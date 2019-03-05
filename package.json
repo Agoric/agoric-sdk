@@ -1,0 +1,54 @@
+{
+  "name": "domain-vat",
+  "version": "0.0.1",
+  "description": "Vat/Container Launcher",
+  "main": "src/index.js",
+  "module": "src/main.js",
+  "engines": {
+    "node": ">=10.15.1"
+  },
+  "bin": {
+    "vat": "bin/vat"
+  },
+  "scripts": {
+    "test": "tape -r esm test/test-node-version.js && tape -r esm test/**/test*.js",
+    "pretty-fix": "prettier --write '**/*.{js,jsx}'",
+    "pretty-check": "prettier --check '**/*.{js,jsx}'",
+    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
+    "lint-check": "eslint '**/*.{js,jsx}'"
+  },
+  "devDependencies": {
+    "@agoric/harden": "^0.0.2",
+    "eslint": "^5.3.0",
+    "eslint-config-airbnb": "^17.1.0",
+    "eslint-config-prettier": "^4.0.0",
+    "eslint-plugin-import": "^2.16.0",
+    "eslint-plugin-jsx-a11y": "^6.2.1",
+    "eslint-plugin-prettier": "^3.0.1",
+    "eslint-plugin-react": "^7.12.4",
+    "esm": "^3.2.5",
+    "prettier": "1.16.4",
+    "rollup-plugin-node-resolve": "^4.0.0",
+    "tape": "^4.10.0",
+    "tape-promise": "^4.0.0"
+  },
+  "dependencies": {
+    "@agoric/nat": "^2.0.0",
+    "rollup": "^1.1.2",
+    "ses": "^0.4.0",
+    "yargs": "^13.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/DomainVat.git"
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/DomainVat/issues"
+  },
+  "homepage": "https://github.com/Agoric/DomainVat#readme",
+  "directories": {
+    "example": "examples"
+  }
+}
