@@ -26,12 +26,26 @@ export async function buildVatController(config) {
   console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })();
   const kernelEndowments = {endow: 'not'};
-  const kernel = buildKernel(kernelEndowments);
+  const kernelController = buildKernel(kernelEndowments);
+  console.log('kernelController', kernelController);
 
-
+  // the kernelController won't leak our objects into the Vats, we must do
+  // the same in this wrapper
   const controller = harden({
+    dumpSlots() {
+      return JSON.parse(JSON.stringify(kernelController.dumpSlots()));
+    },
+
     run() {
-      console.log('controller running');
+      kernelController.run();
+    },
+
+    step() {
+      kernelController.step();
+    },
+
+    queue(vatID, facetID, argsString) {
+      kernelController.queue(vatID, facetID, argsString);
     },
   });
 
