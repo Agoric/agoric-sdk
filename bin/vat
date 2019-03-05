@@ -1,0 +1,7 @@
+#!/usr/bin/env node
+
+require = require('esm')(module);
+const { loadBasedir, buildVatController } = require('../src/index.js');
+loadBasedir('.')
+  .then(config => buildVatController(config))
+  .then(controller => controller.run());

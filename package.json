@@ -11,7 +11,8 @@
     "vat": "bin/vat"
   },
   "scripts": {
-    "test": "tape -r esm test/test-node-version.js && tape -r esm test/**/test*.js",
+    "build-kernel": "node -r esm scripts/build-kernel.js",
+    "test": "npm run-script build-kernel && tape -r esm test/test-node-version.js && tape -r esm test/**/test*.js",
     "pretty-fix": "prettier --write '**/*.{js,jsx}'",
     "pretty-check": "prettier --check '**/*.{js,jsx}'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
