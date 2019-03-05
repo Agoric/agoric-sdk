@@ -1,4 +1,5 @@
 import fs from 'fs';
+import process from 'process';
 import { rollup } from 'rollup';
 
 async function main() {
@@ -49,4 +50,8 @@ return buildKernel;
 }
 
 
-main();
+main().then(_ => process.exit(0), err => {
+  console.log('error creating src/bundles/kernel:');
+  console.log(err);
+  process.exit(1);
+});
