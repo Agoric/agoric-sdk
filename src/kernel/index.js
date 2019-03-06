@@ -122,7 +122,42 @@ export default function buildKernel(kernelEndowments) {
     },
 
     dumpSlots() {
-      return {};
+      const vatTables = Array.from(vats.entries()).map((vat, vatID) => {
+        // TODO: find some way to expose these, the kernel doesn't see them
+        return { vatID };
+      });
+
+      const kernelTable = [];
+      kernelSlots.forEach((fb, vatID) => {
+        fb.forward.forEach((target, slotID) => {
+          kernelTable.push([vatID, slotID, target.vatID, target.slotID]);
+        });
+      });
+
+      function compareNumbers(a, b) {
+        return a - b;
+      }
+
+      function compareStrings(a, b) {
+        if (a > b) {
+          return 1;
+        }
+        if (a < b) {
+          return -1;
+        }
+        return 0;
+      }
+
+      kernelTable.sort(
+        (a, b) =>
+          compareStrings(a[0], b[0]) ||
+          compareNumbers(a[1], b[1]) ||
+          compareStrings(a[2], b[2]) ||
+          compareNumbers(a[3], b[3]) ||
+          0,
+      );
+
+      return { vatTables, kernelTable };
     },
 
     run() {
