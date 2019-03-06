@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { rollup } from 'rollup';
 import harden from '@agoric/harden';
+import Nat from '@agoric/nat';
 import SES from 'ses';
 
 import kernelSourceFunc from './bundles/kernel';
@@ -21,7 +22,9 @@ export async function buildVatController(config) {
   const s = SES.makeSESRootRealm({consoleMode: 'allow',
                                   //errorStackMode: 'allow',
                                  });
-  const r = s.makeRequire({'@agoric/harden': true});
+  const r = s.makeRequire({'@agoric/harden': true,
+                           '@agoric/nat': Nat,
+                          });
   const kernelSource = getKernelSource();
   console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })();
