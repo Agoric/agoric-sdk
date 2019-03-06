@@ -9,12 +9,7 @@ async function main() {
     external: ['@agoric/nat', '@agoric/harden'],
   });
   const { output } = await bundle.generate({
-    format: 'iife',
-    //exports: 'buildKernel',
-    name: 'buildKernel',
-    globals: {
-      '@agoric/harden': 'harden',
-    },
+    format: 'cjs',
   });
   if (output.length !== 1) {
     throw Error('unprepared for more than one chunk/asset');
@@ -25,22 +20,18 @@ async function main() {
   let { code: source } = output[0];
   const { map: sourceMap } = output[0];
 
-  // 'source' is now a string that looks like:
-  // var buildKernel = (function(harden){..}(harden));
-  if (!source.startsWith('var buildKernel = (function')) {
-    throw Error('unexpected prefix');
-  }
-
-  // This is close, but we need a stringifiable function, exported as an ES6
-  // module. So we wrap it in an outer function.
+  // 'source' is now a string that contains a program, which references
+  // require() and sets module.exports . This is close, but we need a single
+  // stringifiable function, as an ES6 module's default export. So we wrap it
+  // in an outer function.
 
   source = `
 export default function kernelSourceFunc() {
-const harden = require('@agoric/harden');
+const module = {};
 
 ${source}
 
-return buildKernel;
+return module.exports;
 }
 `;
 
