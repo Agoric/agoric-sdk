@@ -1,7 +1,7 @@
 
 A walkthrough of how messages are passed from one Vat to another.
 
-== Descriptive Conventions ==
+## Descriptive Conventions
 
 Numbers are suffixed in this description to indicate which numberspace they
 live in, but these suffixes never appear in the implementation.
@@ -25,7 +25,7 @@ From A's point of view, negative numbers are imports, positive numbers are
 exports. We use this polarity so that the deliver(facetID) calls into Vats
 can use positive facetID values.
 
-== Kernel Slot Table ==
+## Kernel Slot Table
 
 Each Vat has a table that maps from their slots to other Vat's slots. This
 table maps in both directions:
@@ -63,7 +63,7 @@ an export of toVatID (arg being sent back home), we just cite the matching
 toSlotID in the deliver(). If it is an export of some other vat, we do a
 three-party link, which adds an import to toVatID.
 
-== Vat import/export table ==
+## Vat import/export table
 
 Each Vat, in its comms library, maintains an internal table which maps two
 sets of objects:
@@ -88,7 +88,7 @@ same values.
 `vatSlots[positiveIndex] <-> localObject`
 
 
-== Initial state ==
+## Initial state
 
 A has a (magically created) reference to B's `bob` object and to C's `carol`
 object. No other references.
@@ -119,7 +119,7 @@ A has a proxy named `bob` which remembers `slot=-10a`, and `carol` with
 |           |       -11a |       C |      50c |
 
 
-== First Message: no arguments ==
+## First Message: no arguments
 
 A invokes `bob.foo()` to B, no arguments, no result promise.
 
@@ -139,7 +139,7 @@ Kernel invokes `B.deliver(slotID=40b, method='foo', argsString='[]', argSlots=[]
 All slot tables remain the same.
 
 
-== Second Message: multiple arguments, including reference to self ==
+## Second Message: multiple arguments, including reference to self
 
 A has a local pass-by-proxy object `alice`.
 
@@ -153,13 +153,13 @@ exportID`). It thus adds `20a -> alice` to its internal exports table. The
 export ID "20a" is appended to the `argSlots` list (which is currently empty,
 since this is the first time the serializer has encountered a pass-by-proxy
 argument for this call). The argument is replaced with a reference to the
-first entry in the `argSlots` list (i.e. "0" since `argSlots` is 0-indexed).
+first entry in the `argSlots` list (i.e. "0i" since `argSlots` is 0-indexed).
 
 The same library notices `bob` is referenced, and is present in the internal
 `obj <-> importID` import table (proxies are always already present in this
 table, since they were added when the reference was first received). The
 matching importID "-10a" is appended to the `argSlots` list, and the index
-(the second entry, "1") is used in the serialization.
+(the second entry, "1i") is used in the serialization.
 
 `vatSlots(A)`:
 
@@ -171,11 +171,11 @@ matching importID "-10a" is appended to the `argSlots` list, and the index
 
 A does:
 
-```js
+```
 syscall.send(targetSlot=-10a,
              method='foo',
-             argsString='[{@qclass: "ref", index: 0},
-                          {@qclass: "ref", index: 1},
+             argsString='[{@qclass: "ref", index: 0i},
+                          {@qclass: "ref", index: 1i},
                          ]',
              argSlots=[20a, -10a])
 ```
@@ -208,12 +208,12 @@ use "40b" directly.
 
 The kernel then queues a message:
 
-```js
+```
 { vatID=B,
   slotID=40b,
   method='foo',
-  argsString='[{@qclass: "ref", index: 0},
-               {@qclass: "ref", index: 1},
+  argsString='[{@qclass: "ref", index: 0i},
+               {@qclass: "ref", index: 1i},
               ]',
   argSlots=[-30b, 40b])
 }
@@ -221,12 +221,12 @@ The kernel then queues a message:
 
 When this message gets to the front of the queue, the kernel invokes:
 
-```js
+```
 B.deliver(
   slotID=40b,
   method='foo',
-  argsString='[{@qclass: "ref", index: 0},
-               {@qclass: "ref", index: 1},
+  argsString='[{@qclass: "ref", index: 0i},
+               {@qclass: "ref", index: 1i},
               ]',
   argSlots=[-30b, 40b])
 }
@@ -262,18 +262,23 @@ present in `kernelSlots[B].backward`, so it can translate that to `-30b`
 without modifying the table. B's comms library sees that `-30b` is already
 present in `vatSlotsB` so it re-uses `proxyAlice` from the previous delivery.
 
-== Third Message: Three-Party Introduction ==
+If A were to invoke `bob.foo(alice, alice)`, the `argsString` would have
+multiple copies of a `{@qclass: "ref", index: 0i}` node, but `argsSlots`
+would have just one copy of `-30b`.
+
+
+## Third Message: Three-Party Introduction
 
 A invokes `bob.bar(carol)`.
 
 A's comms library serializes the object graph as before, producing a
 reference to carol ("-11a") in the arguments:
 
-```js
+```
 syscall.send(targetSlot=-10a,
              method='bar,
-             argsString='[{@qclass: "ref", index: 0},
-                          {@qclass: "ref", index: 1},
+             argsString='[{@qclass: "ref", index: 0i},
+                          {@qclass: "ref", index: 1i},
                          ]',
              argSlots=[-11a])
 ```
@@ -299,22 +304,22 @@ next available value.
 
 The kernel then queues:
 
-```js
+```
 { vatID=B,
   slotID=40b,
   method='bar',
-  argsString='[{@qclass: "ref", index: 0}]',
+  argsString='[{@qclass: "ref", index: 0i}]',
   argSlots=[-31b])
 }
 ```
 
 When this message gets to the front of the queue, the kernel invokes:
 
-```js
+```
 B.deliver(
   slotID=40b,
   method='bar',
-  argsString='[{@qclass: "ref", index: 0}]',
+  argsString='[{@qclass: "ref", index: 0i}]',
   argSlots=[-31b])
 }
 ```
