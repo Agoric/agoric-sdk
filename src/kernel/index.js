@@ -2,11 +2,12 @@
 
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import p2 from './p2.js';
+import p2 from './p2';
 
 export default function buildKernel(kernelEndowments) {
   console.log('in buildKernel', kernelEndowments);
   const foo = p2();
+  foo();
 
   let running = false;
   const vats = harden(new Map());
@@ -32,7 +33,7 @@ export default function buildKernel(kernelEndowments) {
 
   function allocateImportIndex(vatID) {
     const i = nextImportIndex[vatID];
-    nextImportIndex -= 1;
+    nextImportIndex[vatID] -= 1;
     return i;
   }
 
@@ -50,18 +51,15 @@ export default function buildKernel(kernelEndowments) {
     return m.backward.get(key);
   }
 
-  function mapSlots(fromVatID, toVatID, outputSlots) {
-    const inputSlots = outputSlots.map(outSlotID => {
-      const n = mapOutbound(fromVatID, outSlotID);
-      return mapInbound(toVatID, n.vatID, n.slotID);
-    });
-    return inputSlots;
-  }
-
   const syscallBase = harden({
     send(fromVatID, targetSlot, method, argsString, vatSlots) {
-      const { vatID: toVatID, slotID: facetID } = mapOutbound(fromVatID, targetSlot);
-      const slots = vatSlots.map(outSlotID => mapOutbound(fromVatID, outSlotID));
+      const { vatID: toVatID, slotID: facetID } = mapOutbound(
+        fromVatID,
+        targetSlot,
+      );
+      const slots = vatSlots.map(outSlotID =>
+        mapOutbound(fromVatID, outSlotID),
+      );
       runQueue.push({ toVatID, facetID, method, argsString, slots });
     },
   });
@@ -69,7 +67,13 @@ export default function buildKernel(kernelEndowments) {
   function syscallForVatID(fromVatID) {
     return harden({
       send(targetSlot, method, argsString, vatSlots) {
-        return syscallBase.send(fromVatID, targetSlot, method, argsString, vatSlots);
+        return syscallBase.send(
+          fromVatID,
+          targetSlot,
+          method,
+          argsString,
+          vatSlots,
+        );
       },
       // TODO: this is temporary, obviously vats shouldn't be able to pause the kernel
       pause() {
@@ -90,23 +94,34 @@ export default function buildKernel(kernelEndowments) {
     });
     vats.set(vatID, vat);
     if (!kernelSlots.has(vatID)) {
-      kernelSlots.set(vatID, { forward: harden(new Map()), backward: harden(new Map()) });
+      kernelSlots.set(vatID, {
+        forward: harden(new Map()),
+        backward: harden(new Map()),
+      });
     }
     nextImportIndex[vatID] = -1;
   }
 
   function deliverOneMessage(message) {
     const vat = vats[message.toVatID];
-    const inputSlots = message.slots.map(n => mapInbound(message.toVatID,
-                                                         n.vatID, n.slotID));
+    const inputSlots = message.slots.map(n =>
+      mapInbound(message.toVatID, n.vatID, n.slotID),
+    );
     // TODO: protect with promise/then
-    vat.dispatch(vat.syscall,
-                 message.facetID, message.method,
-                 message.argsString, inputSlots);
-
+    vat.dispatch(
+      vat.syscall,
+      message.facetID,
+      message.method,
+      message.argsString,
+      inputSlots,
+    );
   }
 
   const controller = harden({
+    addVat(vatID, occupant) {
+      addVat(`${vatID}`, `${occupant}`);
+    },
+
     dumpSlots() {
       return {};
     },
@@ -139,12 +154,13 @@ export default function buildKernel(kernelEndowments) {
     queue(vatID, facetID, method, argsString) {
       // queue a message on the end of the queue. Use 'step' or 'run' to
       // execute it
-      runQueue.push({ vatID: `${vatID}`,
-                      facetID: `${facetID}`,
-                      method: `${method}`,
-                      argsString: `${argsString}`,
-                      slots: [],
-                    });
+      runQueue.push({
+        vatID: `${vatID}`,
+        facetID: `${facetID}`,
+        method: `${method}`,
+        argsString: `${argsString}`,
+        slots: [],
+      });
     },
   });
 

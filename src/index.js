@@ -1,13 +1,13 @@
-import fs from 'fs';
-import path from 'path';
-import { rollup } from 'rollup';
+// import fs from 'fs';
+// import path from 'path';
+// import { rollup } from 'rollup';
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import SES from 'ses';
 
 import kernelSourceFunc from './bundles/kernel';
 
-export async function loadBasedir(basedir) {
+export async function loadBasedir(_basedir) {
   const vatSources = {};
   const wiringSource = '';
   return harden({ vatSources, wiringSource });
@@ -17,18 +17,17 @@ function getKernelSource() {
   return `(${kernelSourceFunc})`;
 }
 
-export async function buildVatController(config) {
-  console.log("in main");
-  const s = SES.makeSESRootRealm({consoleMode: 'allow',
-                                  //errorStackMode: 'allow',
-                                 });
-  const r = s.makeRequire({'@agoric/harden': true,
-                           '@agoric/nat': Nat,
-                          });
+export async function buildVatController(_config) {
+  console.log('in main');
+  const s = SES.makeSESRootRealm({
+    consoleMode: 'allow',
+    // errorStackMode: 'allow',
+  });
+  const r = s.makeRequire({ '@agoric/harden': true, '@agoric/nat': Nat });
   const kernelSource = getKernelSource();
   console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })();
-  const kernelEndowments = {endow: 'not'};
+  const kernelEndowments = { endow: 'not' };
   const kernelController = buildKernel(kernelEndowments);
   console.log('kernelController', kernelController);
 
