@@ -6,8 +6,7 @@ import p2 from './p2';
 
 export default function buildKernel(kernelEndowments) {
   console.log('in buildKernel', kernelEndowments);
-  const foo = p2();
-  foo();
+  p2(); // temporary, to exercise bundling
 
   let running = false;
   const vats = harden(new Map());
