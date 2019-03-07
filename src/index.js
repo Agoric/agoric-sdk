@@ -28,26 +28,34 @@ export async function buildVatController(_config) {
   console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })();
   const kernelEndowments = { endow: 'not' };
-  const kernelController = buildKernel(kernelEndowments);
-  console.log('kernelController', kernelController);
+  const kernel = buildKernel(kernelEndowments);
+  console.log('kernel', kernel);
 
-  // the kernelController won't leak our objects into the Vats, we must do
+  // the kernel won't leak our objects into the Vats, we must do
   // the same in this wrapper
   const controller = harden({
+    addVat(vatID, dispatchSource) {
+      // TODO: if the 'require' we provide here supplies a non-pure module,
+      // that could open a communication channel between otherwise isolated
+      // Vats. For now that's just harden and Nat, but others might get added
+      // in the future, so pay attention to what we allow in.
+      const dispatch = s.evaluate(dispatchSource, { require: r });
+      kernel.addVat(vatID, dispatch);
+    },
     dumpSlots() {
-      return JSON.parse(JSON.stringify(kernelController.dumpSlots()));
+      return JSON.parse(JSON.stringify(kernel.dumpSlots()));
     },
 
     run() {
-      kernelController.run();
+      kernel.run();
     },
 
     step() {
-      kernelController.step();
+      kernel.step();
     },
 
     queue(vatID, facetID, argsString) {
-      kernelController.queue(vatID, facetID, argsString);
+      kernel.queue(vatID, facetID, argsString);
     },
   });
 

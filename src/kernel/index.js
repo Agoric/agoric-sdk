@@ -1,5 +1,3 @@
-/* global SES */
-
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import p2 from './p2';
@@ -11,14 +9,32 @@ export default function buildKernel(kernelEndowments) {
   let running = false;
   const vats = harden(new Map());
   const runQueue = [];
-  // kernelSlots[fromVatID] = { forward, backward }
-  // forward[fromSlotID] = { vatID, slotID }
-  // backward[`${toVatID}.${toSlotID}`] = fromSlotID
+  // kernelSlots[fromVatID] = { outbound, inbound }
+  // outbound[fromSlotID] = { vatID, slotID }
+  // inbound[`${toVatID}.${toSlotID}`] = fromSlotID
   const kernelSlots = harden(new Map());
-  // nextImportIndex[vatID] = -number
+  // nextImportIndex.get(vatID) = -number
   const nextImportIndex = harden(new Map());
 
+  // define three types: inbound, neutral, outbound
+  // * outbound is what syscall.send(slots=) contains, it is always scoped to
+  //   the sending vat, and the values are either negative (imports) or
+  //   positive (exports)
+  // * middle is stored in runQueue, and contains (vatID, exportID) pairs,
+  //   where exportID is always positive
+  // * inbound is passed into deliver(slots=), is always scoped to the
+  //   receiving/target vat, and the values are either negative (imports) or
+  //   positive (exports)
+  // * outbound->middle looks up negative-imports in kernelSlots, and just
+  //   appends the sending vatID to positive-exports
+  // * middle->inbound removes the vatID when it matches the receiving vat
+  //   (delivering a positive-export), and looks up the others in kernelSlots
+  //   (adding one if necessary) to deliver negative-imports
+
   function mapOutbound(fromVatID, fromSlotID) {
+    // fromVatID just referenced fromSlotID in an argument (or as the target
+    // of a send), what { vatID, slotID } are they talking about?
+
     // fromSlotID might be positive (an export of fromVatID), or negative (an
     // import from somewhere else). Exports don't need translation into the
     // neutral { vatID, slotID } format.
@@ -26,40 +42,43 @@ export default function buildKernel(kernelEndowments) {
       return { vatID: fromVatID, slotID: fromSlotID };
     }
     // imports (of fromVatID) must be translated into the neutral
-    // non-Vat-specific form
-    return kernelSlots.get(fromVatID).forward.get(fromSlotID);
+    // non-Vat-specific form. These will always be exports of somebody else.
+    return kernelSlots.get(fromVatID).outbound.get(fromSlotID);
   }
 
   function allocateImportIndex(vatID) {
-    const i = nextImportIndex[vatID];
-    nextImportIndex[vatID] -= 1;
+    const i = nextImportIndex.get(vatID);
+    nextImportIndex.set(vatID, i - 1);
     return i;
   }
 
-  function mapInbound(toVatID, vatID, slotID) {
-    const m = kernelSlots.get(toVatID);
+  function mapInbound(forVatID, vatID, slotID) {
+    // decide what slotID to give to 'forVatID', so when they reference it
+    // later in an argument, it will be mapped to vatID/slotID.
+    const m = kernelSlots.get(forVatID);
     // slotID is always positive, since it is somebody else's export
     Nat(slotID);
     const key = `${vatID}.${slotID}`; // ugh javascript
-    if (!m.backward.has(key)) {
+    if (!m.inbound.has(key)) {
       // must add both directions
-      const newSlotID = allocateImportIndex(toVatID);
-      m.forward.set(newSlotID, harden({ vatID, slotID }));
-      m.backward.set(key, newSlotID);
+      const newSlotID = allocateImportIndex(forVatID);
+      Nat(-newSlotID); // always negative: import for forVatID
+      m.inbound.set(key, newSlotID);
+      m.outbound.set(newSlotID, harden({ vatID, slotID }));
     }
-    return m.backward.get(key);
+    return m.inbound.get(key);
   }
 
   const syscallBase = harden({
     send(fromVatID, targetSlot, method, argsString, vatSlots) {
-      const { vatID: toVatID, slotID: facetID } = mapOutbound(
-        fromVatID,
-        targetSlot,
-      );
+      const target = mapOutbound(fromVatID, targetSlot);
+      if (!target)
+        throw Error(`unable to find target for ${fromVatID}/${targetSlot}`);
       const slots = vatSlots.map(outSlotID =>
         mapOutbound(fromVatID, outSlotID),
       );
-      runQueue.push({ toVatID, facetID, method, argsString, slots });
+      runQueue.push({ vatID: target.vatID, facetID: target.slotID,
+                      method, argsString, slots });
     },
   });
 
@@ -85,26 +104,28 @@ export default function buildKernel(kernelEndowments) {
     // wasteful and limiting.
   }
 
-  function addVat(vatID, occupant) {
+  function addVat(vatID, dispatch) {
     const vat = harden({
       id: vatID,
-      dispatch: SES.evaluate(occupant),
+      dispatch,
       syscall: syscallForVatID(vatID),
     });
     vats.set(vatID, vat);
     if (!kernelSlots.has(vatID)) {
       kernelSlots.set(vatID, {
-        forward: harden(new Map()),
-        backward: harden(new Map()),
+        outbound: harden(new Map()),
+        inbound: harden(new Map()),
       });
     }
-    nextImportIndex[vatID] = -1;
+    nextImportIndex.set(vatID, -1);
   }
 
   function deliverOneMessage(message) {
-    const vat = vats[message.toVatID];
-    const inputSlots = message.slots.map(n =>
-      mapInbound(message.toVatID, n.vatID, n.slotID),
+    const targetVatID = message.vatID;
+    const vat = vats.get(targetVatID);
+    console.log(`deliver mapping ${JSON.stringify(message)}`);
+    const inputSlots = message.slots.map(s =>
+      mapInbound(targetVatID, s.vatID, s.slotID),
     );
     // TODO: protect with promise/then
     vat.dispatch(
@@ -116,20 +137,36 @@ export default function buildKernel(kernelEndowments) {
     );
   }
 
-  const controller = harden({
-    addVat(vatID, occupant) {
-      addVat(`${vatID}`, `${occupant}`);
+  const kernel = harden({
+    addVat(vatID, dispatch) {
+      harden(dispatch);
+      // 'dispatch' must be an in-realm function. This test guards against
+      // accidents, but not against malice. MarkM thinks there is no reliable
+      // way to test this.
+      if (!(dispatch instanceof Function)) {
+        throw Error('dispatch is not an in-realm function');
+      }
+      addVat(`${vatID}`, dispatch);
     },
 
-    dumpSlots() {
-      const vatTables = Array.from(vats.entries()).map((vat, vatID) => {
+    addImport(forVatID, vatID, slotID) {
+      Nat(slotID); // export
+      const newSlotID = mapInbound(forVatID, vatID, slotID);
+      Nat(-newSlotID); // import
+      return newSlotID;
+    },
+
+    dump() {
+      const vatTables = Array.from(vats.entries()).map(e => {
+        const vatID = e[0];
+        // const vat = e[1];
         // TODO: find some way to expose these, the kernel doesn't see them
         return { vatID };
       });
 
       const kernelTable = [];
       kernelSlots.forEach((fb, vatID) => {
-        fb.forward.forEach((target, slotID) => {
+        fb.outbound.forEach((target, slotID) => {
           kernelTable.push([vatID, slotID, target.vatID, target.slotID]);
         });
       });
@@ -157,7 +194,7 @@ export default function buildKernel(kernelEndowments) {
           0,
       );
 
-      return { vatTables, kernelTable };
+      return { vatTables, kernelTable, runQueue };
     },
 
     run() {
@@ -190,7 +227,7 @@ export default function buildKernel(kernelEndowments) {
       // execute it
       runQueue.push({
         vatID: `${vatID}`,
-        facetID: `${facetID}`,
+        facetID: Nat(facetID), // always export/positive
         method: `${method}`,
         argsString: `${argsString}`,
         slots: [],
@@ -198,5 +235,5 @@ export default function buildKernel(kernelEndowments) {
     },
   });
 
-  return controller;
+  return kernel;
 }
