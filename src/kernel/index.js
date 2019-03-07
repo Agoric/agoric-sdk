@@ -16,7 +16,7 @@ export default function buildKernel(kernelEndowments) {
   // nextImportIndex.get(vatID) = -number
   const nextImportIndex = harden(new Map());
 
-  // define three types: inbound, neutral, outbound
+  // we define three types of slot identifiers: inbound, neutral, outbound
   // * outbound is what syscall.send(slots=) contains, it is always scoped to
   //   the sending vat, and the values are either negative (imports) or
   //   positive (exports)
@@ -25,11 +25,14 @@ export default function buildKernel(kernelEndowments) {
   // * inbound is passed into deliver(slots=), is always scoped to the
   //   receiving/target vat, and the values are either negative (imports) or
   //   positive (exports)
-  // * outbound->middle looks up negative-imports in kernelSlots, and just
-  //   appends the sending vatID to positive-exports
-  // * middle->inbound removes the vatID when it matches the receiving vat
-  //   (delivering a positive-export), and looks up the others in kernelSlots
-  //   (adding one if necessary) to deliver negative-imports
+  //
+  // * To convert outbound->middle, we look up negative-imports in
+  //   kernelSlots, and just appends the sending vatID to positive-exports
+  //
+  // * To convert middle->inbound, we remove the vatID when it matches the
+  //   receiving vat (and then deliver a positive-export), and we look up the
+  //   others in kernelSlots (adding one if necessary) to deliver
+  //   negative-imports
 
   function mapOutbound(fromVatID, fromSlotID) {
     // fromVatID just referenced fromSlotID in an argument (or as the target
@@ -55,13 +58,21 @@ export default function buildKernel(kernelEndowments) {
   function mapInbound(forVatID, vatID, slotID) {
     // decide what slotID to give to 'forVatID', so when they reference it
     // later in an argument, it will be mapped to vatID/slotID.
-    const m = kernelSlots.get(forVatID);
+    console.log(`mapInbound for ${forVatID} of ${vatID}/${slotID}`);
     // slotID is always positive, since it is somebody else's export
     Nat(slotID);
+
+    if (vatID === forVatID) {
+      // this is returning home, just use slotID
+      return slotID;
+    }
+
+    const m = kernelSlots.get(forVatID);
     const key = `${vatID}.${slotID}`; // ugh javascript
     if (!m.inbound.has(key)) {
       // must add both directions
       const newSlotID = allocateImportIndex(forVatID);
+      console.log(` adding ${newSlotID}`);
       Nat(-newSlotID); // always negative: import for forVatID
       m.inbound.set(key, newSlotID);
       m.outbound.set(newSlotID, harden({ vatID, slotID }));
@@ -77,8 +88,13 @@ export default function buildKernel(kernelEndowments) {
       const slots = vatSlots.map(outSlotID =>
         mapOutbound(fromVatID, outSlotID),
       );
-      runQueue.push({ vatID: target.vatID, facetID: target.slotID,
-                      method, argsString, slots });
+      runQueue.push({
+        vatID: target.vatID,
+        facetID: target.slotID,
+        method,
+        argsString,
+        slots,
+      });
     },
   });
 
@@ -222,15 +238,15 @@ export default function buildKernel(kernelEndowments) {
       }
     },
 
-    queue(vatID, facetID, method, argsString) {
-      // queue a message on the end of the queue. Use 'step' or 'run' to
-      // execute it
+    queue(vatID, facetID, method, argsString, slots = []) {
+      // queue a message on the end of the queue, with 'neutral' slotIDs. Use
+      // 'step' or 'run' to execute it
       runQueue.push({
         vatID: `${vatID}`,
         facetID: Nat(facetID), // always export/positive
         method: `${method}`,
         argsString: `${argsString}`,
-        slots: [],
+        slots: slots.map(s => ({ vatID: `${s.vatID}`, slotID: Nat(s.slotID) })),
       });
     },
   });

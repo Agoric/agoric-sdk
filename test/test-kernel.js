@@ -34,13 +34,46 @@ test('simple call', t => {
   t.end();
 });
 
+test('map inbound', t => {
+  const kernel = buildKernel({});
+  const log = [];
+  function d1(_syscall, facetID, method, argsString, slots) {
+    log.push([facetID, method, argsString, slots]);
+  }
+  kernel.addVat('vat1', d1);
+  const data = kernel.dump();
+  t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
+  t.deepEqual(data.kernelTable, []);
+  t.deepEqual(log, []);
+
+  kernel.queue('vat1', 1, 'foo', 'args', [
+    { vatID: 'vat1', slotID: 5 },
+    { vatID: 'vat2', slotID: 6 },
+  ]);
+  t.deepEqual(kernel.dump().runQueue, [
+    {
+      vatID: 'vat1',
+      facetID: 1,
+      method: 'foo',
+      argsString: 'args',
+      slots: [{ vatID: 'vat1', slotID: 5 }, { vatID: 'vat2', slotID: 6 }],
+    },
+  ]);
+  t.deepEqual(log, []);
+  kernel.run();
+  t.deepEqual(log, [[1, 'foo', 'args', [5, -1]]]);
+  t.deepEqual(kernel.dump().kernelTable, [['vat1', -1, 'vat2', 6]]);
+
+  t.end();
+});
+
 test('addImport', t => {
   const kernel = buildKernel({});
-  function d1(syscall, facetID, method, argsString, slots) {}
+  function d1(_syscall, _facetID, _method, _argsString, _slots) {}
   kernel.addVat('vat1', d1);
 
-  function d2(syscall, facetID, method, argsString, slots) {}
-  kernel.addVat('vat2', d1);
+  function d2(_syscall, _facetID, _method, _argsString, _slots) {}
+  kernel.addVat('vat2', d2);
 
   const slotID = kernel.addImport('vat1', 'vat2', 5);
   t.equal(slotID, -1); // first import
@@ -56,7 +89,7 @@ test('outbound call', t => {
   function d1(syscall, facetID, method, argsString, slots) {
     // console.log(`d1/${facetID} called`);
     log.push(['d1', facetID, method, argsString, slots]);
-    syscall.send(v1tovat25, 'bar', 'bargs', []);
+    syscall.send(v1tovat25, 'bar', 'bargs', [v1tovat25, 7]);
   }
   kernel.addVat('vat1', d1);
 
@@ -93,12 +126,16 @@ test('outbound call', t => {
       facetID: 5,
       method: 'bar',
       argsString: 'bargs',
-      slots: [],
+      slots: [{ vatID: 'vat2', slotID: 5 }, { vatID: 'vat1', slotID: 7 }],
     },
   ]);
 
   kernel.step();
-  t.deepEqual(log, [['d2', 5, 'bar', 'bargs', []]]);
+  t.deepEqual(log, [['d2', 5, 'bar', 'bargs', [5, -1]]]);
+  t.deepEqual(kernel.dump().kernelTable, [
+    ['vat1', v1tovat25, 'vat2', 5],
+    ['vat2', -1, 'vat1', 7],
+  ]);
 
   t.end();
 });
