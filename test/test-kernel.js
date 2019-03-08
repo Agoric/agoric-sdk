@@ -139,3 +139,69 @@ test('outbound call', t => {
 
   t.end();
 });
+
+test('three-party', t => {
+  const kernel = buildKernel({});
+  const log = [];
+  let bobForA;
+  let carolForA;
+
+  function vatA(syscall, facetID, method, argsString, slots) {
+    console.log(`vatA/${facetID} called`);
+    log.push(['vatA', facetID, method, argsString, slots]);
+    syscall.send(bobForA, 'intro', 'bargs', [carolForA]);
+  }
+  kernel.addVat('vatA', vatA);
+
+  function vatB(syscall, facetID, method, argsString, slots) {
+    console.log(`vatB/${facetID} called`);
+    log.push(['vatB', facetID, method, argsString, slots]);
+  }
+  kernel.addVat('vatB', vatB);
+
+  function vatC(syscall, facetID, method, argsString, slots) {
+    log.push(['vatC', facetID, method, argsString, slots]);
+  }
+  kernel.addVat('vatC', vatC);
+
+  bobForA = kernel.addImport('vatA', 'vatB', 5);
+  carolForA = kernel.addImport('vatA', 'vatC', 6);
+
+  const data = kernel.dump();
+  t.deepEqual(data.vatTables, [
+    { vatID: 'vatA' },
+    { vatID: 'vatB' },
+    { vatID: 'vatC' },
+  ]);
+  t.deepEqual(data.kernelTable, [
+    ['vatA', carolForA, 'vatC', 6],
+    ['vatA', bobForA, 'vatB', 5],
+  ]);
+  t.deepEqual(log, []);
+
+  kernel.queue('vatA', 1, 'foo', 'args');
+  kernel.step();
+
+  t.deepEqual(log, [['vatA', 1, 'foo', 'args', []]]);
+  log.shift();
+
+  t.deepEqual(kernel.dump().runQueue, [
+    {
+      vatID: 'vatB',
+      facetID: 5,
+      method: 'intro',
+      argsString: 'bargs',
+      slots: [{ vatID: 'vatC', slotID: 6 }],
+    },
+  ]);
+
+  kernel.step();
+  t.deepEqual(log, [['vatB', 5, 'intro', 'bargs', [-1]]]);
+  t.deepEqual(kernel.dump().kernelTable, [
+    ['vatA', carolForA, 'vatC', 6],
+    ['vatA', bobForA, 'vatB', 5],
+    ['vatB', -1, 'vatC', 6],
+  ]);
+
+  t.end();
+});
