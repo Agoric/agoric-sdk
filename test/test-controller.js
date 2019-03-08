@@ -11,12 +11,25 @@ test('load', async t => {
   t.end();
 });
 
-test('simple call', async t => {
+test('simple call with SES', async t => {
   const controller = await buildVatController({});
-  function d1(_syscall, _facetID, _method, _argsString, _slots) {
-    // log.push([facetID, method, argsString, slots]);
-  }
-  controller.addVat('vat1', `(${d1})`);
+  await controller.addVat('vat1', require.resolve('./d1'));
+  const data = controller.dump();
+  t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
+  t.deepEqual(data.kernelTable, []);
+
+  controller.queue('vat1', 1, 'foo', 'args');
+  t.deepEqual(controller.dump().runQueue, [
+    { vatID: 'vat1', facetID: 1, method: 'foo', argsString: 'args', slots: [] },
+  ]);
+  controller.run();
+
+  t.end();
+});
+
+test('simple call non-SES', async t => {
+  const controller = await buildVatController({}, false);
+  await controller.addVat('vat1', require.resolve('./d1'));
   const data = controller.dump();
   t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
   t.deepEqual(data.kernelTable, []);

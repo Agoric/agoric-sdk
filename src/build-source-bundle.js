@@ -1,5 +1,3 @@
-import fs from 'fs';
-import process from 'process';
 import { rollup } from 'rollup';
 
 export default async function bundleSource(startFilename) {
@@ -18,15 +16,19 @@ export default async function bundleSource(startFilename) {
     throw Error(`unprepared for assets: ${output[0].fileName}`);
   }
   let { code: source } = output[0];
-  const { map: sourceMap } = output[0];
+  // const { map: sourceMap } = output[0];
 
   // 'source' is now a string that contains a program, which references
   // require() and sets module.exports . This is close, but we need a single
-  // stringifiable function, as an ES6 module's default export. So we wrap it
-  // in an outer function.
+  // stringifiable function, so we must wrap it in an outer function that
+  // returns the exports.
+  //
+  // build-kernel.js will prefix this with 'export default' so it becomes an
+  // ES6 module. The Vat controller will wrap it with parenthesis so it can
+  // be evaluated and invoked to get at the exports.
 
   source = `
-export default function getExport() {
+function getExport() {
 const module = {};
 
 ${source}
