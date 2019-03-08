@@ -42,8 +42,8 @@ export async function buildVatController(_config) {
       const dispatch = s.evaluate(dispatchSource, { require: r });
       kernel.addVat(vatID, dispatch);
     },
-    dumpSlots() {
-      return JSON.parse(JSON.stringify(kernel.dumpSlots()));
+    dump() {
+      return JSON.parse(JSON.stringify(kernel.dump()));
     },
 
     run() {
@@ -54,8 +54,8 @@ export async function buildVatController(_config) {
       kernel.step();
     },
 
-    queue(vatID, facetID, argsString) {
-      kernel.queue(vatID, facetID, argsString);
+    queue(vatID, facetID, method, argsString) {
+      kernel.queue(vatID, facetID, method, argsString, []);
     },
   });
 
