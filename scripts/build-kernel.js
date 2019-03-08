@@ -1,40 +1,10 @@
 import fs from 'fs';
 import process from 'process';
 import { rollup } from 'rollup';
+import bundleSource from '../src/build-source-bundle';
 
 async function main() {
-  const bundle = await rollup({
-    input: require.resolve('../src/kernel/index.js'),
-    treeshake: false,
-    external: ['@agoric/nat', '@agoric/harden'],
-  });
-  const { output } = await bundle.generate({
-    format: 'cjs',
-  });
-  if (output.length !== 1) {
-    throw Error('unprepared for more than one chunk/asset');
-  }
-  if (output[0].isAsset) {
-    throw Error(`unprepared for assets: ${output[0].fileName}`);
-  }
-  let { code: source } = output[0];
-  const { map: sourceMap } = output[0];
-
-  // 'source' is now a string that contains a program, which references
-  // require() and sets module.exports . This is close, but we need a single
-  // stringifiable function, as an ES6 module's default export. So we wrap it
-  // in an outer function.
-
-  source = `
-export default function kernelSourceFunc() {
-const module = {};
-
-${source}
-
-return module.exports;
-}
-`;
-
+  const source = await bundleSource('../src/kernel/index.js');
   const f = await fs.promises.open('src/bundles/kernel', 'w', 0o644);
   await f.write(source);
   await f.close();
