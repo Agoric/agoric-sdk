@@ -7,9 +7,16 @@ require = require('esm')(module);
 const { loadBasedir, buildVatController } = require('../src/index.js');
 
 async function main() {
-  const basedir = process.argv[2] || '.';
+  let argv = process.argv.splice(2);
+  let withSES = true;
+  if (argv[0] === '--no-ses') {
+    withSES = false;
+    argv.shift();
+  }
+  const basedir = argv[0] || '.';
+
   const config = await loadBasedir(basedir);
-  const controller = await buildVatController(config);
+  const controller = await buildVatController(config, withSES);
   const r = repl.start({ prompt: 'vat> ',
                          replMode: repl.REPL_MODE_STRICT,
                        });
