@@ -30,6 +30,9 @@ test('simple call with SES', async t => {
     slots: [],
   });
 
+  controller.log('2');
+  t.equal(controller.dump().log[1], '2');
+
   t.end();
 });
 
@@ -51,6 +54,9 @@ test('simple call non-SES', async t => {
     argsString: 'args',
     slots: [],
   });
+
+  controller.log('2');
+  t.equal(controller.dump().log[1], '2');
 
   t.end();
 });

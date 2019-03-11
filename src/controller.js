@@ -92,6 +92,11 @@ export async function buildVatController(config, withSES = true) {
       console.log(`adding vat '${vatID}' from ${sourceIndex}`);
       await addVat(vatID, sourceIndex);
     },
+
+    log(str) {
+      kernel.log(str);
+    },
+
     dump() {
       return JSON.parse(JSON.stringify(kernel.dump()));
     },

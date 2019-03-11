@@ -177,6 +177,10 @@ export default function buildKernel(kernelEndowments) {
       return newSlotID;
     },
 
+    log(str) {
+      log.push(`${str}`);
+    },
+
     dump() {
       const vatTables = Array.from(vats.entries()).map(e => {
         const vatID = e[0];
