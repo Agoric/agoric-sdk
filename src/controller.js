@@ -65,6 +65,11 @@ export async function buildVatController(config, withSES = true) {
   // console.log('kernel', kernel);
 
   async function addVat(vatID, sourceIndex) {
+    if (sourceIndex[0] !== '.' && sourceIndex[0] !== '/') {
+      throw Error(
+        'sourceIndex must be relative (./foo) or absolute (/foo) not package (foo)',
+      );
+    }
     let dispatch;
     if (withSES) {
       // TODO: if the 'require' we provide here supplies a non-pure module,

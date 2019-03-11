@@ -60,3 +60,19 @@ test('simple call non-SES', async t => {
 
   t.end();
 });
+
+test('reject module-like sourceIndex', async t => {
+  const vatSources = new Map();
+  // the keys of vatSources are vat source index strings: something that
+  // require() or rollup can use to import/stringify the source graph that
+  // should be loaded into the vat. We want this to be somewhere on local
+  // disk, so it should start with '/' or '.'. If it doesn't, the name will
+  // be treated as something to load from node_modules/ (i.e. something
+  // installed from npm), so we want to reject that.
+  vatSources.set('vat1', 'vatsource');
+  t.rejects(
+    async () => buildVatController({ vatSources }, false),
+    /sourceIndex must be relative/,
+  );
+  t.end();
+});
