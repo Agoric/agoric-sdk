@@ -1,5 +1,5 @@
-// import fs from 'fs';
-// import path from 'path';
+import fs from 'fs';
+import path from 'path';
 // import { rollup } from 'rollup';
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
@@ -9,10 +9,30 @@ import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
 import bundleSource from './build-source-bundle';
 
-export async function loadBasedir(_basedir) {
-  const vatSources = {};
-  const wiringSource = '';
-  return harden({ vatSources, wiringSource });
+export function loadBasedir(basedir) {
+  console.log(`loading config from basedir ${basedir}`);
+  const vatSources = new Map();
+  const subs = fs.readdirSync(basedir, { withFileTypes: true });
+  subs.forEach(dirent => {
+    if (!dirent.isDirectory()) {
+      return;
+    }
+    const indexJS = path.resolve(basedir, dirent.name, 'index.js');
+    try {
+      fs.statSync(indexJS);
+    } catch (e) {
+      console.log(`subdir ${dirent.name} is missing index.js, ignoring`);
+      return;
+    }
+    vatSources.set(dirent.name, indexJS);
+  });
+  let bootstrapIndexJS = path.resolve(basedir, 'bootstrap.js');
+  try {
+    fs.statSync(bootstrapIndexJS);
+  } catch (e) {
+    bootstrapIndexJS = undefined;
+  }
+  return harden({ vatSources, bootstrapIndexJS });
 }
 
 function getKernelSource() {
@@ -26,7 +46,7 @@ function buildSESKernel() {
   });
   const r = s.makeRequire({ '@agoric/harden': true, '@agoric/nat': Nat });
   const kernelSource = getKernelSource();
-  console.log('building kernel');
+  // console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })();
   const kernelEndowments = { endow: 'not' };
   const kernel = buildKernel(kernelEndowments);
@@ -39,12 +59,12 @@ function buildNonSESKernel() {
   return { kernel };
 }
 
-export async function buildVatController(_config, withSES = true) {
-  console.log('in main');
+export async function buildVatController(config, withSES = true) {
+  // console.log('in main');
   const { kernel, s, r } = withSES ? buildSESKernel() : buildNonSESKernel();
-  console.log('kernel', kernel);
+  // console.log('kernel', kernel);
 
-  async function addVat(vatID, sourceindex) {
+  async function addVat(vatID, sourceIndex) {
     let dispatch;
     if (withSES) {
       // TODO: if the 'require' we provide here supplies a non-pure module,
@@ -55,12 +75,12 @@ export async function buildVatController(_config, withSES = true) {
       // comms problem exists between otherwise-isolated code within a single
       // Vat so it doesn't really help anyways
       // const r = s.makeRequire({ '@agoric/harden': true, '@agoric/nat': Nat });
-      let source = await bundleSource(`${sourceindex}`); // TODO use path lib
+      let source = await bundleSource(`${sourceIndex}`);
       source = `(${source})`;
       dispatch = s.evaluate(source, { require: r });
     } else {
       // eslint-disable-next-line global-require,import/no-dynamic-require
-      dispatch = require(`${sourceindex}`).default;
+      dispatch = require(`${sourceIndex}`).default;
     }
     kernel.addVat(vatID, dispatch);
   }
@@ -68,8 +88,9 @@ export async function buildVatController(_config, withSES = true) {
   // the kernel won't leak our objects into the Vats, we must do
   // the same in this wrapper
   const controller = harden({
-    async addVat(vatID, sourceDir) {
-      await addVat(vatID, sourceDir);
+    async addVat(vatID, sourceIndex) {
+      console.log(`adding vat '${vatID}' from ${sourceIndex}`);
+      await addVat(vatID, sourceIndex);
     },
     dump() {
       return JSON.parse(JSON.stringify(kernel.dump()));
@@ -87,6 +108,26 @@ export async function buildVatController(_config, withSES = true) {
       kernel.queue(vatID, facetID, method, argsString, []);
     },
   });
+
+  if (config.vatSources) {
+    for (const vatID of config.vatSources.keys()) {
+      // eslint-disable-next-line no-await-in-loop
+      await controller.addVat(vatID, config.vatSources.get(vatID));
+    }
+  }
+
+  if (config.bootstrapIndexJS) {
+    let bootstrap;
+    if (withSES) {
+      let source = await bundleSource(`${config.bootstrapIndexJS}`);
+      source = `(${source})`;
+      bootstrap = s.evaluate(source, { require: r });
+    } else {
+      // eslint-disable-next-line global-require,import/no-dynamic-require
+      bootstrap = require(`${config.bootstrapIndexJS}`).default;
+    }
+    bootstrap(); // TODO give it hands
+  }
 
   return controller;
 }

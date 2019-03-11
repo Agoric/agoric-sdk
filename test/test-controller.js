@@ -3,8 +3,8 @@ import { buildVatController } from '../src/index';
 
 test('load', async t => {
   const config = {
-    vatSources: {},
-    wiringSource: '',
+    vatSources: new Map(),
+    bootstrapIndexJS: undefined,
   };
   const controller = await buildVatController(config);
   controller.run();

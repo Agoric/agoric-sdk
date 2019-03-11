@@ -2,6 +2,19 @@
 
 require = require('esm')(module);
 const { loadBasedir, buildVatController } = require('../src/index.js');
-loadBasedir('.')
-  .then(config => buildVatController(config))
-  .then(controller => controller.run());
+const repl = require('repl');
+
+async function main() {
+  const config = await loadBasedir('.');
+  const controller = await buildVatController(config);
+  const r = repl.start({ prompt: 'vat> ',
+                         replMode: repl.REPL_MODE_STRICT,
+                       });
+  r.context.dump = () => console.log(controller.dump());
+  r.context.run = () => {console.log('run!'); controller.run();};
+  r.context.step = () => {console.log('step!'); controller.step();};
+
+}
+
+main();
+
