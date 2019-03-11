@@ -77,7 +77,7 @@ export async function buildVatController(config, withSES = true) {
       // const r = s.makeRequire({ '@agoric/harden': true, '@agoric/nat': Nat });
       let source = await bundleSource(`${sourceIndex}`);
       source = `(${source})`;
-      dispatch = s.evaluate(source, { require: r });
+      dispatch = s.evaluate(source, { require: r })();
     } else {
       // eslint-disable-next-line global-require,import/no-dynamic-require
       dispatch = require(`${sourceIndex}`).default;
@@ -121,12 +121,12 @@ export async function buildVatController(config, withSES = true) {
     if (withSES) {
       let source = await bundleSource(`${config.bootstrapIndexJS}`);
       source = `(${source})`;
-      bootstrap = s.evaluate(source, { require: r });
+      bootstrap = s.evaluate(source, { require: r })();
     } else {
       // eslint-disable-next-line global-require,import/no-dynamic-require
       bootstrap = require(`${config.bootstrapIndexJS}`).default;
     }
-    bootstrap(); // TODO give it hands
+    bootstrap(controller);
   }
 
   return controller;

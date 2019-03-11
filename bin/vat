@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 
-require = require('esm')(module);
-const { loadBasedir, buildVatController } = require('../src/index.js');
+const process = require('process');
 const repl = require('repl');
+require = require('esm')(module);
+
+const { loadBasedir, buildVatController } = require('../src/index.js');
 
 async function main() {
-  const config = await loadBasedir('.');
+  const basedir = process.argv[2] || '.';
+  const config = await loadBasedir(basedir);
   const controller = await buildVatController(config);
   const r = repl.start({ prompt: 'vat> ',
                          replMode: repl.REPL_MODE_STRICT,
