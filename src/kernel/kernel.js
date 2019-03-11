@@ -19,7 +19,7 @@ export default function buildKernel(kernelEndowments) {
   // we define three types of slot identifiers: inbound, neutral, outbound
   // * outbound is what syscall.send(slots=) contains, it is always scoped to
   //   the sending vat, and the values are either negative (imports) or
-  //   positive (exports)
+  //   positive (exports). Message targets are always positive/exports.
   // * middle is stored in runQueue, and contains (vatID, exportID) pairs,
   //   where exportID is always positive
   // * inbound is passed into deliver(slots=), is always scoped to the
@@ -168,6 +168,16 @@ export default function buildKernel(kernelEndowments) {
         throw Error('dispatch is not an in-realm function');
       }
       addVat(`${vatID}`, dispatch);
+    },
+
+    connect(fromVatID, importID, toVatID, exportID) {
+      Nat(-importID);
+      Nat(exportID);
+      const key = `${toVatID}.${exportID}`;
+
+      const m = kernelSlots.get(fromVatID);
+      m.outbound.set(importID, { vatID: toVatID, slotID: exportID });
+      m.inbound.set(key, importID);
     },
 
     addImport(forVatID, vatID, slotID) {

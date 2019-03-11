@@ -85,13 +85,19 @@ test('bootstrap', async t => {
   // the controller automatically runs the bootstrap function.
   // left-right/bootstrap.js logs "bootstrap called" and queues a call to
   // left[0].bootstrap
-  const c = await buildVatController(config);
+  const c = await buildVatController(config, false);
   t.deepEqual(c.dump().log, ['bootstrap called']);
+  t.deepEqual(c.dump().kernelTable, [['left', -1, 'right', 5]]);
 
   c.run();
   t.deepEqual(c.dump().log, [
     'bootstrap called',
-    'left dispatch(0, bootstrap)',
+    'left dispatch(0, bootstrap, {}, )',
+    'right dispatch(5, hello, [2,3], -1)',
+  ]);
+  t.deepEqual(c.dump().kernelTable, [
+    ['left', -1, 'right', 5],
+    ['right', -1, 'left', 4],
   ]);
 
   t.end();
