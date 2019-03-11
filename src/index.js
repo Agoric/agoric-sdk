@@ -1,2 +1,3 @@
 import { loadBasedir, buildVatController } from './controller';
-export { loadBasedir, buildVatController};
+
+export { loadBasedir, buildVatController };
