@@ -4,6 +4,8 @@ import Nat from '@agoric/nat';
 export default function buildKernel(kernelEndowments) {
   console.log('in buildKernel', kernelEndowments);
 
+  const log = [];
+
   let running = false;
   const vats = harden(new Map());
   const runQueue = [];
@@ -107,6 +109,11 @@ export default function buildKernel(kernelEndowments) {
           vatSlots,
         );
       },
+
+      log(str) {
+        log.push(`${str}`);
+      },
+
       // TODO: this is temporary, obviously vats shouldn't be able to pause the kernel
       pause() {
         running = false;
@@ -208,7 +215,7 @@ export default function buildKernel(kernelEndowments) {
           0,
       );
 
-      return { vatTables, kernelTable, runQueue };
+      return { vatTables, kernelTable, runQueue, log };
     },
 
     run() {

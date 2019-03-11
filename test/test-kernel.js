@@ -14,13 +14,15 @@ test('build kernel', t => {
 test('simple call', t => {
   const kernel = buildKernel({});
   const log = [];
-  function d1(_syscall, facetID, method, argsString, slots) {
+  function d1(syscall, facetID, method, argsString, slots) {
     log.push([facetID, method, argsString, slots]);
+    syscall.log(JSON.stringify({ facetID, method, argsString, slots }));
   }
   kernel.addVat('vat1', d1);
-  const data = kernel.dump();
+  let data = kernel.dump();
   t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
   t.deepEqual(data.kernelTable, []);
+  t.deepEqual(data.log, []);
   t.deepEqual(log, []);
 
   kernel.queue('vat1', 1, 'foo', 'args');
@@ -30,6 +32,15 @@ test('simple call', t => {
   t.deepEqual(log, []);
   kernel.run();
   t.deepEqual(log, [[1, 'foo', 'args', []]]);
+
+  data = kernel.dump();
+  t.equal(data.log.length, 1);
+  t.deepEqual(JSON.parse(data.log[0]), {
+    facetID: 1,
+    method: 'foo',
+    argsString: 'args',
+    slots: [],
+  });
 
   t.end();
 });

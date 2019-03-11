@@ -1,3 +1,3 @@
-export default function d1(_syscall, _facetID, _method, _argsString, _slots) {
-  // log.push([facetID, method, argsString, slots]);
+export default function d1(syscall, facetID, method, argsString, slots) {
+  syscall.log(JSON.stringify({ facetID, method, argsString, slots }));
 }

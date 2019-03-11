@@ -23,6 +23,12 @@ test('simple call with SES', async t => {
     { vatID: 'vat1', facetID: 1, method: 'foo', argsString: 'args', slots: [] },
   ]);
   controller.run();
+  t.deepEqual(JSON.parse(controller.dump().log[0]), {
+    facetID: 1,
+    method: 'foo',
+    argsString: 'args',
+    slots: [],
+  });
 
   t.end();
 });
@@ -39,6 +45,12 @@ test('simple call non-SES', async t => {
     { vatID: 'vat1', facetID: 1, method: 'foo', argsString: 'args', slots: [] },
   ]);
   controller.run();
+  t.deepEqual(JSON.parse(controller.dump().log[0]), {
+    facetID: 1,
+    method: 'foo',
+    argsString: 'args',
+    slots: [],
+  });
 
   t.end();
 });
