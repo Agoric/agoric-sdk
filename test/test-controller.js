@@ -1,5 +1,6 @@
+import path from 'path';
 import { test } from 'tape-promise/tape';
-import { buildVatController } from '../src/index';
+import { buildVatController, loadBasedir } from '../src/index';
 
 test('load', async t => {
   const config = {
@@ -74,5 +75,24 @@ test('reject module-like sourceIndex', async t => {
     async () => buildVatController({ vatSources }, false),
     /sourceIndex must be relative/,
   );
+  t.end();
+});
+
+test('bootstrap', async t => {
+  const config = await loadBasedir(
+    path.resolve(path.dirname(path.resolve(__dirname)), 'demo', 'left-right'),
+  );
+  // the controller automatically runs the bootstrap function.
+  // left-right/bootstrap.js logs "bootstrap called" and queues a call to
+  // left[0].bootstrap
+  const c = await buildVatController(config);
+  t.deepEqual(c.dump().log, ['bootstrap called']);
+
+  c.run();
+  t.deepEqual(c.dump().log, [
+    'bootstrap called',
+    'left dispatch(0, bootstrap)',
+  ]);
+
   t.end();
 });
