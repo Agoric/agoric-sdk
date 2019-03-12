@@ -100,3 +100,21 @@ test('bootstrap', async t => {
 
   t.end();
 });
+
+test('bootstrap export', async t => {
+  const config = await loadBasedir(path.resolve(__dirname, 'd3'));
+  const c = await buildVatController(config, false);
+  t.deepEqual(c.dump().log, ['bootstrap called', 'left.start called']);
+
+  // t.deepEqual(c.dump().kernelTable, [['left', -1, 'right', 5]]);
+
+  c.run();
+  t.deepEqual(c.dump().log, [
+    'bootstrap called',
+    'left.start called',
+    'left.foo arg1val',
+  ]);
+  // t.deepEqual(c.dump().kernelTable, [    ['left', -1, 'right', 5],    ['right', -1, 'left', 4],  ]);
+
+  t.end();
+});

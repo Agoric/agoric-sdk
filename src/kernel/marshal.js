@@ -332,7 +332,23 @@ export default function makeMarshal() {
     return JSON.parse(str, makeReviver(slots));
   }
 
+  function registerTarget(val) {
+    const exportID = allocateExportID();
+    valToSlotID.set(val, exportID);
+    slotIDToVal.set(exportID, val);
+    return exportID;
+  }
+
+  function getTarget(facetID) {
+    if (!slotIDToVal.has(facetID)) {
+      throw Error(`no target for facetID ${facetID}`);
+    }
+    return slotIDToVal.get(facetID);
+  }
+
   return harden({
+    registerTarget,
+    getTarget,
     serialize,
     unserialize,
   });

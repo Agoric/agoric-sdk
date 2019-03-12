@@ -102,6 +102,14 @@ export default function buildKernel(kernelEndowments) {
   function syscallForVatID(fromVatID) {
     const m = makeMarshal();
     return harden({
+      registerTarget(val) {
+        return m.registerTarget(val);
+      },
+
+      getTarget(facetid) {
+        return m.getTarget(facetid);
+      },
+
       serialize(args) {
         // returns { argsString, slots }
         return m.serialize(args);
@@ -177,13 +185,22 @@ export default function buildKernel(kernelEndowments) {
       // 'dispatch' must be an in-realm function. This test guards against
       // accidents, but not against malice. MarkM thinks there is no reliable
       // way to test this.
-      if ((start !== undefined) && !(start instanceof Function)) {
+      if (start !== undefined && !(start instanceof Function)) {
         throw Error('start is not an in-realm function');
       }
       if (!(dispatch instanceof Function)) {
         throw Error('dispatch is not an in-realm function');
       }
       addVat(`${vatID}`, start, dispatch);
+    },
+
+    runStart(vatID) {
+      const vat = vats.get(vatID);
+      if (!vat) {
+        throw Error(`no such vatID ${vatID}`);
+      }
+      // this is expected to return an array of exportIDs
+      return vat.start(vat.syscall);
     },
 
     connect(fromVatID, importID, toVatID, exportID) {

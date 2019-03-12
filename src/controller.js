@@ -144,7 +144,7 @@ export async function buildVatController(config, withSES = true) {
       // eslint-disable-next-line global-require,import/no-dynamic-require
       bootstrap = require(`${config.bootstrapIndexJS}`).default;
     }
-    bootstrap(controller);
+    bootstrap(kernel);
   }
 
   return controller;
