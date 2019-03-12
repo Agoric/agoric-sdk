@@ -79,11 +79,9 @@ test('reject module-like sourceIndex', async t => {
 });
 
 test('bootstrap', async t => {
-  const config = await loadBasedir(
-    path.resolve(path.dirname(path.resolve(__dirname)), 'demo', 'left-right'),
-  );
+  const config = await loadBasedir(path.resolve(__dirname, 'd2'));
   // the controller automatically runs the bootstrap function.
-  // left-right/bootstrap.js logs "bootstrap called" and queues a call to
+  // d2/bootstrap.js logs "bootstrap called" and queues a call to
   // left[0].bootstrap
   const c = await buildVatController(config, false);
   t.deepEqual(c.dump().log, ['bootstrap called']);
