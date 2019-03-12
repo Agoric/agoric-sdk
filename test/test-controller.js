@@ -12,8 +12,7 @@ test('load', async t => {
   t.end();
 });
 
-test('simple call with SES', async t => {
-  const controller = await buildVatController({});
+async function simpleCall(t, controller) {
   await controller.addVat('vat1', require.resolve('./d1'));
   const data = controller.dump();
   t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
@@ -35,31 +34,16 @@ test('simple call with SES', async t => {
   t.equal(controller.dump().log[1], '2');
 
   t.end();
+}
+
+test('simple call with SES', async t => {
+  const controller = await buildVatController({});
+  await simpleCall(t, controller);
 });
 
 test('simple call non-SES', async t => {
   const controller = await buildVatController({}, false);
-  await controller.addVat('vat1', require.resolve('./d1'));
-  const data = controller.dump();
-  t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
-  t.deepEqual(data.kernelTable, []);
-
-  controller.queue('vat1', 1, 'foo', 'args');
-  t.deepEqual(controller.dump().runQueue, [
-    { vatID: 'vat1', facetID: 1, method: 'foo', argsString: 'args', slots: [] },
-  ]);
-  controller.run();
-  t.deepEqual(JSON.parse(controller.dump().log[0]), {
-    facetID: 1,
-    method: 'foo',
-    argsString: 'args',
-    slots: [],
-  });
-
-  controller.log('2');
-  t.equal(controller.dump().log[1], '2');
-
-  t.end();
+  await simpleCall(t, controller);
 });
 
 test('reject module-like sourceIndex', async t => {
@@ -78,12 +62,12 @@ test('reject module-like sourceIndex', async t => {
   t.end();
 });
 
-test('bootstrap', async t => {
+async function bootstrap(t, withSES) {
   const config = await loadBasedir(path.resolve(__dirname, 'd2'));
   // the controller automatically runs the bootstrap function.
   // d2/bootstrap.js logs "bootstrap called" and queues a call to
   // left[0].bootstrap
-  const c = await buildVatController(config, false);
+  const c = await buildVatController(config, withSES);
   t.deepEqual(c.dump().log, ['bootstrap called']);
   t.deepEqual(c.dump().kernelTable, [['left', -1, 'right', 5]]);
 
@@ -99,11 +83,19 @@ test('bootstrap', async t => {
   ]);
 
   t.end();
+}
+
+test('bootstrap with SES', async t => {
+  await bootstrap(t, true);
 });
 
-test('bootstrap export', async t => {
+test('bootstrap without SES', async t => {
+  await bootstrap(t, false);
+});
+
+async function bootstrapExport(t, withSES) {
   const config = await loadBasedir(path.resolve(__dirname, 'd3'));
-  const c = await buildVatController(config, false);
+  const c = await buildVatController(config, withSES);
   t.deepEqual(c.dump().log, ['bootstrap called', 'left.start called']);
 
   // t.deepEqual(c.dump().kernelTable, [['left', -1, 'right', 5]]);
@@ -117,4 +109,12 @@ test('bootstrap export', async t => {
   // t.deepEqual(c.dump().kernelTable, [    ['left', -1, 'right', 5],    ['right', -1, 'left', 4],  ]);
 
   t.end();
+}
+
+test('bootstrap export with SES', async t => {
+  await bootstrapExport(t, true);
+});
+
+test('bootstrap export without SES', async t => {
+  await bootstrapExport(t, false);
 });
