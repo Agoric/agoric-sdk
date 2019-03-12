@@ -136,9 +136,10 @@ export default function buildKernel(kernelEndowments) {
     // wasteful and limiting.
   }
 
-  function addVat(vatID, dispatch) {
+  function addVat(vatID, start, dispatch) {
     const vat = harden({
       id: vatID,
+      start,
       dispatch,
       syscall: syscallForVatID(vatID),
     });
@@ -170,15 +171,19 @@ export default function buildKernel(kernelEndowments) {
   }
 
   const kernel = harden({
-    addVat(vatID, dispatch) {
+    addVat(vatID, start, dispatch) {
+      harden(start);
       harden(dispatch);
       // 'dispatch' must be an in-realm function. This test guards against
       // accidents, but not against malice. MarkM thinks there is no reliable
       // way to test this.
+      if ((start !== undefined) && !(start instanceof Function)) {
+        throw Error('start is not an in-realm function');
+      }
       if (!(dispatch instanceof Function)) {
         throw Error('dispatch is not an in-realm function');
       }
-      addVat(`${vatID}`, dispatch);
+      addVat(`${vatID}`, start, dispatch);
     },
 
     connect(fromVatID, importID, toVatID, exportID) {

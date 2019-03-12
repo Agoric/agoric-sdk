@@ -29,7 +29,8 @@ export default async function bundleSource(startFilename) {
 
   source = `
 function getExport() {
-const module = {};
+let exports = {};
+const module = { exports };
 
 ${source}
 

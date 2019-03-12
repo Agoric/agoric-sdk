@@ -1,5 +1,5 @@
 console.log(`left loaded`);
-export default function dispatch(syscall, facetid, method, argsbytes, caps) {
+export function dispatch(syscall, facetid, method, argsbytes, caps) {
   console.log(`left dispatch(${facetid}, ${method}, ${argsbytes}, ${caps})`);
   syscall.log(`left dispatch(${facetid}, ${method}, ${argsbytes}, ${caps})`);
   // -1 is our import of something in vatRight
