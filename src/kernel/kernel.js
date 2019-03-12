@@ -101,6 +101,44 @@ export default function buildKernel(kernelEndowments) {
 
   function syscallForVatID(fromVatID) {
     const m = makeMarshal();
+
+    function send(targetSlot, method, argsString, vatSlots) {
+      return syscallBase.send(
+        fromVatID,
+        targetSlot,
+        method,
+        argsString,
+        vatSlots,
+      );
+    }
+
+    function E(presence) {
+      const slotID = m.getImportID(presence);
+      if (slotID === undefined) {
+        throw Error(`E() called on non-presence`);
+      }
+      const handler = {
+        get(target, prop) {
+          console.log(`proxy.get(${prop})`);
+          if (prop === 'test_getSlotID') {
+            return () => slotID;
+          }
+          if (prop !== `${prop}`) {
+            return undefined;
+          }
+          return (...args) => {
+            const ser = m.serialize(harden(args));
+            console.log(`send is ${send} ${typeof send}`);
+            send(slotID, prop, ser.argsString, ser.slots);
+          };
+        },
+        has(_target, _prop) {
+          return true;
+        },
+      };
+      return harden(new Proxy({}, handler));
+    }
+
     return harden({
       registerTarget(val) {
         return m.registerTarget(val);
@@ -119,15 +157,8 @@ export default function buildKernel(kernelEndowments) {
         return m.unserialize(argsString, vatSlots);
       },
 
-      send(targetSlot, method, argsString, vatSlots) {
-        return syscallBase.send(
-          fromVatID,
-          targetSlot,
-          method,
-          argsString,
-          vatSlots,
-        );
-      },
+      E,
+      send,
 
       log(str) {
         log.push(`${str}`);
@@ -288,6 +319,10 @@ export default function buildKernel(kernelEndowments) {
       if (runQueue.length) {
         deliverOneMessage(runQueue.shift());
       }
+    },
+
+    sendFrom(vatID, targetID, method, argsString, slots) {
+      vats.get(vatID).syscall.send(targetID, method, argsString, slots);
     },
 
     queue(vatID, facetID, method, argsString, slots = []) {

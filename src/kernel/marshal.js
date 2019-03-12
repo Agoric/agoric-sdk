@@ -339,6 +339,8 @@ export default function makeMarshal() {
     return exportID;
   }
 
+  // this handles both exports ("targets" which other vats can call) and
+  // imports (presences with which the local vat can do E(p).foo(args))
   function getTarget(facetID) {
     if (!slotIDToVal.has(facetID)) {
       throw Error(`no target for facetID ${facetID}`);
@@ -346,9 +348,17 @@ export default function makeMarshal() {
     return slotIDToVal.get(facetID);
   }
 
+  function getImportID(presence) {
+    if (!valToSlotID.has(presence)) {
+      throw Error(`no importID for presence`);
+    }
+    return valToSlotID.get(presence);
+  }
+
   return harden({
     registerTarget,
     getTarget,
+    getImportID,
     serialize,
     unserialize,
   });
