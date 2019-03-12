@@ -1,5 +1,6 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
+import makeMarshal from './marshal';
 
 export default function buildKernel(kernelEndowments) {
   console.log('in buildKernel', kernelEndowments);
@@ -99,7 +100,17 @@ export default function buildKernel(kernelEndowments) {
   });
 
   function syscallForVatID(fromVatID) {
+    const m = makeMarshal();
     return harden({
+      serialize(args) {
+        // returns { argsString, slots }
+        return m.serialize(args);
+      },
+
+      unserialize(argsString, vatSlots) {
+        return m.unserialize(argsString, vatSlots);
+      },
+
       send(targetSlot, method, argsString, vatSlots) {
         return syscallBase.send(
           fromVatID,
