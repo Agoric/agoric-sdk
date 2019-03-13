@@ -1,8 +1,15 @@
-const harden = require('@agoric/harden');
+// const harden = require('@agoric/harden');
 
 console.log(`left loaded`);
 
-export function start(syscall) {
+function dispatch(syscall, facetid, method, argsbytes, caps) {
+  const t = syscall.getTarget(facetid);
+  const args = syscall.unserialize(argsbytes, caps);
+  t[method](...args);
+}
+
+export default function setup() {
+  /*
   const { E } = syscall;
   syscall.log('left.start called');
   const t1 = {
@@ -16,10 +23,6 @@ export function start(syscall) {
   };
   const t1exportID = syscall.registerTarget(t1);
   return harden([t1exportID]);
-}
-
-export function dispatch(syscall, facetid, method, argsbytes, caps) {
-  const t = syscall.getTarget(facetid);
-  const args = syscall.unserialize(argsbytes, caps);
-  t[method](...args);
+  */
+  return dispatch;
 }

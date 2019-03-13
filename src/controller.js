@@ -75,7 +75,7 @@ export async function buildVatController(config, withSES = true) {
     // two symbols from each Vat: 'start' and 'dispatch'. The code in
     // bootstrap.js gets a 'controller' object which can invoke start()
     // (which is expected to initialize some state and export some facetIDs)
-    let code;
+    let setup;
     if (withSES) {
       // TODO: if the 'require' we provide here supplies a non-pure module,
       // that could open a communication channel between otherwise isolated
@@ -87,12 +87,12 @@ export async function buildVatController(config, withSES = true) {
       // const r = s.makeRequire({ '@agoric/harden': true, '@agoric/nat': Nat });
       let source = await bundleSource(`${sourceIndex}`);
       source = `(${source})`;
-      code = s.evaluate(source, { require: r })();
+      setup = s.evaluate(source, { require: r })();
     } else {
       // eslint-disable-next-line global-require,import/no-dynamic-require
-      code = require(`${sourceIndex}`);
+      setup = require(`${sourceIndex}`).default;
     }
-    kernel.addVat(vatID, code.start, code.dispatch);
+    kernel.addVat(vatID, setup);
   }
 
   // the kernel won't leak our objects into the Vats, we must do

@@ -2,7 +2,7 @@ import path from 'path';
 import { test } from 'tape-promise/tape';
 import { buildVatController, loadBasedir } from '../src/index';
 
-test('load', async t => {
+test('load empty', async t => {
   const config = {
     vatSources: new Map(),
     bootstrapIndexJS: undefined,
@@ -113,10 +113,10 @@ async function bootstrapExport(t, withSES) {
   t.end();
 }
 
-test('bootstrap export with SES', async t => {
+test.skip('bootstrap export with SES', async t => {
   await bootstrapExport(t, true);
 });
 
-test('bootstrap export without SES', async t => {
+test.skip('bootstrap export without SES', async t => {
   await bootstrapExport(t, false);
 });
