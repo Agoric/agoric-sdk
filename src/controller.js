@@ -14,17 +14,18 @@ export function loadBasedir(basedir) {
   const vatSources = new Map();
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.forEach(dirent => {
-    if (!dirent.isDirectory()) {
-      return;
+    if (dirent.name.startsWith('vat-')) {
+      let name;
+      let indexJS;
+      if (dirent.isFile() && dirent.name.endsWith('.js')) {
+        name = dirent.name.slice('vat-'.length, -'.js'.length);
+        indexJS = path.resolve(basedir, dirent.name);
+      } else if (dirent.isDirectory()) {
+        name = dirent.name.slice('vat-'.length);
+        indexJS = path.resolve(basedir, dirent.name, 'index.js');
+      }
+      vatSources.set(name, indexJS);
     }
-    const indexJS = path.resolve(basedir, dirent.name, 'index.js');
-    try {
-      fs.statSync(indexJS);
-    } catch (e) {
-      console.log(`subdir ${dirent.name} is missing index.js, ignoring`);
-      return;
-    }
-    vatSources.set(dirent.name, indexJS);
   });
   let bootstrapIndexJS = path.resolve(basedir, 'bootstrap.js');
   try {
