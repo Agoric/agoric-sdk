@@ -67,7 +67,7 @@ export async function buildVatController(config, withSES = true) {
   async function addVat(vatID, sourceIndex) {
     if (sourceIndex[0] !== '.' && sourceIndex[0] !== '/') {
       throw Error(
-        'sourceIndex must be relative (./foo) or absolute (/foo) not package (foo)',
+        'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
       );
     }
     // we load the sourceIndex (and everything it imports), and expect to get
