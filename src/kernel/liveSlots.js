@@ -10,7 +10,7 @@ import { QCLASS, mustPassByPresence, makeMarshal } from './marshal';
 // The E() wrapper does not yet return a Promise for the result of the method
 // call.
 
-export function makeLiveSlots(forVatID = 'unknown') {
+export function makeLiveSlots(syscall, forVatID = 'unknown') {
   function makePresence(slotID) {
     return harden({
       [`_slotID_${slotID}`]() {},
@@ -146,7 +146,7 @@ export function makeLiveSlots(forVatID = 'unknown') {
     rootIsRegistered = true;
   }
 
-  function dispatch(syscall, facetid, method, argsbytes, caps) {
+  function dispatch(facetid, method, argsbytes, caps) {
     if (!rootIsRegistered) {
       throw Error(`[${forVatID}] registerRoot() wasn't called during setup`);
     }

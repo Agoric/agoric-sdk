@@ -1,9 +1,12 @@
 import harden from '@agoric/harden';
 
-export default function setup(helpers) {
+export default function setup(syscall, helpers) {
   const { log } = helpers;
   log(`right.setup called`);
-  const { dispatch, registerRoot } = helpers.makeLiveSlots(helpers.vatID);
+  const { dispatch, registerRoot } = helpers.makeLiveSlots(
+    syscall,
+    helpers.vatID,
+  );
 
   const obj0 = {
     bar(arg2, self) {

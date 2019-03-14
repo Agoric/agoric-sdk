@@ -2,10 +2,13 @@ import harden from '@agoric/harden';
 
 console.log(`loading bootstrap`);
 
-export default function setup(helpers) {
+export default function setup(syscall, helpers) {
   const { log } = helpers;
   log(`bootstrap called`);
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(helpers.vatID);
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
+    syscall,
+    helpers.vatID,
+  );
   const obj0 = {
     bootstrap(argv, vats) {
       helpers.log(`bootstrap.obj0.bootstrap()`);

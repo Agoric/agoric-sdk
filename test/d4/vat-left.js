@@ -1,11 +1,14 @@
 import harden from '@agoric/harden';
 
-export default function setup(helpers) {
+export default function setup(syscall, helpers) {
   function log(what) {
     helpers.log(what);
     console.log(what);
   }
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(helpers.vatID);
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
+    syscall,
+    helpers.vatID,
+  );
 
   const t1 = {
     callRight(arg1, right) {

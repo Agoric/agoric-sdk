@@ -15,8 +15,8 @@ test('build kernel', t => {
 test('simple call', async t => {
   const kernel = buildKernel({ setImmediate });
   const log = [];
-  function setup1() {
-    function d1(syscall, facetID, method, argsString, slots) {
+  function setup1(syscall) {
+    function d1(facetID, method, argsString, slots) {
       log.push([facetID, method, argsString, slots]);
       syscall.log(JSON.stringify({ facetID, method, argsString, slots }));
     }
@@ -52,8 +52,8 @@ test('simple call', async t => {
 test('map inbound', async t => {
   const kernel = buildKernel({ setImmediate });
   const log = [];
-  function setup1() {
-    function d1(_syscall, facetID, method, argsString, slots) {
+  function setup1(_syscall) {
+    function d1(facetID, method, argsString, slots) {
       log.push([facetID, method, argsString, slots]);
     }
     return d1;
@@ -87,8 +87,8 @@ test('map inbound', async t => {
 
 test('addImport', t => {
   const kernel = buildKernel({ setImmediate });
-  function setup() {
-    function d1(_syscall, _facetID, _method, _argsString, _slots) {}
+  function setup(_syscall) {
+    function d1(_facetID, _method, _argsString, _slots) {}
     return d1;
   }
   kernel.addVat('vat1', setup);
@@ -105,8 +105,8 @@ test('outbound call', async t => {
   const log = [];
   let v1tovat25;
 
-  function setup1() {
-    function d1(syscall, facetID, method, argsString, slots) {
+  function setup1(syscall) {
+    function d1(facetID, method, argsString, slots) {
       // console.log(`d1/${facetID} called`);
       log.push(['d1', facetID, method, argsString, slots]);
       syscall.send(v1tovat25, 'bar', 'bargs', [v1tovat25, 7]);
@@ -115,8 +115,8 @@ test('outbound call', async t => {
   }
   kernel.addVat('vat1', setup1);
 
-  function setup2() {
-    function d2(syscall, facetID, method, argsString, slots) {
+  function setup2(_syscall) {
+    function d2(facetID, method, argsString, slots) {
       // console.log(`d2/${facetID} called`);
       log.push(['d2', facetID, method, argsString, slots]);
     }
@@ -171,8 +171,8 @@ test('three-party', async t => {
   let bobForA;
   let carolForA;
 
-  function setupA() {
-    function vatA(syscall, facetID, method, argsString, slots) {
+  function setupA(syscall) {
+    function vatA(facetID, method, argsString, slots) {
       console.log(`vatA/${facetID} called`);
       log.push(['vatA', facetID, method, argsString, slots]);
       syscall.send(bobForA, 'intro', 'bargs', [carolForA]);
@@ -181,8 +181,8 @@ test('three-party', async t => {
   }
   kernel.addVat('vatA', setupA);
 
-  function setupB() {
-    function vatB(syscall, facetID, method, argsString, slots) {
+  function setupB(_syscall) {
+    function vatB(facetID, method, argsString, slots) {
       console.log(`vatB/${facetID} called`);
       log.push(['vatB', facetID, method, argsString, slots]);
     }
@@ -190,8 +190,8 @@ test('three-party', async t => {
   }
   kernel.addVat('vatB', setupB);
 
-  function setupC() {
-    function vatC(syscall, facetID, method, argsString, slots) {
+  function setupC(_syscall) {
+    function vatC(facetID, method, argsString, slots) {
       log.push(['vatC', facetID, method, argsString, slots]);
     }
     return vatC;

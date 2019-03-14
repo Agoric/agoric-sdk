@@ -131,20 +131,6 @@ export default function buildKernel(kernelEndowments) {
   }
 
   function addVat(vatID, setup) {
-    const helpers = harden({
-      vatID,
-      makeLiveSlots,
-      log(str) {
-        log.push(`${str}`);
-      },
-    });
-    const dispatch = setup(helpers);
-    const vat = harden({
-      id: vatID,
-      dispatch,
-      syscall: syscallForVatID(vatID),
-    });
-    vats.set(vatID, vat);
     if (!kernelSlots.has(vatID)) {
       kernelSlots.set(vatID, {
         outbound: harden(new Map()),
@@ -152,6 +138,20 @@ export default function buildKernel(kernelEndowments) {
       });
     }
     nextImportIndex.set(vatID, -1);
+    const syscall = syscallForVatID(vatID);
+    const helpers = harden({
+      vatID,
+      makeLiveSlots,
+      log(str) {
+        log.push(`${str}`);
+      },
+    });
+    const dispatch = setup(syscall, helpers);
+    const vat = harden({
+      id: vatID,
+      dispatch,
+    });
+    vats.set(vatID, vat);
   }
 
   async function deliverOneMessage(message) {
@@ -176,10 +176,7 @@ export default function buildKernel(kernelEndowments) {
     // protect dispatch with promise/then
     Promise.resolve()
       .then(() => {
-        // TODO: deliver syscall() once during setup(), instead of every time
-        // through dispatch(), although it shouldn't be called until dispatch
         vat.dispatch(
-          vat.syscall,
           message.facetID,
           message.method,
           message.argsString,
