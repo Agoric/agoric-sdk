@@ -42,6 +42,17 @@ export default function setup(syscall, helpers) {
         const p1 = E(t1).foo(1);
         p1.then(x => log(`b.resolved ${x}`));
         log(`b.local1.finish`);
+      } else if (mode === 'local2') {
+        const t1 = harden({
+          foo(arg) {
+            log(`local.foo ${arg}`);
+            return 3;
+          },
+        });
+        const p1 = E(vats.left).returnArg(t1);
+        const p2 = E(p1).foo(2);
+        p2.then(x => log(`b.resolved ${x}`));
+        log(`b.local2.finish`);
       } else {
         throw Error(`unknown mode ${mode}`);
       }

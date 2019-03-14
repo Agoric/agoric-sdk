@@ -27,6 +27,10 @@ export default function setup(syscall, helpers) {
         },
       });
     },
+    returnArg(arg) {
+      log(`left.returnArg`);
+      return arg;
+    },
   };
   registerRoot(harden(t1));
   return dispatch;

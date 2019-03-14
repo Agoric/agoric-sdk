@@ -109,3 +109,26 @@ test('E(local).foo() with SES', async t => {
 test('E(local).foo() without SES', async t => {
   await testLocal1(t, false);
 });
+
+async function testLocal2(t, withSES) {
+  const config = await loadBasedir(path.resolve(__dirname, 'd4'));
+  const c = await buildVatController(config, withSES, ['local2']);
+
+  await c.run();
+  t.deepEqual(c.dump().log, [
+    'bootstrap called',
+    'b.local2.finish',
+    'left.returnArg',
+    'local.foo 2',
+    'b.resolved 3',
+  ]);
+  t.end();
+}
+
+test('resolve-to-local with SES', async t => {
+  await testLocal2(t, true);
+});
+
+test('resolve-to-local without SES', async t => {
+  await testLocal2(t, false);
+});
