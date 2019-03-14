@@ -17,6 +17,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     });
   }
 
+  const resultPromises = new WeakSet();
   const valToSlotID = new WeakMap();
   const slotIDToVal = new Map();
   let nextExportID = 1;
@@ -91,11 +92,34 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
   let send;
 
-  function E(presence) {
-    const slotID = getImportID(presence);
-    if (slotID === undefined) {
-      throw Error(`E() called on non-presence`);
-    }
+  function UnresolvedHandler(resultPromise) {
+    const handler = {
+      get(target, prop) {
+        // console.log(`proxy.get(${prop})`);
+        if (prop !== `${prop}`) {
+          return undefined;
+        }
+        return (...args) => {
+          let r;
+          let rj;
+          const doneP = new Promise((res, rej) => {
+            r = res;
+            rj = rej;
+          });
+          resultPromises.add(doneP);
+          // eslint-disable-next-line no-use-before-define
+          resultPromise.then(val => E(val)[prop](...args)).then(r, rj);
+          return doneP;
+        };
+      },
+      has(_target, _prop) {
+        return true;
+      },
+    };
+    return harden(new Proxy({}, handler));
+  }
+
+  function PresenceHandler(slotID) {
     const handler = {
       get(target, prop) {
         // console.log(`proxy.get(${prop})`);
@@ -106,14 +130,11 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
           return undefined;
         }
         return (...args) => {
-          if (send === undefined) {
-            throw Error('E() used outside dispatch()');
-          }
-
           let r;
           const doneP = new Promise((res, _rej) => {
             r = res;
           });
+          resultPromises.add(doneP);
 
           const resolver = {
             resolve(val) {
@@ -133,6 +154,17 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
       },
     };
     return harden(new Proxy({}, handler));
+  }
+
+  function E(presenceOrResultPromise) {
+    if (resultPromises.has(presenceOrResultPromise)) {
+      return UnresolvedHandler(presenceOrResultPromise);
+    }
+    const slotID = getImportID(presenceOrResultPromise);
+    if (slotID !== undefined) {
+      return PresenceHandler(slotID);
+    }
+    throw Error(`E() called on non-presence`);
   }
 
   let rootIsRegistered = false;
@@ -157,7 +189,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     // phase1: method must run synchronously
     const result = t[method](...args.args);
     if (args.resolver) {
-      // this would cause an infinite loop, so we need sendOnly
+      // this would cause an infinite loop, so we use a sendOnly
       // E(args.resolver).resolve(result);
       const ser = m.serialize(harden({ args: [result] }));
       const resolverSlotID = valToSlotID.get(args.resolver);
