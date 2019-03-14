@@ -15,6 +15,9 @@ export function loadBasedir(basedir) {
   const vatSources = new Map();
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.forEach(dirent => {
+    if (dirent.name.endsWith('~')) {
+      return;
+    }
     if (dirent.name.startsWith('vat-')) {
       let name;
       let indexJS;
