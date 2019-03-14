@@ -1,3 +1,4 @@
+/* global setImmediate */
 import fs from 'fs';
 import path from 'path';
 // import { rollup } from 'rollup';
@@ -49,13 +50,13 @@ function buildSESKernel() {
   const kernelSource = getKernelSource();
   // console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })();
-  const kernelEndowments = { endow: 'not' };
+  const kernelEndowments = { setImmediate };
   const kernel = buildKernel(kernelEndowments);
   return { kernel, s, r };
 }
 
 function buildNonSESKernel() {
-  const kernelEndowments = { endow: 'not' };
+  const kernelEndowments = { setImmediate };
   const kernel = buildKernelNonSES(kernelEndowments);
   return { kernel };
 }
@@ -115,12 +116,12 @@ export async function buildVatController(config, withSES = true) {
       return JSON.parse(JSON.stringify(kernel.dump()));
     },
 
-    run() {
-      kernel.run();
+    async run() {
+      await kernel.run();
     },
 
-    step() {
-      kernel.step();
+    async step() {
+      await kernel.step();
     },
 
     queue(vatID, facetID, method, argsString) {

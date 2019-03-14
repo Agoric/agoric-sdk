@@ -5,6 +5,7 @@ import { QCLASS, makeMarshal } from './marshal';
 
 export default function buildKernel(kernelEndowments) {
   console.log('in buildKernel', kernelEndowments);
+  const { setImmediate } = kernelEndowments;
 
   const log = [];
 
@@ -153,24 +154,47 @@ export default function buildKernel(kernelEndowments) {
     nextImportIndex.set(vatID, -1);
   }
 
-  function deliverOneMessage(message) {
+  async function deliverOneMessage(message) {
     const targetVatID = message.vatID;
     const vat = vats.get(targetVatID);
     console.log(`deliver mapping ${JSON.stringify(message)}`);
     const inputSlots = message.slots.map(s =>
       mapInbound(targetVatID, s.vatID, s.slotID),
     );
-    // TODO: protect with promise/then
 
-    // TODO: deliver syscall() once during setup(), instead of every time
-    // through dispatch(), although it shouldn't be called until dispatch
-    vat.dispatch(
-      vat.syscall,
-      message.facetID,
-      message.method,
-      message.argsString,
-      inputSlots,
-    );
+    // the delivery might cause some number of (native) Promises to be
+    // created and resolved, so we use the IO queue to detect when the
+    // Promise queue is empty. The IO queue (setImmediate and setTimeout) is
+    // lower-priority than the Promise queue on browsers and Node 11, but on
+    // Node 10 it is higher. So this trick requires Node 11.
+    // https://jsblog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
+
+    let r;
+    const queueEmptyP = new Promise(res => (r = res));
+    setImmediate(() => r());
+
+    // protect dispatch with promise/then
+    Promise.resolve()
+      .then(() => {
+        // TODO: deliver syscall() once during setup(), instead of every time
+        // through dispatch(), although it shouldn't be called until dispatch
+        vat.dispatch(
+          vat.syscall,
+          message.facetID,
+          message.method,
+          message.argsString,
+          inputSlots,
+        );
+      })
+      .then(undefined, err => {
+        console.log(
+          `vat[${targetVatID}][${message.facetID}].${
+            message.method
+          } dispatch failed: ${err}`,
+        );
+      });
+
+    await queueEmptyP;
   }
 
   function addImport(forVatID, vatID, slotID) {
@@ -298,28 +322,30 @@ export default function buildKernel(kernelEndowments) {
       return { vatTables, kernelTable, runQueue, log };
     },
 
-    run() {
+    async run() {
       // process all messages, until syscall.pause() is invoked
       running = true;
       while (running && runQueue.length) {
-        deliverOneMessage(runQueue.shift());
+        // eslint-disable-next-line no-await-in-loop
+        await deliverOneMessage(runQueue.shift());
       }
     },
 
-    drain() {
+    async drain() {
       // process all existing messages, but stop before processing new ones
       running = true;
       let remaining = runQueue.length;
       while (running && remaining) {
-        deliverOneMessage(runQueue.shift());
+        // eslint-disable-next-line no-await-in-loop
+        await deliverOneMessage(runQueue.shift());
         remaining -= 1;
       }
     },
 
-    step() {
+    async step() {
       // process a single message
       if (runQueue.length) {
-        deliverOneMessage(runQueue.shift());
+        await deliverOneMessage(runQueue.shift());
       }
     },
 
