@@ -18,6 +18,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   }
 
   const resultPromises = new WeakSet();
+  const outstandingProxies = new WeakSet();
   const valToSlotID = new WeakMap();
   const slotIDToVal = new Map();
   let nextExportID = 1;
@@ -92,8 +93,39 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
   let send;
 
-  function UnresolvedHandler(resultPromise) {
-    const handler = {
+  function PresenceHandler(slotID) {
+    return {
+      get(target, prop) {
+        // console.log(`proxy.get(${prop})`);
+        if (prop !== `${prop}`) {
+          return undefined;
+        }
+        return (...args) => {
+          let r;
+          const doneP = new Promise((res, _rej) => {
+            r = res;
+          });
+
+          const resolver = {
+            resolve(val) {
+              r(val);
+            },
+          };
+          const ser = m.serialize(harden({ args, resolver }));
+          send(slotID, prop, ser.argsString, ser.slots);
+
+          resultPromises.add(doneP);
+          return doneP;
+        };
+      },
+      has(_target, _prop) {
+        return true;
+      },
+    };
+  }
+
+  function PromiseHandler(targetPromise) {
+    return {
       get(target, prop) {
         // console.log(`proxy.get(${prop})`);
         if (prop !== `${prop}`) {
@@ -106,46 +138,11 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
             r = res;
             rj = rej;
           });
-          resultPromises.add(doneP);
+          // We delegate the is-this-a-Presence check to E(val), but we might
+          // be able to optimize it slightly by doing that test here instead.
           // eslint-disable-next-line no-use-before-define
-          resultPromise.then(val => E(val)[prop](...args)).then(r, rj);
-          return doneP;
-        };
-      },
-      has(_target, _prop) {
-        return true;
-      },
-    };
-    return harden(new Proxy({}, handler));
-  }
-
-  function PresenceHandler(slotID) {
-    const handler = {
-      get(target, prop) {
-        // console.log(`proxy.get(${prop})`);
-        if (prop === 'test_getSlotID') {
-          return () => slotID;
-        }
-        if (prop !== `${prop}`) {
-          return undefined;
-        }
-        return (...args) => {
-          let r;
-          const doneP = new Promise((res, _rej) => {
-            r = res;
-          });
+          targetPromise.then(val => E(val)[prop](...args)).then(r, rj);
           resultPromises.add(doneP);
-
-          const resolver = {
-            resolve(val) {
-              r(val);
-            },
-          };
-
-          const ser = m.serialize(harden({ args, resolver }));
-          // console.log(`send is ${send} ${typeof send}`);
-          send(slotID, prop, ser.argsString, ser.slots);
-
           return doneP;
         };
       },
@@ -153,18 +150,43 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
         return true;
       },
     };
-    return harden(new Proxy({}, handler));
   }
 
-  function E(presenceOrResultPromise) {
-    if (resultPromises.has(presenceOrResultPromise)) {
-      return UnresolvedHandler(presenceOrResultPromise);
+  function E(x) {
+    // p = E(x).name(args)
+    //
+    // E(x) returns a proxy on which you can call arbitrary methods. Each of
+    // these method calls returns a promise. The method will be invoked on
+    // whatever 'x' designates (or resolves to) in a future turn, not this
+    // one. 'x' might be/resolve-to:
+    //
+    // * a local object: do x[name](args) in a future turn
+    // * a normal Promise: wait for x to resolve, then x[name](args)
+    // * a Presence: send message to remote Vat to do x[name](args)
+    // * a Promise that we returned earlier: send message to whichever Vat
+    //   gets to decide what the Promise resolves to
+
+    if (outstandingProxies.has(x)) {
+      throw Error('E(E(x)) is invalid, you probably want E(E(x).foo()).bar()');
     }
-    const slotID = getImportID(presenceOrResultPromise);
+    // TODO: if x is a Promise we recognize (because we created it earlier),
+    // we can pipeline messages sent to E(x) (since we remember where we got
+    // x from).
+    // if (resultPromises.has(x)) {
+    //   return UnresolvedRemoteHandler(x);
+    // }
+    let handler;
+    const slotID = getImportID(x);
     if (slotID !== undefined) {
-      return PresenceHandler(slotID);
+      handler = PresenceHandler(slotID);
+    } else {
+      const targetP = Promise.resolve(x);
+      // targetP might resolve to a Presence
+      handler = PromiseHandler(targetP);
     }
-    throw Error(`E() called on non-presence`);
+    const p = harden(new Proxy({}, handler));
+    outstandingProxies.add(p);
+    return p;
   }
 
   let rootIsRegistered = false;
