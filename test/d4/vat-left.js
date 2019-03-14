@@ -18,6 +18,15 @@ export default function setup(syscall, helpers) {
         .then(a => log(`left.then ${a}`));
       return 3;
     },
+    call2(arg) {
+      log(`left.call2 ${arg}`);
+      return harden({
+        call3(x) {
+          log(`left.call3 ${x}`);
+          return 3;
+        },
+      });
+    },
   };
   registerRoot(harden(t1));
   return dispatch;

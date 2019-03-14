@@ -41,3 +41,71 @@ test('E() resolve with SES', async t => {
 test('E() resolve without SES', async t => {
   await testEThen(t, false);
 });
+
+async function testChain1(t, withSES) {
+  const config = await loadBasedir(path.resolve(__dirname, 'd4'));
+  const c = await buildVatController(config, withSES, ['chain1']);
+
+  await c.run();
+  t.deepEqual(c.dump().log, [
+    'bootstrap called',
+    'b.call2',
+    'left.call2 1',
+    'left.call3 2',
+    'b.resolved 3',
+  ]);
+  t.end();
+}
+
+test('E(E(x).foo()).bar() with SES', async t => {
+  await testChain1(t, true);
+});
+
+test('E(E(x).foo()).bar() without SES', async t => {
+  await testChain1(t, false);
+});
+
+async function testChain2(t, withSES) {
+  const config = await loadBasedir(path.resolve(__dirname, 'd4'));
+  const c = await buildVatController(config, withSES, ['chain2']);
+
+  await c.run();
+  t.deepEqual(c.dump().log, [
+    'bootstrap called',
+    'b.call2',
+    'left.call2 1',
+    'left.call3 2',
+    'b.resolved 3',
+  ]);
+  t.end();
+}
+
+test('E(Promise.resolve(presence)).foo() with SES', async t => {
+  await testChain2(t, true);
+});
+
+test('E(Promise.resolve(presence)).foo() without SES', async t => {
+  await testChain2(t, false);
+});
+
+async function testLocal1(t, withSES) {
+  const config = await loadBasedir(path.resolve(__dirname, 'd4'));
+  const c = await buildVatController(config, withSES, ['local1']);
+
+  await c.run();
+  t.deepEqual(c.dump().log, [
+    'bootstrap called',
+    'b.local1.finish',
+    'local.foo 1',
+    'b.resolved 2',
+  ]);
+  t.end();
+}
+
+test('E(local).foo() with SES', async t => {
+  await testLocal1(t, true);
+});
+
+test('E(local).foo() without SES', async t => {
+  await testLocal1(t, false);
+});

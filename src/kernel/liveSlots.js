@@ -17,6 +17,8 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     });
   }
 
+  const resultPromises = new WeakSet();
+  const outstandingProxies = new WeakSet();
   const valToSlotID = new WeakMap();
   const slotIDToVal = new Map();
   let nextExportID = 1;
@@ -76,55 +78,70 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     return slotIDToVal.get(facetID);
   }
 
-  function getImportID(presence) {
-    if (presence === undefined) {
-      throw Error('getImportID(undefined)');
-    }
-    // console.log(`getImportID for`, presence);
-    if (!valToSlotID.has(presence)) {
-      throw Error(`no importID for presence`);
-    }
-    return valToSlotID.get(presence);
-  }
-
   const m = makeMarshal(serializeSlot, unserializeSlot);
 
-  let send;
+  function queueMessage(slotID, prop, args) {
+    let r;
+    const doneP = new Promise((res, _rej) => {
+      r = res;
+    });
 
-  function E(presence) {
-    const slotID = getImportID(presence);
-    if (slotID === undefined) {
-      throw Error(`E() called on non-presence`);
-    }
-    const handler = {
+    const resolver = {
+      resolve(val) {
+        r(val);
+      },
+    };
+    const ser = m.serialize(harden({ args, resolver }));
+    syscall.send(slotID, prop, ser.argsString, ser.slots);
+    return doneP;
+  }
+
+  function PresenceHandler(slotID) {
+    return {
       get(target, prop) {
-        // console.log(`proxy.get(${prop})`);
-        if (prop === 'test_getSlotID') {
-          return () => slotID;
+        console.log(`PreH proxy.get(${prop})`);
+        if (prop !== `${prop}`) {
+          return undefined;
         }
+        const p = (...args) => queueMessage(slotID, prop, args);
+        resultPromises.add(p);
+        return p;
+      },
+      has(_target, _prop) {
+        return true;
+      },
+    };
+  }
+
+  function PromiseHandler(targetPromise) {
+    return {
+      get(target, prop) {
+        console.log(`ProH proxy.get(${prop})`);
         if (prop !== `${prop}`) {
           return undefined;
         }
         return (...args) => {
-          if (send === undefined) {
-            throw Error('E() used outside dispatch()');
-          }
-
           let r;
-          const doneP = new Promise((res, _rej) => {
+          let rj;
+          const doneP = new Promise((res, rej) => {
             r = res;
+            rj = rej;
           });
-
-          const resolver = {
-            resolve(val) {
-              r(val);
-            },
-          };
-
-          const ser = m.serialize(harden({ args, resolver }));
-          // console.log(`send is ${send} ${typeof send}`);
-          send(slotID, prop, ser.argsString, ser.slots);
-
+          function resolved(x) {
+            // We could delegate the is-this-a-Presence check to E(val), but
+            // local objects and Promises are treated the same way, so E
+            // would kick it right back to us, causing an infinite loop
+            if (outstandingProxies.has(x)) {
+              throw Error('E(Vow.resolve(E(x))) is invalid');
+            }
+            const slotID = valToSlotID.get(x);
+            if (slotID !== undefined) {
+              return queueMessage(slotID, prop, args);
+            }
+            return x[prop](...args);
+          }
+          targetPromise.then(resolved).then(r, rj);
+          resultPromises.add(doneP);
           return doneP;
         };
       },
@@ -132,7 +149,48 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
         return true;
       },
     };
-    return harden(new Proxy({}, handler));
+  }
+
+  function E(x) {
+    // p = E(x).name(args)
+    //
+    // E(x) returns a proxy on which you can call arbitrary methods. Each of
+    // these method calls returns a promise. The method will be invoked on
+    // whatever 'x' designates (or resolves to) in a future turn, not this
+    // one. 'x' might be/resolve-to:
+    //
+    // * a local object: do x[name](args) in a future turn
+    // * a normal Promise: wait for x to resolve, then x[name](args)
+    // * a Presence: send message to remote Vat to do x[name](args)
+    // * a Promise that we returned earlier: send message to whichever Vat
+    //   gets to decide what the Promise resolves to
+
+    console.log(
+      `== E(x) ${outstandingProxies.has(x)} ${resultPromises.has(x)} ${x}`,
+    );
+    if (outstandingProxies.has(x)) {
+      throw Error('E(E(x)) is invalid, you probably want E(E(x).foo()).bar()');
+    }
+    // TODO: if x is a Promise we recognize (because we created it earlier),
+    // we can pipeline messages sent to E(x) (since we remember where we got
+    // x from).
+    // if (resultPromises.has(x)) {
+    //   return UnresolvedRemoteHandler(x);
+    // }
+    let handler;
+    const slotID = valToSlotID.get(x);
+    if (slotID !== undefined) {
+      console.log(` was slotID ${slotID}`);
+      handler = PresenceHandler(slotID);
+    } else {
+      console.log(` treating as promise`);
+      const targetP = Promise.resolve(x);
+      // targetP might resolve to a Presence
+      handler = PromiseHandler(targetP);
+    }
+    const p = harden(new Proxy({}, handler));
+    outstandingProxies.add(p);
+    return p;
   }
 
   let rootIsRegistered = false;
@@ -153,17 +211,15 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     const t = getTarget(facetid);
     const args = m.unserialize(argsbytes, caps);
     // eslint-disable-next-line prefer-destructuring
-    send = syscall.send;
     // phase1: method must run synchronously
     const result = t[method](...args.args);
     if (args.resolver) {
-      // this would cause an infinite loop, so we need sendOnly
+      // this would cause an infinite loop, so we use a sendOnly
       // E(args.resolver).resolve(result);
       const ser = m.serialize(harden({ args: [result] }));
       const resolverSlotID = valToSlotID.get(args.resolver);
-      send(resolverSlotID, 'resolve', ser.argsString, ser.slots);
+      syscall.send(resolverSlotID, 'resolve', ser.argsString, ser.slots);
     }
-    send = undefined;
   }
 
   return harden({
