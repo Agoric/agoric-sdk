@@ -1,5 +1,6 @@
+import harden from '@agoric/harden';
+
 console.log(`loading bootstrap`);
-const harden = require('@agoric/harden');
 
 export default function setup(helpers) {
   const { log } = helpers;

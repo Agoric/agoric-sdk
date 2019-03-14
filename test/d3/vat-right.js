@@ -1,4 +1,4 @@
-const harden = require('@agoric/harden');
+import harden from '@agoric/harden';
 
 export default function setup(helpers) {
   const { log } = helpers;
