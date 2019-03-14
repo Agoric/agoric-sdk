@@ -110,9 +110,22 @@ export function makeLiveSlots(forVatID = 'unknown') {
             throw Error('E() used outside dispatch()');
           }
 
-          const ser = m.serialize(harden({ args }));
+          let r;
+          const doneP = new Promise((res, _rej) => {
+            r = res;
+          });
+
+          const resolver = {
+            resolve(val) {
+              r(val);
+            },
+          };
+
+          const ser = m.serialize(harden({ args, resolver }));
           // console.log(`send is ${send} ${typeof send}`);
           send(slotID, prop, ser.argsString, ser.slots);
+
+          return doneP;
         };
       },
       has(_target, _prop) {

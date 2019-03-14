@@ -120,8 +120,12 @@ async function bootstrapExport(t, withSES) {
       vatID: 'left',
       facetID: 0,
       method: 'foo',
-      argsString: '{"args":[1,{"@qclass":"slot","index":0}]}',
-      slots: [{ vatID: 'right', slotID: 0 }],
+      argsString:
+        '{"args":[1,{"@qclass":"slot","index":0}],"resolver":{"@qclass":"slot","index":1}}',
+      slots: [
+        { vatID: 'right', slotID: 0 },
+        { vatID: '_bootstrap', slotID: 1 },
+      ],
     },
   ]);
   c.step();
@@ -135,6 +139,7 @@ async function bootstrapExport(t, withSES) {
   t.deepEqual(c.dump().kernelTable, [
     ['_bootstrap', -2, 'right', 0],
     ['_bootstrap', -1, 'left', 0],
+    ['left', -2, '_bootstrap', 1],
     ['left', -1, 'right', 0],
   ]);
   t.deepEqual(c.dump().runQueue, [
@@ -142,8 +147,9 @@ async function bootstrapExport(t, withSES) {
       vatID: 'right',
       facetID: 0,
       method: 'bar',
-      argsString: '{"args":[2,{"@qclass":"slot","index":0}]}',
-      slots: [{ vatID: 'right', slotID: 0 }],
+      argsString:
+        '{"args":[2,{"@qclass":"slot","index":0}],"resolver":{"@qclass":"slot","index":1}}',
+      slots: [{ vatID: 'right', slotID: 0 }, { vatID: 'left', slotID: 1 }],
     },
   ]);
 
