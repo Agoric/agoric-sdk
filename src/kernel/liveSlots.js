@@ -2,6 +2,14 @@ import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { QCLASS, mustPassByPresence, makeMarshal } from './marshal';
 
+// 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
+// of local objects which have been exported. These cannot be persisted
+// beyond the runtime of the javascript environment, so this mechanism is not
+// going to work for our in-chain hosts.
+
+// The E() wrapper does not yet return a Promise for the result of the method
+// call.
+
 export function makeLiveSlots(forVatID = 'unknown') {
   function makePresence(slotID) {
     return harden({
