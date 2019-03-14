@@ -1,6 +1,7 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import makeMarshal from './marshal';
+import { makeLiveSlots } from './liveSlots';
+import { QCLASS, makeMarshal } from './marshal';
 
 export default function buildKernel(kernelEndowments) {
   console.log('in buildKernel', kernelEndowments);
@@ -100,8 +101,6 @@ export default function buildKernel(kernelEndowments) {
   });
 
   function syscallForVatID(fromVatID) {
-    const m = makeMarshal();
-
     function send(targetSlot, method, argsString, vatSlots) {
       return syscallBase.send(
         fromVatID,
@@ -112,52 +111,7 @@ export default function buildKernel(kernelEndowments) {
       );
     }
 
-    function E(presence) {
-      const slotID = m.getImportID(presence);
-      if (slotID === undefined) {
-        throw Error(`E() called on non-presence`);
-      }
-      const handler = {
-        get(target, prop) {
-          console.log(`proxy.get(${prop})`);
-          if (prop === 'test_getSlotID') {
-            return () => slotID;
-          }
-          if (prop !== `${prop}`) {
-            return undefined;
-          }
-          return (...args) => {
-            const ser = m.serialize(harden(args));
-            console.log(`send is ${send} ${typeof send}`);
-            send(slotID, prop, ser.argsString, ser.slots);
-          };
-        },
-        has(_target, _prop) {
-          return true;
-        },
-      };
-      return harden(new Proxy({}, handler));
-    }
-
     return harden({
-      registerTarget(val) {
-        return m.registerTarget(val);
-      },
-
-      getTarget(facetid) {
-        return m.getTarget(facetid);
-      },
-
-      serialize(args) {
-        // returns { argsString, slots }
-        return m.serialize(args);
-      },
-
-      unserialize(argsString, vatSlots) {
-        return m.unserialize(argsString, vatSlots);
-      },
-
-      E,
       send,
 
       log(str) {
@@ -175,10 +129,17 @@ export default function buildKernel(kernelEndowments) {
     // wasteful and limiting.
   }
 
-  function addVat(vatID, start, dispatch) {
+  function addVat(vatID, setup) {
+    const helpers = harden({
+      vatID,
+      makeLiveSlots,
+      log(str) {
+        log.push(`${str}`);
+      },
+    });
+    const dispatch = setup(helpers);
     const vat = harden({
       id: vatID,
-      start,
       dispatch,
       syscall: syscallForVatID(vatID),
     });
@@ -200,6 +161,9 @@ export default function buildKernel(kernelEndowments) {
       mapInbound(targetVatID, s.vatID, s.slotID),
     );
     // TODO: protect with promise/then
+
+    // TODO: deliver syscall() once during setup(), instead of every time
+    // through dispatch(), although it shouldn't be called until dispatch
     vat.dispatch(
       vat.syscall,
       message.facetID,
@@ -209,30 +173,73 @@ export default function buildKernel(kernelEndowments) {
     );
   }
 
+  function addImport(forVatID, vatID, slotID) {
+    Nat(slotID); // export
+    const newSlotID = mapInbound(forVatID, vatID, slotID);
+    Nat(-newSlotID); // import
+    return newSlotID;
+  }
+
+  function queue(vatID, facetID, method, argsString, slots = []) {
+    // queue a message on the end of the queue, with 'neutral' slotIDs. Use
+    // 'step' or 'run' to execute it
+    runQueue.push({
+      vatID: `${vatID}`,
+      facetID: Nat(facetID), // always export/positive
+      method: `${method}`,
+      argsString: `${argsString}`,
+      slots: slots.map(s => ({ vatID: `${s.vatID}`, slotID: s.slotID })),
+    });
+  }
+
+  function callBootstrap(vatID, argvString) {
+    const argv = JSON.parse(`${argvString}`);
+    // each key of 'vats' will be serialized as a reference to its obj0
+    const vrefs = new Map();
+    const vatObj0s = {};
+    Array.from(vats.entries()).forEach(e => {
+      const targetVatID = e[0];
+      if (targetVatID !== vatID) {
+        // don't give _bootstrap to itself
+        const vref = harden({}); // marker
+        vatObj0s[targetVatID] = vref;
+        vrefs.set(vref, { vatID: targetVatID, slotID: 0 });
+      }
+    });
+
+    function serializeSlot(vref, slots, slotMap) {
+      if (!vrefs.has(vref)) {
+        console.log(`oops ${vref}`, vref);
+        throw Error('bootstrap got unexpected pass-by-presence');
+      }
+      if (!slotMap.has(vref)) {
+        const slotIndex = slots.length;
+        slots.push(vrefs.get(vref));
+        console.log(`--slots now ${JSON.stringify(slots)}`);
+        slotMap.set(vref, slotIndex);
+      }
+      const slotIndex = slotMap.get(vref);
+      return harden({ [QCLASS]: 'slot', index: slotIndex });
+    }
+    const m = makeMarshal(serializeSlot);
+    const s = m.serialize(harden([argv, vatObj0s]));
+    // queue() takes 'neutral' { vatID, slotID } objects in s.slots
+    queue(vatID, 0, 'bootstrap', s.argsString, s.slots);
+  }
+
   const kernel = harden({
-    addVat(vatID, start, dispatch) {
-      harden(start);
-      harden(dispatch);
-      // 'dispatch' must be an in-realm function. This test guards against
+    addVat(vatID, setup) {
+      harden(setup);
+      // 'setup' must be an in-realm function. This test guards against
       // accidents, but not against malice. MarkM thinks there is no reliable
       // way to test this.
-      if (start !== undefined && !(start instanceof Function)) {
-        throw Error('start is not an in-realm function');
+      if (!(setup instanceof Function)) {
+        throw Error('setup is not an in-realm function');
       }
-      if (!(dispatch instanceof Function)) {
-        throw Error('dispatch is not an in-realm function');
-      }
-      addVat(`${vatID}`, start, dispatch);
+      addVat(`${vatID}`, setup);
     },
 
-    runStart(vatID) {
-      const vat = vats.get(vatID);
-      if (!vat) {
-        throw Error(`no such vatID ${vatID}`);
-      }
-      // this is expected to return an array of exportIDs
-      return vat.start(vat.syscall);
-    },
+    callBootstrap,
 
     connect(fromVatID, importID, toVatID, exportID) {
       Nat(-importID);
@@ -244,12 +251,7 @@ export default function buildKernel(kernelEndowments) {
       m.inbound.set(key, importID);
     },
 
-    addImport(forVatID, vatID, slotID) {
-      Nat(slotID); // export
-      const newSlotID = mapInbound(forVatID, vatID, slotID);
-      Nat(-newSlotID); // import
-      return newSlotID;
-    },
+    addImport,
 
     log(str) {
       log.push(`${str}`);
@@ -325,17 +327,7 @@ export default function buildKernel(kernelEndowments) {
       vats.get(vatID).syscall.send(targetID, method, argsString, slots);
     },
 
-    queue(vatID, facetID, method, argsString, slots = []) {
-      // queue a message on the end of the queue, with 'neutral' slotIDs. Use
-      // 'step' or 'run' to execute it
-      runQueue.push({
-        vatID: `${vatID}`,
-        facetID: Nat(facetID), // always export/positive
-        method: `${method}`,
-        argsString: `${argsString}`,
-        slots: slots.map(s => ({ vatID: `${s.vatID}`, slotID: Nat(s.slotID) })),
-      });
-    },
+    queue,
   });
 
   return kernel;

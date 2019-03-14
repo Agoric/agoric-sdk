@@ -2,7 +2,7 @@ import path from 'path';
 import { test } from 'tape-promise/tape';
 import { buildVatController, loadBasedir } from '../src/index';
 
-test('load', async t => {
+test('load empty', async t => {
   const config = {
     vatSources: new Map(),
     bootstrapIndexJS: undefined,
@@ -69,19 +69,6 @@ async function bootstrap(t, withSES) {
   // left[0].bootstrap
   const c = await buildVatController(config, withSES);
   t.deepEqual(c.dump().log, ['bootstrap called']);
-  t.deepEqual(c.dump().kernelTable, [['left', -1, 'right', 5]]);
-
-  c.run();
-  t.deepEqual(c.dump().log, [
-    'bootstrap called',
-    'left dispatch(0, bootstrap, {}, )',
-    'right dispatch(5, hello, [2,3], -1)',
-  ]);
-  t.deepEqual(c.dump().kernelTable, [
-    ['left', -1, 'right', 5],
-    ['right', -1, 'left', 4],
-  ]);
-
   t.end();
 }
 
@@ -96,19 +83,80 @@ test('bootstrap without SES', async t => {
 async function bootstrapExport(t, withSES) {
   const config = await loadBasedir(path.resolve(__dirname, 'd3'));
   const c = await buildVatController(config, withSES);
-  t.deepEqual(c.dump().log, ['bootstrap called', 'left.start called']);
-  t.deepEqual(c.dump().kernelTable, [['left', -1, 'right', 5]]);
+  // console.log(c.dump());
+  // console.log('SLOTS: ', c.dump().runQueue[0].slots);
+  t.deepEqual(c.dump().kernelTable, []);
 
-  // console.log(JSON.stringify(c.dump(), undefined, 1));
-
-  c.run();
-  t.deepEqual(c.dump().log, [
-    'bootstrap called',
-    'left.start called',
-    'left.foo arg1val',
-    'left.callRight',
-    'right.dispatch(5, bar, ["arg2"], )',
+  t.deepEqual(c.dump().runQueue, [
+    {
+      vatID: '_bootstrap',
+      facetID: 0,
+      method: 'bootstrap',
+      argsString:
+        '[[],{"left":{"@qclass":"slot","index":0},"right":{"@qclass":"slot","index":1}}]',
+      slots: [{ vatID: 'left', slotID: 0 }, { vatID: 'right', slotID: 0 }],
+    },
   ]);
+
+  t.deepEqual(c.dump().log, [
+    'left.setup called',
+    'right.setup called',
+    'bootstrap called',
+  ]);
+  // console.log('--- c.step() running bootstrap.obj0.bootstrap');
+  c.step();
+  t.deepEqual(c.dump().log, [
+    'left.setup called',
+    'right.setup called',
+    'bootstrap called',
+    'bootstrap.obj0.bootstrap()',
+  ]);
+  t.deepEqual(c.dump().kernelTable, [
+    ['_bootstrap', -2, 'right', 0],
+    ['_bootstrap', -1, 'left', 0],
+  ]);
+  t.deepEqual(c.dump().runQueue, [
+    {
+      vatID: 'left',
+      facetID: 0,
+      method: 'foo',
+      argsString: '[1,{"@qclass":"slot","index":0}]',
+      slots: [{ vatID: 'right', slotID: 0 }],
+    },
+  ]);
+  c.step();
+  t.deepEqual(c.dump().log, [
+    'left.setup called',
+    'right.setup called',
+    'bootstrap called',
+    'bootstrap.obj0.bootstrap()',
+    'left.foo 1',
+  ]);
+  t.deepEqual(c.dump().kernelTable, [
+    ['_bootstrap', -2, 'right', 0],
+    ['_bootstrap', -1, 'left', 0],
+    ['left', -1, 'right', 0],
+  ]);
+  t.deepEqual(c.dump().runQueue, [
+    {
+      vatID: 'right',
+      facetID: 0,
+      method: 'bar',
+      argsString: '[2,{"@qclass":"slot","index":0}]',
+      slots: [{ vatID: 'right', slotID: 0 }],
+    },
+  ]);
+
+  c.step();
+  t.deepEqual(c.dump().log, [
+    'left.setup called',
+    'right.setup called',
+    'bootstrap called',
+    'bootstrap.obj0.bootstrap()',
+    'left.foo 1',
+    'right.obj0.bar 2 true',
+  ]);
+  t.deepEqual(c.dump().runQueue, []);
 
   t.end();
 }

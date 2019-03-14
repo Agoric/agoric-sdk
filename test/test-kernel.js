@@ -14,11 +14,14 @@ test('build kernel', t => {
 test('simple call', t => {
   const kernel = buildKernel({});
   const log = [];
-  function d1(syscall, facetID, method, argsString, slots) {
-    log.push([facetID, method, argsString, slots]);
-    syscall.log(JSON.stringify({ facetID, method, argsString, slots }));
+  function setup1() {
+    function d1(syscall, facetID, method, argsString, slots) {
+      log.push([facetID, method, argsString, slots]);
+      syscall.log(JSON.stringify({ facetID, method, argsString, slots }));
+    }
+    return d1;
   }
-  kernel.addVat('vat1', undefined, d1);
+  kernel.addVat('vat1', setup1);
   let data = kernel.dump();
   t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
   t.deepEqual(data.kernelTable, []);
@@ -48,10 +51,13 @@ test('simple call', t => {
 test('map inbound', t => {
   const kernel = buildKernel({});
   const log = [];
-  function d1(_syscall, facetID, method, argsString, slots) {
-    log.push([facetID, method, argsString, slots]);
+  function setup1() {
+    function d1(_syscall, facetID, method, argsString, slots) {
+      log.push([facetID, method, argsString, slots]);
+    }
+    return d1;
   }
-  kernel.addVat('vat1', undefined, d1);
+  kernel.addVat('vat1', setup1);
   const data = kernel.dump();
   t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
   t.deepEqual(data.kernelTable, []);
@@ -80,11 +86,12 @@ test('map inbound', t => {
 
 test('addImport', t => {
   const kernel = buildKernel({});
-  function d1(_syscall, _facetID, _method, _argsString, _slots) {}
-  kernel.addVat('vat1', undefined, d1);
-
-  function d2(_syscall, _facetID, _method, _argsString, _slots) {}
-  kernel.addVat('vat2', undefined, d2);
+  function setup() {
+    function d1(_syscall, _facetID, _method, _argsString, _slots) {}
+    return d1;
+  }
+  kernel.addVat('vat1', setup);
+  kernel.addVat('vat2', setup);
 
   const slotID = kernel.addImport('vat1', 'vat2', 5);
   t.equal(slotID, -1); // first import
@@ -97,18 +104,24 @@ test('outbound call', t => {
   const log = [];
   let v1tovat25;
 
-  function d1(syscall, facetID, method, argsString, slots) {
-    // console.log(`d1/${facetID} called`);
-    log.push(['d1', facetID, method, argsString, slots]);
-    syscall.send(v1tovat25, 'bar', 'bargs', [v1tovat25, 7]);
+  function setup1() {
+    function d1(syscall, facetID, method, argsString, slots) {
+      // console.log(`d1/${facetID} called`);
+      log.push(['d1', facetID, method, argsString, slots]);
+      syscall.send(v1tovat25, 'bar', 'bargs', [v1tovat25, 7]);
+    }
+    return d1;
   }
-  kernel.addVat('vat1', undefined, d1);
+  kernel.addVat('vat1', setup1);
 
-  function d2(syscall, facetID, method, argsString, slots) {
-    // console.log(`d2/${facetID} called`);
-    log.push(['d2', facetID, method, argsString, slots]);
+  function setup2() {
+    function d2(syscall, facetID, method, argsString, slots) {
+      // console.log(`d2/${facetID} called`);
+      log.push(['d2', facetID, method, argsString, slots]);
+    }
+    return d2;
   }
-  kernel.addVat('vat2', undefined, d2);
+  kernel.addVat('vat2', setup2);
 
   v1tovat25 = kernel.addImport('vat1', 'vat2', 5);
   t.ok(v1tovat25 < 0);
@@ -157,23 +170,32 @@ test('three-party', t => {
   let bobForA;
   let carolForA;
 
-  function vatA(syscall, facetID, method, argsString, slots) {
-    console.log(`vatA/${facetID} called`);
-    log.push(['vatA', facetID, method, argsString, slots]);
-    syscall.send(bobForA, 'intro', 'bargs', [carolForA]);
+  function setupA() {
+    function vatA(syscall, facetID, method, argsString, slots) {
+      console.log(`vatA/${facetID} called`);
+      log.push(['vatA', facetID, method, argsString, slots]);
+      syscall.send(bobForA, 'intro', 'bargs', [carolForA]);
+    }
+    return vatA;
   }
-  kernel.addVat('vatA', undefined, vatA);
+  kernel.addVat('vatA', setupA);
 
-  function vatB(syscall, facetID, method, argsString, slots) {
-    console.log(`vatB/${facetID} called`);
-    log.push(['vatB', facetID, method, argsString, slots]);
+  function setupB() {
+    function vatB(syscall, facetID, method, argsString, slots) {
+      console.log(`vatB/${facetID} called`);
+      log.push(['vatB', facetID, method, argsString, slots]);
+    }
+    return vatB;
   }
-  kernel.addVat('vatB', undefined, vatB);
+  kernel.addVat('vatB', setupB);
 
-  function vatC(syscall, facetID, method, argsString, slots) {
-    log.push(['vatC', facetID, method, argsString, slots]);
+  function setupC() {
+    function vatC(syscall, facetID, method, argsString, slots) {
+      log.push(['vatC', facetID, method, argsString, slots]);
+    }
+    return vatC;
   }
-  kernel.addVat('vatC', undefined, vatC);
+  kernel.addVat('vatC', setupC);
 
   bobForA = kernel.addImport('vatA', 'vatB', 5);
   carolForA = kernel.addImport('vatA', 'vatC', 6);

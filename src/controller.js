@@ -14,17 +14,18 @@ export function loadBasedir(basedir) {
   const vatSources = new Map();
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.forEach(dirent => {
-    if (!dirent.isDirectory()) {
-      return;
+    if (dirent.name.startsWith('vat-')) {
+      let name;
+      let indexJS;
+      if (dirent.isFile() && dirent.name.endsWith('.js')) {
+        name = dirent.name.slice('vat-'.length, -'.js'.length);
+        indexJS = path.resolve(basedir, dirent.name);
+      } else if (dirent.isDirectory()) {
+        name = dirent.name.slice('vat-'.length);
+        indexJS = path.resolve(basedir, dirent.name, 'index.js');
+      }
+      vatSources.set(name, indexJS);
     }
-    const indexJS = path.resolve(basedir, dirent.name, 'index.js');
-    try {
-      fs.statSync(indexJS);
-    } catch (e) {
-      console.log(`subdir ${dirent.name} is missing index.js, ignoring`);
-      return;
-    }
-    vatSources.set(dirent.name, indexJS);
   });
   let bootstrapIndexJS = path.resolve(basedir, 'bootstrap.js');
   try {
@@ -67,14 +68,14 @@ export async function buildVatController(config, withSES = true) {
   async function addVat(vatID, sourceIndex) {
     if (sourceIndex[0] !== '.' && sourceIndex[0] !== '/') {
       throw Error(
-        'sourceIndex must be relative (./foo) or absolute (/foo) not package (foo)',
+        'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
       );
     }
     // we load the sourceIndex (and everything it imports), and expect to get
     // two symbols from each Vat: 'start' and 'dispatch'. The code in
     // bootstrap.js gets a 'controller' object which can invoke start()
     // (which is expected to initialize some state and export some facetIDs)
-    let code;
+    let setup;
     if (withSES) {
       // TODO: if the 'require' we provide here supplies a non-pure module,
       // that could open a communication channel between otherwise isolated
@@ -86,12 +87,12 @@ export async function buildVatController(config, withSES = true) {
       // const r = s.makeRequire({ '@agoric/harden': true, '@agoric/nat': Nat });
       let source = await bundleSource(`${sourceIndex}`);
       source = `(${source})`;
-      code = s.evaluate(source, { require: r })();
+      setup = s.evaluate(source, { require: r })();
     } else {
       // eslint-disable-next-line global-require,import/no-dynamic-require
-      code = require(`${sourceIndex}`);
+      setup = require(`${sourceIndex}`).default;
     }
-    kernel.addVat(vatID, code.start, code.dispatch);
+    kernel.addVat(vatID, setup);
   }
 
   // the kernel won't leak our objects into the Vats, we must do
@@ -135,16 +136,11 @@ export async function buildVatController(config, withSES = true) {
   }
 
   if (config.bootstrapIndexJS) {
-    let bootstrap;
-    if (withSES) {
-      let source = await bundleSource(`${config.bootstrapIndexJS}`);
-      source = `(${source})`;
-      bootstrap = s.evaluate(source, { require: r })();
-    } else {
-      // eslint-disable-next-line global-require,import/no-dynamic-require
-      bootstrap = require(`${config.bootstrapIndexJS}`).default;
-    }
-    bootstrap(kernel);
+    await addVat('_bootstrap', config.bootstrapIndexJS);
+    // we invoke obj[0].bootstrap with an object that contains 'vats' and
+    // 'argv'.
+    const argv = harden([]);
+    kernel.callBootstrap('_bootstrap', JSON.stringify(argv));
   }
 
   return controller;
