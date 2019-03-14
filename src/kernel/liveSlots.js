@@ -109,7 +109,8 @@ export function makeLiveSlots(forVatID = 'unknown') {
           if (send === undefined) {
             throw Error('E() used outside dispatch()');
           }
-          const ser = m.serialize(harden(args));
+
+          const ser = m.serialize(harden({ args }));
           // console.log(`send is ${send} ${typeof send}`);
           send(slotID, prop, ser.argsString, ser.slots);
         };
@@ -140,7 +141,7 @@ export function makeLiveSlots(forVatID = 'unknown') {
     const args = m.unserialize(argsbytes, caps);
     // eslint-disable-next-line prefer-destructuring
     send = syscall.send;
-    t[method](...args);
+    t[method](...args.args);
     send = undefined;
   }
 

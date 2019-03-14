@@ -222,7 +222,7 @@ export default function buildKernel(kernelEndowments) {
       return harden({ [QCLASS]: 'slot', index: slotIndex });
     }
     const m = makeMarshal(serializeSlot);
-    const s = m.serialize(harden([argv, vatObj0s]));
+    const s = m.serialize(harden({ args: [argv, vatObj0s] }));
     // queue() takes 'neutral' { vatID, slotID } objects in s.slots
     queue(vatID, 0, 'bootstrap', s.argsString, s.slots);
   }

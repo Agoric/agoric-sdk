@@ -93,7 +93,7 @@ async function bootstrapExport(t, withSES) {
       facetID: 0,
       method: 'bootstrap',
       argsString:
-        '[[],{"left":{"@qclass":"slot","index":0},"right":{"@qclass":"slot","index":1}}]',
+        '{"args":[[],{"left":{"@qclass":"slot","index":0},"right":{"@qclass":"slot","index":1}}]}',
       slots: [{ vatID: 'left', slotID: 0 }, { vatID: 'right', slotID: 0 }],
     },
   ]);
@@ -120,7 +120,7 @@ async function bootstrapExport(t, withSES) {
       vatID: 'left',
       facetID: 0,
       method: 'foo',
-      argsString: '[1,{"@qclass":"slot","index":0}]',
+      argsString: '{"args":[1,{"@qclass":"slot","index":0}]}',
       slots: [{ vatID: 'right', slotID: 0 }],
     },
   ]);
@@ -142,7 +142,7 @@ async function bootstrapExport(t, withSES) {
       vatID: 'right',
       facetID: 0,
       method: 'bar',
-      argsString: '[2,{"@qclass":"slot","index":0}]',
+      argsString: '{"args":[2,{"@qclass":"slot","index":0}]}',
       slots: [{ vatID: 'right', slotID: 0 }],
     },
   ]);
