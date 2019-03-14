@@ -1,9 +1,10 @@
+/* global setImmediate */
 import { test } from 'tape-promise/tape';
 import Nat from '@agoric/nat';
 import buildKernel from '../src/kernel/index';
 
 test('build kernel', t => {
-  const kernel = buildKernel({});
+  const kernel = buildKernel({ setImmediate });
   kernel.run(); // empty queue
   const data = kernel.dump();
   t.deepEqual(data.vatTables, []);
@@ -11,8 +12,8 @@ test('build kernel', t => {
   t.end();
 });
 
-test('simple call', t => {
-  const kernel = buildKernel({});
+test('simple call', async t => {
+  const kernel = buildKernel({ setImmediate });
   const log = [];
   function setup1() {
     function d1(syscall, facetID, method, argsString, slots) {
@@ -33,7 +34,7 @@ test('simple call', t => {
     { vatID: 'vat1', facetID: 1, method: 'foo', argsString: 'args', slots: [] },
   ]);
   t.deepEqual(log, []);
-  kernel.run();
+  await kernel.run();
   t.deepEqual(log, [[1, 'foo', 'args', []]]);
 
   data = kernel.dump();
@@ -48,8 +49,8 @@ test('simple call', t => {
   t.end();
 });
 
-test('map inbound', t => {
-  const kernel = buildKernel({});
+test('map inbound', async t => {
+  const kernel = buildKernel({ setImmediate });
   const log = [];
   function setup1() {
     function d1(_syscall, facetID, method, argsString, slots) {
@@ -77,7 +78,7 @@ test('map inbound', t => {
     },
   ]);
   t.deepEqual(log, []);
-  kernel.run();
+  await kernel.run();
   t.deepEqual(log, [[1, 'foo', 'args', [5, -1]]]);
   t.deepEqual(kernel.dump().kernelTable, [['vat1', -1, 'vat2', 6]]);
 
@@ -85,7 +86,7 @@ test('map inbound', t => {
 });
 
 test('addImport', t => {
-  const kernel = buildKernel({});
+  const kernel = buildKernel({ setImmediate });
   function setup() {
     function d1(_syscall, _facetID, _method, _argsString, _slots) {}
     return d1;
@@ -99,8 +100,8 @@ test('addImport', t => {
   t.end();
 });
 
-test('outbound call', t => {
-  const kernel = buildKernel({});
+test('outbound call', async t => {
+  const kernel = buildKernel({ setImmediate });
   const log = [];
   let v1tovat25;
 
@@ -139,7 +140,7 @@ test('outbound call', t => {
     { vatID: 'vat1', facetID: 1, method: 'foo', argsString: 'args', slots: [] },
   ]);
 
-  kernel.step();
+  await kernel.step();
 
   t.deepEqual(log, [['d1', 1, 'foo', 'args', []]]);
   log.shift();
@@ -154,7 +155,7 @@ test('outbound call', t => {
     },
   ]);
 
-  kernel.step();
+  await kernel.step();
   t.deepEqual(log, [['d2', 5, 'bar', 'bargs', [5, -1]]]);
   t.deepEqual(kernel.dump().kernelTable, [
     ['vat1', v1tovat25, 'vat2', 5],
@@ -164,8 +165,8 @@ test('outbound call', t => {
   t.end();
 });
 
-test('three-party', t => {
-  const kernel = buildKernel({});
+test('three-party', async t => {
+  const kernel = buildKernel({ setImmediate });
   const log = [];
   let bobForA;
   let carolForA;
@@ -213,7 +214,7 @@ test('three-party', t => {
   t.deepEqual(log, []);
 
   kernel.queue('vatA', 1, 'foo', 'args');
-  kernel.step();
+  await kernel.step();
 
   t.deepEqual(log, [['vatA', 1, 'foo', 'args', []]]);
   log.shift();
@@ -228,7 +229,7 @@ test('three-party', t => {
     },
   ]);
 
-  kernel.step();
+  await kernel.step();
   t.deepEqual(log, [['vatB', 5, 'intro', 'bargs', [-1]]]);
   t.deepEqual(kernel.dump().kernelTable, [
     ['vatA', carolForA, 'vatC', 6],

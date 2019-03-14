@@ -1,3 +1,4 @@
+/* global setImmediate */
 import fs from 'fs';
 import path from 'path';
 // import { rollup } from 'rollup';
@@ -14,6 +15,9 @@ export function loadBasedir(basedir) {
   const vatSources = new Map();
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.forEach(dirent => {
+    if (dirent.name.endsWith('~')) {
+      return;
+    }
     if (dirent.name.startsWith('vat-')) {
       let name;
       let indexJS;
@@ -49,18 +53,18 @@ function buildSESKernel() {
   const kernelSource = getKernelSource();
   // console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })();
-  const kernelEndowments = { endow: 'not' };
+  const kernelEndowments = { setImmediate };
   const kernel = buildKernel(kernelEndowments);
   return { kernel, s, r };
 }
 
 function buildNonSESKernel() {
-  const kernelEndowments = { endow: 'not' };
+  const kernelEndowments = { setImmediate };
   const kernel = buildKernelNonSES(kernelEndowments);
   return { kernel };
 }
 
-export async function buildVatController(config, withSES = true) {
+export async function buildVatController(config, withSES = true, argv = []) {
   // console.log('in main');
   const { kernel, s, r } = withSES ? buildSESKernel() : buildNonSESKernel();
   // console.log('kernel', kernel);
@@ -115,12 +119,12 @@ export async function buildVatController(config, withSES = true) {
       return JSON.parse(JSON.stringify(kernel.dump()));
     },
 
-    run() {
-      kernel.run();
+    async run() {
+      await kernel.run();
     },
 
-    step() {
-      kernel.step();
+    async step() {
+      await kernel.step();
     },
 
     queue(vatID, facetID, method, argsString) {
@@ -139,7 +143,6 @@ export async function buildVatController(config, withSES = true) {
     await addVat('_bootstrap', config.bootstrapIndexJS);
     // we invoke obj[0].bootstrap with an object that contains 'vats' and
     // 'argv'.
-    const argv = harden([]);
     kernel.callBootstrap('_bootstrap', JSON.stringify(argv));
   }
 

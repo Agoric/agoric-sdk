@@ -2,6 +2,14 @@ import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { QCLASS, mustPassByPresence, makeMarshal } from './marshal';
 
+// 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
+// of local objects which have been exported. These cannot be persisted
+// beyond the runtime of the javascript environment, so this mechanism is not
+// going to work for our in-chain hosts.
+
+// The E() wrapper does not yet return a Promise for the result of the method
+// call.
+
 export function makeLiveSlots(forVatID = 'unknown') {
   function makePresence(slotID) {
     return harden({
@@ -101,9 +109,23 @@ export function makeLiveSlots(forVatID = 'unknown') {
           if (send === undefined) {
             throw Error('E() used outside dispatch()');
           }
-          const ser = m.serialize(harden(args));
+
+          let r;
+          const doneP = new Promise((res, _rej) => {
+            r = res;
+          });
+
+          const resolver = {
+            resolve(val) {
+              r(val);
+            },
+          };
+
+          const ser = m.serialize(harden({ args, resolver }));
           // console.log(`send is ${send} ${typeof send}`);
           send(slotID, prop, ser.argsString, ser.slots);
+
+          return doneP;
         };
       },
       has(_target, _prop) {
@@ -132,7 +154,15 @@ export function makeLiveSlots(forVatID = 'unknown') {
     const args = m.unserialize(argsbytes, caps);
     // eslint-disable-next-line prefer-destructuring
     send = syscall.send;
-    t[method](...args);
+    // phase1: method must run synchronously
+    const result = t[method](...args.args);
+    if (args.resolver) {
+      // this would cause an infinite loop, so we need sendOnly
+      // E(args.resolver).resolve(result);
+      const ser = m.serialize(harden({ args: [result] }));
+      const resolverSlotID = valToSlotID.get(args.resolver);
+      send(resolverSlotID, 'resolve', ser.argsString, ser.slots);
+    }
     send = undefined;
   }
 
