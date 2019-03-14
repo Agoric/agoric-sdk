@@ -4,6 +4,7 @@ import Nat from '@agoric/nat';
 // Special property name that indicates an encoding that needs special
 // decoding.
 const QCLASS = '@qclass';
+export { QCLASS };
 
 // objects can only be passed in one of two/three forms:
 // 1: pass-by-presence: all properties (own and inherited) are methods,
@@ -46,7 +47,7 @@ function canPassByCopy(val) {
   return true;
 }
 
-function mustPassByPresence(val) {
+export function mustPassByPresence(val) {
   // throws exception if cannot
   if (!Object.isFrozen(val)) {
     throw new Error(`cannot serialize non-frozen objects like ${val}`);
@@ -76,45 +77,7 @@ function mustPassByPresence(val) {
   // ok!
 }
 
-function makePresence(slotID) {
-  return harden({
-    test_getSlotID() {
-      return slotID;
-    },
-  });
-}
-
-export default function makeMarshal() {
-  const valToSlotID = new WeakMap();
-  const slotIDToVal = new Map();
-  let nextExportID = 1;
-
-  function allocateExportID() {
-    const exportID = nextExportID;
-    nextExportID += 1;
-    return exportID;
-  }
-
-  function serializeSlot(val, slots, slotMap) {
-    mustPassByPresence(val);
-    if (!valToSlotID.has(val)) {
-      console.log('must be a new export', JSON.stringify(val));
-      // must be a new export
-      const exportID = allocateExportID();
-      valToSlotID.set(val, exportID);
-      slotIDToVal.set(exportID, val);
-    }
-    const slotID = valToSlotID.get(val);
-    console.log(`serializeSlot slotID=${slotID}`);
-    if (!slotMap.has(val)) {
-      const slotIndex = slots.length;
-      slots.push(slotID);
-      slotMap.set(val, slotIndex);
-    }
-    const slotIndex = slotMap.get(val);
-    return harden({ [QCLASS]: 'slot', index: slotIndex });
-  }
-
+export function makeMarshal(serializeSlot, unserializeSlot) {
   function makeReplacer(slots, slotMap) {
     const ibidMap = new Map();
     let ibidCount = 0;
@@ -246,24 +209,6 @@ export default function makeMarshal() {
     };
   }
 
-  function unserializeSlot(data, slots) {
-    const slotID = slots[Nat(data.index)];
-    // todo assert slotID is a non-zero integer
-    if (slotID < 0) {
-      // this is an import
-      if (!slotIDToVal.has(slotID)) {
-        // this is a new import
-        console.log(`assigning new import ${slotID}`);
-        const val = makePresence(slotID);
-        valToSlotID.set(val, slotID);
-        slotIDToVal.set(slotID, val);
-      }
-    }
-    // else this is one of our previous exports. In either case we get it
-    // from the map
-    return slotIDToVal.get(slotID);
-  }
-
   function makeReviver(slots) {
     const ibids = [];
 
@@ -332,33 +277,7 @@ export default function makeMarshal() {
     return JSON.parse(str, makeReviver(slots));
   }
 
-  function registerTarget(val) {
-    const exportID = allocateExportID();
-    valToSlotID.set(val, exportID);
-    slotIDToVal.set(exportID, val);
-    return exportID;
-  }
-
-  // this handles both exports ("targets" which other vats can call) and
-  // imports (presences with which the local vat can do E(p).foo(args))
-  function getTarget(facetID) {
-    if (!slotIDToVal.has(facetID)) {
-      throw Error(`no target for facetID ${facetID}`);
-    }
-    return slotIDToVal.get(facetID);
-  }
-
-  function getImportID(presence) {
-    if (!valToSlotID.has(presence)) {
-      throw Error(`no importID for presence`);
-    }
-    return valToSlotID.get(presence);
-  }
-
   return harden({
-    registerTarget,
-    getTarget,
-    getImportID,
     serialize,
     unserialize,
   });

@@ -1,15 +1,18 @@
 console.log(`loading bootstrap`);
-export default function bootstrap(kernel) {
-  console.log(`bootstrap called`);
-  kernel.log(`bootstrap called`);
-  const leftT1 = kernel.runStart('left')[0];
-  kernel.sendFrom('left', leftT1, 'foo', JSON.stringify(['arg1val']), []);
-  const leftR5 = kernel.addImport('left', 'right', 5);
-  kernel.sendFrom(
-    'left',
-    leftT1,
-    'callRight',
-    JSON.stringify([{ '@qclass': 'slot', index: 0 }]),
-    [leftR5],
-  );
+const harden = require('@agoric/harden');
+
+export default function setup(helpers) {
+  const { log } = helpers;
+  log(`bootstrap called`);
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(helpers.vatID);
+  const obj0 = {
+    bootstrap(argv, vats) {
+      helpers.log(`bootstrap.obj0.bootstrap()`);
+      console.log(`obj0.bootstrap`, argv, vats);
+      E(vats.left).foo(1, vats.right);
+    },
+  };
+
+  registerRoot(harden(obj0));
+  return dispatch;
 }

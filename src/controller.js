@@ -136,16 +136,11 @@ export async function buildVatController(config, withSES = true) {
   }
 
   if (config.bootstrapIndexJS) {
-    let bootstrap;
-    if (withSES) {
-      let source = await bundleSource(`${config.bootstrapIndexJS}`);
-      source = `(${source})`;
-      bootstrap = s.evaluate(source, { require: r })();
-    } else {
-      // eslint-disable-next-line global-require,import/no-dynamic-require
-      bootstrap = require(`${config.bootstrapIndexJS}`).default;
-    }
-    bootstrap(kernel);
+    await addVat('_bootstrap', config.bootstrapIndexJS);
+    // we invoke obj[0].bootstrap with an object that contains 'vats' and
+    // 'argv'.
+    const argv = harden([]);
+    kernel.callBootstrap('_bootstrap', JSON.stringify(argv));
   }
 
   return controller;

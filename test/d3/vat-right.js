@@ -1,9 +1,15 @@
-function dispatch(syscall, facetid, method, argsbytes, caps) {
-  // 5 is what bootstrap.js exports to vatLeft
-  console.log(`right.dispatch(${facetid}, ${method}, ${argsbytes}, ${caps})`);
-  syscall.log(`right.dispatch(${facetid}, ${method}, ${argsbytes}, ${caps})`);
-}
+const harden = require('@agoric/harden');
 
-export default function setup() {
+export default function setup(helpers) {
+  const { log } = helpers;
+  log(`right.setup called`);
+  const { dispatch, registerRoot } = helpers.makeLiveSlots(helpers.vatID);
+
+  const obj0 = {
+    bar(arg2, self) {
+      log(`right.obj0.bar ${arg2} ${self === obj0}`);
+    },
+  };
+  registerRoot(harden(obj0));
   return dispatch;
 }

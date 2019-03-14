@@ -2,7 +2,8 @@
 
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
-import makeMarshal from '../src/kernel/marshal';
+import { makeMarshal } from '../src/kernel/marshal';
+import { makeLiveSlots } from '../src/kernel/liveSlots';
 
 test('serialize static data', t => {
   const m = makeMarshal();
@@ -96,7 +97,7 @@ test('unserialize static data', t => {
 });
 
 test('serialize exports', t => {
-  const m = makeMarshal();
+  const { m } = makeLiveSlots();
   const ser = val => m.serialize(val);
   const o1 = harden({});
   const o2 = harden({
@@ -122,10 +123,10 @@ test('serialize exports', t => {
 });
 
 test('deserialize imports', t => {
-  const m = makeMarshal();
+  const { m } = makeLiveSlots();
   const a = m.unserialize('{"@qclass":"slot","index":0}', [-1]);
   // a should be a proxy/presence. For now these are obvious.
-  t.equal(a.test_getSlotID(), -1);
+  t.ok('_slotID_-1' in a);
   t.ok(Object.isFrozen(a));
 
   // m now remembers the proxy
@@ -140,7 +141,7 @@ test('deserialize imports', t => {
 });
 
 test('deserialize exports', t => {
-  const m = makeMarshal();
+  const { m } = makeLiveSlots();
   const o1 = harden({});
   m.serialize(o1); // allocates slot=1
   const a = m.unserialize('{"@qclass":"slot","index":0}', [1]);
@@ -150,7 +151,7 @@ test('deserialize exports', t => {
 });
 
 test('serialize imports', t => {
-  const m = makeMarshal();
+  const { m } = makeLiveSlots();
   const a = m.unserialize('{"@qclass":"slot","index":0}', [-1]);
   t.deepEqual(m.serialize(a), {
     argsString: '{"@qclass":"slot","index":0}',
