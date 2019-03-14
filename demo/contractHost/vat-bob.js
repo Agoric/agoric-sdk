@@ -16,6 +16,7 @@
 
 /* eslint-disable-next-line global-require, import/no-extraneous-dependencies */
 import harden from '@agoric/harden';
+import escrowExchange from './escrow';
 
 export default function(argv) {
   const { escrowSrc } = argv;

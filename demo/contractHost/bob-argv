@@ -1,5 +1,0 @@
-{
-  "escrowSrc": { "filename": "../escrow.js" },
-  "host": { "sturdyref": "QmWw6P4xieSGYd6ug27nZ5XyrXbF3Zj1E9teHowzv8yEb6/0-WdHggrmk2Szz2TkgwvCfZq" },
-  "alice": { "sturdyref": "QmTxsHYt2a5sWpatR6LTaW4eHR9d4BozAyKMUH89YjFHsE/0-JvLBWi4QHMJQMwrpJSDKCy" }
-}

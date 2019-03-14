@@ -30,15 +30,15 @@ export default function setup(helpers) {
   function mintTest(mint) {
     console.log('starting mintTest');
     const mP = E(mint).makeMint();
-    const alicePurseP = mP.mint(1000, 'alice');
-    const mIssuerP = alicePurseP.getIssuer();
-    const depositPurseP = mIssuerP.makeEmptyPurse('deposit');
-    const v = depositPurseP.deposit(50, alicePurseP.fork()); // hack
-    // this ordering should be guaranteed by the fact that this is all in the
-    // same Flow
-    const aBal = v.then(_ => alicePurseP.getBalance());
-    const dBal = v.then(_ => depositPurseP.getBalance());
-    Vow.all([aBal, dBal]).then(bals => {
+    const alicePurseP = E(mP).mint(1000, 'alice');
+    const mIssuerP = E(alicePurseP).getIssuer();
+    const depositPurseP = E(mIssuerP).makeEmptyPurse('deposit');
+    const v = E(depositPurseP).deposit(50, alicePurseP); // TODO: was .fork() hack
+    // TODO: no longer true "this ordering should be guaranteed by the fact
+    // that this is all in the same Flow"
+    const aBal = v.then(_ => E(alicePurseP).getBalance());
+    const dBal = v.then(_ => E(depositPurseP).getBalance());
+    Promise.all([aBal, dBal]).then(bals => {
       console.log('++ balances:', bals);
       console.log('++ DONE');
     });

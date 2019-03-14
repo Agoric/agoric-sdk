@@ -1,4 +1,3 @@
-/* global Vow */
 // Copyright (C) 2012 Google Inc.
 // Copyright (C) 2018 Agoric
 //
@@ -15,8 +14,6 @@
 // limitations under the License.
 
 import Nat from '@agoric/nat';
-
-/* eslint-disable-next-line global-require, import/no-extraneous-dependencies */
 import harden from '@agoric/harden';
 
 export default function(_argv) {
@@ -49,7 +46,7 @@ export default function(_argv) {
           console.log(
             `deposit[${name}]#${c}: bal=${ledger.get(purse)} amt=${amount}`,
           );
-          return Vow.resolve(srcP).then(src => {
+          return Promise.resolve(srcP).then(src => {
             console.log(
               ` dep[${name}]#${c} (post-P): bal=${ledger.get(
                 purse,

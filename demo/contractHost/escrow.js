@@ -1,12 +1,10 @@
-/* global Vow */
-
-/* eslint-disable-next-line global-require, import/no-extraneous-dependencies */
+/* eslint-disable-next-line global-require */
 const harden = require('@agoric/harden');
 
 export default function escrowExchange(a, b) {
   // a from Alice , b from Bob
   function makeTransfer(srcPurseP, dstPurseP, amount) {
-    const issuerP = Vow.join(srcPurseP.e.getIssuer(), dstPurseP.e.getIssuer());
+    const issuerP = Promise.join(srcPurseP.e.getIssuer(), dstPurseP.e.getIssuer());
     const escrowPurseP = issuerP.e.makeEmptyPurse('escrow');
     return harden({
       phase1() {
@@ -22,19 +20,19 @@ export default function escrowExchange(a, b) {
   }
 
   function failOnly(cancellationP) {
-    return Vow.resolve(cancellationP).then(cancellation => {
+    return Promise.resolve(cancellationP).then(cancellation => {
       throw cancellation;
     });
   }
 
   const aT = makeTransfer(a.moneySrcP, b.moneyDstP, b.moneyNeeded);
   const bT = makeTransfer(b.stockSrcP, a.stockDstP, a.stockNeeded);
-  return Vow.race([
-    Vow.all([aT.phase1(), bT.phase1()]),
+  return Promise.race([
+    Promise.all([aT.phase1(), bT.phase1()]),
     failOnly(a.cancellationP),
     failOnly(b.cancellationP),
   ]).then(
-    _x => Vow.all([aT.phase2(), bT.phase2()]),
-    _ex => Vow.all([aT.abort(), bT.abort()]),
+    _x => Promise.all([aT.phase2(), bT.phase2()]),
+    _ex => Promise.all([aT.abort(), bT.abort()]),
   );
 }
