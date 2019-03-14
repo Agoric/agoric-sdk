@@ -1,7 +1,10 @@
 const harden = require('@agoric/harden');
 
 export default function setup(helpers) {
-  const { log } = helpers;
+  function log(what) {
+    helpers.log(what);
+    console.log(what);
+  }
   const { dispatch, registerRoot } = helpers.makeLiveSlots(helpers.vatID);
 
   const obj0 = {

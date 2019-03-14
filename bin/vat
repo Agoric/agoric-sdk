@@ -13,10 +13,11 @@ async function main() {
     withSES = false;
     argv.shift();
   }
-  const basedir = argv[0] || '.';
+  const basedir = (argv[0] === '--' || argv[0] === undefined) ? '.' : argv.shift();
+  const vatArgv = argv[0] === '--' ? argv.slice(1) : argv;
 
   const config = await loadBasedir(basedir);
-  const controller = await buildVatController(config, withSES);
+  const controller = await buildVatController(config, withSES, vatArgv);
   const r = repl.start({ prompt: 'vat> ',
                          replMode: repl.REPL_MODE_STRICT,
                        });
