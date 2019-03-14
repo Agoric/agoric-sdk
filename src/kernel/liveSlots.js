@@ -78,45 +78,34 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     return slotIDToVal.get(facetID);
   }
 
-  function getImportID(presence) {
-    if (presence === undefined) {
-      throw Error('getImportID(undefined)');
-    }
-    // console.log(`getImportID for`, presence);
-    if (!valToSlotID.has(presence)) {
-      throw Error(`no importID for presence`);
-    }
-    return valToSlotID.get(presence);
-  }
-
   const m = makeMarshal(serializeSlot, unserializeSlot);
 
-  let send;
+  function queueMessage(slotID, prop, args) {
+    let r;
+    const doneP = new Promise((res, _rej) => {
+      r = res;
+    });
+
+    const resolver = {
+      resolve(val) {
+        r(val);
+      },
+    };
+    const ser = m.serialize(harden({ args, resolver }));
+    syscall.send(slotID, prop, ser.argsString, ser.slots);
+    return doneP;
+  }
 
   function PresenceHandler(slotID) {
     return {
       get(target, prop) {
-        // console.log(`proxy.get(${prop})`);
+        console.log(`PreH proxy.get(${prop})`);
         if (prop !== `${prop}`) {
           return undefined;
         }
-        return (...args) => {
-          let r;
-          const doneP = new Promise((res, _rej) => {
-            r = res;
-          });
-
-          const resolver = {
-            resolve(val) {
-              r(val);
-            },
-          };
-          const ser = m.serialize(harden({ args, resolver }));
-          send(slotID, prop, ser.argsString, ser.slots);
-
-          resultPromises.add(doneP);
-          return doneP;
-        };
+        const p = (...args) => queueMessage(slotID, prop, args);
+        resultPromises.add(p);
+        return p;
       },
       has(_target, _prop) {
         return true;
@@ -127,7 +116,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   function PromiseHandler(targetPromise) {
     return {
       get(target, prop) {
-        // console.log(`proxy.get(${prop})`);
+        console.log(`ProH proxy.get(${prop})`);
         if (prop !== `${prop}`) {
           return undefined;
         }
@@ -138,10 +127,20 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
             r = res;
             rj = rej;
           });
-          // We delegate the is-this-a-Presence check to E(val), but we might
-          // be able to optimize it slightly by doing that test here instead.
-          // eslint-disable-next-line no-use-before-define
-          targetPromise.then(val => E(val)[prop](...args)).then(r, rj);
+          function resolved(x) {
+            // We could delegate the is-this-a-Presence check to E(val), but
+            // local objects and Promises are treated the same way, so E
+            // would kick it right back to us, causing an infinite loop
+            if (outstandingProxies.has(x)) {
+              throw Error('E(Vow.resolve(E(x))) is invalid');
+            }
+            const slotID = valToSlotID.get(x);
+            if (slotID !== undefined) {
+              return queueMessage(slotID, prop, args);
+            }
+            return x[prop](...args);
+          }
+          targetPromise.then(resolved).then(r, rj);
           resultPromises.add(doneP);
           return doneP;
         };
@@ -166,6 +165,9 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     // * a Promise that we returned earlier: send message to whichever Vat
     //   gets to decide what the Promise resolves to
 
+    console.log(
+      `== E(x) ${outstandingProxies.has(x)} ${resultPromises.has(x)} ${x}`,
+    );
     if (outstandingProxies.has(x)) {
       throw Error('E(E(x)) is invalid, you probably want E(E(x).foo()).bar()');
     }
@@ -176,10 +178,12 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     //   return UnresolvedRemoteHandler(x);
     // }
     let handler;
-    const slotID = getImportID(x);
+    const slotID = valToSlotID.get(x);
     if (slotID !== undefined) {
+      console.log(` was slotID ${slotID}`);
       handler = PresenceHandler(slotID);
     } else {
+      console.log(` treating as promise`);
       const targetP = Promise.resolve(x);
       // targetP might resolve to a Presence
       handler = PromiseHandler(targetP);
@@ -207,7 +211,6 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     const t = getTarget(facetid);
     const args = m.unserialize(argsbytes, caps);
     // eslint-disable-next-line prefer-destructuring
-    send = syscall.send;
     // phase1: method must run synchronously
     const result = t[method](...args.args);
     if (args.resolver) {
@@ -215,9 +218,8 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
       // E(args.resolver).resolve(result);
       const ser = m.serialize(harden({ args: [result] }));
       const resolverSlotID = valToSlotID.get(args.resolver);
-      send(resolverSlotID, 'resolve', ser.argsString, ser.slots);
+      syscall.send(resolverSlotID, 'resolve', ser.argsString, ser.slots);
     }
-    send = undefined;
   }
 
   return harden({
