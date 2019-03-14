@@ -151,6 +151,13 @@ async function bootstrapExport(t, withSES) {
         '{"args":[2,{"@qclass":"slot","index":0}],"resolver":{"@qclass":"slot","index":1}}',
       slots: [{ vatID: 'right', slotID: 0 }, { vatID: 'left', slotID: 1 }],
     },
+    {
+      vatID: '_bootstrap',
+      facetID: 1,
+      method: 'resolve',
+      argsString: '{"args":[{"@qclass":"undefined"}]}',
+      slots: [],
+    },
   ]);
 
   c.step();
@@ -162,6 +169,35 @@ async function bootstrapExport(t, withSES) {
     'left.foo 1',
     'right.obj0.bar 2 true',
   ]);
+  t.deepEqual(c.dump().runQueue, [
+    {
+      vatID: '_bootstrap',
+      facetID: 1,
+      method: 'resolve',
+      argsString: '{"args":[{"@qclass":"undefined"}]}',
+      slots: [],
+    },
+    {
+      vatID: 'left',
+      facetID: 1,
+      method: 'resolve',
+      argsString: '{"args":[3]}',
+      slots: [],
+    },
+  ]);
+
+  c.step();
+  t.deepEqual(c.dump().runQueue, [
+    {
+      vatID: 'left',
+      facetID: 1,
+      method: 'resolve',
+      argsString: '{"args":[3]}',
+      slots: [],
+    },
+  ]);
+
+  c.step();
   t.deepEqual(c.dump().runQueue, []);
 
   t.end();

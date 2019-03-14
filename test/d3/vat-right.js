@@ -8,6 +8,7 @@ export default function setup(helpers) {
   const obj0 = {
     bar(arg2, self) {
       log(`right.obj0.bar ${arg2} ${self === obj0}`);
+      return 3;
     },
   };
   registerRoot(harden(obj0));

@@ -154,7 +154,15 @@ export function makeLiveSlots(forVatID = 'unknown') {
     const args = m.unserialize(argsbytes, caps);
     // eslint-disable-next-line prefer-destructuring
     send = syscall.send;
-    t[method](...args.args);
+    // phase1: method must run synchronously
+    const result = t[method](...args.args);
+    if (args.resolver) {
+      // this would cause an infinite loop, so we need sendOnly
+      // E(args.resolver).resolve(result);
+      const ser = m.serialize(harden({ args: [result] }));
+      const resolverSlotID = valToSlotID.get(args.resolver);
+      send(resolverSlotID, 'resolve', ser.argsString, ser.slots);
+    }
     send = undefined;
   }
 
