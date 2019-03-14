@@ -1,7 +1,22 @@
+import harden from '@agoric/harden';
+
 console.log(`loading bootstrap`);
-export default function bootstrap(kernel) {
-  console.log(`bootstrap called`);
-  kernel.log(`bootstrap called`);
-  kernel.connect('left', -1, 'right', 5);
-  kernel.queue('left', 0, 'bootstrap', JSON.stringify({}));
+
+export default function setup(helpers) {
+  function log(what) {
+    helpers.log(what);
+    console.log(what);
+  }
+  log(`bootstrap called`);
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(helpers.vatID);
+  const obj0 = {
+    bootstrap(argv, vats) {
+      E(vats.left)
+        .callRight(1, vats.right)
+        .then(r => log(`b.resolved ${r}`), err => log(`b.rejected ${err}`));
+    },
+  };
+
+  registerRoot(harden(obj0));
+  return dispatch;
 }

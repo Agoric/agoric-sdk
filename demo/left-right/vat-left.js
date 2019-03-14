@@ -1,8 +1,21 @@
-console.log(`left loaded`);
-export function dispatch(syscall, facetid, method, argsbytes, caps) {
-  console.log(`left dispatch(${facetid}, ${method}, ${argsbytes}, ${caps})`);
-  syscall.log(`left dispatch(${facetid}, ${method}, ${argsbytes}, ${caps})`);
-  // -1 is our import of something in vatRight
-  // 4 is our export of an imaginary local object
-  syscall.send(-1, 'hello', JSON.stringify([2, 3]), [4]);
+import harden from '@agoric/harden';
+
+export default function setup(helpers) {
+  function log(what) {
+    helpers.log(what);
+    console.log(what);
+  }
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(helpers.vatID);
+
+  const t1 = {
+    callRight(arg1, right) {
+      log(`left.callRight ${arg1}`);
+      E(right)
+        .bar(2)
+        .then(a => log(`left.then ${a}`));
+      return 3;
+    },
+  };
+  registerRoot(harden(t1));
+  return dispatch;
 }
