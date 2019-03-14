@@ -64,7 +64,7 @@ function buildNonSESKernel() {
   return { kernel };
 }
 
-export async function buildVatController(config, withSES = true) {
+export async function buildVatController(config, withSES = true, argv = []) {
   // console.log('in main');
   const { kernel, s, r } = withSES ? buildSESKernel() : buildNonSESKernel();
   // console.log('kernel', kernel);
@@ -143,7 +143,6 @@ export async function buildVatController(config, withSES = true) {
     await addVat('_bootstrap', config.bootstrapIndexJS);
     // we invoke obj[0].bootstrap with an object that contains 'vats' and
     // 'argv'.
-    const argv = harden([]);
     kernel.callBootstrap('_bootstrap', JSON.stringify(argv));
   }
 
