@@ -17,10 +17,10 @@
 import harden from '@agoric/harden';
 import escrowExchange from './escrow';
 
-function makeAlice(E) {
+function makeAlice(E, host, bob) {
   const escrowSrc = `(${escrowExchange})`;
-  const contractHostP = Vow.resolve(argv.host);
-  const bobP = Vow.resolve(argv.bob);
+  const contractHostP = Vow.resolve(host);
+  const bobP = Vow.resolve(bob);
 
   const f = new Flow();
 
@@ -36,7 +36,7 @@ function makeAlice(E) {
     myMoneyIssuerP = myMoneyPurseP.e.getIssuer();
     myStockPurseP = Vow.resolve(myStockPurse);
     myStockIssuerP = myStockPurseP.e.getIssuer();
-    /* eslint-disable-next-line no-use-before-define */
+    // eslint-disable-next-line no-use-before-define
     return alice; // alice and init use each other
   }
 
@@ -90,7 +90,7 @@ function makeAlice(E) {
 
       check(allegedSrc, allegedSide);
 
-      /* eslint-disable-next-line no-unused-vars */
+      // eslint-disable-next-line no-unused-vars
       let cancel;
       const a = harden({
         moneySrcP: myMoneyIssuerP.e.makeEmptyPurse('aliceMoneySrc'),
@@ -109,13 +109,16 @@ function makeAlice(E) {
   return alice;
 }
 
-export default function setup(helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(helpers.vatID);
-  const obj0 = makeAlice(E);
-  registerRoot(harden(obj0));
+function build(E) {
+  return harden({
+    makeAlice(host, bob) {
+      return harden(makeAlice(E, host, bob));
+    },
+  });
+}
+
+export default function setup(syscall, helpers) {
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(syscall, helpers.vatID);
+  registerRoot(build(E));
   return dispatch;
 }

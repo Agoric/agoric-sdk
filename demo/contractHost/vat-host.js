@@ -84,7 +84,7 @@
 /* eslint-disable-next-line global-require, import/no-extraneous-dependencies */
 import harden from '@agoric/harden';
 
-export default function(_argv) {
+function makeHost(E) {
   const m = new WeakMap();
 
   return harden({
@@ -134,4 +134,18 @@ export default function(_argv) {
       });
     },
   });
+}
+
+function build(E) {
+  return harden({
+    makeHost() {
+      return harden(makeHost(E));
+    },
+  });
+}
+
+export default function setup(syscall, helpers) {
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(syscall, helpers.vatID);
+  registerRoot(build(E));
+  return dispatch;
 }
