@@ -210,8 +210,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     }
     const t = getTarget(facetid);
     const args = m.unserialize(argsbytes, caps);
-    // eslint-disable-next-line prefer-destructuring
-    // phase1: method must run synchronously
+    // phase1: method cannot return a promise or raise an exception
     const result = t[method](...args.args);
     if (args.resolver) {
       // this would cause an infinite loop, so we use a sendOnly
