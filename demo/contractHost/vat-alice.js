@@ -1,4 +1,3 @@
-/* global Vow Flow */
 // Copyright (C) 2013 Google Inc.
 // Copyright (C) 2018 Agoric
 //
@@ -18,8 +17,8 @@
 import harden from '@agoric/harden';
 import escrowExchange from './escrow';
 
-export default function(argv) {
-  const { escrowSrc } = argv;
+function makeAlice(E) {
+  const escrowSrc = `(${escrowExchange})`;
   const contractHostP = Vow.resolve(argv.host);
   const bobP = Vow.resolve(argv.bob);
 
@@ -108,4 +107,15 @@ export default function(argv) {
     },
   });
   return alice;
+}
+
+export default function setup(helpers) {
+  function log(what) {
+    helpers.log(what);
+    console.log(what);
+  }
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(helpers.vatID);
+  const obj0 = makeAlice(E);
+  registerRoot(harden(obj0));
+  return dispatch;
 }

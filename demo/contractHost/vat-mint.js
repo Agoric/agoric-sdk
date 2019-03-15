@@ -16,15 +16,17 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-export default function(_argv) {
+export default function() {
   let debugCounter = 0;
 
   function makeMint() {
+    console.log(`makeMint`);
     // Map from purse or payment to balance
     const ledger = new WeakMap();
 
     const issuer = harden({
       makeEmptyPurse(name) {
+        console.log(`makeEmptyPurse(${name})`);
         /* eslint-disable-next-line no-use-before-define */
         return mint(0, name); // mint and issuer call each other
       },
