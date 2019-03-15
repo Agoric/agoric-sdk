@@ -16,7 +16,7 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-export default function() {
+function build(E) {
   let debugCounter = 0;
 
   function makeMint() {
@@ -27,7 +27,7 @@ export default function() {
     const issuer = harden({
       makeEmptyPurse(name) {
         console.log(`makeEmptyPurse(${name})`);
-        /* eslint-disable-next-line no-use-before-define */
+        // eslint-disable-next-line no-use-before-define
         return mint(0, name); // mint and issuer call each other
       },
     });
@@ -79,4 +79,11 @@ export default function() {
   }
 
   return { makeMint };
+}
+
+export default function setup(syscall, helpers) {
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(syscall, helpers.vatID);
+  const obj0 = build(E);
+  registerRoot(harden(obj0));
+  return dispatch;
 }
