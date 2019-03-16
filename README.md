@@ -15,7 +15,10 @@ More docs are in the works. For now, try:
 
 ```
 $ npm install
+$ npm test
 $ bin/vat demo/left-right
 vat> run()
 ```
 
+This repository is still in early development: APIs and features are not
+expected to stabilize for a while.
