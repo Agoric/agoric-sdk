@@ -3,7 +3,7 @@ import { test } from 'tape-promise/tape';
 import { buildVatController, loadBasedir } from '../src/index';
 
 async function testFlush(t, withSES) {
-  const config = await loadBasedir(path.resolve(__dirname, 'd4'));
+  const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
   const c = await buildVatController(config, withSES, ['flush']);
   // all promises should settle before c.step() fires
   await c.step();
@@ -20,7 +20,7 @@ test('flush without SES', async t => {
 });
 
 async function testEThen(t, withSES) {
-  const config = await loadBasedir(path.resolve(__dirname, 'd4'));
+  const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
   const c = await buildVatController(config, withSES, ['e-then']);
 
   await c.run();
@@ -43,7 +43,7 @@ test('E() resolve without SES', async t => {
 });
 
 async function testChain1(t, withSES) {
-  const config = await loadBasedir(path.resolve(__dirname, 'd4'));
+  const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
   const c = await buildVatController(config, withSES, ['chain1']);
 
   await c.run();
@@ -66,7 +66,7 @@ test('E(E(x).foo()).bar() without SES', async t => {
 });
 
 async function testChain2(t, withSES) {
-  const config = await loadBasedir(path.resolve(__dirname, 'd4'));
+  const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
   const c = await buildVatController(config, withSES, ['chain2']);
 
   await c.run();
@@ -89,7 +89,7 @@ test('E(Promise.resolve(presence)).foo() without SES', async t => {
 });
 
 async function testLocal1(t, withSES) {
-  const config = await loadBasedir(path.resolve(__dirname, 'd4'));
+  const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
   const c = await buildVatController(config, withSES, ['local1']);
 
   await c.run();
@@ -111,7 +111,7 @@ test('E(local).foo() without SES', async t => {
 });
 
 async function testLocal2(t, withSES) {
-  const config = await loadBasedir(path.resolve(__dirname, 'd4'));
+  const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
   const c = await buildVatController(config, withSES, ['local2']);
 
   await c.run();

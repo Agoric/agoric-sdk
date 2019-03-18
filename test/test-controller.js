@@ -13,7 +13,7 @@ test('load empty', async t => {
 });
 
 async function simpleCall(t, controller) {
-  await controller.addVat('vat1', require.resolve('./d1'));
+  await controller.addVat('vat1', require.resolve('./vat-controller-1'));
   const data = controller.dump();
   t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
   t.deepEqual(data.kernelTable, []);
@@ -63,9 +63,11 @@ test('reject module-like sourceIndex', async t => {
 });
 
 async function bootstrap(t, withSES) {
-  const config = await loadBasedir(path.resolve(__dirname, 'd2'));
+  const config = await loadBasedir(
+    path.resolve(__dirname, 'basedir-controller-2'),
+  );
   // the controller automatically runs the bootstrap function.
-  // d2/bootstrap.js logs "bootstrap called" and queues a call to
+  // basedir-controller-2/bootstrap.js logs "bootstrap called" and queues a call to
   // left[0].bootstrap
   const c = await buildVatController(config, withSES);
   t.deepEqual(c.dump().log, ['bootstrap called']);
@@ -81,7 +83,9 @@ test('bootstrap without SES', async t => {
 });
 
 async function bootstrapExport(t, withSES) {
-  const config = await loadBasedir(path.resolve(__dirname, 'd3'));
+  const config = await loadBasedir(
+    path.resolve(__dirname, 'basedir-controller-3'),
+  );
   const c = await buildVatController(config, withSES);
   // console.log(c.dump());
   // console.log('SLOTS: ', c.dump().runQueue[0].slots);
