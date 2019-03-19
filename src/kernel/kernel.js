@@ -262,16 +262,6 @@ export default function buildKernel(kernelEndowments) {
 
     callBootstrap,
 
-    connect(fromVatID, importID, toVatID, exportID) {
-      Nat(-importID);
-      Nat(exportID);
-      const key = `${toVatID}.${exportID}`;
-
-      const m = kernelSlots.get(fromVatID);
-      m.outbound.set(importID, { vatID: toVatID, slotID: exportID });
-      m.inbound.set(key, importID);
-    },
-
     addImport,
 
     log(str) {

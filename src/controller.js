@@ -107,10 +107,6 @@ export async function buildVatController(config, withSES = true, argv = []) {
       await addVat(vatID, sourceIndex);
     },
 
-    connect(fromVatID, importID, toVatID, exportID) {
-      kernel.connect(fromVatID, importID, toVatID, exportID);
-    },
-
     log(str) {
       kernel.log(str);
     },
