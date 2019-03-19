@@ -121,18 +121,10 @@ export default function buildKernel(kernelEndowments) {
   });
 
   function syscallForVatID(fromVatID) {
-    function send(targetSlot, method, argsString, vatSlots) {
-      return syscallBase.send(
-        fromVatID,
-        targetSlot,
-        method,
-        argsString,
-        vatSlots,
-      );
-    }
-
     return harden({
-      send,
+      send(...args) {
+        return syscallBase.send(fromVatID, ...args);
+      },
 
       log(str) {
         log.push(`${str}`);
