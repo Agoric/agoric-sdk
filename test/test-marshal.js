@@ -4,6 +4,7 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import { makeMarshal } from '../src/kernel/marshal';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
+import makePromise from '../src/kernel/makePromise';
 
 test('serialize static data', t => {
   const m = makeMarshal();
@@ -157,6 +158,26 @@ test('serialize imports', t => {
     argsString: '{"@qclass":"slot","index":0}',
     slots: [-1],
   });
+
+  t.end();
+});
+
+test.skip('serialize promise', t => {
+  const { m } = makeLiveSlots();
+  const { p, res } = makePromise();
+  t.deepEqual(m.serialize(p), {
+    argsString: '{"@qclass":"promise","index":0}',
+    slots: [1],
+  });
+  // serializer should remember the promise
+  t.deepEqual(m.serialize(p), {
+    argsString: '{"@qclass":"promise","index":0}',
+    slots: [1],
+  });
+
+  // inbound should recognize it and return the promise
+  t.deepEqual(m.unserialize('{"@qclass":"promise","index":0}', [1]),
+              p);
 
   t.end();
 });

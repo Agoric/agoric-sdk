@@ -27,9 +27,27 @@ export default function setup(syscall, helpers) {
         },
       });
     },
+
     returnArg(arg) {
       log(`left.returnArg`);
       return arg;
+    },
+
+    returnMyObject() {
+      return harden({
+        foo(x) {
+          log(`left.myobject.call ${x}`);
+        },
+      });
+    },
+
+    takePromise(p1) {
+      log(`left.takePromise`);
+      return harden(p1.then(t1 => {
+        log(`left.takePromise.then`);
+        E(t1).foo(1);
+        return 4;
+      }));
     },
   };
   registerRoot(harden(t1));
