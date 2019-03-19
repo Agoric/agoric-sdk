@@ -116,7 +116,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   function PromiseHandler(targetPromise) {
     return {
       get(target, prop) {
-        console.log(`ProH proxy.get(${prop})`);
+        // console.log(`ProH proxy.get(${prop})`);
         if (prop !== `${prop}`) {
           return undefined;
         }
@@ -165,9 +165,6 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     // * a Promise that we returned earlier: send message to whichever Vat
     //   gets to decide what the Promise resolves to
 
-    console.log(
-      `== E(x) ${outstandingProxies.has(x)} ${resultPromises.has(x)} ${x}`,
-    );
     if (outstandingProxies.has(x)) {
       throw Error('E(E(x)) is invalid, you probably want E(E(x).foo()).bar()');
     }

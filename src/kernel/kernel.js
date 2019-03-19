@@ -236,7 +236,6 @@ export default function buildKernel(kernelEndowments) {
       if (!slotMap.has(vref)) {
         const slotIndex = slots.length;
         slots.push(vrefs.get(vref));
-        console.log(`--slots now ${JSON.stringify(slots)}`);
         slotMap.set(vref, slotIndex);
       }
       const slotIndex = slotMap.get(vref);
