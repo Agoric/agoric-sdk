@@ -9,6 +9,7 @@ test('load empty', async t => {
   };
   const controller = await buildVatController(config);
   await controller.run();
+  t.ok(true);
   t.end();
 });
 
@@ -98,7 +99,7 @@ async function bootstrapExport(t, withSES) {
       method: 'bootstrap',
       argsString:
         '{"args":[[],{"left":{"@qclass":"slot","index":0},"right":{"@qclass":"slot","index":1}}]}',
-      slots: [{ vatID: 'left', slotID: 0 }, { vatID: 'right', slotID: 0 }],
+      slots: [{ type: 'export', vatID: 'left', slotID: 0 }, { type: 'export', vatID: 'right', slotID: 0 }],
     },
   ]);
 
@@ -116,8 +117,8 @@ async function bootstrapExport(t, withSES) {
     'bootstrap.obj0.bootstrap()',
   ]);
   t.deepEqual(c.dump().kernelTable, [
-    ['_bootstrap', -2, 'right', 0],
-    ['_bootstrap', -1, 'left', 0],
+    ['_bootstrap', 'import', 1, 'export', 'left', 0],
+    ['_bootstrap', 'import', 2, 'export', 'right', 0],
   ]);
   t.deepEqual(c.dump().runQueue, [
     {
@@ -127,8 +128,8 @@ async function bootstrapExport(t, withSES) {
       argsString:
         '{"args":[1,{"@qclass":"slot","index":0}],"resolver":{"@qclass":"slot","index":1}}',
       slots: [
-        { vatID: 'right', slotID: 0 },
-        { vatID: '_bootstrap', slotID: 1 },
+        { type: 'export', vatID: 'right', slotID: 0 },
+        { type: 'export', vatID: '_bootstrap', slotID: 1 },
       ],
     },
   ]);
@@ -141,10 +142,10 @@ async function bootstrapExport(t, withSES) {
     'left.foo 1',
   ]);
   t.deepEqual(c.dump().kernelTable, [
-    ['_bootstrap', -2, 'right', 0],
-    ['_bootstrap', -1, 'left', 0],
-    ['left', -2, '_bootstrap', 1],
-    ['left', -1, 'right', 0],
+    ['_bootstrap', 'import', 1, 'export', 'left', 0],
+    ['_bootstrap', 'import', 2, 'export', 'right', 0],
+    ['left', 'import', 1, 'export', 'right', 0],
+    ['left', 'import', 2, 'export', '_bootstrap', 1],
   ]);
   t.deepEqual(c.dump().runQueue, [
     {
@@ -153,7 +154,7 @@ async function bootstrapExport(t, withSES) {
       method: 'bar',
       argsString:
         '{"args":[2,{"@qclass":"slot","index":0}],"resolver":{"@qclass":"slot","index":1}}',
-      slots: [{ vatID: 'right', slotID: 0 }, { vatID: 'left', slotID: 1 }],
+      slots: [{ type: 'export', vatID: 'right', slotID: 0 }, { type: 'export', vatID: 'left', slotID: 1 }],
     },
     {
       vatID: '_bootstrap',

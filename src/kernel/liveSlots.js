@@ -19,9 +19,14 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
   const resultPromises = new WeakSet();
   const outstandingProxies = new WeakSet();
-  const valToSlotID = new WeakMap();
-  const slotIDToVal = new Map();
+
+  const valToExportID = new WeakMap();
+  const exportIDToVal = new Map();
   let nextExportID = 1;
+
+  const importIDToPresence = new Map();
+  const presenceToImportID = new WeakMap();
+
 
   function allocateExportID() {
     const exportID = nextExportID;
@@ -31,51 +36,74 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
   function serializeSlot(val, slots, slotMap) {
     mustPassByPresence(val);
-    if (!valToSlotID.has(val)) {
-      // console.log('must be a new export', JSON.stringify(val));
-      // must be a new export
-      const exportID = allocateExportID();
-      valToSlotID.set(val, exportID);
-      slotIDToVal.set(exportID, val);
-    }
-    const slotID = valToSlotID.get(val);
-    // console.log(`serializeSlot slotID=${slotID}`);
+    // This is either a Presence (in presenceToImportID), a
+    // previously-serialized local pass-by-presence object (in
+    // valToExportID), or a new local pass-by-presence object.
+
+    // If we've already assigned it an import/exportID, it might be in
+    // slots/slotMap for this particular act of serialization. If it's new,
+    // it certainly will not be in slotMap. If we've already serialized it in
+    // this particular act, it will definitely be in slotMap.
+
     if (!slotMap.has(val)) {
+      let slot;
+
+      if (valToExportID.has(val)) {
+        slot = harden({ type: 'export', slotID: valToExportID.get(val) });
+      } else if (presenceToImportID.has(val)) {
+        slot = harden({ type: 'import', slotID: presenceToImportID.get(val) });
+      } else {
+        // must be a new export
+        // console.log('must be a new export', JSON.stringify(val));
+        const exportID = allocateExportID();
+        valToExportID.set(val, exportID);
+        exportIDToVal.set(exportID, val);
+        slot = harden({ type: 'export', slotID: exportID });
+      }
+
       const slotIndex = slots.length;
-      slots.push(slotID);
+      slots.push(slot);
       slotMap.set(val, slotIndex);
     }
+
     const slotIndex = slotMap.get(val);
     return harden({ [QCLASS]: 'slot', index: slotIndex });
   }
 
   function unserializeSlot(data, slots) {
     // console.log(`unserializeSlot ${data} ${slots}`);
-    const slotID = slots[Nat(data.index)];
-    // todo assert slotID is a non-zero integer
-    if (slotID < 0) {
-      // this is an import
-      if (!slotIDToVal.has(slotID)) {
+    const slot = slots[Nat(data.index)];
+    if (slot.type === 'import') {
+      const { slotID } = slot;
+      if (!importIDToPresence.has(slotID)) {
         // console.log(`assigning new import ${slotID}`);
         // this is a new import
-        const val = makePresence(slotID);
-        // console.log(` for presence`, val);
-        valToSlotID.set(val, slotID);
-        slotIDToVal.set(slotID, val);
+        const p = makePresence(slotID);
+        // console.log(` for presence`, p);
+        presenceToImportID.set(p, slotID);
+        importIDToPresence.set(slotID, p);
       }
+      return importIDToPresence.get(slotID);
+    } else if (slot.type === 'export') {
+      // this is one of our previous exports. the kernel should never
+      // reference an export we didn't previously send
+      const { slotID } = slot;
+      if (!exportIDToVal.has(slotID)) {
+        throw Error(`unrecognized exportID '${slotID}'`);
+      }
+      return exportIDToVal.get(slotID);
+    } else {
+      throw Error(`unrecognized slot.type '${slot.type}'`);
     }
-    // else this is one of our previous exports. In either case we get it
-    // from the map
-    return slotIDToVal.get(slotID);
   }
 
   // this handles both exports ("targets" which other vats can call) and
   // imports (presences with which the local vat can do E(p).foo(args))
   function getTarget(facetID) {
-    if (!slotIDToVal.has(facetID)) {
+    if (!exportIDToVal.has(facetID)) {
       throw Error(`no target for facetID ${facetID}`);
     }
-    return slotIDToVal.get(facetID);
+    return exportIDToVal.get(facetID);
   }
 
   const m = makeMarshal(serializeSlot, unserializeSlot);
@@ -96,14 +124,14 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     return doneP;
   }
 
-  function PresenceHandler(slotID) {
+  function PresenceHandler(importID) {
     return {
       get(target, prop) {
         console.log(`PreH proxy.get(${prop})`);
         if (prop !== `${prop}`) {
           return undefined;
         }
-        const p = (...args) => queueMessage(slotID, prop, args);
+        const p = (...args) => queueMessage(importID, prop, args);
         resultPromises.add(p);
         return p;
       },
@@ -134,7 +162,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
             if (outstandingProxies.has(x)) {
               throw Error('E(Vow.resolve(E(x))) is invalid');
             }
-            const slotID = valToSlotID.get(x);
+            const slotID = presenceToImportID.get(x);
             if (slotID !== undefined) {
               return queueMessage(slotID, prop, args);
             }
@@ -175,10 +203,10 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     //   return UnresolvedRemoteHandler(x);
     // }
     let handler;
-    const slotID = valToSlotID.get(x);
-    if (slotID !== undefined) {
-      console.log(` was slotID ${slotID}`);
-      handler = PresenceHandler(slotID);
+    const importID = presenceToImportID.get(x);
+    if (importID !== undefined) {
+      console.log(` was importID ${importID}`);
+      handler = PresenceHandler(importID);
     } else {
       console.log(` treating as promise`);
       const targetP = Promise.resolve(x);
@@ -196,8 +224,8 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     if (rootIsRegistered) {
       throw Error(`[${forVatID}] registerRoot() was already called`);
     }
-    valToSlotID.set(val, 0);
-    slotIDToVal.set(0, val);
+    valToExportID.set(val, 0);
+    exportIDToVal.set(0, val);
     rootIsRegistered = true;
   }
 
@@ -213,7 +241,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
       // this would cause an infinite loop, so we use a sendOnly
       // E(args.resolver).resolve(result);
       const ser = m.serialize(harden({ args: [result] }));
-      const resolverSlotID = valToSlotID.get(args.resolver);
+      const resolverSlotID = presenceToImportID.get(args.resolver);
       syscall.send(resolverSlotID, 'resolve', ser.argsString, ser.slots);
     }
   }
