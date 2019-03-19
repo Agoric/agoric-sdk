@@ -117,8 +117,7 @@ test('serialize exports', t => {
   });
   t.deepEqual(ser(harden([o2, o1])), {
     argsString: '[{"@qclass":"slot","index":0},{"@qclass":"slot","index":1}]',
-    slots: [{ type: 'export', slotID: 2 },
-            { type: 'export', slotID: 1 }],
+    slots: [{ type: 'export', slotID: 2 }, { type: 'export', slotID: 1 }],
   });
 
   t.end();
@@ -126,20 +125,25 @@ test('serialize exports', t => {
 
 test('deserialize imports', t => {
   const { m } = makeLiveSlots();
-  const a = m.unserialize('{"@qclass":"slot","index":0}',
-                          [{ type: 'import', slotID: 1 }]);
+  const a = m.unserialize('{"@qclass":"slot","index":0}', [
+    { type: 'import', slotID: 1 },
+  ]);
   // a should be a proxy/presence. For now these are obvious.
   t.ok('_slotID_1' in a);
   t.ok(Object.isFrozen(a));
 
   // m now remembers the proxy
-  const b = m.unserialize('{"@qclass":"slot","index":0}',
-                          [{ type: 'import', slotID: 1 }]);
+  const b = m.unserialize('{"@qclass":"slot","index":0}', [
+    { type: 'import', slotID: 1 },
+  ]);
   t.is(a, b);
 
   // the slotid is what matters, not the index
-  const c = m.unserialize('{"@qclass":"slot","index":2}',
-                          ['x', 'x', { type: 'import', slotID: 1 }]);
+  const c = m.unserialize('{"@qclass":"slot","index":2}', [
+    'x',
+    'x',
+    { type: 'import', slotID: 1 },
+  ]);
   t.is(a, c);
 
   t.end();
@@ -149,8 +153,9 @@ test('deserialize exports', t => {
   const { m } = makeLiveSlots();
   const o1 = harden({});
   m.serialize(o1); // allocates slot=1
-  const a = m.unserialize('{"@qclass":"slot","index":0}',
-                          [{ type: 'export', slotID: 1 }]);
+  const a = m.unserialize('{"@qclass":"slot","index":0}', [
+    { type: 'export', slotID: 1 },
+  ]);
   t.is(a, o1);
 
   t.end();
@@ -158,8 +163,9 @@ test('deserialize exports', t => {
 
 test('serialize imports', t => {
   const { m } = makeLiveSlots();
-  const a = m.unserialize('{"@qclass":"slot","index":0}',
-                          [{ type: 'import', slotID: 1 }]);
+  const a = m.unserialize('{"@qclass":"slot","index":0}', [
+    { type: 'import', slotID: 1 },
+  ]);
   t.deepEqual(m.serialize(a), {
     argsString: '{"@qclass":"slot","index":0}',
     slots: [{ type: 'import', slotID: 1 }],
@@ -182,8 +188,7 @@ test.skip('serialize promise', t => {
   });
 
   // inbound should recognize it and return the promise
-  t.deepEqual(m.unserialize('{"@qclass":"promise","index":0}', [1]),
-              p);
+  t.deepEqual(m.unserialize('{"@qclass":"promise","index":0}', [1]), p);
 
   t.end();
 });

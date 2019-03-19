@@ -27,7 +27,6 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   const importIDToPresence = new Map();
   const presenceToImportID = new WeakMap();
 
-
   function allocateExportID() {
     const exportID = nextExportID;
     nextExportID += 1;
@@ -84,7 +83,8 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
         importIDToPresence.set(slotID, p);
       }
       return importIDToPresence.get(slotID);
-    } else if (slot.type === 'export') {
+    }
+    if (slot.type === 'export') {
       // this is one of our previous exports. the kernel should never
       // reference an export we didn't previously send
       const { slotID } = slot;
@@ -92,9 +92,8 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
         throw Error(`unrecognized exportID '${slotID}'`);
       }
       return exportIDToVal.get(slotID);
-    } else {
-      throw Error(`unrecognized slot.type '${slot.type}'`);
     }
+    throw Error(`unrecognized slot.type '${slot.type}'`);
   }
 
   // this handles both exports ("targets" which other vats can call) and

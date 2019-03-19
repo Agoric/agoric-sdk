@@ -10,7 +10,7 @@ export default function setup(syscall, helpers) {
     helpers.vatID,
   );
 
-  const t1 = {
+  const obj0 = {
     callRight(arg1, right) {
       log(`left.callRight ${arg1}`);
       E(right)
@@ -43,13 +43,15 @@ export default function setup(syscall, helpers) {
 
     takePromise(p1) {
       log(`left.takePromise`);
-      return harden(p1.then(t1 => {
-        log(`left.takePromise.then`);
-        E(t1).foo(1);
-        return 4;
-      }));
+      return harden(
+        p1.then(t1 => {
+          log(`left.takePromise.then`);
+          E(t1).foo(1);
+          return 4;
+        }),
+      );
     },
   };
-  registerRoot(harden(t1));
+  registerRoot(harden(obj0));
   return dispatch;
 }

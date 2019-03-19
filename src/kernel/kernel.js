@@ -103,12 +103,13 @@ export default function buildKernel(kernelEndowments) {
   const syscallBase = harden({
     send(fromVatID, targetSlot, method, argsString, vatSlots) {
       Nat(targetSlot);
-      const target = mapOutbound(fromVatID, { type: 'import', slotID: targetSlot });
+      const target = mapOutbound(fromVatID, {
+        type: 'import',
+        slotID: targetSlot,
+      });
       if (!target)
         throw Error(`unable to find target for ${fromVatID}/${targetSlot}`);
-      const slots = vatSlots.map(what =>
-        mapOutbound(fromVatID, what),
-      );
+      const slots = vatSlots.map(what => mapOutbound(fromVatID, what));
       runQueue.push({
         vatID: target.vatID,
         facetID: target.slotID,
@@ -176,9 +177,7 @@ export default function buildKernel(kernelEndowments) {
     const targetVatID = message.vatID;
     const vat = vats.get(targetVatID);
     // console.log(`deliver mapping ${JSON.stringify(message)}`);
-    const inputSlots = message.slots.map(what =>
-      mapInbound(targetVatID, what),
-    );
+    const inputSlots = message.slots.map(what => mapInbound(targetVatID, what));
 
     // the delivery might cause some number of (native) Promises to be
     // created and resolved, so we use the IO queue to detect when the
@@ -219,10 +218,11 @@ export default function buildKernel(kernelEndowments) {
 
   function mapQueueSlotToKernelRealm(s) {
     if (s.type === 'export') {
-      return harden({ type: `${s.type}`,
-                      vatID: `${s.vatID}`,
-                      slotID: Nat(s.slotID),
-                    });
+      return harden({
+        type: `${s.type}`,
+        vatID: `${s.vatID}`,
+        slotID: Nat(s.slotID),
+      });
     }
     throw Error(`unrecognized type '${s.type}'`);
   }
@@ -230,15 +230,17 @@ export default function buildKernel(kernelEndowments) {
   function queue(vatID, facetID, method, argsString, slots = []) {
     // queue a message on the end of the queue, with 'neutral' slotIDs. Use
     // 'step' or 'run' to execute it
-    runQueue.push(harden({
-      vatID: `${vatID}`,
-      facetID: Nat(facetID), // always export/positive
-      method: `${method}`,
-      argsString: `${argsString}`,
-      // queue() is exposed to the controller's realm, so we must translate
-      // each slot into a kernel-realm object/array
-      slots: Array.from(slots.map(mapQueueSlotToKernelRealm)),
-    }));
+    runQueue.push(
+      harden({
+        vatID: `${vatID}`,
+        facetID: Nat(facetID), // always export/positive
+        method: `${method}`,
+        argsString: `${argsString}`,
+        // queue() is exposed to the controller's realm, so we must translate
+        // each slot into a kernel-realm object/array
+        slots: Array.from(slots.map(mapQueueSlotToKernelRealm)),
+      }),
+    );
   }
 
   function callBootstrap(vatID, argvString) {
@@ -306,7 +308,14 @@ export default function buildKernel(kernelEndowments) {
       const kernelTable = [];
       vatImports.forEach((fb, vatID) => {
         fb.outbound.forEach((target, slotID) => {
-          kernelTable.push([vatID, 'import', slotID, target.type, target.vatID, target.slotID]);
+          kernelTable.push([
+            vatID,
+            'import',
+            slotID,
+            target.type,
+            target.vatID,
+            target.slotID,
+          ]);
         });
       });
 

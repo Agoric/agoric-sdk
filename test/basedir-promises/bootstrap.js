@@ -54,7 +54,6 @@ export default function setup(syscall, helpers) {
         const p2 = E(p1).foo(2);
         p2.then(x => log(`b.resolved ${x}`));
         log(`b.local2.finish`);
-
       } else if (mode === 'send-promise1') {
         const t1 = harden({
           foo(arg) {
@@ -66,14 +65,13 @@ export default function setup(syscall, helpers) {
         console.log(`here1`, Object.isFrozen(p1));
         try {
           const p2 = E(vats.left).takePromise(p1);
-        } catch(e) {
+        } catch (e) {
           console.log(`hereE`, e);
         }
         console.log(`here2`);
-        //p2.then(x => log(`b.resolved ${x}`));
-        //r1(t1);
+        // p2.then(x => log(`b.resolved ${x}`));
+        // r1(t1);
         log(`b.send-promise1.finish`);
-
       } else if (mode === 'send-promise2') {
         // the promise we send actually resolves to their side, not ours. In
         // the future this should short-circuit us.
@@ -81,13 +79,11 @@ export default function setup(syscall, helpers) {
         const p2 = E(vats.left).takePromise(p1);
         p2.then(x => log(`b.resolved ${x}`));
         log(`b.send-promise2.finish`);
-
       } else if (mode === 'call-promise1') {
         const p1 = E(vats.left).returnMyObject();
         const p2 = E(p1).foo();
         p2.then(x => log(`b.resolved ${x}`));
         log(`b.call-promise1.finish`);
-
       } else {
         throw Error(`unknown mode ${mode}`);
       }
