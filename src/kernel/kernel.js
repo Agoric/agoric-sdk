@@ -309,6 +309,41 @@ export default function buildKernel(kernelEndowments) {
       delete p.subscribers;
       delete p.decider;
     },
+
+    fulfillToTarget(fromVatID, resolverID, slot) {
+      const { id } = mapOutbound(fromVatID, {
+        type: 'resolver',
+        id: resolverID,
+      });
+      if (!kernelPromises.has(id)) {
+        throw new Error(`unknown kernelPromise id '${id}'`);
+      }
+      const p = kernelPromises.get(id);
+      if (p.state !== 'unresolved') {
+        throw new Error(
+          `kernelPromise[${id}] is '${p.state}', not 'unresolved'`,
+        );
+      }
+      const absoluteSlot = mapOutbound(fromVatID, slot);
+      if (absoluteSlot.type !== 'export') {
+        throw new Error(
+          `fulfillToTarget() must fulfill to export, not ${absoluteSlot.type}`,
+        );
+      }
+
+      p.state = 'fulfilledToTarget';
+      p.fulfillSlot = absoluteSlot;
+      for (const subscriberVatID of p.subscribers) {
+        runQueue.push({
+          type: 'notifyFulfillToTarget',
+          vatID: subscriberVatID,
+          kernelPromiseID: id,
+        });
+      }
+      delete p.subscribers;
+      delete p.decider;
+    },
+
   });
 
   function syscallForVatID(fromVatID) {
@@ -327,6 +362,9 @@ export default function buildKernel(kernelEndowments) {
       },
       fulfillToData(...args) {
         return syscallBase.fulfillToData(fromVatID, ...args);
+      },
+      fulfillToTarget(...args) {
+        return syscallBase.fulfillToTarget(fromVatID, ...args);
       },
 
       log(str) {
@@ -438,6 +476,28 @@ export default function buildKernel(kernelEndowments) {
         err =>
           console.log(
             `vat[${vatID}].promise[${relativeID}] fulfillToData failed: ${err}`,
+            err,
+          ),
+      );
+    }
+
+    if (type === 'notifyFulfillToTarget') {
+      const { kernelPromiseID } = message;
+      const { dispatch } = getVat(vatID);
+      const p = kernelPromises.get(kernelPromiseID);
+      const relativeID = mapInbound(vatID, {
+        type: 'promise',
+        id: kernelPromiseID,
+      }).id;
+      return process(
+        () =>
+          dispatch.notifyFulfillToTarget(
+            relativeID,
+            mapInbound(vatID, p.fulfillSlot),
+          ),
+        err =>
+          console.log(
+            `vat[${vatID}].promise[${relativeID}] fulfillToTarget failed: ${err}`,
             err,
           ),
       );
