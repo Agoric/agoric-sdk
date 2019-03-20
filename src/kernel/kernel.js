@@ -187,6 +187,7 @@ export default function buildKernel(kernelEndowments) {
     throw Error(`unknown type '${slot.type}'`);
   }
 
+  /*
   function chaseRedirections(promiseID) {
     let targetID = Nat(promiseID);
     while (true) {
@@ -198,6 +199,7 @@ export default function buildKernel(kernelEndowments) {
       return targetID;
     }
   }
+  */
 
   const syscallBase = harden({
     send(fromVatID, targetImportID, method, argsString, vatSlots) {
@@ -482,6 +484,7 @@ export default function buildKernel(kernelEndowments) {
           ),
         err =>
           console.log(
+            // eslint-disable-next-line prettier/prettier
             `vat[${vatID}][${message.facetID}].${message.method} dispatch failed: ${err}`,
             err,
           ),
