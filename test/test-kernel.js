@@ -30,7 +30,14 @@ test('simple call', async t => {
 
   kernel.queue('vat1', 1, 'foo', 'args');
   t.deepEqual(kernel.dump().runQueue, [
-    { vatID: 'vat1', facetID: 1, method: 'foo', argsString: 'args', slots: [] },
+    {
+      type: 'deliver',
+      vatID: 'vat1',
+      facetID: 1,
+      method: 'foo',
+      argsString: 'args',
+      slots: [],
+    },
   ]);
   t.deepEqual(log, []);
   await kernel.run();
@@ -69,6 +76,7 @@ test('map inbound', async t => {
   ]);
   t.deepEqual(kernel.dump().runQueue, [
     {
+      type: 'deliver',
       vatID: 'vat1',
       facetID: 1,
       method: 'foo',
@@ -156,7 +164,14 @@ test('outbound call', async t => {
   kernel.queue('vat1', 1, 'foo', 'args');
   t.deepEqual(log, []);
   t.deepEqual(kernel.dump().runQueue, [
-    { vatID: 'vat1', facetID: 1, method: 'foo', argsString: 'args', slots: [] },
+    {
+      type: 'deliver',
+      vatID: 'vat1',
+      facetID: 1,
+      method: 'foo',
+      argsString: 'args',
+      slots: [],
+    },
   ]);
 
   await kernel.step();
@@ -166,6 +181,7 @@ test('outbound call', async t => {
 
   t.deepEqual(kernel.dump().runQueue, [
     {
+      type: 'deliver',
       vatID: 'vat2',
       facetID: 5,
       method: 'bar',
@@ -261,6 +277,7 @@ test('three-party', async t => {
 
   t.deepEqual(kernel.dump().runQueue, [
     {
+      type: 'deliver',
       vatID: 'vatB',
       facetID: 5,
       method: 'intro',
@@ -347,6 +364,7 @@ test('transfer promise', async t => {
   syscallA.send(B.id, 'foo1', 'args', [{ type: 'promise', id: pr2.promiseID }]);
   t.deepEqual(kernel.dump().runQueue, [
     {
+      type: 'deliver',
       vatID: 'vatB',
       facetID: 5,
       method: 'foo1',

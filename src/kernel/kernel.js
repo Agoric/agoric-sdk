@@ -32,7 +32,9 @@ export default function buildKernel(kernelEndowments) {
   //               }
   const vats = harden(new Map());
 
-  // runQueue entries are {vatID, facetID, method, argsString, slots}
+  // runQueue entries are {type, vatID, more..}. 'more' depends on type:
+  // * deliver: facetID, method, argsString, slots
+  // * notifyFulfillToData: kernelPromiseID, argData, slots
   const runQueue = [];
 
   // in the kernel table, promises and resolvers are both indexed by the same
@@ -207,6 +209,7 @@ export default function buildKernel(kernelEndowments) {
         throw Error(`unable to find target for ${fromVatID}/${targetImportID}`);
       const slots = vatSlots.map(slot => mapOutbound(fromVatID, slot));
       runQueue.push({
+        type: 'deliver',
         vatID: target.vatID,
         facetID: target.id,
         method,
@@ -345,6 +348,14 @@ export default function buildKernel(kernelEndowments) {
     });
   }
 
+  async function processOneMessage(message) {
+    const { type } = message;
+    if (type === 'deliver') {
+      return deliverOneMessage(message);
+    }
+    throw new Error(`unknown message type '${type}'`);
+  }
+
   async function deliverOneMessage(message) {
     const targetVatID = message.vatID;
     const { dispatch } = getVat(targetVatID);
@@ -404,6 +415,7 @@ export default function buildKernel(kernelEndowments) {
     // 'step' or 'run' to execute it
     runQueue.push(
       harden({
+        type: 'deliver',
         vatID: `${vatID}`,
         facetID: Nat(facetID), // always export
         method: `${method}`,
@@ -538,7 +550,7 @@ export default function buildKernel(kernelEndowments) {
       running = true;
       while (running && runQueue.length) {
         // eslint-disable-next-line no-await-in-loop
-        await deliverOneMessage(runQueue.shift());
+        await processOneMessage(runQueue.shift());
       }
     },
 
@@ -548,7 +560,7 @@ export default function buildKernel(kernelEndowments) {
       let remaining = runQueue.length;
       while (running && remaining) {
         // eslint-disable-next-line no-await-in-loop
-        await deliverOneMessage(runQueue.shift());
+        await processOneMessage(runQueue.shift());
         remaining -= 1;
       }
     },
@@ -556,7 +568,7 @@ export default function buildKernel(kernelEndowments) {
     async step() {
       // process a single message
       if (runQueue.length) {
-        await deliverOneMessage(runQueue.shift());
+        await processOneMessage(runQueue.shift());
       }
     },
 

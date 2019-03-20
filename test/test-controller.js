@@ -21,7 +21,14 @@ async function simpleCall(t, controller) {
 
   controller.queue('vat1', 1, 'foo', 'args');
   t.deepEqual(controller.dump().runQueue, [
-    { vatID: 'vat1', facetID: 1, method: 'foo', argsString: 'args', slots: [] },
+    {
+      type: 'deliver',
+      vatID: 'vat1',
+      facetID: 1,
+      method: 'foo',
+      argsString: 'args',
+      slots: [],
+    },
   ]);
   await controller.run();
   t.deepEqual(JSON.parse(controller.dump().log[0]), {
@@ -94,6 +101,7 @@ async function bootstrapExport(t, withSES) {
 
   t.deepEqual(c.dump().runQueue, [
     {
+      type: 'deliver',
       vatID: '_bootstrap',
       facetID: 0,
       method: 'bootstrap',
@@ -125,6 +133,7 @@ async function bootstrapExport(t, withSES) {
   ]);
   t.deepEqual(c.dump().runQueue, [
     {
+      type: 'deliver',
       vatID: 'left',
       facetID: 0,
       method: 'foo',
@@ -152,6 +161,7 @@ async function bootstrapExport(t, withSES) {
   ]);
   t.deepEqual(c.dump().runQueue, [
     {
+      type: 'deliver',
       vatID: 'right',
       facetID: 0,
       method: 'bar',
@@ -163,6 +173,7 @@ async function bootstrapExport(t, withSES) {
       ],
     },
     {
+      type: 'deliver',
       vatID: '_bootstrap',
       facetID: 1,
       method: 'resolve',
@@ -182,6 +193,7 @@ async function bootstrapExport(t, withSES) {
   ]);
   t.deepEqual(c.dump().runQueue, [
     {
+      type: 'deliver',
       vatID: '_bootstrap',
       facetID: 1,
       method: 'resolve',
@@ -189,6 +201,7 @@ async function bootstrapExport(t, withSES) {
       slots: [],
     },
     {
+      type: 'deliver',
       vatID: 'left',
       facetID: 1,
       method: 'resolve',
@@ -200,6 +213,7 @@ async function bootstrapExport(t, withSES) {
   await c.step();
   t.deepEqual(c.dump().runQueue, [
     {
+      type: 'deliver',
       vatID: 'left',
       facetID: 1,
       method: 'resolve',
