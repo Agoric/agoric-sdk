@@ -228,7 +228,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     rootIsRegistered = true;
   }
 
-  function dispatch(facetid, method, argsbytes, caps) {
+  function deliver(facetid, method, argsbytes, caps) {
     if (!rootIsRegistered) {
       throw Error(`[${forVatID}] registerRoot() wasn't called during setup`);
     }
@@ -249,6 +249,6 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     m,
     E,
     registerRoot,
-    dispatch,
+    dispatch: { deliver },
   });
 }

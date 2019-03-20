@@ -278,7 +278,7 @@ export default function buildKernel(kernelEndowments) {
     // protect dispatch with promise/then
     Promise.resolve()
       .then(() => {
-        dispatch(
+        dispatch.deliver(
           message.facetID,
           message.method,
           message.argsString,
