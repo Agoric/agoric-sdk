@@ -9,17 +9,28 @@ export default function buildKernel(kernelEndowments) {
   const log = [];
 
   let running = false;
+
+  // 'slot' is the neutral coordinate, and is one of:
+  // * { type: 'export', vatID, slotID }
+  // * { type: 'promise', promiseID }
+
+  // key = `${type}.${toVatID}.${slotID}`
+  // vats[vatid] = { imports: { inbound[key] = importID,
+  //                            outbound[importID] = slot, },
+  //                 nextImportID,
+  //               }
   const vats = harden(new Map());
+
   // runQueue entries are {vatID, facetID, method, argsString, slots}
   const runQueue = [];
 
-  // key = `${type}.${toVatID}.${slotID}`
-  // vatImports[vatID].outbound[importID] = {type, id}
-  // vatImports[vatID].inbound[key] = importID
-  const vatImports = harden(new Map());
-
-  // nextImportIndex[vatID] = Nat
-  const nextImportIndex = harden(new Map());
+  function getVat(vatID) {
+    const vat = vats.get(vatID);
+    if (vat === undefined) {
+      throw new Error(`unknown vatID '${vatID}'`);
+    }
+    return vat;
+  }
 
   // we define three types of slot identifiers: inbound, neutral, outbound
   // * outbound is what syscall.send(slots=) contains, it is always scoped to
@@ -43,6 +54,7 @@ export default function buildKernel(kernelEndowments) {
     // or as the target of a send), what { vatID, what } are they talking
     // about?
     // console.log(`mapOutbound ${JSON.stringify(what)}`);
+    const vat = getVat(fromVatID);
 
     if (what.type === 'export') {
       // one of fromVatID's exports, which doesn't need translation into the
@@ -55,15 +67,16 @@ export default function buildKernel(kernelEndowments) {
       // an import from somewhere else, so translate it into the neutral
       // non-Vat-specific form
       Nat(what.slotID);
-      return vatImports.get(fromVatID).outbound.get(what.slotID);
+      return vat.imports.outbound.get(what.slotID);
     }
 
     throw Error(`unknown what.type '${what.type}'`);
   }
 
   function allocateImportIndex(vatID) {
-    const i = nextImportIndex.get(vatID);
-    nextImportIndex.set(vatID, i + 1);
+    const vat = getVat(vatID);
+    const i = vat.nextImportID;
+    vat.nextImportID = i + 1;
     return i;
   }
 
@@ -71,6 +84,7 @@ export default function buildKernel(kernelEndowments) {
   // (type: export) or an existing/new import
   function mapInbound(forVatID, what) {
     // console.log(`mapInbound for ${forVatID} of ${what}`);
+    const vat = getVat(forVatID);
 
     // for now, what.type is always 'export', but we'll add 'promise' in the
     // future
@@ -85,7 +99,7 @@ export default function buildKernel(kernelEndowments) {
         return { type: 'export', slotID };
       }
 
-      const m = vatImports.get(forVatID);
+      const m = vat.imports;
       const key = `${what.type}.${vatID}.${slotID}`; // ugh javascript
       if (!m.inbound.has(key)) {
         // must add both directions
@@ -142,13 +156,9 @@ export default function buildKernel(kernelEndowments) {
   }
 
   function addVat(vatID, setup) {
-    if (!vatImports.has(vatID)) {
-      vatImports.set(vatID, {
-        outbound: harden(new Map()),
-        inbound: harden(new Map()),
-      });
+    if (vats.has(vatID)) {
+      throw new Error(`already have a vat named '${vatID}'`);
     }
-    nextImportIndex.set(vatID, 1);
     const syscall = syscallForVatID(vatID);
     const helpers = harden({
       vatID,
@@ -158,16 +168,21 @@ export default function buildKernel(kernelEndowments) {
       },
     });
     const dispatch = setup(syscall, helpers);
-    const vat = harden({
+    // the vat record is not hardened: it holds mutable next-ID values
+    vats.set(vatID, {
       id: vatID,
       dispatch,
+      imports: harden({
+        outbound: new Map(),
+        inbound: new Map(),
+      }),
+      nextImportID: 1,
     });
-    vats.set(vatID, vat);
   }
 
   async function deliverOneMessage(message) {
     const targetVatID = message.vatID;
-    const vat = vats.get(targetVatID);
+    const { dispatch } = getVat(targetVatID);
     // console.log(`deliver mapping ${JSON.stringify(message)}`);
     const inputSlots = message.slots.map(what => mapInbound(targetVatID, what));
 
@@ -185,7 +200,7 @@ export default function buildKernel(kernelEndowments) {
     // protect dispatch with promise/then
     Promise.resolve()
       .then(() => {
-        vat.dispatch(
+        dispatch(
           message.facetID,
           message.method,
           message.argsString,
@@ -290,16 +305,16 @@ export default function buildKernel(kernelEndowments) {
     },
 
     dump() {
-      const vatTables = Array.from(vats.entries()).map(e => {
-        const vatID = e[0];
-        // const vat = e[1];
-        // TODO: find some way to expose these, the kernel doesn't see them
-        return { vatID };
-      });
-
+      const vatTables = [];
       const kernelTable = [];
-      vatImports.forEach((fb, vatID) => {
-        fb.outbound.forEach((target, slotID) => {
+
+      vats.forEach((vat, vatID) => {
+        // TODO: find some way to expose the liveSlots internal tables, the
+        // kernel doesn't see them
+        const vatTable = { vatID };
+        vatTables.push(vatTable);
+
+        vat.imports.outbound.forEach((target, slotID) => {
           kernelTable.push([
             vatID,
             'import',
