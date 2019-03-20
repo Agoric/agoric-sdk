@@ -344,6 +344,33 @@ export default function buildKernel(kernelEndowments) {
       delete p.decider;
     },
 
+    reject(fromVatID, resolverID, rejectData, vatSlots) {
+      const { id } = mapOutbound(fromVatID, {
+        type: 'resolver',
+        id: resolverID,
+      });
+      if (!kernelPromises.has(id)) {
+        throw new Error(`unknown kernelPromise id '${id}'`);
+      }
+      const p = kernelPromises.get(id);
+      if (p.state !== 'unresolved') {
+        throw new Error(
+          `kernelPromise[${id}] is '${p.state}', not 'unresolved'`,
+        );
+      }
+      p.state = 'rejected';
+      p.rejectData = rejectData;
+      p.rejectSlots = vatSlots.map(slot => mapOutbound(fromVatID, slot));
+      for (const subscriberVatID of p.subscribers) {
+        runQueue.push({
+          type: 'notifyReject',
+          vatID: subscriberVatID,
+          kernelPromiseID: id,
+        });
+      }
+      delete p.subscribers;
+      delete p.decider;
+    },
   });
 
   function syscallForVatID(fromVatID) {
@@ -365,6 +392,9 @@ export default function buildKernel(kernelEndowments) {
       },
       fulfillToTarget(...args) {
         return syscallBase.fulfillToTarget(fromVatID, ...args);
+      },
+      reject(...args) {
+        return syscallBase.reject(fromVatID, ...args);
       },
 
       log(str) {
@@ -498,6 +528,29 @@ export default function buildKernel(kernelEndowments) {
         err =>
           console.log(
             `vat[${vatID}].promise[${relativeID}] fulfillToTarget failed: ${err}`,
+            err,
+          ),
+      );
+    }
+
+    if (type === 'notifyReject') {
+      const { kernelPromiseID } = message;
+      const { dispatch } = getVat(vatID);
+      const p = kernelPromises.get(kernelPromiseID);
+      const relativeID = mapInbound(vatID, {
+        type: 'promise',
+        id: kernelPromiseID,
+      }).id;
+      return process(
+        () =>
+          dispatch.notifyReject(
+            relativeID,
+            p.rejectData,
+            p.rejectSlots.map(slot => mapInbound(vatID, slot)),
+          ),
+        err =>
+          console.log(
+            `vat[${vatID}].promise[${relativeID}] reject failed: ${err}`,
             err,
           ),
       );

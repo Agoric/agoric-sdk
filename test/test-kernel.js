@@ -582,3 +582,60 @@ test('promise resolveToTarget', async t => {
 
   t.end();
 });
+
+test('promise reject', async t => {
+  const kernel = buildKernel({ setImmediate });
+  let syscall;
+  const log = [];
+  function setup(s) {
+    syscall = s;
+    function deliver(facetID, method, argsString, slots) {
+      log.push(['deliver', facetID, method, argsString, slots]);
+    }
+    function notifyReject(promiseID, rejectData, slots) {
+      log.push(['notify', promiseID, rejectData, slots]);
+    }
+    return { deliver, notifyReject };
+  }
+  kernel.addVat('vatA', setup);
+
+  const pr = syscall.createPromise();
+  t.deepEqual(kernel.dump().kernelTable, [['vatA', 'promise', 20, 40]]);
+
+  const ex1 = { type: 'export', vatID: 'vatB', id: 6 };
+  const A = kernel.addImport('vatA', ex1);
+
+  syscall.subscribe(pr.promiseID);
+  t.deepEqual(kernel.dump().promises, [
+    { id: 40, state: 'unresolved', decider: 'vatA', subscribers: ['vatA'] },
+  ]);
+
+  syscall.reject(pr.resolverID, 'args', [A]);
+  // A gets mapped to a kernelPromiseID first, and a notifyReject message is
+  // queued
+  t.deepEqual(log, []); // no other dispatch calls
+  t.deepEqual(kernel.dump().runQueue, [
+    {
+      type: 'notifyReject',
+      vatID: 'vatA',
+      kernelPromiseID: 40,
+    },
+  ]);
+
+  await kernel.step();
+
+  // the kernelPromiseID gets mapped back to A
+  t.deepEqual(log.shift(), ['notify', pr.promiseID, 'args', [A]]);
+  t.deepEqual(log, []); // no other dispatch calls
+  t.deepEqual(kernel.dump().promises, [
+    {
+      id: 40,
+      state: 'rejected',
+      rejectData: 'args',
+      rejectSlots: [ex1],
+    },
+  ]);
+  t.deepEqual(kernel.dump().runQueue, []);
+
+  t.end();
+});
