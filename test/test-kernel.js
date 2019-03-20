@@ -286,3 +286,20 @@ test('three-party', async t => {
 
   t.end();
 });
+
+test('createPromise', t => {
+  const kernel = buildKernel({ setImmediate });
+  let syscall;
+  function setup(s) {
+    syscall = s;
+    function d1(_facetID, _method, _argsString, _slots) {}
+    return d1;
+  }
+  kernel.addVat('vat1', setup);
+
+  const pr = syscall.createPromise();
+  t.deepEqual(pr, { promiseID: 1, resolverID: 1 });
+
+  t.deepEqual(kernel.dump().kernelTable, [['vat1', 'promise', 1, 1]]);
+  t.end();
+});

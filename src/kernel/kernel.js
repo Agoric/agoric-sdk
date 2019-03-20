@@ -18,11 +18,22 @@ export default function buildKernel(kernelEndowments) {
   // vats[vatid] = { imports: { inbound[key] = importID,
   //                            outbound[importID] = slot, },
   //                 nextImportID,
+  //                 promises: { inbound[kernelPromiseID] = id,
+  //                             outbound[id] = kernelPromiseID, },
+  //                 nextPromiseID,
+  //                 resolvers: { inbound[kernelPromiseID] = id,
+  //                              outbound[id] = kernelPromiseID, },
+  //                 nextResolverID,
   //               }
   const vats = harden(new Map());
 
   // runQueue entries are {vatID, facetID, method, argsString, slots}
   const runQueue = [];
+
+  // in the kernel table, promises and resolvers are both indexed by the same
+  // value. kernelPromises[promiseID] = { decider, subscribers }
+  const kernelPromises = harden(new Map());
+  let nextPromiseIndex = 1;
 
   function getVat(vatID) {
     const vat = vats.get(vatID);
@@ -30,6 +41,24 @@ export default function buildKernel(kernelEndowments) {
       throw new Error(`unknown vatID '${vatID}'`);
     }
     return vat;
+  }
+
+  function allocateKernelPromiseIndex() {
+    const i = nextPromiseIndex;
+    nextPromiseIndex += 1;
+    return i;
+  }
+
+  function allocatePromiseIDForVat(vat) {
+    const i = vat.nextPromiseID;
+    vat.nextPromiseID += 1;
+    return i;
+  }
+
+  function allocateResolverIDForVat(vat) {
+    const i = vat.nextResolverID;
+    vat.nextResolverID += 1;
+    return i;
   }
 
   // we define three types of slot identifiers: inbound, neutral, outbound
@@ -86,12 +115,8 @@ export default function buildKernel(kernelEndowments) {
     // console.log(`mapInbound for ${forVatID} of ${what}`);
     const vat = getVat(forVatID);
 
-    // for now, what.type is always 'export', but we'll add 'promise' in the
-    // future
-
     if (what.type === 'export') {
       const { vatID, slotID } = what;
-      // slotID is always positive, since it is somebody else's export
       Nat(slotID);
 
       if (vatID === forVatID) {
@@ -109,6 +134,30 @@ export default function buildKernel(kernelEndowments) {
         m.outbound.set(newSlotID, harden({ type: 'export', vatID, slotID }));
       }
       return { type: 'import', slotID: m.inbound.get(key) };
+    }
+
+    if (what.type === 'promise') {
+      const kernelPromiseID = what.promiseID;
+      Nat(kernelPromiseID);
+      const m = vat.promises;
+      if (!m.inbound.has(kernelPromiseID)) {
+        const promiseID = Nat(allocatePromiseIDForVat(vat));
+        m.inbound.set(kernelPromiseID, promiseID);
+        m.outbound.set(promiseID, kernelPromiseID);
+      }
+      return { type: 'promise', promiseID: m.inbound.get(kernelPromiseID) };
+    }
+
+    if (what.type === 'resolver') {
+      const kernelPromiseID = what.promiseID;
+      Nat(kernelPromiseID);
+      const m = vat.resolvers;
+      if (!m.inbound.has(kernelPromiseID)) {
+        const resolverID = Nat(allocateResolverIDForVat(vat));
+        m.inbound.set(kernelPromiseID, resolverID);
+        m.outbound.set(resolverID, kernelPromiseID);
+      }
+      return { type: 'resolver', resolverID: m.inbound.get(kernelPromiseID) };
     }
 
     throw Error(`unknown type '${what.type}'`);
@@ -132,12 +181,31 @@ export default function buildKernel(kernelEndowments) {
         slots,
       });
     },
+
+    createPromise(fromVatID) {
+      const promiseID = allocateKernelPromiseIndex();
+      // we don't harden the kernel promise record because it is mutable: it
+      // can be replaced when syscall.redirect/fulfill/reject is called
+      kernelPromises.set(promiseID, { decider: fromVatID, subscribers: [] });
+      const p = mapInbound(fromVatID, {
+        type: 'promise',
+        promiseID,
+      });
+      const r = mapInbound(fromVatID, {
+        type: 'resolver',
+        promiseID,
+      });
+      return { promiseID: p.promiseID, resolverID: r.resolverID };
+    },
   });
 
   function syscallForVatID(fromVatID) {
     return harden({
       send(...args) {
         return syscallBase.send(fromVatID, ...args);
+      },
+      createPromise(...args) {
+        return syscallBase.createPromise(fromVatID, ...args);
       },
 
       log(str) {
@@ -177,6 +245,16 @@ export default function buildKernel(kernelEndowments) {
         inbound: new Map(),
       }),
       nextImportID: 1,
+      promises: harden({
+        outbound: new Map(),
+        inbound: new Map(),
+      }),
+      nextPromiseID: 1,
+      resolvers: harden({
+        outbound: new Map(),
+        inbound: new Map(),
+      }),
+      nextResolverID: 1,
     });
   }
 
@@ -323,6 +401,10 @@ export default function buildKernel(kernelEndowments) {
             target.vatID,
             target.slotID,
           ]);
+        });
+
+        vat.promises.outbound.forEach((kernelPromiseID, promiseID) => {
+          kernelTable.push([vatID, 'promise', promiseID, kernelPromiseID]);
         });
       });
 
