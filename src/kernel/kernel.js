@@ -199,7 +199,10 @@ export default function buildKernel(kernelEndowments) {
       const promiseID = allocateKernelPromiseIndex();
       // we don't harden the kernel promise record because it is mutable: it
       // can be replaced when syscall.redirect/fulfill/reject is called
-      kernelPromises.set(promiseID, { decider: fromVatID, subscribers: [] });
+      kernelPromises.set(promiseID, {
+        decider: fromVatID,
+        subscribers: new Set(),
+      });
       const p = mapInbound(fromVatID, {
         type: 'promise',
         id: promiseID,
@@ -447,7 +450,16 @@ export default function buildKernel(kernelEndowments) {
           0,
       );
 
-      return { vatTables, kernelTable, runQueue, log };
+      const promises = [];
+      kernelPromises.forEach((p, id) => {
+        promises.push({
+          id,
+          decider: p.decider,
+          subscribers: Array.from(p.subscribers),
+        });
+      });
+
+      return { vatTables, kernelTable, promises, runQueue, log };
     },
 
     async run() {

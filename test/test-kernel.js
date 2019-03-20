@@ -292,8 +292,10 @@ test('createPromise', t => {
   }
   kernel.addVat('vat1', setup);
 
+  t.deepEqual(kernel.dump().promises, []);
   const pr = syscall.createPromise();
   t.deepEqual(pr, { promiseID: 20, resolverID: 30 });
+  t.deepEqual(kernel.dump().promises, [{ id: 40, decider: 'vat1', subscribers: [] }]);
 
   t.deepEqual(kernel.dump().kernelTable, [['vat1', 'promise', 20, 40]]);
   t.end();
