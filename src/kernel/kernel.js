@@ -104,6 +104,14 @@ export default function buildKernel(kernelEndowments) {
       return vat.imports.outbound.get(slot.id);
     }
 
+    if (slot.type === 'promise') {
+      Nat(slot.id);
+      if (!vat.promises.outbound.has(slot.id)) {
+        throw new Error(`unknown promise slot '${slot.id}'`);
+      }
+      return { type: 'promise', id: vat.promises.outbound.get(slot.id) };
+    }
+
     throw Error(`unknown slot.type '${slot.type}'`);
   }
 
