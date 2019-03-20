@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-export default function makePair() {
+export default function makePromise() {
   let res;
   let rej;
   const p = new Promise((resolve, reject) => {

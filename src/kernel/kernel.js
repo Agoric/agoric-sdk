@@ -2,6 +2,7 @@ import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { makeLiveSlots } from './liveSlots';
 import { QCLASS, makeMarshal } from './marshal';
+import makePromise from './makePromise';
 
 export default function buildKernel(kernelEndowments) {
   const { setImmediate } = kernelEndowments;
@@ -349,50 +350,50 @@ export default function buildKernel(kernelEndowments) {
   }
 
   async function processOneMessage(message) {
+    async function process(f, logerr) {
+      // the delivery might cause some number of (native) Promises to be
+      // created and resolved, so we use the IO queue to detect when the
+      // Promise queue is empty. The IO queue (setImmediate and setTimeout) is
+      // lower-priority than the Promise queue on browsers and Node 11, but on
+      // Node 10 it is higher. So this trick requires Node 11.
+      // https://jsblog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
+
+      const { p: queueEmptyP, res } = makePromise();
+      setImmediate(() => res());
+
+      // protect f() with promise/then
+      Promise.resolve()
+        .then(f)
+        .then(undefined, logerr);
+      await queueEmptyP;
+    }
+
+    // console.log(`process ${JSON.stringify(message)}`);
     const { type } = message;
     if (type === 'deliver') {
-      return deliverOneMessage(message);
+      const targetVatID = message.vatID;
+      const { dispatch } = getVat(targetVatID);
+      const inputSlots = message.slots.map(slot =>
+        mapInbound(targetVatID, slot),
+      );
+      return process(
+        () =>
+          dispatch.deliver(
+            message.facetID,
+            message.method,
+            message.argsString,
+            inputSlots,
+          ),
+        err =>
+          console.log(
+            `vat[${targetVatID}][${message.facetID}].${
+              message.method
+            } dispatch failed: ${err}`,
+            err,
+          ),
+      );
     }
     throw new Error(`unknown message type '${type}'`);
-  }
-
-  async function deliverOneMessage(message) {
-    const targetVatID = message.vatID;
-    const { dispatch } = getVat(targetVatID);
-    // console.log(`deliver mapping ${JSON.stringify(message)}`);
-    const inputSlots = message.slots.map(slot => mapInbound(targetVatID, slot));
-
-    // the delivery might cause some number of (native) Promises to be
-    // created and resolved, so we use the IO queue to detect when the
-    // Promise queue is empty. The IO queue (setImmediate and setTimeout) is
-    // lower-priority than the Promise queue on browsers and Node 11, but on
-    // Node 10 it is higher. So this trick requires Node 11.
-    // https://jsblog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
-
-    let r;
-    const queueEmptyP = new Promise(res => (r = res));
-    setImmediate(() => r());
-
-    // protect dispatch with promise/then
-    Promise.resolve()
-      .then(() => {
-        dispatch.deliver(
-          message.facetID,
-          message.method,
-          message.argsString,
-          inputSlots,
-        );
-      })
-      .then(undefined, err => {
-        console.log(
-          `vat[${targetVatID}][${message.facetID}].${
-            message.method
-          } dispatch failed: ${err}`,
-          err,
-        );
-      });
-
-    await queueEmptyP;
   }
 
   function addImport(forVatID, what) {
