@@ -82,10 +82,10 @@ test('map inbound', async t => {
   t.deepEqual(log, []);
   await kernel.run();
   t.deepEqual(log, [
-    [1, 'foo', 'args', [{ type: 'export', id: 5 }, { type: 'import', id: 1 }]],
+    [1, 'foo', 'args', [{ type: 'export', id: 5 }, { type: 'import', id: 10 }]],
   ]);
   t.deepEqual(kernel.dump().kernelTable, [
-    ['vat1', 'import', 1, 'export', 'vat2', 6],
+    ['vat1', 'import', 10, 'export', 'vat2', 6],
   ]);
 
   t.end();
@@ -105,9 +105,9 @@ test('addImport', t => {
     vatID: 'vat2',
     id: 5,
   });
-  t.deepEqual(slot, { type: 'import', id: 1 }); // first import
+  t.deepEqual(slot, { type: 'import', id: 10 }); // first import
   t.deepEqual(kernel.dump().kernelTable, [
-    ['vat1', 'import', 1, 'export', 'vat2', 5],
+    ['vat1', 'import', 10, 'export', 'vat2', 5],
   ]);
   t.end();
 });
@@ -144,7 +144,7 @@ test('outbound call', async t => {
     vatID: 'vat2',
     id: 5,
   });
-  t.deepEqual(v1tovat25, { type: 'import', id: 1 }); // first allocation
+  t.deepEqual(v1tovat25, { type: 'import', id: 10 }); // first allocation
 
   const data = kernel.dump();
   t.deepEqual(data.vatTables, [{ vatID: 'vat1' }, { vatID: 'vat2' }]);
@@ -184,12 +184,12 @@ test('outbound call', async t => {
       5,
       'bar',
       'bargs',
-      [{ type: 'export', id: 5 }, { type: 'import', id: 1 }],
+      [{ type: 'export', id: 5 }, { type: 'import', id: 10 }],
     ],
   ]);
   t.deepEqual(kernel.dump().kernelTable, [
     ['vat1', 'import', v1tovat25.id, 'export', 'vat2', 5],
-    ['vat2', 'import', 1, 'export', 'vat1', 7],
+    ['vat2', 'import', 10, 'export', 'vat1', 7],
   ]);
 
   t.end();
@@ -271,12 +271,12 @@ test('three-party', async t => {
 
   await kernel.step();
   t.deepEqual(log, [
-    ['vatB', 5, 'intro', 'bargs', [{ type: 'import', id: 1 }]],
+    ['vatB', 5, 'intro', 'bargs', [{ type: 'import', id: 10 }]],
   ]);
   t.deepEqual(kernel.dump().kernelTable, [
     ['vatA', 'import', bobForA.id, 'export', 'vatB', 5],
     ['vatA', 'import', carolForA.id, 'export', 'vatC', 6],
-    ['vatB', 'import', 1, 'export', 'vatC', 6],
+    ['vatB', 'import', 10, 'export', 'vatC', 6],
   ]);
 
   t.end();
@@ -293,8 +293,8 @@ test('createPromise', t => {
   kernel.addVat('vat1', setup);
 
   const pr = syscall.createPromise();
-  t.deepEqual(pr, { promiseID: 1, resolverID: 1 });
+  t.deepEqual(pr, { promiseID: 20, resolverID: 30 });
 
-  t.deepEqual(kernel.dump().kernelTable, [['vat1', 'promise', 1, 1]]);
+  t.deepEqual(kernel.dump().kernelTable, [['vat1', 'promise', 20, 40]]);
   t.end();
 });

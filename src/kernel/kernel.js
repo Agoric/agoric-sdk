@@ -38,7 +38,7 @@ export default function buildKernel(kernelEndowments) {
   // in the kernel table, promises and resolvers are both indexed by the same
   // value. kernelPromises[promiseID] = { decider, subscribers }
   const kernelPromises = harden(new Map());
-  let nextPromiseIndex = 1;
+  let nextPromiseIndex = 40;
 
   function getVat(vatID) {
     const vat = vats.get(vatID);
@@ -249,17 +249,18 @@ export default function buildKernel(kernelEndowments) {
         outbound: new Map(),
         inbound: new Map(),
       }),
-      nextImportID: 1,
+      // make these IDs start at different values to detect errors better
+      nextImportID: 10,
       promises: harden({
         outbound: new Map(),
         inbound: new Map(),
       }),
-      nextPromiseID: 1,
+      nextPromiseID: 20,
       resolvers: harden({
         outbound: new Map(),
         inbound: new Map(),
       }),
-      nextResolverID: 1,
+      nextResolverID: 30,
     });
   }
 

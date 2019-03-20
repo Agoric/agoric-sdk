@@ -120,8 +120,8 @@ async function bootstrapExport(t, withSES) {
     'bootstrap.obj0.bootstrap()',
   ]);
   t.deepEqual(c.dump().kernelTable, [
-    ['_bootstrap', 'import', 1, 'export', 'left', 0],
-    ['_bootstrap', 'import', 2, 'export', 'right', 0],
+    ['_bootstrap', 'import', 10, 'export', 'left', 0],
+    ['_bootstrap', 'import', 11, 'export', 'right', 0],
   ]);
   t.deepEqual(c.dump().runQueue, [
     {
@@ -145,10 +145,10 @@ async function bootstrapExport(t, withSES) {
     'left.foo 1',
   ]);
   t.deepEqual(c.dump().kernelTable, [
-    ['_bootstrap', 'import', 1, 'export', 'left', 0],
-    ['_bootstrap', 'import', 2, 'export', 'right', 0],
-    ['left', 'import', 1, 'export', 'right', 0],
-    ['left', 'import', 2, 'export', '_bootstrap', 1],
+    ['_bootstrap', 'import', 10, 'export', 'left', 0],
+    ['_bootstrap', 'import', 11, 'export', 'right', 0],
+    ['left', 'import', 10, 'export', 'right', 0],
+    ['left', 'import', 11, 'export', '_bootstrap', 1],
   ]);
   t.deepEqual(c.dump().runQueue, [
     {
