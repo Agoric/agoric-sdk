@@ -11,9 +11,9 @@ import { QCLASS, mustPassByPresence, makeMarshal } from './marshal';
 // call.
 
 export function makeLiveSlots(syscall, forVatID = 'unknown') {
-  function makePresence(slotID) {
+  function makePresence(id) {
     return harden({
-      [`_slotID_${slotID}`]() {},
+      [`_importID_${id}`]() {},
     });
   }
 
@@ -48,16 +48,16 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
       let slot;
 
       if (valToExportID.has(val)) {
-        slot = harden({ type: 'export', slotID: valToExportID.get(val) });
+        slot = harden({ type: 'export', id: valToExportID.get(val) });
       } else if (presenceToImportID.has(val)) {
-        slot = harden({ type: 'import', slotID: presenceToImportID.get(val) });
+        slot = harden({ type: 'import', id: presenceToImportID.get(val) });
       } else {
         // must be a new export
         // console.log('must be a new export', JSON.stringify(val));
         const exportID = allocateExportID();
         valToExportID.set(val, exportID);
         exportIDToVal.set(exportID, val);
-        slot = harden({ type: 'export', slotID: exportID });
+        slot = harden({ type: 'export', id: exportID });
       }
 
       const slotIndex = slots.length;
@@ -73,25 +73,25 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     // console.log(`unserializeSlot ${data} ${slots}`);
     const slot = slots[Nat(data.index)];
     if (slot.type === 'import') {
-      const { slotID } = slot;
-      if (!importIDToPresence.has(slotID)) {
-        // console.log(`assigning new import ${slotID}`);
+      const { id } = slot;
+      if (!importIDToPresence.has(id)) {
+        // console.log(`assigning new import ${id}`);
         // this is a new import
-        const p = makePresence(slotID);
+        const p = makePresence(id);
         // console.log(` for presence`, p);
-        presenceToImportID.set(p, slotID);
-        importIDToPresence.set(slotID, p);
+        presenceToImportID.set(p, id);
+        importIDToPresence.set(id, p);
       }
-      return importIDToPresence.get(slotID);
+      return importIDToPresence.get(id);
     }
     if (slot.type === 'export') {
       // this is one of our previous exports. the kernel should never
       // reference an export we didn't previously send
-      const { slotID } = slot;
-      if (!exportIDToVal.has(slotID)) {
-        throw Error(`unrecognized exportID '${slotID}'`);
+      const { id } = slot;
+      if (!exportIDToVal.has(id)) {
+        throw Error(`unrecognized exportID '${id}'`);
       }
-      return exportIDToVal.get(slotID);
+      return exportIDToVal.get(id);
     }
     throw Error(`unrecognized slot.type '${slot.type}'`);
   }
@@ -107,7 +107,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
   const m = makeMarshal(serializeSlot, unserializeSlot);
 
-  function queueMessage(slotID, prop, args) {
+  function queueMessage(importID, prop, args) {
     let r;
     const doneP = new Promise((res, _rej) => {
       r = res;
@@ -119,7 +119,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
       },
     };
     const ser = m.serialize(harden({ args, resolver }));
-    syscall.send(slotID, prop, ser.argsString, ser.slots);
+    syscall.send(importID, prop, ser.argsString, ser.slots);
     return doneP;
   }
 
@@ -161,9 +161,9 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
             if (outstandingProxies.has(x)) {
               throw Error('E(Vow.resolve(E(x))) is invalid');
             }
-            const slotID = presenceToImportID.get(x);
-            if (slotID !== undefined) {
-              return queueMessage(slotID, prop, args);
+            const importID = presenceToImportID.get(x);
+            if (importID !== undefined) {
+              return queueMessage(importID, prop, args);
             }
             return x[prop](...args);
           }

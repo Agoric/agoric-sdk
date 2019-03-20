@@ -64,8 +64,8 @@ test('map inbound', async t => {
   t.deepEqual(log, []);
 
   kernel.queue('vat1', 1, 'foo', 'args', [
-    { type: 'export', vatID: 'vat1', slotID: 5 },
-    { type: 'export', vatID: 'vat2', slotID: 6 },
+    { type: 'export', vatID: 'vat1', id: 5 },
+    { type: 'export', vatID: 'vat2', id: 6 },
   ]);
   t.deepEqual(kernel.dump().runQueue, [
     {
@@ -74,20 +74,15 @@ test('map inbound', async t => {
       method: 'foo',
       argsString: 'args',
       slots: [
-        { type: 'export', vatID: 'vat1', slotID: 5 },
-        { type: 'export', vatID: 'vat2', slotID: 6 },
+        { type: 'export', vatID: 'vat1', id: 5 },
+        { type: 'export', vatID: 'vat2', id: 6 },
       ],
     },
   ]);
   t.deepEqual(log, []);
   await kernel.run();
   t.deepEqual(log, [
-    [
-      1,
-      'foo',
-      'args',
-      [{ type: 'export', slotID: 5 }, { type: 'import', slotID: 1 }],
-    ],
+    [1, 'foo', 'args', [{ type: 'export', id: 5 }, { type: 'import', id: 1 }]],
   ]);
   t.deepEqual(kernel.dump().kernelTable, [
     ['vat1', 'import', 1, 'export', 'vat2', 6],
@@ -105,12 +100,12 @@ test('addImport', t => {
   kernel.addVat('vat1', setup);
   kernel.addVat('vat2', setup);
 
-  const slotID = kernel.addImport('vat1', {
+  const slot = kernel.addImport('vat1', {
     type: 'export',
     vatID: 'vat2',
-    slotID: 5,
+    id: 5,
   });
-  t.deepEqual(slotID, { type: 'import', slotID: 1 }); // first import
+  t.deepEqual(slot, { type: 'import', id: 1 }); // first import
   t.deepEqual(kernel.dump().kernelTable, [
     ['vat1', 'import', 1, 'export', 'vat2', 5],
   ]);
@@ -126,9 +121,9 @@ test('outbound call', async t => {
     function deliver(facetID, method, argsString, slots) {
       // console.log(`d1/${facetID} called`);
       log.push(['d1', facetID, method, argsString, slots]);
-      syscall.send(v1tovat25.slotID, 'bar', 'bargs', [
-        { type: 'import', slotID: v1tovat25.slotID },
-        { type: 'export', slotID: 7 },
+      syscall.send(v1tovat25.id, 'bar', 'bargs', [
+        { type: 'import', id: v1tovat25.id },
+        { type: 'export', id: 7 },
       ]);
     }
     return { deliver };
@@ -147,14 +142,14 @@ test('outbound call', async t => {
   v1tovat25 = kernel.addImport('vat1', {
     type: 'export',
     vatID: 'vat2',
-    slotID: 5,
+    id: 5,
   });
-  t.deepEqual(v1tovat25, { type: 'import', slotID: 1 }); // first allocation
+  t.deepEqual(v1tovat25, { type: 'import', id: 1 }); // first allocation
 
   const data = kernel.dump();
   t.deepEqual(data.vatTables, [{ vatID: 'vat1' }, { vatID: 'vat2' }]);
   t.deepEqual(data.kernelTable, [
-    ['vat1', 'import', v1tovat25.slotID, 'export', 'vat2', 5],
+    ['vat1', 'import', v1tovat25.id, 'export', 'vat2', 5],
   ]);
   t.deepEqual(log, []);
 
@@ -176,8 +171,8 @@ test('outbound call', async t => {
       method: 'bar',
       argsString: 'bargs',
       slots: [
-        { type: 'export', vatID: 'vat2', slotID: 5 },
-        { type: 'export', vatID: 'vat1', slotID: 7 },
+        { type: 'export', vatID: 'vat2', id: 5 },
+        { type: 'export', vatID: 'vat1', id: 7 },
       ],
     },
   ]);
@@ -189,11 +184,11 @@ test('outbound call', async t => {
       5,
       'bar',
       'bargs',
-      [{ type: 'export', slotID: 5 }, { type: 'import', slotID: 1 }],
+      [{ type: 'export', id: 5 }, { type: 'import', id: 1 }],
     ],
   ]);
   t.deepEqual(kernel.dump().kernelTable, [
-    ['vat1', 'import', v1tovat25.slotID, 'export', 'vat2', 5],
+    ['vat1', 'import', v1tovat25.id, 'export', 'vat2', 5],
     ['vat2', 'import', 1, 'export', 'vat1', 7],
   ]);
 
@@ -210,8 +205,8 @@ test('three-party', async t => {
     function deliver(facetID, method, argsString, slots) {
       console.log(`vatA/${facetID} called`);
       log.push(['vatA', facetID, method, argsString, slots]);
-      syscall.send(bobForA.slotID, 'intro', 'bargs', [
-        { type: 'import', slotID: carolForA.slotID },
+      syscall.send(bobForA.id, 'intro', 'bargs', [
+        { type: 'import', id: carolForA.id },
       ]);
     }
     return { deliver };
@@ -238,12 +233,12 @@ test('three-party', async t => {
   bobForA = kernel.addImport('vatA', {
     type: 'export',
     vatID: 'vatB',
-    slotID: 5,
+    id: 5,
   });
   carolForA = kernel.addImport('vatA', {
     type: 'export',
     vatID: 'vatC',
-    slotID: 6,
+    id: 6,
   });
 
   const data = kernel.dump();
@@ -253,8 +248,8 @@ test('three-party', async t => {
     { vatID: 'vatC' },
   ]);
   t.deepEqual(data.kernelTable, [
-    ['vatA', 'import', bobForA.slotID, 'export', 'vatB', 5],
-    ['vatA', 'import', carolForA.slotID, 'export', 'vatC', 6],
+    ['vatA', 'import', bobForA.id, 'export', 'vatB', 5],
+    ['vatA', 'import', carolForA.id, 'export', 'vatC', 6],
   ]);
   t.deepEqual(log, []);
 
@@ -270,17 +265,17 @@ test('three-party', async t => {
       facetID: 5,
       method: 'intro',
       argsString: 'bargs',
-      slots: [{ type: 'export', vatID: 'vatC', slotID: 6 }],
+      slots: [{ type: 'export', vatID: 'vatC', id: 6 }],
     },
   ]);
 
   await kernel.step();
   t.deepEqual(log, [
-    ['vatB', 5, 'intro', 'bargs', [{ type: 'import', slotID: 1 }]],
+    ['vatB', 5, 'intro', 'bargs', [{ type: 'import', id: 1 }]],
   ]);
   t.deepEqual(kernel.dump().kernelTable, [
-    ['vatA', 'import', bobForA.slotID, 'export', 'vatB', 5],
-    ['vatA', 'import', carolForA.slotID, 'export', 'vatC', 6],
+    ['vatA', 'import', bobForA.id, 'export', 'vatB', 5],
+    ['vatA', 'import', carolForA.id, 'export', 'vatC', 6],
     ['vatB', 'import', 1, 'export', 'vatC', 6],
   ]);
 

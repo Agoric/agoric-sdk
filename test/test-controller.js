@@ -100,8 +100,8 @@ async function bootstrapExport(t, withSES) {
       argsString:
         '{"args":[[],{"left":{"@qclass":"slot","index":0},"right":{"@qclass":"slot","index":1}}]}',
       slots: [
-        { type: 'export', vatID: 'left', slotID: 0 },
-        { type: 'export', vatID: 'right', slotID: 0 },
+        { type: 'export', vatID: 'left', id: 0 },
+        { type: 'export', vatID: 'right', id: 0 },
       ],
     },
   ]);
@@ -131,8 +131,8 @@ async function bootstrapExport(t, withSES) {
       argsString:
         '{"args":[1,{"@qclass":"slot","index":0}],"resolver":{"@qclass":"slot","index":1}}',
       slots: [
-        { type: 'export', vatID: 'right', slotID: 0 },
-        { type: 'export', vatID: '_bootstrap', slotID: 1 },
+        { type: 'export', vatID: 'right', id: 0 },
+        { type: 'export', vatID: '_bootstrap', id: 1 },
       ],
     },
   ]);
@@ -158,8 +158,8 @@ async function bootstrapExport(t, withSES) {
       argsString:
         '{"args":[2,{"@qclass":"slot","index":0}],"resolver":{"@qclass":"slot","index":1}}',
       slots: [
-        { type: 'export', vatID: 'right', slotID: 0 },
-        { type: 'export', vatID: 'left', slotID: 1 },
+        { type: 'export', vatID: 'right', id: 0 },
+        { type: 'export', vatID: 'left', id: 1 },
       ],
     },
     {
