@@ -415,3 +415,39 @@ test('subscribe to promise', t => {
 
   t.end();
 });
+
+test.skip('promise redirection', t => {
+  const kernel = buildKernel({ setImmediate });
+  let syscall;
+  const log = [];
+  function setup(s) {
+    syscall = s;
+    function deliver(facetID, method, argsString, slots) {
+      log.push([facetID, method, argsString, slots]);
+    }
+    return { deliver };
+  }
+  kernel.addVat('vat1', setup);
+
+  const pr1 = syscall.createPromise();
+  const pr2 = syscall.createPromise();
+  t.deepEqual(kernel.dump().kernelTable, [
+    ['vat1', 'promise', 20, 40],
+    ['vat1', 'promise', 21, 41],
+  ]);
+
+  syscall.subscribe(pr1.promiseID);
+  t.deepEqual(kernel.dump().promises, [
+    { id: 40, state: 'unresolved', decider: 'vat1', subscribers: ['vat1'] },
+    { id: 41, state: 'unresolved', decider: 'vat1', subscribers: [] },
+  ]);
+
+  syscall.redirect(pr1.resolverID, pr2.promiseID);
+  t.deepEqual(log, []); // vat is not notified
+  t.deepEqual(kernel.dump().promises, [
+    { id: 40, state: 'redirected', redirectedTo: 41, subscribers: ['vat1'] },
+    { id: 41, state: 'unresolved', decider: 'vat1', subscribers: [] },
+  ]);
+
+  t.end();
+});

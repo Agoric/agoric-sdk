@@ -112,6 +112,14 @@ export default function buildKernel(kernelEndowments) {
       return { type: 'promise', id: vat.promises.outbound.get(slot.id) };
     }
 
+    if (slot.type === 'resolver') {
+      Nat(slot.id);
+      if (!vat.resolvers.outbound.has(slot.id)) {
+        throw new Error(`unknown resolver slot '${slot.id}'`);
+      }
+      return { type: 'resolver', id: vat.resolvers.outbound.get(slot.id) };
+    }
+
     throw Error(`unknown slot.type '${slot.type}'`);
   }
 
@@ -176,6 +184,18 @@ export default function buildKernel(kernelEndowments) {
     throw Error(`unknown type '${slot.type}'`);
   }
 
+  function chaseRedirections(promiseID) {
+    let targetID = Nat(promiseID);
+    while (true) {
+      const p = kernelPromises.get(targetID);
+      if (p.state === 'redirected') {
+        targetID = Nat(p.redirectedTo);
+        continue;
+      }
+      return targetID;
+    }
+  }
+
   const syscallBase = harden({
     send(fromVatID, targetImportID, method, argsString, vatSlots) {
       Nat(targetImportID);
@@ -223,6 +243,40 @@ export default function buildKernel(kernelEndowments) {
       const p = kernelPromises.get(id);
       p.subscribers.add(fromVatID);
     },
+
+    /*
+    redirect(fromVatID, resolverID, targetPromiseID) {
+      const { id } = mapOutbound(fromVatID, { type: 'resolver', id: resolverID });
+      if (!kernelPromises.has(id)) {
+        throw new Error(`unknown kernelPromise id '${id}'`);
+      }
+      const p = kernelPromises.get(id);
+      if (p.state !== 'unresolved') {
+        throw new Error(`kernelPromise[${id}] is '${p.state}', not 'unresolved'`);
+      }
+
+      let { id: targetID } = mapOutbound(fromVatID, { type: 'promise', id: targetPromiseID });
+      if (!kernelPromises.has(targetID)) {
+        throw new Error(`unknown kernelPromise id '${targetID}'`);
+      }
+
+      targetID = chaseRedirections(targetID);
+      const target = kernelPromises.get(targetID);
+
+      for (let s of p.subscribers) {
+        // TODO: we need to remap their subscriptions, somehow
+      }
+
+      p.state = 'redirected';
+      delete p.decider;
+      const subscribers = p.subscribers;
+      delete p.subscribers;
+      p.redirectedTo = targetID;
+      if (p.state !== 'unresolved') {
+        throw new Error(`kernelPromise[${id}] is '${p.state}', not 'unresolved'`);
+      }
+    },
+    */
   });
 
   function syscallForVatID(fromVatID) {
@@ -235,6 +289,9 @@ export default function buildKernel(kernelEndowments) {
       },
       subscribe(...args) {
         return syscallBase.subscribe(fromVatID, ...args);
+      },
+      redirect(...args) {
+        return syscallBase.redirect(fromVatID, ...args);
       },
 
       log(str) {
