@@ -281,6 +281,34 @@ export default function buildKernel(kernelEndowments) {
       }
     },
     */
+
+    fulfillToData(fromVatID, resolverID, fulfillData, vatSlots) {
+      const { id } = mapOutbound(fromVatID, {
+        type: 'resolver',
+        id: resolverID,
+      });
+      if (!kernelPromises.has(id)) {
+        throw new Error(`unknown kernelPromise id '${id}'`);
+      }
+      const p = kernelPromises.get(id);
+      if (p.state !== 'unresolved') {
+        throw new Error(
+          `kernelPromise[${id}] is '${p.state}', not 'unresolved'`,
+        );
+      }
+      p.state = 'fulfilledToData';
+      p.fulfillData = fulfillData;
+      p.fulfillSlots = vatSlots.map(slot => mapOutbound(fromVatID, slot));
+      for (const subscriberVatID of p.subscribers) {
+        runQueue.push({
+          type: 'notifyFulfillToData',
+          vatID: subscriberVatID,
+          kernelPromiseID: id,
+        });
+      }
+      delete p.subscribers;
+      delete p.decider;
+    },
   });
 
   function syscallForVatID(fromVatID) {
@@ -296,6 +324,9 @@ export default function buildKernel(kernelEndowments) {
       },
       redirect(...args) {
         return syscallBase.redirect(fromVatID, ...args);
+      },
+      fulfillToData(...args) {
+        return syscallBase.fulfillToData(fromVatID, ...args);
       },
 
       log(str) {
@@ -349,33 +380,30 @@ export default function buildKernel(kernelEndowments) {
     });
   }
 
+  async function process(f, logerr) {
+    // the delivery might cause some number of (native) Promises to be
+    // created and resolved, so we use the IO queue to detect when the
+    // Promise queue is empty. The IO queue (setImmediate and setTimeout) is
+    // lower-priority than the Promise queue on browsers and Node 11, but on
+    // Node 10 it is higher. So this trick requires Node 11.
+    // https://jsblog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
+
+    const { p: queueEmptyP, res } = makePromise();
+    setImmediate(() => res());
+
+    // protect f() with promise/then
+    Promise.resolve()
+      .then(f)
+      .then(undefined, logerr);
+    await queueEmptyP;
+  }
+
   async function processOneMessage(message) {
-    async function process(f, logerr) {
-      // the delivery might cause some number of (native) Promises to be
-      // created and resolved, so we use the IO queue to detect when the
-      // Promise queue is empty. The IO queue (setImmediate and setTimeout) is
-      // lower-priority than the Promise queue on browsers and Node 11, but on
-      // Node 10 it is higher. So this trick requires Node 11.
-      // https://jsblog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
-
-      const { p: queueEmptyP, res } = makePromise();
-      setImmediate(() => res());
-
-      // protect f() with promise/then
-      Promise.resolve()
-        .then(f)
-        .then(undefined, logerr);
-      await queueEmptyP;
-    }
-
     // console.log(`process ${JSON.stringify(message)}`);
-    const { type } = message;
+    const { type, vatID } = message;
     if (type === 'deliver') {
-      const targetVatID = message.vatID;
-      const { dispatch } = getVat(targetVatID);
-      const inputSlots = message.slots.map(slot =>
-        mapInbound(targetVatID, slot),
-      );
+      const { dispatch } = getVat(vatID);
+      const inputSlots = message.slots.map(slot => mapInbound(vatID, slot));
       return process(
         () =>
           dispatch.deliver(
@@ -386,13 +414,35 @@ export default function buildKernel(kernelEndowments) {
           ),
         err =>
           console.log(
-            `vat[${targetVatID}][${message.facetID}].${
-              message.method
-            } dispatch failed: ${err}`,
+            `vat[${vatID}][${message.facetID}].${message.method} dispatch failed: ${err}`,
             err,
           ),
       );
     }
+
+    if (type === 'notifyFulfillToData') {
+      const { kernelPromiseID } = message;
+      const { dispatch } = getVat(vatID);
+      const p = kernelPromises.get(kernelPromiseID);
+      const relativeID = mapInbound(vatID, {
+        type: 'promise',
+        id: kernelPromiseID,
+      }).id;
+      return process(
+        () =>
+          dispatch.notifyFulfillToData(
+            relativeID,
+            p.fulfillData,
+            p.fulfillSlots.map(slot => mapInbound(vatID, slot)),
+          ),
+        err =>
+          console.log(
+            `vat[${vatID}].promise[${relativeID}] fulfillToData failed: ${err}`,
+            err,
+          ),
+      );
+    }
+
     throw new Error(`unknown message type '${type}'`);
   }
 
@@ -535,12 +585,15 @@ export default function buildKernel(kernelEndowments) {
 
       const promises = [];
       kernelPromises.forEach((p, id) => {
-        promises.push({
-          id,
-          state: p.state,
-          decider: p.decider,
-          subscribers: Array.from(p.subscribers),
-        });
+        const kp = Object.create(
+          Object.prototype,
+          Object.getOwnPropertyDescriptors(p),
+        );
+        kp.id = id;
+        if ('subscribers' in p) {
+          kp.subscribers = Array.from(p.subscribers); // turn Set into Array
+        }
+        promises.push(kp);
       });
 
       return { vatTables, kernelTable, promises, runQueue, log };
