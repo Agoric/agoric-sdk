@@ -295,7 +295,9 @@ test('createPromise', t => {
   t.deepEqual(kernel.dump().promises, []);
   const pr = syscall.createPromise();
   t.deepEqual(pr, { promiseID: 20, resolverID: 30 });
-  t.deepEqual(kernel.dump().promises, [{ id: 40, state: 'unresolved', decider: 'vat1', subscribers: [] }]);
+  t.deepEqual(kernel.dump().promises, [
+    { id: 40, state: 'unresolved', decider: 'vat1', subscribers: [] },
+  ]);
 
   t.deepEqual(kernel.dump().kernelTable, [['vat1', 'promise', 20, 40]]);
   t.end();
@@ -384,6 +386,31 @@ test('transfer promise', async t => {
     ['vatA', 'promise', 21, 41], // pr2
     ['vatB', 'import', 10, 'export', 'vatA', 6],
     ['vatB', 'promise', 20, 41], // B's view of pr2
+  ]);
+
+  t.end();
+});
+
+test('subscribe to promise', t => {
+  const kernel = buildKernel({ setImmediate });
+  let syscall;
+  const log = [];
+  function setup(s) {
+    syscall = s;
+    function deliver(facetID, method, argsString, slots) {
+      log.push([facetID, method, argsString, slots]);
+    }
+    return { deliver };
+  }
+  kernel.addVat('vat1', setup);
+
+  const pr = syscall.createPromise();
+  t.deepEqual(pr, { promiseID: 20, resolverID: 30 });
+  t.deepEqual(kernel.dump().kernelTable, [['vat1', 'promise', 20, 40]]);
+
+  syscall.subscribe(pr.promiseID);
+  t.deepEqual(kernel.dump().promises, [
+    { id: 40, state: 'unresolved', decider: 'vat1', subscribers: ['vat1'] },
   ]);
 
   t.end();

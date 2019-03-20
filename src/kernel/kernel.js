@@ -214,6 +214,15 @@ export default function buildKernel(kernelEndowments) {
       });
       return { promiseID: p.id, resolverID: r.id };
     },
+
+    subscribe(fromVatID, promiseID) {
+      const { id } = mapOutbound(fromVatID, { type: 'promise', id: promiseID });
+      if (!kernelPromises.has(id)) {
+        throw new Error(`unknown kernelPromise id '${id}'`);
+      }
+      const p = kernelPromises.get(id);
+      p.subscribers.add(fromVatID);
+    },
   });
 
   function syscallForVatID(fromVatID) {
@@ -223,6 +232,9 @@ export default function buildKernel(kernelEndowments) {
       },
       createPromise(...args) {
         return syscallBase.createPromise(fromVatID, ...args);
+      },
+      subscribe(...args) {
+        return syscallBase.subscribe(fromVatID, ...args);
       },
 
       log(str) {
