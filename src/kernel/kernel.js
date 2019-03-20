@@ -381,10 +381,6 @@ export default function buildKernel(kernelEndowments) {
       }
     },
 
-    sendFrom(vatID, targetID, method, argsString, slots) {
-      vats.get(vatID).syscall.send(targetID, method, argsString, slots);
-    },
-
     queue,
   });
 
