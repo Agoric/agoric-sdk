@@ -200,6 +200,7 @@ export default function buildKernel(kernelEndowments) {
       // we don't harden the kernel promise record because it is mutable: it
       // can be replaced when syscall.redirect/fulfill/reject is called
       kernelPromises.set(promiseID, {
+        state: 'unresolved',
         decider: fromVatID,
         subscribers: new Set(),
       });
@@ -454,6 +455,7 @@ export default function buildKernel(kernelEndowments) {
       kernelPromises.forEach((p, id) => {
         promises.push({
           id,
+          state: p.state,
           decider: p.decider,
           subscribers: Array.from(p.subscribers),
         });
