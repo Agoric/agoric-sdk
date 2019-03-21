@@ -208,8 +208,9 @@ export default function buildKernel(kernelEndowments) {
         type: 'import',
         id: targetImportID,
       });
-      if (!target)
+      if (!target) {
         throw Error(`unable to find target for ${fromVatID}/${targetImportID}`);
+      }
       const slots = vatSlots.map(slot => mapOutbound(fromVatID, slot));
       runQueue.push({
         type: 'deliver',
