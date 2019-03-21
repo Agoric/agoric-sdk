@@ -201,6 +201,18 @@ export default function buildKernel(kernelEndowments) {
   }
   */
 
+  function createPromiseWithDecider(deciderVatID) {
+    const promiseID = allocateKernelPromiseIndex();
+    // we don't harden the kernel promise record because it is mutable: it
+    // can be replaced when syscall.redirect/fulfill/reject is called
+    kernelPromises.set(promiseID, {
+      state: 'unresolved',
+      decider: deciderVatID,
+      subscribers: new Set(),
+    });
+    return promiseID;
+  }
+
   const syscallBase = harden({
     send(fromVatID, targetImportID, method, argsString, vatSlots) {
       Nat(targetImportID);
@@ -212,6 +224,7 @@ export default function buildKernel(kernelEndowments) {
         throw Error(`unable to find target for ${fromVatID}/${targetImportID}`);
       }
       const slots = vatSlots.map(slot => mapOutbound(fromVatID, slot));
+      const promiseID = createPromiseWithDecider(target.vatID);
       runQueue.push({
         type: 'deliver',
         vatID: target.vatID,
@@ -219,18 +232,17 @@ export default function buildKernel(kernelEndowments) {
         method,
         argsString,
         slots,
+        kernelResolverID: promiseID,
       });
+      const p = mapInbound(fromVatID, {
+        type: 'promise',
+        id: promiseID,
+      });
+      return p.id; // relative to caller
     },
 
     createPromise(fromVatID) {
-      const promiseID = allocateKernelPromiseIndex();
-      // we don't harden the kernel promise record because it is mutable: it
-      // can be replaced when syscall.redirect/fulfill/reject is called
-      kernelPromises.set(promiseID, {
-        state: 'unresolved',
-        decider: fromVatID,
-        subscribers: new Set(),
-      });
+      const promiseID = createPromiseWithDecider(fromVatID);
       const p = mapInbound(fromVatID, {
         type: 'promise',
         id: promiseID,
@@ -239,7 +251,7 @@ export default function buildKernel(kernelEndowments) {
         type: 'resolver',
         id: promiseID,
       });
-      return { promiseID: p.id, resolverID: r.id };
+      return harden({ promiseID: p.id, resolverID: r.id });
     },
 
     subscribe(fromVatID, promiseID) {
@@ -674,8 +686,12 @@ export default function buildKernel(kernelEndowments) {
         ]);
       });
 
-      vat.promises.outbound.forEach((kernelPromiseID, promiseID) => {
-        kernelTable.push([vatID, 'promise', promiseID, kernelPromiseID]);
+      vat.promises.outbound.forEach((kernelPromiseID, id) => {
+        kernelTable.push([vatID, 'promise', id, kernelPromiseID]);
+      });
+
+      vat.resolvers.outbound.forEach((kernelPromiseID, id) => {
+        kernelTable.push([vatID, 'resolver', id, kernelPromiseID]);
       });
     });
 

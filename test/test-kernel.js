@@ -129,10 +129,11 @@ test('outbound call', async t => {
     function deliver(facetID, method, argsString, slots) {
       // console.log(`d1/${facetID} called`);
       log.push(['d1', facetID, method, argsString, slots]);
-      syscall.send(v1tovat25.id, 'bar', 'bargs', [
+      const pid = syscall.send(v1tovat25.id, 'bar', 'bargs', [
         { type: 'import', id: v1tovat25.id },
         { type: 'export', id: 7 },
       ]);
+      log.push(['d1', 'promiseid', pid]);
     }
     return { deliver };
   }
@@ -176,8 +177,9 @@ test('outbound call', async t => {
 
   await kernel.step();
 
-  t.deepEqual(log, [['d1', 1, 'foo', 'args', []]]);
-  log.shift();
+  t.deepEqual(log.shift(), ['d1', 1, 'foo', 'args', []]);
+  t.deepEqual(log.shift(), ['d1', 'promiseid', 20]);
+  t.deepEqual(log, []);
 
   t.deepEqual(kernel.dump().runQueue, [
     {
@@ -190,7 +192,15 @@ test('outbound call', async t => {
         { type: 'export', vatID: 'vat2', id: 5 },
         { type: 'export', vatID: 'vat1', id: 7 },
       ],
+      kernelResolverID: 40,
     },
+  ]);
+  t.deepEqual(kernel.dump().promises, [
+    { id: 40, state: 'unresolved', decider: 'vat2', subscribers: [] },
+  ]);
+  t.deepEqual(kernel.dump().kernelTable, [
+    ['vat1', 'import', v1tovat25.id, 'export', 'vat2', 5],
+    ['vat1', 'promise', 20, 40],
   ]);
 
   await kernel.step();
@@ -205,6 +215,7 @@ test('outbound call', async t => {
   ]);
   t.deepEqual(kernel.dump().kernelTable, [
     ['vat1', 'import', v1tovat25.id, 'export', 'vat2', 5],
+    ['vat1', 'promise', 20, 40],
     ['vat2', 'import', 10, 'export', 'vat1', 7],
   ]);
 
@@ -221,15 +232,18 @@ test('three-party', async t => {
     function deliver(facetID, method, argsString, slots) {
       console.log(`vatA/${facetID} called`);
       log.push(['vatA', facetID, method, argsString, slots]);
-      syscall.send(bobForA.id, 'intro', 'bargs', [
+      const pid = syscall.send(bobForA.id, 'intro', 'bargs', [
         { type: 'import', id: carolForA.id },
       ]);
+      log.push(['vatA', 'promiseID', pid]);
     }
     return { deliver };
   }
   kernel.addVat('vatA', setupA);
 
-  function setupB(_syscall) {
+  let bobSyscall;
+  function setupB(syscall) {
+    bobSyscall = syscall;
     function deliver(facetID, method, argsString, slots) {
       console.log(`vatB/${facetID} called`);
       log.push(['vatB', facetID, method, argsString, slots]);
@@ -257,6 +271,11 @@ test('three-party', async t => {
     id: 6,
   });
 
+  // get bob's promise index to be different than alice's, to check that the
+  // promiseID coming back from send() is scoped to the sender, not the
+  // recipient
+  const bp = bobSyscall.createPromise();
+
   const data = kernel.dump();
   t.deepEqual(data.vatTables, [
     { vatID: 'vatA' },
@@ -266,14 +285,17 @@ test('three-party', async t => {
   t.deepEqual(data.kernelTable, [
     ['vatA', 'import', bobForA.id, 'export', 'vatB', 5],
     ['vatA', 'import', carolForA.id, 'export', 'vatC', 6],
+    ['vatB', 'promise', bp.promiseID, 40],
+    ['vatB', 'resolver', 30, 40],
   ]);
   t.deepEqual(log, []);
 
   kernel.queue('vatA', 1, 'foo', 'args');
   await kernel.step();
 
-  t.deepEqual(log, [['vatA', 1, 'foo', 'args', []]]);
-  log.shift();
+  t.deepEqual(log.shift(), ['vatA', 1, 'foo', 'args', []]);
+  t.deepEqual(log.shift(), ['vatA', 'promiseID', 20]);
+  t.deepEqual(log, []);
 
   t.deepEqual(kernel.dump().runQueue, [
     {
@@ -283,7 +305,19 @@ test('three-party', async t => {
       method: 'intro',
       argsString: 'bargs',
       slots: [{ type: 'export', vatID: 'vatC', id: 6 }],
+      kernelResolverID: 41,
     },
+  ]);
+  t.deepEqual(kernel.dump().promises, [
+    { id: 40, state: 'unresolved', decider: 'vatB', subscribers: [] },
+    { id: 41, state: 'unresolved', decider: 'vatB', subscribers: [] },
+  ]);
+  t.deepEqual(kernel.dump().kernelTable, [
+    ['vatA', 'import', bobForA.id, 'export', 'vatB', 5],
+    ['vatA', 'import', carolForA.id, 'export', 'vatC', 6],
+    ['vatA', 'promise', 20, 41],
+    ['vatB', 'promise', bp.promiseID, 40],
+    ['vatB', 'resolver', 30, 40],
   ]);
 
   await kernel.step();
@@ -293,7 +327,10 @@ test('three-party', async t => {
   t.deepEqual(kernel.dump().kernelTable, [
     ['vatA', 'import', bobForA.id, 'export', 'vatB', 5],
     ['vatA', 'import', carolForA.id, 'export', 'vatC', 6],
+    ['vatA', 'promise', 20, 41],
     ['vatB', 'import', 10, 'export', 'vatC', 6],
+    ['vatB', 'promise', bp.promiseID, 40],
+    ['vatB', 'resolver', 30, 40],
   ]);
 
   t.end();
@@ -316,7 +353,10 @@ test('createPromise', t => {
     { id: 40, state: 'unresolved', decider: 'vat1', subscribers: [] },
   ]);
 
-  t.deepEqual(kernel.dump().kernelTable, [['vat1', 'promise', 20, 40]]);
+  t.deepEqual(kernel.dump().kernelTable, [
+    ['vat1', 'promise', 20, 40],
+    ['vat1', 'resolver', 30, 40],
+  ]);
   t.end();
 });
 
@@ -357,7 +397,13 @@ test('transfer promise', async t => {
     ['vatA', 'import', 10, 'export', 'vatB', 5],
     ['vatA', 'promise', 20, 40], // pr1
     ['vatA', 'promise', 21, 41], // pr2
+    ['vatA', 'resolver', 30, 40], // pr1
+    ['vatA', 'resolver', 31, 41], // pr2
     ['vatB', 'import', 10, 'export', 'vatA', 6],
+  ]);
+  t.deepEqual(kernel.dump().promises, [
+    { id: 40, state: 'unresolved', decider: 'vatA', subscribers: [] },
+    { id: 41, state: 'unresolved', decider: 'vatA', subscribers: [] },
   ]);
 
   // sending a promise should arrive as a promise
@@ -370,40 +416,117 @@ test('transfer promise', async t => {
       method: 'foo1',
       argsString: 'args',
       slots: [{ type: 'promise', id: 41 }],
+      kernelResolverID: 42,
     },
   ]);
+  t.deepEqual(kernel.dump().kernelTable, [
+    ['vatA', 'import', 10, 'export', 'vatB', 5],
+    ['vatA', 'promise', 20, 40], // pr1
+    ['vatA', 'promise', 21, 41], // pr2
+    ['vatA', 'promise', 22, 42], // answer for foo1()
+    ['vatA', 'resolver', 30, 40], // pr1
+    ['vatA', 'resolver', 31, 41], // pr2
+    ['vatB', 'import', 10, 'export', 'vatA', 6],
+  ]);
+  t.deepEqual(kernel.dump().promises, [
+    { id: 40, state: 'unresolved', decider: 'vatA', subscribers: [] },
+    { id: 41, state: 'unresolved', decider: 'vatA', subscribers: [] },
+    { id: 42, state: 'unresolved', decider: 'vatB', subscribers: [] },
+  ]);
+
   await kernel.run();
-  t.deepEqual(logB, [[5, 'foo1', 'args', [{ type: 'promise', id: 20 }]]]);
-  logB.shift();
+  t.deepEqual(logB.shift(), [5, 'foo1', 'args', [{ type: 'promise', id: 20 }]]);
+  t.deepEqual(logB, []);
+  t.deepEqual(kernel.dump().kernelTable, [
+    ['vatA', 'import', 10, 'export', 'vatB', 5],
+    ['vatA', 'promise', 20, 40], // pr1
+    ['vatA', 'promise', 21, 41], // pr2
+    ['vatA', 'promise', 22, 42], // answer for foo1()
+    ['vatA', 'resolver', 30, 40], // pr1
+    ['vatA', 'resolver', 31, 41], // pr2
+    ['vatB', 'import', 10, 'export', 'vatA', 6],
+    ['vatB', 'promise', 20, 41],
+  ]);
 
   // sending it a second time should arrive as the same thing
   syscallA.send(B.id, 'foo2', 'args', [{ type: 'promise', id: pr2.promiseID }]);
   await kernel.run();
-  t.deepEqual(logB, [[5, 'foo2', 'args', [{ type: 'promise', id: 20 }]]]);
-  logB.shift();
+  t.deepEqual(logB.shift(), [5, 'foo2', 'args', [{ type: 'promise', id: 20 }]]);
+  t.deepEqual(logB, []);
+  t.deepEqual(kernel.dump().kernelTable, [
+    ['vatA', 'import', 10, 'export', 'vatB', 5],
+    ['vatA', 'promise', 20, 40], // pr1
+    ['vatA', 'promise', 21, 41], // pr2
+    ['vatA', 'promise', 22, 42], // answer for foo1()
+    ['vatA', 'promise', 23, 43], // answer for foo2()
+    ['vatA', 'resolver', 30, 40], // pr1
+    ['vatA', 'resolver', 31, 41], // pr2
+    ['vatB', 'import', 10, 'export', 'vatA', 6],
+    ['vatB', 'promise', 20, 41],
+  ]);
+
+  t.deepEqual(kernel.dump().promises, [
+    { id: 40, state: 'unresolved', decider: 'vatA', subscribers: [] },
+    { id: 41, state: 'unresolved', decider: 'vatA', subscribers: [] },
+    { id: 42, state: 'unresolved', decider: 'vatB', subscribers: [] },
+    { id: 43, state: 'unresolved', decider: 'vatB', subscribers: [] },
+  ]);
 
   // sending it back should arrive with the sender's index
   syscallB.send(A.id, 'foo3', 'args', [{ type: 'promise', id: 20 }]);
   await kernel.run();
-  t.deepEqual(logA, [
-    [6, 'foo3', 'args', [{ type: 'promise', id: pr2.promiseID }]],
+  t.deepEqual(logA.shift(), [
+    6,
+    'foo3',
+    'args',
+    [{ type: 'promise', id: pr2.promiseID }],
   ]);
-  logA.shift();
+  t.deepEqual(logA, []);
+  t.deepEqual(kernel.dump().kernelTable, [
+    ['vatA', 'import', 10, 'export', 'vatB', 5],
+    ['vatA', 'promise', 20, 40], // pr1
+    ['vatA', 'promise', 21, 41], // pr2
+    ['vatA', 'promise', 22, 42], // answer for foo1()
+    ['vatA', 'promise', 23, 43], // answer for foo2()
+    ['vatA', 'resolver', 30, 40], // pr1
+    ['vatA', 'resolver', 31, 41], // pr2
+    ['vatB', 'import', 10, 'export', 'vatA', 6],
+    ['vatB', 'promise', 20, 41],
+    ['vatB', 'promise', 21, 44], // answer for foo3()
+  ]);
 
   // sending it back a second time should arrive as the same thing
   syscallB.send(A.id, 'foo4', 'args', [{ type: 'promise', id: 20 }]);
   await kernel.run();
-  t.deepEqual(logA, [
-    [6, 'foo4', 'args', [{ type: 'promise', id: pr2.promiseID }]],
+  t.deepEqual(logA.shift(), [
+    6,
+    'foo4',
+    'args',
+    [{ type: 'promise', id: pr2.promiseID }],
   ]);
-  logA.shift();
+  t.deepEqual(logA, []);
+
+  t.deepEqual(kernel.dump().promises, [
+    { id: 40, state: 'unresolved', decider: 'vatA', subscribers: [] },
+    { id: 41, state: 'unresolved', decider: 'vatA', subscribers: [] },
+    { id: 42, state: 'unresolved', decider: 'vatB', subscribers: [] },
+    { id: 43, state: 'unresolved', decider: 'vatB', subscribers: [] },
+    { id: 44, state: 'unresolved', decider: 'vatA', subscribers: [] },
+    { id: 45, state: 'unresolved', decider: 'vatA', subscribers: [] },
+  ]);
 
   t.deepEqual(kernel.dump().kernelTable, [
     ['vatA', 'import', 10, 'export', 'vatB', 5],
     ['vatA', 'promise', 20, 40], // pr1
     ['vatA', 'promise', 21, 41], // pr2
+    ['vatA', 'promise', 22, 42], // answer for foo1()
+    ['vatA', 'promise', 23, 43], // answer for foo2()
+    ['vatA', 'resolver', 30, 40], // pr1
+    ['vatA', 'resolver', 31, 41], // pr2
     ['vatB', 'import', 10, 'export', 'vatA', 6],
-    ['vatB', 'promise', 20, 41], // B's view of pr2
+    ['vatB', 'promise', 20, 41],
+    ['vatB', 'promise', 21, 44], // answer for foo3()
+    ['vatB', 'promise', 22, 45], // answer for foo4()
   ]);
 
   t.end();
@@ -427,7 +550,10 @@ test('subscribe to promise', async t => {
 
   const pr = syscall.createPromise();
   t.deepEqual(pr, { promiseID: 20, resolverID: 30 });
-  t.deepEqual(kernel.dump().kernelTable, [['vat1', 'promise', 20, 40]]);
+  t.deepEqual(kernel.dump().kernelTable, [
+    ['vat1', 'promise', 20, 40],
+    ['vat1', 'resolver', 30, 40],
+  ]);
 
   syscall.subscribe(pr.promiseID);
   t.deepEqual(kernel.dump().promises, [
@@ -500,7 +626,10 @@ test('promise resolveToData', async t => {
   kernel.addVat('vatA', setup);
 
   const pr = syscall.createPromise();
-  t.deepEqual(kernel.dump().kernelTable, [['vatA', 'promise', 20, 40]]);
+  t.deepEqual(kernel.dump().kernelTable, [
+    ['vatA', 'promise', 20, 40],
+    ['vatA', 'resolver', 30, 40],
+  ]);
 
   const ex1 = { type: 'export', vatID: 'vatB', id: 6 };
   const A = kernel.addImport('vatA', ex1);
@@ -563,7 +692,10 @@ test('promise resolveToTarget', async t => {
   kernel.addVat('vatA', setup);
 
   const pr = syscall.createPromise();
-  t.deepEqual(kernel.dump().kernelTable, [['vatA', 'promise', 20, 40]]);
+  t.deepEqual(kernel.dump().kernelTable, [
+    ['vatA', 'promise', 20, 40],
+    ['vatA', 'resolver', 30, 40],
+  ]);
 
   const ex1 = { type: 'export', vatID: 'vatB', id: 6 };
   const A = kernel.addImport('vatA', ex1);
@@ -626,7 +758,10 @@ test('promise reject', async t => {
   kernel.addVat('vatA', setup);
 
   const pr = syscall.createPromise();
-  t.deepEqual(kernel.dump().kernelTable, [['vatA', 'promise', 20, 40]]);
+  t.deepEqual(kernel.dump().kernelTable, [
+    ['vatA', 'promise', 20, 40],
+    ['vatA', 'resolver', 30, 40],
+  ]);
 
   const ex1 = { type: 'export', vatID: 'vatB', id: 6 };
   const A = kernel.addImport('vatA', ex1);

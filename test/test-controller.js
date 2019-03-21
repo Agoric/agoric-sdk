@@ -130,6 +130,7 @@ async function bootstrapExport(t, withSES) {
   t.deepEqual(c.dump().kernelTable, [
     ['_bootstrap', 'import', 10, 'export', 'left', 0],
     ['_bootstrap', 'import', 11, 'export', 'right', 0],
+    ['_bootstrap', 'promise', 20, 40],
   ]);
   t.deepEqual(c.dump().runQueue, [
     {
@@ -143,6 +144,7 @@ async function bootstrapExport(t, withSES) {
         { type: 'export', vatID: 'right', id: 0 },
         { type: 'export', vatID: '_bootstrap', id: 1 },
       ],
+      kernelResolverID: 40,
     },
   ]);
   await c.step();
@@ -156,8 +158,11 @@ async function bootstrapExport(t, withSES) {
   t.deepEqual(c.dump().kernelTable, [
     ['_bootstrap', 'import', 10, 'export', 'left', 0],
     ['_bootstrap', 'import', 11, 'export', 'right', 0],
+    ['_bootstrap', 'promise', 20, 40],
     ['left', 'import', 10, 'export', 'right', 0],
     ['left', 'import', 11, 'export', '_bootstrap', 1],
+    ['left', 'promise', 20, 41],
+    ['left', 'promise', 21, 42],
   ]);
   t.deepEqual(c.dump().runQueue, [
     {
@@ -171,6 +176,7 @@ async function bootstrapExport(t, withSES) {
         { type: 'export', vatID: 'right', id: 0 },
         { type: 'export', vatID: 'left', id: 1 },
       ],
+      kernelResolverID: 41,
     },
     {
       type: 'deliver',
@@ -179,6 +185,7 @@ async function bootstrapExport(t, withSES) {
       method: 'resolve',
       argsString: '{"args":[{"@qclass":"undefined"}]}',
       slots: [],
+      kernelResolverID: 42,
     },
   ]);
 
@@ -199,6 +206,7 @@ async function bootstrapExport(t, withSES) {
       method: 'resolve',
       argsString: '{"args":[{"@qclass":"undefined"}]}',
       slots: [],
+      kernelResolverID: 42,
     },
     {
       type: 'deliver',
@@ -207,6 +215,7 @@ async function bootstrapExport(t, withSES) {
       method: 'resolve',
       argsString: '{"args":[3]}',
       slots: [],
+      kernelResolverID: 43,
     },
   ]);
 
@@ -219,6 +228,7 @@ async function bootstrapExport(t, withSES) {
       method: 'resolve',
       argsString: '{"args":[3]}',
       slots: [],
+      kernelResolverID: 43,
     },
   ]);
 
