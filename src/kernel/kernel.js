@@ -652,6 +652,73 @@ export default function buildKernel(kernelEndowments) {
     queue(vatID, 0, 'bootstrap', s.argsString, s.slots);
   }
 
+  function dump() {
+    const vatTables = [];
+    const kernelTable = [];
+
+    vats.forEach((vat, vatID) => {
+      // TODO: find some way to expose the liveSlots internal tables, the
+      // kernel doesn't see them
+      const vatTable = { vatID };
+      vatTables.push(vatTable);
+
+      vat.imports.outbound.forEach((target, slot) => {
+        kernelTable.push([
+          vatID,
+          'import',
+          slot,
+          target.type,
+          target.vatID,
+          target.id,
+        ]);
+      });
+
+      vat.promises.outbound.forEach((kernelPromiseID, promiseID) => {
+        kernelTable.push([vatID, 'promise', promiseID, kernelPromiseID]);
+      });
+    });
+
+    function compareNumbers(a, b) {
+      return a - b;
+    }
+
+    function compareStrings(a, b) {
+      if (a > b) {
+        return 1;
+      }
+      if (a < b) {
+        return -1;
+      }
+      return 0;
+    }
+
+    kernelTable.sort(
+      (a, b) =>
+        compareStrings(a[0], b[0]) ||
+        compareStrings(a[1], b[1]) ||
+        compareNumbers(a[2], b[2]) ||
+        compareStrings(a[3], b[3]) ||
+        compareNumbers(a[4], b[4]) ||
+        compareNumbers(a[5], b[5]) ||
+        0,
+    );
+
+    const promises = [];
+    kernelPromises.forEach((p, id) => {
+      const kp = Object.create(
+        Object.prototype,
+        Object.getOwnPropertyDescriptors(p),
+      );
+      kp.id = id;
+      if ('subscribers' in p) {
+        kp.subscribers = Array.from(p.subscribers); // turn Set into Array
+      }
+      promises.push(kp);
+    });
+
+    return { vatTables, kernelTable, promises, runQueue, log };
+  }
+
   const kernel = harden({
     addVat(vatID, setup) {
       harden(setup);
@@ -672,72 +739,7 @@ export default function buildKernel(kernelEndowments) {
       log.push(`${str}`);
     },
 
-    dump() {
-      const vatTables = [];
-      const kernelTable = [];
-
-      vats.forEach((vat, vatID) => {
-        // TODO: find some way to expose the liveSlots internal tables, the
-        // kernel doesn't see them
-        const vatTable = { vatID };
-        vatTables.push(vatTable);
-
-        vat.imports.outbound.forEach((target, slot) => {
-          kernelTable.push([
-            vatID,
-            'import',
-            slot,
-            target.type,
-            target.vatID,
-            target.id,
-          ]);
-        });
-
-        vat.promises.outbound.forEach((kernelPromiseID, promiseID) => {
-          kernelTable.push([vatID, 'promise', promiseID, kernelPromiseID]);
-        });
-      });
-
-      function compareNumbers(a, b) {
-        return a - b;
-      }
-
-      function compareStrings(a, b) {
-        if (a > b) {
-          return 1;
-        }
-        if (a < b) {
-          return -1;
-        }
-        return 0;
-      }
-
-      kernelTable.sort(
-        (a, b) =>
-          compareStrings(a[0], b[0]) ||
-          compareStrings(a[1], b[1]) ||
-          compareNumbers(a[2], b[2]) ||
-          compareStrings(a[3], b[3]) ||
-          compareNumbers(a[4], b[4]) ||
-          compareNumbers(a[5], b[5]) ||
-          0,
-      );
-
-      const promises = [];
-      kernelPromises.forEach((p, id) => {
-        const kp = Object.create(
-          Object.prototype,
-          Object.getOwnPropertyDescriptors(p),
-        );
-        kp.id = id;
-        if ('subscribers' in p) {
-          kp.subscribers = Array.from(p.subscribers); // turn Set into Array
-        }
-        promises.push(kp);
-      });
-
-      return { vatTables, kernelTable, promises, runQueue, log };
-    },
+    dump,
 
     async run() {
       // process all messages, until syscall.pause() is invoked
