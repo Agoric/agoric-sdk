@@ -409,16 +409,19 @@ test('transfer promise', async t => {
   t.end();
 });
 
-test('subscribe to promise', t => {
+test('subscribe to promise', async t => {
   const kernel = buildKernel({ setImmediate });
   let syscall;
   const log = [];
   function setup(s) {
     syscall = s;
     function deliver(facetID, method, argsString, slots) {
-      log.push([facetID, method, argsString, slots]);
+      log.push(['deliver', facetID, method, argsString, slots]);
     }
-    return { deliver };
+    function subscribe(resolverID) {
+      log.push(['subscribe', resolverID]);
+    }
+    return { deliver, subscribe };
   }
   kernel.addVat('vat1', setup);
 
@@ -430,6 +433,13 @@ test('subscribe to promise', t => {
   t.deepEqual(kernel.dump().promises, [
     { id: 40, state: 'unresolved', decider: 'vat1', subscribers: ['vat1'] },
   ]);
+  t.deepEqual(kernel.dump().runQueue, [
+    { type: 'subscribe', vatID: 'vat1', kernelPromiseID: 40 },
+  ]);
+  t.deepEqual(log, []);
+
+  await kernel.run();
+  t.deepEqual(log, [['subscribe', 30]]);
 
   t.end();
 });
@@ -482,7 +492,10 @@ test('promise resolveToData', async t => {
     function notifyFulfillToData(promiseID, fulfillData, slots) {
       log.push(['notify', promiseID, fulfillData, slots]);
     }
-    return { deliver, notifyFulfillToData };
+    function subscribe(resolverID) {
+      log.push(['subscribe', resolverID]);
+    }
+    return { deliver, notifyFulfillToData, subscribe };
   }
   kernel.addVat('vatA', setup);
 
@@ -502,6 +515,7 @@ test('promise resolveToData', async t => {
   // message is queued
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
+    { type: 'subscribe', vatID: 'vatA', kernelPromiseID: 40 },
     {
       type: 'notifyFulfillToData',
       vatID: 'vatA',
@@ -510,7 +524,9 @@ test('promise resolveToData', async t => {
   ]);
 
   await kernel.step();
+  t.deepEqual(log.shift(), ['subscribe', pr.resolverID]);
 
+  await kernel.step();
   // the kernelPromiseID gets mapped back to A
   t.deepEqual(log.shift(), ['notify', pr.promiseID, 'args', [A]]);
   t.deepEqual(log, []); // no other dispatch calls
@@ -539,7 +555,10 @@ test('promise resolveToTarget', async t => {
     function notifyFulfillToTarget(promiseID, slot) {
       log.push(['notify', promiseID, slot]);
     }
-    return { deliver, notifyFulfillToTarget };
+    function subscribe(resolverID) {
+      log.push(['subscribe', resolverID]);
+    }
+    return { deliver, notifyFulfillToTarget, subscribe };
   }
   kernel.addVat('vatA', setup);
 
@@ -559,12 +578,16 @@ test('promise resolveToTarget', async t => {
   // message is queued
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
+    { type: 'subscribe', vatID: 'vatA', kernelPromiseID: 40 },
     {
       type: 'notifyFulfillToTarget',
       vatID: 'vatA',
       kernelPromiseID: 40,
     },
   ]);
+
+  await kernel.step();
+  t.deepEqual(log.shift(), ['subscribe', pr.resolverID]);
 
   await kernel.step();
 
@@ -595,7 +618,10 @@ test('promise reject', async t => {
     function notifyReject(promiseID, rejectData, slots) {
       log.push(['notify', promiseID, rejectData, slots]);
     }
-    return { deliver, notifyReject };
+    function subscribe(resolverID) {
+      log.push(['subscribe', resolverID]);
+    }
+    return { deliver, notifyReject, subscribe };
   }
   kernel.addVat('vatA', setup);
 
@@ -609,6 +635,14 @@ test('promise reject', async t => {
   t.deepEqual(kernel.dump().promises, [
     { id: 40, state: 'unresolved', decider: 'vatA', subscribers: ['vatA'] },
   ]);
+  t.deepEqual(kernel.dump().runQueue, [
+    { type: 'subscribe', vatID: 'vatA', kernelPromiseID: 40 },
+  ]);
+
+  // the resolver-holder shouldn't call reject until someone subscribes
+
+  await kernel.step();
+  t.deepEqual(log.shift(), ['subscribe', pr.resolverID]);
 
   syscall.reject(pr.resolverID, 'args', [A]);
   // A gets mapped to a kernelPromiseID first, and a notifyReject message is
@@ -621,7 +655,6 @@ test('promise reject', async t => {
       kernelPromiseID: 40,
     },
   ]);
-
   await kernel.step();
 
   // the kernelPromiseID gets mapped back to A

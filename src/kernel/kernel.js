@@ -247,6 +247,13 @@ export default function buildKernel(kernelEndowments) {
         throw new Error(`unknown kernelPromise id '${id}'`);
       }
       const p = kernelPromises.get(id);
+      if (p.subscribers.size === 0) {
+        runQueue.push({
+          type: 'subscribe',
+          vatID: p.decider,
+          kernelPromiseID: id,
+        });
+      }
       p.subscribers.add(fromVatID);
     },
 
@@ -486,6 +493,23 @@ export default function buildKernel(kernelEndowments) {
           console.log(
             // eslint-disable-next-line prettier/prettier
             `vat[${vatID}][${message.facetID}].${message.method} dispatch failed: ${err}`,
+            err,
+          ),
+      );
+    }
+
+    if (type === 'subscribe') {
+      const { kernelPromiseID } = message;
+      const { dispatch } = getVat(vatID);
+      const relativeID = mapInbound(vatID, {
+        type: 'resolver',
+        id: kernelPromiseID,
+      }).id;
+      return process(
+        () => dispatch.subscribe(relativeID),
+        err =>
+          console.log(
+            `vat[${vatID}].promise[${relativeID}] subscribe failed: ${err}`,
             err,
           ),
       );
