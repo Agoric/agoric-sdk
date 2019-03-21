@@ -191,7 +191,8 @@ network messages and `dispatch.queue` for everything from other vats.
 * dispatch.subscribe(resolverID)
 
   "hey vat, remember that promise you created with dispatch.deliver or
-  syscall.createPromise? Someone now cares about the result. Please call
+  syscall.createPromise? Specifically the resolverID. Someone now cares about
+  the result, and you are the only one who can provide it. Please call
   syscall.notify* with the given resolverID when it changes state."
 
 * syscall.notifyRedirect(resolverID, newPromiseID)
