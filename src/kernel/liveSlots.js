@@ -1,6 +1,7 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { QCLASS, mustPassByPresence, makeMarshal } from './marshal';
+import makePromise from './makePromise';
 
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted
@@ -21,14 +22,19 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   const outstandingProxies = new WeakSet();
 
   function slotToKey(slot) {
-    if (slot.type === 'export' || slot.type === 'import' || slot.type === 'promise') {
+    if (
+      slot.type === 'export' ||
+      slot.type === 'import' ||
+      slot.type === 'promise'
+    ) {
       return `${slot.type}-${Nat(slot.id)}`;
     }
     throw new Error(`unknown slot.type '${slot.type}'`);
   }
   const valToSlot = new WeakMap();
   const slotKeyToVal = new Map();
-  const resolverIDToPromise = new Map();
+  const exportedPromisesByResolverID = new Map();
+  const importedPromisesByPromiseID = new Map();
   let nextExportID = 1;
 
   function allocateExportID() {
@@ -41,16 +47,17 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     const pr = syscall.createPromise();
     // we ignore the kernel promise, but we remember the resolver, in case
     // the kernel subscribes to hear about our local promise changing state
-    resolverIDToPromise.set(pr.resolverID, p);
+    exportedPromisesByResolverID.set(pr.resolverID, p);
+    return harden({ type: 'promise', id: pr.promiseID });
   }
 
-  function exportPassByPresence(val) {
+  function exportPassByPresence() {
     const exportID = allocateExportID();
     return harden({ type: 'export', id: exportID });
   }
 
   function serializeSlot(val, slots, slotMap) {
-    mustPassByPresence(val);
+    // console.log(`serializeSlot`, val, Object.isFrozen(val));
     // This is either a Presence (in presenceToImportID), a
     // previously-serialized local pass-by-presence object or
     // previously-serialized local Promise (in valToSlot), a new local
@@ -68,11 +75,10 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
         // must be a new export
         // console.log('must be a new export', JSON.stringify(val));
         if (Promise.resolve(val) === val) {
-          console.log(`exporting promise`);
-          throw new Error(`not ready for promises`);
           slot = exportPromise(val);
         } else {
-          slot = exportPassByPresence(val);
+          mustPassByPresence(val);
+          slot = exportPassByPresence();
         }
         const key = slotToKey(slot);
         valToSlot.set(val, slot);
@@ -87,6 +93,22 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
     const slotIndex = slotMap.get(val);
     return harden({ [QCLASS]: 'slot', index: slotIndex });
+  }
+
+  function importedPromiseThen(id) {
+    syscall.subscribe(id);
+  }
+
+  function importPromise(id) {
+    const pr = makePromise();
+    importedPromisesByPromiseID.set(id, pr);
+    const { p } = pr;
+    // ideally we'd wait until .then is called on p before subscribing, but
+    // the current Promise API doesn't give us a way to discover this, so we
+    // must subscribe right away. If we were using Vows or some other
+    // then-able, we could just hook then() to notify us.
+    importedPromiseThen(id);
+    return p;
   }
 
   function unserializeSlot(data, slots) {
@@ -104,6 +126,8 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
         // huh, the kernel should never reference an export we didn't
         // previously send
         throw Error(`unrecognized exportID '${slot.id}'`);
+      } else if (slot.type === 'promise') {
+        val = importPromise(slot.id);
       } else {
         throw Error(`unrecognized slot.type '${slot.type}'`);
       }
@@ -263,10 +287,82 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     }
   }
 
+  function subscribe(resolverID) {
+    console.log(`ls.dispatch.subscribe(${resolverID})`);
+    if (!exportedPromisesByResolverID.has(resolverID)) {
+      throw new Error(`unknown resolverID '${resolverID}'`);
+    }
+    const p = exportedPromisesByResolverID.get(resolverID);
+    p.then(
+      res => {
+        console.log(`ls subscribed res`, res);
+        // We need to know if this is resolving to an imported/exported
+        // presence, because then the kernel can deliver queued messages. We
+        // could build a simpler way of doing this.
+        const ser = m.serialize(res);
+        const unser = JSON.parse(ser.argsString);
+        if (
+          typeof unser === 'object' &&
+          QCLASS in unser &&
+          unser[QCLASS].type === 'slot'
+        ) {
+          const slot = unser.slots[unser[QCLASS].index];
+          if (slot.type === 'import' || slot.type === 'export') {
+            syscall.fulfillToTarget(resolverID, slot);
+          }
+        } else {
+          // if it resolves to data, .thens fire but kernel-queued messages are
+          // rejected, because you can't send messages to data
+          syscall.fulfillToData(resolverID, ser.argsString, ser.slots);
+        }
+      },
+      rej => {
+        console.log(`ls subscribed rej`, rej);
+        const ser = m.serialize(rej);
+        syscall.reject(resolverID, ser.argsString, ser.slots);
+      },
+    );
+  }
+
+  function notifyFulfillToData(promiseID, data, slots) {
+    console.log(
+      `ls.dispatch.notifyFulfillToData(${promiseID}, ${data}, ${slots})`,
+    );
+    if (!importedPromisesByPromiseID.has(promiseID)) {
+      throw new Error(`unknown promiseID '${promiseID}'`);
+    }
+    const val = m.unserialize(data, slots);
+    importedPromisesByPromiseID.get(promiseID).res(val);
+  }
+
+  function notifyFulfillToTarget(promiseID, slot) {
+    console.log(`ls.dispatch.notifyFulfillToTarget(${promiseID}, ${slot})`);
+    if (!importedPromisesByPromiseID.has(promiseID)) {
+      throw new Error(`unknown promiseID '${promiseID}'`);
+    }
+    const val = unserializeSlot({ index: 0 }, [slot]);
+    importedPromisesByPromiseID.get(promiseID).res(val);
+  }
+
+  function notifyReject(promiseID, data, slots) {
+    console.log(`ls.dispatch.notifyReject(${promiseID}, ${data}, ${slots})`);
+    if (!importedPromisesByPromiseID.has(promiseID)) {
+      throw new Error(`unknown promiseID '${promiseID}'`);
+    }
+    const val = m.unserialize(data, slots);
+    importedPromisesByPromiseID.get(promiseID).rej(val);
+  }
+
   return harden({
     m,
     E,
     registerRoot,
-    dispatch: { deliver },
+    dispatch: {
+      deliver,
+      subscribe,
+      notifyFulfillToData,
+      notifyFulfillToTarget,
+      notifyReject,
+    },
   });
 }
