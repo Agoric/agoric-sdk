@@ -20,12 +20,16 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   const resultPromises = new WeakSet();
   const outstandingProxies = new WeakSet();
 
-  const valToExportID = new WeakMap();
-  const exportIDToVal = new Map();
+  function slotToKey(slot) {
+    if (slot.type === 'export' || slot.type === 'import' || slot.type === 'promise') {
+      return `${slot.type}-${Nat(slot.id)}`;
+    }
+    throw new Error(`unknown slot.type '${slot.type}'`);
+  }
+  const valToSlot = new WeakMap();
+  const slotKeyToVal = new Map();
+  const resolverIDToPromise = new Map();
   let nextExportID = 1;
-
-  const importIDToPresence = new Map();
-  const presenceToImportID = new WeakMap();
 
   function allocateExportID() {
     const exportID = nextExportID;
@@ -33,13 +37,26 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     return exportID;
   }
 
+  function exportPromise(p) {
+    const pr = syscall.createPromise();
+    // we ignore the kernel promise, but we remember the resolver, in case
+    // the kernel subscribes to hear about our local promise changing state
+    resolverIDToPromise.set(pr.resolverID, p);
+  }
+
+  function exportPassByPresence(val) {
+    const exportID = allocateExportID();
+    return harden({ type: 'export', id: exportID });
+  }
+
   function serializeSlot(val, slots, slotMap) {
     mustPassByPresence(val);
     // This is either a Presence (in presenceToImportID), a
-    // previously-serialized local pass-by-presence object (in
-    // valToExportID), or a new local pass-by-presence object.
+    // previously-serialized local pass-by-presence object or
+    // previously-serialized local Promise (in valToSlot), a new local
+    // pass-by-presence object, or a new local Promise.
 
-    // If we've already assigned it an import/exportID, it might be in
+    // If we've already assigned it an importID or exportID, it might be in
     // slots/slotMap for this particular act of serialization. If it's new,
     // it certainly will not be in slotMap. If we've already serialized it in
     // this particular act, it will definitely be in slotMap.
@@ -47,18 +64,21 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     if (!slotMap.has(val)) {
       let slot;
 
-      if (valToExportID.has(val)) {
-        slot = harden({ type: 'export', id: valToExportID.get(val) });
-      } else if (presenceToImportID.has(val)) {
-        slot = harden({ type: 'import', id: presenceToImportID.get(val) });
-      } else {
+      if (!valToSlot.has(val)) {
         // must be a new export
         // console.log('must be a new export', JSON.stringify(val));
-        const exportID = allocateExportID();
-        valToExportID.set(val, exportID);
-        exportIDToVal.set(exportID, val);
-        slot = harden({ type: 'export', id: exportID });
+        if (Promise.resolve(val) === val) {
+          console.log(`exporting promise`);
+          throw new Error(`not ready for promises`);
+          slot = exportPromise(val);
+        } else {
+          slot = exportPassByPresence(val);
+        }
+        const key = slotToKey(slot);
+        valToSlot.set(val, slot);
+        slotKeyToVal.set(key, val);
       }
+      slot = valToSlot.get(val);
 
       const slotIndex = slots.length;
       slots.push(slot);
@@ -72,37 +92,34 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   function unserializeSlot(data, slots) {
     // console.log(`unserializeSlot ${data} ${slots}`);
     const slot = slots[Nat(data.index)];
-    if (slot.type === 'import') {
-      const { id } = slot;
-      if (!importIDToPresence.has(id)) {
-        // console.log(`assigning new import ${id}`);
-        // this is a new import
-        const p = makePresence(id);
-        // console.log(` for presence`, p);
-        presenceToImportID.set(p, id);
-        importIDToPresence.set(id, p);
+    const key = slotToKey(slot);
+    let val;
+    if (!slotKeyToVal.has(key)) {
+      if (slot.type === 'import') {
+        // this is a new import value
+        // console.log(`assigning new import ${slot.id}`);
+        val = makePresence(slot.id);
+        // console.log(` for presence`, val);
+      } else if (slot.type === 'export') {
+        // huh, the kernel should never reference an export we didn't
+        // previously send
+        throw Error(`unrecognized exportID '${slot.id}'`);
+      } else {
+        throw Error(`unrecognized slot.type '${slot.type}'`);
       }
-      return importIDToPresence.get(id);
+      slotKeyToVal.set(key, val);
+      valToSlot.set(val, slot);
     }
-    if (slot.type === 'export') {
-      // this is one of our previous exports. the kernel should never
-      // reference an export we didn't previously send
-      const { id } = slot;
-      if (!exportIDToVal.has(id)) {
-        throw Error(`unrecognized exportID '${id}'`);
-      }
-      return exportIDToVal.get(id);
-    }
-    throw Error(`unrecognized slot.type '${slot.type}'`);
+    return slotKeyToVal.get(key);
   }
 
-  // this handles both exports ("targets" which other vats can call) and
-  // imports (presences with which the local vat can do E(p).foo(args))
+  // this handles both exports ("targets" which other vats can call)
   function getTarget(facetID) {
-    if (!exportIDToVal.has(facetID)) {
+    const key = slotToKey({ type: 'export', id: facetID });
+    if (!slotKeyToVal.has(key)) {
       throw Error(`no target for facetID ${facetID}`);
     }
-    return exportIDToVal.get(facetID);
+    return slotKeyToVal.get(key);
   }
 
   const m = makeMarshal(serializeSlot, unserializeSlot);
@@ -161,9 +178,9 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
             if (outstandingProxies.has(x)) {
               throw Error('E(Vow.resolve(E(x))) is invalid');
             }
-            const importID = presenceToImportID.get(x);
-            if (importID !== undefined) {
-              return queueMessage(importID, prop, args);
+            const slot = valToSlot.get(x);
+            if (slot && slot.type === 'import') {
+              return queueMessage(slot.id, prop, args);
             }
             return x[prop](...args);
           }
@@ -202,10 +219,10 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     //   return UnresolvedRemoteHandler(x);
     // }
     let handler;
-    const importID = presenceToImportID.get(x);
-    if (importID !== undefined) {
-      console.log(` was importID ${importID}`);
-      handler = PresenceHandler(importID);
+    const slot = valToSlot.get(x);
+    if (slot && slot.type === 'import') {
+      console.log(` was importID ${slot.id}`);
+      handler = PresenceHandler(slot.id);
     } else {
       console.log(` treating as promise`);
       const targetP = Promise.resolve(x);
@@ -223,8 +240,9 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     if (rootIsRegistered) {
       throw Error(`[${forVatID}] registerRoot() was already called`);
     }
-    valToExportID.set(val, 0);
-    exportIDToVal.set(0, val);
+    const slot = { type: 'export', id: 0 };
+    valToSlot.set(val, slot);
+    slotKeyToVal.set(slotToKey(slot), val);
     rootIsRegistered = true;
   }
 
@@ -240,7 +258,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
       // this would cause an infinite loop, so we use a sendOnly
       // E(args.resolver).resolve(result);
       const ser = m.serialize(harden({ args: [result] }));
-      const resolverSlotID = presenceToImportID.get(args.resolver);
+      const resolverSlotID = valToSlot.get(args.resolver).id;
       syscall.send(resolverSlotID, 'resolve', ser.argsString, ser.slots);
     }
   }
