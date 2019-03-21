@@ -19,15 +19,20 @@ async function simpleCall(t, controller) {
   t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
   t.deepEqual(data.kernelTable, []);
 
-  controller.queue('vat1', 1, 'foo', 'args');
+  controller.queueToExport('vat1', 1, 'foo', 'args');
   t.deepEqual(controller.dump().runQueue, [
     {
       type: 'deliver',
-      vatID: 'vat1',
-      facetID: 1,
-      method: 'foo',
-      argsString: 'args',
-      slots: [],
+      target: {
+        type: 'export',
+        vatID: 'vat1',
+        id: 1,
+      },
+      msg: {
+        method: 'foo',
+        argsString: 'args',
+        slots: [],
+      },
     },
   ]);
   await controller.run();
@@ -102,15 +107,20 @@ async function bootstrapExport(t, withSES) {
   t.deepEqual(c.dump().runQueue, [
     {
       type: 'deliver',
-      vatID: '_bootstrap',
-      facetID: 0,
-      method: 'bootstrap',
-      argsString:
-        '{"args":[[],{"left":{"@qclass":"slot","index":0},"right":{"@qclass":"slot","index":1}}]}',
-      slots: [
-        { type: 'export', vatID: 'left', id: 0 },
-        { type: 'export', vatID: 'right', id: 0 },
-      ],
+      target: {
+        type: 'export',
+        vatID: '_bootstrap',
+        id: 0,
+      },
+      msg: {
+        method: 'bootstrap',
+        argsString:
+          '{"args":[[],{"left":{"@qclass":"slot","index":0},"right":{"@qclass":"slot","index":1}}]}',
+        slots: [
+          { type: 'export', vatID: 'left', id: 0 },
+          { type: 'export', vatID: 'right', id: 0 },
+        ],
+      },
     },
   ]);
 
@@ -135,16 +145,21 @@ async function bootstrapExport(t, withSES) {
   t.deepEqual(c.dump().runQueue, [
     {
       type: 'deliver',
-      vatID: 'left',
-      facetID: 0,
-      method: 'foo',
-      argsString:
-        '{"args":[1,{"@qclass":"slot","index":0}],"resolver":{"@qclass":"slot","index":1}}',
-      slots: [
-        { type: 'export', vatID: 'right', id: 0 },
-        { type: 'export', vatID: '_bootstrap', id: 1 },
-      ],
-      kernelResolverID: 40,
+      target: {
+        type: 'export',
+        vatID: 'left',
+        id: 0,
+      },
+      msg: {
+        method: 'foo',
+        argsString:
+          '{"args":[1,{"@qclass":"slot","index":0}],"resolver":{"@qclass":"slot","index":1}}',
+        slots: [
+          { type: 'export', vatID: 'right', id: 0 },
+          { type: 'export', vatID: '_bootstrap', id: 1 },
+        ],
+        kernelResolverID: 40,
+      },
     },
   ]);
   await c.step();
@@ -167,25 +182,35 @@ async function bootstrapExport(t, withSES) {
   t.deepEqual(c.dump().runQueue, [
     {
       type: 'deliver',
-      vatID: 'right',
-      facetID: 0,
-      method: 'bar',
-      argsString:
-        '{"args":[2,{"@qclass":"slot","index":0}],"resolver":{"@qclass":"slot","index":1}}',
-      slots: [
-        { type: 'export', vatID: 'right', id: 0 },
-        { type: 'export', vatID: 'left', id: 1 },
-      ],
-      kernelResolverID: 41,
+      target: {
+        type: 'export',
+        vatID: 'right',
+        id: 0,
+      },
+      msg: {
+        method: 'bar',
+        argsString:
+          '{"args":[2,{"@qclass":"slot","index":0}],"resolver":{"@qclass":"slot","index":1}}',
+        slots: [
+          { type: 'export', vatID: 'right', id: 0 },
+          { type: 'export', vatID: 'left', id: 1 },
+        ],
+        kernelResolverID: 41,
+      },
     },
     {
       type: 'deliver',
-      vatID: '_bootstrap',
-      facetID: 1,
-      method: 'resolve',
-      argsString: '{"args":[{"@qclass":"undefined"}]}',
-      slots: [],
-      kernelResolverID: 42,
+      target: {
+        type: 'export',
+        vatID: '_bootstrap',
+        id: 1,
+      },
+      msg: {
+        method: 'resolve',
+        argsString: '{"args":[{"@qclass":"undefined"}]}',
+        slots: [],
+        kernelResolverID: 42,
+      },
     },
   ]);
 
@@ -201,21 +226,31 @@ async function bootstrapExport(t, withSES) {
   t.deepEqual(c.dump().runQueue, [
     {
       type: 'deliver',
-      vatID: '_bootstrap',
-      facetID: 1,
-      method: 'resolve',
-      argsString: '{"args":[{"@qclass":"undefined"}]}',
-      slots: [],
-      kernelResolverID: 42,
+      target: {
+        type: 'export',
+        vatID: '_bootstrap',
+        id: 1,
+      },
+      msg: {
+        method: 'resolve',
+        argsString: '{"args":[{"@qclass":"undefined"}]}',
+        slots: [],
+        kernelResolverID: 42,
+      },
     },
     {
       type: 'deliver',
-      vatID: 'left',
-      facetID: 1,
-      method: 'resolve',
-      argsString: '{"args":[3]}',
-      slots: [],
-      kernelResolverID: 43,
+      target: {
+        type: 'export',
+        vatID: 'left',
+        id: 1,
+      },
+      msg: {
+        method: 'resolve',
+        argsString: '{"args":[3]}',
+        slots: [],
+        kernelResolverID: 43,
+      },
     },
   ]);
 
@@ -223,12 +258,17 @@ async function bootstrapExport(t, withSES) {
   t.deepEqual(c.dump().runQueue, [
     {
       type: 'deliver',
-      vatID: 'left',
-      facetID: 1,
-      method: 'resolve',
-      argsString: '{"args":[3]}',
-      slots: [],
-      kernelResolverID: 43,
+      target: {
+        type: 'export',
+        vatID: 'left',
+        id: 1,
+      },
+      msg: {
+        method: 'resolve',
+        argsString: '{"args":[3]}',
+        slots: [],
+        kernelResolverID: 43,
+      },
     },
   ]);
 

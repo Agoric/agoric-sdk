@@ -209,214 +209,249 @@ export default function buildKernel(kernelEndowments) {
       state: 'unresolved',
       decider: deciderVatID,
       subscribers: new Set(),
+      queue: [],
     });
     return promiseID;
   }
 
-  const syscallBase = harden({
-    send(fromVatID, targetImportID, method, argsString, vatSlots) {
-      Nat(targetImportID);
-      const target = mapOutbound(fromVatID, {
-        type: 'import',
-        id: targetImportID,
-      });
-      if (!target) {
-        throw Error(`unable to find target for ${fromVatID}/${targetImportID}`);
-      }
-      const slots = vatSlots.map(slot => mapOutbound(fromVatID, slot));
-      const promiseID = createPromiseWithDecider(target.vatID);
-      runQueue.push({
-        type: 'deliver',
-        vatID: target.vatID,
-        facetID: target.id,
-        method,
-        argsString,
-        slots,
-        kernelResolverID: promiseID,
-      });
-      const p = mapInbound(fromVatID, {
-        type: 'promise',
-        id: promiseID,
-      });
-      return p.id; // relative to caller
-    },
+  function makeError(s) {
+    // TODO: create a @qclass=error, once we define those
+    // or maybe replicate whatever happens with {}.foo()
+    // or 3.foo() etc
+    return s;
+  }
 
-    createPromise(fromVatID) {
-      const promiseID = createPromiseWithDecider(fromVatID);
-      const p = mapInbound(fromVatID, {
-        type: 'promise',
-        id: promiseID,
-      });
-      const r = mapInbound(fromVatID, {
-        type: 'resolver',
-        id: promiseID,
-      });
-      return harden({ promiseID: p.id, resolverID: r.id });
-    },
+  function send(target, msg) {
+    if (target.type === 'export') {
+      runQueue.push({ type: 'deliver', target, msg });
+    } else if (target.type === 'promise') {
+      const kp = kernelPromises.get(target.id);
+      if (kp.state === 'unresolved') {
+        kp.queue.push(msg);
+      } else if (kp.state === 'fulfilledToData') {
+        const s = `data is not callable, has no method ${msg.method}`;
+        reject(msg.kernelPromiseID, makeError(s), []);
+      } else if (kp.state === 'fulfilledToTarget') {
+        send(kp.fulfillSlot, msg);
+      } else if (kp.state === 'rejected') {
+        // TODO would it be simpler to redirect msg.kernelPromiseID to kp?
+        reject(msg.kernelPromiseID, kp.rejectData, kp.rejectSlots);
+      } else if (kp.state === 'redirected') {
+        // TODO: shorten as we go
+        send({ type: 'promise', id: kp.redirectedTo });
+      } else {
+        throw new Error(`unknown kernelPromise state '${kp.state}'`);
+      }
+    } else {
+      throw Error(`unable to send() to slot.type ${target.slot}`);
+    }
+  }
 
-    subscribe(fromVatID, promiseID) {
-      const { id } = mapOutbound(fromVatID, { type: 'promise', id: promiseID });
-      if (!kernelPromises.has(id)) {
-        throw new Error(`unknown kernelPromise id '${id}'`);
-      }
-      const p = kernelPromises.get(id);
-      if (p.subscribers.size === 0) {
-        runQueue.push({
-          type: 'subscribe',
-          vatID: p.decider,
-          kernelPromiseID: id,
-        });
-      }
-      p.subscribers.add(fromVatID);
-    },
+  function notifySubscribersAndQueue(id, p, type) {
+    const pslot = { type: 'promise', id };
+    for (const subscriberVatID of p.subscribers) {
+      runQueue.push({ type, vatID: subscriberVatID, kernelPromiseID: id });
+    }
+    // re-deliver msg to the now-settled promise, which will forward or reject depending on the new state
+    // of the promise
+    for (const msg of p.queue) {
+      send(pslot, msg);
+    }
+  }
 
-    /*
-    redirect(fromVatID, resolverID, targetPromiseID) {
-      const { id } = mapOutbound(fromVatID, { type: 'resolver', id: resolverID });
-      if (!kernelPromises.has(id)) {
-        throw new Error(`unknown kernelPromise id '${id}'`);
-      }
-      const p = kernelPromises.get(id);
-      if (p.state !== 'unresolved') {
-        throw new Error(`kernelPromise[${id}] is '${p.state}', not 'unresolved'`);
-      }
+  function fulfillToTarget(id, targetSlot) {
+    if (!kernelPromises.has(id)) {
+      throw new Error(`unknown kernelPromise id '${id}'`);
+    }
+    const p = kernelPromises.get(id);
+    if (p.state !== 'unresolved') {
+      throw new Error(`kernelPromise[${id}] is '${p.state}', not 'unresolved'`);
+    }
+    if (targetSlot.type !== 'export') {
+      throw new Error(
+        `fulfillToTarget() must fulfill to export, not ${targetSlot.type}`,
+      );
+    }
 
-      let { id: targetID } = mapOutbound(fromVatID, { type: 'promise', id: targetPromiseID });
-      if (!kernelPromises.has(targetID)) {
-        throw new Error(`unknown kernelPromise id '${targetID}'`);
-      }
+    p.state = 'fulfilledToTarget';
+    p.fulfillSlot = targetSlot;
+    notifySubscribersAndQueue(id, p, 'notifyFulfillToTarget');
+    delete p.subscribers;
+    delete p.decider;
+    delete p.queue;
+  }
 
-      targetID = chaseRedirections(targetID);
-      const target = kernelPromises.get(targetID);
+  function fulfillToData(id, data, slots) {
+    if (!kernelPromises.has(id)) {
+      throw new Error(`unknown kernelPromise id '${id}'`);
+    }
+    const p = kernelPromises.get(id);
+    if (p.state !== 'unresolved') {
+      throw new Error(`kernelPromise[${id}] is '${p.state}', not 'unresolved'`);
+    }
 
-      for (let s of p.subscribers) {
-        // TODO: we need to remap their subscriptions, somehow
-      }
+    p.state = 'fulfilledToData';
+    p.fulfillData = data;
+    p.fulfillSlots = slots;
+    notifySubscribersAndQueue(id, p, 'notifyFulfillToData');
+    delete p.subscribers;
+    delete p.decider;
+    delete p.queue;
+  }
 
-      p.state = 'redirected';
-      delete p.decider;
-      const subscribers = p.subscribers;
-      delete p.subscribers;
-      p.redirectedTo = targetID;
-      if (p.state !== 'unresolved') {
-        throw new Error(`kernelPromise[${id}] is '${p.state}', not 'unresolved'`);
-      }
-    },
-    */
-
-    fulfillToData(fromVatID, resolverID, fulfillData, vatSlots) {
-      const { id } = mapOutbound(fromVatID, {
-        type: 'resolver',
-        id: resolverID,
-      });
-      if (!kernelPromises.has(id)) {
-        throw new Error(`unknown kernelPromise id '${id}'`);
-      }
-      const p = kernelPromises.get(id);
-      if (p.state !== 'unresolved') {
-        throw new Error(
-          `kernelPromise[${id}] is '${p.state}', not 'unresolved'`,
-        );
-      }
-      p.state = 'fulfilledToData';
-      p.fulfillData = fulfillData;
-      p.fulfillSlots = vatSlots.map(slot => mapOutbound(fromVatID, slot));
-      for (const subscriberVatID of p.subscribers) {
-        runQueue.push({
-          type: 'notifyFulfillToData',
-          vatID: subscriberVatID,
-          kernelPromiseID: id,
-        });
-      }
-      delete p.subscribers;
-      delete p.decider;
-    },
-
-    fulfillToTarget(fromVatID, resolverID, slot) {
-      const { id } = mapOutbound(fromVatID, {
-        type: 'resolver',
-        id: resolverID,
-      });
-      if (!kernelPromises.has(id)) {
-        throw new Error(`unknown kernelPromise id '${id}'`);
-      }
-      const p = kernelPromises.get(id);
-      if (p.state !== 'unresolved') {
-        throw new Error(
-          `kernelPromise[${id}] is '${p.state}', not 'unresolved'`,
-        );
-      }
-      const absoluteSlot = mapOutbound(fromVatID, slot);
-      if (absoluteSlot.type !== 'export') {
-        throw new Error(
-          `fulfillToTarget() must fulfill to export, not ${absoluteSlot.type}`,
-        );
-      }
-
-      p.state = 'fulfilledToTarget';
-      p.fulfillSlot = absoluteSlot;
-      for (const subscriberVatID of p.subscribers) {
-        runQueue.push({
-          type: 'notifyFulfillToTarget',
-          vatID: subscriberVatID,
-          kernelPromiseID: id,
-        });
-      }
-      delete p.subscribers;
-      delete p.decider;
-    },
-
-    reject(fromVatID, resolverID, rejectData, vatSlots) {
-      const { id } = mapOutbound(fromVatID, {
-        type: 'resolver',
-        id: resolverID,
-      });
-      if (!kernelPromises.has(id)) {
-        throw new Error(`unknown kernelPromise id '${id}'`);
-      }
-      const p = kernelPromises.get(id);
-      if (p.state !== 'unresolved') {
-        throw new Error(
-          `kernelPromise[${id}] is '${p.state}', not 'unresolved'`,
-        );
-      }
-      p.state = 'rejected';
-      p.rejectData = rejectData;
-      p.rejectSlots = vatSlots.map(slot => mapOutbound(fromVatID, slot));
-      for (const subscriberVatID of p.subscribers) {
-        runQueue.push({
-          type: 'notifyReject',
-          vatID: subscriberVatID,
-          kernelPromiseID: id,
-        });
-      }
-      delete p.subscribers;
-      delete p.decider;
-    },
-  });
+  function reject(id, val, valSlots) {
+    if (!kernelPromises.has(id)) {
+      throw new Error(`unknown kernelPromise id '${id}'`);
+    }
+    const p = kernelPromises.get(id);
+    if (p.state !== 'unresolved') {
+      throw new Error(`kernelPromise[${id}] is '${p.state}', not 'unresolved'`);
+    }
+    p.state = 'rejected';
+    p.rejectData = val;
+    p.rejectSlots = valSlots;
+    notifySubscribersAndQueue(id, p, 'notifyReject');
+    delete p.subscribers;
+    delete p.decider;
+    delete p.queue;
+  }
 
   function syscallForVatID(fromVatID) {
     return harden({
-      send(...args) {
-        return syscallBase.send(fromVatID, ...args);
+      send(targetSlot, method, argsString, vatSlots) {
+        if (targetSlot.type === undefined) {
+          throw new Error(
+            `targetSlot isn't really a slot ${JSON.stringify(targetSlot)}`,
+          );
+        }
+        const target = mapOutbound(fromVatID, targetSlot);
+        if (!target) {
+          throw Error(
+            `unable to find target for ${fromVatID}/${targetSlot.type}-${
+              targetSlot.id
+            }`,
+          );
+        }
+        const slots = vatSlots.map(slot => mapOutbound(fromVatID, slot));
+        const promiseID = createPromiseWithDecider(target.vatID);
+        const msg = {
+          method,
+          argsString,
+          slots,
+          kernelResolverID: promiseID,
+        };
+        send(target, msg);
+        const p = mapInbound(fromVatID, {
+          type: 'promise',
+          id: promiseID,
+        });
+        return p.id; // relative to caller
       },
-      createPromise(...args) {
-        return syscallBase.createPromise(fromVatID, ...args);
+
+      createPromise() {
+        const promiseID = createPromiseWithDecider(fromVatID);
+        const p = mapInbound(fromVatID, {
+          type: 'promise',
+          id: promiseID,
+        });
+        const r = mapInbound(fromVatID, {
+          type: 'resolver',
+          id: promiseID,
+        });
+        return harden({ promiseID: p.id, resolverID: r.id });
       },
-      subscribe(...args) {
-        return syscallBase.subscribe(fromVatID, ...args);
+
+      subscribe(promiseID) {
+        const { id } = mapOutbound(fromVatID, {
+          type: 'promise',
+          id: promiseID,
+        });
+        if (!kernelPromises.has(id)) {
+          throw new Error(`unknown kernelPromise id '${id}'`);
+        }
+        const p = kernelPromises.get(id);
+        if (p.subscribers.size === 0) {
+          runQueue.push({
+            type: 'subscribe',
+            vatID: p.decider,
+            kernelPromiseID: id,
+          });
+        }
+        p.subscribers.add(fromVatID);
       },
-      redirect(...args) {
-        return syscallBase.redirect(fromVatID, ...args);
+
+      /*
+      redirect(resolverID, targetPromiseID) {
+        const { id } = mapOutbound(fromVatID, { type: 'resolver', id: resolverID });
+        if (!kernelPromises.has(id)) {
+          throw new Error(`unknown kernelPromise id '${id}'`);
+        }
+        const p = kernelPromises.get(id);
+        if (p.state !== 'unresolved') {
+          throw new Error(`kernelPromise[${id}] is '${p.state}', not 'unresolved'`);
+        }
+
+        let { id: targetID } = mapOutbound(fromVatID, { type: 'promise', id: targetPromiseID });
+        if (!kernelPromises.has(targetID)) {
+          throw new Error(`unknown kernelPromise id '${targetID}'`);
+        }
+
+        targetID = chaseRedirections(targetID);
+        const target = kernelPromises.get(targetID);
+
+        for (let s of p.subscribers) {
+          // TODO: we need to remap their subscriptions, somehow
+        }
+
+        p.state = 'redirected';
+        delete p.decider;
+        const subscribers = p.subscribers;
+        delete p.subscribers;
+        p.redirectedTo = targetID;
+        if (p.state !== 'unresolved') {
+          throw new Error(`kernelPromise[${id}] is '${p.state}', not 'unresolved'`);
+        }
       },
-      fulfillToData(...args) {
-        return syscallBase.fulfillToData(fromVatID, ...args);
+      */
+
+      fulfillToData(resolverID, fulfillData, vatSlots) {
+        const { id } = mapOutbound(fromVatID, {
+          type: 'resolver',
+          id: resolverID,
+        });
+        if (!kernelPromises.has(id)) {
+          throw new Error(`unknown kernelPromise id '${id}'`);
+        }
+        const slots = vatSlots.map(slot => mapOutbound(fromVatID, slot));
+        fulfillToData(id, fulfillData, slots);
       },
-      fulfillToTarget(...args) {
-        return syscallBase.fulfillToTarget(fromVatID, ...args);
+
+      fulfillToTarget(resolverID, slot) {
+        const { id } = mapOutbound(fromVatID, {
+          type: 'resolver',
+          id: resolverID,
+        });
+        if (!kernelPromises.has(id)) {
+          throw new Error(`unknown kernelPromise id '${id}'`);
+        }
+
+        const targetSlot = mapOutbound(fromVatID, slot);
+        fulfillToTarget(id, targetSlot);
       },
-      reject(...args) {
-        return syscallBase.reject(fromVatID, ...args);
+
+      reject(resolverID, rejectData, vatSlots) {
+        const { id } = mapOutbound(fromVatID, {
+          type: 'resolver',
+          id: resolverID,
+        });
+        if (!kernelPromises.has(id)) {
+          throw new Error(`unknown kernelPromise id '${id}'`);
+        }
+        reject(
+          id,
+          rejectData,
+          vatSlots.map(slot => mapOutbound(fromVatID, slot)),
+        );
       },
 
       log(str) {
@@ -490,31 +525,41 @@ export default function buildKernel(kernelEndowments) {
 
   async function processOneMessage(message) {
     // console.log(`process ${JSON.stringify(message)}`);
-    const { type, vatID } = message;
+    const { type } = message;
     if (type === 'deliver') {
+      const { target, msg } = message;
+      if (target.type !== 'export') {
+        throw new Error(
+          `processOneMessage got 'deliver' for non-export ${JSON.stringify(
+            target,
+          )}`,
+        );
+      }
+      const { vatID } = target;
       const { dispatch } = getVat(vatID);
-      const inputSlots = message.slots.map(slot => mapInbound(vatID, slot));
+      const inputSlots = msg.slots.map(slot => mapInbound(vatID, slot));
       return process(
         () =>
           dispatch.deliver(
-            message.facetID,
-            message.method,
-            message.argsString,
+            target.id,
+            msg.method,
+            msg.argsString,
             inputSlots,
             // TODO: remove this once resolverID is everywhere
-            message.resolverID && mapInbound(vatID, { type: 'resolver', id: message.resolverID }),
+            msg.resolverID &&
+              mapInbound(vatID, { type: 'resolver', id: msg.resolverID }),
           ),
         err =>
           console.log(
             // eslint-disable-next-line prettier/prettier
-            `vat[${vatID}][${message.facetID}].${message.method} dispatch failed: ${err}`,
+            `vat[${vatID}][${target.id}].${msg.method} dispatch failed: ${err}`,
             err,
           ),
       );
     }
 
     if (type === 'subscribe') {
-      const { kernelPromiseID } = message;
+      const { kernelPromiseID, vatID } = message;
       const { dispatch } = getVat(vatID);
       const relativeID = mapInbound(vatID, {
         type: 'resolver',
@@ -531,7 +576,7 @@ export default function buildKernel(kernelEndowments) {
     }
 
     if (type === 'notifyFulfillToData') {
-      const { kernelPromiseID } = message;
+      const { kernelPromiseID, vatID } = message;
       const { dispatch } = getVat(vatID);
       const p = kernelPromises.get(kernelPromiseID);
       const relativeID = mapInbound(vatID, {
@@ -554,7 +599,7 @@ export default function buildKernel(kernelEndowments) {
     }
 
     if (type === 'notifyFulfillToTarget') {
-      const { kernelPromiseID } = message;
+      const { kernelPromiseID, vatID } = message;
       const { dispatch } = getVat(vatID);
       const p = kernelPromises.get(kernelPromiseID);
       const relativeID = mapInbound(vatID, {
@@ -576,7 +621,7 @@ export default function buildKernel(kernelEndowments) {
     }
 
     if (type === 'notifyReject') {
-      const { kernelPromiseID } = message;
+      const { kernelPromiseID, vatID } = message;
       const { dispatch } = getVat(vatID);
       const p = kernelPromises.get(kernelPromiseID);
       const relativeID = mapInbound(vatID, {
@@ -616,19 +661,25 @@ export default function buildKernel(kernelEndowments) {
     throw Error(`unrecognized type '${s.type}'`);
   }
 
-  function queue(vatID, facetID, method, argsString, slots = []) {
+  function queueToExport(vatID, facetID, method, argsString, slots = []) {
     // queue a message on the end of the queue, with 'absolute' slots. Use
     // 'step' or 'run' to execute it
     runQueue.push(
       harden({
         type: 'deliver',
-        vatID: `${vatID}`,
-        facetID: Nat(facetID), // always export
-        method: `${method}`,
-        argsString: `${argsString}`,
-        // queue() is exposed to the controller's realm, so we must translate
-        // each slot into a kernel-realm object/array
-        slots: Array.from(slots.map(mapQueueSlotToKernelRealm)),
+        target: {
+          type: 'export',
+          vatID: `${vatID}`,
+          id: Nat(facetID),
+        },
+        msg: {
+          method: `${method}`,
+          argsString: `${argsString}`,
+          // queue() is exposed to the controller's realm, so we must translate
+          // each slot into a kernel-realm object/array
+          slots: Array.from(slots.map(mapQueueSlotToKernelRealm)),
+          kernelResolverID: undefined,
+        },
       }),
     );
   }
@@ -663,8 +714,8 @@ export default function buildKernel(kernelEndowments) {
     }
     const m = makeMarshal(serializeSlot);
     const s = m.serialize(harden({ args: [argv, vatObj0s] }));
-    // queue() takes 'neutral' { type: export, vatID, slotID } objects in s.slots
-    queue(vatID, 0, 'bootstrap', s.argsString, s.slots);
+    // queueToExport() takes 'neutral' { type: export, vatID, slotID } objects in s.slots
+    queueToExport(vatID, 0, 'bootstrap', s.argsString, s.slots);
   }
 
   function dump() {
@@ -784,7 +835,7 @@ export default function buildKernel(kernelEndowments) {
       }
     },
 
-    queue,
+    queueToExport,
   });
 
   return kernel;

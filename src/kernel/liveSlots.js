@@ -160,7 +160,12 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
       },
     };
     const ser = m.serialize(harden({ args, resolver }));
-    syscall.send(importID, prop, ser.argsString, ser.slots);
+    syscall.send(
+      { type: 'import', id: importID },
+      prop,
+      ser.argsString,
+      ser.slots,
+    );
     return doneP;
   }
 
@@ -283,7 +288,12 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
       // E(args.resolver).resolve(result);
       const ser = m.serialize(harden({ args: [result] }));
       const resolverSlotID = valToSlot.get(args.resolver).id;
-      syscall.send(resolverSlotID, 'resolve', ser.argsString, ser.slots);
+      syscall.send(
+        { type: 'import', id: resolverSlotID },
+        'resolve',
+        ser.argsString,
+        ser.slots,
+      );
     }
   }
 
