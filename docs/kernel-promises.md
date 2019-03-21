@@ -175,7 +175,7 @@ network messages and `dispatch.queue` for everything from other vats.
   "hey kernel, someone did a .then on my local promise, so please call my
   dispatch.notify* when it changes state"
 
-* syscall.createPromise(promiseID) -> resolverID
+* syscall.createPromise() -> { promiseID, resolverID }
 
   "hey kernel, I want to share one of my local promises, so please create a
   kernel-promise that I can cite."
