@@ -706,11 +706,8 @@ export default function buildKernel(kernelEndowments) {
 
     const promises = [];
     kernelPromises.forEach((p, id) => {
-      const kp = Object.create(
-        Object.prototype,
-        Object.getOwnPropertyDescriptors(p),
-      );
-      kp.id = id;
+      const kp = { id };
+      Object.defineProperties(kp, Object.getOwnPropertyDescriptors(p));
       if ('subscribers' in p) {
         kp.subscribers = Array.from(p.subscribers); // turn Set into Array
       }
