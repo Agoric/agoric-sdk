@@ -501,6 +501,8 @@ export default function buildKernel(kernelEndowments) {
             message.method,
             message.argsString,
             inputSlots,
+            // TODO: remove this once resolverID is everywhere
+            message.resolverID && mapInbound(vatID, { type: 'resolver', id: message.resolverID }),
           ),
         err =>
           console.log(
