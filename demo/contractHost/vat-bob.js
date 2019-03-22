@@ -18,10 +18,9 @@
 import harden from '@agoric/harden';
 import escrowExchange from './escrow';
 
-function makeBob(E, host, alice) {
+function makeBob(E, host) {
   const escrowSrc = `(${escrowExchange})`;
   const contractHostP = Vow.resolve(argv.host);
-  const aliceP = Vow.resolve(argv.alice);
 
   const f = new Flow();
 
@@ -140,16 +139,12 @@ function makeBob(E, host, alice) {
   return bob;
 }
 
-function build(E) {
-  return harden({
-    makeBob(host, alice) {
-      return harden(makeBob(E, host, alice));
-    },
-  });
-}
-
 export default function setup(syscall, helpers) {
   const { E, dispatch, registerRoot } = helpers.makeLiveSlots(syscall, helpers.vatID);
-  registerRoot(build(E));
+  registerRoot(harden({
+    makeBob(host) {
+      return harden(makeBob(E, host));
+    },
+  }));
   return dispatch;
 }

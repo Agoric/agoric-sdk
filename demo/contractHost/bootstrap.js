@@ -53,15 +53,13 @@ export default function setup(syscall, helpers) {
     }
     const contractSrc = `${trivContract}`;
 
-    const tokensP = E(contractHostP).setup(contractSrc);
+    const tokensP = contractHostP.setup(contractSrc);
 
     const whiteTokenP = tokensP.then(tokens => tokens[0]);
     contractHostP.play(whiteTokenP, contractSrc, 0, {});
 
     const blackTokenP = tokensP.then(tokens => tokens[1]);
     const eightP = contractHostP.play(blackTokenP, contractSrc, 1, {});
-    // check that eightP fulfills with 8.
-    // (At the time of this writing, did the right thing under debugger)
     eightP.then(res => {
       console.log('++ eightP resolved to', res, '(should be 8)');
       if (res !== 8) {
@@ -132,24 +130,30 @@ export default function setup(syscall, helpers) {
   }
 
   const obj0 = {
-    bootstrap(argv, vats) {
+    async bootstrap(argv, vats) {
       if (argv[0] === 'mint') {
-        mintTest(vats.mint);
-      } else if (argv[0] === 'trivial') {
-        trivialContractTest(vats.host, argv.trivContractSrc);
-      } else if (argv[0] === 'alice-first') {
-        betterContractTestAliceFirst(vats.mint, vats.host, vats.alice, vats.bob);
+        return mintTest(vats.mint);
+      }
+      const host = await E(vats.host).makeHost();
+      if (argv[0] === 'trivial') {
+        return trivialContractTest(host);
+      }
+      const alice = await E(vats.alice).makeAlice(host, bob);
+      const bob = await E(vats.bob).makeBob(host, alice);
+      if (argv[0] === 'alice-first') {
+        betterContractTestAliceFirst(vats.mint, host, alice, bob);
       } else if (argv[0] === 'bob-first') {
-        betterContractTestBobFirst(vats.mint, vats.host, vats.alice, vats.bob);
+        betterContractTestBobFirst(vats.mint, host, alice, bob);
       } else if (argv[0] === 'bob-first-lies') {
         betterContractTestBobFirst(
           vats.mint,
-          vats.host,
-          vats.alice,
-          vats.bob,
+          host,
+          alice,
+          bob,
           true,
         );
-  }
+      }
+      return undefined;
     },
   };
   registerRoot(harden(obj0));

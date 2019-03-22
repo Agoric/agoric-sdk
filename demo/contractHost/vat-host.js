@@ -83,6 +83,7 @@
 
 /* eslint-disable-next-line global-require, import/no-extraneous-dependencies */
 import harden from '@agoric/harden';
+import makePromise from '../../src/kernel/makePromise';
 
 function makeHost(E) {
   const m = new WeakMap();
@@ -92,20 +93,26 @@ function makeHost(E) {
       contractSrc = `${contractSrc}`;
       const tokens = [];
       const argPs = [];
-      let resolve;
-      const f = new Flow();
-      const resultP = f.makeVow(r => (resolve = r));
+      const { p: resultP, res: resolve } = makePromise();
+      //let resolve;
+      //const f = new Flow();
+      //const resultP = f.makeVow(r => (resolve = r));
       const contract = SES.confineExpr(contractSrc, {
-        Flow,
-        Vow,
+        //Flow,
+        //Vow,
         console,
         require,
+        E,
       });
+      //console.log(`confined contract is ${typeof contract} ${contract}`);
 
       const addParam = (i, token) => {
         tokens[i] = token;
-        let resolveArg;
-        argPs[i] = f.makeVow(r => (resolveArg = r));
+        //let resolveArg;
+        //argPs[i] = f.makeVow(r => (resolveArg = r));
+        const p = makePromise();
+        const resolveArg = p.res;
+        argPs[i] = p.p;
         m.set(token, (allegedSrc, allegedI, arg) => {
           if (contractSrc !== allegedSrc) {
             throw new Error(`unexpected contract: ${contractSrc}`);
@@ -122,30 +129,26 @@ function makeHost(E) {
         addParam(i, harden({}));
       }
       resolve(
-        Vow.all(argPs).then(args => {
+        Promise.all(argPs).then(args => {
           return contract(...args);
         }),
       );
-      return tokens;
+      return harden(tokens);
     },
     play(tokenP, allegedSrc, allegedI, arg) {
-      return Vow.resolve(tokenP).then(token => {
+      return Promise.resolve(tokenP).then(token => {
         return m.get(token)(allegedSrc, allegedI, arg);
       });
     },
   });
 }
 
-function build(E) {
-  return harden({
+export default function setup(syscall, helpers) {
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(syscall, helpers.vatID);
+  registerRoot(harden({
     makeHost() {
       return harden(makeHost(E));
     },
-  });
-}
-
-export default function setup(syscall, helpers) {
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(syscall, helpers.vatID);
-  registerRoot(build(E));
+  }));
   return dispatch;
 }

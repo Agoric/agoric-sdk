@@ -17,12 +17,8 @@
 import harden from '@agoric/harden';
 import escrowExchange from './escrow';
 
-function makeAlice(E, host, bob) {
+function makeAlice(E, host) {
   const escrowSrc = `(${escrowExchange})`;
-  const contractHostP = Vow.resolve(host);
-  const bobP = Vow.resolve(bob);
-
-  const f = new Flow();
 
   let initialized = false;
   let myMoneyPurseP;
@@ -32,10 +28,10 @@ function makeAlice(E, host, bob) {
 
   function init(myMoneyPurse, myStockPurse) {
     initialized = true;
-    myMoneyPurseP = Vow.resolve(myMoneyPurse);
-    myMoneyIssuerP = myMoneyPurseP.e.getIssuer();
-    myStockPurseP = Vow.resolve(myStockPurse);
-    myStockIssuerP = myStockPurseP.e.getIssuer();
+    myMoneyPurseP = Promise.resolve(myMoneyPurse);
+    myMoneyIssuerP = E(myMoneyPurse).getIssuer();
+    myStockPurseP = Promise.resolve(myStockPurse);
+    myStockIssuerP = E(myStockPurse).getIssuer();
     // eslint-disable-next-line no-use-before-define
     return alice; // alice and init use each other
   }
@@ -48,38 +44,38 @@ function makeAlice(E, host, bob) {
 
   const alice = harden({
     init,
-    payBobWell() {
+    payBobWell(bob) {
       if (!initialized) {
         console.log('++ ERR: payBobWell called before init()');
       }
-      const paymentP = myMoneyIssuerP.e.makeEmptyPurse();
-      const ackP = paymentP.e.deposit(10, myMoneyPurseP);
-      return ackP.then(_ => bobP.e.buy('shoe', paymentP));
+      const paymentP = E(myMoneyIssuerP).makeEmptyPurse();
+      const ackP = E(paymentP).deposit(10, myMoneyPurseP);
+      return ackP.then(_ => E(bob).buy('shoe', paymentP));
     },
-    payBobBadly1() {
+    payBobBadly1(bob) {
       if (!initialized) {
         console.log('++ ERR: payBobBadly1 called before init()');
       }
       const payment = harden({ deposit(_amount, _src) {} });
-      return bobP.e.buy('shoe', payment);
+      return E(bob).buy('shoe', payment);
     },
-    payBobBadly2() {
+    payBobBadly2(bob) {
       if (!initialized) {
         console.log('++ ERR: payBobBadly2 called before init()');
       }
-      const paymentP = myMoneyIssuerP.e.makeEmptyPurse();
-      const ackP = paymentP.e.deposit(5, myMoneyPurseP);
-      return ackP.then(_ => bobP.e.buy('shoe', paymentP));
+      const paymentP = E(myMoneyIssuerP).makeEmptyPurse();
+      const ackP = E(paymentP).deposit(5, myMoneyPurseP);
+      return ackP.then(_ => E(bob).buy('shoe', paymentP));
     },
 
-    tradeWell() {
+    tradeWell(bob) {
       if (!initialized) {
         console.log('++ ERR: tradeWell called before init()');
       }
-      const tokensP = contractHostP.e.setup(escrowSrc);
+      const tokensP = E(host).setup(escrowSrc);
       const aliceTokenP = tokensP.then(tokens => tokens[0]);
       const bobTokenP = tokensP.then(tokens => tokens[1]);
-      Vow.resolve(bobP).e.invite(bobTokenP, escrowSrc, 1);
+      E(bob).invite(bobTokenP, escrowSrc, 1);
       return Vow.resolve(alice).e.invite(aliceTokenP, escrowSrc, 0);
     },
 
@@ -101,7 +97,7 @@ function makeAlice(E, host, bob) {
       const ackP = a.moneySrcP.e.deposit(10, myMoneyPurseP);
 
       const doneP = ackP.then(_ =>
-        contractHostP.e.play(tokenP, allegedSrc, allegedSide, a),
+        E(host).play(tokenP, allegedSrc, allegedSide, a),
       );
       return doneP.then(_ => a.stockDstP.e.getBalance());
     },
@@ -109,16 +105,12 @@ function makeAlice(E, host, bob) {
   return alice;
 }
 
-function build(E) {
-  return harden({
-    makeAlice(host, bob) {
-      return harden(makeAlice(E, host, bob));
-    },
-  });
-}
-
 export default function setup(syscall, helpers) {
   const { E, dispatch, registerRoot } = helpers.makeLiveSlots(syscall, helpers.vatID);
-  registerRoot(build(E));
+  registerRoot(harden({
+    makeAlice(host) {
+      return harden(makeAlice(E, host));
+    },
+  }));
   return dispatch;
 }
