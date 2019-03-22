@@ -30,7 +30,15 @@ async function main() {
     const r = repl.start({ prompt: 'vat> ',
                            replMode: repl.REPL_MODE_STRICT,
                          });
-    r.context.dump = () => console.log(controller.dump());
+    r.context.dump = () => {
+      const d = controller.dump();
+      console.log('Kernel Table:');
+      console.log(d.kernelTable);
+      console.log('Promises:');
+      console.log(d.promises);
+      console.log('Run Queue:');
+      console.log(d.runQueue);
+    };
     r.context.run = () => {console.log('run!'); controller.run();};
     r.context.step = () => {console.log('step!'); controller.step();};
   }
