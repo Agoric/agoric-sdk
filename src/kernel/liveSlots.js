@@ -330,6 +330,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
   function thenResolve(resolverID) {
     return res => {
+      harden(res);
       lsdebug(`ls.thenResolve fired`, res);
       // We need to know if this is resolving to an imported/exported
       // presence, because then the kernel can deliver queued messages. We
@@ -356,6 +357,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
   function thenReject(resolverID) {
     return rej => {
+      harden(rej);
       lsdebug(`ls thenReject fired`, rej);
       const ser = m.serialize(rej);
       syscall.reject(resolverID, ser.argsString, ser.slots);
