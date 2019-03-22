@@ -102,19 +102,33 @@ export default function setup(syscall, helpers) {
     const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
     const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
 
-    /* eslint-disable-next-line no-unused-vars */
     const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP);
     const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP);
 
-    E(bobP).tradeWell(aliceP, bobLies).then(
-      res => {
-        console.log('++ bobP.tradeWell done:', res);
-        console.log('++ DONE');
-      },
-      rej => {
-        console.log('++ bobP.tradeWell error:', rej);
-      },
-    );
+    if (bobLies) {
+      E(bobP).tradeWell(aliceP, true).then(
+        res => {
+          console.log('++ bobP.tradeWell done:', res);
+        },
+        rej => {
+          if (rej.message.startsWith('unexpected contract')) {
+            console.log('++ DONE');
+          } else {
+            console.log('++ bobP.tradeWell error:', rej);
+          }
+        },
+      );
+    } else {
+      E(bobP).tradeWell(aliceP, false).then(
+        res => {
+          console.log('++ bobP.tradeWell done:', res);
+          console.log('++ DONE');
+        },
+        rej => {
+          console.log('++ bobP.tradeWell error:', rej);
+        },
+      );
+    }
     //  return E(aliceP).tradeWell(bobP);
   }
 
