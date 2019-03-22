@@ -12,9 +12,9 @@ import makePromise from './makePromise';
 // call.
 
 export function makeLiveSlots(syscall, forVatID = 'unknown') {
-
+  const enableLSDebug = false;
   function lsdebug(...args) {
-    if (false) {
+    if (enableLSDebug) {
       console.log(...args);
     }
   }
@@ -54,6 +54,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     // we ignore the kernel promise, but we use the resolver to notify the
     // kernel when our local promise changes state
     lsdebug(`ls exporting promise ${pr.resolverID}`);
+    // eslint-disable-next-line no-use-before-define
     p.then(thenResolve(pr.resolverID), thenReject(pr.resolverID));
     return harden({ type: 'promise', id: pr.promiseID });
   }
@@ -170,9 +171,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
     // ideally we'd wait until someone .thens done.p, but with native
     // Promises we have no way of spotting that, so subscribe immediately
-    lsdebug(
-      `ls[${forVatID}].queueMessage.importedPromiseThen ${promiseID}`,
-    );
+    lsdebug(`ls[${forVatID}].queueMessage.importedPromiseThen ${promiseID}`);
     importedPromiseThen(promiseID);
 
     // prepare the serializer to recognize it, if it's used as an argument or
@@ -313,16 +312,25 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     const t = getTarget(facetid);
     const args = m.unserialize(argsbytes, caps);
     const p = Promise.resolve().then(_ => {
-      if (!method in t) {
-        throw new TypeError(`target[${method}] does not exist, has ${Object.getOwnPropertyNames(t)}`);
+      if (!(method in t)) {
+        throw new TypeError(
+          `target[${method}] does not exist, has ${Object.getOwnPropertyNames(
+            t,
+          )}`,
+        );
       }
       if (!(t[method] instanceof Function)) {
-        throw new TypeError(`target[${method}] is not a function, typeof is ${typeof t[method]}, has ${Object.getOwnPropertyNames(t)}`);
+        throw new TypeError(
+          `target[${method}] is not a function, typeof is ${typeof t[
+            method
+          ]}, has ${Object.getOwnPropertyNames(t)}`,
+        );
       }
       return t[method](...args.args);
     });
     if (resolverID !== undefined) {
       lsdebug(` ls.deliver attaching then ->${resolverID}`);
+      // eslint-disable-next-line no-use-before-define
       p.then(thenResolve(resolverID), thenReject(resolverID));
     }
     return p;
@@ -375,9 +383,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   } */
 
   function notifyFulfillToData(promiseID, data, slots) {
-    lsdebug(
-      `ls.dispatch.notifyFulfillToData(${promiseID}, ${data}, ${slots})`,
-    );
+    lsdebug(`ls.dispatch.notifyFulfillToData(${promiseID}, ${data}, ${slots})`);
     if (!importedPromisesByPromiseID.has(promiseID)) {
       throw new Error(`unknown promiseID '${promiseID}'`);
     }
