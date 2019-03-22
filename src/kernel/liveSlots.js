@@ -312,7 +312,15 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     }
     const t = getTarget(facetid);
     const args = m.unserialize(argsbytes, caps);
-    const p = Promise.resolve().then(_ => t[method](...args.args));
+    const p = Promise.resolve().then(_ => {
+      if (!method in t) {
+        throw new TypeError(`target[${method}] does not exist, has ${Object.getOwnPropertyNames(t)}`);
+      }
+      if (!(t[method] instanceof Function)) {
+        throw new TypeError(`target[${method}] is not a function, typeof is ${typeof t[method]}, has ${Object.getOwnPropertyNames(t)}`);
+      }
+      return t[method](...args.args);
+    });
     if (resolverID !== undefined) {
       lsdebug(` ls.deliver attaching then ->${resolverID}`);
       p.then(thenResolve(resolverID), thenReject(resolverID));
