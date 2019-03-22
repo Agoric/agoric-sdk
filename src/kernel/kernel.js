@@ -7,6 +7,11 @@ import makePromise from './makePromise';
 export default function buildKernel(kernelEndowments) {
   const { setImmediate } = kernelEndowments;
 
+  function kdebug(...args) {
+    if (false) {
+      console.log(...args);
+    }
+  }
   const log = [];
 
   let running = false;
@@ -91,7 +96,7 @@ export default function buildKernel(kernelEndowments) {
   // target of a send), what are they talking about?
 
   function mapOutbound(fromVatID, slot) {
-    // console.log(`mapOutbound ${JSON.stringify(slot)}`);
+    // kdebug(`mapOutbound ${JSON.stringify(slot)}`);
     const vat = getVat(fromVatID);
 
     if (slot.type === 'export') {
@@ -136,7 +141,7 @@ export default function buildKernel(kernelEndowments) {
   // mapInbound: convert from absolute slot to forVatID-relative slot. This
   // is used when building the arguments for dispatch.deliver.
   function mapInbound(forVatID, slot) {
-    // console.log(`mapInbound for ${forVatID} of ${slot}`);
+    // kdebug(`mapInbound for ${forVatID} of ${slot}`);
     const vat = getVat(forVatID);
 
     if (slot.type === 'export') {
@@ -153,7 +158,7 @@ export default function buildKernel(kernelEndowments) {
       if (!m.inbound.has(key)) {
         // must add both directions
         const newSlotID = Nat(allocateImportIndex(forVatID));
-        // console.log(` adding ${newSlotID}`);
+        // kdebug(` adding ${newSlotID}`);
         m.inbound.set(key, newSlotID);
         m.outbound.set(newSlotID, harden({ type: 'export', vatID, id }));
       }
@@ -178,7 +183,7 @@ export default function buildKernel(kernelEndowments) {
       const m = vat.resolvers;
       if (!m.inbound.has(kernelPromiseID)) {
         const resolverID = Nat(allocateResolverIDForVat(vat));
-        console.log(
+        kdebug(
           ` mapInbound allocating resID ${resolverID} for kpid ${kernelPromiseID}`,
         );
         m.inbound.set(kernelPromiseID, resolverID);
@@ -297,7 +302,7 @@ export default function buildKernel(kernelEndowments) {
   }
 
   function fulfillToData(id, data, slots) {
-    console.log(`fulfillToData[${id}] -> ${data} ${JSON.stringify(slots)}`);
+    kdebug(`fulfillToData[${id}] -> ${data} ${JSON.stringify(slots)}`);
     if (!kernelPromises.has(id)) {
       throw new Error(`unknown kernelPromise id '${id}'`);
     }
@@ -348,7 +353,7 @@ export default function buildKernel(kernelEndowments) {
             }`,
           );
         }
-        console.log(
+        kdebug(
           `syscall[${fromVatID}].send(vat:${JSON.stringify(
             targetSlot,
           )}=ker:${JSON.stringify(target)}).${method}`,
@@ -362,7 +367,7 @@ export default function buildKernel(kernelEndowments) {
         if (target.type === 'export') {
           decider = target.vatID;
         }
-        console.log(`  ^target is ${JSON.stringify(target)}`);
+        kdebug(`  ^target is ${JSON.stringify(target)}`);
         const kernelPromiseID = createPromiseWithDecider(decider);
         const msg = {
           method,
@@ -388,7 +393,7 @@ export default function buildKernel(kernelEndowments) {
           type: 'resolver',
           id: kernelPromiseID,
         });
-        console.log(
+        kdebug(
           `syscall[${fromVatID}].createPromise -> (vat:p${p.id}/r${
             r.id
           }=ker:${kernelPromiseID})`,
@@ -401,7 +406,7 @@ export default function buildKernel(kernelEndowments) {
           type: 'promise',
           id: promiseID,
         });
-        console.log(
+        kdebug(
           `syscall[${fromVatID}].subscribe(vat:${promiseID}=ker:${id})`,
         );
         if (!kernelPromises.has(id)) {
@@ -409,7 +414,7 @@ export default function buildKernel(kernelEndowments) {
         }
         const p = kernelPromises.get(id);
         /*
-        console.log(`  decider is ${p.decider} in ${JSON.stringify(p)}`);
+        kdebug(`  decider is ${p.decider} in ${JSON.stringify(p)}`);
         if (p.subscribers.size === 0 && p.decider !== undefined) {
           runQueue.push({
             type: 'subscribe',
@@ -488,7 +493,7 @@ export default function buildKernel(kernelEndowments) {
           throw new Error(`unknown kernelPromise id '${id}'`);
         }
         const slots = vatSlots.map(slot => mapOutbound(fromVatID, slot));
-        console.log(
+        kdebug(
           `syscall[${fromVatID}].fulfillData(vatid=${resolverID}/kid=${id}) = ${fulfillData} v=${JSON.stringify(
             vatSlots,
           )}/k=${JSON.stringify(slots)}`,
@@ -507,7 +512,7 @@ export default function buildKernel(kernelEndowments) {
         }
 
         const targetSlot = mapOutbound(fromVatID, slot);
-        console.log(
+        kdebug(
           `syscall[${fromVatID}].fulfillToTarget(vatid=${resolverID}/kid=${id}) = vat:${JSON.stringify(
             targetSlot,
           )}=ker:${id})`,
@@ -525,7 +530,7 @@ export default function buildKernel(kernelEndowments) {
           throw new Error(`unknown kernelPromise id '${id}'`);
         }
         const slots = vatSlots.map(slot => mapOutbound(fromVatID, slot));
-        console.log(
+        kdebug(
           `syscall[${fromVatID}].reject(vatid=${resolverID}/kid=${id}) = ${rejectData} v=${JSON.stringify(
             vatSlots,
           )}/k=${JSON.stringify(slots)}`,
@@ -603,7 +608,7 @@ export default function buildKernel(kernelEndowments) {
   }
 
   async function processOneMessage(message) {
-    console.log(`process ${JSON.stringify(message)}`);
+    kdebug(`process ${JSON.stringify(message)}`);
     const { type } = message;
     if (type === 'deliver') {
       const { target, msg } = message;

@@ -11,7 +11,7 @@ import buildKernelNonSES from './kernel/index';
 import bundleSource from './build-source-bundle';
 
 export function loadBasedir(basedir) {
-  console.log(`loading config from basedir ${basedir}`);
+  console.log(`= loading config from basedir ${basedir}`);
   const vatSources = new Map();
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.forEach(dirent => {
@@ -103,7 +103,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
   // the same in this wrapper
   const controller = harden({
     async addVat(vatID, sourceIndex) {
-      console.log(`adding vat '${vatID}' from ${sourceIndex}`);
+      console.log(`= adding vat '${vatID}' from ${sourceIndex}`);
       await addVat(vatID, sourceIndex);
     },
 

@@ -25,7 +25,7 @@ async function main() {
   const controller = await buildVatController(config, withSES, vatArgv);
   if (command === 'run') {
     await controller.run();
-    console.log('vat finished');
+    console.log('= vat finished');
   } else if (command === 'shell') {
     const r = repl.start({ prompt: 'vat> ',
                            replMode: repl.REPL_MODE_STRICT,

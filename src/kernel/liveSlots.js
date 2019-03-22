@@ -12,6 +12,13 @@ import makePromise from './makePromise';
 // call.
 
 export function makeLiveSlots(syscall, forVatID = 'unknown') {
+
+  function lsdebug(...args) {
+    if (false) {
+      console.log(...args);
+    }
+  }
+
   function makePresence(id) {
     return harden({
       [`_importID_${id}`]() {},
@@ -46,7 +53,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     const pr = syscall.createPromise();
     // we ignore the kernel promise, but we use the resolver to notify the
     // kernel when our local promise changes state
-    console.log(`ls exporting promise ${pr.resolverID}`);
+    lsdebug(`ls exporting promise ${pr.resolverID}`);
     p.then(thenResolve(pr.resolverID), thenReject(pr.resolverID));
     return harden({ type: 'promise', id: pr.promiseID });
   }
@@ -57,7 +64,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   }
 
   function serializeSlot(val, slots, slotMap) {
-    // console.log(`serializeSlot`, val, Object.isFrozen(val));
+    // lsdebug(`serializeSlot`, val, Object.isFrozen(val));
     // This is either a Presence (in presenceToImportID), a
     // previously-serialized local pass-by-presence object or
     // previously-serialized local Promise (in valToSlot), a new local
@@ -73,7 +80,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
       if (!valToSlot.has(val)) {
         // must be a new export
-        // console.log('must be a new export', JSON.stringify(val));
+        // lsdebug('must be a new export', JSON.stringify(val));
         if (Promise.resolve(val) === val) {
           slot = exportPromise(val);
         } else {
@@ -108,22 +115,22 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     // the current Promise API doesn't give us a way to discover this, so we
     // must subscribe right away. If we were using Vows or some other
     // then-able, we could just hook then() to notify us.
-    console.log(`ls[${forVatID}].importPromise.importedPromiseThen ${id}`);
+    lsdebug(`ls[${forVatID}].importPromise.importedPromiseThen ${id}`);
     importedPromiseThen(id);
     return p;
   }
 
   function unserializeSlot(data, slots) {
-    // console.log(`unserializeSlot ${data} ${slots}`);
+    // lsdebug(`unserializeSlot ${data} ${slots}`);
     const slot = slots[Nat(data.index)];
     const key = slotToKey(slot);
     let val;
     if (!slotKeyToVal.has(key)) {
       if (slot.type === 'import') {
         // this is a new import value
-        // console.log(`assigning new import ${slot.id}`);
+        // lsdebug(`assigning new import ${slot.id}`);
         val = makePresence(slot.id);
-        // console.log(` for presence`, val);
+        // lsdebug(` for presence`, val);
       } else if (slot.type === 'export') {
         // huh, the kernel should never reference an export we didn't
         // previously send
@@ -153,9 +160,9 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   function queueMessage(targetSlot, prop, args) {
     const done = makePromise();
     const ser = m.serialize(harden({ args }));
-    console.log(`ls.qm send(${JSON.stringify(targetSlot)}, ${prop}`);
+    lsdebug(`ls.qm send(${JSON.stringify(targetSlot)}, ${prop}`);
     const promiseID = syscall.send(targetSlot, prop, ser.argsString, ser.slots);
-    console.log(` ls.qm got promiseID ${promiseID}`);
+    lsdebug(` ls.qm got promiseID ${promiseID}`);
 
     // prepare for notifyFulfillToData/etc
     importedPromisesByPromise.set(done.p, promiseID);
@@ -163,7 +170,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
     // ideally we'd wait until someone .thens done.p, but with native
     // Promises we have no way of spotting that, so subscribe immediately
-    console.log(
+    lsdebug(
       `ls[${forVatID}].queueMessage.importedPromiseThen ${promiseID}`,
     );
     importedPromiseThen(promiseID);
@@ -181,7 +188,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   function PresenceHandler(importSlot) {
     return {
       get(target, prop) {
-        console.log(`PreH proxy.get(${prop})`);
+        lsdebug(`PreH proxy.get(${prop})`);
         if (prop !== `${prop}`) {
           return undefined;
         }
@@ -197,7 +204,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   function KernelPromiseHandler(promiseSlot) {
     return {
       get(target, prop) {
-        console.log(`KPH proxy.get(${prop})`);
+        lsdebug(`KPH proxy.get(${prop})`);
         if (prop !== `${prop}`) {
           return undefined;
         }
@@ -213,7 +220,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   function PromiseHandler(targetPromise) {
     return {
       get(target, prop) {
-        // console.log(`ProH proxy.get(${prop})`);
+        // lsdebug(`ProH proxy.get(${prop})`);
         if (prop !== `${prop}`) {
           return undefined;
         }
@@ -269,12 +276,12 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
       // to this
       handler = KernelPromiseHandler(slot);
     } else if (slot && slot.type === 'import') {
-      console.log(` was importID ${slot.id}`);
+      lsdebug(` was importID ${slot.id}`);
       handler = PresenceHandler(slot);
     } else {
       // might be a local object (previously sent or not), or a local Promise
       // (but not an imported one, or an answer). Treat it like a Promise.
-      console.log(` treating as promise`);
+      lsdebug(` treating as promise`);
       const targetP = Promise.resolve(x);
       // targetP might resolve to a Presence
       handler = PromiseHandler(targetP);
@@ -286,7 +293,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
   let rootIsRegistered = false;
   function registerRoot(val) {
-    // console.log(`[${forVatID}] registerRoot`, val);
+    // lsdebug(`[${forVatID}] registerRoot`, val);
     if (rootIsRegistered) {
       throw Error(`[${forVatID}] registerRoot() was already called`);
     }
@@ -297,7 +304,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   }
 
   function deliver(facetid, method, argsbytes, caps, resolverID) {
-    console.log(
+    lsdebug(
       `ls[${forVatID}].dispatch.deliver ${facetid}.${method} -> ${resolverID}`,
     );
     if (!rootIsRegistered) {
@@ -307,7 +314,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     const args = m.unserialize(argsbytes, caps);
     const p = Promise.resolve().then(_ => t[method](...args.args));
     if (resolverID !== undefined) {
-      console.log(` ls.deliver attaching then ->${resolverID}`);
+      lsdebug(` ls.deliver attaching then ->${resolverID}`);
       p.then(thenResolve(resolverID), thenReject(resolverID));
     }
     return p;
@@ -315,12 +322,12 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
   function thenResolve(resolverID) {
     return res => {
-      console.log(`ls.thenResolve fired`, res);
+      lsdebug(`ls.thenResolve fired`, res);
       // We need to know if this is resolving to an imported/exported
       // presence, because then the kernel can deliver queued messages. We
       // could build a simpler way of doing this.
       const ser = m.serialize(res);
-      console.log(` ser ${ser.argsString} ${JSON.stringify(ser.slots)}`);
+      lsdebug(` ser ${ser.argsString} ${JSON.stringify(ser.slots)}`);
       const unser = JSON.parse(ser.argsString);
       if (
         typeof unser === 'object' &&
@@ -341,7 +348,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
   function thenReject(resolverID) {
     return rej => {
-      console.log(`ls thenReject fired`, rej);
+      lsdebug(`ls thenReject fired`, rej);
       const ser = m.serialize(rej);
       syscall.reject(resolverID, ser.argsString, ser.slots);
     };
@@ -349,7 +356,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
   /*
   function subscribe(resolverID) {
-    console.log(`ls.dispatch.subscribe(${resolverID})`);
+    lsdebug(`ls.dispatch.subscribe(${resolverID})`);
     if (!exportedPromisesByResolverID.has(resolverID)) {
       throw new Error(`unknown resolverID '${resolverID}'`);
     }
@@ -358,7 +365,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   } */
 
   function notifyFulfillToData(promiseID, data, slots) {
-    console.log(
+    lsdebug(
       `ls.dispatch.notifyFulfillToData(${promiseID}, ${data}, ${slots})`,
     );
     if (!importedPromisesByPromiseID.has(promiseID)) {
@@ -369,7 +376,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   }
 
   function notifyFulfillToTarget(promiseID, slot) {
-    console.log(`ls.dispatch.notifyFulfillToTarget(${promiseID}, ${slot})`);
+    lsdebug(`ls.dispatch.notifyFulfillToTarget(${promiseID}, ${slot})`);
     if (!importedPromisesByPromiseID.has(promiseID)) {
       throw new Error(`unknown promiseID '${promiseID}'`);
     }
@@ -378,7 +385,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   }
 
   function notifyReject(promiseID, data, slots) {
-    console.log(`ls.dispatch.notifyReject(${promiseID}, ${data}, ${slots})`);
+    lsdebug(`ls.dispatch.notifyReject(${promiseID}, ${data}, ${slots})`);
     if (!importedPromisesByPromiseID.has(promiseID)) {
       throw new Error(`unknown promiseID '${promiseID}'`);
     }
