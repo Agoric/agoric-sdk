@@ -174,21 +174,51 @@ test('serialize imports', t => {
   t.end();
 });
 
-test.skip('serialize promise', t => {
-  const { m } = makeLiveSlots();
+test('serialize promise', t => {
+  const syscall = {
+    createPromise() {
+      return {
+        promiseID: 1,
+        resolverID: 2,
+      };
+    },
+  };
+
+  const { m } = makeLiveSlots(syscall);
   const { p, res } = makePromise();
   t.deepEqual(m.serialize(p), {
-    argsString: '{"@qclass":"promise","index":0}',
-    slots: [1],
+    argsString: '{"@qclass":"slot","index":0}',
+    slots: [{ type: 'promise', id: 1 }],
   });
   // serializer should remember the promise
-  t.deepEqual(m.serialize(p), {
-    argsString: '{"@qclass":"promise","index":0}',
-    slots: [1],
+  t.deepEqual(m.serialize(harden(['other stuff', p])), {
+    argsString: '["other stuff",{"@qclass":"slot","index":0}]',
+    slots: [{ type: 'promise', id: 1 }],
   });
 
   // inbound should recognize it and return the promise
-  t.deepEqual(m.unserialize('{"@qclass":"promise","index":0}', [1]), p);
+  t.deepEqual(
+    m.unserialize('{"@qclass":"slot","index":0}', [{ type: 'promise', id: 1 }]),
+    p,
+  );
+
+  t.end();
+});
+
+test('unserialize promise', t => {
+  const log = [];
+  const syscall = {
+    subscribe(promiseID) {
+      log.push(`subscribe-${promiseID}`);
+    },
+  };
+
+  const { m } = makeLiveSlots(syscall);
+  const p = m.unserialize('{"@qclass":"slot","index":0}', [
+    { type: 'promise', id: 1 },
+  ]);
+  t.deepEqual(log, ['subscribe-1']);
+  t.ok(p instanceof Promise);
 
   t.end();
 });
