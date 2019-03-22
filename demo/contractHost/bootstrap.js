@@ -46,20 +46,19 @@ export default function setup(syscall, helpers) {
 
   function trivialContractTest(host) {
     console.log('starting trivialContractTest');
-    const contractHostP = E(host);
 
     function trivContract(_whiteP, _blackP) {
       return 8;
     }
     const contractSrc = `${trivContract}`;
 
-    const tokensP = contractHostP.setup(contractSrc);
+    const tokensP = E(host).setup(contractSrc);
 
     const whiteTokenP = tokensP.then(tokens => tokens[0]);
-    contractHostP.play(whiteTokenP, contractSrc, 0, {});
+    E(host).play(whiteTokenP, contractSrc, 0, {});
 
     const blackTokenP = tokensP.then(tokens => tokens[1]);
-    const eightP = contractHostP.play(blackTokenP, contractSrc, 1, {});
+    const eightP = E(host).play(blackTokenP, contractSrc, 1, {});
     eightP.then(res => {
       console.log('++ eightP resolved to', res, '(should be 8)');
       if (res !== 8) {
@@ -70,22 +69,20 @@ export default function setup(syscall, helpers) {
     return eightP;
   }
 
-  function betterContractTestAliceFirst(mint, host, alice, bob) {
-    /* eslint-disable-next-line no-unused-vars */
-    const contractHostP = E(host);
+  function betterContractTestAliceFirst(mint, alice, bob) {
     const moneyMintP = E(mint).makeMint();
-    const aliceMoneyPurseP = moneyMintP.mint(1000);
-    const bobMoneyPurseP = moneyMintP.mint(1001);
+    const aliceMoneyPurseP = E(moneyMintP).mint(1000);
+    const bobMoneyPurseP = E(moneyMintP).mint(1001);
 
     const stockMintP = E(mint).makeMint();
-    const aliceStockPurseP = stockMintP.mint(2002);
-    const bobStockPurseP = stockMintP.mint(2003);
+    const aliceStockPurseP = E(stockMintP).mint(2002);
+    const bobStockPurseP = E(stockMintP).mint(2003);
 
     const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP);
     /* eslint-disable-next-line no-unused-vars */
     const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP);
 
-    const ifItFitsP = aliceP.payBobWell();
+    const ifItFitsP = E(aliceP).payBobWell(bob);
     ifItFitsP.then(
       res => {
         console.log('++ ifItFitsP done:', res);
@@ -96,28 +93,20 @@ export default function setup(syscall, helpers) {
     return ifItFitsP;
   }
 
-  function betterContractTestBobFirst(
-    mint,
-    host,
-    alice,
-    bob,
-    bobLies = false,
-  ) {
-    /* eslint-disable-next-line no-unused-vars */
-    const contractHostP = E(host);
+  function betterContractTestBobFirst(mint, alice, bob, bobLies = false) {
     const moneyMintP = E(mint).makeMint();
-    const aliceMoneyPurseP = moneyMintP.mint(1000, 'aliceMainMoney');
-    const bobMoneyPurseP = moneyMintP.mint(1001, 'bobMainMoney');
+    const aliceMoneyPurseP = E(moneyMintP).mint(1000, 'aliceMainMoney');
+    const bobMoneyPurseP = E(moneyMintP).mint(1001, 'bobMainMoney');
 
     const stockMintP = E(mint).makeMint();
-    const aliceStockPurseP = stockMintP.mint(2002, 'aliceMainStock');
-    const bobStockPurseP = stockMintP.mint(2003, 'bobMainStock');
+    const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
+    const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
 
     /* eslint-disable-next-line no-unused-vars */
     const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP);
     const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP);
 
-    bobP.tradeWell(bobLies).then(
+    E(bobP).tradeWell(aliceP, bobLies).then(
       res => {
         console.log('++ bobP.tradeWell done:', res);
         console.log('++ DONE');
@@ -126,7 +115,7 @@ export default function setup(syscall, helpers) {
         console.log('++ bobP.tradeWell error:', rej);
       },
     );
-    //  return aliceP.tradeWell(bobP);
+    //  return E(aliceP).tradeWell(bobP);
   }
 
   const obj0 = {
@@ -138,20 +127,14 @@ export default function setup(syscall, helpers) {
       if (argv[0] === 'trivial') {
         return trivialContractTest(host);
       }
-      const alice = await E(vats.alice).makeAlice(host, bob);
-      const bob = await E(vats.bob).makeBob(host, alice);
+      const alice = await E(vats.alice).makeAlice(host);
+      const bob = await E(vats.bob).makeBob(host);
       if (argv[0] === 'alice-first') {
-        betterContractTestAliceFirst(vats.mint, host, alice, bob);
+        betterContractTestAliceFirst(vats.mint, alice, bob);
       } else if (argv[0] === 'bob-first') {
-        betterContractTestBobFirst(vats.mint, host, alice, bob);
+        betterContractTestBobFirst(vats.mint, alice, bob);
       } else if (argv[0] === 'bob-first-lies') {
-        betterContractTestBobFirst(
-          vats.mint,
-          host,
-          alice,
-          bob,
-          true,
-        );
+        betterContractTestBobFirst(vats.mint, alice, bob, true);
       }
       return undefined;
     },

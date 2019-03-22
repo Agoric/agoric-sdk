@@ -20,9 +20,6 @@ import escrowExchange from './escrow';
 
 function makeBob(E, host) {
   const escrowSrc = `(${escrowExchange})`;
-  const contractHostP = Vow.resolve(argv.host);
-
-  const f = new Flow();
 
   let initialized = false;
   let myMoneyPurseP;
@@ -32,10 +29,10 @@ function makeBob(E, host) {
 
   function init(myMoneyPurse, myStockPurse) {
     initialized = true;
-    myMoneyPurseP = Vow.resolve(myMoneyPurse);
-    myMoneyIssuerP = myMoneyPurseP.e.getIssuer();
-    myStockPurseP = Vow.resolve(myStockPurse);
-    myStockIssuerP = myStockPurseP.e.getIssuer();
+    myMoneyPurseP = Promise.resolve(myMoneyPurse);
+    myMoneyIssuerP = E(myMoneyPurse).getIssuer();
+    myStockPurseP = Promise.resolve(myStockPurse);
+    myStockIssuerP = E(myStockPurse).getIssuer();
     /* eslint-disable-next-line no-use-before-define */
     return bob; // bob and init use each other
   }
@@ -73,24 +70,24 @@ function makeBob(E, host) {
         }
       }
 
-      return myMoneyPurseP.e.deposit(10, paymentP).then(_ => good);
+      return E(myMoneyPurseP).deposit(10, paymentP).then(_ => good);
     },
 
-    tradeWell(bobLies = false) {
+    tradeWell(alice, bobLies = false) {
       console.log('++ bob.tradeWell starting');
       if (!initialized) {
         console.log('++ ERR: tradeWell called before init()');
       }
-      const tokensP = contractHostP.e.setup(escrowSrc);
+      const tokensP = E(host).setup(escrowSrc);
       const aliceTokenP = tokensP.then(tokens => tokens[0]);
       const bobTokenP = tokensP.then(tokens => tokens[1]);
       let escrowSrcWeTellAlice = escrowSrc;
       if (bobLies) {
         escrowSrcWeTellAlice += 'NOT';
       }
-      const doneP = Vow.all([
-        aliceP.e.invite(aliceTokenP, escrowSrcWeTellAlice, 0),
-        Vow.resolve(bob).e.invite(bobTokenP, escrowSrc, 1),
+      const doneP = Promise.all([
+        E(alice).invite(aliceTokenP, escrowSrcWeTellAlice, 0),
+        E(bob).invite(bobTokenP, escrowSrc, 1),
       ]);
       doneP.then(
         _res => console.log('++ bob.tradeWell done'),
@@ -114,21 +111,21 @@ function makeBob(E, host) {
       /* eslint-disable-next-line no-unused-vars */
       let cancel;
       const b = harden({
-        stockSrcP: myStockIssuerP.e.makeEmptyPurse('bobStockSrc'),
-        moneyDstP: myMoneyIssuerP.e.makeEmptyPurse('bobMoneyDst'),
+        stockSrcP: E(myStockIssuerP).makeEmptyPurse('bobStockSrc'),
+        moneyDstP: E(myMoneyIssuerP).makeEmptyPurse('bobMoneyDst'),
         moneyNeeded: 10,
-        cancellationP: f.makeVow(r => (cancel = r)),
+        cancellationP: new Promise(r => (cancel = r)),
       });
-      const ackP = b.stockSrcP.e.deposit(7, myStockPurseP);
+      const ackP = E(b.stockSrcP).deposit(7, myStockPurseP);
 
       const doneP = ackP.then(_ => {
         console.log('++ bob.invite ackP');
-        return contractHostP.e.play(tokenP, allegedSrc, allegedSide, b);
+        return E(host).play(tokenP, allegedSrc, allegedSide, b);
       });
       return doneP.then(
         _ => {
           console.log('++ bob.invite doneP');
-          return b.moneyDstP.e.getBalance();
+          return E(b.moneyDstP).getBalance();
         },
         rej => {
           console.log('++ bob.invite doneP reject', rej);

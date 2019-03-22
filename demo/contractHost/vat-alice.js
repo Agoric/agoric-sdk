@@ -76,7 +76,7 @@ function makeAlice(E, host) {
       const aliceTokenP = tokensP.then(tokens => tokens[0]);
       const bobTokenP = tokensP.then(tokens => tokens[1]);
       E(bob).invite(bobTokenP, escrowSrc, 1);
-      return Vow.resolve(alice).e.invite(aliceTokenP, escrowSrc, 0);
+      return E(alice).invite(aliceTokenP, escrowSrc, 0);
     },
 
     invite(tokenP, allegedSrc, allegedSide) {
@@ -89,17 +89,17 @@ function makeAlice(E, host) {
       // eslint-disable-next-line no-unused-vars
       let cancel;
       const a = harden({
-        moneySrcP: myMoneyIssuerP.e.makeEmptyPurse('aliceMoneySrc'),
-        stockDstP: myStockIssuerP.e.makeEmptyPurse('aliceStockDst'),
+        moneySrcP: E(myMoneyIssuerP).makeEmptyPurse('aliceMoneySrc'),
+        stockDstP: E(myStockIssuerP).makeEmptyPurse('aliceStockDst'),
         stockNeeded: 7,
-        cancellationP: f.makeVow(r => (cancel = r)),
+        cancellationP: new Promise(r => (cancel = r)),
       });
-      const ackP = a.moneySrcP.e.deposit(10, myMoneyPurseP);
+      const ackP = E(a.moneySrcP).deposit(10, myMoneyPurseP);
 
       const doneP = ackP.then(_ =>
         E(host).play(tokenP, allegedSrc, allegedSide, a),
       );
-      return doneP.then(_ => a.stockDstP.e.getBalance());
+      return doneP.then(_ => E(a.stockDstP).getBalance());
     },
   });
   return alice;
