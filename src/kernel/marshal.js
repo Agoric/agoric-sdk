@@ -77,6 +77,15 @@ export function mustPassByPresence(val) {
   // ok!
 }
 
+const errorConstructors = new Map([
+  ['EvalError', EvalError],
+  ['RangeError', RangeError],
+  ['ReferenceError', ReferenceError],
+  ['SyntaxError', SyntaxError],
+  ['TypeError', TypeError],
+  ['URIError', URIError],
+]);
+
 export function makeMarshal(serializeSlot, unserializeSlot) {
   function makeReplacer(slots, slotMap) {
     const ibidMap = new Map();
@@ -176,11 +185,18 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
       // We can serialize some things as plain pass-by-copy: arrays, and
       // objects with one or more data properties but no method properties.
 
-      // todo: handle this properly, by constructing a @qclass: error
       if (val instanceof Error) {
-        console.log('cannot yet serialize Errors correctly', val);
-        console.log('stack was:', val);
-        throw new Error('cannot yet serialize Errors correctly');
+        // We deliberately do not share the stack, but it would be useful to
+        // log the stack locally so someone who has privileged access to the
+        // throwing Vat can correlate the problem with the remote Vat that
+        // gets this summary. If we do that, we could allocate some random
+        // identifier and include it in the message, to help with the
+        // correlation.
+        return harden({
+          [QCLASS]: 'error',
+          name: `${val.name}`,
+          message: `${val.message}`,
+        });
       }
 
       if (canPassByCopy(val)) {
@@ -252,11 +268,18 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
             return ibids[index];
           }
 
+          case 'error': {
+            const EC = errorConstructors.get(`${data.name}`) || Error;
+            const e = new EC(`${data.message}`);
+            return harden(e);
+          }
+
           case 'slot': {
             data = unserializeSlot(data, slots);
             // overwrite data and break to ibid registration.
             break;
           }
+
           default: {
             // TODO reverse Hilbert hotel
             throw new TypeError(`unrecognized ${QCLASS} ${qclass}`);

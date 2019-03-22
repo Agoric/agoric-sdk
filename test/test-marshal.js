@@ -50,6 +50,18 @@ test('serialize static data', t => {
       slots: [],
     });
   }
+
+  let em;
+  try {
+    throw new ReferenceError('msg');
+  } catch (e) {
+    em = harden(e);
+  }
+  t.deepEqual(ser(em), {
+    argsString: '{"@qclass":"error","name":"ReferenceError","message":"msg"}',
+    slots: [],
+  });
+
   t.end();
 });
 
@@ -80,6 +92,21 @@ test('unserialize static data', t => {
   if (bn) {
     t.deepEqual(uns('{"@qclass":"bigint","digits":"1234"}'), BigInt(1234));
   }
+
+  const em1 = uns(
+    '{"@qclass":"error","name":"ReferenceError","message":"msg"}',
+  );
+  t.ok(em1 instanceof ReferenceError);
+  t.equal(em1.message, 'msg');
+  t.ok(Object.isFrozen(em1));
+
+  const em2 = uns('{"@qclass":"error","name":"TypeError","message":"msg2"}');
+  t.ok(em2 instanceof TypeError);
+  t.equal(em2.message, 'msg2');
+
+  const em3 = uns('{"@qclass":"error","name":"Unknown","message":"msg3"}');
+  t.ok(em3 instanceof Error);
+  t.equal(em3.message, 'msg3');
 
   t.deepEqual(uns('[1,2]'), [1, 2]);
   t.deepEqual(uns('{"a":1,"b":2}'), { a: 1, b: 2 });
