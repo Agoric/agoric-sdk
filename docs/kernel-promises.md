@@ -179,6 +179,10 @@ network messages and `dispatch.queue` for everything from other vats.
 
   "hey kernel, I want to share one of my local promises, so please create a
   kernel-promise that I can cite."
+
+* syscall.release(promiseID)
+
+  "hey kernel, ... ???"
   
 * dispatch.deliver(target, methodName, argsString, slots, resolverID)
   target is {type: export, id} or {type: resolver, id}
@@ -194,6 +198,12 @@ network messages and `dispatch.queue` for everything from other vats.
   syscall.createPromise? Specifically the resolverID. Someone now cares about
   the result, and you are the only one who can provide it. Please call
   syscall.notify* with the given resolverID when it changes state."
+
+* dispatch.release(resolverID)
+
+  "hey vat, remember that promise? nobody is subscribed anymore, and nobody
+  will ever be subscribed again in the future, so you can forget about it"
+  ???
 
 * syscall.notifyRedirect(resolverID, newPromiseID)
 * syscall.notifyFulfillToTarget(resolverID, slot)

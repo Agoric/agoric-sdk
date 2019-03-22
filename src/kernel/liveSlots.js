@@ -18,7 +18,6 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     });
   }
 
-  const resultPromises = new WeakSet();
   const outstandingProxies = new WeakSet();
 
   function slotToKey(slot) {
@@ -33,8 +32,8 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
   }
   const valToSlot = new WeakMap();
   const slotKeyToVal = new Map();
-  const exportedPromisesByResolverID = new Map();
   const importedPromisesByPromiseID = new Map();
+  const importedPromisesByPromise = new WeakMap();
   let nextExportID = 1;
 
   function allocateExportID() {
@@ -45,9 +44,10 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
   function exportPromise(p) {
     const pr = syscall.createPromise();
-    // we ignore the kernel promise, but we remember the resolver, in case
-    // the kernel subscribes to hear about our local promise changing state
-    exportedPromisesByResolverID.set(pr.resolverID, p);
+    // we ignore the kernel promise, but we use the resolver to notify the
+    // kernel when our local promise changes state
+    console.log(`ls exporting promise ${pr.resolverID}`);
+    p.then(thenResolve(pr.resolverID), thenReject(pr.resolverID));
     return harden({ type: 'promise', id: pr.promiseID });
   }
 
@@ -101,12 +101,14 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
   function importPromise(id) {
     const pr = makePromise();
+    importedPromisesByPromise.set(pr.p, id);
     importedPromisesByPromiseID.set(id, pr);
     const { p } = pr;
     // ideally we'd wait until .then is called on p before subscribing, but
     // the current Promise API doesn't give us a way to discover this, so we
     // must subscribe right away. If we were using Vows or some other
     // then-able, we could just hook then() to notify us.
+    console.log(`ls[${forVatID}].importPromise.importedPromiseThen ${id}`);
     importedPromiseThen(id);
     return p;
   }
@@ -148,36 +150,58 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
 
   const m = makeMarshal(serializeSlot, unserializeSlot);
 
-  function queueMessage(importID, prop, args) {
-    let r;
-    const doneP = new Promise((res, _rej) => {
-      r = res;
-    });
+  function queueMessage(targetSlot, prop, args) {
+    const done = makePromise();
+    const ser = m.serialize(harden({ args }));
+    console.log(`ls.qm send(${JSON.stringify(targetSlot)}, ${prop}`);
+    const promiseID = syscall.send(targetSlot, prop, ser.argsString, ser.slots);
+    console.log(` ls.qm got promiseID ${promiseID}`);
 
-    const resolver = {
-      resolve(val) {
-        r(val);
-      },
-    };
-    const ser = m.serialize(harden({ args, resolver }));
-    syscall.send(
-      { type: 'import', id: importID },
-      prop,
-      ser.argsString,
-      ser.slots,
+    // prepare for notifyFulfillToData/etc
+    importedPromisesByPromise.set(done.p, promiseID);
+    importedPromisesByPromiseID.set(promiseID, done);
+
+    // ideally we'd wait until someone .thens done.p, but with native
+    // Promises we have no way of spotting that, so subscribe immediately
+    console.log(
+      `ls[${forVatID}].queueMessage.importedPromiseThen ${promiseID}`,
     );
-    return doneP;
+    importedPromiseThen(promiseID);
+
+    // prepare the serializer to recognize it, if it's used as an argument or
+    // return value
+    const slot = { type: 'promise', id: promiseID };
+    const key = slotToKey(slot);
+    valToSlot.set(done.p, slot);
+    slotKeyToVal.set(key, done.p);
+
+    return done.p;
   }
 
-  function PresenceHandler(importID) {
+  function PresenceHandler(importSlot) {
     return {
       get(target, prop) {
         console.log(`PreH proxy.get(${prop})`);
         if (prop !== `${prop}`) {
           return undefined;
         }
-        const p = (...args) => queueMessage(importID, prop, args);
-        resultPromises.add(p);
+        const p = (...args) => queueMessage(importSlot, prop, args);
+        return p;
+      },
+      has(_target, _prop) {
+        return true;
+      },
+    };
+  }
+
+  function KernelPromiseHandler(promiseSlot) {
+    return {
+      get(target, prop) {
+        console.log(`KPH proxy.get(${prop})`);
+        if (prop !== `${prop}`) {
+          return undefined;
+        }
+        const p = (...args) => queueMessage(promiseSlot, prop, args);
         return p;
       },
       has(_target, _prop) {
@@ -194,28 +218,22 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
           return undefined;
         }
         return (...args) => {
-          let r;
-          let rj;
-          const doneP = new Promise((res, rej) => {
-            r = res;
-            rj = rej;
-          });
+          const pr = makePromise();
           function resolved(x) {
-            // We could delegate the is-this-a-Presence check to E(val), but
-            // local objects and Promises are treated the same way, so E
-            // would kick it right back to us, causing an infinite loop
             if (outstandingProxies.has(x)) {
               throw Error('E(Vow.resolve(E(x))) is invalid');
             }
+            // We could delegate the is-this-a-Presence check to E(val), but
+            // local objects and Promises are treated the same way, so E
+            // would kick it right back to us, causing an infinite loop
             const slot = valToSlot.get(x);
             if (slot && slot.type === 'import') {
-              return queueMessage(slot.id, prop, args);
+              return queueMessage(slot, prop, args);
             }
             return x[prop](...args);
           }
-          targetPromise.then(resolved).then(r, rj);
-          resultPromises.add(doneP);
-          return doneP;
+          targetPromise.then(resolved).then(pr.res, pr.rej);
+          return pr.p;
         };
       },
       has(_target, _prop) {
@@ -241,18 +259,21 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     if (outstandingProxies.has(x)) {
       throw Error('E(E(x)) is invalid, you probably want E(E(x).foo()).bar()');
     }
-    // TODO: if x is a Promise we recognize (because we created it earlier),
-    // we can pipeline messages sent to E(x) (since we remember where we got
-    // x from).
-    // if (resultPromises.has(x)) {
-    //   return UnresolvedRemoteHandler(x);
-    // }
+
     let handler;
     const slot = valToSlot.get(x);
-    if (slot && slot.type === 'import') {
+    const promiseID = importedPromisesByPromise.get(x);
+    if (promiseID !== undefined) {
+      // we created this Promise earlier, either by receiving a serialized
+      // kernel promise, or by send() returning one. We can pipeline messages
+      // to this
+      handler = KernelPromiseHandler(slot);
+    } else if (slot && slot.type === 'import') {
       console.log(` was importID ${slot.id}`);
-      handler = PresenceHandler(slot.id);
+      handler = PresenceHandler(slot);
     } else {
+      // might be a local object (previously sent or not), or a local Promise
+      // (but not an imported one, or an answer). Treat it like a Promise.
       console.log(` treating as promise`);
       const targetP = Promise.resolve(x);
       // targetP might resolve to a Presence
@@ -275,64 +296,66 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     rootIsRegistered = true;
   }
 
-  function deliver(facetid, method, argsbytes, caps) {
+  function deliver(facetid, method, argsbytes, caps, resolverID) {
+    console.log(
+      `ls[${forVatID}].dispatch.deliver ${facetid}.${method} -> ${resolverID}`,
+    );
     if (!rootIsRegistered) {
       throw Error(`[${forVatID}] registerRoot() wasn't called during setup`);
     }
     const t = getTarget(facetid);
     const args = m.unserialize(argsbytes, caps);
-    // phase1: method cannot return a promise or raise an exception
-    const result = t[method](...args.args);
-    if (args.resolver) {
-      // this would cause an infinite loop, so we use a sendOnly
-      // E(args.resolver).resolve(result);
-      const ser = m.serialize(harden({ args: [result] }));
-      const resolverSlotID = valToSlot.get(args.resolver).id;
-      syscall.send(
-        { type: 'import', id: resolverSlotID },
-        'resolve',
-        ser.argsString,
-        ser.slots,
-      );
+    const p = Promise.resolve().then(_ => t[method](...args.args));
+    if (resolverID !== undefined) {
+      console.log(` ls.deliver attaching then ->${resolverID}`);
+      p.then(thenResolve(resolverID), thenReject(resolverID));
     }
+    return p;
   }
 
+  function thenResolve(resolverID) {
+    return res => {
+      console.log(`ls.thenResolve fired`, res);
+      // We need to know if this is resolving to an imported/exported
+      // presence, because then the kernel can deliver queued messages. We
+      // could build a simpler way of doing this.
+      const ser = m.serialize(res);
+      console.log(` ser ${ser.argsString} ${JSON.stringify(ser.slots)}`);
+      const unser = JSON.parse(ser.argsString);
+      if (
+        typeof unser === 'object' &&
+        QCLASS in unser &&
+        unser[QCLASS] === 'slot'
+      ) {
+        const slot = ser.slots[unser.index];
+        if (slot.type === 'import' || slot.type === 'export') {
+          syscall.fulfillToTarget(resolverID, slot);
+        }
+      } else {
+        // if it resolves to data, .thens fire but kernel-queued messages are
+        // rejected, because you can't send messages to data
+        syscall.fulfillToData(resolverID, ser.argsString, ser.slots);
+      }
+    };
+  }
+
+  function thenReject(resolverID) {
+    return rej => {
+      console.log(`ls thenReject fired`, rej);
+      const ser = m.serialize(rej);
+      syscall.reject(resolverID, ser.argsString, ser.slots);
+    };
+  }
+
+  /*
   function subscribe(resolverID) {
     console.log(`ls.dispatch.subscribe(${resolverID})`);
     if (!exportedPromisesByResolverID.has(resolverID)) {
       throw new Error(`unknown resolverID '${resolverID}'`);
     }
     const p = exportedPromisesByResolverID.get(resolverID);
-    p.then(
-      res => {
-        console.log(`ls subscribed res`, res);
-        // We need to know if this is resolving to an imported/exported
-        // presence, because then the kernel can deliver queued messages. We
-        // could build a simpler way of doing this.
-        const ser = m.serialize(res);
-        const unser = JSON.parse(ser.argsString);
-        if (
-          typeof unser === 'object' &&
-          QCLASS in unser &&
-          unser[QCLASS].type === 'slot'
-        ) {
-          const slot = unser.slots[unser[QCLASS].index];
-          if (slot.type === 'import' || slot.type === 'export') {
-            syscall.fulfillToTarget(resolverID, slot);
-          }
-        } else {
-          // if it resolves to data, .thens fire but kernel-queued messages are
-          // rejected, because you can't send messages to data
-          syscall.fulfillToData(resolverID, ser.argsString, ser.slots);
-        }
-      },
-      rej => {
-        console.log(`ls subscribed rej`, rej);
-        const ser = m.serialize(rej);
-        syscall.reject(resolverID, ser.argsString, ser.slots);
-      },
-    );
-  }
+    p.then(thenResolve(resolverID), thenReject(resolverID));
+  } */
 
   function notifyFulfillToData(promiseID, data, slots) {
     console.log(
@@ -369,7 +392,7 @@ export function makeLiveSlots(syscall, forVatID = 'unknown') {
     registerRoot,
     dispatch: {
       deliver,
-      subscribe,
+      // subscribe,
       notifyFulfillToData,
       notifyFulfillToTarget,
       notifyReject,

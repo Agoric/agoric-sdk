@@ -63,14 +63,10 @@ export default function setup(syscall, helpers) {
         });
         const { p: p1, res: r1 } = makePromise();
         console.log(`here1`, Object.isFrozen(p1));
-        try {
-          const p2 = E(vats.left).takePromise(p1);
-        } catch (e) {
-          console.log(`hereE`, e);
-        }
+        const p2 = E(vats.left).takePromise(p1);
         console.log(`here2`);
-        // p2.then(x => log(`b.resolved ${x}`));
-        // r1(t1);
+        p2.then(x => log(`b.resolved ${x}`));
+        r1(t1);
         log(`b.send-promise1.finish`);
       } else if (mode === 'send-promise2') {
         // the promise we send actually resolves to their side, not ours. In

@@ -46,7 +46,16 @@ async function testChain1(t, withSES) {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
   const c = await buildVatController(config, withSES, ['chain1']);
 
+  /*
+  while (true) {
+    console.log('--- STEP ----------------------------------------------------------------');
+    await c.step();
+    console.log(c.dump());
+    if (!c.dump().runQueue.length)
+      break;
+  } */
   await c.run();
+
   t.deepEqual(c.dump().log, [
     'bootstrap called',
     'b.call2',

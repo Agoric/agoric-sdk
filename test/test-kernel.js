@@ -248,6 +248,7 @@ test('outbound call', async t => {
     ['vat1', 'import', v1tovat25.id, 'export', 'vat2', 5],
     ['vat1', 'promise', 20, 40],
     ['vat2', 'import', 10, 'export', 'vat1', 7],
+    ['vat2', 'resolver', 30, 40],
   ]);
 
   t.end();
@@ -382,6 +383,7 @@ test('three-party', async t => {
     ['vatB', 'import', 10, 'export', 'vatC', 6],
     ['vatB', 'promise', bp.promiseID, 40],
     ['vatB', 'resolver', 30, 40],
+    ['vatB', 'resolver', 31, 41],
   ]);
 
   t.end();
@@ -535,11 +537,12 @@ test('transfer promise', async t => {
     ['vatA', 'import', 10, 'export', 'vatB', 5],
     ['vatA', 'promise', 20, 40], // pr1
     ['vatA', 'promise', 21, 41], // pr2
-    ['vatA', 'promise', 22, 42], // answer for foo1()
+    ['vatA', 'promise', 22, 42], // promise for answer of foo1()
     ['vatA', 'resolver', 30, 40], // pr1
     ['vatA', 'resolver', 31, 41], // pr2
     ['vatB', 'import', 10, 'export', 'vatA', 6],
     ['vatB', 'promise', 20, 41],
+    ['vatB', 'resolver', 30, 42], // resolver for answer of foo1()
   ]);
 
   // sending it a second time should arrive as the same thing
@@ -553,12 +556,14 @@ test('transfer promise', async t => {
     ['vatA', 'import', 10, 'export', 'vatB', 5],
     ['vatA', 'promise', 20, 40], // pr1
     ['vatA', 'promise', 21, 41], // pr2
-    ['vatA', 'promise', 22, 42], // answer for foo1()
-    ['vatA', 'promise', 23, 43], // answer for foo2()
+    ['vatA', 'promise', 22, 42], // promise for answer of foo1()
+    ['vatA', 'promise', 23, 43], // promise for answer of foo2()
     ['vatA', 'resolver', 30, 40], // pr1
     ['vatA', 'resolver', 31, 41], // pr2
     ['vatB', 'import', 10, 'export', 'vatA', 6],
     ['vatB', 'promise', 20, 41],
+    ['vatB', 'resolver', 30, 42], // resolver for answer of foo1()
+    ['vatB', 'resolver', 31, 43], // resolver for answer of foo2()
   ]);
 
   t.deepEqual(kernel.dump().promises, [
@@ -608,13 +613,16 @@ test('transfer promise', async t => {
     ['vatA', 'import', 10, 'export', 'vatB', 5],
     ['vatA', 'promise', 20, 40], // pr1
     ['vatA', 'promise', 21, 41], // pr2
-    ['vatA', 'promise', 22, 42], // answer for foo1()
-    ['vatA', 'promise', 23, 43], // answer for foo2()
+    ['vatA', 'promise', 22, 42], // promise for answer of foo1()
+    ['vatA', 'promise', 23, 43], // promise for answer of foo2()
     ['vatA', 'resolver', 30, 40], // pr1
     ['vatA', 'resolver', 31, 41], // pr2
+    ['vatA', 'resolver', 32, 44], // resolver for answer of foo3()
     ['vatB', 'import', 10, 'export', 'vatA', 6],
     ['vatB', 'promise', 20, 41],
-    ['vatB', 'promise', 21, 44], // answer for foo3()
+    ['vatB', 'promise', 21, 44], // promise for answer of foo3()
+    ['vatB', 'resolver', 30, 42], // resolver for answer of foo1()
+    ['vatB', 'resolver', 31, 43], // resolver for answer of foo2()
   ]);
 
   // sending it back a second time should arrive as the same thing
@@ -679,14 +687,18 @@ test('transfer promise', async t => {
     ['vatA', 'import', 10, 'export', 'vatB', 5],
     ['vatA', 'promise', 20, 40], // pr1
     ['vatA', 'promise', 21, 41], // pr2
-    ['vatA', 'promise', 22, 42], // answer for foo1()
-    ['vatA', 'promise', 23, 43], // answer for foo2()
+    ['vatA', 'promise', 22, 42], // promise for answer of foo1()
+    ['vatA', 'promise', 23, 43], // promise for answer of foo2()
     ['vatA', 'resolver', 30, 40], // pr1
     ['vatA', 'resolver', 31, 41], // pr2
+    ['vatA', 'resolver', 32, 44], // resolver for answer of foo3()
+    ['vatA', 'resolver', 33, 45], // resolver for answer of foo4()
     ['vatB', 'import', 10, 'export', 'vatA', 6],
     ['vatB', 'promise', 20, 41],
-    ['vatB', 'promise', 21, 44], // answer for foo3()
-    ['vatB', 'promise', 22, 45], // answer for foo4()
+    ['vatB', 'promise', 21, 44], // promise for answer of foo3()
+    ['vatB', 'promise', 22, 45], // promise for answer of foo4()
+    ['vatB', 'resolver', 30, 42], // resolver for answer of foo1()
+    ['vatB', 'resolver', 31, 43], // resolver for answer of foo2()
   ]);
 
   t.end();
@@ -701,10 +713,7 @@ test('subscribe to promise', async t => {
     function deliver(facetID, method, argsString, slots) {
       log.push(['deliver', facetID, method, argsString, slots]);
     }
-    function subscribe(resolverID) {
-      log.push(['subscribe', resolverID]);
-    }
-    return { deliver, subscribe };
+    return { deliver };
   }
   kernel.addVat('vat1', setup);
 
@@ -725,13 +734,8 @@ test('subscribe to promise', async t => {
       queue: [],
     },
   ]);
-  t.deepEqual(kernel.dump().runQueue, [
-    { type: 'subscribe', vatID: 'vat1', kernelPromiseID: 40 },
-  ]);
+  t.deepEqual(kernel.dump().runQueue, []);
   t.deepEqual(log, []);
-
-  await kernel.run();
-  t.deepEqual(log, [['subscribe', 30]]);
 
   t.end();
 });
@@ -808,10 +812,7 @@ test('promise resolveToData', async t => {
     function notifyFulfillToData(promiseID, fulfillData, slots) {
       log.push(['notify', promiseID, fulfillData, slots]);
     }
-    function subscribe(resolverID) {
-      log.push(['subscribe', resolverID]);
-    }
-    return { deliver, notifyFulfillToData, subscribe };
+    return { deliver, notifyFulfillToData };
   }
   kernel.addVat('vatA', setup);
 
@@ -840,16 +841,12 @@ test('promise resolveToData', async t => {
   // message is queued
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
-    { type: 'subscribe', vatID: 'vatA', kernelPromiseID: 40 },
     {
       type: 'notifyFulfillToData',
       vatID: 'vatA',
       kernelPromiseID: 40,
     },
   ]);
-
-  await kernel.step();
-  t.deepEqual(log.shift(), ['subscribe', pr.resolverID]);
 
   await kernel.step();
   // the kernelPromiseID gets mapped back to A
@@ -880,10 +877,7 @@ test('promise resolveToTarget', async t => {
     function notifyFulfillToTarget(promiseID, slot) {
       log.push(['notify', promiseID, slot]);
     }
-    function subscribe(resolverID) {
-      log.push(['subscribe', resolverID]);
-    }
-    return { deliver, notifyFulfillToTarget, subscribe };
+    return { deliver, notifyFulfillToTarget };
   }
   kernel.addVat('vatA', setup);
 
@@ -912,16 +906,12 @@ test('promise resolveToTarget', async t => {
   // message is queued
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
-    { type: 'subscribe', vatID: 'vatA', kernelPromiseID: 40 },
     {
       type: 'notifyFulfillToTarget',
       vatID: 'vatA',
       kernelPromiseID: 40,
     },
   ]);
-
-  await kernel.step();
-  t.deepEqual(log.shift(), ['subscribe', pr.resolverID]);
 
   await kernel.step();
 
@@ -952,10 +942,7 @@ test('promise reject', async t => {
     function notifyReject(promiseID, rejectData, slots) {
       log.push(['notify', promiseID, rejectData, slots]);
     }
-    function subscribe(resolverID) {
-      log.push(['subscribe', resolverID]);
-    }
-    return { deliver, notifyReject, subscribe };
+    return { deliver, notifyReject };
   }
   kernel.addVat('vatA', setup);
 
@@ -978,14 +965,9 @@ test('promise reject', async t => {
       queue: [],
     },
   ]);
-  t.deepEqual(kernel.dump().runQueue, [
-    { type: 'subscribe', vatID: 'vatA', kernelPromiseID: 40 },
-  ]);
 
-  // the resolver-holder shouldn't call reject until someone subscribes
-
-  await kernel.step();
-  t.deepEqual(log.shift(), ['subscribe', pr.resolverID]);
+  // the resolver-holder calls reject right away, because now we
+  // automatically subscribe
 
   syscall.reject(pr.resolverID, 'args', [A]);
   // A gets mapped to a kernelPromiseID first, and a notifyReject message is

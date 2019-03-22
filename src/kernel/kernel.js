@@ -178,6 +178,9 @@ export default function buildKernel(kernelEndowments) {
       const m = vat.resolvers;
       if (!m.inbound.has(kernelPromiseID)) {
         const resolverID = Nat(allocateResolverIDForVat(vat));
+        console.log(
+          ` mapInbound allocating resID ${resolverID} for kpid ${kernelPromiseID}`,
+        );
         m.inbound.set(kernelPromiseID, resolverID);
         m.outbound.set(resolverID, kernelPromiseID);
       }
@@ -202,16 +205,18 @@ export default function buildKernel(kernelEndowments) {
   */
 
   function createPromiseWithDecider(deciderVatID) {
-    const promiseID = allocateKernelPromiseIndex();
+    // deciderVatID can be undefined if the promise is "owned" by the kernel
+    // (pipelining)
+    const kernelPromiseID = allocateKernelPromiseIndex();
     // we don't harden the kernel promise record because it is mutable: it
     // can be replaced when syscall.redirect/fulfill/reject is called
-    kernelPromises.set(promiseID, {
+    kernelPromises.set(kernelPromiseID, {
       state: 'unresolved',
       decider: deciderVatID,
       subscribers: new Set(),
       queue: [],
     });
-    return promiseID;
+    return kernelPromiseID;
   }
 
   function makeError(s) {
@@ -252,10 +257,20 @@ export default function buildKernel(kernelEndowments) {
     for (const subscriberVatID of p.subscribers) {
       runQueue.push({ type, vatID: subscriberVatID, kernelPromiseID: id });
     }
-    // re-deliver msg to the now-settled promise, which will forward or reject depending on the new state
-    // of the promise
+    // re-deliver msg to the now-settled promise, which will forward or
+    // reject depending on the new state of the promise
     for (const msg of p.queue) {
       send(pslot, msg);
+      // now that we know where the messages can be sent, we know to whom we
+      // must subscribe to satisfy their resolvers. This wasn't working
+      // correctly, so instead liveSlots just assumes that it must tell the
+      // kernel about the resolution for resolver it hears about
+      /*
+      runQueue.push({
+        type: 'subscribe',
+        vatID: XXX,
+        kernelPromiseID: msg.kernelResolverID,
+      }); */
     }
   }
 
@@ -282,6 +297,7 @@ export default function buildKernel(kernelEndowments) {
   }
 
   function fulfillToData(id, data, slots) {
+    console.log(`fulfillToData[${id}] -> ${data} ${JSON.stringify(slots)}`);
     if (!kernelPromises.has(id)) {
       throw new Error(`unknown kernelPromise id '${id}'`);
     }
@@ -332,32 +348,51 @@ export default function buildKernel(kernelEndowments) {
             }`,
           );
         }
+        console.log(
+          `syscall[${fromVatID}].send(vat:${JSON.stringify(
+            targetSlot,
+          )}=ker:${JSON.stringify(target)}).${method}`,
+        );
         const slots = vatSlots.map(slot => mapOutbound(fromVatID, slot));
-        const promiseID = createPromiseWithDecider(target.vatID);
+        // who will decide the answer? If the message is being queued for a
+        // promise, then the kernel will decide (when the answer gets
+        // resolved). If it is going to a specific export, the exporting vat
+        // gets to decide.
+        let decider;
+        if (target.type === 'export') {
+          decider = target.vatID;
+        }
+        console.log(`  ^target is ${JSON.stringify(target)}`);
+        const kernelPromiseID = createPromiseWithDecider(decider);
         const msg = {
           method,
           argsString,
           slots,
-          kernelResolverID: promiseID,
+          kernelResolverID: kernelPromiseID,
         };
         send(target, msg);
         const p = mapInbound(fromVatID, {
           type: 'promise',
-          id: promiseID,
+          id: kernelPromiseID,
         });
         return p.id; // relative to caller
       },
 
       createPromise() {
-        const promiseID = createPromiseWithDecider(fromVatID);
+        const kernelPromiseID = createPromiseWithDecider(fromVatID);
         const p = mapInbound(fromVatID, {
           type: 'promise',
-          id: promiseID,
+          id: kernelPromiseID,
         });
         const r = mapInbound(fromVatID, {
           type: 'resolver',
-          id: promiseID,
+          id: kernelPromiseID,
         });
+        console.log(
+          `syscall[${fromVatID}].createPromise -> (vat:p${p.id}/r${
+            r.id
+          }=ker:${kernelPromiseID})`,
+        );
         return harden({ promiseID: p.id, resolverID: r.id });
       },
 
@@ -366,17 +401,22 @@ export default function buildKernel(kernelEndowments) {
           type: 'promise',
           id: promiseID,
         });
+        console.log(
+          `syscall[${fromVatID}].subscribe(vat:${promiseID}=ker:${id})`,
+        );
         if (!kernelPromises.has(id)) {
           throw new Error(`unknown kernelPromise id '${id}'`);
         }
         const p = kernelPromises.get(id);
-        if (p.subscribers.size === 0) {
+        /*
+        console.log(`  decider is ${p.decider} in ${JSON.stringify(p)}`);
+        if (p.subscribers.size === 0 && p.decider !== undefined) {
           runQueue.push({
             type: 'subscribe',
             vatID: p.decider,
             kernelPromiseID: id,
           });
-        }
+        } */
         p.subscribers.add(fromVatID);
       },
 
@@ -415,6 +455,7 @@ export default function buildKernel(kernelEndowments) {
       */
 
       fulfillToData(resolverID, fulfillData, vatSlots) {
+        Nat(resolverID);
         const { id } = mapOutbound(fromVatID, {
           type: 'resolver',
           id: resolverID,
@@ -423,10 +464,16 @@ export default function buildKernel(kernelEndowments) {
           throw new Error(`unknown kernelPromise id '${id}'`);
         }
         const slots = vatSlots.map(slot => mapOutbound(fromVatID, slot));
+        console.log(
+          `syscall[${fromVatID}].fulfillData(vatid=${resolverID}/kid=${id}) = ${fulfillData} v=${JSON.stringify(
+            vatSlots,
+          )}/k=${JSON.stringify(slots)}`,
+        );
         fulfillToData(id, fulfillData, slots);
       },
 
       fulfillToTarget(resolverID, slot) {
+        Nat(resolverID);
         const { id } = mapOutbound(fromVatID, {
           type: 'resolver',
           id: resolverID,
@@ -436,10 +483,16 @@ export default function buildKernel(kernelEndowments) {
         }
 
         const targetSlot = mapOutbound(fromVatID, slot);
+        console.log(
+          `syscall[${fromVatID}].fulfillToTarget(vatid=${resolverID}/kid=${id}) = vat:${JSON.stringify(
+            targetSlot,
+          )}=ker:${id})`,
+        );
         fulfillToTarget(id, targetSlot);
       },
 
       reject(resolverID, rejectData, vatSlots) {
+        Nat(resolverID);
         const { id } = mapOutbound(fromVatID, {
           type: 'resolver',
           id: resolverID,
@@ -447,11 +500,13 @@ export default function buildKernel(kernelEndowments) {
         if (!kernelPromises.has(id)) {
           throw new Error(`unknown kernelPromise id '${id}'`);
         }
-        reject(
-          id,
-          rejectData,
-          vatSlots.map(slot => mapOutbound(fromVatID, slot)),
+        const slots = vatSlots.map(slot => mapOutbound(fromVatID, slot));
+        console.log(
+          `syscall[${fromVatID}].reject(vatid=${resolverID}/kid=${id}) = ${rejectData} v=${JSON.stringify(
+            vatSlots,
+          )}/k=${JSON.stringify(slots)}`,
         );
+        reject(id, rejectData, slots);
       },
 
       log(str) {
@@ -524,7 +579,7 @@ export default function buildKernel(kernelEndowments) {
   }
 
   async function processOneMessage(message) {
-    // console.log(`process ${JSON.stringify(message)}`);
+    console.log(`process ${JSON.stringify(message)}`);
     const { type } = message;
     if (type === 'deliver') {
       const { target, msg } = message;
@@ -545,19 +600,22 @@ export default function buildKernel(kernelEndowments) {
             msg.method,
             msg.argsString,
             inputSlots,
-            // TODO: remove this once resolverID is everywhere
-            msg.resolverID &&
-              mapInbound(vatID, { type: 'resolver', id: msg.resolverID }),
+            // TODO: remove this once kernelResolverID is everywhere
+            msg.kernelResolverID &&
+              mapInbound(vatID, { type: 'resolver', id: msg.kernelResolverID })
+                .id,
           ),
-        err =>
+        err => {
           console.log(
             // eslint-disable-next-line prettier/prettier
             `vat[${vatID}][${target.id}].${msg.method} dispatch failed: ${err}`,
             err,
-          ),
+          );
+        },
       );
     }
 
+    /*
     if (type === 'subscribe') {
       const { kernelPromiseID, vatID } = message;
       const { dispatch } = getVat(vatID);
@@ -567,13 +625,15 @@ export default function buildKernel(kernelEndowments) {
       }).id;
       return process(
         () => dispatch.subscribe(relativeID),
-        err =>
+        err => {
           console.log(
             `vat[${vatID}].promise[${relativeID}] subscribe failed: ${err}`,
             err,
-          ),
-      );
+          );
+          console.log(dump());
+        });
     }
+    */
 
     if (type === 'notifyFulfillToData') {
       const { kernelPromiseID, vatID } = message;
