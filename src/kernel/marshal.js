@@ -93,8 +93,8 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
           if (!Object.isFrozen(val)) {
             console.log(
               'asked to serialize',
-              val,
               typeof val,
+              val,
               Object.isFrozen(val),
             );
             throw new Error(

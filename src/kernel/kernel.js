@@ -7,8 +7,9 @@ import makePromise from './makePromise';
 export default function buildKernel(kernelEndowments) {
   const { setImmediate } = kernelEndowments;
 
+  const enableKDebug = false;
   function kdebug(...args) {
-    if (false) {
+    if (enableKDebug) {
       console.log(...args);
     }
   }
@@ -240,11 +241,13 @@ export default function buildKernel(kernelEndowments) {
         kp.queue.push(msg);
       } else if (kp.state === 'fulfilledToData') {
         const s = `data is not callable, has no method ${msg.method}`;
+        // eslint-disable-next-line no-use-before-define
         reject(msg.kernelPromiseID, makeError(s), []);
       } else if (kp.state === 'fulfilledToTarget') {
         send(kp.fulfillSlot, msg);
       } else if (kp.state === 'rejected') {
         // TODO would it be simpler to redirect msg.kernelPromiseID to kp?
+        // eslint-disable-next-line no-use-before-define
         reject(msg.kernelPromiseID, kp.rejectData, kp.rejectSlots);
       } else if (kp.state === 'redirected') {
         // TODO: shorten as we go
@@ -406,9 +409,7 @@ export default function buildKernel(kernelEndowments) {
           type: 'promise',
           id: promiseID,
         });
-        kdebug(
-          `syscall[${fromVatID}].subscribe(vat:${promiseID}=ker:${id})`,
-        );
+        kdebug(`syscall[${fromVatID}].subscribe(vat:${promiseID}=ker:${id})`);
         if (!kernelPromises.has(id)) {
           throw new Error(`unknown kernelPromise id '${id}'`);
         }
