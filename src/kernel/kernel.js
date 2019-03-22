@@ -417,7 +417,31 @@ export default function buildKernel(kernelEndowments) {
             kernelPromiseID: id,
           });
         } */
-        p.subscribers.add(fromVatID);
+
+        if (p.state === 'unresolved') {
+          p.subscribers.add(fromVatID);
+          // otherwise it's already resolved, you probably want to know how
+        } else if (p.state === 'fulfilledToTarget') {
+          runQueue.push({
+            type: 'notifyFulfillToTarget',
+            vatID: fromVatID,
+            kernelPromiseID: id,
+          });
+        } else if (p.state === 'fulfilledToData') {
+          runQueue.push({
+            type: 'notifyFulfillToData',
+            vatID: fromVatID,
+            kernelPromiseID: id,
+          });
+        } else if (p.state === 'rejected') {
+          runQueue.push({
+            type: 'notifyReject',
+            vatID: fromVatID,
+            kernelPromiseID: id,
+          });
+        } else {
+          throw new Error(`unknown p.state '${p.state}'`);
+        }
       },
 
       /*

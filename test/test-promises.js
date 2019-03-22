@@ -153,15 +153,15 @@ async function testSendPromise1(t, withSES) {
     'left.takePromise',
     'left.takePromise.then',
     'local.foo 1',
-    'b.resolved 4', // maybe swapped
+    'b.resolved 4',
   ]);
   t.end();
 }
 
-test.skip('send-promise-resolve-to-local with SES', async t => {
+test('send-promise-resolve-to-local with SES', async t => {
   await testSendPromise1(t, true);
 });
 
-test.skip('send-promise-resolve-to-local without SES', async t => {
+test('send-promise-resolve-to-local without SES', async t => {
   await testSendPromise1(t, false);
 });
