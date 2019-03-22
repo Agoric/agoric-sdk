@@ -174,13 +174,17 @@ test('serialize imports', t => {
   t.end();
 });
 
-test('serialize promise', t => {
+test('serialize promise', async t => {
+  const log = [];
   const syscall = {
     createPromise() {
       return {
         promiseID: 1,
         resolverID: 2,
       };
+    },
+    fulfillToData(resolverID, data, slots) {
+      log.push({ resolverID, data, slots });
     },
   };
 
@@ -201,6 +205,14 @@ test('serialize promise', t => {
     m.unserialize('{"@qclass":"slot","index":0}', [{ type: 'promise', id: 1 }]),
     p,
   );
+
+  res(5);
+  t.deepEqual(log, []);
+
+  const { p: pauseP, res: pauseRes } = makePromise();
+  setImmediate(() => pauseRes());
+  await pauseP;
+  t.deepEqual(log, [{ resolverID: 2, data: '5', slots: [] }]);
 
   t.end();
 });
