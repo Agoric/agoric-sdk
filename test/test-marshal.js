@@ -4,6 +4,7 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import { makeMarshal } from '../src/kernel/marshal';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
+import makePromise from '../src/kernel/makePromise';
 
 test('serialize static data', t => {
   const m = makeMarshal();
@@ -107,16 +108,16 @@ test('serialize exports', t => {
   });
   t.deepEqual(ser(o1), {
     argsString: '{"@qclass":"slot","index":0}',
-    slots: [1],
+    slots: [{ type: 'export', id: 1 }],
   });
   // m now remembers that o1 is exported as 1
   t.deepEqual(ser(harden([o1, o1])), {
     argsString: '[{"@qclass":"slot","index":0},{"@qclass":"ibid","index":1}]',
-    slots: [1],
+    slots: [{ type: 'export', id: 1 }],
   });
   t.deepEqual(ser(harden([o2, o1])), {
     argsString: '[{"@qclass":"slot","index":0},{"@qclass":"slot","index":1}]',
-    slots: [2, 1],
+    slots: [{ type: 'export', id: 2 }, { type: 'export', id: 1 }],
   });
 
   t.end();
@@ -124,17 +125,25 @@ test('serialize exports', t => {
 
 test('deserialize imports', t => {
   const { m } = makeLiveSlots();
-  const a = m.unserialize('{"@qclass":"slot","index":0}', [-1]);
+  const a = m.unserialize('{"@qclass":"slot","index":0}', [
+    { type: 'import', id: 1 },
+  ]);
   // a should be a proxy/presence. For now these are obvious.
-  t.ok('_slotID_-1' in a);
+  t.ok('_importID_1' in a);
   t.ok(Object.isFrozen(a));
 
   // m now remembers the proxy
-  const b = m.unserialize('{"@qclass":"slot","index":0}', [-1]);
+  const b = m.unserialize('{"@qclass":"slot","index":0}', [
+    { type: 'import', id: 1 },
+  ]);
   t.is(a, b);
 
   // the slotid is what matters, not the index
-  const c = m.unserialize('{"@qclass":"slot","index":2}', ['x', 'x', -1]);
+  const c = m.unserialize('{"@qclass":"slot","index":2}', [
+    'x',
+    'x',
+    { type: 'import', id: 1 },
+  ]);
   t.is(a, c);
 
   t.end();
@@ -144,7 +153,9 @@ test('deserialize exports', t => {
   const { m } = makeLiveSlots();
   const o1 = harden({});
   m.serialize(o1); // allocates slot=1
-  const a = m.unserialize('{"@qclass":"slot","index":0}', [1]);
+  const a = m.unserialize('{"@qclass":"slot","index":0}', [
+    { type: 'export', id: 1 },
+  ]);
   t.is(a, o1);
 
   t.end();
@@ -152,11 +163,74 @@ test('deserialize exports', t => {
 
 test('serialize imports', t => {
   const { m } = makeLiveSlots();
-  const a = m.unserialize('{"@qclass":"slot","index":0}', [-1]);
+  const a = m.unserialize('{"@qclass":"slot","index":0}', [
+    { type: 'import', id: 1 },
+  ]);
   t.deepEqual(m.serialize(a), {
     argsString: '{"@qclass":"slot","index":0}',
-    slots: [-1],
+    slots: [{ type: 'import', id: 1 }],
   });
+
+  t.end();
+});
+
+test('serialize promise', async t => {
+  const log = [];
+  const syscall = {
+    createPromise() {
+      return {
+        promiseID: 1,
+        resolverID: 2,
+      };
+    },
+    fulfillToData(resolverID, data, slots) {
+      log.push({ resolverID, data, slots });
+    },
+  };
+
+  const { m } = makeLiveSlots(syscall);
+  const { p, res } = makePromise();
+  t.deepEqual(m.serialize(p), {
+    argsString: '{"@qclass":"slot","index":0}',
+    slots: [{ type: 'promise', id: 1 }],
+  });
+  // serializer should remember the promise
+  t.deepEqual(m.serialize(harden(['other stuff', p])), {
+    argsString: '["other stuff",{"@qclass":"slot","index":0}]',
+    slots: [{ type: 'promise', id: 1 }],
+  });
+
+  // inbound should recognize it and return the promise
+  t.deepEqual(
+    m.unserialize('{"@qclass":"slot","index":0}', [{ type: 'promise', id: 1 }]),
+    p,
+  );
+
+  res(5);
+  t.deepEqual(log, []);
+
+  const { p: pauseP, res: pauseRes } = makePromise();
+  setImmediate(() => pauseRes());
+  await pauseP;
+  t.deepEqual(log, [{ resolverID: 2, data: '5', slots: [] }]);
+
+  t.end();
+});
+
+test('unserialize promise', t => {
+  const log = [];
+  const syscall = {
+    subscribe(promiseID) {
+      log.push(`subscribe-${promiseID}`);
+    },
+  };
+
+  const { m } = makeLiveSlots(syscall);
+  const p = m.unserialize('{"@qclass":"slot","index":0}', [
+    { type: 'promise', id: 1 },
+  ]);
+  t.deepEqual(log, ['subscribe-1']);
+  t.ok(p instanceof Promise);
 
   t.end();
 });

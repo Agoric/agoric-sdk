@@ -9,6 +9,7 @@ test('load empty', async t => {
   };
   const controller = await buildVatController(config);
   await controller.run();
+  t.ok(true);
   t.end();
 });
 
@@ -18,9 +19,21 @@ async function simpleCall(t, controller) {
   t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
   t.deepEqual(data.kernelTable, []);
 
-  controller.queue('vat1', 1, 'foo', 'args');
+  controller.queueToExport('vat1', 1, 'foo', 'args');
   t.deepEqual(controller.dump().runQueue, [
-    { vatID: 'vat1', facetID: 1, method: 'foo', argsString: 'args', slots: [] },
+    {
+      type: 'deliver',
+      target: {
+        type: 'export',
+        vatID: 'vat1',
+        id: 1,
+      },
+      msg: {
+        method: 'foo',
+        argsString: 'args',
+        slots: [],
+      },
+    },
   ]);
   await controller.run();
   t.deepEqual(JSON.parse(controller.dump().log[0]), {
@@ -93,12 +106,21 @@ async function bootstrapExport(t, withSES) {
 
   t.deepEqual(c.dump().runQueue, [
     {
-      vatID: '_bootstrap',
-      facetID: 0,
-      method: 'bootstrap',
-      argsString:
-        '{"args":[[],{"left":{"@qclass":"slot","index":0},"right":{"@qclass":"slot","index":1}}]}',
-      slots: [{ vatID: 'left', slotID: 0 }, { vatID: 'right', slotID: 0 }],
+      type: 'deliver',
+      target: {
+        type: 'export',
+        vatID: '_bootstrap',
+        id: 0,
+      },
+      msg: {
+        method: 'bootstrap',
+        argsString:
+          '{"args":[[],{"left":{"@qclass":"slot","index":0},"right":{"@qclass":"slot","index":1}}]}',
+        slots: [
+          { type: 'export', vatID: 'left', id: 0 },
+          { type: 'export', vatID: 'right', id: 0 },
+        ],
+      },
     },
   ]);
 
@@ -116,22 +138,27 @@ async function bootstrapExport(t, withSES) {
     'bootstrap.obj0.bootstrap()',
   ]);
   t.deepEqual(c.dump().kernelTable, [
-    ['_bootstrap', -2, 'right', 0],
-    ['_bootstrap', -1, 'left', 0],
+    ['_bootstrap', 'import', 10, 'export', 'left', 0],
+    ['_bootstrap', 'import', 11, 'export', 'right', 0],
+    ['_bootstrap', 'promise', 20, 40],
   ]);
   t.deepEqual(c.dump().runQueue, [
     {
-      vatID: 'left',
-      facetID: 0,
-      method: 'foo',
-      argsString:
-        '{"args":[1,{"@qclass":"slot","index":0}],"resolver":{"@qclass":"slot","index":1}}',
-      slots: [
-        { vatID: 'right', slotID: 0 },
-        { vatID: '_bootstrap', slotID: 1 },
-      ],
+      type: 'deliver',
+      target: {
+        type: 'export',
+        vatID: 'left',
+        id: 0,
+      },
+      msg: {
+        method: 'foo',
+        argsString: '{"args":[1,{"@qclass":"slot","index":0}]}',
+        slots: [{ type: 'export', vatID: 'right', id: 0 }],
+        kernelResolverID: 40,
+      },
     },
   ]);
+
   await c.step();
   t.deepEqual(c.dump().log, [
     'left.setup called',
@@ -141,30 +168,33 @@ async function bootstrapExport(t, withSES) {
     'left.foo 1',
   ]);
   t.deepEqual(c.dump().kernelTable, [
-    ['_bootstrap', -2, 'right', 0],
-    ['_bootstrap', -1, 'left', 0],
-    ['left', -2, '_bootstrap', 1],
-    ['left', -1, 'right', 0],
+    ['_bootstrap', 'import', 10, 'export', 'left', 0],
+    ['_bootstrap', 'import', 11, 'export', 'right', 0],
+    ['_bootstrap', 'promise', 20, 40],
+    ['left', 'import', 10, 'export', 'right', 0],
+    ['left', 'promise', 20, 41],
+    ['left', 'resolver', 30, 40],
   ]);
   t.deepEqual(c.dump().runQueue, [
     {
-      vatID: 'right',
-      facetID: 0,
-      method: 'bar',
-      argsString:
-        '{"args":[2,{"@qclass":"slot","index":0}],"resolver":{"@qclass":"slot","index":1}}',
-      slots: [{ vatID: 'right', slotID: 0 }, { vatID: 'left', slotID: 1 }],
+      type: 'deliver',
+      target: {
+        type: 'export',
+        vatID: 'right',
+        id: 0,
+      },
+      msg: {
+        method: 'bar',
+        argsString: '{"args":[2,{"@qclass":"slot","index":0}]}',
+        slots: [{ type: 'export', vatID: 'right', id: 0 }],
+        kernelResolverID: 41,
+      },
     },
-    {
-      vatID: '_bootstrap',
-      facetID: 1,
-      method: 'resolve',
-      argsString: '{"args":[{"@qclass":"undefined"}]}',
-      slots: [],
-    },
+    { type: 'notifyFulfillToData', vatID: '_bootstrap', kernelPromiseID: 40 },
   ]);
 
   await c.step();
+
   t.deepEqual(c.dump().log, [
     'left.setup called',
     'right.setup called',
@@ -173,35 +203,65 @@ async function bootstrapExport(t, withSES) {
     'left.foo 1',
     'right.obj0.bar 2 true',
   ]);
+
+  t.deepEqual(c.dump().kernelTable, [
+    ['_bootstrap', 'import', 10, 'export', 'left', 0],
+    ['_bootstrap', 'import', 11, 'export', 'right', 0],
+    ['_bootstrap', 'promise', 20, 40],
+    ['left', 'import', 10, 'export', 'right', 0],
+    ['left', 'promise', 20, 41],
+    ['left', 'resolver', 30, 40],
+    ['right', 'resolver', 30, 41],
+  ]);
   t.deepEqual(c.dump().runQueue, [
-    {
-      vatID: '_bootstrap',
-      facetID: 1,
-      method: 'resolve',
-      argsString: '{"args":[{"@qclass":"undefined"}]}',
-      slots: [],
-    },
-    {
-      vatID: 'left',
-      facetID: 1,
-      method: 'resolve',
-      argsString: '{"args":[3]}',
-      slots: [],
-    },
+    { type: 'notifyFulfillToData', vatID: '_bootstrap', kernelPromiseID: 40 },
+    { type: 'notifyFulfillToData', vatID: 'left', kernelPromiseID: 41 },
   ]);
 
   await c.step();
+
+  t.deepEqual(c.dump().log, [
+    'left.setup called',
+    'right.setup called',
+    'bootstrap called',
+    'bootstrap.obj0.bootstrap()',
+    'left.foo 1',
+    'right.obj0.bar 2 true',
+  ]);
+
+  t.deepEqual(c.dump().kernelTable, [
+    ['_bootstrap', 'import', 10, 'export', 'left', 0],
+    ['_bootstrap', 'import', 11, 'export', 'right', 0],
+    ['_bootstrap', 'promise', 20, 40],
+    ['left', 'import', 10, 'export', 'right', 0],
+    ['left', 'promise', 20, 41],
+    ['left', 'resolver', 30, 40],
+    ['right', 'resolver', 30, 41],
+  ]);
   t.deepEqual(c.dump().runQueue, [
-    {
-      vatID: 'left',
-      facetID: 1,
-      method: 'resolve',
-      argsString: '{"args":[3]}',
-      slots: [],
-    },
+    { type: 'notifyFulfillToData', vatID: 'left', kernelPromiseID: 41 },
   ]);
 
   await c.step();
+
+  t.deepEqual(c.dump().log, [
+    'left.setup called',
+    'right.setup called',
+    'bootstrap called',
+    'bootstrap.obj0.bootstrap()',
+    'left.foo 1',
+    'right.obj0.bar 2 true',
+  ]);
+
+  t.deepEqual(c.dump().kernelTable, [
+    ['_bootstrap', 'import', 10, 'export', 'left', 0],
+    ['_bootstrap', 'import', 11, 'export', 'right', 0],
+    ['_bootstrap', 'promise', 20, 40],
+    ['left', 'import', 10, 'export', 'right', 0],
+    ['left', 'promise', 20, 41],
+    ['left', 'resolver', 30, 40],
+    ['right', 'resolver', 30, 41],
+  ]);
   t.deepEqual(c.dump().runQueue, []);
 
   t.end();

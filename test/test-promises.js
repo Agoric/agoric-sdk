@@ -46,7 +46,16 @@ async function testChain1(t, withSES) {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
   const c = await buildVatController(config, withSES, ['chain1']);
 
+  /*
+  while (true) {
+    console.log('--- STEP ----------------------------------------------------------------');
+    await c.step();
+    console.log(c.dump());
+    if (!c.dump().runQueue.length)
+      break;
+  } */
   await c.run();
+
   t.deepEqual(c.dump().log, [
     'bootstrap called',
     'b.call2',
@@ -131,4 +140,28 @@ test('resolve-to-local with SES', async t => {
 
 test('resolve-to-local without SES', async t => {
   await testLocal2(t, false);
+});
+
+async function testSendPromise1(t, withSES) {
+  const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
+  const c = await buildVatController(config, withSES, ['send-promise1']);
+
+  await c.run();
+  t.deepEqual(c.dump().log, [
+    'bootstrap called',
+    'b.send-promise1.finish',
+    'left.takePromise',
+    'left.takePromise.then',
+    'local.foo 1',
+    'b.resolved 4',
+  ]);
+  t.end();
+}
+
+test('send-promise-resolve-to-local with SES', async t => {
+  await testSendPromise1(t, true);
+});
+
+test('send-promise-resolve-to-local without SES', async t => {
+  await testSendPromise1(t, false);
 });

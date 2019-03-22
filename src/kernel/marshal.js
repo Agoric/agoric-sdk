@@ -192,7 +192,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
 
       // beyond this point it must either be a proxy (created by an inbound
       // call) or a pass-by-presence object
-      console.log(`serializeSlot: ${val}`);
+      // console.log(`serializeSlot: ${val}`);
       return serializeSlot(val, slots, slotMap);
     };
   }
