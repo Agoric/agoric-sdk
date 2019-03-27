@@ -115,10 +115,11 @@ async function bootstrapExport(t, withSES) {
       msg: {
         method: 'bootstrap',
         argsString:
-          '{"args":[[],{"left":{"@qclass":"slot","index":0},"right":{"@qclass":"slot","index":1}}]}',
+          '{"args":[[],{"left":{"@qclass":"slot","index":0},"right":{"@qclass":"slot","index":1},"_bootstrap":{"@qclass":"slot","index":2}}]}',
         slots: [
           { type: 'export', vatID: 'left', id: 0 },
           { type: 'export', vatID: 'right', id: 0 },
+          { type: 'export', vatID: '_bootstrap', id: 0 },
         ],
       },
     },

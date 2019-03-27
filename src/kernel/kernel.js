@@ -781,12 +781,14 @@ export default function buildKernel(kernelEndowments) {
     const vatObj0s = {};
     Array.from(vats.entries()).forEach(e => {
       const targetVatID = e[0];
-      if (targetVatID !== vatID) {
-        // don't give _bootstrap to itself
-        const vref = harden({}); // marker
-        vatObj0s[targetVatID] = vref;
-        vrefs.set(vref, { type: 'export', vatID: targetVatID, id: 0 });
-      }
+      // we happen to give _bootstrap to itself, because unit tests that
+      // don't have any other vats (bootstrap-only configs) then get a
+      // non-empty object as vatObj0s, since an empty object would be
+      // serialized as pass-by-presence. It wouldn't make much sense for the
+      // bootstrap object to call itself, though.
+      const vref = harden({}); // marker
+      vatObj0s[targetVatID] = vref;
+      vrefs.set(vref, { type: 'export', vatID: targetVatID, id: 0 });
     });
 
     function serializeSlot(vref, slots, slotMap) {

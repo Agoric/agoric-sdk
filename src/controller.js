@@ -44,12 +44,27 @@ function getKernelSource() {
   return `(${kernelSourceFunc})`;
 }
 
+// this feeds the SES realm's (real/safe) confineExpr() back into the Realm
+// when it does require('@agoric/evaluate'), so we can get the same
+// functionality both with and without SES
+function makeEvaluate(e) {
+  const { confineExpr } = e;
+  return (source, endowments = {}) => confineExpr(source, endowments);
+}
+
 function buildSESKernel() {
   const s = SES.makeSESRootRealm({
     consoleMode: 'allow',
     errorStackMode: 'allow',
   });
-  const r = s.makeRequire({ '@agoric/harden': true, '@agoric/nat': Nat });
+  const r = s.makeRequire({
+    '@agoric/evaluate': {
+      attenuatorSource: `${makeEvaluate}`,
+      confineExpr: s.global.SES.confineExpr,
+    },
+    '@agoric/harden': true,
+    '@agoric/nat': Nat,
+  });
   const kernelSource = getKernelSource();
   // console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })();

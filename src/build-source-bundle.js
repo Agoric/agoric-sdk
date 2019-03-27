@@ -4,7 +4,7 @@ export default async function bundleSource(startFilename) {
   const bundle = await rollup({
     input: require.resolve(startFilename),
     treeshake: false,
-    external: ['@agoric/nat', '@agoric/harden'],
+    external: ['@agoric/evaluate', '@agoric/nat', '@agoric/harden'],
   });
   const { output } = await bundle.generate({
     format: 'cjs',

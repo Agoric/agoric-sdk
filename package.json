@@ -33,6 +33,7 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
+    "@agoric/evaluate": "./agoric-evaluate",
     "@agoric/harden": "^0.0.4",
     "@agoric/nat": "^2.0.0",
     "rollup": "^1.1.2",

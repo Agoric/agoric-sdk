@@ -1,4 +1,3 @@
-/* global SES Vow Flow */
 // Copyright (C) 2012 Google Inc.
 // Copyright (C) 2018 Agoric
 //
@@ -84,6 +83,7 @@
 /* eslint-disable-next-line global-require, import/no-extraneous-dependencies */
 import harden from '@agoric/harden';
 import makePromise from '../../src/kernel/makePromise';
+import evaluate from '@agoric/evaluate';
 
 function makeHost(E) {
   const m = new WeakMap();
@@ -97,7 +97,7 @@ function makeHost(E) {
       //let resolve;
       //const f = new Flow();
       //const resultP = f.makeVow(r => (resolve = r));
-      const contract = SES.confineExpr(contractSrc, {
+      const contract = evaluate(contractSrc, {
         //Flow,
         //Vow,
         console,
