@@ -1,6 +1,7 @@
 {
-  "name": "domain-vat",
+  "name": "@agoric/swingset-vat",
   "version": "0.0.1",
+  "private": true,
   "description": "Vat/Container Launcher",
   "main": "src/index.js",
   "module": "src/main.js",
@@ -43,14 +44,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Agoric/DomainVat.git"
+    "url": "git+https://github.com/Agoric/SwingSet.git"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/Agoric/DomainVat/issues"
+    "url": "https://github.com/Agoric/SwingSet/issues"
   },
-  "homepage": "https://github.com/Agoric/DomainVat#readme",
+  "homepage": "https://github.com/Agoric/SwingSet#readme",
   "directories": {
     "example": "examples"
   }
