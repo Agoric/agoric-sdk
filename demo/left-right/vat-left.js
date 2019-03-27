@@ -5,7 +5,10 @@ export default function setup(syscall, helpers) {
     helpers.log(what);
     console.log(what);
   }
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(syscall, helpers.vatID);
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
+    syscall,
+    helpers.vatID,
+  );
 
   const t1 = {
     callRight(arg1, right) {

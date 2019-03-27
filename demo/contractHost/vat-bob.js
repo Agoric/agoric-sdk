@@ -1,4 +1,3 @@
-/* global Vow Flow */
 // Copyright (C) 2013 Google Inc.
 // Copyright (C) 2018 Agoric
 //
@@ -70,7 +69,9 @@ function makeBob(E, host) {
         }
       }
 
-      return E(myMoneyPurseP).deposit(10, paymentP).then(_ => good);
+      return E(myMoneyPurseP)
+        .deposit(10, paymentP)
+        .then(_ => good);
     },
 
     tradeWell(alice, bobLies = false) {
@@ -137,11 +138,16 @@ function makeBob(E, host) {
 }
 
 export default function setup(syscall, helpers) {
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(syscall, helpers.vatID);
-  registerRoot(harden({
-    makeBob(host) {
-      return harden(makeBob(E, host));
-    },
-  }));
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
+    syscall,
+    helpers.vatID,
+  );
+  registerRoot(
+    harden({
+      makeBob(host) {
+        return harden(makeBob(E, host));
+      },
+    }),
+  );
   return dispatch;
 }

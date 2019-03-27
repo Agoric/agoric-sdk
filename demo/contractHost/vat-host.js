@@ -82,8 +82,8 @@
 
 /* eslint-disable-next-line global-require, import/no-extraneous-dependencies */
 import harden from '@agoric/harden';
-import makePromise from '../../src/kernel/makePromise';
 import evaluate from '@agoric/evaluate';
+import makePromise from '../../src/kernel/makePromise';
 
 function makeHost(E) {
   const m = new WeakMap();
@@ -94,22 +94,22 @@ function makeHost(E) {
       const tokens = [];
       const argPs = [];
       const { p: resultP, res: resolve } = makePromise();
-      //let resolve;
-      //const f = new Flow();
-      //const resultP = f.makeVow(r => (resolve = r));
+      // let resolve;
+      // const f = new Flow();
+      // const resultP = f.makeVow(r => (resolve = r));
       const contract = evaluate(contractSrc, {
-        //Flow,
-        //Vow,
+        // Flow,
+        // Vow,
         console,
         require,
         E,
       });
-      //console.log(`confined contract is ${typeof contract} ${contract}`);
+      // console.log(`confined contract is ${typeof contract} ${contract}`);
 
       const addParam = (i, token) => {
         tokens[i] = token;
-        //let resolveArg;
-        //argPs[i] = f.makeVow(r => (resolveArg = r));
+        // let resolveArg;
+        // argPs[i] = f.makeVow(r => (resolveArg = r));
         const p = makePromise();
         const resolveArg = p.res;
         argPs[i] = p.p;
@@ -144,11 +144,16 @@ function makeHost(E) {
 }
 
 export default function setup(syscall, helpers) {
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(syscall, helpers.vatID);
-  registerRoot(harden({
-    makeHost() {
-      return harden(makeHost(E));
-    },
-  }));
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
+    syscall,
+    helpers.vatID,
+  );
+  registerRoot(
+    harden({
+      makeHost() {
+        return harden(makeHost(E));
+      },
+    }),
+  );
   return dispatch;
 }

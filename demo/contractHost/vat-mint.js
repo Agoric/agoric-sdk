@@ -16,7 +16,7 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-function build(E) {
+function build(_E) {
   let debugCounter = 0;
 
   function makeMint() {
@@ -82,7 +82,10 @@ function build(E) {
 }
 
 export default function setup(syscall, helpers) {
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(syscall, helpers.vatID);
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
+    syscall,
+    helpers.vatID,
+  );
   const obj0 = build(E);
   registerRoot(harden(obj0));
   return dispatch;

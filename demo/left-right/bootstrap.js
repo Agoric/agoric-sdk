@@ -8,7 +8,10 @@ export default function setup(syscall, helpers) {
     console.log(what);
   }
   log(`bootstrap called`);
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(syscall, helpers.vatID);
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
+    syscall,
+    helpers.vatID,
+  );
   const obj0 = {
     bootstrap(argv, vats) {
       E(vats.left)

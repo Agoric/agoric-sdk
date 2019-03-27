@@ -1,6 +1,7 @@
-/* global console require E */
+/* global require E */
 
 export default function escrowExchange(a, b) {
+  /* eslint-disable-next-line global-require */
   const harden = require('@agoric/harden');
 
   function join(xP, yP) {
