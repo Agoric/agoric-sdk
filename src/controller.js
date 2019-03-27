@@ -70,7 +70,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
   // console.log('kernel', kernel);
 
   async function addVat(vatID, sourceIndex) {
-    if (sourceIndex[0] !== '.' && sourceIndex[0] !== '/') {
+    if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
       throw Error(
         'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
       );
