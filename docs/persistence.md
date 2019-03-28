@@ -47,3 +47,7 @@ To restore an entire kernel, we must:
   * reconfigure the syscall object to hash and execute
 
 Now the kernel should be back in the same state it had before. Every entry in the kernel's import/promise tables should match a Presence or Promise inside the corresponding Vat.
+
+We can execute each Vat's transcript independently: the Vat's state will not depend upon what's happening in the other Vats, and the kernel's state won't depend upon what happens in this particular Vat (since we ignore syscalls during the replay, and compare hashes to make it emits the same syscalls that *were* executed last time).
+
+Since syscalls can return values (e.g. a `send` returns a PromiseID for the answer), our Vat transcript must record these, so the same values can be returned during playback mode.
