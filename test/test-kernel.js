@@ -31,6 +31,7 @@ test('simple call', async t => {
   kernel.queueToExport('vat1', 1, 'foo', 'args');
   t.deepEqual(kernel.dump().runQueue, [
     {
+      vatID: 'vat1',
       type: 'deliver',
       target: {
         type: 'export',
@@ -82,6 +83,7 @@ test('map inbound', async t => {
   ]);
   t.deepEqual(kernel.dump().runQueue, [
     {
+      vatID: 'vat1',
       type: 'deliver',
       target: {
         type: 'export',
@@ -180,6 +182,7 @@ test('outbound call', async t => {
   t.deepEqual(log, []);
   t.deepEqual(kernel.dump().runQueue, [
     {
+      vatID: 'vat1',
       type: 'deliver',
       target: {
         type: 'export',
@@ -203,6 +206,7 @@ test('outbound call', async t => {
 
   t.deepEqual(kernel.dump().runQueue, [
     {
+      vatID: 'vat2',
       type: 'deliver',
       target: {
         type: 'export',
@@ -334,6 +338,7 @@ test('three-party', async t => {
 
   t.deepEqual(kernel.dump().runQueue, [
     {
+      vatID: 'vatB',
       type: 'deliver',
       target: {
         type: 'export',
@@ -483,6 +488,7 @@ test('transfer promise', async t => {
   ]);
   t.deepEqual(kernel.dump().runQueue, [
     {
+      vatID: 'vatB',
       type: 'deliver',
       target: {
         type: 'export',

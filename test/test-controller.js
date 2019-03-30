@@ -22,6 +22,7 @@ async function simpleCall(t, controller) {
   controller.queueToExport('vat1', 1, 'foo', 'args');
   t.deepEqual(controller.dump().runQueue, [
     {
+      vatID: 'vat1',
       type: 'deliver',
       target: {
         type: 'export',
@@ -106,6 +107,7 @@ async function bootstrapExport(t, withSES) {
 
   t.deepEqual(c.dump().runQueue, [
     {
+      vatID: '_bootstrap',
       type: 'deliver',
       target: {
         type: 'export',
@@ -145,6 +147,7 @@ async function bootstrapExport(t, withSES) {
   ]);
   t.deepEqual(c.dump().runQueue, [
     {
+      vatID: 'left',
       type: 'deliver',
       target: {
         type: 'export',
@@ -178,6 +181,7 @@ async function bootstrapExport(t, withSES) {
   ]);
   t.deepEqual(c.dump().runQueue, [
     {
+      vatID: 'right',
       type: 'deliver',
       target: {
         type: 'export',

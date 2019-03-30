@@ -14,6 +14,7 @@ export default function makeVatManager(vatID, syscallManager) {
     fulfillToTarget,
     reject,
     log,
+    process,
   } = syscallManager;
 
   function syscallForVatID(fromVatID) {
@@ -225,7 +226,143 @@ export default function makeVatManager(vatID, syscallManager) {
     // wasteful and limiting.
   }
 
+  let dispatch;
+
+  function setDispatch(dispatcher) {
+    dispatch = dispatcher;
+  }
+
+  async function processOneMessage(message) {
+    if (dispatch === undefined) {
+      throw new Error('setDispatch must be called first');
+    }
+    kdebug(`process ${JSON.stringify(message)}`);
+    const { type } = message;
+    if (type === 'deliver') {
+      const { target, msg } = message;
+      if (target.type !== 'export') {
+        throw new Error(
+          `processOneMessage got 'deliver' for non-export ${JSON.stringify(
+            target,
+          )}`,
+        );
+      }
+      if (target.vatID !== vatID) {
+        throw new Error(
+          `vatManager[${vatID}] given 'deliver' for ${target.vatID}`,
+        );
+      }
+      const inputSlots = msg.slots.map(slot => mapInbound(vatID, slot));
+      return process(
+        () =>
+          dispatch.deliver(
+            target.id,
+            msg.method,
+            msg.argsString,
+            inputSlots,
+            // TODO: remove this once kernelResolverID is everywhere
+            msg.kernelResolverID &&
+              mapInbound(vatID, { type: 'resolver', id: msg.kernelResolverID })
+                .id,
+          ),
+        err => {
+          console.log(
+            // eslint-disable-next-line prettier/prettier
+            `vat[${vatID}][${target.id}].${msg.method} dispatch failed: ${err}`,
+            err,
+          );
+        },
+      );
+    }
+
+    /*
+    if (type === 'subscribe') {
+      const { kernelPromiseID, vatID } = message;
+      const relativeID = mapInbound(vatID, {
+        type: 'resolver',
+        id: kernelPromiseID,
+      }).id;
+      return process(
+        () => dispatch.subscribe(relativeID),
+        err => {
+          console.log(
+            `vat[${vatID}].promise[${relativeID}] subscribe failed: ${err}`,
+            err,
+          );
+          console.log(dump());
+        });
+    }
+    */
+
+    if (type === 'notifyFulfillToData') {
+      const { kernelPromiseID } = message;
+      const p = kernelPromises.get(kernelPromiseID);
+      const relativeID = mapInbound(vatID, {
+        type: 'promise',
+        id: kernelPromiseID,
+      }).id;
+      return process(
+        () =>
+          dispatch.notifyFulfillToData(
+            relativeID,
+            p.fulfillData,
+            p.fulfillSlots.map(slot => mapInbound(vatID, slot)),
+          ),
+        err =>
+          console.log(
+            `vat[${vatID}].promise[${relativeID}] fulfillToData failed: ${err}`,
+            err,
+          ),
+      );
+    }
+
+    if (type === 'notifyFulfillToTarget') {
+      const { kernelPromiseID } = message;
+      const p = kernelPromises.get(kernelPromiseID);
+      const relativeID = mapInbound(vatID, {
+        type: 'promise',
+        id: kernelPromiseID,
+      }).id;
+      return process(
+        () =>
+          dispatch.notifyFulfillToTarget(
+            relativeID,
+            mapInbound(vatID, p.fulfillSlot),
+          ),
+        err =>
+          console.log(
+            `vat[${vatID}].promise[${relativeID}] fulfillToTarget failed: ${err}`,
+            err,
+          ),
+      );
+    }
+
+    if (type === 'notifyReject') {
+      const { kernelPromiseID } = message;
+      const p = kernelPromises.get(kernelPromiseID);
+      const relativeID = mapInbound(vatID, {
+        type: 'promise',
+        id: kernelPromiseID,
+      }).id;
+      return process(
+        () =>
+          dispatch.notifyReject(
+            relativeID,
+            p.rejectData,
+            p.rejectSlots.map(slot => mapInbound(vatID, slot)),
+          ),
+        err =>
+          console.log(
+            `vat[${vatID}].promise[${relativeID}] reject failed: ${err}`,
+            err,
+          ),
+      );
+    }
+
+    throw new Error(`unknown message type '${type}'`);
+  }
+
   const syscall = syscallForVatID(vatID);
-  const manager = { syscall };
+  const manager = { syscall, setDispatch, processOneMessage };
   return manager;
 }

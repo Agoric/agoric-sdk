@@ -41,8 +41,8 @@ export default function buildKernel(kernelEndowments) {
   const vats = harden(new Map());
 
   // runQueue entries are {type, vatID, more..}. 'more' depends on type:
-  // * deliver: facetID, method, argsString, slots
-  // * notifyFulfillToData: kernelPromiseID, argData, slots
+  // * deliver: target, msg
+  // * notifyFulfillToData/notifyFulfillToTarget/notifyReject: kernelPromiseID
   const runQueue = [];
 
   // in the kernel table, promises and resolvers are both indexed by the same
@@ -235,7 +235,7 @@ export default function buildKernel(kernelEndowments) {
 
   function send(target, msg) {
     if (target.type === 'export') {
-      runQueue.push({ type: 'deliver', target, msg });
+      runQueue.push({ type: 'deliver', vatID: target.vatID, target, msg });
     } else if (target.type === 'promise') {
       const kp = kernelPromises.get(target.id);
       if (kp.state === 'unresolved') {
@@ -341,56 +341,6 @@ export default function buildKernel(kernelEndowments) {
     delete p.queue;
   }
 
-  const syscallManager = {
-    kdebug,
-    mapOutbound,
-    mapInbound,
-    createPromiseWithDecider,
-    send,
-    kernelPromises,
-    runQueue,
-    fulfillToData,
-    fulfillToTarget,
-    reject,
-    log,
-  };
-
-  function addVat(vatID, setup) {
-    if (vats.has(vatID)) {
-      throw new Error(`already have a vat named '${vatID}'`);
-    }
-    const manager = makeVatManager(vatID, syscallManager);
-    const helpers = harden({
-      vatID,
-      makeLiveSlots,
-      log(str) {
-        log.push(`${str}`);
-      },
-    });
-    const dispatch = setup(manager.syscall, helpers);
-    // the vat record is not hardened: it holds mutable next-ID values
-    vats.set(vatID, {
-      id: vatID,
-      dispatch,
-      imports: harden({
-        outbound: new Map(),
-        inbound: new Map(),
-      }),
-      // make these IDs start at different values to detect errors better
-      nextImportID: 10,
-      promises: harden({
-        outbound: new Map(),
-        inbound: new Map(),
-      }),
-      nextPromiseID: 20,
-      resolvers: harden({
-        outbound: new Map(),
-        inbound: new Map(),
-      }),
-      nextResolverID: 30,
-    });
-  }
-
   async function process(f, logerr) {
     // the delivery might cause some number of (native) Promises to be
     // created and resolved, so we use the IO queue to detect when the
@@ -409,132 +359,56 @@ export default function buildKernel(kernelEndowments) {
     await queueEmptyP;
   }
 
-  async function processOneMessage(message) {
-    kdebug(`process ${JSON.stringify(message)}`);
-    const { type } = message;
-    if (type === 'deliver') {
-      const { target, msg } = message;
-      if (target.type !== 'export') {
-        throw new Error(
-          `processOneMessage got 'deliver' for non-export ${JSON.stringify(
-            target,
-          )}`,
-        );
-      }
-      const { vatID } = target;
-      const { dispatch } = getVat(vatID);
-      const inputSlots = msg.slots.map(slot => mapInbound(vatID, slot));
-      return process(
-        () =>
-          dispatch.deliver(
-            target.id,
-            msg.method,
-            msg.argsString,
-            inputSlots,
-            // TODO: remove this once kernelResolverID is everywhere
-            msg.kernelResolverID &&
-              mapInbound(vatID, { type: 'resolver', id: msg.kernelResolverID })
-                .id,
-          ),
-        err => {
-          console.log(
-            // eslint-disable-next-line prettier/prettier
-            `vat[${vatID}][${target.id}].${msg.method} dispatch failed: ${err}`,
-            err,
-          );
-        },
-      );
-    }
+  const syscallManager = {
+    kdebug,
+    mapOutbound,
+    mapInbound,
+    createPromiseWithDecider,
+    send,
+    kernelPromises,
+    runQueue,
+    fulfillToData,
+    fulfillToTarget,
+    reject,
+    log,
+    process,
+  };
 
-    /*
-    if (type === 'subscribe') {
-      const { kernelPromiseID, vatID } = message;
-      const { dispatch } = getVat(vatID);
-      const relativeID = mapInbound(vatID, {
-        type: 'resolver',
-        id: kernelPromiseID,
-      }).id;
-      return process(
-        () => dispatch.subscribe(relativeID),
-        err => {
-          console.log(
-            `vat[${vatID}].promise[${relativeID}] subscribe failed: ${err}`,
-            err,
-          );
-          console.log(dump());
-        });
+  function addVat(vatID, setup) {
+    if (vats.has(vatID)) {
+      throw new Error(`already have a vat named '${vatID}'`);
     }
-    */
-
-    if (type === 'notifyFulfillToData') {
-      const { kernelPromiseID, vatID } = message;
-      const { dispatch } = getVat(vatID);
-      const p = kernelPromises.get(kernelPromiseID);
-      const relativeID = mapInbound(vatID, {
-        type: 'promise',
-        id: kernelPromiseID,
-      }).id;
-      return process(
-        () =>
-          dispatch.notifyFulfillToData(
-            relativeID,
-            p.fulfillData,
-            p.fulfillSlots.map(slot => mapInbound(vatID, slot)),
-          ),
-        err =>
-          console.log(
-            `vat[${vatID}].promise[${relativeID}] fulfillToData failed: ${err}`,
-            err,
-          ),
-      );
-    }
-
-    if (type === 'notifyFulfillToTarget') {
-      const { kernelPromiseID, vatID } = message;
-      const { dispatch } = getVat(vatID);
-      const p = kernelPromises.get(kernelPromiseID);
-      const relativeID = mapInbound(vatID, {
-        type: 'promise',
-        id: kernelPromiseID,
-      }).id;
-      return process(
-        () =>
-          dispatch.notifyFulfillToTarget(
-            relativeID,
-            mapInbound(vatID, p.fulfillSlot),
-          ),
-        err =>
-          console.log(
-            `vat[${vatID}].promise[${relativeID}] fulfillToTarget failed: ${err}`,
-            err,
-          ),
-      );
-    }
-
-    if (type === 'notifyReject') {
-      const { kernelPromiseID, vatID } = message;
-      const { dispatch } = getVat(vatID);
-      const p = kernelPromises.get(kernelPromiseID);
-      const relativeID = mapInbound(vatID, {
-        type: 'promise',
-        id: kernelPromiseID,
-      }).id;
-      return process(
-        () =>
-          dispatch.notifyReject(
-            relativeID,
-            p.rejectData,
-            p.rejectSlots.map(slot => mapInbound(vatID, slot)),
-          ),
-        err =>
-          console.log(
-            `vat[${vatID}].promise[${relativeID}] reject failed: ${err}`,
-            err,
-          ),
-      );
-    }
-
-    throw new Error(`unknown message type '${type}'`);
+    const manager = makeVatManager(vatID, syscallManager);
+    const helpers = harden({
+      vatID,
+      makeLiveSlots,
+      log(str) {
+        log.push(`${str}`);
+      },
+    });
+    const dispatch = setup(manager.syscall, helpers);
+    manager.setDispatch(dispatch);
+    // the vat record is not hardened: it holds mutable next-ID values
+    vats.set(vatID, {
+      id: vatID,
+      manager,
+      imports: harden({
+        outbound: new Map(),
+        inbound: new Map(),
+      }),
+      // make these IDs start at different values to detect errors better
+      nextImportID: 10,
+      promises: harden({
+        outbound: new Map(),
+        inbound: new Map(),
+      }),
+      nextPromiseID: 20,
+      resolvers: harden({
+        outbound: new Map(),
+        inbound: new Map(),
+      }),
+      nextResolverID: 30,
+    });
   }
 
   function addImport(forVatID, what) {
@@ -557,6 +431,7 @@ export default function buildKernel(kernelEndowments) {
     // 'step' or 'run' to execute it
     runQueue.push(
       harden({
+        vatID: `${vatID}`,
         type: 'deliver',
         target: {
           type: 'export',
@@ -573,6 +448,20 @@ export default function buildKernel(kernelEndowments) {
         },
       }),
     );
+  }
+
+  function processQueueMessage(message) {
+    kdebug(`processQ ${JSON.stringify(message)}`);
+    const vat = vats.get(message.vatID);
+    if (vat === undefined) {
+      throw new Error(
+        `unknown vatID in target ${JSON.stringify(
+          message,
+        )}, have ${JSON.stringify(Array.from(vats.keys()))}`,
+      );
+    }
+    const { manager } = vat;
+    return manager.processOneMessage(message);
   }
 
   function callBootstrap(vatID, argvString) {
@@ -706,7 +595,7 @@ export default function buildKernel(kernelEndowments) {
       running = true;
       while (running && runQueue.length) {
         // eslint-disable-next-line no-await-in-loop
-        await processOneMessage(runQueue.shift());
+        await processQueueMessage(runQueue.shift());
       }
     },
 
@@ -716,7 +605,7 @@ export default function buildKernel(kernelEndowments) {
       let remaining = runQueue.length;
       while (running && remaining) {
         // eslint-disable-next-line no-await-in-loop
-        await processOneMessage(runQueue.shift());
+        await processQueueMessage(runQueue.shift());
         remaining -= 1;
       }
     },
@@ -724,7 +613,7 @@ export default function buildKernel(kernelEndowments) {
     async step() {
       // process a single message
       if (runQueue.length) {
-        await processOneMessage(runQueue.shift());
+        await processQueueMessage(runQueue.shift());
       }
     },
 
