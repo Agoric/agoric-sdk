@@ -3,7 +3,7 @@ import makePromise from '../../src/kernel/makePromise';
 
 console.log(`loading bootstrap`);
 
-export default function setup(syscall, helpers) {
+export default function setup(syscall, state, helpers) {
   function log(what) {
     helpers.log(what);
     console.log(what);

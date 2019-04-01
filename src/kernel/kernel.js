@@ -37,6 +37,7 @@ export default function buildKernel(kernelEndowments) {
   //                 resolvers: { inbound[kernelPromiseID] = id,
   //                              outbound[id] = kernelPromiseID, },
   //                 nextResolverID,
+  //                 state: { value, slots },
   //               }
   const vats = harden(new Map());
 
@@ -56,6 +57,14 @@ export default function buildKernel(kernelEndowments) {
       throw new Error(`unknown vatID '${vatID}'`);
     }
     return vat;
+  }
+
+  function loadForVatID(vatID) {
+    return getVat(vatID).state;
+  }
+
+  function storeForVatID(vatID, value, slots) {
+    getVat(vatID).state = { value, slots: Array.from(slots) };
   }
 
   function allocateKernelPromiseIndex() {
@@ -363,6 +372,8 @@ export default function buildKernel(kernelEndowments) {
     kdebug,
     mapOutbound,
     mapInbound,
+    loadForVatID,
+    storeForVatID,
     createPromiseWithDecider,
     send,
     kernelPromises,
@@ -386,11 +397,12 @@ export default function buildKernel(kernelEndowments) {
         log.push(`${str}`);
       },
     });
-    const dispatch = setup(manager.syscall, helpers);
+    const dispatch = setup(manager.syscall, manager.state, helpers);
     manager.setDispatch(dispatch);
     // the vat record is not hardened: it holds mutable next-ID values
     vats.set(vatID, {
       id: vatID,
+      state: { value: '', slots: [] },
       manager,
       imports: harden({
         outbound: new Map(),
@@ -507,7 +519,7 @@ export default function buildKernel(kernelEndowments) {
     vats.forEach((vat, vatID) => {
       // TODO: find some way to expose the liveSlots internal tables, the
       // kernel doesn't see them
-      const vatTable = { vatID };
+      const vatTable = { vatID, state: vat.state };
       vatTables.push(vatTable);
 
       vat.imports.outbound.forEach((target, slot) => {

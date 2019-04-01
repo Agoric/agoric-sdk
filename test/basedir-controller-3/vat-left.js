@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 
 console.log(`left loaded`);
 
-export default function setup(syscall, helpers) {
+export default function setup(syscall, state, helpers) {
   const { log } = helpers;
   log(`left.setup called`);
   const { E, dispatch, registerRoot } = helpers.makeLiveSlots(

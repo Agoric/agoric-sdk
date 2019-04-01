@@ -16,7 +16,9 @@ test('load empty', async t => {
 async function simpleCall(t, controller) {
   await controller.addVat('vat1', require.resolve('./vat-controller-1'));
   const data = controller.dump();
-  t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
+  t.deepEqual(data.vatTables, [
+    { vatID: 'vat1', state: { value: '', slots: [] } },
+  ]);
   t.deepEqual(data.kernelTable, []);
 
   controller.queueToExport('vat1', 1, 'foo', 'args');

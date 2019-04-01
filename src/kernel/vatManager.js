@@ -226,6 +226,18 @@ export default function makeVatManager(vatID, syscallManager) {
     // wasteful and limiting.
   }
 
+  const state = harden({
+    load() {
+      const data = syscallManager.loadForVatID(vatID);
+      const inputSlots = data.slots.map(slot => mapInbound(vatID, slot));
+      return { value: data.value, slots: inputSlots };
+    },
+    store(value, vatSlots) {
+      const slots = vatSlots.map(slot => mapOutbound(vatID, slot));
+      syscallManager.storeForVatID(vatID, value, slots);
+    },
+  });
+
   let dispatch;
 
   function setDispatch(dispatcher) {
@@ -363,6 +375,6 @@ export default function makeVatManager(vatID, syscallManager) {
   }
 
   const syscall = syscallForVatID(vatID);
-  const manager = { syscall, setDispatch, processOneMessage };
+  const manager = { syscall, state, setDispatch, processOneMessage };
   return manager;
 }

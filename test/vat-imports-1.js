@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-export default function setup(syscall, helpers) {
+export default function setup(syscall, state, helpers) {
   const { log, makeLiveSlots } = helpers;
   const { dispatch, registerRoot } = makeLiveSlots(syscall, helpers.vatID);
   const obj0 = {

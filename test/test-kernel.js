@@ -23,7 +23,9 @@ test('simple call', async t => {
   }
   kernel.addVat('vat1', setup1);
   let data = kernel.dump();
-  t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
+  t.deepEqual(data.vatTables, [
+    { vatID: 'vat1', state: { value: '', slots: [] } },
+  ]);
   t.deepEqual(data.kernelTable, []);
   t.deepEqual(data.log, []);
   t.deepEqual(log, []);
@@ -73,7 +75,9 @@ test('map inbound', async t => {
   }
   kernel.addVat('vat1', setup1);
   const data = kernel.dump();
-  t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
+  t.deepEqual(data.vatTables, [
+    { vatID: 'vat1', state: { value: '', slots: [] } },
+  ]);
   t.deepEqual(data.kernelTable, []);
   t.deepEqual(log, []);
 
@@ -172,7 +176,10 @@ test('outbound call', async t => {
   t.deepEqual(v1tovat25, { type: 'import', id: 10 }); // first allocation
 
   const data = kernel.dump();
-  t.deepEqual(data.vatTables, [{ vatID: 'vat1' }, { vatID: 'vat2' }]);
+  t.deepEqual(data.vatTables, [
+    { vatID: 'vat1', state: { value: '', slots: [] } },
+    { vatID: 'vat2', state: { value: '', slots: [] } },
+  ]);
   t.deepEqual(data.kernelTable, [
     ['vat1', 'import', v1tovat25.id, 'export', 'vat2', 5],
   ]);
@@ -317,9 +324,9 @@ test('three-party', async t => {
 
   const data = kernel.dump();
   t.deepEqual(data.vatTables, [
-    { vatID: 'vatA' },
-    { vatID: 'vatB' },
-    { vatID: 'vatC' },
+    { vatID: 'vatA', state: { value: '', slots: [] } },
+    { vatID: 'vatB', state: { value: '', slots: [] } },
+    { vatID: 'vatC', state: { value: '', slots: [] } },
   ]);
   t.deepEqual(data.kernelTable, [
     ['vatA', 'import', bobForA.id, 'export', 'vatB', 5],
@@ -1000,6 +1007,62 @@ test('promise reject', async t => {
     },
   ]);
   t.deepEqual(kernel.dump().runQueue, []);
+
+  t.end();
+});
+
+test('persistence', async t => {
+  const kernel = buildKernel({ setImmediate });
+  const log = [];
+  function setup(_syscall, state) {
+    function deliver(_facetID, method, argsString, slots) {
+      if (method === 'store') {
+        state.store(argsString, slots);
+      } else if (method === 'load') {
+        const data = state.load();
+        log.push(data);
+      } else {
+        throw new Error('unknown method');
+      }
+    }
+    return { deliver };
+  }
+  kernel.addVat('vatA', setup);
+  kernel.queueToExport('vatA', 1, 'store', 'args string', [
+    { type: 'export', vatID: 'vatA', id: 1 },
+    { type: 'export', vatID: 'vatB', id: 2 },
+  ]);
+  await kernel.step();
+
+  t.deepEqual(log, []);
+  t.deepEqual(kernel.dump().vatTables[0].state, {
+    value: 'args string',
+    slots: [
+      { type: 'export', vatID: 'vatA', id: 1 },
+      { type: 'export', vatID: 'vatB', id: 2 },
+    ],
+  });
+
+  // state.load() provides vat-specific import/export slots, so figure out
+  // what vatA will receive
+  const slot1 = kernel.dump().kernelTable[0];
+  // vatA's import-X is mapped to vatB:export-2
+  t.equal(slot1[0], 'vatA');
+  t.equal(slot1[1], 'import');
+  const X = slot1[2];
+  t.equal(slot1[3], 'export');
+  t.equal(slot1[4], 'vatB');
+  t.equal(slot1[5], 2);
+
+  kernel.queueToExport('vatA', 1, 'load', '', []);
+  await kernel.step();
+
+  t.deepEqual(log, [
+    {
+      value: 'args string',
+      slots: [{ type: 'export', id: 1 }, { type: 'import', id: X }],
+    },
+  ]);
 
   t.end();
 });
