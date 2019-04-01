@@ -81,9 +81,10 @@ function build(_E) {
   return { makeMint };
 }
 
-export default function setup(syscall, helpers) {
+export default function setup(syscall, state, helpers) {
   const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
     syscall,
+    state,
     helpers.vatID,
   );
   const obj0 = build(E);

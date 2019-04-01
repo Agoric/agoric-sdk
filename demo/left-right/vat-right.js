@@ -1,12 +1,13 @@
 import harden from '@agoric/harden';
 
-export default function setup(syscall, helpers) {
+export default function setup(syscall, state, helpers) {
   function log(what) {
     helpers.log(what);
     console.log(what);
   }
   const { dispatch, registerRoot } = helpers.makeLiveSlots(
     syscall,
+    state,
     helpers.vatID,
   );
 
