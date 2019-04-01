@@ -11,7 +11,7 @@ import makePromise from './makePromise';
 // The E() wrapper does not yet return a Promise for the result of the method
 // call.
 
-export function makeLiveSlots(syscall, forVatID = 'unknown') {
+export function makeLiveSlots(syscall, _state, forVatID = 'unknown') {
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {

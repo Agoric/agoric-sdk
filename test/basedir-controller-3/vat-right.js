@@ -5,6 +5,7 @@ export default function setup(syscall, state, helpers) {
   log(`right.setup called`);
   const { dispatch, registerRoot } = helpers.makeLiveSlots(
     syscall,
+    state,
     helpers.vatID,
   );
 

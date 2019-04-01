@@ -7,6 +7,7 @@ export default function setup(syscall, state, helpers) {
   }
   const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
     syscall,
+    state,
     helpers.vatID,
   );
 

@@ -11,6 +11,7 @@ export default function setup(syscall, state, helpers) {
   log(`bootstrap called`);
   const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
     syscall,
+    state,
     helpers.vatID,
   );
   const obj0 = {
