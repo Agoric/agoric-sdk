@@ -78,16 +78,9 @@ function build(_E) {
     return harden({ mint });
   }
 
-  return { makeMint };
+  return harden({ makeMint });
 }
 
 export default function setup(syscall, state, helpers) {
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
-    syscall,
-    state,
-    helpers.vatID,
-  );
-  const obj0 = build(E);
-  registerRoot(harden(obj0));
-  return dispatch;
+  return helpers.makeLiveSlots(syscall, state, build, helpers.vatID);
 }

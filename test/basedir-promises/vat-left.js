@@ -1,16 +1,6 @@
 import harden from '@agoric/harden';
 
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
-    syscall,
-    state,
-    helpers.vatID,
-  );
-
+function build(E, log) {
   const obj0 = {
     callRight(arg1, right) {
       log(`left.callRight ${arg1}`);
@@ -53,6 +43,14 @@ export default function setup(syscall, state, helpers) {
       );
     },
   };
-  registerRoot(harden(obj0));
-  return dispatch;
+  return harden(obj0);
+}
+
+export default function setup(syscall, state, helpers) {
+  return helpers.makeLiveSlots(
+    syscall,
+    state,
+    E => build(E, helpers.log),
+    helpers.vatID,
+  );
 }

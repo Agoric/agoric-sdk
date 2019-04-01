@@ -138,17 +138,11 @@ function makeBob(E, host) {
 }
 
 export default function setup(syscall, state, helpers) {
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
-    syscall,
-    state,
-    helpers.vatID,
-  );
-  registerRoot(
+  return helpers.makeLiveSlots(syscall, state, E =>
     harden({
       makeBob(host) {
         return harden(makeBob(E, host));
       },
     }),
   );
-  return dispatch;
 }

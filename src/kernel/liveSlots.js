@@ -11,7 +11,7 @@ import makePromise from './makePromise';
 // The E() wrapper does not yet return a Promise for the result of the method
 // call.
 
-export function makeLiveSlots(syscall, _state, forVatID = 'unknown') {
+function build(syscall, _state, makeRoot, forVatID) {
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -290,25 +290,10 @@ export function makeLiveSlots(syscall, _state, forVatID = 'unknown') {
     return p;
   }
 
-  let rootIsRegistered = false;
-  function registerRoot(val) {
-    // lsdebug(`[${forVatID}] registerRoot`, val);
-    if (rootIsRegistered) {
-      throw Error(`[${forVatID}] registerRoot() was already called`);
-    }
-    const slot = { type: 'export', id: 0 };
-    valToSlot.set(val, slot);
-    slotKeyToVal.set(slotToKey(slot), val);
-    rootIsRegistered = true;
-  }
-
   function deliver(facetid, method, argsbytes, caps, resolverID) {
     lsdebug(
       `ls[${forVatID}].dispatch.deliver ${facetid}.${method} -> ${resolverID}`,
     );
-    if (!rootIsRegistered) {
-      throw Error(`[${forVatID}] registerRoot() wasn't called during setup`);
-    }
     const t = getTarget(facetid);
     const args = m.unserialize(argsbytes, caps);
     const p = Promise.resolve().then(_ => {
@@ -409,16 +394,38 @@ export function makeLiveSlots(syscall, _state, forVatID = 'unknown') {
     importedPromisesByPromiseID.get(promiseID).rej(val);
   }
 
-  return harden({
+  const rootObject = makeRoot(E);
+  mustPassByPresence(rootObject);
+  const rootSlot = { type: 'export', id: 0 };
+  valToSlot.set(rootObject, rootSlot);
+  slotKeyToVal.set(slotToKey(rootSlot), rootObject);
+
+  return {
     m,
-    E,
-    registerRoot,
-    dispatch: {
-      deliver,
-      // subscribe,
-      notifyFulfillToData,
-      notifyFulfillToTarget,
-      notifyReject,
-    },
+    deliver,
+    // subscribe,
+    notifyFulfillToData,
+    notifyFulfillToTarget,
+    notifyReject,
+  };
+}
+
+export function makeLiveSlots(syscall, _state, makeRoot, forVatID = 'unknown') {
+  const {
+    deliver,
+    notifyFulfillToData,
+    notifyFulfillToTarget,
+    notifyReject,
+  } = build(syscall, _state, makeRoot, forVatID);
+  return harden({
+    deliver,
+    notifyFulfillToData,
+    notifyFulfillToTarget,
+    notifyReject,
   });
+}
+
+// for tests
+export function makeMarshaller(syscall) {
+  return { m: build(syscall, null, _E => harden({})).m };
 }

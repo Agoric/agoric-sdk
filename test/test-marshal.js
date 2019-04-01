@@ -3,7 +3,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import { makeMarshal } from '../src/kernel/marshal';
-import { makeLiveSlots } from '../src/kernel/liveSlots';
+import { makeMarshaller } from '../src/kernel/liveSlots';
 import makePromise from '../src/kernel/makePromise';
 
 test('serialize static data', t => {
@@ -125,7 +125,7 @@ test('unserialize static data', t => {
 });
 
 test('serialize exports', t => {
-  const { m } = makeLiveSlots();
+  const { m } = makeMarshaller();
   const ser = val => m.serialize(val);
   const o1 = harden({});
   const o2 = harden({
@@ -151,7 +151,7 @@ test('serialize exports', t => {
 });
 
 test('deserialize imports', t => {
-  const { m } = makeLiveSlots();
+  const { m } = makeMarshaller();
   const a = m.unserialize('{"@qclass":"slot","index":0}', [
     { type: 'import', id: 1 },
   ]);
@@ -177,7 +177,7 @@ test('deserialize imports', t => {
 });
 
 test('deserialize exports', t => {
-  const { m } = makeLiveSlots();
+  const { m } = makeMarshaller();
   const o1 = harden({});
   m.serialize(o1); // allocates slot=1
   const a = m.unserialize('{"@qclass":"slot","index":0}', [
@@ -189,7 +189,7 @@ test('deserialize exports', t => {
 });
 
 test('serialize imports', t => {
-  const { m } = makeLiveSlots();
+  const { m } = makeMarshaller();
   const a = m.unserialize('{"@qclass":"slot","index":0}', [
     { type: 'import', id: 1 },
   ]);
@@ -215,7 +215,7 @@ test('serialize promise', async t => {
     },
   };
 
-  const { m } = makeLiveSlots(syscall);
+  const { m } = makeMarshaller(syscall);
   const { p, res } = makePromise();
   t.deepEqual(m.serialize(p), {
     argsString: '{"@qclass":"slot","index":0}',
@@ -252,7 +252,7 @@ test('unserialize promise', t => {
     },
   };
 
-  const { m } = makeLiveSlots(syscall);
+  const { m } = makeMarshaller(syscall);
   const p = m.unserialize('{"@qclass":"slot","index":0}', [
     { type: 'promise', id: 1 },
   ]);
