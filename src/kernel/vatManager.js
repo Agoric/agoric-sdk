@@ -17,8 +17,9 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     process,
   } = syscallManager;
 
-  const inReplay = false;
+  let inReplay = false;
   const transcript = [];
+  let playbackSyscalls;
 
   let currentEntry;
   function startDispatch(method, args) {
@@ -230,17 +231,64 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     reject(id, rejectData, slots);
   }
 
-  function replaySend(_targetSlot, _method, _argsString, _vatSlots) {
-    // return p.id;
+  function replaySend(targetSlot, method, argsString, vatSlots) {
+    const s = playbackSyscalls.shift();
+    if (
+      s.type !== 'send' ||
+      JSON.stringify(s.args) !==
+        JSON.stringify([targetSlot, method, argsString, vatSlots])
+    ) {
+      throw new Error('historical inaccuracy in replaySend');
+    }
+    return s.response.promiseID;
   }
   function replayCreatePromise() {
+    const s = playbackSyscalls.shift();
+    if (s.type !== 'createPromise') {
+      throw new Error('historical inaccuracy in replayCreatePromise');
+    }
     // return harden({ promiseID: p.id, resolverID: r.id });
+    return s.response.pr;
   }
-  function replaySubscribe(_promiseID) {}
+  function replaySubscribe(promiseID) {
+    const s = playbackSyscalls.shift();
+    if (s.type !== 'subscribe' || s.args[0] !== promiseID) {
+      throw new Error('historical inaccuracy in replaySubscribe');
+    }
+  }
   /* function replayRedirect(resolverID, targetPromiseID) { } */
-  function replayFulfillToData(_resolverID, _fulfillData, _vatSlots) {}
-  function replayFulfillToTarget(_resolverID, _slot) {}
-  function replayReject(_resolverID, _rejectData, _vatSlots) {}
+  function replayFulfillToData(resolverID, fulfillData, vatSlots) {
+    const s = playbackSyscalls.shift();
+    if (
+      s.type !== 'fulfillToData' ||
+      s.args[0] !== resolverID ||
+      s.args[1] !== fulfillToData ||
+      JSON.stringify(s.args[2]) !== JSON.stringify(vatSlots)
+    ) {
+      throw new Error('historical inaccuracy in replayFulfillToData');
+    }
+  }
+  function replayFulfillToTarget(resolverID, slot) {
+    const s = playbackSyscalls.shift();
+    if (
+      s.type !== 'fulfillToTarget' ||
+      s.args[0] !== resolverID ||
+      s.args[1] !== slot
+    ) {
+      throw new Error('historical inaccuracy in replayFulfillToTarget');
+    }
+  }
+  function replayReject(resolverID, rejectData, vatSlots) {
+    const s = playbackSyscalls.shift();
+    if (
+      s.type !== 'reject' ||
+      s.args[0] !== resolverID ||
+      s.args[1] !== rejectData ||
+      JSON.stringify(s.args[2]) !== JSON.stringify(vatSlots)
+    ) {
+      throw new Error('historical inaccuracy in replayReject');
+    }
+  }
 
   const syscall = harden({
     send(...args) {
@@ -450,17 +498,16 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     },
   });
 
-  async function loadState(_savedState) {
+  async function loadState(savedState) {
     if (!useTranscript) {
       throw new Error("userspace doesn't do transcripts");
     }
-    throw new Error('loadState not yet implemented');
-    /*
     inReplay = true;
     savedState.transcript.forEach(d => {
+      playbackSyscalls = Array.from(d.syscalls);
       processOneMessage();
     });
-    */
+    inReplay = false;
   }
 
   function getCurrentState() {
