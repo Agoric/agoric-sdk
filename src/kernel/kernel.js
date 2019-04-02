@@ -617,6 +617,49 @@ export default function buildKernel(kernelEndowments) {
       }
     },
 
+    getState() {
+      // return a JSON-serializable data structure which can be passed back
+      // into kernel.loadState() to replay the transcripts and bring all vats
+      // back to their earlier configuration
+
+      // TODO: sort the tables to minimize the delta when a turn only changes
+      // a little bit. In the long run, we'll expose a mutation-sensing tree
+      // to the vats, so we can identify directly what they looked at and
+      // what they changed. For now, we just assume they look at and modify
+      // everything
+
+      const vatTables = {};
+      vats.forEach((vat, vatID) => {
+        vatTables[vatID] = {
+          imports: vat.imports,
+          nextImportID: vat.nextImportID,
+          promises: vat.promises,
+          nextPromiseID: vat.nextPromiseID,
+          resolvers: vat.resolvers,
+          nextResolverID: vat.nextResolverID,
+
+          state: vat.manager.getCurrentState(),
+        };
+      });
+
+      const promises = [];
+      kernelPromises.forEach((p, id) => {
+        const kp = { id };
+        Object.defineProperties(kp, Object.getOwnPropertyDescriptors(p));
+        if ('subscribers' in p) {
+          kp.subscribers = Array.from(p.subscribers); // turn Set into Array
+        }
+        promises.push(kp);
+      });
+
+      return {
+        vats: vatTables,
+        runQueue,
+        promises,
+        nextPromiseIndex,
+      };
+    },
+
     queueToExport,
   });
 
