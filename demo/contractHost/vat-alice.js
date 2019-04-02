@@ -106,17 +106,12 @@ function makeAlice(E, host) {
   return alice;
 }
 
-export default function setup(syscall, helpers) {
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
-    syscall,
-    helpers.vatID,
-  );
-  registerRoot(
+export default function setup(syscall, state, helpers) {
+  return helpers.makeLiveSlots(syscall, state, E =>
     harden({
       makeAlice(host) {
         return harden(makeAlice(E, host));
       },
     }),
   );
-  return dispatch;
 }

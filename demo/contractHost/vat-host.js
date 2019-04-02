@@ -143,17 +143,16 @@ function makeHost(E) {
   });
 }
 
-export default function setup(syscall, helpers) {
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
+export default function setup(syscall, state, helpers) {
+  return helpers.makeLiveSlots(
     syscall,
+    state,
+    E =>
+      harden({
+        makeHost() {
+          return harden(makeHost(E));
+        },
+      }),
     helpers.vatID,
   );
-  registerRoot(
-    harden({
-      makeHost() {
-        return harden(makeHost(E));
-      },
-    }),
-  );
-  return dispatch;
 }

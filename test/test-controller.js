@@ -16,12 +16,13 @@ test('load empty', async t => {
 async function simpleCall(t, controller) {
   await controller.addVat('vat1', require.resolve('./vat-controller-1'));
   const data = controller.dump();
-  t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
+  t.deepEqual(data.vatTables, [{ vatID: 'vat1', state: { transcript: [] } }]);
   t.deepEqual(data.kernelTable, []);
 
   controller.queueToExport('vat1', 1, 'foo', 'args');
   t.deepEqual(controller.dump().runQueue, [
     {
+      vatID: 'vat1',
       type: 'deliver',
       target: {
         type: 'export',
@@ -106,6 +107,7 @@ async function bootstrapExport(t, withSES) {
 
   t.deepEqual(c.dump().runQueue, [
     {
+      vatID: '_bootstrap',
       type: 'deliver',
       target: {
         type: 'export',
@@ -145,6 +147,7 @@ async function bootstrapExport(t, withSES) {
   ]);
   t.deepEqual(c.dump().runQueue, [
     {
+      vatID: 'left',
       type: 'deliver',
       target: {
         type: 'export',
@@ -178,6 +181,7 @@ async function bootstrapExport(t, withSES) {
   ]);
   t.deepEqual(c.dump().runQueue, [
     {
+      vatID: 'right',
       type: 'deliver',
       target: {
         type: 'export',

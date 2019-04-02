@@ -1,8 +1,6 @@
 import harden from '@agoric/harden';
 
-export default function setup(syscall, helpers) {
-  const { log, makeLiveSlots } = helpers;
-  const { dispatch, registerRoot } = makeLiveSlots(syscall, helpers.vatID);
+function build(E, log) {
   const obj0 = {
     bootstrap(argv, _vats) {
       if (argv[0] === 'nat') {
@@ -28,7 +26,10 @@ export default function setup(syscall, helpers) {
       }
     },
   };
+  return harden(obj0);
+}
 
-  registerRoot(harden(obj0));
-  return dispatch;
+export default function setup(syscall, state, helpers) {
+  const { log, makeLiveSlots } = helpers;
+  return makeLiveSlots(syscall, state, E => build(E, log), helpers.vatID);
 }

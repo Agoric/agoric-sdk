@@ -23,7 +23,7 @@ test('simple call', async t => {
   }
   kernel.addVat('vat1', setup1);
   let data = kernel.dump();
-  t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
+  t.deepEqual(data.vatTables, [{ vatID: 'vat1', state: { transcript: [] } }]);
   t.deepEqual(data.kernelTable, []);
   t.deepEqual(data.log, []);
   t.deepEqual(log, []);
@@ -31,6 +31,7 @@ test('simple call', async t => {
   kernel.queueToExport('vat1', 1, 'foo', 'args');
   t.deepEqual(kernel.dump().runQueue, [
     {
+      vatID: 'vat1',
       type: 'deliver',
       target: {
         type: 'export',
@@ -72,7 +73,7 @@ test('map inbound', async t => {
   }
   kernel.addVat('vat1', setup1);
   const data = kernel.dump();
-  t.deepEqual(data.vatTables, [{ vatID: 'vat1' }]);
+  t.deepEqual(data.vatTables, [{ vatID: 'vat1', state: { transcript: [] } }]);
   t.deepEqual(data.kernelTable, []);
   t.deepEqual(log, []);
 
@@ -82,6 +83,7 @@ test('map inbound', async t => {
   ]);
   t.deepEqual(kernel.dump().runQueue, [
     {
+      vatID: 'vat1',
       type: 'deliver',
       target: {
         type: 'export',
@@ -170,7 +172,10 @@ test('outbound call', async t => {
   t.deepEqual(v1tovat25, { type: 'import', id: 10 }); // first allocation
 
   const data = kernel.dump();
-  t.deepEqual(data.vatTables, [{ vatID: 'vat1' }, { vatID: 'vat2' }]);
+  t.deepEqual(data.vatTables, [
+    { vatID: 'vat1', state: { transcript: [] } },
+    { vatID: 'vat2', state: { transcript: [] } },
+  ]);
   t.deepEqual(data.kernelTable, [
     ['vat1', 'import', v1tovat25.id, 'export', 'vat2', 5],
   ]);
@@ -180,6 +185,7 @@ test('outbound call', async t => {
   t.deepEqual(log, []);
   t.deepEqual(kernel.dump().runQueue, [
     {
+      vatID: 'vat1',
       type: 'deliver',
       target: {
         type: 'export',
@@ -203,6 +209,7 @@ test('outbound call', async t => {
 
   t.deepEqual(kernel.dump().runQueue, [
     {
+      vatID: 'vat2',
       type: 'deliver',
       target: {
         type: 'export',
@@ -313,9 +320,9 @@ test('three-party', async t => {
 
   const data = kernel.dump();
   t.deepEqual(data.vatTables, [
-    { vatID: 'vatA' },
-    { vatID: 'vatB' },
-    { vatID: 'vatC' },
+    { vatID: 'vatA', state: { transcript: [] } },
+    { vatID: 'vatB', state: { transcript: [] } },
+    { vatID: 'vatC', state: { transcript: [] } },
   ]);
   t.deepEqual(data.kernelTable, [
     ['vatA', 'import', bobForA.id, 'export', 'vatB', 5],
@@ -334,6 +341,7 @@ test('three-party', async t => {
 
   t.deepEqual(kernel.dump().runQueue, [
     {
+      vatID: 'vatB',
       type: 'deliver',
       target: {
         type: 'export',
@@ -483,6 +491,7 @@ test('transfer promise', async t => {
   ]);
   t.deepEqual(kernel.dump().runQueue, [
     {
+      vatID: 'vatB',
       type: 'deliver',
       target: {
         type: 'export',
@@ -994,6 +1003,66 @@ test('promise reject', async t => {
     },
   ]);
   t.deepEqual(kernel.dump().runQueue, []);
+
+  t.end();
+});
+
+test('transcript', async t => {
+  const kernel = buildKernel({ setImmediate });
+  const log = [];
+  function setup(syscall, _state) {
+    function deliver(facetID, _method, _argsString, slots) {
+      if (facetID === 1) {
+        syscall.send(slots[1], 'foo', 'fooarg', []);
+      }
+    }
+    return { deliver };
+  }
+  kernel.addVat('vatA', setup);
+  kernel.queueToExport('vatA', 1, 'store', 'args string', [
+    { type: 'export', vatID: 'vatA', id: 1 },
+    { type: 'export', vatID: 'vatB', id: 2 },
+  ]);
+  await kernel.step();
+
+  // the transcript records vat-specific import/export slots, so figure out
+  // what vatA will receive
+  const slot1 = kernel.dump().kernelTable[0];
+  // vatA's import-X is mapped to vatB:export-2
+  t.equal(slot1[0], 'vatA');
+  t.equal(slot1[1], 'import');
+  const X = slot1[2];
+  t.equal(slot1[3], 'export');
+  t.equal(slot1[4], 'vatB');
+  t.equal(slot1[5], 2);
+
+  const slot2 = kernel.dump().kernelTable[1];
+  t.equal(slot2[0], 'vatA');
+  t.equal(slot2[1], 'promise');
+  const Y = slot2[2];
+
+  t.deepEqual(log, []);
+  const tr = kernel.dump().vatTables[0].state.transcript;
+  t.equal(tr.length, 1);
+  t.deepEqual(tr[0], {
+    dispatch: {
+      method: 'deliver',
+      args: {
+        facetid: 1,
+        method: 'store',
+        argsbytes: 'args string',
+        caps: [{ type: 'export', id: 1 }, { type: 'import', id: X }],
+        resolverID: undefined,
+      },
+    },
+    syscalls: [
+      {
+        type: 'send',
+        args: [{ type: 'import', id: X }, 'foo', 'fooarg', []],
+        response: { promiseID: Y },
+      },
+    ],
+  });
 
   t.end();
 });

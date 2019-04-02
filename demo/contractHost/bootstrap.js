@@ -19,12 +19,7 @@
 
 import harden from '@agoric/harden';
 
-export default function setup(syscall, helpers) {
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
-    syscall,
-    helpers.vatID,
-  );
-
+function build(E) {
   function mintTest(mint) {
     console.log('starting mintTest');
     const mP = E(mint).makeMint();
@@ -155,6 +150,9 @@ export default function setup(syscall, helpers) {
       return undefined;
     },
   };
-  registerRoot(harden(obj0));
-  return dispatch;
+  return harden(obj0);
+}
+
+export default function setup(syscall, state, helpers) {
+  return helpers.makeLiveSlots(syscall, state, build, helpers.vatID);
 }

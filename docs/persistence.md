@@ -47,3 +47,13 @@ To restore an entire kernel, we must:
   * reconfigure the syscall object to hash and execute
 
 Now the kernel should be back in the same state it had before. Every entry in the kernel's import/promise tables should match a Presence or Promise inside the corresponding Vat.
+
+We can execute each Vat's transcript independently: the Vat's state will not depend upon what's happening in the other Vats, and the kernel's state won't depend upon what happens in this particular Vat (since we ignore syscalls during the replay, and compare hashes to make it emits the same syscalls that *were* executed last time).
+
+Since syscalls can return values (e.g. a `send` returns a PromiseID for the answer), our Vat transcript must record these, so the same values can be returned during playback mode.
+
+# more
+
+The kernel's responsibility is to provide a persistence object to each vat userspace. Initially this will have a single get/set(string) pair of methods. Later, this will be more sophisticated, and will support a Merkle tree (of arbitrary arity) in which each child edge is named (or numbered) and either points to anoter node or a string (of JSON) (see IPFS for details). These nodes will provide an API with `has_child(index)`, `get_or_create_child_node(index)`, `delete_child(index)`, `set_child_data(index, data)`, `get_child_data(index)`. The vat gets access to a per-vat root node. By keeping track of which edges are followed by the vat, the kernel learns which data affects the computation, so it can construct an efficient proof for validators (i.e. the contents of every node that was visited, since the nodes contain the hashes of all their children (nodes or data). The only way to modify the tree is through the various set/delete APIs, so the kernel also learns which subset of the new tree data must be included in the proof.
+
+Vat userspace is responsible for only depending upon state that comes from this persistence object, and for updating the persistence object with all state changes. The initial checkpoint+transcript state management approach will just JSON-serialize a list of turns (one dispatch, zero or more syscalls) and store the string into the initial get/set persistence object. We only actually need the results of the syscalls, but we store the full contents to double-check that the new code behaves the same way as the old code did.

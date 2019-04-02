@@ -3,17 +3,8 @@ import makePromise from '../../src/kernel/makePromise';
 
 console.log(`loading bootstrap`);
 
-export default function setup(syscall, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
-  log(`bootstrap called`);
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
-    syscall,
-    helpers.vatID,
-  );
-  const obj0 = {
+function build(E, log) {
+  return harden({
     bootstrap(argv, vats) {
       const mode = argv[0];
       if (mode === 'flush') {
@@ -84,8 +75,19 @@ export default function setup(syscall, helpers) {
         throw Error(`unknown mode ${mode}`);
       }
     },
-  };
+  });
+}
 
-  registerRoot(harden(obj0));
-  return dispatch;
+export default function setup(syscall, state, helpers) {
+  function log(what) {
+    helpers.log(what);
+    console.log(what);
+  }
+  log(`bootstrap called`);
+  return helpers.makeLiveSlots(
+    syscall,
+    state,
+    E => build(E, log),
+    helpers.vatID,
+  );
 }
