@@ -10,7 +10,7 @@ import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
 import bundleSource from './build-source-bundle';
 
-export function loadBasedir(basedir) {
+export function loadBasedir(basedir, state) {
   console.log(`= loading config from basedir ${basedir}`);
   const vatSources = new Map();
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
@@ -37,7 +37,7 @@ export function loadBasedir(basedir) {
   } catch (e) {
     bootstrapIndexJS = undefined;
   }
-  return harden({ vatSources, bootstrapIndexJS });
+  return harden({ vatSources, bootstrapIndexJS, state });
 }
 
 function getKernelSource() {
@@ -141,6 +141,10 @@ export async function buildVatController(config, withSES = true, argv = []) {
     queueToExport(vatID, facetID, method, argsString) {
       kernel.queueToExport(vatID, facetID, method, argsString, []);
     },
+
+    getState() {
+      return JSON.parse(JSON.stringify(kernel.getState()));
+    },
   });
 
   if (config.vatSources) {
@@ -152,6 +156,11 @@ export async function buildVatController(config, withSES = true, argv = []) {
 
   if (config.bootstrapIndexJS) {
     await addVat('_bootstrap', config.bootstrapIndexJS);
+  }
+
+  if (config.state) {
+    await kernel.loadState(config.state);
+  } else if (config.bootstrapIndexJS) {
     // we invoke obj[0].bootstrap with an object that contains 'vats' and
     // 'argv'.
     kernel.callBootstrap('_bootstrap', JSON.stringify(argv));

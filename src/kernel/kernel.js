@@ -660,6 +660,10 @@ export default function buildKernel(kernelEndowments) {
       };
     },
 
+    loadState(_state) {
+      throw new Error('not implemented');
+    },
+
     queueToExport,
   });
 
