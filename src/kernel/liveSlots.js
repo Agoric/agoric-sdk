@@ -410,13 +410,13 @@ function build(syscall, _state, makeRoot, forVatID) {
   };
 }
 
-export function makeLiveSlots(syscall, _state, makeRoot, forVatID = 'unknown') {
+export function makeLiveSlots(syscall, state, makeRoot, forVatID = 'unknown') {
   const {
     deliver,
     notifyFulfillToData,
     notifyFulfillToTarget,
     notifyReject,
-  } = build(syscall, _state, makeRoot, forVatID);
+  } = build(syscall, state, makeRoot, forVatID);
   return harden({
     deliver,
     notifyFulfillToData,

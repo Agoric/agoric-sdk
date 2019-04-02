@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
-export default function makeVatManager(vatID, syscallManager) {
+export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   const {
     kdebug,
     mapOutbound,
@@ -16,6 +16,20 @@ export default function makeVatManager(vatID, syscallManager) {
     log,
     process,
   } = syscallManager;
+
+  // const inReplay = false;
+  const transcript = [];
+
+  let currentEntry;
+  function startDispatch(method, args) {
+    currentEntry = { dispatch: { method, args }, syscalls: [] };
+  }
+  // function addSyscall(...args) {
+  //   currentEntry.syscalls.push({ args });
+  // }
+  function finishDispatch() {
+    transcript.push(currentEntry);
+  }
 
   function syscallForVatID(fromVatID) {
     return harden({
@@ -225,24 +239,9 @@ export default function makeVatManager(vatID, syscallManager) {
     // from retaining it. OTOH if we don't expect to ever change it, that's
     // wasteful and limiting.
   }
-
-  const state = harden({
-    load() {
-      const data = syscallManager.loadForVatID(vatID);
-      const inputSlots = data.slots.map(slot => mapInbound(vatID, slot));
-      return { value: data.value, slots: inputSlots };
-    },
-    store(value, vatSlots) {
-      const slots = vatSlots.map(slot => mapOutbound(vatID, slot));
-      syscallManager.storeForVatID(vatID, value, slots);
-    },
-  });
+  const syscall = syscallForVatID(vatID);
 
   let dispatch;
-
-  function setDispatch(dispatcher) {
-    dispatch = dispatcher;
-  }
 
   async function processOneMessage(message) {
     if (dispatch === undefined) {
@@ -265,6 +264,17 @@ export default function makeVatManager(vatID, syscallManager) {
         );
       }
       const inputSlots = msg.slots.map(slot => mapInbound(vatID, slot));
+      const resolverID =
+        msg.kernelResolverID &&
+        mapInbound(vatID, { type: 'resolver', id: msg.kernelResolverID }).id;
+      startDispatch('deliver', {
+        facetid: target.id,
+        method: msg.method,
+        argsbytes: msg.argsString,
+        caps: inputSlots,
+        resolverID,
+      });
+
       return process(
         () =>
           dispatch.deliver(
@@ -273,10 +283,9 @@ export default function makeVatManager(vatID, syscallManager) {
             msg.argsString,
             inputSlots,
             // TODO: remove this once kernelResolverID is everywhere
-            msg.kernelResolverID &&
-              mapInbound(vatID, { type: 'resolver', id: msg.kernelResolverID })
-                .id,
+            resolverID,
           ),
+        () => finishDispatch(),
         err => {
           console.log(
             // eslint-disable-next-line prettier/prettier
@@ -296,6 +305,7 @@ export default function makeVatManager(vatID, syscallManager) {
       }).id;
       return process(
         () => dispatch.subscribe(relativeID),
+        () => finishDispatch(),
         err => {
           console.log(
             `vat[${vatID}].promise[${relativeID}] subscribe failed: ${err}`,
@@ -313,13 +323,15 @@ export default function makeVatManager(vatID, syscallManager) {
         type: 'promise',
         id: kernelPromiseID,
       }).id;
+      const slots = p.fulfillSlots.map(slot => mapInbound(vatID, slot));
+      startDispatch('notifyFulfillToData', {
+        promiseID: relativeID,
+        data: p.fulfillData,
+        slots,
+      });
       return process(
-        () =>
-          dispatch.notifyFulfillToData(
-            relativeID,
-            p.fulfillData,
-            p.fulfillSlots.map(slot => mapInbound(vatID, slot)),
-          ),
+        () => dispatch.notifyFulfillToData(relativeID, p.fulfillData, slots),
+        () => finishDispatch(),
         err =>
           console.log(
             `vat[${vatID}].promise[${relativeID}] fulfillToData failed: ${err}`,
@@ -335,12 +347,11 @@ export default function makeVatManager(vatID, syscallManager) {
         type: 'promise',
         id: kernelPromiseID,
       }).id;
+      const slot = mapInbound(vatID, p.fulfillSlot);
+      startDispatch('notifyFulfillToTarget', { promiseID: relativeID, slot });
       return process(
-        () =>
-          dispatch.notifyFulfillToTarget(
-            relativeID,
-            mapInbound(vatID, p.fulfillSlot),
-          ),
+        () => dispatch.notifyFulfillToTarget(relativeID, slot),
+        () => finishDispatch(),
         err =>
           console.log(
             `vat[${vatID}].promise[${relativeID}] fulfillToTarget failed: ${err}`,
@@ -356,13 +367,15 @@ export default function makeVatManager(vatID, syscallManager) {
         type: 'promise',
         id: kernelPromiseID,
       }).id;
+      const slots = p.rejectSlots.map(slot => mapInbound(vatID, slot));
+      startDispatch('notifyReject', {
+        promiseID: relativeID,
+        data: p.rejectData,
+        slots,
+      });
       return process(
-        () =>
-          dispatch.notifyReject(
-            relativeID,
-            p.rejectData,
-            p.rejectSlots.map(slot => mapInbound(vatID, slot)),
-          ),
+        () => dispatch.notifyReject(relativeID, p.rejectData, slots),
+        () => finishDispatch(),
         err =>
           console.log(
             `vat[${vatID}].promise[${relativeID}] reject failed: ${err}`,
@@ -374,7 +387,36 @@ export default function makeVatManager(vatID, syscallManager) {
     throw new Error(`unknown message type '${type}'`);
   }
 
-  const syscall = syscallForVatID(vatID);
-  const manager = { syscall, state, setDispatch, processOneMessage };
+  let useTranscript = true;
+  const state = harden({
+    // if userspace calls activate(), their dispatch() is a pure function
+    // function of the state object, and we don't need to manage checkpoints
+    // or transcripts, just the state object.
+    activate() {
+      useTranscript = false;
+      throw new Error('state.activate() not implemented');
+    },
+  });
+
+  async function loadState(_savedState) {
+    if (!useTranscript) {
+      throw new Error("userspace doesn't do transcripts");
+    }
+    throw new Error('loadState not yet implemented');
+    /*
+    inReplay = true;
+    savedState.transcript.forEach(d => {
+      processOneMessage();
+    });
+    */
+  }
+
+  function getCurrentState() {
+    return { transcript: Array.from(transcript) };
+  }
+
+  dispatch = setup(syscall, state, helpers);
+
+  const manager = { loadState, processOneMessage, getCurrentState };
   return manager;
 }

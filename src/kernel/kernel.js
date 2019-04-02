@@ -37,7 +37,6 @@ export default function buildKernel(kernelEndowments) {
   //                 resolvers: { inbound[kernelPromiseID] = id,
   //                              outbound[id] = kernelPromiseID, },
   //                 nextResolverID,
-  //                 state: { value, slots },
   //               }
   const vats = harden(new Map());
 
@@ -57,14 +56,6 @@ export default function buildKernel(kernelEndowments) {
       throw new Error(`unknown vatID '${vatID}'`);
     }
     return vat;
-  }
-
-  function loadForVatID(vatID) {
-    return getVat(vatID).state;
-  }
-
-  function storeForVatID(vatID, value, slots) {
-    getVat(vatID).state = { value, slots: Array.from(slots) };
   }
 
   function allocateKernelPromiseIndex() {
@@ -350,7 +341,7 @@ export default function buildKernel(kernelEndowments) {
     delete p.queue;
   }
 
-  async function process(f, logerr) {
+  async function process(f, then, logerr) {
     // the delivery might cause some number of (native) Promises to be
     // created and resolved, so we use the IO queue to detect when the
     // Promise queue is empty. The IO queue (setImmediate and setTimeout) is
@@ -366,14 +357,13 @@ export default function buildKernel(kernelEndowments) {
       .then(f)
       .then(undefined, logerr);
     await queueEmptyP;
+    then();
   }
 
   const syscallManager = {
     kdebug,
     mapOutbound,
     mapInbound,
-    loadForVatID,
-    storeForVatID,
     createPromiseWithDecider,
     send,
     kernelPromises,
@@ -389,7 +379,6 @@ export default function buildKernel(kernelEndowments) {
     if (vats.has(vatID)) {
       throw new Error(`already have a vat named '${vatID}'`);
     }
-    const manager = makeVatManager(vatID, syscallManager);
     const helpers = harden({
       vatID,
       makeLiveSlots,
@@ -397,12 +386,11 @@ export default function buildKernel(kernelEndowments) {
         log.push(`${str}`);
       },
     });
-    const dispatch = setup(manager.syscall, manager.state, helpers);
-    manager.setDispatch(dispatch);
+    // the vatManager invokes setup() to build the userspace image
+    const manager = makeVatManager(vatID, syscallManager, setup, helpers);
     // the vat record is not hardened: it holds mutable next-ID values
     vats.set(vatID, {
       id: vatID,
-      state: { value: '', slots: [] },
       manager,
       imports: harden({
         outbound: new Map(),
@@ -519,7 +507,7 @@ export default function buildKernel(kernelEndowments) {
     vats.forEach((vat, vatID) => {
       // TODO: find some way to expose the liveSlots internal tables, the
       // kernel doesn't see them
-      const vatTable = { vatID, state: vat.state };
+      const vatTable = { vatID, state: vat.manager.getCurrentState() };
       vatTables.push(vatTable);
 
       vat.imports.outbound.forEach((target, slot) => {
