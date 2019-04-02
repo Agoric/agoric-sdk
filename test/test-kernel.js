@@ -1010,8 +1010,12 @@ test('promise reject', async t => {
 test('transcript', async t => {
   const kernel = buildKernel({ setImmediate });
   const log = [];
-  function setup(_syscall, _state) {
-    function deliver(_facetID, _method, _argsString, _slots) {}
+  function setup(syscall, _state) {
+    function deliver(facetID, _method, _argsString, slots) {
+      if (facetID === 1) {
+        syscall.send(slots[1], 'foo', 'fooarg', []);
+      }
+    }
     return { deliver };
   }
   kernel.addVat('vatA', setup);
@@ -1032,21 +1036,30 @@ test('transcript', async t => {
   t.equal(slot1[4], 'vatB');
   t.equal(slot1[5], 2);
 
+  const slot2 = kernel.dump().kernelTable[1];
+  t.equal(slot2[0], 'vatA');
+  t.equal(slot2[1], 'promise');
+  const Y = slot2[2];
+
   t.deepEqual(log, []);
-  t.deepEqual(kernel.dump().vatTables[0].state, {
-    transcript: [
+  const tr = kernel.dump().vatTables[0].state.transcript;
+  t.equal(tr.length, 1);
+  t.deepEqual(tr[0], {
+    dispatch: {
+      method: 'deliver',
+      args: {
+        facetid: 1,
+        method: 'store',
+        argsbytes: 'args string',
+        caps: [{ type: 'export', id: 1 }, { type: 'import', id: X }],
+        resolverID: undefined,
+      },
+    },
+    syscalls: [
       {
-        dispatch: {
-          method: 'deliver',
-          args: {
-            facetid: 1,
-            method: 'store',
-            argsbytes: 'args string',
-            caps: [{ type: 'export', id: 1 }, { type: 'import', id: X }],
-            resolverID: undefined,
-          },
-        },
-        syscalls: [],
+        type: 'send',
+        args: [{ type: 'import', id: X }, 'foo', 'fooarg', []],
+        response: { promiseID: Y },
       },
     ],
   });
