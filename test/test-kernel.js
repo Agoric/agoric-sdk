@@ -1045,21 +1045,18 @@ test('transcript', async t => {
   const tr = kernel.dump().vatTables[0].state.transcript;
   t.equal(tr.length, 1);
   t.deepEqual(tr[0], {
-    dispatch: {
-      method: 'deliver',
-      args: {
-        facetid: 1,
-        method: 'store',
-        argsbytes: 'args string',
-        caps: [{ type: 'export', id: 1 }, { type: 'import', id: X }],
-        resolverID: undefined,
-      },
-    },
+    d: [
+      'deliver',
+      1,
+      'store',
+      'args string',
+      [{ type: 'export', id: 1 }, { type: 'import', id: X }],
+      undefined,
+    ],
     syscalls: [
       {
-        type: 'send',
-        args: [{ type: 'import', id: X }, 'foo', 'fooarg', []],
-        response: { promiseID: Y },
+        d: ['send', { type: 'import', id: X }, 'foo', 'fooarg', []],
+        response: Y,
       },
     ],
   });

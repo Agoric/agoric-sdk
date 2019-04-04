@@ -22,17 +22,20 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   let playbackSyscalls;
 
   let currentEntry;
-  function startDispatch(method, args) {
-    currentEntry = { dispatch: { method, args }, syscalls: [] };
+  function transcriptStartDispatch(d) {
+    currentEntry = { d, syscalls: [] };
   }
-  function addSyscall(type, args, response) {
+  function transcriptAddSyscall(d, response) {
     if (currentEntry) {
-      currentEntry.syscalls.push({ type, args, response });
+      currentEntry.syscalls.push({ d, response });
     }
   }
-  function finishDispatch() {
+  function transcriptFinishDispatch() {
     transcript.push(currentEntry);
   }
+
+  // syscall handlers: these are wrapped by the 'syscall' object and made
+  // available to userspace
 
   function doSend(targetSlot, method, argsString, vatSlots) {
     if (targetSlot.type === undefined) {
@@ -231,108 +234,57 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     reject(id, rejectData, slots);
   }
 
-  function replaySend(targetSlot, method, argsString, vatSlots) {
+  function replay(name, ...args) {
     const s = playbackSyscalls.shift();
-    if (
-      s.type !== 'send' ||
-      JSON.stringify(s.args) !==
-        JSON.stringify([targetSlot, method, argsString, vatSlots])
-    ) {
-      throw new Error('historical inaccuracy in replaySend');
+    if (JSON.stringify(s.d) !== JSON.stringify([name, ...args])) {
+      throw new Error(`historical inaccuracy in replay-${name}`);
     }
-    return s.response.promiseID;
-  }
-  function replayCreatePromise() {
-    const s = playbackSyscalls.shift();
-    if (s.type !== 'createPromise') {
-      throw new Error('historical inaccuracy in replayCreatePromise');
-    }
-    // return harden({ promiseID: p.id, resolverID: r.id });
-    return s.response.pr;
-  }
-  function replaySubscribe(promiseID) {
-    const s = playbackSyscalls.shift();
-    if (s.type !== 'subscribe' || s.args[0] !== promiseID) {
-      throw new Error('historical inaccuracy in replaySubscribe');
-    }
-  }
-  /* function replayRedirect(resolverID, targetPromiseID) { } */
-  function replayFulfillToData(resolverID, fulfillData, vatSlots) {
-    const s = playbackSyscalls.shift();
-    if (
-      s.type !== 'fulfillToData' ||
-      s.args[0] !== resolverID ||
-      s.args[1] !== fulfillToData ||
-      JSON.stringify(s.args[2]) !== JSON.stringify(vatSlots)
-    ) {
-      throw new Error('historical inaccuracy in replayFulfillToData');
-    }
-  }
-  function replayFulfillToTarget(resolverID, slot) {
-    const s = playbackSyscalls.shift();
-    if (
-      s.type !== 'fulfillToTarget' ||
-      s.args[0] !== resolverID ||
-      s.args[1] !== slot
-    ) {
-      throw new Error('historical inaccuracy in replayFulfillToTarget');
-    }
-  }
-  function replayReject(resolverID, rejectData, vatSlots) {
-    const s = playbackSyscalls.shift();
-    if (
-      s.type !== 'reject' ||
-      s.args[0] !== resolverID ||
-      s.args[1] !== rejectData ||
-      JSON.stringify(s.args[2]) !== JSON.stringify(vatSlots)
-    ) {
-      throw new Error('historical inaccuracy in replayReject');
-    }
+    return s.response;
   }
 
   const syscall = harden({
     send(...args) {
       if (inReplay) {
-        return replaySend(...args);
+        return replay('send', ...args);
       }
       const promiseID = doSend(...args);
-      addSyscall('send', args, { promiseID });
+      transcriptAddSyscall(['send', ...args], promiseID);
       return promiseID;
     },
     createPromise(...args) {
       if (inReplay) {
-        return replayCreatePromise(...args);
+        return replay('createPromise', ...args);
       }
       const pr = doCreatePromise(...args);
-      addSyscall('createPromise', args, { pr });
+      transcriptAddSyscall(['createPromise', ...args], pr);
       return pr;
     },
     subscribe(...args) {
       if (inReplay) {
-        return replaySubscribe(...args);
+        return replay('subscribe', ...args);
       }
-      addSyscall('subscribe', args, {});
+      transcriptAddSyscall(['subscribe', ...args]);
       return doSubscribe(...args);
     },
     fulfillToData(...args) {
       if (inReplay) {
-        return replayFulfillToData(...args);
+        return replay('fulfillToData', ...args);
       }
-      addSyscall('fulfillToData', args, {});
+      transcriptAddSyscall(['fulfillToData', ...args]);
       return doFulfillToData(...args);
     },
     fulfillToTarget(...args) {
       if (inReplay) {
-        return replayFulfillToTarget(...args);
+        return replay('fulfillToTarget', ...args);
       }
-      addSyscall('fulfillToTarget', args, {});
+      transcriptAddSyscall(['fulfillToTarget', ...args]);
       return doFulfillToTarget(...args);
     },
     reject(...args) {
       if (inReplay) {
-        return replayReject(...args);
+        return replay('reject', ...args);
       }
-      addSyscall('reject', args, {});
+      transcriptAddSyscall(['reject', ...args]);
       return doReject(...args);
     },
 
@@ -341,12 +293,33 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     },
   });
 
-  let dispatch;
+  let useTranscript = true;
+  const state = harden({
+    // if userspace calls activate(), their dispatch() is a pure function
+    // function of the state object, and we don't need to manage checkpoints
+    // or transcripts, just the state object.
+    activate() {
+      useTranscript = false;
+      throw new Error('state.activate() not implemented');
+    },
+  });
+
+  // now build the runtime, which gives us back a dispatch function
+
+  const dispatch = setup(syscall, state, helpers);
+
+  // dispatch handlers: these are used by the kernel core
+
+  async function doProcess(d, errmsg) {
+    transcriptStartDispatch(d);
+    return process(
+      () => dispatch[d[0]](...d.slice(1)),
+      () => transcriptFinishDispatch(),
+      err => console.log(`${errmsg}: ${err}`, err),
+    );
+  }
 
   async function processOneMessage(message) {
-    if (dispatch === undefined) {
-      throw new Error('setDispatch must be called first');
-    }
     kdebug(`process ${JSON.stringify(message)}`);
     const { type } = message;
     if (type === 'deliver') {
@@ -367,32 +340,16 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
       const resolverID =
         msg.kernelResolverID &&
         mapInbound(vatID, { type: 'resolver', id: msg.kernelResolverID }).id;
-      startDispatch('deliver', {
-        facetid: target.id,
-        method: msg.method,
-        argsbytes: msg.argsString,
-        caps: inputSlots,
-        resolverID,
-      });
-
-      return process(
-        () =>
-          dispatch.deliver(
-            target.id,
-            msg.method,
-            msg.argsString,
-            inputSlots,
-            // TODO: remove this once kernelResolverID is everywhere
-            resolverID,
-          ),
-        () => finishDispatch(),
-        err => {
-          console.log(
-            // eslint-disable-next-line prettier/prettier
-            `vat[${vatID}][${target.id}].${msg.method} dispatch failed: ${err}`,
-            err,
-          );
-        },
+      return doProcess(
+        [
+          'deliver',
+          target.id,
+          msg.method,
+          msg.argsString,
+          inputSlots,
+          resolverID,
+        ],
+        `vat[${vatID}][${target.id}].${msg.method} dispatch failed`,
       );
     }
 
@@ -403,16 +360,8 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
         type: 'resolver',
         id: kernelPromiseID,
       }).id;
-      return process(
-        () => dispatch.subscribe(relativeID),
-        () => finishDispatch(),
-        err => {
-          console.log(
-            `vat[${vatID}].promise[${relativeID}] subscribe failed: ${err}`,
-            err,
-          );
-          console.log(dump());
-        });
+      return doProcess(['subscribe', relativeID],
+                       `vat[${vatID}].promise[${relativeID}] subscribe failed`);
     }
     */
 
@@ -424,19 +373,9 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
         id: kernelPromiseID,
       }).id;
       const slots = p.fulfillSlots.map(slot => mapInbound(vatID, slot));
-      startDispatch('notifyFulfillToData', {
-        promiseID: relativeID,
-        data: p.fulfillData,
-        slots,
-      });
-      return process(
-        () => dispatch.notifyFulfillToData(relativeID, p.fulfillData, slots),
-        () => finishDispatch(),
-        err =>
-          console.log(
-            `vat[${vatID}].promise[${relativeID}] fulfillToData failed: ${err}`,
-            err,
-          ),
+      return doProcess(
+        ['notifyFulfillToData', relativeID, p.fulfillData, slots],
+        `vat[${vatID}].promise[${relativeID}] fulfillToData failed`,
       );
     }
 
@@ -448,15 +387,9 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
         id: kernelPromiseID,
       }).id;
       const slot = mapInbound(vatID, p.fulfillSlot);
-      startDispatch('notifyFulfillToTarget', { promiseID: relativeID, slot });
-      return process(
-        () => dispatch.notifyFulfillToTarget(relativeID, slot),
-        () => finishDispatch(),
-        err =>
-          console.log(
-            `vat[${vatID}].promise[${relativeID}] fulfillToTarget failed: ${err}`,
-            err,
-          ),
+      return doProcess(
+        ['notifyFulfillToTarget', relativeID, slot],
+        `vat[${vatID}].promise[${relativeID}] fulfillToTarget failed`,
       );
     }
 
@@ -468,53 +401,31 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
         id: kernelPromiseID,
       }).id;
       const slots = p.rejectSlots.map(slot => mapInbound(vatID, slot));
-      startDispatch('notifyReject', {
-        promiseID: relativeID,
-        data: p.rejectData,
-        slots,
-      });
-      return process(
-        () => dispatch.notifyReject(relativeID, p.rejectData, slots),
-        () => finishDispatch(),
-        err =>
-          console.log(
-            `vat[${vatID}].promise[${relativeID}] reject failed: ${err}`,
-            err,
-          ),
+      return doProcess(
+        ['notifyReject', relativeID, p.rejectData, slots],
+        `vat[${vatID}].promise[${relativeID}] reject failed`,
       );
     }
 
     throw new Error(`unknown message type '${type}'`);
   }
 
-  let useTranscript = true;
-  const state = harden({
-    // if userspace calls activate(), their dispatch() is a pure function
-    // function of the state object, and we don't need to manage checkpoints
-    // or transcripts, just the state object.
-    activate() {
-      useTranscript = false;
-      throw new Error('state.activate() not implemented');
-    },
-  });
-
   async function loadState(savedState) {
     if (!useTranscript) {
       throw new Error("userspace doesn't do transcripts");
     }
     inReplay = true;
-    savedState.transcript.forEach(d => {
-      playbackSyscalls = Array.from(d.syscalls);
-      processOneMessage();
-    });
+    for (let i = 0; i < savedState.transcript.length; i += 1) {
+      const t = savedState.transcript[i];
+      playbackSyscalls = Array.from(t.syscalls);
+      doProcess(t.d, 'errmsg');
+    }
     inReplay = false;
   }
 
   function getCurrentState() {
     return { transcript: Array.from(transcript) };
   }
-
-  dispatch = setup(syscall, state, helpers);
 
   const manager = { loadState, processOneMessage, getCurrentState };
   return manager;
