@@ -244,48 +244,36 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
 
   const syscall = harden({
     send(...args) {
-      if (inReplay) {
-        return replay('send', ...args);
-      }
-      const promiseID = doSend(...args);
+      const promiseID = inReplay ? replay('send', ...args) : doSend(...args);
       transcriptAddSyscall(['send', ...args], promiseID);
       return promiseID;
     },
     createPromise(...args) {
-      if (inReplay) {
-        return replay('createPromise', ...args);
-      }
-      const pr = doCreatePromise(...args);
+      const pr = inReplay
+        ? replay('createPromise', ...args)
+        : doCreatePromise(...args);
       transcriptAddSyscall(['createPromise', ...args], pr);
       return pr;
     },
     subscribe(...args) {
-      if (inReplay) {
-        return replay('subscribe', ...args);
-      }
       transcriptAddSyscall(['subscribe', ...args]);
-      return doSubscribe(...args);
+      return inReplay ? replay('subscribe', ...args) : doSubscribe(...args);
     },
     fulfillToData(...args) {
-      if (inReplay) {
-        return replay('fulfillToData', ...args);
-      }
       transcriptAddSyscall(['fulfillToData', ...args]);
-      return doFulfillToData(...args);
+      return inReplay
+        ? replay('fulfillToData', ...args)
+        : doFulfillToData(...args);
     },
     fulfillToTarget(...args) {
-      if (inReplay) {
-        return replay('fulfillToTarget', ...args);
-      }
       transcriptAddSyscall(['fulfillToTarget', ...args]);
-      return doFulfillToTarget(...args);
+      return inReplay
+        ? replay('fulfillToTarget', ...args)
+        : doFulfillToTarget(...args);
     },
     reject(...args) {
-      if (inReplay) {
-        return replay('reject', ...args);
-      }
       transcriptAddSyscall(['reject', ...args]);
-      return doReject(...args);
+      return inReplay ? replay('reject', ...args) : doReject(...args);
     },
 
     log(str) {
@@ -418,7 +406,8 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     for (let i = 0; i < savedState.transcript.length; i += 1) {
       const t = savedState.transcript[i];
       playbackSyscalls = Array.from(t.syscalls);
-      doProcess(t.d, 'errmsg');
+      // eslint-disable-next-line no-await-in-loop
+      await doProcess(t.d, 'errmsg');
     }
     inReplay = false;
   }

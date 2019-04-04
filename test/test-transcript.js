@@ -49,6 +49,8 @@ async function testLoadState(t, withSES) {
   );
   const c0 = await buildVatController(config, withSES, ['one']);
   const states = await buildTrace(c0);
+  // states.forEach((s,j) =>
+  //               fs.writeFileSync(`kdata-${j}.json`, JSON.stringify(states[j])));
 
   for (let i = 0; i < states.length; i += 1) {
     // eslint-disable-next-line no-await-in-loop
@@ -60,15 +62,17 @@ async function testLoadState(t, withSES) {
     const c = await buildVatController(cfg, withSES, ['one']);
     // eslint-disable-next-line no-await-in-loop
     const newstates = await buildTrace(c);
+    // newstates.forEach((s,j) =>
+    //                  fs.writeFileSync(`kdata-${i+j}-${i}+${j}.json`, JSON.stringify(newstates[j])));
     t.deepEqual(states.slice(i), newstates);
   }
   t.end();
 }
 
-test.skip('transcript-one load with SES', async t => {
+test('transcript-one load with SES', async t => {
   await testLoadState(t, true);
 });
 
-test.skip('transcript-one load without SES', async t => {
+test('transcript-one load without SES', async t => {
   await testLoadState(t, false);
 });
