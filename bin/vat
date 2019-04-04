@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+const fs = require('fs');
+const path = require('path');
 const process = require('process');
 const repl = require('repl');
 require = require('esm')(module);
@@ -41,6 +43,11 @@ async function main() {
     };
     r.context.run = () => {console.log('run!'); controller.run();};
     r.context.step = () => {console.log('step!'); controller.step();};
+    r.context.save = () => {
+      fs.writeFileSync(path.resolve(basedir, 'state.json'),
+                       JSON.stringify(controller.getState()));
+      console.log('state saved to state.json');
+    };
   }
 }
 
