@@ -631,12 +631,23 @@ export default function buildKernel(kernelEndowments) {
       const vatTables = {};
       vats.forEach((vat, vatID) => {
         vatTables[vatID] = {
-          imports: vat.imports,
           nextImportID: vat.nextImportID,
-          promises: vat.promises,
+          imports: {
+            outbound: Array.from(vat.imports.outbound.entries()),
+            inbound: Array.from(vat.imports.inbound.entries()),
+          },
+
           nextPromiseID: vat.nextPromiseID,
-          resolvers: vat.resolvers,
+          promises: {
+            outbound: Array.from(vat.promises.outbound.entries()),
+            inbound: Array.from(vat.promises.inbound.entries()),
+          },
+
           nextResolverID: vat.nextResolverID,
+          resolvers: {
+            outbound: Array.from(vat.resolvers.outbound.entries()),
+            inbound: Array.from(vat.resolvers.inbound.entries()),
+          },
 
           state: vat.manager.getCurrentState(),
         };
@@ -660,8 +671,79 @@ export default function buildKernel(kernelEndowments) {
       };
     },
 
-    loadState(_state) {
-      throw new Error('not implemented');
+    async loadState(state) {
+      // discard our previous state: assume that no vats have been allowed to
+      // run yet
+      if (runQueue.length) {
+        throw new Error(`cannot loadState: runQueue is not empty`);
+      }
+
+      for (const vatID of Object.getOwnPropertyNames(state.vats)) {
+        const vatData = state.vats[vatID];
+        // for now, you can only load the state of vats which were present at
+        // startup. In the future we'll have dynamically-created vats
+        if (!vats.has(vatID)) {
+          throw new Error('dynamically-created vats not yet supported');
+        }
+        const vat = vats.get(vatID);
+        if (
+          vat.imports.outbound.size ||
+          vat.imports.inbound.size ||
+          vat.promises.inbound.size ||
+          vat.promises.inbound.size ||
+          vat.resolvers.inbound.size ||
+          vat.resolvers.inbound.size
+        ) {
+          throw new Error(`vat[$vatID] is not empty, cannot loadState`);
+        }
+
+        vat.nextImportID = vatData.nextImportID;
+        vatData.imports.outbound.forEach(kv =>
+          vat.imports.outbound.set(kv[0], kv[1]),
+        );
+        vatData.imports.inbound.forEach(kv =>
+          vat.imports.inbound.set(kv[0], kv[1]),
+        );
+
+        vat.nextPromiseID = vatData.nextPromiseID;
+        vatData.promises.outbound.forEach(kv =>
+          vat.promises.outbound.set(kv[0], kv[1]),
+        );
+        vatData.promises.inbound.forEach(kv =>
+          vat.promises.inbound.set(kv[0], kv[1]),
+        );
+
+        vat.nextResolverID = vatData.nextResolverID;
+        vatData.resolvers.outbound.forEach(kv =>
+          vat.resolvers.outbound.set(kv[0], kv[1]),
+        );
+        vatData.resolvers.inbound.forEach(kv =>
+          vat.resolvers.inbound.set(kv[0], kv[1]),
+        );
+
+        // this shouldn't be doing any syscalls, which is good because we
+        // haven't wired anything else up yet
+        // eslint-disable-next-line no-await-in-loop
+        await vat.manager.loadState(vatData.state);
+      }
+
+      state.runQueue.forEach(q => runQueue.push(q));
+
+      state.promises.forEach(kp => {
+        const p = {};
+        Object.getOwnPropertyNames(kp).forEach(name => {
+          // eslint-disable-next-line no-empty
+          if (name === 'id') {
+          } else if (name === 'subscribers') {
+            p.subscribers = new Set(kp.subscribers);
+          } else {
+            p[name] = kp[name];
+          }
+        });
+        kernelPromises.set(kp.id, p);
+      });
+      // eslint-disable-next-line prefer-destructuring
+      nextPromiseIndex = state.nextPromiseIndex;
     },
 
     queueToExport,

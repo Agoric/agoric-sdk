@@ -313,7 +313,7 @@ function build(syscall, _state, makeRoot, forVatID) {
       }
       return t[method](...args.args);
     });
-    if (resolverID !== undefined) {
+    if (resolverID !== undefined && resolverID !== null) {
       lsdebug(` ls.deliver attaching then ->${resolverID}`);
       // eslint-disable-next-line no-use-before-define
       p.then(thenResolve(resolverID), thenReject(resolverID));
