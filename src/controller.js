@@ -92,17 +92,23 @@ export async function buildVatController(config, withSES = true, argv = []) {
   const { kernel, s, r } = withSES ? buildSESKernel() : buildNonSESKernel();
   // console.log('kernel', kernel);
 
-  async function addVat(vatID, sourceIndex) {
+  async function addVat(vatID, sourceIndex, options) {
     if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
       throw Error(
         'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
       );
     }
+
     // we load the sourceIndex (and everything it imports), and expect to get
     // two symbols from each Vat: 'start' and 'dispatch'. The code in
     // bootstrap.js gets a 'controller' object which can invoke start()
     // (which is expected to initialize some state and export some facetIDs)
     let setup;
+    // note: the contents of this 'devices' object are kernel-realm, but
+    // the object itself is host-realm. kernel.addVat is responsible for
+    // unpacking it safely and not exposing the container to vat code.
+    const devices = {};
+
     if (withSES) {
       // TODO: if the 'require' we provide here supplies a non-pure module,
       // that could open a communication channel between otherwise isolated
@@ -115,19 +121,34 @@ export async function buildVatController(config, withSES = true, argv = []) {
       let source = await bundleSource(`${sourceIndex}`);
       source = `(${source})`;
       setup = s.evaluate(source, { require: r })();
+      if (options.devices) {
+        Object.getOwnPropertyNames(options.devices).forEach(name => {
+          const d = options.devices[name];
+          devices[name] = s.evaluate(`(${d.attenuatorSource})`, { require: r })(
+            d,
+          );
+        });
+      }
     } else {
       // eslint-disable-next-line global-require,import/no-dynamic-require
       setup = require(`${sourceIndex}`).default;
+      if (options.devices) {
+        Object.getOwnPropertyNames(options.devices).forEach(name => {
+          const d = options.devices[name];
+          // eslint-disable-next-line no-eval
+          devices[name] = eval(d.attenuatorSource)(d);
+        });
+      }
     }
-    kernel.addVat(vatID, setup);
+    kernel.addVat(vatID, setup, devices);
   }
 
   // the kernel won't leak our objects into the Vats, we must do
   // the same in this wrapper
   const controller = harden({
-    async addVat(vatID, sourceIndex) {
+    async addVat(vatID, sourceIndex, options = {}) {
       console.log(`= adding vat '${vatID}' from ${sourceIndex}`);
-      await addVat(vatID, sourceIndex);
+      await addVat(vatID, sourceIndex, options);
     },
 
     log(str) {
@@ -163,7 +184,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
   }
 
   if (config.bootstrapIndexJS) {
-    await addVat('_bootstrap', config.bootstrapIndexJS);
+    await addVat('_bootstrap', config.bootstrapIndexJS, {});
   }
 
   if (config.state) {
