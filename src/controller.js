@@ -171,6 +171,10 @@ export async function buildVatController(config, withSES = true, argv = []) {
       kernel.queueToExport(vatID, facetID, method, argsString, []);
     },
 
+    callBootstrap(vatID, argv) {
+      kernel.callBootstrap(`${vatID}`, JSON.stringify(argv));
+    },
+
     getState() {
       return JSON.parse(JSON.stringify(kernel.getState()));
     },
