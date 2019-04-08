@@ -26,3 +26,35 @@ export function buildSharedStringTable() {
     table: sharedTable,
   };
 }
+
+export function buildInbound() {
+  const bridge = { inboundCallback: undefined };
+
+  function deliverInbound(sender, data) {
+    if (!bridge.inboundCallback) {
+      throw new Error('inboundCallback must be defined first');
+    }
+    try {
+      bridge.inboundCallback(`${sender}`, `${data}`);
+    } catch (e) {
+      console.log(`error during inboundCallback: ${e} ${e.message}`);
+    }
+  }
+
+  function attenuatorSource(e) {
+    const { bridge } = e;
+    // eslint-disable-next-line global-require
+    const harden = require('@agoric/harden');
+    return harden({
+      registerInboundCallback(f) {
+        bridge.inboundCallback = f;
+      },
+    });
+  }
+
+  return {
+    attenuatorSource: `(${attenuatorSource})`,
+    bridge,
+    deliverInbound,
+  };
+}
