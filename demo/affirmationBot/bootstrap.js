@@ -15,8 +15,8 @@ export default function setup(syscall, state, helpers) {
       harden({
         bootstrap(argv, vats) {
           console.log('=> bootstrap() called');
-          E(vats.left)
-            .talkToBot(vats.right, 'hello')
+          E(vats.user)
+            .talkToBot(vats.affirmationbot, 'hello')
             .then(
               r =>
                 log(

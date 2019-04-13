@@ -16,7 +16,7 @@ More docs are in the works. For now, try:
 ```
 $ npm install
 $ npm test
-$ bin/vat run demo/left-right
+$ bin/vat run demo/affirmationBot
 ```
 
 This repository is still in early development: APIs and features are not
@@ -25,7 +25,7 @@ expected to stabilize for a while.
 ## REPL Shell
 
 ```
-$ bin/vat shell demo/left-right
+$ bin/vat shell demo/affirmationBot
 vat>
 ```
 
