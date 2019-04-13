@@ -10,12 +10,10 @@ export default function setup(syscall, state, helpers) {
     state,
     E =>
       harden({
-        talkToBot(vat, msg) {
-          log(
-            `=> user's talkToBot method is called with: (affirmationBot, ${msg})`,
-          );
+        talkToBot(vat, botName) {
+          log(`=> user.talkToBot is called with ${botName}`);
           E(vat)
-            .affirmMe(msg)
+            .affirmMe('hello')
             .then(myAffirmation =>
               log(`=> user receives the affirmation: ${myAffirmation}`),
             );
