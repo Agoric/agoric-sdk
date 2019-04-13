@@ -193,7 +193,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
   } else if (config.bootstrapIndexJS) {
     // we invoke obj[0].bootstrap with an object that contains 'vats' and
     // 'argv'.
-    console.log(`queueing bootstrap()`);
+    console.log(`=> queueing bootstrap()`);
     kernel.callBootstrap('_bootstrap', JSON.stringify(argv));
   }
 

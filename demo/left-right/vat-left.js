@@ -10,12 +10,14 @@ export default function setup(syscall, state, helpers) {
     state,
     E =>
       harden({
-        callRight(arg1, right) {
-          log(`left.callRight ${arg1}`);
-          E(right)
-            .bar(2)
-            .then(a => log(`left.then ${a}`));
-          return 3;
+        talkToBot(vat, msg) {
+          log(`=> user's talkToBot method is called with: (right, ${msg})`);
+          E(vat)
+            .affirmMe(msg)
+            .then(myAffirmation =>
+              log(`=> user receives the affirmation: ${myAffirmation}`),
+            );
+          return 'Thanks for the setup. I sure hope I get some affirmation...';
         },
       }),
     helpers.vatID,

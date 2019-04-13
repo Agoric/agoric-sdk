@@ -11,9 +11,9 @@ export default function setup(syscall, state, helpers) {
     state,
     _E =>
       harden({
-        bar(arg2) {
-          log(`right ${arg2}`);
-          return 4;
+        affirmMe(msg) {
+          log(`=> affirmationBot.affirmMe got the message: ${msg}`);
+          return `${msg}, you are wonderful!`;
         },
       }),
     helpers.vatID,
