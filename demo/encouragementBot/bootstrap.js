@@ -16,7 +16,7 @@ export default function setup(syscall, state, helpers) {
         bootstrap(argv, vats) {
           console.log('=> bootstrap() called');
           E(vats.user)
-            .talkToBot(vats.affirmationbot, 'affirmationBot')
+            .talkToBot(vats.bot, 'encouragementBot')
             .then(
               r =>
                 log(
