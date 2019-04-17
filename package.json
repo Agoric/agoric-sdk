@@ -1,10 +1,8 @@
 {
   "name": "@agoric/swingset-vat",
   "version": "0.0.1",
-  "private": true,
   "description": "Vat/Container Launcher",
-  "main": "src/index.js",
-  "module": "src/main.js",
+  "module": "src/index.js",
   "engines": {
     "node": ">=11.0"
   },
