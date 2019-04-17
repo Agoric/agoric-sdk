@@ -11,9 +11,9 @@ export default function setup(syscall, state, helpers) {
     state,
     _E =>
       harden({
-        bar(arg2) {
-          log(`right ${arg2}`);
-          return 4;
+        encourageMe(name) {
+          log(`=> encouragementBot.encourageMe got the name: ${name}`);
+          return `${name}, you are awesome, keep it up!`;
         },
       }),
     helpers.vatID,
