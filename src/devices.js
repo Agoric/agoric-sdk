@@ -42,6 +42,7 @@ export function buildInbound() {
   }
 
   function attenuatorSource(e) {
+    // eslint-disable-next-line no-shadow
     const { bridge } = e;
     // eslint-disable-next-line global-require
     const harden = require('@agoric/harden');
