@@ -51,6 +51,10 @@ typings/
 # Output of 'npm pack'
 *.tgz
 
+# but we commit this internal tarball because I can't get something
+# installable without this hack
+!agoric-evaluate/agoric-evaluate-0.0.1.tgz
+
 # Yarn Integrity file
 .yarn-integrity
 

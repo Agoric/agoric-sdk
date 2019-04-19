@@ -2,6 +2,7 @@
   "name": "@agoric/swingset-vat",
   "version": "0.0.1",
   "description": "Vat/Container Launcher",
+  "main": "src/main.js",
   "module": "src/index.js",
   "engines": {
     "node": ">=11.0"
@@ -11,6 +12,9 @@
   },
   "scripts": {
     "build-kernel": "node -r esm scripts/build-kernel.js",
+    "pack-evaluate": "cd agoric-evaluate && npm pack",
+    "pack": "npm run-script build-kernel && npm pack",
+    "publish": "npm run-script pack && npm publish --access public",
     "test": "npm run-script build-kernel && tape -r esm test/test-node-version.js && tape -r esm test/**/test*.js",
     "pretty-fix": "prettier --write '**/*.{js,jsx}'",
     "pretty-check": "prettier --check '**/*.{js,jsx}'",
@@ -32,7 +36,7 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
-    "@agoric/evaluate": "./agoric-evaluate",
+    "@agoric/evaluate": "file:./agoric-evaluate/agoric-evaluate-0.0.1.tgz",
     "@agoric/harden": "^0.0.4",
     "@agoric/nat": "^2.0.0",
     "rollup": "^1.1.2",
@@ -40,6 +44,14 @@
     "ses": "^0.5.0",
     "yargs": "^13.1.0"
   },
+  "bundledDependencies": [
+    "@agoric/evaluate"
+  ],
+  "files": [
+    "bin/vat",
+    "src/**/*.js",
+    "src/bundles/kernel"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Agoric/SwingSet.git"
