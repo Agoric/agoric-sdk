@@ -18,6 +18,42 @@ export default function buildKernel(kernelEndowments) {
 
   let running = false;
 
+  // We use vat-centric terminology here, so "inbound" means "into a vat",
+  // generally from the kernel. We also have "comms vats" which use special
+  // device access to interact with remote machines: messages from those
+  // remote machines are "inbound" into the comms vats. Conversely "outbound"
+  // means "out of a vat", usually into the local kernel, but we also use
+  // "outbound" to describe the messages a comms vat is sending over a socket
+  // or other communications channel.
+
+  // The mapInbound() function is used to translate slot references on the
+  // vat->kernel pathway. mapOutbound() is used for kernel->vat.
+
+  // The terms "import" and "export" are also vat-centric. "import" means
+  // something a Vat has imported (from the kernel). Imports are tracked in a
+  // kernel-side table for each Vat, which is populated by the kernel as a
+  // message is delivered. Each import is represented inside the Vat as a
+  // Presence (at least when using liveSlots).
+
+  // "exports" are callable objects inside the Vat which it has made
+  // available to the kernel (so that other vats can invoke it). The exports
+  // table is managed by userspace code inside the vat. The kernel tables map
+  // one vat's import IDs to a pair of (exporting vat, vat's export-id) in
+  // `vats[vatid].imports.outbound[importID]`. To make sure we use the same
+  // importID each time, we also need to keep a reverse table:
+  // `vats[vatid].imports.inbound` maps the (exporting-vat, export-id) back
+  // to the importID.
+
+  // Comms vats will have their own internal tables to track references
+  // shared with other machines. These will have mapInbound/mapOutbound too.
+  // A message arriving on a communication channel will pass through the
+  // comms vat's mapInbound to figure out which "machine export" is the
+  // target, which maps to a "vat import" (coming from the kernel). The
+  // arguments might also be machine exports (for arguments that are "coming
+  // home"), or more commonly will be new machine imports (for arguments that
+  // point to other machines, usually the sending machine). The machine
+  // imports will be presented to the kernel as exports of the comms vat.
+
   // 'id' is always a non-negative integer (a Nat)
   // 'slot' is a type(string)+id, plus maybe a vatid (string)
   // * 'relative slot' lacks a vatid because it is implicit
