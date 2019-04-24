@@ -8,17 +8,129 @@ For a Vat to have any influence on the outside world, *something* must go
 beyond this limitation. Some Vat, somewhere, must have a "device": some
 access to authority outside the Vat model.
 
-The SwingSet architecture, despite being implemented in Javascript, is
-patterned after lower-level OS kernel layout, hence the distinction between
-"userspace" and "kernelspace", with a "syscall" API from one to the other.
-Following that pattern, we say that certain Vats have extraordinary access to
-a "device object", which allows commands to be sent to a "device driver" that
-has privileged access to functions or data that is outside the Vat model.
-
 The simplest such device might just be synchronous access to a shared data
 structure. Since Vats are normally confined to communicating through object
 messages (and even then only through asynchronous access), even a basic
 key-value store must be presented as a "device" if shared with the kernel.
+
+## Vat access to devices
+
+The SwingSet architecture, despite being implemented in Javascript, is
+patterned after lower-level OS kernel layout, hence the distinction between
+"userspace" and "kernelspace", with a "syscall" API from one to the other.
+Following that pattern, we say that certain Vats have extraordinary access to
+one or more "device objects", which allows commands to be sent to a "device
+driver" that has privileged access to functions or data that is outside the
+Vat model.
+
+These device objects are imported into vats just like anything else (such as
+exports from other vats, or kernel promises). They can be included in
+argument lists and delivered from one vat to another like normal objects.
+However, they cannot be the target of a `syscall.send`. Instead, a special
+`syscall.callNow` accepts a device reference as its first argument:
+
+```
+syscall.callNow(device, argsbytes, slots) -> { bytes, slots }
+```
+
+This `callNow` runs *synchronously*, unlike `syscall.send()`. The device
+driver returns the results with the same format as the arguments are sent: a
+serialized object, plus some number of slots that it can reference. All
+interactions with the device are through syscalls and data values. This
+preserves our ability to migrate the vat to a new machine (and forward
+messages, if necessary).
+
+## Device access to Vats
+
+Devices get access to a special message-delivery queue which is serviced
+before the normal kernel run-queue. This allows e.g. a communication-channel
+device to give inbound messages to a comms vat quickly, without being queued
+on the normal escalators (since the comms vat might determine that the
+message is higher-priority than anything already on the escalators, so it
+must be given the opportunity to make this decision quickly).
+
+We have not yet determined how this access will be expressed. It might simply
+be a special escalator-id which effectively has an infinite budget, or it
+might need to be a separate syscall. Until we implement the escalator
+algorithm (and the associated Meters and Keepers), we simply add a
+`syscall.sendOnly` interface to both vats and devices, and defer the priority
+questions for later. `sendOnly` does not return anything.
+
+## Devices Don't Promise
+
+For simplicity, we remove the promise APIs from devices and their
+interactions with Vats. Devices cannot create kernel promises, or receive
+them in calls, and `syscall.sendOnly` (which is the only way for the device
+to send messages to vats) does not cause a promise to be created. Vats cannot
+put promises into the arguments of `syscall.callNow`.
+
+We might change this in the future.
+
+## Bootstrap Vat Disseminates Device Access
+
+Initially, the bootstrap vat holds exclusive access to all devices. They are
+provided as an argument to the `bootstrap()` call, in the same way it gets
+the root object of all other vats. From here, the `bootstrap()` can share
+device access with other vats as it sees fit. Devices can be passed as
+message arguments and promise resolutions just like any other import or
+export.
+
+The function signature is `bootstrap(argv, vats, devices) -> undefined`. The
+`devices` argument, like `vats`, is a plain object whose keys are the names
+of the devices, with values that contain device references (i.e. `{type:
+'device', id: 4}`).
+
+## Device Configuration
+
+There are two kinds of devices: "host devices" and "kernel devices".
+
+The `buildVatController()` call is supplied with a `config` object that
+describes the initial set of vats (including the bootstrap vat). We use
+`config.devices` to define the set of host devices that will be made
+available to `bootstrap()`. `config.devices` is a list (or other iterable),
+in which each value is a 3-item list. The first element is the device name,
+the second is the pathname of the attenuator source (a file which must export
+a default function whose signature is `function setup(syscall, helpers,
+endowments) -> dispatch`), and an object containing endowments that will be
+passed into the setup function. Like vats, the file will be evaluated with a
+`require` endowment that provides access to `@agoric/harden`, `@agoric/nat`,
+and `@agoric/evaluate` (unlike `SES.makeRequire()`, which doesn't provide a
+`require` to the evaluated string).
+
+"Kernel devices" do not need to be configured by the host. The only kernel
+device currently envisioned is one which provides the `addVat` call, which
+allows new Vats to be created at runtime.
+
+It is an error to provide an entry in `config.devices` which collides with
+the name of a kernel device, or to have two devices with the same name.
+
+### Device API
+
+Devices are very much like Vats: the attenuator function is invoked with a
+`syscall` object that the device can use to talk to the kernel, and it must
+return a `dispatch` object with which the kernel can invoke the device. The
+specific methods on `syscall` and `dispatch` are different for devices:
+
+* `syscall.sendOnly(targetSlot, method, argsString, argsSlots) -> undefined`
+* `dispatch.invoke(target, method, argsString, argsSlots) -> { args, slots }`
+* `dispatch.getState() -> { STATE }`
+
+### New Vat APIs
+
+This feature adds two API calls to Vats:
+
+* `syscall.sendOnly(targetSlot, method, argsString, argsSlots) -> undefined`
+* `syscall.callNow(deviceSlot, method, argsString, argsSlots) -> { args, slots }`
+
+(although `sendOnly` is not used to interact with devices, and is only added
+for completeness)
+
+### Device State Persistence
+
+Devices are expected to return their state as a JSON-serializable object
+whenever the kernel asks for it. Devices are not expected to use
+transcript-based persistence.
+
 
 ## Initial Device Types
 
@@ -72,23 +184,10 @@ foreign blockchain (i.e. IBC).
 
 ## Device Drivers
 
-Devices consist of a kernel-realm wrapper function, which closes over any
-host-realm authorities that it needs. The wrapper function is responsible for
-preventing confinement breaches: it must prevent kernel-realm callers from
-accessing host-realm objects, even under adversarial use. In particular, any
-exceptions raised by the host-realm functions must be caught and wrapped with
-kernel-realm replacements. Callbacks must be intercepted too. The wrapper
-function must act as a limited Membrane between the two worlds.
-
-`controller.addVat()` takes an `options` argument. `options.devices` contains
-the definitions of any devices that should be made available to this
-particular vat. The property names on `devices` are device names, and their
-values should follow the same format as SES's `makeRequire`: an object with
-both `attenuatorSource` and the authorities that should be made available to
-it. Unlike `makeRequire`, the `attenuatorSource` used by devices will be
-evaluated with a `require` endowment that provides access to `@agoric/harden`,
-`@agoric/nat`, and `@agoric/evaluate`.
-
-The kernel-realm device object will properties that match the names on
-`devices`, each of which will be the kernel-realm object resulting from the
-evaluation and invocation of `attenuatorSource`.
+Host devices consist of a kernel-realm wrapper function, which closes over
+any host-realm authorities that it needs. The wrapper function is responsible
+for preventing confinement breaches: it must prevent kernel-realm callers
+from accessing host-realm objects, even under adversarial use. In particular,
+any exceptions raised by the host-realm functions must be caught and wrapped
+with kernel-realm replacements. Callbacks must be intercepted too. The
+wrapper function must act as a limited Membrane between the two worlds.

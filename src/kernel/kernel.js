@@ -5,6 +5,7 @@ import { makeCommsSlots } from './commsSlots/index';
 import { QCLASS, makeMarshal } from './marshal';
 import makePromise from './makePromise';
 import makeVatManager from './vatManager';
+import makeDeviceManager from './deviceManager';
 
 export default function buildKernel(kernelEndowments) {
   const { setImmediate } = kernelEndowments;
@@ -20,6 +21,7 @@ export default function buildKernel(kernelEndowments) {
   let running = false;
 
   const vats = harden(new Map());
+  const devices = harden(new Map());
 
   // runQueue entries are {type, vatID, more..}. 'more' depends on type:
   // * deliver: target, msg
@@ -181,6 +183,14 @@ export default function buildKernel(kernelEndowments) {
     delete p.queue;
   }
 
+  function invoke(device, method, data, slots) {
+    const dev = devices.get(device.deviceName);
+    if (!dev) {
+      throw new Error(`unknown deviceRef ${JSON.stringify(device)}`);
+    }
+    return dev.manager.invoke(device, method, data, slots);
+  }
+
   async function process(f, then, logerr) {
     // the delivery might cause some number of (native) Promises to be
     // created and resolved, so we use the IO queue to detect when the
@@ -211,9 +221,10 @@ export default function buildKernel(kernelEndowments) {
     reject,
     log,
     process,
+    invoke,
   };
 
-  function addVat(vatID, setup, devices) {
+  function addVat(vatID, setup, vatDevices) {
     if (vats.has(vatID)) {
       throw new Error(`already have a vat named '${vatID}'`);
     }
@@ -231,7 +242,7 @@ export default function buildKernel(kernelEndowments) {
       syscallManager,
       setup,
       helpers,
-      devices,
+      vatDevices,
     );
     vats.set(
       vatID,
@@ -240,6 +251,31 @@ export default function buildKernel(kernelEndowments) {
         manager,
       }),
     );
+  }
+
+  function addDevice(name, setup, endowments) {
+    if (devices.has(name)) {
+      throw new Error(`already have a device named '${name}'`);
+    }
+    const helpers = harden({
+      name,
+      makeLiveSlots,
+      log(str) {
+        log.push(`${str}`);
+      },
+    });
+    const manager = makeDeviceManager(
+      name,
+      syscallManager,
+      setup,
+      helpers,
+      endowments,
+    );
+    // the vat record is not hardened: it holds mutable next-ID values
+    devices.set(name, {
+      id: name,
+      manager,
+    });
   }
 
   function addImport(forVatID, what) {
@@ -251,6 +287,13 @@ export default function buildKernel(kernelEndowments) {
       return harden({
         type: `${s.type}`,
         vatID: `${s.vatID}`,
+        id: Nat(s.id),
+      });
+    }
+    if (s.type === 'device') {
+      return harden({
+        type: `${s.type}`,
+        deviceName: `${s.deviceName}`,
         id: Nat(s.id),
       });
     }
@@ -307,26 +350,53 @@ export default function buildKernel(kernelEndowments) {
       // non-empty object as vatObj0s, since an empty object would be
       // serialized as pass-by-presence. It wouldn't make much sense for the
       // bootstrap object to call itself, though.
-      const vref = harden({}); // marker
+      const vref = harden({
+        toString() {
+          return targetVatID;
+        },
+      }); // marker
       vatObj0s[targetVatID] = vref;
       vrefs.set(vref, { type: 'export', vatID: targetVatID, id: 0 });
+      console.log(`adding vref ${targetVatID}`);
     });
 
-    function serializeSlot(vref, slots, slotMap) {
-      if (!vrefs.has(vref)) {
-        console.log(`oops ${vref}`, vref);
-        throw Error('bootstrap got unexpected pass-by-presence');
-      }
-      if (!slotMap.has(vref)) {
+    const drefs = new Map();
+    // we cannot serialize empty objects as pass-by-copy, because we decided
+    // to make them pass-by-presence for use as EQ-able markers (eg for
+    // Purses). So if we don't have any devices defined, we must add a dummy
+    // entry to this object so it will serialize as pass-by-copy. We can
+    // remove the dummy entry after we add the 'addVat' device
+    const deviceObj0s = { _dummy: 'dummy' };
+    Array.from(devices.entries()).forEach(d => {
+      const name = d[0];
+      const dref = harden({});
+      deviceObj0s[name] = dref;
+      drefs.set(dref, { type: 'device', deviceName: name, id: 0 });
+      console.log(`adding dref ${name}`);
+    });
+    if (Object.getOwnPropertyNames(deviceObj0s) === 0) {
+      throw new Error('pass-by-copy rules require at least one device');
+    }
+
+    function serializeSlot(ref, slots, slotMap) {
+      if (!slotMap.has(ref)) {
         const slotIndex = slots.length;
-        slots.push(vrefs.get(vref));
-        slotMap.set(vref, slotIndex);
+        if (vrefs.has(ref)) {
+          slots.push(vrefs.get(ref));
+          slotMap.set(ref, slotIndex);
+        } else if (drefs.has(ref)) {
+          slots.push(drefs.get(ref));
+          slotMap.set(ref, slotIndex);
+        } else {
+          console.log(`oops ${ref}`, ref);
+          throw Error('bootstrap got unexpected pass-by-presence');
+        }
       }
-      const slotIndex = slotMap.get(vref);
+      const slotIndex = slotMap.get(ref);
       return harden({ [QCLASS]: 'slot', index: slotIndex });
     }
     const m = makeMarshal(serializeSlot);
-    const s = m.serialize(harden({ args: [argv, vatObj0s] }));
+    const s = m.serialize(harden({ args: [argv, vatObj0s, deviceObj0s] }));
     // queueToExport() takes 'neutral' { type: export, vatID, slotID } objects in s.slots
     queueToExport(vatID, 0, 'bootstrap', s.argsString, s.slots);
   }
@@ -382,7 +452,7 @@ export default function buildKernel(kernelEndowments) {
   }
 
   const kernel = harden({
-    addVat(vatID, setup, devices = {}) {
+    addVat(vatID, setup, vatDevices = {}) {
       harden(setup);
       // 'setup' must be an in-realm function. This test guards against
       // accidents, but not against malice. MarkM thinks there is no reliable
@@ -391,14 +461,23 @@ export default function buildKernel(kernelEndowments) {
         throw Error('setup is not an in-realm function');
       }
       const kernelRealmDevices = {};
-      Object.getOwnPropertyNames(devices).forEach(name => {
-        const d = devices[name];
+      Object.getOwnPropertyNames(vatDevices).forEach(name => {
+        const d = vatDevices[name];
         if (!(d instanceof Object)) {
           throw Error(`device[${name}] is not an in-realm object`);
         }
         kernelRealmDevices[name] = d;
       });
       addVat(`${vatID}`, setup, kernelRealmDevices);
+    },
+
+    addDevice(deviceName, setup, endowments) {
+      console.log(`kernel.addDevice(${deviceName})`);
+      harden(setup);
+      if (!(setup instanceof Function)) {
+        throw Error('setup is not an in-realm function');
+      }
+      addDevice(`${deviceName}`, setup, endowments);
     },
 
     callBootstrap,
@@ -455,6 +534,11 @@ export default function buildKernel(kernelEndowments) {
         Object.assign(vatTables[vatID], vat.manager.getManagerState());
       });
 
+      const deviceState = {};
+      devices.forEach((d, deviceName) => {
+        deviceState[deviceName] = d.manager.getCurrentState();
+      });
+
       const promises = [];
       kernelPromises.forEach((p, id) => {
         const kp = { id };
@@ -467,6 +551,7 @@ export default function buildKernel(kernelEndowments) {
 
       return {
         vats: vatTables,
+        devices: deviceState,
         runQueue,
         promises,
         nextPromiseIndex,

@@ -19,6 +19,7 @@ export default function makeVatManager(
     reject,
     log,
     process,
+    invoke,
   } = syscallManager;
 
   // We use vat-centric terminology here, so "inbound" means "into a vat",
@@ -96,6 +97,12 @@ export default function makeVatManager(
       inbound: new Map(),
     }),
     nextResolverID: 30,
+
+    nextDeviceImportID: 40,
+    deviceImports: harden({
+      outbound: new Map(),
+      inbound: new Map(),
+    }),
   };
 
   function allocatePromiseID() {
@@ -107,6 +114,12 @@ export default function makeVatManager(
   function allocateResolverID() {
     const i = tables.nextResolverID;
     tables.nextResolverID += 1;
+    return i;
+  }
+
+  function allocateDeviceImportID() {
+    const i = tables.nextDeviceImportID;
+    tables.nextDeviceImportID += 1;
     return i;
   }
 
@@ -146,6 +159,11 @@ export default function makeVatManager(
       return tables.imports.outbound.get(slot.id);
     }
 
+    if (slot.type === 'deviceImport') {
+      Nat(slot.id);
+      return tables.deviceImports.outbound.get(slot.id);
+    }
+
     if (slot.type === 'promise') {
       Nat(slot.id);
       if (!tables.promises.outbound.has(slot.id)) {
@@ -162,7 +180,7 @@ export default function makeVatManager(
       return { type: 'resolver', id: tables.resolvers.outbound.get(slot.id) };
     }
 
-    throw Error(`unknown slot.type '${slot.type}'`);
+    throw Error(`unknown slot.type in '${JSON.stringify(slot)}'`);
   }
 
   function allocateImportIndex() {
@@ -194,10 +212,26 @@ export default function makeVatManager(
         m.inbound.set(key, newSlotID);
         m.outbound.set(
           newSlotID,
-          harden({ type: 'export', vatID: fromVatID, id }),
+          harden({ type: 'export', vatID: fromVatID, id }), // TODO just 'slot'?
         );
       }
       return { type: 'import', id: m.inbound.get(key) };
+    }
+
+    if (slot.type === 'device') {
+      const { deviceName, id } = slot;
+      Nat(id);
+
+      const m = tables.deviceImports;
+      const key = `${slot.type}.${deviceName}.${id}`; // ugh javascript
+      if (!m.inbound.has(key)) {
+        // must add both directions
+        const newSlotID = Nat(allocateDeviceImportID());
+        // kdebug(` adding ${newSlotID}`);
+        m.inbound.set(key, newSlotID);
+        m.outbound.set(newSlotID, harden(slot));
+      }
+      return { type: 'deviceImport', id: m.inbound.get(key) };
     }
 
     if (slot.type === 'promise') {
@@ -447,6 +481,24 @@ export default function makeVatManager(
     reject(id, rejectData, slots);
   }
 
+  function doCallNow(target, method, argsString, argsSlots) {
+    const dev = mapOutbound(target);
+    if (dev.type !== 'device') {
+      throw new Error(
+        `doCallNow must target a device, not ${JSON.stringify(target)}`,
+      );
+    }
+    const slots = argsSlots.map(slot => mapOutbound(vatID, slot));
+    kdebug(
+      `syscall[${vatID}].callNow(vat:device:${target.id}=ker:${JSON.stringify(
+        dev,
+      )}).${method}`,
+    );
+    const ret = invoke(dev, method, argsString, slots);
+    const retSlots = ret.slots.map(slot => mapInbound(vatID, slot));
+    return harden({ data: ret.data, slots: retSlots });
+  }
+
   function replay(name, ...args) {
     const s = playbackSyscalls.shift();
     if (JSON.stringify(s.d) !== JSON.stringify([name, ...args])) {
@@ -487,6 +539,12 @@ export default function makeVatManager(
     reject(...args) {
       transcriptAddSyscall(['reject', ...args]);
       return inReplay ? replay('reject', ...args) : doReject(...args);
+    },
+
+    callNow(...args) {
+      const ret = inReplay ? replay('callNow', ...args) : doCallNow(...args);
+      transcriptAddSyscall(['callNow', ...args], ret);
+      return ret;
     },
 
     log(str) {

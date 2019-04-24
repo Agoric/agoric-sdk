@@ -143,6 +143,25 @@ export async function buildVatController(config, withSES = true, argv = []) {
     kernel.addVat(vatID, setup, devices);
   }
 
+  async function addDevice(name, sourceIndex, endowments) {
+    if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
+      throw Error(
+        'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
+      );
+    }
+
+    let setup;
+    if (withSES) {
+      let source = await bundleSource(`${sourceIndex}`);
+      source = `(${source})`;
+      setup = s.evaluate(source, { require: r })();
+    } else {
+      // eslint-disable-next-line global-require,import/no-dynamic-require
+      setup = require(`${sourceIndex}`).default;
+    }
+    kernel.addDevice(name, setup, endowments);
+  }
+
   // the kernel won't leak our objects into the Vats, we must do
   // the same in this wrapper
   const controller = harden({
@@ -179,6 +198,13 @@ export async function buildVatController(config, withSES = true, argv = []) {
       return JSON.parse(JSON.stringify(kernel.getState()));
     },
   });
+
+  if (config.devices) {
+    for (const [name, srcpath, endowments] of config.devices) {
+      // eslint-disable-next-line no-await-in-loop
+      await addDevice(name, srcpath, endowments);
+    }
+  }
 
   if (config.vatSources) {
     for (const vatID of config.vatSources.keys()) {
