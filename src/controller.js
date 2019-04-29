@@ -45,7 +45,7 @@ export function loadBasedir(basedir, stateArg) {
   } catch (e) {
     state = stateArg;
   }
-  return harden({ vatSources, bootstrapIndexJS, state });
+  return { vatSources, bootstrapIndexJS, state };
 }
 
 function getKernelSource() {
@@ -182,8 +182,17 @@ export async function buildVatController(config, withSES = true, argv = []) {
 
   if (config.vatSources) {
     for (const vatID of config.vatSources.keys()) {
-      // eslint-disable-next-line no-await-in-loop
-      await controller.addVat(vatID, config.vatSources.get(vatID));
+      if (config.vatDevices) {
+        // eslint-disable-next-line no-await-in-loop
+        await controller.addVat(
+          vatID,
+          config.vatSources.get(vatID),
+          config.vatDevices.get(vatID),
+        );
+      } else {
+        // eslint-disable-next-line no-await-in-loop
+        await controller.addVat(vatID, config.vatSources.get(vatID));
+      }
     }
   }
 

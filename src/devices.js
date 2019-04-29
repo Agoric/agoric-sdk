@@ -59,3 +59,36 @@ export function buildInbound() {
     deliverInbound,
   };
 }
+
+export function buildChannel() {
+  const bridge = new Map();
+  // receiverMachineName -> inboundCallback
+
+  function attenuatorSource(e) {
+    // eslint-disable-next-line no-shadow
+    const { bridge } = e;
+    // eslint-disable-next-line global-require
+    const harden = require('@agoric/harden');
+    return harden({
+      registerInboundCallback(myMachineName, f) {
+        bridge.set(myMachineName, f);
+      },
+      sendOverChannel(fromMachineName, toMachineName, data) {
+        const callback = bridge.get(toMachineName);
+        if (!callback) {
+          throw new Error('callback must be defined first');
+        }
+        try {
+          callback(`${fromMachineName}`, `${data}`);
+        } catch (err) {
+          console.log(`error during callback: ${e} ${e.message}`);
+        }
+      },
+    });
+  }
+
+  return {
+    attenuatorSource: `(${attenuatorSource})`,
+    bridge,
+  };
+}
