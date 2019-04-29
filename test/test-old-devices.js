@@ -1,10 +1,10 @@
 import path from 'path';
 import { test } from 'tape-promise/tape';
 import { buildVatController } from '../src/index';
-import { buildSharedStringTable } from '../src/devices';
+import { buildSharedStringTable } from '../src/old-devices';
 
 async function testSharedTable(t, withSES) {
-  const srcIndex = path.resolve(__dirname, 'vat-devices-1.js');
+  const srcIndex = path.resolve(__dirname, 'vat-devices-0.js');
   const c = await buildVatController({}, withSES);
   const tableDevice = buildSharedStringTable();
   const devices = {
