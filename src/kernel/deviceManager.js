@@ -145,7 +145,7 @@ export default function makeDeviceManager(
       return { data: results.data, slots: resultSlots };
     } catch (e) {
       console.log(
-        `device[${deviceName}][${target.id}].${method} invoke failed`,
+        `device[${deviceName}][${target.id}].${method} invoke failed: ${e}`,
       );
       return { results: `ERROR: ${e}`, slots: [] };
     }

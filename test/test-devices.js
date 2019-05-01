@@ -38,9 +38,18 @@ test('d0 without SES', async t => {
 });
 
 async function test1(t, withSES) {
+  const sharedArray = [];
   const config = {
     vatSources: new Map(),
-    devices: [['d1', require.resolve('./files-devices/device-1'), {}]],
+    devices: [
+      [
+        'd1',
+        require.resolve('./files-devices/device-1'),
+        {
+          shared: sharedArray,
+        },
+      ],
+    ],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-1'),
   };
   const c = await buildVatController(config, withSES);
@@ -53,6 +62,7 @@ async function test1(t, withSES) {
     'invoke 0 set',
     '{"data":"{}","slots":[]}',
   ]);
+  t.deepEqual(sharedArray, ['pushed']);
   t.end();
 }
 
@@ -62,4 +72,49 @@ test('d1 with SES', async t => {
 
 test('d1 without SES', async t => {
   await test1(t, false);
+});
+
+async function test2(t, mode, withSES) {
+  const config = {
+    vatSources: new Map(),
+    devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
+    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
+  };
+  const c = await buildVatController(config, withSES, [mode]);
+  await c.step();
+  if (mode === '1') {
+    t.deepEqual(c.dump().log, ['calling d2.method1', 'method1 hello', 'done']);
+  } else if (mode === '2') {
+    t.deepEqual(c.dump().log, [
+      'calling d2.method2',
+      'method2',
+      'method3 true',
+      'value',
+    ]);
+  }
+  t.end();
+}
+
+test('d2.1 with SES', async t => {
+  await test2(t, '1', true);
+});
+
+test('d2.1 without SES', async t => {
+  await test2(t, '1', false);
+});
+
+test('d2.2 with SES', async t => {
+  await test2(t, '2', true);
+});
+
+test('d2.2 without SES', async t => {
+  await test2(t, '2', false);
+});
+
+test('d2.3 with SES', async t => {
+  await test2(t, '3', true);
+});
+
+test('d2.3 without SES', async t => {
+  await test2(t, '3', false);
 });

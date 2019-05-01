@@ -488,14 +488,14 @@ export default function makeVatManager(
         `doCallNow must target a device, not ${JSON.stringify(target)}`,
       );
     }
-    const slots = argsSlots.map(slot => mapOutbound(vatID, slot));
+    const slots = argsSlots.map(slot => mapOutbound(slot));
     kdebug(
       `syscall[${vatID}].callNow(vat:device:${target.id}=ker:${JSON.stringify(
         dev,
       )}).${method}`,
     );
     const ret = invoke(dev, method, argsString, slots);
-    const retSlots = ret.slots.map(slot => mapInbound(vatID, slot));
+    const retSlots = ret.slots.map(slot => mapInbound(slot));
     return harden({ data: ret.data, slots: retSlots });
   }
 

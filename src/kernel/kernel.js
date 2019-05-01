@@ -1,6 +1,7 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { makeLiveSlots } from './liveSlots';
+import { makeDeviceSlots } from './deviceSlots';
 import { makeCommsSlots } from './commsSlots/index';
 import { QCLASS, makeMarshal } from './marshal';
 import makePromise from './makePromise';
@@ -259,7 +260,7 @@ export default function buildKernel(kernelEndowments) {
     }
     const helpers = harden({
       name,
-      makeLiveSlots,
+      makeDeviceSlots,
       log(str) {
         log.push(`${str}`);
       },

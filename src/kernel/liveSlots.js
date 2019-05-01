@@ -8,9 +8,6 @@ import makePromise from './makePromise';
 // beyond the runtime of the javascript environment, so this mechanism is not
 // going to work for our in-chain hosts.
 
-// The E() wrapper does not yet return a Promise for the result of the method
-// call.
-
 function build(syscall, _state, makeRoot, forVatID) {
   const enableLSDebug = false;
   function lsdebug(...args) {
@@ -25,13 +22,20 @@ function build(syscall, _state, makeRoot, forVatID) {
     });
   }
 
+  function makeDeviceNode(id) {
+    return harden({
+      [`_deviceID_${id}`]() {},
+    });
+  }
+
   const outstandingProxies = new WeakSet();
 
   function slotToKey(slot) {
     if (
       slot.type === 'export' ||
       slot.type === 'import' ||
-      slot.type === 'promise'
+      slot.type === 'promise' ||
+      slot.type === 'deviceImport'
     ) {
       return `${slot.type}-${Nat(slot.id)}`;
     }
@@ -138,6 +142,8 @@ function build(syscall, _state, makeRoot, forVatID) {
         throw Error(`unrecognized exportID '${slot.id}'`);
       } else if (slot.type === 'promise') {
         val = importPromise(slot.id);
+      } else if (slot.type === 'deviceImport') {
+        val = makeDeviceNode(slot.id);
       } else {
         throw Error(`unrecognized slot.type '${slot.type}'`);
       }
@@ -277,6 +283,8 @@ function build(syscall, _state, makeRoot, forVatID) {
     } else if (slot && slot.type === 'import') {
       lsdebug(` was importID ${slot.id}`);
       handler = PresenceHandler(slot);
+    } else if (slot && slot.type === 'deviceImport') {
+      throw new Error(`E() does not accept device nodes`);
     } else {
       // might be a local object (previously sent or not), or a local Promise
       // (but not an imported one, or an answer). Treat it like a Promise.
@@ -288,6 +296,37 @@ function build(syscall, _state, makeRoot, forVatID) {
     const p = harden(new Proxy({}, handler));
     outstandingProxies.add(p);
     return p;
+  }
+
+  function DeviceHandler(slot) {
+    return {
+      get(target, prop) {
+        if (prop !== `${prop}`) {
+          return undefined;
+        }
+        return (...args) => {
+          const ser = m.serialize(harden({ args }));
+          const ret = syscall.callNow(slot, prop, ser.argsString, ser.slots);
+          const retval = m.unserialize(ret.data, ret.slots);
+          return retval;
+        };
+      },
+    };
+  }
+
+  function D(x) {
+    // results = D(devicenode).name(args)
+    if (outstandingProxies.has(x)) {
+      throw new Error('D(D(x)) is invalid');
+    }
+    const slot = valToSlot.get(x);
+    if (!slot || slot.type !== 'deviceImport') {
+      throw new Error('D() must be given a device node');
+    }
+    const handler = DeviceHandler(slot);
+    const pr = harden(new Proxy({}, handler));
+    outstandingProxies.add(pr);
+    return pr;
   }
 
   function deliver(facetid, method, argsbytes, caps, resolverID) {
@@ -394,7 +433,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     importedPromisesByPromiseID.get(promiseID).rej(val);
   }
 
-  const rootObject = makeRoot(E);
+  const rootObject = makeRoot(E, D);
   mustPassByPresence(rootObject);
   const rootSlot = { type: 'export', id: 0 };
   valToSlot.set(rootObject, rootSlot);
