@@ -5,9 +5,9 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    (_E, D) =>
+    (E, D) =>
       harden({
-        bootstrap(argv, vats, devices) {
+        async bootstrap(argv, vats, devices) {
           if (argv[0] === '1') {
             log(`calling d2.method1`);
             const ret = D(devices.d2).method1('hello');
@@ -35,6 +35,12 @@ export default function setup(syscall, state, helpers) {
               },
             });
             const ret = D(devices.d2).method4(o);
+            log(`ret ${ret}`);
+          } else if (argv[0] === '5') {
+            log(`calling v2.method5`);
+            const p = E(vats.left).left5(devices.d2);
+            log(`called`);
+            const ret = await p;
             log(`ret ${ret}`);
           }
         },

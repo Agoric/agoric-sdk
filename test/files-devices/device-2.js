@@ -35,6 +35,10 @@ export default function setup(syscall, helpers, _endowments) {
           SO(o).foo(obj);
           return 'method4 done';
         },
+        method5(arg) {
+          log(`method5 ${arg}`);
+          return 'ok';
+        },
       }),
     helpers.name,
   );
