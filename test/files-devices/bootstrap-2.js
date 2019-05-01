@@ -5,9 +5,9 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    (_E, D) =>
+    (E, D) =>
       harden({
-        bootstrap(argv, vats, devices) {
+        async bootstrap(argv, vats, devices) {
           if (argv[0] === '1') {
             log(`calling d2.method1`);
             const ret = D(devices.d2).method1('hello');
@@ -23,7 +23,25 @@ export default function setup(syscall, state, helpers) {
             // they should still be able to accept and return them
             const o = harden({});
             const ret = D(devices.d2).method3(o);
-            log(`ret ${ret.obj === o}`);
+            log(`ret ${ret === o}`);
+          } else if (argv[0] === '4') {
+            log(`calling d2.method4`);
+            // now exercise sendOnly on pass-by-presence objects
+            const o = harden({
+              foo(obj) {
+                log(`d2.m4 foo`);
+                D(obj).bar('hello');
+                log(`d2.m4 did bar`);
+              },
+            });
+            const ret = D(devices.d2).method4(o);
+            log(`ret ${ret}`);
+          } else if (argv[0] === '5') {
+            log(`calling v2.method5`);
+            const p = E(vats.left).left5(devices.d2);
+            log(`called`);
+            const ret = await p;
+            log(`ret ${ret}`);
           }
         },
       }),

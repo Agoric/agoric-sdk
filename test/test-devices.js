@@ -80,6 +80,7 @@ async function test2(t, mode, withSES) {
     devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
+  config.vatSources.set('left', require.resolve('./files-devices/vat-left.js'));
   const c = await buildVatController(config, withSES, [mode]);
   await c.step();
   if (mode === '1') {
@@ -90,6 +91,42 @@ async function test2(t, mode, withSES) {
       'method2',
       'method3 true',
       'value',
+    ]);
+  } else if (mode === '3') {
+    t.deepEqual(c.dump().log, ['calling d2.method3', 'method3', 'ret true']);
+  } else if (mode === '4') {
+    t.deepEqual(c.dump().log, [
+      'calling d2.method4',
+      'method4',
+      'ret method4 done',
+    ]);
+    await c.step();
+    t.deepEqual(c.dump().log, [
+      'calling d2.method4',
+      'method4',
+      'ret method4 done',
+      'd2.m4 foo',
+      'method4.bar hello',
+      'd2.m4 did bar',
+    ]);
+  } else if (mode === '5') {
+    t.deepEqual(c.dump().log, ['calling v2.method5', 'called']);
+    await c.step();
+    t.deepEqual(c.dump().log, [
+      'calling v2.method5',
+      'called',
+      'left5',
+      'method5 hello',
+      'left5 did d2.method5, got ok',
+    ]);
+    await c.step();
+    t.deepEqual(c.dump().log, [
+      'calling v2.method5',
+      'called',
+      'left5',
+      'method5 hello',
+      'left5 did d2.method5, got ok',
+      'ret done',
     ]);
   }
   t.end();
@@ -117,4 +154,20 @@ test('d2.3 with SES', async t => {
 
 test('d2.3 without SES', async t => {
   await test2(t, '3', false);
+});
+
+test('d2.4 with SES', async t => {
+  await test2(t, '4', true);
+});
+
+test('d2.4 without SES', async t => {
+  await test2(t, '4', false);
+});
+
+test('d2.5 with SES', async t => {
+  await test2(t, '5', true);
+});
+
+test('d2.5 without SES', async t => {
+  await test2(t, '5', false);
 });

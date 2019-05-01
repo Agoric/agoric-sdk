@@ -4,7 +4,7 @@ import { QCLASS, mustPassByPresence, makeMarshal } from './marshal';
 
 // 'makeDeviceSlots' is a subset of makeLiveSlots, for device code
 
-function build(syscall, rootObject, forDeviceName) {
+function build(syscall, makeRoot, forDeviceName) {
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -17,6 +17,8 @@ function build(syscall, rootObject, forDeviceName) {
       [`_importID_${id}`]() {},
     });
   }
+
+  const outstandingProxies = new WeakSet();
 
   function slotToKey(slot) {
     if (
@@ -117,6 +119,46 @@ function build(syscall, rootObject, forDeviceName) {
 
   const m = makeMarshal(serializeSlot, unserializeSlot);
 
+  function PresenceHandler(importSlot) {
+    return {
+      get(target, prop) {
+        lsdebug(`PreH proxy.get(${prop})`);
+        if (prop !== `${prop}`) {
+          return undefined;
+        }
+        const p = (...args) => {
+          const ser = m.serialize(harden({ args }));
+          syscall.sendOnly(importSlot, prop, ser.argsString, ser.slots);
+        };
+        return p;
+      },
+      has(_target, _prop) {
+        return true;
+      },
+    };
+  }
+
+  function SO(x) {
+    // SO(x).name(args)
+    //
+    // SO returns a proxy, like the E() in liveSlots. However SO's proxy does
+    // a sendOnly() rather than a send(), so it doesn't return a Promise. And
+    // since devices don't accept Promises either, SO(x) must be given a
+    // presence, not a promise that might resolve to a presence.
+
+    if (outstandingProxies.has(x)) {
+      throw new Error('SO(SO(x)) is invalid');
+    }
+    const slot = valToSlot.get(x);
+    if (!slot || slot.type !== 'import') {
+      throw new Error(`SO(x) must be called on a Presence, not ${x}`);
+    }
+    const handler = PresenceHandler(slot);
+    const p = harden(new Proxy({}, handler));
+    outstandingProxies.add(p);
+    return p;
+  }
+
   function invoke(deviceID, method, data, slots) {
     lsdebug(`ls[${forDeviceName}].dispatch.invoke ${deviceID}.${method}`);
     const t = getTarget(deviceID);
@@ -141,6 +183,7 @@ function build(syscall, rootObject, forDeviceName) {
     return harden({ data: ser.argsString, slots: ser.slots });
   }
 
+  const rootObject = makeRoot(SO);
   mustPassByPresence(rootObject);
   const rootSlot = { type: 'deviceExport', id: 0 };
   valToSlot.set(rootObject, rootSlot);
