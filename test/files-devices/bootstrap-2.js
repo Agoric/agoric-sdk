@@ -23,7 +23,7 @@ export default function setup(syscall, state, helpers) {
             // they should still be able to accept and return them
             const o = harden({});
             const ret = D(devices.d2).method3(o);
-            log(`ret ${ret.obj === o}`);
+            log(`ret ${ret === o}`);
           }
         },
       }),

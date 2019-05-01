@@ -91,6 +91,8 @@ async function test2(t, mode, withSES) {
       'method3 true',
       'value',
     ]);
+  } else if (mode === '3') {
+    t.deepEqual(c.dump().log, ['calling d2.method3', 'method3', 'ret true']);
   }
   t.end();
 }
