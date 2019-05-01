@@ -24,6 +24,18 @@ export default function setup(syscall, state, helpers) {
             const o = harden({});
             const ret = D(devices.d2).method3(o);
             log(`ret ${ret === o}`);
+          } else if (argv[0] === '4') {
+            log(`calling d2.method4`);
+            // now exercise sendOnly on pass-by-presence objects
+            const o = harden({
+              foo(obj) {
+                log(`d2.m4 foo`);
+                D(obj).bar('hello');
+                log(`d2.m4 did bar`);
+              },
+            });
+            const ret = D(devices.d2).method4(o);
+            log(`ret ${ret}`);
           }
         },
       }),
