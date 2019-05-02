@@ -40,6 +40,15 @@ interactions with the device are through syscalls and data values. This
 preserves our ability to migrate the vat to a new machine (and forward
 messages, if necessary).
 
+The `liveSlots` wrapper provides an easier-to-use frontend to `syscall.send`,
+allowing userspace code to use `E(presence).method(args) -> promise` instead
+of raw syscalls. It provides a similar frontend to `callNow`, which looks
+like:
+
+```
+retval = D(devicenode).method(args)
+```
+
 ## Device access to Vats
 
 Devices get access to a special message-delivery queue which is serviced
@@ -55,6 +64,17 @@ might need to be a separate syscall. Until we implement the escalator
 algorithm (and the associated Meters and Keepers), we simply add a
 `syscall.sendOnly` interface to both vats and devices, and defer the priority
 questions for later. `sendOnly` does not return anything.
+
+The `deviceSlots` wrapper exposes `sendOnly` with a special wrapper:
+
+```
+SO(presence).method(args)
+```
+
+Unlike the `E` wrapper, this does not return a promise, since `sendOnly` does
+not provide one either.
+
+TODO: `liveSlots` does not yet provide the `SO` send-only wrapper.
 
 ## Devices Don't Promise
 
@@ -125,6 +145,8 @@ This feature adds two API calls to Vats:
 
 (although `sendOnly` is not used to interact with devices, and is only added
 for completeness)
+
+TODO: Vats do not yet have access to `sendOnly`.
 
 ### Device State Persistence
 
