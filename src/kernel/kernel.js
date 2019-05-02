@@ -581,6 +581,12 @@ export default function buildKernel(kernelEndowments) {
         vat.manager.loadManagerState(vatData);
       }
 
+      for (const deviceName of Object.getOwnPropertyNames(state.devices)) {
+        const deviceData = state.devices[deviceName];
+        const device = devices.get(deviceName);
+        device.manager.loadState(deviceData);
+      }
+
       state.runQueue.forEach(q => runQueue.push(q));
 
       state.promises.forEach(kp => {

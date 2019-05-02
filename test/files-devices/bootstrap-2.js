@@ -42,6 +42,16 @@ export default function setup(syscall, state, helpers) {
             log(`called`);
             const ret = await p;
             log(`ret ${ret}`);
+          } else if (argv[0] === 'state1') {
+            log(`calling setState`);
+            D(devices.d2).setState('state2');
+            log(`called`);
+          } else if (argv[0] === 'state2') {
+            log(`calling getState`);
+            const s = D(devices.d2).getState();
+            log(`got ${s}`);
+          } else {
+            throw new Error(`unknown argv mode '${argv[0]}'`);
           }
         },
       }),

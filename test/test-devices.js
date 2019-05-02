@@ -171,3 +171,79 @@ test('d2.5 with SES', async t => {
 test('d2.5 without SES', async t => {
   await test2(t, '5', false);
 });
+
+async function testState(t, withSES) {
+  const config = {
+    vatSources: new Map(),
+    devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
+    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
+  };
+
+  const c = await buildVatController(config, withSES, ['state1']);
+  t.deepEqual(c.getState().devices.d2.deviceState, 'initial');
+  await c.step();
+  t.deepEqual(c.dump().log, ['calling setState', 'setState state2', 'called']);
+  t.deepEqual(c.getState().devices.d2.deviceState, 'state2');
+  t.deepEqual(c.getState().devices.d2.managerState, {
+    nextImportID: 10,
+    imports: {
+      inbound: [],
+      outbound: [],
+    },
+  });
+  t.end();
+}
+
+test('device state with SES', async t => {
+  await testState(t, true);
+});
+
+test('device state without SES', async t => {
+  await testState(t, false);
+});
+
+async function testSetState(t, withSES) {
+  const config = {
+    vatSources: new Map(),
+    devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
+    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
+    state: {
+      vats: {},
+      runQueue: [],
+      promises: [],
+      nextPromiseIndex: 40,
+      devices: {
+        d2: {
+          deviceState: 'initial state',
+          managerState: {
+            nextImportID: 10,
+            imports: {
+              inbound: [],
+              outbound: [],
+            },
+          },
+        },
+      },
+    },
+  };
+  const argv = ['state2'];
+  const c = await buildVatController(config, withSES, argv);
+  t.deepEqual(c.getState().devices.d2.deviceState, 'initial state');
+
+  c.callBootstrap('_bootstrap', argv);
+  await c.run();
+  t.deepEqual(c.dump().log, [
+    'calling getState',
+    'getState called',
+    'got initial state',
+  ]);
+  t.end();
+}
+
+test('set device state with SES', async t => {
+  await testSetState(t, true);
+});
+
+test('set device state without SES', async t => {
+  await testSetState(t, false);
+});

@@ -151,10 +151,41 @@ export default function makeDeviceManager(
     }
   }
 
-  function getCurrentState() {
-    return harden({}); // TODO
+  function getManagerState() {
+    return {
+      nextImportID: tables.nextImportID,
+      imports: {
+        outbound: Array.from(tables.imports.outbound.entries()),
+        inbound: Array.from(tables.imports.inbound.entries()),
+      },
+    };
   }
 
-  const manager = { invoke, getCurrentState };
+  function loadManagerState(deviceData) {
+    if (tables.imports.outbound.size || tables.imports.inbound.size) {
+      throw new Error(`device[$deviceName] is not empty, cannot loadState`);
+    }
+    tables.nextImportID = deviceData.nextImportID;
+    deviceData.imports.outbound.forEach(kv =>
+      tables.imports.outbound.set(kv[0], kv[1]),
+    );
+    deviceData.imports.inbound.forEach(kv =>
+      tables.imports.inbound.set(kv[0], kv[1]),
+    );
+  }
+
+  function loadState(savedState) {
+    loadManagerState(savedState.managerState);
+    dispatch.setState(savedState.deviceState);
+  }
+
+  function getCurrentState() {
+    return harden({
+      managerState: getManagerState(),
+      deviceState: dispatch.getState(),
+    });
+  }
+
+  const manager = { invoke, getCurrentState, loadState };
   return manager;
 }

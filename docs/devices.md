@@ -114,6 +114,7 @@ specific methods on `syscall` and `dispatch` are different for devices:
 * `syscall.sendOnly(targetSlot, method, argsString, argsSlots) -> undefined`
 * `dispatch.invoke(target, method, argsString, argsSlots) -> { args, slots }`
 * `dispatch.getState() -> { STATE }`
+* `dispatch.setState(STATE)`
 
 ### New Vat APIs
 
