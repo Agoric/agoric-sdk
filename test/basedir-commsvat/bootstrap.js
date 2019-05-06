@@ -16,10 +16,11 @@ export default function setup(syscall, state, helpers) {
         async bootstrap(argv, vats) {
           log('=> bootstrap() called');
 
+          // setup
           const LEFT_MACHINE_NAME = 'left';
           const RIGHT_MACHINE_NAME = 'right';
           const CHANNEL = 'channel';
-          const RIGHT_CLIST_INDEX = 0;
+          const INDEX_FOR_RIGHT_INITIAL_OBJ = 0;
 
           await E(vats.rightcomms).init(RIGHT_MACHINE_NAME, 'rightSigningKey');
           await E(vats.leftcomms).init(LEFT_MACHINE_NAME, 'leftSigningKey');
@@ -37,7 +38,7 @@ export default function setup(syscall, state, helpers) {
 
           await E(vats.rightcomms).addEgress(
             LEFT_MACHINE_NAME,
-            RIGHT_CLIST_INDEX,
+            INDEX_FOR_RIGHT_INITIAL_OBJ,
             vats.right,
           );
 
@@ -46,136 +47,90 @@ export default function setup(syscall, state, helpers) {
           // but the leftcomms needs to export it to the kernel
           const pPRootRight = E(vats.leftcomms).addIngress(
             RIGHT_MACHINE_NAME,
-            RIGHT_CLIST_INDEX,
+            INDEX_FOR_RIGHT_INITIAL_OBJ,
           ); // the promise for the presence of right root object
 
+          // run tests
           const test = argv[0];
           const args = argv.slice(1);
-          if (test === 'method' || test === 'methodWithArgs') {
-            E(vats.left)
-              .callMethodOnPresence(pPRootRight, args)
-              .then(
-                r =>
-                  log(
-                    `=> the promise given by the call to left.callMethodOnPresence resolved to '${r}'`,
-                  ),
-                err =>
-                  log(
-                    `=> the promise given by the call to left.callMethodOnPresence was rejected '${err}''`,
-                  ),
-              );
-          }
-          if (test === 'methodWithRef') {
-            // test equality - maintain object identity- make sure that we aren't creating new presences
-            pPRootRight.then(
-              rootRightPresence => {
-                log(`rootRightPresence ${rootRightPresence}`);
+
+          switch (test) {
+            case 'method': {
+              E(vats.left)
+                .callMethodOnPresence(pPRootRight, []) // actually a promise for a presence
+                .then(r => log(`bootstrap call resolved to ${r}`));
+              break;
+            }
+
+            case 'methodWithArgs': {
+              E(vats.left)
+                .callMethodOnPresence(pPRootRight, args)
+                .then(r => log(`bootstrap call resolved to ${r}`));
+              break;
+            }
+
+            case 'methodWithRef': {
+              // test equality - maintain object identity- make sure
+              // that we aren't creating new presences
+              pPRootRight.then(rootRightPresence => {
                 E(vats.left)
                   .callMethodOnPresenceWithRef(rootRightPresence)
-                  .then(
-                    r =>
-                      log(
-                        `=> the promise given by the call to left.callMethodOnPresenceWithRef resolved to '${r}'`,
-                      ),
-                    err =>
-                      log(
-                        `=> the promise given by the call to left.callMethodOnPresenceWithRef was rejected '${err}''`,
-                      ),
-                  );
-              },
-              err => log(`${err}`),
-            );
-          }
-          if (test === 'methodWithOtherRef') {
-            const newObj = await E(vats.left).createNewObj();
+                  .then(r => log(`bootstrap call resolved to ${r}`));
+              });
+              break;
+            }
 
-            pPRootRight.then(
-              rootRightPresence => {
-                log(`rootRightPresence ${rootRightPresence}`);
+            case 'methodWithOtherRef': {
+              const newObj = await E(vats.left).createNewObj();
+              pPRootRight.then(rootRightPresence => {
                 E(vats.left)
                   .callMethodOnPresenceWithOtherRef(rootRightPresence, newObj)
-                  .then(
-                    r =>
-                      log(
-                        `=> the promise given by the call to left.callMethodOnPresenceWithRef resolved to '${r}'`,
-                      ),
-                    err =>
-                      log(
-                        `=> the promise given by the call to left.callMethodOnPresenceWithRef was rejected '${err}''`,
-                      ),
-                  );
-              },
-              err => log(`${err}`),
-            );
-          }
-          if (test === 'methodWithOtherRefTwice') {
-            const newObj = await E(vats.left).createNewObj();
+                  .then(r => log(`bootstrap call resolved to ${r}`));
+              });
+              break;
+            }
 
-            pPRootRight.then(
-              rootRightPresence => {
-                log(`rootRightPresence ${rootRightPresence}`);
+            case 'methodWithOtherRefTwice': {
+              const newObj = await E(vats.left).createNewObj();
+              pPRootRight.then(rootRightPresence => {
                 E(vats.left)
                   .callMethodOnPresenceWithOtherRefTwice(
                     rootRightPresence,
                     newObj,
                   )
-                  .then(
-                    r =>
-                      log(
-                        `=> the promise given by the call to left.callMethodOnPresenceWithRef resolved to '${r}'`,
-                      ),
-                    err =>
-                      log(
-                        `=> the promise given by the call to left.callMethodOnPresenceWithRef was rejected '${err}''`,
-                      ),
-                  );
-              },
-              err => log(`${err}`),
-            );
-          }
-          if (test === 'takeRefAndReturnItAsData') {
-            const newObj = await E(vats.left).createNewObj();
+                  .then(r => log(`bootstrap call resolved to ${r}`));
+              });
+              break;
+            }
 
-            pPRootRight.then(
-              rootRightPresence => {
-                log(`rootRightPresence ${rootRightPresence}`);
+            case 'takeRefAndReturnItAsData': {
+              const newObj = await E(vats.left).createNewObj();
+
+              pPRootRight.then(rootRightPresence => {
                 E(vats.left)
                   .callMethodOnRefAndReturnItAsData(rootRightPresence, newObj)
-                  .then(
-                    r =>
-                      log(
-                        `=> the promise given by the call to left.callMethodOnRefAndReturnItAsData resolved to '${r}'`,
-                      ),
-                    err =>
-                      log(
-                        `=> the promise given by the call to left.callMethodOnRefAndReturnItAsData was rejected '${err}''`,
-                      ),
-                  );
-              },
-              err => log(`${err}`),
-            );
-          }
-          if (test === 'getPromiseBack') {
-            pPRootRight.then(
-              rootRightPresence => {
-                E(vats.left).getPromiseBack(rootRightPresence);
-              },
-              err => log(`${err}`),
-            );
-          }
-          if (test === 'sendPromiseForPresence') {
-            E(vats.left)
-              .callMethodOnPromiseForPresence(pPRootRight)
-              .then(
-                r =>
-                  log(
-                    `=> the promise given by the call to left.callMethodOnPromiseForPresence resolved to '${r}'`,
-                  ),
-                err =>
-                  log(
-                    `=> the promise given by the call to left.callMethodOnPromiseForPresence was rejected '${err}''`,
-                  ),
-              );
+                  .then(r => log(`bootstrap call resolved to ${r}`));
+              });
+              break;
+            }
+
+            case 'getPromiseBack': {
+              pPRootRight.then(rootRightPresence => {
+                E(vats.left)
+                  .getPromiseBack(rootRightPresence)
+                  .then(r => log(`bootstrap call resolved to ${r}`));
+              });
+              break;
+            }
+
+            case 'sendPromiseForPresence': {
+              E(vats.left)
+                .callMethodOnPromiseForPresence(pPRootRight)
+                .then(r => log(`bootstrap call resolved to ${r}`));
+              break;
+            }
+            default:
+              throw new Error('test unexpected');
           }
         },
       }),
