@@ -46,7 +46,9 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
         meToYouSlot,
       );
     }
-    const outgoingWireMessage = state.clists.mapKernelSlotToOutgoingWireMessage(kernelToMeSlot);
+    const outgoingWireMessage = state.clists.mapKernelSlotToOutgoingWireMessage(
+      kernelToMeSlot,
+    );
     return outgoingWireMessage.meToYouSlot;
   }
 

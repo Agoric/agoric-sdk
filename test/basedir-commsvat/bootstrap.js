@@ -65,7 +65,8 @@ export default function setup(syscall, state, helpers) {
                   ),
               );
           }
-          if (test === 'methodWithRef') { // test equality - maintain object identity- make sure that we aren't creating new presences
+          if (test === 'methodWithRef') {
+            // test equality - maintain object identity- make sure that we aren't creating new presences
             pPRootRight.then(
               rootRightPresence => {
                 log(`rootRightPresence ${rootRightPresence}`);
@@ -174,7 +175,7 @@ export default function setup(syscall, state, helpers) {
                   log(
                     `=> the promise given by the call to left.callMethodOnPromiseForPresence was rejected '${err}''`,
                   ),
-            );
+              );
           }
         },
       }),

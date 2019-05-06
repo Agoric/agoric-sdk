@@ -21,7 +21,6 @@ export function makeSendIn(state, syscall) {
      */
 
     sendIn(senderID, dataStr) {
-
       if (!verify(senderID)) {
         throw new Error('could not verify SenderID');
       }
@@ -68,7 +67,6 @@ export function makeSendIn(state, syscall) {
 
       // get the target (an object representing a promise or a vat
       // object) from the index in the data
-
 
       let kernelToMeSlots;
       let kernelToMeTarget;
