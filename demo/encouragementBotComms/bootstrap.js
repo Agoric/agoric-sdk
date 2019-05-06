@@ -30,7 +30,7 @@ export default function setup(syscall, state, helpers) {
             BOT_USER_CHANNEL,
           );
 
-          await E(vats.botcomms).addExport(
+          await E(vats.botcomms).addEgress(
             USER_MACHINE_NAME,
             BOT_CLIST_INDEX,
             vats.bot,
@@ -42,7 +42,7 @@ export default function setup(syscall, state, helpers) {
             BOT_USER_CHANNEL,
           ); // channel - means of connection -- all three can collapse into libp2p address
 
-          const pPBot = E(vats.usercomms).addImport(
+          const pPBot = E(vats.usercomms).addIngress(
             BOT_MACHINE_NAME,
             BOT_CLIST_INDEX,
           );

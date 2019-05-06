@@ -3,10 +3,19 @@ import { makeCLists } from '../../../src/kernel/commsSlots/state/makeCLists';
 
 test('Clists add and get', t => {
   const clists = makeCLists();
-  clists.add('inbound', 'machine0', 'key0', 'value0');
-  const value = clists.getKernelExport('inbound', 'machine0', 'key0');
-  t.equal(value, 'value0');
-  const machineInfo = clists.getMachine('inbound', 'value0');
-  t.equal(machineInfo.machineName, 'machine0');
+  const kernelToMeSlot = { type: 'export', id: 1 };
+  const youToMeSlot = { type: 'your-ingress', id: 102 };
+  const meToYouSlot = clists.changePerspective(youToMeSlot);
+  clists.add('machine0', 'ingress', kernelToMeSlot, youToMeSlot, meToYouSlot);
+  const actualKernelToMeSlot = clists.mapIncomingWireMessageToKernelSlot(
+    'machine0',
+    'ingress',
+    youToMeSlot,
+  );
+  t.deepEqual(actualKernelToMeSlot, kernelToMeSlot);
+  const {
+    meToYouSlot: actualMeToYouSlot,
+  } = clists.mapKernelSlotToOutgoingWireMessage(kernelToMeSlot);
+  t.equal(actualMeToYouSlot, meToYouSlot);
   t.end();
 });

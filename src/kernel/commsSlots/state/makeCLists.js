@@ -4,9 +4,9 @@
  * mappings between external machines and slots.
  *
  * We need to store the data in two separate groups:
- *  * inbound to a commsvat means we are getting information about an
+ *  * ingress to a commsvat means we are getting information about an
  *    object that lives on another machine.
- *  * outbound to a commsvat means that we are passing along
+ *  * egress from a commsvat means that we are passing along
  *    information to an another machine
  *
  * a clist maps an index to an object describing a slot
@@ -18,40 +18,155 @@
 
 export function makeCLists() {
   const state = new Map();
+  let nextID = 1;
 
-  function createKeyObj(direction, machineName, key) {
+  function allocateNewID(type) {
+    const id = nextID;
+    nextID += 1;
+    return `comms.${type[0]}.${id}`;
+  }
+
+  function checkDirection(direction) {
+    if (direction !== 'ingress' && direction !== 'egress') {
+      throw new Error(
+        `direction should be ingress or egress, not ${direction}`,
+      );
+    }
+  }
+
+  function getDirectionFromWireMessageSlot(slot) {
+    return slot.type.split('-')[1];
+  }
+
+  function reverse(direction) {
+    if (direction === 'ingress') return 'egress';
+    if (direction === 'egress') return 'ingress';
+    throw new Error(`direction should be ingress or egress, not ${direction}`);
+  }
+
+  const changePerspectiveMap = new Map();
+  // youToMe: your-egress, meToYou: your-ingress
+  // youToMe: your-ingress, meToYou: your-egress
+  changePerspectiveMap.set('your-egress', 'your-ingress');
+  changePerspectiveMap.set('your-ingress', 'your-egress');
+
+  function changePerspective(slot) {
+    const otherPerspective = changePerspectiveMap.get(slot.type);
+    if (otherPerspective === undefined) {
+      throw new Error(`slot type ${slot.type} is not an allowed type`);
+    }
     return {
-      direction,
-      machineName,
-      key,
+      type: otherPerspective,
+      id: slot.id,
     };
   }
 
-  function createValueObj(direction, value) {
+  function createIncomingWireMessageObj(
+    otherMachineName,
+    direction,
+    youToMeSlot,
+  ) {
     return {
+      otherMachineName,
       direction,
-      kernelExport: value,
+      youToMeSlot,
     };
   }
 
-  function getKernelExport(direction, machineName, key) {
-    return state.get(JSON.stringify(createKeyObj(direction, machineName, key)));
+  function createOutgoingWireMessageObj(
+    otherMachineName,
+    direction,
+    meToYouSlot,
+  ) {
+    return {
+      otherMachineName,
+      direction,
+      meToYouSlot,
+    };
   }
 
-  function getMachine(direction, kernelExport) {
-    return state.get(JSON.stringify(createValueObj(direction, kernelExport)));
+  // takes youToMeSlot, returns kernelToMeSlot
+  function mapIncomingWireMessageToKernelSlot(
+    otherMachineName,
+    direction,
+    youToMeSlot,
+  ) {
+    checkDirection(direction);
+    return state.get(
+      JSON.stringify(
+        createIncomingWireMessageObj(otherMachineName, direction, youToMeSlot),
+      ),
+    );
   }
 
-  function add(direction, machineName, key, value) {
-    const keyObj = createKeyObj(direction, machineName, key);
-    state.set(JSON.stringify(keyObj), value);
-    state.set(JSON.stringify(createValueObj(direction, value)), keyObj);
+  // takes kernelToMeSlot, returns meToYouSlot
+  // we don't know the otherMachineName or direction
+  function mapKernelSlotToOutgoingWireMessage(kernelToMeSlot) {
+    return state.get(JSON.stringify(kernelToMeSlot));
+  }
+
+  // kernelToMeSlot can have type: import, export or promise
+
+  // right, egress, {type:import,id:10}, {type:yourEgress, id:7},
+  // {type:yourIngress, id:7}
+
+  // we will use this in the following ways:
+  // 1) to send out information about something that we know as a
+  //    kernelToMeSlot - we will need to allocate an id if it doesn't
+  //    already exist and then get the 'meToYouSlot' to send over the
+  //    wire
+  // 2) to translate something that we get over the wire (youToMeSlot)
+  //    into a kernelToMeSlot.
+  function add(
+    otherMachineName,
+    direction,
+    kernelToMeSlot,
+    youToMeSlot,
+    meToYouSlot,
+  ) {
+    checkDirection(direction);
+    const incomingWireMessageObj = createIncomingWireMessageObj(
+      otherMachineName,
+      direction,
+      youToMeSlot,
+    );
+    const outgoingWireMessageObj = createOutgoingWireMessageObj(
+      otherMachineName,
+      direction,
+      meToYouSlot,
+    );
+    state.set(JSON.stringify(kernelToMeSlot), outgoingWireMessageObj);
+    state.set(JSON.stringify(incomingWireMessageObj), kernelToMeSlot);
+  }
+
+  function mapKernelSlotToOutgoingWireMessageOrCreate(
+    otherMachineName,
+    direction,
+    kernelToMeSlot,
+  ) {
+    const outgoingWireMessage = mapKernelSlotToOutgoingWireMessage(
+      kernelToMeSlot,
+    );
+    if (outgoingWireMessage === undefined) {
+      const newID = allocateNewID(direction);
+      add(
+        otherMachineName,
+        direction,
+        kernelToMeSlot,
+        { type: `your-${direction}`, id: newID }, // youToMeSlot
+        { type: `your-${reverse(direction)}`, id: newID }, // meToYouSlot
+      );
+    }
+    return mapKernelSlotToOutgoingWireMessage(kernelToMeSlot);
   }
 
   return {
-    getKernelExport,
-    getMachine,
+    mapIncomingWireMessageToKernelSlot,
+    mapKernelSlotToOutgoingWireMessage,
+    mapKernelSlotToOutgoingWireMessageOrCreate,
+    changePerspective,
     add,
+    getDirectionFromWireMessageSlot,
     dump() {
       return state;
     },

@@ -1,12 +1,12 @@
 // access to the outside world
 import { makeSendIn } from './makeSendIn';
 
-export default function handleBootstrap(
+export default function handleInitialObj(
   state,
   syscall,
   method,
   argsbytes,
-  caps,
+  slots,
   resolverID,
   helpers,
   devices,
@@ -54,8 +54,12 @@ export default function handleBootstrap(
     syscall.fulfillToData(resolverID, JSON.stringify('undefined'), []);
   }
 
-  function addExport([sender, index, valslot]) {
-    helpers.log(`addExport called with sender ${sender}, index ${index}`);
+  // an egress is something on my machine that I make available to
+  // another machine
+  function addEgress([sender, index, valslot]) {
+    helpers.log(
+      `addEgress called with sender ${sender}, index ${index}, valslot ${valslot}`,
+    );
     if (
       typeof valslot !== 'object' ||
       !('@qclass' in valslot) ||
@@ -63,42 +67,82 @@ export default function handleBootstrap(
     ) {
       throw new Error(`value must be a slot, not ${JSON.stringify(valslot)}`);
     }
-    const val = caps[valslot.index];
+    const kernelToMeSlot = slots[valslot.index];
+    const meToYouSlot = {
+      type: 'your-ingress',
+      id: index,
+    };
 
-    state.clists.add('outbound', sender, index, val);
+    const youToMeSlot = state.clists.changePerspective(meToYouSlot);
+
+    state.clists.add(
+      sender,
+      'egress',
+      kernelToMeSlot,
+      youToMeSlot,
+      meToYouSlot,
+    );
     syscall.fulfillToData(resolverID, JSON.stringify('undefined'), []);
   }
 
-  function addImport([machineName, index]) {
+  // an ingress is something that lives on another machine
+  // this function should only be used for bootstrapping as a shortcut
+  // in addIngress, we know the common index that we want to
+  // use to communicate about something on the right machine,
+  // but the leftcomms needs to export it to the kernel
+  function addIngress([otherMachineName, index]) {
     helpers.log(
-      `addImport called with machineName ${machineName}, index ${index}`,
+      `addIngress called with machineName ${otherMachineName}, index ${index}`,
     );
-    // if we have already imported this, return the same id
-    let id = state.clists.getKernelExport('inbound', machineName, index);
 
-    // otherwise, create the id and store it
-    if (id === undefined) {
-      id = state.ids.getNextImportID();
-      state.clists.add('inbound', machineName, index, id);
+    const youToMeSlot = {
+      type: 'your-ingress',
+      id: index,
+    };
+
+    // if we have already imported this, return the same id
+    let kernelToMeSlot = state.clists.mapIncomingWireMessageToKernelSlot(
+      otherMachineName,
+      'ingress',
+      youToMeSlot,
+    );
+
+    if (kernelToMeSlot === undefined) {
+      const id = state.ids.allocateID();
+
+      kernelToMeSlot = {
+        type: 'export', // this is an ingress that we are exporting to the kernel
+        id,
+      };
+
+      const meToYouSlot = state.clists.changePerspective(youToMeSlot);
+
+      state.clists.add(
+        otherMachineName,
+        'ingress',
+        kernelToMeSlot,
+        youToMeSlot,
+        meToYouSlot,
+      );
     }
 
-    syscall.fulfillToTarget(resolverID, {
-      type: 'export',
-      id,
-    });
+    // notify the kernel that this call has resolved
+    syscall.fulfillToTarget(resolverID, kernelToMeSlot);
   }
 
   const { args } = JSON.parse(argsbytes);
 
+  // translate args that are slots to the slot rather than qclass
+
   switch (method) {
     case 'init':
       return init(args);
-    case 'addExport':
-      return addExport(args);
+    case 'addEgress':
+      return addEgress(args);
     case 'connect':
       return connect(args);
-    case 'addImport':
-      return addImport(args);
+    case 'addIngress':
+      return addIngress(args);
     default:
       throw new Error(`method ${method} is not available`);
   }

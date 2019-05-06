@@ -1,7 +1,7 @@
 import { makeCLists } from './makeCLists';
 import { makeSubscribers } from './makeSubscribers';
 import { makeChannels } from './makeChannels';
-import { makeGetNextImportID } from './makeGetNextImportID';
+import { makeAllocateID } from './makeAllocateID';
 import { makeMachineState } from './makeMachineState';
 
 function makeState(name) {
@@ -10,7 +10,7 @@ function makeState(name) {
   const clists = makeCLists();
   const subscribers = makeSubscribers();
   const channels = makeChannels();
-  const ids = makeGetNextImportID();
+  const ids = makeAllocateID();
 
   function dumpState() {
     console.log('STATE', {
