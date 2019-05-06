@@ -147,7 +147,7 @@ export default function makeDeviceManager(
       console.log(
         `device[${deviceName}][${target.id}].${method} invoke failed: ${e}`,
       );
-      return { results: `ERROR: ${e}`, slots: [] };
+      return { data: `ERROR: ${e}`, slots: [] };
     }
   }
 

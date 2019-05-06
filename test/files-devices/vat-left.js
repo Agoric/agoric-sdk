@@ -13,6 +13,12 @@ export default function setup(syscall, state, helpers) {
           log(`left5 did d2.method5, got ${ret}`);
           return 'done';
         },
+        leftSharedTable(st) {
+          log(`leftSharedTable`);
+          log(`has key1= ${D(st).has('key1')}`);
+          log(`got key1= ${D(st).get('key1')}`);
+          log(`has key2= ${D(st).has('key2')}`);
+        },
       }),
     helpers.vatID,
   );

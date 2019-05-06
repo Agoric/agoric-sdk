@@ -1,5 +1,6 @@
 import { test } from 'tape-promise/tape';
 import { buildVatController } from '../src/index';
+import buildSharedStringTable from '../src/devices/sharedTable';
 
 async function test0(t, withSES) {
   const config = {
@@ -246,4 +247,37 @@ test('set device state with SES', async t => {
 
 test('set device state without SES', async t => {
   await testSetState(t, false);
+});
+
+async function testSharedTable(t, withSES) {
+  const st = buildSharedStringTable();
+  console.log(`source: ${st.src}`);
+  const config = {
+    vatSources: new Map(),
+    devices: [['sharedTable', st.src, st.endowments]],
+    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
+  };
+  config.vatSources.set('left', require.resolve('./files-devices/vat-left.js'));
+
+  const c = await buildVatController(config, withSES, ['table1']);
+  console.log('H0');
+  await c.step();
+  console.log(`table ${st}`);
+  t.deepEqual(c.dump().log, ['calling left.leftSharedTable']);
+  await c.step();
+  t.deepEqual(c.dump().log, ['calling left.leftSharedTable',
+                             'leftSharedTable',
+                             'has key1= true',
+                             'got key1= val1',
+                             'has key2= false',
+                            ]);
+  t.end();
+}
+
+test('shared table without SES', async t => {
+  await testSharedTable(t, false);
+});
+
+test('shared table with SES', async t => {
+  await testSharedTable(t, true);
 });
