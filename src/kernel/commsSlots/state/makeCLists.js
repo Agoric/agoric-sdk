@@ -34,6 +34,16 @@ export function makeCLists() {
     }
   }
 
+  function checkIfAlreadyExists(incomingWireMessageObj, kernelToMeSlot) {
+    const slot = state.get(JSON.stringify(incomingWireMessageObj));
+    const outgoing = state.get(JSON.stringify(kernelToMeSlot));
+    if (slot || outgoing) {
+      throw new Error(
+        `${JSON.stringify(kernelToMeSlot)} already exists in clist`,
+      );
+    }
+  }
+
   function getDirectionFromWireMessageSlot(slot) {
     return slot.type.split('-')[1];
   }
@@ -134,6 +144,11 @@ export function makeCLists() {
       otherMachineName,
       direction,
       meToYouSlot,
+    );
+    checkIfAlreadyExists(
+      incomingWireMessageObj,
+      outgoingWireMessageObj,
+      kernelToMeSlot,
     );
     state.set(JSON.stringify(kernelToMeSlot), outgoingWireMessageObj);
     state.set(JSON.stringify(incomingWireMessageObj), kernelToMeSlot);

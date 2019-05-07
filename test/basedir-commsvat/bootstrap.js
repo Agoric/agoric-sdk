@@ -114,6 +114,20 @@ export default function setup(syscall, state, helpers) {
               break;
             }
 
+            case 'takeRefAndReturnItAsDataRight': {
+              const newObjRight = await E(vats.right).createNewObj();
+
+              pPRootRight.then(rootRightPresence => {
+                E(vats.left)
+                  .callMethodOnRefAndReturnItAsDataRight(
+                    rootRightPresence,
+                    newObjRight,
+                  )
+                  .then(r => log(`bootstrap call resolved to ${r}`));
+              });
+              break;
+            }
+
             case 'getPromiseBack': {
               pPRootRight.then(rootRightPresence => {
                 E(vats.left)

@@ -86,7 +86,7 @@ export default function buildKernel(kernelEndowments) {
       } else if (kp.state === 'fulfilledToData') {
         const s = `data is not callable, has no method ${msg.method}`;
         // eslint-disable-next-line no-use-before-define
-        reject(msg.kernelPromiseID, makeError(s), []);
+        reject(target.id, makeError(s), []);
       } else if (kp.state === 'fulfilledToTarget') {
         send(kp.fulfillSlot, msg);
       } else if (kp.state === 'rejected') {

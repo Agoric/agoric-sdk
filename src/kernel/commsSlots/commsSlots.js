@@ -122,13 +122,18 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
         mapOutbound(otherMachineName, 'egress', slot),
       );
 
+      const resolverMeToYouSlot = mapOutbound(otherMachineName, 'egress', {
+        type: 'resolver',
+        id: resolverID,
+      });
+
       const channel = state.channels.getChannelDevice(otherMachineName);
       const message = JSON.stringify({
         target: meToYouTargetSlot,
         methodName: method,
         args,
         slots: meToYouSlots,
-        resultIndex: resolverID,
+        resultIndex: resolverMeToYouSlot.id,
       });
 
       helpers.log(
@@ -160,7 +165,7 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
       // we need to map the slots and pass those on
       const dataMsg = JSON.stringify({
         event: 'notifyFulfillToData',
-        resolverID: meToYouSlot.id,
+        promiseID: meToYouSlot.id,
         args: dataStr,
         slots: meToYouSlots, // TODO: these should be dependent on the machine we are sending to
       });

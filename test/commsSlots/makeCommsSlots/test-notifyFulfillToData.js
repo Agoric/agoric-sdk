@@ -56,7 +56,7 @@ test('makeCommsSlots notifyFulfillToData', t => {
   t.equal(tMachineName, 'machine1');
   t.equal(
     sentData,
-    '{"event":"notifyFulfillToData","resolverID":1,"args":"hello","slots":[]}',
+    '{"event":"notifyFulfillToData","promiseID":1,"args":"hello","slots":[]}',
   );
   t.end();
 });

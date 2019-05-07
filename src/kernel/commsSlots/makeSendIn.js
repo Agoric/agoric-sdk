@@ -37,7 +37,7 @@ export function makeSendIn(state, syscall) {
       function mapInbound(youToMeSlot) {
         let kernelToMeSlot = state.clists.mapIncomingWireMessageToKernelSlot(
           senderID,
-          'ingress',
+          state.clists.getDirectionFromWireMessageSlot(youToMeSlot),
           youToMeSlot,
         );
         if (kernelToMeSlot === undefined) {
@@ -57,7 +57,7 @@ export function makeSendIn(state, syscall) {
         }
         return state.clists.mapIncomingWireMessageToKernelSlot(
           senderID,
-          'ingress',
+          state.clists.getDirectionFromWireMessageSlot(youToMeSlot),
           youToMeSlot,
         );
       }
@@ -82,15 +82,30 @@ export function makeSendIn(state, syscall) {
       }
 
       if (data.event) {
+        const resolverKernelToMeSlot = mapInbound({
+          type: 'your-egress',
+          id: data.promiseID,
+        });
         switch (data.event) {
           case 'notifyFulfillToData':
-            syscall.fulfillToData(data.resolverID, data.args, kernelToMeSlots);
+            syscall.fulfillToData(
+              resolverKernelToMeSlot.id,
+              data.args,
+              kernelToMeSlots,
+            );
             return;
           case 'notifyFulfillToTarget':
-            syscall.fulfillToTarget(data.promiseID, kernelToMeTarget);
+            syscall.fulfillToTarget(
+              resolverKernelToMeSlot.id,
+              kernelToMeTarget,
+            );
             return;
           case 'notifyReject':
-            syscall.notifyReject(data.promiseID, data.args, kernelToMeSlots);
+            syscall.notifyReject(
+              resolverKernelToMeSlot.id,
+              data.args,
+              kernelToMeSlots,
+            );
             return;
           default:
             throw new Error(`unknown event ${data.event}`);
@@ -133,7 +148,7 @@ export function makeSendIn(state, syscall) {
         const meToYouSlot = state.clists.changePerspective(youToMeSlot);
         state.clists.add(
           senderID,
-          'egress',
+          'ingress',
           kernelToMeSlot,
           youToMeSlot,
           meToYouSlot,

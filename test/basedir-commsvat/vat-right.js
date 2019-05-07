@@ -61,6 +61,13 @@ export default function setup(syscall, state, helpers) {
             resolve('foo');
           });
         },
+        createNewObj() {
+          return {
+            eat() {
+              return 'yummm';
+            },
+          };
+        },
       }),
     helpers.vatID,
   );
