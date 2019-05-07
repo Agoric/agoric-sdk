@@ -197,7 +197,21 @@ test('Send message and get promise back', async t => {
   const c = await runTest(t, false, ['getPromiseBack']);
   await c.run();
   const dump = c.dump();
-  t.deepEqual(dump.log, [ '=> setup called', '=> bootstrap() called', 'init called with name right', 'init called with name left', 'connect called with otherMachineName left, channelName channel', 'connect called with otherMachineName right, channelName channel', 'addEgress called with sender left, index 0, valslot [object Object]', 'addIngress called with machineName right, index 0', 'left received [object Promise]', 'sendOverChannel from left, to: right message: {"target":{"type":"your-egress","id":0},"methodName":"getPromiseBack","args":[],"slots":[],"resultIndex":2}', 'bootstrap call resolved to called left.getPromiseBack', 'sendOverChannel from right, to: left: {"event":"notifyFulfillToData","promiseID":2,"args":"\\"foo\\"","slots":[]}', 'left p resolved to foo' ]);
+  t.deepEqual(dump.log, [
+    '=> setup called',
+    '=> bootstrap() called',
+    'init called with name right',
+    'init called with name left',
+    'connect called with otherMachineName left, channelName channel',
+    'connect called with otherMachineName right, channelName channel',
+    'addEgress called with sender left, index 0, valslot [object Object]',
+    'addIngress called with machineName right, index 0',
+    'left received [object Promise]',
+    'sendOverChannel from left, to: right message: {"target":{"type":"your-egress","id":0},"methodName":"getPromiseBack","args":[],"slots":[],"resultIndex":2}',
+    'bootstrap call resolved to called left.getPromiseBack',
+    'sendOverChannel from right, to: left: {"event":"notifyFulfillToData","promiseID":2,"args":"\\"foo\\"","slots":[]}',
+    'left p resolved to foo',
+  ]);
   t.end();
 });
 
@@ -207,7 +221,20 @@ test('Resolve to static data that contains slot on left side', async t => {
   const c = await runTest(t, false, ['takeRefAndReturnItAsData']);
   await c.run();
   const dump = c.dump();
-  t.deepEqual(dump.log, [ '=> setup called', '=> bootstrap() called', 'init called with name right', 'init called with name left', 'connect called with otherMachineName left, channelName channel', 'connect called with otherMachineName right, channelName channel', 'addEgress called with sender left, index 0, valslot [object Object]', 'addIngress called with machineName right, index 0', 'sendOverChannel from left, to: right message: {"target":{"type":"your-egress","id":0},"methodName":"takeRefAndReturnItAsData","args":[{"@qclass":"slot","index":0}],"slots":[{"type":"your-ingress","id":2}],"resultIndex":3}', 'bootstrap call resolved to callMethodOnRefAndReturnItAsData was called', 'sendOverChannel from right, to: left: {"event":"notifyFulfillToData","promiseID":3,"args":"{\\"ref\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0}}","slots":[{"type":"your-egress","id":2}]}', '=> left vat receives the returnedData: hello' ]);
+  t.deepEqual(dump.log, [
+    '=> setup called',
+    '=> bootstrap() called',
+    'init called with name right',
+    'init called with name left',
+    'connect called with otherMachineName left, channelName channel',
+    'connect called with otherMachineName right, channelName channel',
+    'addEgress called with sender left, index 0, valslot [object Object]',
+    'addIngress called with machineName right, index 0',
+    'sendOverChannel from left, to: right message: {"target":{"type":"your-egress","id":0},"methodName":"takeRefAndReturnItAsData","args":[{"@qclass":"slot","index":0}],"slots":[{"type":"your-ingress","id":2}],"resultIndex":3}',
+    'bootstrap call resolved to callMethodOnRefAndReturnItAsData was called',
+    'sendOverChannel from right, to: left: {"event":"notifyFulfillToData","promiseID":3,"args":"{\\"ref\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0}}","slots":[{"type":"your-egress","id":2}]}',
+    '=> left vat receives the returnedData: hello',
+  ]);
   t.end();
 });
 
@@ -217,7 +244,20 @@ test('Resolve to static data that contains slot on right side', async t => {
   const c = await runTest(t, false, ['takeRefAndReturnItAsDataRight']);
   await c.run();
   const dump = c.dump();
-  t.deepEqual(dump.log, [ '=> setup called', '=> bootstrap() called', 'init called with name right', 'init called with name left', 'connect called with otherMachineName left, channelName channel', 'connect called with otherMachineName right, channelName channel', 'addEgress called with sender left, index 0, valslot [object Object]', 'addIngress called with machineName right, index 0', 'sendOverChannel from left, to: right message: {"target":{"type":"your-egress","id":0},"methodName":"takeRefAndReturnItAsData","args":[{"@qclass":"slot","index":0}],"slots":[{"type":"your-ingress","id":2}],"resultIndex":3}', 'bootstrap call resolved to callMethodOnRefAndReturnItAsData was called', 'sendOverChannel from right, to: left: {"event":"notifyFulfillToData","promiseID":3,"args":"{\\"ref\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0}}","slots":[{"type":"your-egress","id":2}]}', '=> left vat receives the returnedData: yummm' ]);
+  t.deepEqual(dump.log, [
+    '=> setup called',
+    '=> bootstrap() called',
+    'init called with name right',
+    'init called with name left',
+    'connect called with otherMachineName left, channelName channel',
+    'connect called with otherMachineName right, channelName channel',
+    'addEgress called with sender left, index 0, valslot [object Object]',
+    'addIngress called with machineName right, index 0',
+    'sendOverChannel from left, to: right message: {"target":{"type":"your-egress","id":0},"methodName":"takeRefAndReturnItAsData","args":[{"@qclass":"slot","index":0}],"slots":[{"type":"your-ingress","id":2}],"resultIndex":3}',
+    'bootstrap call resolved to callMethodOnRefAndReturnItAsData was called',
+    'sendOverChannel from right, to: left: {"event":"notifyFulfillToData","promiseID":3,"args":"{\\"ref\\":{\\"@qclass\\":\\"slot\\",\\"index\\":0}}","slots":[{"type":"your-egress","id":2}]}',
+    '=> left vat receives the returnedData: yummm',
+  ]);
   t.end();
 });
 
