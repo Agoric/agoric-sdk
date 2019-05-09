@@ -48,33 +48,35 @@ export function makeSendIn(state, syscall) {
             }
             case 'your-answer': {
               // our "answer" is a resolver, we can find out the
-              // answer and notify the other machine.
-              // "answers" are active, "questions" are passive
+              // answer and notify the other machine using the
+              // you-answer id.
+              // once started, "answers" are active, "questions" are
+              // passive
 
-              // your answer because other machine generated the
-              // youToMeSlot id
+              // what does it mean if it's a your-answer?
+              // what are we resolving such that we can send a message
+              // back?
 
-              // we need a way to store the resolver, and resolver or
-              // reject it when we get a notification to do so from
-              // the other side.
-              const pr = syscall.createPromise();
-
-              // add resolver
-              const resolverKernelToMeSlot = {
-                type: 'resolver',
-                id: pr.resolverID,
-              };
-
-              kernelToMeSlot = { type: 'promise', id: pr.promiseID };
-
-              syscall.subscribe(pr.promiseID);
-
-              state.resolvers.add(kernelToMeSlot, resolverKernelToMeSlot);
-              break;
+              // maybe this isn't a case that should be possible?
+              throw new Error(`we don't expect your-answer here`);
             }
             case 'your-question': {
+              // we need to create a new promise and resolver pair
+ 
+              // we can't drop the resolver
 
-              throw new Error('we should not be using questions as ');
+              const pr = syscall.createPromise();
+
+              // we are creating a promise chain, send our new promiseID
+              kernelToMeSlot = { type: 'promise', id: pr.promiseID };
+
+              // store the resolver so we can retrieve it later
+              state.resolvers.add(kernelToMeSlot, {
+                type: 'resolver',
+                id: pr.resolverID,
+              });
+              syscall.subscribe(pr.promiseID);
+
               break;
             }
             default:
@@ -116,7 +118,10 @@ export function makeSendIn(state, syscall) {
       }
 
       if (data.event) {
-        const resolverKernelToMeSlot = mapInbound(data.promise);
+        const promiseKernelToMeSlot = mapInbound(data.promise);
+        const resolverKernelToMeSlot = state.resolvers.getResolver(
+          promiseKernelToMeSlot,
+        );
         switch (data.event) {
           case 'notifyFulfillToData':
             syscall.fulfillToData(
@@ -167,12 +172,12 @@ export function makeSendIn(state, syscall) {
       // to know about the result, so we need to store this in clist for
       // the sender to have future access to
 
-      if (data.answerSlot) {
+      if (data.resultSlot) {
         const kernelToMeSlot = {
           type: 'promise',
           id: promiseID,
         };
-        const youToMeSlot = data.answerSlot; // your-answer = our answer, their question
+        const youToMeSlot = data.resultSlot; // your-answer = our answer, their question
         const meToYouSlot = state.clists.changePerspective(youToMeSlot);
         state.clists.add(senderID, kernelToMeSlot, youToMeSlot, meToYouSlot);
         syscall.subscribe(promiseID);

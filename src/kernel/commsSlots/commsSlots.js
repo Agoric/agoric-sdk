@@ -7,7 +7,7 @@ import makeState from './state/index';
 import handleInitialObj from './handleInitialObj';
 
 export function makeCommsSlots(syscall, _state, helpers, devices) {
-  const enableCSDebug = false;
+  const enableCSDebug = true;
   const { vatID } = helpers;
   function csdebug(...args) {
     if (enableCSDebug) {
@@ -45,49 +45,67 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
           break;
         }
         case 'promise': {
-          // the promise in an argument is always sent as a promise
-          // this is *our* answer, and *their* question
-          // TODO: is this right?
+          // kernel gives a promise
+          // that means that when we create a new promise/resolver
+          // pair, we will be sending on the promise ID and mapping it
+          // to our kernel promise
+
+          // we can't drop the new resolver, because this is what
+          // liveslots wants when we do syscall.fulfillToTarget(),
+          // etc.
+
+          // when we talk about this over the wire, this will be
+          // 'your-question' in meToYou language, and 'your-answer' in
+          // youToMe language
+
+          // the promise in an argument is always sent as a promise,
+          // even if it resolves to a presence
 
           // we need a way to store the promise, and send a
           // notification to the other side when it is resolved or rejected
           const pr = syscall.createPromise();
 
-          // add resolver
-          const newResolverKernelToMeSlot = {
-            type: 'resolver',
-            id: pr.resolverID,
-          };
-
-          // we are creating a promise chain, send our new promise
+          // we are creating a promise chain, send our new promiseID
           meToYouSlot = { type: 'your-question', id: pr.promiseID };
 
-          state.resolvers.add(kernelToMeSlot, newResolverKernelToMeSlot);
+          // store the resolver so we can retrieve it later
+          state.resolvers.add(
+            { type: 'promise', id: pr.promiseID },
+            { type: 'resolver', id: pr.resolverID },
+          );
+
+          // when we send this as a slot, we also need to subscribe
+          // such that we can pass on all of the notifications of the
+          // promise settlement
+          syscall.subscribe(pr.promiseID);
+          syscall.subscribe(kernelToMeSlot.id);
+
           break;
         }
         case 'resolver': {
-          // TODO: check that this is right
-          // kernel type is resolver
-          // we are allocating the id
-          // therefore, this is *our* question, and *their* answer
+          // kernel gives us a resolver
+          // that means that when we create a new promise/resolver
+          // pair, we will be sending on the resolverID and mapping it
+          // to our kernel resolver
+
+          // when we talk about this over the wire, this will be
+          // 'your-answer' in meToYou language, and 'your-question' in
+          // youToMe language
 
           // we need a way to store the resolver, and resolve or
           // reject it when we get a notification to do so from
           // the other side.
           const pr = syscall.createPromise();
 
-          // add promise
-          const promiseKernelToMeSlot = {
-            type: 'promise',
-            id: pr.promiseID,
-          };
+          // store the resolver so we can retrieve it later
+          state.resolvers.add(
+            { type: 'promise', id: pr.promiseID },
+            { type: 'resolver', id: pr.resolverID },
+          );
 
-          // resolver should be the original resolver - kernelToMeSlot
-
-          // we are creating a promise chain
+          // we are creating a promise chain, send our resolverID
           meToYouSlot = { type: 'your-answer', id: pr.resolverID };
 
-          state.resolvers.add(promiseKernelToMeSlot, kernelToMeSlot);
           break;
         }
         default: {
@@ -179,7 +197,7 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
         mapOutbound(otherMachineName, slot),
       );
 
-      const resolverMeToYouSlot = mapOutbound(otherMachineName, {
+      const resultSlot = mapOutbound(otherMachineName, {
         type: 'resolver',
         id: resolverID,
       });
@@ -190,7 +208,7 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
         methodName: method,
         args,
         slots: meToYouSlots,
-        answerSlot: resolverMeToYouSlot,
+        resultSlot,
       });
 
       helpers.log(
