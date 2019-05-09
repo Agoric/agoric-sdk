@@ -1,5 +1,6 @@
 import { test } from 'tape-promise/tape';
 import { makeCommsSlots } from '../../../src/kernel/commsSlots';
+import makePromise from '../../../src/kernel/makePromise';
 
 const helpers = {
   log: console.log,
@@ -50,6 +51,9 @@ test('makeCommsSlots deliver facetid is nonzero and expected', t => {
     },
     fulfillToData(...args) {
       fulfillToDataArgs = args;
+    },
+    createPromise() {
+      return makePromise();
     },
   };
 

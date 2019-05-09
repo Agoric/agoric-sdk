@@ -28,7 +28,6 @@ test('makeCommsSlots notifyFulfillToTarget', t => {
 
   state.clists.add(
     'abc',
-    'egress',
     { type: 'promise', id: 20 },
     { type: 'your-egress', id: 9 },
     { type: 'your-ingress', id: 9 },
@@ -46,7 +45,7 @@ test('makeCommsSlots notifyFulfillToTarget', t => {
   const meToYouSlot = state.clists.changePerspective(youToMeSlot);
 
   // is this what we need to add?
-  state.clists.add('abc', 'ingress', kernelToMeSlot, youToMeSlot, meToYouSlot);
+  state.clists.add('abc', kernelToMeSlot, youToMeSlot, meToYouSlot);
 
   commsSlots.notifyFulfillToTarget(20, kernelToMeSlot);
 
@@ -54,7 +53,7 @@ test('makeCommsSlots notifyFulfillToTarget', t => {
   t.equal(tMachineName, 'abc');
   t.equal(
     sentData,
-    '{"event":"notifyFulfillToTarget","promiseID":9,"target":{"type":"your-egress","id":3}}',
+    '{"event":"notifyFulfillToTarget","promise":{"type":"your-ingress","id":9},"target":{"type":"your-egress","id":3}}',
   );
   t.end();
 });

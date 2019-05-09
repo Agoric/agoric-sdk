@@ -6,10 +6,9 @@ test('Clists add and get', t => {
   const kernelToMeSlot = { type: 'export', id: 1 };
   const youToMeSlot = { type: 'your-ingress', id: 102 };
   const meToYouSlot = clists.changePerspective(youToMeSlot);
-  clists.add('machine0', 'ingress', kernelToMeSlot, youToMeSlot, meToYouSlot);
+  clists.add('machine0', kernelToMeSlot, youToMeSlot, meToYouSlot);
   const actualKernelToMeSlot = clists.mapIncomingWireMessageToKernelSlot(
     'machine0',
-    'ingress',
     youToMeSlot,
   );
   t.deepEqual(actualKernelToMeSlot, kernelToMeSlot);

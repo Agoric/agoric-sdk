@@ -47,7 +47,6 @@ test('handleInitialObj addEgress', t => {
   const meToYouSlot = state.clists.changePerspective(youToMeSlot);
   const kernelToMeSlot = state.clists.mapIncomingWireMessageToKernelSlot(
     sender,
-    'egress',
     youToMeSlot,
   );
   const {

@@ -1,23 +1,23 @@
 import { makeCLists } from './makeCLists';
-import { makeSubscribers } from './makeSubscribers';
 import { makeChannels } from './makeChannels';
 import { makeAllocateID } from './makeAllocateID';
 import { makeMachineState } from './makeMachineState';
+import { makeResolvers } from './makeResolvers';
 
 function makeState(name) {
   const vatName = name;
   const machineState = makeMachineState();
   const clists = makeCLists();
-  const subscribers = makeSubscribers();
   const channels = makeChannels();
   const ids = makeAllocateID();
+  const resolvers = makeResolvers();
 
   function dumpState() {
     console.log('STATE', {
       machineState: machineState.dump(),
       clists: clists.dump(),
-      subscribers: subscribers.dump(),
       channels: channels.dump(),
+      resolvers: resolvers.dump(),
       nextID: ids.dump(),
       vatName,
     });
@@ -25,8 +25,8 @@ function makeState(name) {
 
   return {
     clists,
-    subscribers,
     channels,
+    resolvers,
     ids,
     machineState,
     dumpState,

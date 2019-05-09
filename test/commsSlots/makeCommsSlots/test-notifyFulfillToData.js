@@ -39,16 +39,9 @@ test('makeCommsSlots notifyFulfillToData', t => {
   };
   const meToYouSlot = state.clists.changePerspective(youToMeSlot);
 
-  state.clists.add(
-    'machine1',
-    'egress',
-    kernelToMeSlot,
-    youToMeSlot,
-    meToYouSlot,
-  );
+  state.clists.add('machine1', kernelToMeSlot, youToMeSlot, meToYouSlot);
 
   state.machineState.setMachineName('bot');
-  state.subscribers.add(promiseID, 'machine1');
   state.channels.add('machine1', 'channel');
 
   commsSlots.notifyFulfillToData(22, 'hello', []);
@@ -56,7 +49,7 @@ test('makeCommsSlots notifyFulfillToData', t => {
   t.equal(tMachineName, 'machine1');
   t.equal(
     sentData,
-    '{"event":"notifyFulfillToData","promiseID":1,"args":"hello","slots":[]}',
+    '{"event":"notifyFulfillToData","promise":{"type":"your-ingress","id":1},"args":"hello","slots":[]}',
   );
   t.end();
 });

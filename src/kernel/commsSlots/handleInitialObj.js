@@ -75,13 +75,7 @@ export default function handleInitialObj(
 
     const youToMeSlot = state.clists.changePerspective(meToYouSlot);
 
-    state.clists.add(
-      sender,
-      'egress',
-      kernelToMeSlot,
-      youToMeSlot,
-      meToYouSlot,
-    );
+    state.clists.add(sender, kernelToMeSlot, youToMeSlot, meToYouSlot);
     syscall.fulfillToData(resolverID, JSON.stringify('undefined'), []);
   }
 
@@ -103,7 +97,6 @@ export default function handleInitialObj(
     // if we have already imported this, return the same id
     let kernelToMeSlot = state.clists.mapIncomingWireMessageToKernelSlot(
       otherMachineName,
-      'ingress',
       youToMeSlot,
     );
 
@@ -119,7 +112,6 @@ export default function handleInitialObj(
 
       state.clists.add(
         otherMachineName,
-        'ingress',
         kernelToMeSlot,
         youToMeSlot,
         meToYouSlot,

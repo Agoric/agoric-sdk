@@ -18,29 +18,86 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
   // setup
   const state = makeState(vatID);
 
-  function mapOutbound(otherMachineName, direction, kernelToMeSlot) {
+  function mapOutbound(otherMachineName, kernelToMeSlot) {
     const outgoingWireMessageObj = state.clists.mapKernelSlotToOutgoingWireMessage(
       kernelToMeSlot,
     ); //  otherMachineName, direction, meToYouSlot
     if (outgoingWireMessageObj === undefined) {
-      const id = state.ids.allocateID();
       // this is something that we have on this machine, and we want
       // to tell another machine about it.
+      // OR we have an error
 
-      // TODO: autogenerate all this stuff behind the scenes
-      if (direction !== 'egress') {
-        throw new Error(
-          'direction is unexpected. We have misunderstood how this should work',
-        );
+      let meToYouSlot;
+
+      switch (kernelToMeSlot.type) {
+        case 'export': {
+          throw new Error(
+            'we do not expect an export (something we have given to the kernel) if outgoingWireMessageObj is undefined',
+          );
+        }
+        case 'import': {
+          const type = 'your-ingress';
+          const id = state.ids.allocateID();
+          meToYouSlot = {
+            type,
+            id,
+          };
+          break;
+        }
+        case 'promise': {
+          // the promise in an argument is always sent as a promise
+          // this is *our* answer, and *their* question
+          // TODO: is this right?
+
+          // we need a way to store the promise, and send a
+          // notification to the other side when it is resolved or rejected
+          const pr = syscall.createPromise();
+
+          // add resolver
+          const newResolverKernelToMeSlot = {
+            type: 'resolver',
+            id: pr.resolverID,
+          };
+
+          // we are creating a promise chain, send our new promise
+          meToYouSlot = { type: 'your-question', id: pr.promiseID };
+
+          state.resolvers.add(kernelToMeSlot, newResolverKernelToMeSlot);
+          break;
+        }
+        case 'resolver': {
+          // TODO: check that this is right
+          // kernel type is resolver
+          // we are allocating the id
+          // therefore, this is *our* question, and *their* answer
+
+          // we need a way to store the resolver, and resolve or
+          // reject it when we get a notification to do so from
+          // the other side.
+          const pr = syscall.createPromise();
+
+          // add promise
+          const promiseKernelToMeSlot = {
+            type: 'promise',
+            id: pr.promiseID,
+          };
+
+          // resolver should be the original resolver - kernelToMeSlot
+
+          // we are creating a promise chain
+          meToYouSlot = { type: 'your-answer', id: pr.resolverID };
+
+          state.resolvers.add(promiseKernelToMeSlot, kernelToMeSlot);
+          break;
+        }
+        default: {
+          throw new Error('unexpected kernelToMeSlot.type');
+        }
       }
-      const meToYouSlot = {
-        type: 'your-ingress',
-        id,
-      };
+
       const youToMeSlot = state.clists.changePerspective(meToYouSlot);
       state.clists.add(
         otherMachineName,
-        direction,
         kernelToMeSlot,
         youToMeSlot,
         meToYouSlot,
@@ -119,10 +176,10 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
       // and store it
 
       const meToYouSlots = kernelToMeSlots.map(slot =>
-        mapOutbound(otherMachineName, 'egress', slot),
+        mapOutbound(otherMachineName, slot),
       );
 
-      const resolverMeToYouSlot = mapOutbound(otherMachineName, 'egress', {
+      const resolverMeToYouSlot = mapOutbound(otherMachineName, {
         type: 'resolver',
         id: resolverID,
       });
@@ -133,7 +190,7 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
         methodName: method,
         args,
         slots: meToYouSlots,
-        resultIndex: resolverMeToYouSlot.id,
+        answerSlot: resolverMeToYouSlot,
       });
 
       helpers.log(
@@ -155,17 +212,17 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
 
       const { otherMachineName, meToYouSlot } = mapOutboundTarget({
         type: 'promise',
-        id: promiseID,
+        id: promiseID, // cast to kernelToMeSlot
       });
 
       const meToYouSlots = kernelToMeSlots.map(slot =>
-        mapOutbound(otherMachineName, 'egress', slot),
+        mapOutbound(otherMachineName, slot),
       );
 
       // we need to map the slots and pass those on
       const dataMsg = JSON.stringify({
         event: 'notifyFulfillToData',
-        promiseID: meToYouSlot.id,
+        promise: meToYouSlot,
         args: dataStr,
         slots: meToYouSlots, // TODO: these should be dependent on the machine we are sending to
       });
@@ -197,8 +254,8 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
 
       const dataMsg = JSON.stringify({
         event: 'notifyFulfillToTarget',
-        promiseID: meToYouSlot.id,
-        target: mapOutbound(otherMachineName, 'egress', slot),
+        promise: meToYouSlot,
+        target: mapOutbound(otherMachineName, slot),
       });
 
       const channel = state.channels.getChannelDevice(otherMachineName);
@@ -216,7 +273,7 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
     notifyReject(promiseID, data, slots) {
       csdebug(`cs.dispatch.notifyReject(${promiseID}, ${data}, ${slots})`);
 
-      const { otherMachineName } = mapOutboundTarget({
+      const { otherMachineName, meToYouSlot } = mapOutboundTarget({
         type: 'promise',
         id: promiseID,
       });
@@ -229,9 +286,9 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
 
       const msg = {
         event: 'notifyReject',
-        promiseID,
+        promise: meToYouSlot,
         args: data,
-        slots: slots.map(slot => mapOutbound(otherMachineName, 'egress', slot)),
+        slots: slots.map(slot => mapOutbound(otherMachineName, slot)),
       };
 
       devices[channel].sendOverChannel(

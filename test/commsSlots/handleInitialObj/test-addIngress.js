@@ -54,7 +54,6 @@ test('handleInitialObj addIngress', t => {
   );
   const kernelToMeSlot = state.clists.mapIncomingWireMessageToKernelSlot(
     sender,
-    'ingress',
     expectedYouToMeSlot,
   );
   const {
@@ -111,7 +110,6 @@ test('handleInitialObj addIngress twice', t => {
   // ensure state updated correctly
   const actualKernelToMeSlot = state.clists.mapIncomingWireMessageToKernelSlot(
     sender,
-    'ingress',
     { type: 'your-ingress', id: index },
   );
   const {
@@ -149,7 +147,6 @@ test('handleInitialObj addIngress twice', t => {
   // ensure state updated correctly
   const actualKernelToMeSlot2 = state.clists.mapIncomingWireMessageToKernelSlot(
     sender2,
-    'ingress',
     { type: 'your-ingress', id: index2 },
   );
   const {
@@ -204,7 +201,6 @@ test('handleInitialObj addIngress same again', t => {
   // ensure state updated correctly
   const actualKernelToMeSlot = state.clists.mapIncomingWireMessageToKernelSlot(
     sender,
-    'ingress',
     { type: 'your-ingress', id: index },
   );
   const {
@@ -242,7 +238,6 @@ test('handleInitialObj addIngress same again', t => {
   // ensure state updated correctly
   const actualKernelToMeSlot2 = state.clists.mapIncomingWireMessageToKernelSlot(
     sender,
-    'ingress',
     { type: 'your-ingress', id: index },
   );
   const {

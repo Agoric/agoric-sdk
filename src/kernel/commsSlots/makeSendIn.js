@@ -25,9 +25,6 @@ export function makeSendIn(state, syscall) {
         throw new Error('could not verify SenderID');
       }
 
-      // "{"index":0,"methodName":"encourageMe","args":["user"],"slots":[],"resultIndex":33}"
-      // "{"event":"notifyFulfillToData","resolverID":33,"data":"\"user, you are awesome, keep it up!\""}"
-
       const data = parseJSON(dataStr);
 
       // everything that comes in to us as a target or a slot needs to
@@ -37,19 +34,57 @@ export function makeSendIn(state, syscall) {
       function mapInbound(youToMeSlot) {
         let kernelToMeSlot = state.clists.mapIncomingWireMessageToKernelSlot(
           senderID,
-          state.clists.getDirectionFromWireMessageSlot(youToMeSlot),
           youToMeSlot,
         );
         if (kernelToMeSlot === undefined) {
-          const id = state.ids.allocateID();
-          // we are telling the kernel about something that exists on another machine
-          kernelToMeSlot = {
-            type: 'export',
-            id,
-          };
+          // we are telling the kernel about something that exists on
+          // another machine, these are ingresses
+
+          switch (youToMeSlot.type) {
+            case 'your-ingress': {
+              const exportID = state.ids.allocateID();
+              kernelToMeSlot = { type: 'export', id: exportID };
+              break;
+            }
+            case 'your-answer': {
+              // our "answer" is a resolver, we can find out the
+              // answer and notify the other machine.
+              // "answers" are active, "questions" are passive
+
+              // your answer because other machine generated the
+              // youToMeSlot id
+
+              // we need a way to store the resolver, and resolver or
+              // reject it when we get a notification to do so from
+              // the other side.
+              const pr = syscall.createPromise();
+
+              // add resolver
+              const resolverKernelToMeSlot = {
+                type: 'resolver',
+                id: pr.resolverID,
+              };
+
+              kernelToMeSlot = { type: 'promise', id: pr.promiseID };
+
+              syscall.subscribe(pr.promiseID);
+
+              state.resolvers.add(kernelToMeSlot, resolverKernelToMeSlot);
+              break;
+            }
+            case 'your-question': {
+
+              throw new Error('we should not be using questions as ');
+              break;
+            }
+            default:
+              throw new Error(
+                `youToMeSlot.type ${youToMeSlot.type} is unexpected`,
+              );
+          }
+
           state.clists.add(
             senderID,
-            'ingress',
             kernelToMeSlot,
             youToMeSlot,
             state.clists.changePerspective(youToMeSlot),
@@ -57,7 +92,6 @@ export function makeSendIn(state, syscall) {
         }
         return state.clists.mapIncomingWireMessageToKernelSlot(
           senderID,
-          state.clists.getDirectionFromWireMessageSlot(youToMeSlot),
           youToMeSlot,
         );
       }
@@ -71,21 +105,18 @@ export function makeSendIn(state, syscall) {
       let kernelToMeSlots;
       let kernelToMeTarget;
       if (data.slots) {
+        // Object {type: "your-answer", id: 2}
         kernelToMeSlots = data.slots.map(mapInbound);
       }
       if (data.target) {
         kernelToMeTarget = state.clists.mapIncomingWireMessageToKernelSlot(
           senderID,
-          state.clists.getDirectionFromWireMessageSlot(data.target),
           data.target,
         );
       }
 
       if (data.event) {
-        const resolverKernelToMeSlot = mapInbound({
-          type: 'your-egress',
-          id: data.promiseID,
-        });
+        const resolverKernelToMeSlot = mapInbound(data.promise);
         switch (data.event) {
           case 'notifyFulfillToData':
             syscall.fulfillToData(
@@ -136,23 +167,14 @@ export function makeSendIn(state, syscall) {
       // to know about the result, so we need to store this in clist for
       // the sender to have future access to
 
-      if (data.resultIndex) {
+      if (data.answerSlot) {
         const kernelToMeSlot = {
           type: 'promise',
           id: promiseID,
         };
-        const youToMeSlot = {
-          type: 'your-ingress',
-          id: data.resultIndex,
-        };
+        const youToMeSlot = data.answerSlot; // your-answer = our answer, their question
         const meToYouSlot = state.clists.changePerspective(youToMeSlot);
-        state.clists.add(
-          senderID,
-          'ingress',
-          kernelToMeSlot,
-          youToMeSlot,
-          meToYouSlot,
-        );
+        state.clists.add(senderID, kernelToMeSlot, youToMeSlot, meToYouSlot);
         syscall.subscribe(promiseID);
       }
     },
