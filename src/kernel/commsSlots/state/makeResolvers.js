@@ -4,11 +4,11 @@ export function makeResolvers() {
 
   return {
     add(promise, resolver) {
-      promiseToResolver.set(promise, resolver);
-      resolverToPromise.set(resolver, promise);
+      promiseToResolver.set(JSON.stringify(promise), resolver);
+      resolverToPromise.set(JSON.stringify(resolver), promise);
     },
     getResolver(promise) {
-      return promiseToResolver.get(promise);
+      return promiseToResolver.get(JSON.stringify(promise));
     },
     dump() {
       return promiseToResolver;

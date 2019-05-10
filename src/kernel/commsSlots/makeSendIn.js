@@ -62,7 +62,6 @@ export function makeSendIn(state, syscall) {
             }
             case 'your-question': {
               // we need to create a new promise and resolver pair
- 
               // we can't drop the resolver
 
               const pr = syscall.createPromise();
@@ -118,6 +117,12 @@ export function makeSendIn(state, syscall) {
       }
 
       if (data.event) {
+        // if the "promise" is a your-question, then we may not have
+        // any knowledge of it. It is something that the other machine
+        // told us about, but all we know is the promise id, and the id
+        // that we use in communication with the other machine
+
+        // if we 
         const promiseKernelToMeSlot = mapInbound(data.promise);
         const resolverKernelToMeSlot = state.resolvers.getResolver(
           promiseKernelToMeSlot,
