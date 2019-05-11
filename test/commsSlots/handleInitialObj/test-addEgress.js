@@ -1,5 +1,5 @@
 import { test } from 'tape-promise/tape';
-import handleInitialObj from '../../../src/kernel/commsSlots/handleInitialObj';
+import handleInitialObj from '../../../src/kernel/commsSlots/outbound/handleInitialObj';
 import makeState from '../../../src/kernel/commsSlots/state';
 
 test('handleInitialObj addEgress', t => {

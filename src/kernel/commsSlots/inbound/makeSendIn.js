@@ -1,8 +1,18 @@
-import { parseJSON } from './helpers';
+import makeMapInbound from './makeMapInbound';
 
 // TODO: implement verify
 function verify(_senderID) {
   return true;
+}
+
+function parseJSON(data) {
+  try {
+    const d = JSON.parse(data);
+    return d;
+  } catch (e) {
+    console.log(`unparseable data: ${data}`);
+    throw e;
+  }
 }
 
 export function makeSendIn(state, syscall) {
@@ -25,77 +35,13 @@ export function makeSendIn(state, syscall) {
         throw new Error('could not verify SenderID');
       }
 
+      const mapInbound = makeMapInbound(syscall, state);
+
       const data = parseJSON(dataStr);
 
       // everything that comes in to us as a target or a slot needs to
       // get mapped to a kernel slot. If we don't already have a kernel slot for
       // something, we should allocate it.
-
-      function mapInbound(youToMeSlot) {
-        let kernelToMeSlot = state.clists.mapIncomingWireMessageToKernelSlot(
-          senderID,
-          youToMeSlot,
-        );
-        if (kernelToMeSlot === undefined) {
-          // we are telling the kernel about something that exists on
-          // another machine, these are ingresses
-
-          switch (youToMeSlot.type) {
-            case 'your-ingress': {
-              const exportID = state.ids.allocateID();
-              kernelToMeSlot = { type: 'export', id: exportID };
-              break;
-            }
-            case 'your-answer': {
-              // our "answer" is a resolver, we can find out the
-              // answer and notify the other machine using the
-              // you-answer id.
-              // once started, "answers" are active, "questions" are
-              // passive
-
-              // what does it mean if it's a your-answer?
-              // what are we resolving such that we can send a message
-              // back?
-
-              // maybe this isn't a case that should be possible?
-              throw new Error(`we don't expect your-answer here`);
-            }
-            case 'your-question': {
-              // we need to create a new promise and resolver pair
-              // we can't drop the resolver
-
-              const pr = syscall.createPromise();
-
-              // we are creating a promise chain, send our new promiseID
-              kernelToMeSlot = { type: 'promise', id: pr.promiseID };
-
-              // store the resolver so we can retrieve it later
-              state.resolvers.add(kernelToMeSlot, {
-                type: 'resolver',
-                id: pr.resolverID,
-              });
-              syscall.subscribe(pr.promiseID);
-
-              break;
-            }
-            default:
-              throw new Error(
-                `youToMeSlot.type ${youToMeSlot.type} is unexpected`,
-              );
-          }
-
-          state.clists.add(
-            senderID,
-            kernelToMeSlot,
-            youToMeSlot,
-            state.clists.changePerspective(youToMeSlot),
-          );
-        }
-        return state.clists.mapIncomingWireMessageToKernelSlot(
-          senderID,
-          youToMeSlot,
-        );
-      }
 
       // if not an event, then we are going to be calling something on
       // an object that we know about (is this right?)

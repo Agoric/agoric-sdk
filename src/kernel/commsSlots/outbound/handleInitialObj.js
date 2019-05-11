@@ -1,5 +1,5 @@
 // access to the outside world
-import { makeSendIn } from './makeSendIn';
+import { makeSendIn } from '../inbound/makeSendIn';
 
 export default function handleInitialObj(
   state,

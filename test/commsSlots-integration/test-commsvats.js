@@ -261,7 +261,7 @@ test('Resolve to static data that contains slot on right side', async t => {
 });
 
 // 6. Promise resolving to a slot, not just data
-test.only('call method on promise for presence', async t => {
+test('call method on promise for presence', async t => {
   const c = await runTest(t, false, ['sendPromiseForPresence']);
   await c.run();
   const dump = c.dump();
