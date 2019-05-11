@@ -1,5 +1,6 @@
 import { test } from 'tape-promise/tape';
 import { makeCommsSlots } from '../../../src/kernel/commsSlots';
+import makePromise from '../../../src/kernel/makePromise';
 
 const helpers = {
   log: console.log,
@@ -17,7 +18,7 @@ test('makeCommsSlots deliver facetid is 0', t => {
 
   const commsSlots = makeCommsSlots(mockSyscall, {}, helpers, {});
   commsSlots.deliver(0, 'init', '{"args":["bot","botSigningKey"]}', [], 30); // init
-  // confirm that init is called, we are already testing init in handleBootstrap
+  // confirm that init is called, we are already testing init in handleInitialObj
   t.deepEqual(fulfillToDataArgs, [30, JSON.stringify('bot'), []]);
   t.end();
 });
@@ -51,6 +52,9 @@ test('makeCommsSlots deliver facetid is nonzero and expected', t => {
     fulfillToData(...args) {
       fulfillToDataArgs = args;
     },
+    createPromise() {
+      return makePromise();
+    },
   };
 
   let sentData;
@@ -79,8 +83,14 @@ test('makeCommsSlots deliver facetid is nonzero and expected', t => {
   state.machineState.setMachineName('bot');
   state.channels.add('machine1', 'channel');
 
-  // setup with an addImport
-  commsSlots.deliver(0, 'addImport', '{"args":["bot",0]}', [], 32);
+  // setup with an addIngress
+  commsSlots.deliver(
+    0,
+    'addIngress',
+    '{"args":["bot", {"@qclass":"slot","index":0}]}',
+    [{ type: 'your-ingress', id: 0 }],
+    32,
+  );
   t.deepEqual(fulfillToTargetArgs, [32, { type: 'export', id: 1 }]);
 
   commsSlots.deliver(1, 'encourageMe', '{"args":["user"]}', [], 33);
@@ -88,7 +98,7 @@ test('makeCommsSlots deliver facetid is nonzero and expected', t => {
 
   t.equal(
     sentData,
-    '{"index":0,"methodName":"encourageMe","args":["user"],"slots":[],"resultIndex":33}',
+    '{"target":{"type":"your-egress","id":{"@qclass":"slot","index":0}},"methodName":"encourageMe","args":["user"],"slots":[],"resultSlot":{"type":"your-resolver","id":2}}',
   );
   t.end();
 });

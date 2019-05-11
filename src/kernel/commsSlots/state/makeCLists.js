@@ -3,15 +3,7 @@
  * This module is instantiated per CommsVat and stores data about
  * mappings between external machines and slots.
  *
- * We need to store the data in two separate groups:
- *  * inbound to a commsvat means we are getting information about an
- *    object that lives on another machine.
- *  * outbound to a commsvat means that we are passing along
- *    information to an another machine
- *
- * a clist maps an index to an object describing a slot
- * for example, one mapping for promises is:
- * resultIndex -> { type: 'promise', id: promiseID }
+ * a clist maps a local machine kernel slot to what will be sent over the wire
  *
  * @module makeCLists
  */
@@ -19,38 +11,99 @@
 export function makeCLists() {
   const state = new Map();
 
-  function createKeyObj(direction, machineName, key) {
+  function checkIfAlreadyExists(incomingWireMessageObj, kernelToMeSlot) {
+    const slot = state.get(JSON.stringify(incomingWireMessageObj));
+    const outgoing = state.get(JSON.stringify(kernelToMeSlot));
+    if (slot || outgoing) {
+      throw new Error(
+        `${JSON.stringify(kernelToMeSlot)} already exists in clist`,
+      );
+    }
+  }
+
+  const changePerspectiveMap = new Map();
+  // youToMe: your-egress, meToYou: your-ingress
+  // youToMe: your-ingress, meToYou: your-egress
+  // youToMe: your-promise, meToYou: your-resolver
+  // youToMe: your-resolver, meToYou: your-promise
+  changePerspectiveMap.set('your-egress', 'your-ingress');
+  changePerspectiveMap.set('your-ingress', 'your-egress');
+  changePerspectiveMap.set('your-promise', 'your-resolver');
+  changePerspectiveMap.set('your-resolver', 'your-promise');
+
+  function changePerspective(slot) {
+    const otherPerspective = changePerspectiveMap.get(slot.type);
+    if (otherPerspective === undefined) {
+      throw new Error(`slot type ${slot.type} is not an allowed type`);
+    }
     return {
-      direction,
-      machineName,
-      key,
+      type: otherPerspective,
+      id: slot.id,
     };
   }
 
-  function createValueObj(direction, value) {
+  function createIncomingWireMessageObj(otherMachineName, youToMeSlot) {
     return {
-      direction,
-      kernelExport: value,
+      otherMachineName,
+      youToMeSlot, // could be a your-ingress, your-egress
     };
   }
 
-  function getKernelExport(direction, machineName, key) {
-    return state.get(JSON.stringify(createKeyObj(direction, machineName, key)));
+  function createOutgoingWireMessageObj(otherMachineName, meToYouSlot) {
+    return {
+      otherMachineName,
+      meToYouSlot, // could be a your-ingress, your-egress
+    };
   }
 
-  function getMachine(direction, kernelExport) {
-    return state.get(JSON.stringify(createValueObj(direction, kernelExport)));
+  // takes youToMeSlot, returns kernelToMeSlot
+  function mapIncomingWireMessageToKernelSlot(otherMachineName, youToMeSlot) {
+    return state.get(
+      JSON.stringify(
+        createIncomingWireMessageObj(otherMachineName, youToMeSlot),
+      ),
+    );
   }
 
-  function add(direction, machineName, key, value) {
-    const keyObj = createKeyObj(direction, machineName, key);
-    state.set(JSON.stringify(keyObj), value);
-    state.set(JSON.stringify(createValueObj(direction, value)), keyObj);
+  // takes kernelToMeSlot, returns meToYouSlot and machineName
+  // we don't know the otherMachineName
+  function mapKernelSlotToOutgoingWireMessage(kernelToMeSlot) {
+    return state.get(JSON.stringify(kernelToMeSlot));
+  }
+
+  // kernelToMeSlot can have type: import, export or promise
+  // youToMe and meToYou slots can have type: your-ingress or
+  // your-egress
+
+  // we will use this in the following ways:
+  // 1) to send out information about something that we know as a
+  //    kernelToMeSlot - we will need to allocate an id if it doesn't
+  //    already exist and then get the 'meToYouSlot' to send over the
+  //    wire
+  // 2) to translate something that we get over the wire (youToMeSlot)
+  //    into a kernelToMeSlot.
+  function add(otherMachineName, kernelToMeSlot, youToMeSlot, meToYouSlot) {
+    const incomingWireMessageObj = createIncomingWireMessageObj(
+      otherMachineName,
+      youToMeSlot,
+    );
+    const outgoingWireMessageObj = createOutgoingWireMessageObj(
+      otherMachineName,
+      meToYouSlot,
+    );
+    checkIfAlreadyExists(
+      incomingWireMessageObj,
+      outgoingWireMessageObj,
+      kernelToMeSlot,
+    );
+    state.set(JSON.stringify(kernelToMeSlot), outgoingWireMessageObj);
+    state.set(JSON.stringify(incomingWireMessageObj), kernelToMeSlot);
   }
 
   return {
-    getKernelExport,
-    getMachine,
+    mapIncomingWireMessageToKernelSlot,
+    mapKernelSlotToOutgoingWireMessage,
+    changePerspective,
     add,
     dump() {
       return state;

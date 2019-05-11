@@ -1,8 +1,8 @@
 import { test } from 'tape-promise/tape';
-import handleBootstrap from '../../../src/kernel/commsSlots/handleBootstrap';
+import handleInitialObj from '../../../src/kernel/commsSlots/outbound/handleInitialObj';
 import makeState from '../../../src/kernel/commsSlots/state';
 
-test('handleBootstrap addExport', t => {
+test('handleInitialObj addEgress', t => {
   let fulfillToDataArgs;
 
   const mockSyscall = {
@@ -15,17 +15,17 @@ test('handleBootstrap addExport', t => {
 
   const resolverID = 2;
   const sender = 'user';
-  const index = 0;
+  const index = 4;
   const valslot = { '@qclass': 'slot', index: 0 };
   const caps = [{ type: 'import', id: 10 }];
   const helpers = {
     log: console.log,
   };
 
-  const result = handleBootstrap(
+  const result = handleInitialObj(
     state,
     mockSyscall,
-    'addExport',
+    'addEgress',
     JSON.stringify({
       args: [sender, index, valslot],
     }),
@@ -40,9 +40,19 @@ test('handleBootstrap addExport', t => {
   t.deepEqual(fulfillToDataArgs, [resolverID, JSON.stringify('undefined'), []]);
 
   // ensure state updated correctly
-  const kernelExport = state.clists.getKernelExport('outbound', sender, index);
-  const machineInfo = state.clists.getMachine('outbound', caps[index]);
-  t.deepEqual(kernelExport, caps[index]); // actual, expected
-  t.equal(machineInfo.machineName, sender);
+  const youToMeSlot = {
+    type: 'your-egress',
+    id: index,
+  };
+  const meToYouSlot = state.clists.changePerspective(youToMeSlot);
+  const kernelToMeSlot = state.clists.mapIncomingWireMessageToKernelSlot(
+    sender,
+    youToMeSlot,
+  );
+  const {
+    meToYouSlot: actualMeToYouSlot,
+  } = state.clists.mapKernelSlotToOutgoingWireMessage(caps[0]);
+  t.deepEqual(kernelToMeSlot, caps[0]); // actual, expected
+  t.deepEqual(actualMeToYouSlot, meToYouSlot);
   t.end();
 });

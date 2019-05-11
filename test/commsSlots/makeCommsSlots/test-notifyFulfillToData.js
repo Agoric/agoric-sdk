@@ -29,13 +29,19 @@ test('makeCommsSlots notifyFulfillToData', t => {
 
   // setup
   const state = commsSlots.getState();
-  state.clists.add('outbound', helpers, 1, {
+  const kernelToMeSlot = {
     type: 'promise',
     id: promiseID,
-  });
+  };
+  const youToMeSlot = {
+    type: 'your-egress',
+    id: 1,
+  };
+  const meToYouSlot = state.clists.changePerspective(youToMeSlot);
+
+  state.clists.add('machine1', kernelToMeSlot, youToMeSlot, meToYouSlot);
 
   state.machineState.setMachineName('bot');
-  state.subscribers.add(promiseID, 'machine1');
   state.channels.add('machine1', 'channel');
 
   commsSlots.notifyFulfillToData(22, 'hello', []);
@@ -43,7 +49,7 @@ test('makeCommsSlots notifyFulfillToData', t => {
   t.equal(tMachineName, 'machine1');
   t.equal(
     sentData,
-    '{"event":"notifyFulfillToData","resolverID":1,"data":"hello"}',
+    '{"event":"notifyFulfillToData","promise":{"type":"your-ingress","id":1},"args":"hello","slots":[]}',
   );
   t.end();
 });
