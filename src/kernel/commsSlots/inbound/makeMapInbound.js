@@ -38,14 +38,6 @@ function makeMapInbound(syscall, state, senderID) {
           syscall.subscribe(kernelToMeSlot);
           break;
         }
-        case 'your-answer': {
-          // transition only check, remove when done
-          throw new Error(`we don't expect your-answer here`);
-        }
-        case 'your-question': {
-          // transition only check, remove when done
-          throw new Error(`we don't expect your-question here`);
-        }
         default:
           throw new Error(`youToMeSlot.type ${youToMeSlot.type} is unexpected`);
       }
