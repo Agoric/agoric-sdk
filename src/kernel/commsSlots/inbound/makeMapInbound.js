@@ -1,5 +1,5 @@
-function makeMapInbound(syscall, state) {
-  function mapInbound(senderID, youToMeSlot) {
+function makeMapInbound(syscall, state, senderID) {
+  function mapInbound(youToMeSlot) {
     let kernelToMeSlot = state.clists.mapIncomingWireMessageToKernelSlot(
       senderID,
       youToMeSlot,

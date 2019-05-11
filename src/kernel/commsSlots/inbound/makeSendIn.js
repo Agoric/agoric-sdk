@@ -35,7 +35,7 @@ export function makeSendIn(state, syscall) {
         throw new Error('could not verify SenderID');
       }
 
-      const mapInbound = makeMapInbound(syscall, state);
+      const mapInbound = makeMapInbound(syscall, state, senderID);
 
       const data = parseJSON(dataStr);
 
@@ -52,7 +52,6 @@ export function makeSendIn(state, syscall) {
       let kernelToMeSlots;
       let kernelToMeTarget;
       if (data.slots) {
-        // Object {type: "your-answer", id: 2}
         kernelToMeSlots = data.slots.map(mapInbound);
       }
       if (data.target) {
@@ -68,7 +67,6 @@ export function makeSendIn(state, syscall) {
         // told us about, but all we know is the promise id, and the id
         // that we use in communication with the other machine
 
-        // if we 
         const promiseKernelToMeSlot = mapInbound(data.promise);
         const resolverKernelToMeSlot = state.resolvers.getResolver(
           promiseKernelToMeSlot,

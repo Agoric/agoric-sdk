@@ -61,7 +61,7 @@ async function runTest(t, withSES, argv) {
 }
 
 // 1. Invoke method on other machine with no arguments
-test('Invoke method on other machine with no arguments', async t => {
+test.only('Invoke method on other machine with no arguments', async t => {
   const c = await runTest(t, false, ['method']);
   await c.run();
   const { log } = c.dump();
