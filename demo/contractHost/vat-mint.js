@@ -16,17 +16,17 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-function build(_E) {
+function build(_E, log) {
   let debugCounter = 0;
 
   function makeMint() {
-    console.log(`makeMint`);
+    log(`makeMint`);
     // Map from purse or payment to balance
     const ledger = new WeakMap();
 
     const issuer = harden({
       makeEmptyPurse(name) {
-        console.log(`makeEmptyPurse(${name})`);
+        log(`makeEmptyPurse(${name})`);
         // eslint-disable-next-line no-use-before-define
         return mint(0, name); // mint and issuer call each other
       },
@@ -35,7 +35,7 @@ function build(_E) {
     const mint = (initialBalance, name) => {
       const purse = harden({
         getBalance() {
-          console.log(`getBalance`, ledger.get(purse));
+          log(`getBalance`, ledger.get(purse));
           return ledger.get(purse);
         },
         getIssuer() {
@@ -45,11 +45,9 @@ function build(_E) {
           amount = Nat(amount);
           debugCounter += 1;
           const c = debugCounter;
-          console.log(
-            `deposit[${name}]#${c}: bal=${ledger.get(purse)} amt=${amount}`,
-          );
+          log(`deposit[${name}]#${c}: bal=${ledger.get(purse)} amt=${amount}`);
           return Promise.resolve(srcP).then(src => {
-            console.log(
+            log(
               ` dep[${name}]#${c} (post-P): bal=${ledger.get(
                 purse,
               )} amt=${amount}`,
@@ -82,5 +80,14 @@ function build(_E) {
 }
 
 export default function setup(syscall, state, helpers) {
-  return helpers.makeLiveSlots(syscall, state, build, helpers.vatID);
+  function log(what) {
+    helpers.log(what);
+    console.log(what);
+  }
+  return helpers.makeLiveSlots(
+    syscall,
+    state,
+    E => build(E, log),
+    helpers.vatID,
+  );
 }

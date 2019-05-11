@@ -17,7 +17,7 @@
 import harden from '@agoric/harden';
 import escrowExchange from './escrow';
 
-function makeBob(E, host) {
+function makeBob(E, host, log) {
   const escrowSrc = `(${escrowExchange})`;
 
   let initialized = false;
@@ -52,7 +52,7 @@ function makeBob(E, host) {
      */
     buy(desc, paymentP) {
       if (!initialized) {
-        console.log('++ ERR: buy called before init()');
+        log('++ ERR: buy called before init()');
       }
       /* eslint-disable-next-line no-unused-vars */
       let amount;
@@ -75,9 +75,9 @@ function makeBob(E, host) {
     },
 
     tradeWell(alice, bobLies = false) {
-      console.log('++ bob.tradeWell starting');
+      log('++ bob.tradeWell starting');
       if (!initialized) {
-        console.log('++ ERR: tradeWell called before init()');
+        log('++ ERR: tradeWell called before init()');
       }
       const tokensP = E(host).setup(escrowSrc);
       const aliceTokenP = tokensP.then(tokens => tokens[0]);
@@ -91,8 +91,8 @@ function makeBob(E, host) {
         E(bob).invite(bobTokenP, escrowSrc, 1),
       ]);
       doneP.then(
-        _res => console.log('++ bob.tradeWell done'),
-        rej => console.log('++ bob.tradeWell reject', rej),
+        _res => log('++ bob.tradeWell done'),
+        rej => log('++ bob.tradeWell reject', rej),
       );
       return doneP;
     },
@@ -104,11 +104,11 @@ function makeBob(E, host) {
      */
     invite(tokenP, allegedSrc, allegedSide) {
       if (!initialized) {
-        console.log('++ ERR: invite called before init()');
+        log('++ ERR: invite called before init()');
       }
-      console.log('++ bob.invite start');
+      log('++ bob.invite start');
       check(allegedSrc, allegedSide);
-      console.log('++ bob.invite passed check');
+      log('++ bob.invite passed check');
       /* eslint-disable-next-line no-unused-vars */
       let cancel;
       const b = harden({
@@ -120,16 +120,16 @@ function makeBob(E, host) {
       const ackP = E(b.stockSrcP).deposit(7, myStockPurseP);
 
       const doneP = ackP.then(_ => {
-        console.log('++ bob.invite ackP');
+        log('++ bob.invite ackP');
         return E(host).play(tokenP, allegedSrc, allegedSide, b);
       });
       return doneP.then(
         _ => {
-          console.log('++ bob.invite doneP');
+          log('++ bob.invite doneP');
           return E(b.moneyDstP).getBalance();
         },
         rej => {
-          console.log('++ bob.invite doneP reject', rej);
+          log('++ bob.invite doneP reject', rej);
         },
       );
     },
@@ -138,10 +138,14 @@ function makeBob(E, host) {
 }
 
 export default function setup(syscall, state, helpers) {
+  function log(what) {
+    helpers.log(what);
+    console.log(what);
+  }
   return helpers.makeLiveSlots(syscall, state, E =>
     harden({
       makeBob(host) {
-        return harden(makeBob(E, host));
+        return harden(makeBob(E, host, log));
       },
     }),
   );

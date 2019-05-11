@@ -19,9 +19,9 @@
 
 import harden from '@agoric/harden';
 
-function build(E) {
+function build(E, log) {
   function mintTest(mint) {
-    console.log('starting mintTest');
+    log('starting mintTest');
     const mP = E(mint).makeMint();
     const alicePurseP = E(mP).mint(1000, 'alice');
     const mIssuerP = E(alicePurseP).getIssuer();
@@ -32,13 +32,13 @@ function build(E) {
     const aBal = v.then(_ => E(alicePurseP).getBalance());
     const dBal = v.then(_ => E(depositPurseP).getBalance());
     Promise.all([aBal, dBal]).then(bals => {
-      console.log('++ balances:', bals);
-      console.log('++ DONE');
+      log('++ balances:', bals);
+      log('++ DONE');
     });
   }
 
   function trivialContractTest(host) {
-    console.log('starting trivialContractTest');
+    log('starting trivialContractTest');
 
     function trivContract(_whiteP, _blackP) {
       return 8;
@@ -53,11 +53,11 @@ function build(E) {
     const blackTokenP = tokensP.then(tokens => tokens[1]);
     const eightP = E(host).play(blackTokenP, contractSrc, 1, {});
     eightP.then(res => {
-      console.log('++ eightP resolved to', res, '(should be 8)');
+      log('++ eightP resolved to', res, '(should be 8)');
       if (res !== 8) {
         throw new Error(`eightP resolved to ${res}, not 8`);
       }
-      console.log('++ DONE');
+      log('++ DONE');
     });
     return eightP;
   }
@@ -78,10 +78,10 @@ function build(E) {
     const ifItFitsP = E(aliceP).payBobWell(bob);
     ifItFitsP.then(
       res => {
-        console.log('++ ifItFitsP done:', res);
-        console.log('++ DONE');
+        log('++ ifItFitsP done:', res);
+        log('++ DONE');
       },
-      rej => console.log('++ ifItFitsP failed', rej),
+      rej => log('++ ifItFitsP failed', rej),
     );
     return ifItFitsP;
   }
@@ -103,13 +103,13 @@ function build(E) {
         .tradeWell(aliceP, true)
         .then(
           res => {
-            console.log('++ bobP.tradeWell done:', res);
+            log('++ bobP.tradeWell done:', res);
           },
           rej => {
             if (rej.message.startsWith('unexpected contract')) {
-              console.log('++ DONE');
+              log('++ DONE');
             } else {
-              console.log('++ bobP.tradeWell error:', rej);
+              log('++ bobP.tradeWell error:', rej);
             }
           },
         );
@@ -118,11 +118,11 @@ function build(E) {
         .tradeWell(aliceP, false)
         .then(
           res => {
-            console.log('++ bobP.tradeWell done:', res);
-            console.log('++ DONE');
+            log('++ bobP.tradeWell done:', res);
+            log('++ DONE');
           },
           rej => {
-            console.log('++ bobP.tradeWell error:', rej);
+            log('++ bobP.tradeWell error:', rej);
           },
         );
     }
@@ -131,28 +131,50 @@ function build(E) {
 
   const obj0 = {
     async bootstrap(argv, vats) {
-      if (argv[0] === 'mint') {
-        return mintTest(vats.mint);
+      switch (argv[0]) {
+        case 'mint': {
+          return mintTest(vats.mint);
+        }
+        case 'trivial': {
+          const host = await E(vats.host).makeHost();
+          return trivialContractTest(host);
+        }
+        case 'alice-first': {
+          const host = await E(vats.host).makeHost();
+          const alice = await E(vats.alice).makeAlice(host);
+          const bob = await E(vats.bob).makeBob(host);
+          return betterContractTestAliceFirst(vats.mint, alice, bob);
+        }
+        case 'bob-first': {
+          const host = await E(vats.host).makeHost();
+          const alice = await E(vats.alice).makeAlice(host);
+          const bob = await E(vats.bob).makeBob(host);
+          return betterContractTestBobFirst(vats.mint, alice, bob);
+        }
+        case 'bob-first-lies': {
+          const host = await E(vats.host).makeHost();
+          const alice = await E(vats.alice).makeAlice(host);
+          const bob = await E(vats.bob).makeBob(host);
+          return betterContractTestBobFirst(vats.mint, alice, bob, true);
+        }
+        default:
+          throw new Error('unrecognized argument value');
       }
-      const host = await E(vats.host).makeHost();
-      if (argv[0] === 'trivial') {
-        return trivialContractTest(host);
-      }
-      const alice = await E(vats.alice).makeAlice(host);
-      const bob = await E(vats.bob).makeBob(host);
-      if (argv[0] === 'alice-first') {
-        betterContractTestAliceFirst(vats.mint, alice, bob);
-      } else if (argv[0] === 'bob-first') {
-        betterContractTestBobFirst(vats.mint, alice, bob);
-      } else if (argv[0] === 'bob-first-lies') {
-        betterContractTestBobFirst(vats.mint, alice, bob, true);
-      }
-      return undefined;
     },
   };
   return harden(obj0);
 }
 
 export default function setup(syscall, state, helpers) {
-  return helpers.makeLiveSlots(syscall, state, build, helpers.vatID);
+  function log(what) {
+    helpers.log(what);
+    console.log(what);
+  }
+  log(`=> setup called`);
+  return helpers.makeLiveSlots(
+    syscall,
+    state,
+    E => build(E, log),
+    helpers.vatID,
+  );
 }

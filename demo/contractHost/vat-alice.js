@@ -17,7 +17,7 @@
 import harden from '@agoric/harden';
 import escrowExchange from './escrow';
 
-function makeAlice(E, host) {
+function makeAlice(E, host, log) {
   const escrowSrc = `(${escrowExchange})`;
 
   let initialized = false;
@@ -47,7 +47,7 @@ function makeAlice(E, host) {
     init,
     payBobWell(bob) {
       if (!initialized) {
-        console.log('++ ERR: payBobWell called before init()');
+        log('++ ERR: payBobWell called before init()');
       }
       const paymentP = E(myMoneyIssuerP).makeEmptyPurse();
       const ackP = E(paymentP).deposit(10, myMoneyPurseP);
@@ -55,14 +55,14 @@ function makeAlice(E, host) {
     },
     payBobBadly1(bob) {
       if (!initialized) {
-        console.log('++ ERR: payBobBadly1 called before init()');
+        log('++ ERR: payBobBadly1 called before init()');
       }
       const payment = harden({ deposit(_amount, _src) {} });
       return E(bob).buy('shoe', payment);
     },
     payBobBadly2(bob) {
       if (!initialized) {
-        console.log('++ ERR: payBobBadly2 called before init()');
+        log('++ ERR: payBobBadly2 called before init()');
       }
       const paymentP = E(myMoneyIssuerP).makeEmptyPurse();
       const ackP = E(paymentP).deposit(5, myMoneyPurseP);
@@ -71,7 +71,7 @@ function makeAlice(E, host) {
 
     tradeWell(bob) {
       if (!initialized) {
-        console.log('++ ERR: tradeWell called before init()');
+        log('++ ERR: tradeWell called before init()');
       }
       const tokensP = E(host).setup(escrowSrc);
       const aliceTokenP = tokensP.then(tokens => tokens[0]);
@@ -82,7 +82,7 @@ function makeAlice(E, host) {
 
     invite(tokenP, allegedSrc, allegedSide) {
       if (!initialized) {
-        console.log('++ ERR: invite called before init()');
+        log('++ ERR: invite called before init()');
       }
 
       check(allegedSrc, allegedSide);
@@ -107,10 +107,14 @@ function makeAlice(E, host) {
 }
 
 export default function setup(syscall, state, helpers) {
+  function log(what) {
+    helpers.log(what);
+    console.log(what);
+  }
   return helpers.makeLiveSlots(syscall, state, E =>
     harden({
       makeAlice(host) {
-        return harden(makeAlice(E, host));
+        return harden(makeAlice(E, host, log));
       },
     }),
   );
