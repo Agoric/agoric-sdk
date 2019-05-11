@@ -81,7 +81,7 @@ export function buildChannel() {
         try {
           callback(`${fromMachineName}`, `${data}`);
         } catch (err) {
-          console.log(`error during callback: ${err} ${err.stack}`, err);
+          console.log(`error during callback: ${err}`, err);
         }
       },
     });

@@ -59,6 +59,11 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
         meToYouSlot: meToYouTargetSlot,
       } = mapOutboundTarget(kernelToMeSlotTarget);
 
+      // TODO: throw an exception if the otherMachineName that we get
+      // from slots is different than otherMachineName that we get
+      // from the target slot. That would be the three-party handoff
+      // case which we are not supporting yet
+
       const { args } = JSON.parse(argsStr);
 
       // map the slots
