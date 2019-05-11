@@ -31,7 +31,7 @@ function makeMapOutbound(syscall, state) {
           // settles.
 
           // we will need to create a new ID to tell the other side about.
-        
+
           // TODO: figure out the naming
           // when we talk about this over the wire, this will be
           // 'your-promise' in meToYou language, and 'your-resolver' in

@@ -26,7 +26,6 @@ function makeMapInbound(syscall, state, senderID) {
           break;
         }
         case 'your-resolver': {
-
           // this is resultSlot case, where this is how the
           // otherMachine is requesting to be notified about the
           // result of a message
