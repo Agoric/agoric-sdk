@@ -14,37 +14,38 @@ function makeMapInbound(syscall, state, senderID) {
           kernelToMeSlot = { type: 'export', id: exportID };
           break;
         }
-        case 'your-answer': {
-          // our "answer" is a resolver, we can find out the
-          // answer and notify the other machine using the
-          // you-answer id.
-          // once started, "answers" are active, "questions" are
-          // passive
-
-          // what does it mean if it's a your-answer?
-          // what are we resolving such that we can send a message
-          // back?
-
-          // maybe this isn't a case that should be possible?
-          throw new Error(`we don't expect your-answer here`);
-        }
-        case 'your-question': {
-          // we need to create a new promise and resolver pair
-          // we can't drop the resolver
-
+        case 'your-promise': {
           const pr = syscall.createPromise();
 
           // we are creating a promise chain, send our new promiseID
+          kernelToMeSlot = { type: 'resolver', id: pr.resolverID };
+
+          // I don't think it makes sense to subscribe to the promise,
+          // since all settlement messages should be coming in from
+          // other machines
+          break;
+        }
+        case 'your-resolver': {
+
+          // this is resultSlot case, where this is how the
+          // otherMachine is requesting to be notified about the
+          // result of a message
+
+          const pr = syscall.createPromise();
+
+          // we are creating a promise chain
           kernelToMeSlot = { type: 'promise', id: pr.promiseID };
 
-          // store the resolver so we can retrieve it later
-          state.resolvers.add(kernelToMeSlot, {
-            type: 'resolver',
-            id: pr.resolverID,
-          });
-          syscall.subscribe(pr.promiseID);
-
+          syscall.subscribe(kernelToMeSlot);
           break;
+        }
+        case 'your-answer': {
+          // transition only check, remove when done
+          throw new Error(`we don't expect your-answer here`);
+        }
+        case 'your-question': {
+          // transition only check, remove when done
+          throw new Error(`we don't expect your-question here`);
         }
         default:
           throw new Error(`youToMeSlot.type ${youToMeSlot.type} is unexpected`);

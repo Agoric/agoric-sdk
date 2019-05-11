@@ -26,66 +26,51 @@ function makeMapOutbound(syscall, state) {
           break;
         }
         case 'promise': {
-          // kernel gives a promise
-          // that means that when we create a new promise/resolver
-          // pair, we will be sending on the promise ID and mapping it
-          // to our kernel promise
+          // kernel gives a promise, that means that we want to
+          // subscribe to it and notify the other side when it
+          // settles.
 
-          // we can't drop the new resolver, because this is what
-          // liveslots wants when we do syscall.fulfillToTarget(),
-          // etc.
-
+          // we will need to create a new ID to tell the other side about.
+        
+          // TODO: figure out the naming
           // when we talk about this over the wire, this will be
-          // 'your-question' in meToYou language, and 'your-answer' in
+          // 'your-promise' in meToYou language, and 'your-resolver' in
           // youToMe language
 
           // the promise in an argument is always sent as a promise,
           // even if it resolves to a presence
 
-          // we need a way to store the promise, and send a
-          // notification to the other side when it is resolved or rejected
-          const pr = syscall.createPromise();
-
-          // we are creating a promise chain, send our new promiseID
-          meToYouSlot = { type: 'your-question', id: pr.promiseID };
-
-          // store the resolver so we can retrieve it later
-          state.resolvers.add(
-            { type: 'promise', id: pr.promiseID },
-            { type: 'resolver', id: pr.resolverID },
-          );
+          const type = 'your-promise';
+          const id = state.ids.allocateID();
+          meToYouSlot = {
+            type,
+            id,
+          };
 
           // when we send this as a slot, we also need to subscribe
           // such that we can pass on all of the notifications of the
           // promise settlement
-          syscall.subscribe(pr.promiseID);
           syscall.subscribe(kernelToMeSlot.id);
 
           break;
         }
         case 'resolver': {
           // kernel gives us a resolver
-          // that means that when we create a new promise/resolver
-          // pair, we will be sending on the resolverID and mapping it
-          // to our kernel resolver
+          // this is the resultIndex/resultSlot case
+
+          // that means that the kernel is asking the commsVat to send
+          // a message on, and has asked to be notified when it resolves.
 
           // when we talk about this over the wire, this will be
-          // 'your-answer' in meToYou language, and 'your-question' in
+          // 'your-resolver' in meToYou language, and 'your-promise' in
           // youToMe language
 
-          // we need a way to store the resolver, and resolve or
-          // reject it when we get a notification to do so from
-          // the other side.
-          const pr = syscall.createPromise();
-
-          // store the resolver so we can retrieve it later
-          state.resolvers.add(
-            { type: 'promise', id: pr.promiseID },
-            { type: 'resolver', id: pr.resolverID },
-          );
-
-          // we are creating a promise chain, send our resolverID
-          meToYouSlot = { type: 'your-answer', id: pr.resolverID };
+          const type = 'your-resolver';
+          const id = state.ids.allocateID();
+          meToYouSlot = {
+            type,
+            id,
+          };
 
           break;
         }

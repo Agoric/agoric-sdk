@@ -11,7 +11,7 @@ import makeDeviceManager from './deviceManager';
 export default function buildKernel(kernelEndowments) {
   const { setImmediate } = kernelEndowments;
 
-  const enableKDebug = true;
+  const enableKDebug = false;
   function kdebug(...args) {
     if (enableKDebug) {
       console.log(...args);

@@ -9,7 +9,7 @@ import makePromise from './makePromise';
 // going to work for our in-chain hosts.
 
 function build(syscall, _state, makeRoot, forVatID) {
-  const enableLSDebug = true;
+  const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
       console.log(...args);

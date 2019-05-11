@@ -62,15 +62,9 @@ export function makeSendIn(state, syscall) {
       }
 
       if (data.event) {
-        // if the "promise" is a your-question, then we may not have
-        // any knowledge of it. It is something that the other machine
-        // told us about, but all we know is the promise id, and the id
-        // that we use in communication with the other machine
-
-        const promiseKernelToMeSlot = mapInbound(data.promise);
-        const resolverKernelToMeSlot = state.resolvers.getResolver(
-          promiseKernelToMeSlot,
-        );
+        // we should have already made a promise/resolver pair for the
+        // kernel once we received a "your-promise" message previously
+        const resolverKernelToMeSlot = mapInbound(data.promise);
         switch (data.event) {
           case 'notifyFulfillToData':
             syscall.fulfillToData(

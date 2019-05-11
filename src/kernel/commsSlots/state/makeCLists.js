@@ -3,9 +3,7 @@
  * This module is instantiated per CommsVat and stores data about
  * mappings between external machines and slots.
  *
- * a clist maps an index to an object describing a slot
- * for example, one mapping for promises is:
- * resultIndex -> { type: 'promise', id: promiseID }
+ * a clist maps a local machine kernel slot to what will be sent over the wire
  *
  * @module makeCLists
  */
@@ -26,12 +24,12 @@ export function makeCLists() {
   const changePerspectiveMap = new Map();
   // youToMe: your-egress, meToYou: your-ingress
   // youToMe: your-ingress, meToYou: your-egress
-  // youToMe: your-answer, meToYou: your-question
-  // youToMe: your-question, meToYou: your-answer
+  // youToMe: your-promise, meToYou: your-resolver
+  // youToMe: your-resolver, meToYou: your-promise
   changePerspectiveMap.set('your-egress', 'your-ingress');
   changePerspectiveMap.set('your-ingress', 'your-egress');
-  changePerspectiveMap.set('your-answer', 'your-question');
-  changePerspectiveMap.set('your-question', 'your-answer');
+  changePerspectiveMap.set('your-promise', 'your-resolver');
+  changePerspectiveMap.set('your-resolver', 'your-promise');
 
   function changePerspective(slot) {
     const otherPerspective = changePerspectiveMap.get(slot.type);
@@ -47,14 +45,14 @@ export function makeCLists() {
   function createIncomingWireMessageObj(otherMachineName, youToMeSlot) {
     return {
       otherMachineName,
-      youToMeSlot, // could be a your-ingress, your-egress, your-question, or your-answer
+      youToMeSlot, // could be a your-ingress, your-egress
     };
   }
 
   function createOutgoingWireMessageObj(otherMachineName, meToYouSlot) {
     return {
       otherMachineName,
-      meToYouSlot, // could be a your-ingress, your-egress, your-question, or your-answer
+      meToYouSlot, // could be a your-ingress, your-egress
     };
   }
 
@@ -74,11 +72,8 @@ export function makeCLists() {
   }
 
   // kernelToMeSlot can have type: import, export or promise
-  // youToMe and meToYou slots can have type: your-ingress,
-  // your-egress, your-question, your-answer
-
-  // right, egress, {type:import,id:10}, {type:your-egress, id:7},
-  // {type:your-ingress, id:7}
+  // youToMe and meToYou slots can have type: your-ingress or
+  // your-egress
 
   // we will use this in the following ways:
   // 1) to send out information about something that we know as a

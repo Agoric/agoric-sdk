@@ -8,7 +8,7 @@ import handleInitialObj from './handleInitialObj';
 import makeMapOutbound from './makeMapOutbound';
 
 export function makeCommsSlots(syscall, _state, helpers, devices) {
-  const enableCSDebug = true;
+  const enableCSDebug = false;
   const { vatID } = helpers;
   function csdebug(...args) {
     if (enableCSDebug) {

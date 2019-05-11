@@ -98,7 +98,7 @@ test('makeCommsSlots deliver facetid is nonzero and expected', t => {
 
   t.equal(
     sentData,
-    '{"target":{"type":"your-egress","id":{"@qclass":"slot","index":0}},"methodName":"encourageMe","args":["user"],"slots":[],"resultSlot":{"type":"your-answer"}}',
+    '{"target":{"type":"your-egress","id":{"@qclass":"slot","index":0}},"methodName":"encourageMe","args":["user"],"slots":[],"resultSlot":{"type":"your-resolver","id":2}}',
   );
   t.end();
 });
