@@ -63,8 +63,9 @@ export default function setup(syscall, state, helpers) {
         },
         createNewObj() {
           return {
-            eat() {
-              return 'yummm';
+            method() {
+              log(`=> right.1.method was invoked`);
+              return 'called method';
             },
           };
         },

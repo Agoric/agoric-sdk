@@ -9,12 +9,32 @@ export default function setup(syscall, state, helpers) {
     state,
     E =>
       harden({
+        startTest(test, args) {
+          switch (test) {
+            case 'left does: E(right.0).method() => returnData': {
+              const rightRootPresence = args[0];
+              E(rightRootPresence)
+                .method()
+                .then(r => log(`=> left vat receives the returnedData: ${r}`));
+              break;
+            }
+
+            case 'left does: E(right.1).method() => returnData': {
+              const rightNewObjPresence = args[0];
+              E(rightNewObjPresence)
+                .method()
+                .then(r => log(`=> left vat receives the returnedData: ${r}`));
+              break;
+            }
+
+            default:
+              throw new Error(`test ${test} not recognized`);
+          }
+        },
         callMethodOnPresence(presence, args) {
           log(`=> left.callMethodOnPresence is called with args: [${args}]`);
           if (args.length <= 0) {
-            E(presence)
-              .method()
-              .then(r => log(`=> left vat receives the returnedData: ${r}`));
+            
           } else {
             E(presence)
               .takeArgAndReturnData(args)
