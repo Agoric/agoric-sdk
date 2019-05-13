@@ -60,9 +60,18 @@ export default function setup(syscall, state, helpers) {
               break;
             }
 
+            case 'left does: E(right.0).method(dataArg1) => returnData': {
+              await E(vats.left).startTest(test, [rootRightPresence]);
+            }
+
             case 'left does: E(right.1).method() => returnData': {
-              const newRightObjPresence = await E(vats.right).createNewObj();
-              await E(vats.left).startTest(test, [newRightObjPresence]);
+              const result = await E(vats.left).startTest(test, [rootRightPresence]);
+              log(`result in here ${result}`);
+              break;
+            }
+
+            case 'left does: E(right.0).method() => right.promise': {
+              await E(vats.left).startTest(test, [rootRightPresence]);
               break;
             }
 

@@ -30,14 +30,14 @@ export async function runVats(t, withSES, argv) {
     config.vatDevices = vatDevices;
   }
   const c = await buildVatController(config, withSES, argv);
-  await c.run();
-  const { log } = c.dump();
-  return log;
+  return c;
 }
 
 export function runTest(testStr) {
   test(testStr, async t => {
-    const log = await runVats(t, false, [testStr]);
+    const c = await runVats(t, false, [testStr]);
+    await c.run();
+    const { log } = c.dump();
     t.deepEqual(log, testLogs[testStr]);
     t.end();
   });
@@ -45,8 +45,39 @@ export function runTest(testStr) {
 
 export function runTestOnly(testStr) {
   test.only(testStr, async t => {
-    const log = await runVats(t, false, [testStr]);
-    t.deepEqual(log, testLogs[testStr]);
+    const c = await runVats(t, false, [testStr]);
+    await c.run();
+    const dump = c.dump();
+    console.log(dump);
+    t.deepEqual(dump.log, testLogs[testStr]);
+    t.end();
+  });
+}
+
+export function stepTestOnly(testStr) {
+  test.only(testStr, async t => {
+    const c = await runVats(t, false, [testStr]);
+    await c.step();
+    await c.step();
+    await c.step();
+    await c.step();
+    await c.step();
+    await c.step();
+    await c.step();
+    await c.step();
+    await c.step();
+    await c.step();
+    await c.step();
+    await c.step();
+    await c.step();
+    await c.step();
+    await c.step();
+    await c.step();
+    await c.step();
+    await c.step();
+    const dump = c.dump();
+    console.log(dump);
+    t.deepEqual(dump.log, testLogs[testStr]);
     t.end();
   });
 }

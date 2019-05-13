@@ -17,10 +17,15 @@ export default function setup(syscall, state, helpers) {
           log(`=> right.method was invoked`);
           return 'called method';
         },
-        takeArgAndReturnData(arg) {
-          log(`=> right.takeArgAndReturnData got the arg: ${arg}`);
+        methodWithArgs(arg) {
+          log(`=> right.methodWithArgs got the arg: ${arg}`);
           return `${arg} was received`;
         },
+        methodReturnsPromise() {
+          log(`=> right.methodReturnsPromise was invoked`);
+          return new Promise((_resolve, _reject) => {});
+        },
+
         takeReferenceEqualToTargetAndReturnData(ref) {
           log(
             `=> right.takeReferenceEqualToTargetAndReturnData got the arg: ${ref}`,

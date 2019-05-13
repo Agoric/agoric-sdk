@@ -24,7 +24,7 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
     deliver(facetid, method, argsStr, kernelToMeSlots, resolverID) {
       const kernelToMeSlotTarget = { type: 'export', id: facetid };
       csdebug(
-        `ls[${vatID}].dispatch.deliver ${facetid}.${method} -> ${resolverID}`,
+        `cs[${vatID}].dispatch.deliver ${facetid}.${method} -> ${resolverID}`,
       );
 
       // CASE 1: we are hitting the initial object (0)

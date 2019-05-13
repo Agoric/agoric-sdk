@@ -1,4 +1,4 @@
-import { runTest, runTestOnly } from './run-test';
+import { runTest, runTestOnly, stepTestOnly } from './run-test';
 
 // 1. Invoke method on other machine with no arguments - don’t look at return value
 // 2. Invoke with argument all the way through
@@ -29,12 +29,12 @@ import { runTest, runTestOnly } from './run-test';
 
 /* TABLE OF CONTENTS OF TESTS */
 // left does: E(right.0).method() => returnData
+// left does: E(right.0).method(dataArg1) => returnData
 // left does: E(right.1).method() => returnData
 // left does: E(right.0).method() => right.promise
 // left does: E(right.0).method() => left.promise
 // left does: E(right.0).method() => right.presence
 // left does: E(right.0).method() => left.presence
-// left does: E(right.0).method(dataArg1) => returnData
 // left does: E(right.0).method(left.promise) => returnData
 // left does: E(right.0).method(right.promise) => returnData
 // left does: E(right.0).method(left.presence) => returnData
@@ -45,14 +45,44 @@ import { runTest, runTestOnly } from './run-test';
 /* TEST: left does: E(right.0).method() => returnData
  * DESCRIPTION: The left vat invokes a method on the right vat's root
  * object and returns data.
+ * TESTING:
+    cs[rightcomms].dispatch.deliver 0.init -> 30
+    cs[leftcomms].dispatch.deliver 0.init -> 30
+    cs[rightcomms].dispatch.deliver 0.connect -> 31
+    cs[leftcomms].dispatch.deliver 0.connect -> 31
+    cs[rightcomms].dispatch.deliver 0.addEgress -> 32
+    cs[leftcomms].dispatch.deliver 0.addIngress -> 32
+    cs[leftcomms].dispatch.deliver 1.method -> 33
+    cs.dispatch.notifyFulfillToData(20, "called method", )
  */
 runTest('left does: E(right.0).method() => returnData');
+
+/* TEST: left does: E(right.0).method(dataArg1) => returnData
+ * DESCRIPTION: The left vat invokes a method on the right vat's root
+ * object with an argument and returns data connected to that argument.
+ * TESTING:
+
+ */
+stepTestOnly('left does: E(right.0).method(dataArg1) => returnData');
 
 /* TEST: left does: E(right.1).method() => returnData
  * DESCRIPTION: The left vat invokes a method on the right vat's
  * object (a new object, not the root object) and returns data.
+ * TESTING:
+
  */
-runTestOnly('left does: E(right.1).method() => returnData');
+
+ // TODO: This test needs to be fixed, seems to not be using the
+ // commsSlots at all 
+runTest('left does: E(right.1).method() => returnData');
+
+/* TEST: left does: E(right.0).method() => right.promise
+ * DESCRIPTION: The left vat invokes a method on the right vat's root
+ * object and returns a promise
+ * TESTING:
+
+ */
+runTest('left does: E(right.0).method() => right.promise');
 
 // // 2. Invoke with argument all the way through
 // test('Invoke method with argument on other machine', async t => {
