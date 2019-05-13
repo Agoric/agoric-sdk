@@ -48,7 +48,16 @@ export function runTestOnly(testStr) {
     const c = await runVats(t, false, [testStr]);
     await c.run();
     const dump = c.dump();
-    console.log(dump);
+    t.deepEqual(dump.log, testLogs[testStr]);
+    t.end();
+  });
+}
+
+export function runTestSkip(testStr) {
+  test.skip(testStr, async t => {
+    const c = await runVats(t, false, [testStr]);
+    await c.run();
+    const dump = c.dump();
     t.deepEqual(dump.log, testLogs[testStr]);
     t.end();
   });
@@ -76,7 +85,6 @@ export function stepTestOnly(testStr) {
     await c.step();
     await c.step();
     const dump = c.dump();
-    console.log(dump);
     t.deepEqual(dump.log, testLogs[testStr]);
     t.end();
   });

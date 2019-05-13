@@ -6,6 +6,15 @@ export default function setup(syscall, state, helpers) {
     console.log(what);
   }
 
+  function createNewObj() {
+    return {
+      method() {
+        log(`=> left.1.method was invoked`);
+        return 'called method';
+      },
+    };
+  }
+
   return helpers.makeLiveSlots(
     syscall,
     state,
@@ -27,6 +36,44 @@ export default function setup(syscall, state, helpers) {
               .then(r => log(`=> left vat receives the returnedData: ${r}`));
             break;
           }
+
+          case 'left does: E(right.0).method(right.0) => returnData': {
+            const rightRootPresence = args[0];
+            E(rightRootPresence)
+              .methodWithPresence(rightRootPresence)
+              .then(r => log(`=> left vat receives the returnedData: ${r}`));
+            break;
+          }
+
+          case 'left does: E(right.0).method(left.1) => returnData': {
+            const rightRootPresence = args[0];
+            const leftRootPresence = args[1];
+            const leftNewObjPresence = await E(leftRootPresence).createNewObj();
+            E(rightRootPresence)
+              .methodWithPresence(leftNewObjPresence)
+              .then(r => log(`=> left vat receives the returnedData: ${r}`));
+            break;
+          }
+
+          case 'left does: E(right.0).method(left.1) => returnData twice': {
+            const rightRootPresence = args[0];
+            const leftRootPresence = args[1];
+            const leftNewObjPresence = await E(leftRootPresence).createNewObj();
+
+            // first time
+            E(rightRootPresence)
+              .methodWithPresenceTwice(leftNewObjPresence)
+              .then(r => log(`=> left vat receives the returnedData: ${r}`));
+
+            // second time
+            E(rightRootPresence)
+              .methodWithPresenceTwice(leftNewObjPresence)
+              .then(r => log(`=> left vat receives the returnedData: ${r}`));
+
+            // check logs to ensure the same ids are used
+            break;
+          }
+
           case 'left does: E(right.1).method() => returnData': {
             const rightRootPresence = args[0];
             const rightNewObjPresence = await E(
@@ -37,105 +84,87 @@ export default function setup(syscall, state, helpers) {
               .then(r => log(`=> left vat receives the returnedData: ${r}`));
             break;
           }
-          case 'left does: E(right.0).method() => right.promise': {
+
+          case 'left does: E(right.0).method() => right.presence': {
+            const rightRootPresence = args[0];
+            const presence = E(rightRootPresence).methodReturnsRightPresence();
+            E(presence)
+              .method()
+              .then(r => log(`=> left vat receives the returnedData: ${r}`));
+            break;
+          }
+
+          case 'left does: E(right.0).method() => left.presence': {
+            const rightRootPresence = args[0];
+            const newLeftObj = createNewObj();
+            const presence = E(rightRootPresence).methodReturnsLeftPresence(
+              newLeftObj,
+            );
+            E(presence)
+              .method()
+              .then(r => log(`=> left vat receives the returnedData: ${r}`));
+            break;
+          }
+
+          case 'left does: E(right.0).method() => right.promise => data': {
             const rightRootPresence = args[0];
             const result = E(rightRootPresence).methodReturnsPromise();
             log(`=> left vat receives the returnedPromise: ${result}`);
             result.then(r => log(`=> returnedPromise.then: ${r}`));
             break;
           }
-    
+
+          case 'left does: E(right.0).method() => right.promise => right.presence': {
+            const rightRootPresence = args[0];
+            const result = E(
+              rightRootPresence,
+            ).methodReturnsPromiseForRightPresence();
+            log(`=> left vat receives the returnedPromise: ${result}`);
+            result.then(async r => {
+              log(`=> returnedPromise.then: ${r}`);
+              // call method on presence to confirm expected presence
+              const methodCallResult = await E(r).method();
+              log(`=> presence methodCallResult: ${methodCallResult}`);
+            });
+            break;
+          }
+
+          case 'left does: E(right.0).method() => right.promise => left.presence': {
+            const rightRootPresence = args[0];
+            const leftPresence = createNewObj();
+            const result = E(
+              rightRootPresence,
+            ).methodReturnsPromiseForLeftPresence(leftPresence);
+            log(`=> left vat receives the returnedPromise: ${result}`);
+            result.then(async r => {
+              log(`=> returnedPromise.then: ${r}`);
+              // call method on presence to confirm expected presence
+              const methodCallResult = await E(r).method();
+              log(`=> presence methodCallResult: ${methodCallResult}`);
+            });
+            break;
+          }
+
+          case 'left does: E(right.0).method() => right.promise => reject': {
+            const rightRootPresence = args[0];
+            try {
+              E(rightRootPresence).methodReturnsPromiseReject();
+            } catch (err) {
+              log(
+                `=> left vat receives the rejected promise with error ${err}`,
+              );
+            }
+            break;
+          }
+
           default:
             throw new Error(`test ${test} not recognized`);
         }
-      };
+      }
+
       return harden({
         startTest,
-        // callMethodOnPresence(presence, args) {
-        //   log(`=> left.callMethodOnPresence is called with args: [${args}]`);
-        //   if (args.length <= 0) {
-            
-        //   } else {
-        //     E(presence)
-        //       .takeArgAndReturnData(args)
-        //       .then(returnedData => {
-        //         log(`=> left vat receives the returnedData: ${returnedData}`);
-        //       });
-        //   }
-        //   return 'presence was called';
-        // },
-        // callMethodOnPresenceWithRef(presence) {
-        //   E(presence)
-        //     .takeReferenceEqualToTargetAndReturnData(presence)
-        //     .then(returnedData => {
-        //       log(`=> left vat receives the returnedData: ${returnedData}`);
-        //     });
-        //   return 'presence was called';
-        // },
-        // callMethodOnPresenceWithOtherRef(presence, otherRef) {
-        //   E(presence)
-        //     .takeReferenceDifferentThanTargetAndReturnData(otherRef)
-        //     .then(returnedData => {
-        //       log(`=> left vat receives the returnedData: ${returnedData}`);
-        //     });
-        //   return 'presence was called';
-        // },
-        // callMethodOnPresenceWithOtherRefTwice(presence, otherRef) {
-        //   E(presence)
-        //     .takeReferenceDifferentThanTargetAndReturnDataTwice(otherRef)
-        //     .then(returnedData => {
-        //       log(`=> left vat receives the returnedData: ${returnedData}`);
-        //     });
-        //   E(presence)
-        //     .takeReferenceDifferentThanTargetAndReturnDataTwice(otherRef)
-        //     .then(returnedData => {
-        //       log(`=> left vat receives the returnedData: ${returnedData}`);
-        //     });
-        //   return 'presence was called';
-        // },
-        // callMethodOnRefAndReturnItAsData(presence, otherRef) {
-        //   E(presence)
-        //     .takeRefAndReturnItAsData(otherRef)
-        //     .then(returnedDataRef => {
-        //       E(returnedDataRef.ref)
-        //         .hi()
-        //         .then(r => log(`=> left vat receives the returnedData: ${r}`));
-        //     });
-        //   return 'callMethodOnRefAndReturnItAsData was called';
-        // },
-        // callMethodOnRefAndReturnItAsDataRight(presence, newRightObj) {
-        //   E(presence)
-        //     .takeRefAndReturnItAsData(newRightObj)
-        //     .then(returnedDataRef => {
-        //       E(returnedDataRef.ref)
-        //         .eat()
-        //         .then(r => log(`=> left vat receives the returnedData: ${r}`));
-        //     });
-        //   return 'callMethodOnRefAndReturnItAsData was called';
-        // },
-        // getPromiseBack(presence) {
-        //   const p = E(presence).getPromiseBack();
-        //   log(`left received ${p}`);
-        //   p.then(r => {
-        //     log(`left p resolved to ${r}`);
-        //   });
-        //   return 'called left.getPromiseBack';
-        // },
-        // callMethodOnPromiseForPresence(pPresence) {
-        //   E(pPresence)
-        //     .takeReferenceEqualToTargetAndCallMethod(pPresence)
-        //     .then(returnedData => {
-        //       log(`=> left vat receives the returnedData: ${returnedData}`);
-        //     });
-        //   return 'left vat called right';
-        // },
-        // createNewObj() {
-        //   return {
-        //     hi() {
-        //       return 'hello';
-        //     },
-        //   };
-        // },
+        createNewObj,
       });
     },
     helpers.vatID,

@@ -183,12 +183,12 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
         `sendOverChannel notifyReject promiseID: ${promiseID}, data: ${data}`,
       );
 
-      const msg = {
+      const msg = JSON.stringify({
         event: 'notifyReject',
         promise: meToYouSlot,
         args: data,
         slots: slots.map(slot => mapOutbound(otherMachineName, slot)),
-      };
+      });
 
       devices[channel].sendOverChannel(
         state.machineState.getMachineName(),

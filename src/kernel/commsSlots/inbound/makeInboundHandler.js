@@ -90,7 +90,7 @@ export default function makeInboundHandler(state, syscall) {
             );
             return;
           case 'notifyReject':
-            syscall.notifyReject(
+            syscall.reject(
               resolverKernelToMeSlot.id,
               data.args,
               kernelToMeSlots,
