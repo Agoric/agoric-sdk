@@ -265,12 +265,13 @@ async function testSharedTable(t, withSES) {
   console.log(`table ${st}`);
   t.deepEqual(c.dump().log, ['calling left.leftSharedTable']);
   await c.step();
-  t.deepEqual(c.dump().log, ['calling left.leftSharedTable',
-                             'leftSharedTable',
-                             'has key1= true',
-                             'got key1= val1',
-                             'has key2= false',
-                            ]);
+  t.deepEqual(c.dump().log, [
+    'calling left.leftSharedTable',
+    'leftSharedTable',
+    'has key1= true',
+    'got key1= val1',
+    'has key2= false',
+  ]);
   t.end();
 }
 

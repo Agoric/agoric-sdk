@@ -1,4 +1,3 @@
-
 export default function buildInbound() {
   const bridge = { inboundCallback: undefined }; // not hardened
   const src = require.resolve('./inbound-src');

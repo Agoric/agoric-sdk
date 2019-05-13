@@ -23,18 +23,19 @@ export default function setup(syscall, helpers, endowments) {
 
   return helpers.makeDeviceSlots(
     syscall,
-    SO => harden({
-      get(key) {
-        return table.get(`${key}`);
-      },
-      set(key, value) {
-        console.log('Hs');
-        table.set(`${key}`, `${value}`);
-      },
-      has(key) {
-        return table.has(`${key}`);
-      },
-    }),
+    _SO =>
+      harden({
+        get(key) {
+          return table.get(`${key}`);
+        },
+        set(key, value) {
+          console.log('Hs');
+          table.set(`${key}`, `${value}`);
+        },
+        has(key) {
+          return table.has(`${key}`);
+        },
+      }),
     getState,
     setState,
     helpers.name,
