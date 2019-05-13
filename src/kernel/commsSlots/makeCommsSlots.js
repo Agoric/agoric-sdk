@@ -1,13 +1,13 @@
 import harden from '@agoric/harden';
 
 // state
-import makeState from '../state/index';
+import makeState from './state/index';
 
 // methods that can be called on the inital obj, 0
-import handleInitialObj from './handleInitialObj';
-import makeMapOutbound from './makeMapOutbound';
+import handleInitialObj from './outbound/handleInitialObj';
+import makeMapOutbound from './outbound/makeMapOutbound';
 
-export function makeCommsSlots(syscall, _state, helpers, devices) {
+export default function makeCommsSlots(syscall, _state, helpers, devices) {
   const enableCSDebug = false;
   const { vatID } = helpers;
   function csdebug(...args) {
