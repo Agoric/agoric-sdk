@@ -1,5 +1,5 @@
 // access to the outside world
-import { makeSendIn } from './inbound/makeSendIn';
+import makeInboundHandler from './inbound/makeInboundHandler';
 
 export default function handleCommsController(
   state,
@@ -42,12 +42,12 @@ export default function handleCommsController(
     // in the future, data structure would contain name and predicate
 
     state.channels.add(otherMachineName, channelName);
-    const { sendIn } = makeSendIn(state, syscall);
+    const { inboundHandler } = makeInboundHandler(state, syscall);
 
     if (devices && devices[channelName]) {
       devices[channelName].registerInboundCallback(
         state.machineState.getMachineName(),
-        sendIn,
+        inboundHandler,
       );
     }
 

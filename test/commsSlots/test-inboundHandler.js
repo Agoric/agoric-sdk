@@ -1,5 +1,5 @@
 // import { test } from 'tape-promise/tape';
-// import { makeSendIn } from '../../src/kernel/commsSlots/makeSendIn';
+// import makeInboundHandler from '../../src/kernel/commsSlots/inbound/makeInboundHandler';
 // import makeState from '../../src/kernel/commsSlots/state';
 
 // // send [ { type: 'your-egress', id: 10 }, 'getIssuer', '{"args":[]}', [] ]
@@ -31,8 +31,8 @@
 //     { type: 'your-ingress', id: 10 },
 //   );
 
-//   const { sendIn } = makeSendIn(state, mockSyscall);
-//   sendIn(
+//   const { inboundHandler } = makeInboundHandler(state, mockSyscall);
+//   inboundHandler(
 //     senderID,
 //     JSON.stringify({
 //       target: { type: 'your-egress', id: 10 },
@@ -89,8 +89,8 @@
 
 //   state.clists.add(senderID, 'egress', 0, { type: 'your-egress', id: 10 });
 //   state.clists.add(senderID, 'egress', 1, { type: 'promise', id: 20 });
-//   const { sendIn } = makeSendIn(state, mockSyscall);
-//   sendIn(
+//   const { inboundHandler } = makeInboundHandler(state, mockSyscall);
+//   inboundHandler(
 //     senderID,
 //     JSON.stringify({
 //       index: 1,
@@ -149,8 +149,8 @@
 //   state.clists.add(senderID, 'egress', 0, { type: 'your-egress', id: 10 });
 //   state.clists.add(senderID, 'egress', 1, { type: 'promise', id: 20 });
 //   state.clists.add(senderID, 'egress', 2, { type: 'promise', id: 21 });
-//   const { sendIn } = makeSendIn(state, mockSyscall);
-//   sendIn(
+//   const { inboundHandler } = makeInboundHandler(state, mockSyscall);
+//   inboundHandler(
 //     senderID,
 //     JSON.stringify({
 //       index: 2,
@@ -209,8 +209,8 @@
 //   state.clists.add(senderID, 'egress', 0, { type: 'your-egress', id: 10 });
 //   state.clists.add(senderID, 'egress', 1, { type: 'promise', id: 20 });
 //   state.clists.add(senderID, 'egress', 2, { type: 'promise', id: 21 });
-//   const { sendIn } = makeSendIn(state, mockSyscall);
-//   sendIn(
+//   const { inboundHandler } = makeInboundHandler(state, mockSyscall);
+//   inboundHandler(
 //     senderID,
 //     JSON.stringify({
 //       index: 2,
@@ -268,8 +268,8 @@
 //   state.clists.add(senderID, 'egress', 0, { type: 'your-egress', id: 10 });
 //   state.clists.add(senderID, 'egress', 1, { type: 'promise', id: 20 });
 //   state.clists.add(senderID, 'egress', 2, { type: 'promise', id: 21 });
-//   const { sendIn } = makeSendIn(state, mockSyscall);
-//   sendIn(
+//   const { inboundHandler } = makeInboundHandler(state, mockSyscall);
+//   inboundHandler(
 //     senderID,
 //     JSON.stringify({
 //       index: 0,

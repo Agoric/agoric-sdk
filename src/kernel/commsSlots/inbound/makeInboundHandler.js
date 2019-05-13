@@ -15,7 +15,7 @@ function parseJSON(data) {
   }
 }
 
-export function makeSendIn(state, syscall) {
+export default function makeInboundHandler(state, syscall) {
   return {
     /**
      * aka 'inbound' from SwingSet-Cosmos
@@ -30,7 +30,7 @@ export function makeSendIn(state, syscall) {
      *
      */
 
-    sendIn(senderID, dataStr) {
+    inboundHandler(senderID, dataStr) {
       if (!verify(senderID)) {
         throw new Error('could not verify SenderID');
       }
