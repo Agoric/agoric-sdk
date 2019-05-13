@@ -1,8 +1,8 @@
 import { test } from 'tape-promise/tape';
-import handleInitialObj from '../../../src/kernel/commsSlots/outbound/handleInitialObj';
+import handleCommsController from '../../../src/kernel/commsSlots/commsController';
 import makeState from '../../../src/kernel/commsSlots/state';
 
-test('handleInitialObj addEgress', t => {
+test('handleCommsController addEgress', t => {
   let fulfillToDataArgs;
 
   const mockSyscall = {
@@ -22,7 +22,7 @@ test('handleInitialObj addEgress', t => {
     log: console.log,
   };
 
-  const result = handleInitialObj(
+  const result = handleCommsController(
     state,
     mockSyscall,
     'addEgress',

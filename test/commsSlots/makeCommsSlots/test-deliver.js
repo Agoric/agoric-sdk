@@ -18,7 +18,7 @@ test('makeCommsSlots deliver facetid is 0', t => {
 
   const commsSlots = makeCommsSlots(mockSyscall, {}, helpers, {});
   commsSlots.deliver(0, 'init', '{"args":["bot","botSigningKey"]}', [], 30); // init
-  // confirm that init is called, we are already testing init in handleInitialObj
+  // confirm that init is called, we are already testing init in handleCommsController
   t.deepEqual(fulfillToDataArgs, [30, JSON.stringify('bot'), []]);
   t.end();
 });

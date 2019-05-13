@@ -1,12 +1,12 @@
 import { test } from 'tape-promise/tape';
-import handleInitialObj from '../../../src/kernel/commsSlots/outbound/handleInitialObj';
+import handleCommsController from '../../../src/kernel/commsSlots/commsController';
 import makeState from '../../../src/kernel/commsSlots/state';
 
 const helpers = {
   log: console.log,
 };
 
-test('handleInitialObj connect update channels', t => {
+test('handleCommsController connect update channels', t => {
   let fulfillToDataArgs;
 
   const mockSyscall = {
@@ -22,7 +22,7 @@ test('handleInitialObj connect update channels', t => {
   const deviceName = 'channel';
   const resolverID = 2;
 
-  const result = handleInitialObj(
+  const result = handleCommsController(
     state,
     mockSyscall,
     'connect',

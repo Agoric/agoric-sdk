@@ -4,7 +4,7 @@ import harden from '@agoric/harden';
 import makeState from './state/index';
 
 // methods that can be called on the inital obj, 0
-import handleInitialObj from './outbound/handleInitialObj';
+import handleCommsController from './commsController';
 import makeMapOutbound from './outbound/makeMapOutbound';
 
 export default function makeCommsSlots(syscall, _state, helpers, devices) {
@@ -29,7 +29,7 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
 
       // CASE 1: we are hitting the initial object (0)
       if (facetid === 0) {
-        const result = handleInitialObj(
+        const result = handleCommsController(
           state,
           syscall,
           method,

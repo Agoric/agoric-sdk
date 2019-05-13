@@ -1,12 +1,12 @@
 import { test } from 'tape-promise/tape';
-import handleInitialObj from '../../../src/kernel/commsSlots/outbound/handleInitialObj';
+import handleCommsController from '../../../src/kernel/commsSlots/commsController';
 import makeState from '../../../src/kernel/commsSlots/state';
 
 const helpers = {
   log: console.log,
 };
 
-test('handleInitialObj addIngress', t => {
+test('handleCommsController addIngress', t => {
   let fulfillToTargetArgs;
 
   const mockSyscall = {
@@ -21,7 +21,7 @@ test('handleInitialObj addIngress', t => {
   const sender = 'bot';
   const index = 8;
 
-  const result = handleInitialObj(
+  const result = handleCommsController(
     state,
     mockSyscall,
     'addIngress',
@@ -67,7 +67,7 @@ test('handleInitialObj addIngress', t => {
   t.end();
 });
 
-test('handleInitialObj addIngress twice', t => {
+test('handleCommsController addIngress twice', t => {
   let fulfillToTargetArgs;
 
   const mockSyscall = {
@@ -84,7 +84,7 @@ test('handleInitialObj addIngress twice', t => {
   const index = 8;
   const index2 = 9;
 
-  const result = handleInitialObj(
+  const result = handleCommsController(
     state,
     mockSyscall,
     'addIngress',
@@ -121,7 +121,7 @@ test('handleInitialObj addIngress twice', t => {
   t.deepEqual(actualKernelToMeSlot, { type: 'export', id: 1 }); // actual, expected
   t.deepEqual(actualMeToYouSlot, { type: 'your-egress', id: index });
 
-  const result2 = handleInitialObj(
+  const result2 = handleCommsController(
     state,
     mockSyscall,
     'addIngress',
@@ -160,7 +160,7 @@ test('handleInitialObj addIngress twice', t => {
   t.end();
 });
 
-test('handleInitialObj addIngress same again', t => {
+test('handleCommsController addIngress same again', t => {
   let fulfillToTargetArgs;
 
   const mockSyscall = {
@@ -175,7 +175,7 @@ test('handleInitialObj addIngress same again', t => {
   const sender = 'bot';
   const index = 5;
 
-  const result = handleInitialObj(
+  const result = handleCommsController(
     state,
     mockSyscall,
     'addIngress',
@@ -212,7 +212,7 @@ test('handleInitialObj addIngress same again', t => {
   t.deepEqual(actualKernelToMeSlot, { type: 'export', id: 1 }); // actual, expected
   t.deepEqual(actualMeToYouSlot, { type: 'your-egress', id: index });
 
-  const result2 = handleInitialObj(
+  const result2 = handleCommsController(
     state,
     mockSyscall,
     'addIngress',
