@@ -1,13 +1,13 @@
 import harden from '@agoric/harden';
 
 // state
-import makeState from '../state/index';
+import makeState from './state/index';
 
 // methods that can be called on the inital obj, 0
-import handleInitialObj from './handleInitialObj';
-import makeMapOutbound from './makeMapOutbound';
+import handleCommsController from './commsController';
+import makeMapOutbound from './outbound/makeMapOutbound';
 
-export function makeCommsSlots(syscall, _state, helpers, devices) {
+export default function makeCommsSlots(syscall, _state, helpers, devices) {
   const enableCSDebug = false;
   const { vatID } = helpers;
   function csdebug(...args) {
@@ -29,7 +29,7 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
 
       // CASE 1: we are hitting the initial object (0)
       if (facetid === 0) {
-        const result = handleInitialObj(
+        const result = handleCommsController(
           state,
           syscall,
           method,

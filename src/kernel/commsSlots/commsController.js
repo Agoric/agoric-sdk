@@ -1,7 +1,7 @@
 // access to the outside world
-import { makeSendIn } from '../inbound/makeSendIn';
+import { makeSendIn } from './inbound/makeSendIn';
 
-export default function handleInitialObj(
+export default function handleCommsController(
   state,
   syscall,
   method,

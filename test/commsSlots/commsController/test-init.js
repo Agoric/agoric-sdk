@@ -1,12 +1,12 @@
 import { test } from 'tape-promise/tape';
-import handleInitialObj from '../../../src/kernel/commsSlots/outbound/handleInitialObj';
+import handleCommsController from '../../../src/kernel/commsSlots/commsController';
 import makeState from '../../../src/kernel/commsSlots/state';
 
 const helpers = {
   log: console.log,
 };
 
-test('handleInitialObj init update machineState', t => {
+test('handleCommsController init update machineState', t => {
   let fulfillToDataArgs;
 
   const mockSyscall = {
@@ -23,7 +23,7 @@ test('handleInitialObj init update machineState', t => {
   const newProofMaterial = 'proofMaterial1';
   const resolverID = 2;
 
-  const result = handleInitialObj(
+  const result = handleCommsController(
     state,
     mockSyscall,
     'init',
@@ -52,7 +52,7 @@ test('handleInitialObj init update machineState', t => {
   t.end();
 });
 
-test('handleInitialObj init: only init once', t => {
+test('handleCommsController init: only init once', t => {
   let fulfillToDataArgs;
 
   const mockSyscall = {
@@ -69,7 +69,7 @@ test('handleInitialObj init: only init once', t => {
   const newProofMaterial = 'proofMaterial1';
   const resolverID = 2;
 
-  const result = handleInitialObj(
+  const result = handleCommsController(
     state,
     mockSyscall,
     'init',
@@ -97,7 +97,7 @@ test('handleInitialObj init: only init once', t => {
   t.equal(currentProofMaterial, newProofMaterial);
 
   t.throws(() => {
-    return handleInitialObj(
+    return handleCommsController(
       state,
       mockSyscall,
       'init',

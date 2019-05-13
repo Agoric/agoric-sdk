@@ -1,3 +1,3 @@
-import { makeCommsSlots } from './outbound/commsSlots';
+import makeCommsSlots from './makeCommsSlots';
 
 export { makeCommsSlots };
