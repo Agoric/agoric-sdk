@@ -66,6 +66,8 @@ export default function makeCommsSlots(syscall, _state, helpers) {
         return inboundHandler(method, argsStr, kernelToMeSlots);
       }
 
+      // TODO: move the rest of this method into outbound/ somewhere
+
       // CASE 3: messages from other vats to send to other machines
 
       // since we are sending to a target that is an object on another
@@ -83,6 +85,9 @@ export default function makeCommsSlots(syscall, _state, helpers) {
       // from the target slot. That would be the three-party handoff
       // case which we are not supporting yet
 
+      // TODO: don't parse the args we get from the kernel, we should wrap
+      // these in a struture that adds methodName/event/target/etc and send
+      // that to the other side
       const { args } = JSON.parse(argsStr);
 
       // map the slots
@@ -97,6 +102,8 @@ export default function makeCommsSlots(syscall, _state, helpers) {
         mapOutbound(otherMachineName, slot),
       );
 
+      // TODO: resolverID might be empty if the local vat did
+      // syscall.sendOnly, in which case we should leave resultSlot empty too
       const resultSlot = mapOutbound(otherMachineName, {
         type: 'resolver',
         id: resolverID,
@@ -105,7 +112,7 @@ export default function makeCommsSlots(syscall, _state, helpers) {
       const message = JSON.stringify({
         target: meToYouTargetSlot,
         methodName: method,
-        args,
+        args, // TODO just include argsStr directly
         slots: meToYouSlots,
         resultSlot,
       });

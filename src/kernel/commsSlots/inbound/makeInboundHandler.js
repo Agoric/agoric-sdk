@@ -76,10 +76,14 @@ export default function makeInboundHandler(state, syscall) {
         // the promise resolves to a target, this target could be
         // unknown at this point?
         kernelToMeTarget = mapInbound(data.target);
+        if (kernelToMeTarget === undefined) {
+          throw new Error(`unrecognized inbound egress target ${JSON.stringify(data.target)}`);
+        }
       }
 
       // TODO: 'data.event' should include 'send', rather than indicating a
       // send by its omission
+      // TODO: replace syscall.notifyReject with just syscall.reject
 
       if (data.event) {
         // we should have already made a promise/resolver pair for the

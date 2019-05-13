@@ -25,7 +25,7 @@ test('makeCommsSlots deliver to commsController (facetid 0)', t => {
   // confirm that init is called, we are already testing init in handleCommsController
   t.deepEqual(fulfillToDataArgs, [30, JSON.stringify('bot'), []]);
   t.deepEqual(callNowArgs,
-              [ { type: 'device', id: 4 }, 'registerHandler', '{"args":["bot",{"@qclass":"slot","index":0}]}', [ { '@qclass': 'export', index: 1 } ] ] );
+              [ { type: 'device', id: 4 }, 'registerInboundCallback', '{"args":["bot",{"@qclass":"slot","index":0}]}', [ { '@qclass': 'export', index: 1 } ] ] );
 
   t.end();
 });
@@ -34,16 +34,24 @@ test('makeCommsSlots deliver to egress', t => {
   let sendArgs;
   let fulfillToDataArgs;
   let callNowArgs;
+  let subscribeArgs;
 
   const mockSyscall = {
     send(...args) {
       sendArgs = args;
+      if (args[1] === 'bar') {
+        return 66; // TODO: issue #34 this ought to be {type: 'promise', id: 66}
+      }
+      return undefined;
     },
     fulfillToData(...args) {
       fulfillToDataArgs = args;
     },
     callNow(...args) {
       callNowArgs = args;
+    },
+    subscribe(...args) {
+      subscribeArgs = args;
     },
   };
 
@@ -57,7 +65,7 @@ test('makeCommsSlots deliver to egress', t => {
 
   // inboundHandlerFacetID is probably 1, since it's the first thing
   // allocated, but we aren't invoking deliver(init) (or capturing the
-  // callNow(registerHandler) args) to learn it more directly. Still make a
+  // callNow(registerInboundCallback) args) to learn it more directly. Still make a
   // half-hearted effort to compare it against the state object, to improve
   // the debugging experience for someone in the future
   const inboundHandlerFacetID = JSON.parse(state.ids.dump()) - 1;
@@ -82,11 +90,12 @@ test('makeCommsSlots deliver to egress', t => {
   );
   t.deepEqual(fulfillToDataArgs, [32, '"undefined"', []]);
 
-  const machineArgs = { target: 55,
+  const machineArgs = { target: { type: 'your-egress', id: 70 },
                         methodName: 'bar',
-                        args: JSON.stringify([{foo: 1}]),
+                        //args: JSON.stringify([{foo: 1}]),
+                        args: [{foo: 1}],
                         slots: [],
-                        resultSlot: undefined,
+                        resultSlot: { type: 'your-resolver', id: 71 },
                       };
   const a2 = JSON.stringify(machineArgs);
   const msgArgs = ['bot', a2];
@@ -96,8 +105,11 @@ test('makeCommsSlots deliver to egress', t => {
 
   t.deepEqual(sendArgs, [ { type: 'import', id: 55 }, 'bar',
                           JSON.stringify({ args: [{foo: 1}] }),
-                          [], 43 ]);
-
+                          [],
+                        ]);
+  t.deepEqual(subscribeArgs, [ 66 ]);
+  t.deepEqual(state.clists.mapKernelSlotToOutgoingWireMessage({type: 'promise', id: 66}),
+              { otherMachineName: 'bot', meToYouSlot: { type: 'your-promise', id: 71 } });
   t.end();
 });
 
@@ -153,6 +165,7 @@ test('makeCommsSlots deliver to ingress', t => {
     [],
     31,
   );
+  t.deepEqual(fulfillToDataArgs, [31, '"undefined"', []]);
 
   // setup with an addIngress
   commsSlots.deliver(
@@ -163,11 +176,13 @@ test('makeCommsSlots deliver to ingress', t => {
     32,
   );
   t.deepEqual(fulfillToTargetArgs, [32, { type: 'export', id: 2 }]);
+  fulfillToTargetArgs = undefined;
+  fulfillToDataArgs = undefined;
 
   commsSlots.deliver(2, 'encourageMe', '{"args":["me"]}', [], 33);
-  t.deepEqual(fulfillToDataArgs, [31, '"undefined"', []]);
+  t.equal(fulfillToTargetArgs, undefined);
+  t.equal(fulfillToDataArgs, undefined);
 
-  console.log(callNowArgs);
   t.equal(callNowArgs.length, 4);
   t.deepEqual(callNowArgs[0], {'type': 'device', id: devNodeIndex });
   t.equal(callNowArgs[1], 'sendOverChannel');

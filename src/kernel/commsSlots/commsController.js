@@ -29,7 +29,7 @@ export default function handleCommsController(
     // handler.inbound(senderName, message)
     const handlerExport = {'@qclass': 'export', index: inboundHandlerFacetID };
     const regArgs = JSON.stringify({ args: [ name, {'@qclass': 'slot', index: 0} ] });
-    syscall.callNow(channelDev, 'registerHandler', regArgs, [ handlerExport ]);
+    syscall.callNow(channelDev, 'registerInboundCallback', regArgs, [ handlerExport ]);
 
     syscall.fulfillToData(
       resolverID,
