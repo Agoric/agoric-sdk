@@ -50,6 +50,12 @@ export default function setup(syscall, state, helpers) {
             log(`calling getState`);
             const s = D(devices.d2).getState();
             log(`got ${s}`);
+          } else if (argv[0] === 'table1') {
+            console.log('HERE', devices);
+            D(devices.sharedTable).set('key1', 'val1');
+            console.log('HERE1', devices);
+            log(`calling left.leftSharedTable`);
+            await E(vats.left).leftSharedTable(devices.sharedTable);
           } else {
             throw new Error(`unknown argv mode '${argv[0]}'`);
           }
