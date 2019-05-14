@@ -78,6 +78,9 @@ export default function setup(syscall, state, helpers) {
           log(`promise resolves to ${promiseResult}`);
           return promiseResult;
         },
+        methodOnPromiseForPresence(promiseForPresence) {
+          return E(promiseForPresence).method();
+        },
         createNewObj,
       }),
     helpers.vatID,

@@ -177,6 +177,29 @@ export default function setup(syscall, state, helpers) {
             break;
           }
 
+          case 'left does: E(right.0).method(right.promise => right.presence) => returnData': {
+            const rightRootPresence = args[0];
+            const rPromisePresence = E(
+              rightRootPresence,
+            ).methodReturnsPromiseForRightPresence();
+            E(rightRootPresence)
+              .methodOnPromiseForPresence(rPromisePresence)
+              .then(r => log(`=> left vat receives the returnedData: ${r}`));
+            break;
+          }
+
+          case 'left does: E(right.0).method(right.promise => left.presence) => returnData': {
+            const rightRootPresence = args[0];
+            const leftPresence = createNewObj();
+            const lPromisePresence = E(
+              rightRootPresence,
+            ).methodReturnsPromiseForLeftPresence(leftPresence);
+            E(rightRootPresence)
+              .methodOnPromiseForPresence(lPromisePresence)
+              .then(r => log(`=> left vat receives the returnedData: ${r}`));
+            break;
+          }
+
           default:
             throw new Error(`test ${test} not recognized`);
         }

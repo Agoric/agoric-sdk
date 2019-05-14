@@ -16,6 +16,8 @@ import { runTest, runTestOnly, stepTestOnly, runTestSkip } from './run-test';
 // left does: E(right.0).method() => right.promise => reject
 // left does: E(right.0).method(left.promise) => returnData
 // left does: E(right.0).method(right.promise) => returnData
+// left does: E(right.0).method(right.promise => right.presence) => returnData
+// left does: E(right.0).method(right.promise => left.presence) => returnData
 
 /* TEST: left does: E(right.0).method() => returnData
  * DESCRIPTION: The left vat invokes a method on the right vat's root
@@ -109,3 +111,19 @@ runTest('left does: E(right.0).method(left.promise) => returnData');
  * object with a promise that the right machine knows about
  */
 runTest('left does: E(right.0).method(right.promise) => returnData');
+
+/* TEST: left does: E(right.0).method(right.promise => right.presence) => returnData
+ * DESCRIPTION: The left vat invokes a method on the right vat's root
+ * object with a promise that resolves to a right.presence
+ */
+runTest(
+  'left does: E(right.0).method(right.promise => right.presence) => returnData',
+);
+
+/* TEST: left does: E(right.0).method(right.promise => left.presence) => returnData
+ * DESCRIPTION: The left vat invokes a method on the right vat's root
+ * object with a promise that resolves to a left.presence
+ */
+runTest(
+  'left does: E(right.0).method(right.promise => left.presence) => returnData',
+);
