@@ -18,16 +18,13 @@ export function loadBasedir(basedir, stateArg) {
     if (dirent.name.endsWith('~')) {
       return;
     }
-    if (dirent.name.startsWith('vat-')) {
-      let name;
-      let indexJS;
-      if (dirent.isFile() && dirent.name.endsWith('.js')) {
-        name = dirent.name.slice('vat-'.length, -'.js'.length);
-        indexJS = path.resolve(basedir, dirent.name);
-      } else if (dirent.isDirectory()) {
-        name = dirent.name.slice('vat-'.length);
-        indexJS = path.resolve(basedir, dirent.name, 'index.js');
-      }
+    if (
+      dirent.name.startsWith('vat-') &&
+      dirent.isFile() &&
+      dirent.name.endsWith('.js')
+    ) {
+      const name = dirent.name.slice('vat-'.length, -'.js'.length);
+      const indexJS = path.resolve(basedir, dirent.name);
       vatSources.set(name, indexJS);
     }
   });
