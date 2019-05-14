@@ -19,7 +19,7 @@ test('handleCommsController connect update channels', t => {
 
   const otherMachineName = 'machine1';
   const verifyingKey = 'key1';
-  const deviceName = 'channel';
+  const channelName = 'channel';
   const resolverID = 2;
 
   const result = handleCommsController(
@@ -27,7 +27,7 @@ test('handleCommsController connect update channels', t => {
     mockSyscall,
     'connect',
     JSON.stringify({
-      args: [otherMachineName, verifyingKey, deviceName],
+      args: [otherMachineName, verifyingKey, channelName],
     }),
     [],
     resolverID,
@@ -39,8 +39,5 @@ test('handleCommsController connect update channels', t => {
   // ensure calls to syscall are correct
   t.deepEqual(fulfillToDataArgs, [resolverID, JSON.stringify('undefined'), []]);
 
-  // ensure state updated correctly
-  const channel = state.channels.getChannelDevice(otherMachineName);
-  t.equal(channel, deviceName);
   t.end();
 });

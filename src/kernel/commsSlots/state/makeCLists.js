@@ -96,6 +96,9 @@ export function makeCLists() {
       outgoingWireMessageObj,
       kernelToMeSlot,
     );
+    // TODO: serialize these more stably, since JSON will depend on the order
+    // in which the properties were added. Maybe `${type}-${id}` or
+    // djson.stringify.
     state.set(JSON.stringify(kernelToMeSlot), outgoingWireMessageObj);
     state.set(JSON.stringify(incomingWireMessageObj), kernelToMeSlot);
   }

@@ -1,13 +1,7 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
-export default function makeVatManager(
-  vatID,
-  syscallManager,
-  setup,
-  helpers,
-  devices,
-) {
+export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   const {
     kdebug,
     createPromiseWithDecider,
@@ -565,7 +559,7 @@ export default function makeVatManager(
 
   // now build the runtime, which gives us back a dispatch function
 
-  const dispatch = setup(syscall, state, helpers, devices);
+  const dispatch = setup(syscall, state, helpers);
 
   // dispatch handlers: these are used by the kernel core
 

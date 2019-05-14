@@ -20,6 +20,7 @@ export default function setup(syscall, helpers, endowments) {
     SO =>
       harden({
         registerInboundCallback(myMachineName, handler) {
+          // todo: rename to registerInboundHandler
           if (bridge.has(myMachineName)) {
             throw new Error(`bridge already has ${myMachineName}`);
           }
@@ -30,9 +31,10 @@ export default function setup(syscall, helpers, endowments) {
               console.log(`error during inboundCallback: ${e} ${e.message}`);
             }
           }
-          bridge.inboundCallback.set(myMachineName, f);
+          bridge.set(myMachineName, f);
         },
         sendOverChannel(fromMachineName, toMachineName, data) {
+          // todo: rename to sendOutbound
           if (!bridge.has(toMachineName)) {
             throw new Error(`bridge does not have ${toMachineName}`);
           }

@@ -1,7 +1,7 @@
 import makeMapInbound from './makeMapInbound';
 
 // TODO: implement verify
-function verify(_senderID) {
+function verify(_senderID, _dataStr) {
   return true;
 }
 
@@ -36,12 +36,23 @@ export default function makeInboundHandler(state, syscall) {
      * }
      *
      */
-
-    inboundHandler(senderID, dataStr) {
+    inboundHandler(method, argsStr, deviceToMeSlots) {
+      if (method !== 'inbound') {
+        throw new Error(`inboundHandler got method '${method}', not 'inbound'`);
+      }
+      if (deviceToMeSlots.length !== 0) {
+        throw new Error(
+          `inboundHandler got unexpected slots, ${JSON.stringify(
+            deviceToMeSlots,
+          )}`,
+        );
+      }
+      const [senderID, dataStr] = JSON.parse(argsStr).args;
       sidebug(
         `sendIn ${senderID} => ${state.machineState.getMachineName()}, ${dataStr}`,
       );
-      if (!verify(senderID)) {
+
+      if (!verify(senderID, dataStr)) {
         throw new Error('could not verify SenderID');
       }
 
@@ -69,7 +80,16 @@ export default function makeInboundHandler(state, syscall) {
         // the promise resolves to a target, this target could be
         // unknown at this point?
         kernelToMeTarget = mapInbound(data.target);
+        if (kernelToMeTarget === undefined) {
+          throw new Error(
+            `unrecognized inbound egress target ${JSON.stringify(data.target)}`,
+          );
+        }
       }
+
+      // TODO: 'data.event' should include 'send', rather than indicating a
+      // send by its omission
+      // TODO: replace syscall.notifyReject with just syscall.reject
 
       if (data.event) {
         // we should have already made a promise/resolver pair for the

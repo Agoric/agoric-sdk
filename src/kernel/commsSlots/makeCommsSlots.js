@@ -7,7 +7,10 @@ import makeState from './state/index';
 import handleCommsController from './commsController';
 import makeMapOutbound from './outbound/makeMapOutbound';
 
-export default function makeCommsSlots(syscall, _state, helpers, devices) {
+// access to the outside world
+import makeInboundHandler from './inbound/makeInboundHandler';
+
+export default function makeCommsSlots(syscall, _state, helpers) {
   const enableCSDebug = true;
   const { vatID } = helpers;
   function csdebug(...args) {
@@ -19,6 +22,19 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
   // setup
   const state = makeState(vatID);
   const { mapOutbound, mapOutboundTarget } = makeMapOutbound(syscall, state);
+  const { inboundHandler } = makeInboundHandler(state, syscall);
+  const inboundHandlerFacetID = state.ids.allocateID();
+
+  function sendThroughDevice(fromMachineName, toMachineName, data) {
+    const devnode = state.channels.getChannelDevice();
+    if (!devnode) {
+      throw new Error(
+        'sendThroughDevice() called before init() did setChannelDevice()',
+      );
+    }
+    const args = { args: [fromMachineName, toMachineName, data] };
+    syscall.callNow(devnode, 'sendOverChannel', JSON.stringify(args), []);
+  }
 
   const dispatch = harden({
     deliver(facetid, method, argsStr, kernelToMeSlots, resolverID) {
@@ -37,15 +53,22 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
           kernelToMeSlots,
           resolverID,
           helpers,
-          devices,
+          inboundHandlerFacetID,
         );
         return result;
       }
 
       // CASE 2: messages are coming from a device node that we have
-      // registered an object with
+      // registered an object with. The device node will use sendOnly(), so
+      // we won't get a resolverID.
+
       // TODO: build out this case, should look like liveSlots
       // TODO: figure out how to move commsSlots into liveSlots
+      if (facetid === inboundHandlerFacetID) {
+        return inboundHandler(method, argsStr, kernelToMeSlots);
+      }
+
+      // TODO: move the rest of this method into outbound/ somewhere
 
       // CASE 3: messages from other vats to send to other machines
 
@@ -64,6 +87,9 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
       // from the target slot. That would be the three-party handoff
       // case which we are not supporting yet
 
+      // TODO: don't parse the args we get from the kernel, we should wrap
+      // these in a struture that adds methodName/event/target/etc and send
+      // that to the other side
       const { args } = JSON.parse(argsStr);
 
       // map the slots
@@ -78,29 +104,27 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
         mapOutbound(otherMachineName, slot),
       );
 
+      // TODO: resolverID might be empty if the local vat did
+      // syscall.sendOnly, in which case we should leave resultSlot empty too
       const resultSlot = mapOutbound(otherMachineName, {
         type: 'resolver',
         id: resolverID,
       });
 
-      const channel = state.channels.getChannelDevice(otherMachineName);
       const message = JSON.stringify({
         target: meToYouTargetSlot,
         methodName: method,
-        args,
+        args, // TODO just include argsStr directly
         slots: meToYouSlots,
         resultSlot,
       });
 
-      helpers.log(
-        `sendOverChannel from ${state.machineState.getMachineName()}, to: ${otherMachineName} message: ${message}`,
-      );
+      const myMachineName = state.machineState.getMachineName();
+      if (myMachineName === otherMachineName) {
+        throw new Error(`wait I appear to be talking to myself`);
+      }
 
-      return devices[channel].sendOverChannel(
-        state.machineState.getMachineName(),
-        otherMachineName,
-        message,
-      );
+      return sendThroughDevice(myMachineName, otherMachineName, message);
     },
 
     // TODO: change promiseID to a slot instead of wrapping it
@@ -129,13 +153,7 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
       // TODO: figure out whether there is a one-to-one correspondance
       // between our exports to the kernel and objects
 
-      const channel = state.channels.getChannelDevice(otherMachineName);
-
-      helpers.log(
-        `sendOverChannel from ${state.machineState.getMachineName()}, to: ${otherMachineName}: ${dataMsg}`,
-      );
-
-      devices[channel].sendOverChannel(
+      sendThroughDevice(
         state.machineState.getMachineName(),
         otherMachineName,
         dataMsg,
@@ -157,11 +175,7 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
         target: mapOutbound(otherMachineName, slot),
       });
 
-      const channel = state.channels.getChannelDevice(otherMachineName);
-
-      helpers.log(`sendOverChannel message: ${dataMsg}`);
-
-      devices[channel].sendOverChannel(
+      sendThroughDevice(
         state.machineState.getMachineName(),
         otherMachineName,
         dataMsg,
@@ -177,12 +191,6 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
         id: promiseID,
       });
 
-      const channel = state.channels.getChannelDevice(otherMachineName);
-
-      helpers.log(
-        `sendOverChannel notifyReject promiseID: ${promiseID}, data: ${data}`,
-      );
-
       const msg = JSON.stringify({
         event: 'notifyReject',
         promise: meToYouSlot,
@@ -190,7 +198,7 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
         slots: slots.map(slot => mapOutbound(otherMachineName, slot)),
       });
 
-      devices[channel].sendOverChannel(
+      sendThroughDevice(
         state.machineState.getMachineName(),
         otherMachineName,
         msg,

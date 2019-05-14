@@ -1,30 +1,13 @@
 import { test } from 'tape-promise/tape';
-
-const { buildChannel } = require('../src/devices');
-const { loadBasedir, buildVatController } = require('../src/index.js');
+import buildChannel from '../src/devices/channel';
+import { loadBasedir, buildVatController } from '../src/index';
 
 async function main(withSES, basedir, argv) {
   const channelDevice = buildChannel();
-  const vatDevices = new Map();
-  const commsConfig = {
-    devices: {
-      channel: {
-        attenuatorSource: channelDevice.attenuatorSource,
-        bridge: channelDevice.bridge,
-      },
-    },
-  };
+  console.log('channelDevice is', channelDevice);
 
   const config = await loadBasedir(basedir);
-  for (const vatID of config.vatSources.keys()) {
-    if (vatID.endsWith('comms')) {
-      vatDevices.set(vatID, commsConfig);
-    }
-  }
-
-  if (vatDevices.size > 0) {
-    config.vatDevices = vatDevices;
-  }
+  config.devices = [['channel', channelDevice.src, channelDevice.endowments]];
 
   const controller = await buildVatController(config, withSES, argv);
   await controller.run();
@@ -66,10 +49,8 @@ test('run encouragementBotComms Demo with SES', async t => {
     'connect called with otherMachineName bot, channelName channel',
     'addIngress called with machineName bot, index 0',
     '=> user.talkToBot is called with bot',
-    'sendOverChannel from user, to: bot message: {"target":{"type":"your-egress","id":0},"methodName":"encourageMe","args":["user"],"slots":[],"resultSlot":{"type":"your-resolver","id":2}}',
     "=> the promise given by the call to user.talkToBot resolved to 'Thanks for the setup. I sure hope I get some encouragement...'",
     '=> encouragementBot.encourageMe got the name: user',
-    'sendOverChannel from bot, to: user: {"event":"notifyFulfillToData","promise":{"type":"your-promise","id":2},"args":"\\"user, you are awesome, keep it up!\\"","slots":[]}',
     '=> user receives the encouragement: user, you are awesome, keep it up!',
   ]);
   t.end();
@@ -86,10 +67,8 @@ test('run encouragementBotComms Demo without SES', async t => {
     'connect called with otherMachineName bot, channelName channel',
     'addIngress called with machineName bot, index 0',
     '=> user.talkToBot is called with bot',
-    'sendOverChannel from user, to: bot message: {"target":{"type":"your-egress","id":0},"methodName":"encourageMe","args":["user"],"slots":[],"resultSlot":{"type":"your-resolver","id":2}}',
     "=> the promise given by the call to user.talkToBot resolved to 'Thanks for the setup. I sure hope I get some encouragement...'",
     '=> encouragementBot.encourageMe got the name: user',
-    'sendOverChannel from bot, to: user: {"event":"notifyFulfillToData","promise":{"type":"your-promise","id":2},"args":"\\"user, you are awesome, keep it up!\\"","slots":[]}',
     '=> user receives the encouragement: user, you are awesome, keep it up!',
   ]);
   t.end();

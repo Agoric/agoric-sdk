@@ -13,7 +13,7 @@ export default function setup(syscall, state, helpers) {
     state,
     E =>
       harden({
-        async bootstrap(argv, vats) {
+        async bootstrap(argv, vats, devices) {
           log('=> bootstrap() called');
 
           // setup
@@ -22,8 +22,16 @@ export default function setup(syscall, state, helpers) {
           const CHANNEL = 'channel';
           const INDEX_FOR_RIGHT_INITIAL_OBJ = 0;
 
-          await E(vats.rightcomms).init(RIGHT_MACHINE_NAME, 'rightSigningKey');
-          await E(vats.leftcomms).init(LEFT_MACHINE_NAME, 'leftSigningKey');
+          await E(vats.rightcomms).init(
+            RIGHT_MACHINE_NAME,
+            'rightSigningKey',
+            devices.channel,
+          );
+          await E(vats.leftcomms).init(
+            LEFT_MACHINE_NAME,
+            'leftSigningKey',
+            devices.channel,
+          );
 
           await E(vats.rightcomms).connect(
             LEFT_MACHINE_NAME,

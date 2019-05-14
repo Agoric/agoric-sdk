@@ -92,7 +92,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
   const { kernel, s, r } = withSES ? buildSESKernel() : buildNonSESKernel();
   // console.log('kernel', kernel);
 
-  async function addVat(vatID, sourceIndex, options) {
+  async function addVat(vatID, sourceIndex, _options) {
     if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
       throw Error(
         'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
@@ -104,10 +104,6 @@ export async function buildVatController(config, withSES = true, argv = []) {
     // bootstrap.js gets a 'controller' object which can invoke start()
     // (which is expected to initialize some state and export some facetIDs)
     let setup;
-    // note: the contents of this 'devices' object are kernel-realm, but
-    // the object itself is host-realm. kernel.addVat is responsible for
-    // unpacking it safely and not exposing the container to vat code.
-    const devices = {};
 
     if (withSES) {
       // TODO: if the 'require' we provide here supplies a non-pure module,
@@ -121,26 +117,11 @@ export async function buildVatController(config, withSES = true, argv = []) {
       let source = await bundleSource(`${sourceIndex}`);
       source = `(${source})`;
       setup = s.evaluate(source, { require: r })();
-      if (options.devices) {
-        Object.getOwnPropertyNames(options.devices).forEach(name => {
-          const d = options.devices[name];
-          devices[name] = s.evaluate(`(${d.attenuatorSource})`, { require: r })(
-            d,
-          );
-        });
-      }
     } else {
       // eslint-disable-next-line global-require,import/no-dynamic-require
       setup = require(`${sourceIndex}`).default;
-      if (options.devices) {
-        Object.getOwnPropertyNames(options.devices).forEach(name => {
-          const d = options.devices[name];
-          // eslint-disable-next-line no-eval
-          devices[name] = eval(d.attenuatorSource)(d);
-        });
-      }
     }
-    kernel.addVat(vatID, setup, devices);
+    kernel.addVat(vatID, setup);
   }
 
   async function addDevice(name, sourceIndex, endowments) {
@@ -208,17 +189,8 @@ export async function buildVatController(config, withSES = true, argv = []) {
 
   if (config.vatSources) {
     for (const vatID of config.vatSources.keys()) {
-      if (config.vatDevices) {
-        // eslint-disable-next-line no-await-in-loop
-        await controller.addVat(
-          vatID,
-          config.vatSources.get(vatID),
-          config.vatDevices.get(vatID),
-        );
-      } else {
-        // eslint-disable-next-line no-await-in-loop
-        await controller.addVat(vatID, config.vatSources.get(vatID));
-      }
+      // eslint-disable-next-line no-await-in-loop
+      await controller.addVat(vatID, config.vatSources.get(vatID));
     }
   }
 
