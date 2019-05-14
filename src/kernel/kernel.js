@@ -225,7 +225,7 @@ export default function buildKernel(kernelEndowments) {
     invoke,
   };
 
-  function addVat(vatID, setup, vatDevices) {
+  function addVat(vatID, setup) {
     if (vats.has(vatID)) {
       throw new Error(`already have a vat named '${vatID}'`);
     }
@@ -238,13 +238,7 @@ export default function buildKernel(kernelEndowments) {
       },
     });
     // the vatManager invokes setup() to build the userspace image
-    const manager = makeVatManager(
-      vatID,
-      syscallManager,
-      setup,
-      helpers,
-      vatDevices,
-    );
+    const manager = makeVatManager(vatID, syscallManager, setup, helpers);
     vats.set(
       vatID,
       harden({
@@ -453,7 +447,7 @@ export default function buildKernel(kernelEndowments) {
   }
 
   const kernel = harden({
-    addVat(vatID, setup, vatDevices = {}) {
+    addVat(vatID, setup) {
       harden(setup);
       // 'setup' must be an in-realm function. This test guards against
       // accidents, but not against malice. MarkM thinks there is no reliable
@@ -461,15 +455,7 @@ export default function buildKernel(kernelEndowments) {
       if (!(setup instanceof Function)) {
         throw Error('setup is not an in-realm function');
       }
-      const kernelRealmDevices = {};
-      Object.getOwnPropertyNames(vatDevices).forEach(name => {
-        const d = vatDevices[name];
-        if (!(d instanceof Object)) {
-          throw Error(`device[${name}] is not an in-realm object`);
-        }
-        kernelRealmDevices[name] = d;
-      });
-      addVat(`${vatID}`, setup, kernelRealmDevices);
+      addVat(`${vatID}`, setup);
     },
 
     addDevice(deviceName, setup, endowments) {
