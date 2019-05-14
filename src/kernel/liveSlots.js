@@ -377,7 +377,7 @@ function build(syscall, _state, makeRoot, forVatID) {
       ) {
         const slot = ser.slots[unser.index];
         if (slot.type === 'import' || slot.type === 'export') {
-          syscall.fulfillToTarget(resolverID, slot);
+          syscall.fulfillToPresence(resolverID, slot);
         }
       } else {
         // if it resolves to data, .thens fire but kernel-queued messages are
@@ -415,8 +415,8 @@ function build(syscall, _state, makeRoot, forVatID) {
     importedPromisesByPromiseID.get(promiseID).res(val);
   }
 
-  function notifyFulfillToTarget(promiseID, slot) {
-    lsdebug(`ls.dispatch.notifyFulfillToTarget(${promiseID}, ${slot})`);
+  function notifyFulfillToPresence(promiseID, slot) {
+    lsdebug(`ls.dispatch.notifyFulfillToPresence(${promiseID}, ${slot})`);
     if (!importedPromisesByPromiseID.has(promiseID)) {
       throw new Error(`unknown promiseID '${promiseID}'`);
     }
@@ -444,7 +444,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     deliver,
     // subscribe,
     notifyFulfillToData,
-    notifyFulfillToTarget,
+    notifyFulfillToPresence,
     notifyReject,
   };
 }
@@ -453,13 +453,13 @@ export function makeLiveSlots(syscall, state, makeRoot, forVatID = 'unknown') {
   const {
     deliver,
     notifyFulfillToData,
-    notifyFulfillToTarget,
+    notifyFulfillToPresence,
     notifyReject,
   } = build(syscall, state, makeRoot, forVatID);
   return harden({
     deliver,
     notifyFulfillToData,
-    notifyFulfillToTarget,
+    notifyFulfillToPresence,
     notifyReject,
   });
 }

@@ -182,8 +182,8 @@ test('makeCommsSlots deliver to ingress', t => {
   const calls = [];
 
   const mockSyscall = {
-    fulfillToTarget(...args) {
-      calls.push(['fulfillToTarget', args]);
+    fulfillToPresence(...args) {
+      calls.push(['fulfillToPresence', args]);
     },
     fulfillToData(...args) {
       calls.push(['fulfillToData', args]);
@@ -231,7 +231,7 @@ test('makeCommsSlots deliver to ingress', t => {
     [{ type: 'your-ingress', id: 0 }],
     32,
   );
-  t.deepEqual(calls[0], ['fulfillToTarget', [32, { type: 'export', id: 2 }]]);
+  t.deepEqual(calls[0], ['fulfillToPresence', [32, { type: 'export', id: 2 }]]);
   calls.shift();
 
   commsSlots.deliver(2, 'encourageMe', '{"args":["me"]}', [], 33);

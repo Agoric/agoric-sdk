@@ -9,7 +9,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     kernelPromises,
     runQueue,
     fulfillToData,
-    fulfillToTarget,
+    fulfillToPresence,
     reject,
     log,
     process,
@@ -364,9 +364,9 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     if (p.state === 'unresolved') {
       p.subscribers.add(vatID);
       // otherwise it's already resolved, you probably want to know how
-    } else if (p.state === 'fulfilledToTarget') {
+    } else if (p.state === 'fulfilledToPresence') {
       runQueue.push({
-        type: 'notifyFulfillToTarget',
+        type: 'notifyFulfillToPresence',
         vatID,
         kernelPromiseID: id,
       });
@@ -438,7 +438,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     fulfillToData(id, fulfillData, slots);
   }
 
-  function doFulfillToTarget(resolverID, slot) {
+  function doFulfillToPresence(resolverID, slot) {
     Nat(resolverID);
     const { id } = mapOutbound({
       type: 'resolver',
@@ -450,11 +450,11 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
 
     const targetSlot = mapOutbound(slot);
     kdebug(
-      `syscall[${vatID}].fulfillToTarget(vatid=${resolverID}/kid=${id}) = vat:${JSON.stringify(
+      `syscall[${vatID}].fulfillToPresence(vatid=${resolverID}/kid=${id}) = vat:${JSON.stringify(
         targetSlot,
       )}=ker:${id})`,
     );
-    fulfillToTarget(id, targetSlot);
+    fulfillToPresence(id, targetSlot);
   }
 
   function doReject(resolverID, rejectData, vatSlots) {
@@ -524,11 +524,11 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
         ? replay('fulfillToData', ...args)
         : doFulfillToData(...args);
     },
-    fulfillToTarget(...args) {
-      transcriptAddSyscall(['fulfillToTarget', ...args]);
+    fulfillToPresence(...args) {
+      transcriptAddSyscall(['fulfillToPresence', ...args]);
       return inReplay
-        ? replay('fulfillToTarget', ...args)
-        : doFulfillToTarget(...args);
+        ? replay('fulfillToPresence', ...args)
+        : doFulfillToPresence(...args);
     },
     reject(...args) {
       transcriptAddSyscall(['reject', ...args]);
@@ -632,7 +632,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
       );
     }
 
-    if (type === 'notifyFulfillToTarget') {
+    if (type === 'notifyFulfillToPresence') {
       const { kernelPromiseID } = message;
       const p = kernelPromises.get(kernelPromiseID);
       const relativeID = mapInbound({
@@ -641,8 +641,8 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
       }).id;
       const slot = mapInbound(p.fulfillSlot);
       return doProcess(
-        ['notifyFulfillToTarget', relativeID, slot],
-        `vat[${vatID}].promise[${relativeID}] fulfillToTarget failed`,
+        ['notifyFulfillToPresence', relativeID, slot],
+        `vat[${vatID}].promise[${relativeID}] fulfillToPresence failed`,
       );
     }
 

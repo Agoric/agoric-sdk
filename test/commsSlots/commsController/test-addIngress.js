@@ -7,11 +7,11 @@ const helpers = {
 };
 
 test('handleCommsController addIngress', t => {
-  let fulfillToTargetArgs;
+  let fulfillToPresenceArgs;
 
   const mockSyscall = {
-    fulfillToTarget(...args) {
-      fulfillToTargetArgs = args;
+    fulfillToPresence(...args) {
+      fulfillToPresenceArgs = args;
     },
   };
 
@@ -36,7 +36,7 @@ test('handleCommsController addIngress', t => {
   t.equal(result, undefined);
 
   // ensure calls to syscall are correct
-  t.deepEqual(fulfillToTargetArgs, [
+  t.deepEqual(fulfillToPresenceArgs, [
     resolverID,
     {
       type: 'export',
@@ -68,11 +68,11 @@ test('handleCommsController addIngress', t => {
 });
 
 test('handleCommsController addIngress twice', t => {
-  let fulfillToTargetArgs;
+  let fulfillToPresenceArgs;
 
   const mockSyscall = {
-    fulfillToTarget(...args) {
-      fulfillToTargetArgs = args;
+    fulfillToPresence(...args) {
+      fulfillToPresenceArgs = args;
     },
   };
 
@@ -99,7 +99,7 @@ test('handleCommsController addIngress twice', t => {
   t.equal(result, undefined);
 
   // ensure calls to syscall are correct
-  t.deepEqual(fulfillToTargetArgs, [
+  t.deepEqual(fulfillToPresenceArgs, [
     resolverID,
     {
       type: 'export',
@@ -136,7 +136,7 @@ test('handleCommsController addIngress twice', t => {
   t.equal(result2, undefined);
 
   // ensure calls to syscall are correct
-  t.deepEqual(fulfillToTargetArgs, [
+  t.deepEqual(fulfillToPresenceArgs, [
     resolverID,
     {
       type: 'export',
@@ -161,11 +161,11 @@ test('handleCommsController addIngress twice', t => {
 });
 
 test('handleCommsController addIngress same again', t => {
-  let fulfillToTargetArgs;
+  let fulfillToPresenceArgs;
 
   const mockSyscall = {
-    fulfillToTarget(...args) {
-      fulfillToTargetArgs = args;
+    fulfillToPresence(...args) {
+      fulfillToPresenceArgs = args;
     },
   };
 
@@ -190,7 +190,7 @@ test('handleCommsController addIngress same again', t => {
   t.equal(result, undefined);
 
   // ensure calls to syscall are correct
-  t.deepEqual(fulfillToTargetArgs, [
+  t.deepEqual(fulfillToPresenceArgs, [
     resolverID,
     {
       type: 'export',
@@ -227,7 +227,7 @@ test('handleCommsController addIngress same again', t => {
   t.equal(result2, undefined);
 
   // ensure calls to syscall are correct
-  t.deepEqual(fulfillToTargetArgs, [
+  t.deepEqual(fulfillToPresenceArgs, [
     resolverID,
     {
       type: 'export',

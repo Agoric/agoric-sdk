@@ -161,8 +161,8 @@ export default function makeCommsSlots(syscall, _state, helpers) {
     },
 
     // TODO: use a slot with type promise instead of a promiseID
-    notifyFulfillToTarget(promiseID, slot) {
-      csdebug(`cs.dispatch.notifyFulfillToTarget(${promiseID}, ${slot})`);
+    notifyFulfillToPresence(promiseID, slot) {
+      csdebug(`cs.dispatch.notifyFulfillToPresence(${promiseID}, ${slot})`);
 
       const { otherMachineName, meToYouSlot } = mapOutboundTarget({
         type: 'promise',
@@ -170,7 +170,7 @@ export default function makeCommsSlots(syscall, _state, helpers) {
       });
 
       const dataMsg = JSON.stringify({
-        event: 'notifyFulfillToTarget',
+        event: 'notifyFulfillToPresence',
         promise: meToYouSlot,
         target: mapOutbound(otherMachineName, slot),
       });

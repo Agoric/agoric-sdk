@@ -120,7 +120,7 @@ export default function handleCommsController(
     }
 
     // notify the kernel that this call has resolved
-    syscall.fulfillToTarget(resolverID, kernelToMeSlot);
+    syscall.fulfillToPresence(resolverID, kernelToMeSlot);
   }
 
   // This is a degenerate form of deserialization, just enough to handle the

@@ -874,7 +874,7 @@ test('promise resolveToData', async t => {
   t.end();
 });
 
-test('promise resolveToTarget', async t => {
+test('promise resolveToPresence', async t => {
   const kernel = buildKernel({ setImmediate });
   let syscall;
   const log = [];
@@ -883,10 +883,10 @@ test('promise resolveToTarget', async t => {
     function deliver(facetID, method, argsString, slots) {
       log.push(['deliver', facetID, method, argsString, slots]);
     }
-    function notifyFulfillToTarget(promiseID, slot) {
+    function notifyFulfillToPresence(promiseID, slot) {
       log.push(['notify', promiseID, slot]);
     }
-    return { deliver, notifyFulfillToTarget };
+    return { deliver, notifyFulfillToPresence };
   }
   kernel.addVat('vatA', setup);
 
@@ -910,13 +910,13 @@ test('promise resolveToTarget', async t => {
     },
   ]);
 
-  syscall.fulfillToTarget(pr.resolverID, A);
-  // A gets mapped to a kernelPromiseID first, and a notifyFulfillToTarget
+  syscall.fulfillToPresence(pr.resolverID, A);
+  // A gets mapped to a kernelPromiseID first, and a notifyFulfillToPresence
   // message is queued
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
     {
-      type: 'notifyFulfillToTarget',
+      type: 'notifyFulfillToPresence',
       vatID: 'vatA',
       kernelPromiseID: 40,
     },
@@ -930,7 +930,7 @@ test('promise resolveToTarget', async t => {
   t.deepEqual(kernel.dump().promises, [
     {
       id: 40,
-      state: 'fulfilledToTarget',
+      state: 'fulfilledToPresence',
       fulfillSlot: ex1,
     },
   ]);

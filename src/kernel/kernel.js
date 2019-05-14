@@ -26,7 +26,7 @@ export default function buildKernel(kernelEndowments) {
 
   // runQueue entries are {type, vatID, more..}. 'more' depends on type:
   // * deliver: target, msg
-  // * notifyFulfillToData/notifyFulfillToTarget/notifyReject: kernelPromiseID
+  // * notifyFulfillToData/notifyFulfillToPresence/notifyReject: kernelPromiseID
   const runQueue = [];
 
   // in the kernel table, promises and resolvers are both indexed by the same
@@ -87,7 +87,7 @@ export default function buildKernel(kernelEndowments) {
         const s = `data is not callable, has no method ${msg.method}`;
         // eslint-disable-next-line no-use-before-define
         reject(msg.kernelPromiseID, makeError(s), []);
-      } else if (kp.state === 'fulfilledToTarget') {
+      } else if (kp.state === 'fulfilledToPresence') {
         send(kp.fulfillSlot, msg);
       } else if (kp.state === 'rejected') {
         // TODO would it be simpler to redirect msg.kernelPromiseID to kp?
@@ -126,7 +126,7 @@ export default function buildKernel(kernelEndowments) {
     }
   }
 
-  function fulfillToTarget(id, targetSlot) {
+  function fulfillToPresence(id, targetSlot) {
     if (!kernelPromises.has(id)) {
       throw new Error(`unknown kernelPromise id '${id}'`);
     }
@@ -136,13 +136,13 @@ export default function buildKernel(kernelEndowments) {
     }
     if (targetSlot.type !== 'export') {
       throw new Error(
-        `fulfillToTarget() must fulfill to export, not ${targetSlot.type}`,
+        `fulfillToPresence() must fulfill to export, not ${targetSlot.type}`,
       );
     }
 
-    p.state = 'fulfilledToTarget';
+    p.state = 'fulfilledToPresence';
     p.fulfillSlot = targetSlot;
-    notifySubscribersAndQueue(id, p, 'notifyFulfillToTarget');
+    notifySubscribersAndQueue(id, p, 'notifyFulfillToPresence');
     delete p.subscribers;
     delete p.decider;
     delete p.queue;
@@ -218,7 +218,7 @@ export default function buildKernel(kernelEndowments) {
     kernelPromises,
     runQueue,
     fulfillToData,
-    fulfillToTarget,
+    fulfillToPresence,
     reject,
     log,
     process,

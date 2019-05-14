@@ -5,7 +5,7 @@ const helpers = {
   log: console.log,
 };
 
-test('makeCommsSlots notifyFulfillToTarget', t => {
+test('makeCommsSlots notifyFulfillToPresence', t => {
   const calls = [];
   const mockSyscall = {
     callNow(...args) {
@@ -38,7 +38,7 @@ test('makeCommsSlots notifyFulfillToTarget', t => {
   // is this what we need to add?
   state.clists.add('abc', kernelToMeSlot, youToMeSlot, meToYouSlot);
 
-  commsSlots.notifyFulfillToTarget(20, kernelToMeSlot);
+  commsSlots.notifyFulfillToPresence(20, kernelToMeSlot);
   t.equal(calls.length, 1);
   t.equal(calls[0][0], 'callNow');
   t.deepEqual(calls[0][1], [
@@ -49,7 +49,7 @@ test('makeCommsSlots notifyFulfillToTarget', t => {
         'bot',
         'abc',
         JSON.stringify({
-          event: 'notifyFulfillToTarget',
+          event: 'notifyFulfillToPresence',
           promise: { type: 'your-ingress', id: 9 },
           target: { type: 'your-egress', id: 3 },
         }),

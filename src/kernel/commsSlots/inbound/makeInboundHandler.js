@@ -106,8 +106,8 @@ export default function makeInboundHandler(state, syscall) {
               kernelToMeSlots,
             );
             return;
-          case 'notifyFulfillToTarget':
-            syscall.fulfillToTarget(
+          case 'notifyFulfillToPresence':
+            syscall.fulfillToPresence(
               resolverKernelToMeSlot.id,
               kernelToMeTarget,
             );
