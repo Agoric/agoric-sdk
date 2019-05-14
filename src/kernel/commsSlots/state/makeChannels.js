@@ -1,30 +1,25 @@
 // TODO: check signature on this
 // in the future, data structure would contain name and predicate
 
-// this maps machines to deviceNames to be used as a channel
+// for now, this just tracks the one channel we use for all messages
 export function makeChannels() {
-  const machineToChannelDevice = new Map();
-  const channelDeviceToMachine = new Map();
+  let channelDev;
 
   return {
     /**
-     * @param  {string} machineName
-     * @param  {string} deviceName
+     * @param  {slotref} device
      */
-    add(machineName, deviceName) {
-      machineToChannelDevice.set(machineName, deviceName);
-      channelDeviceToMachine.set(deviceName, machineName);
+    setChannelDevice(device) {
+      channelDev = device;
     },
     /**
-     * Get the callback that reaches the machine
-     * @param  {string} machine
-     * @returns {string} deviceName
+     * @returns {slotref} device
      */
-    getChannelDevice(machine) {
-      return machineToChannelDevice.get(machine);
+    getChannelDevice() {
+      return channelDev;
     },
     dump() {
-      return machineToChannelDevice;
+      return channelDev;
     },
   };
 }

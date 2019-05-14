@@ -13,7 +13,7 @@ export default function setup(syscall, state, helpers) {
     state,
     E =>
       harden({
-        async bootstrap(argv, vats) {
+        async bootstrap(argv, vats, devices) {
           console.log('=> bootstrap() called');
 
           const BOT_MACHINE_NAME = 'bot';
@@ -21,8 +21,10 @@ export default function setup(syscall, state, helpers) {
           const BOT_USER_CHANNEL = 'channel';
           const BOT_CLIST_INDEX = 0;
 
-          await E(vats.botcomms).init(BOT_MACHINE_NAME, 'botSigningKey');
-          await E(vats.usercomms).init(USER_MACHINE_NAME, 'userSigningKey');
+          await E(vats.botcomms).init(BOT_MACHINE_NAME, 'botSigningKey',
+                                      devices.channel);
+          await E(vats.usercomms).init(USER_MACHINE_NAME, 'userSigningKey',
+                                       devices.channel);
 
           await E(vats.botcomms).connect(
             USER_MACHINE_NAME,

@@ -7,7 +7,10 @@ import makeState from './state/index';
 import handleCommsController from './commsController';
 import makeMapOutbound from './outbound/makeMapOutbound';
 
-export default function makeCommsSlots(syscall, _state, helpers, devices) {
+// access to the outside world
+import makeInboundHandler from './inbound/makeInboundHandler';
+
+export default function makeCommsSlots(syscall, _state, helpers) {
   const enableCSDebug = true;
   const { vatID } = helpers;
   function csdebug(...args) {
@@ -19,6 +22,17 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
   // setup
   const state = makeState(vatID);
   const { mapOutbound, mapOutboundTarget } = makeMapOutbound(syscall, state);
+  const { inboundHandler } = makeInboundHandler(state, syscall);
+  const inboundHandlerFacetID = state.ids.allocateID();
+
+  function sendThroughDevice(fromMachineName, toMachineName, data) {
+    const devnode = state.channels.getChannelDevice();
+    if (!devnode) {
+      throw new Error('sendThroughDevice() called before init() did setChannelDevice()');
+    }
+    const args = { args: [ fromMachineName, toMachineName, data ] };
+    const _ret = syscall.callNow(devnode, 'sendOverChannel', JSON.stringify(args), []);
+  }
 
   const dispatch = harden({
     deliver(facetid, method, argsStr, kernelToMeSlots, resolverID) {
@@ -37,15 +51,20 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
           kernelToMeSlots,
           resolverID,
           helpers,
-          devices,
+          inboundHandlerFacetID,
         );
         return result;
       }
 
       // CASE 2: messages are coming from a device node that we have
-      // registered an object with
+      // registered an object with. The device node will use sendOnly(), so
+      // we won't get a resolverID.
+
       // TODO: build out this case, should look like liveSlots
       // TODO: figure out how to move commsSlots into liveSlots
+      if (facetid === inboundHandlerFacetID) {
+        return inboundHandler(method, argsStr, kernelToMeSlots);
+      }
 
       // CASE 3: messages from other vats to send to other machines
 
@@ -83,7 +102,6 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
         id: resolverID,
       });
 
-      const channel = state.channels.getChannelDevice(otherMachineName);
       const message = JSON.stringify({
         target: meToYouTargetSlot,
         methodName: method,
@@ -96,8 +114,13 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
         `sendOverChannel from ${state.machineState.getMachineName()}, to: ${otherMachineName} message: ${message}`,
       );
 
-      return devices[channel].sendOverChannel(
-        state.machineState.getMachineName(),
+      const myMachineName = state.machineState.getMachineName();
+      if (myMachineName === otherMachineName) {
+        throw new Error(`wait I appear to be talking to myself`);
+      }
+
+      return sendThroughDevice(
+        myMachineName,
         otherMachineName,
         message,
       );
@@ -135,7 +158,7 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
         `sendOverChannel from ${state.machineState.getMachineName()}, to: ${otherMachineName}: ${dataMsg}`,
       );
 
-      devices[channel].sendOverChannel(
+      sendThroughDevice(
         state.machineState.getMachineName(),
         otherMachineName,
         dataMsg,
@@ -161,7 +184,7 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
 
       helpers.log(`sendOverChannel message: ${dataMsg}`);
 
-      devices[channel].sendOverChannel(
+      sendThroughDevice(
         state.machineState.getMachineName(),
         otherMachineName,
         dataMsg,
@@ -190,7 +213,7 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
         slots: slots.map(slot => mapOutbound(otherMachineName, slot)),
       });
 
-      devices[channel].sendOverChannel(
+      sendThroughDevice(
         state.machineState.getMachineName(),
         otherMachineName,
         msg,

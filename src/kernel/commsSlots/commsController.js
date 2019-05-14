@@ -1,6 +1,3 @@
-// access to the outside world
-import makeInboundHandler from './inbound/makeInboundHandler';
-
 export default function handleCommsController(
   state,
   syscall,
@@ -9,9 +6,9 @@ export default function handleCommsController(
   slots,
   resolverID,
   helpers,
-  devices,
+  inboundHandlerFacetID,
 ) {
-  function init([name, proofMaterial]) {
+  function init([name, proofMaterial, channelDev]) {
     helpers.log(`init called with name ${name}`);
     if (
       state.machineState.getMachineName() != null ||
@@ -23,6 +20,17 @@ export default function handleCommsController(
     state.machineState.setMachineName(name);
     state.machineState.setProofMaterial(proofMaterial);
 
+    // remember the channel device so we can send messages later
+    state.channels.setChannelDevice(channelDev);
+
+    // Create a handler object, and register it with the channel device.
+    // After registration, each time a message arrives for our machine name,
+    // the channel device will invoke the handler like:
+    // handler.inbound(senderName, message)
+    const handlerExport = {'@qclass': 'export', index: inboundHandlerFacetID };
+    const regArgs = JSON.stringify({ args: [ name, {'@qclass': 'slot', index: 0} ] });
+    syscall.callNow(channelDev, 'registerHandler', regArgs, [ handlerExport ]);
+
     syscall.fulfillToData(
       resolverID,
       JSON.stringify(state.machineState.getMachineName()),
@@ -31,27 +39,19 @@ export default function handleCommsController(
   }
 
   function connect([otherMachineName, _verifyingKey, channelName]) {
+    // TODO: channelName is now ignored, should be removed
     helpers.log(
       `connect called with otherMachineName ${otherMachineName}, channelName ${channelName}`,
     );
-    if (channelName !== 'channel') {
-      throw new Error('channel not recognized');
-    }
 
     // TODO: check signature on this
     // in the future, data structure would contain name and predicate
+    syscall.fulfillToData(
+      resolverID,
+      JSON.stringify('undefined'),
+      [],
+    );
 
-    state.channels.add(otherMachineName, channelName);
-    const { inboundHandler } = makeInboundHandler(state, syscall);
-
-    if (devices && devices[channelName]) {
-      devices[channelName].registerInboundCallback(
-        state.machineState.getMachineName(),
-        inboundHandler,
-      );
-    }
-
-    syscall.fulfillToData(resolverID, JSON.stringify('undefined'), []);
   }
 
   // an egress is something on my machine that I make available to
@@ -122,12 +122,21 @@ export default function handleCommsController(
     syscall.fulfillToTarget(resolverID, kernelToMeSlot);
   }
 
+  // This is a degenerate form of deserialization, just enough to handle the
+  // handful of methods implemented by the commsController. 'argsbytes' can
+  // normally have arbitrary {'@qclass':'slot', index} objects, which point
+  // into the 'slots' array. The only method that expects one is init(), and
+  // it always expects it in args[2], so we manually translate it here.
   const { args } = JSON.parse(argsbytes);
 
   // translate args that are slots to the slot rather than qclass
 
   switch (method) {
     case 'init':
+      if (args[2]['@qclass'] !== 'slot' || args[2].index !== 0) {
+        throw new Error(`unexpected args for init(): ${argsbytes}`);
+      }
+      args[2] = slots[0];
       return init(args);
     case 'addEgress':
       return addEgress(args);
