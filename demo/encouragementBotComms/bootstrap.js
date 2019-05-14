@@ -21,10 +21,16 @@ export default function setup(syscall, state, helpers) {
           const BOT_USER_CHANNEL = 'channel';
           const BOT_CLIST_INDEX = 0;
 
-          await E(vats.botcomms).init(BOT_MACHINE_NAME, 'botSigningKey',
-                                      devices.channel);
-          await E(vats.usercomms).init(USER_MACHINE_NAME, 'userSigningKey',
-                                       devices.channel);
+          await E(vats.botcomms).init(
+            BOT_MACHINE_NAME,
+            'botSigningKey',
+            devices.channel,
+          );
+          await E(vats.usercomms).init(
+            USER_MACHINE_NAME,
+            'userSigningKey',
+            devices.channel,
+          );
 
           await E(vats.botcomms).connect(
             USER_MACHINE_NAME,

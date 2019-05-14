@@ -28,10 +28,12 @@ export default function makeCommsSlots(syscall, _state, helpers) {
   function sendThroughDevice(fromMachineName, toMachineName, data) {
     const devnode = state.channels.getChannelDevice();
     if (!devnode) {
-      throw new Error('sendThroughDevice() called before init() did setChannelDevice()');
+      throw new Error(
+        'sendThroughDevice() called before init() did setChannelDevice()',
+      );
     }
-    const args = { args: [ fromMachineName, toMachineName, data ] };
-    const _ret = syscall.callNow(devnode, 'sendOverChannel', JSON.stringify(args), []);
+    const args = { args: [fromMachineName, toMachineName, data] };
+    syscall.callNow(devnode, 'sendOverChannel', JSON.stringify(args), []);
   }
 
   const dispatch = harden({
@@ -117,20 +119,12 @@ export default function makeCommsSlots(syscall, _state, helpers) {
         resultSlot,
       });
 
-      helpers.log(
-        `sendOverChannel from ${state.machineState.getMachineName()}, to: ${otherMachineName} message: ${message}`,
-      );
-
       const myMachineName = state.machineState.getMachineName();
       if (myMachineName === otherMachineName) {
         throw new Error(`wait I appear to be talking to myself`);
       }
 
-      return sendThroughDevice(
-        myMachineName,
-        otherMachineName,
-        message,
-      );
+      return sendThroughDevice(myMachineName, otherMachineName, message);
     },
 
     // TODO: change promiseID to a slot instead of wrapping it
@@ -159,12 +153,6 @@ export default function makeCommsSlots(syscall, _state, helpers) {
       // TODO: figure out whether there is a one-to-one correspondance
       // between our exports to the kernel and objects
 
-      const channel = state.channels.getChannelDevice(otherMachineName);
-
-      helpers.log(
-        `sendOverChannel from ${state.machineState.getMachineName()}, to: ${otherMachineName}: ${dataMsg}`,
-      );
-
       sendThroughDevice(
         state.machineState.getMachineName(),
         otherMachineName,
@@ -187,10 +175,6 @@ export default function makeCommsSlots(syscall, _state, helpers) {
         target: mapOutbound(otherMachineName, slot),
       });
 
-      const channel = state.channels.getChannelDevice(otherMachineName);
-
-      helpers.log(`sendOverChannel message: ${dataMsg}`);
-
       sendThroughDevice(
         state.machineState.getMachineName(),
         otherMachineName,
@@ -206,12 +190,6 @@ export default function makeCommsSlots(syscall, _state, helpers) {
         type: 'promise',
         id: promiseID,
       });
-
-      const channel = state.channels.getChannelDevice(otherMachineName);
-
-      helpers.log(
-        `sendOverChannel notifyReject promiseID: ${promiseID}, data: ${data}`,
-      );
 
       const msg = JSON.stringify({
         event: 'notifyReject',

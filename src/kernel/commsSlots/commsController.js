@@ -27,9 +27,13 @@ export default function handleCommsController(
     // After registration, each time a message arrives for our machine name,
     // the channel device will invoke the handler like:
     // handler.inbound(senderName, message)
-    const handlerExport = {'@qclass': 'export', index: inboundHandlerFacetID };
-    const regArgs = JSON.stringify({ args: [ name, {'@qclass': 'slot', index: 0} ] });
-    syscall.callNow(channelDev, 'registerInboundCallback', regArgs, [ handlerExport ]);
+    const handlerExport = { type: 'export', id: inboundHandlerFacetID };
+    const regArgs = JSON.stringify({
+      args: [name, { '@qclass': 'slot', index: 0 }],
+    });
+    syscall.callNow(channelDev, 'registerInboundCallback', regArgs, [
+      handlerExport,
+    ]);
 
     syscall.fulfillToData(
       resolverID,
@@ -46,12 +50,7 @@ export default function handleCommsController(
 
     // TODO: check signature on this
     // in the future, data structure would contain name and predicate
-    syscall.fulfillToData(
-      resolverID,
-      JSON.stringify('undefined'),
-      [],
-    );
-
+    syscall.fulfillToData(resolverID, JSON.stringify('undefined'), []);
   }
 
   // an egress is something on my machine that I make available to
@@ -136,7 +135,7 @@ export default function handleCommsController(
       if (args[2]['@qclass'] !== 'slot' || args[2].index !== 0) {
         throw new Error(`unexpected args for init(): ${argsbytes}`);
       }
-      args[2] = slots[0];
+      args[2] = slots[args[2].index];
       return init(args);
     case 'addEgress':
       return addEgress(args);

@@ -3,7 +3,7 @@ import { makeChannels } from '../../../src/kernel/commsSlots/state/makeChannels'
 
 test('channels set and get', t => {
   const channels = makeChannels();
-  const dev1 = {type: 'device', index: 1};
+  const dev1 = { type: 'device', index: 1 };
   channels.setChannelDevice(dev1);
   const channelDev = channels.getChannelDevice();
   t.deepEqual(channelDev, dev1);

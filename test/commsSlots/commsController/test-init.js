@@ -37,7 +37,7 @@ test('handleCommsController init', t => {
     JSON.stringify({
       args: [newMachineName, newProofMaterial, slot0],
     }),
-    [ devNode ],
+    [devNode],
     resolverID,
     helpers,
     inboundHandlerFacetID,
@@ -47,9 +47,10 @@ test('handleCommsController init', t => {
 
   // ensure calls to syscall are correct
   t.deepEqual(callNowArgs, [
-    devNode, 'registerHandler',
-    JSON.stringify({ args: [ newMachineName, slot0 ] }),
-    [ { '@qclass': 'export', index: inboundHandlerFacetID } ],
+    devNode,
+    'registerInboundCallback',
+    JSON.stringify({ args: [newMachineName, slot0] }),
+    [{ type: 'export', id: inboundHandlerFacetID }],
   ]);
   t.deepEqual(fulfillToDataArgs, [
     resolverID,
@@ -72,7 +73,7 @@ test('handleCommsController init', t => {
       JSON.stringify({
         args: [newMachineName, newProofMaterial, slot0],
       }),
-      [ devNode ],
+      [devNode],
       resolverID,
       helpers,
       inboundHandlerFacetID,

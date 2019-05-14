@@ -41,7 +41,11 @@ export default function makeInboundHandler(state, syscall) {
         throw new Error(`inboundHandler got method '${method}', not 'inbound'`);
       }
       if (deviceToMeSlots.length !== 0) {
-        throw new Error(`inboundHandler got unexpected slots, ${JSON.stringify(deviceToMeSlots)}`);
+        throw new Error(
+          `inboundHandler got unexpected slots, ${JSON.stringify(
+            deviceToMeSlots,
+          )}`,
+        );
       }
       const [senderID, dataStr] = JSON.parse(argsStr).args;
       sidebug(
@@ -77,7 +81,9 @@ export default function makeInboundHandler(state, syscall) {
         // unknown at this point?
         kernelToMeTarget = mapInbound(data.target);
         if (kernelToMeTarget === undefined) {
-          throw new Error(`unrecognized inbound egress target ${JSON.stringify(data.target)}`);
+          throw new Error(
+            `unrecognized inbound egress target ${JSON.stringify(data.target)}`,
+          );
         }
       }
 

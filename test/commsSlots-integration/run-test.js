@@ -2,7 +2,7 @@ import path from 'path';
 import { test } from 'tape-promise/tape';
 import testLogs from './test-logs';
 import { buildVatController, loadBasedir } from '../../src/index';
-import { buildChannel } from '../../src/devices';
+import buildChannel from '../../src/devices/channel';
 
 export async function runVats(t, withSES, argv) {
   const config = await loadBasedir(
@@ -10,25 +10,7 @@ export async function runVats(t, withSES, argv) {
   );
 
   const channelDevice = buildChannel();
-  const vatDevices = new Map();
-  const commsConfig = {
-    devices: {
-      channel: {
-        attenuatorSource: channelDevice.attenuatorSource,
-        bridge: channelDevice.bridge,
-      },
-    },
-  };
-
-  for (const vatID of config.vatSources.keys()) {
-    if (vatID.endsWith('comms')) {
-      vatDevices.set(vatID, commsConfig);
-    }
-  }
-
-  if (vatDevices.size > 0) {
-    config.vatDevices = vatDevices;
-  }
+  config.devices = [['channel', channelDevice.src, channelDevice.endowments]];
   const c = await buildVatController(config, withSES, argv);
   return c;
 }

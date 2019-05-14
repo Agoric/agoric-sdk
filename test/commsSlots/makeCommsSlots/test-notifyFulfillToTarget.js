@@ -6,25 +6,17 @@ const helpers = {
 };
 
 test('makeCommsSlots notifyFulfillToTarget', t => {
-  const mockSyscall = {};
-
-  let sentData;
-  let fMachineName;
-  let tMachineName;
-
-  function sendOverChannel(fromMachineName, toMachineName, data) {
-    fMachineName = fromMachineName;
-    tMachineName = toMachineName;
-    sentData = data;
-  }
-
-  const commsSlots = makeCommsSlots(mockSyscall, {}, helpers, {
-    channel: {
-      sendOverChannel,
+  const calls = [];
+  const mockSyscall = {
+    callNow(...args) {
+      calls.push(['callNow', args]);
     },
-  });
+  };
 
+  const commsSlots = makeCommsSlots(mockSyscall, {}, helpers);
+  const devNode = { type: 'device', id: 42 };
   const state = commsSlots.getState();
+  state.channels.setChannelDevice(devNode);
 
   state.clists.add(
     'abc',
@@ -32,7 +24,6 @@ test('makeCommsSlots notifyFulfillToTarget', t => {
     { type: 'your-egress', id: 9 },
     { type: 'your-ingress', id: 9 },
   );
-  state.channels.add('abc', 'channel');
   state.machineState.setMachineName('bot');
   const kernelToMeSlot = {
     type: 'import',
@@ -48,12 +39,23 @@ test('makeCommsSlots notifyFulfillToTarget', t => {
   state.clists.add('abc', kernelToMeSlot, youToMeSlot, meToYouSlot);
 
   commsSlots.notifyFulfillToTarget(20, kernelToMeSlot);
-
-  t.equal(fMachineName, 'bot');
-  t.equal(tMachineName, 'abc');
-  t.equal(
-    sentData,
-    '{"event":"notifyFulfillToTarget","promise":{"type":"your-ingress","id":9},"target":{"type":"your-egress","id":3}}',
-  );
+  t.equal(calls.length, 1);
+  t.equal(calls[0][0], 'callNow');
+  t.deepEqual(calls[0][1], [
+    devNode,
+    'sendOverChannel',
+    JSON.stringify({
+      args: [
+        'bot',
+        'abc',
+        JSON.stringify({
+          event: 'notifyFulfillToTarget',
+          promise: { type: 'your-ingress', id: 9 },
+          target: { type: 'your-egress', id: 3 },
+        }),
+      ],
+    }),
+    [],
+  ]);
   t.end();
 });
