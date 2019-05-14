@@ -36,8 +36,10 @@ test('handleCommsController addEgress', t => {
 
   t.equal(result, undefined);
 
+  const UNDEFINED = JSON.stringify({ '@qclass': 'undefined' });
+
   // ensure calls to syscall are correct
-  t.deepEqual(fulfillToDataArgs, [resolverID, JSON.stringify('undefined'), []]);
+  t.deepEqual(fulfillToDataArgs, [resolverID, UNDEFINED, []]);
 
   // ensure state updated correctly
   const youToMeSlot = {

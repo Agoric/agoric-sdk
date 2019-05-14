@@ -42,6 +42,8 @@ export default function handleCommsController(
     );
   }
 
+  const UNDEFINED = JSON.stringify({ '@qclass': 'undefined' });
+
   function connect([otherMachineName, _verifyingKey, channelName]) {
     // TODO: channelName is now ignored, should be removed
     helpers.log(
@@ -50,7 +52,7 @@ export default function handleCommsController(
 
     // TODO: check signature on this
     // in the future, data structure would contain name and predicate
-    syscall.fulfillToData(resolverID, JSON.stringify('undefined'), []);
+    syscall.fulfillToData(resolverID, UNDEFINED, []);
   }
 
   // an egress is something on my machine that I make available to
@@ -75,7 +77,7 @@ export default function handleCommsController(
     const youToMeSlot = state.clists.changePerspective(meToYouSlot);
 
     state.clists.add(sender, kernelToMeSlot, youToMeSlot, meToYouSlot);
-    syscall.fulfillToData(resolverID, JSON.stringify('undefined'), []);
+    syscall.fulfillToData(resolverID, UNDEFINED, []);
   }
 
   // an ingress is something that lives on another machine

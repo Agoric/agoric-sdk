@@ -7,6 +7,8 @@ const helpers = {
   vatID: 'botcomms',
 };
 
+const UNDEFINED = JSON.stringify({ '@qclass': 'undefined' });
+
 test('makeCommsSlots deliver to commsController (facetid 0)', t => {
   const calls = [];
 
@@ -100,7 +102,7 @@ test('makeCommsSlots deliver to egress', t => {
     [],
     31,
   );
-  t.deepEqual(calls[0], ['fulfillToData', [31, '"undefined"', []]]);
+  t.deepEqual(calls[0], ['fulfillToData', [31, UNDEFINED, []]]);
   calls.shift();
 
   // setup with an addEgress
@@ -111,7 +113,7 @@ test('makeCommsSlots deliver to egress', t => {
     [{ type: 'import', id: 55 }],
     32,
   );
-  t.deepEqual(calls, [['fulfillToData', [32, '"undefined"', []]]]);
+  t.deepEqual(calls, [['fulfillToData', [32, UNDEFINED, []]]]);
   calls.shift();
 
   const machineArgs = {
@@ -218,7 +220,7 @@ test('makeCommsSlots deliver to ingress', t => {
     [],
     31,
   );
-  t.deepEqual(calls[0], ['fulfillToData', [31, '"undefined"', []]]);
+  t.deepEqual(calls[0], ['fulfillToData', [31, UNDEFINED, []]]);
   calls.shift();
 
   // setup with an addIngress

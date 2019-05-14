@@ -36,8 +36,10 @@ test('handleCommsController connect update channels', t => {
 
   t.equal(result, undefined);
 
+  const UNDEFINED = JSON.stringify({ '@qclass': 'undefined' });
+
   // ensure calls to syscall are correct
-  t.deepEqual(fulfillToDataArgs, [resolverID, JSON.stringify('undefined'), []]);
+  t.deepEqual(fulfillToDataArgs, [resolverID, UNDEFINED, []]);
 
   t.end();
 });
