@@ -16,6 +16,13 @@ function parseJSON(data) {
 }
 
 export default function makeInboundHandler(state, syscall) {
+  const enableSIDebug = true;
+  function sidebug(...args) {
+    if (enableSIDebug) {
+      console.log(...args);
+    }
+  }
+
   return {
     /**
      * aka 'inbound' from SwingSet-Cosmos
@@ -31,6 +38,9 @@ export default function makeInboundHandler(state, syscall) {
      */
 
     inboundHandler(senderID, dataStr) {
+      sidebug(
+        `sendIn ${senderID} => ${state.machineState.getMachineName()}, ${dataStr}`,
+      );
       if (!verify(senderID)) {
         throw new Error('could not verify SenderID');
       }
@@ -55,16 +65,19 @@ export default function makeInboundHandler(state, syscall) {
         kernelToMeSlots = data.slots.map(mapInbound);
       }
       if (data.target) {
-        kernelToMeTarget = state.clists.mapIncomingWireMessageToKernelSlot(
-          senderID,
-          data.target,
-        );
+        // since this isn't a message target but instead saying that
+        // the promise resolves to a target, this target could be
+        // unknown at this point?
+        kernelToMeTarget = mapInbound(data.target);
       }
 
       if (data.event) {
         // we should have already made a promise/resolver pair for the
         // kernel once we received a "your-promise" message previously
-        const resolverKernelToMeSlot = mapInbound(data.promise);
+        const promiseKernelToMeSlot = mapInbound(data.promise);
+        const resolverKernelToMeSlot = state.promiseResolverPairs.getResolver(
+          promiseKernelToMeSlot,
+        );
         switch (data.event) {
           case 'notifyFulfillToData':
             syscall.fulfillToData(
@@ -80,7 +93,7 @@ export default function makeInboundHandler(state, syscall) {
             );
             return;
           case 'notifyReject':
-            syscall.notifyReject(
+            syscall.reject(
               resolverKernelToMeSlot.id,
               data.args,
               kernelToMeSlots,

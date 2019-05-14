@@ -8,7 +8,7 @@ import handleCommsController from './commsController';
 import makeMapOutbound from './outbound/makeMapOutbound';
 
 export default function makeCommsSlots(syscall, _state, helpers, devices) {
-  const enableCSDebug = false;
+  const enableCSDebug = true;
   const { vatID } = helpers;
   function csdebug(...args) {
     if (enableCSDebug) {
@@ -24,7 +24,7 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
     deliver(facetid, method, argsStr, kernelToMeSlots, resolverID) {
       const kernelToMeSlotTarget = { type: 'export', id: facetid };
       csdebug(
-        `ls[${vatID}].dispatch.deliver ${facetid}.${method} -> ${resolverID}`,
+        `cs[${vatID}].dispatch.deliver ${facetid}.${method} -> ${resolverID}`,
       );
 
       // CASE 1: we are hitting the initial object (0)
@@ -183,12 +183,12 @@ export default function makeCommsSlots(syscall, _state, helpers, devices) {
         `sendOverChannel notifyReject promiseID: ${promiseID}, data: ${data}`,
       );
 
-      const msg = {
+      const msg = JSON.stringify({
         event: 'notifyReject',
         promise: meToYouSlot,
         args: data,
         slots: slots.map(slot => mapOutbound(otherMachineName, slot)),
-      };
+      });
 
       devices[channel].sendOverChannel(
         state.machineState.getMachineName(),

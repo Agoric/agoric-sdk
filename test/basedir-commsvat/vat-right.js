@@ -8,6 +8,15 @@ export default function setup(syscall, state, helpers) {
   let ingressRef;
   let hasBeenCalled = false;
 
+  function createNewObj() {
+    return {
+      method() {
+        log(`=> right.1.method was invoked`);
+        return 'called method';
+      },
+    };
+  }
+
   return helpers.makeLiveSlots(
     syscall,
     state,
@@ -17,57 +26,62 @@ export default function setup(syscall, state, helpers) {
           log(`=> right.method was invoked`);
           return 'called method';
         },
-        takeArgAndReturnData(arg) {
-          log(`=> right.takeArgAndReturnData got the arg: ${arg}`);
+        methodWithArgs(arg) {
+          log(`=> right.methodWithArgs got the arg: ${arg}`);
           return `${arg} was received`;
         },
-        takeReferenceEqualToTargetAndReturnData(ref) {
-          log(
-            `=> right.takeReferenceEqualToTargetAndReturnData got the arg: ${ref}`,
-          );
-          return `ref was received`;
-        },
-        takeReferenceEqualToTargetAndCallMethod(ref) {
-          log(
-            `=> right.takeReferenceEqualToTargetAndCallMethod got the arg: ${ref}`,
-          );
+        methodWithPresence(ref) {
+          log(`=> right.methodWithPresence got the ref ${ref}`);
+          // invoke method on ref object
           return E(ref).method();
         },
-        takeReferenceDifferentThanTargetAndReturnData(ref) {
-          log(
-            `=> right.takeReferenceDifferentThanTargetAndReturnData got the arg: ${ref}`,
-          );
-          return E(ref).hi();
-        },
-        takeReferenceDifferentThanTargetAndReturnDataTwice(ref) {
+        methodWithPresenceTwice(ref) {
           if (hasBeenCalled) {
             log(`ref equal each time: ${ref === ingressRef}`);
           }
-          log(
-            `=> right.takeReferenceDifferentThanTargetAndReturnData got the arg: ${ref}`,
-          );
+          log(`=> right.methodWithPresence got the ref ${ref}`);
           hasBeenCalled = true;
           ingressRef = ref;
-          return E(ref).hi();
+          // invoke method on ref object
+          return E(ref).method();
         },
-        takeRefAndReturnItAsData(ref) {
-          return { ref };
+        methodReturnsRightPresence() {
+          return this.createNewObj();
         },
-        takeRefAndReturnIt(ref) {
-          return ref;
+        methodReturnsLeftPresence(leftPresence) {
+          return leftPresence;
         },
-        getPromiseBack() {
+        methodReturnsPromise() {
+          log(`=> right.methodReturnsPromise was invoked`);
           return new Promise((resolve, _reject) => {
             resolve('foo');
           });
         },
-        createNewObj() {
-          return {
-            eat() {
-              return 'yummm';
-            },
-          };
+        methodReturnsPromiseForRightPresence() {
+          return new Promise((resolve, _reject) => {
+            resolve(this.createNewObj());
+          });
         },
+        methodReturnsPromiseForLeftPresence(leftPresence) {
+          return new Promise((resolve, _reject) => {
+            resolve(leftPresence);
+          });
+        },
+        methodReturnsPromiseReject() {
+          log(`=> right.methodReturnsPromiseReject was invoked`);
+          return new Promise((_resolve, reject) => {
+            reject(new Error('this was rejected'));
+          });
+        },
+        async methodWithPromise(promise) {
+          const promiseResult = await promise;
+          log(`promise resolves to ${promiseResult}`);
+          return promiseResult;
+        },
+        methodOnPromiseForPresence(promiseForPresence) {
+          return E(promiseForPresence).method();
+        },
+        createNewObj,
       }),
     helpers.vatID,
   );
