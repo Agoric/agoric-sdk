@@ -39,7 +39,7 @@ export default function makeInboundHandler(state, syscall) {
 
     inboundHandler(senderID, dataStr) {
       sidebug(
-        `sendIn to ${state.machineState.getMachineName()} from ${senderID}, ${dataStr}`,
+        `sendIn ${senderID} => ${state.machineState.getMachineName()}, ${dataStr}`,
       );
       if (!verify(senderID)) {
         throw new Error('could not verify SenderID');
@@ -74,7 +74,10 @@ export default function makeInboundHandler(state, syscall) {
       if (data.event) {
         // we should have already made a promise/resolver pair for the
         // kernel once we received a "your-promise" message previously
-        const resolverKernelToMeSlot = mapInbound(data.promise);
+        const promiseKernelToMeSlot = mapInbound(data.promise);
+        const resolverKernelToMeSlot = state.promiseResolverPairs.getResolver(
+          promiseKernelToMeSlot,
+        );
         switch (data.event) {
           case 'notifyFulfillToData':
             syscall.fulfillToData(

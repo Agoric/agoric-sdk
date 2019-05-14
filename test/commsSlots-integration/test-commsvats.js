@@ -1,15 +1,6 @@
 // eslint-disable-next-line no-unused-vars
 import { runTest, runTestOnly, stepTestOnly, runTestSkip } from './run-test';
 
-// 7. Something that represents promises over the wire
-//      Passing promises as arguments, resolving a promise to an array
-//      that contains a promise
-//      left includes promise that it knows about in calling right,
-//      the right ends up with its own promise and should be able to a
-//      then on that promise, when left is creator/decider, the right
-//      should be notified when it is resolved.
-//        test different interleavings - wait for resolution, etc.
-
 /* TABLE OF CONTENTS OF TESTS */
 // left does: E(right.0).method() => returnData
 // left does: E(right.0).method(dataArg1) => returnData
@@ -23,11 +14,8 @@ import { runTest, runTestOnly, stepTestOnly, runTestSkip } from './run-test';
 // left does: E(right.0).method() => right.promise => right.presence
 // left does: E(right.0).method() => right.promise => left.presence
 // left does: E(right.0).method() => right.promise => reject
-
 // left does: E(right.0).method(left.promise) => returnData
 // left does: E(right.0).method(right.promise) => returnData
-// left does: E(right.0).method(left.presence) => returnData
-// left does: E(right.0).method(right.presence) => returnData
 
 /* TEST: left does: E(right.0).method() => returnData
  * DESCRIPTION: The left vat invokes a method on the right vat's root
@@ -108,12 +96,16 @@ runTest('left does: E(right.0).method() => right.promise => left.presence');
  * DESCRIPTION: The left vat invokes a method on the right vat's root
  * object and is given a promise that is rejected.
  */
-
-// TODO: How do we want to handle rejection? Currently errors in src/kernel/marshal.js:273
-runTestSkip('left does: E(right.0).method() => right.promise => reject');
+runTest('left does: E(right.0).method() => right.promise => reject');
 
 /* TEST: left does: E(right.0).method(left.promise) => returnData
  * DESCRIPTION: The left vat invokes a method on the right vat's root
  * object with a promise that the left machine knows about
  */
-runTestSkip('left does: E(right.0).method(left.promise) => returnData');
+runTest('left does: E(right.0).method(left.promise) => returnData');
+
+/* TEST: left does: E(right.0).method(right.promise) => returnData
+ * DESCRIPTION: The left vat invokes a method on the right vat's root
+ * object with a promise that the right machine knows about
+ */
+runTest('left does: E(right.0).method(right.promise) => returnData');

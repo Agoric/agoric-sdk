@@ -2,6 +2,7 @@ import { makeCLists } from './makeCLists';
 import { makeChannels } from './makeChannels';
 import { makeAllocateID } from './makeAllocateID';
 import { makeMachineState } from './makeMachineState';
+import { makePromiseResolverPairs } from './makePromiseResolverPairs';
 
 function makeState(name) {
   const vatName = name;
@@ -9,6 +10,7 @@ function makeState(name) {
   const clists = makeCLists();
   const channels = makeChannels();
   const ids = makeAllocateID();
+  const promiseResolverPairs = makePromiseResolverPairs();
 
   function dumpState() {
     console.log('STATE', {
@@ -17,6 +19,7 @@ function makeState(name) {
       channels: channels.dump(),
       nextID: ids.dump(),
       vatName,
+      promiseResolverPairs: promiseResolverPairs.dump(),
     });
   }
 
@@ -27,6 +30,7 @@ function makeState(name) {
     machineState,
     dumpState,
     vatName,
+    promiseResolverPairs,
   };
 }
 

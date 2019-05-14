@@ -148,12 +148,32 @@ export default function setup(syscall, state, helpers) {
           case 'left does: E(right.0).method() => right.promise => reject': {
             const rightRootPresence = args[0];
             try {
-              E(rightRootPresence).methodReturnsPromiseReject();
+              await E(rightRootPresence).methodReturnsPromiseReject();
             } catch (err) {
               log(
                 `=> left vat receives the rejected promise with error ${err}`,
               );
             }
+            break;
+          }
+
+          case 'left does: E(right.0).method(left.promise) => returnData': {
+            const rightRootPresence = args[0];
+            const lpromise = new Promise((resolve, _reject) => {
+              resolve('foo');
+            });
+            E(rightRootPresence)
+              .methodWithPromise(lpromise)
+              .then(r => log(`=> left vat receives the returnedData: ${r}`));
+            break;
+          }
+
+          case 'left does: E(right.0).method(right.promise) => returnData': {
+            const rightRootPresence = args[0];
+            const rpromise = E(rightRootPresence).methodReturnsPromise();
+            E(rightRootPresence)
+              .methodWithPromise(rpromise)
+              .then(r => log(`=> left vat receives the returnedData: ${r}`));
             break;
           }
 

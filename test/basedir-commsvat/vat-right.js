@@ -73,6 +73,11 @@ export default function setup(syscall, state, helpers) {
             reject(new Error('this was rejected'));
           });
         },
+        async methodWithPromise(promise) {
+          const promiseResult = await promise;
+          log(`promise resolves to ${promiseResult}`);
+          return promiseResult;
+        },
         createNewObj,
       }),
     helpers.vatID,

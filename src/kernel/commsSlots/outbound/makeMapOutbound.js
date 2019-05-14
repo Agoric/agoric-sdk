@@ -72,6 +72,21 @@ function makeMapOutbound(syscall, state) {
             id,
           };
 
+          // kernelToMeSlot can't be type resolver
+          // overwrite it for now
+          const kernelToMeSlotID = kernelToMeSlot.id;
+          const promise = {
+            type: 'promise',
+            id: kernelToMeSlotID,
+          };
+          const resolver = {
+            type: 'resolver',
+            id: kernelToMeSlotID,
+          };
+          kernelToMeSlot = promise;
+
+          state.promiseResolverPairs.add(promise, resolver);
+
           break;
         }
         default: {

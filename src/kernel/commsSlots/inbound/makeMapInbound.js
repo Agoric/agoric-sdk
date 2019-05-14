@@ -18,7 +18,11 @@ function makeMapInbound(syscall, state, senderID) {
           const pr = syscall.createPromise();
 
           // we are creating a promise chain, send our new promiseID
-          kernelToMeSlot = { type: 'resolver', id: pr.resolverID };
+          kernelToMeSlot = { type: 'promise', id: pr.promiseID };
+          state.promiseResolverPairs.add(
+            { type: 'promise', id: pr.promiseID },
+            { type: 'resolver', id: pr.resolverID },
+          );
 
           // I don't think it makes sense to subscribe to the promise,
           // since all settlement messages should be coming in from
@@ -31,6 +35,10 @@ function makeMapInbound(syscall, state, senderID) {
           // result of a message
 
           const pr = syscall.createPromise();
+          state.promiseResolverPairs.add(
+            { type: 'promise', id: pr.promiseID },
+            { type: 'resolver', id: pr.resolverID },
+          );
 
           // we are creating a promise chain
           kernelToMeSlot = { type: 'promise', id: pr.promiseID };
