@@ -561,7 +561,9 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
 
   const dispatch = setup(syscall, state, helpers);
   if (!dispatch || dispatch.deliver === undefined) {
-    throw new Error(`vat setup() failed to return a 'dispatch' with .deliver`);
+    throw new Error(
+      `vat setup() failed to return a 'dispatch' with .deliver: ${dispatch}`,
+    );
   }
 
   // dispatch handlers: these are used by the kernel core
