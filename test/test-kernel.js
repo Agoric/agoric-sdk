@@ -134,6 +134,27 @@ test('addImport', t => {
   t.end();
 });
 
+test('outbound call to my own export should fail', async t => {
+  const kernel = buildKernel({ setImmediate });
+  const log = [];
+  let s;
+  function setup1(syscall) {
+    s = syscall;
+    function deliver(facetID, method, argsString, slots) {
+      log.push([facetID, method, argsString, slots]);
+    }
+    return { deliver };
+  }
+  kernel.addVat('vat1', setup1);
+
+  t.throws(
+    () => s.send({ type: 'export', id: 5 }, 'methodname', 'body', []),
+    /send\(\) is calling itself/,
+  );
+
+  t.end();
+});
+
 test('outbound call', async t => {
   const kernel = buildKernel({ setImmediate });
   const log = [];

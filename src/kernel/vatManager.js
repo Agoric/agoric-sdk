@@ -284,6 +284,12 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
         `targetSlot isn't really a slot ${JSON.stringify(targetSlot)}`,
       );
     }
+    if (targetSlot.type === 'export') {
+      // Disable send-to-self for now. It might be useful in the future, but
+      // I doubt it, and we can prevent some confusion by flagging a specific
+      // error here. See issue #43 for details.
+      throw new Error(`send() is calling itself, see issue #43`);
+    }
     const target = mapOutbound(targetSlot);
     if (!target) {
       throw Error(
