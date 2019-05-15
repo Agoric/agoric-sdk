@@ -148,6 +148,10 @@ for completeness)
 
 TODO: Vats do not yet have access to `sendOnly`.
 
+The `liveSlots` helper for constructing Vats provides both an `E()` wrapper
+(for constructing `syscall.send()` messages to Presences) and a `D()` wrapper
+(for constructing `syscall.callNow` messages to device nodes).
+
 ### Device State Persistence
 
 Devices are expected to return their state as a JSON-serializable object
@@ -214,3 +218,38 @@ from accessing host-realm objects, even under adversarial use. In particular,
 any exceptions raised by the host-realm functions must be caught and wrapped
 with kernel-realm replacements. Callbacks must be intercepted too. The
 wrapper function must act as a limited Membrane between the two worlds.
+
+
+## DeviceSlots helper
+
+Device code can use a helper function named `deviceSlots` to build the
+required `dispatch` function. This behaves much like `liveSlots` for regular
+Vat code, except:
+
+* It does not provide the `E()` wrapper, since devices cannot manage promises
+  or eventual-sends
+* Instead, it provides an `SO()` wrapper, which exposes `syscall.sendonly`.
+* All pass-by-presence objects returned by device methods are passed as
+  device nodes
+* The root object provided to the `deviceSlots` helper is exposed as the root
+  device node to the bootstrap function
+
+```js
+// exampledevice-src.js
+import harden from '@agoric/harden';
+export default function setup(syscall, helpers, endowments) {
+  const { stuff } = endowments;
+  function getState() { return 'state'; }
+  function setState(newState) { throw new Error('not implemented'); }
+  return helpers.makeDeviceSlots(
+    syscall,
+    SO => harden({
+      devfunc1(arg, arg2) {
+        SO(arg1).methname(arg3);
+      },
+    },
+    getState, setState,
+    helpers.name,
+  );
+}
+```
