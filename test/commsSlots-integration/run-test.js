@@ -10,7 +10,9 @@ export async function runVats(t, withSES, argv) {
   );
 
   const channelDevice = buildChannel();
-  config.devices = [['channel', channelDevice.src, channelDevice.endowments]];
+  config.devices = [
+    ['channel', channelDevice.srcPath, channelDevice.endowments],
+  ];
   const c = await buildVatController(config, withSES, argv);
   return c;
 }

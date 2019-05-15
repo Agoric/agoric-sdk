@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 
 export default function buildChannel() {
   const bridge = harden(new Map());
-  const src = require.resolve('./channel-src');
+  const srcPath = require.resolve('./channel-src');
   function deliverInbound(fromMachineName, toMachineName, data) {
     if (!bridge.has(toMachineName)) {
       throw new Error('handler not yet registered');
@@ -17,7 +17,7 @@ export default function buildChannel() {
   }
 
   return {
-    src,
+    srcPath,
     endowments: { bridge },
     // these two are for external access
     deliverInbound,

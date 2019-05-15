@@ -1,9 +1,9 @@
 export default function buildSharedStringTable() {
   const table = new Map(); // not hardened
-  const src = require.resolve('./sharedTable-src');
+  const srcPath = require.resolve('./sharedTable-src');
 
   return {
-    src,
+    srcPath,
     endowments: { table },
     table, // for debugging/testing
   };

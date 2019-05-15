@@ -7,7 +7,9 @@ async function main(withSES, basedir, argv) {
   console.log('channelDevice is', channelDevice);
 
   const config = await loadBasedir(basedir);
-  config.devices = [['channel', channelDevice.src, channelDevice.endowments]];
+  config.devices = [
+    ['channel', channelDevice.srcPath, channelDevice.endowments],
+  ];
 
   const controller = await buildVatController(config, withSES, argv);
   await controller.run();

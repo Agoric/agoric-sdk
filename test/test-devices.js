@@ -251,10 +251,10 @@ test('set device state without SES', async t => {
 
 async function testSharedTable(t, withSES) {
   const st = buildSharedStringTable();
-  console.log(`source: ${st.src}`);
+  console.log(`source: ${st.srcPath}`);
   const config = {
     vatSources: new Map(),
-    devices: [['sharedTable', st.src, st.endowments]],
+    devices: [['sharedTable', st.srcPath, st.endowments]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
   config.vatSources.set('left', require.resolve('./files-devices/vat-left.js'));
