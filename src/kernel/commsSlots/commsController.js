@@ -31,7 +31,7 @@ export default function handleCommsController(
     const regArgs = JSON.stringify({
       args: [name, { '@qclass': 'slot', index: 0 }],
     });
-    syscall.callNow(channelDev, 'registerInboundCallback', regArgs, [
+    syscall.callNow(channelDev, 'registerInboundHandler', regArgs, [
       handlerExport,
     ]);
 

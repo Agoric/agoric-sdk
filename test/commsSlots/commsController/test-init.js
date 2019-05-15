@@ -48,7 +48,7 @@ test('handleCommsController init', t => {
   // ensure calls to syscall are correct
   t.deepEqual(callNowArgs, [
     devNode,
-    'registerInboundCallback',
+    'registerInboundHandler',
     JSON.stringify({ args: [newMachineName, slot0] }),
     [{ type: 'export', id: inboundHandlerFacetID }],
   ]);

@@ -43,7 +43,7 @@ test('makeCommsSlots notifyFulfillToPresence', t => {
   t.equal(calls[0][0], 'callNow');
   t.deepEqual(calls[0][1], [
     devNode,
-    'sendOverChannel',
+    'sendOutbound',
     JSON.stringify({
       args: [
         'bot',

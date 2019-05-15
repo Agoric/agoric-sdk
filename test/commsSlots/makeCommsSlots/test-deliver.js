@@ -34,7 +34,7 @@ test('makeCommsSlots deliver to commsController (facetid 0)', t => {
     'callNow',
     [
       { type: 'device', id: 4 },
-      'registerInboundCallback',
+      'registerInboundHandler',
       '{"args":["bot",{"@qclass":"slot","index":0}]}',
       [{ type: 'export', id: 1 }],
     ],
@@ -89,7 +89,7 @@ test('makeCommsSlots deliver to egress', t => {
 
   // inboundHandlerFacetID is probably 1, since it's the first thing
   // allocated, but we aren't invoking deliver(init) (or capturing the
-  // callNow(registerInboundCallback) args) to learn it more directly. Still make a
+  // callNow(registerInboundHandler) args) to learn it more directly. Still make a
   // half-hearted effort to compare it against the state object, to improve
   // the debugging experience for someone in the future
   const inboundHandlerFacetID = JSON.parse(state.ids.dump()) - 1;
@@ -240,7 +240,7 @@ test('makeCommsSlots deliver to ingress', t => {
   calls.shift();
   t.equal(args.length, 4);
   t.deepEqual(args[0], { type: 'device', id: devNodeIndex });
-  t.equal(args[1], 'sendOverChannel');
+  t.equal(args[1], 'sendOutbound');
   t.deepEqual(JSON.parse(args[2]), {
     args: [
       'user',

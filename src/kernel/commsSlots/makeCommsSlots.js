@@ -33,7 +33,7 @@ export default function makeCommsSlots(syscall, _state, helpers) {
       );
     }
     const args = { args: [fromMachineName, toMachineName, data] };
-    syscall.callNow(devnode, 'sendOverChannel', JSON.stringify(args), []);
+    syscall.callNow(devnode, 'sendOutbound', JSON.stringify(args), []);
   }
 
   const dispatch = harden({
