@@ -560,6 +560,9 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   // now build the runtime, which gives us back a dispatch function
 
   const dispatch = setup(syscall, state, helpers);
+  if (!dispatch || dispatch.deliver === undefined) {
+    throw new Error(`vat setup() failed to return a 'dispatch' with .deliver`);
+  }
 
   // dispatch handlers: these are used by the kernel core
 
