@@ -4,11 +4,17 @@ function makeMapInbound(syscall, state, senderID) {
       senderID,
       youToMeSlot,
     );
+
     if (kernelToMeSlot === undefined) {
       // we are telling the kernel about something that exists on
       // another machine, these are ingresses
 
       switch (youToMeSlot.type) {
+        case 'your-egress': {
+          throw new Error(
+            `unrecognized inbound ${JSON.stringify(youToMeSlot)}`,
+          );
+        }
         case 'your-ingress': {
           const exportID = state.ids.allocateID();
           kernelToMeSlot = { type: 'export', id: exportID };
