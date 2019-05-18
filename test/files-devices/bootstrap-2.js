@@ -56,6 +56,15 @@ export default function setup(syscall, state, helpers) {
             console.log('HERE1', devices);
             log(`calling left.leftSharedTable`);
             await E(vats.left).leftSharedTable(devices.sharedTable);
+          } else if (argv[0] === 'outbox1') {
+            D(devices.outbox).add('recip1', 1, 'data1');
+            D(devices.outbox).add('recip1', 2, 'data2');
+            D(devices.outbox).add('recip1', 3, 'data3');
+            D(devices.outbox).add('recip2', 4, 'data4');
+            D(devices.outbox).add('recip3', 5, 'data5');
+            D(devices.outbox).remove('recip1', 1);
+            D(devices.outbox).remove('recip2', 4, 'data4');
+            // should leave recip1: [data2,data3], recip3: [data5]
           } else {
             throw new Error(`unknown argv mode '${argv[0]}'`);
           }

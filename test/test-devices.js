@@ -1,6 +1,7 @@
 import { test } from 'tape-promise/tape';
 import { buildVatController } from '../src/index';
 import buildSharedStringTable from '../src/devices/sharedTable';
+import buildOutbox from '../src/devices/outbox';
 
 async function test0(t, withSES) {
   const config = {
@@ -281,4 +282,34 @@ test('shared table without SES', async t => {
 
 test('shared table with SES', async t => {
   await testSharedTable(t, true);
+});
+
+async function testOutbox(t, withSES) {
+  const ob = buildOutbox();
+  const config = {
+    vatSources: new Map(),
+    devices: [['outbox', ob.srcPath, ob.endowments]],
+    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
+  };
+
+  const c = await buildVatController(config, withSES, ['outbox1']);
+  await c.run();
+  t.deepEqual(ob.convertMapsToObjects(ob.outbox), {
+    recip1: {
+      2: 'data2',
+      3: 'data3',
+    },
+    recip3: {
+      5: 'data5',
+    },
+  });
+  t.end();
+}
+
+test('outbox without SES', async t => {
+  await testOutbox(t, false);
+});
+
+test.skip('outbox with SES', async t => {
+  await testOutbox(t, true);
 });
