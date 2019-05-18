@@ -187,6 +187,11 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   // is used when building the arguments for dispatch.deliver.
   function mapInbound(slot) {
     kdebug(`mapInbound for ${vatID} of ${JSON.stringify(slot)}`);
+    if (Object.getPrototypeOf(slot) !== Object.getPrototypeOf({})) {
+      throw new Error(
+        `hey, mapInbound given wrong-realm slot ${JSON.stringify(slot)}`,
+      );
+    }
 
     if (slot.type === 'export') {
       const { vatID: fromVatID, id } = slot;
@@ -574,16 +579,16 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
 
   // dispatch handlers: these are used by the kernel core
 
-  async function doProcess(d, errmsg) {
+  function doProcess(d, errmsg) {
     transcriptStartDispatch(d);
     return process(
       () => dispatch[d[0]](...d.slice(1)),
       () => transcriptFinishDispatch(),
-      err => console.log(`${errmsg}: ${err}`, err),
+      err => console.log(`doProcess: ${errmsg}: ${err}`, err),
     );
   }
 
-  async function processOneMessage(message) {
+  function processOneMessage(message) {
     kdebug(`process ${JSON.stringify(message)}`);
     const { type } = message;
     if (type === 'deliver') {

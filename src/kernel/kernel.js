@@ -330,7 +330,13 @@ export default function buildKernel(kernelEndowments) {
       );
     }
     const { manager } = vat;
-    return manager.processOneMessage(message);
+    try {
+      return manager.processOneMessage(message);
+    } catch (e) {
+      // log so we get a stack trace
+      console.log(`error in processOneMessage: ${e} ${e.message}`, e);
+      throw e;
+    }
   }
 
   function callBootstrap(vatID, argvString) {
@@ -545,7 +551,8 @@ export default function buildKernel(kernelEndowments) {
       };
     },
 
-    async loadState(state) {
+    async loadState(outerRealmState) {
+      const state = JSON.parse(JSON.stringify(outerRealmState));
       // discard our previous state: assume that no vats have been allowed to
       // run yet
       if (runQueue.length) {
@@ -588,6 +595,7 @@ export default function buildKernel(kernelEndowments) {
         });
         kernelPromises.set(kp.id, p);
       });
+
       // eslint-disable-next-line prefer-destructuring
       nextPromiseIndex = state.nextPromiseIndex;
     },
