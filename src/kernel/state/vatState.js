@@ -4,9 +4,23 @@ import { insist } from '../insist';
 
 export default function makeVatState() {
   // per-vat translation tables
+
+  // kernelSlotToVatSlot is an object with four properties:
+  //    exports, devices, promises, resolvers.
+  // vatSlotToKernelSlot has imports, deviceImports, promises, resolvers
   const state = {
-    kernelSlotToVatSlot: new Map(),
-    vatSlotToKernelSlot: new Map(),
+    kernelSlotToVatSlot: {
+      exports: new Map(),
+      devices: new Map(),
+      promises: new Map(),
+      resolvers: new Map(),
+    },
+    vatSlotToKernelSlot: {
+      imports: new Map(),
+      deviceImports: new Map(),
+      promises: new Map(),
+      resolvers: new Map(),
+    },
 
     // make these IDs start at different values to detect errors
     // better
@@ -57,22 +71,73 @@ export default function makeVatState() {
     );
   }
 
-  function createKernelSlotKey(kernelSlot) {
+  function getKernelSlotTypedMapAndKey(kernelSlot) {
     insistKernelSlot(kernelSlot);
+
     const { type, id } = kernelSlot;
-    if (type === 'promise' || type === 'resolver') {
-      return `${type}-${id}`;
+    let typedKernelToVatMap;
+    let kernelSlotKey;
+
+    switch (type) {
+      case 'promise': {
+        typedKernelToVatMap = state.kernelSlotToVatSlot.promises;
+        kernelSlotKey = `${type}-${id}`;
+        break;
+      }
+      case 'resolver': {
+        typedKernelToVatMap = state.kernelSlotToVatSlot.resolvers;
+        kernelSlotKey = `${type}-${id}`;
+        break;
+      }
+      case 'export': {
+        typedKernelToVatMap = state.kernelSlotToVatSlot.exports;
+        kernelSlotKey = `${type}-${kernelSlot.vatID}-${id}`;
+        break;
+      }
+      case 'device': {
+        typedKernelToVatMap = state.kernelSlotToVatSlot.devices;
+        kernelSlotKey = `${type}-${kernelSlot.vatID}-${id}`;
+        break;
+      }
+      default:
+        throw new Error(`unexpected kernelSlot type ${kernelSlot.type}`);
     }
-    if (type === 'export' || type === 'device') {
-      return `${type}-${kernelSlot.vatID}-${id}`;
-    }
-    throw new Error(`unexpected kernelSlot type ${kernelSlot.type}`);
+    return {
+      typedKernelToVatMap,
+      kernelSlotKey,
+    };
   }
 
-  function createValSlotKey(vatSlot) {
+  function getValSlotTypedMapAndKey(vatSlot) {
     insistVatSlot(vatSlot);
     const { type, id } = vatSlot;
-    return `${type}-${id}`;
+    let typedVatToKernelMap;
+    // imports, deviceImports, promises, resolvers
+
+    switch (type) {
+      case 'import': {
+        typedVatToKernelMap = state.vatSlotToKernelSlot.imports;
+        break;
+      }
+      case 'deviceImport': {
+        typedVatToKernelMap = state.vatSlotToKernelSlot.deviceImports;
+        break;
+      }
+      case 'promise': {
+        typedVatToKernelMap = state.vatSlotToKernelSlot.promises;
+        break;
+      }
+      case 'resolver': {
+        typedVatToKernelMap = state.vatSlotToKernelSlot.resolvers;
+        break;
+      }
+      default:
+        throw new Error(`unexpected vatSlot type ${vatSlot.type}`);
+    }
+    return {
+      typedVatToKernelMap,
+      vatSlotKey: `${type}-${id}`,
+    };
   }
 
   function getVatSlotTypeFromKernelSlot(kernelSlot) {
@@ -106,7 +171,10 @@ export default function makeVatState() {
   }
 
   function mapVatSlotToKernelSlot(vatSlot) {
-    const kernelSlot = state.vatSlotToKernelSlot.get(createValSlotKey(vatSlot));
+    const { typedVatToKernelMap, vatSlotKey } = getValSlotTypedMapAndKey(
+      vatSlot,
+    );
+    const kernelSlot = typedVatToKernelMap.get(vatSlotKey);
     if (kernelSlot === undefined) {
       throw new Error(`unknown ${vatSlot.type} slot '${vatSlot.id}'`);
     }
@@ -114,15 +182,21 @@ export default function makeVatState() {
   }
 
   function mapKernelSlotToVatSlot(kernelSlot) {
-    if (!state.kernelSlotToVatSlot.has(createKernelSlotKey(kernelSlot))) {
+    const { typedKernelToVatMap, kernelSlotKey } = getKernelSlotTypedMapAndKey(
+      kernelSlot,
+    );
+    if (!typedKernelToVatMap.has(kernelSlotKey)) {
       // must add both directions
       const newVatSlotID = Nat(allocateNextVatSlotID(kernelSlot));
       const vatSlotType = getVatSlotTypeFromKernelSlot(kernelSlot);
       const vatSlot = { type: vatSlotType, id: newVatSlotID };
-      state.kernelSlotToVatSlot.set(createKernelSlotKey(kernelSlot), vatSlot);
-      state.vatSlotToKernelSlot.set(createValSlotKey(vatSlot), kernelSlot);
+      typedKernelToVatMap.set(kernelSlotKey, vatSlot);
+      const { typedVatToKernelMap, vatSlotKey } = getValSlotTypedMapAndKey(
+        vatSlot,
+      );
+      typedVatToKernelMap.set(vatSlotKey, kernelSlot);
     }
-    return state.kernelSlotToVatSlot.get(createKernelSlotKey(kernelSlot));
+    return typedKernelToVatMap.get(kernelSlotKey);
   }
 
   function loadManagerState(vatData) {
@@ -134,19 +208,61 @@ export default function makeVatState() {
     state.nextResolverID = vatData.nextResolverID;
     state.nextDeviceImportID = vatData.nextDeviceImportID;
 
-    vatData.kernelSlotToVatSlot.forEach(([key, value]) => {
-      state.kernelSlotToVatSlot.set(key, value);
+    // exports, devices, promises, resolvers
+
+    vatData.kernelSlotToVatSlot.exports.forEach(([key, value]) => {
+      state.kernelSlotToVatSlot.exports.set(key, value);
     });
 
-    vatData.vatSlotToKernelSlot.forEach(([key, value]) => {
-      state.vatSlotToKernelSlot.set(key, value);
+    vatData.kernelSlotToVatSlot.devices.forEach(([key, value]) => {
+      state.kernelSlotToVatSlot.devices.set(key, value);
+    });
+
+    vatData.kernelSlotToVatSlot.promises.forEach(([key, value]) => {
+      state.kernelSlotToVatSlot.promises.set(key, value);
+    });
+
+    vatData.kernelSlotToVatSlot.resolvers.forEach(([key, value]) => {
+      state.kernelSlotToVatSlot.resolvers.set(key, value);
+    });
+
+    // imports, deviceImports, promises, resolvers
+
+    vatData.vatSlotToKernelSlot.imports.forEach(([key, value]) => {
+      state.vatSlotToKernelSlot.imports.set(key, value);
+    });
+
+    vatData.vatSlotToKernelSlot.deviceImports.forEach(([key, value]) => {
+      state.vatSlotToKernelSlot.deviceImports.set(key, value);
+    });
+
+    vatData.vatSlotToKernelSlot.promises.forEach(([key, value]) => {
+      state.vatSlotToKernelSlot.promises.set(key, value);
+    });
+
+    vatData.vatSlotToKernelSlot.resolvers.forEach(([key, value]) => {
+      state.vatSlotToKernelSlot.resolvers.set(key, value);
     });
   }
 
   function getManagerState() {
     return {
-      kernelSlotToVatSlot: Array.from(state.kernelSlotToVatSlot.entries()),
-      vatSlotToKernelSlot: Array.from(state.vatSlotToKernelSlot.entries()),
+      kernelSlotToVatSlot: {
+        // exports, devices, promises, resolvers
+        exports: Array.from(state.kernelSlotToVatSlot.exports.entries()),
+        devices: Array.from(state.kernelSlotToVatSlot.devices.entries()),
+        promises: Array.from(state.kernelSlotToVatSlot.promises.entries()),
+        resolvers: Array.from(state.kernelSlotToVatSlot.resolvers.entries()),
+      },
+      // imports, deviceImports, promises, resolvers
+      vatSlotToKernelSlot: {
+        imports: Array.from(state.vatSlotToKernelSlot.imports.entries()),
+        deviceImports: Array.from(
+          state.vatSlotToKernelSlot.deviceImports.entries(),
+        ),
+        promises: Array.from(state.vatSlotToKernelSlot.promises.entries()),
+        resolvers: Array.from(state.vatSlotToKernelSlot.resolvers.entries()),
+      },
 
       nextImportID: state.nextImportID,
       nextPromiseID: state.nextPromiseID,
@@ -165,12 +281,15 @@ export default function makeVatState() {
     state.transcript.push(msg);
   }
 
+  // pretty print for logging and testing
   function dumpState(vatID) {
     const res = [];
-    state.kernelSlotToVatSlot.forEach(vatSlot => {
-      const kernelSlot = state.vatSlotToKernelSlot.get(
-        createValSlotKey(vatSlot),
+
+    function printSlots(vatSlot) {
+      const { typedVatToKernelMap, vatSlotKey } = getValSlotTypedMapAndKey(
+        vatSlot,
       );
+      const kernelSlot = typedVatToKernelMap.get(vatSlotKey);
       if (vatSlot.type === 'promise' || vatSlot.type === 'resolver') {
         res.push([vatID, vatSlot.type, vatSlot.id, kernelSlot.id]);
       } else {
@@ -183,7 +302,14 @@ export default function makeVatState() {
           kernelSlot.id,
         ]);
       }
-    });
+    }
+
+    // 'exports', 'devices', 'promises', 'resolvers'
+    state.kernelSlotToVatSlot.exports.forEach(printSlots);
+    state.kernelSlotToVatSlot.devices.forEach(printSlots);
+    state.kernelSlotToVatSlot.promises.forEach(printSlots);
+    state.kernelSlotToVatSlot.resolvers.forEach(printSlots);
+
     return harden(res);
   }
 
