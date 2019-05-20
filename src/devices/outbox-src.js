@@ -17,9 +17,9 @@ export default function setup(syscall, helpers, endowments) {
     syscall,
     _SO =>
       harden({
-        add(recipient, msgnum, data) {
+        add(recipient, msgnum, body) {
           try {
-            addToOutbox(`${recipient}`, Nat(msgnum), `${data}`);
+            addToOutbox(`${recipient}`, Nat(msgnum), `${body}`);
           } catch (e) {
             throw new Error(`error in addToOutbox: ${e} ${e.message}`);
           }
