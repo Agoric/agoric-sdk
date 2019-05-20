@@ -436,7 +436,8 @@ export default function buildKernel(kernelEndowments) {
       return kernelState.getState();
     },
 
-    loadState(newState) {
+    loadState(outerRealmState) {
+      const newState = JSON.parse(JSON.stringify(outerRealmState));
       return kernelState.loadState(newState);
     },
 

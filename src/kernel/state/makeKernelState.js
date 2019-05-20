@@ -189,8 +189,7 @@ function makeKernelState() {
     };
   }
 
-  async function loadState(outerRealmState) {
-    const newState = JSON.parse(JSON.stringify(outerRealmState));
+  async function loadState(newState) {
 
     // discard our previous state: assume that no vats have been allowed to
     // run yet
