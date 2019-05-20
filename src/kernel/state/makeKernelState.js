@@ -190,7 +190,6 @@ function makeKernelState() {
   }
 
   async function loadState(newState) {
-
     // discard our previous state: assume that no vats have been allowed to
     // run yet
     if (!isRunQueueEmpty()) {
