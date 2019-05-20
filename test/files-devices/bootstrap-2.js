@@ -60,11 +60,13 @@ export default function setup(syscall, state, helpers) {
             D(devices.outbox).add('recip1', 1, 'data1');
             D(devices.outbox).add('recip1', 2, 'data2');
             D(devices.outbox).add('recip1', 3, 'data3');
+            D(devices.outbox).ackInbound('recip1', 12);
+            D(devices.outbox).ackInbound('recip1', 13);
             D(devices.outbox).add('recip2', 4, 'data4');
             D(devices.outbox).add('recip3', 5, 'data5');
             D(devices.outbox).remove('recip1', 1);
             D(devices.outbox).remove('recip2', 4, 'data4');
-            // should leave recip1: [data2,data3], recip3: [data5]
+            // should leave recip1: [data2,data3], recip2: [], recip3: [data5]
           } else {
             throw new Error(`unknown argv mode '${argv[0]}'`);
           }

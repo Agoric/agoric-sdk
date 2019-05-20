@@ -294,13 +294,23 @@ async function testOutbox(t, withSES) {
 
   const c = await buildVatController(config, withSES, ['outbox1']);
   await c.run();
-  t.deepEqual(ob.convertMapsToObjects(ob.outbox), {
+  t.deepEqual(ob.exportToData(ob.outbox), {
     recip1: {
-      2: 'data2',
-      3: 'data3',
+      inboundAck: 13,
+      outbox: {
+        2: 'data2',
+        3: 'data3',
+      },
+    },
+    recip2: {
+      inboundAck: undefined,
+      outbox: {},
     },
     recip3: {
-      5: 'data5',
+      inboundAck: undefined,
+      outbox: {
+        5: 'data5',
+      },
     },
   });
   t.end();

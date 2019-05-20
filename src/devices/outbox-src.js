@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
 export default function setup(syscall, helpers, endowments) {
-  const { addToOutbox, removeFromOutbox } = endowments;
+  const { addToOutbox, removeFromOutbox, setAcknum } = endowments;
 
   // we keep no state in the device, it all lives elsewhere, as decided by
   // the host
@@ -29,6 +29,13 @@ export default function setup(syscall, helpers, endowments) {
             removeFromOutbox(`${recipient}`, Nat(msgnum));
           } catch (e) {
             throw new Error(`error in removeFromOutbox: ${e} ${e.message}`);
+          }
+        },
+        ackInbound(recipient, msgnum) {
+          try {
+            setAcknum(`${recipient}`, Nat(msgnum));
+          } catch (e) {
+            throw new Error(`error in setInboxAck: ${e} ${e.message}`);
           }
         },
       }),
