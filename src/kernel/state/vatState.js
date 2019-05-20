@@ -19,12 +19,6 @@ export default function makeVatState() {
     transcript: [],
   };
 
-  function createKeyFromObj(obj) {
-    const keyItems = [];
-    Object.getOwnPropertyNames(obj).forEach(k => keyItems.push(k, obj[k]));
-    return keyItems.join('-');
-  }
-
   const allowedVatSlotTypes = [
     'export',
     'import',
@@ -33,15 +27,9 @@ export default function makeVatState() {
     'resolver',
   ];
 
-  const allowedKernelSlotTypes = [
-    'export',
-    'import',
-    'device',
-    'promise',
-    'resolver',
-  ];
+  const allowedKernelSlotTypes = ['export', 'device', 'promise', 'resolver'];
 
-  function checkVatSlot(slot) {
+  function insistVatSlot(slot) {
     const properties = Object.getOwnPropertyNames(slot);
     insist(
       properties.length === 2,
@@ -54,7 +42,7 @@ export default function makeVatState() {
     );
   }
 
-  function checkKernelSlot(slot) {
+  function insistKernelSlot(slot) {
     const properties = Object.getOwnPropertyNames(slot);
     insist(
       properties.length === 3 ||
@@ -70,29 +58,21 @@ export default function makeVatState() {
   }
 
   function createKernelSlotKey(kernelSlot) {
-    checkKernelSlot(kernelSlot);
-    return createKeyFromObj(kernelSlot);
+    insistKernelSlot(kernelSlot);
+    const { type, id } = kernelSlot;
+    if (type === 'promise' || type === 'resolver') {
+      return `${type}-${id}`;
+    }
+    if (type === 'export' || type === 'device') {
+      return `${type}-${kernelSlot.vatID}-${id}`;
+    }
+    throw new Error(`unexpected kernelSlot type ${kernelSlot.type}`);
   }
 
   function createValSlotKey(vatSlot) {
-    checkVatSlot(vatSlot);
-    return createKeyFromObj(vatSlot);
-  }
-
-  function getNextVatSlotID(type) {
-    insist(
-      allowedVatSlotTypes.includes(type),
-      `type ${type} is not an allowed vat slot type`,
-    );
-    return state.nextIDs[type];
-  }
-
-  function setNextVatSlotID(type, newNextID) {
-    insist(
-      allowedVatSlotTypes.includes(type),
-      `type ${type} is not an allowed vat slot type`,
-    );
-    state.nextIDs[type] = newNextID;
+    insistVatSlot(vatSlot);
+    const { type, id } = vatSlot;
+    return `${type}-${id}`;
   }
 
   function getVatSlotTypeFromKernelSlot(kernelSlot) {
@@ -112,14 +92,22 @@ export default function makeVatState() {
 
   function allocateNextVatSlotID(kernelSlot) {
     const vatSlotType = getVatSlotTypeFromKernelSlot(kernelSlot);
-    const i = getNextVatSlotID(vatSlotType);
-    setNextVatSlotID(vatSlotType, i + 1);
+
+    insist(
+      allowedVatSlotTypes.includes(vatSlotType),
+      `type ${vatSlotType} is not an allowed vat slot type`,
+    );
+
+    const i = state.nextIDs[vatSlotType];
+
+    state.nextIDs[vatSlotType] = i + 1;
+
     return i;
   }
 
-  function mapVatSlotToKernelSlot(vatSlot, throwIfNotFound) {
+  function mapVatSlotToKernelSlot(vatSlot) {
     const kernelSlot = state.vatSlotToKernelSlot.get(createValSlotKey(vatSlot));
-    if (kernelSlot === undefined && throwIfNotFound) {
+    if (kernelSlot === undefined) {
       throw new Error(`unknown ${vatSlot.type} slot '${vatSlot.id}'`);
     }
     return kernelSlot;
@@ -207,7 +195,7 @@ export default function makeVatState() {
     getCurrentState,
     dumpState,
     addToTranscript,
-    checkKernelSlot,
-    checkVatSlot,
+    insistKernelSlot,
+    insistVatSlot,
   });
 }

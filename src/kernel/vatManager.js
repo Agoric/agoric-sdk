@@ -1,21 +1,18 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import makeVatState from './state/makeVatState';
+import makeVatState from './state/vatState';
 
 export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   const {
     kdebug,
     createPromiseWithDecider,
     send,
-    // kernelPromises,
-    // runQueue,
     fulfillToData,
     fulfillToPresence,
     reject,
-    // log,
     process,
     invoke,
-    kernelState, // added
+    kernelState,
   } = syscallManager;
 
   const vatState = makeVatState();
@@ -101,7 +98,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   // vatSlot to kernelSlot
   // mapOutbound
   function mapVatSlotToKernelSlot(vatSlot) {
-    vatState.checkVatSlot(vatSlot);
+    vatState.insistVatSlot(vatSlot);
     const { type, id } = vatSlot;
 
     if (type === 'export') {
@@ -109,17 +106,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
       return { type: 'export', vatID, id };
     }
 
-    if (type === 'import' || type === 'deviceImport') {
-      // an import from somewhere else, so look in the sending Vat's table to
-      // translate into absolute form
-      return vatState.mapVatSlotToKernelSlot(vatSlot, false);
-    }
-
-    if (type === 'promise' || type === 'resolver') {
-      return vatState.mapVatSlotToKernelSlot(vatSlot, true);
-    }
-
-    throw new Error('an unknown error occurred in mapVatSlotToKernelSlot');
+    return vatState.mapVatSlotToKernelSlot(vatSlot);
   }
 
   // kernelSlot to VatSlot
@@ -137,7 +124,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
       );
     }
 
-    vatState.checkKernelSlot(kernelSlot);
+    vatState.insistKernelSlot(kernelSlot);
 
     if (kernelSlot.type === 'export') {
       const { vatID: fromVatID, id } = kernelSlot;

@@ -10,18 +10,25 @@ function makeKernelState() {
     nextPromiseIndex: 40,
   };
 
-  function getNextPromiseIndex() {
-    const id = state.nextPromiseIndex;
-    state.nextPromiseIndex += 1;
-    return id;
-  }
-
-  function setNextPromiseIndex(id) {
+  // used by loading state only
+  function loadNextPromiseIndex(id) {
     state.nextPromiseIndex = id;
   }
 
-  function addKernelPromise(kernelPromiseID, kernelPromiseObj) {
+  // used by loading state only
+  function loadKernelPromise(kernelPromiseID, kernelPromiseObj) {
     state.kernelPromises.set(kernelPromiseID, kernelPromiseObj);
+  }
+
+  function addKernelPromise(kernelPromiseObj) {
+    function allocateNextPromiseIndex() {
+      const id = state.nextPromiseIndex;
+      state.nextPromiseIndex += 1;
+      return id;
+    }
+    const kernelPromiseID = allocateNextPromiseIndex();
+    state.kernelPromises.set(kernelPromiseID, kernelPromiseObj);
+    return kernelPromiseID;
   }
 
   function getKernelPromise(kernelPromiseID) {
@@ -92,6 +99,7 @@ function makeKernelState() {
     state.log.push(`${msg}`);
   }
 
+  // used for debugging and tests
   function dump() {
     const vatTables = [];
     const kernelTable = [];
@@ -230,13 +238,12 @@ function makeKernelState() {
           p[name] = kp[name];
         }
       });
-      addKernelPromise(kp.id, p);
+      loadKernelPromise(kp.id, p);
     });
-    setNextPromiseIndex(newState.nextPromiseIndex);
+    loadNextPromiseIndex(newState.nextPromiseIndex);
   }
 
   return harden({
-    getNextPromiseIndex,
     addKernelPromise,
     getKernelPromise,
     hasKernelPromise,
@@ -254,7 +261,6 @@ function makeKernelState() {
     isRunQueueEmpty,
     getRunQueueLength,
     getNextMsg,
-    setNextPromiseIndex,
     getState,
     loadState,
     log,

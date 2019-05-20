@@ -7,7 +7,7 @@ import { QCLASS, makeMarshal } from './marshal';
 import makePromise from './makePromise';
 import makeVatManager from './vatManager';
 import makeDeviceManager from './deviceManager';
-import makeKernelState from './state/makeKernelState';
+import makeKernelState from './state/kernelState';
 
 export default function buildKernel(kernelEndowments) {
   const { setImmediate } = kernelEndowments;
@@ -30,10 +30,6 @@ export default function buildKernel(kernelEndowments) {
   // in the kernel table, promises and resolvers are both indexed by the same
   // value. kernelPromises[promiseID] = { decider, subscribers }
 
-  function allocateKernelPromiseIndex() {
-    return kernelState.getNextPromiseIndex();
-  }
-
   /*
   function chaseRedirections(promiseID) {
     let targetID = Nat(promiseID);
@@ -51,10 +47,10 @@ export default function buildKernel(kernelEndowments) {
   function createPromiseWithDecider(deciderVatID) {
     // deciderVatID can be undefined if the promise is "owned" by the kernel
     // (pipelining)
-    const kernelPromiseID = allocateKernelPromiseIndex();
+
     // we don't harden the kernel promise record because it is mutable: it
     // can be replaced when syscall.redirect/fulfill/reject is called
-    kernelState.addKernelPromise(kernelPromiseID, {
+    const kernelPromiseID = kernelState.addKernelPromise({
       state: 'unresolved',
       decider: deciderVatID,
       subscribers: new Set(),
@@ -211,15 +207,12 @@ export default function buildKernel(kernelEndowments) {
     kdebug,
     createPromiseWithDecider,
     send,
-    // kernelPromises,
-    // runQueue,
     fulfillToData,
     fulfillToPresence,
     reject,
-    // log,
     process,
     invoke,
-    kernelState, // added
+    kernelState,
   };
 
   function addVat(vatID, setup) {
@@ -447,17 +440,6 @@ export default function buildKernel(kernelEndowments) {
       while (running && !kernelState.isRunQueueEmpty()) {
         // eslint-disable-next-line no-await-in-loop
         await processQueueMessage(kernelState.getNextMsg());
-      }
-    },
-
-    async drain() {
-      // process all existing messages, but stop before processing new ones
-      running = true;
-      let remaining = kernelState.getRunQueueLength();
-      while (running && !remaining) {
-        // eslint-disable-next-line no-await-in-loop
-        await processQueueMessage(kernelState.getNextMsg());
-        remaining -= 1;
       }
     },
 
