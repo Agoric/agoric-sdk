@@ -56,17 +56,30 @@ export default function setup(syscall, state, helpers) {
             console.log('HERE1', devices);
             log(`calling left.leftSharedTable`);
             await E(vats.left).leftSharedTable(devices.sharedTable);
-          } else if (argv[0] === 'outbox1') {
-            D(devices.outbox).add('recip1', 1, 'data1');
-            D(devices.outbox).add('recip1', 2, 'data2');
-            D(devices.outbox).add('recip1', 3, 'data3');
-            D(devices.outbox).ackInbound('recip1', 12);
-            D(devices.outbox).ackInbound('recip1', 13);
-            D(devices.outbox).add('recip2', 4, 'data4');
-            D(devices.outbox).add('recip3', 5, 'data5');
-            D(devices.outbox).remove('recip1', 1);
-            D(devices.outbox).remove('recip2', 4, 'data4');
-            // should leave recip1: [data2,data3], recip2: [], recip3: [data5]
+          } else if (argv[0] === 'mailbox1') {
+            D(devices.mailbox).add('peer1', 1, 'data1');
+            D(devices.mailbox).add('peer1', 2, 'data2');
+            D(devices.mailbox).add('peer1', 3, 'data3');
+            D(devices.mailbox).ackInbound('peer1', 12);
+            D(devices.mailbox).ackInbound('peer1', 13);
+            D(devices.mailbox).add('peer2', 4, 'data4');
+            D(devices.mailbox).add('peer3', 5, 'data5');
+            D(devices.mailbox).remove('peer1', 1);
+            D(devices.mailbox).remove('peer2', 4, 'data4');
+            // should leave peer1: [data2,data3], peer2: [], peer3: [data5]
+          } else if (argv[0] === 'mailbox2') {
+            const handler = harden({
+              deliverInboundMessages(peer, messages) {
+                log(`dm-${peer}`);
+                messages.forEach(m => {
+                  log(`m-${m[0]}-${m[1]}`);
+                });
+              },
+              deliverInboundAck(peer, ack) {
+                log(`da-${peer}-${ack}`);
+              },
+            });
+            D(devices.mailbox).registerInboundHandler(handler);
           } else {
             throw new Error(`unknown argv mode '${argv[0]}'`);
           }
