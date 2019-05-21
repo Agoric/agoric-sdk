@@ -1,20 +1,21 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
+import makeVatState from './state/vatState';
 
 export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   const {
     kdebug,
     createPromiseWithDecider,
     send,
-    kernelPromises,
-    runQueue,
     fulfillToData,
     fulfillToPresence,
     reject,
-    log,
     process,
     invoke,
+    kernelState,
   } = syscallManager;
+
+  const vatState = makeVatState();
 
   // We use vat-centric terminology here, so "inbound" means "into a vat",
   // generally from the kernel. We also have "comms vats" which use special
@@ -24,8 +25,8 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   // "outbound" to describe the messages a comms vat is sending over a socket
   // or other communications channel.
 
-  // The mapInbound() function is used to translate slot references on the
-  // vat->kernel pathway. mapOutbound() is used for kernel->vat.
+  // The mapVatSlotToKernelSlot() function is used to translate slot references on the
+  // vat->kernel pathway. mapKernelToVatSlot() is used for kernel->vat.
 
   // The terms "import" and "export" are also vat-centric. "import" means
   // something a Vat has imported (from the kernel). Imports are tracked in a
@@ -73,50 +74,6 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   //            nextResolverID,
   //          }
 
-  // per-vat translation tables
-  const tables = {
-    imports: harden({
-      outbound: new Map(),
-      inbound: new Map(),
-    }),
-    // make these IDs start at different values to detect errors better
-    nextImportID: 10,
-    promises: harden({
-      outbound: new Map(),
-      inbound: new Map(),
-    }),
-    nextPromiseID: 20,
-    resolvers: harden({
-      outbound: new Map(),
-      inbound: new Map(),
-    }),
-    nextResolverID: 30,
-
-    nextDeviceImportID: 40,
-    deviceImports: harden({
-      outbound: new Map(),
-      inbound: new Map(),
-    }),
-  };
-
-  function allocatePromiseID() {
-    const i = tables.nextPromiseID;
-    tables.nextPromiseID += 1;
-    return i;
-  }
-
-  function allocateResolverID() {
-    const i = tables.nextResolverID;
-    tables.nextResolverID += 1;
-    return i;
-  }
-
-  function allocateDeviceImportID() {
-    const i = tables.nextDeviceImportID;
-    tables.nextDeviceImportID += 1;
-    return i;
-  }
-
   // we define three types of slot identifiers: inbound, neutral, outbound
   // * outbound is what syscall.send(slots=) contains, it is always scoped to
   //   the sending vat, and the values are {type, id}. 'type' is either
@@ -138,133 +95,50 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   // just did syscall.send and referenced 'slot' (in an argument, or as the
   // target of a send), what are they talking about?
 
-  function mapOutbound(slot) {
-    // kdebug(`mapOutbound ${JSON.stringify(slot)}`);
-    if (slot.type === 'export') {
+  // vatSlot to kernelSlot
+  // mapOutbound
+  function mapVatSlotToKernelSlot(vatSlot) {
+    vatState.insistVatSlot(vatSlot);
+    const { type, id } = vatSlot;
+
+    if (type === 'export') {
       // one of our exports, so just make the vatID explicit
-      Nat(slot.id);
-      return { type: 'export', vatID, id: slot.id };
+      return { type: 'export', vatID, id };
     }
 
-    if (slot.type === 'import') {
-      // an import from somewhere else, so look in the sending Vat's table to
-      // translate into absolute form
-      Nat(slot.id);
-      return tables.imports.outbound.get(slot.id);
-    }
-
-    if (slot.type === 'deviceImport') {
-      Nat(slot.id);
-      return tables.deviceImports.outbound.get(slot.id);
-    }
-
-    if (slot.type === 'promise') {
-      Nat(slot.id);
-      if (!tables.promises.outbound.has(slot.id)) {
-        throw new Error(`unknown promise slot '${slot.id}'`);
-      }
-      return { type: 'promise', id: tables.promises.outbound.get(slot.id) };
-    }
-
-    if (slot.type === 'resolver') {
-      Nat(slot.id);
-      if (!tables.resolvers.outbound.has(slot.id)) {
-        throw new Error(`unknown resolver slot '${slot.id}'`);
-      }
-      return { type: 'resolver', id: tables.resolvers.outbound.get(slot.id) };
-    }
-
-    throw Error(`unknown slot.type in '${JSON.stringify(slot)}'`);
+    return vatState.mapVatSlotToKernelSlot(vatSlot);
   }
 
-  function allocateImportIndex() {
-    const i = tables.nextImportID;
-    tables.nextImportID = i + 1;
-    return i;
-  }
-
+  // kernelSlot to VatSlot
   // mapInbound: convert from absolute slot to forVatID-relative slot. This
   // is used when building the arguments for dispatch.deliver.
-  function mapInbound(slot) {
-    kdebug(`mapInbound for ${vatID} of ${JSON.stringify(slot)}`);
-    if (Object.getPrototypeOf(slot) !== Object.getPrototypeOf({})) {
+
+  function mapKernelSlotToVatSlot(kernelSlot) {
+    kdebug(
+      `mapKernelSlotToVatSlot for ${vatID} of ${JSON.stringify(kernelSlot)}`,
+    );
+
+    if (Object.getPrototypeOf(kernelSlot) !== Object.getPrototypeOf({})) {
       throw new Error(
-        `hey, mapInbound given wrong-realm slot ${JSON.stringify(slot)}`,
+        `hey, mapInbound given wrong-realm slot ${JSON.stringify(kernelSlot)}`,
       );
     }
 
-    if (slot.type === 'export') {
-      const { vatID: fromVatID, id } = slot;
-      Nat(id);
+    vatState.insistKernelSlot(kernelSlot);
+
+    if (kernelSlot.type === 'export') {
+      const { vatID: fromVatID, id } = kernelSlot;
 
       if (vatID === fromVatID) {
         // this is returning home, so it's one of the target's exports
         return { type: 'export', id };
       }
-
-      const m = tables.imports;
-      const key = `${slot.type}.${fromVatID}.${id}`; // ugh javascript
-      if (!m.inbound.has(key)) {
-        // must add both directions
-        const newSlotID = Nat(allocateImportIndex());
-        // kdebug(` adding ${newSlotID}`);
-        m.inbound.set(key, newSlotID);
-        m.outbound.set(
-          newSlotID,
-          harden({ type: 'export', vatID: fromVatID, id }), // TODO just 'slot'?
-        );
-      }
-      return { type: 'import', id: m.inbound.get(key) };
     }
 
-    if (slot.type === 'device') {
-      const { deviceName, id } = slot;
-      Nat(id);
-
-      const m = tables.deviceImports;
-      const key = `${slot.type}.${deviceName}.${id}`; // ugh javascript
-      if (!m.inbound.has(key)) {
-        // must add both directions
-        const newSlotID = Nat(allocateDeviceImportID());
-        // kdebug(` adding ${newSlotID}`);
-        m.inbound.set(key, newSlotID);
-        m.outbound.set(newSlotID, harden(slot));
-      }
-      return { type: 'deviceImport', id: m.inbound.get(key) };
-    }
-
-    if (slot.type === 'promise') {
-      const kernelPromiseID = slot.id;
-      Nat(kernelPromiseID);
-      const m = tables.promises;
-      if (!m.inbound.has(kernelPromiseID)) {
-        const promiseID = Nat(allocatePromiseID());
-        m.inbound.set(kernelPromiseID, promiseID);
-        m.outbound.set(promiseID, kernelPromiseID);
-      }
-      return { type: 'promise', id: m.inbound.get(kernelPromiseID) };
-    }
-
-    if (slot.type === 'resolver') {
-      const kernelPromiseID = slot.id;
-      Nat(kernelPromiseID);
-      const m = tables.resolvers;
-      if (!m.inbound.has(kernelPromiseID)) {
-        const resolverID = Nat(allocateResolverID());
-        kdebug(
-          ` mapInbound allocating resID ${resolverID} for kpid ${kernelPromiseID}`,
-        );
-        m.inbound.set(kernelPromiseID, resolverID);
-        m.outbound.set(resolverID, kernelPromiseID);
-      }
-      return { type: 'resolver', id: m.inbound.get(kernelPromiseID) };
-    }
-
-    throw Error(`unknown type '${slot.type}'`);
+    return vatState.mapKernelSlotToVatSlot(kernelSlot);
   }
 
   let inReplay = false;
-  const transcript = [];
   let playbackSyscalls;
 
   let currentEntry;
@@ -277,7 +151,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     }
   }
   function transcriptFinishDispatch() {
-    transcript.push(currentEntry);
+    vatState.addToTranscript(currentEntry);
   }
 
   // syscall handlers: these are wrapped by the 'syscall' object and made
@@ -289,13 +163,16 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
         `targetSlot isn't really a slot ${JSON.stringify(targetSlot)}`,
       );
     }
+
     if (targetSlot.type === 'export') {
       // Disable send-to-self for now. It might be useful in the future, but
       // I doubt it, and we can prevent some confusion by flagging a specific
       // error here. See issue #43 for details.
       throw new Error(`send() is calling itself, see issue #43`);
     }
-    const target = mapOutbound(targetSlot);
+
+    const target = mapVatSlotToKernelSlot(targetSlot);
+
     if (!target) {
       throw Error(
         `unable to find target for ${vatID}/${targetSlot.type}-${
@@ -308,7 +185,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
         targetSlot,
       )}=ker:${JSON.stringify(target)}).${method}`,
     );
-    const slots = vatSlots.map(slot => mapOutbound(slot));
+    const slots = vatSlots.map(slot => mapVatSlotToKernelSlot(slot));
     // who will decide the answer? If the message is being queued for a
     // promise, then the kernel will decide (when the answer gets
     // resolved). If it is going to a specific export, the exporting vat
@@ -326,7 +203,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
       kernelResolverID: kernelPromiseID,
     };
     send(target, msg);
-    const p = mapInbound({
+    const p = mapKernelSlotToVatSlot({
       type: 'promise',
       id: kernelPromiseID,
     });
@@ -335,11 +212,11 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
 
   function doCreatePromise() {
     const kernelPromiseID = createPromiseWithDecider(vatID);
-    const p = mapInbound({
+    const p = mapKernelSlotToVatSlot({
       type: 'promise',
       id: kernelPromiseID,
     });
-    const r = mapInbound({
+    const r = mapKernelSlotToVatSlot({
       type: 'resolver',
       id: kernelPromiseID,
     });
@@ -352,15 +229,15 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   }
 
   function doSubscribe(promiseID) {
-    const { id } = mapOutbound({
+    const { id } = mapVatSlotToKernelSlot({
       type: 'promise',
       id: promiseID,
     });
     kdebug(`syscall[${vatID}].subscribe(vat:${promiseID}=ker:${id})`);
-    if (!kernelPromises.has(id)) {
+    if (!kernelState.hasKernelPromise(id)) {
       throw new Error(`unknown kernelPromise id '${id}'`);
     }
-    const p = kernelPromises.get(id);
+    const p = kernelState.getKernelPromise(id);
 
     /*
     kdebug(`  decider is ${p.decider} in ${JSON.stringify(p)}`);
@@ -376,19 +253,19 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
       p.subscribers.add(vatID);
       // otherwise it's already resolved, you probably want to know how
     } else if (p.state === 'fulfilledToPresence') {
-      runQueue.push({
+      kernelState.addToRunQueue({
         type: 'notifyFulfillToPresence',
         vatID,
         kernelPromiseID: id,
       });
     } else if (p.state === 'fulfilledToData') {
-      runQueue.push({
+      kernelState.addToRunQueue({
         type: 'notifyFulfillToData',
         vatID,
         kernelPromiseID: id,
       });
     } else if (p.state === 'rejected') {
-      runQueue.push({
+      kernelState.addToRunQueue({
         type: 'notifyReject',
         vatID,
         kernelPromiseID: id,
@@ -400,22 +277,22 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
 
   /*
   function doRedirect(resolverID, targetPromiseID) {
-    const { id } = mapOutbound({ type: 'resolver', id: resolverID });
-    if (!kernelPromises.has(id)) {
+    const { id } = mapVatSlotToKernelSlot({ type: 'resolver', id: resolverID });
+    if (!kernelState.hasKernelPromise(id)) {
       throw new Error(`unknown kernelPromise id '${id}'`);
     }
-    const p = kernelPromises.get(id);
+    const p = kernelState.getKernelPromise(id);
     if (p.state !== 'unresolved') {
       throw new Error(`kernelPromise[${id}] is '${p.state}', not 'unresolved'`);
     }
 
-    let { id: targetID } = mapOutbound({ type: 'promise', id: targetPromiseID });
-    if (!kernelPromises.has(targetID)) {
+    let { id: targetID } = mapVatSlotToKernelSlot({ type: 'promise', id: targetPromiseID });
+    if (!kernelState.hasKernelPromise(targetID)) {
       throw new Error(`unknown kernelPromise id '${targetID}'`);
     }
 
     targetID = chaseRedirections(targetID);
-    const target = kernelPromises.get(targetID);
+    const target = kernelState.getKernelPromise(targetID);
 
     for (let s of p.subscribers) {
       // TODO: we need to remap their subscriptions, somehow
@@ -433,14 +310,14 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
 
   function doFulfillToData(resolverID, fulfillData, vatSlots) {
     Nat(resolverID);
-    const { id } = mapOutbound({
+    const { id } = mapVatSlotToKernelSlot({
       type: 'resolver',
       id: resolverID,
     });
-    if (!kernelPromises.has(id)) {
+    if (!kernelState.hasKernelPromise(id)) {
       throw new Error(`unknown kernelPromise id '${id}'`);
     }
-    const slots = vatSlots.map(slot => mapOutbound(slot));
+    const slots = vatSlots.map(slot => mapVatSlotToKernelSlot(slot));
     kdebug(
       `syscall[${vatID}].fulfillData(vatid=${resolverID}/kid=${id}) = ${fulfillData} v=${JSON.stringify(
         vatSlots,
@@ -451,15 +328,15 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
 
   function doFulfillToPresence(resolverID, slot) {
     Nat(resolverID);
-    const { id } = mapOutbound({
+    const { id } = mapVatSlotToKernelSlot({
       type: 'resolver',
       id: resolverID,
     });
-    if (!kernelPromises.has(id)) {
+    if (!kernelState.hasKernelPromise(id)) {
       throw new Error(`unknown kernelPromise id '${id}'`);
     }
 
-    const targetSlot = mapOutbound(slot);
+    const targetSlot = mapVatSlotToKernelSlot(slot);
     kdebug(
       `syscall[${vatID}].fulfillToPresence(vatid=${resolverID}/kid=${id}) = vat:${JSON.stringify(
         targetSlot,
@@ -470,14 +347,14 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
 
   function doReject(resolverID, rejectData, vatSlots) {
     Nat(resolverID);
-    const { id } = mapOutbound({
+    const { id } = mapVatSlotToKernelSlot({
       type: 'resolver',
       id: resolverID,
     });
-    if (!kernelPromises.has(id)) {
+    if (!kernelState.hasKernelPromise(id)) {
       throw new Error(`unknown kernelPromise id '${id}'`);
     }
-    const slots = vatSlots.map(slot => mapOutbound(slot));
+    const slots = vatSlots.map(slot => mapVatSlotToKernelSlot(slot));
     kdebug(
       `syscall[${vatID}].reject(vatid=${resolverID}/kid=${id}) = ${rejectData} v=${JSON.stringify(
         vatSlots,
@@ -487,20 +364,20 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   }
 
   function doCallNow(target, method, argsString, argsSlots) {
-    const dev = mapOutbound(target);
+    const dev = mapVatSlotToKernelSlot(target);
     if (dev.type !== 'device') {
       throw new Error(
         `doCallNow must target a device, not ${JSON.stringify(target)}`,
       );
     }
-    const slots = argsSlots.map(slot => mapOutbound(slot));
+    const slots = argsSlots.map(slot => mapVatSlotToKernelSlot(slot));
     kdebug(
       `syscall[${vatID}].callNow(vat:device:${target.id}=ker:${JSON.stringify(
         dev,
       )}).${method}`,
     );
     const ret = invoke(dev, method, argsString, slots);
-    const retSlots = ret.slots.map(slot => mapInbound(slot));
+    const retSlots = ret.slots.map(slot => mapKernelSlotToVatSlot(slot));
     return harden({ data: ret.data, slots: retSlots });
   }
 
@@ -553,7 +430,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     },
 
     log(str) {
-      log.push(`${str}`);
+      kernelState.log(str);
     },
   });
 
@@ -605,10 +482,11 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
           `vatManager[${vatID}] given 'deliver' for ${target.vatID}`,
         );
       }
-      const inputSlots = msg.slots.map(slot => mapInbound(slot));
+      const inputSlots = msg.slots.map(slot => mapKernelSlotToVatSlot(slot));
       const resolverID =
         msg.kernelResolverID &&
-        mapInbound({ type: 'resolver', id: msg.kernelResolverID }).id;
+        mapKernelSlotToVatSlot({ type: 'resolver', id: msg.kernelResolverID })
+          .id;
       return doProcess(
         [
           'deliver',
@@ -625,7 +503,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     /*
     if (type === 'subscribe') {
       const { kernelPromiseID, vatID } = message;
-      const relativeID = mapInbound({
+      const relativeID = mapKernelSlotToVatSlot({
         type: 'resolver',
         id: kernelPromiseID,
       }).id;
@@ -636,12 +514,12 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
 
     if (type === 'notifyFulfillToData') {
       const { kernelPromiseID } = message;
-      const p = kernelPromises.get(kernelPromiseID);
-      const relativeID = mapInbound({
+      const p = kernelState.getKernelPromise(kernelPromiseID);
+      const relativeID = mapKernelSlotToVatSlot({
         type: 'promise',
         id: kernelPromiseID,
       }).id;
-      const slots = p.fulfillSlots.map(slot => mapInbound(slot));
+      const slots = p.fulfillSlots.map(slot => mapKernelSlotToVatSlot(slot));
       return doProcess(
         ['notifyFulfillToData', relativeID, p.fulfillData, slots],
         `vat[${vatID}].promise[${relativeID}] fulfillToData failed`,
@@ -650,12 +528,12 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
 
     if (type === 'notifyFulfillToPresence') {
       const { kernelPromiseID } = message;
-      const p = kernelPromises.get(kernelPromiseID);
-      const relativeID = mapInbound({
+      const p = kernelState.getKernelPromise(kernelPromiseID);
+      const relativeID = mapKernelSlotToVatSlot({
         type: 'promise',
         id: kernelPromiseID,
       }).id;
-      const slot = mapInbound(p.fulfillSlot);
+      const slot = mapKernelSlotToVatSlot(p.fulfillSlot);
       return doProcess(
         ['notifyFulfillToPresence', relativeID, slot],
         `vat[${vatID}].promise[${relativeID}] fulfillToPresence failed`,
@@ -664,12 +542,12 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
 
     if (type === 'notifyReject') {
       const { kernelPromiseID } = message;
-      const p = kernelPromises.get(kernelPromiseID);
-      const relativeID = mapInbound({
+      const p = kernelState.getKernelPromise(kernelPromiseID);
+      const relativeID = mapKernelSlotToVatSlot({
         type: 'promise',
         id: kernelPromiseID,
       }).id;
-      const slots = p.rejectSlots.map(slot => mapInbound(slot));
+      const slots = p.rejectSlots.map(slot => mapKernelSlotToVatSlot(slot));
       return doProcess(
         ['notifyReject', relativeID, p.rejectData, slots],
         `vat[${vatID}].promise[${relativeID}] reject failed`,
@@ -677,42 +555,6 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     }
 
     throw new Error(`unknown message type '${type}'`);
-  }
-
-  function loadManagerState(vatData) {
-    if (
-      tables.imports.outbound.size ||
-      tables.imports.inbound.size ||
-      tables.promises.inbound.size ||
-      tables.promises.inbound.size ||
-      tables.resolvers.inbound.size ||
-      tables.resolvers.inbound.size
-    ) {
-      throw new Error(`vat[$vatID] is not empty, cannot loadState`);
-    }
-    tables.nextImportID = vatData.nextImportID;
-    vatData.imports.outbound.forEach(kv =>
-      tables.imports.outbound.set(kv[0], kv[1]),
-    );
-    vatData.imports.inbound.forEach(kv =>
-      tables.imports.inbound.set(kv[0], kv[1]),
-    );
-
-    tables.nextPromiseID = vatData.nextPromiseID;
-    vatData.promises.outbound.forEach(kv =>
-      tables.promises.outbound.set(kv[0], kv[1]),
-    );
-    vatData.promises.inbound.forEach(kv =>
-      tables.promises.inbound.set(kv[0], kv[1]),
-    );
-
-    tables.nextResolverID = vatData.nextResolverID;
-    vatData.resolvers.outbound.forEach(kv =>
-      tables.resolvers.outbound.set(kv[0], kv[1]),
-    );
-    vatData.resolvers.inbound.forEach(kv =>
-      tables.resolvers.inbound.set(kv[0], kv[1]),
-    );
   }
 
   async function loadState(savedState) {
@@ -730,58 +572,15 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     inReplay = false;
   }
 
-  function getManagerState() {
-    return {
-      nextImportID: tables.nextImportID,
-      imports: {
-        outbound: Array.from(tables.imports.outbound.entries()),
-        inbound: Array.from(tables.imports.inbound.entries()),
-      },
-
-      nextPromiseID: tables.nextPromiseID,
-      promises: {
-        outbound: Array.from(tables.promises.outbound.entries()),
-        inbound: Array.from(tables.promises.inbound.entries()),
-      },
-
-      nextResolverID: tables.nextResolverID,
-      resolvers: {
-        outbound: Array.from(tables.resolvers.outbound.entries()),
-        inbound: Array.from(tables.resolvers.inbound.entries()),
-      },
-    };
-  }
-
-  function getCurrentState() {
-    return { transcript: Array.from(transcript) };
-  }
-
-  function dumpTables() {
-    const res = [];
-    tables.imports.outbound.forEach((target, slot) => {
-      res.push([vatID, 'import', slot, target.type, target.vatID, target.id]);
-    });
-
-    tables.promises.outbound.forEach((kernelPromiseID, id) => {
-      res.push([vatID, 'promise', id, kernelPromiseID]);
-    });
-
-    tables.resolvers.outbound.forEach((kernelPromiseID, id) => {
-      res.push([vatID, 'resolver', id, kernelPromiseID]);
-    });
-    kdebug(`vatMAnager.dumpTables ${JSON.stringify(res)}`);
-    return harden(res);
-  }
-
   const manager = {
-    mapInbound,
-    mapOutbound,
-    dumpTables,
-    loadManagerState,
+    mapKernelSlotToVatSlot,
+    mapVatSlotToKernelSlot,
+    dumpState: vatState.dumpState,
+    loadManagerState: vatState.loadManagerState,
     loadState,
     processOneMessage,
-    getManagerState,
-    getCurrentState,
+    getManagerState: vatState.getManagerState,
+    getCurrentState: vatState.getCurrentState,
   };
   return manager;
 }
