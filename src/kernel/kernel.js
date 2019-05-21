@@ -224,7 +224,7 @@ export default function buildKernel(kernelEndowments) {
       makeLiveSlots,
       makeCommsSlots,
       log(str) {
-        kernelState.log(str);
+        kernelState.log(`${str}`);
       },
     });
     // the vatManager invokes setup() to build the userspace image
@@ -246,7 +246,7 @@ export default function buildKernel(kernelEndowments) {
       name,
       makeDeviceSlots,
       log(str) {
-        kernelState.log(str);
+        kernelState.log(`${str}`);
       },
     });
     const manager = makeDeviceManager(
@@ -316,7 +316,7 @@ export default function buildKernel(kernelEndowments) {
       throw new Error(
         `unknown vatID in target ${JSON.stringify(
           message,
-        )}, have ${JSON.stringify(Array.from(kernelState.getAllVatNames()))}`,
+        )}, have ${JSON.stringify(kernelState.getAllVatNames())}`,
       );
     }
     const { manager } = vat;
@@ -334,7 +334,7 @@ export default function buildKernel(kernelEndowments) {
     // each key of 'vats' will be serialized as a reference to its obj0
     const vrefs = new Map();
     const vatObj0s = {};
-    Array.from(kernelState.getAllVats()).forEach(e => {
+    kernelState.getAllVats().forEach(e => {
       const targetVatID = e[0];
       // we happen to give _bootstrap to itself, because unit tests that
       // don't have any other vats (bootstrap-only configs) then get a
@@ -358,7 +358,7 @@ export default function buildKernel(kernelEndowments) {
     // entry to this object so it will serialize as pass-by-copy. We can
     // remove the dummy entry after we add the 'addVat' device
     const deviceObj0s = { _dummy: 'dummy' };
-    Array.from(kernelState.getAllDevices()).forEach(d => {
+    kernelState.getAllDevices().forEach(d => {
       const name = d[0];
       const dref = harden({});
       deviceObj0s[name] = dref;

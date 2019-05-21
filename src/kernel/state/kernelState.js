@@ -72,15 +72,15 @@ function makeKernelState() {
   }
 
   function getAllVatNames() {
-    return state.vats.keys();
+    return Array.from(state.vats.keys());
   }
 
   function getAllVats() {
-    return state.vats.entries();
+    return Array.from(state.vats.entries());
   }
 
   function getAllDevices() {
-    return state.devices.entries();
+    return Array.from(state.devices.entries());
   }
 
   function isRunQueueEmpty() {
@@ -96,7 +96,7 @@ function makeKernelState() {
   }
 
   function log(msg) {
-    state.log.push(`${msg}`);
+    state.log.push(msg); // template literal barrier in kernel.js
   }
 
   // used for debugging and tests

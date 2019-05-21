@@ -75,68 +75,70 @@ export default function makeVatState() {
     insistKernelSlot(kernelSlot);
 
     const { type, id } = kernelSlot;
-    let typedKernelToVatMap;
-    let kernelSlotKey;
+
+    const tables = state.kernelSlotToVatSlot;
 
     switch (type) {
       case 'promise': {
-        typedKernelToVatMap = state.kernelSlotToVatSlot.promises;
-        kernelSlotKey = `${type}-${id}`;
-        break;
+        return {
+          table: tables.promises,
+          key: id,
+        };
       }
       case 'resolver': {
-        typedKernelToVatMap = state.kernelSlotToVatSlot.resolvers;
-        kernelSlotKey = `${type}-${id}`;
-        break;
+        return {
+          table: tables.resolvers,
+          key: id,
+        };
       }
       case 'export': {
-        typedKernelToVatMap = state.kernelSlotToVatSlot.exports;
-        kernelSlotKey = `${type}-${kernelSlot.vatID}-${id}`;
-        break;
+        return {
+          table: tables.exports,
+          key: `${kernelSlot.vatID}-${id}`,
+        };
       }
       case 'device': {
-        typedKernelToVatMap = state.kernelSlotToVatSlot.devices;
-        kernelSlotKey = `${type}-${kernelSlot.vatID}-${id}`;
-        break;
+        return {
+          table: tables.devices,
+          key: `${kernelSlot.vatID}-${id}`,
+        };
       }
       default:
         throw new Error(`unexpected kernelSlot type ${kernelSlot.type}`);
     }
-    return {
-      typedKernelToVatMap,
-      kernelSlotKey,
-    };
   }
 
   function getValSlotTypedMapAndKey(vatSlot) {
     insistVatSlot(vatSlot);
     const { type, id } = vatSlot;
-    let typedVatToKernelMap;
+
+    const tables = state.vatSlotToKernelSlot;
+    let table;
     // imports, deviceImports, promises, resolvers
 
     switch (type) {
       case 'import': {
-        typedVatToKernelMap = state.vatSlotToKernelSlot.imports;
+        table = tables.imports;
         break;
       }
       case 'deviceImport': {
-        typedVatToKernelMap = state.vatSlotToKernelSlot.deviceImports;
+        table = tables.deviceImports;
         break;
       }
       case 'promise': {
-        typedVatToKernelMap = state.vatSlotToKernelSlot.promises;
+        table = tables.promises;
         break;
       }
       case 'resolver': {
-        typedVatToKernelMap = state.vatSlotToKernelSlot.resolvers;
+        table = tables.resolvers;
         break;
       }
       default:
         throw new Error(`unexpected vatSlot type ${vatSlot.type}`);
     }
     return {
-      typedVatToKernelMap,
-      vatSlotKey: `${type}-${id}`,
+      table,
+      key: `${type}-${id}`,
     };
   }
 
@@ -155,26 +157,9 @@ export default function makeVatState() {
     }
   }
 
-  function allocateNextVatSlotID(kernelSlot) {
-    const vatSlotType = getVatSlotTypeFromKernelSlot(kernelSlot);
-
-    insist(
-      allowedVatSlotTypes.includes(vatSlotType),
-      `type ${vatSlotType} is not an allowed vat slot type`,
-    );
-
-    const i = state.nextIDs[vatSlotType];
-
-    state.nextIDs[vatSlotType] = i + 1;
-
-    return i;
-  }
-
   function mapVatSlotToKernelSlot(vatSlot) {
-    const { typedVatToKernelMap, vatSlotKey } = getValSlotTypedMapAndKey(
-      vatSlot,
-    );
-    const kernelSlot = typedVatToKernelMap.get(vatSlotKey);
+    const { table, key } = getValSlotTypedMapAndKey(vatSlot);
+    const kernelSlot = table.get(key);
     if (kernelSlot === undefined) {
       throw new Error(`unknown ${vatSlot.type} slot '${vatSlot.id}'`);
     }
@@ -182,21 +167,20 @@ export default function makeVatState() {
   }
 
   function mapKernelSlotToVatSlot(kernelSlot) {
-    const { typedKernelToVatMap, kernelSlotKey } = getKernelSlotTypedMapAndKey(
-      kernelSlot,
-    );
-    if (!typedKernelToVatMap.has(kernelSlotKey)) {
+    const { table, key } = getKernelSlotTypedMapAndKey(kernelSlot);
+    if (!table.has(key)) {
       // must add both directions
-      const newVatSlotID = Nat(allocateNextVatSlotID(kernelSlot));
       const vatSlotType = getVatSlotTypeFromKernelSlot(kernelSlot);
+      const newVatSlotID = state.nextIDs[vatSlotType];
+      state.nextIDs[vatSlotType] = newVatSlotID + 1;
       const vatSlot = { type: vatSlotType, id: newVatSlotID };
-      typedKernelToVatMap.set(kernelSlotKey, vatSlot);
-      const { typedVatToKernelMap, vatSlotKey } = getValSlotTypedMapAndKey(
+      table.set(key, vatSlot);
+      const { table: vatSlotTable, key: vatSlotKey } = getValSlotTypedMapAndKey(
         vatSlot,
       );
-      typedVatToKernelMap.set(vatSlotKey, kernelSlot);
+      vatSlotTable.set(vatSlotKey, kernelSlot);
     }
-    return typedKernelToVatMap.get(kernelSlotKey);
+    return table.get(key);
   }
 
   function loadManagerState(vatData) {
@@ -286,10 +270,8 @@ export default function makeVatState() {
     const res = [];
 
     function printSlots(vatSlot) {
-      const { typedVatToKernelMap, vatSlotKey } = getValSlotTypedMapAndKey(
-        vatSlot,
-      );
-      const kernelSlot = typedVatToKernelMap.get(vatSlotKey);
+      const { table, key } = getValSlotTypedMapAndKey(vatSlot);
+      const kernelSlot = table.get(key);
       if (vatSlot.type === 'promise' || vatSlot.type === 'resolver') {
         res.push([vatID, vatSlot.type, vatSlot.id, kernelSlot.id]);
       } else {
