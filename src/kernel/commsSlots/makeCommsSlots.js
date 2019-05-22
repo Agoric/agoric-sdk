@@ -25,15 +25,14 @@ export default function makeCommsSlots(syscall, _state, helpers) {
   const { inboundHandler } = makeInboundHandler(state, syscall);
   const inboundHandlerFacetID = state.ids.allocateID();
 
-  function sendThroughDevice(fromMachineName, toMachineName, data) {
-    const devnode = state.channels.getChannelDevice();
-    if (!devnode) {
-      throw new Error(
-        'sendThroughDevice() called before init() did setChannelDevice()',
-      );
+  function sendToVatTP(toMachineName, data) {
+    const vt = state.machineState.getVatTP();
+    if (!vt) {
+      throw new Error('sendToVatTP() called before init() did setVatTP()');
     }
-    const args = { args: [fromMachineName, toMachineName, data] };
-    syscall.callNow(devnode, 'sendOutbound', JSON.stringify(args), []);
+    const args = { args: [toMachineName, data] };
+    // TODO: this should be sendOnly, once vatManager provides that
+    syscall.send(vt, 'send', JSON.stringify(args), []);
   }
 
   const dispatch = harden({
@@ -66,6 +65,9 @@ export default function makeCommsSlots(syscall, _state, helpers) {
       // TODO: figure out how to move commsSlots into liveSlots
       if (facetid === inboundHandlerFacetID) {
         return inboundHandler(method, argsStr, kernelToMeSlots);
+        // TODO: resolve resolverID, at least until we change vattp.js to use
+        // sendOnly() for commsHandler.inbound instead of send(), at which
+        // point resolverID should always be empty
       }
 
       // TODO: move the rest of this method into outbound/ somewhere
@@ -119,12 +121,7 @@ export default function makeCommsSlots(syscall, _state, helpers) {
         resultSlot,
       });
 
-      const myMachineName = state.machineState.getMachineName();
-      if (myMachineName === otherMachineName) {
-        throw new Error(`wait I appear to be talking to myself`);
-      }
-
-      return sendThroughDevice(myMachineName, otherMachineName, message);
+      return sendToVatTP(otherMachineName, message);
     },
 
     // TODO: change promiseID to a slot instead of wrapping it
@@ -153,11 +150,7 @@ export default function makeCommsSlots(syscall, _state, helpers) {
       // TODO: figure out whether there is a one-to-one correspondance
       // between our exports to the kernel and objects
 
-      sendThroughDevice(
-        state.machineState.getMachineName(),
-        otherMachineName,
-        dataMsg,
-      ); // fromMachineName, toMachineName, data
+      sendToVatTP(otherMachineName, dataMsg);
     },
 
     // TODO: use a slot with type promise instead of a promiseID
@@ -175,11 +168,7 @@ export default function makeCommsSlots(syscall, _state, helpers) {
         target: mapOutbound(otherMachineName, slot),
       });
 
-      sendThroughDevice(
-        state.machineState.getMachineName(),
-        otherMachineName,
-        dataMsg,
-      ); // fromMachineName, toMachineName, data
+      sendToVatTP(otherMachineName, dataMsg);
     },
 
     // TODO: use promise slot rather than promiseID
@@ -198,11 +187,7 @@ export default function makeCommsSlots(syscall, _state, helpers) {
         slots: slots.map(slot => mapOutbound(otherMachineName, slot)),
       });
 
-      sendThroughDevice(
-        state.machineState.getMachineName(),
-        otherMachineName,
-        msg,
-      ); // fromMachineName, toMachineName, data
+      sendToVatTP(otherMachineName, msg);
     },
 
     // for testing purposes only

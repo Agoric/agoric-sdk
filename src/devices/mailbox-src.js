@@ -23,7 +23,7 @@ export default function setup(syscall, helpers, endowments) {
       }
     });
     if (newMessages.length) {
-      inboundHandler.deliverInboundMessages(peer, newMessages);
+      inboundHandler.deliverInboundMessages(peer, harden(newMessages));
     }
     let latestAck = -1;
     if (highestInboundAck.has(peer)) {

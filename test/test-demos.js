@@ -1,15 +1,10 @@
 import { test } from 'tape-promise/tape';
-import buildChannel from '../src/devices/channel';
 import { loadBasedir, buildVatController } from '../src/index';
 
 async function main(withSES, basedir, argv) {
-  const channelDevice = buildChannel();
-  console.log('channelDevice is', channelDevice);
-
   const config = await loadBasedir(basedir);
-  config.devices = [
-    ['channel', channelDevice.srcPath, channelDevice.endowments],
-  ];
+  const ldSrcPath = require.resolve('../src/devices/loopbox-src');
+  config.devices = [['loopbox', ldSrcPath, {}]];
 
   const controller = await buildVatController(config, withSES, argv);
   await controller.run();
@@ -44,11 +39,7 @@ test('run encouragementBotComms Demo with SES', async t => {
   const dump = await main(true, 'demo/encouragementBotComms', []);
   t.deepEquals(dump.log, [
     '=> setup called',
-    'init called with name bot',
-    'init called with name user',
-    'connect called with otherMachineName user, channelName channel',
     'addEgress called with sender user, index 0, valslot [object Object]',
-    'connect called with otherMachineName bot, channelName channel',
     'addIngress called with machineName bot, index 0',
     '=> user.talkToBot is called with bot',
     "=> the promise given by the call to user.talkToBot resolved to 'Thanks for the setup. I sure hope I get some encouragement...'",
@@ -62,11 +53,7 @@ test('run encouragementBotComms Demo without SES', async t => {
   const dump = await main(false, 'demo/encouragementBotComms');
   t.deepEquals(dump.log, [
     '=> setup called',
-    'init called with name bot',
-    'init called with name user',
-    'connect called with otherMachineName user, channelName channel',
     'addEgress called with sender user, index 0, valslot [object Object]',
-    'connect called with otherMachineName bot, channelName channel',
     'addIngress called with machineName bot, index 0',
     '=> user.talkToBot is called with bot',
     "=> the promise given by the call to user.talkToBot resolved to 'Thanks for the setup. I sure hope I get some encouragement...'",

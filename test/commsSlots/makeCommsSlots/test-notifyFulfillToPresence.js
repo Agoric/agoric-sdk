@@ -8,15 +8,15 @@ const helpers = {
 test('makeCommsSlots notifyFulfillToPresence', t => {
   const calls = [];
   const mockSyscall = {
-    callNow(...args) {
-      calls.push(['callNow', args]);
+    send(...args) {
+      calls.push(['send', args]);
     },
   };
 
   const commsSlots = makeCommsSlots(mockSyscall, {}, helpers);
-  const devNode = { type: 'device', id: 42 };
+  const vatTP = { type: 'import', id: 4 };
   const state = commsSlots.getState();
-  state.channels.setChannelDevice(devNode);
+  state.machineState.setVatTP(vatTP);
 
   state.clists.add(
     'abc',
@@ -24,7 +24,7 @@ test('makeCommsSlots notifyFulfillToPresence', t => {
     { type: 'your-egress', id: 9 },
     { type: 'your-ingress', id: 9 },
   );
-  state.machineState.setMachineName('bot');
+
   const kernelToMeSlot = {
     type: 'import',
     id: 11,
@@ -40,13 +40,12 @@ test('makeCommsSlots notifyFulfillToPresence', t => {
 
   commsSlots.notifyFulfillToPresence(20, kernelToMeSlot);
   t.equal(calls.length, 1);
-  t.equal(calls[0][0], 'callNow');
+  t.equal(calls[0][0], 'send');
   t.deepEqual(calls[0][1], [
-    devNode,
-    'sendOutbound',
+    vatTP,
+    'send',
     JSON.stringify({
       args: [
-        'bot',
         'abc',
         JSON.stringify({
           event: 'notifyFulfillToPresence',

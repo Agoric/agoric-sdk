@@ -16,32 +16,33 @@ test('makeCommsSlots deliver to commsController (facetid 0)', t => {
     fulfillToData(...args) {
       calls.push(['fulfillToData', args]);
     },
-    callNow(...args) {
-      calls.push(['callNow', args]);
+    send(...args) {
+      calls.push(['send', args]);
     },
   };
 
+  const vatTP = { type: 'import', id: 4 };
   const commsSlots = makeCommsSlots(mockSyscall, {}, helpers);
   commsSlots.deliver(
     0,
     'init',
-    '{"args":["bot","botSigningKey",{"@qclass":"slot","index":0}]}',
-    [{ type: 'device', id: 4 }],
+    '{"args":[{"@qclass":"slot","index":0}]}',
+    [vatTP],
     30,
   );
 
   t.deepEqual(calls[0], [
-    'callNow',
+    'send',
     [
-      { type: 'device', id: 4 },
-      'registerInboundHandler',
-      '{"args":["bot",{"@qclass":"slot","index":0}]}',
+      vatTP,
+      'registerCommsHandler',
+      '{"args":[{"@qclass":"slot","index":0}]}',
       [{ type: 'export', id: 1 }],
     ],
   ]);
   calls.shift();
 
-  t.deepEqual(calls[0], ['fulfillToData', [30, JSON.stringify('bot'), []]]);
+  t.deepEqual(calls[0], ['fulfillToData', [30, UNDEFINED, []]]);
   calls.shift();
 
   t.end();
@@ -72,19 +73,19 @@ test('makeCommsSlots deliver to egress', t => {
   const commsSlots = makeCommsSlots(mockSyscall, {}, helpers);
   const state = commsSlots.getState();
 
-  const devNodeIndex = 42;
-  // we need to get device:42 registered, but we don't otherwise test the
-  // consequences of init(), because we tested that earlier in this file
+  const vatTP = { type: 'import', id: 42 };
+  // we need to get the vatTP object registered, but we don't otherwise test
+  // the consequences of init(), because we tested that earlier in this file
   commsSlots.deliver(
     0,
     'init',
-    '{"args":["user","userSigningKey",{"@qclass":"slot","index":0}]}',
-    [{ type: 'device', id: devNodeIndex }],
+    '{"args":[{"@qclass":"slot","index":0}]}',
+    [vatTP],
     30,
   );
-  t.equal(calls[0][0], 'callNow');
+  t.equal(calls[0][0], 'send');
   calls.shift();
-  t.deepEqual(calls[0], ['fulfillToData', [30, '"user"', []]]);
+  t.deepEqual(calls[0], ['fulfillToData', [30, UNDEFINED, []]]);
   calls.shift();
 
   // inboundHandlerFacetID is probably 1, since it's the first thing
@@ -95,25 +96,15 @@ test('makeCommsSlots deliver to egress', t => {
   const inboundHandlerFacetID = JSON.parse(state.ids.dump()) - 1;
   t.equal(inboundHandlerFacetID, 1);
 
-  commsSlots.deliver(
-    0,
-    'connect',
-    '{"args":["bot","botVerifyingKey","channel"]}',
-    [],
-    31,
-  );
-  t.deepEqual(calls[0], ['fulfillToData', [31, UNDEFINED, []]]);
-  calls.shift();
-
   // setup with an addEgress
   commsSlots.deliver(
     0,
     'addEgress',
     '{"args":["bot", 70, {"@qclass":"slot","index":0}]}',
     [{ type: 'import', id: 55 }],
-    32,
+    31,
   );
-  t.deepEqual(calls, [['fulfillToData', [32, UNDEFINED, []]]]);
+  t.deepEqual(calls, [['fulfillToData', [31, UNDEFINED, []]]]);
   calls.shift();
 
   const machineArgs = {
@@ -191,6 +182,9 @@ test('makeCommsSlots deliver to ingress', t => {
     createPromise() {
       return makePromise();
     },
+    send(...args) {
+      calls.push(['send', args]);
+    },
     callNow(...args) {
       calls.push(['callNow', args]);
     },
@@ -198,29 +192,19 @@ test('makeCommsSlots deliver to ingress', t => {
 
   const commsSlots = makeCommsSlots(mockSyscall, {}, helpers);
 
-  const devNodeIndex = 42;
-  // we need to get device:42 registered, but we don't otherwise test the
-  // consequences of init(), because we tested that earlier in this file
+  const vatTP = { type: 'import', id: 42 };
+  // we need to get the vatTP object registered, but we don't otherwise test
+  // the consequences of init(), because we tested that earlier in this file
   commsSlots.deliver(
     0,
     'init',
-    '{"args":["user","userSigningKey",{"@qclass":"slot","index":0}]}',
-    [{ type: 'device', id: devNodeIndex }],
+    '{"args":[{"@qclass":"slot","index":0}]}',
+    [vatTP],
     30,
   );
-  t.equal(calls[0][0], 'callNow');
+  t.equal(calls[0][0], 'send');
   calls.shift();
-  t.deepEqual(calls[0], ['fulfillToData', [30, JSON.stringify('user'), []]]);
-  calls.shift();
-
-  commsSlots.deliver(
-    0,
-    'connect',
-    '{"args":["bot","botVerifyingKey","channel"]}',
-    [],
-    31,
-  );
-  t.deepEqual(calls[0], ['fulfillToData', [31, UNDEFINED, []]]);
+  t.deepEqual(calls[0], ['fulfillToData', [30, UNDEFINED, []]]);
   calls.shift();
 
   // setup with an addIngress
@@ -229,21 +213,20 @@ test('makeCommsSlots deliver to ingress', t => {
     'addIngress',
     '{"args":["bot", {"@qclass":"slot","index":0}]}',
     [{ type: 'your-ingress', id: 0 }],
-    32,
+    31,
   );
-  t.deepEqual(calls[0], ['fulfillToPresence', [32, { type: 'export', id: 2 }]]);
+  t.deepEqual(calls[0], ['fulfillToPresence', [31, { type: 'export', id: 2 }]]);
   calls.shift();
 
-  commsSlots.deliver(2, 'encourageMe', '{"args":["me"]}', [], 33);
-  t.equal(calls[0][0], 'callNow');
+  commsSlots.deliver(2, 'encourageMe', '{"args":["me"]}', [], 32);
+  t.equal(calls[0][0], 'send');
   const args = calls[0][1];
   calls.shift();
   t.equal(args.length, 4);
-  t.deepEqual(args[0], { type: 'device', id: devNodeIndex });
-  t.equal(args[1], 'sendOutbound');
+  t.deepEqual(args[0], vatTP);
+  t.equal(args[1], 'send');
   t.deepEqual(JSON.parse(args[2]), {
     args: [
-      'user',
       'bot',
       '{"target":{"type":"your-egress","id":{"@qclass":"slot","index":0}},"methodName":"encourageMe","args":["me"],"slots":[],"resultSlot":{"type":"your-resolver","id":3}}',
     ],

@@ -3,20 +3,14 @@ import { makeMachineState } from '../../../src/kernel/commsSlots/state/makeMachi
 
 test('machineState set and get', t => {
   const machineState = makeMachineState();
-  t.equal(machineState.getMachineName(), undefined);
-  t.equal(machineState.getProofMaterial(), undefined);
-  machineState.setMachineName('alice');
-  machineState.setProofMaterial('proof');
-  t.equal(machineState.getMachineName(), 'alice');
-  t.equal(machineState.getProofMaterial(), 'proof');
+  t.equal(machineState.getVatTP(), undefined);
+  machineState.setVatTP('fake-vattp');
+  t.equal(machineState.getVatTP(), 'fake-vattp');
 
   // test that it creates a new instance
   const otherMachineState = makeMachineState();
-  t.equal(otherMachineState.getMachineName(), undefined);
-  t.equal(otherMachineState.getProofMaterial(), undefined);
-  otherMachineState.setMachineName('alice');
-  otherMachineState.setProofMaterial('proof');
-  t.equal(otherMachineState.getMachineName(), 'alice');
-  t.equal(otherMachineState.getProofMaterial(), 'proof');
+  t.equal(otherMachineState.getVatTP(), undefined);
+  otherMachineState.setVatTP('other-fake-vattp');
+  t.equal(otherMachineState.getVatTP(), 'other-fake-vattp');
   t.end();
 });

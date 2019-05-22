@@ -1,10 +1,5 @@
 import makeMapInbound from './makeMapInbound';
 
-// TODO: implement verify
-function verify(_senderID, _dataStr) {
-  return true;
-}
-
 function parseJSON(data) {
   try {
     const d = JSON.parse(data);
@@ -48,13 +43,7 @@ export default function makeInboundHandler(state, syscall) {
         );
       }
       const [senderID, dataStr] = JSON.parse(argsStr).args;
-      sidebug(
-        `sendIn ${senderID} => ${state.machineState.getMachineName()}, ${dataStr}`,
-      );
-
-      if (!verify(senderID, dataStr)) {
-        throw new Error('could not verify SenderID');
-      }
+      sidebug(`sendIn ${senderID} => ${dataStr}`);
 
       const mapInbound = makeMapInbound(syscall, state, senderID);
 

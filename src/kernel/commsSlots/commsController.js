@@ -1,3 +1,5 @@
+const UNDEFINED = JSON.stringify({ '@qclass': 'undefined' });
+
 export default function handleCommsController(
   state,
   syscall,
@@ -8,50 +10,23 @@ export default function handleCommsController(
   helpers,
   inboundHandlerFacetID,
 ) {
-  function init([name, proofMaterial, channelDev]) {
-    helpers.log(`init called with name ${name}`);
-    if (
-      state.machineState.getMachineName() != null ||
-      state.machineState.getProofMaterial() != null
-    ) {
+  function init([vattp]) {
+    if (state.machineState.getVatTP()) {
       throw new Error('commsVat has already been initialized');
     }
 
-    state.machineState.setMachineName(name);
-    state.machineState.setProofMaterial(proofMaterial);
+    // remember the vatTP helper so we can send messages later
+    state.machineState.setVatTP(vattp);
 
-    // remember the channel device so we can send messages later
-    state.channels.setChannelDevice(channelDev);
-
-    // Create a handler object, and register it with the channel device.
-    // After registration, each time a message arrives for our machine name,
-    // the channel device will invoke the handler like:
-    // handler.inbound(senderName, message)
+    // Create a handler object, and register it with vatTP. After
+    // registration, each time a message arrives for our machine, vatTP will
+    // invoke the handler like: handler.inbound(senderName, message)
     const handlerExport = { type: 'export', id: inboundHandlerFacetID };
     const regArgs = JSON.stringify({
-      args: [name, { '@qclass': 'slot', index: 0 }],
+      args: [{ '@qclass': 'slot', index: 0 }],
     });
-    syscall.callNow(channelDev, 'registerInboundHandler', regArgs, [
-      handlerExport,
-    ]);
+    syscall.send(vattp, 'registerCommsHandler', regArgs, [handlerExport]);
 
-    syscall.fulfillToData(
-      resolverID,
-      JSON.stringify(state.machineState.getMachineName()),
-      [],
-    );
-  }
-
-  const UNDEFINED = JSON.stringify({ '@qclass': 'undefined' });
-
-  function connect([otherMachineName, _verifyingKey, channelName]) {
-    // TODO: channelName is now ignored, should be removed
-    helpers.log(
-      `connect called with otherMachineName ${otherMachineName}, channelName ${channelName}`,
-    );
-
-    // TODO: check signature on this
-    // in the future, data structure would contain name and predicate
     syscall.fulfillToData(resolverID, UNDEFINED, []);
   }
 
@@ -134,15 +109,13 @@ export default function handleCommsController(
 
   switch (method) {
     case 'init':
-      if (args[2]['@qclass'] !== 'slot' || args[2].index !== 0) {
+      if (args[0]['@qclass'] !== 'slot' || args[0].index !== 0) {
         throw new Error(`unexpected args for init(): ${argsbytes}`);
       }
-      args[2] = slots[args[2].index];
+      args[0] = slots[args[0].index];
       return init(args);
     case 'addEgress':
       return addEgress(args);
-    case 'connect':
-      return connect(args);
     case 'addIngress':
       return addIngress(args);
     default:
