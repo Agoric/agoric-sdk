@@ -25,7 +25,7 @@ export default function setup(syscall, helpers, endowments) {
     if (newMessages.length) {
       inboundHandler.deliverInboundMessages(peer, harden(newMessages));
     }
-    if (hAck !== undefined) {
+    if (hAck !== undefined && hAck !== null) {
       let latestAck = -1;
       if (highestInboundAck.has(peer)) {
         latestAck = highestInboundAck.get(peer);
