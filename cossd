@@ -1,11 +1,2 @@
-#! /usr/bin/env node
-console.log('Starting Node');
-console.log('Setting Node timer');
-let i = 0;
-setInterval(() => {
-    console.log('Node is alive', ++i);
-}, 1000);
-const coss = require('./lib');
-console.log('Have COSS', coss);
-// FIXME: Somehow specify argv explicitly.
-coss.start();
+#! /bin/sh
+exec docker run --volume=coss-state:/root/.nsd --rm -it michaelfig/cosmic-swingset ${1+"$@"}

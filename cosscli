@@ -1,0 +1,2 @@
+#! /bin/sh
+exec docker run --entrypoint=./cosscli --volume=coss-state:/root/.nsd --rm -it michaelfig/cosmic-swingset ${1+"$@"}

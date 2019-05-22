@@ -28,4 +28,5 @@ COPY --from=go-build /usr/src/app/lib/*.so /usr/src/app/lib/
 COPY --from=go-build /go/bin/cosscli /usr/src/app/
 
 # By default, run the daemon with specified arguments.
+EXPOSE 26657
 ENTRYPOINT [ "./cossd" ]
