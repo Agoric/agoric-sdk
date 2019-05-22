@@ -1,2 +1,3 @@
 #! /bin/sh
-exec docker run --entrypoint=./cosscli --volume=coss-state:/root/.nsd --rm -it michaelfig/cosmic-swingset ${1+"$@"}
+test -t 1 && flags=-t
+exec docker run -i $flags --net=host --entrypoint=./cosscli --volume=cosscli-state:/root/.nscli --rm michaelfig/cosmic-swingset ${1+"$@"}

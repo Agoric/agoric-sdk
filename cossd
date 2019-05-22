@@ -1,2 +1,2 @@
 #! /bin/sh
-exec docker run --volume=coss-state:/root/.nsd --rm -it michaelfig/cosmic-swingset ${1+"$@"}
+exec docker run -p127.0.0.1:26557:26557 --volume=cossd-state:/root/.nsd --rm -it michaelfig/cosmic-swingset ${1+"$@"}

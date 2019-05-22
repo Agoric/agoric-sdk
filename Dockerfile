@@ -20,13 +20,13 @@ FROM node:stretch AS install
 
 WORKDIR /usr/src/app
 RUN mkdir -p lib build/Release
-COPY lib/*.js ./lib/
-COPY cossd package*.json ./
+COPY lib/*.js lib/cossd ./lib/
+COPY package*.json ./
 RUN npm install --production
 COPY --from=node-build /usr/src/app/build/Release/*.node build/Release/
-COPY --from=go-build /usr/src/app/lib/*.so /usr/src/app/lib/
-COPY --from=go-build /go/bin/cosscli /usr/src/app/
+COPY --from=go-build /usr/src/app/lib/*.so lib/
+COPY --from=go-build /go/bin/cosscli .
 
 # By default, run the daemon with specified arguments.
 EXPOSE 26657
-ENTRYPOINT [ "./cossd" ]
+ENTRYPOINT [ "./lib/cossd" ]
