@@ -13,3 +13,4 @@ build
 # IDE
 .idea/
 *.iml
+node_modules

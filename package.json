@@ -1,0 +1,17 @@
+{
+    "name": "cosmic-swingset",
+    "version": "0.1.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+      "build": "node-gyp configure build",
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Agoric",
+    "license": "Apache-2.0",
+    "devDependencies": {
+      "node-gyp": "^3.6.2"
+    }
+}
+  
