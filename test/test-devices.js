@@ -1,7 +1,7 @@
 import { test } from 'tape-promise/tape';
 import { buildVatController } from '../src/index';
 import buildSharedStringTable from '../src/devices/sharedTable';
-import buildOutbox from '../src/devices/outbox';
+import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 
 async function test0(t, withSES) {
   const config = {
@@ -284,29 +284,30 @@ test('shared table with SES', async t => {
   await testSharedTable(t, true);
 });
 
-async function testOutbox(t, withSES) {
-  const ob = buildOutbox();
+async function testMailboxOutbound(t, withSES) {
+  const s = buildMailboxStateMap();
+  const mb = buildMailbox(s);
   const config = {
     vatSources: new Map(),
-    devices: [['outbox', ob.srcPath, ob.endowments]],
+    devices: [['mailbox', mb.srcPath, mb.endowments]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
 
-  const c = await buildVatController(config, withSES, ['outbox1']);
+  const c = await buildVatController(config, withSES, ['mailbox1']);
   await c.run();
-  t.deepEqual(ob.exportToData(ob.outbox), {
-    recip1: {
+  t.deepEqual(s.exportToData(), {
+    peer1: {
       inboundAck: 13,
       outbox: {
         2: 'data2',
         3: 'data3',
       },
     },
-    recip2: {
+    peer2: {
       inboundAck: undefined,
       outbox: {},
     },
-    recip3: {
+    peer3: {
       inboundAck: undefined,
       outbox: {
         5: 'data5',
@@ -316,10 +317,81 @@ async function testOutbox(t, withSES) {
   t.end();
 }
 
-test('outbox without SES', async t => {
-  await testOutbox(t, false);
+test('mailbox without SES', async t => {
+  await testMailboxOutbound(t, false);
 });
 
-test.skip('outbox with SES', async t => {
-  await testOutbox(t, true);
+test('mailbox with SES', async t => {
+  await testMailboxOutbound(t, true);
+});
+
+async function testMailboxInbound(t, withSES) {
+  const s = buildMailboxStateMap();
+  const mb = buildMailbox(s);
+  const config = {
+    vatSources: new Map(),
+    devices: [['mailbox', mb.srcPath, mb.endowments]],
+    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
+  };
+
+  const c = await buildVatController(config, withSES, ['mailbox2']);
+  await c.run();
+  mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2']], 3);
+  await c.run();
+  t.deepEqual(c.dump().log, ['dm-peer1', 'm-1-msg1', 'm-2-msg2', 'da-peer1-3']);
+
+  // delivering the same messages should not trigger sends
+  mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2']], 3);
+  await c.run();
+  t.deepEqual(c.dump().log, ['dm-peer1', 'm-1-msg1', 'm-2-msg2', 'da-peer1-3']);
+
+  // but new messages should be sent
+  mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2'], [3, 'msg3']], 3);
+  await c.run();
+  t.deepEqual(c.dump().log, [
+    'dm-peer1',
+    'm-1-msg1',
+    'm-2-msg2',
+    'da-peer1-3',
+    'dm-peer1',
+    'm-3-msg3',
+  ]);
+
+  // and a higher ack should be sent
+  mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2'], [3, 'msg3']], 4);
+  await c.run();
+  t.deepEqual(c.dump().log, [
+    'dm-peer1',
+    'm-1-msg1',
+    'm-2-msg2',
+    'da-peer1-3',
+    'dm-peer1',
+    'm-3-msg3',
+    'da-peer1-4',
+  ]);
+
+  mb.deliverInbound('peer2', [[4, 'msg4']], 5);
+  await c.run();
+  t.deepEqual(c.dump().log, [
+    'dm-peer1',
+    'm-1-msg1',
+    'm-2-msg2',
+    'da-peer1-3',
+    'dm-peer1',
+    'm-3-msg3',
+    'da-peer1-4',
+    'dm-peer2',
+    'm-4-msg4',
+    'da-peer2-5',
+  ]);
+
+  t.end();
+}
+
+test('mailbox without SES', async t => {
+  await testMailboxInbound(t, false);
+});
+
+test('mailbox with SES', async t => {
+  await testMailboxInbound(t, true);
 });

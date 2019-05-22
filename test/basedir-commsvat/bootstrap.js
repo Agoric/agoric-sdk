@@ -11,41 +11,28 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E =>
+    (E, D) =>
       harden({
         async bootstrap(argv, vats, devices) {
           log('=> bootstrap() called');
 
           // setup
-          const LEFT_MACHINE_NAME = 'left';
-          const RIGHT_MACHINE_NAME = 'right';
-          const CHANNEL = 'channel';
+          const LEFT = 'left';
+          const RIGHT = 'right';
           const INDEX_FOR_RIGHT_INITIAL_OBJ = 0;
 
-          await E(vats.rightcomms).init(
-            RIGHT_MACHINE_NAME,
-            'rightSigningKey',
-            devices.channel,
-          );
-          await E(vats.leftcomms).init(
-            LEFT_MACHINE_NAME,
-            'leftSigningKey',
-            devices.channel,
-          );
+          D(devices.loopbox).registerInboundHandler(LEFT, vats.leftvattp);
+          const leftsender = D(devices.loopbox).makeSender(LEFT);
+          await E(vats.leftvattp).registerMailboxDevice(leftsender);
+          await E(vats.leftcomms).init(vats.leftvattp);
 
-          await E(vats.rightcomms).connect(
-            LEFT_MACHINE_NAME,
-            'leftVerifyingKey',
-            CHANNEL,
-          );
-          await E(vats.leftcomms).connect(
-            RIGHT_MACHINE_NAME,
-            'rightVerifyingKey',
-            CHANNEL,
-          );
+          D(devices.loopbox).registerInboundHandler(RIGHT, vats.rightvattp);
+          const rightsender = D(devices.loopbox).makeSender(RIGHT);
+          await E(vats.rightvattp).registerMailboxDevice(rightsender);
+          await E(vats.rightcomms).init(vats.rightvattp);
 
           await E(vats.rightcomms).addEgress(
-            LEFT_MACHINE_NAME,
+            LEFT,
             INDEX_FOR_RIGHT_INITIAL_OBJ,
             vats.right,
           );
@@ -54,7 +41,7 @@ export default function setup(syscall, state, helpers) {
           // use to communicate about something on the right machine,
           // but the leftcomms needs to export it to the kernel
           const rootRightPresence = await E(vats.leftcomms).addIngress(
-            RIGHT_MACHINE_NAME,
+            RIGHT,
             INDEX_FOR_RIGHT_INITIAL_OBJ,
           );
 

@@ -1,24 +1,14 @@
 export function makeMachineState() {
-  let myMachineName;
-  let myProofMaterial;
+  let vattp;
   return {
-    getMachineName() {
-      return myMachineName;
+    getVatTP() {
+      return vattp;
     },
-    getProofMaterial() {
-      return myProofMaterial;
-    },
-    setMachineName(machineName) {
-      myMachineName = machineName;
-    },
-    setProofMaterial(proofMaterial) {
-      myProofMaterial = proofMaterial;
+    setVatTP(v) {
+      vattp = v;
     },
     dump() {
-      return JSON.stringify({
-        myMachineName: `${myMachineName}`,
-        myProofMaterial: `${myProofMaterial}`,
-      });
+      return JSON.stringify({});
     },
   };
 }

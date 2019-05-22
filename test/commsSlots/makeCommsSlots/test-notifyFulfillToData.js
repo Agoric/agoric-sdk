@@ -9,18 +9,18 @@ const helpers = {
 test('makeCommsSlots notifyFulfillToData', t => {
   const calls = [];
   const mockSyscall = {
-    callNow(...args) {
-      calls.push(['callNow', args]);
+    send(...args) {
+      calls.push(['send', args]);
     },
   };
 
   const commsSlots = makeCommsSlots(mockSyscall, {}, helpers);
-  const devNode = { type: 'device', id: 42 };
+  const vatTP = { type: 'import', id: 4 };
   const promiseID = 22;
 
   // setup
   const state = commsSlots.getState();
-  state.channels.setChannelDevice(devNode);
+  state.machineState.setVatTP(vatTP);
   const kernelToMeSlot = {
     type: 'promise',
     id: promiseID,
@@ -33,17 +33,14 @@ test('makeCommsSlots notifyFulfillToData', t => {
 
   state.clists.add('machine1', kernelToMeSlot, youToMeSlot, meToYouSlot);
 
-  state.machineState.setMachineName('bot');
-
   commsSlots.notifyFulfillToData(22, 'hello', []);
   t.equal(calls.length, 1);
-  t.equal(calls[0][0], 'callNow');
+  t.equal(calls[0][0], 'send');
   t.deepEqual(calls[0][1], [
-    devNode,
-    'sendOutbound',
+    vatTP,
+    'send',
     JSON.stringify({
       args: [
-        'bot',
         'machine1',
         JSON.stringify({
           event: 'notifyFulfillToData',

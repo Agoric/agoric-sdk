@@ -2,17 +2,15 @@ import path from 'path';
 import { test } from 'tape-promise/tape';
 import testLogs from './test-logs';
 import { buildVatController, loadBasedir } from '../../src/index';
-import buildChannel from '../../src/devices/channel';
 
 export async function runVats(t, withSES, argv) {
   const config = await loadBasedir(
+    // TODO: move basedir-commsvat to ./ , since it isn't used anywhere else
     path.resolve(__dirname, '../basedir-commsvat'),
   );
 
-  const channelDevice = buildChannel();
-  config.devices = [
-    ['channel', channelDevice.srcPath, channelDevice.endowments],
-  ];
+  const ldSrcPath = require.resolve('../../src/devices/loopbox-src');
+  config.devices = [['loopbox', ldSrcPath, {}]];
   const c = await buildVatController(config, withSES, argv);
   return c;
 }
