@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/sdk-application-tutorial/x/nameservice"
+	"github.com/Agoric/cosmic-swingset/x/nameservice"
 	"github.com/spf13/cobra"
 )
 
