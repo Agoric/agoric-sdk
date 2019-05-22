@@ -336,11 +336,11 @@ async function testMailboxInbound(t, withSES) {
 
   const c = await buildVatController(config, withSES, ['mailbox2']);
   await c.run();
-  mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2']], 3);
+  mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2']], undefined);
   await c.run();
-  t.deepEqual(c.dump().log, ['dm-peer1', 'm-1-msg1', 'm-2-msg2', 'da-peer1-3']);
+  t.deepEqual(c.dump().log, ['dm-peer1', 'm-1-msg1', 'm-2-msg2']);
 
-  // delivering the same messages should not trigger sends
+  // delivering the same messages should not trigger sends, but the ack is new
   mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2']], 3);
   await c.run();
   t.deepEqual(c.dump().log, ['dm-peer1', 'm-1-msg1', 'm-2-msg2', 'da-peer1-3']);

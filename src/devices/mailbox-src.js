@@ -25,14 +25,16 @@ export default function setup(syscall, helpers, endowments) {
     if (newMessages.length) {
       inboundHandler.deliverInboundMessages(peer, harden(newMessages));
     }
-    let latestAck = -1;
-    if (highestInboundAck.has(peer)) {
-      latestAck = highestInboundAck.get(peer);
-    }
-    const ack = Nat(hAck);
-    if (ack > latestAck) {
-      highestInboundAck.set(peer, ack);
-      inboundHandler.deliverInboundAck(peer, ack);
+    if (hAck !== undefined) {
+      let latestAck = -1;
+      if (highestInboundAck.has(peer)) {
+        latestAck = highestInboundAck.get(peer);
+      }
+      const ack = Nat(hAck);
+      if (ack > latestAck) {
+        highestInboundAck.set(peer, ack);
+        inboundHandler.deliverInboundAck(peer, ack);
+      }
     }
   }
   endowments.registerInboundCallback(inboundCallback);
