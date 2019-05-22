@@ -161,13 +161,13 @@ transcript-based persistence.
 
 ## Initial Device Types
 
-### Outbox Device
+### Mailbox Device
 
-Most off-machine communication takes place through an "outbox". This is a
+Most off-machine communication takes place through an "mailbox". This is a
 special portion of the kernel state vector into which the VatTP layer can
 write message bodies destined for other machines, using the `add(recipient,
 msgnum, body)` method of the outbox device. The host loop is expected to
-allow the kernel to quiesce, then example this outbox for new outbound
+allow the kernel to quiesce, then examine this mailbox for new outbound
 messages. At that point it should attempt to deliver them to the other
 machine, using TCP/TLS (perhaps with `libp2p`) or other means. By deferring
 message delivery until the kernel state has been checkpointed, we avoid the
@@ -176,8 +176,8 @@ message delivery until the kernel state has been checkpointed, we avoid the
 VatTP code can remove messages from the outbox when it receives an
 acknowledgment of receipt, by using the `remove(recipient, msgnum)` method.
 
-Each outbox is paired with one in some other machine. To send an
-acknowledgment to that remote outbox, VatTP can use the
+Each mailbox is paired with a partnet in some other machine. To send an
+acknowledgment to that remote mailbox, VatTP can use the
 `ackInbound(recipient, msgnum)` method. This ack is written into the state
 vector next to the outbox where it can be delivered to the remote end by the
 same host loop.
