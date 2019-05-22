@@ -7,7 +7,6 @@ const repl = require('repl');
 require = require('esm')(module);
 const util = require('util');
 
-const { buildChannel } = require('../src/devices');
 const { loadBasedir, buildVatController } = require('../src/index.js');
 
 function deepLog(item) {
@@ -28,27 +27,9 @@ async function main() {
   const basedir = (argv[0] === '--' || argv[0] === undefined) ? '.' : argv.shift();
   const vatArgv = argv[0] === '--' ? argv.slice(1) : argv;
 
-  const channelDevice = buildChannel();
-  const vatDevices = new Map();
-  const commsConfig = {
-    devices: {
-      channel: {
-        attenuatorSource: channelDevice.attenuatorSource,
-        bridge: channelDevice.bridge,
-      },
-    },
-  };
-
   const config = await loadBasedir(basedir);
-  for (const vatID of config.vatSources.keys()) {
-    if (vatID.endsWith('comms')) {
-      vatDevices.set(vatID, commsConfig);
-    }
-  }
-
-  if (vatDevices.size > 0) {
-    config.vatDevices = vatDevices;
-  }
+  const ldSrcPath = require.resolve('../src/devices/loopbox-src');
+  config.devices = [['loopbox', ldSrcPath, {}]];
 
   const controller = await buildVatController(config, withSES, vatArgv);
   if (command === 'run') {
