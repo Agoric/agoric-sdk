@@ -11,6 +11,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "devDependencies": {
-    "node-gyp": "^3.6.2"
+    "bindings": "^1.2.1",
+    "node-addon-api": "^1.6.3"
   }
 }
