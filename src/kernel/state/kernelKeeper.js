@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
-import makeVatState from './vatState';
+import makeVatKeeper from './vatKeeper';
 
-function makeKernelState(kvstore) {
+function makeKernelKeeper(kvstore) {
   // kvstore has set, get, has, delete methods
   // set (key []byte, value []byte)
   // get (key []byte)  => value []byte
@@ -134,13 +134,13 @@ function makeKernelState(kvstore) {
     for (const vatEntry of iter) {
       const { key: vatID, value: vatkvstore } = vatEntry;
 
-      const vatState = makeVatState(vatkvstore);
+      const vatKeeper = makeVatKeeper(vatkvstore);
 
       // TODO: find some way to expose the liveSlots internal tables, the
       // kernel doesn't see them
-      const vatTable = { vatID, state: vatState.getCurrentState() };
+      const vatTable = { vatID, state: vatKeeper.getCurrentState() };
       vatTables.push(vatTable);
-      vatState.dumpState(vatID).forEach(e => kernelTable.push(e));
+      vatKeeper.dumpState(vatID).forEach(e => kernelTable.push(e));
     }
 
     function compareNumbers(a, b) {
@@ -210,10 +210,10 @@ function makeKernelState(kvstore) {
 
     for (const vatEntry of vatIter) {
       const { key: vatID, value: vatkvstore } = vatEntry;
-      const vatState = makeVatState(vatkvstore);
+      const vatKeeper = makeVatKeeper(vatkvstore);
 
-      vatTables[vatID] = { state: vatState.getCurrentState() };
-      Object.assign(vatTables[vatID], vatState.getManagerState());
+      vatTables[vatID] = { state: vatKeeper.getCurrentState() };
+      Object.assign(vatTables[vatID], vatKeeper.getManagerState());
     }
 
     const deviceState = {};
@@ -320,4 +320,4 @@ function makeKernelState(kvstore) {
   });
 }
 
-export default makeKernelState;
+export default makeKernelKeeper;

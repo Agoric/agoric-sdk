@@ -2,8 +2,7 @@ import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { insist } from '../insist';
 
-export default function makeVatState(kvstore) {
-  // per-vat translation tables
+export default function makeVatKeeper(kvstore) {
 
   // kernelSlotToVatSlot is an object with four properties:
   //    exports, devices, promises, resolvers.
