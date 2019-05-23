@@ -1,30 +1,44 @@
 import harden from '@agoric/harden';
 
-function makeKernelState(state) {
+function makeKernelState(kvstore) {
+  // kvstore has set, get, has, delete methods
+  // set (key []byte, value []byte)
+  // get (key []byte)  => value []byte
+  // has (key []byte) => exists bool
+  // delete (key []byte)
+  // iterator, reverseIterator
+
+  const ephemeralState = {
+    vats: harden(new Map()),
+    devices: harden(new Map()),
+  };
 
   // used by loading state only
   function loadNextPromiseIndex(id) {
-    state.nextPromiseIndex = id;
+    kvstore.set('nextPromiseIndex', id);
   }
 
   // used by loading state only
   function loadKernelPromise(kernelPromiseID, kernelPromiseObj) {
-    state.kernelPromises.set(kernelPromiseID, kernelPromiseObj);
+    const kernelPromises = kvstore.get('kernelPromises');
+    kernelPromises.set(kernelPromiseID, kernelPromiseObj);
   }
 
   function addKernelPromise(kernelPromiseObj) {
     function allocateNextPromiseIndex() {
-      const id = state.nextPromiseIndex;
-      state.nextPromiseIndex += 1;
+      const id = kvstore.get('nextPromiseIndex');
+      kvstore.set('nextPromiseIndex', id + 1);
       return id;
     }
     const kernelPromiseID = allocateNextPromiseIndex();
-    state.kernelPromises.set(kernelPromiseID, kernelPromiseObj);
+    const kernelPromises = kvstore.get('kernelPromises');
+    kernelPromises.set(kernelPromiseID, kernelPromiseObj);
     return kernelPromiseID;
   }
 
   function getKernelPromise(kernelPromiseID) {
-    const p = state.kernelPromises.get(kernelPromiseID);
+    const kernelPromises = kvstore.get('kernelPromises');
+    const p = kernelPromises.get(kernelPromiseID);
     if (p === undefined) {
       throw new Error(`unknown kernelPromise id '${kernelPromiseID}'`);
     }
@@ -32,63 +46,78 @@ function makeKernelState(state) {
   }
 
   function hasKernelPromise(kernelPromiseID) {
-    return state.kernelPromises.has(kernelPromiseID);
+    const kernelPromises = kvstore.get('kernelPromises');
+    return kernelPromises.has(kernelPromiseID);
   }
 
   function addToRunQueue(msg) {
-    state.runQueue.push(msg);
+    const runQueue = kvstore.get('runQueue');
+    runQueue.push(msg);
   }
 
   function addDevice(deviceName, deviceObj) {
-    state.devices.set(deviceName, deviceObj);
+    const devices = kvstore.get('devices');
+    devices.set(deviceName, deviceObj);
   }
 
   function getDevice(deviceName) {
-    return state.devices.get(deviceName);
+    const devices = kvstore.get('devices');
+    return devices.get(deviceName);
   }
 
   function hasDevice(deviceName) {
-    return state.devices.has(deviceName);
+    const devices = kvstore.get('devices');
+    return devices.has(deviceName);
   }
 
   function addVat(vatID, vatObj) {
-    state.vats.set(vatID, vatObj);
+    const vats = kvstore.get('vats');
+    vats.set(vatID, vatObj);
   }
 
   function hasVat(vatID) {
-    return state.vats.has(vatID);
+    const vats = kvstore.get('vats');
+    return vats.has(vatID);
   }
 
   function getVat(vatID) {
-    return state.vats.get(vatID);
+    const vats = kvstore.get('vats');
+    return vats.get(vatID);
   }
 
   function getAllVatNames() {
-    return Array.from(state.vats.keys());
+    const vats = kvstore.get('vats');
+    return Array.from(vats.keys());
   }
 
   function getAllVats() {
-    return Array.from(state.vats.entries());
+    const vats = kvstore.get('vats');
+    return Array.from(vats.entries());
   }
 
   function getAllDevices() {
-    return Array.from(state.devices.entries());
+    const devices = kvstore.get('devices');
+    return Array.from(devices.entries());
   }
 
   function isRunQueueEmpty() {
-    return state.runQueue.length <= 0;
+    const runQueue = kvstore.get('runQueue');
+    return runQueue.length <= 0;
   }
 
   function getRunQueueLength() {
-    return state.runQueue.length;
+    const runQueue = kvstore.get('runQueue');
+    return runQueue.length;
   }
 
   function getNextMsg() {
-    return state.runQueue.shift();
+    const runQueue = kvstore.get('runQueue');
+    return runQueue.shift();
   }
 
   function log(msg) {
-    state.log.push(msg); // template literal barrier in kernel.js
+    const kvstoreLog = kvstore.get('log');
+    kvstoreLog.push(msg); // template literal barrier in kernel.js
   }
 
   // used for debugging and tests
@@ -96,7 +125,9 @@ function makeKernelState(state) {
     const vatTables = [];
     const kernelTable = [];
 
-    state.vats.forEach((vat, vatID) => {
+    const vats = kvstore.get('vats');
+
+    vats.forEach((vat, vatID) => {
       // TODO: find some way to expose the liveSlots internal tables, the
       // kernel doesn't see them
       const vatTable = { vatID, state: vat.manager.getCurrentState() };
@@ -130,7 +161,9 @@ function makeKernelState(state) {
     );
 
     const promises = [];
-    state.kernelPromises.forEach((p, id) => {
+
+    const kernelPromises = kvstore.get('kernelPromises');
+    kernelPromises.forEach((p, id) => {
       const kp = { id };
       Object.defineProperties(kp, Object.getOwnPropertyDescriptors(p));
       if ('subscribers' in p) {
@@ -139,12 +172,15 @@ function makeKernelState(state) {
       promises.push(kp);
     });
 
+    const runQueue = kvstore.get('runQueue');
+    const kvstoreLog = kvstore.get('log');
+
     return {
       vatTables,
       kernelTable,
       promises,
-      runQueue: state.runQueue,
-      log: state.log,
+      runQueue,
+      log: kvstoreLog,
     };
   }
 
@@ -160,18 +196,24 @@ function makeKernelState(state) {
     // everything
 
     const vatTables = {};
-    state.vats.forEach((vat, vatID) => {
+    const vats = kvstore.get('vats');
+
+    vats.forEach((vat, vatID) => {
       vatTables[vatID] = { state: vat.manager.getCurrentState() };
       Object.assign(vatTables[vatID], vat.manager.getManagerState());
     });
 
     const deviceState = {};
-    state.devices.forEach((d, deviceName) => {
+    const devices = kvstore.get('devices');
+
+    devices.forEach((d, deviceName) => {
       deviceState[deviceName] = d.manager.getCurrentState();
     });
 
     const promises = [];
-    state.kernelPromises.forEach((p, id) => {
+
+    const kernelPromises = kvstore.get('kernelPromises');
+    kernelPromises.forEach((p, id) => {
       const kp = { id };
       Object.defineProperties(kp, Object.getOwnPropertyDescriptors(p));
       if ('subscribers' in p) {
@@ -180,12 +222,15 @@ function makeKernelState(state) {
       promises.push(kp);
     });
 
+    const runQueue = kvstore.get('runQueue');
+    const nextPromiseIndex = kvstore.get('nextPromiseIndex');
+
     return {
       vats: vatTables,
       devices: deviceState,
-      runQueue: state.runQueue,
+      runQueue,
       promises,
-      nextPromiseIndex: state.nextPromiseIndex,
+      nextPromiseIndex,
     };
   }
 

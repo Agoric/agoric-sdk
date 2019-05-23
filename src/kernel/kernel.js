@@ -9,9 +9,15 @@ import makeVatManager from './vatManager';
 import makeDeviceManager from './deviceManager';
 import makeKernelState from './state/kernelState';
 
-export default function buildKernel(kernelEndowments) {
-  const { setImmediate } = kernelEndowments;
-  const newState = {
+function makeKVStore() {
+  // kvstore has set, get, has, delete methods
+  // set (key []byte, value []byte)
+  // get (key []byte)  => value []byte
+  // has (key []byte) => exists bool
+  // delete (key []byte)
+  // iterator, reverseIterator
+
+  const state = {
     log: [],
     vats: harden(new Map()),
     devices: harden(new Map()),
@@ -19,7 +25,26 @@ export default function buildKernel(kernelEndowments) {
     kernelPromises: harden(new Map()),
     nextPromiseIndex: 40,
   };
-  const kernelState = makeKernelState(newState);
+
+  return {
+    get(key) {
+      return state[key];
+    },
+    set(key, value) {
+      state[key] = value;
+    },
+    has(key) {
+      return Object.prototype.hasOwnProperty.call(state, key);
+    },
+  };
+}
+
+export default function buildKernel(kernelEndowments) {
+  const { setImmediate } = kernelEndowments;
+
+  const kvstore = makeKVStore();
+
+  const kernelState = makeKernelState(kvstore);
 
   const enableKDebug = false;
   function kdebug(...args) {
