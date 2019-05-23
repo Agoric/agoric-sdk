@@ -1,4 +1,4 @@
-import dJSON from 'deterministic-json';
+import stableStringify from './json-stable-stringify';
 
 // TO BE TOSSED ONCE WE HAVE A KVSTORE IMPLEMENTATION
 
@@ -11,7 +11,7 @@ export default function makeKVStore(state) {
   // iterator, reverseIterator
 
   function getDetermOwnProperties(obj) {
-    const orderedObj = dJSON.parse(dJSON.stringify(obj));
+    const orderedObj = JSON.parse(stableStringify(obj));
     return Object.getOwnPropertyNames(orderedObj);
   }
 
