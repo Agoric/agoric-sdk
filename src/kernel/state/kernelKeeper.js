@@ -9,15 +9,6 @@ function makeKernelKeeper(kvstore) {
   // delete (key []byte)
   // iterator, reverseIterator
 
-  function getKeys(iterator) {
-    const keys = [];
-
-    for (const entry of iterator) {
-      keys.push(entry.key);
-    }
-    return keys;
-  }
-
   // used by loading state only
   function loadNextPromiseIndex(id) {
     kvstore.set('nextPromiseIndex', id);
@@ -92,14 +83,12 @@ function makeKernelKeeper(kvstore) {
 
   function getAllVatNames() {
     const vats = kvstore.get('vats');
-    const iter = vats.iterator();
-    return getKeys(iter);
+    return vats.keys();
   }
 
-  function getAllDevices() {
+  function getAllDeviceNames() {
     const devices = kvstore.get('devices');
-    const iter = devices.iterator();
-    return getKeys(iter);
+    return devices.keys();
   }
 
   function isRunQueueEmpty() {
@@ -171,7 +160,7 @@ function makeKernelKeeper(kvstore) {
     const promises = [];
 
     const kernelPromises = kvstore.get('kernelPromises');
-    kernelPromises.forEach((p, id) => {
+    kernelPromises.entries().forEach((p, id) => {
       const kp = { id };
       Object.defineProperties(kp, Object.getOwnPropertyDescriptors(p));
       if ('subscribers' in p) {
@@ -310,7 +299,7 @@ function makeKernelKeeper(kvstore) {
     hasVat,
     getVat,
     getAllVatNames,
-    getAllDevices,
+    getAllDeviceNames,
     isRunQueueEmpty,
     getRunQueueLength,
     getNextMsg,

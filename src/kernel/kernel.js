@@ -26,6 +26,10 @@ export default function buildKernel(kernelEndowments) {
 
   const kernelKeeper = makeKernelKeeper(kernelKVStore);
 
+  const ephemeral = {
+    vats: new Map(),
+  };
+
   const enableKDebug = false;
   function kdebug(...args) {
     if (enableKDebug) {
@@ -242,7 +246,7 @@ export default function buildKernel(kernelEndowments) {
     });
     // the vatManager invokes setup() to build the userspace image
     const manager = makeVatManager(vatID, syscallManager, setup, helpers);
-    kernelKeeper.addVat(
+    ephemeral.vats.set(
       vatID,
       harden({
         id: vatID,
@@ -326,7 +330,7 @@ export default function buildKernel(kernelEndowments) {
 
   function processQueueMessage(message) {
     kdebug(`processQ ${JSON.stringify(message)}`);
-    const vat = kernelKeeper.getVat(message.vatID);
+    const vat = ephemeral.vats.get(message.vatID);
     if (vat === undefined) {
       throw new Error(
         `unknown vatID in target ${JSON.stringify(
@@ -373,7 +377,7 @@ export default function buildKernel(kernelEndowments) {
     // entry to this object so it will serialize as pass-by-copy. We can
     // remove the dummy entry after we add the 'addVat' device
     const deviceObj0s = { _dummy: 'dummy' };
-    kernelKeeper.getAllDevices().forEach(deviceName => {
+    kernelKeeper.getAllDeviceNames().forEach(deviceName => {
       const dref = harden({});
       deviceObj0s[deviceName] = dref;
       drefs.set(dref, { type: 'device', deviceName, id: 0 });

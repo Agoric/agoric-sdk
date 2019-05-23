@@ -3,21 +3,10 @@ import Nat from '@agoric/nat';
 import { insist } from '../insist';
 
 export default function makeVatKeeper(kvstore) {
-
   // kernelSlotToVatSlot is an object with four properties:
   //    exports, devices, promises, resolvers.
   //    vatSlotToKernelSlot has imports, deviceImports, promises,
   //    resolvers
-  
-  function getEntries(store) {
-    const iterator = store.iterator();
-    const entries = [];
-
-    for (const entry of iterator) {
-      entries.push(entry);
-    }
-    return entries;
-  }
 
   const allowedVatSlotTypes = [
     'export',
@@ -238,17 +227,17 @@ export default function makeVatKeeper(kvstore) {
     return {
       kernelSlotToVatSlot: {
         // exports, devices, promises, resolvers
-        exports: getEntries(kernelSlotToVatSlot.get('exports')),
-        devices: getEntries(kernelSlotToVatSlot.get('devices')),
-        promises: getEntries(kernelSlotToVatSlot.get('promises')),
-        resolvers: getEntries(kernelSlotToVatSlot.get('resolvers')),
+        exports: kernelSlotToVatSlot.get('exports').entries(),
+        devices: kernelSlotToVatSlot.get('devices').entries(),
+        promises: kernelSlotToVatSlot.get('promises').entries(),
+        resolvers: kernelSlotToVatSlot.get('resolvers').entries(),
       },
       // imports, deviceImports, promises, resolvers
       vatSlotToKernelSlot: {
-        imports: getEntries(vatSlotToKernelSlot.get('imports')),
-        deviceImports: getEntries(vatSlotToKernelSlot.get('deviceImports')),
-        promises: getEntries(vatSlotToKernelSlot.get('promises')),
-        resolvers: getEntries(vatSlotToKernelSlot.get('resolvers')),
+        imports: vatSlotToKernelSlot.get('imports').entries(),
+        deviceImports: vatSlotToKernelSlot.get('deviceImports').entries(),
+        promises: vatSlotToKernelSlot.get('promises').entries(),
+        resolvers: vatSlotToKernelSlot.get('resolvers').entries(),
       },
 
       nextImportID: kvstore.get('nextImportID'),
@@ -294,10 +283,22 @@ export default function makeVatKeeper(kvstore) {
 
     const kernelSlotToVatSlot = kvstore.get('kernelSlotToVatSlot');
 
-    getEntries(kernelSlotToVatSlot.get('exports')).forEach(printSlots);
-    getEntries(kernelSlotToVatSlot.get('devices')).forEach(printSlots);
-    getEntries(kernelSlotToVatSlot.get('promises')).forEach(printSlots);
-    getEntries(kernelSlotToVatSlot.get('resolvers')).forEach(printSlots);
+    kernelSlotToVatSlot
+      .get('exports')
+      .values()
+      .forEach(printSlots);
+    kernelSlotToVatSlot
+      .get('devices')
+      .values()
+      .forEach(printSlots);
+    kernelSlotToVatSlot
+      .get('promises')
+      .values()
+      .forEach(printSlots);
+    kernelSlotToVatSlot
+      .get('resolvers')
+      .values()
+      .forEach(printSlots);
 
     return harden(res);
   }
