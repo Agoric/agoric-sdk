@@ -10,6 +10,20 @@ import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
 import bundleSource from './build-source-bundle';
 
+
+// TODO: change completely to either KVStore or merk levelDB
+function loadState(basedir, stateArg) {
+  let state;
+  const stateFile = path.resolve(basedir, 'state.json');
+  try {
+    const stateData = fs.readFileSync(stateFile);
+    state = JSON.parse(stateData);
+  } catch (e) {
+    state = stateArg;
+  }
+  return state;
+}
+
 export function loadBasedir(basedir, stateArg) {
   console.log(`= loading config from basedir ${basedir}`);
   const vatSources = new Map();
@@ -36,14 +50,7 @@ export function loadBasedir(basedir, stateArg) {
   } catch (e) {
     bootstrapIndexJS = undefined;
   }
-  let state;
-  const stateFile = path.resolve(basedir, 'state.json');
-  try {
-    const stateData = fs.readFileSync(stateFile);
-    state = JSON.parse(stateData);
-  } catch (e) {
-    state = stateArg;
-  }
+  const state = loadState(basedir, stateArg);
   return { vatSources, bootstrapIndexJS, state };
 }
 
