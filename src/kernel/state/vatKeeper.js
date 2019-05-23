@@ -160,11 +160,12 @@ export default function makeVatKeeper(kvstore) {
   }
 
   function loadManagerState(vatData) {
-    // kvstore has no size
-    // TODO: reimplement this
-    // if (state.kernelSlotToVatSlot.size || state.vatSlotToKernelSlot.size) {
-    //   throw new Error(`vat[$vatID] is not empty, cannot loadState`);
-    // }
+    if (
+      kvstore.get('kernelSlotToVatSlot').size() ||
+      kvstore.get('vatSlotToKernelSlot').size()
+    ) {
+      throw new Error(`vat[$vatID] is not empty, cannot loadState`);
+    }
 
     kvstore.set('nextImportID', vatData.nextImportID);
     kvstore.set('nextPromiseID', vatData.nextPromiseID);

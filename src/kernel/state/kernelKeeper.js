@@ -1,5 +1,6 @@
 import harden from '@agoric/harden';
 import makeVatKeeper from './vatKeeper';
+import makeDeviceKeeper from './deviceKeeper';
 
 function makeKernelKeeper(kvstore) {
   // kvstore has set, get, has, delete methods
@@ -206,12 +207,13 @@ function makeKernelKeeper(kvstore) {
     }
 
     const deviceState = {};
+
     const devices = kvstore.get('devices');
     const deviceIter = devices.iterator();
 
-    for (const deviceEntry of deviceIter) {
-      const { key: deviceName, value: devicekvstore } = deviceEntry;
-      deviceState[deviceName] = deviceState.getCurrentState(devicekvstore);
+    for (const { key: deviceName, value: devicekvstore } of deviceIter) {
+      const deviceKeeper = makeDeviceKeeper(devicekvstore);
+      deviceState[deviceName] = deviceKeeper.getCurrentState();
     }
 
     const promises = [];

@@ -1,26 +1,35 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
+import makeKVStore from './kvstore';
+import makeDeviceKeeper from './state/deviceKeeper';
+
 export default function makeDeviceManager(
   deviceName,
   syscallManager,
   setup,
   helpers,
   endowments,
+  kernelKeeper,
 ) {
   const { kdebug, send, log } = syscallManager;
 
   // per-device translation tables
-  const tables = {
-    imports: harden({
-      outbound: new Map(),
-      inbound: new Map(),
+  const deviceStartingState = {
+    imports: makeKVStore({
+      outbound: makeKVStore({}),
+      inbound: makeKVStore({}),
     }),
     // make these IDs start at different values to detect errors better
     nextImportID: 10,
   };
 
-  function mapOutbound(slot) {
+  const deviceKVStore = makeKVStore(deviceStartingState);
+  kernelKeeper.addDevice(deviceName, deviceKVStore);
+
+  const deviceKeeper = makeDeviceKeeper(kernelKeeper.getDevice(deviceName));
+
+  function mapDeviceSlotToKernelSlot(slot) {
     // kdebug(`mapOutbound ${JSON.stringify(slot)}`);
     if (slot.type === 'deviceExport') {
       // one of our exports, so just make the deviceName explicit
@@ -28,25 +37,12 @@ export default function makeDeviceManager(
       return { type: 'device', deviceName, id: slot.id };
     }
 
-    if (slot.type === 'import') {
-      // an import from somewhere else, so look in the sending Vat's table to
-      // translate into absolute form
-      Nat(slot.id);
-      return tables.imports.outbound.get(slot.id);
-    }
-
-    throw Error(`unknown slot.type '${slot.type}'`);
-  }
-
-  function allocateImportIndex() {
-    const i = tables.nextImportID;
-    tables.nextImportID = i + 1;
-    return i;
+    return deviceKeeper.mapDeviceSlotToKernelSlot(slot);
   }
 
   // mapInbound: convert from absolute slot to deviceName-relative slot. This
   // is used when building the arguments for dispatch.invoke.
-  function mapInbound(slot) {
+  function mapKernelSlotToDeviceSlot(slot) {
     kdebug(`mapInbound for device-${deviceName} of ${JSON.stringify(slot)}`);
 
     if (slot.type === 'device') {
@@ -62,26 +58,7 @@ export default function makeDeviceManager(
       return { type: 'deviceExport', id };
     }
 
-    if (slot.type === 'export') {
-      const { vatID: fromVatID, id } = slot;
-      Nat(id);
-
-      const m = tables.imports;
-      const key = `${slot.type}.${fromVatID}.${id}`; // ugh javascript
-      if (!m.inbound.has(key)) {
-        // must add both directions
-        const newSlotID = Nat(allocateImportIndex());
-        // kdebug(` adding ${newSlotID}`);
-        m.inbound.set(key, newSlotID);
-        m.outbound.set(
-          newSlotID,
-          harden({ type: 'export', vatID: fromVatID, id }), // TODO just 'slot'?
-        );
-      }
-      return { type: 'import', id: m.inbound.get(key) };
-    }
-
-    throw Error(`unknown type '${slot.type}'`);
+    return deviceKeeper.mapKernelSlotToDeviceSlot(slot);
   }
 
   // syscall handlers: these are wrapped by the 'syscall' object and made
@@ -93,7 +70,7 @@ export default function makeDeviceManager(
         `targetSlot isn't really a slot ${JSON.stringify(targetSlot)}`,
       );
     }
-    const target = mapOutbound(targetSlot);
+    const target = mapDeviceSlotToKernelSlot(targetSlot);
     if (!target) {
       throw Error(
         `unable to find target for ${deviceName}/${targetSlot.type}-${
@@ -106,7 +83,7 @@ export default function makeDeviceManager(
         targetSlot,
       )}=ker:${JSON.stringify(target)}).${method}`,
     );
-    const slots = vatSlots.map(slot => mapOutbound(slot));
+    const slots = vatSlots.map(slot => mapDeviceSlotToKernelSlot(slot));
     kdebug(`  ^target is ${JSON.stringify(target)}`);
     const msg = {
       method,
@@ -137,10 +114,12 @@ export default function makeDeviceManager(
     if (target.type !== 'device' || target.deviceName !== deviceName) {
       throw new Error(`not for me ${JSON.stringify(target)}`);
     }
-    const inputSlots = slots.map(slot => mapInbound(slot));
+    const inputSlots = slots.map(slot => mapKernelSlotToDeviceSlot(slot));
     try {
       const results = dispatch.invoke(target.id, method, data, inputSlots);
-      const resultSlots = results.slots.map(slot => mapOutbound(slot));
+      const resultSlots = results.slots.map(slot =>
+        mapDeviceSlotToKernelSlot(slot),
+      );
       console.log(`about to return`, results.data, resultSlots);
       return { data: results.data, slots: resultSlots };
     } catch (e) {
@@ -151,41 +130,22 @@ export default function makeDeviceManager(
     }
   }
 
-  function getManagerState() {
-    return {
-      nextImportID: tables.nextImportID,
-      imports: {
-        outbound: Array.from(tables.imports.outbound.entries()),
-        inbound: Array.from(tables.imports.inbound.entries()),
-      },
-    };
-  }
-
-  function loadManagerState(deviceData) {
-    if (tables.imports.outbound.size || tables.imports.inbound.size) {
-      throw new Error(`device[$deviceName] is not empty, cannot loadState`);
-    }
-    tables.nextImportID = deviceData.nextImportID;
-    deviceData.imports.outbound.forEach(kv =>
-      tables.imports.outbound.set(kv[0], kv[1]),
-    );
-    deviceData.imports.inbound.forEach(kv =>
-      tables.imports.inbound.set(kv[0], kv[1]),
-    );
-  }
-
   function loadState(savedState) {
-    loadManagerState(savedState.managerState);
+    deviceKeeper.loadManagerState(savedState.managerState);
     dispatch.setState(savedState.deviceState);
   }
 
   function getCurrentState() {
     return harden({
-      managerState: getManagerState(),
+      managerState: deviceKeeper.getManagerState(),
       deviceState: dispatch.getState(),
     });
   }
 
-  const manager = { invoke, getCurrentState, loadState };
+  const manager = {
+    invoke,
+    getCurrentState,
+    loadState,
+  };
   return manager;
 }

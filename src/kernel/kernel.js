@@ -28,6 +28,7 @@ export default function buildKernel(kernelEndowments) {
 
   const ephemeral = {
     vats: new Map(),
+    devices: new Map(),
   };
 
   const enableKDebug = false;
@@ -194,7 +195,7 @@ export default function buildKernel(kernelEndowments) {
   }
 
   function invoke(device, method, data, slots) {
-    const dev = kernelKeeper.getDevice(device.deviceName);
+    const dev = ephemeral.devices.get(device.deviceName);
     if (!dev) {
       throw new Error(`unknown deviceRef ${JSON.stringify(device)}`);
     }
@@ -266,15 +267,17 @@ export default function buildKernel(kernelEndowments) {
         kernelKeeper.log(`${str}`);
       },
     });
+
     const manager = makeDeviceManager(
       name,
       syscallManager,
       setup,
       helpers,
       endowments,
+      kernelKeeper,
     );
     // the vat record is not hardened: it holds mutable next-ID values
-    kernelKeeper.addDevice(name, {
+    ephemeral.devices.set(name, {
       id: name,
       manager,
     });

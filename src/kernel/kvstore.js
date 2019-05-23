@@ -66,5 +66,8 @@ export default function makeKVStore(state) {
       }
       return values;
     },
+    size() {
+      return this.keys().length;
+    },
   };
 }
