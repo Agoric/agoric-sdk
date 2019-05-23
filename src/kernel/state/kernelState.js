@@ -1,14 +1,6 @@
 import harden from '@agoric/harden';
 
-function makeKernelState() {
-  const state = {
-    log: [],
-    vats: harden(new Map()),
-    devices: harden(new Map()),
-    runQueue: [],
-    kernelPromises: harden(new Map()),
-    nextPromiseIndex: 40,
-  };
+function makeKernelState(state) {
 
   // used by loading state only
   function loadNextPromiseIndex(id) {

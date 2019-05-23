@@ -11,7 +11,15 @@ import makeKernelState from './state/kernelState';
 
 export default function buildKernel(kernelEndowments) {
   const { setImmediate } = kernelEndowments;
-  const kernelState = makeKernelState();
+  const newState = {
+    log: [],
+    vats: harden(new Map()),
+    devices: harden(new Map()),
+    runQueue: [],
+    kernelPromises: harden(new Map()),
+    nextPromiseIndex: 40,
+  };
+  const kernelState = makeKernelState(newState);
 
   const enableKDebug = false;
   function kdebug(...args) {
