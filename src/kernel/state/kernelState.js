@@ -1,4 +1,5 @@
 import harden from '@agoric/harden';
+import makeVatState from './vatState';
 
 function makeKernelState(kvstore) {
   // kvstore has set, get, has, delete methods
@@ -8,10 +9,14 @@ function makeKernelState(kvstore) {
   // delete (key []byte)
   // iterator, reverseIterator
 
-  const ephemeralState = {
-    vats: harden(new Map()),
-    devices: harden(new Map()),
-  };
+  function getKeys(iterator) {
+    const keys = [];
+
+    for (const entry of iterator) {
+      keys.push(entry.key);
+    }
+    return keys;
+  }
 
   // used by loading state only
   function loadNextPromiseIndex(id) {
@@ -87,17 +92,14 @@ function makeKernelState(kvstore) {
 
   function getAllVatNames() {
     const vats = kvstore.get('vats');
-    return Array.from(vats.keys());
-  }
-
-  function getAllVats() {
-    const vats = kvstore.get('vats');
-    return Array.from(vats.entries());
+    const iter = vats.iterator();
+    return getKeys(iter);
   }
 
   function getAllDevices() {
     const devices = kvstore.get('devices');
-    return Array.from(devices.entries());
+    const iter = devices.iterator();
+    return getKeys(iter);
   }
 
   function isRunQueueEmpty() {
@@ -127,13 +129,19 @@ function makeKernelState(kvstore) {
 
     const vats = kvstore.get('vats');
 
-    vats.forEach((vat, vatID) => {
+    const iter = vats.iterator();
+
+    for (const vatEntry of iter) {
+      const { key: vatID, value: vatkvstore } = vatEntry;
+
+      const vatState = makeVatState(vatkvstore);
+
       // TODO: find some way to expose the liveSlots internal tables, the
       // kernel doesn't see them
-      const vatTable = { vatID, state: vat.manager.getCurrentState() };
+      const vatTable = { vatID, state: vatState.getCurrentState() };
       vatTables.push(vatTable);
-      vat.manager.dumpState(vatID).forEach(e => kernelTable.push(e));
-    });
+      vatState.dumpState(vatID).forEach(e => kernelTable.push(e));
+    }
 
     function compareNumbers(a, b) {
       return a - b;
@@ -198,29 +206,38 @@ function makeKernelState(kvstore) {
     const vatTables = {};
     const vats = kvstore.get('vats');
 
-    vats.forEach((vat, vatID) => {
-      vatTables[vatID] = { state: vat.manager.getCurrentState() };
-      Object.assign(vatTables[vatID], vat.manager.getManagerState());
-    });
+    const vatIter = vats.iterator();
+
+    for (const vatEntry of vatIter) {
+      const { key: vatID, value: vatkvstore } = vatEntry;
+      const vatState = makeVatState(vatkvstore);
+
+      vatTables[vatID] = { state: vatState.getCurrentState() };
+      Object.assign(vatTables[vatID], vatState.getManagerState());
+    }
 
     const deviceState = {};
     const devices = kvstore.get('devices');
+    const deviceIter = devices.iterator();
 
-    devices.forEach((d, deviceName) => {
-      deviceState[deviceName] = d.manager.getCurrentState();
-    });
+    for (const deviceEntry of deviceIter) {
+      const { key: deviceName, value: devicekvstore } = deviceEntry;
+      deviceState[deviceName] = deviceState.getCurrentState(devicekvstore);
+    }
 
     const promises = [];
 
     const kernelPromises = kvstore.get('kernelPromises');
-    kernelPromises.forEach((p, id) => {
+    const kernelPromiseIter = kernelPromises.iterator();
+
+    for (const { key: id, value: p } of kernelPromiseIter) {
       const kp = { id };
       Object.defineProperties(kp, Object.getOwnPropertyDescriptors(p));
       if ('subscribers' in p) {
         kp.subscribers = Array.from(p.subscribers); // turn Set into Array
       }
       promises.push(kp);
-    });
+    }
 
     const runQueue = kvstore.get('runQueue');
     const nextPromiseIndex = kvstore.get('nextPromiseIndex');
@@ -293,7 +310,6 @@ function makeKernelState(kvstore) {
     hasVat,
     getVat,
     getAllVatNames,
-    getAllVats,
     getAllDevices,
     isRunQueueEmpty,
     getRunQueueLength,

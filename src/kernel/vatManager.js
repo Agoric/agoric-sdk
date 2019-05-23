@@ -1,6 +1,7 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import makeVatState from './state/vatState';
+import makeKVStore from './kvstore';
 
 export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   const {
@@ -15,7 +16,34 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     kernelState,
   } = syscallManager;
 
-  const vatState = makeVatState();
+  const vatStartingState = {
+    kernelSlotToVatSlot: makeKVStore({
+      exports: makeKVStore({}),
+      devices: makeKVStore({}),
+      promises: makeKVStore({}),
+      resolvers: makeKVStore({}),
+    }),
+    vatSlotToKernelSlot: makeKVStore({
+      imports: makeKVStore({}),
+      deviceImports: makeKVStore({}),
+      promises: makeKVStore({}),
+      resolvers: makeKVStore({}),
+    }),
+
+    // make these IDs start at different values to detect errors
+    // better
+    nextIDs: makeKVStore({
+      import: 10,
+      promise: 20,
+      resolver: 30,
+      deviceImport: 40,
+    }),
+    transcript: [],
+  };
+
+  const kvstore = makeKVStore(vatStartingState);
+
+  const vatState = makeVatState(kvstore);
 
   // We use vat-centric terminology here, so "inbound" means "into a vat",
   // generally from the kernel. We also have "comms vats" which use special

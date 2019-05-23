@@ -15,10 +15,10 @@ export default function buildKernel(kernelEndowments) {
 
   const state = {
     log: [],
-    vats: harden(new Map()),
-    devices: harden(new Map()),
+    vats: makeKVStore({}),
+    devices: makeKVStore({}),
     runQueue: [],
-    kernelPromises: harden(new Map()),
+    kernelPromises: makeKVStore({}),
     nextPromiseIndex: 40,
   };
 
@@ -347,8 +347,8 @@ export default function buildKernel(kernelEndowments) {
     // each key of 'vats' will be serialized as a reference to its obj0
     const vrefs = new Map();
     const vatObj0s = {};
-    kernelState.getAllVats().forEach(e => {
-      const targetVatID = e[0];
+    kernelState.getAllVatNames().forEach(name => {
+      const targetVatID = name;
       // we happen to give _bootstrap to itself, because unit tests that
       // don't have any other vats (bootstrap-only configs) then get a
       // non-empty object as vatObj0s, since an empty object would be
@@ -371,12 +371,11 @@ export default function buildKernel(kernelEndowments) {
     // entry to this object so it will serialize as pass-by-copy. We can
     // remove the dummy entry after we add the 'addVat' device
     const deviceObj0s = { _dummy: 'dummy' };
-    kernelState.getAllDevices().forEach(d => {
-      const name = d[0];
+    kernelState.getAllDevices().forEach(deviceName => {
       const dref = harden({});
-      deviceObj0s[name] = dref;
-      drefs.set(dref, { type: 'device', deviceName: name, id: 0 });
-      console.log(`adding dref ${name}`);
+      deviceObj0s[deviceName] = dref;
+      drefs.set(dref, { type: 'device', deviceName, id: 0 });
+      console.log(`adding dref ${deviceName}`);
     });
     if (Object.getOwnPropertyNames(deviceObj0s) === 0) {
       throw new Error('pass-by-copy rules require at least one device');

@@ -2,36 +2,23 @@ import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { insist } from '../insist';
 
-export default function makeVatState() {
+export default function makeVatState(kvstore) {
   // per-vat translation tables
 
   // kernelSlotToVatSlot is an object with four properties:
   //    exports, devices, promises, resolvers.
-  // vatSlotToKernelSlot has imports, deviceImports, promises, resolvers
-  const state = {
-    kernelSlotToVatSlot: {
-      exports: new Map(),
-      devices: new Map(),
-      promises: new Map(),
-      resolvers: new Map(),
-    },
-    vatSlotToKernelSlot: {
-      imports: new Map(),
-      deviceImports: new Map(),
-      promises: new Map(),
-      resolvers: new Map(),
-    },
+  //    vatSlotToKernelSlot has imports, deviceImports, promises,
+  //    resolvers
+  
+  function getEntries(store) {
+    const iterator = store.iterator();
+    const entries = [];
 
-    // make these IDs start at different values to detect errors
-    // better
-    nextIDs: {
-      import: 10,
-      promise: 20,
-      resolver: 30,
-      deviceImport: 40,
-    },
-    transcript: [],
-  };
+    for (const entry of iterator) {
+      entries.push(entry);
+    }
+    return entries;
+  }
 
   const allowedVatSlotTypes = [
     'export',
@@ -76,30 +63,30 @@ export default function makeVatState() {
 
     const { type, id } = kernelSlot;
 
-    const tables = state.kernelSlotToVatSlot;
+    const tables = kvstore.get('kernelSlotToVatSlot');
 
     switch (type) {
       case 'promise': {
         return {
-          table: tables.promises,
+          table: tables.get('promises'),
           key: id,
         };
       }
       case 'resolver': {
         return {
-          table: tables.resolvers,
+          table: tables.get('resolvers'),
           key: id,
         };
       }
       case 'export': {
         return {
-          table: tables.exports,
+          table: tables.get('exports'),
           key: `${kernelSlot.vatID}-${id}`,
         };
       }
       case 'device': {
         return {
-          table: tables.devices,
+          table: tables.get('devices'),
           key: `${kernelSlot.vatID}-${id}`,
         };
       }
@@ -112,25 +99,25 @@ export default function makeVatState() {
     insistVatSlot(vatSlot);
     const { type, id } = vatSlot;
 
-    const tables = state.vatSlotToKernelSlot;
+    const tables = kvstore.get('vatSlotToKernelSlot');
     let table;
     // imports, deviceImports, promises, resolvers
 
     switch (type) {
       case 'import': {
-        table = tables.imports;
+        table = tables.get('imports');
         break;
       }
       case 'deviceImport': {
-        table = tables.deviceImports;
+        table = tables.get('deviceImports');
         break;
       }
       case 'promise': {
-        table = tables.promises;
+        table = tables.get('promises');
         break;
       }
       case 'resolver': {
-        table = tables.resolvers;
+        table = tables.get('resolvers');
         break;
       }
       default:
@@ -171,8 +158,9 @@ export default function makeVatState() {
     if (!table.has(key)) {
       // must add both directions
       const vatSlotType = getVatSlotTypeFromKernelSlot(kernelSlot);
-      const newVatSlotID = state.nextIDs[vatSlotType];
-      state.nextIDs[vatSlotType] = newVatSlotID + 1;
+      const nextIDs = kvstore.get('nextIDs');
+      const newVatSlotID = nextIDs.get(vatSlotType);
+      nextIDs.set(vatSlotType, newVatSlotID + 1);
       const vatSlot = { type: vatSlotType, id: newVatSlotID };
       table.set(key, vatSlot);
       const { table: vatSlotTable, key: vatSlotKey } = getVatSlotTypedMapAndKey(
@@ -184,85 +172,102 @@ export default function makeVatState() {
   }
 
   function loadManagerState(vatData) {
-    if (state.kernelSlotToVatSlot.size || state.vatSlotToKernelSlot.size) {
-      throw new Error(`vat[$vatID] is not empty, cannot loadState`);
-    }
-    state.nextImportID = vatData.nextImportID;
-    state.nextPromiseID = vatData.nextPromiseID;
-    state.nextResolverID = vatData.nextResolverID;
-    state.nextDeviceImportID = vatData.nextDeviceImportID;
+    // kvstore has no size
+    // TODO: reimplement this
+    // if (state.kernelSlotToVatSlot.size || state.vatSlotToKernelSlot.size) {
+    //   throw new Error(`vat[$vatID] is not empty, cannot loadState`);
+    // }
+
+    kvstore.set('nextImportID', vatData.nextImportID);
+    kvstore.set('nextPromiseID', vatData.nextPromiseID);
+    kvstore.set('nextResolverID', vatData.nextResolverID);
+    kvstore.set('nextDeviceImportID', vatData.nextDeviceImportID);
 
     // exports, devices, promises, resolvers
+    const kernelSlotToVatSlot = kvstore.get('kernelSlotToVatSlot');
 
     vatData.kernelSlotToVatSlot.exports.forEach(([key, value]) => {
-      state.kernelSlotToVatSlot.exports.set(key, value);
+      const exports = kernelSlotToVatSlot.get('exports');
+      exports.set(key, value);
     });
 
     vatData.kernelSlotToVatSlot.devices.forEach(([key, value]) => {
-      state.kernelSlotToVatSlot.devices.set(key, value);
+      const devices = kernelSlotToVatSlot.get('devices');
+      devices.set(key, value);
     });
 
     vatData.kernelSlotToVatSlot.promises.forEach(([key, value]) => {
-      state.kernelSlotToVatSlot.promises.set(key, value);
+      const promises = kernelSlotToVatSlot.get('promises');
+      promises.set(key, value);
     });
 
     vatData.kernelSlotToVatSlot.resolvers.forEach(([key, value]) => {
-      state.kernelSlotToVatSlot.resolvers.set(key, value);
+      const resolvers = kernelSlotToVatSlot.get('resolvers');
+      resolvers.set(key, value);
+      resolvers.set(key, value);
     });
 
     // imports, deviceImports, promises, resolvers
 
+    const vatSlotToKernelSlot = kvstore.get('vatSlotToKernelSlot');
+
     vatData.vatSlotToKernelSlot.imports.forEach(([key, value]) => {
-      state.vatSlotToKernelSlot.imports.set(key, value);
+      const imports = vatSlotToKernelSlot.get('imports');
+      imports.set(key, value);
     });
 
     vatData.vatSlotToKernelSlot.deviceImports.forEach(([key, value]) => {
-      state.vatSlotToKernelSlot.deviceImports.set(key, value);
+      const deviceImports = vatSlotToKernelSlot.get('deviceImports');
+      deviceImports.set(key, value);
     });
 
     vatData.vatSlotToKernelSlot.promises.forEach(([key, value]) => {
-      state.vatSlotToKernelSlot.promises.set(key, value);
+      const promises = vatSlotToKernelSlot.get('promises');
+      promises.set(key, value);
     });
 
     vatData.vatSlotToKernelSlot.resolvers.forEach(([key, value]) => {
-      state.vatSlotToKernelSlot.resolvers.set(key, value);
+      const resolvers = vatSlotToKernelSlot.get('resolvers');
+      resolvers.set(key, value);
     });
   }
 
   function getManagerState() {
+    const kernelSlotToVatSlot = kvstore.get('kernelSlotToVatSlot');
+    const vatSlotToKernelSlot = kvstore.get('vatSlotToKernelSlot');
+
     return {
       kernelSlotToVatSlot: {
         // exports, devices, promises, resolvers
-        exports: Array.from(state.kernelSlotToVatSlot.exports.entries()),
-        devices: Array.from(state.kernelSlotToVatSlot.devices.entries()),
-        promises: Array.from(state.kernelSlotToVatSlot.promises.entries()),
-        resolvers: Array.from(state.kernelSlotToVatSlot.resolvers.entries()),
+        exports: getEntries(kernelSlotToVatSlot.get('exports')),
+        devices: getEntries(kernelSlotToVatSlot.get('devices')),
+        promises: getEntries(kernelSlotToVatSlot.get('promises')),
+        resolvers: getEntries(kernelSlotToVatSlot.get('resolvers')),
       },
       // imports, deviceImports, promises, resolvers
       vatSlotToKernelSlot: {
-        imports: Array.from(state.vatSlotToKernelSlot.imports.entries()),
-        deviceImports: Array.from(
-          state.vatSlotToKernelSlot.deviceImports.entries(),
-        ),
-        promises: Array.from(state.vatSlotToKernelSlot.promises.entries()),
-        resolvers: Array.from(state.vatSlotToKernelSlot.resolvers.entries()),
+        imports: getEntries(vatSlotToKernelSlot.get('imports')),
+        deviceImports: getEntries(vatSlotToKernelSlot.get('deviceImports')),
+        promises: getEntries(vatSlotToKernelSlot.get('promises')),
+        resolvers: getEntries(vatSlotToKernelSlot.get('resolvers')),
       },
 
-      nextImportID: state.nextImportID,
-      nextPromiseID: state.nextPromiseID,
-      nextResolverID: state.nextResolverID,
-      nextDeviceImportID: state.nextDeviceImportID,
+      nextImportID: kvstore.get('nextImportID'),
+      nextPromiseID: kvstore.get('nextPromiseID'),
+      nextResolverID: kvstore.get('nextResolverID'),
+      nextDeviceImportID: kvstore.get('nextDeviceImportID'),
 
-      transcript: state.transcript,
+      transcript: kvstore.get('transcript'),
     };
   }
 
   function getCurrentState() {
-    return { transcript: Array.from(state.transcript) };
+    return { transcript: Array.from(kvstore.get('transcript')) };
   }
 
   function addToTranscript(msg) {
-    state.transcript.push(msg);
+    const transcript = kvstore.get('transcript');
+    transcript.push(msg);
   }
 
   // pretty print for logging and testing
@@ -287,10 +292,13 @@ export default function makeVatState() {
     }
 
     // 'exports', 'devices', 'promises', 'resolvers'
-    state.kernelSlotToVatSlot.exports.forEach(printSlots);
-    state.kernelSlotToVatSlot.devices.forEach(printSlots);
-    state.kernelSlotToVatSlot.promises.forEach(printSlots);
-    state.kernelSlotToVatSlot.resolvers.forEach(printSlots);
+
+    const kernelSlotToVatSlot = kvstore.get('kernelSlotToVatSlot');
+
+    getEntries(kernelSlotToVatSlot.get('exports')).forEach(printSlots);
+    getEntries(kernelSlotToVatSlot.get('devices')).forEach(printSlots);
+    getEntries(kernelSlotToVatSlot.get('promises')).forEach(printSlots);
+    getEntries(kernelSlotToVatSlot.get('resolvers')).forEach(printSlots);
 
     return harden(res);
   }
