@@ -334,19 +334,30 @@ async function testMailboxInbound(t, withSES) {
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
 
+  let rc;
+
   const c = await buildVatController(config, withSES, ['mailbox2']);
   await c.run();
-  mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2']], undefined);
+  rc = mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2']], undefined);
+  t.ok(rc);
   await c.run();
   t.deepEqual(c.dump().log, ['dm-peer1', 'm-1-msg1', 'm-2-msg2']);
 
   // delivering the same messages should not trigger sends, but the ack is new
-  mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2']], 3);
+  rc = mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2']], 3);
+  t.ok(rc);
+  await c.run();
+  t.deepEqual(c.dump().log, ['dm-peer1', 'm-1-msg1', 'm-2-msg2', 'da-peer1-3']);
+
+  // no new messages/acks makes deliverInbound return 'false'
+  rc = mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2']], 3);
+  t.notOk(rc);
   await c.run();
   t.deepEqual(c.dump().log, ['dm-peer1', 'm-1-msg1', 'm-2-msg2', 'da-peer1-3']);
 
   // but new messages should be sent
-  mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2'], [3, 'msg3']], 3);
+  rc = mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2'], [3, 'msg3']], 3);
+  t.ok(rc);
   await c.run();
   t.deepEqual(c.dump().log, [
     'dm-peer1',
@@ -358,7 +369,8 @@ async function testMailboxInbound(t, withSES) {
   ]);
 
   // and a higher ack should be sent
-  mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2'], [3, 'msg3']], 4);
+  rc = mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2'], [3, 'msg3']], 4);
+  t.ok(rc);
   await c.run();
   t.deepEqual(c.dump().log, [
     'dm-peer1',
@@ -370,7 +382,8 @@ async function testMailboxInbound(t, withSES) {
     'da-peer1-4',
   ]);
 
-  mb.deliverInbound('peer2', [[4, 'msg4']], 5);
+  rc = mb.deliverInbound('peer2', [[4, 'msg4']], 5);
+  t.ok(rc);
   await c.run();
   t.deepEqual(c.dump().log, [
     'dm-peer1',

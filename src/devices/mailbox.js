@@ -154,9 +154,11 @@ export function buildMailbox(state) {
   // Functions made available to the host: these are used for inbound
   // messages and acks. The outbound direction uses the mailboxState object.
 
+  // deliverInbound returns true if something changed, and the caller should
+  // run the kernel's event loop
   function deliverInbound(peer, messages, ack) {
     try {
-      inboundCallback(peer, messages, ack);
+      return Boolean(inboundCallback(peer, messages, ack));
     } catch (e) {
       throw new Error(`error in inboundCallback: ${e} ${e.message}`);
     }
