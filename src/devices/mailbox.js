@@ -17,7 +17,8 @@
   the vatTP, as 'send(peer, msg)'. When this arrives on vat-VatTP, it invokes
   the device's 'add' method, as add(peer, msgnum, msg). The add() function
   modifies the mailboxState vector. This all takes place while the kernel run
-  loop is processing the run-queue, so no actual messages are transmitted yet.
+  loop is processing the run-queue, so no actual messages are transmitted
+  yet.
 
   Later, when the host has finished processing the run-queue (or decides that
   it's done enough work for now, and leaves some items on the queue), the
@@ -33,7 +34,33 @@
   either a higher msgnum or acknum, it must transmit a [messages, acknum]
   pair to the indicated peer.
 
-  ... describe inbound side, acks
+  If the host lives in a replicated consensus environment (i.e. a
+  blockchain), it doesn't need to do anything else. External followers will
+  notice that the outbox has changed, and react to it be delivering the new
+  messages into the receiving side.
+
+  On the intended recipient, outside of the swingset codebase, something
+  becomes aware of the incoming messages and acknum. It submits these (along
+  with the name of the sender) to the `deliverInbound()` function. This
+  performs deduplication, so it is reasonable to re-invoke `deliverInbound()`
+  with the same set of messages multiple times (e.g. if the program is
+  following a blockchain, and each new block triggers another call).
+  deliverInbound then delivers the new messages to the VatTP vat, which
+  forwards them to the comms vat for dispatch to the right target objects.
+  VatTP also updates the outbound `acknum` field with the latest message it
+  has processed.
+
+  As before (on the other machine), the host must examine the mailboxState
+  and notice that the `acknum` has changed, and notify the other side
+  somehow. When that notification arrives, `deliverInbound()` is again
+  invoked (with the new acknum, but perhaps no new messages). The new acknum
+  tells the VatTP on that side that it is now safe to remove the retired
+  messages from its own mailboxState.
+
+  Acks must be delivered next to actual messages, not inside them, because
+  otherwise the acknowledgment process would never converge. Acks can
+  piggyback on top of normal messages, so no extra roundtrips should be
+  necessary.
 
 */
 
