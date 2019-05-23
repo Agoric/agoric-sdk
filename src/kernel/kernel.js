@@ -8,14 +8,10 @@ import makePromise from './makePromise';
 import makeVatManager from './vatManager';
 import makeDeviceManager from './deviceManager';
 import makeKernelState from './state/kernelState';
+import makeKVStore from './kvstore';
 
-function makeKVStore() {
-  // kvstore has set, get, has, delete methods
-  // set (key []byte, value []byte)
-  // get (key []byte)  => value []byte
-  // has (key []byte) => exists bool
-  // delete (key []byte)
-  // iterator, reverseIterator
+export default function buildKernel(kernelEndowments) {
+  const { setImmediate } = kernelEndowments;
 
   const state = {
     log: [],
@@ -26,23 +22,7 @@ function makeKVStore() {
     nextPromiseIndex: 40,
   };
 
-  return {
-    get(key) {
-      return state[key];
-    },
-    set(key, value) {
-      state[key] = value;
-    },
-    has(key) {
-      return Object.prototype.hasOwnProperty.call(state, key);
-    },
-  };
-}
-
-export default function buildKernel(kernelEndowments) {
-  const { setImmediate } = kernelEndowments;
-
-  const kvstore = makeKVStore();
+  const kvstore = makeKVStore(state);
 
   const kernelState = makeKernelState(kvstore);
 
