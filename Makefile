@@ -15,7 +15,9 @@ docker-push:
 compile-go: go.sum
 	GO111MODULE=on go build -buildmode=c-shared -o lib/libcoss.so lib/coss.go
 
-build: compile-go
+build: compile-go compile-node
+
+compile-node:
 	npm run build
 	-install_name_tool -change libcoss.so `pwd`/lib/libcoss.so build/Release/coss.node 
 

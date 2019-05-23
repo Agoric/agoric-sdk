@@ -34,8 +34,9 @@ func StartCOSS(instance int, toNode C.dispatchFunc, cosmosArgs []*C.char) {
 	fmt.Fprintln(os.Stderr, "Done starting Cosmos")
 }
 
-//export DispatchToCosmos
-func DispatchToCosmos(instance int, in *C.char) *C.char {
+//export SyscallToCosmos
+func SyscallToCosmos(instance int, in *C.char) *C.char {
+	fmt.Fprintln(os.Stderr, "Syscall to Go", C.GoString(in))
 	return C.CString("hello, from Go!")
 }
 
