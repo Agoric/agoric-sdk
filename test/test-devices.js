@@ -298,22 +298,22 @@ async function testMailboxOutbound(t, withSES) {
   t.deepEqual(s.exportToData(), {
     peer1: {
       inboundAck: 13,
-      outbox: {
-        2: 'data2',
-        3: 'data3',
-      },
+      outbox: [[2, 'data2'], [3, 'data3']],
     },
     peer2: {
       inboundAck: undefined,
-      outbox: {},
+      outbox: [],
     },
     peer3: {
       inboundAck: undefined,
-      outbox: {
-        5: 'data5',
-      },
+      outbox: [[5, 'data5']],
     },
   });
+
+  const s2 = buildMailboxStateMap();
+  s2.populateFromData(s.exportToData());
+  t.deepEqual(s.exportToData(), s2.exportToData());
+
   t.end();
 }
 

@@ -97,10 +97,11 @@ export function buildMailboxStateMap() {
   function exportToData() {
     const data = {};
     state.forEach((inout, peer) => {
-      const messages = {};
+      const messages = [];
       inout.outbox.forEach((body, msgnum) => {
-        messages[msgnum] = body;
+        messages.push([msgnum, body]);
       });
+      messages.sort((a, b) => a[0] - b[0]);
       data[peer] = { outbox: messages, inboundAck: inout.inboundAck };
     });
     return harden(data);
@@ -113,9 +114,9 @@ export function buildMailboxStateMap() {
     for (const peer of Object.getOwnPropertyNames(data)) {
       const inout = getOrCreatePeer(peer);
       const d = data[peer];
-      for (const msgnum of Object.getOwnPropertyNames(d.outbox)) {
-        inout.outbox.set(msgnum, d.outbox[msgnum]);
-      }
+      d.outbox.forEach(m => {
+        inout.outbox.set(Nat(m[0]), m[1]);
+      });
       inout.inboundAck = d.inboundAck;
     }
   }
