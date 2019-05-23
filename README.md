@@ -315,9 +315,9 @@ objects for identity until they pass out of a `.then()` resolution handler.
 
 [circleci-svg]: https://circleci.com/gh/Agoric/SwingSet.svg?style=svg
 [circleci-url]: https://circleci.com/gh/Agoric/SwingSet
-[deps-svg]: https://david-dm.org/Agoric/PlaygroundVat.svg
-[deps-url]: https://david-dm.org/Agoric/PlaygroundVat
-[dev-deps-svg]: https://david-dm.org/Agoric/PlaygroundVat/dev-status.svg
-[dev-deps-url]: https://david-dm.org/Agoric/PlaygroundVat?type=dev
+[deps-svg]: https://david-dm.org/Agoric/SwingSet.svg
+[deps-url]: https://david-dm.org/Agoric/SwingSet
+[dev-deps-svg]: https://david-dm.org/Agoric/SwingSet/dev-status.svg
+[dev-deps-url]: https://david-dm.org/Agoric/SwingSet?type=dev
 [license-image]: https://img.shields.io/badge/License-Apache%202.0-blue.svg
 [license-url]: LICENSE
