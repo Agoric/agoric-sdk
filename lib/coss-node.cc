@@ -7,19 +7,29 @@ namespace coss {
 using namespace std;
 
 static Napi::Function dispatch;
-static Napi::Env dispatch_env;
 
-static char* DoDispatchToNode(int instance, char* str) {
-    Napi::Env env = dispatch_env;
-    dispatch.Call(env.Global(), {
+static int last_instance = 0;
+
+void DoDispatchToNode(int instance, char* str) {
+    Napi::Env env = dispatch.Env();
+    if (last_instance != instance) {
+        cerr << "Dispatch to instance " << instance << " not supported!" << endl;
+    }
+    dispatch.MakeCallback(env.Global(), {
         Napi::Number::New(env, last_instance),
         Napi::String::New(env, str),
     });
 }
 
-static Napi::Value Start(const Napi::CallbackInfo& info) {
-    static int last_instance = 0;
+static Napi::Value DoDispatchToGo(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    int instance = info[0].As<Napi::Number>();
+    string tmp = info[1].As<Napi::String>().Utf8Value();
+    char* ret = DispatchToCosmos(instance, const_cast<char*>(tmp.c_str()));
+    return Napi::String::New(env, ret);
+}
 
+static Napi::Value Start(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     cerr << "Starting Go COSS from Node COSS" << endl;
 
@@ -30,34 +40,33 @@ static Napi::Value Start(const Napi::CallbackInfo& info) {
     last_instance ++;
 
     dispatch = info[0].As<Napi::Function>();
-    Napi::Array cosmosArgv = info[1].As<Napi::Function>();
-    int argc = cosmosArgv.Length();
-    char* argv[argc] = {nullptr};
+    Napi::Array cosmosArgv = info[1].As<Napi::Array>();
+    unsigned int argc = cosmosArgv.Length();
+    char** argv = new char*[argc];
     for (unsigned int i = 0; i < argc; i ++) {
-        if (array.Has(i)) {
-            string tmp = array.Get(i).As<Napi::String>.Utf8Value();
+        if (cosmosArgv.Has(i)) {
+            string tmp = cosmosArgv.Get(i).As<Napi::String>().Utf8Value();
             argv[i] = strdup(tmp.c_str());
         }
     }
 
     GoSlice args = {argv, argc, argc};
-    StartCoss(last_instance, DoDispatchToNode, args);
+    StartCOSS(last_instance, DoDispatchToNode, args);
+
+    for (unsigned int i = 0; i < argc; i ++) {
+        free(argv[i]);
+    }
     cerr << "End of starting GO COSS from Node COSS" << endl;
-
     return Napi::Number::New(env, last_instance);
-}
-
-static Napi::Value DoDispatchToGo(const Napi::CallbackInfo& info) {
-    int instance = info[0].As<Napi::Number>();
-    string tmp = info[1].As<Napi::String>().Utf8Value();
-    char* ret = DispatchToCosmos(instance, tmp.c_str());
-    return Napi::String::New(env, ret);
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set(
         Napi::String::New(env, "start"),
-        Napi::Function::New(env, Start));
+        Napi::Function::New(env, Start, "Start"));
+    exports.Set(
+        Napi::String::New(env, "dispatch"),
+        Napi::Function::New(env, DoDispatchToGo, "DoDispatchToGo"));
     return exports;
 }
 
