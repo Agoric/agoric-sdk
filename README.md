@@ -109,7 +109,7 @@ anything else.
 
 ## Vat Sources
 
-Each Vat source file (`vat-foo.js` or `vat-bar/index.js`) is treated as a
+Each Vat source file (like `vat-foo.js` or `vat-bar.js`) is treated as a
 starting point for the `rollup` tool, which converts the Vat's source tree
 into a single string (so it can be evaluated in a SES realm). This starting
 point can use `import` to reference shared local files. It can also import a
@@ -128,7 +128,7 @@ lines of boilerplate in the `setup()` function.
 import harden from '@agoric/harden';
 
 function buildRootObject(E) {
-  return {
+  return harden({
     callRight(arg1, right) {
       console.log(`left.callRight ${arg1}`);
       E(right)
@@ -136,13 +136,11 @@ function buildRootObject(E) {
         .then(a => console.log(`left.then ${a}`));
       return 3;
     },
-  };
+  });
 }
 
-export default function setup(syscall, helpers) {
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(syscall, helpers.vatID);
-
-  registerRoot(harden(buildRootObject(E)));
+export default function setup(syscall, state, helpers) {
+  const dispatch = helpers.makeLiveSlots(syscall, state, buildRootObject, helpers.vatID);
   return dispatch;
 }
 ```
@@ -164,8 +162,8 @@ The system can pass-by-copy "Data Objects" with similar rules:
 
 ## Root Objects
 
-The "Root Object" is a callable object passed to `registerRoot()`. It will be
-made available to the Bootstrap Vat.
+The "Root Object" is a callable object returned by `buildRootObject()`. It
+will be made available to the Bootstrap Vat.
 
 ## Sending Messages with Presences
 
@@ -294,7 +292,7 @@ to the first one.
 
 This drastic reduction in latency is significant when the Vats are far away
 from each other, and the inter-Vat communication delay is large. The SwingSet
-container does not yet provide a "Comms Vat" to enable off-host messaging,
+container does not yet provide complete facilities for off-host messaging,
 but once that is implemented, promise pipelining will make a big difference.
 
 ## Presence Identity Comparison
