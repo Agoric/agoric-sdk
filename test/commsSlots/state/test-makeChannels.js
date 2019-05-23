@@ -1,5 +1,5 @@
 import { test } from 'tape-promise/tape';
-import { makeChannels } from '../../../src/kernel/commsSlots/state/makeChannels';
+import { makeChannels } from '../../../src/kernel/commsSlots/state/channels';
 
 test('channels set and get', t => {
   const channels = makeChannels();

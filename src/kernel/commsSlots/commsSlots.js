@@ -5,10 +5,10 @@ import makeState from './state/index';
 
 // methods that can be called on the inital obj, 0
 import handleCommsController from './commsController';
-import makeMapOutbound from './outbound/makeMapOutbound';
+import makeMapOutbound from './outbound/mapOutbound';
 
 // access to the outside world
-import makeInboundHandler from './inbound/makeInboundHandler';
+import makeInboundHandler from './inbound/inboundHandler';
 
 export default function makeCommsSlots(syscall, _state, helpers) {
   const enableCSDebug = true;

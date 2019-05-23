@@ -1,5 +1,5 @@
 // import { test } from 'tape-promise/tape';
-// import makeInboundHandler from '../../src/kernel/commsSlots/inbound/makeInboundHandler';
+// import makeInboundHandler from '../../src/kernel/commsSlots/inbound/inboundHandler';
 // import makeState from '../../src/kernel/commsSlots/state';
 
 // // send [ { type: 'your-egress', id: 10 }, 'getIssuer', '{"args":[]}', [] ]

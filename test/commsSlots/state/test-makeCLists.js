@@ -1,5 +1,5 @@
 import { test } from 'tape-promise/tape';
-import { makeCLists } from '../../../src/kernel/commsSlots/state/makeCLists';
+import { makeCLists } from '../../../src/kernel/commsSlots/state/CLists';
 
 test('Clists add and get', t => {
   const clists = makeCLists();

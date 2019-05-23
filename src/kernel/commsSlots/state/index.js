@@ -1,8 +1,8 @@
-import { makeCLists } from './makeCLists';
-import { makeChannels } from './makeChannels';
-import { makeAllocateID } from './makeAllocateID';
-import { makeMachineState } from './makeMachineState';
-import { makePromiseResolverPairs } from './makePromiseResolverPairs';
+import { makeCLists } from './CLists';
+import { makeChannels } from './channels';
+import { makeAllocateID } from './allocateID';
+import { makeMachineState } from './machineState';
+import { makePromiseResolverPairs } from './promiseResolverPairs';
 
 function makeState(name) {
   const vatName = name;

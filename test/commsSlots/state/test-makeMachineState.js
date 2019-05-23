@@ -1,5 +1,5 @@
 import { test } from 'tape-promise/tape';
-import { makeMachineState } from '../../../src/kernel/commsSlots/state/makeMachineState';
+import { makeMachineState } from '../../../src/kernel/commsSlots/state/machineState';
 
 test('machineState set and get', t => {
   const machineState = makeMachineState();

@@ -1,5 +1,5 @@
 import { test } from 'tape-promise/tape';
-import { makeAllocateID } from '../../../src/kernel/commsSlots/state/makeAllocateID';
+import { makeAllocateID } from '../../../src/kernel/commsSlots/state/allocateID';
 
 test('allocateID', t => {
   const id = makeAllocateID();

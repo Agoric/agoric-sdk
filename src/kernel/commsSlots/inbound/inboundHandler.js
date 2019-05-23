@@ -1,4 +1,4 @@
-import makeMapInbound from './makeMapInbound';
+import makeMapInbound from './mapInbound';
 
 function parseJSON(data) {
   try {
