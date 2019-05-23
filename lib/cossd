@@ -7,9 +7,10 @@ setInterval(() => {
 }, 1000);
 const coss = require('bindings')('coss.node');
 console.log('Have COSS', coss);
-// FIXME: Somehow specify argv explicitly.
+
 const instance = coss.start((instance, str) => {
-    console.error('received request from Go', instance, str);
+    console.error('received dispatch from Go', instance, str);
     coss.syscall(instance, "Hello from Go dispatch: " + str.toUpperCase());
 }, process.argv.slice(1));
+
 console.log('Got from COSS', coss.syscall(instance, "Hello from node proper!"));

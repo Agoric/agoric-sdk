@@ -1,3 +1,40 @@
 #! /bin/sh
-test -t 1 && flags=-t
-exec docker run -i $flags --net=host --entrypoint=./cosscli --volume=cosscli-state:/root/.nscli --rm michaelfig/cosmic-swingset ${1+"$@"}
+test -t 1 && FLAGS=-t
+thisdir=`dirname "$0"`
+ABS=`cd "$thisdir" && pwd`
+COSSD_PORT=26657
+REST_PORT=1317
+ENTRY=./cosscli
+ARGS=
+
+
+case "$1" in
+keys | help | config)
+  # No need for networking to cossd, indeed, SSH interaction
+  # would mess up our output.
+  ;;
+*)
+  case " $@ " in
+  *" --help "*) ;;
+  *)
+    if test `uname -s 2>/dev/null` = Darwin; then
+      # On MacOS, run the tunnel to host.docker.internal:$COSSD_PORT.
+      # FIXME: Windows needs the same.
+      ENTRY=/ssh-tunnel
+      FLAGS="-t --volume=$HOME/.ssh:/root/.ssh --volume=$ABS/ssh-tunnel:/ssh-tunnel"
+      ARGS=" $USER@host.docker.internal $COSSD_PORT ./cosscli"
+    fi
+    ;;
+  esac
+  ;;
+esac
+
+case "$1" in
+rest-server)
+  FLAGS="$FLAGS -p127.0.0.1:$REST_PORT:$REST_PORT"
+  ;;
+esac
+
+exec docker run -i $FLAGS --entrypoint="$ENTRY" \
+  --volume=cosscli-state:/root/.nscli \
+  --rm michaelfig/cosmic-swingset$ARGS ${1+"$@"}

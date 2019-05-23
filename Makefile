@@ -1,4 +1,4 @@
- REPOSITORY = michaelfig/cosmic-swingset
+REPOSITORY = michaelfig/cosmic-swingset
 TAG := $(shell sed -ne 's/.*"version": "\(.*\)".*/\1/p' package.json)
 
 include Makefile.ledger
@@ -13,7 +13,7 @@ docker-push:
 	docker push $(REPOSITORY):$(TAG)
 
 compile-go: go.sum
-	GO111MODULE=on go build -buildmode=c-shared -o lib/libcoss.so lib/coss.go
+	GO111MODULE=on go build -v -buildmode=c-shared -o lib/libcoss.so lib/coss.go
 
 build: compile-go compile-node
 
@@ -22,8 +22,9 @@ compile-node:
 	-install_name_tool -change libcoss.so `pwd`/lib/libcoss.so build/Release/coss.node 
 
 install: go.sum
-	#GO111MODULE=on go install -tags "$(build_tags)" ./cmd/nsd
-	GO111MODULE=on go install -tags "$(build_tags)" ./cmd/cosscli
+	# Not needed, because we librarify ./cmd/cossd as ./lib/libcoss.so
+	#GO111MODULE=on go install -tags "$(build_tags)" ./cmd/cossd
+	GO111MODULE=on go install -v -tags "$(build_tags)" ./cmd/cosscli
 
 go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"
