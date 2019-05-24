@@ -8,9 +8,9 @@ setInterval(() => {
 const coss = require('bindings')('coss.node');
 console.log('Have COSS', coss);
 
-const instance = coss.start((instance, str) => {
+const instance = coss.start((port, str) => {
     console.error('received dispatch from Go', instance, str);
-    coss.syscall(instance, "Hello from Go dispatch: " + str.toUpperCase());
+    coss.send(port, "Hello from Go dispatch: " + str.toUpperCase());
 }, process.argv.slice(1));
 
-console.log('Got from COSS', coss.syscall(instance, "Hello from node proper!"));
+console.log('Got from COSS', coss.send(instance, "Hello from node proper!"));

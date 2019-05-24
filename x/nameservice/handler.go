@@ -26,7 +26,11 @@ func handleMsgSetName(ctx sdk.Context, keeper Keeper, msg MsgSetName) sdk.Result
 	if !msg.Owner.Equals(keeper.GetOwner(ctx, msg.Name)) { // Checks if the the msg sender is the same as the current owner
 		return sdk.ErrUnauthorized("Incorrect Owner").Result() // If not, throw an error
 	}
-	keeper.SetName(ctx, msg.Name, msg.Value) // If so, set the name to the value specified in the msg.
+	ssn, err := SwingSetName(msg.Name, msg.Value)
+	if err != nil {
+		return sdk.ErrInternal(err.Error()).Result()
+	}
+	keeper.SetName(ctx, ssn.Name, ssn.Value) // If so, set the name to the value specified by SwingSet.
 	return sdk.Result{}                      // return
 }
 

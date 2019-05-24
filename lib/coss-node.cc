@@ -9,40 +9,62 @@ using namespace std;
 
 static shared_ptr<ThreadSafeCallback> dispatch;
 
-static int last_instance = 0;
-
-void DispatchToSwingSet(int instance, char* str) {
-    cerr << "Dispatch to SwingSet instance " << instance << " " << str << endl;
-    char* instr = strdup(str);
-    dispatch->call([instr](Napi::Env env, vector<napi_value>& args){
-        cerr << "Calling threadsafe callback with " << instr << endl;
-        args = {
-            Napi::Number::New(env, last_instance),
-            Napi::String::New(env, instr),
-        };
-        free(instr);
-    });
-    cerr << "Ending Dispatch to SwingSet" << str << endl;
+int SendToNode(int port, int replyPort, Body str) {
+    cerr << "Send to node port " << port << " " << str << endl;
+    string instr(str);
+    std::thread([instr, port, replyPort]{
+        auto future = dispatch->call<string>(
+            // Prepare arguments.
+            [port, instr](Napi::Env env, vector<napi_value>& args){
+                cerr << "Calling threadsafe callback with " << instr << endl;
+                args = {
+                    Napi::Number::New(env, port),
+                    Napi::String::New(env, instr),
+                };
+            },
+            // Prepare return value.
+            [](const Napi::Value &val) {
+                cerr << "Returning threadsafe callback" << endl;
+                string str = val.As<Napi::String>().Utf8Value();
+                cerr << "returning " << str;
+                return str;
+            });
+        if (replyPort) {
+            cerr << "Waiting on future" << endl;
+            try {
+                string ret = future.get();
+                cerr << "Replying to Go" << endl;
+                ReplyToGo(replyPort, false, ret.c_str());
+            } catch (std::exception& e) {
+                cerr << "Exceptioning " << e.what() << endl;
+                ReplyToGo(replyPort, true, e.what());
+            }
+        }
+        cerr << "Thread is finished" << endl;
+    }).detach();
+    cerr << "Ending Send to Node " << str << endl;
+    return 0;
 }
 
-static Napi::Value SyscallToGo(const Napi::CallbackInfo& info) {
-    cerr << "Syscall to Go" << endl;
+static Napi::Value send(const Napi::CallbackInfo& info) {
+    cerr << "Send to Go" << endl;
     Napi::Env env = info.Env();
     int instance = info[0].As<Napi::Number>();
     string tmp = info[1].As<Napi::String>().Utf8Value();
-    char* ret = SyscallToCosmos(instance, const_cast<char*>(tmp.c_str()));
+    Body ret = SendToGo(instance, tmp.c_str());
     return Napi::String::New(env, ret);
 }
 
-static Napi::Value Start(const Napi::CallbackInfo& info) {
+static Napi::Value start(const Napi::CallbackInfo& info) {
+    static bool singleton = false;
     Napi::Env env = info.Env();
     cerr << "Starting Go COSS from Node COSS" << endl;
 
-    if (last_instance > 0) {
+    if (singleton) {
         Napi::TypeError::New(env, "Cannot start multiple COSS instances").ThrowAsJavaScriptException();
         return env.Null();
     }
-    last_instance ++;
+    singleton = true;
 
     auto cb = make_shared<ThreadSafeCallback>(info[0].As<Napi::Function>());
     dispatch.swap(cb);
@@ -59,23 +81,23 @@ static Napi::Value Start(const Napi::CallbackInfo& info) {
     }
 
     GoSlice args = {argv, argc, argc};
-    StartCOSS(last_instance, DispatchToSwingSet, args);
+    int cosmosPort = StartCOSS(SendToNode, args);
 
     for (unsigned int i = 0; i < argc; i ++) {
         free(argv[i]);
     }
     delete[] argv;
     cerr << "End of starting GO COSS from Node COSS" << endl;
-    return Napi::Number::New(env, last_instance);
+    return Napi::Number::New(env, cosmosPort);
 }
 
-Napi::Object Init(Napi::Env env, Napi::Object exports) {
+static Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set(
         Napi::String::New(env, "start"),
-        Napi::Function::New(env, Start, "Start"));
+        Napi::Function::New(env, start, "start"));
     exports.Set(
-        Napi::String::New(env, "syscall"),
-        Napi::Function::New(env, SyscallToGo, "SyscallToGo"));
+        Napi::String::New(env, "send"),
+        Napi::Function::New(env, send, "send"));
     return exports;
 }
 
