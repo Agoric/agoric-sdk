@@ -109,19 +109,15 @@ async function bootstrapExport(t, withSES) {
     {
       vatID: '_bootstrap',
       type: 'deliver',
-      target: {
-        type: 'export',
-        vatID: '_bootstrap',
-        id: 0,
-      },
+      target: { type: 'export', vatID: '_bootstrap', id: 0 },
       msg: {
         method: 'bootstrap',
         argsString:
-          '{"args":[[],{"left":{"@qclass":"slot","index":0},"right":{"@qclass":"slot","index":1},"_bootstrap":{"@qclass":"slot","index":2}},{"_dummy":"dummy"}]}',
+          '{"args":[[],{"_bootstrap":{"@qclass":"slot","index":0},"left":{"@qclass":"slot","index":1},"right":{"@qclass":"slot","index":2}},{"_dummy":"dummy"}]}',
         slots: [
+          { type: 'export', vatID: '_bootstrap', id: 0 },
           { type: 'export', vatID: 'left', id: 0 },
           { type: 'export', vatID: 'right', id: 0 },
-          { type: 'export', vatID: '_bootstrap', id: 0 },
         ],
       },
     },
