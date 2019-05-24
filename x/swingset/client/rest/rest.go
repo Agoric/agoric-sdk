@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Agoric/cosmic-swingset/x/swingset"
 	"github.com/cosmos/cosmos-sdk/client/context"
-	"github.com/Agoric/cosmic-swingset/x/nameservice"
 
 	clientrest "github.com/cosmos/cosmos-sdk/client/rest"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -62,7 +62,7 @@ func buyNameHandler(cdc *codec.Codec, cliCtx context.CLIContext) http.HandlerFun
 		}
 
 		// create the message
-		msg := nameservice.NewMsgBuyName(req.Name, coins, addr)
+		msg := swingset.NewMsgBuyName(req.Name, coins, addr)
 		err = msg.ValidateBasic()
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
@@ -100,7 +100,7 @@ func setNameHandler(cdc *codec.Codec, cliCtx context.CLIContext) http.HandlerFun
 		}
 
 		// create the message
-		msg := nameservice.NewMsgSetName(req.Name, req.Value, addr)
+		msg := swingset.NewMsgSetName(req.Name, req.Value, addr)
 		err = msg.ValidateBasic()
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusBadRequest, err.Error())

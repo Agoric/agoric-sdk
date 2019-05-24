@@ -14,22 +14,22 @@ import (
 	amino "github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/libs/cli"
 
+	app "github.com/Agoric/cosmic-swingset"
+	ssclient "github.com/Agoric/cosmic-swingset/x/swingset/client"
+	ssrest "github.com/Agoric/cosmic-swingset/x/swingset/client/rest"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	auth "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	bankcmd "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
 	bank "github.com/cosmos/cosmos-sdk/x/bank/client/rest"
-	app "github.com/Agoric/cosmic-swingset"
-	nsclient "github.com/Agoric/cosmic-swingset/x/nameservice/client"
-	nsrest "github.com/Agoric/cosmic-swingset/x/nameservice/client/rest"
 )
 
 const (
 	storeAcc = "acc"
-	storeNS  = "nameservice"
+	storeSS  = "swingset"
 )
 
-var defaultCLIHome = os.ExpandEnv("$HOME/.nscli")
+var defaultCLIHome = os.ExpandEnv("$HOME/.sscli")
 
 func main() {
 	cobra.EnableCommandSorting = false
@@ -44,12 +44,12 @@ func main() {
 	config.Seal()
 
 	mc := []sdk.ModuleClients{
-		nsclient.NewModuleClient(storeNS, cdc),
+		ssclient.NewModuleClient(storeSS, cdc),
 	}
 
 	rootCmd := &cobra.Command{
-		Use:   "nscli",
-		Short: "nameservice Client",
+		Use:   "sscli",
+		Short: "swingset Client",
 	}
 
 	// Add --chain-id to persistent flags and mark it required
@@ -71,7 +71,7 @@ func main() {
 		client.LineBreak,
 	)
 
-	executor := cli.PrepareMainCmd(rootCmd, "NS", defaultCLIHome)
+	executor := cli.PrepareMainCmd(rootCmd, "SS", defaultCLIHome)
 	err := executor.Execute()
 	if err != nil {
 		panic(err)
@@ -84,7 +84,7 @@ func registerRoutes(rs *lcd.RestServer) {
 	tx.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc)
 	auth.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc, storeAcc)
 	bank.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc, rs.KeyBase)
-	nsrest.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc, storeNS)
+	ssrest.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc, storeSS)
 }
 
 func queryCmd(cdc *amino.Codec, mc []sdk.ModuleClients) *cobra.Command {

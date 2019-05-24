@@ -1,4 +1,4 @@
-package nameservice
+package swingset
 
 import (
 	"encoding/json"
@@ -23,7 +23,7 @@ func NewMsgSetName(name string, value string, owner sdk.AccAddress) MsgSetName {
 }
 
 // Route should return the name of the module
-func (msg MsgSetName) Route() string { return "nameservice" }
+func (msg MsgSetName) Route() string { return "swingset" }
 
 // Type should return the action
 func (msg MsgSetName) Type() string { return "set_name" }
@@ -70,7 +70,7 @@ func NewMsgBuyName(name string, bid sdk.Coins, buyer sdk.AccAddress) MsgBuyName 
 }
 
 // Route should return the name of the module
-func (msg MsgBuyName) Route() string { return "nameservice" }
+func (msg MsgBuyName) Route() string { return "swingset" }
 
 // Type should return the action
 func (msg MsgBuyName) Type() string { return "buy_name" }

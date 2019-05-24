@@ -1,4 +1,4 @@
-package nsd
+package ssd
 
 import (
 	"encoding/json"
@@ -22,9 +22,9 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 	"github.com/tendermint/tendermint/libs/log"
 
+	app "github.com/Agoric/cosmic-swingset"
 	gaiaInit "github.com/cosmos/cosmos-sdk/cmd/gaia/init"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	app "github.com/Agoric/cosmic-swingset"
 	abci "github.com/tendermint/tendermint/abci/types"
 	cfg "github.com/tendermint/tendermint/config"
 	dbm "github.com/tendermint/tendermint/libs/db"
@@ -32,7 +32,7 @@ import (
 )
 
 // DefaultNodeHome sets the folder where the applcation data and configuration will be stored
-var DefaultNodeHome = os.ExpandEnv("$HOME/.nsd")
+var DefaultNodeHome = os.ExpandEnv("$HOME/.ssd")
 
 const (
 	flagOverwrite = "overwrite"
@@ -45,8 +45,8 @@ func Run() {
 	ctx := server.NewDefaultContext()
 
 	rootCmd := &cobra.Command{
-		Use:               "nsd",
-		Short:             "nameservice App Daemon (server)",
+		Use:               "ssd",
+		Short:             " swingset App Daemon (server)",
 		PersistentPreRunE: server.PersistentPreRunEFn(ctx),
 	}
 
@@ -64,13 +64,13 @@ func Run() {
 }
 
 func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer) abci.Application {
-	return app.NewNameServiceApp(logger, db)
+	return app.NewSwingSetApp(logger, db)
 }
 
 func appExporter() server.AppExporter {
 	return func(logger log.Logger, db dbm.DB, _ io.Writer, _ int64, _ bool, _ []string) (
 		json.RawMessage, []tmtypes.GenesisValidator, error) {
-		dapp := app.NewNameServiceApp(logger, db)
+		dapp := app.NewSwingSetApp(logger, db)
 		return dapp.ExportAppStateAndValidators()
 	}
 }
@@ -123,7 +123,7 @@ func InitCmd(ctx *server.Context, cdc *codec.Codec) *cobra.Command {
 
 			cfg.WriteConfigFile(filepath.Join(config.RootDir, "config", "config.toml"), config)
 
-			fmt.Printf("Initialized nsd configuration and bootstrapping files in %s...\n", viper.GetString(cli.HomeFlag))
+			fmt.Printf("Initialized ssd configuration and bootstrapping files in %s...\n", viper.GetString(cli.HomeFlag))
 			return nil
 		},
 	}
@@ -144,7 +144,7 @@ func AddGenesisAccountCmd(ctx *server.Context, cdc *codec.Codec) *cobra.Command 
 		Long: strings.TrimSpace(`
 Adds accounts to the genesis file so that you can start a chain with coins in the CLI:
 
-$ nsd add-genesis-account cosmos1tse7r2fadvlrrgau3pa0ss7cqh55wrv6y9alwh 1000STAKE,1000nametoken
+$ ssd add-genesis-account cosmos1tse7r2fadvlrrgau3pa0ss7cqh55wrv6y9alwh 1000STAKE,1000agtoken
 `),
 		RunE: func(_ *cobra.Command, args []string) error {
 			addr, err := sdk.AccAddressFromBech32(args[0])

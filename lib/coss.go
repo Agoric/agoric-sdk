@@ -14,8 +14,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Agoric/cosmic-swingset/lib/nsd"
-	"github.com/Agoric/cosmic-swingset/x/nameservice"
+	"github.com/Agoric/cosmic-swingset/lib/ssd"
+	swingset "github.com/Agoric/cosmic-swingset/x/swingset"
 )
 
 type goReturn = struct {
@@ -23,7 +23,7 @@ type goReturn = struct {
 	err error
 }
 
-const NameservicePort = 123
+const SwingSetPort = 123
 
 var replies = map[int]chan goReturn{}
 var lastReply = 0
@@ -31,7 +31,7 @@ var lastReply = 0
 //export StartCOSS
 func StartCOSS(toNode C.sendFunc, cosmosArgs []*C.char) C.int {
 	// FIXME: Decouple the sending logic from the Cosmos app.
-	nameservice.NodeMessageSender = func(port int, needReply bool, str string) (string, error) {
+	swingset.NodeMessageSender = func(port int, needReply bool, str string) (string, error) {
 		var rPort int
 		if needReply {
 			lastReply++
@@ -63,13 +63,13 @@ func StartCOSS(toNode C.sendFunc, cosmosArgs []*C.char) C.int {
 	os.Args = args
 	go func() {
 		// We run in the background, but exit when the job is over.
-		// nameservice.SendToNode("hello from Initial Go!")
-		nsd.Run()
+		// swingset.SendToNode("hello from Initial Go!")
+		ssd.Run()
 		fmt.Fprintln(os.Stderr, "Shutting down Cosmos")
 		os.Exit(0)
 	}()
 	fmt.Fprintln(os.Stderr, "Done starting Cosmos")
-	return NameservicePort
+	return SwingSetPort
 }
 
 //export ReplyToGo
@@ -99,8 +99,8 @@ func SendToGo(port C.int, str C.Body) C.Body {
 	goStr := C.GoString(str)
 	fmt.Fprintln(os.Stderr, "Send to Go", goStr)
 	switch port {
-	case NameservicePort:
-		str, _ := nameservice.ReceiveFromNode(goStr)
+	case SwingSetPort:
+		str, _ := swingset.ReceiveFromNode(goStr)
 		return C.CString(str)
 	}
 	return C.CString("FIXME: implement port " + string(port))

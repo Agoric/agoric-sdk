@@ -1,8 +1,8 @@
 package client
 
 import (
+	swingsetcmd "github.com/Agoric/cosmic-swingset/x/swingset/client/cli"
 	"github.com/cosmos/cosmos-sdk/client"
-	nameservicecmd "github.com/Agoric/cosmic-swingset/x/nameservice/client/cli"
 	"github.com/spf13/cobra"
 	amino "github.com/tendermint/go-amino"
 )
@@ -19,16 +19,16 @@ func NewModuleClient(storeKey string, cdc *amino.Codec) ModuleClient {
 
 // GetQueryCmd returns the cli query commands for this module
 func (mc ModuleClient) GetQueryCmd() *cobra.Command {
-	// Group nameservice queries under a subcommand
+	// Group swingset queries under a subcommand
 	namesvcQueryCmd := &cobra.Command{
-		Use:   "nameservice",
-		Short: "Querying commands for the nameservice module",
+		Use:   "swingset",
+		Short: "Querying commands for the swingset module",
 	}
 
 	namesvcQueryCmd.AddCommand(client.GetCommands(
-		nameservicecmd.GetCmdResolveName(mc.storeKey, mc.cdc),
-		nameservicecmd.GetCmdWhois(mc.storeKey, mc.cdc),
-		nameservicecmd.GetCmdNames(mc.storeKey, mc.cdc),
+		swingsetcmd.GetCmdResolveName(mc.storeKey, mc.cdc),
+		swingsetcmd.GetCmdWhois(mc.storeKey, mc.cdc),
+		swingsetcmd.GetCmdNames(mc.storeKey, mc.cdc),
 	)...)
 
 	return namesvcQueryCmd
@@ -37,13 +37,13 @@ func (mc ModuleClient) GetQueryCmd() *cobra.Command {
 // GetTxCmd returns the transaction commands for this module
 func (mc ModuleClient) GetTxCmd() *cobra.Command {
 	namesvcTxCmd := &cobra.Command{
-		Use:   "nameservice",
-		Short: "Nameservice transactions subcommands",
+		Use:   "swingset",
+		Short: "SwingSet transactions subcommands",
 	}
 
 	namesvcTxCmd.AddCommand(client.PostCommands(
-		nameservicecmd.GetCmdBuyName(mc.cdc),
-		nameservicecmd.GetCmdSetName(mc.cdc),
+		swingsetcmd.GetCmdBuyName(mc.cdc),
+		swingsetcmd.GetCmdSetName(mc.cdc),
 	)...)
 
 	return namesvcTxCmd

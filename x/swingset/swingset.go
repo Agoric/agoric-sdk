@@ -1,4 +1,4 @@
-package nameservice
+package swingset
 
 import (
 	"encoding/json"

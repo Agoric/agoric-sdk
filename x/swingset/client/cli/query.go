@@ -3,9 +3,9 @@ package cli
 import (
 	"fmt"
 
+	"github.com/Agoric/cosmic-swingset/x/swingset"
 	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/Agoric/cosmic-swingset/x/nameservice"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +25,7 @@ func GetCmdResolveName(queryRoute string, cdc *codec.Codec) *cobra.Command {
 				return nil
 			}
 
-			var out nameservice.QueryResResolve
+			var out swingset.QueryResResolve
 			cdc.MustUnmarshalJSON(res, &out)
 			return cliCtx.PrintOutput(out)
 		},
@@ -48,7 +48,7 @@ func GetCmdWhois(queryRoute string, cdc *codec.Codec) *cobra.Command {
 				return nil
 			}
 
-			var out nameservice.Whois
+			var out swingset.Whois
 			cdc.MustUnmarshalJSON(res, &out)
 			return cliCtx.PrintOutput(out)
 		},
@@ -70,7 +70,7 @@ func GetCmdNames(queryRoute string, cdc *codec.Codec) *cobra.Command {
 				return nil
 			}
 
-			var out nameservice.QueryResNames
+			var out swingset.QueryResNames
 			cdc.MustUnmarshalJSON(res, &out)
 			return cliCtx.PrintOutput(out)
 		},

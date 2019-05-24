@@ -1,4 +1,4 @@
-package nameservice
+package swingset
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"

@@ -1,4 +1,4 @@
-package nameservice
+package swingset
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// NewHandler returns a handler for "nameservice" type messages.
+// NewHandler returns a handler for "swingset" type messages.
 func NewHandler(keeper Keeper) sdk.Handler {
 	return func(ctx sdk.Context, msg sdk.Msg) sdk.Result {
 		switch msg := msg.(type) {
@@ -15,7 +15,7 @@ func NewHandler(keeper Keeper) sdk.Handler {
 		case MsgBuyName:
 			return handleMsgBuyName(ctx, keeper, msg)
 		default:
-			errMsg := fmt.Sprintf("Unrecognized nameservice Msg type: %v", msg.Type())
+			errMsg := fmt.Sprintf("Unrecognized swingset Msg type: %v", msg.Type())
 			return sdk.ErrUnknownRequest(errMsg).Result()
 		}
 	}
