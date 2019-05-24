@@ -3,7 +3,13 @@ import Nat from '@agoric/nat';
 import makeVatKeeper from './state/vatKeeper';
 import makeKVStore from './kvstore';
 
-export default function makeVatManager(vatID, syscallManager, setup, helpers) {
+export default function makeVatManager(
+  vatID,
+  syscallManager,
+  setup,
+  helpers,
+  vatKVStore,
+) {
   const {
     kdebug,
     createPromiseWithDecider,
@@ -16,32 +22,6 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     kernelKeeper,
   } = syscallManager;
 
-  const vatStartingState = {
-    kernelSlotToVatSlot: makeKVStore({
-      exports: makeKVStore({}),
-      devices: makeKVStore({}),
-      promises: makeKVStore({}),
-      resolvers: makeKVStore({}),
-    }),
-    vatSlotToKernelSlot: makeKVStore({
-      imports: makeKVStore({}),
-      deviceImports: makeKVStore({}),
-      promises: makeKVStore({}),
-      resolvers: makeKVStore({}),
-    }),
-
-    // make these IDs start at different values to detect errors
-    // better
-    nextIDs: makeKVStore({
-      import: 10,
-      promise: 20,
-      resolver: 30,
-      deviceImport: 40,
-    }),
-    transcript: [],
-  };
-
-  const vatKVStore = makeKVStore(vatStartingState);
   kernelKeeper.addVat(vatID, vatKVStore);
 
   const vatKeeper = makeVatKeeper(kernelKeeper.getVat(vatID));

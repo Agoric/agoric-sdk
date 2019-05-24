@@ -245,8 +245,41 @@ export default function buildKernel(kernelEndowments) {
         kernelKeeper.log(`${str}`);
       },
     });
+
+    const vatStartingState = {
+      kernelSlotToVatSlot: makeKVStore({
+        exports: makeKVStore({}),
+        devices: makeKVStore({}),
+        promises: makeKVStore({}),
+        resolvers: makeKVStore({}),
+      }),
+      vatSlotToKernelSlot: makeKVStore({
+        imports: makeKVStore({}),
+        deviceImports: makeKVStore({}),
+        promises: makeKVStore({}),
+        resolvers: makeKVStore({}),
+      }),
+      // make these IDs start at different values to detect errors
+      // better
+      nextIDs: makeKVStore({
+        import: 10,
+        promise: 20,
+        resolver: 30,
+        deviceImport: 40,
+      }),
+      transcript: [],
+    };
+
+    const vatKVStore = makeKVStore(vatStartingState);
+
     // the vatManager invokes setup() to build the userspace image
-    const manager = makeVatManager(vatID, syscallManager, setup, helpers);
+    const manager = makeVatManager(
+      vatID,
+      syscallManager,
+      setup,
+      helpers,
+      vatKVStore,
+    );
     ephemeral.vats.set(
       vatID,
       harden({
