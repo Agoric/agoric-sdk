@@ -196,11 +196,11 @@ async function testState(t, withSES) {
   t.end();
 }
 
-test('device state with SES', async t => {
+test.skip('device state with SES', async t => {
   await testState(t, true);
 });
 
-test('device state without SES', async t => {
+test.skip('device state without SES', async t => {
   await testState(t, false);
 });
 
@@ -242,11 +242,11 @@ async function testSetState(t, withSES) {
   t.end();
 }
 
-test('set device state with SES', async t => {
+test.skip('set device state with SES', async t => {
   await testSetState(t, true);
 });
 
-test('set device state without SES', async t => {
+test.skip('set device state without SES', async t => {
   await testSetState(t, false);
 });
 

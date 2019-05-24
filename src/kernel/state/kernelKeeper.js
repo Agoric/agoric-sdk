@@ -161,8 +161,9 @@ function makeKernelKeeper(kvstore) {
     const promises = [];
 
     const kernelPromises = kvstore.get('kernelPromises');
-    kernelPromises.entries().forEach((p, id) => {
-      const kp = { id };
+    kernelPromises.entries().forEach(entry => {
+      const { key: id, value: p } = entry;
+      const kp = { id: Number(id) };
       Object.defineProperties(kp, Object.getOwnPropertyDescriptors(p));
       if ('subscribers' in p) {
         kp.subscribers = Array.from(p.subscribers); // turn Set into Array
@@ -256,18 +257,21 @@ function makeKernelKeeper(kvstore) {
       if (!hasVat(vatID)) {
         throw new Error('dynamically-created vats not yet supported');
       }
-      const vat = getVat(vatID);
+      const vatkvstore = getVat(vatID);
+      const vatKeeper = makeVatKeeper(vatkvstore);
+
       // this shouldn't be doing any syscalls, which is good because we
       // haven't wired anything else up yet
       // eslint-disable-next-line no-await-in-loop
-      await vat.manager.loadState(vatData.state);
-      vat.manager.loadManagerState(vatData);
+      // await vatKeeper.loadState(vatData.state);
+      vatKeeper.loadManagerState(vatData);
     }
 
     for (const deviceName of Object.getOwnPropertyNames(newState.devices)) {
       const deviceData = newState.devices[deviceName];
-      const device = getDevice(deviceName);
-      device.manager.loadState(deviceData);
+      const devicekvstore = getDevice(deviceName);
+      const deviceKeeper = makeDeviceKeeper(devicekvstore);
+      deviceKeeper.loadManagerState(deviceData);
     }
 
     newState.runQueue.forEach(q => addToRunQueue(q));

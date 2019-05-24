@@ -67,7 +67,8 @@ function makeDeviceKeeper(kvstore) {
     };
   }
 
-  function loadManagerState(deviceData) {
+  function loadManagerState(data) {
+    const deviceData = data.managerState;
     const outbound = kvstore.get('imports').get('outbound');
     const inbound = kvstore.get('imports').get('inbound');
 
@@ -80,11 +81,20 @@ function makeDeviceKeeper(kvstore) {
     deviceData.imports.inbound.forEach(kv => inbound.set(kv[0], kv[1]));
   }
 
+  function getCurrentState() {
+    return harden({
+      managerState: getManagerState(),
+      // deviceState: dispatch.getState(),
+      deviceState: {},
+    });
+  }
+
   return harden({
     mapDeviceSlotToKernelSlot,
     mapKernelSlotToDeviceSlot,
     getManagerState,
     loadManagerState,
+    getCurrentState,
   });
 }
 

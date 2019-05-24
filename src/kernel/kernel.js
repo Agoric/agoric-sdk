@@ -284,9 +284,8 @@ export default function buildKernel(kernelEndowments) {
   }
 
   function addImport(forVatID, what) {
-    const vatKVStore = kernelKeeper.getVat(forVatID);
-    const manager = makeVatManager(vatKVStore);
-    return manager.mapKernelSlotToVatSlot(what);
+    const vat = ephemeral.vats.get(forVatID);
+    return vat.manager.mapKernelSlotToVatSlot(what);
   }
 
   function mapQueueSlotToKernelRealm(s) {

@@ -161,8 +161,10 @@ export default function makeVatKeeper(kvstore) {
 
   function loadManagerState(vatData) {
     if (
-      kvstore.get('kernelSlotToVatSlot').size() ||
-      kvstore.get('vatSlotToKernelSlot').size()
+      kvstore
+        .get('kernelSlotToVatSlot')
+        .get('exports')
+        .size()
     ) {
       throw new Error(`vat[$vatID] is not empty, cannot loadState`);
     }
@@ -175,22 +177,22 @@ export default function makeVatKeeper(kvstore) {
     // exports, devices, promises, resolvers
     const kernelSlotToVatSlot = kvstore.get('kernelSlotToVatSlot');
 
-    vatData.kernelSlotToVatSlot.exports.forEach(([key, value]) => {
+    vatData.kernelSlotToVatSlot.exports.forEach(({ key, value }) => {
       const exports = kernelSlotToVatSlot.get('exports');
       exports.set(key, value);
     });
 
-    vatData.kernelSlotToVatSlot.devices.forEach(([key, value]) => {
+    vatData.kernelSlotToVatSlot.devices.forEach(({ key, value }) => {
       const devices = kernelSlotToVatSlot.get('devices');
       devices.set(key, value);
     });
 
-    vatData.kernelSlotToVatSlot.promises.forEach(([key, value]) => {
+    vatData.kernelSlotToVatSlot.promises.forEach(({ key, value }) => {
       const promises = kernelSlotToVatSlot.get('promises');
       promises.set(key, value);
     });
 
-    vatData.kernelSlotToVatSlot.resolvers.forEach(([key, value]) => {
+    vatData.kernelSlotToVatSlot.resolvers.forEach(({ key, value }) => {
       const resolvers = kernelSlotToVatSlot.get('resolvers');
       resolvers.set(key, value);
       resolvers.set(key, value);
@@ -200,22 +202,22 @@ export default function makeVatKeeper(kvstore) {
 
     const vatSlotToKernelSlot = kvstore.get('vatSlotToKernelSlot');
 
-    vatData.vatSlotToKernelSlot.imports.forEach(([key, value]) => {
+    vatData.vatSlotToKernelSlot.imports.forEach(({ key, value }) => {
       const imports = vatSlotToKernelSlot.get('imports');
       imports.set(key, value);
     });
 
-    vatData.vatSlotToKernelSlot.deviceImports.forEach(([key, value]) => {
+    vatData.vatSlotToKernelSlot.deviceImports.forEach(({ key, value }) => {
       const deviceImports = vatSlotToKernelSlot.get('deviceImports');
       deviceImports.set(key, value);
     });
 
-    vatData.vatSlotToKernelSlot.promises.forEach(([key, value]) => {
+    vatData.vatSlotToKernelSlot.promises.forEach(({ key, value }) => {
       const promises = vatSlotToKernelSlot.get('promises');
       promises.set(key, value);
     });
 
-    vatData.vatSlotToKernelSlot.resolvers.forEach(([key, value]) => {
+    vatData.vatSlotToKernelSlot.resolvers.forEach(({ key, value }) => {
       const resolvers = vatSlotToKernelSlot.get('resolvers');
       resolvers.set(key, value);
     });
