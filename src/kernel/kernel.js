@@ -451,7 +451,14 @@ export default function buildKernel(kernelEndowments) {
 
     loadState(outerRealmState) {
       const newState = JSON.parse(JSON.stringify(outerRealmState));
-      return kernelKeeper.loadState(newState);
+
+      // copy in the data passively
+      kernelKeeper.loadState(newState);
+
+      // evaluate the transcript
+      for (const [vatID, vat] of ephemeral.vats.entries()) {
+        vat.manager.loadState(newState.vats[vatID].state);
+      }
     },
 
     async run() {
