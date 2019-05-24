@@ -7,28 +7,89 @@ namespace coss {
 
 static std::shared_ptr<ThreadSafeCallback> dispatcher;
 
+class NodeReply {
+public:
+    NodeReply(bool isRejection, std::string value) :
+        _isRejection(isRejection), _value(value) {}
+    std::string value() {
+        return _value;
+    }
+    bool isRejection() {
+        return _isRejection;
+    }
+private:
+    bool _isRejection;
+    std::string _value;
+};
+
+class NodeReplier : public Napi::ObjectWrap<NodeReplier> {
+public:
+    static Napi::Object Init(Napi::Env env, Napi::Object exports) {
+        Napi::HandleScope scope(env);
+        Napi::Function func = DefineClass(env, "NodeReplier", {
+            InstanceMethod("resolve", &NodeReplier::Resolve),
+            InstanceMethod("reject", &NodeReplier::Reject),
+        });
+
+        constructor = Napi::Persistent(func);
+        constructor.SuppressDestruct();
+
+        exports.Set("NodeReplier", func);
+        return exports;
+    }
+
+    NodeReplier(const Napi::CallbackInfo& info) : Napi::ObjectWrap<NodeReplier>(info) {
+        // Do nothing, we're initialized by New.
+    }
+
+    static Napi::Object New(Napi::Env env, std::shared_ptr<std::promise<NodeReply>> promise) {
+        Napi::Object obj = constructor.New({});
+        NodeReplier* self = Unwrap(obj);
+        self->_promise.swap(promise);
+        return obj;
+    }
+
+private:
+    static Napi::FunctionReference constructor;
+    void doReply(bool isRejection, std::string value) {
+        NodeReply reply(isRejection, value);
+        _promise->set_value(reply);
+    }
+
+    void Resolve(const Napi::CallbackInfo& info) {
+        doReply(false, info[0].As<Napi::String>().Utf8Value());
+    }
+
+    void Reject(const Napi::CallbackInfo& info) {
+        doReply(true, info[0].As<Napi::String>().Utf8Value());
+    }
+
+    std::shared_ptr<std::promise<NodeReply>> _promise;
+};
+
+Napi::FunctionReference NodeReplier::constructor;
+
 int SendToNode(int port, int replyPort, Body str) {
     std::cerr << "Send to node port " << port << " " << str << std::endl;
     std::string instr(str);
     std::thread([instr, port, replyPort]{
-        auto future = dispatcher->call<std::string>(
+        auto promise = std::make_shared<std::promise<NodeReply>>();
+        dispatcher->call(
             // Prepare arguments.
-            [port, instr](Napi::Env env, std::vector<napi_value>& args){
+            [port, instr, promise](Napi::Env env, std::vector<napi_value>& args){
                 std::cerr << "Calling threadsafe callback with " << instr << std::endl;
                 args = {
                     Napi::Number::New(env, port),
                     Napi::String::New(env, instr),
+                    NodeReplier::New(env, promise),
                 };
-            },
-            [](const Napi::Value& val){
-                return val.As<Napi::String>().Utf8Value();
             });
         if (replyPort) {
             std::cerr << "Waiting on future" << std::endl;
             try {
-                std::string ret = future.get();
-                std::cerr << "Replying to Go with " << ret << std::endl;
-                ReplyToGo(replyPort, false, ret.c_str());
+                NodeReply ret = promise->get_future().get();
+                std::cerr << "Replying to Go with " << ret.value() << " " << ret.isRejection() << std::endl;
+                ReplyToGo(replyPort, ret.isRejection(), ret.value().c_str());
             } catch (std::exception& e) {
                 std::cerr << "Exceptioning " << e.what() << std::endl;
                 ReplyToGo(replyPort, true, e.what());
@@ -84,7 +145,8 @@ static Napi::Value start(const Napi::CallbackInfo& info) {
     return Napi::Number::New(env, cosmosPort);
 }
 
-static Napi::Object Init(Napi::Env env, Napi::Object exports) {
+static Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
+    exports = NodeReplier::Init(env, exports);
     exports.Set(
         Napi::String::New(env, "start"),
         Napi::Function::New(env, start, "start"));
@@ -94,6 +156,6 @@ static Napi::Object Init(Napi::Env env, Napi::Object exports) {
     return exports;
 }
 
-NODE_API_MODULE(NODE_GYP_MODULE_NAME, Init)
+NODE_API_MODULE(NODE_GYP_MODULE_NAME, InitAll)
 
 }

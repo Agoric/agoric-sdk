@@ -8,12 +8,20 @@ setInterval(() => {
 const coss = require('bindings')('coss.node');
 console.log('Have COSS', coss);
 
-const cosmos = coss.start((port, str) => {
+const cosmos = coss.start((port, str, replier) => {
     const action = JSON.parse(str);
     switch (action.type) {
     case 'SET_NAME':
         action.value = action.value.toUpperCase();
-        return coss.send(cosmos, JSON.stringify(action));
+        setTimeout(() => {
+            console.log('Delayed, now sending to cosmos');
+            const val = coss.send(cosmos, JSON.stringify(action));
+            console.log('Got from cosmos', JSON.stringify(val));
+            console.log('Have replier', replier);
+            replier.resolve(val);
+        }, 3000);
+        console.log('Returning immediately from Javascript');
+        return 'Immediate!';
     }
     return JSON.stringify({type: "ERROR", value: `Unknown action.type ${action.type}`});
 }, process.argv.slice(1));
