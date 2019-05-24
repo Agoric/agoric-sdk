@@ -268,6 +268,15 @@ export default function buildKernel(kernelEndowments) {
       },
     });
 
+    const deviceStartingState = {
+      imports: makeKVStore({
+        outbound: makeKVStore({}),
+        inbound: makeKVStore({}),
+      }),
+      // make these IDs start at different values to detect errors better
+      nextImportID: 10,
+    };
+
     const manager = makeDeviceManager(
       name,
       syscallManager,
@@ -275,6 +284,7 @@ export default function buildKernel(kernelEndowments) {
       helpers,
       endowments,
       kernelKeeper,
+      makeKVStore(deviceStartingState),
     );
     // the vat record is not hardened: it holds mutable next-ID values
     ephemeral.devices.set(name, {

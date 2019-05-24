@@ -1,7 +1,6 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
-import makeKVStore from './kvstore';
 import makeDeviceKeeper from './state/deviceKeeper';
 
 export default function makeDeviceManager(
@@ -11,20 +10,11 @@ export default function makeDeviceManager(
   helpers,
   endowments,
   kernelKeeper,
+  deviceKVStore,
 ) {
   const { kdebug, send, log } = syscallManager;
 
   // per-device translation tables
-  const deviceStartingState = {
-    imports: makeKVStore({
-      outbound: makeKVStore({}),
-      inbound: makeKVStore({}),
-    }),
-    // make these IDs start at different values to detect errors better
-    nextImportID: 10,
-  };
-
-  const deviceKVStore = makeKVStore(deviceStartingState);
   kernelKeeper.addDevice(deviceName, deviceKVStore);
 
   const deviceKeeper = makeDeviceKeeper(kernelKeeper.getDevice(deviceName));

@@ -52,9 +52,9 @@ function makeKernelKeeper(kvstore) {
     runQueue.push(msg);
   }
 
-  function addDevice(deviceName, deviceObj) {
+  function addDevice(deviceName, deviceKVStore) {
     const devices = kvstore.get('devices');
-    devices.set(deviceName, deviceObj);
+    devices.set(deviceName, deviceKVStore);
   }
 
   function getDevice(deviceName) {
