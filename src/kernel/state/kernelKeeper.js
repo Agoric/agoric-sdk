@@ -2,13 +2,22 @@ import harden from '@agoric/harden';
 import makeVatKeeper from './vatKeeper';
 import makeDeviceKeeper from './deviceKeeper';
 
-function makeKernelKeeper(kvstore) {
+function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
   // kvstore has set, get, has, delete methods
   // set (key []byte, value []byte)
   // get (key []byte)  => value []byte
   // has (key []byte) => exists bool
   // delete (key []byte)
   // iterator, reverseIterator
+
+  function createStartingKernelState() {
+    kvstore.set('log', []);
+    kvstore.set('vats', makeExternalKVStore(external));
+    kvstore.set('devices', makeExternalKVStore(external));
+    kvstore.set('runQueue', []);
+    kvstore.set('kernelPromises', makeExternalKVStore(external));
+    kvstore.set('nextPromiseIndex', 40);
+  }
 
   // used by loading state only
   function loadNextPromiseIndex(id) {
@@ -293,6 +302,7 @@ function makeKernelKeeper(kvstore) {
   }
 
   return harden({
+    createStartingKernelState,
     addKernelPromise,
     getKernelPromise,
     hasKernelPromise,

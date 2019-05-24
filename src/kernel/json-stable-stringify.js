@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 // https://github.com/substack/json-stable-stringify/
 // npm json-stable-stringify
 
@@ -12,18 +14,17 @@ const isArray =
 const objectKeys =
   Object.keys ||
   function(obj) {
-    let has =
+    const has =
       Object.prototype.hasOwnProperty ||
       function() {
         return true;
       };
-    let keys = [];
-    for (let key in obj) {
+    const keys = [];
+    for (const key in obj) {
       if (has.call(obj, key)) keys.push(key);
     }
     return keys;
   };
-
 
 export default function stableStringify(obj, opts) {
   if (!opts) opts = {};
@@ -38,8 +39,8 @@ export default function stableStringify(obj, opts) {
     (function(f) {
       return function(node) {
         return function(a, b) {
-          let aobj = { key: a, value: node[a] };
-          let bobj = { key: b, value: node[b] };
+          const aobj = { key: a, value: node[a] };
+          const bobj = { key: b, value: node[b] };
           return f(aobj, bobj);
         };
       };
@@ -69,7 +70,7 @@ export default function stableStringify(obj, opts) {
           stringify(node, i, node[i], level + 1) || JSON.stringify(null);
         out.push(indent + space + item);
       }
-      return `[${  out.join(',')  }${indent  }]`;
+      return `[${out.join(',')}${indent}]`;
     }
     if (seen.indexOf(node) !== -1) {
       if (cycles) return JSON.stringify('__cycle__');
@@ -88,6 +89,6 @@ export default function stableStringify(obj, opts) {
       out.push(indent + space + keyValue);
     }
     seen.splice(seen.indexOf(node), 1);
-    return `{${  out.join(',')  }${indent  }}`;
+    return `{${out.join(',')}${indent}}`;
   })({ '': obj }, '', obj, 0);
 }

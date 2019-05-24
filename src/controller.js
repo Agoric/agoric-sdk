@@ -10,6 +10,7 @@ import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
 import bundleSource from './build-source-bundle';
 
+import makeKVStore from './kernel/kvstore';
 
 // TODO: change completely to either KVStore or merk levelDB
 function loadState(basedir, stateArg) {
@@ -66,6 +67,41 @@ function makeEvaluate(e) {
   return (source, endowments = {}) => confineExpr(source, endowments);
 }
 
+const outsideRealmKVStore = makeKVStore({});
+
+const external = harden({
+  sendMsg(msg) {
+    console.log(msg);
+    const command = JSON.parse(msg);
+    const { method } = command;
+    switch (method) {
+      case 'get': {
+        const { key } = command;
+        return outsideRealmKVStore.get(key);
+      }
+      case 'set': {
+        const { key, value } = command;
+        outsideRealmKVStore.set(key, value);
+        break;
+      }
+      case 'has': {
+        const { key } = command;
+        return outsideRealmKVStore.has(key);
+      }
+      case 'delete': {
+        const { key } = command;
+        outsideRealmKVStore.delete(key);
+        break;
+      }
+      case 'iterator': {
+        return outsideRealmKVStore.iterator();
+      }
+      default:
+        throw new Error(`unexpected message to kvstore ${msg}`);
+    }
+  },
+});
+
 function buildSESKernel() {
   const s = SES.makeSESRootRealm({
     consoleMode: 'allow',
@@ -83,13 +119,13 @@ function buildSESKernel() {
   // console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })();
   const kernelEndowments = { setImmediate };
-  const kernel = buildKernel(kernelEndowments);
+  const kernel = buildKernel(kernelEndowments, external);
   return { kernel, s, r };
 }
 
 function buildNonSESKernel() {
   const kernelEndowments = { setImmediate };
-  const kernel = buildKernelNonSES(kernelEndowments);
+  const kernel = buildKernelNonSES(kernelEndowments, external);
   return { kernel };
 }
 

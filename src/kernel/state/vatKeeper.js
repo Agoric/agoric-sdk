@@ -2,11 +2,38 @@ import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { insist } from '../insist';
 
-export default function makeVatKeeper(kvstore) {
-  // kernelSlotToVatSlot is an object with four properties:
-  //    exports, devices, promises, resolvers.
-  //    vatSlotToKernelSlot has imports, deviceImports, promises,
-  //    resolvers
+export default function makeVatKeeper(kvstore, makeExternalKVStore, external) {
+  function createStartingVatState() {
+    // kernelSlotToVatSlot is an object with four properties:
+    //    exports, devices, promises, resolvers.
+    // vatSlotToKernelSlot has imports, deviceImports, promises,
+    //    resolvers
+
+    kvstore.set('kernelSlotToVatSlot', makeExternalKVStore(external));
+    kvstore.set('vatSlotToKernelSlot', makeExternalKVStore(external));
+
+    const kernelSlotToVatSlot = kvstore.get('kernelSlotToVatSlot');
+    const vatSlotToKernelSlot = kvstore.get('vatSlotToKernelSlot');
+
+    kernelSlotToVatSlot.set('exports', makeExternalKVStore(external));
+    kernelSlotToVatSlot.set('devices', makeExternalKVStore(external));
+    kernelSlotToVatSlot.set('promises', makeExternalKVStore(external));
+    kernelSlotToVatSlot.set('resolvers', makeExternalKVStore(external));
+
+    vatSlotToKernelSlot.set('imports', makeExternalKVStore(external));
+    vatSlotToKernelSlot.set('deviceImports', makeExternalKVStore(external));
+    vatSlotToKernelSlot.set('promises', makeExternalKVStore(external));
+    vatSlotToKernelSlot.set('resolvers', makeExternalKVStore(external));
+
+    kvstore.set('nextIDs', makeExternalKVStore(external));
+    const nextIDs = kvstore.get('nextIDs');
+    nextIDs.set('import', 10);
+    nextIDs.set('promise', 20);
+    nextIDs.set('resolver', 30);
+    nextIDs.set('deviceImport', 40);
+
+    kvstore.set('transcript', []);
+  }
 
   const allowedVatSlotTypes = [
     'export',
@@ -307,6 +334,7 @@ export default function makeVatKeeper(kvstore) {
   }
 
   return harden({
+    createStartingVatState,
     mapVatSlotToKernelSlot,
     mapKernelSlotToVatSlot,
     loadManagerState,

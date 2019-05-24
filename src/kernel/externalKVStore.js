@@ -1,8 +1,6 @@
-import stableStringify from './json-stable-stringify';
+import stringify from './json-stable-stringify';
 
-// TO BE TOSSED ONCE WE HAVE A KVSTORE IMPLEMENTATION
-
-export default function makeKVStore(state) {
+export default function makeExternalKVStore(external) {
   // kvstore has set, get, has, delete methods
   // set (key []byte, value []byte)
   // get (key []byte)  => value []byte
@@ -10,38 +8,49 @@ export default function makeKVStore(state) {
   // delete (key []byte)
   // iterator, reverseIterator
 
-  function getDetermOwnProperties(obj) {
-    const orderedObj = JSON.parse(stableStringify(obj));
-    return Object.getOwnPropertyNames(orderedObj);
-  }
-
-  function* makeEntriesIterator(obj) {
-    const properties = getDetermOwnProperties(obj);
-    for (const index of properties) {
-      yield {
-        key: properties[index],
-        value: obj[properties[index]],
-      };
-    }
-  }
-
   return {
     get(key) {
-      return state[key];
+      const value = external.sendMsg(
+        stringify({
+          method: 'get',
+          key: `${key}`,
+        }),
+      );
+      return value;
     },
     set(key, value) {
-      state[key] = value;
+      return external.sendMsg(
+        stringify({
+          method: 'set',
+          key: `${key}`,
+          value,
+        }),
+      );
     },
     has(key) {
-      return Object.prototype.hasOwnProperty.call(state, key);
+      return external.sendMsg(
+        stringify({
+          method: 'has',
+          key: `${key}`,
+        }),
+      );
     },
     delete(key) {
-      delete state[key];
+      return external.sendMsg(
+        stringify({
+          method: 'delete',
+          key: `${key}`,
+        }),
+      );
     },
     iterator() {
-      return makeEntriesIterator(state);
+      return external.sendMsg(
+        stringify({
+          method: 'iterator',
+        }),
+      );
     },
-    // reverseIterator
+    // TODO: reverseIterator
 
     // additional helpers that aren't part of kvstore
 

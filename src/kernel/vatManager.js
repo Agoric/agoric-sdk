@@ -1,7 +1,6 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import makeVatKeeper from './state/vatKeeper';
-import makeKVStore from './kvstore';
 
 export default function makeVatManager(
   vatID,

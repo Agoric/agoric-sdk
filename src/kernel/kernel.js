@@ -8,23 +8,22 @@ import makePromise from './makePromise';
 import makeVatManager from './vatManager';
 import makeDeviceManager from './deviceManager';
 import makeKernelKeeper from './state/kernelKeeper';
-import makeKVStore from './kvstore';
+import makeVatKeeper from './state/vatKeeper';
+import makeDeviceKeeper from './state/deviceKeeper';
+import makeExternalKVStore from './externalKVStore';
 
-export default function buildKernel(kernelEndowments) {
+export default function buildKernel(kernelEndowments, external) {
   const { setImmediate } = kernelEndowments;
 
-  const state = {
-    log: [],
-    vats: makeKVStore({}),
-    devices: makeKVStore({}),
-    runQueue: [],
-    kernelPromises: makeKVStore({}),
-    nextPromiseIndex: 40,
-  };
+  const kernelKVStore = makeExternalKVStore(external);
 
-  const kernelKVStore = makeKVStore(state);
+  const kernelKeeper = makeKernelKeeper(
+    kernelKVStore,
+    makeExternalKVStore,
+    external,
+  );
 
-  const kernelKeeper = makeKernelKeeper(kernelKVStore);
+  kernelKeeper.createStartingKernelState();
 
   const ephemeral = {
     vats: new Map(),
@@ -246,31 +245,10 @@ export default function buildKernel(kernelEndowments) {
       },
     });
 
-    const vatStartingState = {
-      kernelSlotToVatSlot: makeKVStore({
-        exports: makeKVStore({}),
-        devices: makeKVStore({}),
-        promises: makeKVStore({}),
-        resolvers: makeKVStore({}),
-      }),
-      vatSlotToKernelSlot: makeKVStore({
-        imports: makeKVStore({}),
-        deviceImports: makeKVStore({}),
-        promises: makeKVStore({}),
-        resolvers: makeKVStore({}),
-      }),
-      // make these IDs start at different values to detect errors
-      // better
-      nextIDs: makeKVStore({
-        import: 10,
-        promise: 20,
-        resolver: 30,
-        deviceImport: 40,
-      }),
-      transcript: [],
-    };
+    const vatKVStore = makeExternalKVStore(external);
+    const vatKeeper = makeVatKeeper(vatKVStore, makeExternalKVStore, external);
 
-    const vatKVStore = makeKVStore(vatStartingState);
+    vatKeeper.createStartingVatState();
 
     // the vatManager invokes setup() to build the userspace image
     const manager = makeVatManager(
@@ -301,14 +279,14 @@ export default function buildKernel(kernelEndowments) {
       },
     });
 
-    const deviceStartingState = {
-      imports: makeKVStore({
-        outbound: makeKVStore({}),
-        inbound: makeKVStore({}),
-      }),
-      // make these IDs start at different values to detect errors better
-      nextImportID: 10,
-    };
+    const deviceKVStore = makeExternalKVStore(external);
+    const deviceKeeper = makeDeviceKeeper(
+      deviceKVStore,
+      makeExternalKVStore,
+      external,
+    );
+
+    deviceKeeper.createStartingDeviceState();
 
     const manager = makeDeviceManager(
       name,
@@ -317,7 +295,7 @@ export default function buildKernel(kernelEndowments) {
       helpers,
       endowments,
       kernelKeeper,
-      makeKVStore(deviceStartingState),
+      deviceKVStore,
     );
     // the vat record is not hardened: it holds mutable next-ID values
     ephemeral.devices.set(name, {
