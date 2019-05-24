@@ -5,52 +5,46 @@
 
 namespace coss {
 
-using namespace std;
-
-static shared_ptr<ThreadSafeCallback> dispatch;
+static std::shared_ptr<ThreadSafeCallback> dispatcher;
 
 int SendToNode(int port, int replyPort, Body str) {
-    cerr << "Send to node port " << port << " " << str << endl;
-    string instr(str);
+    std::cerr << "Send to node port " << port << " " << str << std::endl;
+    std::string instr(str);
     std::thread([instr, port, replyPort]{
-        auto future = dispatch->call<string>(
+        auto future = dispatcher->call<std::string>(
             // Prepare arguments.
-            [port, instr](Napi::Env env, vector<napi_value>& args){
-                cerr << "Calling threadsafe callback with " << instr << endl;
+            [port, instr](Napi::Env env, std::vector<napi_value>& args){
+                std::cerr << "Calling threadsafe callback with " << instr << std::endl;
                 args = {
                     Napi::Number::New(env, port),
                     Napi::String::New(env, instr),
                 };
             },
-            // Prepare return value.
-            [](const Napi::Value &val) {
-                cerr << "Returning threadsafe callback" << endl;
-                string str = val.As<Napi::String>().Utf8Value();
-                cerr << "returning " << str;
-                return str;
+            [](const Napi::Value& val){
+                return val.As<Napi::String>().Utf8Value();
             });
         if (replyPort) {
-            cerr << "Waiting on future" << endl;
+            std::cerr << "Waiting on future" << std::endl;
             try {
-                string ret = future.get();
-                cerr << "Replying to Go" << endl;
+                std::string ret = future.get();
+                std::cerr << "Replying to Go with " << ret << std::endl;
                 ReplyToGo(replyPort, false, ret.c_str());
             } catch (std::exception& e) {
-                cerr << "Exceptioning " << e.what() << endl;
+                std::cerr << "Exceptioning " << e.what() << std::endl;
                 ReplyToGo(replyPort, true, e.what());
             }
         }
-        cerr << "Thread is finished" << endl;
+        std::cerr << "Thread is finished" << std::endl;
     }).detach();
-    cerr << "Ending Send to Node " << str << endl;
+    std::cerr << "Ending Send to Node " << str << std::endl;
     return 0;
 }
 
 static Napi::Value send(const Napi::CallbackInfo& info) {
-    cerr << "Send to Go" << endl;
+    std::cerr << "Send to Go" << std::endl;
     Napi::Env env = info.Env();
     int instance = info[0].As<Napi::Number>();
-    string tmp = info[1].As<Napi::String>().Utf8Value();
+    std::string tmp = info[1].As<Napi::String>().Utf8Value();
     Body ret = SendToGo(instance, tmp.c_str());
     return Napi::String::New(env, ret);
 }
@@ -58,7 +52,7 @@ static Napi::Value send(const Napi::CallbackInfo& info) {
 static Napi::Value start(const Napi::CallbackInfo& info) {
     static bool singleton = false;
     Napi::Env env = info.Env();
-    cerr << "Starting Go COSS from Node COSS" << endl;
+    std::cerr << "Starting Go COSS from Node COSS" << std::endl;
 
     if (singleton) {
         Napi::TypeError::New(env, "Cannot start multiple COSS instances").ThrowAsJavaScriptException();
@@ -66,14 +60,13 @@ static Napi::Value start(const Napi::CallbackInfo& info) {
     }
     singleton = true;
 
-    auto cb = make_shared<ThreadSafeCallback>(info[0].As<Napi::Function>());
-    dispatch.swap(cb);
+    dispatcher = std::make_shared<ThreadSafeCallback>(info[0].As<Napi::Function>());
     Napi::Array cosmosArgv = info[1].As<Napi::Array>();
     unsigned int argc = cosmosArgv.Length();
     char** argv = new char*[argc];
     for (unsigned int i = 0; i < argc; i ++) {
         if (cosmosArgv.Has(i)) {
-            string tmp = cosmosArgv.Get(i).As<Napi::String>().Utf8Value();
+            std::string tmp = cosmosArgv.Get(i).As<Napi::String>().Utf8Value();
             argv[i] = strdup(tmp.c_str());
         } else {
             argv[i] = nullptr;
@@ -87,7 +80,7 @@ static Napi::Value start(const Napi::CallbackInfo& info) {
         free(argv[i]);
     }
     delete[] argv;
-    cerr << "End of starting GO COSS from Node COSS" << endl;
+    std::cerr << "End of starting GO COSS from Node COSS" << std::endl;
     return Napi::Number::New(env, cosmosPort);
 }
 

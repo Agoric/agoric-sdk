@@ -9,8 +9,13 @@ const coss = require('bindings')('coss.node');
 console.log('Have COSS', coss);
 
 const instance = coss.start((port, str) => {
-    console.error('received dispatch from Go', instance, str);
-    coss.send(port, "Hello from Go dispatch: " + str.toUpperCase());
+    const action = JSON.parse(str);
+    switch (action.type) {
+    case 'SET_NAME':
+        action.value = action.value.toUpperCase();
+        return JSON.stringify(action);
+    }
+    return JSON.stringify({type: "ERROR", value: `Unknown action.type ${action.type}`});
 }, process.argv.slice(1));
 
 console.log('Got from COSS', coss.send(instance, "Hello from node proper!"));

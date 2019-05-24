@@ -2,6 +2,8 @@ package nameservice
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
 )
 
 const SWINGSET_PORT = 17
@@ -33,11 +35,13 @@ func SwingSetName(name, value string) (*swingSetName, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Fprintln(os.Stderr, "About to call node")
 	out, err := CallToNode(string(b))
+	fmt.Fprintln(os.Stderr, "Returned", out, err)
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal([]byte(out), ssn)
+	err = json.Unmarshal([]byte(out), &ssn)
 	if err != nil {
 		return nil, err
 	}

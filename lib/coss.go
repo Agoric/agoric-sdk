@@ -32,22 +32,26 @@ var lastReply = 0
 func StartCOSS(toNode C.sendFunc, cosmosArgs []*C.char) C.int {
 	// FIXME: Decouple the sending logic from the Cosmos app.
 	nameservice.NodeMessageSender = func(port int, needReply bool, str string) (string, error) {
-		rPort := -1
-		defer delete(replies, rPort)
+		var rPort int
 		if needReply {
 			lastReply++
-			rPort := lastReply
+			rPort = lastReply
 			replies[rPort] = make(chan goReturn)
 		}
 
-		// Send the message and return immediately
+		// Send the message
 		C.invokeSendFunc(toNode, C.int(port), C.int(rPort), C.CString(str))
 		if !needReply {
+			// Return immediately
+			fmt.Fprintln(os.Stderr, "Don't wait")
 			return "<no-reply-requested>", nil
 		}
 
 		// Block the sending goroutine while we wait for the reply
+		fmt.Fprintln(os.Stderr, "Waiting for", rPort)
 		ret := <-replies[rPort]
+		delete(replies, rPort)
+		fmt.Fprintln(os.Stderr, "Woken, got", ret)
 		return ret.str, ret.err
 	}
 
