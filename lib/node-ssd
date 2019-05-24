@@ -5,17 +5,17 @@ let i = 0;
 setInterval(() => {
     console.log('Node is alive', ++i);
 }, 1000);
-const coss = require('bindings')('coss.node');
-console.log('Have COSS', coss);
+const ss = require('bindings')('ss.node');
+console.log('Have SSD', ss);
 
-const cosmos = coss.start((port, str, replier) => {
+const cosmos = ss.start((port, str, replier) => {
     const action = JSON.parse(str);
     switch (action.type) {
     case 'SET_NAME':
         action.value = action.value.toUpperCase();
         setTimeout(() => {
             console.log('Delayed, now sending to cosmos');
-            const val = coss.send(cosmos, JSON.stringify(action));
+            const val = ss.send(cosmos, JSON.stringify(action));
             console.log('Got from cosmos', JSON.stringify(val));
             console.log('Have replier', replier);
             replier.resolve(val);
@@ -26,4 +26,4 @@ const cosmos = coss.start((port, str, replier) => {
     return JSON.stringify({type: "ERROR", value: `Unknown action.type ${action.type}`});
 }, process.argv.slice(1));
 
-console.log('Got from COSS', coss.send(cosmos, "Hello from node proper!"));
+console.log('Got from SSD', ss.send(cosmos, "Hello from node proper!"));

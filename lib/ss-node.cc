@@ -1,9 +1,9 @@
 #include <napi.h>
 #include <napi-thread-safe-callback.hpp>
 #include <iostream>
-#include "libcoss.h"
+#include "libss.h"
 
-namespace coss {
+namespace ss {
 
 static std::shared_ptr<ThreadSafeCallback> dispatcher;
 

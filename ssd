@@ -1,6 +1,6 @@
 #! /bin/sh
 PORT=26657
 exec docker run -p127.0.0.1:$PORT:$PORT \
-  --volume=cossd-state:/root/.nsd \
+  --volume=ssd-state:/root/.ssd \
   --rm -it \
-  michaelfig/cosmic-swingset ${1+"$@"}
+  agoric/cosmic-swingset ${1+"$@"}

@@ -1,7 +1,7 @@
 {
   "targets": [
     {
-      "target_name": "coss",
+      "target_name": "ss",
       "cflags!": [ "-fno-exceptions" ],
       "cflags_cc!": [ "-fno-exceptions" ],
       "xcode_settings": {
@@ -12,13 +12,13 @@
       "msvs_settings": {
         "VCCLCompilerTool": { "ExceptionHandling": 1 },
       },
-      "sources": [ "lib/coss-node.cc" ],
+      "sources": [ "lib/ss-node.cc" ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")",
         "<!@(node -p \"require('napi-thread-safe-callback').include\")"
       ],
       "dependencies": ["<!(node -p \"require('node-addon-api').gyp\")"],
-      "libraries": [ "-Wl,-rpath,<!(pwd)/lib", "<!(pwd)/lib/libcoss.so" ],
+      "libraries": [ "-Wl,-rpath,<!(pwd)/lib", "<!(pwd)/lib/libss.so" ],
       "conditions": [
         ['OS=="mac"', {
           'cflags+': ['-fvisibility=hidden'],
