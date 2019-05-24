@@ -8,14 +8,14 @@ setInterval(() => {
 const coss = require('bindings')('coss.node');
 console.log('Have COSS', coss);
 
-const instance = coss.start((port, str) => {
+const cosmos = coss.start((port, str) => {
     const action = JSON.parse(str);
     switch (action.type) {
     case 'SET_NAME':
         action.value = action.value.toUpperCase();
-        return JSON.stringify(action);
+        return coss.send(cosmos, JSON.stringify(action));
     }
     return JSON.stringify({type: "ERROR", value: `Unknown action.type ${action.type}`});
 }, process.argv.slice(1));
 
-console.log('Got from COSS', coss.send(instance, "Hello from node proper!"));
+console.log('Got from COSS', coss.send(cosmos, "Hello from node proper!"));

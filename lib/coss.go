@@ -23,7 +23,7 @@ type goReturn = struct {
 	err error
 }
 
-const CosmosPort = 123
+const NameservicePort = 123
 
 var replies = map[int]chan goReturn{}
 var lastReply = 0
@@ -63,13 +63,13 @@ func StartCOSS(toNode C.sendFunc, cosmosArgs []*C.char) C.int {
 	os.Args = args
 	go func() {
 		// We run in the background, but exit when the job is over.
-		nameservice.SendToNode("hello from Initial Go!")
+		// nameservice.SendToNode("hello from Initial Go!")
 		nsd.Run()
 		fmt.Fprintln(os.Stderr, "Shutting down Cosmos")
 		os.Exit(0)
 	}()
 	fmt.Fprintln(os.Stderr, "Done starting Cosmos")
-	return CosmosPort
+	return NameservicePort
 }
 
 //export ReplyToGo
@@ -99,8 +99,9 @@ func SendToGo(port C.int, str C.Body) C.Body {
 	goStr := C.GoString(str)
 	fmt.Fprintln(os.Stderr, "Send to Go", goStr)
 	switch port {
-	case CosmosPort:
-		return C.CString("Would dispatch Cosmos")
+	case NameservicePort:
+		str, _ := nameservice.ReceiveFromNode(goStr)
+		return C.CString(str)
 	}
 	return C.CString("FIXME: implement port " + string(port))
 }

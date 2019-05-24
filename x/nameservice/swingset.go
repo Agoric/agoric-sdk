@@ -2,8 +2,11 @@ package nameservice
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 const SWINGSET_PORT = 17
@@ -25,7 +28,25 @@ func CallToNode(str string) (string, error) {
 	return NodeMessageSender(SWINGSET_PORT, true, str)
 }
 
-func SwingSetName(name, value string) (*swingSetName, error) {
+var mySetName func(string, string)
+
+func ReceiveFromNode(str string) (string, error) {
+	action := new(swingSetName)
+	err := json.Unmarshal([]byte(str), &action)
+	if err != nil {
+		return "", err
+	}
+
+	switch action.Type {
+	case "SET_NAME":
+		fmt.Fprintln(os.Stderr, "Setting name", action.Name, action.Value)
+		mySetName(action.Name, action.Value)
+		return "true", nil
+	}
+	return "", errors.New("Unrecognized action.type " + action.Type)
+}
+
+func handleSwingSetName(ctx sdk.Context, keeper Keeper, name, value string) error {
 	ssn := &swingSetName{
 		Type:  "SET_NAME",
 		Name:  name,
@@ -33,18 +54,13 @@ func SwingSetName(name, value string) (*swingSetName, error) {
 	}
 	b, err := json.Marshal(ssn)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	fmt.Fprintln(os.Stderr, "About to call node")
+	fmt.Fprintln(os.Stderr, "About to call SwingSet")
+	mySetName = func(name, value string) {
+		keeper.SetName(ctx, name, value)
+	}
 	out, err := CallToNode(string(b))
-	fmt.Fprintln(os.Stderr, "Returned", out, err)
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal([]byte(out), &ssn)
-	if err != nil {
-		return nil, err
-	}
-
-	return ssn, nil
+	fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	return err
 }
