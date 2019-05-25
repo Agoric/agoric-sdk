@@ -24,7 +24,7 @@ launch().then(({ handler, setSet }) => {
   }
   const cosmos = ss.start(fromGo, process.argv.slice(1));
   function set(key, value) {
-    ss.send(cosmos, JSON.stringify({method: "set", key, value}));
+    return ss.send(cosmos, JSON.stringify({method: "set", key, value}));
   }
   setSet(set);
 
