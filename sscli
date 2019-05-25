@@ -9,7 +9,7 @@ ARGS=
 
 
 case "$1" in
-keys | help | config)
+"" | keys | help | config)
   # No need for networking to ssd, indeed, SSH interaction
   # would mess up our output.
   ;;
