@@ -12,7 +12,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/swingset-vat": "^0.0.8",
-    "bindings": "^1.2.1"
+    "bindings": "^1.2.1",
+    "esm": "^3.2.5"
   },
   "devDependencies": {
     "napi-thread-safe-callback": "0.0.6",
