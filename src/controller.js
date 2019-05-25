@@ -12,6 +12,65 @@ import bundleSource from './build-source-bundle';
 
 import makeKVStore from './kernel/kvstore';
 
+export function makeExternal() {
+  const outsideRealmKVStore = makeKVStore({});
+  const external = harden({
+    sendMsg(msg) {
+      const command = JSON.parse(msg);
+      const { method, key } = command;
+      if (key.includes('undefined')) {
+        throw new Error(`key ${key} includes undefined`);
+      }
+      let result;
+      switch (method) {
+        case 'get': {
+          result = outsideRealmKVStore.get(key);
+          break;
+        }
+        case 'set': {
+          const { value } = command;
+          outsideRealmKVStore.set(key, value);
+          break;
+        }
+        case 'has': {
+          const bool = outsideRealmKVStore.has(key);
+          result = [bool]; // JSON compatibility
+          break;
+        }
+        case 'delete': {
+          outsideRealmKVStore.delete(key);
+          break;
+        }
+        case 'keys': {
+          result = outsideRealmKVStore.keys(key);
+          break;
+        }
+        case 'entries': {
+          result = outsideRealmKVStore.entries(key);
+          break;
+        }
+        case 'values': {
+          result = outsideRealmKVStore.values(key);
+          break;
+        }
+        case 'size': {
+          result = outsideRealmKVStore.size(key);
+          break;
+        }
+        default:
+          throw new Error(`unexpected message to kvstore ${msg}`);
+      }
+      // console.log(msg, '=>', result);
+      if (result === undefined) {
+        return JSON.stringify(null);
+      }
+      return JSON.stringify(result);
+    },
+  });
+
+  return external;
+}
+
 // TODO: change completely to either KVStore or merk levelDB
 function loadState(basedir, stateArg) {
   let state;
@@ -67,54 +126,6 @@ function makeEvaluate(e) {
   return (source, endowments = {}) => confineExpr(source, endowments);
 }
 
-const outsideRealmKVStore = makeKVStore({});
-
-const external = harden({
-  sendMsg(msg) {
-    console.log(msg);
-    const command = JSON.parse(msg);
-    const { method } = command;
-    switch (method) {
-      case 'get': {
-        const { key } = command;
-        return outsideRealmKVStore.get(key);
-      }
-      case 'set': {
-        const { key, value } = command;
-        outsideRealmKVStore.set(key, value);
-        break;
-      }
-      case 'has': {
-        const { key } = command;
-        return outsideRealmKVStore.has(key);
-      }
-      case 'delete': {
-        const { key } = command;
-        outsideRealmKVStore.delete(key);
-        break;
-      }
-      case 'keys': {
-        const { key } = command;
-        return outsideRealmKVStore.keys(key);
-      }
-      case 'entries': {
-        const { key } = command;
-        return outsideRealmKVStore.entries(key);
-      }
-      case 'values': {
-        const { key } = command;
-        return outsideRealmKVStore.values(key);
-      }
-      case 'size': {
-        const { key } = command;
-        return outsideRealmKVStore.size(key);
-      }
-      default:
-        throw new Error(`unexpected message to kvstore ${msg}`);
-    }
-  },
-});
-
 function buildSESKernel() {
   const s = SES.makeSESRootRealm({
     consoleMode: 'allow',
@@ -132,12 +143,14 @@ function buildSESKernel() {
   // console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })();
   const kernelEndowments = { setImmediate };
+  const external = makeExternal();
   const kernel = buildKernel(kernelEndowments, external);
   return { kernel, s, r };
 }
 
 function buildNonSESKernel() {
   const kernelEndowments = { setImmediate };
+  const external = makeExternal();
   const kernel = buildKernelNonSES(kernelEndowments, external);
   return { kernel };
 }
