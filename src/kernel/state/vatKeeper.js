@@ -137,7 +137,7 @@ export default function makeVatKeeper(
       case 'device': {
         return {
           table: tables.get('devices'),
-          key: `${kernelSlot.vatID}-${id}`,
+          key: `${kernelSlot.deviceName}-${id}`,
         };
       }
       default:
