@@ -1,5 +1,3 @@
-import stableStringify from './json-stable-stringify';
-
 // key is a full path string, e.g.:
 // "kernel.vats.vat1.kernelSlotToVatSlot.exports"
 // we want to add a key and value to be able to iterate:

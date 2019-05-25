@@ -66,8 +66,7 @@ export default function buildKernel(kernelEndowments, external) {
     // deciderVatID can be undefined if the promise is "owned" by the kernel
     // (pipelining)
 
-    // we don't harden the kernel promise record because it is mutable: it
-    // can be replaced when syscall.redirect/fulfill/reject is called
+    // kernel promise is replaced if altered, so we can safely harden
     const kernelPromiseID = kernelKeeper.addKernelPromise(deciderVatID);
     return kernelPromiseID;
   }

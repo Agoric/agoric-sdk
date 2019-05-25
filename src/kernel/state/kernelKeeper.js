@@ -38,12 +38,12 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
     }
     const kernelPromiseID = allocateNextPromiseIndex();
 
-    const kernelPromiseObj = {
+    const kernelPromiseObj = harden({
       state: 'unresolved',
       decider: deciderVatID,
       queue: [],
       subscribers: [],
-    };
+    });
 
     const kernelPromises = kvstore.get('kernelPromises');
     kernelPromises.set(kernelPromiseID, kernelPromiseObj);
