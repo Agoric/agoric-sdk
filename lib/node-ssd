@@ -15,7 +15,7 @@ setInterval(() => {
 const ss = require('bindings')('ss.node');
 console.log('Have SSD', ss);
 
-launch().then(handler => {
+launch().then(({ handler, setSet }) => {
   function fromGo(port, str, replier) {
     const action = JSON.parse(str);
     const p = Promise.resolve(handler(action));
@@ -23,6 +23,11 @@ launch().then(handler => {
            rej => replier.reject("rejection ignored"));
   }
   const cosmos = ss.start(fromGo, process.argv.slice(1));
+  function set(key, value) {
+    ss.send(cosmos, JSON.stringify({method: "set", key, value}));
+  }
+  setSet(set);
+
   console.log('Got from SSD', ss.send(cosmos, "Hello from node proper!"));
 },
               rej => {
