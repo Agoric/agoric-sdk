@@ -52,6 +52,14 @@ type storageMessage struct {
 var myKeeper Keeper
 var myContext sdk.Context
 
+func mailboxPeer(key string) (string, error) {
+	path := strings.Split(key, ".")
+	if len(path) != 2 || path[0] != "mailbox" {
+		return "", errors.New("Can only access 'mailbox.PEER'")
+	}
+	return path[1], nil
+}
+
 func ReceiveFromNode(str string) (string, error) {
 	msg := new(storageMessage)
 	err := json.Unmarshal([]byte(str), &msg)
@@ -59,17 +67,34 @@ func ReceiveFromNode(str string) (string, error) {
 		return "", err
 	}
 
+	// TODO: Actually use generic store, not just mailboxes.
 	switch msg.Method {
 	case "set":
-		path := strings.Split(msg.Key, ".")
-		if len(path) != 2 || path[0] != "mailbox" {
-			return "", errors.New("Can only set 'mailbox.PEER'")
+		peer, err := mailboxPeer(msg.Key)
+		if err != nil {
+			return "", err
 		}
 		mailbox := NewMailbox()
 		mailbox.Value = msg.Value
-		myKeeper.SetMailbox(myContext, path[1], mailbox)
+		myKeeper.SetMailbox(myContext, peer, mailbox)
+		return "true", nil
+		break
+
+	case "get":
+		peer, err := mailboxPeer(msg.Key)
+		if err != nil {
+			return "", err
+		}
+		mailbox := myKeeper.GetMailbox(myContext, peer)
+		return mailbox.Value, nil
+
+	case "has":
+	case "keys":
+	case "entries":
+	case "values":
+	case "size":
+		// TODO: Implement these operations
 	}
-	/* TODO: Dispatch based on msg.Method */
 
 	return "", errors.New("Unrecognized msg.Method " + msg.Method)
 }
