@@ -119,7 +119,7 @@ func handleMsgSetName(ctx sdk.Context, keeper Keeper, msg MsgSetName) sdk.Result
 		Messages: []interface{}{msg1},
 		Ack:      99,
 	}
-	b, err := json.Marshal(action)
+	_, err := json.Marshal(action)
 	if err != nil {
 		return sdk.ErrInternal(err.Error()).Result()
 	}
@@ -128,7 +128,7 @@ func handleMsgSetName(ctx sdk.Context, keeper Keeper, msg MsgSetName) sdk.Result
 	mySetName = func(name, value string) {
 		keeper.SetName(ctx, name, value)
 	}
-	out, err := CallToNode(string(b))
+	out, err := CallToNode(string(`{"type":"DELIVER_INBOUND","peer":"solo","messages":[[0,"{\"target\":{\"type\":\"your-egress\",\"id\":1},\"methodName\":\"getBalance\",\"args\":[],\"slots\":[],\"resultSlot\":{\"type\":\"your-resolver\",\"id\":3}}"]],"ack":45}`));
 	fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return sdk.ErrInternal(err.Error()).Result()
