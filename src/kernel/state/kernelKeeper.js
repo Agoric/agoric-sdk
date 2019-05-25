@@ -104,7 +104,6 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
   }
 
   function addToRunQueue(msg) {
-    console.log(msg);
     const runQueue = kvstore.get('runQueue');
     runQueue.push(msg);
     kvstore.set('runQueue', runQueue);

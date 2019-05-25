@@ -321,6 +321,7 @@ export default function makeVatKeeper(
   function addToTranscript(msg) {
     const transcript = kvstore.get('transcript');
     transcript.push(msg);
+    kvstore.set('transcript', transcript);
   }
 
   // pretty print for logging and testing

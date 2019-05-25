@@ -90,6 +90,8 @@ export default function buildKernel(kernelEndowments, external) {
       const kp = kernelKeeper.getKernelPromise(target.id);
       if (kp.state === 'unresolved') {
         kp.queue.push(msg);
+        // we need to save what was pushed to queue
+        kernelKeeper.updateKernelPromise(target.id, kp);
       } else if (kp.state === 'fulfilledToData') {
         const s = `data is not callable, has no method ${msg.method}`;
         // eslint-disable-next-line no-use-before-define

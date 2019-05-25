@@ -1081,8 +1081,8 @@ test('transcript', async t => {
       1,
       'store',
       'args string',
-      [{ type: 'export', id: 1 }, { type: 'import', id: X }],
-      undefined,
+      [{ id: 1, type: 'export' }, { id: 10, type: 'import' }],
+      null,
     ],
     syscalls: [
       {
