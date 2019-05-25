@@ -18,7 +18,7 @@ import (
 // GetCmdBuyName is the CLI command for sending a BuyName transaction
 func GetCmdDeliver(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "deliver FROM [JSON-STRING]",
+		Use:   "deliver [sender] [json string]",
 		Short: "deliver inbound messages",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {

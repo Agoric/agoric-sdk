@@ -26,9 +26,7 @@ func (mc ModuleClient) GetQueryCmd() *cobra.Command {
 	}
 
 	namesvcQueryCmd.AddCommand(client.GetCommands(
-		swingsetcmd.GetCmdResolveName(mc.storeKey, mc.cdc),
-		swingsetcmd.GetCmdWhois(mc.storeKey, mc.cdc),
-		swingsetcmd.GetCmdNames(mc.storeKey, mc.cdc),
+		swingsetcmd.GetCmdMailbox(mc.storeKey, mc.cdc),
 	)...)
 
 	return namesvcQueryCmd

@@ -25,70 +25,26 @@ func NewKeeper(coinKeeper bank.Keeper, storeKey sdk.StoreKey, cdc *codec.Codec) 
 	}
 }
 
-// Gets the entire Whois metadata struct for a name
-func (k Keeper) GetWhois(ctx sdk.Context, name string) Whois {
+// Gets the entire mailbox struct for a peer
+func (k Keeper) GetMailbox(ctx sdk.Context, peer string) Mailbox {
 	store := ctx.KVStore(k.storeKey)
-	if !store.Has([]byte(name)) {
-		return NewWhois()
+	if !store.Has([]byte(peer)) {
+		return NewMailbox()
 	}
-	bz := store.Get([]byte(name))
-	var whois Whois
-	k.cdc.MustUnmarshalBinaryBare(bz, &whois)
-	return whois
+	bz := store.Get([]byte(peer))
+	var mailbox Mailbox
+	k.cdc.MustUnmarshalBinaryBare(bz, &mailbox)
+	return mailbox
 }
 
-// Sets the entire Whois metadata struct for a name
-func (k Keeper) SetWhois(ctx sdk.Context, name string, whois Whois) {
-	if whois.Owner.Empty() {
-		return
-	}
+// Sets the entire mailbox struct for a peer
+func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox Mailbox) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set([]byte(name), k.cdc.MustMarshalBinaryBare(whois))
+	store.Set([]byte(peer), k.cdc.MustMarshalBinaryBare(mailbox))
 }
 
-// ResolveName - returns the string that the name resolves to
-func (k Keeper) ResolveName(ctx sdk.Context, name string) string {
-	return k.GetWhois(ctx, name).Value
-}
-
-// SetName - sets the value string that a name resolves to
-func (k Keeper) SetName(ctx sdk.Context, name string, value string) {
-	whois := k.GetWhois(ctx, name)
-	whois.Value = value
-	k.SetWhois(ctx, name, whois)
-}
-
-// HasOwner - returns whether or not the name already has an owner
-func (k Keeper) HasOwner(ctx sdk.Context, name string) bool {
-	return !k.GetWhois(ctx, name).Owner.Empty()
-}
-
-// GetOwner - get the current owner of a name
-func (k Keeper) GetOwner(ctx sdk.Context, name string) sdk.AccAddress {
-	return k.GetWhois(ctx, name).Owner
-}
-
-// SetOwner - sets the current owner of a name
-func (k Keeper) SetOwner(ctx sdk.Context, name string, owner sdk.AccAddress) {
-	whois := k.GetWhois(ctx, name)
-	whois.Owner = owner
-	k.SetWhois(ctx, name, whois)
-}
-
-// GetPrice - gets the current price of a name
-func (k Keeper) GetPrice(ctx sdk.Context, name string) sdk.Coins {
-	return k.GetWhois(ctx, name).Price
-}
-
-// SetPrice - sets the current price of a name
-func (k Keeper) SetPrice(ctx sdk.Context, name string, price sdk.Coins) {
-	whois := k.GetWhois(ctx, name)
-	whois.Price = price
-	k.SetWhois(ctx, name, whois)
-}
-
-// Get an iterator over all names in which the keys are the names and the values are the whois
-func (k Keeper) GetNamesIterator(ctx sdk.Context) sdk.Iterator {
+// Get an iterator over all peers in which the keys are the peers and the values are the mailbox
+func (k Keeper) GetPeersIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
 	return sdk.KVStorePrefixIterator(store, nil)
 }
