@@ -301,11 +301,11 @@ async function testMailboxOutbound(t, withSES) {
       outbox: [[2, 'data2'], [3, 'data3']],
     },
     peer2: {
-      inboundAck: undefined,
+      inboundAck: 0,
       outbox: [],
     },
     peer3: {
-      inboundAck: undefined,
+      inboundAck: 0,
       outbox: [[5, 'data5']],
     },
   });
@@ -317,11 +317,11 @@ async function testMailboxOutbound(t, withSES) {
   t.end();
 }
 
-test('mailbox without SES', async t => {
+test('mailbox outbound without SES', async t => {
   await testMailboxOutbound(t, false);
 });
 
-test('mailbox with SES', async t => {
+test('mailbox outbound with SES', async t => {
   await testMailboxOutbound(t, true);
 });
 
@@ -338,7 +338,7 @@ async function testMailboxInbound(t, withSES) {
 
   const c = await buildVatController(config, withSES, ['mailbox2']);
   await c.run();
-  rc = mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2']], undefined);
+  rc = mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2']], 0);
   t.ok(rc);
   await c.run();
   t.deepEqual(c.dump().log, ['dm-peer1', 'm-1-msg1', 'm-2-msg2']);
@@ -401,10 +401,10 @@ async function testMailboxInbound(t, withSES) {
   t.end();
 }
 
-test('mailbox without SES', async t => {
+test('mailbox inbound without SES', async t => {
   await testMailboxInbound(t, false);
 });
 
-test('mailbox with SES', async t => {
+test('mailbox inbound with SES', async t => {
   await testMailboxInbound(t, true);
 });

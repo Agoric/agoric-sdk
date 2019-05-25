@@ -7,9 +7,10 @@ export default function setup(syscall, helpers, endowments) {
   let inboundHandler;
 
   function inboundCallback(hPeer, hMessages, hAck) {
+    const ack = Nat(hAck);
     let didSomething = false;
     const peer = `${hPeer}`;
-    let latestMsg = -1;
+    let latestMsg = 0;
     if (highestInboundDelivered.has(peer)) {
       latestMsg = highestInboundDelivered.get(peer);
     }
@@ -27,17 +28,14 @@ export default function setup(syscall, helpers, endowments) {
       inboundHandler.deliverInboundMessages(peer, harden(newMessages));
       didSomething = true;
     }
-    if (hAck !== undefined && hAck !== null) {
-      let latestAck = -1;
-      if (highestInboundAck.has(peer)) {
-        latestAck = highestInboundAck.get(peer);
-      }
-      const ack = Nat(hAck);
-      if (ack > latestAck) {
-        highestInboundAck.set(peer, ack);
-        inboundHandler.deliverInboundAck(peer, ack);
-        didSomething = true;
-      }
+    let latestAck = 0;
+    if (highestInboundAck.has(peer)) {
+      latestAck = highestInboundAck.get(peer);
+    }
+    if (ack > latestAck) {
+      highestInboundAck.set(peer, ack);
+      inboundHandler.deliverInboundAck(peer, ack);
+      didSomething = true;
     }
     return didSomething;
   }

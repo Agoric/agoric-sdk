@@ -11,7 +11,8 @@
   the kernel special section of the kernel state vector. For each peer, this
   'mailboxState' object contains a list of outstanding messages (each with a
   msgnum integer and a string body), and an 'ackNum' (an integer which
-  indicates the highest-numbered inbound message that has been processed).
+  indicates the highest-numbered inbound message that has been processed,
+  where '1' is the first message).
 
   When the comms vat wants to send a message, it sends a 'send()' message to
   the vatTP, as 'send(peer, msg)'. When this arrives on vat-VatTP, it invokes
@@ -76,7 +77,7 @@ export function buildMailboxStateMap() {
 
   function getOrCreatePeer(peer) {
     if (!state.has(peer)) {
-      state.set(peer, { outbox: harden(new Map()), inboundAck: undefined });
+      state.set(peer, { outbox: harden(new Map()), inboundAck: 0 });
     }
     return state.get(peer);
   }

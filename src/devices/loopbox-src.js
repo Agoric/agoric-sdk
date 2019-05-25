@@ -21,7 +21,7 @@ export default function setup(syscall, helpers, _endowments) {
         },
 
         makeSender(sender) {
-          let count = 0;
+          let count = 1;
           return harden({
             add(peer, msgnum, body) {
               if (!inboundHandlers.has(peer)) {

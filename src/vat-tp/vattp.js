@@ -11,8 +11,8 @@ function build(E, D) {
   function getPeer(peer) {
     if (!peers.has(peer)) {
       peers.set(peer, {
-        outbound: { highestRemoved: -1, highestAdded: -1 },
-        inbound: { highestDelivered: -1 },
+        outbound: { highestRemoved: 0, highestAdded: 0 },
+        inbound: { highestDelivered: 0 },
       });
     }
     return peers.get(peer);
