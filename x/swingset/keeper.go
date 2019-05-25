@@ -28,10 +28,10 @@ func NewKeeper(coinKeeper bank.Keeper, storeKey sdk.StoreKey, cdc *codec.Codec) 
 // Gets the entire mailbox struct for a peer
 func (k Keeper) GetMailbox(ctx sdk.Context, peer string) Mailbox {
 	store := ctx.KVStore(k.storeKey)
-	if !store.Has([]byte(peer)) {
+	path := "data:mailbox." + peer
+	if !store.Has([]byte(path)) {
 		return NewMailbox()
 	}
-	path := "data:mailbox." + peer
 	bz := store.Get([]byte(path))
 	var mailbox Mailbox
 	k.cdc.MustUnmarshalBinaryBare(bz, &mailbox)
