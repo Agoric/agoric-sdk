@@ -15,8 +15,19 @@ setInterval(() => {
 const ss = require('bindings')('ss.node');
 console.log('Have SSD', ss);
 
-const handler = launch();
-const cosmos = ss.start((port, str, replier) => {
+launch().then(handler => {
+  function fromGo(port, str, replier) {
+    const action = JSON.parse(str);
+    const p = Promise.resolve(handler(action));
+    p.then(res => replier.resolve("success ignored"),
+           rej => replier.reject("rejection ignored"));
+  }
+  const cosmos = ss.start(fromGo, process.argv.slice(1));
+  console.log('Got from SSD', ss.send(cosmos, "Hello from node proper!"));
+},
+              rej => {
+                console.log(`launch() failed`, rej);
+              });
 /*
     console.error('Node received', str);
     const action = JSON.parse(str);
@@ -36,12 +47,5 @@ const cosmos = ss.start((port, str, replier) => {
     replier.reject(JSON.stringify({type: "ERROR", value: `Unknown action.type ${action.type}`}));
 */
 
-  const action = JSON.parse(str);
-  const p = Promise.resolve(handler(action));
-  p.then(res => replier.resolve("success ignored"),
-         rej => replier.reject("rejection ignored"));
 
-}, process.argv.slice(1));
-
-console.log('Got from SSD', ss.send(cosmos, "Hello from node proper!"));
 

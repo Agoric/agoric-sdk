@@ -74,9 +74,9 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 		Type:     "DELIVER_INBOUND",
 		Peer:     msg.Peer,
 		Messages: messages,
-		Ack:      99,
+		Ack:      msg.Ack,
 	}
-	b, err := json.Marshal(action)
+	_, err := json.Marshal(action)
 	if err != nil {
 		return sdk.ErrInternal(err.Error()).Result()
 	}
