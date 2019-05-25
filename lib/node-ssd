@@ -1,14 +1,23 @@
 #! /usr/bin/env node
 console.log('Starting Node');
-console.log('Setting Node timer');
+
+require = require('esm')(module);
+
+const { launch } = require('./launch-chain');
+
+/*console.log('Setting Node timer');
 let i = 0;
 setInterval(() => {
     console.log('Node is alive', ++i);
 }, 1000);
+*/
+
 const ss = require('bindings')('ss.node');
 console.log('Have SSD', ss);
 
+const handler = launch();
 const cosmos = ss.start((port, str, replier) => {
+/*
     console.error('Node received', str);
     const action = JSON.parse(str);
     switch (action.type) {
@@ -25,6 +34,14 @@ const cosmos = ss.start((port, str, replier) => {
         return 'Immediate!';
     }
     replier.reject(JSON.stringify({type: "ERROR", value: `Unknown action.type ${action.type}`}));
+*/
+
+  const action = JSON.parse(str);
+  const p = Promise.resolve(handler(action));
+  p.then(res => replier.resolve("success ignored"),
+         rej => replier.reject("rejection ignored"));
+
 }, process.argv.slice(1));
 
 console.log('Got from SSD', ss.send(cosmos, "Hello from node proper!"));
+

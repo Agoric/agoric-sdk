@@ -11,6 +11,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
+    "@agoric/swingset-vat": "^0.0.8",
     "bindings": "^1.2.1"
   },
   "devDependencies": {
