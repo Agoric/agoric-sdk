@@ -11,10 +11,41 @@ import (
 
 const SWINGSET_PORT = 17
 
-type swingSetName = struct {
+type swingSetName struct {
 	Type  string `json:"type"`
 	Name  string `json:"name"`
 	Value string `json:"value"`
+}
+
+type swingSetMessage struct {
+	Num   int    `json:"num"`
+	Event string `json:"event"`
+}
+
+type swingSetSlot struct {
+	Type string `json:"type"`
+	Id   int    `json:"id"`
+}
+
+type swingSetCallMessage struct {
+	Num        int            `json:"num"`
+	Event      string         `json:"event"`
+	Target     swingSetSlot   `json:"target"`
+	Method     string         `json:"method"`
+	Args       []string       `json:"args"`
+	Slots      []swingSetSlot `json:"slots"`
+	ResultSlot swingSetSlot   `json:"resultSlot"`
+}
+
+type swingSetAction struct {
+	Type string `json:"type"`
+}
+
+type swingSetDeliverInboundAction struct {
+	Type     string        `json:"type"`
+	Peer     string        `json:"peer"`
+	Messages []interface{} `json:"messages"`
+	Ack      int           `json:"ack"`
 }
 
 var NodeMessageSender func(port int, needReply bool, str string) (string, error)
@@ -66,16 +97,34 @@ func handleMsgSetName(ctx sdk.Context, keeper Keeper, msg MsgSetName) sdk.Result
 		return sdk.ErrUnauthorized("Incorrect Owner").Result() // If not, throw an error
 	}
 
-	ssn := &swingSetName{
-		Type:  "SET_NAME",
-		Name:  msg.Name,
-		Value: msg.Value,
+	msg1 := &swingSetCallMessage{
+		Num:   456,
+		Event: "call",
+		Target: swingSetSlot{
+			Type: "your-egress",
+			Id:   10,
+		},
+		Method: "makeEmptyPurse",
+		Args:   []string{"hello", "world"},
+		Slots:  []swingSetSlot{},
+		ResultSlot: swingSetSlot{
+			Type: "your-resolver",
+			Id:   71,
+		},
 	}
-	b, err := json.Marshal(ssn)
+
+	action := &swingSetDeliverInboundAction{
+		Type:     "DELIVER_INBOUND",
+		Peer:     "alice",
+		Messages: []interface{}{msg1},
+		Ack:      99,
+	}
+	b, err := json.Marshal(action)
 	if err != nil {
 		return sdk.ErrInternal(err.Error()).Result()
 	}
 	fmt.Fprintln(os.Stderr, "About to call SwingSet")
+	// FIXME: Make available to storage.
 	mySetName = func(name, value string) {
 		keeper.SetName(ctx, name, value)
 	}

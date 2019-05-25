@@ -9,6 +9,7 @@ const ss = require('bindings')('ss.node');
 console.log('Have SSD', ss);
 
 const cosmos = ss.start((port, str, replier) => {
+    console.error('Node received', str);
     const action = JSON.parse(str);
     switch (action.type) {
     case 'SET_NAME':
@@ -23,7 +24,7 @@ const cosmos = ss.start((port, str, replier) => {
         console.log('Returning immediately from Javascript');
         return 'Immediate!';
     }
-    return JSON.stringify({type: "ERROR", value: `Unknown action.type ${action.type}`});
+    replier.reject(JSON.stringify({type: "ERROR", value: `Unknown action.type ${action.type}`}));
 }, process.argv.slice(1));
 
 console.log('Got from SSD', ss.send(cosmos, "Hello from node proper!"));
