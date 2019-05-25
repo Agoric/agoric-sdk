@@ -30,9 +30,11 @@ alias ssd=$PWD/lib/node-ssd
 alias sscli=$GOPATH/bin/sscli
 ```
 
-When you're done with the aliases, you can delete them with:
+Test that the aliases work with:
+
 ```
-unalias ssd sscli
+$ ssd --help
+$ sscli --help
 ```
 
 # Tutorial
@@ -47,9 +49,11 @@ ssd init --chain-id agchain
 
 # Copy the `Address` output here and save it for later use 
 # [optional] add "--ledger" at the end to use a Ledger Nano S 
+# Save password and recovery keys if you want.
 sscli keys add jack
 
 # Copy the `Address` output here and save it for later use
+# Save password and recovery keys if you want.
 sscli keys add alice
 
 # Add both accounts, with coins to the genesis file
@@ -63,12 +67,12 @@ sscli config indent true
 sscli config trust-node true
 ```
 
-Go to a different terminal, and start the testnet run:
+Go to a different terminal (make sure your shell aliases are installed first), and start the testnet run:
 ```
 ssd start
 ```
 
-Run commands against the network you have just created:
+Go back to the old terminal and run commands against the network you have just created:
 ```
 # First check the accounts to ensure they have funds
 sscli query account $(sscli keys show jack -a) 
@@ -81,6 +85,7 @@ sscli tx swingset buy-name jack.id 5agtoken --from jack
 sscli tx swingset set-name jack.id my-name.local --from jack 
 
 # Try out a resolve query against the name you registered
+# The capitalization shows that SwingSet intercepted the Cosmos request.
 sscli query swingset resolve jack.id
 # > MY-NAME.LOCAL
 

@@ -22,7 +22,7 @@ compile-go: go.sum
 build: compile-go compile-node
 
 compile-node:
-	npm run build
+	test ! -d node_modules/bindings || npm run build
 
 install: go.sum
 	# Not needed, because we librarify ./cmd/ssd as ./lib/libss.so
