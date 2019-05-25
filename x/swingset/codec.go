@@ -6,6 +6,5 @@ import (
 
 // RegisterCodec registers concrete types on the Amino codec
 func RegisterCodec(cdc *codec.Codec) {
-	cdc.RegisterConcrete(MsgSetName{}, "swingset/SetName", nil)
-	cdc.RegisterConcrete(MsgBuyName{}, "swingset/BuyName", nil)
+	cdc.RegisterConcrete(MsgDeliverInbound{}, "swingset/DeliverInbound", nil)
 }

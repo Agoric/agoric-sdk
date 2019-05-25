@@ -6,41 +6,58 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// MsgSetName defines a SetName message
-type MsgSetName struct {
-	Name  string
-	Value string
-	Owner sdk.AccAddress
+// MsgDeliverInbound defines a DeliverInbound message
+type MsgDeliverInbound struct {
+	Peer      string
+	Messages  []string
+	Nums      []int
+	Ack       int
+	Submitter sdk.AccAddress
 }
 
-// NewMsgSetName is a constructor function for MsgSetName
-func NewMsgSetName(name string, value string, owner sdk.AccAddress) MsgSetName {
-	return MsgSetName{
-		Name:  name,
-		Value: value,
-		Owner: owner,
+func NewMsgDeliverInbound(peer string, messages []string, nums []int, ack int, submitter sdk.AccAddress) MsgDeliverInbound {
+	return MsgDeliverInbound{
+		Peer:      peer,
+		Messages:  messages,
+		Nums:      nums,
+		Ack:       ack,
+		Submitter: submitter,
 	}
 }
 
 // Route should return the name of the module
-func (msg MsgSetName) Route() string { return "swingset" }
+func (msg MsgDeliverInbound) Route() string { return "swingset" }
 
 // Type should return the action
-func (msg MsgSetName) Type() string { return "set_name" }
+func (msg MsgDeliverInbound) Type() string { return "deliver" }
 
 // ValidateBasic runs stateless checks on the message
-func (msg MsgSetName) ValidateBasic() sdk.Error {
-	if msg.Owner.Empty() {
-		return sdk.ErrInvalidAddress(msg.Owner.String())
+func (msg MsgDeliverInbound) ValidateBasic() sdk.Error {
+	if msg.Submitter.Empty() {
+		return sdk.ErrInvalidAddress(msg.Submitter.String())
 	}
-	if len(msg.Name) == 0 || len(msg.Value) == 0 {
-		return sdk.ErrUnknownRequest("Name and/or Value cannot be empty")
+	if len(msg.Peer) == 0 {
+		return sdk.ErrUnknownRequest("Peer cannot be empty")
+	}
+	if len(msg.Messages) != len(msg.Nums) {
+		return sdk.ErrUnknownRequest("Messages and Nums must be the same length")
+	}
+	for i, num := range msg.Nums {
+		if len(msg.Messages[i]) == 0 {
+			return sdk.ErrUnknownRequest("Messages cannot be empty")
+		}
+		if num < 0 {
+			return sdk.ErrUnknownRequest("Nums cannot be negative")
+		}
+	}
+	if msg.Ack < -1 {
+		return sdk.ErrUnknownRequest("Ack cannot be less than -1")
 	}
 	return nil
 }
 
 // GetSignBytes encodes the message for signing
-func (msg MsgSetName) GetSignBytes() []byte {
+func (msg MsgDeliverInbound) GetSignBytes() []byte {
 	b, err := json.Marshal(msg)
 	if err != nil {
 		panic(err)
@@ -49,56 +66,6 @@ func (msg MsgSetName) GetSignBytes() []byte {
 }
 
 // GetSigners defines whose signature is required
-func (msg MsgSetName) GetSigners() []sdk.AccAddress {
-	return []sdk.AccAddress{msg.Owner}
-}
-
-// MsgBuyName defines the BuyName message
-type MsgBuyName struct {
-	Name  string
-	Bid   sdk.Coins
-	Buyer sdk.AccAddress
-}
-
-// NewMsgBuyName is the constructor function for MsgBuyName
-func NewMsgBuyName(name string, bid sdk.Coins, buyer sdk.AccAddress) MsgBuyName {
-	return MsgBuyName{
-		Name:  name,
-		Bid:   bid,
-		Buyer: buyer,
-	}
-}
-
-// Route should return the name of the module
-func (msg MsgBuyName) Route() string { return "swingset" }
-
-// Type should return the action
-func (msg MsgBuyName) Type() string { return "buy_name" }
-
-// ValidateBasic runs stateless checks on the message
-func (msg MsgBuyName) ValidateBasic() sdk.Error {
-	if msg.Buyer.Empty() {
-		return sdk.ErrInvalidAddress(msg.Buyer.String())
-	}
-	if len(msg.Name) == 0 {
-		return sdk.ErrUnknownRequest("Name cannot be empty")
-	}
-	if !msg.Bid.IsAllPositive() {
-		return sdk.ErrInsufficientCoins("Bids must be positive")
-	}
-	return nil
-}
-
-// GetSignBytes encodes the message for signing
-func (msg MsgBuyName) GetSignBytes() []byte {
-	b, err := json.Marshal(msg)
-	if err != nil {
-		panic(err)
-	}
-	return sdk.MustSortJSON(b)
-}
-
-// GetSigners defines whose signature is required
-func (msg MsgBuyName) GetSigners() []sdk.AccAddress {
-	return []sdk.AccAddress{msg.Buyer}
+func (msg MsgDeliverInbound) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.Submitter}
 }

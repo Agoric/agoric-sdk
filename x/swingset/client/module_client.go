@@ -42,8 +42,7 @@ func (mc ModuleClient) GetTxCmd() *cobra.Command {
 	}
 
 	namesvcTxCmd.AddCommand(client.PostCommands(
-		swingsetcmd.GetCmdBuyName(mc.cdc),
-		swingsetcmd.GetCmdSetName(mc.cdc),
+		swingsetcmd.GetCmdDeliver(mc.cdc),
 	)...)
 
 	return namesvcTxCmd
