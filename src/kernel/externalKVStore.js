@@ -10,19 +10,23 @@ export default function makeExternalKVStore(pathToRoot, external) {
 
   return {
     get(key) {
-      const value = external.sendMsg(
+      const strValue = external.sendMsg(
         stringify({
           method: 'get',
           key: `${pathToRoot}.${key}`,
         }),
       );
-
-      if (typeof value === 'object' && !Array.isArray(value)) {
+      const value = JSON.parse(strValue);
+      if (value === 'kvstore') {
         return makeExternalKVStore(`${pathToRoot}.${key}`, external);
       }
       return value;
     },
     set(key, value) {
+      if (value.get) {
+        // is a kvstore itself
+        value = 'kvstore';
+      }
       return external.sendMsg(
         stringify({
           method: 'set',
@@ -32,44 +36,72 @@ export default function makeExternalKVStore(pathToRoot, external) {
       );
     },
     has(key) {
-      return external.sendMsg(
+      const boolArrayStr = external.sendMsg(
         stringify({
           method: 'has',
           key: `${pathToRoot}.${key}`,
         }),
       );
+      return JSON.parse(boolArrayStr)[0]; // JSON compatibility
     },
     keys() {
-      return external.sendMsg(
+      const strKeys = external.sendMsg(
         stringify({
           method: 'keys',
           key: `${pathToRoot}`,
         }),
       );
+      return JSON.parse(strKeys);
     },
     entries() {
-      return external.sendMsg(
+      const strEntries = external.sendMsg(
         stringify({
           method: 'entries',
           key: `${pathToRoot}`,
         }),
       );
+      const results = [];
+      const entries = JSON.parse(strEntries);
+      for (const entry of entries) {
+        if (entry.value === 'kvstore') {
+          results.push({
+            key: entry.key,
+            value: makeExternalKVStore(`${pathToRoot}.${entry.key}`, external),
+          });
+        } else {
+          results.push(entry);
+        }
+      }
+      return results;
     },
     values() {
-      return external.sendMsg(
+      const strEntries = external.sendMsg(
         stringify({
-          method: 'values',
+          method: 'entries',
           key: `${pathToRoot}`,
         }),
       );
+      const values = [];
+      const entries = JSON.parse(strEntries);
+      for (const entry of entries) {
+        if (entry.value === 'kvstore') {
+          values.push(
+            makeExternalKVStore(`${pathToRoot}.${entry.key}`, external),
+          );
+        } else {
+          values.push(entry.value);
+        }
+      }
+      return values;
     },
     size() {
-      return external.sendMsg(
+      const strSize = external.sendMsg(
         stringify({
           method: 'size',
           key: `${pathToRoot}`,
         }),
       );
+      return JSON.parse(strSize);
     },
   };
 }
