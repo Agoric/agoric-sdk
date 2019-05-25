@@ -258,7 +258,7 @@ export default function makeVatManager(
     } */
 
     if (p.state === 'unresolved') {
-      p.subscribers.add(vatID);
+      kernelKeeper.addSubscriberToPromise(id, vatID);
       // otherwise it's already resolved, you probably want to know how
     } else if (p.state === 'fulfilledToPresence') {
       kernelKeeper.addToRunQueue({

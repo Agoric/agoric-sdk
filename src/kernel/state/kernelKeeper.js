@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 import makeVatKeeper from './vatKeeper';
 import makeDeviceKeeper from './deviceKeeper';
 
-function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
+function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
   // kvstore has set, get, has, delete methods
   // set (key []byte, value []byte)
   // get (key []byte)  => value []byte
@@ -12,12 +12,10 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
 
   function createStartingKernelState() {
     kvstore.set('log', []);
-    kvstore.set('vats', makeExternalKVStore('kernel', external));
-    kvstore.set('vatNames', []);
-    kvstore.set('devices', makeExternalKVStore('kernel', external));
-    kvstore.set('deviceNames', []);
+    kvstore.set('vats', makeExternalKVStore(pathToRoot, external));
+    kvstore.set('devices', makeExternalKVStore(pathToRoot, external));
     kvstore.set('runQueue', []);
-    kvstore.set('kernelPromises', makeExternalKVStore('kernel', external));
+    kvstore.set('kernelPromises', makeExternalKVStore(pathToRoot, external));
     kvstore.set('nextPromiseIndex', 40);
   }
 
@@ -32,13 +30,21 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
     kernelPromises.set(kernelPromiseID, kernelPromiseObj);
   }
 
-  function addKernelPromise(kernelPromiseObj) {
+  function addKernelPromise(deciderVatID) {
     function allocateNextPromiseIndex() {
       const id = kvstore.get('nextPromiseIndex');
       kvstore.set('nextPromiseIndex', id + 1);
       return id;
     }
     const kernelPromiseID = allocateNextPromiseIndex();
+
+    const kernelPromiseObj = {
+      state: 'unresolved',
+      decider: deciderVatID,
+      queue: [],
+      subscribers: [],
+    };
+
     const kernelPromises = kvstore.get('kernelPromises');
     kernelPromises.set(kernelPromiseID, kernelPromiseObj);
     return kernelPromiseID;
@@ -58,17 +64,54 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
     return kernelPromises.has(kernelPromiseID);
   }
 
+  function deleteKernelPromiseData(kernelPromiseID) {
+    const kernelPromises = kvstore.get('kernelPromises');
+    const kernelPromise = kernelPromises.get(kernelPromiseID);
+    delete kernelPromise.subscribers;
+    delete kernelPromise.decider;
+    delete kernelPromise.queue;
+    // re-save
+    kernelPromises.set(kernelPromiseID, kernelPromise);
+  }
+
+  function updateKernelPromise(kernelPromiseID, kernelPromise) {
+    const kernelPromises = kvstore.get('kernelPromises');
+    kernelPromises.set(kernelPromiseID, kernelPromise);
+  }
+
+  function addSubscriberToPromise(kernelPromiseID, vatID) {
+    const kernelPromises = kvstore.get('kernelPromises');
+    const kernelPromise = kernelPromises.get(kernelPromiseID);
+    const subscribersSet = new Set(kernelPromise.subscribers);
+    subscribersSet.add(vatID);
+    kernelPromise.subscribers = Array.from(subscribersSet);
+    // re-save
+    kernelPromises.set(kernelPromiseID, kernelPromise);
+  }
+
+  function getSubscribers(kernelPromiseID) {
+    const kernelPromises = kvstore.get('kernelPromises');
+    const kernelPromise = kernelPromises.get(kernelPromiseID);
+    return new Set(kernelPromise.subscribers);
+  }
+
+  function loadSubscribers(kernelPromiseID, subscribersArray) {
+    const kernelPromises = kvstore.get('kernelPromises');
+    const kernelPromise = kernelPromises.get(kernelPromiseID);
+    kernelPromise.subscribers = subscribersArray;
+    // resave
+    kernelPromises.set(kernelPromiseID, kernelPromise);
+  }
+
   function addToRunQueue(msg) {
     const runQueue = kvstore.get('runQueue');
     runQueue.push(msg);
+    kvstore.set('runQueue', runQueue);
   }
 
   function addDevice(deviceName, deviceKVStore) {
     const devices = kvstore.get('devices');
     devices.set(deviceName, deviceKVStore);
-    const deviceNames = kvstore.get('deviceNames');
-    deviceNames.push(deviceName);
-    kvstore.set('deviceNames', deviceNames);
   }
 
   function getDevice(deviceName) {
@@ -84,9 +127,6 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
   function addVat(vatID, vatObj) {
     const vats = kvstore.get('vats');
     vats.set(vatID, vatObj);
-    const vatNames = kvstore.get('vatNames');
-    vatNames.push(vatID);
-    kvstore.set('vatNames', vatNames);
   }
 
   function hasVat(vatID) {
@@ -100,11 +140,13 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
   }
 
   function getAllVatNames() {
-    return kvstore.get('vatNames');
+    const vats = kvstore.get('vats');
+    return vats.keys();
   }
 
   function getAllDeviceNames() {
-    return kvstore.get('deviceNames');
+    const devices = kvstore.get('devices');
+    return devices.keys();
   }
 
   function isRunQueueEmpty() {
@@ -119,12 +161,15 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
 
   function getNextMsg() {
     const runQueue = kvstore.get('runQueue');
-    return runQueue.shift();
+    const msg = runQueue.shift();
+    kvstore.set('runQueue', runQueue);
+    return msg;
   }
 
   function log(msg) {
     const kvstoreLog = kvstore.get('log');
     kvstoreLog.push(msg); // template literal barrier in kernel.js
+    kvstore.set('log', kvstoreLog);
   }
 
   // used for debugging and tests
@@ -178,8 +223,9 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
       const { key: id, value: p } = entry;
       const kp = { id: Number(id) };
       Object.defineProperties(kp, Object.getOwnPropertyDescriptors(p));
-      if ('subscribers' in p) {
-        kp.subscribers = Array.from(p.subscribers); // turn Set into Array
+      const subscribers = getSubscribers(kp.id); // an array
+      if (subscribers) {
+        kp.subscribers = subscribers;
       }
       promises.push(kp);
     });
@@ -210,9 +256,7 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
     const vatTables = {};
     const vats = kvstore.get('vats');
 
-    const vatIter = vats.iterator();
-
-    for (const vatEntry of vatIter) {
+    for (const vatEntry of vats.entries()) {
       const { key: vatID, value: vatkvstore } = vatEntry;
       const vatKeeper = makeVatKeeper(vatkvstore);
 
@@ -223,9 +267,8 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
     const deviceState = {};
 
     const devices = kvstore.get('devices');
-    const deviceIter = devices.iterator();
 
-    for (const { key: deviceName, value: devicekvstore } of deviceIter) {
+    for (const { key: deviceName, value: devicekvstore } of devices.entries()) {
       const deviceKeeper = makeDeviceKeeper(devicekvstore);
       deviceState[deviceName] = deviceKeeper.getCurrentState();
     }
@@ -233,13 +276,13 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
     const promises = [];
 
     const kernelPromises = kvstore.get('kernelPromises');
-    const kernelPromiseIter = kernelPromises.iterator();
 
-    for (const { key: id, value: p } of kernelPromiseIter) {
+    for (const { key: id, value: p } of kernelPromises.entries()) {
       const kp = { id };
       Object.defineProperties(kp, Object.getOwnPropertyDescriptors(p));
-      if ('subscribers' in p) {
-        kp.subscribers = Array.from(p.subscribers); // turn Set into Array
+      const subscribers = getSubscribers(kp.id); // an array
+      if (subscribers) {
+        kp.subscribers = subscribers;
       }
       promises.push(kp);
     }
@@ -295,7 +338,7 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
         // eslint-disable-next-line no-empty
         if (name === 'id') {
         } else if (name === 'subscribers') {
-          p.subscribers = new Set(kp.subscribers);
+          loadSubscribers(kp.id, kp.subscribers); // an array
         } else {
           p[name] = kp[name];
         }
@@ -310,6 +353,10 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
     addKernelPromise,
     getKernelPromise,
     hasKernelPromise,
+    deleteKernelPromiseData,
+    updateKernelPromise,
+    addSubscriberToPromise,
+    getSubscribers,
     addToRunQueue,
     dump,
     addDevice,

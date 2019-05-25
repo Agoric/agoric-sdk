@@ -19,6 +19,7 @@ export default function buildKernel(kernelEndowments, external) {
 
   const kernelKeeper = makeKernelKeeper(
     kernelKVStore,
+    'kernel',
     makeExternalKVStore,
     external,
   );
@@ -67,12 +68,7 @@ export default function buildKernel(kernelEndowments, external) {
 
     // we don't harden the kernel promise record because it is mutable: it
     // can be replaced when syscall.redirect/fulfill/reject is called
-    const kernelPromiseID = kernelKeeper.addKernelPromise({
-      state: 'unresolved',
-      decider: deciderVatID,
-      subscribers: new Set(),
-      queue: [],
-    });
+    const kernelPromiseID = kernelKeeper.addKernelPromise(deciderVatID);
     return kernelPromiseID;
   }
 
@@ -118,7 +114,7 @@ export default function buildKernel(kernelEndowments, external) {
 
   function notifySubscribersAndQueue(id, p, type) {
     const pslot = { type: 'promise', id };
-    for (const subscriberVatID of p.subscribers) {
+    for (const subscriberVatID of kernelKeeper.getSubscribers(id)) {
       kernelKeeper.addToRunQueue({
         type,
         vatID: subscriberVatID,
@@ -150,10 +146,8 @@ export default function buildKernel(kernelEndowments, external) {
     }
   }
 
-  function deletePromiseData(kernelPromise) {
-    delete kernelPromise.subscribers;
-    delete kernelPromise.decider;
-    delete kernelPromise.queue;
+  function deletePromiseData(kernelPromiseID) {
+    kernelKeeper.deleteKernelPromiseData(kernelPromiseID);
   }
 
   function fulfillToPresence(id, targetSlot) {
@@ -167,8 +161,9 @@ export default function buildKernel(kernelEndowments, external) {
 
     p.state = 'fulfilledToPresence';
     p.fulfillSlot = targetSlot;
+    kernelKeeper.updateKernelPromise(id, p);
     notifySubscribersAndQueue(id, p, 'notifyFulfillToPresence');
-    deletePromiseData(p);
+    deletePromiseData(id);
   }
 
   function fulfillToData(id, data, slots) {
@@ -179,8 +174,9 @@ export default function buildKernel(kernelEndowments, external) {
     p.state = 'fulfilledToData';
     p.fulfillData = data;
     p.fulfillSlots = slots;
+    kernelKeeper.updateKernelPromise(id, p);
     notifySubscribersAndQueue(id, p, 'notifyFulfillToData');
-    deletePromiseData(p);
+    deletePromiseData(id);
   }
 
   function reject(id, val, valSlots) {
@@ -189,8 +185,9 @@ export default function buildKernel(kernelEndowments, external) {
     p.state = 'rejected';
     p.rejectData = val;
     p.rejectSlots = valSlots;
+    kernelKeeper.updateKernelPromise(id, p);
     notifySubscribersAndQueue(id, p, 'notifyReject');
-    deletePromiseData(p);
+    deletePromiseData(id);
   }
 
   function invoke(device, method, data, slots) {
