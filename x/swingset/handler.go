@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -48,7 +49,8 @@ type storageMessage struct {
 	Value  string `json:"value"`
 }
 
-var myKeeperReference Keeper
+var myKeeper Keeper
+var myContext sdk.Context
 
 func ReceiveFromNode(str string) (string, error) {
 	msg := new(storageMessage)
@@ -57,6 +59,16 @@ func ReceiveFromNode(str string) (string, error) {
 		return "", err
 	}
 
+	switch msg.Method {
+	case "set":
+		path := strings.Split(msg.Key, ".")
+		if len(path) != 2 || path[0] != "mailbox" {
+			return "", errors.New("Can only set 'mailbox.PEER'")
+		}
+		mailbox := NewMailbox()
+		mailbox.Value = msg.Value
+		myKeeper.SetMailbox(myContext, path[1], mailbox)
+	}
 	/* TODO: Dispatch based on msg.Method */
 
 	return "", errors.New("Unrecognized msg.Method " + msg.Method)
@@ -81,12 +93,11 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 		return sdk.ErrInternal(err.Error()).Result()
 	}
 	fmt.Fprintln(os.Stderr, "About to call SwingSet")
-	/*
-		// FIXME: Make available to storage.
-		mySetName = func(name, value string) {
-			keeper.SetName(ctx, name, value)
-		}
-	*/
+
+	// We can set a global because we are guaranteed not to reenter
+	// by other transactions until our CallToNode returns.
+	myKeeper = keeper
+	myContext = ctx
 	out, err := CallToNode(string(b))
 	fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {

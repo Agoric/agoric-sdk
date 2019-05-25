@@ -31,7 +31,8 @@ func (k Keeper) GetMailbox(ctx sdk.Context, peer string) Mailbox {
 	if !store.Has([]byte(peer)) {
 		return NewMailbox()
 	}
-	bz := store.Get([]byte(peer))
+	path := "data:mailbox." + peer
+	bz := store.Get([]byte(path))
 	var mailbox Mailbox
 	k.cdc.MustUnmarshalBinaryBare(bz, &mailbox)
 	return mailbox
@@ -40,7 +41,8 @@ func (k Keeper) GetMailbox(ctx sdk.Context, peer string) Mailbox {
 // Sets the entire mailbox struct for a peer
 func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox Mailbox) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set([]byte(peer), k.cdc.MustMarshalBinaryBare(mailbox))
+	path := "data:mailbox." + peer
+	store.Set([]byte(path), k.cdc.MustMarshalBinaryBare(mailbox))
 }
 
 // Get an iterator over all peers in which the keys are the peers and the values are the mailbox
