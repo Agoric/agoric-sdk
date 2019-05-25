@@ -23,6 +23,8 @@ case "$1" in
       ENTRY=/ssh-tunnel
       FLAGS="-t --volume=$HOME/.ssh:/root/.ssh" # --volume=$ABS/ssh-tunnel:/ssh-tunnel"
       ARGS=" $USER@host.docker.internal $COSSD_PORT ./sscli"
+    else
+      FLAGS="$FLAGS --net=host"
     fi
     ;;
   esac
