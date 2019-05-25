@@ -8,7 +8,7 @@ import makeKVStore from '../src/kernel/kvstore';
 // delete (key []byte)
 // iterator, reverseIterator
 
-test('kvstore set, get, has, delete, iterator', t => {
+test('kvstore set, get, has, delete, keys, values, entries', t => {
   const kvstore = makeKVStore({});
   const val1 = {
     one: 'one',
@@ -30,12 +30,17 @@ test('kvstore set, get, has, delete, iterator', t => {
   const actualDeletedVal2 = kvstore.get('key2');
   t.equal(actualDeletedVal2, undefined);
 
-  const iterator = kvstore.iterator();
-  const { value: first } = iterator.next();
-  t.deepEqual(first, { key: 'key1', value: val1 });
+  const values = kvstore.values();
+  t.deepEqual(values[0], val1);
+  t.deepEqual(values[1], val3);
 
-  const { value: third } = iterator.next();
-  t.deepEqual(third, { key: 'key3', value: val3 });
+  const keys = kvstore.keys();
+  t.equal(keys[0], 'key1');
+  t.equal(keys[1], 'key3');
+
+  const entries = kvstore.entries();
+  t.deepEqual(entries[0], { key: 'key1', value: val1 });
+  t.deepEqual(entries[1], { key: 'key3', value: val3 });
 
   // test order
   const kvstore2 = makeKVStore({});
@@ -43,15 +48,10 @@ test('kvstore set, get, has, delete, iterator', t => {
   kvstore2.set('key2', val2);
   kvstore2.set('key1', val1);
 
-  const iterator2 = kvstore2.iterator();
-  const { value: first2 } = iterator2.next();
-  t.deepEqual(first2, { key: 'key1', value: val1 });
-
-  const { value: second2 } = iterator2.next();
-  t.deepEqual(second2, { key: 'key2', value: val2 });
-
-  const { value: third2 } = iterator2.next();
-  t.deepEqual(third2, { key: 'key3', value: val3 });
+  const entries2 = kvstore2.entries();
+  t.deepEqual(entries2[0], { key: 'key1', value: val1 });
+  t.deepEqual(entries2[1], { key: 'key2', value: val2 });
+  t.deepEqual(entries2[2], { key: 'key3', value: val3 });
 
   t.end();
 });
