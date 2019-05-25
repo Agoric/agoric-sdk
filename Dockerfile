@@ -19,13 +19,13 @@ RUN npm install && npm run build
 FROM node:stretch AS install
 
 WORKDIR /usr/src/app
-RUN mkdir -p lib build/Release
-COPY lib/node-ssd ./lib/
+COPY --from=go-build /usr/src/app/lib/ ./lib/
+RUN mkdir -p build/Release
 COPY ssh-tunnel /ssh-tunnel
 COPY package*.json ./
+COPY demo1/ ./demo1/
 RUN npm install --production
 COPY --from=node-build /usr/src/app/build/Release/*.node build/Release/
-COPY --from=go-build /usr/src/app/lib/*.so lib/
 COPY --from=go-build /go/bin/sscli .
 
 # By default, run the daemon with specified arguments.
