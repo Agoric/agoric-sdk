@@ -349,7 +349,7 @@ export default function buildKernel(kernelEndowments, external) {
           // queue() is exposed to the controller's realm, so we must translate
           // each slot into a kernel-realm object/array
           slots: Array.from(slots.map(mapQueueSlotToKernelRealm)),
-          kernelResolverID: undefined,
+          kernelResolverID: null, // this will be json stringified
         },
       }),
     );

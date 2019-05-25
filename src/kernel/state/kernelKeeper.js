@@ -104,6 +104,7 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
   }
 
   function addToRunQueue(msg) {
+    console.log(msg);
     const runQueue = kvstore.get('runQueue');
     runQueue.push(msg);
     kvstore.set('runQueue', runQueue);
@@ -223,9 +224,9 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
       const { key: id, value: p } = entry;
       const kp = { id: Number(id) };
       Object.defineProperties(kp, Object.getOwnPropertyDescriptors(p));
-      const subscribers = getSubscribers(kp.id); // an array
+      const subscribers = getSubscribers(kp.id);
       if (subscribers) {
-        kp.subscribers = subscribers;
+        kp.subscribers = Array.from(subscribers);
       }
       promises.push(kp);
     });

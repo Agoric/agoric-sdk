@@ -13,7 +13,25 @@ function setKeys(state, key) {
     keys = [];
   }
   keys.push(lastKey);
-  state[keysKey] = keys;
+  const keySet = new Set(keys);
+  keys = Array.from(keySet);
+  state[keysKey] = keys.sort();
+}
+
+function deleteKeys(state, key) {
+  const fullPathArray = key.split('.');
+  const oneUp = fullPathArray.slice(0, -1).join('.');
+  const lastKey = fullPathArray[fullPathArray.length - 1];
+  const keysKey = `keys.${oneUp}`;
+  let keys = state[keysKey];
+  if (keys === undefined) {
+    keys = [];
+  }
+  const index = keys.indexOf(lastKey);
+  if (index > -1) {
+    keys.splice(index, 1);
+    state[keysKey] = keys.sort();
+  }
 }
 
 export default function makeKVStore(state) {
@@ -40,6 +58,7 @@ export default function makeKVStore(state) {
     },
     delete(key) {
       delete state[key];
+      deleteKeys(state, key);
     },
     // reverseIterator
 

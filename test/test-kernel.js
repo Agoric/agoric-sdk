@@ -45,7 +45,7 @@ test('simple call', async t => {
         method: 'foo',
         argsString: 'args',
         slots: [],
-        kernelResolverID: undefined,
+        kernelResolverID: null,
       },
     },
   ]);
@@ -87,22 +87,18 @@ test('map inbound', async t => {
   ]);
   t.deepEqual(kernel.dump().runQueue, [
     {
-      vatID: 'vat1',
-      type: 'deliver',
-      target: {
-        type: 'export',
-        vatID: 'vat1',
-        id: 1,
-      },
       msg: {
-        method: 'foo',
         argsString: 'args',
+        kernelResolverID: null,
+        method: 'foo',
         slots: [
-          { type: 'export', vatID: 'vat1', id: 5 },
-          { type: 'export', vatID: 'vat2', id: 6 },
+          { id: 5, type: 'export', vatID: 'vat1' },
+          { id: 6, type: 'export', vatID: 'vat2' },
         ],
-        kernelResolverID: undefined,
       },
+      target: { id: 1, type: 'export', vatID: 'vat1' },
+      type: 'deliver',
+      vatID: 'vat1',
     },
   ]);
   t.deepEqual(log, []);
@@ -213,19 +209,15 @@ test('outbound call', async t => {
   t.deepEqual(log, []);
   t.deepEqual(kernel.dump().runQueue, [
     {
-      vatID: 'vat1',
-      type: 'deliver',
-      target: {
-        type: 'export',
-        vatID: 'vat1',
-        id: 1,
-      },
       msg: {
-        method: 'foo',
         argsString: 'args',
+        kernelResolverID: null,
+        method: 'foo',
         slots: [],
-        kernelResolverID: undefined,
       },
+      target: { id: 1, type: 'export', vatID: 'vat1' },
+      type: 'deliver',
+      vatID: 'vat1',
     },
   ]);
 
@@ -898,9 +890,10 @@ test('promise resolveToData', async t => {
   t.deepEqual(kernel.dump().promises, [
     {
       id: 40,
-      state: 'fulfilledToData',
       fulfillData: 'args',
-      fulfillSlots: [ex1],
+      fulfillSlots: [{ id: 6, type: 'export', vatID: 'vatB' }],
+      state: 'fulfilledToData',
+      subscribers: [],
     },
   ]);
   t.deepEqual(kernel.dump().runQueue, []);
@@ -965,12 +958,12 @@ test('promise resolveToPresence', async t => {
   t.deepEqual(kernel.dump().promises, [
     {
       id: 40,
+      fulfillSlot: { id: 6, type: 'export', vatID: 'vatB' },
       state: 'fulfilledToPresence',
-      fulfillSlot: ex1,
+      subscribers: [],
     },
   ]);
   t.deepEqual(kernel.dump().runQueue, []);
-
   t.end();
 });
 
@@ -1033,9 +1026,10 @@ test('promise reject', async t => {
   t.deepEqual(kernel.dump().promises, [
     {
       id: 40,
-      state: 'rejected',
       rejectData: 'args',
-      rejectSlots: [ex1],
+      rejectSlots: [{ id: 6, type: 'export', vatID: 'vatB' }],
+      state: 'rejected',
+      subscribers: [],
     },
   ]);
   t.deepEqual(kernel.dump().runQueue, []);

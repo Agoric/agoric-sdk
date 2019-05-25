@@ -22,18 +22,15 @@ async function simpleCall(t, controller) {
   controller.queueToExport('vat1', 1, 'foo', 'args');
   t.deepEqual(controller.dump().runQueue, [
     {
-      vatID: 'vat1',
-      type: 'deliver',
-      target: {
-        type: 'export',
-        vatID: 'vat1',
-        id: 1,
-      },
       msg: {
-        method: 'foo',
         argsString: 'args',
+        kernelResolverID: null,
+        method: 'foo',
         slots: [],
       },
+      target: { id: 1, type: 'export', vatID: 'vat1' },
+      type: 'deliver',
+      vatID: 'vat1',
     },
   ]);
   await controller.run();
@@ -107,19 +104,20 @@ async function bootstrapExport(t, withSES) {
 
   t.deepEqual(c.dump().runQueue, [
     {
-      vatID: '_bootstrap',
-      type: 'deliver',
-      target: { type: 'export', vatID: '_bootstrap', id: 0 },
       msg: {
-        method: 'bootstrap',
         argsString:
           '{"args":[[],{"_bootstrap":{"@qclass":"slot","index":0},"left":{"@qclass":"slot","index":1},"right":{"@qclass":"slot","index":2}},{"_dummy":"dummy"}]}',
+        kernelResolverID: null,
+        method: 'bootstrap',
         slots: [
-          { type: 'export', vatID: '_bootstrap', id: 0 },
-          { type: 'export', vatID: 'left', id: 0 },
-          { type: 'export', vatID: 'right', id: 0 },
+          { id: 0, type: 'export', vatID: '_bootstrap' },
+          { id: 0, type: 'export', vatID: 'left' },
+          { id: 0, type: 'export', vatID: 'right' },
         ],
       },
+      target: { id: 0, type: 'export', vatID: '_bootstrap' },
+      type: 'deliver',
+      vatID: '_bootstrap',
     },
   ]);
 

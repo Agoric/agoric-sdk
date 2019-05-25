@@ -138,7 +138,7 @@ test('resolve-to-local with SES', async t => {
   await testLocal2(t, true);
 });
 
-test('resolve-to-local without SES', async t => {
+test.only('resolve-to-local without SES', async t => {
   await testLocal2(t, false);
 });
 
