@@ -1,6 +1,6 @@
 import stringify from './json-stable-stringify';
 
-export default function makeExternalKVStore(external) {
+export default function makeExternalKVStore(pathToRoot, external) {
   // kvstore has set, get, has, delete methods
   // set (key []byte, value []byte)
   // get (key []byte)  => value []byte
@@ -13,16 +13,20 @@ export default function makeExternalKVStore(external) {
       const value = external.sendMsg(
         stringify({
           method: 'get',
-          key: `${key}`,
+          key: `${pathToRoot}.${key}`,
         }),
       );
+
+      if (typeof value === 'object' && !Array.isArray(value)) {
+        return makeExternalKVStore(`${pathToRoot}.${key}`, external);
+      }
       return value;
     },
     set(key, value) {
       return external.sendMsg(
         stringify({
           method: 'set',
-          key: `${key}`,
+          key: `${pathToRoot}.${key}`,
           value,
         }),
       );
@@ -31,52 +35,41 @@ export default function makeExternalKVStore(external) {
       return external.sendMsg(
         stringify({
           method: 'has',
-          key: `${key}`,
+          key: `${pathToRoot}.${key}`,
         }),
       );
     },
-    delete(key) {
-      return external.sendMsg(
-        stringify({
-          method: 'delete',
-          key: `${key}`,
-        }),
-      );
-    },
-    iterator() {
-      return external.sendMsg(
-        stringify({
-          method: 'iterator',
-        }),
-      );
-    },
-    // TODO: reverseIterator
-
-    // additional helpers that aren't part of kvstore
-
     keys() {
-      const keys = [];
-      for (const entry of this.iterator()) {
-        keys.push(entry.key);
-      }
-      return keys;
+      return external.sendMsg(
+        stringify({
+          method: 'keys',
+          key: `${pathToRoot}`,
+        }),
+      );
     },
     entries() {
-      const entries = [];
-      for (const entry of this.iterator()) {
-        entries.push(entry);
-      }
-      return entries;
+      return external.sendMsg(
+        stringify({
+          method: 'entries',
+          key: `${pathToRoot}`,
+        }),
+      );
     },
     values() {
-      const values = [];
-      for (const entry of this.iterator()) {
-        values.push(entry.value);
-      }
-      return values;
+      return external.sendMsg(
+        stringify({
+          method: 'values',
+          key: `${pathToRoot}`,
+        }),
+      );
     },
     size() {
-      return this.keys().length;
+      return external.sendMsg(
+        stringify({
+          method: 'size',
+          key: `${pathToRoot}`,
+        }),
+      );
     },
   };
 }

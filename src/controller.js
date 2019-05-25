@@ -93,8 +93,21 @@ const external = harden({
         outsideRealmKVStore.delete(key);
         break;
       }
-      case 'iterator': {
-        return outsideRealmKVStore.iterator();
+      case 'keys': {
+        const { key } = command;
+        return outsideRealmKVStore.keys(key);
+      }
+      case 'entries': {
+        const { key } = command;
+        return outsideRealmKVStore.entries(key);
+      }
+      case 'values': {
+        const { key } = command;
+        return outsideRealmKVStore.values(key);
+      }
+      case 'size': {
+        const { key } = command;
+        return outsideRealmKVStore.size(key);
       }
       default:
         throw new Error(`unexpected message to kvstore ${msg}`);

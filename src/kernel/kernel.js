@@ -15,7 +15,7 @@ import makeExternalKVStore from './externalKVStore';
 export default function buildKernel(kernelEndowments, external) {
   const { setImmediate } = kernelEndowments;
 
-  const kernelKVStore = makeExternalKVStore(external);
+  const kernelKVStore = makeExternalKVStore('kernel', external);
 
   const kernelKeeper = makeKernelKeeper(
     kernelKVStore,
@@ -245,8 +245,14 @@ export default function buildKernel(kernelEndowments, external) {
       },
     });
 
-    const vatKVStore = makeExternalKVStore(external);
-    const vatKeeper = makeVatKeeper(vatKVStore, makeExternalKVStore, external);
+    const vatPath = `kernel.vats.${vatID}`;
+    const vatKVStore = makeExternalKVStore(vatPath, external);
+    const vatKeeper = makeVatKeeper(
+      vatKVStore,
+      vatPath,
+      makeExternalKVStore,
+      external,
+    );
 
     vatKeeper.createStartingVatState();
 
@@ -279,9 +285,11 @@ export default function buildKernel(kernelEndowments, external) {
       },
     });
 
-    const deviceKVStore = makeExternalKVStore(external);
+    const devicePath = `kernel.devices.${name}`;
+    const deviceKVStore = makeExternalKVStore(devicePath, external);
     const deviceKeeper = makeDeviceKeeper(
       deviceKVStore,
+      devicePath,
       makeExternalKVStore,
       external,
     );

@@ -12,10 +12,12 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
 
   function createStartingKernelState() {
     kvstore.set('log', []);
-    kvstore.set('vats', makeExternalKVStore(external));
-    kvstore.set('devices', makeExternalKVStore(external));
+    kvstore.set('vats', makeExternalKVStore('kernel', external));
+    kvstore.set('vatNames', []);
+    kvstore.set('devices', makeExternalKVStore('kernel', external));
+    kvstore.set('deviceNames', []);
     kvstore.set('runQueue', []);
-    kvstore.set('kernelPromises', makeExternalKVStore(external));
+    kvstore.set('kernelPromises', makeExternalKVStore('kernel', external));
     kvstore.set('nextPromiseIndex', 40);
   }
 
@@ -64,6 +66,9 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
   function addDevice(deviceName, deviceKVStore) {
     const devices = kvstore.get('devices');
     devices.set(deviceName, deviceKVStore);
+    const deviceNames = kvstore.get('deviceNames');
+    deviceNames.push(deviceName);
+    kvstore.set('deviceNames', deviceNames);
   }
 
   function getDevice(deviceName) {
@@ -79,6 +84,9 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
   function addVat(vatID, vatObj) {
     const vats = kvstore.get('vats');
     vats.set(vatID, vatObj);
+    const vatNames = kvstore.get('vatNames');
+    vatNames.push(vatID);
+    kvstore.set('vatNames', vatNames);
   }
 
   function hasVat(vatID) {
@@ -92,13 +100,11 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
   }
 
   function getAllVatNames() {
-    const vats = kvstore.get('vats');
-    return vats.keys();
+    return kvstore.get('vatNames');
   }
 
   function getAllDeviceNames() {
-    const devices = kvstore.get('devices');
-    return devices.keys();
+    return kvstore.get('deviceNames');
   }
 
   function isRunQueueEmpty() {
@@ -128,9 +134,7 @@ function makeKernelKeeper(kvstore, makeExternalKVStore, external) {
 
     const vats = kvstore.get('vats');
 
-    const iter = vats.iterator();
-
-    for (const vatEntry of iter) {
+    for (const vatEntry of vats.entries()) {
       const { key: vatID, value: vatkvstore } = vatEntry;
 
       const vatKeeper = makeVatKeeper(vatkvstore);

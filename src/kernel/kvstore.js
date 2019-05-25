@@ -38,36 +38,36 @@ export default function makeKVStore(state) {
     delete(key) {
       delete state[key];
     },
-    iterator() {
-      return makeEntriesIterator(state);
+    iterator(key) {
+      return makeEntriesIterator(state[key]);
     },
     // reverseIterator
 
     // additional helpers that aren't part of kvstore
 
-    keys() {
+    keys(key) {
       const keys = [];
-      for (const entry of this.iterator()) {
+      for (const entry of this.iterator(key)) {
         keys.push(entry.key);
       }
       return keys;
     },
-    entries() {
+    entries(key) {
       const entries = [];
-      for (const entry of this.iterator()) {
+      for (const entry of this.iterator(key)) {
         entries.push(entry);
       }
       return entries;
     },
-    values() {
+    values(key) {
       const values = [];
-      for (const entry of this.iterator()) {
+      for (const entry of this.iterator(key)) {
         values.push(entry.value);
       }
       return values;
     },
-    size() {
-      return this.keys().length;
+    size(key) {
+      return this.keys(key).length;
     },
   };
 }

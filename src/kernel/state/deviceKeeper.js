@@ -1,12 +1,12 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
-function makeDeviceKeeper(kvstore, makeExternalKVStore, external) {
+function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
   function createStartingDeviceState() {
-    kvstore.set('imports', makeExternalKVStore(external));
+    kvstore.set('imports', makeExternalKVStore(pathToRoot, external));
     const imports = kvstore.get('imports');
-    imports.set('outbound', makeExternalKVStore(external));
-    imports.set('inbound', makeExternalKVStore(external));
+    imports.set('outbound', makeExternalKVStore(pathToRoot, external));
+    imports.set('inbound', makeExternalKVStore(pathToRoot, external));
     kvstore.set('nextImportID', 10);
   }
 
