@@ -50,8 +50,8 @@ func (msg MsgDeliverInbound) ValidateBasic() sdk.Error {
 			return sdk.ErrUnknownRequest("Nums cannot be negative")
 		}
 	}
-	if msg.Ack < -1 {
-		return sdk.ErrUnknownRequest("Ack cannot be less than -1")
+	if msg.Ack < 0 {
+		return sdk.ErrUnknownRequest("Ack cannot be negative")
 	}
 	return nil
 }

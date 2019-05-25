@@ -1,6 +1,6 @@
 package swingset
 
-const EmptyMailboxValue = "[[], -1]"
+const EmptyMailboxValue = "[[], 0]"
 
 type Mailbox struct {
 	Value string `json:"value"`
