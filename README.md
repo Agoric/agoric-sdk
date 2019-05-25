@@ -78,23 +78,12 @@ Go back to the old terminal and run commands against the network you have just c
 sscli query account $(sscli keys show jack -a) 
 sscli query account $(sscli keys show alice -a) 
 
-# Buy your first name using your coins from the genesis file
-sscli tx swingset buy-name jack.id 5agtoken --from jack 
+# Relay a message on behalf of Alice
+# TODO: Use a valid message set and ack for demo1
+sscli tx swingset deliver alice '[[], 1]' --from jack --fees 1agtoken
 
-# Set the value for the name you just bought
-sscli tx swingset set-name jack.id my-name.local --from jack 
-
-# Try out a resolve query against the name you registered
-# The capitalization shows that SwingSet intercepted the Cosmos request.
-sscli query swingset resolve jack.id
-# > MY-NAME.LOCAL
-
-# Try out a whois query against the name you just registered
-sscli query swingset whois jack.id
-# > {"value":"MY-NAME.LOCAL","owner":"cosmos1l7k5tdt2qam0zecxrx78yuw447ga54dsmtpk2s","price":[{"denom":"agtoken","amount":"5"}]}
-
-# Alice buys name from jack
-sscli tx swingset buy-name jack.id 10agtoken --from alice 
+# Look at Bob's the outbound mailbox
+sscli query swingset mailbox bob
 ```
 
 **Congratulations, you are running the Agoric testnet!**
