@@ -9,11 +9,9 @@ ARGS=
 
 
 case "$1" in
-"" | keys | help | config)
-  # No need for networking to ssd, indeed, SSH interaction
-  # would mess up our output.
-  ;;
-*)
+rest-server)
+  # FIXME: Does this actually work?
+  FLAGS="-p127.0.0.1:$REST_PORT:$REST_PORT"
   case " $@ " in
   *" --help "*) ;;
   *)
@@ -21,22 +19,17 @@ case "$1" in
       # On MacOS, run the tunnel to host.docker.internal:$COSSD_PORT.
       # FIXME: Windows needs the same.
       ENTRY=/ssh-tunnel
-      FLAGS="-t --volume=$HOME/.ssh:/root/.ssh" # --volume=$ABS/ssh-tunnel:/ssh-tunnel"
+      FLAGS="$FLAGS -t --volume=$HOME/.ssh:/root/.ssh" # --volume=$ABS/ssh-tunnel:/ssh-tunnel"
       ARGS=" $USER@host.docker.internal $COSSD_PORT ./sscli"
-    else
-      FLAGS="$FLAGS --net=host"
     fi
     ;;
   esac
   ;;
-esac
-
-case "$1" in
-rest-server)
-  FLAGS="$FLAGS -p127.0.0.1:$REST_PORT:$REST_PORT"
+*)
+  FLAGS="--net=host"
   ;;
 esac
 
-exec docker run -i $FLAGS --entrypoint="$ENTRY" \
+exec docker run -i --net=host $FLAGS --entrypoint="$ENTRY" \
   --volume=sscli-state:/root/.sscli \
   --rm agoric/cosmic-swingset$ARGS ${1+"$@"}
