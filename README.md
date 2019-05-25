@@ -10,7 +10,7 @@ $ ssd --help
 $ sscli --help
 ```
 
-You can find the images at [Docker Hub](https://docker.io/r/agoric/cosmic-swingset)
+You can find the images at [Docker Hub](https://cloud.docker.com/u/agoric/repository/docker/agoric/cosmic-swingset)
 
 ## Build from source
 
@@ -19,8 +19,8 @@ You can browse the current source tree at [Github](https://github.com/Agoric/cos
 If you want to build and install from sources, you need Node.js 11 and Golang 1.12:
 
 ```
-$ npm install
 $ make
+$ npm install
 ```
 
 Make shell aliases for `ssd` and `sscli`.  Note that the `$PWD` variable must be the absolute path to the current cosmic-swingset directory:
@@ -78,15 +78,15 @@ sscli query account $(sscli keys show alice -a)
 sscli tx swingset buy-name jack.id 5agtoken --from jack 
 
 # Set the value for the name you just bought
-sscli tx swingset set-name jack.id 8.8.8.8 --from jack 
+sscli tx swingset set-name jack.id my-name.local --from jack 
 
 # Try out a resolve query against the name you registered
 sscli query swingset resolve jack.id
-# > 8.8.8.8
+# > MY-NAME.LOCAL
 
 # Try out a whois query against the name you just registered
 sscli query swingset whois jack.id
-# > {"value":"8.8.8.8","owner":"cosmos1l7k5tdt2qam0zecxrx78yuw447ga54dsmtpk2s","price":[{"denom":"agtoken","amount":"5"}]}
+# > {"value":"MY-NAME.LOCAL","owner":"cosmos1l7k5tdt2qam0zecxrx78yuw447ga54dsmtpk2s","price":[{"denom":"agtoken","amount":"5"}]}
 
 # Alice buys name from jack
 sscli tx swingset buy-name jack.id 10agtoken --from alice 

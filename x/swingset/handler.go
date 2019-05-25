@@ -1,10 +1,23 @@
 package swingset
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
+
+const SWINGSET_PORT = 17
+
+type swingSetName = struct {
+	Type  string `json:"type"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+var NodeMessageSender func(port int, needReply bool, str string) (string, error)
 
 // NewHandler returns a handler for "swingset" type messages.
 func NewHandler(keeper Keeper) sdk.Handler {
@@ -21,12 +34,53 @@ func NewHandler(keeper Keeper) sdk.Handler {
 	}
 }
 
-// Handle a message to set name
+func SendToNode(str string) error {
+	_, err := NodeMessageSender(SWINGSET_PORT, false, str)
+	return err
+}
+
+func CallToNode(str string) (string, error) {
+	return NodeMessageSender(SWINGSET_PORT, true, str)
+}
+
+var mySetName func(string, string)
+
+func ReceiveFromNode(str string) (string, error) {
+	action := new(swingSetName)
+	err := json.Unmarshal([]byte(str), &action)
+	if err != nil {
+		return "", err
+	}
+
+	switch action.Type {
+	case "SET_NAME":
+		fmt.Fprintln(os.Stderr, "Setting name", action.Name, action.Value)
+		mySetName(action.Name, action.Value)
+		return "true", nil
+	}
+	return "", errors.New("Unrecognized action.type " + action.Type)
+}
+
 func handleMsgSetName(ctx sdk.Context, keeper Keeper, msg MsgSetName) sdk.Result {
 	if !msg.Owner.Equals(keeper.GetOwner(ctx, msg.Name)) { // Checks if the the msg sender is the same as the current owner
 		return sdk.ErrUnauthorized("Incorrect Owner").Result() // If not, throw an error
 	}
-	err := handleSwingSetName(ctx, keeper, msg.Name, msg.Value)
+
+	ssn := &swingSetName{
+		Type:  "SET_NAME",
+		Name:  msg.Name,
+		Value: msg.Value,
+	}
+	b, err := json.Marshal(ssn)
+	if err != nil {
+		return sdk.ErrInternal(err.Error()).Result()
+	}
+	fmt.Fprintln(os.Stderr, "About to call SwingSet")
+	mySetName = func(name, value string) {
+		keeper.SetName(ctx, name, value)
+	}
+	out, err := CallToNode(string(b))
+	fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return sdk.ErrInternal(err.Error()).Result()
 	}
