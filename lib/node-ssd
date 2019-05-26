@@ -15,7 +15,7 @@ setInterval(() => {
 const ss = require('bindings')('ss.node');
 console.log('Have SSD', ss);
 
-launch().then(({ handler, setSet }) => {
+launch().then(({ handler, setStorage }) => {
   function fromGo(port, str, replier) {
     const action = JSON.parse(str);
     const p = Promise.resolve(handler(action));
@@ -23,10 +23,22 @@ launch().then(({ handler, setSet }) => {
            rej => replier.reject("rejection ignored"));
   }
   const cosmos = ss.start(fromGo, process.argv.slice(1));
-  function set(key, value) {
-    return ss.send(cosmos, JSON.stringify({method: "set", key, value}));
-  }
-  setSet(set);
+  setStorage({
+    has(key) {
+      return ss.send(cosmos, JSON.stringify({method: "has", key}));
+    },
+    set(key, value) {
+      return ss.send(cosmos, JSON.stringify({method: "set", key, value}));
+    },
+    get(key) {
+      return ss.send(cosmos, JSON.stringify({method: "get", key}));
+    },
+  });
+  // We want the Go side to call this once it's safe for us to use storage,
+  // since the handler will load the saved kernel state (with
+  // storage.has/get) and then build the swingset kernel.
+  const _p = handler({type: 'SDK_READY'});
+
 
   console.log('Got from SSD', ss.send(cosmos, "Hello from node proper!"));
 },
