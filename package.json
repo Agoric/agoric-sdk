@@ -11,7 +11,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/swingset-vat": "^0.0.8",
+    "@agoric/swingset-vat": "^0.0.9",
     "bindings": "^1.2.1",
     "deterministic-json": "^1.0.5",
     "esm": "^3.2.5"
