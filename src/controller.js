@@ -126,7 +126,7 @@ function makeEvaluate(e) {
   return (source, endowments = {}) => confineExpr(source, endowments);
 }
 
-function buildSESKernel() {
+function buildSESKernel(external) {
   const s = SES.makeSESRootRealm({
     consoleMode: 'allow',
     errorStackMode: 'allow',
@@ -143,21 +143,26 @@ function buildSESKernel() {
   // console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })();
   const kernelEndowments = { setImmediate };
-  const external = makeExternal();
   const kernel = buildKernel(kernelEndowments, external);
   return { kernel, s, r };
 }
 
-function buildNonSESKernel() {
+function buildNonSESKernel(external) {
   const kernelEndowments = { setImmediate };
-  const external = makeExternal();
   const kernel = buildKernelNonSES(kernelEndowments, external);
   return { kernel };
 }
 
-export async function buildVatController(config, withSES = true, argv = []) {
+export async function buildVatController(
+  config,
+  withSES = true,
+  argv = [],
+  external = makeExternal(),
+) {
   // console.log('in main');
-  const { kernel, s, r } = withSES ? buildSESKernel() : buildNonSESKernel();
+  const { kernel, s, r } = withSES
+    ? buildSESKernel(external)
+    : buildNonSESKernel(external);
   // console.log('kernel', kernel);
 
   async function addVat(vatID, sourceIndex, _options) {

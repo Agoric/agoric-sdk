@@ -2,6 +2,8 @@ import { test } from 'tape-promise/tape';
 import { buildVatController } from '../src/index';
 import buildSharedStringTable from '../src/devices/sharedTable';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
+import { makeExternal } from '../src/controller';
+import makeExternalKVStore from '../src/kernel/externalKVStore';
 
 async function test0(t, withSES) {
   const config = {
@@ -77,13 +79,16 @@ test('d1 without SES', async t => {
 });
 
 async function test2(t, mode, withSES) {
+  const external = makeExternal();
+  const kvstore = makeExternalKVStore('kernel.devices.d2', external);
+
   const config = {
     vatSources: new Map(),
-    devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
+    devices: [['d2', require.resolve('./files-devices/device-2'), { kvstore }]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
   config.vatSources.set('left', require.resolve('./files-devices/vat-left.js'));
-  const c = await buildVatController(config, withSES, [mode]);
+  const c = await buildVatController(config, withSES, [mode], external);
   await c.step();
   if (mode === '1') {
     t.deepEqual(c.dump().log, ['calling d2.method1', 'method1 hello', 'done']);
@@ -175,13 +180,16 @@ test('d2.5 without SES', async t => {
 });
 
 async function testState(t, withSES) {
+  const external = makeExternal();
+  const kvstore = makeExternalKVStore('kernel.devices.d2', external);
+
   const config = {
     vatSources: new Map(),
-    devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
+    devices: [['d2', require.resolve('./files-devices/device-2'), { kvstore }]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
 
-  const c = await buildVatController(config, withSES, ['state1']);
+  const c = await buildVatController(config, withSES, ['state1'], external);
   t.deepEqual(c.getState().devices.d2.deviceState, 'initial');
   await c.step();
   t.deepEqual(c.dump().log, ['calling setState', 'setState state2', 'called']);
@@ -196,18 +204,21 @@ async function testState(t, withSES) {
   t.end();
 }
 
-test.skip('device state with SES', async t => {
+test('device state with SES', async t => {
   await testState(t, true);
 });
 
-test.skip('device state without SES', async t => {
+test('device state without SES', async t => {
   await testState(t, false);
 });
 
 async function testSetState(t, withSES) {
+  const external = makeExternal();
+  const kvstore = makeExternalKVStore('kernel.devices.d2', external);
+
   const config = {
     vatSources: new Map(),
-    devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
+    devices: [['d2', require.resolve('./files-devices/device-2'), { kvstore }]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
     state: {
       vats: {},
@@ -229,7 +240,7 @@ async function testSetState(t, withSES) {
     },
   };
   const argv = ['state2'];
-  const c = await buildVatController(config, withSES, argv);
+  const c = await buildVatController(config, withSES, argv, external);
   t.deepEqual(c.getState().devices.d2.deviceState, 'initial state');
 
   c.callBootstrap('_bootstrap', argv);
@@ -242,16 +253,20 @@ async function testSetState(t, withSES) {
   t.end();
 }
 
-test.skip('set device state with SES', async t => {
+test('set device state with SES', async t => {
   await testSetState(t, true);
 });
 
-test.skip('set device state without SES', async t => {
+test('set device state without SES', async t => {
   await testSetState(t, false);
 });
 
 async function testSharedTable(t, withSES) {
+  const external = makeExternal();
+  const kvstore = makeExternalKVStore('kernel.devices.d2', external);
+
   const st = buildSharedStringTable();
+  st.endowments.kvstore = kvstore;
   console.log(`source: ${st.srcPath}`);
   const config = {
     vatSources: new Map(),
@@ -260,7 +275,7 @@ async function testSharedTable(t, withSES) {
   };
   config.vatSources.set('left', require.resolve('./files-devices/vat-left.js'));
 
-  const c = await buildVatController(config, withSES, ['table1']);
+  const c = await buildVatController(config, withSES, ['table1'], external);
   console.log('H0');
   await c.step();
   console.log(`table ${st}`);

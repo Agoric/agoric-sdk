@@ -327,7 +327,8 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
       const deviceData = newState.devices[deviceName];
       const devicekvstore = getDevice(deviceName);
       const deviceKeeper = makeDeviceKeeper(devicekvstore);
-      deviceKeeper.loadManagerState(deviceData);
+      deviceKeeper.loadManagerState(deviceData.managerState);
+      deviceKeeper.loadDeviceState(deviceData.deviceState);
     }
 
     newState.runQueue.forEach(q => addToRunQueue(q));

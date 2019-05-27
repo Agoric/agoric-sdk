@@ -89,7 +89,11 @@ export default function makeKVStore(state) {
       return values;
     },
     size(key) {
-      return state[`keys.${key}`].length;
+      const keys = state[`keys.${key}`];
+      if (keys === undefined) {
+        return 0;
+      }
+      return keys.length;
     },
   };
 }

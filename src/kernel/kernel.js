@@ -483,8 +483,11 @@ export default function buildKernel(kernelEndowments, external) {
       kernelKeeper.loadState(newState);
 
       // evaluate the transcript
-      for (const [vatID, vat] of ephemeral.vats.entries()) {
-        vat.manager.loadState(newState.vats[vatID].state);
+
+      for (const vatID of Object.getOwnPropertyNames(newState.vats)) {
+        const vatData = newState.vats[vatID];
+        const vat = ephemeral.vats.get(vatID);
+        vat.manager.loadState(vatData.state);
       }
     },
 

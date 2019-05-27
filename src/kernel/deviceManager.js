@@ -122,13 +122,13 @@ export default function makeDeviceManager(
 
   function loadState(savedState) {
     deviceKeeper.loadManagerState(savedState.managerState);
-    // dispatch.setState(savedState.deviceState);
+    deviceKeeper.loadDeviceState(savedState.deviceState);
   }
 
   function getCurrentState() {
     return harden({
       managerState: deviceKeeper.getManagerState(),
-      // deviceState: dispatch.getState(),
+      deviceState: deviceKeeper.getDeviceState(),
     });
   }
 

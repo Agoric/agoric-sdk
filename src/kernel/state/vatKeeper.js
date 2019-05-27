@@ -309,8 +309,6 @@ export default function makeVatKeeper(
       nextPromiseID: kvstore.get('nextPromiseID'),
       nextResolverID: kvstore.get('nextResolverID'),
       nextDeviceImportID: kvstore.get('nextDeviceImportID'),
-
-      transcript: kvstore.get('transcript'),
     };
   }
 

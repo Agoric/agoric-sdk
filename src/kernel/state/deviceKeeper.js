@@ -75,8 +75,7 @@ function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
     };
   }
 
-  function loadManagerState(data) {
-    const deviceData = data.managerState;
+  function loadManagerState(deviceData) {
     const outbound = kvstore.get('imports').get('outbound');
     const inbound = kvstore.get('imports').get('inbound');
 
@@ -89,11 +88,24 @@ function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
     deviceData.imports.inbound.forEach(kv => inbound.set(kv[0], kv[1]));
   }
 
+  function getDeviceState() {
+    return kvstore.get('deviceState');
+  }
+
+  function loadDeviceState(newState) {
+    // state must be stringifiable
+    kvstore.set('deviceState', newState);
+  }
+
+  function loadState(savedState) {
+    loadManagerState(savedState.managerState);
+    loadDeviceState(savedState.deviceState);
+  }
+
   function getCurrentState() {
     return harden({
       managerState: getManagerState(),
-      // deviceState: dispatch.getState(),
-      deviceState: {},
+      deviceState: getDeviceState(),
     });
   }
 
@@ -103,6 +115,9 @@ function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
     mapKernelSlotToDeviceSlot,
     getManagerState,
     loadManagerState,
+    getDeviceState,
+    loadDeviceState,
+    loadState,
     getCurrentState,
   });
 }
