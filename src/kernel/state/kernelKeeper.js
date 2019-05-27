@@ -280,7 +280,7 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
     for (const { key: id, value: p } of kernelPromises.entries()) {
       const kp = { id };
       Object.defineProperties(kp, Object.getOwnPropertyDescriptors(p));
-      const subscribers = getSubscribers(kp.id); // an array
+      const subscribers = Array.from(getSubscribers(kp.id));
       if (subscribers) {
         kp.subscribers = subscribers;
       }
@@ -337,14 +337,14 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
       const p = {};
       Object.getOwnPropertyNames(kp).forEach(name => {
         // eslint-disable-next-line no-empty
-        if (name === 'id') {
-        } else if (name === 'subscribers') {
-          loadSubscribers(kp.id, kp.subscribers); // an array
-        } else {
+        if (name !== 'id') {
           p[name] = kp[name];
         }
       });
       loadKernelPromise(kp.id, p);
+      if (kp.subscribers) {
+        loadSubscribers(kp.id, kp.subscribers); // an array
+      }
     });
     loadNextPromiseIndex(newState.nextPromiseIndex);
   }
