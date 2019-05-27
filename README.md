@@ -79,8 +79,7 @@ sscli query account $(sscli keys show jack -a)
 sscli query account $(sscli keys show alice -a) 
 
 # Relay a message on behalf of Alice
-# TODO: Use a valid message set and ack for demo1
-sscli tx swingset deliver alice '[[], 1]' --from jack --fees 1agtoken
+sscli tx swingset deliver alice --from jack '[[[0,"{\"target\":{\"type\":\"your-egress\",\"id\":1},\"methodName\":\"getIssuer\",\"args\":[],\"slots\":[],\"resultSlot\":{\"type\":\"your-resolver\",\"id\":1}}"]], 0]'
 
 # Look at Bob's the outbound mailbox
 sscli query swingset mailbox bob
