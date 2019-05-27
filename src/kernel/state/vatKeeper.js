@@ -231,10 +231,11 @@ export default function makeVatKeeper(
       throw new Error(`vat[$vatID] is not empty, cannot loadState`);
     }
 
-    kvstore.set('nextImportID', vatData.nextImportID);
-    kvstore.set('nextPromiseID', vatData.nextPromiseID);
-    kvstore.set('nextResolverID', vatData.nextResolverID);
-    kvstore.set('nextDeviceImportID', vatData.nextDeviceImportID);
+    const nextIDs = kvstore.get('nextIDs');
+    nextIDs.set('import', vatData.nextImportID);
+    nextIDs.set('promise', vatData.nextPromiseID);
+    nextIDs.set('resolver', vatData.nextResolverID);
+    nextIDs.set('deviceImport', vatData.nextDeviceImportID);
 
     // exports, devices, promises, resolvers
     const kernelSlotToVatSlot = kvstore.get('kernelSlotToVatSlot');
@@ -288,6 +289,7 @@ export default function makeVatKeeper(
   function getManagerState() {
     const kernelSlotToVatSlot = kvstore.get('kernelSlotToVatSlot');
     const vatSlotToKernelSlot = kvstore.get('vatSlotToKernelSlot');
+    const nextIDs = kvstore.get('nextIDs');
 
     return {
       kernelSlotToVatSlot: {
@@ -305,10 +307,10 @@ export default function makeVatKeeper(
         resolvers: vatSlotToKernelSlot.get('resolvers').entries(),
       },
 
-      nextImportID: kvstore.get('nextImportID'),
-      nextPromiseID: kvstore.get('nextPromiseID'),
-      nextResolverID: kvstore.get('nextResolverID'),
-      nextDeviceImportID: kvstore.get('nextDeviceImportID'),
+      nextImportID: nextIDs.get('import'),
+      nextPromiseID: nextIDs.get('promise'),
+      nextResolverID: nextIDs.get('resolver'),
+      nextDeviceImportID: nextIDs.get('deviceImport'),
     };
   }
 
