@@ -476,7 +476,7 @@ export default function buildKernel(kernelEndowments, external) {
       return kernelKeeper.getState();
     },
 
-    loadState(outerRealmState) {
+    async loadState(outerRealmState) {
       const newState = JSON.parse(JSON.stringify(outerRealmState));
 
       // copy in the data passively
@@ -487,7 +487,8 @@ export default function buildKernel(kernelEndowments, external) {
       for (const vatID of Object.getOwnPropertyNames(newState.vats)) {
         const vatData = newState.vats[vatID];
         const vat = ephemeral.vats.get(vatID);
-        vat.manager.loadState(vatData.state);
+        // eslint-disable-next-line no-await-in-loop
+        await vat.manager.loadState(vatData.state);
       }
     },
 

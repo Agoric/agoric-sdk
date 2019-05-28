@@ -318,8 +318,6 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
 
       // this shouldn't be doing any syscalls, which is good because we
       // haven't wired anything else up yet
-      // eslint-disable-next-line no-await-in-loop
-      // await vatKeeper.loadState(vatData.state);
       vatKeeper.loadManagerState(vatData);
     }
 
