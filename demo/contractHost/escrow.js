@@ -1,49 +1,96 @@
-/* global require E */
+/* global E makePromise */
+// Copyright (C) 2019 Agoric, under Apache License 2.0
 
-export default function escrowExchange(a, b) {
-  /* eslint-disable-next-line global-require */
-  const harden = require('@agoric/harden');
+import harden from '@agoric/harden';
 
-  function join(xP, yP) {
-    return Promise.all([xP, yP]).then(([x, y]) => {
-      if (Object.is(x, y)) {
-        return x;
-      }
-      throw new Error('not the same');
-    });
-  }
+// For clarity, the code below internally speaks of a scenario is
+// which Alice is trading some of her money for some of Bob's
+// stock. However, for generality, the API does not expose names like
+// "alice", "bob", "money", or "stock". Rather, Alice and Bob are
+// players 0 and 1. Money are the rights transfered from player 0 to
+// 1, and Stock are the rights transfered from 1 to 0.
 
-  // a from Alice , b from Bob
-  function makeTransfer(srcPurseP, dstPurseP, amount) {
-    const issuerP = join(E(srcPurseP).getIssuer(), E(dstPurseP).getIssuer());
-    const escrowPurseP = E(issuerP).makeEmptyPurse('escrow');
+function escrowExchange(terms, chitMaker) {
+  const [moneyNeeded, stockNeeded] = terms;
+
+  function makeTransfer(amount, srcPaymentP) {
+    const { issuer } = amount.label;
+    const escrowP = E(issuer).getExclusive(amount, srcPaymentP, 'escrow');
+    const winnings = makePromise();
+    const refund = makePromise();
     return harden({
       phase1() {
-        return E(escrowPurseP).deposit(amount, srcPurseP);
+        return escrowP;
       },
       phase2() {
-        return E(dstPurseP).deposit(amount, escrowPurseP);
+        winnings.res(escrowP);
+        refund.res(null);
       },
-      abort() {
-        return E(srcPurseP).deposit(amount, escrowPurseP);
+      abort(reason) {
+        winnings.reject(reason);
+        refund.res(escrowP);
+      },
+      getWinnings() {
+        return winnings.p;
+      },
+      getRefund() {
+        return refund.p;
       },
     });
   }
 
-  function failOnly(cancellationP) {
-    return Promise.resolve(cancellationP).then(cancellation => {
-      throw cancellation;
-    });
-  }
+  // Promise wiring
 
-  const aT = makeTransfer(a.moneySrcP, b.moneyDstP, b.moneyNeeded);
-  const bT = makeTransfer(b.stockSrcP, a.stockDstP, a.stockNeeded);
-  return Promise.race([
-    Promise.all([aT.phase1(), bT.phase1()]),
-    failOnly(a.cancellationP),
-    failOnly(b.cancellationP),
-  ]).then(
-    _x => Promise.all([aT.phase2(), bT.phase2()]),
-    _ex => Promise.all([aT.abort(), bT.abort()]),
+  const moneyPayment = makePromise();
+  const moneyTransfer = makeTransfer(moneyNeeded, moneyPayment.p);
+
+  const stockPayment = makePromise();
+  const stockTransfer = makeTransfer(stockNeeded, stockPayment.p);
+
+  // TODO Use cancellation tokens instead.
+  const aliceCancel = makePromise();
+  const bobCancel = makePromise();
+
+  // Set it all in motion optimistically.
+
+  const decisionP = Promise.race([
+    Promise.all([moneyTransfer.phase1(), stockTransfer.phase1()]),
+    aliceCancel.p,
+    bobCancel.p,
+  ]);
+  decisionP.then(
+    _ => {
+      moneyTransfer.phase2();
+      stockTransfer.phase2();
+    },
+    reason => {
+      moneyTransfer.abort(reason);
+      stockTransfer.abort(reason);
+    },
   );
+
+  // Seats
+
+  const aliceSeat = harden({
+    offer: moneyPayment.res,
+    cancel: aliceCancel.reject,
+    getWinnings: stockTransfer.getWinnings,
+    getRefund: moneyTransfer.getRefund,
+  });
+
+  const bobSeat = harden({
+    offer: stockPayment.res,
+    cancel: bobCancel.reject,
+    getWinnings: moneyTransfer.getWinnings,
+    getRefund: stockTransfer.getRefund,
+  });
+
+  return harden([
+    chitMaker.make([0, moneyNeeded, stockNeeded], aliceSeat),
+    chitMaker.make([1, stockNeeded, moneyNeeded], bobSeat),
+  ]);
 }
+
+const escrowExchangeSrc = `(${escrowExchange})`;
+
+export { escrowExchange, escrowExchangeSrc };

@@ -1,49 +1,46 @@
-// Copyright (C) 2013 Google Inc.
-// Copyright (C) 2018 Agoric
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright (C) 2013 Google Inc, under Apache License 2.0
+// Copyright (C) 2018 Agoric, under Apache License 2.0
 
-/* eslint-disable-next-line global-require, import/no-extraneous-dependencies */
 import harden from '@agoric/harden';
-import escrowExchange from './escrow';
 
-function makeBob(E, host, log) {
-  const escrowSrc = `(${escrowExchange})`;
+import { insist } from '../../collections/insist';
+import { escrowExchangeSrc } from './escrow';
+import { coveredCallSrc } from './coveredCall';
+import { makeCollect } from './chit';
+
+function makeBob(E, host) {
+  const collect = makeCollect(E);
 
   let initialized = false;
-  let myMoneyPurseP;
-  let myMoneyIssuerP;
-  let myStockPurseP;
-  let myStockIssuerP;
+  let timerP;
 
-  function init(myMoneyPurse, myStockPurse) {
+  let myMoneyPurseP;
+  let moneyIssuerP;
+  let moneyNeededP;
+
+  let myStockPurseP;
+  let stockIssuerP;
+  let stockNeededP;
+
+  function init(timer, myMoneyPurse, myStockPurse) {
+    timerP = E.resolve(timer);
+
+    myMoneyPurseP = E.resolve(myMoneyPurse);
+    moneyIssuerP = E(myMoneyPurseP).getIssuer();
+    moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
+
+    myStockPurseP = E.resolve(myStockPurse);
+    stockIssuerP = E(myStockPurseP).getIssuer();
+    stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
+
     initialized = true;
-    myMoneyPurseP = Promise.resolve(myMoneyPurse);
-    myMoneyIssuerP = E(myMoneyPurse).getIssuer();
-    myStockPurseP = Promise.resolve(myStockPurse);
-    myStockIssuerP = E(myStockPurse).getIssuer();
-    /* eslint-disable-next-line no-use-before-define */
+    // eslint-disable-next-line no-use-before-define
     return bob; // bob and init use each other
   }
 
-  const check = (_allegedSrc, _allegedSide) => {
-    // for testing purposes, alice and bob are willing to play
-    // any side of any contract, so that the failure we're testing
-    // is in the contractHost's checking
-  };
-
   const bob = harden({
     init,
+
     /**
      * This is not an imperative to Bob to buy something but rather
      * the opposite. It is a request by a client to buy something from
@@ -51,9 +48,9 @@ function makeBob(E, host, log) {
      * is a bit confusing here.
      */
     buy(desc, paymentP) {
-      if (!initialized) {
-        log('++ ERR: buy called before init()');
-      }
+      insist(initialized)`\
+ERR: buy called before init()`;
+
       /* eslint-disable-next-line no-unused-vars */
       let amount;
       let good;
@@ -70,29 +67,26 @@ function makeBob(E, host, log) {
       }
 
       return E(myMoneyPurseP)
-        .deposit(10, paymentP)
+        .deposit(amount, paymentP)
         .then(_ => good);
     },
 
-    tradeWell(alice, bobLies = false) {
+    tradeWell(alice) {
       log('++ bob.tradeWell starting');
-      if (!initialized) {
-        log('++ ERR: tradeWell called before init()');
-      }
-      const tokensP = E(host).setup(escrowSrc);
-      const aliceTokenP = tokensP.then(tokens => tokens[0]);
-      const bobTokenP = tokensP.then(tokens => tokens[1]);
-      let escrowSrcWeTellAlice = escrowSrc;
-      if (bobLies) {
-        escrowSrcWeTellAlice += 'NOT';
-      }
+      insist(initialized)`\
+ERR: tradeWell called before init()`;
+
+      const termsP = harden([moneyNeededP, stockNeededP]);
+      const chitsP = E(host).start(escrowExchangeSrc, termsP);
+      const aliceChitP = chitsP.then(chits => chits[0]);
+      const bobChitP = chitsP.then(chits => chits[1]);
       const doneP = Promise.all([
-        E(alice).invite(aliceTokenP, escrowSrcWeTellAlice, 0),
-        E(bob).invite(bobTokenP, escrowSrc, 1),
+        E(alice).invite(aliceChitP),
+        E(bob).invite(bobChitP),
       ]);
       doneP.then(
         _res => log('++ bob.tradeWell done'),
-        rej => log('++ bob.tradeWell reject', rej),
+        rej => log('++ bob.tradeWell reject: ', rej),
       );
       return doneP;
     },
@@ -102,42 +96,46 @@ function makeBob(E, host, log) {
      * this object, asking it to join in a contract instance. It is not
      * requesting that this object invite anything.
      */
-    invite(tokenP, allegedSrc, allegedSide) {
-      if (!initialized) {
-        log('++ ERR: invite called before init()');
-      }
-      log('++ bob.invite start');
-      check(allegedSrc, allegedSide);
-      log('++ bob.invite passed check');
-      /* eslint-disable-next-line no-unused-vars */
-      let cancel;
-      const b = harden({
-        stockSrcP: E(myStockIssuerP).makeEmptyPurse('bobStockSrc'),
-        moneyDstP: E(myMoneyIssuerP).makeEmptyPurse('bobMoneyDst'),
-        moneyNeeded: 10,
-        cancellationP: new Promise(r => (cancel = r)),
-      });
-      const ackP = E(b.stockSrcP).deposit(7, myStockPurseP);
+    invite(chitP) {
+      insist(initialized)`\
+ERR: invite called before init()`;
 
-      const doneP = ackP.then(_ => {
-        log('++ bob.invite ackP');
-        return E(host).play(tokenP, allegedSrc, allegedSide, b);
-      });
-      return doneP.then(
-        _ => {
-          log('++ bob.invite doneP');
-          return E(b.moneyDstP).getBalance();
-        },
-        rej => {
-          log('++ bob.invite doneP reject', rej);
-        },
+      const seatP = E(host).redeem(chitP);
+      const stockPaymentP = E(myStockPurseP).withdraw(7);
+      E(seatP).offer(stockPaymentP);
+      return collect(seatP, myMoneyPurseP, myStockPurseP, 'bob escrow');
+    },
+
+    offerAliceOption(alice) {
+      log('++ bob.offerAliceOption starting');
+      insist(initialized)`\
+ERR: offerAliceOption called before init()`;
+
+      const termsP = harden([
+        moneyNeededP,
+        stockNeededP,
+        timerP,
+        'singularity',
+      ]);
+      const bobChitP = E(host).start(coveredCallSrc, termsP);
+      const bobSeatP = E(host).redeem(bobChitP);
+      const stockPaymentP = E(myStockPurseP).withdraw(7);
+      const aliceChitP = E(bobSeatP).offer(stockPaymentP);
+      const doneP = Promise.all([
+        E(alice).acceptOption(aliceChitP),
+        collect(bobSeatP, myMoneyPurseP, myStockPurseP, 'bob option'),
+      ]);
+      doneP.then(
+        _res => log('++ bob.offerAliceOption done'),
+        rej => log('++ bob.offerAliceOption reject: ', rej),
       );
+      return doneP;
     },
   });
   return bob;
 }
 
-export default function setup(syscall, state, helpers) {
+function setup(syscall, state, helpers) {
   function log(what) {
     helpers.log(what);
     console.log(what);
@@ -150,3 +148,4 @@ export default function setup(syscall, state, helpers) {
     }),
   );
 }
+export default harden(setup);

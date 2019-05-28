@@ -1,58 +1,96 @@
-// Copyright (C) 2011 Google Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Test simple contract code
- * @requires define
- */
+// Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
 
+import { insist } from '../../collections/insist';
+
 function build(E, log) {
-  function mintTest(mint) {
-    log('starting mintTest');
-    const mP = E(mint).makeMint();
-    const alicePurseP = E(mP).mint(1000, 'alice');
-    const mIssuerP = E(alicePurseP).getIssuer();
-    const depositPurseP = E(mIssuerP).makeEmptyPurse('deposit');
-    const v = E(depositPurseP).deposit(50, alicePurseP); // TODO: was .fork() hack
-    // TODO: no longer true "this ordering should be guaranteed by the fact
-    // that this is all in the same Flow"
-    const aBal = v.then(_ => E(alicePurseP).getBalance());
-    const dBal = v.then(_ => E(depositPurseP).getBalance());
-    Promise.all([aBal, dBal]).then(bals => {
-      log('++ balances:', bals);
-      log('++ DONE');
+  function showPaymentBalance(name, paymentP) {
+    E(paymentP)
+      .getXferBalance()
+      .then(amount => log(name, ' xfer balance ', amount));
+  }
+  function showPurseBalances(name, purseP) {
+    E(purseP)
+      .getXferBalance()
+      .then(amount => log(name, ' xfer balance ', amount));
+    E(purseP)
+      .getUseBalance()
+      .then(amount => log(name, ' use balance ', amount));
+  }
+
+  /*
+  const fakeNowTimer = harden({
+    delayUntil(deadline, resolution = undefined) {
+      log(`Pretend ${deadline} passed`);
+      return E.resolve(resolution);
+    },
+  });
+  */
+  const fakeNeverTimer = harden({
+    delayUntil(deadline, _resolution = undefined) {
+      log(`Pretend ${deadline} never happens`);
+      return new Promise(_r => {});
+    },
+  });
+
+  // This is written in the full assay style, where bare number
+  // objects are never used in lieu of full amount objects. This has
+  // the virtue of unit typing, where 3 dollars cannot be confused
+  // with 3 seconds.
+  function mintTestAssay(mint) {
+    log('starting mintTestAssay');
+    const mMintP = E(mint).makeMint('bucks');
+    const mIssuerP = E(mMintP).getIssuer();
+    E.resolve(mIssuerP).then(issuer => {
+      // By using an unforgeable issuer presence and a pass-by-copy
+      // description together as a unit label, we check that both
+      // agree. The veracity of the description is, however, only as
+      // good as the issuer doing the check.
+      const label = harden({ issuer, description: 'bucks' });
+      const bucks1000 = harden({ label, quantity: 1000 });
+      const bucks50 = harden({ label, quantity: 50 });
+
+      const alicePurseP = E(mMintP).mint(bucks1000, 'alice');
+      const paymentP = E(alicePurseP).withdraw(bucks50);
+      E.resolve(paymentP).then(_ => {
+        showPurseBalances('alice', alicePurseP);
+        showPaymentBalance('payment', paymentP);
+      });
+    });
+  }
+
+  // Uses raw numbers rather than amounts. Until we have support for
+  // pass-by-presence, the full assay style shown in mintTestAssay is
+  // too awkward.
+  function mintTestNumber(mint) {
+    log('starting mintTestNumber');
+    const mMintP = E(mint).makeMint('quatloos');
+
+    const alicePurseP = E(mMintP).mint(1000, 'alice');
+    const paymentP = E(alicePurseP).withdraw(50);
+    E.resolve(paymentP).then(_ => {
+      showPurseBalances('alice', alicePurseP);
+      showPaymentBalance('payment', paymentP);
     });
   }
 
   function trivialContractTest(host) {
     log('starting trivialContractTest');
 
-    function trivContract(_whiteP, _blackP) {
-      return 8;
+    function trivContract(terms, chitMaker) {
+      return chitMaker.make('foo', 8);
     }
     const contractSrc = `${trivContract}`;
 
-    const tokensP = E(host).setup(contractSrc);
+    const fooChitP = E(host).start(contractSrc, 'foo terms');
 
-    const whiteTokenP = tokensP.then(tokens => tokens[0]);
-    E(host).play(whiteTokenP, contractSrc, 0, {});
+    showPaymentBalance('foo', fooChitP);
 
-    const blackTokenP = tokensP.then(tokens => tokens[1]);
-    const eightP = E(host).play(blackTokenP, contractSrc, 1, {});
+    const eightP = E(host).redeem(fooChitP);
+
     eightP.then(res => {
+      showPaymentBalance('foo', fooChitP);
       log('++ eightP resolved to', res, '(should be 8)');
       if (res !== 8) {
         throw new Error(`eightP resolved to ${res}, not 8`);
@@ -63,61 +101,57 @@ function build(E, log) {
   }
 
   function betterContractTestAliceFirst(mint, alice, bob) {
-    const moneyMintP = E(mint).makeMint();
+    const moneyMintP = E(mint).makeMint('moola');
     const aliceMoneyPurseP = E(moneyMintP).mint(1000);
     const bobMoneyPurseP = E(moneyMintP).mint(1001);
 
-    const stockMintP = E(mint).makeMint();
+    const stockMintP = E(mint).makeMint('Tyrell');
     const aliceStockPurseP = E(stockMintP).mint(2002);
     const bobStockPurseP = E(stockMintP).mint(2003);
 
-    const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP);
-    /* eslint-disable-next-line no-unused-vars */
-    const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP);
-
-    const ifItFitsP = E(aliceP).payBobWell(bob);
-    ifItFitsP.then(
-      res => {
-        log('++ ifItFitsP done:', res);
-        log('++ DONE');
-      },
-      rej => log('++ ifItFitsP failed', rej),
+    const aliceP = E(alice).init(
+      fakeNeverTimer,
+      aliceMoneyPurseP,
+      aliceStockPurseP,
     );
-    return ifItFitsP;
+    const bobP = E(bob).init(fakeNeverTimer, bobMoneyPurseP, bobStockPurseP);
+    return Promise.all([aliceP, bobP]).then(_ => {
+      const ifItFitsP = E(aliceP).payBobWell(bob);
+      ifItFitsP.then(
+        res => {
+          log('++ ifItFitsP done:', res);
+          log('++ DONE');
+        },
+        rej => log('++ ifItFitsP failed', rej),
+      );
+      return ifItFitsP;
+    });
   }
 
-  function betterContractTestBobFirst(mint, alice, bob, bobLies = false) {
-    const moneyMintP = E(mint).makeMint();
+  function betterContractTestBobFirst(mint, alice, bob) {
+    const moneyMintP = E(mint).makeMint('clams');
     const aliceMoneyPurseP = E(moneyMintP).mint(1000, 'aliceMainMoney');
     const bobMoneyPurseP = E(moneyMintP).mint(1001, 'bobMainMoney');
 
-    const stockMintP = E(mint).makeMint();
+    const stockMintP = E(mint).makeMint('fudco');
     const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
     const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
 
-    const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP);
-    const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP);
-
-    if (bobLies) {
-      E(bobP)
-        .tradeWell(aliceP, true)
-        .then(
-          res => {
-            log('++ bobP.tradeWell done:', res);
-          },
-          rej => {
-            if (rej.message.startsWith('unexpected contract')) {
-              log('++ DONE');
-            } else {
-              log('++ bobP.tradeWell error:', rej);
-            }
-          },
-        );
-    } else {
+    const aliceP = E(alice).init(
+      fakeNeverTimer,
+      aliceMoneyPurseP,
+      aliceStockPurseP,
+    );
+    const bobP = E(bob).init(fakeNeverTimer, bobMoneyPurseP, bobStockPurseP);
+    return Promise.all([aliceP, bobP]).then(_ => {
       E(bobP)
         .tradeWell(aliceP, false)
         .then(
           res => {
+            showPurseBalances('alice money', aliceMoneyPurseP);
+            showPurseBalances('alice stock', aliceStockPurseP);
+            showPurseBalances('bob money', bobMoneyPurseP);
+            showPurseBalances('bob stock', bobStockPurseP);
             log('++ bobP.tradeWell done:', res);
             log('++ DONE');
           },
@@ -125,15 +159,105 @@ function build(E, log) {
             log('++ bobP.tradeWell error:', rej);
           },
         );
-    }
-    //  return E(aliceP).tradeWell(bobP);
+    });
+  }
+
+  function coveredCallTest(mint, alice, bob) {
+    const moneyMintP = E(mint).makeMint('smackers');
+    const aliceMoneyPurseP = E(moneyMintP).mint(1000, 'aliceMainMoney');
+    const bobMoneyPurseP = E(moneyMintP).mint(1001, 'bobMainMoney');
+
+    const stockMintP = E(mint).makeMint('yoyodyne');
+    const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
+    const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
+
+    const aliceP = E(alice).init(
+      fakeNeverTimer,
+      aliceMoneyPurseP,
+      aliceStockPurseP,
+    );
+    const bobP = E(bob).init(fakeNeverTimer, bobMoneyPurseP, bobStockPurseP);
+    return Promise.all([aliceP, bobP]).then(_ => {
+      E(bobP)
+        .offerAliceOption(aliceP, false)
+        .then(
+          res => {
+            showPurseBalances('alice money', aliceMoneyPurseP);
+            showPurseBalances('alice stock', aliceStockPurseP);
+            showPurseBalances('bob money', bobMoneyPurseP);
+            showPurseBalances('bob stock', bobStockPurseP);
+            log('++ bobP.offerAliceOption done:', res);
+            log('++ DONE');
+          },
+          rej => {
+            log('++ bobP.offerAliceOption error:', rej);
+          },
+        );
+    });
+  }
+
+  function coveredCallSaleTest(mint, alice, bob, fred) {
+    const doughMintP = E(mint).makeMint('dough');
+    const aliceDoughPurseP = E(doughMintP).mint(1000, 'aliceDough');
+    const bobDoughPurseP = E(doughMintP).mint(1001, 'bobDough');
+    const fredDoughPurseP = E(doughMintP).mint(1002, 'fredDough');
+
+    const stockMintP = E(mint).makeMint('wonka');
+    const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
+    const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
+    const fredStockPurseP = E(stockMintP).mint(2004, 'fredMainStock');
+
+    const finMintP = E(mint).makeMint('fins');
+    const aliceFinPurseP = E(finMintP).mint(3000, 'aliceFins');
+    const fredFinPurseP = E(finMintP).mint(3001, 'fredFins');
+
+    const aliceP = E(alice).init(
+      fakeNeverTimer,
+      aliceDoughPurseP,
+      aliceStockPurseP,
+      aliceFinPurseP,
+      fred,
+    );
+    const bobP = E(bob).init(fakeNeverTimer, bobDoughPurseP, bobStockPurseP);
+    /* eslint-disable-next-line no-unused-vars */
+    const fredP = E(fred).init(
+      fakeNeverTimer,
+      fredDoughPurseP,
+      fredStockPurseP,
+      fredFinPurseP,
+    );
+    return Promise.all([aliceP, bobP, fredP]).then(_ => {
+      E(bobP)
+        .offerAliceOption(aliceP)
+        .then(
+          res => {
+            showPurseBalances('alice dough', aliceDoughPurseP);
+            showPurseBalances('alice stock', aliceStockPurseP);
+            showPurseBalances('alice fins', aliceFinPurseP);
+
+            showPurseBalances('bob dough', bobDoughPurseP);
+            showPurseBalances('bob stock', bobStockPurseP);
+
+            showPurseBalances('fred dough', fredDoughPurseP);
+            showPurseBalances('fred stock', fredStockPurseP);
+            showPurseBalances('fred fins', fredFinPurseP);
+
+            log('++ bobP.offerAliceOption done:', res);
+            log('++ DONE');
+          },
+          rej => {
+            log('++ bobP.offerAliceOption error:', rej);
+          },
+        );
+    });
   }
 
   const obj0 = {
     async bootstrap(argv, vats) {
       switch (argv[0]) {
         case 'mint': {
-          return mintTest(vats.mint);
+          mintTestAssay(vats.mint);
+          return mintTestNumber(vats.mint);
         }
         case 'trivial': {
           const host = await E(vats.host).makeHost();
@@ -151,21 +275,30 @@ function build(E, log) {
           const bob = await E(vats.bob).makeBob(host);
           return betterContractTestBobFirst(vats.mint, alice, bob);
         }
-        case 'bob-first-lies': {
+        case 'covered-call': {
           const host = await E(vats.host).makeHost();
           const alice = await E(vats.alice).makeAlice(host);
           const bob = await E(vats.bob).makeBob(host);
-          return betterContractTestBobFirst(vats.mint, alice, bob, true);
+          return coveredCallTest(vats.mint, alice, bob);
         }
-        default:
-          throw new Error('unrecognized argument value');
+        case 'covered-call-sale': {
+          const host = await E(vats.host).makeHost();
+          const alice = await E(vats.alice).makeAlice(host);
+          const bob = await E(vats.bob).makeBob(host);
+          const fred = await E(vats.fred).makeFred(host);
+          return coveredCallSaleTest(vats.mint, alice, bob, fred);
+        }
+        default: {
+          throw new Error(`unrecognized argument value ${argv[0]}`);
+        }
       }
     },
   };
   return harden(obj0);
 }
+harden(build);
 
-export default function setup(syscall, state, helpers) {
+function setup(syscall, state, helpers) {
   function log(what) {
     helpers.log(what);
     console.log(what);
@@ -178,3 +311,4 @@ export default function setup(syscall, state, helpers) {
     helpers.vatID,
   );
 }
+export default harden(setup);
