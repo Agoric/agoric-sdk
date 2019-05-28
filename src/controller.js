@@ -26,6 +26,8 @@ export function loadBasedir(basedir, stateArg) {
       const name = dirent.name.slice('vat-'.length, -'.js'.length);
       const indexJS = path.resolve(basedir, dirent.name);
       vatSources.set(name, indexJS);
+    } else {
+      console.log('ignoring ', dirent.name);
     }
   });
   let bootstrapIndexJS = path.resolve(basedir, 'bootstrap.js');

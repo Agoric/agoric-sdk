@@ -37,7 +37,7 @@ export default function handleCommsController(
       `addEgress called with sender ${sender}, index ${index}, valslot ${valslot}`,
     );
     if (
-      typeof valslot !== 'object' ||
+      Object(valslot) !== valslot ||
       !('@qclass' in valslot) ||
       valslot['@qclass'] !== 'slot'
     ) {

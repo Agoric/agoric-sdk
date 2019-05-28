@@ -25,5 +25,7 @@ export default function makePromise() {
       delete p.domain;
     }
   }
-  return harden({ p, res, rej });
+  // TODO: Retire name 'rej' as it looks too much like 'res'.
+  return harden({ p, res, rej, reject: rej });
 }
+harden(makePromise);
