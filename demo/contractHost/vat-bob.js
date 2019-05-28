@@ -8,7 +8,7 @@ import { escrowExchangeSrc } from './escrow';
 import { coveredCallSrc } from './coveredCall';
 import { makeCollect } from './chit';
 
-function makeBob(E, host) {
+function makeBob(E, host, log) {
   const collect = makeCollect(E);
 
   let initialized = false;

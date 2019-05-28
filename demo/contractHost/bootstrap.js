@@ -2,8 +2,6 @@
 
 import harden from '@agoric/harden';
 
-import { insist } from '../../collections/insist';
-
 function build(E, log) {
   function showPaymentBalance(name, paymentP) {
     E(paymentP)

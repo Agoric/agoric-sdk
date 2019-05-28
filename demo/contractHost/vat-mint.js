@@ -4,7 +4,7 @@ import harden from '@agoric/harden';
 
 import { makeMint } from './issuers';
 
-function build(_E, log) {
+function build(_E, _log) {
   return harden({ makeMint });
 }
 harden(build);
