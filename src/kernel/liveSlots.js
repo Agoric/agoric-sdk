@@ -371,7 +371,7 @@ function build(syscall, _state, makeRoot, forVatID) {
       lsdebug(` ser ${ser.argsString} ${JSON.stringify(ser.slots)}`);
       const unser = JSON.parse(ser.argsString);
       if (
-        typeof unser === 'object' &&
+        Object(unser) === unser &&
         QCLASS in unser &&
         unser[QCLASS] === 'slot'
       ) {
