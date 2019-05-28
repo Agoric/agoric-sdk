@@ -23,6 +23,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 
 	app "github.com/Agoric/cosmic-swingset"
+	swingset "github.com/Agoric/cosmic-swingset/x/swingset"
 	gaiaInit "github.com/cosmos/cosmos-sdk/cmd/gaia/init"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -38,7 +39,13 @@ const (
 	flagOverwrite = "overwrite"
 )
 
+type Sender func(needReply bool, str string) (string, error)
+
 func Run() {
+	RunWithController(nil)
+}
+
+func RunWithController(sendToNode Sender) {
 	cobra.EnableCommandSorting = false
 
 	cdc := app.MakeCodec()
@@ -52,7 +59,10 @@ func Run() {
 
 	rootCmd.AddCommand(InitCmd(ctx, cdc))
 	rootCmd.AddCommand(AddGenesisAccountCmd(ctx, cdc))
-	server.AddCommands(ctx, cdc, rootCmd, newApp, appExporter())
+	server.AddCommands(ctx, cdc, rootCmd, makeNewApp(sendToNode), appExporter())
+
+	// FIXME: Remove this global variable!
+	swingset.NodeMessageSender = sendToNode
 
 	// prepare and add flags
 	executor := cli.PrepareBaseCmd(rootCmd, "NS", DefaultNodeHome)
@@ -63,8 +73,25 @@ func Run() {
 	}
 }
 
-func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer) abci.Application {
-	return app.NewSwingSetApp(logger, db)
+func makeNewApp(sendToNode Sender) func(logger log.Logger, db dbm.DB, traceStore io.Writer) abci.Application {
+	fmt.Println("Constructing app!")
+	return func(logger log.Logger, db dbm.DB, traceStore io.Writer) abci.Application {
+		fmt.Println("Starting daemon!")
+		abci := app.NewSwingSetApp(logger, db)
+		if sendToNode != nil {
+			handler := NewPrefixedDBStorageHandler("swingset", db)
+			port := swingset.RegisterPortHandler(handler)
+			msg := fmt.Sprintf(`{"type":"SSD_INIT","readonlyStoragePort":%d}`, port)
+			fmt.Println("Sending SSD_INIT to Node", port, msg)
+			ret, err := sendToNode(true, msg)
+			fmt.Println("Received SSD_INIT response", ret, err)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "Cannot initialize Node", err)
+				return nil
+			}
+		}
+		return abci
+	}
 }
 
 func appExporter() server.AppExporter {
@@ -196,7 +223,7 @@ $ ssd add-genesis-account cosmos1tse7r2fadvlrrgau3pa0ss7cqh55wrv6y9alwh 1000STAK
 	return cmd
 }
 
-// SimpleAppGenTx returns a simple GenTx command that makes the node a valdiator from the start
+// SimpleAppGenTx returns a simple GenTx command that makes the node a validator from the start
 func SimpleAppGenTx(cdc *codec.Codec, pk crypto.PubKey) (
 	appGenTx, cliPrint json.RawMessage, validator tmtypes.GenesisValidator, err error) {
 

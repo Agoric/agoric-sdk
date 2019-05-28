@@ -28,10 +28,10 @@ const SwingSetPort = 123
 var replies = map[int]chan goReturn{}
 var lastReply = 0
 
-//export StartCOSS
-func StartCOSS(toNode C.sendFunc, cosmosArgs []*C.char) C.int {
+//export RunSSD
+func RunSSD(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int {
 	// FIXME: Decouple the sending logic from the Cosmos app.
-	swingset.NodeMessageSender = func(port int, needReply bool, str string) (string, error) {
+	sendToNode := func(needReply bool, str string) (string, error) {
 		var rPort int
 		if needReply {
 			lastReply++
@@ -40,7 +40,7 @@ func StartCOSS(toNode C.sendFunc, cosmosArgs []*C.char) C.int {
 		}
 
 		// Send the message
-		C.invokeSendFunc(toNode, C.int(port), C.int(rPort), C.CString(str))
+		C.invokeSendFunc(toNode, nodePort, C.int(rPort), C.CString(str))
 		if !needReply {
 			// Return immediately
 			fmt.Fprintln(os.Stderr, "Don't wait")
@@ -64,7 +64,7 @@ func StartCOSS(toNode C.sendFunc, cosmosArgs []*C.char) C.int {
 	go func() {
 		// We run in the background, but exit when the job is over.
 		// swingset.SendToNode("hello from Initial Go!")
-		ssd.Run()
+		ssd.RunWithController(sendToNode)
 		fmt.Fprintln(os.Stderr, "Shutting down Cosmos")
 		os.Exit(0)
 	}()
@@ -98,12 +98,12 @@ func ReplyToGo(replyPort C.int, isError C.int, str C.Body) C.int {
 func SendToGo(port C.int, str C.Body) C.Body {
 	goStr := C.GoString(str)
 	fmt.Fprintln(os.Stderr, "Send to Go", goStr)
-	switch port {
-	case SwingSetPort:
-		str, _ := swingset.ReceiveFromNode(goStr)
-		return C.CString(str)
+	outstr, err := swingset.ReceiveFromNode(int(port), goStr)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Cannot receive from node", err)
+		return C.CString("")
 	}
-	return C.CString("FIXME: implement port " + string(port))
+	return C.CString(outstr)
 }
 
 // Do nothing in main.

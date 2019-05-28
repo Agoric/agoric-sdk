@@ -5,64 +5,74 @@ require = require('esm')(module);
 
 const { launch } = require('./launch-chain');
 
-/*console.log('Setting Node timer');
-let i = 0;
-setInterval(() => {
-    console.log('Node is alive', ++i);
-}, 1000);
-*/
-
 const ss = require('bindings')('ss.node');
 console.log('Have SSD', ss);
 
-launch().then(({ handler, setStorage }) => {
-  function fromGo(port, str, replier) {
-    const action = JSON.parse(str);
-    const p = Promise.resolve(handler(action));
-    p.then(res => replier.resolve("success ignored"),
-           rej => replier.reject("rejection ignored"));
+const portHandlers = {};
+let lastPort = 0;
+function registerPortHandler(portHandler) {
+  const port = ++lastPort;
+  portHandlers[port] = portHandler;
+  return port;
+}
+function fromGo(port, str, replier) {
+  const handler = portHandlers[port];
+  if (!handler) {
+    return replier.reject(`invalid requested port ${port}`);
   }
-  const cosmos = ss.start(fromGo, process.argv.slice(1));
-  setStorage({
+  const action = JSON.parse(str);
+  const p = Promise.resolve(handler(action));
+  p.then(res => replier.resolve("success ignored"),
+         rej => replier.reject("rejection ignored"));
+}
+
+// Actually run the main ssd program.  Before we start the daemon,
+// there will be a call to nodePort/SSD_INIT, otherwise exit.
+const nodePort = registerPortHandler(toSwingSet);
+ss.runSSD(nodePort, fromGo, process.argv.slice(1));
+
+let globalHandler, globalSetStorage;
+async function toSwingSet(action, replier) {
+  function handlePromise(p) {
+    p.then(res => replier.resolve(`success ${res} ignored`),
+          rej => replier.reject(`rejection ${res} ignored`));
+  }
+  if (globalHandler) {
+    if (action.storagePort) {
+      // FIXME: Initialize the storage for this particular transaction.
+      globalSetStorage(makeStorage(action.storagePort));
+    }
+    const p = Promise.resolve(globalHandler(action));
+    handlePromise(p);
+  }
+
+  if (action.type !== 'SSD_INIT') {
+    return replier.reject(`SSD_INIT must be the first message`);
+  }
+  const sPort = action.readonlyStoragePort;
+  launch().then(({ handler, setStorage }) => {
+    globalHandler = handler;
+    globalSetStorage = setStorage;
+    // Initialize the kernel state by reading the storage.
+    setStorage(makeStorage(sPort));
+    const p = Promise.resolve(handler({type: 'SDK_READY'}));
+    handlePromise(p);
+  }, rej => {
+    console.log(`launch() failed`, rej);
+  });
+}
+
+// Generate a storage object for the port.
+function makeStorage(sPort) {
+  return {
     has(key) {
-      return ss.send(cosmos, JSON.stringify({method: "has", key}));
+      return ss.send(sPort, JSON.stringify({method: "has", key}));
     },
     set(key, value) {
-      return ss.send(cosmos, JSON.stringify({method: "set", key, value}));
+      return ss.send(sPort, JSON.stringify({method: "set", key, value}));
     },
     get(key) {
-      return ss.send(cosmos, JSON.stringify({method: "get", key}));
+      return ss.send(sPort, JSON.stringify({method: "get", key}));
     },
-  });
-  // We want the Go side to call this once it's safe for us to use storage,
-  // since the handler will load the saved kernel state (with
-  // storage.has/get) and then build the swingset kernel.
-  const _p = handler({type: 'SDK_READY'});
-
-
-  console.log('Got from SSD', ss.send(cosmos, "Hello from node proper!"));
-},
-              rej => {
-                console.log(`launch() failed`, rej);
-              });
-/*
-    console.error('Node received', str);
-    const action = JSON.parse(str);
-    switch (action.type) {
-    case 'SET_NAME':
-        action.value = action.value.toUpperCase();
-        setTimeout(() => {
-            console.log('Delayed, now sending to cosmos');
-            const val = ss.send(cosmos, JSON.stringify(action));
-            console.log('Got from cosmos', JSON.stringify(val));
-            console.log('Have replier', replier);
-            replier.resolve(val);
-        }, 3000);
-        console.log('Returning immediately from Javascript');
-        return 'Immediate!';
-    }
-    replier.reject(JSON.stringify({type: "ERROR", value: `Unknown action.type ${action.type}`}));
-*/
-
-
-
+  };
+}

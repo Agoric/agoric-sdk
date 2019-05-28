@@ -10,16 +10,27 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-const SWINGSET_PORT = 17
-
 type deliverInboundAction struct {
-	Type     string          `json:"type"`
-	Peer     string          `json:"peer"`
-	Messages [][]interface{} `json:"messages"`
-	Ack      int             `json:"ack"`
+	Type        string          `json:"type"`
+	Peer        string          `json:"peer"`
+	Messages    [][]interface{} `json:"messages"`
+	Ack         int             `json:"ack"`
+	StoragePort int             `json:"storagePort"`
 }
 
-var NodeMessageSender func(port int, needReply bool, str string) (string, error)
+// FIXME: Get rid of this globals in exchange for a field on some object.
+var NodeMessageSender func(needReply bool, str string) (string, error)
+
+// FIXME: Get rid of this global in exchange for a method on some object.
+func SendToNode(str string) error {
+	_, err := NodeMessageSender(false, str)
+	return err
+}
+
+// FIXME: Get rid of this global in exchange for a method on some object.
+func CallToNode(str string) (string, error) {
+	return NodeMessageSender(true, str)
+}
 
 // NewHandler returns a handler for "swingset" type messages.
 func NewHandler(keeper Keeper) sdk.Handler {
@@ -34,23 +45,30 @@ func NewHandler(keeper Keeper) sdk.Handler {
 	}
 }
 
-func SendToNode(str string) error {
-	_, err := NodeMessageSender(SWINGSET_PORT, false, str)
-	return err
+type PortHandler interface {
+	Receive(string) (string, error)
 }
 
-func CallToNode(str string) (string, error) {
-	return NodeMessageSender(SWINGSET_PORT, true, str)
+var portToHandler = map[int]PortHandler{}
+var lastPort = 0
+
+func RegisterPortHandler(portHandler PortHandler) int {
+	lastPort++
+	portToHandler[lastPort] = portHandler
+	return lastPort
+}
+func UnregisterPortHandler(portNum int) error {
+	delete(portToHandler, portNum)
+	return nil
 }
 
-type storageMessage struct {
-	Method string `json:"method"`
-	Key    string `json:"key"`
-	Value  string `json:"value"`
+func ReceiveFromNode(portNum int, msg string) (string, error) {
+	handler := portToHandler[portNum]
+	if handler == nil {
+		return "", errors.New("Unregistered port " + string(portNum))
+	}
+	return handler.Receive(msg)
 }
-
-var myKeeper Keeper
-var myContext sdk.Context
 
 func mailboxPeer(key string) (string, error) {
 	path := strings.Split(key, ".")
@@ -58,45 +76,6 @@ func mailboxPeer(key string) (string, error) {
 		return "", errors.New("Can only access 'mailbox.PEER'")
 	}
 	return path[1], nil
-}
-
-func ReceiveFromNode(str string) (string, error) {
-	msg := new(storageMessage)
-	err := json.Unmarshal([]byte(str), &msg)
-	if err != nil {
-		return "", err
-	}
-
-	// TODO: Actually use generic store, not just mailboxes.
-	switch msg.Method {
-	case "set":
-		peer, err := mailboxPeer(msg.Key)
-		if err != nil {
-			return "", err
-		}
-		mailbox := NewMailbox()
-		mailbox.Value = msg.Value
-		myKeeper.SetMailbox(myContext, peer, mailbox)
-		return "true", nil
-		break
-
-	case "get":
-		peer, err := mailboxPeer(msg.Key)
-		if err != nil {
-			return "", err
-		}
-		mailbox := myKeeper.GetMailbox(myContext, peer)
-		return mailbox.Value, nil
-
-	case "has":
-	case "keys":
-	case "entries":
-	case "values":
-	case "size":
-		// TODO: Implement these operations
-	}
-
-	return "", errors.New("Unrecognized msg.Method " + msg.Method)
 }
 
 func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbound) sdk.Result {
@@ -107,11 +86,14 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 		messages[i][1] = message
 	}
 
+	storageHandler := NewStorageHandler(ctx, keeper)
+	newPort := RegisterPortHandler(storageHandler)
 	action := &deliverInboundAction{
-		Type:     "DELIVER_INBOUND",
-		Peer:     msg.Peer,
-		Messages: messages,
-		Ack:      msg.Ack,
+		Type:        "DELIVER_INBOUND",
+		Peer:        msg.Peer,
+		Messages:    messages,
+		Ack:         msg.Ack,
+		StoragePort: newPort,
 	}
 	b, err := json.Marshal(action)
 	if err != nil {
@@ -119,12 +101,9 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 	}
 	fmt.Fprintln(os.Stderr, "About to call SwingSet")
 
-	// We can set a global because we are guaranteed not to reenter
-	// by other transactions until our CallToNode returns.
-	myKeeper = keeper
-	myContext = ctx
 	out, err := CallToNode(string(b))
 	fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	UnregisterPortHandler(newPort)
 	if err != nil {
 		return sdk.ErrInternal(err.Error()).Result()
 	}

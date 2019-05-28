@@ -69,8 +69,13 @@ private:
 
 Napi::FunctionReference NodeReplier::constructor;
 
+static int ssdPort = -1;
 int SendToNode(int port, int replyPort, Body str) {
     std::cerr << "Send to node port " << port << " " << str << std::endl;
+    // FIXME: Make a better bootstrap, honouring an SSD_START message.
+    if (ssdPort < 0) {
+        ssdPort = replyPort;
+    }
     std::string instr(str);
     std::thread([instr, port, replyPort]{
         auto promise = std::make_shared<std::promise<NodeReply>>();
@@ -110,24 +115,25 @@ static Napi::Value send(const Napi::CallbackInfo& info) {
     return Napi::String::New(env, ret);
 }
 
-static Napi::Value start(const Napi::CallbackInfo& info) {
+static Napi::Value runSSD(const Napi::CallbackInfo& info) {
     static bool singleton = false;
     Napi::Env env = info.Env();
-    std::cerr << "Starting Go COSS from Node COSS" << std::endl;
+    std::cerr << "Starting Go SSD from Node SSD" << std::endl;
 
     if (singleton) {
-        Napi::TypeError::New(env, "Cannot start multiple COSS instances").ThrowAsJavaScriptException();
+        Napi::TypeError::New(env, "Cannot start multiple SSD instances").ThrowAsJavaScriptException();
         return env.Null();
     }
     singleton = true;
 
-    dispatcher = std::make_shared<ThreadSafeCallback>(info[0].As<Napi::Function>());
-    Napi::Array cosmosArgv = info[1].As<Napi::Array>();
-    unsigned int argc = cosmosArgv.Length();
+    int nodePort = info[0].As<Napi::Number>().ToNumber();
+    dispatcher = std::make_shared<ThreadSafeCallback>(info[1].As<Napi::Function>());
+    Napi::Array ssdArgv = info[2].As<Napi::Array>();
+    unsigned int argc = ssdArgv.Length();
     char** argv = new char*[argc];
     for (unsigned int i = 0; i < argc; i ++) {
-        if (cosmosArgv.Has(i)) {
-            std::string tmp = cosmosArgv.Get(i).As<Napi::String>().Utf8Value();
+        if (ssdArgv.Has(i)) {
+            std::string tmp = ssdArgv.Get(i).As<Napi::String>().Utf8Value();
             argv[i] = strdup(tmp.c_str());
         } else {
             argv[i] = nullptr;
@@ -135,21 +141,21 @@ static Napi::Value start(const Napi::CallbackInfo& info) {
     }
 
     GoSlice args = {argv, argc, argc};
-    int cosmosPort = StartCOSS(SendToNode, args);
+    RunSSD(nodePort, SendToNode, args);
 
     for (unsigned int i = 0; i < argc; i ++) {
         free(argv[i]);
     }
     delete[] argv;
-    std::cerr << "End of starting GO COSS from Node COSS" << std::endl;
-    return Napi::Number::New(env, cosmosPort);
+    std::cerr << "End of starting SSD from Node SSD" << std::endl;
+    return Napi::Number::New(env, ssdPort);
 }
 
 static Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
     exports = NodeReplier::Init(env, exports);
     exports.Set(
-        Napi::String::New(env, "start"),
-        Napi::Function::New(env, start, "start"));
+        Napi::String::New(env, "runSSD"),
+        Napi::Function::New(env, runSSD, "runSSD"));
     exports.Set(
         Napi::String::New(env, "send"),
         Napi::Function::New(env, send, "send"));
