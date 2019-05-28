@@ -297,6 +297,12 @@ function build(syscall, _state, makeRoot, forVatID) {
     outstandingProxies.add(p);
     return p;
   }
+  // Like Promise.resolve, except that if applied to a presence, it
+  // would be better for it to return the remote promise for this
+  // specimen, rather than a fresh local promise fulfilled by this
+  // specimen.
+  // TODO: for now, just alias Promise.resolve.
+  E.resolve = specimen => Promise.resolve(specimen);
 
   function DeviceHandler(slot) {
     return {
