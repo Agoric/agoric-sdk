@@ -9,10 +9,7 @@ import makePromise from '../src/kernel/makePromise';
 test('serialize static data', t => {
   const m = makeMarshal();
   const ser = val => m.serialize(val);
-  t.throws(
-    () => ser([1, 2]),
-    /non-frozen objects like .* are disabled for now/,
-  );
+  t.throws(() => ser([1, 2]), /cannot pass non-frozen objects like .*/);
   t.deepEqual(ser(harden([1, 2])), { argsString: '[1,2]', slots: [] });
   t.deepEqual(ser(harden({ foo: 1 })), { argsString: '{"foo":1}', slots: [] });
   t.deepEqual(ser(true), { argsString: 'true', slots: [] });
@@ -79,8 +76,11 @@ test('unserialize static data', t => {
   t.ok(Object.is(uns('{"@qclass":"NaN"}'), NaN));
   t.deepEqual(uns('{"@qclass":"Infinity"}'), Infinity);
   t.deepEqual(uns('{"@qclass":"-Infinity"}'), -Infinity);
-  t.deepEqual(uns('{"@qclass":"undefined"}'), undefined);
   t.deepEqual(uns('{"@qclass":"symbol", "key":"sym1"}'), Symbol.for('sym1'));
+
+  // Normal json reviver cannot make properties with undefined values
+  t.deepEqual(uns('[{"@qclass":"undefined"}]'), [undefined]);
+  t.deepEqual(uns('{"foo": {"@qclass":"undefined"}}'), { foo: undefined });
   let bn;
   try {
     bn = BigInt(4);
@@ -121,6 +121,38 @@ test('unserialize static data', t => {
   t.ok(Object.isFrozen(a.b.c));
   t.ok(Object.isFrozen(a.b.c.d));
 
+  t.end();
+});
+
+test('serialize ibid cycle', t => {
+  const m = makeMarshal();
+  const ser = val => m.serialize(val);
+  const cycle = ['a', 'x', 'c'];
+  cycle[1] = cycle;
+  harden(cycle);
+
+  t.deepEqual(ser(cycle), {
+    argsString: '["a",{"@qclass":"ibid","index":0},"c"]',
+    slots: [],
+  });
+  t.end();
+});
+
+test('forbid ibid cycle', t => {
+  const m = makeMarshal();
+  const uns = val => m.unserialize(val, []);
+  t.throws(
+    () => uns('["a",{"@qclass":"ibid","index":0},"c"]'),
+    /Ibid cycle at 0/,
+  );
+  t.end();
+});
+
+test('unserialize ibid cycle', t => {
+  const m = makeMarshal();
+  const uns = val => m.unserialize(val, [], 'warnOfCycles');
+  const cycle = uns('["a",{"@qclass":"ibid","index":0},"c"]');
+  t.ok(Object.is(cycle[1], cycle));
   t.end();
 });
 
