@@ -28,7 +28,6 @@ export function loadBasedir(basedir, stateArg) {
       vatSources.set(name, indexJS);
     } else {
       console.log('ignoring ', dirent.name);
-      return;
     }
   });
   let bootstrapIndexJS = path.resolve(basedir, 'bootstrap.js');
