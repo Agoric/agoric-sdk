@@ -22,8 +22,8 @@ function fromGo(port, str, replier) {
   }
   const action = JSON.parse(str);
   const p = Promise.resolve(handler(action));
-  p.then(res => replier.resolve("success ignored"),
-         rej => replier.reject("rejection ignored"));
+  p.then(res => replier.resolve(`${res}`),
+         rej => replier.reject(`rejection ${rej} ignored`));
 }
 
 // Actually run the main ssd program.  Before we start the daemon,
@@ -33,33 +33,33 @@ ss.runSSD(nodePort, fromGo, process.argv.slice(1));
 
 let globalHandler, globalSetStorage;
 async function toSwingSet(action, replier) {
-  function handlePromise(p) {
-    p.then(res => replier.resolve(`success ${res} ignored`),
-          rej => replier.reject(`rejection ${res} ignored`));
-  }
-  if (globalHandler) {
-    if (action.storagePort) {
-      // FIXME: Initialize the storage for this particular transaction.
-      globalSetStorage(makeStorage(action.storagePort));
-    }
-    const p = Promise.resolve(globalHandler(action));
-    handlePromise(p);
+  if (action.type === 'SSD_INIT') {
+    return true;
   }
 
-  if (action.type !== 'SSD_INIT') {
-    return replier.reject(`SSD_INIT must be the first message`);
+  // Only start running for DELIVER_INBOUND.
+  if (action.type !== 'DELIVER_INBOUND') {
+    throw `Unknown action type ${action.type}`;
   }
-  const sPort = action.readonlyStoragePort;
-  launch().then(({ handler, setStorage }) => {
-    globalHandler = handler;
-    globalSetStorage = setStorage;
-    // Initialize the kernel state by reading the storage.
-    setStorage(makeStorage(sPort));
-    const p = Promise.resolve(handler({type: 'SDK_READY'}));
-    handlePromise(p);
-  }, rej => {
-    console.log(`launch() failed`, rej);
-  });
+
+  if (globalHandler) {
+    if (action.storagePort) {
+      // Initialize the storage for this particular transaction.
+      globalSetStorage(makeStorage(action.storagePort));
+    }
+    return await globalHandler(action);
+  }
+
+  const sPort = action.storagePort;
+  const {handler, setStorage} = await launch();
+  globalHandler = handler;
+  globalSetStorage = setStorage;
+  
+  // Initialize the kernel state by reading the storage.
+  setStorage(makeStorage(sPort));
+  console.log('Sending SDK_READY');
+  const ret = await handler({type: 'SDK_READY'});
+  return await handler(action);
 }
 
 // Generate a storage object for the port.

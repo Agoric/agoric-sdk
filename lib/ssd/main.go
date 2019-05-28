@@ -79,15 +79,13 @@ func makeNewApp(sendToNode Sender) func(logger log.Logger, db dbm.DB, traceStore
 		fmt.Println("Starting daemon!")
 		abci := app.NewSwingSetApp(logger, db)
 		if sendToNode != nil {
-			handler := NewPrefixedDBStorageHandler("swingset", db)
-			port := swingset.RegisterPortHandler(handler)
-			msg := fmt.Sprintf(`{"type":"SSD_INIT","readonlyStoragePort":%d}`, port)
-			fmt.Println("Sending SSD_INIT to Node", port, msg)
+			msg := `{"type":"SSD_INIT"}`
+			fmt.Println("Sending to Node", msg)
 			ret, err := sendToNode(true, msg)
 			fmt.Println("Received SSD_INIT response", ret, err)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "Cannot initialize Node", err)
-				return nil
+				os.Exit(1)
 			}
 		}
 		return abci

@@ -16,6 +16,7 @@ type deliverInboundAction struct {
 	Messages    [][]interface{} `json:"messages"`
 	Ack         int             `json:"ack"`
 	StoragePort int             `json:"storagePort"`
+	BlockHeight int64           `json:"blockHeight"`
 }
 
 // FIXME: Get rid of this globals in exchange for a field on some object.
@@ -93,6 +94,7 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 		Peer:        msg.Peer,
 		Messages:    messages,
 		Ack:         msg.Ack,
+		BlockHeight: ctx.BlockHeight(),
 		StoragePort: newPort,
 	}
 	b, err := json.Marshal(action)

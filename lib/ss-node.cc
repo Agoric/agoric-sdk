@@ -82,7 +82,7 @@ int SendToNode(int port, int replyPort, Body str) {
         dispatcher->call(
             // Prepare arguments.
             [port, instr, promise](Napi::Env env, std::vector<napi_value>& args){
-                std::cerr << "Calling threadsafe callback with " << instr << std::endl;
+                // std::cerr << "Calling threadsafe callback with " << instr << std::endl;
                 args = {
                     Napi::Number::New(env, port),
                     Napi::String::New(env, instr),
@@ -90,7 +90,7 @@ int SendToNode(int port, int replyPort, Body str) {
                 };
             });
         if (replyPort) {
-            std::cerr << "Waiting on future" << std::endl;
+            // std::cerr << "Waiting on future" << std::endl;
             try {
                 NodeReply ret = promise->get_future().get();
                 std::cerr << "Replying to Go with " << ret.value() << " " << ret.isRejection() << std::endl;
@@ -100,7 +100,7 @@ int SendToNode(int port, int replyPort, Body str) {
                 ReplyToGo(replyPort, true, e.what());
             }
         }
-        std::cerr << "Thread is finished" << std::endl;
+        // std::cerr << "Thread is finished" << std::endl;
     }).detach();
     std::cerr << "Ending Send to Node " << str << std::endl;
     return 0;
