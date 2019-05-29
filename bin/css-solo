@@ -1,0 +1,9 @@
+#!/usr/bin/env node
+
+const process = require('process');
+require = require('esm')(module);
+const solo = require('../lib/css-solo/main.js').default;
+solo(process.argv.splice(2))
+  .then(_res => 0,
+        rej => console.log(`error running css-solo:`, rej));
+
