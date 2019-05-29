@@ -85,8 +85,6 @@ ERR: fred.acceptOptionOffer called before init()`;
             coveredCallSrc,
             [dough10, wonka7, timerP, 'singularity'],
             'holder',
-            dough10,
-            wonka7,
           );
 
           const metaOptionSaleAmountP = exchangeInviteAmount(
@@ -94,9 +92,7 @@ ERR: fred.acceptOptionOffer called before init()`;
             allegedMetaAmount.quantity.label.identity,
             escrowExchangeSrc,
             [fin55, metaOptionAmountP],
-            0,
-            fin55,
-            metaOptionAmountP,
+            'left',
           );
 
           return E.resolve(metaOptionSaleAmountP).then(metaOptionSaleAmount =>

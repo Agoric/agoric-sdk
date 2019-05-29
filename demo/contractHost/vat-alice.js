@@ -101,9 +101,7 @@ ERR: alice.acceptInvite called before init()`;
             allegedMetaAmount.quantity.label.identity,
             escrowExchangeSrc,
             [clams10, fudco7],
-            0,
-            clams10,
-            fudco7,
+            'left',
           );
 
           return E.resolve(metaOneAmountP).then(metaOneAmount =>
@@ -163,8 +161,6 @@ ERR: alice.acceptOptionDirectly called before init()`;
             coveredCallSrc,
             [smackers10, yoyodyne7, timerP, 'singularity'],
             'holder',
-            smackers10,
-            yoyodyne7,
           );
 
           return E.resolve(metaOneAmountP).then(metaOneAmount =>

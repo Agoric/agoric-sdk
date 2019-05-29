@@ -29,10 +29,7 @@ function coveredCall(terms, inviteMaker) {
         .getExclusive(stockNeeded, stockPayment, 'prePay')
         .then(prePayment => {
           E(bobEscrowSeatP).offer(prePayment);
-          return inviteMaker.make(
-            ['holder', moneyNeeded, stockNeeded],
-            aliceEscrowSeatP,
-          );
+          return inviteMaker.make('holder', aliceEscrowSeatP);
         });
     },
     getWinnings() {
@@ -43,7 +40,7 @@ function coveredCall(terms, inviteMaker) {
     },
   });
 
-  return inviteMaker.make(['writer', stockNeeded, moneyNeeded], bobSeat);
+  return inviteMaker.make('writer', bobSeat);
 }
 
 const coveredCallSrc = `\

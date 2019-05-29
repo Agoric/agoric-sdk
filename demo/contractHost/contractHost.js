@@ -133,9 +133,7 @@ function exchangeInviteAmount(
   seatIdentityP,
   contractSrc,
   terms,
-  seatIndex,
-  giveAmount,
-  takeAmount,
+  seatDesc,
 ) {
   const passable = harden({
     label: {
@@ -148,7 +146,7 @@ function exchangeInviteAmount(
         description: {
           contractSrc,
           terms,
-          seatDesc: [seatIndex, giveAmount, takeAmount],
+          seatDesc,
         },
       },
       quantity: 1,

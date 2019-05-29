@@ -86,8 +86,8 @@ function escrowExchange(terms, inviteMaker) {
   });
 
   return harden([
-    inviteMaker.make([0, moneyNeeded, stockNeeded], aliceSeat),
-    inviteMaker.make([1, stockNeeded, moneyNeeded], bobSeat),
+    inviteMaker.make('left', aliceSeat),
+    inviteMaker.make('right', bobSeat),
   ]);
 }
 
