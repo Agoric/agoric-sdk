@@ -1,25 +1,98 @@
 package rest
 
 import (
-	"github.com/cosmos/cosmos-sdk/client/context"
+	"fmt"
+	"net/http"
 
+	"github.com/Agoric/cosmic-swingset/x/swingset"
+	"github.com/cosmos/cosmos-sdk/client/context"
+	clientrest "github.com/cosmos/cosmos-sdk/client/rest"
 	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/rest"
 
 	"github.com/gorilla/mux"
 )
 
 const (
-	restName = "name"
+	pathName = "storage"
+	peerName = "peer"
 )
 
 // RegisterRoutes - Central function to define routes that get registered by the main application
 func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router, cdc *codec.Codec, storeName string) {
-	/*	r.HandleFunc(fmt.Sprintf("/%s/names", storeName), namesHandler(cdc, cliCtx, storeName)).Methods("GET")
-		r.HandleFunc(fmt.Sprintf("/%s/names", storeName), buyNameHandler(cdc, cliCtx)).Methods("POST")
-		r.HandleFunc(fmt.Sprintf("/%s/names", storeName), setNameHandler(cdc, cliCtx)).Methods("PUT")
-		r.HandleFunc(fmt.Sprintf("/%s/names/{%s}", storeName, restName), resolveNameHandler(cdc, cliCtx, storeName)).Methods("GET")
-		r.HandleFunc(fmt.Sprintf("/%s/names/{%s}/whois", storeName, restName), whoIsHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/mailbox/{%s}", storeName, peerName), getMailboxHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/mailbox", storeName), deliverMailboxHandler(cdc, cliCtx)).Methods("POST")
+	/*
+		r.HandleFunc(fmt.Sprintf("/%s/storage/{%s}", storeName, pathName), getStorageHandler(cdc, cliCtx, storeName)).Methods("GET")
+		r.HandleFunc(fmt.Sprintf("/%s/storage", storeName), setStorageHandler(cdc, cliCtx)).Methods("POST")
+		r.HandleFunc(fmt.Sprintf("/%s/storage", storeName), listStorageHandler(cdc, cliCtx)).Methods("GET")
 	*/
+}
+
+type getMailboxReq struct {
+	BaseReq rest.BaseReq `json:"base_req"`
+	Peer    string       `json:"peer"`
+}
+
+func getMailboxHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		paramType := vars[peerName]
+
+		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/mailbox/%s", storeName, paramType), nil)
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
+			return
+		}
+
+		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+	}
+}
+
+type deliverMailboxReq struct {
+	BaseReq   rest.BaseReq `json:"base_req"`
+	Peer      string       `json:"peer"`
+	Deliver   string       `json:"deliver"`
+	Submitter string       `json:"submitter"`
+}
+
+func deliverMailboxHandler(cdc *codec.Codec, cliCtx context.CLIContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req deliverMailboxReq
+
+		if !rest.ReadRESTReq(w, r, cdc, &req) {
+			rest.WriteErrorResponse(w, http.StatusBadRequest, "failed to parse request")
+			return
+		}
+
+		baseReq := req.BaseReq.Sanitize()
+		if !baseReq.ValidateBasic(w) {
+			return
+		}
+
+		addr, err := sdk.AccAddressFromBech32(req.Submitter)
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		// create the message
+		deliver, err := swingset.UnmarshalMessagesJSON(req.Deliver)
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		msg := swingset.NewMsgDeliverInbound(req.Peer, deliver, addr)
+		err = msg.ValidateBasic()
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		clientrest.WriteGenerateStdTxResponse(w, cdc, cliCtx, baseReq, []sdk.Msg{msg})
+	}
 }
 
 /*

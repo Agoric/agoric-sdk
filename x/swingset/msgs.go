@@ -15,12 +15,12 @@ type MsgDeliverInbound struct {
 	Submitter sdk.AccAddress
 }
 
-func NewMsgDeliverInbound(peer string, messages []string, nums []int, ack int, submitter sdk.AccAddress) MsgDeliverInbound {
+func NewMsgDeliverInbound(peer string, msgs *Messages, submitter sdk.AccAddress) MsgDeliverInbound {
 	return MsgDeliverInbound{
 		Peer:      peer,
-		Messages:  messages,
-		Nums:      nums,
-		Ack:       ack,
+		Messages:  msgs.Messages,
+		Nums:      msgs.Nums,
+		Ack:       msgs.Ack,
 		Submitter: submitter,
 	}
 }

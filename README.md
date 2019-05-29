@@ -83,6 +83,20 @@ sscli tx swingset deliver alice --from jack '[[[0,"{\"target\":{\"type\":\"your-
 
 # Look at Bob's the outbound mailbox
 sscli query swingset mailbox bob
+
+# Start the REST server
+sscli rest-server &
+
+# Get the sequence and account numbers for jack to construct the below requests
+$ curl -s http://localhost:1317/auth/accounts/$(sscli keys show jack -a)
+# > {"type": "auth/Account","value":{"address": "cosmos1nzezs2twwwa4zrsjhqznqxw4qgjux9t46nlpp0","coins":[{"denom": "agtoken","amount": "998"},{"denom":"jackcoin","amount":"1000"}],"public_key":{"type":"tendermint/PubKeySecp256k1","value": "AxbAggtxje/u7U09mVl9Te5Wyvuo/TSXGBW2PDFs/his"},"account_number":"0","sequence":"8"}}
+
+# Send another message on behalf of Alice
+$ curl -XPOST -s http://localhost:1317/swingset/mailbox --data-binary '{"base_req":{"from":"cosmos1nzezs2twwwa4zrsjhqznqxw4qgjux9t46nlpp0","password":"hello123","chain_id":"agchain","sequence":"9","account_number":"0"},"peer":"alice","submitter":"cosmos1nzezs2twwwa4zrsjhqznqxw4qgjux9t46nlpp0","deliver":"[[[1,\"foo\"],[2,\"bar\"]],123]"}'
+
+# Query Bob's mailbox
+$ curl -s http://localhost:1317/swingset/mailbox/bob
+# > {"value":"[[], 0]"}
 ```
 
 **Congratulations, you are running the Agoric testnet!**
