@@ -10,7 +10,7 @@ import { coveredCallSrc } from './coveredCall';
 import { exchangeChitAmount, makeCollect } from './chit';
 
 function makeFred(E, host, log) {
-  const collect = makeCollect(E);
+  const collect = makeCollect(E, log);
 
   let initialized = false;
   let timerP;

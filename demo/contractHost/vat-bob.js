@@ -9,7 +9,7 @@ import { coveredCallSrc } from './coveredCall';
 import { makeCollect } from './chit';
 
 function makeBob(E, host, log) {
-  const collect = makeCollect(E);
+  const collect = makeCollect(E, log);
 
   let initialized = false;
   let timerP;

@@ -154,7 +154,7 @@ function exchangeChitAmount(
 }
 harden(exchangeChitAmount);
 
-function makeCollect(E) {
+function makeCollect(E, log) {
   function collect(seatP, winPurseP, refundPurseP, name = 'collecting') {
     const results = harden([
       E(seatP)
@@ -172,7 +172,7 @@ function makeCollect(E) {
     ]);
     const doneP = allSettled(results);
     E.resolve(doneP).then(([wins, refs]) => {
-      console.log(`${name} wins: `, wins, `refs: `, refs);
+      log(`${name} wins: `, wins, ` refs: `, refs);
     });
     // Use Promise.all here rather than allSettled in order to
     // propagate rejection.

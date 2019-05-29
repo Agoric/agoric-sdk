@@ -9,7 +9,7 @@ import { coveredCallSrc } from './coveredCall';
 import { exchangeChitAmount, makeCollect } from './chit';
 
 function makeAlice(E, host, log) {
-  const collect = makeCollect(E);
+  const collect = makeCollect(E, log);
 
   function showPaymentBalance(name, paymentP) {
     E(paymentP)
