@@ -199,7 +199,10 @@ ERR: alice.acceptOptionForFred called before init()`;
       const aliceForFredInviteP = invitesP.then(invites => invites[1]);
       const doneP = Promise.all([
         E(optFredP).acceptOptionOffer(fredInviteP),
-        E(alice).completeOptionsSale(aliceForFredInviteP, allegedInvitePaymentP),
+        E(alice).completeOptionsSale(
+          aliceForFredInviteP,
+          allegedInvitePaymentP,
+        ),
       ]);
       doneP.then(
         _res => log('++ alice.acceptOptionForFred done'),

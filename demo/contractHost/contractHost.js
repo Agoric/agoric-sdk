@@ -28,8 +28,8 @@ No invites left`;
     const seatIdentity = baseAmount.label.identity;
     insist(seats.has(seatIdentity))`\
 Not a registered invite seat identity ${seatIdentity}`;
-    return E.resolve(metaIssuer.slash(metaAmount, allegedInvitePayment)).then(_ =>
-      seats.get(seatIdentity),
+    return E.resolve(metaIssuer.slash(metaAmount, allegedInvitePayment)).then(
+      _ => seats.get(seatIdentity),
     );
   }
 
