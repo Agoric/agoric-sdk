@@ -1,14 +1,17 @@
 const harden = require('@agoric/harden');
 
-export default function setup(syscall, helpers, _endowments) {
+export default function setup(syscall, helpers, endowments) {
   const { log } = helpers;
 
-  let state = 'initial';
+  const { kvstore } = endowments;
+
+  kvstore.set('deviceState', 'initial');
+
   function getState() {
-    return state;
+    return kvstore.get('deviceState');
   }
   function setState(newState) {
-    state = newState;
+    kvstore.set('deviceState', newState);
   }
 
   return helpers.makeDeviceSlots(
@@ -50,12 +53,12 @@ export default function setup(syscall, helpers, _endowments) {
         },
         setState(arg) {
           log(`setState ${arg}`);
-          state = arg;
+          kvstore.set('deviceState', arg);
           return 'ok';
         },
         getState() {
           log(`getState called`);
-          return state;
+          return kvstore.get('deviceState');
         },
       }),
     getState,

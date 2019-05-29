@@ -7,11 +7,29 @@ import { QCLASS, makeMarshal } from './marshal';
 import makePromise from './makePromise';
 import makeVatManager from './vatManager';
 import makeDeviceManager from './deviceManager';
-import makeKernelState from './state/kernelState';
+import makeKernelKeeper from './state/kernelKeeper';
+import makeVatKeeper from './state/vatKeeper';
+import makeDeviceKeeper from './state/deviceKeeper';
+import makeExternalKVStore from './externalKVStore';
 
-export default function buildKernel(kernelEndowments) {
+export default function buildKernel(kernelEndowments, external) {
   const { setImmediate } = kernelEndowments;
-  const kernelState = makeKernelState();
+
+  const kernelKVStore = makeExternalKVStore('kernel', external);
+
+  const kernelKeeper = makeKernelKeeper(
+    kernelKVStore,
+    'kernel',
+    makeExternalKVStore,
+    external,
+  );
+
+  kernelKeeper.createStartingKernelState();
+
+  const ephemeral = {
+    vats: new Map(),
+    devices: new Map(),
+  };
 
   const enableKDebug = false;
   function kdebug(...args) {
@@ -34,7 +52,7 @@ export default function buildKernel(kernelEndowments) {
   function chaseRedirections(promiseID) {
     let targetID = Nat(promiseID);
     while (true) {
-      const p = kernelState.getKernelPromise(targetID);
+      const p = kernelKeeper.getKernelPromise(targetID);
       if (p.state === 'redirected') {
         targetID = Nat(p.redirectedTo);
         continue;
@@ -48,14 +66,8 @@ export default function buildKernel(kernelEndowments) {
     // deciderVatID can be undefined if the promise is "owned" by the kernel
     // (pipelining)
 
-    // we don't harden the kernel promise record because it is mutable: it
-    // can be replaced when syscall.redirect/fulfill/reject is called
-    const kernelPromiseID = kernelState.addKernelPromise({
-      state: 'unresolved',
-      decider: deciderVatID,
-      subscribers: new Set(),
-      queue: [],
-    });
+    // kernel promise is replaced if altered, so we can safely harden
+    const kernelPromiseID = kernelKeeper.addKernelPromise(deciderVatID);
     return kernelPromiseID;
   }
 
@@ -68,16 +80,18 @@ export default function buildKernel(kernelEndowments) {
 
   function send(target, msg) {
     if (target.type === 'export') {
-      kernelState.addToRunQueue({
+      kernelKeeper.addToRunQueue({
         type: 'deliver',
         vatID: target.vatID,
         target,
         msg,
       });
     } else if (target.type === 'promise') {
-      const kp = kernelState.getKernelPromise(target.id);
+      const kp = kernelKeeper.getKernelPromise(target.id);
       if (kp.state === 'unresolved') {
         kp.queue.push(msg);
+        // we need to save what was pushed to queue
+        kernelKeeper.updateKernelPromise(target.id, kp);
       } else if (kp.state === 'fulfilledToData') {
         const s = `data is not callable, has no method ${msg.method}`;
         // eslint-disable-next-line no-use-before-define
@@ -101,8 +115,8 @@ export default function buildKernel(kernelEndowments) {
 
   function notifySubscribersAndQueue(id, p, type) {
     const pslot = { type: 'promise', id };
-    for (const subscriberVatID of p.subscribers) {
-      kernelState.addToRunQueue({
+    for (const subscriberVatID of kernelKeeper.getSubscribers(id)) {
+      kernelKeeper.addToRunQueue({
         type,
         vatID: subscriberVatID,
         kernelPromiseID: id,
@@ -133,14 +147,12 @@ export default function buildKernel(kernelEndowments) {
     }
   }
 
-  function deletePromiseData(kernelPromise) {
-    delete kernelPromise.subscribers;
-    delete kernelPromise.decider;
-    delete kernelPromise.queue;
+  function deletePromiseData(kernelPromiseID) {
+    kernelKeeper.deleteKernelPromiseData(kernelPromiseID);
   }
 
   function fulfillToPresence(id, targetSlot) {
-    const p = kernelState.getKernelPromise(id);
+    const p = kernelKeeper.getKernelPromise(id);
     assertResolved(id, p.state);
     if (targetSlot.type !== 'export') {
       throw new Error(
@@ -150,34 +162,37 @@ export default function buildKernel(kernelEndowments) {
 
     p.state = 'fulfilledToPresence';
     p.fulfillSlot = targetSlot;
+    kernelKeeper.updateKernelPromise(id, p);
     notifySubscribersAndQueue(id, p, 'notifyFulfillToPresence');
-    deletePromiseData(p);
+    deletePromiseData(id);
   }
 
   function fulfillToData(id, data, slots) {
     kdebug(`fulfillToData[${id}] -> ${data} ${JSON.stringify(slots)}`);
-    const p = kernelState.getKernelPromise(id);
+    const p = kernelKeeper.getKernelPromise(id);
     assertResolved(id, p.state);
 
     p.state = 'fulfilledToData';
     p.fulfillData = data;
     p.fulfillSlots = slots;
+    kernelKeeper.updateKernelPromise(id, p);
     notifySubscribersAndQueue(id, p, 'notifyFulfillToData');
-    deletePromiseData(p);
+    deletePromiseData(id);
   }
 
   function reject(id, val, valSlots) {
-    const p = kernelState.getKernelPromise(id);
+    const p = kernelKeeper.getKernelPromise(id);
     assertResolved(id, p.state);
     p.state = 'rejected';
     p.rejectData = val;
     p.rejectSlots = valSlots;
+    kernelKeeper.updateKernelPromise(id, p);
     notifySubscribersAndQueue(id, p, 'notifyReject');
-    deletePromiseData(p);
+    deletePromiseData(id);
   }
 
   function invoke(device, method, data, slots) {
-    const dev = kernelState.getDevice(device.deviceName);
+    const dev = ephemeral.devices.get(device.deviceName);
     if (!dev) {
       throw new Error(`unknown deviceRef ${JSON.stringify(device)}`);
     }
@@ -212,11 +227,11 @@ export default function buildKernel(kernelEndowments) {
     reject,
     process,
     invoke,
-    kernelState,
+    kernelKeeper,
   };
 
   function addVat(vatID, setup) {
-    if (kernelState.hasVat(vatID)) {
+    if (kernelKeeper.hasVat(vatID)) {
       throw new Error(`already have a vat named '${vatID}'`);
     }
     const helpers = harden({
@@ -224,12 +239,30 @@ export default function buildKernel(kernelEndowments) {
       makeLiveSlots,
       makeCommsSlots,
       log(str) {
-        kernelState.log(`${str}`);
+        kernelKeeper.log(`${str}`);
       },
     });
+
+    const vatPath = `kernel.vats.${vatID}`;
+    const vatKVStore = makeExternalKVStore(vatPath, external);
+    const vatKeeper = makeVatKeeper(
+      vatKVStore,
+      vatPath,
+      makeExternalKVStore,
+      external,
+    );
+
+    vatKeeper.createStartingVatState();
+
     // the vatManager invokes setup() to build the userspace image
-    const manager = makeVatManager(vatID, syscallManager, setup, helpers);
-    kernelState.addVat(
+    const manager = makeVatManager(
+      vatID,
+      syscallManager,
+      setup,
+      helpers,
+      vatKVStore,
+    );
+    ephemeral.vats.set(
       vatID,
       harden({
         id: vatID,
@@ -239,32 +272,47 @@ export default function buildKernel(kernelEndowments) {
   }
 
   function addDevice(name, setup, endowments) {
-    if (kernelState.hasDevice(name)) {
+    if (kernelKeeper.hasDevice(name)) {
       throw new Error(`already have a device named '${name}'`);
     }
     const helpers = harden({
       name,
       makeDeviceSlots,
       log(str) {
-        kernelState.log(`${str}`);
+        kernelKeeper.log(`${str}`);
       },
     });
+
+    const devicePath = `kernel.devices.${name}`;
+    const deviceKVStore = makeExternalKVStore(devicePath, external);
+    const deviceKeeper = makeDeviceKeeper(
+      deviceKVStore,
+      devicePath,
+      makeExternalKVStore,
+      external,
+    );
+
+    deviceKeeper.createStartingDeviceState();
+
     const manager = makeDeviceManager(
       name,
       syscallManager,
       setup,
       helpers,
       endowments,
+      kernelKeeper,
+      deviceKVStore,
     );
     // the vat record is not hardened: it holds mutable next-ID values
-    kernelState.addDevice(name, {
+    ephemeral.devices.set(name, {
       id: name,
       manager,
     });
   }
 
   function addImport(forVatID, what) {
-    return kernelState.getVat(forVatID).manager.mapKernelSlotToVatSlot(what);
+    const vat = ephemeral.vats.get(forVatID);
+    return vat.manager.mapKernelSlotToVatSlot(what);
   }
 
   function mapQueueSlotToKernelRealm(s) {
@@ -288,7 +336,7 @@ export default function buildKernel(kernelEndowments) {
   function queueToExport(vatID, facetID, method, argsString, slots = []) {
     // queue a message on the end of the queue, with 'absolute' slots. Use
     // 'step' or 'run' to execute it
-    kernelState.addToRunQueue(
+    kernelKeeper.addToRunQueue(
       harden({
         vatID: `${vatID}`,
         type: 'deliver',
@@ -303,7 +351,7 @@ export default function buildKernel(kernelEndowments) {
           // queue() is exposed to the controller's realm, so we must translate
           // each slot into a kernel-realm object/array
           slots: Array.from(slots.map(mapQueueSlotToKernelRealm)),
-          kernelResolverID: undefined,
+          kernelResolverID: null, // this will be json stringified
         },
       }),
     );
@@ -311,12 +359,12 @@ export default function buildKernel(kernelEndowments) {
 
   function processQueueMessage(message) {
     kdebug(`processQ ${JSON.stringify(message)}`);
-    const vat = kernelState.getVat(message.vatID);
+    const vat = ephemeral.vats.get(message.vatID);
     if (vat === undefined) {
       throw new Error(
         `unknown vatID in target ${JSON.stringify(
           message,
-        )}, have ${JSON.stringify(kernelState.getAllVatNames())}`,
+        )}, have ${JSON.stringify(kernelKeeper.getAllVatNames())}`,
       );
     }
     const { manager } = vat;
@@ -334,8 +382,8 @@ export default function buildKernel(kernelEndowments) {
     // each key of 'vats' will be serialized as a reference to its obj0
     const vrefs = new Map();
     const vatObj0s = {};
-    kernelState.getAllVats().forEach(e => {
-      const targetVatID = e[0];
+    kernelKeeper.getAllVatNames().forEach(name => {
+      const targetVatID = name;
       // we happen to give _bootstrap to itself, because unit tests that
       // don't have any other vats (bootstrap-only configs) then get a
       // non-empty object as vatObj0s, since an empty object would be
@@ -358,12 +406,11 @@ export default function buildKernel(kernelEndowments) {
     // entry to this object so it will serialize as pass-by-copy. We can
     // remove the dummy entry after we add the 'addVat' device
     const deviceObj0s = { _dummy: 'dummy' };
-    kernelState.getAllDevices().forEach(d => {
-      const name = d[0];
+    kernelKeeper.getAllDeviceNames().forEach(deviceName => {
       const dref = harden({});
-      deviceObj0s[name] = dref;
-      drefs.set(dref, { type: 'device', deviceName: name, id: 0 });
-      console.log(`adding dref ${name}`);
+      deviceObj0s[deviceName] = dref;
+      drefs.set(dref, { type: 'device', deviceName, id: 0 });
+      console.log(`adding dref ${deviceName}`);
     });
     if (Object.getOwnPropertyNames(deviceObj0s) === 0) {
       throw new Error('pass-by-copy rules require at least one device');
@@ -418,35 +465,46 @@ export default function buildKernel(kernelEndowments) {
     addImport,
 
     log(str) {
-      kernelState.log(`${str}`);
+      kernelKeeper.log(`${str}`);
     },
 
     dump() {
-      return kernelState.dump();
+      return kernelKeeper.dump();
     },
 
     getState() {
-      return kernelState.getState();
+      return kernelKeeper.getState();
     },
 
-    loadState(outerRealmState) {
+    async loadState(outerRealmState) {
       const newState = JSON.parse(JSON.stringify(outerRealmState));
-      return kernelState.loadState(newState);
+
+      // copy in the data passively
+      kernelKeeper.loadState(newState);
+
+      // evaluate the transcript
+
+      for (const vatID of Object.getOwnPropertyNames(newState.vats)) {
+        const vatData = newState.vats[vatID];
+        const vat = ephemeral.vats.get(vatID);
+        // eslint-disable-next-line no-await-in-loop
+        await vat.manager.loadState(vatData.state);
+      }
     },
 
     async run() {
       // process all messages, until syscall.pause() is invoked
       running = true;
-      while (running && !kernelState.isRunQueueEmpty()) {
+      while (running && !kernelKeeper.isRunQueueEmpty()) {
         // eslint-disable-next-line no-await-in-loop
-        await processQueueMessage(kernelState.getNextMsg());
+        await processQueueMessage(kernelKeeper.getNextMsg());
       }
     },
 
     async step() {
       // process a single message
-      if (!kernelState.isRunQueueEmpty()) {
-        await processQueueMessage(kernelState.getNextMsg());
+      if (!kernelKeeper.isRunQueueEmpty()) {
+        await processQueueMessage(kernelKeeper.getNextMsg());
       }
     },
 

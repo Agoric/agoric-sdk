@@ -10,6 +10,80 @@ import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
 import bundleSource from './build-source-bundle';
 
+import makeKVStore from './kernel/kvstore';
+
+export function makeExternal() {
+  const outsideRealmKVStore = makeKVStore({});
+  const external = harden({
+    sendMsg(msg) {
+      const command = JSON.parse(msg);
+      const { method, key } = command;
+      if (key.includes('undefined')) {
+        throw new Error(`key ${key} includes undefined`);
+      }
+      let result;
+      switch (method) {
+        case 'get': {
+          result = outsideRealmKVStore.get(key);
+          break;
+        }
+        case 'set': {
+          const { value } = command;
+          outsideRealmKVStore.set(key, value);
+          break;
+        }
+        case 'has': {
+          const bool = outsideRealmKVStore.has(key);
+          result = [bool]; // JSON compatibility
+          break;
+        }
+        case 'delete': {
+          outsideRealmKVStore.delete(key);
+          break;
+        }
+        case 'keys': {
+          result = outsideRealmKVStore.keys(key);
+          break;
+        }
+        case 'entries': {
+          result = outsideRealmKVStore.entries(key);
+          break;
+        }
+        case 'values': {
+          result = outsideRealmKVStore.values(key);
+          break;
+        }
+        case 'size': {
+          result = outsideRealmKVStore.size(key);
+          break;
+        }
+        default:
+          throw new Error(`unexpected message to kvstore ${msg}`);
+      }
+      // console.log(msg, '=>', result);
+      if (result === undefined) {
+        return JSON.stringify(null);
+      }
+      return JSON.stringify(result);
+    },
+  });
+
+  return external;
+}
+
+// TODO: change completely to either KVStore or merk levelDB
+function loadState(basedir, stateArg) {
+  let state;
+  const stateFile = path.resolve(basedir, 'state.json');
+  try {
+    const stateData = fs.readFileSync(stateFile);
+    state = JSON.parse(stateData);
+  } catch (e) {
+    state = stateArg;
+  }
+  return state;
+}
+
 export function loadBasedir(basedir, stateArg) {
   console.log(`= loading config from basedir ${basedir}`);
   const vatSources = new Map();
@@ -36,14 +110,7 @@ export function loadBasedir(basedir, stateArg) {
   } catch (e) {
     bootstrapIndexJS = undefined;
   }
-  let state;
-  const stateFile = path.resolve(basedir, 'state.json');
-  try {
-    const stateData = fs.readFileSync(stateFile);
-    state = JSON.parse(stateData);
-  } catch (e) {
-    state = stateArg;
-  }
+  const state = loadState(basedir, stateArg);
   return { vatSources, bootstrapIndexJS, state };
 }
 
@@ -59,7 +126,7 @@ function makeEvaluate(e) {
   return (source, endowments = {}) => confineExpr(source, endowments);
 }
 
-function buildSESKernel() {
+function buildSESKernel(external) {
   const s = SES.makeSESRootRealm({
     consoleMode: 'allow',
     errorStackMode: 'allow',
@@ -76,19 +143,26 @@ function buildSESKernel() {
   // console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })();
   const kernelEndowments = { setImmediate };
-  const kernel = buildKernel(kernelEndowments);
+  const kernel = buildKernel(kernelEndowments, external);
   return { kernel, s, r };
 }
 
-function buildNonSESKernel() {
+function buildNonSESKernel(external) {
   const kernelEndowments = { setImmediate };
-  const kernel = buildKernelNonSES(kernelEndowments);
+  const kernel = buildKernelNonSES(kernelEndowments, external);
   return { kernel };
 }
 
-export async function buildVatController(config, withSES = true, argv = []) {
+export async function buildVatController(
+  config,
+  withSES = true,
+  argv = [],
+  external = makeExternal(),
+) {
   // console.log('in main');
-  const { kernel, s, r } = withSES ? buildSESKernel() : buildNonSESKernel();
+  const { kernel, s, r } = withSES
+    ? buildSESKernel(external)
+    : buildNonSESKernel(external);
   // console.log('kernel', kernel);
 
   async function addVat(vatID, sourceIndex, _options) {

@@ -1,9 +1,11 @@
 /* global setImmediate */
 import { test } from 'tape-promise/tape';
 import buildKernel from '../src/kernel/index';
+import { makeExternal } from '../src/controller';
 
 test('build kernel', t => {
-  const kernel = buildKernel({ setImmediate });
+  const external = makeExternal();
+  const kernel = buildKernel({ setImmediate }, external);
   kernel.run(); // empty queue
   const data = kernel.dump();
   t.deepEqual(data.vatTables, []);
@@ -12,7 +14,8 @@ test('build kernel', t => {
 });
 
 test('simple call', async t => {
-  const kernel = buildKernel({ setImmediate });
+  const external = makeExternal();
+  const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   function setup1(syscall) {
     function deliver(facetID, method, argsString, slots) {
@@ -42,7 +45,7 @@ test('simple call', async t => {
         method: 'foo',
         argsString: 'args',
         slots: [],
-        kernelResolverID: undefined,
+        kernelResolverID: null,
       },
     },
   ]);
@@ -63,7 +66,8 @@ test('simple call', async t => {
 });
 
 test('map inbound', async t => {
-  const kernel = buildKernel({ setImmediate });
+  const external = makeExternal();
+  const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   function setup1(_syscall) {
     function deliver(facetID, method, argsString, slots) {
@@ -83,22 +87,18 @@ test('map inbound', async t => {
   ]);
   t.deepEqual(kernel.dump().runQueue, [
     {
-      vatID: 'vat1',
-      type: 'deliver',
-      target: {
-        type: 'export',
-        vatID: 'vat1',
-        id: 1,
-      },
       msg: {
-        method: 'foo',
         argsString: 'args',
+        kernelResolverID: null,
+        method: 'foo',
         slots: [
-          { type: 'export', vatID: 'vat1', id: 5 },
-          { type: 'export', vatID: 'vat2', id: 6 },
+          { id: 5, type: 'export', vatID: 'vat1' },
+          { id: 6, type: 'export', vatID: 'vat2' },
         ],
-        kernelResolverID: undefined,
       },
+      target: { id: 1, type: 'export', vatID: 'vat1' },
+      type: 'deliver',
+      vatID: 'vat1',
     },
   ]);
   t.deepEqual(log, []);
@@ -114,7 +114,8 @@ test('map inbound', async t => {
 });
 
 test('addImport', t => {
-  const kernel = buildKernel({ setImmediate });
+  const external = makeExternal();
+  const kernel = buildKernel({ setImmediate }, external);
   function setup(_syscall) {
     function deliver(_facetID, _method, _argsString, _slots) {}
     return { deliver };
@@ -135,7 +136,8 @@ test('addImport', t => {
 });
 
 test('outbound call to my own export should fail', async t => {
-  const kernel = buildKernel({ setImmediate });
+  const external = makeExternal();
+  const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   let s;
   function setup1(syscall) {
@@ -156,7 +158,8 @@ test('outbound call to my own export should fail', async t => {
 });
 
 test('outbound call', async t => {
-  const kernel = buildKernel({ setImmediate });
+  const external = makeExternal();
+  const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   let v1tovat25;
 
@@ -206,19 +209,15 @@ test('outbound call', async t => {
   t.deepEqual(log, []);
   t.deepEqual(kernel.dump().runQueue, [
     {
-      vatID: 'vat1',
-      type: 'deliver',
-      target: {
-        type: 'export',
-        vatID: 'vat1',
-        id: 1,
-      },
       msg: {
-        method: 'foo',
         argsString: 'args',
+        kernelResolverID: null,
+        method: 'foo',
         slots: [],
-        kernelResolverID: undefined,
       },
+      target: { id: 1, type: 'export', vatID: 'vat1' },
+      type: 'deliver',
+      vatID: 'vat1',
     },
   ]);
 
@@ -283,7 +282,8 @@ test('outbound call', async t => {
 });
 
 test('three-party', async t => {
-  const kernel = buildKernel({ setImmediate });
+  const external = makeExternal();
+  const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   let bobForA;
   let carolForA;
@@ -419,7 +419,8 @@ test('three-party', async t => {
 });
 
 test('createPromise', t => {
-  const kernel = buildKernel({ setImmediate });
+  const external = makeExternal();
+  const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   function setup(s) {
     syscall = s;
@@ -449,7 +450,8 @@ test('createPromise', t => {
 });
 
 test('transfer promise', async t => {
-  const kernel = buildKernel({ setImmediate });
+  const external = makeExternal();
+  const kernel = buildKernel({ setImmediate }, external);
   let syscallA;
   const logA = [];
   function setupA(syscall) {
@@ -735,7 +737,8 @@ test('transfer promise', async t => {
 });
 
 test('subscribe to promise', async t => {
-  const kernel = buildKernel({ setImmediate });
+  const external = makeExternal();
+  const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   const log = [];
   function setup(s) {
@@ -771,7 +774,8 @@ test('subscribe to promise', async t => {
 });
 
 test.skip('promise redirection', t => {
-  const kernel = buildKernel({ setImmediate });
+  const external = makeExternal();
+  const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   const log = [];
   function setup(s) {
@@ -831,7 +835,8 @@ test.skip('promise redirection', t => {
 });
 
 test('promise resolveToData', async t => {
-  const kernel = buildKernel({ setImmediate });
+  const external = makeExternal();
+  const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   const log = [];
   function setup(s) {
@@ -885,9 +890,10 @@ test('promise resolveToData', async t => {
   t.deepEqual(kernel.dump().promises, [
     {
       id: 40,
-      state: 'fulfilledToData',
       fulfillData: 'args',
-      fulfillSlots: [ex1],
+      fulfillSlots: [{ id: 6, type: 'export', vatID: 'vatB' }],
+      state: 'fulfilledToData',
+      subscribers: [],
     },
   ]);
   t.deepEqual(kernel.dump().runQueue, []);
@@ -896,7 +902,8 @@ test('promise resolveToData', async t => {
 });
 
 test('promise resolveToPresence', async t => {
-  const kernel = buildKernel({ setImmediate });
+  const external = makeExternal();
+  const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   const log = [];
   function setup(s) {
@@ -951,17 +958,18 @@ test('promise resolveToPresence', async t => {
   t.deepEqual(kernel.dump().promises, [
     {
       id: 40,
+      fulfillSlot: { id: 6, type: 'export', vatID: 'vatB' },
       state: 'fulfilledToPresence',
-      fulfillSlot: ex1,
+      subscribers: [],
     },
   ]);
   t.deepEqual(kernel.dump().runQueue, []);
-
   t.end();
 });
 
 test('promise reject', async t => {
-  const kernel = buildKernel({ setImmediate });
+  const external = makeExternal();
+  const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   const log = [];
   function setup(s) {
@@ -1018,9 +1026,10 @@ test('promise reject', async t => {
   t.deepEqual(kernel.dump().promises, [
     {
       id: 40,
-      state: 'rejected',
       rejectData: 'args',
-      rejectSlots: [ex1],
+      rejectSlots: [{ id: 6, type: 'export', vatID: 'vatB' }],
+      state: 'rejected',
+      subscribers: [],
     },
   ]);
   t.deepEqual(kernel.dump().runQueue, []);
@@ -1029,7 +1038,8 @@ test('promise reject', async t => {
 });
 
 test('transcript', async t => {
-  const kernel = buildKernel({ setImmediate });
+  const external = makeExternal();
+  const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   function setup(syscall, _state) {
     function deliver(facetID, _method, _argsString, slots) {
@@ -1071,8 +1081,8 @@ test('transcript', async t => {
       1,
       'store',
       'args string',
-      [{ type: 'export', id: 1 }, { type: 'import', id: X }],
-      undefined,
+      [{ id: 1, type: 'export' }, { id: 10, type: 'import' }],
+      null,
     ],
     syscalls: [
       {

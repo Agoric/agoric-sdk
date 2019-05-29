@@ -1,8 +1,14 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import makeVatState from './state/vatState';
+import makeVatKeeper from './state/vatKeeper';
 
-export default function makeVatManager(vatID, syscallManager, setup, helpers) {
+export default function makeVatManager(
+  vatID,
+  syscallManager,
+  setup,
+  helpers,
+  vatKVStore,
+) {
   const {
     kdebug,
     createPromiseWithDecider,
@@ -12,10 +18,12 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     reject,
     process,
     invoke,
-    kernelState,
+    kernelKeeper,
   } = syscallManager;
 
-  const vatState = makeVatState();
+  kernelKeeper.addVat(vatID, vatKVStore);
+
+  const vatKeeper = makeVatKeeper(kernelKeeper.getVat(vatID));
 
   // We use vat-centric terminology here, so "inbound" means "into a vat",
   // generally from the kernel. We also have "comms vats" which use special
@@ -98,7 +106,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   // vatSlot to kernelSlot
   // mapOutbound
   function mapVatSlotToKernelSlot(vatSlot) {
-    vatState.insistVatSlot(vatSlot);
+    vatKeeper.insistVatSlot(vatSlot);
     const { type, id } = vatSlot;
 
     if (type === 'export') {
@@ -106,7 +114,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
       return { type: 'export', vatID, id };
     }
 
-    return vatState.mapVatSlotToKernelSlot(vatSlot);
+    return vatKeeper.mapVatSlotToKernelSlot(vatSlot);
   }
 
   // kernelSlot to VatSlot
@@ -124,7 +132,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
       );
     }
 
-    vatState.insistKernelSlot(kernelSlot);
+    vatKeeper.insistKernelSlot(kernelSlot);
 
     if (kernelSlot.type === 'export') {
       const { vatID: fromVatID, id } = kernelSlot;
@@ -135,7 +143,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
       }
     }
 
-    return vatState.mapKernelSlotToVatSlot(kernelSlot);
+    return vatKeeper.mapKernelSlotToVatSlot(kernelSlot);
   }
 
   let inReplay = false;
@@ -151,7 +159,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     }
   }
   function transcriptFinishDispatch() {
-    vatState.addToTranscript(currentEntry);
+    vatKeeper.addToTranscript(currentEntry);
   }
 
   // syscall handlers: these are wrapped by the 'syscall' object and made
@@ -234,10 +242,10 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
       id: promiseID,
     });
     kdebug(`syscall[${vatID}].subscribe(vat:${promiseID}=ker:${id})`);
-    if (!kernelState.hasKernelPromise(id)) {
+    if (!kernelKeeper.hasKernelPromise(id)) {
       throw new Error(`unknown kernelPromise id '${id}'`);
     }
-    const p = kernelState.getKernelPromise(id);
+    const p = kernelKeeper.getKernelPromise(id);
 
     /*
     kdebug(`  decider is ${p.decider} in ${JSON.stringify(p)}`);
@@ -250,22 +258,22 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     } */
 
     if (p.state === 'unresolved') {
-      p.subscribers.add(vatID);
+      kernelKeeper.addSubscriberToPromise(id, vatID);
       // otherwise it's already resolved, you probably want to know how
     } else if (p.state === 'fulfilledToPresence') {
-      kernelState.addToRunQueue({
+      kernelKeeper.addToRunQueue({
         type: 'notifyFulfillToPresence',
         vatID,
         kernelPromiseID: id,
       });
     } else if (p.state === 'fulfilledToData') {
-      kernelState.addToRunQueue({
+      kernelKeeper.addToRunQueue({
         type: 'notifyFulfillToData',
         vatID,
         kernelPromiseID: id,
       });
     } else if (p.state === 'rejected') {
-      kernelState.addToRunQueue({
+      kernelKeeper.addToRunQueue({
         type: 'notifyReject',
         vatID,
         kernelPromiseID: id,
@@ -278,21 +286,21 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   /*
   function doRedirect(resolverID, targetPromiseID) {
     const { id } = mapVatSlotToKernelSlot({ type: 'resolver', id: resolverID });
-    if (!kernelState.hasKernelPromise(id)) {
+    if (!kernelKeeper.hasKernelPromise(id)) {
       throw new Error(`unknown kernelPromise id '${id}'`);
     }
-    const p = kernelState.getKernelPromise(id);
+    const p = kernelKeeper.getKernelPromise(id);
     if (p.state !== 'unresolved') {
       throw new Error(`kernelPromise[${id}] is '${p.state}', not 'unresolved'`);
     }
 
     let { id: targetID } = mapVatSlotToKernelSlot({ type: 'promise', id: targetPromiseID });
-    if (!kernelState.hasKernelPromise(targetID)) {
+    if (!kernelKeeper.hasKernelPromise(targetID)) {
       throw new Error(`unknown kernelPromise id '${targetID}'`);
     }
 
     targetID = chaseRedirections(targetID);
-    const target = kernelState.getKernelPromise(targetID);
+    const target = kernelKeeper.getKernelPromise(targetID);
 
     for (let s of p.subscribers) {
       // TODO: we need to remap their subscriptions, somehow
@@ -314,7 +322,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
       type: 'resolver',
       id: resolverID,
     });
-    if (!kernelState.hasKernelPromise(id)) {
+    if (!kernelKeeper.hasKernelPromise(id)) {
       throw new Error(`unknown kernelPromise id '${id}'`);
     }
     const slots = vatSlots.map(slot => mapVatSlotToKernelSlot(slot));
@@ -332,7 +340,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
       type: 'resolver',
       id: resolverID,
     });
-    if (!kernelState.hasKernelPromise(id)) {
+    if (!kernelKeeper.hasKernelPromise(id)) {
       throw new Error(`unknown kernelPromise id '${id}'`);
     }
 
@@ -351,7 +359,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
       type: 'resolver',
       id: resolverID,
     });
-    if (!kernelState.hasKernelPromise(id)) {
+    if (!kernelKeeper.hasKernelPromise(id)) {
       throw new Error(`unknown kernelPromise id '${id}'`);
     }
     const slots = vatSlots.map(slot => mapVatSlotToKernelSlot(slot));
@@ -430,7 +438,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
     },
 
     log(str) {
-      kernelState.log(str);
+      kernelKeeper.log(str);
     },
   });
 
@@ -514,7 +522,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
 
     if (type === 'notifyFulfillToData') {
       const { kernelPromiseID } = message;
-      const p = kernelState.getKernelPromise(kernelPromiseID);
+      const p = kernelKeeper.getKernelPromise(kernelPromiseID);
       const relativeID = mapKernelSlotToVatSlot({
         type: 'promise',
         id: kernelPromiseID,
@@ -528,7 +536,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
 
     if (type === 'notifyFulfillToPresence') {
       const { kernelPromiseID } = message;
-      const p = kernelState.getKernelPromise(kernelPromiseID);
+      const p = kernelKeeper.getKernelPromise(kernelPromiseID);
       const relativeID = mapKernelSlotToVatSlot({
         type: 'promise',
         id: kernelPromiseID,
@@ -542,7 +550,7 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
 
     if (type === 'notifyReject') {
       const { kernelPromiseID } = message;
-      const p = kernelState.getKernelPromise(kernelPromiseID);
+      const p = kernelKeeper.getKernelPromise(kernelPromiseID);
       const relativeID = mapKernelSlotToVatSlot({
         type: 'promise',
         id: kernelPromiseID,
@@ -575,12 +583,12 @@ export default function makeVatManager(vatID, syscallManager, setup, helpers) {
   const manager = {
     mapKernelSlotToVatSlot,
     mapVatSlotToKernelSlot,
-    dumpState: vatState.dumpState,
-    loadManagerState: vatState.loadManagerState,
+    dumpState: vatKeeper.dumpState,
+    loadManagerState: vatKeeper.loadManagerState,
     loadState,
     processOneMessage,
-    getManagerState: vatState.getManagerState,
-    getCurrentState: vatState.getCurrentState,
+    getManagerState: vatKeeper.getManagerState,
+    getCurrentState: vatKeeper.getCurrentState,
   };
   return manager;
 }
