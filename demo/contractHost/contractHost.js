@@ -35,72 +35,84 @@ Not a registered invite seat identity ${seatIdentity}`;
 
   // The contract host is designed to have a long-lived credible
   // identity.
-  //
-  // TODO: The contract host `start` method should spin off a new vat
-  // for each new contract instance.
   const contractHost = harden({
     getInviteIssuer() {
       return controller.getMetaIssuer();
     },
 
     // The `contractSrc` is code for a contract function parameterized
-    // by `terms` and `inviteMaker`. `start` evaluates this code,
+    // by `terms` and `inviteMaker`. `spawn` evaluates this code,
     // calls that function to start the contract, and returns whatever
     // the contract returns.
-    start(contractSrc, termsP) {
-      contractSrc = `${contractSrc}`;
-      const contract = evaluate(contractSrc, {
-        Nat,
-        harden,
-        console,
-        E,
-        makePromise,
-      });
+    //
+    // TODO: The `spawn` method should spin off a new vat for each new
+    // contract instance.  In the current single-vat implementation we
+    // could evaluate the contractSrc to a contract during install
+    // rather than spawn. However, once we spin off a new vat per
+    // spawn, we'll need to evaluate per-spawn anyway. Even though we
+    // do not save on evaluations, this currying enables us to avoid
+    // re-sending the contract source code, and it enables us to use
+    // the installation in descriptions rather than the source code
+    // itself.
+    install(contractSrc) {
+      const installation = harden({
+        spawn(termsP) {
+          contractSrc = `${contractSrc}`;
+          const contract = evaluate(contractSrc, {
+            Nat,
+            harden,
+            console,
+            E,
+            makePromise,
+          });
 
-      return E.resolve(allComparable(termsP)).then(terms => {
-        const inviteMaker = harden({
-          // Used by the contract to make invites for credibly
-          // participating in the contract. The returned invite can be
-          // redeemed for this seat. The inviteMaker contributes the
-          // description `{ contractSrc, terms, seatDesc }`. If this
-          // contract host redeems an invite, then the contractSrc and
-          // terms are accurate. The seatDesc is according to that
-          // contractSrc code.
-          make(seatDesc, seat, name = 'an invite payment') {
-            const baseDescription = harden({
-              contractSrc,
-              terms,
-              seatDesc,
+          return E.resolve(allComparable(termsP)).then(terms => {
+            const inviteMaker = harden({
+              // Used by the contract to make invites for credibly
+              // participating in the contract. The returned invite can be
+              // redeemed for this seat. The inviteMaker contributes the
+              // description `{ contractSrc, terms, seatDesc }`. If this
+              // contract host redeems an invite, then the contractSrc and
+              // terms are accurate. The seatDesc is according to that
+              // contractSrc code.
+              make(seatDesc, seat, name = 'an invite payment') {
+                const baseDescription = harden({
+                  contractSrc,
+                  terms,
+                  seatDesc,
+                });
+                // Note that an empty object is pass-by-presence, and so
+                // has an unforgeable identity.
+                const seatIdentity = harden({});
+                const baseLabel = harden({
+                  identity: seatIdentity,
+                  description: baseDescription,
+                });
+                const baseAssay = makeNatAssay(baseLabel);
+                const baseAmount = baseAssay.make(1);
+                controller.register(baseAssay);
+                seats.set(seatIdentity, seat);
+                const metaOneAmount = metaAssay.make(baseAmount);
+                // This should be the only use of the meta mint, to make a
+                // meta purse whose quantity is one unit of a base amount
+                // for a unique base label. This meta purse makes the
+                // returned meta payment, and then the empty meta purse is
+                // dropped, in the sense that it becomes inaccessible. But
+                // it is not yet collectable. Until the returned payment
+                // is deposited, it will retain the metaPurse, as the
+                // metaPurse contains the usage rights.
+                const metaPurse = controller
+                  .getMetaMint()
+                  .mint(metaOneAmount, name);
+                return metaPurse.withdrawAll(name);
+              },
+              redeem,
             });
-            // Note that an empty object is pass-by-presence, and so
-            // has an unforgeable identity.
-            const seatIdentity = harden({});
-            const baseLabel = harden({
-              identity: seatIdentity,
-              description: baseDescription,
-            });
-            const baseAssay = makeNatAssay(baseLabel);
-            const baseAmount = baseAssay.make(1);
-            controller.register(baseAssay);
-            seats.set(seatIdentity, seat);
-            const metaOneAmount = metaAssay.make(baseAmount);
-            // This should be the only use of the meta mint, to make a
-            // meta purse whose quantity is one unit of a base amount
-            // for a unique base label. This meta purse makes the
-            // returned meta payment, and then the empty meta purse is
-            // dropped, in the sense that it becomes inaccessible. But
-            // it is not yet collectable. Until the returned payment
-            // is deposited, it will retain the metaPurse, as the
-            // metaPurse contains the usage rights.
-            const metaPurse = controller
-              .getMetaMint()
-              .mint(metaOneAmount, name);
-            return metaPurse.withdrawAll(name);
-          },
-          redeem,
-        });
-        return contract(terms, inviteMaker);
+            return contract(terms, inviteMaker);
+          });
+        },
       });
+      return installation;
     },
 
     // If this is an invite payment made by an inviteMaker of this contract

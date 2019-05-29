@@ -81,7 +81,7 @@ const contractTrivialGolden = [
   '=> setup called',
   'starting trivialContractTest',
   'foo xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"label":{"identity":{},"description":{"contractSrc":"function trivCo...foo\', 8);\\n    }","terms":"foo terms","seatDesc":"foo"}},"quantity":1}}',
-  '++ eightP resolved to8(should be 8)',
+  '++ eightP resolved to 8 (should be 8)',
   '++ DONE',
   'foo xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":null}',
 ];

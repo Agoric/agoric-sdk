@@ -12,7 +12,7 @@ function makeAlice(E, host, log) {
   const collect = makeCollect(E, log);
 
   function showPaymentBalance(name, paymentP) {
-    E(paymentP)
+    return E(paymentP)
       .getXferBalance()
       .then(amount => log(name, ' xfer balance ', amount));
   }
@@ -194,7 +194,7 @@ ERR: alice.acceptOptionForFred called before init()`;
       const inviteNeededP = E(allegedInvitePaymentP).getXferBalance();
 
       const termsP = harden([finNeededP, inviteNeededP]);
-      const invitesP = E(host).start(escrowExchangeSrc, termsP);
+      const invitesP = E(E(host).install(escrowExchangeSrc)).spawn(termsP);
       const fredInviteP = invitesP.then(invites => invites[0]);
       const aliceForFredInviteP = invitesP.then(invites => invites[1]);
       const doneP = Promise.all([

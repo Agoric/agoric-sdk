@@ -4,17 +4,19 @@ import harden from '@agoric/harden';
 
 function build(E, log) {
   function showPaymentBalance(name, paymentP) {
-    E(paymentP)
+    return E(paymentP)
       .getXferBalance()
       .then(amount => log(name, ' xfer balance ', amount));
   }
   function showPurseBalances(name, purseP) {
-    E(purseP)
-      .getXferBalance()
-      .then(amount => log(name, ' xfer balance ', amount));
-    E(purseP)
-      .getUseBalance()
-      .then(amount => log(name, ' use balance ', amount));
+    return Promise.all([
+      E(purseP)
+        .getXferBalance()
+        .then(amount => log(name, ' xfer balance ', amount)),
+      E(purseP)
+        .getUseBalance()
+        .then(amount => log(name, ' use balance ', amount)),
+    ]);
   }
 
   /*
@@ -81,21 +83,21 @@ function build(E, log) {
     }
     const contractSrc = `${trivContract}`;
 
-    const fooInviteP = E(host).start(contractSrc, 'foo terms');
+    const fooInviteP = E(E(host).install(contractSrc)).spawn('foo terms');
 
-    showPaymentBalance('foo', fooInviteP);
+    return E.resolve(showPaymentBalance('foo', fooInviteP)).then(_ => {
+      const eightP = E(host).redeem(fooInviteP);
 
-    const eightP = E(host).redeem(fooInviteP);
-
-    eightP.then(res => {
-      showPaymentBalance('foo', fooInviteP);
-      log('++ eightP resolved to', res, '(should be 8)');
-      if (res !== 8) {
-        throw new Error(`eightP resolved to ${res}, not 8`);
-      }
-      log('++ DONE');
+      eightP.then(res => {
+        showPaymentBalance('foo', fooInviteP);
+        log('++ eightP resolved to ', res, ' (should be 8)');
+        if (res !== 8) {
+          throw new Error(`eightP resolved to ${res}, not 8`);
+        }
+        log('++ DONE');
+      });
+      return eightP;
     });
-    return eightP;
   }
 
   function betterContractTestAliceFirst(mint, alice, bob) {
