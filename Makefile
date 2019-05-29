@@ -32,3 +32,8 @@ install: go.sum
 go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"
 	GO111MODULE=on go mod verify
+
+start-css-solo:
+	-rm -r t1
+	bin/css-solo init t1
+	cd t1 && ../bin/css-solo start

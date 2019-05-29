@@ -14,7 +14,10 @@
     "@agoric/swingset-vat": "^0.0.9",
     "bindings": "^1.2.1",
     "deterministic-json": "^1.0.5",
-    "esm": "^3.2.5"
+    "esm": "^3.2.5",
+    "express": "^4.17.0",
+    "morgan": "^1.9.1",
+    "ws": "^7.0.0"
   },
   "devDependencies": {
     "napi-thread-safe-callback": "0.0.6",
