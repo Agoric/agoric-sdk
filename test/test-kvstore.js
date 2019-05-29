@@ -1,5 +1,5 @@
 import { test } from 'tape-promise/tape';
-import makeKVStore from '../src/kernel/kvstore';
+import makeKVStore from '../src/kvstore';
 
 // kvstore has set, get, has, delete methods
 // set (key []byte, value []byte)

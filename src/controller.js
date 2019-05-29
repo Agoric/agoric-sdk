@@ -10,7 +10,7 @@ import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
 import bundleSource from './build-source-bundle';
 
-import makeKVStore from './kernel/kvstore';
+import makeKVStore from './kvstore';
 
 export function makeExternal() {
   const outsideRealmKVStore = makeKVStore({});
