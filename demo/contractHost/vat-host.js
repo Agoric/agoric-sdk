@@ -2,7 +2,7 @@
 
 import harden from '@agoric/harden';
 
-import { makeContractHost } from './chit';
+import { makeContractHost } from './contractHost';
 
 function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(

@@ -7,14 +7,14 @@ import { allComparable } from '../../collections/sameStructure';
 import { insist } from '../../collections/insist';
 import { escrowExchangeSrc } from './escrow';
 import { coveredCallSrc } from './coveredCall';
-import { exchangeChitAmount, makeCollect } from './chit';
+import { exchangeInviteAmount, makeCollect } from './contractHost';
 
 function makeFred(E, host, log) {
   const collect = makeCollect(E, log);
 
   let initialized = false;
   let timerP;
-  let chitIssuerP;
+  let inviteIssuerP;
 
   let myMoneyPurseP;
   let moneyIssuerP;
@@ -27,7 +27,7 @@ function makeFred(E, host, log) {
 
   function init(timer, myMoneyPurse, myStockPurse, myFinPurse) {
     timerP = E.resolve(timer);
-    chitIssuerP = E(host).getChitIssuer();
+    inviteIssuerP = E(host).getInviteIssuer();
 
     myMoneyPurseP = E.resolve(myMoneyPurse);
     moneyIssuerP = E(myMoneyPurseP).getIssuer();
@@ -45,7 +45,7 @@ function makeFred(E, host, log) {
 
   const fred = harden({
     init,
-    acceptOptionOffer(allegedChitPaymentP) {
+    acceptOptionOffer(allegedInvitePaymentP) {
       log('++ fred.acceptOptionOffer starting');
       insist(initialized)`\
 ERR: fred.acceptOptionOffer called before init()`;
@@ -72,16 +72,16 @@ ERR: fred.acceptOptionOffer called before init()`;
         quantity: 55,
       });
 
-      const allegedMetaAmountP = E(allegedChitPaymentP).getXferBalance();
+      const allegedMetaAmountP = E(allegedInvitePaymentP).getXferBalance();
 
-      const verifiedChitP = E.resolve(allegedMetaAmountP).then(
+      const verifiedInviteP = E.resolve(allegedMetaAmountP).then(
         allegedMetaAmount => {
-          const allegedBaseOptionsChitIssuer =
+          const allegedBaseOptionsInviteIssuer =
             allegedMetaAmount.quantity.label.description.terms[1];
 
-          const metaOptionAmountP = exchangeChitAmount(
-            chitIssuerP,
-            allegedBaseOptionsChitIssuer.quantity.label.identity,
+          const metaOptionAmountP = exchangeInviteAmount(
+            inviteIssuerP,
+            allegedBaseOptionsInviteIssuer.quantity.label.identity,
             coveredCallSrc,
             [dough10, wonka7, timerP, 'singularity'],
             'holder',
@@ -89,8 +89,8 @@ ERR: fred.acceptOptionOffer called before init()`;
             wonka7,
           );
 
-          const metaOptionSaleAmountP = exchangeChitAmount(
-            chitIssuerP,
+          const metaOptionSaleAmountP = exchangeInviteAmount(
+            inviteIssuerP,
             allegedMetaAmount.quantity.label.identity,
             escrowExchangeSrc,
             [fin55, metaOptionAmountP],
@@ -100,28 +100,28 @@ ERR: fred.acceptOptionOffer called before init()`;
           );
 
           return E.resolve(metaOptionSaleAmountP).then(metaOptionSaleAmount =>
-            E(chitIssuerP).getExclusive(
+            E(inviteIssuerP).getExclusive(
               metaOptionSaleAmount,
-              allegedChitPaymentP,
-              'verified chit',
+              allegedInvitePaymentP,
+              'verified invite',
             ),
           );
         },
       );
-      const seatP = E(host).redeem(verifiedChitP);
+      const seatP = E(host).redeem(verifiedInviteP);
       const finPaymentP = E(myFinPurseP).withdraw(55);
       E(seatP).offer(finPaymentP);
-      const optionChitPurseP = E(chitIssuerP).makeEmptyPurse();
+      const optionInvitePurseP = E(inviteIssuerP).makeEmptyPurse();
       const gotOptionP = collect(
         seatP,
-        optionChitPurseP,
+        optionInvitePurseP,
         myFinPurseP,
         'fred buys escrowed option',
       );
       return E.resolve(gotOptionP).then(_ => {
         // Fred bought the option. Now fred tries to exercise the option.
-        const optionChitPayment = E(optionChitPurseP).withdrawAll();
-        const optionSeatP = E(host).redeem(optionChitPayment);
+        const optionInvitePayment = E(optionInvitePurseP).withdrawAll();
+        const optionSeatP = E(host).redeem(optionInvitePayment);
         return E.resolve(allComparable(dough10)).then(d10 => {
           const doughPaymentP = E(myMoneyPurseP).withdraw(d10);
           E(optionSeatP).offer(doughPaymentP);

@@ -5,16 +5,16 @@ import harden from '@agoric/harden';
 
 import { escrowExchange } from './escrow';
 
-function coveredCall(terms, chitMaker) {
+function coveredCall(terms, inviteMaker) {
   const [moneyNeeded, stockNeeded, timerP, deadline] = terms;
 
-  const [aliceChit, bobChit] = escrowExchange(
+  const [aliceInvite, bobInvite] = escrowExchange(
     [moneyNeeded, stockNeeded],
-    chitMaker,
+    inviteMaker,
   );
 
-  const aliceEscrowSeatP = chitMaker.redeem(aliceChit);
-  const bobEscrowSeatP = chitMaker.redeem(bobChit);
+  const aliceEscrowSeatP = inviteMaker.redeem(aliceInvite);
+  const bobEscrowSeatP = inviteMaker.redeem(bobInvite);
 
   // Seats
 
@@ -29,7 +29,7 @@ function coveredCall(terms, chitMaker) {
         .getExclusive(stockNeeded, stockPayment, 'prePay')
         .then(prePayment => {
           E(bobEscrowSeatP).offer(prePayment);
-          return chitMaker.make(
+          return inviteMaker.make(
             ['holder', moneyNeeded, stockNeeded],
             aliceEscrowSeatP,
           );
@@ -43,7 +43,7 @@ function coveredCall(terms, chitMaker) {
     },
   });
 
-  return chitMaker.make(['writer', stockNeeded, moneyNeeded], bobSeat);
+  return inviteMaker.make(['writer', stockNeeded, moneyNeeded], bobSeat);
 }
 
 const coveredCallSrc = `\

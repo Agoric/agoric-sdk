@@ -1,7 +1,5 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-// Chit === Contract Host Issuer Token
-
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
@@ -21,16 +19,16 @@ function makeContractHost(E) {
   const metaIssuer = controller.getMetaIssuer();
   const metaAssay = metaIssuer.getAssay();
 
-  function redeem(allegedChitPayment) {
-    const allegedMetaAmount = allegedChitPayment.getXferBalance();
+  function redeem(allegedInvitePayment) {
+    const allegedMetaAmount = allegedInvitePayment.getXferBalance();
     const metaAmount = metaAssay.vouch(allegedMetaAmount);
     insist(!metaAssay.isEmpty(metaAmount))`\
-No chits left`;
+No invites left`;
     const baseAmount = metaAssay.quantity(metaAmount);
     const seatIdentity = baseAmount.label.identity;
     insist(seats.has(seatIdentity))`\
-Not a registered chit seat identity ${seatIdentity}`;
-    return E.resolve(metaIssuer.slash(metaAmount, allegedChitPayment)).then(_ =>
+Not a registered invite seat identity ${seatIdentity}`;
+    return E.resolve(metaIssuer.slash(metaAmount, allegedInvitePayment)).then(_ =>
       seats.get(seatIdentity),
     );
   }
@@ -41,12 +39,12 @@ Not a registered chit seat identity ${seatIdentity}`;
   // TODO: The contract host `start` method should spin off a new vat
   // for each new contract instance.
   const contractHost = harden({
-    getChitIssuer() {
+    getInviteIssuer() {
       return controller.getMetaIssuer();
     },
 
     // The `contractSrc` is code for a contract function parameterized
-    // by `terms` and `chitMaker`. `start` evaluates this code,
+    // by `terms` and `inviteMaker`. `start` evaluates this code,
     // calls that function to start the contract, and returns whatever
     // the contract returns.
     start(contractSrc, termsP) {
@@ -60,15 +58,15 @@ Not a registered chit seat identity ${seatIdentity}`;
       });
 
       return E.resolve(allComparable(termsP)).then(terms => {
-        const chitMaker = harden({
-          // Used by the contract to make chits for credibly
-          // participating in the contract. The returned chit can be
-          // redeemed for this seat. The chitMaker contributes the
+        const inviteMaker = harden({
+          // Used by the contract to make invites for credibly
+          // participating in the contract. The returned invite can be
+          // redeemed for this seat. The inviteMaker contributes the
           // description `{ contractSrc, terms, seatDesc }`. If this
-          // contract host redeems a chit, then the contractSrc and
+          // contract host redeems an invite, then the contractSrc and
           // terms are accurate. The seatDesc is according to that
           // contractSrc code.
-          make(seatDesc, seat, name = 'a chit payment') {
+          make(seatDesc, seat, name = 'an invite payment') {
             const baseDescription = harden({
               contractSrc,
               terms,
@@ -101,16 +99,16 @@ Not a registered chit seat identity ${seatIdentity}`;
           },
           redeem,
         });
-        return contract(terms, chitMaker);
+        return contract(terms, inviteMaker);
       });
     },
 
-    // If this is a chit payment made by a chitMaker of this contract
+    // If this is an invite payment made by an inviteMaker of this contract
     // host, redeem it for the associated seat. Else error. Redeeming
-    // consumes the chit payment and also transfers the use rights.
-    redeem(allegedChitPaymentP) {
-      return E.resolve(allegedChitPaymentP).then(allegedChitPayment => {
-        return redeem(allegedChitPayment);
+    // consumes the invite payment and also transfers the use rights.
+    redeem(allegedInvitePaymentP) {
+      return E.resolve(allegedInvitePaymentP).then(allegedInvitePayment => {
+        return redeem(allegedInvitePayment);
       });
     },
   });
@@ -118,8 +116,8 @@ Not a registered chit seat identity ${seatIdentity}`;
 }
 harden(makeContractHost);
 
-function exchangeChitAmount(
-  chitIssuerP,
+function exchangeInviteAmount(
+  inviteIssuerP,
   seatIdentityP,
   contractSrc,
   terms,
@@ -129,7 +127,7 @@ function exchangeChitAmount(
 ) {
   const passable = harden({
     label: {
-      issuer: chitIssuerP,
+      issuer: inviteIssuerP,
       description: 'contract host',
     },
     quantity: {
@@ -152,7 +150,7 @@ function exchangeChitAmount(
   */
   return comparableP;
 }
-harden(exchangeChitAmount);
+harden(exchangeInviteAmount);
 
 function makeCollect(E, log) {
   function collect(seatP, winPurseP, refundPurseP, name = 'collecting') {
@@ -182,4 +180,4 @@ function makeCollect(E, log) {
 }
 harden(makeCollect);
 
-export { makeContractHost, exchangeChitAmount, makeCollect };
+export { makeContractHost, exchangeInviteAmount, makeCollect };

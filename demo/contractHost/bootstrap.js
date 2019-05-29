@@ -76,19 +76,19 @@ function build(E, log) {
   function trivialContractTest(host) {
     log('starting trivialContractTest');
 
-    function trivContract(terms, chitMaker) {
-      return chitMaker.make('foo', 8);
+    function trivContract(terms, inviteMaker) {
+      return inviteMaker.make('foo', 8);
     }
     const contractSrc = `${trivContract}`;
 
-    const fooChitP = E(host).start(contractSrc, 'foo terms');
+    const fooInviteP = E(host).start(contractSrc, 'foo terms');
 
-    showPaymentBalance('foo', fooChitP);
+    showPaymentBalance('foo', fooInviteP);
 
-    const eightP = E(host).redeem(fooChitP);
+    const eightP = E(host).redeem(fooInviteP);
 
     eightP.then(res => {
-      showPaymentBalance('foo', fooChitP);
+      showPaymentBalance('foo', fooInviteP);
       log('++ eightP resolved to', res, '(should be 8)');
       if (res !== 8) {
         throw new Error(`eightP resolved to ${res}, not 8`);

@@ -6,7 +6,7 @@ import harden from '@agoric/harden';
 import { insist } from '../../collections/insist';
 import { escrowExchangeSrc } from './escrow';
 import { coveredCallSrc } from './coveredCall';
-import { makeCollect } from './chit';
+import { makeCollect } from './contractHost';
 
 function makeBob(E, host, log) {
   const collect = makeCollect(E, log);
@@ -77,12 +77,12 @@ ERR: buy called before init()`;
 ERR: tradeWell called before init()`;
 
       const termsP = harden([moneyNeededP, stockNeededP]);
-      const chitsP = E(host).start(escrowExchangeSrc, termsP);
-      const aliceChitP = chitsP.then(chits => chits[0]);
-      const bobChitP = chitsP.then(chits => chits[1]);
+      const invitesP = E(host).start(escrowExchangeSrc, termsP);
+      const aliceInviteP = invitesP.then(invites => invites[0]);
+      const bobInviteP = invitesP.then(invites => invites[1]);
       const doneP = Promise.all([
-        E(alice).invite(aliceChitP),
-        E(bob).invite(bobChitP),
+        E(alice).acceptInvite(aliceInviteP),
+        E(bob).acceptInvite(bobInviteP),
       ]);
       doneP.then(
         _res => log('++ bob.tradeWell done'),
@@ -91,16 +91,11 @@ ERR: tradeWell called before init()`;
       return doneP;
     },
 
-    /**
-     * As with 'buy', the naming is awkward. A client is inviting
-     * this object, asking it to join in a contract instance. It is not
-     * requesting that this object invite anything.
-     */
-    invite(chitP) {
+    acceptInvite(inviteP) {
       insist(initialized)`\
-ERR: invite called before init()`;
+ERR: acceptInvite called before init()`;
 
-      const seatP = E(host).redeem(chitP);
+      const seatP = E(host).redeem(inviteP);
       const stockPaymentP = E(myStockPurseP).withdraw(7);
       E(seatP).offer(stockPaymentP);
       return collect(seatP, myMoneyPurseP, myStockPurseP, 'bob escrow');
@@ -117,12 +112,12 @@ ERR: offerAliceOption called before init()`;
         timerP,
         'singularity',
       ]);
-      const bobChitP = E(host).start(coveredCallSrc, termsP);
-      const bobSeatP = E(host).redeem(bobChitP);
+      const bobInviteP = E(host).start(coveredCallSrc, termsP);
+      const bobSeatP = E(host).redeem(bobInviteP);
       const stockPaymentP = E(myStockPurseP).withdraw(7);
-      const aliceChitP = E(bobSeatP).offer(stockPaymentP);
+      const aliceInviteP = E(bobSeatP).offer(stockPaymentP);
       const doneP = Promise.all([
-        E(alice).acceptOption(aliceChitP),
+        E(alice).acceptOption(aliceInviteP),
         collect(bobSeatP, myMoneyPurseP, myStockPurseP, 'bob option'),
       ]);
       doneP.then(
