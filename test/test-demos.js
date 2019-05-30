@@ -80,6 +80,7 @@ test('run contractHost Demo --mint without SES', async t => {
 const contractTrivialGolden = [
   '=> setup called',
   'starting trivialContractTest',
+  "Does source function trivContract(terms, inviteMaker) {\n      return inviteMaker.make('foo', 8);\n    } match? true",
   'foo xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"label":{"identity":{},"description":{"installation":{},"terms":"foo terms","seatDesc":"foo"}},"quantity":1}}',
   '++ eightP resolved to 8 (should be 8)',
   '++ DONE',

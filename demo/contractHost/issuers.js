@@ -4,8 +4,7 @@ import harden from '@agoric/harden';
 
 import { makePrivateName } from '../../collections/PrivateName';
 import { insist } from '../../collections/insist';
-import { makeNatAssay, makeMetaSingleAssayMaker } from './assays';
-import { mustBeSameStructure } from '../../collections/sameStructure';
+import { makeNatAssay } from './assays';
 
 function makeMint(description, makeAssay = makeNatAssay) {
   insist(description)`\
@@ -183,45 +182,6 @@ Payment expected: ${src}`;
 }
 harden(makeMint);
 
-// Makes a meta issuer issuing rights represented by registered base
-// assays.
-//
-// An empty meta purse or meta payment is not specific to a base
-// assay. Its balance is the empty meta amount which has a null meta
-// quantity. Non-empty ones have a meta amount whose quantity is a
-// base amount of some registered base assay, which cannot be combined
-// with amounts of other base assays. (This is the "single"
-// restriction of makeMetaSingleAssayMaker.)
-//
-// Base assays should be registered as soon as they are made, so that
-// there is no observable state change from not being registered to
-// being registered.
-function makeMetaIssuerController(description) {
-  const baseIdentityToAssay = makePrivateName();
-  function baseLabelToAssayFn(baseLabel) {
-    const baseAssay = baseIdentityToAssay.get(baseLabel.identity);
-    mustBeSameStructure(baseAssay.getLabel(), baseLabel, `Labels don't match`);
-    return baseAssay;
-  }
-  const makeMetaAssay = makeMetaSingleAssayMaker(baseLabelToAssayFn);
-  const metaMint = makeMint(description, makeMetaAssay);
-  const metaIssuer = metaMint.getIssuer();
-
-  const controller = harden({
-    getMetaMint() {
-      return metaMint;
-    },
-    getMetaIssuer() {
-      return metaIssuer;
-    },
-    register(baseAssay) {
-      baseIdentityToAssay.init(baseAssay.getLabel().identity, baseAssay);
-    },
-  });
-  return controller;
-}
-harden(makeMetaIssuerController);
-
 // Creates a local issuer that locally represents a remotely issued
 // currency. Returns a promise for a peg object that asynchonously
 // converts between the two. The local currency is synchronously
@@ -287,4 +247,4 @@ function makePeg(E, remoteIssuerP, makeAssay = makeNatAssay) {
 }
 harden(makePeg);
 
-export { makeMint, makeMetaIssuerController, makePeg };
+export { makeMint, makePeg };

@@ -4,7 +4,7 @@
 import harden from '@agoric/harden';
 
 import { insist } from '../../collections/insist';
-import { exchangeInviteAmount, makeCollect } from './contractHost';
+import { makeCollect } from './contractHost';
 
 function makeAlice(E, host, log) {
   const collect = makeCollect(E, log);
@@ -21,6 +21,7 @@ function makeAlice(E, host, log) {
   let coveredCallInstallationP;
   let timerP;
   let inviteIssuerP;
+  let inviteIssuerLabel;
 
   let myMoneyPurseP;
   let moneyIssuerP;
@@ -46,6 +47,10 @@ function makeAlice(E, host, log) {
     coveredCallInstallationP = coveredCallInst;
     timerP = E.resolve(timer);
     inviteIssuerP = E(host).getInviteIssuer();
+    inviteIssuerLabel = harden({
+      issuer: inviteIssuerP,
+      description: 'contract host',
+    });
 
     myMoneyPurseP = E.resolve(myMoneyPurse);
     moneyIssuerP = E(myMoneyPurseP).getIssuer();
@@ -82,10 +87,10 @@ ERR: alice.acceptInvite called before init()`;
 
       showPaymentBalance('alice invite', allegedInvitePaymentP);
 
-      const allegedMetaAmountP = E(allegedInvitePaymentP).getXferBalance();
+      const allegedInviteAmountP = E(allegedInvitePaymentP).getXferBalance();
 
-      const verifiedInviteP = E.resolve(allegedMetaAmountP).then(
-        allegedMetaAmount => {
+      const verifiedInviteP = E.resolve(allegedInviteAmountP).then(
+        allegedInviteAmount => {
           const clams10 = harden({
             label: {
               issuer: moneyIssuerP,
@@ -101,30 +106,32 @@ ERR: alice.acceptInvite called before init()`;
             quantity: 7,
           });
 
-          const metaOneAmountP = exchangeInviteAmount(
-            inviteIssuerP,
-            allegedMetaAmount.quantity.label.identity,
-            escrowExchangeInstallationP,
-            [clams10, fudco7],
-            'left',
-          );
+          const inviteAmount = harden({
+            label: inviteIssuerLabel,
+            quantity: {
+              installation: escrowExchangeInstallationP,
+              terms: [clams10, fudco7],
+              seatIdentity: allegedInviteAmount.quantity.seatIdentity,
+              seatDesc: 'left',
+            },
+          });
 
-          return E.resolve(metaOneAmountP).then(metaOneAmount =>
-            E(inviteIssuerP).getExclusive(
-              metaOneAmount,
-              allegedInvitePaymentP,
-              'verified invite',
-            ),
+          return E(inviteIssuerP).getExclusive(
+            inviteAmount,
+            allegedInvitePaymentP,
+            'verified invite',
           );
         },
       );
 
-      showPaymentBalance('verified invite', verifiedInviteP);
-
-      const seatP = E(host).redeem(verifiedInviteP);
-      const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
-      E(seatP).offer(moneyPaymentP);
-      return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice escrow');
+      return E.resolve(
+        showPaymentBalance('verified invite', verifiedInviteP),
+      ).then(_ => {
+        const seatP = E(host).redeem(verifiedInviteP);
+        const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
+        E(seatP).offer(moneyPaymentP);
+        return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice escrow');
+      });
     },
 
     acceptOption(allegedInvitePaymentP) {
@@ -141,10 +148,10 @@ ERR: alice.acceptOptionDirectly called before init()`;
 
       showPaymentBalance('alice invite', allegedInvitePaymentP);
 
-      const allegedMetaAmountP = E(allegedInvitePaymentP).getXferBalance();
+      const allegedInviteAmountP = E(allegedInvitePaymentP).getXferBalance();
 
-      const verifiedInviteP = E.resolve(allegedMetaAmountP).then(
-        allegedMetaAmount => {
+      const verifiedInvitePaymentP = E.resolve(allegedInviteAmountP).then(
+        allegedInviteAmount => {
           const smackers10 = harden({
             label: {
               issuer: moneyIssuerP,
@@ -160,30 +167,32 @@ ERR: alice.acceptOptionDirectly called before init()`;
             quantity: 7,
           });
 
-          const metaOneAmountP = exchangeInviteAmount(
-            inviteIssuerP,
-            allegedMetaAmount.quantity.label.identity,
-            coveredCallInstallationP,
-            [smackers10, yoyodyne7, timerP, 'singularity'],
-            'holder',
-          );
+          const inviteAmount = harden({
+            label: inviteIssuerLabel,
+            quantity: {
+              installation: coveredCallInstallationP,
+              terms: [smackers10, yoyodyne7, timerP, 'singularity'],
+              seatIdentity: allegedInviteAmount.quantity.seatIdentity,
+              seatDesc: 'holder',
+            },
+          });
 
-          return E.resolve(metaOneAmountP).then(metaOneAmount =>
-            E(inviteIssuerP).getExclusive(
-              metaOneAmount,
-              allegedInvitePaymentP,
-              'verified invite',
-            ),
+          return E(inviteIssuerP).getExclusive(
+            inviteAmount,
+            allegedInvitePaymentP,
+            'verified invite',
           );
         },
       );
 
-      showPaymentBalance('verified invite', verifiedInviteP);
-
-      const seatP = E(host).redeem(verifiedInviteP);
-      const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
-      E(seatP).offer(moneyPaymentP);
-      return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice option');
+      return E.resolve(
+        showPaymentBalance('verified invite', verifiedInvitePaymentP),
+      ).then(_ => {
+        const seatP = E(host).redeem(verifiedInvitePaymentP);
+        const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
+        E(seatP).offer(moneyPaymentP);
+        return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice option');
+      });
     },
 
     acceptOptionForFred(allegedInvitePaymentP) {

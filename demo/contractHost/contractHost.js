@@ -8,37 +8,37 @@ import { makePrivateName } from '../../collections/PrivateName';
 import { allSettled } from '../../collections/allSettled';
 import { insist } from '../../collections/insist';
 import { allComparable } from '../../collections/sameStructure';
-import { makeNatAssay } from './assays';
-import { makeMetaIssuerController } from './issuers';
+import { makeUniAssay } from './assays';
+import { makeMint } from './issuers';
 import makePromise from '../../src/kernel/makePromise';
 
 function makeContractHost(E) {
   // Maps from seat identity to seats
   const seats = makePrivateName();
+  // from installation to source code string
+  const installationSources = makePrivateName();
 
-  const controller = makeMetaIssuerController('contract host');
-  const metaIssuer = controller.getMetaIssuer();
-  const metaAssay = metaIssuer.getAssay();
+  const inviteMint = makeMint(makeUniAssay);
+  const inviteIssuer = inviteMint.getIssuer();
+  const inviteAssay = inviteIssuer.getAssay();
 
   function redeem(allegedInvitePayment) {
-    const allegedMetaAmount = allegedInvitePayment.getXferBalance();
-    const metaAmount = metaAssay.vouch(allegedMetaAmount);
-    insist(!metaAssay.isEmpty(metaAmount))`\
+    const allegedInviteAmount = allegedInvitePayment.getXferBalance();
+    const inviteAmount = inviteAssay.vouch(allegedInviteAmount);
+    insist(!inviteAssay.isEmpty(inviteAmount))`\
 No invites left`;
-    const baseAmount = metaAssay.quantity(metaAmount);
-    const seatIdentity = baseAmount.label.identity;
-    insist(seats.has(seatIdentity))`\
-Not a registered invite seat identity ${seatIdentity}`;
-    return E.resolve(metaIssuer.slash(metaAmount, allegedInvitePayment)).then(
-      _ => seats.get(seatIdentity),
-    );
+    const desc = inviteAssay.quantity(inviteAmount);
+    const { seatIdentity } = desc;
+    return E.resolve(
+      inviteIssuer.slash(inviteAmount, allegedInvitePayment),
+    ).then(_ => seats.get(seatIdentity));
   }
 
   // The contract host is designed to have a long-lived credible
   // identity.
   const contractHost = harden({
     getInviteIssuer() {
-      return controller.getMetaIssuer();
+      return inviteIssuer();
     },
 
     // The `contractSrc` is code for a contract function parameterized
@@ -70,42 +70,32 @@ Not a registered invite seat identity ${seatIdentity}`;
           return E.resolve(allComparable(termsP)).then(terms => {
             const inviteMaker = harden({
               // Used by the contract to make invites for credibly
-              // participating in the contract. The returned invite can be
-              // redeemed for this seat. The inviteMaker contributes the
-              // description `{ installation, terms, seatDesc }`. If this
-              // contract host redeems an invite, then the contractSrc and
-              // terms are accurate. The seatDesc is according to that
+              // participating in the contract. The returned invite
+              // can be redeemed for this seat. The inviteMaker
+              // contributes the description `{ installation, terms,
+              // seatIdentity, seatDesc }`. If this contract host
+              // redeems an invite, then the contractSrc and terms are
+              // accurate. The seatDesc is according to that
               // contractSrc code.
               make(seatDesc, seat, name = 'an invite payment') {
-                const baseDescription = harden({
+                const seatIdentity = harden({});
+                const inviteDescription = harden({
                   installation,
                   terms,
+                  seatIdentity,
                   seatDesc,
                 });
-                // Note that an empty object is pass-by-presence, and so
-                // has an unforgeable identity.
-                const seatIdentity = harden({});
-                const baseLabel = harden({
-                  identity: seatIdentity,
-                  description: baseDescription,
-                });
-                const baseAssay = makeNatAssay(baseLabel);
-                const baseAmount = baseAssay.make(1);
-                controller.register(baseAssay);
                 seats.init(seatIdentity, seat);
-                const metaOneAmount = metaAssay.make(baseAmount);
-                // This should be the only use of the meta mint, to make a
-                // meta purse whose quantity is one unit of a base amount
-                // for a unique base label. This meta purse makes the
-                // returned meta payment, and then the empty meta purse is
-                // dropped, in the sense that it becomes inaccessible. But
-                // it is not yet collectable. Until the returned payment
-                // is deposited, it will retain the metaPurse, as the
-                // metaPurse contains the usage rights.
-                const metaPurse = controller
-                  .getMetaMint()
-                  .mint(metaOneAmount, name);
-                return metaPurse.withdrawAll(name);
+                // This should be the only use of the invite mint, to
+                // make an invite purse whose quantity describes this
+                // seat. This invite purse makes the invite payment,
+                // and then the invite purse is dropped, in the sense that it
+                // becomes inaccessible. But it is not yet
+                // collectable. Until the returned invite payment is
+                // deposited, it will retain the invite purse, as the
+                // invite purse contains the (uselss in this case) usage rights.
+                const invitePurse = inviteIssuer.mint(inviteDescription, name);
+                return invitePurse.withdrawAll(name);
               },
               redeem,
             });
@@ -113,7 +103,17 @@ Not a registered invite seat identity ${seatIdentity}`;
           });
         },
       });
+      installationSources.init(installation, contractSrc);
       return installation;
+    },
+
+    // Verify that this is a genuine installation and show its source
+    // code. Thus, all genuine installations are transparent if one
+    // has their contractHost.
+    getInstallationSourceCode(installationP) {
+      return E.resolve(installationP).then(installation =>
+        installationSources.get(installation),
+      );
     },
 
     // If this is an invite payment made by an inviteMaker of this contract
@@ -129,49 +129,15 @@ Not a registered invite seat identity ${seatIdentity}`;
 }
 harden(makeContractHost);
 
-function exchangeInviteAmount(
-  inviteIssuerP,
-  seatIdentityP,
-  installationP,
-  terms,
-  seatDesc,
-) {
-  const passable = harden({
-    label: {
-      issuer: inviteIssuerP,
-      description: 'contract host',
-    },
-    quantity: {
-      label: {
-        identity: seatIdentityP,
-        description: {
-          installation: installationP,
-          terms,
-          seatDesc,
-        },
-      },
-      quantity: 1,
-    },
-  });
-  const comparableP = allComparable(passable);
-  /*
-  E.resolve(comparableP).then(comparable =>
-    console.log('\n####\n(', passable, ')\n####\n(', comparable, ')\n####\n'),
-  );
-  */
-  return comparableP;
-}
-harden(exchangeInviteAmount);
-
 function makeCollect(E, log) {
   function collect(seatP, winPurseP, refundPurseP, name = 'collecting') {
     const results = harden([
       E(seatP)
         .getWinnings()
         .then(winnings => E(winPurseP).depositAll(winnings)),
-      // TODO Bug if replace the comma above with the uncommented out
-      // ".then(_ => undefined)," below, somehow we end up trying to
-      // marshal an array with holes, rather than an array with
+      // TODO Bug if we replace the comma above with the uncommented
+      // out ".then(_ => undefined)," below, somehow we end up trying
+      // to marshal an array with holes, rather than an array with
       // undefined elements. This remains true whether we use
       // Promise.all or allSettled
       /* .then(_ => undefined), */
@@ -191,4 +157,4 @@ function makeCollect(E, log) {
 }
 harden(makeCollect);
 
-export { makeContractHost, exchangeInviteAmount, makeCollect };
+export { makeContractHost, makeCollect };

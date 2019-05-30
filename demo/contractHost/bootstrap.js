@@ -86,21 +86,29 @@ function build(E, log) {
     }
     const contractSrc = `${trivContract}`;
 
-    const fooInviteP = E(E(host).install(contractSrc)).spawn('foo terms');
+    const installationP = E(host).install(contractSrc);
 
-    return E.resolve(showPaymentBalance('foo', fooInviteP)).then(_ => {
-      const eightP = E(host).redeem(fooInviteP);
+    return E(host)
+      .getInstallationSourceCode(installationP)
+      .then(src => {
+        log('Does source ', src, ' match? ', src === contractSrc);
 
-      eightP.then(res => {
-        showPaymentBalance('foo', fooInviteP);
-        log('++ eightP resolved to ', res, ' (should be 8)');
-        if (res !== 8) {
-          throw new Error(`eightP resolved to ${res}, not 8`);
-        }
-        log('++ DONE');
+        const fooInviteP = E(installationP).spawn('foo terms');
+
+        return E.resolve(showPaymentBalance('foo', fooInviteP)).then(_ => {
+          const eightP = E(host).redeem(fooInviteP);
+
+          eightP.then(res => {
+            showPaymentBalance('foo', fooInviteP);
+            log('++ eightP resolved to ', res, ' (should be 8)');
+            if (res !== 8) {
+              throw new Error(`eightP resolved to ${res}, not 8`);
+            }
+            log('++ DONE');
+          });
+          return eightP;
+        });
       });
-      return eightP;
-    });
   }
 
   function betterContractTestAliceFirst(host, mint, alice, bob) {

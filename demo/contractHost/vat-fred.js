@@ -5,7 +5,7 @@ import harden from '@agoric/harden';
 
 import { allComparable } from '../../collections/sameStructure';
 import { insist } from '../../collections/insist';
-import { exchangeInviteAmount, makeCollect } from './contractHost';
+import { makeCollect } from './contractHost';
 
 function makeFred(E, host, log) {
   const collect = makeCollect(E, log);
@@ -16,6 +16,7 @@ function makeFred(E, host, log) {
   let coveredCallInstallationP;
   let timerP;
   let inviteIssuerP;
+  let inviteIssuerLabel;
 
   let myMoneyPurseP;
   let moneyIssuerP;
@@ -38,6 +39,10 @@ function makeFred(E, host, log) {
     coveredCallInstallationP = coveredCallInst;
     timerP = E.resolve(timer);
     inviteIssuerP = E(host).getInviteIssuer();
+    inviteIssuerLabel = harden({
+      issuer: inviteIssuerP,
+      description: 'contract host',
+    });
 
     myMoneyPurseP = E.resolve(myMoneyPurse);
     moneyIssuerP = E(myMoneyPurseP).getIssuer();
@@ -55,7 +60,7 @@ function makeFred(E, host, log) {
 
   const fred = harden({
     init,
-    acceptOptionOffer(allegedInvitePaymentP) {
+    acceptOptionOffer(allegedSaleInvitePaymentP) {
       log('++ fred.acceptOptionOffer starting');
       insist(initialized)`\
 ERR: fred.acceptOptionOffer called before init()`;
@@ -82,52 +87,55 @@ ERR: fred.acceptOptionOffer called before init()`;
         quantity: 55,
       });
 
-      const allegedMetaAmountP = E(allegedInvitePaymentP).getXferBalance();
+      const allegedSaleAmountP = E(allegedSaleInvitePaymentP).getXferBalance();
 
-      const verifiedInviteP = E.resolve(allegedMetaAmountP).then(
-        allegedMetaAmount => {
-          const allegedBaseOptionsInviteIssuer =
-            allegedMetaAmount.quantity.label.description.terms[1];
+      const verifiedSaleInvitePaymentP = E.resolve(allegedSaleAmountP).then(
+        allegedSaleInviteAmount => {
+          const allegedOptionsInviteAmount =
+            allegedSaleInviteAmount.quantity.terms[1];
 
-          const metaOptionAmountP = exchangeInviteAmount(
-            inviteIssuerP,
-            allegedBaseOptionsInviteIssuer.quantity.label.identity,
-            coveredCallInstallationP,
-            [dough10, wonka7, timerP, 'singularity'],
-            'holder',
-          );
+          const optionsInviteAmount = harden({
+            label: inviteIssuerLabel,
+            quantity: {
+              installation: coveredCallInstallationP,
+              terms: [dough10, wonka7, timerP, 'singularity'],
+              seatIdentity: allegedOptionsInviteAmount.quantity.seatIdentity,
+              seatDesc: 'holder',
+            },
+          });
 
-          const metaOptionSaleAmountP = exchangeInviteAmount(
-            inviteIssuerP,
-            allegedMetaAmount.quantity.label.identity,
-            escrowExchangeInstallationP,
-            [fin55, metaOptionAmountP],
-            'left',
-          );
+          const saleInviteAmount = harden({
+            label: inviteIssuerLabel,
+            quantity: {
+              installation: escrowExchangeInstallationP,
+              terms: [fin55, optionsInviteAmount],
+              seatIdentity: allegedSaleInviteAmount.quantity.seatIdentity,
+              seatDesc: 'left',
+            },
+          });
 
-          return E.resolve(metaOptionSaleAmountP).then(metaOptionSaleAmount =>
-            E(inviteIssuerP).getExclusive(
-              metaOptionSaleAmount,
-              allegedInvitePaymentP,
-              'verified invite',
-            ),
+          return E(inviteIssuerP).getExclusive(
+            saleInviteAmount,
+            allegedSaleInvitePaymentP,
+            'verified sale invite',
           );
         },
       );
-      const seatP = E(host).redeem(verifiedInviteP);
+
+      const saleSeatP = E(host).redeem(verifiedSaleInvitePaymentP);
       const finPaymentP = E(myFinPurseP).withdraw(55);
-      E(seatP).offer(finPaymentP);
+      E(saleSeatP).offer(finPaymentP);
       const optionInvitePurseP = E(inviteIssuerP).makeEmptyPurse();
       const gotOptionP = collect(
-        seatP,
+        saleSeatP,
         optionInvitePurseP,
         myFinPurseP,
         'fred buys escrowed option',
       );
       return E.resolve(gotOptionP).then(_ => {
         // Fred bought the option. Now fred tries to exercise the option.
-        const optionInvitePayment = E(optionInvitePurseP).withdrawAll();
-        const optionSeatP = E(host).redeem(optionInvitePayment);
+        const optionInvitePaymentP = E(optionInvitePurseP).withdrawAll();
+        const optionSeatP = E(host).redeem(optionInvitePaymentP);
         return E.resolve(allComparable(dough10)).then(d10 => {
           const doughPaymentP = E(myMoneyPurseP).withdraw(d10);
           E(optionSeatP).offer(doughPaymentP);

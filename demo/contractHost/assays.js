@@ -122,193 +122,116 @@ Unrecognized amount: ${amount}`;
 }
 harden(makeNatAssay);
 
-// A meta assay wraps those base assays returned by
-// baseLabelToAssayFn. A meta amount's quantity is a base amount, or
-// null for empty. Thus, different meta amounts that have the same
-// meta label can contain different meta quantities, each of whom is a
-// base amount with a different base label. The "single" qualifier
-// here is for the restriction that a metaSingleAssay cannot combine
-// base amounts with different base labels.
-//
-// TODO: Before we can make a more general meta assay, we need to
-// recognize a ConstMap as a pass-by-copy object. Once we have that,
-// we can have a meta amount be a ConstMap from base labels to base
-// amounts.
-//
-// Since an empty meta amount has a null quantity rather than a base
-// amount, it has no corresponding base assay.
-function makeMetaSingleAssayMaker(baseLabelToAssayFn) {
-  function makeMetaSingleAssay(metaLabel) {
-    mustBeComparable(metaLabel);
+// A uniAssay makes uni amounts, which are either empty or have unique
+// descriptions. The quantity must either be null, in which case it is
+// empty, or be some truthy comparable value, in which case it
+// represents a single unique unit described by that truthy
+// quantity. Combining two uni amounts with different truthy
+// quantities fails, as they represent non-combinable rights.
+function makeUniAssay(label) {
+  mustBeComparable(label);
 
-    // memoize well formedness check of meta amounts.
-    const metaBrand = new WeakSet();
+  const brand = new WeakSet();
 
-    const metaEmptyAmount = harden({ label: metaLabel, quantity: null });
-    metaBrand.add(metaEmptyAmount);
+  const emptyAmount = harden({ label, quantity: null });
+  brand.add(emptyAmount);
 
-    const metaAssay = harden({
-      getLabel() {
-        return metaLabel;
-      },
+  const assay = harden({
+    getLabel() {
+      return label;
+    },
 
-      // Given the raw quantity that this kind of amount would label, return
-      // an amount so labeling that quantity.
-      make(allegedBaseAmount) {
-        if (allegedBaseAmount === null) {
-          return metaEmptyAmount;
-        }
-        const baseAssay = baseLabelToAssayFn(allegedBaseAmount.label);
-        insist(baseAssay !== undefined)`\
-base label not found ${allegedBaseAmount}`;
-        const baseAmount = baseAssay.make(allegedBaseAmount.quantity);
-        if (baseAssay.isEmpty(baseAmount)) {
-          return metaEmptyAmount;
-        }
-        const metaAmount = harden({ label: metaLabel, quantity: baseAmount });
-        metaBrand.add(metaAmount);
-        return metaAmount;
-      },
+    make(optDescription) {
+      if (optDescription === null) {
+        return emptyAmount;
+      }
+      insist(!!optDescription)`\
+Uni description must be either null or truthy ${optDescription}`;
 
-      // Is this an amount object made by this assay? If so, return
-      // it. Otherwise error.
-      vouch(metaAmount) {
-        insist(metaBrand.has(metaAmount))`\
-Unrecognized metaAmount: ${metaAmount}`;
-        return metaAmount;
-      },
+      mustBeComparable(optDescription);
 
-      // Is this like an amount object made by this assay, such as one
-      // received by pass-by-copy from an otherwise-identical remote
-      // amount? On success, return an amount object made by this
-      // assay. Otherwise error.
-      //
-      // Until we have good support for pass-by-construction, the full
-      // assay style is too awkward to use remotely. See
-      // mintTestAssay. So coerce also accepts a bare number which it
-      // will coerce to a labeled number via metaAssay.make.
-      coerce(allegedMetaAmount) {
-        if (metaBrand.has(allegedMetaAmount)) {
-          return allegedMetaAmount;
-        }
-        const {
-          label: allegedMetaLabel,
-          quantity: allegedBaseAmount,
-        } = allegedMetaAmount;
-        mustBeSameStructure(
-          metaLabel,
-          allegedMetaLabel,
-          'Unrecognized meta label',
-        );
-        // Will throw on inappropriate quantity
-        return metaAssay.make(allegedBaseAmount);
-      },
+      const amount = harden({ label, quantity: optDescription });
+      brand.add(amount);
+      return amount;
+    },
 
-      // Return the raw quantity that this meta amount labels. This
-      // will be either null or a base amount with a label recognized
-      // by baseLabelToAssayFn.
-      quantity(metaAmount) {
-        return metaAssay.vouch(metaAmount).quantity;
-      },
+    vouch(amount) {
+      insist(brand.has(amount))`\
+Unrecognized amount: ${amount}`;
+      return amount;
+    },
 
-      // The meta empty amount has a quantity of null, rather than a
-      // base amount.
-      empty() {
-        return metaEmptyAmount;
-      },
+    coerce(allegedMetaAmount) {
+      if (brand.has(allegedMetaAmount)) {
+        return allegedMetaAmount;
+      }
+      const { label: allegedLabel, quantity } = allegedMetaAmount;
+      mustBeSameStructure(label, allegedLabel, 'Unrecognized label');
+      return assay.make(quantity);
+    },
 
-      isEmpty(metaAmount) {
-        const baseAmount = metaAssay.quantity(metaAmount);
-        if (baseAmount === null) {
-          insist(metaAmount === metaEmptyAmount)`\
-The empty meta amount should be unique`;
-          return true;
-        }
-        const baseAssay = baseLabelToAssayFn(baseAmount.label);
-        insist(!baseAssay.isEmpty(baseAmount))`\
-Empty base amount should be canonicalized as a null meta quantity`;
-        return false;
-      },
+    quantity(amount) {
+      return assay.vouch(amount).quantity;
+    },
 
-      // Set inclusion of erights.
-      // Does the set of erights described by `leftAmount` include all
-      // the erights described by `rightAmount`?
-      includes(leftMetaAmount, rightMetaAmount) {
-        if (metaAssay.isEmpty(rightMetaAmount)) {
-          return true;
-        }
-        if (metaAssay.isEmpty(leftMetaAmount)) {
-          return false;
-        }
-        const leftBaseAmount = leftMetaAmount.quantity;
-        const leftBaseLabel = leftBaseAmount.label;
-        const rightBaseAmount = rightMetaAmount.quantity;
-        const rightBaseLabel = rightBaseAmount.label;
+    empty() {
+      return emptyAmount;
+    },
 
-        if (!sameStructure(leftBaseLabel, rightBaseLabel)) {
-          return false;
-        }
-        const baseAssay = baseLabelToAssayFn(leftBaseLabel);
-        return baseAssay.includes(leftBaseAmount, rightBaseAmount);
-      },
+    isEmpty(amount) {
+      return assay.quantity(amount) === null;
+    },
 
-      // Set union of erights.
-      // Describe all the erights described by `leftAmount` and those
-      // described by `rightAmount`.
-      with(leftMetaAmount, rightMetaAmount) {
-        if (metaAssay.isEmpty(leftMetaAmount)) {
-          return rightMetaAmount;
-        }
-        if (metaAssay.isEmpty(rightMetaAmount)) {
-          return leftMetaAmount;
-        }
-        const leftBaseAmount = leftMetaAmount.quantity;
-        const leftBaseLabel = leftBaseAmount.label;
-        const rightBaseAmount = rightMetaAmount.quantity;
-        const rightBaseLabel = rightBaseAmount.label;
+    includes(leftAmount, rightAmount) {
+      const leftQuant = assay.quantity(leftAmount);
+      const rightQuant = assay.quantity(rightAmount);
+      if (rightQuant === null) {
+        return true;
+      }
+      return sameStructure(leftQuant, rightQuant);
+    },
 
-        mustBeSameStructure(
-          leftBaseLabel,
-          rightBaseLabel,
-          'Cannot combine different base rights',
-        );
-        const baseAssay = baseLabelToAssayFn(leftBaseLabel);
+    with(leftAmount, rightAmount) {
+      const leftQuant = assay.quantity(leftAmount);
+      const rightQuant = assay.quantity(rightAmount);
+      if (leftQuant === null) {
+        return rightAmount;
+      }
+      if (rightQuant === null) {
+        return leftAmount;
+      }
+      if (sameStructure(leftQuant, rightQuant)) {
+        // The "throw" is useless since insist(false) will unconditionally
+        // throw anyway. Rather, it informs IDEs of this control flow.
+        throw insist(false)`\
+Even identical non-empty uni amounts cannot be added together ${leftAmount}`;
+      } else {
+        // The "throw" is useless since insist(false) will unconditionally
+        // throw anyway. Rather, it informs IDEs of this control flow.
+        throw insist(false)`\
+Cannot combine different uni descriptions ${leftAmount} vs ${rightAmount}`;
+      }
+    },
 
-        return metaAssay.make(baseAssay.with(leftBaseAmount, rightBaseAmount));
-      },
+    without(leftAmount, rightAmount) {
+      const leftQuant = assay.quantity(leftAmount);
+      const rightQuant = assay.quantity(rightAmount);
+      if (rightQuant === null) {
+        return leftAmount;
+      }
+      insist(leftQuant !== null)`\
+Empty left does not include ${rightAmount}`;
 
-      // Covering set subtraction of erights.
-      // If leftAmount does not include rightAmount, error.
-      // Describe the erights described by `leftAmount` and not described
-      // by `rightAmount`.
-      without(leftMetaAmount, rightMetaAmount) {
-        if (metaAssay.isEmpty(rightMetaAmount)) {
-          return leftMetaAmount;
-        }
-        insist(!metaAssay.isEmpty(leftMetaAmount))`\
-empty left meta assay does not include ${rightMetaAmount}`;
-
-        const leftBaseAmount = leftMetaAmount.quantity;
-        const leftBaseLabel = leftBaseAmount.label;
-        const rightBaseAmount = rightMetaAmount.quantity;
-        const rightBaseLabel = rightBaseAmount.label;
-
-        mustBeSameStructure(
-          leftBaseLabel,
-          rightBaseLabel,
-          'Cannot subtract different base rights',
-        );
-        const baseAssay = baseLabelToAssayFn(leftBaseLabel);
-
-        return metaAssay.make(
-          baseAssay.without(leftBaseAmount, rightBaseAmount),
-        );
-      },
-    });
-    return metaAssay;
-  }
-  return harden(makeMetaSingleAssay);
+      mustBeSameStructure(
+        leftQuant,
+        rightQuant,
+        'Cannot subtract different uni descriptions',
+      );
+      return emptyAmount;
+    },
+  });
+  return assay;
 }
-harden(makeMetaSingleAssayMaker);
+harden(makeUniAssay);
 
-export { makeNatAssay, makeMetaSingleAssayMaker };
+export { makeNatAssay, makeUniAssay };
