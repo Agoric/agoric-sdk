@@ -14,3 +14,4 @@ build
 .idea/
 *.iml
 node_modules
+t1/
