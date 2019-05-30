@@ -42,7 +42,7 @@ show-local-gci:
 	@./calc-gci.js ~/.ag-cosmos-chain/config/genesis.json
 
 set-local-gci-ingress:
-	cd t1 && ../bin/ag-solo set-gci-ingress `../calc-gci.js ~/.ag-cosmos-chain/config/genesis.json` `../calc-rpcport.js ~/.ag-cosmos-chain/config/config.toml`
+	cd t1 && ../bin/ag-solo set-gci-ingress `../calc-gci.js ~/.ag-chain-cosmos/config/genesis.json` `../calc-rpcport.js ~/.ag-chain-cosmos/config/config.toml`
 
 start-ag-solo-connected-to-local:
 	-rm -r t1
