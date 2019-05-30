@@ -1,2 +1,2 @@
-libss.h
-libss.so
+lib*.h
+lib*.so

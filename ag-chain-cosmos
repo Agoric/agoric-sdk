@@ -1,6 +1,6 @@
 #! /bin/sh
 PORT=26657
 exec docker run -p127.0.0.1:$PORT:$PORT \
-  --volume=ssd-state:/root/.ssd \
+  --volume=ag-chain-cosmos-state:/root/.ag-chain-cosmos \
   --rm -it \
   agoric/cosmic-swingset ${1+"$@"}

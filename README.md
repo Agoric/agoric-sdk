@@ -6,8 +6,8 @@ To test on a local Docker instance, use:
 
 ```
 $ sudo make docker-install
-$ ssd --help
-$ sscli --help
+$ ag-chain-cosmos --help
+$ ag-cosmos-helper --help
 ```
 
 You can find the images at [Docker Hub](https://cloud.docker.com/u/agoric/repository/docker/agoric/cosmic-swingset)
@@ -23,18 +23,18 @@ $ make
 $ npm install
 ```
 
-Make shell aliases for `ssd` and `sscli`.  Note that the `$PWD` variable must be the absolute path to the current cosmic-swingset directory:
+Make shell aliases for `ag-chain-cosmos` and `ag-cosmos-helper`.  Note that the `$PWD` variable must be the absolute path to the current cosmic-swingset directory:
 
 ```
-alias ssd=$PWD/lib/node-ssd
-alias sscli=$GOPATH/bin/sscli
+alias ag-chain-cosmos=$PWD/lib/node-ag-chain-cosmos
+alias ag-cosmos-helper=$GOPATH/bin/ag-cosmos-helper
 ```
 
 Test that the aliases work with:
 
 ```
-$ ssd --help
-$ sscli --help
+$ ag-chain-cosmos --help
+$ ag-cosmos-helper --help
 ```
 
 # Tutorial
@@ -45,50 +45,50 @@ First, configure the Agoric validator and CLI tool:
 
 ```
 # Initialize configuration files and genesis file
-ssd init --chain-id agchain
+ag-chain-cosmos init --chain-id agchain
 
 # Copy the `Address` output here and save it for later use 
 # [optional] add "--ledger" at the end to use a Ledger Nano S 
 # Save password and recovery keys if you want.
-sscli keys add jack
+ag-cosmos-helper keys add jack
 
 # Copy the `Address` output here and save it for later use
 # Save password and recovery keys if you want.
-sscli keys add alice
+ag-cosmos-helper keys add alice
 
 # Add both accounts, with coins to the genesis file
-ssd add-genesis-account $(sscli keys show jack -a) 1000agtoken,1000jackcoin
-ssd add-genesis-account $(sscli keys show alice -a) 1000agtoken,1000alicecoin
+ag-chain-cosmos add-genesis-account $(ag-cosmos-helper keys show jack -a) 1000agtoken,1000jackcoin
+ag-chain-cosmos add-genesis-account $(ag-cosmos-helper keys show alice -a) 1000agtoken,1000alicecoin
 
 # Configure your CLI to eliminate need for chain-id flag
-sscli config chain-id agchain
-sscli config output json
-sscli config indent true
-sscli config trust-node true
+ag-cosmos-helper config chain-id agchain
+ag-cosmos-helper config output json
+ag-cosmos-helper config indent true
+ag-cosmos-helper config trust-node true
 ```
 
 Go to a different terminal (make sure your shell aliases are installed first), and start the testnet run:
 ```
-ssd start
+ag-chain-cosmos start
 ```
 
 Go back to the old terminal and run commands against the network you have just created:
 ```
 # First check the accounts to ensure they have funds
-sscli query account $(sscli keys show jack -a) 
-sscli query account $(sscli keys show alice -a) 
+ag-cosmos-helper query account $(ag-cosmos-helper keys show jack -a) 
+ag-cosmos-helper query account $(ag-cosmos-helper keys show alice -a) 
 
 # Relay a message on behalf of Alice
-sscli tx swingset deliver alice --from jack '[[[0,"{\"target\":{\"type\":\"your-egress\",\"id\":1},\"methodName\":\"getIssuer\",\"args\":[],\"slots\":[],\"resultSlot\":{\"type\":\"your-resolver\",\"id\":1}}"]], 0]'
+ag-cosmos-helper tx swingset deliver alice --from jack '[[[0,"{\"target\":{\"type\":\"your-egress\",\"id\":1},\"methodName\":\"getIssuer\",\"args\":[],\"slots\":[],\"resultSlot\":{\"type\":\"your-resolver\",\"id\":1}}"]], 0]'
 
 # Look at Bob's the outbound mailbox
-sscli query swingset mailbox bob
+ag-cosmos-helper query swingset mailbox bob
 
 # Start the REST server
-sscli rest-server &
+ag-cosmos-helper rest-server &
 
 # Get the sequence and account numbers for jack to construct the below requests
-$ curl -s http://localhost:1317/auth/accounts/$(sscli keys show jack -a)
+$ curl -s http://localhost:1317/auth/accounts/$(ag-cosmos-helper keys show jack -a)
 # > {"type": "auth/Account","value":{"address": "cosmos1nzezs2twwwa4zrsjhqznqxw4qgjux9t46nlpp0","coins":[{"denom": "agtoken","amount": "998"},{"denom":"jackcoin","amount":"1000"}],"public_key":{"type":"tendermint/PubKeySecp256k1","value": "AxbAggtxje/u7U09mVl9Te5Wyvuo/TSXGBW2PDFs/his"},"account_number":"0","sequence":"8"}}
 
 # Send another message on behalf of Alice

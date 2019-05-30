@@ -1,6 +1,6 @@
-# The css-solo Tool
+# The ag-solo Tool
 
-The `css-solo` tool is used to create and launch a SwingSet vat-machine. This
+The `ag-solo` tool is used to create and launch a SwingSet vat-machine. This
 machine can interact with the outside world either through a WebSocket
 listening port, or by exchanging messages with a Cosmos-SDK -based
 vat-machine (launched with `css-chain`).
@@ -21,9 +21,9 @@ load, so it must be performed before `npm install` can work)
 Choose a working directory for the machine. We'll call it `$BASEDIR`.
 
 ```
-$ bin/css-solo init $BASEDIR
+$ bin/ag-solo init $BASEDIR
 $ cd $BASEDIR
-$ ../bin/css-solo start
+$ ../bin/ag-solo start
 ```
 
 Now open a web browser and point it at `http://localhost:8000`
@@ -81,14 +81,14 @@ E(home.purse).getBalance()
 
 ## Modifying the demo objects
 
-The `lib/css-solo/vats/` directory contains the source code for all the Vats
+The `lib/ag-solo/vats/` directory contains the source code for all the Vats
 created in the solo vat-machine. The actual filenames are enumerated in
-`lib/css-solo/init-basedir.js`, so if you add a new Vat, be sure to add it to
+`lib/ag-solo/init-basedir.js`, so if you add a new Vat, be sure to add it to
 `init-basedir.js` too.
 
-The objects added to `home` are created in `lib/css-solo/vats/bootstrap.js`.
+The objects added to `home` are created in `lib/ag-solo/vats/bootstrap.js`.
 
-The REPL handler is in `lib/css-solo/vats/vat-http.js`.
+The REPL handler is in `lib/ag-solo/vats/vat-http.js`.
 
 The HTML frontend code is pure JS/DOM (no additional libraries yet), in
-`lib/css-solo/html/index.html` and `lib/css-solo/html/main.js`.
+`lib/ag-solo/html/index.html` and `lib/ag-solo/html/main.js`.

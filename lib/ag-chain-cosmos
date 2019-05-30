@@ -5,8 +5,8 @@ require = require('esm')(module);
 
 const { launch } = require('./launch-chain');
 
-const ss = require('bindings')('ss.node');
-console.log('Have SSD', ss);
+const agcc = require('bindings')('agcosmosdaemon.node');
+console.log('Have AG_COSMOS', agcc);
 
 const portHandlers = {};
 let lastPort = 0;
@@ -26,14 +26,14 @@ function fromGo(port, str, replier) {
          rej => replier.reject(`rejection ${rej} ignored`));
 }
 
-// Actually run the main ssd program.  Before we start the daemon,
-// there will be a call to nodePort/SSD_INIT, otherwise exit.
+// Actually run the main ag-chain-cosmos program.  Before we start the daemon,
+// there will be a call to nodePort/AG_COSMOS_INIT, otherwise exit.
 const nodePort = registerPortHandler(toSwingSet);
-ss.runSSD(nodePort, fromGo, process.argv.slice(1));
+agcc.runAG_COSMOS(nodePort, fromGo, process.argv.slice(1));
 
 let globalHandler, globalSetStorage;
 async function toSwingSet(action, replier) {
-  if (action.type === 'SSD_INIT') {
+  if (action.type === 'AG_COSMOS_INIT') {
     return true;
   }
 
@@ -66,13 +66,13 @@ async function toSwingSet(action, replier) {
 function makeStorage(sPort) {
   return {
     has(key) {
-      return ss.send(sPort, JSON.stringify({method: "has", key}));
+      return agcc.send(sPort, JSON.stringify({method: "has", key}));
     },
     set(key, value) {
-      return ss.send(sPort, JSON.stringify({method: "set", key, value}));
+      return agcc.send(sPort, JSON.stringify({method: "set", key, value}));
     },
     get(key) {
-      return ss.send(sPort, JSON.stringify({method: "get", key}));
+      return agcc.send(sPort, JSON.stringify({method: "get", key}));
     },
   };
 }

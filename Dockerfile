@@ -26,8 +26,8 @@ COPY package*.json ./
 COPY demo1/ ./demo1/
 RUN npm install --production
 COPY --from=node-build /usr/src/app/build/Release/*.node build/Release/
-COPY --from=go-build /go/bin/sscli .
+COPY --from=go-build /go/bin/ag-cosmos-helper .
 
 # By default, run the daemon with specified arguments.
 EXPOSE 26657
-ENTRYPOINT [ "./lib/node-ssd" ]
+ENTRYPOINT [ "./lib/ag-chain-cosmos" ]

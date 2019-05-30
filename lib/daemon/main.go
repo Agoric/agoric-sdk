@@ -1,4 +1,4 @@
-package ssd
+package daemon
 
 import (
 	"encoding/json"
@@ -33,7 +33,7 @@ import (
 )
 
 // DefaultNodeHome sets the folder where the applcation data and configuration will be stored
-var DefaultNodeHome = os.ExpandEnv("$HOME/.ssd")
+var DefaultNodeHome = os.ExpandEnv("$HOME/.ag-chain-cosmos")
 
 const (
 	flagOverwrite = "overwrite"
@@ -52,7 +52,7 @@ func RunWithController(sendToNode Sender) {
 	ctx := server.NewDefaultContext()
 
 	rootCmd := &cobra.Command{
-		Use:               "ssd",
+		Use:               "ag-chain-cosmos",
 		Short:             " swingset App Daemon (server)",
 		PersistentPreRunE: server.PersistentPreRunEFn(ctx),
 	}
@@ -79,10 +79,10 @@ func makeNewApp(sendToNode Sender) func(logger log.Logger, db dbm.DB, traceStore
 		fmt.Println("Starting daemon!")
 		abci := app.NewSwingSetApp(logger, db)
 		if sendToNode != nil {
-			msg := `{"type":"SSD_INIT"}`
+			msg := `{"type":"AG_COSMOS_INIT"}`
 			fmt.Println("Sending to Node", msg)
 			ret, err := sendToNode(true, msg)
-			fmt.Println("Received SSD_INIT response", ret, err)
+			fmt.Println("Received AG_COSMOS_INIT response", ret, err)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "Cannot initialize Node", err)
 				os.Exit(1)
@@ -148,7 +148,7 @@ func InitCmd(ctx *server.Context, cdc *codec.Codec) *cobra.Command {
 
 			cfg.WriteConfigFile(filepath.Join(config.RootDir, "config", "config.toml"), config)
 
-			fmt.Printf("Initialized ssd configuration and bootstrapping files in %s...\n", viper.GetString(cli.HomeFlag))
+			fmt.Printf("Initialized ag-chain-cosmos configuration and bootstrapping files in %s...\n", viper.GetString(cli.HomeFlag))
 			return nil
 		},
 	}
@@ -169,7 +169,7 @@ func AddGenesisAccountCmd(ctx *server.Context, cdc *codec.Codec) *cobra.Command 
 		Long: strings.TrimSpace(`
 Adds accounts to the genesis file so that you can start a chain with coins in the CLI:
 
-$ ssd add-genesis-account cosmos1tse7r2fadvlrrgau3pa0ss7cqh55wrv6y9alwh 1000STAKE,1000agtoken
+$ ag-chain-cosmos add-genesis-account cosmos1tse7r2fadvlrrgau3pa0ss7cqh55wrv6y9alwh 1000STAKE,1000agtoken
 `),
 		RunE: func(_ *cobra.Command, args []string) error {
 			addr, err := sdk.AccAddressFromBech32(args[0])

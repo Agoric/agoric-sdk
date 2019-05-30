@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Agoric/cosmic-swingset/lib/ssd"
+	"github.com/Agoric/cosmic-swingset/lib/daemon"
 	swingset "github.com/Agoric/cosmic-swingset/x/swingset"
 )
 
@@ -28,8 +28,8 @@ const SwingSetPort = 123
 var replies = map[int]chan goReturn{}
 var lastReply = 0
 
-//export RunSSD
-func RunSSD(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int {
+//export RunAG_COSMOS
+func RunAG_COSMOS(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int {
 	// FIXME: Decouple the sending logic from the Cosmos app.
 	sendToNode := func(needReply bool, str string) (string, error) {
 		var rPort int
@@ -64,7 +64,7 @@ func RunSSD(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int {
 	go func() {
 		// We run in the background, but exit when the job is over.
 		// swingset.SendToNode("hello from Initial Go!")
-		ssd.RunWithController(sendToNode)
+		daemon.RunWithController(sendToNode)
 		fmt.Fprintln(os.Stderr, "Shutting down Cosmos")
 		os.Exit(0)
 	}()

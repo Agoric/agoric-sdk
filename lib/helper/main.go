@@ -1,4 +1,4 @@
-package sscli
+package helper
 
 import (
 	"os"
@@ -29,7 +29,7 @@ const (
 	storeSS  = "swingset"
 )
 
-var defaultCLIHome = os.ExpandEnv("$HOME/.sscli")
+var defaultCLIHome = os.ExpandEnv("$HOME/.ag-cosmos-helper")
 
 func Run() {
 	cobra.EnableCommandSorting = false
@@ -48,8 +48,8 @@ func Run() {
 	}
 
 	rootCmd := &cobra.Command{
-		Use:   "sscli",
-		Short: "swingset Client",
+		Use:   "ag-cosmos-helper",
+		Short: "Agoric Cosmos Client",
 	}
 
 	// Add --chain-id to persistent flags and mark it required
@@ -71,7 +71,7 @@ func Run() {
 		client.LineBreak,
 	)
 
-	executor := cli.PrepareMainCmd(rootCmd, "SS", defaultCLIHome)
+	executor := cli.PrepareMainCmd(rootCmd, "AG_SOLO_COSMOS_HELPER", defaultCLIHome)
 	err := executor.Execute()
 	if err != nil {
 		panic(err)

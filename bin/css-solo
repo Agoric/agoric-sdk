@@ -2,8 +2,8 @@
 
 const process = require('process');
 require = require('esm')(module);
-const solo = require('../lib/css-solo/main.js').default;
+const solo = require('../lib/ag-solo/main.js').default;
 solo(process.argv.splice(2))
   .then(_res => 0,
-        rej => console.log(`error running css-solo:`, rej));
+        rej => console.log(`error running ag-solo:`, rej));
 

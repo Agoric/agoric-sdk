@@ -4,7 +4,7 @@ const process = require('process');
 const fs = require('fs');
 const toml = require('@iarna/toml');
 
-// point this at ~/.ssd/config/config.toml
+// point this at ~/.ag-cosmos-chain/config/config.toml
 
 const configString = fs.readFileSync(process.argv[2]).toString();
 const config = toml.parse(configString);

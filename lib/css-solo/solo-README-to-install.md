@@ -1,1 +1,1 @@
-This is a css-solo basedir.
+This is a ag-solo basedir.

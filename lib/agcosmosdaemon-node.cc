@@ -1,7 +1,7 @@
 #include <napi.h>
 #include <napi-thread-safe-callback.hpp>
 #include <iostream>
-#include "libss.h"
+#include "libagcosmosdaemon.h"
 
 namespace ss {
 
@@ -69,12 +69,12 @@ private:
 
 Napi::FunctionReference NodeReplier::constructor;
 
-static int ssdPort = -1;
+static int daemonPort = -1;
 int SendToNode(int port, int replyPort, Body str) {
     std::cerr << "Send to node port " << port << " " << str << std::endl;
-    // FIXME: Make a better bootstrap, honouring an SSD_START message.
-    if (ssdPort < 0) {
-        ssdPort = replyPort;
+    // FIXME: Make a better bootstrap, honouring an AG_COSMOS_START message.
+    if (daemonPort < 0) {
+        daemonPort = replyPort;
     }
     std::string instr(str);
     std::thread([instr, port, replyPort]{
@@ -115,25 +115,25 @@ static Napi::Value send(const Napi::CallbackInfo& info) {
     return Napi::String::New(env, ret);
 }
 
-static Napi::Value runSSD(const Napi::CallbackInfo& info) {
+static Napi::Value runAG_COSMOS(const Napi::CallbackInfo& info) {
     static bool singleton = false;
     Napi::Env env = info.Env();
-    std::cerr << "Starting Go SSD from Node SSD" << std::endl;
+    std::cerr << "Starting Go AG_COSMOS from Node AG_COSMOS" << std::endl;
 
     if (singleton) {
-        Napi::TypeError::New(env, "Cannot start multiple SSD instances").ThrowAsJavaScriptException();
+        Napi::TypeError::New(env, "Cannot start multiple AG_COSMOS instances").ThrowAsJavaScriptException();
         return env.Null();
     }
     singleton = true;
 
     int nodePort = info[0].As<Napi::Number>().ToNumber();
     dispatcher = std::make_shared<ThreadSafeCallback>(info[1].As<Napi::Function>());
-    Napi::Array ssdArgv = info[2].As<Napi::Array>();
-    unsigned int argc = ssdArgv.Length();
+    Napi::Array daemonArgv = info[2].As<Napi::Array>();
+    unsigned int argc = daemonArgv.Length();
     char** argv = new char*[argc];
     for (unsigned int i = 0; i < argc; i ++) {
-        if (ssdArgv.Has(i)) {
-            std::string tmp = ssdArgv.Get(i).As<Napi::String>().Utf8Value();
+        if (daemonArgv.Has(i)) {
+            std::string tmp = daemonArgv.Get(i).As<Napi::String>().Utf8Value();
             argv[i] = strdup(tmp.c_str());
         } else {
             argv[i] = nullptr;
@@ -141,21 +141,21 @@ static Napi::Value runSSD(const Napi::CallbackInfo& info) {
     }
 
     GoSlice args = {argv, argc, argc};
-    RunSSD(nodePort, SendToNode, args);
+    RunAG_COSMOS(nodePort, SendToNode, args);
 
     for (unsigned int i = 0; i < argc; i ++) {
         free(argv[i]);
     }
     delete[] argv;
-    std::cerr << "End of starting SSD from Node SSD" << std::endl;
-    return Napi::Number::New(env, ssdPort);
+    std::cerr << "End of starting AG_COSMOS from Node AG_COSMOS" << std::endl;
+    return Napi::Number::New(env, daemonPort);
 }
 
 static Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
     exports = NodeReplier::Init(env, exports);
     exports.Set(
-        Napi::String::New(env, "runSSD"),
-        Napi::Function::New(env, runSSD, "runSSD"));
+        Napi::String::New(env, "runAG_COSMOS"),
+        Napi::Function::New(env, runAG_COSMOS, "runAG_COSMOS"));
     exports.Set(
         Napi::String::New(env, "send"),
         Napi::Function::New(env, send, "send"));
