@@ -33,16 +33,18 @@ function build(E, D) {
           // TODO: SO() / sendOnly()
           E(commsHandler).inbound(peer, body);
           p.highestDelivered = num;
+          D(mailbox).ackInbound(peer, num);
         }
       });
     },
 
     deliverInboundAck(peer, ack) {
       const p = getPeer(peer).outbound;
-      const num = p.highestRemoved + 1;
+      let num = p.highestRemoved + 1;
       while (num <= p.highestAdded && num <= ack) {
         D(mailbox).remove(peer, num);
         p.highestRemoved = num;
+        num += 1;
       }
     },
 
