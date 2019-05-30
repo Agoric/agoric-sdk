@@ -4,6 +4,7 @@ import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 
+import { makePrivateName } from '../../collections/PrivateName';
 import { allSettled } from '../../collections/allSettled';
 import { insist } from '../../collections/insist';
 import { allComparable } from '../../collections/sameStructure';
@@ -13,7 +14,7 @@ import makePromise from '../../src/kernel/makePromise';
 
 function makeContractHost(E) {
   // Maps from seat identity to seats
-  const seats = new WeakMap();
+  const seats = makePrivateName();
 
   const controller = makeMetaIssuerController('contract host');
   const metaIssuer = controller.getMetaIssuer();
@@ -71,13 +72,13 @@ Not a registered invite seat identity ${seatIdentity}`;
               // Used by the contract to make invites for credibly
               // participating in the contract. The returned invite can be
               // redeemed for this seat. The inviteMaker contributes the
-              // description `{ contractSrc, terms, seatDesc }`. If this
+              // description `{ installation, terms, seatDesc }`. If this
               // contract host redeems an invite, then the contractSrc and
               // terms are accurate. The seatDesc is according to that
               // contractSrc code.
               make(seatDesc, seat, name = 'an invite payment') {
                 const baseDescription = harden({
-                  contractSrc,
+                  installation,
                   terms,
                   seatDesc,
                 });
@@ -91,7 +92,7 @@ Not a registered invite seat identity ${seatIdentity}`;
                 const baseAssay = makeNatAssay(baseLabel);
                 const baseAmount = baseAssay.make(1);
                 controller.register(baseAssay);
-                seats.set(seatIdentity, seat);
+                seats.init(seatIdentity, seat);
                 const metaOneAmount = metaAssay.make(baseAmount);
                 // This should be the only use of the meta mint, to make a
                 // meta purse whose quantity is one unit of a base amount
@@ -131,7 +132,7 @@ harden(makeContractHost);
 function exchangeInviteAmount(
   inviteIssuerP,
   seatIdentityP,
-  contractSrc,
+  installationP,
   terms,
   seatDesc,
 ) {
@@ -144,7 +145,7 @@ function exchangeInviteAmount(
       label: {
         identity: seatIdentityP,
         description: {
-          contractSrc,
+          installation: installationP,
           terms,
           seatDesc,
         },

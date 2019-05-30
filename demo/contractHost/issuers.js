@@ -197,11 +197,9 @@ harden(makeMint);
 // there is no observable state change from not being registered to
 // being registered.
 function makeMetaIssuerController(description) {
-  const baseIdentityToAssay = new WeakMap();
+  const baseIdentityToAssay = makePrivateName();
   function baseLabelToAssayFn(baseLabel) {
     const baseAssay = baseIdentityToAssay.get(baseLabel.identity);
-    insist(baseAssay !== undefined)`\
-Label identity not found ${baseLabel}.identity === ${baseLabel.identity}`;
     mustBeSameStructure(baseAssay.getLabel(), baseLabel, `Labels don't match`);
     return baseAssay;
   }
@@ -217,7 +215,7 @@ Label identity not found ${baseLabel}.identity === ${baseLabel.identity}`;
       return metaIssuer;
     },
     register(baseAssay) {
-      baseIdentityToAssay.set(baseAssay.getLabel().identity, baseAssay);
+      baseIdentityToAssay.init(baseAssay.getLabel().identity, baseAssay);
     },
   });
   return controller;

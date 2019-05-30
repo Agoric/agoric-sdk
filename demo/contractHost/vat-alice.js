@@ -4,8 +4,6 @@
 import harden from '@agoric/harden';
 
 import { insist } from '../../collections/insist';
-import { escrowExchangeSrc } from './escrow';
-import { coveredCallSrc } from './coveredCall';
 import { exchangeInviteAmount, makeCollect } from './contractHost';
 
 function makeAlice(E, host, log) {
@@ -18,6 +16,9 @@ function makeAlice(E, host, log) {
   }
 
   let initialized = false;
+
+  let escrowExchangeInstallationP;
+  let coveredCallInstallationP;
   let timerP;
   let inviteIssuerP;
 
@@ -33,12 +34,16 @@ function makeAlice(E, host, log) {
   let optFredP;
 
   function init(
+    escrowExchangeInst,
+    coveredCallInst,
     timer,
     myMoneyPurse,
     myStockPurse,
     myOptFinPurse = undefined,
     optFred = undefined,
   ) {
+    escrowExchangeInstallationP = escrowExchangeInst;
+    coveredCallInstallationP = coveredCallInst;
     timerP = E.resolve(timer);
     inviteIssuerP = E(host).getInviteIssuer();
 
@@ -99,7 +104,7 @@ ERR: alice.acceptInvite called before init()`;
           const metaOneAmountP = exchangeInviteAmount(
             inviteIssuerP,
             allegedMetaAmount.quantity.label.identity,
-            escrowExchangeSrc,
+            escrowExchangeInstallationP,
             [clams10, fudco7],
             'left',
           );
@@ -158,7 +163,7 @@ ERR: alice.acceptOptionDirectly called before init()`;
           const metaOneAmountP = exchangeInviteAmount(
             inviteIssuerP,
             allegedMetaAmount.quantity.label.identity,
-            coveredCallSrc,
+            coveredCallInstallationP,
             [smackers10, yoyodyne7, timerP, 'singularity'],
             'holder',
           );
@@ -190,7 +195,8 @@ ERR: alice.acceptOptionForFred called before init()`;
       const inviteNeededP = E(allegedInvitePaymentP).getXferBalance();
 
       const termsP = harden([finNeededP, inviteNeededP]);
-      const invitesP = E(E(host).install(escrowExchangeSrc)).spawn(termsP);
+      // const invitesP = E(E(host).install(escrowExchangeSrc)).spawn(termsP);
+      const invitesP = E(escrowExchangeInstallationP).spawn(termsP);
       const fredInviteP = invitesP.then(invites => invites[0]);
       const aliceForFredInviteP = invitesP.then(invites => invites[1]);
       const doneP = Promise.all([

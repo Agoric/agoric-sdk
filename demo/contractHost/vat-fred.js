@@ -5,14 +5,15 @@ import harden from '@agoric/harden';
 
 import { allComparable } from '../../collections/sameStructure';
 import { insist } from '../../collections/insist';
-import { escrowExchangeSrc } from './escrow';
-import { coveredCallSrc } from './coveredCall';
 import { exchangeInviteAmount, makeCollect } from './contractHost';
 
 function makeFred(E, host, log) {
   const collect = makeCollect(E, log);
 
   let initialized = false;
+
+  let escrowExchangeInstallationP;
+  let coveredCallInstallationP;
   let timerP;
   let inviteIssuerP;
 
@@ -25,7 +26,16 @@ function makeFred(E, host, log) {
   let myFinPurseP;
   let finIssuerP;
 
-  function init(timer, myMoneyPurse, myStockPurse, myFinPurse) {
+  function init(
+    escrowExchangeInst,
+    coveredCallInst,
+    timer,
+    myMoneyPurse,
+    myStockPurse,
+    myFinPurse,
+  ) {
+    escrowExchangeInstallationP = escrowExchangeInst;
+    coveredCallInstallationP = coveredCallInst;
     timerP = E.resolve(timer);
     inviteIssuerP = E(host).getInviteIssuer();
 
@@ -82,7 +92,7 @@ ERR: fred.acceptOptionOffer called before init()`;
           const metaOptionAmountP = exchangeInviteAmount(
             inviteIssuerP,
             allegedBaseOptionsInviteIssuer.quantity.label.identity,
-            coveredCallSrc,
+            coveredCallInstallationP,
             [dough10, wonka7, timerP, 'singularity'],
             'holder',
           );
@@ -90,7 +100,7 @@ ERR: fred.acceptOptionOffer called before init()`;
           const metaOptionSaleAmountP = exchangeInviteAmount(
             inviteIssuerP,
             allegedMetaAmount.quantity.label.identity,
-            escrowExchangeSrc,
+            escrowExchangeInstallationP,
             [fin55, metaOptionAmountP],
             'left',
           );

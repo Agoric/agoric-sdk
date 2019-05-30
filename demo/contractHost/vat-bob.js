@@ -4,14 +4,15 @@
 import harden from '@agoric/harden';
 
 import { insist } from '../../collections/insist';
-import { escrowExchangeSrc } from './escrow';
-import { coveredCallSrc } from './coveredCall';
 import { makeCollect } from './contractHost';
 
 function makeBob(E, host, log) {
   const collect = makeCollect(E, log);
 
   let initialized = false;
+
+  let escrowExchangeInstallationP;
+  let coveredCallInstallationP;
   let timerP;
 
   let myMoneyPurseP;
@@ -22,7 +23,15 @@ function makeBob(E, host, log) {
   let stockIssuerP;
   let stockNeededP;
 
-  function init(timer, myMoneyPurse, myStockPurse) {
+  function init(
+    escrowExchangeInst,
+    coveredCallInst,
+    timer,
+    myMoneyPurse,
+    myStockPurse,
+  ) {
+    escrowExchangeInstallationP = escrowExchangeInst;
+    coveredCallInstallationP = coveredCallInst;
     timerP = E.resolve(timer);
 
     myMoneyPurseP = E.resolve(myMoneyPurse);
@@ -77,7 +86,7 @@ ERR: buy called before init()`;
 ERR: tradeWell called before init()`;
 
       const termsP = harden([moneyNeededP, stockNeededP]);
-      const invitesP = E(E(host).install(escrowExchangeSrc)).spawn(termsP);
+      const invitesP = E(escrowExchangeInstallationP).spawn(termsP);
       const aliceInviteP = invitesP.then(invites => invites[0]);
       const bobInviteP = invitesP.then(invites => invites[1]);
       const doneP = Promise.all([
@@ -112,7 +121,7 @@ ERR: offerAliceOption called before init()`;
         timerP,
         'singularity',
       ]);
-      const bobInviteP = E(E(host).install(coveredCallSrc)).spawn(termsP);
+      const bobInviteP = E(coveredCallInstallationP).spawn(termsP);
       const bobSeatP = E(host).redeem(bobInviteP);
       const stockPaymentP = E(myStockPurseP).withdraw(7);
       const aliceInviteP = E(bobSeatP).offer(stockPaymentP);
