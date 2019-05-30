@@ -71,7 +71,7 @@ func Run() {
 		client.LineBreak,
 	)
 
-	executor := cli.PrepareMainCmd(rootCmd, "AG_SOLO_COSMOS_HELPER", defaultCLIHome)
+	executor := cli.PrepareMainCmd(rootCmd, "AG_COSMOS_HELPER", defaultCLIHome)
 	err := executor.Execute()
 	if err != nil {
 		panic(err)

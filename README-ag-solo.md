@@ -3,7 +3,7 @@
 The `ag-solo` tool is used to create and launch a SwingSet vat-machine. This
 machine can interact with the outside world either through a WebSocket
 listening port, or by exchanging messages with a Cosmos-SDK -based
-vat-machine (launched with `css-chain`).
+vat-machine (launched with `ag-chain-cosmos`).
 
 ## Build from source
 
