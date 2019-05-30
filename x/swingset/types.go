@@ -7,15 +7,27 @@ import (
 
 const EmptyMailboxValue = "[[], 0]"
 
-type Mailbox struct {
+type Storage struct {
 	Value string `json:"value"`
 }
 
+func NewStorage() Storage {
+	return Storage{}
+}
+
 // Returns a new Mailbox with an empty mailbox
-func NewMailbox() Mailbox {
-	return Mailbox{
+func NewMailbox() Storage {
+	return Storage{
 		Value: EmptyMailboxValue,
 	}
+}
+
+type Keys struct {
+	Keys []string `json:"keys"`
+}
+
+func NewKeys() Keys {
+	return Keys{}
 }
 
 // FIXME: Should have @agoric/nat

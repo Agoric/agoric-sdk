@@ -16,6 +16,7 @@ import (
 
 const (
 	pathName = "storage"
+	keysName = "keys"
 	peerName = "peer"
 )
 
@@ -23,11 +24,61 @@ const (
 func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router, cdc *codec.Codec, storeName string) {
 	r.HandleFunc(fmt.Sprintf("/%s/mailbox/{%s}", storeName, peerName), getMailboxHandler(cdc, cliCtx, storeName)).Methods("GET")
 	r.HandleFunc(fmt.Sprintf("/%s/mailbox", storeName), deliverMailboxHandler(cdc, cliCtx)).Methods("POST")
-	/*
-		r.HandleFunc(fmt.Sprintf("/%s/storage/{%s}", storeName, pathName), getStorageHandler(cdc, cliCtx, storeName)).Methods("GET")
-		r.HandleFunc(fmt.Sprintf("/%s/storage", storeName), setStorageHandler(cdc, cliCtx)).Methods("POST")
-		r.HandleFunc(fmt.Sprintf("/%s/storage", storeName), listStorageHandler(cdc, cliCtx)).Methods("GET")
-	*/
+	r.HandleFunc(fmt.Sprintf("/%s/storage/{%s}", storeName, pathName), getStorageHandler(cdc, cliCtx, storeName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/keys/{%s}", storeName, keysName), getKeysHandler(cdc, cliCtx, keysName)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/%s/keys", storeName), getKeysHandler(cdc, cliCtx, keysName)).Methods("GET")
+}
+
+type getStorageReq struct {
+	BaseReq rest.BaseReq `json:"base_req"`
+	Path    string       `json:"path"`
+}
+
+func getStorageHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		paramType := vars[pathName]
+
+		res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/storage/%s", storeName, paramType), nil)
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
+			return
+		}
+
+		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+	}
+}
+
+type getKeysReq struct {
+	BaseReq rest.BaseReq `json:"base_req"`
+	Path    string       `json:"path"`
+}
+
+func getKeysHandler(cdc *codec.Codec, cliCtx context.CLIContext, storeName string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		paramType, ok := vars[keysName]
+		var query string
+		if ok {
+			query = fmt.Sprintf("custom/%s/keys/%s", storeName, paramType)
+		} else {
+			query = fmt.Sprintf("custom/%s/keys/", storeName)
+		}
+		res, err := cliCtx.QueryWithData(query, nil)
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusNotFound, err.Error())
+			return
+		}
+
+		rest.PostProcessResponse(w, cdc, res, cliCtx.Indent)
+	}
+}
+
+type setStorageReq struct {
+	BaseReq rest.BaseReq `json:"base_req"`
+	Path    string       `json:"path"`
+	Value   string       `json:"value"`
+	Owner   string       `json:"owner"`
 }
 
 type getMailboxReq struct {

@@ -12,7 +12,7 @@ import (
 	authtxb "github.com/cosmos/cosmos-sdk/x/auth/client/txbuilder"
 )
 
-// GetCmdBuyName is the CLI command for sending a BuyName transaction
+// GetCmdDeliver is the CLI command for sending a DeliverInbound transaction
 func GetCmdDeliver(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
 		Use:   "deliver [sender] [json string]",

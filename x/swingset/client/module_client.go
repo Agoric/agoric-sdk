@@ -20,28 +20,30 @@ func NewModuleClient(storeKey string, cdc *amino.Codec) ModuleClient {
 // GetQueryCmd returns the cli query commands for this module
 func (mc ModuleClient) GetQueryCmd() *cobra.Command {
 	// Group swingset queries under a subcommand
-	namesvcQueryCmd := &cobra.Command{
+	swingsetQueryCmd := &cobra.Command{
 		Use:   "swingset",
 		Short: "Querying commands for the swingset module",
 	}
 
-	namesvcQueryCmd.AddCommand(client.GetCommands(
+	swingsetQueryCmd.AddCommand(client.GetCommands(
+		swingsetcmd.GetCmdGetKeys(mc.storeKey, mc.cdc),
 		swingsetcmd.GetCmdMailbox(mc.storeKey, mc.cdc),
+		swingsetcmd.GetCmdGetStorage(mc.storeKey, mc.cdc),
 	)...)
 
-	return namesvcQueryCmd
+	return swingsetQueryCmd
 }
 
 // GetTxCmd returns the transaction commands for this module
 func (mc ModuleClient) GetTxCmd() *cobra.Command {
-	namesvcTxCmd := &cobra.Command{
+	swingsetTxCmd := &cobra.Command{
 		Use:   "swingset",
 		Short: "SwingSet transactions subcommands",
 	}
 
-	namesvcTxCmd.AddCommand(client.PostCommands(
+	swingsetTxCmd.AddCommand(client.PostCommands(
 		swingsetcmd.GetCmdDeliver(mc.cdc),
 	)...)
 
-	return namesvcTxCmd
+	return swingsetTxCmd
 }
