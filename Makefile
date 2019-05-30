@@ -37,3 +37,15 @@ start-css-solo:
 	-rm -r t1
 	bin/css-solo init t1
 	cd t1 && ../bin/css-solo start
+
+show-local-gci:
+	@./calc-gci.js ~/.ssd/config/genesis.json
+
+set-local-gci-ingress:
+	cd t1 && ../bin/css-solo set-gci-ingress `../calc-gci.js ~/.ssd/config/genesis.json` `../calc-rpcport.js ~/.ssd/config/config.toml`
+
+start-css-solo-connected-to-local:
+	-rm -r t1
+	bin/css-solo init t1
+	$(MAKE) set-local-gci-ingress
+	cd t1 && ../bin/css-solo start
