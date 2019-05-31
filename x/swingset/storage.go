@@ -26,12 +26,28 @@ func NewStorageHandler(context sdk.Context, keeper Keeper) *storageHandler {
 	}
 }
 
-func (sh *storageHandler) Receive(str string) (string, error) {
+func (sh *storageHandler) Receive(str string) (ret string, err error) {
 	msg := new(storageMessage)
-	err := json.Unmarshal([]byte(str), &msg)
+	err = json.Unmarshal([]byte(str), &msg)
 	if err != nil {
-		return "", err
+		return
 	}
+
+	// Allow recovery from OutOfGas panics so that we don't crash
+	defer func() {
+		if r := recover(); r != nil {
+			switch rType := r.(type) {
+			case sdk.ErrorOutOfGas:
+				err = fmt.Errorf(
+					"out of gas in location: %v; gasUsed: %d",
+					rType.Descriptor, sh.Context.GasMeter().GasConsumed(),
+				)
+			default:
+				// Not ErrorOutOfGas, so panic again.
+				panic(r)
+			}
+		}
+	}()
 
 	// Handle generic paths.
 	switch msg.Method {
