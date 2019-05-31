@@ -88,6 +88,10 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 	}
 
 	storageHandler := NewStorageHandler(ctx, keeper)
+
+	// Allow the storageHandler to consume unlimited gas.
+	storageHandler.Context = storageHandler.Context.WithGasMeter(sdk.NewInfiniteGasMeter())
+
 	newPort := RegisterPortHandler(storageHandler)
 	action := &deliverInboundAction{
 		Type:        "DELIVER_INBOUND",
