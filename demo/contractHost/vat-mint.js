@@ -10,9 +10,9 @@ function build(_E, _log) {
 harden(build);
 
 function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
+  function log(...args) {
+    helpers.log(...args);
+    console.log(...args);
   }
   return helpers.makeLiveSlots(
     syscall,

@@ -9,7 +9,7 @@ import { escrowExchangeSrc } from './escrow';
 import { coveredCallSrc } from './coveredCall';
 import { exchangeChitAmount, makeCollect } from './chit';
 
-function makeFred(E, host) {
+function makeFred(E, host, log) {
   const collect = makeCollect(E);
 
   let initialized = false;
@@ -46,7 +46,7 @@ function makeFred(E, host) {
   const fred = harden({
     init,
     acceptOptionOffer(allegedChitPaymentP) {
-      console.log('++ fred.acceptOptionOffer starting');
+      log('++ fred.acceptOptionOffer starting');
       insist(initialized)`\
 ERR: fred.acceptOptionOffer called before init()`;
 
@@ -139,10 +139,14 @@ ERR: fred.acceptOptionOffer called before init()`;
 }
 
 function setup(syscall, state, helpers) {
+  function log(...args) {
+    helpers.log(...args);
+    console.log(...args);
+  }
   return helpers.makeLiveSlots(syscall, state, E =>
     harden({
       makeFred(host) {
-        return harden(makeFred(E, host));
+        return harden(makeFred(E, host, log));
       },
     }),
   );

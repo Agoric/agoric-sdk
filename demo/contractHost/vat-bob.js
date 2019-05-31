@@ -136,9 +136,9 @@ ERR: offerAliceOption called before init()`;
 }
 
 function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
+  function log(...args) {
+    helpers.log(...args);
+    console.log(...args);
   }
   return helpers.makeLiveSlots(syscall, state, E =>
     harden({

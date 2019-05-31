@@ -297,9 +297,9 @@ function build(E, log) {
 harden(build);
 
 function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
+  function log(...args) {
+    helpers.log(...args);
+    console.log(...args);
   }
   log(`=> setup called`);
   return helpers.makeLiveSlots(
