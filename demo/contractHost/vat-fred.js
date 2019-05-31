@@ -104,21 +104,25 @@ ERR: fred.acceptOptionOffer called before init()`;
             },
           });
 
-          const saleInviteAmount = harden({
-            label: inviteIssuerLabel,
-            quantity: {
-              installation: escrowExchangeInstallationP,
-              terms: [fin55, optionsInviteAmount],
-              seatIdentity: allegedSaleInviteAmount.quantity.seatIdentity,
-              seatDesc: 'left',
-            },
-          });
-
-          return E(inviteIssuerP).getExclusive(
-            saleInviteAmount,
-            allegedSaleInvitePaymentP,
-            'verified sale invite',
+          const saleInviteAmountP = allComparable(
+            harden({
+              label: inviteIssuerLabel,
+              quantity: {
+                installation: escrowExchangeInstallationP,
+                terms: [fin55, optionsInviteAmount],
+                seatIdentity: allegedSaleInviteAmount.quantity.seatIdentity,
+                seatDesc: 'left',
+              },
+            }),
           );
+
+          return E.resolve(saleInviteAmountP).then(saleInviteAmount => {
+            return E(inviteIssuerP).getExclusive(
+              saleInviteAmount,
+              allegedSaleInvitePaymentP,
+              'verified sale invite',
+            );
+          });
         },
       );
 

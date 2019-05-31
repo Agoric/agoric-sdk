@@ -7,18 +7,29 @@ import evaluate from '@agoric/evaluate';
 import { makePrivateName } from '../../collections/PrivateName';
 import { allSettled } from '../../collections/allSettled';
 import { insist } from '../../collections/insist';
-import { allComparable } from '../../collections/sameStructure';
-import { makeUniAssay } from './assays';
+import {
+  mustBeSameStructure,
+  allComparable,
+} from '../../collections/sameStructure';
+import { makeUniAssayMaker } from './assays';
 import { makeMint } from './issuers';
 import makePromise from '../../src/kernel/makePromise';
 
 function makeContractHost(E) {
   // Maps from seat identity to seats
   const seats = makePrivateName();
+  // from seat identity to invite description.
+  const seatDescriptions = makePrivateName();
   // from installation to source code string
   const installationSources = makePrivateName();
 
-  const inviteMint = makeMint(makeUniAssay);
+  function descriptionCoercer(allegedDescription) {
+    const seatDesc = seatDescriptions.get(allegedDescription.seatIdentity);
+    mustBeSameStructure(seatDesc, allegedDescription);
+    return seatDesc;
+  }
+  const makeUniAssay = makeUniAssayMaker(descriptionCoercer);
+  const inviteMint = makeMint('contract host', makeUniAssay);
   const inviteIssuer = inviteMint.getIssuer();
   const inviteAssay = inviteIssuer.getAssay();
 
@@ -38,7 +49,7 @@ No invites left`;
   // identity.
   const contractHost = harden({
     getInviteIssuer() {
-      return inviteIssuer();
+      return inviteIssuer;
     },
 
     // The `contractSrc` is code for a contract function parameterized
@@ -79,22 +90,25 @@ No invites left`;
               // contractSrc code.
               make(seatDesc, seat, name = 'an invite payment') {
                 const seatIdentity = harden({});
-                const inviteDescription = harden({
+                const seatDescription = harden({
                   installation,
                   terms,
                   seatIdentity,
                   seatDesc,
                 });
                 seats.init(seatIdentity, seat);
+                seatDescriptions.init(seatIdentity, seatDescription);
+                const inviteAmount = inviteAssay.make(seatDescription);
                 // This should be the only use of the invite mint, to
                 // make an invite purse whose quantity describes this
                 // seat. This invite purse makes the invite payment,
-                // and then the invite purse is dropped, in the sense that it
-                // becomes inaccessible. But it is not yet
+                // and then the invite purse is dropped, in the sense
+                // that it becomes inaccessible. But it is not yet
                 // collectable. Until the returned invite payment is
                 // deposited, it will retain the invite purse, as the
-                // invite purse contains the (uselss in this case) usage rights.
-                const invitePurse = inviteIssuer.mint(inviteDescription, name);
+                // invite purse contains the (uselss in this case)
+                // usage rights.
+                const invitePurse = inviteMint.mint(inviteAmount, name);
                 return invitePurse.withdrawAll(name);
               },
               redeem,

@@ -4,6 +4,7 @@
 import harden from '@agoric/harden';
 
 import { insist } from '../../collections/insist';
+import { allComparable } from '../../collections/sameStructure';
 import { makeCollect } from './contractHost';
 
 function makeAlice(E, host, log) {
@@ -106,21 +107,25 @@ ERR: alice.acceptInvite called before init()`;
             quantity: 7,
           });
 
-          const inviteAmount = harden({
-            label: inviteIssuerLabel,
-            quantity: {
-              installation: escrowExchangeInstallationP,
-              terms: [clams10, fudco7],
-              seatIdentity: allegedInviteAmount.quantity.seatIdentity,
-              seatDesc: 'left',
-            },
-          });
-
-          return E(inviteIssuerP).getExclusive(
-            inviteAmount,
-            allegedInvitePaymentP,
-            'verified invite',
+          const inviteAmountP = allComparable(
+            harden({
+              label: inviteIssuerLabel,
+              quantity: {
+                installation: escrowExchangeInstallationP,
+                terms: [clams10, fudco7],
+                seatIdentity: allegedInviteAmount.quantity.seatIdentity,
+                seatDesc: 'left',
+              },
+            }),
           );
+
+          return E.resolve(inviteAmountP).then(inviteAmount => {
+            return E(inviteIssuerP).getExclusive(
+              inviteAmount,
+              allegedInvitePaymentP,
+              'verified invite',
+            );
+          });
         },
       );
 
@@ -167,21 +172,25 @@ ERR: alice.acceptOptionDirectly called before init()`;
             quantity: 7,
           });
 
-          const inviteAmount = harden({
-            label: inviteIssuerLabel,
-            quantity: {
-              installation: coveredCallInstallationP,
-              terms: [smackers10, yoyodyne7, timerP, 'singularity'],
-              seatIdentity: allegedInviteAmount.quantity.seatIdentity,
-              seatDesc: 'holder',
-            },
-          });
-
-          return E(inviteIssuerP).getExclusive(
-            inviteAmount,
-            allegedInvitePaymentP,
-            'verified invite',
+          const inviteAmountP = allComparable(
+            harden({
+              label: inviteIssuerLabel,
+              quantity: {
+                installation: coveredCallInstallationP,
+                terms: [smackers10, yoyodyne7, timerP, 'singularity'],
+                seatIdentity: allegedInviteAmount.quantity.seatIdentity,
+                seatDesc: 'holder',
+              },
+            }),
           );
+
+          return E.resolve(inviteAmountP).then(inviteAmount => {
+            return E(inviteIssuerP).getExclusive(
+              inviteAmount,
+              allegedInvitePaymentP,
+              'verified invite',
+            );
+          });
         },
       );
 
