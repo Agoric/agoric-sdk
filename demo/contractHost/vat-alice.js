@@ -170,8 +170,8 @@ function makeAlice(E, host, log) {
           const finNeededP = E(E(optFinIssuerP).getAssay()).make(55);
           const inviteNeededP = E(allegedInvitePaymentP).getXferBalance();
 
-          const termsP = harden([finNeededP, inviteNeededP]);
-          const invitesP = E(escrowExchangeInstallationP).spawn(termsP);
+          const terms = harden([finNeededP, inviteNeededP]);
+          const invitesP = E(escrowExchangeInstallationP).spawn(terms);
           const fredInviteP = invitesP.then(invites => invites[0]);
           const aliceForFredInviteP = invitesP.then(invites => invites[1]);
           const doneP = Promise.all([

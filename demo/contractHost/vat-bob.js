@@ -52,8 +52,8 @@ function makeBob(E, host, log) {
 
         tradeWell(alice) {
           log('++ bob.tradeWell starting');
-          const termsP = harden([moneyNeededP, stockNeededP]);
-          const invitesP = E(escrowExchangeInstallationP).spawn(termsP);
+          const terms = harden([moneyNeededP, stockNeededP]);
+          const invitesP = E(escrowExchangeInstallationP).spawn(terms);
           const aliceInviteP = invitesP.then(invites => invites[0]);
           const bobInviteP = invitesP.then(invites => invites[1]);
           const doneP = Promise.all([
@@ -76,13 +76,13 @@ function makeBob(E, host, log) {
 
         offerAliceOption(alice) {
           log('++ bob.offerAliceOption starting');
-          const termsP = harden([
+          const terms = harden([
             moneyNeededP,
             stockNeededP,
             timerP,
             'singularity',
           ]);
-          const bobInviteP = E(coveredCallInstallationP).spawn(termsP);
+          const bobInviteP = E(coveredCallInstallationP).spawn(terms);
           const bobSeatP = E(host).redeem(bobInviteP);
           const stockPaymentP = E(myStockPurseP).withdraw(7);
           const aliceInviteP = E(bobSeatP).offer(stockPaymentP);
