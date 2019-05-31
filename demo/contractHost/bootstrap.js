@@ -6,11 +6,17 @@ import { escrowExchangeSrc } from './escrow';
 import { coveredCallSrc } from './coveredCall';
 
 function build(E, log) {
+  // TODO BUG: All callers should wait until settled before doing
+  // anything that would change the balance before show*Balance* reads
+  // it.
   function showPaymentBalance(name, paymentP) {
     return E(paymentP)
       .getXferBalance()
       .then(amount => log(name, ' xfer balance ', amount));
   }
+  // TODO BUG: All callers should wait until settled before doing
+  // anything that would change the balance before show*Balance* reads
+  // it.
   function showPurseBalances(name, purseP) {
     return Promise.all([
       E(purseP)
@@ -111,7 +117,7 @@ function build(E, log) {
       });
   }
 
-  function betterContractTestAliceFirst(host, mint, alice, bob) {
+  function betterContractTestAliceFirst(host, mint, aliceI, bobI) {
     const escrowExchangeInstallationP = E(host).install(escrowExchangeSrc);
     const coveredCallInstallationP = E(host).install(coveredCallSrc);
 
@@ -123,14 +129,14 @@ function build(E, log) {
     const aliceStockPurseP = E(stockMintP).mint(2002);
     const bobStockPurseP = E(stockMintP).mint(2003);
 
-    const aliceP = E(alice).init(
+    const aliceP = E(aliceI).init(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
       aliceMoneyPurseP,
       aliceStockPurseP,
     );
-    const bobP = E(bob).init(
+    const bobP = E(bobI).init(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
@@ -138,7 +144,7 @@ function build(E, log) {
       bobStockPurseP,
     );
     return Promise.all([aliceP, bobP]).then(_ => {
-      const ifItFitsP = E(aliceP).payBobWell(bob);
+      const ifItFitsP = E(aliceP).payBobWell(bobP);
       ifItFitsP.then(
         res => {
           log('++ ifItFitsP done:', res);
@@ -150,7 +156,7 @@ function build(E, log) {
     });
   }
 
-  function betterContractTestBobFirst(host, mint, alice, bob) {
+  function betterContractTestBobFirst(host, mint, aliceI, bobI) {
     const escrowExchangeInstallationP = E(host).install(escrowExchangeSrc);
     const coveredCallInstallationP = E(host).install(coveredCallSrc);
 
@@ -162,14 +168,14 @@ function build(E, log) {
     const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
     const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
 
-    const aliceP = E(alice).init(
+    const aliceP = E(aliceI).init(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
       aliceMoneyPurseP,
       aliceStockPurseP,
     );
-    const bobP = E(bob).init(
+    const bobP = E(bobI).init(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
@@ -195,7 +201,7 @@ function build(E, log) {
     });
   }
 
-  function coveredCallTest(host, mint, alice, bob) {
+  function coveredCallTest(host, mint, aliceI, bobI) {
     const escrowExchangeInstallationP = E(host).install(escrowExchangeSrc);
     const coveredCallInstallationP = E(host).install(coveredCallSrc);
 
@@ -207,14 +213,14 @@ function build(E, log) {
     const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
     const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
 
-    const aliceP = E(alice).init(
+    const aliceP = E(aliceI).init(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
       aliceMoneyPurseP,
       aliceStockPurseP,
     );
-    const bobP = E(bob).init(
+    const bobP = E(bobI).init(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
@@ -240,7 +246,7 @@ function build(E, log) {
     });
   }
 
-  function coveredCallSaleTest(host, mint, alice, bob, fred) {
+  function coveredCallSaleTest(host, mint, aliceI, bobI, fredI) {
     const escrowExchangeInstallationP = E(host).install(escrowExchangeSrc);
     const coveredCallInstallationP = E(host).install(coveredCallSrc);
 
@@ -258,30 +264,29 @@ function build(E, log) {
     const aliceFinPurseP = E(finMintP).mint(3000, 'aliceFins');
     const fredFinPurseP = E(finMintP).mint(3001, 'fredFins');
 
-    const aliceP = E(alice).init(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      aliceDoughPurseP,
-      aliceStockPurseP,
-      aliceFinPurseP,
-      fred,
-    );
-    const bobP = E(bob).init(
+    const bobP = E(bobI).init(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
       bobDoughPurseP,
       bobStockPurseP,
     );
-    /* eslint-disable-next-line no-unused-vars */
-    const fredP = E(fred).init(
+    const fredP = E(fredI).init(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
       fredDoughPurseP,
       fredStockPurseP,
       fredFinPurseP,
+    );
+    const aliceP = E(aliceI).init(
+      escrowExchangeInstallationP,
+      coveredCallInstallationP,
+      fakeNeverTimer,
+      aliceDoughPurseP,
+      aliceStockPurseP,
+      aliceFinPurseP,
+      fredP,
     );
     return Promise.all([aliceP, bobP, fredP]).then(_ => {
       E(bobP)
@@ -322,28 +327,28 @@ function build(E, log) {
         }
         case 'alice-first': {
           const host = await E(vats.host).makeHost();
-          const alice = await E(vats.alice).makeAlice(host);
-          const bob = await E(vats.bob).makeBob(host);
-          return betterContractTestAliceFirst(host, vats.mint, alice, bob);
+          const aliceI = await E(vats.alice).makeAlice(host);
+          const bobI = await E(vats.bob).makeBob(host);
+          return betterContractTestAliceFirst(host, vats.mint, aliceI, bobI);
         }
         case 'bob-first': {
           const host = await E(vats.host).makeHost();
-          const alice = await E(vats.alice).makeAlice(host);
-          const bob = await E(vats.bob).makeBob(host);
-          return betterContractTestBobFirst(host, vats.mint, alice, bob);
+          const aliceI = await E(vats.alice).makeAlice(host);
+          const bobI = await E(vats.bob).makeBob(host);
+          return betterContractTestBobFirst(host, vats.mint, aliceI, bobI);
         }
         case 'covered-call': {
           const host = await E(vats.host).makeHost();
-          const alice = await E(vats.alice).makeAlice(host);
-          const bob = await E(vats.bob).makeBob(host);
-          return coveredCallTest(host, vats.mint, alice, bob);
+          const aliceI = await E(vats.alice).makeAlice(host);
+          const bobI = await E(vats.bob).makeBob(host);
+          return coveredCallTest(host, vats.mint, aliceI, bobI);
         }
         case 'covered-call-sale': {
           const host = await E(vats.host).makeHost();
-          const alice = await E(vats.alice).makeAlice(host);
-          const bob = await E(vats.bob).makeBob(host);
-          const fred = await E(vats.fred).makeFred(host);
-          return coveredCallSaleTest(host, vats.mint, alice, bob, fred);
+          const aliceI = await E(vats.alice).makeAlice(host);
+          const bobI = await E(vats.bob).makeBob(host);
+          const fredI = await E(vats.fred).makeFred(host);
+          return coveredCallSaleTest(host, vats.mint, aliceI, bobI, fredI);
         }
         default: {
           throw new Error(`unrecognized argument value ${argv[0]}`);
