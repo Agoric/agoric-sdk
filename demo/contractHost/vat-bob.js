@@ -5,11 +5,11 @@ import harden from '@agoric/harden';
 
 import { makeCollect } from './contractHost';
 
-function makeBob(E, host, log) {
+function makeBobMaker(E, host, log) {
   const collect = makeCollect(E, log);
 
   return harden({
-    init(
+    make(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       timerP,
@@ -109,8 +109,8 @@ function setup(syscall, state, helpers) {
   }
   return helpers.makeLiveSlots(syscall, state, E =>
     harden({
-      makeBob(host) {
-        return harden(makeBob(E, host, log));
+      makeBobMaker(host) {
+        return harden(makeBobMaker(E, host, log));
       },
     }),
   );

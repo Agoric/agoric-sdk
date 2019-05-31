@@ -6,7 +6,7 @@ import harden from '@agoric/harden';
 import { allComparable } from '../../collections/sameStructure';
 import { makeCollect } from './contractHost';
 
-function makeAlice(E, host, log) {
+function makeAliceMaker(E, host, log) {
   const collect = makeCollect(E, log);
 
   // TODO BUG: All callers should wait until settled before doing
@@ -19,7 +19,7 @@ function makeAlice(E, host, log) {
   }
 
   return harden({
-    init(
+    make(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       timerP,
@@ -214,8 +214,8 @@ function setup(syscall, state, helpers) {
   }
   return helpers.makeLiveSlots(syscall, state, E =>
     harden({
-      makeAlice(host) {
-        return harden(makeAlice(E, host, log));
+      makeAliceMaker(host) {
+        return harden(makeAliceMaker(E, host, log));
       },
     }),
   );

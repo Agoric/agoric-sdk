@@ -6,11 +6,11 @@ import harden from '@agoric/harden';
 import { allComparable } from '../../collections/sameStructure';
 import { makeCollect } from './contractHost';
 
-function makeFred(E, host, log) {
+function makeFredMaker(E, host, log) {
   const collect = makeCollect(E, log);
 
   return harden({
-    init(
+    make(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       timerP,
@@ -134,8 +134,8 @@ function setup(syscall, state, helpers) {
   }
   return helpers.makeLiveSlots(syscall, state, E =>
     harden({
-      makeFred(host) {
-        return harden(makeFred(E, host, log));
+      makeFredMaker(host) {
+        return harden(makeFredMaker(E, host, log));
       },
     }),
   );
