@@ -23,11 +23,8 @@ function makeFred(E, host, log) {
         issuer: inviteIssuerP,
         description: 'contract host',
       });
-
       const moneyIssuerP = E(myMoneyPurseP).getIssuer();
-
       const stockIssuerP = E(myStockPurseP).getIssuer();
-
       const finIssuerP = E(myFinPurseP).getIssuer();
 
       const fred = harden({
