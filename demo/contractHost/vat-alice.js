@@ -1,121 +1,223 @@
-// Copyright (C) 2013 Google Inc.
-// Copyright (C) 2018 Agoric
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright (C) 2013 Google Inc, under Apache License 2.0
+// Copyright (C) 2018 Agoric, under Apache License 2.0
 
-/* eslint-disable-next-line global-require, import/no-extraneous-dependencies */
 import harden from '@agoric/harden';
-import escrowExchange from './escrow';
 
-function makeAlice(E, host, log) {
-  const escrowSrc = `(${escrowExchange})`;
+import { allComparable } from '../../collections/sameStructure';
+import { makeCollect } from './contractHost';
 
-  let initialized = false;
-  let myMoneyPurseP;
-  let myMoneyIssuerP;
-  /* eslint-disable-next-line no-unused-vars */
-  let myStockPurseP;
-  let myStockIssuerP;
+function makeAliceMaker(E, host, log) {
+  const collect = makeCollect(E, log);
 
-  function init(myMoneyPurse, myStockPurse) {
-    initialized = true;
-    myMoneyPurseP = Promise.resolve(myMoneyPurse);
-    myMoneyIssuerP = E(myMoneyPurse).getIssuer();
-    myStockPurseP = Promise.resolve(myStockPurse);
-    myStockIssuerP = E(myStockPurse).getIssuer();
-    // eslint-disable-next-line no-use-before-define
-    return alice; // alice and init use each other
+  // TODO BUG: All callers should wait until settled before doing
+  // anything that would change the balance before show*Balance* reads
+  // it.
+  function showPaymentBalance(name, paymentP) {
+    return E(paymentP)
+      .getXferBalance()
+      .then(amount => log(name, ' xfer balance ', amount));
   }
 
-  const check = (_allegedSrc, _allegedSide) => {
-    // for testing purposes, alice and bob are willing to play
-    // any side of any contract, so that the failure we're testing
-    // is in the contractHost's checking
-  };
-
-  const alice = harden({
-    init,
-    payBobWell(bob) {
-      if (!initialized) {
-        log('++ ERR: payBobWell called before init()');
-      }
-      const paymentP = E(myMoneyIssuerP).makeEmptyPurse();
-      const ackP = E(paymentP).deposit(10, myMoneyPurseP);
-      return ackP.then(_ => E(bob).buy('shoe', paymentP));
-    },
-    payBobBadly1(bob) {
-      if (!initialized) {
-        log('++ ERR: payBobBadly1 called before init()');
-      }
-      const payment = harden({ deposit(_amount, _src) {} });
-      return E(bob).buy('shoe', payment);
-    },
-    payBobBadly2(bob) {
-      if (!initialized) {
-        log('++ ERR: payBobBadly2 called before init()');
-      }
-      const paymentP = E(myMoneyIssuerP).makeEmptyPurse();
-      const ackP = E(paymentP).deposit(5, myMoneyPurseP);
-      return ackP.then(_ => E(bob).buy('shoe', paymentP));
-    },
-
-    tradeWell(bob) {
-      if (!initialized) {
-        log('++ ERR: tradeWell called before init()');
-      }
-      const tokensP = E(host).setup(escrowSrc);
-      const aliceTokenP = tokensP.then(tokens => tokens[0]);
-      const bobTokenP = tokensP.then(tokens => tokens[1]);
-      E(bob).invite(bobTokenP, escrowSrc, 1);
-      return E(alice).invite(aliceTokenP, escrowSrc, 0);
-    },
-
-    invite(tokenP, allegedSrc, allegedSide) {
-      if (!initialized) {
-        log('++ ERR: invite called before init()');
-      }
-
-      check(allegedSrc, allegedSide);
-
-      // eslint-disable-next-line no-unused-vars
-      let cancel;
-      const a = harden({
-        moneySrcP: E(myMoneyIssuerP).makeEmptyPurse('aliceMoneySrc'),
-        stockDstP: E(myStockIssuerP).makeEmptyPurse('aliceStockDst'),
-        stockNeeded: 7,
-        cancellationP: new Promise(r => (cancel = r)),
+  return harden({
+    make(
+      escrowExchangeInstallationP,
+      coveredCallInstallationP,
+      timerP,
+      myMoneyPurseP,
+      myStockPurseP,
+      myOptFinPurseP = undefined,
+      optFredP = undefined,
+    ) {
+      const inviteIssuerP = E(host).getInviteIssuer();
+      const inviteIssuerLabel = harden({
+        issuer: inviteIssuerP,
+        description: 'contract host',
       });
-      const ackP = E(a.moneySrcP).deposit(10, myMoneyPurseP);
+      const moneyIssuerP = E(myMoneyPurseP).getIssuer();
+      const stockIssuerP = E(myStockPurseP).getIssuer();
+      const optFinIssuerP = myOptFinPurseP && E(myOptFinPurseP).getIssuer();
 
-      const doneP = ackP.then(_ =>
-        E(host).play(tokenP, allegedSrc, allegedSide, a),
-      );
-      return doneP.then(_ => E(a.stockDstP).getBalance());
+      const alice = harden({
+        payBobWell(bob) {
+          log('++ alice.payBobWell starting');
+          const paymentP = E(myMoneyPurseP).withdraw(10);
+          return E(bob).buy('shoe', paymentP);
+        },
+
+        acceptInvite(allegedInvitePaymentP) {
+          log('++ alice.acceptInvite starting');
+          showPaymentBalance('alice invite', allegedInvitePaymentP);
+
+          const allegedInviteAmountP = E(
+            allegedInvitePaymentP,
+          ).getXferBalance();
+
+          const verifiedInviteP = E.resolve(allegedInviteAmountP).then(
+            allegedInviteAmount => {
+              const clams10 = harden({
+                label: {
+                  issuer: moneyIssuerP,
+                  description: 'clams',
+                },
+                quantity: 10,
+              });
+              const fudco7 = harden({
+                label: {
+                  issuer: stockIssuerP,
+                  description: 'fudco',
+                },
+                quantity: 7,
+              });
+
+              const inviteAmountP = allComparable(
+                harden({
+                  label: inviteIssuerLabel,
+                  quantity: {
+                    installation: escrowExchangeInstallationP,
+                    terms: [clams10, fudco7],
+                    seatIdentity: allegedInviteAmount.quantity.seatIdentity,
+                    seatDesc: 'left',
+                  },
+                }),
+              );
+
+              return E.resolve(inviteAmountP).then(inviteAmount => {
+                return E(inviteIssuerP).getExclusive(
+                  inviteAmount,
+                  allegedInvitePaymentP,
+                  'verified invite',
+                );
+              });
+            },
+          );
+
+          return E.resolve(
+            showPaymentBalance('verified invite', verifiedInviteP),
+          ).then(_ => {
+            const seatP = E(host).redeem(verifiedInviteP);
+            const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
+            E(seatP).offer(moneyPaymentP);
+            return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice escrow');
+          });
+        },
+
+        acceptOption(allegedInvitePaymentP) {
+          if (optFredP) {
+            return alice.acceptOptionForFred(allegedInvitePaymentP);
+          }
+          return alice.acceptOptionDirectly(allegedInvitePaymentP);
+        },
+
+        acceptOptionDirectly(allegedInvitePaymentP) {
+          log('++ alice.acceptOptionDirectly starting');
+          showPaymentBalance('alice invite', allegedInvitePaymentP);
+
+          const allegedInviteAmountP = E(
+            allegedInvitePaymentP,
+          ).getXferBalance();
+
+          const verifiedInvitePaymentP = E.resolve(allegedInviteAmountP).then(
+            allegedInviteAmount => {
+              const smackers10 = harden({
+                label: {
+                  issuer: moneyIssuerP,
+                  description: 'smackers',
+                },
+                quantity: 10,
+              });
+              const yoyodyne7 = harden({
+                label: {
+                  issuer: stockIssuerP,
+                  description: 'yoyodyne',
+                },
+                quantity: 7,
+              });
+
+              const inviteAmountP = allComparable(
+                harden({
+                  label: inviteIssuerLabel,
+                  quantity: {
+                    installation: coveredCallInstallationP,
+                    terms: [smackers10, yoyodyne7, timerP, 'singularity'],
+                    seatIdentity: allegedInviteAmount.quantity.seatIdentity,
+                    seatDesc: 'holder',
+                  },
+                }),
+              );
+
+              return E.resolve(inviteAmountP).then(inviteAmount => {
+                return E(inviteIssuerP).getExclusive(
+                  inviteAmount,
+                  allegedInvitePaymentP,
+                  'verified invite',
+                );
+              });
+            },
+          );
+
+          return E.resolve(
+            showPaymentBalance('verified invite', verifiedInvitePaymentP),
+          ).then(_ => {
+            const seatP = E(host).redeem(verifiedInvitePaymentP);
+            const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
+            E(seatP).offer(moneyPaymentP);
+            return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice option');
+          });
+        },
+
+        acceptOptionForFred(allegedInvitePaymentP) {
+          log('++ alice.acceptOptionForFred starting');
+          const finNeededP = E(E(optFinIssuerP).getAssay()).make(55);
+          const inviteNeededP = E(allegedInvitePaymentP).getXferBalance();
+
+          const terms = harden([finNeededP, inviteNeededP]);
+          const invitesP = E(escrowExchangeInstallationP).spawn(terms);
+          const fredInviteP = invitesP.then(invites => invites[0]);
+          const aliceForFredInviteP = invitesP.then(invites => invites[1]);
+          const doneP = Promise.all([
+            E(optFredP).acceptOptionOffer(fredInviteP),
+            E(alice).completeOptionsSale(
+              aliceForFredInviteP,
+              allegedInvitePaymentP,
+            ),
+          ]);
+          doneP.then(
+            _res => log('++ alice.acceptOptionForFred done'),
+            rej => log('++ alice.acceptOptionForFred reject: ', rej),
+          );
+          return doneP;
+        },
+
+        completeOptionsSale(aliceForFredInviteP, allegedInvitePaymentP) {
+          log('++ alice.completeOptionsSale starting');
+          const aliceForFredSeatP = E(host).redeem(aliceForFredInviteP);
+
+          E(aliceForFredSeatP).offer(allegedInvitePaymentP);
+          const myInvitePurseP = E(inviteIssuerP).makeEmptyPurse();
+          return collect(
+            aliceForFredSeatP,
+            myOptFinPurseP,
+            myInvitePurseP,
+            'alice options sale',
+          );
+        },
+      });
+      return alice;
     },
   });
-  return alice;
 }
 
-export default function setup(syscall, state, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
+function setup(syscall, state, helpers) {
+  function log(...args) {
+    helpers.log(...args);
+    console.log(...args);
   }
   return helpers.makeLiveSlots(syscall, state, E =>
     harden({
-      makeAlice(host) {
-        return harden(makeAlice(E, host, log));
+      makeAliceMaker(host) {
+        return harden(makeAliceMaker(E, host, log));
       },
     }),
   );
 }
+export default harden(setup);
