@@ -234,12 +234,24 @@ export default function buildKernel(kernelEndowments, external) {
     if (kernelKeeper.hasVat(vatID)) {
       throw new Error(`already have a vat named '${vatID}'`);
     }
+    function abbreviateReviver(_, arg) {
+      if (typeof arg === 'string' && arg.length >= 40) {
+        // truncate long strings
+        return `${arg.slice(0, 15)}...${arg.slice(arg.length - 15)}`;
+      }
+      return arg;
+    }
     const helpers = harden({
       vatID,
       makeLiveSlots,
       makeCommsSlots,
-      log(str) {
-        kernelKeeper.log(`${str}`);
+      log(...args) {
+        const rendered = args.map(arg =>
+          typeof arg === 'string'
+            ? arg
+            : JSON.stringify(arg, abbreviateReviver),
+        );
+        kernelKeeper.log(rendered.join(''));
       },
     });
 
