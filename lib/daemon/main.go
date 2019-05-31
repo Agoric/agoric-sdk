@@ -65,7 +65,7 @@ func RunWithController(sendToNode Sender) {
 	swingset.NodeMessageSender = sendToNode
 
 	// prepare and add flags
-	executor := cli.PrepareBaseCmd(rootCmd, "NS", DefaultNodeHome)
+	executor := cli.PrepareBaseCmd(rootCmd, "AG_CHAIN_COSMOS", DefaultNodeHome)
 	err := executor.Execute()
 	if err != nil {
 		// handle with #870

@@ -20,6 +20,7 @@ require (
 	github.com/gogo/protobuf v1.1.1
 	github.com/golang/protobuf v1.2.0
 	github.com/golang/snappy v0.0.1
+	github.com/google/pprof v0.0.0-20190515194954-54271f7e092f // indirect
 	github.com/gorilla/mux v1.7.0
 	github.com/gorilla/websocket v1.4.0
 	github.com/hashicorp/hcl v1.0.0
@@ -54,6 +55,7 @@ require (
 	github.com/tendermint/tendermint v0.31.0-dev0
 	github.com/zondax/hid v0.9.0
 	github.com/zondax/ledger-go v0.8.0
+	golang.org/x/arch v0.0.0-20190312162104-788fe5ffcd8c // indirect
 	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd
 	golang.org/x/sys v0.0.0-20190329044733-9eb1bfa1ce65
 	golang.org/x/text v0.3.0
