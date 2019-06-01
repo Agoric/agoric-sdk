@@ -66,7 +66,13 @@ function makeFredMaker(E, host, log) {
                 label: inviteIssuerLabel,
                 quantity: {
                   installation: coveredCallInstallationP,
-                  terms: [dough10, wonka7, timerP, 'singularity'],
+                  terms: [
+                    escrowExchangeInstallationP,
+                    dough10,
+                    wonka7,
+                    timerP,
+                    'singularity',
+                  ],
                   seatIdentity:
                     allegedOptionsInviteAmount.quantity.seatIdentity,
                   seatDesc: 'holder',

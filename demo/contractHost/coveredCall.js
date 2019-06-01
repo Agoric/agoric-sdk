@@ -3,18 +3,25 @@
 
 import harden from '@agoric/harden';
 
-import { escrowExchange } from './escrow';
-
 function coveredCall(terms, inviteMaker) {
-  const [moneyNeeded, stockNeeded, timerP, deadline] = terms;
+  const [
+    escrowExchangeInstallationP,
+    moneyNeeded,
+    stockNeeded,
+    timerP,
+    deadline,
+  ] = terms;
 
-  const [aliceInvite, bobInvite] = escrowExchange(
-    [moneyNeeded, stockNeeded],
-    inviteMaker,
+  const pairP = E(escrowExchangeInstallationP).spawn(
+    harden([moneyNeeded, stockNeeded]),
   );
 
-  const aliceEscrowSeatP = inviteMaker.redeem(aliceInvite);
-  const bobEscrowSeatP = inviteMaker.redeem(bobInvite);
+  const aliceEscrowSeatP = E.resolve(pairP).then(pair =>
+    inviteMaker.redeem(pair[0]),
+  );
+  const bobEscrowSeatP = E.resolve(pairP).then(pair =>
+    inviteMaker.redeem(pair[1]),
+  );
 
   // Seats
 
@@ -43,10 +50,6 @@ function coveredCall(terms, inviteMaker) {
   return inviteMaker.make('writer', bobSeat);
 }
 
-const coveredCallSrc = `\
-(function() {
-  ${escrowExchange}
-  return (${coveredCall});
-}())`;
+const coveredCallSrc = `(${coveredCall})`;
 
 export { coveredCall, coveredCallSrc };

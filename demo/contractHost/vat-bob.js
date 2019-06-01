@@ -77,6 +77,7 @@ function makeBobMaker(E, host, log) {
         offerAliceOption(alice) {
           log('++ bob.offerAliceOption starting');
           const terms = harden([
+            escrowExchangeInstallationP,
             moneyNeededP,
             stockNeededP,
             timerP,
