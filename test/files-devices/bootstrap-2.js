@@ -80,6 +80,18 @@ export default function setup(syscall, state, helpers) {
               },
             });
             D(devices.mailbox).registerInboundHandler(handler);
+          } else if (argv[0] === 'command1') {
+            D(devices.command).sendBroadcast({ hello: 'everybody' });
+          } else if (argv[0] === 'command2') {
+            const handler = harden({
+              inbound(count, body) {
+                log(`handle-${count}-${body.piece}`);
+                D(devices.command).sendResponse(count, body.doReject, {
+                  response: 'body',
+                });
+              },
+            });
+            D(devices.command).registerInboundHandler(handler);
           } else {
             throw new Error(`unknown argv mode '${argv[0]}'`);
           }

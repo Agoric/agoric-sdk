@@ -2,6 +2,7 @@ import { test } from 'tape-promise/tape';
 import { buildVatController } from '../src/index';
 import buildSharedStringTable from '../src/devices/sharedTable';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
+import buildCommand from '../src/devices/command';
 import { makeExternal } from '../src/controller';
 import makeExternalKVStore from '../src/kernel/externalKVStore';
 
@@ -422,4 +423,69 @@ test('mailbox inbound without SES', async t => {
 
 test('mailbox inbound with SES', async t => {
   await testMailboxInbound(t, true);
+});
+
+async function testCommandBroadcast(t, withSES) {
+  const cm = buildCommand();
+  const config = {
+    vatSources: new Map(),
+    devices: [['command', cm.srcPath, cm.endowments]],
+    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
+  };
+
+  const broadcasts = [];
+  cm.registerBroadcastCallback(body => broadcasts.push(body));
+
+  const c = await buildVatController(config, withSES, ['command1']);
+  await c.run();
+  t.deepEqual(broadcasts, [{ hello: 'everybody' }]);
+
+  t.end();
+}
+
+test('command broadcast without SES', async t => {
+  await testCommandBroadcast(t, false);
+});
+
+test('command broadcast with SES', async t => {
+  await testCommandBroadcast(t, true);
+});
+
+async function testCommandDeliver(t, withSES) {
+  const cm = buildCommand();
+  const config = {
+    vatSources: new Map(),
+    devices: [['command', cm.srcPath, cm.endowments]],
+    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
+  };
+
+  const c = await buildVatController(config, withSES, ['command2']);
+  await c.run();
+
+  t.deepEqual(c.dump().log.length, 0);
+  const p1 = cm.inboundCommand({ piece: 'missing', doReject: false });
+  await c.run();
+  const r1 = await p1;
+  t.deepEqual(r1, { response: 'body' });
+  t.deepEqual(c.dump().log, ['handle-0-missing']);
+
+  const p2 = cm.inboundCommand({ piece: 'errory', doReject: true });
+  let rejection;
+  p2.then(
+    res => t.fail(`expected to reject, but got ${res}`),
+    rej => (rejection = rej),
+  );
+  await c.run();
+  t.deepEqual(c.dump().log, ['handle-0-missing', 'handle-1-errory']);
+  t.deepEqual(rejection, { response: 'body' });
+
+  t.end();
+}
+
+test('command deliver without SES', async t => {
+  await testCommandDeliver(t, false);
+});
+
+test('command deliver with SES', async t => {
+  await testCommandDeliver(t, true);
 });
