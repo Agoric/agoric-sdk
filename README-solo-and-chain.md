@@ -8,7 +8,7 @@ $ ag-chain-cosmos init --chain-id agoric
 $ bin/ag-solo init t1
 $ ag-chain-cosmos add-genesis-account `cat t1/ag-cosmos-helper-address` 1000agtoken
 
-# Now edit lib/bootstrap.js and replace the 'solo' on line 18 with the
+# Now edit demo1/bootstrap.js and replace the 'solo' on line 18 with the
 # contents of t1/ag-cosmos-helper-address (without the newline)
 
 $ ag-chain-cosmos start
