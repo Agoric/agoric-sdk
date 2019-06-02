@@ -26,7 +26,7 @@ rest-server)
   esac
   ;;
 *)
-  FLAGS="--net=host"
+  FLAGS="$FLAGS --net=host"
   ;;
 esac
 
