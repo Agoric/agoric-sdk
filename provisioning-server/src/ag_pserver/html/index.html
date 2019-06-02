@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Agoric Testnet Provisioning Page</title>
+<link rel="stylesheet" type="text/css" href="styles.css" />
+</head>
+<body>
+<h2>Welcome to the Agoric Testnet</h2>
+
+<div>On this page you can obtain a code to provision your client node.</div>
+
+<div>Type your nickname into this box and press the button to obtain a provisioning code. Then run <tt>ag-setup-solo</tt> and type the code into the prompt.</div>
+
+<div>
+  <form action="request-code" method="post">
+    <label for="nickname">Nickname: </label>
+    <input type="text" name="nickname" size="20">
+    <input type="submit" value="Request Provisioning Code">
+  </form>
+</div>
+
+</body>
+</html>

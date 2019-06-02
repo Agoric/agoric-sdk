@@ -15,3 +15,8 @@ build
 *.iml
 node_modules
 t1/
+
+ve3/
+ve3-client/
+ag-setup-solo/src/ag_setup_solo.egg-info/
+provisioning-server/src/ag_pserver.egg-info/
