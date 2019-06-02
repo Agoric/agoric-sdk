@@ -49,3 +49,18 @@ start-ag-solo-connected-to-local:
 	bin/ag-solo init t1
 	$(MAKE) set-local-gci-ingress
 	cd t1 && ../bin/ag-solo start
+
+install-pserver:
+	python3 -mvenv ve3
+	ve3/bin/pip install -U setuptools wheel
+	ve3/bin/pip install --editable ./provisioning-server
+
+run-pserver:
+	ve3/bin/ag-pserver --listen tcp:8001 --controller tcp:localhost:8002
+
+install-setup-client:
+	python3 -mvenv ve3-client
+	ve3-client/bin/pip install -U setuptools wheel
+	ve3-client/bin/pip install --editable ./ag-setup-solo
+run-setup-client:
+	ve3-client/bin/ag-setup-solo
