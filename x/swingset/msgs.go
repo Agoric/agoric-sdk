@@ -58,6 +58,13 @@ func (msg MsgDeliverInbound) ValidateBasic() sdk.Error {
 
 // GetSignBytes encodes the message for signing
 func (msg MsgDeliverInbound) GetSignBytes() []byte {
+	// FIXME: This compensates for Amino maybe returning nil instead of empty slices.
+	if msg.Messages == nil {
+		msg.Messages = []string{}
+	}
+	if msg.Nums == nil {
+		msg.Nums = []int{}
+	}
 	b, err := json.Marshal(msg)
 	if err != nil {
 		panic(err)
