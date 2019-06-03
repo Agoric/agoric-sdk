@@ -26,7 +26,7 @@ $ npm install
 Make shell aliases for `ag-chain-cosmos` and `ag-cosmos-helper`.  Note that the `$PWD` variable must be the absolute path to the current cosmic-swingset directory:
 
 ```
-alias ag-chain-cosmos=$PWD/lib/node-ag-chain-cosmos
+alias ag-chain-cosmos=$PWD/lib/ag-chain-cosmos
 alias ag-cosmos-helper=$GOPATH/bin/ag-cosmos-helper
 ```
 
