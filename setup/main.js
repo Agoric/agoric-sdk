@@ -1,11 +1,13 @@
 import util from 'util';
-import {resolve} from 'path';
+import {resolve, basename} from 'path';
 import {exec as rawExec, spawn} from 'child_process';
 import {statSync} from 'fs';
+import {createInterface} from 'readline';
 const exec = util.promisify(rawExec);
 
-const DEPLOY_DIR = resolve(__dirname, '../deploy');
+const SETUP_DIR = resolve(__dirname, '../setup');
 const SSH_TYPE = 'ecdsa';
+const CHAIN_HOME = process.env.AG_SETUP_COSMOS_HOME || process.cwd();
 
 const shellMetaRegexp = /(\s|['"\\`$;])/;
 const shellEscape = (arg) => (arg.match(shellMetaRegexp) ? `"${arg.replace(/(["\\])/g, '\\$1')}"` : arg);
@@ -38,24 +40,40 @@ const needDoRun = async (cmd) => {
 };
 
 const playbook = (name) => {
-  const fullPath = `${DEPLOY_DIR}/ansible/${name}`;
+  const fullPath = `${SETUP_DIR}/ansible/${name}`;
   return ['ansible-playbook', `-essh_known_hosts=${process.cwd()}/ssh_known_hosts`, fullPath];
 };
 
 const sleep = (seconds, why) => {
   console.error(`Waiting ${seconds} seconds`, why || '');
-  new Promise((resolve, reject) => setInterval(resolve, 1000 * seconds));
+  return new Promise((resolve, reject) => setInterval(resolve, 1000 * seconds));
+}
+
+const ask = (prompt) => {
+  const rl = createInterface(process.stdin, process.stdout);
+  return new Promise((resolve) => {
+    rl.question(prompt, (result) => {
+      rl.close();
+      resolve(result);
+    });
+  });
 }
 
 const main = async (progname, args) => {
-  const initHint = (dir) => console.error(`\nNOTE: cd ${dir}, then you can run ${progname} subcommands`)
+  const initHint = (dir) => console.error(`\
+
+NOTE: to manage the ${dir} setup directory, do
+  export AG_SETUP_COSMOS_BACKEND=${dir}
+or
+  cd ${dir}
+and run ${progname} subcommands`);
   const help = () => console.log(`\
 Usage: ${progname} [command] [...args]
 
 bootstrap   call \`init [...args]' then proceed with setup
 help        display this message
-init        initialize a chain deployment directory
-provision   create network nodes to match this directory
+init        initialize a chain setup directory
+provision   create network nodes to match this setup
 run         run a shell command on a set of hosts
 show-hosts  display the Ansible hosts file for the nodes
 update-ssh  download the SSH host keys for the nodes
@@ -71,20 +89,36 @@ update-ssh  download the SSH host keys for the nodes
   };
   
   const cmd = args[0];
+  if (CHAIN_HOME) {
+    // Switch to the chain home.
+    switch (cmd) {
+      case 'bootstrap':
+      case 'init':
+      case 'destroy':
+        break;
+      default:
+        process.chdir(CHAIN_HOME);
+        break;
+    }
+  }
+
   switch (cmd) {
     case 'help': {
       help();
       break;
     }
     case 'bootstrap': {
-      const [name] = args.slice(1);
+      let [dir] = args.slice(1);
       const reMain = (args) => {
         console.error('$', ...[progname, ...args].map(shellEscape));
         return main(progname, args);
       };
       await reMain(['init', ...args.slice(1)]);
-      process.chdir(name);
-      await reMain(['provision']);
+      if (!dir) {
+        dir = CHAIN_HOME;
+      }
+      process.chdir(dir);
+      await reMain(['provision', '-auto-approve']);
       await needDoRun(['sh', '-c', `${shellEscape(progname)} show-hosts > hosts`]);
       while (true) {
         const code = await reMain(['update-ssh']);
@@ -94,12 +128,43 @@ update-ssh  download the SSH host keys for the nodes
         await sleep(10, 'for hosts to boot SSH');
       }
       await reMain(['run', 'all', 'hostname']);
-      initHint(name);
+      initHint(dir);
+      break;
+    }
+
+    case 'destroy': {
+      let [dir] = args.slice(1);
+      if (!dir) {
+        dir = CHAIN_HOME;
+      }
+      if (!dir) {
+        throw `Need: [dir]`;
+      }
+
+      // Unprovision terraform.
+      let exists;
+      try {
+        exists = statSync(`${dir}/.terraform`);
+      } catch (e) {}
+      if (exists) {
+        // Terraform will prompt.
+        await needDoRun(['sh', '-c', `cd ${shellEscape(dir)} && terraform destroy`]);
+      } else {
+        const res = await ask(`Are you sure you want to destroy ${dir}?  Type "yes" to destroy: `);
+        if (res !== 'yes') {
+          throw `Aborting due to user request`;
+        }
+      }
+
+      await needDoRun(['rm', '-rf', dir]);
       break;
     }
 
     case 'init': {
       let [dir, NETWORK_NAME] = args.slice(1);
+      if (!dir) {
+        dir = CHAIN_HOME;
+      }
       if (!dir) {
         throw `Need: [dir] [[network name]]`;
       }
@@ -111,31 +176,34 @@ update-ssh  download the SSH host keys for the nodes
         subSep = '; ';
       };
 
-      // FIXME: Gather information.
       const adir = resolve(process.cwd(), dir);
       const SSH_PRIVATE_KEY_FILE = resolve(adir, `id_${SSH_TYPE}`);
-      const BACKEND_TF = resolve(process.env.HOME, 'agoric-backend.tf');
+      const BACKEND_TF = process.env.AG_SETUP_COSMOS_BACKEND;
       if (!NETWORK_NAME) {
-        NETWORK_NAME = dir;
+        NETWORK_NAME = basename(dir);
       }
       doSub('PWD', adir);
-      doSub('DEPLOY_DIR', DEPLOY_DIR);
+      doSub('SETUP_DIR', SETUP_DIR);
       doSub('NETWORK_NAME', NETWORK_NAME);
-      doSub('DO_API_TOKEN', process.env.DO_API_TOKEN);
       doSub('SSH_KEY_FILE', `${SSH_PRIVATE_KEY_FILE}.pub`);
+
+      // TODO: Gather information and persist so they can change it before commit.
+      doSub('DO_API_TOKEN', process.env.DO_API_TOKEN);
 
       // Check one more time.
       await needNotExists(dir);
 
       // TODO: Do this all within Node so it works on Windows.
-      await needDoRun(['cp', '-a', `${DEPLOY_DIR}/template`, dir]);
+      await needDoRun(['cp', '-a', `${SETUP_DIR}/template`, dir]);
       if (BACKEND_TF) {
         await needDoRun(['sh', '-c',
           `sed -e 's!@WORKSPACE_NAME@!ag-chain-cosmos-${NETWORK_NAME}!g' ${shellEscape(BACKEND_TF)} > ${shellEscape(`${dir}/backend.tf`)}`]);
       }
-      await needDoRun(['ssh-keygen', '-t', SSH_TYPE, '-f', SSH_PRIVATE_KEY_FILE])
+      // Set empty password.
+      await needDoRun(['ssh-keygen', '-N', '', '-t', SSH_TYPE, '-f', SSH_PRIVATE_KEY_FILE])
+      const ext = (process.platform === 'darwin') ? ' ""' : '';
       await needDoRun(['sh', '-c',
-        `find ${shellEscape(dir)} -type f -print0 | xargs -0 sed -i '' -e '${subs}'`]);
+        `find ${shellEscape(dir)} -type f -print0 | xargs -0 sed -i${ext} -e '${subs}'`]);
       initHint(dir);
       break;
     }
@@ -150,7 +218,7 @@ update-ssh  download the SSH host keys for the nodes
       if (!exists) {
         await needDoRun(['terraform', 'init']);
       }
-      await needDoRun(['terraform', 'apply']);
+      await needDoRun(['terraform', 'apply', ...args.slice(1)]);
       break;
     }
 

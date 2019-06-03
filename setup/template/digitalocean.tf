@@ -1,5 +1,5 @@
 module "digitalocean" {
-  source           = "@DEPLOY_DIR@/terraform/digitalocean"
+  source           = "@SETUP_DIR@/terraform/digitalocean"
   CLUSTER_NAME     = "${var.NETWORK_NAME}-digitalocean"
   OFFSET           = "${var.OFFSETS["digitalocean"]}"
   REGIONS          = "${var.REGIONS["digitalocean"]}"

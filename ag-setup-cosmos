@@ -1,0 +1,14 @@
+#! /bin/sh
+PORT=26657
+CHAIN_NAME=${CHAIN_NAME-agoric}
+FLAGS=
+if test "$1" = shell; then
+  FLAGS=--entrypoint=/bin/bash
+  shift
+fi
+exec docker run --rm -it $FLAGS \
+  --volume=ag-setup-cosmos-chains:/usr/src/app/chains \
+  --env AG_SETUP_COSMOS_HOME=/usr/src/app/chains/$CHAIN_NAME \
+  --env AG_SETUP_COSMOS_BACKEND=$AG_SETUP_COSMOS_BACKEND \
+  --env DO_API_TOKEN=$DO_API_TOKEN \
+  agoric/cosmic-swingset-setup ${1+"$@"}

@@ -7,11 +7,23 @@ all: build install
 docker-install:
 	install -m 755 ./ag-chain-cosmos ./ag-cosmos-helper /usr/local/bin/
 
-docker-build:
+docker-build: docker-build-base docker-build-setup
+
+docker-build-setup:
+	docker build --build-arg=TAG=$(TAG) -t $(REPOSITORY)-setup:latest ./setup
+	docker tag $(REPOSITORY)-setup:latest $(REPOSITORY)-setup:$(TAG)
+
+docker-build-base:
 	docker build -t $(REPOSITORY):latest .
 	docker tag $(REPOSITORY):latest $(REPOSITORY):$(TAG)
 
-docker-push:
+docker-push: docker-push-base docker-push-setup
+
+docker-push-setup:
+	docker push $(REPOSITORY)-setup:latest
+	docker push $(REPOSITORY)-setup:$(TAG)
+
+docker-push-base:
 	docker push $(REPOSITORY):latest
 	docker push $(REPOSITORY):$(TAG)
 
