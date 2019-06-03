@@ -7,9 +7,15 @@ export default function setup(syscall, helpers, endowments) {
   let inboundHandler;
 
   function inboundCallback(hPeer, hMessages, hAck) {
+    const peer = `${hPeer}`;
+    if (!inboundCallback) {
+      throw new Error(
+        `mailbox.inboundCallback(${peer}) called before handler was registered`,
+      );
+    }
     const ack = Nat(hAck);
     let didSomething = false;
-    const peer = `${hPeer}`;
+
     let latestMsg = 0;
     if (highestInboundDelivered.has(peer)) {
       latestMsg = highestInboundDelivered.get(peer);
