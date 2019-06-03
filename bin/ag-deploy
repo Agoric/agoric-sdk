@@ -1,7 +1,0 @@
-#! /usr/bin/env node
-
-require = require('esm')(module);
-const deploy = require('../deploy/main.js').default;
-deploy(process.argv.splice(2))
-  .then(_res => 0,
-    rej => console.log(`error running ag-deploy:`, rej));

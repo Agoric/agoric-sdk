@@ -4,8 +4,8 @@ variable "DO_API_TOKEN" {
   description = "DigitalOcean Access Token"
 }
 
-variable "TESTNET_NAME" {
-  description = "Name of the testnet"
+variable "CLUSTER_NAME" {
+  description = "Name of the cluster"
   default = "agoric"
 }
 
@@ -15,8 +15,13 @@ variable "SSH_KEY_FILE" {
 }
 
 variable "SERVERS" {
-  description = "Number of nodes in testnet"
+  description = "Number of nodes in cluster"
   default = "5"
+}
+
+variable "OFFSET" {
+  description = "Offset of node id"
+  default = "0"
 }
 
 variable "REGIONS" {
@@ -32,7 +37,8 @@ provider "digitalocean" {
 
 module "cluster" {
   source           = "./cluster"
-  name             = "${var.TESTNET_NAME}"
+  name             = "${var.CLUSTER_NAME}"
+  offset           = "${var.OFFSET}"
   regions          = "${var.REGIONS}"
   ssh_key          = "${var.SSH_KEY_FILE}"
   servers          = "${var.SERVERS}"

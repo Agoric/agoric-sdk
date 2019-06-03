@@ -24,7 +24,7 @@ RUN mkdir -p build/Release
 COPY ssh-tunnel /ssh-tunnel
 COPY package*.json ./
 COPY demo1/ ./demo1/
-COPY bin/ ./bin/
+COPY bin/ag-solo ./bin/
 RUN npm install --production
 COPY --from=node-build /usr/src/app/build/Release/*.node build/Release/
 COPY --from=go-build /go/bin/ag-cosmos-helper .

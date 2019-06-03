@@ -8,6 +8,11 @@ variable "regions" {
   default = ["AMS3", "FRA1", "LON1", "NYC3", "SFO2", "SGP1", "TOR1"]
 }
 
+variable "offset" {
+  description = "Offset of node id"
+  default = 0
+}
+
 variable "ssh_key" {
   description = "SSH key filename to copy to the nodes"
   type = "string"

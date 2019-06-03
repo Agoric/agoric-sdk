@@ -1,0 +1,22 @@
+---
+- hosts: all
+  gather_facts: no
+  become: no
+  vars:
+    ssh_known_hosts: ~/.ssh/known_hosts
+  tasks:
+    - name: get port and host, default 22
+      delegate_to: localhost
+      set_fact:
+        ansible_ssh_port: "{{ hostvars[inventory_hostname]['ansible_ssh_port'] | default('22') }}"
+        ansible_hostname: "{{ hostvars[inventory_hostname]['ansible_host'] | default(inventory_hostname) }}"
+
+    - name: Ensure ssh host key known
+      delegate_to: localhost
+      lineinfile:
+        path: "{{ ssh_known_hosts }}"
+        create: yes
+        state: present
+        line: "{{ item }}"
+      with_lines:
+        - "ssh-keyscan -p{{ ansible_ssh_port }} {{ ansible_hostname }}"

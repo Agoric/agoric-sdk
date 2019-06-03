@@ -13,3 +13,4 @@ output "public_ips" {
   value = ["${digitalocean_droplet.cluster.*.ipv4_address}"]
 }
 
+

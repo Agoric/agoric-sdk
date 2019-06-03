@@ -1,8 +1,13 @@
 #Terraform Configuration
 
-variable "TESTNET_NAME" {
-  description = "Name of the testnet"
+variable "NETWORK_NAME" {
+  description = "Name of the network"
   default = "agoric"
+}
+
+variable "OFFSETS" {
+    description = "Map from provider to offset of node numbers"
+    type = "map"
 }
 
 variable "SSH_KEY_FILE" {

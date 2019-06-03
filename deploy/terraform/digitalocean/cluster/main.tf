@@ -8,8 +8,8 @@ resource "digitalocean_ssh_key" "cluster" {
 }
 
 resource "digitalocean_droplet" "cluster" {
-  name = "${var.name}-node${count.index}"
-  image = "centos-7-x64"
+  name = "${var.name}-node${var.offset + count.index}"
+  image = "debian-9-x64"
   size = "${var.instance_size}"
   region = "${element(var.regions, count.index)}"
   ssh_keys = ["${digitalocean_ssh_key.cluster.id}"]
@@ -17,7 +17,7 @@ resource "digitalocean_droplet" "cluster" {
   tags = ["${digitalocean_tag.cluster.id}"]
 
   lifecycle = {
-	prevent_destroy = false
+	  prevent_destroy = false
   }
 
   connection {

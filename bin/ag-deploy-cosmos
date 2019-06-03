@@ -1,0 +1,7 @@
+#! /usr/bin/env node
+
+require = require('esm')(module);
+const deploy = require('../deploy/main.js').default;
+deploy(process.argv[1], process.argv.splice(2))
+  .then(res => process.exit(res || 0),
+    rej => console.error(`error running ag-deploy-cosmos:`, rej));
