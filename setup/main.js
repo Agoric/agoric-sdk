@@ -1,76 +1,23 @@
-import util from 'util';
-import {resolve, basename} from 'path';
-import {exec as rawExec, spawn} from 'child_process';
-import {statSync} from 'fs';
-import {createInterface} from 'readline';
-const exec = util.promisify(rawExec);
-
-const SETUP_DIR = resolve(__dirname, '../setup');
-const SSH_TYPE = 'ecdsa';
-const CHAIN_HOME = process.env.AG_SETUP_COSMOS_HOME || process.cwd();
-
-const shellMetaRegexp = /(\s|['"\\`$;])/;
-const shellEscape = (arg) => (arg.match(shellMetaRegexp) ? `"${arg.replace(/(["\\])/g, '\\$1')}"` : arg);
-
-// Dah-doo-run-run-run, dah-doo-run-run.
-const doRun = (cmd) => {
-  console.error('$', ...cmd.map(shellEscape));
-  const proc = spawn(cmd[0], cmd.slice(1), {stdio: [process.stdin, process.stdout, process.stderr]});
-  return new Promise((resolve, reject) => {
-    proc.once('exit', resolve);
-    proc.once('error', reject);
-  });
-};
-
-const needNotExists = async (filename) => {
-  let exists;
-  try {
-    exists = statSync(filename);
-  } catch (e) {}
-  if (exists) {
-    throw `${filename} already exists`;
-  }
-};
-
-const needDoRun = async (cmd) => {
-  const ret = await doRun(cmd);
-  if (ret !== 0) {
-    throw `Aborted with exit code ${ret}`;
-  }
-};
-
-const playbook = (name) => {
-  const fullPath = `${SETUP_DIR}/ansible/${name}`;
-  return ['ansible-playbook', `-essh_known_hosts=${process.cwd()}/ssh_known_hosts`, fullPath];
-};
-
-const sleep = (seconds, why) => {
-  console.error(`Waiting ${seconds} seconds`, why || '');
-  return new Promise((resolve, reject) => setInterval(resolve, 1000 * seconds));
-}
-
-const ask = (prompt) => {
-  const rl = createInterface(process.stdin, process.stdout);
-  return new Promise((resolve) => {
-    rl.question(prompt, (result) => {
-      rl.close();
-      resolve(result);
-    });
-  });
-}
+import {ask, CHAIN_HOME, playbook, sleep, SSH_TYPE} from './setup';
+import {resolve, stat} from './files';
+import {doRun, exec, needDoRun, shellEscape, shellMetaRegexp} from './run';
+import doInit from './init';
 
 const main = async (progname, args) => {
-  const initHint = (dir) => console.error(`\
+  const initHint = (dir) => {
+    const adir = dir ? resolve(process.cwd(), dir) : process.cwd();
+    console.error(`\
 
-NOTE: to manage the ${dir} setup directory, do
-  export AG_SETUP_COSMOS_BACKEND=${dir}
+NOTE: to manage the ${adir} setup directory, do
+  export AG_SETUP_COSMOS_BACKEND=${adir}
 or
-  cd ${dir}
+  cd ${adir}
 and run ${progname} subcommands`);
+  };
   const help = () => console.log(`\
 Usage: ${progname} [command] [...args]
 
-bootstrap   call \`init [...args]' then proceed with setup
+bootstrap   call \`init [...args]' then proceed with automatic setup
 help        display this message
 init        initialize a chain setup directory
 provision   create network nodes to match this setup
@@ -79,12 +26,12 @@ show-hosts  display the Ansible hosts file for the nodes
 update-ssh  download the SSH host keys for the nodes
 `);
   const inited = async (cmd = `${progname} init`, ...files) => {
-    files = [...files, 'ansible.cfg', 'vars.tf', 'outputs.tf'];
+    files = [...files, 'vars.tf', 'ansible.cfg'];
     try {
-      const ps = files.map(statSync);
+      const ps = files.map(stat);
       await Promise.all(ps);
     } catch (e) {
-      throw `You need to be in a directory created by \`${cmd}'`;
+      throw `${process.cwd()} does not appear to be a directory created by \`${cmd}'`;
     }
   };
   
@@ -114,10 +61,9 @@ update-ssh  download the SSH host keys for the nodes
         return main(progname, args);
       };
       await reMain(['init', ...args.slice(1)]);
-      if (!dir) {
-        dir = CHAIN_HOME;
+      if (dir) {
+        process.chdir(dir);
       }
-      process.chdir(dir);
       await reMain(['provision', '-auto-approve']);
       await needDoRun(['sh', '-c', `${shellEscape(progname)} show-hosts > hosts`]);
       while (true) {
@@ -128,7 +74,7 @@ update-ssh  download the SSH host keys for the nodes
         await sleep(10, 'for hosts to boot SSH');
       }
       await reMain(['run', 'all', 'hostname']);
-      initHint(dir);
+      initHint();
       break;
     }
 
@@ -144,7 +90,7 @@ update-ssh  download the SSH host keys for the nodes
       // Unprovision terraform.
       let exists;
       try {
-        exists = statSync(`${dir}/.terraform`);
+        exists = await stat(`${dir}/.terraform`);
       } catch (e) {}
       if (exists) {
         // Terraform will prompt.
@@ -161,50 +107,8 @@ update-ssh  download the SSH host keys for the nodes
     }
 
     case 'init': {
-      let [dir, NETWORK_NAME] = args.slice(1);
-      if (!dir) {
-        dir = CHAIN_HOME;
-      }
-      if (!dir) {
-        throw `Need: [dir] [[network name]]`;
-      }
-      await needNotExists(dir);
-
-      let subs = '', subSep = '';
-      const doSub = (vname, value) => {
-        subs += `${subSep}s!@${vname}@!${value}!g`;
-        subSep = '; ';
-      };
-
-      const adir = resolve(process.cwd(), dir);
-      const SSH_PRIVATE_KEY_FILE = resolve(adir, `id_${SSH_TYPE}`);
-      const BACKEND_TF = process.env.AG_SETUP_COSMOS_BACKEND;
-      if (!NETWORK_NAME) {
-        NETWORK_NAME = basename(dir);
-      }
-      doSub('PWD', adir);
-      doSub('SETUP_DIR', SETUP_DIR);
-      doSub('NETWORK_NAME', NETWORK_NAME);
-      doSub('SSH_KEY_FILE', `${SSH_PRIVATE_KEY_FILE}.pub`);
-
-      // TODO: Gather information and persist so they can change it before commit.
-      doSub('DO_API_TOKEN', process.env.DO_API_TOKEN);
-
-      // Check one more time.
-      await needNotExists(dir);
-
-      // TODO: Do this all within Node so it works on Windows.
-      await needDoRun(['cp', '-a', `${SETUP_DIR}/template`, dir]);
-      if (BACKEND_TF) {
-        await needDoRun(['sh', '-c',
-          `sed -e 's!@WORKSPACE_NAME@!ag-chain-cosmos-${NETWORK_NAME}!g' ${shellEscape(BACKEND_TF)} > ${shellEscape(`${dir}/backend.tf`)}`]);
-      }
-      // Set empty password.
-      await needDoRun(['ssh-keygen', '-N', '', '-t', SSH_TYPE, '-f', SSH_PRIVATE_KEY_FILE])
-      const ext = (process.platform === 'darwin') ? ' ""' : '';
-      await needDoRun(['sh', '-c',
-        `find ${shellEscape(dir)} -type f -print0 | xargs -0 sed -i${ext} -e '${subs}'`]);
-      initHint(dir);
+      await doInit(progname, args);
+      initHint(args[1]);
       break;
     }
 
@@ -212,7 +116,7 @@ update-ssh  download the SSH host keys for the nodes
       await inited();
       let exists;
       try {
-        exists = statSync('.terraform');
+        exists = await stat('.terraform');
       } catch (e) {}
 
       if (!exists) {
@@ -295,7 +199,7 @@ ${node}:
         const escapedArgs = cmd.map(shellEscape);
         runArg = `sh -c ${shellEscape(escapedArgs.join(' '))}`;
       }
-      const run = ['ansible', host, '-a', runArg, '-f5'];
+      const run = ['ansible', '-f10', host, '-a', runArg];
       await needDoRun(run);
       break;
     }

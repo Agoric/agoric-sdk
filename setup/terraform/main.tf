@@ -15,7 +15,7 @@ variable "SSH_KEY_FILE" {
   type = "string"
 }
 
-variable "REGIONS" {
-    description = "Map from provider to list of regions indexed by instance ID"
+variable "DATACENTERS" {
+    description = "Map from provider to list of datacenters indexed by instance ID"
     type = "map"
 }
