@@ -129,6 +129,9 @@ export function mustPassByPresence(val) {
   if (Array.isArray(val)) {
     throw new Error(`Arrays cannot be pass-by-presence`);
   }
+  if (val === null) {
+    throw new Error(`null cannot be pass-by-presence`);
+  }
 
   const names = Object.getOwnPropertyNames(val);
   names.forEach(name => {
