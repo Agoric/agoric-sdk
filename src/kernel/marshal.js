@@ -443,7 +443,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
         return rawTree;
       }
       if (QCLASS in rawTree) {
-        const qclass = `${rawTree[QCLASS]}`;
+        const qclass = rawTree[QCLASS];
         if (typeof qclass !== 'string') {
           throw new TypeError(`invalid qclass typeof ${typeof qclass}`);
         }
