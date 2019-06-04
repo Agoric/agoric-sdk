@@ -3,10 +3,10 @@
 - hosts: all
   user: root
   any_errors_fatal: true
-  gather_facts: no
+  gather_facts: yes
   vars:
     - service: ag-chain-cosmos
   roles:
-    - stop
-    - start
+    - init
+    - fetch-genesis
 

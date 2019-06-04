@@ -1,0 +1,14 @@
+- name: Add nodesource PPA
+  shell: "wget -O- https://deb.nodesource.com/setup_v{{ NODEJS_VERSION }}.x | sudo bash -"
+  args:
+    warn: no
+    
+- name: Update repositories cache and install prerequisites
+  apt:
+    name: "{{ packages }}"
+    update_cache: yes
+    state: present
+  vars:
+    packages:
+    - rsync
+    - "nodejs={{ NODEJS_VERSION }}.*"

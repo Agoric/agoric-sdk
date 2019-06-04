@@ -1,0 +1,4 @@
+- name: Fetch genesis.json
+  fetch:
+    dest: "genesis"
+    src: "/home/{{ service }}/.{{ service }}/config/genesis.json"

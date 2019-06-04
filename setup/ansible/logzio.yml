@@ -7,7 +7,7 @@
   any_errors_fatal: true
   gather_facts: no
   vars:
-    - service: tendermint
+    - service: ag-chain-cosmos
     - JOURNALBEAT_BINARY: "{{lookup('env', 'GOPATH')}}/bin/journalbeat"
   roles:
     - logzio

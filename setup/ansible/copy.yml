@@ -8,9 +8,8 @@
     - service: ag-chain-cosmos
     - HELPER_BINARY: "{{lookup('env', 'GOPATH')}}/bin/ag-cosmos-helper"
     - APPDIR: "{{lookup('pipe', 'pwd')}}/../.."
+    - NODEJS_VERSION: 12
   roles:
-    - stop
+    - prereq
     - copy
-    - unsafe_reset
-    - start
 

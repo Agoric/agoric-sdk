@@ -176,6 +176,11 @@ ${node}:
       await inited();
       return await doRun(playbook('update_known_hosts.yml'));
     }
+
+    case 'config': {
+      await inited();
+      return await doRun(playbook('config.yml'));
+    }
     
     case 'run': {
       const [host, ...cmd] = args.slice(1);

@@ -1,0 +1,29 @@
+---
+
+- name: Copy helper
+  copy:
+    src: "{{HELPER_BINARY}}"
+    dest: /usr/bin
+    mode: 0755
+
+- name: Synchronize install directory
+  synchronize:
+    src: "{{APPDIR}}/"
+    dest: "/usr/src/{{service}}/"
+    dirs: yes
+    delete: yes
+    mode: push
+    rsync_opts:
+    - "--exclude=.git"
+    - "--exclude=setup"
+    - "--exclude=.vscode"
+    - "--exclude=chains"
+    - "--exclude=x"
+    - "--exclude=t[0-9]*"
+    - "--exclude=provisioning-server"
+
+- name: "Symlink {{service}}"
+  file:
+    src: "/usr/src/{{service}}/lib/{{service}}"
+    dest: "/usr/local/bin/{{service}}"
+    state: link
