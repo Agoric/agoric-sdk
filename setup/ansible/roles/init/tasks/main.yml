@@ -1,2 +1,18 @@
-- name: Initialize the service
-  shell: "{{ service }} init"
+- name: Create service group
+  group: "name={{service}}"
+
+- name: Create service user
+  user: "name={{service}} group={{service}} home=/home/{{service}}"
+
+- name: Change user folder to more permissive
+  file: "path=/home/{{service}} mode=0755"
+
+- name: "Initialize {{ service }}"
+  become: yes
+  become_user: "{{ service }}"
+  shell: "{{ service }} init --chain-id={{ NETWORK_NAME }}"
+
+- name: "Add coins to {{ service }}"
+  become: yes
+  become_user: "{{ service }}"
+  shell: "{{ service }} add-genesis-account {{ BOOTSTRAP_PUBKEY }} {{ BOOTSTRAP_TOKENS }}"

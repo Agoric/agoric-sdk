@@ -1,20 +1,14 @@
 import util from 'util';
 import {resolve, basename} from 'path';
-import {mkdir as rawMkdir, stat as rawStat, writeFile as rawWriteFile} from 'fs';
+import {chmod as rawChmod, mkdir as rawMkdir, readFile as rawReadFile, stat as rawStat, writeFile as rawWriteFile} from 'fs';
+import {Readable} from 'stream';
 
+export const chmod = util.promisify(rawChmod);
 export const mkdir = util.promisify(rawMkdir);
 export const writeFile = util.promisify(rawWriteFile);
+export const readFile = util.promisify(rawReadFile);
+export const stat = util.promisify(rawStat);
 export {resolve, basename};
-
-export const stat = (path) => new Promise((resolve, reject) => {
-    rawStat(path, (err, stats) => {
-        if (err) {
-            return reject(err);
-        }
-        resolve(stats);
-    });
-});
-
 
 export const needNotExists = async (filename) => {
     let exists;
@@ -29,4 +23,12 @@ export const needNotExists = async (filename) => {
 export const createFile = (path, contents) => {
     console.log(`Creating ${path}`);
     return writeFile(path, contents);
+}
+
+export const streamFromString = (str) => {
+  const s = new Readable();
+  // s._read = () => {};
+  s.push(str);
+  s.push(null);
+  return s;
 }

@@ -27,7 +27,7 @@ COPY demo1/ ./demo1/
 COPY bin/ ./bin/
 RUN npm install --production
 COPY --from=node-build /usr/src/app/build/Release/*.node build/Release/
-COPY --from=go-build /go/bin/ag-cosmos-helper .
+COPY --from=go-build /go/bin/ag-cosmos-helper /usr/local/bin/
 
 # By default, run the daemon with specified arguments.
 EXPOSE 26657

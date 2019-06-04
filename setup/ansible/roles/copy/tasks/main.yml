@@ -3,7 +3,7 @@
 - name: Copy helper
   copy:
     src: "{{HELPER_BINARY}}"
-    dest: /usr/bin
+    dest: /usr/bin/
     mode: 0755
 
 - name: Synchronize install directory
@@ -21,6 +21,12 @@
     - "--exclude=x"
     - "--exclude=t[0-9]*"
     - "--exclude=provisioning-server"
+
+- name: "Symlink /usr/src/app"
+  file:
+    src: "/usr/src/{{service}}"
+    dest: /usr/src/app
+    state: link
 
 - name: "Symlink {{service}}"
   file:

@@ -10,13 +10,14 @@ RUN curl https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform
 RUN echo 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main' >> /etc/apt/sources.list && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367 && \
     apt-get update -y && \
-    apt-get install -y ansible && \
+    apt-get install -y ansible rsync && \
     apt-get clean -y
 
 WORKDIR /usr/src/app
 RUN ln -sf $PWD/setup/ag-setup-cosmos /usr/local/bin/
-COPY . setup/
+COPY package*.json setup/
 RUN cd setup && npm install --production
+COPY . setup/
 
 WORKDIR /usr/src/app/chains
 

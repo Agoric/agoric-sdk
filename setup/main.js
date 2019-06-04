@@ -1,5 +1,5 @@
-import {CHAIN_HOME, playbook, sleep, SSH_TYPE} from './setup';
-import {resolve, stat} from './files';
+import {ACCOUNT_JSON, CHAIN_HOME, playbook, sleep, SSH_TYPE} from './setup';
+import {readFile, resolve, stat, streamFromString} from './files';
 import {doRun, exec, needDoRun, shellEscape, shellMetaRegexp} from './run';
 import doInit from './init';
 import {prompt} from 'inquirer';
@@ -22,14 +22,14 @@ bootstrap   call \`init [...args]' then proceed with automatic setup
 help        display this message
 init        initialize a chain setup directory
 provision   create network nodes to match this setup
-run         run a shell command on a set of hosts
+run         run a shell command on a set of nodes
+play        run an Ansible playbook on the nodes
 show-hosts  display the Ansible hosts file for the nodes
-update-ssh  download the SSH host keys for the nodes
 `);
   const inited = async (cmd = `${progname} init`, ...files) => {
     files = [...files, 'vars.tf', 'ansible.cfg'];
     try {
-      const ps = files.map(stat);
+      const ps = files.map((path) => stat(path));
       await Promise.all(ps);
     } catch (e) {
       throw `${process.cwd()} does not appear to be a directory created by \`${cmd}'`;
@@ -43,6 +43,7 @@ update-ssh  download the SSH host keys for the nodes
       case 'bootstrap':
       case 'init':
       case 'destroy':
+      case 'merge-genesis':
         break;
       default:
         process.chdir(CHAIN_HOME);
@@ -58,21 +59,76 @@ update-ssh  download the SSH host keys for the nodes
     case 'bootstrap': {
       let [dir] = args.slice(1);
       const reMain = (args) => {
-        console.error('$', ...[progname, ...args].map(shellEscape));
+        const displayArgs = [progname, ...args];
+        if (displayArgs.length >= 4 && displayArgs[1] === 'new-account') {
+          displayArgs[3] = '*redacted*';
+        }
+        console.error('$', ...displayArgs.map(shellEscape));
         return main(progname, args);
       };
+
       await reMain(['init', ...args.slice(1)]);
+
+      const json = await readFile(ACCOUNT_JSON);
+      const {user, password} = JSON.parse(String(json));
+      await reMain(['new-account', user, password]);
+      const {stdout, stderr} = await exec(`ag-cosmos-helper keys show ${shellEscape(user)} -a`);
+      if (stderr) {
+        console.error(String(stderr));
+        return 1;
+      }
+      const pubkey = String(stdout).trimRight();
+      const {CONFIRM} = await prompt([{type: "confirm", name: "CONFIRM", default: false, message: "Have you written the phrase down in a safe place?"}]);
+      if (!CONFIRM) {
+        throw `You are not responsible enough to run an Agoric Cosmos Chain!`;
+      }
+  
       await reMain(['provision', '-auto-approve']);
       await needDoRun(['sh', '-c', `${shellEscape(progname)} show-hosts > hosts`]);
       while (true) {
-        const code = await reMain(['update-ssh']);
+        const code = await reMain(['play', 'update_known_hosts']);
         if (code === 0) {
           break;
         }
         await sleep(10, 'for hosts to boot SSH');
       }
-      await reMain(['run', 'all', 'hostname']);
+      await reMain(['play', 'bootstrap', `-eBOOTSTRAP_PUBKEY=${pubkey}`]);
+      await needDoRun(['sh', '-c', `${shellEscape(progname)} merge-genesis genesis/*/genesis.json > genesis.json`]);
+      await reMain(['play', 'install-genesis']);
+      await reMain(['install-peers']);
       initHint();
+      break;
+    }
+
+    case 'new-account': {
+      const [user, passwd] = args.slice(1);
+      const stdin = passwd ? streamFromString(`${passwd}\n${passwd}\n`) : 'inherit';
+      await needDoRun(['ag-cosmos-helper', 'keys', 'add', user], stdin);
+      break;
+    }
+
+    case 'install-peers': {
+      await inited();
+      await needDoRun(playbook('install', '-ePERSISTENT_PEERS=hello,world,foobar'));
+      break;
+    }
+
+    case 'merge-genesis': {
+      const files = args.slice(1);
+      const ps = files.map((file) => readFile(file));
+      const bodies = await Promise.all(ps);
+      let first;
+      const validators = [];
+      for (const body of bodies) {
+        const text = String(body);
+        const obj = JSON.parse(text);
+        if (!first) {
+          first = obj;
+        }
+        validators.push(...obj.validators);
+      }
+      first.validators = validators;
+      process.stdout.write(JSON.stringify(first, undefined, 2));
       break;
     }
 
@@ -172,16 +228,18 @@ ${node}:
       break;
     }
 
-    case 'update-ssh': {
+    case 'play': {
+      const [pb, ...pbargs] = args.slice(1);
+      if (!pb) {
+        throw `Need: [playbook name]`;
+      }
+      if (!pb.match(/^\w[-\w]*$/)) {
+        throw `[playbook] ${JSON.stringify(pb)} must be a word`;
+      }
       await inited();
-      return await doRun(playbook('update_known_hosts.yml'));
+      return await doRun(playbook(`${pb}.yml`, ...pbargs));
     }
 
-    case 'config': {
-      await inited();
-      return await doRun(playbook('config.yml'));
-    }
-    
     case 'run': {
       const [host, ...cmd] = args.slice(1);
       if (!host || cmd.length === 0) {

@@ -1,15 +1,14 @@
 ---
 
-- name: Create service group
-  group: "name={{service}}"
+- name: Set persistent_peers
+  lineinfile:
+    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    state: present
+    regexp: '^persistent_peers *='
+    line: 'persistent_peers = "{{ PERSISTENT_PEERS }}"'
 
-- name: Create service user
-  user: "name={{service}} group={{service}} home=/home/{{service}}"
-
-- name: Change user folder to more permissive
-  file: "path=/home/{{service}} mode=0755"
-
-# FIXME: First run init, then genesis.json, then p2p.persistent_peers.
-#- name: Create service
-#  template: "src=systemd.service.j2 dest=/etc/systemd/system/{{service}}.service"
-#  notify: reload services
+- name: Create service
+  template:
+    src: systemd.service.j2
+    dest: "/etc/systemd/system/{{service}}.service"
+  notify: reload services

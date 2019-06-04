@@ -1,6 +1,6 @@
-import {ALLOCATE_FRESH_CLUSTERS, CHAIN_HOME, SETUP_DIR, SSH_TYPE} from './setup';
-import {basename, createFile, mkdir, needNotExists, resolve} from './files';
-import {needDoRun} from './run';
+import {ACCOUNT_JSON, ALLOCATE_FRESH_CLUSTERS, CHAIN_HOME, PLAYBOOK_WRAPPER, SETUP_DIR, SSH_TYPE} from './setup';
+import {basename, chmod, createFile, mkdir, needNotExists, resolve} from './files';
+import {needDoRun, shellEscape} from './run';
 import fetch from 'node-fetch';
 import {prompt} from 'inquirer';
 
@@ -12,6 +12,12 @@ const nodeCount = (count) => {
         return ` (${count} nodes)`;
     }
     return '';
+};
+
+const genUserPassword = (NETWORK_NAME) => {
+    const genRandomString = (len) =>
+        [...Array(len)].map(i=>(~~(Math.random()*36)).toString(36)).join('');
+    return [`${NETWORK_NAME}${genRandomString(8)}`, genRandomString(14)];
 };
 
 const ALL_PROVIDERS = {
@@ -49,15 +55,16 @@ module "${CLUSTER}" {
 `),
     }
 };
+
+const DONE = {name: 'Done!', value: ''};
+
 const askProvider = (PLACEMENTS) => {
-    const DONE = 'Finished';
     const questions = [
         {
             name: 'PROVIDER',
             type: 'list',
             message: `Where would you like to allocate nodes?`,
-            choices: [...Object.keys(ALL_PROVIDERS).sort().map(p => ({name: `${p}${nodeCount(calculateTotal(PLACEMENTS[p]))}`, value: p})), DONE],
-            filter: (provider) => provider === DONE ? '' : provider,
+            choices: [DONE, ...Object.keys(ALL_PROVIDERS).sort().map(p => ({name: `${p}${nodeCount(calculateTotal(PLACEMENTS[p]))}`, value: p}))],
         },
     ];
     return prompt(questions);
@@ -76,14 +83,14 @@ const askApiKey = (PROVIDER, DEFAULT_KEY) => {
     return prompt(questions);
 };
 
-const askDatacenter = (provider, dcs, placement) => {
+const askDatacenter = async (provider, dcs, placement) => {
     const questions = [];
     if (dcs) {
         questions.push({
             name: 'DATACENTER',
             type: 'list',
             message: `Which ${provider} datacenter?`,
-            choices: dcs,
+            choices: [DONE, ...dcs],
         });
     } else {
         questions.push({
@@ -93,29 +100,22 @@ const askDatacenter = (provider, dcs, placement) => {
             filter: (dc) => dc.trim(),
         })
     }
-    questions.push({
-        name: 'NUM_NODES',
-        type: 'number',
-        message: ({DATACENTER}) => `Number of nodes for ${provider} ${DATACENTER} (0 or more)?`,
-        default: ({DATACENTER}) => placement[DATACENTER] || 0,
-        validate: (num) => Math.floor(num) === num && num >= 0,
-    });
-    questions.push({
-        name: 'MORE',
-        message: ({NUM_NODES, DATACENTER}) => {
-            const newPlacement = {...placement};
-            if (NUM_NODES) {
-                newPlacement[DATACENTER] = NUM_NODES;
-            } else {
-                delete newPlacement[DATACENTER];
-            }
-            const total = calculateTotal(newPlacement);
-            return `Any more ${provider} allocations${nodeCount(total)}?`;
-        },
-        type: 'confirm',
-        default: true,
-    });
-    return prompt(questions);
+
+    const {DATACENTER} = await prompt(questions);
+    if (!DATACENTER) {
+        return {MORE: false};
+    }
+
+    const {NUM_NODES} = await prompt([
+        {
+            name: 'NUM_NODES',
+            type: 'number',
+            message: `Number of nodes for ${provider} ${DATACENTER} (0 or more)?`,
+            default: placement[DATACENTER] || 0,
+            validate: (num) => Math.floor(num) === num && num >= 0,
+        }
+    ]);
+    return {DATACENTER, NUM_NODES, MORE: true};
 }
 
 const doInit = async (progname, args) => {
@@ -128,22 +128,12 @@ const doInit = async (progname, args) => {
     }
     await needNotExists(`${dir}/ansible.cfg`);
 
-    let subs = '', subSep = '';
-    const doSub = (vname, value) => {
-      subs += `${subSep}s!@${vname}@!${value}!g`;
-      subSep = '; ';
-    };
-
     const adir = resolve(process.cwd(), dir);
     const SSH_PRIVATE_KEY_FILE = resolve(adir, `id_${SSH_TYPE}`);
     const BACKEND_TF = process.env.AG_SETUP_COSMOS_BACKEND;
     if (!NETWORK_NAME) {
       NETWORK_NAME = basename(dir);
     }
-    doSub('PWD', adir);
-    doSub('SETUP_DIR', SETUP_DIR);
-    doSub('NETWORK_NAME', NETWORK_NAME);
-    doSub('SSH_KEY_FILE', `${SSH_PRIVATE_KEY_FILE}.pub`);
 
     // TODO: Gather information and persist so they can change it before commit.
     let instance = 0;
@@ -158,6 +148,10 @@ const doInit = async (progname, args) => {
     } catch (e) {}
     process.chdir(dir);
 
+    // Create new credentials.
+    const [user, password] = genUserPassword(NETWORK_NAME);
+    await createFile(ACCOUNT_JSON, JSON.stringify({user, password}, undefined, 2));
+    
     while (true) {
         const {PROVIDER} = await askProvider(PLACEMENTS);
         if (!PROVIDER) {
@@ -310,6 +304,15 @@ output "offsets" {
     }
     // Set empty password.
     await needDoRun(['ssh-keygen', '-N', '', '-t', SSH_TYPE, '-f', SSH_PRIVATE_KEY_FILE])
+
+    await createFile(PLAYBOOK_WRAPPER, `\
+#! /bin/sh
+exec ansible-playbook -f10 \\
+  -eCHAIN_HOME=${shellEscape(process.cwd())} \\
+  -eNETWORK_NAME=${shellEscape(NETWORK_NAME)} \\
+  \${1+"\$@"}
+`);
+    await chmod(PLAYBOOK_WRAPPER, '0755');
 
     // Finish by writing ansible.cfg.
     await createFile(`ansible.cfg`, `\

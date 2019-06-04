@@ -1,4 +1,5 @@
-- name: Fetch genesis.json
+- name: "Fetch {{ genesis | default('genesis') }}/*/genesis.json"
   fetch:
-    dest: "genesis"
+    dest: "{{ genesis | default('genesis') }}/{{ inventory_hostname }}/"
+    flat: yes
     src: "/home/{{ service }}/.{{ service }}/config/genesis.json"

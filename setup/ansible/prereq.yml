@@ -1,0 +1,11 @@
+---
+
+- hosts: all
+  user: root
+  any_errors_fatal: true
+  gather_facts: yes
+  vars:
+    - NODEJS_VERSION: 12
+  roles:
+    - prereq
+

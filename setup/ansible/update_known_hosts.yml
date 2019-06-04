@@ -3,7 +3,7 @@
   gather_facts: no
   become: no
   vars:
-    ssh_known_hosts: ~/.ssh/known_hosts
+    ssh_known_hosts: "{{ CHAIN_HOME }}/ssh_known_hosts"
   tasks:
     - name: get port and host, default 22
       delegate_to: localhost

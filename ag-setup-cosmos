@@ -8,6 +8,7 @@ if test "$1" = shell; then
 fi
 exec docker run --rm -it $FLAGS \
   --volume=ag-setup-cosmos-chains:/usr/src/app/chains \
+  --volume=ag-cosmos-helper-state:/root/.ag-cosmos-helper \
   --env AG_SETUP_COSMOS_HOME=/usr/src/app/chains/$CHAIN_NAME \
   --env AG_SETUP_COSMOS_BACKEND=$AG_SETUP_COSMOS_BACKEND \
   --env DO_API_TOKEN=$DO_API_TOKEN \
