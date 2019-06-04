@@ -5,7 +5,7 @@ include Makefile.ledger
 all: build install
 
 docker-install:
-	install -m 755 ./ag-chain-cosmos ./ag-cosmos-helper /usr/local/bin/
+	install -m 755 ./ag-chain-cosmos ./ag-cosmos-helper ./ag-setup-cosmos /usr/local/bin/
 
 docker-build: docker-build-base docker-build-setup
 

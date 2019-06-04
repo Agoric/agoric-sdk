@@ -1,0 +1,18 @@
+{
+  "name": "@agoric/cosmic-swingset-setup",
+  "version": "1.0.0",
+  "description": "Set up the Agoric Cosmos chain nodes",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Agoric/cosmic-swingset/setup"
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "inquirer": "^6.3.1"
+  }
+}

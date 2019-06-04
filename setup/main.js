@@ -2,10 +2,11 @@ import {ask, CHAIN_HOME, playbook, sleep, SSH_TYPE} from './setup';
 import {resolve, stat} from './files';
 import {doRun, exec, needDoRun, shellEscape, shellMetaRegexp} from './run';
 import doInit from './init';
+import {prompt} from 'inquirer';
 
 const main = async (progname, args) => {
-  const initHint = (dir) => {
-    const adir = dir ? resolve(process.cwd(), dir) : process.cwd();
+  const initHint = () => {
+    const adir = process.cwd();
     console.error(`\
 
 NOTE: to manage the ${adir} setup directory, do
@@ -61,9 +62,6 @@ update-ssh  download the SSH host keys for the nodes
         return main(progname, args);
       };
       await reMain(['init', ...args.slice(1)]);
-      if (dir) {
-        process.chdir(dir);
-      }
       await reMain(['provision', '-auto-approve']);
       await needDoRun(['sh', '-c', `${shellEscape(progname)} show-hosts > hosts`]);
       while (true) {
@@ -95,20 +93,19 @@ update-ssh  download the SSH host keys for the nodes
       if (exists) {
         // Terraform will prompt.
         await needDoRun(['sh', '-c', `cd ${shellEscape(dir)} && terraform destroy`]);
-      } else {
-        const res = await ask(`Are you sure you want to destroy ${dir}?  Type "yes" to destroy: `);
-        if (res !== 'yes') {
-          throw `Aborting due to user request`;
-        }
       }
 
+      const {CONFIRM} = await prompt([{type: 'input', name: 'CONFIRM', default: 'no', message: `Type "yes" if you are sure you want to remove ${dir}:`}]);
+      if (CONFIRM !== 'yes') {
+        throw `Aborting due to user request`;
+      }
       await needDoRun(['rm', '-rf', dir]);
       break;
     }
 
     case 'init': {
       await doInit(progname, args);
-      initHint(args[1]);
+      initHint();
       break;
     }
 

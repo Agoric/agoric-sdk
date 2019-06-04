@@ -14,8 +14,9 @@ RUN echo 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main' >> /e
     apt-get clean -y
 
 WORKDIR /usr/src/app
-RUN ln -sf $PWD/bin/ag-setup-cosmos /usr/local/bin/
+RUN ln -sf $PWD/setup/ag-setup-cosmos /usr/local/bin/
 COPY . setup/
+RUN cd setup && npm install --production
 
 WORKDIR /usr/src/app/chains
 
