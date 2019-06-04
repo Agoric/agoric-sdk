@@ -3,7 +3,7 @@ import { buildVatController } from '../src/index';
 import buildSharedStringTable from '../src/devices/sharedTable';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 import buildCommand from '../src/devices/command';
-import { makeExternal } from '../src/controller';
+import makeExternal from '../src/stateInMemory';
 import makeExternalKVStore from '../src/kernel/externalKVStore';
 
 async function test0(t, withSES) {

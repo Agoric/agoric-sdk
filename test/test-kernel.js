@@ -1,7 +1,7 @@
 /* global setImmediate */
 import { test } from 'tape-promise/tape';
 import buildKernel from '../src/kernel/index';
-import { makeExternal } from '../src/controller';
+import makeExternal from '../src/stateInMemory';
 
 test('build kernel', t => {
   const external = makeExternal();
