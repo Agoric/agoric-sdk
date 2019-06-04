@@ -1,4 +1,4 @@
-import {ask, CHAIN_HOME, playbook, sleep, SSH_TYPE} from './setup';
+import {CHAIN_HOME, playbook, sleep, SSH_TYPE} from './setup';
 import {resolve, stat} from './files';
 import {doRun, exec, needDoRun, shellEscape, shellMetaRegexp} from './run';
 import doInit from './init';

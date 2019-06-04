@@ -9,7 +9,7 @@ export const shellEscape = (arg) => (arg.match(shellMetaRegexp) ? `"${arg.replac
 // Dah-doo-run-run-run, dah-doo-run-run.
 export const doRun = (cmd) => {
   console.error('$', ...cmd.map(shellEscape));
-  const proc = spawn(cmd[0], cmd.slice(1), {stdio: [process.stdin, process.stdout, process.stderr]});
+  const proc = spawn(cmd[0], cmd.slice(1), {stdio: ['inherit', 'inherit', 'inherit']});
   return new Promise((resolve, reject) => {
     proc.once('exit', resolve);
     proc.once('error', reject);

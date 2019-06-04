@@ -1,4 +1,4 @@
-import {ask, SETUP_DIR, SSH_TYPE} from './setup';
+import {CHAIN_HOME, SETUP_DIR, SSH_TYPE} from './setup';
 import {basename, createFile, mkdir, needNotExists, resolve} from './files';
 import {needDoRun} from './run';
 import fetch from 'node-fetch';
