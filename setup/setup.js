@@ -1,5 +1,6 @@
 import {resolve} from './files';
 
+export const ALLOCATE_FRESH_CLUSTERS = false;
 export const SETUP_DIR = resolve(__dirname, '../setup');
 export const SSH_TYPE = 'ecdsa';
 export const CHAIN_HOME = process.env.AG_SETUP_COSMOS_HOME;
