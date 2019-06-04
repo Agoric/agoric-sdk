@@ -71,7 +71,7 @@ Napi::FunctionReference NodeReplier::constructor;
 
 static int daemonPort = -1;
 int SendToNode(int port, int replyPort, Body str) {
-    std::cerr << "Send to node port " << port << " " << str << std::endl;
+    //std::cerr << "Send to node port " << port << " " << str << std::endl;
     // FIXME: Make a better bootstrap, honouring an AG_COSMOS_START message.
     if (daemonPort < 0) {
         daemonPort = replyPort;
@@ -93,21 +93,21 @@ int SendToNode(int port, int replyPort, Body str) {
             // std::cerr << "Waiting on future" << std::endl;
             try {
                 NodeReply ret = promise->get_future().get();
-                std::cerr << "Replying to Go with " << ret.value() << " " << ret.isRejection() << std::endl;
+                // std::cerr << "Replying to Go with " << ret.value() << " " << ret.isRejection() << std::endl;
                 ReplyToGo(replyPort, ret.isRejection(), ret.value().c_str());
             } catch (std::exception& e) {
-                std::cerr << "Exceptioning " << e.what() << std::endl;
+                // std::cerr << "Exceptioning " << e.what() << std::endl;
                 ReplyToGo(replyPort, true, e.what());
             }
         }
         // std::cerr << "Thread is finished" << std::endl;
     }).detach();
-    std::cerr << "Ending Send to Node " << str << std::endl;
+    // std::cerr << "Ending Send to Node " << str << std::endl;
     return 0;
 }
 
 static Napi::Value send(const Napi::CallbackInfo& info) {
-    std::cerr << "Send to Go" << std::endl;
+    // std::cerr << "Send to Go" << std::endl;
     Napi::Env env = info.Env();
     int instance = info[0].As<Napi::Number>();
     std::string tmp = info[1].As<Napi::String>().Utf8Value();
@@ -118,7 +118,7 @@ static Napi::Value send(const Napi::CallbackInfo& info) {
 static Napi::Value runAG_COSMOS(const Napi::CallbackInfo& info) {
     static bool singleton = false;
     Napi::Env env = info.Env();
-    std::cerr << "Starting Go AG_COSMOS from Node AG_COSMOS" << std::endl;
+    // std::cerr << "Starting Go AG_COSMOS from Node AG_COSMOS" << std::endl;
 
     if (singleton) {
         Napi::TypeError::New(env, "Cannot start multiple AG_COSMOS instances").ThrowAsJavaScriptException();
@@ -147,7 +147,7 @@ static Napi::Value runAG_COSMOS(const Napi::CallbackInfo& info) {
         free(argv[i]);
     }
     delete[] argv;
-    std::cerr << "End of starting AG_COSMOS from Node AG_COSMOS" << std::endl;
+    // std::cerr << "End of starting AG_COSMOS from Node AG_COSMOS" << std::endl;
     return Napi::Number::New(env, daemonPort);
 }
 

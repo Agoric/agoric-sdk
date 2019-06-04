@@ -1,5 +1,5 @@
 import {ACCOUNT_JSON, CHAIN_HOME, playbook, sleep, SSH_TYPE} from './setup';
-import {readFile, resolve, stat, streamFromString} from './files';
+import {exists, readFile, resolve, stat, streamFromString} from './files';
 import {doRun, exec, needDoRun, shellEscape, shellMetaRegexp} from './run';
 import doInit from './init';
 import {prompt} from 'inquirer';
@@ -25,6 +25,7 @@ provision   create network nodes to match this setup
 run         run a shell command on a set of nodes
 play        run an Ansible playbook on the nodes
 show-hosts  display the Ansible hosts file for the nodes
+show-peers  display the Tendermint peers for the nodes
 `);
   const inited = async (cmd = `${progname} init`, ...files) => {
     files = [...files, 'vars.tf', 'ansible.cfg'];
@@ -77,7 +78,7 @@ show-hosts  display the Ansible hosts file for the nodes
         console.error(String(stderr));
         return 1;
       }
-      const pubkey = String(stdout).trimRight();
+      const address = String(stdout).trimRight();
       const {CONFIRM} = await prompt([{type: "confirm", name: "CONFIRM", default: false, message: "Have you written the phrase down in a safe place?"}]);
       if (!CONFIRM) {
         throw `You are not responsible enough to run an Agoric Cosmos Chain!`;
@@ -92,10 +93,29 @@ show-hosts  display the Ansible hosts file for the nodes
         }
         await sleep(10, 'for hosts to boot SSH');
       }
-      await reMain(['play', 'bootstrap', `-eBOOTSTRAP_PUBKEY=${pubkey}`]);
+      await reMain(['play', 'bootstrap', `-eBOOTSTRAP_ADDRESS=${address}`]);
       await needDoRun(['sh', '-c', `${shellEscape(progname)} merge-genesis genesis/*/genesis.json > genesis.json`]);
       await reMain(['play', 'install-genesis']);
-      await reMain(['install-peers']);
+      
+      {
+        const {stdout, stderr} = await exec(`${progname} show-peers`);
+        if (stderr) {
+          console.error(String(stderr));
+          return 1;
+        }
+        const peers = String(stdout).trimRight();
+        await reMain(['play', 'install', `-ePERSISTENT_PEERS=${peers}`]);
+      }
+
+      await reMain(['play', 'start']);
+      console.error(`Your Agoric Cosmos chain is now running!`);
+      while (true) {
+        const code = await reMain(['play', 'status']);
+        if (code !== 0) {
+          break;
+        }
+        await sleep(10, 'for more status updates; you may hit Control-C at any time')
+      }
       initHint();
       break;
     }
@@ -107,9 +127,56 @@ show-hosts  display the Ansible hosts file for the nodes
       break;
     }
 
-    case 'install-peers': {
+    case 'show-peers': {
       await inited();
-      await needDoRun(playbook('install', '-ePERSISTENT_PEERS=hello,world,foobar'));
+      const {stdout, stderr} = await exec(`terraform output -json`);
+      if (stderr) {
+        throw `${stderr}`;
+      }
+      const tf = JSON.parse(`${stdout}`);
+      const public_ips = [], public_ports = [];
+      for (const CLUSTER of Object.keys(tf.public_ips.value)) {
+        const ips = tf.public_ips.value[CLUSTER];
+        const offset = Number(tf.offsets.value[CLUSTER]);
+        for (let i = 0; i < ips.length; i ++) {
+          public_ips[offset + i] = ips[i];
+        }
+      }
+
+      const DEFAULT_PORT = 26656;
+
+      let peers = '', sep = '';
+      let idPath;
+      let i = 0;
+      while (true) {
+        // Read the node-id file for this node.
+        idPath = `genesis/node${i}/node-id`;
+        if (!await exists(idPath)) {
+          break;
+        }
+
+        const raw = await readFile(idPath);
+        const ID = String(raw);
+
+        if (!ID) {
+          throw `${idPath} does not contain a node ID`;
+        }
+        if (!ID.match(/^[a-f0-9]+/)) {
+          throw `${idPath} contains an invalid ID ${ID}`;
+        }
+        const IP = public_ips[i];
+        if (!IP) {
+          throw `${idPath} does not correspond to a Terraform public IP`;
+        }
+        const PORT = public_ports[i] || DEFAULT_PORT;
+        peers += `${sep}${ID}@${IP}:${PORT}`;
+        sep = ',';
+        i ++;
+      }
+      if (i === 0) {
+        throw `No ${idPath} file found`;
+      }
+      process.stdout.write(peers);
       break;
     }
 
@@ -142,11 +209,7 @@ show-hosts  display the Ansible hosts file for the nodes
       }
 
       // Unprovision terraform.
-      let exists;
-      try {
-        exists = await stat(`${dir}/.terraform`);
-      } catch (e) {}
-      if (exists) {
+      if (await exists(`${dir}/.terraform`)) {
         // Terraform will prompt.
         await needDoRun(['sh', '-c', `cd ${shellEscape(dir)} && terraform destroy`]);
       }
@@ -167,12 +230,7 @@ show-hosts  display the Ansible hosts file for the nodes
 
     case 'provision': {
       await inited();
-      let exists;
-      try {
-        exists = await stat('.terraform');
-      } catch (e) {}
-
-      if (!exists) {
+      if (!await exists('.terraform')) {
         await needDoRun(['terraform', 'init']);
       }
       await needDoRun(['terraform', 'apply', ...args.slice(1)]);
@@ -184,7 +242,7 @@ show-hosts  display the Ansible hosts file for the nodes
       await inited(`${progname} init`, SSH_PRIVATE_KEY_FILE);
       const {stdout, stderr} = await exec(`terraform output -json`);
       if (stderr) {
-        console.error(`${stderr}`);
+        throw `${stderr}`;
       }
       const obj = JSON.parse(`${stdout}`);
       const out = process.stdout;
@@ -237,7 +295,7 @@ ${node}:
         throw `[playbook] ${JSON.stringify(pb)} must be a word`;
       }
       await inited();
-      return await doRun(playbook(`${pb}.yml`, ...pbargs));
+      return await doRun(playbook(pb, ...pbargs));
     }
 
     case 'run': {

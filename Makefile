@@ -10,20 +10,20 @@ docker-install:
 docker-build: docker-build-base docker-build-setup
 
 docker-build-setup:
-	docker build --build-arg=TAG=$(TAG) -t $(REPOSITORY)-setup:latest ./setup
-	docker tag $(REPOSITORY)-setup:latest $(REPOSITORY)-setup:$(TAG)
+	docker build -t $(REPOSITORY)-setup:latest ./setup
 
 docker-build-base:
 	docker build -t $(REPOSITORY):latest .
-	docker tag $(REPOSITORY):latest $(REPOSITORY):$(TAG)
 
 docker-push: docker-push-base docker-push-setup
 
 docker-push-setup:
+	docker tag $(REPOSITORY)-setup:latest $(REPOSITORY)-setup:$(TAG)
 	docker push $(REPOSITORY)-setup:latest
 	docker push $(REPOSITORY)-setup:$(TAG)
 
 docker-push-base:
+	docker tag $(REPOSITORY):latest $(REPOSITORY):$(TAG)
 	docker push $(REPOSITORY):latest
 	docker push $(REPOSITORY):$(TAG)
 

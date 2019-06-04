@@ -3,3 +3,15 @@
     dest: "{{ genesis | default('genesis') }}/{{ inventory_hostname }}/"
     flat: yes
     src: "/home/{{ service }}/.{{ service }}/config/genesis.json"
+
+- name: "Get tendermint show-node-id output"
+  become: yes
+  become_user: "{{ service }}"
+  shell: "{{ service }} tendermint show-node-id"
+  register: chain_node_id
+
+- name: "Create {{ genesis | default('genesis') }}/*/node-id"
+  delegate_to: localhost
+  copy:
+    content: "{{ chain_node_id.stdout }}"
+    dest: "{{ genesis | default('genesis') }}/{{ inventory_hostname }}/node-id"

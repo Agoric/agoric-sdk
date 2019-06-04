@@ -74,15 +74,15 @@ func RunWithController(sendToNode Sender) {
 }
 
 func makeNewApp(sendToNode Sender) func(logger log.Logger, db dbm.DB, traceStore io.Writer) abci.Application {
-	fmt.Println("Constructing app!")
+	// fmt.Println("Constructing app!")
 	return func(logger log.Logger, db dbm.DB, traceStore io.Writer) abci.Application {
-		fmt.Println("Starting daemon!")
+		// fmt.Println("Starting daemon!")
 		abci := app.NewSwingSetApp(logger, db)
 		if sendToNode != nil {
 			msg := `{"type":"AG_COSMOS_INIT"}`
-			fmt.Println("Sending to Node", msg)
-			ret, err := sendToNode(true, msg)
-			fmt.Println("Received AG_COSMOS_INIT response", ret, err)
+			// fmt.Println("Sending to Node", msg)
+			_, err := sendToNode(true, msg)
+			// fmt.Println("Received AG_COSMOS_INIT response", ret, err)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "Cannot initialize Node", err)
 				os.Exit(1)

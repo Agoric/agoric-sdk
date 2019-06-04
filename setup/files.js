@@ -1,9 +1,11 @@
 import util from 'util';
 import {resolve, basename} from 'path';
-import {chmod as rawChmod, mkdir as rawMkdir, readFile as rawReadFile, stat as rawStat, writeFile as rawWriteFile} from 'fs';
+import {chmod as rawChmod, exists as rawExists, mkdir as rawMkdir,
+  readFile as rawReadFile, stat as rawStat, writeFile as rawWriteFile} from 'fs';
 import {Readable} from 'stream';
 
 export const chmod = util.promisify(rawChmod);
+export const exists = util.promisify(rawExists);
 export const mkdir = util.promisify(rawMkdir);
 export const writeFile = util.promisify(rawWriteFile);
 export const readFile = util.promisify(rawReadFile);
@@ -11,11 +13,7 @@ export const stat = util.promisify(rawStat);
 export {resolve, basename};
 
 export const needNotExists = async (filename) => {
-    let exists;
-    try {
-      exists = await stat(filename);
-    } catch (e) {}
-    if (exists) {
+    if (await exists(filename)) {
       throw `${filename} already exists`;
     }
   };

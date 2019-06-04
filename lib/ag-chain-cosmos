@@ -1,12 +1,12 @@
 #! /usr/bin/env node
-console.log('Starting Node');
+//console.log('Starting Node');
 
 require = require('esm')(module);
 
 const { launch } = require('./launch-chain');
 
 const agcc = require('bindings')('agcosmosdaemon.node');
-console.log('Have AG_COSMOS', agcc);
+//console.log('Have AG_COSMOS', agcc);
 
 const portHandlers = {};
 let lastPort = 0;
@@ -57,7 +57,7 @@ async function toSwingSet(action, replier) {
   
   // Initialize the kernel state by reading the storage.
   setStorage(makeStorage(sPort));
-  console.log('Sending SDK_READY');
+  // console.log('Sending SDK_READY');
   const ret = await handler({type: 'SDK_READY'});
   return await handler(action);
 }

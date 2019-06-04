@@ -43,15 +43,15 @@ func RunAG_COSMOS(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int
 		C.invokeSendFunc(toNode, nodePort, C.int(rPort), C.CString(str))
 		if !needReply {
 			// Return immediately
-			fmt.Fprintln(os.Stderr, "Don't wait")
+			// fmt.Fprintln(os.Stderr, "Don't wait")
 			return "<no-reply-requested>", nil
 		}
 
 		// Block the sending goroutine while we wait for the reply
-		fmt.Fprintln(os.Stderr, "Waiting for", rPort)
+		// fmt.Fprintln(os.Stderr, "Waiting for", rPort)
 		ret := <-replies[rPort]
 		delete(replies, rPort)
-		fmt.Fprintln(os.Stderr, "Woken, got", ret)
+		// fmt.Fprintln(os.Stderr, "Woken, got", ret)
 		return ret.str, ret.err
 	}
 
@@ -59,23 +59,23 @@ func RunAG_COSMOS(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int
 	for i, s := range cosmosArgs {
 		args[i] = C.GoString(s)
 	}
-	fmt.Fprintln(os.Stderr, "Starting Cosmos", args)
+	// fmt.Fprintln(os.Stderr, "Starting Cosmos", args)
 	os.Args = args
 	go func() {
 		// We run in the background, but exit when the job is over.
 		// swingset.SendToNode("hello from Initial Go!")
 		daemon.RunWithController(sendToNode)
-		fmt.Fprintln(os.Stderr, "Shutting down Cosmos")
+		// fmt.Fprintln(os.Stderr, "Shutting down Cosmos")
 		os.Exit(0)
 	}()
-	fmt.Fprintln(os.Stderr, "Done starting Cosmos")
+	// fmt.Fprintln(os.Stderr, "Done starting Cosmos")
 	return SwingSetPort
 }
 
 //export ReplyToGo
 func ReplyToGo(replyPort C.int, isError C.int, str C.Body) C.int {
 	goStr := C.GoString(str)
-	fmt.Fprintln(os.Stderr, "Reply to Go", goStr)
+	// fmt.Fprintln(os.Stderr, "Reply to Go", goStr)
 	returnCh := replies[int(replyPort)]
 	if returnCh == nil {
 		// Unexpected reply.
@@ -97,7 +97,7 @@ func ReplyToGo(replyPort C.int, isError C.int, str C.Body) C.int {
 //export SendToGo
 func SendToGo(port C.int, str C.Body) C.Body {
 	goStr := C.GoString(str)
-	fmt.Fprintln(os.Stderr, "Send to Go", goStr)
+	// fmt.Fprintln(os.Stderr, "Send to Go", goStr)
 	outstr, err := swingset.ReceiveFromNode(int(port), goStr)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Cannot receive from node", err)
