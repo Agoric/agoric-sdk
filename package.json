@@ -1,5 +1,5 @@
 {
-  "name": "ertp",
+  "name": "@agoric/ertp",
   "version": "0.0.1",
   "description": "Electronic Rights Transfer Protocol (ERTP). A smart contract framework for exchanging electronic rights",
   "main": "index.js",
