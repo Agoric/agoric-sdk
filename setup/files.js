@@ -6,6 +6,7 @@ import {chmod as rawChmod, exists as rawExists, mkdir as rawMkdir,
   write as rawWrite, close as rawClose, unlink as rawUnlink, rename as rawRename} from 'fs';
 import {Readable} from 'stream';
 import {open as tempOpen} from 'temp';
+import chalk from 'chalk';
 
 export const chmod = util.promisify(rawChmod);
 export const exists = util.promisify(rawExists);
@@ -27,7 +28,7 @@ export const needNotExists = async (filename) => {
   };
 
 export const createFile = async (path, contents) => {
-    console.error(`Creating ${path}`);
+    console.error(chalk.yellow(`Creating ${chalk.underline(path)}`));
     const info = await new Promise((resolve, reject) => {
       tempOpen({dir: dirname(path), prefix: `${basename(path)}.`}, function(err, info) {
         if (err) {

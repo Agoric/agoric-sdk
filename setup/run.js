@@ -1,13 +1,47 @@
-import util from 'util';
 import {exec as rawExec, spawn} from 'child_process';
 import { Writable } from 'stream';
-export const exec = util.promisify(rawExec);
 
 export const shellMetaRegexp = /(\s|[\[\]'"\\`$;*?{}])/;
 export const shellEscape = (arg) => (arg.match(shellMetaRegexp) ? `"${arg.replace(/(["\\])/g, '\\$1')}"` : arg);
 let SETUP_SILENT = false;
 export const setSilent = (val) => {
   SETUP_SILENT = val;
+};
+
+export const exec = (cmd) => {
+  const cp = rawExec(cmd);
+  const promise = new Promise((resolve, reject) => {
+    cp.addListener('error', reject);
+    cp.addListener('exit', (code) => {
+      resolve(code);
+    });
+  });
+  promise.process = cp;
+  return promise;
+};
+
+export const backtick = async (cmd) => {
+  const cp = exec(cmd);
+  let outbuf = '';
+  const stdout = new Writable({
+    write(data, encoding, callback) {
+      outbuf += String(data);
+      callback();
+    },
+  });
+  cp.process.stdout.pipe(stdout);
+  cp.process.stderr.pipe(process.stderr);
+
+  const code = await cp;
+  return {stdout: outbuf, code};
+};
+
+export const needBacktick = async (cmd) => {
+  const ret = await backtick(cmd);
+  if (ret.code !== 0) {
+    throw `Unexpected ${JSON.stringify(cmd)} exit code: ${ret.code}`;
+  }
+  return ret;
 };
 
 export const chdir = (path) => {

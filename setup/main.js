@@ -1,30 +1,26 @@
 import {ACCOUNT_JSON, CHAIN_HOME, DEFAULT_BOOT_TOKENS, playbook, sleep, SSH_TYPE} from './setup';
 import {exists, readFile, resolve, stat, streamFromString, createFile, unlink} from './files';
-import {chdir, doRun, exec, needDoRun, shellEscape, shellMetaRegexp, setSilent} from './run';
+import {chdir, doRun, needBacktick, needDoRun, shellEscape, shellMetaRegexp, setSilent} from './run';
 import doInit from './init';
 
 import {prompt} from 'inquirer';
 import {stringify as djsonStringify} from 'deterministic-json';
 import {createHash} from 'crypto';
 import chalk from 'chalk';
-import { Writable } from 'stream';
 
 const AFTER_TERRAFORMING = ['hosts', `ssh_known_hosts.stamp`, `genesis.json`, `ssh_known_hosts`, `peers.txt`, `terraform.json`];
 
 const provisionOutput = async () => {
   const jsonFile = `terraform.json`;
-  let buf;
+  let json;
   if (await exists(jsonFile)) {
-    buf = await readFile(jsonFile);
+    json = String(await readFile(jsonFile));
   } else {
-    const {stdout, stderr} = await exec(`terraform output -json`);
-    if (stderr) {
-      throw `${stderr}`;
-    }
-    await createFile(`terraform.json`, stdout);
-    buf = stdout;
+    const {stdout} = await needBacktick(`terraform output -json`);
+    json = stdout;
+    await createFile(`terraform.json`, json);
   }
-  return JSON.parse(String(buf));
+  return JSON.parse(json);
 };
 
 const main = async (progname, args) => {
@@ -116,11 +112,7 @@ show-config      display the client connection parameters
         const json = await readFile(ACCOUNT_JSON);
         const {user, password} = JSON.parse(String(json));
         await reMain(['new-account', user, password]);
-        const {stdout, stderr} = await exec(`ag-cosmos-helper keys show ${shellEscape(user)} -a`);
-        if (stderr) {
-          console.error(String(stderr));
-          return 1;
-        }
+        const {stdout} = await needBacktick(`ag-cosmos-helper keys show ${shellEscape(user)} -a`);
         bootAddress = String(stdout).trimRight();
         const {CONFIRM} = await prompt([{type: "confirm", name: "CONFIRM", default: false, message: "Have you written the phrase down in a safe place?"}]);
         if (!CONFIRM) {
@@ -132,13 +124,8 @@ show-config      display the client connection parameters
       const hostsFile = `hosts`;
       if (!await exists(hostsFile)) {
         await reMain(['provision', '-auto-approve']);
-        const {stdout, stderr} = await exec(`${shellEscape(progname)} show-hosts`);
-        if (stderr) {
-          console.error(String(stderr));
-          return 1;
-        }
-        const hosts = String(stdout);
-        await createFile(hostsFile, hosts);
+        const ret = await needBacktick(`${shellEscape(progname)} show-hosts`);
+        await createFile(hostsFile, ret.stdout);
       }
 
       const knownHostsStamp = `ssh_known_hosts.stamp`;
@@ -157,12 +144,8 @@ show-config      display the client connection parameters
       const genesisFile = `genesis.json`;
       if (!await exists(genesisFile)) {
         await reMain(['play', 'bootstrap', `-eBOOTSTRAP_ADDRESS=${bootAddress}`, `-eBOOTSTRAP_TOKENS=${bootTokens}`]);
-        const {stdout, stderr} = await exec(`${shellEscape(progname)} show-genesis genesis/*/genesis.json`);
-        if (stderr) {
-          console.error(String(stderr));
-          return 1;
-        }
-        await createFile(genesisFile, String(stdout));
+        const merged = await needBacktick(`${shellEscape(progname)} show-genesis genesis/*/genesis.json`);
+        await createFile(genesisFile, merged);
       }
 
       const installGenesisStamp = `genesis.stamp`;
@@ -176,12 +159,7 @@ show-config      display the client connection parameters
       if (await exists(peersFile)) {
         peers = await readFile(peersFile);
       } else {
-        const {stdout, stderr} = await exec(`${progname} show-peers`);
-        if (stderr) {
-          console.error(String(stderr));
-          return 1;
-        }
-        peers = String(stdout);
+        const peers = await needBacktick(`${progname} show-peers`);
         await createFile(peersFile, peers);
       }
 
@@ -204,10 +182,7 @@ show-config      display the client connection parameters
       console.error(chalk.black.bgGreenBright.bold('Your Agoric Cosmos chain is now running!'));
 
       {
-        const {stdout, stderr} = await exec(`${progname} show-config`);
-        if (stderr) {
-          console.error(String(stderr));
-        }
+        const {stdout} = await needBacktick(`${progname} show-config`, cp);
         process.stdout.write(chalk.yellow(String(stdout)));
       }
       initHint();
@@ -256,13 +231,7 @@ show-config      display the client connection parameters
       // Expand the hosts into nodes.
       const nodeMap = {};
       for (const host of hosts) {
-        const {stdout, stderr} = await exec(`ansible --list-hosts ${shellEscape(host)}`);
-        if (stderr) {
-          console.error(String(stderr));
-          return 1;
-        }
-
-
+        const {stdout} = await needBacktick(`ansible --list-hosts ${shellEscape(host)}`);
         for (const line of String(stdout).split('\n')) {
           const match = line.match(/^\s*(node\d+)/);
           if (match) {
