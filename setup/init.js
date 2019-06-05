@@ -140,6 +140,9 @@ const doInit = async (progname, args) => {
     const SSH_PRIVATE_KEY_FILE = resolve(adir, `id_${SSH_TYPE}`);
     const BACKEND_TF = process.env.AG_SETUP_COSMOS_BACKEND;
     if (!NETWORK_NAME) {
+        NETWORK_NAME = process.env.CHAIN_NAME;
+    }
+    if (!NETWORK_NAME) {
       NETWORK_NAME = basename(dir);
     }
 

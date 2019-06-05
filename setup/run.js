@@ -20,7 +20,7 @@ export const exec = (cmd) => {
   return promise;
 };
 
-export const backtick = async (cmd) => {
+export const getStdout = async (cmd) => {
   const cp = exec(cmd);
   let outbuf = '';
   const stdout = new Writable({
@@ -36,12 +36,17 @@ export const backtick = async (cmd) => {
   return {stdout: outbuf, code};
 };
 
+export const backtick = async (cmd) => {
+  const ret = await getStdout(cmd);
+  return ret.stdout;
+};
+
 export const needBacktick = async (cmd) => {
-  const ret = await backtick(cmd);
+  const ret = await getStdout(cmd);
   if (ret.code !== 0) {
     throw `Unexpected ${JSON.stringify(cmd)} exit code: ${ret.code}`;
   }
-  return ret;
+  return ret.stdout;
 };
 
 export const chdir = (path) => {

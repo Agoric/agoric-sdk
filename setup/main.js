@@ -16,8 +16,7 @@ const provisionOutput = async () => {
   if (await exists(jsonFile)) {
     json = String(await readFile(jsonFile));
   } else {
-    const {stdout} = await needBacktick(`terraform output -json`);
-    json = stdout;
+    json = await needBacktick(`terraform output -json`);
     await createFile(`terraform.json`, json);
   }
   return JSON.parse(json);
@@ -85,7 +84,7 @@ show-config      display the client connection parameters
     case 'bootstrap': {
       let [bootAddress] = args.slice(1);
       const bootTokens = DEFAULT_BOOT_TOKENS;
-      const reMain = (args) => {
+      const reMain = async (args) => {
         const displayArgs = [progname, ...args];
         if (displayArgs.length >= 4 && displayArgs[1] === 'new-account') {
           displayArgs[3] = '*redacted*';
@@ -94,13 +93,20 @@ show-config      display the client connection parameters
         return main(progname, args);
       };
 
+      const needReMain = async (args) => {
+        const code = await reMain(args);
+        if (code !== 0) {
+          throw `Unexpected exit: ${code}`;
+        }
+      };
+
       const dir = CHAIN_HOME;
       if (await exists(`${dir}/ag-chain-cosmos-network.txt`)) {
         // Change to directory.
         await chdir(dir);
       } else {
         // NOTE: init automatically changes directory.
-        await reMain(['init', dir, ...(process.env.CHAIN_NAME ? [process.env.CHAIN_NAME] : [])]);
+        await needReMain(['init', dir, ...(process.env.AG_SETUP_COSMOS_NAME ? [process.env.AG_SETUP_COSMOS_NAME] : [])]);
       }
 
       const addressFile = `account-address.txt`;
@@ -111,9 +117,8 @@ show-config      display the client connection parameters
       } else {
         const json = await readFile(ACCOUNT_JSON);
         const {user, password} = JSON.parse(String(json));
-        await reMain(['new-account', user, password]);
-        const {stdout} = await needBacktick(`ag-cosmos-helper keys show ${shellEscape(user)} -a`);
-        bootAddress = String(stdout).trimRight();
+        await needReMain(['new-account', user, password]);
+        bootAddress = (await needBacktick(`ag-cosmos-helper keys show ${shellEscape(user)} -a`)).trimRight();
         const {CONFIRM} = await prompt([{type: "confirm", name: "CONFIRM", default: false, message: "Have you written the phrase down in a safe place?"}]);
         if (!CONFIRM) {
           throw `You are not responsible enough to run an Agoric Cosmos Chain!`;
@@ -123,9 +128,9 @@ show-config      display the client connection parameters
   
       const hostsFile = `hosts`;
       if (!await exists(hostsFile)) {
-        await reMain(['provision', '-auto-approve']);
-        const ret = await needBacktick(`${shellEscape(progname)} show-hosts`);
-        await createFile(hostsFile, ret.stdout);
+        await needReMain(['provision', '-auto-approve']);
+        const hosts = await needBacktick(`${shellEscape(progname)} show-hosts`);
+        await createFile(hostsFile, hosts);
       }
 
       const knownHostsStamp = `ssh_known_hosts.stamp`;
@@ -143,14 +148,14 @@ show-config      display the client connection parameters
       }
       const genesisFile = `genesis.json`;
       if (!await exists(genesisFile)) {
-        await reMain(['play', 'bootstrap', `-eBOOTSTRAP_ADDRESS=${bootAddress}`, `-eBOOTSTRAP_TOKENS=${bootTokens}`]);
+        await needReMain(['play', 'bootstrap', `-eBOOTSTRAP_ADDRESS=${bootAddress}`, `-eBOOTSTRAP_TOKENS=${bootTokens}`]);
         const merged = await needBacktick(`${shellEscape(progname)} show-genesis genesis/*/genesis.json`);
         await createFile(genesisFile, merged);
       }
 
       const installGenesisStamp = `genesis.stamp`;
       if (!await exists(installGenesisStamp)) {
-        await reMain(['play', 'install-genesis']);
+        await needReMain(['play', 'install-genesis']);
         await createFile(installGenesisStamp, String(new Date));
       }
 
@@ -159,31 +164,28 @@ show-config      display the client connection parameters
       if (await exists(peersFile)) {
         peers = await readFile(peersFile);
       } else {
-        const peers = await needBacktick(`${progname} show-peers`);
+        peers = await needBacktick(`${progname} show-peers`);
         await createFile(peersFile, peers);
       }
 
       const installPeersStamp = `peers.stamp`;
       if (!await exists(installPeersStamp)) {
-        await reMain(['play', 'install', `-ePERSISTENT_PEERS=${peers}`]);
+        await needReMain(['play', 'install', `-ePERSISTENT_PEERS=${peers}`]);
         await createFile(installPeersStamp, String(new Date));
       }
 
       const startStamp = `start.stamp`;
-      if (await exists(startStamp)) {
-        // Need to restart.
-        await reMain(['rolling-restart']);
-      } else {
-        await reMain(['play', 'start']);
-        await reMain(['wait-for-any']);
+      if (!await exists(startStamp)) {
+        await needReMain(['play', 'start']);
         await createFile(startStamp, String(new Date));
       }
 
+      await needReMain(['wait-for-any']);
       console.error(chalk.black.bgGreenBright.bold('Your Agoric Cosmos chain is now running!'));
 
       {
-        const {stdout} = await needBacktick(`${progname} show-config`, cp);
-        process.stdout.write(chalk.yellow(String(stdout)));
+        const cfg = await needBacktick(`${progname} show-config`);
+        process.stdout.write(chalk.yellow(cfg));
       }
       initHint();
       break;
@@ -204,18 +206,23 @@ show-config      display the client connection parameters
     }
 
     case 'show-config': {
-      const reMain = (args) => main(progname, args);
+      const needReMain = async (args) => {
+        const code = await main(progname, args);
+        if (code !== 0) {
+          throw `Unexpected exit: ${code}`;
+        }
+      };
       setSilent(true);
       await chdir(CHAIN_HOME);
       await inited();
       process.stdout.write('CHAIN_NAME=');
-      await reMain(['show-chain-name']);
+      await needReMain(['show-chain-name']);
       process.stdout.write('\nGCI=');
-      await reMain(['show-gci']);
+      await needReMain(['show-gci']);
       process.stdout.write('\nRPCADDRS=');
-      await reMain(['show-rpcaddrs']);
+      await needReMain(['show-rpcaddrs']);
       process.stdout.write('\nBOOTSTRAP_ADDRESS=');
-      await reMain(['show-bootstrap-address']);
+      await needReMain(['show-bootstrap-address']);
       process.stdout.write('\n');
       break;
     }
@@ -231,8 +238,8 @@ show-config      display the client connection parameters
       // Expand the hosts into nodes.
       const nodeMap = {};
       for (const host of hosts) {
-        const {stdout} = await needBacktick(`ansible --list-hosts ${shellEscape(host)}`);
-        for (const line of String(stdout).split('\n')) {
+        const hostLines = await needBacktick(`ansible --list-hosts ${shellEscape(host)}`);
+        for (const line of hostLines.split('\n')) {
           const match = line.match(/^\s*(node\d+)/);
           if (match) {
             nodeMap[match[1]] = true;
@@ -265,7 +272,7 @@ show-config      display the client connection parameters
       while (true) {
         await sleep(6, `to check if ${chalk.underline(host)} has committed a block`);
         let buf = '';
-        await needDoRun(playbook('status', '-l', host), undefined, function(chunk) {
+        const code = await needDoRun(playbook('status', '-l', host), undefined, function(chunk) {
           process.stdout.write(chunk);
           buf += String(chunk);
         });
