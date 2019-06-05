@@ -8,6 +8,7 @@ To test on a local Docker instance, use:
 $ sudo make docker-install
 $ ag-chain-cosmos --help
 $ ag-cosmos-helper --help
+$ ag-setup-cosmos help
 ```
 
 You can find the images at [Docker Hub](https://cloud.docker.com/u/agoric/repository/docker/agoric/cosmic-swingset)
@@ -23,7 +24,7 @@ $ make
 $ npm install
 ```
 
-Make shell aliases for `ag-chain-cosmos` and `ag-cosmos-helper`.  Note that the `$PWD` variable must be the absolute path to the current cosmic-swingset directory:
+Make shell aliases as below.  Note that the `$PWD` variable must be the absolute path to the current cosmic-swingset directory:
 
 ```
 alias ag-chain-cosmos=$PWD/lib/ag-chain-cosmos
@@ -37,7 +38,41 @@ $ ag-chain-cosmos --help
 $ ag-cosmos-helper --help
 ```
 
-# Tutorial
+# Testnet Tutorial
+
+The `ag-setup-cosmos` tool is used to manage testnets.  Unless you are developing `ag-setup-cosmos` (whose sources are in the `setup` directory), you should use the Docker scripts in the first section and a working Docker installation since `ag-setup-cosmos` only works under Linux with Terraform and Ansible installed.
+
+```
+# Make a home directory for your testnet.
+export CHAIN_HOME=$PWD/chains/agoric
+
+# Fill out the node placement options, then go for coffee while it boots.
+ag-setup-cosmos bootstrap
+
+# Wait a long time while the nodes bootstrap and begin publishing blocks.
+# Ctrl-C when prompted, once you are done looking at status.
+
+# Get the peers for the testnet.
+ag-setup-cosmos show-peers; echo
+
+# Get the GCI hash for the testnet.
+ag-setup-cosmos show-gci; echo
+
+# If you need to run a shell command on all nodes:
+ag-setup-cosmos run all hostname
+
+# or just the first node:
+ag-setup-cosmos run node0 hostname
+```
+
+**Congratulations, you are running the Agoric testnet!**
+
+```
+# Wipe out the entire testnet deployment.  Will prompt you for confirmation.
+ag-setup-cosmos destroy
+```
+
+# Agoric Cosmos Chain Development Tutorial
 
 After you have either installed the Docker scripts or built from scratch and set your shell aliases, you can try the following to start your own testnet and interact with it.
 
@@ -84,8 +119,6 @@ ag-cosmos-helper tx swingset deliver alice --from jack '[[[0,"{\"target\":{\"typ
 # Look at Bob's outbound mailbox
 ag-cosmos-helper query swingset mailbox bob
 ```
-
-**Congratulations, you are running the Agoric testnet!**
 
 # Acknowledgements
 

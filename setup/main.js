@@ -2,7 +2,10 @@ import {ACCOUNT_JSON, CHAIN_HOME, playbook, sleep, SSH_TYPE} from './setup';
 import {exists, readFile, resolve, stat, streamFromString} from './files';
 import {doRun, exec, needDoRun, shellEscape, shellMetaRegexp} from './run';
 import doInit from './init';
+
 import {prompt} from 'inquirer';
+import {stringify as djsonStringify} from 'deterministic-json';
+import {createHash} from 'crypto';
 
 const main = async (progname, args) => {
   const initHint = () => {
@@ -177,6 +180,14 @@ show-peers  display the Tendermint peers for the nodes
         throw `No ${idPath} file found`;
       }
       process.stdout.write(peers);
+      break;
+    }
+
+    case 'show-gci': {
+      const genesis = await readFile('genesis.json');
+      const s = djsonStringify(JSON.parse(String(genesis)));
+      const gci = createHash('sha256').update(s).digest('hex');
+      process.stdout.write(gci);
       break;
     }
 
