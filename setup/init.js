@@ -5,10 +5,10 @@ import fetch from 'node-fetch';
 import {prompt} from 'inquirer';
 
 const calculateTotal = (placement) => (placement ? Object.values(placement) : []).reduce((prior, cur) => prior + cur, 0);
-const nodeCount = (count) => {
+const nodeCount = (count, force) => {
     if (count === 1) {
         return ` (${count} node)`;
-    } else if (count) {
+    } else if (count || force) {
         return ` (${count} nodes)`;
     }
     return '';
@@ -20,8 +20,10 @@ const genUserPassword = (NETWORK_NAME) => {
     return [`${NETWORK_NAME}${genRandomString(8)}`, genRandomString(14)];
 };
 
-const ALL_PROVIDERS = {
+const PROVIDERS = {
     digitalocean: {
+        name: 'DigitalOcean droplets https://cloud.digitalocean.com/',
+        value: 'digitalocean',
         defaultApiToken() {
             return process.env.DO_API_TOKEN;
         },
@@ -61,7 +63,7 @@ const askProvider = (PLACEMENTS) => {
     for (const placement of Object.values(PLACEMENTS)) {
         total += calculateTotal(placement);
     }
-    const count = nodeCount(total);
+    const count = nodeCount(total, true);
     const DONE = {name: `Done with allocation${count}`, value: ''};
 
     const questions = [
@@ -69,7 +71,7 @@ const askProvider = (PLACEMENTS) => {
             name: 'PROVIDER',
             type: 'list',
             message: `Where would you like to allocate nodes${count}?`,
-            choices: [DONE, ...Object.keys(ALL_PROVIDERS).sort().map(p => ({name: `${p}${nodeCount(calculateTotal(PLACEMENTS[p]))}`, value: p}))],
+            choices: [DONE, ...Object.values(PROVIDERS).sort().map(nv => ({name: `${nv.name}${nodeCount(calculateTotal(PLACEMENTS[nv.value]))}`, value: nv.value}))],
         },
     ];
     return prompt(questions);
@@ -80,7 +82,7 @@ const askApiKey = (PROVIDER, DEFAULT_KEY) => {
         {
             name: 'API_KEY',
             type: 'input',
-            message: `API Key for ${PROVIDER}?`,
+            message: `API Key for ${PROVIDERS[PROVIDER].name}?`,
             default: DEFAULT_KEY,
             filter: (key) => key.trim(),
         }
@@ -90,7 +92,7 @@ const askApiKey = (PROVIDER, DEFAULT_KEY) => {
 
 const askDatacenter = async (provider, dcs, placement) => {
     const questions = [];
-    const count = nodeCount(calculateTotal(placement));
+    const count = nodeCount(calculateTotal(placement), true);
     const DONE = {name: `Done with ${provider} allocation${count}`, value: ''};
     if (dcs) {
         questions.push({
@@ -164,12 +166,12 @@ const doInit = async (progname, args) => {
         if (!PROVIDER) {
             break;
         }
-        const {API_KEY} = await askApiKey(PROVIDER, API_KEYS[PROVIDER] || ALL_PROVIDERS[PROVIDER].defaultApiToken())
+        const {API_KEY} = await askApiKey(PROVIDER, API_KEYS[PROVIDER] || PROVIDERS[PROVIDER].defaultApiToken())
         if (!API_KEY) {
             continue;
         }
 
-        const provider = ALL_PROVIDERS[PROVIDER];
+        const provider = PROVIDERS[PROVIDER];
         let CLUSTER = PROVIDER;
         if (ALLOCATE_FRESH_CLUSTERS) {
             if (!lastCluster[PROVIDER]) {
@@ -287,7 +289,7 @@ ${Object.keys(API_KEYS).sort().map(p => `    ${p} = ${JSON.stringify(API_KEYS[p]
     const clusterPrefix = 'ag-chain-cosmos-';
     for (const CLUSTER of Object.keys(CLUSTER_PROVIDER).sort()) {
         const PROVIDER = CLUSTER_PROVIDER[CLUSTER];
-        const provider = ALL_PROVIDERS[PROVIDER];
+        const provider = PROVIDERS[PROVIDER];
         await provider.createClusterFiles(PROVIDER, CLUSTER, clusterPrefix);
     }
 
