@@ -1,6 +1,6 @@
 import {ACCOUNT_JSON, ALLOCATE_FRESH_CLUSTERS, CHAIN_HOME, PLAYBOOK_WRAPPER, SETUP_DIR, SSH_TYPE} from './setup';
 import {basename, chmod, createFile, mkdir, needNotExists, resolve} from './files';
-import {needDoRun, shellEscape} from './run';
+import {chdir, needDoRun, shellEscape} from './run';
 import fetch from 'node-fetch';
 import {prompt} from 'inquirer';
 
@@ -36,10 +36,9 @@ const PROVIDERS = {
                 return;
             }
             return json.regions.map(r => {
-                const code = r.slug.toUpperCase();
                 return {
-                    name: `${code} - ${r.name}`,
-                    value: code,
+                    name: `${r.slug} - ${r.name}`,
+                    value: r.slug,
                 };
             });
         },
@@ -135,7 +134,7 @@ const doInit = async (progname, args) => {
     if (!dir) {
       throw `Need: [dir] [[network name]]`;
     }
-    await needNotExists(`${dir}/ansible.cfg`);
+    await needNotExists(`${dir}/ag-chain-cosmos-network.txt`);
 
     const adir = resolve(process.cwd(), dir);
     const SSH_PRIVATE_KEY_FILE = resolve(adir, `id_${SSH_TYPE}`);
@@ -155,7 +154,7 @@ const doInit = async (progname, args) => {
     try {
       await mkdir(dir);
     } catch (e) {}
-    process.chdir(dir);
+    await chdir(dir);
 
     // Create new credentials.
     const [user, password] = genUserPassword(NETWORK_NAME);
@@ -322,7 +321,6 @@ exec ansible-playbook -f10 \\
 `);
     await chmod(PLAYBOOK_WRAPPER, '0755');
 
-    // Finish by writing ansible.cfg.
     await createFile(`ansible.cfg`, `\
 [defaults]
 inventory = ./hosts
@@ -330,6 +328,8 @@ inventory = ./hosts
 [ssh_connection]
 ssh_args = -oForwardAgent=yes -oUserKnownHostsFile=ssh_known_hosts -oControlMaster=auto -oControlPersist=30m
 `);
+
+    await createFile(`ag-chain-cosmos-network.txt`, NETWORK_NAME);
 };
 
 export default doInit;
