@@ -56,14 +56,19 @@ module "${CLUSTER}" {
     }
 };
 
-const DONE = {name: 'Done!', value: ''};
-
 const askProvider = (PLACEMENTS) => {
+    let total = 0;
+    for (const placement of Object.values(PLACEMENTS)) {
+        total += calculateTotal(placement);
+    }
+    const count = nodeCount(total);
+    const DONE = {name: `Done with allocation${count}`, value: ''};
+
     const questions = [
         {
             name: 'PROVIDER',
             type: 'list',
-            message: `Where would you like to allocate nodes?`,
+            message: `Where would you like to allocate nodes${count}?`,
             choices: [DONE, ...Object.keys(ALL_PROVIDERS).sort().map(p => ({name: `${p}${nodeCount(calculateTotal(PLACEMENTS[p]))}`, value: p}))],
         },
     ];
@@ -85,18 +90,20 @@ const askApiKey = (PROVIDER, DEFAULT_KEY) => {
 
 const askDatacenter = async (provider, dcs, placement) => {
     const questions = [];
+    const count = nodeCount(calculateTotal(placement));
+    const DONE = {name: `Done with ${provider} allocation${count}`, value: ''};
     if (dcs) {
         questions.push({
             name: 'DATACENTER',
             type: 'list',
-            message: `Which ${provider} datacenter?`,
+            message: `Which ${provider} datacenter${count}?`,
             choices: [DONE, ...dcs],
         });
     } else {
         questions.push({
             name: 'DATACENTER',
             type: 'input',
-            message: `Which ${provider} datacenter?`,
+            message: `Which ${provider} datacenter${count}?`,
             filter: (dc) => dc.trim(),
         })
     }
@@ -211,6 +218,7 @@ const doInit = async (progname, args) => {
         }
 
         const offset = instance;
+        DATACENTERS[CLUSTER] = [];
         for (const dc of Object.keys(placement).sort()) {
             const nodes = [];
             for (let i = 0; i < placement[dc]; i ++) {
@@ -220,9 +228,6 @@ const doInit = async (progname, args) => {
             if (nodes.length == 0) {
                 continue;
             }
-            if (!DATACENTERS[CLUSTER]) {
-                DATACENTERS[CLUSTER] = [];
-            }
             DATACENTERS[CLUSTER].push(...nodes);
         }
 
@@ -231,6 +236,7 @@ const doInit = async (progname, args) => {
             PLACEMENTS[CLUSTER] = placement;
         } else {
             delete PLACEMENTS[CLUSTER];
+            delete DATACENTERS[CLUSTER];
         }
 
         if (instance === offset) {
