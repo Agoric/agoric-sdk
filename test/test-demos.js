@@ -229,3 +229,73 @@ test('run contractHost Demo --covered-call-sale without SES', async t => {
   t.deepEquals(dump.log, contractCoveredCallSaleGolden);
   t.end();
 });
+
+const corkboardAssaysGolden = [
+  '=> setup called',
+  'starting testCorkboardAssay',
+  'starting testCorkboardAssayQuantities',
+];
+
+test('run handoff Demo --corkboard assays', async t => {
+  const dump = await main(false, 'demo/handoff', ['corkboardAssay']);
+  t.deepEquals(dump.log, corkboardAssaysGolden);
+  t.end();
+});
+
+test('run handoff Demo --corkboard assays', async t => {
+  const dump = await main(true, 'demo/handoff', ['corkboardAssay']);
+  t.deepEquals(dump.log, corkboardAssaysGolden);
+  t.end();
+});
+
+const corkboardContentsGolden = [
+  '=> setup called',
+  'starting testCorkboardStorage',
+];
+
+test('run handoff Demo --corkboard contents', async t => {
+  const dump = await main(false, 'demo/handoff', ['corkboard']);
+  t.deepEquals(dump.log, corkboardContentsGolden);
+  t.end();
+});
+
+test('run handoff Demo --corkboard contents', async t => {
+  const dump = await main(true, 'demo/handoff', ['corkboard']);
+  t.deepEquals(dump.log, corkboardContentsGolden);
+  t.end();
+});
+
+const handoffTestGolden = [
+  '=> setup called',
+  'starting testHandoffStorage',
+  'expected validate to throw',
+];
+
+test('run handoff Demo --handoff service', async t => {
+  const dump = await main(false, 'demo/handoff', ['handoff']);
+  t.deepEquals(dump.log, handoffTestGolden);
+  t.end();
+});
+
+test('run handoff Demo --handoff service', async t => {
+  const dump = await main(true, 'demo/handoff', ['handoff']);
+  t.deepEquals(dump.log, handoffTestGolden);
+  t.end();
+});
+
+const twoPartyHandoffGolden = [
+  '=> setup called',
+  'starting testHandoffStorage',
+];
+
+test('run handoff Demo --Two Party handoff', async t => {
+  const dump = await main(false, 'demo/handoff', ['twoVatHandoff']);
+  t.deepEquals(dump.log, twoPartyHandoffGolden);
+  t.end();
+});
+
+test('run handoff Demo --Two Party handoff', async t => {
+  const dump = await main(true, 'demo/handoff', ['twoVatHandoff']);
+  t.deepEquals(dump.log, twoPartyHandoffGolden);
+  t.end();
+});
