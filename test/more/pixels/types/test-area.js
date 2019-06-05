@@ -5,7 +5,7 @@ import {
   isEqual,
   makeArea,
   includes,
-} from '../../../more/pixels/types/area';
+} from '../../../../more/pixels/types/area';
 
 test('area insistArea', t => {
   t.doesNotThrow(() =>

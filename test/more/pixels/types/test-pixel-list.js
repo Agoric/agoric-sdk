@@ -9,7 +9,7 @@ import {
   withPixelList,
   withoutPixelList,
   makeWholePixelList,
-} from '../../../more/pixels/types/pixelList';
+} from '../../../../more/pixels/types/pixelList';
 
 test('pixelList insistPixelList', t => {
   const startPixel = { x: 0, y: 0 };
