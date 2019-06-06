@@ -1,5 +1,5 @@
 {
-  "name": "marshal",
+  "name": "@agoric/marshal",
   "version": "0.0.1",
   "description": "marshal",
   "main": "marshal.js",
