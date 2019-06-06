@@ -286,6 +286,7 @@ test('run handoff Demo --handoff service', async t => {
 const twoPartyHandoffGolden = [
   '=> setup called',
   'starting testHandoffStorage',
+  'expecting coordination on 42.',
 ];
 
 test('run handoff Demo --Two Party handoff', async t => {

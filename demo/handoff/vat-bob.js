@@ -7,10 +7,11 @@ function makeBobMaker(E, _host, _log) {
     make(handoffServiceP) {
       const bob = harden({
         findSomething(key) {
-          const boardP = E(handoffServiceP).grab(key);
           return E(handoffServiceP)
-            .vouch(boardP)
-            .then(E(boardP).lookup(key));
+            .grab(key)
+            .then(board => {
+              return E(E(handoffServiceP).validate(board)).lookup(key);
+            });
         },
       });
       return bob;

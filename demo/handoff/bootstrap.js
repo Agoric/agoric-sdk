@@ -112,7 +112,9 @@ function build(E, log) {
         E(bobP)
           .findSomething('schelling')
           .then(actual => {
-            if (actual !== 42) {
+            if (actual === 42) {
+              log(`expecting coordination on 42.`);
+            } else {
               log(`expecting coordination on 42, got ${actual}`);
             }
           });
