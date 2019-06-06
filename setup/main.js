@@ -3,9 +3,9 @@ import {exists, readFile, resolve, stat, streamFromString, createFile, unlink} f
 import {chdir, doRun, needBacktick, needDoRun, shellEscape, shellMetaRegexp, setSilent} from './run';
 import doInit from './init';
 
-import {prompt} from 'inquirer';
-import {stringify as djsonStringify} from 'deterministic-json';
-import {createHash} from 'crypto';
+import inquirer from 'inquirer';
+import djson from 'deterministic-json';
+import crypto from 'crypto';
 import chalk from 'chalk';
 
 const AFTER_TERRAFORMING = ['hosts', `ssh_known_hosts.stamp`, `genesis.json`, `ssh_known_hosts`, `peers.txt`, `terraform.json`];
@@ -119,7 +119,7 @@ show-config      display the client connection parameters
         const {user, password} = JSON.parse(String(json));
         await needReMain(['new-account', user, password]);
         bootAddress = (await needBacktick(`ag-cosmos-helper keys show ${shellEscape(user)} -a`)).trimRight();
-        const {CONFIRM} = await prompt([{type: "confirm", name: "CONFIRM", default: false, message: "Have you written the phrase down in a safe place?"}]);
+        const {CONFIRM} = await inquirer.prompt([{type: "confirm", name: "CONFIRM", default: false, message: "Have you written the phrase down in a safe place?"}]);
         if (!CONFIRM) {
           throw `You are not responsible enough to run an Agoric Cosmos Chain!`;
         }
@@ -206,24 +206,19 @@ show-config      display the client connection parameters
     }
 
     case 'show-config': {
-      const needReMain = async (args) => {
-        const code = await main(progname, args);
-        if (code !== 0) {
-          throw `Unexpected exit: ${code}`;
-        }
-      };
       setSilent(true);
       await chdir(CHAIN_HOME);
       await inited();
-      process.stdout.write('CHAIN_NAME=');
-      await needReMain(['show-chain-name']);
-      process.stdout.write('\nGCI=');
-      await needReMain(['show-gci']);
-      process.stdout.write('\nRPCADDRS=');
-      await needReMain(['show-rpcaddrs']);
-      process.stdout.write('\nBOOTSTRAP_ADDRESS=');
-      await needReMain(['show-bootstrap-address']);
-      process.stdout.write('\n');
+      const [chainName, gci, rpcAddrs, bootstrapAddress] = await Promise.all(
+        ['show-chain-name', 'show-gci', 'show-rpcaddrs', 'show-bootstrap-address']
+          .map((cmd) => needBacktick([progname, cmd].map(shellEscape).join(' '))));
+      const obj = {
+        chainName,
+        gci,
+        rpcAddrs: rpcAddrs.split(','),
+        bootstrapAddress,
+      };
+      process.stdout.write(`${JSON.stringify(obj, undefined, 2)}\n`);
       break;
     }
 
@@ -364,8 +359,8 @@ show-config      display the client connection parameters
 
     case 'show-gci': {
       const genesis = await readFile('genesis.json');
-      const s = djsonStringify(JSON.parse(String(genesis)));
-      const gci = createHash('sha256').update(s).digest('hex');
+      const s = djson.stringify(JSON.parse(String(genesis)));
+      const gci = crypto.createHash('sha256').update(s).digest('hex');
       process.stdout.write(gci);
       break;
     }
@@ -405,7 +400,7 @@ show-config      display the client connection parameters
         // Terraform will prompt.
         await needDoRun(['terraform', 'destroy']);
       } else {
-        const {CONFIRM} = await prompt([{type: 'input', name: 'CONFIRM', default: 'no', message: `Type "yes" if you are sure you want to reset ${dir} state:`}]);
+        const {CONFIRM} = await inquirer.prompt([{type: 'input', name: 'CONFIRM', default: 'no', message: `Type "yes" if you are sure you want to reset ${dir} state:`}]);
         if (CONFIRM !== 'yes') {
           throw `Aborting due to user request`;
         }
