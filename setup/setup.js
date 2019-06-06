@@ -2,7 +2,6 @@ import {resolve} from './files';
 import chalk from 'chalk';
 
 export const ACCOUNT_JSON = `account.json`;
-export const ALLOCATE_FRESH_CLUSTERS = false;
 export const DEFAULT_BOOT_TOKENS = `1000000agmedallion`;
 export const PLAYBOOK_WRAPPER = `./ansible-playbook.sh`;
 export const SETUP_DIR = resolve(__dirname, '../setup');
