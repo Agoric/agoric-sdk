@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import { QCLASS, mustPassByPresence, makeMarshal } from './marshal';
+import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
 
 // 'makeDeviceSlots' is a subset of makeLiveSlots, for device code
 

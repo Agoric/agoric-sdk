@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import { QCLASS, mustPassByPresence, makeMarshal } from './marshal';
+import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
 import makePromise from './makePromise';
 
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track

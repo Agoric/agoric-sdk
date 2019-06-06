@@ -1,9 +1,10 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
+import { QCLASS, makeMarshal } from '@agoric/marshal';
+
 import { makeLiveSlots } from './liveSlots';
 import { makeDeviceSlots } from './deviceSlots';
 import { makeCommsSlots } from './commsSlots/index';
-import { QCLASS, makeMarshal } from './marshal';
 import makePromise from './makePromise';
 import makeVatManager from './vatManager';
 import makeDeviceManager from './deviceManager';

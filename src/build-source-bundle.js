@@ -1,10 +1,12 @@
 import { rollup } from 'rollup';
+import resolve from 'rollup-plugin-node-resolve';
 
 export default async function bundleSource(startFilename) {
   const bundle = await rollup({
     input: require.resolve(startFilename),
     treeshake: false,
     external: ['@agoric/evaluate', '@agoric/nat', '@agoric/harden'],
+    plugins: [resolve()],
   });
   const { output } = await bundle.generate({
     format: 'cjs',

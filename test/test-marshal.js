@@ -2,7 +2,8 @@
 
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
-import { makeMarshal, mustPassByPresence } from '../src/kernel/marshal';
+import { makeMarshal, mustPassByPresence } from '@agoric/marshal';
+
 import { makeMarshaller } from '../src/kernel/liveSlots';
 import makePromise from '../src/kernel/makePromise';
 
