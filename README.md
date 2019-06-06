@@ -13,6 +13,34 @@ $ ag-setup-cosmos help
 
 You can find the images at [Docker Hub](https://cloud.docker.com/u/agoric/repository/docker/agoric/cosmic-swingset)
 
+# Testnet Tutorial
+
+The `ag-setup-cosmos` tool is used to manage testnets.  Unless you are developing `ag-setup-cosmos` (whose sources are in the `setup` directory), you should use the Docker scripts in the first section and a working Docker installation since `ag-setup-cosmos` only works under Linux with Terraform 0.11 and Ansible installed.
+
+```
+# Fill out the node placement options, then go for coffee while it boots.
+ag-setup-cosmos bootstrap [optional bootstrap wallet address]
+
+# Wait a long time while the nodes bootstrap and begin publishing blocks.
+# If there is an error, bootstrap is idempotent (i.e. you can rerun
+# ag-setup-cosmos bootstrap
+# and it will pick up where it left off).
+
+# If you need to run a shell command on all nodes:
+ag-setup-cosmos run all hostname
+
+# or just the first node:
+ag-setup-cosmos run node0 hostname
+```
+
+**Congratulations, you are running the Agoric testnet!**
+
+```
+# Unprovision the testnet deployment, but do not require reinitialization.
+# Will prompt you for confirmation.
+ag-setup-cosmos destroy
+```
+
 ## Build from source
 
 You can browse the current source tree at [Github](https://github.com/Agoric/cosmic-swingset)
@@ -36,40 +64,6 @@ Test that the aliases work with:
 ```
 $ ag-chain-cosmos --help
 $ ag-cosmos-helper --help
-```
-
-# Testnet Tutorial
-
-The `ag-setup-cosmos` tool is used to manage testnets.  Unless you are developing `ag-setup-cosmos` (whose sources are in the `setup` directory), you should use the Docker scripts in the first section and a working Docker installation since `ag-setup-cosmos` only works under Linux with Terraform and Ansible installed.
-
-```
-# Make a home directory for your testnet.
-export CHAIN_HOME=$PWD/chains/agoric
-
-# Fill out the node placement options, then go for coffee while it boots.
-ag-setup-cosmos bootstrap
-
-# Wait a long time while the nodes bootstrap and begin publishing blocks.
-# Ctrl-C when prompted, once you are done looking at status.
-
-# Get the peers for the testnet.
-ag-setup-cosmos show-peers; echo
-
-# Get the GCI hash for the testnet.
-ag-setup-cosmos show-gci; echo
-
-# If you need to run a shell command on all nodes:
-ag-setup-cosmos run all hostname
-
-# or just the first node:
-ag-setup-cosmos run node0 hostname
-```
-
-**Congratulations, you are running the Agoric testnet!**
-
-```
-# Wipe out the entire testnet deployment.  Will prompt you for confirmation.
-ag-setup-cosmos destroy
 ```
 
 # Agoric Cosmos Chain Development Tutorial
