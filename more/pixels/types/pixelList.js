@@ -1,6 +1,6 @@
-import { insistPixel, isEqual } from './pixel';
-import { passStyleOf } from '../../../util/marshal';
+import { passStyleOf } from '@agoric/marshal';
 
+import { insistPixel, isEqual } from './pixel';
 import { insist } from '../../../util/insist';
 
 // pixelList is the most naive bundling of pixels

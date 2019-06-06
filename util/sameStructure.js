@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
+import { passStyleOf } from '@agoric/marshal';
 
 import { insist } from './insist';
-import { passStyleOf } from './marshal';
 
 // Shim of Object.fromEntries from
 // https://github.com/tc39/proposal-object-from-entries/blob/master/polyfill.js
