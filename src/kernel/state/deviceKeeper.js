@@ -75,31 +75,8 @@ function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
     };
   }
 
-  function loadManagerState(deviceData) {
-    const outbound = kvstore.get('imports').get('outbound');
-    const inbound = kvstore.get('imports').get('inbound');
-
-    if (outbound.size() || inbound.size()) {
-      throw new Error(`device[$deviceName] is not empty, cannot loadState`);
-    }
-
-    kvstore.set('nextImportID', deviceData.nextImportID);
-    deviceData.imports.outbound.forEach(kv => outbound.set(kv[0], kv[1]));
-    deviceData.imports.inbound.forEach(kv => inbound.set(kv[0], kv[1]));
-  }
-
   function getDeviceState() {
     return kvstore.get('deviceState');
-  }
-
-  function loadDeviceState(newState) {
-    // state must be stringifiable
-    kvstore.set('deviceState', newState);
-  }
-
-  function loadState(savedState) {
-    loadManagerState(savedState.managerState);
-    loadDeviceState(savedState.deviceState);
   }
 
   function getCurrentState() {
@@ -114,10 +91,7 @@ function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
     mapDeviceSlotToKernelSlot,
     mapKernelSlotToDeviceSlot,
     getManagerState,
-    loadManagerState,
     getDeviceState,
-    loadDeviceState,
-    loadState,
     getCurrentState,
   });
 }

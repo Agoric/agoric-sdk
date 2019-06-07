@@ -13,23 +13,38 @@ import makeVatKeeper from './state/vatKeeper';
 import makeDeviceKeeper from './state/deviceKeeper';
 import makeExternalKVStore from './externalKVStore';
 
-export default function buildKernel(kernelEndowments, external) {
+function abbreviateReviver(_, arg) {
+  if (typeof arg === 'string' && arg.length >= 40) {
+    // truncate long strings
+    return `${arg.slice(0, 15)}...${arg.slice(arg.length - 15)}`;
+  }
+  return arg;
+}
+
+export default function buildKernel(kernelEndowments, externalStorage) {
   const { setImmediate } = kernelEndowments;
 
-  const kernelKVStore = makeExternalKVStore('kernel', external);
+  const kernelKVStore = makeExternalKVStore('kernel', externalStorage);
 
   const kernelKeeper = makeKernelKeeper(
     kernelKVStore,
     'kernel',
     makeExternalKVStore,
-    external,
+    externalStorage,
   );
 
-  kernelKeeper.createStartingKernelState();
+  let started = false;
+  // this holds externally-added vats, which are present at startup, but not
+  // vats that are added later from within the kernel
+  const genesisVats = new Map();
+  // we name this 'genesisDevices' for parallelism, but actually all devices
+  // must be present at genesis
+  const genesisDevices = new Map();
 
   const ephemeral = {
     vats: new Map(),
     devices: new Map(),
+    log: [],
   };
 
   const enableKDebug = false;
@@ -231,98 +246,6 @@ export default function buildKernel(kernelEndowments, external) {
     kernelKeeper,
   };
 
-  function addVat(vatID, setup) {
-    if (kernelKeeper.hasVat(vatID)) {
-      throw new Error(`already have a vat named '${vatID}'`);
-    }
-    function abbreviateReviver(_, arg) {
-      if (typeof arg === 'string' && arg.length >= 40) {
-        // truncate long strings
-        return `${arg.slice(0, 15)}...${arg.slice(arg.length - 15)}`;
-      }
-      return arg;
-    }
-    const helpers = harden({
-      vatID,
-      makeLiveSlots,
-      makeCommsSlots,
-      log(...args) {
-        const rendered = args.map(arg =>
-          typeof arg === 'string'
-            ? arg
-            : JSON.stringify(arg, abbreviateReviver),
-        );
-        kernelKeeper.log(rendered.join(''));
-      },
-    });
-
-    const vatPath = `kernel.vats.${vatID}`;
-    const vatKVStore = makeExternalKVStore(vatPath, external);
-    const vatKeeper = makeVatKeeper(
-      vatKVStore,
-      vatPath,
-      makeExternalKVStore,
-      external,
-    );
-
-    vatKeeper.createStartingVatState();
-
-    // the vatManager invokes setup() to build the userspace image
-    const manager = makeVatManager(
-      vatID,
-      syscallManager,
-      setup,
-      helpers,
-      vatKVStore,
-    );
-    ephemeral.vats.set(
-      vatID,
-      harden({
-        id: vatID,
-        manager,
-      }),
-    );
-  }
-
-  function addDevice(name, setup, endowments) {
-    if (kernelKeeper.hasDevice(name)) {
-      throw new Error(`already have a device named '${name}'`);
-    }
-    const helpers = harden({
-      name,
-      makeDeviceSlots,
-      log(str) {
-        kernelKeeper.log(`${str}`);
-      },
-    });
-
-    const devicePath = `kernel.devices.${name}`;
-    const deviceKVStore = makeExternalKVStore(devicePath, external);
-    const deviceKeeper = makeDeviceKeeper(
-      deviceKVStore,
-      devicePath,
-      makeExternalKVStore,
-      external,
-    );
-
-    deviceKeeper.createStartingDeviceState();
-
-    const manager = makeDeviceManager(
-      name,
-      syscallManager,
-      setup,
-      helpers,
-      endowments,
-      kernelKeeper,
-      deviceKVStore,
-    );
-    // the vat record is not hardened: it holds mutable next-ID values
-    ephemeral.devices.set(name, {
-      id: name,
-      manager,
-    });
-  }
-
   function addImport(forVatID, what) {
     const vat = ephemeral.vats.get(forVatID);
     return vat.manager.mapKernelSlotToVatSlot(what);
@@ -391,6 +314,8 @@ export default function buildKernel(kernelEndowments, external) {
   }
 
   function callBootstrap(vatID, argvString) {
+    // we invoke obj[0].bootstrap with an object that contains 'vats' and
+    // 'argv'.
     const argv = JSON.parse(`${argvString}`);
     // each key of 'vats' will be serialized as a reference to its obj0
     const vrefs = new Map();
@@ -452,8 +377,134 @@ export default function buildKernel(kernelEndowments, external) {
     queueToExport(vatID, 0, 'bootstrap', s.argsString, s.slots);
   }
 
+  async function start(bootstrapVatID, argvString) {
+    if (started) {
+      throw new Error('kernel.start already called');
+    }
+    started = true;
+    const wasInitialized = kernelKeeper.getInitialized();
+    console.log(`wasInitialized = ${wasInitialized}`);
+
+    // if the state is not yet initialized, populate the starting state
+    if (!wasInitialized) {
+      kernelKeeper.createStartingKernelState();
+    }
+
+    // instantiate all vats and devices
+    for (const vatID of genesisVats.keys()) {
+      const setup = genesisVats.get(vatID);
+      const helpers = harden({
+        vatID,
+        makeLiveSlots,
+        makeCommsSlots,
+        log(...args) {
+          const rendered = args.map(arg =>
+                                    typeof arg === 'string'
+                                    ? arg
+                                    : JSON.stringify(arg, abbreviateReviver),
+                                   );
+          ephemeral.log.push(rendered.join(''));
+        },
+      });
+
+      const vatPath = `kernel.vats.${vatID}`;
+      const vatKVStore = makeExternalKVStore(vatPath, externalStorage);
+      const vatKeeper = makeVatKeeper(
+        vatKVStore,
+        vatPath,
+        makeExternalKVStore,
+        externalStorage,
+      );
+
+      if (!wasInitialized) {
+        if (kernelKeeper.hasVat(vatID)) {
+          throw new Error(`already have a vat named '${vatID}'`);
+        }
+        vatKeeper.createStartingVatState();
+        kernelKeeper.addVat(vatID, vatKVStore);
+      }
+
+      // the vatManager invokes setup() to build the userspace image
+      const manager = makeVatManager(
+        vatID,
+        syscallManager,
+        setup,
+        helpers,
+        vatKVStore,
+      );
+      ephemeral.vats.set(
+        vatID,
+        harden({
+          id: vatID,
+          manager,
+        }),
+      );
+    }
+
+    for (const name of genesisDevices.keys()) {
+      const { setup, endowments } = genesisDevices.get(name);
+      const helpers = harden({
+        name,
+        makeDeviceSlots,
+        log(str) {
+          ephemeral.log.push(`${str}`);
+        },
+      });
+
+      const devicePath = `kernel.devices.${name}`;
+      const deviceKVStore = makeExternalKVStore(devicePath, externalStorage);
+      const deviceKeeper = makeDeviceKeeper(
+        deviceKVStore,
+        devicePath,
+        makeExternalKVStore,
+        externalStorage,
+      );
+
+      if (!wasInitialized) {
+        if (kernelKeeper.hasDevice(name)) {
+          throw new Error(`already have a device named '${name}'`);
+        }
+        deviceKeeper.createStartingDeviceState();
+        // per-device translation tables
+        kernelKeeper.addDevice(name, deviceKVStore);
+      }
+
+      const manager = makeDeviceManager(
+        name,
+        syscallManager,
+        setup,
+        helpers,
+        endowments,
+        kernelKeeper,
+        deviceKVStore,
+      );
+      // the vat record is not hardened: it holds mutable next-ID values
+      ephemeral.devices.set(name, {
+        id: name,
+        manager,
+      });
+    }
+
+    // and enqueue the bootstrap() call
+    if (!wasInitialized && ephemeral.vats.has(bootstrapVatID)) {
+      console.log(`=> queueing bootstrap()`);
+      callBootstrap(bootstrapVatID, argvString);
+    }
+
+    // if it *was* initialized, replay the transcripts
+    if (wasInitialized) {
+      for (const vat of ephemeral.vats.values()) {
+        // eslint-disable-next-line no-await-in-loop
+        await vat.manager.replayTranscript();
+      }
+    }
+
+    kernelKeeper.setInitialized();
+  }
+
   const kernel = harden({
-    addVat(vatID, setup) {
+    addGenesisVat(vatID0, setup) {
+      const vatID = `${vatID0}`;
       harden(setup);
       // 'setup' must be an in-realm function. This test guards against
       // accidents, but not against malice. MarkM thinks there is no reliable
@@ -461,49 +512,48 @@ export default function buildKernel(kernelEndowments, external) {
       if (!(setup instanceof Function)) {
         throw Error('setup is not an in-realm function');
       }
-      addVat(`${vatID}`, setup);
+      if (started) {
+        throw new Error(`addGenesisVat() cannot be called after kernel.start`);
+      }
+      if (genesisVats.has(vatID)) {
+        throw new Error(`vatID ${vatID} already added`);
+      }
+      genesisVats.set(vatID, setup);
     },
 
-    addDevice(deviceName, setup, endowments) {
+    addGenesisDevice(deviceName, setup, endowments) {
       console.log(`kernel.addDevice(${deviceName})`);
       harden(setup);
       if (!(setup instanceof Function)) {
         throw Error('setup is not an in-realm function');
       }
-      addDevice(`${deviceName}`, setup, endowments);
+      if (started) {
+        throw new Error(`addDevice() cannot be called after kernel.start`);
+      }
+      if (genesisDevices.has(deviceName)) {
+        throw new Error(`deviceName ${deviceName} already added`);
+      }
+      genesisDevices.set(deviceName, { setup, endowments });
     },
-
-    callBootstrap,
 
     addImport,
 
     log(str) {
-      kernelKeeper.log(`${str}`);
+      ephemeral.log.push(`${str}`);
     },
 
     dump() {
-      return kernelKeeper.dump();
+      const stateDump = kernelKeeper.dump();
+      // note: dump().log is not deterministic, since log() does not go
+      // through the syscall interface (and we replay transcripts one vat at
+      // a time, so any log() calls that were interleaved during their
+      // original execution will be sorted by vat in the replace). Logs are
+      // not kept in the kvstore, only in ephemeral state.
+      stateDump.log = ephemeral.log;
+      return stateDump;
     },
 
-    getState() {
-      return kernelKeeper.getState();
-    },
-
-    async loadState(outerRealmState) {
-      const newState = JSON.parse(JSON.stringify(outerRealmState));
-
-      // copy in the data passively
-      kernelKeeper.loadState(newState);
-
-      // evaluate the transcript
-
-      for (const vatID of Object.getOwnPropertyNames(newState.vats)) {
-        const vatData = newState.vats[vatID];
-        const vat = ephemeral.vats.get(vatID);
-        // eslint-disable-next-line no-await-in-loop
-        await vat.manager.loadState(vatData.state);
-      }
-    },
+    start,
 
     async run() {
       // process all messages, until syscall.pause() is invoked

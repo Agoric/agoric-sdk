@@ -221,101 +221,8 @@ export default function makeVatKeeper(
     return table.get(key);
   }
 
-  function loadManagerState(vatData) {
-    if (
-      kvstore
-        .get('kernelSlotToVatSlot')
-        .get('exports')
-        .size()
-    ) {
-      throw new Error(`vat[$vatID] is not empty, cannot loadState`);
-    }
-
-    const nextIDs = kvstore.get('nextIDs');
-    nextIDs.set('import', vatData.nextImportID);
-    nextIDs.set('promise', vatData.nextPromiseID);
-    nextIDs.set('resolver', vatData.nextResolverID);
-    nextIDs.set('deviceImport', vatData.nextDeviceImportID);
-
-    // exports, devices, promises, resolvers
-    const kernelSlotToVatSlot = kvstore.get('kernelSlotToVatSlot');
-
-    vatData.kernelSlotToVatSlot.exports.forEach(({ key, value }) => {
-      const exports = kernelSlotToVatSlot.get('exports');
-      exports.set(key, value);
-    });
-
-    vatData.kernelSlotToVatSlot.devices.forEach(({ key, value }) => {
-      const devices = kernelSlotToVatSlot.get('devices');
-      devices.set(key, value);
-    });
-
-    vatData.kernelSlotToVatSlot.promises.forEach(({ key, value }) => {
-      const promises = kernelSlotToVatSlot.get('promises');
-      promises.set(key, value);
-    });
-
-    vatData.kernelSlotToVatSlot.resolvers.forEach(({ key, value }) => {
-      const resolvers = kernelSlotToVatSlot.get('resolvers');
-      resolvers.set(key, value);
-      resolvers.set(key, value);
-    });
-
-    // imports, deviceImports, promises, resolvers
-
-    const vatSlotToKernelSlot = kvstore.get('vatSlotToKernelSlot');
-
-    vatData.vatSlotToKernelSlot.imports.forEach(({ key, value }) => {
-      const imports = vatSlotToKernelSlot.get('imports');
-      imports.set(key, value);
-    });
-
-    vatData.vatSlotToKernelSlot.deviceImports.forEach(({ key, value }) => {
-      const deviceImports = vatSlotToKernelSlot.get('deviceImports');
-      deviceImports.set(key, value);
-    });
-
-    vatData.vatSlotToKernelSlot.promises.forEach(({ key, value }) => {
-      const promises = vatSlotToKernelSlot.get('promises');
-      promises.set(key, value);
-    });
-
-    vatData.vatSlotToKernelSlot.resolvers.forEach(({ key, value }) => {
-      const resolvers = vatSlotToKernelSlot.get('resolvers');
-      resolvers.set(key, value);
-    });
-  }
-
-  function getManagerState() {
-    const kernelSlotToVatSlot = kvstore.get('kernelSlotToVatSlot');
-    const vatSlotToKernelSlot = kvstore.get('vatSlotToKernelSlot');
-    const nextIDs = kvstore.get('nextIDs');
-
-    return {
-      kernelSlotToVatSlot: {
-        // exports, devices, promises, resolvers
-        exports: kernelSlotToVatSlot.get('exports').entries(),
-        devices: kernelSlotToVatSlot.get('devices').entries(),
-        promises: kernelSlotToVatSlot.get('promises').entries(),
-        resolvers: kernelSlotToVatSlot.get('resolvers').entries(),
-      },
-      // imports, deviceImports, promises, resolvers
-      vatSlotToKernelSlot: {
-        imports: vatSlotToKernelSlot.get('imports').entries(),
-        deviceImports: vatSlotToKernelSlot.get('deviceImports').entries(),
-        promises: vatSlotToKernelSlot.get('promises').entries(),
-        resolvers: vatSlotToKernelSlot.get('resolvers').entries(),
-      },
-
-      nextImportID: nextIDs.get('import'),
-      nextPromiseID: nextIDs.get('promise'),
-      nextResolverID: nextIDs.get('resolver'),
-      nextDeviceImportID: nextIDs.get('deviceImport'),
-    };
-  }
-
-  function getCurrentState() {
-    return { transcript: Array.from(kvstore.get('transcript')) };
+  function getTranscript() {
+    return Array.from(kvstore.get('transcript'));
   }
 
   function addToTranscript(msg) {
@@ -373,9 +280,7 @@ export default function makeVatKeeper(
     createStartingVatState,
     mapVatSlotToKernelSlot,
     mapKernelSlotToVatSlot,
-    loadManagerState,
-    getManagerState,
-    getCurrentState,
+    getTranscript,
     dumpState,
     addToTranscript,
     insistKernelSlot,

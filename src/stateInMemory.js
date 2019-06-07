@@ -1,8 +1,8 @@
 import harden from '@agoric/harden';
 import makeKVStore from './kvstore';
 
-export default function makeExternal() {
-  const outsideRealmKVStore = makeKVStore({});
+export default function makeStorageInMemory(storage = {}) {
+  const outsideRealmKVStore = makeKVStore(storage);
   const external = harden({
     sendMsg(msg) {
       const command = JSON.parse(msg);

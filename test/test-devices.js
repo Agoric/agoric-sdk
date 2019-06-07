@@ -3,7 +3,7 @@ import { buildVatController } from '../src/index';
 import buildSharedStringTable from '../src/devices/sharedTable';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 import buildCommand from '../src/devices/command';
-import makeExternal from '../src/stateInMemory';
+import makeStorageInMemory from '../src/stateInMemory';
 import makeExternalKVStore from '../src/kernel/externalKVStore';
 
 async function test0(t, withSES) {
@@ -80,7 +80,7 @@ test('d1 without SES', async t => {
 });
 
 async function test2(t, mode, withSES) {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kvstore = makeExternalKVStore('kernel.devices.d2', external);
 
   const config = {
@@ -181,7 +181,7 @@ test('d2.5 without SES', async t => {
 });
 
 async function testState(t, withSES) {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kvstore = makeExternalKVStore('kernel.devices.d2', external);
 
   const config = {
@@ -214,7 +214,7 @@ test('device state without SES', async t => {
 });
 
 async function testSetState(t, withSES) {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kvstore = makeExternalKVStore('kernel.devices.d2', external);
 
   const config = {
@@ -263,7 +263,7 @@ test('set device state without SES', async t => {
 });
 
 async function testSharedTable(t, withSES) {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kvstore = makeExternalKVStore('kernel.devices.d2', external);
 
   const st = buildSharedStringTable();

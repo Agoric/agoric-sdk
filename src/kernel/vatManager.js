@@ -21,8 +21,6 @@ export default function makeVatManager(
     kernelKeeper,
   } = syscallManager;
 
-  kernelKeeper.addVat(vatID, vatKVStore);
-
   const vatKeeper = makeVatKeeper(kernelKeeper.getVat(vatID));
 
   // We use vat-centric terminology here, so "inbound" means "into a vat",
@@ -565,14 +563,15 @@ export default function makeVatManager(
     throw new Error(`unknown message type '${type}'`);
   }
 
-  async function loadState(savedState) {
+  async function replayTranscript() {
     if (!useTranscript) {
       throw new Error("userspace doesn't do transcripts");
     }
 
+    const transcript = vatKeeper.getTranscript();
     inReplay = true;
-    for (let i = 0; i < savedState.transcript.length; i += 1) {
-      const t = savedState.transcript[i];
+    for (let i = 0; i < transcript.length; i += 1) {
+      const t = transcript[i];
       playbackSyscalls = Array.from(t.syscalls);
       // eslint-disable-next-line no-await-in-loop
       await doProcess(t.d, 'errmsg');
@@ -583,12 +582,8 @@ export default function makeVatManager(
   const manager = {
     mapKernelSlotToVatSlot,
     mapVatSlotToKernelSlot,
-    dumpState: vatKeeper.dumpState,
-    loadManagerState: vatKeeper.loadManagerState,
-    loadState,
     processOneMessage,
-    getManagerState: vatKeeper.getManagerState,
-    getCurrentState: vatKeeper.getCurrentState,
+    replayTranscript,
   };
   return manager;
 }

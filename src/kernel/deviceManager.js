@@ -14,9 +14,6 @@ export default function makeDeviceManager(
 ) {
   const { kdebug, send, log } = syscallManager;
 
-  // per-device translation tables
-  kernelKeeper.addDevice(deviceName, deviceKVStore);
-
   const deviceKeeper = makeDeviceKeeper(kernelKeeper.getDevice(deviceName));
 
   function mapDeviceSlotToKernelSlot(slot) {
@@ -120,22 +117,8 @@ export default function makeDeviceManager(
     }
   }
 
-  function loadState(savedState) {
-    deviceKeeper.loadManagerState(savedState.managerState);
-    deviceKeeper.loadDeviceState(savedState.deviceState);
-  }
-
-  function getCurrentState() {
-    return harden({
-      managerState: deviceKeeper.getManagerState(),
-      deviceState: deviceKeeper.getDeviceState(),
-    });
-  }
-
   const manager = {
     invoke,
-    getCurrentState,
-    loadState,
   };
   return manager;
 }

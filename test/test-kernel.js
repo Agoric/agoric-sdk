@@ -1,10 +1,10 @@
 /* global setImmediate */
 import { test } from 'tape-promise/tape';
 import buildKernel from '../src/kernel/index';
-import makeExternal from '../src/stateInMemory';
+import makeStorageInMemory from '../src/stateInMemory';
 
 test('build kernel', t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   kernel.run(); // empty queue
   const data = kernel.dump();
@@ -14,7 +14,7 @@ test('build kernel', t => {
 });
 
 test('simple call', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   function setup1(syscall) {
@@ -66,7 +66,7 @@ test('simple call', async t => {
 });
 
 test('map inbound', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   function setup1(_syscall) {
@@ -114,7 +114,7 @@ test('map inbound', async t => {
 });
 
 test('addImport', t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   function setup(_syscall) {
     function deliver(_facetID, _method, _argsString, _slots) {}
@@ -136,7 +136,7 @@ test('addImport', t => {
 });
 
 test('outbound call to my own export should fail', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   let s;
@@ -158,7 +158,7 @@ test('outbound call to my own export should fail', async t => {
 });
 
 test('outbound call', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   let v1tovat25;
@@ -282,7 +282,7 @@ test('outbound call', async t => {
 });
 
 test('three-party', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   let bobForA;
@@ -419,7 +419,7 @@ test('three-party', async t => {
 });
 
 test('createPromise', t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   function setup(s) {
@@ -450,7 +450,7 @@ test('createPromise', t => {
 });
 
 test('transfer promise', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   let syscallA;
   const logA = [];
@@ -737,7 +737,7 @@ test('transfer promise', async t => {
 });
 
 test('subscribe to promise', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   const log = [];
@@ -774,7 +774,7 @@ test('subscribe to promise', async t => {
 });
 
 test.skip('promise redirection', t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   const log = [];
@@ -835,7 +835,7 @@ test.skip('promise redirection', t => {
 });
 
 test('promise resolveToData', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   const log = [];
@@ -902,7 +902,7 @@ test('promise resolveToData', async t => {
 });
 
 test('promise resolveToPresence', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   const log = [];
@@ -968,7 +968,7 @@ test('promise resolveToPresence', async t => {
 });
 
 test('promise reject', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   const log = [];
@@ -1038,7 +1038,7 @@ test('promise reject', async t => {
 });
 
 test('transcript', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   function setup(syscall, _state) {
