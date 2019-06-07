@@ -88,6 +88,13 @@ function makeWholePixelList(canvasSize) {
   return pixelList;
 }
 
+function insistPixelListEqual(leftPixelList, rightPixelList) {
+  // includes both ways, super inefficient
+  // if pixelLists were ordered, this would be must more efficient
+  insistIncludesPixelList(leftPixelList, rightPixelList);
+  insistIncludesPixelList(rightPixelList, leftPixelList);
+}
+
 export {
   insistPixelList,
   includesPixel,
@@ -96,4 +103,5 @@ export {
   withPixelList,
   withoutPixelList,
   makeWholePixelList,
+  insistPixelListEqual,
 };

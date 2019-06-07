@@ -13,6 +13,7 @@ import {
   includesPixelList,
   withPixelList,
   withoutPixelList,
+  insistPixelListEqual,
 } from './types/pixelList';
 
 // A pixelList is a naive collection of pixels in the form:
@@ -28,18 +29,18 @@ import {
 // the description is "pixelList"
 
 function makePixelListAssayMaker(canvasSize) {
-  function makePixelListAssay(label) {
-    mustBeComparable(label);
+  function makePixelListAssay(pixelLabel) {
+    mustBeComparable(pixelLabel);
 
     const brand = new WeakSet();
 
     // our empty pixelList is an empty array
-    const emptyAmount = harden({ label, pixelList: [] });
+    const emptyAmount = harden({ label: pixelLabel, pixelList: [] });
     brand.add(emptyAmount);
 
-    const assay = harden({
+    const assay = {
       getLabel() {
-        return label;
+        return pixelLabel;
       },
 
       make(pixelList) {
@@ -50,7 +51,7 @@ function makePixelListAssayMaker(canvasSize) {
           return emptyAmount;
         }
 
-        const amount = harden({ label, quantity: pixelList });
+        const amount = harden({ label: pixelLabel, quantity: pixelList });
         brand.add(amount);
         return amount;
       },
@@ -69,7 +70,7 @@ function makePixelListAssayMaker(canvasSize) {
           label: allegedLabel,
           quantity: pixelList,
         } = allegedPixelListAmount;
-        mustBeSameStructure(label, allegedLabel, 'Unrecognized label');
+        mustBeSameStructure(pixelLabel, allegedLabel, 'Unrecognized label');
         return assay.make(pixelList);
       },
 
@@ -99,7 +100,7 @@ function makePixelListAssayMaker(canvasSize) {
         const rightPixelList = assay.quantity(rightAmount);
 
         return harden({
-          label,
+          label: pixelLabel,
           quantity: withPixelList(leftPixelList, rightPixelList),
         });
       },
@@ -115,12 +116,59 @@ function makePixelListAssayMaker(canvasSize) {
         const pixelList = withoutPixelList(leftPixelList, rightPixelList);
 
         return harden({
-          label,
+          label: pixelLabel,
           quantity: pixelList,
         });
       },
-    });
-    return assay;
+    };
+    if (pixelLabel.description === 'pixelList') {
+      assay.toTransferAndUseRights = (
+        srcAmount,
+        useRightLabel,
+        transferRightLabel,
+      ) => {
+        const srcPixelList = assay.quantity(srcAmount);
+
+        const useAmount = {
+          label: useRightLabel,
+          quantity: srcPixelList,
+        };
+
+        const transferAmount = {
+          label: transferRightLabel,
+          quantity: srcPixelList,
+        };
+
+        return {
+          transferAmount,
+          useAmount,
+        };
+
+        // my pixelList of length one : [ {x: 0, y:0 }] should turn
+        // into two amounts: useRights [{ x: 0, y: 0}] and
+        // transferRights [{ x: 0, y: 0 }]
+
+        // pixelListAmount -> useRightsAmount and transferRightsAmount
+      };
+    }
+    if (
+      pixelLabel.description === 'transferRight' ||
+      pixelLabel.description === 'useRight'
+    ) {
+      assay.toPixel = ({ useAmount, transferAmount }) => {
+        const usePixelList = assay.quantity(useAmount);
+        const transferPixelList = assay.quantity(transferAmount);
+
+        insistPixelListEqual(usePixelList, transferPixelList);
+
+        const pixelAmount = {
+          label: pixelLabel,
+          quantity: usePixelList,
+        };
+        return pixelAmount;
+      };
+    }
+    return harden(assay);
   }
   return harden(makePixelListAssay);
 }
