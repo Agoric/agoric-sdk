@@ -1,5 +1,5 @@
 import { test } from 'tape-promise/tape';
-import { makeLruQueue } from '../demo/pixel-demo/lruQueue';
+import { makeLruQueue } from '../../../more/pixels/lruQueue';
 
 test('LRU Queue creation', t => {
   const { lruQueue, lruQueueBuilder } = makeLruQueue();
