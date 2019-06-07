@@ -33,6 +33,13 @@ ag-setup-cosmos run all hostname
 ag-setup-cosmos run node0 hostname
 ```
 
+Now, set up the provisioning server:
+
+```
+ag-setup-cosmos show-config | ve3/bin/ag-pserver set-cosmos-config
+ve3/bin/ag-pserver start
+```
+
 **Congratulations, you are running the Agoric testnet!**
 
 ```

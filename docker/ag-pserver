@@ -1,6 +1,8 @@
 #! /bin/sh
 PORT=8001
+TTY=-i
+test -t 0 && TTY=-it
 exec docker run -p127.0.0.1:$PORT:$PORT \
   --volume=ag-pserver-state:/root/.ag-pserver \
-  --rm -it \
+  --rm $TTY \
   agoric/cosmic-swingset-pserver ${1+"$@"}

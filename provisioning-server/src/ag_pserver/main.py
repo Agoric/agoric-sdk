@@ -52,8 +52,8 @@ class RequestCode(resource.Resource):
         f = open(cosmosConfigFile(self.opts['home']))
         config = json.loads(f.read())
         server_message = {
-            "GCI": config['gci'],
-            "rpcPorts": config['rpcAddrs'],
+            "gci": config['gci'],
+            "rpcAddrs": config['rpcAddrs'],
             "ingressIndex": 1,
             }
         sm = json.dumps(server_message).encode("utf-8")
@@ -105,8 +105,10 @@ def main():
             os.mkdir(o['home'])
         except FileExistsError:
             pass
+        fname = cosmosConfigFile(o['home'])
+        print('Reading %s from stdin; hit Ctrl-D to finish' % fname)
         cfgJson = sys.stdin.read()
-        f = open(cosmosConfigFile(o['home']), 'w')
+        f = open(fname, 'w')
         f.write(cfgJson)
         f.close()
     elif o.subCommand == 'start':

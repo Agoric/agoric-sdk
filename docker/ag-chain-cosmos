@@ -1,6 +1,8 @@
 #! /bin/sh
 PORT=26657
+TTY=-i
+test -t 0 && TTY=-it
 exec docker run -p127.0.0.1:$PORT:$PORT \
   --volume=ag-chain-cosmos-state:/root/.ag-chain-cosmos \
-  --rm -it \
+  --rm $TTY \
   agoric/cosmic-swingset ${1+"$@"}

@@ -2,12 +2,18 @@
 PORT=26657
 CHAIN_NAME=${CHAIN_NAME-agoric}
 CHAIN_HOME=${CHAIN_HOME-$CHAIN_NAME}
+TTY=-it
 FLAGS=
-if test "$1" = shell; then
+case "$1" in
+shell)
   FLAGS=--entrypoint=/bin/bash
   shift
-fi
-exec docker run --rm -it $FLAGS \
+  ;;
+show-*)
+  TTY=-i
+  ;;
+esac
+exec docker run --rm $TTY $FLAGS \
   --volume=ag-setup-cosmos-chains:/usr/src/app/chains \
   --volume=ag-cosmos-helper-state:/root/.ag-cosmos-helper \
   --env AG_SETUP_COSMOS_NAME=$CHAIN_NAME \
