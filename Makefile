@@ -7,7 +7,7 @@ all: build install
 docker-install:
 	install -m 755 ./ag-chain-cosmos ./ag-cosmos-helper ./ag-setup-cosmos /usr/local/bin/
 
-docker-build: docker-build-base docker-build-setup
+docker-build: docker-build-base docker-build-pserver docker-build-setup
 
 docker-build-setup:
 	docker build -t $(REPOSITORY)-setup:latest ./setup
@@ -15,7 +15,10 @@ docker-build-setup:
 docker-build-base:
 	docker build -t $(REPOSITORY):latest .
 
-docker-push: docker-push-base docker-push-setup
+docker-build-pserver:
+	docker build -t $(REPOSITORY)-pserver:latest ./provisioning-server
+
+docker-push: docker-push-base docker-push-setup docker-push-pserver
 
 docker-push-setup:
 	docker tag $(REPOSITORY)-setup:latest $(REPOSITORY)-setup:$(TAG)
@@ -26,6 +29,11 @@ docker-push-base:
 	docker tag $(REPOSITORY):latest $(REPOSITORY):$(TAG)
 	docker push $(REPOSITORY):latest
 	docker push $(REPOSITORY):$(TAG)
+
+docker-push-pserver:
+	docker tag $(REPOSITORY)-pserver:latest $(REPOSITORY)-pserver:$(TAG)
+	docker push $(REPOSITORY)-pserver:latest
+	docker push $(REPOSITORY)-pserver:$(TAG)
 
 compile-go: go.sum
 	GO111MODULE=on go build -v -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go

@@ -5,6 +5,7 @@ from twisted.python import usage
 import wormhole
 import treq
 import os.path
+import os
 import json
 
 from twisted.python import log
@@ -22,6 +23,7 @@ class Options(usage.Options):
     optParameters = [
         ["listen", "l", "tcp:8001", "client-visible HTTP listening port"],
         ["controller", "c", "tcp:localhost:8002", "controller's listening port for us to send control messages"],
+        ["home", None, os.environ["HOME"] + '/.ag-pserver', "provisioning-server's state directory"],
         ]
 
 class RequestCode(resource.Resource):

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 # run:
-#  python3 -mvenv ve3
-#  ve3/bin/pip install wheel
-#  ve3/bin/pip install --editable .
-#  ve3/bin/ag-pserver --listen tcp:8001 --controller tcp:localhost:8002
+#  python3 -mvenv ../ve3
+#  ../ve3/bin/pip install wheel
+#  ../ve3/bin/pip install --editable .
+#  ../ve3/bin/ag-pserver --listen tcp:8001 --controller tcp:localhost:8002
 
 # the provisioning webpage is in html/index.html , edit it in place
 

@@ -1,0 +1,6 @@
+#! /bin/sh
+PORT=26657
+exec docker run -p127.0.0.1:$PORT:$PORT \
+  --volume=ag-pserver-state:/root/.ag-pserver \
+  --rm -it \
+  agoric/cosmic-swingset-pserver ${1+"$@"}
