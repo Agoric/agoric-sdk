@@ -18,6 +18,7 @@
     "esm": "^3.2.5",
     "express": "^4.17.0",
     "lotion-connect": "^0.1.22",
+    "minimist": "^1.2.0",
     "morgan": "^1.9.1",
     "node-fetch": "^2.6.0",
     "ws": "^7.0.0"

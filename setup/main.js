@@ -7,6 +7,7 @@ import inquirer from 'inquirer';
 import djson from 'deterministic-json';
 import crypto from 'crypto';
 import chalk from 'chalk';
+import parseArgs from 'minimist';
 
 const AFTER_TERRAFORMING = ['hosts', `ssh_known_hosts.stamp`, `genesis.json`, `ssh_known_hosts`, `peers.txt`, `terraform.json`];
 
@@ -22,13 +23,14 @@ const provisionOutput = async () => {
   return JSON.parse(json);
 };
 
-const main = async (progname, args) => {
+const main = async (progname, rawArgs) => {
+  const {_: args, ...opts} = parseArgs(rawArgs);
   const initHint = () => {
     const adir = process.cwd();
     console.error(`\
 
 NOTE: to manage the ${adir} setup directory, do
-  export AG_SETUP_COSMOS_BACKEND=${adir}
+  export AG_SETUP_COSMOS_HOME=${adir}
 or
   cd ${adir}
 and run ${progname} subcommands`);
@@ -74,6 +76,11 @@ show-config      display the client connection parameters
         }
         break;
     }
+  }
+
+  if (opts.help) {
+    help();
+    return 0;
   }
 
   switch (cmd) {

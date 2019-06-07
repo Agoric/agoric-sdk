@@ -1,0 +1,6 @@
+#! /bin/sh
+PORT=8000
+exec docker run -p127.0.0.1:$PORT:$PORT \
+  --volume=ag-solo-state:/usr/src/app/solo \
+  --rm -it --entrypoint=bin/ag-solo \
+  agoric/cosmic-swingset ${1+"$@"}
