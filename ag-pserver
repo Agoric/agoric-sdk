@@ -1,5 +1,5 @@
 #! /bin/sh
-PORT=26657
+PORT=8001
 exec docker run -p127.0.0.1:$PORT:$PORT \
   --volume=ag-pserver-state:/root/.ag-pserver \
   --rm -it \
