@@ -1,14 +1,14 @@
 #! /bin/sh
 PORT=8000
-SOLO_NAME=agoric
-SOLO_HOME=${SOLO_HOME-solo/$SOLO_NAME}
-ENTRYPOINT=bin/ag-solo
+SOLO_NAME=${SOLO_NAME-agoric}
+SOLO_HOME=${SOLO_HOME-$SOLO_NAME}
+FLAGS=
 if test "$1" = shell; then
-  ENTRYPOINT=/bin/bash
+  FLAGS=--entrypoint=/bin/bash
   shift
 fi
 exec docker run -p127.0.0.1:$PORT:$PORT \
   --volume=ag-solo-state:/usr/src/app/solo \
   -eAG_SOLO_BASEDIR="$SOLO_HOME" \
-  --rm -it --entrypoint="$ENTRYPOINT" \
-  agoric/cosmic-swingset ${1+"$@"}
+  --rm -it $FLAGS \
+  agoric/cosmic-swingset-solo ${1+"$@"}

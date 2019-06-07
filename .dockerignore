@@ -9,4 +9,5 @@ build
 node_modules/
 lib/lib*.h
 lib/lib*.so
+lib/ag-solo
 ve3
