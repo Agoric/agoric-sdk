@@ -81,6 +81,6 @@ run-pserver:
 install-setup-client:
 	python3 -mvenv ve3-client
 	ve3-client/bin/pip install -U setuptools wheel
-	ve3-client/bin/pip install --editable ./ag-setup-solo
+	ve3-client/bin/pip install --editable ./setup-solo
 run-setup-client:
 	ve3-client/bin/ag-setup-solo

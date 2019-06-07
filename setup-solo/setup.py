@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 # run:
-#  python3 -mvenv ve3
-#  ve3/bin/pip install wheel
-#  ve3/bin/pip install --editable .
-#  ve3/bin/ag-setup-solo
+#  python3 -mvenv ../ve3
+#  ../ve3/bin/pip install wheel
+#  ../ve3/bin/pip install --editable .
+#  ../ve3/bin/ag-setup-solo
 
 from setuptools import setup
 setup(

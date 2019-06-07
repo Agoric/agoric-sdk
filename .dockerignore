@@ -3,3 +3,10 @@ node_modules
 Dockerfile
 chains
 setup
+provisioning-server
+solo
+build
+node_modules/
+lib/lib*.h
+lib/lib*.so
+ve3
