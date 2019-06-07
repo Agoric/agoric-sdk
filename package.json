@@ -35,7 +35,7 @@
     "@agoric/harden": "0.0.4",
     "@agoric/marshal": "0.0.1",
     "@agoric/nat": "^2.0.1",
-    "@agoric/swingset-vat": "file:../SwingSet",
+    "@agoric/swingset-vat": "0.0.12",
     "ses": "^0.5.0"
   },
   "devDependencies": {
