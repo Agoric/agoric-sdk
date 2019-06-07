@@ -1,13 +1,7 @@
 import harden from '@agoric/harden';
 
-export default function setup(syscall, helpers, _endowments) {
+export default function setup(syscall, state, helpers, _endowments) {
   const inboundHandlers = harden(new Map());
-
-  function getState() {
-    return harden({});
-  }
-
-  function setState(_newState) {}
 
   return helpers.makeDeviceSlots(
     syscall,
@@ -36,8 +30,6 @@ export default function setup(syscall, helpers, _endowments) {
           });
         },
       }),
-    getState,
-    setState,
     helpers.name,
   );
 }

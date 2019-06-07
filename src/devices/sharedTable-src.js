@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-export default function setup(syscall, helpers, endowments) {
+export default function setup(syscall, state, helpers, endowments) {
   console.log(`in src`, endowments);
   const { kvstore } = endowments;
 
@@ -53,8 +53,6 @@ export default function setup(syscall, helpers, endowments) {
           return table.has(`${key}`);
         },
       }),
-    getState,
-    setState,
     helpers.name,
   );
 }

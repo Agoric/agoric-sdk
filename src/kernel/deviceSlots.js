@@ -198,21 +198,11 @@ function build(syscall, makeRoot, forDeviceName) {
 export function makeDeviceSlots(
   syscall,
   makeRoot,
-  getState,
-  setState,
   forDeviceName = 'unknown',
 ) {
-  if (typeof getState !== 'function') {
-    throw new Error(`getState must be a function, not '${getState}'`);
-  }
-  if (typeof setState !== 'function') {
-    throw new Error(`setState must be a function, not '${setState}'`);
-  }
   const { invoke } = build(syscall, makeRoot, forDeviceName);
   return harden({
     invoke,
-    getState,
-    setState,
   });
 }
 

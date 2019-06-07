@@ -91,9 +91,21 @@ export default function makeDeviceManager(
     },
   });
 
+  // Devices are allowed to get their state at startup, and set it anytime.
+  // They do not use orthogonal persistence or transcripts.
+  const state = harden({
+    get() {
+      return deviceKeeper.getDeviceState();
+    },
+    set(value) {
+      deviceKeeper.setDeviceState(value);
+    },
+  });
+
+
   // now build the runtime, which gives us back a dispatch function
 
-  const dispatch = setup(syscall, helpers, endowments);
+  const dispatch = setup(syscall, state, helpers, endowments);
 
   // dispatch handlers: these are used by the kernel core
 

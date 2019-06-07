@@ -79,11 +79,8 @@ function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
     return kvstore.get('deviceState');
   }
 
-  function getCurrentState() {
-    return harden({
-      managerState: getManagerState(),
-      deviceState: getDeviceState(),
-    });
+  function setDeviceState(value) {
+    return kvstore.set('deviceState', value);
   }
 
   return harden({
@@ -92,7 +89,7 @@ function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
     mapKernelSlotToDeviceSlot,
     getManagerState,
     getDeviceState,
-    getCurrentState,
+    setDeviceState,
   });
 }
 

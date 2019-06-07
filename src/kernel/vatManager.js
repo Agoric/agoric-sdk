@@ -1,6 +1,7 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import makeVatKeeper from './state/vatKeeper';
+import djson from './djson';
 
 export default function makeVatManager(
   vatID,
@@ -157,7 +158,9 @@ export default function makeVatManager(
     }
   }
   function transcriptFinishDispatch() {
-    vatKeeper.addToTranscript(currentEntry);
+    if (!inReplay) {
+      vatKeeper.addToTranscript(currentEntry);
+    }
   }
 
   // syscall handlers: these are wrapped by the 'syscall' object and made
@@ -389,7 +392,10 @@ export default function makeVatManager(
 
   function replay(name, ...args) {
     const s = playbackSyscalls.shift();
-    if (JSON.stringify(s.d) !== JSON.stringify([name, ...args])) {
+    if (djson.stringify(s.d) !== djson.stringify([name, ...args])) {
+      console.log(`anachrophobia strikes vat ${vatID}`);
+      console.log(`expected:`, djson.stringify(s.d));
+      console.log(`got     :`, djson.stringify([name, ...args]));
       throw new Error(`historical inaccuracy in replay-${name}`);
     }
     return s.response;

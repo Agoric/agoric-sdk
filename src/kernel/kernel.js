@@ -493,9 +493,14 @@ export default function buildKernel(kernelEndowments, externalStorage) {
 
     // if it *was* initialized, replay the transcripts
     if (wasInitialized) {
+      const oldLength = kernelKeeper.getRunQueueLength();
       for (const vat of ephemeral.vats.values()) {
         // eslint-disable-next-line no-await-in-loop
         await vat.manager.replayTranscript();
+      }
+      const newLength = kernelKeeper.getRunQueueLength();
+      if (newLength !== oldLength) {
+        throw new Error(`replayTranscript added run-queue entries, wasn't supposed to`);
       }
     }
 
