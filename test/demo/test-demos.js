@@ -17,12 +17,10 @@ const contractMintGolden = [
   '=> setup called',
   'starting mintTestAssay',
   'starting mintTestNumber',
-  'alice xfer balance {"label":{"issuer":{},"description":"quatloos"},"quantity":950}',
-  'alice use balance {"label":{"issuer":{},"description":"quatloos"},"quantity":1000}',
-  'payment xfer balance {"label":{"issuer":{},"description":"quatloos"},"quantity":50}',
-  'alice xfer balance {"label":{"issuer":{},"description":"bucks"},"quantity":950}',
-  'alice use balance {"label":{"issuer":{},"description":"bucks"},"quantity":1000}',
-  'payment xfer balance {"label":{"issuer":{},"description":"bucks"},"quantity":50}',
+  'alice balance {"label":{"issuer":{},"description":"quatloos"},"quantity":950}',
+  'payment balance {"label":{"issuer":{},"description":"quatloos"},"quantity":50}',
+  'alice balance {"label":{"issuer":{},"description":"bucks"},"quantity":950}',
+  'payment balance {"label":{"issuer":{},"description":"bucks"},"quantity":50}',
 ];
 
 test('run contractHost Demo --mint with SES', async t => {
@@ -41,10 +39,10 @@ const contractTrivialGolden = [
   '=> setup called',
   'starting trivialContractTest',
   "Does source function trivContract(terms, inviteMaker) {\n      return inviteMaker.make('foo', 8);\n    } match? true",
-  'foo xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":"foo terms","seatIdentity":{},"seatDesc":"foo"}}',
+  'foo balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":"foo terms","seatIdentity":{},"seatDesc":"foo"}}',
   '++ eightP resolved to 8 (should be 8)',
   '++ DONE',
-  'foo xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":null}',
+  'foo balance {"label":{"issuer":{},"description":"contract host"},"quantity":null}',
 ];
 
 test('run contractHost Demo --trivial with SES', async t => {
@@ -82,21 +80,17 @@ const contractBobFirstGolden = [
   '=> setup called',
   '++ bob.tradeWell starting',
   '++ alice.acceptInvite starting',
-  'alice invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"clams"},"quantity":10},{"label":{"issuer":{},"description":"fudco"},"quantity":7}],"seatIdentity":{},"seatDesc":"left"}}',
-  'verified invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"clams"},"quantity":10},{"label":{"issuer":{},"description":"fudco"},"quantity":7}],"seatIdentity":{},"seatDesc":"left"}}',
+  'alice invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"clams"},"quantity":10},{"label":{"issuer":{},"description":"fudco"},"quantity":7}],"seatIdentity":{},"seatDesc":"left"}}',
+  'verified invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"clams"},"quantity":10},{"label":{"issuer":{},"description":"fudco"},"quantity":7}],"seatIdentity":{},"seatDesc":"left"}}',
   'bob escrow wins: {"label":{"issuer":{},"description":"clams"},"quantity":10} refs: null',
   'alice escrow wins: {"label":{"issuer":{},"description":"fudco"},"quantity":7} refs: null',
   '++ bob.tradeWell done',
   '++ bobP.tradeWell done:[[{"label":{"issuer":{},"description":"fudco"},"quantity":7},null],[{"label":{"issuer":{},"description":"clams"},"quantity":10},null]]',
   '++ DONE',
-  'alice money xfer balance {"label":{"issuer":{},"description":"clams"},"quantity":990}',
-  'alice money use balance {"label":{"issuer":{},"description":"clams"},"quantity":990}',
-  'alice stock xfer balance {"label":{"issuer":{},"description":"fudco"},"quantity":2009}',
-  'alice stock use balance {"label":{"issuer":{},"description":"fudco"},"quantity":2009}',
-  'bob money xfer balance {"label":{"issuer":{},"description":"clams"},"quantity":1011}',
-  'bob money use balance {"label":{"issuer":{},"description":"clams"},"quantity":1011}',
-  'bob stock xfer balance {"label":{"issuer":{},"description":"fudco"},"quantity":1996}',
-  'bob stock use balance {"label":{"issuer":{},"description":"fudco"},"quantity":1996}',
+  'alice money balance {"label":{"issuer":{},"description":"clams"},"quantity":990}',
+  'alice stock balance {"label":{"issuer":{},"description":"fudco"},"quantity":2009}',
+  'bob money balance {"label":{"issuer":{},"description":"clams"},"quantity":1011}',
+  'bob stock balance {"label":{"issuer":{},"description":"fudco"},"quantity":1996}',
 ];
 
 test('run contractHost Demo --bob-first with SES', async t => {
@@ -111,27 +105,7 @@ test('run contractHost Demo --bob-first without SES', async t => {
   t.end();
 });
 
-const contractCoveredCallGolden = [
-  '=> setup called',
-  '++ bob.offerAliceOption starting',
-  '++ alice.acceptOptionDirectly starting',
-  'Pretend singularity never happens',
-  'alice invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
-  'verified invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
-  'alice option wins: {"label":{"issuer":{},"description":"yoyodyne"},"quantity":7} refs: null',
-  'bob option wins: {"label":{"issuer":{},"description":"smackers"},"quantity":10} refs: null',
-  '++ bob.offerAliceOption done',
-  '++ bobP.offerAliceOption done:[[{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},null],[{"label":{"issuer":{},"description":"smackers"},"quantity":10},null]]',
-  '++ DONE',
-  'alice money xfer balance {"label":{"issuer":{},"description":"smackers"},"quantity":990}',
-  'alice money use balance {"label":{"issuer":{},"description":"smackers"},"quantity":990}',
-  'alice stock xfer balance {"label":{"issuer":{},"description":"yoyodyne"},"quantity":2009}',
-  'alice stock use balance {"label":{"issuer":{},"description":"yoyodyne"},"quantity":2009}',
-  'bob money xfer balance {"label":{"issuer":{},"description":"smackers"},"quantity":1011}',
-  'bob money use balance {"label":{"issuer":{},"description":"smackers"},"quantity":1011}',
-  'bob stock xfer balance {"label":{"issuer":{},"description":"yoyodyne"},"quantity":1996}',
-  'bob stock use balance {"label":{"issuer":{},"description":"yoyodyne"},"quantity":1996}',
-];
+const contractCoveredCallGolden = [ '=> setup called', '++ bob.offerAliceOption starting', '++ alice.acceptOptionDirectly starting', 'Pretend singularity never happens', 'alice invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}', 'verified invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}', 'alice option wins: {"label":{"issuer":{},"description":"yoyodyne"},"quantity":7} refs: null', 'bob option wins: {"label":{"issuer":{},"description":"smackers"},"quantity":10} refs: null', '++ bob.offerAliceOption done', '++ bobP.offerAliceOption done:[[{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},null],[{"label":{"issuer":{},"description":"smackers"},"quantity":10},null]]', '++ DONE', 'alice money balance {"label":{"issuer":{},"description":"smackers"},"quantity":990}', 'alice stock balance {"label":{"issuer":{},"description":"yoyodyne"},"quantity":2009}', 'bob money balance {"label":{"issuer":{},"description":"smackers"},"quantity":1011}', 'bob stock balance {"label":{"issuer":{},"description":"yoyodyne"},"quantity":1996}' ];
 
 test('run contractHost Demo --covered-call with SES', async t => {
   const dump = await main(true, 'demo/contractHost', ['covered-call']);
@@ -160,22 +134,14 @@ const contractCoveredCallSaleGolden = [
   '++ bob.offerAliceOption done',
   '++ bobP.offerAliceOption done:[[[{"label":{"issuer":{},"description":"wonka"},"quantity":7},null],[{"label":{"issuer":{},"description":"fins"},"quantity":55},null]],[{"label":{"issuer":{},"description":"dough"},"quantity":10},null]]',
   '++ DONE',
-  'alice dough xfer balance {"label":{"issuer":{},"description":"dough"},"quantity":1000}',
-  'alice dough use balance {"label":{"issuer":{},"description":"dough"},"quantity":1000}',
-  'alice stock xfer balance {"label":{"issuer":{},"description":"wonka"},"quantity":2002}',
-  'alice stock use balance {"label":{"issuer":{},"description":"wonka"},"quantity":2002}',
-  'alice fins xfer balance {"label":{"issuer":{},"description":"fins"},"quantity":3055}',
-  'alice fins use balance {"label":{"issuer":{},"description":"fins"},"quantity":3055}',
-  'bob dough xfer balance {"label":{"issuer":{},"description":"dough"},"quantity":1011}',
-  'bob dough use balance {"label":{"issuer":{},"description":"dough"},"quantity":1011}',
-  'bob stock xfer balance {"label":{"issuer":{},"description":"wonka"},"quantity":1996}',
-  'bob stock use balance {"label":{"issuer":{},"description":"wonka"},"quantity":1996}',
-  'fred dough xfer balance {"label":{"issuer":{},"description":"dough"},"quantity":992}',
-  'fred dough use balance {"label":{"issuer":{},"description":"dough"},"quantity":992}',
-  'fred stock xfer balance {"label":{"issuer":{},"description":"wonka"},"quantity":2011}',
-  'fred stock use balance {"label":{"issuer":{},"description":"wonka"},"quantity":2011}',
-  'fred fins xfer balance {"label":{"issuer":{},"description":"fins"},"quantity":2946}',
-  'fred fins use balance {"label":{"issuer":{},"description":"fins"},"quantity":2946}',
+  'alice dough balance {"label":{"issuer":{},"description":"dough"},"quantity":1000}',
+  'alice stock balance {"label":{"issuer":{},"description":"wonka"},"quantity":2002}',
+  'alice fins balance {"label":{"issuer":{},"description":"fins"},"quantity":3055}',
+  'bob dough balance {"label":{"issuer":{},"description":"dough"},"quantity":1011}',
+  'bob stock balance {"label":{"issuer":{},"description":"wonka"},"quantity":1996}',
+  'fred dough balance {"label":{"issuer":{},"description":"dough"},"quantity":992}',
+  'fred stock balance {"label":{"issuer":{},"description":"wonka"},"quantity":2011}',
+  'fred fins balance {"label":{"issuer":{},"description":"fins"},"quantity":2946}',
 ];
 
 test('run contractHost Demo --covered-call-sale with SES', async t => {
@@ -264,9 +230,8 @@ test('run handoff Demo --Two Party handoff', async t => {
 const successfulWithdraw = [
   '=> setup called',
   'starting mintTestPixelListAssay',
-  'alice xfer balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":0,"y":1},{"x":1,"y":0},{"x":1,"y":1}]}',
-  'alice use balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":0,"y":0},{"x":0,"y":1},{"x":1,"y":0},{"x":1,"y":1}]}',
-  'payment xfer balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":0,"y":0}]}',
+  'alice balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":0,"y":1},{"x":1,"y":0},{"x":1,"y":1}]}',
+  'payment balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":0,"y":0}]}',
 ];
 
 test('run Pixel Demo mint and withdraw with SES', async t => {
@@ -307,21 +272,17 @@ const contractBobFirstGoldenPixel = [
   '=> setup called',
   '++ bob.tradeWell starting',
   '++ alice.acceptInvite starting',
-  'alice invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"clams"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]}],"seatIdentity":{},"seatDesc":"left"}}',
-  'verified invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"clams"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]}],"seatIdentity":{},"seatDesc":"left"}}',
+  'alice invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"clams"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]}],"seatIdentity":{},"seatDesc":"left"}}',
+  'verified invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"clams"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]}],"seatIdentity":{},"seatDesc":"left"}}',
   'bob escrow wins: {"label":{"issuer":{},"description":"clams"},"quantity":10} refs: null',
   'alice escrow wins: {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]} refs: null',
   '++ bob.tradeWell done',
   '++ bobP.tradeWell done:[[{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]},null],[{"label":{"issuer":{},"description":"clams"},"quantity":10},null]]',
   '++ DONE',
-  'alice money xfer balance {"label":{"issuer":{},"description":"clams"},"quantity":990}',
-  'alice money use balance {"label":{"issuer":{},"description":"clams"},"quantity":990}',
-  'alice pixels xfer balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":0,"y":0},{"x":0,"y":1},{"x":1,"y":1}]}',
-  'alice pixels use balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":0,"y":0},{"x":0,"y":1},{"x":1,"y":1}]}',
-  'bob money xfer balance {"label":{"issuer":{},"description":"clams"},"quantity":1011}',
-  'bob money use balance {"label":{"issuer":{},"description":"clams"},"quantity":1011}',
-  'bob pixels xfer balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":0}]}',
-  'bob pixels use balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":0}]}',
+  'alice money balance {"label":{"issuer":{},"description":"clams"},"quantity":990}',
+  'alice pixels balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":0,"y":0},{"x":0,"y":1},{"x":1,"y":1}]}',
+  'bob money balance {"label":{"issuer":{},"description":"clams"},"quantity":1011}',
+  'bob pixels balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":0}]}',
 ];
 
 test('run Pixel Demo --bob-first with SES', async t => {
@@ -341,21 +302,17 @@ const contractCoveredCallGoldenPixel = [
   '++ bob.offerAliceOption starting',
   '++ alice.acceptOptionDirectly starting',
   'Pretend singularity never happens',
-  'alice invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
-  'verified invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
+  'alice invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
+  'verified invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
   'alice option wins: {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]} refs: null',
   'bob option wins: {"label":{"issuer":{},"description":"smackers"},"quantity":10} refs: null',
   '++ bob.offerAliceOption done',
   '++ bobP.offerAliceOption done:[[{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]},null],[{"label":{"issuer":{},"description":"smackers"},"quantity":10},null]]',
   '++ DONE',
-  'alice money xfer balance {"label":{"issuer":{},"description":"smackers"},"quantity":990}',
-  'alice money use balance {"label":{"issuer":{},"description":"smackers"},"quantity":990}',
-  'alice pixel xfer balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":0,"y":0},{"x":0,"y":1},{"x":1,"y":1}]}',
-  'alice pixel use balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":0,"y":0},{"x":0,"y":1},{"x":1,"y":1}]}',
-  'bob money xfer balance {"label":{"issuer":{},"description":"smackers"},"quantity":1011}',
-  'bob money use balance {"label":{"issuer":{},"description":"smackers"},"quantity":1011}',
-  'bob pixel xfer balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":0}]}',
-  'bob pixel use balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":0}]}',
+  'alice money balance {"label":{"issuer":{},"description":"smackers"},"quantity":990}',
+  'alice pixel balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":0,"y":0},{"x":0,"y":1},{"x":1,"y":1}]}',
+  'bob money balance {"label":{"issuer":{},"description":"smackers"},"quantity":1011}',
+  'bob pixel balance {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":0}]}',
 ];
 
 test('run Pixel Demo --covered-call with SES', async t => {

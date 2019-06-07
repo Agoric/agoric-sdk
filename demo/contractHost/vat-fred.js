@@ -53,9 +53,7 @@ function makeFredMaker(E, host, log) {
             quantity: 55,
           });
 
-          const allegedSaleAmountP = E(
-            allegedSaleInvitePaymentP,
-          ).getXferBalance();
+          const allegedSaleAmountP = E(allegedSaleInvitePaymentP).getBalance();
 
           const verifiedSaleInvitePaymentP = E.resolve(allegedSaleAmountP).then(
             allegedSaleInviteAmount => {

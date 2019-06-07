@@ -10,22 +10,9 @@ function makeMint(description, makeAssay = makeNatAssay) {
   insist(description)`\
 Description must be truthy: ${description}`;
 
-  // Map from purse or payment to the transfer rights it currently
-  // holds. Transfer rights can move via payments, or they can cause a
-  // transfer of both the transfer and use rights by depositing it
-  // into a purse.
-  const xferRights = makePrivateName();
-
-  // Map from purse to useRights, where useRights do not include the
-  // right to transfer. Creating a payment moves some xferRights into the
-  // payment, but no useRights. Depositing a payment into another
-  // purse transfers both the xferRights and the useRights.
-  const useRights = makePrivateName();
-
-  // Map from payment to the home purse the payment came from. When the
-  // payment is deposited elsewhere, useRights are transfered from the
-  // home purse to the destination purse.
-  const homePurses = makePrivateName();
+  // Map from purse or payment to the rights it currently
+  // holds. Rights can move via payments
+  const rights = makePrivateName();
 
   // src is a purse or payment. Return a fresh payment.  One internal
   // function used for both cases, since they are so similar.
@@ -33,16 +20,9 @@ Description must be truthy: ${description}`;
     // eslint-disable-next-line no-use-before-define
     amount = assay.coerce(amount);
     _name = `${_name}`;
-    if (isPurse) {
-      insist(useRights.has(src))`\
-Purse expected: ${src}`;
-    } else {
-      insist(homePurses.has(src))`\
-Payment expected: ${src}`;
-    }
-    const srcOldXferAmount = xferRights.get(src);
+    const srcOldRightsAmount = rights.get(src);
     // eslint-disable-next-line no-use-before-define
-    const srcNewXferAmount = assay.without(srcOldXferAmount, amount);
+    const srcNewRightsAmount = assay.without(srcOldRightsAmount, amount);
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -54,14 +34,12 @@ Payment expected: ${src}`;
         // eslint-disable-next-line no-use-before-define
         return issuer;
       },
-      getXferBalance() {
-        return xferRights.get(payment);
+      getBalance() {
+        return rights.get(payment);
       },
     });
-    xferRights.set(src, srcNewXferAmount);
-    xferRights.init(payment, amount);
-    const homePurse = isPurse ? src : homePurses.get(src);
-    homePurses.init(payment, homePurse);
+    rights.set(src, srcNewRightsAmount);
+    rights.init(payment, amount);
     return payment;
   }
 
@@ -89,7 +67,7 @@ Payment expected: ${src}`;
 
     getExclusiveAll(srcPaymentP, name = 'a payment') {
       return Promise.resolve(srcPaymentP).then(srcPayment =>
-        takePayment(xferRights.get(srcPayment), false, srcPayment, name),
+        takePayment(rights.get(srcPayment), false, srcPayment, name),
       );
     },
 
@@ -112,28 +90,19 @@ Payment expected: ${src}`;
 
   function depositInto(purse, amount, srcPayment) {
     amount = assay.coerce(amount);
-    const purseOldXferAmount = xferRights.get(purse);
-    const srcOldXferAmount = xferRights.get(srcPayment);
+    const purseOldRightsAmount = rights.get(purse);
+    const srcOldRightsAmount = rights.get(srcPayment);
     // Also checks that the union is representable
-    const purseNewXferAmount = assay.with(purseOldXferAmount, amount);
-    const srcNewXferAmount = assay.without(srcOldXferAmount, amount);
-
-    const homePurse = homePurses.get(srcPayment);
-    const purseOldUseAmount = useRights.get(purse);
-    const homeOldUseAmount = useRights.get(homePurse);
-    // Also checks that the union is representable
-    const purseNewUseAmount = assay.with(purseOldUseAmount, amount);
-    const homeNewUseAmount = assay.without(homeOldUseAmount, amount);
+    const purseNewRightsAmount = assay.with(purseOldRightsAmount, amount);
+    const srcNewRightsAmount = assay.without(srcOldRightsAmount, amount);
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
     // During side effects below, any early exits should be made into
     // fatal turn aborts.
 
-    xferRights.set(srcPayment, srcNewXferAmount);
-    xferRights.set(purse, purseNewXferAmount);
-    useRights.set(homePurse, homeNewUseAmount);
-    useRights.set(purse, purseNewUseAmount);
+    rights.set(srcPayment, srcNewRightsAmount);
+    rights.set(purse, purseNewRightsAmount);
 
     return amount;
   }
@@ -150,11 +119,8 @@ Payment expected: ${src}`;
         getIssuer() {
           return issuer;
         },
-        getXferBalance() {
-          return xferRights.get(purse);
-        },
-        getUseBalance() {
-          return useRights.get(purse);
+        getBalance() {
+          return rights.get(purse);
         },
         deposit(amount, srcPaymentP) {
           return Promise.resolve(srcPaymentP).then(srcPayment => {
@@ -163,18 +129,17 @@ Payment expected: ${src}`;
         },
         depositAll(srcPaymentP) {
           return Promise.resolve(srcPaymentP).then(srcPayment => {
-            return depositInto(purse, xferRights.get(srcPayment), srcPayment);
+            return depositInto(purse, rights.get(srcPayment), srcPayment);
           });
         },
         withdraw(amount, name = 'a withdrawal payment') {
           return takePayment(amount, true, purse, name);
         },
         withdrawAll(name = 'a withdrawal payment') {
-          return takePayment(xferRights.get(purse), true, purse, name);
+          return takePayment(rights.get(purse), true, purse, name);
         },
       });
-      xferRights.init(purse, initialBalance);
-      useRights.init(purse, initialBalance);
+      rights.init(purse, initialBalance);
       return purse;
     },
   });
