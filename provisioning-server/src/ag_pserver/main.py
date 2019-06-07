@@ -12,30 +12,48 @@ from twisted.python import log
 import sys
 log.startLogging(sys.stdout)
 
-#MAILBOX_URL = u"ws://relay.magic-wormhole.io:4000/v1"
-MAILBOX_URL = u"ws://10.0.2.24:4000/v1"
+MAILBOX_URL = u"ws://relay.magic-wormhole.io:4000/v1"
+#MAILBOX_URL = u"ws://10.0.2.24:4000/v1"
 APPID = u"agoric.com/ag-testnet1/provisioning-tool"
 
 htmldir = os.path.join(os.path.dirname(__file__), "html")
 
 
-class Options(usage.Options):
+class SetConfigOptions(usage.Options):
+    pass
+
+class StartOptions(usage.Options):
     optParameters = [
         ["listen", "l", "tcp:8001", "client-visible HTTP listening port"],
         ["controller", "c", "tcp:localhost:8002", "controller's listening port for us to send control messages"],
+    ]
+
+class Options(usage.Options):
+    subCommands = [
+        ['set-cosmos-config', None, SetConfigOptions, "Pipe output of 'ag-setup-cosmos show-config' to this command"],
+        ['start', None, StartOptions, 'Start the HTTP server'],
+        ]
+    optParameters = [
         ["home", None, os.environ["HOME"] + '/.ag-pserver', "provisioning-server's state directory"],
         ]
 
+def cosmosConfigFile(home):
+    return home + '/cosmos-chain.json';
+
+
 class RequestCode(resource.Resource):
-    def __init__(self, reactor):
+    def __init__(self, reactor, o):
         self.reactor = reactor
+        self.opts = o
 
     def got_message(self, client_message, w):
         cm = json.loads(client_message.decode("utf-8"))
         print("pubkey:", cm["pubkey"])
+        f = open(cosmosConfigFile(self.opts['home']))
+        config = json.loads(f.read())
         server_message = {
-            "GCI": "chain GCI",
-            "rpcPorts": ["host1:port1", "host2:port2"],
+            "GCI": config['gci'],
+            "rpcPorts": config['rpcAddrs'],
             "ingressIndex": 1,
             }
         sm = json.dumps(server_message).encode("utf-8")
@@ -72,7 +90,7 @@ class RequestCode(resource.Resource):
 def run_server(reactor, o):
     print("dir is", __file__)
     root = static.File(htmldir)
-    root.putChild(b"request-code", RequestCode(reactor))
+    root.putChild(b"request-code", RequestCode(reactor, o))
     site = server.Site(root)
     s = endpoints.serverFromString(reactor, o["listen"])
     s.listen(site)
@@ -82,4 +100,17 @@ def run_server(reactor, o):
 def main():
     o = Options()
     o.parseOptions()
-    react(run_server, (o,))
+    if o.subCommand == 'set-cosmos-config':
+        try:
+            os.mkdir(o['home'])
+        except FileExistsError:
+            pass
+        cfgJson = sys.stdin.read()
+        f = open(cosmosConfigFile(o['home']), 'w')
+        f.write(cfgJson)
+        f.close()
+    elif o.subCommand == 'start':
+        react(run_server, ({**o, **o.subOptions},))
+    else:
+        print("Need either 'set-cosmos-config' or 'start'")
+        sys.exit(1)
