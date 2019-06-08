@@ -79,19 +79,20 @@ test('The user allows someone else to change the color but not the right to tran
   );
   const useRightAssay = exclusiveUseRightPayment.getIssuer().getAssay();
 
+  // first user stores the pixel location info
   const rawPixel = useRightAssay.quantity(
     exclusiveUseRightPayment.getBalance(),
   )[0];
 
   // TODO: send to other vat
   // other user below
+  // other user puts the useRight in their purse, changes color
   const otherUserPurse = useRightIssuer.makeEmptyPurse();
   const otherUserExclusiveUseRightPayment = await useRightIssuer.getExclusiveAll(
     exclusiveUseRightPayment,
   );
   await otherUserPurse.depositAll(otherUserExclusiveUseRightPayment);
 
-  // ok until this line
   const payment = await otherUserPurse.withdrawAll();
 
   const exclusivePayment = await useRightIssuer.getExclusiveAll(payment);

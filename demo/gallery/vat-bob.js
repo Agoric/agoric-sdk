@@ -3,27 +3,11 @@
 
 import harden from '@agoric/harden';
 
-import { makeCollect } from '../../core/contractHost';
+let storedExclusivePayment;
 
-function makeBobMaker(E, host, log) {
-  const collect = makeCollect(E, log);
-
+function makeBobMaker(E, log) {
   return harden({
-    make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      timerP,
-      myMoneyPurseP,
-      myPixelListPurseP,
-    ) {
-      const moneyIssuerP = E(myMoneyPurseP).getIssuer();
-      const moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
-
-      const pixelListIssuerP = E(myPixelListPurseP).getIssuer();
-      const pixelsNeededP = E(E(pixelListIssuerP).getAssay()).make([
-        { x: 1, y: 1 },
-      ]);
-
+    make(gallery) {
       const bob = harden({
         /**
          * This is not an imperative to Bob to buy something but rather
@@ -31,92 +15,40 @@ function makeBobMaker(E, host, log) {
          * Bob, and therefore a request that Bob sell something. OO naming
          * is a bit confusing here.
          */
-        async buy(pixelList, paymentAmount, paymentP) {
-          log('++ bob.buy starting');
-          return E.resolve(pixelListIssuerP).then(issuer => {
-            const depositResultP = E(myMoneyPurseP).deposit(
-              paymentAmount,
-              paymentP,
-            );
-            log('++ deposit');
-            const pixelAmount = {
-              label: {
-                issuer,
-                description: 'pixelList',
-              },
-              quantity: pixelList,
-            };
-            const withdrawalResultP = E(myPixelListPurseP).withdraw(
-              pixelAmount,
-            );
-            log('++ withdrawal');
-            return Promise.all([depositResultP, withdrawalResultP]).then(
-              _ => 'exchange successful',
-            );
-          });
-        },
+        async receiveUseRight(useRightPaymentP) {
+          log('++ bob.receiveUseRight starting');
 
-        tradeWell(alice) {
-          log('++ bob.tradeWell starting');
-          // Alice has 0, 0; 0, 1
-          // bob has 1, 0; 1, 1
-
-          // bob will be offering a pixel for money
-          const terms = harden([moneyNeededP, pixelsNeededP]);
-          const invitesP = E(escrowExchangeInstallationP).spawn(terms);
-          const aliceInviteP = invitesP.then(invites => invites[0]);
-          const bobInviteP = invitesP.then(invites => invites[1]);
-          const doneP = Promise.all([
-            E(alice).acceptInvite(aliceInviteP),
-            E(bob).acceptInvite(bobInviteP),
-          ]);
-          doneP.then(
-            _res => log('++ bob.tradeWell done'),
-            rej => log('++ bob.tradeWell reject: ', rej),
+          const useRightIssuer = E(useRightPaymentP).getIssuer();
+          const useRightPurse = E(useRightIssuer).makeEmptyPurse();
+          const exclusiveUseRightPaymentP = E(useRightIssuer).getExclusiveAll(
+            useRightPaymentP,
           );
-          return doneP;
+
+          // putting it in a purse isn't useful but it allows us to
+          // test the functionality
+          await E(useRightPurse).depositAll(exclusiveUseRightPaymentP);
+          const payment = await E(useRightPurse).withdrawAll();
+
+          const exclusivePayment = await E(useRightIssuer).getExclusiveAll(
+            payment,
+          );
+
+          // bob actually changes the color to light purple
+          const amountP = await E(gallery).changeColor(
+            exclusivePayment,
+            '#B695C0',
+          );
+
+          storedExclusivePayment = exclusivePayment;
+          return amountP;
         },
-
-        acceptInvite(inviteP) {
-          const seatP = E(host).redeem(inviteP);
-          return E.resolve(pixelsNeededP).then(pixelsNeeded => {
-            const pixelPaymentP = E(myPixelListPurseP).withdraw(pixelsNeeded);
-            E(seatP).offer(pixelPaymentP);
-            return collect(
-              seatP,
-              myMoneyPurseP,
-              myPixelListPurseP,
-              'bob escrow',
-            );
-          });
-        },
-
-        offerAliceOption(alice) {
-          log('++ bob.offerAliceOption starting');
-
-          const terms = harden([
-            escrowExchangeInstallationP,
-            moneyNeededP,
-            pixelsNeededP,
-            timerP,
-            'singularity',
-          ]);
-          const bobInviteP = E(coveredCallInstallationP).spawn(terms);
-          const bobSeatP = E(host).redeem(bobInviteP);
-          return E.resolve(pixelsNeededP).then(pixelsNeeded => {
-            console.log('got pixelsNeeded');
-            const pixelPaymentP = E(myPixelListPurseP).withdraw(pixelsNeeded);
-            const aliceInviteP = E(bobSeatP).offer(pixelPaymentP);
-            const doneP = Promise.all([
-              E(alice).acceptOption(aliceInviteP),
-              collect(bobSeatP, myMoneyPurseP, myPixelListPurseP, 'bob option'),
-            ]);
-            doneP.then(
-              _res => log('++ bob.offerAliceOption done'),
-              rej => log('++ bob.offerAliceOption reject: ', rej),
-            );
-            return doneP;
-          });
+        async tryToColor() {
+          // bob tries to change the color to light purple
+          const amountP = await E(gallery).changeColor(
+            storedExclusivePayment,
+            '#B695C0',
+          );
+          return amountP;
         },
       });
       return bob;
@@ -131,8 +63,8 @@ function setup(syscall, state, helpers) {
   }
   return helpers.makeLiveSlots(syscall, state, E =>
     harden({
-      makeBobMaker(host) {
-        return harden(makeBobMaker(E, host, log));
+      makeBobMaker() {
+        return harden(makeBobMaker(E, log));
       },
     }),
   );

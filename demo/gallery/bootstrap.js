@@ -36,6 +36,12 @@ function build(E, log) {
     const rawPixel = alicePixelAmount.quantity[0];
     log(`current color ${gallery.userFacet.getColor(rawPixel.x, rawPixel.y)}`);
   }
+  async function testAliceSendsOnlyUseRight(aliceMaker, bobMaker, gallery) {
+    log('starting testAliceSendsOnlyUseRight');
+    const aliceP = E(aliceMaker).make(gallery.userFacet);
+    const bobP = E(bobMaker).make(gallery.userFacet);
+    await E(aliceP).doSendOnlyUseRight(bobP);
+  }
 
   const obj0 = {
     async bootstrap(argv, vats) {
@@ -55,6 +61,14 @@ function build(E, log) {
           const gallery = makeGallery(E, canvasSize);
           log('alice is made');
           return testAliceChangesColor(aliceMaker, gallery);
+        }
+        case 'aliceSendsOnlyUseRight': {
+          log('aliceSendsOnlyUseRight');
+          const aliceMaker = await E(vats.alice).makeAliceMaker();
+          const bobMaker = await E(vats.bob).makeBobMaker();
+          const gallery = makeGallery(E, canvasSize);
+          log('alice is made');
+          return testAliceSendsOnlyUseRight(aliceMaker, bobMaker, gallery);
         }
         default: {
           throw new Error(`unrecognized argument value ${argv[0]}`);

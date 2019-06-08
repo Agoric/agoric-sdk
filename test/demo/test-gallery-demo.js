@@ -55,3 +55,29 @@ test('run gallery demo aliceChangesColor without SES', async t => {
   t.deepEquals(dump.log, expectedAliceChangesColorLog);
   t.end();
 });
+
+const expectedAliceSendsOnlyUseRightLog = [
+  '=> setup called',
+  'aliceSendsOnlyUseRight',
+  'alice is made',
+  'starting testAliceSendsOnlyUseRight',
+  '++ alice.doOnlySendUseRight starting',
+  'tapped Faucet',
+  'pixel x:1, y:4 has original color #D3D3D3',
+  '++ bob.receiveUseRight starting',
+  "pixel x:1, y:4 changed to bob's color #B695C0",
+  "pixel x:1, y:4 changed to alice's color #9FBF95",
+  'bob was unable to color: Error: no use rights present',
+];
+
+test('run gallery demo aliceSendsOnlyUseRight with SES', async t => {
+  const dump = await main(true, 'demo/gallery', ['aliceSendsOnlyUseRight']);
+  t.deepEquals(dump.log, expectedAliceSendsOnlyUseRightLog);
+  t.end();
+});
+
+test('run gallery demo aliceSendsOnlyUseRight without SES', async t => {
+  const dump = await main(false, 'demo/gallery', ['aliceSendsOnlyUseRight']);
+  t.deepEquals(dump.log, expectedAliceSendsOnlyUseRightLog);
+  t.end();
+});
