@@ -1,15 +1,10 @@
 ---
 
-- name: Set persistent_peers
-  lineinfile:
-    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
-    state: present
-    regexp: '^persistent_peers *='
-    line: 'persistent_peers = "{{ PERSISTENT_PEERS }}"'
-
 - name: Create service
   template:
     src: systemd.service.j2
     dest: "/etc/systemd/system/{{service}}.service"
+    execline: "{{ execline }}"
+  vars:
     execline: "/usr/src/ag-chain-cosmos/lib/ag-chain-cosmos start --proxy_app=kvstore"
   notify: reload services

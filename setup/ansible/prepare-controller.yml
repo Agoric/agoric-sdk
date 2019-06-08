@@ -8,5 +8,6 @@
     - service: ag-pserver
     - data: "{{ SETUP_HOME }}/{{ service }}/data"
   roles:
+    - init
     - init-controller
     - fetch-controller

@@ -1,10 +1,10 @@
 ---
 
-- name: Copy helper
-  copy:
+- name: Synchronize helper
+  synchronize:
     src: "{{HELPER_BINARY}}"
     dest: /usr/bin/
-    mode: 0755
+    mode: push
 
 - name: Synchronize install directory
   synchronize:
@@ -32,4 +32,10 @@
   file:
     src: "/usr/src/{{service}}/lib/{{service}}"
     dest: "/usr/local/bin/{{service}}"
+    state: link
+
+- name: "Symlink ag-solo"
+  file:
+    src: "/usr/src/{{service}}/bin/ag-solo"
+    dest: "/usr/local/bin/ag-solo"
     state: link

@@ -19,7 +19,7 @@ export const unlink = util.promisify(rawUnlink);
 export const rename = util.promisify(rawRename);
 const fsWrite = util.promisify(rawWrite);
 const fsClose = util.promisify(rawClose);
-export {resolve, basename};
+export {resolve, dirname, basename};
 
 export const needNotExists = async (filename) => {
     if (await exists(filename)) {

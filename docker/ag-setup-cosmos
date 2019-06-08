@@ -2,11 +2,14 @@
 PORT=26657
 NETWORK_NAME=${NETWORK_NAME-agoric}
 SETUP_HOME=${SETUP_HOME-$NETWORK_NAME}
-TTY=-it
+TTY=-i
+test -t 0 && TTY=-it
 FLAGS=
 case "$1" in
 shell)
+  shift
   FLAGS=--entrypoint=/bin/bash
+  set dummy ${1+"$@"}
   shift
   ;;
 show-*)

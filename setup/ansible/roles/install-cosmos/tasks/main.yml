@@ -1,5 +1,16 @@
 - name: "Install {{ data | default(service + '/data') }}/genesis.json"
+  become_user: root
+  become: true
   copy:
     src: "{{ data | default(service + '/data') }}/genesis.json"
     dest: "/home/{{ service }}/.{{ service }}/config/genesis.json"
+    owner: "{{ service }}"
+    group: "{{ service }}"
     mode: 0644
+
+- name: Set persistent_peers
+  lineinfile:
+    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    state: present
+    regexp: '^persistent_peers *='
+    line: 'persistent_peers = "{{ PERSISTENT_PEERS }}"'

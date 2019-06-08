@@ -1,0 +1,9 @@
+- name: "Install {{ data | default(service + '/data') }}/cosmos-chain.json"
+  become_user: root
+  become: true
+  copy:
+    src: "{{ data | default(service + '/data') }}/cosmos-chain.json"
+    dest: "/home/{{ service }}/.{{ service }}/cosmos-chain.json"
+    owner: "{{ service }}"
+    group: "{{ service }}"
+    mode: 0644

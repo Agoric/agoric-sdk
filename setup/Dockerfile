@@ -21,6 +21,7 @@ COPY . setup/
 
 # Add the provisioning server, so we can deploy it via Ansible.
 COPY --from=agoric/cosmic-swingset-pserver /usr/src/app/ve3/ /usr/src/app/ve3/
+COPY --from=agoric/cosmic-swingset /usr/src/app/lib/ag-solo/ /usr/src/app/lib/ag-solo/
 
 WORKDIR /usr/src/app/chains
 

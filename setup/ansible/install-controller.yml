@@ -5,10 +5,7 @@
   any_errors_fatal: true
   gather_facts: yes
   vars:
-    - service: ag-chain-cosmos
+    - service: ag-pserver
     - data: "{{ SETUP_HOME }}/{{ service }}/data"
-    - BOOTSTRAP_TOKENS: 1000000agtoken
   roles:
-    - init
-    - init-cosmos
-    - fetch-cosmos
+    - install-controller

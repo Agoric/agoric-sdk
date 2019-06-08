@@ -1,5 +1,5 @@
 import {SETUP_HOME, DEFAULT_BOOT_TOKENS, playbook, sleep, SSH_TYPE} from './setup';
-import {exists, readFile, resolve, stat, streamFromString, createFile, unlink} from './files';
+import {dirname, exists, readFile, resolve, stat, streamFromString, createFile, mkdir, unlink} from './files';
 import {chdir, doRun, needBacktick, needDoRun, shellEscape, shellMetaRegexp, setSilent} from './run';
 import doInit from './init';
 
@@ -8,26 +8,47 @@ import djson from 'deterministic-json';
 import crypto from 'crypto';
 import chalk from 'chalk';
 import parseArgs from 'minimist';
-import { mkdir } from 'fs';
+import { writeFile } from 'fs';
 
 const PROVISION_DIR = 'provision';
 const COSMOS_DIR = 'ag-chain-cosmos';
 const CONTROLLER_DIR = 'ag-pserver';
 
+const guardFile = async (file, maker) => {
+  if (await exists(file)) {
+    return 0;
+  }
+  const parent = dirname(file);
+  if (!await exists(parent)) {
+    await mkdir(parent);
+  }
+  let made = false;
+  const ret = await maker(async contents => {
+    await createFile(file, contents === undefined ? String(new Date) : contents);
+    made = true;
+  });
+  if (!made) {
+    // They failed.
+    throw ret;
+  }
+  return ret;
+};
+
 const provisionOutput = async () => {
   const jsonFile = `${PROVISION_DIR}/terraform.json`;
-  let json;
-  if (await exists(jsonFile)) {
-    json = String(await readFile(jsonFile));
-  } else {
-    json = await needBacktick(`terraform output -json`);
-    await createFile(jsonFile, json);
-  }
+  await guardFile(jsonFile, async makeFile => {
+    const json = await needBacktick(`terraform output -json`);
+    await makeFile(json);    
+  });
+  const json = String(await readFile(jsonFile));
   return JSON.parse(json);
 };
 
 const main = async (progname, rawArgs) => {
-  const {_: args, ...opts} = parseArgs(rawArgs);
+  const {_: args, ...opts} = parseArgs(rawArgs, {
+    boolean: ['version', 'help'],
+    stopEarly: true,
+  });
   const initHint = () => {
     const adir = process.cwd();
     console.error(`\
@@ -92,7 +113,6 @@ show-config      display the client connection parameters
       break;
     }
     case 'bootstrap': {
-      let [bootAddress] = args.slice(1);
       const bootTokens = DEFAULT_BOOT_TOKENS;
       const reMain = async (args) => {
         const displayArgs = [progname, ...args];
@@ -116,18 +136,13 @@ show-config      display the client connection parameters
         await needReMain(['init', dir, ...(process.env.AG_SETUP_COSMOS_NAME ? [process.env.AG_SETUP_COSMOS_NAME] : [])]);
       }
 
-      if (!await exists(PROVISION_DIR)) {
-        await mkdir(PROVISION_DIR);
-      }
-      const hostsFile = `${PROVISION_DIR}/hosts`;
-      if (!await exists(hostsFile)) {
+      await guardFile(`${PROVISION_DIR}/hosts`, async makeFile => {
         await needReMain(['provision', '-auto-approve']);
         const hosts = await needBacktick(`${shellEscape(progname)} show-hosts`);
-        await createFile(hostsFile, hosts);
-      }
+        await makeFile(hosts);
+      });
 
-      const knownHostsStamp = `${PROVISION_DIR}/ssh_known_hosts.stamp`;
-      if (!await exists(knownHostsStamp)) {
+      await guardFile(`${PROVISION_DIR}/ssh_known_hosts.stamp`, async makeFile => {
         while (true) {
           const code = await reMain(['play', 'update_known_hosts']);
           if (code === 0) {
@@ -137,68 +152,91 @@ show-config      display the client connection parameters
           }
           await sleep(10, 'for hosts to boot SSH');
         }
-        await createFile(knownHostsStamp, String(new Date));
-      }
+        makeFile();
+      });
 
       // Prepare all the machines.
-      const machineFile = `${PROVISION_DIR}/prepare.stamp`;
-      if (!await exists(machineFile)) {
+      await guardFile(`${PROVISION_DIR}/prepare.stamp`, async makeFile => {
         await needReMain(['play', 'prepare-machine']);
-        await createFile(machineFile, String(new Date));
-      }
+        await makeFile();
+      });
       
       // Initialize the controller.
-      if (!await exists(CONTROLLER_DIR)) {
-        await mkdir(CONTROLLER_DIR);
-      }
-      const conFile = `${CONTROLLER_DIR}/data/bootstrap-address.txt`;
-      if (!await exists(conFile)) {
+      await guardFile(`${CONTROLLER_DIR}/prepare.stamp`, async makeFile => {
         await needReMain(['play', 'prepare-controller']);
-        await createFile(conFile, String(new Date));
-      }
+        await makeFile();
+      });
+
+      // Fetch the boot address.
+      const bootAddress = String(await readFile(`${CONTROLLER_DIR}/data/node0/boot-address.txt`));
+
+      // Bump the chain name.
+      await guardFile(`${COSMOS_DIR}/chain-name.txt`, async makeFile => {
+        const instanceFile = `chain-instance.txt`;
+        if (!await exists(instanceFile)) {
+          chainInstance = 0;
+        } else {
+          chainInstance = Number(await readFile(instanceFile));
+        }
+        chainInstance ++;
+        const networkName = await readFile('network.txt');
+        await writeFile(instanceFile, String(chainInstance));
+        await makeFile(`${networkName}${chainInstance}`);
+      });
 
       // Bootstrap the chain nodes.
       const genesisFile = `${COSMOS_DIR}/data/genesis.json`;
-      if (!await exists(genesisFile)) {
+      await guardFile(genesisFile, async makeFile => {
         await needReMain(['play', 'prepare-cosmos', `-eBOOTSTRAP_ADDRESS=${bootAddress}`, `-eBOOTSTRAP_TOKENS=${bootTokens}`]);
         const merged = await needBacktick(`${shellEscape(progname)} show-genesis ${COSMOS_DIR}/data/*/genesis.json`);
-        await createFile(genesisFile, merged);
-      }
-
-      const installCosmosStamp = `${COSMOS_DIR}/install.stamp`;
-      if (!await exists(installCosmosStamp)) {
-        await needReMain(['play', 'install-cosmos']);
-        await createFile(installCosmosStamp, String(new Date));
-      }
+        await makeFile(merged);
+      });
 
       const peersFile = `${COSMOS_DIR}/peers.txt`;
-      let peers;
-      if (await exists(peersFile)) {
-        peers = await readFile(peersFile);
-      } else {
-        peers = await needBacktick(`${progname} show-peers`);
-        await createFile(peersFile, peers);
-      }
+      await guardFile(peersFile, async makeFile => {
+        const peers = await needBacktick(`${progname} show-peers`);
+        await makeFile(peers);
+      })
+      const peers = await readFile(peersFile);
 
-      const installPeersStamp = `${COSMOS_DIR}/peers.stamp`;
-      if (!await exists(installPeersStamp)) {
-        await needReMain(['play', 'install', `-ePERSISTENT_PEERS=${peers}`]);
-        await createFile(installPeersStamp, String(new Date));
-      }
+      await guardFile(`${COSMOS_DIR}/install.stamp`, async makeFile => {
+        await needReMain(['play', 'install-cosmos', `-ePERSISTENT_PEERS=${peers}`]);
+        await makeFile();
+      });
 
-      const startStamp = `${COSMOS_DIR}/start.stamp`;
-      if (!await exists(startStamp)) {
+      await guardFile(`${COSMOS_DIR}/service.stamp`, async makeFile => {
+        await needReMain(['play', 'install']);
+        await makeFile();
+      });
+
+      await guardFile(`${COSMOS_DIR}/start.stamp`, async makeFile => {
         await needReMain(['play', 'start']);
-        await createFile(startStamp, String(new Date));
-      }
+        await makeFile();
+      });
 
       await needReMain(['wait-for-any']);
       console.error(chalk.black.bgGreenBright.bold('Your Agoric Cosmos chain is now running!'));
-
-      const cfg = await needBacktick(`${progname} show-config`);
       process.stdout.write(chalk.yellow(cfg));
 
+      await guardFile(`${CONTROLLER_DIR}/data/cosmos-chain.json`, async makeFile => {
+        const cfg = await needBacktick(`${progname} show-config`);
+        await makeFile(cfg);
+      });
 
+      await guardFile(`${CONTROLLER_DIR}/install.stamp`, async makeFile => {
+        await needReMain(['play', 'install-controller']);
+        await makeFile();
+      });
+
+      await guardFile(`${CONTROLLER_DIR}/service.stamp`, async makeFile => {
+        await needReMain(['play', 'install', '-eservice=ag-pserver', '-eexecline=/usr/src/app/ve3/bin/ag-pserver']);
+        await makeFile();
+      });
+
+      await guardFile(`${CONTROLLER_DIR}/start.stamp`, async makeFile => {
+        await needReMain(['play', 'start', '-eservice=ag-pserver']);
+        await makeFile();
+      });
 
       initHint();
       break;
@@ -206,7 +244,7 @@ show-config      display the client connection parameters
 
     case 'show-chain-name': {
       await inited();
-      const chainName = await readFile(`${COSMOS_DIR}/ag-chain-cosmos-network.txt`);
+      const chainName = await readFile(`${COSMOS_DIR}/chain-name.txt`);
       process.stdout.write(chainName);
       break;
     }
@@ -447,13 +485,6 @@ show-config      display the client connection parameters
       await inited(`${progname} init`, SSH_PRIVATE_KEY_FILE);
       const prov = await provisionOutput();
       const out = process.stdout;
-      out.write(`\
-all:
-  children:
-`);
-      let allHosts = `\
-  hosts:
-`;
       const prefixLines = (str, prefix) => {
         const allLines = str.split('\n');
         if (allLines[allLines.length - 1] === '') {
@@ -463,21 +494,20 @@ all:
       };
       const indent = (str, nspaces) => prefixLines(str, ' '.repeat(nspaces));
 
-
       const byGroup = {};
       const makeGroup = (name) => {
         const beginBlock = `\
 ${name}:
   hosts:
 `
-        byGroup[name] = indent(beginBlock, 4);
-        return (block) => byGroup[name] += indent(block, 8);
+        byGroup[name] = beginBlock;
+        return (hostBlock) => byGroup[name] += indent(hostBlock, 4);
       };
 
-      const addChainCosmos = makeGroup('ag-chain-cosmos');
-      make
+      const addAll = makeGroup('all')
+      const addChainCosmos = makeGroup('ag-chain-cosmos', 4);
       for (const provider of Object.keys(prov.public_ips.value).sort()) {
-        const addProvider = makeGroup(provider);
+        const addProvider = makeGroup(provider, 4);
         const ips = prov.public_ips.value[provider];
         const offset = Number(prov.offsets.value[provider]);
         for (let instance = 0; instance < ips.length; instance ++) {
@@ -490,21 +520,24 @@ ${node}:
   ansible_ssh_private_key_file: '${SSH_PRIVATE_KEY_FILE}'
   ansible_python_interpreter: /usr/bin/python
 `;
-          allHosts += indent(host, 4);
           addProvider(host);
 
           // TODO: Don't make these hardcoded assumptions.
           // For now, we add all the nodes to ag-chain-cosmos, and the first node to ag-pserver.
           addChainCosmos(host);
           if (node === 'node0') {
-            makeGroup('ag-pserver')(host);
+            makeGroup('ag-pserver', 4)(host);
           }
         }
       }
+      out.write(byGroup.all);
+      out.write('  children:\n');
       for (const group of Object.keys(byGroup).sort()) {
-        out.write(group);
+        if (group === 'all') {
+          continue;
+        }
+        out.write(indent(byGroup[group], 4));
       }
-      out.write(allHosts);
       break;
     }
 
