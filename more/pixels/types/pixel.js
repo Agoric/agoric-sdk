@@ -33,4 +33,14 @@ function isLessThanOrEqual(leftPixel, rightPixel) {
   return leftPixel.x <= rightPixel.x && leftPixel.y <= rightPixel.y;
 }
 
-export { insistWithinBounds, insistPixel, isEqual, isLessThanOrEqual };
+function getString(pixel) {
+  return `x${pixel.x}y${pixel.y}`;
+}
+
+export {
+  insistWithinBounds,
+  insistPixel,
+  isEqual,
+  isLessThanOrEqual,
+  getString,
+};

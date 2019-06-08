@@ -35,7 +35,7 @@ function makePixelListAssayMaker(canvasSize) {
     const brand = new WeakSet();
 
     // our empty pixelList is an empty array
-    const emptyAmount = harden({ label: pixelLabel, pixelList: [] });
+    const emptyAmount = harden({ label: pixelLabel, quantity: [] });
     brand.add(emptyAmount);
 
     const assay = {
@@ -99,10 +99,9 @@ function makePixelListAssayMaker(canvasSize) {
         const leftPixelList = assay.quantity(leftAmount);
         const rightPixelList = assay.quantity(rightAmount);
 
-        return harden({
-          label: pixelLabel,
-          quantity: withPixelList(leftPixelList, rightPixelList),
-        });
+        const resultPixelList = withPixelList(leftPixelList, rightPixelList);
+
+        return assay.make(harden(resultPixelList));
       },
 
       // Covering set subtraction of erights.
@@ -113,31 +112,21 @@ function makePixelListAssayMaker(canvasSize) {
         const leftPixelList = assay.quantity(leftAmount);
         const rightPixelList = assay.quantity(rightAmount);
 
-        const pixelList = withoutPixelList(leftPixelList, rightPixelList);
+        const resultPixelList = withoutPixelList(leftPixelList, rightPixelList);
 
-        return harden({
-          label: pixelLabel,
-          quantity: pixelList,
-        });
+        return assay.make(harden(resultPixelList));
       },
     };
-    if (pixelLabel.description === 'pixelList') {
+    if (pixelLabel.description === 'pixels') {
       assay.toTransferAndUseRights = (
         srcAmount,
-        useRightLabel,
-        transferRightLabel,
+        useRightAssay,
+        transferRightAssay,
       ) => {
         const srcPixelList = assay.quantity(srcAmount);
 
-        const useAmount = {
-          label: useRightLabel,
-          quantity: srcPixelList,
-        };
-
-        const transferAmount = {
-          label: transferRightLabel,
-          quantity: srcPixelList,
-        };
+        const useAmount = useRightAssay.make(harden(srcPixelList));
+        const transferAmount = transferRightAssay.make(harden(srcPixelList));
 
         return {
           transferAmount,
@@ -151,20 +140,18 @@ function makePixelListAssayMaker(canvasSize) {
         // pixelListAmount -> useRightsAmount and transferRightsAmount
       };
     }
-    if (
-      pixelLabel.description === 'transferRight' ||
-      pixelLabel.description === 'useRight'
-    ) {
-      assay.toPixel = ({ useAmount, transferAmount }) => {
-        const usePixelList = assay.quantity(useAmount);
+    if (pixelLabel.description === 'pixelTransferRights') {
+      assay.toPixel = (
+        { useAmount, transferAmount },
+        useRightAssay,
+        pixelAssay,
+      ) => {
+        const usePixelList = useRightAssay.quantity(useAmount);
         const transferPixelList = assay.quantity(transferAmount);
 
         insistPixelListEqual(usePixelList, transferPixelList);
 
-        const pixelAmount = {
-          label: pixelLabel,
-          quantity: usePixelList,
-        };
+        const pixelAmount = pixelAssay.make(harden(transferPixelList));
         return pixelAmount;
       };
     }

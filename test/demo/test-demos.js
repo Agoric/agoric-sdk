@@ -105,7 +105,23 @@ test('run contractHost Demo --bob-first without SES', async t => {
   t.end();
 });
 
-const contractCoveredCallGolden = [ '=> setup called', '++ bob.offerAliceOption starting', '++ alice.acceptOptionDirectly starting', 'Pretend singularity never happens', 'alice invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}', 'verified invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}', 'alice option wins: {"label":{"issuer":{},"description":"yoyodyne"},"quantity":7} refs: null', 'bob option wins: {"label":{"issuer":{},"description":"smackers"},"quantity":10} refs: null', '++ bob.offerAliceOption done', '++ bobP.offerAliceOption done:[[{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},null],[{"label":{"issuer":{},"description":"smackers"},"quantity":10},null]]', '++ DONE', 'alice money balance {"label":{"issuer":{},"description":"smackers"},"quantity":990}', 'alice stock balance {"label":{"issuer":{},"description":"yoyodyne"},"quantity":2009}', 'bob money balance {"label":{"issuer":{},"description":"smackers"},"quantity":1011}', 'bob stock balance {"label":{"issuer":{},"description":"yoyodyne"},"quantity":1996}' ];
+const contractCoveredCallGolden = [
+  '=> setup called',
+  '++ bob.offerAliceOption starting',
+  '++ alice.acceptOptionDirectly starting',
+  'Pretend singularity never happens',
+  'alice invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
+  'verified invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
+  'alice option wins: {"label":{"issuer":{},"description":"yoyodyne"},"quantity":7} refs: null',
+  'bob option wins: {"label":{"issuer":{},"description":"smackers"},"quantity":10} refs: null',
+  '++ bob.offerAliceOption done',
+  '++ bobP.offerAliceOption done:[[{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},null],[{"label":{"issuer":{},"description":"smackers"},"quantity":10},null]]',
+  '++ DONE',
+  'alice money balance {"label":{"issuer":{},"description":"smackers"},"quantity":990}',
+  'alice stock balance {"label":{"issuer":{},"description":"yoyodyne"},"quantity":2009}',
+  'bob money balance {"label":{"issuer":{},"description":"smackers"},"quantity":1011}',
+  'bob stock balance {"label":{"issuer":{},"description":"yoyodyne"},"quantity":1996}',
+];
 
 test('run contractHost Demo --covered-call with SES', async t => {
   const dump = await main(true, 'demo/contractHost', ['covered-call']);

@@ -1,27 +1,21 @@
+/* eslint no-use-before-define: 0 */ // --> OFF
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
 
-import { makePrivateName } from '../util/PrivateName';
 import { insist } from '../util/insist';
 import { makeNatAssay } from './assays';
 
-function makeMint(description, makeAssay = makeNatAssay) {
+function makeMint(description, makeMintController, makeAssay = makeNatAssay) {
   insist(description)`\
 Description must be truthy: ${description}`;
-
-  // Map from purse or payment to the rights it currently
-  // holds. Rights can move via payments
-  const rights = makePrivateName();
 
   // src is a purse or payment. Return a fresh payment.  One internal
   // function used for both cases, since they are so similar.
   function takePayment(amount, isPurse, src, _name) {
-    // eslint-disable-next-line no-use-before-define
     amount = assay.coerce(amount);
     _name = `${_name}`;
-    const srcOldRightsAmount = rights.get(src);
-    // eslint-disable-next-line no-use-before-define
+    const srcOldRightsAmount = mintController.getAmount(src);
     const srcNewRightsAmount = assay.without(srcOldRightsAmount, amount);
 
     // ///////////////// commit point //////////////////
@@ -31,31 +25,26 @@ Description must be truthy: ${description}`;
 
     const payment = harden({
       getIssuer() {
-        // eslint-disable-next-line no-use-before-define
         return issuer;
       },
       getBalance() {
-        return rights.get(payment);
+        return mintController.getAmount(payment);
       },
     });
-    rights.set(src, srcNewRightsAmount);
-    rights.init(payment, amount);
+    mintController.recordPayment(src, payment, amount, srcNewRightsAmount);
     return payment;
   }
 
   const issuer = harden({
     getLabel() {
-      // eslint-disable-next-line no-use-before-define
       return assay.getLabel();
     },
 
     getAssay() {
-      // eslint-disable-next-line no-use-before-define
       return assay;
     },
 
     makeEmptyPurse(name = 'a purse') {
-      // eslint-disable-next-line no-use-before-define
       return mint.mint(assay.empty(), name); // mint and issuer call each other
     },
 
@@ -67,7 +56,12 @@ Description must be truthy: ${description}`;
 
     getExclusiveAll(srcPaymentP, name = 'a payment') {
       return Promise.resolve(srcPaymentP).then(srcPayment =>
-        takePayment(rights.get(srcPayment), false, srcPayment, name),
+        takePayment(
+          mintController.getAmount(srcPayment),
+          false,
+          srcPayment,
+          name,
+        ),
       );
     },
 
@@ -87,11 +81,12 @@ Description must be truthy: ${description}`;
   const label = harden({ issuer, description });
 
   const assay = makeAssay(label);
+  const mintController = makeMintController(assay);
 
   function depositInto(purse, amount, srcPayment) {
     amount = assay.coerce(amount);
-    const purseOldRightsAmount = rights.get(purse);
-    const srcOldRightsAmount = rights.get(srcPayment);
+    const purseOldRightsAmount = mintController.getAmount(purse);
+    const srcOldRightsAmount = mintController.getAmount(srcPayment);
     // Also checks that the union is representable
     const purseNewRightsAmount = assay.with(purseOldRightsAmount, amount);
     const srcNewRightsAmount = assay.without(srcOldRightsAmount, amount);
@@ -101,17 +96,47 @@ Description must be truthy: ${description}`;
     // During side effects below, any early exits should be made into
     // fatal turn aborts.
 
-    rights.set(srcPayment, srcNewRightsAmount);
-    rights.set(purse, purseNewRightsAmount);
+    mintController.recordDeposit(
+      srcPayment,
+      assay.coerce(srcNewRightsAmount),
+      purse,
+      assay.coerce(purseNewRightsAmount),
+    );
 
     return amount;
   }
 
+  let destroyed = false;
+  function destroyMint() {
+    destroyed = true;
+  }
+  function insistNotDestroyed() {
+    insist(!destroyed)`mint has been destroyed`;
+  }
+
   const mint = harden({
     getIssuer() {
+      insistNotDestroyed();
       return issuer;
     },
+    destroyAll() {
+      insistNotDestroyed();
+      mintController.destroyAll();
+    },
+    destroy(amount) {
+      insistNotDestroyed();
+      amount = assay.coerce(amount);
+      // for non-fungible tokens that are unique, destroy them by removing them from
+      // the purses/payments that they live in
+      mintController.destroy(amount);
+    },
+    revoke(amount) {
+      insistNotDestroyed();
+      this.destroy(amount);
+      return mint(amount);
+    },
     mint(initialBalance, _name = 'a purse') {
+      insistNotDestroyed();
       initialBalance = assay.coerce(initialBalance);
       _name = `${_name}`;
 
@@ -120,7 +145,7 @@ Description must be truthy: ${description}`;
           return issuer;
         },
         getBalance() {
-          return rights.get(purse);
+          return mintController.getAmount(purse);
         },
         deposit(amount, srcPaymentP) {
           return Promise.resolve(srcPaymentP).then(srcPayment => {
@@ -129,21 +154,31 @@ Description must be truthy: ${description}`;
         },
         depositAll(srcPaymentP) {
           return Promise.resolve(srcPaymentP).then(srcPayment => {
-            return depositInto(purse, rights.get(srcPayment), srcPayment);
+            return depositInto(
+              purse,
+              mintController.getAmount(srcPayment),
+              srcPayment,
+            );
           });
         },
         withdraw(amount, name = 'a withdrawal payment') {
           return takePayment(amount, true, purse, name);
         },
         withdrawAll(name = 'a withdrawal payment') {
-          return takePayment(rights.get(purse), true, purse, name);
+          return takePayment(
+            mintController.getAmount(purse),
+            true,
+            purse,
+            name,
+          );
         },
       });
-      rights.init(purse, initialBalance);
+      mintController.recordMint(purse, initialBalance);
       return purse;
     },
   });
-  return mint;
+
+  return { mint, destroyMint };
 }
 harden(makeMint);
 
