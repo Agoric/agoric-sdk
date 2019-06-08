@@ -5,10 +5,13 @@ import { makePixelListAssayMaker } from './pixelListAssay';
 import { makeMint } from '../../core/issuers';
 import { makeWholePixelList, insistPixelList } from './types/pixelList';
 import { makeMintController } from './pixelMintController';
+import { makeLruQueue } from './lruQueue';
 
-export function makeGallery(canvasSize = 10) {
+export function makeGallery(E, canvasSize = 10) {
   function getRandomColor() {
-    return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+    // TODO: actually getRandomColor in a deterministic way
+    // return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+    return '#D3D3D3';
   }
 
   function makeRandomData() {
@@ -30,6 +33,14 @@ export function makeGallery(canvasSize = 10) {
 
   // create all pixels (list of raw objs)
   const allPixels = makeWholePixelList(canvasSize);
+
+  // create LRU for "seemingly unpredictable" output from faucet
+  const { lruQueue, lruQueueBuilder } = makeLruQueue();
+
+  for (const pixel of allPixels) {
+    lruQueueBuilder.push(pixel);
+  }
+  lruQueueBuilder.resortArbitrarily(allPixels.length, 7);
 
   // START ERTP
 
@@ -80,74 +91,82 @@ export function makeGallery(canvasSize = 10) {
   const gallerySplitPixelPurse = pixelIssuer.makeEmptyPurse();
 
   // split pixelList into UseRights and TransferRights
-  async function transformToTransferAndUse(pixelListPayment) {
-    const pixelListAmount = pixelListPayment.getBalance();
-    // fail early if empty
-    const pixelList = pixelAssay.quantity(pixelListAmount);
-    if (pixelList.length <= 0) {
-      throw new Error('no pixels to transform');
-    }
+  async function transformToTransferAndUse(pixelListPaymentP) {
+    return Promise.resolve(pixelListPaymentP).then(async pixelListPayment => {
+      const pixelListAmount = pixelListPayment.getBalance();
+      // fail early if empty
+      const pixelList = pixelAssay.quantity(pixelListAmount);
+      if (pixelList.length <= 0) {
+        throw new Error('no pixels to transform');
+      }
 
-    const exclusivePayment = await pixelIssuer.getExclusiveAll(pixelListPayment);
-    await gallerySplitPixelPurse.depositAll(exclusivePayment); // conserve pixels
+      const exclusivePayment = await pixelIssuer.getExclusiveAll(
+        pixelListPayment,
+      );
+      await gallerySplitPixelPurse.depositAll(exclusivePayment); // conserve pixels
 
-    const { transferAmount, useAmount } = pixelAssay.toTransferAndUseRights(
-      pixelListAmount,
-      useRightAssay,
-      transferRightAssay,
-    );
+      const { transferAmount, useAmount } = pixelAssay.toTransferAndUseRights(
+        pixelListAmount,
+        useRightAssay,
+        transferRightAssay,
+      );
 
-    const transferRightPurse = transferRightMint.mint(transferAmount);
-    const useRightPurse = useRightMint.mint(useAmount);
+      const transferRightPurse = transferRightMint.mint(transferAmount);
+      const useRightPurse = useRightMint.mint(useAmount);
 
-    const transferRightPayment = await transferRightPurse.withdrawAll(
-      'transferRights',
-    );
-    const useRightPayment = await useRightPurse.withdrawAll('useRights');
+      const transferRightPayment = await transferRightPurse.withdrawAll(
+        'transferRights',
+      );
+      const useRightPayment = await useRightPurse.withdrawAll('useRights');
 
-    return {
-      transferRightPayment,
-      useRightPayment,
-    };
+      return {
+        transferRightPayment,
+        useRightPayment,
+      };
+    });
   }
 
   // merge UseRights and TransferRights into a pixel
-  async function transformToPixel(transferRightPayment) {
-    // someone else may have the useRightPayment so we must destroy the
-    // useRight
+  async function transformToPixel(transferRightPaymentP) {
+    return Promise.resolve(transferRightPaymentP).then(
+      async transferRightPayment => {
+        // someone else may have the useRightPayment so we must destroy the
+        // useRight
 
-    // we have an exclusive on the transfer right
-    const transferAmount = transferRightPayment.getBalance();
-    const quantity = transferRightAssay.quantity(transferAmount);
-    await transferRightIssuer.getExclusiveAll(transferRightPayment);
+        // we have an exclusive on the transfer right
+        const transferAmount = transferRightPayment.getBalance();
+        const quantity = transferRightAssay.quantity(transferAmount);
+        await transferRightIssuer.getExclusiveAll(transferRightPayment);
 
-    // create a useRightAmount corresponding to transferRight
-    const useAmount = useRightAssay.make(quantity);
+        // create a useRightAmount corresponding to transferRight
+        const useAmount = useRightAssay.make(quantity);
 
-    const pixelListAmount = pixelAssay.coerce(
-      transferRightAssay.toPixel(
-        {
-          useAmount,
-          transferAmount,
-        },
-        useRightAssay,
-        pixelAssay,
-      ),
+        const pixelListAmount = pixelAssay.coerce(
+          transferRightAssay.toPixel(
+            {
+              useAmount,
+              transferAmount,
+            },
+            useRightAssay,
+            pixelAssay,
+          ),
+        );
+
+        // commit point
+        await useRightMint.destroy(useAmount);
+        await transferRightMint.destroy(transferAmount);
+
+        const pixelPayment = await gallerySplitPixelPurse.withdraw(
+          pixelListAmount,
+          'pixels',
+        ); // conserve pixels
+        return pixelPayment;
+      },
     );
-
-    // commit point
-    await useRightMint.destroy(useAmount);
-    await transferRightMint.destroy(transferAmount);
-
-    const pixelPayment = await gallerySplitPixelPurse.withdraw(
-      pixelListAmount,
-      'pixels',
-    ); // conserve pixels
-    return pixelPayment;
   }
 
   function tapFaucet() {
-    const rawPixel = allPixels[Math.floor(Math.random() * allPixels.length)];
+    const rawPixel = lruQueue.popToTail();
     return getPixelPayment(harden([rawPixel]));
   }
 
@@ -158,24 +177,27 @@ export function makeGallery(canvasSize = 10) {
 
   const galleryUseRightPurse = useRightIssuer.makeEmptyPurse();
 
-  async function changeColor(useRightPayment, newColor) {
-    const pixelAmount = useRightPayment.getBalance();
-    const pixelList = useRightAssay.quantity(pixelAmount);
+  async function changeColor(useRightPaymentP, newColor) {
+    return Promise.resolve(useRightPaymentP).then(async useRightPayment => {
+      const pixelAmount = useRightPayment.getBalance();
+      const pixelList = useRightAssay.quantity(pixelAmount);
 
-    if (pixelList.length <= 0) {
-      throw new Error('no use rights present');
-    }
+      if (pixelList.length <= 0) {
+        throw new Error('no use rights present');
+      }
 
-    // if this works, it was a useRightPayment
-    // commit point
-    // don't get exclusive
-    await galleryUseRightPurse.depositAll(useRightPayment);
-    insistColor(newColor);
+      // if this works, it was a useRightPayment
+      // commit point
+      // don't get exclusive
+      await galleryUseRightPurse.depositAll(useRightPayment);
+      insistColor(newColor);
 
-    for (let i = 0; i < pixelList.length; i += 1) {
-      const pixel = pixelList[i];
-      setPixelState(pixel, newColor);
-    }
+      for (let i = 0; i < pixelList.length; i += 1) {
+        const pixel = pixelList[i];
+        setPixelState(pixel, newColor);
+      }
+      return pixelAmount;
+    });
   }
 
   function revokePixel(rawPixel) {

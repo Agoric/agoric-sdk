@@ -7,7 +7,7 @@ import harden from '@agoric/harden';
 // requeuing arbitrary entries to the tail. Initialize by pushing an arbitrary
 // number of items, then call resortArbitrarily() with the number of entries and
 // a step size (something prime and not a multiple of the row size).
-function makeLruQueue() {
+export function makeLruQueue() {
   function makeNode(obj, prev = null, next = null) {
     return { contents: obj, prev, next };
   }
@@ -106,8 +106,5 @@ function makeLruQueue() {
   const lruQueue = harden({ popToTail, requeue });
   const lruQueueBuilder = harden({ push, resortArbitrarily, isEmpty });
 
-  return { lruQueue, lruQueueBuilder };
+  return harden({ lruQueue, lruQueueBuilder });
 }
-harden(makeLruQueue());
-
-export { makeLruQueue };
