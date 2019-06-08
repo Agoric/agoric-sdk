@@ -1,4 +1,4 @@
-import {ACCOUNT_JSON, CHAIN_HOME, DEFAULT_BOOT_TOKENS, playbook, sleep, SSH_TYPE} from './setup';
+import {SETUP_HOME, DEFAULT_BOOT_TOKENS, playbook, sleep, SSH_TYPE} from './setup';
 import {exists, readFile, resolve, stat, streamFromString, createFile, unlink} from './files';
 import {chdir, doRun, needBacktick, needDoRun, shellEscape, shellMetaRegexp, setSilent} from './run';
 import doInit from './init';
@@ -8,17 +8,20 @@ import djson from 'deterministic-json';
 import crypto from 'crypto';
 import chalk from 'chalk';
 import parseArgs from 'minimist';
+import { mkdir } from 'fs';
 
-const AFTER_TERRAFORMING = ['hosts', `ssh_known_hosts.stamp`, `genesis.json`, `ssh_known_hosts`, `peers.txt`, `terraform.json`];
+const PROVISION_DIR = 'provision';
+const COSMOS_DIR = 'ag-chain-cosmos';
+const CONTROLLER_DIR = 'ag-pserver';
 
 const provisionOutput = async () => {
-  const jsonFile = `terraform.json`;
+  const jsonFile = `${PROVISION_DIR}/terraform.json`;
   let json;
   if (await exists(jsonFile)) {
     json = String(await readFile(jsonFile));
   } else {
     json = await needBacktick(`terraform output -json`);
-    await createFile(`terraform.json`, json);
+    await createFile(jsonFile, json);
   }
   return JSON.parse(json);
 };
@@ -51,7 +54,7 @@ rolling-restart  restart each node one at a time
 show-config      display the client connection parameters
 `);
   const inited = async (cmd = `${progname} init`, ...files) => {
-    files = [...files, 'ag-chain-cosmos-network.txt'];
+    files = [...files, 'ansible.cfg', 'vars.tf'];
     try {
       const ps = files.map((path) => stat(path));
       await Promise.all(ps);
@@ -61,7 +64,7 @@ show-config      display the client connection parameters
   };
   
   const cmd = args[0];
-  if (CHAIN_HOME) {
+  if (SETUP_HOME) {
     // Switch to the chain home.
     switch (cmd) {
       case 'bootstrap':
@@ -71,8 +74,8 @@ show-config      display the client connection parameters
       case 'show-config':
         break;
       default:
-        if (process.cwd() !== CHAIN_HOME) {
-          await chdir(CHAIN_HOME);
+        if (process.cwd() !== SETUP_HOME) {
+          await chdir(SETUP_HOME);
         }
         break;
     }
@@ -93,9 +96,6 @@ show-config      display the client connection parameters
       const bootTokens = DEFAULT_BOOT_TOKENS;
       const reMain = async (args) => {
         const displayArgs = [progname, ...args];
-        if (displayArgs.length >= 4 && displayArgs[1] === 'new-account') {
-          displayArgs[3] = '*redacted*';
-        }
         console.error('$', ...displayArgs.map(shellEscape));
         return main(progname, args);
       };
@@ -107,8 +107,8 @@ show-config      display the client connection parameters
         }
       };
 
-      const dir = CHAIN_HOME;
-      if (await exists(`${dir}/ag-chain-cosmos-network.txt`)) {
+      const dir = SETUP_HOME;
+      if (await exists(`${dir}/network.txt`)) {
         // Change to directory.
         await chdir(dir);
       } else {
@@ -116,31 +116,17 @@ show-config      display the client connection parameters
         await needReMain(['init', dir, ...(process.env.AG_SETUP_COSMOS_NAME ? [process.env.AG_SETUP_COSMOS_NAME] : [])]);
       }
 
-      const addressFile = `account-address.txt`;
-      if (bootAddress) {
-        await createFile(addressFile, bootAddress);
-      } else if (await exists(addressFile)) {
-        bootAddress = String(await readFile(addressFile));
-      } else {
-        const json = await readFile(ACCOUNT_JSON);
-        const {user, password} = JSON.parse(String(json));
-        await needReMain(['new-account', user, password]);
-        bootAddress = (await needBacktick(`ag-cosmos-helper keys show ${shellEscape(user)} -a`)).trimRight();
-        const {CONFIRM} = await inquirer.prompt([{type: "confirm", name: "CONFIRM", default: false, message: "Have you written the phrase down in a safe place?"}]);
-        if (!CONFIRM) {
-          throw `You are not responsible enough to run an Agoric Cosmos Chain!`;
-        }
-        await createFile(addressFile, address);
+      if (!await exists(PROVISION_DIR)) {
+        await mkdir(PROVISION_DIR);
       }
-  
-      const hostsFile = `hosts`;
+      const hostsFile = `${PROVISION_DIR}/hosts`;
       if (!await exists(hostsFile)) {
         await needReMain(['provision', '-auto-approve']);
         const hosts = await needBacktick(`${shellEscape(progname)} show-hosts`);
         await createFile(hostsFile, hosts);
       }
 
-      const knownHostsStamp = `ssh_known_hosts.stamp`;
+      const knownHostsStamp = `${PROVISION_DIR}/ssh_known_hosts.stamp`;
       if (!await exists(knownHostsStamp)) {
         while (true) {
           const code = await reMain(['play', 'update_known_hosts']);
@@ -153,20 +139,39 @@ show-config      display the client connection parameters
         }
         await createFile(knownHostsStamp, String(new Date));
       }
-      const genesisFile = `genesis.json`;
+
+      // Prepare all the machines.
+      const machineFile = `${PROVISION_DIR}/prepare.stamp`;
+      if (!await exists(machineFile)) {
+        await needReMain(['play', 'prepare-machine']);
+        await createFile(machineFile, String(new Date));
+      }
+      
+      // Initialize the controller.
+      if (!await exists(CONTROLLER_DIR)) {
+        await mkdir(CONTROLLER_DIR);
+      }
+      const conFile = `${CONTROLLER_DIR}/data/bootstrap-address.txt`;
+      if (!await exists(conFile)) {
+        await needReMain(['play', 'prepare-controller']);
+        await createFile(conFile, String(new Date));
+      }
+
+      // Bootstrap the chain nodes.
+      const genesisFile = `${COSMOS_DIR}/data/genesis.json`;
       if (!await exists(genesisFile)) {
-        await needReMain(['play', 'bootstrap', `-eBOOTSTRAP_ADDRESS=${bootAddress}`, `-eBOOTSTRAP_TOKENS=${bootTokens}`]);
-        const merged = await needBacktick(`${shellEscape(progname)} show-genesis genesis/*/genesis.json`);
+        await needReMain(['play', 'prepare-cosmos', `-eBOOTSTRAP_ADDRESS=${bootAddress}`, `-eBOOTSTRAP_TOKENS=${bootTokens}`]);
+        const merged = await needBacktick(`${shellEscape(progname)} show-genesis ${COSMOS_DIR}/data/*/genesis.json`);
         await createFile(genesisFile, merged);
       }
 
-      const installGenesisStamp = `genesis.stamp`;
-      if (!await exists(installGenesisStamp)) {
-        await needReMain(['play', 'install-genesis']);
-        await createFile(installGenesisStamp, String(new Date));
+      const installCosmosStamp = `${COSMOS_DIR}/install.stamp`;
+      if (!await exists(installCosmosStamp)) {
+        await needReMain(['play', 'install-cosmos']);
+        await createFile(installCosmosStamp, String(new Date));
       }
 
-      const peersFile = `peers.txt`;
+      const peersFile = `${COSMOS_DIR}/peers.txt`;
       let peers;
       if (await exists(peersFile)) {
         peers = await readFile(peersFile);
@@ -175,13 +180,13 @@ show-config      display the client connection parameters
         await createFile(peersFile, peers);
       }
 
-      const installPeersStamp = `peers.stamp`;
+      const installPeersStamp = `${COSMOS_DIR}/peers.stamp`;
       if (!await exists(installPeersStamp)) {
         await needReMain(['play', 'install', `-ePERSISTENT_PEERS=${peers}`]);
         await createFile(installPeersStamp, String(new Date));
       }
 
-      const startStamp = `start.stamp`;
+      const startStamp = `${COSMOS_DIR}/start.stamp`;
       if (!await exists(startStamp)) {
         await needReMain(['play', 'start']);
         await createFile(startStamp, String(new Date));
@@ -190,31 +195,32 @@ show-config      display the client connection parameters
       await needReMain(['wait-for-any']);
       console.error(chalk.black.bgGreenBright.bold('Your Agoric Cosmos chain is now running!'));
 
-      {
-        const cfg = await needBacktick(`${progname} show-config`);
-        process.stdout.write(chalk.yellow(cfg));
-      }
+      const cfg = await needBacktick(`${progname} show-config`);
+      process.stdout.write(chalk.yellow(cfg));
+
+
+
       initHint();
       break;
     }
 
     case 'show-chain-name': {
       await inited();
-      const chainName = await readFile(`ag-chain-cosmos-network.txt`);
+      const chainName = await readFile(`${COSMOS_DIR}/ag-chain-cosmos-network.txt`);
       process.stdout.write(chainName);
       break;
     }
 
     case 'show-bootstrap-address': {
       await inited();
-      const bootAddress = await readFile(`account-address.txt`);
+      const bootAddress = await readFile(`${COSMOS_DIR}/account-address.txt`);
       process.stdout.write(bootAddress);
       break;
     }
 
     case 'show-config': {
       setSilent(true);
-      await chdir(CHAIN_HOME);
+      await chdir(SETUP_HOME);
       await inited();
       const [chainName, gci, rpcAddrs, bootstrapAddress] = await Promise.all(
         ['show-chain-name', 'show-gci', 'show-rpcaddrs', 'show-bootstrap-address']
@@ -334,7 +340,7 @@ show-config      display the client connection parameters
       let i = 0;
       while (true) {
         // Read the node-id file for this node.
-        idPath = `genesis/node${i}/node-id`;
+        idPath = `${COSMOS_DIR}/genesis/node${i}/node-id`;
         if (!await exists(idPath)) {
           break;
         }
@@ -365,7 +371,7 @@ show-config      display the client connection parameters
     }
 
     case 'show-gci': {
-      const genesis = await readFile('genesis.json');
+      const genesis = await readFile(`${GENESIS}/genesis.json`);
       const s = djson.stringify(JSON.parse(String(genesis)));
       const gci = crypto.createHash('sha256').update(s).digest('hex');
       process.stdout.write(gci);
@@ -394,7 +400,7 @@ show-config      display the client connection parameters
     case 'destroy': {
       let [dir] = args.slice(1);
       if (!dir) {
-        dir = CHAIN_HOME;
+        dir = SETUP_HOME;
       }
       if (!dir) {
         throw `Need: [dir]`;
@@ -416,9 +422,8 @@ show-config      display the client connection parameters
       // Unlink all the state that was built up after terraforming.
       await Promise.all(AFTER_TERRAFORMING.map((name) => unlink(name).catch(e => {})));
 
-      // Remove the genesis directory and all stamps.
-      await needDoRun(['rm', '-rf', 'genesis']);
-      await needDoRun(['sh', '-c', 'rm -f *.stamp']);
+      // We no longer are provisioned or have Cosmos.
+      await needDoRun(['rm', '-rf', PROVISION_DIR, COSMOS_DIR]);
       break;
     }
 
@@ -438,7 +443,7 @@ show-config      display the client connection parameters
     }
 
     case 'show-hosts': {
-      const SSH_PRIVATE_KEY_FILE = resolve(process.cwd(), `id_${SSH_TYPE}`);
+      const SSH_PRIVATE_KEY_FILE = resolve(`id_${SSH_TYPE}`);
       await inited(`${progname} init`, SSH_PRIVATE_KEY_FILE);
       const prov = await provisionOutput();
       const out = process.stdout;
@@ -449,11 +454,30 @@ all:
       let allHosts = `\
   hosts:
 `;
+      const prefixLines = (str, prefix) => {
+        const allLines = str.split('\n');
+        if (allLines[allLines.length - 1] === '') {
+          allLines.pop();
+        }
+        return allLines.reduce((prior, line) => (prior + prefix + line + '\n'), '');
+      };
+      const indent = (str, nspaces) => prefixLines(str, ' '.repeat(nspaces));
+
+
+      const byGroup = {};
+      const makeGroup = (name) => {
+        const beginBlock = `\
+${name}:
+  hosts:
+`
+        byGroup[name] = indent(beginBlock, 4);
+        return (block) => byGroup[name] += indent(block, 8);
+      };
+
+      const addChainCosmos = makeGroup('ag-chain-cosmos');
+      make
       for (const provider of Object.keys(prov.public_ips.value).sort()) {
-        out.write(`\
-    ${provider}:
-      hosts:
-`)
+        const addProvider = makeGroup(provider);
         const ips = prov.public_ips.value[provider];
         const offset = Number(prov.offsets.value[provider]);
         for (let instance = 0; instance < ips.length; instance ++) {
@@ -466,17 +490,19 @@ ${node}:
   ansible_ssh_private_key_file: '${SSH_PRIVATE_KEY_FILE}'
   ansible_python_interpreter: /usr/bin/python
 `;
-          const prefixLines = (str, prefix) => {
-            const allLines = str.split('\n');
-            if (allLines[allLines.length - 1] === '') {
-              allLines.pop();
-            }
-            return allLines.reduce((prior, line) => (prior + prefix + line + '\n'), '');
-          };
-          const indent = (str, nspaces) => prefixLines(str, ' '.repeat(nspaces));
           allHosts += indent(host, 4);
-          out.write(indent(host, 8));
+          addProvider(host);
+
+          // TODO: Don't make these hardcoded assumptions.
+          // For now, we add all the nodes to ag-chain-cosmos, and the first node to ag-pserver.
+          addChainCosmos(host);
+          if (node === 'node0') {
+            makeGroup('ag-pserver')(host);
+          }
         }
+      }
+      for (const group of Object.keys(byGroup).sort()) {
+        out.write(group);
       }
       out.write(allHosts);
       break;

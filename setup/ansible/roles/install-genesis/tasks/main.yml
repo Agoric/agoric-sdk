@@ -1,5 +1,0 @@
-- name: "Install {{ genesis | default('genesis') }}.json"
-  copy:
-    src: "{{ genesis | default('genesis') }}.json"
-    dest: "/home/{{ service }}/.{{ service }}/config/genesis.json"
-    mode: 0644

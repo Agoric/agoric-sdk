@@ -8,7 +8,7 @@ Restart=on-failure
 User={{service}}
 Group={{service}}
 PermissionsStartOnly=true
-ExecStart=/usr/src/ag-chain-cosmos/lib/ag-chain-cosmos start --proxy_app=kvstore
+ExecStart={{execline}}
 ExecReload=/bin/kill -HUP $MAINPID
 KillSignal=SIGTERM
 

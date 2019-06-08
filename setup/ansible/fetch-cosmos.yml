@@ -1,12 +1,11 @@
 ---
 
-- hosts: all
+- hosts: "{{ service }}"
   user: root
   any_errors_fatal: true
   gather_facts: yes
   vars:
     - service: ag-chain-cosmos
-    - genesis: "{{ CHAIN_HOME }}/genesis"
+    - data: "{{ SETUP_HOME }}/{{ service }}/data"
   roles:
-    - install-genesis
-
+    - fetch-cosmos

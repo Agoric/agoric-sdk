@@ -1,0 +1,4 @@
+- name: "Initialize {{ service }}"
+  become: yes
+  become_user: "{{ service }}"
+  shell: "ag-solo init controller"

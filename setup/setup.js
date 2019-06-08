@@ -6,8 +6,8 @@ export const DEFAULT_BOOT_TOKENS = `1000000agmedallion`;
 export const PLAYBOOK_WRAPPER = `./ansible-playbook.sh`;
 export const SETUP_DIR = resolve(__dirname, '../setup');
 export const SSH_TYPE = 'ecdsa';
-export const CHAIN_HOME = process.env.AG_SETUP_COSMOS_HOME ? resolve(process.env.AG_SETUP_COSMOS_HOME) : "";
-process.env.AG_SETUP_COSMOS_HOME = CHAIN_HOME;
+export const SETUP_HOME = process.env.AG_SETUP_COSMOS_HOME ? resolve(process.env.AG_SETUP_COSMOS_HOME) : "";
+process.env.AG_SETUP_COSMOS_HOME = SETUP_HOME;
 
 export const playbook = (name, ...args) => {
   const fullPath = `${SETUP_DIR}/ansible/${name}.yml`;

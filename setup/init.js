@@ -1,4 +1,4 @@
-import {ACCOUNT_JSON, CHAIN_HOME, PLAYBOOK_WRAPPER, SETUP_DIR, SSH_TYPE} from './setup';
+import {ACCOUNT_JSON, SETUP_HOME, PLAYBOOK_WRAPPER, SETUP_DIR, SSH_TYPE} from './setup';
 import {basename, chmod, createFile, mkdir, needNotExists, resolve} from './files';
 import {chdir, needDoRun, shellEscape} from './run';
 import fetch from 'node-fetch';
@@ -50,12 +50,6 @@ const nodeCount = (count, force) => {
         return ` (${count} nodes)`;
     }
     return '';
-};
-
-const genUserPassword = (NETWORK_NAME) => {
-    const genRandomString = (len) =>
-        [...Array(len)].map(i=>(~~(Math.random()*36)).toString(36)).join('');
-    return [`${NETWORK_NAME}${genRandomString(8)}`, genRandomString(14)];
 };
 
 const askPlacement = (PLACEMENTS) => {
@@ -144,18 +138,17 @@ const askDatacenter = async (PLACEMENT, dcs, placement) => {
 const doInit = async (progname, args) => {
     let [dir, NETWORK_NAME] = args.slice(1);
     if (!dir) {
-      dir = CHAIN_HOME;
+      dir = SETUP_HOME;
     }
     if (!dir) {
       throw `Need: [dir] [[network name]]`;
     }
-    await needNotExists(`${dir}/ag-chain-cosmos-network.txt`);
+    await needNotExists(`${dir}/network.txt`);
 
     const adir = resolve(process.cwd(), dir);
     const SSH_PRIVATE_KEY_FILE = resolve(adir, `id_${SSH_TYPE}`);
-    const BACKEND_TF = process.env.AG_SETUP_COSMOS_BACKEND;
     if (!NETWORK_NAME) {
-        NETWORK_NAME = process.env.CHAIN_NAME;
+        NETWORK_NAME = process.env.NETWORK_NAME;
     }
     if (!NETWORK_NAME) {
       NETWORK_NAME = basename(dir);
@@ -172,10 +165,6 @@ const doInit = async (progname, args) => {
     } catch (e) {}
     await chdir(dir);
 
-    // Create new credentials.
-    const [user, password] = genUserPassword(NETWORK_NAME);
-    await createFile(ACCOUNT_JSON, JSON.stringify({user, password}, undefined, 2));
-    
     while (true) {
         let {PLACEMENT} = await askPlacement(PLACEMENTS);
         if (!PLACEMENT) {
@@ -326,32 +315,27 @@ output "offsets" {
 }
 `);
 
-    // TODO: Do this all within Node so it works on Windows.
-    if (BACKEND_TF) {
-      await needDoRun(['sh', '-c',
-        `sed -e 's!@WORKSPACE_NAME@!ag-chain-cosmos-${NETWORK_NAME}!g' ${shellEscape(BACKEND_TF)} > ${shellEscape(`backend.tf`)}`]);
-    }
     // Set empty password.
     await needDoRun(['ssh-keygen', '-N', '', '-t', SSH_TYPE, '-f', SSH_PRIVATE_KEY_FILE])
 
     await createFile(PLAYBOOK_WRAPPER, `\
 #! /bin/sh
 exec ansible-playbook -f10 \\
-  -eCHAIN_HOME=${shellEscape(process.cwd())} \\
-  -eNETWORK_NAME=${shellEscape(NETWORK_NAME)} \\
+  -eSETUP_HOME=${shellEscape(process.cwd())} \\
+  -eNETWORK_NAME=\`cat ${shellEscape(resolve('network.txt'))}\` \\
   \${1+"\$@"}
 `);
     await chmod(PLAYBOOK_WRAPPER, '0755');
 
     await createFile(`ansible.cfg`, `\
 [defaults]
-inventory = ./hosts
+inventory = ./provision/hosts
 
 [ssh_connection]
-ssh_args = -oForwardAgent=yes -oUserKnownHostsFile=ssh_known_hosts -oControlMaster=auto -oControlPersist=30m
+ssh_args = -oForwardAgent=yes -oUserKnownHostsFile=provision/ssh_known_hosts -oControlMaster=auto -oControlPersist=30m
 `);
 
-    await createFile(`ag-chain-cosmos-network.txt`, NETWORK_NAME);
+    await createFile(`network.txt`, NETWORK_NAME);
 };
 
 export default doInit;

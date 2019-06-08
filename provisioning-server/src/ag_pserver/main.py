@@ -49,6 +49,9 @@ class RequestCode(resource.Resource):
     def got_message(self, client_message, w):
         cm = json.loads(client_message.decode("utf-8"))
         print("pubkey:", cm["pubkey"])
+
+        # TODO: Do treq to controller node
+
         f = open(cosmosConfigFile(self.opts['home']))
         config = json.loads(f.read())
         server_message = {

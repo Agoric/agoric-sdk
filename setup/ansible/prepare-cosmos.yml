@@ -6,8 +6,8 @@
   gather_facts: yes
   vars:
     - service: ag-chain-cosmos
-    - NETWORK_NAME: testnet
+    - data: "{{ SETUP_HOME }}/{{ service }}/data"
     - BOOTSTRAP_TOKENS: 1000000agtoken
   roles:
-    - init
-
+    - init-cosmos
+    - fetch-cosmos
