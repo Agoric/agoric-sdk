@@ -4,11 +4,12 @@ import harden from '@agoric/harden';
 
 import { makeMint } from '../../core/issuers';
 import { makePixelListAssayMaker } from '../../more/pixels/pixelListAssay';
+import { makeMintController } from '../../more/pixels/pixelMintController';
 
 function build(_E, _log) {
   function makePixelListMint(canvasSize) {
     const makePixelListAssay = makePixelListAssayMaker(canvasSize);
-    return makeMint('pixelList', makePixelListAssay);
+    return makeMint('pixelList', makeMintController, makePixelListAssay);
   }
   return harden({ makePixelListMint, makeMint });
 }

@@ -5,8 +5,13 @@ import harden from '@agoric/harden';
 
 import { insist } from '../util/insist';
 import { makeNatAssay } from './assays';
+import { makeBasicMintController } from './mintController';
 
-function makeMint(description, makeMintController, makeAssay = makeNatAssay) {
+function makeMint(
+  description,
+  makeMintController = makeBasicMintController,
+  makeAssay = makeNatAssay,
+) {
   insist(description)`\
 Description must be truthy: ${description}`;
 
@@ -110,33 +115,33 @@ Description must be truthy: ${description}`;
   function destroyMint() {
     destroyed = true;
   }
-  function insistNotDestroyed() {
+  function insistMintNotDestroyed() {
     insist(!destroyed)`mint has been destroyed`;
   }
 
   const mint = harden({
     getIssuer() {
-      insistNotDestroyed();
+      insistMintNotDestroyed();
       return issuer;
     },
     destroyAll() {
-      insistNotDestroyed();
+      insistMintNotDestroyed();
       mintController.destroyAll();
     },
     destroy(amount) {
-      insistNotDestroyed();
+      insistMintNotDestroyed();
       amount = assay.coerce(amount);
       // for non-fungible tokens that are unique, destroy them by removing them from
       // the purses/payments that they live in
       mintController.destroy(amount);
     },
     revoke(amount) {
-      insistNotDestroyed();
+      insistMintNotDestroyed();
       this.destroy(amount);
       return mint(amount);
     },
     mint(initialBalance, _name = 'a purse') {
-      insistNotDestroyed();
+      insistMintNotDestroyed();
       initialBalance = assay.coerce(initialBalance);
       _name = `${_name}`;
 
@@ -178,7 +183,8 @@ Description must be truthy: ${description}`;
     },
   });
 
-  return { mint, destroyMint };
+  // TODO: pass along destroyMint capability too
+  return mint;
 }
 harden(makeMint);
 
@@ -186,7 +192,12 @@ harden(makeMint);
 // currency. Returns a promise for a peg object that asynchonously
 // converts between the two. The local currency is synchronously
 // transferable locally.
-function makePeg(E, remoteIssuerP, makeAssay = makeNatAssay) {
+function makePeg(
+  E,
+  remoteIssuerP,
+  makeMintController,
+  makeAssay = makeNatAssay,
+) {
   const remoteLabelP = E(remoteIssuerP).getLabel();
 
   // The remoteLabel is a local copy of the remote pass-by-copy
@@ -198,7 +209,7 @@ function makePeg(E, remoteIssuerP, makeAssay = makeNatAssay) {
     const backingPurseP = E(remoteIssuerP).makeEmptyPurse('backing');
 
     const { description } = remoteLabel;
-    const localMint = makeMint(description, makeAssay);
+    const localMint = makeMint(description, makeMintController, makeAssay);
     const localIssuer = localMint.getIssuer();
     const localLabel = localIssuer.getLabel();
 

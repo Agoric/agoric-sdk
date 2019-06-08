@@ -72,6 +72,7 @@ function build(E, log) {
   function mintTestNumber(mint) {
     log('starting mintTestNumber');
     const mMintP = E(mint).makeMint('quatloos');
+    mMintP.then(newMint => console.log(newMint));
 
     const alicePurseP = E(mMintP).mint(1000, 'alice');
     const paymentP = E(alicePurseP).withdraw(50);
