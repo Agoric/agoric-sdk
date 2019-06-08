@@ -5,6 +5,9 @@ import harden from '@agoric/harden';
 
 import { insist } from '../../util/insist';
 
+let storedUseRight;
+let storedTransferRight;
+
 function makeAliceMaker(E, log) {
   // TODO BUG: All callers should wait until settled before doing
   // anything that would change the balance before show*Balance* reads
@@ -125,7 +128,7 @@ function makeAliceMaker(E, log) {
             useRightIssuer,
           ).getExclusiveAll(useRightPayment2P);
 
-          const changedAmount = await E(gallery).changeColor(
+          await E(gallery).changeColor(
             exclusiveUseRightPayment2P,
             '#9FBF95', // a light green
           );
@@ -144,6 +147,61 @@ function makeAliceMaker(E, log) {
               _res => log('uh oh, bob was able to color'),
               rej => log(`bob was unable to color: ${rej}`),
             );
+        },
+        async doTapFaucetAndStore() {
+          log('++ alice.doTapFaucetAndStore starting');
+          const pixelPaymentP = E(gallery).tapFaucet();
+          const pixelIssuer = E(pixelPaymentP).getIssuer();
+          const exclusivePixelPaymentP = await E(pixelIssuer).getExclusiveAll(
+            pixelPaymentP,
+          );
+
+          const {
+            useRightPayment: useRightPaymentP,
+            transferRightPayment: transferRightPaymentP,
+          } = await E(gallery).transformToTransferAndUse(
+            exclusivePixelPaymentP,
+          );
+
+          const useRightIssuer = E(useRightPaymentP).getIssuer();
+          const exclusiveUseRightPaymentP = E(useRightIssuer).getExclusiveAll(
+            useRightPaymentP,
+          );
+
+          const transferRightIssuer = E(transferRightPaymentP).getIssuer();
+          const exclusiveTransferRightPaymentP = E(
+            transferRightIssuer,
+          ).getExclusiveAll(transferRightPaymentP);
+
+          storedUseRight = exclusiveUseRightPaymentP;
+          storedTransferRight = exclusiveTransferRightPaymentP;
+
+          const amount = await E(storedUseRight).getBalance();
+
+          const rawPixel = amount.quantity[0];
+
+          return rawPixel;
+        },
+        async checkAfterRevoked() {
+          log('++ alice.checkAfterRevoked starting');
+          // changeColor throws an Error with an empty payment
+          // check transferRight is empty
+          E(gallery)
+            .changeColor(
+              storedUseRight,
+              '#9FBF95', // a light green
+            )
+            .then(
+              _res => log(`successfully changed color, but shouldn't`),
+              rej => log(`successfully threw ${rej}`),
+            );
+
+          const amount = await E(storedTransferRight).getBalance();
+          log(
+            `amount quantity should be an array of length 0: ${
+              amount.quantity.length
+            }`,
+          );
         },
       });
       return alice;

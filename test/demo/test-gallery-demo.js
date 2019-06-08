@@ -58,7 +58,7 @@ test('run gallery demo aliceChangesColor without SES', async t => {
 
 const expectedAliceSendsOnlyUseRightLog = [
   '=> setup called',
-  'aliceSendsOnlyUseRight',
+  'starting aliceSendsOnlyUseRight',
   'alice is made',
   'starting testAliceSendsOnlyUseRight',
   '++ alice.doOnlySendUseRight starting',
@@ -79,5 +79,27 @@ test('run gallery demo aliceSendsOnlyUseRight with SES', async t => {
 test('run gallery demo aliceSendsOnlyUseRight without SES', async t => {
   const dump = await main(false, 'demo/gallery', ['aliceSendsOnlyUseRight']);
   t.deepEquals(dump.log, expectedAliceSendsOnlyUseRightLog);
+  t.end();
+});
+
+const expectedGalleryRevokesLog = [
+  '=> setup called',
+  'starting galleryRevokes',
+  'starting testGalleryRevokes',
+  '++ alice.doTapFaucetAndStore starting',
+  '++ alice.checkAfterRevoked starting',
+  'amount quantity should be an array of length 0: 0',
+  'successfully threw Error: no use rights present',
+];
+
+test('run gallery demo galleryRevokes with SES', async t => {
+  const dump = await main(true, 'demo/gallery', ['galleryRevokes']);
+  t.deepEquals(dump.log, expectedGalleryRevokesLog);
+  t.end();
+});
+
+test('run gallery demo galleryRevokes without SES', async t => {
+  const dump = await main(false, 'demo/gallery', ['galleryRevokes']);
+  t.deepEquals(dump.log, expectedGalleryRevokesLog);
   t.end();
 });

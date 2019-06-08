@@ -5,7 +5,6 @@ import harden from '@agoric/harden';
 import { escrowExchangeSrc } from '../../core/escrow';
 import { coveredCallSrc } from '../../core/coveredCall';
 import { makeWholePixelList } from '../../more/pixels/types/pixelList';
-import { makeMintController } from '../../more/pixels/pixelMintController';
 
 function build(E, log) {
   // TODO BUG: All callers should wait until settled before doing

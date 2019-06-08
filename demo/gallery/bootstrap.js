@@ -5,25 +5,6 @@ import harden from '@agoric/harden';
 import { makeGallery } from '../../more/pixels/gallery';
 
 function build(E, log) {
-  // TODO BUG: All callers should wait until settled before doing
-  // anything that would change the balance before show*Balance* reads
-  // it.
-  function showPaymentBalance(name, paymentP) {
-    return E(paymentP)
-      .getBalance()
-      .then(amount => log(name, ' balance ', amount));
-  }
-  // TODO BUG: All callers should wait until settled before doing
-  // anything that would change the balance before show*Balance* reads
-  // it.
-  function showPurseBalances(name, purseP) {
-    return Promise.all([
-      E(purseP)
-        .getBalance()
-        .then(amount => log(name, ' balance ', amount)),
-    ]);
-  }
-
   function testTapFaucet(aliceMaker, gallery) {
     log('starting testTapFaucet');
     const aliceP = E(aliceMaker).make(gallery.userFacet);
@@ -41,6 +22,13 @@ function build(E, log) {
     const aliceP = E(aliceMaker).make(gallery.userFacet);
     const bobP = E(bobMaker).make(gallery.userFacet);
     await E(aliceP).doSendOnlyUseRight(bobP);
+  }
+  async function testGalleryRevokes(aliceMaker, bobMaker, gallery) {
+    log('starting testGalleryRevokes');
+    const aliceP = E(aliceMaker).make(gallery.userFacet);
+    const rawPixel = await E(aliceP).doTapFaucetAndStore();
+    gallery.adminFacet.revokePixel(rawPixel);
+    E(aliceP).checkAfterRevoked();
   }
 
   const obj0 = {
@@ -63,12 +51,19 @@ function build(E, log) {
           return testAliceChangesColor(aliceMaker, gallery);
         }
         case 'aliceSendsOnlyUseRight': {
-          log('aliceSendsOnlyUseRight');
+          log('starting aliceSendsOnlyUseRight');
           const aliceMaker = await E(vats.alice).makeAliceMaker();
           const bobMaker = await E(vats.bob).makeBobMaker();
           const gallery = makeGallery(E, canvasSize);
           log('alice is made');
           return testAliceSendsOnlyUseRight(aliceMaker, bobMaker, gallery);
+        }
+        case 'galleryRevokes': {
+          log('starting galleryRevokes');
+          const aliceMaker = await E(vats.alice).makeAliceMaker();
+          const bobMaker = await E(vats.bob).makeBobMaker();
+          const gallery = makeGallery(E, canvasSize);
+          return testGalleryRevokes(aliceMaker, bobMaker, gallery);
         }
         default: {
           throw new Error(`unrecognized argument value ${argv[0]}`);

@@ -112,6 +112,8 @@ Description must be truthy: ${description}`;
   }
 
   let destroyed = false;
+  // eventually, we will want to be able to credibly destroy the mint
+  // eslint-disable-next-line no-unused-vars
   function destroyMint() {
     destroyed = true;
   }
