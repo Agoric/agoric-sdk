@@ -19,30 +19,27 @@ The `ag-setup-cosmos` tool is used to manage testnets.  Unless you are developin
 
 ```
 # Fill out the node placement options, then go for coffee while it boots.
-ag-setup-cosmos bootstrap [optional bootstrap wallet address]
+# Note: Supply --instance=NNN if you want chain instance ID other than 1
+ag-setup-cosmos bootstrap
 
 # Wait a long time while the nodes bootstrap and begin publishing blocks.
 # If there is an error, bootstrap is idempotent (i.e. you can rerun
 # ag-setup-cosmos bootstrap
 # and it will pick up where it left off).
-
-# If you need to run a shell command on all nodes:
-ag-setup-cosmos run all hostname
-
-# or just the first node:
-ag-setup-cosmos run node0 hostname
-```
-
-Now, set up the provisioning server:
-
-```
-ag-setup-cosmos show-config | ve3/bin/ag-pserver set-cosmos-config
-ve3/bin/ag-pserver start
 ```
 
 **Congratulations, you are running the Agoric testnet!**
 
 ```
+# If you need to run a shell command on all nodes:
+ag-setup-cosmos run all hostname
+
+# or just the first node:
+ag-setup-cosmos run node0 hostname
+
+# Reconfigure the chain and provisioner for a new ID with incremented suffix
+ag-setup-cosmos bootstrap --bump
+
 # Unprovision the testnet deployment, but do not require reinitialization.
 # Will prompt you for confirmation.
 ag-setup-cosmos destroy
