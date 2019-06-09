@@ -1,5 +1,5 @@
 REPOSITORY = agoric/cosmic-swingset
-TAG := $(shell sed -ne 's/.*"version": "\(.*\)".*/\1/p' package.json)
+TAG := $(shell test ! -f package.json || sed -ne 's/.*"version": "\(.*\)".*/\1/p' package.json)
 
 include Makefile.ledger
 all: build install

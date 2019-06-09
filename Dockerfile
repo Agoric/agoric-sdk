@@ -2,7 +2,7 @@
 FROM golang:stretch AS go-build
 
 WORKDIR /usr/src/app
-COPY Makefile* package.json *.go go.* ./
+COPY Makefile* *.go go.* ./
 COPY x/ x/
 COPY cmd/ cmd/
 COPY lib/*.go lib/
