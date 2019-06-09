@@ -12,7 +12,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/ertp": "0.0.4",
-    "@agoric/swingset-vat": "^0.0.11",
+    "@agoric/swingset-vat": "^0.0.12",
     "@iarna/toml": "^2.2.3",
     "bindings": "^1.2.1",
     "deterministic-json": "^1.0.5",
