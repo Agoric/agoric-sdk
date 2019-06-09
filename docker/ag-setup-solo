@@ -1,5 +1,13 @@
 #! /bin/sh
+SOLO_NAME=${SOLO_NAME-agoric}
+SOLO_HOME=${SOLO_HOME-$SOLO_NAME}
+FLAGS=
+if test "$1" = shell; then
+  FLAGS=--entrypoint=/bin/bash
+  shift
+fi
 exec docker run \
   --volume=ag-solo-state:/usr/src/app/solo \
-  --rm -it \
-  agoric/cosmic-swingset-solo ${1+"$@"}
+  -eAG_SOLO_BASEDIR="$SOLO_HOME" \
+  --rm -it $FLAGS \
+  agoric/cosmic-swingset-setup-solo ${1+"$@"}

@@ -7,7 +7,7 @@ all: build install
 docker-install:
 	install -m 755 docker/* /usr/local/bin/
 
-docker-build: docker-build-base docker-build-pserver docker-build-setup docker-build-solo
+docker-build: docker-build-base docker-build-pserver docker-build-setup docker-build-solo docker-build-setup-solo
 
 docker-build-setup:
 	docker build -t $(REPOSITORY)-setup:latest ./setup
@@ -21,7 +21,10 @@ docker-build-pserver:
 docker-build-solo:
 	docker build -t $(REPOSITORY)-solo:latest ./lib/ag-solo
 
-docker-push: docker-push-base docker-push-setup docker-push-pserver docker-push-solo
+docker-build-setup-solo:
+	docker build -t $(REPOSITORY)-setup-solo:latest ./setup-solo
+
+docker-push: docker-push-base docker-push-setup docker-push-pserver docker-push-solo docker-push-setup-solo
 
 docker-push-setup:
 	docker tag $(REPOSITORY)-setup:latest $(REPOSITORY)-setup:$(TAG)
@@ -42,6 +45,11 @@ docker-push-solo:
 	docker tag $(REPOSITORY)-solo:latest $(REPOSITORY)-solo:$(TAG)
 	docker push $(REPOSITORY)-solo:latest
 	docker push $(REPOSITORY)-solo:$(TAG)
+
+docker-push-setup-solo:
+	docker tag $(REPOSITORY)-setup-solo:latest $(REPOSITORY)-setup-solo:$(TAG)
+	docker push $(REPOSITORY)-setup-solo:latest
+	docker push $(REPOSITORY)-setup-solo:$(TAG)
 
 compile-go: go.sum
 	GO111MODULE=on go build -v -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go

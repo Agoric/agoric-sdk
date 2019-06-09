@@ -287,7 +287,7 @@ show-config      display the client connection parameters
       await guardFile(`${CONTROLLER_DIR}/solo-start.stamp`, () => needReMain(['play', 'start', '-eservice=ag-controller', '-euser=ag-pserver']));
 
       await guardFile(`${CONTROLLER_DIR}/service.stamp`, () =>
-        needReMain(['play', 'install', '-eservice=ag-pserver', '-eexecline="/usr/src/app/ve3/bin/ag-pserver start"']));
+        needReMain(['play', 'install', '-eservice=ag-pserver', '-eexecline="/usr/src/app/ve3/bin/ag-pserver start -c http://localhost:8000/vat"']));
 
       await guardFile(`${CONTROLLER_DIR}/start.stamp`, () => needReMain(['play', 'start', '-eservice=ag-pserver']));
 

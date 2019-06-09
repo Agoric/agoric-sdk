@@ -3,6 +3,7 @@ node_modules
 Dockerfile
 chains
 setup
+setup-solo
 provisioning-server
 solo
 build

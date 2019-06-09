@@ -17,11 +17,13 @@ AG_SOLO = os.path.abspath('bin/ag-solo')
 if not os.path.exists(AG_SOLO):
     AG_SOLO = 'ag-solo'
 
+START_DIR = os.path.abspath('.')
+
 class Options(usage.Options):
     optParameters = [
         ]
-    def parseArgs(self, basedir):
-        self['basedir'] = basedir
+    def parseArgs(self, basedir=os.environ['AG_SOLO_BASEDIR']):
+        self['basedir'] = os.environ['AG_SOLO_BASEDIR'] = basedir
 
 @defer.inlineCallbacks
 def run_client(reactor, o, pubkey):
@@ -37,9 +39,12 @@ def run_client(reactor, o, pubkey):
     print("server message is", sm)
     yield w.close()
 
+    if not sm['ok']:
+        print("error from server:", sm['error'])
+        return
+
     BASEDIR = o['basedir']
-    os.chdir(BASEDIR)
-    subprocess.run([AG_SOLO, 'set-gci-ingress', sm['gci'], *sm['rpcAddrs']], check=True)
+    subprocess.run([AG_SOLO, 'set-gci-ingress', '--chainID=%s' % sm['chainName'], sm['gci'], *sm['rpcAddrs']], check=True)
 
 def guard(path, fun):
     if os.path.exists(path):
@@ -61,4 +66,5 @@ def main():
     pkfile = open(pkeyFile)
     pubkey = pkfile.read()
     pkfile.close()
+    pubkey = pubkey.strip()
     react(run_client, (o,pubkey))

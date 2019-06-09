@@ -49,32 +49,42 @@ class RequestCode(resource.Resource):
     @defer.inlineCallbacks
     def got_message(self, client_message, nickname):
         cm = json.loads(client_message.decode("utf-8"))
-        print("pubkey:", cm["pubkey"])
-        m = json.dumps({"type": "pleaseProvision",
-                        "nickname": nickname,
-                        "pubkey": cm["pubkey"]});
+        mobj = {"type": "pleaseProvision",
+                "nickname": nickname,
+                "pubkey": cm["pubkey"],
+                }
+        print("mobj:", mobj)
+        m = json.dumps(mobj)
         controller_url = self.opts["controller"]
         # this HTTP request goes to the controller machine, where it should
         # be routed to vat-provisioning.js and the pleaseProvision() method.
-        resp = yield treq.post(controller_url, m.encode('utf-8'),
-                               headers={b'Content-Type': [b'application/json']})
-        r = yield treq.json_content(resp)
-        if not r.get("ok"):
+        try:
+            resp = yield treq.post(controller_url, m.encode('utf-8'),
+                                headers={b'Content-Type': [b'application/json']})
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+        rawResp = yield treq.json_content(resp)
+        if not rawResp.get("ok"):
             print("provisioning server error", r)
-            returnValue({"ok": false, "error": r})
+            return {"ok": False, "error": r.get('rej')}
+        r = rawResp['res']
         ingressIndex = r["ingressIndex"]
         f = open(cosmosConfigFile(self.opts['home']))
         config = json.loads(f.read())
         # this message is sent back to setup-solo/src/ag_setup_solo/main.py
         server_message = {
+            "ok": True,
             "gci": config['gci'],
             "rpcAddrs": config['rpcAddrs'],
+            "chainName": config['chainName'],
             "ingressIndex": ingressIndex,
             }
-        returnValue(server_message)
+        print("send server_message", server_message)
+        return server_message
 
     def send_provisioning_response(self, server_message, w):
         sm = json.dumps(server_message).encode("utf-8")
+        print("send provisioning response", server_message)
         w.send_message(sm)
         d = w.close()
         d.addCallbacks(lambda _: print("provisioning complete"),
@@ -87,7 +97,7 @@ class RequestCode(resource.Resource):
         code = yield w.get_code()
 
         d = w.get_message()
-        d.addCallback(self.got_message, nickname)
+        d.addCallback(self.got_message, nickname.decode('utf-8'))
         d.addCallback(self.send_provisioning_response, w)
 
         with open(os.path.join(htmldir, "response-template.html")) as f:
