@@ -42,44 +42,6 @@ the environment:
 * `step()`: execute the next action on the run queue
 * `run()`: keep stepping until the run queue is empty
 
-## Contract Host Examples
-
-The `demo/contractHost` directory contains the basic ERTP examples, ported
-from the PlaygroundVat environment, which were themselves ported from the old
-es-lab environment. This demonstrates Mints, Purses, and Escrow Agents.
-
-```
-$ bin/vat run demo/contractHost -- mint
-= loading config from basedir demo/contractHost
-= adding vat 'alice' from /home/warner/bindmounts/trees/SwingSet/demo/contractHost/vat-alice.js
-= adding vat 'bob' from /home/warner/bindmounts/trees/SwingSet/demo/contractHost/vat-bob.js
-= adding vat 'host' from /home/warner/bindmounts/trees/SwingSet/demo/contractHost/vat-host.js
-= adding vat 'mint' from /home/warner/bindmounts/trees/SwingSet/demo/contractHost/vat-mint.js
-starting mintTest
-makeMint
-makeEmptyPurse(deposit)
-deposit[deposit]#1: bal=0 amt=50
- dep[deposit]#1 (post-P): bal=0 amt=50
-getBalance 950
-getBalance 50
-++ balances: [ 950, 50 ]
-++ DONE
-= vat finished
-```
-
-The driver program (`demo/contractHost/bootstrap.js`) uses the provided
-argument to switch modes:
-
-* `mint`: creates a Mint, build a Purse, deposit it into a different Purse
-* `trivial`: build a Contract Host, submit a trivial contract, execute
-* `alice-first`: Alice and Bob perform a basic money-for-stock escrow transfer
-* `bob-first`: same, but exercise different ordering
-* `bob-first-lies`: same, but Bob submits a false (non-matching) contract,
-  and the Contract Host rejects the operation
-
-The `bob-first-lies` mode does not work yet, as our serialization library
-cannot yet handle Errors.
-
 ## Vat Basedirs
 
 The main argument to `bin/vat` is a "basedir", which contains sources for all
