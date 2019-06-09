@@ -203,6 +203,7 @@ show-config      display the client connection parameters
 
       // Stop all the services.
       await reMain(['play', 'stop', '-eservice=ag-pserver']);
+      await reMain(['play', 'stop', '-eservice=ag-controller', '-euser=ag-pserver']);
       await reMain(['play', 'stop', '-eservice=ag-chain-cosmos']);
 
       // Blow away controller/cosmos state.
