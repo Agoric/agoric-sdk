@@ -47,7 +47,7 @@ class RequestCode(resource.Resource):
         self.opts = o
 
     @defer.inlineCallbacks
-    def got_message(self, client_message):
+    def got_message(self, client_message, nickname):
         cm = json.loads(client_message.decode("utf-8"))
         print("pubkey:", cm["pubkey"])
         m = json.dumps({"type": "pleaseProvision",
@@ -56,9 +56,9 @@ class RequestCode(resource.Resource):
         controller_url = self.opts["controller"]
         # this HTTP request goes to the controller machine, where it should
         # be routed to vat-provisioning.js and the pleaseProvision() method.
-        resp = await treq.post(controller_url, m.encode('utf-8'),
+        resp = yield treq.post(controller_url, m.encode('utf-8'),
                                headers={b'Content-Type': [b'application/json']})
-        r = await treq.json_content(resp)
+        r = yield treq.json_content(resp)
         if not r.get("ok"):
             print("provisioning server error", r)
             returnValue({"ok": false, "error": r})
@@ -73,7 +73,7 @@ class RequestCode(resource.Resource):
             }
         returnValue(server_message)
 
-    def send_provisioning_response(server_message, w):
+    def send_provisioning_response(self, server_message, w):
         sm = json.dumps(server_message).encode("utf-8")
         w.send_message(sm)
         d = w.close()
@@ -87,8 +87,8 @@ class RequestCode(resource.Resource):
         code = yield w.get_code()
 
         d = w.get_message()
-        d.addCallback(self.got_message)
-        d.addCallback(send_provisioning_response, w)
+        d.addCallback(self.got_message, nickname)
+        d.addCallback(self.send_provisioning_response, w)
 
         with open(os.path.join(htmldir, "response-template.html")) as f:
             template = f.read()
