@@ -1,5 +1,6 @@
 from twisted.internet.task import react
 from twisted.web import static, resource, server
+from twisted.web.template import Element, XMLFile, renderer, flattenString
 from twisted.internet import endpoints, defer
 from twisted.python import usage
 import wormhole
@@ -40,6 +41,46 @@ class Options(usage.Options):
 def cosmosConfigFile(home):
     return home + '/cosmos-chain.json';
 
+class ConfigElement(Element):
+    loader = XMLFile(os.path.join(htmldir, "index.html"))
+
+    def __init__(self, config):
+        self._config = config
+
+    @renderer
+    def config(self, request, tag):
+        tag.fillSlots(cosmos_config=self._config)
+        return tag
+
+class ResponseElement(Element):
+    loader = XMLFile(os.path.join(htmldir, "response-template.html"))
+
+    def __init__(self, code):
+        self._code = code
+    
+    @renderer
+    def code(self, request, tag):
+        return self._code
+
+class Provisioner(resource.Resource):
+    def __init__(self, reactor, o):
+        self.reactor = reactor
+        self.opts = o
+
+    @defer.inlineCallbacks
+    def build_page(self):
+        f = open(cosmosConfigFile(self.opts['home']))
+        html = yield flattenString(None, ConfigElement(f.read()))
+        defer.returnValue(html)
+
+    def render_GET(self, req):
+        d = self.build_page()
+        def built(response):
+            req.write(response)
+            req.finish()
+        d.addCallback(built)
+        d.addErrback(log.err)
+        return server.NOT_DONE_YET
 
 class RequestCode(resource.Resource):
     def __init__(self, reactor, o):
@@ -100,10 +141,9 @@ class RequestCode(resource.Resource):
         d.addCallback(self.got_message, nickname.decode('utf-8'))
         d.addCallback(self.send_provisioning_response, w)
 
-        with open(os.path.join(htmldir, "response-template.html")) as f:
-            template = f.read()
-        template = template.replace("$$$CODE$$$", code)
-        defer.returnValue(template.encode("utf-8"))
+
+        html = yield flattenString(None, ResponseElement(code))
+        defer.returnValue(html)
 
     def render_POST(self, req):
         nickname = req.args[b"nickname"][0]
@@ -119,6 +159,9 @@ class RequestCode(resource.Resource):
 def run_server(reactor, o):
     print("dir is", __file__)
     root = static.File(htmldir)
+    provisioner = Provisioner(reactor, o)
+    root.putChild(b"", provisioner)
+    root.putChild(b"index.html", provisioner)
     root.putChild(b"request-code", RequestCode(reactor, o))
     site = server.Site(root)
     s = endpoints.serverFromString(reactor, o["listen"])

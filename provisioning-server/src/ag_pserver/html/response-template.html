@@ -1,5 +1,5 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
 <head>
 <meta charset="utf-8"/>
 <title>Agoric Testnet Provisioning Page</title>
@@ -8,9 +8,9 @@
 <body>
 <h2>Provision Your Client Node</h2>
 
-<div>Your provisioning code is: <span class="provisioning-code">$$$CODE$$$</span><div>
+<div>Your provisioning code is: <span class="provisioning-code"><span t:render="code">$$$CODE$$$</span></span></div>
 
-<br>
+<br/>
 
 <div>Now run the following command and enter the provisioning code when asked:</div>
 

@@ -1,5 +1,5 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
 <head>
 <meta charset="utf-8"/>
 <title>Agoric Testnet Provisioning Page</title>
@@ -15,10 +15,12 @@
 <div>
   <form action="request-code" method="post">
     <label for="nickname">Nickname: </label>
-    <input type="text" name="nickname" size="20">
-    <input type="submit" value="Request Provisioning Code">
+    <input type="text" name="nickname" size="20"/>
+    <input type="submit" value="Request Provisioning Code"/>
   </form>
 </div>
+
+<div t:render="config"><pre><t:slot name="cosmos_config" /></pre></div>
 
 </body>
 </html>

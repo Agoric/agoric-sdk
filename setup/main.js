@@ -286,8 +286,16 @@ show-config      display the client connection parameters
         needReMain(['play', 'install', '-eservice=ag-controller', '-euser=ag-pserver', '-echdir=/home/ag-pserver/controller', '-eexecline="/usr/local/bin/ag-solo start"']));
       await guardFile(`${CONTROLLER_DIR}/solo-start.stamp`, () => needReMain(['play', 'start', '-eservice=ag-controller', '-euser=ag-pserver']));
 
+      let pserverFlags = '';
+      const installFlags = [];
+      const pub = `${networkName}.crt`, key = `${networkName}.key`;
+      if (await exists(pub) && await exists(key)) {
+        pserverFlags = ' ' + shellEscape(`--listen=ssl:443:privateKey=.ag-pserver/${key}:certKey=.ag-pserver/${pub}`);
+        installFlags.push(`-eserviceLines=AmbientCapabilities=CAP_NET_BIND_SERVICE`);
+      }
+      const execline = `/usr/src/app/ve3/bin/ag-pserver start${pserverFlags} -c http://localhost:8000/vat`;
       await guardFile(`${CONTROLLER_DIR}/service.stamp`, () =>
-        needReMain(['play', 'install', '-eservice=ag-pserver', '-eexecline="/usr/src/app/ve3/bin/ag-pserver start -c http://localhost:8000/vat"']));
+        needReMain(['play', 'install', '-eservice=ag-pserver', `-eexecline=${shellEscape(execline)}`, ...installFlags]));
 
       await guardFile(`${CONTROLLER_DIR}/start.stamp`, () => needReMain(['play', 'start', '-eservice=ag-pserver']));
 

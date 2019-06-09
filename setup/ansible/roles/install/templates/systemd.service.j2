@@ -4,6 +4,7 @@ Requires=network-online.target
 After=network-online.target
 
 [Service]
+{{ serviceLines | default('') }}
 WorkingDirectory={{chdir}}
 Restart=on-failure
 User={{user}}

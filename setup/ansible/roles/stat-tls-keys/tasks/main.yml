@@ -1,0 +1,8 @@
+
+- name: "check if {{ NETWORK_NAME }} keys exist"
+  stat:
+    path: "{{ SETUP_HOME }}/{{ NETWORK_NAME }}.{{ item }}"
+  register: "tls{{ item }}"
+  with_items:
+    - crt
+    - key
