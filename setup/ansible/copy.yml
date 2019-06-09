@@ -6,7 +6,6 @@
   gather_facts: yes
   vars:
     - service: ag-chain-cosmos
-    - HELPER_BINARY: "/usr/local/bin/ag-cosmos-helper"
     - APPDIR: "{{lookup('pipe', 'pwd')}}/../.."
   roles:
     - copy

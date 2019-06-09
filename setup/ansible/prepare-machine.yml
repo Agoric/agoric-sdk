@@ -7,8 +7,5 @@
   vars:
     - service: ag-chain-cosmos
     - NODEJS_VERSION: 12
-    - HELPER_BINARY: "/usr/local/bin/ag-cosmos-helper"
-    - APPDIR: "{{lookup('pipe', 'pwd')}}/../.."
   roles:
     - prereq
-    - copy

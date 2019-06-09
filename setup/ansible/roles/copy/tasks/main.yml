@@ -5,6 +5,7 @@
     src: "{{HELPER_BINARY}}"
     dest: /usr/bin/
     mode: push
+  when: HELPER_BINARY is defined
 
 - name: Synchronize install directory
   synchronize:
@@ -24,17 +25,23 @@
 
 - name: "Symlink /usr/src/app"
   file:
-    src: "/usr/src/{{service}}"
+    src: "/usr/src/ag-chain-cosmos"
     dest: /usr/src/app
     state: link
 
-- name: "Symlink {{service}}"
+- name: "Symlink ag-chain-cosmos"
   file:
-    src: "/usr/src/{{service}}/lib/{{service}}"
-    dest: "/usr/local/bin/{{service}}"
+    src: "/usr/src/ag-chain-cosmos/lib/ag-chain-cosmos"
+    dest: "/usr/local/bin/ag-chain-cosmos"
     state: link
 
-- name: "Symlink ag-solo"
+- name: "Symlink /usr/src/ag-solo"
+  file:
+    src: "/usr/src/ag-chain-cosmos"
+    dest: /usr/src/ag-solo
+    state: link
+
+- name: "Symlink /usr/local/bin/ag-solo"
   file:
     src: "/usr/src/{{service}}/bin/ag-solo"
     dest: "/usr/local/bin/ag-solo"

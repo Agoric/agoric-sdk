@@ -6,8 +6,6 @@
   gather_facts: yes
   vars:
     - service: ag-chain-cosmos
-    - NETWORK_NAME: testnet
-    - BOOTSTRAP_TOKENS: 1000000agtoken
   roles:
     - init
 

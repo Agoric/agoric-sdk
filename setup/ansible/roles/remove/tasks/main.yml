@@ -1,0 +1,6 @@
+- name: "Remove {{to_remove}}"
+  become_user: "{{service}}"
+  become: yes
+  file:
+    path: "{{ to_remove }}"
+    state: absent

@@ -4,9 +4,10 @@ Requires=network-online.target
 After=network-online.target
 
 [Service]
+WorkingDirectory={{chdir}}
 Restart=on-failure
-User={{service}}
-Group={{service}}
+User={{user}}
+Group={{user}}
 PermissionsStartOnly=true
 ExecStart={{execline}}
 ExecReload=/bin/kill -HUP $MAINPID

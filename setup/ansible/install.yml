@@ -1,11 +1,13 @@
 ---
 
-- hosts: all
+- hosts: "{{ user }}"
   user: root
   any_errors_fatal: true
   gather_facts: no
   vars:
     - service: ag-chain-cosmos
+    - user: "{{ service }}"
+    - chdir: "/home/{{ user }}"
   roles:
     - install
   

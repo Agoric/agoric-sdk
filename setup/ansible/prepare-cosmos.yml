@@ -7,8 +7,15 @@
   vars:
     - service: ag-chain-cosmos
     - data: "{{ SETUP_HOME }}/{{ service }}/data"
-    - BOOTSTRAP_TOKENS: 1000000agtoken
+    - BOOTSTRAP_TOKENS: "{{ lookup('file', SETUP_HOME + '/boot-tokens.txt') }}"
+    - BOOTSTRAP_ADDRESS: "{{ lookup('file', SETUP_HOME + '/ag-pserver/data/node0/boot-address.txt') }}"
+    - CHAIN_NAME: "{{ lookup('file', SETUP_HOME + '/' + service + '/chain-name.txt') }}"
+    - to_remove: "/home/{{ service }}/.{{ service }}"
+    - HELPER_BINARY: "/usr/local/bin/ag-cosmos-helper"
+    - APPDIR: "{{lookup('pipe', 'pwd')}}/../.."
   roles:
+    - copy
     - init
+    - remove
     - init-cosmos
     - fetch-cosmos

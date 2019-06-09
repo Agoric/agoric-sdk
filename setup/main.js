@@ -8,11 +8,16 @@ import djson from 'deterministic-json';
 import crypto from 'crypto';
 import chalk from 'chalk';
 import parseArgs from 'minimist';
-import { writeFile } from 'fs';
 
 const PROVISION_DIR = 'provision';
+const PROVISIONER_NODE = 'node0'; // FIXME: Allow configuration.
 const COSMOS_DIR = 'ag-chain-cosmos';
 const CONTROLLER_DIR = 'ag-pserver';
+
+// This is needed for hyphenated groups.
+process.env.ANSIBLE_TRANSFORM_INVALID_GROUP_CHARS = 'never';
+
+const trimReadFile = async (file) => String(await readFile(file)).trimRight();
 
 const guardFile = async (file, maker) => {
   if (await exists(file)) {
@@ -24,12 +29,17 @@ const guardFile = async (file, maker) => {
   }
   let made = false;
   const ret = await maker(async contents => {
-    await createFile(file, contents === undefined ? String(new Date) : contents);
+    await createFile(file, contents);
     made = true;
   });
   if (!made) {
-    // They failed.
-    throw ret;
+    if (!ret) {
+      // Create a timestamp by default.
+      await createFile(file, String(new Date));
+    } else {
+      // They failed.
+      throw ret;
+    }
   }
   return ret;
 };
@@ -49,6 +59,20 @@ const main = async (progname, rawArgs) => {
     boolean: ['version', 'help'],
     stopEarly: true,
   });
+
+  const reMain = async (args) => {
+    const displayArgs = [progname, ...args];
+    console.error('$', ...displayArgs.map(shellEscape));
+    return main(progname, args);
+  };
+
+  const needReMain = async (args) => {
+    const code = await reMain(args);
+    if (code !== 0) {
+      throw `Unexpected exit: ${code}`;
+    }
+  };
+
   const initHint = () => {
     const adir = process.cwd();
     console.error(`\
@@ -113,19 +137,14 @@ show-config      display the client connection parameters
       break;
     }
     case 'bootstrap': {
-      const bootTokens = DEFAULT_BOOT_TOKENS;
-      const reMain = async (args) => {
-        const displayArgs = [progname, ...args];
-        console.error('$', ...displayArgs.map(shellEscape));
-        return main(progname, args);
-      };
+      const {_: subArgs, ...subOpts} = parseArgs(args.slice(1), {
+        stopEarly: true,
+      });
 
-      const needReMain = async (args) => {
-        const code = await reMain(args);
-        if (code !== 0) {
-          throw `Unexpected exit: ${code}`;
-        }
-      };
+      let [bootTokens] = subArgs;
+      if (!bootTokens) {
+        bootTokens = DEFAULT_BOOT_TOKENS;
+      }
 
       const dir = SETUP_HOME;
       if (await exists(`${dir}/network.txt`)) {
@@ -136,13 +155,15 @@ show-config      display the client connection parameters
         await needReMain(['init', dir, ...(process.env.AG_SETUP_COSMOS_NAME ? [process.env.AG_SETUP_COSMOS_NAME] : [])]);
       }
 
+      guardFile('boot-tokens.txt', makeFile => makeFile(bootTokens));
+
       await guardFile(`${PROVISION_DIR}/hosts`, async makeFile => {
         await needReMain(['provision', '-auto-approve']);
         const hosts = await needBacktick(`${shellEscape(progname)} show-hosts`);
         await makeFile(hosts);
       });
 
-      await guardFile(`${PROVISION_DIR}/ssh_known_hosts.stamp`, async makeFile => {
+      await guardFile(`${PROVISION_DIR}/ssh_known_hosts.stamp`, async () => {
         while (true) {
           const code = await reMain(['play', 'update_known_hosts']);
           if (code === 0) {
@@ -152,91 +173,122 @@ show-config      display the client connection parameters
           }
           await sleep(10, 'for hosts to boot SSH');
         }
-        makeFile();
       });
 
       // Prepare all the machines.
-      await guardFile(`${PROVISION_DIR}/prepare.stamp`, async makeFile => {
-        await needReMain(['play', 'prepare-machine']);
-        await makeFile();
-      });
-      
-      // Initialize the controller.
-      await guardFile(`${CONTROLLER_DIR}/prepare.stamp`, async makeFile => {
-        await needReMain(['play', 'prepare-controller']);
-        await makeFile();
+      await guardFile(`${PROVISION_DIR}/prepare.stamp`, () => needReMain(['play', 'prepare-machine']));
+      const bootOpts = [];
+      if (subOpts.instance) {
+        bootOpts.push(`--instance=${subOpts.instance}`);
+      }
+      if (subOpts.bump) {
+        bootOpts.push(`--bump`);
+      }
+      await needReMain(['bootstrap-cosmos', ...bootOpts]);
+      break;
+    }
+
+    case 'bump-chain-instance': {
+      await inited();
+      const {_: subArgs, ...subOpts} = parseArgs(args.slice(1), {
+        stopEarly: true,
       });
 
-      // Fetch the boot address.
-      const bootAddress = String(await readFile(`${CONTROLLER_DIR}/data/node0/boot-address.txt`));
-
-      // Bump the chain name.
-      await guardFile(`${COSMOS_DIR}/chain-name.txt`, async makeFile => {
-        const instanceFile = `chain-instance.txt`;
-        if (!await exists(instanceFile)) {
-          chainInstance = 0;
-        } else {
-          chainInstance = Number(await readFile(instanceFile));
-        }
+      const instanceFile = `chain-instance.txt`;
+      let chainInstance = subOpts.instance;
+      if (!chainInstance) {
+        chainInstance = Number(await trimReadFile(instanceFile));
         chainInstance ++;
-        const networkName = await readFile('network.txt');
-        await writeFile(instanceFile, String(chainInstance));
-        await makeFile(`${networkName}${chainInstance}`);
+      }
+
+      // Stop all the services.
+      await reMain(['play', 'stop', '-eservice=ag-pserver']);
+      await reMain(['play', 'stop', '-eservice=ag-chain-cosmos']);
+
+      // Blow away controller/cosmos state.
+      await needDoRun(['rm', '-rf', CONTROLLER_DIR, COSMOS_DIR]);
+
+      // We've bumped, write out the new instance.
+      await createFile(instanceFile, String(chainInstance));
+      break;
+    }
+
+    case 'bootstrap-cosmos': {
+      await inited();
+      const {_: subArgs, ...subOpts} = parseArgs(args.slice(1), {
+        boolean: ['bump'],
+        stopEarly: true,
+      });
+    
+      if (subOpts.bump || subOpts.instance) {
+        const bumpOpts = subOpts.instance ? [`--instance=${subOpts.instance}`] : [];
+        await needReMain(['bump-chain-instance', ...bumpOpts]);
+      }
+
+      // Make sure the instance exists.
+      await guardFile(`chain-instance.txt`, makeFile => makeFile('1'));
+
+      // Initialize the controller.
+      await guardFile(`${CONTROLLER_DIR}/prepare.stamp`, () => needReMain(['play', 'prepare-controller']));
+
+      // Assign the chain name.
+      const networkName = await trimReadFile('network.txt');
+      const chainInstance = await trimReadFile('chain-instance.txt');
+      const chainName = `${networkName}${chainInstance}`;
+      const currentChainName = await trimReadFile(`${COSMOS_DIR}/chain-name.txt`).catch(e => undefined);
+      if (currentChainName !== chainName) {
+        // We don't have matching parameters, so remove the old state.
+        await needDoRun(['rm', '-rf', COSMOS_DIR]);
+      }
+      await guardFile(`${COSMOS_DIR}/chain-name.txt`, async makeFile => {
+        await makeFile(chainName);
       });
 
       // Bootstrap the chain nodes.
       const genesisFile = `${COSMOS_DIR}/data/genesis.json`;
       await guardFile(genesisFile, async makeFile => {
-        await needReMain(['play', 'prepare-cosmos', `-eBOOTSTRAP_ADDRESS=${bootAddress}`, `-eBOOTSTRAP_TOKENS=${bootTokens}`]);
+        await needReMain(['play', 'prepare-cosmos']);
         const merged = await needBacktick(`${shellEscape(progname)} show-genesis ${COSMOS_DIR}/data/*/genesis.json`);
         await makeFile(merged);
       });
 
-      const peersFile = `${COSMOS_DIR}/peers.txt`;
+      const peersFile = `${COSMOS_DIR}/data/peers.txt`;
       await guardFile(peersFile, async makeFile => {
-        const peers = await needBacktick(`${progname} show-peers`);
+        const peers = await needBacktick(`${shellEscape(progname)} show-peers`);
         await makeFile(peers);
       })
-      const peers = await readFile(peersFile);
 
-      await guardFile(`${COSMOS_DIR}/install.stamp`, async makeFile => {
-        await needReMain(['play', 'install-cosmos', `-ePERSISTENT_PEERS=${peers}`]);
-        await makeFile();
-      });
-
-      await guardFile(`${COSMOS_DIR}/service.stamp`, async makeFile => {
-        await needReMain(['play', 'install']);
-        await makeFile();
-      });
-
-      await guardFile(`${COSMOS_DIR}/start.stamp`, async makeFile => {
-        await needReMain(['play', 'start']);
-        await makeFile();
-      });
+      await guardFile(`${COSMOS_DIR}/install.stamp`, () => needReMain(['play', 'install-cosmos']));
+      await guardFile(`${COSMOS_DIR}/service.stamp`, () => needReMain(['play', 'install']));
+      await guardFile(`${COSMOS_DIR}/start.stamp`, () => needReMain(['play', 'start']));
 
       await needReMain(['wait-for-any']);
       console.error(chalk.black.bgGreenBright.bold('Your Agoric Cosmos chain is now running!'));
-      process.stdout.write(chalk.yellow(cfg));
+      const cfg = await needBacktick(`${shellEscape(progname)} show-config`);
+      process.stdout.write(chalk.yellow(cfg) + '\n');
 
       await guardFile(`${CONTROLLER_DIR}/data/cosmos-chain.json`, async makeFile => {
-        const cfg = await needBacktick(`${progname} show-config`);
         await makeFile(cfg);
       });
 
-      await guardFile(`${CONTROLLER_DIR}/install.stamp`, async makeFile => {
-        await needReMain(['play', 'install-controller']);
-        await makeFile();
+      await guardFile(`${CONTROLLER_DIR}/gci.txt`, async makeFile => {
+        const gci = await needBacktick(`${shellEscape(progname)} show-gci`);
+        await makeFile(gci);
       });
+      await guardFile(`${CONTROLLER_DIR}/rpcaddrs.txt`, async makeFile => {
+        const rpcAddrs = await needBacktick(`${shellEscape(progname)} show-rpcaddrs`);
+        await makeFile(rpcAddrs.replace(',', ' '));
+      });
+      await guardFile(`${CONTROLLER_DIR}/install.stamp`, () => needReMain(['play', 'install-controller']));
 
-      await guardFile(`${CONTROLLER_DIR}/service.stamp`, async makeFile => {
-        await needReMain(['play', 'install', '-eservice=ag-pserver', '-eexecline=/usr/src/app/ve3/bin/ag-pserver']);
-        await makeFile();
-      });
+      await guardFile(`${CONTROLLER_DIR}/solo-service.stamp`, () =>
+        needReMain(['play', 'install', '-eservice=ag-controller', '-euser=ag-pserver', '-echdir=/home/ag-pserver/controller', '-eexecline="/usr/local/bin/ag-solo start"']));
+      await guardFile(`${CONTROLLER_DIR}/solo-start.stamp`, () => needReMain(['play', 'start', '-eservice=ag-controller', '-euser=ag-pserver']));
 
-      await guardFile(`${CONTROLLER_DIR}/start.stamp`, async makeFile => {
-        await needReMain(['play', 'start', '-eservice=ag-pserver']);
-        await makeFile();
-      });
+      await guardFile(`${CONTROLLER_DIR}/service.stamp`, () =>
+        needReMain(['play', 'install', '-eservice=ag-pserver', '-eexecline="/usr/src/app/ve3/bin/ag-pserver start"']));
+
+      await guardFile(`${CONTROLLER_DIR}/start.stamp`, () => needReMain(['play', 'start', '-eservice=ag-pserver']));
 
       initHint();
       break;
@@ -244,14 +296,14 @@ show-config      display the client connection parameters
 
     case 'show-chain-name': {
       await inited();
-      const chainName = await readFile(`${COSMOS_DIR}/chain-name.txt`);
+      const chainName = await trimReadFile(`${COSMOS_DIR}/chain-name.txt`);
       process.stdout.write(chainName);
       break;
     }
 
     case 'show-bootstrap-address': {
       await inited();
-      const bootAddress = await readFile(`${COSMOS_DIR}/account-address.txt`);
+      const bootAddress = await trimReadFile(`${CONTROLLER_DIR}/data/${PROVISIONER_NODE}/boot-address.txt`);
       process.stdout.write(bootAddress);
       break;
     }
@@ -310,7 +362,7 @@ show-config      display the client connection parameters
       let [host] = args.slice(1);
       await inited();
       if (!host) {
-        host = 'all';
+        host = 'ag-chain-cosmos';
       }
 
       // Detect when blocks are being produced.
@@ -378,12 +430,12 @@ show-config      display the client connection parameters
       let i = 0;
       while (true) {
         // Read the node-id file for this node.
-        idPath = `${COSMOS_DIR}/genesis/node${i}/node-id`;
+        idPath = `${COSMOS_DIR}/data/node${i}/node-id`;
         if (!await exists(idPath)) {
           break;
         }
 
-        const raw = await readFile(idPath);
+        const raw = await trimReadFile(idPath);
         const ID = String(raw);
 
         if (!ID) {
@@ -409,7 +461,7 @@ show-config      display the client connection parameters
     }
 
     case 'show-gci': {
-      const genesis = await readFile(`${GENESIS}/genesis.json`);
+      const genesis = await readFile(`${COSMOS_DIR}/data/genesis.json`);
       const s = djson.stringify(JSON.parse(String(genesis)));
       const gci = crypto.createHash('sha256').update(s).digest('hex');
       process.stdout.write(gci);
@@ -461,7 +513,7 @@ show-config      display the client connection parameters
       await Promise.all(AFTER_TERRAFORMING.map((name) => unlink(name).catch(e => {})));
 
       // We no longer are provisioned or have Cosmos.
-      await needDoRun(['rm', '-rf', PROVISION_DIR, COSMOS_DIR]);
+      await needDoRun(['rm', '-rf', PROVISION_DIR, CONTROLLER_DIR, COSMOS_DIR]);
       break;
     }
 
@@ -525,7 +577,7 @@ ${node}:
           // TODO: Don't make these hardcoded assumptions.
           // For now, we add all the nodes to ag-chain-cosmos, and the first node to ag-pserver.
           addChainCosmos(host);
-          if (node === 'node0') {
+          if (node === PROVISIONER_NODE) {
             makeGroup('ag-pserver', 4)(host);
           }
         }

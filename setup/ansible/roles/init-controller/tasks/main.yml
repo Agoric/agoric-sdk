@@ -1,4 +1,15 @@
+- name: Synchronize vat directory
+  synchronize:
+    src: "{{ APPDIR }}/lib/ag-solo/vats/"
+    dest: /usr/src/ag-solo/lib/ag-solo/vats/
+    dirs: yes
+    delete: yes
+    mode: push
+
 - name: "Initialize {{ service }}"
   become: yes
   become_user: "{{ service }}"
-  shell: "ag-solo init controller"
+  shell:
+    cmd: "ag-solo init controller"
+    creates: controller
+    chdir: "/home/{{ service }}"

@@ -7,7 +7,11 @@
   vars:
     - service: ag-pserver
     - data: "{{ SETUP_HOME }}/{{ service }}/data"
+    - APPDIR: "{{lookup('pipe', 'pwd')}}/../.."
+    - to_remove: "/home/{{ service }}/controller"
   roles:
+    - copy
     - init
+    - remove
     - init-controller
     - fetch-controller
