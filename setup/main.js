@@ -15,7 +15,7 @@ const COSMOS_DIR = 'ag-chain-cosmos';
 const CONTROLLER_DIR = 'ag-pserver';
 
 // This is needed for hyphenated groups.
-process.env.ANSIBLE_TRANSFORM_INVALID_GROUP_CHARS = 'never';
+process.env.ANSIBLE_TRANSFORM_INVALID_GROUP_CHARS = 'ignore';
 
 const trimReadFile = async (file) => String(await readFile(file)).trimRight();
 

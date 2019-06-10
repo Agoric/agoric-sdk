@@ -387,6 +387,7 @@ exec ansible-playbook -f10 \\
     await createFile(`ansible.cfg`, `\
 [defaults]
 inventory = ./provision/hosts
+deprecation_warnings = False
 
 [ssh_connection]
 ssh_args = -oForwardAgent=yes -oUserKnownHostsFile=provision/ssh_known_hosts -oControlMaster=auto -oControlPersist=30m
