@@ -1,7 +1,11 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-import { makePixelListAssayMaker } from './pixelListAssay';
+import {
+  makeCompoundPixelAssayMaker,
+  makeTransferRightPixelAssayMaker,
+  makeUseRightPixelAssayMaker,
+} from './pixelAssays';
 import { makeMint } from '../../core/issuers';
 import { makeWholePixelList, insistPixelList } from './types/pixelList';
 import { makeMintController } from './pixelMintController';
@@ -44,9 +48,9 @@ export function makeGallery(E, canvasSize = 10) {
 
   // START ERTP
 
-  const makePixelListAssay = makePixelListAssayMaker(canvasSize, true);
-  const makeTransferAssay = makePixelListAssayMaker(canvasSize, false);
-  const makeUseAssay = makePixelListAssayMaker(canvasSize, false);
+  const makePixelListAssay = makeCompoundPixelAssayMaker(canvasSize);
+  const makeTransferAssay = makeTransferRightPixelAssayMaker(canvasSize);
+  const makeUseAssay = makeUseRightPixelAssayMaker(canvasSize);
 
   // a pixel represents the right to color and transfer the right to color
   const pixelMint = makeMint('pixels', makeMintController, makePixelListAssay);
@@ -94,11 +98,6 @@ export function makeGallery(E, canvasSize = 10) {
   async function transformToTransferAndUse(pixelListPaymentP) {
     return Promise.resolve(pixelListPaymentP).then(async pixelListPayment => {
       const pixelListAmount = pixelListPayment.getBalance();
-      // fail early if empty
-      const pixelList = pixelAssay.quantity(pixelListAmount);
-      if (pixelList.length <= 0) {
-        throw new Error('no pixels to transform');
-      }
 
       const exclusivePayment = await pixelIssuer.getExclusiveAll(
         pixelListPayment,
@@ -135,21 +134,17 @@ export function makeGallery(E, canvasSize = 10) {
 
         // we have an exclusive on the transfer right
         const transferAmount = transferRightPayment.getBalance();
-        const quantity = transferRightAssay.quantity(transferAmount);
         await transferRightIssuer.getExclusiveAll(transferRightPayment);
 
-        // create a useRightAmount corresponding to transferRight
-        const useAmount = useRightAssay.make(quantity);
+        const pixelListAmount = transferRightAssay.toPixel(
+          transferAmount,
+          pixelAssay,
+        );
 
-        const pixelListAmount = pixelAssay.coerce(
-          transferRightAssay.toPixel(
-            {
-              useAmount,
-              transferAmount,
-            },
-            useRightAssay,
-            pixelAssay,
-          ),
+        const { useAmount } = pixelAssay.toTransferAndUseRights(
+          pixelListAmount,
+          useRightAssay,
+          transferRightAssay,
         );
 
         // commit point
@@ -171,26 +166,25 @@ export function makeGallery(E, canvasSize = 10) {
   }
 
   function insistColor(_myColor) {
-    // const allowedColors = new Map();
-    // insist(allowedColors.has(myColor))`color is not allowed`;
+    // TODO: check whether allowed
   }
-
-  const galleryUseRightPurse = useRightIssuer.makeEmptyPurse();
 
   async function changeColor(useRightPaymentP, newColor) {
     return Promise.resolve(useRightPaymentP).then(async useRightPayment => {
-      const pixelAmount = useRightPayment.getBalance();
-      const pixelList = useRightAssay.quantity(pixelAmount);
+      const emptyAmount = useRightAssay.make(harden([]));
 
-      if (pixelList.length <= 0) {
+      // withdraw empty amount from payment
+      // if this doesn't error, it was a useRightPayment
+      useRightIssuer.getExclusive(emptyAmount, useRightPaymentP);
+
+      const pixelAmount = useRightPayment.getBalance();
+
+      if (useRightAssay.isEmpty(pixelAmount)) {
         throw new Error('no use rights present');
       }
-
-      // if this works, it was a useRightPayment
-      // commit point
-      // don't get exclusive
-      await galleryUseRightPurse.depositAll(useRightPayment);
       insistColor(newColor);
+
+      const pixelList = useRightAssay.quantity(pixelAmount);
 
       for (let i = 0; i < pixelList.length; i += 1) {
         const pixel = pixelList[i];

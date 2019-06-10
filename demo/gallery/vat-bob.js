@@ -18,8 +18,10 @@ function makeBobMaker(E, log) {
         async receiveUseRight(useRightPaymentP) {
           log('++ bob.receiveUseRight starting');
 
-          const useRightIssuer = E(useRightPaymentP).getIssuer();
+          const { useRightIssuer } = await E(gallery).getIssuers();
           const useRightPurse = E(useRightIssuer).makeEmptyPurse();
+          // does bob know the amount that he is getting?
+          // use getExclusive() instead
           const exclusiveUseRightPaymentP = E(useRightIssuer).getExclusiveAll(
             useRightPaymentP,
           );

@@ -127,6 +127,7 @@ test('The user gives away their right to the pixel (right to transfer color righ
   // setup
   const { userFacet } = makeGallery();
   const { pixelIssuer, useRightIssuer } = userFacet.getIssuers();
+  const useRightAssay = useRightIssuer.getAssay();
 
   const pixelPurse = pixelIssuer.makeEmptyPurse();
 
@@ -154,7 +155,11 @@ test('The user gives away their right to the pixel (right to transfer color righ
 
   t.equal(userFacet.getColor(rawPixel.x, rawPixel.y), '#00000');
 
-  t.rejects(userFacet.transformToTransferAndUse(newPayment));
+  const {
+    useRightPayment: useRightPayment2,
+  } = await userFacet.transformToTransferAndUse(newPayment);
+  const amount = useRightPayment2.getBalance();
+  t.true(useRightAssay.isEmpty(amount));
   t.end();
 });
 
