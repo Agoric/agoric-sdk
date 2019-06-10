@@ -32,5 +32,5 @@
     - crt
     - key
   when:
-    - tlscrt.stat.exists == true
-    - tlskey.stat.exists == true
+    - tlscrt.stat.exists
+    - tlskey.stat.exists

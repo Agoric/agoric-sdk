@@ -4,6 +4,7 @@
   user: root
   any_errors_fatal: true
   gather_facts: yes
+  strategy: free
   vars:
     - NODEJS_VERSION: 12
   roles:

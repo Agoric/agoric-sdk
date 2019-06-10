@@ -4,10 +4,12 @@
   user: root
   any_errors_fatal: true
   gather_facts: yes
+  strategy: free
   vars:
     - service: ag-pserver
     - data: "{{ SETUP_HOME }}/{{ service }}/data"
     - APPDIR: "{{lookup('pipe', 'pwd')}}/../.."
+    - HELPER_BINARY: "/usr/local/bin/ag-cosmos-helper"
     - to_remove: "/home/{{ service }}/controller"
   roles:
     - copy

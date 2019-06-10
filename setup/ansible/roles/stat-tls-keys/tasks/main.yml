@@ -1,8 +1,13 @@
 
-- name: "check if {{ NETWORK_NAME }} keys exist"
+- name: "check if {{ NETWORK_NAME }}.key exists"
+  delegate_to: localhost
   stat:
-    path: "{{ SETUP_HOME }}/{{ NETWORK_NAME }}.{{ item }}"
-  register: "tls{{ item }}"
-  with_items:
-    - crt
-    - key
+    path: "{{ SETUP_HOME }}/{{ NETWORK_NAME }}.key"
+  register: "tlskey"
+
+- name: "check if {{ NETWORK_NAME }}.crt exists"
+  delegate_to: localhost
+  stat:
+    path: "{{ SETUP_HOME }}/{{ NETWORK_NAME }}.crt"
+  register: "tlscrt"
+
