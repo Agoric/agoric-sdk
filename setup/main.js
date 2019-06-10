@@ -518,9 +518,6 @@ show-config      display the client connection parameters
         }
       }
 
-      // Unlink all the state that was built up after terraforming.
-      await Promise.all(AFTER_TERRAFORMING.map((name) => unlink(name).catch(e => {})));
-
       // We no longer are provisioned or have Cosmos.
       await needDoRun(['rm', '-rf', PROVISION_DIR, CONTROLLER_DIR, COSMOS_DIR]);
       break;
