@@ -2,7 +2,7 @@
 
 - hosts: all
   user: root
-  any_errors_fatal: true
+  #any_errors_fatal: true
   gather_facts: yes
   strategy: free
   vars:

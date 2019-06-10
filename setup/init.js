@@ -386,11 +386,11 @@ exec ansible-playbook -f10 \\
 
     await createFile(`ansible.cfg`, `\
 [defaults]
-pipelining = True
 inventory = ./provision/hosts
 
 [ssh_connection]
 ssh_args = -oForwardAgent=yes -oUserKnownHostsFile=provision/ssh_known_hosts -oControlMaster=auto -oControlPersist=30m
+pipelining = True
 `);
 
     await createFile(`network.txt`, NETWORK_NAME);
