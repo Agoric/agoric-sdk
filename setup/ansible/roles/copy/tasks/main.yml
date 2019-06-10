@@ -3,14 +3,14 @@
 - name: Synchronize helper
   synchronize:
     src: "{{HELPER_BINARY}}"
-    dest: /usr/bin/
+    dest: /usr/local/bin/
     mode: push
   when: HELPER_BINARY is defined
 
 - name: Synchronize install directory
   synchronize:
     src: "{{APPDIR}}/"
-    dest: "/usr/src/{{service}}/"
+    dest: "/usr/src/ag-chain-cosmos/"
     dirs: yes
     delete: yes
     mode: push
@@ -43,6 +43,6 @@
 
 - name: "Symlink /usr/local/bin/ag-solo"
   file:
-    src: "/usr/src/{{service}}/bin/ag-solo"
+    src: "/usr/src/ag-chain-cosmos/bin/ag-solo"
     dest: "/usr/local/bin/ag-solo"
     state: link
