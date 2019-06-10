@@ -30,6 +30,10 @@ ag-setup-cosmos bootstrap
 
 **Congratulations, you are running the Agoric testnet!**
 
+Now, browse to your node0's IP address, port 8001 (which is running your testnet provisioner).
+You should see your testnet's parameters, and an option to request a provisioning code.  Follow
+the instructions to add your own node!
+
 ```
 # If you need to run a shell command on all nodes:
 ag-setup-cosmos run all hostname

@@ -45,6 +45,7 @@ def run_client(reactor, o, pubkey):
 
     BASEDIR = o['basedir']
     subprocess.run([AG_SOLO, 'set-gci-ingress', '--chainID=%s' % sm['chainName'], sm['gci'], *sm['rpcAddrs']], check=True)
+    subprocess.run([AG_SOLO, 'start'], check=True)
 
 def guard(path, fun):
     if os.path.exists(path):
