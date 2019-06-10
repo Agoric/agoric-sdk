@@ -20,7 +20,7 @@
   become_user: "{{ service }}"
   become: true
   shell:
-    cmd: "ag-solo set-gci-ingress --chainID={{ CHAIN_NAME }} {{ GCI }} {{ RPC_ADDRS }}"
+    cmd: "ag-solo set-gci-ingress --controller --chainID={{ CHAIN_NAME }} {{ GCI }} {{ RPC_ADDRS }}"
     chdir: "/home/{{ service }}/controller"
 
 - name: "Add {{ NETWORK_NAME }} keys"
