@@ -13,7 +13,6 @@ import {
   includesPixelList,
   withPixelList,
   withoutPixelList,
-  insistPixelListEqual,
 } from './types/pixelList';
 
 // A pixelList is a naive collection of pixels in the form:
