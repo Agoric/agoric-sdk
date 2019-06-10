@@ -2,16 +2,102 @@ import {ACCOUNT_JSON, SETUP_HOME, PLAYBOOK_WRAPPER, SETUP_DIR, SSH_TYPE} from '.
 import {basename, chmod, createFile, mkdir, needNotExists, resolve} from './files';
 import {chdir, needDoRun, shellEscape} from './run';
 import fetch from 'node-fetch';
-import {prompt} from 'inquirer';
+import inquirer from 'inquirer';
+
+const genericAskApiKey = async (provider, myDetails) => {
+    const questions = [    
+        {
+            name: 'API_KEYS',
+            type: 'input',
+            message: `API Key for ${provider.name}?`,
+            default: myDetails.API_KEYS || process.env.DO_API_TOKEN,
+            filter: (key) => key.trim(),
+        }
+    ];
+    const ret = await inquirer.prompt(questions);
+    if (!ret.API_KEYS) {
+        return {CANCEL: true};
+    }
+    return ret;
+};
+
+const genericAskDatacenter = async (provider, PLACEMENT, dcs, placement) => {
+    const questions = [];
+    const count = nodeCount(calculateTotal(placement), true);
+    const DONE = {name: `Done with ${PLACEMENT} placement${count}`, value: ''};
+    if (dcs) {
+        questions.push({
+            name: 'DATACENTER',
+            type: 'list',
+            message: `Which ${PLACEMENT} datacenter${count}?`,
+            choices: [DONE, ...dcs],
+        });
+    } else {
+        questions.push({
+            name: 'DATACENTER',
+            type: 'input',
+            message: `Which ${PLACEMENT} datacenter${count}?`,
+            filter: (dc) => dc.trim(),
+        })
+    }
+
+    const {DATACENTER} = await inquirer.prompt(questions);
+    if (!DATACENTER) {
+        return {MORE: false};
+    }
+
+    const {NUM_NODES} = await inquirer.prompt([
+        {
+            name: 'NUM_NODES',
+            type: 'number',
+            message: `Number of nodes for ${PLACEMENT} ${DATACENTER} (0 or more)?`,
+            default: placement[DATACENTER] || 0,
+            validate: (num) => Math.floor(num) === num && num >= 0,
+        }
+    ]);
+    return {DATACENTER, NUM_NODES, MORE: true};
+};
+
+const DOCKER_DATACENTER = 'default';
 
 const PROVIDERS = {
+    docker: {
+        name: 'Docker instances',
+        value: 'docker',
+        askDatacenter: async (provider, PLACEMENT, dcs, placement) => {
+            const {NUM_NODES} = await inquirer.prompt([
+                {
+                    name: 'NUM_NODES',
+                    type: 'number',
+                    message: `Number of nodes for ${PLACEMENT} (0 or more)?`,
+                    default: placement[DOCKER_DATACENTER] || 0,
+                    validate: (num) => Math.floor(num) === num && num >= 0,
+                }
+            ]);
+            return {
+                DATACENTER: DOCKER_DATACENTER,
+                NUM_NODES,
+                MORE: false,
+            };
+        },
+        createPlacementFiles: (provider, PLACEMENT, PREFIX) =>
+            createFile(`placement-${PLACEMENT}.tf`, `\
+module "${PLACEMENT}" {
+    source           = "${SETUP_DIR}/terraform/${provider.value}"
+    CLUSTER_NAME     = "${PREFIX}\${var.NETWORK_NAME}-${PLACEMENT}"
+    OFFSET           = "\${var.OFFSETS["${PLACEMENT}"]}"
+    SSH_KEY_FILE     = "\${var.SSH_KEY_FILE}"
+    SERVERS          = "\${length(var.DATACENTERS["${PLACEMENT}"])}"
+}
+`),
+    },
     digitalocean: {
         name: 'DigitalOcean https://cloud.digitalocean.com/',
         value: 'digitalocean',
-        defaultApiToken() {
-            return process.env.DO_API_TOKEN;
-        },
-        datacenters: async (apikey) => {
+        askDetails: genericAskApiKey,
+        askDatacenter: genericAskDatacenter,
+        datacenters: async (provider, PLACEMENT, DETAILS) => {
+            const {API_KEYS: apikey} = DETAILS;
             const res = await fetch('https://api.digitalocean.com/v2/regions', {
                 headers: {'Authorization': `Bearer ${apikey}`},
             });
@@ -27,10 +113,10 @@ const PROVIDERS = {
                 };
             });
         },
-        createPlacementFiles: (PROVIDER, PLACEMENT, PREFIX) =>
+        createPlacementFiles: (provider, PLACEMENT, PREFIX) =>
             createFile(`placement-${PLACEMENT}.tf`, `\
 module "${PLACEMENT}" {
-    source           = "${SETUP_DIR}/terraform/${PROVIDER}"
+    source           = "${SETUP_DIR}/terraform/${provider.value}"
     CLUSTER_NAME     = "${PREFIX}\${var.NETWORK_NAME}-${PLACEMENT}"
     OFFSET           = "\${var.OFFSETS["${PLACEMENT}"]}"
     REGIONS          = "\${var.DATACENTERS["${PLACEMENT}"]}"
@@ -69,7 +155,7 @@ const askPlacement = (PLACEMENTS) => {
             choices: [DONE, NEW, ...Object.keys(PLACEMENTS).sort().map(place => ({name: `${place}${nodeCount(calculateTotal(PLACEMENTS[place]))}`, value: place}))],
         }
     ];
-    return prompt(questions);
+    return inquirer.prompt(questions);
 };
 
 const askProvider = () => {
@@ -82,58 +168,8 @@ const askProvider = () => {
             choices: [DONE, ...Object.values(PROVIDERS).sort((nva, nvb) => nva.name < nvb.name ? -1 : nva.name === nvb.name ? 0 : 1)],
         },
     ];
-    return prompt(questions);
+    return inquirer.prompt(questions);
 };
-
-const askApiKey = (provider, DEFAULT_KEY) => {
-    const questions = [    
-        {
-            name: 'API_KEY',
-            type: 'input',
-            message: `API Key for ${provider.name}?`,
-            default: DEFAULT_KEY,
-            filter: (key) => key.trim(),
-        }
-    ];
-    return prompt(questions);
-};
-
-const askDatacenter = async (PLACEMENT, dcs, placement) => {
-    const questions = [];
-    const count = nodeCount(calculateTotal(placement), true);
-    const DONE = {name: `Done with ${PLACEMENT} placement${count}`, value: ''};
-    if (dcs) {
-        questions.push({
-            name: 'DATACENTER',
-            type: 'list',
-            message: `Which ${PLACEMENT} datacenter${count}?`,
-            choices: [DONE, ...dcs],
-        });
-    } else {
-        questions.push({
-            name: 'DATACENTER',
-            type: 'input',
-            message: `Which ${PLACEMENT} datacenter${count}?`,
-            filter: (dc) => dc.trim(),
-        })
-    }
-
-    const {DATACENTER} = await prompt(questions);
-    if (!DATACENTER) {
-        return {MORE: false};
-    }
-
-    const {NUM_NODES} = await prompt([
-        {
-            name: 'NUM_NODES',
-            type: 'number',
-            message: `Number of nodes for ${PLACEMENT} ${DATACENTER} (0 or more)?`,
-            default: placement[DATACENTER] || 0,
-            validate: (num) => Math.floor(num) === num && num >= 0,
-        }
-    ]);
-    return {DATACENTER, NUM_NODES, MORE: true};
-}
 
 const doInit = async (progname, args) => {
     let [dir, NETWORK_NAME] = args.slice(1);
@@ -159,7 +195,7 @@ const doInit = async (progname, args) => {
     const PLACEMENTS = {};
     const PLACEMENT_PROVIDER = {};
     const lastPlacement = {};
-    const API_KEYS = {};
+    const DETAILS = {};
     try {
       await mkdir(dir);
     } catch (e) {}
@@ -170,7 +206,7 @@ const doInit = async (progname, args) => {
         if (!PLACEMENT) {
             break;
         }
-        let provider;
+        let provider, myDetails = {};
         if (PLACEMENT !== 'NEW') {
             const PROVIDER = PLACEMENT_PROVIDER[PLACEMENT];
             provider = PROVIDERS[PROVIDER];
@@ -180,20 +216,39 @@ const doInit = async (progname, args) => {
                 continue;
             }
             provider = PROVIDERS[PROVIDER];
-            const {API_KEY} = await askApiKey(provider, API_KEYS[PLACEMENT] || provider.defaultApiToken());
-            if (!API_KEY) {
-                continue;
+            
+            const setPlacement = () => {
+                if (!lastPlacement[PROVIDER]) {
+                    lastPlacement[PROVIDER] = 0;
+                }
+                lastPlacement[PROVIDER] ++;
+                PLACEMENT = `${PROVIDER}${lastPlacement[PROVIDER]}`;
+                PLACEMENT_PROVIDER[PLACEMENT] = PROVIDER;
+            };
+
+            if (provider.askDetails) {
+                const {CANCEL, ...PLACEMENT_DETAILS} = await provider.askDetails(provider, myDetails);
+                if (CANCEL) {
+                    continue;
+                }
+                // Out with the old, in with the new.
+                setPlacement();
+                for (const vname of Object.keys(myDetails)) {
+                    delete DETAILS[vname][PLACEMENT];
+                }
+                myDetails = PLACEMENT_DETAILS;
+                for (const vname of Object.keys(myDetails)) {
+                    if (!DETAILS[vname]) {
+                        DETAILS[vname] = {};
+                    }
+                    DETAILS[vname][PLACEMENT] = PLACEMENT_DETAILS[vname];
+                }
+            } else {
+                setPlacement();
             }
-            if (!lastPlacement[PROVIDER]) {
-                lastPlacement[PROVIDER] = 0;
-            }
-            lastPlacement[PROVIDER] ++;
-            PLACEMENT = `${PROVIDER}${lastPlacement[PROVIDER]}`;
-            API_KEYS[PLACEMENT] = API_KEY;
-            PLACEMENT_PROVIDER[PLACEMENT] = PROVIDER;
         }
 
-        const dcs = await provider.datacenters(API_KEYS[PLACEMENT]);
+        const dcs = provider.datacenters && await provider.datacenters(provider, PLACEMENT, myDetails);
         const placement = PLACEMENTS[PLACEMENT] || {};
         if (dcs) {
             // Add our choices to the list.
@@ -220,7 +275,7 @@ const doInit = async (progname, args) => {
                 }
                 return ret;
             });
-            const {DATACENTER, NUM_NODES, MORE} = await askDatacenter(PLACEMENT, dcsWithNodeCount, placement);
+            const {DATACENTER, NUM_NODES, MORE} = await provider.askDatacenter(provider, PLACEMENT, dcsWithNodeCount, placement);
             if (NUM_NODES) {
                 placement[DATACENTER] = NUM_NODES;
             } else {
@@ -288,11 +343,13 @@ ${Object.keys(OFFSETS).sort().map(p => `     ${p} = ${OFFSETS[p]}`).join('\n')}
   }
 }
 
-variable "API_KEYS" {
+${Object.keys(DETAILS).sort().map(vname => `\
+variable ${JSON.stringify(vname)} {
   default = {
-${Object.keys(API_KEYS).sort().map(p => `    ${p} = ${JSON.stringify(API_KEYS[p])}`).join('\n')}
+${Object.keys(DETAILS[vname]).sort().map(p => `    ${p} = ${JSON.stringify(DETAILS[vname][p])}`).join('\n')}
   }
 }
+`).join('\n')}
 `);
 
     // Go and create the specific files.
@@ -300,7 +357,7 @@ ${Object.keys(API_KEYS).sort().map(p => `    ${p} = ${JSON.stringify(API_KEYS[p]
     for (const PLACEMENT of Object.keys(PLACEMENT_PROVIDER).sort()) {
         const PROVIDER = PLACEMENT_PROVIDER[PLACEMENT];
         const provider = PROVIDERS[PROVIDER];
-        await provider.createPlacementFiles(PROVIDER, PLACEMENT, clusterPrefix);
+        await provider.createPlacementFiles(provider, PLACEMENT, clusterPrefix);
     }
 
     await createFile(`outputs.tf`, `\
@@ -329,6 +386,7 @@ exec ansible-playbook -f10 \\
 
     await createFile(`ansible.cfg`, `\
 [defaults]
+pipelining = True
 inventory = ./provision/hosts
 
 [ssh_connection]
@@ -336,6 +394,6 @@ ssh_args = -oForwardAgent=yes -oUserKnownHostsFile=provision/ssh_known_hosts -oC
 `);
 
     await createFile(`network.txt`, NETWORK_NAME);
-};
+    };
 
 export default doInit;
