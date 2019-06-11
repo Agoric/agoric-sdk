@@ -35,7 +35,7 @@ function build(E, log) {
     async bootstrap(argv, vats) {
       const canvasSize = 10;
       function stateChangeHandler(_newState) {
-          // does nothing in this test
+        // does nothing in this test
       }
 
       switch (argv[0]) {

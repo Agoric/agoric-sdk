@@ -87,6 +87,11 @@ export function makeGallery(
   const transferRightIssuer = transferRightMint.getIssuer();
   const transferRightAssay = transferRightIssuer.getAssay();
 
+  // Dust is the currency that the Gallery accepts for pixels
+  const dustMint = makeMint('dust');
+  const dustIssuer = dustMint.getIssuer();
+  const dustAssay = dustIssuer.getAssay();
+
   // get the pixelList from the LRU
   function makePixelPayment(rawPixelList) {
     insistPixelList(rawPixelList, canvasSize);
@@ -214,6 +219,26 @@ export function makeGallery(
     return makePixelPayment(harden([rawPixel]));
   }
 
+  function getDistance(a, b) {
+    const { x: xA, y: yA } = a;
+    const { x: xB, y: yB } = b;
+    return Math.floor(Math.sqrt((xA - xB) ** 2 + (yA - yB) ** 2));
+  }
+
+  function getDistanceFromCenter(rawPixel) {
+    const centerCoord = Math.floor(canvasSize / 2);
+    const center = { x: centerCoord, y: centerCoord };
+    return getDistance(rawPixel, center);
+  }
+
+  function pricePixel(rawPixel) {
+    const distance = getDistanceFromCenter(rawPixel);
+    // prices are simplistic for now
+    // they range from canvasSize / 2 to canvasSize
+    const price = canvasSize - distance;
+    return dustAssay.make(price);
+  }
+
   // anyone can getColor, no restrictions, no tokens
   function getColor(x, y) {
     const rawPixel = { x: Nat(x), y: Nat(y) };
@@ -225,6 +250,7 @@ export function makeGallery(
       pixelIssuer,
       useRightIssuer,
       transferRightIssuer,
+      dustIssuer,
     };
   }
 
@@ -242,6 +268,9 @@ export function makeGallery(
 
   const adminFacet = {
     revokePixel,
+    getDistance,
+    getDistanceFromCenter,
+    pricePixel,
   };
 
   const readFacet = {

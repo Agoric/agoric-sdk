@@ -209,3 +209,44 @@ test('The Gallery revokes the right to transfer the pixel or color with it', asy
 
   t.end();
 });
+
+test('getDistance', t => {
+  const { adminFacet } = makeGallery();
+  const { getDistance } = adminFacet;
+  t.strictEqual(getDistance({ x: 0, y: 1 }, { x: 0, y: 1 }), 0);
+  t.strictEqual(getDistance({ x: 2, y: 1 }, { x: 0, y: 1 }), 2);
+  t.strictEqual(getDistance({ x: 2, y: 3 }, { x: 0, y: 1 }), 2);
+  t.strictEqual(getDistance({ x: 0, y: 1 }, { x: 4, y: 1 }), 4);
+  t.strictEqual(getDistance({ x: 2, y: 2 }, { x: 0, y: 7 }), 5);
+  t.end();
+});
+
+test('getDistanceFromCenter', t => {
+  const { adminFacet } = makeGallery();
+  // default canvasSize is 10
+  const { getDistanceFromCenter } = adminFacet;
+  t.strictEqual(getDistanceFromCenter({ x: 0, y: 1 }), 6);
+  t.strictEqual(getDistanceFromCenter({ x: 2, y: 1 }), 5);
+  t.strictEqual(getDistanceFromCenter({ x: 2, y: 3 }), 3);
+  t.strictEqual(getDistanceFromCenter({ x: 4, y: 1 }), 4);
+  t.strictEqual(getDistanceFromCenter({ x: 0, y: 7 }), 5);
+  t.strictEqual(getDistanceFromCenter({ x: 5, y: 5 }), 0);
+  t.end();
+});
+
+test('pricePixel', t => {
+  const { adminFacet, userFacet } = makeGallery();
+  // default canvasSize is 10
+  const { pricePixel } = adminFacet;
+  const { getIssuers } = userFacet;
+  const { dustIssuer } = getIssuers();
+  const dustAssay = dustIssuer.getAssay();
+
+  t.deepEqual(pricePixel({ x: 0, y: 1 }), dustAssay.make(4));
+  t.deepEqual(pricePixel({ x: 2, y: 1 }), dustAssay.make(5));
+  t.deepEqual(pricePixel({ x: 2, y: 3 }), dustAssay.make(7));
+  t.deepEqual(pricePixel({ x: 4, y: 1 }), dustAssay.make(6));
+  t.deepEqual(pricePixel({ x: 0, y: 7 }), dustAssay.make(5));
+  t.deepEqual(pricePixel({ x: 5, y: 5 }), dustAssay.make(10));
+  t.end();
+});
