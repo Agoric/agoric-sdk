@@ -36,7 +36,8 @@ export default function setup(syscall, state, helpers, endowments) {
 
   return helpers.makeDeviceSlots(
     syscall,
-    _SO =>
+    state,
+    _ =>
       harden({
         get(key) {
           const table = getState();

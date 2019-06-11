@@ -8,13 +8,26 @@ export default function setup(syscall, state, helpers, endowments) {
     sendBroadcast,
   } = endowments;
 
-  let { inboundHandler } = state.get() || {};
+  function build({ SO, getDeviceState, setDeviceState }) {
+    let { inboundHandler } = getDeviceState() || {};
 
-  function build(_SO) {
-    return {
+    registerInboundCallback((count, bodyString) => {
+      if (!inboundHandler) {
+        throw new Error(`inboundCallback before registerInboundHandler`);
+      }
+      try {
+        const body = JSON.parse(`${bodyString}`);
+        SO(inboundHandler).inbound(Nat(count), body);
+      } catch (e) {
+        console.log(`error during inboundCallback: ${e} ${e.message}`);
+        throw new Error(`error during inboundCallback: ${e} ${e.message}`);
+      }
+    });
+
+    return harden({
       registerInboundHandler(handler) {
         inboundHandler = handler;
-        state.set({ inboundHandler });
+        setDeviceState(harden({ inboundHandler }));
       },
 
       sendResponse(count, isReject, obj) {
@@ -32,26 +45,13 @@ export default function setup(syscall, state, helpers, endowments) {
           console.log(`error during sendBroadcast: ${e} ${e.message}`);
         }
       },
-    };
+    });
   }
 
   return helpers.makeDeviceSlots(
     syscall,
-    SO => {
-      registerInboundCallback((count, bodyString) => {
-        if (!inboundHandler) {
-          throw new Error(`inboundCallback before registerInboundHandler`);
-        }
-        try {
-          const body = JSON.parse(`${bodyString}`);
-          SO(inboundHandler).inbound(Nat(count), body);
-        } catch (e) {
-          console.log(`error during inboundCallback: ${e} ${e.message}`);
-          throw new Error(`error during inboundCallback: ${e} ${e.message}`);
-        }
-      });
-      return harden(build(SO));
-    },
+    state,
+    build,
     helpers.name,
   );
 }

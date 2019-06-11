@@ -4,7 +4,6 @@ import Nat from '@agoric/nat';
 export default function setup(syscall, state, helpers, endowments) {
   const highestInboundDelivered = harden(new Map());
   const highestInboundAck = harden(new Map());
-  let { inboundHandler } = state.get() || {};
 
   let deliverInboundMessages;
   let deliverInboundAck;
@@ -53,14 +52,42 @@ export default function setup(syscall, state, helpers, endowments) {
   // we keep no state in the device, it all lives elsewhere, as decided by
   // the host
 
-  function build(SO) {
-    return {
+  function build({SO, getDeviceState, setDeviceState}) {
+    let { inboundHandler } = getDeviceState() || {};
+    console.log(`mailbox-src build: inboundHandler is`, inboundHandler);
+    deliverInboundMessages = (peer, newMessages) => {
+      if (!inboundHandler) {
+        throw new Error(`deliverInboundMessages before registerInboundHandler`);
+      }
+      try {
+        SO(inboundHandler).deliverInboundMessages(peer, newMessages);
+      } catch (e) {
+        console.log(
+          `error during deliverInboundMessages: ${e} ${e.message}`,
+        );
+      }
+    };
+
+    deliverInboundAck = (peer, ack) => {
+      if (!inboundHandler) {
+        throw new Error(`deliverInboundAck before registerInboundHandler`);
+      }
+      try {
+        SO(inboundHandler).deliverInboundAck(peer, ack);
+      } catch (e) {
+        console.log(
+          `error during deliverInboundAck: ${e} ${e.message}`,
+        );
+      }
+    };
+
+    return harden({
       registerInboundHandler(handler) {
         if (inboundHandler) {
           throw new Error(`already registered`);
         }
         inboundHandler = handler;
-        state.set({ inboundHandler });
+        setDeviceState(harden({ inboundHandler }));
       },
 
       add(peer, msgnum, body) {
@@ -86,38 +113,13 @@ export default function setup(syscall, state, helpers, endowments) {
           throw new Error(`error in ackInbound: ${e} ${e.message}`);
         }
       },
-    };
+    });
   }
 
   return helpers.makeDeviceSlots(
     syscall,
-    SO => {
-      deliverInboundMessages = (peer, newMessages) => {
-        if (!inboundHandler) {
-          throw new Error(`deliverInboundMessages before registerInboundHandler`);
-        }
-        try {
-          SO(inboundHandler).deliverInboundMessages(peer, newMessages);
-        } catch (e) {
-          console.log(
-            `error during deliverInboundMessages: ${e} ${e.message}`,
-          );
-        }
-      };
-      deliverInboundAck = (peer, ack) => {
-        if (!inboundHandler) {
-          throw new Error(`deliverInboundAck before registerInboundHandler`);
-        }
-        try {
-          SO(inboundHandler).deliverInboundAck(peer, ack);
-        } catch (e) {
-          console.log(
-            `error during deliverInboundAck: ${e} ${e.message}`,
-          );
-        }
-      };
-      return harden(build(SO));
-    },
+    state,
+    build,
     helpers.name,
   );
 }

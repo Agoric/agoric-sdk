@@ -5,8 +5,10 @@ export default function setup(syscall, state, helpers, _endowments) {
 
   return helpers.makeDeviceSlots(
     syscall,
-    SO =>
-      harden({
+    state,
+    s => {
+      const { SO } = s;
+      return harden({
         registerInboundHandler(name, handler) {
           if (inboundHandlers.has(name)) {
             throw new Error(`already registered`);
@@ -29,7 +31,8 @@ export default function setup(syscall, state, helpers, _endowments) {
             ackInbound(_peer, _msgnum) {},
           });
         },
-      }),
+      });
+    },
     helpers.name,
   );
 }

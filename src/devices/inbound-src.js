@@ -6,7 +6,9 @@ export default function setup(syscall, state, helpers, endowments) {
 
   return helpers.makeDeviceSlots(
     syscall,
-    SO => {
+    state,
+    s => {
+      const { SO } = s;
       bridge.inboundCallback = (sender, message) => {
         if (!inboundHandler) {
           throw new Error(`inboundCallback before registerInboundHandler`);
