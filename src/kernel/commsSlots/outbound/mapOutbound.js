@@ -2,6 +2,7 @@ function makeMapOutbound(syscall, state) {
   function mapOutbound(otherMachineName, kernelToMeSlot) {
     const outgoingWireMessageObj = state.clists.mapKernelSlotToOutgoingWireMessage(
       kernelToMeSlot,
+      otherMachineName,
     ); //  otherMachineName, direction, meToYouSlot
     if (outgoingWireMessageObj === undefined) {
       // this is something that we have on this machine, and we want
@@ -104,12 +105,13 @@ function makeMapOutbound(syscall, state) {
     }
     const outgoingWireMessage = state.clists.mapKernelSlotToOutgoingWireMessage(
       kernelToMeSlot,
+      otherMachineName,
     );
     return outgoingWireMessage.meToYouSlot;
   }
 
   function mapOutboundTarget(kernelToMeSlot) {
-    const outgoingWireMessageObj = state.clists.mapKernelSlotToOutgoingWireMessage(
+    const outgoingWireMessageList = state.clists.mapKernelSlotToOutgoingWireMessageList(
       kernelToMeSlot,
     ); //  otherMachineName, direction, meToYouSlot
     // we will need to know what machine to send it to, just from the
@@ -117,12 +119,12 @@ function makeMapOutbound(syscall, state) {
 
     // we also do not allocate a new id, if we can't find it, it's an
     // error.
-    if (!outgoingWireMessageObj) {
+    if (!outgoingWireMessageList) {
       throw new Error(
         `targetSlot ${JSON.stringify(kernelToMeSlot)} is not recognized`,
       );
     }
-    return outgoingWireMessageObj;
+    return outgoingWireMessageList;
   }
 
   return {

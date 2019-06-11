@@ -140,10 +140,13 @@ test('makeCommsSlots deliver to egress', t => {
   calls.shift();
 
   t.deepEqual(
-    state.clists.mapKernelSlotToOutgoingWireMessage({
-      type: 'promise',
-      id: 66,
-    }),
+    state.clists.mapKernelSlotToOutgoingWireMessage(
+      {
+        type: 'promise',
+        id: 66,
+      },
+      'bot',
+    ),
     { otherMachineName: 'bot', meToYouSlot: { type: 'your-promise', id: 71 } },
   );
   t.end();

@@ -14,7 +14,7 @@ export function makeCLists() {
   function checkIfAlreadyExists(incomingWireMessageKey, kernelToMeKey) {
     const slot = state.get(incomingWireMessageKey);
     const outgoing = state.get(kernelToMeKey);
-    if (slot || outgoing) {
+    if (slot && outgoing) {
       throw new Error(`${kernelToMeKey} already exists in clist`);
     }
   }
@@ -78,8 +78,24 @@ export function makeCLists() {
 
   // takes kernelToMeSlot, returns meToYouSlot and machineName
   // we don't know the otherMachineName
-  function mapKernelSlotToOutgoingWireMessage(kernelToMeSlot) {
-    return state.get(createKernelToMeKey(kernelToMeSlot));
+  function mapKernelSlotToOutgoingWireMessageList(kernelToMeSlot) {
+    const machineNameToOutgoingWireMessageMap = state.get(
+      createKernelToMeKey(kernelToMeSlot),
+    );
+    return Array.from(machineNameToOutgoingWireMessageMap.values());
+  }
+
+  function mapKernelSlotToOutgoingWireMessage(
+    kernelToMeSlot,
+    otherMachineName,
+  ) {
+    const machineNameToOutgoingMessageMap = state.get(
+      createKernelToMeKey(kernelToMeSlot),
+    );
+    if (machineNameToOutgoingMessageMap === undefined) {
+      return undefined;
+    }
+    return machineNameToOutgoingMessageMap.get(otherMachineName); // the meToYouSlot for that otherMachineName
   }
 
   // kernelToMeSlot can have type: import, export or promise
@@ -104,12 +120,15 @@ export function makeCLists() {
     );
     const kernelToMeKey = createKernelToMeKey(kernelToMeSlot);
     checkIfAlreadyExists(incomingWireMessageKey, kernelToMeKey);
-    state.set(kernelToMeKey, outgoingWireMessageObj);
+    const machineNameToOutgoingMessage = state.get(kernelToMeKey) || new Map();
+    machineNameToOutgoingMessage.set(otherMachineName, outgoingWireMessageObj);
+    state.set(kernelToMeKey, machineNameToOutgoingMessage);
     state.set(incomingWireMessageKey, kernelToMeSlot);
   }
 
   return {
     mapIncomingWireMessageToKernelSlot,
+    mapKernelSlotToOutgoingWireMessageList,
     mapKernelSlotToOutgoingWireMessage,
     changePerspective,
     add,
