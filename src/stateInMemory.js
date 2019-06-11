@@ -18,12 +18,14 @@ export default function makeStorageInMemory(storage = {}) {
         }
         case 'set': {
           const { value } = command;
+          if (value !== `${value}`) {
+            throw new Error(`storageInMemory.set value must be string, not ${JSON.stringify(value)}`);
+          }
           outsideRealmKVStore.set(key, value);
           break;
         }
         case 'has': {
-          const bool = outsideRealmKVStore.has(key);
-          result = [bool]; // JSON compatibility
+          result = outsideRealmKVStore.has(key);
           break;
         }
         case 'delete': {

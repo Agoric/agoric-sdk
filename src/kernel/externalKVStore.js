@@ -36,13 +36,14 @@ export default function makeExternalKVStore(pathToRoot, external) {
       );
     },
     has(key) {
-      const boolArrayStr = external.sendMsg(
+      const strValue = external.sendMsg(
         stringify({
           method: 'has',
           key: `${pathToRoot}.${key}`,
         }),
       );
-      return JSON.parse(boolArrayStr)[0]; // JSON compatibility
+      console.log(`externalKVStore.has returned: '${strValue}'`);
+      return JSON.parse(strValue);
     },
     keys() {
       const strKeys = external.sendMsg(
