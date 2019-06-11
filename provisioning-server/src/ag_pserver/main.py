@@ -8,10 +8,15 @@ import treq
 import os.path
 import os
 import json
+import subprocess
 
 from twisted.python import log
 import sys
 log.startLogging(sys.stdout)
+
+# TODO: Don't hardcode these.
+INITIAL_TOKEN = '1agmedallion'
+AG_BOOTSTRAP_PASSWORD = b'mmmmmmmm'
 
 MAILBOX_URL = u"ws://relay.magic-wormhole.io:4000/v1"
 #MAILBOX_URL = u"ws://10.0.2.24:4000/v1"
@@ -96,6 +101,21 @@ class RequestCode(resource.Resource):
                 }
         print("mobj:", mobj)
         m = json.dumps(mobj)
+
+        f = open(cosmosConfigFile(self.opts['home']))
+        config = json.loads(f.read())
+
+        # FIXME: Make more resilient to DOS attacks, or attempts
+        # to drain all our agmedallions.
+        if INITIAL_TOKEN is not None:
+            subprocess.run([
+                'ag-cosmos-helper', 'tx', 'send', cm['pubkey'],
+                INITIAL_TOKEN, '--from', config['bootstrapAddress'],
+                '--yes', '--chain-id', config['chainName'],
+                '--node',
+                'tcp://' + config['rpcAddrs'][0], # TODO: rotate on failure
+                '--home', os.environ['HOME'] + '/controller/ag-cosmos-helper-statedir'
+                ], check=True, input= AG_BOOTSTRAP_PASSWORD + b'\n')
         controller_url = self.opts["controller"]
         # this HTTP request goes to the controller machine, where it should
         # be routed to vat-provisioning.js and the pleaseProvision() method.
@@ -106,12 +126,10 @@ class RequestCode(resource.Resource):
             return {"ok": False, "error": str(e)}
         rawResp = yield treq.json_content(resp)
         if not rawResp.get("ok"):
-            print("provisioning server error", r)
-            return {"ok": False, "error": r.get('rej')}
+            print("provisioning server error", rawResp)
+            return {"ok": False, "error": rawResp.get('rej')}
         r = rawResp['res']
         ingressIndex = r["ingressIndex"]
-        f = open(cosmosConfigFile(self.opts['home']))
-        config = json.loads(f.read())
         # this message is sent back to setup-solo/src/ag_setup_solo/main.py
         server_message = {
             "ok": True,

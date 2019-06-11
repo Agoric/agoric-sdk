@@ -21,7 +21,9 @@ START_DIR = os.path.abspath('.')
 
 class Options(usage.Options):
     optParameters = [
-        ]
+        ["webhost", "h", "127.0.0.1", "client-visible HTTP listening address"],
+        ["webport", "p", "8000", "client-visible HTTP listening port"],
+    ]
     def parseArgs(self, basedir=os.environ['AG_SOLO_BASEDIR']):
         self['basedir'] = os.environ['AG_SOLO_BASEDIR'] = basedir
 
@@ -55,7 +57,7 @@ def guard(path, fun):
 def doInit(o):
     BASEDIR = o['basedir']
     # run 'ag-solo init BASEDIR'
-    subprocess.run([AG_SOLO, 'init', BASEDIR], check=True)
+    subprocess.run([AG_SOLO, 'init', BASEDIR, '--webhost=' + o['webhost'], '--webport=' + o['webport']], check=True)
 
 def main():
     o = Options()
