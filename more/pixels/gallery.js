@@ -11,7 +11,14 @@ import { makeWholePixelList, insistPixelList } from './types/pixelList';
 import { makeMintController } from './pixelMintController';
 import { makeLruQueue } from './lruQueue';
 
-export function makeGallery(E, canvasSize = 10) {
+function mockStateChangeHandler(_newState) {
+  // does nothing
+}
+
+export function makeGallery(
+  stateChangeHandler = mockStateChangeHandler,
+  canvasSize = 10,
+) {
   function getRandomColor() {
     // TODO: actually getRandomColor in a deterministic way
     // return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
@@ -31,8 +38,15 @@ export function makeGallery(E, canvasSize = 10) {
   }
   const state = makeRandomData();
 
+  // provide state the canvas html page
+  function getState() {
+    return JSON.stringify(state);
+  }
+
   function setPixelState(pixel, newColor) {
     state[pixel.x][pixel.y] = newColor;
+    // for now we pass the whole state
+    stateChangeHandler(getState());
   }
 
   // create all pixels (list of raw objs)
@@ -205,11 +219,6 @@ export function makeGallery(E, canvasSize = 10) {
     transferRightMint.destroy(transferRightAmount);
   }
 
-  // provide state the canvas html page
-  function provideState() {
-    return JSON.stringify(state);
-  }
-
   // anyone can getColor, no restrictions, no tokens
   function getColor(x, y) {
     const rawPixel = { x: Nat(x), y: Nat(y) };
@@ -241,7 +250,7 @@ export function makeGallery(E, canvasSize = 10) {
   };
 
   const readFacet = {
-    provideState,
+    getState,
     getColor,
   };
 

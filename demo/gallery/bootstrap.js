@@ -34,19 +34,22 @@ function build(E, log) {
   const obj0 = {
     async bootstrap(argv, vats) {
       const canvasSize = 10;
+      function stateChangeHandler(_newState) {
+          // does nothing in this test
+      }
 
       switch (argv[0]) {
         case 'tapFaucet': {
           log('starting tapFaucet');
           const aliceMaker = await E(vats.alice).makeAliceMaker();
-          const gallery = makeGallery(E, canvasSize);
+          const gallery = makeGallery(stateChangeHandler, canvasSize);
           log('alice is made');
           return testTapFaucet(aliceMaker, gallery);
         }
         case 'aliceChangesColor': {
           log('starting aliceChangesColor');
           const aliceMaker = await E(vats.alice).makeAliceMaker();
-          const gallery = makeGallery(E, canvasSize);
+          const gallery = makeGallery(stateChangeHandler, canvasSize);
           log('alice is made');
           return testAliceChangesColor(aliceMaker, gallery);
         }
@@ -54,7 +57,7 @@ function build(E, log) {
           log('starting aliceSendsOnlyUseRight');
           const aliceMaker = await E(vats.alice).makeAliceMaker();
           const bobMaker = await E(vats.bob).makeBobMaker();
-          const gallery = makeGallery(E, canvasSize);
+          const gallery = makeGallery(stateChangeHandler, canvasSize);
           log('alice is made');
           return testAliceSendsOnlyUseRight(aliceMaker, bobMaker, gallery);
         }
@@ -62,7 +65,7 @@ function build(E, log) {
           log('starting galleryRevokes');
           const aliceMaker = await E(vats.alice).makeAliceMaker();
           const bobMaker = await E(vats.bob).makeBobMaker();
-          const gallery = makeGallery(E, canvasSize);
+          const gallery = makeGallery(stateChangeHandler, canvasSize);
           return testGalleryRevokes(aliceMaker, bobMaker, gallery);
         }
         default: {
