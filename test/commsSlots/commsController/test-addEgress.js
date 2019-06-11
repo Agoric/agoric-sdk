@@ -53,7 +53,7 @@ test('handleCommsController addEgress', t => {
   );
   const {
     meToYouSlot: actualMeToYouSlot,
-  } = state.clists.mapKernelSlotToOutgoingWireMessage(caps[0]);
+  } = state.clists.mapKernelSlotToOutgoingWireMessage(caps[0], sender);
   t.deepEqual(kernelToMeSlot, caps[0]); // actual, expected
   t.deepEqual(actualMeToYouSlot, meToYouSlot);
   t.end();

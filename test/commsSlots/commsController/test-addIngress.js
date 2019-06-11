@@ -58,10 +58,13 @@ test('handleCommsController addIngress', t => {
   );
   const {
     meToYouSlot: actualMeToYouSlot,
-  } = state.clists.mapKernelSlotToOutgoingWireMessage({
-    type: 'export',
-    id: 1,
-  });
+  } = state.clists.mapKernelSlotToOutgoingWireMessage(
+    {
+      type: 'export',
+      id: 1,
+    },
+    sender,
+  );
   t.deepEqual(kernelToMeSlot, { type: 'export', id: 1 }); // actual, expected
   t.deepEqual(actualMeToYouSlot, expectedMeToYouSlot);
   t.end();
@@ -114,10 +117,13 @@ test('handleCommsController addIngress twice', t => {
   );
   const {
     meToYouSlot: actualMeToYouSlot,
-  } = state.clists.mapKernelSlotToOutgoingWireMessage({
-    type: 'export',
-    id: 1,
-  });
+  } = state.clists.mapKernelSlotToOutgoingWireMessage(
+    {
+      type: 'export',
+      id: 1,
+    },
+    sender,
+  );
   t.deepEqual(actualKernelToMeSlot, { type: 'export', id: 1 }); // actual, expected
   t.deepEqual(actualMeToYouSlot, { type: 'your-egress', id: index });
 
@@ -151,10 +157,13 @@ test('handleCommsController addIngress twice', t => {
   );
   const {
     meToYouSlot: actualMeToYouSlot2,
-  } = state.clists.mapKernelSlotToOutgoingWireMessage({
-    type: 'export',
-    id: 2,
-  });
+  } = state.clists.mapKernelSlotToOutgoingWireMessage(
+    {
+      type: 'export',
+      id: 2,
+    },
+    sender2,
+  );
   t.deepEqual(actualKernelToMeSlot2, { type: 'export', id: 2 }); // actual, expected
   t.deepEqual(actualMeToYouSlot2, { type: 'your-egress', id: index2 });
   t.end();
@@ -205,10 +214,13 @@ test('handleCommsController addIngress same again', t => {
   );
   const {
     meToYouSlot: actualMeToYouSlot,
-  } = state.clists.mapKernelSlotToOutgoingWireMessage({
-    type: 'export',
-    id: 1,
-  });
+  } = state.clists.mapKernelSlotToOutgoingWireMessage(
+    {
+      type: 'export',
+      id: 1,
+    },
+    sender,
+  );
   t.deepEqual(actualKernelToMeSlot, { type: 'export', id: 1 }); // actual, expected
   t.deepEqual(actualMeToYouSlot, { type: 'your-egress', id: index });
 
@@ -242,10 +254,13 @@ test('handleCommsController addIngress same again', t => {
   );
   const {
     meToYouSlot: actualMeToYouSlot2,
-  } = state.clists.mapKernelSlotToOutgoingWireMessage({
-    type: 'export',
-    id: 1,
-  });
+  } = state.clists.mapKernelSlotToOutgoingWireMessage(
+    {
+      type: 'export',
+      id: 1,
+    },
+    sender,
+  );
   t.deepEqual(actualKernelToMeSlot2, { type: 'export', id: 1 }); // actual, expected
   t.deepEqual(actualMeToYouSlot2, { type: 'your-egress', id: index });
 

@@ -36,6 +36,7 @@ export default function makeCommsSlots(syscall, _state, helpers) {
   }
 
   const dispatch = harden({
+    // eslint-disable-next-line consistent-return
     deliver(facetid, method, argsStr, kernelToMeSlots, resolverID) {
       const kernelToMeSlotTarget = { type: 'export', id: facetid };
       csdebug(
@@ -79,49 +80,56 @@ export default function makeCommsSlots(syscall, _state, helpers) {
       // we must have it in our tables at this point, if we don't it's an error.
       // Otherwise we wouldn't know where to send the outgoing
       // message.
-      const {
-        otherMachineName,
-        meToYouSlot: meToYouTargetSlot,
-      } = mapOutboundTarget(kernelToMeSlotTarget);
 
-      // TODO: throw an exception if the otherMachineName that we get
-      // from slots is different than otherMachineName that we get
-      // from the target slot. That would be the three-party handoff
-      // case which we are not supporting yet
+      // we may have multiple machines to send the message to
+      const outboundWireMessageList = mapOutboundTarget(kernelToMeSlotTarget);
 
-      // TODO: don't parse the args we get from the kernel, we should wrap
-      // these in a struture that adds methodName/event/target/etc and send
-      // that to the other side
-      const { args } = JSON.parse(argsStr);
+      function mapAndSend(outboundWireMessage) {
+        const {
+          otherMachineName,
+          meToYouSlot: meToYouTargetSlot,
+        } = outboundWireMessage;
 
-      // map the slots
-      // we want to ensure that we are not revealing anything about
-      // our internal data - thus we need to transform everything
-      // related to slots
+        // TODO: throw an exception if the otherMachineName that we get
+        // from slots is different than otherMachineName that we get
+        // from the target slot. That would be the three-party handoff
+        // case which we are not supporting yet
 
-      // if something isn't present in the slots (note, not the target), we need to allocate an id for it
-      // and store it
+        // TODO: don't parse the args we get from the kernel, we should wrap
+        // these in a struture that adds methodName/event/target/etc and send
+        // that to the other side
+        const { args } = JSON.parse(argsStr);
 
-      const meToYouSlots = kernelToMeSlots.map(slot =>
-        mapOutbound(otherMachineName, slot),
-      );
+        // map the slots
+        // we want to ensure that we are not revealing anything about
+        // our internal data - thus we need to transform everything
+        // related to slots
 
-      // TODO: resolverID might be empty if the local vat did
-      // syscall.sendOnly, in which case we should leave resultSlot empty too
-      const resultSlot = mapOutbound(otherMachineName, {
-        type: 'resolver',
-        id: resolverID,
-      });
+        // if something isn't present in the slots (note, not the target), we need to allocate an id for it
+        // and store it
 
-      const message = JSON.stringify({
-        target: meToYouTargetSlot,
-        methodName: method,
-        args, // TODO just include argsStr directly
-        slots: meToYouSlots,
-        resultSlot,
-      });
+        const meToYouSlots = kernelToMeSlots.map(slot =>
+          mapOutbound(otherMachineName, slot),
+        );
 
-      return sendToVatTP(otherMachineName, message);
+        // TODO: resolverID might be empty if the local vat did
+        // syscall.sendOnly, in which case we should leave resultSlot empty too
+        const resultSlot = mapOutbound(otherMachineName, {
+          type: 'resolver',
+          id: resolverID,
+        });
+
+        const message = JSON.stringify({
+          target: meToYouTargetSlot,
+          methodName: method,
+          args, // TODO just include argsStr directly
+          slots: meToYouSlots,
+          resultSlot,
+        });
+
+        return sendToVatTP(otherMachineName, message);
+      }
+      outboundWireMessageList.map(mapAndSend);
     },
 
     // TODO: change promiseID to a slot instead of wrapping it
@@ -130,64 +138,78 @@ export default function makeCommsSlots(syscall, _state, helpers) {
         `cs.dispatch.notifyFulfillToData(${promiseID}, ${dataStr}, ${kernelToMeSlots})`,
       );
 
-      const { otherMachineName, meToYouSlot } = mapOutboundTarget({
+      const outgoingWireMessageList = mapOutboundTarget({
         type: 'promise',
         id: promiseID, // cast to kernelToMeSlot
       });
 
-      const meToYouSlots = kernelToMeSlots.map(slot =>
-        mapOutbound(otherMachineName, slot),
-      );
+      function mapAndSend(outboundWireMessage) {
+        const { otherMachineName, meToYouSlot } = outboundWireMessage;
+        const meToYouSlots = kernelToMeSlots.map(slot =>
+          mapOutbound(otherMachineName, slot),
+        );
 
-      // we need to map the slots and pass those on
-      const dataMsg = JSON.stringify({
-        event: 'notifyFulfillToData',
-        promise: meToYouSlot,
-        args: dataStr,
-        slots: meToYouSlots, // TODO: these should be dependent on the machine we are sending to
-      });
+        // we need to map the slots and pass those on
+        const dataMsg = JSON.stringify({
+          event: 'notifyFulfillToData',
+          promise: meToYouSlot,
+          args: dataStr,
+          slots: meToYouSlots, // TODO: these should be dependent on the machine we are sending to
+        });
 
-      // TODO: figure out whether there is a one-to-one correspondance
-      // between our exports to the kernel and objects
+        // TODO: figure out whether there is a one-to-one correspondance
+        // between our exports to the kernel and objects
 
-      sendToVatTP(otherMachineName, dataMsg);
+        sendToVatTP(otherMachineName, dataMsg);
+      }
+
+      outgoingWireMessageList.map(mapAndSend);
     },
 
     // TODO: use a slot with type promise instead of a promiseID
     notifyFulfillToPresence(promiseID, slot) {
       csdebug(`cs.dispatch.notifyFulfillToPresence(${promiseID}, ${slot})`);
 
-      const { otherMachineName, meToYouSlot } = mapOutboundTarget({
+      const outgoingWireMessageList = mapOutboundTarget({
         type: 'promise',
         id: promiseID,
       });
 
-      const dataMsg = JSON.stringify({
-        event: 'notifyFulfillToPresence',
-        promise: meToYouSlot,
-        target: mapOutbound(otherMachineName, slot),
-      });
+      function mapAndSend(outgoingWireMessage) {
+        const { otherMachineName, meToYouSlot } = outgoingWireMessage;
+        const dataMsg = JSON.stringify({
+          event: 'notifyFulfillToPresence',
+          promise: meToYouSlot,
+          target: mapOutbound(otherMachineName, slot),
+        });
 
-      sendToVatTP(otherMachineName, dataMsg);
+        sendToVatTP(otherMachineName, dataMsg);
+      }
+
+      outgoingWireMessageList.map(mapAndSend);
     },
 
     // TODO: use promise slot rather than promiseID
     notifyReject(promiseID, data, slots) {
       csdebug(`cs.dispatch.notifyReject(${promiseID}, ${data}, ${slots})`);
 
-      const { otherMachineName, meToYouSlot } = mapOutboundTarget({
+      const outgoingWireMessageList = mapOutboundTarget({
         type: 'promise',
         id: promiseID,
       });
 
-      const msg = JSON.stringify({
-        event: 'notifyReject',
-        promise: meToYouSlot,
-        args: data,
-        slots: slots.map(slot => mapOutbound(otherMachineName, slot)),
-      });
+      function mapAndSend(outgoingWireMessage) {
+        const { otherMachineName, meToYouSlot } = outgoingWireMessage;
+        const msg = JSON.stringify({
+          event: 'notifyReject',
+          promise: meToYouSlot,
+          args: data,
+          slots: slots.map(slot => mapOutbound(otherMachineName, slot)),
+        });
 
-      sendToVatTP(otherMachineName, msg);
+        sendToVatTP(otherMachineName, msg);
+      }
+      outgoingWireMessageList.map(mapAndSend);
     },
 
     // for testing purposes only
