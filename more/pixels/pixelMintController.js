@@ -27,7 +27,11 @@ export function makeMintController(assay) {
     // assume length === 1 for now
 
     const pixel = pixelList[0];
-    const location = pixelToPursePayment.get(getString(pixel));
+    const strPixel = getString(pixel);
+    if (!pixelToPursePayment.has(strPixel)) {
+      return;
+    }
+    const location = pixelToPursePayment.get(strPixel);
     // amount is guaranteed to be there
     // eslint-disable-next-line no-use-before-define
     amount = assay.coerce(amount);

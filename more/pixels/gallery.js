@@ -87,22 +87,16 @@ export function makeGallery(
   const transferRightIssuer = transferRightMint.getIssuer();
   const transferRightAssay = transferRightIssuer.getAssay();
 
-  const allPixelsAmount = harden({
-    label: pixelLabel,
-    quantity: allPixels,
-  });
-
-  // mint all the pixels that will ever exist
-  const galleryPurse = pixelMint.mint(allPixelsAmount, 'gallery');
-
   // get the pixelList from the LRU
-  function getPixelPayment(rawPixelList) {
+  function makePixelPayment(rawPixelList) {
     insistPixelList(rawPixelList, canvasSize);
     const pixelAmount = {
       label: pixelLabel,
       quantity: rawPixelList,
     };
-    const payment = galleryPurse.withdraw(pixelAmount);
+    // we need to create this, since it was just destroyed
+    const newGalleryPurse = pixelMint.mint(pixelAmount, 'gallery');
+    const payment = newGalleryPurse.withdraw(pixelAmount);
     return payment;
   }
 
@@ -174,11 +168,6 @@ export function makeGallery(
     );
   }
 
-  function tapFaucet() {
-    const rawPixel = lruQueue.popToTail();
-    return getPixelPayment(harden([rawPixel]));
-  }
-
   function insistColor(_myColor) {
     // TODO: check whether allowed
   }
@@ -217,6 +206,12 @@ export function makeGallery(
     pixelMint.destroy(pixelAmount);
     useRightMint.destroy(useRightAmount);
     transferRightMint.destroy(transferRightAmount);
+  }
+
+  function tapFaucet() {
+    const rawPixel = lruQueue.popToTail();
+    revokePixel(rawPixel);
+    return makePixelPayment(harden([rawPixel]));
   }
 
   // anyone can getColor, no restrictions, no tokens
