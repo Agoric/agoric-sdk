@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "build": "node-gyp configure build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tape -r esm 'test/**/test*.js' | tap-spec",
+    "pretty-fix": "prettier --write '**/*.{js,jsx}'",
+    "pretty-check": "prettier --check '**/*.{js,jsx}'",
+    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
+    "lint-check": "eslint '**/*.{js,jsx}'"
   },
   "keywords": [],
   "author": "Agoric",
@@ -16,7 +20,7 @@
     "@iarna/toml": "^2.2.3",
     "bindings": "^1.2.1",
     "deterministic-json": "^1.0.5",
-    "esm": "^3.2.5",
+    "esm": "^3.2.25",
     "express": "^4.17.0",
     "lotion-connect": "^0.1.22",
     "minimist": "^1.2.0",
@@ -26,6 +30,17 @@
   },
   "devDependencies": {
     "napi-thread-safe-callback": "0.0.6",
-    "node-addon-api": "^1.6.3"
+    "node-addon-api": "^1.6.3",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb": "^17.1.0",
+    "eslint-config-prettier": "^4.3.0",
+    "eslint-plugin-import": "^2.17.3",
+    "eslint-plugin-jsx-a11y": "^6.2.1",
+    "eslint-plugin-prettier": "^3.1.0",
+    "eslint-plugin-react": "^7.13.0",
+    "prettier": "^1.17.1",
+    "tap-spec": "^5.0.0",
+    "tape": "^4.10.2",
+    "tape-promise": "^4.0.0"
   }
 }

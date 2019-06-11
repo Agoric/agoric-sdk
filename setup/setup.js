@@ -1,12 +1,14 @@
-import {resolve} from './files';
 import chalk from 'chalk';
+import { resolve } from './files';
 
 export const ACCOUNT_JSON = `account.json`;
 export const DEFAULT_BOOT_TOKENS = `1000000agmedallion`;
 export const PLAYBOOK_WRAPPER = `./ansible-playbook.sh`;
 export const SETUP_DIR = resolve(__dirname, '../setup');
 export const SSH_TYPE = 'ecdsa';
-export const SETUP_HOME = process.env.AG_SETUP_COSMOS_HOME ? resolve(process.env.AG_SETUP_COSMOS_HOME) : "";
+export const SETUP_HOME = process.env.AG_SETUP_COSMOS_HOME
+  ? resolve(process.env.AG_SETUP_COSMOS_HOME)
+  : '';
 process.env.AG_SETUP_COSMOS_HOME = SETUP_HOME;
 
 export const playbook = (name, ...args) => {

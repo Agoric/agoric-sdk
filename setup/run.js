@@ -1,18 +1,19 @@
-import {exec as rawExec, spawn} from 'child_process';
+import { exec as rawExec, spawn } from 'child_process';
 import { Writable } from 'stream';
 
 export const shellMetaRegexp = /(\s|[\[\]'"\\`$;*?{}])/;
-export const shellEscape = (arg) => (arg.match(shellMetaRegexp) ? `"${arg.replace(/(["\\])/g, '\\$1')}"` : arg);
+export const shellEscape = arg =>
+  arg.match(shellMetaRegexp) ? `"${arg.replace(/(["\\])/g, '\\$1')}"` : arg;
 let SETUP_SILENT = false;
-export const setSilent = (val) => {
+export const setSilent = val => {
   SETUP_SILENT = val;
 };
 
-export const exec = (cmd) => {
+export const exec = cmd => {
   const cp = rawExec(cmd);
   const promise = new Promise((resolve, reject) => {
     cp.addListener('error', reject);
-    cp.addListener('exit', (code) => {
+    cp.addListener('exit', code => {
       resolve(code);
     });
   });
@@ -20,7 +21,7 @@ export const exec = (cmd) => {
   return promise;
 };
 
-export const getStdout = async (cmd) => {
+export const getStdout = async cmd => {
   const cp = exec(cmd);
   let outbuf = '';
   const stdout = new Writable({
@@ -33,15 +34,15 @@ export const getStdout = async (cmd) => {
   cp.process.stderr.pipe(process.stderr);
 
   const code = await cp;
-  return {stdout: outbuf, code};
+  return { stdout: outbuf, code };
 };
 
-export const backtick = async (cmd) => {
+export const backtick = async cmd => {
   const ret = await getStdout(cmd);
   return ret.stdout;
 };
 
-export const needBacktick = async (cmd) => {
+export const needBacktick = async cmd => {
   const ret = await getStdout(cmd);
   if (ret.code !== 0) {
     throw `Unexpected ${JSON.stringify(cmd)} exit code: ${ret.code}`;
@@ -49,7 +50,7 @@ export const needBacktick = async (cmd) => {
   return ret.stdout;
 };
 
-export const chdir = (path) => {
+export const chdir = path => {
   if (!SETUP_SILENT) {
     console.error('$ cd', shellEscape(path));
   }
@@ -64,8 +65,12 @@ export const doRun = (cmd, readable, writeCb) => {
   if (!SETUP_SILENT) {
     console.error('$', ...cmd.map(shellEscape));
   }
-  const stdio = [readable ? 'pipe' : 'inherit', writeCb ? 'pipe' : 'inherit', 'inherit'];
-  const proc = spawn(cmd[0], cmd.slice(1), {stdio});
+  const stdio = [
+    readable ? 'pipe' : 'inherit',
+    writeCb ? 'pipe' : 'inherit',
+    'inherit',
+  ];
+  const proc = spawn(cmd[0], cmd.slice(1), { stdio });
   if (readable) {
     readable.pipe(proc.stdin);
   }
@@ -90,8 +95,8 @@ export const doRun = (cmd, readable, writeCb) => {
 };
 
 export const needDoRun = async (cmd, ...opts) => {
-    const ret = await doRun(cmd, ...opts);
-    if (ret !== 0) {
-      throw `Aborted with exit code ${ret}`;
-    }
-  };
+  const ret = await doRun(cmd, ...opts);
+  if (ret !== 0) {
+    throw `Aborted with exit code ${ret}`;
+  }
+};

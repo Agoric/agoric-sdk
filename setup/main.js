@@ -1,13 +1,36 @@
-import {SETUP_HOME, DEFAULT_BOOT_TOKENS, playbook, sleep, SSH_TYPE} from './setup';
-import {dirname, exists, readFile, resolve, stat, streamFromString, createFile, mkdir, unlink} from './files';
-import {chdir, doRun, needBacktick, needDoRun, shellEscape, shellMetaRegexp, setSilent} from './run';
-import doInit from './init';
-
 import inquirer from 'inquirer';
 import djson from 'deterministic-json';
 import crypto from 'crypto';
 import chalk from 'chalk';
 import parseArgs from 'minimist';
+import doInit from './init';
+import {
+  chdir,
+  doRun,
+  needBacktick,
+  needDoRun,
+  shellEscape,
+  shellMetaRegexp,
+  setSilent,
+} from './run';
+import {
+  dirname,
+  exists,
+  readFile,
+  resolve,
+  stat,
+  streamFromString,
+  createFile,
+  mkdir,
+  unlink,
+} from './files';
+import {
+  SETUP_HOME,
+  DEFAULT_BOOT_TOKENS,
+  playbook,
+  sleep,
+  SSH_TYPE,
+} from './setup';
 
 const PROVISION_DIR = 'provision';
 const PROVISIONER_NODE = 'node0'; // FIXME: Allow configuration.
@@ -17,14 +40,14 @@ const CONTROLLER_DIR = 'ag-pserver';
 // This is needed for hyphenated groups.
 process.env.ANSIBLE_TRANSFORM_INVALID_GROUP_CHARS = 'ignore';
 
-const trimReadFile = async (file) => String(await readFile(file)).trimRight();
+const trimReadFile = async file => String(await readFile(file)).trimRight();
 
 const guardFile = async (file, maker) => {
   if (await exists(file)) {
     return 0;
   }
   const parent = dirname(file);
-  if (!await exists(parent)) {
+  if (!(await exists(parent))) {
     await mkdir(parent);
   }
   let made = false;
@@ -35,7 +58,7 @@ const guardFile = async (file, maker) => {
   if (!made) {
     if (!ret) {
       // Create a timestamp by default.
-      await createFile(file, String(new Date));
+      await createFile(file, String(new Date()));
     } else {
       // They failed.
       throw ret;
@@ -48,25 +71,25 @@ const provisionOutput = async () => {
   const jsonFile = `${PROVISION_DIR}/terraform.json`;
   await guardFile(jsonFile, async makeFile => {
     const json = await needBacktick(`terraform output -json`);
-    await makeFile(json);    
+    await makeFile(json);
   });
   const json = String(await readFile(jsonFile));
   return JSON.parse(json);
 };
 
 const main = async (progname, rawArgs) => {
-  const {_: args, ...opts} = parseArgs(rawArgs, {
+  const { _: args, ...opts } = parseArgs(rawArgs, {
     boolean: ['version', 'help'],
     stopEarly: true,
   });
 
-  const reMain = async (args) => {
+  const reMain = async args => {
     const displayArgs = [progname, ...args];
     console.error('$', ...displayArgs.map(shellEscape));
     return main(progname, args);
   };
 
-  const needReMain = async (args) => {
+  const needReMain = async args => {
     const code = await reMain(args);
     if (code !== 0) {
       throw `Unexpected exit: ${code}`;
@@ -83,7 +106,8 @@ or
   cd ${adir}
 and run ${progname} subcommands`);
   };
-  const help = () => console.log(`\
+  const help = () =>
+    console.log(`\
 Usage: ${progname} [command] [...args]
 
 Notable commands:
@@ -101,13 +125,13 @@ show-config      display the client connection parameters
   const inited = async (cmd = `${progname} init`, ...files) => {
     files = [...files, 'ansible.cfg', 'vars.tf'];
     try {
-      const ps = files.map((path) => stat(path));
+      const ps = files.map(path => stat(path));
       await Promise.all(ps);
     } catch (e) {
       throw `${process.cwd()} does not appear to be a directory created by \`${cmd}'`;
     }
   };
-  
+
   const cmd = args[0];
   if (SETUP_HOME) {
     // Switch to the chain home.
@@ -137,7 +161,7 @@ show-config      display the client connection parameters
       break;
     }
     case 'bootstrap': {
-      const {_: subArgs, ...subOpts} = parseArgs(args.slice(1), {
+      const { _: subArgs, ...subOpts } = parseArgs(args.slice(1), {
         stopEarly: true,
       });
 
@@ -152,7 +176,13 @@ show-config      display the client connection parameters
         await chdir(dir);
       } else {
         // NOTE: init automatically changes directory.
-        await needReMain(['init', dir, ...(process.env.AG_SETUP_COSMOS_NAME ? [process.env.AG_SETUP_COSMOS_NAME] : [])]);
+        await needReMain([
+          'init',
+          dir,
+          ...(process.env.AG_SETUP_COSMOS_NAME
+            ? [process.env.AG_SETUP_COSMOS_NAME]
+            : []),
+        ]);
       }
 
       guardFile('boot-tokens.txt', makeFile => makeFile(bootTokens));
@@ -176,7 +206,9 @@ show-config      display the client connection parameters
       });
 
       // Prepare all the machines.
-      await guardFile(`${PROVISION_DIR}/prepare.stamp`, () => needReMain(['play', 'prepare-machine']));
+      await guardFile(`${PROVISION_DIR}/prepare.stamp`, () =>
+        needReMain(['play', 'prepare-machine']),
+      );
       const bootOpts = [];
       if (subOpts.instance) {
         bootOpts.push(`--instance=${subOpts.instance}`);
@@ -190,7 +222,7 @@ show-config      display the client connection parameters
 
     case 'bump-chain-instance': {
       await inited();
-      const {_: subArgs, ...subOpts} = parseArgs(args.slice(1), {
+      const { _: subArgs, ...subOpts } = parseArgs(args.slice(1), {
         stopEarly: true,
       });
 
@@ -198,12 +230,17 @@ show-config      display the client connection parameters
       let chainInstance = subOpts.instance;
       if (!chainInstance) {
         chainInstance = Number(await trimReadFile(instanceFile));
-        chainInstance ++;
+        chainInstance++;
       }
 
       // Stop all the services.
       await reMain(['play', 'stop', '-eservice=ag-pserver']);
-      await reMain(['play', 'stop', '-eservice=ag-controller', '-euser=ag-pserver']);
+      await reMain([
+        'play',
+        'stop',
+        '-eservice=ag-controller',
+        '-euser=ag-pserver',
+      ]);
       await reMain(['play', 'stop', '-eservice=ag-chain-cosmos']);
 
       // Blow away controller/cosmos state.
@@ -216,13 +253,15 @@ show-config      display the client connection parameters
 
     case 'bootstrap-cosmos': {
       await inited();
-      const {_: subArgs, ...subOpts} = parseArgs(args.slice(1), {
+      const { _: subArgs, ...subOpts } = parseArgs(args.slice(1), {
         boolean: ['bump'],
         stopEarly: true,
       });
-    
+
       if (subOpts.bump || subOpts.instance) {
-        const bumpOpts = subOpts.instance ? [`--instance=${subOpts.instance}`] : [];
+        const bumpOpts = subOpts.instance
+          ? [`--instance=${subOpts.instance}`]
+          : [];
         await needReMain(['bump-chain-instance', ...bumpOpts]);
       }
 
@@ -230,13 +269,17 @@ show-config      display the client connection parameters
       await guardFile(`chain-instance.txt`, makeFile => makeFile('1'));
 
       // Initialize the controller.
-      await guardFile(`${CONTROLLER_DIR}/prepare.stamp`, () => needReMain(['play', 'prepare-controller']));
+      await guardFile(`${CONTROLLER_DIR}/prepare.stamp`, () =>
+        needReMain(['play', 'prepare-controller']),
+      );
 
       // Assign the chain name.
       const networkName = await trimReadFile('network.txt');
       const chainInstance = await trimReadFile('chain-instance.txt');
       const chainName = `${networkName}${chainInstance}`;
-      const currentChainName = await trimReadFile(`${COSMOS_DIR}/chain-name.txt`).catch(e => undefined);
+      const currentChainName = await trimReadFile(
+        `${COSMOS_DIR}/chain-name.txt`,
+      ).catch(e => undefined);
       if (currentChainName !== chainName) {
         // We don't have matching parameters, so remove the old state.
         await needDoRun(['rm', '-rf', COSMOS_DIR]);
@@ -249,7 +292,11 @@ show-config      display the client connection parameters
       const genesisFile = `${COSMOS_DIR}/data/genesis.json`;
       await guardFile(genesisFile, async makeFile => {
         await needReMain(['play', 'prepare-cosmos']);
-        const merged = await needBacktick(`${shellEscape(progname)} show-genesis ${COSMOS_DIR}/data/*/genesis.json`);
+        const merged = await needBacktick(
+          `${shellEscape(
+            progname,
+          )} show-genesis ${COSMOS_DIR}/data/*/genesis.json`,
+        );
         await makeFile(merged);
       });
 
@@ -257,47 +304,93 @@ show-config      display the client connection parameters
       await guardFile(peersFile, async makeFile => {
         const peers = await needBacktick(`${shellEscape(progname)} show-peers`);
         await makeFile(peers);
-      })
+      });
 
-      await guardFile(`${COSMOS_DIR}/install.stamp`, () => needReMain(['play', 'install-cosmos']));
-      await guardFile(`${COSMOS_DIR}/service.stamp`, () => needReMain(['play', 'install']));
-      await guardFile(`${COSMOS_DIR}/start.stamp`, () => needReMain(['play', 'start']));
+      await guardFile(`${COSMOS_DIR}/install.stamp`, () =>
+        needReMain(['play', 'install-cosmos']),
+      );
+      await guardFile(`${COSMOS_DIR}/service.stamp`, () =>
+        needReMain(['play', 'install']),
+      );
+      await guardFile(`${COSMOS_DIR}/start.stamp`, () =>
+        needReMain(['play', 'start']),
+      );
 
       await needReMain(['wait-for-any']);
-      console.error(chalk.black.bgGreenBright.bold('Your Agoric Cosmos chain is now running!'));
+      console.error(
+        chalk.black.bgGreenBright.bold(
+          'Your Agoric Cosmos chain is now running!',
+        ),
+      );
       const cfg = await needBacktick(`${shellEscape(progname)} show-config`);
-      process.stdout.write(chalk.yellow(cfg) + '\n');
+      process.stdout.write(`${chalk.yellow(cfg)}\n`);
 
-      await guardFile(`${CONTROLLER_DIR}/data/cosmos-chain.json`, async makeFile => {
-        await makeFile(cfg);
-      });
+      await guardFile(
+        `${CONTROLLER_DIR}/data/cosmos-chain.json`,
+        async makeFile => {
+          await makeFile(cfg);
+        },
+      );
 
       await guardFile(`${CONTROLLER_DIR}/gci.txt`, async makeFile => {
         const gci = await needBacktick(`${shellEscape(progname)} show-gci`);
         await makeFile(gci);
       });
       await guardFile(`${CONTROLLER_DIR}/rpcaddrs.txt`, async makeFile => {
-        const rpcAddrs = await needBacktick(`${shellEscape(progname)} show-rpcaddrs`);
+        const rpcAddrs = await needBacktick(
+          `${shellEscape(progname)} show-rpcaddrs`,
+        );
         await makeFile(rpcAddrs.replace(',', ' '));
       });
-      await guardFile(`${CONTROLLER_DIR}/install.stamp`, () => needReMain(['play', 'install-controller']));
+      await guardFile(`${CONTROLLER_DIR}/install.stamp`, () =>
+        needReMain(['play', 'install-controller']),
+      );
 
       await guardFile(`${CONTROLLER_DIR}/solo-service.stamp`, () =>
-        needReMain(['play', 'install', '-eservice=ag-controller', '-euser=ag-pserver', '-echdir=/home/ag-pserver/controller', '-eexecline="/usr/local/bin/ag-solo start"']));
-      await guardFile(`${CONTROLLER_DIR}/solo-start.stamp`, () => needReMain(['play', 'start', '-eservice=ag-controller', '-euser=ag-pserver']));
+        needReMain([
+          'play',
+          'install',
+          '-eservice=ag-controller',
+          '-euser=ag-pserver',
+          '-echdir=/home/ag-pserver/controller',
+          '-eexecline="/usr/local/bin/ag-solo start"',
+        ]),
+      );
+      await guardFile(`${CONTROLLER_DIR}/solo-start.stamp`, () =>
+        needReMain([
+          'play',
+          'start',
+          '-eservice=ag-controller',
+          '-euser=ag-pserver',
+        ]),
+      );
 
       let pserverFlags = '';
       const installFlags = [];
-      const pub = `${networkName}.crt`, key = `${networkName}.key`;
-      if (await exists(pub) && await exists(key)) {
-        pserverFlags = ' ' + shellEscape(`--listen=ssl:443:privateKey=.ag-pserver/${key}:certKey=.ag-pserver/${pub}`);
-        installFlags.push(`-eserviceLines=AmbientCapabilities=CAP_NET_BIND_SERVICE`);
+      const pub = `${networkName}.crt`;
+      const key = `${networkName}.key`;
+      if ((await exists(pub)) && (await exists(key))) {
+        pserverFlags = ` ${shellEscape(
+          `--listen=ssl:443:privateKey=.ag-pserver/${key}:certKey=.ag-pserver/${pub}`,
+        )}`;
+        installFlags.push(
+          `-eserviceLines=AmbientCapabilities=CAP_NET_BIND_SERVICE`,
+        );
       }
       const execline = `/usr/src/app/ve3/bin/ag-pserver start${pserverFlags} -c http://localhost:8000/vat`;
       await guardFile(`${CONTROLLER_DIR}/service.stamp`, () =>
-        needReMain(['play', 'install', '-eservice=ag-pserver', `-eexecline=${shellEscape(execline)}`, ...installFlags]));
+        needReMain([
+          'play',
+          'install',
+          '-eservice=ag-pserver',
+          `-eexecline=${shellEscape(execline)}`,
+          ...installFlags,
+        ]),
+      );
 
-      await guardFile(`${CONTROLLER_DIR}/start.stamp`, () => needReMain(['play', 'start', '-eservice=ag-pserver']));
+      await guardFile(`${CONTROLLER_DIR}/start.stamp`, () =>
+        needReMain(['play', 'start', '-eservice=ag-pserver']),
+      );
 
       initHint();
       break;
@@ -312,7 +405,9 @@ show-config      display the client connection parameters
 
     case 'show-bootstrap-address': {
       await inited();
-      const bootAddress = await trimReadFile(`${CONTROLLER_DIR}/data/${PROVISIONER_NODE}/boot-address.txt`);
+      const bootAddress = await trimReadFile(
+        `${CONTROLLER_DIR}/data/${PROVISIONER_NODE}/boot-address.txt`,
+      );
       process.stdout.write(bootAddress);
       break;
     }
@@ -322,8 +417,13 @@ show-config      display the client connection parameters
       await chdir(SETUP_HOME);
       await inited();
       const [chainName, gci, rpcAddrs, bootstrapAddress] = await Promise.all(
-        ['show-chain-name', 'show-gci', 'show-rpcaddrs', 'show-bootstrap-address']
-          .map((cmd) => needBacktick([progname, cmd].map(shellEscape).join(' '))));
+        [
+          'show-chain-name',
+          'show-gci',
+          'show-rpcaddrs',
+          'show-bootstrap-address',
+        ].map(cmd => needBacktick([progname, cmd].map(shellEscape).join(' '))),
+      );
       const obj = {
         chainName,
         gci,
@@ -345,7 +445,9 @@ show-config      display the client connection parameters
       // Expand the hosts into nodes.
       const nodeMap = {};
       for (const host of hosts) {
-        const hostLines = await needBacktick(`ansible --list-hosts ${shellEscape(host)}`);
+        const hostLines = await needBacktick(
+          `ansible --list-hosts ${shellEscape(host)}`,
+        );
         for (const line of hostLines.split('\n')) {
           const match = line.match(/^\s*(node\d+)/);
           if (match) {
@@ -360,7 +462,8 @@ show-config      display the client connection parameters
       }
 
       for (const node of nodes) {
-        const nodePlaybook = (book, ...args) => playbook(book, '-l', node, ...args);
+        const nodePlaybook = (book, ...args) =>
+          playbook(book, '-l', node, ...args);
         await needDoRun(nodePlaybook('restart'));
         await needDoRun([progname, 'wait-for-any', node]);
       }
@@ -377,13 +480,22 @@ show-config      display the client connection parameters
       // Detect when blocks are being produced.
       let height = 0;
       while (true) {
-        await sleep(6, `to check if ${chalk.underline(host)} has committed a block`);
+        await sleep(
+          6,
+          `to check if ${chalk.underline(host)} has committed a block`,
+        );
         let buf = '';
-        const code = await needDoRun(playbook('status', '-l', host), undefined, function(chunk) {
-          process.stdout.write(chunk);
-          buf += String(chunk);
-        });
-        const match = buf.match(/Committed state.*module=state.*height=([1-9]\d*)/);
+        const code = await needDoRun(
+          playbook('status', '-l', host),
+          undefined,
+          function(chunk) {
+            process.stdout.write(chunk);
+            buf += String(chunk);
+          },
+        );
+        const match = buf.match(
+          /Committed state.*module=state.*height=([1-9]\d*)/,
+        );
         if (match) {
           height = match[1];
           break;
@@ -391,13 +503,21 @@ show-config      display the client connection parameters
       }
 
       const atLeast = host.match(/^node\d+/) ? '' : `At least one of `;
-      console.error(chalk.greenBright(`${atLeast}${chalk.underline(host)} is up-and-running (committed block height=${height})`));
+      console.error(
+        chalk.greenBright(
+          `${atLeast}${chalk.underline(
+            host,
+          )} is up-and-running (committed block height=${height})`,
+        ),
+      );
       break;
     }
 
     case 'new-account': {
       const [user, passwd] = args.slice(1);
-      const stdin = passwd ? streamFromString(`${passwd}\n${passwd}\n`) : 'inherit';
+      const stdin = passwd
+        ? streamFromString(`${passwd}\n${passwd}\n`)
+        : 'inherit';
       await needDoRun(['ag-cosmos-helper', 'keys', 'add', user], stdin);
       break;
     }
@@ -406,7 +526,8 @@ show-config      display the client connection parameters
       await inited();
       const prov = await provisionOutput();
 
-      let rpcaddrs = '', sep = '';
+      let rpcaddrs = '';
+      let sep = '';
       for (const CLUSTER of Object.keys(prov.public_ips.value)) {
         const ips = prov.public_ips.value[CLUSTER];
         const PORT = 26657;
@@ -423,24 +544,26 @@ show-config      display the client connection parameters
     case 'show-peers': {
       await inited();
       const prov = await provisionOutput();
-      const public_ips = [], public_ports = [];
+      const public_ips = [];
+      const public_ports = [];
       for (const CLUSTER of Object.keys(prov.public_ips.value)) {
         const ips = prov.public_ips.value[CLUSTER];
         const offset = Number(prov.offsets.value[CLUSTER]);
-        for (let i = 0; i < ips.length; i ++) {
+        for (let i = 0; i < ips.length; i++) {
           public_ips[offset + i] = ips[i];
         }
       }
 
       const DEFAULT_PORT = 26656;
 
-      let peers = '', sep = '';
+      let peers = '';
+      let sep = '';
       let idPath;
       let i = 0;
       while (true) {
         // Read the node-id file for this node.
         idPath = `${COSMOS_DIR}/data/node${i}/node-id`;
-        if (!await exists(idPath)) {
+        if (!(await exists(idPath))) {
           break;
         }
 
@@ -460,7 +583,7 @@ show-config      display the client connection parameters
         const PORT = public_ports[i] || DEFAULT_PORT;
         peers += `${sep}${ID}@${IP}:${PORT}`;
         sep = ',';
-        i ++;
+        i++;
       }
       if (i === 0) {
         throw `No ${idPath} file found`;
@@ -472,14 +595,17 @@ show-config      display the client connection parameters
     case 'show-gci': {
       const genesis = await readFile(`${COSMOS_DIR}/data/genesis.json`);
       const s = djson.stringify(JSON.parse(String(genesis)));
-      const gci = crypto.createHash('sha256').update(s).digest('hex');
+      const gci = crypto
+        .createHash('sha256')
+        .update(s)
+        .digest('hex');
       process.stdout.write(gci);
       break;
     }
 
     case 'show-genesis': {
       const files = args.slice(1);
-      const ps = files.map((file) => readFile(file));
+      const ps = files.map(file => readFile(file));
       const bodies = await Promise.all(ps);
       let first;
       const validators = [];
@@ -512,7 +638,14 @@ show-config      display the client connection parameters
         // Terraform will prompt.
         await needDoRun(['terraform', 'destroy']);
       } else {
-        const {CONFIRM} = await inquirer.prompt([{type: 'input', name: 'CONFIRM', default: 'no', message: `Type "yes" if you are sure you want to reset ${dir} state:`}]);
+        const { CONFIRM } = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'CONFIRM',
+            default: 'no',
+            message: `Type "yes" if you are sure you want to reset ${dir} state:`,
+          },
+        ]);
         if (CONFIRM !== 'yes') {
           throw `Aborting due to user request`;
         }
@@ -531,7 +664,7 @@ show-config      display the client connection parameters
 
     case 'provision': {
       await inited();
-      if (!await exists('.terraform')) {
+      if (!(await exists('.terraform'))) {
         await needDoRun(['terraform', 'init']);
       }
       await needDoRun(['terraform', 'apply', ...args.slice(1)]);
@@ -548,29 +681,32 @@ show-config      display the client connection parameters
         if (allLines[allLines.length - 1] === '') {
           allLines.pop();
         }
-        return allLines.reduce((prior, line) => (prior + prefix + line + '\n'), '');
+        return allLines.reduce(
+          (prior, line) => `${prior + prefix + line}\n`,
+          '',
+        );
       };
       const indent = (str, nspaces) => prefixLines(str, ' '.repeat(nspaces));
 
       const byGroup = {};
-      const makeGroup = (name) => {
+      const makeGroup = name => {
         const beginBlock = `\
 ${name}:
   hosts:
-`
+`;
         byGroup[name] = beginBlock;
-        return (hostBlock) => byGroup[name] += indent(hostBlock, 4);
+        return hostBlock => (byGroup[name] += indent(hostBlock, 4));
       };
 
-      const addAll = makeGroup('all')
+      const addAll = makeGroup('all');
       const addChainCosmos = makeGroup('ag-chain-cosmos', 4);
       for (const provider of Object.keys(prov.public_ips.value).sort()) {
         const addProvider = makeGroup(provider, 4);
         const ips = prov.public_ips.value[provider];
         const offset = Number(prov.offsets.value[provider]);
-        for (let instance = 0; instance < ips.length; instance ++) {
+        for (let instance = 0; instance < ips.length; instance++) {
           const ip = ips[instance];
-          const node = `node${offset + instance}`
+          const node = `node${offset + instance}`;
           const host = `\
 ${node}:
   ansible_host: ${ip}
