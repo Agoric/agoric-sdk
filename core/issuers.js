@@ -111,39 +111,24 @@ Description must be truthy: ${description}`;
     return amount;
   }
 
-  let destroyed = false;
-  // eventually, we will want to be able to credibly destroy the mint
-  // eslint-disable-next-line no-unused-vars
-  function destroyMint() {
-    destroyed = true;
-  }
-  function insistMintNotDestroyed() {
-    insist(!destroyed)`mint has been destroyed`;
-  }
-
   const mint = harden({
     getIssuer() {
-      insistMintNotDestroyed();
       return issuer;
     },
     destroyAll() {
-      insistMintNotDestroyed();
       mintController.destroyAll();
     },
     destroy(amount) {
-      insistMintNotDestroyed();
       amount = assay.coerce(amount);
       // for non-fungible tokens that are unique, destroy them by removing them from
       // the purses/payments that they live in
       mintController.destroy(amount);
     },
     revoke(amount) {
-      insistMintNotDestroyed();
       this.destroy(amount);
       return mint(amount);
     },
     mint(initialBalance, _name = 'a purse') {
-      insistMintNotDestroyed();
       initialBalance = assay.coerce(initialBalance);
       _name = `${_name}`;
 
