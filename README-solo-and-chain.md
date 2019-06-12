@@ -4,21 +4,18 @@ To test communication between a (local, one-validator) chain machine and a
 solo machine, follow these steps:
 
 ```
+$ rm -rf ~/.ag-chain-cosmos
 $ ag-chain-cosmos init --chain-id agoric
+$ rm -rf t1
 $ bin/ag-solo init t1
 $ ag-chain-cosmos add-genesis-account `cat t1/ag-cosmos-helper-address` 1000agtoken
+$ BOOT_ADDRESS=`cat t1/ag-cosmos-helper-address` ag-chain-cosmos start
 
-# Now edit demo1/bootstrap.js and replace the 'solo' on line 18 with the
-# contents of t1/ag-cosmos-helper-address (without the newline)
+# Wait about 5 seconds for the chain to produce its first block.
 
-$ ag-chain-cosmos start
-
-# Now swith to a different shell, since 'start' doesn't daemonize. And wait
-# about 5 seconds for the chain to produce its first block before starting
-# the solo machine.
-
-$ make set-local-gci-ingress
-$ (cd t1 && ../bin/ag-solo start)
+# Now switch to a different shell, since 'start' doesn't daemonize.
+$ make set-local-gci-ingress CHAIN_ID=agoric
+$ (cd t1 && ../bin/ag-solo start --role=controller --role=client `cat ag-cosmos-helper-address`)
 
 # Now point a browser at http://localhost:8000/ and enter the following into
 # the text box:

@@ -1,5 +1,6 @@
 REPOSITORY = agoric/cosmic-swingset
 TAG := $(shell test ! -f package.json || sed -ne 's/.*"version": "\(.*\)".*/\1/p' package.json)
+CHAIN_ID = agoric
 
 include Makefile.ledger
 all: build install
@@ -78,7 +79,7 @@ show-local-gci:
 	@./calc-gci.js ~/.ag-cosmos-chain/config/genesis.json
 
 set-local-gci-ingress:
-	cd t1 && ../bin/ag-solo set-gci-ingress `../calc-gci.js ~/.ag-chain-cosmos/config/genesis.json` `../calc-rpcport.js ~/.ag-chain-cosmos/config/config.toml`
+	cd t1 && ../bin/ag-solo set-gci-ingress --chainID=$(CHAIN_ID) `../calc-gci.js ~/.ag-chain-cosmos/config/genesis.json` `../calc-rpcport.js ~/.ag-chain-cosmos/config/config.toml`
 
 start-ag-solo-connected-to-local:
 	-rm -r t1

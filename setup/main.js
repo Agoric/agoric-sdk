@@ -309,8 +309,12 @@ show-config      display the client connection parameters
       await guardFile(`${COSMOS_DIR}/install.stamp`, () =>
         needReMain(['play', 'install-cosmos']),
       );
+
+      const bootAddress = await needBacktick(
+        `${shellEscape(progname)} show-bootstrap-address`,
+      );
       await guardFile(`${COSMOS_DIR}/service.stamp`, () =>
-        needReMain(['play', 'install']),
+        needReMain(['play', 'install', `-eserviceLines="Environment=BOOT_ADDRESS=${bootAddress}"`]),
       );
       await guardFile(`${COSMOS_DIR}/start.stamp`, () =>
         needReMain(['play', 'start']),
@@ -343,7 +347,7 @@ show-config      display the client connection parameters
         await makeFile(rpcAddrs.replace(',', ' '));
       });
       await guardFile(`${CONTROLLER_DIR}/install.stamp`, () =>
-        needReMain(['play', 'install-controller']),
+        needReMain(['play', 'install-controller',]),
       );
 
       await guardFile(`${CONTROLLER_DIR}/solo-service.stamp`, () =>
@@ -353,7 +357,7 @@ show-config      display the client connection parameters
           '-eservice=ag-controller',
           '-euser=ag-pserver',
           '-echdir=/home/ag-pserver/controller',
-          '-eexecline="/usr/local/bin/ag-solo start --role=controller"',
+          `-eexecline="/usr/local/bin/ag-solo start --role=controller"`,
         ]),
       );
       await guardFile(`${CONTROLLER_DIR}/solo-start.stamp`, () =>

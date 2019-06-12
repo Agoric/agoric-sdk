@@ -1,7 +1,7 @@
 from twisted.internet.task import react
 from twisted.web import static, resource, server
 from twisted.web.template import Element, XMLFile, renderer, flattenString
-from twisted.internet import endpoints, defer
+from twisted.internet import endpoints, defer, protocol
 from twisted.python import usage
 import wormhole
 import treq
@@ -42,6 +42,24 @@ class Options(usage.Options):
     optParameters = [
         ["home", None, os.environ["HOME"] + '/.ag-pserver', "provisioning-server's state directory"],
         ]
+
+class SendInputAndWaitProtocol(protocol.ProcessProtocol):
+    def __init__(self, d, input):
+        self.deferred = d
+        self.input = input
+
+    def connectionMade(self):
+        self.transport.write(self.input)
+        self.transport.closeStdin()
+    
+    def outReceived(self, data):
+        print(str(data))
+
+    def errReceived(self, data):
+        print(str(data), file=sys.stderr)
+    
+    def processEnded(self, reason):
+        self.deferred.callback(reason.value.exitCode)
 
 def cosmosConfigFile(home):
     return home + '/cosmos-chain.json';
@@ -108,23 +126,33 @@ class RequestCode(resource.Resource):
         # FIXME: Make more resilient to DOS attacks, or attempts
         # to drain all our agmedallions.
         if INITIAL_TOKEN is not None:
-            subprocess.run([
-                'ag-cosmos-helper', 'tx', 'send', cm['pubkey'],
+            d = defer.Deferred()
+            processProtocol = SendInputAndWaitProtocol(d, AG_BOOTSTRAP_PASSWORD + b'\n')
+            program = 'ag-cosmos-helper'
+            self.reactor.spawnProcess(processProtocol, '/usr/local/bin/' + program, args=[
+                program, 'tx', 'send', cm['pubkey'],
                 INITIAL_TOKEN, '--from', config['bootstrapAddress'],
                 '--yes', '--chain-id', config['chainName'],
                 '--node',
                 'tcp://' + config['rpcAddrs'][0], # TODO: rotate on failure
                 '--home', os.environ['HOME'] + '/controller/ag-cosmos-helper-statedir'
-                ], check=True, input= AG_BOOTSTRAP_PASSWORD + b'\n')
+                ])
+            code = yield d
+            print('transfer of ' + INITIAL_TOKEN + ' returned ' + str(code))
+
         controller_url = self.opts["controller"]
+        print('contacting ' + controller_url)
         # this HTTP request goes to the controller machine, where it should
         # be routed to vat-provisioning.js and the pleaseProvision() method.
         try:
             resp = yield treq.post(controller_url, m.encode('utf-8'),
-                                headers={b'Content-Type': [b'application/json']})
+                                   headers={b'Content-Type': [b'application/json']})
+            if resp.code < 200 or resp.code >= 300:
+                raise Exception('invalid response code ' + resp.code)
+            rawResp = yield treq.json_content(resp)
         except Exception as e:
+            print('controller error', e)
             return {"ok": False, "error": str(e)}
-        rawResp = yield treq.json_content(resp)
         if not rawResp.get("ok"):
             print("provisioning server error", rawResp)
             return {"ok": False, "error": rawResp.get('rej')}

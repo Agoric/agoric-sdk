@@ -16,7 +16,7 @@ FROM node:stretch AS node-build
 WORKDIR /usr/src/app
 RUN mkdir lib
 COPY lib/*.cc lib/
-COPY package*.json *.gyp ./
+COPY package*.json *.gyp *.tgz ./
 COPY --from=go-build /usr/src/app/lib/*.so /usr/src/app/lib/*.h ./lib/
 RUN npm install && npm run build
 
@@ -28,7 +28,7 @@ COPY lib/ lib/
 COPY --from=go-build /usr/src/app/lib/ lib/
 RUN mkdir -p build/Release
 COPY ssh-tunnel /ssh-tunnel
-COPY package*.json ./
+COPY package*.json *.tgz ./
 COPY demo1/ ./demo1/
 COPY bin/ ./bin/
 RUN npm install --production

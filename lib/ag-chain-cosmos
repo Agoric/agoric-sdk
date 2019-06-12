@@ -1,9 +1,11 @@
 #! /usr/bin/env node
 //console.log('Starting Node');
 
+const bootAddress = process.env.BOOT_ADDRESS;
 require = require('esm')(module);
 
 const { launch } = require('./launch-chain');
+const path = require('path');
 
 const agcc = require('bindings')('agcosmosdaemon.node');
 //console.log('Have AG_COSMOS', agcc);
@@ -51,7 +53,7 @@ async function toSwingSet(action, replier) {
   }
 
   const sPort = action.storagePort;
-  const {handler, setStorage} = await launch('./ag-solo/vats', ['--role=chain']);
+  const {handler, setStorage} = await launch(path.resolve(__dirname, '../lib/ag-solo/vats'), ['--role=chain', bootAddress]);
   globalHandler = handler;
   globalSetStorage = setStorage;
   
