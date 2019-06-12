@@ -353,7 +353,7 @@ show-config      display the client connection parameters
           '-eservice=ag-controller',
           '-euser=ag-pserver',
           '-echdir=/home/ag-pserver/controller',
-          '-eexecline="/usr/local/bin/ag-solo start"',
+          '-eexecline="/usr/local/bin/ag-solo start --role=controller"',
         ]),
       );
       await guardFile(`${CONTROLLER_DIR}/solo-start.stamp`, () =>

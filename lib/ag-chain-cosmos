@@ -51,7 +51,7 @@ async function toSwingSet(action, replier) {
   }
 
   const sPort = action.storagePort;
-  const {handler, setStorage} = await launch();
+  const {handler, setStorage} = await launch('./ag-solo/vats', ['--role=chain']);
   globalHandler = handler;
   globalSetStorage = setStorage;
   
