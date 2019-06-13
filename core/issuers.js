@@ -1,48 +1,27 @@
+/* eslint no-use-before-define: 0 */ // --> OFF
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
 
-import { makePrivateName } from '../util/PrivateName';
 import { insist } from '../util/insist';
 import { makeNatAssay } from './assays';
+import { makeBasicMintController } from './mintController';
 
-function makeMint(description, makeAssay = makeNatAssay) {
+function makeMint(
+  description,
+  makeMintController = makeBasicMintController,
+  makeAssay = makeNatAssay,
+) {
   insist(description)`\
 Description must be truthy: ${description}`;
-
-  // Map from purse or payment to the transfer rights it currently
-  // holds. Transfer rights can move via payments, or they can cause a
-  // transfer of both the transfer and use rights by depositing it
-  // into a purse.
-  const xferRights = makePrivateName();
-
-  // Map from purse to useRights, where useRights do not include the
-  // right to transfer. Creating a payment moves some xferRights into the
-  // payment, but no useRights. Depositing a payment into another
-  // purse transfers both the xferRights and the useRights.
-  const useRights = makePrivateName();
-
-  // Map from payment to the home purse the payment came from. When the
-  // payment is deposited elsewhere, useRights are transfered from the
-  // home purse to the destination purse.
-  const homePurses = makePrivateName();
 
   // src is a purse or payment. Return a fresh payment.  One internal
   // function used for both cases, since they are so similar.
   function takePayment(amount, isPurse, src, _name) {
-    // eslint-disable-next-line no-use-before-define
     amount = assay.coerce(amount);
     _name = `${_name}`;
-    if (isPurse) {
-      insist(useRights.has(src))`\
-Purse expected: ${src}`;
-    } else {
-      insist(homePurses.has(src))`\
-Payment expected: ${src}`;
-    }
-    const srcOldXferAmount = xferRights.get(src);
-    // eslint-disable-next-line no-use-before-define
-    const srcNewXferAmount = assay.without(srcOldXferAmount, amount);
+    const srcOldRightsAmount = mintController.getAmount(src);
+    const srcNewRightsAmount = assay.without(srcOldRightsAmount, amount);
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -51,33 +30,26 @@ Payment expected: ${src}`;
 
     const payment = harden({
       getIssuer() {
-        // eslint-disable-next-line no-use-before-define
         return issuer;
       },
-      getXferBalance() {
-        return xferRights.get(payment);
+      getBalance() {
+        return mintController.getAmount(payment);
       },
     });
-    xferRights.set(src, srcNewXferAmount);
-    xferRights.init(payment, amount);
-    const homePurse = isPurse ? src : homePurses.get(src);
-    homePurses.init(payment, homePurse);
+    mintController.recordPayment(src, payment, amount, srcNewRightsAmount);
     return payment;
   }
 
   const issuer = harden({
     getLabel() {
-      // eslint-disable-next-line no-use-before-define
       return assay.getLabel();
     },
 
     getAssay() {
-      // eslint-disable-next-line no-use-before-define
       return assay;
     },
 
     makeEmptyPurse(name = 'a purse') {
-      // eslint-disable-next-line no-use-before-define
       return mint.mint(assay.empty(), name); // mint and issuer call each other
     },
 
@@ -89,7 +61,12 @@ Payment expected: ${src}`;
 
     getExclusiveAll(srcPaymentP, name = 'a payment') {
       return Promise.resolve(srcPaymentP).then(srcPayment =>
-        takePayment(xferRights.get(srcPayment), false, srcPayment, name),
+        takePayment(
+          mintController.getAmount(srcPayment),
+          false,
+          srcPayment,
+          name,
+        ),
       );
     },
 
@@ -109,31 +86,27 @@ Payment expected: ${src}`;
   const label = harden({ issuer, description });
 
   const assay = makeAssay(label);
+  const mintController = makeMintController(assay);
 
   function depositInto(purse, amount, srcPayment) {
     amount = assay.coerce(amount);
-    const purseOldXferAmount = xferRights.get(purse);
-    const srcOldXferAmount = xferRights.get(srcPayment);
+    const purseOldRightsAmount = mintController.getAmount(purse);
+    const srcOldRightsAmount = mintController.getAmount(srcPayment);
     // Also checks that the union is representable
-    const purseNewXferAmount = assay.with(purseOldXferAmount, amount);
-    const srcNewXferAmount = assay.without(srcOldXferAmount, amount);
-
-    const homePurse = homePurses.get(srcPayment);
-    const purseOldUseAmount = useRights.get(purse);
-    const homeOldUseAmount = useRights.get(homePurse);
-    // Also checks that the union is representable
-    const purseNewUseAmount = assay.with(purseOldUseAmount, amount);
-    const homeNewUseAmount = assay.without(homeOldUseAmount, amount);
+    const purseNewRightsAmount = assay.with(purseOldRightsAmount, amount);
+    const srcNewRightsAmount = assay.without(srcOldRightsAmount, amount);
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
     // During side effects below, any early exits should be made into
     // fatal turn aborts.
 
-    xferRights.set(srcPayment, srcNewXferAmount);
-    xferRights.set(purse, purseNewXferAmount);
-    useRights.set(homePurse, homeNewUseAmount);
-    useRights.set(purse, purseNewUseAmount);
+    mintController.recordDeposit(
+      srcPayment,
+      assay.coerce(srcNewRightsAmount),
+      purse,
+      assay.coerce(purseNewRightsAmount),
+    );
 
     return amount;
   }
@@ -141,6 +114,19 @@ Payment expected: ${src}`;
   const mint = harden({
     getIssuer() {
       return issuer;
+    },
+    destroyAll() {
+      mintController.destroyAll();
+    },
+    destroy(amount) {
+      amount = assay.coerce(amount);
+      // for non-fungible tokens that are unique, destroy them by removing them from
+      // the purses/payments that they live in
+      mintController.destroy(amount);
+    },
+    revoke(amount) {
+      this.destroy(amount);
+      return mint(amount);
     },
     mint(initialBalance, _name = 'a purse') {
       initialBalance = assay.coerce(initialBalance);
@@ -150,11 +136,8 @@ Payment expected: ${src}`;
         getIssuer() {
           return issuer;
         },
-        getXferBalance() {
-          return xferRights.get(purse);
-        },
-        getUseBalance() {
-          return useRights.get(purse);
+        getBalance() {
+          return mintController.getAmount(purse);
         },
         deposit(amount, srcPaymentP) {
           return Promise.resolve(srcPaymentP).then(srcPayment => {
@@ -163,21 +146,31 @@ Payment expected: ${src}`;
         },
         depositAll(srcPaymentP) {
           return Promise.resolve(srcPaymentP).then(srcPayment => {
-            return depositInto(purse, xferRights.get(srcPayment), srcPayment);
+            return depositInto(
+              purse,
+              mintController.getAmount(srcPayment),
+              srcPayment,
+            );
           });
         },
         withdraw(amount, name = 'a withdrawal payment') {
           return takePayment(amount, true, purse, name);
         },
         withdrawAll(name = 'a withdrawal payment') {
-          return takePayment(xferRights.get(purse), true, purse, name);
+          return takePayment(
+            mintController.getAmount(purse),
+            true,
+            purse,
+            name,
+          );
         },
       });
-      xferRights.init(purse, initialBalance);
-      useRights.init(purse, initialBalance);
+      mintController.recordMint(purse, initialBalance);
       return purse;
     },
   });
+
+  // TODO: pass along destroyMint capability too
   return mint;
 }
 harden(makeMint);
@@ -186,7 +179,12 @@ harden(makeMint);
 // currency. Returns a promise for a peg object that asynchonously
 // converts between the two. The local currency is synchronously
 // transferable locally.
-function makePeg(E, remoteIssuerP, makeAssay = makeNatAssay) {
+function makePeg(
+  E,
+  remoteIssuerP,
+  makeMintController,
+  makeAssay = makeNatAssay,
+) {
   const remoteLabelP = E(remoteIssuerP).getLabel();
 
   // The remoteLabel is a local copy of the remote pass-by-copy
@@ -198,7 +196,7 @@ function makePeg(E, remoteIssuerP, makeAssay = makeNatAssay) {
     const backingPurseP = E(remoteIssuerP).makeEmptyPurse('backing');
 
     const { description } = remoteLabel;
-    const localMint = makeMint(description, makeAssay);
+    const localMint = makeMint(description, makeMintController, makeAssay);
     const localIssuer = localMint.getIssuer();
     const localLabel = localIssuer.getLabel();
 

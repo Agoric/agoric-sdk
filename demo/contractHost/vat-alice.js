@@ -14,8 +14,8 @@ function makeAliceMaker(E, host, log) {
   // it.
   function showPaymentBalance(name, paymentP) {
     return E(paymentP)
-      .getXferBalance()
-      .then(amount => log(name, ' xfer balance ', amount));
+      .getBalance()
+      .then(amount => log(name, ' balance ', amount));
   }
 
   return harden({
@@ -48,9 +48,7 @@ function makeAliceMaker(E, host, log) {
           log('++ alice.acceptInvite starting');
           showPaymentBalance('alice invite', allegedInvitePaymentP);
 
-          const allegedInviteAmountP = E(
-            allegedInvitePaymentP,
-          ).getXferBalance();
+          const allegedInviteAmountP = E(allegedInvitePaymentP).getBalance();
 
           const verifiedInviteP = E.resolve(allegedInviteAmountP).then(
             allegedInviteAmount => {
@@ -112,9 +110,7 @@ function makeAliceMaker(E, host, log) {
           log('++ alice.acceptOptionDirectly starting');
           showPaymentBalance('alice invite', allegedInvitePaymentP);
 
-          const allegedInviteAmountP = E(
-            allegedInvitePaymentP,
-          ).getXferBalance();
+          const allegedInviteAmountP = E(allegedInvitePaymentP).getBalance();
 
           const verifiedInvitePaymentP = E.resolve(allegedInviteAmountP).then(
             allegedInviteAmount => {
@@ -174,7 +170,7 @@ function makeAliceMaker(E, host, log) {
         acceptOptionForFred(allegedInvitePaymentP) {
           log('++ alice.acceptOptionForFred starting');
           const finNeededP = E(E(optFinIssuerP).getAssay()).make(55);
-          const inviteNeededP = E(allegedInvitePaymentP).getXferBalance();
+          const inviteNeededP = E(allegedInvitePaymentP).getBalance();
 
           const terms = harden([finNeededP, inviteNeededP]);
           const invitesP = E(escrowExchangeInstallationP).spawn(terms);

@@ -9,6 +9,7 @@ import { insist } from '../util/insist';
 import { mustBeSameStructure, allComparable } from '../util/sameStructure';
 import { makeUniAssayMaker } from './assays';
 import { makeMint } from './issuers';
+import { makeBasicMintController } from './mintController';
 import makePromise from '../util/makePromise';
 
 function makeContractHost(E, evaluate) {
@@ -25,12 +26,16 @@ function makeContractHost(E, evaluate) {
     return seatDesc;
   }
   const makeUniAssay = makeUniAssayMaker(descriptionCoercer);
-  const inviteMint = makeMint('contract host', makeUniAssay);
+  const inviteMint = makeMint(
+    'contract host',
+    makeBasicMintController,
+    makeUniAssay,
+  );
   const inviteIssuer = inviteMint.getIssuer();
   const inviteAssay = inviteIssuer.getAssay();
 
   function redeem(allegedInvitePayment) {
-    const allegedInviteAmount = allegedInvitePayment.getXferBalance();
+    const allegedInviteAmount = allegedInvitePayment.getBalance();
     const inviteAmount = inviteAssay.vouch(allegedInviteAmount);
     insist(!inviteAssay.isEmpty(inviteAmount))`\
 No invites left`;
