@@ -17,7 +17,7 @@
   "dependencies": {
     "@agoric/evaluate": "file:agoric-evaluate-0.0.1.tgz",
     "@agoric/swingset-vat": "^0.0.13",
-    "@agoric/ertp": "../ertp",
+    "@agoric/ertp": "^0.0.5",
     "@iarna/toml": "^2.2.3",
     "bindings": "^1.2.1",
     "deterministic-json": "^1.0.5",
