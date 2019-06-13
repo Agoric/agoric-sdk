@@ -1,8 +1,6 @@
 package swingset
 
 import (
-	"encoding/json"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -65,11 +63,7 @@ func (msg MsgDeliverInbound) GetSignBytes() []byte {
 	if msg.Nums == nil {
 		msg.Nums = []int{}
 	}
-	b, err := json.Marshal(msg)
-	if err != nil {
-		panic(err)
-	}
-	return sdk.MustSortJSON(b)
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
 }
 
 // GetSigners defines whose signature is required
