@@ -20,7 +20,7 @@ function makeBobMaker(E, log) {
 
           const { useRightIssuer } = await E(gallery).getIssuers();
           const useRightPurse = E(useRightIssuer).makeEmptyPurse();
-          // does bob know the amount that he is getting?
+          // TODO: does bob know the amount that he is getting?
           // use getExclusive() instead
           const exclusiveUseRightPaymentP = E(useRightIssuer).getExclusiveAll(
             useRightPaymentP,

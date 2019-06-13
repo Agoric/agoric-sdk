@@ -235,18 +235,14 @@ test('getDistanceFromCenter', t => {
 });
 
 test('pricePixel', t => {
-  const { adminFacet, userFacet } = makeGallery();
+  const { userFacet } = makeGallery();
   // default canvasSize is 10
-  const { pricePixel } = adminFacet;
-  const { getIssuers } = userFacet;
-  const { dustIssuer } = getIssuers();
-  const dustAssay = dustIssuer.getAssay();
-
-  t.deepEqual(pricePixel({ x: 0, y: 1 }), dustAssay.make(4));
-  t.deepEqual(pricePixel({ x: 2, y: 1 }), dustAssay.make(5));
-  t.deepEqual(pricePixel({ x: 2, y: 3 }), dustAssay.make(7));
-  t.deepEqual(pricePixel({ x: 4, y: 1 }), dustAssay.make(6));
-  t.deepEqual(pricePixel({ x: 0, y: 7 }), dustAssay.make(5));
-  t.deepEqual(pricePixel({ x: 5, y: 5 }), dustAssay.make(10));
+  const { pricePixel } = userFacet;
+  t.deepEqual(pricePixel({ x: 0, y: 1 }), 4);
+  t.deepEqual(pricePixel({ x: 2, y: 1 }), 5);
+  t.deepEqual(pricePixel({ x: 2, y: 3 }), 7);
+  t.deepEqual(pricePixel({ x: 4, y: 1 }), 6);
+  t.deepEqual(pricePixel({ x: 0, y: 7 }), 5);
+  t.deepEqual(pricePixel({ x: 5, y: 5 }), 10);
   t.end();
 });
