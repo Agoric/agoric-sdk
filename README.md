@@ -1,15 +1,22 @@
 # Agoric's Cosmic SwingSet
 
+TL;DR: Browse to a public testnet provisioning page, then run:
+
+```
+$ SOLO_NAME=han ./docker/ag-setup-solo
+```
+
+where `han` is the same of your solo vat machine that follows the blockchain.
+
 ## Docker images
 
-To test on a local Docker instance, use:
+If you want to use Docker images globally, run:
 
 ```
 $ sudo make docker-install
-$ ag-chain-cosmos --help
-$ ag-cosmos-helper --help
-$ ag-setup-cosmos help
 ```
+
+Otherwise, the scripts are in the `docker` subdirectory.
 
 You can find the images at [Docker Hub](https://cloud.docker.com/u/agoric/repository/docker/agoric/cosmic-swingset)
 
