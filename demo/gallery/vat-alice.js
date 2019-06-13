@@ -4,11 +4,14 @@
 import harden from '@agoric/harden';
 
 import { insist } from '../../util/insist';
+import { makeCollect } from '../../core/contractHost';
 
 let storedUseRight;
 let storedTransferRight;
 
 function makeAliceMaker(E, log) {
+  const collect = makeCollect(E, log);
+
   // TODO BUG: All callers should wait until settled before doing
   // anything that would change the balance before show*Balance* reads
   // it.
@@ -151,7 +154,9 @@ function makeAliceMaker(E, log) {
         async doTapFaucetAndStore() {
           log('++ alice.doTapFaucetAndStore starting');
           const pixelPaymentP = E(gallery).tapFaucet();
-          const pixelIssuer = E(pixelPaymentP).getIssuer();
+          const { pixelIssuer, useRightIssuer, transferRightIssuer } = await E(
+            gallery,
+          ).getIssuers();
           const exclusivePixelPaymentP = await E(pixelIssuer).getExclusiveAll(
             pixelPaymentP,
           );
@@ -163,12 +168,10 @@ function makeAliceMaker(E, log) {
             exclusivePixelPaymentP,
           );
 
-          const useRightIssuer = E(useRightPaymentP).getIssuer();
           const exclusiveUseRightPaymentP = E(useRightIssuer).getExclusiveAll(
             useRightPaymentP,
           );
 
-          const transferRightIssuer = E(transferRightPaymentP).getIssuer();
           const exclusiveTransferRightPaymentP = E(
             transferRightIssuer,
           ).getExclusiveAll(transferRightPaymentP);
@@ -202,6 +205,25 @@ function makeAliceMaker(E, log) {
               amount.quantity.length
             }`,
           );
+        },
+        async doTapFaucetAndSell(host) {
+          log('++ alice.doTapFaucetAndSell starting');
+          const pixelPaymentP = E(gallery).tapFaucet();
+          const { pixelIssuer, dustIssuer } = await E(gallery).getIssuers();
+          const exclusivePixelPaymentP = await E(pixelIssuer).getExclusiveAll(
+            pixelPaymentP,
+          );
+          const amount = await E(exclusivePixelPaymentP).getBalance();
+          // sellToGallery creates a escrow smart contract with the
+          // terms of the amount parameter plus what the gallery is
+          // willing to offer for it
+          // sellToGallery returns an invite to the smart contract
+          const inviteP = E(gallery).sellToGallery(amount);
+          const seatP = E(host).redeem(inviteP);
+          E(seatP).offer(exclusivePixelPaymentP);
+          const dustPurseP = E(dustIssuer).makeEmptyPurse();
+          const pixelPurseP = E(pixelIssuer).makeEmptyPurse();
+          return collect(seatP, dustPurseP, pixelPurseP, 'alice escrow');
         },
       });
       return alice;

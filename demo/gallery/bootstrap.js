@@ -30,6 +30,11 @@ function build(E, log) {
     gallery.adminFacet.revokePixel(rawPixel);
     E(aliceP).checkAfterRevoked();
   }
+  async function testAliceSellsBack(aliceMaker, bobMaker, gallery, host) {
+    log('starting testAliceSellsBack');
+    const aliceP = E(aliceMaker).make(gallery.userFacet);
+    await E(aliceP).doTapFaucetAndSell(host);
+  }
 
   const obj0 = {
     async bootstrap(argv, vats) {
@@ -42,14 +47,28 @@ function build(E, log) {
         case 'tapFaucet': {
           log('starting tapFaucet');
           const aliceMaker = await E(vats.alice).makeAliceMaker();
-          const gallery = makeGallery(stateChangeHandler, canvasSize);
+          const host = E(vats.host).makeHost();
+          const gallery = makeGallery(
+            E,
+            host,
+            log,
+            stateChangeHandler,
+            canvasSize,
+          );
           log('alice is made');
           return testTapFaucet(aliceMaker, gallery);
         }
         case 'aliceChangesColor': {
           log('starting aliceChangesColor');
           const aliceMaker = await E(vats.alice).makeAliceMaker();
-          const gallery = makeGallery(stateChangeHandler, canvasSize);
+          const host = E(vats.host).makeHost();
+          const gallery = makeGallery(
+            E,
+            host,
+            log,
+            stateChangeHandler,
+            canvasSize,
+          );
           log('alice is made');
           return testAliceChangesColor(aliceMaker, gallery);
         }
@@ -57,7 +76,14 @@ function build(E, log) {
           log('starting aliceSendsOnlyUseRight');
           const aliceMaker = await E(vats.alice).makeAliceMaker();
           const bobMaker = await E(vats.bob).makeBobMaker();
-          const gallery = makeGallery(stateChangeHandler, canvasSize);
+          const host = E(vats.host).makeHost();
+          const gallery = makeGallery(
+            E,
+            host,
+            log,
+            stateChangeHandler,
+            canvasSize,
+          );
           log('alice is made');
           return testAliceSendsOnlyUseRight(aliceMaker, bobMaker, gallery);
         }
@@ -65,8 +91,29 @@ function build(E, log) {
           log('starting galleryRevokes');
           const aliceMaker = await E(vats.alice).makeAliceMaker();
           const bobMaker = await E(vats.bob).makeBobMaker();
-          const gallery = makeGallery(stateChangeHandler, canvasSize);
+          const host = E(vats.host).makeHost();
+          const gallery = makeGallery(
+            E,
+            host,
+            log,
+            stateChangeHandler,
+            canvasSize,
+          );
           return testGalleryRevokes(aliceMaker, bobMaker, gallery);
+        }
+        case 'aliceSellsBack': {
+          log('starting aliceSellsBack');
+          const aliceMaker = await E(vats.alice).makeAliceMaker();
+          const bobMaker = await E(vats.bob).makeBobMaker();
+          const host = E(vats.host).makeHost();
+          const gallery = makeGallery(
+            E,
+            host,
+            log,
+            stateChangeHandler,
+            canvasSize,
+          );
+          return testAliceSellsBack(aliceMaker, bobMaker, gallery, host);
         }
         default: {
           throw new Error(`unrecognized argument value ${argv[0]}`);
