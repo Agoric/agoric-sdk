@@ -26,10 +26,22 @@ export function makeGallery(
   stateChangeHandler = mockStateChangeHandler,
   canvasSize = 10,
 ) {
-  function getRandomColor() {
+  function getRandomColor(fraction, num) {
     // TODO: actually getRandomColor in a deterministic way
+    /* eslint-disable no-bitwise */
+    const startState = Math.floor(fraction * 0xffffffff) ^ 0xdeadbeef;
+    let lfsr = startState;
+    for (let i = -3; i < num; i += 1) {
+      lfsr ^= lfsr >>> 7;
+      lfsr ^= Math.min(lfsr << 9, 0xffffffff);
+      lfsr ^= lfsr >>> 13;
+    }
+    /* eslint-enable no-bitwise */
+
+    const rand = (Math.floor(lfsr) % 0x7fffff) + 0x800000;
+    return `#${rand.toString(16)}`;
     // return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-    return '#D3D3D3';
+    // return '#D3D3D3';
   }
 
   function makeRandomData() {
@@ -37,7 +49,7 @@ export function makeGallery(
     for (let x = 0; x < canvasSize; x += 1) {
       const pixelRow = [];
       for (let y = 0; y < canvasSize; y += 1) {
-        pixelRow.push(getRandomColor());
+        pixelRow.push(getRandomColor(x / canvasSize, y));
       }
       pixels.push(pixelRow);
     }
@@ -45,7 +57,7 @@ export function makeGallery(
   }
   const state = makeRandomData();
 
-  // provide state the canvas html page
+  // provide state for the canvas html page
   function getState() {
     return JSON.stringify(state);
   }
