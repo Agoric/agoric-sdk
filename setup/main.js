@@ -314,7 +314,11 @@ show-config      display the client connection parameters
         `${shellEscape(progname)} show-bootstrap-address`,
       );
       await guardFile(`${COSMOS_DIR}/service.stamp`, () =>
-        needReMain(['play', 'install', `-eserviceLines="Environment=BOOT_ADDRESS=${bootAddress}"`]),
+        needReMain([
+          'play',
+          'install',
+          `-eserviceLines="Environment=BOOT_ADDRESS=${bootAddress}"`,
+        ]),
       );
       await guardFile(`${COSMOS_DIR}/start.stamp`, () =>
         needReMain(['play', 'start']),
@@ -347,7 +351,7 @@ show-config      display the client connection parameters
         await makeFile(rpcAddrs.replace(',', ' '));
       });
       await guardFile(`${CONTROLLER_DIR}/install.stamp`, () =>
-        needReMain(['play', 'install-controller',]),
+        needReMain(['play', 'install-controller']),
       );
 
       await guardFile(`${CONTROLLER_DIR}/solo-service.stamp`, () =>
