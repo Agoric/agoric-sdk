@@ -28,7 +28,7 @@ function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
       return kvstore
         .get('imports')
         .get('outbound')
-        .get(slot.id);
+        .get(`${slot.id}`);
     }
 
     throw Error(`unknown slot.type '${slot.type}'`);
@@ -53,7 +53,7 @@ function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
         // kdebug(` adding ${newSlotID}`);
         inbound.set(key, newSlotID);
         outbound.set(
-          newSlotID,
+          `${newSlotID}`,
           harden({ type: 'export', vatID: fromVatID, id }), // TODO just 'slot'?
         );
       }

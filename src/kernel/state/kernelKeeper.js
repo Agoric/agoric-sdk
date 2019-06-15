@@ -42,13 +42,13 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
     });
 
     const kernelPromises = kvstore.get('kernelPromises');
-    kernelPromises.set(kernelPromiseID, kernelPromiseObj);
+    kernelPromises.set(`${kernelPromiseID}`, kernelPromiseObj);
     return kernelPromiseID;
   }
 
   function getKernelPromise(kernelPromiseID) {
     const kernelPromises = kvstore.get('kernelPromises');
-    const p = kernelPromises.get(kernelPromiseID);
+    const p = kernelPromises.get(`${kernelPromiseID}`);
     if (p === undefined) {
       throw new Error(`unknown kernelPromise id '${kernelPromiseID}'`);
     }
@@ -57,37 +57,37 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
 
   function hasKernelPromise(kernelPromiseID) {
     const kernelPromises = kvstore.get('kernelPromises');
-    return kernelPromises.has(kernelPromiseID);
+    return kernelPromises.has(`${kernelPromiseID}`);
   }
 
   function deleteKernelPromiseData(kernelPromiseID) {
     const kernelPromises = kvstore.get('kernelPromises');
-    const kernelPromise = kernelPromises.get(kernelPromiseID);
+    const kernelPromise = kernelPromises.get(`${kernelPromiseID}`);
     delete kernelPromise.subscribers;
     delete kernelPromise.decider;
     delete kernelPromise.queue;
     // re-save
-    kernelPromises.set(kernelPromiseID, kernelPromise);
+    kernelPromises.set(`${kernelPromiseID}`, kernelPromise);
   }
 
   function updateKernelPromise(kernelPromiseID, kernelPromise) {
     const kernelPromises = kvstore.get('kernelPromises');
-    kernelPromises.set(kernelPromiseID, kernelPromise);
+    kernelPromises.set(`${kernelPromiseID}`, kernelPromise);
   }
 
   function addSubscriberToPromise(kernelPromiseID, vatID) {
     const kernelPromises = kvstore.get('kernelPromises');
-    const kernelPromise = kernelPromises.get(kernelPromiseID);
+    const kernelPromise = kernelPromises.get(`${kernelPromiseID}`);
     const subscribersSet = new Set(kernelPromise.subscribers);
     subscribersSet.add(vatID);
     kernelPromise.subscribers = Array.from(subscribersSet);
     // re-save
-    kernelPromises.set(kernelPromiseID, kernelPromise);
+    kernelPromises.set(`${kernelPromiseID}`, kernelPromise);
   }
 
   function getSubscribers(kernelPromiseID) {
     const kernelPromises = kvstore.get('kernelPromises');
-    const kernelPromise = kernelPromises.get(kernelPromiseID);
+    const kernelPromise = kernelPromises.get(`${kernelPromiseID}`);
     return new Set(kernelPromise.subscribers);
   }
 

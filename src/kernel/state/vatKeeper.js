@@ -205,20 +205,20 @@ export default function makeVatKeeper(
 
   function mapKernelSlotToVatSlot(kernelSlot) {
     const { table, key } = getKernelSlotTypedMapAndKey(kernelSlot);
-    if (!table.has(key)) {
+    if (!table.has(`${key}`)) {
       // must add both directions
       const vatSlotType = getVatSlotTypeFromKernelSlot(kernelSlot);
       const nextIDs = kvstore.get('nextIDs');
       const newVatSlotID = nextIDs.get(vatSlotType);
       nextIDs.set(vatSlotType, newVatSlotID + 1);
       const vatSlot = { type: vatSlotType, id: newVatSlotID };
-      table.set(key, vatSlot);
+      table.set(`${key}`, vatSlot);
       const { table: vatSlotTable, key: vatSlotKey } = getVatSlotTypedMapAndKey(
         vatSlot,
       );
       vatSlotTable.set(vatSlotKey, kernelSlot);
     }
-    return table.get(key);
+    return table.get(`${key}`);
   }
 
   function getTranscript() {
