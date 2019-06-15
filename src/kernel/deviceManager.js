@@ -10,7 +10,7 @@ export default function makeDeviceManager(
   helpers,
   endowments,
   kernelKeeper,
-  deviceKVStore,
+  _deviceKVStore,
 ) {
   const { kdebug, send, log } = syscallManager;
 
@@ -101,7 +101,6 @@ export default function makeDeviceManager(
       deviceKeeper.setDeviceState(value);
     },
   });
-
 
   // now build the runtime, which gives us back a dispatch function
 

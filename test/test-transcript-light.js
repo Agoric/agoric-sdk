@@ -31,9 +31,7 @@ async function testLoadState(t, withSES) {
   // build from loaded state
   // Step 0
 
-  const cfg0 = await loadBasedir(
-    path.resolve(__dirname, 'basedir-transcript'),
-  );
+  const cfg0 = await loadBasedir(path.resolve(__dirname, 'basedir-transcript'));
   const s0 = JSON.parse(state0);
   cfg0.externalStorage = makeStorageInMemory(s0);
   const c0 = await buildVatController(cfg0, withSES, ['one']);
@@ -55,9 +53,7 @@ async function testLoadState(t, withSES) {
 
   // Step 1
 
-  const cfg1 = await loadBasedir(
-    path.resolve(__dirname, 'basedir-transcript'),
-  );
+  const cfg1 = await loadBasedir(path.resolve(__dirname, 'basedir-transcript'));
   const s1 = JSON.parse(state1);
   cfg1.externalStorage = makeStorageInMemory(s1);
   const c1 = await buildVatController(cfg1, withSES, ['one']);
@@ -78,9 +74,7 @@ async function testLoadState(t, withSES) {
 
   // Step 2
 
-  const cfg2 = await loadBasedir(
-    path.resolve(__dirname, 'basedir-transcript'),
-  );
+  const cfg2 = await loadBasedir(path.resolve(__dirname, 'basedir-transcript'));
   const s2 = JSON.parse(state2);
   cfg2.externalStorage = makeStorageInMemory(s2);
   const c2 = await buildVatController(cfg2, withSES, ['one']);

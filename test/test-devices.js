@@ -194,7 +194,7 @@ async function testState(t, withSES) {
   const c1 = await buildVatController(config, withSES, ['write+read']);
   await c1.run();
   t.deepEqual(c1.dump().log, ['null', 'w+r', 'called', 'got {"s":"new"}']);
-  t.deepEqual(JSON.parse(s1['kernel.devices.d3.deviceState']), {s: 'new'});
+  t.deepEqual(JSON.parse(s1['kernel.devices.d3.deviceState']), { s: 'new' });
   t.deepEqual(JSON.parse(s1['kernel.devices.d3.nextImportID']), 10);
 
   t.end();

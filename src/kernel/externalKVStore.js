@@ -108,7 +108,7 @@ export default function makeExternalKVStore(pathToRoot, external) {
         key: `${pathToRoot}.${key}`,
       });
       const retStr = external.sendMsg(msg);
-      //console.log(`exKVs.get(${pathToRoot}.${key}) got`, retStr, typeof retStr);
+      // console.log(`exKVs.get(${pathToRoot}.${key}) got`, retStr, typeof retStr);
       // every sendMsg response is JSON-encoded
       const encodedValue = JSON.parse(retStr);
       if (encodedValue === 'kvstore') {
@@ -133,9 +133,9 @@ export default function makeExternalKVStore(pathToRoot, external) {
         // them apart
       }
 
-      //console.log(`external.set(${key})`, typeof key);
+      // console.log(`external.set(${key})`, typeof key);
       if (key.indexOf('vats') !== -1) {
-        //console.log(`external.set(${key}) encoding ${value} into ${encodedValue}`);
+        // console.log(`external.set(${key}) encoding ${value} into ${encodedValue}`);
       }
       const msg = stringify({
         method: 'set',
@@ -147,7 +147,7 @@ export default function makeExternalKVStore(pathToRoot, external) {
 
     has(key) {
       insistString(key, `externalKVstore.has(root=${pathToRoot}) key`);
-      //console.log(`external.has(${key})`, typeof key);
+      // console.log(`external.has(${key})`, typeof key);
       const msg = stringify({
         method: 'has',
         key: `${pathToRoot}.${key}`,

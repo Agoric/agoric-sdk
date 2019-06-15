@@ -7,7 +7,10 @@ import { insist } from './insist';
 
 function build(syscall, state, makeRoot, forDeviceName) {
   insist(state.get && state.set, 'deviceSlots.build got bad "state" argument');
-  insist(typeof makeRoot === 'function', 'deviceSlots.build got bad "makeRoot"');
+  insist(
+    typeof makeRoot === 'function',
+    'deviceSlots.build got bad "makeRoot"',
+  );
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {

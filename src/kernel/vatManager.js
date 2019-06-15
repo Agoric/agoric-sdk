@@ -8,7 +8,7 @@ export default function makeVatManager(
   syscallManager,
   setup,
   helpers,
-  vatKVStore,
+  _vatKVStore,
 ) {
   const {
     kdebug,

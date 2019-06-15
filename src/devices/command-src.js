@@ -48,10 +48,5 @@ export default function setup(syscall, state, helpers, endowments) {
     });
   }
 
-  return helpers.makeDeviceSlots(
-    syscall,
-    state,
-    build,
-    helpers.name,
-  );
+  return helpers.makeDeviceSlots(syscall, state, build, helpers.name);
 }

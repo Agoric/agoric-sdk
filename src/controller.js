@@ -95,7 +95,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
     : buildNonSESKernel(externalStorage);
   // console.log('kernel', kernel);
 
-  async function addGenesisVat(vatID, sourceIndex, options = {}) {
+  async function addGenesisVat(vatID, sourceIndex, _options = {}) {
     console.log(`= adding vat '${vatID}' from ${sourceIndex}`);
     if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
       throw Error(

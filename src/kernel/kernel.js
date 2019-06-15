@@ -406,10 +406,10 @@ export default function buildKernel(kernelEndowments, externalStorage) {
         makeCommsSlots,
         log(...args) {
           const rendered = args.map(arg =>
-                                    typeof arg === 'string'
-                                    ? arg
-                                    : JSON.stringify(arg, abbreviateReviver),
-                                   );
+            typeof arg === 'string'
+              ? arg
+              : JSON.stringify(arg, abbreviateReviver),
+          );
           ephemeral.log.push(rendered.join(''));
         },
       });
@@ -507,7 +507,9 @@ export default function buildKernel(kernelEndowments, externalStorage) {
       }
       const newLength = kernelKeeper.getRunQueueLength();
       if (newLength !== oldLength) {
-        throw new Error(`replayTranscript added run-queue entries, wasn't supposed to`);
+        throw new Error(
+          `replayTranscript added run-queue entries, wasn't supposed to`,
+        );
       }
     }
 

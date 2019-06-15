@@ -58,7 +58,9 @@ export function makeKVStore(state) {
         throw new Error(`key ${key} value ${value} includes undefined`);
       }
       if (value !== `${value}`) {
-        throw new Error(`kvstore requires string values, not ${JSON.stringify(value)}`);
+        throw new Error(
+          `kvstore requires string values, not ${stringify(value)}`,
+        );
       }
       state[key] = value;
       setKeys(state, key);
@@ -127,7 +129,11 @@ export function makeStorageInMemory(storage = {}) {
         case 'set': {
           const { value: encodedValue } = command;
           if (encodedValue !== `${encodedValue}`) {
-            throw new Error(`storageInMemory.set value must be string, not ${JSON.stringify(encodedValue)}`);
+            throw new Error(
+              `storageInMemory.set value must be string, not ${stringify(
+                encodedValue,
+              )}`,
+            );
           }
           outsideRealmKVStore.set(key, encodedValue);
           break;
@@ -160,7 +166,7 @@ export function makeStorageInMemory(storage = {}) {
           throw new Error(`unexpected message to kvstore ${msg}`);
       }
       // console.log(msg, '=>', result);
-      return JSON.stringify(result);
+      return stringify(result);
     },
   });
 
