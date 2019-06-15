@@ -1,6 +1,5 @@
 import { test } from 'tape-promise/tape';
 import { buildVatController } from '../src/index';
-import buildSharedStringTable from '../src/devices/sharedTable';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 import buildCommand from '../src/devices/command';
 import { makeStorageInMemory } from '../src/stateInMemory';
@@ -206,44 +205,6 @@ test('device state with SES', async t => {
 
 test('device state without SES', async t => {
   await testState(t, false);
-});
-
-async function testSharedTable(t, withSES) {
-  const external = makeStorageInMemory();
-  const kvstore = makeExternalKVStore('kernel.devices.d2', external);
-
-  const st = buildSharedStringTable();
-  st.endowments.kvstore = kvstore;
-  console.log(`source: ${st.srcPath}`);
-  const config = {
-    vatSources: new Map(),
-    devices: [['sharedTable', st.srcPath, st.endowments]],
-    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
-  };
-  config.vatSources.set('left', require.resolve('./files-devices/vat-left.js'));
-
-  const c = await buildVatController(config, withSES, ['table1'], external);
-  console.log('H0');
-  await c.step();
-  console.log(`table ${st}`);
-  t.deepEqual(c.dump().log, ['calling left.leftSharedTable']);
-  await c.step();
-  t.deepEqual(c.dump().log, [
-    'calling left.leftSharedTable',
-    'leftSharedTable',
-    'has key1= true',
-    'got key1= val1',
-    'has key2= false',
-  ]);
-  t.end();
-}
-
-test('shared table without SES', async t => {
-  await testSharedTable(t, false);
-});
-
-test('shared table with SES', async t => {
-  await testSharedTable(t, true);
 });
 
 async function testMailboxOutbound(t, withSES) {
