@@ -3,11 +3,9 @@
 import harden from '@agoric/harden';
 
 import { makeCorkboard } from '../../more/handoff/corkboard';
-import { sameStructure } from '../../util/sameStructure';
 import { makeHandoffService } from '../../more/handoff/handoff';
 
 function build(E, log) {
-
   function testCorkboardStorage() {
     log('starting testCorkboardStorage');
     const bb = makeCorkboard('whiteboard');
