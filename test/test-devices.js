@@ -71,11 +71,11 @@ async function test1(t, withSES) {
   t.end();
 }
 
-test.skip('d1 with SES', async t => {
+test('d1 with SES', async t => {
   await test1(t, true);
 });
 
-test.skip('d1 without SES', async t => {
+test('d1 without SES', async t => {
   await test1(t, false);
 });
 
@@ -181,85 +181,31 @@ test('d2.5 without SES', async t => {
 });
 
 async function testState(t, withSES) {
-  const external = makeStorageInMemory();
-  const kvstore = makeExternalKVStore('kernel.devices.d2', external);
-
+  const s1 = {};
   const config = {
     vatSources: new Map(),
-    devices: [['d2', require.resolve('./files-devices/device-2'), { kvstore }]],
-    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
+    devices: [['d3', require.resolve('./files-devices/device-3'), {}]],
+    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-3'),
+    externalStorage: makeStorageInMemory(s1),
   };
 
-  const c = await buildVatController(config, withSES, ['state1'], external);
-  t.deepEqual(c.getState().devices.d2.deviceState, 'initial');
-  await c.step();
-  t.deepEqual(c.dump().log, ['calling setState', 'setState state2', 'called']);
-  t.deepEqual(c.getState().devices.d2.deviceState, 'state2');
-  t.deepEqual(c.getState().devices.d2.managerState, {
-    nextImportID: 10,
-    imports: {
-      inbound: [],
-      outbound: [],
-    },
-  });
+  // The initial state should be missing (null). Then we set it with the call
+  // from bootstrap, and read it back.
+  const c1 = await buildVatController(config, withSES, ['write+read']);
+  await c1.run();
+  t.deepEqual(c1.dump().log, ['null', 'w+r', 'called', 'got {"s":"new"}']);
+  t.deepEqual(JSON.parse(s1['kernel.devices.d3.deviceState']), {s: 'new'});
+  t.deepEqual(JSON.parse(s1['kernel.devices.d3.nextImportID']), 10);
+
   t.end();
 }
 
-test.skip('device state with SES', async t => {
+test('device state with SES', async t => {
   await testState(t, true);
 });
 
-test.skip('device state without SES', async t => {
+test('device state without SES', async t => {
   await testState(t, false);
-});
-
-async function testSetState(t, withSES) {
-  const external = makeStorageInMemory();
-  const kvstore = makeExternalKVStore('kernel.devices.d2', external);
-
-  const config = {
-    vatSources: new Map(),
-    devices: [['d2', require.resolve('./files-devices/device-2'), { kvstore }]],
-    bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
-    state: {
-      vats: {},
-      runQueue: [],
-      promises: [],
-      nextPromiseIndex: 40,
-      devices: {
-        d2: {
-          deviceState: 'initial state',
-          managerState: {
-            nextImportID: 10,
-            imports: {
-              inbound: [],
-              outbound: [],
-            },
-          },
-        },
-      },
-    },
-  };
-  const argv = ['state2'];
-  const c = await buildVatController(config, withSES, argv, external);
-  t.deepEqual(c.getState().devices.d2.deviceState, 'initial state');
-
-  c.callBootstrap('_bootstrap', argv);
-  await c.run();
-  t.deepEqual(c.dump().log, [
-    'calling getState',
-    'getState called',
-    'got initial state',
-  ]);
-  t.end();
-}
-
-test.skip('set device state with SES', async t => {
-  await testSetState(t, true);
-});
-
-test.skip('set device state without SES', async t => {
-  await testSetState(t, false);
 });
 
 async function testSharedTable(t, withSES) {

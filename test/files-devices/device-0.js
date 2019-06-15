@@ -1,6 +1,6 @@
 const harden = require('@agoric/harden');
 
-export default function setup(_syscall, _helpers, _endowments) {
+export default function setup(_syscall, _state, _helpers, _endowments) {
   const dispatch = harden({
     invoke(_target, _method, _argsData, _argsSlots) {
       const args = '';
