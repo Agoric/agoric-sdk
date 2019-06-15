@@ -2,51 +2,11 @@
 
 import harden from '@agoric/harden';
 
-import { makeCorkboardAssayMaker } from '../../more/handoff/corkboardAssay';
 import { makeCorkboard } from '../../more/handoff/corkboard';
 import { sameStructure } from '../../util/sameStructure';
 import { makeHandoffService } from '../../more/handoff/handoff';
 
 function build(E, log) {
-  function testCorkboardAssay() {
-    log('starting testCorkboardAssay');
-    const corkboardAssayMaker = makeCorkboardAssayMaker();
-    const assay = corkboardAssayMaker('foo');
-    if (assay.getLabel() !== 'foo') {
-      log('assay label should be "foo"');
-    }
-    if (assay.empty('corkboard') !== assay.empty('another corkboard')) {
-      log('corkboards not equal');
-    }
-
-    const fakeChannel = makeCorkboard('something');
-    const amount = assay.make(fakeChannel);
-    if (!assay.vouch(amount)) {
-      log('assay should vouch for actual amount');
-    }
-    if (assay.coerce(amount) !== amount) {
-      log('assay should coerce to itself');
-    }
-    const allegedAmount = { label: 'foo', quantity: fakeChannel };
-    if (!sameStructure(assay.coerce(allegedAmount.quantity), amount)) {
-      log(
-        `literal assay (${
-          allegedAmount.quantity
-        } should coerce to equivalent ${amount}`,
-      );
-    }
-  }
-
-  function testCorkboardAssayQuantities() {
-    log('starting testCorkboardAssayQuantities');
-    const corkboardAssayMaker = makeCorkboardAssayMaker();
-    const assay = corkboardAssayMaker('foo');
-    const fakeChannel = makeCorkboard('bar');
-    const amount = assay.make(fakeChannel);
-    if (amount !== fakeChannel) {
-      log('amount quantity should be label: "bar".');
-    }
-  }
 
   function testCorkboardStorage() {
     log('starting testCorkboardStorage');
@@ -124,9 +84,6 @@ function build(E, log) {
   const obj0 = {
     async bootstrap(argv, vats) {
       switch (argv[0]) {
-        case 'corkboardAssay': {
-          return testCorkboardAssay() + testCorkboardAssayQuantities();
-        }
         case 'corkboard': {
           return testCorkboardStorage();
         }
