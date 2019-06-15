@@ -42,6 +42,7 @@ const expectedAliceChangesColorLog = [
   '++ alice.doChangeColor starting',
   'tapped Faucet',
   'current color #000000',
+  'pixel index is 100 of 100',
 ];
 
 test('run gallery demo aliceChangesColor with SES', async t => {

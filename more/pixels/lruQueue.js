@@ -2,12 +2,16 @@
 
 import harden from '@agoric/harden';
 
+function isIdentical(left, right) {
+  return left === right;
+}
+
 // An LRU queue. The maker returns two facets.  One allows initialization, the
 // other only supports popping from the front (entries are re-queud) or
 // requeuing arbitrary entries to the tail. Initialize by pushing an arbitrary
 // number of items, then call resortArbitrarily() with the number of entries and
 // a step size (something prime and not a multiple of the row size).
-export function makeLruQueue() {
+export function makeLruQueue(isEqualEntry = isIdentical) {
   function makeNode(obj, prev = null, next = null) {
     return { contents: obj, prev, next };
   }
@@ -23,6 +27,7 @@ export function makeLruQueue() {
 
   // push a new object on the queue. Only used during creation?
   function push(obj) {
+    harden(obj);
     if (isEmpty()) {
       head = makeNode(obj);
       tail = head;
@@ -62,16 +67,16 @@ export function makeLruQueue() {
 
   // find an arbitrary object from the queue, and move it to the tail.
   function requeue(obj) {
-    if (isEmpty() || tail.contents === obj) {
+    if (isEmpty() || isEqualEntry(tail.contents, obj)) {
       return;
     }
-    if (head.contents === obj) {
+    if (isEqualEntry(head.contents, obj)) {
       popToTail();
       return;
     }
 
     let [prev, cur] = [head, head.next];
-    while (cur !== undefined && cur.contents !== obj) {
+    while (cur !== undefined && !isEqualEntry(cur.contents, obj)) {
       if (cur.next === undefined) {
         return;
       }
@@ -80,11 +85,33 @@ export function makeLruQueue() {
       cur = cur.next;
     }
 
-    if (cur === undefined || cur.contents !== obj) {
+    if (cur === undefined || !isEqualEntry(cur.contents, obj)) {
       return;
     }
 
     requeueNode(cur, prev);
+  }
+
+  function reportPosition(entry) {
+    if (isEmpty()) {
+      return 'missing';
+    }
+
+    let position = false;
+    let total = 0;
+    let cur = head;
+    while (cur !== undefined) {
+      total += 1;
+      if (position === false && isEqualEntry(cur.contents, entry)) {
+        position = total;
+      }
+      cur = cur.next;
+    }
+    if (position === false) {
+      return 'missing';
+    }
+
+    return `${position} of ${total}`;
   }
 
   function resortArbitrarily(entries, step = 117) {
@@ -105,6 +132,12 @@ export function makeLruQueue() {
 
   const lruQueue = harden({ popToTail, requeue });
   const lruQueueBuilder = harden({ push, resortArbitrarily, isEmpty });
+  const lruQueueAdmin = harden({
+    push,
+    resortArbitrarily,
+    isEmpty,
+    reportPosition,
+  });
 
-  return harden({ lruQueue, lruQueueBuilder });
+  return harden({ lruQueue, lruQueueBuilder, lruQueueAdmin });
 }
