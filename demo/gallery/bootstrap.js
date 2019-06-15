@@ -16,6 +16,7 @@ function build(E, log) {
     const alicePixelAmount = await E(aliceP).doChangeColor();
     const rawPixel = alicePixelAmount.quantity[0];
     log(`current color ${gallery.userFacet.getColor(rawPixel.x, rawPixel.y)}`);
+    log(`pixel index is ${gallery.adminFacet.reportPosition(rawPixel)}`);
   }
   async function testAliceSendsOnlyUseRight(aliceMaker, bobMaker, gallery) {
     log('starting testAliceSendsOnlyUseRight');

@@ -1,6 +1,7 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
+import { isEqual as isEqualPixel } from './types/pixel';
 import {
   makeCompoundPixelAssayMaker,
   makeTransferRightPixelAssayMaker,
@@ -49,22 +50,30 @@ export function makeGallery(
     return JSON.stringify(state);
   }
 
-  function setPixelState(pixel, newColor) {
-    state[pixel.x][pixel.y] = newColor;
-    // for now we pass the whole state
-    stateChangeHandler(getState());
-  }
-
   // create all pixels (list of raw objs)
   const allPixels = makeWholePixelList(canvasSize);
 
   // create LRU for "seemingly unpredictable" output from faucet
-  const { lruQueue, lruQueueBuilder } = makeLruQueue();
+  const { lruQueue, lruQueueBuilder, lruQueueAdmin } = makeLruQueue(
+    isEqualPixel,
+  );
 
   for (const pixel of allPixels) {
     lruQueueBuilder.push(pixel);
   }
   lruQueueBuilder.resortArbitrarily(allPixels.length, 7);
+
+  function setPixelState(pixel, newColor) {
+    state[pixel.x][pixel.y] = newColor;
+    lruQueue.requeue(pixel);
+    // for now we pass the whole state
+    stateChangeHandler(getState());
+  }
+
+  // read-only access for the admin interface.
+  function reportPosition(entry) {
+    return lruQueueAdmin.reportPosition(entry);
+  }
 
   // START ERTP
   const collect = makeCollect(E, log);
@@ -316,6 +325,7 @@ export function makeGallery(
     getDistance,
     getDistanceFromCenter,
     pricePixel,
+    reportPosition,
   };
 
   const readFacet = {
