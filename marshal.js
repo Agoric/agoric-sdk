@@ -180,7 +180,9 @@ export function passStyleOf(val) {
         throw new Error(`property "${QCLASS}" reserved`);
       }
       if (!Object.isFrozen(val)) {
-        throw new Error(`cannot pass non-frozen objects like ${val}`);
+        throw new Error(
+          `cannot pass non-frozen objects like ${val}. [Use harden()]`,
+        );
       }
       if (Promise.resolve(val) === val) {
         return 'promise';
