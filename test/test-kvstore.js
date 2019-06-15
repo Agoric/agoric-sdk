@@ -1,5 +1,5 @@
 import { test } from 'tape-promise/tape';
-import makeKVStore from '../src/kvstore';
+import { makeKVStore } from '../src/stateInMemory';
 
 // kvstore has set, get, has, delete methods
 // set (key []byte, value []byte)
@@ -10,15 +10,15 @@ import makeKVStore from '../src/kvstore';
 
 test('kvstore set, get, has, delete, keys, values, entries', t => {
   const kvstore = makeKVStore({});
-  const val1 = {
+  const val1 = JSON.stringify({
     one: 'one',
-  };
-  const val2 = {
+  });
+  const val2 = JSON.stringify({
     two: 'two',
-  };
-  const val3 = {
+  });
+  const val3 = JSON.stringify({
     three: 'three',
-  };
+  });
   kvstore.set('kernel.key1', val1);
   kvstore.set('kernel.key2', val2);
   kvstore.set('kernel.key3', val3);
@@ -28,7 +28,7 @@ test('kvstore set, get, has, delete, keys, values, entries', t => {
 
   kvstore.delete('kernel.key2');
   const actualDeletedVal2 = kvstore.get('kernel.key2');
-  t.equal(actualDeletedVal2, undefined);
+  t.equal(actualDeletedVal2, null);
 
   const values = kvstore.values('kernel');
   t.deepEqual(values[0], val1);

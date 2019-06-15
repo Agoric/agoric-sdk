@@ -35,11 +35,11 @@ async function testSaveState(t, withSES) {
   t.end();
 }
 
-test('transcript-one save with SES', async t => {
+test.skip('transcript-one save with SES', async t => {
   await testSaveState(t, true);
 });
 
-test('transcript-one save without SES', async t => {
+test.skip('transcript-one save without SES', async t => {
   await testSaveState(t, false);
 });
 
@@ -69,10 +69,10 @@ async function testLoadState(t, withSES) {
   t.end();
 }
 
-test('transcript-one load with SES', async t => {
+test.skip('transcript-one load with SES', async t => {
   await testLoadState(t, true);
 });
 
-test('transcript-one load without SES', async t => {
+test.skip('transcript-one load without SES', async t => {
   await testLoadState(t, false);
 });

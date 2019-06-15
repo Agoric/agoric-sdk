@@ -112,10 +112,10 @@ async function testLoadState(t, withSES) {
   t.end();
 }
 
-test('transcript-light load with SES', async t => {
+test.skip('transcript-light load with SES', async t => {
   await testLoadState(t, true);
 });
 
-test('transcript-light load without SES', async t => {
+test.skip('transcript-light load without SES', async t => {
   await testLoadState(t, false);
 });

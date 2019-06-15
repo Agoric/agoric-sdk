@@ -47,12 +47,12 @@ async function simpleCall(t, controller) {
   t.end();
 }
 
-test('simple call with SES', async t => {
+test.skip('simple call with SES', async t => {
   const controller = await buildVatController({});
   await simpleCall(t, controller);
 });
 
-test('simple call non-SES', async t => {
+test.skip('simple call non-SES', async t => {
   const controller = await buildVatController({}, false);
   await simpleCall(t, controller);
 });
