@@ -58,7 +58,7 @@ function makeFredMaker(E, host, log) {
           const verifiedSaleInvitePaymentP = E.resolve(allegedSaleAmountP).then(
             allegedSaleInviteAmount => {
               const allegedOptionsInviteAmount =
-                allegedSaleInviteAmount.quantity.terms[1];
+                allegedSaleInviteAmount.quantity.terms.right;
 
               const optionsInviteAmount = harden({
                 label: inviteIssuerLabel,
@@ -82,7 +82,7 @@ function makeFredMaker(E, host, log) {
                   label: inviteIssuerLabel,
                   quantity: {
                     installation: escrowExchangeInstallationP,
-                    terms: [fin55, optionsInviteAmount],
+                    terms: { left: fin55, right: optionsInviteAmount },
                     seatIdentity: allegedSaleInviteAmount.quantity.seatIdentity,
                     seatDesc: 'left',
                   },

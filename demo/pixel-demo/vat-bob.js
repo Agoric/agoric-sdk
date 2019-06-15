@@ -62,10 +62,10 @@ function makeBobMaker(E, host, log) {
           // bob has 1, 0; 1, 1
 
           // bob will be offering a pixel for money
-          const terms = harden([moneyNeededP, pixelsNeededP]);
+          const terms = harden({ left: moneyNeededP, right: pixelsNeededP });
           const invitesP = E(escrowExchangeInstallationP).spawn(terms);
-          const aliceInviteP = invitesP.then(invites => invites[0]);
-          const bobInviteP = invitesP.then(invites => invites[1]);
+          const aliceInviteP = invitesP.then(invites => invites.left);
+          const bobInviteP = invitesP.then(invites => invites.right);
           const doneP = Promise.all([
             E(alice).acceptInvite(aliceInviteP),
             E(bob).acceptInvite(bobInviteP),

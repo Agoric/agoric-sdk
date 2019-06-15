@@ -52,10 +52,10 @@ function makeBobMaker(E, host, log) {
 
         tradeWell(alice) {
           log('++ bob.tradeWell starting');
-          const terms = harden([moneyNeededP, stockNeededP]);
+          const terms = harden({ left: moneyNeededP, right: stockNeededP });
           const invitesP = E(escrowExchangeInstallationP).spawn(terms);
-          const aliceInviteP = invitesP.then(invites => invites[0]);
-          const bobInviteP = invitesP.then(invites => invites[1]);
+          const aliceInviteP = invitesP.then(invites => invites.left);
+          const bobInviteP = invitesP.then(invites => invites.right);
           const doneP = Promise.all([
             E(alice).acceptInvite(aliceInviteP),
             E(bob).acceptInvite(bobInviteP),
