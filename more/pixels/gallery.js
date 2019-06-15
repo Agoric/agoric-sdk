@@ -283,12 +283,12 @@ export function makeGallery(
         'dust for pixel',
       );
       // dustPurse is dropped
-      const terms = harden([dustAmount, pixelAmount]);
+      const terms = harden({ left: dustAmount, right: pixelAmount });
       const contractHost = makeContractHost(E, evaluate);
       const escrowExchangeInstallationP = await E(contractHost).install(
         escrowExchangeSrc,
       );
-      const [galleryInviteP, userInviteP] = await E(
+      const { left: galleryInviteP, right: userInviteP } = await E(
         escrowExchangeInstallationP,
       ).spawn(terms);
       const seatP = E(contractHost).redeem(galleryInviteP);

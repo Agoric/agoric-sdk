@@ -72,7 +72,7 @@ function makeAliceMaker(E, host, log) {
                   label: inviteIssuerLabel,
                   quantity: {
                     installation: escrowExchangeInstallationP,
-                    terms: [clams10, pixel1x1],
+                    terms: { left: clams10, right: pixel1x1 },
                     seatIdentity: allegedInviteAmount.quantity.seatIdentity,
                     seatDesc: 'left',
                   },
@@ -182,9 +182,9 @@ function makeAliceMaker(E, host, log) {
           const finNeededP = E(E(optFinIssuerP).getAssay()).make(55);
           const inviteNeededP = E(allegedInvitePaymentP).getBalance();
 
-          const terms = harden([finNeededP, inviteNeededP]);
+          const terms = harden({ left: finNeededP, right: inviteNeededP });
           const invitesP = E(escrowExchangeInstallationP).spawn(terms);
-          const fredInviteP = invitesP.then(invites => invites[0]);
+          const fredInviteP = invitesP.then(invites => invites.left);
           const aliceForFredInviteP = invitesP.then(invites => invites[1]);
           const doneP = Promise.all([
             E(optFredP).acceptOptionOffer(fredInviteP),
