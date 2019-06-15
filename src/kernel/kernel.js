@@ -247,6 +247,10 @@ export default function buildKernel(kernelEndowments, externalStorage) {
   };
 
   function addImport(forVatID, what) {
+    if (!started) {
+      throw new Error('must do kernel.start() before addImport()');
+      // because then we can't get the vatManager
+    }
     const vat = ephemeral.vats.get(forVatID);
     return vat.manager.mapKernelSlotToVatSlot(what);
   }
@@ -270,6 +274,9 @@ export default function buildKernel(kernelEndowments, externalStorage) {
   }
 
   function queueToExport(vatID, facetID, method, argsString, slots = []) {
+    if (!started) {
+      throw new Error('must do kernel.start() before queueToExport()');
+    }
     // queue a message on the end of the queue, with 'absolute' slots. Use
     // 'step' or 'run' to execute it
     kernelKeeper.addToRunQueue(
@@ -561,6 +568,9 @@ export default function buildKernel(kernelEndowments, externalStorage) {
     start,
 
     async run() {
+      if (!started) {
+        throw new Error('must do kernel.start() before run()');
+      }
       // process all messages, until syscall.pause() is invoked
       running = true;
       while (running && !kernelKeeper.isRunQueueEmpty()) {
@@ -570,6 +580,9 @@ export default function buildKernel(kernelEndowments, externalStorage) {
     },
 
     async step() {
+      if (!started) {
+        throw new Error('must do kernel.start() before step()');
+      }
       // process a single message
       if (!kernelKeeper.isRunQueueEmpty()) {
         await processQueueMessage(kernelKeeper.getNextMsg());

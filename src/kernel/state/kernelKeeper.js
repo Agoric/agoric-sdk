@@ -168,7 +168,7 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
 
       // TODO: find some way to expose the liveSlots internal tables, the
       // kernel doesn't see them
-      const vatTable = { vatID }; //, state: vatKeeper.getCurrentState() };
+      const vatTable = { vatID, state: { transcript: vatKeeper.getTranscript() } };
       vatTables.push(vatTable);
       vatKeeper.dumpState(vatID).forEach(e => kernelTable.push(e));
     }

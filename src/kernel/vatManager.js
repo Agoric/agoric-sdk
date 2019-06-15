@@ -440,10 +440,6 @@ export default function makeVatManager(
       transcriptAddSyscall(['callNow', ...args], ret);
       return ret;
     },
-
-    log(str) {
-      kernelKeeper.log(str);
-    },
   });
 
   let useTranscript = true;

@@ -13,8 +13,11 @@ test('load empty', async t => {
   t.end();
 });
 
-async function simpleCall(t, controller) {
-  await controller.addVat('vat1', require.resolve('./vat-controller-1'));
+async function simpleCall(t, withSES) {
+  const config = {
+    vatSources: new Map([['vat1', require.resolve('./vat-controller-1')]]),
+  };
+  const controller = await buildVatController(config, withSES);
   const data = controller.dump();
   t.deepEqual(data.vatTables, [{ vatID: 'vat1', state: { transcript: [] } }]);
   t.deepEqual(data.kernelTable, []);
@@ -47,14 +50,12 @@ async function simpleCall(t, controller) {
   t.end();
 }
 
-test.skip('simple call with SES', async t => {
-  const controller = await buildVatController({});
-  await simpleCall(t, controller);
+test('simple call with SES', async t => {
+  await simpleCall(t, true);
 });
 
-test.skip('simple call non-SES', async t => {
-  const controller = await buildVatController({}, false);
-  await simpleCall(t, controller);
+test('simple call non-SES', async t => {
+  await simpleCall(t, false);
 });
 
 test('reject module-like sourceIndex', async t => {

@@ -1,6 +1,7 @@
-export default function start(syscall, _helpers) {
+// -*- js -*-
+export default function start(syscall, _state, helpers) {
   function deliver(facetID, method, argsString, slots) {
-    syscall.log(JSON.stringify({ facetID, method, argsString, slots }));
+    helpers.log(JSON.stringify({ facetID, method, argsString, slots }));
   }
   return { deliver };
 }
