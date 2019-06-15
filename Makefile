@@ -101,14 +101,3 @@ install-setup-client:
 	ve3-client/bin/pip install --editable ./setup-solo
 run-setup-client:
 	ve3-client/bin/ag-setup-solo
-
-run-chain:
-	rm -rf ~/.ag-chain-cosmos
-	lib/ag-chain-cosmos init --chain-id $(CHAIN_ID)
-	rm -rf t1 && bin/ag-solo init t1
-	ag-chain-cosmos add-genesis-account `cat t1/ag-cosmos-helper-address` 1000agmedallion
-	BOOT_ADDRESS=`cat t1/ag-cosmos-helper-address` ag-chain-cosmos start
-
-run-client: set-local-gci-ingress
-	cd t1 && ../bin/ag-solo start --role=controller --role=client `cat ag-cosmos-helper-address`
-
