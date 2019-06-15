@@ -181,7 +181,7 @@ export function passStyleOf(val) {
       }
       if (!Object.isFrozen(val)) {
         throw new Error(
-          `cannot pass non-frozen objects like ${val}. [Use harden()]`
+          `cannot pass non-frozen objects like ${val}. [Use harden()]`,
         );
       }
       if (Promise.resolve(val) === val) {
