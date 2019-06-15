@@ -1,7 +1,7 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
+import evaluate from '@agoric/evaluate';
 
-import { isEqual as isEqualPixel } from './types/pixel';
 import {
   makeCompoundPixelAssayMaker,
   makeTransferRightPixelAssayMaker,
@@ -9,11 +9,12 @@ import {
 } from './pixelAssays';
 import { makeMint } from '../../core/issuers';
 import { makeWholePixelList, insistPixelList } from './types/pixelList';
+import { insistPixel, isEqual as isEqualPixel } from './types/pixel';
 import { makeMintController } from './pixelMintController';
 import { makeLruQueue } from './lruQueue';
 
 import { escrowExchangeSrc } from '../../core/escrow';
-import { makeCollect } from '../../core/contractHost';
+import { makeContractHost, makeCollect } from '../../core/contractHost';
 
 function mockStateChangeHandler(_newState) {
   // does nothing
@@ -21,7 +22,6 @@ function mockStateChangeHandler(_newState) {
 
 export function makeGallery(
   E,
-  contractHost,
   log,
   stateChangeHandler = mockStateChangeHandler,
   canvasSize = 10,
@@ -247,7 +247,8 @@ export function makeGallery(
     return getDistance(rawPixel, center);
   }
 
-  function pricePixel(rawPixel) {
+  function pricePixelInternal(rawPixel) {
+    insistPixel(rawPixel, canvasSize);
     const distance = getDistanceFromCenter(rawPixel);
     // prices are simplistic for now
     // they range from canvasSize / 2 to canvasSize
@@ -256,10 +257,11 @@ export function makeGallery(
   }
 
   function pricePixelAmount(pixelAmount) {
+    pixelAmount = pixelAssay.coerce(pixelAmount);
     const rawPixelList = pixelAssay.quantity(pixelAmount);
     let totalPriceInDust = 0;
     for (const rawPixel of rawPixelList) {
-      totalPriceInDust += pricePixel(rawPixel);
+      totalPriceInDust += pricePixelInternal(rawPixel);
     }
     return dustAssay.make(totalPriceInDust);
   }
@@ -282,7 +284,8 @@ export function makeGallery(
       );
       // dustPurse is dropped
       const terms = harden([dustAmount, pixelAmount]);
-      const escrowExchangeInstallationP = E(contractHost).install(
+      const contractHost = makeContractHost(E, evaluate);
+      const escrowExchangeInstallationP = await E(contractHost).install(
         escrowExchangeSrc,
       );
       const [galleryInviteP, userInviteP] = await E(
@@ -290,11 +293,18 @@ export function makeGallery(
       ).spawn(terms);
       const seatP = E(contractHost).redeem(galleryInviteP);
       E(seatP).offer(dustPaymentP);
-      const dustPurseP = E(dustIssuer).makeEmptyPurse();
-      const pixelPurseP = E(pixelIssuer).makeEmptyPurse();
+      const dustPurseP = dustIssuer.makeEmptyPurse();
+      const pixelPurseP = pixelIssuer.makeEmptyPurse();
       collect(seatP, pixelPurseP, dustPurseP, 'gallery escrow');
-      return userInviteP;
+      return {
+        inviteP: userInviteP,
+        host: contractHost,
+      };
     });
+  }
+
+  function collectFromGallery(seatP, pixelPurseP, dustPurseP, name) {
+    return collect(seatP, pixelPurseP, dustPurseP, name);
   }
 
   function getIssuers() {
@@ -316,16 +326,17 @@ export function makeGallery(
     getCanvasSize() {
       return canvasSize;
     },
-    pricePixel, // transparent pricing for now
+    pricePixelAmount, // transparent pricing for now
     sellToGallery,
+    collectFromGallery,
   };
 
   const adminFacet = {
     revokePixel,
     getDistance,
     getDistanceFromCenter,
-    pricePixel,
     reportPosition,
+    pricePixelAmount,
   };
 
   const readFacet = {

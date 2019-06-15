@@ -1,7 +1,7 @@
 import { test } from 'tape-promise/tape';
+import harden from '@agoric/harden';
 
 import { makeGallery } from '../../../more/pixels/gallery';
-
 import { insistPixelList } from '../../../more/pixels/types/pixelList';
 
 test('tapFaucet', t => {
@@ -234,15 +234,36 @@ test('getDistanceFromCenter', t => {
   t.end();
 });
 
-test('pricePixel', t => {
+test('pricePixel Internal', t => {
   const { userFacet } = makeGallery();
   // default canvasSize is 10
-  const { pricePixel } = userFacet;
-  t.deepEqual(pricePixel({ x: 0, y: 1 }), 4);
-  t.deepEqual(pricePixel({ x: 2, y: 1 }), 5);
-  t.deepEqual(pricePixel({ x: 2, y: 3 }), 7);
-  t.deepEqual(pricePixel({ x: 4, y: 1 }), 6);
-  t.deepEqual(pricePixel({ x: 0, y: 7 }), 5);
-  t.deepEqual(pricePixel({ x: 5, y: 5 }), 10);
+  const { pricePixelAmount, getIssuers } = userFacet;
+  const { dustIssuer, pixelIssuer } = getIssuers();
+  const dustAssay = dustIssuer.getAssay();
+  const pixelAssay = pixelIssuer.getAssay();
+  t.deepEqual(
+    pricePixelAmount(pixelAssay.make(harden([{ x: 0, y: 1 }]))),
+    dustAssay.make(4),
+  );
+  t.deepEqual(
+    pricePixelAmount(pixelAssay.make(harden([{ x: 2, y: 1 }]))),
+    dustAssay.make(5),
+  );
+  t.deepEqual(
+    pricePixelAmount(pixelAssay.make(harden([{ x: 2, y: 3 }]))),
+    dustAssay.make(7),
+  );
+  t.deepEqual(
+    pricePixelAmount(pixelAssay.make(harden([{ x: 4, y: 1 }]))),
+    dustAssay.make(6),
+  );
+  t.deepEqual(
+    pricePixelAmount(pixelAssay.make(harden([{ x: 0, y: 7 }]))),
+    dustAssay.make(5),
+  );
+  t.deepEqual(
+    pricePixelAmount(pixelAssay.make(harden([{ x: 5, y: 5 }]))),
+    dustAssay.make(10),
+  );
   t.end();
 });

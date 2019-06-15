@@ -4,14 +4,11 @@
 import harden from '@agoric/harden';
 
 import { insist } from '../../util/insist';
-import { makeCollect } from '../../core/contractHost';
 
 let storedUseRight;
 let storedTransferRight;
 
 function makeAliceMaker(E, log) {
-  const collect = makeCollect(E, log);
-
   // TODO BUG: All callers should wait until settled before doing
   // anything that would change the balance before show*Balance* reads
   // it.
@@ -206,7 +203,7 @@ function makeAliceMaker(E, log) {
             }`,
           );
         },
-        async doTapFaucetAndSell(host) {
+        async doTapFaucetAndSell() {
           log('++ alice.doTapFaucetAndSell starting');
           const pixelPaymentP = E(gallery).tapFaucet();
           const { pixelIssuer, dustIssuer } = await E(gallery).getIssuers();
@@ -218,12 +215,17 @@ function makeAliceMaker(E, log) {
           // terms of the amount parameter plus what the gallery is
           // willing to offer for it
           // sellToGallery returns an invite to the smart contract
-          const inviteP = E(gallery).sellToGallery(amount);
+          const { inviteP, host } = await E(gallery).sellToGallery(amount);
           const seatP = E(host).redeem(inviteP);
           E(seatP).offer(exclusivePixelPaymentP);
           const dustPurseP = E(dustIssuer).makeEmptyPurse();
           const pixelPurseP = E(pixelIssuer).makeEmptyPurse();
-          return collect(seatP, dustPurseP, pixelPurseP, 'alice escrow');
+          return E(gallery).collectFromGallery(
+            seatP,
+            dustPurseP,
+            pixelPurseP,
+            'alice escrow',
+          );
         },
       });
       return alice;
