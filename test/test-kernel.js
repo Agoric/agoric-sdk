@@ -1,7 +1,7 @@
 /* global setImmediate */
 import { test } from 'tape-promise/tape';
 import buildKernel from '../src/kernel/index';
-import makeStorageInMemory from '../src/stateInMemory';
+import { makeStorageInMemory } from '../src/stateInMemory';
 
 test('build kernel', t => {
   const external = makeStorageInMemory();

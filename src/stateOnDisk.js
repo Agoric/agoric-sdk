@@ -3,7 +3,7 @@
 
 import fs from 'fs';
 import harden from '@agoric/harden';
-import makeStorageInMemory from './stateInMemory';
+import { makeStorageInMemory } from './stateInMemory';
 
 export default function buildExternalForFile(fn) {
   let storage;

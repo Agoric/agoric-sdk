@@ -9,7 +9,7 @@ import SES from 'ses';
 import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
 import bundleSource from './build-source-bundle';
-import makeStorageInMemory from './stateInMemory';
+import { makeStorageInMemory } from './stateInMemory';
 import buildExternalForFile from './stateOnDisk';
 
 export function loadBasedir(basedir) {
