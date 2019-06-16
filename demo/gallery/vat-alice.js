@@ -283,9 +283,9 @@ function makeAliceMaker(E, log) {
           E(cbP).addEntry('contractHost', contractHost);
 
           // check that we got paid.
-          const dustCollectionPurse = E(dustIssuerP).makeEmptyPurse();
+          const dustCollectionPurse = E(dustIssuerP).makeEmptyPurse('payment');
           const pixelRefundP = E(pixelIssuerP).makeEmptyPurse('refund');
-          collect(
+          await collect(
             sellerSeatP,
             dustCollectionPurse,
             pixelRefundP,
@@ -301,6 +301,7 @@ function makeAliceMaker(E, log) {
                 log(`++ Alice shouldn't receive a refund ${balance.quantity}.`);
               }
             });
+          return { pixelRefundP, dustCollectionPurse };
         },
       });
       return alice;

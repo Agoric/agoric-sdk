@@ -130,9 +130,7 @@ const expectedAliceSellsToBobLog = [
   '=> setup called',
   'starting aliceSellsToBob',
   'starting testAliceSellsToBob',
-  '++ alice.doTapFaucetAndSell starting',
-  'gallery escrow wins: {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]} refs: null',
-  'alice escrow wins: {"label":{"issuer":{},"description":"dust"},"quantity":6} refs: null',
+  '++ alice.doTapFaucetAndAddOfferToCorkboard starting',
 ];
 
 test('run gallery demo aliceSellsToBob with SES', async t => {

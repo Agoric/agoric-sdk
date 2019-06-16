@@ -41,8 +41,19 @@ function build(E, log) {
     const aliceDustPurseP = E(gallery.adminFacet.dustMint).mint(50, 'alice');
     const aliceP = E(aliceMaker).make(gallery.userFacet);
     const bobP = E(bobMaker).make(gallery.userFacet);
-    await E(aliceP).doTapFaucetAndAddOfferToCorkboard(handoff, aliceDustPurseP);
-    await E(bobP).buyFromCorkBoard(handoff);
+    const { pixelRefundP, dustCollectionPurse } =
+      await E(aliceP).doTapFaucetAndAddOfferToCorkboard(handoff, aliceDustPurseP);
+    const { dustRefundP, exclusivePayment } = await E(bobP).buyFromCorkBoard(handoff);
+    const doneP = Promise.all([
+      dustRefundP,
+      exclusivePayment,
+      pixelRefundP,
+      dustCollectionPurse,
+    ]);
+    doneP.then(
+      _res => log('++ aliceSellsToBob done'),
+      rej => log('++ aliceSellsToBob reject: ', rej),
+    );
   }
 
   const obj0 = {

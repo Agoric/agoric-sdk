@@ -74,15 +74,18 @@ function makeBobMaker(E, log) {
           );
 
           // bob tries to change the color to light purple
-          await E(gallery)
+          E(gallery)
             .changeColor(exclusivePayment, '#B695C0')
-            .then(amountP => {
-              const color = E(gallery).getColor(amountP.x, amountP.y);
-              log(`bob tried to color, and produced ${color}`);
-            });
+            .then(
+              amountP => {
+                const color = E(gallery).getColor(amountP.x, amountP.y);
+                log(`bob tried to color, and produced ${color}`);
+              },
+              rej => log('++ bob failed to color: ', rej),
+            );
+          return { dustRefundP, exclusivePayment };
         },
       });
-      return bob;
     },
   });
 }
