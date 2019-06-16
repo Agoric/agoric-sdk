@@ -1,10 +1,12 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
-export default function setup(syscall, helpers, endowments) {
+export default function setup(syscall, state, helpers, endowments) {
   const highestInboundDelivered = harden(new Map());
   const highestInboundAck = harden(new Map());
-  let inboundHandler;
+
+  let deliverInboundMessages;
+  let deliverInboundAck;
 
   function inboundCallback(hPeer, hMessages, hAck) {
     const peer = `${hPeer}`;
@@ -31,7 +33,7 @@ export default function setup(syscall, helpers, endowments) {
       }
     });
     if (newMessages.length) {
-      inboundHandler.deliverInboundMessages(peer, harden(newMessages));
+      deliverInboundMessages(peer, harden(newMessages));
       didSomething = true;
     }
     let latestAck = 0;
@@ -40,7 +42,7 @@ export default function setup(syscall, helpers, endowments) {
     }
     if (ack > latestAck) {
       highestInboundAck.set(peer, ack);
-      inboundHandler.deliverInboundAck(peer, ack);
+      deliverInboundAck(peer, ack);
       didSomething = true;
     }
     return didSomething;
@@ -50,68 +52,65 @@ export default function setup(syscall, helpers, endowments) {
   // we keep no state in the device, it all lives elsewhere, as decided by
   // the host
 
-  function getState() {
-    return harden({});
+  function build({ SO, getDeviceState, setDeviceState }) {
+    let { inboundHandler } = getDeviceState() || {};
+    // console.log(`mailbox-src build: inboundHandler is`, inboundHandler);
+    deliverInboundMessages = (peer, newMessages) => {
+      if (!inboundHandler) {
+        throw new Error(`deliverInboundMessages before registerInboundHandler`);
+      }
+      try {
+        SO(inboundHandler).deliverInboundMessages(peer, newMessages);
+      } catch (e) {
+        console.log(`error during deliverInboundMessages: ${e} ${e.message}`);
+      }
+    };
+
+    deliverInboundAck = (peer, ack) => {
+      if (!inboundHandler) {
+        throw new Error(`deliverInboundAck before registerInboundHandler`);
+      }
+      try {
+        SO(inboundHandler).deliverInboundAck(peer, ack);
+      } catch (e) {
+        console.log(`error during deliverInboundAck: ${e} ${e.message}`);
+      }
+    };
+
+    return harden({
+      registerInboundHandler(handler) {
+        if (inboundHandler) {
+          throw new Error(`already registered`);
+        }
+        inboundHandler = handler;
+        setDeviceState(harden({ inboundHandler }));
+      },
+
+      add(peer, msgnum, body) {
+        try {
+          endowments.add(`${peer}`, Nat(msgnum), `${body}`);
+        } catch (e) {
+          throw new Error(`error in add: ${e} ${e.message}`);
+        }
+      },
+
+      remove(peer, msgnum) {
+        try {
+          endowments.remove(`${peer}`, Nat(msgnum));
+        } catch (e) {
+          throw new Error(`error in remove: ${e} ${e.message}`);
+        }
+      },
+
+      ackInbound(peer, msgnum) {
+        try {
+          endowments.setAcknum(`${peer}`, Nat(msgnum));
+        } catch (e) {
+          throw new Error(`error in ackInbound: ${e} ${e.message}`);
+        }
+      },
+    });
   }
 
-  function setState(_newState) {}
-
-  return helpers.makeDeviceSlots(
-    syscall,
-    SO =>
-      harden({
-        registerInboundHandler(handler) {
-          if (inboundHandler) {
-            throw new Error(`already registered`);
-          }
-          inboundHandler = harden({
-            deliverInboundMessages(peer, newMessages) {
-              try {
-                SO(handler).deliverInboundMessages(peer, newMessages);
-              } catch (e) {
-                console.log(
-                  `error during deliverInboundMessages: ${e} ${e.message}`,
-                );
-              }
-            },
-            deliverInboundAck(peer, ack) {
-              try {
-                SO(handler).deliverInboundAck(peer, ack);
-              } catch (e) {
-                console.log(
-                  `error during deliverInboundAck: ${e} ${e.message}`,
-                );
-              }
-            },
-          });
-        },
-
-        add(peer, msgnum, body) {
-          try {
-            endowments.add(`${peer}`, Nat(msgnum), `${body}`);
-          } catch (e) {
-            throw new Error(`error in add: ${e} ${e.message}`);
-          }
-        },
-
-        remove(peer, msgnum) {
-          try {
-            endowments.remove(`${peer}`, Nat(msgnum));
-          } catch (e) {
-            throw new Error(`error in remove: ${e} ${e.message}`);
-          }
-        },
-
-        ackInbound(peer, msgnum) {
-          try {
-            endowments.setAcknum(`${peer}`, Nat(msgnum));
-          } catch (e) {
-            throw new Error(`error in ackInbound: ${e} ${e.message}`);
-          }
-        },
-      }),
-    getState,
-    setState,
-    helpers.name,
-  );
+  return helpers.makeDeviceSlots(syscall, state, build, helpers.name);
 }

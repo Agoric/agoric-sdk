@@ -10,12 +10,9 @@ export default function makeDeviceManager(
   helpers,
   endowments,
   kernelKeeper,
-  deviceKVStore,
+  _deviceKVStore,
 ) {
   const { kdebug, send, log } = syscallManager;
-
-  // per-device translation tables
-  kernelKeeper.addDevice(deviceName, deviceKVStore);
 
   const deviceKeeper = makeDeviceKeeper(kernelKeeper.getDevice(deviceName));
 
@@ -94,9 +91,20 @@ export default function makeDeviceManager(
     },
   });
 
+  // Devices are allowed to get their state at startup, and set it anytime.
+  // They do not use orthogonal persistence or transcripts.
+  const state = harden({
+    get() {
+      return deviceKeeper.getDeviceState();
+    },
+    set(value) {
+      deviceKeeper.setDeviceState(value);
+    },
+  });
+
   // now build the runtime, which gives us back a dispatch function
 
-  const dispatch = setup(syscall, helpers, endowments);
+  const dispatch = setup(syscall, state, helpers, endowments);
 
   // dispatch handlers: these are used by the kernel core
 
@@ -110,7 +118,6 @@ export default function makeDeviceManager(
       const resultSlots = results.slots.map(slot =>
         mapDeviceSlotToKernelSlot(slot),
       );
-      console.log(`about to return`, results.data, resultSlots);
       return { data: results.data, slots: resultSlots };
     } catch (e) {
       console.log(
@@ -120,22 +127,8 @@ export default function makeDeviceManager(
     }
   }
 
-  function loadState(savedState) {
-    deviceKeeper.loadManagerState(savedState.managerState);
-    deviceKeeper.loadDeviceState(savedState.deviceState);
-  }
-
-  function getCurrentState() {
-    return harden({
-      managerState: deviceKeeper.getManagerState(),
-      deviceState: deviceKeeper.getDeviceState(),
-    });
-  }
-
   const manager = {
     invoke,
-    getCurrentState,
-    loadState,
   };
   return manager;
 }

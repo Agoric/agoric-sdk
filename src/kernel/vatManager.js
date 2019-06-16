@@ -1,13 +1,14 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import makeVatKeeper from './state/vatKeeper';
+import djson from './djson';
 
 export default function makeVatManager(
   vatID,
   syscallManager,
   setup,
   helpers,
-  vatKVStore,
+  _vatKVStore,
 ) {
   const {
     kdebug,
@@ -20,8 +21,6 @@ export default function makeVatManager(
     invoke,
     kernelKeeper,
   } = syscallManager;
-
-  kernelKeeper.addVat(vatID, vatKVStore);
 
   const vatKeeper = makeVatKeeper(kernelKeeper.getVat(vatID));
 
@@ -159,7 +158,9 @@ export default function makeVatManager(
     }
   }
   function transcriptFinishDispatch() {
-    vatKeeper.addToTranscript(currentEntry);
+    if (!inReplay) {
+      vatKeeper.addToTranscript(currentEntry);
+    }
   }
 
   // syscall handlers: these are wrapped by the 'syscall' object and made
@@ -391,7 +392,10 @@ export default function makeVatManager(
 
   function replay(name, ...args) {
     const s = playbackSyscalls.shift();
-    if (JSON.stringify(s.d) !== JSON.stringify([name, ...args])) {
+    if (djson.stringify(s.d) !== djson.stringify([name, ...args])) {
+      console.log(`anachrophobia strikes vat ${vatID}`);
+      console.log(`expected:`, djson.stringify(s.d));
+      console.log(`got     :`, djson.stringify([name, ...args]));
       throw new Error(`historical inaccuracy in replay-${name}`);
     }
     return s.response;
@@ -435,10 +439,6 @@ export default function makeVatManager(
       const ret = inReplay ? replay('callNow', ...args) : doCallNow(...args);
       transcriptAddSyscall(['callNow', ...args], ret);
       return ret;
-    },
-
-    log(str) {
-      kernelKeeper.log(str);
     },
   });
 
@@ -565,14 +565,15 @@ export default function makeVatManager(
     throw new Error(`unknown message type '${type}'`);
   }
 
-  async function loadState(savedState) {
+  async function replayTranscript() {
     if (!useTranscript) {
       throw new Error("userspace doesn't do transcripts");
     }
 
+    const transcript = vatKeeper.getTranscript();
     inReplay = true;
-    for (let i = 0; i < savedState.transcript.length; i += 1) {
-      const t = savedState.transcript[i];
+    for (let i = 0; i < transcript.length; i += 1) {
+      const t = transcript[i];
       playbackSyscalls = Array.from(t.syscalls);
       // eslint-disable-next-line no-await-in-loop
       await doProcess(t.d, 'errmsg');
@@ -583,12 +584,8 @@ export default function makeVatManager(
   const manager = {
     mapKernelSlotToVatSlot,
     mapVatSlotToKernelSlot,
-    dumpState: vatKeeper.dumpState,
-    loadManagerState: vatKeeper.loadManagerState,
-    loadState,
     processOneMessage,
-    getManagerState: vatKeeper.getManagerState,
-    getCurrentState: vatKeeper.getCurrentState,
+    replayTranscript,
   };
   return manager;
 }

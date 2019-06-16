@@ -1,12 +1,12 @@
 /* global setImmediate */
 import { test } from 'tape-promise/tape';
 import buildKernel from '../src/kernel/index';
-import { makeExternal } from '../src/controller';
+import { makeStorageInMemory } from '../src/stateInMemory';
 
-test('build kernel', t => {
-  const external = makeExternal();
+test('build kernel', async t => {
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
-  kernel.run(); // empty queue
+  await kernel.start(); // empty queue
   const data = kernel.dump();
   t.deepEqual(data.vatTables, []);
   t.deepEqual(data.kernelTable, []);
@@ -14,17 +14,18 @@ test('build kernel', t => {
 });
 
 test('simple call', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   const log = [];
-  function setup1(syscall) {
+  function setup1(syscall, state, helpers) {
     function deliver(facetID, method, argsString, slots) {
       log.push([facetID, method, argsString, slots]);
-      syscall.log(JSON.stringify({ facetID, method, argsString, slots }));
+      helpers.log(JSON.stringify({ facetID, method, argsString, slots }));
     }
     return { deliver };
   }
-  kernel.addVat('vat1', setup1);
+  kernel.addGenesisVat('vat1', setup1);
+  await kernel.start();
   let data = kernel.dump();
   t.deepEqual(data.vatTables, [{ vatID: 'vat1', state: { transcript: [] } }]);
   t.deepEqual(data.kernelTable, []);
@@ -66,7 +67,7 @@ test('simple call', async t => {
 });
 
 test('map inbound', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   function setup1(_syscall) {
@@ -75,7 +76,8 @@ test('map inbound', async t => {
     }
     return { deliver };
   }
-  kernel.addVat('vat1', setup1);
+  kernel.addGenesisVat('vat1', setup1);
+  await kernel.start();
   const data = kernel.dump();
   t.deepEqual(data.vatTables, [{ vatID: 'vat1', state: { transcript: [] } }]);
   t.deepEqual(data.kernelTable, []);
@@ -113,15 +115,16 @@ test('map inbound', async t => {
   t.end();
 });
 
-test('addImport', t => {
-  const external = makeExternal();
+test('addImport', async t => {
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   function setup(_syscall) {
     function deliver(_facetID, _method, _argsString, _slots) {}
     return { deliver };
   }
-  kernel.addVat('vat1', setup);
-  kernel.addVat('vat2', setup);
+  kernel.addGenesisVat('vat1', setup);
+  kernel.addGenesisVat('vat2', setup);
+  await kernel.start();
 
   const slot = kernel.addImport('vat1', {
     type: 'export',
@@ -136,7 +139,7 @@ test('addImport', t => {
 });
 
 test('outbound call to my own export should fail', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   let s;
@@ -147,7 +150,8 @@ test('outbound call to my own export should fail', async t => {
     }
     return { deliver };
   }
-  kernel.addVat('vat1', setup1);
+  kernel.addGenesisVat('vat1', setup1);
+  await kernel.start();
 
   t.throws(
     () => s.send({ type: 'export', id: 5 }, 'methodname', 'body', []),
@@ -158,7 +162,7 @@ test('outbound call to my own export should fail', async t => {
 });
 
 test('outbound call', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   let v1tovat25;
@@ -177,7 +181,7 @@ test('outbound call', async t => {
     }
     return { deliver };
   }
-  kernel.addVat('vat1', setup1);
+  kernel.addGenesisVat('vat1', setup1);
 
   function setup2(_syscall) {
     function deliver(facetID, method, argsString, slots) {
@@ -186,7 +190,8 @@ test('outbound call', async t => {
     }
     return { deliver };
   }
-  kernel.addVat('vat2', setup2);
+  kernel.addGenesisVat('vat2', setup2);
+  await kernel.start();
 
   v1tovat25 = kernel.addImport('vat1', {
     type: 'export',
@@ -282,7 +287,7 @@ test('outbound call', async t => {
 });
 
 test('three-party', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   let bobForA;
@@ -302,7 +307,7 @@ test('three-party', async t => {
     }
     return { deliver };
   }
-  kernel.addVat('vatA', setupA);
+  kernel.addGenesisVat('vatA', setupA);
 
   let bobSyscall;
   function setupB(syscall) {
@@ -313,7 +318,7 @@ test('three-party', async t => {
     }
     return { deliver };
   }
-  kernel.addVat('vatB', setupB);
+  kernel.addGenesisVat('vatB', setupB);
 
   function setupC(_syscall) {
     function deliver(facetID, method, argsString, slots) {
@@ -321,7 +326,9 @@ test('three-party', async t => {
     }
     return { deliver };
   }
-  kernel.addVat('vatC', setupC);
+  kernel.addGenesisVat('vatC', setupC);
+
+  await kernel.start();
 
   bobForA = kernel.addImport('vatA', {
     type: 'export',
@@ -418,8 +425,8 @@ test('three-party', async t => {
   t.end();
 });
 
-test('createPromise', t => {
-  const external = makeExternal();
+test('createPromise', async t => {
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   function setup(s) {
@@ -427,7 +434,8 @@ test('createPromise', t => {
     function deliver(_facetID, _method, _argsString, _slots) {}
     return { deliver };
   }
-  kernel.addVat('vat1', setup);
+  kernel.addGenesisVat('vat1', setup);
+  await kernel.start();
 
   t.deepEqual(kernel.dump().promises, []);
   const pr = syscall.createPromise();
@@ -450,7 +458,7 @@ test('createPromise', t => {
 });
 
 test('transfer promise', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   let syscallA;
   const logA = [];
@@ -461,7 +469,7 @@ test('transfer promise', async t => {
     }
     return { deliver };
   }
-  kernel.addVat('vatA', setupA);
+  kernel.addGenesisVat('vatA', setupA);
 
   let syscallB;
   const logB = [];
@@ -472,7 +480,9 @@ test('transfer promise', async t => {
     }
     return { deliver };
   }
-  kernel.addVat('vatB', setupB);
+  kernel.addGenesisVat('vatB', setupB);
+
+  await kernel.start();
 
   const B = kernel.addImport('vatA', { type: 'export', vatID: 'vatB', id: 5 });
   const A = kernel.addImport('vatB', { type: 'export', vatID: 'vatA', id: 6 });
@@ -737,7 +747,7 @@ test('transfer promise', async t => {
 });
 
 test('subscribe to promise', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   const log = [];
@@ -748,7 +758,8 @@ test('subscribe to promise', async t => {
     }
     return { deliver };
   }
-  kernel.addVat('vat1', setup);
+  kernel.addGenesisVat('vat1', setup);
+  await kernel.start();
 
   const pr = syscall.createPromise();
   t.deepEqual(pr, { promiseID: 20, resolverID: 30 });
@@ -773,8 +784,9 @@ test('subscribe to promise', async t => {
   t.end();
 });
 
-test.skip('promise redirection', t => {
-  const external = makeExternal();
+// promise redirection is not yet implemented
+test.skip('promise redirection', async t => {
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   const log = [];
@@ -785,13 +797,16 @@ test.skip('promise redirection', t => {
     }
     return { deliver };
   }
-  kernel.addVat('vat1', setup);
+  kernel.addGenesisVat('vat1', setup);
+  await kernel.start();
 
   const pr1 = syscall.createPromise();
   const pr2 = syscall.createPromise();
   t.deepEqual(kernel.dump().kernelTable, [
     ['vat1', 'promise', 20, 40],
     ['vat1', 'promise', 21, 41],
+    ['vat1', 'resolver', 30, 40],
+    ['vat1', 'resolver', 31, 41],
   ]);
 
   syscall.subscribe(pr1.promiseID);
@@ -835,7 +850,7 @@ test.skip('promise redirection', t => {
 });
 
 test('promise resolveToData', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   const log = [];
@@ -849,7 +864,8 @@ test('promise resolveToData', async t => {
     }
     return { deliver, notifyFulfillToData };
   }
-  kernel.addVat('vatA', setup);
+  kernel.addGenesisVat('vatA', setup);
+  await kernel.start();
 
   const pr = syscall.createPromise();
   t.deepEqual(kernel.dump().kernelTable, [
@@ -902,7 +918,7 @@ test('promise resolveToData', async t => {
 });
 
 test('promise resolveToPresence', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   const log = [];
@@ -916,7 +932,8 @@ test('promise resolveToPresence', async t => {
     }
     return { deliver, notifyFulfillToPresence };
   }
-  kernel.addVat('vatA', setup);
+  kernel.addGenesisVat('vatA', setup);
+  await kernel.start();
 
   const pr = syscall.createPromise();
   t.deepEqual(kernel.dump().kernelTable, [
@@ -968,7 +985,7 @@ test('promise resolveToPresence', async t => {
 });
 
 test('promise reject', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   let syscall;
   const log = [];
@@ -982,7 +999,8 @@ test('promise reject', async t => {
     }
     return { deliver, notifyReject };
   }
-  kernel.addVat('vatA', setup);
+  kernel.addGenesisVat('vatA', setup);
+  await kernel.start();
 
   const pr = syscall.createPromise();
   t.deepEqual(kernel.dump().kernelTable, [
@@ -1038,7 +1056,7 @@ test('promise reject', async t => {
 });
 
 test('transcript', async t => {
-  const external = makeExternal();
+  const external = makeStorageInMemory();
   const kernel = buildKernel({ setImmediate }, external);
   const log = [];
   function setup(syscall, _state) {
@@ -1049,7 +1067,9 @@ test('transcript', async t => {
     }
     return { deliver };
   }
-  kernel.addVat('vatA', setup);
+  kernel.addGenesisVat('vatA', setup);
+  await kernel.start();
+
   kernel.queueToExport('vatA', 1, 'store', 'args string', [
     { type: 'export', vatID: 'vatA', id: 1 },
     { type: 'export', vatID: 'vatB', id: 2 },

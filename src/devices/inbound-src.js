@@ -1,30 +1,32 @@
 import harden from '@agoric/harden';
 
-export default function setup(syscall, helpers, endowments) {
+export default function setup(syscall, state, helpers, endowments) {
   const { bridge } = endowments;
-  function getState() {
-    return {};
-  }
-  function setState(_newState) {
-    throw new Error('inbound device not yet able to setState');
-  }
+  let { inboundHandler } = state.get() || {};
 
   return helpers.makeDeviceSlots(
     syscall,
-    SO =>
-      harden({
+    state,
+    s => {
+      const { SO } = s;
+      bridge.inboundCallback = (sender, message) => {
+        if (!inboundHandler) {
+          throw new Error(`inboundCallback before registerInboundHandler`);
+        }
+        try {
+          SO(inboundHandler).inbound(`${sender}`, `${message}`);
+        } catch (e) {
+          console.log(`error during inboundCallback: ${e} ${e.message}`);
+        }
+      };
+      return harden({
+        // todo: rename this to registerInboundHandler for consistency
         registerInboundCallback(handler) {
-          bridge.inboundCallback = (sender, message) => {
-            try {
-              SO(handler).inbound(`${sender}`, `${message}`);
-            } catch (e) {
-              console.log(`error during inboundCallback: ${e} ${e.message}`);
-            }
-          };
+          inboundHandler = handler;
+          state.set({ inboundHandler });
         },
-      }),
-    getState,
-    setState,
+      });
+    },
     helpers.name,
   );
 }

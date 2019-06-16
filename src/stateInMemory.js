@@ -1,3 +1,6 @@
+import harden from '@agoric/harden';
+import stringify from './kernel/json-stable-stringify';
+
 // key is a full path string, e.g.:
 // "kernel.vats.vat1.kernelSlotToVatSlot.exports"
 // we want to add a key and value to be able to iterate:
@@ -34,7 +37,7 @@ function deleteKeys(state, key) {
   }
 }
 
-export default function makeKVStore(state) {
+export function makeKVStore(state) {
   // kvstore has set, get, has, delete methods
   // set (key []byte, value []byte)
   // get (key []byte)  => value []byte
@@ -44,11 +47,20 @@ export default function makeKVStore(state) {
 
   return {
     get(key) {
-      return state[key];
+      const value = state[key];
+      if (value === undefined) {
+        return null;
+      }
+      return value;
     },
     set(key, value) {
       if (key.includes('undefined')) {
         throw new Error(`key ${key} value ${value} includes undefined`);
+      }
+      if (value !== `${value}`) {
+        throw new Error(
+          `kvstore requires string values, not ${stringify(value)}`,
+        );
       }
       state[key] = value;
       setKeys(state, key);
@@ -96,4 +108,67 @@ export default function makeKVStore(state) {
       return keys.length;
     },
   };
+}
+
+export function makeStorageInMemory(storage = {}) {
+  const outsideRealmKVStore = makeKVStore(storage);
+  const external = harden({
+    sendMsg(msg) {
+      const command = JSON.parse(msg);
+      const { method, key } = command;
+      if (key.includes('undefined')) {
+        throw new Error(`key ${key} includes undefined`);
+      }
+      let result = null;
+      switch (method) {
+        case 'get': {
+          const encodedValue = outsideRealmKVStore.get(key);
+          result = encodedValue;
+          break;
+        }
+        case 'set': {
+          const { value: encodedValue } = command;
+          if (encodedValue !== `${encodedValue}`) {
+            throw new Error(
+              `storageInMemory.set value must be string, not ${stringify(
+                encodedValue,
+              )}`,
+            );
+          }
+          outsideRealmKVStore.set(key, encodedValue);
+          break;
+        }
+        case 'has': {
+          result = outsideRealmKVStore.has(key);
+          break;
+        }
+        case 'delete': {
+          outsideRealmKVStore.delete(key);
+          break;
+        }
+        case 'keys': {
+          result = outsideRealmKVStore.keys(key);
+          break;
+        }
+        case 'entries': {
+          result = outsideRealmKVStore.entries(key);
+          break;
+        }
+        case 'values': {
+          result = outsideRealmKVStore.values(key);
+          break;
+        }
+        case 'size': {
+          result = outsideRealmKVStore.size(key);
+          break;
+        }
+        default:
+          throw new Error(`unexpected message to kvstore ${msg}`);
+      }
+      // console.log(msg, '=>', result);
+      return stringify(result);
+    },
+  });
+
+  return external;
 }

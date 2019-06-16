@@ -50,12 +50,6 @@ export default function setup(syscall, state, helpers) {
             log(`calling getState`);
             const s = D(devices.d2).getState();
             log(`got ${s}`);
-          } else if (argv[0] === 'table1') {
-            console.log('HERE', devices);
-            D(devices.sharedTable).set('key1', 'val1');
-            console.log('HERE1', devices);
-            log(`calling left.leftSharedTable`);
-            await E(vats.left).leftSharedTable(devices.sharedTable);
           } else if (argv[0] === 'mailbox1') {
             D(devices.mailbox).add('peer1', 1, 'data1');
             D(devices.mailbox).add('peer1', 2, 'data2');

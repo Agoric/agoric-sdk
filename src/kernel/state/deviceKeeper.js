@@ -28,7 +28,7 @@ function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
       return kvstore
         .get('imports')
         .get('outbound')
-        .get(slot.id);
+        .get(`${slot.id}`);
     }
 
     throw Error(`unknown slot.type '${slot.type}'`);
@@ -53,7 +53,7 @@ function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
         // kdebug(` adding ${newSlotID}`);
         inbound.set(key, newSlotID);
         outbound.set(
-          newSlotID,
+          `${newSlotID}`,
           harden({ type: 'export', vatID: fromVatID, id }), // TODO just 'slot'?
         );
       }
@@ -75,38 +75,12 @@ function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
     };
   }
 
-  function loadManagerState(deviceData) {
-    const outbound = kvstore.get('imports').get('outbound');
-    const inbound = kvstore.get('imports').get('inbound');
-
-    if (outbound.size() || inbound.size()) {
-      throw new Error(`device[$deviceName] is not empty, cannot loadState`);
-    }
-
-    kvstore.set('nextImportID', deviceData.nextImportID);
-    deviceData.imports.outbound.forEach(kv => outbound.set(kv[0], kv[1]));
-    deviceData.imports.inbound.forEach(kv => inbound.set(kv[0], kv[1]));
-  }
-
   function getDeviceState() {
     return kvstore.get('deviceState');
   }
 
-  function loadDeviceState(newState) {
-    // state must be stringifiable
-    kvstore.set('deviceState', newState);
-  }
-
-  function loadState(savedState) {
-    loadManagerState(savedState.managerState);
-    loadDeviceState(savedState.deviceState);
-  }
-
-  function getCurrentState() {
-    return harden({
-      managerState: getManagerState(),
-      deviceState: getDeviceState(),
-    });
+  function setDeviceState(value) {
+    return kvstore.set('deviceState', value);
   }
 
   return harden({
@@ -114,11 +88,8 @@ function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
     mapDeviceSlotToKernelSlot,
     mapKernelSlotToDeviceSlot,
     getManagerState,
-    loadManagerState,
     getDeviceState,
-    loadDeviceState,
-    loadState,
-    getCurrentState,
+    setDeviceState,
   });
 }
 

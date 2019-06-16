@@ -9,82 +9,10 @@ import SES from 'ses';
 import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
 import bundleSource from './build-source-bundle';
+import { makeStorageInMemory } from './stateInMemory';
+import buildExternalForFile from './stateOnDisk';
 
-import makeKVStore from './kvstore';
-
-export function makeExternal() {
-  const outsideRealmKVStore = makeKVStore({});
-  const external = harden({
-    sendMsg(msg) {
-      const command = JSON.parse(msg);
-      const { method, key } = command;
-      if (key.includes('undefined')) {
-        throw new Error(`key ${key} includes undefined`);
-      }
-      let result;
-      switch (method) {
-        case 'get': {
-          result = outsideRealmKVStore.get(key);
-          break;
-        }
-        case 'set': {
-          const { value } = command;
-          outsideRealmKVStore.set(key, value);
-          break;
-        }
-        case 'has': {
-          const bool = outsideRealmKVStore.has(key);
-          result = [bool]; // JSON compatibility
-          break;
-        }
-        case 'delete': {
-          outsideRealmKVStore.delete(key);
-          break;
-        }
-        case 'keys': {
-          result = outsideRealmKVStore.keys(key);
-          break;
-        }
-        case 'entries': {
-          result = outsideRealmKVStore.entries(key);
-          break;
-        }
-        case 'values': {
-          result = outsideRealmKVStore.values(key);
-          break;
-        }
-        case 'size': {
-          result = outsideRealmKVStore.size(key);
-          break;
-        }
-        default:
-          throw new Error(`unexpected message to kvstore ${msg}`);
-      }
-      // console.log(msg, '=>', result);
-      if (result === undefined) {
-        return JSON.stringify(null);
-      }
-      return JSON.stringify(result);
-    },
-  });
-
-  return external;
-}
-
-// TODO: change completely to either KVStore or merk levelDB
-function loadState(basedir, stateArg) {
-  let state;
-  const stateFile = path.resolve(basedir, 'state.json');
-  try {
-    const stateData = fs.readFileSync(stateFile);
-    state = JSON.parse(stateData);
-  } catch (e) {
-    state = stateArg;
-  }
-  return state;
-}
-
-export function loadBasedir(basedir, stateArg) {
+export function loadBasedir(basedir) {
   console.log(`= loading config from basedir ${basedir}`);
   const vatSources = new Map();
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
@@ -110,8 +38,14 @@ export function loadBasedir(basedir, stateArg) {
   } catch (e) {
     bootstrapIndexJS = undefined;
   }
-  const state = loadState(basedir, stateArg);
-  return { vatSources, bootstrapIndexJS, state };
+  return { vatSources, bootstrapIndexJS };
+}
+
+export function useStorageInBasedir(basedir, config) {
+  const stateFile = path.resolve(basedir, 'state.json');
+  const { externalStorage, save } = buildExternalForFile(stateFile);
+  config.externalStorage = externalStorage;
+  return save;
 }
 
 function getKernelSource() {
@@ -126,7 +60,7 @@ function makeEvaluate(e) {
   return (source, endowments = {}) => confineExpr(source, endowments);
 }
 
-function buildSESKernel(external) {
+function buildSESKernel(externalStorage) {
   const s = SES.makeSESRootRealm({
     consoleMode: 'allow',
     errorStackMode: 'allow',
@@ -143,29 +77,26 @@ function buildSESKernel(external) {
   // console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })();
   const kernelEndowments = { setImmediate };
-  const kernel = buildKernel(kernelEndowments, external);
+  const kernel = buildKernel(kernelEndowments, externalStorage);
   return { kernel, s, r };
 }
 
-function buildNonSESKernel(external) {
+function buildNonSESKernel(externalStorage) {
   const kernelEndowments = { setImmediate };
-  const kernel = buildKernelNonSES(kernelEndowments, external);
+  const kernel = buildKernelNonSES(kernelEndowments, externalStorage);
   return { kernel };
 }
 
-export async function buildVatController(
-  config,
-  withSES = true,
-  argv = [],
-  external = makeExternal(),
-) {
-  // console.log('in main');
+export async function buildVatController(config, withSES = true, argv = []) {
+  // todo: move argv into the config
+  const externalStorage = config.externalStorage || makeStorageInMemory();
   const { kernel, s, r } = withSES
-    ? buildSESKernel(external)
-    : buildNonSESKernel(external);
+    ? buildSESKernel(externalStorage)
+    : buildNonSESKernel(externalStorage);
   // console.log('kernel', kernel);
 
-  async function addVat(vatID, sourceIndex, _options) {
+  async function addGenesisVat(vatID, sourceIndex, _options = {}) {
+    console.log(`= adding vat '${vatID}' from ${sourceIndex}`);
     if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
       throw Error(
         'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
@@ -194,10 +125,10 @@ export async function buildVatController(
       // eslint-disable-next-line global-require,import/no-dynamic-require
       setup = require(`${sourceIndex}`).default;
     }
-    kernel.addVat(vatID, setup);
+    kernel.addGenesisVat(vatID, setup);
   }
 
-  async function addDevice(name, sourceIndex, endowments) {
+  async function addGenesisDevice(name, sourceIndex, endowments) {
     if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
       throw Error(
         'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
@@ -213,15 +144,14 @@ export async function buildVatController(
       // eslint-disable-next-line global-require,import/no-dynamic-require
       setup = require(`${sourceIndex}`).default;
     }
-    kernel.addDevice(name, setup, endowments);
+    kernel.addGenesisDevice(name, setup, endowments);
   }
 
   // the kernel won't leak our objects into the Vats, we must do
   // the same in this wrapper
   const controller = harden({
-    async addVat(vatID, sourceIndex, options = {}) {
-      console.log(`= adding vat '${vatID}' from ${sourceIndex}`);
-      await addVat(vatID, sourceIndex, options);
+    addVat(vatID, sourceIndex, options = {}) {
+      return addGenesisVat(vatID, sourceIndex, options);
     },
 
     log(str) {
@@ -247,39 +177,30 @@ export async function buildVatController(
     callBootstrap(vatID, bootstrapArgv) {
       kernel.callBootstrap(`${vatID}`, JSON.stringify(bootstrapArgv));
     },
-
-    getState() {
-      return JSON.parse(JSON.stringify(kernel.getState()));
-    },
   });
 
   if (config.devices) {
     for (const [name, srcpath, endowments] of config.devices) {
       // eslint-disable-next-line no-await-in-loop
-      await addDevice(name, srcpath, endowments);
+      await addGenesisDevice(name, srcpath, endowments);
     }
   }
 
   if (config.vatSources) {
     for (const vatID of config.vatSources.keys()) {
       // eslint-disable-next-line no-await-in-loop
-      await controller.addVat(vatID, config.vatSources.get(vatID));
+      await addGenesisVat(vatID, config.vatSources.get(vatID));
     }
   }
 
   if (config.bootstrapIndexJS) {
-    await addVat('_bootstrap', config.bootstrapIndexJS, {});
+    await addGenesisVat('_bootstrap', config.bootstrapIndexJS, {});
   }
 
-  if (config.state) {
-    await kernel.loadState(config.state);
-    console.log(`loadState complete`);
-  } else if (config.bootstrapIndexJS) {
-    // we invoke obj[0].bootstrap with an object that contains 'vats' and
-    // 'argv'.
-    console.log(`=> queueing bootstrap()`);
-    kernel.callBootstrap('_bootstrap', JSON.stringify(argv));
-  }
+  // start() may queue bootstrap if state doesn't say we did it already. It
+  // also replays the transcripts from a previous run, if any, which will
+  // execute vat code (but all syscalls will be disabled)
+  await kernel.start('_bootstrap', JSON.stringify(argv));
 
   return controller;
 }

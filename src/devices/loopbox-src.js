@@ -1,18 +1,14 @@
 import harden from '@agoric/harden';
 
-export default function setup(syscall, helpers, _endowments) {
+export default function setup(syscall, state, helpers, _endowments) {
   const inboundHandlers = harden(new Map());
-
-  function getState() {
-    return harden({});
-  }
-
-  function setState(_newState) {}
 
   return helpers.makeDeviceSlots(
     syscall,
-    SO =>
-      harden({
+    state,
+    s => {
+      const { SO } = s;
+      return harden({
         registerInboundHandler(name, handler) {
           if (inboundHandlers.has(name)) {
             throw new Error(`already registered`);
@@ -35,9 +31,8 @@ export default function setup(syscall, helpers, _endowments) {
             ackInbound(_peer, _msgnum) {},
           });
         },
-      }),
-    getState,
-    setState,
+      });
+    },
     helpers.name,
   );
 }

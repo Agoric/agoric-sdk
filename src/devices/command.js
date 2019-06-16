@@ -46,7 +46,12 @@ export default function buildCommand() {
   function deliverResponse(kCount, kIsReject, kResponseString) {
     const count = Nat(kCount);
     const isReject = Boolean(kIsReject);
-    const obj = JSON.parse(`${kResponseString}`);
+    let obj;
+    // TODO: is this safe against kernel-realm trickery? It's awfully handy
+    // to let the kernel-side result be 'undefined'
+    if (kResponseString !== undefined) {
+      obj = JSON.parse(`${kResponseString}`);
+    }
     if (!responses.has(count)) {
       // maybe just ignore it
       throw new Error(`unknown response index ${count}`);

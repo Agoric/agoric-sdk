@@ -1,10 +1,16 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
+import { insist } from './insist';
 
 // 'makeDeviceSlots' is a subset of makeLiveSlots, for device code
 
-function build(syscall, makeRoot, forDeviceName) {
+function build(syscall, state, makeRoot, forDeviceName) {
+  insist(state.get && state.set, 'deviceSlots.build got bad "state" argument');
+  insist(
+    typeof makeRoot === 'function',
+    'deviceSlots.build got bad "makeRoot"',
+  );
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -159,6 +165,27 @@ function build(syscall, makeRoot, forDeviceName) {
     return p;
   }
 
+  function getDeviceState() {
+    const stateData = state.get();
+    if (!stateData) {
+      return undefined;
+    }
+    return m.unserialize(stateData.data, stateData.slots);
+  }
+
+  function setDeviceState(deviceState) {
+    const ser = m.serialize(deviceState);
+    state.set({ data: ser.argsString, slots: ser.slots });
+  }
+
+  // here we finally invoke the device code, and get back the root devnode
+  const rootObject = makeRoot(harden({ SO, getDeviceState, setDeviceState }));
+
+  mustPassByPresence(rootObject);
+  const rootSlot = { type: 'deviceExport', id: 0 };
+  valToSlot.set(rootObject, rootSlot);
+  slotKeyToVal.set(slotToKey(rootSlot), rootObject);
+
   function invoke(deviceID, method, data, slots) {
     lsdebug(`ls[${forDeviceName}].dispatch.invoke ${deviceID}.${method}`);
     const t = getTarget(deviceID);
@@ -183,12 +210,6 @@ function build(syscall, makeRoot, forDeviceName) {
     return harden({ data: ser.argsString, slots: ser.slots });
   }
 
-  const rootObject = makeRoot(SO);
-  mustPassByPresence(rootObject);
-  const rootSlot = { type: 'deviceExport', id: 0 };
-  valToSlot.set(rootObject, rootSlot);
-  slotKeyToVal.set(slotToKey(rootSlot), rootObject);
-
   return {
     m,
     invoke,
@@ -197,22 +218,13 @@ function build(syscall, makeRoot, forDeviceName) {
 
 export function makeDeviceSlots(
   syscall,
+  state,
   makeRoot,
-  getState,
-  setState,
   forDeviceName = 'unknown',
 ) {
-  if (typeof getState !== 'function') {
-    throw new Error(`getState must be a function, not '${getState}'`);
-  }
-  if (typeof setState !== 'function') {
-    throw new Error(`setState must be a function, not '${setState}'`);
-  }
-  const { invoke } = build(syscall, makeRoot, forDeviceName);
+  const { invoke } = build(syscall, state, makeRoot, forDeviceName);
   return harden({
     invoke,
-    getState,
-    setState,
   });
 }
 
