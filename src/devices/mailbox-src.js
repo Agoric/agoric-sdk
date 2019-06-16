@@ -54,7 +54,7 @@ export default function setup(syscall, state, helpers, endowments) {
 
   function build({ SO, getDeviceState, setDeviceState }) {
     let { inboundHandler } = getDeviceState() || {};
-    console.log(`mailbox-src build: inboundHandler is`, inboundHandler);
+    // console.log(`mailbox-src build: inboundHandler is`, inboundHandler);
     deliverInboundMessages = (peer, newMessages) => {
       if (!inboundHandler) {
         throw new Error(`deliverInboundMessages before registerInboundHandler`);
