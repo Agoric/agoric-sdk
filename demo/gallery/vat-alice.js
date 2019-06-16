@@ -11,29 +11,28 @@ import { escrowExchangeSrc } from '../../core/escrow';
 let storedUseRight;
 let storedTransferRight;
 
-function createSaleOffer(E, pixelAmountP, gallery, dustPurse, collect) {
-  return Promise.resolve(pixelAmountP).then(async pixelAmount => {
+function createSaleOffer(E, pixelPaymentP, gallery, dustPurse, collect) {
+  return Promise.resolve(pixelPaymentP).then(async pixelPayment => {
     const { pixelIssuerP, dustIssuerP } = await E(gallery).getIssuers();
-    pixelAmount = E(E(pixelIssuerP).getAssay()).coerce(pixelAmount);
-    const dustAmount = 37;
-    const dustPaymentP = E(dustPurse).withdraw(dustAmount, 'dustPayable');
+    const pixelAmount = await E(pixelPayment).getBalance();
+    const dustAmount = await E(E(dustIssuerP).getAssay()).make(37);
     const terms = harden([dustAmount, pixelAmount]);
     const contractHost = makeContractHost(E, evaluate);
     const escrowExchangeInstallationP = await E(contractHost).install(
       escrowExchangeSrc,
     );
-    const [sellerInviteP, buyerInviteP] = await E(
+    const [buyerInviteP, sellerInviteP] = await E(
       escrowExchangeInstallationP,
     ).spawn(terms);
     const seatP = E(contractHost).redeem(sellerInviteP);
-    E(seatP).offer(dustPaymentP);
+    E(seatP).offer(pixelPayment);
     const dustPurseP = E(dustIssuerP).makeEmptyPurse();
     const pixelPurseP = E(pixelIssuerP).makeEmptyPurse();
     collect(seatP, pixelPurseP, dustPurseP, 'alice escrow');
     return {
-      sellerInviteP,
-      buyerInviteP,
-      host: contractHost,
+      sellerSeatP: seatP,
+      buyerInvite: buyerInviteP,
+      contractHost,
     };
   });
 }
@@ -262,35 +261,44 @@ function makeAliceMaker(E, log) {
           const pixelPaymentP = E(gallery).tapFaucet();
           const { pixelIssuerP, dustIssuerP } = await E(gallery).getIssuers();
           const collect = makeCollect(E, log);
-          const { sellerInviteP, buyerInviteP } = await createSaleOffer(
-            E,
+          const exclusivePixelPaymentP = await E(pixelIssuerP).getExclusiveAll(
             pixelPaymentP,
+          );
+
+          const {
+            sellerSeatP,
+            buyerInvite,
+            contractHost,
+          } = await createSaleOffer(
+            E,
+            exclusivePixelPaymentP,
             gallery,
             dustPurseP,
             collect,
           );
 
           // store buyerInviteP in corkboard
-          const cbP = handoffSvc.createEntry('MeetPoint');
-          E(cbP).addEntry('contract', buyerInviteP);
+          const cbP = E(handoffSvc).createEntry('MeetPoint');
+          E(cbP).addEntry('buyerSeat', buyerInvite);
+          E(cbP).addEntry('contractHost', contractHost);
 
           // check that we got paid.
-          const emptyDustPurse = E(dustIssuerP).makeEmptyPurse();
+          const dustCollectionPurse = E(dustIssuerP).makeEmptyPurse();
           const pixelRefundP = E(pixelIssuerP).makeEmptyPurse('refund');
           collect(
-            sellerInviteP,
-            emptyDustPurse,
+            sellerSeatP,
+            dustCollectionPurse,
             pixelRefundP,
             'alice collects',
           );
-          E(emptyDustPurse)
+          E(dustCollectionPurse)
             .getBalance()
-            .then(balance => log(`++ Alice got paid ${balance}.`));
+            .then(balance => log(`++ Alice got paid ${balance.quantity}.`));
           E(pixelRefundP)
             .getBalance()
             .then(balance => {
-              if (balance !== 0) {
-                log(`++ Alice shouldn't have received a refund ${balance}.`);
+              if (balance.quantity.length !== 0) {
+                log(`++ Alice shouldn't receive a refund ${balance.quantity}.`);
               }
             });
         },

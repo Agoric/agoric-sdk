@@ -59,11 +59,15 @@ function makeBobMaker(E, log) {
           ).getIssuers();
           const dustPurse = E(dustIssuer).mint(37, 'bob purse');
           const collect = makeCollect(E, log);
-          const boardP = handoffSvc.createEntry('MeetPoint');
-          const contractP = E(boardP).get('contract');
+          const boardP = E(handoffSvc).grab('MeetPoint');
+          const contractHostP = E(boardP).get('contractHost');
+          const buyerInviteP = E(boardP).get('buyerInvite');
+          const buyerSeatP = E(contractHostP).redeem(buyerInviteP);
+
           const pixelPurseP = E(pixelIssuer).makeEmptyPurse('purchase');
-          E(contractP).offer(dustPurse);
-          collect(contractP, pixelPurseP, dustPurse, 'bob option');
+          E(buyerSeatP).offer(dustPurse);
+          const dustRefundP = E(dustIssuer).makeEmptyPurse('dust refund');
+          await collect(buyerSeatP, pixelPurseP, dustRefundP, 'bob option');
 
           const exclusivePayment = await E(useRightIssuer).getExclusiveAll(
             pixelPurseP,
@@ -71,7 +75,7 @@ function makeBobMaker(E, log) {
 
           // bob tries to change the color to light purple
           await E(gallery)
-            .changeColor(exclusivePayment, '#B695C0',)
+            .changeColor(exclusivePayment, '#B695C0')
             .then(amountP => {
               const color = E(gallery).getColor(amountP.x, amountP.y);
               log(`bob tried to color, and produced ${color}`);
