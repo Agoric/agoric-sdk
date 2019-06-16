@@ -3,6 +3,8 @@
 require = require('esm')(module);
 
 const bootAddress = process.env.BOOT_ADDRESS;
+const ROLE = process.env.ROLE || 'chain';
+
 // TODO: use the 'basedir' pattern, or find the cosmos state directory
 // (~/.ag-chain-cosmos ?), or something anything better than scribbling
 // into the current directory.
@@ -94,7 +96,7 @@ async function toSwingSet(action, replier) {
     };
 
     const vatsdir = path.resolve(__dirname, '../lib/ag-solo/vats');
-    const argv = ['--role=chain', bootAddress];
+    const argv = [`--role=${ROLE}`, bootAddress];
     const d = launch(mailboxStorage, stateFile, vatsdir, argv);
 
     d.then(undefined,

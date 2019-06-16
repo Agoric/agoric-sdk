@@ -101,3 +101,22 @@ install-setup-client:
 	ve3-client/bin/pip install --editable ./setup-solo
 run-setup-client:
 	ve3-client/bin/ag-setup-solo
+
+AGC = ./lib/ag-chain-cosmos
+localdemo2-setup:
+	-rm -r ~/.ag-chain-cosmos
+	-rm ag-cosmos-chain-state.json
+	$(AGC) init --chain-id=agoric
+	rm -rf t1
+	bin/ag-solo init t1
+	$(AGC) add-genesis-account `cat t1/ag-cosmos-helper-address` 1000agtoken
+	$(MAKE) set-local-gci-ingress
+	@echo "export const soloKey = '`cat t1/ag-cosmos-helper-address`';" >lib/ag-solo/vats/solo-key.js
+	@echo "ROLE=localchain BOOT_ADDRESS=\`cat t1/ag-cosmos-helper-address\` agc start"
+	@echo "(cd t1 && ../bin/ag-solo start --role=localclient)"
+
+localdemo2-run-chain:
+	ROLE=localchain BOOT_ADDRESS=`cat t1/ag-cosmos-helper-address` $(AGC) start
+localdemo2-run-client:
+	cd t1 && ../bin/ag-solo start --role=localclient
+
