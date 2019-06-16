@@ -39,9 +39,15 @@ export function makeGallery(
     /* eslint-enable no-bitwise */
 
     const rand = (Math.floor(lfsr) % 0x7fffff) + 0x800000;
-    return `#${rand.toString(16)}`;
-    // return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-    // return '#D3D3D3';
+    let randomColor = `#${rand.toString(16)}`;
+    if (randomColor.length === 6) {
+      randomColor = `${randomColor}0`;
+    }
+    const isHexColor = color => /^#[0-9A-F]{6}$/i.test(color);
+    if (!isHexColor(randomColor)) {
+      throw new Error(`color ${randomColor} is not a valid color`);
+    }
+    return randomColor;
   }
 
   function makeRandomData() {
