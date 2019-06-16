@@ -70,9 +70,9 @@ export function makeCLists() {
   // takes youToMeSlot, returns kernelToMeSlot
   function mapIncomingWireMessageToKernelSlot(otherMachineName, youToMeSlot) {
     const key = createIncomingWireMessageKey(otherMachineName, youToMeSlot);
-    if (!state.has(key)) {
-      console.log(`unable to find key ${key}`);
-    }
+    // if (!state.has(key)) {
+    //   console.log(`unable to find key ${key}`);
+    // }
     return state.get(key);
   }
 
