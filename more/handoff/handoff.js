@@ -2,15 +2,13 @@
 
 import harden from '@agoric/harden';
 
-import { makeCorkboardAssayMaker } from './corkboardAssay';
 import { makeCorkboard } from './corkboard';
+import { insist } from '../../util/insist';
 
 function makeHandoffService() {
   // I'd have used PrivateNames, but they want objects (not Strings) as Keys.
   const boards = new Map();
-
-  const corkboardAssayMaker = makeCorkboardAssayMaker();
-  const corkboardAssay = corkboardAssayMaker('root');
+  const brand = new WeakSet();
 
   const handoffService = harden({
     // retrieve and remove from the map.
@@ -29,11 +27,13 @@ function makeHandoffService() {
       }
       const corkBoard = makeCorkboard(preferredName);
       boards.set(preferredName, corkBoard);
-      corkboardAssay.make(corkBoard);
+      brand.add(corkBoard);
       return corkBoard;
     },
     validate(allegedBoard) {
-      return corkboardAssay.vouch(allegedBoard);
+      insist(brand.has(allegedBoard))`\
+Unrecognized board: ${allegedBoard}`;
+      return allegedBoard;
     },
     // We don't need remove, since grab can be used for that.
   });

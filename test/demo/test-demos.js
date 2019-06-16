@@ -172,24 +172,6 @@ test('run contractHost Demo --covered-call-sale without SES', async t => {
   t.end();
 });
 
-const corkboardAssaysGolden = [
-  '=> setup called',
-  'starting testCorkboardAssay',
-  'starting testCorkboardAssayQuantities',
-];
-
-test('run handoff Demo --corkboard assays', async t => {
-  const dump = await main(false, 'demo/handoff', ['corkboardAssay']);
-  t.deepEquals(dump.log, corkboardAssaysGolden);
-  t.end();
-});
-
-test('run handoff Demo --corkboard assays', async t => {
-  const dump = await main(true, 'demo/handoff', ['corkboardAssay']);
-  t.deepEquals(dump.log, corkboardAssaysGolden);
-  t.end();
-});
-
 const corkboardContentsGolden = [
   '=> setup called',
   'starting testCorkboardStorage',

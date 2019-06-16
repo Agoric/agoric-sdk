@@ -166,11 +166,11 @@ Unrecognized amount: ${amount}`;
         return amount;
       },
 
-      coerce(allegedMetaAmount) {
-        if (brand.has(allegedMetaAmount)) {
-          return allegedMetaAmount;
+      coerce(allegedAmount) {
+        if (brand.has(allegedAmount)) {
+          return allegedAmount;
         }
-        const { label: allegedLabel, quantity } = allegedMetaAmount;
+        const { label: allegedLabel, quantity } = allegedAmount;
         mustBeSameStructure(label, allegedLabel, 'Unrecognized label');
         return assay.make(quantity);
       },
