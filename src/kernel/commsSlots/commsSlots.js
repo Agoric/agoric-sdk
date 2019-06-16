@@ -11,7 +11,7 @@ import makeMapOutbound from './outbound/mapOutbound';
 import makeInboundHandler from './inbound/inboundHandler';
 
 export default function makeCommsSlots(syscall, _state, helpers) {
-  const enableCSDebug = true;
+  const enableCSDebug = false;
   const { vatID } = helpers;
   function csdebug(...args) {
     if (enableCSDebug) {

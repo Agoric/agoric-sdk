@@ -118,7 +118,6 @@ export default function makeDeviceManager(
       const resultSlots = results.slots.map(slot =>
         mapDeviceSlotToKernelSlot(slot),
       );
-      console.log(`about to return`, results.data, resultSlots);
       return { data: results.data, slots: resultSlots };
     } catch (e) {
       console.log(
