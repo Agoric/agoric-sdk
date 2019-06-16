@@ -290,13 +290,17 @@ export function makeGallery(
     return state[rawPixel.x][rawPixel.y];
   }
 
+  const sellBuyPixelPurseP = pixelIssuer.makeEmptyPurse();
+  const sellBuyDustPurseP = dustIssuer.makeEmptyPurse();
+
   // only pixels can be sold to the gallery, not use or transfer rights
   function sellToGallery(pixelAmountP) {
     return Promise.resolve(pixelAmountP).then(async pixelAmount => {
       pixelAmount = pixelAssay.coerce(pixelAmount);
       const dustAmount = pricePixelAmount(pixelAmount);
-      const dustPurse = await dustMint.mint(dustAmount);
-      const dustPaymentP = await dustPurse.withdraw(
+      // just mint the dust that we need
+      const tempDustPurseP = dustMint.mint(dustAmount);
+      const dustPaymentP = tempDustPurseP.withdraw(
         dustAmount,
         'dust for pixel',
       );
@@ -311,9 +315,7 @@ export function makeGallery(
       ).spawn(terms);
       const seatP = E(contractHost).redeem(galleryInviteP);
       E(seatP).offer(dustPaymentP);
-      const dustPurseP = dustIssuer.makeEmptyPurse();
-      const pixelPurseP = pixelIssuer.makeEmptyPurse();
-      collect(seatP, pixelPurseP, dustPurseP, 'gallery escrow');
+      collect(seatP, sellBuyPixelPurseP, sellBuyDustPurseP, 'gallery escrow');
       return {
         inviteP: userInviteP,
         host: contractHost,
@@ -321,8 +323,52 @@ export function makeGallery(
     });
   }
 
-  function collectFromGallery(seatP, pixelPurseP, dustPurseP, name) {
-    return collect(seatP, pixelPurseP, dustPurseP, name);
+  // only pixels can be bought from the gallery, not use or transfer rights
+  function buyFromGallery(pixelAmountP) {
+    return Promise.resolve(pixelAmountP).then(async pixelAmount => {
+      pixelAmount = pixelAssay.coerce(pixelAmount);
+
+      // if the gallery purse contains this pixelAmount, we will
+      // create a invite to trade, otherwise we return a message
+      const pixelPurseAmount = sellBuyPixelPurseP.getBalance();
+      if (!pixelAssay.includes(pixelPurseAmount, pixelAmount)) {
+        return {
+          inviteP: undefined,
+          host: undefined,
+          message: 'gallery did not have the pixels required',
+        };
+      }
+      const pixelPaymentP = await E(sellBuyPixelPurseP).withdraw(pixelAmount);
+      const dustAmount = pricePixelAmount(pixelAmount);
+
+      // same order as in sellToGallery
+      // the left will have to provide dust, right will have to
+      // provide pixels. Left is the user, right is the gallery
+      const terms = harden({ left: dustAmount, right: pixelAmount });
+      const contractHost = makeContractHost(E, evaluate);
+      const escrowExchangeInstallationP = E(contractHost).install(
+        escrowExchangeSrc,
+      );
+      // order switch compared to as in sellToGallery
+      const { left: userInviteP, right: galleryInviteP } = await E(
+        escrowExchangeInstallationP,
+      ).spawn(terms);
+      const seatP = E(contractHost).redeem(galleryInviteP);
+      E(seatP).offer(pixelPaymentP);
+      // user is buying from gallery, giving dust
+      // gallery is selling, getting dust and giving pixels
+      // win purse for gallery is a dust purse, refund is
+      collect(seatP, sellBuyDustPurseP, sellBuyPixelPurseP, 'gallery escrow');
+      return {
+        inviteP: userInviteP,
+        host: contractHost,
+        dustNeeded: dustAmount,
+      };
+    });
+  }
+
+  function collectFromGallery(seatP, purseLeftP, purseRightP, name) {
+    return collect(seatP, purseLeftP, purseRightP, name);
   }
 
   function getIssuers() {
@@ -346,6 +392,7 @@ export function makeGallery(
     },
     pricePixelAmount, // transparent pricing for now
     sellToGallery,
+    buyFromGallery,
     collectFromGallery,
   };
 

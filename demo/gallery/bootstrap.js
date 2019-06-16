@@ -31,10 +31,10 @@ function build(E, log) {
     gallery.adminFacet.revokePixel(rawPixel);
     E(aliceP).checkAfterRevoked();
   }
-  async function testAliceSellsBack(aliceMaker, bobMaker, gallery) {
-    log('starting testAliceSellsBack');
+  async function testAliceSellsAndBuys(aliceMaker, bobMaker, gallery) {
+    log('starting testAliceSellsAndBuys');
     const aliceP = E(aliceMaker).make(gallery.userFacet);
-    await E(aliceP).doTapFaucetAndSell();
+    await E(aliceP).doSellAndBuy();
   }
 
   const obj0 = {
@@ -74,12 +74,12 @@ function build(E, log) {
           const gallery = makeGallery(E, log, stateChangeHandler, canvasSize);
           return testGalleryRevokes(aliceMaker, bobMaker, gallery);
         }
-        case 'aliceSellsBack': {
-          log('starting aliceSellsBack');
+        case 'aliceSellsAndBuys': {
+          log('starting aliceSellsAndBuys');
           const aliceMaker = await E(vats.alice).makeAliceMaker();
           const bobMaker = await E(vats.bob).makeBobMaker();
           const gallery = makeGallery(E, log, stateChangeHandler, canvasSize);
-          return testAliceSellsBack(aliceMaker, bobMaker, gallery);
+          return testAliceSellsAndBuys(aliceMaker, bobMaker, gallery);
         }
         default: {
           throw new Error(`unrecognized argument value ${argv[0]}`);
