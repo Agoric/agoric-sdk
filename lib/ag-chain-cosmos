@@ -1,11 +1,16 @@
 #! /usr/bin/env node
 //console.log('Starting Node');
+require = require('esm')(module);
 
 const bootAddress = process.env.BOOT_ADDRESS;
-require = require('esm')(module);
+// TODO: use the 'basedir' pattern, or find the cosmos state directory
+// (~/.ag-chain-cosmos ?), or something anything better than scribbling
+// into the current directory.
+const stateFile = 'ag-cosmos-chain-state.json';
 
 const { launch } = require('./launch-chain');
 const path = require('path');
+const stringify = require('@agoric/swingset-vat/src/kernel/json-stable-stringify').default;
 
 const agcc = require('bindings')('agcosmosdaemon.node');
 //console.log('Have AG_COSMOS', agcc);
@@ -33,8 +38,14 @@ function fromGo(port, str, replier) {
 const nodePort = registerPortHandler(toSwingSet);
 agcc.runAG_COSMOS(nodePort, fromGo, process.argv.slice(1));
 
-let globalHandler, globalSetStorage;
+let deliverInbound;
+// this storagePort changes for every single message. We define it out here
+// so the 'externalStorage' object can close over the single mutable
+// instance, and we update the 'sPort' value each time toSwingSet is called
+let sPort;
+
 async function toSwingSet(action, replier) {
+  console.log(`toSwingSet`, action, replier);
   if (action.type === 'AG_COSMOS_INIT') {
     return true;
   }
@@ -44,37 +55,62 @@ async function toSwingSet(action, replier) {
     throw `Unknown action type ${action.type}`;
   }
 
-  if (globalHandler) {
-    if (action.storagePort) {
-      // Initialize the storage for this particular transaction.
-      globalSetStorage(makeStorage(action.storagePort));
-    }
-    return await globalHandler(action);
+  if (action.storagePort) {
+    // Initialize the storage for this particular transaction.
+    //console.log(` setting sPort to`, action.storagePort);
+    sPort = action.storagePort;
   }
 
-  const sPort = action.storagePort;
-  const {handler, setStorage} = await launch(path.resolve(__dirname, '../lib/ag-solo/vats'), ['--role=chain', bootAddress]);
-  globalHandler = handler;
-  globalSetStorage = setStorage;
-  
-  // Initialize the kernel state by reading the storage.
-  setStorage(makeStorage(sPort));
-  // console.log('Sending SDK_READY');
-  const ret = await handler({type: 'SDK_READY'});
-  return await handler(action);
-}
+  // launch the swingset once
+  if (!deliverInbound) {
+    // this object is used to store the mailbox state. we only ever use
+    // key='mailbox'
+    const mailboxStorage = {
+      has(key) {
+        // x/swingset/storage.go returns "true" or "false"
+        const retStr = agcc.send(sPort, stringify({method: "has", key}));
+        const ret = JSON.parse(retStr)
+        if (Boolean(ret) !== ret) {
+          throw new Error(`agcc.send(has) returned ${ret} not Boolean`);
+        }
+        return ret;
+      },
+      set(key, value) {
+        if (value !== `${value}`) {
+          throw new Error(`golang storage API only takes string values, not '${JSON.stringify(value)}'`);
+        }
+        const encodedValue = stringify(value);
+        agcc.send(sPort, stringify({method: "set", key, value: encodedValue}));
+      },
+      get(key) {
+        const retStr = agcc.send(sPort, stringify({method: "get", key}));
+        //console.log(`s.get(${key}) retstr=${retstr}`);
+        const encodedValue = JSON.parse(retStr);
+        //console.log(` encodedValue=${encodedValue}`);
+        const value = JSON.parse(encodedValue);
+        //console.log(` value=${value}`);
+        return value;
+      },
+    };
 
-// Generate a storage object for the port.
-function makeStorage(sPort) {
-  return {
-    has(key) {
-      return agcc.send(sPort, JSON.stringify({method: "has", key}));
-    },
-    set(key, value) {
-      return agcc.send(sPort, JSON.stringify({method: "set", key, value}));
-    },
-    get(key) {
-      return agcc.send(sPort, JSON.stringify({method: "get", key}));
-    },
-  };
+    const vatsdir = path.resolve(__dirname, '../lib/ag-solo/vats');
+    const argv = ['--role=chain', bootAddress];
+    const d = launch(mailboxStorage, stateFile, vatsdir, argv);
+
+    d.then(undefined,
+           rej => {
+             console.log(`launch failed`, rej);
+             throw rej;
+           });
+    const s = await d;
+    deliverInbound = s.deliverInbound;
+  }
+
+  const d = deliverInbound(action.peer, action.messages, action.ack);
+  d.then(undefined,
+         rej => {
+           console.log(`deliverInbound failed`, rej);
+           throw rej;
+         });
+  return await d;
 }
