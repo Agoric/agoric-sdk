@@ -3,10 +3,40 @@
 
 import harden from '@agoric/harden';
 
+import evaluate from '@agoric/evaluate';
 import { insist } from '../../util/insist';
+import { makeCollect, makeContractHost } from '../../core/contractHost';
+import { escrowExchangeSrc } from '../../core/escrow';
 
 let storedUseRight;
 let storedTransferRight;
+
+function createSaleOffer(E, pixelAmountP, gallery, dustPurse, collect) {
+  return Promise.resolve(pixelAmountP).then(async pixelAmount => {
+    const { pixelIssuerP, dustIssuerP } = await E(gallery).getIssuers();
+    pixelAmount = E(E(pixelIssuerP).getAssay()).coerce(pixelAmount);
+    const dustAmount = 37;
+    const dustPaymentP = E(dustPurse).withdraw(dustAmount, 'dustPayable');
+    const terms = harden([dustAmount, pixelAmount]);
+    const contractHost = makeContractHost(E, evaluate);
+    const escrowExchangeInstallationP = await E(contractHost).install(
+      escrowExchangeSrc,
+    );
+    const [sellerInviteP, buyerInviteP] = await E(
+      escrowExchangeInstallationP,
+    ).spawn(terms);
+    const seatP = E(contractHost).redeem(sellerInviteP);
+    E(seatP).offer(dustPaymentP);
+    const dustPurseP = E(dustIssuerP).makeEmptyPurse();
+    const pixelPurseP = E(pixelIssuerP).makeEmptyPurse();
+    collect(seatP, pixelPurseP, dustPurseP, 'alice escrow');
+    return {
+      sellerInviteP,
+      buyerInviteP,
+      host: contractHost,
+    };
+  });
+}
 
 function makeAliceMaker(E, log) {
   // TODO BUG: All callers should wait until settled before doing
@@ -226,6 +256,43 @@ function makeAliceMaker(E, log) {
             pixelPurseP,
             'alice escrow',
           );
+        },
+        async doTapFaucetAndAddOfferToCorkboard(handoffSvc, dustPurseP) {
+          log('++ alice.doTapFaucetAndAddOfferToCorkboard starting');
+          const pixelPaymentP = E(gallery).tapFaucet();
+          const { pixelIssuerP, dustIssuerP } = await E(gallery).getIssuers();
+          const collect = makeCollect(E, log);
+          const { sellerInviteP, buyerInviteP } = await createSaleOffer(
+            E,
+            pixelPaymentP,
+            gallery,
+            dustPurseP,
+            collect,
+          );
+
+          // store buyerInviteP in corkboard
+          const cbP = handoffSvc.createEntry('MeetPoint');
+          E(cbP).addEntry('contract', buyerInviteP);
+
+          // check that we got paid.
+          const emptyDustPurse = E(dustIssuerP).makeEmptyPurse();
+          const pixelRefundP = E(pixelIssuerP).makeEmptyPurse('refund');
+          collect(
+            sellerInviteP,
+            emptyDustPurse,
+            pixelRefundP,
+            'alice collects',
+          );
+          E(emptyDustPurse)
+            .getBalance()
+            .then(balance => log(`++ Alice got paid ${balance}.`));
+          E(pixelRefundP)
+            .getBalance()
+            .then(balance => {
+              if (balance !== 0) {
+                log(`++ Alice shouldn't have received a refund ${balance}.`);
+              }
+            });
         },
       });
       return alice;

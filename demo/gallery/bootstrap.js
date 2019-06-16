@@ -31,10 +31,18 @@ function build(E, log) {
     gallery.adminFacet.revokePixel(rawPixel);
     E(aliceP).checkAfterRevoked();
   }
-  async function testAliceSellsBack(aliceMaker, bobMaker, gallery) {
+  async function testAliceSellsBack(aliceMaker, gallery) {
     log('starting testAliceSellsBack');
     const aliceP = E(aliceMaker).make(gallery.userFacet);
     await E(aliceP).doTapFaucetAndSell();
+  }
+  async function testAliceSellsToBob(aliceMaker, bobMaker, gallery, handoff) {
+    log('starting testAliceSellsToBob');
+    const aliceDustPurseP = E(gallery.adminFacet.dustMint).mint(50, 'alice');
+    const aliceP = E(aliceMaker).make(gallery.userFacet);
+    const bobP = E(bobMaker).make(gallery.userFacet);
+    await E(aliceP).doTapFaucetAndAddOfferToCorkboard(handoff, aliceDustPurseP);
+    await E(bobP).buyFromCorkBoard(handoff);
   }
 
   const obj0 = {
@@ -77,9 +85,16 @@ function build(E, log) {
         case 'aliceSellsBack': {
           log('starting aliceSellsBack');
           const aliceMaker = await E(vats.alice).makeAliceMaker();
-          const bobMaker = await E(vats.bob).makeBobMaker();
           const gallery = makeGallery(E, log, stateChangeHandler, canvasSize);
-          return testAliceSellsBack(aliceMaker, bobMaker, gallery);
+          return testAliceSellsBack(aliceMaker, gallery);
+        }
+        case 'aliceSellsToBob': {
+          log('starting aliceSellsToBob');
+          const aliceMaker = await E(vats.alice).makeAliceMaker();
+          const bobMaker = await E(vats.bob).makeBobMaker();
+          const handoffSvc = await E(vats.handoff).makeHandoffService();
+          const gallery = makeGallery(E, log, stateChangeHandler, canvasSize);
+          return testAliceSellsToBob(aliceMaker, bobMaker, gallery, handoffSvc);
         }
         default: {
           throw new Error(`unrecognized argument value ${argv[0]}`);

@@ -2,6 +2,7 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
+import { makeCollect } from '../../core/contractHost';
 
 let storedExclusivePayment;
 
@@ -51,6 +52,30 @@ function makeBobMaker(E, log) {
             '#B695C0',
           );
           return amountP;
+        },
+        async buyFromCorkBoard(handoffSvc) {
+          const { pixelIssuer, dustIssuer, useRightIssuer } = await E(
+            gallery,
+          ).getIssuers();
+          const dustPurse = E(dustIssuer).mint(37, 'bob purse');
+          const collect = makeCollect(E, log);
+          const boardP = handoffSvc.createEntry('MeetPoint');
+          const contractP = E(boardP).get('contract');
+          const pixelPurseP = E(pixelIssuer).makeEmptyPurse('purchase');
+          E(contractP).offer(dustPurse);
+          collect(contractP, pixelPurseP, dustPurse, 'bob option');
+
+          const exclusivePayment = await E(useRightIssuer).getExclusiveAll(
+            pixelPurseP,
+          );
+
+          // bob tries to change the color to light purple
+          await E(gallery)
+            .changeColor(exclusivePayment, '#B695C0',)
+            .then(amountP => {
+              const color = E(gallery).getColor(amountP.x, amountP.y);
+              log(`bob tried to color, and produced ${color}`);
+            });
         },
       });
       return bob;

@@ -309,10 +309,10 @@ export function makeGallery(
 
   function getIssuers() {
     return {
-      pixelIssuer,
+      pixelIssuerP: pixelIssuer,
       useRightIssuer,
       transferRightIssuer,
-      dustIssuer,
+      dustIssuerP: dustIssuer,
     };
   }
 
@@ -337,6 +337,7 @@ export function makeGallery(
     getDistanceFromCenter,
     reportPosition,
     pricePixelAmount,
+    dustMint,
   };
 
   const readFacet = {
