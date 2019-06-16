@@ -9,7 +9,7 @@ import {
 } from './pixelAssays';
 import { makeMint } from '../../core/issuers';
 import { makeWholePixelList, insistPixelList } from './types/pixelList';
-import { insistPixel } from './types/pixel';
+import { insistPixel, isEqual as isEqualPixel } from './types/pixel';
 import { makeMintController } from './pixelMintController';
 import { makeLruQueue } from './lruQueue';
 
@@ -33,15 +33,21 @@ export function makeGallery(
     let lfsr = startState;
     for (let i = -3; i < num; i += 1) {
       lfsr ^= lfsr >>> 7;
-      lfsr ^= Math.min(lfsr << 9, 0xffffffff);
+      lfsr ^= (lfsr << 9) & 0xffffffff;
       lfsr ^= lfsr >>> 13;
     }
     /* eslint-enable no-bitwise */
 
     const rand = (Math.floor(lfsr) % 0x7fffff) + 0x800000;
-    return `#${rand.toString(16)}`;
-    // return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-    // return '#D3D3D3';
+    let randomColor = `#${rand.toString(16)}`;
+    if (randomColor.length === 6) {
+      randomColor = `${randomColor}0`;
+    }
+    const isHexColor = color => /^#[0-9A-F]{6}$/i.test(color);
+    if (!isHexColor(randomColor)) {
+      throw new Error(`color ${randomColor} is not a valid color`);
+    }
+    return randomColor;
   }
 
   function makeRandomData() {
@@ -62,22 +68,30 @@ export function makeGallery(
     return JSON.stringify(state);
   }
 
-  function setPixelState(pixel, newColor) {
-    state[pixel.x][pixel.y] = newColor;
-    // for now we pass the whole state
-    stateChangeHandler(getState());
-  }
-
   // create all pixels (list of raw objs)
   const allPixels = makeWholePixelList(canvasSize);
 
   // create LRU for "seemingly unpredictable" output from faucet
-  const { lruQueue, lruQueueBuilder } = makeLruQueue();
+  const { lruQueue, lruQueueBuilder, lruQueueAdmin } = makeLruQueue(
+    isEqualPixel,
+  );
 
   for (const pixel of allPixels) {
     lruQueueBuilder.push(pixel);
   }
   lruQueueBuilder.resortArbitrarily(allPixels.length, 7);
+
+  function setPixelState(pixel, newColor) {
+    state[pixel.x][pixel.y] = newColor;
+    lruQueue.requeue(pixel);
+    // for now we pass the whole state
+    stateChangeHandler(getState());
+  }
+
+  // read-only access for the admin interface.
+  function reportPosition(entry) {
+    return lruQueueAdmin.reportPosition(entry);
+  }
 
   // START ERTP
   const collect = makeCollect(E, log);
@@ -276,30 +290,32 @@ export function makeGallery(
     return state[rawPixel.x][rawPixel.y];
   }
 
+  const sellBuyPixelPurseP = pixelIssuer.makeEmptyPurse();
+  const sellBuyDustPurseP = dustIssuer.makeEmptyPurse();
+
   // only pixels can be sold to the gallery, not use or transfer rights
   function sellToGallery(pixelAmountP) {
     return Promise.resolve(pixelAmountP).then(async pixelAmount => {
       pixelAmount = pixelAssay.coerce(pixelAmount);
       const dustAmount = pricePixelAmount(pixelAmount);
-      const dustPurse = await dustMint.mint(dustAmount);
-      const dustPaymentP = await dustPurse.withdraw(
+      // just mint the dust that we need
+      const tempDustPurseP = dustMint.mint(dustAmount);
+      const dustPaymentP = tempDustPurseP.withdraw(
         dustAmount,
         'dust for pixel',
       );
       // dustPurse is dropped
-      const terms = harden([dustAmount, pixelAmount]);
+      const terms = harden({ left: dustAmount, right: pixelAmount });
       const contractHost = makeContractHost(E, evaluate);
       const escrowExchangeInstallationP = await E(contractHost).install(
         escrowExchangeSrc,
       );
-      const [galleryInviteP, userInviteP] = await E(
+      const { left: galleryInviteP, right: userInviteP } = await E(
         escrowExchangeInstallationP,
       ).spawn(terms);
       const seatP = E(contractHost).redeem(galleryInviteP);
       E(seatP).offer(dustPaymentP);
-      const dustPurseP = dustIssuer.makeEmptyPurse();
-      const pixelPurseP = pixelIssuer.makeEmptyPurse();
-      collect(seatP, pixelPurseP, dustPurseP, 'gallery escrow');
+      collect(seatP, sellBuyPixelPurseP, sellBuyDustPurseP, 'gallery escrow');
       return {
         inviteP: userInviteP,
         host: contractHost,
@@ -307,8 +323,52 @@ export function makeGallery(
     });
   }
 
-  function collectFromGallery(seatP, pixelPurseP, dustPurseP, name) {
-    return collect(seatP, pixelPurseP, dustPurseP, name);
+  // only pixels can be bought from the gallery, not use or transfer rights
+  function buyFromGallery(pixelAmountP) {
+    return Promise.resolve(pixelAmountP).then(async pixelAmount => {
+      pixelAmount = pixelAssay.coerce(pixelAmount);
+
+      // if the gallery purse contains this pixelAmount, we will
+      // create a invite to trade, otherwise we return a message
+      const pixelPurseAmount = sellBuyPixelPurseP.getBalance();
+      if (!pixelAssay.includes(pixelPurseAmount, pixelAmount)) {
+        return {
+          inviteP: undefined,
+          host: undefined,
+          message: 'gallery did not have the pixels required',
+        };
+      }
+      const pixelPaymentP = await E(sellBuyPixelPurseP).withdraw(pixelAmount);
+      const dustAmount = pricePixelAmount(pixelAmount);
+
+      // same order as in sellToGallery
+      // the left will have to provide dust, right will have to
+      // provide pixels. Left is the user, right is the gallery
+      const terms = harden({ left: dustAmount, right: pixelAmount });
+      const contractHost = makeContractHost(E, evaluate);
+      const escrowExchangeInstallationP = E(contractHost).install(
+        escrowExchangeSrc,
+      );
+      // order switch compared to as in sellToGallery
+      const { left: userInviteP, right: galleryInviteP } = await E(
+        escrowExchangeInstallationP,
+      ).spawn(terms);
+      const seatP = E(contractHost).redeem(galleryInviteP);
+      E(seatP).offer(pixelPaymentP);
+      // user is buying from gallery, giving dust
+      // gallery is selling, getting dust and giving pixels
+      // win purse for gallery is a dust purse, refund is
+      collect(seatP, sellBuyDustPurseP, sellBuyPixelPurseP, 'gallery escrow');
+      return {
+        inviteP: userInviteP,
+        host: contractHost,
+        dustNeeded: dustAmount,
+      };
+    });
+  }
+
+  function collectFromGallery(seatP, purseLeftP, purseRightP, name) {
+    return collect(seatP, purseLeftP, purseRightP, name);
   }
 
   function getIssuers() {
@@ -332,6 +392,7 @@ export function makeGallery(
     },
     pricePixelAmount, // transparent pricing for now
     sellToGallery,
+    buyFromGallery,
     collectFromGallery,
   };
 
@@ -339,6 +400,7 @@ export function makeGallery(
     revokePixel,
     getDistance,
     getDistanceFromCenter,
+    reportPosition,
     pricePixelAmount,
   };
 

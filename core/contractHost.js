@@ -42,7 +42,7 @@ No invites left`;
     const desc = inviteAssay.quantity(inviteAmount);
     const { seatIdentity } = desc;
     return E.resolve(
-      inviteIssuer.slash(inviteAmount, allegedInvitePayment),
+      inviteIssuer.burn(inviteAmount, allegedInvitePayment),
     ).then(_ => seats.get(seatIdentity));
   }
 

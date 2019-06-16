@@ -80,8 +80,8 @@ const contractBobFirstGolden = [
   '=> setup called',
   '++ bob.tradeWell starting',
   '++ alice.acceptInvite starting',
-  'alice invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"clams"},"quantity":10},{"label":{"issuer":{},"description":"fudco"},"quantity":7}],"seatIdentity":{},"seatDesc":"left"}}',
-  'verified invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"clams"},"quantity":10},{"label":{"issuer":{},"description":"fudco"},"quantity":7}],"seatIdentity":{},"seatDesc":"left"}}',
+  'alice invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":{"left":{"label":{"issuer":{},"description":"clams"},"quantity":10},"right":{"label":{"issuer":{},"description":"fudco"},"quantity":7}},"seatIdentity":{},"seatDesc":"left"}}',
+  'verified invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":{"left":{"label":{"issuer":{},"description":"clams"},"quantity":10},"right":{"label":{"issuer":{},"description":"fudco"},"quantity":7}},"seatIdentity":{},"seatDesc":"left"}}',
   'bob escrow wins: {"label":{"issuer":{},"description":"clams"},"quantity":10} refs: null',
   'alice escrow wins: {"label":{"issuer":{},"description":"fudco"},"quantity":7} refs: null',
   '++ bob.tradeWell done',
@@ -169,24 +169,6 @@ test('run contractHost Demo --covered-call-sale with SES', async t => {
 test('run contractHost Demo --covered-call-sale without SES', async t => {
   const dump = await main(false, 'demo/contractHost', ['covered-call-sale']);
   t.deepEquals(dump.log, contractCoveredCallSaleGolden);
-  t.end();
-});
-
-const corkboardAssaysGolden = [
-  '=> setup called',
-  'starting testCorkboardAssay',
-  'starting testCorkboardAssayQuantities',
-];
-
-test('run handoff Demo --corkboard assays', async t => {
-  const dump = await main(false, 'demo/handoff', ['corkboardAssay']);
-  t.deepEquals(dump.log, corkboardAssaysGolden);
-  t.end();
-});
-
-test('run handoff Demo --corkboard assays', async t => {
-  const dump = await main(true, 'demo/handoff', ['corkboardAssay']);
-  t.deepEquals(dump.log, corkboardAssaysGolden);
   t.end();
 });
 
@@ -288,8 +270,8 @@ const contractBobFirstGoldenPixel = [
   '=> setup called',
   '++ bob.tradeWell starting',
   '++ alice.acceptInvite starting',
-  'alice invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"clams"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]}],"seatIdentity":{},"seatDesc":"left"}}',
-  'verified invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"clams"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]}],"seatIdentity":{},"seatDesc":"left"}}',
+  'alice invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":{"left":{"label":{"issuer":{},"description":"clams"},"quantity":10},"right":{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]}},"seatIdentity":{},"seatDesc":"left"}}',
+  'verified invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":{"left":{"label":{"issuer":{},"description":"clams"},"quantity":10},"right":{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]}},"seatIdentity":{},"seatDesc":"left"}}',
   'bob escrow wins: {"label":{"issuer":{},"description":"clams"},"quantity":10} refs: null',
   'alice escrow wins: {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]} refs: null',
   '++ bob.tradeWell done',

@@ -42,6 +42,7 @@ const expectedAliceChangesColorLog = [
   '++ alice.doChangeColor starting',
   'tapped Faucet',
   'current color #000000',
+  'pixel index is 100 of 100',
 ];
 
 test('run gallery demo aliceChangesColor with SES', async t => {
@@ -63,7 +64,7 @@ const expectedAliceSendsOnlyUseRightLog = [
   'starting testAliceSendsOnlyUseRight',
   '++ alice.doOnlySendUseRight starting',
   'tapped Faucet',
-  'pixel x:1, y:4 has original color #D3D3D3',
+  'pixel x:1, y:4 has original color #a90490',
   '++ bob.receiveUseRight starting',
   "pixel x:1, y:4 changed to bob's color #B695C0",
   "pixel x:1, y:4 changed to alice's color #9FBF95",
@@ -104,23 +105,27 @@ test('run gallery demo galleryRevokes without SES', async t => {
   t.end();
 });
 
-const expectedAliceSellsBackLog = [
+const expectedAliceSellsAndBuysLog = [
   '=> setup called',
-  'starting aliceSellsBack',
-  'starting testAliceSellsBack',
-  '++ alice.doTapFaucetAndSell starting',
+  'starting aliceSellsAndBuys',
+  'starting testAliceSellsAndBuys',
+  '++ alice.doSellAndBuy starting',
   'gallery escrow wins: {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]} refs: null',
   'alice escrow wins: {"label":{"issuer":{},"description":"dust"},"quantity":6} refs: null',
+  'gallery escrow wins: {"label":{"issuer":{},"description":"dust"},"quantity":6} refs: null',
+  'alice escrow 2 wins: {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]} refs: null',
+  'alice pixel purse balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
+  'alice dust purse balance {"label":{"issuer":{},"description":"dust"},"quantity":0}',
 ];
 
-test('run gallery demo aliceSellsBack with SES', async t => {
-  const dump = await main(true, 'demo/gallery', ['aliceSellsBack']);
-  t.deepEquals(dump.log, expectedAliceSellsBackLog);
+test('run gallery demo aliceSellsAndBuys with SES', async t => {
+  const dump = await main(true, 'demo/gallery', ['aliceSellsAndBuys']);
+  t.deepEquals(dump.log, expectedAliceSellsAndBuysLog);
   t.end();
 });
 
-test('run gallery demo aliceSellsBack without SES', async t => {
-  const dump = await main(false, 'demo/gallery', ['aliceSellsBack']);
-  t.deepEquals(dump.log, expectedAliceSellsBackLog);
+test('run gallery demo aliceSellsAndBuys without SES', async t => {
+  const dump = await main(false, 'demo/gallery', ['aliceSellsAndBuys']);
+  t.deepEquals(dump.log, expectedAliceSellsAndBuysLog);
   t.end();
 });

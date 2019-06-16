@@ -13,14 +13,14 @@ function coveredCall(terms, inviteMaker) {
   ] = terms;
 
   const pairP = E(escrowExchangeInstallationP).spawn(
-    harden([moneyNeeded, stockNeeded]),
+    harden({ left: moneyNeeded, right: stockNeeded }),
   );
 
   const aliceEscrowSeatP = E.resolve(pairP).then(pair =>
-    inviteMaker.redeem(pair[0]),
+    inviteMaker.redeem(pair.left),
   );
   const bobEscrowSeatP = E.resolve(pairP).then(pair =>
-    inviteMaker.redeem(pair[1]),
+    inviteMaker.redeem(pair.right),
   );
 
   // Seats

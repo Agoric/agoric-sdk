@@ -70,14 +70,14 @@ Description must be truthy: ${description}`;
       );
     },
 
-    slash(amount, srcPaymentP) {
+    burn(amount, srcPaymentP) {
       // We deposit the alleged payment, rather than just doing a get
       // exclusive on it, in order to consume the usage erights as well.
       const sinkPurse = issuer.makeEmptyPurse('sink purse');
       return sinkPurse.deposit(amount, srcPaymentP);
     },
 
-    slashAll(srcPaymentP) {
+    burnAll(srcPaymentP) {
       const sinkPurse = issuer.makeEmptyPurse('sink purse');
       return sinkPurse.depositAll(srcPaymentP);
     },
@@ -235,7 +235,7 @@ function makePeg(
 
       redeemAll(localPayment, name = 'redeemed') {
         return localIssuer
-          .slashAll(localPayment)
+          .burnAll(localPayment)
           .then(localAmount =>
             E(backingPurseP).withdraw(remoteAmountOf(localAmount), name),
           );

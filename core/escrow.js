@@ -11,7 +11,7 @@ import harden from '@agoric/harden';
 // 1, and Stock are the rights transfered from 1 to 0.
 
 function escrowExchange(terms, inviteMaker) {
-  const [moneyNeeded, stockNeeded] = terms;
+  const { left: moneyNeeded, right: stockNeeded } = terms;
 
   function makeTransfer(amount, srcPaymentP) {
     const { issuer } = amount.label;
@@ -85,10 +85,10 @@ function escrowExchange(terms, inviteMaker) {
     getRefund: stockTransfer.getRefund,
   });
 
-  return harden([
-    inviteMaker.make('left', aliceSeat),
-    inviteMaker.make('right', bobSeat),
-  ]);
+  return harden({
+    left: inviteMaker.make('left', aliceSeat),
+    right: inviteMaker.make('right', bobSeat),
+  });
 }
 
 const escrowExchangeSrc = `(${escrowExchange})`;
