@@ -66,7 +66,7 @@ func UnregisterPortHandler(portNum int) error {
 func ReceiveFromNode(portNum int, msg string) (string, error) {
 	handler := portToHandler[portNum]
 	if handler == nil {
-		return "", errors.New("Unregistered port " + string(portNum))
+		return "", errors.New("Unregistered port " + fmt.Sprintf("%d", portNum))
 	}
 	return handler.Receive(msg)
 }

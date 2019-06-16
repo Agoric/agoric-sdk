@@ -54,24 +54,33 @@ func (sh *storageHandler) Receive(str string) (ret string, err error) {
 	case "set":
 		storage := NewStorage()
 		storage.Value = msg.Value
+		//fmt.Printf("giving Keeper.SetStorage(%s) %s\n", msg.Key, storage.Value)
 		sh.Keeper.SetStorage(sh.Context, msg.Key, storage)
 		return "true", nil
 
 	case "get":
 		storage := sh.Keeper.GetStorage(sh.Context, msg.Key)
-		return storage.Value, nil
+		if storage.Value == "" {
+			return "null", nil
+		}
+		//fmt.Printf("Keeper.GetStorage gave us %s\n", storage.Value)
+		s, err := json.Marshal(storage.Value)
+		if err != nil {
+			return "", err
+		}
+		return string(s), nil
 
 	case "has":
 		storage := sh.Keeper.GetStorage(sh.Context, msg.Key)
 		if storage.Value == "" {
-			return "", nil
+			return "false", nil
 		}
 		return "true", nil
 
 	case "keys":
 		keys := sh.Keeper.GetKeys(sh.Context, msg.Key)
 		if keys.Keys == nil {
-			return "", nil
+			return "[]", nil
 		}
 		bytes, err := json.Marshal(keys.Keys)
 		if err != nil {

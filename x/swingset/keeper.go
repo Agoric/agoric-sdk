@@ -30,10 +30,11 @@ func NewKeeper(coinKeeper bank.Keeper, storeKey sdk.StoreKey, cdc *codec.Codec) 
 
 // Gets generic storage
 func (k Keeper) GetStorage(ctx sdk.Context, path string) Storage {
+	//fmt.Printf("GetStorage(%s)\n", path);
 	store := ctx.KVStore(k.storeKey)
 	fullPath := "data:" + path
 	if !store.Has([]byte(fullPath)) {
-		return NewStorage()
+		return Storage{""}
 	}
 	bz := store.Get([]byte(fullPath))
 	var storage Storage

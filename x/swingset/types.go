@@ -5,7 +5,7 @@ import (
 	"errors"
 )
 
-const EmptyMailboxValue = "{\"outbox\":[], \"ack\":0}"
+const EmptyMailboxValue = "\"{\\\"outbox\\\":[], \\\"ack\\\":0}\""
 
 type Storage struct {
 	Value string `json:"value"`
