@@ -4,26 +4,41 @@ To test communication between a (local, one-validator) chain machine and a
 solo machine, follow these steps:
 
 ```
-$ rm -rf ~/.ag-chain-cosmos
-$ ag-chain-cosmos init --chain-id agoric
-$ rm -rf t1
-$ bin/ag-solo init t1
-$ ag-chain-cosmos add-genesis-account `cat t1/ag-cosmos-helper-address` 1000agtoken
-$ BOOT_ADDRESS=`cat t1/ag-cosmos-helper-address` ag-chain-cosmos start
-
-# Wait about 5 seconds for the chain to produce its first block.
-
-# Now switch to a different shell, since 'start' doesn't daemonize.
-$ make set-local-gci-ingress CHAIN_ID=agoric
-$ (cd t1 && ../bin/ag-solo start --role=controller --role=client `cat ag-cosmos-helper-address`)
-
-# Now point a browser at http://localhost:8000/ and enter the following into
-# the text box:
-#
-# E(home.chain).getBalance()
-#
-# and press the "eval" button
+$ make
+$ make install
+$ npm install
+$ make localdemo2-setup
 ```
+
+Then, in one shell, do:
+
+```
+$ make localdemo2-run-chain
+```
+
+and wait about 5 seconds for the chain to produce its first block.
+
+Then, in a separate shell, do:
+
+```
+$ make localdemo2-run-client
+```
+
+Then point a browser at http://localhost:8000/ and enter one of the following
+into the text box (and press the "eval" button):
+
+* `E(home.purse).getBalance()`: home.purse is the "dust" purse, which starts
+  out empty and can be filled by selling pixels
+* `E(home.gallery).tapFaucet()`: obtain a pixel right
+
+See README-gallery-demo for more things to try.
+
+
+## The Setup
+
+`localdemo2-setup` creates both a chain and a solo/client, and configures
+them to be able to talk to each other. Look in the Makefile for details about
+how this works.
 
 The `add-genesis-account` step gives 1000 tokens to the solo machine. The
 quantity isn't significant right now, but having any tokens at all means the
@@ -32,9 +47,9 @@ send messages to the chain. Without this step, there will be no account
 entry, which means no sequence number for the account, so signed messges will
 be rejected.
 
-Editing `lib/bootstrap.js` causes the chain-side vats to provide an exported
-object (an "egress") to the solo vats. Without this, the inbound VatTP
-messages will meet an empty C-list and they won't be able to access any
+Editing `lib/ag-solo/vats/solo-key.js` causes the chain-side vats to provide
+an exported object (an "egress") to the solo vats. Without this, the inbound
+VatTP messages will meet an empty C-list and they won't be able to access any
 objects.
 
 The `make set-local-gci-ingress` step copies the chain's access data (the GCI
