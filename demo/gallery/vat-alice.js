@@ -36,9 +36,9 @@ function makeAliceMaker(E, log) {
             pixelPaymentP,
           );
 
-          const useRightTransferRightBundleP = await E(
-            gallery,
-          ).transformToTransferAndUse(exclusivePixelPaymentP);
+          const useRightTransferRightBundleP = await E(gallery).split(
+            exclusivePixelPaymentP,
+          );
 
           const {
             useRightPayment: useRightPaymentP,
@@ -80,9 +80,7 @@ function makeAliceMaker(E, log) {
           const {
             useRightPayment: useRightPaymentP,
             transferRightPayment: transferRightPaymentP,
-          } = await E(gallery).transformToTransferAndUse(
-            exclusivePixelPaymentP,
-          );
+          } = await E(gallery).split(exclusivePixelPaymentP);
 
           const useRightIssuer = E(useRightPaymentP).getIssuer();
           const exclusiveUseRightPaymentP = E(useRightIssuer).getExclusiveAll(
@@ -114,15 +112,15 @@ function makeAliceMaker(E, log) {
           );
 
           // alice takes the right back
-          const pixelPayment2P = await E(gallery).transformToPixel(
+          const pixelPayment2P = await E(gallery).toPixel(
             exclusiveTransferRightPaymentP,
           );
           const exclusivePixelPayment2P = await E(pixelIssuer).getExclusiveAll(
             pixelPayment2P,
           );
-          const { useRightPayment: useRightPayment2P } = await E(
-            gallery,
-          ).transformToTransferAndUse(exclusivePixelPayment2P);
+          const { useRightPayment: useRightPayment2P } = await E(gallery).split(
+            exclusivePixelPayment2P,
+          );
 
           const exclusiveUseRightPayment2P = await E(
             useRightIssuer,
@@ -161,9 +159,7 @@ function makeAliceMaker(E, log) {
           const {
             useRightPayment: useRightPaymentP,
             transferRightPayment: transferRightPaymentP,
-          } = await E(gallery).transformToTransferAndUse(
-            exclusivePixelPaymentP,
-          );
+          } = await E(gallery).split(exclusivePixelPaymentP);
 
           const exclusiveUseRightPaymentP = E(useRightIssuer).getExclusiveAll(
             useRightPaymentP,

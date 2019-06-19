@@ -142,7 +142,7 @@ export function makeGallery(
   const gallerySplitPixelPurse = pixelIssuer.makeEmptyPurse();
 
   // split pixelList into UseRights and TransferRights
-  async function transformToTransferAndUse(pixelListPaymentP) {
+  async function split(pixelListPaymentP) {
     return Promise.resolve(pixelListPaymentP).then(async pixelListPayment => {
       const pixelListAmount = pixelListPayment.getBalance();
 
@@ -173,7 +173,7 @@ export function makeGallery(
   }
 
   // merge UseRights and TransferRights into a pixel
-  async function transformToPixel(transferRightPaymentP) {
+  async function toPixel(transferRightPaymentP) {
     return Promise.resolve(transferRightPaymentP).then(
       async transferRightPayment => {
         // someone else may have the useRightPayment so we must destroy the
@@ -384,8 +384,8 @@ export function makeGallery(
     changeColor,
     getColor,
     tapFaucet,
-    transformToTransferAndUse,
-    transformToPixel,
+    split,
+    toPixel,
     getIssuers,
     getCanvasSize() {
       return canvasSize;

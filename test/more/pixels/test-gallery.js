@@ -37,9 +37,7 @@ test('the user changes the color of a pixel', async t => {
   const pixelPayment = userFacet.tapFaucet();
 
   const exclusivePixelPayment = await pixelIssuer.getExclusiveAll(pixelPayment);
-  const { useRightPayment } = await userFacet.transformToTransferAndUse(
-    exclusivePixelPayment,
-  );
+  const { useRightPayment } = await userFacet.split(exclusivePixelPayment);
   const exclusiveUseRightPayment = await useRightIssuer.getExclusiveAll(
     useRightPayment,
   );
@@ -67,10 +65,9 @@ test('The user allows someone else to change the color but not the right to tran
   const pixelPayment = userFacet.tapFaucet();
 
   const exclusivePixelPayment = await pixelIssuer.getExclusiveAll(pixelPayment);
-  const {
-    useRightPayment,
-    transferRightPayment,
-  } = await userFacet.transformToTransferAndUse(exclusivePixelPayment);
+  const { useRightPayment, transferRightPayment } = await userFacet.split(
+    exclusivePixelPayment,
+  );
   const exclusiveUseRightPayment = await useRightIssuer.getExclusiveAll(
     useRightPayment,
   );
@@ -103,15 +100,13 @@ test('The user allows someone else to change the color but not the right to tran
 
   // original user transforms the transfer right into a pixel to get
   // the color right back
-  const pixelPayment2 = await userFacet.transformToPixel(
-    exclusiveTransferRightPayment,
-  );
+  const pixelPayment2 = await userFacet.toPixel(exclusiveTransferRightPayment);
   const exclusivePixelPayment2 = await pixelIssuer.getExclusiveAll(
     pixelPayment2,
   );
-  const {
-    useRightPayment: useRightPayment2,
-  } = await userFacet.transformToTransferAndUse(exclusivePixelPayment2);
+  const { useRightPayment: useRightPayment2 } = await userFacet.split(
+    exclusivePixelPayment2,
+  );
   const exclusiveUseRightPayment2 = await useRightIssuer.getExclusiveAll(
     useRightPayment2,
   );
@@ -144,9 +139,7 @@ test('The user gives away their right to the pixel (right to transfer color righ
 
   const exclPaymentNewUser = await pixelIssuer.getExclusiveAll(newPayment);
 
-  const { useRightPayment } = await userFacet.transformToTransferAndUse(
-    exclPaymentNewUser,
-  );
+  const { useRightPayment } = await userFacet.split(exclPaymentNewUser);
   const exclusiveUseRightPayment = await useRightIssuer.getExclusiveAll(
     useRightPayment,
   );
@@ -155,9 +148,9 @@ test('The user gives away their right to the pixel (right to transfer color righ
 
   t.equal(userFacet.getColor(rawPixel.x, rawPixel.y), '#00000');
 
-  const {
-    useRightPayment: useRightPayment2,
-  } = await userFacet.transformToTransferAndUse(newPayment);
+  const { useRightPayment: useRightPayment2 } = await userFacet.split(
+    newPayment,
+  );
   const amount = useRightPayment2.getBalance();
   t.true(useRightAssay.isEmpty(amount));
   t.end();
@@ -179,10 +172,9 @@ test('The Gallery revokes the right to transfer the pixel or color with it', asy
   const originalColor = userFacet.getColor(rawPixel.x, rawPixel.y);
   const exclusivePixelPayment = await pixelIssuer.getExclusiveAll(pixelPayment);
 
-  const {
-    useRightPayment,
-    transferRightPayment,
-  } = await userFacet.transformToTransferAndUse(exclusivePixelPayment);
+  const { useRightPayment, transferRightPayment } = await userFacet.split(
+    exclusivePixelPayment,
+  );
   const exclusiveUseRightPayment = await useRightIssuer.getExclusiveAll(
     useRightPayment,
   );
