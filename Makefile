@@ -111,7 +111,6 @@ localdemo2-setup:
 	bin/ag-solo init t1
 	$(AGC) add-genesis-account `cat t1/ag-cosmos-helper-address` 1000agtoken
 	$(MAKE) set-local-gci-ingress
-	@echo "export const soloKey = '`cat t1/ag-cosmos-helper-address`';" >lib/ag-solo/vats/solo-key.js
 	@echo "ROLE=localchain BOOT_ADDRESS=\`cat t1/ag-cosmos-helper-address\` agc start"
 	@echo "(cd t1 && ../bin/ag-solo start --role=localclient)"
 

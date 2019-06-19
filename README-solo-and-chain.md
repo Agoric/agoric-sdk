@@ -47,11 +47,6 @@ send messages to the chain. Without this step, there will be no account
 entry, which means no sequence number for the account, so signed messges will
 be rejected.
 
-Editing `lib/ag-solo/vats/solo-key.js` causes the chain-side vats to provide
-an exported object (an "egress") to the solo vats. Without this, the inbound
-VatTP messages will meet an empty C-list and they won't be able to access any
-objects.
-
 The `make set-local-gci-ingress` step copies the chain's access data (the GCI
 identifier and the RPC host/port connection hints) into the solo machine's
 `connections.json`, which allows the solo-side VatTP to route messages to the
@@ -59,6 +54,13 @@ chain (by invoking the `ag-cosmos-helper` process to sign and broadcast
 transactions). It also writes the GCI into a file where the solo bootstrap
 function can read it, which adds the chain-side object as an import (i.e.
 "ingress"), giving the solo vats access to that chain-side object.
+
+The `localdemo2-run-chain` target sets an environment variable named
+`BOOT_ADDRESS` to the public key of the solo machine. This causes the
+chain-side vats to provide an exported object (an "egress") to the solo vats
+from which they can fetch a bundle of chain-side objects (the "chain
+bundle"). Without this, the inbound VatTP messages will meet an empty C-list
+and they won't be able to access any objects.
 
 After starting both vats and evaluating the `getBalance()` line, the solo
 machine will send a message to the chain. The chain will see the transaction,
