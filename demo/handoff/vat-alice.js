@@ -8,7 +8,7 @@ function makeAliceMaker(E, _host, _log) {
       const alice = harden({
         shareSomething(someKey) {
           return E(handoffServiceP)
-            .createEntry(someKey)
+            .createBoard(someKey)
             .then(board => E(board).addEntry(someKey, 42));
         },
       });

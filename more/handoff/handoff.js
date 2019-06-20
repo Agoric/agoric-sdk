@@ -9,19 +9,23 @@ function makeHandoffService() {
   // I'd have used PrivateNames, but they want objects (not Strings) as Keys.
   const boards = new Map();
   const brand = new WeakSet();
+  const tombstone = [];
 
   const handoffService = harden({
     // retrieve and remove from the map.
-    grab(key) {
+    grabBoard(key) {
       if (!boards.has(key)) {
         return undefined;
       }
+      if (boards.get(key) === tombstone) {
+        throw new Error(`Entry for ${key} has already been collected.`);
+      }
       const result = boards.get(key);
-      // these are single-use entries.
-      boards.delete(key);
+      // these are single-use entries. Leave a tombstone to prevent MITM.
+      boards.set(key, tombstone);
       return result;
     },
-    createEntry(preferredName) {
+    createBoard(preferredName) {
       if (boards.has(preferredName)) {
         throw new Error(`Entry already exists: ${preferredName}`);
       }
@@ -35,7 +39,7 @@ function makeHandoffService() {
 Unrecognized board: ${allegedBoard}`;
       return allegedBoard;
     },
-    // We don't need remove, since grab can be used for that.
+    // We don't need remove, since grabBoard can be used for that.
   });
 
   return handoffService;

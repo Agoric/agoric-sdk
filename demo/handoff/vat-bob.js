@@ -8,7 +8,7 @@ function makeBobMaker(E, _host, _log) {
       const bob = harden({
         findSomething(key) {
           return E(handoffServiceP)
-            .grab(key)
+            .grabBoard(key)
             .then(board => {
               return E(E(handoffServiceP).validate(board)).lookup(key);
             });
