@@ -373,10 +373,10 @@ export function makeGallery(
 
   function getIssuers() {
     return {
-      pixelIssuerP: pixelIssuer,
+      pixelIssuer,
       useRightIssuer,
       transferRightIssuer,
-      dustIssuerP: dustIssuer,
+      dustIssuer,
     };
   }
 

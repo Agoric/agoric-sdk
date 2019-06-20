@@ -54,19 +54,19 @@ function makeBobMaker(E, log) {
           return amountP;
         },
         async buyFromCorkBoard(handoffSvc, dustPurseP) {
-          const { pixelIssuerP, dustIssuerP } = await E(gallery).getIssuers();
+          const { pixelIssuer, dustIssuer } = await E(gallery).getIssuers();
           const collect = makeCollect(E, log);
           const boardP = E(handoffSvc).grabBoard('MeetPoint');
           const contractHostP = E(boardP).lookup('contractHost');
           const buyerInviteP = E(boardP).lookup('buyerSeat');
           const buyerSeatP = E(contractHostP).redeem(buyerInviteP);
 
-          const pixelPurseP = E(pixelIssuerP).makeEmptyPurse('purchase');
+          const pixelPurseP = E(pixelIssuer).makeEmptyPurse('purchase');
           E(buyerSeatP).offer(dustPurseP);
-          const dustRefundP = E(dustIssuerP).makeEmptyPurse('dust refund');
+          const dustRefundP = E(dustIssuer).makeEmptyPurse('dust refund');
           await collect(buyerSeatP, pixelPurseP, dustRefundP, 'bob option');
 
-          const exclusivePayment = await E(pixelIssuerP).getExclusiveAll(
+          const exclusivePayment = await E(pixelIssuer).getExclusiveAll(
             pixelPurseP,
           );
 
