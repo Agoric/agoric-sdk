@@ -3,6 +3,7 @@
 TL;DR: Browse to a public testnet provisioning page, then run:
 
 ```
+$ make docker-pull
 $ SOLO_NAME=han ./docker/ag-setup-solo
 ```
 

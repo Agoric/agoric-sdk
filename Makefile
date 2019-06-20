@@ -5,7 +5,12 @@ CHAIN_ID = agoric
 include Makefile.ledger
 all: build install
 
-docker-install:
+docker-pull:
+	for f in '' -pserver -setup -setup-solo -solo; do \
+		docker pull $(REPOSITORY)$$f:latest || exit $$?; \
+	done
+
+docker-install: docker-pull
 	install -m 755 docker/* /usr/local/bin/
 
 docker-build: docker-build-base docker-build-solo docker-build-pserver docker-build-setup docker-build-setup-solo
