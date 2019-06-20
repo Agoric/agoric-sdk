@@ -1,6 +1,7 @@
 REPOSITORY = agoric/cosmic-swingset
 TAG := $(shell test ! -f package.json || sed -ne 's/.*"version": "\(.*\)".*/\1/p' package.json)
 CHAIN_ID = agoric
+INITIAL_TOKENS = 1000agmedallion
 
 include Makefile.ledger
 all: build install
@@ -106,10 +107,10 @@ AGC = ./lib/ag-chain-cosmos
 scenario2-setup:
 	-rm -r ~/.ag-chain-cosmos
 	-rm ag-cosmos-chain-state.json
-	$(AGC) init --chain-id=agoric
+	$(AGC) init --chain-id=$(CHAIN_ID)
 	rm -rf t1
 	bin/ag-solo init t1
-	$(AGC) add-genesis-account `cat t1/ag-cosmos-helper-address` 1000agtoken
+	$(AGC) add-genesis-account `cat t1/ag-cosmos-helper-address` $(INITIAL_TOKENS)
 	$(MAKE) set-local-gci-ingress
 	@echo "ROLE=two_chain BOOT_ADDRESS=\`cat t1/ag-cosmos-helper-address\` agc start"
 	@echo "(cd t1 && ../bin/ag-solo start --role=two_client)"
