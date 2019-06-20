@@ -10,7 +10,8 @@
     - data: "{{ SETUP_HOME }}/{{ service }}/data"
     - APPDIR: "{{lookup('pipe', 'pwd')}}/../.."
     - HELPER_BINARY: "/usr/local/bin/ag-cosmos-helper"
-    - to_remove: "/home/{{ service }}/controller"
+    - to_remove:
+      - "/home/{{ service }}/controller"
   roles:
     - copy
     - init

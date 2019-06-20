@@ -2,5 +2,6 @@
   become_user: "{{service}}"
   become: yes
   file:
-    path: "{{ to_remove }}"
+    path: "{{ item }}"
     state: absent
+  loop: "{{ to_remove }}"
