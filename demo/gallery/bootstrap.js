@@ -31,7 +31,7 @@ function build(E, log) {
     gallery.adminFacet.revokePixel(rawPixel);
     E(aliceP).checkAfterRevoked();
   }
-  async function testAliceSellsAndBuys(aliceMaker, bobMaker, gallery) {
+  async function testAliceSellsAndBuys(aliceMaker, gallery) {
     log('starting testAliceSellsAndBuys');
     const aliceP = E(aliceMaker).make(gallery.userFacet);
     await E(aliceP).doSellAndBuy();
@@ -41,8 +41,8 @@ function build(E, log) {
     const { userFacet, adminFacet } = gallery;
     const aliceP = E(aliceMaker).make(userFacet);
     const bobP = E(bobMaker).make(userFacet);
-    const { dustIssuer } = userFacet.getIssuers();
-    const aliceDustPurseP = dustIssuer.makeEmptyPurse('Alice dust purse');
+    const { dustIssuerP } = userFacet.getIssuers();
+    const aliceDustPurseP = dustIssuerP.makeEmptyPurse('Alice dust purse');
     const bobDust = adminFacet.dustMint.mint(37, 'bob purse');
     const {
       aliceRefundP,

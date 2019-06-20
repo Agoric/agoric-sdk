@@ -6,10 +6,10 @@ import { insistPixelList } from '../../../more/pixels/types/pixelList';
 
 test('tapFaucet', t => {
   const { userFacet } = makeGallery();
-  const { pixelIssuer } = userFacet.getIssuers();
+  const { pixelIssuerP } = userFacet.getIssuers();
   const pixelPayment = userFacet.tapFaucet();
   const amount = pixelPayment.getBalance();
-  const pixelAssay = pixelIssuer.getAssay();
+  const pixelAssay = pixelIssuerP.getAssay();
   const quantity = pixelAssay.quantity(amount);
   t.doesNotThrow(() => insistPixelList(quantity, userFacet.getCanvasSize()));
   t.end();
@@ -18,10 +18,10 @@ test('tapFaucet', t => {
 test('get exclusive pixel payment from faucet', t => {
   const { userFacet } = makeGallery();
   const payment = userFacet.tapFaucet();
-  const { pixelIssuer } = userFacet.getIssuers();
-  pixelIssuer.getExclusiveAll(payment).then(pixelPayment => {
+  const { pixelIssuerP } = userFacet.getIssuers();
+  pixelIssuerP.getExclusiveAll(payment).then(pixelPayment => {
     const amount = pixelPayment.getBalance();
-    const pixelAssay = pixelIssuer.getAssay();
+    const pixelAssay = pixelIssuerP.getAssay();
     const quantity = pixelAssay.quantity(amount);
     t.doesNotThrow(() => insistPixelList(quantity, userFacet.getCanvasSize()));
     t.end();
@@ -31,7 +31,7 @@ test('get exclusive pixel payment from faucet', t => {
 test('the user changes the color of a pixel', async t => {
   // setup
   const { userFacet } = makeGallery();
-  const { pixelIssuer, useRightIssuer } = userFacet.getIssuers();
+  const { pixelIssuerP, useRightIssuer } = userFacet.getIssuers();
 
   // user actions
   const pixelPayment = userFacet.tapFaucet();
@@ -56,7 +56,7 @@ test('The user allows someone else to change the color but not the right to tran
   // setup
   const { userFacet } = makeGallery();
   const {
-    pixelIssuer,
+    pixelIssuerP,
     useRightIssuer,
     transferRightIssuer,
   } = userFacet.getIssuers();
@@ -121,23 +121,23 @@ test('The user allows someone else to change the color but not the right to tran
 test('The user gives away their right to the pixel (right to transfer color rights) permanently', async t => {
   // setup
   const { userFacet } = makeGallery();
-  const { pixelIssuer, useRightIssuer } = userFacet.getIssuers();
+  const { pixelIssuerP, useRightIssuer } = userFacet.getIssuers();
   const useRightAssay = useRightIssuer.getAssay();
 
-  const pixelPurse = pixelIssuer.makeEmptyPurse();
+  const pixelPurse = pixelIssuerP.makeEmptyPurse();
 
   // user actions
   const pixelPayment = userFacet.tapFaucet();
-  const pixelAssay = pixelIssuer.getAssay();
+  const pixelAssay = pixelIssuerP.getAssay();
   const rawPixel = pixelAssay.quantity(pixelPayment.getBalance())[0];
-  const exclusivePixelPayment = await pixelIssuer.getExclusiveAll(pixelPayment);
+  const exclusivePixelPayment = await pixelIssuerP.getExclusiveAll(pixelPayment);
   await pixelPurse.depositAll(exclusivePixelPayment);
 
   const newPayment = await pixelPurse.withdrawAll();
 
   // TODO: send over vat to other user
 
-  const exclPaymentNewUser = await pixelIssuer.getExclusiveAll(newPayment);
+  const exclPaymentNewUser = await pixelIssuerP.getExclusiveAll(newPayment);
 
   const { useRightPayment } = await userFacet.split(exclPaymentNewUser);
   const exclusiveUseRightPayment = await useRightIssuer.getExclusiveAll(
@@ -160,17 +160,17 @@ test('The Gallery revokes the right to transfer the pixel or color with it', asy
   // setup
   const { userFacet, adminFacet } = makeGallery();
   const {
-    pixelIssuer,
+    pixelIssuerP,
     useRightIssuer,
     transferRightIssuer,
   } = userFacet.getIssuers();
 
   // user actions
   const pixelPayment = userFacet.tapFaucet();
-  const pixelAssay = pixelIssuer.getAssay();
+  const pixelAssay = pixelIssuerP.getAssay();
   const rawPixel = pixelAssay.quantity(pixelPayment.getBalance())[0];
   const originalColor = userFacet.getColor(rawPixel.x, rawPixel.y);
-  const exclusivePixelPayment = await pixelIssuer.getExclusiveAll(pixelPayment);
+  const exclusivePixelPayment = await pixelIssuerP.getExclusiveAll(pixelPayment);
 
   const { useRightPayment, transferRightPayment } = await userFacet.split(
     exclusivePixelPayment,
@@ -230,9 +230,9 @@ test('pricePixel Internal', t => {
   const { userFacet } = makeGallery();
   // default canvasSize is 10
   const { pricePixelAmount, getIssuers } = userFacet;
-  const { dustIssuer, pixelIssuer } = getIssuers();
-  const dustAssay = dustIssuer.getAssay();
-  const pixelAssay = pixelIssuer.getAssay();
+  const { dustIssuerP, pixelIssuerP } = getIssuers();
+  const dustAssay = dustIssuerP.getAssay();
+  const pixelAssay = pixelIssuerP.getAssay();
   t.deepEqual(
     pricePixelAmount(pixelAssay.make(harden([{ x: 0, y: 1 }]))),
     dustAssay.make(4),

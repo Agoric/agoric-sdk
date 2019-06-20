@@ -13,9 +13,9 @@ let storedTransferRight;
 
 function createSaleOffer(E, pixelPaymentP, gallery, dustPurseP, collect) {
   return Promise.resolve(pixelPaymentP).then(async pixelPayment => {
-    const { pixelIssuer, dustIssuer } = await E(gallery).getIssuers();
+    const { pixelIssuerP, dustIssuerP } = await E(gallery).getIssuers();
     const pixelAmount = await E(pixelPayment).getBalance();
-    const dustAmount = await E(E(dustIssuer).getAssay()).make(37);
+    const dustAmount = await E(E(dustIssuerP).getAssay()).make(37);
     const terms = harden({ left: dustAmount, right: pixelAmount });
     const contractHost = makeContractHost(E, evaluate);
     const escrowExchangeInstallationP = E(contractHost).install(
@@ -26,7 +26,7 @@ function createSaleOffer(E, pixelPaymentP, gallery, dustPurseP, collect) {
     ).spawn(terms);
     const seatP = E(contractHost).redeem(sellerInviteP);
     E(seatP).offer(pixelPayment);
-    const pixelPurseP = E(pixelIssuer).makeEmptyPurse();
+    const pixelPurseP = E(pixelIssuerP).makeEmptyPurse();
     collect(seatP, dustPurseP, pixelPurseP, 'alice escrow');
     return { buyerInviteP, contractHost };
   });
@@ -269,8 +269,8 @@ function makeAliceMaker(E, log) {
         },
         async doTapFaucetAndOfferViaCorkboard(handoffSvc, dustPurseP) {
           log('++ alice.doTapFaucetAndOfferViaCorkboard starting');
-          const { pixelIssuer } = await E(gallery).getIssuers();
-          const exclusivePixelPaymentP = await E(pixelIssuer).getExclusiveAll(
+          const { pixelIssuerP } = await E(gallery).getIssuers();
+          const exclusivePixelPaymentP = await E(pixelIssuerP).getExclusiveAll(
             E(gallery).tapFaucet(),
           );
 
@@ -291,7 +291,7 @@ function makeAliceMaker(E, log) {
           );
 
           // check that we got paid.
-          const pixelRefundP = E(pixelIssuer).makeEmptyPurse('refund');
+          const pixelRefundP = E(pixelIssuerP).makeEmptyPurse('refund');
           return {
             aliceRefundP: pixelRefundP,
             alicePaymentP: dustPurseP,

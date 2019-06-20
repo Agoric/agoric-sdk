@@ -54,25 +54,23 @@ function makeBobMaker(E, log) {
           return amountP;
         },
         async buyFromCorkBoard(handoffSvc, dustPurseP) {
-          const { pixelIssuer, dustIssuer } = await E(gallery).getIssuers();
+          const { pixelIssuerP, dustIssuerP } = await E(gallery).getIssuers();
           const collect = makeCollect(E, log);
           const boardP = E(handoffSvc).grabBoard('MeetPoint');
           const contractHostP = E(boardP).lookup('contractHost');
           const buyerInviteP = E(boardP).lookup('buyerSeat');
           const buyerSeatP = E(contractHostP).redeem(buyerInviteP);
 
-          const pixelPurseP = E(pixelIssuer).makeEmptyPurse('purchase');
+          const pixelPurseP = E(pixelIssuerP).makeEmptyPurse('purchase');
           E(buyerSeatP).offer(dustPurseP);
-          const dustRefundP = E(dustIssuer).makeEmptyPurse('dust refund');
+          const dustRefundP = E(dustIssuerP).makeEmptyPurse('dust refund');
           await collect(buyerSeatP, pixelPurseP, dustRefundP, 'bob option');
 
-          const exclusivePayment = await E(pixelIssuer).getExclusiveAll(
+          const exclusivePayment = await E(pixelIssuerP).getExclusiveAll(
             pixelPurseP,
           );
 
-          const { useRightPayment } = await E(
-            gallery,
-          ).transformToTransferAndUse(exclusivePayment);
+          const { useRightPayment } = await E(gallery).split(exclusivePayment);
 
           const useRightIssuer = E(useRightPayment).getIssuer();
           const exclusiveUseRightPaymentP = E(useRightIssuer).getExclusiveAll(

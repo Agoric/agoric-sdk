@@ -147,7 +147,7 @@ test('run gallery demo aliceSellsToBob with SES', async t => {
   t.end();
 });
 
-test.only('run gallery demo aliceSellsToBob without SES', async t => {
+test('run gallery demo aliceSellsToBob without SES', async t => {
   const dump = await main(false, 'demo/gallery', ['aliceSellsToBob']);
   t.deepEquals(dump.log, expectedAliceSellsToBobLog);
   t.end();
