@@ -38,6 +38,8 @@ function fromGo(port, str, replier) {
 // Actually run the main ag-chain-cosmos program.  Before we start the daemon,
 // there will be a call to nodePort/AG_COSMOS_INIT, otherwise exit.
 const nodePort = registerPortHandler(toSwingSet);
+// Need to keep the process alive until Go exits.
+setInterval(() => undefined, 30000);
 agcc.runAG_COSMOS(nodePort, fromGo, process.argv.slice(1));
 
 let deliverInbound;

@@ -7,6 +7,7 @@ import json
 import os.path
 import subprocess
 import sys
+import os
 
 MAILBOX_URL = u"ws://relay.magic-wormhole.io:4000/v1"
 #MAILBOX_URL = u"ws://10.0.2.24:4000/v1"
@@ -47,7 +48,7 @@ def run_client(reactor, o, pubkey):
 
     BASEDIR = o['basedir']
     subprocess.run([AG_SOLO, 'set-gci-ingress', '--chainID=%s' % sm['chainName'], sm['gci'], *sm['rpcAddrs']], check=True)
-    subprocess.run([AG_SOLO, 'start', '--role=client'], check=True)
+    os.execvp(AG_SOLO, [AG_SOLO, 'start', '--role=client'])
 
 def guard(path, fun):
     if os.path.exists(path):

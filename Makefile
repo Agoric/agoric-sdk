@@ -1,6 +1,7 @@
 REPOSITORY = agoric/cosmic-swingset
 TAG := $(shell test ! -f package.json || sed -ne 's/.*"version": "\(.*\)".*/\1/p' package.json)
 CHAIN_ID = agoric
+INITIAL_TOKENS = 1000agmedallion
 
 include Makefile.ledger
 all: build install
@@ -108,19 +109,24 @@ run-setup-client:
 	ve3-client/bin/ag-setup-solo
 
 AGC = ./lib/ag-chain-cosmos
-localdemo2-setup:
+scenario2-setup:
 	-rm -r ~/.ag-chain-cosmos
 	-rm ag-cosmos-chain-state.json
-	$(AGC) init --chain-id=agoric
+	$(AGC) init --chain-id=$(CHAIN_ID)
 	rm -rf t1
 	bin/ag-solo init t1
-	$(AGC) add-genesis-account `cat t1/ag-cosmos-helper-address` 1000agtoken
+	$(AGC) add-genesis-account `cat t1/ag-cosmos-helper-address` $(INITIAL_TOKENS)
 	$(MAKE) set-local-gci-ingress
-	@echo "ROLE=localchain BOOT_ADDRESS=\`cat t1/ag-cosmos-helper-address\` agc start"
-	@echo "(cd t1 && ../bin/ag-solo start --role=localclient)"
+	@echo "ROLE=two_chain BOOT_ADDRESS=\`cat t1/ag-cosmos-helper-address\` agc start"
+	@echo "(cd t1 && ../bin/ag-solo start --role=two_client)"
 
-localdemo2-run-chain:
-	ROLE=localchain BOOT_ADDRESS=`cat t1/ag-cosmos-helper-address` $(AGC) start
-localdemo2-run-client:
-	cd t1 && ../bin/ag-solo start --role=localclient
+scenario2-run-chain:
+	ROLE=two_chain BOOT_ADDRESS=`cat t1/ag-cosmos-helper-address` $(AGC) start
+scenario2-run-client:
+	cd t1 && ../bin/ag-solo start --role=two_client
 
+scenario3-setup:
+	rm -rf t1
+	bin/ag-solo init t1
+scenario3-run-client:
+	cd t1 && ../bin/ag-solo start --role=three_client

@@ -8,7 +8,6 @@ import treq
 import os.path
 import os
 import json
-import subprocess
 
 from twisted.python import log
 import sys
