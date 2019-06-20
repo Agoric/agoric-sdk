@@ -11,7 +11,7 @@ import { escrowExchangeSrc } from '../../core/escrow';
 let storedUseRight;
 let storedTransferRight;
 
-function createSaleOffer(E, pixelPaymentP, gallery, dustPurseP, collect) {
+function createSaleOffer(E, pixelPaymentP, gallery, dustPurseP, collect, log) {
   return Promise.resolve(pixelPaymentP).then(async pixelPayment => {
     const { pixelIssuerP, dustIssuerP } = await E(gallery).getIssuers();
     const pixelAmount = await E(pixelPayment).getBalance();
@@ -26,6 +26,9 @@ function createSaleOffer(E, pixelPaymentP, gallery, dustPurseP, collect) {
     ).spawn(terms);
     const seatP = E(contractHost).redeem(sellerInviteP);
     E(seatP).offer(pixelPayment);
+    E(E(seatP).getWinnings())
+      .getBalance()
+      .then(b => log(`Alice collected ${b.quantity} ${b.label.description}`));
     const pixelPurseP = E(pixelIssuerP).makeEmptyPurse();
     collect(seatP, dustPurseP, pixelPurseP, 'alice escrow');
     return { buyerInviteP, contractHost };
@@ -280,6 +283,7 @@ function makeAliceMaker(E, log) {
             gallery,
             dustPurseP,
             makeCollect(E, log),
+            log,
           );
 
           // store buyerInviteP and contractHost in corkboard
@@ -290,7 +294,6 @@ function makeAliceMaker(E, log) {
             contractHost,
           );
 
-          // check that we got paid.
           const pixelRefundP = E(pixelIssuerP).makeEmptyPurse('refund');
           return {
             aliceRefundP: pixelRefundP,

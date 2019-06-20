@@ -135,6 +135,7 @@ const expectedAliceSellsToBobLog = [
   'starting aliceSellsToBob',
   'starting testAliceSellsToBob',
   '++ alice.doTapFaucetAndOfferViaCorkboard starting',
+  'Alice collected 37 dust',
   'alice escrow wins: {"label":{"issuer":{},"description":"dust"},"quantity":37} refs: null',
   'bob option wins: {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]} refs: null',
   '++ aliceSellsToBob done',
