@@ -36,6 +36,33 @@ function build(E, log) {
     const aliceP = E(aliceMaker).make(gallery.userFacet);
     await E(aliceP).doSellAndBuy();
   }
+  async function testAliceSellsToBob(aliceMaker, bobMaker, gallery, handoff) {
+    log('starting testAliceSellsToBob');
+    const { userFacet, adminFacet } = gallery;
+    const aliceP = E(aliceMaker).make(userFacet);
+    const bobP = E(bobMaker).make(userFacet);
+    const { dustIssuer } = userFacet.getIssuers();
+    const aliceDustPurseP = dustIssuer.makeEmptyPurse('Alice dust purse');
+    const bobDust = adminFacet.dustMint.mint(37, 'bob purse');
+    const {
+      aliceRefundP,
+      alicePaymentP,
+      buyerSeatReceipt,
+      contractHostReceipt,
+    } = await E(aliceP).doTapFaucetAndOfferViaCorkboard(
+      handoff,
+      aliceDustPurseP,
+    );
+    // Don't start Bob until Alice has created and stored the buyerSeat
+    const { bobRefundP, bobPixelP } = await Promise.all([
+      contractHostReceipt,
+      buyerSeatReceipt,
+    ]).then(_ => E(bobP).buyFromCorkBoard(handoff, bobDust));
+    Promise.all([aliceRefundP, alicePaymentP, bobRefundP, bobPixelP]).then(
+      _res => log('++ aliceSellsToBob done'),
+      rej => log('++ aliceSellsToBob reject: ', rej),
+    );
+  }
 
   const obj0 = {
     async bootstrap(argv, vats) {
@@ -80,6 +107,14 @@ function build(E, log) {
           const bobMaker = await E(vats.bob).makeBobMaker();
           const gallery = makeGallery(E, log, stateChangeHandler, canvasSize);
           return testAliceSellsAndBuys(aliceMaker, bobMaker, gallery);
+        }
+        case 'aliceSellsToBob': {
+          log('starting aliceSellsToBob');
+          const aliceMaker = await E(vats.alice).makeAliceMaker();
+          const bobMaker = await E(vats.bob).makeBobMaker();
+          const handoffSvc = await E(vats.handoff).makeHandoffService();
+          const gallery = makeGallery(E, log, stateChangeHandler, canvasSize);
+          return testAliceSellsToBob(aliceMaker, bobMaker, gallery, handoffSvc);
         }
         default: {
           throw new Error(`unrecognized argument value ${argv[0]}`);

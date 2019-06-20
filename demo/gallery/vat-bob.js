@@ -2,6 +2,7 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
+import { makeCollect } from '../../core/contractHost';
 
 let storedExclusivePayment;
 
@@ -51,6 +52,46 @@ function makeBobMaker(E, log) {
             '#B695C0',
           );
           return amountP;
+        },
+        async buyFromCorkBoard(handoffSvc, dustPurseP) {
+          const { pixelIssuer, dustIssuer } = await E(gallery).getIssuers();
+          const collect = makeCollect(E, log);
+          const boardP = E(handoffSvc).grabBoard('MeetPoint');
+          const contractHostP = E(boardP).lookup('contractHost');
+          const buyerInviteP = E(boardP).lookup('buyerSeat');
+          const buyerSeatP = E(contractHostP).redeem(buyerInviteP);
+
+          const pixelPurseP = E(pixelIssuer).makeEmptyPurse('purchase');
+          E(buyerSeatP).offer(dustPurseP);
+          const dustRefundP = E(dustIssuer).makeEmptyPurse('dust refund');
+          await collect(buyerSeatP, pixelPurseP, dustRefundP, 'bob option');
+
+          const exclusivePayment = await E(pixelIssuer).getExclusiveAll(
+            pixelPurseP,
+          );
+
+          const { useRightPayment } = await E(
+            gallery,
+          ).transformToTransferAndUse(exclusivePayment);
+
+          const useRightIssuer = E(useRightPayment).getIssuer();
+          const exclusiveUseRightPaymentP = E(useRightIssuer).getExclusiveAll(
+            useRightPayment,
+          );
+          // bob tries to change the color to light purple
+          E(gallery)
+            .changeColor(exclusiveUseRightPaymentP, '#B695C0')
+            .then(
+              amountP => {
+                E(gallery)
+                  .getColor(amountP.quantity[0].x, amountP.quantity[0].y)
+                  .then(color =>
+                    log(`bob tried to color, and produced ${color}`),
+                  );
+              },
+              rej => log('++ bob failed to color: ', rej),
+            );
+          return { bobRefundP: dustRefundP, bobPixelP: exclusivePayment };
         },
       });
       return bob;
