@@ -13,7 +13,7 @@ function makeHandoffService() {
 
   const handoffService = harden({
     // retrieve and remove from the map.
-    grab(key) {
+    grabBoard(key) {
       if (!boards.has(key)) {
         return undefined;
       }
@@ -25,7 +25,7 @@ function makeHandoffService() {
       boards.set(key, tombstone);
       return result;
     },
-    createEntry(preferredName) {
+    createBoard(preferredName) {
       if (boards.has(preferredName)) {
         throw new Error(`Entry already exists: ${preferredName}`);
       }
@@ -39,7 +39,7 @@ function makeHandoffService() {
 Unrecognized board: ${allegedBoard}`;
       return allegedBoard;
     },
-    // We don't need remove, since grab can be used for that.
+    // We don't need remove, since grabBoard can be used for that.
   });
 
   return handoffService;

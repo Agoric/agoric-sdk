@@ -3,17 +3,17 @@ import { makeHandoffService } from '../../more/handoff/handoff';
 
 test('Handoff creation', t => {
   const handoffService = makeHandoffService();
-  const first = handoffService.createEntry('first');
+  const first = handoffService.createBoard('first');
   t.assert(handoffService.validate(first));
   t.end();
 });
 
 test('Handoff repeated creation', t => {
   const handoffService = makeHandoffService();
-  const first = handoffService.createEntry('first');
+  const first = handoffService.createBoard('first');
   t.assert(handoffService.validate(first));
   t.throws(
-    _ => handoffService.createEntry('first'),
+    _ => handoffService.createBoard('first'),
     /already exists/,
     'should throw on repeated call.',
   );
@@ -23,13 +23,13 @@ test('Handoff repeated creation', t => {
 test('Handoff grab value', t => {
   const handoffService = makeHandoffService();
   const firstName = 'first';
-  const first = handoffService.createEntry(firstName);
+  const first = handoffService.createBoard(firstName);
   t.assert(handoffService.validate(first));
-  const second = handoffService.grab(firstName);
+  const second = handoffService.grabBoard(firstName);
   t.assert(handoffService.validate(second));
   t.equals(second, first);
   t.throws(
-    _ => handoffService.grab(firstName),
+    _ => handoffService.grabBoard(firstName),
     /has already been collected/,
     'should throw on repeated call.',
   );

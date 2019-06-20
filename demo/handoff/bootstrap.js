@@ -17,19 +17,19 @@ function build(E, log) {
   function testHandoffStorage(handoff) {
     log('starting testHandoffStorage');
     const h = makeHandoffService(handoff);
-    if (h.grab('missing') !== undefined) {
+    if (h.grabBoard('missing') !== undefined) {
       log('empty services should have no entries');
     }
-    const entry = h.createEntry('rendezvous');
+    const entry = h.createBoard('rendezvous');
     if (entry === undefined) {
       log('should be able to create new new corkboard');
     }
     if (h.validate(entry) !== entry) {
       log('expected new corkboard to validate');
     }
-    const cork = h.grab('rendezvous');
+    const cork = h.grabBoard('rendezvous');
     if (cork === undefined) {
-      log('should be able to grab new corkboard');
+      log('should be able to grabBoard new corkboard');
     }
     if (cork.getName() !== 'rendezvous') {
       log('new board name should match');
