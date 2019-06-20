@@ -124,7 +124,7 @@ test('run gallery demo aliceSellsAndBuys with SES', async t => {
   t.end();
 });
 
-test('run gallery demo aliceSellsBack without SES', async t => {
+test('run gallery demo aliceSellsAndBuys without SES', async t => {
   const dump = await main(false, 'demo/gallery', ['aliceSellsAndBuys']);
   t.deepEquals(dump.log, expectedAliceSellsAndBuysLog);
   t.end();
