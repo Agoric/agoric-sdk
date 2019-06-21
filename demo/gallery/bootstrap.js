@@ -49,10 +49,7 @@ function build(E, log) {
       alicePaymentP,
       buyerSeatReceipt,
       contractHostReceipt,
-    } = await E(aliceP).doTapFaucetAndOfferViaCorkboard(
-      handoff,
-      aliceDust,
-    );
+    } = await E(aliceP).doTapFaucetAndOfferViaCorkboard(handoff, aliceDust);
     // Don't start Bob until Alice has created and stored the buyerSeat
     const { bobRefundP, bobPixelP } = await Promise.all([
       contractHostReceipt,
