@@ -268,6 +268,9 @@ show-config      display the client connection parameters
       // Make sure the instance exists.
       await guardFile(`chain-instance.txt`, makeFile => makeFile('1'));
 
+      // Make sure the version exists.
+      await guardFile(`chain-version.txt`, makeFile => makeFile(''));
+
       // Initialize the controller.
       await guardFile(`${CONTROLLER_DIR}/prepare.stamp`, () =>
         needReMain(['play', 'prepare-controller']),
@@ -275,8 +278,9 @@ show-config      display the client connection parameters
 
       // Assign the chain name.
       const networkName = await trimReadFile('network.txt');
+      const chainVersion = await trimReadFile('chain-version.txt');
       const chainInstance = await trimReadFile('chain-instance.txt');
-      const chainName = `${networkName}${chainInstance}`;
+      const chainName = `${networkName}${chainVersion}${chainInstance}`;
       const pserverPassword = (await exists('pserver-password.txt'))
         ? await trimReadFile('pserver-password.txt')
         : '';
@@ -285,7 +289,7 @@ show-config      display the client connection parameters
       ).catch(e => undefined);
       if (currentChainName !== chainName) {
         // We don't have matching parameters, so remove the old state.
-        await needDoRun(['rm', '-rf', COSMOS_DIR]);
+        await needDoRun(['rm', '-rf', CONTROLLER_DIR, COSMOS_DIR]);
       }
       await guardFile(`${COSMOS_DIR}/chain-name.txt`, async makeFile => {
         await makeFile(chainName);
