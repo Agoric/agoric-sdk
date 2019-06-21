@@ -23,12 +23,12 @@ APPID = u"agoric.com/ag-testnet1/provisioning-tool"
 
 htmldir = os.path.join(os.path.dirname(__file__), "html")
 
-
 class SetConfigOptions(usage.Options):
     pass
 
 class StartOptions(usage.Options):
     optParameters = [
+        ["mountpoint", "m", "/", "controller's top level web page"],
         ["listen", "l", "tcp:8001", "client-visible HTTP listening port"],
         ["controller", "c", "http://localhost:8002/vat", "controller's listening port for us to send control messages"],
     ]
@@ -208,6 +208,17 @@ def run_server(reactor, o):
     root.putChild(b"", provisioner)
     root.putChild(b"index.html", provisioner)
     root.putChild(b"request-code", RequestCode(reactor, o))
+
+    # Prefix the mountpoints.
+    revpaths = o['mountpoint'].split('/')
+    revpaths.reverse()
+    for dir in revpaths:
+        # print('mount root under ' + dir)
+        if dir != '':
+            r = resource.Resource()
+            r.putChild(dir.encode('utf-8'), root)
+            root = r
+
     site = server.Site(root)
     s = endpoints.serverFromString(reactor, o["listen"])
     s.listen(site)

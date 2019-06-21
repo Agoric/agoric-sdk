@@ -277,6 +277,9 @@ show-config      display the client connection parameters
       const networkName = await trimReadFile('network.txt');
       const chainInstance = await trimReadFile('chain-instance.txt');
       const chainName = `${networkName}${chainInstance}`;
+      const pserverPassword = (await exists('pserver-password.txt'))
+        ? await trimReadFile('pserver-password.txt')
+        : '';
       const currentChainName = await trimReadFile(
         `${COSMOS_DIR}/chain-name.txt`,
       ).catch(e => undefined);
@@ -385,7 +388,12 @@ show-config      display the client connection parameters
           `-eserviceLines=AmbientCapabilities=CAP_NET_BIND_SERVICE`,
         );
       }
-      const execline = `/usr/src/app/ve3/bin/ag-pserver start${pserverFlags} -c http://localhost:8000/vat`;
+
+      const mountpoint =
+        pserverPassword === ''
+          ? ''
+          : ` -m ${shellEscape(`/provision-${pserverPassword}`)}`;
+      const execline = `/usr/src/app/ve3/bin/ag-pserver start${pserverFlags}${mountpoint} -c http://localhost:8000/vat`;
       await guardFile(`${CONTROLLER_DIR}/service.stamp`, () =>
         needReMain([
           'play',
