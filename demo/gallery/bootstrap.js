@@ -42,7 +42,7 @@ function build(E, log) {
     const aliceP = E(aliceMaker).make(userFacet);
     const bobP = E(bobMaker).make(userFacet);
     const { dustIssuer } = userFacet.getIssuers();
-    const aliceDustPurseP = dustIssuer.makeEmptyPurse('Alice dust purse');
+    const aliceDust = dustIssuer.makeEmptyPurse('Alice dust purse');
     const bobDust = adminFacet.dustMint.mint(37, 'bob purse');
     const {
       aliceRefundP,
@@ -51,7 +51,7 @@ function build(E, log) {
       contractHostReceipt,
     } = await E(aliceP).doTapFaucetAndOfferViaCorkboard(
       handoff,
-      aliceDustPurseP,
+      aliceDust,
     );
     // Don't start Bob until Alice has created and stored the buyerSeat
     const { bobRefundP, bobPixelP } = await Promise.all([
