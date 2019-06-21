@@ -271,11 +271,6 @@ show-config      display the client connection parameters
       // Make sure the version exists.
       await guardFile(`chain-version.txt`, makeFile => makeFile(''));
 
-      // Initialize the controller.
-      await guardFile(`${CONTROLLER_DIR}/prepare.stamp`, () =>
-        needReMain(['play', 'prepare-controller']),
-      );
-
       // Assign the chain name.
       const networkName = await trimReadFile('network.txt');
       const chainVersion = await trimReadFile('chain-version.txt');
@@ -294,6 +289,11 @@ show-config      display the client connection parameters
       await guardFile(`${COSMOS_DIR}/chain-name.txt`, async makeFile => {
         await makeFile(chainName);
       });
+
+      // Initialize the controller.
+      await guardFile(`${CONTROLLER_DIR}/prepare.stamp`, () =>
+        needReMain(['play', 'prepare-controller']),
+      );
 
       // Bootstrap the chain nodes.
       const genesisFile = `${COSMOS_DIR}/data/genesis.json`;
