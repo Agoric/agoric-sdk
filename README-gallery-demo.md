@@ -23,13 +23,13 @@ To color the pixel, we need to split the pixel into "transfer" and
 and we'll be using it to color. 
 
 The following commands show a pixel being obtained from the faucet,
-being transformed into transfer and use rights, coloring the pixel by
+being split into transfer and use rights, coloring the pixel by
 using the 'use' right, and selling a pixel to the gallery through a
 escrow smart contract.  
 
 ```
 E(home.gallery).tapFaucet()
-E(home.gallery).transformToTransferAndUse(history[0])
+E(home.gallery).split(history[0])
 history[1].useRightPayment
 E(home.gallery).changeColor(history[2], '#FF69B4')
 E(home.gallery).tapFaucet()
