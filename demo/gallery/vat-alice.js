@@ -3,10 +3,37 @@
 
 import harden from '@agoric/harden';
 
+import evaluate from '@agoric/evaluate';
 import { insist } from '../../util/insist';
+import { makeCollect, makeContractHost } from '../../core/contractHost';
+import { escrowExchangeSrc } from '../../core/escrow';
 
 let storedUseRight;
 let storedTransferRight;
+
+function createSaleOffer(E, pixelPaymentP, gallery, dustPurseP, collect, log) {
+  return Promise.resolve(pixelPaymentP).then(async pixelPayment => {
+    const { pixelIssuer, dustIssuer } = await E(gallery).getIssuers();
+    const pixelAmount = await E(pixelPayment).getBalance();
+    const dustAmount = await E(E(dustIssuer).getAssay()).make(37);
+    const terms = harden({ left: dustAmount, right: pixelAmount });
+    const contractHost = makeContractHost(E, evaluate);
+    const escrowExchangeInstallationP = E(contractHost).install(
+      escrowExchangeSrc,
+    );
+    const { left: buyerInviteP, right: sellerInviteP } = await E(
+      escrowExchangeInstallationP,
+    ).spawn(terms);
+    const seatP = E(contractHost).redeem(sellerInviteP);
+    E(seatP).offer(pixelPayment);
+    E(E(seatP).getWinnings())
+      .getBalance()
+      .then(b => log(`Alice collected ${b.quantity} ${b.label.description}`));
+    const pixelPurseP = E(pixelIssuer).makeEmptyPurse();
+    collect(seatP, dustPurseP, pixelPurseP, 'alice escrow');
+    return { buyerInviteP, contractHost };
+  });
+}
 
 function makeAliceMaker(E, log) {
   // TODO BUG: All callers should wait until settled before doing
@@ -242,6 +269,38 @@ function makeAliceMaker(E, log) {
           );
           showPaymentBalance('alice pixel purse', pixelPurseP);
           showPaymentBalance('alice dust purse', dustPurseP);
+        },
+        async doTapFaucetAndOfferViaCorkboard(handoffSvc, dustPurseP) {
+          log('++ alice.doTapFaucetAndOfferViaCorkboard starting');
+          const { pixelIssuer } = await E(gallery).getIssuers();
+          const exclusivePixelPaymentP = await E(pixelIssuer).getExclusiveAll(
+            E(gallery).tapFaucet(),
+          );
+
+          const { buyerInviteP, contractHost } = await createSaleOffer(
+            E,
+            exclusivePixelPaymentP,
+            gallery,
+            dustPurseP,
+            makeCollect(E, log),
+            log,
+          );
+
+          // store buyerInviteP and contractHost in corkboard
+          const cbP = E(handoffSvc).createBoard('MeetPoint');
+          const buyerSeatReceipt = E(cbP).addEntry('buyerSeat', buyerInviteP);
+          const contractHostReceipt = E(cbP).addEntry(
+            'contractHost',
+            contractHost,
+          );
+
+          const pixelRefundP = E(pixelIssuer).makeEmptyPurse('refund');
+          return {
+            aliceRefundP: pixelRefundP,
+            alicePaymentP: dustPurseP,
+            buyerSeatReceipt,
+            contractHostReceipt,
+          };
         },
       });
       return alice;

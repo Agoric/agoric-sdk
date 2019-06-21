@@ -129,3 +129,27 @@ test('run gallery demo aliceSellsAndBuys without SES', async t => {
   t.deepEquals(dump.log, expectedAliceSellsAndBuysLog);
   t.end();
 });
+
+const expectedAliceSellsToBobLog = [
+  '=> setup called',
+  'starting aliceSellsToBob',
+  'starting testAliceSellsToBob',
+  '++ alice.doTapFaucetAndOfferViaCorkboard starting',
+  'Alice collected 37 dust',
+  'alice escrow wins: {"label":{"issuer":{},"description":"dust"},"quantity":37} refs: null',
+  'bob option wins: {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]} refs: null',
+  '++ aliceSellsToBob done',
+  'bob tried to color, and produced #B695C0',
+];
+
+test('run gallery demo aliceSellsToBob with SES', async t => {
+  const dump = await main(true, 'demo/gallery', ['aliceSellsToBob']);
+  t.deepEquals(dump.log, expectedAliceSellsToBobLog);
+  t.end();
+});
+
+test('run gallery demo aliceSellsToBob without SES', async t => {
+  const dump = await main(false, 'demo/gallery', ['aliceSellsToBob']);
+  t.deepEquals(dump.log, expectedAliceSellsToBobLog);
+  t.end();
+});

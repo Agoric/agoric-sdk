@@ -402,6 +402,7 @@ export function makeGallery(
     getDistanceFromCenter,
     reportPosition,
     pricePixelAmount,
+    dustMint,
   };
 
   const readFacet = {
