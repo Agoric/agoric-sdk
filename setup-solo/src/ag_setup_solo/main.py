@@ -5,6 +5,7 @@ import wormhole
 import treq
 import json
 import os.path
+import shutil
 import subprocess
 import sys
 import os
@@ -25,7 +26,7 @@ class Options(usage.Options):
         ["webhost", "h", "127.0.0.1", "client-visible HTTP listening address"],
         ["webport", "p", "8000", "client-visible HTTP listening port"],
     ]
-    def parseArgs(self, basedir=os.environ['AG_SOLO_BASEDIR']):
+    def parseArgs(self, basedir=os.environ.get('AG_SOLO_BASEDIR', 'agoric')):
         self['basedir'] = os.environ['AG_SOLO_BASEDIR'] = basedir
 
 @defer.inlineCallbacks
@@ -50,11 +51,6 @@ def run_client(reactor, o, pubkey):
     subprocess.run([AG_SOLO, 'set-gci-ingress', '--chainID=%s' % sm['chainName'], sm['gci'], *sm['rpcAddrs']], check=True)
     os.execvp(AG_SOLO, [AG_SOLO, 'start', '--role=client'])
 
-def guard(path, fun):
-    if os.path.exists(path):
-        return True
-    return fun()
-
 def doInit(o):
     BASEDIR = o['basedir']
     # run 'ag-solo init BASEDIR'
@@ -65,7 +61,17 @@ def main():
     o.parseOptions()
     pkeyFile = o['basedir'] + '/ag-cosmos-helper-address'
     # If it doesn't exist, run the ag-solo init.
-    guard(pkeyFile, lambda: doInit(o))
+    if os.path.exists(pkeyFile):
+        print(pkeyFile + ' already exists!')
+        yesno = input('Type "yes" to reinitialize, anything else cancels: ')
+        if yesno.strip() != 'yes':
+            print('Cancelling!')
+            sys.exit(1)
+        shutil.rmtree(o['basedir'], ignore_errors=True, onerror=None)
+        doInit(o)
+    else:
+        doInit(o)
+
     # read the pubkey out of BASEDIR/ag-cosmos-helper-address
     pkfile = open(pkeyFile)
     pubkey = pkfile.read()
