@@ -6,3 +6,5 @@
 - name: restart journalbeat
   service: name=journalbeat state=restarted
 
+- name: restart rsyslog
+  service: name=rsyslog state=restarted

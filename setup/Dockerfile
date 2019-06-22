@@ -1,4 +1,10 @@
 ARG TAG=latest
+FROM golang:stretch AS go-build
+
+WORKDIR /usr/src/journalbeat
+RUN apt-get update && apt-get install libsystemd-dev
+RUN go get github.com/mheese/journalbeat
+
 FROM agoric/cosmic-swingset:$TAG
 
 # Install Terraform.
@@ -12,6 +18,9 @@ RUN echo 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main' >> /e
     apt-get update -y && \
     apt-get install -y ansible rsync && \
     apt-get clean -y
+
+# Copy journalbeat for logging support
+COPY --from=go-build /go/bin/journalbeat /usr/local/bin/
 
 WORKDIR /usr/src/app
 RUN ln -sf $PWD/setup/ag-setup-cosmos /usr/local/bin/

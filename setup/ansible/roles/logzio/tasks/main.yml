@@ -1,7 +1,11 @@
 ---
 
+- name: Copy rsyslog config
+  template: src=22-logzio-linux.conf.j2 dest=/etc/rsyslog.d/22-logzio-linux.conf mode=0600
+  notify: restart rsyslog
+
 - name: Copy journalbeat binary
-  copy: src="{{JOURNALBEAT_BINARY}}" dest=/usr/bin/journalbeat mode=0755
+  synchronize: src="{{JOURNALBEAT_BINARY}}" dest=/usr/bin/journalbeat
   notify: restart journalbeat
 
 - name: Create folders
@@ -24,4 +28,3 @@
   notify:
   - reload daemon
   - restart journalbeat
-  
