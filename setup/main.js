@@ -233,19 +233,6 @@ show-config      display the client connection parameters
         chainInstance++;
       }
 
-      // Stop all the services.
-      await reMain(['play', 'stop', '-eservice=ag-pserver']);
-      await reMain([
-        'play',
-        'stop',
-        '-eservice=ag-controller',
-        '-euser=ag-pserver',
-      ]);
-      await reMain(['play', 'stop', '-eservice=ag-chain-cosmos']);
-
-      // Blow away controller/cosmos state.
-      await needDoRun(['rm', '-rf', CONTROLLER_DIR, COSMOS_DIR]);
-
       // We've bumped, write out the new instance.
       await createFile(instanceFile, String(chainInstance));
       break;
@@ -282,8 +269,20 @@ show-config      display the client connection parameters
       const currentChainName = await trimReadFile(
         `${COSMOS_DIR}/chain-name.txt`,
       ).catch(e => undefined);
+
       if (currentChainName !== chainName) {
-        // We don't have matching parameters, so remove the old state.
+        // We don't have matching parameters, so restart the chain.
+        // Stop all the services.
+        await reMain(['play', 'stop', '-eservice=ag-pserver']);
+        await reMain([
+          'play',
+          'stop',
+          '-eservice=ag-controller',
+          '-euser=ag-pserver',
+        ]);
+        await reMain(['play', 'stop', '-eservice=ag-chain-cosmos']);
+
+        // Blow away controller/cosmos state.
         await needDoRun(['rm', '-rf', CONTROLLER_DIR, COSMOS_DIR]);
       }
       await guardFile(`${COSMOS_DIR}/chain-name.txt`, async makeFile => {
