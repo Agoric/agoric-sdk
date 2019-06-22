@@ -14,8 +14,10 @@ esac
 if test "$1" = shell; then
   FLAGS=--entrypoint=/bin/bash
   shift
+else
+  FLAGS=-p127.0.0.1:$PORT:$PORT
 fi
-exec docker run -p127.0.0.1:$PORT:$PORT \
+exec docker run \
   --volume=ag-solo-state:/usr/src/app/solo \
   -eAG_SOLO_BASEDIR="$SOLO_HOME" \
   --rm -it $FLAGS \
