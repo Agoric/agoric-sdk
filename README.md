@@ -3,8 +3,7 @@
 TL;DR: Browse to a public testnet provisioning page, then run:
 
 ```
-$ make docker-pull
-$ SOLO_NAME=han ./docker/ag-setup-solo
+$ SOLO_NAME=han ./docker/ag-setup-solo --pull
 ```
 
 where `han` is the same of your solo vat machine that follows the blockchain.
@@ -27,7 +26,8 @@ The `ag-setup-cosmos` tool is used to manage testnets.  Unless you are developin
 
 ```
 # Fill out the node placement options, then go for coffee while it boots.
-# Note: Supply --instance=NNN if you want chain instance ID other than 1
+# Note: Supply --bump={major|minor|revision} if you want to increment the
+# version number.
 ag-setup-cosmos bootstrap
 
 # Wait a long time while the nodes bootstrap and begin publishing blocks.

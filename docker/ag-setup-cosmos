@@ -2,9 +2,16 @@
 PORT=26657
 NETWORK_NAME=${NETWORK_NAME-agoric}
 SETUP_HOME=${SETUP_HOME-$NETWORK_NAME}
+IMAGE=agoric/cosmic-swingset-setup
 TTY=-i
-test -t 0 && TTY=-it
+test -t 0 && test -t 1 && TTY=-it
 FLAGS=
+case "$1" in
+--pull)
+  shift
+  docker pull "$IMAGE"
+  ;;
+esac
 case "$1" in
 shell)
   shift
@@ -27,4 +34,4 @@ exec docker run --rm $TTY $FLAGS \
   --env AG_SETUP_COSMOS_HOME=$SETUP_HOME \
   --env AG_SETUP_COSMOS_BACKEND=$AG_SETUP_COSMOS_BACKEND \
   --env DO_API_TOKEN=$DO_API_TOKEN \
-  agoric/cosmic-swingset-setup ${1+"$@"}
+  "$IMAGE" ${1+"$@"}

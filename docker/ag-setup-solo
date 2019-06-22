@@ -2,6 +2,14 @@
 SOLO_NAME=${SOLO_NAME-agoric}
 SOLO_HOME=${SOLO_HOME-$SOLO_NAME}
 PORT=${PORT-8000}
+IMAGE=agoric/cosmic-swingset-setup-solo
+case "$1" in
+--pull)
+  shift
+  docker pull "$IMAGE"
+  ;;
+esac
+
 if test "$1" = shell; then
   FLAGS=--entrypoint=/bin/bash
   ARGS=
@@ -15,4 +23,4 @@ exec docker run \
   --volume=ag-solo-state:/usr/src/app/solo \
   -eAG_SOLO_BASEDIR="$SOLO_HOME" \
   --rm -it $FLAGS \
-  agoric/cosmic-swingset-setup-solo ${1+"$@"}
+  "$IMAGE" ${1+"$@"}

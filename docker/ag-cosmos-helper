@@ -1,12 +1,19 @@
 #! /bin/sh
-test -t 1 && FLAGS=-t
+{ test -t 1 || test -t 0; } && FLAGS=-t
 thisdir=`dirname "$0"`
 ABS=`cd "$thisdir" && pwd`
 COSSD_PORT=26657
 REST_PORT=1317
 ENTRY=./ag-cosmos-helper
 ARGS=
+IMAGE=agoric/cosmic-swingset
 
+case "$1" in
+--pull)
+  shift
+  docker pull "$IMAGE"
+  ;;
+esac
 
 case "$1" in
 rest-server)
@@ -32,4 +39,4 @@ esac
 
 exec docker run -i --net=host $FLAGS --entrypoint="$ENTRY" \
   --volume=ag-cosmos-helper-state:/root/.ag-cosmos-helper \
-  --rm agoric/cosmic-swingset$ARGS ${1+"$@"}
+  --rm "$IMAGE"$ARGS ${1+"$@"}
