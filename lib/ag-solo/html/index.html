@@ -27,7 +27,20 @@
     grid-column: 3;
     grid-row: 2;
     margin: 20px;
-  }
+   height: 5in;
+   width: 100%;
+   display: flex;
+   flex-direction: column;
+ }
+ #history {
+   overflow-y: scroll;
+   overflow-x: hidden;
+   width:  100%;
+ }
+ #history > .history-line {
+   background: #DBFAF9;
+   border-top: 2pt;
+ }
 </style>
 </head>
 <body>
@@ -41,7 +54,7 @@ You need to enable JavaScript to run this app.</noscript>
   <div class="right">
     <div>Use <code>home</code> to see useful objects, and <code>history[N]</code> to refer to result history</div>
     <div id="history"></div>
-    <div>command[<span class="historyNumber">0</span>]> 
+    <div class="cmd">command[<span class="historyNumber">0</span>]> 
       <input id="input" tabindex="0" type="text" size="80"/> 
       <input id="go" tabindex="1" type="submit" value="eval"/>
     </div>
