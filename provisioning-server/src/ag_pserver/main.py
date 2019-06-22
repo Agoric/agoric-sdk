@@ -77,12 +77,17 @@ class ConfigElement(Element):
 class ResponseElement(Element):
     loader = XMLFile(os.path.join(htmldir, "response-template.html"))
 
-    def __init__(self, code):
+    def __init__(self, code, nickname):
         self._code = code
+        self._nickname = nickname
     
     @renderer
     def code(self, request, tag):
         return self._code
+    
+    @renderer
+    def nickname(self, request, tag):
+        return self._nickname
 
 class Provisioner(resource.Resource):
     def __init__(self, reactor, o):
@@ -187,7 +192,7 @@ class RequestCode(resource.Resource):
         d.addCallback(self.send_provisioning_response, w)
 
 
-        html = yield flattenString(None, ResponseElement(code))
+        html = yield flattenString(None, ResponseElement(code, nickname))
         defer.returnValue(html)
 
     def render_POST(self, req):
