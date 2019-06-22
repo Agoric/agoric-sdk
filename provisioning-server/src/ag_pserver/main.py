@@ -74,10 +74,11 @@ class ConfigElement(Element):
         tag.fillSlots(cosmos_config=self._config)
         return tag
 
-class ResponseElement(Element):
+class ResponseElement(ConfigElement):
     loader = XMLFile(os.path.join(htmldir, "response-template.html"))
 
-    def __init__(self, code, nickname):
+    def __init__(self, config, code, nickname):
+        super().__init__(config)
         self._code = code
         self._nickname = nickname
     
@@ -192,7 +193,8 @@ class RequestCode(resource.Resource):
         d.addCallback(self.send_provisioning_response, w)
 
 
-        html = yield flattenString(None, ResponseElement(code, nickname))
+        f = open(cosmosConfigFile(self.opts['home']))
+        html = yield flattenString(None, ResponseElement(f.read(), code, nickname))
         defer.returnValue(html)
 
     def render_POST(self, req):
