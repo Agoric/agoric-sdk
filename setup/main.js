@@ -244,7 +244,7 @@ show-config      display the client connection parameters
         tag = subOpts.tag;
       } else if (subArgs[0] === undefined || String(subArgs[0]) === 'true') {
         // Default bump.
-        versionKind = 'minor';
+        versionKind = 'revision';
       }
 
       switch (versionKind) {
