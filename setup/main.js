@@ -210,59 +210,93 @@ show-config      display the client connection parameters
         needReMain(['play', 'prepare-machine']),
       );
       const bootOpts = [];
-      if (subOpts.instance) {
-        bootOpts.push(`--instance=${subOpts.instance}`);
-      }
       if (subOpts.bump) {
-        bootOpts.push(`--bump`);
+        bootOpts.push(`--bump=${subOpts.bump}`);
       }
       await needReMain(['bootstrap-cosmos', ...bootOpts]);
       break;
     }
 
-    case 'bump-chain-instance': {
+    case 'bump-chain-version': {
       await inited();
       const { _: subArgs, ...subOpts } = parseArgs(args.slice(1), {
-        stopEarly: true,
+        string: ['tag'],
       });
 
-      const instanceFile = `chain-instance.txt`;
-      let chainInstance = subOpts.instance;
-      if (!chainInstance) {
-        chainInstance = Number(await trimReadFile(instanceFile));
-        chainInstance++;
+      const versionFile = `chain-version.txt`;
+
+      let major = 0;
+      let minor = 0;
+      let revision = 0;
+      let tag = '';
+      if (await exists(versionFile)) {
+        const vstr = await trimReadFile(versionFile);
+        const match = vstr.match(/^(\d+)\.(\d+)\.(\d+)(.*)$/);
+        if (match) {
+          [major, minor, revision, tag] = match.slice(1);
+        } else {
+          tag = vstr;
+        }
       }
 
-      // We've bumped, write out the new instance.
-      await createFile(instanceFile, String(chainInstance));
+      let versionKind = subArgs[0];
+      if (subOpts.tag !== undefined) {
+        tag = subOpts.tag;
+      } else if (subArgs[0] === undefined || String(subArgs[0]) === 'true') {
+        // Default bump.
+        versionKind = 'minor';
+      }
+
+      switch (versionKind) {
+        case 'major':
+          major = Number(major) + 1;
+          minor = '0';
+          revision = '0';
+          break;
+
+        case 'minor':
+          minor = Number(minor) + 1;
+          revision = '0';
+          break;
+
+        case 'revision':
+          revision = Number(revision) + 1;
+          break;
+
+        case undefined:
+          break;
+
+        default:
+          throw Error(
+            `${versionKind} is not one of "major", "minor", or "revision"`,
+          );
+      }
+
+      const vstr = `${major}.${minor}.${revision}${tag}`;
+      console.log(vstr);
+      await createFile(versionFile, vstr);
       break;
     }
 
     case 'bootstrap-cosmos': {
       await inited();
       const { _: subArgs, ...subOpts } = parseArgs(args.slice(1), {
-        boolean: ['bump'],
+        string: ['bump'],
         stopEarly: true,
       });
 
-      if (subOpts.bump || subOpts.instance) {
-        const bumpOpts = subOpts.instance
-          ? [`--instance=${subOpts.instance}`]
-          : [];
-        await needReMain(['bump-chain-instance', ...bumpOpts]);
+      if (subOpts.bump) {
+        const bumpOpts = subOpts.bump ? [subOpts.bump] : [];
+        await needReMain(['bump-chain-version', ...bumpOpts]);
       }
 
-      // Make sure the instance exists.
-      await guardFile(`chain-instance.txt`, makeFile => makeFile('1'));
-
-      // Make sure the version exists.
-      await guardFile(`chain-version.txt`, makeFile => makeFile(''));
+      // Make sure the version file exists.
+      await guardFile(`chain-version.txt`, makeFile => makeFile('0.0.0'));
 
       // Assign the chain name.
       const networkName = await trimReadFile('network.txt');
       const chainVersion = await trimReadFile('chain-version.txt');
-      const chainInstance = await trimReadFile('chain-instance.txt');
-      const chainName = `${networkName}${chainVersion}${chainInstance}`;
+      const chainName = `${networkName}-${chainVersion}`;
       const pserverPassword = (await exists('pserver-password.txt'))
         ? await trimReadFile('pserver-password.txt')
         : '';
