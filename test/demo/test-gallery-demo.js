@@ -64,7 +64,7 @@ const expectedAliceSendsOnlyUseRightLog = [
   'starting testAliceSendsOnlyUseRight',
   '++ alice.doOnlySendUseRight starting',
   'tapped Faucet',
-  'pixel x:1, y:4 has original color #a90490',
+  'pixel x:1, y:4 has original color #a903be',
   '++ bob.receiveUseRight starting',
   "pixel x:1, y:4 changed to bob's color #B695C0",
   "pixel x:1, y:4 changed to alice's color #9FBF95",

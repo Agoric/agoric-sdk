@@ -27,7 +27,10 @@ export function makeGallery(
   canvasSize = 10,
 ) {
   function getRandomColor(fraction, num) {
-    // TODO: actually getRandomColor in a deterministic way
+    // This is a linear-feedback shift register with computed startState
+    // and number of iterations.  Thus, it is totally deterministic, but
+    // at least looks a little random.
+
     /* eslint-disable no-bitwise */
     const startState = Math.floor(fraction * 0xffffffff) ^ 0xdeadbeef;
     let lfsr = startState;
@@ -38,11 +41,11 @@ export function makeGallery(
     }
     /* eslint-enable no-bitwise */
 
-    const rand = (Math.floor(lfsr) % 0x7fffff) + 0x800000;
-    let randomColor = `#${rand.toString(16)}`;
-    if (randomColor.length === 6) {
-      randomColor = `${randomColor}0`;
-    }
+    // lfsr may be negative, so we make it start at 0.
+    const rand = (Math.floor(lfsr) % 0x800000) + 0x7fffff;
+
+    // Need to pad the beginning of the string with zeros.
+    const randomColor = `#${rand.toString(16).padStart(6, '0')}`;
     const isHexColor = color => /^#[0-9A-F]{6}$/i.test(color);
     if (!isHexColor(randomColor)) {
       throw new Error(`color ${randomColor} is not a valid color`);
