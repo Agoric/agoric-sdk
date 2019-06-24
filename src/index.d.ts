@@ -27,13 +27,25 @@ export interface EPromise<R> extends Promise<R> {
   finally(onfinally?: (() => void) | undefined | null): EPromise<R>;
 }
 
+interface SettledFulfilled {
+  status: 'fulfilled';
+  value: unknown;
+}
+
+interface SettledRejected {
+  status: 'rejected';
+  reason: unknown;
+}
+
+type SettledStatus = SettledFulfilled | SettledRejected;
+
 interface EPromiseConstructor extends PromiseConstructor {
   prototype: EPromise<unknown>;
   makeRemote(relayer: RemoteRelayer<R>): EPromise<unknown>;
   resolve<R>(specimen: R): EPromise<R>;
   reject(reason: unknown): EPromise<never>;
   all(iterable: Iterable | AsyncIterable): EPromise<unknown[]>;
-  allSettled(iterable: Iterable | AsyncIterable): EPromise<unknown[]>;
+  allSettled(iterable: Iterable | AsyncIterable): EPromise<SettledStatus[]>;
   race(iterable: Iterable | AsyncIterable): EPromise<unknown>; 
 }
 

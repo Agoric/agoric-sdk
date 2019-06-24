@@ -12,6 +12,104 @@ if (typeof window !== 'undefined') {
   });
 }
 
+test('EPromise.all', async t => {
+  try {
+    const EPromise = makeEPromiseClass(Promise);
+
+    t.deepEqual(await EPromise.all([1, Promise.resolve(2), 3]), [1, 2, 3]);
+
+    function* generator() {
+      yield 9;
+      yield EPromise.resolve(8).then(res => res * 10);
+      yield Promise.resolve(7).then(res => -res);
+    }
+    t.deepEqual(await EPromise.all(generator()), [9, 80, -7]);
+
+    // Ensure that a rejected promise rejects all.
+    const toThrow = RangeError('expected');
+    try {
+      t.assert(await EPromise.all([1, Promise.reject(toThrow), 3]) && false);
+    } catch (e) {
+      t.is(e, toThrow);
+    }
+  } finally {
+    t.end();
+  }
+});
+
+test('EPromise.allSettled', async t => {
+  try {
+    const EPromise = makeEPromiseClass(Promise);
+
+    t.deepEqual(await EPromise.allSettled([1, Promise.resolve(2), 3]), [
+      {status: 'fulfilled', value: 1},
+      {status: 'fulfilled', value: 2},
+      {status: 'fulfilled', value: 3},
+    ]);
+
+    let shouldThrow;
+    function* generator() {
+      yield 9;
+      shouldThrow = Error('expected');
+      yield EPromise.reject(shouldThrow).catch(e => 80);
+      yield Promise.resolve(7).then(res => -res);
+    }
+    try {
+      t.deepEqual(await EPromise.allSettled(generator()), [
+        {status: 'fulfilled', value: 9},
+        {status: 'fulfilled', value: 80},
+        {status: 'fulfilled', value: -7},
+      ]);
+    } catch (e) {
+      t.assert(false, `unexpected throw ${e}`);
+    }
+
+    // Ensure that a rejected promise still settles.
+    shouldThrow = Error('expected');
+    try {
+      t.deepEqual(await EPromise.allSettled([1, Promise.reject(shouldThrow), 3]), [
+        {status: 'fulfilled', value: 1},
+        {status: 'rejected', reason: shouldThrow},
+        {status: 'fulfilled', value: 3},
+      ]);
+    } catch (e) {
+      t.assert(false, `unexpected throw ${e}`);
+    }
+  } finally {
+    t.end();
+  }
+});
+
+test('EPromise.race', async t => {
+  try {
+    const EPromise = makeEPromiseClass(Promise);
+    function delay(value, millis) {
+      return new EPromise(resolve => setTimeout(() => resolve(value), millis));
+    }
+
+    try {
+      t.equal(await EPromise.race([1, delay(2, 1000), delay(3, 500)]), 1);
+    } catch (e) {
+      t.assert(false, `unexpected exception ${e}`);
+    }
+
+    let shouldThrow;
+    function* generator() {
+      yield delay(9, 500);
+      shouldThrow = Error('expected');
+      yield EPromise.reject(shouldThrow);
+      yield delay(7, 1000);
+    }
+    try {
+      t.assert(await EPromise.race(generator()) && false);
+    } catch (e) {
+      t.equal(e, shouldThrow);
+    }
+  } finally {
+    t.end();
+  }
+});
+
 test('get', async t => {
   try {
     const EPromise = makeEPromiseClass(Promise);

@@ -12,8 +12,111 @@
  * @returns {typeof EPromise} EPromise class
  */
 export default function makeEPromiseClass(Promise) {
-  let asyncIterateHelper;
+  /**
+   * Reduce-like function to support iterable values mapped to Promise.resolve, and
+   * combine them asynchronously.
+   *
+   * The combiner may be called in any order, and the collection is not necessarily
+   * done iterating by the time it's called.
+   *
+   * The notable difference from reduce is that the combiner gets a reified
+   * settled promise, and returns a combiner action (reject, resolve, continue).
+   *
+   * @param {*} initValue first value of result
+   * @param {Iterable} iterable values to Promise.resolve
+   * @param {Combiner} combiner synchronously reduce each item
+   * @returns {Promise<*>}
+   */
+  function combinePromises(initValue, iterable, combiner) {
+    let result = initValue;
 
+    return new Promise(async (resolve, reject) => {
+      // We start at 1 to prevent the iterator from resolving
+      // the EPromise until the loop is complete and all items
+      // have been reduced.
+      let countDown = 1;
+      let alreadySettled = false;
+
+      function rejectOnce(e) {
+        if (!alreadySettled) {
+          alreadySettled = true;
+          reject(e);
+        }
+      }
+
+      function resolveOnce(value) {
+        if (!alreadySettled) {
+          alreadySettled = true;
+          resolve(value);
+        }
+      }
+
+      async function doReduce(mapped, index) {
+        if (alreadySettled) {
+          // Short-circuit out of here, since we already
+          // rejected or resolved.
+          return;
+        }
+
+        // Either update the result or throw an exception.
+        if (index !== undefined) {
+          const action = await combiner(result, mapped, index);
+          switch (action.status) {
+            case 'continue':
+              // eslint-disable-next-line prefer-destructuring
+              result = action.result;
+              break;
+
+            case 'rejected':
+              rejectOnce(action.reason);
+              break;
+
+            case 'fulfilled':
+              // Resolve the outer promise.
+              result = action.value;
+              resolveOnce(result);
+              break;
+
+            default:
+              throw TypeError(`Not a valid combiner return value: ${action}`);
+          }
+        }
+
+        // Check to see if we're the last outstanding combiner.
+        countDown -= 1;
+        if (countDown === 0) {
+          // Resolve the outer promise.
+          resolveOnce(result);
+        }
+      }
+
+      try {
+        let i = 0;
+        for (const item of iterable) {
+          const index = i;
+          i += 1;
+
+          // Say that we have one more to wait for.
+          countDown += 1;
+
+          /* eslint-disable-next-line no-use-before-define */
+          Promise.resolve(item)
+            .then(
+              value => doReduce({ status: 'fulfilled', value }, index), // Successful resolve.
+              reason => doReduce({ status: 'rejected', reason }, index), // Failed resolve.
+            )
+            .catch(rejectOnce);
+        }
+
+        // If we had no items or they all settled before the
+        // loop ended, this will count down to zero and resolve
+        // the result.
+        await doReduce(undefined, undefined);
+      } catch (e) {
+        rejectOnce(e);
+      }
+    });
+  }
   // A remoteRelay must additionally have an AWAIT_FAR method
   const localRelay = {
     GET(p, key) {
@@ -92,131 +195,65 @@ export default function makeEPromiseClass(Promise) {
     // EPromise.resolve and EPromise.reject, no matter what the
     // implementation of the inherited Promise is.
     static all(iterable) {
-      let nleft = 0;
-      const res = [];
-
-      return asyncIterateHelper(iterable, {
-        refcount(delta) {
-          if (nleft < 0) {
-            // Already raised an exception
-            return;
-          }
-          nleft += delta;
-          if (nleft === 0) {
-            this.resolve(res);
-          }
-        },
-
-        settleOne(index, value, isException) {
-          if (nleft < 0) {
-            // Already got an error.
-            return;
-          }
-          if (isException) {
-            // Got an error just now, so raise it.
-            nleft = -1;
-            this.reject(value);
-            return;
-          }
-          res[index] = value;
-          this.refcount(-1);
-        },
+      return combinePromises([], iterable, (res, item, index) => {
+        if (item.status === 'rejected') {
+          throw item.reason;
+        }
+        res[index] = item.value;
+        return { status: 'continue', result: res };
       });
     }
 
     static allSettled(iterable) {
-      const res = [];
-      let nleft = 0;
-      return asyncIterateHelper(iterable, {
-        remaining(delta) {
-          nleft += delta;
-          if (nleft === 0) {
-            this.resolve(res);
-          }
-        },
-        settleOne(index, value, isException) {
-          if (isException) {
-            res[index] = {
-              status: 'rejected',
-              reason: value,
-            };
-          } else {
-            res[index] = {
-              status: 'fulfilled',
-              value,
-            };
-          }
-          this.remaining(-1);
-        },
+      return combinePromises([], iterable, (res, item, index) => {
+        res[index] = item;
+        return { status: 'continue', result: res };
       });
     }
 
     static race(iterable) {
-      let nleft = 0;
-      return asyncIterateHelper(iterable, {
-        remaining(delta) {
-          nleft += delta;
-          if (nleft < 0) {
-            // Already resolved/rejected.
-            return;
-          }
-          if (nleft === 0) {
-            // This is our only return.
-            this.resolve(undefined);
-          }
-        },
-        settleOne(_index, value, isException) {
-          if (nleft < 0) {
-            // Already settled.
-            return;
-          }
-          nleft = -1;
-          // Make sure future iterations can't make us settle again.
-          this.refcount(-1);
-          if (isException) {
-            this.reject(value);
-            return;
-          }
-          this.resolve(value);
-        },
-      });
+      return combinePromises([], iterable, (_, item) => item);
     }
   }
 
-  asyncIterateHelper = function asyncIterate(iterable, handler) {
-    // We can use async here, since platform promises are good
-    // enough for the async iterable protocol we'd like to crib.
-    //
-    // However, the promise we return must obey our API.
-    return new EPromise(async (resolve, reject) => {
-      handler.resolve = resolve;
-      handler.reject = reject;
-      function captureResult(index) {
-        return [
-          value => handler.settleOne(index, value, false),
-          reason => handler.settleOne(index, reason, true),
-        ];
-      }
-
-      try {
-        // Allow async generators.
-        let i = 0;
-        handler.remaining(+1); // To prevent returning during iteration.
-        for await (const item of iterable) {
-          // Say that we have one more.
-          handler.remaining(+1);
-          // Allow handler.settleOne to adjust remaining.
-          this.resolve(item).then(...captureResult(i));
-          i += 1;
-        }
-
-        // If we had no items, go to zero remaining here.
-        handler.remaining(-1);
-      } catch (e) {
-        reject(e);
-      }
-    });
-  };
-
   return EPromise;
 }
+
+/**
+ * A reified fulfilled promise.
+ * 
+ * @typedef {Object} SettledFulfilled
+ * @property {'fulfilled'} status
+ * @property {*} [value]
+ */
+
+/**
+ * A reified rejected promise.
+ * 
+ * @typedef {Object} SettledRejected
+ * @property {'rejected'} status
+ * @property {*} [reason]
+ */
+
+/**
+ * A reified settled promise.
+ * @typedef {SettledFulfilled | SettledRejected} SettledStatus
+ */
+
+/**
+ * Tell combinePromises to continue with a new value for the result.
+ *
+ * @typedef {Object} CombinerContinue
+ * @property {'continue'} status
+ * @property {*} result
+ */
+
+/**
+ * Return a new value based on the results of an item's mapped promise.
+ *
+ * @callback Combiner
+ * @param {*} previousValue
+ * @param {SettledStatus} currentValue
+ * @param {number} currentIndex
+ * @returns {CombinerContinue|SettledStatus} what to do next
+ */
