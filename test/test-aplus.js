@@ -18,8 +18,8 @@ test('Promises/A+ 1.1', t => {
         return ret;
       },
     };
-    promisesAplusTests(adapter, err => (testErrs = err));
+    promisesAplusTests(adapter, err => t.assert(!err));
   } finally {
-    t.end(testErrs);
+    t.end();
   }
 });
