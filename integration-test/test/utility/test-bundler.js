@@ -30,6 +30,8 @@ const runBrowserTests = async indexFile => {
   });
   await page.goto(`file:${path.join(__dirname, indexFile)}`);
   await page.title();
+  // If there is a 'testDonePromise', wait until it resolves.
+  // This allows async tests to finish before closing the browser.
   /* eslint-disable-next-line no-undef */
   await page.evaluate(() => window.testDonePromise);
   await browser.close();
