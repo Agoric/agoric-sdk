@@ -3,6 +3,7 @@ import makeEPromiseClass from '../src/index';
 
 if (typeof window !== 'undefined') {
   // Let the browser detect when the tests are done.
+  /* eslint-disable-next-line no-undefined */
   window.testDonePromise = new Promise(resolve => {
     test.onFinish(() => {
       // Allow the summary to be printed.
@@ -30,7 +31,7 @@ test('put', async t => {
 test('post', async t => {
   const EPromise = makeEPromiseClass(Promise);
   const fn = () => 'hello';
-  fn.a = (n) => n + 1;
+  fn.a = n => n + 1;
   fn[2] = (n1, n2) => n1 * n2;
   const ep = EPromise.resolve(fn);
   t.equal(await ep.post('a', [3]), 4);
@@ -42,7 +43,7 @@ test('post', async t => {
 test('invoke', async t => {
   const EPromise = makeEPromiseClass(Promise);
   const fn = () => 'hello';
-  fn.a = (n) => n + 1;
+  fn.a = n => n + 1;
   fn[2] = (n1, n2) => n1 * n2;
   const ep = EPromise.resolve(fn);
   t.equal(await ep.invoke('a', 3), 4);
