@@ -66,3 +66,4 @@ dist/
 .cache
 integration-test/bundles
 integration-test/transform-tests/output
+.DS_Store

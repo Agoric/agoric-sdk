@@ -1,6 +1,16 @@
 import test from 'tape';
 import makeEPromiseClass from '../src/index';
 
+if (typeof window !== 'undefined') {
+  // Let the browser detect when the tests are done.
+  window.testDonePromise = new Promise(resolve => {
+    test.onFinish(() => {
+      // Allow the summary to be printed.
+      setTimeout(resolve, 1);
+    });
+  });
+}
+
 test('get', async t => {
   const EPromise = makeEPromiseClass(Promise);
   const res = await EPromise.resolve([123, 456, 789]).get(1);

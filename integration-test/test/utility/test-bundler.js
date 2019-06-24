@@ -18,18 +18,19 @@ const runBrowserTests = async indexFile => {
     if (msg.text().includes('# tests')) {
       [numTests] = msg
         .text()
-        .split(' ')
+        .split(/ +/)
         .slice(-1);
     }
     if (msg.text().includes('# pass')) {
       [numPass] = msg
         .text()
-        .split(' ')
+        .split(/ +/)
         .slice(-1);
     }
   });
   await page.goto(`file:${path.join(__dirname, indexFile)}`);
   await page.title();
+  await page.evaluate(() => window.testDonePromise);
   await browser.close();
   return { numTests, numPass };
 };
