@@ -1,6 +1,6 @@
 /**
  * Create an EPromise class that supports eventual send (infix-bang) operations.
- * This is a class that extends the Promise class argument (which may be platform
+ * This is a class that extends the BasePromise class argument (which may be platform
  * Promises, or some other implementation).
  *
  * Based heavily on nanoq https://github.com/drses/nanoq/blob/master/src/nanoq.js
@@ -8,10 +8,124 @@
  * Original spec for the infix-bang desugaring:
  * https://web.archive.org/web/20161026162206/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency
  *
- * @param {typeof Promise} Promise Promise class to derive from
+ * @param {typeof Promise} BasePromise Promise class to derive from
  * @returns {typeof EPromise} EPromise class
  */
-export default function makeEPromiseClass(Promise) {
+export default function makeEPromiseClass(BasePromise) {
+  // A remoteRelay must additionally have an AWAIT_FAR method
+  const localRelay = {
+    GET(p, key) {
+      return p.then(o => o[key]);
+    },
+    PUT(p, key, val) {
+      return p.then(o => (o[key] = val));
+    },
+    DELETE(p, key) {
+      return p.then(o => delete o[key]);
+    },
+    POST(p, optKey, args) {
+      if (optKey === undefined || optKey === null) {
+        return p.then(o => o(...args));
+      }
+      return p.then(o => o[optKey](...args));
+    },
+  };
+
+  const relayToPromise = new WeakMap();
+  const promiseToRelay = new WeakMap();
+
+  function relay(p) {
+    return promiseToRelay.get(p) || localRelay;
+  }
+
+  class EPromise extends BasePromise {
+    static makeRemote(remoteRelay) {
+      const promise = this.resolve(remoteRelay.AWAIT_FAR());
+      relayToPromise.set(remoteRelay, promise);
+      promiseToRelay.set(promise, remoteRelay);
+      return promise;
+    }
+
+    static resolve(specimen) {
+      return (
+        relayToPromise.get(specimen) ||
+        new EPromise(resolve => resolve(specimen))
+      );
+    }
+
+    static reject(reason) {
+      return new EPromise((_resolve, reject) => reject(reason));
+    }
+
+    get(key) {
+      return relay(this).GET(this, key);
+    }
+
+    put(key, val) {
+      return relay(this).PUT(this, key, val);
+    }
+
+    del(key) {
+      return relay(this).DELETE(this, key);
+    }
+
+    post(optKey, args) {
+      return relay(this).POST(this, optKey, args);
+    }
+
+    invoke(optKey, ...args) {
+      return relay(this).POST(this, optKey, args);
+    }
+
+    fapply(args) {
+      return relay(this).POST(this, undefined, args);
+    }
+
+    fcall(...args) {
+      return relay(this).POST(this, undefined, args);
+    }
+
+    // ***********************************************************
+    // The rest of these static methods ensure we use the correct
+    // EPromise.resolve and EPromise.reject, no matter what the
+    // implementation of the inherited BasePromise is.
+    static all(iterable) {
+      // eslint-disable-next-line no-use-before-define
+      return combinePromises([], iterable, (res, item, index) => {
+        // Reject if any reject.
+        if (item.status === 'rejected') {
+          throw item.reason;
+        }
+
+        // Add the resolved value to the array.
+        res[index] = item.value;
+
+        // Continue combining promise results.
+        return { status: 'continue', result: res };
+      });
+    }
+
+    static allSettled(iterable) {
+      // eslint-disable-next-line no-use-before-define
+      return combinePromises([], iterable, (res, item, index) => {
+        // Add the reified promise result to the array.
+        res[index] = item;
+
+        // Continue combining promise results.
+        return { status: 'continue', result: res };
+      });
+    }
+
+    // TODO: Implement any(iterable) according to spec.
+    // Also add it to the SES/Jessie whitelists.
+
+    static race(iterable) {
+      // Just return the first reified promise result, whether fulfilled or rejected.
+      // eslint-disable-next-line no-use-before-define
+      return combinePromises([], iterable, (_, item) => item);
+    }
+  }
+
   /**
    * Reduce-like function to support iterable values mapped to Promise.resolve, and
    * combine them asynchronously.
@@ -23,14 +137,16 @@ export default function makeEPromiseClass(Promise) {
    * settled promise, and returns a combiner action (reject, resolve, continue).
    *
    * @param {*} initValue first value of result
-   * @param {Iterable} iterable values to Promise.resolve
+   * @param {Iterable} iterable values to EPromise.resolve
    * @param {Combiner} combiner synchronously reduce each item
-   * @returns {Promise<*>}
+   * @returns {EPromise<*>}
    */
   function combinePromises(initValue, iterable, combiner) {
     let result = initValue;
 
-    return new Promise(async (resolve, reject) => {
+    // We use the platform async keyword here to simplify
+    // the executor function.
+    return new EPromise(async (resolve, reject) => {
       // We start at 1 to prevent the iterator from resolving
       // the EPromise until the loop is complete and all items
       // have been reduced.
@@ -99,8 +215,7 @@ export default function makeEPromiseClass(Promise) {
           // Say that we have one more to wait for.
           countDown += 1;
 
-          /* eslint-disable-next-line no-use-before-define */
-          Promise.resolve(item)
+          EPromise.resolve(item)
             .then(
               value => doReduce({ status: 'fulfilled', value }, index), // Successful resolve.
               reason => doReduce({ status: 'rejected', reason }, index), // Failed resolve.
@@ -117,111 +232,13 @@ export default function makeEPromiseClass(Promise) {
       }
     });
   }
-  // A remoteRelay must additionally have an AWAIT_FAR method
-  const localRelay = {
-    GET(p, key) {
-      return p.then(o => o[key]);
-    },
-    PUT(p, key, val) {
-      return p.then(o => (o[key] = val));
-    },
-    DELETE(p, key) {
-      return p.then(o => delete o[key]);
-    },
-    POST(p, optKey, args) {
-      if (optKey === undefined || optKey === null) {
-        return p.then(o => o(...args));
-      }
-      return p.then(o => o[optKey](...args));
-    },
-  };
-
-  const relayToPromise = new WeakMap();
-  const promiseToRelay = new WeakMap();
-
-  function relay(p) {
-    return promiseToRelay.get(p) || localRelay;
-  }
-
-  class EPromise extends Promise {
-    static makeRemote(remoteRelay) {
-      const promise = this.resolve(remoteRelay.AWAIT_FAR());
-      relayToPromise.set(remoteRelay, promise);
-      promiseToRelay.set(promise, remoteRelay);
-      return promise;
-    }
-
-    static resolve(specimen) {
-      return (
-        relayToPromise.get(specimen) ||
-        new EPromise(resolve => resolve(specimen))
-      );
-    }
-
-    static reject(reason) {
-      return new EPromise((_resolve, reject) => reject(reason));
-    }
-
-    get(key) {
-      return relay(this).GET(this, key);
-    }
-
-    put(key, val) {
-      return relay(this).PUT(this, key, val);
-    }
-
-    del(key) {
-      return relay(this).DELETE(this, key);
-    }
-
-    post(optKey, args) {
-      return relay(this).POST(this, optKey, args);
-    }
-
-    invoke(optKey, ...args) {
-      return relay(this).POST(this, optKey, args);
-    }
-
-    fapply(args) {
-      return relay(this).POST(this, undefined, args);
-    }
-
-    fcall(...args) {
-      return relay(this).POST(this, undefined, args);
-    }
-
-    // ***********************************************************
-    // The rest of these static methods ensure we use the correct
-    // EPromise.resolve and EPromise.reject, no matter what the
-    // implementation of the inherited Promise is.
-    static all(iterable) {
-      return combinePromises([], iterable, (res, item, index) => {
-        if (item.status === 'rejected') {
-          throw item.reason;
-        }
-        res[index] = item.value;
-        return { status: 'continue', result: res };
-      });
-    }
-
-    static allSettled(iterable) {
-      return combinePromises([], iterable, (res, item, index) => {
-        res[index] = item;
-        return { status: 'continue', result: res };
-      });
-    }
-
-    static race(iterable) {
-      return combinePromises([], iterable, (_, item) => item);
-    }
-  }
 
   return EPromise;
 }
 
 /**
  * A reified fulfilled promise.
- * 
+ *
  * @typedef {Object} SettledFulfilled
  * @property {'fulfilled'} status
  * @property {*} [value]
@@ -229,7 +246,7 @@ export default function makeEPromiseClass(Promise) {
 
 /**
  * A reified rejected promise.
- * 
+ *
  * @typedef {Object} SettledRejected
  * @property {'rejected'} status
  * @property {*} [reason]

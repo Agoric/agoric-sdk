@@ -18,6 +18,7 @@ test('EPromise.all', async t => {
 
     t.deepEqual(await EPromise.all([1, Promise.resolve(2), 3]), [1, 2, 3]);
 
+    // eslint-disable-next-line no-inner-declarations
     function* generator() {
       yield 9;
       yield EPromise.resolve(8).then(res => res * 10);
@@ -28,10 +29,12 @@ test('EPromise.all', async t => {
     // Ensure that a rejected promise rejects all.
     const toThrow = RangeError('expected');
     try {
-      t.assert(await EPromise.all([1, Promise.reject(toThrow), 3]) && false);
+      t.assert((await EPromise.all([1, Promise.reject(toThrow), 3])) && false);
     } catch (e) {
       t.is(e, toThrow);
     }
+  } catch (e) {
+    t.assert(false, `Unexpected exception ${e}`);
   } finally {
     t.end();
   }
@@ -42,39 +45,37 @@ test('EPromise.allSettled', async t => {
     const EPromise = makeEPromiseClass(Promise);
 
     t.deepEqual(await EPromise.allSettled([1, Promise.resolve(2), 3]), [
-      {status: 'fulfilled', value: 1},
-      {status: 'fulfilled', value: 2},
-      {status: 'fulfilled', value: 3},
+      { status: 'fulfilled', value: 1 },
+      { status: 'fulfilled', value: 2 },
+      { status: 'fulfilled', value: 3 },
     ]);
 
     let shouldThrow;
+    // eslint-disable-next-line no-inner-declarations
     function* generator() {
       yield 9;
       shouldThrow = Error('expected');
-      yield EPromise.reject(shouldThrow).catch(e => 80);
+      yield EPromise.reject(shouldThrow).catch(_ => 80);
       yield Promise.resolve(7).then(res => -res);
     }
-    try {
-      t.deepEqual(await EPromise.allSettled(generator()), [
-        {status: 'fulfilled', value: 9},
-        {status: 'fulfilled', value: 80},
-        {status: 'fulfilled', value: -7},
-      ]);
-    } catch (e) {
-      t.assert(false, `unexpected throw ${e}`);
-    }
+    t.deepEqual(await EPromise.allSettled(generator()), [
+      { status: 'fulfilled', value: 9 },
+      { status: 'fulfilled', value: 80 },
+      { status: 'fulfilled', value: -7 },
+    ]);
 
     // Ensure that a rejected promise still settles.
     shouldThrow = Error('expected');
-    try {
-      t.deepEqual(await EPromise.allSettled([1, Promise.reject(shouldThrow), 3]), [
-        {status: 'fulfilled', value: 1},
-        {status: 'rejected', reason: shouldThrow},
-        {status: 'fulfilled', value: 3},
-      ]);
-    } catch (e) {
-      t.assert(false, `unexpected throw ${e}`);
-    }
+    t.deepEqual(
+      await EPromise.allSettled([1, Promise.reject(shouldThrow), 3]),
+      [
+        { status: 'fulfilled', value: 1 },
+        { status: 'rejected', reason: shouldThrow },
+        { status: 'fulfilled', value: 3 },
+      ],
+    );
+  } catch (e) {
+    t.assert(false, `Unexpected exception ${e}`);
   } finally {
     t.end();
   }
@@ -83,6 +84,7 @@ test('EPromise.allSettled', async t => {
 test('EPromise.race', async t => {
   try {
     const EPromise = makeEPromiseClass(Promise);
+    // eslint-disable-next-line no-inner-declarations
     function delay(value, millis) {
       return new EPromise(resolve => setTimeout(() => resolve(value), millis));
     }
@@ -94,6 +96,7 @@ test('EPromise.race', async t => {
     }
 
     let shouldThrow;
+    // eslint-disable-next-line no-inner-declarations
     function* generator() {
       yield delay(9, 500);
       shouldThrow = Error('expected');
@@ -101,10 +104,12 @@ test('EPromise.race', async t => {
       yield delay(7, 1000);
     }
     try {
-      t.assert(await EPromise.race(generator()) && false);
+      t.assert((await EPromise.race(generator())) && false);
     } catch (e) {
       t.equal(e, shouldThrow);
     }
+  } catch (e) {
+    t.assert(false, `Unexpected exception ${e}`);
   } finally {
     t.end();
   }
@@ -115,6 +120,8 @@ test('get', async t => {
     const EPromise = makeEPromiseClass(Promise);
     const res = await EPromise.resolve([123, 456, 789]).get(1);
     t.equal(res, 456);
+  } catch (e) {
+    t.assert(false, `Unexpected exception ${e}`);
   } finally {
     t.end();
   }
@@ -127,6 +134,8 @@ test('put', async t => {
     const ep = EPromise.resolve(a);
     t.equal(await ep.put(1, 999), 999);
     t.deepEqual(a, [123, 999, 789]);
+  } catch (e) {
+    t.assert(false, `Unexpected exception ${e}`);
   } finally {
     t.end();
   }
@@ -142,6 +151,8 @@ test('post', async t => {
     t.equal(await ep.post('a', [3]), 4);
     t.equal(await ep.post(2, [3, 4]), 12);
     t.equal(await ep.post(undefined, []), 'hello');
+  } catch (e) {
+    t.assert(false, `Unexpected exception ${e}`);
   } finally {
     t.end();
   }
@@ -157,6 +168,8 @@ test('invoke', async t => {
     t.equal(await ep.invoke('a', 3), 4);
     t.equal(await ep.invoke(2, 3, 4), 12);
     t.equal(await ep.invoke(undefined), 'hello');
+  } catch (e) {
+    t.assert(false, `Unexpected exception ${e}`);
   } finally {
     t.end();
   }
@@ -167,6 +180,8 @@ test('fcall', async t => {
     const EPromise = makeEPromiseClass(Promise);
     const ep = EPromise.resolve((a, b) => a * b);
     t.equal(await ep.fcall(3, 6), 18);
+  } catch (e) {
+    t.assert(false, `Unexpected exception ${e}`);
   } finally {
     t.end();
   }
@@ -177,6 +192,8 @@ test('fapply', async t => {
     const EPromise = makeEPromiseClass(Promise);
     const ep = EPromise.resolve((a, b) => a * b);
     t.equal(await ep.fapply([3, 6]), 18);
+  } catch (e) {
+    t.assert(false, `Unexpected exception ${e}`);
   } finally {
     t.end();
   }

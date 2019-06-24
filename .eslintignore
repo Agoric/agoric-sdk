@@ -1,5 +1,5 @@
 # dist
-dist/
-node_modules/
-.git/
-.cache/
+dist
+node_modules
+.git
+.cache
