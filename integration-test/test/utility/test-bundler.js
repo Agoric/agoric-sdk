@@ -30,6 +30,7 @@ const runBrowserTests = async indexFile => {
   });
   await page.goto(`file:${path.join(__dirname, indexFile)}`);
   await page.title();
+  /* eslint-disable-next-line no-undef */
   await page.evaluate(() => window.testDonePromise);
   await browser.close();
   return { numTests, numPass };
