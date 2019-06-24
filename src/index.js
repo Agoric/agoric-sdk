@@ -1,14 +1,15 @@
 /**
  * Create an EPromise class that supports eventual send (infix-bang) operations.
  * This is a class that extends the BasePromise class argument (which may be platform
- * Promises, or some other implementation).
+ * Promises, or some other implementation).  Only the `new BasePromise(executor)`
+ * constructor form is used directly by EPromise.
  *
  * Based heavily on nanoq https://github.com/drses/nanoq/blob/master/src/nanoq.js
  *
  * Original spec for the infix-bang desugaring:
  * https://web.archive.org/web/20161026162206/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency
  *
- * @param {typeof Promise} BasePromise Promise class to derive from
+ * @param {typeof Promise} BasePromise ES6 Promise contstructor
  * @returns {typeof EPromise} EPromise class
  */
 export default function makeEPromiseClass(BasePromise) {
@@ -127,14 +128,15 @@ export default function makeEPromiseClass(BasePromise) {
   }
 
   /**
-   * Reduce-like function to support iterable values mapped to Promise.resolve, and
-   * combine them asynchronously.
+   * Reduce-like helper function to support iterable values mapped to Promise.resolve,
+   * and combine them asynchronously.
    *
    * The combiner may be called in any order, and the collection is not necessarily
    * done iterating by the time it's called.
    *
    * The notable difference from reduce is that the combiner gets a reified
-   * settled promise, and returns a combiner action (reject, resolve, continue).
+   * settled promise as its `item` argument, and returns a combiner action
+   * with a `status` field of "rejected", "fulfilled", or "continue".
    *
    * @param {*} initValue first value of result
    * @param {Iterable} iterable values to EPromise.resolve
@@ -167,7 +169,15 @@ export default function makeEPromiseClass(BasePromise) {
         }
       }
 
-      async function doReduce(mapped, index) {
+      function doCountDown() {
+        countDown -= 1;
+        if (countDown === 0) {
+          // Resolve the outer promise.
+          resolveOnce(result);
+        }
+      }
+
+      async function doCombine(mapped, index) {
         if (alreadySettled) {
           // Short-circuit out of here, since we already
           // rejected or resolved.
@@ -175,35 +185,28 @@ export default function makeEPromiseClass(BasePromise) {
         }
 
         // Either update the result or throw an exception.
-        if (index !== undefined) {
-          const action = await combiner(result, mapped, index);
-          switch (action.status) {
-            case 'continue':
-              // eslint-disable-next-line prefer-destructuring
-              result = action.result;
-              break;
+        const action = await combiner(result, mapped, index);
+        switch (action.status) {
+          case 'continue':
+            // eslint-disable-next-line prefer-destructuring
+            result = action.result;
+            break;
 
-            case 'rejected':
-              rejectOnce(action.reason);
-              break;
+          case 'rejected':
+            rejectOnce(action.reason);
+            break;
 
-            case 'fulfilled':
-              // Resolve the outer promise.
-              result = action.value;
-              resolveOnce(result);
-              break;
+          case 'fulfilled':
+            // Resolve the outer promise.
+            result = action.value;
+            resolveOnce(result);
+            break;
 
-            default:
-              throw TypeError(`Not a valid combiner return value: ${action}`);
-          }
+          default:
+            throw TypeError(`Not a valid combiner return value: ${action}`);
         }
 
-        // Check to see if we're the last outstanding combiner.
-        countDown -= 1;
-        if (countDown === 0) {
-          // Resolve the outer promise.
-          resolveOnce(result);
-        }
+        doCountDown();
       }
 
       try {
@@ -217,8 +220,8 @@ export default function makeEPromiseClass(BasePromise) {
 
           EPromise.resolve(item)
             .then(
-              value => doReduce({ status: 'fulfilled', value }, index), // Successful resolve.
-              reason => doReduce({ status: 'rejected', reason }, index), // Failed resolve.
+              value => doCombine({ status: 'fulfilled', value }, index), // Successful resolve.
+              reason => doCombine({ status: 'rejected', reason }, index), // Failed resolve.
             )
             .catch(rejectOnce);
         }
@@ -226,7 +229,7 @@ export default function makeEPromiseClass(BasePromise) {
         // If we had no items or they all settled before the
         // loop ended, this will count down to zero and resolve
         // the result.
-        await doReduce(undefined, undefined);
+        doCountDown();
       } catch (e) {
         rejectOnce(e);
       }
@@ -237,19 +240,13 @@ export default function makeEPromiseClass(BasePromise) {
 }
 
 /**
- * A reified fulfilled promise.
+ * Return a new value based on a reified promise result.
  *
- * @typedef {Object} SettledFulfilled
- * @property {'fulfilled'} status
- * @property {*} [value]
- */
-
-/**
- * A reified rejected promise.
- *
- * @typedef {Object} SettledRejected
- * @property {'rejected'} status
- * @property {*} [reason]
+ * @callback Combiner
+ * @param {*} previousValue last value passed with CombinerContinue
+ * @param {SettledStatus} currentValue current reified promise result
+ * @param {number} currentIndex current index in the input iterable
+ * @returns {CombinerContinue|SettledStatus} what to do next
  */
 
 /**
@@ -258,19 +255,25 @@ export default function makeEPromiseClass(BasePromise) {
  */
 
 /**
- * Tell combinePromises to continue with a new value for the result.
+ * A reified fulfilled promise.
  *
- * @typedef {Object} CombinerContinue
- * @property {'continue'} status
- * @property {*} result
+ * @typedef {Object} SettledFulfilled
+ * @property {'fulfilled'} status the promise was fulfilled
+ * @property {*} [value] the value of the promise resolution
  */
 
 /**
- * Return a new value based on the results of an item's mapped promise.
+ * A reified rejected promise.
  *
- * @callback Combiner
- * @param {*} previousValue
- * @param {SettledStatus} currentValue
- * @param {number} currentIndex
- * @returns {CombinerContinue|SettledStatus} what to do next
+ * @typedef {Object} SettledRejected
+ * @property {'rejected'} status the promise was rejected
+ * @property {*} [reason] the value of the promise rejection
+ */
+
+/**
+ * Tell combinePromises to continue with a new value for the result.
+ *
+ * @typedef {Object} CombinerContinue
+ * @property {'continue'} status continue with combining
+ * @property {*} result the new result to use as `currentValue`
  */
