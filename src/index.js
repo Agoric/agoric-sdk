@@ -13,45 +13,126 @@
  * @returns {typeof EPromise} EPromise class
  */
 export default function makeEPromiseClass(BasePromise) {
-  // A remoteRelay must additionally have an AWAIT_FAR method
-  const localRelay = {
-    GET(p, key) {
-      return p.then(o => o[key]);
-    },
-    PUT(p, key, val) {
-      return p.then(o => (o[key] = val));
-    },
-    DELETE(p, key) {
-      return p.then(o => delete o[key]);
-    },
-    POST(p, optKey, args) {
-      if (optKey === undefined || optKey === null) {
-        return p.then(o => o(...args));
-      }
-      return p.then(o => o[optKey](...args));
-    },
-  };
-
-  const relayToPromise = new WeakMap();
+  const presenceToResolvedRelay = new WeakMap();
   const promiseToRelay = new WeakMap();
 
+  // This special relay accepts Promises, and forwards
+  // the remote to its corresponding resolvedRelay.
+  //
+  // If passed a Promise that is not remote, perform
+  // the corresponding local operation.
+  let forwardingRelay;
   function relay(p) {
-    return promiseToRelay.get(p) || localRelay;
+    return promiseToRelay.get(p) || forwardingRelay;
   }
 
   class EPromise extends BasePromise {
-    static makeRemote(remoteRelay) {
-      const promise = this.resolve(remoteRelay.AWAIT_FAR());
-      relayToPromise.set(remoteRelay, promise);
-      promiseToRelay.set(promise, remoteRelay);
-      return promise;
+    static makeRemote(executor, unresolvedRelay) {
+      let remoteResolve;
+      let remoteReject;
+      let relayResolve;
+      const remoteP = new EPromise((resolve, reject) => {
+        remoteResolve = resolve;
+        remoteReject = reject;
+      });
+
+      if (!unresolvedRelay) {
+        // Create a simple unresolvedRelay that just postpones until the
+        // resolvedRelay is set.
+        //
+        // This is insufficient for actual remote Promises (too many round-trips),
+        // but is an easy way to create a local Remote.
+        const relayP = new EPromise(resolve => {
+          relayResolve = resolve;
+        });
+
+        const postpone = forwardedOperation => {
+          // Just wait until the relay is resolved/rejected.
+          return async (p, ...args) => {
+            console.log(`forwarding ${forwardedOperation}`);
+            await relayP;
+            return p[forwardedOperation](args);
+          };
+        };
+
+        unresolvedRelay = {
+          GET: postpone('get'),
+          PUT: postpone('put'),
+          DELETE: postpone('delete'),
+          POST: postpone('post'),
+        };
+      }
+
+      // Until the remote is resolved, we use the unresolvedRelay.
+      promiseToRelay.set(remoteP, unresolvedRelay);
+
+      function rejectRemote(reason) {
+        if (relayResolve) {
+          relayResolve(null);
+        }
+        remoteReject(reason);
+      }
+
+      function resolveRemote(presence, resolvedRelay) {
+        try {
+          if (resolvedRelay) {
+            // Sanity checks.
+            if (Object(resolvedRelay) !== resolvedRelay) {
+              throw TypeError(
+                `Resolved relay ${resolvedRelay} cannot be a primitive`,
+              );
+            }
+            for (const method of ['GET', 'PUT', 'DELETE', 'POST']) {
+              if (typeof resolvedRelay[method] !== 'function') {
+                throw TypeError(
+                  `Resolved relay ${resolvedRelay} requires a ${method} method`,
+                );
+              }
+            }
+            if (Object(presence) !== presence) {
+              throw TypeError(`Presence ${presence} cannot be a primitive`);
+            }
+            if (presence === null) {
+              throw TypeError(`Presence ${presence} cannot be null`);
+            }
+            if (presenceToResolvedRelay.has(presence)) {
+              throw TypeError(`Presence ${presence} is already mapped`);
+            }
+            if (presence && typeof presence.then === 'function') {
+              throw TypeError(
+                `Presence ${presence} cannot be a Promise or other thenable`,
+              );
+            }
+
+            // Create a table entry for the presence mapped to the resolvedRelay.
+            presenceToResolvedRelay.set(presence, resolvedRelay);
+          }
+
+          // Remove the mapping, as our resolvedRelay should be used instead.
+          promiseToRelay.delete(remoteP);
+
+          // Resolve with the new presence or other value.
+          remoteResolve(presence);
+
+          if (relayResolve) {
+            // Activate the default unresolvedRelay.
+            relayResolve(resolvedRelay);
+          }
+        } catch (e) {
+          rejectRemote(e);
+        }
+      }
+
+      // Invoke the callback to let the user resolve/reject.
+      executor(resolveRemote, rejectRemote);
+
+      // Return a remote EPromise, which wil be resolved/rejected
+      // by the executor.
+      return remoteP;
     }
 
-    static resolve(specimen) {
-      return (
-        relayToPromise.get(specimen) ||
-        new EPromise(resolve => resolve(specimen))
-      );
+    static resolve(value) {
+      return new EPromise(resolve => resolve(value));
     }
 
     static reject(reason) {
@@ -66,7 +147,7 @@ export default function makeEPromiseClass(BasePromise) {
       return relay(this).PUT(this, key, val);
     }
 
-    del(key) {
+    delete(key) {
       return relay(this).DELETE(this, key);
     }
 
@@ -126,6 +207,33 @@ export default function makeEPromiseClass(BasePromise) {
       return combinePromises([], iterable, (_, item) => item);
     }
   }
+
+  function makeForwarder(operation, localImpl) {
+    return async (ep, ...args) => {
+      const o = await ep;
+      const resolvedRelay = presenceToResolvedRelay.get(o);
+      if (resolvedRelay) {
+        // The relay was resolved, so give it a naked object.
+        return resolvedRelay[operation](o, ...args);
+      }
+
+      // Not a Remote, so use the local implementation on the
+      // naked object.
+      return localImpl(o, ...args);
+    };
+  }
+
+  forwardingRelay = {
+    GET: makeForwarder('GET', (o, key) => o[key]),
+    PUT: makeForwarder('PUT', (o, key, val) => (o[key] = val)),
+    DELETE: makeForwarder('DELETE', (o, key) => delete o[key]),
+    POST: makeForwarder('POST', (o, optKey, args) => {
+      if (optKey === undefined || optKey === null) {
+        return o(...args);
+      }
+      return o[optKey](...args);
+    }),
+  };
 
   /**
    * Reduce-like helper function to support iterable values mapped to Promise.resolve,
