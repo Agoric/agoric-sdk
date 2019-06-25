@@ -1,8 +1,7 @@
 // Type definitions for eventual-send
 // FIXME: Add jsdocs.
 
-interface RemoteRelayer<R> {
-  AWAIT_FAR(): EPromise<unknown>;
+interface ERelay {
   GET(p: EPromise<unknown>, name: string | number | symbol): EPromise<unknown>;
   PUT(p: EPromise<unknown>, name: string | number | symbol, value: unknown): EPromise<void>;
   DELETE(p: EPromise<unknown>, name: string | number | symbol): EPromise<boolean>;
@@ -12,7 +11,7 @@ interface RemoteRelayer<R> {
 export interface EPromise<R> extends Promise<R> {
   get(name: string | number | symbol): EPromise<unknown>;
   put(name: string | number | symbol, value: unknown): EPromise<void>;
-  del(name: string | number | symbol): EPromise<boolean>;
+  delete(name: string | number | symbol): EPromise<boolean>;
   post(name?: string | number | symbol, args: unknown[]): EPromise<unknown>;
   invoke(name: string | number | symbol, ...args: unknown[]): EPromise<unknown>;
   fapply(args: unknown[]): EPromise<unknown>;
@@ -39,14 +38,19 @@ interface RejectedStatus {
 
 type SettledStatus = FulfilledStatus | RejectedStatus;
 
+type RemoteExecutor<R> = (
+  resolveRemote: (value?: R, resolvedRelay?: ERelay) => void,
+  rejectRemote: (reason?: unknown) => void,
+) => void;
+
 interface EPromiseConstructor extends PromiseConstructor {
   prototype: EPromise<unknown>;
-  makeRemote(relayer: RemoteRelayer<R>): EPromise<unknown>;
-  resolve<R>(specimen: R): EPromise<R>;
+  makeRemote<R>(executor: RemoteExecutor<R>, unresolvedRelay?: ERelay): EPromise<R>;
+  resolve<R>(value: R): EPromise<R>;
   reject(reason: unknown): EPromise<never>;
-  all(iterable: Iterable | AsyncIterable): EPromise<unknown[]>;
-  allSettled(iterable: Iterable | AsyncIterable): EPromise<SettledStatus[]>;
-  race(iterable: Iterable | AsyncIterable): EPromise<unknown>; 
+  all(iterable: Iterable): EPromise<unknown[]>;
+  allSettled(iterable: Iterable): EPromise<SettledStatus[]>;
+  race(iterable: Iterable): EPromise<unknown>; 
 }
 
 export default function makeEPromiseClass(Promise: PromiseConstructor): EPromiseConstructor;
