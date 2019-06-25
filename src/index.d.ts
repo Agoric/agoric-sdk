@@ -27,17 +27,17 @@ export interface EPromise<R> extends Promise<R> {
   finally(onfinally?: (() => void) | undefined | null): EPromise<R>;
 }
 
-interface SettledFulfilled {
+interface FulfilledStatus {
   status: 'fulfilled';
   value: unknown;
 }
 
-interface SettledRejected {
+interface RejectedStatus {
   status: 'rejected';
   reason: unknown;
 }
 
-type SettledStatus = SettledFulfilled | SettledRejected;
+type SettledStatus = FulfilledStatus | RejectedStatus;
 
 interface EPromiseConstructor extends PromiseConstructor {
   prototype: EPromise<unknown>;

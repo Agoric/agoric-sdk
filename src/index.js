@@ -244,20 +244,20 @@ export default function makeEPromiseClass(BasePromise) {
  *
  * @callback Combiner
  * @param {*} previousValue last value passed with CombinerContinue
- * @param {SettledStatus} currentValue current reified promise result
+ * @param {SettledStatus} currentStatus current reified promise result
  * @param {number} currentIndex current index in the input iterable
  * @returns {CombinerContinue|SettledStatus} what to do next
  */
 
 /**
  * A reified settled promise.
- * @typedef {SettledFulfilled | SettledRejected} SettledStatus
+ * @typedef {FulfilledStatus | RejectedStatus} SettledStatus
  */
 
 /**
  * A reified fulfilled promise.
  *
- * @typedef {Object} SettledFulfilled
+ * @typedef {Object} FulfilledStatus
  * @property {'fulfilled'} status the promise was fulfilled
  * @property {*} [value] the value of the promise resolution
  */
@@ -265,7 +265,7 @@ export default function makeEPromiseClass(BasePromise) {
 /**
  * A reified rejected promise.
  *
- * @typedef {Object} SettledRejected
+ * @typedef {Object} RejectedStatus
  * @property {'rejected'} status the promise was rejected
  * @property {*} [reason] the value of the promise rejection
  */
@@ -275,5 +275,5 @@ export default function makeEPromiseClass(BasePromise) {
  *
  * @typedef {Object} CombinerContinue
  * @property {'continue'} status continue with combining
- * @property {*} result the new result to use as `currentValue`
+ * @property {*} result the new result to use as `currentStatus`
  */

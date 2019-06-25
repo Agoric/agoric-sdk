@@ -31,7 +31,7 @@ test('EPromise.all', async t => {
     try {
       t.assert((await EPromise.all([1, Promise.reject(toThrow), 3])) && false);
     } catch (e) {
-      t.is(e, toThrow);
+      t.equal(e, toThrow);
     }
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
