@@ -141,6 +141,7 @@ show-config      display the client connection parameters
       case 'destroy':
       case 'show-genesis':
       case 'show-config':
+      case 'ssh':
         break;
       default:
         if (process.cwd() !== SETUP_HOME) {
@@ -462,6 +463,33 @@ show-config      display the client connection parameters
         `${CONTROLLER_DIR}/data/${PROVISIONER_NODE}/boot-address.txt`,
       );
       process.stdout.write(bootAddress);
+      break;
+    }
+
+    case 'ssh': {
+      const [host, ...sshArgs] = args.slice(1);
+      if (!host) {
+        throw `Need: [host]`;
+      }
+
+      setSilent(true);
+      await chdir(SETUP_HOME);
+      await inited();
+      const json = await needBacktick(
+        `ansible-inventory --host=${shellEscape(host)}`,
+      );
+      const obj = JSON.parse(json);
+      const node = obj.ansible_host || host;
+      const user = obj.ansible_ssh_user || 'root';
+      const pkey = obj.ansible_ssh_private_key_file;
+
+      const sshCmd = ['ssh', `-oUserKnownHostsFile=provision/ssh_known_hosts`];
+      if (pkey) {
+        sshCmd.push(`-i${pkey}`);
+      }
+      sshCmd.push(`${user}@${node}`);
+      sshCmd.push(...sshArgs);
+      await needDoRun(sshCmd);
       break;
     }
 
