@@ -20,6 +20,7 @@ docker-build-setup:
 	docker build -t $(REPOSITORY)-setup:latest ./setup
 
 docker-build-base:
+	git describe --always --dirty > lib/git-revision.txt
 	docker build -t $(REPOSITORY):latest .
 
 docker-build-pserver:
