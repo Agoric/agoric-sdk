@@ -66,19 +66,65 @@ def cosmosConfigFile(home):
 class ConfigElement(Element):
     loader = XMLFile(os.path.join(htmldir, "index.html"))
 
-    def __init__(self, config):
+    @staticmethod
+    def gatherArgs(opts):
+        meta = {}
+        f = open(cosmosConfigFile(opts['home']))
+        config = f.read()
+        gr = '/usr/src/app/lib/git-revision.txt'
+        if os.path.exists(gr):
+          f = open()
+          meta['package_git'] = f.read().strip()
+        else:
+          f = os.popen('git describe --always --dirty')
+          meta['package_git'] = f.read().strip()
+
+        pj = '/usr/src/app/lib/package.json'
+        pjson = {}
+        if os.path.exists(pj):
+          f = open('/usr/src/app/lib/package.json')
+          pjson = json.load(f)
+        else:
+          pjpath = None
+          # Walk upwards from the current directory.
+          pj = os.path.abspath('package.json')
+          while pj != pjpath:
+            pjpath = pj
+            if os.path.exists(pjpath):
+              f = open(pjpath)
+              pjson = json.load(f)
+              break
+            pj = os.path.join(os.path.dirname(pjpath), '../package.json')
+            pj = os.path.abspath(np)
+
+        meta['package_version'] = pjson.get('version', 'unknown')
+        meta['package_name'] = pjson.get('name', 'cosmic-swingset')
+        repo = pjson.get('repository', 'https://github.com/Agoric/cosmic-swingset')
+        cleanRev = meta['package_git'].replace('-dirty', '')
+        link = repo + '/commit/' + cleanRev
+        meta['package_repo'] = link
+
+        return [config, meta]
+
+    def __init__(self, config, meta):
         self._config = config
+        self._meta = meta
 
     @renderer
     def config(self, request, tag):
         tag.fillSlots(cosmos_config=self._config)
         return tag
 
+    @renderer
+    def meta(self, request, tag):
+      tag.fillSlots(**self._meta)
+      return tag
+
 class ResponseElement(ConfigElement):
     loader = XMLFile(os.path.join(htmldir, "response-template.html"))
 
-    def __init__(self, config, code, nickname):
-        super().__init__(config)
+    def __init__(self, code, nickname, *args):
+        super().__init__(*args)
         self._code = code
         self._nickname = nickname
     
@@ -97,8 +143,8 @@ class Provisioner(resource.Resource):
 
     @defer.inlineCallbacks
     def build_page(self):
-        f = open(cosmosConfigFile(self.opts['home']))
-        html = yield flattenString(None, ConfigElement(f.read()))
+        args = ConfigElement.gatherArgs(self.opts)
+        html = yield flattenString(None, ConfigElement(*args))
         defer.returnValue(html)
 
     def render_GET(self, req):
@@ -193,8 +239,8 @@ class RequestCode(resource.Resource):
         d.addCallback(self.send_provisioning_response, w)
 
 
-        f = open(cosmosConfigFile(self.opts['home']))
-        html = yield flattenString(None, ResponseElement(f.read(), code, nickname))
+        args = ConfigElement.gatherArgs(self.opts)
+        html = yield flattenString(None, ResponseElement(code, nickname, *args))
         defer.returnValue(html)
 
     def render_POST(self, req):

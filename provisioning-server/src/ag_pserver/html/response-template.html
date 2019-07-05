@@ -24,5 +24,13 @@ Testnet Client Node!</div>
 
 <div t:render="config"><pre><t:slot name="cosmos_config" /></pre></div>
 
+<hr/>
+<address>
+<div t:render="meta">Source:
+  <a target="_blank"><t:attr name="href"><t:slot name="package_repo"/></t:attr><t:slot name="package_name"/></a>
+  v<t:slot name="package_version"/>+<t:slot name="package_git"/>
+</div>
+</address>
+
 </body>
 </html>
