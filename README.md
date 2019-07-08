@@ -77,7 +77,7 @@ alias ag-chain-cosmos=$PWD/lib/ag-chain-cosmos
 If installing the GO language didn't setup a `$GOPATH` variable,
 you'll need to find the directory and set the variable. Typically
 ```
-GOPATH="~/go"
+GOPATH="$HOME/go"
 ```
 Then do
 ```
