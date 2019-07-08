@@ -18,7 +18,7 @@ $ sudo make docker-install
 
 Otherwise, the scripts are in the `docker` subdirectory.
 
-You can find the images at [Docker Hub](https://cloud.docker.com/u/agoric/repository/docker/agoric/cosmic-swingset)
+You can find the images at [Docker Hub](https://hub.docker.com/r/agoric/cosmic-swingset)
 
 # Testnet Tutorial
 
