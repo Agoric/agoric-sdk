@@ -6,7 +6,7 @@ TL;DR: Browse to a public testnet provisioning page, then run:
 $ SOLO_NAME=han ./docker/ag-setup-solo --pull
 ```
 
-where `han` is the same of your solo vat machine that follows the blockchain.
+where `han` is the name of your solo vat machine that follows the blockchain.
 
 ## Docker images
 
