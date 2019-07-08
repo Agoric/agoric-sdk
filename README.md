@@ -6,7 +6,7 @@ TL;DR: Browse to a public testnet provisioning page, then run:
 $ SOLO_NAME=han ./docker/ag-setup-solo --pull
 ```
 
-where `han` is the same of your solo vat machine that follows the blockchain.
+where `han` is the name of your solo vat machine that follows the blockchain.
 
 ## Docker images
 
@@ -18,7 +18,7 @@ $ sudo make docker-install
 
 Otherwise, the scripts are in the `docker` subdirectory.
 
-You can find the images at [Docker Hub](https://cloud.docker.com/u/agoric/repository/docker/agoric/cosmic-swingset)
+You can find the images at [Docker Hub](https://hub.docker.com/r/agoric/cosmic-swingset)
 
 # Testnet Tutorial
 
@@ -68,10 +68,19 @@ $ make
 $ npm install
 ```
 
-Make shell aliases as below.  Note that the `$PWD` variable must be the absolute path to the current cosmic-swingset directory:
+Make shell aliases as below.  Note that the `$PWD` variable must be
+the absolute path to the current cosmic-swingset directory:
 
 ```
 alias ag-chain-cosmos=$PWD/lib/ag-chain-cosmos
+```
+If installing the GO language didn't setup a `$GOPATH` variable,
+you'll need to find the directory and set the variable. Typically
+```
+GOPATH="$HOME/go"
+```
+Then do
+```
 alias ag-cosmos-helper=$GOPATH/bin/ag-cosmos-helper
 ```
 
