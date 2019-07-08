@@ -4,11 +4,9 @@
 <meta charset="utf-8"/>
 <title>SwingSet Solo REPL Demo</title>
 <style>
-  * { padding: 0; margin: 0; }
-  canvas { 
-    background: #eee; 
-    display: block; 
-    border: 3px solid black;
+  * {
+    padding: 0;
+    margin: 0;
   }
   h1 {
     text-align: center;
@@ -49,13 +47,13 @@ You need to enable JavaScript to run this app.</noscript>
 
 <div class="container">
   <div class="left">
-    <canvas id="myCanvas" width="500" height="500"></canvas>
+    <div id="galleryBoard" class="gallery"></div>
   </div>
   <div class="right">
     <div>Use <code>home</code> to see useful objects, and <code>history[N]</code> to refer to result history</div>
     <div id="history"></div>
-    <div class="cmd">command[<span class="historyNumber">0</span>]> 
-      <input id="input" tabindex="0" type="text" size="80"/> 
+    <div class="cmd">command[<span class="historyNumber">0</span>]>
+      <input id="input" tabindex="0" type="text" size="80"/>
       <input id="go" tabindex="1" type="submit" value="eval"/>
     </div>
   </div>
@@ -66,7 +64,6 @@ You need to enable JavaScript to run this app.</noscript>
   Source: <a target="_blank" id="package_repo"><span id="package_name">cosmic-swingset</span></a>
   v<span id="package_version"></span>+<span id="package_git"></span>
 </address>
-
 <script src="./main.js"></script>
 </body>
 </html>
