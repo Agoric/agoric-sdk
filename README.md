@@ -68,10 +68,19 @@ $ make
 $ npm install
 ```
 
-Make shell aliases as below.  Note that the `$PWD` variable must be the absolute path to the current cosmic-swingset directory:
+Make shell aliases as below.  Note that the `$PWD` variable must be
+the absolute path to the current cosmic-swingset directory:
 
 ```
 alias ag-chain-cosmos=$PWD/lib/ag-chain-cosmos
+```
+If installing the GO language didn't setup a `$GOPATH` variable,
+you'll need to find the directory and set the variable. Typically
+```
+GOPATH="~/go"
+```
+Then do
+```
 alias ag-cosmos-helper=$GOPATH/bin/ag-cosmos-helper
 ```
 
