@@ -1,10 +1,8 @@
 {
-  "name": "???",
+  "name": "@agoric/acorn-infix-bang",
   "version": "0.0.1",
-  "description": "???",
-  "main": "dist/???.cjs.js",
-  "module": "dist/???.esm.js",
-  "browser": "dist/???.umd.js",
+  "description": "Eventual send (infix bang) parser plugin for Acorn",
+  "main": "index.js",
   "scripts": {
     "test": "tape -r esm 'test/**/*.js'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
@@ -18,13 +16,15 @@
     "eslint-plugin-jsx-a11y": "^6.1.2",
     "eslint-plugin-prettier": "^3.0.1",
     "eslint-plugin-react": "^7.12.0",
+    "esm": "^3.2.25",
     "prettier": "^1.16.4",
-    "tape": "^4.9.2",
+    "rollup": "^1.16.7",
     "tap-spec": "^5.0.0",
+    "tape": "^4.9.2",
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
-    "esm": "^3.2.5"
+    "acorn": "^6.2.0"
   },
   "keywords": [],
   "files": [
@@ -32,12 +32,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "???"
+    "url": "https://github.com/Agoric/acorn-infix-bang"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "???"
+    "url": "https://github.com/Agoric/acorn-infix-bang/issues"
   },
-  "homepage": "???"
+  "homepage": "https://github.com/acorn-infix-bang#readme"
 }
