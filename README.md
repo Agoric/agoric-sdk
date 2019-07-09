@@ -1,6 +1,5 @@
-# New Repo
+# Acorn Infix Bang
 
-This repository should be a compilation of everything that a new
-Agoric repo should have, including ESLint settings, prettier settings,
-package.json dependencies and scripts, licenses, sample tests, CircleCI config, and
-VSCode testing config.
+This Acorn parser plugin understands infix bang (eventual send).
+
+More docs will be added when the proposal reaches stage 0.
