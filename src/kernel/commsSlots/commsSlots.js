@@ -21,7 +21,10 @@ export default function makeCommsSlots(syscall, _state, helpers) {
 
   // setup
   const state = makeState(vatID);
-  const { mapOutbound, mapOutboundTarget } = makeMapOutbound(syscall, state);
+  const { mapOutbound, mapOutboundTarget, mapResultSlot } = makeMapOutbound(
+    syscall,
+    state,
+  );
   const { inboundHandler } = makeInboundHandler(state, syscall);
   const inboundHandlerFacetID = state.ids.allocateID();
 
@@ -37,10 +40,10 @@ export default function makeCommsSlots(syscall, _state, helpers) {
 
   const dispatch = harden({
     // eslint-disable-next-line consistent-return
-    deliver(facetid, method, argsStr, kernelToMeSlots, resolverID) {
+    deliver(facetid, method, argsStr, kernelToMeSlots, resolver) {
       const kernelToMeSlotTarget = { type: 'export', id: facetid };
       csdebug(
-        `cs[${vatID}].dispatch.deliver ${facetid}.${method} -> ${resolverID}`,
+        `cs[${vatID}].dispatch.deliver ${facetid}.${method} -> ${resolver && resolver.id}`,
       );
 
       // CASE 1: we are hitting the initial object (0)
@@ -51,7 +54,7 @@ export default function makeCommsSlots(syscall, _state, helpers) {
           method,
           argsStr,
           kernelToMeSlots,
-          resolverID,
+          resolver.id,
           helpers,
           inboundHandlerFacetID,
         );
@@ -114,12 +117,10 @@ export default function makeCommsSlots(syscall, _state, helpers) {
 
         // TODO: resolverID might be empty if the local vat did
         // syscall.sendOnly, in which case we should leave resultSlot empty too
-        const resultSlot = mapOutbound(otherMachineName, {
-          type: 'resolver',
-          id: resolverID,
-        });
+        const resultSlot = mapResultSlot(otherMachineName, resolver);
 
         const message = JSON.stringify({
+          event: 'send',
           target: meToYouTargetSlot,
           methodName: method,
           args, // TODO just include argsStr directly
@@ -151,7 +152,7 @@ export default function makeCommsSlots(syscall, _state, helpers) {
 
         // we need to map the slots and pass those on
         const dataMsg = JSON.stringify({
-          event: 'notifyFulfillToData',
+          event: 'fulfillToData',
           promise: meToYouSlot,
           args: dataStr,
           slots: meToYouSlots, // TODO: these should be dependent on the machine we are sending to
@@ -178,7 +179,7 @@ export default function makeCommsSlots(syscall, _state, helpers) {
       function mapAndSend(outgoingWireMessage) {
         const { otherMachineName, meToYouSlot } = outgoingWireMessage;
         const dataMsg = JSON.stringify({
-          event: 'notifyFulfillToPresence',
+          event: 'fulfillToPresence',
           promise: meToYouSlot,
           target: mapOutbound(otherMachineName, slot),
         });
@@ -201,7 +202,7 @@ export default function makeCommsSlots(syscall, _state, helpers) {
       function mapAndSend(outgoingWireMessage) {
         const { otherMachineName, meToYouSlot } = outgoingWireMessage;
         const msg = JSON.stringify({
-          event: 'notifyReject',
+          event: 'reject',
           promise: meToYouSlot,
           args: data,
           slots: slots.map(slot => mapOutbound(otherMachineName, slot)),

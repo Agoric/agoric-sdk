@@ -502,7 +502,7 @@ export default function makeVatManager(
           msg.method,
           msg.argsString,
           inputSlots,
-          resolverID,
+          harden({ type: 'resolver', id: resolverID }),
         ],
         `vat[${vatID}][${target.id}].${msg.method} dispatch failed`,
       );

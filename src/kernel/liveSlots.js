@@ -335,7 +335,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     return pr;
   }
 
-  function deliver(facetid, method, argsbytes, caps, resolverID) {
+  function deliver(facetid, method, argsbytes, caps, { id: resolverID }) {
     lsdebug(
       `ls[${forVatID}].dispatch.deliver ${facetid}.${method} -> ${resolverID}`,
     );

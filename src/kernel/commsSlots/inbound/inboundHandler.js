@@ -45,107 +45,105 @@ export default function makeInboundHandler(state, syscall) {
       const [senderID, dataStr] = JSON.parse(argsStr).args;
       sidebug(`sendIn ${senderID} => ${dataStr}`);
 
-      const mapInbound = makeMapInbound(syscall, state, senderID);
-
+      const {
+        mapInboundTarget,
+        mapInboundSlot,
+        mapInboundResolver,
+      } = makeMapInbound(syscall, state, senderID);
       const data = parseJSON(dataStr);
 
       // everything that comes in to us as a target or a slot needs to
       // get mapped to a kernel slot. If we don't already have a kernel slot for
-      // something, we should allocate it.
+      // something, it is either an error or we should allocate it.
 
-      // if not an event, then we are going to be calling something on
-      // an object that we know about (is this right?)
+      // there are four potential events which map onto the syscalls
+      // * send
+      // * fulfillToData
+      // * fulfillToPresence
+      // * reject
 
-      // get the target (an object representing a promise or a vat
-      // object) from the index in the data
+      // the syscall interfaces are:
+      // * syscall.send(kernelToMeTarget, methodName, argsString, kernelToMeSlots) ->
+      //   resultPromiseID
+      // * syscall.fulfillToData(resolverID, resultString,
+      //   kernelToMeSlots)
+      // * syscall.fulfillToPresence(resolverID, kernelToMeSlot)
+      // * syscall.reject(resolverID, resultString, kernelToMeSlots)
 
-      let kernelToMeSlots;
-      let kernelToMeTarget;
-      if (data.slots) {
-        kernelToMeSlots = data.slots.map(mapInbound);
-      }
-      if (data.target) {
-        // since this isn't a message target but instead saying that
-        // the promise resolves to a target, this target could be
-        // unknown at this point?
-        kernelToMeTarget = mapInbound(data.target);
-        if (kernelToMeTarget === undefined) {
-          throw new Error(
-            `unrecognized inbound egress target ${JSON.stringify(data.target)}`,
+      switch (data.event) {
+        case 'send': {
+          // build the arguments to syscall.send()
+          const kernelToMeTarget = mapInboundTarget(data.target);
+          const { methodName } = data;
+
+          const kernelToMeSlots = data.slots.map(mapInboundSlot);
+
+          // put the target.methodName(args, slots) call on the runQueue to
+          // be delivered
+          const promiseID = syscall.send(
+            kernelToMeTarget,
+            methodName,
+            JSON.stringify({ args: data.args }),
+            kernelToMeSlots,
           );
-        }
-      }
 
-      // TODO: 'data.event' should include 'send', rather than indicating a
-      // send by its omission
-      // TODO: replace syscall.notifyReject with just syscall.reject
+          // if there is a resultIndex passed in, the inbound sender wants
+          // to know about the result, so we need to store this in clist for
+          // the sender to have future access to
 
-      if (data.event) {
-        // we should have already made a promise/resolver pair for the
-        // kernel once we received a "your-promise" message previously
-        const promiseKernelToMeSlot = mapInbound(data.promise);
-        const resolverKernelToMeSlot = state.promiseResolverPairs.getResolver(
-          promiseKernelToMeSlot,
-        );
-        switch (data.event) {
-          case 'notifyFulfillToData':
-            syscall.fulfillToData(
-              resolverKernelToMeSlot.id,
-              data.args,
-              kernelToMeSlots,
+          // in the sendOnly case, no resultSlot should be passed
+
+          if (data.resultSlot) {
+            const kernelToMeSlot = {
+              type: 'promise',
+              id: promiseID,
+            };
+
+            // We don't need to create a promise because the result of
+            // syscall.send() is a promiseID already.
+
+            const youToMeSlot = data.resultSlot;
+            const meToYouSlot = state.clists.changePerspective(youToMeSlot);
+            state.clists.add(
+              senderID,
+              kernelToMeSlot,
+              youToMeSlot,
+              meToYouSlot,
             );
-            return;
-          case 'notifyFulfillToPresence':
-            syscall.fulfillToPresence(
-              resolverKernelToMeSlot.id,
-              kernelToMeTarget,
-            );
-            return;
-          case 'notifyReject':
-            syscall.reject(
-              resolverKernelToMeSlot.id,
-              data.args,
-              kernelToMeSlots,
-            );
-            return;
-          default:
-            throw new Error(`unknown event ${data.event}`);
+            syscall.subscribe(promiseID);
+          }
+          break;
         }
-      }
+        case 'fulfillToData': {
+          const resolverKernelToMeSlot = mapInboundResolver(data.promise);
+          const kernelToMeSlots = data.slots.map(mapInboundSlot);
 
-      /* slots are used when referencing a
-        presence as an arg, e.g.:
-        {
-          index: 2,
-          methodName: 'deposit',
-          args: [20, { '@qclass': 'slot', index: 0 }],
-          slots: [{ type: 'export', index: 0 }],
-          resultIndex: 3,
+          syscall.fulfillToData(
+            resolverKernelToMeSlot.id,
+            data.args,
+            kernelToMeSlots,
+          );
+          return;
         }
-      */
+        case 'fulfillToPresence': {
+          const resolverKernelToMeSlot = mapInboundResolver(data.promise);
+          const kernelToMeTarget = mapInboundSlot(data.target);
 
-      // put the target.methodName(args, slots) call on the runQueue to
-      // be delivered
-      const promiseID = syscall.send(
-        kernelToMeTarget,
-        data.methodName,
-        JSON.stringify({ args: data.args }),
-        kernelToMeSlots,
-      );
+          syscall.fulfillToPresence(
+            resolverKernelToMeSlot.id,
+            kernelToMeTarget,
+          );
+          return;
+        }
+        case 'reject': {
+          const resolverKernelToMeSlot = mapInboundResolver(data.promise);
+          const kernelToMeSlots = data.slots.map(mapInboundSlot);
 
-      // if there is a resultIndex passed in, the inbound sender wants
-      // to know about the result, so we need to store this in clist for
-      // the sender to have future access to
-
-      if (data.resultSlot) {
-        const kernelToMeSlot = {
-          type: 'promise',
-          id: promiseID,
-        };
-        const youToMeSlot = data.resultSlot; // your-answer = our answer, their question
-        const meToYouSlot = state.clists.changePerspective(youToMeSlot);
-        state.clists.add(senderID, kernelToMeSlot, youToMeSlot, meToYouSlot);
-        syscall.subscribe(promiseID);
+          syscall.reject(resolverKernelToMeSlot.id, data.args, kernelToMeSlots);
+          return;
+        }
+        default:
+          throw new Error(`unknown event ${data.event}`);
       }
     },
   };

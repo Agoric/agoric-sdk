@@ -28,7 +28,7 @@ test('makeCommsSlots deliver to commsController (facetid 0)', t => {
     'init',
     '{"args":[{"@qclass":"slot","index":0}]}',
     [vatTP],
-    30,
+    { type: 'resolver', id: 30 },
   );
 
   t.deepEqual(calls[0], [
@@ -81,7 +81,7 @@ test('makeCommsSlots deliver to egress', t => {
     'init',
     '{"args":[{"@qclass":"slot","index":0}]}',
     [vatTP],
-    30,
+    { type: 'resolver', id: 30 },
   );
   t.equal(calls[0][0], 'send');
   calls.shift();
@@ -102,12 +102,13 @@ test('makeCommsSlots deliver to egress', t => {
     'addEgress',
     '{"args":["bot", 70, {"@qclass":"slot","index":0}]}',
     [{ type: 'import', id: 55 }],
-    31,
+    { type: 'resolver', id: 31 },
   );
   t.deepEqual(calls, [['fulfillToData', [31, UNDEFINED, []]]]);
   calls.shift();
 
   const machineArgs = {
+    event: 'send',
     target: { type: 'your-egress', id: 70 },
     methodName: 'bar',
     // args: JSON.stringify([{foo: 1}]),
@@ -164,7 +165,7 @@ test('makeCommsSlots deliver facetid is unexpected', t => {
   const commsSlots = makeCommsSlots(mockSyscall, {}, helpers);
 
   t.throws(() => {
-    commsSlots.deliver(99, 'init', '{"args":["bot","botSigningKey"]}', [], 30);
+    commsSlots.deliver(99, 'init', '{"args":["bot","botSigningKey"]}', [], { type: 'resolver', id: 30 });
   }, "{[Error: unknown facetid] message: 'unknown facetid' }");
   t.equal(calls.length, 0);
   // TODO: init() really ought to notifyReject() upon error, not leave the
@@ -203,7 +204,7 @@ test('makeCommsSlots deliver to ingress', t => {
     'init',
     '{"args":[{"@qclass":"slot","index":0}]}',
     [vatTP],
-    30,
+    { type: 'resolver', id: 30 },
   );
   t.equal(calls[0][0], 'send');
   calls.shift();
@@ -216,12 +217,14 @@ test('makeCommsSlots deliver to ingress', t => {
     'addIngress',
     '{"args":["bot", {"@qclass":"slot","index":0}]}',
     [{ type: 'your-ingress', id: 0 }],
-    31,
+    { type: 'resolver', id: 31 },
   );
   t.deepEqual(calls[0], ['fulfillToPresence', [31, { type: 'export', id: 2 }]]);
   calls.shift();
 
-  commsSlots.deliver(2, 'encourageMe', '{"args":["me"]}', [], 32);
+  commsSlots.deliver(2, 'encourageMe', '{"args":["me"]}', [], {
+    type: 'resolver', id: 32,
+  });
   t.equal(calls[0][0], 'send');
   const args = calls[0][1];
   calls.shift();
@@ -231,7 +234,7 @@ test('makeCommsSlots deliver to ingress', t => {
   t.deepEqual(JSON.parse(args[2]), {
     args: [
       'bot',
-      '{"target":{"type":"your-egress","id":{"@qclass":"slot","index":0}},"methodName":"encourageMe","args":["me"],"slots":[],"resultSlot":{"type":"your-resolver","id":3}}',
+      '{"event":"send","target":{"type":"your-egress","id":{"@qclass":"slot","index":0}},"methodName":"encourageMe","args":["me"],"slots":[],"resultSlot":{"type":"your-resolver","id":3}}',
     ],
   });
   t.deepEqual(args[3], []);
