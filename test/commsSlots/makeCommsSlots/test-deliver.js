@@ -165,7 +165,10 @@ test('makeCommsSlots deliver facetid is unexpected', t => {
   const commsSlots = makeCommsSlots(mockSyscall, {}, helpers);
 
   t.throws(() => {
-    commsSlots.deliver(99, 'init', '{"args":["bot","botSigningKey"]}', [], { type: 'resolver', id: 30 });
+    commsSlots.deliver(99, 'init', '{"args":["bot","botSigningKey"]}', [], {
+      type: 'resolver',
+      id: 30,
+    });
   }, "{[Error: unknown facetid] message: 'unknown facetid' }");
   t.equal(calls.length, 0);
   // TODO: init() really ought to notifyReject() upon error, not leave the
@@ -223,7 +226,8 @@ test('makeCommsSlots deliver to ingress', t => {
   calls.shift();
 
   commsSlots.deliver(2, 'encourageMe', '{"args":["me"]}', [], {
-    type: 'resolver', id: 32,
+    type: 'resolver',
+    id: 32,
   });
   t.equal(calls[0][0], 'send');
   const args = calls[0][1];
