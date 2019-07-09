@@ -1,14 +1,15 @@
 {
-  "name": "???",
+  "name": "@agoric/transform-bang",
   "version": "0.0.1",
-  "description": "???",
-  "main": "dist/???.cjs.js",
-  "module": "dist/???.esm.js",
-  "browser": "dist/???.umd.js",
+  "description": "transform-bang",
+  "main": "dist/transform-bang.cjs.js",
+  "module": "dist/transform-bang.esm.js",
+  "browser": "dist/transform-bang.umd.js",
   "scripts": {
     "test": "tape -r esm 'test/**/*.js'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
-    "lint-check": "eslint '**/*.{js,jsx}'"
+    "lint-check": "eslint '**/*.{js,jsx}'",
+    "build": "rollup -c rollup.config.js"
   },
   "devDependencies": {
     "eslint": "^5.11.1",
@@ -19,12 +20,20 @@
     "eslint-plugin-prettier": "^3.0.1",
     "eslint-plugin-react": "^7.12.0",
     "prettier": "^1.16.4",
-    "tape": "^4.9.2",
+    "rollup": "^1.16.6",
+    "rollup-plugin-commonjs": "^10.0.1",
     "tap-spec": "^5.0.0",
+    "tape": "^4.9.2",
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
-    "esm": "^3.2.5"
+    "@agoric/babel-parser": "^7.5.0-infixBang.1",
+    "@agoric/eventual-send": "0.0.1",
+    "@agoric/harden": "0.0.4",
+    "@babel/generator": "^7.5.0",
+    "esm": "^3.2.5",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "ses": "file:ses-0.5.1.tgz"
   },
   "keywords": [],
   "files": [
@@ -32,12 +41,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "???"
+    "url": "git+https://github.com/Agoric/transform-bang"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "???"
+    "url": "https://github.com/Agoric/transform-bang/issues"
   },
-  "homepage": "???"
+  "homepage": "https://github.com/Agoric/transform-bang#readme"
 }
