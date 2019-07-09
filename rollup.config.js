@@ -1,4 +1,3 @@
-import commonjs from 'rollup-plugin-commonjs';
 import resolve from 'rollup-plugin-node-resolve';
 
 export default [
@@ -19,6 +18,6 @@ export default [
         format: 'cjs',
       },
     ],
-    plugins: [resolve(), commonjs()],
+    plugins: [resolve()],
   },
 ];

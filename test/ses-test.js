@@ -1,10 +1,14 @@
 import { test } from 'tape-promise/tape';
 import * as SES from 'ses';
+
+import { parse } from '@agoric/babel-parser';
+import generate from '@babel/generator';
+
 import makeBangTransformer from '../src';
 
 test('infix bang is disabled by default', t => {
   try {
-    const s = SES.makeSESRootRealm();
+    const s = SES.makeSESRootRealm(parse, generate);
     t.throws(
       () =>
         s.evaluate('"abc"!length', {
@@ -28,7 +32,7 @@ test('infix bang is disabled by default', t => {
 test('infix bang can be enabled', async t => {
   try {
     const s = SES.makeSESRootRealm({
-      transforms: makeBangTransformer(),
+      transforms: makeBangTransformer(parse, generate),
     });
     t.equals(await s.evaluate('"abc"!length'), 3);
     t.equals(await s.evaluate('({foo() { return "hello"; }})!foo()'), 'hello');

@@ -1,9 +1,6 @@
 import makeEPromiseClass from '@agoric/eventual-send';
 
-import { parse } from '@agoric/babel-parser';
-import generate from '@babel/generator';
-
-function makeBangTransformer() {
+function makeBangTransformer(parse, generate) {
   let EPromise;
   const transform = {
     init(r, harden) {
