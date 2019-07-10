@@ -1,6 +1,6 @@
 {
   "name": "@agoric/transform-bang",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "description": "transform-bang",
   "main": "dist/transform-bang.cjs.js",
   "module": "dist/transform-bang.esm.js",
@@ -12,6 +12,11 @@
     "build": "rollup -c rollup.config.js"
   },
   "devDependencies": {
+    "@agoric/acorn-infix-bang": "0.0.3",
+    "@agoric/babel-parser": "^7.5.0-infixBang.1",
+    "@babel/generator": "^7.5.0",
+    "acorn": "^6.2.0",
+    "astring": "^1.4.0",
     "eslint": "^5.11.1",
     "eslint-config-airbnb": "^17.1.0",
     "eslint-config-prettier": "^3.3.0",
@@ -21,12 +26,10 @@
     "eslint-plugin-react": "^7.12.0",
     "prettier": "^1.16.4",
     "rollup": "^1.16.6",
+    "rollup-plugin-node-resolve": "^5.2.0",
     "tap-spec": "^5.0.0",
     "tape": "^4.9.2",
-    "tape-promise": "^4.0.0",
-    "rollup-plugin-node-resolve": "^5.2.0",
-    "@agoric/babel-parser": "^7.5.0-infixBang.1",
-    "@babel/generator": "^7.5.0"
+    "tape-promise": "^4.0.0"
   },
   "dependencies": {
     "@agoric/eventual-send": "^0.1.3",

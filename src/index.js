@@ -16,15 +16,15 @@ function makeBangTransformer(parse, generate) {
     rewrite(rs) {
       // Parse with infixBang enabled, rewriting to
       // Promise.resolve(...).get/put/post/delete
-      const babelAst = parse(rs.src, {
+      const ast = parse(rs.src, {
         plugins: ['infixBang'],
       });
       // Create the source from the ast.
-      const output = generate(babelAst, {}, rs.src);
+      const output = generate(ast, {}, rs.src);
       // console.log(`have src`, output.code);
       return {
         ...rs,
-        babelAst,
+        ast,
         src: output.code,
       };
     },
