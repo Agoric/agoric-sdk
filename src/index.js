@@ -1,19 +1,13 @@
-import makeEPromiseClass from '@agoric/eventual-send';
+import maybeExtendPromise from '@agoric/eventual-send';
+
+const EPromise = maybeExtendPromise(Promise);
+
+// Attempt to patch the platform.
+(typeof window === 'undefined' ? global : window).Promise = EPromise;
 
 function makeBangTransformer(parse, generate) {
-  let EPromise;
   const transform = {
-    init(r, harden) {
-      // Create a new EPromise from the platform Promise implementation.
-      EPromise = harden(r.evaluate(`(${makeEPromiseClass})`)(r.global.Promise));
-    },
-
     endow(es) {
-      if (!EPromise) {
-        // Not yet initialized: don't override platform Promises.
-        return es;
-      }
-      // Override the global Promise reference.
       return {
         ...es,
         endowments: { ...es.endowments, Promise: EPromise },

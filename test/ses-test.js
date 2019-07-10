@@ -6,9 +6,19 @@ import generate from '@babel/generator';
 
 import makeBangTransformer from '../src';
 
+test('Promise is augmented', t => {
+  try {
+    t.equals(typeof Promise.resolve(123).get, 'function');
+  } catch (e) {
+    t.assert(false, e);
+  } finally {
+    t.end();
+  }
+});
+
 test('infix bang is disabled by default', t => {
   try {
-    const s = SES.makeSESRootRealm(parse, generate);
+    const s = SES.makeSESRootRealm();
     t.throws(
       () =>
         s.evaluate('"abc"!length', {
