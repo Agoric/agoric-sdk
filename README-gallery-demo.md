@@ -7,12 +7,12 @@ pixels.
 
 To access the gallery, type `home.gallery` in the REPL. `home.gallery` is a
 Presence. In the SwingSet environment, Presences are remote references to objects on
-other vats. To invoke them, use the `E` wrapper. For example, the
+other vats. To invoke them, use the [proposed infix bang](https://github.com/Agoric/proposal-infix-bang). For example, the
 first thing you might want to do is tap the gallery faucet to get a
 pixel for free: 
 
 ```js
-E(home.gallery).tapFaucet()
+home.gallery!tapFaucet()
 ```
 
 This returns a presence for the pixel that you receive from the
@@ -28,23 +28,22 @@ using the 'use' right, and selling a pixel to the gallery through a
 escrow smart contract.  
 
 ```
-E(home.gallery).tapFaucet()
-E(home.gallery).split(history[0])
+home.gallery!tapFaucet()
+home.gallery!split(history[0])
 history[1].useRightPayment
-E(home.gallery).changeColor(history[2], '#FF69B4')
-E(home.gallery).tapFaucet()
-E(history[4]).getBalance()
-E(home.gallery).pricePixelAmount(history[5])
-E(home.gallery).sellToGallery(history[5])
+home.gallery!changeColor(history[2], '#FF69B4')
+home.gallery!tapFaucet()
+history[4]!getBalance()
+home.gallery!pricePixelAmount(history[5])
+home.gallery!sellToGallery(history[5])
 history[7].inviteP
 history[7].host
-E(history[9]).redeem(history[8])
-E(history[10]).offer(history[4])
-E(home.gallery).getIssuers()
+history[9]!redeem(history[8])
+history[10]!offer(history[4])
+home.gallery!getIssuers()
 history[12].pixelIssuer
 history[12].dustIssuer
-E(history[13]).makeEmptyPurse()
-E(history[14]).makeEmptyPurse()
-E(home.gallery).collectFromGallery(history[10], history[16],
-history[15], 'my escrow')
+history[13]!makeEmptyPurse()
+history[14]!makeEmptyPurse()
+home.gallery!collectFromGallery(history[10], history[16], history[15], 'my escrow')
 ```
