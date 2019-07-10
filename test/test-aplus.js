@@ -1,10 +1,10 @@
 import test from 'tape';
 import promisesAplusTests from 'promises-aplus-tests';
-import makeEPromiseClass from '../src/index';
+import maybeExtendPromise from '../src/index';
 
 test('Promises/A+ 1.1', t => {
   try {
-    const EPromise = makeEPromiseClass(Promise);
+    const EPromise = maybeExtendPromise(Promise);
     const adapter = {
       resolved: EPromise.resolve,
       rejected: EPromise.rejected,

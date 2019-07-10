@@ -1,7 +1,7 @@
 // Type definitions for eventual-send
-// FIXME: Add jsdocs.
+// TODO: Add jsdocs.
 
-interface ERelay {
+interface EHandler {
   GET(p: EPromise<unknown>, name: string | number | symbol): EPromise<unknown>;
   PUT(p: EPromise<unknown>, name: string | number | symbol, value: unknown): EPromise<void>;
   DELETE(p: EPromise<unknown>, name: string | number | symbol): EPromise<boolean>;
@@ -38,14 +38,14 @@ interface RejectedStatus {
 
 type SettledStatus = FulfilledStatus | RejectedStatus;
 
-type RemoteExecutor<R> = (
-  resolveRemote: (value?: R, resolvedRelay?: ERelay) => void,
-  rejectRemote: (reason?: unknown) => void,
+type HandledExecutor<R> = (
+  resolveHandled: (value?: R, resolvedHandler?: EHandler) => void,
+  rejectHandled: (reason?: unknown) => void,
 ) => void;
 
 interface EPromiseConstructor extends PromiseConstructor {
   prototype: EPromise<unknown>;
-  makeRemote<R>(executor: RemoteExecutor<R>, unresolvedRelay?: ERelay): EPromise<R>;
+  makeHandled<R>(executor: HandledExecutor<R>, unresolvedHandler?: EHandler): EPromise<R>;
   resolve<R>(value: R): EPromise<R>;
   reject(reason: unknown): EPromise<never>;
   all(iterable: Iterable): EPromise<unknown[]>;
@@ -53,4 +53,4 @@ interface EPromiseConstructor extends PromiseConstructor {
   race(iterable: Iterable): EPromise<unknown>; 
 }
 
-export default function makeEPromiseClass(Promise: PromiseConstructor): EPromiseConstructor;
+export default function maybeExtendPromise(Promise: PromiseConstructor): EPromiseConstructor;

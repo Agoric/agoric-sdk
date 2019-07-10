@@ -1,4 +1,4 @@
-# MakeEPromiseClass
+# MaybeExtendPromise
 
 [![Build Status][circleci-svg]][circleci-url]
 [![dependency status][deps-svg]][deps-url]
@@ -7,19 +7,19 @@
 
 [![Promises/A+ 1.1 compliant][aplus-logo]][aplus-url] Promises/A+ 1.1 compliant
 
-Create a class which implements the eventual-send Promise API.  This API is used by the ECMAScript infix-bang proposal.
+Extend a Promise class to implements the eventual-send API.  This API is used by the ECMAScript infix-bang proposal.
 
 ## How to use
 
 > Note: If you're writing an application, you probably don't want to use this package directly. You'll want to use the eventual-send `!` operator (infix bang) provided in [SES](https://github.com/Agoric/SES) or other platforms.
 
-The created `EPromise` class can be used as described in `test/test.js`.
+The updated `EPromise` class can be used as described in `test/test.js`.
 
 ## Creating a custom EPromise Class
 
-This package (`@agoric/eventual-send`) provides a `makeEPromiseClass()` which can be used to build your own `EPromise` class. When you call `makeEPromiseClass()`, you give it an underlying `Promise` class that is inherited and augmented with eventual-send methods.
+This package (`@agoric/eventual-send`) provides a `maybeExtendPromise()` which can be used to extend your own `Promise` class. When you call `maybeExtendPromise()`, you give it an underlying `Promise` constructor that is augmented with eventual-send methods.
 
-You can create an `EPromise` class from any existing Promises/A+ implementation, including the ECMAScript 6 and later `Promise` implementation.
+You can extend any existing Promises/A+ implementation, including the ECMAScript 6 and later `Promise` implementation.
 
 [aplus-url]: https://promisesaplus.com/
 [aplus-logo]: https://promisesaplus.com/assets/logo-small.png

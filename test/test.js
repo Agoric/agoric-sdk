@@ -1,5 +1,5 @@
 import test from 'tape';
-import makeEPromiseClass from '../src/index';
+import maybeExtendPromise from '../src/index';
 
 if (typeof window !== 'undefined') {
   // Let the browser detect when the tests are done.
@@ -12,9 +12,9 @@ if (typeof window !== 'undefined') {
   });
 }
 
-test('EPromise.makeRemote expected errors', async t => {
+test('EPromise.makeHandled expected errors', async t => {
   try {
-    const EPromise = makeEPromiseClass(Promise);
+    const EPromise = maybeExtendPromise(Promise);
 
     const relay = {
       GET(key) {
@@ -34,14 +34,14 @@ test('EPromise.makeRemote expected errors', async t => {
     // Full relay succeeds.
     const fullObj = {};
     t.equal(
-      await EPromise.makeRemote(resolve => resolve(fullObj, relay)),
+      await EPromise.makeHandled(resolve => resolve(fullObj, relay)),
       fullObj,
     );
 
     // Primitive relay fails.
     try {
       t.assert(
-        (await EPromise.makeRemote(resolve => resolve({}, 123))) && false,
+        (await EPromise.makeHandled(resolve => resolve({}, 123))) && false,
       );
     } catch (e) {
       t.throws(() => {
@@ -56,7 +56,7 @@ test('EPromise.makeRemote expected errors', async t => {
       try {
         t.assert(
           // eslint-disable-next-line no-await-in-loop
-          (await EPromise.makeRemote(resolve => resolve({}, relay2))) && false,
+          (await EPromise.makeHandled(resolve => resolve({}, relay2))) && false,
         );
       } catch (e) {
         t.throws(() => {
@@ -68,7 +68,7 @@ test('EPromise.makeRemote expected errors', async t => {
     // Primitive resolve fails.
     try {
       t.assert(
-        (await EPromise.makeRemote(resolve => resolve(123, relay))) && false,
+        (await EPromise.makeHandled(resolve => resolve(123, relay))) && false,
       );
     } catch (e) {
       t.throws(() => {
@@ -80,7 +80,7 @@ test('EPromise.makeRemote expected errors', async t => {
     const promise = EPromise.resolve({});
     try {
       t.assert(
-        (await EPromise.makeRemote(resolve => resolve(promise, relay))) &&
+        (await EPromise.makeHandled(resolve => resolve(promise, relay))) &&
           false,
       );
     } catch (e) {
@@ -91,10 +91,10 @@ test('EPromise.makeRemote expected errors', async t => {
 
     // First resolve succeeds but second resolve fails.
     const obj = {};
-    t.assert(await EPromise.makeRemote(resolve => resolve(obj, relay)));
+    t.assert(await EPromise.makeHandled(resolve => resolve(obj, relay)));
     try {
       t.assert(
-        (await EPromise.makeRemote(resolve => resolve(obj, relay))) && false,
+        (await EPromise.makeHandled(resolve => resolve(obj, relay))) && false,
       );
     } catch (e) {
       t.throws(() => {
@@ -108,11 +108,11 @@ test('EPromise.makeRemote expected errors', async t => {
   }
 });
 
-test('EPromise.makeRemote(executor, undefined)', async t => {
+test('EPromise.makeHandled(executor, undefined)', async t => {
   try {
-    const EPromise = makeEPromiseClass(Promise);
+    const EPromise = maybeExtendPromise(Promise);
 
-    const remoteP = EPromise.makeRemote(resolve => {
+    const remoteP = EPromise.makeHandled(resolve => {
       setTimeout(() => {
         const o = {
           num: 123,
@@ -165,7 +165,7 @@ test('EPromise.all', async t => {
   }
 
   try {
-    EPromise = makeEPromiseClass(Promise);
+    EPromise = maybeExtendPromise(Promise);
 
     t.deepEqual(await EPromise.all([1, Promise.resolve(2), 3]), [1, 2, 3]);
     t.deepEqual(await EPromise.all(generator()), [9, 80, -7]);
@@ -184,7 +184,7 @@ test('EPromise.all', async t => {
   }
 });
 
-test('EPromise.allSettled', async t => {
+test.skip('EPromise.allSettled', async t => {
   let EPromise;
   let shouldThrow;
   function* generator() {
@@ -195,7 +195,7 @@ test('EPromise.allSettled', async t => {
   }
 
   try {
-    EPromise = makeEPromiseClass(Promise);
+    EPromise = maybeExtendPromise(Promise);
 
     t.deepEqual(await EPromise.allSettled([1, Promise.resolve(2), 3]), [
       { status: 'fulfilled', value: 1 },
@@ -240,7 +240,7 @@ test('EPromise.race', async t => {
   }
 
   try {
-    EPromise = makeEPromiseClass(Promise);
+    EPromise = maybeExtendPromise(Promise);
 
     try {
       t.equal(await EPromise.race([1, delay(2, 1000), delay(3, 500)]), 1);
@@ -262,7 +262,7 @@ test('EPromise.race', async t => {
 
 test('get', async t => {
   try {
-    const EPromise = makeEPromiseClass(Promise);
+    const EPromise = maybeExtendPromise(Promise);
     const res = await EPromise.resolve([123, 456, 789]).get(1);
     t.equal(res, 456);
   } catch (e) {
@@ -274,7 +274,7 @@ test('get', async t => {
 
 test('put', async t => {
   try {
-    const EPromise = makeEPromiseClass(Promise);
+    const EPromise = maybeExtendPromise(Promise);
     const a = [123, 456, 789];
     const ep = EPromise.resolve(a);
     t.equal(await ep.put(1, 999), 999);
@@ -288,7 +288,7 @@ test('put', async t => {
 
 test('post', async t => {
   try {
-    const EPromise = makeEPromiseClass(Promise);
+    const EPromise = maybeExtendPromise(Promise);
     const fn = () => 'hello';
     fn.a = n => n + 1;
     fn[2] = (n1, n2) => n1 * n2;
@@ -305,7 +305,7 @@ test('post', async t => {
 
 test('invoke', async t => {
   try {
-    const EPromise = makeEPromiseClass(Promise);
+    const EPromise = maybeExtendPromise(Promise);
     const fn = () => 'hello';
     fn.a = n => n + 1;
     fn[2] = (n1, n2) => n1 * n2;
@@ -322,7 +322,7 @@ test('invoke', async t => {
 
 test('fcall', async t => {
   try {
-    const EPromise = makeEPromiseClass(Promise);
+    const EPromise = maybeExtendPromise(Promise);
     const ep = EPromise.resolve((a, b) => a * b);
     t.equal(await ep.fcall(3, 6), 18);
   } catch (e) {
@@ -334,7 +334,7 @@ test('fcall', async t => {
 
 test('fapply', async t => {
   try {
-    const EPromise = makeEPromiseClass(Promise);
+    const EPromise = maybeExtendPromise(Promise);
     const ep = EPromise.resolve((a, b) => a * b);
     t.equal(await ep.fapply([3, 6]), 18);
   } catch (e) {
