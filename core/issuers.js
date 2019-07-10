@@ -1,4 +1,4 @@
-/* eslint no-use-before-define: 0 */ // --> OFF
+/* eslint no-use-before-define: 0 */ // => OFF
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
