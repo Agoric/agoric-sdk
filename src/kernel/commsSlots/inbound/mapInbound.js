@@ -69,7 +69,7 @@ function makeMapInbound(syscall, state, senderID) {
   }
 
   function mapInboundResolver(youToMeSlot) {
-    // we store the promise in the clist, but we need to get the resolver
+    // sometimes the resolver is stored (the resultSlot case), sometimes the promise is stored
     const kernelToMeSlot = state.clists.mapIncomingWireMessageToKernelSlot(
       senderID,
       youToMeSlot,
