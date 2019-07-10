@@ -67,21 +67,49 @@ test('infix bang can be enabled', async t => {
     const s = SES.makeSESRootRealm({
       transforms: makeBangTransformer(parse, generate),
     });
-    t.equals(await s.evaluate('"abc"!length'), 3);
-    t.equals(await s.evaluate('({foo() { return "hello"; }})!foo()'), 'hello');
-    t.equals(await s.evaluate('(() => "world")!()'), 'world');
-    t.equals(await s.evaluate('["a", "b", "c"]![2]'), 'c');
+    t.equals(await s.evaluate(`"abc"!length`), 3);
+    t.equals(
+      await s.evaluate(
+        `({foo(nick) { return "hello " + nick; }})!foo('person')`,
+      ),
+      'hello person',
+    );
+    t.equals(await s.evaluate(`((punct) => "world" + punct)!('!')`), 'world!');
+    t.equals(await s.evaluate(`["a", "b", "c"]![2]`), 'c');
 
-    if (false) {
-      // FIXME: Direct eval is not supported.
-      t.equals(await s.evaluate(`eval('"abc"!length')`), 3);
-      t.equals(await s.evaluate(`eval('eval(\\'"abc"!length\\')')`), 3);
+    const o = { gone: 'away', here: 'world' };
+    t.equals(await s.evaluate('o => delete o!gone')(o), true);
+    t.equals(o.gone, undefined);
+    t.equals(o.here, 'world');
+
+    t.equals(await s.evaluate(`o => (o!back = 'here')`)(o), 'here');
+    t.equals(o.back, 'here');
+
+    const noReject = fn => fn();
+
+    let directEval = noReject;
+    if (true) {
+      // FIXME: Should be noReject.
+      directEval = fn => t.rejects(fn(), /possible direct eval expression rejected/);
     }
-    if (false) {
-      // FIXME: (1 , eval) is not a function.
-      t.equals(await s.evaluate(`(1,eval)('"abc"!length')`), 3);
-      t.equals(await s.evaluate(`(1,eval)('(1,eval)(\\'"abc"!length\\')')`), 3);
+    await directEval(async () =>
+      t.equals(await s.evaluate(`eval('"abc"!length')`), 3),
+    );
+    await directEval(async () =>
+      t.equals(await s.evaluate(`eval('eval(\\'"abc"!length\\')')`), 3),
+    );
+
+    let indirEval = noReject;
+    if (true) {
+      // FIXME: Should be noReject.
+      indirEval = fn => t.rejects(fn(), /\(1 , eval\) is not a function/);
     }
+    await indirEval(async () =>
+      t.equals(await s.evaluate(`(1,eval)('"abc"!length')`), 3),
+    );
+    await indirEval(async () =>
+      t.equals(await s.evaluate(`(1,eval)('(1,eval)(\\'"abc"!length\\')')`), 3),
+    );
   } catch (e) {
     t.assert(false, e);
   } finally {
