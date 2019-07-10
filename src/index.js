@@ -41,7 +41,7 @@ export default function maybeExtendPromise(Promise) {
   // If passed a Promise that is not handled, perform
   // the corresponding local operation.
   let forwardingHandler;
-  function relay(p) {
+  function handler(p) {
     return promiseToHandler.get(p) || forwardingHandler;
   }
 
@@ -49,31 +49,31 @@ export default function maybeExtendPromise(Promise) {
     Promise.prototype,
     Object.getOwnPropertyDescriptors({
       get(key) {
-        return relay(this).GET(this, key);
+        return handler(this).GET(this, key);
       },
 
       put(key, val) {
-        return relay(this).PUT(this, key, val);
+        return handler(this).PUT(this, key, val);
       },
 
       delete(key) {
-        return relay(this).DELETE(this, key);
+        return handler(this).DELETE(this, key);
       },
 
       post(optKey, args) {
-        return relay(this).POST(this, optKey, args);
+        return handler(this).POST(this, optKey, args);
       },
 
       invoke(optKey, ...args) {
-        return relay(this).POST(this, optKey, args);
+        return handler(this).POST(this, optKey, args);
       },
 
       fapply(args) {
-        return relay(this).POST(this, undefined, args);
+        return handler(this).POST(this, undefined, args);
       },
 
       fcall(...args) {
-        return relay(this).POST(this, undefined, args);
+        return handler(this).POST(this, undefined, args);
       },
     }),
   );
