@@ -1,6 +1,6 @@
 {
   "name": "@agoric/acorn-infix-bang",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Eventual send (infix bang) parser plugin for Acorn",
   "main": "index.js",
   "scripts": {
