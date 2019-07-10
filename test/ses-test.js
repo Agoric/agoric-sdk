@@ -39,6 +39,29 @@ test('infix bang is disabled by default', t => {
   }
 });
 
+test('infix bang can be enabled twice', async t => {
+  try {
+    const s = SES.makeSESRootRealm({
+      transforms: [
+        ...makeBangTransformer(parse, generate),
+        ...makeBangTransformer(parse, generate),
+      ],
+    });
+    t.equal(await s.evaluate('"abc"![2]'), 'c');
+    const s2 = SES.makeSESRootRealm({
+      transforms: [
+        ...makeBangTransformer(parse, generate),
+        ...makeBangTransformer(parse, generate),
+      ],
+    });
+    t.equal(await s2.evaluate('"abc"![2]'), 'c');
+  } catch (e) {
+    t.assert(false, e);
+  } finally {
+    t.end();
+  }
+});
+
 test('infix bang can be enabled', async t => {
   try {
     const s = SES.makeSESRootRealm({
