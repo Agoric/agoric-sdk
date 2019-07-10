@@ -1,5 +1,6 @@
 import { rollup } from 'rollup';
 import resolve from 'rollup-plugin-node-resolve';
+import infixBang from '@agoric/acorn-infix-bang';
 
 export default async function bundleSource(startFilename) {
   const bundle = await rollup({
@@ -7,6 +8,7 @@ export default async function bundleSource(startFilename) {
     treeshake: false,
     external: ['@agoric/evaluate', '@agoric/nat', '@agoric/harden'],
     plugins: [resolve()],
+    acornInjectPlugins: [infixBang()],
   });
   const { output } = await bundle.generate({
     format: 'cjs',

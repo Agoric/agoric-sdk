@@ -6,11 +6,18 @@ import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import SES from 'ses';
 
+import { parse } from '@agoric/babel-parser';
+import generate from '@babel/generator';
+import makeBangTransformer from '@agoric/transform-bang';
+import maybeExtendPromise from '@agoric/eventual-send';
+
 import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
 import bundleSource from './build-source-bundle';
 import { makeStorageInMemory } from './stateInMemory';
 import buildExternalForFile from './stateOnDisk';
+
+const shims = [`(${maybeExtendPromise})(Promise)`];
 
 export function loadBasedir(basedir) {
   console.log(`= loading config from basedir ${basedir}`);
@@ -61,9 +68,13 @@ function makeEvaluate(e) {
 }
 
 function buildSESKernel(externalStorage) {
+  const transforms = [...makeBangTransformer(parse, generate)];
+  // console.log('transforms', transforms);
   const s = SES.makeSESRootRealm({
     consoleMode: 'allow',
     errorStackMode: 'allow',
+    shims,
+    transforms,
   });
   const r = s.makeRequire({
     '@agoric/evaluate': {
@@ -82,6 +93,9 @@ function buildSESKernel(externalStorage) {
 }
 
 function buildNonSESKernel(externalStorage) {
+  // Extend platform Promises if necessary.
+  maybeExtendPromise(Promise);
+
   const kernelEndowments = { setImmediate };
   const kernel = buildKernelNonSES(kernelEndowments, externalStorage);
   return { kernel };

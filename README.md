@@ -131,20 +131,11 @@ will be made available to the Bootstrap Vat.
 
 When a Callable Object is sent to another Vat, it arrives as a Presence. This
 is a special (empty) object that represents the Callable Object, and can be
-used to send it messages. The special `E()` wrapper is used to get a proxy
-from which methods can be invoked.
+used to send it messages.  If you are running SwingSet under SES (the default),
+then the so-called "bang syntax" can be used to invoke eventual send methods.
 
 Suppose Vat "bob" defines a Root Object with a method named `bar`. The
 bootstrap receives this as `vats.bob`, and can send a message like this:
-
-```js
-function bootstrap(argv, vats) {
-  E(vats.bob).bar('hello bob');
-}
-```
-
-In the future, this `E()` wrapper is intended to be replace with so-called
-"bang syntax", which will look like:
 
 ```js
 function bootstrap(argv, vats) {
@@ -154,12 +145,19 @@ function bootstrap(argv, vats) {
 
 The `!` operator (pronounced "bang") has the same left-to-right precedence as
 the `.` "dot" operator, so that example is equivalent to
-`(vats.bob)!bar('hello bob')`.
+`Promise.resolve(vats.bob).post('bar', ['hello bob'])`.
 
+If you are not running under SES and your Javascript environment does not yet support "bang syntax" (i.e. running `"abc"![2]` results in a syntax error, not a Promise), then the special `E()` wrapper can be used to get a proxy from which methods can be invoked, which looks like:
 
-## Other uses for E
+```js
+function bootstrap(argv, vats) {
+  E(vats.bob).bar('hello bob');
+}
+```
 
-The main purpose of the E wrapper (and bang syntax) is to provide an
+## Other uses for bang syntax
+
+The main purpose of the bang syntax (and E wrapper) is to provide an
 "eventual send" operator, in which the message is always delivered on some
 later turn of the event loop. This happens regardless of whether the target
 is local or in some other Vat:
@@ -168,14 +166,14 @@ is local or in some other Vat:
 const t1 = {
   foo() { console.log('foo called'); },
 };
-E(t1).foo()
-console.log('E() called');
+t1!foo()
+console.log('bang called');
 ```
 
 will print:
 
 ```
-E() called
+bang called
 foo called
 ```
 
@@ -185,28 +183,34 @@ This is equivalent to:
 Promise.resolve(t1).then(x => x.foo())
 ```
 
+or
+
+```
+E(t1).foo()
+```
+
 ## Return Values
 
 Eventual-sends return a Promise for their eventual result:
 
 ```js
-const fooP = E(bob).foo();
+const fooP = bob!foo();
 fooP.then(resolution => console.log('foo said', resolution),
           rejection => console.log('foo errored with', rejection));
 ```
 
 ## Sending Messages to Promises
 
-The `E()` wrapper also accepts Promises, just like `Promise.resolve`. The
+Bang syntax also accepts Promises, just like `Promise.resolve`. The
 method will be invoked (on some future turn) on whatever the Promise resolves
 to.
 
-If `E()` is called on a Promise which rejects, the method is not invoked, and
+If bang syntax is used on a Promise which rejects, the method is not invoked, and
 the return promise's `rejection` function is called instead:
 
 ```js
 const badP = Promise.reject(new Error());
-const p2 = E(badP).foo();
+const p2 = badP!foo();
 p2.then(undefined, rej => console.log('rejected', rej));
 // prints 'rejected'
 ```
@@ -217,31 +221,31 @@ fail with a `ReferenceError`.
 
 ## Promise Pipelining
 
-In `fooP = E(bob).foo()`, `fooP` represents the (eventual) return value of
+In `fooP = bob!foo()`, `fooP` represents the (eventual) return value of
 whatever `foo()` executes. If that return value is also a Callable Object, it
 is possible to queue messages to be delivered to that future target. The
-Promise returned by an eventual-send can be used in an `E()` wrapper too, and
+Promise returned by an eventual-send can be used by bang syntax too, and
 the method invoked will be turned into a queued message that won't be
 delivered until the first promise resolves:
 
 ```js
-const db = E(databaseServer).openDB();
-const row = E(db).select(criteria)
-const success = E(row).modify(newValue);
+const db = databaseServer!openDB();
+const row = db!select(criteria)
+const success = row!modify(newValue);
 success.then(res => console.log('row modified'));
 ```
 
 If you don't care about them, the intermediate values can be discarded:
 
 ```js
-E(E(E(databaseServer).openDB()).select(criteria)).modify(newValue)
+databaseServer!openDB()!select(criteria)!modify(newValue)
   .then(res => console.log('row modified'));
 ```
 
-This will be more pleasant with bang-syntax:
+This can be done outside of SES in legacy Javascript environments with the `E()` wrapper:
 
 ```js
-databaseServer!openDB()!select(criteria)!modify(newValue)
+E(E(E(databaseServer).openDB()).select(criteria)).modify(newValue)
   .then(res => console.log('row modified'));
 ```
 

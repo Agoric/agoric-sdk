@@ -16,10 +16,33 @@ function build(syscall, _state, makeRoot, forVatID) {
     }
   }
 
-  function makePresence(id) {
-    return harden({
-      [`_importID_${id}`]() {},
-    });
+  // Make a handled Promise that enqueues kernel messages.
+  function makeQueued(slot) {
+    /* eslint-disable no-use-before-define */
+    const handler = {
+      GET(_o, prop) {
+        // Support: o![prop]!(...args)
+        return (...args) => queueMessage(slot, prop, args);
+      },
+      POST(_o, prop, args) {
+        // Support: o![prop](...args).
+        return queueMessage(slot, prop, args);
+      },
+    };
+    /* eslint-enable no-use-before-define */
+
+    const pr = {};
+    pr.p = Promise.makeHandled((res, rej) => {
+      pr.rej = rej;
+      pr.res = target => {
+        if (Object(target) !== target) {
+          // Not an object, needs no additional handler.
+          return res(target);
+        }
+        return res(target, handler);
+      };
+    }, handler);
+    return pr;
   }
 
   function makeDeviceNode(id) {
@@ -44,7 +67,6 @@ function build(syscall, _state, makeRoot, forVatID) {
   const valToSlot = new WeakMap();
   const slotKeyToVal = new Map();
   const importedPromisesByPromiseID = new Map();
-  const importedPromisesByPromise = new WeakMap();
   let nextExportID = 1;
 
   function allocateExportID() {
@@ -111,9 +133,10 @@ function build(syscall, _state, makeRoot, forVatID) {
     syscall.subscribe(id);
   }
 
-  function importPromise(id) {
-    const pr = makePromise();
-    importedPromisesByPromise.set(pr.p, id);
+  function importPromise(slot) {
+    const { id } = slot;
+    const pr = makeQueued(slot);
+
     importedPromisesByPromiseID.set(id, pr);
     const { p } = pr;
     // ideally we'd wait until .then is called on p before subscribing, but
@@ -134,14 +157,19 @@ function build(syscall, _state, makeRoot, forVatID) {
       if (slot.type === 'import') {
         // this is a new import value
         // lsdebug(`assigning new import ${slot.id}`);
-        val = makePresence(slot.id);
+        const presence = harden({
+          [`_importID_${slot.id}`]() {},
+        });
+        const pr = makeQueued(slot);
+        pr.res(presence);
+        val = presence;
         // lsdebug(` for presence`, val);
       } else if (slot.type === 'export') {
         // huh, the kernel should never reference an export we didn't
         // previously send
         throw Error(`unrecognized exportID '${slot.id}'`);
       } else if (slot.type === 'promise') {
-        val = importPromise(slot.id);
+        val = importPromise(slot);
       } else if (slot.type === 'deviceImport') {
         val = makeDeviceNode(slot.id);
       } else {
@@ -172,7 +200,6 @@ function build(syscall, _state, makeRoot, forVatID) {
     lsdebug(` ls.qm got promiseID ${promiseID}`);
 
     // prepare for notifyFulfillToData/etc
-    importedPromisesByPromise.set(done.p, promiseID);
     importedPromisesByPromiseID.set(promiseID, done);
 
     // ideally we'd wait until someone .thens done.p, but with native
@@ -190,65 +217,31 @@ function build(syscall, _state, makeRoot, forVatID) {
     return done.p;
   }
 
-  function PresenceHandler(importSlot) {
+  /**
+   * A Proxy handler for E(x).
+   *
+   * @param {Promise} ep Promise with eventual send API
+   * @returns {ProxyHandler} the Proxy handler
+   */
+  function EPromiseHandler(ep) {
     return {
-      get(target, prop) {
-        lsdebug(`PreH proxy.get(${prop})`);
-        if (prop !== `${prop}`) {
+      get(_target, p, _receiver) {
+        if (`${p}` !== p) {
           return undefined;
         }
-        const p = (...args) => queueMessage(importSlot, prop, args);
-        return p;
+        return (...args) => ep.post(p, args);
       },
-      has(_target, _prop) {
-        return true;
+      deleteProperty(_target, p) {
+        return ep.delete(p);
       },
-    };
-  }
-
-  function KernelPromiseHandler(promiseSlot) {
-    return {
-      get(target, prop) {
-        lsdebug(`KPH proxy.get(${prop})`);
-        if (prop !== `${prop}`) {
-          return undefined;
-        }
-        const p = (...args) => queueMessage(promiseSlot, prop, args);
-        return p;
+      set(_target, p, value, _receiver) {
+        return ep.put(p, value);
       },
-      has(_target, _prop) {
-        return true;
+      apply(_target, _thisArg, argArray = []) {
+        return ep.post(undefined, argArray);
       },
-    };
-  }
-
-  function PromiseHandler(targetPromise) {
-    return {
-      get(target, prop) {
-        // lsdebug(`ProH proxy.get(${prop})`);
-        if (prop !== `${prop}`) {
-          return undefined;
-        }
-        return (...args) => {
-          const pr = makePromise();
-          function resolved(x) {
-            if (outstandingProxies.has(x)) {
-              throw Error('E(Vow.resolve(E(x))) is invalid');
-            }
-            // We could delegate the is-this-a-Presence check to E(val), but
-            // local objects and Promises are treated the same way, so E
-            // would kick it right back to us, causing an infinite loop
-            const slot = valToSlot.get(x);
-            if (slot && slot.type === 'import') {
-              return queueMessage(slot, prop, args);
-            }
-            return x[prop](...args);
-          }
-          targetPromise.then(resolved).then(pr.res, pr.rej);
-          return pr.p;
-        };
-      },
-      has(_target, _prop) {
+      has(_target, _p) {
+        // We just pretend everything exists.
         return true;
       },
     };
@@ -272,27 +265,18 @@ function build(syscall, _state, makeRoot, forVatID) {
       throw Error('E(E(x)) is invalid, you probably want E(E(x).foo()).bar()');
     }
 
-    let handler;
     const slot = valToSlot.get(x);
-    const promiseID = importedPromisesByPromise.get(x);
-    if (promiseID !== undefined) {
-      // we created this Promise earlier, either by receiving a serialized
-      // kernel promise, or by send() returning one. We can pipeline messages
-      // to this
-      handler = KernelPromiseHandler(slot);
-    } else if (slot && slot.type === 'import') {
-      lsdebug(` was importID ${slot.id}`);
-      handler = PresenceHandler(slot);
-    } else if (slot && slot.type === 'deviceImport') {
+
+    if (slot && slot.type === 'deviceImport') {
       throw new Error(`E() does not accept device nodes`);
-    } else {
-      // might be a local object (previously sent or not), or a local Promise
-      // (but not an imported one, or an answer). Treat it like a Promise.
-      lsdebug(` treating as promise`);
-      const targetP = Promise.resolve(x);
-      // targetP might resolve to a Presence
-      handler = PromiseHandler(targetP);
     }
+
+    lsdebug(` treating as promise`);
+    const targetP = Promise.resolve(x);
+
+    // targetP might resolve to a Presence
+    const handler = EPromiseHandler(targetP);
+
     const p = harden(new Proxy({}, handler));
     outstandingProxies.add(p);
     return p;

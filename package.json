@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-vat",
-  "version": "0.0.14",
+  "version": "0.0.15-dev.0",
   "description": "Vat/Container Launcher",
   "main": "src/main.js",
   "module": "src/index.js",
@@ -23,6 +23,7 @@
     "lint-check": "eslint '**/*.{js,jsx}'"
   },
   "devDependencies": {
+    "@babel/core": "^7.5.4",
     "eslint": "^5.3.0",
     "eslint-config-airbnb": "^17.1.0",
     "eslint-config-prettier": "^4.0.0",
@@ -37,14 +38,20 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
+    "@agoric/acorn-infix-bang": "0.0.4",
+    "@agoric/babel-parser": "^7.5.0-infixBang.1",
     "@agoric/evaluate": "file:./agoric-evaluate/agoric-evaluate-0.0.1.tgz",
+    "@agoric/eventual-send": "^0.1.9",
     "@agoric/harden": "^0.0.4",
     "@agoric/marshal": "0.0.1",
     "@agoric/nat": "^2.0.0",
-    "rollup": "^1.1.2",
+    "@agoric/transform-bang": "^0.3.1",
+    "@babel/generator": "^7.5.0",
+    "babel-plugin-syntax-infix-bang": "^7.4.5",
+    "rollup": "^1.16.7",
     "rollup-plugin-node-resolve": "^5.0.1",
     "semver": "^6.1.0",
-    "ses": "^0.5.0",
+    "ses": "^0.5.1",
     "yargs": "^13.1.0"
   },
   "bundledDependencies": [
