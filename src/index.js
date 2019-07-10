@@ -11,23 +11,7 @@
  */
 export default function maybeExtendPromise(Promise) {
   // Make idempotent, so we don't layer on top of a BasePromise that is adequate.
-  let needsShim = false;
-  for (const method of [
-    'get',
-    'put',
-    'post',
-    'delete',
-    'invoke',
-    'fapply',
-    'fcall',
-  ]) {
-    if (typeof Promise.prototype[method] !== 'function') {
-      needsShim = true;
-      break;
-    }
-  }
-  if (!needsShim) {
-    // Already supports all the methods.
+  if (typeof Promise.makeHandled === 'function') {
     return Promise;
   }
 
@@ -209,7 +193,7 @@ export default function maybeExtendPromise(Promise) {
         return resolvedHandler[operation](o, ...args);
       }
 
-      // Not a Remote, so use the local implementation on the
+      // Not a handled Promise, so use the local implementation on the
       // naked object.
       return localImpl(o, ...args);
     };

@@ -12,6 +12,18 @@ if (typeof window !== 'undefined') {
   });
 }
 
+test('maybeExtendPromise will not overwrite', async t => {
+  try {
+    const { makeHandled: secondMakeHandled } = maybeExtendPromise(Promise);
+    const { makeHandled: thirdMakeHandled } = maybeExtendPromise(Promise);
+    t.equal(thirdMakeHandled, secondMakeHandled);
+  } catch (e) {
+    t.assert(false, e);
+  } finally {
+    t.end();
+  }
+});
+
 test('EPromise.makeHandled expected errors', async t => {
   try {
     const EPromise = maybeExtendPromise(Promise);
