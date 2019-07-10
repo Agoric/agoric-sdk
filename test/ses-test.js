@@ -2,6 +2,8 @@
 import { test } from 'tape-promise/tape';
 import * as SES from 'ses';
 
+import maybeExtendPromise from '@agoric/eventual-send';
+
 import { parse as babelParse } from '@agoric/babel-parser';
 import babelGenerate from '@babel/generator';
 
@@ -11,20 +13,12 @@ import * as astring from 'astring';
 
 import makeBangTransformer from '../src';
 
+const shims = [`(${maybeExtendPromise})(Promise)`];
+
 const AcornInfixBangParser = AcornParser.extend(acornInfixBang());
 const acornParse = src => AcornInfixBangParser.parse(src);
 const acornGenerate = (ast, _options, _src) => ({
   code: astring.generate(ast),
-});
-
-test('Promise is augmented', t => {
-  try {
-    t.equals(typeof Promise.resolve(123).get, 'function');
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
-  }
 });
 
 test('infix bang is disabled by default', t => {
@@ -53,6 +47,7 @@ test('infix bang is disabled by default', t => {
 test('infix bang can be enabled twice', async t => {
   try {
     const s = SES.makeSESRootRealm({
+      shims,
       transforms: [
         ...makeBangTransformer(babelParse, babelGenerate),
         ...makeBangTransformer(babelParse, babelGenerate),
@@ -60,6 +55,7 @@ test('infix bang can be enabled twice', async t => {
     });
     t.equal(await s.evaluate('"abc"![2]'), 'c');
     const s2 = SES.makeSESRootRealm({
+      shims,
       transforms: [
         ...makeBangTransformer(acornParse, acornGenerate),
         ...makeBangTransformer(acornParse, acornGenerate),
@@ -80,6 +76,7 @@ test('infix bang can be enabled', async t => {
       [acornParse, acornGenerate],
     ]) {
       const s = SES.makeSESRootRealm({
+        shims,
         transforms: makeBangTransformer(parse, generate),
       });
       t.equals(await s.evaluate(`"abc"!length`), 3);

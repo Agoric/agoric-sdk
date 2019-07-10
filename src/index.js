@@ -1,18 +1,5 @@
-import maybeExtendPromise from '@agoric/eventual-send';
-
-const EPromise = maybeExtendPromise(Promise);
-
-// Attempt to patch the platform.
-(typeof window === 'undefined' ? global : window).Promise = EPromise;
-
 function makeBangTransformer(parse, generate) {
   const transform = {
-    init(r) {
-      r.global.Promise = r.evaluate(`(${maybeExtendPromise})`)(
-        r.global.Promise,
-      );
-    },
-
     rewrite(rs) {
       // Parse with infixBang enabled, rewriting to
       // Promise.resolve(...).get/put/post/delete
@@ -29,6 +16,7 @@ function makeBangTransformer(parse, generate) {
       };
     },
   };
+
   return [transform];
 }
 
