@@ -135,6 +135,10 @@ function plugin(options, Parser) {
     parseIdentifier() {
       return this.parseIdent(true);
     }
+
+    parseCallExpressionArguments(endToken, bool) {
+      return this.parseExprList(endToken, true, bool);
+    }
   };
 }
 
