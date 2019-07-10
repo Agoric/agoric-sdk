@@ -7,11 +7,10 @@ const EPromise = maybeExtendPromise(Promise);
 
 function makeBangTransformer(parse, generate) {
   const transform = {
-    endow(es) {
-      return {
-        ...es,
-        endowments: { ...es.endowments, Promise: EPromise },
-      };
+    init(r) {
+      r.global.Promise = r.evaluate(`(${maybeExtendPromise})`)(
+        r.global.Promise,
+      );
     },
 
     rewrite(rs) {
