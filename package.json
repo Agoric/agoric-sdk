@@ -1,6 +1,6 @@
 {
   "name": "@agoric/transform-bang",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "transform-bang",
   "main": "dist/transform-bang.cjs.js",
   "module": "dist/transform-bang.esm.js",
@@ -28,14 +28,14 @@
     "prettier": "^1.16.4",
     "rollup": "^1.16.6",
     "rollup-plugin-node-resolve": "^5.2.0",
+    "ses": "^0.5.1",
     "tap-spec": "^5.0.0",
     "tape": "^4.9.2",
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
     "@agoric/harden": "0.0.4",
-    "esm": "^3.2.5",
-    "ses": "file:ses-0.5.1.tgz"
+    "esm": "^3.2.5"
   },
   "keywords": [],
   "files": [
