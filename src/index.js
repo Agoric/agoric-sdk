@@ -21,9 +21,6 @@ export default function maybeExtendPromise(Promise) {
 
   // This special handler accepts Promises, and forwards
   // handled Promises to their corresponding resolvedHandler.
-  //
-  // If passed a Promise that is not handled, perform
-  // the corresponding local operation.
   let forwardingHandler;
   function handler(p) {
     return promiseToHandler.get(p) || forwardingHandler;
@@ -101,7 +98,7 @@ export default function maybeExtendPromise(Promise) {
             return async (p, ...args) => {
               // console.log(`forwarding ${forwardedOperation}`);
               await handlerP;
-              return p[forwardedOperation](args);
+              return p[forwardedOperation](...args);
             };
           };
 
@@ -167,7 +164,7 @@ export default function maybeExtendPromise(Promise) {
 
             if (resolveTheHandler) {
               // Activate the default unresolvedHandler.
-              resolveTheHandler(resolvedHandler);
+              resolveTheHandler(null);
             }
           } catch (e) {
             rejectHandled(e);

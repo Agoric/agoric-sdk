@@ -129,8 +129,8 @@ test('EPromise.makeHandled(executor, undefined)', async t => {
         const o = {
           num: 123,
           str: 'my string',
-          hello(name) {
-            return `Hello, ${name}!`;
+          hello(name, punct = '') {
+            return `Hello, ${name}${punct}`;
           },
         };
 
@@ -152,6 +152,7 @@ test('EPromise.makeHandled(executor, undefined)', async t => {
       }, 200);
     });
 
+    t.equal(await remoteP.post('hello', ['World', '!']), 'Hello, World!');
     t.equal(await remoteP.get('str'), 'my string');
     t.equal(await remoteP.get('num'), 123);
     t.equal(await remoteP.put('num', 789), 789);
@@ -160,7 +161,7 @@ test('EPromise.makeHandled(executor, undefined)', async t => {
     t.equal(await remoteP.get('str'), undefined);
     t.equal(await remoteP.delete('str'), true);
     t.equal(await remoteP.get('str'), undefined);
-    t.equal(await remoteP.invoke('hello', 'World'), 'Hello, World!');
+    t.equal(await remoteP.invoke('hello', 'World'), 'Hello, World');
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
   } finally {
