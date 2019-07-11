@@ -101,18 +101,12 @@ test('EPromise.makeHandled expected errors', async t => {
       }, /cannot be a Promise/);
     }
 
-    // First resolve succeeds but second resolve fails.
+    // First resolve succeeds.
     const obj = {};
     t.assert(await EPromise.makeHandled(resolve => resolve(obj, relay)));
-    try {
-      t.assert(
-        (await EPromise.makeHandled(resolve => resolve(obj, relay))) && false,
-      );
-    } catch (e) {
-      t.throws(() => {
-        throw e;
-      }, /is already mapped/);
-    }
+
+    // And second does too.
+    t.assert(await EPromise.makeHandled(resolve => resolve(obj, relay)));
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
   } finally {

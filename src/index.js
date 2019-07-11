@@ -171,18 +171,18 @@ export default function maybeExtendPromise(Promise) {
             if (presence === null) {
               throw TypeError(`Presence ${presence} cannot be null`);
             }
-            if (presenceToHandler.has(presence)) {
-              throw TypeError(`Presence ${presence} is already mapped`);
-            }
             if (presence && typeof presence.then === 'function') {
               throw TypeError(
                 `Presence ${presence} cannot be a Promise or other thenable`,
               );
             }
 
-            // Create table entries for the presence mapped to the fulfilledHandler.
-            presenceToPromise.set(presence, handledP);
-            presenceToHandler.set(presence, fulfilledHandler);
+            // Just like platform Promises, multiple calls to resolve don't fail.
+            if (!presenceToHandler.has(presence)) {
+              // Create table entries for the presence mapped to the fulfilledHandler.
+              presenceToPromise.set(presence, handledP);
+              presenceToHandler.set(presence, fulfilledHandler);
+            }
 
             // Remove the mapping, as our fulfilledHandler should be used instead.
             promiseToHandler.delete(handledP);
