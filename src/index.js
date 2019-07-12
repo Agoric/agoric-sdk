@@ -22,39 +22,44 @@ export default function maybeExtendPromise(Promise) {
   // This special handler accepts Promises, and forwards
   // handled Promises to their corresponding fulfilledHandler.
   let forwardingHandler;
-  function handler(p) {
-    return promiseToHandler.get(p) || forwardingHandler;
+  function handler(p, operation, ...args) {
+    const h = promiseToHandler.get(p) || forwardingHandler;
+    if (typeof h[operation] !== 'function') {
+      const handlerName = h === forwardingHandler ? 'forwardingHandler' : 'unfulfilledHandler';
+      throw TypeError(`${handlerName}.${operation} is not a function`);
+    }
+    return h[operation](p, ...args);
   }
 
   Object.defineProperties(
     Promise.prototype,
     Object.getOwnPropertyDescriptors({
       get(key) {
-        return handler(this).GET(this, key);
+        return handler(this, 'GET', key);
       },
 
       put(key, val) {
-        return handler(this).PUT(this, key, val);
+        return handler(this, 'PUT', key, val);
       },
 
       delete(key) {
-        return handler(this).DELETE(this, key);
+        return handler(this, 'DELETE', key);
       },
 
       post(optKey, args) {
-        return handler(this).POST(this, optKey, args);
+        return handler(this, 'POST', optKey, args);
       },
 
       invoke(optKey, ...args) {
-        return handler(this).POST(this, optKey, args);
+        return handler(this, 'POST', optKey, args);
       },
 
       fapply(args) {
-        return handler(this).POST(this, undefined, args);
+        return handler(this, 'POST', undefined, args);
       },
 
       fcall(...args) {
-        return handler(this).POST(this, undefined, args);
+        return handler(this, 'POST', undefined, args);
       },
     }),
   );
@@ -113,11 +118,6 @@ export default function maybeExtendPromise(Promise) {
         function validateHandler(h) {
           if (Object(h) !== h) {
             throw TypeError(`Handler ${h} cannot be a primitive`);
-          }
-          for (const method of ['GET', 'PUT', 'DELETE', 'POST']) {
-            if (typeof h[method] !== 'function') {
-              throw TypeError(`Handler ${h} requires a ${method} method`);
-            }
           }
         }
         validateHandler(unfulfilledHandler);
@@ -215,6 +215,9 @@ export default function maybeExtendPromise(Promise) {
       const fulfilledHandler = presenceToHandler.get(o);
       if (fulfilledHandler) {
         // The handler was resolved, so give it a naked object.
+        if (typeof fulfilledHandler[operation] !== 'function') {
+          throw TypeError(`fulfilledHandler.${operation} is not a function`);
+        }
         return fulfilledHandler[operation](o, ...args);
       }
 

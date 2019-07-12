@@ -65,15 +65,33 @@ test('EPromise.makeHandled expected errors', async t => {
     for (const method of Object.keys(relay)) {
       const { [method]: elide, ...relay2 } = relay;
       t.equal(elide, relay[method]);
+      let op;
+      switch (method) {
+        case 'GET':
+          op = p => p.get('foo');
+          break;
+        case 'PUT':
+          op = p => p.put('foo', 123);
+          break;
+        case 'POST':
+          op = p => p.post('bar', ['abc', 123]);
+          break;
+        case 'DELETE':
+          op = p => p.delete('foo');
+          break;
+        default:
+          throw TypeError(`Unrecognized method type ${method}`);
+      }
       try {
         t.assert(
           // eslint-disable-next-line no-await-in-loop
-          (await EPromise.makeHandled(resolve => resolve({}, relay2))) && false,
+          (await op(EPromise.makeHandled(resolve => resolve({}, relay2)))) &&
+            false,
         );
       } catch (e) {
         t.throws(() => {
           throw e;
-        }, new RegExp(`requires a ${method} method`));
+        }, new RegExp(`fulfilledHandler.${method} is not a function`));
       }
     }
 
@@ -302,6 +320,7 @@ test('post', async t => {
     const ep = EPromise.resolve(fn);
     t.equal(await ep.post('a', [3]), 4);
     t.equal(await ep.post(2, [3, 4]), 12);
+    t.equal(await ep.get(2).post(undefined, [3, 4]), 12);
     t.equal(await ep.post(undefined, []), 'hello');
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
