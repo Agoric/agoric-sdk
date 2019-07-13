@@ -1,4 +1,4 @@
-import test from 'tape';
+import test from 'tape-promise/tape';
 import maybeExtendPromise from '../src/index';
 
 if (typeof window !== 'undefined') {
@@ -69,9 +69,9 @@ test('handlers are always async', async t => {
 
 test('maybeExtendPromise will not overwrite', async t => {
   try {
-    const { makeHandled: secondMakeHandled } = maybeExtendPromise(Promise);
-    const { makeHandled: thirdMakeHandled } = maybeExtendPromise(Promise);
-    t.equal(thirdMakeHandled, secondMakeHandled);
+    const { makeHandled: makeHandled2 } = maybeExtendPromise(Promise);
+    const { makeHandled: makeHandled3 } = maybeExtendPromise(Promise);
+    t.equal(makeHandled3, makeHandled2, `Promise.makeHandled is the same`);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -83,7 +83,7 @@ test('EPromise.makeHandled expected errors', async t => {
   try {
     const EPromise = maybeExtendPromise(Promise);
 
-    const relay = {
+    const handler = {
       GET(key) {
         return key;
       },
@@ -98,28 +98,25 @@ test('EPromise.makeHandled expected errors', async t => {
       },
     };
 
-    // Full relay succeeds.
+    // Full handler succeeds.
     const fullObj = {};
     t.equal(
-      await EPromise.makeHandled(resolve => resolve(fullObj, relay)),
+      await EPromise.makeHandled(resolve => resolve(fullObj, handler)),
       fullObj,
+      `resolved handled Promise is equal`,
     );
 
-    // Primitive relay fails.
-    try {
-      t.assert(
-        (await EPromise.makeHandled(resolve => resolve({}, 123))) && false,
-      );
-    } catch (e) {
-      t.throws(() => {
-        throw e;
-      }, /cannot be a primitive/);
-    }
+    // Primitive handler fails.
+    await t.rejects(
+      EPromise.makeHandled(resolve => resolve({}, 123)),
+      /cannot be a primitive/,
+      'primitive handler rejects',
+    );
 
     // Relay missing a method fails.
-    for (const method of Object.keys(relay)) {
-      const { [method]: elide, ...relay2 } = relay;
-      t.equal(elide, relay[method]);
+    for (const method of Object.keys(handler)) {
+      const { [method]: elide, ...handler2 } = handler;
+      t.equal(elide, handler[method], `method ${method} is elided`);
       let op;
       switch (method) {
         case 'GET':
@@ -137,49 +134,38 @@ test('EPromise.makeHandled expected errors', async t => {
         default:
           throw TypeError(`Unrecognized method type ${method}`);
       }
-      try {
-        t.assert(
-          // eslint-disable-next-line no-await-in-loop
-          (await op(EPromise.makeHandled(resolve => resolve({}, relay2)))) &&
-            false,
-        );
-      } catch (e) {
-        t.throws(() => {
-          throw e;
-        }, new RegExp(`fulfilledHandler.${method} is not a function`));
-      }
+      // eslint-disable-next-line no-await-in-loop
+      await t.rejects(
+        op(EPromise.makeHandled(resolve => resolve({}, handler2))),
+        new RegExp(`fulfilledHandler.${method} is not a function`),
+        `missing ${method} is rejected`,
+      );
     }
 
     // Primitive resolve fails.
-    try {
-      t.assert(
-        (await EPromise.makeHandled(resolve => resolve(123, relay))) && false,
-      );
-    } catch (e) {
-      t.throws(() => {
-        throw e;
-      }, /cannot be a primitive/);
-    }
+    await t.rejects(
+      EPromise.makeHandled(resolve => resolve(123, handler)),
+      /cannot be a primitive/,
+      `primitive handled presence rejects`,
+    );
 
     // Promise resolve fails.
     const promise = EPromise.resolve({});
-    try {
-      t.assert(
-        (await EPromise.makeHandled(resolve => resolve(promise, relay))) &&
-          false,
-      );
-    } catch (e) {
-      t.throws(() => {
-        throw e;
-      }, /cannot be a Promise/);
-    }
+    await t.rejects(
+      EPromise.makeHandled(resolve => resolve(promise, handler)),
+      /cannot be a Promise/,
+      `Promise handled presence rejects`,
+    );
 
     // First resolve succeeds.
     const obj = {};
-    t.assert(await EPromise.makeHandled(resolve => resolve(obj, relay)));
+    let resolveHandled;
+    const p = EPromise.makeHandled(resolve => (resolveHandled = resolve));
+    resolveHandled(obj, handler);
+    t.equals(await p, obj, `first resolve succeeds`);
 
-    // And second does too.
-    t.assert(await EPromise.makeHandled(resolve => resolve(obj, relay)));
+    resolveHandled({ ...obj, noMatch: false }, handler);
+    t.equals(await p, obj, `second resolve ignored`);
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
   } finally {
@@ -191,7 +177,7 @@ test('EPromise.makeHandled(executor, undefined)', async t => {
   try {
     const EPromise = maybeExtendPromise(Promise);
 
-    const remoteP = EPromise.makeHandled(resolve => {
+    const handledP = EPromise.makeHandled(resolve => {
       setTimeout(() => {
         const o = {
           num: 123,
@@ -219,16 +205,28 @@ test('EPromise.makeHandled(executor, undefined)', async t => {
       }, 200);
     });
 
-    t.equal(await remoteP.post('hello', ['World', '!']), 'Hello, World!');
-    t.equal(await remoteP.get('str'), 'my string');
-    t.equal(await remoteP.get('num'), 123);
-    t.equal(await remoteP.put('num', 789), 789);
-    t.equal(await remoteP.get('num'), 789);
-    t.equal(await remoteP.delete('str'), true);
-    t.equal(await remoteP.get('str'), undefined);
-    t.equal(await remoteP.delete('str'), true);
-    t.equal(await remoteP.get('str'), undefined);
-    t.equal(await remoteP.invoke('hello', 'World'), 'Hello, World');
+    t.equal(
+      await handledP.post('hello', ['World', '!']),
+      'Hello, World!',
+      `.post works`,
+    );
+    t.equal(await handledP.get('str'), 'my string', `.get works`);
+    t.equal(await handledP.get('num'), 123, `.get num works`);
+    t.equal(await handledP.put('num', 789), 789, `.put works`);
+    t.equal(await handledP.get('num'), 789, `.put changes assignment`);
+    t.equal(await handledP.delete('str'), true, `.delete works`);
+    t.equal(await handledP.get('str'), undefined, `.delete actually deletes`);
+    t.equal(await handledP.delete('str'), true, `.delete works second time`);
+    t.equal(
+      await handledP.get('str'),
+      undefined,
+      `.delete second time still deletes`,
+    );
+    t.equal(
+      await handledP.invoke('hello', 'World'),
+      'Hello, World',
+      `.invoke works`,
+    );
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
   } finally {
@@ -247,16 +245,24 @@ test('EPromise.all', async t => {
   try {
     EPromise = maybeExtendPromise(Promise);
 
-    t.deepEqual(await EPromise.all([1, Promise.resolve(2), 3]), [1, 2, 3]);
-    t.deepEqual(await EPromise.all(generator()), [9, 80, -7]);
+    t.deepEqual(
+      await EPromise.all([1, Promise.resolve(2), 3]),
+      [1, 2, 3],
+      `.all works`,
+    );
+    t.deepEqual(
+      await EPromise.all(generator()),
+      [9, 80, -7],
+      `.all on generator works`,
+    );
 
     // Ensure that a rejected promise rejects all.
     const toThrow = RangeError('expected');
-    try {
-      t.assert((await EPromise.all([1, Promise.reject(toThrow), 3])) && false);
-    } catch (e) {
-      t.equal(e, toThrow);
-    }
+    await t.rejects(
+      EPromise.all([1, Promise.reject(toThrow), 3]),
+      toThrow,
+      `.all rejects properly`,
+    );
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
   } finally {
@@ -277,17 +283,25 @@ test.skip('EPromise.allSettled', async t => {
   try {
     EPromise = maybeExtendPromise(Promise);
 
-    t.deepEqual(await EPromise.allSettled([1, Promise.resolve(2), 3]), [
-      { status: 'fulfilled', value: 1 },
-      { status: 'fulfilled', value: 2 },
-      { status: 'fulfilled', value: 3 },
-    ]);
+    t.deepEqual(
+      await EPromise.allSettled([1, Promise.resolve(2), 3]),
+      [
+        { status: 'fulfilled', value: 1 },
+        { status: 'fulfilled', value: 2 },
+        { status: 'fulfilled', value: 3 },
+      ],
+      `.allSettled gets all fulfillments`,
+    );
 
-    t.deepEqual(await EPromise.allSettled(generator()), [
-      { status: 'fulfilled', value: 9 },
-      { status: 'fulfilled', value: 80 },
-      { status: 'fulfilled', value: -7 },
-    ]);
+    t.deepEqual(
+      await EPromise.allSettled(generator()),
+      [
+        { status: 'fulfilled', value: 9 },
+        { status: 'fulfilled', value: 80 },
+        { status: 'fulfilled', value: -7 },
+      ],
+      `.allSettled gets all generated fulfillments`,
+    );
 
     // Ensure that a rejected promise still settles.
     shouldThrow = Error('expected');
@@ -298,6 +312,7 @@ test.skip('EPromise.allSettled', async t => {
         { status: 'rejected', reason: shouldThrow },
         { status: 'fulfilled', value: 3 },
       ],
+      `.allSettled detects rejections`,
     );
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
@@ -323,16 +338,20 @@ test('EPromise.race', async t => {
     EPromise = maybeExtendPromise(Promise);
 
     try {
-      t.equal(await EPromise.race([1, delay(2, 1000), delay(3, 500)]), 1);
+      t.equal(
+        await EPromise.race([1, delay(2, 1000), delay(3, 500)]),
+        1,
+        `.race works`,
+      );
     } catch (e) {
       t.assert(false, `unexpected exception ${e}`);
     }
 
-    try {
-      t.assert((await EPromise.race(generator())) && false);
-    } catch (e) {
-      t.equal(e, shouldThrow);
-    }
+    await t.rejects(
+      EPromise.race(generator()),
+      shouldThrow,
+      `.race generator throws`,
+    );
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
   } finally {
@@ -344,7 +363,7 @@ test('get', async t => {
   try {
     const EPromise = maybeExtendPromise(Promise);
     const res = await EPromise.resolve([123, 456, 789]).get(1);
-    t.equal(res, 456);
+    t.equal(res, 456, `.get works`);
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
   } finally {
@@ -357,8 +376,8 @@ test('put', async t => {
     const EPromise = maybeExtendPromise(Promise);
     const a = [123, 456, 789];
     const ep = EPromise.resolve(a);
-    t.equal(await ep.put(1, 999), 999);
-    t.deepEqual(a, [123, 999, 789]);
+    t.equal(await ep.put(1, 999), 999, `.put works`);
+    t.deepEqual(a, [123, 999, 789], `.put actually changed`);
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
   } finally {
@@ -373,10 +392,18 @@ test('post', async t => {
     fn.a = n => n + 1;
     fn[2] = (n1, n2) => n1 * n2;
     const ep = EPromise.resolve(fn);
-    t.equal(await ep.post('a', [3]), 4);
-    t.equal(await ep.post(2, [3, 4]), 12);
-    t.equal(await ep.get(2).post(undefined, [3, 4]), 12);
-    t.equal(await ep.post(undefined, []), 'hello');
+    t.equal(await ep.post('a', [3]), 4, `.post('a', args) works`);
+    t.equal(await ep.post(2, [3, 4]), 12, `.post(2, args) works`);
+    t.equal(
+      await ep.get(2).post(undefined, [3, 4]),
+      12,
+      `.post(undefined, args) works`,
+    );
+    t.equal(
+      await ep.post(undefined, []),
+      'hello',
+      `.post(undefined, []) works`,
+    );
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
   } finally {
@@ -391,9 +418,9 @@ test('invoke', async t => {
     fn.a = n => n + 1;
     fn[2] = (n1, n2) => n1 * n2;
     const ep = EPromise.resolve(fn);
-    t.equal(await ep.invoke('a', 3), 4);
-    t.equal(await ep.invoke(2, 3, 4), 12);
-    t.equal(await ep.invoke(undefined), 'hello');
+    t.equal(await ep.invoke('a', 3), 4, `.invoke(two args) works`);
+    t.equal(await ep.invoke(2, 3, 4), 12, `.invoke(three args) works`);
+    t.equal(await ep.invoke(undefined), 'hello', `.invoke(undefined) works`);
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
   } finally {
@@ -405,7 +432,7 @@ test('fcall', async t => {
   try {
     const EPromise = maybeExtendPromise(Promise);
     const ep = EPromise.resolve((a, b) => a * b);
-    t.equal(await ep.fcall(3, 6), 18);
+    t.equal(await ep.fcall(3, 6), 18, `.fcall works`);
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
   } finally {
@@ -417,7 +444,7 @@ test('fapply', async t => {
   try {
     const EPromise = maybeExtendPromise(Promise);
     const ep = EPromise.resolve((a, b) => a * b);
-    t.equal(await ep.fapply([3, 6]), 18);
+    t.equal(await ep.fapply([3, 6]), 18, `.fapply works`);
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
   } finally {

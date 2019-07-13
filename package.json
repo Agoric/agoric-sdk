@@ -35,7 +35,8 @@
     "prettier": "^1.16.4",
     "promises-aplus-tests": "^2.1.2",
     "rollup": "^1.2.2",
-    "tape": "^4.9.2"
+    "tape": "^4.11.0",
+    "tape-promise": "^4.0.0"
   },
   "directories": {
     "test": "test"
