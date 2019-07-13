@@ -5,7 +5,7 @@ const helpers = {
   log: console.log,
 };
 
-test('makeCommsSlots notifyFulfillToPresence', t => {
+test('makeCommsSlots fulfillToPresence', t => {
   const calls = [];
   const mockSyscall = {
     send(...args) {
@@ -48,7 +48,7 @@ test('makeCommsSlots notifyFulfillToPresence', t => {
       args: [
         'abc',
         JSON.stringify({
-          event: 'notifyFulfillToPresence',
+          event: 'fulfillToPresence',
           promise: { type: 'your-ingress', id: 9 },
           target: { type: 'your-egress', id: 3 },
         }),

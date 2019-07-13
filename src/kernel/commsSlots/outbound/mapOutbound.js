@@ -33,11 +33,6 @@ function makeMapOutbound(syscall, state) {
 
           // we will need to create a new ID to tell the other side about.
 
-          // TODO: figure out the naming
-          // when we talk about this over the wire, this will be
-          // 'your-promise' in meToYou language, and 'your-resolver' in
-          // youToMe language
-
           // the promise in an argument is always sent as a promise,
           // even if it resolves to a presence
 
@@ -52,41 +47,6 @@ function makeMapOutbound(syscall, state) {
           // such that we can pass on all of the notifications of the
           // promise settlement
           syscall.subscribe(kernelToMeSlot.id);
-
-          break;
-        }
-        case 'resolver': {
-          // kernel gives us a resolver
-          // this is the resultIndex/resultSlot case
-
-          // that means that the kernel is asking the commsVat to send
-          // a message on, and has asked to be notified when it resolves.
-
-          // when we talk about this over the wire, this will be
-          // 'your-resolver' in meToYou language, and 'your-promise' in
-          // youToMe language
-
-          const type = 'your-resolver';
-          const id = state.ids.allocateID();
-          meToYouSlot = {
-            type,
-            id,
-          };
-
-          // kernelToMeSlot can't be type resolver
-          // overwrite it for now
-          const kernelToMeSlotID = kernelToMeSlot.id;
-          const promise = {
-            type: 'promise',
-            id: kernelToMeSlotID,
-          };
-          const resolver = {
-            type: 'resolver',
-            id: kernelToMeSlotID,
-          };
-          kernelToMeSlot = promise;
-
-          state.promiseResolverPairs.add(promise, resolver);
 
           break;
         }
@@ -127,9 +87,41 @@ function makeMapOutbound(syscall, state) {
     return outgoingWireMessageList;
   }
 
+  function mapResultSlot(otherMachineName, kernelToMeSlot) {
+    // kernel gives us a resolver
+    // this is the resultIndex/resultSlot case
+
+    // that means that the kernel is asking the commsVat to send
+    // a message on, and has asked to be notified when it resolves.
+
+    // when we talk about this over the wire, this will be
+    // 'your-resolver' in meToYou language, and 'your-promise' in
+    // youToMe language
+
+    const meToYouSlot = {
+      type: 'your-resolver',
+      id: state.ids.allocateID(),
+    };
+
+    const youToMeSlot = state.clists.changePerspective(meToYouSlot);
+    state.clists.add(
+      otherMachineName,
+      kernelToMeSlot,
+      youToMeSlot,
+      meToYouSlot,
+    );
+
+    const outgoingWireMessage = state.clists.mapKernelSlotToOutgoingWireMessage(
+      kernelToMeSlot,
+      otherMachineName,
+    );
+    return outgoingWireMessage.meToYouSlot;
+  }
+
   return {
     mapOutbound,
     mapOutboundTarget,
+    mapResultSlot,
   };
 }
 

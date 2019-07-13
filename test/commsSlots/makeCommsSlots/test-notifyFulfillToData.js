@@ -6,7 +6,7 @@ const helpers = {
   vatID: 'botcomms',
 };
 
-test('makeCommsSlots notifyFulfillToData', t => {
+test('makeCommsSlots fulfillToData', t => {
   const calls = [];
   const mockSyscall = {
     send(...args) {
@@ -43,7 +43,7 @@ test('makeCommsSlots notifyFulfillToData', t => {
       args: [
         'machine1',
         JSON.stringify({
-          event: 'notifyFulfillToData',
+          event: 'fulfillToData',
           promise: meToYouSlot,
           args: 'hello',
           slots: [],
