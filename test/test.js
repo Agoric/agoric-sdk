@@ -12,6 +12,49 @@ if (typeof window !== 'undefined') {
   });
 }
 
+test('immediate forwarding', async t => {
+  try {
+    const EPromise = maybeExtendPromise(Promise);
+
+    const queue = [];
+    const handler = {
+      POST(_o, fn, args) {
+        queue.push([fn, args]);
+        return 'foo';
+      },
+    };
+    let resolver;
+    const ep = EPromise.makeHandled(resolve => {
+      resolver = resolve;
+    }, handler);
+
+    // Make sure asynchronous posts go through.
+    const expected = [['myfn', ['abc', 123]]];
+    const firstPost = ep.post('myfn', ['abc', 123]).then(v => {
+      t.equal(v, 'foo', 'post return value is foo');
+      t.deepEqual(queue, expected, 'single post in queue');
+    });
+
+    t.deepEqual(queue, expected, 'unfulfilled post is synchronous');
+    await firstPost;
+
+    const target = {};
+    resolver(target, handler);
+    expected.push(['myotherfn', ['def', 456]]);
+    const secondPost = ep.post('myotherfn', ['def', 456]).then(v => {
+      t.equal(v, 'foo', 'second post return value is foo');
+      t.deepEqual(queue, expected, 'second post is queued');
+    });
+
+    t.deepEqual(queue, expected, 'fulfilled post is synchronous');
+    await secondPost;
+  } catch (e) {
+    t.assert(false, e);
+  } finally {
+    t.end();
+  }
+});
+
 test('maybeExtendPromise will not overwrite', async t => {
   try {
     const { makeHandled: secondMakeHandled } = maybeExtendPromise(Promise);
