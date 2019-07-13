@@ -1,6 +1,6 @@
 {
   "name": "@agoric/transform-bang",
-  "version": "0.3.1",
+  "version": "0.3.2-dev.0",
   "description": "transform-bang",
   "main": "dist/transform-bang.cjs.js",
   "module": "dist/transform-bang.esm.js",
