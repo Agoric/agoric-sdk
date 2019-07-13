@@ -32,10 +32,11 @@ test('infix bang is disabled by default', t => {
           },
         }),
       SyntaxError,
+      `infix bang fails`,
     );
     if (false) {
       // FIXME: (1 , eval) is not a function.
-      t.equals(s.evaluate('(1,eval)("123")'), 123);
+      t.equals(s.evaluate('(1,eval)("123")'), 123, `indirect eval works`);
     }
   } catch (e) {
     t.assert(false, e);
@@ -53,7 +54,7 @@ test('infix bang can be enabled twice', async t => {
         ...makeBangTransformer(babelParse, babelGenerate),
       ],
     });
-    t.equal(await s.evaluate('"abc"![2]'), 'c');
+    t.equal(await s.evaluate('"abc"![2]'), 'c', `babel double transform works`);
     const s2 = SES.makeSESRootRealm({
       shims,
       transforms: [
@@ -61,7 +62,11 @@ test('infix bang can be enabled twice', async t => {
         ...makeBangTransformer(acornParse, acornGenerate),
       ],
     });
-    t.equal(await s2.evaluate('"abc"![2]'), 'c');
+    t.equal(
+      await s2.evaluate('"abc"![2]'),
+      'c',
+      `acorn double transform works`,
+    );
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -71,34 +76,56 @@ test('infix bang can be enabled twice', async t => {
 
 test('infix bang can be enabled', async t => {
   try {
-    for (const [parse, generate] of [
-      [babelParse, babelGenerate],
-      [acornParse, acornGenerate],
+    for (const [name, parse, generate] of [
+      ['babel', babelParse, babelGenerate],
+      ['acorn', acornParse, acornGenerate],
     ]) {
       const s = SES.makeSESRootRealm({
         shims,
         transforms: makeBangTransformer(parse, generate),
       });
-      t.equals(await s.evaluate(`"abc"!length`), 3);
+      t.equals(await s.evaluate(`"abc"!length`), 3, `${name} .get() works`);
       t.equals(
         await s.evaluate(
           `({foo(nick) { return "hello " + nick; }})!foo('person')`,
         ),
         'hello person',
+        `${name} .post() works`,
       );
       t.equals(
         await s.evaluate(`((punct) => "world" + punct)!('!')`),
         'world!',
+        `${name} .post(undefined, ...) works`,
       );
-      t.equals(await s.evaluate(`["a", "b", "c"]![2]`), 'c');
+      t.equals(
+        await s.evaluate(`["a", "b", "c"]![2]`),
+        'c',
+        `${name} computed .get works`,
+      );
+
+      t.equals(
+        await s.evaluate(
+          `({foo(greeting) { return greeting + ' world';}})!foo!('hello')`,
+        ),
+        'hello world',
+        `${name} double bang evaluates`,
+      );
 
       const o = { gone: 'away', here: 'world' };
-      t.equals(await s.evaluate('o => delete o!gone')(o), true);
-      t.equals(o.gone, undefined);
-      t.equals(o.here, 'world');
+      t.equals(
+        await s.evaluate('o => delete o!gone')(o),
+        true,
+        `${name} .delete works`,
+      );
+      t.equals(o.gone, undefined, `${name} .delete actually does`);
+      t.equals(o.here, 'world', `${name} .delete other property stays`);
 
-      t.equals(await s.evaluate(`o => (o!back = 'here')`)(o), 'here');
-      t.equals(o.back, 'here');
+      t.equals(
+        await s.evaluate(`o => (o!back = 'here')`)(o),
+        'here',
+        `${name} .put works`,
+      );
+      t.equals(o.back, 'here', `${name} .put changes assignment`);
 
       const noReject = fn => fn();
 
@@ -106,27 +133,49 @@ test('infix bang can be enabled', async t => {
       if (true) {
         // FIXME: Should be noReject.
         directEval = fn =>
-          t.rejects(fn(), /possible direct eval expression rejected/);
+          t.rejects(
+            fn(),
+            /possible direct eval expression rejected/,
+            `${name} direct eval fails (FIXME)`,
+          );
       }
       await directEval(async () =>
-        t.equals(await s.evaluate(`eval('"abc"!length')`), 3),
+        t.equals(
+          await s.evaluate(`eval('"abc"!length')`),
+          3,
+          `${name} direct eval works`,
+        ),
       );
       await directEval(async () =>
-        t.equals(await s.evaluate(`eval('eval(\\'"abc"!length\\')')`), 3),
+        t.equals(
+          await s.evaluate(`eval('eval(\\'"abc"!length\\')')`),
+          3,
+          `${name} nested direct eval works`,
+        ),
       );
 
       let indirEval = noReject;
       if (true) {
         // FIXME: Should be noReject.
-        indirEval = fn => t.rejects(fn(), /\(1 , eval\) is not a function/);
+        indirEval = fn =>
+          t.rejects(
+            fn(),
+            /\(1 , eval\) is not a function/,
+            `${name} indirect eval fails (FIXME)`,
+          );
       }
       await indirEval(async () =>
-        t.equals(await s.evaluate(`(1,eval)('"abc"!length')`), 3),
+        t.equals(
+          await s.evaluate(`(1,eval)('"abc"!length')`),
+          3,
+          `${name} indirect eval works`,
+        ),
       );
       await indirEval(async () =>
         t.equals(
           await s.evaluate(`(1,eval)('(1,eval)(\\'"abc"!length\\')')`),
           3,
+          `${name} nested indirect eval works`,
         ),
       );
     }
