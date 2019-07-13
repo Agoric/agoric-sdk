@@ -22,45 +22,57 @@ export default function maybeExtendPromise(Promise) {
   // This special handler accepts Promises, and forwards
   // handled Promises to their corresponding fulfilledHandler.
   let forwardingHandler;
-  function handler(p, operation, ...args) {
-    const h = promiseToHandler.get(p) || forwardingHandler;
-    if (typeof h[operation] !== 'function') {
-      const handlerName =
-        h === forwardingHandler ? 'forwardingHandler' : 'unfulfilledHandler';
-      throw TypeError(`${handlerName}.${operation} is not a function`);
+  function handle(p, operation, ...args) {
+    const unfulfilledHandler = promiseToHandler.get(p);
+    if (unfulfilledHandler) {
+      if (typeof unfulfilledHandler[operation] !== 'function') {
+        throw TypeError(`unfulfilledHandler.${operation} is not a function`);
+      }
+      // We pass the Promise directly, but we need to ensure we
+      // run in a future turn, to prevent synchronous attacks.
+      return Promise.resolve().then(() =>
+        unfulfilledHandler[operation](p, ...args),
+      );
     }
-    return Promise.resolve(h[operation](p, ...args));
+
+    // We use the forwardingHandler, but pass in the naked object in a future turn.
+    if (typeof forwardingHandler[operation] !== 'function') {
+      throw TypeError(`forwardingHandler.${operation} is not a function`);
+    }
+    return Promise.resolve(p).then(o =>
+      forwardingHandler[operation](o, ...args),
+    );
   }
 
   Object.defineProperties(
     Promise.prototype,
     Object.getOwnPropertyDescriptors({
       get(key) {
-        return handler(this, 'GET', key);
+        return handle(this, 'GET', key);
       },
 
       put(key, val) {
-        return handler(this, 'PUT', key, val);
+        return handle(this, 'PUT', key, val);
       },
 
       delete(key) {
-        return handler(this, 'DELETE', key);
+        return handle(this, 'DELETE', key);
       },
 
       post(optKey, args) {
-        return handler(this, 'POST', optKey, args);
+        return handle(this, 'POST', optKey, args);
       },
 
       invoke(optKey, ...args) {
-        return handler(this, 'POST', optKey, args);
+        return handle(this, 'POST', optKey, args);
       },
 
       fapply(args) {
-        return handler(this, 'POST', undefined, args);
+        return handle(this, 'POST', undefined, args);
       },
 
       fcall(...args) {
-        return handler(this, 'POST', undefined, args);
+        return handle(this, 'POST', undefined, args);
       },
     }),
   );
@@ -180,13 +192,13 @@ export default function maybeExtendPromise(Promise) {
 
             // Just like platform Promises, multiple calls to resolve don't fail.
             if (!presenceToHandler.has(presence)) {
+              // Create table entries for the presence mapped to the fulfilledHandler.
               presenceToPromise.set(presence, handledP);
               presenceToHandler.set(presence, fulfilledHandler);
             }
 
-            // We need to invoke fulfilledHandler immediately, so add it
-            // to the mapping.
-            promiseToHandler.set(handledP, fulfilledHandler);
+            // Remove the mapping, as our fulfilledHandler should be used instead.
+            promiseToHandler.delete(handledP);
 
             // We committed to this presence, so resolve.
             handledResolve(presence);
@@ -211,19 +223,18 @@ export default function maybeExtendPromise(Promise) {
   );
 
   function makeForwarder(operation, localImpl) {
-    return async (ep, ...args) => {
-      const o = await ep;
+    return (o, ...args) => {
+      // We are in another turn already, and have the naked object.
       const fulfilledHandler = presenceToHandler.get(o);
       if (fulfilledHandler) {
-        // The handler was resolved, so give it a naked object.
+        // The handler was resolved, so use it.
         if (typeof fulfilledHandler[operation] !== 'function') {
           throw TypeError(`fulfilledHandler.${operation} is not a function`);
         }
         return fulfilledHandler[operation](o, ...args);
       }
 
-      // Not a handled Promise, so use the local implementation on the
-      // naked object.
+      // Not handled, so use the local implementation.
       return localImpl(o, ...args);
     };
   }

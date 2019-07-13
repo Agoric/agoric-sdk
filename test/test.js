@@ -12,7 +12,7 @@ if (typeof window !== 'undefined') {
   });
 }
 
-test('immediate forwarding', async t => {
+test('handlers are always async', async t => {
   try {
     const EPromise = maybeExtendPromise(Promise);
 
@@ -29,25 +29,37 @@ test('immediate forwarding', async t => {
     }, handler);
 
     // Make sure asynchronous posts go through.
-    const expected = [['myfn', ['abc', 123]]];
     const firstPost = ep.post('myfn', ['abc', 123]).then(v => {
       t.equal(v, 'foo', 'post return value is foo');
-      t.deepEqual(queue, expected, 'single post in queue');
+      t.deepEqual(queue, [['myfn', ['abc', 123]]], 'single post in queue');
     });
 
-    t.deepEqual(queue, expected, 'unfulfilled post is synchronous');
+    t.deepEqual(queue, [], 'unfulfilled post is asynchronous');
     await firstPost;
+    t.deepEqual(
+      queue,
+      [['myfn', ['abc', 123]]],
+      'single post in queue after await',
+    );
 
     const target = {};
     resolver(target, handler);
-    expected.push(['myotherfn', ['def', 456]]);
     const secondPost = ep.post('myotherfn', ['def', 456]).then(v => {
       t.equal(v, 'foo', 'second post return value is foo');
-      t.deepEqual(queue, expected, 'second post is queued');
+      t.deepEqual(
+        queue,
+        [['myfn', ['abc', 123]], ['myotherfn', ['def', 456]]],
+        'second post is queued',
+      );
     });
 
-    t.deepEqual(queue, expected, 'fulfilled post is synchronous');
+    t.deepEqual(queue, [['myfn', ['abc', 123]]], 'second post is asynchronous');
     await secondPost;
+    t.deepEqual(
+      queue,
+      [['myfn', ['abc', 123]], ['myotherfn', ['def', 456]]],
+      'second post is queued after await',
+    );
   } catch (e) {
     t.assert(false, e);
   } finally {
