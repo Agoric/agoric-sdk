@@ -41,7 +41,7 @@
     "@agoric/acorn-infix-bang": "0.0.4",
     "@agoric/babel-parser": "^7.5.0-infixBang.1",
     "@agoric/evaluate": "file:./agoric-evaluate/agoric-evaluate-0.0.1.tgz",
-    "@agoric/eventual-send": "^0.1.9",
+    "@agoric/eventual-send": "^0.1.10",
     "@agoric/harden": "^0.0.4",
     "@agoric/marshal": "0.0.1",
     "@agoric/nat": "^2.0.0",
