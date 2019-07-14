@@ -132,7 +132,8 @@ will be made available to the Bootstrap Vat.
 When a Callable Object is sent to another Vat, it arrives as a Presence. This
 is a special (empty) object that represents the Callable Object, and can be
 used to send it messages.  If you are running SwingSet under SES (the default),
-then the so-called "bang syntax" can be used to invoke eventual send methods.
+then the so-called "bang syntax" ([proposed for future ECMAScript](https://github.com/Agoric/proposal-infix-bang))
+can be used to invoke eventual send methods.
 
 Suppose Vat "bob" defines a Root Object with a method named `bar`. The
 bootstrap receives this as `vats.bob`, and can send a message like this:
