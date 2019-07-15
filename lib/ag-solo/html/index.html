@@ -1,72 +1,109 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8"/>
-<title>SwingSet Solo REPL Demo</title>
-<style>
-  * { padding: 0; margin: 0; }
-  canvas { 
-    background: #eee; 
-    display: block; 
-    border: 3px solid black;
-  }
-  h1 {
-    text-align: center;
-    margin-top:40px;
-  }
-  .container {
-    display: grid;
-    grid-template-columns: 40px 520px auto 40px;
-    grid-template-rows: 40px auto;
-  }
-  .left {
-    grid-column: 2;
-    grid-row: 2;
-  }
-  .right {
-    grid-column: 3;
-    grid-row: 2;
-    margin: 20px;
-   height: 5in;
-   width: 100%;
-   display: flex;
-   flex-direction: column;
- }
- #history {
-   overflow-y: scroll;
-   overflow-x: hidden;
-   width:  100%;
- }
- #history > .history-line {
-   background: #DBFAF9;
-   border-top: 2pt;
- }
-</style>
-</head>
-<body>
-<noscript>
-You need to enable JavaScript to run this app.</noscript>
 
-<div class="container">
-  <div class="left">
-    <canvas id="myCanvas" width="500" height="500"></canvas>
-  </div>
-  <div class="right">
-    <div>Use <code>home</code> to see useful objects, and <code>history[N]</code> to refer to result history</div>
-    <div id="history"></div>
-    <div class="cmd">command[<span class="historyNumber">0</span>]> 
-      <input id="input" tabindex="0" type="text" size="80"/> 
-      <input id="go" tabindex="1" type="submit" value="eval"/>
+<head>
+  <meta charset="utf-8" />
+  <title>SwingSet Solo REPL Demo</title>
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 40px 520px auto 40px;
+      grid-template-rows: 40px auto;
+    }
+
+    .left {
+      grid-column: 2;
+      grid-row: 2;
+    }
+
+    .right {
+      grid-column: 3;
+      grid-row: 2;
+      margin: 20px;
+      height: 5in;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .gallery {
+      border: 3px solid black;
+      background: repeating-linear-gradient(-45deg, grey, grey 5px, white 5px, white 10px);
+      height: 500px;
+      width: 500px;
+      line-height: 0;
+    }
+
+    .pixel {
+      height: 50px;
+      width: 50px;
+      display: inline-block;
+      transition: background-color 2s;
+    }
+
+    .updated {
+      animation-name: spin;
+      animation-duration: 2000ms;
+      animation-iteration-count: 1;
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #history {
+      overflow-y: scroll;
+      overflow-x: hidden;
+      width: 100%;
+    }
+
+    #history>.history-line {
+      background: #DBFAF9;
+      border-top: 2pt;
+    }
+  </style>
+</head>
+
+<body>
+  <noscript>
+    You need to enable JavaScript to run this app.</noscript>
+
+  <div class="container">
+    <div class="left">
+      <div id="galleryBoard" class="gallery"></div>
+    </div>
+    <div class="right">
+      <div>Use <code>home</code> to see useful objects, and <code>history[N]</code> to refer to result history</div>
+      <div id="history"></div>
+      <div class="cmd">command[<span class="historyNumber">0</span>]>
+        <input id="input" tabindex="0" type="text" size="80" />
+        <input id="go" tabindex="1" type="submit" value="eval" />
+      </div>
     </div>
   </div>
-</div>
 
-<hr />
-<address>
-  Source: <a target="_blank" id="package_repo"><span id="package_name">cosmic-swingset</span></a>
-  v<span id="package_version"></span>+<span id="package_git"></span>
-</address>
-
-<script src="./main.js"></script>
+  <hr />
+  <address>
+    Source: <a target="_blank" id="package_repo"><span id="package_name">cosmic-swingset</span></a>
+    v<span id="package_version"></span>+<span id="package_git"></span>
+  </address>
+  <script src="./main.js"></script>
 </body>
+
 </html>
