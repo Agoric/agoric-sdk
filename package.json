@@ -11,6 +11,7 @@
     "vat": "bin/vat"
   },
   "scripts": {
+    "build": "npm run-script build-kernel",
     "build-kernel": "node -r esm scripts/build-kernel.js",
     "pack-evaluate": "cd agoric-evaluate && npm pack",
     "pack": "npm run-script build-kernel && npm pack",
