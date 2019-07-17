@@ -1,10 +1,11 @@
 {
-  "name": "cosmic-swingset",
+  "name": "@agoric/cosmic-swingset",
   "version": "0.7.4",
   "description": "",
   "main": "index.js",
   "repository": "https://github.com/Agoric/cosmic-swingset",
   "scripts": {
+    "prebuild": "make all",
     "build": "node-gyp configure build",
     "test": "tape -r esm 'test/**/test*.js' | tap-spec",
     "pretty-fix": "prettier --write '**/*.{js,jsx}'",
