@@ -13,7 +13,6 @@
   "scripts": {
     "build": "npm run-script build-kernel",
     "build-kernel": "node -r esm scripts/build-kernel.js",
-    "pack-evaluate": "cd agoric-evaluate && npm pack",
     "pack": "npm run-script build-kernel && npm pack",
     "publish": "npm run-script pack && npm publish --access public",
     "test": "npm run-script build-kernel && tape -r esm test/test-node-version.js && tape -r esm 'test/**/test*.js' | tap-spec",
@@ -41,7 +40,7 @@
   "dependencies": {
     "@agoric/acorn-infix-bang": "0.0.4",
     "@agoric/babel-parser": "^7.5.0",
-    "@agoric/evaluate": "file:./agoric-evaluate/agoric-evaluate-0.0.1.tgz",
+    "@agoric/evaluate": "^1.1.0",
     "@agoric/eventual-send": "^0.1.10",
     "@agoric/harden": "^0.0.4",
     "@agoric/marshal": "0.0.1",
@@ -55,9 +54,6 @@
     "ses": "^0.5.1",
     "yargs": "^13.1.0"
   },
-  "bundledDependencies": [
-    "@agoric/evaluate"
-  ],
   "files": [
     "bin/vat",
     "src/**/*.js",
