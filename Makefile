@@ -63,7 +63,7 @@ compile-go: go.sum
 	GO111MODULE=on go build -v -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go
 	-install_name_tool -id `pwd`/lib/libagcosmosdaemon.so lib/libagcosmosdaemon.so
 
-build: compile-go compile-node
+build: compile-go
 
 compile-node:
 	test ! -d node_modules/bindings || npm run build

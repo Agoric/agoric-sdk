@@ -64,7 +64,6 @@ You can browse the current source tree at [Github](https://github.com/Agoric/cos
 If you want to build and install from sources, you need Node.js 11 and Golang 1.12:
 
 ```
-$ make
 $ npm install
 ```
 

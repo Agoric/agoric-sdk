@@ -8,13 +8,8 @@ vat-machine (launched with `ag-chain-cosmos`).
 ## Build from source
 
 ```
-$ make
 $ npm install
 ```
-
-(the `make` step builds some Go libraries and header files, which are
-necessary for `npm install` to compile the `.so` extensions for node.js to
-load, so it must be performed before `npm install` can work)
 
 ## Create a vat-machine
 
