@@ -63,8 +63,15 @@ function getKernelSource() {
 // when it does require('@agoric/evaluate'), so we can get the same
 // functionality both with and without SES
 function makeEvaluate(e) {
-  const { confineExpr } = e;
-  return (source, endowments = {}) => confineExpr(source, endowments);
+  const { confineExpr, confine } = e;
+  const evaluateExpr = (source, endowments = {}, options = {}) =>
+    confineExpr(source, endowments, options);
+  const evaluateProgram = (source, endowments = {}, options = {}) =>
+    confine(source, endowments, options);
+  return Object.assign(evaluateExpr, {
+    evaluateExpr,
+    evaluateProgram,
+  });
 }
 
 function buildSESKernel(externalStorage) {
@@ -80,6 +87,7 @@ function buildSESKernel(externalStorage) {
     '@agoric/evaluate': {
       attenuatorSource: `${makeEvaluate}`,
       confineExpr: s.global.SES.confineExpr,
+      confine: s.global.SES.confine,
     },
     '@agoric/harden': true,
     '@agoric/nat': Nat,
