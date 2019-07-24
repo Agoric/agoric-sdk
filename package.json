@@ -31,11 +31,11 @@
   },
   "homepage": "https://github.com/Agoric/ertp#readme",
   "dependencies": {
-    "@agoric/evaluate": "file:./agoric-evaluate-0.0.1.tgz",
-    "@agoric/harden": "0.0.4",
-    "@agoric/marshal": "0.0.1",
+    "@agoric/evaluate": "^1.1.0",
+    "@agoric/harden": "^0.0.4",
+    "@agoric/marshal": "^0.0.1",
     "@agoric/nat": "^2.0.1",
-    "@agoric/swingset-vat": "0.0.12",
+    "@agoric/swingset-vat": "^0.0.12",
     "ses": "^0.5.0"
   },
   "devDependencies": {
@@ -51,8 +51,5 @@
     "tap-spec": "^5.0.0",
     "tape": "^4.10.2",
     "tape-promise": "^4.0.0"
-  },
-  "bundledDependencies": [
-    "@agoric/evaluate"
-  ]
+  }
 }
