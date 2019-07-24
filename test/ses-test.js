@@ -34,10 +34,7 @@ test('infix bang is disabled by default', t => {
       SyntaxError,
       `infix bang fails`,
     );
-    if (false) {
-      // FIXME: (1 , eval) is not a function.
-      t.equals(s.evaluate('(1,eval)("123")'), 123, `indirect eval works`);
-    }
+    t.equals(s.evaluate('(1,eval)("123")'), 123, `indirect eval works`);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -154,29 +151,15 @@ test('infix bang can be enabled', async t => {
         ),
       );
 
-      let indirEval = noReject;
-      if (true) {
-        // FIXME: Should be noReject.
-        indirEval = fn =>
-          t.rejects(
-            fn(),
-            /\(1 , eval\) is not a function/,
-            `${name} indirect eval fails (FIXME)`,
-          );
-      }
-      await indirEval(async () =>
-        t.equals(
-          await s.evaluate(`(1,eval)('"abc"!length')`),
-          3,
-          `${name} indirect eval works`,
-        ),
+      t.equals(
+        await s.evaluate(`(1,eval)('"abc"!length')`),
+        3,
+        `${name} indirect eval works`,
       );
-      await indirEval(async () =>
-        t.equals(
-          await s.evaluate(`(1,eval)('(1,eval)(\\'"abc"!length\\')')`),
-          3,
-          `${name} nested indirect eval works`,
-        ),
+      t.equals(
+        await s.evaluate(`(1,eval)('(1,eval)(\\'"abc"!length\\')')`),
+        3,
+        `${name} nested indirect eval works`,
       );
     }
   } catch (e) {
