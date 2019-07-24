@@ -4,8 +4,6 @@ To test communication between a (local, one-validator) chain machine and a
 solo machine, follow these steps:
 
 ```
-$ make
-$ make install
 $ npm install
 $ make localdemo2-setup
 ```
