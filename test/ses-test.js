@@ -1,3 +1,4 @@
+/* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable no-await-in-loop */
 import { test } from 'tape-promise/tape';
 import * as SES from 'ses';
@@ -17,8 +18,12 @@ const shims = [`(${maybeExtendPromise})(Promise)`];
 
 const AcornParser = AcornRawParser.extend(acornInfixBang());
 const acornParser = {
-  parse(src) { return AcornParser.parse(src); },
-  parseExpression(src) { return AcornParser.parseExpressionAt(src, 0); },
+  parse(src) {
+    return AcornParser.parse(src);
+  },
+  parseExpression(src) {
+    return AcornParser.parseExpressionAt(src, 0);
+  },
 };
 const acornGenerate = (ast, _options, _src) => ({
   code: astring.generate(ast),
