@@ -5,7 +5,7 @@
   "main": "src/main.js",
   "module": "src/index.js",
   "engines": {
-    "node": ">=12.0"
+    "node": ">=11.0"
   },
   "bin": {
     "vat": "bin/vat"
@@ -23,7 +23,6 @@
     "lint-check": "eslint '**/*.{js,jsx}'"
   },
   "devDependencies": {
-    "@babel/core": "^7.5.4",
     "eslint": "^5.3.0",
     "eslint-config-airbnb": "^17.1.0",
     "eslint-config-prettier": "^4.0.0",
@@ -39,15 +38,11 @@
   },
   "dependencies": {
     "@agoric/acorn-infix-bang": "0.0.4",
-    "@agoric/babel-parser": "^7.5.0",
+    "@agoric/default-evaluate-options": "^0.1.0",
     "@agoric/evaluate": "^1.1.0",
-    "@agoric/eventual-send": "^0.2.0",
     "@agoric/harden": "^0.0.4",
     "@agoric/marshal": "0.0.1",
     "@agoric/nat": "^2.0.0",
-    "@agoric/transform-bang": "^0.3.1",
-    "@babel/generator": "^7.5.0",
-    "babel-plugin-syntax-infix-bang": "^7.4.5",
     "rollup": "^1.16.7",
     "rollup-plugin-node-resolve": "^5.0.1",
     "semver": "^6.1.0",

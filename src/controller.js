@@ -6,10 +6,7 @@ import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import SES from 'ses';
 
-import { parse } from '@agoric/babel-parser';
-import generate from '@babel/generator';
-import makeBangTransformer from '@agoric/transform-bang';
-import maybeExtendPromise from '@agoric/eventual-send';
+import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 
 import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
@@ -17,7 +14,7 @@ import bundleSource from './build-source-bundle';
 import { makeStorageInMemory } from './stateInMemory';
 import buildExternalForFile from './stateOnDisk';
 
-const shims = [`(${maybeExtendPromise})(Promise)`];
+const evaluateOptions = makeDefaultEvaluateOptions();
 
 export function loadBasedir(basedir) {
   console.log(`= loading config from basedir ${basedir}`);
@@ -75,13 +72,11 @@ function makeEvaluate(e) {
 }
 
 function buildSESKernel(externalStorage) {
-  const transforms = [...makeBangTransformer(parse, generate)];
   // console.log('transforms', transforms);
   const s = SES.makeSESRootRealm({
+    ...evaluateOptions,
     consoleMode: 'allow',
     errorStackMode: 'allow',
-    shims,
-    transforms,
   });
   const r = s.makeRequire({
     '@agoric/evaluate': {
@@ -101,8 +96,9 @@ function buildSESKernel(externalStorage) {
 }
 
 function buildNonSESKernel(externalStorage) {
-  // Extend platform Promises if necessary.
-  maybeExtendPromise(Promise);
+  // Evaluate shims to produce desired globals.
+  // eslint-disable-next-line no-eval
+  (evaluateOptions.shims || []).forEach(shim => (1, eval)(shim));
 
   const kernelEndowments = { setImmediate };
   const kernel = buildKernelNonSES(kernelEndowments, externalStorage);
