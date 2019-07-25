@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
+  <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,500,700&display=swap" rel="stylesheet">
   <title>SwingSet Solo REPL Demo</title>
   <style>
     * {
@@ -17,26 +18,31 @@
 
     .container {
       display: grid;
-      grid-template-columns: 40px 520px auto 40px;
-      grid-template-rows: 40px auto;
+      grid-template-columns: 506px auto;
+      grid-template-rows: 506px;
+      grid-column-gap: 40px;
+      padding: 40px;
+      width: 100%;
     }
 
     .left {
-      grid-column: 2;
-      grid-row: 2;
+      grid-column: 1;
+      grid-row: 1;
     }
 
     .right {
-      grid-column: 3;
-      grid-row: 2;
-      margin: 20px;
-      height: 5in;
-      width: 100%;
+      grid-column: 2;
+      grid-row: 1;
       display: flex;
       flex-direction: column;
     }
 
+    .right>div {
+      padding: 8px 0;
+    }
+
     .gallery {
+      grid-row: 2;
       border: 3px solid black;
       background: repeating-linear-gradient(-45deg, grey, grey 5px, white 5px, white 10px);
       height: 500px;
@@ -67,15 +73,48 @@
       }
     }
 
-    #history {
-      overflow-y: scroll;
+    .history {
+      flex-grow: 0;
+      overflow-y: auto;
       overflow-x: hidden;
-      width: 100%;
+      border-spacing: 0;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 14px;
+      font-weight: 400;
+      max-width: 800px;
     }
 
-    #history>.history-line {
+    .history>div {
+      display: grid;
+      grid-template-columns: 100px auto;
+      grid-column-gap: 0;
+    }
+
+    .history>.command-line {
       background: #DBFAF9;
-      border-top: 2pt;
+      font-weight: 500;
+      padding-top: 3px;
+      padding-bottom: 3px;
+    }
+
+    .history>.history-line {
+      padding-bottom: 12px;
+    }
+
+    .history>div> :first-child {
+      text-align: right;
+      color: #424248;
+    }
+
+    .history>div> :last-child {
+      text-align: left;
+      padding-left: 8px;
+      max-width: 680px;
+      word-wrap: break-word;
+    }
+
+    #cmd {
+      overflow: visible;
     }
   </style>
 </head>
@@ -89,11 +128,17 @@
       <div id="galleryBoard" class="gallery"></div>
     </div>
     <div class="right">
-      <div>Use <code>home</code> to see useful objects, and <code>history[N]</code> to refer to result history</div>
-      <div id="history"></div>
-      <div class="cmd">command[<span class="historyNumber">0</span>]>
-        <input id="input" tabindex="0" type="text" size="80" />
-        <input id="go" tabindex="1" type="submit" value="eval" />
+      <div class="help">Use <code>home</code> to see useful objects, and <code>history[N]</code> to refer to result
+        history</div>
+      <div id="history" class="history"></div>
+      <div id="cmd" class="history">
+        <div class="command-line">
+          <div>command[<span id="historyNumber">0</span>]</div>
+          <div>
+            <input id="input" tabindex="0" type="text" size="80" />
+            <input id="go" tabindex="1" type="submit" value="eval" />
+          </div>
+        </div>
       </div>
     </div>
   </div>
