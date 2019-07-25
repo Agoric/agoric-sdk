@@ -35,8 +35,8 @@
     "@agoric/harden": "^0.0.4",
     "@agoric/marshal": "^0.0.1",
     "@agoric/nat": "^2.0.1",
-    "@agoric/swingset-vat": "^0.0.12",
-    "ses": "^0.5.0"
+    "@agoric/swingset-vat": "^0.0.16",
+    "ses": "^0.5.3"
   },
   "devDependencies": {
     "eslint": "^5.16.0",
