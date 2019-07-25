@@ -4,10 +4,10 @@ import * as SES from 'ses';
 
 import maybeExtendPromise from '@agoric/eventual-send';
 
-import { parse as babelParse } from '@agoric/babel-parser';
+import * as babelParser from '@agoric/babel-parser';
 import babelGenerate from '@babel/generator';
 
-import { Parser as AcornParser } from 'acorn';
+import { Parser as AcornRawParser } from 'acorn';
 import acornInfixBang from '@agoric/acorn-infix-bang';
 import * as astring from 'astring';
 
@@ -15,8 +15,11 @@ import makeBangTransformer from '../src';
 
 const shims = [`(${maybeExtendPromise})(Promise)`];
 
-const AcornInfixBangParser = AcornParser.extend(acornInfixBang());
-const acornParse = src => AcornInfixBangParser.parse(src);
+const AcornParser = AcornRawParser.extend(acornInfixBang());
+const acornParser = {
+  parse(src) { return AcornParser.parse(src); },
+  parseExpression(src) { return AcornParser.parseExpressionAt(src, 0); },
+};
 const acornGenerate = (ast, _options, _src) => ({
   code: astring.generate(ast),
 });
@@ -47,16 +50,16 @@ test('infix bang can be enabled twice', async t => {
     const s = SES.makeSESRootRealm({
       shims,
       transforms: [
-        ...makeBangTransformer(babelParse, babelGenerate),
-        ...makeBangTransformer(babelParse, babelGenerate),
+        ...makeBangTransformer(babelParser, babelGenerate),
+        ...makeBangTransformer(babelParser, babelGenerate),
       ],
     });
     t.equal(await s.evaluate('"abc"![2]'), 'c', `babel double transform works`);
     const s2 = SES.makeSESRootRealm({
       shims,
       transforms: [
-        ...makeBangTransformer(acornParse, acornGenerate),
-        ...makeBangTransformer(acornParse, acornGenerate),
+        ...makeBangTransformer(acornParser, acornGenerate),
+        ...makeBangTransformer(acornParser, acornGenerate),
       ],
     });
     t.equal(
@@ -73,13 +76,13 @@ test('infix bang can be enabled twice', async t => {
 
 test('infix bang can be enabled', async t => {
   try {
-    for (const [name, parse, generate] of [
-      ['babel', babelParse, babelGenerate],
-      ['acorn', acornParse, acornGenerate],
+    for (const [name, parser, generate] of [
+      ['babel', babelParser, babelGenerate],
+      ['acorn', acornParser, acornGenerate],
     ]) {
       const s = SES.makeSESRootRealm({
         shims,
-        transforms: makeBangTransformer(parse, generate),
+        transforms: makeBangTransformer(parser, generate),
       });
       t.equals(await s.evaluate(`"abc"!length`), 3, `${name} .get() works`);
       t.equals(
