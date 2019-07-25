@@ -4,7 +4,8 @@ function makeBangTransformer(parser, generate) {
       // Parse with infixBang enabled, rewriting to
       // Promise.resolve(...).get/put/post/delete
       const parseFunc =
-        (ss.sourceType === 'expression' && parser.parseExpression) || parser.parse;
+        (ss.sourceType === 'expression' && parser.parseExpression) ||
+        parser.parse;
       const ast = (parseFunc || parser)(ss.src, {
         plugins: ['infixBang'],
       });
