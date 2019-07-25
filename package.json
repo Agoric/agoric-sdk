@@ -1,11 +1,12 @@
 {
-  "name": "???",
+  "name": "@agoric/default-evaluate-options",
   "version": "0.0.1",
-  "description": "???",
-  "main": "dist/???.cjs.js",
-  "module": "dist/???.esm.js",
-  "browser": "dist/???.umd.js",
+  "description": "Agoric default evaluation options for Realms and SES",
+  "main": "dist/default-evaluate-options.cjs.js",
+  "module": "dist/default-evaluate-options.esm.js",
+  "browser": "dist/default-evaluate-options.umd.js",
   "scripts": {
+    "build": "rollup -c",
     "test": "tape -r esm 'test/**/*.js'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
@@ -22,12 +23,19 @@
     "eslint-plugin-prettier": "^3.0.1",
     "eslint-plugin-react": "^7.12.0",
     "prettier": "^1.16.4",
+    "rollup": "^1.17.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
     "tap-spec": "^5.0.0",
     "tape": "^4.9.2",
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
-    "esm": "^3.2.5"
+    "@agoric/babel-parser": "^7.5.0",
+    "@agoric/eventual-send": "^0.1.10",
+    "@agoric/transform-bang": "^0.3.1",
+    "@babel/generator": "^7.5.5",
+    "esm": "^3.2.5",
+    "rollup-plugin-commonjs": "^10.0.1"
   },
   "keywords": [],
   "files": [
@@ -35,12 +43,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "???"
+    "url": "git+https://github.com/Agoric/default-evaluate-options"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "???"
+    "url": "https://github.com/Agoric/default-evaluate-options/issues"
   },
-  "homepage": "???"
+  "homepage": "https://github.com/Agoric/default-evaluate-options#readme"
 }

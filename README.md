@@ -1,6 +1,13 @@
-# New Repo
+# Default Evaluate Options
 
-This repository should be a compilation of everything that a new
-Agoric repo should have, including ESLint settings, prettier settings,
-package.json dependencies and scripts, licenses, sample tests, CircleCI config, and
-VSCode testing config.
+This repository provides default evaluation options for use with Realms and SES.
+
+Semantic versioning of this package is important, so that you don't introduce
+incompatible changes into your repositories.
+
+```
+import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
+[...]
+const options = makeDefaultEvaluateOptions();
+const r = Realm.makeRootRealm(options);
+```
