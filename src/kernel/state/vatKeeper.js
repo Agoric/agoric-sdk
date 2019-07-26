@@ -2,72 +2,37 @@ import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { insist } from '../insist';
 
-export default function makeVatKeeper(
-  kvstore,
-  pathToRoot,
-  makeExternalKVStore,
-  external,
-) {
+// makeVatKeeper is a pure function: all state is kept in the argument object
+
+export default function makeVatKeeper(state) {
+
   function createStartingVatState() {
     // kernelSlotToVatSlot is an object with four properties:
     //    exports, devices, promises, resolvers.
     // vatSlotToKernelSlot has imports, deviceImports, promises,
     //    resolvers
 
-    kvstore.set(
-      'kernelSlotToVatSlot',
-      makeExternalKVStore(pathToRoot, external),
-    );
-    kvstore.set(
-      'vatSlotToKernelSlot',
-      makeExternalKVStore(pathToRoot, external),
-    );
+    state.kernelSlotToVatSlot = {
+      exports: {},
+      devices: {},
+      promises: {},
+      resolvers: {},
+    };
+    state.vatSlotToKernelSlot = {
+      imports: {},
+      deviceImports: {},
+      promises: {},
+      resolvers: {},
+    };
 
-    const kernelSlotToVatSlot = kvstore.get('kernelSlotToVatSlot');
-    const vatSlotToKernelSlot = kvstore.get('vatSlotToKernelSlot');
+    state.nextIDs = {
+      import: 10,
+      promise: 20,
+      resolver: 30,
+      deviceImport: 40,
+    };
 
-    kernelSlotToVatSlot.set(
-      'exports',
-      makeExternalKVStore(pathToRoot, external),
-    );
-    kernelSlotToVatSlot.set(
-      'devices',
-      makeExternalKVStore(pathToRoot, external),
-    );
-    kernelSlotToVatSlot.set(
-      'promises',
-      makeExternalKVStore(pathToRoot, external),
-    );
-    kernelSlotToVatSlot.set(
-      'resolvers',
-      makeExternalKVStore(pathToRoot, external),
-    );
-
-    vatSlotToKernelSlot.set(
-      'imports',
-      makeExternalKVStore(pathToRoot, external),
-    );
-    vatSlotToKernelSlot.set(
-      'deviceImports',
-      makeExternalKVStore(pathToRoot, external),
-    );
-    vatSlotToKernelSlot.set(
-      'promises',
-      makeExternalKVStore(pathToRoot, external),
-    );
-    vatSlotToKernelSlot.set(
-      'resolvers',
-      makeExternalKVStore(pathToRoot, external),
-    );
-
-    kvstore.set('nextIDs', makeExternalKVStore(pathToRoot, external));
-    const nextIDs = kvstore.get('nextIDs');
-    nextIDs.set('import', 10);
-    nextIDs.set('promise', 20);
-    nextIDs.set('resolver', 30);
-    nextIDs.set('deviceImport', 40);
-
-    kvstore.set('transcript', []);
+    state.transcript = [];
   }
 
   const allowedVatSlotTypes = [
@@ -113,30 +78,30 @@ export default function makeVatKeeper(
 
     const { type, id } = kernelSlot;
 
-    const tables = kvstore.get('kernelSlotToVatSlot');
+    const tables = state.kernelSlotToVatSlot;
 
     switch (type) {
       case 'promise': {
         return {
-          table: tables.get('promises'),
+          table: tables.promises,
           key: id,
         };
       }
       case 'resolver': {
         return {
-          table: tables.get('resolvers'),
+          table: tables.resolvers,
           key: id,
         };
       }
       case 'export': {
         return {
-          table: tables.get('exports'),
+          table: tables.exports,
           key: `${kernelSlot.vatID}-${id}`,
         };
       }
       case 'device': {
         return {
-          table: tables.get('devices'),
+          table: tables.devices,
           key: `${kernelSlot.deviceName}-${id}`,
         };
       }
@@ -149,25 +114,25 @@ export default function makeVatKeeper(
     insistVatSlot(vatSlot);
     const { type, id } = vatSlot;
 
-    const tables = kvstore.get('vatSlotToKernelSlot');
+    const tables = state.vatSlotToKernelSlot;
     let table;
     // imports, deviceImports, promises, resolvers
 
     switch (type) {
       case 'import': {
-        table = tables.get('imports');
+        table = tables.imports;
         break;
       }
       case 'deviceImport': {
-        table = tables.get('deviceImports');
+        table = tables.deviceImports;
         break;
       }
       case 'promise': {
-        table = tables.get('promises');
+        table = tables.promises;
         break;
       }
       case 'resolver': {
-        table = tables.get('resolvers');
+        table = tables.resolvers;
         break;
       }
       default:
@@ -205,30 +170,28 @@ export default function makeVatKeeper(
 
   function mapKernelSlotToVatSlot(kernelSlot) {
     const { table, key } = getKernelSlotTypedMapAndKey(kernelSlot);
-    if (!table.has(`${key}`)) {
+    if (!Object.hasOwnProperty(table, `${key}`)) {
       // must add both directions
       const vatSlotType = getVatSlotTypeFromKernelSlot(kernelSlot);
-      const nextIDs = kvstore.get('nextIDs');
-      const newVatSlotID = nextIDs.get(vatSlotType);
-      nextIDs.set(vatSlotType, newVatSlotID + 1);
+      const nextIDs = state.nextIDs;
+      const newVatSlotID = nextIDs[vatSlotType];
+      nextIDs[vatSlotType] = newVatSlotID + 1;
       const vatSlot = { type: vatSlotType, id: newVatSlotID };
-      table.set(`${key}`, vatSlot);
+      table[`${key}`] = vatSlot;
       const { table: vatSlotTable, key: vatSlotKey } = getVatSlotTypedMapAndKey(
         vatSlot,
       );
-      vatSlotTable.set(vatSlotKey, kernelSlot);
+      vatSlotTable[vatSlotKey] = kernelSlot;
     }
-    return table.get(`${key}`);
+    return table[`${key}`];
   }
 
   function getTranscript() {
-    return Array.from(kvstore.get('transcript'));
+    return Array.from(state.transcript);
   }
 
   function addToTranscript(msg) {
-    const transcript = kvstore.get('transcript');
-    transcript.push(msg);
-    kvstore.set('transcript', transcript);
+    state.transcript.push(msg);
   }
 
   // pretty print for logging and testing
@@ -237,7 +200,7 @@ export default function makeVatKeeper(
 
     function printSlots(vatSlot) {
       const { table, key } = getVatSlotTypedMapAndKey(vatSlot);
-      const kernelSlot = table.get(key);
+      const kernelSlot = table[key];
       if (vatSlot.type === 'promise' || vatSlot.type === 'resolver') {
         res.push([vatID, vatSlot.type, vatSlot.id, kernelSlot.id]);
       } else {
@@ -254,24 +217,10 @@ export default function makeVatKeeper(
 
     // 'exports', 'devices', 'promises', 'resolvers'
 
-    const kernelSlotToVatSlot = kvstore.get('kernelSlotToVatSlot');
-
-    kernelSlotToVatSlot
-      .get('exports')
-      .values()
-      .forEach(printSlots);
-    kernelSlotToVatSlot
-      .get('devices')
-      .values()
-      .forEach(printSlots);
-    kernelSlotToVatSlot
-      .get('promises')
-      .values()
-      .forEach(printSlots);
-    kernelSlotToVatSlot
-      .get('resolvers')
-      .values()
-      .forEach(printSlots);
+    for (const n of ['exports', 'devices', 'promises', 'resolvers']) {
+      const t = state.kernelSlotToVatSlot[n];
+      Object.getOwnPropertyNames(t).forEach(name => printSlots(t[name]));
+    }
 
     return harden(res);
   }

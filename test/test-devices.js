@@ -3,7 +3,6 @@ import { buildVatController } from '../src/index';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 import buildCommand from '../src/devices/command';
 import { makeStorageInMemory } from '../src/stateInMemory';
-import makeExternalKVStore from '../src/kernel/externalKVStore';
 
 async function test0(t, withSES) {
   const config = {
@@ -80,11 +79,10 @@ test('d1 without SES', async t => {
 
 async function test2(t, mode, withSES) {
   const external = makeStorageInMemory();
-  const kvstore = makeExternalKVStore('kernel.devices.d2', external);
 
   const config = {
     vatSources: new Map(),
-    devices: [['d2', require.resolve('./files-devices/device-2'), { kvstore }]],
+    devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
   config.vatSources.set('left', require.resolve('./files-devices/vat-left.js'));

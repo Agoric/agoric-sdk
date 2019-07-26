@@ -11,8 +11,6 @@ import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
 import bundleSource from './build-source-bundle';
-import { makeStorageInMemory } from './stateInMemory';
-import buildExternalForFile from './stateOnDisk';
 
 const evaluateOptions = makeDefaultEvaluateOptions();
 
@@ -45,11 +43,24 @@ export function loadBasedir(basedir) {
   return { vatSources, bootstrapIndexJS };
 }
 
-export function useStorageInBasedir(basedir, config) {
+// let { initialState, save } = manageStateInBasedir(BASEDIR);
+// config.initialState = initialState;
+// ..
+// save(controller.getState())
+
+export function manageStateInBasedir(basedir) {
   const stateFile = path.resolve(basedir, 'state.json');
-  const { externalStorage, save } = buildExternalForFile(stateFile);
-  config.externalStorage = externalStorage;
-  return save;
+  let initialState = {};
+  try {
+    const data = fs.readFileSync(stateFile);
+    initialState = JSON.parse(data);
+  } catch (e) {
+  }
+  function save(state) {
+    fs.writeFileSync(stateFile, state);
+  }
+
+  return { initialState, save };
 }
 
 function getKernelSource() {
@@ -71,7 +82,7 @@ function makeEvaluate(e) {
   });
 }
 
-function buildSESKernel(externalStorage) {
+function buildSESKernel(initialState) {
   // console.log('transforms', transforms);
   const s = SES.makeSESRootRealm({
     ...evaluateOptions,
@@ -91,26 +102,26 @@ function buildSESKernel(externalStorage) {
   // console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })();
   const kernelEndowments = { setImmediate };
-  const kernel = buildKernel(kernelEndowments, externalStorage);
+  const kernel = buildKernel(kernelEndowments, initialState);
   return { kernel, s, r };
 }
 
-function buildNonSESKernel(externalStorage) {
+function buildNonSESKernel(initialState) {
   // Evaluate shims to produce desired globals.
   // eslint-disable-next-line no-eval
   (evaluateOptions.shims || []).forEach(shim => (1, eval)(shim));
 
   const kernelEndowments = { setImmediate };
-  const kernel = buildKernelNonSES(kernelEndowments, externalStorage);
+  const kernel = buildKernelNonSES(kernelEndowments, initialState);
   return { kernel };
 }
 
 export async function buildVatController(config, withSES = true, argv = []) {
   // todo: move argv into the config
-  const externalStorage = config.externalStorage || makeStorageInMemory();
+  const initialState = config.initialState || JSON.stringify({});
   const { kernel, s, r } = withSES
-    ? buildSESKernel(externalStorage)
-    : buildNonSESKernel(externalStorage);
+    ? buildSESKernel(initialState)
+    : buildNonSESKernel(initialState);
   // console.log('kernel', kernel);
 
   async function addGenesisVat(vatID, sourceIndex, _options = {}) {
@@ -178,6 +189,10 @@ export async function buildVatController(config, withSES = true, argv = []) {
 
     dump() {
       return JSON.parse(JSON.stringify(kernel.dump()));
+    },
+
+    getState() {
+      return `${kernel.getState()}`;
     },
 
     async run() {

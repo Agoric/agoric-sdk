@@ -8,7 +8,7 @@ export default function makeVatManager(
   syscallManager,
   setup,
   helpers,
-  _vatKVStore,
+  vatKeeper,
 ) {
   const {
     kdebug,
@@ -21,8 +21,6 @@ export default function makeVatManager(
     invoke,
     kernelKeeper,
   } = syscallManager;
-
-  const vatKeeper = makeVatKeeper(kernelKeeper.getVat(vatID));
 
   // We use vat-centric terminology here, so "inbound" means "into a vat",
   // generally from the kernel. We also have "comms vats" which use special

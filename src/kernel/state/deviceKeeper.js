@@ -1,18 +1,21 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
-function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
+// makeVatKeeper is a pure function: all state is kept in the argument object
+
+function makeDeviceKeeper(state) {
+
   function createStartingDeviceState() {
-    kvstore.set('imports', makeExternalKVStore(pathToRoot, external));
-    const imports = kvstore.get('imports');
-    imports.set('outbound', makeExternalKVStore(pathToRoot, external));
-    imports.set('inbound', makeExternalKVStore(pathToRoot, external));
-    kvstore.set('nextImportID', 10);
+    state.imports = {
+      outbound: {},
+      inbound: {},
+    };
+    state.nextImportID = 10;
   }
 
   function allocateImportIndex() {
-    const i = kvstore.get('nextImportID');
-    kvstore.set('nextImportID', i + 1);
+    const i = state.nextImportID;
+    state.nextImportID = i + 1;
     return i;
   }
 
@@ -25,10 +28,7 @@ function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
       // an import from somewhere else, so look in the sending Vat's table to
       // translate into absolute form
       Nat(slot.id);
-      return kvstore
-        .get('imports')
-        .get('outbound')
-        .get(`${slot.id}`);
+      return state.imports.outbound[`${slot.id}`];
     }
 
     throw Error(`unknown slot.type '${slot.type}'`);
@@ -43,51 +43,36 @@ function makeDeviceKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
       const { vatID: fromVatID, id } = slot;
       Nat(id);
 
-      const imports = kvstore.get('imports');
-      const inbound = imports.get('inbound');
-      const outbound = imports.get('outbound');
+      const imports = state.imports;
+      const inbound = imports.inbound;
+      const outbound = imports.outbound;
       const key = `${slot.type}.${fromVatID}.${id}`; // ugh javascript
       if (!inbound.has(key)) {
         // must add both directions
-        const newSlotID = Nat(allocateImportIndex());
+         const newSlotID = Nat(allocateImportIndex());
         // kdebug(` adding ${newSlotID}`);
-        inbound.set(key, newSlotID);
-        outbound.set(
-          `${newSlotID}`,
-          harden({ type: 'export', vatID: fromVatID, id }), // TODO just 'slot'?
-        );
+        inbound[key] = newSlotID;
+        outbound[`${newSlotID}`] =
+          harden({ type: 'export', vatID: fromVatID, id }); // TODO just 'slot'?
       }
-      return { type: 'import', id: inbound.get(key) };
+      return { type: 'import', id: inbound[key] };
     }
 
     throw Error(`unknown type '${slot.type}'`);
   }
 
-  function getManagerState() {
-    const outbound = kvstore.get('imports').get('outbound');
-    const inbound = kvstore.get('imports').get('inbound');
-    return {
-      nextImportID: kvstore.get('nextImportID'),
-      imports: {
-        outbound: outbound.entries(),
-        inbound: inbound.entries(),
-      },
-    };
-  }
-
   function getDeviceState() {
-    return kvstore.get('deviceState');
+    return state.deviceState;
   }
 
   function setDeviceState(value) {
-    return kvstore.set('deviceState', value);
+    state.deviceState = value;
   }
 
   return harden({
     createStartingDeviceState,
     mapDeviceSlotToKernelSlot,
     mapKernelSlotToDeviceSlot,
-    getManagerState,
     getDeviceState,
     setDeviceState,
   });

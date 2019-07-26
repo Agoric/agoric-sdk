@@ -11,7 +11,6 @@ import makeDeviceManager from './deviceManager';
 import makeKernelKeeper from './state/kernelKeeper';
 import makeVatKeeper from './state/vatKeeper';
 import makeDeviceKeeper from './state/deviceKeeper';
-import makeExternalKVStore from './externalKVStore';
 
 function abbreviateReviver(_, arg) {
   if (typeof arg === 'string' && arg.length >= 40) {
@@ -21,17 +20,10 @@ function abbreviateReviver(_, arg) {
   return arg;
 }
 
-export default function buildKernel(kernelEndowments, externalStorage) {
+export default function buildKernel(kernelEndowments, initialState) {
   const { setImmediate } = kernelEndowments;
 
-  const kernelKVStore = makeExternalKVStore('kernel', externalStorage);
-
-  const kernelKeeper = makeKernelKeeper(
-    kernelKVStore,
-    'kernel',
-    makeExternalKVStore,
-    externalStorage,
-  );
+  const kernelKeeper = makeKernelKeeper(initialState);
 
   let started = false;
   // this holds externally-added vats, which are present at startup, but not
@@ -414,22 +406,7 @@ export default function buildKernel(kernelEndowments, externalStorage) {
         },
       });
 
-      const vatPath = `kernel.vats.${vatID}`;
-      const vatKVStore = makeExternalKVStore(vatPath, externalStorage);
-      const vatKeeper = makeVatKeeper(
-        vatKVStore,
-        vatPath,
-        makeExternalKVStore,
-        externalStorage,
-      );
-
-      if (!wasInitialized) {
-        if (kernelKeeper.hasVat(vatID)) {
-          throw new Error(`already have a vat named '${vatID}'`);
-        }
-        vatKeeper.createStartingVatState();
-        kernelKeeper.addVat(vatID, vatKVStore);
-      }
+      let vatKeeper = wasInitialized ? kernelKeeper.getVat(vatID) : kernelKeeper.createVat(vatID);
 
       // the vatManager invokes setup() to build the userspace image
       const manager = makeVatManager(
@@ -437,7 +414,7 @@ export default function buildKernel(kernelEndowments, externalStorage) {
         syscallManager,
         setup,
         helpers,
-        vatKVStore,
+        vatKeeper,
       );
       ephemeral.vats.set(
         vatID,
@@ -458,23 +435,7 @@ export default function buildKernel(kernelEndowments, externalStorage) {
         },
       });
 
-      const devicePath = `kernel.devices.${name}`;
-      const deviceKVStore = makeExternalKVStore(devicePath, externalStorage);
-      const deviceKeeper = makeDeviceKeeper(
-        deviceKVStore,
-        devicePath,
-        makeExternalKVStore,
-        externalStorage,
-      );
-
-      if (!wasInitialized) {
-        if (kernelKeeper.hasDevice(name)) {
-          throw new Error(`already have a device named '${name}'`);
-        }
-        deviceKeeper.createStartingDeviceState();
-        // per-device translation tables
-        kernelKeeper.addDevice(name, deviceKVStore);
-      }
+      let deviceKeeper = wasInitialized ? kernelKeeper.getDevice(name) : kernelKeeper.createDevice(name);
 
       const manager = makeDeviceManager(
         name,
@@ -482,8 +443,7 @@ export default function buildKernel(kernelEndowments, externalStorage) {
         setup,
         helpers,
         endowments,
-        kernelKeeper,
-        deviceKVStore,
+        deviceKeeper,
       );
       // the vat record is not hardened: it holds mutable next-ID values
       ephemeral.devices.set(name, {
@@ -562,7 +522,7 @@ export default function buildKernel(kernelEndowments, externalStorage) {
       // through the syscall interface (and we replay transcripts one vat at
       // a time, so any log() calls that were interleaved during their
       // original execution will be sorted by vat in the replace). Logs are
-      // not kept in the kvstore, only in ephemeral state.
+      // not kept in the persistent, only in ephemeral state.
       stateDump.log = ephemeral.log;
       return stateDump;
     },

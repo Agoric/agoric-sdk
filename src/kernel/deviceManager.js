@@ -9,12 +9,9 @@ export default function makeDeviceManager(
   setup,
   helpers,
   endowments,
-  kernelKeeper,
-  _deviceKVStore,
+  deviceKeeper,
 ) {
   const { kdebug, send, log } = syscallManager;
-
-  const deviceKeeper = makeDeviceKeeper(kernelKeeper.getDevice(deviceName));
 
   function mapDeviceSlotToKernelSlot(slot) {
     // kdebug(`mapOutbound ${JSON.stringify(slot)}`);
