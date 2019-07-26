@@ -6,7 +6,7 @@
   "module": "dist/default-evaluate-options.esm.js",
   "browser": "dist/default-evaluate-options.umd.js",
   "scripts": {
-    "build": "rollup -c",
+    "build": "npm ci&&rollup -c",
     "test": "tape -r esm 'test/**/*.js'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
