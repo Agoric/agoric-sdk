@@ -99,9 +99,7 @@ function makeAliceMaker(E, log) {
           const origColor = await E(gallery).getColor(rawPixel.x, rawPixel.y);
 
           log(
-            `pixel x:${rawPixel.x}, y:${
-              rawPixel.y
-            } has original color ${origColor}`,
+            `pixel x:${rawPixel.x}, y:${rawPixel.y} has original color ${origColor}`,
           );
 
           const {
@@ -133,9 +131,7 @@ function makeAliceMaker(E, log) {
           );
           const bobsColor = await E(gallery).getColor(rawPixel.x, rawPixel.y);
           log(
-            `pixel x:${rawPixel.x}, y:${
-              rawPixel.y
-            } changed to bob's color ${bobsColor}`,
+            `pixel x:${rawPixel.x}, y:${rawPixel.y} changed to bob's color ${bobsColor}`,
           );
 
           // alice takes the right back
@@ -160,9 +156,7 @@ function makeAliceMaker(E, log) {
 
           const alicesColor = await E(gallery).getColor(rawPixel.x, rawPixel.y);
           log(
-            `pixel x:${rawPixel.x}, y:${
-              rawPixel.y
-            } changed to alice's color ${alicesColor}`,
+            `pixel x:${rawPixel.x}, y:${rawPixel.y} changed to alice's color ${alicesColor}`,
           );
 
           // tell bob to try to color, he can't
@@ -221,9 +215,7 @@ function makeAliceMaker(E, log) {
 
           const amount = await E(storedTransferRight).getBalance();
           log(
-            `amount quantity should be an array of length 0: ${
-              amount.quantity.length
-            }`,
+            `amount quantity should be an array of length 0: ${amount.quantity.length}`,
           );
         },
         async doSellAndBuy() {
