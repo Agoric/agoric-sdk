@@ -22,7 +22,7 @@
       grid-template-rows: 506px;
       grid-column-gap: 40px;
       padding: 40px;
-      width: 100%;
+      box-sizing: border-box;
     }
 
     .left {
@@ -33,12 +33,9 @@
     .right {
       grid-column: 2;
       grid-row: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .right>div {
-      padding: 8px 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      grid-row-gap: 8px;
     }
 
     .gallery {
@@ -73,15 +70,19 @@
       }
     }
 
-    .history {
-      flex-grow: 0;
+    .help {
+      border-bottom: 1px solid black;
+    }
+
+    #history {
       overflow-y: auto;
       overflow-x: hidden;
+    }
+    .history {
       border-spacing: 0;
       font-family: 'Roboto Mono', monospace;
       font-size: 14px;
       font-weight: 400;
-      max-width: 800px;
     }
 
     .history>div {
@@ -106,15 +107,37 @@
       color: #424248;
     }
 
-    .history>div> :last-child {
+    .history>div> :nth-child(2) {
       text-align: left;
       padding-left: 8px;
-      max-width: 680px;
+      /* Overflow must be set (to auto or hidden) to force the word break to apply.
+         The word-wrap is required to wrap a long value with no spaces. */
+      overflow: hidden;
       word-wrap: break-word;
     }
 
-    #cmd {
-      overflow: visible;
+    #command-entry {
+      grid-template-columns: 100px auto 60px;
+      min-width: 260px;
+      align-items: baseline;
+    }
+
+    /* For command entry and eval button. */
+    input {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 14px;
+      width: 100%;
+      border: 1px solid gray;
+    }
+    
+    input[type=text]:focus {
+      border-color: #428f87;
+    }
+
+    input[type=submit] {
+      color: white;
+      background: #428f87;
+      border-radius: 4px;
     }
   </style>
 </head>
@@ -131,13 +154,11 @@
       <div class="help">Use <code>home</code> to see useful objects, and <code>history[N]</code> to refer to result
         history</div>
       <div id="history" class="history"></div>
-      <div id="cmd" class="history">
-        <div class="command-line">
+      <div class="history">
+        <div id="command-entry" class="command-line">
           <div>command[<span id="historyNumber">0</span>]</div>
-          <div>
-            <input id="input" tabindex="0" type="text" size="80" />
-            <input id="go" tabindex="1" type="submit" value="eval" />
-          </div>
+          <div><input id="input" tabindex="0" type="text" /></div>
+          <div><input id="go" tabindex="1" type="submit" value="eval" /></div>
         </div>
       </div>
     </div>
