@@ -18,9 +18,9 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/ertp": "^0.0.8",
-    "@agoric/evaluate": "^1.1.0",
-    "@agoric/swingset-vat": "^0.0.15",
+    "@agoric/ertp": "0.0.9",
+    "@agoric/evaluate": "^1.2.0",
+    "@agoric/swingset-vat": "^0.0.16",
     "@iarna/toml": "^2.2.3",
     "bindings": "^1.2.1",
     "deterministic-json": "^1.0.5",
@@ -30,21 +30,21 @@
     "minimist": "^1.2.0",
     "morgan": "^1.9.1",
     "node-fetch": "^2.6.0",
-    "ws": "^7.0.0"
+    "ws": "^7.1.1"
   },
   "devDependencies": {
-    "napi-thread-safe-callback": "0.0.6",
-    "node-addon-api": "^1.6.3",
-    "eslint": "^5.16.0",
-    "eslint-config-airbnb": "^17.1.0",
-    "eslint-config-prettier": "^4.3.0",
-    "eslint-plugin-import": "^2.17.3",
-    "eslint-plugin-jsx-a11y": "^6.2.1",
+    "eslint": "^6.1.0",
+    "eslint-config-airbnb": "^17.1.1",
+    "eslint-config-prettier": "^6.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
     "eslint-plugin-prettier": "^3.1.0",
-    "eslint-plugin-react": "^7.13.0",
+    "eslint-plugin-react": "^7.14.3",
+    "napi-thread-safe-callback": "0.0.6",
+    "node-addon-api": "^1.7.1",
     "prettier": "^1.17.1",
     "tap-spec": "^5.0.0",
-    "tape": "^4.10.2",
+    "tape": "^4.11.0",
     "tape-promise": "^4.0.0"
   }
 }
