@@ -50,6 +50,40 @@ test('infix bang is disabled by default', t => {
   }
 });
 
+test('expression source is parsable', async t => {
+  try {
+    const s = SES.makeSESRootRealm({
+      shims,
+      transforms: makeBangTransformer(babelParser, babelGenerate),
+    });
+    t.equal(
+      s.evaluate(`123; 456`, {}, { sourceType: 'program' }),
+      456,
+      'program succeeds',
+    );
+    t.equal(
+      s.evaluate(`123;`, {}, { sourceType: 'program' }),
+      123,
+      'semicolon program succeeds',
+    );
+    /* FIXME: When sourceType matters to realms-shim, use this.
+    t.throws(
+      () => s.evaluate(`123;`, {}, { sourceType: 'expression' }),
+      SyntaxError,
+      'non-expression fails',
+    ); */
+    t.equal(
+      s.evaluate(`123`, {}, { sourceType: 'expression' }),
+      123,
+      'expression succeeds',
+    );
+  } catch (e) {
+    t.assert(false, e);
+  } finally {
+    t.end();
+  }
+});
+
 test('infix bang can be enabled twice', async t => {
   try {
     const s = SES.makeSESRootRealm({
