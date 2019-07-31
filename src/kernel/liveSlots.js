@@ -162,7 +162,9 @@ function build(syscall, _state, makeRoot, forVatID) {
         // this is a new import value
         // lsdebug(`assigning new import ${slot.id}`);
         const presence = harden({
-          [`_importID_${slot.id}`]() {},
+          toString() {
+            return `[Presence ${slot.id}]`;
+          },
         });
         const pr = makeQueued(slot);
         pr.res(presence);

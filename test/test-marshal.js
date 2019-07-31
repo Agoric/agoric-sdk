@@ -189,7 +189,7 @@ test('deserialize imports', t => {
     { type: 'import', id: 1 },
   ]);
   // a should be a proxy/presence. For now these are obvious.
-  t.ok('_importID_1' in a);
+  t.equal(a.toString(), '[Presence 1]');
   t.ok(Object.isFrozen(a));
 
   // m now remembers the proxy
