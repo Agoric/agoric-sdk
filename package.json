@@ -41,7 +41,7 @@
     "@agoric/acorn-infix-bang": "0.0.4",
     "@agoric/babel-parser": "^7.5.0",
     "@agoric/evaluate": "^1.1.0",
-    "@agoric/eventual-send": "^0.1.10",
+    "@agoric/eventual-send": "^0.2.0",
     "@agoric/harden": "^0.0.4",
     "@agoric/marshal": "0.0.1",
     "@agoric/nat": "^2.0.0",
