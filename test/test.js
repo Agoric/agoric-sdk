@@ -17,50 +17,110 @@ test('handlers are always async', async t => {
     const EPromise = maybeExtendPromise(Promise);
 
     const queue = [];
+    const ran = [];
+    const target = {
+      toString() {
+        return 'target';
+      },
+    };
     const handler = {
-      POST(_o, fn, args) {
-        queue.push([fn, args]);
-        return 'foo';
+      POST(o, fn, args) {
+        queue.push([o, fn, args]);
+        return 'ful';
+      },
+    };
+    const unfulfilledHandler = {
+      POST(p, fn, args) {
+        queue.push([null, fn, args]);
+        return 'un';
       },
     };
     let resolver;
     const ep = EPromise.makeHandled(resolve => {
       resolver = resolve;
-    }, handler);
+    }, unfulfilledHandler);
 
     // Make sure asynchronous posts go through.
-    const firstPost = ep.post('myfn', ['abc', 123]).then(v => {
-      t.equal(v, 'foo', 'post return value is foo');
-      t.deepEqual(queue, [['myfn', ['abc', 123]]], 'single post in queue');
+    const nested = ep.post('myfn', ['abc', 123]);
+    const firstPost = nested.then(v => {
+      t.equal(v, 'un', 'first post return value is un');
+      t.deepEqual(
+        queue,
+        [[null, 'myfn', ['abc', 123]]],
+        'single post in queue after first resolves',
+      );
+      return 'first';
     });
 
-    t.deepEqual(queue, [], 'unfulfilled post is asynchronous');
-    await firstPost;
+    t.deepEqual(queue, [], 'first post is asynchronous');
+    t.deepEqual(ran, [], 'not ran immediately after first');
+    await Promise.resolve();
     t.deepEqual(
       queue,
-      [['myfn', ['abc', 123]]],
+      [[null, 'myfn', ['abc', 123]]],
       'single post in queue after await',
     );
 
-    const target = {};
-    resolver(target, handler);
-    const secondPost = ep.post('myotherfn', ['def', 456]).then(v => {
-      t.equal(v, 'foo', 'second post return value is foo');
+    const secondPost = nested.post('myotherfn', ['def', 456]).then(v => {
+      t.equal(v, 'un', 'second post return value is un');
       t.deepEqual(
         queue,
-        [['myfn', ['abc', 123]], ['myotherfn', ['def', 456]]],
-        'second post is queued',
+        [[null, 'myfn', ['abc', 123]], [null, 'myotherfn', ['def', 456]]],
+        'both posts in queue after second resolves',
       );
+      return 'second';
     });
 
-    t.deepEqual(queue, [['myfn', ['abc', 123]]], 'second post is asynchronous');
-    await secondPost;
     t.deepEqual(
       queue,
-      [['myfn', ['abc', 123]], ['myotherfn', ['def', 456]]],
+      [[null, 'myfn', ['abc', 123]]],
+      'second post is asynchronous',
+    );
+    await Promise.resolve();
+    t.deepEqual(
+      queue,
+      [[null, 'myfn', ['abc', 123]], [null, 'myotherfn', ['def', 456]]],
       'second post is queued after await',
     );
+
+    resolver(target, handler);
+
+    const thirdPost = ep.post('mythirdfn', ['ghi', 789]).then(v => {
+      t.equal(v, 'ful', 'third post return value is ful');
+      t.deepEqual(
+        queue,
+        [
+          [null, 'myfn', ['abc', 123]],
+          [null, 'myotherfn', ['def', 456]],
+          [target, 'mythirdfn', ['ghi', 789]],
+        ],
+        'third post is queued',
+      );
+      return 'third';
+    });
+
+    t.deepEqual(
+      queue,
+      [[null, 'myfn', ['abc', 123]], [null, 'myotherfn', ['def', 456]]],
+      'third post is asynchronous',
+    );
+    await Promise.resolve();
+
+    t.deepEqual(
+      queue,
+      [
+        [null, 'myfn', ['abc', 123]],
+        [null, 'myotherfn', ['def', 456]],
+        [target, 'mythirdfn', ['ghi', 789]],
+      ],
+      'all posts are actually queued after await',
+    );
+
+    t.equal(await firstPost, 'first', 'first post returned properly');
+    t.equal(await thirdPost, 'third', 'third post returned properly');
+    t.equal(await secondPost, 'second', 'second post returned properly');
   } catch (e) {
+    console.log('unexpected exception', e);
     t.assert(false, e);
   } finally {
     t.end();

@@ -28,17 +28,22 @@ export default function maybeExtendPromise(Promise) {
       if (typeof unfulfilledHandler[operation] !== 'function') {
         throw TypeError(`unfulfilledHandler.${operation} is not a function`);
       }
-      // We pass the Promise directly, but we need to ensure we
-      // run in a future turn, to prevent synchronous attacks.
-      return Promise.resolve().then(() =>
-        unfulfilledHandler[operation](p, ...args),
-      );
+
+      return Promise.makeHandled(resolve => {
+        // We run in a future turn to prevent synchronous attacks,
+        Promise.resolve().then(() =>
+          // and resolve to the answer from the unfulfilled handler,
+          resolve(unfulfilledHandler[operation](p, ...args)),
+        );
+        // with the same unfulfilled handler.
+      }, unfulfilledHandler);
     }
 
     // We use the forwardingHandler, but pass in the naked object in a future turn.
     if (typeof forwardingHandler[operation] !== 'function') {
       throw TypeError(`forwardingHandler.${operation} is not a function`);
     }
+    // When this promise resolves, run the forwarding handler.
     return Promise.resolve(p).then(o =>
       forwardingHandler[operation](o, ...args),
     );
@@ -159,6 +164,7 @@ export default function maybeExtendPromise(Promise) {
               const existingUnfulfilledHandler = promiseToHandler.get(target);
               if (existingUnfulfilledHandler) {
                 // Reuse the unfulfilled handler.
+                console.log('reusing unfulfilled handler');
                 promiseToHandler.set(handledP, existingUnfulfilledHandler);
                 return;
               }
