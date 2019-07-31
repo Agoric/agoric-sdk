@@ -17,50 +17,118 @@ test('handlers are always async', async t => {
     const EPromise = maybeExtendPromise(Promise);
 
     const queue = [];
+    const target = {
+      is: 'target',
+    };
     const handler = {
-      POST(_o, fn, args) {
-        queue.push([fn, args]);
-        return 'foo';
+      POST(o, fn, args) {
+        queue.push([o, fn, args]);
+        return 'ful';
+      },
+    };
+    let resolver2;
+    const ep2 = EPromise.makeHandled(resolve => (resolver2 = resolve), {
+      POST(p, fn, args) {
+        queue.push(['ep2', fn, args]);
+        return 'un';
+      },
+    });
+    const unfulfilledHandler = {
+      POST(p, fn, args) {
+        queue.push(['ep', fn, args]);
+        return ep2;
       },
     };
     let resolver;
     const ep = EPromise.makeHandled(resolve => {
       resolver = resolve;
-    }, handler);
+    }, unfulfilledHandler);
 
     // Make sure asynchronous posts go through.
-    const firstPost = ep.post('myfn', ['abc', 123]).then(v => {
-      t.equal(v, 'foo', 'post return value is foo');
-      t.deepEqual(queue, [['myfn', ['abc', 123]]], 'single post in queue');
+    const nested = ep.post('myfn', ['abc', 123]);
+    const firstPost = nested.then(v => {
+      t.equal(v, 'un', 'first post return value is un');
+      t.deepEqual(
+        queue,
+        [
+          ['ep', 'myfn', ['abc', 123]],
+          ['ep2', 'myotherfn', ['def', 456]],
+          [target, 'mythirdfn', ['ghi', 789]],
+        ],
+        'all posts in queue after first resolves',
+      );
+      return 'first';
     });
 
     t.deepEqual(queue, [], 'unfulfilled post is asynchronous');
-    await firstPost;
+    await Promise.resolve();
     t.deepEqual(
       queue,
-      [['myfn', ['abc', 123]]],
+      [['ep', 'myfn', ['abc', 123]]],
       'single post in queue after await',
     );
 
-    const target = {};
-    resolver(target, handler);
-    const secondPost = ep.post('myotherfn', ['def', 456]).then(v => {
-      t.equal(v, 'foo', 'second post return value is foo');
+    const secondPost = nested.post('myotherfn', ['def', 456]).then(v => {
+      t.equal(v, 'un', 'second post return value is un');
       t.deepEqual(
         queue,
-        [['myfn', ['abc', 123]], ['myotherfn', ['def', 456]]],
-        'second post is queued',
+        [['ep', 'myfn', ['abc', 123]], ['ep2', 'myotherfn', ['def', 456]]],
+        'both posts in queue after second resolves',
       );
+      return 'second';
     });
 
-    t.deepEqual(queue, [['myfn', ['abc', 123]]], 'second post is asynchronous');
-    await secondPost;
     t.deepEqual(
       queue,
-      [['myfn', ['abc', 123]], ['myotherfn', ['def', 456]]],
+      [['ep', 'myfn', ['abc', 123]]],
+      'second post is asynchronous',
+    );
+    await Promise.resolve();
+    t.deepEqual(
+      queue,
+      [['ep', 'myfn', ['abc', 123]], ['ep2', 'myotherfn', ['def', 456]]],
       'second post is queued after await',
     );
+
+    resolver(target, handler);
+    resolver2('un');
+
+    const thirdPost = ep.post('mythirdfn', ['ghi', 789]).then(v => {
+      t.equal(v, 'ful', 'third post return value is ful');
+      t.deepEqual(
+        queue,
+        [
+          ['ep', 'myfn', ['abc', 123]],
+          ['ep2', 'myotherfn', ['def', 456]],
+          [target, 'mythirdfn', ['ghi', 789]],
+        ],
+        'third post is queued',
+      );
+      return 'third';
+    });
+
+    t.deepEqual(
+      queue,
+      [['ep', 'myfn', ['abc', 123]], ['ep2', 'myotherfn', ['def', 456]]],
+      'third post is asynchronous',
+    );
+    await Promise.resolve();
+
+    t.deepEqual(
+      queue,
+      [
+        ['ep', 'myfn', ['abc', 123]],
+        ['ep2', 'myotherfn', ['def', 456]],
+        [target, 'mythirdfn', ['ghi', 789]],
+      ],
+      'all posts are actually queued after await',
+    );
+
+    t.equal(await firstPost, 'first', 'first post returned properly');
+    t.equal(await thirdPost, 'third', 'third post returned properly');
+    t.equal(await secondPost, 'second', 'second post returned properly');
   } catch (e) {
+    console.log('unexpected exception', e);
     t.assert(false, e);
   } finally {
     t.end();

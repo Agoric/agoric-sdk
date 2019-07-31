@@ -28,11 +28,15 @@ export default function maybeExtendPromise(Promise) {
       if (typeof unfulfilledHandler[operation] !== 'function') {
         throw TypeError(`unfulfilledHandler.${operation} is not a function`);
       }
-      // We pass the Promise directly, but we need to ensure we
-      // run in a future turn, to prevent synchronous attacks.
-      return Promise.resolve().then(() =>
-        unfulfilledHandler[operation](p, ...args),
-      );
+
+      return Promise.makeHandled(resolve => {
+        // We run in a future turn to prevent synchronous attacks,
+        Promise.resolve().then(() =>
+          // and resolve to the answer from the unfulfilled handler,
+          resolve(unfulfilledHandler[operation](p, ...args)),
+        );
+        // with the default unfulfilled forwarding handler.
+      });
     }
 
     // We use the forwardingHandler, but pass in the naked object in a future turn.
@@ -107,16 +111,19 @@ export default function maybeExtendPromise(Promise) {
           //
           // This is insufficient for actual remote handled Promises
           // (too many round-trips), but is an easy way to create a local handled Promise.
-          const handlerP = new Promise(resolve => {
+          const interlockP = new Promise(resolve => {
             continueForwarding = () => resolve(null);
           });
 
           const postpone = forwardedOperation => {
             // Just wait until the handler is resolved/rejected.
-            return async (p, ...args) => {
+            return (x, ...args) => {
               // console.log(`forwarding ${forwardedOperation}`);
-              await handlerP;
-              return p[forwardedOperation](...args);
+              return Promise.makeHandled(resolve => {
+                interlockP.then(() => {
+                  resolve(x[forwardedOperation](...args));
+                });
+              });
             };
           };
 
@@ -146,6 +153,14 @@ export default function maybeExtendPromise(Promise) {
         }
 
         async function resolveHandled(target, fulfilledHandler) {
+          const doContinue = () => {
+            if (continueForwarding) {
+              // Tell the default unfulfilledHandler to forward messages.
+              continueForwarding();
+            }
+            // Return undefined.
+          };
+
           try {
             // Sanity checks.
             if (fulfilledHandler) {
@@ -160,7 +175,7 @@ export default function maybeExtendPromise(Promise) {
               if (existingUnfulfilledHandler) {
                 // Reuse the unfulfilled handler.
                 promiseToHandler.set(handledP, existingUnfulfilledHandler);
-                return;
+                return doContinue();
               }
 
               // See if the target is a presence we already know of.
@@ -168,12 +183,12 @@ export default function maybeExtendPromise(Promise) {
               const existingFulfilledHandler = presenceToHandler.get(presence);
               if (existingFulfilledHandler) {
                 promiseToHandler.set(handledP, existingFulfilledHandler);
-                return;
+                return doContinue();
               }
 
               // Remove the mapping, as we don't need a handler.
               promiseToHandler.delete(handledP);
-              return;
+              return doContinue();
             }
 
             // Validate and install our mapped target (i.e. presence).
@@ -202,14 +217,10 @@ export default function maybeExtendPromise(Promise) {
 
             // We committed to this presence, so resolve.
             handledResolve(presence);
-
-            // Tell the default unfulfilledHandler to forward messages.
-            if (continueForwarding) {
-              continueForwarding();
-            }
           } catch (e) {
             rejectHandled(e);
           }
+          return doContinue();
         }
 
         // Invoke the callback to let the user resolve/reject.
