@@ -6,6 +6,51 @@ INITIAL_TOKENS = 1000agmedallion
 include Makefile.ledger
 all: build install
 
+scenario0-setup:
+	-rm -r ~/.ag-chain-cosmos
+	-rm ag-cosmos-chain-state.json
+	python3 -mvenv ve3
+	ve3/bin/pip install setup-solo/
+
+scenario0-run-client:
+	ve3/bin/ag-setup-solo
+
+scenario0-run-chain:
+	@echo 'No local chain needs to run in scenario0'
+
+scenario1-setup: scenario0-setup
+scenario1-run-chain:
+	@test "`uname -s`" = Linux || \
+		{ echo 'Must run under Linux; use "make docker-build && docker/ag-setup-cosmos bootstrap"'; exit 1; }
+	setup/ag-setup-cosmos bootstrap
+
+scenario1-run-client: scenario0-run-client
+
+AGC = ./lib/ag-chain-cosmos
+scenario2-setup:
+	-rm -r ~/.ag-chain-cosmos
+	-rm ag-cosmos-chain-state.json
+	$(AGC) init --chain-id=$(CHAIN_ID)
+	rm -rf t1
+	bin/ag-solo init t1
+	$(AGC) add-genesis-account `cat t1/ag-cosmos-helper-address` $(INITIAL_TOKENS)
+	$(MAKE) set-local-gci-ingress
+	@echo "ROLE=two_chain BOOT_ADDRESS=\`cat t1/ag-cosmos-helper-address\` agc start"
+	@echo "(cd t1 && ../bin/ag-solo start --role=two_client)"
+
+scenario2-run-chain:
+	ROLE=two_chain BOOT_ADDRESS=`cat t1/ag-cosmos-helper-address` $(AGC) start
+scenario2-run-client:
+	cd t1 && ../bin/ag-solo start --role=two_client
+
+scenario3-setup:
+	rm -rf t1
+	bin/ag-solo init t1
+scenario3-run-client:
+	cd t1 && ../bin/ag-solo start --role=three_client
+scenario3-run-chain:
+	@echo 'No local chain needs to run in scenario3'
+
 docker-pull:
 	for f in '' -pserver -setup -setup-solo -solo; do \
 		docker pull $(REPOSITORY)$$f:latest || exit $$?; \
@@ -108,26 +153,3 @@ install-setup-client:
 	ve3-client/bin/pip install --editable ./setup-solo
 run-setup-client:
 	ve3-client/bin/ag-setup-solo
-
-AGC = ./lib/ag-chain-cosmos
-scenario2-setup:
-	-rm -r ~/.ag-chain-cosmos
-	-rm ag-cosmos-chain-state.json
-	$(AGC) init --chain-id=$(CHAIN_ID)
-	rm -rf t1
-	bin/ag-solo init t1
-	$(AGC) add-genesis-account `cat t1/ag-cosmos-helper-address` $(INITIAL_TOKENS)
-	$(MAKE) set-local-gci-ingress
-	@echo "ROLE=two_chain BOOT_ADDRESS=\`cat t1/ag-cosmos-helper-address\` agc start"
-	@echo "(cd t1 && ../bin/ag-solo start --role=two_client)"
-
-scenario2-run-chain:
-	ROLE=two_chain BOOT_ADDRESS=`cat t1/ag-cosmos-helper-address` $(AGC) start
-scenario2-run-client:
-	cd t1 && ../bin/ag-solo start --role=two_client
-
-scenario3-setup:
-	rm -rf t1
-	bin/ag-solo init t1
-scenario3-run-client:
-	cd t1 && ../bin/ag-solo start --role=three_client

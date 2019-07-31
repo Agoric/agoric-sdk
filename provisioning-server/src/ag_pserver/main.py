@@ -73,7 +73,7 @@ class ConfigElement(Element):
         config = f.read()
         gr = '/usr/src/app/lib/git-revision.txt'
         if os.path.exists(gr):
-          f = open()
+          f = open(gr)
           meta['package_git'] = f.read().strip()
         else:
           f = os.popen('git describe --always --dirty')
@@ -95,7 +95,7 @@ class ConfigElement(Element):
               pjson = json.load(f)
               break
             pj = os.path.join(os.path.dirname(pjpath), '../package.json')
-            pj = os.path.abspath(np)
+            pj = os.path.abspath(pj)
 
         meta['package_version'] = pjson.get('version', 'unknown')
         meta['package_name'] = pjson.get('name', 'cosmic-swingset')

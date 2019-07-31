@@ -446,7 +446,22 @@ show-config      display the client connection parameters
         needReMain(['play', 'start', '-eservice=ag-pserver']),
       );
 
+      const rpcAddrs = await needBacktick(
+        `${shellEscape(progname)} show-rpcaddrs`,
+      );
+      const match = rpcAddrs.match(/^([^,]+):\d+(,|$)/);
+      const pserverHost = pserverFlags
+        ? `https://${match[1]}`
+        : `http://${match[1]}:8001`;
+      const pserverUrl = `${pserverHost}${pserverPassword &&
+        `/provision-${pserverPassword}`}`;
       initHint();
+
+      console.error(
+        chalk.black.bgGreenBright.bold(
+          `Go to the provisioning server at: ${pserverUrl}`
+        ),
+      );
       break;
     }
 
