@@ -42,7 +42,11 @@ function build(syscall, _state, makeRoot, forVatID) {
         return res(target, handler);
       };
     }, handler);
-    return pr;
+    // We harden this Promise because it feeds importPromise(), which is
+    // where remote promises inside inbound arguments and resolutions are
+    // created. Both places are additionally hardened by m.unserialize, but
+    // it seems reasonable to do it here too, just in case.
+    return harden(pr);
   }
 
   function makeDeviceNode(id) {
@@ -229,16 +233,21 @@ function build(syscall, _state, makeRoot, forVatID) {
         if (`${p}` !== p) {
           return undefined;
         }
-        return (...args) => ep.post(p, args);
+        // Harden this Promise because it's our only opportunity to ensure
+        // p1=E(x).foo() is hardened. The Handled Promise API does not (yet)
+        // allow the handler to synchronously influence the promise returned
+        // by the handled methods, so we must freeze it from the outside. See
+        // #95 for details.
+        return (...args) => harden(ep.post(p, args));
       },
       deleteProperty(_target, p) {
-        return ep.delete(p);
+        return harden(ep.delete(p));
       },
       set(_target, p, value, _receiver) {
-        return ep.put(p, value);
+        return harden(ep.put(p, value));
       },
       apply(_target, _thisArg, argArray = []) {
-        return ep.post(undefined, argArray);
+        return harden(ep.post(undefined, argArray));
       },
       has(_target, _p) {
         // We just pretend everything exists.
