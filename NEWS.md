@@ -1,5 +1,17 @@
 User-visible changes in SwingSet:
 
+## Release 0.0.17 (31-Jul-2019)
+
+* All Promises returned by `E(x).foo()` are now hardened. Previously this was
+  inconsistent. The Promise returned by `x!foo()` is *not* hardened. The
+  arguments of eventual-send calls are eventually hardened as a side-effect
+  of the send, but probably not until some future turn. #95
+* Upgrade to @agoric/eventual-send-0.2.0, to support that hardening.
+* "Presences" (the `x` in `E(x).foo()`) now have a useful `.toString()`
+  method, and the previous `_importID_NN` method was removed. (#98)
+* Require Node.js v12 or higher. (#99)
+
+
 ## Release 0.0.16 (24-Jul-2019)
 
 * New `@agoric/evaluate` API. Vat code which needs to safely evaluate strings
