@@ -24,9 +24,9 @@ jobs:
 
   # Lint and Test
 
-  lint_and_test_node_11: &lint_and_test
+  lint_and_test_node_12: &lint_and_test
     docker:
-      - image: circleci/node:11
+      - image: circleci/node:12
     steps: 
       - checkout
       - *install_npm
@@ -45,7 +45,7 @@ jobs:
 
   # Automated Npm Audit Fix PR
 
-  npm_audit_node_11: &npm_audit
+  npm_audit_node_12: &npm_audit
     docker:
       - image: circleci/golang:1.12.0-node
     steps: 
@@ -69,7 +69,7 @@ workflows:
   version: 2
   test_all:
     jobs:
-      - lint_and_test_node_11
+      - lint_and_test_node_12
   nightly:
      triggers:
        - schedule:
@@ -79,4 +79,4 @@ workflows:
                only:
                  - master
      jobs:
-        - npm_audit_node_11
+        - npm_audit_node_12
