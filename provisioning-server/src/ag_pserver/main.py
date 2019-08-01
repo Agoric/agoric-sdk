@@ -76,13 +76,15 @@ class ConfigElement(Element):
           f = open(gr)
           meta['package_git'] = f.read().strip()
         else:
-          f = os.popen('git describe --always --dirty')
-          meta['package_git'] = f.read().strip()
+          f = os.popen('git rev-parse --short HEAD')
+          sha = f.read().strip()
+          f = os.popen('git diff --quiet || echo -dirty')
+          meta['package_git'] = sha + f.read().strip()
 
-        pj = '/usr/src/app/lib/package.json'
+        pj = '/usr/src/app/package.json'
         pjson = {}
         if os.path.exists(pj):
-          f = open('/usr/src/app/lib/package.json')
+          f = open(pj)
           pjson = json.load(f)
         else:
           pjpath = None
