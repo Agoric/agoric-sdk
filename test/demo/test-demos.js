@@ -1,5 +1,5 @@
 import { test } from 'tape-promise/tape';
-import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
+import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 
 async function main(withSES, basedir, argv) {
   const config = await loadBasedir(basedir);
@@ -38,7 +38,7 @@ test('run contractHost Demo --mint without SES', async t => {
 const contractTrivialGolden = [
   '=> setup called',
   'starting trivialContractTest',
-  'Does contract source match? true',
+  'Does source match? true',
   'foo balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":"foo terms","seatIdentity":{},"seatDesc":"foo"}}',
   '++ eightP resolved to 8 (should be 8)',
   '++ DONE',
@@ -110,8 +110,8 @@ const contractCoveredCallGolden = [
   '++ bob.offerAliceOption starting',
   '++ alice.acceptOptionDirectly starting',
   'Pretend singularity never happens',
-  'alice invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
-  'verified invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
+  'alice invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":{"escrowExchangeInstallation":{},"money":{"label":{"issuer":{},"description":"smackers"},"quantity":10},"stock":{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},"timer":{},"deadline":"singularity"},"seatIdentity":{},"seatDesc":"holder"}}',
+  'verified invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":{"escrowExchangeInstallation":{},"money":{"label":{"issuer":{},"description":"smackers"},"quantity":10},"stock":{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},"timer":{},"deadline":"singularity"},"seatIdentity":{},"seatDesc":"holder"}}',
   'alice option wins: {"label":{"issuer":{},"description":"yoyodyne"},"quantity":7} refs: null',
   'bob option wins: {"label":{"issuer":{},"description":"smackers"},"quantity":10} refs: null',
   '++ bob.offerAliceOption done',
@@ -143,7 +143,7 @@ const contractCoveredCallSaleGolden = [
   '++ fred.acceptOptionOffer starting',
   'Pretend singularity never happens',
   'alice options sale wins: {"label":{"issuer":{},"description":"fins"},"quantity":55} refs: null',
-  'fred buys escrowed option wins: {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"dough"},"quantity":10},{"label":{"issuer":{},"description":"wonka"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}} refs: null',
+  'fred buys escrowed option wins: {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":{"escrowExchangeInstallation":{},"money":{"label":{"issuer":{},"description":"dough"},"quantity":10},"stock":{"label":{"issuer":{},"description":"wonka"},"quantity":7},"timer":{},"deadline":"singularity"},"seatIdentity":{},"seatDesc":"holder"}} refs: null',
   'fred exercises option, buying stock wins: {"label":{"issuer":{},"description":"wonka"},"quantity":7} refs: null',
   'bob option wins: {"label":{"issuer":{},"description":"dough"},"quantity":10} refs: null',
   '++ alice.acceptOptionForFred done',
@@ -300,8 +300,8 @@ const contractCoveredCallGoldenPixel = [
   '++ bob.offerAliceOption starting',
   '++ alice.acceptOptionDirectly starting',
   'Pretend singularity never happens',
-  'alice invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
-  'verified invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
+  'alice invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":{"escrowExchangeInstallation":{},"money":{"label":{"issuer":{},"description":"smackers"},"quantity":10},"stock":{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]},"timer":{},"deadline":"singularity"},"seatIdentity":{},"seatDesc":"holder"}}',
+  'verified invite balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":{"escrowExchangeInstallation":{},"money":{"label":{"issuer":{},"description":"smackers"},"quantity":10},"stock":{"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]},"timer":{},"deadline":"singularity"},"seatIdentity":{},"seatDesc":"holder"}}',
   'alice option wins: {"label":{"issuer":{},"description":"pixelList"},"quantity":[{"x":1,"y":1}]} refs: null',
   'bob option wins: {"label":{"issuer":{},"description":"smackers"},"quantity":10} refs: null',
   '++ bob.offerAliceOption done',

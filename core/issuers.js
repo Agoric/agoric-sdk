@@ -49,6 +49,10 @@ Description must be truthy: ${description}`;
       return assay;
     },
 
+    makeAmount(quantity) {
+      return assay.make(quantity);
+    },
+
     makeEmptyPurse(name = 'a purse') {
       return mint.mint(assay.empty(), name); // mint and issuer call each other
     },

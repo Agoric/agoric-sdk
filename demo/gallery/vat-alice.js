@@ -6,7 +6,7 @@ import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 import { insist } from '../../util/insist';
 import { makeCollect, makeContractHost } from '../../core/contractHost';
-import { escrowExchangeSrc } from '../../core/escrow';
+import { escrowExchangeSrcs } from '../../core/escrow';
 
 let storedUseRight;
 let storedTransferRight;
@@ -19,7 +19,7 @@ function createSaleOffer(E, pixelPaymentP, gallery, dustPurseP, collect, log) {
     const terms = harden({ left: dustAmount, right: pixelAmount });
     const contractHost = makeContractHost(E, evaluate);
     const escrowExchangeInstallationP = E(contractHost).install(
-      escrowExchangeSrc,
+      escrowExchangeSrcs,
     );
     const { left: buyerInviteP, right: sellerInviteP } = await E(
       escrowExchangeInstallationP,

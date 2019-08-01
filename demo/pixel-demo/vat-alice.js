@@ -139,13 +139,13 @@ function makeAliceMaker(E, host, log) {
                   label: inviteIssuerLabel,
                   quantity: {
                     installation: coveredCallInstallationP,
-                    terms: [
-                      escrowExchangeInstallationP,
-                      smackers10,
-                      pixel1x1,
-                      timerP,
-                      'singularity',
-                    ],
+                    terms: {
+                      escrowExchangeInstallation: escrowExchangeInstallationP,
+                      money: smackers10,
+                      stock: pixel1x1,
+                      timer: timerP,
+                      deadline: 'singularity',
+                    },
                     seatIdentity: allegedInviteAmount.quantity.seatIdentity,
                     seatDesc: 'holder',
                   },

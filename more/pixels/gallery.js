@@ -13,7 +13,7 @@ import { insistPixel, isEqual as isEqualPixel } from './types/pixel';
 import { makeMintController } from './pixelMintController';
 import { makeLruQueue } from './lruQueue';
 
-import { escrowExchangeSrc } from '../../core/escrow';
+import { escrowExchangeSrcs } from '../../core/escrow';
 import { makeContractHost, makeCollect } from '../../core/contractHost';
 
 function mockStateChangeHandler(_newState) {
@@ -311,7 +311,7 @@ export function makeGallery(
       const terms = harden({ left: dustAmount, right: pixelAmount });
       const contractHost = makeContractHost(E, evaluate);
       const escrowExchangeInstallationP = await E(contractHost).install(
-        escrowExchangeSrc,
+        escrowExchangeSrcs,
       );
       const { left: galleryInviteP, right: userInviteP } = await E(
         escrowExchangeInstallationP,
@@ -350,7 +350,7 @@ export function makeGallery(
       const terms = harden({ left: dustAmount, right: pixelAmount });
       const contractHost = makeContractHost(E, evaluate);
       const escrowExchangeInstallationP = E(contractHost).install(
-        escrowExchangeSrc,
+        escrowExchangeSrcs,
       );
       // order switch compared to as in sellToGallery
       const { left: userInviteP, right: galleryInviteP } = await E(

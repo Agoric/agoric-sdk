@@ -2,9 +2,8 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
-
-import { allComparable } from '../../util/sameStructure';
 import { makeCollect } from '../../core/contractHost';
+import { allComparable } from '../../util/sameStructure';
 
 function makeAliceMaker(E, host, log) {
   const collect = makeCollect(E, log);
@@ -29,13 +28,6 @@ function makeAliceMaker(E, host, log) {
       optFredP = undefined,
     ) {
       const inviteIssuerP = E(host).getInviteIssuer();
-      const inviteIssuerLabel = harden({
-        issuer: inviteIssuerP,
-        description: 'contract host',
-      });
-      const moneyIssuerP = E(myMoneyPurseP).getIssuer();
-      const stockIssuerP = E(myStockPurseP).getIssuer();
-      const optFinIssuerP = myOptFinPurseP && E(myOptFinPurseP).getIssuer();
 
       const alice = harden({
         payBobWell(bob) {
@@ -47,52 +39,29 @@ function makeAliceMaker(E, host, log) {
         acceptInvite(allegedInvitePaymentP) {
           log('++ alice.acceptInvite starting');
           showPaymentBalance('alice invite', allegedInvitePaymentP);
-
-          const allegedInviteAmountP = E(allegedInvitePaymentP).getBalance();
-
-          const verifiedInviteP = E.resolve(allegedInviteAmountP).then(
-            allegedInviteAmount => {
-              const clams10 = harden({
-                label: {
-                  issuer: moneyIssuerP,
-                  description: 'clams',
-                },
-                quantity: 10,
+          const clams10P = E(E(myMoneyPurseP).getIssuer()).makeAmount(10);
+          const fudco7P = E(E(myStockPurseP).getIssuer()).makeAmount(7);
+          const verifiedInvitePaymentP = E(allegedInvitePaymentP)
+            .getBalance()
+            .then(allegedInviteAmount => {
+              return E.resolve(Promise.all([clams10P, fudco7P])).then(terms => {
+                const [left, right] = terms;
+                return E(escrowExchangeInstallationP)
+                  .checkAmount(allegedInviteAmount, { left, right }, 'left')
+                  .then(() => {
+                    return E(inviteIssuerP).getExclusive(
+                      allegedInviteAmount,
+                      allegedInvitePaymentP,
+                      'verified invite',
+                    );
+                  });
               });
-              const fudco7 = harden({
-                label: {
-                  issuer: stockIssuerP,
-                  description: 'fudco',
-                },
-                quantity: 7,
-              });
-
-              const inviteAmountP = allComparable(
-                harden({
-                  label: inviteIssuerLabel,
-                  quantity: {
-                    installation: escrowExchangeInstallationP,
-                    terms: { left: clams10, right: fudco7 },
-                    seatIdentity: allegedInviteAmount.quantity.seatIdentity,
-                    seatDesc: 'left',
-                  },
-                }),
-              );
-
-              return E.resolve(inviteAmountP).then(inviteAmount => {
-                return E(inviteIssuerP).getExclusive(
-                  inviteAmount,
-                  allegedInvitePaymentP,
-                  'verified invite',
-                );
-              });
-            },
-          );
+            });
 
           return E.resolve(
-            showPaymentBalance('verified invite', verifiedInviteP),
+            showPaymentBalance('verified invite', verifiedInvitePaymentP),
           ).then(_ => {
-            const seatP = E(host).redeem(verifiedInviteP);
+            const seatP = E(host).redeem(verifiedInvitePaymentP);
             const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
             E(seatP).offer(moneyPaymentP);
             return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice escrow');
@@ -114,45 +83,26 @@ function makeAliceMaker(E, host, log) {
 
           const verifiedInvitePaymentP = E.resolve(allegedInviteAmountP).then(
             allegedInviteAmount => {
-              const smackers10 = harden({
-                label: {
-                  issuer: moneyIssuerP,
-                  description: 'smackers',
-                },
-                quantity: 10,
-              });
-              const yoyodyne7 = harden({
-                label: {
-                  issuer: stockIssuerP,
-                  description: 'yoyodyne',
-                },
-                quantity: 7,
-              });
-
-              const inviteAmountP = allComparable(
-                harden({
-                  label: inviteIssuerLabel,
-                  quantity: {
-                    installation: coveredCallInstallationP,
-                    terms: [
-                      escrowExchangeInstallationP,
-                      smackers10,
-                      yoyodyne7,
-                      timerP,
-                      'singularity',
-                    ],
-                    seatIdentity: allegedInviteAmount.quantity.seatIdentity,
-                    seatDesc: 'holder',
-                  },
-                }),
+              const smackers10P = E(E(myMoneyPurseP).getIssuer()).makeAmount(
+                10,
               );
-
-              return E.resolve(inviteAmountP).then(inviteAmount => {
-                return E(inviteIssuerP).getExclusive(
-                  inviteAmount,
-                  allegedInvitePaymentP,
-                  'verified invite',
-                );
+              const yoyodyne7P = E(E(myStockPurseP).getIssuer()).makeAmount(7);
+              const coveredCallTermsP = harden([
+                smackers10P,
+                yoyodyne7P,
+                timerP,
+                'singularity',
+              ]);
+              return E.resolve(allComparable(coveredCallTermsP)).then(terms => {
+                return E(coveredCallInstallationP)
+                  .checkAmount(allegedInviteAmount, terms)
+                  .then(_ => {
+                    return E(inviteIssuerP).getExclusive(
+                      allegedInviteAmount,
+                      allegedInvitePaymentP,
+                      'verified invite',
+                    );
+                  });
               });
             },
           );
@@ -169,17 +119,21 @@ function makeAliceMaker(E, host, log) {
 
         acceptOptionForFred(allegedInvitePaymentP) {
           log('++ alice.acceptOptionForFred starting');
-          const finNeededP = E(E(optFinIssuerP).getAssay()).make(55);
+          const finNeededP = E(E(myOptFinPurseP).getIssuer()).makeAmount(55);
           const inviteNeededP = E(allegedInvitePaymentP).getBalance();
 
           const terms = harden({ left: finNeededP, right: inviteNeededP });
-          const invitesP = E(escrowExchangeInstallationP).spawn(terms);
-          const fredInviteP = invitesP.then(invites => invites.left);
-          const aliceForFredInviteP = invitesP.then(invites => invites.right);
+          const invitePaymentsP = E(escrowExchangeInstallationP).spawn(terms);
+          const fredInvitePaymentP = invitePaymentsP.then(
+            invitePayments => invitePayments.left,
+          );
+          const aliceForFredInvitePaymentP = invitePaymentsP.then(
+            invitePayments => invitePayments.right,
+          );
           const doneP = Promise.all([
-            E(optFredP).acceptOptionOffer(fredInviteP),
+            E(optFredP).acceptOptionOffer(fredInvitePaymentP),
             E(alice).completeOptionsSale(
-              aliceForFredInviteP,
+              aliceForFredInvitePaymentP,
               allegedInvitePaymentP,
             ),
           ]);
@@ -190,9 +144,9 @@ function makeAliceMaker(E, host, log) {
           return doneP;
         },
 
-        completeOptionsSale(aliceForFredInviteP, allegedInvitePaymentP) {
+        completeOptionsSale(aliceForFredInvitePaymentP, allegedInvitePaymentP) {
           log('++ alice.completeOptionsSale starting');
-          const aliceForFredSeatP = E(host).redeem(aliceForFredInviteP);
+          const aliceForFredSeatP = E(host).redeem(aliceForFredInvitePaymentP);
 
           E(aliceForFredSeatP).offer(allegedInvitePaymentP);
           const myInvitePurseP = E(inviteIssuerP).makeEmptyPurse();
