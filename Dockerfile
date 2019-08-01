@@ -17,6 +17,7 @@ WORKDIR /usr/src/app
 RUN mkdir lib
 COPY lib/*.cc lib/
 COPY package*.json *.gyp *.tgz ./
+RUN echo 'all:' > Makefile
 COPY --from=go-build /usr/src/app/lib/*.so /usr/src/app/lib/*.h ./lib/
 RUN npm install && npm run build
 

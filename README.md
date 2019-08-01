@@ -1,6 +1,6 @@
 # Agoric's Cosmic SwingSet
 
-TL;DR: Browse to a public testnet provisioning page, then run:
+TL;DR: Ask for a public testnet provisioning code, then run:
 
 ```
 $ SOLO_NAME=han ./docker/ag-setup-solo --pull
@@ -8,9 +8,186 @@ $ SOLO_NAME=han ./docker/ag-setup-solo --pull
 
 where `han` is the name of your solo vat machine that follows the blockchain.
 
+Then connect to http://localhost:8000 and go to the [Gallery Demo](#gallery-pixel-demo) section.
+
+If you don't have a provisioning code, or otherwise want to run the demo from the code in this directory,
+read [the next section](#different-scenarios).
+
+## Different scenarios
+
+Running the demo requires a local solo node to serve as your access point.
+
+These are the main
+configuration scenarios for how that solo node interacts with a testnet:
+
+**[You will need to [build this repository from source](#build-from-source) before the commands in this section work.
+]**
+
+<details>
+  <summary>Scenario 0: a public testnet (kick the tires)</summary>
+
+  To run the solo node using the current directory's source code against a public testnet, use:
+  ```
+  $ make scenario0-setup
+  $ make scenario0-run-client
+  ```
+
+  Alternatively, running the solo node from a Docker image and no local source code is described in the [top section](#agorics-cosmic-swingset).  
+</details>
+<details>
+  <summary>Scenario 1: your own local testnet (develop testnet provisioner)</summary>
+
+  This scenario is only useful for moving toward deploying the local source code as a new testnet.  Before using this scenario, you should test your on-chain code under Scenario 2.
+  
+  ```
+  make scenario1-setup
+  make scenario1-run-chain
+  ```
+
+  Wait until the bootstrap produces a provisioning server URL and visit it.  Then run in another terminal:
+
+  ```
+  make scenario1-run-client
+  ```
+
+  See [Testnet Tutorial](#testnet-tutorial) for more guidance.
+</details>
+<details>
+  <summary>Scenario 2: a single local testnet node (develop on-chain demo)</summary>
+
+  Before using this scenario, you should test your off-chain code under Scenario 3.
+
+  Run:
+  ```
+  $ make scenario2-setup
+  $ make scenario2-run-chain
+  ```
+  Wait about 5 seconds for the chain to produce its first block, then switch to another terminal:
+  ```
+  $ make scenario2-run-client
+  ```
+  
+</details>
+<details>
+  <summary>Scenario 3: no testnet (develop off-chain demo)</summary>
+
+  Test the demo code without interacting with a blockchain.
+
+  Run:
+  ```
+  $ make scenario3-setup
+  $ make scenario3-run-client
+  ```
+
+  The `lib/ag-solo/vats/` directory contains the source code for all the Vats
+created in the solo vat-machine. The actual filenames are enumerated in
+`lib/ag-solo/init-basedir.js`, so if you add a new Vat, be sure to add it to
+`init-basedir.js` too.
+
+The objects added to `home` are created in `lib/ag-solo/vats/bootstrap.js`.
+
+The REPL handler is in `lib/ag-solo/vats/vat-http.js`.
+
+The HTML frontend code is pure JS/DOM (no additional libraries yet), in
+`lib/ag-solo/html/index.html` and `lib/ag-solo/html/main.js`.
+
+</details>
+
+Now go to https://localhost:8000/ to interact with your new solo node.
+
+# Gallery Pixel Demo
+
+In this Gallery Demo, the goal is to be able to create designs in a
+pixel canvas. You start with access to the gallery and a handful of
+methods that allow you to obtain pixels, color them, and buy or sell
+pixels. 
+
+To access the gallery, type `home.gallery` in the REPL. `home.gallery` is a
+Presence. In the SwingSet environment, Presences are remote references to objects on
+other vats. To invoke them, use the [proposed infix bang](https://github.com/Agoric/proposal-infix-bang). For example, the
+first thing you might want to do is tap the gallery faucet to get a
+pixel for free: 
+
+```js
+home.gallery!tapFaucet()
+```
+
+This returns a presence for the pixel that you receive from the
+faucet and saves it under `history[0]`.
+
+To color the pixel, we need to split the pixel into "transfer" and
+"use" rights. The right to use the pixel means that you can color it,
+and we'll be using it to color. 
+
+The following commands show a pixel being obtained from the faucet,
+being split into transfer and use rights, coloring the pixel by
+using the 'use' right, and selling a pixel to the gallery through a
+escrow smart contract.  
+
+```
+home.gallery!tapFaucet()
+home.gallery!split(history[0])
+history[1].useRightPayment
+home.gallery!changeColor(history[2], '#FF69B4')
+home.gallery!tapFaucet()
+history[4]!getBalance()
+home.gallery!pricePixelAmount(history[5])
+home.gallery!sellToGallery(history[5])
+history[7].inviteP
+history[7].host
+history[9]!redeem(history[8])
+history[10]!offer(history[4])
+home.gallery!getIssuers()
+history[12].pixelIssuer
+history[12].dustIssuer
+history[13]!makeEmptyPurse()
+history[14]!makeEmptyPurse()
+home.gallery!collectFromGallery(history[10], history[16], history[15], 'my escrow')
+```
+
+# Build from source
+
+You can browse the current source tree at [Github](https://github.com/Agoric/cosmic-swingset)
+
+If you want to build and install from sources, you need Node.js 11 and Golang 1.12:
+
+```
+$ npm install
+```
+
+Make symbolic links somewhere in your `$PATH` (such as `/usr/local/bin`) as below: 
+
+```
+ln -s $PWD/lib/ag-chain-cosmos /usr/local/bin/
+```
+
+If installing the GO language didn't setup a `$GOPATH` variable,
+you'll need to find the directory and set the variable. Typically
+```
+GOPATH="$HOME/go"
+```
+
+Then do
+```
+ln -s $GOPATH/bin/ag-cosmos-helper /usr/local/bin/
+```
+
+Test that the links work with:
+
+```
+$ ag-chain-cosmos --help
+$ ag-cosmos-helper --help
+```
+
+# Testnet Tutorial
+
+The `ag-setup-cosmos` tool is used to manage testnets.  Unless you are developing `ag-setup-cosmos` (whose sources are in the `setup` directory), you should use the Docker scripts in the first section and a working Docker installation since `ag-setup-cosmos` only works under Linux with Terraform 0.11 and Ansible installed.
+
 ## Docker images
 
-If you want to use Docker images globally, run:
+If you are not running on Linux, you will need to use Docker to provide the setup environment needed by the provisioning server and testnet nodes.
+
+If you want to install the Docker image scripts on this machine, run:
 
 ```
 $ sudo make docker-install
@@ -20,9 +197,7 @@ Otherwise, the scripts are in the `docker` subdirectory.
 
 You can find the images at [Docker Hub](https://hub.docker.com/r/agoric/cosmic-swingset)
 
-# Testnet Tutorial
-
-The `ag-setup-cosmos` tool is used to manage testnets.  Unless you are developing `ag-setup-cosmos` (whose sources are in the `setup` directory), you should use the Docker scripts in the first section and a working Docker installation since `ag-setup-cosmos` only works under Linux with Terraform 0.11 and Ansible installed.
+## Bootstrapping
 
 ```
 # Fill out the node placement options, then go for coffee while it boots.
@@ -55,87 +230,6 @@ ag-setup-cosmos bootstrap --bump
 # Unprovision the testnet deployment, but do not require reinitialization.
 # Will prompt you for confirmation.
 ag-setup-cosmos destroy
-```
-
-## Build from source
-
-You can browse the current source tree at [Github](https://github.com/Agoric/cosmic-swingset)
-
-If you want to build and install from sources, you need Node.js 11 and Golang 1.12:
-
-```
-$ npm install
-```
-
-Make shell aliases as below.  Note that the `$PWD` variable must be
-the absolute path to the current cosmic-swingset directory:
-
-```
-alias ag-chain-cosmos=$PWD/lib/ag-chain-cosmos
-```
-If installing the GO language didn't setup a `$GOPATH` variable,
-you'll need to find the directory and set the variable. Typically
-```
-GOPATH="$HOME/go"
-```
-Then do
-```
-alias ag-cosmos-helper=$GOPATH/bin/ag-cosmos-helper
-```
-
-Test that the aliases work with:
-
-```
-$ ag-chain-cosmos --help
-$ ag-cosmos-helper --help
-```
-
-# Agoric Cosmos Chain Development Tutorial
-
-After you have either installed the Docker scripts or built from scratch and set your shell aliases, you can try the following to start your own testnet and interact with it.
-
-First, configure the Agoric validator and CLI tool:
-
-```
-# Initialize configuration files and genesis file
-ag-chain-cosmos init --chain-id agoric
-
-# Copy the `Address` output here and save it for later use 
-# [optional] add "--ledger" at the end to use a Ledger Nano S 
-# Save password and recovery keys if you want.
-ag-cosmos-helper keys add jack
-
-# Copy the `Address` output here and save it for later use
-# Save password and recovery keys if you want.
-ag-cosmos-helper keys add alice
-
-# Add both accounts, with coins, to the genesis file
-ag-chain-cosmos add-genesis-account $(ag-cosmos-helper keys show jack -a) 1000agtoken,1000jackcoin
-ag-chain-cosmos add-genesis-account $(ag-cosmos-helper keys show alice -a) 1000agtoken,1000alicecoin
-
-# Configure your CLI to eliminate need for chain-id flag
-ag-cosmos-helper config chain-id agoric
-ag-cosmos-helper config output json
-ag-cosmos-helper config indent true
-ag-cosmos-helper config trust-node true
-```
-
-Go to a different terminal (make sure your shell aliases are installed first), and start the testnet with:
-```
-ag-chain-cosmos start
-```
-
-Go back to the old terminal and run commands against the network you have just created:
-```
-# First check the accounts to ensure they have funds
-ag-cosmos-helper query account $(ag-cosmos-helper keys show jack -a) 
-ag-cosmos-helper query account $(ag-cosmos-helper keys show alice -a) 
-
-# Relay a message on behalf of Alice
-ag-cosmos-helper tx swingset deliver alice --from jack '[[[0,"{\"target\":{\"type\":\"your-egress\",\"id\":1},\"methodName\":\"getIssuer\",\"args\":[],\"slots\":[],\"resultSlot\":{\"type\":\"your-resolver\",\"id\":1}}"]], 0]'
-
-# Look at Bob's outbound mailbox
-ag-cosmos-helper query swingset mailbox bob
 ```
 
 # Acknowledgements
