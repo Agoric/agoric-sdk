@@ -245,9 +245,13 @@ export function makeGallery(
     const useRightAmount = useRightAssay.make(pixelList);
     const transferRightAmount = transferRightAssay.make(pixelList);
 
-    pixelMint.destroy(pixelAmount);
-    useRightMint.destroy(useRightAmount);
-    transferRightMint.destroy(transferRightAmount);
+    try {
+      pixelMint.destroy(pixelAmount);
+      useRightMint.destroy(useRightAmount);
+      transferRightMint.destroy(transferRightAmount);
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   function tapFaucet() {

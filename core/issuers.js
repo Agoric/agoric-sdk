@@ -15,28 +15,37 @@ function makeMint(
   insist(description)`\
 Description must be truthy: ${description}`;
 
-  // src is a purse or payment. Return a fresh payment.  One internal
+  // assetSrc is a purse or payment. Return a fresh payment.  One internal
   // function used for both cases, since they are so similar.
-  function takePayment(amount, isPurse, src, _name) {
-    amount = assay.coerce(amount);
-    _name = `${_name}`;
-    const srcOldRightsAmount = mintController.getAmount(src);
-    const srcNewRightsAmount = assay.without(srcOldRightsAmount, amount);
-
-    // ///////////////// commit point //////////////////
-    // All queries above passed with no side effects.
-    // During side effects below, any early exits should be made into
-    // fatal turn aborts.
+  function takePayment(
+    assetSrc,
+    srcController,
+    paymentAmount,
+    unsafePaymentName,
+  ) {
+    const paymentName = `${unsafePaymentName}`;
+    paymentAmount = assay.coerce(paymentAmount);
+    const oldSrcAmount = srcController.getAmount(assetSrc);
+    const newSrcAmount = assay.without(oldSrcAmount, paymentAmount);
 
     const payment = harden({
       getIssuer() {
         return issuer;
       },
       getBalance() {
-        return mintController.getAmount(payment);
+        return paymentController.getAmount(payment);
+      },
+      getName() {
+        return paymentName;
       },
     });
-    mintController.recordPayment(src, payment, amount, srcNewRightsAmount);
+
+    // ///////////////// commit point //////////////////
+    // All queries above passed with no side effects.
+    // During side effects below, any early exits should be made into
+    // fatal turn aborts.
+    paymentController.recordNew(payment, paymentAmount);
+    srcController.updateAmount(assetSrc, newSrcAmount);
     return payment;
   }
 
@@ -57,21 +66,23 @@ Description must be truthy: ${description}`;
       return mint.mint(assay.empty(), name); // mint and issuer call each other
     },
 
-    getExclusive(amount, srcPaymentP, name = 'a payment') {
-      return Promise.resolve(srcPaymentP).then(srcPayment =>
-        takePayment(amount, false, srcPayment, name),
-      );
+    getExclusive(amount, srcPaymentP, name) {
+      return Promise.resolve(srcPaymentP).then(srcPayment => {
+        name = name !== undefined ? name : srcPayment.getName(); // use old name
+        return takePayment(srcPayment, paymentController, amount, name);
+      });
     },
 
-    getExclusiveAll(srcPaymentP, name = 'a payment') {
-      return Promise.resolve(srcPaymentP).then(srcPayment =>
-        takePayment(
-          mintController.getAmount(srcPayment),
-          false,
+    getExclusiveAll(srcPaymentP, name) {
+      return Promise.resolve(srcPaymentP).then(srcPayment => {
+        name = name !== undefined ? name : srcPayment.getName(); // use old name
+        return takePayment(
           srcPayment,
+          paymentController,
+          paymentController.getAmount(srcPayment),
           name,
-        ),
-      );
+        );
+      });
     },
 
     burn(amount, srcPaymentP) {
@@ -90,27 +101,24 @@ Description must be truthy: ${description}`;
   const label = harden({ issuer, description });
 
   const assay = makeAssay(label);
-  const mintController = makeMintController(assay);
+  const { purseController, paymentController, destroy } = makeMintController(
+    assay,
+  );
 
-  function depositInto(purse, amount, srcPayment) {
+  function depositInto(purse, amount, payment) {
     amount = assay.coerce(amount);
-    const purseOldRightsAmount = mintController.getAmount(purse);
-    const srcOldRightsAmount = mintController.getAmount(srcPayment);
+    const oldPurseAmount = purseController.getAmount(purse);
+    const oldPaymentAmount = paymentController.getAmount(payment);
     // Also checks that the union is representable
-    const purseNewRightsAmount = assay.with(purseOldRightsAmount, amount);
-    const srcNewRightsAmount = assay.without(srcOldRightsAmount, amount);
+    const newPurseAmount = assay.with(oldPurseAmount, amount);
+    const newPaymentAmount = assay.without(oldPaymentAmount, amount);
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
     // During side effects below, any early exits should be made into
     // fatal turn aborts.
-
-    mintController.recordDeposit(
-      srcPayment,
-      assay.coerce(srcNewRightsAmount),
-      purse,
-      assay.coerce(purseNewRightsAmount),
-    );
+    paymentController.updateAmount(payment, newPaymentAmount);
+    purseController.updateAmount(purse, newPurseAmount);
 
     return amount;
   }
@@ -120,28 +128,32 @@ Description must be truthy: ${description}`;
       return issuer;
     },
     destroyAll() {
-      mintController.destroyAll();
+      purseController.destroyAll();
+      paymentController.destroyAll();
     },
     destroy(amount) {
       amount = assay.coerce(amount);
       // for non-fungible tokens that are unique, destroy them by removing them from
       // the purses/payments that they live in
-      mintController.destroy(amount);
+      destroy(amount);
     },
     revoke(amount) {
       this.destroy(amount);
       return mint(amount);
     },
-    mint(initialBalance, _name = 'a purse') {
+    mint(initialBalance, name = 'a purse') {
       initialBalance = assay.coerce(initialBalance);
-      _name = `${_name}`;
+      name = `${name}`;
 
       const purse = harden({
+        getName() {
+          return name;
+        },
         getIssuer() {
           return issuer;
         },
         getBalance() {
-          return mintController.getAmount(purse);
+          return purseController.getAmount(purse);
         },
         deposit(amount, srcPaymentP) {
           return Promise.resolve(srcPaymentP).then(srcPayment => {
@@ -152,24 +164,24 @@ Description must be truthy: ${description}`;
           return Promise.resolve(srcPaymentP).then(srcPayment => {
             return depositInto(
               purse,
-              mintController.getAmount(srcPayment),
+              paymentController.getAmount(srcPayment),
               srcPayment,
             );
           });
         },
-        withdraw(amount, name = 'a withdrawal payment') {
-          return takePayment(amount, true, purse, name);
+        withdraw(amount, paymentName = 'a withdrawal payment') {
+          return takePayment(purse, purseController, amount, paymentName);
         },
-        withdrawAll(name = 'a withdrawal payment') {
+        withdrawAll(paymentName = 'a withdrawal payment') {
           return takePayment(
-            mintController.getAmount(purse),
-            true,
             purse,
-            name,
+            purseController,
+            purseController.getAmount(purse),
+            paymentName,
           );
         },
       });
-      mintController.recordMint(purse, initialBalance);
+      purseController.recordNew(purse, initialBalance);
       return purse;
     },
   });

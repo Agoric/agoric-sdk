@@ -64,13 +64,12 @@ function makeBobMaker(E, log) {
           const buyerSeatP = E(contractHostP).redeem(buyerInviteP);
 
           const pixelPurseP = E(pixelIssuer).makeEmptyPurse('purchase');
-          E(buyerSeatP).offer(dustPurseP);
+          const dustPaymentP = E(dustPurseP).withdrawAll();
+          E(buyerSeatP).offer(dustPaymentP);
           const dustRefundP = E(dustIssuer).makeEmptyPurse('dust refund');
           await collect(buyerSeatP, pixelPurseP, dustRefundP, 'bob option');
 
-          const exclusivePayment = await E(pixelIssuer).getExclusiveAll(
-            pixelPurseP,
-          );
+          const exclusivePayment = await E(pixelPurseP).withdrawAll();
 
           const { useRightPayment } = await E(gallery).split(exclusivePayment);
           const exclusiveUseRightPaymentP = E(useRightIssuer).getExclusiveAll(
