@@ -186,7 +186,8 @@ class RequestCode(resource.Resource):
                 '--yes', '--chain-id', config['chainName'],
                 '--node',
                 'tcp://' + config['rpcAddrs'][0], # TODO: rotate on failure
-                '--home', os.environ['HOME'] + '/controller/ag-cosmos-helper-statedir'
+                '--home', os.environ['HOME'] + '/controller/ag-cosmos-helper-statedir',
+                '--broadcast-mode', 'block' # Don't return until committed.
                 ])
             code = yield d
             print('transfer of ' + INITIAL_TOKEN + ' returned ' + str(code))
