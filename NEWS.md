@@ -1,5 +1,11 @@
 User-visible changes in SwingSet:
 
+## Release 0.0.18 (31-Jul-2019)
+
+* Downgrade to @agoric/eventual-send-0.1.11 via @agoric/default-evaluate-options.
+  The @agoric/eventual-send-0.2.0 release had some serious problems with
+  memory exhaustion.
+
 ## Release 0.0.17 (31-Jul-2019)
 
 * All Promises returned by `E(x).foo()` are now hardened. Previously this was
