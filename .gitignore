@@ -86,3 +86,4 @@ typings/
 # next.js build output
 .next
 ag-cosmos-chain-state.json
+lib/git-revision.txt

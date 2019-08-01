@@ -20,7 +20,7 @@
   "dependencies": {
     "@agoric/ertp": "0.0.9",
     "@agoric/evaluate": "^1.2.0",
-    "@agoric/swingset-vat": "^0.0.16",
+    "@agoric/swingset-vat": "^0.0.18",
     "@iarna/toml": "^2.2.3",
     "bindings": "^1.2.1",
     "deterministic-json": "^1.0.5",
