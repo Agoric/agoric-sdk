@@ -1,12 +1,13 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
-import evaluate from '@agoric/evaluate';
 
 import {
   makeCompoundPixelAssayMaker,
   makeTransferRightPixelAssayMaker,
   makeUseRightPixelAssayMaker,
 } from './pixelAssays';
+import { makeCollect } from '../../core/contractHost';
+
 import { makeMint } from '../../core/issuers';
 import { makeWholePixelList, insistPixelList } from './types/pixelList';
 import { insistPixel, isEqual as isEqualPixel } from './types/pixel';
@@ -14,7 +15,6 @@ import { makeMintController } from './pixelMintController';
 import { makeLruQueue } from './lruQueue';
 
 import { escrowExchangeSrcs } from '../../core/escrow';
-import { makeContractHost, makeCollect } from '../../core/contractHost';
 
 function mockStateChangeHandler(_newState) {
   // does nothing
@@ -23,6 +23,7 @@ function mockStateChangeHandler(_newState) {
 export function makeGallery(
   E,
   log,
+  contractHost,
   stateChangeHandler = mockStateChangeHandler,
   canvasSize = 10,
 ) {
@@ -52,6 +53,7 @@ export function makeGallery(
     }
     return randomColor;
   }
+  const collect = makeCollect(E, log);
 
   function makeRandomData() {
     const pixels = [];
@@ -97,7 +99,6 @@ export function makeGallery(
   }
 
   // START ERTP
-  const collect = makeCollect(E, log);
 
   const makePixelListAssay = makeCompoundPixelAssayMaker(canvasSize);
   const makeTransferAssay = makeTransferRightPixelAssayMaker(canvasSize);
@@ -313,7 +314,6 @@ export function makeGallery(
       );
       // dustPurse is dropped
       const terms = harden({ left: dustAmount, right: pixelAmount });
-      const contractHost = makeContractHost(E, evaluate);
       const escrowExchangeInstallationP = await E(contractHost).install(
         escrowExchangeSrcs,
       );
@@ -352,7 +352,6 @@ export function makeGallery(
       // the left will have to provide dust, right will have to
       // provide pixels. Left is the user, right is the gallery
       const terms = harden({ left: dustAmount, right: pixelAmount });
-      const contractHost = makeContractHost(E, evaluate);
       const escrowExchangeInstallationP = E(contractHost).install(
         escrowExchangeSrcs,
       );
