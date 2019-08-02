@@ -8,7 +8,7 @@ export const SETUP_DIR = resolve(__dirname, '../setup');
 export const SSH_TYPE = 'ecdsa';
 export const SETUP_HOME = process.env.AG_SETUP_COSMOS_HOME
   ? resolve(process.env.AG_SETUP_COSMOS_HOME)
-  : '.';
+  : resolve('.');
 process.env.AG_SETUP_COSMOS_HOME = SETUP_HOME;
 
 export const playbook = (name, ...args) => {
