@@ -458,7 +458,8 @@ show-config      display the client connection parameters
 
       console.error(
         chalk.black.bgGreenBright.bold(
-          `Go to the provisioning server at: ${pserverUrl}`
+          `Go to the provisioning server at: ${pserverUrl}
+or "curl '${pserverUrl}/request-code?nickname=MY-NICK'"`,
         ),
       );
       break;

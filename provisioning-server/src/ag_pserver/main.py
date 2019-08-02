@@ -232,19 +232,22 @@ class RequestCode(resource.Resource):
                        lambda f: print("provisioning error", f))
 
     @defer.inlineCallbacks
+    def process_wormhole(self, nickname):
+      w = wormhole.create(APPID, MAILBOX_URL, self.reactor)
+      w.allocate_code()
+      code = yield w.get_code()
+
+      d = w.get_message()
+      d.addCallback(self.got_message, nickname.decode('utf-8'))
+      d.addCallback(self.send_provisioning_response, w)
+      return code
+
+    @defer.inlineCallbacks
     def build_provisioning_response(self, nickname):
-        w = wormhole.create(APPID, MAILBOX_URL, self.reactor)
-        w.allocate_code()
-        code = yield w.get_code()
-
-        d = w.get_message()
-        d.addCallback(self.got_message, nickname.decode('utf-8'))
-        d.addCallback(self.send_provisioning_response, w)
-
-
+        code = yield self.process_wormhole(nickname)
         args = ConfigElement.gatherArgs(self.opts)
         html = yield flattenString(None, ResponseElement(code, nickname, *args))
-        defer.returnValue(html)
+        return html
 
     def render_POST(self, req):
         nickname = req.args[b"nickname"][0]
@@ -256,6 +259,18 @@ class RequestCode(resource.Resource):
         d.addCallback(built)
         d.addErrback(log.err)
         return server.NOT_DONE_YET
+
+    def render_GET(self, req):
+      nickname = req.args[b"nickname"][0]
+      d = self.process_wormhole(nickname)
+      def built(code):
+        req.setHeader('Content-Type', 'text/plain; charset=UTF-8')
+        req.write((code + '\n').encode('utf-8'))
+        req.finish()
+      d.addCallback(built)
+      d.addErrback(log.err)
+      return server.NOT_DONE_YET
+
 
 def run_server(reactor, o):
     print("dir is", __file__)
