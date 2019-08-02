@@ -19,3 +19,8 @@ variable "DATACENTERS" {
     description = "Map from provider to list of datacenters indexed by instance ID"
     type = "map"
 }
+
+variable "VOLUMES" {
+  description = "Map from provider to system volume specifications"
+  type = "map"
+}

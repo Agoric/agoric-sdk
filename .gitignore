@@ -14,7 +14,7 @@ build
 .idea/
 *.iml
 node_modules
-t1/
+t[0-9]/
 
 ve3/
 ve3-client/

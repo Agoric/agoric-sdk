@@ -11,6 +11,28 @@ import {
 } from './files';
 import { chdir, needDoRun, shellEscape } from './run';
 
+const tfStringify = obj => {
+  let ret = '';
+  if (Array.isArray(obj)) {
+    let sep = '[';
+    for (const el of obj) {
+      ret += sep + tfStringify(el);
+      sep = ',';
+    }
+    ret += ']';
+  } else if (Object(obj) === obj) {
+    let sep = '{';
+    for (const key of Object.keys(obj).sort()) {
+      ret += `${sep}${JSON.stringify(key)}=${tfStringify(obj[key])}`;
+      sep = ',';
+    }
+    ret += '}';
+  } else {
+    ret = JSON.stringify(obj);
+  }
+  return ret;
+};
+
 const genericAskApiKey = async (provider, myDetails) => {
   const questions = [
     {
@@ -71,6 +93,22 @@ const PROVIDERS = {
   docker: {
     name: 'Docker instances',
     value: 'docker',
+    askDetails: async (_provider, _myDetails) => {
+      let vspec = '/sys/fs/cgroup:/sys/fs/cgroup';
+      if (process.env.DOCKER_VOLUMES) {
+        vspec += `,${process.env.DOCKER_VOLUMES}`;
+      }
+      return {
+        VOLUMES: vspec
+          .split(',')
+          .map(vol => vol.split(':'))
+          // eslint-disable-next-line camelcase
+          .map(([host_path, container_path]) => ({
+            host_path,
+            container_path,
+          })),
+      };
+    },
     askDatacenter: async (provider, PLACEMENT, dcs, placement) => {
       const { NUM_NODES } = await inquirer.prompt([
         {
@@ -97,6 +135,7 @@ module "${PLACEMENT}" {
     OFFSET           = "\${var.OFFSETS["${PLACEMENT}"]}"
     SSH_KEY_FILE     = "\${var.SSH_KEY_FILE}"
     SERVERS          = "\${length(var.DATACENTERS["${PLACEMENT}"])}"
+    VOLUMES          = "\${var.VOLUMES["${PLACEMENT}"]}"
 }
 `,
       ),
@@ -380,21 +419,11 @@ variable "SSH_KEY_FILE" {
 }
 
 variable "DATACENTERS" {
-  default = {
-${Object.keys(DATACENTERS)
-  .sort()
-  .map(p => `    ${p} = ${JSON.stringify(DATACENTERS[p])}`)
-  .join('\n')}
-  }
+  default = ${tfStringify(DATACENTERS)}
 }
 
 variable "OFFSETS" {
-  default = {
-${Object.keys(OFFSETS)
-  .sort()
-  .map(p => `     ${p} = ${OFFSETS[p]}`)
-  .join('\n')}
-  }
+  default = ${tfStringify(OFFSETS)}
 }
 
 ${Object.keys(DETAILS)
@@ -402,12 +431,7 @@ ${Object.keys(DETAILS)
   .map(
     vname => `\
 variable ${JSON.stringify(vname)} {
-  default = {
-${Object.keys(DETAILS[vname])
-  .sort()
-  .map(p => `    ${p} = ${JSON.stringify(DETAILS[vname][p])}`)
-  .join('\n')}
-  }
+  default = ${tfStringify(DETAILS[vname])}
 }
 `,
   )
