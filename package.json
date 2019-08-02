@@ -11,7 +11,9 @@
     "pretty-fix": "prettier --write '**/*.{js,jsx}'",
     "pretty-check": "prettier --check '**/*.{js,jsx}'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
-    "lint-check": "eslint '**/*.{js,jsx}'"
+    "lint-check": "eslint '**/*.{js,jsx}'",
+    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx}'",
+    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
   },
   "repository": {
     "type": "git",
@@ -36,6 +38,7 @@
     "@agoric/marshal": "^0.0.1",
     "@agoric/nat": "^2.0.1",
     "@babel/core": "^7.5.5",
+    "eslint-config-jessie": "0.0.3",
     "ses": "^0.5.3"
   },
   "devDependencies": {
