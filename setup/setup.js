@@ -8,7 +8,7 @@ export const SETUP_DIR = resolve(__dirname, '../setup');
 export const SSH_TYPE = 'ecdsa';
 export const SETUP_HOME = process.env.AG_SETUP_COSMOS_HOME
   ? resolve(process.env.AG_SETUP_COSMOS_HOME)
-  : '';
+  : '.';
 process.env.AG_SETUP_COSMOS_HOME = SETUP_HOME;
 
 export const playbook = (name, ...args) => {
@@ -18,5 +18,5 @@ export const playbook = (name, ...args) => {
 
 export const sleep = (seconds, why) => {
   console.error(chalk.yellow(`Waiting ${seconds} seconds`, why || ''));
-  return new Promise((resolve, reject) => setInterval(resolve, 1000 * seconds));
+  return new Promise(res => setInterval(res, 1000 * seconds));
 };

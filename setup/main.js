@@ -22,7 +22,6 @@ import {
   streamFromString,
   createFile,
   mkdir,
-  unlink,
 } from './files';
 import {
   SETUP_HOME,

@@ -1,12 +1,6 @@
 import fetch from 'node-fetch';
 import inquirer from 'inquirer';
-import {
-  ACCOUNT_JSON,
-  SETUP_HOME,
-  PLAYBOOK_WRAPPER,
-  SETUP_DIR,
-  SSH_TYPE,
-} from './setup';
+import { SETUP_HOME, PLAYBOOK_WRAPPER, SETUP_DIR, SSH_TYPE } from './setup';
 import {
   basename,
   chmod,
