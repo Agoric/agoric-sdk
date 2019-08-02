@@ -7,10 +7,16 @@
     mode: push
   when: HELPER_BINARY is defined
 
+- name: "Development mode?"
+  delegate_to: localhost
+  stat:
+    path: "/vagrant"
+  register: dev
+
 - name: Synchronize install directory
   synchronize:
     src: "{{APPDIR}}/"
-    dest: "/usr/src/ag-chain-cosmos/"
+    dest: "/usr/src/cosmic-swingset/"
     dirs: yes
     delete: yes
     mode: push
@@ -22,27 +28,35 @@
     - "--exclude=x"
     - "--exclude=t[0-9]*"
     - "--exclude=provisioning-server"
+  when: not dev.stat.exists
+
+- name: "Symlink /vagrant/cosmic-swingset"
+  file:
+    src: /vagrant/cosmic-swingset
+    dest: /usr/src/cosmic-swingset
+    state: link
+  when: dev.stat.exists
 
 - name: "Symlink /usr/src/app"
   file:
-    src: "/usr/src/ag-chain-cosmos"
+    src: "/usr/src/cosmic-swingset"
     dest: /usr/src/app
     state: link
 
 - name: "Symlink ag-chain-cosmos"
   file:
-    src: "/usr/src/ag-chain-cosmos/lib/ag-chain-cosmos"
+    src: "/usr/src/cosmic-swingset/lib/ag-chain-cosmos"
     dest: "/usr/local/bin/ag-chain-cosmos"
     state: link
 
 - name: "Symlink /usr/src/ag-solo"
   file:
-    src: "/usr/src/ag-chain-cosmos"
+    src: "/usr/src/cosmic-swingset"
     dest: /usr/src/ag-solo
     state: link
 
 - name: "Symlink /usr/local/bin/ag-solo"
   file:
-    src: "/usr/src/ag-chain-cosmos/bin/ag-solo"
+    src: "/usr/src/cosmic-swingset/bin/ag-solo"
     dest: "/usr/local/bin/ag-solo"
     state: link

@@ -9,7 +9,7 @@
     - service: ag-pserver
     - data: "{{ SETUP_HOME }}/{{ service }}/data"
     - APPDIR: "{{lookup('pipe', 'pwd')}}/../.."
-    - HELPER_BINARY: "/usr/local/bin/ag-cosmos-helper"
+    - HELPER_BINARY: "{{lookup('env', 'GOPATH') or '/usr/local'}}/bin/ag-cosmos-helper"
     - to_remove:
       - "/home/{{ service }}/controller"
   roles:
