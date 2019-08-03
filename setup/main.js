@@ -413,6 +413,21 @@ show-config      display the client connection parameters
         ]),
       );
 
+      // Install any pubkeys from a former instantiation.
+      await guardFile(`${CONTROLLER_DIR}/pubkeys.stamp`, () =>
+        needReMain([
+          'ssh',
+          'ag-pserver',
+          'sudo',
+          '-u',
+          'ag-pserver',
+          '/usr/src/app/ve3/bin/ag-pserver',
+          'add-pubkeys',
+          '-c',
+          'http://localhost:8000/vat',
+        ]),
+      );
+
       let pserverFlags = '';
       const installFlags = [];
       const pub = `${networkName}.crt`;
