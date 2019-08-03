@@ -8,6 +8,7 @@ import treq
 import os.path
 import os
 import json
+import pynetstring as netstring
 
 from twisted.python import log
 import sys
@@ -26,6 +27,11 @@ htmldir = os.path.join(os.path.dirname(__file__), "html")
 class SetConfigOptions(usage.Options):
     pass
 
+class AddPubkeysOptions(usage.Options):
+    optParameters = [
+        ["controller", "c", "http://localhost:8002/vat", "controller's listening port for us to send control messages"],
+    ]
+
 class StartOptions(usage.Options):
     optParameters = [
         ["mountpoint", "m", "/", "controller's top level web page"],
@@ -36,6 +42,7 @@ class StartOptions(usage.Options):
 class Options(usage.Options):
     subCommands = [
         ['set-cosmos-config', None, SetConfigOptions, "Pipe output of 'ag-setup-cosmos show-config' to this command"],
+        ['add-pubkeys', None, AddPubkeysOptions, 'Add public keys from saved database'],
         ['start', None, StartOptions, 'Start the HTTP server'],
         ]
     optParameters = [
@@ -61,7 +68,10 @@ class SendInputAndWaitProtocol(protocol.ProcessProtocol):
         self.deferred.callback(reason.value.exitCode)
 
 def cosmosConfigFile(home):
-    return home + '/cosmos-chain.json';
+    return home + '/cosmos-chain.json'
+
+def pubkeyDatabase(home):
+  return home + '/pubkeys.nsdb'
 
 class ConfigElement(Element):
     loader = XMLFile(os.path.join(htmldir, "index.html"))
@@ -145,6 +155,9 @@ class Provisioner(resource.Resource):
 
     @defer.inlineCallbacks
     def build_page(self):
+        f = open(cosmosConfigFile(opts['home']))
+        config = f.read()
+
         args = ConfigElement.gatherArgs(self.opts)
         html = yield flattenString(None, ConfigElement(*args))
         defer.returnValue(html)
@@ -158,6 +171,70 @@ class Provisioner(resource.Resource):
         d.addErrback(log.err)
         return server.NOT_DONE_YET
 
+
+@defer.inlineCallbacks
+def enablePubkey(reactor, opts, config, nickname, pubkey):
+    mobj = {
+      "type": "pleaseProvision",
+      "nickname": nickname,
+      "pubkey": pubkey,
+    }
+    # print("mobj:", mobj)
+    def ret(server_message):
+      return [mobj, server_message, config]
+
+    # FIXME: Make more resilient to DOS attacks, or attempts
+    # to drain all our agmedallions.
+    if INITIAL_TOKEN is not None:
+        d = defer.Deferred()
+        processProtocol = SendInputAndWaitProtocol(d, AG_BOOTSTRAP_PASSWORD + b'\n')
+        program = 'ag-cosmos-helper' 
+        reactor.spawnProcess(processProtocol, '/usr/local/bin/' + program, args=[
+            program, 'tx', 'send', pubkey,
+            INITIAL_TOKEN, '--from', config['bootstrapAddress'],
+            '--yes', '--chain-id', config['chainName'],
+            '--node',
+            'tcp://' + config['rpcAddrs'][0], # TODO: rotate on failure
+            '--home', os.environ['HOME'] + '/controller/ag-cosmos-helper-statedir',
+            '--broadcast-mode', 'block' # Don't return until committed.
+            ])
+        code = yield d
+        print('transfer of ' + INITIAL_TOKEN + ' returned ' + str(code))
+        if code != 0:
+          return ret({"ok": False, "error": 'transfer returned ' + str(code)})
+
+    controller_url = opts["controller"]
+    #print('contacting ' + controller_url)
+    m = json.dumps(mobj)
+
+    # this HTTP request goes to the controller machine, where it should
+    # be routed to vat-provisioning.js and the pleaseProvision() method.
+    try:
+        resp = yield treq.post(controller_url, m.encode('utf-8'),
+                                headers={b'Content-Type': [b'application/json']})
+        if resp.code < 200 or resp.code >= 300:
+            raise Exception('invalid response code ' + resp.code)
+        rawResp = yield treq.json_content(resp)
+    except Exception as e:
+        print('controller error', e)
+        return ret({"ok": False, "error": str(e)})
+    if not rawResp.get("ok"):
+        print("provisioning server error", rawResp)
+        return ret({"ok": False, "error": rawResp.get('rej')})
+    r = rawResp['res']
+    ingressIndex = r["ingressIndex"]
+    # this message is sent back to setup-solo/src/ag_setup_solo/main.py
+    server_message = {
+        "ok": True,
+        "gci": config['gci'],
+        "rpcAddrs": config['rpcAddrs'],
+        "chainName": config['chainName'],
+        "ingressIndex": ingressIndex,
+        }
+    print("send server_message", server_message)
+    return ret(server_message)
+
+
 class RequestCode(resource.Resource):
     def __init__(self, reactor, o):
         self.reactor = reactor
@@ -166,69 +243,26 @@ class RequestCode(resource.Resource):
     @defer.inlineCallbacks
     def got_message(self, client_message, nickname):
         cm = json.loads(client_message.decode("utf-8"))
-        mobj = {"type": "pleaseProvision",
-                "nickname": nickname,
-                "pubkey": cm["pubkey"],
-                }
-        print("mobj:", mobj)
-        m = json.dumps(mobj)
-
         f = open(cosmosConfigFile(self.opts['home']))
         config = json.loads(f.read())
 
-        # FIXME: Make more resilient to DOS attacks, or attempts
-        # to drain all our agmedallions.
-        if INITIAL_TOKEN is not None:
-            d = defer.Deferred()
-            processProtocol = SendInputAndWaitProtocol(d, AG_BOOTSTRAP_PASSWORD + b'\n')
-            program = 'ag-cosmos-helper'
-            self.reactor.spawnProcess(processProtocol, '/usr/local/bin/' + program, args=[
-                program, 'tx', 'send', cm['pubkey'],
-                INITIAL_TOKEN, '--from', config['bootstrapAddress'],
-                '--yes', '--chain-id', config['chainName'],
-                '--node',
-                'tcp://' + config['rpcAddrs'][0], # TODO: rotate on failure
-                '--home', os.environ['HOME'] + '/controller/ag-cosmos-helper-statedir',
-                '--broadcast-mode', 'block' # Don't return until committed.
-                ])
-            code = yield d
-            print('transfer of ' + INITIAL_TOKEN + ' returned ' + str(code))
+        msgs = yield enablePubkey(self.reactor, self.opts, config, nickname, cm['pubkey'])
+        return msgs
 
-        controller_url = self.opts["controller"]
-        print('contacting ' + controller_url)
-        # this HTTP request goes to the controller machine, where it should
-        # be routed to vat-provisioning.js and the pleaseProvision() method.
-        try:
-            resp = yield treq.post(controller_url, m.encode('utf-8'),
-                                   headers={b'Content-Type': [b'application/json']})
-            if resp.code < 200 or resp.code >= 300:
-                raise Exception('invalid response code ' + resp.code)
-            rawResp = yield treq.json_content(resp)
-        except Exception as e:
-            print('controller error', e)
-            return {"ok": False, "error": str(e)}
-        if not rawResp.get("ok"):
-            print("provisioning server error", rawResp)
-            return {"ok": False, "error": rawResp.get('rej')}
-        r = rawResp['res']
-        ingressIndex = r["ingressIndex"]
-        # this message is sent back to setup-solo/src/ag_setup_solo/main.py
-        server_message = {
-            "ok": True,
-            "gci": config['gci'],
-            "rpcAddrs": config['rpcAddrs'],
-            "chainName": config['chainName'],
-            "ingressIndex": ingressIndex,
-            }
-        print("send server_message", server_message)
-        return server_message
-
-    def send_provisioning_response(self, server_message, w):
+    def send_provisioning_response(self, msgs, w):
+        [mobj, server_message, config] = msgs
         sm = json.dumps(server_message).encode("utf-8")
         print("send provisioning response", server_message)
         w.send_message(sm)
         d = w.close()
-        d.addCallbacks(lambda _: print("provisioning complete"),
+        def complete(_):
+          print("provisioning complete")
+          pknick = config['chainName'] + '=' + mobj['pubkey'] + '=' + mobj['nickname'][:32]
+          print("save public key to database", pknick)
+          pknick_bytes = netstring.encode(pknick)
+          with open(pubkeyDatabase(self.opts['home']), 'a') as db:
+            db.write(pknick_bytes.decode('ascii'))
+        d.addCallbacks(complete,
                        lambda f: print("provisioning error", f))
 
     @defer.inlineCallbacks
@@ -272,6 +306,16 @@ class RequestCode(resource.Resource):
       return server.NOT_DONE_YET
 
 
+class ConfigJSON(resource.Resource):
+  def __init__(self, o):
+    self.opts = o
+
+  def render_GET(self, req):
+    f = open(cosmosConfigFile(self.opts['home']))
+    config = f.read()
+    req.setHeader('Content-Type', 'application/json')
+    return config.encode('utf-8')
+
 def run_server(reactor, o):
     print("dir is", __file__)
     root = static.File(htmldir)
@@ -290,11 +334,38 @@ def run_server(reactor, o):
             r.putChild(dir.encode('utf-8'), root)
             root = r
 
+    # Display the JSON config.
+    root.putChild(b"network-config", ConfigJSON(o))
+
     site = server.Site(root)
     s = endpoints.serverFromString(reactor, o["listen"])
     s.listen(site)
     print("server running")
     return defer.Deferred()
+
+def doEnablePubkeys(reactor, opts, config, pknicks):
+  finished = defer.Deferred()
+
+  def showError(e):
+    print(e)
+    doLatest(None)
+
+  def doLatest(d):
+    if len(pknicks) == 0:
+      finished.callback(d)
+      return
+
+    pknick_bytes = pknicks.pop()
+    try:
+      [chainName, pubkey, nickname] = pknick_bytes.decode('ascii').split('=', 2)
+      print('enabling', chainName, nickname, pubkey)
+      d = enablePubkey(reactor, opts, config, nickname, pubkey)
+      d.addErrback(showError)
+      d.addCallback(doLatest)
+    except Exception as e:
+      showError(e)
+  doLatest(None)
+  return finished
 
 def main():
     o = Options()
@@ -307,9 +378,18 @@ def main():
         fname = cosmosConfigFile(o['home'])
         print('Reading %s from stdin; hit Ctrl-D to finish' % fname)
         cfgJson = sys.stdin.read()
-        f = open(fname, 'w')
-        f.write(cfgJson)
-        f.close()
+        with open(fname, 'w') as f:
+          f.write(cfgJson)
+    elif o.subCommand == 'add-pubkeys':
+        # Now that we have our files, add all the accounts.
+        f = open(cosmosConfigFile(o['home']), 'r')
+        config = json.loads(f.read())
+        try:
+          f = open(pubkeyDatabase(o['home']))
+          pknicks = netstring.decode(f.read())
+        except FileNotFoundError:
+          return
+        react(doEnablePubkeys, ({**o, **o.subOptions}, config, pknicks))
     elif o.subCommand == 'start':
         react(run_server, ({**o, **o.subOptions},))
     else:
