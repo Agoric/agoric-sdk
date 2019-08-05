@@ -2,7 +2,6 @@ import { test } from 'tape-promise/tape';
 import { buildVatController } from '../src/index';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 import buildCommand from '../src/devices/command';
-import { makeStorageInMemory } from '../src/stateInMemory';
 
 async function test0(t, withSES) {
   const config = {

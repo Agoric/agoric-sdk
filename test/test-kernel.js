@@ -1,11 +1,9 @@
 /* global setImmediate */
 import { test } from 'tape-promise/tape';
 import buildKernel from '../src/kernel/index';
-import { makeStorageInMemory } from '../src/stateInMemory';
 
 test('build kernel', async t => {
-  const external = makeStorageInMemory();
-  const kernel = buildKernel({ setImmediate }, external);
+  const kernel = buildKernel({ setImmediate });
   await kernel.start(); // empty queue
   const data = kernel.dump();
   t.deepEqual(data.vatTables, []);
@@ -14,8 +12,7 @@ test('build kernel', async t => {
 });
 
 test('simple call', async t => {
-  const external = makeStorageInMemory();
-  const kernel = buildKernel({ setImmediate }, external);
+  const kernel = buildKernel({ setImmediate });
   const log = [];
   function setup1(syscall, state, helpers) {
     function deliver(facetID, method, argsString, slots) {
@@ -67,8 +64,7 @@ test('simple call', async t => {
 });
 
 test('map inbound', async t => {
-  const external = makeStorageInMemory();
-  const kernel = buildKernel({ setImmediate }, external);
+  const kernel = buildKernel({ setImmediate });
   const log = [];
   function setup1(_syscall) {
     function deliver(facetID, method, argsString, slots) {
@@ -116,8 +112,7 @@ test('map inbound', async t => {
 });
 
 test('addImport', async t => {
-  const external = makeStorageInMemory();
-  const kernel = buildKernel({ setImmediate }, external);
+  const kernel = buildKernel({ setImmediate });
   function setup(_syscall) {
     function deliver(_facetID, _method, _argsString, _slots) {}
     return { deliver };
@@ -139,8 +134,7 @@ test('addImport', async t => {
 });
 
 test('outbound call to my own export should fail', async t => {
-  const external = makeStorageInMemory();
-  const kernel = buildKernel({ setImmediate }, external);
+  const kernel = buildKernel({ setImmediate });
   const log = [];
   let s;
   function setup1(syscall) {
@@ -162,8 +156,7 @@ test('outbound call to my own export should fail', async t => {
 });
 
 test('outbound call', async t => {
-  const external = makeStorageInMemory();
-  const kernel = buildKernel({ setImmediate }, external);
+  const kernel = buildKernel({ setImmediate });
   const log = [];
   let v1tovat25;
 
@@ -287,8 +280,7 @@ test('outbound call', async t => {
 });
 
 test('three-party', async t => {
-  const external = makeStorageInMemory();
-  const kernel = buildKernel({ setImmediate }, external);
+  const kernel = buildKernel({ setImmediate });
   const log = [];
   let bobForA;
   let carolForA;
@@ -426,8 +418,7 @@ test('three-party', async t => {
 });
 
 test('createPromise', async t => {
-  const external = makeStorageInMemory();
-  const kernel = buildKernel({ setImmediate }, external);
+  const kernel = buildKernel({ setImmediate });
   let syscall;
   function setup(s) {
     syscall = s;
@@ -458,8 +449,7 @@ test('createPromise', async t => {
 });
 
 test('transfer promise', async t => {
-  const external = makeStorageInMemory();
-  const kernel = buildKernel({ setImmediate }, external);
+  const kernel = buildKernel({ setImmediate });
   let syscallA;
   const logA = [];
   function setupA(syscall) {
@@ -747,8 +737,7 @@ test('transfer promise', async t => {
 });
 
 test('subscribe to promise', async t => {
-  const external = makeStorageInMemory();
-  const kernel = buildKernel({ setImmediate }, external);
+  const kernel = buildKernel({ setImmediate });
   let syscall;
   const log = [];
   function setup(s) {
@@ -786,8 +775,7 @@ test('subscribe to promise', async t => {
 
 // promise redirection is not yet implemented
 test.skip('promise redirection', async t => {
-  const external = makeStorageInMemory();
-  const kernel = buildKernel({ setImmediate }, external);
+  const kernel = buildKernel({ setImmediate });
   let syscall;
   const log = [];
   function setup(s) {
@@ -850,8 +838,7 @@ test.skip('promise redirection', async t => {
 });
 
 test('promise resolveToData', async t => {
-  const external = makeStorageInMemory();
-  const kernel = buildKernel({ setImmediate }, external);
+  const kernel = buildKernel({ setImmediate });
   let syscall;
   const log = [];
   function setup(s) {
@@ -918,8 +905,7 @@ test('promise resolveToData', async t => {
 });
 
 test('promise resolveToPresence', async t => {
-  const external = makeStorageInMemory();
-  const kernel = buildKernel({ setImmediate }, external);
+  const kernel = buildKernel({ setImmediate });
   let syscall;
   const log = [];
   function setup(s) {
@@ -985,8 +971,7 @@ test('promise resolveToPresence', async t => {
 });
 
 test('promise reject', async t => {
-  const external = makeStorageInMemory();
-  const kernel = buildKernel({ setImmediate }, external);
+  const kernel = buildKernel({ setImmediate });
   let syscall;
   const log = [];
   function setup(s) {
@@ -1056,8 +1041,7 @@ test('promise reject', async t => {
 });
 
 test('transcript', async t => {
-  const external = makeStorageInMemory();
-  const kernel = buildKernel({ setImmediate }, external);
+  const kernel = buildKernel({ setImmediate });
   const log = [];
   function setup(syscall, _state) {
     function deliver(facetID, _method, _argsString, slots) {

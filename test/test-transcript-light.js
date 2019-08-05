@@ -1,7 +1,6 @@
 import path from 'path';
 import { test } from 'tape-promise/tape';
 import { buildVatController, loadBasedir } from '../src/index';
-import { makeStorageInMemory } from '../src/stateInMemory';
 import stringify from '../src/kernel/json-stable-stringify';
 
 async function testLoadState(t, withSES) {

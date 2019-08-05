@@ -1,13 +1,13 @@
 import {
   loadBasedir,
-  useStorageInBasedir,
+  manageStateInBasedir,
   buildVatController,
 } from './controller';
 import { buildMailboxStateMap, buildMailbox } from './devices/mailbox';
 
 export {
   loadBasedir,
-  useStorageInBasedir,
+  manageStateInBasedir,
   buildVatController,
   buildMailboxStateMap,
   buildMailbox,
