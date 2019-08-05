@@ -47,7 +47,7 @@ function makeDeviceKeeper(state) {
       const inbound = imports.inbound;
       const outbound = imports.outbound;
       const key = `${slot.type}.${fromVatID}.${id}`; // ugh javascript
-      if (!inbound.has(key)) {
+      if (!Object.hasOwnProperty(inbound, key)) {
         // must add both directions
          const newSlotID = Nat(allocateImportIndex());
         // kdebug(` adding ${newSlotID}`);

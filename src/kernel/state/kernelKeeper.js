@@ -10,14 +10,14 @@ import makeDeviceKeeper from './deviceKeeper';
 // call, and that future instance should behave identically to this one.
 
 function makeKernelKeeper(initialState) {
-  const state = JSON.parse(initialState);
+  const state = JSON.parse(`${initialState}`);
 
   function getInitialized() {
-    return state.has('initialized');
+    return Object.hasOwnProperty(state, 'initialized');
   }
 
   function setInitialized() {
-    state.set('initialized', true);
+    state.initialized = true;
   }
 
   function createStartingKernelState() {
@@ -154,6 +154,9 @@ function makeKernelKeeper(initialState) {
   }
 
   // used for debugging, and tests. This returns a JSON-serializable object.
+  // It includes references to live (mutable) kernel state, so don't mutate
+  // the pieces, and be sure to serialize/deserialize before passing it
+  // outside the kernel realm.
   function dump() {
     const vatTables = [];
     const kernelTable = [];

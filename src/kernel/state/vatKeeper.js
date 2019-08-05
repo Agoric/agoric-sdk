@@ -161,7 +161,7 @@ export default function makeVatKeeper(state) {
 
   function mapVatSlotToKernelSlot(vatSlot) {
     const { table, key } = getVatSlotTypedMapAndKey(vatSlot);
-    const kernelSlot = table.get(key);
+    const kernelSlot = table[key];
     if (kernelSlot === undefined) {
       throw new Error(`unknown ${vatSlot.type} slot '${vatSlot.id}'`);
     }

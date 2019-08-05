@@ -20,7 +20,7 @@ function abbreviateReviver(_, arg) {
   return arg;
 }
 
-export default function buildKernel(kernelEndowments, initialState) {
+export default function buildKernel(kernelEndowments, initialState='{}') {
   const { setImmediate } = kernelEndowments;
 
   const kernelKeeper = makeKernelKeeper(initialState);
@@ -522,7 +522,7 @@ export default function buildKernel(kernelEndowments, initialState) {
       // through the syscall interface (and we replay transcripts one vat at
       // a time, so any log() calls that were interleaved during their
       // original execution will be sorted by vat in the replace). Logs are
-      // not kept in the persistent, only in ephemeral state.
+      // not kept in the persistent state, only in ephemeral state.
       stateDump.log = ephemeral.log;
       return stateDump;
     },
