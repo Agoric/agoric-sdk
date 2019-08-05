@@ -13,7 +13,7 @@ function makeKernelKeeper(initialState) {
   const state = JSON.parse(`${initialState}`);
 
   function getInitialized() {
-    return Object.hasOwnProperty(state, 'initialized');
+    return state.hasOwnProperty('initialized');
   }
 
   function setInitialized() {
@@ -57,7 +57,7 @@ function makeKernelKeeper(initialState) {
   }
 
   function hasKernelPromise(kernelPromiseID) {
-    return Object.hasOwnProperty(state.kernelPromises, Nat(kernelPromiseID));
+    return state.kernelPromises.hasOwnProperty(Nat(kernelPromiseID));
   }
 
   function deleteKernelPromiseData(kernelPromiseID) {

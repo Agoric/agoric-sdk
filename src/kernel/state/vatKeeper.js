@@ -170,7 +170,7 @@ export default function makeVatKeeper(state) {
 
   function mapKernelSlotToVatSlot(kernelSlot) {
     const { table, key } = getKernelSlotTypedMapAndKey(kernelSlot);
-    if (!Object.hasOwnProperty(table, `${key}`)) {
+    if (!table.hasOwnProperty(`${key}`)) {
       // must add both directions
       const vatSlotType = getVatSlotTypeFromKernelSlot(kernelSlot);
       const nextIDs = state.nextIDs;
