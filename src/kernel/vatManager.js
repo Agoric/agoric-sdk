@@ -181,9 +181,7 @@ export default function makeVatManager(
 
     if (!target) {
       throw Error(
-        `unable to find target for ${vatID}/${targetSlot.type}-${
-          targetSlot.id
-        }`,
+        `unable to find target for ${vatID}/${targetSlot.type}-${targetSlot.id}`,
       );
     }
     kdebug(
@@ -227,9 +225,7 @@ export default function makeVatManager(
       id: kernelPromiseID,
     });
     kdebug(
-      `syscall[${vatID}].createPromise -> (vat:p${p.id}/r${
-        r.id
-      }=ker:${kernelPromiseID})`,
+      `syscall[${vatID}].createPromise -> (vat:p${p.id}/r${r.id}=ker:${kernelPromiseID})`,
     );
     return harden({ promiseID: p.id, resolverID: r.id });
   }

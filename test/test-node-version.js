@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-redeclare
 /* global process */
 import semver from 'semver';
 import { test } from 'tape-promise/tape';

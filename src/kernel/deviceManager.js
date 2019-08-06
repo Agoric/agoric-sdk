@@ -55,9 +55,7 @@ export default function makeDeviceManager(
     const target = mapDeviceSlotToKernelSlot(targetSlot);
     if (!target) {
       throw Error(
-        `unable to find target for ${deviceName}/${targetSlot.type}-${
-          targetSlot.id
-        }`,
+        `unable to find target for ${deviceName}/${targetSlot.type}-${targetSlot.id}`,
       );
     }
     kdebug(
