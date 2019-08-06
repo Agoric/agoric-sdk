@@ -5,7 +5,6 @@ import { insist } from '../insist';
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
 export default function makeVatKeeper(state) {
-
   function createStartingVatState() {
     // kernelSlotToVatSlot is an object with four properties:
     //    exports, devices, promises, resolvers.
@@ -170,10 +169,10 @@ export default function makeVatKeeper(state) {
 
   function mapKernelSlotToVatSlot(kernelSlot) {
     const { table, key } = getKernelSlotTypedMapAndKey(kernelSlot);
-    if (!table.hasOwnProperty(`${key}`)) {
+    if (!Object.getOwnPropertyDescriptor(table, `${key}`)) {
       // must add both directions
       const vatSlotType = getVatSlotTypeFromKernelSlot(kernelSlot);
-      const nextIDs = state.nextIDs;
+      const { nextIDs } = state;
       const newVatSlotID = nextIDs[vatSlotType];
       nextIDs[vatSlotType] = newVatSlotID + 1;
       const vatSlot = { type: vatSlotType, id: newVatSlotID };

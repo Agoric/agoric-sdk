@@ -9,8 +9,6 @@ import makePromise from './makePromise';
 import makeVatManager from './vatManager';
 import makeDeviceManager from './deviceManager';
 import makeKernelKeeper from './state/kernelKeeper';
-import makeVatKeeper from './state/vatKeeper';
-import makeDeviceKeeper from './state/deviceKeeper';
 
 function abbreviateReviver(_, arg) {
   if (typeof arg === 'string' && arg.length >= 40) {
@@ -20,7 +18,7 @@ function abbreviateReviver(_, arg) {
   return arg;
 }
 
-export default function buildKernel(kernelEndowments, initialState='{}') {
+export default function buildKernel(kernelEndowments, initialState = '{}') {
   const { setImmediate } = kernelEndowments;
 
   const kernelKeeper = makeKernelKeeper(initialState);
@@ -148,9 +146,7 @@ export default function buildKernel(kernelEndowments, initialState='{}') {
   function getUnresolvedPromise(id) {
     const p = kernelKeeper.getKernelPromise(id);
     if (p.state !== 'unresolved') {
-      throw new Error(
-        `kernelPromise[${id}] is '${p.state}', not 'unresolved'`,
-      );
+      throw new Error(`kernelPromise[${id}] is '${p.state}', not 'unresolved'`);
     }
     return p;
   }
@@ -166,8 +162,13 @@ export default function buildKernel(kernelEndowments, initialState='{}') {
       state: 'fulfilledToPresence',
       fulfillSlot: targetSlot,
     });
-    notifySubscribersAndQueue(id, subscribers, queue, 'notifyFulfillToPresence');
-    //kernelKeeper.deleteKernelPromiseData(id);
+    notifySubscribersAndQueue(
+      id,
+      subscribers,
+      queue,
+      'notifyFulfillToPresence',
+    );
+    // kernelKeeper.deleteKernelPromiseData(id);
   }
 
   function fulfillToData(id, data, slots) {
@@ -179,7 +180,7 @@ export default function buildKernel(kernelEndowments, initialState='{}') {
       fulfillSlots: slots,
     });
     notifySubscribersAndQueue(id, subscribers, queue, 'notifyFulfillToData');
-    //kernelKeeper.deleteKernelPromiseData(id);
+    // kernelKeeper.deleteKernelPromiseData(id);
     // TODO: we can't delete the promise until all vat references are gone,
     // and certainly not until the notifyFulfillToData we just queued is
     // delivered
@@ -193,7 +194,7 @@ export default function buildKernel(kernelEndowments, initialState='{}') {
       rejectSlots: valSlots,
     });
     notifySubscribersAndQueue(id, subscribers, queue, 'notifyReject');
-    //kernelKeeper.deleteKernelPromiseData(id);
+    // kernelKeeper.deleteKernelPromiseData(id);
   }
 
   function invoke(device, method, data, slots) {
@@ -403,7 +404,9 @@ export default function buildKernel(kernelEndowments, initialState='{}') {
         },
       });
 
-      let vatKeeper = wasInitialized ? kernelKeeper.getVat(vatID) : kernelKeeper.createVat(vatID);
+      const vatKeeper = wasInitialized
+        ? kernelKeeper.getVat(vatID)
+        : kernelKeeper.createVat(vatID);
 
       // the vatManager invokes setup() to build the userspace image
       const manager = makeVatManager(
@@ -432,7 +435,9 @@ export default function buildKernel(kernelEndowments, initialState='{}') {
         },
       });
 
-      let deviceKeeper = wasInitialized ? kernelKeeper.getDevice(name) : kernelKeeper.createDevice(name);
+      const deviceKeeper = wasInitialized
+        ? kernelKeeper.getDevice(name)
+        : kernelKeeper.createDevice(name);
 
       const manager = makeDeviceManager(
         name,

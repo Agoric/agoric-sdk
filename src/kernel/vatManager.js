@@ -1,6 +1,5 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import makeVatKeeper from './state/vatKeeper';
 import djson from './djson';
 
 export default function makeVatManager(

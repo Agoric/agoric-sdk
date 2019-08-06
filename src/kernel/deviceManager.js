@@ -1,8 +1,6 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
-import makeDeviceKeeper from './state/deviceKeeper';
-
 export default function makeDeviceManager(
   deviceName,
   syscallManager,

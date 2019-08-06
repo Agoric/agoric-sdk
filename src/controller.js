@@ -50,11 +50,12 @@ export function loadBasedir(basedir) {
 
 export function manageStateInBasedir(basedir) {
   const stateFile = path.resolve(basedir, 'state.json');
-  let initialState = {};
+  let initialState;
   try {
     const data = fs.readFileSync(stateFile);
     initialState = JSON.parse(data);
   } catch (e) {
+    initialState = {};
   }
   function save(state) {
     fs.writeFileSync(stateFile, state);

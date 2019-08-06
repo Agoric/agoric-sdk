@@ -4,7 +4,6 @@ import Nat from '@agoric/nat';
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
 function makeDeviceKeeper(state) {
-
   function createStartingDeviceState() {
     state.imports = {
       outbound: {},
@@ -43,17 +42,20 @@ function makeDeviceKeeper(state) {
       const { vatID: fromVatID, id } = slot;
       Nat(id);
 
-      const imports = state.imports;
-      const inbound = imports.inbound;
-      const outbound = imports.outbound;
+      const { imports } = state;
+      const { inbound } = imports;
+      const { outbound } = imports;
       const key = `${slot.type}.${fromVatID}.${id}`; // ugh javascript
-      if (!inbound.hasOwnProperty(key)) {
+      if (!Object.getOwnPropertyDescriptor(inbound, key)) {
         // must add both directions
-         const newSlotID = Nat(allocateImportIndex());
+        const newSlotID = Nat(allocateImportIndex());
         // kdebug(` adding ${newSlotID}`);
         inbound[key] = newSlotID;
-        outbound[`${newSlotID}`] =
-          harden({ type: 'export', vatID: fromVatID, id }); // TODO just 'slot'?
+        outbound[`${newSlotID}`] = harden({
+          type: 'export',
+          vatID: fromVatID,
+          id,
+        }); // TODO just 'slot'?
       }
       return { type: 'import', id: inbound[key] };
     }

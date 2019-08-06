@@ -13,7 +13,7 @@ function makeKernelKeeper(initialState) {
   const state = JSON.parse(`${initialState}`);
 
   function getInitialized() {
-    return state.hasOwnProperty('initialized');
+    return !!Object.getOwnPropertyDescriptor(state, 'initialized');
   }
 
   function setInitialized() {
@@ -27,7 +27,6 @@ function makeKernelKeeper(initialState) {
     state.kernelPromises = {};
     state.nextPromiseIndex = 40;
   }
-
 
   function addKernelPromise(deciderVatID) {
     function allocateNextPromiseIndex() {
@@ -57,7 +56,10 @@ function makeKernelKeeper(initialState) {
   }
 
   function hasKernelPromise(kernelPromiseID) {
-    return state.kernelPromises.hasOwnProperty(Nat(kernelPromiseID));
+    return !!Object.getOwnPropertyDescriptor(
+      state.kernelPromises,
+      Nat(kernelPromiseID),
+    );
   }
 
   function replaceKernelPromise(kernelPromiseID, p) {
@@ -91,7 +93,6 @@ function makeKernelKeeper(initialState) {
     p.subscribers = Array.from(subscribersSet);
   }
 
-
   function addToRunQueue(msg) {
     state.runQueue.push(msg);
   }
@@ -107,7 +108,6 @@ function makeKernelKeeper(initialState) {
   function getNextMsg() {
     return state.runQueue.shift();
   }
-
 
   // vatID must already exist
   function getVat(vatID) {
@@ -133,7 +133,6 @@ function makeKernelKeeper(initialState) {
   function getAllVatNames() {
     return Object.getOwnPropertyNames(state.vats).sort();
   }
-
 
   // deviceID must already exist
   function getDevice(deviceID) {
@@ -174,7 +173,7 @@ function makeKernelKeeper(initialState) {
     const vatTables = [];
     const kernelTable = [];
 
-    const vats = state.vats;
+    const { vats } = state;
 
     for (const vatID of Object.getOwnPropertyNames(vats)) {
       const vk = getVat(vatID);
@@ -216,7 +215,7 @@ function makeKernelKeeper(initialState) {
 
     const promises = [];
 
-    const kernelPromises = state.kernelPromises;
+    const { kernelPromises } = state;
     Object.getOwnPropertyNames(kernelPromises).forEach(id => {
       const p = kernelPromises[id];
       const kp = { id: Number(id) };
@@ -261,7 +260,7 @@ function makeKernelKeeper(initialState) {
 
     getDevice,
     createDevice,
-    getAllDeviceNames, 
+    getAllDeviceNames,
 
     getState,
     dump,
