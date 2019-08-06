@@ -33,7 +33,7 @@
     "esm": "^3.2.5",
     "prettier": "1.17.1",
     "tap-spec": "^5.0.0",
-    "tape": "^4.10.0",
+    "tape": "^4.11.0",
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
@@ -45,9 +45,9 @@
     "@agoric/nat": "^2.0.0",
     "rollup": "^1.19.3",
     "rollup-plugin-node-resolve": "^5.2.0",
-    "semver": "^6.1.0",
+    "semver": "^6.3.0",
     "ses": "^0.5.3",
-    "yargs": "^13.1.0"
+    "yargs": "^13.3.0"
   },
   "files": [
     "bin/vat",
