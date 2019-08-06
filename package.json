@@ -1,6 +1,6 @@
 {
   "name": "@agoric/cosmic-swingset",
-  "version": "0.7.6-dev.0",
+  "version": "0.7.6",
   "description": "",
   "main": "index.js",
   "repository": "https://github.com/Agoric/cosmic-swingset",
