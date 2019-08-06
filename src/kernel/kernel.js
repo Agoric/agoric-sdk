@@ -97,9 +97,7 @@ export default function buildKernel(kernelEndowments, initialState='{}') {
     } else if (target.type === 'promise') {
       const kp = kernelKeeper.getKernelPromise(target.id);
       if (kp.state === 'unresolved') {
-        kp.queue.push(msg);
-        // we need to save what was pushed to queue
-        kernelKeeper.updateKernelPromise(target.id, kp);
+        kernelKeeper.addMessageToPromiseQueue(target.id, msg);
       } else if (kp.state === 'fulfilledToData') {
         const s = `data is not callable, has no method ${msg.method}`;
         // eslint-disable-next-line no-use-before-define
@@ -121,9 +119,9 @@ export default function buildKernel(kernelEndowments, initialState='{}') {
     }
   }
 
-  function notifySubscribersAndQueue(id, p, type) {
+  function notifySubscribersAndQueue(id, subscribers, queue, type) {
     const pslot = { type: 'promise', id };
-    for (const subscriberVatID of kernelKeeper.getSubscribers(id)) {
+    for (const subscriberVatID of subscribers) {
       kernelKeeper.addToRunQueue({
         type,
         vatID: subscriberVatID,
@@ -132,7 +130,7 @@ export default function buildKernel(kernelEndowments, initialState='{}') {
     }
     // re-deliver msg to the now-settled promise, which will forward or
     // reject depending on the new state of the promise
-    for (const msg of p.queue) {
+    for (const msg of queue) {
       send(pslot, msg);
       // now that we know where the messages can be sent, we know to whom we
       // must subscribe to satisfy their resolvers. This wasn't working
@@ -147,56 +145,55 @@ export default function buildKernel(kernelEndowments, initialState='{}') {
     }
   }
 
-  function assertResolved(id, promiseState) {
-    if (promiseState !== 'unresolved') {
+  function getUnresolvedPromise(id) {
+    const p = kernelKeeper.getKernelPromise(id);
+    if (p.state !== 'unresolved') {
       throw new Error(
-        `kernelPromise[${id}] is '${promiseState}', not 'unresolved'`,
+        `kernelPromise[${id}] is '${p.state}', not 'unresolved'`,
       );
     }
-  }
-
-  function deletePromiseData(kernelPromiseID) {
-    kernelKeeper.deleteKernelPromiseData(kernelPromiseID);
+    return p;
   }
 
   function fulfillToPresence(id, targetSlot) {
-    const p = kernelKeeper.getKernelPromise(id);
-    assertResolved(id, p.state);
     if (targetSlot.type !== 'export') {
       throw new Error(
         `fulfillToPresence() must fulfill to export, not ${targetSlot.type}`,
       );
     }
-
-    p.state = 'fulfilledToPresence';
-    p.fulfillSlot = targetSlot;
-    kernelKeeper.updateKernelPromise(id, p);
-    notifySubscribersAndQueue(id, p, 'notifyFulfillToPresence');
-    deletePromiseData(id);
+    const { subscribers, queue } = getUnresolvedPromise(id);
+    kernelKeeper.replaceKernelPromise(id, {
+      state: 'fulfilledToPresence',
+      fulfillSlot: targetSlot,
+    });
+    notifySubscribersAndQueue(id, subscribers, queue, 'notifyFulfillToPresence');
+    //kernelKeeper.deleteKernelPromiseData(id);
   }
 
   function fulfillToData(id, data, slots) {
     kdebug(`fulfillToData[${id}] -> ${data} ${JSON.stringify(slots)}`);
-    const p = kernelKeeper.getKernelPromise(id);
-    assertResolved(id, p.state);
-
-    p.state = 'fulfilledToData';
-    p.fulfillData = data;
-    p.fulfillSlots = slots;
-    kernelKeeper.updateKernelPromise(id, p);
-    notifySubscribersAndQueue(id, p, 'notifyFulfillToData');
-    deletePromiseData(id);
+    const { subscribers, queue } = getUnresolvedPromise(id);
+    kernelKeeper.replaceKernelPromise(id, {
+      state: 'fulfilledToData',
+      fulfillData: data,
+      fulfillSlots: slots,
+    });
+    notifySubscribersAndQueue(id, subscribers, queue, 'notifyFulfillToData');
+    //kernelKeeper.deleteKernelPromiseData(id);
+    // TODO: we can't delete the promise until all vat references are gone,
+    // and certainly not until the notifyFulfillToData we just queued is
+    // delivered
   }
 
   function reject(id, val, valSlots) {
-    const p = kernelKeeper.getKernelPromise(id);
-    assertResolved(id, p.state);
-    p.state = 'rejected';
-    p.rejectData = val;
-    p.rejectSlots = valSlots;
-    kernelKeeper.updateKernelPromise(id, p);
-    notifySubscribersAndQueue(id, p, 'notifyReject');
-    deletePromiseData(id);
+    const { subscribers, queue } = getUnresolvedPromise(id);
+    kernelKeeper.replaceKernelPromise(id, {
+      state: 'rejected',
+      rejectData: val,
+      rejectSlots: valSlots,
+    });
+    notifySubscribersAndQueue(id, subscribers, queue, 'notifyReject');
+    //kernelKeeper.deleteKernelPromiseData(id);
   }
 
   function invoke(device, method, data, slots) {
