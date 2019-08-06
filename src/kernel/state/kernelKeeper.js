@@ -1,53 +1,54 @@
 import harden from '@agoric/harden';
+import Nat from '@agoric/nat';
 import makeVatKeeper from './vatKeeper';
+import makeDeviceKeeper from './deviceKeeper';
 
-function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
-  // kvstore has set, get, has, delete methods
-  // set (key []byte, value []byte)
-  // get (key []byte)  => value []byte
-  // has (key []byte) => exists bool
-  // delete (key []byte)
-  // iterator, reverseIterator
+// This holds all the kernel state, including that of each Vat and Device, in
+// a single JSON-serializable object. At any moment (well, really only
+// between turns) we might be asked for it as a string. This same string may
+// be used as the 'initialState' argument of some future makeKernelKeeper()
+// call, and that future instance should behave identically to this one.
+
+function makeKernelKeeper(initialState) {
+  const state = JSON.parse(`${initialState}`);
 
   function getInitialized() {
-    return kvstore.has('initialized');
+    return !!Object.getOwnPropertyDescriptor(state, 'initialized');
   }
 
   function setInitialized() {
-    kvstore.set('initialized', true);
+    state.initialized = true;
   }
 
   function createStartingKernelState() {
-    kvstore.set('vats', makeExternalKVStore(pathToRoot, external));
-    kvstore.set('devices', makeExternalKVStore(pathToRoot, external));
-    kvstore.set('runQueue', []);
-    kvstore.set('kernelPromises', makeExternalKVStore(pathToRoot, external));
-    kvstore.set('nextPromiseIndex', 40);
+    state.vats = {};
+    state.devices = {};
+    state.runQueue = [];
+    state.kernelPromises = {};
+    state.nextPromiseIndex = 40;
   }
 
   function addKernelPromise(deciderVatID) {
     function allocateNextPromiseIndex() {
-      const id = kvstore.get('nextPromiseIndex');
-      kvstore.set('nextPromiseIndex', id + 1);
+      const id = state.nextPromiseIndex;
+      state.nextPromiseIndex = id + 1;
       return id;
     }
     const kernelPromiseID = allocateNextPromiseIndex();
 
-    const kernelPromiseObj = harden({
+    const kernelPromiseObj = {
       state: 'unresolved',
       decider: deciderVatID,
       queue: [],
       subscribers: [],
-    });
+    };
 
-    const kernelPromises = kvstore.get('kernelPromises');
-    kernelPromises.set(`${kernelPromiseID}`, kernelPromiseObj);
+    state.kernelPromises[kernelPromiseID] = kernelPromiseObj;
     return kernelPromiseID;
   }
 
   function getKernelPromise(kernelPromiseID) {
-    const kernelPromises = kvstore.get('kernelPromises');
-    const p = kernelPromises.get(`${kernelPromiseID}`);
+    const p = state.kernelPromises[Nat(kernelPromiseID)];
     if (p === undefined) {
       throw new Error(`unknown kernelPromise id '${kernelPromiseID}'`);
     }
@@ -55,124 +56,136 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
   }
 
   function hasKernelPromise(kernelPromiseID) {
-    const kernelPromises = kvstore.get('kernelPromises');
-    return kernelPromises.has(`${kernelPromiseID}`);
+    return !!Object.getOwnPropertyDescriptor(
+      state.kernelPromises,
+      Nat(kernelPromiseID),
+    );
+  }
+
+  function replaceKernelPromise(kernelPromiseID, p) {
+    state.kernelPromises[Nat(kernelPromiseID)] = p;
   }
 
   function deleteKernelPromiseData(kernelPromiseID) {
-    const kernelPromises = kvstore.get('kernelPromises');
-    const kernelPromise = kernelPromises.get(`${kernelPromiseID}`);
-    delete kernelPromise.subscribers;
-    delete kernelPromise.decider;
-    delete kernelPromise.queue;
-    // re-save
-    kernelPromises.set(`${kernelPromiseID}`, kernelPromise);
+    delete state.kernelPromises[Nat(kernelPromiseID)];
   }
 
-  function updateKernelPromise(kernelPromiseID, kernelPromise) {
-    const kernelPromises = kvstore.get('kernelPromises');
-    kernelPromises.set(`${kernelPromiseID}`, kernelPromise);
+  function addMessageToPromiseQueue(kernelPromiseID, msg) {
+    const p = state.kernelPromises[Nat(kernelPromiseID)];
+    if (p === undefined) {
+      throw new Error(`unknown kernelPromise id '${kernelPromiseID}'`);
+    }
+    if (p.state !== 'unresolved') {
+      throw new Error(
+        `kernelPromise[${kernelPromiseID}] is '${p.state}', not 'unresolved'`,
+      );
+    }
+    p.queue.push(msg);
   }
 
   function addSubscriberToPromise(kernelPromiseID, vatID) {
-    const kernelPromises = kvstore.get('kernelPromises');
-    const kernelPromise = kernelPromises.get(`${kernelPromiseID}`);
-    const subscribersSet = new Set(kernelPromise.subscribers);
+    const p = state.kernelPromises[Nat(kernelPromiseID)];
+    if (p === undefined) {
+      throw new Error(`unknown kernelPromise id '${kernelPromiseID}'`);
+    }
+    const subscribersSet = new Set(p.subscribers);
     subscribersSet.add(vatID);
-    kernelPromise.subscribers = Array.from(subscribersSet);
-    // re-save
-    kernelPromises.set(`${kernelPromiseID}`, kernelPromise);
-  }
-
-  function getSubscribers(kernelPromiseID) {
-    const kernelPromises = kvstore.get('kernelPromises');
-    const kernelPromise = kernelPromises.get(`${kernelPromiseID}`);
-    return new Set(kernelPromise.subscribers);
+    p.subscribers = Array.from(subscribersSet);
   }
 
   function addToRunQueue(msg) {
-    const runQueue = kvstore.get('runQueue');
-    runQueue.push(msg);
-    kvstore.set('runQueue', runQueue);
-  }
-
-  function addDevice(deviceName, deviceKVStore) {
-    const devices = kvstore.get('devices');
-    devices.set(deviceName, deviceKVStore);
-  }
-
-  function getDevice(deviceName) {
-    const devices = kvstore.get('devices');
-    return devices.get(deviceName);
-  }
-
-  function hasDevice(deviceName) {
-    const devices = kvstore.get('devices');
-    return devices.has(deviceName);
-  }
-
-  function addVat(vatID, vatObj) {
-    const vats = kvstore.get('vats');
-    vats.set(vatID, vatObj);
-  }
-
-  function hasVat(vatID) {
-    const vats = kvstore.get('vats');
-    return vats.has(vatID);
-  }
-
-  function getVat(vatID) {
-    const vats = kvstore.get('vats');
-    return vats.get(vatID);
-  }
-
-  function getAllVatNames() {
-    const vats = kvstore.get('vats');
-    return vats.keys();
-  }
-
-  function getAllDeviceNames() {
-    const devices = kvstore.get('devices');
-    return devices.keys();
+    state.runQueue.push(msg);
   }
 
   function isRunQueueEmpty() {
-    const runQueue = kvstore.get('runQueue');
-    return runQueue.length <= 0;
+    return state.runQueue.length <= 0;
   }
 
   function getRunQueueLength() {
-    const runQueue = kvstore.get('runQueue');
-    return runQueue.length;
+    return state.runQueue.length;
   }
 
   function getNextMsg() {
-    const runQueue = kvstore.get('runQueue');
-    const msg = runQueue.shift();
-    kvstore.set('runQueue', runQueue);
-    return msg;
+    return state.runQueue.shift();
   }
 
-  // used for debugging and tests
+  // vatID must already exist
+  function getVat(vatID) {
+    const vatState = state.vats[vatID];
+    if (vatState === undefined) {
+      throw new Error(`unknown vatID id '${vatID}'`);
+    }
+    return makeVatKeeper(vatState);
+  }
+
+  function createVat(vatID) {
+    vatID = `${vatID}`;
+    if (vatID in state.vats) {
+      throw new Error(`vatID '${vatID}' already exists in state.vats`);
+    }
+    const vatState = {};
+    state.vats[vatID] = vatState;
+    const vk = makeVatKeeper(vatState, vatID);
+    vk.createStartingVatState();
+    return vk;
+  }
+
+  function getAllVatNames() {
+    return Object.getOwnPropertyNames(state.vats).sort();
+  }
+
+  // deviceID must already exist
+  function getDevice(deviceID) {
+    const deviceState = state.devices[deviceID];
+    if (deviceState === undefined) {
+      throw new Error(`unknown deviceID id '${deviceID}'`);
+    }
+    return makeDeviceKeeper(deviceState);
+  }
+
+  function createDevice(deviceID) {
+    deviceID = `${deviceID}`;
+    if (deviceID in state.devices) {
+      throw new Error(`deviceID '${deviceID}' already exists in state.devices`);
+    }
+    const deviceState = {};
+    state.devices[deviceID] = deviceState;
+    const dk = makeDeviceKeeper(deviceState);
+    dk.createStartingDeviceState();
+    return dk;
+  }
+
+  function getAllDeviceNames() {
+    return Object.getOwnPropertyNames(state.devices).sort();
+  }
+
+  // used for persistence. This returns a JSON-serialized string, suitable to
+  // be passed back into makeKernelKeeper() as 'initialState'.
+  function getState() {
+    return JSON.stringify(state);
+  }
+
+  // used for debugging, and tests. This returns a JSON-serializable object.
+  // It includes references to live (mutable) kernel state, so don't mutate
+  // the pieces, and be sure to serialize/deserialize before passing it
+  // outside the kernel realm.
   function dump() {
     const vatTables = [];
     const kernelTable = [];
 
-    const vats = kvstore.get('vats');
+    const { vats } = state;
 
-    for (const vatEntry of vats.entries()) {
-      const { key: vatID, value: vatkvstore } = vatEntry;
-
-      const vatKeeper = makeVatKeeper(vatkvstore);
+    for (const vatID of Object.getOwnPropertyNames(vats)) {
+      const vk = getVat(vatID);
 
       // TODO: find some way to expose the liveSlots internal tables, the
       // kernel doesn't see them
       const vatTable = {
         vatID,
-        state: { transcript: vatKeeper.getTranscript() },
+        state: { transcript: vk.getTranscript() },
       };
       vatTables.push(vatTable);
-      vatKeeper.dumpState(vatID).forEach(e => kernelTable.push(e));
+      vk.dumpState(vatID).forEach(e => kernelTable.push(e));
     }
 
     function compareNumbers(a, b) {
@@ -202,19 +215,18 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
 
     const promises = [];
 
-    const kernelPromises = kvstore.get('kernelPromises');
-    kernelPromises.entries().forEach(entry => {
-      const { key: id, value: p } = entry;
+    const { kernelPromises } = state;
+    Object.getOwnPropertyNames(kernelPromises).forEach(id => {
+      const p = kernelPromises[id];
       const kp = { id: Number(id) };
       Object.defineProperties(kp, Object.getOwnPropertyDescriptors(p));
-      const subscribers = getSubscribers(kp.id);
-      if (subscribers) {
-        kp.subscribers = Array.from(subscribers);
+      if (p.subscribers) {
+        kp.subscribers = Array.from(p.subscribers);
       }
       promises.push(kp);
     });
 
-    const runQueue = kvstore.get('runQueue');
+    const runQueue = Array.from(state.runQueue);
 
     return {
       vatTables,
@@ -228,26 +240,30 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
     getInitialized,
     setInitialized,
     createStartingKernelState,
+
     addKernelPromise,
     getKernelPromise,
     hasKernelPromise,
+    replaceKernelPromise,
     deleteKernelPromiseData,
-    updateKernelPromise,
+    addMessageToPromiseQueue,
     addSubscriberToPromise,
-    getSubscribers,
+
     addToRunQueue,
-    dump,
-    addDevice,
-    getDevice,
-    hasDevice,
-    addVat,
-    hasVat,
-    getVat,
-    getAllVatNames,
-    getAllDeviceNames,
     isRunQueueEmpty,
     getRunQueueLength,
     getNextMsg,
+
+    getVat,
+    createVat,
+    getAllVatNames,
+
+    getDevice,
+    createDevice,
+    getAllDeviceNames,
+
+    getState,
+    dump,
   });
 }
 

@@ -9,9 +9,6 @@ import makePromise from './makePromise';
 import makeVatManager from './vatManager';
 import makeDeviceManager from './deviceManager';
 import makeKernelKeeper from './state/kernelKeeper';
-import makeVatKeeper from './state/vatKeeper';
-import makeDeviceKeeper from './state/deviceKeeper';
-import makeExternalKVStore from './externalKVStore';
 
 function abbreviateReviver(_, arg) {
   if (typeof arg === 'string' && arg.length >= 40) {
@@ -21,17 +18,10 @@ function abbreviateReviver(_, arg) {
   return arg;
 }
 
-export default function buildKernel(kernelEndowments, externalStorage) {
+export default function buildKernel(kernelEndowments, initialState = '{}') {
   const { setImmediate } = kernelEndowments;
 
-  const kernelKVStore = makeExternalKVStore('kernel', externalStorage);
-
-  const kernelKeeper = makeKernelKeeper(
-    kernelKVStore,
-    'kernel',
-    makeExternalKVStore,
-    externalStorage,
-  );
+  const kernelKeeper = makeKernelKeeper(initialState);
 
   let started = false;
   // this holds externally-added vats, which are present at startup, but not
@@ -105,9 +95,7 @@ export default function buildKernel(kernelEndowments, externalStorage) {
     } else if (target.type === 'promise') {
       const kp = kernelKeeper.getKernelPromise(target.id);
       if (kp.state === 'unresolved') {
-        kp.queue.push(msg);
-        // we need to save what was pushed to queue
-        kernelKeeper.updateKernelPromise(target.id, kp);
+        kernelKeeper.addMessageToPromiseQueue(target.id, msg);
       } else if (kp.state === 'fulfilledToData') {
         const s = `data is not callable, has no method ${msg.method}`;
         // eslint-disable-next-line no-use-before-define
@@ -129,9 +117,9 @@ export default function buildKernel(kernelEndowments, externalStorage) {
     }
   }
 
-  function notifySubscribersAndQueue(id, p, type) {
+  function notifySubscribersAndQueue(id, subscribers, queue, type) {
     const pslot = { type: 'promise', id };
-    for (const subscriberVatID of kernelKeeper.getSubscribers(id)) {
+    for (const subscriberVatID of subscribers) {
       kernelKeeper.addToRunQueue({
         type,
         vatID: subscriberVatID,
@@ -140,7 +128,7 @@ export default function buildKernel(kernelEndowments, externalStorage) {
     }
     // re-deliver msg to the now-settled promise, which will forward or
     // reject depending on the new state of the promise
-    for (const msg of p.queue) {
+    for (const msg of queue) {
       send(pslot, msg);
       // now that we know where the messages can be sent, we know to whom we
       // must subscribe to satisfy their resolvers. This wasn't working
@@ -155,56 +143,58 @@ export default function buildKernel(kernelEndowments, externalStorage) {
     }
   }
 
-  function assertResolved(id, promiseState) {
-    if (promiseState !== 'unresolved') {
-      throw new Error(
-        `kernelPromise[${id}] is '${promiseState}', not 'unresolved'`,
-      );
+  function getUnresolvedPromise(id) {
+    const p = kernelKeeper.getKernelPromise(id);
+    if (p.state !== 'unresolved') {
+      throw new Error(`kernelPromise[${id}] is '${p.state}', not 'unresolved'`);
     }
-  }
-
-  function deletePromiseData(kernelPromiseID) {
-    kernelKeeper.deleteKernelPromiseData(kernelPromiseID);
+    return p;
   }
 
   function fulfillToPresence(id, targetSlot) {
-    const p = kernelKeeper.getKernelPromise(id);
-    assertResolved(id, p.state);
     if (targetSlot.type !== 'export') {
       throw new Error(
         `fulfillToPresence() must fulfill to export, not ${targetSlot.type}`,
       );
     }
-
-    p.state = 'fulfilledToPresence';
-    p.fulfillSlot = targetSlot;
-    kernelKeeper.updateKernelPromise(id, p);
-    notifySubscribersAndQueue(id, p, 'notifyFulfillToPresence');
-    deletePromiseData(id);
+    const { subscribers, queue } = getUnresolvedPromise(id);
+    kernelKeeper.replaceKernelPromise(id, {
+      state: 'fulfilledToPresence',
+      fulfillSlot: targetSlot,
+    });
+    notifySubscribersAndQueue(
+      id,
+      subscribers,
+      queue,
+      'notifyFulfillToPresence',
+    );
+    // kernelKeeper.deleteKernelPromiseData(id);
   }
 
   function fulfillToData(id, data, slots) {
     kdebug(`fulfillToData[${id}] -> ${data} ${JSON.stringify(slots)}`);
-    const p = kernelKeeper.getKernelPromise(id);
-    assertResolved(id, p.state);
-
-    p.state = 'fulfilledToData';
-    p.fulfillData = data;
-    p.fulfillSlots = slots;
-    kernelKeeper.updateKernelPromise(id, p);
-    notifySubscribersAndQueue(id, p, 'notifyFulfillToData');
-    deletePromiseData(id);
+    const { subscribers, queue } = getUnresolvedPromise(id);
+    kernelKeeper.replaceKernelPromise(id, {
+      state: 'fulfilledToData',
+      fulfillData: data,
+      fulfillSlots: slots,
+    });
+    notifySubscribersAndQueue(id, subscribers, queue, 'notifyFulfillToData');
+    // kernelKeeper.deleteKernelPromiseData(id);
+    // TODO: we can't delete the promise until all vat references are gone,
+    // and certainly not until the notifyFulfillToData we just queued is
+    // delivered
   }
 
   function reject(id, val, valSlots) {
-    const p = kernelKeeper.getKernelPromise(id);
-    assertResolved(id, p.state);
-    p.state = 'rejected';
-    p.rejectData = val;
-    p.rejectSlots = valSlots;
-    kernelKeeper.updateKernelPromise(id, p);
-    notifySubscribersAndQueue(id, p, 'notifyReject');
-    deletePromiseData(id);
+    const { subscribers, queue } = getUnresolvedPromise(id);
+    kernelKeeper.replaceKernelPromise(id, {
+      state: 'rejected',
+      rejectData: val,
+      rejectSlots: valSlots,
+    });
+    notifySubscribersAndQueue(id, subscribers, queue, 'notifyReject');
+    // kernelKeeper.deleteKernelPromiseData(id);
   }
 
   function invoke(device, method, data, slots) {
@@ -414,22 +404,9 @@ export default function buildKernel(kernelEndowments, externalStorage) {
         },
       });
 
-      const vatPath = `kernel.vats.${vatID}`;
-      const vatKVStore = makeExternalKVStore(vatPath, externalStorage);
-      const vatKeeper = makeVatKeeper(
-        vatKVStore,
-        vatPath,
-        makeExternalKVStore,
-        externalStorage,
-      );
-
-      if (!wasInitialized) {
-        if (kernelKeeper.hasVat(vatID)) {
-          throw new Error(`already have a vat named '${vatID}'`);
-        }
-        vatKeeper.createStartingVatState();
-        kernelKeeper.addVat(vatID, vatKVStore);
-      }
+      const vatKeeper = wasInitialized
+        ? kernelKeeper.getVat(vatID)
+        : kernelKeeper.createVat(vatID);
 
       // the vatManager invokes setup() to build the userspace image
       const manager = makeVatManager(
@@ -437,7 +414,7 @@ export default function buildKernel(kernelEndowments, externalStorage) {
         syscallManager,
         setup,
         helpers,
-        vatKVStore,
+        vatKeeper,
       );
       ephemeral.vats.set(
         vatID,
@@ -458,23 +435,9 @@ export default function buildKernel(kernelEndowments, externalStorage) {
         },
       });
 
-      const devicePath = `kernel.devices.${name}`;
-      const deviceKVStore = makeExternalKVStore(devicePath, externalStorage);
-      const deviceKeeper = makeDeviceKeeper(
-        deviceKVStore,
-        devicePath,
-        makeExternalKVStore,
-        externalStorage,
-      );
-
-      if (!wasInitialized) {
-        if (kernelKeeper.hasDevice(name)) {
-          throw new Error(`already have a device named '${name}'`);
-        }
-        deviceKeeper.createStartingDeviceState();
-        // per-device translation tables
-        kernelKeeper.addDevice(name, deviceKVStore);
-      }
+      const deviceKeeper = wasInitialized
+        ? kernelKeeper.getDevice(name)
+        : kernelKeeper.createDevice(name);
 
       const manager = makeDeviceManager(
         name,
@@ -482,8 +445,7 @@ export default function buildKernel(kernelEndowments, externalStorage) {
         setup,
         helpers,
         endowments,
-        kernelKeeper,
-        deviceKVStore,
+        deviceKeeper,
       );
       // the vat record is not hardened: it holds mutable next-ID values
       ephemeral.devices.set(name, {
@@ -556,13 +518,17 @@ export default function buildKernel(kernelEndowments, externalStorage) {
       ephemeral.log.push(`${str}`);
     },
 
+    getState() {
+      return kernelKeeper.getState();
+    },
+
     dump() {
       const stateDump = kernelKeeper.dump();
       // note: dump().log is not deterministic, since log() does not go
       // through the syscall interface (and we replay transcripts one vat at
       // a time, so any log() calls that were interleaved during their
       // original execution will be sorted by vat in the replace). Logs are
-      // not kept in the kvstore, only in ephemeral state.
+      // not kept in the persistent state, only in ephemeral state.
       stateDump.log = ephemeral.log;
       return stateDump;
     },

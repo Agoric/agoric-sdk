@@ -1,20 +1,15 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
-import makeDeviceKeeper from './state/deviceKeeper';
-
 export default function makeDeviceManager(
   deviceName,
   syscallManager,
   setup,
   helpers,
   endowments,
-  kernelKeeper,
-  _deviceKVStore,
+  deviceKeeper,
 ) {
   const { kdebug, send, log } = syscallManager;
-
-  const deviceKeeper = makeDeviceKeeper(kernelKeeper.getDevice(deviceName));
 
   function mapDeviceSlotToKernelSlot(slot) {
     // kdebug(`mapOutbound ${JSON.stringify(slot)}`);
