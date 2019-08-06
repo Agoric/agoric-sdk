@@ -119,18 +119,19 @@ function makeKernelKeeper(initialState) {
   }
 
   function createVat(vatID) {
+    vatID = `${vatID}`;
     if (vatID in state.vats) {
       throw new Error(`vatID '${vatID}' already exists in state.vats`);
     }
     const vatState = {};
-    state.vats[`${vatID}`] = vatState;
-    const vk = makeVatKeeper(vatState);
+    state.vats[vatID] = vatState;
+    const vk = makeVatKeeper(vatState, vatID);
     vk.createStartingVatState();
     return vk;
   }
 
   function getAllVatNames() {
-    return Object.getOwnPropertyNames(state.vats);
+    return Object.getOwnPropertyNames(state.vats).sort();
   }
 
 
@@ -144,18 +145,19 @@ function makeKernelKeeper(initialState) {
   }
 
   function createDevice(deviceID) {
+    deviceID = `${deviceID}`;
     if (deviceID in state.devices) {
       throw new Error(`deviceID '${deviceID}' already exists in state.devices`);
     }
     const deviceState = {};
-    state.devices[`${deviceID}`] = deviceState;
+    state.devices[deviceID] = deviceState;
     const dk = makeDeviceKeeper(deviceState);
     dk.createStartingDeviceState();
     return dk;
   }
 
   function getAllDeviceNames() {
-    return Object.getOwnPropertyNames(state.devices);
+    return Object.getOwnPropertyNames(state.devices).sort();
   }
 
   // used for persistence. This returns a JSON-serialized string, suitable to
