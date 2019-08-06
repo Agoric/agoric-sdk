@@ -472,14 +472,12 @@ show-config      display the client connection parameters
       initHint();
 
       console.error(
-        chalk.black.bgGreenBright.bold(
-          `Go to the provisioning server at: ${pserverUrl}
-or "curl '${pserverUrl}/request-code?nickname=MY-NICK'"`,
-        ),
+        `Go to the provisioning server at: ${chalk.yellow.bold(pserverUrl)}
+or "${chalk.yellow.bold(`curl '${pserverUrl}/request-code?nickname=MY-NICK'`)}"`,
       );
       if (await exists('/vagrant')) {
         console.log(`to publish a chain-connected server to your host, do something like:
-${chalk.yellow.bold(`"ve3/bin/ag-setup-solo --webhost=0.0.0.0"`)}`);
+"${chalk.yellow.bold(`ve3/bin/ag-setup-solo --webhost=0.0.0.0`)}"`);
       }
       break;
     }
