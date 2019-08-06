@@ -1,10 +1,19 @@
 User-visible changes in SwingSet:
 
+## Release 0.0.19 (06-Aug-2019)
+
+* Rewrite persistence to be much more efficient. (#94)
+* Update to @agoric/evaluate-1.3.0 . This adds `evaluateModule`, but only in
+  `--no-ses` mode for now.
+* Update to ses-0.5.3, which re-enables indirect eval
+
+
 ## Release 0.0.18 (31-Jul-2019)
 
 * Downgrade to @agoric/eventual-send-0.1.11 via @agoric/default-evaluate-options.
   The @agoric/eventual-send-0.2.0 release had some serious problems with
   memory exhaustion.
+
 
 ## Release 0.0.17 (31-Jul-2019)
 
