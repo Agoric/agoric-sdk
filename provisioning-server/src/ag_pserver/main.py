@@ -154,7 +154,7 @@ class Provisioner(resource.Resource):
 
     @defer.inlineCallbacks
     def build_page(self):
-        f = open(cosmosConfigFile(opts['home']))
+        f = open(cosmosConfigFile(self.opts['home']))
         config = f.read()
 
         args = ConfigElement.gatherArgs(self.opts)
