@@ -43,27 +43,6 @@ export function loadBasedir(basedir) {
   return { vatSources, bootstrapIndexJS };
 }
 
-// let { initialState, save } = manageStateInBasedir(BASEDIR);
-// config.initialState = initialState;
-// ..
-// save(controller.getState())
-
-export function manageStateInBasedir(basedir) {
-  const stateFile = path.resolve(basedir, 'state.json');
-  let initialState;
-  try {
-    const data = fs.readFileSync(stateFile);
-    initialState = JSON.parse(data);
-  } catch (e) {
-    initialState = {};
-  }
-  function save(state) {
-    fs.writeFileSync(stateFile, state);
-  }
-
-  return { initialState, save };
-}
-
 function getKernelSource() {
   return `(${kernelSourceFunc})`;
 }
