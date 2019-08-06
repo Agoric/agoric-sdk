@@ -39,14 +39,14 @@
   "dependencies": {
     "@agoric/acorn-infix-bang": "0.0.4",
     "@agoric/default-evaluate-options": "^0.1.0",
-    "@agoric/evaluate": "^1.1.0",
+    "@agoric/evaluate": "^1.3.0",
     "@agoric/harden": "^0.0.4",
     "@agoric/marshal": "0.0.1",
     "@agoric/nat": "^2.0.0",
     "rollup": "^1.16.7",
     "rollup-plugin-node-resolve": "^5.0.1",
     "semver": "^6.1.0",
-    "ses": "^0.5.1",
+    "ses": "^0.5.3",
     "yargs": "^13.1.0"
   },
   "files": [
