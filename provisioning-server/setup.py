@@ -19,7 +19,6 @@ setup(
     package_data={"ag_pserver": ['html/*']},
     install_requires=[
         "twisted[tls]",
-        "pynetstring",
         "magic-wormhole",
         "treq",
         ],
