@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-redeclare
 /* global setImmediate setTimeout */
 import { test } from 'tape-promise/tape';
 

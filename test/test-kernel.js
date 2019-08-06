@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-redeclare
 /* global setImmediate */
 import { test } from 'tape-promise/tape';
 import buildKernel from '../src/kernel/index';

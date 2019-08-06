@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-redeclare
 /* global setImmediate */
 import fs from 'fs';
 import path from 'path';
