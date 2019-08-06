@@ -16,8 +16,8 @@ build
 node_modules
 t[0-9]/
 
-ve3/
-ve3-client/
+ve[0-9]/
+ve[0-9]-client/
 *.egg-info/
 __pycache__/
 chains

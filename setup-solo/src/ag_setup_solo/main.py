@@ -9,30 +9,42 @@ import shutil
 import subprocess
 import sys
 import os
+import urllib.request
 
 MAILBOX_URL = u"ws://relay.magic-wormhole.io:4000/v1"
 #MAILBOX_URL = u"ws://10.0.2.24:4000/v1"
 APPID = u"agoric.com/ag-testnet1/provisioning-tool"
+NETWORK_CONFIG = "https://testnet.agoric.com/network-config"
 
 # Locate the ag-solo binary.
-AG_SOLO = os.path.abspath('bin/ag-solo')
-if not os.path.exists(AG_SOLO):
+# Look up until we find a different bin directory.
+candidate = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
+AG_SOLO = os.path.join(candidate, 'bin', 'ag-solo')
+while not os.path.exists(AG_SOLO):
+  next_candidate = os.path.dirname(candidate)
+  if next_candidate == candidate:
     AG_SOLO = 'ag-solo'
-
-START_DIR = os.path.abspath('.')
+    break
+  candidate = next_candidate
+  AG_SOLO = os.path.join(candidate, 'bin', 'ag-solo')
 
 class Options(usage.Options):
     optParameters = [
         ["webhost", "h", "127.0.0.1", "client-visible HTTP listening address"],
         ["webport", "p", "8000", "client-visible HTTP listening port"],
+        ["netconfig", None, NETWORK_CONFIG, "website for network config"]
     ]
     def parseArgs(self, basedir=os.environ.get('AG_SOLO_BASEDIR', 'agoric')):
         self['basedir'] = os.environ['AG_SOLO_BASEDIR'] = basedir
 
+
+def setIngressAndRestart(sm):
+    subprocess.run([AG_SOLO, 'set-gci-ingress', '--chainID=%s' % sm['chainName'], sm['gci'], *sm['rpcAddrs']], check=True)
+    os.execvp(AG_SOLO, [AG_SOLO, 'start', '--role=client'])
+
 @defer.inlineCallbacks
 def run_client(reactor, o, pubkey):
     w = wormhole.create(APPID, MAILBOX_URL, reactor)
-    # FIXME: Handle SIGINT!
     wormhole.input_with_completion("Provisioning code: ", w.input_code(), reactor)
     cm = json.dumps({
         "pubkey": pubkey,
@@ -48,8 +60,7 @@ def run_client(reactor, o, pubkey):
         return
 
     BASEDIR = o['basedir']
-    subprocess.run([AG_SOLO, 'set-gci-ingress', '--chainID=%s' % sm['chainName'], sm['gci'], *sm['rpcAddrs']], check=True)
-    os.execvp(AG_SOLO, [AG_SOLO, 'start', '--role=client'])
+    setIngressAndRestart(sm)
 
 def doInit(o):
     BASEDIR = o['basedir']
@@ -59,22 +70,44 @@ def doInit(o):
 def main():
     o = Options()
     o.parseOptions()
-    pkeyFile = o['basedir'] + '/ag-cosmos-helper-address'
-    # If it doesn't exist, run the ag-solo init.
-    if os.path.exists(pkeyFile):
-        print(pkeyFile + ' already exists!')
-        yesno = input('Type "yes" to reinitialize, anything else cancels: ')
-        if yesno.strip() != 'yes':
-            print('Cancelling!')
-            sys.exit(1)
-        shutil.rmtree(o['basedir'], ignore_errors=True, onerror=None)
-        doInit(o)
-    else:
+    pkeyFile = os.path.join(o['basedir'], 'ag-cosmos-helper-address')
+    # If the public key file does not exist, just init and run.
+    if not os.path.exists(pkeyFile):
         doInit(o)
 
-    # read the pubkey out of BASEDIR/ag-cosmos-helper-address
-    pkfile = open(pkeyFile)
-    pubkey = pkfile.read()
-    pkfile.close()
-    pubkey = pubkey.strip()
-    react(run_client, (o,pubkey))
+        # read the pubkey out of BASEDIR/ag-cosmos-helper-address
+        pkfile = open(pkeyFile)
+        pubkey = pkfile.read()
+        pkfile.close()
+        pubkey = pubkey.strip()
+        react(run_client, (o,pubkey))
+        sys.exit(1)
+
+    yesno = input('Type "yes" to reset state from ' + o['netconfig'] + ', anything else cancels: ')
+    if yesno.strip() != 'yes':
+        print('Cancelling!')
+        sys.exit(1)
+
+    # Blow away everything except the key file and state dir.
+    helperStateDir = os.path.join(o['basedir'], 'ag-cosmos-helper-statedir')
+    for name in os.listdir(o['basedir']):
+      p = os.path.join(o['basedir'], name)
+      if p == pkeyFile or p == helperStateDir:
+        continue
+      if os.path.isdir(p) and not os.path.islink(p):
+        shutil.rmtree(p)
+      else:
+        os.remove(p)
+
+    # Upgrade the ag-solo files.
+    doInit(o)
+
+    # Download the netconfig.
+    print('downloading netconfig from', o['netconfig'])
+    resp = urllib.request.urlopen(o['netconfig'])
+    encoding = resp.headers.get_content_charset('utf-8')
+    decoded = resp.read().decode(encoding)
+    netconfig = json.loads(decoded)
+
+    setIngressAndRestart(netconfig)
+    sys.exit(1)
