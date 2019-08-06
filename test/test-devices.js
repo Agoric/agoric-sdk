@@ -77,15 +77,13 @@ test('d1 without SES', async t => {
 });
 
 async function test2(t, mode, withSES) {
-  const external = makeStorageInMemory();
-
   const config = {
     vatSources: new Map(),
     devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
   config.vatSources.set('left', require.resolve('./files-devices/vat-left.js'));
-  const c = await buildVatController(config, withSES, [mode], external);
+  const c = await buildVatController(config, withSES, [mode]);
   await c.step();
   if (mode === '1') {
     t.deepEqual(c.dump().log, ['calling d2.method1', 'method1 hello', 'done']);
@@ -177,21 +175,20 @@ test('d2.5 without SES', async t => {
 });
 
 async function testState(t, withSES) {
-  const s1 = {};
   const config = {
     vatSources: new Map(),
     devices: [['d3', require.resolve('./files-devices/device-3'), {}]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-3'),
-    externalStorage: makeStorageInMemory(s1),
+    initialState: JSON.stringify({}),
   };
 
   // The initial state should be missing (null). Then we set it with the call
   // from bootstrap, and read it back.
   const c1 = await buildVatController(config, withSES, ['write+read']);
   await c1.run();
-  t.deepEqual(c1.dump().log, ['null', 'w+r', 'called', 'got {"s":"new"}']);
-  t.deepEqual(JSON.parse(s1['kernel.devices.d3.deviceState']), { s: 'new' });
-  t.deepEqual(JSON.parse(s1['kernel.devices.d3.nextImportID']), 10);
+  t.deepEqual(c1.dump().log, ['undefined', 'w+r', 'called', 'got {"s":"new"}']);
+  t.deepEqual(JSON.parse(c1.getState()).devices.d3.deviceState, { s: 'new' });
+  t.deepEqual(JSON.parse(c1.getState()).devices.d3.nextImportID, 10);
 
   t.end();
 }

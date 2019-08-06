@@ -4,14 +4,14 @@ import { test } from 'tape-promise/tape';
 import { buildVatController, loadBasedir } from '../src/index';
 import stringify from '../src/kernel/json-stable-stringify';
 
-async function buildTrace(c, s) {
+async function buildTrace(c) {
   const states = [];
   while (c.dump().runQueue.length) {
-    states.push(stringify(s));
+    states.push(c.getState());
     // eslint-disable-next-line no-await-in-loop
     await c.step();
   }
-  states.push(stringify(s));
+  states.push(c.getState());
   return states;
 }
 
@@ -20,19 +20,17 @@ async function testSaveState(t, withSES) {
     path.resolve(__dirname, 'basedir-transcript'),
   );
 
-  const s1 = {};
-  config.externalStorage = makeStorageInMemory(s1);
+  config.initialState = stringify({});
   const c1 = await buildVatController(config, withSES, ['one']);
-  const states1 = await buildTrace(c1, s1);
+  const states1 = await buildTrace(c1);
   /*
   states1.forEach( (s, i) =>
     fs.writeFileSync(`kdata-${i}.json`, s)
   ); */
 
-  const s2 = {};
-  config.externalStorage = makeStorageInMemory(s2);
+  config.initialState = stringify({});
   const c2 = await buildVatController(config, withSES, ['one']);
-  const states2 = await buildTrace(c2, s2);
+  const states2 = await buildTrace(c2);
 
   states1.forEach((s, i) => {
     t.deepEqual(s, states2[i]);
@@ -52,10 +50,9 @@ async function testLoadState(t, withSES) {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
   );
-  const s0 = {};
-  config.externalStorage = makeStorageInMemory(s0);
+  config.initialState = stringify({});
   const c0 = await buildVatController(config, withSES, ['one']);
-  const states = await buildTrace(c0, s0);
+  const states = await buildTrace(c0);
   // states.forEach((s,j) =>
   //               fs.writeFileSync(`kdata-${j}.json`, states[j]));
 
@@ -64,12 +61,11 @@ async function testLoadState(t, withSES) {
     const cfg = await loadBasedir(
       path.resolve(__dirname, 'basedir-transcript'),
     );
-    const s = JSON.parse(states[i]);
-    cfg.externalStorage = makeStorageInMemory(s);
+    cfg.initialState = states[i];
     // eslint-disable-next-line no-await-in-loop
     const c = await buildVatController(cfg, withSES, ['one']);
     // eslint-disable-next-line no-await-in-loop
-    const newstates = await buildTrace(c, s);
+    const newstates = await buildTrace(c);
     // newstates.forEach((s,j) =>
     //                  fs.writeFileSync(`kdata-${i+j}-${i}+${j}.json`, newstates[j]));
     t.deepEqual(states.slice(i), newstates);

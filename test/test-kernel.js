@@ -583,6 +583,7 @@ test('transfer promise', async t => {
   ]);
   await kernel.run();
   t.deepEqual(logB.shift(), [5, 'foo2', 'args', [{ type: 'promise', id: 20 }]]);
+
   t.deepEqual(logB, []);
   t.deepEqual(kernel.dump().kernelTable, [
     ['vatA', 'import', 10, 'export', 'vatB', 5],
@@ -896,7 +897,6 @@ test('promise resolveToData', async t => {
       fulfillData: 'args',
       fulfillSlots: [{ id: 6, type: 'export', vatID: 'vatB' }],
       state: 'fulfilledToData',
-      subscribers: [],
     },
   ]);
   t.deepEqual(kernel.dump().runQueue, []);
@@ -963,7 +963,6 @@ test('promise resolveToPresence', async t => {
       id: 40,
       fulfillSlot: { id: 6, type: 'export', vatID: 'vatB' },
       state: 'fulfilledToPresence',
-      subscribers: [],
     },
   ]);
   t.deepEqual(kernel.dump().runQueue, []);
@@ -1032,7 +1031,6 @@ test('promise reject', async t => {
       rejectData: 'args',
       rejectSlots: [{ id: 6, type: 'export', vatID: 'vatB' }],
       state: 'rejected',
-      subscribers: [],
     },
   ]);
   t.deepEqual(kernel.dump().runQueue, []);
