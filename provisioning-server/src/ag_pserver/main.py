@@ -8,7 +8,6 @@ import treq
 import os.path
 import os
 import json
-import pynetstring as netstring
 
 from twisted.python import log
 import sys
@@ -71,7 +70,7 @@ def cosmosConfigFile(home):
     return home + '/cosmos-chain.json'
 
 def pubkeyDatabase(home):
-  return home + '/pubkeys.nsdb'
+  return home + '/pubkeys.jsona'
 
 class ConfigElement(Element):
     loader = XMLFile(os.path.join(htmldir, "index.html"))
@@ -213,7 +212,7 @@ def enablePubkey(reactor, opts, config, nickname, pubkey):
         resp = yield treq.post(controller_url, m.encode('utf-8'),
                                 headers={b'Content-Type': [b'application/json']})
         if resp.code < 200 or resp.code >= 300:
-            raise Exception('invalid response code ' + resp.code)
+            raise Exception('invalid response code ' + str(resp.code))
         rawResp = yield treq.json_content(resp)
     except Exception as e:
         print('controller error', e)
@@ -257,11 +256,15 @@ class RequestCode(resource.Resource):
         d = w.close()
         def complete(_):
           print("provisioning complete")
-          pknick = config['chainName'] + '=' + mobj['pubkey'] + '=' + mobj['nickname'][:32]
-          print("save public key to database", pknick)
-          pknick_bytes = netstring.encode(pknick)
+          pkobj = {
+            'chainName': config['chainName'],
+            'pubkey': mobj['pubkey'],
+            'nickname': mobj['nickname'][:32],
+          }
+          print("save public key to database", pkobj)
+          pkobj_str = json.dumps(pkobj)
           with open(pubkeyDatabase(self.opts['home']), 'a') as db:
-            db.write(pknick_bytes.decode('ascii'))
+            db.write(pkobj_str + ',\n')
         d.addCallbacks(complete,
                        lambda f: print("provisioning error", f))
 
@@ -343,7 +346,7 @@ def run_server(reactor, o):
     print("server running")
     return defer.Deferred()
 
-def doEnablePubkeys(reactor, opts, config, pknicks):
+def doEnablePubkeys(reactor, opts, config, pkobjs):
   finished = defer.Deferred()
 
   def showError(e):
@@ -351,15 +354,14 @@ def doEnablePubkeys(reactor, opts, config, pknicks):
     doLatest(None)
 
   def doLatest(d):
-    if len(pknicks) == 0:
+    if len(pkobjs) == 0:
       finished.callback(d)
       return
 
-    pknick_bytes = pknicks.pop()
+    pkobj = pkobjs.pop()
     try:
-      [chainName, pubkey, nickname] = pknick_bytes.decode('ascii').split('=', 2)
-      print('enabling', chainName, nickname, pubkey)
-      d = enablePubkey(reactor, opts, config, nickname, pubkey)
+      print('enabling', pkobj['chainName'], pkobj['nickname'], pkobj['pubkey'])
+      d = enablePubkey(reactor, opts, config, pkobj['nickname'], pkobj['pubkey'])
       d.addErrback(showError)
       d.addCallback(doLatest)
     except Exception as e:
@@ -386,10 +388,11 @@ def main():
         config = json.loads(f.read())
         try:
           f = open(pubkeyDatabase(o['home']))
-          pknicks = netstring.decode(f.read())
+          pkobjs_str = f.read().strip(', \r\n');
+          pkobjs = json.loads('[' + pkobjs_str + ']')
         except FileNotFoundError:
           return
-        react(doEnablePubkeys, ({**o, **o.subOptions}, config, pknicks))
+        react(doEnablePubkeys, ({**o, **o.subOptions}, config, pkobjs))
     elif o.subCommand == 'start':
         react(run_server, ({**o, **o.subOptions},))
     else:
