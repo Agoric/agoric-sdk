@@ -513,6 +513,10 @@ export default function buildKernel(kernelEndowments, initialState='{}') {
       ephemeral.log.push(`${str}`);
     },
 
+    getState() {
+      return kernelKeeper.getState();
+    },
+
     dump() {
       const stateDump = kernelKeeper.dump();
       // note: dump().log is not deterministic, since log() does not go
