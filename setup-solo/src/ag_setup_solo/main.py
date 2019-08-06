@@ -15,7 +15,6 @@ MAILBOX_URL = u"ws://relay.magic-wormhole.io:4000/v1"
 #MAILBOX_URL = u"ws://10.0.2.24:4000/v1"
 APPID = u"agoric.com/ag-testnet1/provisioning-tool"
 NETWORK_CONFIG = "https://testnet.agoric.com/network-config"
-DEFAULT_SWINGSTATE_JSON = json.dumps({"mailbox": {}, "kernel": {}})
 
 # Locate the ag-solo binary.
 # Look up until we find a different bin directory.
@@ -71,33 +70,44 @@ def doInit(o):
 def main():
     o = Options()
     o.parseOptions()
-    pkeyFile = o['basedir'] + '/ag-cosmos-helper-address'
-    # If it doesn't exist, run the ag-solo init.
-    if os.path.exists(pkeyFile):
-        print(pkeyFile + ' already exists!')
-        yesno = input('Type "yes" to reset state from ' + o['netconfig'] + ', anything else cancels: ')
-        if yesno.strip() != 'yes':
-            print('Cancelling!')
-            sys.exit(1)
-        
-        resp = urllib.request.urlopen(o['netconfig'])
-        encoding = resp.headers.get_content_charset('utf-8')
-        decoded = resp.read().decode(encoding)
-        netconfig = json.loads(decoded)
-
-        # Truncate the default swingstate.json.
-        # FIXME: It would be nicer if SwingSet state was kept in its own
-        # directory, then we could just shutil.rmtree(it).
-        with open(os.path.join(o['basedir'], 'swingstate.json'), 'w') as f:
-          f.write(DEFAULT_SWINGSTATE_JSON)
-
-        setIngressAndRestart(netconfig)
-    else:
+    pkeyFile = os.path.join(o['basedir'], 'ag-cosmos-helper-address')
+    # If the public key file does not exist, just init and run.
+    if not os.path.exists(pkeyFile):
         doInit(o)
 
-    # read the pubkey out of BASEDIR/ag-cosmos-helper-address
-    pkfile = open(pkeyFile)
-    pubkey = pkfile.read()
-    pkfile.close()
-    pubkey = pubkey.strip()
-    react(run_client, (o,pubkey))
+        # read the pubkey out of BASEDIR/ag-cosmos-helper-address
+        pkfile = open(pkeyFile)
+        pubkey = pkfile.read()
+        pkfile.close()
+        pubkey = pubkey.strip()
+        react(run_client, (o,pubkey))
+        sys.exit(1)
+
+    yesno = input('Type "yes" to reset state from ' + o['netconfig'] + ', anything else cancels: ')
+    if yesno.strip() != 'yes':
+        print('Cancelling!')
+        sys.exit(1)
+
+    # Blow away everything except the key file and state dir.
+    helperStateDir = os.path.join(o['basedir'], 'ag-cosmos-helper-statedir')
+    for name in os.listdir(o['basedir']):
+      p = os.path.join(o['basedir'], name)
+      if p == pkeyFile or p == helperStateDir:
+        continue
+      if os.path.isdir(p) and not os.path.islink(p):
+        shutil.rmtree(p)
+      else:
+        os.remove(p)
+
+    # Upgrade the ag-solo files.
+    doInit(o)
+
+    # Download the netconfig.
+    print('downloading netconfig from', o['netconfig'])
+    resp = urllib.request.urlopen(o['netconfig'])
+    encoding = resp.headers.get_content_charset('utf-8')
+    decoded = resp.read().decode(encoding)
+    netconfig = json.loads(decoded)
+
+    setIngressAndRestart(netconfig)
+    sys.exit(1)
