@@ -60,8 +60,25 @@ function makeKernelKeeper(initialState) {
     return state.kernelPromises.hasOwnProperty(Nat(kernelPromiseID));
   }
 
+  function replaceKernelPromise(kernelPromiseID, p) {
+    state.kernelPromises[Nat(kernelPromiseID)] = p;
+  }
+
   function deleteKernelPromiseData(kernelPromiseID) {
     delete state.kernelPromises[Nat(kernelPromiseID)];
+  }
+
+  function addMessageToPromiseQueue(kernelPromiseID, msg) {
+    const p = state.kernelPromises[Nat(kernelPromiseID)];
+    if (p === undefined) {
+      throw new Error(`unknown kernelPromise id '${kernelPromiseID}'`);
+    }
+    if (p.state !== 'unresolved') {
+      throw new Error(
+        `kernelPromise[${kernelPromiseID}] is '${p.state}', not 'unresolved'`,
+      );
+    }
+    p.queue.push(msg);
   }
 
   function addSubscriberToPromise(kernelPromiseID, vatID) {
@@ -69,15 +86,9 @@ function makeKernelKeeper(initialState) {
     if (p === undefined) {
       throw new Error(`unknown kernelPromise id '${kernelPromiseID}'`);
     }
-    const s = p.subscribers;
-    const subscribersSet = new Set(s.subscribers);
+    const subscribersSet = new Set(p.subscribers);
     subscribersSet.add(vatID);
-    p.subscribersSet = Array.from(subscribersSet);
-  }
-
-  function getSubscribers(kernelPromiseID) {
-    const p = state.kernelPromises[Nat(kernelPromiseID)];
-    return new Set(p.subscribers);
+    p.subscribers = Array.from(subscribersSet);
   }
 
 
@@ -208,9 +219,8 @@ function makeKernelKeeper(initialState) {
       const p = kernelPromises[id];
       const kp = { id: Number(id) };
       Object.defineProperties(kp, Object.getOwnPropertyDescriptors(p));
-      const subscribers = getSubscribers(kp.id);
-      if (subscribers) {
-        kp.subscribers = Array.from(subscribers);
+      if (p.subscribers) {
+        kp.subscribers = Array.from(p.subscribers);
       }
       promises.push(kp);
     });
@@ -233,9 +243,10 @@ function makeKernelKeeper(initialState) {
     addKernelPromise,
     getKernelPromise,
     hasKernelPromise,
+    replaceKernelPromise,
     deleteKernelPromiseData,
+    addMessageToPromiseQueue,
     addSubscriberToPromise,
-    getSubscribers,
 
     addToRunQueue,
     isRunQueueEmpty,
