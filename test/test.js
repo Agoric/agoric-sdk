@@ -12,6 +12,22 @@ if (typeof window !== 'undefined') {
   });
 }
 
+test('reject/resolve returns undefined', async t => {
+  try {
+    const EPromise = maybeExtendPromise(Promise);
+    const ret = await EPromise.makeHandled((resolve, reject) => {
+      t.equal(resolve(123), undefined, 'resolver undefined');
+      t.equal(reject(999), undefined, 'rejector undefined');
+    });
+    t.equal(ret, 123, 'resolved value');
+  } catch (e) {
+    console.log('unexpected exception', e);
+    t.assert(false, e);
+  } finally {
+    t.end();
+  }
+});
+
 test('handlers are always async', async t => {
   try {
     const EPromise = maybeExtendPromise(Promise);
