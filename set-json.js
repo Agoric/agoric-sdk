@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// Run as: ./set-json MY.json abc=123 'def.ghi="string"'
+// Run as: ./set-json.js SOMETHING.json abc=123 'def.ghi="string"'
 const process = require('process');
 const fs = require('fs');
 
