@@ -1,6 +1,7 @@
 # Agoric's Cosmic SwingSet
 
-TL;DR: Ask for a public testnet provisioning code, then run:
+TL;DR: Request a public testnet provisioning code from https://testnet.agoric.com/, and
+after you have received the code run:
 
 ```
 $ SOLO_NAME=han ./docker/ag-setup-solo --pull
@@ -24,51 +25,6 @@ configuration scenarios for how that solo node interacts with a testnet:
 ]**
 
 <details>
-  <summary>Scenario 0: a public testnet (kick the tires)</summary>
-
-  To run the solo node using the current directory's source code against a public testnet, use:
-  ```
-  $ make scenario0-setup
-  $ make scenario0-run-client
-  ```
-
-  Alternatively, running the solo node from a Docker image and no local source code is described in the [top section](#agorics-cosmic-swingset).  
-</details>
-<details>
-  <summary>Scenario 1: your own local testnet (develop testnet provisioner)</summary>
-
-  This scenario is only useful for moving toward deploying the local source code as a new testnet.  Before using this scenario, you should test your on-chain code under Scenario 2.
-  
-  ```
-  make scenario1-setup
-  make scenario1-run-chain
-  ```
-
-  Wait until the bootstrap produces a provisioning server URL and visit it.  Then run in another terminal:
-
-  ```
-  make scenario1-run-client
-  ```
-
-  See [Testnet Tutorial](#testnet-tutorial) for more guidance.
-</details>
-<details>
-  <summary>Scenario 2: a single local testnet node (develop on-chain demo)</summary>
-
-  Before using this scenario, you should test your off-chain code under Scenario 3.
-
-  Run:
-  ```
-  $ make scenario2-setup
-  $ make scenario2-run-chain
-  ```
-  Wait about 5 seconds for the chain to produce its first block, then switch to another terminal:
-  ```
-  $ make scenario2-run-client
-  ```
-  
-</details>
-<details>
   <summary>Scenario 3: no testnet (develop off-chain demo)</summary>
 
   Test the demo code without interacting with a blockchain.
@@ -91,6 +47,51 @@ The REPL handler is in `lib/ag-solo/vats/vat-http.js`.
 The HTML frontend code is pure JS/DOM (no additional libraries yet), in
 `lib/ag-solo/html/index.html` and `lib/ag-solo/html/main.js`.
 
+</details>
+<details>
+  <summary>Scenario 2: a single local testnet node (develop on-chain demo)</summary>
+
+  Before using this scenario, you should test your off-chain code under Scenario 3.
+
+  Run:
+  ```
+  $ make scenario2-setup
+  $ make scenario2-run-chain
+  ```
+  Wait about 5 seconds for the chain to produce its first block, then switch to another terminal:
+  ```
+  $ make scenario2-run-client
+  ```
+  
+</details>
+<details>
+  <summary>Scenario 1: your own local testnet (develop testnet provisioner)</summary>
+
+  This scenario is only useful for moving toward deploying the local source code as a new testnet.  Before using this scenario, you should test your on-chain code under Scenario 2.
+  
+  ```
+  make scenario1-setup
+  make scenario1-run-chain
+  ```
+
+  Wait until the bootstrap produces a provisioning server URL and visit it.  Then run in another terminal:
+
+  ```
+  make scenario1-run-client
+  ```
+
+  See [Testnet Tutorial](#testnet-tutorial) for more guidance.
+</details>
+<details>
+  <summary>Scenario 0: a public testnet (kick the tires)</summary>
+
+  To run the solo node using the current directory's source code against a public testnet, use:
+  ```
+  $ make scenario0-setup
+  $ make scenario0-run-client
+  ```
+
+  Alternatively, running the solo node from a Docker image and no local source code is described in the [top section](#agorics-cosmic-swingset).  
 </details>
 
 Now go to https://localhost:8000/ to interact with your new solo node.
