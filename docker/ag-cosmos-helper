@@ -37,6 +37,6 @@ rest-server)
   ;;
 esac
 
-exec docker run -i --net=host $FLAGS --entrypoint="$ENTRY" \
+exec docker run -i $FLAGS --entrypoint="$ENTRY" \
   --volume=ag-cosmos-helper-state:/root/.ag-cosmos-helper \
   --rm "$IMAGE"$ARGS ${1+"$@"}
