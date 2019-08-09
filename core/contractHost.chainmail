@@ -33,7 +33,7 @@ interface ContractHost {
    * Seat.
    */
   getInviteIssuer() -> (Issuer);
-};
+}
 
 /**
   * An installation of a Contract can spawn multiple copies each with the same
@@ -52,7 +52,7 @@ interface Installation {
    * Create a new InviteMaker, then call the Contract's start() method and
    * return its results. The results are often a collection of seat invitations
    * for the seats in the contract, but see coveredCall for an exception.
-   *
+   */
   spawn(terms :Terms) -> (invites :Object);
 
  /**
@@ -67,7 +67,7 @@ interface Installation {
   * they're attempting to participate in, and which seat they are taking.
   */
   checkAmount(installation :Installation, inviteAmount :Amount, terms :Terms);
-};
+}
 
 /**
   * Contracts are pass-by-text.

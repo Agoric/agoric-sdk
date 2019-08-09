@@ -15,8 +15,11 @@ struct Amount (Quantity, Label) {
  * strings naming a particular right, or an arbitrary object that sensibly
  * represents the rights at issue. All Amounts made by the same Assay have the
  * same label.
+ *
+ * Quantity must be Comparable. (This IDL doesn't yet provide a way to specify
+ * subtype relationships for structs.)
  */
-struct Quantity extends (Comparable) {
+struct Quantity {
 }
 
 /**
@@ -80,7 +83,7 @@ interface Assay (Amount (Quantity, Label)) {
    * in rightAmount. If leftAmount doesn't include rightAmout, throw an error.
    */
   without(leftAmount :Amount, rightAmount :Amount) -> (Amount);
-};
+}
 
 /**
  * The label for an amount identifies the issuer, and includes a description of
@@ -96,8 +99,13 @@ struct Label {
   description :Description;
 }
 
-/** Human-readable description of a kind of rights. */
-struct Description extends (Comparable) {
+/**
+ * Human-readable description of a kind of rights.
+ *
+ * The Descriptions must be Comparables. (This IDL doesn't yet provide a way to
+ * specify subtype relationships for structs.)
+ */
+struct Description {
 }
 
 /**
