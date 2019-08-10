@@ -99,6 +99,10 @@ Unrecognized amount: ${amount}`;
       return assay.quantity(leftAmount) >= assay.quantity(rightAmount);
     },
 
+    equals(leftAmount, rightAmount) {
+      return assay.quantity(leftAmount) === assay.quantity(rightAmount);
+    },
+
     // Set union of erights.
     // Describe all the erights described by `leftAmount` and those
     // described by `rightAmount`.
@@ -194,6 +198,13 @@ Unrecognized amount: ${amount}`;
           return true;
         }
         return sameStructure(leftQuant, rightQuant);
+      },
+
+      equals(leftAmount, rightAmount) {
+        return (
+          assay.includes(leftAmount, rightAmount) &&
+          assay.includes(rightAmount, leftAmount)
+        );
       },
 
       with(leftAmount, rightAmount) {

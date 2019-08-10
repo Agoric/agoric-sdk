@@ -70,6 +70,12 @@ interface Assay (Amount (Quantity, Label)) {
   /** Returns true if the leftAmount contains the rightAmount. */
   includes(leftAmount :Amount, rightAmount :Amount) -> (boolean);
 
+  /** 
+   * Returns true if the leftAmount equals the rightAmount. We assume
+   * that if includes is true in both directions, equals is also true 
+   */
+  equals(leftAmount :Amount, rightAmount :Amount) -> (boolean);
+
   /**
    * Returns a new amount that includes both leftAmount and rightAmount.
    *

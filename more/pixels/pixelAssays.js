@@ -86,6 +86,13 @@ function makePixelListAssayMaker(canvasSize) {
         return includesPixelList(leftPixelList, rightPixelList);
       },
 
+      equals(leftAmount, rightAmount) {
+        return (
+          assay.includes(leftAmount, rightAmount) &&
+          assay.includes(rightAmount, leftAmount)
+        );
+      },
+
       // set union
       with(leftAmount, rightAmount) {
         const leftPixelList = assay.quantity(leftAmount);
