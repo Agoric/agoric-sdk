@@ -4,59 +4,50 @@
 import harden from '@agoric/harden';
 import { makeCollect } from '../../../core/contractHost';
 
-let storedExclusivePayment;
+let storedERTPAsset;
+let storedPixels;
 
 function makeBobMaker(E, log) {
   return harden({
     make(gallery) {
       const bob = harden({
-        /**
-         * This is not an imperative to Bob to buy something but rather
-         * the opposite. It is a request by a client to buy something from
-         * Bob, and therefore a request that Bob sell something. OO naming
-         * is a bit confusing here.
-         */
-        async receiveUseRight(useRightPaymentP) {
-          log('++ bob.receiveUseRight starting');
+        async receiveChildPayment(paymentP) {
+          log('++ bob.receiveChildPayment starting');
 
-          const { useRightIssuer } = await E(gallery).getIssuers();
-          const useRightPurse = E(useRightIssuer).makeEmptyPurse();
-          // TODO: does bob know the amount that he is getting?
-          // use getExclusive() instead
-          const exclusiveUseRightPaymentP = E(useRightIssuer).getExclusiveAll(
-            useRightPaymentP,
-          );
+          const { pixelIssuer: originalPixelIssuer } = await E(
+            gallery,
+          ).getIssuers();
+          const childIssuer = E(originalPixelIssuer).getChildIssuer();
+          const childPixelPurse = E(childIssuer).makeEmptyPurse();
 
           // putting it in a purse isn't useful but it allows us to
-          // test the functionality
-          await E(useRightPurse).depositAll(exclusiveUseRightPaymentP);
-          const payment = await E(useRightPurse).withdrawAll();
+          // test the functionality and exclusivity
 
-          const exclusivePayment = await E(useRightIssuer).getExclusiveAll(
-            payment,
-          );
+          await E(childPixelPurse).depositAll(paymentP);
+          const newPayment = await E(childPixelPurse).withdrawAll();
+
+          const useObj = await E(newPayment).getUse();
 
           // bob actually changes the color to light purple
-          const amountP = await E(gallery).changeColor(
-            exclusivePayment,
-            '#B695C0',
-          );
+          const amountP = await E(useObj).changeColorAll('#B695C0');
 
-          storedExclusivePayment = exclusivePayment;
+          storedERTPAsset = newPayment;
+          storedPixels = useObj;
           return amountP;
         },
-        async tryToColor() {
+        async tryToColorPixels() {
           // bob tries to change the color to light purple
-          const amountP = await E(gallery).changeColor(
-            storedExclusivePayment,
-            '#B695C0',
-          );
+          const amountP = await E(storedPixels).changeColorAll('#B695C0');
+          return amountP;
+        },
+        async tryToColorERTP() {
+          // bob tries to change the color to light purple
+          const pixels = await E(storedERTPAsset).getUse();
+          const amountP = await E(pixels).changeColorAll('#B695C0');
           return amountP;
         },
         async buyFromCorkBoard(handoffSvc, dustPurseP) {
-          const { pixelIssuer, dustIssuer, useRightIssuer } = await E(
-            gallery,
-          ).getIssuers();
+          const { pixelIssuer, dustIssuer } = await E(gallery).getIssuers();
           const collect = makeCollect(E, log);
           const boardP = E(handoffSvc).grabBoard('MeetPoint');
           const contractHostP = E(boardP).lookup('contractHost');
@@ -71,24 +62,56 @@ function makeBobMaker(E, log) {
 
           const exclusivePayment = await E(pixelPurseP).withdrawAll();
 
-          const { useRightPayment } = await E(gallery).split(exclusivePayment);
-          const exclusiveUseRightPaymentP = E(useRightIssuer).getExclusiveAll(
-            useRightPayment,
-          );
+          const useObj = await E(exclusivePayment).getUse();
+
           // bob tries to change the color to light purple
-          E(gallery)
-            .changeColor(exclusiveUseRightPaymentP, '#B695C0')
+          E(useObj)
+            .changeColorAll('#B695C0')
             .then(
               amountP => {
                 E(gallery)
-                  .getColor(amountP.quantity[0].x, amountP.quantity[0].y)
+                  .getPixelColor(amountP.quantity[0].x, amountP.quantity[0].y)
                   .then(color =>
                     log(`bob tried to color, and produced ${color}`),
                   );
               },
               rej => log('++ bob failed to color: ', rej),
             );
-          return { bobRefundP: dustRefundP, bobPixelP: exclusivePayment };
+          return harden({
+            bobRefundP: dustRefundP,
+            bobPixelP: exclusivePayment,
+          });
+        },
+        async receiveSuspiciousPayment(suspiciousPayment) {
+          log('++ bob.receiveSuspiciousPayment starting');
+
+          const { pixelIssuer: originalPixelIssuer } = await E(
+            gallery,
+          ).getIssuers();
+          const childIssuer = E(originalPixelIssuer).getChildIssuer();
+          const childPixelPurse = E(childIssuer).makeEmptyPurse();
+
+          // There are two ways that bob can test the validity of the
+          // payment.
+
+          // 1) He can try to deposit it in a purse whose
+          // issuer is a validated descendant of the originalPixelIssuer
+
+          try {
+            await E(childPixelPurse).depositAll(suspiciousPayment);
+          } catch (err) {
+            log('the payment could not be deposited in childPixelPurse');
+          }
+
+          // 2) He can see if the issuer of the payment is a
+          //    descendant of the originalPixelIssuer
+
+          const suspiciousIssuer = E(suspiciousPayment).getIssuer();
+          const isReal = await E(originalPixelIssuer).isDescendantIssuer(
+            suspiciousIssuer,
+          );
+
+          log(`is the issuer of the payment a real descendant? ${isReal}`);
         },
       });
       return bob;

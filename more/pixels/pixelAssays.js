@@ -20,15 +20,8 @@ import {
 // This is less than ideal for efficiency and expressiveness but will
 // do for now
 
-// a label is an object w/ the properties 'issuer' and 'description'
-// issuer is an obj with methods like getExclusive & getEmptyPurse
-// description is a string
-
-// our PixelLists should have the same issuer and the same description
-// the description is "pixelList"
-
-function makeAbstractPixelListAssayMaker(canvasSize) {
-  function makeAbstractPixelListAssay(pixelLabel) {
+function makePixelListAssayMaker(canvasSize) {
+  function makePixelListAssay(pixelLabel) {
     mustBeComparable(pixelLabel);
 
     const brand = new WeakSet();
@@ -37,7 +30,7 @@ function makeAbstractPixelListAssayMaker(canvasSize) {
     const emptyAmount = harden({ label: pixelLabel, quantity: [] });
     brand.add(emptyAmount);
 
-    const assay = {
+    const assay = harden({
       getLabel() {
         return pixelLabel;
       },
@@ -115,75 +108,11 @@ function makeAbstractPixelListAssayMaker(canvasSize) {
 
         return assay.make(harden(resultPixelList));
       },
-    };
+    });
     return harden(assay);
   }
-  return harden(makeAbstractPixelListAssay);
+  return harden(makePixelListAssay);
 }
-harden(makeAbstractPixelListAssayMaker);
+harden(makePixelListAssayMaker);
 
-function makeCompoundPixelAssayMaker(canvasSize) {
-  const superPixelAssayMaker = makeAbstractPixelListAssayMaker(canvasSize);
-  function makeCompoundPixelAssay(pixelLabel) {
-    const superPixelAssay = superPixelAssayMaker(pixelLabel);
-    const compoundPixelAssay = harden({
-      ...superPixelAssay,
-      // my pixelList of length one : [ {x: 0, y:0 }] should turn
-      // into two amounts: useRights [{ x: 0, y: 0}] and
-      // transferRights [{ x: 0, y: 0 }]
-
-      // pixelListAmount -> useRightsAmount and transferRightsAmount
-      toTransferAndUseRights(srcAmount, useRightAssay, transferRightAssay) {
-        const srcPixelList = compoundPixelAssay.quantity(srcAmount);
-
-        const useAmount = useRightAssay.make(harden(srcPixelList));
-        const transferAmount = transferRightAssay.make(harden(srcPixelList));
-
-        return harden({
-          transferAmount,
-          useAmount,
-        });
-      },
-    });
-    return compoundPixelAssay;
-  }
-  return harden(makeCompoundPixelAssay);
-}
-harden(makeCompoundPixelAssayMaker);
-
-function makeTransferRightPixelAssayMaker(canvasSize) {
-  const superPixelAssayMaker = makeAbstractPixelListAssayMaker(canvasSize);
-  function makeTransferAssay(pixelLabel) {
-    const superPixelAssay = superPixelAssayMaker(pixelLabel);
-    const transferAssay = harden({
-      ...superPixelAssay,
-      toPixel(transferAmount, pixelAssay) {
-        const quantity = transferAssay.quantity(transferAmount);
-        const pixelAmount = pixelAssay.make(harden(quantity));
-        return pixelAmount;
-      },
-    });
-    return transferAssay;
-  }
-  return harden(makeTransferAssay);
-}
-harden(makeTransferRightPixelAssayMaker);
-
-function makeUseRightPixelAssayMaker(canvasSize) {
-  const superPixelAssayMaker = makeAbstractPixelListAssayMaker(canvasSize);
-  function makeUseAssay(pixelLabel) {
-    const superPixelAssay = superPixelAssayMaker(pixelLabel);
-    const useAssay = harden({
-      ...superPixelAssay,
-    });
-    return useAssay;
-  }
-  return harden(makeUseAssay);
-}
-harden(makeUseRightPixelAssayMaker);
-
-export {
-  makeCompoundPixelAssayMaker,
-  makeTransferRightPixelAssayMaker,
-  makeUseRightPixelAssayMaker,
-};
+export { makePixelListAssayMaker };

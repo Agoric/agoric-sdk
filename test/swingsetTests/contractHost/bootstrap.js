@@ -85,12 +85,12 @@ function build(E, log) {
   function trivialContractTest(host) {
     log('starting trivialContractTest');
 
-    const trivContract = {
+    const trivContract = harden({
       start: (terms, inviteMaker) => {
         return inviteMaker.make('foo', 8);
       },
-    };
-    const contractSrcs = { start: `${trivContract.start} ` };
+    });
+    const contractSrcs = harden({ start: `${trivContract.start} ` });
 
     const installationP = E(host).install(contractSrcs);
 

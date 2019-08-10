@@ -10,7 +10,7 @@ import { mustBeSameStructure } from '../util/sameStructure';
 // Rather, Alice and Bob are left and right respectively. Money represents the
 // rights transferred from left to right, and Stock represents the rights
 // transferred from right to left.
-const escrowExchange = {
+const escrowExchange = harden({
   start: (terms, inviteMaker) => {
     const { left: moneyNeeded, right: stockNeeded } = terms;
 
@@ -122,12 +122,12 @@ const escrowExchange = {
 
     return seat === 'left' ? allegedSeat.right : allegedSeat.left;
   },
-};
+});
 
-const escrowExchangeSrcs = {
+const escrowExchangeSrcs = harden({
   start: `${escrowExchange.start}`,
   checkAmount: `${escrowExchange.checkAmount}`,
   checkPartialAmount: `${escrowExchange.checkPartialAmount}`,
-};
+});
 
 export { escrowExchangeSrcs };

@@ -15,7 +15,12 @@ function build(E, log) {
     const aliceP = E(aliceMaker).make(gallery.userFacet);
     const alicePixelAmount = await E(aliceP).doChangeColor();
     const rawPixel = alicePixelAmount.quantity[0];
-    log(`current color ${gallery.userFacet.getColor(rawPixel.x, rawPixel.y)}`);
+    log(
+      `current color ${gallery.userFacet.getPixelColor(
+        rawPixel.x,
+        rawPixel.y,
+      )}`,
+    );
     log(`pixel index is ${gallery.adminFacet.reportPosition(rawPixel)}`);
   }
   async function testAliceSendsOnlyUseRight(aliceMaker, bobMaker, gallery) {
@@ -28,7 +33,8 @@ function build(E, log) {
     log('starting testGalleryRevokes');
     const aliceP = E(aliceMaker).make(gallery.userFacet);
     const rawPixel = await E(aliceP).doTapFaucetAndStore();
-    gallery.adminFacet.revokePixel(rawPixel);
+    const galleryPayment = gallery.adminFacet.getPayment(rawPixel);
+    E(galleryPayment).revokeChildren();
     E(aliceP).checkAfterRevoked();
   }
   async function testAliceSellsAndBuys(aliceMaker, bobMaker, gallery) {
@@ -61,6 +67,21 @@ function build(E, log) {
     );
   }
 
+  async function testAliceCreatesFakeChild(aliceMaker, bobMaker, gallery) {
+    log('starting testAliceCreatesFakeChild');
+    const { userFacet } = gallery;
+    const aliceP = E(aliceMaker).make(userFacet);
+    const bobP = E(bobMaker).make(userFacet);
+    await E(aliceP).doCreateFakeChild(bobP);
+  }
+
+  async function testSpendAndRevoke(aliceMaker, gallery) {
+    log('starting testSpendAndRevoke');
+    const { userFacet } = gallery;
+    const aliceP = E(aliceMaker).make(userFacet);
+    await E(aliceP).doSpendAndRevoke();
+  }
+
   const obj0 = {
     async bootstrap(argv, vats) {
       const canvasSize = 10;
@@ -79,12 +100,12 @@ function build(E, log) {
           stateChangeHandler,
           canvasSize,
         );
-        return {
+        return harden({
           host,
           aliceMaker,
           bobMaker,
           gallery,
-        };
+        });
       }
 
       switch (argv[0]) {
@@ -121,6 +142,16 @@ function build(E, log) {
           const { aliceMaker, bobMaker, gallery } = await makeStartingObjs();
           const handoffSvc = await E(vats.handoff).makeHandoffService();
           return testAliceSellsToBob(aliceMaker, bobMaker, gallery, handoffSvc);
+        }
+        case 'aliceCreatesFakeChild': {
+          log('starting aliceCreatesFakeChild');
+          const { aliceMaker, bobMaker, gallery } = await makeStartingObjs();
+          return testAliceCreatesFakeChild(aliceMaker, bobMaker, gallery);
+        }
+        case 'spendAndRevoke': {
+          log('starting spendAndRevoke');
+          const { aliceMaker, gallery } = await makeStartingObjs();
+          return testSpendAndRevoke(aliceMaker, gallery);
         }
         default: {
           throw new Error(`unrecognized argument value ${argv[0]}`);

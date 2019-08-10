@@ -54,8 +54,7 @@ interface Issuer (Amount (Quantity)) {
 interface MintMaker {
   makeMint(
       description :Comparable,
-      makeMintController :MintControllerMaker,
-      makeAssay :AssayMaker) -> (Mint);
+      makeConfig :MintConfigMaker) -> (Mint);
 }
 
 /**
@@ -73,18 +72,6 @@ interface Mint (Amount (Quantity)) {
    * purse'.
    */
   mint(initialBalance :Amount, name :String = 'a purse') -> (Purse);
-
-  /** Reset all purses and payments to contain nothing. */
-  destroyAll();
-
-  /** (Non-fungible amounts only) Ensure no purse or payment contains amount. */
-  destroy(amount :Amount);
-
-  /**
-   * Destroy any purses or payments containing amount, then issue a new Purse
-   * with that amount.
-   */
-  revoke(amount :Amount) -> (Purse);
 }
 
 /**

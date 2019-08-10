@@ -10,7 +10,7 @@ function build(E) {
     E(bobMaker).make(bobDoughPurseP);
   }
 
-  const obj0 = {
+  const obj0 = harden({
     async bootstrap(argv, vats) {
       switch (argv[0]) {
         case 'corrupted-presence': {
@@ -23,7 +23,7 @@ function build(E) {
         }
       }
     },
-  };
+  });
   return harden(obj0);
 }
 

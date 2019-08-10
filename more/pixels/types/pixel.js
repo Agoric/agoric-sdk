@@ -1,4 +1,5 @@
 import Nat from '@agoric/nat';
+import harden from '@agoric/harden';
 
 import { insist } from '../../../util/insist';
 
@@ -33,6 +34,18 @@ function isLessThanOrEqual(leftPixel, rightPixel) {
   return leftPixel.x <= rightPixel.x && leftPixel.y <= rightPixel.y;
 }
 
+function getDistance(a, b) {
+  const { x: xA, y: yA } = a;
+  const { x: xB, y: yB } = b;
+  return Math.floor(Math.sqrt((xA - xB) ** 2 + (yA - yB) ** 2));
+}
+
+function getDistanceFromCenter(pixel, canvasSize = 10) {
+  const centerCoord = Math.floor(canvasSize / 2);
+  const center = harden({ x: centerCoord, y: centerCoord });
+  return getDistance(pixel, center);
+}
+
 function getString(pixel) {
   return `x${pixel.x}y${pixel.y}`;
 }
@@ -43,4 +56,6 @@ export {
   isEqual,
   isLessThanOrEqual,
   getString,
+  getDistance,
+  getDistanceFromCenter,
 };

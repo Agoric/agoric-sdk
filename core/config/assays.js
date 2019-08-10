@@ -3,12 +3,12 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-import { insist } from '../util/insist';
+import { insist } from '../../util/insist';
 import {
   sameStructure,
   mustBeSameStructure,
   mustBeComparable,
-} from '../util/sameStructure';
+} from '../../util/sameStructure';
 
 // This assays.js module treats labels as black boxes. It is not aware
 // of issuers, and so can handle labels whose issuers are merely

@@ -7,8 +7,12 @@ import { insist } from '../../../util/insist';
 import { makeCollect } from '../../../core/contractHost';
 import { escrowExchangeSrcs } from '../../../core/escrow';
 
-let storedUseRight;
-let storedTransferRight;
+// only used by doCreateFakeChild test below
+import { makeMint } from '../../../core/issuers';
+import { makePixelConfigMaker } from '../../../more/pixels/pixelConfig';
+
+let storedUseObj;
+let storedERTPAsset;
 
 function makeAliceMaker(E, log, contractHost) {
   const collect = makeCollect(E, log);
@@ -45,7 +49,7 @@ function makeAliceMaker(E, log, contractHost) {
             );
           const pixelPurseP = E(pixelIssuer).makeEmptyPurse();
           collect(seatP, dustPurseP, pixelPurseP, 'alice escrow');
-          return { buyerInviteP, contractHost };
+          return harden({ buyerInviteP, contractHost });
         });
       }
 
@@ -58,156 +62,104 @@ function makeAliceMaker(E, log, contractHost) {
         async doChangeColor() {
           log('++ alice.doChangeColor starting');
           const pixelPaymentP = E(gallery).tapFaucet();
+          const pixels = E(pixelPaymentP).getUse();
+          const changedAmount = await E(pixels).changeColorAll('#000000');
           log('tapped Faucet');
-
-          const pixelIssuer = E(pixelPaymentP).getIssuer();
-          const exclusivePixelPaymentP = E(pixelIssuer).getExclusiveAll(
-            pixelPaymentP,
-          );
-
-          const useRightTransferRightBundleP = await E(gallery).split(
-            exclusivePixelPaymentP,
-          );
-
-          const {
-            useRightPayment: useRightPaymentP,
-          } = useRightTransferRightBundleP;
-
-          const useRightIssuer = E(useRightPaymentP).getIssuer();
-          const exclusiveUseRightPaymentP = E(useRightIssuer).getExclusiveAll(
-            useRightPaymentP,
-          );
-
-          const changedAmount = await E(gallery).changeColor(
-            exclusiveUseRightPaymentP,
-            '#000000',
-          );
           return changedAmount;
         },
         async doSendOnlyUseRight(bob) {
           log('++ alice.doOnlySendUseRight starting');
           const pixelPaymentP = E(gallery).tapFaucet();
           log('tapped Faucet');
-
-          const pixelIssuer = E(pixelPaymentP).getIssuer();
-          const exclusivePixelPaymentP = await E(pixelIssuer).getExclusiveAll(
-            pixelPaymentP,
-          );
-
-          const amount = await E(exclusivePixelPaymentP).getBalance();
-
-          const rawPixel = amount.quantity[0];
-
-          const origColor = await E(gallery).getColor(rawPixel.x, rawPixel.y);
+          const pixels = E(pixelPaymentP).getUse();
+          const rawPixels = await E(pixels).getRawPixels();
+          const rawPixel = rawPixels[0];
+          const origColors = await E(pixels).getColors();
 
           log(
-            `pixel x:${rawPixel.x}, y:${rawPixel.y} has original color ${origColor}`,
+            `pixel x:${rawPixel.x}, y:${rawPixel.y} has original color ${origColors[0].color}`,
           );
 
-          const {
-            useRightPayment: useRightPaymentP,
-            transferRightPayment: transferRightPaymentP,
-          } = await E(gallery).split(exclusivePixelPaymentP);
+          // create child use object and send to bob
+          // keep the original ERTP object and use right obj
 
-          const useRightIssuer = E(useRightPaymentP).getIssuer();
-          const exclusiveUseRightPaymentP = E(useRightIssuer).getExclusiveAll(
-            useRightPaymentP,
-          );
+          const childPayment = await E(pixelPaymentP).getChildPayment();
+          const childPayment2 = await E(pixelPaymentP).getChildPayment();
 
-          const transferRightIssuer = E(transferRightPaymentP).getIssuer();
-          const exclusiveTransferRightPaymentP = E(
-            transferRightIssuer,
-          ).getExclusiveAll(transferRightPaymentP);
+          const result = await E(bob).receiveChildPayment(childPayment);
 
-          // we have gotten exclusive access to both the useRight and
-          // the transferRight payments.
+          // check that Alice's childPayment and childPayment2 are
+          // both the same thing and both are empty.
 
-          // send useRightPayment to Bob
-          // Alice keeps transferRightPayment
-          const result = await E(bob).receiveUseRight(
-            exclusiveUseRightPaymentP,
-          );
+          showPaymentBalance('childPayment', childPayment);
+          showPaymentBalance('childPayment2', childPayment2);
+
           const bobsRawPixel = result.quantity[0];
           insist(
             bobsRawPixel.x === rawPixel.x && bobsRawPixel.y === rawPixel.y,
           );
-          const bobsColor = await E(gallery).getColor(rawPixel.x, rawPixel.y);
+          const bobsColor = await E(gallery).getPixelColor(
+            rawPixel.x,
+            rawPixel.y,
+          );
           log(
             `pixel x:${rawPixel.x}, y:${rawPixel.y} changed to bob's color ${bobsColor}`,
           );
 
           // alice takes the right back
-          const pixelPayment2P = await E(gallery).toPixel(
-            exclusiveTransferRightPaymentP,
-          );
-          const exclusivePixelPayment2P = await E(pixelIssuer).getExclusiveAll(
-            pixelPayment2P,
-          );
-          const { useRightPayment: useRightPayment2P } = await E(gallery).split(
-            exclusivePixelPayment2P,
-          );
-
-          const exclusiveUseRightPayment2P = await E(
-            useRightIssuer,
-          ).getExclusiveAll(useRightPayment2P);
-
-          await E(gallery).changeColor(
-            exclusiveUseRightPayment2P,
+          await E(pixelPaymentP).revokeChildren();
+          await E(pixels).changeColorAll(
             '#9FBF95', // a light green
           );
 
-          const alicesColor = await E(gallery).getColor(rawPixel.x, rawPixel.y);
+          const alicesColor = await E(gallery).getPixelColor(
+            rawPixel.x,
+            rawPixel.y,
+          );
           log(
             `pixel x:${rawPixel.x}, y:${rawPixel.y} changed to alice's color ${alicesColor}`,
           );
 
           // tell bob to try to color, he can't
-          return E(bob)
-            .tryToColor()
-            .then(
-              _res => log('uh oh, bob was able to color'),
-              rej => log(`bob was unable to color: ${rej}`),
-            );
+
+          try {
+            await E(bob)
+              .tryToColorPixels()
+              .then(
+                _res => log('uh oh, bob was able to color'),
+                rej => log(`bob was unable to color: ${rej}`),
+              );
+          } catch (err) {
+            log(err);
+          }
+
+          try {
+            await E(bob)
+              .tryToColorERTP()
+              .then(
+                _res => log('uh oh, bob was able to color'),
+                rej => log(`bob was unable to color: ${rej}`),
+              );
+          } catch (err) {
+            log(err);
+          }
         },
         async doTapFaucetAndStore() {
           log('++ alice.doTapFaucetAndStore starting');
-          const pixelPaymentP = E(gallery).tapFaucet();
-          const { pixelIssuer, useRightIssuer, transferRightIssuer } = await E(
-            gallery,
-          ).getIssuers();
-          const exclusivePixelPaymentP = await E(pixelIssuer).getExclusiveAll(
-            pixelPaymentP,
-          );
+          const pixelPayment = await E(gallery).tapFaucet();
 
-          const {
-            useRightPayment: useRightPaymentP,
-            transferRightPayment: transferRightPaymentP,
-          } = await E(gallery).split(exclusivePixelPaymentP);
+          storedUseObj = E(pixelPayment).getUse();
+          storedERTPAsset = pixelPayment;
 
-          const exclusiveUseRightPaymentP = E(useRightIssuer).getExclusiveAll(
-            useRightPaymentP,
-          );
-
-          const exclusiveTransferRightPaymentP = E(
-            transferRightIssuer,
-          ).getExclusiveAll(transferRightPaymentP);
-
-          storedUseRight = exclusiveUseRightPaymentP;
-          storedTransferRight = exclusiveTransferRightPaymentP;
-
-          const amount = await E(storedUseRight).getBalance();
-
-          const rawPixel = amount.quantity[0];
-
-          return rawPixel;
+          const rawPixels = await E(storedUseObj).getRawPixels();
+          return rawPixels[0];
         },
         async checkAfterRevoked() {
           log('++ alice.checkAfterRevoked starting');
           // changeColor throws an Error with an empty payment
           // check transferRight is empty
-          E(gallery)
-            .changeColor(
-              storedUseRight,
+          E(storedUseObj)
+            .changeColorAll(
               '#9FBF95', // a light green
             )
             .then(
@@ -215,7 +167,7 @@ function makeAliceMaker(E, log, contractHost) {
               rej => log(`successfully threw ${rej}`),
             );
 
-          const amount = await E(storedTransferRight).getBalance();
+          const amount = await E(storedERTPAsset).getBalance();
           log(
             `amount quantity should be an array of length 0: ${amount.quantity.length}`,
           );
@@ -224,17 +176,16 @@ function makeAliceMaker(E, log, contractHost) {
           log('++ alice.doSellAndBuy starting');
           const pixelPaymentP = E(gallery).tapFaucet();
           const { pixelIssuer, dustIssuer } = await E(gallery).getIssuers();
-          const exclusivePixelPaymentP = await E(pixelIssuer).getExclusiveAll(
-            pixelPaymentP,
-          );
-          const amount = await E(exclusivePixelPaymentP).getBalance();
+
+          const amount = await E(pixelPaymentP).getBalance();
+
           // sellToGallery creates a escrow smart contract with the
           // terms of the amount parameter plus what the gallery is
           // willing to offer for it
           // sellToGallery returns an invite to the smart contract
           const { inviteP, host } = await E(gallery).sellToGallery(amount);
           const seatP = E(host).redeem(inviteP);
-          await E(seatP).offer(exclusivePixelPaymentP);
+          await E(seatP).offer(pixelPaymentP);
           const dustPurseP = E(dustIssuer).makeEmptyPurse();
           const pixelPurseP = E(pixelIssuer).makeEmptyPurse();
           await E(gallery).collectFromGallery(
@@ -267,12 +218,10 @@ function makeAliceMaker(E, log, contractHost) {
         async doTapFaucetAndOfferViaCorkboard(handoffSvc, dustPurseP) {
           log('++ alice.doTapFaucetAndOfferViaCorkboard starting');
           const { pixelIssuer } = await E(gallery).getIssuers();
-          const exclusivePixelPaymentP = await E(pixelIssuer).getExclusiveAll(
-            E(gallery).tapFaucet(),
-          );
+          const pixelPaymentP = E(gallery).tapFaucet();
 
           const { buyerInviteP } = await createSaleOffer(
-            exclusivePixelPaymentP,
+            pixelPaymentP,
             dustPurseP,
           );
 
@@ -285,12 +234,140 @@ function makeAliceMaker(E, log, contractHost) {
           );
 
           const pixelRefundP = E(pixelIssuer).makeEmptyPurse('refund');
-          return {
+          return harden({
             aliceRefundP: pixelRefundP,
             alicePaymentP: dustPurseP,
             buyerSeatReceipt,
             contractHostReceipt,
-          };
+          });
+        },
+        async doCreateFakeChild(bob) {
+          log('++ alice.doCreateFakeChild starting');
+          const { pixelIssuer } = await E(gallery).getIssuers();
+
+          // create a fake childMint controlled entirely by Alice
+          function makeUseObj(issuer, asset) {
+            const useObj = harden({
+              changeColor(amount, _newColor) {
+                return amount;
+              },
+              changeColorAll(newColor) {
+                return useObj.changeColor(asset.getBalance(), newColor);
+              },
+              getRawPixels() {
+                const assay = issuer.getAssay();
+                const pixelList = assay.quantity(asset.getBalance());
+                return pixelList;
+              },
+              getColors() {
+                const pixelList = useObj.getRawPixels();
+                const colors = [];
+                for (const pixel of pixelList) {
+                  colors.push(gallery.getPixelColor(pixel.x, pixel.y));
+                }
+                return colors;
+              },
+            });
+            return useObj;
+          }
+
+          const makePixelConfig = makePixelConfigMaker(
+            harden(makeUseObj),
+            10,
+            harden(pixelIssuer),
+          );
+
+          const fakeChildMint = makeMint('pixels', makePixelConfig);
+
+          // use the fakeChildMint to create a payment to trick Bob
+          const fakeChildIssuer = E(fakeChildMint).getIssuer();
+          const fakeChildAssay = await E(fakeChildIssuer).getAssay();
+          const fakeChildPurse = E(fakeChildMint).mint(
+            fakeChildAssay.make(harden([{ x: 0, y: 1 }])),
+          );
+          const fakeChildPayment = E(fakeChildPurse).withdrawAll();
+
+          await E(bob).receiveSuspiciousPayment(fakeChildPayment);
+
+          // Note that the gallery cannot revoke anything that Alice
+          // makes with her fakeChildMint, but this makes sense since
+          // it is not a real child.
+        },
+        async doSpendAndRevoke() {
+          // this tests how spending is related to revoking delegated
+          // rights
+          const pixelPaymentP = await E(gallery).tapFaucet();
+          const childPaymentP = E(pixelPaymentP).getChildPayment();
+          const grandchildPaymentP = E(childPaymentP).getChildPayment();
+
+          const { pixelIssuer } = await E(gallery).getIssuers();
+          const purseP = E(pixelIssuer).makeEmptyPurse();
+          const childIssuerP = E(pixelIssuer).getChildIssuer();
+          const childPurseP = E(childIssuerP).makeEmptyPurse();
+          const grandchildIssuerP = E(childIssuerP).getChildIssuer();
+          const grandchildPurseP = E(grandchildIssuerP).makeEmptyPurse();
+
+          showPaymentBalance('originalPixelPayment', pixelPaymentP);
+          showPaymentBalance('childPayment', childPaymentP);
+          showPaymentBalance('grandchildPayment', grandchildPaymentP);
+          showPaymentBalance('purse', purseP);
+          showPaymentBalance('childPurseP', childPurseP);
+          showPaymentBalance('grandchildPurseP', grandchildPurseP);
+
+          await E(childPurseP).depositAll(childPaymentP);
+
+          log('childPayment deposited in childPurse');
+
+          showPaymentBalance('originalPixelPayment', pixelPaymentP);
+          showPaymentBalance('childPayment', childPaymentP);
+          showPaymentBalance('grandchildPayment', grandchildPaymentP);
+          showPaymentBalance('purse', purseP);
+          showPaymentBalance('childPurseP', childPurseP);
+          showPaymentBalance('grandchildPurseP', grandchildPurseP);
+
+          await E(purseP).depositAll(pixelPaymentP);
+
+          log('originalPixelPayment deposited in purse');
+
+          showPaymentBalance('originalPixelPayment', pixelPaymentP);
+          showPaymentBalance('childPayment', childPaymentP);
+          showPaymentBalance('grandchildPayment', grandchildPaymentP);
+          showPaymentBalance('purse', purseP);
+          showPaymentBalance('childPurseP', childPurseP);
+          showPaymentBalance('grandchildPurseP', grandchildPurseP);
+
+          await E(grandchildPurseP).depositAll(grandchildPaymentP);
+
+          log('grandchildPayment deposited in grandchildPurse');
+
+          showPaymentBalance('originalPixelPayment', pixelPaymentP);
+          showPaymentBalance('childPayment', childPaymentP);
+          showPaymentBalance('grandchildPayment', grandchildPaymentP);
+          showPaymentBalance('purse', purseP);
+          showPaymentBalance('childPurseP', childPurseP);
+          showPaymentBalance('grandchildPurseP', grandchildPurseP);
+
+          await E(childPaymentP).revokeChildren(); // does nothing
+
+          log('childPayment.revokeChildren() does nothing');
+
+          showPaymentBalance('originalPixelPayment', pixelPaymentP);
+          showPaymentBalance('childPayment', childPaymentP);
+          showPaymentBalance('grandchildPayment', grandchildPaymentP);
+          showPaymentBalance('purse', purseP);
+          showPaymentBalance('childPurseP', childPurseP);
+          showPaymentBalance('grandchildPurseP', grandchildPurseP);
+
+          await E(purseP).revokeChildren(); // revokes childPurse and grandchildPurse
+
+          log('purse.revokeChildren() revokes childPurse and grandchildPurse');
+
+          showPaymentBalance('originalPixelPayment', pixelPaymentP);
+          showPaymentBalance('childPayment', childPaymentP);
+          showPaymentBalance('grandchildPayment', grandchildPaymentP);
+          showPaymentBalance('purse', purseP);
+          showPaymentBalance('childPurseP', childPurseP);
+          showPaymentBalance('grandchildPurseP', grandchildPurseP);
         },
       });
       return alice;

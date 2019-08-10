@@ -1,4 +1,5 @@
 import { test } from 'tape-promise/tape';
+import harden from '@agoric/harden';
 
 import {
   insistWithinBounds,
@@ -31,7 +32,7 @@ test('pixel insistPixel', t => {
 
 // should only be used with valid Pixels
 test('pixel isEqual', t => {
-  const startPixel = { x: 0, y: 0 };
+  const startPixel = harden({ x: 0, y: 0 });
   t.true(isEqual(startPixel, { x: 0, y: 0 }));
   t.false(isEqual(startPixel, { x: 1, y: 0 }));
   t.end();

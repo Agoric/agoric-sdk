@@ -11,9 +11,8 @@ import {
   mustBeSameStructure,
   sameStructure,
 } from '../util/sameStructure';
-import { makeUniAssayMaker } from './assays';
+import { makeUniAssayConfigMaker } from './config/uniAssayConfig';
 import { makeMint } from './issuers';
-import { makeBasicMintController } from './mintController';
 import makePromise from '../util/makePromise';
 
 /** Make a reusable host that can reliably install and execute contracts. */
@@ -31,12 +30,8 @@ function makeContractHost(E, evaluate) {
     return seatDesc;
   }
 
-  const makeUniAssay = makeUniAssayMaker(descriptionCoercer);
-  const inviteMint = makeMint(
-    'contract host',
-    makeBasicMintController,
-    makeUniAssay,
-  );
+  const makeUniAssayConfig = makeUniAssayConfigMaker(descriptionCoercer);
+  const inviteMint = makeMint('contract host', makeUniAssayConfig);
   const inviteIssuer = inviteMint.getIssuer();
   const inviteAssay = inviteIssuer.getAssay();
 

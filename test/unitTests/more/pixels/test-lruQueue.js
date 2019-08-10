@@ -1,9 +1,11 @@
 import { test } from 'tape-promise/tape';
+import harden from '@agoric/harden';
+
 import { makeLruQueue } from '../../../../more/pixels/lruQueue';
 
 test('LRU Queue creation', t => {
   const { lruQueue, lruQueueBuilder } = makeLruQueue();
-  const pixel = { x: 0, y: 0 };
+  const pixel = harden({ x: 0, y: 0 });
   lruQueueBuilder.push(pixel);
   t.equals(lruQueueBuilder.isEmpty(), false);
   t.equals(lruQueue.popToTail(), lruQueue.popToTail());
@@ -39,7 +41,7 @@ test('LRU requeue', t => {
   const pointsOrdered = new Map();
   for (let i = 0; i < 2; i += 1) {
     for (let j = 0; j < 2; j += 1) {
-      const aPoint = { x: i, y: j };
+      const aPoint = harden({ x: i, y: j });
       lruQueueBuilder.push(aPoint);
       pointsOrdered.set(2 * i + j, aPoint);
     }
@@ -70,7 +72,7 @@ test('LRU reorder', t => {
   const pointsOrdered = new Map();
   for (let i = 0; i < 3; i += 1) {
     for (let j = 0; j < 3; j += 1) {
-      const aPoint = { x: i, y: j };
+      const aPoint = harden({ x: i, y: j });
       lruQueueBuilder.push(aPoint);
       pointsOrdered.set(3 * i + j, aPoint);
     }

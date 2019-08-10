@@ -1,4 +1,5 @@
 import { test } from 'tape-promise/tape';
+import harden from '@agoric/harden';
 
 import {
   insistArea,
@@ -56,8 +57,8 @@ test('area insistArea', t => {
 });
 
 test('area isEqual', t => {
-  const start = { x: 2, y: 2 };
-  const end = { x: 4, y: 4 };
+  const start = harden({ x: 2, y: 2 });
+  const end = harden({ x: 4, y: 4 });
   t.true(isEqual({ start, end }, { start, end }));
 
   t.false(
@@ -73,8 +74,8 @@ test('area isEqual', t => {
 });
 
 test('area includes', t => {
-  const start = { x: 2, y: 2 };
-  const end = { x: 4, y: 4 };
+  const start = harden({ x: 2, y: 2 });
+  const end = harden({ x: 4, y: 4 });
   t.true(includes({ start, end }, { x: 3, y: 3 }));
   t.true(includes({ start, end }, { x: 2, y: 2 }));
   t.false(includes({ start, end }, { x: 0, y: 0 }));
@@ -83,8 +84,8 @@ test('area includes', t => {
 
 test('area makeArea', t => {
   // makeArea(allegedArea, pixelList, canvasSize)
-  const start = { x: 2, y: 2 };
-  const end = { x: 4, y: 4 };
+  const start = harden({ x: 2, y: 2 });
+  const end = harden({ x: 4, y: 4 });
   const pixelList = [
     start,
     { x: 2, y: 3 },

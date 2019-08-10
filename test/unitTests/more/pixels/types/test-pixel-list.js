@@ -12,9 +12,9 @@ import {
 } from '../../../../../more/pixels/types/pixelList';
 
 test('pixelList insistPixelList', t => {
-  const startPixel = { x: 0, y: 0 };
-  const secondPixel = { x: 0, y: 1 };
-  const thirdPixel = { x: 0, y: 2 };
+  const startPixel = harden({ x: 0, y: 0 });
+  const secondPixel = harden({ x: 0, y: 1 });
+  const thirdPixel = harden({ x: 0, y: 2 });
   const pixelList = harden([startPixel, secondPixel, thirdPixel]);
   t.doesNotThrow(() => insistPixelList(pixelList, 5));
   t.throws(() => insistPixelList(startPixel, 5));
@@ -24,10 +24,10 @@ test('pixelList insistPixelList', t => {
 });
 
 test('pixelList includesPixel', t => {
-  const startPixel = { x: 0, y: 0 };
-  const secondPixel = { x: 0, y: 1 };
-  const thirdPixel = { x: 0, y: 2 };
-  const fourthPixel = { x: 9, y: 1 };
+  const startPixel = harden({ x: 0, y: 0 });
+  const secondPixel = harden({ x: 0, y: 1 });
+  const thirdPixel = harden({ x: 0, y: 2 });
+  const fourthPixel = harden({ x: 9, y: 1 });
   const pixelList = harden([startPixel, secondPixel, thirdPixel]);
   t.true(includesPixel(pixelList, startPixel));
   t.true(includesPixel(pixelList, secondPixel));
@@ -37,10 +37,10 @@ test('pixelList includesPixel', t => {
 });
 
 test('pixelList insistIncludesPixel', t => {
-  const startPixel = { x: 0, y: 0 };
-  const secondPixel = { x: 0, y: 1 };
-  const thirdPixel = { x: 0, y: 2 };
-  const fourthPixel = { x: 9, y: 1 };
+  const startPixel = harden({ x: 0, y: 0 });
+  const secondPixel = harden({ x: 0, y: 1 });
+  const thirdPixel = harden({ x: 0, y: 2 });
+  const fourthPixel = harden({ x: 9, y: 1 });
   const pixelList = harden([startPixel, secondPixel, thirdPixel]);
   t.doesNotThrow(() => insistIncludesPixel(pixelList, startPixel));
   t.doesNotThrow(() => insistIncludesPixel(pixelList, secondPixel));
@@ -50,10 +50,10 @@ test('pixelList insistIncludesPixel', t => {
 });
 
 test('pixelList includesPixelList', t => {
-  const startPixel = { x: 0, y: 0 };
-  const secondPixel = { x: 0, y: 1 };
-  const thirdPixel = { x: 0, y: 2 };
-  const fourthPixel = { x: 9, y: 1 };
+  const startPixel = harden({ x: 0, y: 0 });
+  const secondPixel = harden({ x: 0, y: 1 });
+  const thirdPixel = harden({ x: 0, y: 2 });
+  const fourthPixel = harden({ x: 9, y: 1 });
   t.true(includesPixelList(harden([]), harden([])));
   t.true(includesPixelList(harden([startPixel]), harden([])));
   t.true(includesPixelList(harden([startPixel]), harden([startPixel])));
@@ -78,8 +78,8 @@ test('pixelList includesPixelList', t => {
 });
 
 test('pixelList withPixelList', t => {
-  const startPixel = { x: 0, y: 0 };
-  const secondPixel = { x: 0, y: 1 };
+  const startPixel = harden({ x: 0, y: 0 });
+  const secondPixel = harden({ x: 0, y: 1 });
   t.deepEqual(withPixelList(harden([]), harden([])), []);
   t.deepEqual(withPixelList(harden([startPixel]), harden([])), [startPixel]);
   t.deepEqual(withPixelList(harden([]), harden([startPixel])), [startPixel]);
@@ -98,8 +98,8 @@ test('pixelList withPixelList', t => {
 });
 
 test('pixelList withoutPixelList', t => {
-  const startPixel = { x: 0, y: 0 };
-  const secondPixel = { x: 0, y: 1 };
+  const startPixel = harden({ x: 0, y: 0 });
+  const secondPixel = harden({ x: 0, y: 1 });
   t.deepEqual(withoutPixelList(harden([]), harden([])), []);
   t.deepEqual(withoutPixelList(harden([startPixel]), harden([])), [startPixel]);
   t.throws(() => withoutPixelList(harden([]), harden([startPixel])));

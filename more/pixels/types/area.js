@@ -1,3 +1,4 @@
+import harden from '@agoric/harden';
 import { insistPixel, isLessThanOrEqual } from './pixel';
 import { insistIncludesPixel } from './pixelList';
 
@@ -48,7 +49,7 @@ function makeArea(allegedArea, pixelList, canvasSize) {
     for (let { y } = start; y <= end.y; y += 1) {
       // check that all of the pixels within the area are included in
       // the pixelList
-      const pixel = { x, y };
+      const pixel = harden({ x, y });
       insistIncludesPixel(pixelList, pixel);
     }
   }
