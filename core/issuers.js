@@ -83,14 +83,14 @@ Description must be truthy: ${description}`;
       return mint.mint(assay.empty(), name); // mint and issuer call each other
     },
 
-    getExclusive(amount, srcPaymentP, name) {
+    claim(amount, srcPaymentP, name) {
       return Promise.resolve(srcPaymentP).then(srcPayment => {
         name = name !== undefined ? name : srcPayment.getName(); // use old name
         return takePayment(srcPayment, paymentKeeper, amount, name);
       });
     },
 
-    getExclusiveAll(srcPaymentP, name) {
+    claimAll(srcPaymentP, name) {
       return Promise.resolve(srcPaymentP).then(srcPayment => {
         name = name !== undefined ? name : srcPayment.getName(); // use old name
         return takePayment(

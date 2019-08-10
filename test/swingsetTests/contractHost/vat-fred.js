@@ -39,7 +39,7 @@ function makeFredMaker(E, host, log) {
                       return E(coveredCallInstallationP)
                         .checkAmount(coveredCallAmount, terms)
                         .then(() => {
-                          return E(inviteIssuerP).getExclusive(
+                          return E(inviteIssuerP).claim(
                             allegedInviteAmount,
                             allegedSaleInvitePaymentP,
                             'verified sale invite',

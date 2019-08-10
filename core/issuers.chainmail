@@ -26,13 +26,13 @@ interface Issuer (Amount (Quantity)) {
    * those rights, exclusively or not. The src payment retains any excess not
    * included in amount.
    */
-  getExclusive(amount :Amount, src :Payment, name :String = 'a payment')
+  claim(amount :Amount, src :Payment, name :String = 'a payment')
     -> (Payment);
 
   /**
    * Make a new Payment that has exclusive rights to all the contents of src.
    */
-  getExclusiveAll(src :Payment, name :String = 'a payment') -> (Payment);
+  claimAll(src :Payment, name :String = 'a payment') -> (Payment);
 
   /** Burn amount of the rights from src. */
   burn(amount :Amount, src :Payment) -> (Amount);
@@ -80,7 +80,7 @@ interface Mint (Amount (Quantity)) {
  * interface. A purse's balance can rise and fall, through the action of
  * deposit() and withdraw(), while payments don't accept deposits, but can be
  * reduced with burn(), aggregated by passing them as a parameter to deposit(),
- * or claimed using issuer.getExclusive().
+ * or claimed using issuer.claim().
  *
  * The primary use for Purses and Payments is for currency-like and goods-like
  * valuables, but they can also be used to represent other kinds of rights, such
@@ -116,7 +116,7 @@ interface Purse (Amount) {
  * Payments hold verified amounts of certain rights issued by Mints. Amounts
  * from payments can be deposited in purses, but otherwise, the entire amount is
  * available when the payment is transferred. A payment's balance can only fall,
- * through the action of deposit(), getExclusive() or burn().
+ * through the action of deposit(), claim() or burn().
  *
  * Payments can be converted to Purses by getting a verified issuer and calling
  * issuer.makeEmptyPurse().depositAll(payment);
