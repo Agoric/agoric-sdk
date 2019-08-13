@@ -1,7 +1,9 @@
 /**
- * Modify a Promise class to have it support eventual send (infix-bang) operations.
+ * Modify a Promise class to have it support eventual send
+ * (infix-bang) operations.
  *
- * Based heavily on nanoq https://github.com/drses/nanoq/blob/master/src/nanoq.js
+ * Based heavily on nanoq
+ * https://github.com/drses/nanoq/blob/master/src/nanoq.js
  *
  * Original spec for the infix-bang desugaring:
  * https://web.archive.org/web/20161026162206/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency
@@ -10,7 +12,8 @@
  * @return {typeof EPromise} Extended promise
  */
 export default function maybeExtendPromise(Promise) {
-  // Make idempotent, so we don't layer on top of a BasePromise that is adequate.
+  // Make idempotent, so we don't layer on top of a BasePromise that
+  // is adequate.
   if (typeof Promise.makeHandled === 'function') {
     return Promise;
   }
@@ -29,17 +32,20 @@ export default function maybeExtendPromise(Promise) {
         throw TypeError(`unfulfilledHandler.${operation} is not a function`);
       }
 
-      return Promise.makeHandled(resolve => {
+      return Promise.makeHandled((resolve, reject) => {
         // We run in a future turn to prevent synchronous attacks,
-        Promise.resolve().then(() =>
-          // and resolve to the answer from the unfulfilled handler,
-          resolve(unfulfilledHandler[operation](p, ...args)),
-        );
+        Promise.resolve()
+          .then(() =>
+            // and resolve to the answer from the unfulfilled handler,
+            resolve(unfulfilledHandler[operation](p, ...args)),
+          )
+          .catch(reject);
         // with the default unfulfilled forwarding handler.
       });
     }
 
-    // We use the forwardingHandler, but pass in the naked object in a future turn.
+    // We use the forwardingHandler, but pass in the naked object in a
+    // future turn.
     if (typeof forwardingHandler[operation] !== 'function') {
       throw TypeError(`forwardingHandler.${operation} is not a function`);
     }
@@ -99,7 +105,7 @@ export default function maybeExtendPromise(Promise) {
       makeHandled(executor, unfulfilledHandler = undefined) {
         let handledResolve;
         let handledReject;
-        let continueForwarding;
+        let continueForwarding = () => {};
         const handledP = new Promise((resolve, reject) => {
           handledResolve = resolve;
           handledReject = reject;
@@ -110,28 +116,37 @@ export default function maybeExtendPromise(Promise) {
           // fulfilledHandler is set.
           //
           // This is insufficient for actual remote handled Promises
-          // (too many round-trips), but is an easy way to create a local handled Promise.
+          // (too many round-trips), but is an easy way to create a
+          // local handled Promise.
           const interlockP = new Promise(resolve => {
-            continueForwarding = () => resolve(null);
+            continueForwarding = (targetP = undefined) => {
+              // Box the target promise so that it isn't further resolved.
+              resolve([targetP]);
+              // Return undefined.
+            };
           });
 
-          const postpone = forwardedOperation => {
+          const makePostponed = postponedOperation => {
             // Just wait until the handler is resolved/rejected.
-            return (x, ...args) => {
-              // console.log(`forwarding ${forwardedOperation}`);
-              return Promise.makeHandled(resolve => {
-                interlockP.then(() => {
-                  resolve(x[forwardedOperation](...args));
-                });
+            return function postpone(x, ...args) {
+              // console.log(`forwarding ${postponedOperation}`);
+              return Promise.makeHandled((resolve, reject) => {
+                interlockP
+                  .then(([targetP]) => {
+                    // If targetP is a handled promise, use it, otherwise x.
+                    const nextPromise = targetP || x;
+                    resolve(nextPromise[postponedOperation](...args));
+                  })
+                  .catch(reject);
               });
             };
           };
 
           unfulfilledHandler = {
-            GET: postpone('get'),
-            PUT: postpone('put'),
-            DELETE: postpone('delete'),
-            POST: postpone('post'),
+            GET: makePostponed('get'),
+            PUT: makePostponed('put'),
+            DELETE: makePostponed('delete'),
+            POST: makePostponed('post'),
           };
         }
 
@@ -146,21 +161,11 @@ export default function maybeExtendPromise(Promise) {
         promiseToHandler.set(handledP, unfulfilledHandler);
 
         function rejectHandled(reason) {
-          if (continueForwarding) {
-            continueForwarding();
-          }
+          continueForwarding();
           handledReject(reason);
         }
 
         async function resolveHandled(target, fulfilledHandler) {
-          const doContinue = () => {
-            if (continueForwarding) {
-              // Tell the default unfulfilledHandler to forward messages.
-              continueForwarding();
-            }
-            // Return undefined.
-          };
-
           try {
             // Sanity checks.
             if (fulfilledHandler) {
@@ -168,14 +173,14 @@ export default function maybeExtendPromise(Promise) {
             }
 
             if (!fulfilledHandler) {
-              // Resolve with the target.
+              // Resolve with the target when it's ready.
               handledResolve(target);
 
               const existingUnfulfilledHandler = promiseToHandler.get(target);
               if (existingUnfulfilledHandler) {
                 // Reuse the unfulfilled handler.
                 promiseToHandler.set(handledP, existingUnfulfilledHandler);
-                return doContinue();
+                return continueForwarding(target);
               }
 
               // See if the target is a presence we already know of.
@@ -183,12 +188,12 @@ export default function maybeExtendPromise(Promise) {
               const existingFulfilledHandler = presenceToHandler.get(presence);
               if (existingFulfilledHandler) {
                 promiseToHandler.set(handledP, existingFulfilledHandler);
-                return doContinue();
+                return continueForwarding();
               }
 
               // Remove the mapping, as we don't need a handler.
               promiseToHandler.delete(handledP);
-              return doContinue();
+              return continueForwarding();
             }
 
             // Validate and install our mapped target (i.e. presence).
@@ -205,26 +210,31 @@ export default function maybeExtendPromise(Promise) {
               );
             }
 
-            // Just like platform Promises, multiple calls to resolve don't fail.
+            // Just like platform Promises, multiple calls to resolve
+            // don't fail.
             if (!presenceToHandler.has(presence)) {
-              // Create table entries for the presence mapped to the fulfilledHandler.
+              // Create table entries for the presence mapped to the
+              // fulfilledHandler.
               presenceToPromise.set(presence, handledP);
               presenceToHandler.set(presence, fulfilledHandler);
             }
 
-            // Remove the mapping, as our fulfilledHandler should be used instead.
+            // Remove the mapping, as our fulfilledHandler should be
+            // used instead.
             promiseToHandler.delete(handledP);
 
             // We committed to this presence, so resolve.
             handledResolve(presence);
           } catch (e) {
-            rejectHandled(e);
+            handledReject(e);
           }
-          return doContinue();
+          return continueForwarding();
         }
 
         // Invoke the callback to let the user resolve/reject.
-        executor(resolveHandled, rejectHandled);
+        executor((...args) => {
+          resolveHandled(...args);
+        }, rejectHandled);
 
         // Return a handled Promise, which wil be resolved/rejected
         // by the executor.
