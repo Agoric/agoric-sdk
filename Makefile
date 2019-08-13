@@ -45,7 +45,8 @@ scenario2-run-client:
 
 scenario3-setup:
 	rm -rf t1
-	bin/ag-solo init t1
+	bin/ag-solo init t1 --egresses=
+	@echo 'Ignore advice above, instead run `make scenario3-run-client`'
 scenario3-run-client:
 	cd t1 && ../bin/ag-solo start --role=three_client
 scenario3-run-chain:
