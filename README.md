@@ -162,8 +162,8 @@ You might see something like:
 ```
 
 The `quantity` tells us which pixels we've received. `{ x:1, y:4 }`
-means that we got a pixel that is in the second row (`x:1`) and 5 pixels
-from the left (`y:4`). To color the pixel, we need to get the use
+means that we got a pixel that is in the fifth row (`y:4`) and 2 pixels
+from the left (`x:1`). To color the pixel, we need to get the use
 object from the payment. You can think of the use object as a regular
 JavaScript object that just happens to be associated with an ERTP
 payment. 
