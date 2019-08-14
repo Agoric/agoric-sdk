@@ -6,43 +6,107 @@ number of additional features that showcase the unique affordances of
 the Agoric platform, including: higher-order contracts, easy creation
 of new assets, and safe code reusability.
 
-## Pixels
-The base asset is a pixelList (an array of
-pixels). The holder of a pixel is able to change the color of the
-pixel by splitting the pixelList up into the useRight (the right to
-color) and a transfer right (the right to transfer the pixel). The
-holder of the use right can send a payment of the right to the Gallery
-(the creator the pixel canvas) to color. 
+| ![Reddit's r/place](readme-assets/rplace.png) | 
+|:--:| 
+| *Reddit's r/place as a social experiment in cooperation* |
 
-When the transfer right is sent as a payment to another user, that
-user can do turn the transfer right in to the Gallery to get a full
-pixel back, thus revoking any coloring rights that may be in the hands
-of other users. 
 
-## Dust
-We also have a currency called Dust (Pixel Dust, heh heh). Users do not start out with any Dust - they only start out with access to the faucet. As described in more detail below, they can sell the pixels that they get for free from the faucet back to the Gallery in order to earn Dust.  
+## Installation
 
-## Gallery
+| <img src="readme-assets/pixel-demo.png" alt="Pixel Gallery"> | 
+|:--:| 
+| *The testnet pixel demo. Slightly fewer pixels.* |
 
-At the start, all pixels and all color rights are held by the Gallery.
-The Gallery provides a faucet that allows users to get a pixel at a
-time for free. The Gallery has a queue of all the pixels ordered by
-least recently used (at the start, this is all the pixels in an
-unusual order), and takes from the front of this LRU queue to provide a pixel to the faucet.
 
-The user eventually gets a handful of pixels from the faucet (in the
-future, this would be rate-limited per user), but at this point, it is unlikely that the user is able to draw
-anything interesting. Hopefully, this will incentivize them to keep
-playing (“gotta collect them all”) rather than deter them. 
+The pixel demo runs on [our private
+testnet](https://github.com/Agoric/cosmic-swingset#agorics-cosmic-swingset).
+For instructions on how to run a local, off-chain version for
+yourself, please see [Scenario 3
+here](https://github.com/Agoric/cosmic-swingset#different-scenarios).
+The testnet documentation also includes a [short walkthrough of the
+demo with sample commands](https://github.com/Agoric/cosmic-swingset#gallery-pixel-demo). If you would rather view the code and learn
+more about how the demo works, feel free to read on.
 
-## Further Gameplay
+## ERTP: Electronic Rights Transfer Protocol
 
-In order to amass the pixels that they want in order to draw their masterpiece, the user will need to sell some pixels to get our currency, Dust. (The user does not start out with any money.) Our Gallery will always buy pixels back, but it values pixels near the center much more than pixels on the periphery. This will incentivize people to keep hitting the faucet because they might get a “valuable” pixel in the next go. 
+The pixel demo uses our smart contract framework, called ERTP, or the
+Electronic Rights Transfer Protocol. Throw away all you know about
+public key hashes mapped to account balances, because ERTP doesn't use
+'em. In fact, ERTP itself doesn't have any concept of cryptography. Instead,
+it uses object capabilities to enforce access control. Instead of
+having to prove ownership of a corresponding private key, in the world
+of object capabilities, if your program has a reference to an object,
+it can call methods on that object. If it doesn't have a reference, it
+can't. For more on object capabilities, see [here](http://habitatchronicles.com/2017/05/what-are-capabilities/). For more on ERTP,
+see a quick tutorial [here](README.md) and the ERTP interface descriptions
+[here](core/issuers.chainmail) and [here](core/assays.chainmail) and [here](core/contractHost.chainmail). 
 
-In order to sell pixels, the user must create an ask in our order book. The Gallery will always have a bid (request to buy) for all pixels, but the price should be relatively low, lower than selling to another user (this will need to be done after experimentation, not sure how to guarantee it now). 
+## A preemption hierarchy of rights
 
-Now that the user has some Dust, how can they buy their pixels? The pixel canvas will have an on-hover attribute that shows the x, y coordinates of the hovered-over pixel. The user should be able to look at the canvas to see what they want to buy, and record the coordinates. Then, they can create a bid in the order book for that pixel or sell it to the Gallery for a relatively low price. 
+All of the pixels (individual squares) on the demo webpage
+are owned by the gallery, the code that administrates the pixels. The
+gallery has the power to revoke the pixels from any user at any time. When a user
+calls `gallery!tapFaucet()`, the gallery takes the least recently
+colored pixel from its current holder (if anyone holds it) and gives
+it to the user in the form of an ERTP payment. 
 
-The user should be able to put their color rights into our ERTP covered call and other contract components and create things like options. 
+| ![The hierarchy of rights in the pixel demo](readme-assets/hierarchy-pixel-rights.png) | 
+|:--:| 
+| *The preemption hierarchy of rights in the pixel demo* |
 
-For examples of how the ERTP assets work, see the gallery tests.
+The gallery is able to revoke the pixels held by users because the
+pixel demo creates a customized version of ERTP in which rights are
+*hierarchical*. Hierarchical rights are familiar in property. For
+instance, a property owner might lease an apartment to a tenant, who
+might in turn, lease it to a subtenant. Anyone higher in the hierarchy
+can take away access from anyone lower in the hierarchy, and give it
+to someone else. 
+
+## Using Pixels
+
+ERTP provides a `makeMint` function that takes in a configuration
+function. The pixel demo configuration implements the hierarchical
+rights and allows us to add additional methods to purses and payments.
+
+To be able to color a pixel, the user must first get a "use object"
+from a purse or payment that contains pixels:
+
+```js
+const useObj = E(payment).getUse()
+```
+ The "use object" that they receive acts just like any
+other JavaScript object. It has methods (in this case, all associated
+with coloring the pixels in the underlying purse or payment) that can
+be called. To color, the user does:
+
+```js
+E(useObj).changeColorAll('#000000');
+```
+
+with the hex color of their choice. 
+
+## Transferring revocable rights
+
+When a user wants to give another user the ability to color a pixel,
+but wants to be able to revoke that ability later, the user can call
+`getChildPayment` and pass the childPayment to the other user. The
+other user can tell that they aren't getting a payment on the same
+level as one that the gallery would give out, and it could be revoked
+at any point if `revokeChildren()` is called on the original
+payment. 
+
+## Buying and selling pixels
+
+The users can buy and sell pixels with the gallery at any time by
+calling `sellToGallery(pixelAmount)` and
+`buyFromGallery(pixelAmount)`. They must pass in an `amount` that
+describes exactly what they want to sell or buy. If successful, they
+will get an invitation from the gallery for a simple, secure escrow
+exchange of the pixels for "dust", the currency that the gallery
+transacts in. Users do not start out with any dust - they only start
+out with access to the faucet.  
+
+In order to amass the pixels that they want in order to draw their
+masterpiece, the user will need to sell some pixels to get dust. The
+gallery will always buy pixels back, but it values pixels near the
+center much more than pixels on the periphery. 
