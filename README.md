@@ -3,7 +3,7 @@
 Agoric's Cosmic SwingSet enables developers to test smart contracts build with [ERTP](https://github.com/Agoric/ERTP) in various blockchain setup environments
 
 This repository currently hosts various pieces:
-- Code to set up a "solo node" (a client program which purpose is to discuss with a blockchain on a testnet)
+- Code to set up a **solo node** (a local peer which can host objects for testing or interaction with a blockchain)
 - Code and tools to set up a testnet on your machine
 - Code that runs the server-side Pixel Demo on the solo node
 - Code that runs in a web browser and interacts with the server-side of the Pixel Demo
