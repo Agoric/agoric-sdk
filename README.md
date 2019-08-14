@@ -9,7 +9,7 @@ This repository currently hosts various pieces:
 - Code that runs in a web browser and interacts with the server-side of the Pixel Demo
 
 
-If you're coming to this repo with a provisioning code from Agoric, you can jump to the [relevant section]()
+If you're coming to this repo with a **provisioning code** from Agoric, you can jump to the [relevant section](#with-a-provisioning-code-from-agoric)
 
 Otherwise, you can continue to the next section to choose one of the setups for the Pixel Demo
 
