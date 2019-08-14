@@ -96,16 +96,43 @@ The HTML frontend code is pure JS/DOM (no additional libraries yet), in
 
 Now go to https://localhost:8000/ to interact with your new solo node.
 
-# Gallery Pixel Demo
+# Pixel Demo
 
-In this Gallery Demo, the goal is to be able to create designs in a
-pixel canvas. You start with access to the gallery and a handful of
-methods that allow you to obtain pixels, color them, and buy or sell
-pixels. 
+This demo is roughly based on [Reddit's
+r/Place](https://en.wikipedia.org/wiki/Place_(Reddit)), but has a 
+number of additional features that showcase the unique affordances of
+the Agoric platform, including: higher-order contracts, easy creation
+of new assets, and safe code reusability.
+
+| ![Reddit's r/place](readme-assets/rplace.png) | 
+|:--:| 
+| *Reddit's r/place as a social experiment in cooperation* |
+
+
+## Installation
+
+| <img src="readme-assets/pixel-demo.png" alt="Pixel Gallery"> | 
+|:--:| 
+| *The testnet pixel demo. Slightly fewer pixels.* |
+
+
+The pixel demo runs on [our private testnet](https://github.com/Agoric/cosmic-swingset#agorics-cosmic-swingset). For instructions on how to
+run a local, off-chain version for yourself, please see [Scenario 3
+here](https://github.com/Agoric/cosmic-swingset#different-scenarios).
+
+## Getting Started
+
+In the pixel demo, the goal is to be able to amass enough pixels to
+draw a design on a pixel canvas. You start out empty-handed, with no
+money and no pixels to your name. However, you do have access to the *gallery*, the
+administrator of the canvas. The gallery has a handful of
+methods that allow you to obtain a few pixels for free, color them,
+sell them, and buy more.
 
 To access the gallery, type `home.gallery` in the REPL. `home.gallery` is a
-Presence. In the SwingSet environment, Presences are remote references to objects on
-other vats. To invoke them, use the [proposed infix bang](https://github.com/Agoric/proposal-infix-bang). For example, the
+a remote object (what we call a *presence*). It actually lives in another environment (what we
+call a *vat*). We can call methods on remote objects as if the objects were
+local by replacing the dot syntax (`obj.foo`) with a [bang](https://github.com/Agoric/proposal-infix-bang) (`obj!foo`). For example, the
 first thing you might want to do is tap the gallery faucet to get a
 pixel for free: 
 
@@ -113,23 +140,50 @@ pixel for free:
 home.gallery!tapFaucet()
 ```
 
-This returns a presence for the pixel that you receive from the
-faucet and saves it under `history[0]`.
+`tapFaucet` returns a pixel and saves it under `history[0]`. The pixel that you receive is
+actually in the form of an ERTP payment. [ERTP](https://github.com/Agoric/ERTP) (Electronic Rights Transfer Protocol)]
+is our smart contract framework for handling transferable objects.
+Payments have a few functions. Let's call `getBalance()` on our payment
+to see which pixel we received. 
 
-To color the pixel, we need to split the pixel into "transfer" and
-"use" rights. The right to use the pixel means that you can color it,
-and we'll be using it to color. 
+```js
+history[0]!getBalance()
+```
+
+You might see something like: 
+
+```js
+{"label":{"issuer":[Presence 15],"description":"pixels"},"quantity":[{"x":1,"y":4}]}
+```
+
+The `quantity` tells us which pixels we've received. `{ x:1, y:4 }`
+means that we got a pixel that is in the second row (`x:1`) and 5 pixels
+from the left (`y:4`). To color the pixel, we need to get the use
+object from the payment. You can think of the use object as a regular
+JavaScript object that just happens to be associated with an ERTP
+payment. 
+
+```js
+history[0]!getUse()
+
+```
+
+Your use object will be stored under history, as `history[2]`. Now we
+can use it to color. 
+
+```js
+history[2]!changeColorAll('#FF69B4')
+```
 
 The following commands show a pixel being obtained from the faucet,
-being split into transfer and use rights, coloring the pixel by
-using the 'use' right, and selling a pixel to the gallery through a
+getting the 'use' object, coloring the pixel, and selling a pixel to the gallery through a
 escrow smart contract.  
 
 ```
 home.gallery!tapFaucet()
-home.gallery!split(history[0])
-history[1].useRightPayment
-home.gallery!changeColor(history[2], '#FF69B4')
+history[0]!getBalance()
+history[0]!getUse()
+history[2]!changeColorAll('#FF69B4')
 home.gallery!tapFaucet()
 history[4]!getBalance()
 home.gallery!pricePixelAmount(history[5])
@@ -144,7 +198,12 @@ history[12].dustIssuer
 history[13]!makeEmptyPurse()
 history[14]!makeEmptyPurse()
 home.gallery!collectFromGallery(history[10], history[16], history[15], 'my escrow')
+history[16]!getBalance()
 ```
+
+Woohoo! We're now 6 dust richer than when we started.
+
+Learn more about ERTP and our pixel demo [here](https://github.com/Agoric/ERTP). 
 
 # Build from source
 
@@ -237,4 +296,3 @@ ag-setup-cosmos destroy
 # Acknowledgements
 
 This work was started by combining the [Cosmos SDK tutorial](https://cosmos.network/docs/tutorial/) with the build process described in a [Golang Node.js addon example](https://github.com/BuildingXwithJS/node-blackfriday-example).
-
