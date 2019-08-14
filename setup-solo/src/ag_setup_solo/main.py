@@ -15,6 +15,8 @@ MAILBOX_URL = u"ws://relay.magic-wormhole.io:4000/v1"
 #MAILBOX_URL = u"ws://10.0.2.24:4000/v1"
 APPID = u"agoric.com/ag-testnet1/provisioning-tool"
 NETWORK_CONFIG = "https://testnet.agoric.com/network-config"
+# We need this to connect to cloudflare's https.
+USER_AGENT = "Mozilla/5.0"
 
 # Locate the ag-solo binary.
 # Look up until we find a different bin directory.
@@ -104,7 +106,8 @@ def main():
 
     # Download the netconfig.
     print('downloading netconfig from', o['netconfig'])
-    resp = urllib.request.urlopen(o['netconfig'])
+    req = urllib.request.Request(o['netconfig'], data=None, headers={'User-Agent': USER_AGENT})
+    resp = urllib.request.urlopen(req)
     encoding = resp.headers.get_content_charset('utf-8')
     decoded = resp.read().decode(encoding)
     netconfig = json.loads(decoded)
