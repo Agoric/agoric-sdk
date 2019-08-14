@@ -129,12 +129,17 @@ administrator of the canvas. The gallery has a handful of
 methods that allow you to obtain a few pixels for free, color them,
 sell them, and buy more.
 
-To access the gallery, type `home.gallery` in the REPL. `home.gallery` is a
-a remote object (what we call a *presence*). It actually lives in another environment (what we
-call a *vat*). We can call methods on remote objects as if the objects were
-local by replacing the dot syntax (`obj.foo`) with a [bang](https://github.com/Agoric/proposal-infix-bang) (`obj!foo`). For example, the
-first thing you might want to do is tap the gallery faucet to get a
-pixel for free: 
+To access the gallery, type `home.gallery` in the REPL. `home.gallery`
+is a remote object (what we call a *presence*). It actually lives in
+another environment (what we call a *vat*). Instead of obj.foo(), we
+can write E(obj).foo() or the syntactic sugar, obj!foo() and get a
+promise for the result. We call this syntactic sugar ['infix
+bang'](https://github.com/Agoric/proposal-infix-bang). The syntax
+means "deliver the message foo() to the actual object asynchronously,
+in its own turn, wherever and whenever it is, even if it is local."
+Using E or !, you can talk asynchronously to local and remote objects
+in exactly the same way. For example, the first thing you might want
+to do is tap the gallery faucet to get a pixel for free:
 
 ```js
 home.gallery!tapFaucet()
