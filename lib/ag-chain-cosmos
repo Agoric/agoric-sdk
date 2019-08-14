@@ -99,14 +99,7 @@ async function toSwingSet(action, replier) {
 
     const vatsdir = path.resolve(__dirname, '../lib/ag-solo/vats');
     const argv = [`--role=${ROLE}`, bootAddress];
-    const d = launch(mailboxStorage, stateFile, vatsdir, argv);
-
-    d.then(undefined,
-           rej => {
-             console.log(`launch failed`, rej);
-             throw rej;
-           });
-    const s = await d;
+    const s = await launch(mailboxStorage, stateFile, vatsdir, argv);
     deliverInbound = s.deliverInbound;
   }
 
