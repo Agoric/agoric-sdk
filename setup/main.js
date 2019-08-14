@@ -388,7 +388,7 @@ show-config      display the client connection parameters
         const rpcAddrs = await needBacktick(
           `${shellEscape(progname)} show-rpcaddrs`,
         );
-        await makeFile(rpcAddrs.replace(',', ' '));
+        await makeFile(rpcAddrs.replace(/,/g, ' '));
       });
       await guardFile(`${CONTROLLER_DIR}/install.stamp`, () =>
         needReMain(['play', 'install-controller']),
