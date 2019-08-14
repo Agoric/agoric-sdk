@@ -325,12 +325,13 @@ ag-setup-cosmos destroy
 You can request a public testnet provisioning code from https://testnet.agoric.com/
 
 Once you have received the code run:
-
-```
-$ SOLO_NAME=han ./docker/ag-setup-solo --pull
+```sh
+SOLO_NAME=han ./docker/ag-setup-solo --pull
 ```
 
 where `han` is the name of your solo vat machine that follows the blockchain.
+
+This command will prompt you for the testnet provisioning code.
 
 Then connect to http://localhost:8000 and go to the [Gallery Demo](#gallery-pixel-demo) section.
 
