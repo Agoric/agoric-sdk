@@ -1,41 +1,81 @@
 # Agoric's Cosmic SwingSet
 
-TL;DR: Request a public testnet provisioning code from https://testnet.agoric.com/, and
-after you have received the code run:
+Agoric's Cosmic SwingSet enables developers to test smart contracts build with [ERTP](https://github.com/Agoric/ERTP) in various blockchain setup environments
 
+This repository currently hosts various pieces:
+- Code to set up a "solo node" (a client program which purpose is to discuss with a blockchain on a testnet)
+- Code and tools to set up a testnet on your machine
+- Code that runs the server-side Pixel Demo on the solo node
+- Code that runs in a web browser and interacts with the server-side of the Pixel Demo
+
+
+If you're coming to this repo with a provisioning code from Agoric, you can jump to the [relevant section]()
+
+Otherwise, you can continue to the next section to choose one of the setups for the Pixel Demo
+
+
+## Different setups to run the Pixel Demo
+
+Running the demo requires a local solo node to serve as your access point\
+In any case, for now, you will be needing to build the solo node from the source code
+
+### Build from source
+
+If you want to build and install from sources, you need to install
+- [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- [node.js](https://nodejs.org/en/) (you need at least version 11). This installs 2 binaries named `node` (JavaScript runtime) and `npm` (JavaScript package manager)
+- [Golang](https://golang.org/doc/install) (you need at least version 1.12)
+
+```sh
+git clone git@github.com:Agoric/cosmic-swingset.git
+cd cosmic-swingset
+npm install
+npm run build
 ```
-$ SOLO_NAME=han ./docker/ag-setup-solo --pull
+
+Make symbolic links somewhere in your `$PATH` (such as `/usr/local/bin`) as below: 
+
+```sh
+ln -s $PWD/lib/ag-chain-cosmos /usr/local/bin/
 ```
 
-where `han` is the name of your solo vat machine that follows the blockchain.
+If installing the GO language didn't setup a `$GOPATH` variable,
+you'll need to find the directory and set the variable. Typically
+```sh
+GOPATH="$HOME/go"
+```
 
-Then connect to http://localhost:8000 and go to the [Gallery Demo](#gallery-pixel-demo) section.
+Then do
+```sh
+ln -s $GOPATH/bin/ag-cosmos-helper /usr/local/bin/
+```
 
-If you don't have a provisioning code, or otherwise want to run the demo from the code in this directory,
-read [the next section](#different-scenarios).
+Test that the links work with:
 
-## Different scenarios
+```sh
+ag-chain-cosmos --help
+ag-cosmos-helper --help
+```
 
-Running the demo requires a local solo node to serve as your access point.
+(each should display )
 
-These are the main
-configuration scenarios for how that solo node interacts with a testnet:
+### Choose a scenario
 
-**[You will need to [build this repository from source](#build-from-source) before the commands in this section work.
-]**
+#### Scenario 3 : no testnet (develop off-chain demo)
 
-<details>
-  <summary>Scenario 3: no testnet (develop off-chain demo)</summary>
+In this scenario, you run: 
+- a **solo node** with the server-side Pixel Demo running and exposing an HTTP server in localhost
+- a **web browser** connecting to the solo node and enabling user interaction with the Pixel Demo
 
-  Test the demo code without interacting with a blockchain.
+No blockchain is involved.
 
-  Run:
-  ```
-  $ make scenario3-setup
-  $ make scenario3-run-client
-  ```
+Run:
+```sh
+make scenario3-setup
+make scenario3-run-client
+```
 
-  The `lib/ag-solo/vats/` directory contains the source code for all the Vats
+The `lib/ag-solo/vats/` directory contains the source code for all the Vats
 created in the solo vat-machine. The actual filenames are enumerated in
 `lib/ag-solo/init-basedir.js`, so if you add a new Vat, be sure to add it to
 `init-basedir.js` too.
@@ -47,52 +87,68 @@ The REPL handler is in `lib/ag-solo/vats/vat-http.js`.
 The HTML frontend code is pure JS/DOM (no additional libraries yet), in
 `lib/ag-solo/html/index.html` and `lib/ag-solo/html/main.js`.
 
-</details>
-<details>
-  <summary>Scenario 2: a single local testnet node (develop on-chain demo)</summary>
 
-  Before using this scenario, you should test your off-chain code under Scenario 3.
+#### Scenario 2: a single local testnet node (develop on-chain demo)
 
-  Run:
-  ```
-  $ make scenario2-setup
-  $ make scenario2-run-chain
-  ```
-  Wait about 5 seconds for the chain to produce its first block, then switch to another terminal:
-  ```
-  $ make scenario2-run-client
-  ```
+In this scenario, you run: 
+- a **solo node** exposing an HTTP server in localhost
+- a **single local blockchain testnet node** with the server-side Pixel Demo running
+- a **web browser** connecting to the solo node and enabling user interaction with the Pixel Demo
+
+The solo node communicates with the testnet node
+
+you install the pixel demo is run 
+
+Before using this scenario, it is recommanded that you test your code with Scenario 3.
+
+Run:
+```sh
+make scenario2-setup
+make scenario2-run-chain
+```
+
+Wait about 5 seconds for the chain to produce its first block, then switch to another terminal:
+```sh
+make scenario2-run-client
+```
   
-</details>
-<details>
-  <summary>Scenario 1: your own local testnet (develop testnet provisioner)</summary>
+#### Scenario 1: your own local testnet (develop testnet provisioner)
 
-  This scenario is only useful for moving toward deploying the local source code as a new testnet.  Before using this scenario, you should test your on-chain code under Scenario 2.
-  
-  ```
-  make scenario1-setup
-  make scenario1-run-chain
-  ```
+In this scenario, you run: 
+- a **solo node** exposing an HTTP server in localhost
+- a **several local blockchain testnet nodes** with the server-side Pixel Demo running on top. 
+- a **web browser** connecting to the solo node and enabling user interaction with the Pixel Demo
 
-  Wait until the bootstrap produces a provisioning server URL and visit it.  Then run in another terminal:
+This scenario is only useful for moving toward deploying the local source code as a new testnet. Before using this scenario, you should test your on-chain code under Scenario 2.
 
-  ```
-  make scenario1-run-client
-  ```
+```sh
+make scenario1-setup
+make scenario1-run-chain
+```
 
-  See [Testnet Tutorial](#testnet-tutorial) for more guidance.
-</details>
-<details>
-  <summary>Scenario 0: a public testnet (kick the tires)</summary>
+Wait until the bootstrap produces a provisioning server URL and visit it.  Then run in another terminal:
 
-  To run the solo node using the current directory's source code against a public testnet, use:
-  ```
-  $ make scenario0-setup
-  $ make scenario0-run-client
-  ```
+```sh
+make scenario1-run-client
+```
 
-  Alternatively, running the solo node from a Docker image and no local source code is described in the [top section](#agorics-cosmic-swingset).  
-</details>
+See [Testnet Tutorial](#testnet-tutorial) for more guidance.
+
+#### Scenario 0: a public testnet (kick the tires)
+
+In this scenario, you run: 
+- a **solo node** exposing an HTTP server in localhost
+- a **web browser** connecting to the solo node and enabling user interaction with the Pixel Demo
+
+This scenario assumes your solo node can access a **blockchain running on the Internet**
+
+To run the solo node using the current directory's source code against a public testnet, use:
+```
+$ make scenario0-setup
+$ make scenario0-run-client
+```
+
+Alternatively, running the solo node from a Docker image and no local source code is described in the [top section](#agorics-cosmic-swingset).  
 
 Now go to https://localhost:8000/ to interact with your new solo node.
 
@@ -210,46 +266,12 @@ Woohoo! We're now 6 dust richer than when we started.
 
 Learn more about ERTP and our pixel demo [here](https://github.com/Agoric/ERTP). 
 
-# Build from source
 
-You can browse the current source tree at [Github](https://github.com/Agoric/cosmic-swingset)
-
-If you want to build and install from sources, you need Node.js 11 and Golang 1.12:
-
-```
-npm install
-npm run build
-```
-
-Make symbolic links somewhere in your `$PATH` (such as `/usr/local/bin`) as below: 
-
-```
-ln -s $PWD/lib/ag-chain-cosmos /usr/local/bin/
-```
-
-If installing the GO language didn't setup a `$GOPATH` variable,
-you'll need to find the directory and set the variable. Typically
-```
-GOPATH="$HOME/go"
-```
-
-Then do
-```
-ln -s $GOPATH/bin/ag-cosmos-helper /usr/local/bin/
-```
-
-Test that the links work with:
-
-```
-$ ag-chain-cosmos --help
-$ ag-cosmos-helper --help
-```
-
-# Testnet Tutorial
+## Testnet Tutorial
 
 The `ag-setup-cosmos` tool is used to manage testnets.  Unless you are developing `ag-setup-cosmos` (whose sources are in the `setup` directory), you should use the Docker scripts in the first section and a working Docker installation since `ag-setup-cosmos` only works under Linux with Terraform 0.11 and Ansible installed.
 
-## Docker images
+### Docker images
 
 If you are not running on Linux, you will need to use Docker to provide the setup environment needed by the provisioning server and testnet nodes.
 
@@ -263,7 +285,7 @@ Otherwise, the scripts are in the `docker` subdirectory.
 
 You can find the images at [Docker Hub](https://hub.docker.com/r/agoric/cosmic-swingset)
 
-## Bootstrapping
+### Bootstrapping
 
 ```
 # Fill out the node placement options, then go for coffee while it boots.
@@ -297,6 +319,25 @@ ag-setup-cosmos bootstrap --bump
 # Will prompt you for confirmation.
 ag-setup-cosmos destroy
 ```
+
+## With a provisioning code from Agoric
+
+You can request a public testnet provisioning code from https://testnet.agoric.com/
+
+Once you have received the code run:
+
+```
+$ SOLO_NAME=han ./docker/ag-setup-solo --pull
+```
+
+where `han` is the name of your solo vat machine that follows the blockchain.
+
+Then connect to http://localhost:8000 and go to the [Gallery Demo](#gallery-pixel-demo) section.
+
+If you don't have a provisioning code, or otherwise want to run the demo from the code in this directory,
+read [the next section](#different-scenarios).
+
+
 
 # Acknowledgements
 
