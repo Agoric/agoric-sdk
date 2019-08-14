@@ -57,7 +57,7 @@ ag-chain-cosmos --help
 ag-cosmos-helper --help
 ```
 
-(each should display )
+(each should display help on the console for each tool)
 
 ### Choose a scenario
 
