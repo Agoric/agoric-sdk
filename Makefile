@@ -3,6 +3,17 @@ TAG := $(shell test ! -f package.json || sed -ne 's/.*"version": "\(.*\)".*/\1/p
 CHAIN_ID = agoric
 INITIAL_TOKENS = 1000agmedallion
 
+ifneq ("$(wildcard /vagrant)","")
+# Within a VM.  We need to get to the outside.
+INSPECT_ADDRESS = 0.0.0.0
+else
+# On a host machine.  Stay here.
+INSPECT_ADDRESS = 127.0.0.1
+endif
+
+BREAK_CHAIN = false
+NODE_DEBUG = node --inspect-port=$(INSPECT_ADDRESS):9229
+
 include Makefile.ledger
 all: build install
 
@@ -39,7 +50,7 @@ scenario2-setup:
 	@echo "(cd t1 && ../bin/ag-solo start --role=two_client)"
 
 scenario2-run-chain:
-	ROLE=two_chain BOOT_ADDRESS=`cat t1/ag-cosmos-helper-address` $(AGC) start
+	ROLE=two_chain BOOT_ADDRESS=`cat t1/ag-cosmos-helper-address` $(NODE_DEBUG) `$(BREAK_CHAIN) && echo --inspect-brk` $(AGC) start
 scenario2-run-client:
 	cd t1 && ../bin/ag-solo start --role=two_client
 
