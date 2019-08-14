@@ -79,7 +79,7 @@ make scenario3-run-client
 
 Also, as part of `make scenario3-setup`, `bin/ag-solo init <directory>` get called and all the content of the [`vats`](lib/ag-solo/vats) directory gets copied to the `<directory>`
 
-The objects added to `home` are created in [`lib/ag-solo/vats/bootstrap.js`](lib/ag-solo/vats/bootstrap.js).
+The objects added to `home` are created in [`lib/ag-solo/vats/vat-demo.js`](lib/ag-solo/vats/vat-demo.js).
 
 The REPL handler is in [`lib/ag-solo/vats/vat-http.js`](lib/ag-solo/vats/vat-http.js).
 
@@ -340,5 +340,5 @@ read [the next section](#different-scenarios).
 
 
 # Acknowledgements
-
+vat-demo.js
 This work was started by combining the [Cosmos SDK tutorial](https://cosmos.network/docs/tutorial/) with the build process described in a [Golang Node.js addon example](https://github.com/BuildingXwithJS/node-blackfriday-example).
