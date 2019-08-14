@@ -83,8 +83,8 @@ in an optional configuration that allows for many more possibilities.
 To explore further types of digital assets, beyond fungible tokens, we
 decided to create a demo for our
 [testnet](https://github.com/Agoric/cosmic-swingset) in which users
-can buy and sell the right to color a pixel on a webpage. Read more
-[here](/GALLERY-README.md).
+can buy and sell the right to color a pixel on a webpage. Read [more
+about the gallery](/GALLERY-README.md).
 
 ## Gotchas
 

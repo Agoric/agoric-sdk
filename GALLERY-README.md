@@ -21,8 +21,7 @@ of new assets, and safe code reusability.
 The pixel demo runs on [our private
 testnet](https://github.com/Agoric/cosmic-swingset#agorics-cosmic-swingset).
 For instructions on how to run a local, off-chain version for
-yourself, please see [Scenario 3
-here](https://github.com/Agoric/cosmic-swingset#different-scenarios).
+yourself, please see [Scenario 3](https://github.com/Agoric/cosmic-swingset#different-scenarios).
 The testnet documentation also includes a [short walkthrough of the
 demo with sample commands](https://github.com/Agoric/cosmic-swingset#gallery-pixel-demo). If you would rather view the code and learn
 more about how the demo works, feel free to read on.
@@ -32,14 +31,18 @@ more about how the demo works, feel free to read on.
 The pixel demo uses our smart contract framework, called ERTP, or the
 Electronic Rights Transfer Protocol. Throw away all you know about
 public key hashes mapped to account balances, because ERTP doesn't use
-'em. In fact, ERTP itself doesn't have any concept of cryptography. Instead,
-it uses object capabilities to enforce access control. Instead of
-having to prove ownership of a corresponding private key, in the world
-of object capabilities, if your program has a reference to an object,
-it can call methods on that object. If it doesn't have a reference, it
-can't. For more on object capabilities, see [here](http://habitatchronicles.com/2017/05/what-are-capabilities/). For more on ERTP,
-see a quick tutorial [here](README.md) and the ERTP interface descriptions
-[here](core/issuers.chainmail) and [here](core/assays.chainmail) and [here](core/contractHost.chainmail). 
+'em. In fact, ERTP itself doesn't have any concept of cryptography.
+Instead, it uses object capabilities to enforce access control.
+Instead of having to prove ownership of a corresponding private key,
+in the world of object capabilities, if your program has a reference
+to an object, it can call methods on that object. If it doesn't have a
+reference, it can't. For more on object capabilities, see [Chip
+Morningstar's
+post](http://habitatchronicles.com/2017/05/what-are-capabilities/).
+For more on ERTP, [see a quick tutorial](README.md) and the ERTP
+interface descriptions [for issuers.js](core/issuers.chainmail),
+[assays.js](core/assays.chainmail) and [contractHost.js](core/contractHost.chainmail).
+
 
 ## A preemption hierarchy of rights
 
