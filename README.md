@@ -75,14 +75,13 @@ make scenario3-setup
 make scenario3-run-client
 ```
 
-The `lib/ag-solo/vats/` directory contains the source code for all the Vats
-created in the solo vat-machine. The actual filenames are enumerated in
-`lib/ag-solo/init-basedir.js`, so if you add a new Vat, be sure to add it to
-`init-basedir.js` too.
+[`lib/ag-solo/vats/vat-demo.js`](lib/ag-solo/vats/vat-demo.js) contains the code running a vat with the Pixel Gallery Demo.
 
-The objects added to `home` are created in `lib/ag-solo/vats/bootstrap.js`.
+Also, as part of `make scenario3-setup`, `bin/ag-solo init <directory>` get called and all the content of the [`vats`](lib/ag-solo/vats) directory gets copied to the `<directory>`
 
-The REPL handler is in `lib/ag-solo/vats/vat-http.js`.
+The objects added to `home` are created in [`lib/ag-solo/vats/bootstrap.js`](lib/ag-solo/vats/bootstrap.js).
+
+The REPL handler is in [`lib/ag-solo/vats/vat-http.js`](lib/ag-solo/vats/vat-http.js).
 
 The HTML frontend code is pure JS/DOM (no additional libraries yet), in
 `lib/ag-solo/html/index.html` and `lib/ag-solo/html/main.js`.
