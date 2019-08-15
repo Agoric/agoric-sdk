@@ -340,5 +340,5 @@ read [the next section](#different-scenarios).
 
 
 # Acknowledgements
-vat-demo.js
+
 This work was started by combining the [Cosmos SDK tutorial](https://cosmos.network/docs/tutorial/) with the build process described in a [Golang Node.js addon example](https://github.com/BuildingXwithJS/node-blackfriday-example).
