@@ -92,10 +92,10 @@ with the hex color of their choice.
 
 When a user wants to give another user the ability to color a pixel,
 but wants to be able to revoke that ability later, the user can call
-`getChildPayment` and pass the childPayment to the other user. The
+`claimChild` and pass the childPayment to the other user. The
 other user can tell that they aren't getting a payment on the same
 level as one that the gallery would give out, and it could be revoked
-at any point if `revokeChildren()` is called on the original
+at any point if `claimChild()` is called again on the original
 payment. 
 
 ## Buying and selling pixels

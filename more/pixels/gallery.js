@@ -186,11 +186,7 @@ export function makeGallery(
   function tapFaucet() {
     const pixel = lruQueue.popToTail();
     const payment = pixelToPayment.get(getPixelStr(pixel));
-    payment.revokeChildren();
-
-    // give the user the child use rights, from which they can get an
-    // ERTP object
-    return payment.getChildPayment();
+    return payment.claimChild();
   }
 
   function pricePixelInternal(rawPixel) {

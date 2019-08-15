@@ -83,13 +83,12 @@ function makeAliceMaker(E, log, contractHost) {
           // create child use object and send to bob
           // keep the original ERTP object and use right obj
 
-          const childPayment = await E(pixelPaymentP).getChildPayment();
-          const childPayment2 = await E(pixelPaymentP).getChildPayment();
+          const childPayment = await E(pixelPaymentP).claimChild();
+          const childPayment2 = await E(pixelPaymentP).claimChild();
 
-          const result = await E(bob).receiveChildPayment(childPayment);
+          const result = await E(bob).receiveChildPayment(childPayment2);
 
-          // check that Alice's childPayment and childPayment2 are
-          // both the same thing and both are empty.
+          // check that Alice's childPayment2 subsumed childPayment
 
           showPaymentBalance('childPayment', childPayment);
           showPaymentBalance('childPayment2', childPayment2);
@@ -107,7 +106,7 @@ function makeAliceMaker(E, log, contractHost) {
           );
 
           // alice takes the right back
-          await E(pixelPaymentP).revokeChildren();
+          await E(pixelPaymentP).claimChild();
           await E(pixels).changeColorAll(
             '#9FBF95', // a light green
           );
@@ -297,8 +296,8 @@ function makeAliceMaker(E, log, contractHost) {
           // this tests how spending is related to revoking delegated
           // rights
           const pixelPaymentP = await E(gallery).tapFaucet();
-          const childPaymentP = E(pixelPaymentP).getChildPayment();
-          const grandchildPaymentP = E(childPaymentP).getChildPayment();
+          const childPaymentP = E(pixelPaymentP).claimChild();
+          const grandchildPaymentP = E(childPaymentP).claimChild();
 
           const { pixelIssuer } = await E(gallery).getIssuers();
           const purseP = E(pixelIssuer).makeEmptyPurse();
@@ -347,20 +346,9 @@ function makeAliceMaker(E, log, contractHost) {
           showPaymentBalance('childPurseP', childPurseP);
           showPaymentBalance('grandchildPurseP', grandchildPurseP);
 
-          await E(childPaymentP).revokeChildren(); // does nothing
+          await E(childPaymentP).claimChild(); // does nothing
 
-          log('childPayment.revokeChildren() does nothing');
-
-          showPaymentBalance('originalPixelPayment', pixelPaymentP);
-          showPaymentBalance('childPayment', childPaymentP);
-          showPaymentBalance('grandchildPayment', grandchildPaymentP);
-          showPaymentBalance('purse', purseP);
-          showPaymentBalance('childPurseP', childPurseP);
-          showPaymentBalance('grandchildPurseP', grandchildPurseP);
-
-          await E(purseP).revokeChildren(); // revokes childPurse and grandchildPurse
-
-          log('purse.revokeChildren() revokes childPurse and grandchildPurse');
+          log('childPayment.claimChild() does nothing');
 
           showPaymentBalance('originalPixelPayment', pixelPaymentP);
           showPaymentBalance('childPayment', childPaymentP);
@@ -368,6 +356,42 @@ function makeAliceMaker(E, log, contractHost) {
           showPaymentBalance('purse', purseP);
           showPaymentBalance('childPurseP', childPurseP);
           showPaymentBalance('grandchildPurseP', grandchildPurseP);
+
+          await E(purseP).claimChild(); // revokes childPurse and grandchildPurse
+
+          log('purse.claimChild() revokes childPurse and grandchildPurse');
+
+          showPaymentBalance('originalPixelPayment', pixelPaymentP);
+          showPaymentBalance('childPayment', childPaymentP);
+          showPaymentBalance('grandchildPayment', grandchildPaymentP);
+          showPaymentBalance('purse', purseP);
+          showPaymentBalance('childPurseP', childPurseP);
+          showPaymentBalance('grandchildPurseP', grandchildPurseP);
+        },
+        async doGetAllPixels() {
+          log('++ alice.doGetAllPixels starting');
+
+          const { pixelIssuer } = await E(gallery).getIssuers();
+          const purse = await E(pixelIssuer).makeEmptyPurse();
+          for (let i = 0; i < 100; i += 1) {
+            // eslint-disable-next-line no-await-in-loop
+            const pixelPayment = await E(gallery).tapFaucet();
+            // eslint-disable-next-line no-await-in-loop
+            await E(purse).depositAll(pixelPayment);
+          }
+          showPaymentBalance('purse', purse);
+          const amount = await E(purse).getBalance();
+          log(amount.quantity.length);
+
+          // we have successfully obtained all the pixels from the gallery
+
+          for (let i = 0; i < 10; i += 1) {
+            // eslint-disable-next-line no-await-in-loop
+            const pixelPayment = await E(gallery).tapFaucet();
+            showPaymentBalance('payment', pixelPayment);
+          }
+
+          // These payments aren't zero
         },
       });
       return alice;

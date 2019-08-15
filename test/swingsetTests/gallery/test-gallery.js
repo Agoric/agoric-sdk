@@ -225,14 +225,14 @@ const expectedSpendAndRevoke = [
   'purse balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
   'childPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
   'grandchildPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'childPayment.revokeChildren() does nothing',
+  'childPayment.claimChild() does nothing',
   'originalPixelPayment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
   'childPayment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
   'grandchildPayment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
   'purse balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
   'childPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
   'grandchildPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'purse.revokeChildren() revokes childPurse and grandchildPurse',
+  'purse.claimChild() revokes childPurse and grandchildPurse',
   'originalPixelPayment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
   'childPayment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
   'grandchildPayment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
@@ -242,7 +242,7 @@ const expectedSpendAndRevoke = [
 ];
 
 // Mark asks: If the customized payment is spent (or even if the original payment
-// is spent if that's possible), calls revokeChildren of that
+// is spent if that's possible), calls getChild of that
 // customized payment, or revoke the children by other means? Does
 // this revocation propagate to grandchildren, etc?
 
@@ -257,9 +257,9 @@ const expectedSpendAndRevoke = [
 //    else should change
 // 4. Deposit grandchildPayment into grandchildPurse. Same thing here
 //    and nothing else should change.
-// 5. Try calling revokeChildren() on the (now empty) childPayment.
+// 5. Try calling claimChild() on the (now empty) childPayment.
 //    Nothing happens.
-// 6. Call revokeChildren() on the purse, which has a pixel in it.
+// 6. Call claimChild() on the purse, which has a pixel in it.
 //    This revokes the same pixel from the childPurse and grandchildPurse
 
 test('gallery - create childPayment, spend, revoke with SES', async t => {
@@ -271,5 +271,39 @@ test('gallery - create childPayment, spend, revoke with SES', async t => {
 test('gallery - create childPayment, spend, revoke without SES', async t => {
   const dump = await main(false, 'gallery', ['spendAndRevoke']);
   t.deepEquals(dump.log, expectedSpendAndRevoke);
+  t.end();
+});
+
+const expectedGetAllPixels = [
+  '=> setup called',
+  'starting getAllPixels',
+  'starting testGetAllPixels',
+  '++ alice.doGetAllPixels starting',
+  'purse balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4},{"x":2,"y":2},{"x":3,"y":0},{"x":3,"y":8},{"x":4,"y":6},{"x":5,"y":4},{"x":6,"y":2},{"x":7,"y":0},{"x":7,"y":8},{"x":8,"y":6},{"x":9,"y":4},{"x":0,"y":2},{"x":1,"y":0},{"x":1,"y":9},{"x":2,"y":8},{"x":3,"y":7},{"x":4,"y":7},{"x":5,"y":6},{"x":6,"y":5},{"x":7,"y":4},{"x":8,"y":3},{"x":9,"y":2},{"x":0,"y":1},{"x":1,"y":1},{"x":2,"y":1},{"x":3,"y":2},{"x":4,"y":2},{"x":5,"y":2},{"x":6,"y":3},{"x":7,"y":3},{"x":8,"y":4},{"x":9,"y":5},{"x":0,"y":5},{"x":1,"y":6},{"x":2,"y":7},{"x":4,"y":0},{"x":5,"y":1},{"x":6,"y":4},{"x":7,"y":6},{"x":8,"y":8},{"x":9,"y":9},{"x":1,"y":2},{"x":2,"y":5},{"x":3,"y":9},{"x":5,"y":3},{"x":6,"y":7},{"x":8,"y":0},{"x":9,"y":3},{"x":0,"y":7},{"x":2,"y":3},{"x":3,"y":6},{"x":5,"y":5},{"x":6,"y":9},{"x":8,"y":5},{"x":0,"y":0},{"x":1,"y":7},{"x":3,"y":4},{"x":5,"y":0},{"x":7,"y":1},{"x":8,"y":9},{"x":0,"y":6},{"x":2,"y":6},{"x":4,"y":5},{"x":6,"y":6},{"x":8,"y":7},{"x":0,"y":8},{"x":3,"y":1},{"x":5,"y":7},{"x":7,"y":7},{"x":9,"y":8},{"x":2,"y":4},{"x":4,"y":9},{"x":7,"y":9},{"x":0,"y":4},{"x":3,"y":5},{"x":6,"y":1},{"x":9,"y":6},{"x":2,"y":9},{"x":6,"y":0},{"x":9,"y":7},{"x":4,"y":1},{"x":7,"y":5},{"x":1,"y":5},{"x":5,"y":9},{"x":0,"y":9},{"x":5,"y":8},{"x":1,"y":3},{"x":7,"y":2},{"x":3,"y":3},{"x":9,"y":1},{"x":8,"y":1},{"x":4,"y":8},{"x":4,"y":4},{"x":6,"y":8},{"x":9,"y":0},{"x":2,"y":0},{"x":1,"y":8},{"x":8,"y":2},{"x":4,"y":3},{"x":0,"y":3}]}',
+  '100',
+  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
+  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":2,"y":2}]}',
+  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":3,"y":0}]}',
+  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":3,"y":8}]}',
+  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":4,"y":6}]}',
+  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":5,"y":4}]}',
+  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":6,"y":2}]}',
+  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":7,"y":0}]}',
+  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":7,"y":8}]}',
+  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":8,"y":6}]}',
+];
+
+// What is the behavior of the gallery when we call tapFaucet enough
+// times to amass all of the pixels and start revoking from ourselves?
+
+test('gallery - get all pixels', async t => {
+  const dump = await main(true, 'gallery', ['getAllPixels']);
+  t.deepEquals(dump.log, expectedGetAllPixels);
+  t.end();
+});
+
+test('gallery - get all pixels without SES', async t => {
+  const dump = await main(false, 'gallery', ['getAllPixels']);
+  t.deepEquals(dump.log, expectedGetAllPixels);
   t.end();
 });

@@ -37,7 +37,7 @@ function makePixelConfigMaker(
 
     // Lazily creates the childMint if it doesn't already
     // exist
-    function getOrMakeChildMint(issuer) {
+    function prepareChildMint(issuer) {
       if (childMint === undefined) {
         const makePixelConfigChild = makePixelConfigMaker(
           makeUseObj,
@@ -48,14 +48,12 @@ function makePixelConfigMaker(
         childMint = makeMint(description, makePixelConfigChild);
         childIssuer = childMint.getIssuer();
       }
-      return childMint;
     }
 
     // This method is used in the creation of childPayments and
     // childPurses where we want the amount to be the same as in the
     // original asset apart from the difference in issuers.
     function getChildAmount(issuer, amount) {
-      getOrMakeChildMint(issuer);
       // quantity is the same, but amounts are different for
       // different issuers
       const { quantity } = amount;
@@ -64,7 +62,6 @@ function makePixelConfigMaker(
 
     return harden({
       makeCustomPayment(superPayment, issuer) {
-        let childPayment;
         return harden({
           ...superPayment,
           // This creates a new use object on every call. Please see
@@ -73,35 +70,25 @@ function makePixelConfigMaker(
           getUse() {
             return makeUseObj(issuer, superPayment);
           },
-          // Mint a new payment from the child mint with the same
-          // quantity as the original payment
-          getChildPayment() {
-            if (childPayment === undefined) {
-              const childAmount = getChildAmount(
-                issuer,
-                superPayment.getBalance(),
-              );
-              const childPurse = childMint.mint(childAmount);
-              childPayment = childPurse.withdrawAll();
-            }
-            return childPayment;
-          },
-          // Remove the amount of this payment from the purses and
-          // payments of the childMint. Removes recursively down the
-          // chain until it fails to find a childMint.
-          revokeChildren() {
-            if (childMint !== undefined) {
-              const childAmount = getChildAmount(
-                issuer,
-                superPayment.getBalance(),
-              );
-              childMint.revoke(childAmount);
-            }
+          // Revoke all descendants of this payment and mint a new
+          // payment from the child mint with the same quantity as the
+          // original payment
+          claimChild() {
+            prepareChildMint(issuer);
+            const childAmount = getChildAmount(
+              issuer,
+              superPayment.getBalance(),
+            );
+            // Remove the amount of this payment from the purses and
+            // payments of the childMint. Removes recursively down the
+            // chain until it fails to find a childMint.
+            childMint.revoke(childAmount);
+            const childPurse = childMint.mint(childAmount);
+            return childPurse.withdrawAll();
           },
         });
       },
       makeCustomPurse(superPurse, issuer) {
-        let childPurse;
         return harden({
           ...superPurse,
           // This creates a new use object on every call. Please see
@@ -110,29 +97,17 @@ function makePixelConfigMaker(
           getUse() {
             return makeUseObj(issuer, superPurse);
           },
-          // Mint a new purse from the child mint with the same
-          // quantity as the original purse
-          getChildPurse() {
-            if (childPurse === undefined) {
-              const childAmount = getChildAmount(
-                issuer,
-                superPurse.getBalance(),
-              );
-              childPurse = childMint.mint(childAmount);
-            }
-            return childPurse;
-          },
-          // Remove the amount of this purse from the purses and
-          // payments of the childMint. Removes recursively down the
-          // chain until it fails to find a childMint.
-          revokeChildren() {
-            if (childMint !== undefined) {
-              const childAmount = getChildAmount(
-                issuer,
-                superPurse.getBalance(),
-              );
-              childMint.revoke(childAmount);
-            }
+          // Revoke all descendants of this purse and mint a new purse
+          // from the child mint with the same quantity as the
+          // original purse
+          claimChild() {
+            prepareChildMint(issuer);
+            const childAmount = getChildAmount(issuer, superPurse.getBalance());
+            // Remove the amount of this payment from the purses and
+            // payments of the childMint. Removes recursively down the
+            // chain until it fails to find a childMint.
+            childMint.revoke(childAmount);
+            return childMint.mint(childAmount);
           },
         });
       },
@@ -149,17 +124,9 @@ function makePixelConfigMaker(
           revoke(amount) {
             amount = assay.coerce(amount);
 
-            // wrap this in a try/catch because sometimes the amount
-            // we are trying to destroy will not have been made yet,
-            // in the case of a childMint.
-            // TODO: handle this better
-            try {
-              mintKeeper.destroy(amount);
-              if (childMint !== undefined) {
-                childMint.revoke(getChildAmount(issuer, amount)); // recursively revoke child assets
-              }
-            } catch (err) {
-              console.log(err);
+            mintKeeper.destroy(amount);
+            if (childMint !== undefined) {
+              childMint.revoke(getChildAmount(issuer, amount)); // recursively revoke child assets
             }
           },
         });
@@ -174,7 +141,7 @@ function makePixelConfigMaker(
           },
           // The child issuer is one level down in the chain of issuers.
           getChildIssuer() {
-            getOrMakeChildMint(superIssuer);
+            prepareChildMint(superIssuer);
             return childIssuer;
           },
           // Returns true if the alleged descendant issuer is either a

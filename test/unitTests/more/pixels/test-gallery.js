@@ -17,6 +17,56 @@ test('tapFaucet', t => {
   t.end();
 });
 
+test('get all pixels repeatedly', async t => {
+  const { userFacet: gallery } = makeGallery();
+  const { pixelIssuer } = await gallery.getIssuers();
+  const pixelAssay = pixelIssuer.getAssay();
+  const purse = await pixelIssuer.makeEmptyPurse();
+  for (let i = 0; i < 100; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    const pixelPayment = await gallery.tapFaucet();
+    // eslint-disable-next-line no-await-in-loop
+    await purse.depositAll(pixelPayment);
+  }
+  const pursePixels = pixelAssay.quantity(purse.getBalance());
+  // eslint-disable-next-line prettier/prettier
+  t.deepEquals([ { x: 1, y: 4 }, { x: 2, y: 2 }, { x: 3, y: 0 }, { x: 3, y: 8 }, { x: 4, y: 6 }, { x: 5, y: 4 }, { x: 6, y: 2 }, { x: 7, y: 0 }, { x: 7, y: 8 }, { x: 8, y: 6 }, { x: 9, y: 4 }, { x: 0, y: 2 }, { x: 1, y: 0 }, { x: 1, y: 9 }, { x: 2, y: 8 }, { x: 3, y: 7 }, { x: 4, y: 7 }, { x: 5, y: 6 }, { x: 6, y: 5 }, { x: 7, y: 4 }, { x: 8, y: 3 }, { x: 9, y: 2 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 2 }, { x: 4, y: 2 }, { x: 5, y: 2 }, { x: 6, y: 3 }, { x: 7, y: 3 }, { x: 8, y: 4 }, { x: 9, y: 5 }, { x: 0, y: 5 }, { x: 1, y: 6 }, { x: 2, y: 7 }, { x: 4, y: 0 }, { x: 5, y: 1 }, { x: 6, y: 4 }, { x: 7, y: 6 }, { x: 8, y: 8 }, { x: 9, y: 9 }, { x: 1, y: 2 }, { x: 2, y: 5 }, { x: 3, y: 9 }, { x: 5, y: 3 }, { x: 6, y: 7 }, { x: 8, y: 0 }, { x: 9, y: 3 }, { x: 0, y: 7 }, { x: 2, y: 3 }, { x: 3, y: 6 }, { x: 5, y: 5 }, { x: 6, y: 9 }, { x: 8, y: 5 }, { x: 0, y: 0 }, { x: 1, y: 7 }, { x: 3, y: 4 }, { x: 5, y: 0 }, { x: 7, y: 1 }, { x: 8, y: 9 }, { x: 0, y: 6 }, { x: 2, y: 6 }, { x: 4, y: 5 }, { x: 6, y: 6 }, { x: 8, y: 7 }, { x: 0, y: 8 }, { x: 3, y: 1 }, { x: 5, y: 7 }, { x: 7, y: 7 }, { x: 9, y: 8 }, { x: 2, y: 4 }, { x: 4, y: 9 }, { x: 7, y: 9 }, { x: 0, y: 4 }, { x: 3, y: 5 }, { x: 6, y: 1 }, { x: 9, y: 6 }, { x: 2, y: 9 }, { x: 6, y: 0 }, { x: 9, y: 7 }, { x: 4, y: 1 }, { x: 7, y: 5 }, { x: 1, y: 5 }, { x: 5, y: 9 }, { x: 0, y: 9 }, { x: 5, y: 8 }, { x: 1, y: 3 }, { x: 7, y: 2 }, { x: 3, y: 3 }, { x: 9, y: 1 }, { x: 8, y: 1 }, { x: 4, y: 8 }, { x: 4, y: 4 }, { x: 6, y: 8 }, { x: 9, y: 0 }, { x: 2, y: 0 }, { x: 1, y: 8 }, { x: 8, y: 2 }, { x: 4, y: 3 }, { x: 0, y: 3 } ], pursePixels);
+  t.equals(pursePixels.length, 100);
+
+  // we have successfully obtained all the pixels from the gallery
+
+  for (let i = 0; i < 10; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    const pixelPayment = await gallery.tapFaucet();
+    t.notDeepEqual(pixelAssay.quantity(pixelPayment.getBalance()), []);
+  }
+  t.end();
+});
+
+test('get all pixels and use them', async t => {
+  const { userFacet: gallery } = makeGallery();
+  const bundles = [];
+  for (let i = 0; i < 100; i += 1) {
+    const pixelPayment = gallery.tapFaucet();
+    const useObj = pixelPayment.getUse();
+    bundles.push(useObj);
+  }
+  bundles.forEach(b => b.changeColorAll('red'));
+
+  t.deepEquals(bundles[0].getRawPixels(), [{ x: 1, y: 4 }]);
+
+  const pixelPayment = gallery.tapFaucet();
+  const useObj = pixelPayment.getUse();
+  bundles.push(useObj);
+
+  t.deepEquals(bundles[0].getRawPixels(), []);
+
+  t.throws(() => bundles[0].changeColorAll('blue'));
+  t.doesNotThrow(() => bundles[1].changeColorAll('blue'));
+  t.doesNotThrow(() => bundles[bundles.length - 1].changeColorAll('blue'));
+  t.end();
+});
+
 test('get exclusive pixel payment from faucet', t => {
   const { userFacet } = makeGallery();
   const payment = userFacet.tapFaucet();
