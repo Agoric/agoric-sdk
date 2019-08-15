@@ -1,5 +1,19 @@
 User-visible changes in ERTP:
 
+## Release v0.1.1 (8/15/2019)
+
+Core ERTP:
+* Made the `makeMint` config act in a more "trait-like" manner.
+  Instead of creating custom purses and payments by calling a function
+  that returns the custom purse or payment, the "trait-like" style
+  combines the core methods of a purse or payment with the custom
+  methods, overriding any custom methods with the core methods if
+  there is any overlap. 
+
+Pixel Demo:
+* Fixed a bug in which `tapFaucet` did not return newly minted
+  `pixelPayments` but instead returned previously created ones.
+
 ## Release v0.1.0 (8/14/2019)
 
 Core ERTP:
