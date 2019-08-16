@@ -99,4 +99,5 @@ export const needDoRun = async (cmd, ...opts) => {
   if (ret !== 0) {
     throw `Aborted with exit code ${ret}`;
   }
+  return ret;
 };

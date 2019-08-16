@@ -35,6 +35,7 @@ const PROVISION_DIR = 'provision';
 const PROVISIONER_NODE = 'node0'; // FIXME: Allow configuration.
 const COSMOS_DIR = 'ag-chain-cosmos';
 const CONTROLLER_DIR = 'ag-pserver';
+const SECONDS_BETWEEN_BLOCKS = 5;
 
 // This is needed for hyphenated groups.
 process.env.ANSIBLE_TRANSFORM_INVALID_GROUP_CHARS = 'ignore';
@@ -64,6 +65,31 @@ const guardFile = async (file, maker) => {
     }
   }
   return ret;
+};
+
+const waitForStatus = async (user, host, service, doRetry, acceptFn) => {
+  const hostArgs = host ? [`-l${host}`] : [];
+  const serviceArgs = service ? [`-eservice=${service}`] : [];
+  let retryNum = 0;
+  for (;;) {
+    // eslint-disable-next-line no-await-in-loop
+    await doRetry(retryNum);
+    let buf = '';
+    // eslint-disable-next-line no-await-in-loop
+    const code = await needDoRun(
+      playbook('status', `-euser=${user}`, ...hostArgs, ...serviceArgs),
+      undefined,
+      chunk => {
+        process.stdout.write(chunk);
+        buf += String(chunk);
+      },
+    );
+    const accepted = acceptFn(buf, code);
+    if (accepted !== undefined) {
+      return accepted;
+    }
+    retryNum += 1;
+  }
 };
 
 const provisionOutput = async () => {
@@ -404,14 +430,32 @@ show-config      display the client connection parameters
           `-eexecline="/usr/local/bin/ag-solo start --role=controller"`,
         ]),
       );
-      await guardFile(`${CONTROLLER_DIR}/solo-start.stamp`, () =>
-        needReMain([
+      await guardFile(`${CONTROLLER_DIR}/solo-start.stamp`, async () => {
+        await needReMain([
           'play',
           'start',
           '-eservice=ag-controller',
           '-euser=ag-pserver',
-        ]),
-      );
+        ]);
+
+        const svc = 'ag-controller';
+        await waitForStatus(
+          'ag-pserver', // user
+          PROVISIONER_NODE, // host
+          svc, // service
+          _retries =>
+            sleep(
+              SECONDS_BETWEEN_BLOCKS + 1,
+              `to check if ${chalk.underline(svc)} has found a block`,
+            ),
+          (buf, code) => {
+            if (code) {
+              return undefined;
+            }
+            return buf.match(/: new block on/) ? true : undefined;
+          },
+        );
+      });
 
       // Install any pubkeys from a former instantiation.
       await guardFile(`${CONTROLLER_DIR}/pubkeys.stamp`, () =>
@@ -586,34 +630,31 @@ or "${chalk.yellow.bold(`curl '${pserverUrl}/request-code?nickname=MY-NICK'`)}"`
     case 'wait-for-any': {
       let [host] = args.slice(1);
       await inited();
+
       if (!host) {
         host = 'ag-chain-cosmos';
       }
 
       // Detect when blocks are being produced.
-      let height = 0;
-      while (true) {
-        await sleep(
-          6,
-          `to check if ${chalk.underline(host)} has committed a block`,
-        );
-        let buf = '';
-        const code = await needDoRun(
-          playbook('status', '-l', host),
-          undefined,
-          function(chunk) {
-            process.stdout.write(chunk);
-            buf += String(chunk);
-          },
-        );
-        const match = buf.match(
-          /Committed state.*module=state.*height=([1-9]\d*)/,
-        );
-        if (match) {
-          height = match[1];
-          break;
-        }
-      }
+      const height = await waitForStatus(
+        'ag-chain-cosmos', // user
+        host, // host
+        'ag-chain-cosmos', // service
+        _retries =>
+          sleep(
+            SECONDS_BETWEEN_BLOCKS + 1,
+            `to check if ${chalk.underline(host)} has committed a block`,
+          ),
+        buf => {
+          const match = buf.match(
+            /Committed state.*module=state.*height=([1-9]\d*)/,
+          );
+          if (match) {
+            return match[1];
+          }
+          return undefined;
+        },
+      );
 
       const atLeast = host.match(/^node\d+/) ? '' : `At least one of `;
       console.error(

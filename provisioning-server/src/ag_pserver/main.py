@@ -1,4 +1,4 @@
-from twisted.internet.task import react
+from twisted.internet.task import react, deferLater
 from twisted.web import static, resource, server
 from twisted.web.template import Element, XMLFile, renderer, flattenString
 from twisted.internet import endpoints, defer, protocol
@@ -8,6 +8,7 @@ import treq
 import os.path
 import os
 import json
+import random
 
 from twisted.python import log
 import sys
@@ -45,7 +46,7 @@ class Options(usage.Options):
         ['start', None, StartOptions, 'Start the HTTP server'],
         ]
     optParameters = [
-        ["home", None, os.environ["HOME"] + '/.ag-pserver', "provisioning-server's state directory"],
+        ["home", None, os.path.join(os.environ["HOME"], '.ag-pserver'), "provisioning-server's state directory"],
         ]
 
 class SendInputAndWaitProtocol(protocol.ProcessProtocol):
@@ -67,10 +68,10 @@ class SendInputAndWaitProtocol(protocol.ProcessProtocol):
         self.deferred.callback(reason.value.exitCode)
 
 def cosmosConfigFile(home):
-    return home + '/cosmos-chain.json'
+    return os.path.join(home, 'cosmos-chain.json')
 
 def pubkeyDatabase(home):
-  return home + '/pubkeys.jsona'
+    return os.path.join(home, 'pubkeys.jsona')
 
 class ConfigElement(Element):
     loader = XMLFile(os.path.join(htmldir, "index.html"))
@@ -159,7 +160,7 @@ class Provisioner(resource.Resource):
 
         args = ConfigElement.gatherArgs(self.opts)
         html = yield flattenString(None, ConfigElement(*args))
-        defer.returnValue(html)
+        return html
 
     def render_GET(self, req):
         d = self.build_page()
@@ -185,31 +186,40 @@ def enablePubkey(reactor, opts, config, nickname, pubkey):
     # FIXME: Make more resilient to DOS attacks, or attempts
     # to drain all our agmedallions.
     if INITIAL_TOKEN is not None:
-        d = defer.Deferred()
-        processProtocol = SendInputAndWaitProtocol(d, AG_BOOTSTRAP_PASSWORD + b'\n')
-        program = 'ag-cosmos-helper' 
-        reactor.spawnProcess(processProtocol, '/usr/local/bin/' + program, args=[
-            program, 'tx', 'send', pubkey,
-            INITIAL_TOKEN, '--from', config['bootstrapAddress'],
-            '--yes', '--chain-id', config['chainName'],
-            '--node',
-            'tcp://' + config['rpcAddrs'][0], # TODO: rotate on failure
-            '--home', os.environ['HOME'] + '/controller/ag-cosmos-helper-statedir',
-            '--broadcast-mode', 'block' # Don't return until committed.
-            ])
-        code = yield d
-        print('transfer of ' + INITIAL_TOKEN + ' returned ' + str(code))
+        retries = 10
+        code = None
+        while code != 0 and retries > 0:
+            if code is not None:
+                # Wait 3 seconds between sends.
+                yield deferLater(reactor, 3, lambda: None)
+            retries -= 1
+            rpcAddr = random.choice(config['rpcAddrs'])
+            print('transferring ' + INITIAL_TOKEN + ' to ' + pubkey + ' via ' + rpcAddr)
+            d = defer.Deferred()
+            processProtocol = SendInputAndWaitProtocol(d, AG_BOOTSTRAP_PASSWORD + b'\n')
+            program = 'ag-cosmos-helper' 
+            reactor.spawnProcess(processProtocol, '/usr/local/bin/' + program, args=[
+                program, 'tx', 'send', pubkey,
+                INITIAL_TOKEN, '--from', config['bootstrapAddress'],
+                '--yes', '--chain-id', config['chainName'],
+                '--node',
+                'tcp://' + rpcAddr,
+                '--home', os.path.join(opts['home'], 'ag-cosmos-helper-statedir'),
+                '--broadcast-mode', 'block' # Don't return until committed.
+                ])
+            code = yield d
+            print('transfer returned ' + str(code))
         if code != 0:
-          return ret({"ok": False, "error": 'transfer returned ' + str(code)})
+            return ret({"ok": False, "error": 'transfer returned ' + str(code)})
 
     controller_url = opts["controller"]
-    #print('contacting ' + controller_url)
+    print('contacting ' + controller_url)
     m = json.dumps(mobj)
 
     # this HTTP request goes to the controller machine, where it should
     # be routed to vat-provisioning.js and the pleaseProvision() method.
     try:
-        resp = yield treq.post(controller_url, m.encode('utf-8'),
+        resp = yield treq.post(controller_url, m.encode('utf-8'), reactor=reactor,
                                 headers={b'Content-Type': [b'application/json']})
         if resp.code < 200 or resp.code >= 300:
             raise Exception('invalid response code ' + str(resp.code))
@@ -354,6 +364,8 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
     doLatest(None)
 
   def doLatest(d):
+    if d is not None:
+      print(d)
     if len(pkobjs) == 0:
       finished.callback(d)
       return
