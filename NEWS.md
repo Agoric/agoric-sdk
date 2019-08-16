@@ -6,6 +6,7 @@ REPL:
 * Upgrade to @agoric/ertp version 0.1.1.
 * Replace expression evaluator with a "script" evaluator.
   IIFEs are no longer needed to evaluate statements.
+* `ag-setup-solo` no longer overwrites apparently good chain state.
 * Indicate `home.LOADING` until the chain bundle is received.
 * `docker/ag-solo` and `docker/ag-setup-solo` now accept a
   `HOST_PORT` environment variable to designate what TCP port

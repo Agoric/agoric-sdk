@@ -40,8 +40,11 @@ class Options(usage.Options):
         self['basedir'] = os.environ['AG_SOLO_BASEDIR'] = basedir
 
 
-def setIngressAndRestart(sm):
+def setIngress(sm):
+    print('Setting chain parameters with ' + AG_SOLO)
     subprocess.run([AG_SOLO, 'set-gci-ingress', '--chainID=%s' % sm['chainName'], sm['gci'], *sm['rpcAddrs']], check=True)
+def restart():
+    print('Restarting ' + AG_SOLO)
     os.execvp(AG_SOLO, [AG_SOLO, 'start', '--role=client'])
 
 @defer.inlineCallbacks
@@ -62,7 +65,8 @@ def run_client(reactor, o, pubkey):
         return
 
     BASEDIR = o['basedir']
-    setIngressAndRestart(sm)
+    setIngress(sm)
+    restart()
 
 def doInit(o):
     BASEDIR = o['basedir']
@@ -90,6 +94,29 @@ def main():
         print('Cancelling!')
         sys.exit(1)
 
+    # Download the netconfig.
+    print('downloading netconfig from', o['netconfig'])
+    req = urllib.request.Request(o['netconfig'], data=None, headers={'User-Agent': USER_AGENT})
+    resp = urllib.request.urlopen(req)
+    encoding = resp.headers.get_content_charset('utf-8')
+    decoded = resp.read().decode(encoding)
+    netconfig = json.loads(decoded)
+
+    connections_json = os.path.join(o['basedir'], 'connections.json')
+    conns = []
+    try:
+      f = open(connections_json)
+      conns = json.loads(f.read())
+    except FileNotFoundError:
+      pass
+
+    # Maybe just run the ag-solo command if our params already match.
+    for conn in conns:
+      if 'GCI' in conn and conn['GCI'] == netconfig['gci']:
+        print('Already have an entry for ' + conn['GCI'] + '; not replacing')
+        restart()
+        sys.exit(1)
+
     # Blow away everything except the key file and state dir.
     helperStateDir = os.path.join(o['basedir'], 'ag-cosmos-helper-statedir')
     for name in os.listdir(o['basedir']):
@@ -104,13 +131,6 @@ def main():
     # Upgrade the ag-solo files.
     doInit(o)
 
-    # Download the netconfig.
-    print('downloading netconfig from', o['netconfig'])
-    req = urllib.request.Request(o['netconfig'], data=None, headers={'User-Agent': USER_AGENT})
-    resp = urllib.request.urlopen(req)
-    encoding = resp.headers.get_content_charset('utf-8')
-    decoded = resp.read().decode(encoding)
-    netconfig = json.loads(decoded)
-
-    setIngressAndRestart(netconfig)
+    setIngress(netconfig)
+    restart()
     sys.exit(1)
