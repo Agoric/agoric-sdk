@@ -772,7 +772,16 @@ or "${chalk.yellow.bold(`curl '${pserverUrl}/request-code?nickname=MY-NICK'`)}"`
         validators.push(...obj.validators);
       }
       first.validators = validators;
-      process.stdout.write(JSON.stringify(first, undefined, 2));
+
+      const stdin = streamFromString(JSON.stringify(first, undefined, 2));
+
+      // Apply the Agoric overrides from set-json.js.
+      setSilent(true);
+      await needDoRun(
+        [resolve(__dirname, 'set-json.js'), '-', '--agoric-genesis-overrides'],
+        stdin,
+      );
+
       break;
     }
 

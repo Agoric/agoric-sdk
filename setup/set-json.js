@@ -5,7 +5,18 @@ const process = require('process');
 const fs = require('fs');
 
 // point this at ~/.ag-cosmos-chain/config/genesis.json
-const [file, ...substs] = process.argv.slice(2);
+const [file, ...sargs] = process.argv.slice(2);
+
+const assigns = sargs.reduce((prior, assign) => {
+  if (assign === '--agoric-genesis-overrides') {
+    prior.push(
+      `app_state.auth.params.tx_size_cost_per_byte="0"`,
+    );
+  } else {
+    prior.push(assign);
+  }
+  return prior;
+}, []);
 
 let config;
 try {
@@ -24,7 +35,7 @@ try {
   }
 }
 
-for (const pathEquals of substs) {
+for (const pathEquals of assigns) {
   const match = pathEquals.match(/^([^=]+)=(.*)$/);
   if (!match) {
     throw Error(`not a path=value argument ${pathEquals}`);
