@@ -1,8 +1,9 @@
 #! /bin/sh
-PORT=8000
 SOLO_NAME=${SOLO_NAME-agoric}
 SOLO_HOME=${SOLO_HOME-$SOLO_NAME}
 IMAGE=agoric/cosmic-swingset-solo
+PORT=${PORT-8000}
+HOST_PORT=${HOST_PORT-$PORT}
 FLAGS=
 case "$1" in
 --pull)
@@ -15,7 +16,7 @@ if test "$1" = shell; then
   FLAGS=--entrypoint=/bin/bash
   shift
 else
-  FLAGS=-p127.0.0.1:$PORT:$PORT
+  FLAGS=-p127.0.0.1:$HOST_PORT:$PORT
 fi
 exec docker run \
   --volume=ag-solo-state:/usr/src/app/solo \

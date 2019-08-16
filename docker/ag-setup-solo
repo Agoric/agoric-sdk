@@ -2,6 +2,7 @@
 SOLO_NAME=${SOLO_NAME-agoric}
 SOLO_HOME=${SOLO_HOME-$SOLO_NAME}
 PORT=${PORT-8000}
+HOST_PORT=${HOST_PORT-$PORT}
 IMAGE=agoric/cosmic-swingset-setup-solo
 case "$1" in
 --pull)
@@ -19,7 +20,7 @@ else
   shift
 fi
 exec docker run \
-  -p127.0.0.1:$PORT:$PORT \
+  -p127.0.0.1:$HOST_PORT:$PORT \
   --volume=ag-solo-state:/usr/src/app/solo \
   -eAG_SOLO_BASEDIR="$SOLO_HOME" \
   --rm -it $FLAGS \
