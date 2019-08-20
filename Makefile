@@ -42,6 +42,7 @@ scenario2-setup:
 	-rm -r ~/.ag-chain-cosmos
 	-rm ag-cosmos-chain-state.json
 	$(AGC) init --chain-id=$(CHAIN_ID)
+	./setup/set-json.js ~/.ag-chain-cosmos/config/genesis.json --agoric-genesis-overrides
 	rm -rf t1
 	bin/ag-solo init t1
 	$(AGC) add-genesis-account `cat t1/ag-cosmos-helper-address` $(INITIAL_TOKENS)

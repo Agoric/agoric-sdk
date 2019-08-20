@@ -1,6 +1,9 @@
 package cli
 
 import (
+	"fmt"
+	"io/ioutil"
+
 	"github.com/spf13/cobra"
 
 	"github.com/Agoric/cosmic-swingset/x/swingset"
@@ -18,6 +21,7 @@ func GetCmdDeliver(cdc *codec.Codec) *cobra.Command {
 		Use:   "deliver [sender] [json string]",
 		Short: "deliver inbound messages",
 		Args:  cobra.ExactArgs(2),
+		
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliCtx := context.NewCLIContext().WithCodec(cdc).WithAccountDecoder(cdc)
 
@@ -27,7 +31,23 @@ func GetCmdDeliver(cdc *codec.Codec) *cobra.Command {
 				return err
 			}
 
-			msgs, err := swingset.UnmarshalMessagesJSON(args[1])
+			jsonIn := args[1]
+			if jsonIn[0] == '@' {
+				fname := args[1][1:]
+				if fname == "-" {
+					// Reading from stdin.
+					if _, err := fmt.Scanln(&jsonIn); err != nil {
+						return err
+					}
+				} else {
+					jsonBytes, err := ioutil.ReadFile(fname)
+					if err != nil {
+						return err
+					}
+					jsonIn = string(jsonBytes)
+				}
+			}
+			msgs, err := swingset.UnmarshalMessagesJSON(jsonIn)
 			if err != nil {
 				return err
 			}

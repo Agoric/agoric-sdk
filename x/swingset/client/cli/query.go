@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/Agoric/cosmic-swingset/x/swingset"
 	"github.com/cosmos/cosmos-sdk/client/context"
@@ -21,7 +22,7 @@ func GetCmdGetStorage(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/storage/%s", queryRoute, path), nil)
 			if err != nil {
-				fmt.Printf("could not find storage path - %s \n", path)
+				fmt.Fprintf(os.Stderr, "could not find storage path - %s \n", path)
 				return nil
 			}
 
@@ -47,7 +48,7 @@ func GetCmdGetKeys(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/keys/%s", queryRoute, path), nil)
 			if err != nil {
-				fmt.Printf("could not find keys path - %s \n", path)
+				fmt.Fprintf(os.Stderr, "could not find keys path - %s \n", path)
 				return nil
 			}
 
@@ -70,7 +71,7 @@ func GetCmdMailbox(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/mailbox/%s", queryRoute, peer), nil)
 			if err != nil {
-				fmt.Printf("could not find peer mailbox - %s \n", peer)
+				fmt.Fprintf(os.Stderr, "could not find peer mailbox - %s \n", peer)
 				return nil
 			}
 
