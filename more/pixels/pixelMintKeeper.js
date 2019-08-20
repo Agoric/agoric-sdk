@@ -24,6 +24,14 @@ export function makePixelMintKeeper(assay) {
     }
   }
 
+  function deletePixelToAssetMapping(amount) {
+    amount = assay.coerce(amount);
+    const pixelList = assay.quantity(amount);
+    for (const pixel of pixelList) {
+      pixelToAsset.delete(getString(pixel));
+    }
+  }
+
   function makeAssetKeeper() {
     // asset to amount
     const amounts = makePrivateName();
@@ -44,6 +52,13 @@ export function makePixelMintKeeper(assay) {
       },
       has(asset) {
         return amounts.has(asset);
+      },
+      remove(asset) {
+        const amount = amounts.get(asset);
+        amounts.delete(asset);
+        // the pixels will be remapped in a later step, but let's
+        // delete the map here as well to be safe
+        deletePixelToAssetMapping(amount);
       },
     });
   }

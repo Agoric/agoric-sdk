@@ -16,7 +16,7 @@ const escrowExchange = harden({
 
     function makeTransfer(amount, srcPaymentP) {
       const { issuer } = amount.label;
-      const escrowP = E(issuer).claim(amount, srcPaymentP, 'escrow');
+      const escrowP = E(issuer).claimExactly(amount, srcPaymentP, 'escrow');
       const winnings = makePromise();
       const refund = makePromise();
       return harden({

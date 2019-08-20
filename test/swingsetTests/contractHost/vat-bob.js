@@ -46,7 +46,7 @@ function makeBobMaker(E, host, log) {
           }
 
           return E(myMoneyPurseP)
-            .deposit(amount, paymentP)
+            .depositExactly(amount, paymentP)
             .then(_ => good);
         },
 

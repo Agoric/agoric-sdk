@@ -22,6 +22,9 @@ export function makeCoreMintKeeper() {
       has(asset) {
         return amounts.has(asset);
       },
+      remove(asset) {
+        amounts.delete(asset);
+      },
     });
   }
 

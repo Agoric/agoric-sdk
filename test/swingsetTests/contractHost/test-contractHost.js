@@ -44,7 +44,6 @@ const contractTrivialGolden = [
   'foo balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":"foo terms","seatIdentity":{},"seatDesc":"foo"}}',
   '++ eightP resolved to 8 (should be 8)',
   '++ DONE',
-  'foo balance {"label":{"issuer":{},"description":"contract host"},"quantity":null}',
 ];
 
 test('run contractHost Demo --trivial with SES', async t => {

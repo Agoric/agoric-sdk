@@ -25,6 +25,11 @@ key not found: ${key}`;
 key not found: ${key}`;
       wm.set(key, value);
     },
+    delete(key) {
+      insist(wm.has(key))`\
+      key not found: ${key}`;
+      wm.delete(key);
+    },
   });
 }
 harden(makePrivateName);

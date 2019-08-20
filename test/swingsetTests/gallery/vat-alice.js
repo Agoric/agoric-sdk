@@ -23,7 +23,8 @@ function makeAliceMaker(E, log, contractHost) {
   function showPaymentBalance(name, paymentP) {
     return E(paymentP)
       .getBalance()
-      .then(amount => log(name, ' balance ', amount));
+      .then(amount => log(name, ' balance ', amount))
+      .catch(err => console.log(err));
   }
 
   return harden({
@@ -88,9 +89,16 @@ function makeAliceMaker(E, log, contractHost) {
 
           const result = await E(bob).receiveChildPayment(childPayment2);
 
-          // check that Alice's childPayment2 subsumed childPayment
-
+          // Check that Alice's childPayment2 subsumed childPayment.
+          // Note that claimChild() does not "kill" previously created
+          // childPayments. This is because the revocation occurs on
+          // the pixels in the amount, and not on a per payment basis,
+          // so payment linearity rules cannot apply. For instance, we
+          // may be destroying one pixel from a childPayment and
+          // leaving the rest.
           showPaymentBalance('childPayment', childPayment);
+          // childPayment2 was killed outright because it was claimed
+          // exclusively by Bob.
           showPaymentBalance('childPayment2', childPayment2);
 
           const bobsRawPixel = result.quantity[0];
@@ -346,7 +354,12 @@ function makeAliceMaker(E, log, contractHost) {
           showPaymentBalance('childPurseP', childPurseP);
           showPaymentBalance('grandchildPurseP', grandchildPurseP);
 
-          await E(childPaymentP).claimChild(); // does nothing
+          try {
+            // throws error because childPaymentP was consumed
+            await E(childPaymentP).claimChild();
+          } catch (err) {
+            console.log(err);
+          }
 
           log('childPayment.claimChild() does nothing');
 

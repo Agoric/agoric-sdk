@@ -12,7 +12,8 @@ function build(E, log) {
   function showPaymentBalance(name, paymentP) {
     return E(paymentP)
       .getBalance()
-      .then(amount => log(name, ' balance ', amount));
+      .then(amount => log(name, ' balance ', amount))
+      .catch(err => console.log(err));
   }
   // TODO BUG: All callers should wait until settled before doing
   // anything that would change the balance before show*Balance* reads
@@ -21,7 +22,8 @@ function build(E, log) {
     return Promise.all([
       E(purseP)
         .getBalance()
-        .then(amount => log(name, ' balance ', amount)),
+        .then(amount => log(name, ' balance ', amount))
+        .catch(err => console.log(err)),
     ]);
   }
 

@@ -32,6 +32,18 @@ Description must be truthy: ${description}`;
     makeAssay,
   } = makeConfig();
 
+  // Methods like depositExactly() pass in an amount which is supposed
+  // to be equal to the balance of the payment. These methods
+  // use this helper function to check that the amount is equal
+  function insistAmountEqualsPaymentBalance(amount, payment) {
+    amount = assay.coerce(amount);
+    const paymentAmount = paymentKeeper.getAmount(payment);
+    insist(
+      assay.equals(amount, paymentAmount),
+    )`payment balance ${paymentAmount} must equal amount ${amount}`;
+    return paymentAmount;
+  }
+
   // assetSrc is a purse or payment. Return a fresh payment.  One internal
   // function used for both cases, since they are so similar.
   function takePayment(assetSrc, srcKeeper, paymentAmount, name) {
@@ -68,6 +80,39 @@ Description must be truthy: ${description}`;
     return payment;
   }
 
+  // takePaymentAndKill works like takePayment, but it kills the
+  // oldPayment (assetSrc) rather than reducing its balance.
+  function takePaymentAndKill(oldPayment, name) {
+    name = `${name}`;
+    const paymentAmount = paymentKeeper.getAmount(oldPayment);
+
+    const corePayment = harden({
+      getIssuer() {
+        return issuer;
+      },
+      getBalance() {
+        return paymentKeeper.getAmount(payment);
+      },
+      getName() {
+        return name;
+      },
+    });
+    // makePaymentTrait is defined in the passed-in configuration and adds
+    // additional methods to corePayment
+    const payment = harden({
+      ...makePaymentTrait(corePayment, issuer),
+      ...corePayment,
+    });
+
+    // ///////////////// commit point //////////////////
+    // All queries above passed with no side effects.
+    // During side effects below, any early exits should be made into
+    // fatal turn aborts.
+    paymentKeeper.recordNew(payment, paymentAmount);
+    paymentKeeper.remove(oldPayment);
+    return payment;
+  }
+
   const coreIssuer = harden({
     getLabel() {
       return assay.getLabel();
@@ -85,30 +130,85 @@ Description must be truthy: ${description}`;
       return mint.mint(assay.empty(), name); // mint and issuer call each other
     },
 
-    claim(amount, srcPaymentP, name) {
+    combine(paymentsArray, name = 'combined payment') {
+      const totalAmount = paymentsArray.reduce((soFar, payment) => {
+        return assay.with(soFar, paymentKeeper.getAmount(payment));
+      }, assay.empty());
+
+      const combinedPayment = harden({
+        getIssuer() {
+          return issuer;
+        },
+        getBalance() {
+          return paymentKeeper.getAmount(combinedPayment);
+        },
+        getName() {
+          return name;
+        },
+      });
+
+      // ///////////////// commit point //////////////////
+      // All queries above passed with no side effects.
+      // During side effects below, any early exits should be made into
+      // fatal turn aborts.
+      for (const payment of paymentsArray) {
+        paymentKeeper.remove(payment);
+      }
+      paymentKeeper.recordNew(combinedPayment, totalAmount);
+      return combinedPayment;
+    },
+
+    split(payment, amountsArray, namesArray) {
+      namesArray =
+        namesArray !== undefined
+          ? namesArray
+          : Array(amountsArray.length).fill('a split payment');
+      insist(
+        amountsArray.length === namesArray.length,
+      )`the amounts and names should have the same length`;
+
+      const paymentMinusAmounts = amountsArray.reduce((soFar, amount) => {
+        return assay.without(soFar, amount);
+      }, paymentKeeper.getAmount(payment));
+
+      insist(
+        assay.isEmpty(paymentMinusAmounts),
+      )`the amounts of the proposed new payments do not equal the amount of the source payment`;
+
+      // ///////////////// commit point //////////////////
+      // All queries above passed with no side effects.
+      // During side effects below, any early exits should be made into
+      // fatal turn aborts.
+
+      const newPayments = [];
+
+      for (let i = 0; i < amountsArray.length; i += 1) {
+        newPayments.push(
+          takePayment(payment, paymentKeeper, amountsArray[i], namesArray[i]),
+        );
+      }
+      paymentKeeper.remove(payment);
+      return harden(newPayments);
+    },
+
+    claimExactly(amount, srcPaymentP, name) {
       return Promise.resolve(srcPaymentP).then(srcPayment => {
+        insistAmountEqualsPaymentBalance(amount, srcPayment);
         name = name !== undefined ? name : srcPayment.getName(); // use old name
-        return takePayment(srcPayment, paymentKeeper, amount, name);
+        return takePaymentAndKill(srcPayment, name);
       });
     },
 
     claimAll(srcPaymentP, name) {
       return Promise.resolve(srcPaymentP).then(srcPayment => {
         name = name !== undefined ? name : srcPayment.getName(); // use old name
-        return takePayment(
-          srcPayment,
-          paymentKeeper,
-          paymentKeeper.getAmount(srcPayment),
-          name,
-        );
+        return takePaymentAndKill(srcPayment, name);
       });
     },
 
-    burn(amount, srcPaymentP) {
-      // We deposit the alleged payment, rather than just doing a get
-      // exclusive on it, in order to consume the usage erights as well.
+    burnExactly(amount, srcPaymentP) {
       const sinkPurse = coreIssuer.makeEmptyPurse('sink purse');
-      return sinkPurse.deposit(amount, srcPaymentP);
+      return sinkPurse.depositExactly(amount, srcPaymentP);
     },
 
     burnAll(srcPaymentP) {
@@ -130,22 +230,21 @@ Description must be truthy: ${description}`;
   const mintKeeper = makeMintKeeper(assay);
   const { purseKeeper, paymentKeeper } = mintKeeper;
 
-  function depositInto(purse, amount, payment) {
-    amount = assay.coerce(amount);
+  // depositInto always deposits the entire payment amount
+  function depositInto(purse, payment) {
     const oldPurseAmount = purseKeeper.getAmount(purse);
-    const oldPaymentAmount = paymentKeeper.getAmount(payment);
+    const paymentAmount = paymentKeeper.getAmount(payment);
     // Also checks that the union is representable
-    const newPurseAmount = assay.with(oldPurseAmount, amount);
-    const newPaymentAmount = assay.without(oldPaymentAmount, amount);
+    const newPurseAmount = assay.with(oldPurseAmount, paymentAmount);
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
     // During side effects below, any early exits should be made into
     // fatal turn aborts.
-    paymentKeeper.updateAmount(payment, newPaymentAmount);
+    paymentKeeper.remove(payment);
     purseKeeper.updateAmount(purse, newPurseAmount);
 
-    return amount;
+    return paymentAmount;
   }
 
   const coreMint = harden({
@@ -166,18 +265,15 @@ Description must be truthy: ${description}`;
         getBalance() {
           return purseKeeper.getAmount(purse);
         },
-        deposit(amount, srcPaymentP) {
+        depositExactly(amount, srcPaymentP) {
           return Promise.resolve(srcPaymentP).then(srcPayment => {
-            return depositInto(purse, amount, srcPayment);
+            insistAmountEqualsPaymentBalance(amount, srcPayment);
+            return depositInto(purse, srcPayment);
           });
         },
         depositAll(srcPaymentP) {
           return Promise.resolve(srcPaymentP).then(srcPayment => {
-            return depositInto(
-              purse,
-              paymentKeeper.getAmount(srcPayment),
-              srcPayment,
-            );
+            return depositInto(purse, srcPayment);
           });
         },
         withdraw(amount, paymentName = 'a withdrawal payment') {

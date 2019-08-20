@@ -45,7 +45,7 @@ const coveredCall = harden({
       offer(stockPayment) {
         const sIssuer = stockNeeded.label.issuer;
         return E(sIssuer)
-          .claim(stockNeeded, stockPayment, 'prePay')
+          .claimExactly(stockNeeded, stockPayment, 'prePay')
           .then(prePayment => {
             E(bobEscrowSeatP).offer(prePayment);
             return inviteMaker.make('holder', aliceEscrowSeatP);

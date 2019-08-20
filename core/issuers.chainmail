@@ -21,12 +21,24 @@ interface Issuer (Amount (Quantity)) {
   /** Make an empty purse associated with this kind of right. */
   makeEmptyPurse(name :String) -> (Purse);
 
-  /**
-   * Make a new Payment that has exclusive rights to the amount, only if src had
-   * those rights, exclusively or not. The src payment retains any excess not
-   * included in amount.
+  /** Combine multiple payments into one payment. */
+  combine(paymentsArray :List(Payment), 
+  name :String = 'combined payment') -> (Payment)
+
+  /** 
+   * Split a single payment into multiple payments, according to the
+   * amounts and names passed in. 
    */
-  claim(amount :Amount, src :Payment, name :String = 'a payment')
+  split(payment, amountsArray :List(Amount), namesArray
+  :List(String))
+    -> (List(Payment))
+
+  /**
+   * Make a new Payment that has exclusive rights to all the contents
+   * of src. If amount does not equal the balance of the src payment,
+   * throws error.
+   */
+  claimExactly(amount :Amount, src :Payment, name :String = 'a payment')
     -> (Payment);
 
   /**
@@ -34,8 +46,11 @@ interface Issuer (Amount (Quantity)) {
    */
   claimAll(src :Payment, name :String = 'a payment') -> (Payment);
 
-  /** Burn amount of the rights from src. */
-  burn(amount :Amount, src :Payment) -> (Amount);
+  /** 
+   * Burn all of the rights from src. If amount does not equal the
+   * balance of the src payment, throw error. 
+   */
+  burnExactly(amount :Amount, src :Payment) -> (Amount);
 
   /** Burn all of the rights from src. */
   burnAll(src :Payment) -> (Amount);
@@ -78,9 +93,9 @@ interface Mint (Amount (Quantity)) {
  * Purses hold verified amounts of certain rights issued by Mints. Purses can
  * transfer part of the balance they hold in a payment, which has a narrower
  * interface. A purse's balance can rise and fall, through the action of
- * deposit() and withdraw(), while payments don't accept deposits, but can be
- * reduced with burn(), aggregated by passing them as a parameter to deposit(),
- * or claimed using issuer.claim().
+ * depositExactly() and withdraw(). Operations on payments
+ * (burnExactly(), depositExactly(), issuer.claimExactly()) kill the
+ * original payment and create new payments if applicable.
  *
  * The primary use for Purses and Payments is for currency-like and goods-like
  * valuables, but they can also be used to represent other kinds of rights, such
@@ -96,8 +111,12 @@ interface Purse (Amount) {
   /** Get the amount contained in this purse, confirmed by the issuer. */
   getBalance() -> (Amount);
 
-  /** Deposit amount from srcPayment into this purse, returning the amount. */
-  deposit(amount :Amount, srcPayment :Payment) -> (Amount);
+  /**
+   * Deposit all the contents of srcPayment into this purse, returning the
+   * amount. If the amount does not equal the balance of srcPayment,
+   * throw error.
+   */
+  depositExactly(amount :Amount, srcPayment :Payment) -> (Amount);
 
   /**
    * Deposit all the contents of srcPayment into this purse, returning the
@@ -116,7 +135,7 @@ interface Purse (Amount) {
  * Payments hold verified amounts of certain rights issued by Mints. Amounts
  * from payments can be deposited in purses, but otherwise, the entire amount is
  * available when the payment is transferred. A payment's balance can only fall,
- * through the action of deposit(), claim() or burn().
+ * through the action of depositExactly(), claimExactly() or burnExactly().
  *
  * Payments can be converted to Purses by getting a verified issuer and calling
  * issuer.makeEmptyPurse().depositAll(payment);
