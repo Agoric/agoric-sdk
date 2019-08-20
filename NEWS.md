@@ -1,5 +1,20 @@
 User-visible changes in ERTP:
 
+## Release v0.1.2 (8/20/2019)
+
+Core ERTP:
+* Enforced "payment linearity". Whenever a payment is deposited,
+  burned, or claimed, the entire payment must be used up ("killed").
+  When a payment is killed, it is removed from the ledger entirely,
+  not just reduced to an empty amount, as was previously the case. Two
+  new methods to support payment linearity are added to `issuer`:
+  `combine(paymentArray)` and `split(payment, amountsArray,
+  namesArray)`. The methods for depositing are now
+  `depositExactly(amount, payment)`, which checks that the `amount` is
+  equal to the `payment` balance, and `depositAll(payment)`. The
+  methods for burning are now `burnExactly` and `burnAll`, and the
+  methods for claiming are now `claimExactly` and `claimAll`. 
+
 ## Release v0.1.1 (8/15/2019)
 
 Core ERTP:
