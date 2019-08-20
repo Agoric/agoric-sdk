@@ -1,0 +1,11 @@
+- name: Download fluentd (TreasureData) script
+  get_url:
+    url: "https://toolbelt.treasuredata.com/sh/install-debian-stretch-td-agent3.sh"
+    dest: "/root/install-td-agent3.sh"
+    mode: "0755"
+
+- name: Install fluentd script
+  shell: "/root/install-td-agent3.sh"
+
+- name: Install fluent-plugin-systemd
+  shell: "td-agent-gem install fluent-plugin-systemd -v 1.0.1"

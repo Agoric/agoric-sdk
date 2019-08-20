@@ -6,7 +6,7 @@
 
 - name: Install nodesource PPA
   shell: "/root/setup_nodejs{{ NODEJS_VERSION }}.sh"
-    
+
 - name: Update repositories cache and install prerequisites
   apt:
     name: "{{ packages }}"
@@ -15,4 +15,5 @@
   vars:
     packages:
     - rsync
+    - sudo
     - "nodejs={{ NODEJS_VERSION }}.*"
