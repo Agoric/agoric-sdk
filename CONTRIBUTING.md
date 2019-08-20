@@ -19,7 +19,7 @@ You'll need Node.js version 11 or higher.
 Before submitting a pull request, please:
 
 * run `npm test` and make sure all the unit tests pass
-* run `npm run-script lint-fix` to reformat the code according to our
+* run `npm run lint-fix` to reformat the code according to our
   `eslint` profile, and fix any complaints that it can't automatically
   correct
 
@@ -31,8 +31,7 @@ Before submitting a pull request, please:
   * and does a `git commit` and `git tag` by default
   * to do `git commit` and `git tag` manually, use `--no-git-tag-version`
   * to get signed tags, start with `npm config set sign-git-tag true`
-* `npm run build`
-* `npm publish`
+* `npm publish --access public`
 * `npm version prerelease --preid=dev`
 * `git push`
 
