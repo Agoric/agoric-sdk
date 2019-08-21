@@ -267,7 +267,7 @@ Learn more about ERTP and our pixel demo [here](https://github.com/Agoric/ERTP).
 
 ### Initial Endowments
 
-When a client is started up, it has a few items in a map named home.
+When a client is started up, it has a few items in a record named home.
 
 * gallery: the Pixel Gallery, described above
 * purse: a purse that can hold pixel Dust
