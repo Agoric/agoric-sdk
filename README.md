@@ -149,7 +149,7 @@ $ make scenario0-run-client
 
 Alternatively, running the solo node from a Docker image and no local source code is described in the [top section](#agorics-cosmic-swingset).  
 
-Now go to https://localhost:8000/ to interact with your new solo node.
+Now go to http://localhost:8000/ to interact with your new solo node.
 
 # Pixel Demo
 
@@ -265,6 +265,40 @@ Woohoo! We're now 6 dust richer than when we started.
 
 Learn more about ERTP and our pixel demo [here](https://github.com/Agoric/ERTP). 
 
+### Initial Endowments
+
+When a client is started up, it has a few items in a record named home.
+
+* gallery: the Pixel Gallery, described above
+* purse: a purse that can hold pixel Dust
+* handoffService: a handoff service, which makes it possible to pass capabilities between vats
+* canvasStatePublisher: a service with the message subscribe(callback)
+
+#### handoffService
+
+home.handoffService is a handoff service that lets you connect to
+other vats that are connected to the same remote vat. handoffService
+has three methods: createBoard(name), grabBoard(name), and
+validate(board). These allow you to create a 'corkboard' which you can
+use to pass items to and from another vat. The handoff service's
+methods are designed to allow you to share a newly created corkboard
+with one other vat, after which the name can't be reused.
+
+The way to use it is to call createBoard() with a name that you share
+with someone else. They then call grabBoard() and pass the name you
+gave. If they get a valid corkboard, then you have a private
+channel. If they don't get it, then someone else must have tried to
+grab the name first, and you can discard that one and try again.
+
+Once you each have an end, either of you can call addEntry(key, value)
+to store an object, which the other party can retrieve with
+lookup(key).
+
+#### canvasStatePublisher
+
+home.canvasStatePublisher has a subscribe() method, which takes a callback
+function. When the state of the pixel gallery changes, the callback's
+notify() method is called with the new state.
 
 ## Testnet Tutorial
 
