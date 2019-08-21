@@ -1,5 +1,10 @@
 User-visible changes in Cosmic SwingSet:
 
+## Release v0.8.4 (2019-08-21)
+
+* Upgrade to @agoric/ertp version 0.1.2.
+* Increase chain message throughput limits.
+
 ## Release v0.8.3 (2019-08-16)
 
 * More robust provisioning
