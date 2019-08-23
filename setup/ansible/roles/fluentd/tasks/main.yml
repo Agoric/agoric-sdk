@@ -78,3 +78,9 @@
     src: fluentd.conf
     dest: /etc/td-agent/td-agent.conf
   notify: restart fluentd
+
+- name: Ensure fluentd is running
+  service:
+    name: td-agent
+    state: started
+    enabled: yes

@@ -1,8 +1,8 @@
 <store>
   @type logzio_buffered
-  endpoint_url https://listener.logz.io:8071?token=YViIQKXrDhhlzgfQQqkFHmSXKSGiDWaf&type=my_type
-  output_include_time true
-  output_include_tags true
+  endpoint_url https://listener.logz.io:8071?token={{ LOGZIO_TOKEN }}
+  output_include_time false
+  output_include_tags false
   http_idle_timeout 10
   <buffer>
       @type memory
