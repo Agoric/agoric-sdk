@@ -1,5 +1,7 @@
+/* eslint-disable */
+
 import harden from '@agoric/harden';
-import { makeNatAssay } from '../../core/config/assays';
+import { makeNatAssay } from '../../core/config/natAssay';
 import { makeMint } from '../../core/issuers';
 
 // This implementation may be out of date

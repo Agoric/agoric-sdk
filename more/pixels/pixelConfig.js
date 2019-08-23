@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 
 import { makePixelMintKeeper } from './pixelMintKeeper';
-import { makePixelListAssayMaker } from './pixelAssays';
+import { makePixelStrategy } from './pixelStrategy';
 import { makeMint } from '../../core/issuers';
 
 /**
@@ -32,8 +32,6 @@ function makePixelConfigMaker(
     // child's parent).
     let childIssuer;
     let childMint;
-
-    const makePixelAssay = makePixelListAssayMaker(canvasSize);
 
     // Lazily creates the childMint if it doesn't already
     // exist
@@ -154,7 +152,7 @@ function makePixelConfigMaker(
         });
       },
       makeMintKeeper: makePixelMintKeeper,
-      makeAssay: makePixelAssay,
+      strategy: makePixelStrategy(canvasSize),
     });
   }
   return makePixelConfig;
