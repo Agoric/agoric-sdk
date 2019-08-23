@@ -4,8 +4,8 @@
   project {{ GCLOUD_PROJECT }}
   keyfile /var/log/td-agent/gcs-keyfile.json
   bucket {{ GCS_BUCKET_NAME }}
-  object_key_format %{path}%{time_slice}_%{index}.%{file_extension}
-  path logs/%Y/%m/%d/
+  object_key_format %{path}%{time_slice}.%{file_extension}
+  path logs/%{hostname}/%Y/%m/%d/
 
   # if you want to use ${tag} or %Y/%m/%d/ like syntax in path / object_key_format,
   # need to specify tag for ${tag} and time for %Y/%m/%d in <buffer> argument.
