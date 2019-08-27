@@ -28,6 +28,6 @@ function makeCorkboard(name) {
     // TODO(hibbert) retrieve by numbered position
   });
 }
-harden(makeCorkboard());
+harden(makeCorkboard);
 
 export { makeCorkboard };
