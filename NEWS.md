@@ -1,5 +1,20 @@
 User-visible changes in ERTP:
 
+## Release v0.1.3 (8/27/2019)
+
+Core ERTP:
+* Extracted assay set operations/arithmetic into "strategies". We had
+  several different assays that described various types of fungible
+  and non-fungible digital assets. A lot of the code was reused, but
+  what differed was the custom logic for the arithmetic or set
+  operations. For instance, a fungible token just adds or substracts
+  natural numbers, but a non-fungible token might put something in or
+  take something out of a list. We extracted that logic such that we
+  could reuse `assay.js` for many different types of assets.
+* Added an 'import manager' that maps strings to imported code. The
+  import manager allows code such as configuration functions to be
+  imported rather than passed as parameters.
+
 ## Release v0.1.2 (8/20/2019)
 
 Core ERTP:
