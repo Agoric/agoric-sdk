@@ -2,7 +2,7 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
 import { makeGallery } from '../../../../more/pixels/gallery';
-import { insistPixelList } from '../../../../more/pixels/types/pixelList';
+import { makePixelStrategy } from '../../../../more/pixels/pixelStrategy';
 
 // These tests do not require SwingSet or vats
 
@@ -13,7 +13,8 @@ test('tapFaucet', t => {
   const amount = pixelPayment.getBalance();
   const pixelAssay = pixelIssuer.getAssay();
   const quantity = pixelAssay.quantity(amount);
-  t.doesNotThrow(() => insistPixelList(quantity, userFacet.getCanvasSize()));
+  const strategy = makePixelStrategy();
+  t.doesNotThrow(() => strategy.insistKind(quantity));
   t.end();
 });
 
@@ -75,7 +76,8 @@ test('get exclusive pixel payment from faucet', t => {
     const amount = pixelPayment.getBalance();
     const pixelAssay = pixelIssuer.getAssay();
     const quantity = pixelAssay.quantity(amount);
-    t.doesNotThrow(() => insistPixelList(quantity, userFacet.getCanvasSize()));
+    const strategy = makePixelStrategy();
+    t.doesNotThrow(() => strategy.insistKind(quantity));
     t.end();
   });
 });
