@@ -18,8 +18,8 @@ include Makefile.ledger
 all: build install
 
 scenario0-setup:
-	-rm -r ~/.ag-chain-cosmos
-	-rm ag-cosmos-chain-state.json
+	rm -rf ~/.ag-chain-cosmos
+	rm -f ag-cosmos-chain-state.json
 	python3 -mvenv ve3
 	ve3/bin/pip install setup-solo/
 
@@ -39,8 +39,8 @@ scenario1-run-client: scenario0-run-client
 
 AGC = ./lib/ag-chain-cosmos
 scenario2-setup:
-	-rm -r ~/.ag-chain-cosmos
-	-rm ag-cosmos-chain-state.json
+	rm -rf ~/.ag-chain-cosmos
+	rm -f ag-cosmos-chain-state.json
 	$(AGC) init --chain-id=$(CHAIN_ID)
 	./setup/set-json.js ~/.ag-chain-cosmos/config/genesis.json --agoric-genesis-overrides
 	rm -rf t1
@@ -138,7 +138,7 @@ go.sum: go.mod
 	GO111MODULE=on go mod verify
 
 start-ag-solo:
-	-rm -r t1
+	rm -rf t1
 	bin/ag-solo init t1
 	cd t1 && ../bin/ag-solo start
 
@@ -149,7 +149,7 @@ set-local-gci-ingress:
 	cd t1 && ../bin/ag-solo set-gci-ingress --chainID=$(CHAIN_ID) `../calc-gci.js ~/.ag-chain-cosmos/config/genesis.json` `../calc-rpcport.js ~/.ag-chain-cosmos/config/config.toml`
 
 start-ag-solo-connected-to-local:
-	-rm -r t1
+	rm -rf t1
 	bin/ag-solo init t1
 	$(MAKE) set-local-gci-ingress
 	cd t1 && ../bin/ag-solo start

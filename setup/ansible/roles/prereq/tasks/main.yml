@@ -16,4 +16,5 @@
     packages:
     - rsync
     - sudo
+    - curl
     - "nodejs={{ NODEJS_VERSION }}.*"

@@ -4,6 +4,15 @@
     dest: "/root/install-td-agent3.sh"
     mode: "0755"
 
+- name: Install fluentd prerequisites
+  apt:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - build-essential
+    - curl
+
 - name: Install fluentd script
   shell: "/root/install-td-agent3.sh"
 
@@ -15,6 +24,23 @@
     name: td-agent
     groups: systemd-journal
     append: yes
+
+- name: Synchronize config.d
+  copy:
+    src: config.d
+    dest: /etc/td-agent/
+  notify: restart fluentd
+
+- name: Install fluent-plugin-honeycomb
+  shell: "td-agent-gem install fluent-plugin-honeycomb"
+  when: HONEYCOMB_API_KEY is defined and HONEYCOMB_DATASET is defined
+
+- name: Copy honeycomb store
+  template:
+    src: honeycomb.store.j2
+    dest: /etc/td-agent/config.d/honeycomb.store
+  notify: restart fluentd
+  when: HONEYCOMB_API_KEY is defined and HONEYCOMB_DATASET is defined
 
 - name: Install fluent-plugin-logzio
   shell: "td-agent-gem install fluent-plugin-logzio"
@@ -66,12 +92,6 @@
     creates: "{{ diskusage_rb }}"
   vars:
     diskusage_rb: /opt/td-agent/embedded/lib/ruby/gems/2.4.0/gems/fluent-plugin-diskusage-0.0.2/lib/fluent/plugin/in_diskusage.rb
-
-- name: Synchronize config.d
-  copy:
-    src: config.d
-    dest: /etc/td-agent/
-  notify: restart fluentd
 
 - name: Synchronize fluentd.conf
   copy:
