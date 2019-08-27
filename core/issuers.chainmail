@@ -15,6 +15,9 @@ interface Issuer (Amount (Quantity)) {
   /* Get the Assay for this Issuer. */
   getAssay() -> (Assay);
 
+  /* Get the Strategy for this Issuer. */
+  getStrategy() -> (Strategy);
+
   /** Make an Amount that contains the indicated quantity. */
   makeAmount(quantity :Quantity) -> (Amount);
 
@@ -149,4 +152,39 @@ interface Payment (Amount) {
 
   /** Get the amount contained in this payment, confirmed by the issuer. */
   getBalance() -> (Amount);
+}
+
+/** 
+ * All of the difference in how an assay behaves can be reduced to
+ * the behavior of the set operations on quantities (think: arithmetic)
+ * such as `empty`, `with`, `without`, `includes`, etc. We extract this
+ * custom logic into a strategy. Strategies are about quantity
+ * arithmetic, whereas Assays are about Amounts, which are labeled
+ * quantities. Assays use Strategies to do their quantity arithmetic,
+ * and then label the results, making new Amounts. 
+ */ 
+interface Strategy () {
+  /** 
+   * Check the kind of this quantity and throw if it is not the
+   * expected kind. 
+   */
+  insistKind(allegedQuantity :Quantity) -> (Quantity);
+
+  /** Get the representation for empty */
+  empty() -> (Quantity);
+
+  /** Is the quantity empty? */
+  isEmpty(quantity :Quantity) -> (boolean);
+
+  /** Does the whole include the part? */
+  includes(whole :Quantity, part :Quantity) -> (boolean);
+
+  /** Does left equal right? */
+  equals(left :Quantity, right :Quantity) -> (boolean);
+
+  /** Return the left combined with the right */
+  with(left :Quantity, right :Quantity) -> (Quantity);
+
+  /** Return what remains after removing the part from the whole */
+  without(whole :Quantity, part :Quantity) -> (Quantity);
 }
