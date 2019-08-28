@@ -48,18 +48,33 @@ function getKernelSource() {
   return `(${kernelSourceFunc})`;
 }
 
-// this feeds the SES realm's (real/safe) confineExpr() back into the Realm
+// this feeds the SES realm's (real/safe) makeCompartment() back into the Realm
 // when it does require('@agoric/evaluate'), so we can get the same
 // functionality both with and without SES
 function makeEvaluate(e) {
-  const { confineExpr, confine } = e;
-  const evaluateExpr = (source, endowments = {}, options = {}) =>
-    confineExpr(source, endowments, options);
-  const evaluateProgram = (source, endowments = {}, options = {}) =>
-    confine(source, endowments, options);
-  return Object.assign(evaluateExpr, {
-    evaluateExpr,
-    evaluateProgram,
+  const { makeCompartment, sesOptions } = e;
+  const { shims, transforms } = sesOptions;
+  const makeEvaluators = (realmOptions = {}) => {
+    const { shims: realmShims, transforms: realmTransforms } = realmOptions;
+    const c = makeCompartment({
+      ...sesOptions,
+      ...realmOptions,
+      shims: (shims || []).concat(realmShims || []),
+      transforms: (realmTransforms || []).concat(transforms || []),
+    });
+    return {
+      evaluateExpr(source, endowments = {}, options = {}) {
+        return c.evaluate(`(${source}\n)`, endowments, options);
+      },
+      evaluateProgram(source, endowments = {}, options = {}) {
+        return c.evaluate(`${source}`, endowments, options);
+      },
+    };
+  };
+  const evaluators = makeEvaluators();
+  return Object.assign(evaluators.evaluateExpr, {
+    makeEvaluators,
+    ...evaluators,
   });
 }
 
@@ -73,8 +88,8 @@ function buildSESKernel(initialState) {
   const r = s.makeRequire({
     '@agoric/evaluate': {
       attenuatorSource: `${makeEvaluate}`,
-      confineExpr: s.global.SES.confineExpr,
-      confine: s.global.SES.confine,
+      sesOptions: evaluateOptions,
+      makeCompartment: s.global.Realm.makeCompartment,
     },
     '@agoric/harden': true,
     '@agoric/nat': Nat,
