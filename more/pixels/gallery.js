@@ -7,7 +7,7 @@ import { makePixelConfigMaker } from './pixelConfig';
 import { makeMint } from '../../core/issuers';
 import { makeWholePixelList } from './types/pixelList';
 import {
-  insistPixel,
+  makeInsistPixel,
   isEqual as isEqualPixel,
   getDistance,
   getDistanceFromCenter,
@@ -190,7 +190,7 @@ export function makeGallery(
   }
 
   function pricePixelInternal(rawPixel) {
-    insistPixel(rawPixel, canvasSize);
+    makeInsistPixel(canvasSize)(rawPixel);
     const distance = getDistanceFromCenter(rawPixel, canvasSize);
     // prices are simplistic for now
     // they range from canvasSize / 2 to canvasSize

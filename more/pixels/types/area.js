@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { insistPixel, isLessThanOrEqual } from './pixel';
+import { makeInsistPixel, isLessThanOrEqual } from './pixel';
 import { includesPixel } from './pixelList';
 
 import { insist } from '../../../util/insist';
@@ -14,8 +14,10 @@ function insistArea(area, canvasSize) {
   insist(properties.length === 2)`\
   areas must have start, end properties only`;
 
-  insistPixel(area.start, canvasSize);
-  insistPixel(area.end, canvasSize);
+  const insistPixel = makeInsistPixel(canvasSize);
+
+  insistPixel(area.start);
+  insistPixel(area.end);
 
   insistLessThanOrEqual(area.start, area.end);
 

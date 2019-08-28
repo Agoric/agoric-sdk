@@ -11,14 +11,16 @@ function insistWithinBounds(num, canvasSize) {
   pixel position must be within bounds`;
 }
 
-function insistPixel(pixel, canvasSize) {
+const makeInsistPixel = (canvasSize = 10) => pixel => {
   const properties = Object.getOwnPropertyNames(pixel);
   insist(properties.length === 2)`\
   pixels must have x, y properties only`;
 
   insistWithinBounds(pixel.x, canvasSize);
   insistWithinBounds(pixel.y, canvasSize);
-}
+
+  return pixel;
+};
 
 // should only be used with valid pixels - no checks
 function isEqual(leftPixel, rightPixel) {
@@ -32,6 +34,33 @@ function isEqual(leftPixel, rightPixel) {
 // should only be used with valid pixels
 function isLessThanOrEqual(leftPixel, rightPixel) {
   return leftPixel.x <= rightPixel.x && leftPixel.y <= rightPixel.y;
+}
+
+function compare(a, b) {
+  if (!a || !b) {
+    return undefined;
+  }
+  const xLess = a.x < b.x;
+  const yLess = a.y < b.y;
+  const xEqual = a.x === b.x;
+  const yEqual = a.y === b.y;
+
+  if (xEqual && yEqual) {
+    return 0;
+  }
+
+  // 1, 2 before 2, 1
+  if (yLess) {
+    return -1;
+  }
+
+  // 1, 2 before 1, 3
+  if (yEqual && xLess) {
+    return -1;
+  }
+
+  // must be greater
+  return 1;
 }
 
 function getDistance(a, b) {
@@ -52,10 +81,11 @@ function getString(pixel) {
 
 export {
   insistWithinBounds,
-  insistPixel,
+  makeInsistPixel,
   isEqual,
   isLessThanOrEqual,
   getString,
   getDistance,
   getDistanceFromCenter,
+  compare,
 };

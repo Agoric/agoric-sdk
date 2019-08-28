@@ -3,7 +3,7 @@ import harden from '@agoric/harden';
 
 import {
   insistWithinBounds,
-  insistPixel,
+  makeInsistPixel,
   isEqual,
   isLessThanOrEqual,
 } from '../../../../../more/pixels/types/pixel';
@@ -18,15 +18,29 @@ test('pixel insistWithinBounds', t => {
   t.end();
 });
 
-test('pixel insistPixel', t => {
-  t.doesNotThrow(() => insistPixel({ x: 0, y: 0 }, 2));
-  t.doesNotThrow(() => insistPixel({ x: 0, y: 0 }, 1));
-  t.throws(() => insistPixel({ x: 0, y: 0 }, 'a'));
-  t.throws(() => insistPixel({}, 1));
-  t.throws(() => insistPixel({ x: 0, y: 0 }, undefined));
-  t.throws(() => insistPixel({ x: 0, y: 3 }, 1));
-  t.throws(() => insistPixel({ x: 0, y: 'a' }, 1));
-  t.throws(() => insistPixel({ x: 0, y: 3, empty: true }, 1));
+test('pixel makeInsistPixel good', t => {
+  t.deepEquals(makeInsistPixel(2)({ x: 0, y: 0 }), { x: 0, y: 0 });
+  t.deepEquals(makeInsistPixel(1)({ x: 0, y: 0 }), { x: 0, y: 0 });
+  // This doesn't throw because there is a default canvasSize
+  t.deepEquals(makeInsistPixel(undefined)({ x: 0, y: 0 }), { x: 0, y: 0 });
+  t.end();
+});
+
+test('pixel makeInsistPixel bad', t => {
+  t.throws(() => makeInsistPixel('a')({ x: 0, y: 0 }), /not a safe integer/);
+  t.throws(
+    () => makeInsistPixel(1)({}),
+    /pixels must have x, y properties only/,
+  );
+  t.throws(
+    () => makeInsistPixel(1)({ x: 0, y: 3 }),
+    /pixel position must be within bounds/,
+  );
+  t.throws(() => makeInsistPixel(1)({ x: 0, y: 'a' }), /not a safe integer/);
+  t.throws(
+    () => makeInsistPixel(1)({ x: 0, y: 3, empty: true }),
+    /pixels must have x, y properties only/,
+  );
   t.end();
 });
 
