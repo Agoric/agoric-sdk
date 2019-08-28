@@ -10,4 +10,5 @@ build
 node_modules/
 lib/lib*.h
 lib/lib*.so
-ve3
+ve[0-9]
+t[0-9]

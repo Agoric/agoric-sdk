@@ -13,3 +13,6 @@ test
 
 # Travis CI
 .circleci
+ve[0-9]
+t[0-9]
+build
