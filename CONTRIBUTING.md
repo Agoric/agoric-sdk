@@ -4,25 +4,25 @@ Thank you!
 
 ## Contact
 
-We use github issues for all bug reports: https://github.com/Agoric/@REPO@/issues
+We use github issues for all bug reports: https://github.com/Agoric/cosmic-swingset/issues
 
 ## Installing, Testing
 
 You'll need Node.js version 11 or higher. There is a unit test to
 double-check that you have a suitable version.
 
-* git clone https://github.com/Agoric/@REPO@/
+* git clone https://github.com/Agoric/cosmic-swingset/
 * npm install
+* npm run build
 * npm test
+
+See README.md for how to use.
 
 ## Pull Requests
 
 Before submitting a pull request, please:
 
 * run `npm test` and make sure all the unit tests pass
-* run `npm run-script lint-fix` to reformat the code according to our
-  `eslint` profile, and fix any complaints that it can't automatically
-  correct
 
 ## Making a Release
 
@@ -33,9 +33,18 @@ Before submitting a pull request, please:
   * to do `git commit` and `git tag` manually, use `--no-git-tag-version`
   * to get signed tags, start with `npm config set sign-git-tag true`
 * `npm run build`
+* `npm test`
+* `make docker-build`
+* Test the Docker build on your private network:
+```sh
+NETWORK_NAME=myname ./docker/ag-setup-cosmos bootstrap --bump
+SOLO_NAME=myname ./docker/ag-setup-solo
+```
+* visit http://localhost:8000/ and interact with your network
 * `npm publish`
+* `make docker-push`
 * `npm version prerelease --preid=dev`
-* `git push`
+* `git push origin master vX.Y.Z`
 
 ## Versioning
 
