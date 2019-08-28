@@ -42,7 +42,7 @@ export default function makeDeviceManager(
       method,
       argsString,
       slots,
-      kernelResolverID: undefined,
+      result: null,
     };
     send(target, msg);
   }

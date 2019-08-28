@@ -25,17 +25,19 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
 
-  function deliver(target, method, argsbytes, caps, resolverID) {
+  function deliver(target, method, argsbytes, caps, result) {
     if (target === controller) {
       return deliverToController(
         state,
         method,
         argsbytes,
         caps,
-        resolverID,
+        result,
         syscall,
       );
     }
+    // console.log(`comms.deliver ${target} r=${result}`);
+    // dumpState(state);
     if (state.objectTable.has(target)) {
       insist(
         method.indexOf(':') === -1 && method.indexOf(';') === -1,
@@ -48,7 +50,7 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
         method,
         argsbytes,
         caps,
-        resolverID,
+        result,
       );
       return transmit(syscall, state, remoteID, body);
     }
@@ -73,6 +75,7 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
     //  resolveLocal(promiseID, { type: 'data', data, slots });
     // }
     // console.log(`notifyFulfillToData ${promiseID}`);
+    // dumpState(state);
     const [remoteID, body] = resolvePromiseToRemote(syscall, state, promiseID, {
       type: 'data',
       data,
@@ -81,6 +84,13 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
     if (remoteID) {
       return transmit(syscall, state, remoteID, body);
     }
+    // todo: if we previously held resolution authority for this promise, then
+    // transferred it to some local vat, we'll have subscribed to the kernel to
+    // hear about it. If we then get the authority back again, we no longer
+    // want to hear about its resolution (since we're the ones doing the
+    // resolving), but the kernel still thinks of us as subscribing, so we'll
+    // get a bogus dispatch.notifyFulfill*. Currently we throw an error, which
+    // is currently ignored but might prompt a vat shutdown in the future.
     throw new Error(`unknown promise ${promiseID}`);
   }
 

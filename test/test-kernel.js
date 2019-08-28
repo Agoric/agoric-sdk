@@ -55,7 +55,7 @@ test('simple call', async t => {
         method: 'foo',
         argsString: 'args',
         slots: [],
-        kernelResolverID: null,
+        result: null,
       },
     },
   ]);
@@ -102,7 +102,7 @@ test('map inbound', async t => {
     {
       msg: {
         argsString: 'args',
-        kernelResolverID: null,
+        result: null,
         method: 'foo',
         slots: [koFor5, koFor6],
       },
@@ -147,12 +147,14 @@ test('outbound call', async t => {
   const kernel = buildKernel({ setImmediate });
   const log = [];
   let v1tovat25;
+  const p7 = 'p+7';
 
   function setup1(syscall) {
     function deliver(facetID, method, argsString, slots) {
       // console.log(`d1/${facetID} called`);
       log.push(['d1', facetID, method, argsString, slots]);
-      const pid = syscall.send(v1tovat25, 'bar', 'bargs', [v1tovat25, 'o+7']);
+      const pid = syscall.createPromise();
+      syscall.send(v1tovat25, 'bar', 'bargs', [v1tovat25, 'o+7', p7], pid);
       log.push(['d1', 'promiseid', pid]);
     }
     return { deliver };
@@ -163,6 +165,7 @@ test('outbound call', async t => {
     function deliver(facetID, method, argsString, slots) {
       // console.log(`d2/${facetID} called`);
       log.push(['d2', facetID, method, argsString, slots]);
+      log.push(['d2 promises', kernel.dump().promises]);
     }
     return { deliver };
   }
@@ -194,7 +197,7 @@ test('outbound call', async t => {
     {
       msg: {
         argsString: 'args',
-        kernelResolverID: null,
+        result: null,
         method: 'foo',
         slots: [],
       },
@@ -218,11 +221,61 @@ test('outbound call', async t => {
       msg: {
         method: 'bar',
         argsString: 'bargs',
-        slots: [vat2Obj5, 'ko22'],
-        kernelResolverID: 'kp40',
+        slots: [vat2Obj5, 'ko22', 'kp41'],
+        result: 'kp40',
       },
     },
   ]);
+  t.deepEqual(kernel.dump().promises, [
+    {
+      id: 'kp40',
+      state: 'unresolved',
+      decider: undefined,
+      subscribers: [],
+      queue: [],
+    },
+    {
+      id: 'kp41',
+      state: 'unresolved',
+      decider: 'vat1',
+      subscribers: [],
+      queue: [],
+    },
+  ]);
+
+  kt.push(['ko22', 'vat1', 'o+7']);
+  kt.push(['kp40', 'vat1', 'p-60']);
+  kt.push(['kp41', 'vat1', p7]);
+  checkKT(t, kernel, kt);
+
+  await kernel.step();
+  // this checks that the decider was set to vat2 while bar() was delivered
+  t.deepEqual(log, [
+    ['d2', 'o+5', 'bar', 'bargs', ['o+5', 'o-50', 'p-60']],
+    [
+      'd2 promises',
+      [
+        {
+          id: 'kp40',
+          state: 'unresolved',
+          decider: 'vat2',
+          subscribers: [],
+          queue: [],
+        },
+        {
+          id: 'kp41',
+          state: 'unresolved',
+          decider: 'vat1',
+          subscribers: [],
+          queue: [],
+        },
+      ],
+    ],
+  ]);
+  kt.push(['ko22', 'vat2', 'o-50']);
+  kt.push(['kp41', 'vat2', 'p-60']);
+  kt.push(['kp40', 'vat2', 'p-61']);
+  checkKT(t, kernel, kt);
   t.deepEqual(kernel.dump().promises, [
     {
       id: 'kp40',
@@ -231,20 +284,18 @@ test('outbound call', async t => {
       subscribers: [],
       queue: [],
     },
+    {
+      id: 'kp41',
+      state: 'unresolved',
+      decider: 'vat1',
+      // Sending a promise from vat1 to vat2 doesn't cause vat2 to be
+      // subscribed unless they want it. Liveslots will always subscribe,
+      // because we don't have enough hooks into Promises to detect a
+      // .then(), but non-liveslots vats don't have to.
+      subscribers: [],
+      queue: [],
+    },
   ]);
-  kt.push(['ko22', 'vat1', 'o+7']);
-  kt.push(['kp40', 'vat1', 'p-60']);
-  checkKT(t, kernel, kt);
-
-  await kernel.step();
-  t.deepEqual(log, [['d2', 'o+5', 'bar', 'bargs', ['o+5', 'o-50']]]);
-  // our temporary handling of resolverIDs causes vat2's clist to have a
-  // funny mapping. (kp40->p-60, p-60->kp40, r-60->kp40). The dump() function
-  // assumes a strictly bijective mapping and doesn't include the surjective
-  // r-60->kp40 edge. So instead of ['kp40', 'vat2', 'r-60'], we see:
-  kt.push(['kp40', 'vat2', 'p-60']);
-  kt.push(['ko22', 'vat2', 'o-50']);
-  checkKT(t, kernel, kt);
 
   t.end();
 });
@@ -261,7 +312,8 @@ test('three-party', async t => {
     function deliver(facetID, method, argsString, slots) {
       console.log(`vatA/${facetID} called`);
       log.push(['vatA', facetID, method, argsString, slots]);
-      const pid = syscall.send(bobForA, 'intro', 'bargs', [carolForA]);
+      const pid = syscall.createPromise();
+      syscall.send(bobForA, 'intro', 'bargs', [carolForA], pid);
       log.push(['vatA', 'promiseID', pid]);
     }
     return { deliver };
@@ -298,7 +350,7 @@ test('three-party', async t => {
   // different than bob's, so we can check that the promiseID coming back
   // from send() is scoped to the sender, not the recipient
   const ap = aliceSyscall.createPromise();
-  t.equal(ap.promiseID, 'p-60');
+  t.equal(ap, 'p-60');
 
   const data = kernel.dump();
   t.deepEqual(data.vatTables, [
@@ -312,7 +364,7 @@ test('three-party', async t => {
     [bob, 'vatB', 'o+5'],
     [carol, 'vatA', carolForA],
     [carol, 'vatC', 'o+6'],
-    ['kp40', 'vatA', ap.promiseID],
+    ['kp40', 'vatA', ap],
   ];
   checkKT(t, kernel, kt);
   t.deepEqual(log, []);
@@ -333,7 +385,7 @@ test('three-party', async t => {
         method: 'intro',
         argsString: 'bargs',
         slots: [carol],
-        kernelResolverID: 'kp41',
+        result: 'kp41',
       },
     },
   ]);
@@ -348,7 +400,7 @@ test('three-party', async t => {
     {
       id: 'kp41',
       state: 'unresolved',
-      decider: 'vatB',
+      decider: undefined,
       subscribers: [],
       queue: [],
     },
@@ -378,7 +430,7 @@ test('createPromise', async t => {
 
   t.deepEqual(kernel.dump().promises, []);
   const pr = syscall.createPromise();
-  t.deepEqual(pr, { promiseID: 'p-60', resolverID: 'r-60' });
+  t.deepEqual(pr, 'p-60');
   t.deepEqual(kernel.dump().promises, [
     {
       id: 'kp40',
@@ -428,10 +480,10 @@ test('transfer promise', async t => {
   const A = kernel.addImport('vatB', alice);
 
   const pr1 = syscallA.createPromise();
-  t.deepEqual(pr1, { promiseID: 'p-60', resolverID: 'r-60' });
+  t.deepEqual(pr1, 'p-60');
   // we send pr2
   const pr2 = syscallA.createPromise();
-  t.deepEqual(pr2, { promiseID: 'p-61', resolverID: 'r-61' });
+  t.deepEqual(pr2, 'p-61');
 
   const kt = [
     ['ko20', 'vatA', 'o+6'],
@@ -461,7 +513,7 @@ test('transfer promise', async t => {
   checkPromises(t, kernel, kp);
 
   // sending a promise should arrive as a promise
-  syscallA.send(B, 'foo1', 'args', [pr2.promiseID]);
+  syscallA.send(B, 'foo1', 'args', [pr2]);
   t.deepEqual(kernel.dump().runQueue, [
     {
       vatID: 'vatB',
@@ -471,80 +523,41 @@ test('transfer promise', async t => {
         method: 'foo1',
         argsString: 'args',
         slots: ['kp41'],
-        kernelResolverID: 'kp42',
+        result: undefined,
       },
     },
   ]);
-  kt.push(['kp42', 'vatA', 'p-62']); // promise for answer of foo1()
   checkKT(t, kernel, kt);
-  kp.push({
-    id: 'kp42',
-    state: 'unresolved',
-    decider: 'vatB',
-    subscribers: [],
-    queue: [],
-  });
   checkPromises(t, kernel, kp);
 
   await kernel.run();
   t.deepEqual(logB.shift(), ['o+5', 'foo1', 'args', ['p-60']]);
   t.deepEqual(logB, []);
   kt.push(['kp41', 'vatB', 'p-60']); // pr2 for B
-  kt.push(['kp42', 'vatB', 'p-61']); // resolver for answer of foo1()
   checkKT(t, kernel, kt);
 
   // sending it a second time should arrive as the same thing
-  syscallA.send(B, 'foo2', 'args', [pr2.promiseID]);
+  syscallA.send(B, 'foo2', 'args', [pr2]);
   await kernel.run();
   t.deepEqual(logB.shift(), ['o+5', 'foo2', 'args', ['p-60']]);
-
   t.deepEqual(logB, []);
-  kt.push(['kp43', 'vatA', 'p-63']); // promise for answer of foo2()
-  kt.push(['kp43', 'vatB', 'p-62']); // resolver for answer of foo2()
   checkKT(t, kernel, kt);
-
-  kp.push({
-    id: 'kp43',
-    state: 'unresolved',
-    decider: 'vatB',
-    subscribers: [],
-    queue: [],
-  });
   checkPromises(t, kernel, kp);
 
   // sending it back should arrive with the sender's index
   syscallB.send(A, 'foo3', 'args', ['p-60']);
   await kernel.run();
-  t.deepEqual(logA.shift(), ['o+6', 'foo3', 'args', [pr2.promiseID]]);
+  t.deepEqual(logA.shift(), ['o+6', 'foo3', 'args', [pr2]]);
   t.deepEqual(logA, []);
-  kt.push(['kp44', 'vatA', 'p-64']); // resolver for answer of foo3()
-  kt.push(['kp44', 'vatB', 'p-63']); // promise for answer of foo3()
   checkKT(t, kernel, kt);
+  checkPromises(t, kernel, kp);
 
   // sending it back a second time should arrive as the same thing
   syscallB.send(A, 'foo4', 'args', ['p-60']);
   await kernel.run();
-  t.deepEqual(logA.shift(), ['o+6', 'foo4', 'args', [pr2.promiseID]]);
+  t.deepEqual(logA.shift(), ['o+6', 'foo4', 'args', [pr2]]);
   t.deepEqual(logA, []);
-
-  kp.push({
-    id: 'kp44',
-    state: 'unresolved',
-    decider: 'vatA',
-    subscribers: [],
-    queue: [],
-  });
-  kp.push({
-    id: 'kp45',
-    state: 'unresolved',
-    decider: 'vatA',
-    subscribers: [],
-    queue: [],
-  });
   checkPromises(t, kernel, kp);
-
-  kt.push(['kp45', 'vatA', 'p-65']); // resolver for answer of foo4()
-  kt.push(['kp45', 'vatB', 'p-64']); // promise for answer of foo4()
   checkKT(t, kernel, kt);
 
   t.end();
@@ -565,10 +578,10 @@ test('subscribe to promise', async t => {
   await kernel.start();
 
   const pr = syscall.createPromise();
-  t.deepEqual(pr, { promiseID: 'p-60', resolverID: 'r-60' });
+  t.deepEqual(pr, 'p-60');
   t.deepEqual(kernel.dump().kernelTable, [['kp40', 'vat1', 'p-60']]);
 
-  syscall.subscribe(pr.promiseID);
+  syscall.subscribe(pr);
   t.deepEqual(kernel.dump().promises, [
     {
       id: 'kp40',
@@ -608,7 +621,7 @@ test.skip('promise redirection', async t => {
     ['vat1', 'resolver', 31, 41],
   ]);
 
-  syscall.subscribe(pr1.promiseID);
+  syscall.subscribe(pr1);
   t.deepEqual(kernel.dump().promises, [
     {
       id: 40,
@@ -626,7 +639,7 @@ test.skip('promise redirection', async t => {
     },
   ]);
 
-  syscall.redirect(pr1.resolverID, pr2.promiseID);
+  syscall.redirect(pr1, pr2);
   t.deepEqual(log, []); // vat is not notified
   t.deepEqual(kernel.dump().promises, [
     {
@@ -669,7 +682,7 @@ test('promise resolveToData', async t => {
   const pr = syscall.createPromise();
   t.deepEqual(kernel.dump().kernelTable, [['kp40', 'vatA', 'p-60']]);
 
-  syscall.subscribe(pr.promiseID);
+  syscall.subscribe(pr);
   t.deepEqual(kernel.dump().promises, [
     {
       id: 'kp40',
@@ -680,9 +693,8 @@ test('promise resolveToData', async t => {
     },
   ]);
 
-  syscall.fulfillToData(pr.resolverID, 'args', [alice]);
-  // the resolverID gets mapped to a kernelPromiseID first, and a
-  // notifyFulfillToData message is queued
+  syscall.fulfillToData(pr, 'args', [alice]);
+  // this causes a notifyFulfillToData message to be queued
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
     {
@@ -694,7 +706,7 @@ test('promise resolveToData', async t => {
 
   await kernel.step();
   // the kernelPromiseID gets mapped back to the vat PromiseID
-  t.deepEqual(log.shift(), ['notify', pr.promiseID, 'args', [alice]]);
+  t.deepEqual(log.shift(), ['notify', pr, 'args', [alice]]);
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().promises, [
     {
@@ -742,7 +754,7 @@ test('promise resolveToPresence', async t => {
   ];
   checkKT(t, kernel, kt);
 
-  syscall.subscribe(pr.promiseID);
+  syscall.subscribe(pr);
   t.deepEqual(kernel.dump().promises, [
     {
       id: 'kp40',
@@ -753,7 +765,7 @@ test('promise resolveToPresence', async t => {
     },
   ]);
 
-  syscall.fulfillToPresence(pr.resolverID, bobForAlice);
+  syscall.fulfillToPresence(pr, bobForAlice);
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
     {
@@ -765,7 +777,7 @@ test('promise resolveToPresence', async t => {
 
   await kernel.step();
 
-  t.deepEqual(log.shift(), ['notify', pr.promiseID, bobForAlice]);
+  t.deepEqual(log.shift(), ['notify', pr, bobForAlice]);
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().promises, [
     {
@@ -807,7 +819,7 @@ test('promise reject', async t => {
   ];
   checkKT(t, kernel, kt);
 
-  syscall.subscribe(pr.promiseID);
+  syscall.subscribe(pr);
   t.deepEqual(kernel.dump().promises, [
     {
       id: 'kp40',
@@ -821,7 +833,7 @@ test('promise reject', async t => {
   // the resolver-holder calls reject right away, because now we
   // automatically subscribe
 
-  syscall.reject(pr.resolverID, 'args', [bobForAlice]);
+  syscall.reject(pr, 'args', [bobForAlice]);
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
     {
@@ -832,7 +844,7 @@ test('promise reject', async t => {
   ]);
   await kernel.step();
 
-  t.deepEqual(log.shift(), ['notify', pr.promiseID, 'args', [bobForAlice]]);
+  t.deepEqual(log.shift(), ['notify', pr, 'args', [bobForAlice]]);
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().promises, [
     {
@@ -854,7 +866,8 @@ test('transcript', async t => {
   function setup(syscall, _state) {
     function deliver(facetID, _method, _argsString, slots) {
       if (facetID === aliceForAlice) {
-        const p = syscall.send(slots[1], 'foo', 'fooarg', []);
+        const p = syscall.createPromise();
+        syscall.send(slots[1], 'foo', 'fooarg', [], p);
         log.push(p);
       }
     }
@@ -887,12 +900,13 @@ test('transcript', async t => {
       'store',
       'args string',
       [aliceForAlice, bobForAlice],
-      null,
+      undefined,
     ],
     syscalls: [
+      { d: ['createPromise'], response: p1 },
       {
-        d: ['send', bobForAlice, 'foo', 'fooarg', []],
-        response: p1,
+        d: ['send', bobForAlice, 'foo', 'fooarg', [], p1],
+        response: undefined,
       },
     ],
   });

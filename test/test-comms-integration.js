@@ -21,6 +21,13 @@ export function runTest(testType, withSES, testStr, expectedLogs) {
   const expected = setupLogs.concat(expectedLogs);
   testType(testStr, async t => {
     const c = await runVats(t, withSES, [testStr]);
+    /*
+    while (c.dump().runQueue.length) {
+      console.log('-');
+      console.log(`--- turn starts`);
+      await c.step();
+      //console.log(c.dump().kernelTable);
+    } */
     await c.run();
     const { log } = c.dump();
     t.deepEqual(log, expected);

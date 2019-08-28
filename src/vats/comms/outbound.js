@@ -1,12 +1,7 @@
-import { makeVatSlot, insistVatType } from '../parseVatSlots';
-import {
-  flipRemoteSlot,
-  insistRemoteType,
-  makeRemoteSlot,
-} from './parseRemoteSlot';
-import { getOutbound, mapOutbound } from './clist';
-import { allocatePromiseIndex } from './state';
-import { getRemote, insistRemoteID } from './remote';
+import { insistVatType } from '../parseVatSlots';
+import { insistRemoteType } from './parseRemoteSlot';
+import { getOutbound, mapOutbound, mapOutboundResult } from './clist';
+import { insistRemoteID } from './remote';
 import { insist } from '../../kernel/insist';
 
 export function deliverToRemote(
@@ -16,12 +11,11 @@ export function deliverToRemote(
   method,
   data,
   slots,
-  resolverID,
+  result,
 ) {
   // this object lives on 'remoteID', so we send messages at them
   const remoteID = state.objectTable.get(target);
   insist(remoteID !== undefined, `oops ${target}`);
-  const remote = getRemote(state, remoteID);
 
   const remoteTargetSlot = getOutbound(state, remoteID, target);
   const remoteMessageSlots = slots.map(s =>
@@ -32,28 +26,17 @@ export function deliverToRemote(
     rmss = `:${rmss}`;
   }
   let remoteResultSlot = '';
-  if (resolverID) {
-    insistVatType('resolver', resolverID);
-    // outbound: resolverID=r-NN -> rp-NN
-    // inbound: rp+NN -> r-NN
-    const pIndex = allocatePromiseIndex(state);
-    const p = makeVatSlot('promise', true, pIndex); // p+NN
-    state.promiseTable.set(p, {
-      owner: null,
-      resolved: false,
-      decider: remoteID,
-      subscriber: null,
-      resolverID, // r-NN, temporary
-    });
-    remoteResultSlot = makeRemoteSlot('promise', false, pIndex); // rp-NN
-    remote.toRemote.set(p, remoteResultSlot); // p+NN -> rp-NN
-    remote.fromRemote.set(flipRemoteSlot(remoteResultSlot), p); // rp+NN -> p+NN
+  if (result) {
+    insistVatType('promise', result);
+    // outbound: promiseID=p-NN -> rp-NN
+    // inbound: rp+NN -> p-NN
+    remoteResultSlot = mapOutboundResult(state, remoteID, result);
   }
 
   // now render the transmission. todo: 'method' lives in the transmission
   // for now, but will be moved to 'data'
   const msg = `deliver:${remoteTargetSlot}:${method}:${remoteResultSlot}${rmss};${data}`;
-  // console.log(`deliverToRemote(target=${target}/${remoteTargetSlot}, result=${resolverID}/${remoteResultSlot}) leaving state as:`);
+  // console.log(`deliverToRemote(target=${target}/${remoteTargetSlot}, result=${result}/${remoteResultSlot}) leaving state as:`);
   // dumpState(state);
   return [remoteID, msg];
 }

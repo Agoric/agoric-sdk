@@ -114,30 +114,40 @@ export default function makeVatManager(
   // syscall handlers: these are wrapped by the 'syscall' object and made
   // available to userspace
 
-  function doSend(targetSlot, method, argsString, vatSlots) {
+  function doSend(targetSlot, method, argsString, vatSlots, resultSlot) {
     insist(`${targetSlot}` === targetSlot, 'non-string targetSlot');
     // TODO: disable send-to-self for now, qv issue #43
     const target = mapVatSlotToKernelSlot(targetSlot);
     kdebug(`syscall[${vatID}].send(vat:${targetSlot}=ker:${target}).${method}`);
     const slots = vatSlots.map(slot => mapVatSlotToKernelSlot(slot));
-    // who will decide the answer? If the message is being queued for a
-    // promise, then the kernel will decide (when the answer gets
-    // resolved). If it is going to a specific export, the exporting vat
-    // gets to decide.
-    let decider;
-    if (parseKernelSlot(target).type === 'object') {
-      decider = kernelKeeper.ownerOfKernelObject(target);
+    let result;
+    if (resultSlot) {
+      insistVatType('promise', resultSlot);
+      result = mapVatSlotToKernelSlot(resultSlot);
+      insistKernelType('promise', result);
+      // The promise must be unresolved, and this Vat must be the decider.
+      // The most common case is that 'resultSlot' is a new exported promise
+      // (p+NN). But it might be a previously-imported promise (p-NN) that
+      // they got in a deliver() call, which gave them resolution authority.
+      const p = kernelKeeper.getKernelPromise(result);
+      insist(
+        p.state === 'unresolved',
+        `send() result ${result} is already resolved`,
+      );
+      insist(
+        p.decider === vatID,
+        `send() result ${result} is decided by ${p.decider} not ${vatID}`,
+      );
+      p.decider = undefined; // resolution authority now held by run-queue
     }
-    kdebug(`  ^target is ${target}`);
-    const kernelPromiseID = createPromiseWithDecider(decider);
+
     const msg = {
       method,
       argsString,
       slots,
-      kernelResolverID: kernelPromiseID,
+      result,
     };
     send(target, msg);
-    return mapKernelSlotToVatSlot(kernelPromiseID);
   }
 
   function doCreatePromise() {
@@ -146,8 +156,7 @@ export default function makeVatManager(
     kdebug(
       `syscall[${vatID}].createPromise -> (vat:${p}=ker:${kernelPromiseID})`,
     );
-    const r = vatKeeper.mapKernelPromiseToVatResolver(kernelPromiseID); // temporary
-    return harden({ promiseID: p, resolverID: r });
+    return p;
   }
 
   function doSubscribe(promiseID) {
@@ -199,76 +208,61 @@ export default function makeVatManager(
     }
   }
 
-  /*
-  function doRedirect(resolverID, targetPromiseID) {
-    const { id } = mapVatSlotToKernelSlot({ type: 'resolver', id: resolverID });
-    if (!kernelKeeper.hasKernelPromise(id)) {
-      throw new Error(`unknown kernelPromise id '${id}'`);
-    }
-    const p = kernelKeeper.getKernelPromise(id);
-    if (p.state !== 'unresolved') {
-      throw new Error(`kernelPromise[${id}] is '${p.state}', not 'unresolved'`);
-    }
-
-    let { id: targetID } = mapVatSlotToKernelSlot({ type: 'promise', id: targetPromiseID });
-    if (!kernelKeeper.hasKernelPromise(targetID)) {
-      throw new Error(`unknown kernelPromise id '${targetID}'`);
-    }
-
-    targetID = chaseRedirections(targetID);
-    const target = kernelKeeper.getKernelPromise(targetID);
-
-    for (let s of p.subscribers) {
-      // TODO: we need to remap their subscriptions, somehow
-    }
-
-    p.state = 'redirected';
-    delete p.decider;
-    const subscribers = p.subscribers;
-    delete p.subscribers;
-    p.redirectedTo = targetID;
-    if (p.state !== 'unresolved') {
-      throw new Error(`kernelPromise[${id}] is '${p.state}', not 'unresolved'`);
-    }
-  } */
-
-  function doFulfillToData(resolverID, fulfillData, vatSlots) {
-    insistVatType('resolver', resolverID);
-    const kp = mapVatSlotToKernelSlot(resolverID);
+  function doFulfillToData(promiseID, fulfillData, vatSlots) {
+    insistVatType('promise', promiseID);
+    const kp = mapVatSlotToKernelSlot(promiseID);
     insistKernelType('promise', kp);
     insist(kernelKeeper.hasKernelPromise(kp), `unknown kernelPromise '${kp}'`);
+    const p = kernelKeeper.getKernelPromise(kp);
+    insist(p.state === 'unresolved', `${kp} was already resolved`);
+    insist(
+      p.decider === vatID,
+      `${kp} is decided by ${p.decider}, not ${vatID}`,
+    );
 
     const slots = vatSlots.map(slot => mapVatSlotToKernelSlot(slot));
     kdebug(
-      `syscall[${vatID}].fulfillData(${resolverID}/${kp}) = ${fulfillData} ${JSON.stringify(
+      `syscall[${vatID}].fulfillData(${promiseID}/${kp}) = ${fulfillData} ${JSON.stringify(
         vatSlots,
       )}/${JSON.stringify(slots)}`,
     );
     fulfillToData(kp, fulfillData, slots);
   }
 
-  function doFulfillToPresence(resolverID, slot) {
-    insistVatType('resolver', resolverID);
-    const kp = mapVatSlotToKernelSlot(resolverID);
+  function doFulfillToPresence(promiseID, slot) {
+    insistVatType('promise', promiseID);
+    const kp = mapVatSlotToKernelSlot(promiseID);
     insistKernelType('promise', kp);
     insist(kernelKeeper.hasKernelPromise(kp), `unknown kernelPromise '${kp}'`);
+    const p = kernelKeeper.getKernelPromise(kp);
+    insist(p.state === 'unresolved', `${kp} was already resolved`);
+    insist(
+      p.decider === vatID,
+      `${kp} is decided by ${p.decider}, not ${vatID}`,
+    );
 
     const targetSlot = mapVatSlotToKernelSlot(slot);
     kdebug(
-      `syscall[${vatID}].fulfillToPresence(${resolverID}/${kp}) = ${slot}/${targetSlot})`,
+      `syscall[${vatID}].fulfillToPresence(${promiseID}/${kp}) = ${slot}/${targetSlot})`,
     );
     fulfillToPresence(kp, targetSlot);
   }
 
-  function doReject(resolverID, rejectData, vatSlots) {
-    insistVatType('resolver', resolverID);
-    const kp = mapVatSlotToKernelSlot(resolverID);
+  function doReject(promiseID, rejectData, vatSlots) {
+    insistVatType('promise', promiseID);
+    const kp = mapVatSlotToKernelSlot(promiseID);
     insistKernelType('promise', kp);
     insist(kernelKeeper.hasKernelPromise(kp), `unknown kernelPromise '${kp}'`);
+    const p = kernelKeeper.getKernelPromise(kp);
+    insist(p.state === 'unresolved', `${kp} was already resolved`);
+    insist(
+      p.decider === vatID,
+      `${kp} is decided by ${p.decider}, not ${vatID}`,
+    );
 
     const slots = vatSlots.map(slot => mapVatSlotToKernelSlot(slot));
     kdebug(
-      `syscall[${vatID}].reject(${resolverID}/${kp}) = ${rejectData} ${JSON.stringify(
+      `syscall[${vatID}].reject(${promiseID}/${kp}) = ${rejectData} ${JSON.stringify(
         vatSlots,
       )}/${JSON.stringify(slots)}`,
     );
@@ -302,6 +296,7 @@ export default function makeVatManager(
   const syscall = harden({
     send(...args) {
       const promiseID = inReplay ? replay('send', ...args) : doSend(...args);
+      // todo: remove return value
       transcriptAddSyscall(['send', ...args], promiseID);
       return promiseID;
     },
@@ -377,6 +372,7 @@ export default function makeVatManager(
     kdebug(`process ${JSON.stringify(message)}`);
     const { type } = message;
     if (type === 'deliver') {
+      // console.log(`   process ${vatID} ${message.msg.method}() -> result=${message.msg.result}`);
       const { target, msg } = message;
       // temporary, until we allow delivery of pipelined messages to vats
       // which have opted-in
@@ -384,9 +380,22 @@ export default function makeVatManager(
       const targetSlot = mapKernelSlotToVatSlot(target);
       insist(parseVatSlot(targetSlot).allocatedByVat, `deliver() to wrong vat`);
       const inputSlots = msg.slots.map(slot => mapKernelSlotToVatSlot(slot));
-      const resolverID =
-        msg.kernelResolverID &&
-        vatKeeper.mapKernelPromiseToVatResolver(msg.kernelResolverID);
+      let resultSlot;
+      if (msg.result) {
+        insistKernelType('promise', msg.result);
+        const p = kernelKeeper.getKernelPromise(msg.result);
+        insist(
+          p.state === 'unresolved',
+          `result ${msg.result} already resolved`,
+        );
+        insist(
+          !p.decider,
+          `result ${msg.result} already has decider ${p.decider}`,
+        );
+        resultSlot = vatKeeper.mapKernelSlotToVatSlot(msg.result);
+        insistVatType('promise', resultSlot);
+        p.decider = vatID;
+      }
       return doProcess(
         [
           'deliver',
@@ -394,29 +403,18 @@ export default function makeVatManager(
           msg.method,
           msg.argsString,
           inputSlots,
-          resolverID,
+          resultSlot,
         ],
         `vat[${vatID}][${targetSlot}].${msg.method} dispatch failed`,
       );
     }
-
-    /*
-    if (type === 'subscribe') {
-      const { kernelPromiseID, vatID } = message;
-      const relativeID = mapKernelSlotToVatSlot({
-        type: 'resolver',
-        id: kernelPromiseID,
-      }).id;
-      return doProcess(['subscribe', relativeID],
-                       `vat[${vatID}].promise[${relativeID}] subscribe failed`);
-    }
-    */
 
     if (type === 'notifyFulfillToData') {
       const { kernelPromiseID } = message;
       const kp = kernelKeeper.getKernelPromise(kernelPromiseID);
       const vpid = mapKernelSlotToVatSlot(kernelPromiseID);
       const slots = kp.fulfillSlots.map(slot => mapKernelSlotToVatSlot(slot));
+      // console.log(`     ${vatID} ${message.type} ${message.kernelPromiseID}`, kp.fulfillData, kp.fulfillSlots);
       return doProcess(
         ['notifyFulfillToData', vpid, kp.fulfillData, slots],
         `vat[${vatID}].promise[${vpid}] fulfillToData failed`,
@@ -428,6 +426,7 @@ export default function makeVatManager(
       const kp = kernelKeeper.getKernelPromise(kernelPromiseID);
       const vpid = mapKernelSlotToVatSlot(kernelPromiseID);
       const slot = mapKernelSlotToVatSlot(kp.fulfillSlot);
+      // console.log(`     ${vatID} ${message.type} ${message.kernelPromiseID}`, kp.fulfillSlot);
       return doProcess(
         ['notifyFulfillToPresence', vpid, slot],
         `vat[${vatID}].promise[${vpid}] fulfillToPresence failed`,

@@ -19,7 +19,7 @@ export function deliverToController(
   method,
   data,
   slots,
-  resolverID,
+  result,
   syscall,
 ) {
   function doAddRemote(args) {
@@ -30,7 +30,7 @@ export function deliverToController(
     }
     const transmitterID = slots[args[1].index];
     const { receiverID } = addRemote(state, name, transmitterID);
-    syscall.fulfillToPresence(resolverID, receiverID);
+    syscall.fulfillToPresence(result, receiverID);
   }
 
   function doAddEgress(args) {
@@ -43,7 +43,7 @@ export function deliverToController(
     }
     const localRef = slots[args[2].index];
     addEgress(state, remoteID, remoteRefID, localRef);
-    syscall.fulfillToData(resolverID, UNDEFINED, []);
+    syscall.fulfillToData(result, UNDEFINED, []);
   }
 
   function doAddIngress(args) {
@@ -52,7 +52,7 @@ export function deliverToController(
     const remoteID = state.names.get(remoteName);
     const remoteRefID = Nat(args[1]);
     const localRef = addIngress(state, remoteID, remoteRefID);
-    syscall.fulfillToPresence(resolverID, localRef);
+    syscall.fulfillToPresence(result, localRef);
   }
 
   // This is a degenerate form of deserialization, just enough to handle the

@@ -28,7 +28,7 @@ async function simpleCall(t, withSES) {
     {
       msg: {
         argsString: 'args',
-        kernelResolverID: null,
+        result: null,
         method: 'foo',
         slots: [],
       },
@@ -119,7 +119,7 @@ async function bootstrapExport(t, withSES) {
       msg: {
         argsString:
           '{"args":[[],{"_bootstrap":{"@qclass":"slot","index":0},"left":{"@qclass":"slot","index":1},"right":{"@qclass":"slot","index":2}},{"_dummy":"dummy"}]}',
-        kernelResolverID: null,
+        result: null,
         method: 'bootstrap',
         slots: [boot0, left0, right0],
       },
@@ -157,7 +157,7 @@ async function bootstrapExport(t, withSES) {
         method: 'foo',
         argsString: '{"args":[1,{"@qclass":"slot","index":0}]}',
         slots: [right0],
-        kernelResolverID: fooP,
+        result: fooP,
       },
     },
   ]);
@@ -185,7 +185,7 @@ async function bootstrapExport(t, withSES) {
         method: 'bar',
         argsString: '{"args":[2,{"@qclass":"slot","index":0}]}',
         slots: [right0],
-        kernelResolverID: barP,
+        result: barP,
       },
     },
     { type: 'notifyFulfillToData', vatID: '_bootstrap', kernelPromiseID: fooP },

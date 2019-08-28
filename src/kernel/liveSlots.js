@@ -74,13 +74,13 @@ function build(syscall, _state, makeRoot, forVatID) {
   }
 
   function exportPromise(p) {
-    const pr = syscall.createPromise();
+    const pid = syscall.createPromise();
     // we ignore the kernel promise, but we use the resolver to notify the
     // kernel when our local promise changes state
-    lsdebug(`ls exporting promise ${pr.resolverID}`);
+    lsdebug(`ls exporting promise ${pid}`);
     // eslint-disable-next-line no-use-before-define
-    p.then(thenResolve(pr.resolverID), thenReject(pr.resolverID));
-    return pr.promiseID;
+    p.then(thenResolve(pid), thenReject(pid));
+    return pid;
   }
 
   function exportPassByPresence() {
@@ -186,7 +186,8 @@ function build(syscall, _state, makeRoot, forVatID) {
   function queueMessage(targetSlot, prop, args) {
     const ser = m.serialize(harden({ args }));
     lsdebug(`ls.qm send(${JSON.stringify(targetSlot)}, ${prop}`);
-    const promiseID = syscall.send(targetSlot, prop, ser.argsString, ser.slots);
+    const promiseID = syscall.createPromise(); // temporary
+    syscall.send(targetSlot, prop, ser.argsString, ser.slots, promiseID);
     insistVatType('promise', promiseID);
     lsdebug(` ls.qm got promiseID ${promiseID}`);
     const done = makeQueued(promiseID);
@@ -314,9 +315,9 @@ function build(syscall, _state, makeRoot, forVatID) {
     return pr;
   }
 
-  function deliver(target, method, argsbytes, caps, resolverID) {
+  function deliver(target, method, argsbytes, caps, result) {
     lsdebug(
-      `ls[${forVatID}].dispatch.deliver ${target}.${method} -> ${resolverID}`,
+      `ls[${forVatID}].dispatch.deliver ${target}.${method} -> ${result}`,
     );
     const t = slotToVal.get(target);
     if (!t) {
@@ -340,17 +341,17 @@ function build(syscall, _state, makeRoot, forVatID) {
       }
       return t[method](...args.args);
     });
-    if (resolverID !== undefined && resolverID !== null) {
-      lsdebug(` ls.deliver attaching then ->${resolverID}`);
-      insistVatType('resolver', resolverID); // temporary
+    if (result) {
+      lsdebug(` ls.deliver attaching then ->${result}`);
+      insistVatType('promise', result);
       // eslint-disable-next-line no-use-before-define
-      p.then(thenResolve(resolverID), thenReject(resolverID));
+      p.then(thenResolve(result), thenReject(result));
     }
     return p;
   }
 
-  function thenResolve(resolverID) {
-    insistVatType('resolver', resolverID); // temporary
+  function thenResolve(promiseID) {
+    insistVatType('promise', promiseID);
     return res => {
       harden(res);
       lsdebug(`ls.thenResolve fired`, res);
@@ -369,36 +370,26 @@ function build(syscall, _state, makeRoot, forVatID) {
         const slot = ser.slots[unser.index];
         const { type } = parseVatSlot(slot);
         if (type === 'object') {
-          syscall.fulfillToPresence(resolverID, slot);
+          syscall.fulfillToPresence(promiseID, slot);
         } else {
           throw new Error(`thenResolve to non-object slot ${slot}`);
         }
       } else {
         // if it resolves to data, .thens fire but kernel-queued messages are
         // rejected, because you can't send messages to data
-        syscall.fulfillToData(resolverID, ser.argsString, ser.slots);
+        syscall.fulfillToData(promiseID, ser.argsString, ser.slots);
       }
     };
   }
 
-  function thenReject(resolverID) {
+  function thenReject(promiseID) {
     return rej => {
       harden(rej);
       lsdebug(`ls thenReject fired`, rej);
       const ser = m.serialize(rej);
-      syscall.reject(resolverID, ser.argsString, ser.slots);
+      syscall.reject(promiseID, ser.argsString, ser.slots);
     };
   }
-
-  /*
-  function subscribe(resolverID) {
-    lsdebug(`ls.dispatch.subscribe(${resolverID})`);
-    if (!exportedPromisesByResolverID.has(resolverID)) {
-      throw new Error(`unknown resolverID '${resolverID}'`);
-    }
-    const p = exportedPromisesByResolverID.get(resolverID);
-    p.then(thenResolve(resolverID), thenReject(resolverID));
-  } */
 
   function notifyFulfillToData(promiseID, data, slots) {
     lsdebug(`ls.dispatch.notifyFulfillToData(${promiseID}, ${data}, ${slots})`);

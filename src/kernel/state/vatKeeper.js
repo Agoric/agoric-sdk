@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 import { insist } from '../insist';
-import { insistKernelType, parseKernelSlot } from '../parseKernelSlots';
+import { parseKernelSlot } from '../parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../../vats/parseVatSlots';
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
@@ -12,11 +12,6 @@ export default function makeVatKeeper(
   addKernelPromise,
 ) {
   function createStartingVatState() {
-    // kernelSlotToVatSlot is an object with four properties:
-    //    exports, devices, promises, resolvers.
-    // vatSlotToKernelSlot has imports, deviceImports, promises,
-    //    resolvers
-
     state.kernelSlotToVatSlot = {}; // kpNN -> p+NN, etc
     state.vatSlotToKernelSlot = {}; // p+NN -> kpNN, etc
 
@@ -93,20 +88,6 @@ export default function makeVatKeeper(
     return state.kernelSlotToVatSlot[kernelSlot];
   }
 
-  // temporary
-  function mapKernelPromiseToVatResolver(kernelSlot) {
-    insistKernelType('promise', kernelSlot);
-    const vp = mapKernelSlotToVatSlot(kernelSlot);
-    const parsed = parseVatSlot(vp);
-    const vr = makeVatSlot('resolver', parsed.allocatedByVat, parsed.id);
-    const existing = state.vatSlotToKernelSlot[vr];
-    if (existing === undefined) {
-      // the vat resolver and the vat promise both map to the kernel promise
-      state.vatSlotToKernelSlot[vr] = kernelSlot;
-    }
-    return vr;
-  }
-
   function getTranscript() {
     return Array.from(state.transcript);
   }
@@ -129,7 +110,6 @@ export default function makeVatKeeper(
     createStartingVatState,
     mapVatSlotToKernelSlot,
     mapKernelSlotToVatSlot,
-    mapKernelPromiseToVatResolver,
     getTranscript,
     dumpState,
     addToTranscript,

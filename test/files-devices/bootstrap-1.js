@@ -4,7 +4,7 @@ export default function setup(syscall, state, helpers, _devices) {
   const { log } = helpers;
   let deviceRef;
   const dispatch = harden({
-    deliver(facetid, method, argsbytes, caps, _resolverID) {
+    deliver(facetid, method, argsbytes, caps, _result) {
       if (method === 'bootstrap') {
         const { args } = JSON.parse(argsbytes);
         const deviceIndex = args[2].d1.index;

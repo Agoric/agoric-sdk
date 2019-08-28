@@ -26,22 +26,28 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
       .slice(3)
       .map(s => mapInbound(state, remoteID, s, syscall));
     const body = message.slice(sci + 1);
-    // todo: sendOnly if (!result.length)
-    const p = syscall.send(target, method, body, msgSlots);
-    syscall.subscribe(p);
-    // console.log(`-- deliverFromRemote, result=${result} local p=${p}`);
-    // for now p is p-NN, later we will allocate+provide p+NN instead
+    let r;
     if (result.length) {
+      // todo: replace with mapInboundResult
       insistRemoteType('promise', result);
-      insist(!parseRemoteSlot(result).allocatedByRecipient, result);
-      state.promiseTable.set(p, {
+      insist(!parseRemoteSlot(result).allocatedByRecipient, result); // temp?
+      // for now p is p-NN, later we will allocate+provide p+NN instead
+      r = syscall.createPromise(); // temporary
+      state.promiseTable.set(r, {
         owner: remoteID,
         resolved: false,
         decider: null,
         subscriber: remoteID,
       });
-      remote.fromRemote.set(result, p);
-      remote.toRemote.set(p, flipRemoteSlot(result));
+      remote.fromRemote.set(result, r);
+      remote.toRemote.set(r, flipRemoteSlot(result));
+    }
+    // else it's a sendOnly()
+    syscall.send(target, method, body, msgSlots, r);
+    if (r) {
+      // todo: can/should we subscribe to this early, before syscall.send()?
+      // probably not.
+      syscall.subscribe(r);
     }
     // dumpState(state);
   } else if (command === 'resolve') {
@@ -70,15 +76,14 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
       p.decider === remoteID,
       `${p.decider} is the decider of ${target}, not ${remoteID}`,
     );
-    const { resolverID } = p;
     const slots = remoteSlots.map(s => mapInbound(state, remoteID, s, syscall));
     const body = message.slice(sci + 1);
     if (type === 'object') {
-      syscall.fulfillToPresence(resolverID, slots[0]);
+      syscall.fulfillToPresence(target, slots[0]);
     } else if (type === 'data') {
-      syscall.fulfillToData(resolverID, body, slots);
+      syscall.fulfillToData(target, body, slots);
     } else if (type === 'reject') {
-      syscall.reject(resolverID, body, slots);
+      syscall.reject(target, body, slots);
     } else {
       throw new Error(`unknown resolution type ${type} in ${message}`);
     }

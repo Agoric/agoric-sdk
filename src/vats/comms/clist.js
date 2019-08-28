@@ -119,6 +119,55 @@ export function mapOutbound(state, remoteID, s, syscall) {
   return remote.toRemote.get(s);
 }
 
+export function mapOutboundResult(state, remoteID, s) {
+  // We're sending a slot to a remote system for use as a result. We must do
+  // some additional who-is-the-decider checks.
+  const remote = getRemote(state, remoteID);
+  insistVatType('promise', s);
+
+  if (!state.promiseTable.has(s)) {
+    state.promiseTable.set(s, {
+      owner: null, // todo: what is this for anyways?
+      resolved: false,
+      decider: null, // for a brief moment, we're the decider
+      subscriber: null,
+    });
+  }
+  const p = state.promiseTable.get(s);
+  // we (the local machine) must have resolution authority, which happens for
+  // new promises, and for old ones that arrived as the 'result' of inbound
+  // messages from remote machines (transferring authority to us).
+  insist(!p.decider, `result ${s} has decider ${p.decider}, not us`);
+  insist(!p.resolved, `result ${s} is already resolved`);
+  // if we received this promise from remote1, we can send it back to them,
+  // but we can't send it to any other remote.
+  insist(
+    !p.subscriber || p.subscriber === remoteID,
+    `result ${s} has subscriber ${p.subscriber}, not none or ${remoteID}`,
+  );
+  // todo: if we previously held resolution authority for this promise, then
+  // transferred it to some local vat, we'll have subscribed to the kernel to
+  // hear about it. If we then get the authority back again, we no longer
+  // want to hear about its resolution (since we're the ones doing the
+  // resolving), but the kernel still thinks of us as subscribing, so we'll
+  // get a bogus dispatch.notifyFulfill*. Currently we throw an error, which
+  // is currently ignored but might prompt a vat shutdown in the future.
+
+  p.decider = remoteID; // transfer authority to recipient
+
+  const existing = remote.toRemote.get(s);
+  if (!existing) {
+    const index = remote.nextPromiseIndex;
+    remote.nextPromiseIndex += 1;
+    // the recipient receives rp-NN
+    const rs = makeRemoteSlot('promise', false, index);
+    remote.toRemote.set(s, rs);
+    remote.fromRemote.set(flipRemoteSlot(rs), s);
+  }
+
+  return remote.toRemote.get(s);
+}
+
 export function mapInbound(state, remoteID, s, syscall) {
   // We're receiving a slot from a remote system. If they've sent it to us
   // previously, or if we're the ones who sent it to them earlier, it will be
@@ -147,7 +196,8 @@ export function mapInbound(state, remoteID, s, syscall) {
       if (allocatedByRecipient) {
         throw new Error(`promises not implemented yet`);
       } else {
-        const { promiseID, resolverID } = syscall.createPromise();
+        // todo: temporary, replace with locally-allocated p+NN index
+        const promiseID = syscall.createPromise();
         remote.fromRemote.set(s, promiseID);
         remote.toRemote.set(promiseID, s);
         state.promiseTable.set(promiseID, {
@@ -155,11 +205,8 @@ export function mapInbound(state, remoteID, s, syscall) {
           resolved: false,
           decider: remoteID,
           subscriber: null,
-          resolverID, // temporary
         });
-        console.log(
-          `inbound promise ${s} mapped to ${promiseID}/${resolverID}`,
-        );
+        console.log(`inbound promise ${s} mapped to ${promiseID}`);
       }
     } else if (type === 'resolver') {
       throw new Error(`resolvers not implemented yet`);

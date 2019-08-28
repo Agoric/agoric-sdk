@@ -239,13 +239,10 @@ test('serialize promise', async t => {
   const log = [];
   const syscall = {
     createPromise() {
-      return {
-        promiseID: 'p-1',
-        resolverID: 'r-1',
-      };
+      return 'p-1';
     },
-    fulfillToData(resolverID, data, slots) {
-      log.push({ resolverID, data, slots });
+    fulfillToData(result, data, slots) {
+      log.push({ result, data, slots });
     },
   };
 
@@ -270,7 +267,7 @@ test('serialize promise', async t => {
   const { p: pauseP, res: pauseRes } = makePromise();
   setImmediate(() => pauseRes());
   await pauseP;
-  t.deepEqual(log, [{ resolverID: 'r-1', data: '5', slots: [] }]);
+  t.deepEqual(log, [{ result: 'p-1', data: '5', slots: [] }]);
 
   t.end();
 });
