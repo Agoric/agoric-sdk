@@ -47,8 +47,7 @@ export default function setup(syscall, state, helpers) {
 
           case 'left does: E(right.0).method(left.1) => returnData': {
             const rightRootPresence = args[0];
-            const leftRootPresence = args[1];
-            const leftNewObjPresence = await E(leftRootPresence).createNewObj();
+            const leftNewObjPresence = createNewObj();
             E(rightRootPresence)
               .methodWithPresence(leftNewObjPresence)
               .then(r => log(`=> left vat receives the returnedData: ${r}`));
@@ -57,8 +56,7 @@ export default function setup(syscall, state, helpers) {
 
           case 'left does: E(right.0).method(left.1) => returnData twice': {
             const rightRootPresence = args[0];
-            const leftRootPresence = args[1];
-            const leftNewObjPresence = await E(leftRootPresence).createNewObj();
+            const leftNewObjPresence = createNewObj();
 
             // first time
             E(rightRootPresence)
@@ -110,6 +108,7 @@ export default function setup(syscall, state, helpers) {
             const rightRootPresence = args[0];
             const result = E(rightRootPresence).methodReturnsPromise();
             log(`=> left vat receives the returnedPromise: ${result}`);
+            E(rightRootPresence).resolveToFoo();
             result.then(r => log(`=> returnedPromise.then: ${r}`));
             break;
           }
@@ -120,6 +119,7 @@ export default function setup(syscall, state, helpers) {
               rightRootPresence,
             ).methodReturnsPromiseForRightPresence();
             log(`=> left vat receives the returnedPromise: ${result}`);
+            E(rightRootPresence).resolveToNewObj();
             result.then(async r => {
               log(`=> returnedPromise.then: ${r}`);
               // call method on presence to confirm expected presence
@@ -134,8 +134,9 @@ export default function setup(syscall, state, helpers) {
             const leftPresence = createNewObj();
             const result = E(
               rightRootPresence,
-            ).methodReturnsPromiseForLeftPresence(leftPresence);
+            ).methodReturnsPromiseForLeftPresence();
             log(`=> left vat receives the returnedPromise: ${result}`);
+            E(rightRootPresence).resolveToLeftPresence(leftPresence);
             result.then(async r => {
               log(`=> returnedPromise.then: ${r}`);
               // call method on presence to confirm expected presence
@@ -147,8 +148,10 @@ export default function setup(syscall, state, helpers) {
 
           case 'left does: E(right.0).method() => right.promise => reject': {
             const rightRootPresence = args[0];
+            const p = E(rightRootPresence).methodReturnsPromiseReject();
+            E(rightRootPresence).rejectThatPromise();
             try {
-              await E(rightRootPresence).methodReturnsPromiseReject();
+              await p;
             } catch (err) {
               log(
                 `=> left vat receives the rejected promise with error ${err}`,
@@ -168,12 +171,23 @@ export default function setup(syscall, state, helpers) {
             break;
           }
 
-          case 'left does: E(right.0).method(right.promise) => returnData': {
+          case 'left does: E(right.0).method(right.promise) => returnData 1': {
             const rightRootPresence = args[0];
             const rpromise = E(rightRootPresence).methodReturnsPromise();
-            E(rightRootPresence)
-              .methodWithPromise(rpromise)
-              .then(r => log(`=> left vat receives the returnedData: ${r}`));
+            const p = E(rightRootPresence).methodWithPromise(rpromise);
+            E(rightRootPresence).resolveToFoo();
+            p.then(r => log(`=> left vat receives the returnedData: ${r}`));
+            break;
+          }
+
+          case 'left does: E(right.0).method(right.promise) => returnData 2': {
+            // test resolving the promise before sending it
+            // TODO: I'm not convinced this is working yet.
+            const rightRootPresence = args[0];
+            const rpromise = E(rightRootPresence).methodReturnsPromise();
+            E(rightRootPresence).resolveToFoo();
+            const p = E(rightRootPresence).methodWithPromise(rpromise);
+            p.then(r => log(`=> left vat receives the returnedData: ${r}`));
             break;
           }
 
@@ -182,6 +196,7 @@ export default function setup(syscall, state, helpers) {
             const rPromisePresence = E(
               rightRootPresence,
             ).methodReturnsPromiseForRightPresence();
+            E(rightRootPresence).resolveToNewObj();
             E(rightRootPresence)
               .methodOnPromiseForPresence(rPromisePresence)
               .then(r => log(`=> left vat receives the returnedData: ${r}`));
@@ -193,7 +208,8 @@ export default function setup(syscall, state, helpers) {
             const leftPresence = createNewObj();
             const lPromisePresence = E(
               rightRootPresence,
-            ).methodReturnsPromiseForLeftPresence(leftPresence);
+            ).methodReturnsPromiseForLeftPresence();
+            E(rightRootPresence).resolveToLeftPresence(leftPresence);
             E(rightRootPresence)
               .methodOnPromiseForPresence(lPromisePresence)
               .then(r => log(`=> left vat receives the returnedData: ${r}`));
@@ -207,7 +223,6 @@ export default function setup(syscall, state, helpers) {
 
       return harden({
         startTest,
-        createNewObj,
       });
     },
     helpers.vatID,

@@ -3,7 +3,6 @@ import { QCLASS, makeMarshal } from '@agoric/marshal';
 
 import { makeLiveSlots } from './liveSlots';
 import { makeDeviceSlots } from './deviceSlots';
-import { makeCommsSlots } from './commsSlots/index';
 import makePromise from './makePromise';
 import makeVatManager from './vatManager';
 import makeDeviceManager from './deviceManager';
@@ -394,7 +393,6 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
       const helpers = harden({
         vatID,
         makeLiveSlots,
-        makeCommsSlots,
         log(...args) {
           const rendered = args.map(arg =>
             typeof arg === 'string'

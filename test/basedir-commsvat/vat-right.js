@@ -1,7 +1,9 @@
 import harden from '@agoric/harden';
+import makePromise from '../../src/kernel/makePromise';
 
 export default function setup(syscall, state, helpers) {
   function log(what) {
+    console.log(what);
     helpers.log(what);
   }
 
@@ -15,6 +17,25 @@ export default function setup(syscall, state, helpers) {
         return 'called method';
       },
     };
+  }
+
+  let stashedPromise;
+  let stashedResolver;
+  let stashedRejector;
+  function createNewPromise() {
+    const p0 = makePromise();
+    stashedPromise = p0.p;
+    stashedResolver = p0.res;
+    stashedRejector = p0.rej;
+    return stashedPromise;
+  }
+
+  function resolve(what) {
+    stashedResolver(what);
+  }
+
+  function reject(what) {
+    stashedRejector(what);
   }
 
   return helpers.makeLiveSlots(
@@ -53,25 +74,29 @@ export default function setup(syscall, state, helpers) {
         },
         methodReturnsPromise() {
           log(`=> right.methodReturnsPromise was invoked`);
-          return new Promise((resolve, _reject) => {
-            resolve('foo');
-          });
+          return createNewPromise();
+        },
+        resolveToFoo() {
+          resolve('foo');
         },
         methodReturnsPromiseForRightPresence() {
-          return new Promise((resolve, _reject) => {
-            resolve(this.createNewObj());
-          });
+          return createNewPromise();
         },
-        methodReturnsPromiseForLeftPresence(leftPresence) {
-          return new Promise((resolve, _reject) => {
-            resolve(leftPresence);
-          });
+        resolveToNewObj() {
+          resolve(this.createNewObj());
+        },
+        methodReturnsPromiseForLeftPresence() {
+          return createNewPromise();
+        },
+        resolveToLeftPresence(leftPresence) {
+          resolve(leftPresence);
         },
         methodReturnsPromiseReject() {
           log(`=> right.methodReturnsPromiseReject was invoked`);
-          return new Promise((_resolve, reject) => {
-            reject(new Error('this was rejected'));
-          });
+          return createNewPromise();
+        },
+        rejectThatPromise() {
+          reject(new Error('this was rejected'));
         },
         async methodWithPromise(promise) {
           const promiseResult = await promise;

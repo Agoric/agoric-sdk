@@ -23,12 +23,28 @@ export default function setup(syscall, state, helpers) {
           D(devices.loopbox).registerInboundHandler(USER, vats.uservattp);
           const usersender = D(devices.loopbox).makeSender(USER);
           await E(vats.uservattp).registerMailboxDevice(usersender);
-          await E(vats.usercomms).init(vats.uservattp);
+          const {
+            transmitter: txToBotForUser,
+            setReceiver: setRxFromBotForUser,
+          } = await E(vats.uservattp).addRemote(BOT);
+          const rxFromBotForUser = await E(vats.usercomms).addRemote(
+            BOT,
+            txToBotForUser,
+          );
+          E(setRxFromBotForUser).setReceiver(rxFromBotForUser);
 
           D(devices.loopbox).registerInboundHandler(BOT, vats.botvattp);
           const botsender = D(devices.loopbox).makeSender(BOT);
           await E(vats.botvattp).registerMailboxDevice(botsender);
-          await E(vats.botcomms).init(vats.botvattp);
+          const {
+            transmitter: txToUserForBot,
+            setReceiver: setRxFromUserForBot,
+          } = await E(vats.botvattp).addRemote(USER);
+          const rxFromUserForBot = await E(vats.botcomms).addRemote(
+            USER,
+            txToUserForBot,
+          );
+          E(setRxFromUserForBot).setReceiver(rxFromUserForBot);
 
           await E(vats.botcomms).addEgress(
             USER,

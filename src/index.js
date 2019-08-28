@@ -4,5 +4,9 @@ import { buildMailboxStateMap, buildMailbox } from './devices/mailbox';
 export { loadBasedir, buildVatController, buildMailboxStateMap, buildMailbox };
 
 export function getVatTPSourcePath() {
-  return require.resolve('./vat-tp/vattp');
+  return require.resolve('./vats/vat-tp/vattp');
+}
+
+export function getCommsSourcePath() {
+  return require.resolve('./vats/comms');
 }

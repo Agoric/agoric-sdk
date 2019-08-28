@@ -19,21 +19,39 @@ export default function setup(syscall, state, helpers) {
           // setup
           const LEFT = 'left';
           const RIGHT = 'right';
-          const INDEX_FOR_RIGHT_INITIAL_OBJ = 0;
+          const RIGHT_OBJECT_INDEX = 12;
 
           D(devices.loopbox).registerInboundHandler(LEFT, vats.leftvattp);
           const leftsender = D(devices.loopbox).makeSender(LEFT);
           await E(vats.leftvattp).registerMailboxDevice(leftsender);
-          await E(vats.leftcomms).init(vats.leftvattp);
+
+          const {
+            transmitter: txToRightForLeft,
+            setReceiver: setRxFromRightForLeft,
+          } = await E(vats.leftvattp).addRemote(RIGHT);
+          const rxFromRightForLeft = await E(vats.leftcomms).addRemote(
+            RIGHT,
+            txToRightForLeft,
+          );
+          await E(setRxFromRightForLeft).setReceiver(rxFromRightForLeft);
 
           D(devices.loopbox).registerInboundHandler(RIGHT, vats.rightvattp);
           const rightsender = D(devices.loopbox).makeSender(RIGHT);
           await E(vats.rightvattp).registerMailboxDevice(rightsender);
-          await E(vats.rightcomms).init(vats.rightvattp);
+
+          const {
+            transmitter: txToLeftForRight,
+            setReceiver: setRxFromLeftForRight,
+          } = await E(vats.rightvattp).addRemote(LEFT);
+          const rxFromLeftForRight = await E(vats.rightcomms).addRemote(
+            LEFT,
+            txToLeftForRight,
+          );
+          await E(setRxFromLeftForRight).setReceiver(rxFromLeftForRight);
 
           await E(vats.rightcomms).addEgress(
             LEFT,
-            INDEX_FOR_RIGHT_INITIAL_OBJ,
+            RIGHT_OBJECT_INDEX,
             vats.right,
           );
 
@@ -42,7 +60,7 @@ export default function setup(syscall, state, helpers) {
           // but the leftcomms needs to export it to the kernel
           const rootRightPresence = await E(vats.leftcomms).addIngress(
             RIGHT,
-            INDEX_FOR_RIGHT_INITIAL_OBJ,
+            RIGHT_OBJECT_INDEX,
           );
 
           // run tests
