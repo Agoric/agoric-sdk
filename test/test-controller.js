@@ -1,6 +1,7 @@
 import path from 'path';
 import { test } from 'tape-promise/tape';
 import { buildVatController, loadBasedir } from '../src/index';
+import { checkKT } from './util';
 
 test('load empty', async t => {
   const config = {
@@ -22,7 +23,7 @@ async function simpleCall(t, withSES) {
   t.deepEqual(data.vatTables, [{ vatID: 'vat1', state: { transcript: [] } }]);
   t.deepEqual(data.kernelTable, []);
 
-  controller.queueToExport('vat1', 1, 'foo', 'args');
+  controller.queueToExport('vat1', 'o+1', 'foo', 'args');
   t.deepEqual(controller.dump().runQueue, [
     {
       msg: {
@@ -31,14 +32,14 @@ async function simpleCall(t, withSES) {
         method: 'foo',
         slots: [],
       },
-      target: { id: 1, type: 'export', vatID: 'vat1' },
+      target: 'ko20',
       type: 'deliver',
       vatID: 'vat1',
     },
   ]);
   await controller.run();
   t.deepEqual(JSON.parse(controller.dump().log[0]), {
-    facetID: 1,
+    facetID: 'o+1',
     method: 'foo',
     argsString: 'args',
     slots: [],
@@ -101,7 +102,17 @@ async function bootstrapExport(t, withSES) {
   const c = await buildVatController(config, withSES);
   // console.log(c.dump());
   // console.log('SLOTS: ', c.dump().runQueue[0].slots);
-  t.deepEqual(c.dump().kernelTable, []);
+
+  // the expected kernel object indices
+  const boot0 = 'ko20';
+  const left0 = 'ko21';
+  const right0 = 'ko22';
+  const kt = [
+    [boot0, '_bootstrap', 'o+0'],
+    [left0, 'left', 'o+0'],
+    [right0, 'right', 'o+0'],
+  ];
+  checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [
     {
@@ -110,13 +121,9 @@ async function bootstrapExport(t, withSES) {
           '{"args":[[],{"_bootstrap":{"@qclass":"slot","index":0},"left":{"@qclass":"slot","index":1},"right":{"@qclass":"slot","index":2}},{"_dummy":"dummy"}]}',
         kernelResolverID: null,
         method: 'bootstrap',
-        slots: [
-          { id: 0, type: 'export', vatID: '_bootstrap' },
-          { id: 0, type: 'export', vatID: 'left' },
-          { id: 0, type: 'export', vatID: 'right' },
-        ],
+        slots: [boot0, left0, right0],
       },
-      target: { id: 0, type: 'export', vatID: '_bootstrap' },
+      target: boot0,
       type: 'deliver',
       vatID: '_bootstrap',
     },
@@ -129,36 +136,34 @@ async function bootstrapExport(t, withSES) {
   ]);
   // console.log('--- c.step() running bootstrap.obj0.bootstrap');
   await c.step();
+  // kernel promise for result of the foo() that bootstrap sends to vat-left
+  const fooP = 'kp40';
   t.deepEqual(c.dump().log, [
     'left.setup called',
     'right.setup called',
     'bootstrap called',
     'bootstrap.obj0.bootstrap()',
   ]);
-  t.deepEqual(c.dump().kernelTable, [
-    ['_bootstrap', 'import', 10, 'export', 'left', 0],
-    ['_bootstrap', 'import', 11, 'export', 'right', 0],
-    ['_bootstrap', 'promise', 20, 40],
-  ]);
+  kt.push([left0, '_bootstrap', 'o-50']);
+  kt.push([right0, '_bootstrap', 'o-51']);
+  kt.push([fooP, '_bootstrap', 'p-60']);
+  checkKT(t, c, kt);
   t.deepEqual(c.dump().runQueue, [
     {
       vatID: 'left',
       type: 'deliver',
-      target: {
-        type: 'export',
-        vatID: 'left',
-        id: 0,
-      },
+      target: left0,
       msg: {
         method: 'foo',
         argsString: '{"args":[1,{"@qclass":"slot","index":0}]}',
-        slots: [{ type: 'export', vatID: 'right', id: 0 }],
-        kernelResolverID: 40,
+        slots: [right0],
+        kernelResolverID: fooP,
       },
     },
   ]);
 
   await c.step();
+  const barP = 'kp41';
   t.deepEqual(c.dump().log, [
     'left.setup called',
     'right.setup called',
@@ -166,31 +171,24 @@ async function bootstrapExport(t, withSES) {
     'bootstrap.obj0.bootstrap()',
     'left.foo 1',
   ]);
-  t.deepEqual(c.dump().kernelTable, [
-    ['_bootstrap', 'import', 10, 'export', 'left', 0],
-    ['_bootstrap', 'import', 11, 'export', 'right', 0],
-    ['_bootstrap', 'promise', 20, 40],
-    ['left', 'import', 10, 'export', 'right', 0],
-    ['left', 'promise', 20, 41],
-    ['left', 'resolver', 30, 40],
-  ]);
+  kt.push([right0, 'left', 'o-50']);
+  kt.push([fooP, 'left', 'p-60']);
+  kt.push([barP, 'left', 'p-61']);
+  checkKT(t, c, kt);
+
   t.deepEqual(c.dump().runQueue, [
     {
       vatID: 'right',
       type: 'deliver',
-      target: {
-        type: 'export',
-        vatID: 'right',
-        id: 0,
-      },
+      target: right0,
       msg: {
         method: 'bar',
         argsString: '{"args":[2,{"@qclass":"slot","index":0}]}',
-        slots: [{ type: 'export', vatID: 'right', id: 0 }],
-        kernelResolverID: 41,
+        slots: [right0],
+        kernelResolverID: barP,
       },
     },
-    { type: 'notifyFulfillToData', vatID: '_bootstrap', kernelPromiseID: 40 },
+    { type: 'notifyFulfillToData', vatID: '_bootstrap', kernelPromiseID: fooP },
   ]);
 
   await c.step();
@@ -204,18 +202,12 @@ async function bootstrapExport(t, withSES) {
     'right.obj0.bar 2 true',
   ]);
 
-  t.deepEqual(c.dump().kernelTable, [
-    ['_bootstrap', 'import', 10, 'export', 'left', 0],
-    ['_bootstrap', 'import', 11, 'export', 'right', 0],
-    ['_bootstrap', 'promise', 20, 40],
-    ['left', 'import', 10, 'export', 'right', 0],
-    ['left', 'promise', 20, 41],
-    ['left', 'resolver', 30, 40],
-    ['right', 'resolver', 30, 41],
-  ]);
+  kt.push([barP, 'right', 'p-60']);
+  checkKT(t, c, kt);
+
   t.deepEqual(c.dump().runQueue, [
-    { type: 'notifyFulfillToData', vatID: '_bootstrap', kernelPromiseID: 40 },
-    { type: 'notifyFulfillToData', vatID: 'left', kernelPromiseID: 41 },
+    { type: 'notifyFulfillToData', vatID: '_bootstrap', kernelPromiseID: fooP },
+    { type: 'notifyFulfillToData', vatID: 'left', kernelPromiseID: barP },
   ]);
 
   await c.step();
@@ -228,18 +220,10 @@ async function bootstrapExport(t, withSES) {
     'left.foo 1',
     'right.obj0.bar 2 true',
   ]);
+  checkKT(t, c, kt);
 
-  t.deepEqual(c.dump().kernelTable, [
-    ['_bootstrap', 'import', 10, 'export', 'left', 0],
-    ['_bootstrap', 'import', 11, 'export', 'right', 0],
-    ['_bootstrap', 'promise', 20, 40],
-    ['left', 'import', 10, 'export', 'right', 0],
-    ['left', 'promise', 20, 41],
-    ['left', 'resolver', 30, 40],
-    ['right', 'resolver', 30, 41],
-  ]);
   t.deepEqual(c.dump().runQueue, [
-    { type: 'notifyFulfillToData', vatID: 'left', kernelPromiseID: 41 },
+    { type: 'notifyFulfillToData', vatID: 'left', kernelPromiseID: barP },
   ]);
 
   await c.step();
@@ -253,15 +237,7 @@ async function bootstrapExport(t, withSES) {
     'right.obj0.bar 2 true',
   ]);
 
-  t.deepEqual(c.dump().kernelTable, [
-    ['_bootstrap', 'import', 10, 'export', 'left', 0],
-    ['_bootstrap', 'import', 11, 'export', 'right', 0],
-    ['_bootstrap', 'promise', 20, 40],
-    ['left', 'import', 10, 'export', 'right', 0],
-    ['left', 'promise', 20, 41],
-    ['left', 'resolver', 30, 40],
-    ['right', 'resolver', 30, 41],
-  ]);
+  checkKT(t, c, kt);
   t.deepEqual(c.dump().runQueue, []);
 
   t.end();

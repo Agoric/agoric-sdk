@@ -1,66 +1,73 @@
 import harden from '@agoric/harden';
-import Nat from '@agoric/nat';
+import { insist } from '../insist';
+import { parseKernelSlot } from '../parseKernelSlots';
+import { makeVatSlot, parseVatSlot } from '../../vats/parseVatSlots';
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
-function makeDeviceKeeper(state) {
+function makeDeviceKeeper(state, deviceName, addKernelObject, addKernelDevice) {
   function createStartingDeviceState() {
-    state.imports = {
-      outbound: {},
-      inbound: {},
-    };
-    state.nextImportID = 10;
+    state.kernelSlotToDevSlot = {}; // kdNN -> d+NN, koNN -> o-NN
+    state.devSlotToKernelSlot = {}; // d+NN -> kdNN, o-NN -> koNN
+    state.nextObjectID = 10; // for imports, the NN in o-NN
   }
 
-  function allocateImportIndex() {
-    const i = state.nextImportID;
-    state.nextImportID = i + 1;
-    return i;
-  }
+  function mapDeviceSlotToKernelSlot(devSlot) {
+    insist(`${devSlot}` === devSlot, 'non-string devSlot');
+    // kdebug(`mapOutbound ${devSlot}`);
+    const existing = state.devSlotToKernelSlot[devSlot];
+    if (existing === undefined) {
+      const { type, allocatedByVat } = parseVatSlot(devSlot);
 
-  function mapDeviceSlotToKernelSlot(slot) {
-    // kdebug(`mapOutbound ${JSON.stringify(slot)}`);
-
-    // export already handled
-
-    if (slot.type === 'import') {
-      // an import from somewhere else, so look in the sending Vat's table to
-      // translate into absolute form
-      Nat(slot.id);
-      return state.imports.outbound[`${slot.id}`];
+      if (allocatedByVat) {
+        let kernelSlot;
+        if (type === 'object') {
+          kernelSlot = addKernelObject(deviceName);
+        } else if (type === 'promise') {
+          throw new Error(`devices do not accept Promises`);
+        } else if (type === 'device') {
+          kernelSlot = addKernelDevice(deviceName);
+        } else {
+          throw new Error(`unknown type ${type}`);
+        }
+        state.devSlotToKernelSlot[devSlot] = kernelSlot;
+        state.kernelSlotToDevSlot[kernelSlot] = devSlot;
+      } else {
+        // the vat didn't allocate it, and the kernel didn't allocate it
+        // (else it would have been in the c-list), so it must be bogus
+        throw new Error(`unknown devSlot ${devSlot}`);
+      }
     }
 
-    throw Error(`unknown slot.type '${slot.type}'`);
+    return state.devSlotToKernelSlot[devSlot];
   }
 
   // mapInbound: convert from absolute slot to deviceName-relative slot. This
   // is used when building the arguments for dispatch.invoke.
-  function mapKernelSlotToDeviceSlot(slot) {
-    // device already handled
+  function mapKernelSlotToDeviceSlot(kernelSlot) {
+    insist(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
+    const existing = state.kernelSlotToDevSlot[kernelSlot];
+    if (existing === undefined) {
+      const { type } = parseKernelSlot(kernelSlot);
 
-    if (slot.type === 'export') {
-      const { vatID: fromVatID, id } = slot;
-      Nat(id);
-
-      const { imports } = state;
-      const { inbound } = imports;
-      const { outbound } = imports;
-      const key = `${slot.type}.${fromVatID}.${id}`; // ugh javascript
-      if (!Object.getOwnPropertyDescriptor(inbound, key)) {
-        // must add both directions
-        const newSlotID = Nat(allocateImportIndex());
-        // kdebug(` adding ${newSlotID}`);
-        inbound[key] = newSlotID;
-        outbound[`${newSlotID}`] = harden({
-          type: 'export',
-          vatID: fromVatID,
-          id,
-        }); // TODO just 'slot'?
+      let devSlot;
+      if (type === 'object') {
+        const id = state.nextObjectID;
+        state.nextObjectID += 1;
+        devSlot = makeVatSlot(type, false, id);
+      } else if (type === 'device') {
+        throw new Error('devices cannot import other device nodes');
+      } else if (type === 'promise') {
+        throw new Error('devices cannot import Promises');
+      } else {
+        throw new Error(`unknown type ${type}`);
       }
-      return { type: 'import', id: inbound[key] };
+
+      state.devSlotToKernelSlot[devSlot] = kernelSlot;
+      state.kernelSlotToDevSlot[kernelSlot] = devSlot;
     }
 
-    throw Error(`unknown type '${slot.type}'`);
+    return state.kernelSlotToDevSlot[kernelSlot];
   }
 
   function getDeviceState() {
@@ -71,12 +78,22 @@ function makeDeviceKeeper(state) {
     state.deviceState = value;
   }
 
+  function dumpState() {
+    const res = [];
+    Object.getOwnPropertyNames(state.kernelSlotToDevSlot).forEach(ks => {
+      const ds = state.kernelSlotToDevSlot[ks];
+      res.push([ks, deviceName, ds]);
+    });
+    return harden(res);
+  }
+
   return harden({
     createStartingDeviceState,
     mapDeviceSlotToKernelSlot,
     mapKernelSlotToDeviceSlot,
     getDeviceState,
     setDeviceState,
+    dumpState,
   });
 }
 

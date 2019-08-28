@@ -2,6 +2,11 @@ import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
 import { insist } from './insist';
+import {
+  insistVatType,
+  makeVatSlot,
+  parseVatSlot,
+} from '../vats/parseVatSlots';
 
 // 'makeDeviceSlots' is a subset of makeLiveSlots, for device code
 
@@ -25,19 +30,8 @@ function build(syscall, state, makeRoot, forDeviceName) {
   }
 
   const outstandingProxies = new WeakSet();
-
-  function slotToKey(slot) {
-    if (
-      slot.type === 'deviceExport' ||
-      slot.type === 'import' ||
-      slot.type === 'deviceImport'
-    ) {
-      return `${slot.type}-${Nat(slot.id)}`;
-    }
-    throw new Error(`unknown slot.type '${slot.type}'`);
-  }
   const valToSlot = new WeakMap();
-  const slotKeyToVal = new Map();
+  const slotToVal = new Map();
   let nextExportID = 1;
 
   function allocateExportID() {
@@ -48,7 +42,7 @@ function build(syscall, state, makeRoot, forDeviceName) {
 
   function exportPassByPresence() {
     const exportID = allocateExportID();
-    return harden({ type: 'deviceExport', id: exportID });
+    return makeVatSlot('device', true, exportID);
   }
 
   function serializeSlot(val, slots, slotMap) {
@@ -71,10 +65,9 @@ function build(syscall, state, makeRoot, forDeviceName) {
         // lsdebug('must be a new export', JSON.stringify(val));
         mustPassByPresence(val);
         slot = exportPassByPresence();
-
-        const key = slotToKey(slot);
+        parseVatSlot(slot); // assertion
         valToSlot.set(val, slot);
-        slotKeyToVal.set(key, val);
+        slotToVal.set(slot, val);
       }
       slot = valToSlot.get(val);
 
@@ -90,37 +83,24 @@ function build(syscall, state, makeRoot, forDeviceName) {
   function unserializeSlot(data, slots) {
     // lsdebug(`unserializeSlot ${data} ${slots}`);
     const slot = slots[Nat(data.index)];
-    const key = slotToKey(slot);
     let val;
-    if (!slotKeyToVal.has(key)) {
-      if (slot.type === 'import') {
+    if (!slotToVal.has(slot)) {
+      const { type, allocatedByVat } = parseVatSlot(slot);
+      insist(!allocatedByVat, `I don't remember allocating ${slot}`);
+      if (type === 'object') {
         // this is a new import value
-        // lsdebug(`assigning new import ${slot.id}`);
-        val = makePresence(slot.id);
+        // lsdebug(`assigning new import ${slot}`);
+        val = makePresence(slot);
         // lsdebug(` for presence`, val);
-      } else if (slot.type === 'deviceExport') {
-        // huh, the kernel should never reference an export we didn't
-        // previously send
-        throw Error(`unrecognized deviceExport '${slot.id}'`);
-      } else if (slot.type === 'deviceImport') {
-        // same
-        throw Error(`unrecognized deviceImport '${slot.id}'`);
+      } else if (type === 'device') {
+        throw Error(`devices should not be given other devices '${slot}'`);
       } else {
-        throw Error(`unrecognized slot.type '${slot.type}'`);
+        throw Error(`unrecognized slot type '${type}'`);
       }
-      slotKeyToVal.set(key, val);
+      slotToVal.set(slot, val);
       valToSlot.set(val, slot);
     }
-    return slotKeyToVal.get(key);
-  }
-
-  // this handles both exports ("targets" which other vats can call)
-  function getTarget(deviceID) {
-    const key = slotToKey({ type: 'deviceExport', id: deviceID });
-    if (!slotKeyToVal.has(key)) {
-      throw Error(`no target for facetID ${deviceID}`);
-    }
-    return slotKeyToVal.get(key);
+    return slotToVal.get(slot);
   }
 
   const m = makeMarshal(serializeSlot, unserializeSlot);
@@ -156,7 +136,7 @@ function build(syscall, state, makeRoot, forDeviceName) {
       throw new Error('SO(SO(x)) is invalid');
     }
     const slot = valToSlot.get(x);
-    if (!slot || slot.type !== 'import') {
+    if (!slot || parseVatSlot(slot).type !== 'object') {
       throw new Error(`SO(x) must be called on a Presence, not ${x}`);
     }
     const handler = PresenceHandler(slot);
@@ -180,15 +160,19 @@ function build(syscall, state, makeRoot, forDeviceName) {
 
   // here we finally invoke the device code, and get back the root devnode
   const rootObject = makeRoot(harden({ SO, getDeviceState, setDeviceState }));
-
   mustPassByPresence(rootObject);
-  const rootSlot = { type: 'deviceExport', id: 0 };
+
+  const rootSlot = makeVatSlot('device', true, 0);
   valToSlot.set(rootObject, rootSlot);
-  slotKeyToVal.set(slotToKey(rootSlot), rootObject);
+  slotToVal.set(rootSlot, rootObject);
 
   function invoke(deviceID, method, data, slots) {
-    lsdebug(`ls[${forDeviceName}].dispatch.invoke ${deviceID}.${method}`);
-    const t = getTarget(deviceID);
+    insistVatType('device', deviceID);
+    lsdebug(
+      `ls[${forDeviceName}].dispatch.invoke ${deviceID}.${method}`,
+      slots,
+    );
+    const t = slotToVal.get(deviceID);
     const args = m.unserialize(data, slots);
     if (!(method in t)) {
       throw new TypeError(

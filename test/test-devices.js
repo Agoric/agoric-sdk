@@ -24,10 +24,7 @@ async function test0(t, withSES) {
       },
     ],
   });
-  t.deepEqual(JSON.parse(c.dump().log[1]), [
-    { type: 'export', id: 0 },
-    { type: 'deviceImport', id: 40 },
-  ]);
+  t.deepEqual(JSON.parse(c.dump().log[1]), ['o+0', 'd-70']);
   t.end();
 }
 
@@ -56,12 +53,12 @@ async function test1(t, withSES) {
   };
   const c = await buildVatController(config, withSES);
   await c.step();
-  c.queueToExport('_bootstrap', 0, 'step1', '{"args":[]}');
+  c.queueToExport('_bootstrap', 'o+0', 'step1', '{"args":[]}');
   await c.step();
   console.log(c.dump().log);
   t.deepEqual(c.dump().log, [
     'callNow',
-    'invoke 0 set',
+    'invoke d+0 set',
     '{"data":"{}","slots":[]}',
   ]);
   t.deepEqual(sharedArray, ['pushed']);
@@ -188,7 +185,7 @@ async function testState(t, withSES) {
   await c1.run();
   t.deepEqual(c1.dump().log, ['undefined', 'w+r', 'called', 'got {"s":"new"}']);
   t.deepEqual(JSON.parse(c1.getState()).devices.d3.deviceState, { s: 'new' });
-  t.deepEqual(JSON.parse(c1.getState()).devices.d3.nextImportID, 10);
+  t.deepEqual(JSON.parse(c1.getState()).devices.d3.nextObjectID, 10);
 
   t.end();
 }

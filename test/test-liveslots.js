@@ -37,14 +37,11 @@ test('liveslots pipelines to syscall.send', async t => {
   await kernel.start(); // no bootstrap
   t.deepEqual(kernel.dump().runQueue, []);
 
-  const root = kernel.addImport(
-    'b',
-    harden({ type: 'export', vatID: 'a', id: 0 }),
-  );
+  const root = kernel.addImport('b', kernel.addExport('a', 'o+0'));
 
   // root!one(x) // sendOnly
   const arg0 = JSON.stringify({ args: [{ '@qclass': 'slot', index: 0 }] });
-  syscall.send(root, 'one', arg0, [harden({ type: 'export', id: 5 })]);
+  syscall.send(root, 'one', arg0, ['o+5']);
 
   // calling one() should cause three syscall.send() calls to be made: one
   // for x!pipe1(), a second pipelined to the result promise of it, and a
