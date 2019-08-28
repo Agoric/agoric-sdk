@@ -1,5 +1,11 @@
 User-visible changes in Cosmic SwingSet:
 
+## Release v0.8.5 (2019-08-28)
+
+* Upgrade to @agoric/ertp version 0.1.3
+* Doc fixes
+* Ansible playbook `fluentd` to facilitate logging
+
 ## Release v0.8.4 (2019-08-21)
 
 * Upgrade to @agoric/ertp version 0.1.2.
