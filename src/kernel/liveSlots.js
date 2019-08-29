@@ -66,6 +66,7 @@ function build(syscall, _state, makeRoot, forVatID) {
   const slotToVal = new Map();
   const importedPromisesByPromiseID = new Map();
   let nextExportID = 1;
+  let nextPromiseID = 5;
 
   function allocateExportID() {
     const exportID = nextExportID;
@@ -73,10 +74,14 @@ function build(syscall, _state, makeRoot, forVatID) {
     return exportID;
   }
 
+  function allocatePromiseID() {
+    const promiseID = nextPromiseID;
+    nextPromiseID += 1;
+    return makeVatSlot('promise', true, promiseID);
+  }
+
   function exportPromise(p) {
-    const pid = syscall.createPromise();
-    // we ignore the kernel promise, but we use the resolver to notify the
-    // kernel when our local promise changes state
+    const pid = allocatePromiseID();
     lsdebug(`ls exporting promise ${pid}`);
     // eslint-disable-next-line no-use-before-define
     p.then(thenResolve(pid), thenReject(pid));
@@ -185,25 +190,23 @@ function build(syscall, _state, makeRoot, forVatID) {
 
   function queueMessage(targetSlot, prop, args) {
     const ser = m.serialize(harden({ args }));
-    lsdebug(`ls.qm send(${JSON.stringify(targetSlot)}, ${prop}`);
-    const promiseID = syscall.createPromise(); // temporary
-    syscall.send(targetSlot, prop, ser.argsString, ser.slots, promiseID);
-    insistVatType('promise', promiseID);
-    lsdebug(` ls.qm got promiseID ${promiseID}`);
-    const done = makeQueued(promiseID);
+    const pid = allocatePromiseID();
+    const done = makeQueued(pid);
+    lsdebug(`ls.qm send(${JSON.stringify(targetSlot)}, ${prop}) -> ${pid}`);
+    syscall.send(targetSlot, prop, ser.argsString, ser.slots, pid);
 
     // prepare for notifyFulfillToData/etc
-    importedPromisesByPromiseID.set(promiseID, done);
+    importedPromisesByPromiseID.set(pid, done);
 
     // ideally we'd wait until someone .thens done.p, but with native
     // Promises we have no way of spotting that, so subscribe immediately
-    lsdebug(`ls[${forVatID}].queueMessage.importedPromiseThen ${promiseID}`);
-    importedPromiseThen(promiseID);
+    lsdebug(`ls[${forVatID}].queueMessage.importedPromiseThen ${pid}`);
+    importedPromiseThen(pid);
 
     // prepare the serializer to recognize it, if it's used as an argument or
     // return value
-    valToSlot.set(done.p, promiseID);
-    slotToVal.set(promiseID, done.p);
+    valToSlot.set(done.p, pid);
+    slotToVal.set(pid, done.p);
 
     return done.p;
   }

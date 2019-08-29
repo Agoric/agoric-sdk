@@ -5,6 +5,7 @@ import {
   parseRemoteSlot,
 } from './parseRemoteSlot';
 import { mapInbound, getInbound } from './clist';
+import { allocatePromise } from './state';
 import { insist } from '../../kernel/insist';
 
 export function deliverFromRemote(syscall, state, remoteID, message) {
@@ -28,11 +29,11 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
     const body = message.slice(sci + 1);
     let r;
     if (result.length) {
-      // todo: replace with mapInboundResult
+      // todo: replace with mapInboundResult, allow pre-existing promises if
+      // the decider is right
       insistRemoteType('promise', result);
       insist(!parseRemoteSlot(result).allocatedByRecipient, result); // temp?
-      // for now p is p-NN, later we will allocate+provide p+NN instead
-      r = syscall.createPromise(); // temporary
+      r = allocatePromise(state);
       state.promiseTable.set(r, {
         owner: remoteID,
         resolved: false,

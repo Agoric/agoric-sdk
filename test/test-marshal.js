@@ -250,16 +250,16 @@ test('serialize promise', async t => {
   const { p, res } = makePromise();
   t.deepEqual(m.serialize(p), {
     argsString: '{"@qclass":"slot","index":0}',
-    slots: ['p-1'],
+    slots: ['p+5'],
   });
   // serializer should remember the promise
   t.deepEqual(m.serialize(harden(['other stuff', p])), {
     argsString: '["other stuff",{"@qclass":"slot","index":0}]',
-    slots: ['p-1'],
+    slots: ['p+5'],
   });
 
   // inbound should recognize it and return the promise
-  t.deepEqual(m.unserialize('{"@qclass":"slot","index":0}', ['p-1']), p);
+  t.deepEqual(m.unserialize('{"@qclass":"slot","index":0}', ['p+5']), p);
 
   res(5);
   t.deepEqual(log, []);
@@ -267,7 +267,7 @@ test('serialize promise', async t => {
   const { p: pauseP, res: pauseRes } = makePromise();
   setImmediate(() => pauseRes());
   await pauseP;
-  t.deepEqual(log, [{ result: 'p-1', data: '5', slots: [] }]);
+  t.deepEqual(log, [{ result: 'p+5', data: '5', slots: [] }]);
 
   t.end();
 });

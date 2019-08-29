@@ -1,3 +1,5 @@
+import { makeVatSlot } from '../parseVatSlots';
+
 export function makeState() {
   const state = {
     nextRemoteIndex: 1,
@@ -44,8 +46,8 @@ export function dumpState(state) {
   }
 }
 
-export function allocatePromiseIndex(state) {
+export function allocatePromise(state) {
   const index = state.nextPromiseIndex;
   state.nextPromiseIndex += 1;
-  return index;
+  return makeVatSlot('promise', true, index);
 }

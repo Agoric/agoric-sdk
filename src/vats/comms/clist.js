@@ -6,6 +6,7 @@ import {
   parseRemoteSlot,
 } from './parseRemoteSlot';
 import { getRemote } from './remote';
+import { allocatePromise } from './state';
 import { insist } from '../../kernel/insist';
 
 export function getOutbound(state, remoteID, target) {
@@ -168,7 +169,7 @@ export function mapOutboundResult(state, remoteID, s) {
   return remote.toRemote.get(s);
 }
 
-export function mapInbound(state, remoteID, s, syscall) {
+export function mapInbound(state, remoteID, s, _syscall) {
   // We're receiving a slot from a remote system. If they've sent it to us
   // previously, or if we're the ones who sent it to them earlier, it will be
   // in the inbound table already.
@@ -196,20 +197,17 @@ export function mapInbound(state, remoteID, s, syscall) {
       if (allocatedByRecipient) {
         throw new Error(`promises not implemented yet`);
       } else {
-        // todo: temporary, replace with locally-allocated p+NN index
-        const promiseID = syscall.createPromise();
-        remote.fromRemote.set(s, promiseID);
-        remote.toRemote.set(promiseID, s);
+        const promiseID = allocatePromise(state);
         state.promiseTable.set(promiseID, {
           owner: remoteID,
           resolved: false,
           decider: remoteID,
           subscriber: null,
         });
+        remote.fromRemote.set(s, promiseID);
+        remote.toRemote.set(promiseID, s);
         console.log(`inbound promise ${s} mapped to ${promiseID}`);
       }
-    } else if (type === 'resolver') {
-      throw new Error(`resolvers not implemented yet`);
     } else {
       throw new Error(`unknown type ${type}`);
     }

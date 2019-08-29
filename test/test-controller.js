@@ -146,7 +146,7 @@ async function bootstrapExport(t, withSES) {
   ]);
   kt.push([left0, '_bootstrap', 'o-50']);
   kt.push([right0, '_bootstrap', 'o-51']);
-  kt.push([fooP, '_bootstrap', 'p-60']);
+  kt.push([fooP, '_bootstrap', 'p+5']);
   checkKT(t, c, kt);
   t.deepEqual(c.dump().runQueue, [
     {
@@ -173,7 +173,7 @@ async function bootstrapExport(t, withSES) {
   ]);
   kt.push([right0, 'left', 'o-50']);
   kt.push([fooP, 'left', 'p-60']);
-  kt.push([barP, 'left', 'p-61']);
+  kt.push([barP, 'left', 'p+5']);
   checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [
