@@ -48,11 +48,35 @@ function getKernelSource() {
   return `(${kernelSourceFunc})`;
 }
 
-// this feeds the SES realm's (real/safe) confineExpr() back into the Realm
+// this feeds the SES realm's (real/safe) confine*() back into the Realm
 // when it does require('@agoric/evaluate'), so we can get the same
 // functionality both with and without SES
+// To support makeEvaluators, we create a new Compartment.
 function makeEvaluate(e) {
-  const { confineExpr, confine } = e;
+  const { makeCompartment, rootOptions, confine, confineExpr } = e;
+  const makeEvaluators = (realmOptions = {}) => {
+    const c = makeCompartment({
+      ...rootOptions,
+      ...realmOptions,
+      // Global shims need to take effect before realm shims.
+      shims: (rootOptions.shims || []).concat(realmOptions.shims || []),
+      // Realm transforms need to be vetted by global transforms.
+      transforms: (realmOptions.transforms || []).concat(
+        rootOptions.transforms || [],
+      ),
+    });
+    return {
+      evaluateExpr(source, endowments = {}, options = {}) {
+        return c.evaluate(`(${source}\n)`, endowments, options);
+      },
+      evaluateProgram(source, endowments = {}, options = {}) {
+        return c.evaluate(`${source}`, endowments, options);
+      },
+    };
+  };
+
+  // As an optimisation, do not create a new compartment unless
+  // they call makeEvaluators explicitly.
   const evaluateExpr = (source, endowments = {}, options = {}) =>
     confineExpr(source, endowments, options);
   const evaluateProgram = (source, endowments = {}, options = {}) =>
@@ -60,6 +84,7 @@ function makeEvaluate(e) {
   return Object.assign(evaluateExpr, {
     evaluateExpr,
     evaluateProgram,
+    makeEvaluators,
   });
 }
 
@@ -73,8 +98,10 @@ function buildSESKernel(initialState) {
   const r = s.makeRequire({
     '@agoric/evaluate': {
       attenuatorSource: `${makeEvaluate}`,
-      confineExpr: s.global.SES.confineExpr,
       confine: s.global.SES.confine,
+      confineExpr: s.global.SES.confineExpr,
+      rootOptions: evaluateOptions,
+      makeCompartment: s.global.Realm.makeCompartment,
     },
     '@agoric/harden': true,
     '@agoric/nat': Nat,
