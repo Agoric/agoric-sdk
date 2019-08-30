@@ -48,19 +48,22 @@ function getKernelSource() {
   return `(${kernelSourceFunc})`;
 }
 
-// this feeds the SES realm's (real/safe) makeCompartment() back into the Realm
+// this feeds the SES realm's (real/safe) confine*() back into the Realm
 // when it does require('@agoric/evaluate'), so we can get the same
 // functionality both with and without SES
+// To support makeEvaluators, we create a new Compartment.
 function makeEvaluate(e) {
-  const { makeCompartment, sesOptions } = e;
-  const { shims, transforms } = sesOptions;
+  const { makeCompartment, rootOptions, confine, confineExpr } = e;
   const makeEvaluators = (realmOptions = {}) => {
-    const { shims: realmShims, transforms: realmTransforms } = realmOptions;
     const c = makeCompartment({
-      ...sesOptions,
+      ...rootOptions,
       ...realmOptions,
-      shims: (shims || []).concat(realmShims || []),
-      transforms: (realmTransforms || []).concat(transforms || []),
+      // Global shims need to take effect before realm shims.
+      shims: (rootOptions.shims || []).concat(realmOptions.shims || []),
+      // Realm transforms need to be vetted by global transforms.
+      transforms: (realmOptions.transforms || []).concat(
+        rootOptions.transforms || [],
+      ),
     });
     return {
       evaluateExpr(source, endowments = {}, options = {}) {
@@ -71,10 +74,17 @@ function makeEvaluate(e) {
       },
     };
   };
-  const evaluators = makeEvaluators();
-  return Object.assign(evaluators.evaluateExpr, {
+
+  // As an optimisation, do not create a new compartment unless
+  // they call makeEvaluators explicitly.
+  const evaluateExpr = (source, endowments = {}, options = {}) =>
+    confineExpr(source, endowments, options);
+  const evaluateProgram = (source, endowments = {}, options = {}) =>
+    confine(source, endowments, options);
+  return Object.assign(evaluateExpr, {
+    evaluateExpr,
+    evaluateProgram,
     makeEvaluators,
-    ...evaluators,
   });
 }
 
@@ -88,7 +98,9 @@ function buildSESKernel(initialState) {
   const r = s.makeRequire({
     '@agoric/evaluate': {
       attenuatorSource: `${makeEvaluate}`,
-      sesOptions: evaluateOptions,
+      confine: s.global.SES.confine,
+      confineExpr: s.global.SES.confineExpr,
+      rootOptions: evaluateOptions,
       makeCompartment: s.global.Realm.makeCompartment,
     },
     '@agoric/harden': true,
