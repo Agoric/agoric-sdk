@@ -69,15 +69,6 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
   }
   */
 
-  function createPromiseWithDecider(deciderVatID) {
-    // deciderVatID can be undefined if the promise is "owned" by the kernel
-    // (pipelining)
-
-    // TODO: not true (but we should make it true): kernel promise is
-    // replaced if altered, so we can safely harden
-    return kernelKeeper.addKernelPromise(deciderVatID);
-  }
-
   function makeError(s) {
     // TODO: create a @qclass=error, once we define those
     // or maybe replicate whatever happens with {}.foo()
@@ -224,7 +215,6 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
 
   const syscallManager = {
     kdebug,
-    createPromiseWithDecider,
     send,
     fulfillToData,
     fulfillToPresence,

@@ -13,7 +13,6 @@ export default function makeVatManager(
 ) {
   const {
     kdebug,
-    createPromiseWithDecider,
     send,
     fulfillToData,
     fulfillToPresence,
@@ -148,15 +147,6 @@ export default function makeVatManager(
       result,
     };
     send(target, msg);
-  }
-
-  function doCreatePromise() {
-    const kernelPromiseID = createPromiseWithDecider(vatID);
-    const p = mapKernelSlotToVatSlot(kernelPromiseID);
-    kdebug(
-      `syscall[${vatID}].createPromise -> (vat:${p}=ker:${kernelPromiseID})`,
-    );
-    return p;
   }
 
   function doSubscribe(promiseID) {
@@ -299,13 +289,6 @@ export default function makeVatManager(
       // todo: remove return value
       transcriptAddSyscall(['send', ...args], promiseID);
       return promiseID;
-    },
-    createPromise(...args) {
-      const pr = inReplay
-        ? replay('createPromise', ...args)
-        : doCreatePromise(...args);
-      transcriptAddSyscall(['createPromise', ...args], pr);
-      return pr;
     },
     subscribe(...args) {
       transcriptAddSyscall(['subscribe', ...args]);
