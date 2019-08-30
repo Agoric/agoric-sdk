@@ -238,9 +238,6 @@ test('serialize imports', async t => {
 test('serialize promise', async t => {
   const log = [];
   const syscall = {
-    createPromise() {
-      return 'p-1';
-    },
     fulfillToData(result, data, slots) {
       log.push({ result, data, slots });
     },

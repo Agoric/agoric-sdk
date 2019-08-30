@@ -8,7 +8,7 @@ import makeVatManager from './vatManager';
 import makeDeviceManager from './deviceManager';
 import makeKernelKeeper from './state/kernelKeeper';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
-import { insistVatType, makeVatSlot } from '../vats/parseVatSlots';
+import { makeVatSlot } from '../vats/parseVatSlots';
 import { insist } from './insist';
 
 function abbreviateReviver(_, arg) {
@@ -236,7 +236,6 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
 
   function addImport(forVatID, what) {
     const kernelSlot = `${what}`;
-    insistKernelType('object', kernelSlot);
     if (!started) {
       throw new Error('must do kernel.start() before addImport()');
       // because otherwise we can't get the vatManager
@@ -247,7 +246,6 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
 
   function addExport(fromVatID, what) {
     const vatSlot = `${what}`;
-    insistVatType('object', vatSlot);
     if (!started) {
       throw new Error('must do kernel.start() before addExport()');
       // because otherwise we can't get the vatManager
