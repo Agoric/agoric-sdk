@@ -33,8 +33,7 @@ async function simpleCall(t, withSES) {
         slots: [],
       },
       target: 'ko20',
-      type: 'deliver',
-      vatID: 'vat1',
+      type: 'send',
     },
   ]);
   await controller.run();
@@ -124,8 +123,7 @@ async function bootstrapExport(t, withSES) {
         slots: [boot0, left0, right0],
       },
       target: boot0,
-      type: 'deliver',
-      vatID: '_bootstrap',
+      type: 'send',
     },
   ]);
 
@@ -150,8 +148,7 @@ async function bootstrapExport(t, withSES) {
   checkKT(t, c, kt);
   t.deepEqual(c.dump().runQueue, [
     {
-      vatID: 'left',
-      type: 'deliver',
+      type: 'send',
       target: left0,
       msg: {
         method: 'foo',
@@ -178,8 +175,7 @@ async function bootstrapExport(t, withSES) {
 
   t.deepEqual(c.dump().runQueue, [
     {
-      vatID: 'right',
-      type: 'deliver',
+      type: 'send',
       target: right0,
       msg: {
         method: 'bar',
@@ -188,7 +184,7 @@ async function bootstrapExport(t, withSES) {
         result: barP,
       },
     },
-    { type: 'notifyFulfillToData', vatID: '_bootstrap', kernelPromiseID: fooP },
+    { type: 'notify', vatID: '_bootstrap', kpid: fooP },
   ]);
 
   await c.step();
@@ -206,8 +202,8 @@ async function bootstrapExport(t, withSES) {
   checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [
-    { type: 'notifyFulfillToData', vatID: '_bootstrap', kernelPromiseID: fooP },
-    { type: 'notifyFulfillToData', vatID: 'left', kernelPromiseID: barP },
+    { type: 'notify', vatID: '_bootstrap', kpid: fooP },
+    { type: 'notify', vatID: 'left', kpid: barP },
   ]);
 
   await c.step();
@@ -223,7 +219,7 @@ async function bootstrapExport(t, withSES) {
   checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [
-    { type: 'notifyFulfillToData', vatID: 'left', kernelPromiseID: barP },
+    { type: 'notify', vatID: 'left', kpid: barP },
   ]);
 
   await c.step();

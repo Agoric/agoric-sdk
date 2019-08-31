@@ -55,20 +55,6 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
   // in the kernel table, promises and resolvers are both indexed by the same
   // value. kernelPromises[promiseID] = { decider, subscribers }
 
-  /*
-  function chaseRedirections(promiseID) {
-    let targetID = Nat(promiseID);
-    while (true) {
-      const p = kernelKeeper.getKernelPromise(targetID);
-      if (p.state === 'redirected') {
-        targetID = Nat(p.redirectedTo);
-        continue;
-      }
-      return targetID;
-    }
-  }
-  */
-
   function makeError(s) {
     // TODO: create a @qclass=error, once we define those
     // or maybe replicate whatever happens with {}.foo()
@@ -76,122 +62,34 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     return s;
   }
 
-  function send(target, msg) {
-    const { type } = parseKernelSlot(target);
-    if (type === 'object') {
-      kernelKeeper.addToRunQueue({
-        type: 'deliver',
-        vatID: kernelKeeper.ownerOfKernelObject(target),
-        target,
-        msg,
-      });
-    } else if (type === 'promise') {
-      const kp = kernelKeeper.getKernelPromise(target);
-      if (kp.state === 'unresolved') {
-        kernelKeeper.addMessageToPromiseQueue(target, msg);
-      } else if (kp.state === 'fulfilledToData') {
-        const s = `data is not callable, has no method ${msg.method}`;
-        // eslint-disable-next-line no-use-before-define
-        reject(msg.kernelPromiseID, makeError(s), []);
-      } else if (kp.state === 'fulfilledToPresence') {
-        send(kp.fulfillSlot, msg);
-      } else if (kp.state === 'rejected') {
-        // TODO would it be simpler to redirect msg.kernelPromiseID to kp?
-        // eslint-disable-next-line no-use-before-define
-        reject(msg.kernelPromiseID, kp.rejectData, kp.rejectSlots);
-      } else if (kp.state === 'redirected') {
-        throw new Error('not implemented yet');
-        // TODO: shorten as we go
-        // send(kp.redirectedTo, msg);
-      } else {
-        throw new Error(`unknown kernelPromise state '${kp.state}'`);
-      }
-    } else {
-      throw Error(`unable to send() to slot.type ${JSON.stringify(type)}`);
-    }
-  }
-
-  function notifySubscribersAndQueue(kpid, subscribers, queue, type) {
+  function notifySubscribersAndQueue(kpid, subscribers, queue) {
     insistKernelType('promise', kpid);
-    for (const subscriberVatID of subscribers) {
-      kernelKeeper.addToRunQueue({
-        type,
-        vatID: subscriberVatID,
-        kernelPromiseID: kpid,
-      });
+    for (const vatID of subscribers) {
+      kernelKeeper.addToRunQueue(
+        harden({
+          type: 'notify',
+          vatID,
+          kpid,
+        }),
+      );
     }
     // re-deliver msg to the now-settled promise, which will forward or
     // reject depending on the new state of the promise
     for (const msg of queue) {
-      send(kpid, msg);
-      // now that we know where the messages can be sent, we know to whom we
-      // must subscribe to satisfy their resolvers. This wasn't working
-      // correctly, so instead liveSlots just assumes that it must tell the
-      // kernel about the resolution for resolver it hears about
-      /*
-      runQueue.push({
-        type: 'subscribe',
-        vatID: XXX,
-        kernelPromiseID: msg.kernelResolverID,
-      }); */
-    }
-  }
-
-  function getUnresolvedPromise(kpid) {
-    const p = kernelKeeper.getKernelPromise(kpid);
-    if (p.state !== 'unresolved') {
-      throw new Error(
-        `kernelPromise[${kpid}] is '${p.state}', not 'unresolved'`,
+      // todo: this is slightly lazy, sending the message back to the same
+      // promise that just got resolved. When this message makes it to the
+      // front of the run-queue, we'll look up the resolution. Instead, we
+      // could maybe look up the resolution *now* and set the correct target
+      // early. Doing that might make it easier to remove the Promise Table
+      // entry earlier.
+      kernelKeeper.addToRunQueue(
+        harden({
+          type: 'send',
+          target: kpid,
+          msg,
+        }),
       );
     }
-    return p;
-  }
-
-  function fulfillToPresence(kpid, targetSlot) {
-    const { type } = parseKernelSlot(targetSlot);
-    insist(
-      type === 'object',
-      `fulfillToPresence() must fulfill to object, not ${type}`,
-    );
-    const { subscribers, queue } = getUnresolvedPromise(kpid);
-    kernelKeeper.fulfillKernelPromiseToPresence(kpid, targetSlot);
-    notifySubscribersAndQueue(
-      kpid,
-      subscribers,
-      queue,
-      'notifyFulfillToPresence',
-    );
-    // kernelKeeper.deleteKernelPromiseData(kpid);
-  }
-
-  function fulfillToData(kpid, data, slots) {
-    kdebug(`fulfillToData[${kpid}] -> ${data} ${JSON.stringify(slots)}`);
-    insistKernelType('promise', kpid);
-    const { subscribers, queue } = getUnresolvedPromise(kpid);
-
-    kernelKeeper.fulfillKernelPromiseToData(kpid, data, slots);
-    notifySubscribersAndQueue(kpid, subscribers, queue, 'notifyFulfillToData');
-    // kernelKeeper.deleteKernelPromiseData(kpid);
-    // TODO: we can't delete the promise until all vat references are gone,
-    // and certainly not until the notifyFulfillToData we just queued is
-    // delivered
-  }
-
-  function reject(kpid, val, valSlots) {
-    const { subscribers, queue } = getUnresolvedPromise(kpid);
-    kernelKeeper.rejectKernelPromise(kpid, val, valSlots);
-    notifySubscribersAndQueue(kpid, subscribers, queue, 'notifyReject');
-    // kernelKeeper.deleteKernelPromiseData(kpid);
-  }
-
-  function invoke(deviceSlot, method, data, slots) {
-    insistKernelType('device', deviceSlot);
-    const deviceName = kernelKeeper.ownerOfKernelDevice(deviceSlot);
-    const dev = ephemeral.devices.get(deviceName);
-    if (!dev) {
-      throw new Error(`unknown deviceRef ${deviceSlot}`);
-    }
-    return dev.manager.invoke(deviceSlot, method, data, slots);
   }
 
   async function process(f, then, logerr) {
@@ -213,15 +111,84 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     then();
   }
 
+  function send(target, msg) {
+    const m = harden({ type: 'send', target, msg });
+    kernelKeeper.addToRunQueue(m);
+  }
+
+  function invoke(deviceSlot, method, data, slots) {
+    insistKernelType('device', deviceSlot);
+    const deviceName = kernelKeeper.ownerOfKernelDevice(deviceSlot);
+    const dev = ephemeral.devices.get(deviceName);
+    if (!dev) {
+      throw new Error(`unknown deviceRef ${deviceSlot}`);
+    }
+    return dev.manager.invoke(deviceSlot, method, data, slots);
+  }
+
+  function subscribe(vatID, kpid) {
+    const p = kernelKeeper.getKernelPromise(kpid);
+    if (p.state === 'unresolved') {
+      kernelKeeper.addSubscriberToPromise(kpid, vatID);
+    } else {
+      // otherwise it's already resolved, you probably want to know how
+      const m = harden({ type: 'notify', vatID, kpid });
+      kernelKeeper.addToRunQueue(m);
+    }
+  }
+
+  function getResolveablePromise(kpid, resolvingVatID) {
+    insistKernelType('promise', kpid);
+    const p = kernelKeeper.getKernelPromise(kpid);
+    insist(p.state === 'unresolved', `${kpid} was already resolved`);
+    insist(
+      p.decider === resolvingVatID,
+      `${kpid} is decided by ${p.decider}, not ${resolvingVatID}`,
+    );
+    return p;
+  }
+
+  function fulfillToPresence(vatID, kpid, targetSlot) {
+    const p = getResolveablePromise(kpid, vatID);
+    const { type } = parseKernelSlot(targetSlot);
+    insist(
+      type === 'object',
+      `fulfillToPresence() must fulfill to object, not ${type}`,
+    );
+    const { subscribers, queue } = p;
+    kernelKeeper.fulfillKernelPromiseToPresence(kpid, targetSlot);
+    notifySubscribersAndQueue(kpid, subscribers, queue);
+    // todo: some day it'd be nice to delete the promise table entry now. To
+    // do that correctly, we must make sure no vats still hold pointers to
+    // it, which means vats must drop their refs when they get notified about
+    // the resolution ("you knew it was resolved, you shouldn't be sending
+    // any more messages to it, send them to the resolution instead"), and we
+    // must wait for those notifications to be delivered.
+  }
+
+  function fulfillToData(vatID, kpid, data, slots) {
+    const p = getResolveablePromise(kpid, vatID);
+    const { subscribers, queue } = p;
+    kernelKeeper.fulfillKernelPromiseToData(kpid, data, slots);
+    notifySubscribersAndQueue(kpid, subscribers, queue);
+  }
+
+  function reject(vatID, kpid, data, slots) {
+    const p = getResolveablePromise(kpid, vatID);
+    const { subscribers, queue } = p;
+    kernelKeeper.rejectKernelPromise(kpid, data, slots);
+    notifySubscribersAndQueue(kpid, subscribers, queue);
+  }
+
   const syscallManager = {
     kdebug,
-    send,
-    fulfillToData,
-    fulfillToPresence,
-    reject,
     process,
+    send,
     invoke,
-    kernelKeeper,
+    subscribe,
+    fulfillToPresence,
+    fulfillToData,
+    reject,
   };
 
   function addImport(forVatID, what) {
@@ -256,8 +223,7 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     const kernelSlot = addExport(vatID, vatSlot);
     kernelKeeper.addToRunQueue(
       harden({
-        vatID, // TODO remove vatID from run-queue
-        type: 'deliver',
+        type: 'send',
         target: kernelSlot,
         msg: {
           method: `${method}`,
@@ -271,23 +237,99 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     );
   }
 
-  function processQueueMessage(message) {
-    kdebug(`processQ ${JSON.stringify(message)}`);
-    const vat = ephemeral.vats.get(message.vatID);
-    if (vat === undefined) {
-      throw new Error(
-        `unknown vatID in target ${JSON.stringify(
-          message,
-        )}, have ${JSON.stringify(kernelKeeper.getAllVatNames())}`,
-      );
-    }
-    const { manager } = vat;
+  async function deliverToVat(vatID, target, msg) {
+    const vat = ephemeral.vats.get(vatID);
+    insist(vat, `unknown vatID ${vatID}`);
     try {
-      return manager.processOneMessage(message);
+      await vat.manager.deliverOneMessage(target, msg);
     } catch (e) {
       // log so we get a stack trace
-      console.log(`error in processOneMessage: ${e} ${e.message}`, e);
+      console.log(`error in kernel.deliver: ${e} ${e.message}`, e);
       throw e;
+    }
+  }
+
+  function getKernelResolveablePromise(kpid) {
+    insistKernelType('promise', kpid);
+    const p = kernelKeeper.getKernelPromise(kpid);
+    insist(p.state === 'unresolved', `${kpid} was already resolved`);
+    insist(!p.decider, `${kpid} is decided by ${p.decider}, not kernel`);
+    return p;
+  }
+
+  function deliverToError(kpid, errorData, errorSlots) {
+    // todo: see if this can be merged with reject()
+    const p = getKernelResolveablePromise(kpid);
+    const { subscribers, queue } = p;
+    kernelKeeper.rejectKernelPromise(kpid, errorData, errorSlots);
+    notifySubscribersAndQueue(kpid, subscribers, queue);
+  }
+
+  async function deliverToTarget(target, msg) {
+    const { type } = parseKernelSlot(target);
+    if (type === 'object') {
+      const vatID = kernelKeeper.ownerOfKernelObject(target);
+      await deliverToVat(vatID, target, msg);
+    } else if (type === 'promise') {
+      const kp = kernelKeeper.getKernelPromise(target);
+      if (kp.state === 'fulfilledToPresence') {
+        await deliverToTarget(kp.fulfillSlot, msg);
+      } else if (kp.state === 'redirected') {
+        // await deliverToTarget(kp.redirectTarget, msg); // probably correct
+        throw new Error('not implemented yet');
+      } else if (kp.state === 'fulfilledToData') {
+        if (msg.result) {
+          const s = `data is not callable, has no method ${msg.method}`;
+          await deliverToError(msg.result, makeError(s), []);
+        }
+        // todo: maybe log error?
+      } else if (kp.state === 'rejected') {
+        // TODO would it be simpler to redirect msg.kpid to kp?
+        if (msg.result) {
+          await deliverToError(msg.result, kp.rejectData, kp.rejectSlots);
+        }
+      } else if (kp.state === 'unresolved') {
+        if (!kp.decider) {
+          kernelKeeper.addMessageToPromiseQueue(target, msg);
+        } else {
+          // const vat = ephemeral.vats.get(kp.decider);
+          const vatDoesPipelining = false; // todo: check the vat
+          if (vatDoesPipelining) {
+            await deliverToVat(kp.decider, target, msg); // pipeline
+          } else {
+            kernelKeeper.addMessageToPromiseQueue(target, msg);
+          }
+        }
+      } else {
+        throw new Error(`unknown kernelPromise state '${kp.state}'`);
+      }
+    } else {
+      throw Error(`unable to send() to slot.type ${type}`);
+    }
+  }
+
+  async function processNotify(message) {
+    const { vatID, kpid } = message;
+    const vat = ephemeral.vats.get(vatID);
+    insist(vat, `unknown vatID ${vatID}`);
+    const p = kernelKeeper.getKernelPromise(kpid);
+    try {
+      await vat.manager.deliverOneNotification(kpid, p);
+    } catch (e) {
+      // log so we get a stack trace
+      console.log(`error in kernel.processNotify: ${e} ${e.message}`, e);
+      throw e;
+    }
+  }
+
+  async function processQueueMessage(message) {
+    kdebug(`processQ ${JSON.stringify(message)}`);
+    if (message.type === 'send') {
+      await deliverToTarget(message.target, message.msg);
+    } else if (message.type === 'notify') {
+      await processNotify(message);
+    } else {
+      throw Error(`unable to process message.type ${message.type}`);
     }
   }
 
@@ -401,6 +443,7 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
         syscallManager,
         setup,
         helpers,
+        kernelKeeper,
         vatKeeper,
       );
       ephemeral.vats.set(

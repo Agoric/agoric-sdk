@@ -54,8 +54,7 @@ test('simple call', async t => {
   kernel.queueToExport('vat1', 'o+1', 'foo', 'args');
   t.deepEqual(kernel.dump().runQueue, [
     {
-      vatID: 'vat1',
-      type: 'deliver',
+      type: 'send',
       target: 'ko20',
       msg: {
         method: 'foo',
@@ -106,15 +105,14 @@ test('map inbound', async t => {
   kernel.queueToExport('vat1', 'o+1', 'foo', 'args', [koFor5, koFor6]);
   t.deepEqual(kernel.dump().runQueue, [
     {
+      type: 'send',
+      target: 'ko22',
       msg: {
         argsString: 'args',
         result: null,
         method: 'foo',
         slots: [koFor5, koFor6],
       },
-      target: 'ko22',
-      type: 'deliver',
-      vatID: 'vat1',
     },
   ]);
   t.deepEqual(log, []);
@@ -202,31 +200,31 @@ test('outbound call', async t => {
   checkKT(t, kernel, kt);
   t.deepEqual(log, []);
 
+  // o1!foo(args)
   kernel.queueToExport('vat1', 'o+1', 'foo', 'args');
   t.deepEqual(log, []);
   t.deepEqual(kernel.dump().runQueue, [
     {
+      type: 'send',
+      target: t1,
       msg: {
         argsString: 'args',
         result: null,
         method: 'foo',
         slots: [],
       },
-      target: t1,
-      type: 'deliver',
-      vatID: 'vat1',
     },
   ]);
 
   await kernel.step();
+  // that queues pid=o2!bar(o2, o7, p7)
 
   t.deepEqual(log.shift(), ['d1', 'o+1', 'foo', 'args', []]);
   t.deepEqual(log, []);
 
   t.deepEqual(kernel.dump().runQueue, [
     {
-      vatID: 'vat2',
-      type: 'deliver',
+      type: 'send',
       target: vat2Obj5,
       msg: {
         method: 'bar',
@@ -259,7 +257,6 @@ test('outbound call', async t => {
   checkKT(t, kernel, kt);
 
   await kernel.step();
-  // this checks that the decider was set to vat2 while bar() was delivered
   t.deepEqual(log, [
     // todo: check result
     ['d2', 'o+5', 'bar', 'bargs', ['o+5', 'o-50', 'p-60']],
@@ -393,8 +390,7 @@ test('three-party', async t => {
 
   t.deepEqual(kernel.dump().runQueue, [
     {
-      vatID: 'vatB',
-      type: 'deliver',
+      type: 'send',
       target: bob,
       msg: {
         method: 'intro',
@@ -481,8 +477,7 @@ test('transfer promise', async t => {
   syscallA.send(B, 'foo1', 'args', [pr1]);
   t.deepEqual(kernel.dump().runQueue, [
     {
-      vatID: 'vatB',
-      type: 'deliver',
+      type: 'send',
       target: bob,
       msg: {
         method: 'foo1',
@@ -624,9 +619,9 @@ test('promise resolveToData', async t => {
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
     {
-      type: 'notifyFulfillToData',
+      type: 'notify',
       vatID: 'vatA',
-      kernelPromiseID: pForKernel,
+      kpid: pForKernel,
     },
   ]);
 
@@ -701,9 +696,9 @@ test('promise resolveToPresence', async t => {
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
     {
-      type: 'notifyFulfillToPresence',
+      type: 'notify',
       vatID: 'vatA',
-      kernelPromiseID: pForKernel,
+      kpid: pForKernel,
     },
   ]);
 
@@ -770,9 +765,9 @@ test('promise reject', async t => {
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, [
     {
-      type: 'notifyReject',
+      type: 'notify',
       vatID: 'vatA',
-      kernelPromiseID: pForKernel,
+      kpid: pForKernel,
     },
   ]);
 
@@ -838,6 +833,111 @@ test('transcript', async t => {
       },
     ],
   });
+
+  t.end();
+});
+
+// todo: p1=x!foo(); p2=p1!bar(); p3=p2!urgh(); no pipelining. p1 will have a
+// decider but p2 gets queued in p1 (not pipelined to vat-with-x) so p2 won't
+// have a decider. Make sure p3 gets queued in p2 rather than exploding.
+
+test('non-pipelined promise queueing', async t => {
+  const kernel = buildKernel({ setImmediate });
+
+  let syscall;
+  function setupA(s) {
+    syscall = s;
+    function deliver() {}
+    return { deliver };
+  }
+  kernel.addGenesisVat('vatA', setupA);
+
+  function setupB(_s) {
+    function deliver() {}
+    return { deliver };
+  }
+  kernel.addGenesisVat('vatB', setupB);
+  await kernel.start();
+
+  const bobForB = 'o+6';
+  const bobForKernel = kernel.addExport('vatB', bobForB);
+  const bobForA = kernel.addImport('vatA', bobForKernel);
+
+  const p1ForA = 'p+1';
+  syscall.send(bobForA, 'foo', 'fooargs', [], p1ForA);
+  const p1ForKernel = kernel.addExport('vatA', p1ForA);
+
+  const p2ForA = 'p+2';
+  syscall.send(p1ForA, 'bar', 'barargs', [], p2ForA);
+  const p2ForKernel = kernel.addExport('vatA', p2ForA);
+
+  const p3ForA = 'p+3';
+  syscall.send(p2ForA, 'urgh', 'urghargs', [], p3ForA);
+  const p3ForKernel = kernel.addExport('vatA', p3ForA);
+
+  t.deepEqual(kernel.dump().promises, [
+    {
+      id: p1ForKernel,
+      state: 'unresolved',
+      decider: undefined,
+      subscribers: [],
+      queue: [],
+    },
+    {
+      id: p2ForKernel,
+      state: 'unresolved',
+      decider: undefined,
+      subscribers: [],
+      queue: [],
+    },
+    {
+      id: p3ForKernel,
+      state: 'unresolved',
+      decider: undefined,
+      subscribers: [],
+      queue: [],
+    },
+  ]);
+
+  await kernel.run();
+
+  t.deepEqual(kernel.dump().promises, [
+    {
+      id: p1ForKernel,
+      state: 'unresolved',
+      decider: 'vatB',
+      subscribers: [],
+      queue: [
+        {
+          method: 'bar',
+          argsString: 'barargs',
+          slots: [],
+          result: p2ForKernel,
+        },
+      ],
+    },
+    {
+      id: p2ForKernel,
+      state: 'unresolved',
+      decider: undefined,
+      subscribers: [],
+      queue: [
+        {
+          method: 'urgh',
+          argsString: 'urghargs',
+          slots: [],
+          result: p3ForKernel,
+        },
+      ],
+    },
+    {
+      id: p3ForKernel,
+      state: 'unresolved',
+      decider: undefined,
+      subscribers: [],
+      queue: [],
+    },
+  ]);
 
   t.end();
 });

@@ -63,9 +63,9 @@ function makeKernelKeeper(initialState) {
   }
 
   function addKernelPromise(deciderVatID) {
-    const kernelPromiseID = state.nextPromiseIndex;
-    state.nextPromiseIndex = kernelPromiseID + 1;
-    const s = makeKernelSlot('promise', kernelPromiseID);
+    const kpid = state.nextPromiseIndex;
+    state.nextPromiseIndex = kpid + 1;
+    const s = makeKernelSlot('promise', kpid);
 
     // we leave this unfrozen, because the queue and subscribers are mutable
     state.kernelPromises[s] = {

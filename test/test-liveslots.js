@@ -127,28 +127,18 @@ test('liveslots pipelines to syscall.send', async t => {
 
   // root!one(x) // sendOnly
   const arg0 = JSON.stringify({ args: [{ '@qclass': 'slot', index: 0 }] });
-  syscall.send(root, 'one', arg0, ['o+5']);
+  syscall.send(root, 'one', arg0, ['o+5'], undefined);
+
+  await kernel.step();
+  // console.log(kernel.dump().runQueue);
 
   // calling one() should cause three syscall.send() calls to be made: one
   // for x!pipe1(), a second pipelined to the result promise of it, and a
-  // third pipelined to the result of the second. With the current design,
-  // the kernel ought to put the first onto the runQueue, and second onto the
-  // kernel promise queue for the result of the first, and likewise the
-  // third.
-  await kernel.step();
-  const { result } = kernel.dump().runQueue[0].msg;
-  const state = JSON.parse(kernel.getState());
-  const kp = state.kernelPromises[result];
-  t.equal(kp.queue.length, 1);
-  t.equal(kp.queue[0].method, 'pipe2');
-  const result2 = kp.queue[0].result;
-  const kp2 = state.kernelPromises[result2];
-  t.equal(kp2.queue.length, 1);
-  t.equal(kp2.queue[0].method, 'pipe3');
+  // third pipelined to the result of the second.
 
   // in the new design, three sends() mean three items on the runqueue, and
   // they'll be appended to kernel promise queues after they get to the front
-  // t.deepEqual(kernel.dump().runQueue.length, 3);
+  t.deepEqual(kernel.dump().runQueue.length, 3);
 
   t.end();
 });

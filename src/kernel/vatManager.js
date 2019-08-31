@@ -9,18 +9,10 @@ export default function makeVatManager(
   syscallManager,
   setup,
   helpers,
+  kernelKeeper,
   vatKeeper,
 ) {
-  const {
-    kdebug,
-    send,
-    fulfillToData,
-    fulfillToPresence,
-    reject,
-    process,
-    invoke,
-    kernelKeeper,
-  } = syscallManager;
+  const { kdebug, process } = syscallManager;
 
   // We use vat-centric terminology here, so "inbound" means "into a vat",
   // generally from the kernel. We also have "comms vats" which use special
@@ -146,7 +138,7 @@ export default function makeVatManager(
       slots,
       result,
     };
-    send(target, msg);
+    syscallManager.send(target, msg);
   }
 
   function doSubscribe(promiseID) {
@@ -155,108 +147,42 @@ export default function makeVatManager(
     if (!kernelKeeper.hasKernelPromise(id)) {
       throw new Error(`unknown kernelPromise id '${id}'`);
     }
-    const p = kernelKeeper.getKernelPromise(id);
-
-    /*
-    // Originally the kernel didn't subscribe to a vat's promise until some
-    // other vat had subscribed to the kernel's promise. That proved too hard
-    // to manage, so now the kernel always subscribes to every vat promise.
-    // This code was to handle the original behavior but has bitrotted
-    // because it is unused.
-    kdebug(`  decider is ${p.decider} in ${JSON.stringify(p)}`);
-    if (p.subscribers.size === 0 && p.decider !== undefined) {
-      runQueue.push({
-        type: 'subscribe',
-        vatID: p.decider,
-        kernelPromiseID: id,
-      });
-    } */
-
-    if (p.state === 'unresolved') {
-      kernelKeeper.addSubscriberToPromise(id, vatID);
-      // otherwise it's already resolved, you probably want to know how
-    } else if (p.state === 'fulfilledToPresence') {
-      kernelKeeper.addToRunQueue({
-        type: 'notifyFulfillToPresence',
-        vatID,
-        kernelPromiseID: id,
-      });
-    } else if (p.state === 'fulfilledToData') {
-      kernelKeeper.addToRunQueue({
-        type: 'notifyFulfillToData',
-        vatID,
-        kernelPromiseID: id,
-      });
-    } else if (p.state === 'rejected') {
-      kernelKeeper.addToRunQueue({
-        type: 'notifyReject',
-        vatID,
-        kernelPromiseID: id,
-      });
-    } else {
-      throw new Error(`unknown p.state '${p.state}'`);
-    }
-  }
-
-  function doFulfillToData(promiseID, fulfillData, vatSlots) {
-    insistVatType('promise', promiseID);
-    const kp = mapVatSlotToKernelSlot(promiseID);
-    insistKernelType('promise', kp);
-    insist(kernelKeeper.hasKernelPromise(kp), `unknown kernelPromise '${kp}'`);
-    const p = kernelKeeper.getKernelPromise(kp);
-    insist(p.state === 'unresolved', `${kp} was already resolved`);
-    insist(
-      p.decider === vatID,
-      `${kp} is decided by ${p.decider}, not ${vatID}`,
-    );
-
-    const slots = vatSlots.map(slot => mapVatSlotToKernelSlot(slot));
-    kdebug(
-      `syscall[${vatID}].fulfillData(${promiseID}/${kp}) = ${fulfillData} ${JSON.stringify(
-        vatSlots,
-      )}/${JSON.stringify(slots)}`,
-    );
-    fulfillToData(kp, fulfillData, slots);
+    syscallManager.subscribe(vatID, id);
   }
 
   function doFulfillToPresence(promiseID, slot) {
     insistVatType('promise', promiseID);
-    const kp = mapVatSlotToKernelSlot(promiseID);
-    insistKernelType('promise', kp);
-    insist(kernelKeeper.hasKernelPromise(kp), `unknown kernelPromise '${kp}'`);
-    const p = kernelKeeper.getKernelPromise(kp);
-    insist(p.state === 'unresolved', `${kp} was already resolved`);
-    insist(
-      p.decider === vatID,
-      `${kp} is decided by ${p.decider}, not ${vatID}`,
-    );
-
+    const kpid = mapVatSlotToKernelSlot(promiseID);
     const targetSlot = mapVatSlotToKernelSlot(slot);
     kdebug(
-      `syscall[${vatID}].fulfillToPresence(${promiseID}/${kp}) = ${slot}/${targetSlot})`,
+      `syscall[${vatID}].fulfillToPresence(${promiseID / kpid}) = ${slot /
+        targetSlot})`,
     );
-    fulfillToPresence(kp, targetSlot);
+    syscallManager.fulfillToPresence(vatID, kpid, targetSlot);
+  }
+
+  function doFulfillToData(promiseID, fulfillData, vatSlots) {
+    insistVatType('promise', promiseID);
+    const kpid = mapVatSlotToKernelSlot(promiseID);
+    const slots = vatSlots.map(slot => mapVatSlotToKernelSlot(slot));
+    kdebug(
+      `syscall[${vatID}].fulfillData(${promiseID}/${kpid}) = ${fulfillData} ${JSON.stringify(
+        vatSlots,
+      )}/${JSON.stringify(slots)}`,
+    );
+    syscallManager.fulfillToData(vatID, kpid, fulfillData, slots);
   }
 
   function doReject(promiseID, rejectData, vatSlots) {
     insistVatType('promise', promiseID);
-    const kp = mapVatSlotToKernelSlot(promiseID);
-    insistKernelType('promise', kp);
-    insist(kernelKeeper.hasKernelPromise(kp), `unknown kernelPromise '${kp}'`);
-    const p = kernelKeeper.getKernelPromise(kp);
-    insist(p.state === 'unresolved', `${kp} was already resolved`);
-    insist(
-      p.decider === vatID,
-      `${kp} is decided by ${p.decider}, not ${vatID}`,
-    );
-
+    const kpid = mapVatSlotToKernelSlot(promiseID);
     const slots = vatSlots.map(slot => mapVatSlotToKernelSlot(slot));
     kdebug(
-      `syscall[${vatID}].reject(${promiseID}/${kp}) = ${rejectData} ${JSON.stringify(
+      `syscall[${vatID}].reject(${promiseID}/${kpid}) = ${rejectData} ${JSON.stringify(
         vatSlots,
       )}/${JSON.stringify(slots)}`,
     );
-    reject(kp, rejectData, slots);
+    syscallManager.reject(vatID, kpid, rejectData, slots);
   }
 
   function doCallNow(target, method, argsString, argsSlots) {
@@ -267,7 +193,7 @@ export default function makeVatManager(
     }
     const slots = argsSlots.map(slot => mapVatSlotToKernelSlot(slot));
     kdebug(`syscall[${vatID}].callNow(${target}/${dev}).${method}`);
-    const ret = invoke(dev, method, argsString, slots);
+    const ret = syscallManager.invoke(dev, method, argsString, slots);
     const retSlots = ret.slots.map(slot => mapKernelSlotToVatSlot(slot));
     return harden({ data: ret.data, slots: retSlots });
   }
@@ -351,83 +277,70 @@ export default function makeVatManager(
     );
   }
 
-  function processOneMessage(message) {
-    kdebug(`process ${JSON.stringify(message)}`);
-    const { type } = message;
-    if (type === 'deliver') {
-      // console.log(`   process ${vatID} ${message.msg.method}() -> result=${message.msg.result}`);
-      const { target, msg } = message;
-      // temporary, until we allow delivery of pipelined messages to vats
-      // which have opted-in
-      insistKernelType('object', target);
-      const targetSlot = mapKernelSlotToVatSlot(target);
-      insist(parseVatSlot(targetSlot).allocatedByVat, `deliver() to wrong vat`);
-      const inputSlots = msg.slots.map(slot => mapKernelSlotToVatSlot(slot));
-      let resultSlot;
-      if (msg.result) {
-        insistKernelType('promise', msg.result);
-        const p = kernelKeeper.getKernelPromise(msg.result);
-        insist(
-          p.state === 'unresolved',
-          `result ${msg.result} already resolved`,
-        );
-        insist(
-          !p.decider,
-          `result ${msg.result} already has decider ${p.decider}`,
-        );
-        resultSlot = vatKeeper.mapKernelSlotToVatSlot(msg.result);
-        insistVatType('promise', resultSlot);
-        p.decider = vatID;
-      }
-      return doProcess(
-        [
-          'deliver',
-          targetSlot,
-          msg.method,
-          msg.argsString,
-          inputSlots,
-          resultSlot,
-        ],
-        `vat[${vatID}][${targetSlot}].${msg.method} dispatch failed`,
-      );
+  async function deliverOneMessage(target, msg) {
+    const { type } = parseKernelSlot(target);
+    const vatDoesPipelining = false; // todo: allow vats to opt-in
+    if (!vatDoesPipelining) {
+      insist(type === 'object', `cannot deliver to ${type}`); // temporary
     }
 
-    if (type === 'notifyFulfillToData') {
-      const { kernelPromiseID } = message;
-      const kp = kernelKeeper.getKernelPromise(kernelPromiseID);
-      const vpid = mapKernelSlotToVatSlot(kernelPromiseID);
-      const slots = kp.fulfillSlots.map(slot => mapKernelSlotToVatSlot(slot));
-      // console.log(`     ${vatID} ${message.type} ${message.kernelPromiseID}`, kp.fulfillData, kp.fulfillSlots);
-      return doProcess(
-        ['notifyFulfillToData', vpid, kp.fulfillData, slots],
-        `vat[${vatID}].promise[${vpid}] fulfillToData failed`,
+    const targetSlot = mapKernelSlotToVatSlot(target);
+    insist(parseVatSlot(targetSlot).allocatedByVat, `deliver() to wrong vat`);
+    const inputSlots = msg.slots.map(slot => mapKernelSlotToVatSlot(slot));
+    let resultSlot;
+    if (msg.result) {
+      insistKernelType('promise', msg.result);
+      const p = kernelKeeper.getKernelPromise(msg.result);
+      insist(p.state === 'unresolved', `result ${msg.result} already resolved`);
+      insist(
+        !p.decider,
+        `result ${msg.result} already has decider ${p.decider}`,
       );
+      resultSlot = vatKeeper.mapKernelSlotToVatSlot(msg.result);
+      insistVatType('promise', resultSlot);
+      p.decider = vatID; // todo: depends on mutable keeper promises
     }
+    await doProcess(
+      [
+        'deliver',
+        targetSlot,
+        msg.method,
+        msg.argsString,
+        inputSlots,
+        resultSlot,
+      ],
+      `vat[${vatID}][${targetSlot}].${msg.method} dispatch failed`,
+    );
+  }
 
-    if (type === 'notifyFulfillToPresence') {
-      const { kernelPromiseID } = message;
-      const kp = kernelKeeper.getKernelPromise(kernelPromiseID);
-      const vpid = mapKernelSlotToVatSlot(kernelPromiseID);
+  async function deliverOneNotification(kpid, kp) {
+    insist(kp.state !== 'unresolved', `spurious notification ${kpid}`);
+    if (kp.state === 'fulfilledToPresence') {
+      const vpid = mapKernelSlotToVatSlot(kpid);
       const slot = mapKernelSlotToVatSlot(kp.fulfillSlot);
-      // console.log(`     ${vatID} ${message.type} ${message.kernelPromiseID}`, kp.fulfillSlot);
-      return doProcess(
+      await doProcess(
         ['notifyFulfillToPresence', vpid, slot],
         `vat[${vatID}].promise[${vpid}] fulfillToPresence failed`,
       );
-    }
-
-    if (type === 'notifyReject') {
-      const { kernelPromiseID } = message;
-      const kp = kernelKeeper.getKernelPromise(kernelPromiseID);
-      const vpid = mapKernelSlotToVatSlot(kernelPromiseID);
+    } else if (kp.state === 'redirected') {
+      throw new Error('not implemented yet');
+    } else if (kp.state === 'fulfilledToData') {
+      const vpid = mapKernelSlotToVatSlot(kpid);
+      const slots = kp.fulfillSlots.map(slot => mapKernelSlotToVatSlot(slot));
+      await doProcess(
+        ['notifyFulfillToData', vpid, kp.fulfillData, slots],
+        `vat[${vatID}].promise[${vpid}] fulfillToData failed`,
+      );
+    } else if (kp.state === 'rejected') {
+      const vpid = mapKernelSlotToVatSlot(kpid);
       const slots = kp.rejectSlots.map(slot => mapKernelSlotToVatSlot(slot));
-      return doProcess(
+      await doProcess(
         ['notifyReject', vpid, kp.rejectData, slots],
         `vat[${vatID}].promise[${vpid}] reject failed`,
       );
+    } else {
+      throw new Error(`unknown kernelPromise state '${kp.state}'`);
     }
-
-    throw new Error(`unknown message type '${type}'`);
   }
 
   async function replayTranscript() {
@@ -449,7 +362,8 @@ export default function makeVatManager(
   const manager = {
     mapKernelSlotToVatSlot,
     mapVatSlotToKernelSlot,
-    processOneMessage,
+    deliverOneMessage,
+    deliverOneNotification,
     replayTranscript,
   };
   return manager;
