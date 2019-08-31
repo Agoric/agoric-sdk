@@ -27,7 +27,7 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
   let started = false;
   // this holds externally-added vats, which are present at startup, but not
   // vats that are added later from within the kernel
-  const genesisVats = new Map();
+  const genesisVats = new Map(); // vatID -> { setup, options }
   // we name this 'genesisDevices' for parallelism, but actually all devices
   // must be present at genesis
   const genesisDevices = new Map();
@@ -292,10 +292,9 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
         if (!kp.decider) {
           kernelKeeper.addMessageToPromiseQueue(target, msg);
         } else {
-          // const vat = ephemeral.vats.get(kp.decider);
-          const vatDoesPipelining = false; // todo: check the vat
-          if (vatDoesPipelining) {
-            await deliverToVat(kp.decider, target, msg); // pipeline
+          const vat = ephemeral.vats.get(kp.decider);
+          if (vat.enablePipelining) {
+            await deliverToVat(kp.decider, target, msg);
           } else {
             kernelKeeper.addMessageToPromiseQueue(target, msg);
           }
@@ -419,7 +418,7 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
 
     // instantiate all vats and devices
     for (const vatID of genesisVats.keys()) {
-      const setup = genesisVats.get(vatID);
+      const { setup, options } = genesisVats.get(vatID);
       const helpers = harden({
         vatID,
         makeLiveSlots,
@@ -450,6 +449,7 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
         vatID,
         harden({
           manager,
+          enablePipelining: Boolean(options.enablePipelining),
         }),
       );
     }
@@ -507,7 +507,7 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
   }
 
   const kernel = harden({
-    addGenesisVat(vatID0, setup) {
+    addGenesisVat(vatID0, setup, options = {}) {
       const vatID = `${vatID0}`;
       harden(setup);
       // 'setup' must be an in-realm function. This test guards against
@@ -516,13 +516,24 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
       if (!(setup instanceof Function)) {
         throw Error('setup is not an in-realm function');
       }
+      // for now, we guard against 'options' by treating it as JSON-able data
+      options = JSON.parse(JSON.stringify(options));
+      // todo: consider having vats indicate 'enablePipelining' during
+      // setup(), rather than using options= during kernel.addVat()
+      const knownOptions = new Set(['enablePipelining']);
+      for (const k of Object.getOwnPropertyNames(options)) {
+        if (!knownOptions.has(k)) {
+          throw new Error(`unknown option ${k}`);
+        }
+      }
+
       if (started) {
         throw new Error(`addGenesisVat() cannot be called after kernel.start`);
       }
       if (genesisVats.has(vatID)) {
         throw new Error(`vatID ${vatID} already added`);
       }
-      genesisVats.set(vatID, setup);
+      genesisVats.set(vatID, { setup, options });
     },
 
     addGenesisDevice(deviceName, setup, endowments) {

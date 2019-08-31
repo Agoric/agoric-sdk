@@ -278,14 +278,13 @@ export default function makeVatManager(
   }
 
   async function deliverOneMessage(target, msg) {
-    const { type } = parseKernelSlot(target);
-    const vatDoesPipelining = false; // todo: allow vats to opt-in
-    if (!vatDoesPipelining) {
-      insist(type === 'object', `cannot deliver to ${type}`); // temporary
-    }
-
     const targetSlot = mapKernelSlotToVatSlot(target);
-    insist(parseVatSlot(targetSlot).allocatedByVat, `deliver() to wrong vat`);
+    if (targetSlot.type === 'object') {
+      insist(parseVatSlot(targetSlot).allocatedByVat, `deliver() to wrong vat`);
+    } else if (targetSlot.type === 'promise') {
+      const p = kernelKeeper.getKernelPromise(target);
+      insist(p.decider === vatID, `wrong decider`);
+    }
     const inputSlots = msg.slots.map(slot => mapKernelSlotToVatSlot(slot));
     let resultSlot;
     if (msg.result) {

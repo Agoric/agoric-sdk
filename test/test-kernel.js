@@ -837,12 +837,13 @@ test('transcript', async t => {
   t.end();
 });
 
-// todo: p1=x!foo(); p2=p1!bar(); p3=p2!urgh(); no pipelining. p1 will have a
+// p1=x!foo(); p2=p1!bar(); p3=p2!urgh(); no pipelining. p1 will have a
 // decider but p2 gets queued in p1 (not pipelined to vat-with-x) so p2 won't
 // have a decider. Make sure p3 gets queued in p2 rather than exploding.
 
 test('non-pipelined promise queueing', async t => {
   const kernel = buildKernel({ setImmediate });
+  const log = [];
 
   let syscall;
   function setupA(s) {
@@ -853,7 +854,9 @@ test('non-pipelined promise queueing', async t => {
   kernel.addGenesisVat('vatA', setupA);
 
   function setupB(_s) {
-    function deliver() {}
+    function deliver(target, method, argsString, slots, result) {
+      log.push([target, method, argsString, slots, result]);
+    }
     return { deliver };
   }
   kernel.addGenesisVat('vatB', setupB);
@@ -901,6 +904,10 @@ test('non-pipelined promise queueing', async t => {
 
   await kernel.run();
 
+  const p1ForB = kernel.addImport('vatB', p1ForKernel);
+  t.deepEqual(log.shift(), [bobForB, 'foo', 'fooargs', [], p1ForB]);
+  t.deepEqual(log, []);
+
   t.deepEqual(kernel.dump().promises, [
     {
       id: p1ForKernel,
@@ -934,6 +941,107 @@ test('non-pipelined promise queueing', async t => {
       id: p3ForKernel,
       state: 'unresolved',
       decider: undefined,
+      subscribers: [],
+      queue: [],
+    },
+  ]);
+
+  t.end();
+});
+
+// p1=x!foo(); p2=p1!bar(); p3=p2!urgh(); with pipelining. All three should
+// get delivered to vat-with-x.
+
+test('pipelined promise queueing', async t => {
+  const kernel = buildKernel({ setImmediate });
+  const log = [];
+
+  let syscall;
+  function setupA(s) {
+    syscall = s;
+    function deliver() {}
+    return { deliver };
+  }
+  kernel.addGenesisVat('vatA', setupA);
+
+  function setupB(_s) {
+    function deliver(target, method, argsString, slots, result) {
+      log.push([target, method, argsString, slots, result]);
+    }
+    return { deliver };
+  }
+  kernel.addGenesisVat('vatB', setupB, { enablePipelining: true });
+  await kernel.start();
+
+  const bobForB = 'o+6';
+  const bobForKernel = kernel.addExport('vatB', bobForB);
+  const bobForA = kernel.addImport('vatA', bobForKernel);
+
+  const p1ForA = 'p+1';
+  syscall.send(bobForA, 'foo', 'fooargs', [], p1ForA);
+  const p1ForKernel = kernel.addExport('vatA', p1ForA);
+
+  const p2ForA = 'p+2';
+  syscall.send(p1ForA, 'bar', 'barargs', [], p2ForA);
+  const p2ForKernel = kernel.addExport('vatA', p2ForA);
+
+  const p3ForA = 'p+3';
+  syscall.send(p2ForA, 'urgh', 'urghargs', [], p3ForA);
+  const p3ForKernel = kernel.addExport('vatA', p3ForA);
+
+  t.deepEqual(kernel.dump().promises, [
+    {
+      id: p1ForKernel,
+      state: 'unresolved',
+      decider: undefined,
+      subscribers: [],
+      queue: [],
+    },
+    {
+      id: p2ForKernel,
+      state: 'unresolved',
+      decider: undefined,
+      subscribers: [],
+      queue: [],
+    },
+    {
+      id: p3ForKernel,
+      state: 'unresolved',
+      decider: undefined,
+      subscribers: [],
+      queue: [],
+    },
+  ]);
+
+  await kernel.run();
+
+  const p1ForB = kernel.addImport('vatB', p1ForKernel);
+  const p2ForB = kernel.addImport('vatB', p2ForKernel);
+  const p3ForB = kernel.addImport('vatB', p3ForKernel);
+  t.deepEqual(log.shift(), [bobForB, 'foo', 'fooargs', [], p1ForB]);
+  t.deepEqual(log.shift(), [p1ForB, 'bar', 'barargs', [], p2ForB]);
+  t.deepEqual(log.shift(), [p2ForB, 'urgh', 'urghargs', [], p3ForB]);
+  t.deepEqual(log, []);
+
+  t.deepEqual(kernel.dump().promises, [
+    {
+      id: p1ForKernel,
+      state: 'unresolved',
+      decider: 'vatB',
+      subscribers: [],
+      queue: [],
+    },
+    {
+      id: p2ForKernel,
+      state: 'unresolved',
+      decider: 'vatB',
+      subscribers: [],
+      queue: [],
+    },
+    {
+      id: p3ForKernel,
+      state: 'unresolved',
+      decider: 'vatB',
       subscribers: [],
       queue: [],
     },
