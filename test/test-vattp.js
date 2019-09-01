@@ -7,6 +7,7 @@ async function testVatTP(t, withSES) {
   const mb = buildMailbox(s);
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['mailbox', mb.srcPath, mb.endowments]],
     bootstrapIndexJS: require.resolve('./files-vattp/bootstrap-test-vattp'),
   };
@@ -45,6 +46,7 @@ async function testVatTP2(t, withSES) {
   const mb = buildMailbox(s);
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['mailbox', mb.srcPath, mb.endowments]],
     bootstrapIndexJS: require.resolve('./files-vattp/bootstrap-test-vattp'),
   };

@@ -1,12 +1,19 @@
 import path from 'path';
 import { test } from 'tape-promise/tape';
-import { buildVatController, loadBasedir } from '../src/index';
+import {
+  buildVatController,
+  getCommsSourcePath,
+  loadBasedir,
+} from '../src/index';
 
 export async function runVats(t, withSES, argv) {
   const config = await loadBasedir(
     path.resolve(__dirname, './basedir-commsvat'),
   );
-
+  config.vatSources.set('leftcomms', getCommsSourcePath());
+  config.vatOptions.set('leftcomms', { enablePipelining: !true });
+  config.vatSources.set('rightcomms', getCommsSourcePath());
+  config.vatOptions.set('rightcomms', { enablePipelining: !true });
   const ldSrcPath = require.resolve('../src/devices/loopbox-src');
   config.devices = [['loopbox', ldSrcPath, {}]];
   const c = await buildVatController(config, withSES, argv);

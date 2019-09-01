@@ -6,6 +6,7 @@ import { checkKT } from './util';
 test('load empty', async t => {
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     bootstrapIndexJS: undefined,
   };
   const controller = await buildVatController(config);
@@ -17,6 +18,7 @@ test('load empty', async t => {
 async function simpleCall(t, withSES) {
   const config = {
     vatSources: new Map([['vat1', require.resolve('./vat-controller-1')]]),
+    vatOptions: new Map(),
   };
   const controller = await buildVatController(config, withSES);
   const data = controller.dump();
@@ -67,8 +69,9 @@ test('reject module-like sourceIndex', async t => {
   // be treated as something to load from node_modules/ (i.e. something
   // installed from npm), so we want to reject that.
   vatSources.set('vat1', 'vatsource');
+  const vatOptions = new Map();
   t.rejects(
-    async () => buildVatController({ vatSources }, false),
+    async () => buildVatController({ vatSources, vatOptions }, false),
     /sourceIndex must be relative/,
   );
   t.end();

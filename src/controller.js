@@ -18,6 +18,7 @@ const evaluateOptions = makeDefaultEvaluateOptions();
 export function loadBasedir(basedir) {
   console.log(`= loading config from basedir ${basedir}`);
   const vatSources = new Map();
+  const vatOptions = new Map();
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.forEach(dirent => {
     if (dirent.name.endsWith('~')) {
@@ -41,7 +42,7 @@ export function loadBasedir(basedir) {
   } catch (e) {
     bootstrapIndexJS = undefined;
   }
-  return { vatSources, bootstrapIndexJS };
+  return { vatSources, vatOptions, bootstrapIndexJS };
 }
 
 function getKernelSource() {
@@ -132,7 +133,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
     : buildNonSESKernel(initialState);
   // console.log('kernel', kernel);
 
-  async function addGenesisVat(vatID, sourceIndex, _options = {}) {
+  async function addGenesisVat(vatID, sourceIndex, options = {}) {
     console.log(`= adding vat '${vatID}' from ${sourceIndex}`);
     if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
       throw Error(
@@ -162,7 +163,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
       // eslint-disable-next-line global-require,import/no-dynamic-require
       setup = require(`${sourceIndex}`).default;
     }
-    kernel.addGenesisVat(vatID, setup);
+    kernel.addGenesisVat(vatID, setup, options);
   }
 
   async function addGenesisDevice(name, sourceIndex, endowments) {
@@ -230,8 +231,9 @@ export async function buildVatController(config, withSES = true, argv = []) {
 
   if (config.vatSources) {
     for (const vatID of config.vatSources.keys()) {
+      const options = config.vatOptions.get(vatID);
       // eslint-disable-next-line no-await-in-loop
-      await addGenesisVat(vatID, config.vatSources.get(vatID));
+      await addGenesisVat(vatID, config.vatSources.get(vatID), options);
     }
   }
 

@@ -6,6 +6,7 @@ import buildCommand from '../src/devices/command';
 async function test0(t, withSES) {
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['d0', require.resolve('./files-devices/device-0'), {}]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-0'),
   };
@@ -40,6 +41,7 @@ async function test1(t, withSES) {
   const sharedArray = [];
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [
       [
         'd1',
@@ -76,6 +78,7 @@ test('d1 without SES', async t => {
 async function test2(t, mode, withSES) {
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
@@ -174,6 +177,7 @@ test('d2.5 without SES', async t => {
 async function testState(t, withSES) {
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['d3', require.resolve('./files-devices/device-3'), {}]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-3'),
     initialState: JSON.stringify({}),
@@ -203,6 +207,7 @@ async function testMailboxOutbound(t, withSES) {
   const mb = buildMailbox(s);
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['mailbox', mb.srcPath, mb.endowments]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
@@ -244,6 +249,7 @@ async function testMailboxInbound(t, withSES) {
   const mb = buildMailbox(s);
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['mailbox', mb.srcPath, mb.endowments]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
@@ -327,6 +333,7 @@ async function testCommandBroadcast(t, withSES) {
   const cm = buildCommand();
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['command', cm.srcPath, cm.endowments]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
@@ -353,6 +360,7 @@ async function testCommandDeliver(t, withSES) {
   const cm = buildCommand();
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['command', cm.srcPath, cm.endowments]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
