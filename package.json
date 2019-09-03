@@ -38,14 +38,14 @@
     "@agoric/marshal": "^0.0.1",
     "@agoric/nat": "^2.0.1",
     "@babel/core": "^7.5.5",
-    "ses": "^0.5.3"
+    "ses": "^0.6.0"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "0.0.19",
-    "eslint": "^6.1.0",
+    "@agoric/swingset-vat": "0.0.20",
+    "eslint": "^6.3.0",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-config-jessie": "0.0.3",
-    "eslint-config-prettier": "^6.0.0",
+    "eslint-config-prettier": "^6.2.0",
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-prettier": "^3.1.0",
     "esm": "^3.2.25",
