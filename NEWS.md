@@ -1,5 +1,17 @@
 User-visible changes in ERTP:
 
+## Release v0.1.4 (9/3/2019)
+
+Core ERTP:
+* Created a "list strategy" for assays. The list strategy allows
+  non-fungible assets to have set operations. For instance, for the
+  pixelList assay, each pixel is defined by the x and y coordinates,
+  but there can be multiple pixels in a purse or payment. These
+  multiple pixels can be combined together because they are put in a
+  list. Similarly, we can remove pixels from a purse or payment by
+  removing them from the list.
+* Updated to `@agoric/swingset-vat` v0.0.20 and `ses` v0.6.0
+
 ## Release v0.1.3 (8/27/2019)
 
 Core ERTP:
