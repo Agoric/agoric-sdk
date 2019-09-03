@@ -1,5 +1,26 @@
 User-visible changes in SwingSet:
 
+## Release 0.0.20 (03-Sep-2019)
+
+* Update dependencies (including ses-0.6.0).
+* Allow use of Node.js v11 again
+* fix `bin/vat`
+* Improve `eval()` options available to Vat code via
+  `require('@agoric/evaluate')`. The previous version only offered
+  `evaluateExpr` and `evaluateProgram`, which evaluate expressions and
+  programs in a frozen environment, so assignments to global variables is an
+  error. In the new version, this import also provides `makeEvaluators`,
+  which Vat code can use to build a new compartment with non-frozen globals:
+
+```js
+const { makeEvaluators } = require('@agoric/evaluate');
+// both evaluateProgram and evaluateExpr operate on the same Compartment
+const { evaluateProgram, evaluateExpr } = makeEvaluators({sloppyGlobals: true});
+evaluateProgram('a = 4');
+evaluateExpr('a+1') === 5; // true
+```
+
+
 ## Release 0.0.19 (06-Aug-2019)
 
 * Rewrite persistence to be much more efficient. (#94)
