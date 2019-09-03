@@ -7,7 +7,7 @@ const repl = require('repl');
 require = require('esm')(module);
 const util = require('util');
 
-const { loadBasedir, useStorageInBasedir, buildVatController } = require('../src/index.js');
+const { loadBasedir, buildVatController } = require('../src/index.js');
 
 function deepLog(item) {
   console.log(util.inspect(item, false, null, true));
@@ -28,7 +28,6 @@ async function main() {
   const vatArgv = argv[0] === '--' ? argv.slice(1) : argv;
 
   const config = await loadBasedir(basedir);
-  const save = useStorageInBasedir(basedir, config);
   const ldSrcPath = require.resolve('../src/devices/loopbox-src');
   config.devices = [['loopbox', ldSrcPath, {}]];
 
@@ -52,10 +51,6 @@ async function main() {
     r.context.dump2 = () => controller.dump();
     r.context.run = () => {console.log('run!'); controller.run();};
     r.context.step = () => {console.log('step!'); controller.step();};
-    r.context.save = () => {
-      save();
-      console.log('state saved to state.json');
-    };
   }
 }
 
