@@ -1,6 +1,6 @@
 User-visible changes in Cosmic SwingSet:
 
-## Upcoming Release
+## Release v0.8.6 (2019-09-04)
 
 * Enable mutable globals and sloppyGlobals in the gallery demo
   This allows direct assignment to unreferenced global variables
