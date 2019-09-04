@@ -1,5 +1,13 @@
 User-visible changes in Cosmic SwingSet:
 
+## Upcoming Release
+
+* Enable mutable globals and sloppyGlobals in the gallery demo
+  This allows direct assignment to unreferenced global variables
+  such as: `myvar = 123` assigning to the global `myvar`
+* Upgrade to @agoric/ertp version 0.1.4
+* Upgrade to @agoric/swingset-vat version 0.0.20
+
 ## Release v0.8.5 (2019-08-28)
 
 * Upgrade to @agoric/ertp version 0.1.3
