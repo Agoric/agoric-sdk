@@ -9,6 +9,7 @@
     - service: ag-chain-cosmos
     - data: "{{ SETUP_HOME }}/{{ service }}/data"
     - PERSISTENT_PEERS: "{{ lookup('file', SETUP_HOME + '/' + service + '/data/peers.txt') }}"
+    - NUM_FILE_DESCRIPTORS: 2048
   roles:
     - install-cosmos
 

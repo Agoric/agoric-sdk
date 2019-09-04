@@ -8,6 +8,15 @@
     group: "{{ service }}"
     mode: 0644
 
+- name: "Update {{ service }} max file descriptors"
+  become_user: root
+  become: true
+  lineinfile:
+    path: /etc/security/limits.conf
+    state: present
+    regexp: "^{{ service }} *soft *nofile "
+    line: "{{ service }} soft nofile {{ NUM_FILE_DESCRIPTORS }}"
+
 - name: Set persistent_peers
   lineinfile:
     path: "/home/{{ service }}/.{{ service }}/config/config.toml"

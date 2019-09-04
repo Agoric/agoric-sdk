@@ -1,5 +1,9 @@
 User-visible changes in Cosmic SwingSet:
 
+## Next release
+
+* Raise ag-chain-cosmos file descriptor limit to 2048
+
 ## Release v0.8.6 (2019-09-04)
 
 * Enable mutable globals and sloppyGlobals in the gallery demo
