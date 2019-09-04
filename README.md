@@ -16,7 +16,7 @@ Otherwise, you can continue to the next section to choose one of the setups for 
 
 ## Different setups to run the Pixel Demo
 
-Running the demo requires a local solo node to serve as your access point\
+Running the demo requires a local solo node to serve as your access point.
 In any case, for now, you will be needing to build the solo node from the source code
 
 ### Build from source
@@ -197,17 +197,17 @@ in exactly the same way. For example, the first thing you might want
 to do is tap the gallery faucet to get a pixel for free:
 
 ```js
-home.gallery!tapFaucet()
+px = home.gallery!tapFaucet()
 ```
 
-`tapFaucet` returns a pixel and saves it under `history[0]`. The pixel that you receive is
+`tapFaucet` returns a pixel and saves it under `px`. The pixel that you receive is
 actually in the form of an ERTP payment. [ERTP](https://github.com/Agoric/ERTP) (Electronic Rights Transfer Protocol)]
 is our smart contract framework for handling transferable objects.
 Payments have a few functions. Let's call `getBalance()` on our payment
 to see which pixel we received. 
 
 ```js
-history[0]!getBalance()
+px!getBalance()
 ```
 
 You might see something like: 
@@ -224,44 +224,39 @@ JavaScript object that just happens to be associated with an ERTP
 payment. 
 
 ```js
-history[0]!getUse()
-
+use = px!getUse()
 ```
 
-Your use object will be stored under history, as `history[2]`. Now we
+Your use object will be stored under `use`. Now we
 can use it to color. 
 
 ```js
-history[2]!changeColorAll('#FF69B4')
+use!changeColorAll('#FF69B4')
 ```
 
 The following commands show a pixel being obtained from the faucet,
-getting the 'use' object, coloring the pixel, and selling a pixel to the gallery through a
+getting the 'use' object, coloring the pixel, and selling a pixel to the gallery through an
 escrow smart contract.  
 
 ```
-home.gallery!tapFaucet()
-history[0]!getBalance()
-history[0]!getUse()
-history[2]!changeColorAll('#FF69B4')
-home.gallery!tapFaucet()
-history[4]!getBalance()
-home.gallery!pricePixelAmount(history[5])
-home.gallery!sellToGallery(history[5])
-history[7].inviteP
-history[7].host
-history[9]!redeem(history[8])
-history[10]!offer(history[4])
-home.gallery!getIssuers()
-history[12].pixelIssuer
-history[12].dustIssuer
-history[13]!makeEmptyPurse()
-history[14]!makeEmptyPurse()
-home.gallery!collectFromGallery(history[10], history[16], history[15], 'my escrow')
-history[16]!getBalance()
+px = home.gallery!tapFaucet();
+px!getBalance();
+use = px!getUse();
+use!changeColorAll('yellow');
+px2 = home.gallery!tapFaucet();
+amt2 = px2!getBalance();
+amt2.then(a => home.gallery!pricePixelAmount(a));
+hostInvite = home.gallery!sellToGallery(amt2);
+seat = hostInvite!host!redeem(hostInvite!inviteP);
+offered = seat!offer(px2);
+issuers = home.gallery!getIssuers();
+pxPurse = issuers!pixelIssuer!makeEmptyPurse();
+dustPurse = issuers!dustIssuer!makeEmptyPurse();
+collected = offered.then(() => home.gallery!collectFromGallery(seat, dustPurse, pxPurse, 'my escrow'));
+collected.then(() => dustPurse!getBalance());
 ```
 
-Woohoo! We're now 6 dust richer than when we started.
+Woohoo! We're now a few dust richer than when we started.
 
 Learn more about ERTP and our pixel demo [here](https://github.com/Agoric/ERTP). 
 
@@ -369,7 +364,7 @@ This command will prompt you for the testnet provisioning code.
 Then connect to http://localhost:8000 and go to the [Gallery Demo](#gallery-pixel-demo) section.
 
 If you don't have a provisioning code, or otherwise want to run the demo from the code in this directory,
-read [the next section](#different-scenarios).
+read [about the scenarios](#choose-a-scenario).
 
 
 

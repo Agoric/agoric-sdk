@@ -37,8 +37,8 @@ Before submitting a pull request, please:
 * `make docker-build`
 * Test the Docker build on your private network:
 ```sh
-NETWORK_NAME=myname ./docker/ag-setup-cosmos bootstrap --bump
-SOLO_NAME=myname ./docker/ag-setup-solo
+NETWORK_NAME=testtestnet ./docker/ag-setup-cosmos bootstrap --bump
+SOLO_NAME=testtestnet ./docker/ag-setup-solo
 ```
 * visit http://localhost:8000/ and interact with your network
 * `npm publish`

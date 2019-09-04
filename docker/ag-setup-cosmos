@@ -30,6 +30,7 @@ fi
 exec docker run --rm $TTY $FLAGS \
   --volume=ag-setup-cosmos-chains:/usr/src/app/chains \
   --volume=ag-cosmos-helper-state:/root/.ag-cosmos-helper \
+  --volume=/var/run/docker.sock:/var/run/docker.sock \
   --env AG_SETUP_COSMOS_NAME=$NETWORK_NAME \
   --env AG_SETUP_COSMOS_HOME=$SETUP_HOME \
   --env AG_SETUP_COSMOS_BACKEND=$AG_SETUP_COSMOS_BACKEND \
