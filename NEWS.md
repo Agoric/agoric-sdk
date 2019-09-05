@@ -1,6 +1,6 @@
 User-visible changes in Cosmic SwingSet:
 
-## Next release
+## Release v0.8.7 (2019-09-04)
 
 * Raise ag-chain-cosmos file descriptor limit to 2048
 

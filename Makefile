@@ -1,5 +1,6 @@
 REPOSITORY = agoric/cosmic-swingset
 TAG := $(shell test ! -f package.json || sed -ne 's/.*"version": "\(.*\)".*/\1/p' package.json)
+DO_PUSH_LATEST :=
 CHAIN_ID = agoric
 INITIAL_TOKENS = 1000agmedallion
 
@@ -96,27 +97,27 @@ docker-push: docker-push-base docker-push-solo docker-push-setup docker-push-pse
 
 docker-push-setup:
 	docker tag $(REPOSITORY)-setup:latest $(REPOSITORY)-setup:$(TAG)
-	docker push $(REPOSITORY)-setup:latest
+	$(DO_PUSH_LATEST) docker push $(REPOSITORY)-setup:latest
 	docker push $(REPOSITORY)-setup:$(TAG)
 
 docker-push-base:
 	docker tag $(REPOSITORY):latest $(REPOSITORY):$(TAG)
-	docker push $(REPOSITORY):latest
+	$(DO_PUSH_LATEST) docker push $(REPOSITORY):latest
 	docker push $(REPOSITORY):$(TAG)
 
 docker-push-pserver:
 	docker tag $(REPOSITORY)-pserver:latest $(REPOSITORY)-pserver:$(TAG)
-	docker push $(REPOSITORY)-pserver:latest
+	$(DO_PUSH_LATEST) docker push $(REPOSITORY)-pserver:latest
 	docker push $(REPOSITORY)-pserver:$(TAG)
 
 docker-push-solo:
 	docker tag $(REPOSITORY)-solo:latest $(REPOSITORY)-solo:$(TAG)
-	docker push $(REPOSITORY)-solo:latest
+	$(DO_PUSH_LATEST) docker push $(REPOSITORY)-solo:latest
 	docker push $(REPOSITORY)-solo:$(TAG)
 
 docker-push-setup-solo:
 	docker tag $(REPOSITORY)-setup-solo:latest $(REPOSITORY)-setup-solo:$(TAG)
-	docker push $(REPOSITORY)-setup-solo:latest
+	$(DO_PUSH_LATEST) docker push $(REPOSITORY)-setup-solo:latest
 	docker push $(REPOSITORY)-setup-solo:$(TAG)
 
 compile-go: go.sum
