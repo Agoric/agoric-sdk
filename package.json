@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "@agoric/acorn-infix-bang": "0.0.4",
-    "@agoric/default-evaluate-options": "^0.1.2",
+    "@agoric/default-evaluate-options": "^0.1.3",
     "@agoric/evaluate": "^1.3.2",
     "@agoric/harden": "^0.0.4",
     "@agoric/marshal": "0.0.1",
