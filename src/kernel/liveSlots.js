@@ -1,7 +1,6 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
-import makePromise from './makePromise';
 
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted
@@ -199,11 +198,12 @@ function build(syscall, _state, makeRoot, forVatID) {
   const m = makeMarshal(serializeSlot, unserializeSlot);
 
   function queueMessage(targetSlot, prop, args) {
-    const done = makePromise();
     const ser = m.serialize(harden({ args }));
     lsdebug(`ls.qm send(${JSON.stringify(targetSlot)}, ${prop}`);
     const promiseID = syscall.send(targetSlot, prop, ser.argsString, ser.slots);
     lsdebug(` ls.qm got promiseID ${promiseID}`);
+    const slot = { type: 'promise', id: promiseID };
+    const done = makeQueued(slot);
 
     // prepare for notifyFulfillToData/etc
     importedPromisesByPromiseID.set(promiseID, done);
@@ -215,7 +215,6 @@ function build(syscall, _state, makeRoot, forVatID) {
 
     // prepare the serializer to recognize it, if it's used as an argument or
     // return value
-    const slot = { type: 'promise', id: promiseID };
     const key = slotToKey(slot);
     valToSlot.set(done.p, slot);
     slotKeyToVal.set(key, done.p);
