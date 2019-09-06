@@ -36,31 +36,43 @@ export default function maybeExtendPromise(Promise) {
   let forwardingHandler;
   function handle(p, operation, ...args) {
     const unfulfilledHandler = promiseToHandler.get(p);
+    let executor;
     if (unfulfilledHandler) {
       if (typeof unfulfilledHandler[operation] !== 'function') {
         throw TypeError(`unfulfilledHandler.${operation} is not a function`);
       }
 
-      return Promise.makeHandled((resolve, reject) => {
+      executor = (resolve, reject) => {
         // We run in a future turn to prevent synchronous attacks,
         Promise.resolve()
           .then(() =>
-            // and resolve to the answer from the unfulfilled handler,
+            // and resolve to the answer from the specific unfulfilled handler,
             resolve(unfulfilledHandler[operation](p, ...args)),
           )
           .catch(reject);
-        // with the default unfulfilled forwarding handler.
-      });
+      };
+    } else {
+      executor = (resolve, reject) => {
+        // We run in a future turn to prevent synchronous attacks,
+        Promise.resolve(p)
+          .then(o => {
+            // We now have the naked object,
+            if (typeof forwardingHandler[operation] !== 'function') {
+              throw TypeError(
+                `forwardingHandler.${operation} is not a function`,
+              );
+            }
+            // and resolve to the forwardingHandler's operation.
+            resolve(forwardingHandler[operation](o, ...args));
+          })
+          .catch(reject);
+      };
     }
 
-    // We use the forwardingHandler, but pass in the naked object in a
-    // future turn.
-    if (typeof forwardingHandler[operation] !== 'function') {
-      throw TypeError(`forwardingHandler.${operation} is not a function`);
-    }
-    return Promise.resolve(p).then(o =>
-      forwardingHandler[operation](o, ...args),
-    );
+    // We return a handled promise with the default unfulfilled handler.
+    // This prevents a race between the above Promise.resolves and
+    // pipelining.
+    return Promise.makeHandled(executor);
   }
 
   Object.defineProperties(
