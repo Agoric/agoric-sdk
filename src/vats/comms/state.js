@@ -1,3 +1,4 @@
+import { insist } from '../../kernel/insist';
 import { makeVatSlot } from '../parseVatSlots';
 
 export function makeState() {
@@ -12,7 +13,11 @@ export function makeState() {
 
     // hopefully we can avoid the need for local promises
     // localPromises: new Map(), // p+NN/p-NN -> local purpose
-    promiseTable: new Map(), // p+NN/p-NN -> { owner, resolved, decider, subscriber }
+    promiseTable: new Map(), // p+NN/p-NN -> { state, owner, decider, subscriber }
+    // and maybe resolution, one of:
+    // * {type: 'object', slot}
+    // * {type: 'data', body, slots}
+    // * {type: 'reject', body, slots}
     nextPromiseIndex: 20,
   };
 
@@ -46,8 +51,88 @@ export function dumpState(state) {
   }
 }
 
-export function allocatePromise(state) {
+export function trackUnresolvedPromise(state, remoteID, pid) {
+  insist(!state.promiseTable.has(pid), `${pid} already present`);
+  state.promiseTable.set(pid, {
+    owner: remoteID,
+    state: 'unresolved',
+    decider: remoteID,
+    subscriber: null,
+  });
+}
+
+export function allocateUnresolvedPromise(state, remoteID) {
   const index = state.nextPromiseIndex;
   state.nextPromiseIndex += 1;
-  return makeVatSlot('promise', true, index);
+  const pid = makeVatSlot('promise', true, index);
+  trackUnresolvedPromise(state, remoteID, pid);
+  return pid;
+}
+
+export function setPromiseDecider(state, promiseID, decider) {
+  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  state.promiseTable.get(promiseID).decider = decider;
+}
+
+export function setPromiseSubscriber(state, promiseID, subscriber) {
+  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  state.promiseTable.get(promiseID).subscriber = subscriber;
+}
+
+export function insistPromiseIsUnresolved(state, promiseID) {
+  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  const pstate = state.promiseTable.get(promiseID).state;
+  insist(
+    pstate === 'unresolved',
+    `${promiseID} has state ${pstate}, not 'unresolved'`,
+  );
+}
+
+export function insistPromiseDeciderIs(state, promiseID, remoteID) {
+  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  const { decider } = state.promiseTable.get(promiseID);
+  insist(
+    decider === remoteID,
+    `${promiseID} is decided by ${decider}, not ${remoteID}`,
+  );
+}
+
+export function insistPromiseDeciderIsMe(state, promiseID) {
+  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  const { decider } = state.promiseTable.get(promiseID);
+  insist(!decider, `${decider} is the decider for ${promiseID}, not me`);
+}
+
+export function insistPromiseSubscriberIsNotDifferent(
+  state,
+  promiseID,
+  remoteID,
+) {
+  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  const { subscriber } = state.promiseTable.get(promiseID);
+  if (subscriber) {
+    insist(
+      subscriber === remoteID,
+      `${promiseID} subscriber is ${subscriber}, not ${remoteID}`,
+    );
+  }
+}
+
+export function getPromiseSubscriber(state, promiseID) {
+  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  const { subscriber } = state.promiseTable.get(promiseID);
+  insist(subscriber, `${promiseID} has no subscriber`);
+  return subscriber;
+}
+
+export function markPromiseAsResolved(state, promiseID, resolution) {
+  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  const p = state.promiseTable.get(promiseID);
+  insist(
+    p.state === 'unresolved',
+    `${promiseID} is already resolved (${p.state})`,
+  );
+  p.resolution = resolution;
+  p.decider = undefined;
+  p.subscriber = undefined;
 }

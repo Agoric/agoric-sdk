@@ -12,7 +12,7 @@ function transmit(syscall, state, remoteID, msg) {
   // the vat-tp "integrity layer" is a regular vat, so it expects an argument
   // encoded as JSON
   const body = JSON.stringify({ args: [msg] });
-  syscall.send(remote.transmitterID, 'transmit', body, []); // todo: sendOnly
+  syscall.send(remote.transmitterID, 'transmit', body, []); // sendOnly
 }
 
 export const debugState = new WeakMap();
@@ -38,12 +38,12 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
     }
     // console.log(`comms.deliver ${target} r=${result}`);
     // dumpState(state);
-    if (state.objectTable.has(target)) {
+    if (state.objectTable.has(target) || state.promiseTable.has(target)) {
       insist(
         method.indexOf(':') === -1 && method.indexOf(';') === -1,
         `illegal method name ${method}`,
       );
-      const [remoteID, body] = deliverToRemote(
+      return deliverToRemote(
         syscall,
         state,
         target,
@@ -51,8 +51,8 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
         argsbytes,
         caps,
         result,
+        transmit,
       );
-      return transmit(syscall, state, remoteID, body);
     }
     if (state.remoteReceivers.has(target)) {
       insist(method === 'receive', `unexpected method ${method}`);
@@ -66,24 +66,23 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
         message,
       );
     }
-    // TODO: if (target in PromiseTable) : pipelining
+
+    // TODO: if promise target not in PromiseTable: resolve result to error
+    //   this will happen if someone pipelines to our controller/receiver
     throw new Error(`unknown target ${target}`);
   }
 
-  function notifyFulfillToData(promiseID, data, slots) {
-    // if (promiseID in localPromises) {
-    //  resolveLocal(promiseID, { type: 'data', data, slots });
-    // }
-    // console.log(`notifyFulfillToData ${promiseID}`);
+  function notifyFulfillToData(promiseID, body, slots) {
+    console.log(`comms.notifyFulfillToData(${promiseID})`);
     // dumpState(state);
-    const [remoteID, body] = resolvePromiseToRemote(syscall, state, promiseID, {
-      type: 'data',
-      data,
-      slots,
-    });
-    if (remoteID) {
-      return transmit(syscall, state, remoteID, body);
-    }
+
+    // I *think* we should never get here for local promises, since the
+    // controller only does sendOnly. But if we change that, we need to catch
+    // locally-generated promises and deal with them.
+    // if (promiseID in localPromises) {
+    //  resolveLocal(promiseID, { type: 'data', body, slots });
+    // }
+
     // todo: if we previously held resolution authority for this promise, then
     // transferred it to some local vat, we'll have subscribed to the kernel to
     // hear about it. If we then get the authority back again, we no longer
@@ -91,32 +90,21 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
     // resolving), but the kernel still thinks of us as subscribing, so we'll
     // get a bogus dispatch.notifyFulfill*. Currently we throw an error, which
     // is currently ignored but might prompt a vat shutdown in the future.
-    throw new Error(`unknown promise ${promiseID}`);
+
+    const resolution = harden({ type: 'data', body, slots });
+    resolvePromiseToRemote(syscall, state, promiseID, resolution, transmit);
   }
 
   function notifyFulfillToPresence(promiseID, slot) {
-    // console.log(`notifyFulfillToPresence ${promiseID}`);
-    const [remoteID, body] = resolvePromiseToRemote(syscall, state, promiseID, {
-      type: 'object',
-      slot,
-    });
-    if (remoteID) {
-      return transmit(syscall, state, remoteID, body);
-    }
-    throw new Error(`unknown promise ${promiseID}`);
+    console.log(`comms.notifyFulfillToPresence(${promiseID}) = ${slot}`);
+    const resolution = harden({ type: 'object', slot });
+    resolvePromiseToRemote(syscall, state, promiseID, resolution, transmit);
   }
 
-  function notifyReject(promiseID, data, slots) {
-    // console.log(`notifyReject ${promiseID}`);
-    const [remoteID, body] = resolvePromiseToRemote(syscall, state, promiseID, {
-      type: 'reject',
-      data,
-      slots,
-    });
-    if (remoteID) {
-      return transmit(syscall, state, remoteID, body);
-    }
-    throw new Error(`unknown promise ${promiseID}`);
+  function notifyReject(promiseID, body, slots) {
+    console.log(`comms.notifyReject(${promiseID})`);
+    const resolution = harden({ type: 'reject', body, slots });
+    resolvePromiseToRemote(syscall, state, promiseID, resolution, transmit);
   }
 
   const dispatch = harden({

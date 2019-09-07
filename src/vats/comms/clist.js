@@ -2,11 +2,21 @@ import Nat from '@agoric/nat';
 import { makeVatSlot, parseVatSlot, insistVatType } from '../parseVatSlots';
 import {
   flipRemoteSlot,
+  insistRemoteType,
   makeRemoteSlot,
   parseRemoteSlot,
 } from './parseRemoteSlot';
 import { getRemote } from './remote';
-import { allocatePromise } from './state';
+import {
+  allocateUnresolvedPromise,
+  insistPromiseIsUnresolved,
+  insistPromiseDeciderIs,
+  insistPromiseDeciderIsMe,
+  insistPromiseSubscriberIsNotDifferent,
+  trackUnresolvedPromise,
+  setPromiseDecider,
+  setPromiseSubscriber,
+} from './state';
 import { insist } from '../../kernel/insist';
 
 export function getOutbound(state, remoteID, target) {
@@ -52,14 +62,17 @@ export function mapOutbound(state, remoteID, s, syscall) {
         const index = remote.nextObjectIndex;
         remote.nextObjectIndex += 1;
         // The recipient will receive ro-NN
-        remote.toRemote.set(s, makeRemoteSlot('object', false, index));
+        const rs = makeRemoteSlot('object', false, index);
+        remote.toRemote.set(s, rs);
         // but when they send it back, they'll send ro+NN
-        remote.fromRemote.set(makeRemoteSlot('object', true, index), s);
+        remote.fromRemote.set(flipRemoteSlot(rs), s);
       }
     } else if (type === 'promise') {
       if (allocatedByVat) {
+        // this is probably a three-party handoff, not sure
         throw new Error(`unable to handle vat-allocated promise ${s} yet`);
       } else {
+        // todo: this might be overly restrictive
         if (state.promiseTable.has(s)) {
           // We already know about this promise, either because it arrived
           // from some other remote, or because we sent it to some other
@@ -70,10 +83,7 @@ export function mapOutbound(state, remoteID, s, syscall) {
             !p.owner,
             `promise ${s} owner is ${p.owner}, not me, so I cannot send to ${remoteID}`,
           );
-          insist(
-            !p.decider,
-            `promise ${s} decider is ${p.decider}, not me, so I cannot send to ${remoteID}`,
-          );
+          insistPromiseDeciderIsMe(state, s);
           // also we can't handle more than a single subscriber yet
           insist(
             !p.subscriber,
@@ -95,24 +105,11 @@ export function mapOutbound(state, remoteID, s, syscall) {
         remote.toRemote.set(s, rs);
         remote.fromRemote.set(flipRemoteSlot(rs), s);
         if (!state.promiseTable.has(s)) {
-          state.promiseTable.set(s, {
-            owner: null, // kernel-allocated, so ID is this-machine-allocated
-            resolved: false,
-            decider: null, // we decide
-            subscriber: remoteID,
-          });
+          trackUnresolvedPromise(state, null, s);
+          setPromiseSubscriber(state, s, remoteID);
           syscall.subscribe(s);
         }
       }
-    } else if (type === 'resolver') {
-      // TODO: is this clause currently unused?
-      insist(!allocatedByVat, `resolver ${s} must be kernel-allocated for now`);
-      const index = remote.nextResolverIndex;
-      remote.nextResolverIndex += 1;
-      // recipient gets rr-NN
-      remote.toRemote.set(s, makeRemoteSlot('resolver', false, index));
-      // recipient sends rr+NN
-      remote.fromRemote.set(makeRemoteSlot('resolver', true, index), s);
     } else {
       throw new Error(`unknown type ${type}`);
     }
@@ -127,25 +124,19 @@ export function mapOutboundResult(state, remoteID, s) {
   insistVatType('promise', s);
 
   if (!state.promiseTable.has(s)) {
-    state.promiseTable.set(s, {
-      owner: null, // todo: what is this for anyways?
-      resolved: false,
-      decider: null, // for a brief moment, we're the decider
-      subscriber: null,
-    });
+    // 'null' because, for a brief moment, we're the decider
+    trackUnresolvedPromise(state, null, s);
   }
-  const p = state.promiseTable.get(s);
+
   // we (the local machine) must have resolution authority, which happens for
   // new promises, and for old ones that arrived as the 'result' of inbound
   // messages from remote machines (transferring authority to us).
-  insist(!p.decider, `result ${s} has decider ${p.decider}, not us`);
-  insist(!p.resolved, `result ${s} is already resolved`);
+  insistPromiseDeciderIsMe(state, s);
+  insistPromiseIsUnresolved(state, s);
   // if we received this promise from remote1, we can send it back to them,
   // but we can't send it to any other remote.
-  insist(
-    !p.subscriber || p.subscriber === remoteID,
-    `result ${s} has subscriber ${p.subscriber}, not none or ${remoteID}`,
-  );
+  insistPromiseSubscriberIsNotDifferent(state, s, remoteID);
+
   // todo: if we previously held resolution authority for this promise, then
   // transferred it to some local vat, we'll have subscribed to the kernel to
   // hear about it. If we then get the authority back again, we no longer
@@ -154,7 +145,8 @@ export function mapOutboundResult(state, remoteID, s) {
   // get a bogus dispatch.notifyFulfill*. Currently we throw an error, which
   // is currently ignored but might prompt a vat shutdown in the future.
 
-  p.decider = remoteID; // transfer authority to recipient
+  // transfer resolution authority to recipient
+  setPromiseDecider(state, s, remoteID);
 
   const existing = remote.toRemote.get(s);
   if (!existing) {
@@ -195,15 +187,9 @@ export function mapInbound(state, remoteID, s, _syscall) {
       state.objectTable.set(localSlot, remoteID);
     } else if (type === 'promise') {
       if (allocatedByRecipient) {
-        throw new Error(`promises not implemented yet`);
+        throw new Error(`I don't remember giving ${s} to ${remoteID}`);
       } else {
-        const promiseID = allocatePromise(state);
-        state.promiseTable.set(promiseID, {
-          owner: remoteID,
-          resolved: false,
-          decider: remoteID,
-          subscriber: null,
-        });
+        const promiseID = allocateUnresolvedPromise(state, remoteID);
         remote.fromRemote.set(s, promiseID);
         remote.toRemote.set(promiseID, s);
         console.log(`inbound promise ${s} mapped to ${promiseID}`);
@@ -223,6 +209,22 @@ export function getInbound(state, remoteID, target) {
     );
   }
   return remote.fromRemote.get(target);
+}
+
+export function mapInboundResult(syscall, state, remoteID, result) {
+  insistRemoteType('promise', result);
+  insist(!parseRemoteSlot(result).allocatedByRecipient, result); // temp?
+  const r = mapInbound(state, remoteID, result, syscall);
+  insistVatType('promise', r);
+  insistPromiseIsUnresolved(state, r);
+  insistPromiseDeciderIs(state, r, remoteID);
+  insistPromiseSubscriberIsNotDifferent(state, r, remoteID);
+  setPromiseDecider(state, r, null); // (local kernel / other local vat) now decides
+  setPromiseSubscriber(state, r, remoteID); // auto-subscribe the sender
+  const remote = getRemote(state, remoteID);
+  remote.fromRemote.set(result, r);
+  remote.toRemote.set(r, flipRemoteSlot(result));
+  return r;
 }
 
 export function addEgress(state, remoteID, remoteRefID, localRef) {

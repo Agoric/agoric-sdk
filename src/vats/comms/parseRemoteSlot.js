@@ -7,7 +7,7 @@ import { insist } from '../../kernel/insist';
 // message, and "-" when allocated by the sender of the message.
 
 export function parseRemoteSlot(s) {
-  insist(s === `${s}`);
+  insist(s === `${s}`, `${s} is not a string`);
   let type;
   let allocatedByRecipient;
   const typechars = s.slice(0, 2);

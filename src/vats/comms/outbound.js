@@ -1,8 +1,40 @@
 import { insistVatType } from '../parseVatSlots';
 import { insistRemoteType } from './parseRemoteSlot';
 import { getOutbound, mapOutbound, mapOutboundResult } from './clist';
+import {
+  getPromiseSubscriber,
+  insistPromiseDeciderIsMe,
+  insistPromiseIsUnresolved,
+  markPromiseAsResolved,
+} from './state';
 import { insistRemoteID } from './remote';
 import { insist } from '../../kernel/insist';
+
+function getRemoteFor(state, target) {
+  if (state.objectTable.has(target)) {
+    return state.objectTable.get(target);
+  }
+  if (state.promiseTable.has(target)) {
+    const p = state.promiseTable.get(target);
+    if (p.state === 'unresolved') {
+      return p.decider;
+    }
+    if (p.state === 'fulfilledToPresence') {
+      return getRemoteFor(state, p.fulfillSlot);
+    }
+    if (p.state === 'fulfilledToData') {
+      throw new Error(`todo: error for fulfilledToData`);
+    } else if (p.state === 'rejected') {
+      throw new Error(`todo: error for rejected`);
+    } else if (p.stated === 'forwarded') {
+      // todo
+      return getRemoteFor(state, p.forwardedSlot);
+    } else {
+      throw new Error(`unknown p.state ${p.state}`);
+    }
+  }
+  throw new Error(`unknown target type ${target}`);
+}
 
 export function deliverToRemote(
   syscall,
@@ -12,10 +44,11 @@ export function deliverToRemote(
   data,
   slots,
   result,
+  transmit,
 ) {
   // this object lives on 'remoteID', so we send messages at them
-  const remoteID = state.objectTable.get(target);
-  insist(remoteID !== undefined, `oops ${target}`);
+  const remoteID = getRemoteFor(state, target);
+  insist(remoteID, `oops ${target}`);
 
   const remoteTargetSlot = getOutbound(state, remoteID, target);
   const remoteMessageSlots = slots.map(s =>
@@ -38,20 +71,27 @@ export function deliverToRemote(
   const msg = `deliver:${remoteTargetSlot}:${method}:${remoteResultSlot}${rmss};${data}`;
   // console.log(`deliverToRemote(target=${target}/${remoteTargetSlot}, result=${result}/${remoteResultSlot}) leaving state as:`);
   // dumpState(state);
-  return [remoteID, msg];
+  transmit(syscall, state, remoteID, msg);
 }
 
-export function resolvePromiseToRemote(syscall, state, promiseID, resolution) {
+export function resolvePromiseToRemote(
+  syscall,
+  state,
+  promiseID,
+  resolution,
+  transmit,
+) {
   // console.log(`resolvePromiseToRemote ${promiseID}`, resolution);
   insistVatType('promise', promiseID);
-  const p = state.promiseTable.get(promiseID);
-  if (!p || !p.subscriber) {
-    return [undefined, undefined]; // todo: local promise?
-  }
-  insist(!p.resolved, `${promiseID} is already resolved`);
-  insist(!p.decider, `${p.decider} is the decider for ${promiseID}, not me`);
-  const remoteID = p.subscriber;
+  insistPromiseIsUnresolved(state, promiseID);
+  insistPromiseDeciderIsMe(state, promiseID);
+  const remoteID = getPromiseSubscriber(state, promiseID);
   insistRemoteID(remoteID);
+
+  // mark it as resolved in the promise table, so later messages to it will
+  // be handled properly
+  markPromiseAsResolved(state, promiseID, resolution);
+
   // for now, promiseID = p-NN, later will be p+NN
   const target = getOutbound(state, remoteID, promiseID);
   // target should be rp+NN
@@ -77,16 +117,12 @@ export function resolvePromiseToRemote(syscall, state, promiseID, resolution) {
     );
     msg = `resolve:object:${target}:${resolutionRef};`;
   } else if (resolution.type === 'data') {
-    const rmss = mapSlots();
-    msg = `resolve:data:${target}${rmss};${resolution.data}`;
+    msg = `resolve:data:${target}${mapSlots()};${resolution.body}`;
   } else if (resolution.type === 'reject') {
-    const rmss = mapSlots();
-    msg = `resolve:reject:${target}${rmss};${resolution.data}`;
+    msg = `resolve:reject:${target}${mapSlots()};${resolution.body}`;
   } else {
     throw new Error(`unknown resolution type ${resolution.type}`);
   }
-  p.resolved = true;
-  p.decider = undefined;
-  p.subscriber = undefined;
-  return [remoteID, msg];
+
+  transmit(syscall, state, remoteID, msg);
 }
