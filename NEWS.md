@@ -1,5 +1,27 @@
 User-visible changes in SwingSet:
 
+## Release 0.0.21 (09-Sep-2019)
+
+* Enable "Promise Pipelining" between remote SwingSet machines connected by
+  Comms Vats. When a vat on the first machine does `x!foo()!bar()!baz()` to
+  an object "x" on the second machine (i.e. `bar` is sent to whatever object
+  `foo` returns), all three calls will be delivered to the second machine in
+  a single batch, rather than waiting for each promise to resolve before
+  delivering the next message. This amortizes the inter-machine latency and
+  is a critical performance improvement enabled by the ocap/Promise
+  architecture.
+* Extensive rewrite of the vat/kernel interface and run-queue, to represent
+  objects and promises more concisely, and enable pipelining.
+* Upgrade to `@agoric/default-evaluate-options` and `@agoric/eventual-send`
+  to get a "HandledPromise" that supports pipelining.
+* Rewrote the comms layer to encode remote messages more concisely, and
+  support pipelining.
+* Change `buildVatController` API, add per-vat options like
+  `enablePipelining`, currently only used for the comms vat.
+* Change the `vattp` and `comms` vat APIs for configuring new remote machines
+  and adding ingress/egress objects.
+
+
 ## Release 0.0.20 (03-Sep-2019)
 
 * Update dependencies (including ses-0.6.0).
