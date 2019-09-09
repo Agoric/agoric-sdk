@@ -343,8 +343,10 @@ the Comms Vat, means "I want the kernel to queue those messages, not me".
 
 ```js
 const config = await loadBasedir(basedir);
-config.vatSources.set('comms', getCommsSourcePath());
-config.vatOptions.set('comms', { enablePipelining: true });
+config.vats.set('comms',
+                { sourcepath: getCommsSourcePath(),
+                  options: { enablePipelining: true },
+                });
 ```
 
 (open question: another option would be for `dispatch.deliver()` to return a

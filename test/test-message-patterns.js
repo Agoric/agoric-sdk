@@ -77,12 +77,12 @@ export async function runVatsInComms(t, withSES, enablePipelining, name) {
   const bdir = path.resolve(__dirname, 'basedir-message-patterns');
   const config = await loadBasedir(bdir);
   config.bootstrapIndexJS = path.join(bdir, 'bootstrap-comms.js');
-  config.vatSources.set('leftcomms', getCommsSourcePath());
-  config.vatOptions.set('leftcomms', { enablePipelining });
-  config.vatSources.set('rightcomms', getCommsSourcePath());
-  config.vatOptions.set('rightcomms', { enablePipelining });
-  config.vatSources.set('leftvattp', getVatTPSourcePath());
-  config.vatSources.set('rightvattp', getVatTPSourcePath());
+  config.vats.set('leftcomms', { sourcepath: getCommsSourcePath() });
+  config.vats.get('leftcomms').options = { enablePipelining };
+  config.vats.set('rightcomms', { sourcepath: getCommsSourcePath() });
+  config.vats.get('rightcomms').options = { enablePipelining };
+  config.vats.set('leftvattp', { sourcepath: getVatTPSourcePath() });
+  config.vats.set('rightvattp', { sourcepath: getVatTPSourcePath() });
   const ldSrcPath = require.resolve('../src/devices/loopbox-src');
   config.devices = [['loopbox', ldSrcPath, {}]];
   const c = await buildVatController(config, withSES, [name]);

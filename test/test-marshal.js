@@ -12,7 +12,7 @@ import { buildVatController } from '../src/index';
 
 async function prep() {
   const config = {
-    vatSources: new Map(),
+    vats: new Map(),
     bootstrapIndexJS: undefined,
   };
   const controller = await buildVatController(config, false);
