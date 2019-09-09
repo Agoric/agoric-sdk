@@ -2,7 +2,7 @@
 /* global setImmediate */
 import { test } from 'tape-promise/tape';
 import buildKernel from '../src/kernel/index';
-import { makeVatSlot } from '../src/vats/parseVatSlots';
+import { makeVatSlot } from '../src/parseVatSlots';
 import { checkKT } from './util';
 
 function checkPromises(t, kernel, expected) {

@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { makeVatSlot } from '../parseVatSlots';
+import { makeVatSlot } from '../../parseVatSlots';
 import { getRemote } from './remote';
 import { makeState } from './state';
 import { deliverToRemote, resolvePromiseToRemote } from './outbound';

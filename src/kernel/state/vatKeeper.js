@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { insist } from '../../insist';
 import { parseKernelSlot } from '../parseKernelSlots';
-import { makeVatSlot, parseVatSlot } from '../../vats/parseVatSlots';
+import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
 

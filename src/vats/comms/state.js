@@ -1,5 +1,5 @@
 import { insist } from '../../insist';
-import { makeVatSlot } from '../parseVatSlots';
+import { makeVatSlot } from '../../parseVatSlots';
 
 export function makeState() {
   const state = {

@@ -8,7 +8,7 @@ import makeVatManager from './vatManager';
 import makeDeviceManager from './deviceManager';
 import makeKernelKeeper from './state/kernelKeeper';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
-import { makeVatSlot } from '../vats/parseVatSlots';
+import { makeVatSlot } from '../parseVatSlots';
 import { insist } from '../insist';
 
 function abbreviateReviver(_, arg) {

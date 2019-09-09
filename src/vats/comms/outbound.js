@@ -1,4 +1,4 @@
-import { insistVatType } from '../parseVatSlots';
+import { insistVatType } from '../../parseVatSlots';
 import { insistRemoteType } from './parseRemoteSlot';
 import { getOutbound, mapOutbound, mapOutboundResult } from './clist';
 import {

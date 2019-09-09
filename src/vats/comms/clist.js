@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import { makeVatSlot, parseVatSlot, insistVatType } from '../parseVatSlots';
+import { makeVatSlot, parseVatSlot, insistVatType } from '../../parseVatSlots';
 import {
   flipRemoteSlot,
   insistRemoteType,

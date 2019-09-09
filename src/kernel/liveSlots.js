@@ -2,11 +2,7 @@ import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
 import { insist } from '../insist';
-import {
-  insistVatType,
-  makeVatSlot,
-  parseVatSlot,
-} from '../vats/parseVatSlots';
+import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
 
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted
