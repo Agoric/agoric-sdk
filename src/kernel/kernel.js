@@ -3,7 +3,7 @@ import { QCLASS, makeMarshal } from '@agoric/marshal';
 
 import { makeLiveSlots } from './liveSlots';
 import { makeDeviceSlots } from './deviceSlots';
-import makePromise from './makePromise';
+import makePromise from '../makePromise';
 import makeVatManager from './vatManager';
 import makeDeviceManager from './deviceManager';
 import makeKernelKeeper from './state/kernelKeeper';

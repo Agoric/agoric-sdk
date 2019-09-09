@@ -4,7 +4,7 @@
 // test.stuff patterns.
 
 import harden from '@agoric/harden';
-import makePromise from '../src/kernel/makePromise';
+import makePromise from '../src/makePromise';
 
 // Exercise a set of increasingly complex object-capability message patterns,
 // for testing.

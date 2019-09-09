@@ -5,7 +5,7 @@ import harden from '@agoric/harden';
 import { makeMarshal, mustPassByPresence } from '@agoric/marshal';
 
 import { makeMarshaller } from '../src/kernel/liveSlots';
-import makePromise from '../src/kernel/makePromise';
+import makePromise from '../src/makePromise';
 
 import { buildVatController } from '../src/index';
 

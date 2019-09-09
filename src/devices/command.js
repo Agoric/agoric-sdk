@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import makePromise from '../kernel/makePromise';
+import makePromise from '../makePromise';
 
 export default function buildCommand() {
   let inboundCallback;
