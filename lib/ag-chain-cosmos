@@ -48,8 +48,19 @@ let deliverInbound;
 // instance, and we update the 'sPort' value each time toSwingSet is called
 let sPort;
 
-async function toSwingSet(action, replier) {
+function toSwingSet(action, replier) {
   console.log(`toSwingSet`, action, replier);
+  return _toSwingSet(action, replier)
+    .then(ret => {
+      console.log(`toSwingSet returning:`, ret);
+      return ret;
+    }, err => {
+      console.log('toSwingSet threw error:', err);
+      throw err;
+    });
+}
+
+async function _toSwingSet(action, replier) {
   if (action.type === 'AG_COSMOS_INIT') {
     return true;
   }
