@@ -161,7 +161,7 @@ export function mapOutboundResult(state, remoteID, s) {
   return remote.toRemote.get(s);
 }
 
-export function mapInbound(state, remoteID, s, _syscall) {
+export function mapInbound(state, remoteID, s) {
   // We're receiving a slot from a remote system. If they've sent it to us
   // previously, or if we're the ones who sent it to them earlier, it will be
   // in the inbound table already.
@@ -211,10 +211,10 @@ export function getInbound(state, remoteID, target) {
   return remote.fromRemote.get(target);
 }
 
-export function mapInboundResult(syscall, state, remoteID, result) {
+export function mapInboundResult(state, remoteID, result) {
   insistRemoteType('promise', result);
   insist(!parseRemoteSlot(result).allocatedByRecipient, result); // temp?
-  const r = mapInbound(state, remoteID, result, syscall);
+  const r = mapInbound(state, remoteID, result);
   insistVatType('promise', r);
   insistPromiseIsUnresolved(state, r);
   insistPromiseDeciderIs(state, r, remoteID);
@@ -270,11 +270,6 @@ export function addIngress(state, remoteID, remoteRefID) {
   // Return a localRef that maps to 'remoteRef' at remoteRefID. Just a
   // wrapper around mapInbound.
   const inboundRemoteRef = makeRemoteSlot('object', false, remoteRefID);
-  const localRef = mapInbound(
-    state,
-    remoteID,
-    inboundRemoteRef,
-    'fake syscall unused',
-  );
+  const localRef = mapInbound(state, remoteID, inboundRemoteRef);
   return localRef;
 }

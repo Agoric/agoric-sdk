@@ -23,13 +23,11 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
     const target = getInbound(state, remoteID, slots[0]);
     const method = slots[1];
     const result = slots[2]; // 'rp-NN' or empty string
-    const msgSlots = slots
-      .slice(3)
-      .map(s => mapInbound(state, remoteID, s, syscall));
+    const msgSlots = slots.slice(3).map(s => mapInbound(state, remoteID, s));
     const body = message.slice(sci + 1);
     let r; // send() if result promise is provided, else sendOnly()
     if (result.length) {
-      r = mapInboundResult(syscall, state, remoteID, result);
+      r = mapInboundResult(state, remoteID, result);
     }
     syscall.send(target, method, body, msgSlots, r);
     if (r) {
@@ -58,7 +56,7 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
     const remoteSlots = pieces.slice(3); // length=1 for resolve:object
     insistRemoteType('promise', remoteTarget); // slots[0] is 'rp+NN`.
     const target = getInbound(state, remoteID, remoteTarget);
-    const slots = remoteSlots.map(s => mapInbound(state, remoteID, s, syscall));
+    const slots = remoteSlots.map(s => mapInbound(state, remoteID, s));
     const body = message.slice(sci + 1);
 
     // rp+NN maps to target=p-+NN and we look at the promiseTable to make
