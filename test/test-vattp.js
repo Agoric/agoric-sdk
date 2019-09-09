@@ -6,12 +6,11 @@ async function testVatTP(t, withSES) {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
-    vatSources: new Map(),
-    vatOptions: new Map(),
+    vats: new Map(),
     devices: [['mailbox', mb.srcPath, mb.endowments]],
     bootstrapIndexJS: require.resolve('./files-vattp/bootstrap-test-vattp'),
   };
-  config.vatSources.set('vattp', getVatTPSourcePath());
+  config.vats.set('vattp', { sourcepath: getVatTPSourcePath() });
 
   const c = await buildVatController(config, withSES, ['1']);
   await c.run();
@@ -45,12 +44,11 @@ async function testVatTP2(t, withSES) {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
-    vatSources: new Map(),
-    vatOptions: new Map(),
+    vats: new Map(),
     devices: [['mailbox', mb.srcPath, mb.endowments]],
     bootstrapIndexJS: require.resolve('./files-vattp/bootstrap-test-vattp'),
   };
-  config.vatSources.set('vattp', getVatTPSourcePath());
+  config.vats.set('vattp', { sourcepath: getVatTPSourcePath() });
 
   const c = await buildVatController(config, withSES, ['2']);
   await c.run();

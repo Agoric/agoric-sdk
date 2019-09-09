@@ -5,8 +5,7 @@ import buildCommand from '../src/devices/command';
 
 async function test0(t, withSES) {
   const config = {
-    vatSources: new Map(),
-    vatOptions: new Map(),
+    vats: new Map(),
     devices: [['d0', require.resolve('./files-devices/device-0'), {}]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-0'),
   };
@@ -40,8 +39,7 @@ test('d0 without SES', async t => {
 async function test1(t, withSES) {
   const sharedArray = [];
   const config = {
-    vatSources: new Map(),
-    vatOptions: new Map(),
+    vats: new Map(),
     devices: [
       [
         'd1',
@@ -77,12 +75,13 @@ test('d1 without SES', async t => {
 
 async function test2(t, mode, withSES) {
   const config = {
-    vatSources: new Map(),
-    vatOptions: new Map(),
+    vats: new Map(),
     devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
-  config.vatSources.set('left', require.resolve('./files-devices/vat-left.js'));
+  config.vats.set('left', {
+    sourcepath: require.resolve('./files-devices/vat-left.js'),
+  });
   const c = await buildVatController(config, withSES, [mode]);
   await c.step();
   if (mode === '1') {
@@ -176,8 +175,7 @@ test('d2.5 without SES', async t => {
 
 async function testState(t, withSES) {
   const config = {
-    vatSources: new Map(),
-    vatOptions: new Map(),
+    vats: new Map(),
     devices: [['d3', require.resolve('./files-devices/device-3'), {}]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-3'),
     initialState: JSON.stringify({}),
@@ -206,8 +204,7 @@ async function testMailboxOutbound(t, withSES) {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
-    vatSources: new Map(),
-    vatOptions: new Map(),
+    vats: new Map(),
     devices: [['mailbox', mb.srcPath, mb.endowments]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
@@ -248,8 +245,7 @@ async function testMailboxInbound(t, withSES) {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
-    vatSources: new Map(),
-    vatOptions: new Map(),
+    vats: new Map(),
     devices: [['mailbox', mb.srcPath, mb.endowments]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
@@ -332,8 +328,7 @@ test('mailbox inbound with SES', async t => {
 async function testCommandBroadcast(t, withSES) {
   const cm = buildCommand();
   const config = {
-    vatSources: new Map(),
-    vatOptions: new Map(),
+    vats: new Map(),
     devices: [['command', cm.srcPath, cm.endowments]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
@@ -359,8 +354,7 @@ test('command broadcast with SES', async t => {
 async function testCommandDeliver(t, withSES) {
   const cm = buildCommand();
   const config = {
-    vatSources: new Map(),
-    vatOptions: new Map(),
+    vats: new Map(),
     devices: [['command', cm.srcPath, cm.endowments]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };

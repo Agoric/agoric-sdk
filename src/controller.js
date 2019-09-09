@@ -17,8 +17,7 @@ const evaluateOptions = makeDefaultEvaluateOptions();
 
 export function loadBasedir(basedir) {
   console.log(`= loading config from basedir ${basedir}`);
-  const vatSources = new Map();
-  const vatOptions = new Map();
+  const vats = new Map(); // name -> { sourcepath, options }
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.forEach(dirent => {
     if (dirent.name.endsWith('~')) {
@@ -31,7 +30,7 @@ export function loadBasedir(basedir) {
     ) {
       const name = dirent.name.slice('vat-'.length, -'.js'.length);
       const indexJS = path.resolve(basedir, dirent.name);
-      vatSources.set(name, indexJS);
+      vats.set(name, { sourcepath: indexJS, options: {} });
     } else {
       console.log('ignoring ', dirent.name);
     }
@@ -42,7 +41,7 @@ export function loadBasedir(basedir) {
   } catch (e) {
     bootstrapIndexJS = undefined;
   }
-  return { vatSources, vatOptions, bootstrapIndexJS };
+  return { vats, bootstrapIndexJS };
 }
 
 function getKernelSource() {
@@ -229,11 +228,11 @@ export async function buildVatController(config, withSES = true, argv = []) {
     }
   }
 
-  if (config.vatSources) {
-    for (const vatID of config.vatSources.keys()) {
-      const options = config.vatOptions.get(vatID);
+  if (config.vats) {
+    for (const vatID of config.vats.keys()) {
+      const v = config.vats.get(vatID);
       // eslint-disable-next-line no-await-in-loop
-      await addGenesisVat(vatID, config.vatSources.get(vatID), options);
+      await addGenesisVat(vatID, v.sourcepath, v.options || {});
     }
   }
 

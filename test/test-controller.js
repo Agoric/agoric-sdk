@@ -5,8 +5,7 @@ import { checkKT } from './util';
 
 test('load empty', async t => {
   const config = {
-    vatSources: new Map(),
-    vatOptions: new Map(),
+    vats: new Map(),
     bootstrapIndexJS: undefined,
   };
   const controller = await buildVatController(config);
@@ -17,8 +16,9 @@ test('load empty', async t => {
 
 async function simpleCall(t, withSES) {
   const config = {
-    vatSources: new Map([['vat1', require.resolve('./vat-controller-1')]]),
-    vatOptions: new Map(),
+    vats: new Map([
+      ['vat1', { sourcepath: require.resolve('./vat-controller-1') }],
+    ]),
   };
   const controller = await buildVatController(config, withSES);
   const data = controller.dump();
@@ -61,17 +61,17 @@ test('simple call non-SES', async t => {
 });
 
 test('reject module-like sourceIndex', async t => {
-  const vatSources = new Map();
-  // the keys of vatSources are vat source index strings: something that
-  // require() or rollup can use to import/stringify the source graph that
-  // should be loaded into the vat. We want this to be somewhere on local
-  // disk, so it should start with '/' or '.'. If it doesn't, the name will
-  // be treated as something to load from node_modules/ (i.e. something
-  // installed from npm), so we want to reject that.
-  vatSources.set('vat1', 'vatsource');
-  const vatOptions = new Map();
+  const vats = new Map();
+  // the keys of 'vats' have a 'sourcepath' property which are vat source
+  // index strings: something that require() or rollup can use to
+  // import/stringify the source graph that should be loaded into the vat. We
+  // want this to be somewhere on local disk, so it should start with '/' or
+  // '.'. If it doesn't, the name will be treated as something to load from
+  // node_modules/ (i.e. something installed from npm), so we want to reject
+  // that.
+  vats.set('vat1', { sourcepath: 'vatsource' });
   t.rejects(
-    async () => buildVatController({ vatSources, vatOptions }, false),
+    async () => buildVatController({ vats }, false),
     /sourceIndex must be relative/,
   );
   t.end();
