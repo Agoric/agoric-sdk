@@ -1,9 +1,9 @@
 const harden = require('@agoric/harden');
 
 function build(E, D, log) {
-  const commsHandler = harden({
-    inbound(peer, body) {
-      log(`ch.inbound ${peer} ${body}`);
+  const receiver = harden({
+    receive(body) {
+      log(`ch.receive ${body}`);
     },
   });
 
@@ -11,13 +11,15 @@ function build(E, D, log) {
     async bootstrap(argv, vats, devices) {
       D(devices.mailbox).registerInboundHandler(vats.vattp);
       await E(vats.vattp).registerMailboxDevice(devices.mailbox);
-      await E(vats.vattp).registerCommsHandler(commsHandler);
-      // await E(vats.comms).init(vats.vattp);
+      const name = 'remote1';
+      const { transmitter, setReceiver } = await E(vats.vattp).addRemote(name);
+      // const receiver = await E(vats.comms).addRemote(name, transmitter);
+      await E(setReceiver).setReceiver(receiver);
 
       if (argv[0] === '1') {
         log('not sending anything');
       } else if (argv[0] === '2') {
-        E(vats.vattp).send('peer1', 'out1');
+        E(transmitter).transmit('out1');
       } else {
         throw new Error(`unknown argv mode '${argv[0]}'`);
       }

@@ -6,6 +6,7 @@ import buildCommand from '../src/devices/command';
 async function test0(t, withSES) {
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['d0', require.resolve('./files-devices/device-0'), {}]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-0'),
   };
@@ -24,10 +25,7 @@ async function test0(t, withSES) {
       },
     ],
   });
-  t.deepEqual(JSON.parse(c.dump().log[1]), [
-    { type: 'export', id: 0 },
-    { type: 'deviceImport', id: 40 },
-  ]);
+  t.deepEqual(JSON.parse(c.dump().log[1]), ['o+0', 'd-70']);
   t.end();
 }
 
@@ -43,6 +41,7 @@ async function test1(t, withSES) {
   const sharedArray = [];
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [
       [
         'd1',
@@ -56,12 +55,12 @@ async function test1(t, withSES) {
   };
   const c = await buildVatController(config, withSES);
   await c.step();
-  c.queueToExport('_bootstrap', 0, 'step1', '{"args":[]}');
+  c.queueToExport('_bootstrap', 'o+0', 'step1', '{"args":[]}');
   await c.step();
   console.log(c.dump().log);
   t.deepEqual(c.dump().log, [
     'callNow',
-    'invoke 0 set',
+    'invoke d+0 set',
     '{"data":"{}","slots":[]}',
   ]);
   t.deepEqual(sharedArray, ['pushed']);
@@ -79,6 +78,7 @@ test('d1 without SES', async t => {
 async function test2(t, mode, withSES) {
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['d2', require.resolve('./files-devices/device-2'), {}]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
@@ -177,6 +177,7 @@ test('d2.5 without SES', async t => {
 async function testState(t, withSES) {
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['d3', require.resolve('./files-devices/device-3'), {}]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-3'),
     initialState: JSON.stringify({}),
@@ -188,7 +189,7 @@ async function testState(t, withSES) {
   await c1.run();
   t.deepEqual(c1.dump().log, ['undefined', 'w+r', 'called', 'got {"s":"new"}']);
   t.deepEqual(JSON.parse(c1.getState()).devices.d3.deviceState, { s: 'new' });
-  t.deepEqual(JSON.parse(c1.getState()).devices.d3.nextImportID, 10);
+  t.deepEqual(JSON.parse(c1.getState()).devices.d3.nextObjectID, 10);
 
   t.end();
 }
@@ -206,6 +207,7 @@ async function testMailboxOutbound(t, withSES) {
   const mb = buildMailbox(s);
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['mailbox', mb.srcPath, mb.endowments]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
@@ -247,6 +249,7 @@ async function testMailboxInbound(t, withSES) {
   const mb = buildMailbox(s);
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['mailbox', mb.srcPath, mb.endowments]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
@@ -330,6 +333,7 @@ async function testCommandBroadcast(t, withSES) {
   const cm = buildCommand();
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['command', cm.srcPath, cm.endowments]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
@@ -356,6 +360,7 @@ async function testCommandDeliver(t, withSES) {
   const cm = buildCommand();
   const config = {
     vatSources: new Map(),
+    vatOptions: new Map(),
     devices: [['command', cm.srcPath, cm.endowments]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };

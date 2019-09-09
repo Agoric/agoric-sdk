@@ -30,31 +30,3 @@ test('run encouragementBot Demo without SES', async t => {
   t.deepEquals(dump.log, encouragementBotGolden);
   t.end();
 });
-
-const encouragementBotCommsGolden = [
-  '=> setup called',
-  'addEgress called with sender user, index 0, valslot [object Object]',
-  'addIngress called with machineName bot, index 0',
-  '=> user.talkToBot is called with bot',
-  "=> the promise given by the call to user.talkToBot resolved to 'Thanks for the setup. I sure hope I get some encouragement...'",
-  '=> encouragementBot.encourageMe got the name: user',
-  '=> user receives the encouragement: user, you are awesome, keep it up!',
-];
-
-test('run encouragementBotComms Demo with SES', async t => {
-  const dump = await main(true, 'demo/encouragementBotComms', []);
-  t.deepEquals(dump.log, encouragementBotCommsGolden);
-  t.end();
-});
-
-test('run encouragementBotComms Demo without SES', async t => {
-  const dump = await main(false, 'demo/encouragementBotComms');
-  t.deepEquals(dump.log, encouragementBotCommsGolden);
-  t.end();
-});
-
-test('run encouragementBotCommsBang Demo with SES', async t => {
-  const dump = await main(true, 'demo/encouragementBotCommsBang', []);
-  t.deepEquals(dump.log, encouragementBotCommsGolden);
-  t.end();
-});

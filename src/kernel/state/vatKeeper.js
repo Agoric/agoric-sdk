@@ -1,188 +1,91 @@
 import harden from '@agoric/harden';
-import Nat from '@agoric/nat';
-import { insist } from '../insist';
+import { insist } from '../../insist';
+import { parseKernelSlot } from '../parseKernelSlots';
+import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
-export default function makeVatKeeper(state) {
+export default function makeVatKeeper(
+  state,
+  vatID,
+  addKernelObject,
+  addKernelPromise,
+) {
   function createStartingVatState() {
-    // kernelSlotToVatSlot is an object with four properties:
-    //    exports, devices, promises, resolvers.
-    // vatSlotToKernelSlot has imports, deviceImports, promises,
-    //    resolvers
+    state.kernelSlotToVatSlot = {}; // kpNN -> p+NN, etc
+    state.vatSlotToKernelSlot = {}; // p+NN -> kpNN, etc
 
-    state.kernelSlotToVatSlot = {
-      exports: {},
-      devices: {},
-      promises: {},
-      resolvers: {},
-    };
-    state.vatSlotToKernelSlot = {
-      imports: {},
-      deviceImports: {},
-      promises: {},
-      resolvers: {},
-    };
-
-    state.nextIDs = {
-      import: 10,
-      promise: 20,
-      resolver: 30,
-      deviceImport: 40,
-    };
+    state.nextObjectID = 50;
+    state.nextPromiseID = 60;
+    state.nextDeviceID = 70;
 
     state.transcript = [];
   }
 
-  const allowedVatSlotTypes = [
-    'export',
-    'import',
-    'deviceImport',
-    'promise',
-    'resolver',
-  ];
-
-  const allowedKernelSlotTypes = ['export', 'device', 'promise', 'resolver'];
-
-  function insistVatSlot(slot) {
-    const properties = Object.getOwnPropertyNames(slot);
+  function insistVatSlotType(type, slot) {
     insist(
-      properties.length === 2,
-      `wrong number of properties for a vatSlot ${JSON.stringify(slot)}`,
+      type === parseVatSlot(slot).type,
+      `vatSlot ${slot} is not of type ${type}`,
     );
-    Nat(slot.id);
-    insist(
-      allowedVatSlotTypes.includes(slot.type),
-      `unknown slot.type in '${JSON.stringify(slot)}'`,
-    );
-  }
-
-  function insistKernelSlot(slot) {
-    const properties = Object.getOwnPropertyNames(slot);
-    insist(
-      properties.length === 3 ||
-        (properties.length === 2 &&
-          (slot.type === 'promise' || slot.type === 'resolver')),
-      `wrong number of properties for a kernelSlot ${JSON.stringify(slot)}`,
-    ); // a kernel slot has a vatID property, unless it is a promise or a resolver
-    Nat(slot.id);
-    insist(
-      allowedKernelSlotTypes.includes(slot.type),
-      `unknown slot.type in '${JSON.stringify(slot)}'`,
-    );
-  }
-
-  function getKernelSlotTypedMapAndKey(kernelSlot) {
-    insistKernelSlot(kernelSlot);
-
-    const { type, id } = kernelSlot;
-
-    const tables = state.kernelSlotToVatSlot;
-
-    switch (type) {
-      case 'promise': {
-        return {
-          table: tables.promises,
-          key: id,
-        };
-      }
-      case 'resolver': {
-        return {
-          table: tables.resolvers,
-          key: id,
-        };
-      }
-      case 'export': {
-        return {
-          table: tables.exports,
-          key: `${kernelSlot.vatID}-${id}`,
-        };
-      }
-      case 'device': {
-        return {
-          table: tables.devices,
-          key: `${kernelSlot.deviceName}-${id}`,
-        };
-      }
-      default:
-        throw new Error(`unexpected kernelSlot type ${kernelSlot.type}`);
-    }
-  }
-
-  function getVatSlotTypedMapAndKey(vatSlot) {
-    insistVatSlot(vatSlot);
-    const { type, id } = vatSlot;
-
-    const tables = state.vatSlotToKernelSlot;
-    let table;
-    // imports, deviceImports, promises, resolvers
-
-    switch (type) {
-      case 'import': {
-        table = tables.imports;
-        break;
-      }
-      case 'deviceImport': {
-        table = tables.deviceImports;
-        break;
-      }
-      case 'promise': {
-        table = tables.promises;
-        break;
-      }
-      case 'resolver': {
-        table = tables.resolvers;
-        break;
-      }
-      default:
-        throw new Error(`unexpected vatSlot type ${vatSlot.type}`);
-    }
-    return {
-      table,
-      key: `${type}-${id}`,
-    };
-  }
-
-  function getVatSlotTypeFromKernelSlot(kernelSlot) {
-    switch (kernelSlot.type) {
-      case 'export':
-        return 'import';
-      case 'device':
-        return 'deviceImport';
-      case 'promise':
-        return 'promise';
-      case 'resolver':
-        return 'resolver';
-      default:
-        throw new Error('unrecognized kernelSlot type');
-    }
   }
 
   function mapVatSlotToKernelSlot(vatSlot) {
-    const { table, key } = getVatSlotTypedMapAndKey(vatSlot);
-    const kernelSlot = table[key];
-    if (kernelSlot === undefined) {
-      throw new Error(`unknown ${vatSlot.type} slot '${vatSlot.id}'`);
+    insist(`${vatSlot}` === vatSlot, 'non-string vatSlot');
+    const existing = state.vatSlotToKernelSlot[vatSlot];
+    if (existing === undefined) {
+      const { type, allocatedByVat } = parseVatSlot(vatSlot);
+
+      if (allocatedByVat) {
+        let kernelSlot;
+        if (type === 'object') {
+          kernelSlot = addKernelObject(vatID);
+        } else if (type === 'device') {
+          throw new Error(`normal vats aren't allowed to export device nodes`);
+        } else if (type === 'promise') {
+          kernelSlot = addKernelPromise(vatID);
+        } else {
+          throw new Error(`unknown type ${type}`);
+        }
+        state.vatSlotToKernelSlot[vatSlot] = kernelSlot;
+        state.kernelSlotToVatSlot[kernelSlot] = vatSlot;
+      } else {
+        // the vat didn't allocate it, and the kernel didn't allocate it
+        // (else it would have been in the c-list), so it must be bogus
+        throw new Error(`unknown vatSlot ${vatSlot}`);
+      }
     }
-    return kernelSlot;
+
+    return state.vatSlotToKernelSlot[vatSlot];
   }
 
   function mapKernelSlotToVatSlot(kernelSlot) {
-    const { table, key } = getKernelSlotTypedMapAndKey(kernelSlot);
-    if (!Object.getOwnPropertyDescriptor(table, `${key}`)) {
-      // must add both directions
-      const vatSlotType = getVatSlotTypeFromKernelSlot(kernelSlot);
-      const { nextIDs } = state;
-      const newVatSlotID = nextIDs[vatSlotType];
-      nextIDs[vatSlotType] = newVatSlotID + 1;
-      const vatSlot = { type: vatSlotType, id: newVatSlotID };
-      table[`${key}`] = vatSlot;
-      const { table: vatSlotTable, key: vatSlotKey } = getVatSlotTypedMapAndKey(
-        vatSlot,
-      );
-      vatSlotTable[vatSlotKey] = kernelSlot;
+    insist(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
+    const existing = state.kernelSlotToVatSlot[kernelSlot];
+    if (existing === undefined) {
+      const { type } = parseKernelSlot(kernelSlot);
+
+      let vatSlot;
+      if (type === 'object') {
+        const id = state.nextObjectID;
+        state.nextObjectID += 1;
+        vatSlot = makeVatSlot(type, false, id);
+      } else if (type === 'device') {
+        const id = state.nextDeviceID;
+        state.nextDeviceID += 1;
+        vatSlot = makeVatSlot(type, false, id);
+      } else if (type === 'promise') {
+        const id = state.nextPromiseID;
+        state.nextPromiseID += 1;
+        vatSlot = makeVatSlot(type, false, id);
+      } else {
+        throw new Error(`unknown type ${type}`);
+      }
+
+      state.vatSlotToKernelSlot[vatSlot] = kernelSlot;
+      state.kernelSlotToVatSlot[kernelSlot] = vatSlot;
     }
-    return table[`${key}`];
+
+    return state.kernelSlotToVatSlot[kernelSlot];
   }
 
   function getTranscript() {
@@ -194,33 +97,12 @@ export default function makeVatKeeper(state) {
   }
 
   // pretty print for logging and testing
-  function dumpState(vatID) {
+  function dumpState() {
     const res = [];
-
-    function printSlots(vatSlot) {
-      const { table, key } = getVatSlotTypedMapAndKey(vatSlot);
-      const kernelSlot = table[key];
-      if (vatSlot.type === 'promise' || vatSlot.type === 'resolver') {
-        res.push([vatID, vatSlot.type, vatSlot.id, kernelSlot.id]);
-      } else {
-        res.push([
-          vatID,
-          vatSlot.type,
-          vatSlot.id,
-          kernelSlot.type,
-          kernelSlot.vatID,
-          kernelSlot.id,
-        ]);
-      }
-    }
-
-    // 'exports', 'devices', 'promises', 'resolvers'
-
-    for (const n of ['exports', 'devices', 'promises', 'resolvers']) {
-      const t = state.kernelSlotToVatSlot[n];
-      Object.getOwnPropertyNames(t).forEach(name => printSlots(t[name]));
-    }
-
+    Object.getOwnPropertyNames(state.kernelSlotToVatSlot).forEach(ks => {
+      const vs = state.kernelSlotToVatSlot[ks];
+      res.push([ks, vatID, vs]);
+    });
     return harden(res);
   }
 
@@ -231,7 +113,6 @@ export default function makeVatKeeper(state) {
     getTranscript,
     dumpState,
     addToTranscript,
-    insistKernelSlot,
-    insistVatSlot,
+    insistVatSlotType,
   });
 }
