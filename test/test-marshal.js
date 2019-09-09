@@ -3,6 +3,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import { makeMarshal, mustPassByPresence } from '@agoric/marshal';
+import maybeExtendPromise from '@agoric/eventual-send';
 
 import { makeMarshaller } from '../src/kernel/liveSlots';
 import makePromise from '../src/makePromise';
@@ -17,6 +18,8 @@ async function prep() {
   const controller = await buildVatController(config, false);
   await controller.run();
 }
+
+maybeExtendPromise(Promise);
 
 test('serialize static data', t => {
   const m = makeMarshal();
