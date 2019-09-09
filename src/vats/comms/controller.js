@@ -23,17 +23,32 @@ export function deliverToController(
   syscall,
 ) {
   function doAddRemote(args) {
+    // comms!addRemote(name, tx, setRx)
+    //  we then do setRx!setReceiver(rx)
     const name = args[0];
     insist(name === `${name}`, `bad addRemote name ${name}`);
     if (args[1]['@qclass'] !== 'slot' || args[1].index !== 0) {
       throw new Error(`unexpected args for addRemote(): ${data}`);
     }
+    if (args[2]['@qclass'] !== 'slot' || args[2].index !== 1) {
+      throw new Error(`unexpected args for addRemote(): ${data}`);
+    }
     const transmitterID = slots[args[1].index];
+    const setReceiverID = slots[args[2].index];
+
     const { receiverID } = addRemote(state, name, transmitterID);
-    syscall.fulfillToPresence(result, receiverID);
+
+    const rxArg = { '@qclass': 'slot', index: 0 };
+    const setReceiverBody = JSON.stringify({ args: [rxArg] });
+    syscall.send(setReceiverID, 'setReceiver', setReceiverBody, [receiverID]);
+    // todo: consider, this leaves one message (setReceiver) on the queue,
+    // rather than giving the caller of comms!addRemote() something to
+    // synchronize upon. I don't think it hurts, but might affect debugging.
+    syscall.fulfillToData(result, UNDEFINED, []);
   }
 
   function doAddEgress(args) {
+    // comms!addEgress(name, index, obj)
     const remoteName = args[0];
     insist(state.names.has(remoteName), `unknown remote name ${remoteName}`);
     const remoteID = state.names.get(remoteName);
@@ -47,6 +62,7 @@ export function deliverToController(
   }
 
   function doAddIngress(args) {
+    // obj = comms!addIngress(name, index)
     const remoteName = args[0];
     insist(state.names.has(remoteName), `unknown remote name ${remoteName}`);
     const remoteID = state.names.get(remoteName);
@@ -57,12 +73,10 @@ export function deliverToController(
 
   // This is a degenerate form of deserialization, just enough to handle the
   // handful of methods implemented by the commsController. 'argsbytes' can
-  // normally have arbitrary {'@qclass':'slot', index} objects, which point
-  // into the 'slots' array. The only method that expects one is init(), and
-  // it always expects it in args[2], so we manually translate it here.
+  // normally have arbitrary {'@qclass': whatever} objects, but we only
+  // handle {'@qclass':'slot', index} objects, which point into the 'slots'
+  // array.
   const { args } = JSON.parse(data);
-
-  // translate args that are slots to the slot rather than qclass
 
   switch (method) {
     case 'addRemote':
