@@ -8,7 +8,7 @@ import {
   markPromiseAsResolved,
 } from './state';
 import { insistRemoteID } from './remote';
-import { insist } from '../../kernel/insist';
+import { insist } from '../../insist';
 
 function getRemoteFor(state, target) {
   if (state.objectTable.has(target)) {

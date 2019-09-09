@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { insist } from '../../kernel/insist';
+import { insist } from '../../insist';
 
 function build(E, D) {
   let mailbox; // mailbox device

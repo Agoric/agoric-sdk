@@ -1,6 +1,6 @@
 import Nat from '@agoric/nat';
 import { makeVatSlot, insistVatType } from '../parseVatSlots';
-import { insist } from '../../kernel/insist';
+import { insist } from '../../insist';
 
 function makeRemoteID(index) {
   return `remote${Nat(index)}`;

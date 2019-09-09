@@ -1,4 +1,4 @@
-import { insist } from '../../kernel/insist';
+import { insist } from '../../insist';
 import { makeVatSlot } from '../parseVatSlots';
 
 export function makeState() {

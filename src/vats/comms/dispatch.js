@@ -5,7 +5,7 @@ import { makeState } from './state';
 import { deliverToRemote, resolvePromiseToRemote } from './outbound';
 import { deliverFromRemote } from './inbound';
 import { deliverToController } from './controller';
-import { insist } from '../../kernel/insist';
+import { insist } from '../../insist';
 
 function transmit(syscall, state, remoteID, msg) {
   const remote = getRemote(state, remoteID);

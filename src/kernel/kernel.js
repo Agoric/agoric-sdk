@@ -9,7 +9,7 @@ import makeDeviceManager from './deviceManager';
 import makeKernelKeeper from './state/kernelKeeper';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { makeVatSlot } from '../vats/parseVatSlots';
-import { insist } from './insist';
+import { insist } from '../insist';
 
 function abbreviateReviver(_, arg) {
   if (typeof arg === 'string' && arg.length >= 40) {

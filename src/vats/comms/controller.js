@@ -1,7 +1,7 @@
 import Nat from '@agoric/nat';
 import { addRemote } from './remote';
 import { addEgress, addIngress } from './clist';
-import { insist } from '../../kernel/insist';
+import { insist } from '../../insist';
 
 const UNDEFINED = JSON.stringify({ '@qclass': 'undefined' });
 

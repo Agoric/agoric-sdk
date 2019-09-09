@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import { insist } from '../kernel/insist';
+import { insist } from '../insist';
 
 // Object/promise references (in vats) contain a three-tuple of (type,
 // allocator flag, index). The 'ownership' flag is expressed as a sign: "-"

@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 import djson from './djson';
-import { insist } from './insist';
+import { insist } from '../insist';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../vats/parseVatSlots';
 

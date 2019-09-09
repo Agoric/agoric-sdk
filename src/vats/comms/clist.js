@@ -17,7 +17,7 @@ import {
   setPromiseDecider,
   setPromiseSubscriber,
 } from './state';
-import { insist } from '../../kernel/insist';
+import { insist } from '../../insist';
 
 export function getOutbound(state, remoteID, target) {
   const remote = getRemote(state, remoteID);

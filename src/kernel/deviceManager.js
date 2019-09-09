@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { insist } from './insist';
+import { insist } from '../insist';
 import { insistKernelType } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../vats/parseVatSlots';
 

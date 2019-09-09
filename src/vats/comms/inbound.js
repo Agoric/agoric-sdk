@@ -6,7 +6,7 @@ import {
   insistPromiseDeciderIs,
   markPromiseAsResolved,
 } from './state';
-import { insist } from '../../kernel/insist';
+import { insist } from '../../insist';
 
 export function deliverFromRemote(syscall, state, remoteID, message) {
   const command = message.split(':', 1)[0];
