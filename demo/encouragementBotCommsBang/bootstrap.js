@@ -27,8 +27,7 @@ export default function setup(syscall, state, helpers) {
             transmitter: txToBotForUser,
             setReceiver: setRxFromBotForUser,
           } = await vats.uservattp!addRemote(BOT);
-          const rxFromBotForUser = await vats.usercomms!addRemote(BOT, txToBotForUser);
-          setRxFromBotForUser!setReceiver(rxFromBotForUser);
+          const rxFromBotForUser = await vats.usercomms!addRemote(BOT, txToBotForUser, setRxFromBotForUser);
 
           D(devices.loopbox).registerInboundHandler(BOT, vats.botvattp);
           const botsender = D(devices.loopbox).makeSender(BOT);
@@ -37,8 +36,7 @@ export default function setup(syscall, state, helpers) {
             transmitter: txToUserForBot,
             setReceiver: setRxFromUserForBot,
           } = await vats.botvattp!addRemote(USER);
-          const rxFromUserForBot = await vats.botcomms!addRemote(USER, txToUserForBot);
-          setRxFromUserForBot!setReceiver(rxFromUserForBot);
+          const rxFromUserForBot = await vats.botcomms!addRemote(USER, txToUserForBot, setRxFromUserForBot);
 
           await vats.botcomms!addEgress(
             USER,

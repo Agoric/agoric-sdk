@@ -13,7 +13,7 @@ function build(E, D, log) {
       await E(vats.vattp).registerMailboxDevice(devices.mailbox);
       const name = 'remote1';
       const { transmitter, setReceiver } = await E(vats.vattp).addRemote(name);
-      // const receiver = await E(vats.comms).addRemote(name, transmitter);
+      // replace the E(vats.comms).addRemote() we'd normally do
       await E(setReceiver).setReceiver(receiver);
 
       if (argv[0] === '1') {

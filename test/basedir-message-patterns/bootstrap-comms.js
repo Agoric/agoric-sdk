@@ -15,11 +15,11 @@ function build(E, D) {
         transmitter: txToRightForLeft,
         setReceiver: setRxFromRightForLeft,
       } = await E(vats.leftvattp).addRemote(RIGHT);
-      const rxFromRightForLeft = await E(vats.leftcomms).addRemote(
+      await E(vats.leftcomms).addRemote(
         RIGHT,
         txToRightForLeft,
+        setRxFromRightForLeft,
       );
-      await E(setRxFromRightForLeft).setReceiver(rxFromRightForLeft);
 
       D(devices.loopbox).registerInboundHandler(RIGHT, vats.rightvattp);
       const rightsender = D(devices.loopbox).makeSender(RIGHT);
@@ -29,11 +29,11 @@ function build(E, D) {
         transmitter: txToLeftForRight,
         setReceiver: setRxFromLeftForRight,
       } = await E(vats.rightvattp).addRemote(LEFT);
-      const rxFromLeftForRight = await E(vats.rightcomms).addRemote(
+      await E(vats.rightcomms).addRemote(
         LEFT,
         txToLeftForRight,
+        setRxFromLeftForRight,
       );
-      await E(setRxFromLeftForRight).setReceiver(rxFromLeftForRight);
 
       // get B set up
       const { bob, bert } = await E(vats.b).init();
