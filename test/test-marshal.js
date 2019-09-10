@@ -10,27 +10,27 @@ test('serialize static data', t => {
   const m = makeMarshal();
   const ser = val => m.serialize(val);
   t.throws(() => ser([1, 2]), /cannot pass non-frozen objects like .*/);
-  t.deepEqual(ser(harden([1, 2])), { argsString: '[1,2]', slots: [] });
-  t.deepEqual(ser(harden({ foo: 1 })), { argsString: '{"foo":1}', slots: [] });
-  t.deepEqual(ser(true), { argsString: 'true', slots: [] });
-  t.deepEqual(ser(1), { argsString: '1', slots: [] });
-  t.deepEqual(ser('abc'), { argsString: '"abc"', slots: [] });
+  t.deepEqual(ser(harden([1, 2])), { body: '[1,2]', slots: [] });
+  t.deepEqual(ser(harden({ foo: 1 })), { body: '{"foo":1}', slots: [] });
+  t.deepEqual(ser(true), { body: 'true', slots: [] });
+  t.deepEqual(ser(1), { body: '1', slots: [] });
+  t.deepEqual(ser('abc'), { body: '"abc"', slots: [] });
   t.deepEqual(ser(undefined), {
-    argsString: '{"@qclass":"undefined"}',
+    body: '{"@qclass":"undefined"}',
     slots: [],
   });
-  t.deepEqual(ser(-0), { argsString: '{"@qclass":"-0"}', slots: [] });
-  t.deepEqual(ser(NaN), { argsString: '{"@qclass":"NaN"}', slots: [] });
+  t.deepEqual(ser(-0), { body: '{"@qclass":"-0"}', slots: [] });
+  t.deepEqual(ser(NaN), { body: '{"@qclass":"NaN"}', slots: [] });
   t.deepEqual(ser(Infinity), {
-    argsString: '{"@qclass":"Infinity"}',
+    body: '{"@qclass":"Infinity"}',
     slots: [],
   });
   t.deepEqual(ser(-Infinity), {
-    argsString: '{"@qclass":"-Infinity"}',
+    body: '{"@qclass":"-Infinity"}',
     slots: [],
   });
   t.deepEqual(ser(Symbol.for('sym1')), {
-    argsString: '{"@qclass":"symbol","key":"sym1"}',
+    body: '{"@qclass":"symbol","key":"sym1"}',
     slots: [],
   });
   let bn;
@@ -43,7 +43,7 @@ test('serialize static data', t => {
   }
   if (bn) {
     t.deepEqual(ser(bn), {
-      argsString: '{"@qclass":"bigint","digits":"4"}',
+      body: '{"@qclass":"bigint","digits":"4"}',
       slots: [],
     });
   }
@@ -55,7 +55,7 @@ test('serialize static data', t => {
     em = harden(e);
   }
   t.deepEqual(ser(em), {
-    argsString: '{"@qclass":"error","name":"ReferenceError","message":"msg"}',
+    body: '{"@qclass":"error","name":"ReferenceError","message":"msg"}',
     slots: [],
   });
 
@@ -64,7 +64,7 @@ test('serialize static data', t => {
 
 test('unserialize static data', t => {
   const m = makeMarshal();
-  const uns = val => m.unserialize(val, []);
+  const uns = body => m.unserialize({ body, slots: [] });
   t.equal(uns('1'), 1);
   t.equal(uns('"abc"'), 'abc');
   t.equal(uns('false'), false);
@@ -132,7 +132,7 @@ test('serialize ibid cycle', t => {
   harden(cycle);
 
   t.deepEqual(ser(cycle), {
-    argsString: '["a",{"@qclass":"ibid","index":0},"c"]',
+    body: '["a",{"@qclass":"ibid","index":0},"c"]',
     slots: [],
   });
   t.end();
@@ -140,7 +140,7 @@ test('serialize ibid cycle', t => {
 
 test('forbid ibid cycle', t => {
   const m = makeMarshal();
-  const uns = val => m.unserialize(val, []);
+  const uns = body => m.unserialize({ body, slots: [] });
   t.throws(
     () => uns('["a",{"@qclass":"ibid","index":0},"c"]'),
     /Ibid cycle at 0/,
@@ -150,7 +150,7 @@ test('forbid ibid cycle', t => {
 
 test('unserialize ibid cycle', t => {
   const m = makeMarshal();
-  const uns = val => m.unserialize(val, [], 'warnOfCycles');
+  const uns = body => m.unserialize({ body, slots: [] }, 'warnOfCycles');
   const cycle = uns('["a",{"@qclass":"ibid","index":0},"c"]');
   t.ok(Object.is(cycle[1], cycle));
   t.end();
@@ -163,7 +163,7 @@ test('null cannot be pass-by-presence', t => {
 
 test('mal-formed @qclass', t => {
   const m = makeMarshal();
-  const uns = val => m.unserialize(val, []);
+  const uns = body => m.unserialize({ body, slots: [] });
   t.throws(() => uns('{"@qclass": 0}'), /invalid qclass/);
   t.end();
 });
