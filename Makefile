@@ -121,7 +121,7 @@ docker-push-setup-solo:
 	docker push $(REPOSITORY)-setup-solo:$(TAG)
 
 compile-go: go.sum
-	GO111MODULE=on go build -v -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go
+	go build -v -mod=readonly -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go
 	test "`uname -s 2>/dev/null`" != Darwin || install_name_tool -id `pwd`/lib/libagcosmosdaemon.so lib/libagcosmosdaemon.so
 
 build: compile-go
@@ -130,9 +130,7 @@ compile-node:
 	test ! -d node_modules/bindings || npm run build
 
 install: go.sum
-	# Not needed, because we librarify ./cmd/ag-chain-cosmos as ./lib/libagcosmosdaemon.so
-	#GO111MODULE=on go install -tags "$(build_tags)" ./cmd/ag-chain-cosmos
-	GO111MODULE=on go install -v -tags "$(build_tags)" ./cmd/ag-cosmos-helper
+	go install -v -mod=readonly -tags "$(build_tags)" ./cmd/ag-cosmos-helper
 
 go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"

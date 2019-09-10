@@ -1,18 +1,19 @@
-package swingset
+package keeper
 
 import (
 	"sort"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/x/bank"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/bank"
+	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
 )
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	coinKeeper bank.Keeper
+	CoinKeeper bank.Keeper
 
 	storeKey sdk.StoreKey // Unexposed key to access store from sdk.Context
 
@@ -22,40 +23,40 @@ type Keeper struct {
 // NewKeeper creates new instances of the swingset Keeper
 func NewKeeper(coinKeeper bank.Keeper, storeKey sdk.StoreKey, cdc *codec.Codec) Keeper {
 	return Keeper{
-		coinKeeper: coinKeeper,
+		CoinKeeper: coinKeeper,
 		storeKey:   storeKey,
 		cdc:        cdc,
 	}
 }
 
 // Gets generic storage
-func (k Keeper) GetStorage(ctx sdk.Context, path string) Storage {
+func (k Keeper) GetStorage(ctx sdk.Context, path string) types.Storage {
 	//fmt.Printf("GetStorage(%s)\n", path);
 	store := ctx.KVStore(k.storeKey)
 	fullPath := "data:" + path
 	if !store.Has([]byte(fullPath)) {
-		return Storage{""}
+		return types.Storage{""}
 	}
 	bz := store.Get([]byte(fullPath))
-	var storage Storage
+	var storage types.Storage
 	k.cdc.MustUnmarshalBinaryBare(bz, &storage)
 	return storage
 }
 
-func (k Keeper) GetKeys(ctx sdk.Context, path string) Keys {
+func (k Keeper) GetKeys(ctx sdk.Context, path string) types.Keys {
 	store := ctx.KVStore(k.storeKey)
 	fullPath := "keys:" + path
 	if !store.Has([]byte(fullPath)) {
-		return NewKeys()
+		return types.NewKeys()
 	}
 	bz := store.Get([]byte(fullPath))
-	var keys Keys
+	var keys types.Keys
 	k.cdc.MustUnmarshalBinaryBare(bz, &keys)
 	return keys
 }
 
 // Sets the entire generic storage for a path
-func (k Keeper) SetStorage(ctx sdk.Context, path string, storage Storage) {
+func (k Keeper) SetStorage(ctx sdk.Context, path string, storage types.Storage) {
 	store := ctx.KVStore(k.storeKey)
 
 	fullPath := "data:" + path
@@ -103,20 +104,20 @@ func (k Keeper) SetStorage(ctx sdk.Context, path string, storage Storage) {
 }
 
 // Gets the entire mailbox struct for a peer
-func (k Keeper) GetMailbox(ctx sdk.Context, peer string) Storage {
+func (k Keeper) GetMailbox(ctx sdk.Context, peer string) types.Storage {
 	store := ctx.KVStore(k.storeKey)
 	path := "data:mailbox." + peer
 	if !store.Has([]byte(path)) {
-		return NewMailbox()
+		return types.NewMailbox()
 	}
 	bz := store.Get([]byte(path))
-	var mailbox Storage
+	var mailbox types.Storage
 	k.cdc.MustUnmarshalBinaryBare(bz, &mailbox)
 	return mailbox
 }
 
 // Sets the entire mailbox struct for a peer
-func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox Storage) {
+func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox types.Storage) {
 	store := ctx.KVStore(k.storeKey)
 	path := "data:mailbox." + peer
 	store.Set([]byte(path), k.cdc.MustMarshalBinaryBare(mailbox))

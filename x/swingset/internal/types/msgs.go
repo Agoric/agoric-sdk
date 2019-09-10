@@ -1,8 +1,10 @@
-package swingset
+package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
+
+const RouterKey = ModuleName // this was defined in your key.go file
 
 // MsgDeliverInbound defines a DeliverInbound message
 type MsgDeliverInbound struct {
@@ -24,7 +26,7 @@ func NewMsgDeliverInbound(peer string, msgs *Messages, submitter sdk.AccAddress)
 }
 
 // Route should return the name of the module
-func (msg MsgDeliverInbound) Route() string { return "swingset" }
+func (msg MsgDeliverInbound) Route() string { return RouterKey }
 
 // Type should return the action
 func (msg MsgDeliverInbound) Type() string { return "deliver" }

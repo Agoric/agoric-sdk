@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	// "github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -19,7 +21,7 @@ type deliverInboundAction struct {
 	BlockHeight int64           `json:"blockHeight"`
 }
 
-// FIXME: Get rid of this globals in exchange for a field on some object.
+// FIXME: Get rid of this global in exchange for a field on some object.
 var NodeMessageSender func(needReply bool, str string) (string, error)
 
 // FIXME: Get rid of this global in exchange for a method on some object.
