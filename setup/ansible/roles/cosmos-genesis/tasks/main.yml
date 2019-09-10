@@ -1,0 +1,51 @@
+- name: "Add bootstrap coins to {{ service }}"
+  become: yes
+  become_user: "{{ service }}"
+  shell: "{{ service }} add-genesis-account {{ BOOTSTRAP_ADDRESS }} {{ BOOTSTRAP_TOKENS }}"
+
+- name: "Create staking account for {{ service }}"
+  become: yes
+  become_user: "{{ service }}"
+  shell: "echo 'mmmmmmmm' | ag-cosmos-helper keys add {{ STAKER }}"
+  args:
+    creates: "/home/{{ service }}/.ag-cosmos-helper/keys"
+
+- name: "Add staking coins to {{ service }}"
+  become: yes
+  become_user: "{{ service }}"
+  shell: "{{ service }} add-genesis-account $(ag-cosmos-helper keys show {{ STAKER }} -a) {{ STAKER_TOKENS }}"
+
+- name: "Create {{ gentx }}"
+  become: yes
+  become_user: "{{ service }}"
+  file:
+    state: directory
+    path: "{{ gentx }}"
+    mode: 0700
+  vars:
+    gentx: "/home/{{ service }}/.{{ service }}/config/gentx"
+
+- name: "Create first validator gentx"
+  become: yes
+  become_user: "{{ service }}"
+  shell: "echo 'mmmmmmmm' | {{ service }} gentx --name={{ STAKER }} --output-document={{ json }}"
+  vars:
+    json: "/home/{{ service }}/.{{ service }}/config/gentx/node0.json"
+  args:
+    creates: "{{ json }}"
+
+- name: "Collect gentxs"
+  become: yes
+  become_user: "{{ service }}"
+  shell: "{{ service }} collect-gentxs"
+
+- name: "Validate genesis"
+  become: yes
+  become_user: "{{ service }}"
+  shell: "{{ service }} validate-genesis"
+
+- name: "Download genesis.json"
+  fetch:
+    src: "/home/{{ service }}/.{{ service }}/config/genesis.json"
+    flat: yes
+    dest: "{{ data | default(service + '/data') }}/genesis.json"

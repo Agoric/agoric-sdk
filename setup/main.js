@@ -356,25 +356,12 @@ show-config      display the client connection parameters
       );
 
       // Bootstrap the chain nodes.
-/*
-      // FIXME: Would like to do this, but lotion-connect requires genesis.json#validators
       await guardFile(`${COSMOS_DIR}/prepare.stamp`, () =>
         needReMain(['play', 'prepare-cosmos']),
       );
       await guardFile(`${COSMOS_DIR}/genesis.stamp`, () =>
         needReMain(['play', 'cosmos-genesis']),
       );
-*/
-      const genesisFile = `${COSMOS_DIR}/data/genesis.json`;
-      await guardFile(genesisFile, async makeFile => {
-        await needReMain(['play', 'prepare-cosmos']);
-        const merged = await needBacktick(
-          `${shellEscape(
-            progname,
-          )} show-genesis ${COSMOS_DIR}/data/*/genesis.json`,
-        );
-        await makeFile(merged);
-      });
 
       const peersFile = `${COSMOS_DIR}/data/peers.txt`;
       await guardFile(peersFile, async makeFile => {
