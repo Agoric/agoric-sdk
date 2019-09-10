@@ -33,6 +33,7 @@ import {
 
 const PROVISION_DIR = 'provision';
 const PROVISIONER_NODE = 'node0'; // FIXME: Allow configuration.
+const INITIAL_VALIDATOR_POWER = '10';
 const COSMOS_DIR = 'ag-chain-cosmos';
 const CONTROLLER_DIR = 'ag-pserver';
 const SECONDS_BETWEEN_BLOCKS = 5;
@@ -355,6 +356,15 @@ show-config      display the client connection parameters
       );
 
       // Bootstrap the chain nodes.
+/*
+      // FIXME: Would like to do this, but lotion-connect requires genesis.json#validators
+      await guardFile(`${COSMOS_DIR}/prepare.stamp`, () =>
+        needReMain(['play', 'prepare-cosmos']),
+      );
+      await guardFile(`${COSMOS_DIR}/genesis.stamp`, () =>
+        needReMain(['play', 'cosmos-genesis']),
+      );
+*/
       const genesisFile = `${COSMOS_DIR}/data/genesis.json`;
       await guardFile(genesisFile, async makeFile => {
         await needReMain(['play', 'prepare-cosmos']);
@@ -517,7 +527,9 @@ show-config      display the client connection parameters
 
       console.error(
         `Go to the provisioning server at: ${chalk.yellow.bold(pserverUrl)}
-or "${chalk.yellow.bold(`curl '${pserverUrl}/request-code?nickname=MY-NICK'`)}"`,
+or "${chalk.yellow.bold(
+          `curl '${pserverUrl}/request-code?nickname=MY-NICK'`,
+        )}"`,
       );
       if (await exists('/vagrant')) {
         console.log(`to publish a chain-connected server to your host, do something like:
@@ -761,16 +773,42 @@ or "${chalk.yellow.bold(`curl '${pserverUrl}/request-code?nickname=MY-NICK'`)}"`
       const files = args.slice(1);
       const ps = files.map(file => readFile(file));
       const bodies = await Promise.all(ps);
+      const namePkbody = await Promise.all(
+        files.map(async file => {
+          const match = file.match(/^(.*\/)([^/]*)\/genesis.json$/);
+          if (match) {
+            const name = match[2];
+            const pkFile = `${match[1]}${name}/priv_validator_key.json`;
+            if (await exists(pkFile)) {
+              const contents = await readFile(pkFile);
+              return [name, contents];
+            }
+          }
+          return [];
+        }),
+      );
       let first;
       const validators = [];
-      for (const body of bodies) {
+      bodies.forEach((body, index) => {
         const text = String(body);
         const obj = JSON.parse(text);
         if (!first) {
           first = obj;
         }
-        validators.push(...obj.validators);
-      }
+        if (obj.validators) {
+          validators.push(...obj.validators);
+        } else {
+          const [name, pkBody] = namePkbody[index];
+          if (pkBody) {
+            const { priv_key, ...pubkey } = JSON.parse(String(pkBody));
+            validators.push({
+              name,
+              ...pubkey,
+              power: INITIAL_VALIDATOR_POWER,
+            });
+          }
+        }
+      });
       first.validators = validators;
 
       const stdin = streamFromString(JSON.stringify(first, undefined, 2));

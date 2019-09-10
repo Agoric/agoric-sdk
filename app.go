@@ -265,7 +265,11 @@ func (app *swingSetApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) 
 		panic(err)
 	}
 
-	return app.mm.InitGenesis(ctx, genesisState)
+	res := app.mm.InitGenesis(ctx, genesisState)
+	if len(res.Validators) == 0 {
+		res.Validators = req.Validators
+	}
+	return res
 }
 
 func (app *swingSetApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
