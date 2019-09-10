@@ -1,8 +1,9 @@
 User-visible changes in Cosmic SwingSet:
 
-## Release ?? (??)
+## Release v0.8.8 (2019-09-10)
 
 * Enable promise-pipelining on cross-machine messages
+* Upgrade to @agoric/swingset-vat version 0.0.21
 
 ## Release v0.8.7 (2019-09-04)
 
