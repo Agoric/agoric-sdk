@@ -1,5 +1,9 @@
 User-visible changes in Cosmic SwingSet:
 
+## Release v0.9.0 (2019-09-11)
+
+* Upgrade to Cosmos SDK v0.37.0
+
 ## Release v0.8.8 (2019-09-10)
 
 * Enable promise-pipelining on cross-machine messages
