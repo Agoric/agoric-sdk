@@ -359,9 +359,16 @@ show-config      display the client connection parameters
       await guardFile(`${COSMOS_DIR}/prepare.stamp`, () =>
         needReMain(['play', 'prepare-cosmos']),
       );
-      await guardFile(`${COSMOS_DIR}/genesis.stamp`, () =>
-        needReMain(['play', 'cosmos-genesis']),
-      );
+      await guardFile(`${COSMOS_DIR}/genesis.stamp`, async () => {
+        await needReMain(['play', 'cosmos-genesis']);
+
+        // Apply the Agoric overrides from set-json.js.
+        await needDoRun([
+          resolve(__dirname, 'set-json.js'),
+          `${COSMOS_DIR}/data/genesis.json`,
+          '--agoric-genesis-overrides',
+        ]);
+      });
 
       const peersFile = `${COSMOS_DIR}/data/peers.txt`;
       await guardFile(peersFile, async makeFile => {
