@@ -1,0 +1,16 @@
+---
+
+- hosts: "{{ STAKER_NODE }}"
+  user: root
+  strategy: free
+  vars:
+    - data: "{{ SETUP_HOME }}/{{ service }}/data"
+    - service: ag-chain-cosmos
+    - BOOTSTRAP_TOKENS: "{{ lookup('file', SETUP_HOME + '/boot-tokens.txt') }}"
+    - BOOTSTRAP_ADDRESS: "{{ lookup('file', SETUP_HOME + '/ag-pserver/data/node0/boot-address.txt') }}"
+    - STAKER: ag-staker
+    - STAKER_TOKENS: 100000000stake
+    - STAKER_AMOUNT: 1000000stake
+    - STAKER_NODE: node0
+  roles:
+    - cosmos-genesis

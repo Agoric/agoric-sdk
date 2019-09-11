@@ -1,4 +1,4 @@
-package swingset
+package types
 
 import (
 	"encoding/json"

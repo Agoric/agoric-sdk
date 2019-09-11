@@ -4,11 +4,29 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Agoric/cosmic-swingset/x/swingset"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
 	"github.com/spf13/cobra"
 )
+
+func GetQueryCmd(storeKey string, cdc *codec.Codec) *cobra.Command {
+	swingsetQueryCmd := &cobra.Command{
+		Use:                        types.ModuleName,
+		Short:                      "Querying commands for the swingset module",
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       client.ValidateCmd,
+	}
+	swingsetQueryCmd.AddCommand(client.GetCommands(
+		GetCmdGetStorage(storeKey, cdc),
+		GetCmdGetKeys(storeKey, cdc),
+		GetCmdMailbox(storeKey, cdc),
+	)...)
+	return swingsetQueryCmd
+}
+
 
 // GetCmdGetStorage queries information about storage
 func GetCmdGetStorage(queryRoute string, cdc *codec.Codec) *cobra.Command {
@@ -20,13 +38,13 @@ func GetCmdGetStorage(queryRoute string, cdc *codec.Codec) *cobra.Command {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 			path := args[0]
 
-			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/storage/%s", queryRoute, path), nil)
+			res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/storage/%s", queryRoute, path), nil)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "could not find storage path - %s \n", path)
+				fmt.Fprintf(os.Stderr, "could not find storage path - %s: %s\n", path, err)
 				return nil
 			}
 
-			var out swingset.QueryResStorage
+			var out types.QueryResStorage
 			cdc.MustUnmarshalJSON(res, &out)
 			return cliCtx.PrintOutput(out)
 		},
@@ -46,13 +64,13 @@ func GetCmdGetKeys(queryRoute string, cdc *codec.Codec) *cobra.Command {
 				path = args[0]
 			}
 
-			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/keys/%s", queryRoute, path), nil)
+			res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/keys/%s", queryRoute, path), nil)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "could not find keys path - %s \n", path)
+				fmt.Fprintf(os.Stderr, "could not find keys path - %s: %s\n", path, err)
 				return nil
 			}
 
-			var out swingset.QueryResKeys
+			var out types.QueryResKeys
 			cdc.MustUnmarshalJSON(res, &out)
 			return cliCtx.PrintOutput(out)
 		},
@@ -69,13 +87,13 @@ func GetCmdMailbox(queryRoute string, cdc *codec.Codec) *cobra.Command {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 			peer := args[0]
 
-			res, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/mailbox/%s", queryRoute, peer), nil)
+			res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/mailbox/%s", queryRoute, peer), nil)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "could not find peer mailbox - %s \n", peer)
+				fmt.Fprintf(os.Stderr, "could not find peer mailbox - %s: %s\n", peer, err)
 				return nil
 			}
 
-			var out swingset.QueryResStorage
+			var out types.QueryResStorage
 			cdc.MustUnmarshalJSON(res, &out)
 			return cliCtx.PrintOutput(out)
 		},

@@ -199,8 +199,8 @@ def enablePubkey(reactor, opts, config, nickname, pubkey):
             processProtocol = SendInputAndWaitProtocol(d, AG_BOOTSTRAP_PASSWORD + b'\n')
             program = 'ag-cosmos-helper' 
             reactor.spawnProcess(processProtocol, '/usr/local/bin/' + program, args=[
-                program, 'tx', 'send', pubkey,
-                INITIAL_TOKEN, '--from', config['bootstrapAddress'],
+                program, 'tx', 'send', config['bootstrapAddress'], pubkey,
+                INITIAL_TOKEN,
                 '--yes', '--chain-id', config['chainName'],
                 '--node',
                 'tcp://' + rpcAddr,

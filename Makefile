@@ -42,11 +42,14 @@ AGC = ./lib/ag-chain-cosmos
 scenario2-setup:
 	rm -rf ~/.ag-chain-cosmos
 	rm -f ag-cosmos-chain-state.json
-	$(AGC) init --chain-id=$(CHAIN_ID)
-	./setup/set-json.js ~/.ag-chain-cosmos/config/genesis.json --agoric-genesis-overrides
+	$(AGC) init scenario2-chain --chain-id=$(CHAIN_ID)
 	rm -rf t1
 	bin/ag-solo init t1
-	$(AGC) add-genesis-account `cat t1/ag-cosmos-helper-address` $(INITIAL_TOKENS)
+	$(AGC) add-genesis-account `cat t1/ag-cosmos-helper-address` $(INITIAL_TOKENS),100000000stake
+	echo 'mmmmmmmm' | $(AGC) gentx --home-client=t1/ag-cosmos-helper-statedir --name=ag-solo --amount=1000000stake
+	$(AGC) collect-gentxs
+	$(AGC) validate-genesis
+	./setup/set-json.js ~/.ag-chain-cosmos/config/genesis.json --agoric-genesis-overrides
 	$(MAKE) set-local-gci-ingress
 	@echo "ROLE=two_chain BOOT_ADDRESS=\`cat t1/ag-cosmos-helper-address\` agc start"
 	@echo "(cd t1 && ../bin/ag-solo start --role=two_client)"
@@ -121,7 +124,7 @@ docker-push-setup-solo:
 	docker push $(REPOSITORY)-setup-solo:$(TAG)
 
 compile-go: go.sum
-	GO111MODULE=on go build -v -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go
+	go build -v -mod=readonly -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go
 	test "`uname -s 2>/dev/null`" != Darwin || install_name_tool -id `pwd`/lib/libagcosmosdaemon.so lib/libagcosmosdaemon.so
 
 build: compile-go
@@ -130,9 +133,7 @@ compile-node:
 	test ! -d node_modules/bindings || npm run build
 
 install: go.sum
-	# Not needed, because we librarify ./cmd/ag-chain-cosmos as ./lib/libagcosmosdaemon.so
-	#GO111MODULE=on go install -tags "$(build_tags)" ./cmd/ag-chain-cosmos
-	GO111MODULE=on go install -v -tags "$(build_tags)" ./cmd/ag-cosmos-helper
+	go install -v -mod=readonly -tags "$(build_tags)" ./cmd/ag-cosmos-helper
 
 go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"

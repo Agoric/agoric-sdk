@@ -8,29 +8,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/client/lcd"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
-	"github.com/cosmos/cosmos-sdk/client/tx"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
+	bankcmd "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
+	app "github.com/Agoric/cosmic-swingset"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	amino "github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/libs/cli"
-
-	app "github.com/Agoric/cosmic-swingset"
-	ssclient "github.com/Agoric/cosmic-swingset/x/swingset/client"
-	ssrest "github.com/Agoric/cosmic-swingset/x/swingset/client/rest"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
-	auth "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
-	bankcmd "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
-	bank "github.com/cosmos/cosmos-sdk/x/bank/client/rest"
 )
 
-const (
-	storeAcc = "acc"
-	storeSS  = "swingset"
-)
-
-var defaultCLIHome = os.ExpandEnv("$HOME/.ag-cosmos-helper")
-
+// Run is the main program for the SwingSet client
 func Run() {
 	cobra.EnableCommandSorting = false
 
@@ -42,10 +30,6 @@ func Run() {
 	config.SetBech32PrefixForValidator(sdk.Bech32PrefixValAddr, sdk.Bech32PrefixValPub)
 	config.SetBech32PrefixForConsensusNode(sdk.Bech32PrefixConsAddr, sdk.Bech32PrefixConsPub)
 	config.Seal()
-
-	mc := []sdk.ModuleClients{
-		ssclient.NewModuleClient(storeSS, cdc),
-	}
 
 	rootCmd := &cobra.Command{
 		Use:   "ag-cosmos-helper",
@@ -61,9 +45,9 @@ func Run() {
 	// Construct Root Command
 	rootCmd.AddCommand(
 		rpc.StatusCommand(),
-		client.ConfigCmd(defaultCLIHome),
-		queryCmd(cdc, mc),
-		txCmd(cdc, mc),
+		client.ConfigCmd(app.DefaultCLIHome),
+		queryCmd(cdc),
+		txCmd(cdc),
 		client.LineBreak,
 		lcd.ServeCommand(cdc, registerRoutes),
 		client.LineBreak,
@@ -71,7 +55,7 @@ func Run() {
 		client.LineBreak,
 	)
 
-	executor := cli.PrepareMainCmd(rootCmd, "AG_COSMOS_HELPER", defaultCLIHome)
+	executor := cli.PrepareMainCmd(rootCmd, "AG_COSMOS_HELPER", app.DefaultCLIHome)
 	err := executor.Execute()
 	if err != nil {
 		panic(err)
@@ -79,15 +63,11 @@ func Run() {
 }
 
 func registerRoutes(rs *lcd.RestServer) {
-	rs.CliCtx = rs.CliCtx.WithAccountDecoder(rs.Cdc)
-	rpc.RegisterRoutes(rs.CliCtx, rs.Mux)
-	tx.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc)
-	auth.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc, storeAcc)
-	bank.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc, rs.KeyBase)
-	ssrest.RegisterRoutes(rs.CliCtx, rs.Mux, rs.Cdc, storeSS)
+	client.RegisterRoutes(rs.CliCtx, rs.Mux)
+	app.ModuleBasics.RegisterRESTRoutes(rs.CliCtx, rs.Mux)
 }
 
-func queryCmd(cdc *amino.Codec, mc []sdk.ModuleClients) *cobra.Command {
+func queryCmd(cdc *amino.Codec) *cobra.Command {
 	queryCmd := &cobra.Command{
 		Use:     "query",
 		Aliases: []string{"q"},
@@ -95,22 +75,22 @@ func queryCmd(cdc *amino.Codec, mc []sdk.ModuleClients) *cobra.Command {
 	}
 
 	queryCmd.AddCommand(
+		authcmd.GetAccountCmd(cdc),
+		client.LineBreak,
 		rpc.ValidatorCommand(cdc),
 		rpc.BlockCommand(),
-		tx.SearchTxCmd(cdc),
-		tx.QueryTxCmd(cdc),
+		authcmd.QueryTxsByEventsCmd(cdc),
+		authcmd.QueryTxCmd(cdc),
 		client.LineBreak,
-		authcmd.GetAccountCmd(storeAcc, cdc),
 	)
 
-	for _, m := range mc {
-		queryCmd.AddCommand(m.GetQueryCmd())
-	}
+	// add modules' query commands
+	app.ModuleBasics.AddQueryCommands(queryCmd, cdc)
 
 	return queryCmd
 }
 
-func txCmd(cdc *amino.Codec, mc []sdk.ModuleClients) *cobra.Command {
+func txCmd(cdc *amino.Codec) *cobra.Command {
 	txCmd := &cobra.Command{
 		Use:   "tx",
 		Short: "Transactions subcommands",
@@ -120,13 +100,15 @@ func txCmd(cdc *amino.Codec, mc []sdk.ModuleClients) *cobra.Command {
 		bankcmd.SendTxCmd(cdc),
 		client.LineBreak,
 		authcmd.GetSignCommand(cdc),
-		tx.GetBroadcastCommand(cdc),
+		authcmd.GetMultiSignCommand(cdc),
+		client.LineBreak,
+		authcmd.GetBroadcastCommand(cdc),
+		authcmd.GetEncodeCommand(cdc),
 		client.LineBreak,
 	)
 
-	for _, m := range mc {
-		txCmd.AddCommand(m.GetTxCmd())
-	}
+	// add modules' tx commands
+	app.ModuleBasics.AddTxCommands(txCmd, cdc)
 
 	return txCmd
 }

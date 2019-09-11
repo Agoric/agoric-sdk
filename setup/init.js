@@ -382,14 +382,13 @@ const doInit = async (progname, args) => {
     DATACENTERS[PLACEMENT] = [];
     for (const dc of Object.keys(placement).sort()) {
       const nodes = [];
-      for (let i = 0; i < placement[dc]; i++) {
-        instance++;
+      for (let i = 0; i < placement[dc]; i += 1) {
+        instance += 1;
         nodes.push(dc);
       }
-      if (nodes.length == 0) {
-        continue;
+      if (nodes.length !== 0) {
+        DATACENTERS[PLACEMENT].push(...nodes);
       }
-      DATACENTERS[PLACEMENT].push(...nodes);
     }
 
     if (instance === offset) {

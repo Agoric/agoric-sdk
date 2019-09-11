@@ -6,14 +6,31 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Agoric/cosmic-swingset/x/swingset"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/context"
-	"github.com/cosmos/cosmos-sdk/client/utils"
 	"github.com/cosmos/cosmos-sdk/codec"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtxb "github.com/cosmos/cosmos-sdk/x/auth/client/txbuilder"
+	"github.com/cosmos/cosmos-sdk/x/auth"
+	"github.com/cosmos/cosmos-sdk/x/auth/client/utils"
+	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
 )
+
+func GetTxCmd(storeKey string, cdc *codec.Codec) *cobra.Command {
+	swingsetTxCmd := &cobra.Command{
+		Use:                        types.ModuleName,
+		Short:                      "SwingSet transaction subcommands",
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       client.ValidateCmd,
+	}
+
+	swingsetTxCmd.AddCommand(client.PostCommands(
+		GetCmdDeliver(cdc),
+	)...)
+
+	return swingsetTxCmd
+}
 
 // GetCmdDeliver is the CLI command for sending a DeliverInbound transaction
 func GetCmdDeliver(cdc *codec.Codec) *cobra.Command {
@@ -23,13 +40,9 @@ func GetCmdDeliver(cdc *codec.Codec) *cobra.Command {
 		Args:  cobra.ExactArgs(2),
 		
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cliCtx := context.NewCLIContext().WithCodec(cdc).WithAccountDecoder(cdc)
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
 
-			txBldr := authtxb.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
-
-			if err := cliCtx.EnsureAccountExists(); err != nil {
-				return err
-			}
+			txBldr := auth.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
 
 			jsonIn := args[1]
 			if jsonIn[0] == '@' {
@@ -47,20 +60,18 @@ func GetCmdDeliver(cdc *codec.Codec) *cobra.Command {
 					jsonIn = string(jsonBytes)
 				}
 			}
-			msgs, err := swingset.UnmarshalMessagesJSON(jsonIn)
+			msgs, err := types.UnmarshalMessagesJSON(jsonIn)
 			if err != nil {
 				return err
 			}
 
-			msg := swingset.NewMsgDeliverInbound(args[0], msgs, cliCtx.GetFromAddress())
+			msg := types.NewMsgDeliverInbound(args[0], msgs, cliCtx.GetFromAddress())
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
 
-			cliCtx.PrintResponse = true
-
 			// return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, msgs)
-			return utils.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{msg}, false)
+			return utils.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{msg})
 		},
 	}
 }

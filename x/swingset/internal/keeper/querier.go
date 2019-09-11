@@ -1,10 +1,10 @@
-package swingset
+package keeper
 
 import (
-	"encoding/json"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -42,7 +42,7 @@ func queryStorage(ctx sdk.Context, path string, req abci.RequestQuery, keeper Ke
 		return []byte{}, sdk.ErrUnknownRequest("could not get storage")
 	}
 
-	bz, err2 := codec.MarshalJSONIndent(keeper.cdc, QueryResStorage{value})
+	bz, err2 := codec.MarshalJSONIndent(keeper.cdc, types.QueryResStorage{value})
 	if err2 != nil {
 		panic("could not marshal result to JSON")
 	}
@@ -59,7 +59,7 @@ func queryKeys(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keepe
 		return []byte{}, sdk.ErrUnknownRequest("could not get keys")
 	}
 
-	bz, err2 := codec.MarshalJSONIndent(keeper.cdc, QueryResKeys{klist})
+	bz, err2 := codec.MarshalJSONIndent(keeper.cdc, types.QueryResKeys{klist})
 	if err2 != nil {
 		panic("could not marshal result to JSON")
 	}
@@ -78,34 +78,10 @@ func queryMailbox(ctx sdk.Context, path []string, req abci.RequestQuery, keeper 
 		return []byte{}, sdk.ErrUnknownRequest("could not get peer mailbox")
 	}
 
-	bz, err2 := codec.MarshalJSONIndent(keeper.cdc, QueryResStorage{value})
+	bz, err2 := codec.MarshalJSONIndent(keeper.cdc, types.QueryResStorage{value})
 	if err2 != nil {
 		panic("could not marshal result to JSON")
 	}
 
 	return bz, nil
-}
-
-// Query Result Payload for a storage query
-type QueryResStorage struct {
-	Value string `json:"value"`
-}
-
-// implement fmt.Stringer
-func (r QueryResStorage) String() string {
-	return r.Value
-}
-
-// Query Result Payload for a keys query
-type QueryResKeys struct {
-	Keys []string `json:"keys"`
-}
-
-// implement fmt.Stringer
-func (r QueryResKeys) String() string {
-	bytes, err := json.Marshal(r.Keys)
-	if err != nil {
-		return ""
-	}
-	return string(bytes)
 }
