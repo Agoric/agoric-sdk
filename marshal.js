@@ -397,7 +397,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
     const slotMap = new Map(); // maps val (proxy or presence) to
     // index of slots[]
     return {
-      argsString: JSON.stringify(val, makeReplacer(slots, slotMap)),
+      body: JSON.stringify(val, makeReplacer(slots, slotMap)),
       slots,
     };
   }
@@ -530,9 +530,17 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
     };
   }
 
-  function unserialize(str, slots, cyclePolicy = 'forbidCycles') {
-    const rawTree = harden(JSON.parse(str));
-    const fullRevive = makeFullRevive(slots, cyclePolicy);
+  function unserialize(data, cyclePolicy = 'forbidCycles') {
+    if (data.body !== `${data.body}`) {
+      throw new Error(
+        `unserialize() given non-capdata (.body is ${data.body}, not string)`,
+      );
+    }
+    if (!(data.slots instanceof Array)) {
+      throw new Error(`unserialize() given non-capdata (.slots are not Array)`);
+    }
+    const rawTree = harden(JSON.parse(data.body));
+    const fullRevive = makeFullRevive(data.slots, cyclePolicy);
     return harden(fullRevive(rawTree));
   }
 
