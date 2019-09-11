@@ -12,6 +12,7 @@ import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
 import bundleSource from './build-source-bundle';
+import { insistCapData } from './capdata';
 
 const evaluateOptions = makeDefaultEvaluateOptions();
 
@@ -211,9 +212,10 @@ export async function buildVatController(config, withSES = true, argv = []) {
       await kernel.step();
     },
 
-    queueToExport(vatID, facetID, method, argsString) {
+    queueToExport(vatID, facetID, method, args) {
+      insistCapData(args);
       kernel.addExport(vatID, facetID);
-      kernel.queueToExport(vatID, facetID, method, argsString, []);
+      kernel.queueToExport(vatID, facetID, method, args);
     },
 
     callBootstrap(vatID, bootstrapArgv) {

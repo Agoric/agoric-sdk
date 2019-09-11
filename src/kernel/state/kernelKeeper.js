@@ -2,6 +2,7 @@ import harden from '@agoric/harden';
 import makeVatKeeper from './vatKeeper';
 import makeDeviceKeeper from './deviceKeeper';
 import { insistKernelType, makeKernelSlot } from '../parseKernelSlots';
+import { insistCapData } from '../../capdata';
 
 // This holds all the kernel state, including that of each Vat and Device, in
 // a single JSON-serializable object. At any moment (well, really only
@@ -96,25 +97,25 @@ function makeKernelKeeper(initialState) {
     insistKernelType('promise', kernelSlot);
     state.kernelPromises[kernelSlot] = harden({
       state: 'fulfilledToPresence',
-      fulfillSlot: targetSlot,
+      slot: targetSlot,
     });
   }
 
-  function fulfillKernelPromiseToData(kernelSlot, data, slots) {
+  function fulfillKernelPromiseToData(kernelSlot, capdata) {
     insistKernelType('promise', kernelSlot);
+    insistCapData(capdata);
     state.kernelPromises[kernelSlot] = harden({
       state: 'fulfilledToData',
-      fulfillData: data,
-      fulfillSlots: slots,
+      data: capdata,
     });
   }
 
-  function rejectKernelPromise(kernelSlot, val, valSlots) {
+  function rejectKernelPromise(kernelSlot, capdata) {
     insistKernelType('promise', kernelSlot);
+    insistCapData(capdata);
     state.kernelPromises[kernelSlot] = harden({
       state: 'rejected',
-      rejectData: val,
-      rejectSlots: valSlots,
+      data: capdata,
     });
   }
 

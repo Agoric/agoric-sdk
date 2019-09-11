@@ -10,6 +10,8 @@ import makeKernelKeeper from './state/kernelKeeper';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { makeVatSlot } from '../parseVatSlots';
 import { insist } from '../insist';
+import { insistCapData } from '../capdata';
+import { insistMessage } from '../message';
 
 function abbreviateReviver(_, arg) {
   if (typeof arg === 'string' && arg.length >= 40) {
@@ -59,7 +61,7 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     // TODO: create a @qclass=error, once we define those
     // or maybe replicate whatever happens with {}.foo()
     // or 3.foo() etc: "TypeError: {}.foo is not a function"
-    return s;
+    return harden({ body: JSON.stringify(s), slots: [] });
   }
 
   function notifySubscribersAndQueue(kpid, subscribers, queue) {
@@ -76,6 +78,7 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     // re-deliver msg to the now-settled promise, which will forward or
     // reject depending on the new state of the promise
     for (const msg of queue) {
+      insistMessage(msg);
       // todo: this is slightly lazy, sending the message back to the same
       // promise that just got resolved. When this message makes it to the
       // front of the run-queue, we'll look up the resolution. Instead, we
@@ -112,18 +115,21 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
   }
 
   function send(target, msg) {
+    parseKernelSlot(target);
+    insistMessage(msg);
     const m = harden({ type: 'send', target, msg });
     kernelKeeper.addToRunQueue(m);
   }
 
-  function invoke(deviceSlot, method, data, slots) {
+  function invoke(deviceSlot, method, args) {
     insistKernelType('device', deviceSlot);
+    insistCapData(args);
     const deviceName = kernelKeeper.ownerOfKernelDevice(deviceSlot);
     const dev = ephemeral.devices.get(deviceName);
     if (!dev) {
       throw new Error(`unknown deviceRef ${deviceSlot}`);
     }
-    return dev.manager.invoke(deviceSlot, method, data, slots);
+    return dev.manager.invoke(deviceSlot, method, args);
   }
 
   function subscribe(vatID, kpid) {
@@ -166,17 +172,19 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     // must wait for those notifications to be delivered.
   }
 
-  function fulfillToData(vatID, kpid, data, slots) {
+  function fulfillToData(vatID, kpid, data) {
+    insistCapData(data);
     const p = getResolveablePromise(kpid, vatID);
     const { subscribers, queue } = p;
-    kernelKeeper.fulfillKernelPromiseToData(kpid, data, slots);
+    kernelKeeper.fulfillKernelPromiseToData(kpid, data);
     notifySubscribersAndQueue(kpid, subscribers, queue);
   }
 
-  function reject(vatID, kpid, data, slots) {
+  function reject(vatID, kpid, data) {
+    insistCapData(data);
     const p = getResolveablePromise(kpid, vatID);
     const { subscribers, queue } = p;
-    kernelKeeper.rejectKernelPromise(kpid, data, slots);
+    kernelKeeper.rejectKernelPromise(kpid, data);
     notifySubscribersAndQueue(kpid, subscribers, queue);
   }
 
@@ -211,33 +219,40 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     return vat.manager.mapVatSlotToKernelSlot(vatSlot);
   }
 
-  function queueToExport(vatID, vatSlot, method, argsString, slots = []) {
+  function queueToExport(vatID, vatSlot, method, args) {
+    // queue a message on the end of the queue, with 'absolute' kernelSlots.
+    // Use 'step' or 'run' to execute it
     vatID = `${vatID}`;
     vatSlot = `${vatSlot}`;
+    method = `${method}`;
+    // we can't use insistCapData() here: .slots are from the controller's
+    // Realm, not the kernel Realm, so it's the wrong kind of Array
+    insist(args.slots !== undefined, `args not capdata, no .slots: ${args}`);
+    // now we must translate it into a kernel-realm object/array
+    args = harden({
+      body: `${args.body}`,
+      slots: Array.from(args.slots).map(s => `${s}`),
+    });
     if (!started) {
       throw new Error('must do kernel.start() before queueToExport()');
     }
-    slots.forEach(s => parseKernelSlot(s)); // typecheck
-    // queue a message on the end of the queue, with 'absolute' kernelSlots.
-    // Use 'step' or 'run' to execute it
+    insistCapData(args);
+    args.slots.forEach(s => parseKernelSlot(s)); // typecheck
+    // we use result=null because this will be json stringified
+    const msg = harden({ method, args, result: null });
+    insistMessage(msg);
     const kernelSlot = addExport(vatID, vatSlot);
     kernelKeeper.addToRunQueue(
       harden({
         type: 'send',
         target: kernelSlot,
-        msg: {
-          method: `${method}`,
-          argsString: `${argsString}`,
-          // queue() is exposed to the controller's realm, so we must translate
-          // each slot into a kernel-realm object/array
-          slots: Array.from(slots.map(s => `${s}`)),
-          result: null, // this will be json stringified
-        },
+        msg,
       }),
     );
   }
 
   async function deliverToVat(vatID, target, msg) {
+    insistMessage(msg);
     const vat = ephemeral.vats.get(vatID);
     insist(vat, `unknown vatID ${vatID}`);
     try {
@@ -257,15 +272,17 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     return p;
   }
 
-  function deliverToError(kpid, errorData, errorSlots) {
+  function deliverToError(kpid, errorData) {
     // todo: see if this can be merged with reject()
+    insistCapData(errorData);
     const p = getKernelResolveablePromise(kpid);
     const { subscribers, queue } = p;
-    kernelKeeper.rejectKernelPromise(kpid, errorData, errorSlots);
+    kernelKeeper.rejectKernelPromise(kpid, errorData);
     notifySubscribersAndQueue(kpid, subscribers, queue);
   }
 
   async function deliverToTarget(target, msg) {
+    insistMessage(msg);
     const { type } = parseKernelSlot(target);
     if (type === 'object') {
       const vatID = kernelKeeper.ownerOfKernelObject(target);
@@ -273,20 +290,20 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     } else if (type === 'promise') {
       const kp = kernelKeeper.getKernelPromise(target);
       if (kp.state === 'fulfilledToPresence') {
-        await deliverToTarget(kp.fulfillSlot, msg);
+        await deliverToTarget(kp.slot, msg);
       } else if (kp.state === 'redirected') {
         // await deliverToTarget(kp.redirectTarget, msg); // probably correct
         throw new Error('not implemented yet');
       } else if (kp.state === 'fulfilledToData') {
         if (msg.result) {
           const s = `data is not callable, has no method ${msg.method}`;
-          await deliverToError(msg.result, makeError(s), []);
+          await deliverToError(msg.result, makeError(s));
         }
         // todo: maybe log error?
       } else if (kp.state === 'rejected') {
         // TODO would it be simpler to redirect msg.kpid to kp?
         if (msg.result) {
-          await deliverToError(msg.result, kp.rejectData, kp.rejectSlots);
+          await deliverToError(msg.result, kp.data);
         }
       } else if (kp.state === 'unresolved') {
         if (!kp.decider) {
@@ -397,10 +414,10 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
       return harden({ [QCLASS]: 'slot', index: slotIndex });
     }
     const m = makeMarshal(serializeSlot);
-    const s = m.serialize(harden({ args: [argv, vatObj0s, deviceObj0s] }));
+    const args = harden([argv, vatObj0s, deviceObj0s]);
     // queueToExport() takes kernel-refs (ko+NN, kd+NN) in s.slots
     const boot0 = makeVatSlot('object', true, 0);
-    queueToExport(vatID, boot0, 'bootstrap', s.argsString, s.slots);
+    queueToExport(vatID, boot0, 'bootstrap', m.serialize(args));
   }
 
   async function start(bootstrapVatID, argvString) {
