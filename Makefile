@@ -42,11 +42,14 @@ AGC = ./lib/ag-chain-cosmos
 scenario2-setup:
 	rm -rf ~/.ag-chain-cosmos
 	rm -f ag-cosmos-chain-state.json
-	$(AGC) init --chain-id=$(CHAIN_ID)
-	./setup/set-json.js ~/.ag-chain-cosmos/config/genesis.json --agoric-genesis-overrides
+	$(AGC) init scenario2-chain --chain-id=$(CHAIN_ID)
 	rm -rf t1
 	bin/ag-solo init t1
-	$(AGC) add-genesis-account `cat t1/ag-cosmos-helper-address` $(INITIAL_TOKENS)
+	$(AGC) add-genesis-account `cat t1/ag-cosmos-helper-address` $(INITIAL_TOKENS),100000000stake
+	echo 'mmmmmmmm' | $(AGC) gentx --home-client=t1/ag-cosmos-helper-statedir --name=ag-solo
+	$(AGC) collect-gentxs
+	$(AGC) validate-genesis
+	./setup/set-json.js ~/.ag-chain-cosmos/config/genesis.json --agoric-genesis-overrides
 	$(MAKE) set-local-gci-ingress
 	@echo "ROLE=two_chain BOOT_ADDRESS=\`cat t1/ag-cosmos-helper-address\` agc start"
 	@echo "(cd t1 && ../bin/ag-solo start --role=two_client)"
