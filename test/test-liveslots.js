@@ -7,6 +7,14 @@ import evaluateExpr from '@agoric/evaluate'; // to get Promise.makeHandled
 import buildKernel from '../src/kernel/index';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
+function capdata(body, slots = []) {
+  return harden({ body, slots });
+}
+
+function capargs(args, slots = []) {
+  return capdata(JSON.stringify(args), slots);
+}
+
 test('calls', async t => {
   const kernel = buildKernel({ setImmediate });
   const log = [];
@@ -14,8 +22,8 @@ test('calls', async t => {
 
   function setupBootstrap(syscallBootstrap, _state, _helpers) {
     syscall = syscallBootstrap;
-    function deliver(facetID, method, argsString, slots, result) {
-      log.push(['deliver', facetID, method, argsString, slots, result]);
+    function deliver(facetID, method, args, result) {
+      log.push(['deliver', facetID, method, args, result]);
     }
     return { deliver };
   }
@@ -46,7 +54,7 @@ test('calls', async t => {
   const root = kernel.addImport('bootstrap', kernel.addExport('vat', 'o+0'));
 
   // root!one() // sendOnly
-  syscall.send(root, 'one', JSON.stringify({ args: [] }), [], undefined);
+  syscall.send(root, 'one', capargs(['args']), undefined);
 
   await kernel.step();
   t.deepEqual(log.shift(), 'one');
@@ -59,32 +67,30 @@ test('calls', async t => {
   syscall.send(
     root,
     'two',
-    JSON.stringify({ args: [{ '@qclass': 'slot', index: 0 }] }),
-    ['p+1'],
+    capargs([{ '@qclass': 'slot', index: 0 }], ['p+1']),
     undefined,
   );
   await kernel.step();
   t.deepEqual(log.shift(), 'two true');
 
-  syscall.fulfillToData('p+1', JSON.stringify('result'), []);
+  syscall.fulfillToData('p+1', capargs('result'));
   await kernel.step();
   t.deepEqual(log.shift(), ['res', 'result']);
 
-  // pr = makePromise()
+  // pr = makePromise()a
   // root!two(pr.promise)
   // pr.reject('rejection')
 
   syscall.send(
     root,
     'two',
-    JSON.stringify({ args: [{ '@qclass': 'slot', index: 0 }] }),
-    ['p+2'],
+    capargs([{ '@qclass': 'slot', index: 0 }], ['p+2']),
     undefined,
   );
   await kernel.step();
   t.deepEqual(log.shift(), 'two true');
 
-  syscall.reject('p+2', JSON.stringify('rejection'), []);
+  syscall.reject('p+2', capargs('rejection'));
   await kernel.step();
   t.deepEqual(log.shift(), ['rej', 'rejection']);
 
@@ -126,8 +132,12 @@ test('liveslots pipelines to syscall.send', async t => {
   const root = kernel.addImport('b', kernel.addExport('a', 'o+0'));
 
   // root!one(x) // sendOnly
-  const arg0 = JSON.stringify({ args: [{ '@qclass': 'slot', index: 0 }] });
-  syscall.send(root, 'one', arg0, ['o+5'], undefined);
+  syscall.send(
+    root,
+    'one',
+    capargs([{ '@qclass': 'slot', index: 0 }], ['o+5']),
+    undefined,
+  );
 
   await kernel.step();
   // console.log(kernel.dump().runQueue);

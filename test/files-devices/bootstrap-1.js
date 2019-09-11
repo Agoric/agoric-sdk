@@ -4,18 +4,19 @@ export default function setup(syscall, state, helpers, _devices) {
   const { log } = helpers;
   let deviceRef;
   const dispatch = harden({
-    deliver(facetid, method, argsbytes, caps, _result) {
+    deliver(facetid, method, args, _result) {
       if (method === 'bootstrap') {
-        const { args } = JSON.parse(argsbytes);
-        const deviceIndex = args[2].d1.index;
-        deviceRef = caps[deviceIndex];
+        const argb = JSON.parse(args.body);
+        const deviceIndex = argb[2].d1.index;
+        deviceRef = args.slots[deviceIndex];
         if (deviceRef !== 'd-70') {
           throw new Error(`bad deviceRef ${deviceRef}`);
         }
       } else if (method === 'step1') {
         console.log('in step1');
         log(`callNow`);
-        const ret = syscall.callNow(deviceRef, 'set', '{}', []);
+        const setArgs = harden({ body: JSON.stringify([]), slots: [] });
+        const ret = syscall.callNow(deviceRef, 'set', setArgs);
         log(JSON.stringify(ret));
       }
     },

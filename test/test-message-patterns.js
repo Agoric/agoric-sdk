@@ -38,7 +38,7 @@ async function runWithTrace(c) {
         console.log(
           ` send ${q.msg.result} = ${q.target}!${
             q.msg.method
-          }(${q.msg.slots.join(',')} ${q.msg.argsString})`,
+          }(${q.msg.args.slots.join(',')} ${q.msg.args.body})`,
         );
       } else if (q.type === 'notify') {
         console.log(` notify ${q.vatID}: ${q.kpid}`);
