@@ -26,10 +26,10 @@
   become: yes
   become_user: "{{ service }}"
   shell: "{{ service }} tendermint show-validator"
-  register: chain_node_id
+  register: chain_validator
 
 - name: "Create {{ data | default(service + '/data') }}/*/pubkey"
   delegate_to: localhost
   copy:
-    content: "{{ chain_node_id.stdout }}"
+    content: "{{ chain_validator.stdout }}"
     dest: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}/pubkey"

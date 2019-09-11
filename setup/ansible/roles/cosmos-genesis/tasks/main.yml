@@ -2,18 +2,29 @@
   become: yes
   become_user: "{{ service }}"
   shell: "{{ service }} add-genesis-account {{ BOOTSTRAP_ADDRESS }} {{ BOOTSTRAP_TOKENS }}"
+  ignore_errors: true
+
+- name: "Check {{ STAKER }}-* exists"
+  become: yes
+  become_user: "{{ service }}"
+  shell: "ag-cosmos-helper keys show {{ STAKER }}-{{ STAKER_NODE }}"
+  ignore_errors: true
+  register: staker_exists
 
 - name: "Create staking account for {{ service }}"
   become: yes
   become_user: "{{ service }}"
-  shell: "echo 'mmmmmmmm' | ag-cosmos-helper keys add {{ STAKER }}"
-  args:
-    creates: "/home/{{ service }}/.ag-cosmos-helper/keys"
+  shell: "echo 'mmmmmmmm' | ag-cosmos-helper keys add {{ STAKER }}-{{ STAKER_NODE }}"
+  when: staker_exists.rc != 0
 
 - name: "Add staking coins to {{ service }}"
   become: yes
   become_user: "{{ service }}"
-  shell: "{{ service }} add-genesis-account $(ag-cosmos-helper keys show {{ STAKER }} -a) {{ STAKER_TOKENS }}"
+  shell: "\
+    {{ service }} add-genesis-account \
+      $(ag-cosmos-helper keys show {{ STAKER }}-{{ STAKER_NODE }} -a) \
+      {{ STAKER_TOKENS }}"
+  ignore_errors: true
 
 - name: "Create {{ gentx }}"
   become: yes
@@ -28,9 +39,11 @@
 - name: "Create first validator gentx"
   become: yes
   become_user: "{{ service }}"
-  shell: "echo 'mmmmmmmm' | {{ service }} gentx --amount={{ STAKER_AMOUNT }} --name={{ STAKER }} --output-document={{ json }}"
+  shell: "\
+    echo 'mmmmmmmm' | {{ service }} gentx --amount={{ STAKER_AMOUNT }} \
+      --name={{ STAKER }}-{{ STAKER_NODE }} --output-document={{ json }}"
   vars:
-    json: "/home/{{ service }}/.{{ service }}/config/gentx/node0.json"
+    json: "/home/{{ service }}/.{{ service }}/config/gentx/{{ STAKER_NODE }}.json"
   args:
     creates: "{{ json }}"
 

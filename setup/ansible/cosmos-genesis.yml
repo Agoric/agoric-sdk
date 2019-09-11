@@ -1,6 +1,6 @@
 ---
 
-- hosts: node0
+- hosts: "{{ STAKER_NODE }}"
   user: root
   strategy: free
   vars:
@@ -11,5 +11,6 @@
     - STAKER: ag-staker
     - STAKER_TOKENS: 100000000stake
     - STAKER_AMOUNT: 1000000stake
+    - STAKER_NODE: node0
   roles:
     - cosmos-genesis

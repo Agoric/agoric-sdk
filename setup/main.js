@@ -395,6 +395,12 @@ show-config      display the client connection parameters
       );
 
       await needReMain(['wait-for-any']);
+
+      // Add the bootstrap validators.
+      await guardFile(`${COSMOS_DIR}/validators.stamp`, () =>
+        needReMain(['play', 'cosmos-validators']),
+      );
+
       console.error(
         chalk.black.bgGreenBright.bold(
           'Your Agoric Cosmos chain is now running!',
