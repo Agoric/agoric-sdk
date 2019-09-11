@@ -3,6 +3,7 @@ import Nat from '@agoric/nat';
 import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
 import { insist } from '../insist';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
+import { insistCapData } from '../capdata';
 
 // 'makeDeviceSlots' is a subset of makeLiveSlots, for device code
 
@@ -109,8 +110,8 @@ function build(syscall, state, makeRoot, forDeviceName) {
           return undefined;
         }
         const p = (...args) => {
-          const ser = m.serialize(harden({ args }));
-          syscall.sendOnly(importSlot, prop, ser.argsString, ser.slots);
+          const capdata = m.serialize(harden(args));
+          syscall.sendOnly(importSlot, prop, capdata);
         };
         return p;
       },
@@ -146,12 +147,14 @@ function build(syscall, state, makeRoot, forDeviceName) {
     if (!stateData) {
       return undefined;
     }
-    return m.unserialize(stateData.data, stateData.slots);
+    insistCapData(stateData);
+    return m.unserialize(stateData);
   }
 
   function setDeviceState(deviceState) {
     const ser = m.serialize(deviceState);
-    state.set({ data: ser.argsString, slots: ser.slots });
+    insistCapData(ser);
+    state.set(ser);
   }
 
   // here we finally invoke the device code, and get back the root devnode
@@ -162,14 +165,14 @@ function build(syscall, state, makeRoot, forDeviceName) {
   valToSlot.set(rootObject, rootSlot);
   slotToVal.set(rootSlot, rootObject);
 
-  function invoke(deviceID, method, data, slots) {
+  function invoke(deviceID, method, args) {
     insistVatType('device', deviceID);
+    insistCapData(args);
     lsdebug(
       `ls[${forDeviceName}].dispatch.invoke ${deviceID}.${method}`,
-      slots,
+      args.slots,
     );
     const t = slotToVal.get(deviceID);
-    const args = m.unserialize(data, slots);
     if (!(method in t)) {
       throw new TypeError(
         `target[${method}] does not exist, has ${Object.getOwnPropertyNames(
@@ -184,10 +187,10 @@ function build(syscall, state, makeRoot, forDeviceName) {
         ]}, has ${Object.getOwnPropertyNames(t)}`,
       );
     }
-    const res = t[method](...args.args);
-    const ser = m.serialize(res);
-    lsdebug(` ser ${ser.argsString} ${JSON.stringify(ser.slots)}`);
-    return harden({ data: ser.argsString, slots: ser.slots });
+    const res = t[method](...m.unserialize(args));
+    const resultdata = m.serialize(res);
+    lsdebug(` results ${resultdata.body} ${JSON.stringify(resultdata.slots)}`);
+    return resultdata;
   }
 
   return {
