@@ -46,7 +46,7 @@ scenario2-setup:
 	rm -rf t1
 	bin/ag-solo init t1
 	$(AGC) add-genesis-account `cat t1/ag-cosmos-helper-address` $(INITIAL_TOKENS),100000000stake
-	echo 'mmmmmmmm' | $(AGC) gentx --home-client=t1/ag-cosmos-helper-statedir --name=ag-solo
+	echo 'mmmmmmmm' | $(AGC) gentx --home-client=t1/ag-cosmos-helper-statedir --name=ag-solo --amount=1000000stake
 	$(AGC) collect-gentxs
 	$(AGC) validate-genesis
 	./setup/set-json.js ~/.ag-chain-cosmos/config/genesis.json --agoric-genesis-overrides

@@ -10,5 +10,6 @@
     - BOOTSTRAP_ADDRESS: "{{ lookup('file', SETUP_HOME + '/ag-pserver/data/node0/boot-address.txt') }}"
     - STAKER: ag-staker
     - STAKER_TOKENS: 100000000stake
+    - STAKER_AMOUNT: 1000000stake
   roles:
     - cosmos-genesis

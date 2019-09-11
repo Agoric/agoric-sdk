@@ -28,7 +28,7 @@
 - name: "Create first validator gentx"
   become: yes
   become_user: "{{ service }}"
-  shell: "echo 'mmmmmmmm' | {{ service }} gentx --name={{ STAKER }} --output-document={{ json }}"
+  shell: "echo 'mmmmmmmm' | {{ service }} gentx --amount={{ STAKER_AMOUNT }} --name={{ STAKER }} --output-document={{ json }}"
   vars:
     json: "/home/{{ service }}/.{{ service }}/config/gentx/node0.json"
   args:
