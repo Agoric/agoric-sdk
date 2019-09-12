@@ -59,6 +59,10 @@ test('serialize static data', t => {
     slots: [],
   });
 
+  const cd = ser(harden([1, 2]));
+  t.equal(Object.isFrozen(cd), true);
+  t.equal(Object.isFrozen(cd.slots), true);
+
   t.end();
 });
 

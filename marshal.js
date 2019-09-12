@@ -396,10 +396,10 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
     const slots = [];
     const slotMap = new Map(); // maps val (proxy or presence) to
     // index of slots[]
-    return {
+    return harden({
       body: JSON.stringify(val, makeReplacer(slots, slotMap)),
       slots,
-    };
+    });
   }
 
   function makeFullRevive(slots, cyclePolicy) {
