@@ -24,6 +24,7 @@ In any case, for now, you will be needing to build the solo node from the source
 If you want to build and install from sources, you need to install
 - [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - [node.js](https://nodejs.org/en/) (you need at least version 11). This installs 2 binaries named `node` (JavaScript runtime) and `npm` (JavaScript package manager)
+    - **Warning:** There are some [known issues](https://github.com/Agoric/cosmic-swingset/issues/71) installing cosmic-swingset with [snap-based version of node.js on Ubuntu](https://github.com/nodesource/distributions/blob/master/README.md#snap). **We recommand** using a non-snap version
 - [Golang](https://golang.org/doc/install) (you need at least version 1.12)
 
 ```sh
