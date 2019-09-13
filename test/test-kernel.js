@@ -1,30 +1,35 @@
 // eslint-disable-next-line no-redeclare
 /* global setImmediate */
 import { test } from 'tape-promise/tape';
+import harden from '@agoric/harden';
 import buildKernel from '../src/kernel/index';
 import { makeVatSlot } from '../src/parseVatSlots';
 import { checkKT } from './util';
 
+function capdata(body, slots = []) {
+  return harden({ body, slots });
+}
+
+function checkPromises(t, kernel, expected) {
+  // extract the kernel promise table and assert that the contents match the
+  // expected list. This sorts on the promise ID, then does a t.deepEqual
+  function comparePromiseIDs(a, b) {
+    return a.id - b.id;
+  }
+
+  const got = Array.from(kernel.dump().promises);
+  got.sort(comparePromiseIDs);
+  expected = Array.from(expected);
+  expected.sort(comparePromiseIDs);
+  t.deepEqual(got, expected);
+}
+
+function emptySetup(_syscall) {
+  function deliver() {}
+  return { deliver };
+}
+
 export default function runTests() {
-  function checkPromises(t, kernel, expected) {
-    // extract the kernel promise table and assert that the contents match the
-    // expected list. This sorts on the promise ID, then does a t.deepEqual
-    function comparePromiseIDs(a, b) {
-      return a.id - b.id;
-    }
-
-    const got = Array.from(kernel.dump().promises);
-    got.sort(comparePromiseIDs);
-    expected = Array.from(expected);
-    expected.sort(comparePromiseIDs);
-    t.deepEqual(got, expected);
-  }
-
-  function emptySetup(_syscall) {
-    function deliver() {}
-    return { deliver };
-  }
-
   test('build kernel', async t => {
     const kernel = buildKernel({ setImmediate });
     await kernel.start(); // empty queue
@@ -38,9 +43,9 @@ export default function runTests() {
     const kernel = buildKernel({ setImmediate });
     const log = [];
     function setup1(syscall, state, helpers) {
-      function deliver(facetID, method, argsString, slots) {
-        log.push([facetID, method, argsString, slots]);
-        helpers.log(JSON.stringify({ facetID, method, argsString, slots }));
+      function deliver(facetID, method, args) {
+        log.push([facetID, method, args]);
+        helpers.log(JSON.stringify({ facetID, method, args }));
       }
       return { deliver };
     }
@@ -52,30 +57,28 @@ export default function runTests() {
     t.deepEqual(data.log, []);
     t.deepEqual(log, []);
 
-    kernel.queueToExport('vat1', 'o+1', 'foo', 'args');
+    kernel.queueToExport('vat1', 'o+1', 'foo', capdata('args'));
     t.deepEqual(kernel.dump().runQueue, [
       {
         type: 'send',
         target: 'ko20',
         msg: {
           method: 'foo',
-          argsString: 'args',
-          slots: [],
+          args: capdata('args'),
           result: null,
         },
       },
     ]);
     t.deepEqual(log, []);
     await kernel.run();
-    t.deepEqual(log, [['o+1', 'foo', 'args', []]]);
+    t.deepEqual(log, [['o+1', 'foo', capdata('args')]]);
 
     data = kernel.dump();
     t.equal(data.log.length, 1);
     t.deepEqual(JSON.parse(data.log[0]), {
       facetID: 'o+1',
       method: 'foo',
-      argsString: 'args',
-      slots: [],
+      args: capdata('args'),
     });
 
     t.end();
@@ -85,8 +88,8 @@ export default function runTests() {
     const kernel = buildKernel({ setImmediate });
     const log = [];
     function setup1(_syscall) {
-      function deliver(facetID, method, argsString, slots) {
-        log.push([facetID, method, argsString, slots]);
+      function deliver(facetID, method, args) {
+        log.push([facetID, method, args]);
       }
       return { deliver };
     }
@@ -103,22 +106,26 @@ export default function runTests() {
 
     const koFor5 = kernel.addExport('vat1', 'o+5');
     const koFor6 = kernel.addExport('vat2', 'o+6');
-    kernel.queueToExport('vat1', 'o+1', 'foo', 'args', [koFor5, koFor6]);
+    kernel.queueToExport(
+      'vat1',
+      'o+1',
+      'foo',
+      capdata('args', [koFor5, koFor6]),
+    );
     t.deepEqual(kernel.dump().runQueue, [
       {
         type: 'send',
         target: 'ko22',
         msg: {
-          argsString: 'args',
-          result: null,
           method: 'foo',
-          slots: [koFor5, koFor6],
+          args: capdata('args', [koFor5, koFor6]),
+          result: null,
         },
       },
     ]);
     t.deepEqual(log, []);
     await kernel.run();
-    t.deepEqual(log, [['o+1', 'foo', 'args', ['o+5', 'o-50']]]);
+    t.deepEqual(log, [['o+1', 'foo', capdata('args', ['o+5', 'o-50'])]]);
     t.deepEqual(kernel.dump().kernelTable, [
       [koFor5, 'vat1', 'o+5'],
       [koFor6, 'vat1', 'o-50'],
@@ -132,7 +139,7 @@ export default function runTests() {
   test('addImport', async t => {
     const kernel = buildKernel({ setImmediate });
     function setup(_syscall) {
-      function deliver(_facetID, _method, _argsString, _slots) {}
+      function deliver(_facetID, _method, _args) {}
       return { deliver };
     }
     kernel.addGenesisVat('vat1', setup);
@@ -161,20 +168,25 @@ export default function runTests() {
         nextPromiseIndex += 1;
         return makeVatSlot('promise', true, index);
       }
-      function deliver(facetID, method, argsString, slots) {
+      function deliver(facetID, method, args) {
         // console.log(`d1/${facetID} called`);
-        log.push(['d1', facetID, method, argsString, slots]);
+        log.push(['d1', facetID, method, args]);
         const pid = allocatePromise();
-        syscall.send(v1tovat25, 'bar', 'bargs', [v1tovat25, 'o+7', p7], pid);
+        syscall.send(
+          v1tovat25,
+          'bar',
+          capdata('bargs', [v1tovat25, 'o+7', p7]),
+          pid,
+        );
       }
       return { deliver };
     }
     kernel.addGenesisVat('vat1', setup1);
 
     function setup2(_syscall) {
-      function deliver(facetID, method, argsString, slots) {
+      function deliver(facetID, method, args) {
         // console.log(`d2/${facetID} called`);
-        log.push(['d2', facetID, method, argsString, slots]);
+        log.push(['d2', facetID, method, args]);
         log.push(['d2 promises', kernel.dump().promises]);
       }
       return { deliver };
@@ -202,17 +214,16 @@ export default function runTests() {
     t.deepEqual(log, []);
 
     // o1!foo(args)
-    kernel.queueToExport('vat1', 'o+1', 'foo', 'args');
+    kernel.queueToExport('vat1', 'o+1', 'foo', capdata('args'));
     t.deepEqual(log, []);
     t.deepEqual(kernel.dump().runQueue, [
       {
         type: 'send',
         target: t1,
         msg: {
-          argsString: 'args',
-          result: null,
           method: 'foo',
-          slots: [],
+          args: capdata('args'),
+          result: null,
         },
       },
     ]);
@@ -220,7 +231,7 @@ export default function runTests() {
     await kernel.step();
     // that queues pid=o2!bar(o2, o7, p7)
 
-    t.deepEqual(log.shift(), ['d1', 'o+1', 'foo', 'args', []]);
+    t.deepEqual(log.shift(), ['d1', 'o+1', 'foo', capdata('args')]);
     t.deepEqual(log, []);
 
     t.deepEqual(kernel.dump().runQueue, [
@@ -229,8 +240,7 @@ export default function runTests() {
         target: vat2Obj5,
         msg: {
           method: 'bar',
-          argsString: 'bargs',
-          slots: [vat2Obj5, 'ko22', 'kp40'],
+          args: capdata('bargs', [vat2Obj5, 'ko22', 'kp40']),
           result: 'kp41',
         },
       },
@@ -260,7 +270,7 @@ export default function runTests() {
     await kernel.step();
     t.deepEqual(log, [
       // todo: check result
-      ['d2', 'o+5', 'bar', 'bargs', ['o+5', 'o-50', 'p-60']],
+      ['d2', 'o+5', 'bar', capdata('bargs', ['o+5', 'o-50', 'p-60'])],
       [
         'd2 promises',
         [
@@ -324,11 +334,11 @@ export default function runTests() {
         nextPromiseIndex += 1;
         return makeVatSlot('promise', true, index);
       }
-      function deliver(facetID, method, argsString, slots) {
+      function deliver(facetID, method, args) {
         console.log(`vatA/${facetID} called`);
-        log.push(['vatA', facetID, method, argsString, slots]);
+        log.push(['vatA', facetID, method, args]);
         const pid = allocatePromise();
-        syscall.send(bobForA, 'intro', 'bargs', [carolForA], pid);
+        syscall.send(bobForA, 'intro', capdata('bargs', [carolForA]), pid);
         log.push(['vatA', 'promiseID', pid]);
       }
       return { deliver };
@@ -336,17 +346,17 @@ export default function runTests() {
     kernel.addGenesisVat('vatA', setupA);
 
     function setupB(_syscall) {
-      function deliver(facetID, method, argsString, slots) {
+      function deliver(facetID, method, args) {
         console.log(`vatB/${facetID} called`);
-        log.push(['vatB', facetID, method, argsString, slots]);
+        log.push(['vatB', facetID, method, args]);
       }
       return { deliver };
     }
     kernel.addGenesisVat('vatB', setupB);
 
     function setupC(_syscall) {
-      function deliver(facetID, method, argsString, slots) {
-        log.push(['vatC', facetID, method, argsString, slots]);
+      function deliver(facetID, method, args) {
+        log.push(['vatC', facetID, method, args]);
       }
       return { deliver };
     }
@@ -382,10 +392,10 @@ export default function runTests() {
     checkKT(t, kernel, kt);
     t.deepEqual(log, []);
 
-    kernel.queueToExport('vatA', 'o+4', 'foo', 'args');
+    kernel.queueToExport('vatA', 'o+4', 'foo', capdata('args'));
     await kernel.step();
 
-    t.deepEqual(log.shift(), ['vatA', 'o+4', 'foo', 'args', []]);
+    t.deepEqual(log.shift(), ['vatA', 'o+4', 'foo', capdata('args')]);
     t.deepEqual(log.shift(), ['vatA', 'promiseID', 'p+5']);
     t.deepEqual(log, []);
 
@@ -395,8 +405,7 @@ export default function runTests() {
         target: bob,
         msg: {
           method: 'intro',
-          argsString: 'bargs',
-          slots: [carol],
+          args: capdata('bargs', [carol]),
           result: 'kp41',
         },
       },
@@ -421,7 +430,7 @@ export default function runTests() {
     checkKT(t, kernel, kt);
 
     await kernel.step();
-    t.deepEqual(log, [['vatB', 'o+5', 'intro', 'bargs', ['o-50']]]);
+    t.deepEqual(log, [['vatB', 'o+5', 'intro', capdata('bargs', ['o-50'])]]);
     kt.push([carol, 'vatB', 'o-50']);
     kt.push(['kp41', 'vatB', 'p-60']);
     checkKT(t, kernel, kt);
@@ -435,8 +444,8 @@ export default function runTests() {
     const logA = [];
     function setupA(syscall) {
       syscallA = syscall;
-      function deliver(facetID, method, argsString, slots) {
-        logA.push([facetID, method, argsString, slots]);
+      function deliver(facetID, method, args) {
+        logA.push([facetID, method, args]);
       }
       return { deliver };
     }
@@ -446,8 +455,8 @@ export default function runTests() {
     const logB = [];
     function setupB(syscall) {
       syscallB = syscall;
-      function deliver(facetID, method, argsString, slots) {
-        logB.push([facetID, method, argsString, slots]);
+      function deliver(facetID, method, args) {
+        logB.push([facetID, method, args]);
       }
       return { deliver };
     }
@@ -475,15 +484,14 @@ export default function runTests() {
     checkPromises(t, kernel, kp);
 
     // sending a promise should arrive as a promise
-    syscallA.send(B, 'foo1', 'args', [pr1]);
+    syscallA.send(B, 'foo1', capdata('args', [pr1]));
     t.deepEqual(kernel.dump().runQueue, [
       {
         type: 'send',
         target: bob,
         msg: {
           method: 'foo1',
-          argsString: 'args',
-          slots: ['kp40'],
+          args: capdata('args', ['kp40']),
           result: undefined,
         },
       },
@@ -499,31 +507,31 @@ export default function runTests() {
     });
     checkPromises(t, kernel, kp);
     await kernel.run();
-    t.deepEqual(logB.shift(), ['o+5', 'foo1', 'args', ['p-60']]);
+    t.deepEqual(logB.shift(), ['o+5', 'foo1', capdata('args', ['p-60'])]);
     t.deepEqual(logB, []);
     kt.push(['kp40', 'vatB', 'p-60']); // pr1 for B
     checkKT(t, kernel, kt);
 
     // sending it a second time should arrive as the same thing
-    syscallA.send(B, 'foo2', 'args', [pr1]);
+    syscallA.send(B, 'foo2', capdata('args', [pr1]));
     await kernel.run();
-    t.deepEqual(logB.shift(), ['o+5', 'foo2', 'args', ['p-60']]);
+    t.deepEqual(logB.shift(), ['o+5', 'foo2', capdata('args', ['p-60'])]);
     t.deepEqual(logB, []);
     checkKT(t, kernel, kt);
     checkPromises(t, kernel, kp);
 
     // sending it back should arrive with the sender's index
-    syscallB.send(A, 'foo3', 'args', ['p-60']);
+    syscallB.send(A, 'foo3', capdata('args', ['p-60']));
     await kernel.run();
-    t.deepEqual(logA.shift(), ['o+6', 'foo3', 'args', [pr1]]);
+    t.deepEqual(logA.shift(), ['o+6', 'foo3', capdata('args', [pr1])]);
     t.deepEqual(logA, []);
     checkKT(t, kernel, kt);
     checkPromises(t, kernel, kp);
 
     // sending it back a second time should arrive as the same thing
-    syscallB.send(A, 'foo4', 'args', ['p-60']);
+    syscallB.send(A, 'foo4', capdata('args', ['p-60']));
     await kernel.run();
-    t.deepEqual(logA.shift(), ['o+6', 'foo4', 'args', [pr1]]);
+    t.deepEqual(logA.shift(), ['o+6', 'foo4', capdata('args', [pr1])]);
     t.deepEqual(logA, []);
     checkPromises(t, kernel, kp);
     checkKT(t, kernel, kt);
@@ -537,8 +545,8 @@ export default function runTests() {
     const log = [];
     function setup(s) {
       syscall = s;
-      function deliver(facetID, method, argsString, slots) {
-        log.push(['deliver', facetID, method, argsString, slots]);
+      function deliver(facetID, method, args) {
+        log.push(['deliver', facetID, method, args]);
       }
       return { deliver };
     }
@@ -579,8 +587,8 @@ export default function runTests() {
     function setupA(s) {
       syscallA = s;
       function deliver() {}
-      function notifyFulfillToData(promiseID, fulfillData, slots) {
-        log.push(['notify', promiseID, fulfillData, slots]);
+      function notifyFulfillToData(promiseID, data) {
+        log.push(['notify', promiseID, data]);
       }
       return { deliver, notifyFulfillToData };
     }
@@ -615,7 +623,7 @@ export default function runTests() {
       },
     ]);
 
-    syscallB.fulfillToData(pForB, 'args', [aliceForA]);
+    syscallB.fulfillToData(pForB, capdata('args', [aliceForA]));
     // this causes a notifyFulfillToData message to be queued
     t.deepEqual(log, []); // no other dispatch calls
     t.deepEqual(kernel.dump().runQueue, [
@@ -628,14 +636,13 @@ export default function runTests() {
 
     await kernel.step();
     // the kernelPromiseID gets mapped back to the vat PromiseID
-    t.deepEqual(log.shift(), ['notify', pForA, 'args', ['o-50']]);
+    t.deepEqual(log.shift(), ['notify', pForA, capdata('args', ['o-50'])]);
     t.deepEqual(log, []); // no other dispatch calls
     t.deepEqual(kernel.dump().promises, [
       {
         id: pForKernel,
-        fulfillData: 'args',
-        fulfillSlots: ['ko20'],
         state: 'fulfilledToData',
+        data: capdata('args', ['ko20']),
       },
     ]);
     t.deepEqual(kernel.dump().runQueue, []);
@@ -709,8 +716,8 @@ export default function runTests() {
     t.deepEqual(kernel.dump().promises, [
       {
         id: pForKernel,
-        fulfillSlot: bobForKernel,
         state: 'fulfilledToPresence',
+        slot: bobForKernel,
       },
     ]);
     t.deepEqual(kernel.dump().runQueue, []);
@@ -725,8 +732,8 @@ export default function runTests() {
     function setupA(s) {
       syscallA = s;
       function deliver() {}
-      function notifyReject(promiseID, rejectData, slots) {
-        log.push(['notify', promiseID, rejectData, slots]);
+      function notifyReject(promiseID, rejectData) {
+        log.push(['notify', promiseID, rejectData]);
       }
       return { deliver, notifyReject };
     }
@@ -761,7 +768,7 @@ export default function runTests() {
       },
     ]);
 
-    syscallB.reject(pForB, 'args', [aliceForA]);
+    syscallB.reject(pForB, capdata('args', [aliceForA]));
     // this causes a notifyFulfillToData message to be queued
     t.deepEqual(log, []); // no other dispatch calls
     t.deepEqual(kernel.dump().runQueue, [
@@ -774,14 +781,13 @@ export default function runTests() {
 
     await kernel.step();
     // the kernelPromiseID gets mapped back to the vat PromiseID
-    t.deepEqual(log.shift(), ['notify', pForA, 'args', ['o-50']]);
+    t.deepEqual(log.shift(), ['notify', pForA, capdata('args', ['o-50'])]);
     t.deepEqual(log, []); // no other dispatch calls
     t.deepEqual(kernel.dump().promises, [
       {
         id: pForKernel,
-        rejectData: 'args',
-        rejectSlots: ['ko20'],
         state: 'rejected',
+        data: capdata('args', ['ko20']),
       },
     ]);
     t.deepEqual(kernel.dump().runQueue, []);
@@ -793,9 +799,9 @@ export default function runTests() {
     const aliceForAlice = 'o+1';
     const kernel = buildKernel({ setImmediate });
     function setup(syscall, _state) {
-      function deliver(facetID, _method, _argsString, slots) {
+      function deliver(facetID, _method, args) {
         if (facetID === aliceForAlice) {
-          syscall.send(slots[1], 'foo', 'fooarg', [], 'p+5');
+          syscall.send(args.slots[1], 'foo', capdata('fooarg'), 'p+5');
         }
       }
       return { deliver };
@@ -808,10 +814,12 @@ export default function runTests() {
     const bob = kernel.addExport('vatB', 'o+2');
     const bobForAlice = kernel.addImport('vatA', bob);
 
-    kernel.queueToExport('vatA', aliceForAlice, 'store', 'args string', [
-      alice,
-      bob,
-    ]);
+    kernel.queueToExport(
+      'vatA',
+      aliceForAlice,
+      'store',
+      capdata('args string', [alice, bob]),
+    );
     await kernel.step();
 
     // the transcript records vat-specific import/export slots
@@ -823,13 +831,12 @@ export default function runTests() {
         'deliver',
         aliceForAlice,
         'store',
-        'args string',
-        [aliceForAlice, bobForAlice],
+        capdata('args string', [aliceForAlice, bobForAlice]),
         undefined,
       ],
       syscalls: [
         {
-          d: ['send', bobForAlice, 'foo', 'fooarg', [], 'p+5'],
+          d: ['send', bobForAlice, 'foo', capdata('fooarg'), 'p+5'],
           response: undefined,
         },
       ],
@@ -855,8 +862,8 @@ export default function runTests() {
     kernel.addGenesisVat('vatA', setupA);
 
     function setupB(_s) {
-      function deliver(target, method, argsString, slots, result) {
-        log.push([target, method, argsString, slots, result]);
+      function deliver(target, method, args, result) {
+        log.push([target, method, args, result]);
       }
       return { deliver };
     }
@@ -868,15 +875,15 @@ export default function runTests() {
     const bobForA = kernel.addImport('vatA', bobForKernel);
 
     const p1ForA = 'p+1';
-    syscall.send(bobForA, 'foo', 'fooargs', [], p1ForA);
+    syscall.send(bobForA, 'foo', capdata('fooargs'), p1ForA);
     const p1ForKernel = kernel.addExport('vatA', p1ForA);
 
     const p2ForA = 'p+2';
-    syscall.send(p1ForA, 'bar', 'barargs', [], p2ForA);
+    syscall.send(p1ForA, 'bar', capdata('barargs'), p2ForA);
     const p2ForKernel = kernel.addExport('vatA', p2ForA);
 
     const p3ForA = 'p+3';
-    syscall.send(p2ForA, 'urgh', 'urghargs', [], p3ForA);
+    syscall.send(p2ForA, 'urgh', capdata('urghargs'), p3ForA);
     const p3ForKernel = kernel.addExport('vatA', p3ForA);
 
     t.deepEqual(kernel.dump().promises, [
@@ -906,7 +913,7 @@ export default function runTests() {
     await kernel.run();
 
     const p1ForB = kernel.addImport('vatB', p1ForKernel);
-    t.deepEqual(log.shift(), [bobForB, 'foo', 'fooargs', [], p1ForB]);
+    t.deepEqual(log.shift(), [bobForB, 'foo', capdata('fooargs'), p1ForB]);
     t.deepEqual(log, []);
 
     t.deepEqual(kernel.dump().promises, [
@@ -918,8 +925,7 @@ export default function runTests() {
         queue: [
           {
             method: 'bar',
-            argsString: 'barargs',
-            slots: [],
+            args: capdata('barargs'),
             result: p2ForKernel,
           },
         ],
@@ -932,8 +938,7 @@ export default function runTests() {
         queue: [
           {
             method: 'urgh',
-            argsString: 'urghargs',
-            slots: [],
+            args: capdata('urghargs'),
             result: p3ForKernel,
           },
         ],
@@ -966,8 +971,8 @@ export default function runTests() {
     kernel.addGenesisVat('vatA', setupA);
 
     function setupB(_s) {
-      function deliver(target, method, argsString, slots, result) {
-        log.push([target, method, argsString, slots, result]);
+      function deliver(target, method, args, result) {
+        log.push([target, method, args, result]);
       }
       return { deliver };
     }
@@ -979,15 +984,15 @@ export default function runTests() {
     const bobForA = kernel.addImport('vatA', bobForKernel);
 
     const p1ForA = 'p+1';
-    syscall.send(bobForA, 'foo', 'fooargs', [], p1ForA);
+    syscall.send(bobForA, 'foo', capdata('fooargs'), p1ForA);
     const p1ForKernel = kernel.addExport('vatA', p1ForA);
 
     const p2ForA = 'p+2';
-    syscall.send(p1ForA, 'bar', 'barargs', [], p2ForA);
+    syscall.send(p1ForA, 'bar', capdata('barargs'), p2ForA);
     const p2ForKernel = kernel.addExport('vatA', p2ForA);
 
     const p3ForA = 'p+3';
-    syscall.send(p2ForA, 'urgh', 'urghargs', [], p3ForA);
+    syscall.send(p2ForA, 'urgh', capdata('urghargs'), p3ForA);
     const p3ForKernel = kernel.addExport('vatA', p3ForA);
 
     t.deepEqual(kernel.dump().promises, [
@@ -1019,9 +1024,9 @@ export default function runTests() {
     const p1ForB = kernel.addImport('vatB', p1ForKernel);
     const p2ForB = kernel.addImport('vatB', p2ForKernel);
     const p3ForB = kernel.addImport('vatB', p3ForKernel);
-    t.deepEqual(log.shift(), [bobForB, 'foo', 'fooargs', [], p1ForB]);
-    t.deepEqual(log.shift(), [p1ForB, 'bar', 'barargs', [], p2ForB]);
-    t.deepEqual(log.shift(), [p2ForB, 'urgh', 'urghargs', [], p3ForB]);
+    t.deepEqual(log.shift(), [bobForB, 'foo', capdata('fooargs'), p1ForB]);
+    t.deepEqual(log.shift(), [p1ForB, 'bar', capdata('barargs'), p2ForB]);
+    t.deepEqual(log.shift(), [p2ForB, 'urgh', capdata('urghargs'), p3ForB]);
     t.deepEqual(log, []);
 
     t.deepEqual(kernel.dump().promises, [

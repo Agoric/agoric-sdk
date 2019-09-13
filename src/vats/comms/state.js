@@ -1,4 +1,5 @@
 import { insist } from '../../insist';
+import { insistCapData } from '../../capdata';
 import { makeVatSlot } from '../../parseVatSlots';
 
 export function makeState() {
@@ -16,8 +17,8 @@ export function makeState() {
     promiseTable: new Map(), // p+NN/p-NN -> { state, owner, decider, subscriber }
     // and maybe resolution, one of:
     // * {type: 'object', slot}
-    // * {type: 'data', body, slots}
-    // * {type: 'reject', body, slots}
+    // * {type: 'data', data}
+    // * {type: 'reject', data}
     nextPromiseIndex: 20,
   };
 
@@ -132,6 +133,16 @@ export function markPromiseAsResolved(state, promiseID, resolution) {
     p.state === 'unresolved',
     `${promiseID} is already resolved (${p.state})`,
   );
+  if (resolution.type === 'object') {
+    insist(resolution.slot, `resolution(object) requires .slot`);
+  } else if (resolution.type === 'data') {
+    insistCapData(resolution.data);
+  } else if (resolution.type === 'reject') {
+    insistCapData(resolution.data);
+  } else {
+    throw new Error(`unknown resolution type ${resolution.type}`);
+  }
+  p.state = 'resolved';
   p.resolution = resolution;
   p.decider = undefined;
   p.subscriber = undefined;

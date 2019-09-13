@@ -1,7 +1,12 @@
 import path from 'path';
+import harden from '@agoric/harden';
 import { test } from 'tape-promise/tape';
 import { buildVatController, loadBasedir } from '../src/index';
 import { checkKT } from './util';
+
+function capdata(body, slots = []) {
+  return harden({ body, slots });
+}
 
 test('load empty', async t => {
   const config = {
@@ -25,14 +30,13 @@ async function simpleCall(t, withSES) {
   t.deepEqual(data.vatTables, [{ vatID: 'vat1', state: { transcript: [] } }]);
   t.deepEqual(data.kernelTable, []);
 
-  controller.queueToExport('vat1', 'o+1', 'foo', 'args');
+  controller.queueToExport('vat1', 'o+1', 'foo', capdata('args'));
   t.deepEqual(controller.dump().runQueue, [
     {
       msg: {
-        argsString: 'args',
-        result: null,
         method: 'foo',
-        slots: [],
+        args: capdata('args'),
+        result: null,
       },
       target: 'ko20',
       type: 'send',
@@ -42,8 +46,7 @@ async function simpleCall(t, withSES) {
   t.deepEqual(JSON.parse(controller.dump().log[0]), {
     facetID: 'o+1',
     method: 'foo',
-    argsString: 'args',
-    slots: [],
+    args: capdata('args'),
   });
 
   controller.log('2');
@@ -119,11 +122,13 @@ async function bootstrapExport(t, withSES) {
   t.deepEqual(c.dump().runQueue, [
     {
       msg: {
-        argsString:
-          '{"args":[[],{"_bootstrap":{"@qclass":"slot","index":0},"left":{"@qclass":"slot","index":1},"right":{"@qclass":"slot","index":2}},{"_dummy":"dummy"}]}',
         result: null,
         method: 'bootstrap',
-        slots: [boot0, left0, right0],
+        args: {
+          body:
+            '[[],{"_bootstrap":{"@qclass":"slot","index":0},"left":{"@qclass":"slot","index":1},"right":{"@qclass":"slot","index":2}},{"_dummy":"dummy"}]',
+          slots: [boot0, left0, right0],
+        },
       },
       target: boot0,
       type: 'send',
@@ -155,8 +160,10 @@ async function bootstrapExport(t, withSES) {
       target: left0,
       msg: {
         method: 'foo',
-        argsString: '{"args":[1,{"@qclass":"slot","index":0}]}',
-        slots: [right0],
+        args: {
+          body: '[1,{"@qclass":"slot","index":0}]',
+          slots: [right0],
+        },
         result: fooP,
       },
     },
@@ -182,8 +189,10 @@ async function bootstrapExport(t, withSES) {
       target: right0,
       msg: {
         method: 'bar',
-        argsString: '{"args":[2,{"@qclass":"slot","index":0}]}',
-        slots: [right0],
+        args: {
+          body: '[2,{"@qclass":"slot","index":0}]',
+          slots: [right0],
+        },
         result: barP,
       },
     },

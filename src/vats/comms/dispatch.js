@@ -6,13 +6,14 @@ import { deliverToRemote, resolvePromiseToRemote } from './outbound';
 import { deliverFromRemote } from './inbound';
 import { deliverToController } from './controller';
 import { insist } from '../../insist';
+import { insistCapData } from '../../capdata';
 
 function transmit(syscall, state, remoteID, msg) {
   const remote = getRemote(state, remoteID);
   // the vat-tp "integrity layer" is a regular vat, so it expects an argument
   // encoded as JSON
-  const body = JSON.stringify({ args: [msg] });
-  syscall.send(remote.transmitterID, 'transmit', body, []); // sendOnly
+  const args = harden({ body: JSON.stringify([msg]), slots: [] });
+  syscall.send(remote.transmitterID, 'transmit', args); // sendOnly
 }
 
 export const debugState = new WeakMap();
@@ -25,16 +26,10 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
 
-  function deliver(target, method, argsbytes, caps, result) {
+  function deliver(target, method, args, result) {
+    insistCapData(args);
     if (target === controller) {
-      return deliverToController(
-        state,
-        method,
-        argsbytes,
-        caps,
-        result,
-        syscall,
-      );
+      return deliverToController(state, method, args, result, syscall);
     }
     // console.log(`comms.deliver ${target} r=${result}`);
     // dumpState(state);
@@ -48,8 +43,7 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
         state,
         target,
         method,
-        argsbytes,
-        caps,
+        args,
         result,
         transmit,
       );
@@ -58,7 +52,7 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
       insist(method === 'receive', `unexpected method ${method}`);
       // the vat-tp integrity layer is a regular vat, so when they send the
       // received message to us, it will be embedded in a JSON array
-      const message = JSON.parse(argsbytes).args[0];
+      const message = JSON.parse(args.body)[0];
       return deliverFromRemote(
         syscall,
         state,
@@ -72,7 +66,8 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
     throw new Error(`unknown target ${target}`);
   }
 
-  function notifyFulfillToData(promiseID, body, slots) {
+  function notifyFulfillToData(promiseID, data) {
+    insistCapData(data);
     console.log(`comms.notifyFulfillToData(${promiseID})`);
     // dumpState(state);
 
@@ -91,7 +86,7 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
     // get a bogus dispatch.notifyFulfill*. Currently we throw an error, which
     // is currently ignored but might prompt a vat shutdown in the future.
 
-    const resolution = harden({ type: 'data', body, slots });
+    const resolution = harden({ type: 'data', data });
     resolvePromiseToRemote(syscall, state, promiseID, resolution, transmit);
   }
 
@@ -101,9 +96,10 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
     resolvePromiseToRemote(syscall, state, promiseID, resolution, transmit);
   }
 
-  function notifyReject(promiseID, body, slots) {
+  function notifyReject(promiseID, data) {
+    insistCapData(data);
     console.log(`comms.notifyReject(${promiseID})`);
-    const resolution = harden({ type: 'reject', body, slots });
+    const resolution = harden({ type: 'reject', data });
     resolvePromiseToRemote(syscall, state, promiseID, resolution, transmit);
   }
 

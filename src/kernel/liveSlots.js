@@ -3,6 +3,7 @@ import Nat from '@agoric/nat';
 import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
 import { insist } from '../insist';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
+import { insistCapData } from '../capdata';
 
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted
@@ -185,24 +186,24 @@ function build(syscall, _state, makeRoot, forVatID) {
   const m = makeMarshal(serializeToSlot, unserializeSlot);
 
   function queueMessage(targetSlot, prop, args) {
-    const ser = m.serialize(harden({ args }));
-    const pid = allocatePromiseID();
-    const done = makeQueued(pid);
-    lsdebug(`ls.qm send(${JSON.stringify(targetSlot)}, ${prop}) -> ${pid}`);
-    syscall.send(targetSlot, prop, ser.argsString, ser.slots, pid);
+    const serArgs = m.serialize(harden(args));
+    const result = allocatePromiseID();
+    const done = makeQueued(result);
+    lsdebug(`ls.qm send(${JSON.stringify(targetSlot)}, ${prop}) -> ${result}`);
+    syscall.send(targetSlot, prop, serArgs, result);
 
     // prepare for notifyFulfillToData/etc
-    importedPromisesByPromiseID.set(pid, done);
+    importedPromisesByPromiseID.set(result, done);
 
     // ideally we'd wait until someone .thens done.p, but with native
     // Promises we have no way of spotting that, so subscribe immediately
-    lsdebug(`ls[${forVatID}].queueMessage.importedPromiseThen ${pid}`);
-    importedPromiseThen(pid);
+    lsdebug(`ls[${forVatID}].queueMessage.importedPromiseThen ${result}`);
+    importedPromiseThen(result);
 
     // prepare the serializer to recognize it, if it's used as an argument or
     // return value
-    valToSlot.set(done.p, pid);
-    slotToVal.set(pid, done.p);
+    valToSlot.set(done.p, result);
+    slotToVal.set(result, done.p);
 
     return done.p;
   }
@@ -290,9 +291,10 @@ function build(syscall, _state, makeRoot, forVatID) {
           return undefined;
         }
         return (...args) => {
-          const ser = m.serialize(harden({ args }));
-          const ret = syscall.callNow(slot, prop, ser.argsString, ser.slots);
-          const retval = m.unserialize(ret.data, ret.slots);
+          const serArgs = m.serialize(harden(args));
+          const ret = syscall.callNow(slot, prop, serArgs);
+          insistCapData(ret);
+          const retval = m.unserialize(ret);
           return retval;
         };
       },
@@ -314,7 +316,8 @@ function build(syscall, _state, makeRoot, forVatID) {
     return pr;
   }
 
-  function deliver(target, method, argsbytes, caps, result) {
+  function deliver(target, method, argsdata, result) {
+    insistCapData(argsdata);
     lsdebug(
       `ls[${forVatID}].dispatch.deliver ${target}.${method} -> ${result}`,
     );
@@ -322,7 +325,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     if (!t) {
       throw Error(`no target ${target}`);
     }
-    const args = m.unserialize(argsbytes, caps);
+    const args = m.unserialize(argsdata);
     const p = Promise.resolve().then(_ => {
       if (!(method in t)) {
         throw new TypeError(
@@ -338,7 +341,7 @@ function build(syscall, _state, makeRoot, forVatID) {
           ]}, has ${Object.getOwnPropertyNames(t)}`,
         );
       }
-      return t[method](...args.args);
+      return t[method](...args);
     });
     if (result) {
       lsdebug(` ls.deliver attaching then ->${result}`);
@@ -358,9 +361,9 @@ function build(syscall, _state, makeRoot, forVatID) {
       // presence, because then the kernel can deliver queued messages. We
       // could build a simpler way of doing this.
       const ser = m.serialize(res);
-      lsdebug(` ser ${ser.argsString} ${JSON.stringify(ser.slots)}`);
+      lsdebug(` ser ${ser.body} ${JSON.stringify(ser.slots)}`);
       // find out what resolution category we're using
-      const unser = JSON.parse(ser.argsString);
+      const unser = JSON.parse(ser.body);
       if (
         Object(unser) === unser &&
         QCLASS in unser &&
@@ -376,7 +379,7 @@ function build(syscall, _state, makeRoot, forVatID) {
       } else {
         // if it resolves to data, .thens fire but kernel-queued messages are
         // rejected, because you can't send messages to data
-        syscall.fulfillToData(promiseID, ser.argsString, ser.slots);
+        syscall.fulfillToData(promiseID, ser);
       }
     };
   }
@@ -386,17 +389,20 @@ function build(syscall, _state, makeRoot, forVatID) {
       harden(rej);
       lsdebug(`ls thenReject fired`, rej);
       const ser = m.serialize(rej);
-      syscall.reject(promiseID, ser.argsString, ser.slots);
+      syscall.reject(promiseID, ser);
     };
   }
 
-  function notifyFulfillToData(promiseID, data, slots) {
-    lsdebug(`ls.dispatch.notifyFulfillToData(${promiseID}, ${data}, ${slots})`);
+  function notifyFulfillToData(promiseID, data) {
+    insistCapData(data);
+    lsdebug(
+      `ls.dispatch.notifyFulfillToData(${promiseID}, ${data.body}, ${data.slots})`,
+    );
     insistVatType('promise', promiseID);
     if (!importedPromisesByPromiseID.has(promiseID)) {
       throw new Error(`unknown promiseID '${promiseID}'`);
     }
-    const val = m.unserialize(data, slots);
+    const val = m.unserialize(data);
     importedPromisesByPromiseID.get(promiseID).res(val);
   }
 
@@ -410,13 +416,16 @@ function build(syscall, _state, makeRoot, forVatID) {
     importedPromisesByPromiseID.get(promiseID).res(val);
   }
 
-  function notifyReject(promiseID, data, slots) {
-    lsdebug(`ls.dispatch.notifyReject(${promiseID}, ${data}, ${slots})`);
+  function notifyReject(promiseID, data) {
+    insistCapData(data);
+    lsdebug(
+      `ls.dispatch.notifyReject(${promiseID}, ${data.body}, ${data.slots})`,
+    );
     insistVatType('promise', promiseID);
     if (!importedPromisesByPromiseID.has(promiseID)) {
       throw new Error(`unknown promiseID '${promiseID}'`);
     }
-    const val = m.unserialize(data, slots);
+    const val = m.unserialize(data);
     importedPromisesByPromiseID.get(promiseID).rej(val);
   }
 

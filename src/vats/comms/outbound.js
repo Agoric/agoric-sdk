@@ -9,6 +9,7 @@ import {
 } from './state';
 import { insistRemoteID } from './remote';
 import { insist } from '../../insist';
+import { insistCapData } from '../../capdata';
 
 function getRemoteFor(state, target) {
   if (state.objectTable.has(target)) {
@@ -19,19 +20,23 @@ function getRemoteFor(state, target) {
     if (p.state === 'unresolved') {
       return p.decider;
     }
-    if (p.state === 'fulfilledToPresence') {
-      return getRemoteFor(state, p.fulfillSlot);
+    if (p.state === 'resolved') {
+      if (p.resolution.type === 'object') {
+        return getRemoteFor(state, p.resolution.slot);
+      }
+      if (p.resolution.type === 'data') {
+        throw new Error(`todo: error for fulfilledToData`);
+      }
+      if (p.resolution.type === 'reject') {
+        throw new Error(`todo: error for rejected`);
+      }
+      if (p.resolution.type === 'forwarded') {
+        // todo
+        return getRemoteFor(state, p.resolution.slot);
+      }
+      throw new Error(`unknown res type ${p.resolution.type}`);
     }
-    if (p.state === 'fulfilledToData') {
-      throw new Error(`todo: error for fulfilledToData`);
-    } else if (p.state === 'rejected') {
-      throw new Error(`todo: error for rejected`);
-    } else if (p.stated === 'forwarded') {
-      // todo
-      return getRemoteFor(state, p.forwardedSlot);
-    } else {
-      throw new Error(`unknown p.state ${p.state}`);
-    }
+    throw new Error(`unknown p.state ${p.state}`);
   }
   throw new Error(`unknown target type ${target}`);
 }
@@ -41,17 +46,17 @@ export function deliverToRemote(
   state,
   target,
   method,
-  data,
-  slots,
+  args,
   result,
   transmit,
 ) {
   // this object lives on 'remoteID', so we send messages at them
   const remoteID = getRemoteFor(state, target);
   insist(remoteID, `oops ${target}`);
+  insistCapData(args);
 
   const remoteTargetSlot = getOutbound(state, remoteID, target);
-  const remoteMessageSlots = slots.map(s =>
+  const remoteMessageSlots = args.slots.map(s =>
     mapOutbound(state, remoteID, s, syscall),
   );
   let rmss = remoteMessageSlots.join(':');
@@ -68,7 +73,7 @@ export function deliverToRemote(
 
   // now render the transmission. todo: 'method' lives in the transmission
   // for now, but will be moved to 'data'
-  const msg = `deliver:${remoteTargetSlot}:${method}:${remoteResultSlot}${rmss};${data}`;
+  const msg = `deliver:${remoteTargetSlot}:${method}:${remoteResultSlot}${rmss};${args.body}`;
   // console.log(`deliverToRemote(target=${target}/${remoteTargetSlot}, result=${result}/${remoteResultSlot}) leaving state as:`);
   // dumpState(state);
   transmit(syscall, state, remoteID, msg);
@@ -98,7 +103,7 @@ export function resolvePromiseToRemote(
   insistRemoteType('promise', target);
   // insist(parseRemoteSlot(target).allocatedByRecipient, target); // rp+NN for them
   function mapSlots() {
-    const { slots } = resolution;
+    const { slots } = resolution.data;
     const rms = slots.map(s => mapOutbound(state, remoteID, s, syscall));
     let rmss = rms.join(':');
     if (rmss) {
@@ -117,9 +122,9 @@ export function resolvePromiseToRemote(
     );
     msg = `resolve:object:${target}:${resolutionRef};`;
   } else if (resolution.type === 'data') {
-    msg = `resolve:data:${target}${mapSlots()};${resolution.body}`;
+    msg = `resolve:data:${target}${mapSlots()};${resolution.data.body}`;
   } else if (resolution.type === 'reject') {
-    msg = `resolve:reject:${target}${mapSlots()};${resolution.body}`;
+    msg = `resolve:reject:${target}${mapSlots()};${resolution.data.body}`;
   } else {
     throw new Error(`unknown resolution type ${resolution.type}`);
   }

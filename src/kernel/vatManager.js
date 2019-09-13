@@ -3,6 +3,8 @@ import djson from './djson';
 import { insist } from '../insist';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
+import { insistCapData } from '../capdata';
+import { insistMessage } from '../message';
 
 export default function makeVatManager(
   vatID,
@@ -105,12 +107,14 @@ export default function makeVatManager(
   // syscall handlers: these are wrapped by the 'syscall' object and made
   // available to userspace
 
-  function doSend(targetSlot, method, argsString, vatSlots, resultSlot) {
+  function doSend(targetSlot, method, args, resultSlot) {
     insist(`${targetSlot}` === targetSlot, 'non-string targetSlot');
+    insistCapData(args);
     // TODO: disable send-to-self for now, qv issue #43
     const target = mapVatSlotToKernelSlot(targetSlot);
     kdebug(`syscall[${vatID}].send(vat:${targetSlot}=ker:${target}).${method}`);
-    const slots = vatSlots.map(slot => mapVatSlotToKernelSlot(slot));
+    const kernelSlots = args.slots.map(slot => mapVatSlotToKernelSlot(slot));
+    const kernelArgs = harden({ ...args, slots: kernelSlots });
     let result;
     if (resultSlot) {
       insistVatType('promise', resultSlot);
@@ -132,12 +136,12 @@ export default function makeVatManager(
       p.decider = undefined; // resolution authority now held by run-queue
     }
 
-    const msg = {
+    const msg = harden({
       method,
-      argsString,
-      slots,
+      args: kernelArgs,
       result,
-    };
+    });
+    insistMessage(msg);
     syscallManager.send(target, msg);
   }
 
@@ -161,41 +165,47 @@ export default function makeVatManager(
     syscallManager.fulfillToPresence(vatID, kpid, targetSlot);
   }
 
-  function doFulfillToData(promiseID, fulfillData, vatSlots) {
+  function doFulfillToData(promiseID, data) {
     insistVatType('promise', promiseID);
+    insistCapData(data);
     const kpid = mapVatSlotToKernelSlot(promiseID);
-    const slots = vatSlots.map(slot => mapVatSlotToKernelSlot(slot));
+    const kernelSlots = data.slots.map(slot => mapVatSlotToKernelSlot(slot));
+    const kernelData = harden({ ...data, slots: kernelSlots });
     kdebug(
-      `syscall[${vatID}].fulfillData(${promiseID}/${kpid}) = ${fulfillData} ${JSON.stringify(
-        vatSlots,
-      )}/${JSON.stringify(slots)}`,
+      `syscall[${vatID}].fulfillData(${promiseID}/${kpid}) = ${
+        data.body
+      } ${JSON.stringify(data.slots)}/${JSON.stringify(kernelSlots)}`,
     );
-    syscallManager.fulfillToData(vatID, kpid, fulfillData, slots);
+    syscallManager.fulfillToData(vatID, kpid, kernelData);
   }
 
-  function doReject(promiseID, rejectData, vatSlots) {
+  function doReject(promiseID, data) {
     insistVatType('promise', promiseID);
+    insistCapData(data);
     const kpid = mapVatSlotToKernelSlot(promiseID);
-    const slots = vatSlots.map(slot => mapVatSlotToKernelSlot(slot));
+    const kernelSlots = data.slots.map(slot => mapVatSlotToKernelSlot(slot));
+    const kernelData = harden({ ...data, slots: kernelSlots });
     kdebug(
-      `syscall[${vatID}].reject(${promiseID}/${kpid}) = ${rejectData} ${JSON.stringify(
-        vatSlots,
-      )}/${JSON.stringify(slots)}`,
+      `syscall[${vatID}].reject(${promiseID}/${kpid}) = ${
+        data.body
+      } ${JSON.stringify(data.slots)}/${JSON.stringify(kernelSlots)}`,
     );
-    syscallManager.reject(vatID, kpid, rejectData, slots);
+    syscallManager.reject(vatID, kpid, kernelData);
   }
 
-  function doCallNow(target, method, argsString, argsSlots) {
+  function doCallNow(target, method, args) {
+    insistCapData(args);
     const dev = mapVatSlotToKernelSlot(target);
     const { type } = parseKernelSlot(dev);
     if (type !== 'device') {
       throw new Error(`doCallNow must target a device, not ${dev}`);
     }
-    const slots = argsSlots.map(slot => mapVatSlotToKernelSlot(slot));
+    const kernelSlots = args.slots.map(slot => mapVatSlotToKernelSlot(slot));
+    const kernelData = harden({ ...args, slots: kernelSlots });
     kdebug(`syscall[${vatID}].callNow(${target}/${dev}).${method}`);
-    const ret = syscallManager.invoke(dev, method, argsString, slots);
+    const ret = syscallManager.invoke(dev, method, kernelData);
     const retSlots = ret.slots.map(slot => mapKernelSlotToVatSlot(slot));
-    return harden({ data: ret.data, slots: retSlots });
+    return harden({ ...ret, slots: retSlots });
   }
 
   function replay(name, ...args) {
@@ -278,6 +288,7 @@ export default function makeVatManager(
   }
 
   async function deliverOneMessage(target, msg) {
+    insistMessage(msg);
     const targetSlot = mapKernelSlotToVatSlot(target);
     if (targetSlot.type === 'object') {
       insist(parseVatSlot(targetSlot).allocatedByVat, `deliver() to wrong vat`);
@@ -285,7 +296,7 @@ export default function makeVatManager(
       const p = kernelKeeper.getKernelPromise(target);
       insist(p.decider === vatID, `wrong decider`);
     }
-    const inputSlots = msg.slots.map(slot => mapKernelSlotToVatSlot(slot));
+    const inputSlots = msg.args.slots.map(slot => mapKernelSlotToVatSlot(slot));
     let resultSlot;
     if (msg.result) {
       insistKernelType('promise', msg.result);
@@ -304,8 +315,7 @@ export default function makeVatManager(
         'deliver',
         targetSlot,
         msg.method,
-        msg.argsString,
-        inputSlots,
+        harden({ ...msg.args, slots: inputSlots }),
         resultSlot,
       ],
       `vat[${vatID}][${targetSlot}].${msg.method} dispatch failed`,
@@ -316,7 +326,7 @@ export default function makeVatManager(
     insist(kp.state !== 'unresolved', `spurious notification ${kpid}`);
     if (kp.state === 'fulfilledToPresence') {
       const vpid = mapKernelSlotToVatSlot(kpid);
-      const slot = mapKernelSlotToVatSlot(kp.fulfillSlot);
+      const slot = mapKernelSlotToVatSlot(kp.slot);
       await doProcess(
         ['notifyFulfillToPresence', vpid, slot],
         `vat[${vatID}].promise[${vpid}] fulfillToPresence failed`,
@@ -325,16 +335,22 @@ export default function makeVatManager(
       throw new Error('not implemented yet');
     } else if (kp.state === 'fulfilledToData') {
       const vpid = mapKernelSlotToVatSlot(kpid);
-      const slots = kp.fulfillSlots.map(slot => mapKernelSlotToVatSlot(slot));
+      const vatData = harden({
+        ...kp.data,
+        slots: kp.data.slots.map(slot => mapKernelSlotToVatSlot(slot)),
+      });
       await doProcess(
-        ['notifyFulfillToData', vpid, kp.fulfillData, slots],
+        ['notifyFulfillToData', vpid, vatData],
         `vat[${vatID}].promise[${vpid}] fulfillToData failed`,
       );
     } else if (kp.state === 'rejected') {
       const vpid = mapKernelSlotToVatSlot(kpid);
-      const slots = kp.rejectSlots.map(slot => mapKernelSlotToVatSlot(slot));
+      const vatData = harden({
+        ...kp.data,
+        slots: kp.data.slots.map(slot => mapKernelSlotToVatSlot(slot)),
+      });
       await doProcess(
-        ['notifyReject', vpid, kp.rejectData, slots],
+        ['notifyReject', vpid, vatData],
         `vat[${vatID}].promise[${vpid}] reject failed`,
       );
     } else {

@@ -25,11 +25,12 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
     const result = slots[2]; // 'rp-NN' or empty string
     const msgSlots = slots.slice(3).map(s => mapInbound(state, remoteID, s));
     const body = message.slice(sci + 1);
+    const args = harden({ body, slots: msgSlots });
     let r; // send() if result promise is provided, else sendOnly()
     if (result.length) {
       r = mapInboundResult(state, remoteID, result);
     }
-    syscall.send(target, method, body, msgSlots, r);
+    syscall.send(target, method, args, r);
     if (r) {
       // syscall.subscribe() happens after the send(), so it doesn't have to
       // deal with allocating promises too
@@ -58,6 +59,7 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
     const target = getInbound(state, remoteID, remoteTarget);
     const slots = remoteSlots.map(s => mapInbound(state, remoteID, s));
     const body = message.slice(sci + 1);
+    const data = harden({ body, slots });
 
     // rp+NN maps to target=p-+NN and we look at the promiseTable to make
     // sure it's in the right state.
@@ -70,13 +72,13 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
       markPromiseAsResolved(state, target, resolution);
       syscall.fulfillToPresence(target, slot);
     } else if (type === 'data') {
-      const resolution = harden({ type: 'data', body, slots });
+      const resolution = harden({ type: 'data', data });
       markPromiseAsResolved(state, target, resolution);
-      syscall.fulfillToData(target, body, slots);
+      syscall.fulfillToData(target, data);
     } else if (type === 'reject') {
-      const resolution = harden({ type: 'reject', body, slots });
+      const resolution = harden({ type: 'reject', data });
       markPromiseAsResolved(state, target, resolution);
-      syscall.reject(target, body, slots);
+      syscall.reject(target, data);
     } else {
       throw new Error(`unknown resolution type ${type} in ${message}`);
     }

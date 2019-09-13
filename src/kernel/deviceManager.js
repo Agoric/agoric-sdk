@@ -2,6 +2,8 @@ import harden from '@agoric/harden';
 import { insist } from '../insist';
 import { insistKernelType } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
+import { insistCapData } from '../capdata';
+import { insistMessage } from '../message';
 
 export default function makeDeviceManager(
   deviceName,
@@ -30,20 +32,23 @@ export default function makeDeviceManager(
   // syscall handlers: these are wrapped by the 'syscall' object and made
   // available to userspace
 
-  function doSendOnly(targetSlot, method, argsString, vatSlots) {
+  function doSendOnly(targetSlot, method, args) {
     insist(`${targetSlot}` === targetSlot, 'non-string targetSlot');
     insistVatType('object', targetSlot);
+    insistCapData(args);
     const target = mapDeviceSlotToKernelSlot(targetSlot);
     insist(target, `unable to find target`);
     kdebug(`syscall[${deviceName}].send(${targetSlot}/${target}).${method}`);
-    const slots = vatSlots.map(slot => mapDeviceSlotToKernelSlot(slot));
     kdebug(`  ^target is ${target}`);
     const msg = {
       method,
-      argsString,
-      slots,
+      args: {
+        ...args,
+        slots: args.slots.map(slot => mapDeviceSlotToKernelSlot(slot)),
+      },
       result: null,
     };
+    insistMessage(msg);
     send(target, msg);
   }
 
@@ -74,17 +79,20 @@ export default function makeDeviceManager(
 
   // dispatch handlers: these are used by the kernel core
 
-  function invoke(target, method, data, slots) {
+  function invoke(target, method, args) {
     insistKernelType('device', target);
+    insistCapData(args);
     const t = mapKernelSlotToDeviceSlot(target);
     insist(parseVatSlot(t).allocatedByVat, 'not allocated by me');
-    const inputSlots = slots.map(slot => mapKernelSlotToDeviceSlot(slot));
     try {
-      const results = dispatch.invoke(t, method, data, inputSlots);
-      const resultSlots = results.slots.map(slot =>
-        mapDeviceSlotToKernelSlot(slot),
-      );
-      return { data: results.data, slots: resultSlots };
+      const results = dispatch.invoke(t, method, {
+        ...args,
+        slots: args.slots.map(slot => mapKernelSlotToDeviceSlot(slot)),
+      });
+      return harden({
+        ...results,
+        slots: results.slots.map(slot => mapDeviceSlotToKernelSlot(slot)),
+      });
     } catch (e) {
       console.log(
         `device[${deviceName}][${t}].${method} invoke failed: ${e}`,

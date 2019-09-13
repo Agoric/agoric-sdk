@@ -1,7 +1,16 @@
 import { test } from 'tape-promise/tape';
+import harden from '@agoric/harden';
 import { buildVatController } from '../src/index';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 import buildCommand from '../src/devices/command';
+
+function capdata(body, slots = []) {
+  return harden({ body, slots });
+}
+
+function capargs(args, slots = []) {
+  return capdata(JSON.stringify(args), slots);
+}
 
 async function test0(t, withSES) {
   const config = {
@@ -12,18 +21,16 @@ async function test0(t, withSES) {
   const c = await buildVatController(config, withSES);
   await c.step();
   // console.log(util.inspect(c.dump(), { depth: null }));
-  t.deepEqual(JSON.parse(c.dump().log[0]), {
-    args: [
-      [],
-      {
-        _bootstrap: { '@qclass': 'slot', index: 0 },
-      },
-      {
-        _dummy: 'dummy',
-        d0: { '@qclass': 'slot', index: 1 },
-      },
-    ],
-  });
+  t.deepEqual(JSON.parse(c.dump().log[0]), [
+    [],
+    {
+      _bootstrap: { '@qclass': 'slot', index: 0 },
+    },
+    {
+      _dummy: 'dummy',
+      d0: { '@qclass': 'slot', index: 1 },
+    },
+  ]);
   t.deepEqual(JSON.parse(c.dump().log[1]), ['o+0', 'd-70']);
   t.end();
 }
@@ -53,13 +60,13 @@ async function test1(t, withSES) {
   };
   const c = await buildVatController(config, withSES);
   await c.step();
-  c.queueToExport('_bootstrap', 'o+0', 'step1', '{"args":[]}');
+  c.queueToExport('_bootstrap', 'o+0', 'step1', capargs([]));
   await c.step();
   console.log(c.dump().log);
   t.deepEqual(c.dump().log, [
     'callNow',
     'invoke d+0 set',
-    '{"data":"{}","slots":[]}',
+    JSON.stringify(capargs([])),
   ]);
   t.deepEqual(sharedArray, ['pushed']);
   t.end();
