@@ -26,6 +26,7 @@ If you want to build and install from sources, you need to install
 - [node.js](https://nodejs.org/en/) (you need at least version 11). This installs 2 binaries named `node` (JavaScript runtime) and `npm` (JavaScript package manager)
     - **Warning:** There are some [known issues](https://github.com/Agoric/cosmic-swingset/issues/71) installing cosmic-swingset with [snap-based version of node.js on Ubuntu](https://github.com/nodesource/distributions/blob/master/README.md#snap). **We recommand** using a non-snap version
 - [Golang](https://golang.org/doc/install) (you need at least version 1.12)
+    - **(optional)** If installing the GO language didn't setup a `$GOPATH` variable, you'll need to find the directory and set the variable. Typically `GOPATH="$HOME/go"`
 
 ```sh
 git clone git@github.com:Agoric/cosmic-swingset.git
@@ -38,16 +39,6 @@ Make symbolic links somewhere in your `$PATH` (such as `/usr/local/bin`) as belo
 
 ```sh
 ln -s $PWD/lib/ag-chain-cosmos /usr/local/bin/
-```
-
-If installing the GO language didn't setup a `$GOPATH` variable,
-you'll need to find the directory and set the variable. Typically
-```sh
-GOPATH="$HOME/go"
-```
-
-Then do
-```sh
 ln -s $GOPATH/bin/ag-cosmos-helper /usr/local/bin/
 ```
 
