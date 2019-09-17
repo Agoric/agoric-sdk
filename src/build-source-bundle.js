@@ -11,6 +11,7 @@ export default async function bundleSource(startFilename) {
     acornInjectPlugins: [infixBang()],
   });
   const { output } = await bundle.generate({
+    exports: 'named',
     format: 'cjs',
   });
   if (output.length !== 1) {

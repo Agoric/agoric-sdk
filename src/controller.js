@@ -109,7 +109,7 @@ function buildSESKernel(initialState) {
   });
   const kernelSource = getKernelSource();
   // console.log('building kernel');
-  const buildKernel = s.evaluate(kernelSource, { require: r })();
+  const buildKernel = s.evaluate(kernelSource, { require: r })().default;
   const kernelEndowments = { setImmediate };
   const kernel = buildKernel(kernelEndowments, initialState);
   return { kernel, s, r };
@@ -158,7 +158,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
       // const r = s.makeRequire({ '@agoric/harden': true, '@agoric/nat': Nat });
       let source = await bundleSource(`${sourceIndex}`);
       source = `(${source})`;
-      setup = s.evaluate(source, { require: r })();
+      setup = s.evaluate(source, { require: r })().default;
     } else {
       // eslint-disable-next-line global-require,import/no-dynamic-require
       setup = require(`${sourceIndex}`).default;
@@ -177,7 +177,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
     if (withSES) {
       let source = await bundleSource(`${sourceIndex}`);
       source = `(${source})`;
-      setup = s.evaluate(source, { require: r })();
+      setup = s.evaluate(source, { require: r })().default;
     } else {
       // eslint-disable-next-line global-require,import/no-dynamic-require
       setup = require(`${sourceIndex}`).default;
