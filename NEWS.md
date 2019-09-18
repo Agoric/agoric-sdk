@@ -1,5 +1,10 @@
 User-visible changes in Cosmic SwingSet:
 
+## Release v0.9.1 (2019-09-18)
+
+* Upgrade to SwingSet v0.0.22.  This fixes a publically disclosed
+  [security vulnerability in realms-shim](https://github.com/Agoric/realms-shim/issues/48),
+
 ## Release v0.9.0 (2019-09-11)
 
 * Upgrade to Cosmos SDK v0.37.0
