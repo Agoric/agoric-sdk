@@ -60,7 +60,7 @@ async function test1(t, withSES) {
   };
   const c = await buildVatController(config, withSES);
   await c.step();
-  c.queueToExport('_bootstrap', 'o+0', 'step1', capargs([]));
+  c.queueToVatExport('_bootstrap', 'o+0', 'step1', capargs([]));
   await c.step();
   console.log(c.dump().log);
   t.deepEqual(c.dump().log, [
@@ -191,10 +191,11 @@ async function testState(t, withSES) {
   // The initial state should be missing (null). Then we set it with the call
   // from bootstrap, and read it back.
   const c1 = await buildVatController(config, withSES, ['write+read']);
+  const d3 = c1.deviceNameToID('d3');
   await c1.run();
   t.deepEqual(c1.dump().log, ['undefined', 'w+r', 'called', 'got {"s":"new"}']);
-  t.deepEqual(JSON.parse(c1.getState()).devices.d3.deviceState, { s: 'new' });
-  t.deepEqual(JSON.parse(c1.getState()).devices.d3.nextObjectID, 10);
+  t.deepEqual(JSON.parse(c1.getState()).devices[d3].deviceState, { s: 'new' });
+  t.deepEqual(JSON.parse(c1.getState()).devices[d3].nextObjectID, 10);
 
   t.end();
 }

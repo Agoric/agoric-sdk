@@ -2,25 +2,23 @@ import harden from '@agoric/harden';
 import { insist } from '../../insist';
 import { parseKernelSlot } from '../parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
+import { insistVatID } from '../id';
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
-export default function makeVatKeeper(
-  state,
-  vatID,
-  addKernelObject,
-  addKernelPromise,
-) {
-  function createStartingVatState() {
-    state.kernelSlotToVatSlot = {}; // kpNN -> p+NN, etc
-    state.vatSlotToKernelSlot = {}; // p+NN -> kpNN, etc
+export function initializeVatState(vatID, state) {
+  state.kernelSlotToVatSlot = {}; // kpNN -> p+NN, etc
+  state.vatSlotToKernelSlot = {}; // p+NN -> kpNN, etc
 
-    state.nextObjectID = 50;
-    state.nextPromiseID = 60;
-    state.nextDeviceID = 70;
+  state.nextObjectID = 50;
+  state.nextPromiseID = 60;
+  state.nextDeviceID = 70;
 
-    state.transcript = [];
-  }
+  state.transcript = [];
+}
+
+export function makeVatKeeper(state, vatID, addKernelObject, addKernelPromise) {
+  insistVatID(vatID);
 
   function insistVatSlotType(type, slot) {
     insist(
@@ -107,7 +105,6 @@ export default function makeVatKeeper(
   }
 
   return harden({
-    createStartingVatState,
     mapVatSlotToKernelSlot,
     mapKernelSlotToVatSlot,
     getTranscript,

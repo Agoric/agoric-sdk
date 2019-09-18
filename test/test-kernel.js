@@ -51,13 +51,14 @@ export default function runTests() {
     }
     kernel.addGenesisVat('vat1', setup1);
     await kernel.start();
+    const vat1 = kernel.vatNameToID('vat1');
     let data = kernel.dump();
-    t.deepEqual(data.vatTables, [{ vatID: 'vat1', state: { transcript: [] } }]);
+    t.deepEqual(data.vatTables, [{ vatID: vat1, state: { transcript: [] } }]);
     t.deepEqual(data.kernelTable, []);
     t.deepEqual(data.log, []);
     t.deepEqual(log, []);
 
-    kernel.queueToExport('vat1', 'o+1', 'foo', capdata('args'));
+    kernel.queueToExport(vat1, 'o+1', 'foo', capdata('args'));
     t.deepEqual(kernel.dump().runQueue, [
       {
         type: 'send',
@@ -96,22 +97,19 @@ export default function runTests() {
     kernel.addGenesisVat('vat1', setup1);
     kernel.addGenesisVat('vat2', setup1);
     await kernel.start();
+    const vat1 = kernel.vatNameToID('vat1');
+    const vat2 = kernel.vatNameToID('vat2');
     const data = kernel.dump();
     t.deepEqual(data.vatTables, [
-      { vatID: 'vat1', state: { transcript: [] } },
-      { vatID: 'vat2', state: { transcript: [] } },
+      { vatID: vat1, state: { transcript: [] } },
+      { vatID: vat2, state: { transcript: [] } },
     ]);
     t.deepEqual(data.kernelTable, []);
     t.deepEqual(log, []);
 
-    const koFor5 = kernel.addExport('vat1', 'o+5');
-    const koFor6 = kernel.addExport('vat2', 'o+6');
-    kernel.queueToExport(
-      'vat1',
-      'o+1',
-      'foo',
-      capdata('args', [koFor5, koFor6]),
-    );
+    const koFor5 = kernel.addExport(vat1, 'o+5');
+    const koFor6 = kernel.addExport(vat2, 'o+6');
+    kernel.queueToExport(vat1, 'o+1', 'foo', capdata('args', [koFor5, koFor6]));
     t.deepEqual(kernel.dump().runQueue, [
       {
         type: 'send',
@@ -127,10 +125,10 @@ export default function runTests() {
     await kernel.run();
     t.deepEqual(log, [['o+1', 'foo', capdata('args', ['o+5', 'o-50'])]]);
     t.deepEqual(kernel.dump().kernelTable, [
-      [koFor5, 'vat1', 'o+5'],
-      [koFor6, 'vat1', 'o-50'],
-      [koFor6, 'vat2', 'o+6'],
-      ['ko22', 'vat1', 'o+1'],
+      [koFor5, vat1, 'o+5'],
+      [koFor6, vat1, 'o-50'],
+      [koFor6, vat2, 'o+6'],
+      ['ko22', vat1, 'o+1'],
     ]);
 
     t.end();
@@ -145,12 +143,14 @@ export default function runTests() {
     kernel.addGenesisVat('vat1', setup);
     kernel.addGenesisVat('vat2', setup);
     await kernel.start();
+    const vat1 = kernel.vatNameToID('vat1');
+    const vat2 = kernel.vatNameToID('vat2');
 
-    const slot = kernel.addImport('vat1', kernel.addExport('vat2', 'o+5'));
+    const slot = kernel.addImport(vat1, kernel.addExport(vat2, 'o+5'));
     t.deepEqual(slot, 'o-50'); // first import
     t.deepEqual(kernel.dump().kernelTable, [
-      ['ko20', 'vat1', 'o-50'],
-      ['ko20', 'vat2', 'o+5'],
+      ['ko20', vat1, 'o-50'],
+      ['ko20', vat2, 'o+5'],
     ]);
     t.end();
   });
@@ -193,28 +193,30 @@ export default function runTests() {
     }
     kernel.addGenesisVat('vat2', setup2);
     await kernel.start();
+    const vat1 = kernel.vatNameToID('vat1');
+    const vat2 = kernel.vatNameToID('vat2');
 
-    const t1 = kernel.addExport('vat1', 'o+1');
-    const vat2Obj5 = kernel.addExport('vat2', 'o+5');
-    v1tovat25 = kernel.addImport('vat1', vat2Obj5);
+    const t1 = kernel.addExport(vat1, 'o+1');
+    const vat2Obj5 = kernel.addExport(vat2, 'o+5');
+    v1tovat25 = kernel.addImport(vat1, vat2Obj5);
     t.deepEqual(v1tovat25, 'o-50'); // first allocation
 
     const data = kernel.dump();
     t.deepEqual(data.vatTables, [
-      { vatID: 'vat1', state: { transcript: [] } },
-      { vatID: 'vat2', state: { transcript: [] } },
+      { vatID: vat1, state: { transcript: [] } },
+      { vatID: vat2, state: { transcript: [] } },
     ]);
 
     const kt = [
-      [t1, 'vat1', 'o+1'],
-      ['ko21', 'vat1', v1tovat25],
-      ['ko21', 'vat2', 'o+5'],
+      [t1, vat1, 'o+1'],
+      ['ko21', vat1, v1tovat25],
+      ['ko21', vat2, 'o+5'],
     ];
     checkKT(t, kernel, kt);
     t.deepEqual(log, []);
 
     // o1!foo(args)
-    kernel.queueToExport('vat1', 'o+1', 'foo', capdata('args'));
+    kernel.queueToExport(vat1, 'o+1', 'foo', capdata('args'));
     t.deepEqual(log, []);
     t.deepEqual(kernel.dump().runQueue, [
       {
@@ -249,7 +251,7 @@ export default function runTests() {
       {
         id: 'kp40',
         state: 'unresolved',
-        decider: 'vat1',
+        decider: vat1,
         subscribers: [],
         queue: [],
       },
@@ -262,9 +264,9 @@ export default function runTests() {
       },
     ]);
 
-    kt.push(['ko22', 'vat1', 'o+7']);
-    kt.push(['kp40', 'vat1', p7]);
-    kt.push(['kp41', 'vat1', 'p+5']);
+    kt.push(['ko22', vat1, 'o+7']);
+    kt.push(['kp40', vat1, p7]);
+    kt.push(['kp41', vat1, 'p+5']);
     checkKT(t, kernel, kt);
 
     await kernel.step();
@@ -277,14 +279,14 @@ export default function runTests() {
           {
             id: 'kp40',
             state: 'unresolved',
-            decider: 'vat1',
+            decider: vat1,
             subscribers: [],
             queue: [],
           },
           {
             id: 'kp41',
             state: 'unresolved',
-            decider: 'vat2',
+            decider: vat2,
             subscribers: [],
             queue: [],
           },
@@ -292,16 +294,16 @@ export default function runTests() {
       ],
     ]);
 
-    kt.push(['ko22', 'vat2', 'o-50']);
-    kt.push(['kp41', 'vat2', 'p-61']);
-    kt.push(['kp40', 'vat2', 'p-60']);
+    kt.push(['ko22', vat2, 'o-50']);
+    kt.push(['kp41', vat2, 'p-61']);
+    kt.push(['kp40', vat2, 'p-60']);
     checkKT(t, kernel, kt);
 
     t.deepEqual(kernel.dump().promises, [
       {
         id: 'kp40',
         state: 'unresolved',
-        decider: 'vat1',
+        decider: vat1,
         // Sending a promise from vat1 to vat2 doesn't cause vat2 to be
         // subscribed unless they want it. Liveslots will always subscribe,
         // because we don't have enough hooks into Promises to detect a
@@ -312,7 +314,7 @@ export default function runTests() {
       {
         id: 'kp41',
         state: 'unresolved',
-        decider: 'vat2',
+        decider: vat2,
         subscribers: [],
         queue: [],
       },
@@ -363,36 +365,39 @@ export default function runTests() {
     kernel.addGenesisVat('vatC', setupC);
 
     await kernel.start();
+    const vatA = kernel.vatNameToID('vatA');
+    const vatB = kernel.vatNameToID('vatB');
+    const vatC = kernel.vatNameToID('vatC');
 
-    const alice = kernel.addExport('vatA', 'o+4');
-    const bob = kernel.addExport('vatB', 'o+5');
-    const carol = kernel.addExport('vatC', 'o+6');
+    const alice = kernel.addExport(vatA, 'o+4');
+    const bob = kernel.addExport(vatB, 'o+5');
+    const carol = kernel.addExport(vatC, 'o+6');
 
-    bobForA = kernel.addImport('vatA', bob);
-    carolForA = kernel.addImport('vatA', carol);
+    bobForA = kernel.addImport(vatA, bob);
+    carolForA = kernel.addImport(vatA, carol);
 
     // do an extra allocation to make sure we aren't confusing the indices
     const extraP = 'p+99';
-    const ap = kernel.addExport('vatA', extraP);
+    const ap = kernel.addExport(vatA, extraP);
 
     const data = kernel.dump();
     t.deepEqual(data.vatTables, [
-      { vatID: 'vatA', state: { transcript: [] } },
-      { vatID: 'vatB', state: { transcript: [] } },
-      { vatID: 'vatC', state: { transcript: [] } },
+      { vatID: vatA, state: { transcript: [] } },
+      { vatID: vatB, state: { transcript: [] } },
+      { vatID: vatC, state: { transcript: [] } },
     ]);
     const kt = [
-      [alice, 'vatA', 'o+4'],
-      [bob, 'vatA', bobForA],
-      [bob, 'vatB', 'o+5'],
-      [carol, 'vatA', carolForA],
-      [carol, 'vatC', 'o+6'],
-      [ap, 'vatA', extraP],
+      [alice, vatA, 'o+4'],
+      [bob, vatA, bobForA],
+      [bob, vatB, 'o+5'],
+      [carol, vatA, carolForA],
+      [carol, vatC, 'o+6'],
+      [ap, vatA, extraP],
     ];
     checkKT(t, kernel, kt);
     t.deepEqual(log, []);
 
-    kernel.queueToExport('vatA', 'o+4', 'foo', capdata('args'));
+    kernel.queueToExport(vatA, 'o+4', 'foo', capdata('args'));
     await kernel.step();
 
     t.deepEqual(log.shift(), ['vatA', 'o+4', 'foo', capdata('args')]);
@@ -414,7 +419,7 @@ export default function runTests() {
       {
         id: ap,
         state: 'unresolved',
-        decider: 'vatA',
+        decider: vatA,
         subscribers: [],
         queue: [],
       },
@@ -426,13 +431,13 @@ export default function runTests() {
         queue: [],
       },
     ]);
-    kt.push(['kp41', 'vatA', 'p+5']);
+    kt.push(['kp41', vatA, 'p+5']);
     checkKT(t, kernel, kt);
 
     await kernel.step();
     t.deepEqual(log, [['vatB', 'o+5', 'intro', capdata('bargs', ['o-50'])]]);
-    kt.push([carol, 'vatB', 'o-50']);
-    kt.push(['kp41', 'vatB', 'p-60']);
+    kt.push([carol, vatB, 'o-50']);
+    kt.push(['kp41', vatB, 'p-60']);
     checkKT(t, kernel, kt);
 
     t.end();
@@ -463,21 +468,23 @@ export default function runTests() {
     kernel.addGenesisVat('vatB', setupB);
 
     await kernel.start();
+    const vatA = kernel.vatNameToID('vatA');
+    const vatB = kernel.vatNameToID('vatB');
 
-    const alice = kernel.addExport('vatA', 'o+6');
-    const bob = kernel.addExport('vatB', 'o+5');
+    const alice = kernel.addExport(vatA, 'o+6');
+    const bob = kernel.addExport(vatB, 'o+5');
 
-    const B = kernel.addImport('vatA', bob);
-    const A = kernel.addImport('vatB', alice);
+    const B = kernel.addImport(vatA, bob);
+    const A = kernel.addImport(vatB, alice);
 
     // we send pr1
     const pr1 = 'p+6';
 
     const kt = [
-      ['ko20', 'vatA', 'o+6'],
-      ['ko20', 'vatB', 'o-50'],
-      ['ko21', 'vatA', 'o-50'],
-      ['ko21', 'vatB', 'o+5'],
+      ['ko20', vatA, 'o+6'],
+      ['ko20', vatB, 'o-50'],
+      ['ko21', vatA, 'o-50'],
+      ['ko21', vatB, 'o+5'],
     ];
     checkKT(t, kernel, kt);
     const kp = [];
@@ -496,12 +503,12 @@ export default function runTests() {
         },
       },
     ]);
-    kt.push(['kp40', 'vatA', pr1]);
+    kt.push(['kp40', vatA, pr1]);
     checkKT(t, kernel, kt);
     kp.push({
       id: 'kp40',
       state: 'unresolved',
-      decider: 'vatA',
+      decider: vatA,
       subscribers: [],
       queue: [],
     });
@@ -509,7 +516,7 @@ export default function runTests() {
     await kernel.run();
     t.deepEqual(logB.shift(), ['o+5', 'foo1', capdata('args', ['p-60'])]);
     t.deepEqual(logB, []);
-    kt.push(['kp40', 'vatB', 'p-60']); // pr1 for B
+    kt.push(['kp40', vatB, 'p-60']); // pr1 for B
     checkKT(t, kernel, kt);
 
     // sending it a second time should arrive as the same thing
@@ -554,22 +561,21 @@ export default function runTests() {
     kernel.addGenesisVat('vat2', emptySetup);
 
     await kernel.start();
+    const vat1 = kernel.vatNameToID('vat1');
+    const vat2 = kernel.vatNameToID('vat2');
 
-    const kp = kernel.addExport('vat2', 'p+5');
-    const pr = kernel.addImport('vat1', kp);
+    const kp = kernel.addExport(vat2, 'p+5');
+    const pr = kernel.addImport(vat1, kp);
     t.deepEqual(pr, 'p-60');
-    t.deepEqual(kernel.dump().kernelTable, [
-      [kp, 'vat1', pr],
-      [kp, 'vat2', 'p+5'],
-    ]);
+    t.deepEqual(kernel.dump().kernelTable, [[kp, vat1, pr], [kp, vat2, 'p+5']]);
 
     syscall.subscribe(pr);
     t.deepEqual(kernel.dump().promises, [
       {
         id: kp,
         state: 'unresolved',
-        decider: 'vat2',
-        subscribers: ['vat1'],
+        decider: vat2,
+        subscribers: [vat1],
         queue: [],
       },
     ]);
@@ -602,14 +608,16 @@ export default function runTests() {
     }
     kernel.addGenesisVat('vatB', setupB);
     await kernel.start();
+    const vatA = kernel.vatNameToID('vatA');
+    const vatB = kernel.vatNameToID('vatB');
 
     const aliceForA = 'o+6';
     const pForB = 'p+5';
-    const pForKernel = kernel.addExport('vatB', pForB);
-    const pForA = kernel.addImport('vatA', pForKernel);
+    const pForKernel = kernel.addExport(vatB, pForB);
+    const pForA = kernel.addImport(vatA, pForKernel);
     t.deepEqual(kernel.dump().kernelTable, [
-      [pForKernel, 'vatA', pForA],
-      [pForKernel, 'vatB', pForB],
+      [pForKernel, vatA, pForA],
+      [pForKernel, vatB, pForB],
     ]);
 
     syscallA.subscribe(pForA);
@@ -617,8 +625,8 @@ export default function runTests() {
       {
         id: pForKernel,
         state: 'unresolved',
-        decider: 'vatB',
-        subscribers: ['vatA'],
+        decider: vatB,
+        subscribers: [vatA],
         queue: [],
       },
     ]);
@@ -629,7 +637,7 @@ export default function runTests() {
     t.deepEqual(kernel.dump().runQueue, [
       {
         type: 'notify',
-        vatID: 'vatA',
+        vatID: vatA,
         kpid: pForKernel,
       },
     ]);
@@ -673,19 +681,21 @@ export default function runTests() {
     }
     kernel.addGenesisVat('vatB', setupB);
     await kernel.start();
+    const vatA = kernel.vatNameToID('vatA');
+    const vatB = kernel.vatNameToID('vatB');
 
     const bobForB = 'o+6';
-    const bobForKernel = kernel.addExport('vatB', 'o+6');
-    const bobForA = kernel.addImport('vatA', bobForKernel);
+    const bobForKernel = kernel.addExport(vatB, 'o+6');
+    const bobForA = kernel.addImport(vatA, bobForKernel);
 
     const pForB = 'p+5';
-    const pForKernel = kernel.addExport('vatB', 'p+5');
-    const pForA = kernel.addImport('vatA', pForKernel);
+    const pForKernel = kernel.addExport(vatB, 'p+5');
+    const pForA = kernel.addImport(vatA, pForKernel);
     const kt = [
-      [bobForKernel, 'vatB', bobForB],
-      [bobForKernel, 'vatA', bobForA],
-      [pForKernel, 'vatA', pForA],
-      [pForKernel, 'vatB', pForB],
+      [bobForKernel, vatB, bobForB],
+      [bobForKernel, vatA, bobForA],
+      [pForKernel, vatA, pForA],
+      [pForKernel, vatB, pForB],
     ];
     checkKT(t, kernel, kt);
 
@@ -694,8 +704,8 @@ export default function runTests() {
       {
         id: pForKernel,
         state: 'unresolved',
-        decider: 'vatB',
-        subscribers: ['vatA'],
+        decider: vatB,
+        subscribers: [vatA],
         queue: [],
       },
     ]);
@@ -705,7 +715,7 @@ export default function runTests() {
     t.deepEqual(kernel.dump().runQueue, [
       {
         type: 'notify',
-        vatID: 'vatA',
+        vatID: vatA,
         kpid: pForKernel,
       },
     ]);
@@ -747,14 +757,16 @@ export default function runTests() {
     }
     kernel.addGenesisVat('vatB', setupB);
     await kernel.start();
+    const vatA = kernel.vatNameToID('vatA');
+    const vatB = kernel.vatNameToID('vatB');
 
     const aliceForA = 'o+6';
     const pForB = 'p+5';
-    const pForKernel = kernel.addExport('vatB', pForB);
-    const pForA = kernel.addImport('vatA', pForKernel);
+    const pForKernel = kernel.addExport(vatB, pForB);
+    const pForA = kernel.addImport(vatA, pForKernel);
     t.deepEqual(kernel.dump().kernelTable, [
-      [pForKernel, 'vatA', pForA],
-      [pForKernel, 'vatB', pForB],
+      [pForKernel, vatA, pForA],
+      [pForKernel, vatB, pForB],
     ]);
 
     syscallA.subscribe(pForA);
@@ -762,8 +774,8 @@ export default function runTests() {
       {
         id: pForKernel,
         state: 'unresolved',
-        decider: 'vatB',
-        subscribers: ['vatA'],
+        decider: vatB,
+        subscribers: [vatA],
         queue: [],
       },
     ]);
@@ -774,7 +786,7 @@ export default function runTests() {
     t.deepEqual(kernel.dump().runQueue, [
       {
         type: 'notify',
-        vatID: 'vatA',
+        vatID: vatA,
         kpid: pForKernel,
       },
     ]);
@@ -809,13 +821,15 @@ export default function runTests() {
     kernel.addGenesisVat('vatA', setup);
     kernel.addGenesisVat('vatB', emptySetup);
     await kernel.start();
+    const vatA = kernel.vatNameToID('vatA');
+    const vatB = kernel.vatNameToID('vatB');
 
-    const alice = kernel.addExport('vatA', aliceForAlice);
-    const bob = kernel.addExport('vatB', 'o+2');
-    const bobForAlice = kernel.addImport('vatA', bob);
+    const alice = kernel.addExport(vatA, aliceForAlice);
+    const bob = kernel.addExport(vatB, 'o+2');
+    const bobForAlice = kernel.addImport(vatA, bob);
 
     kernel.queueToExport(
-      'vatA',
+      vatA,
       aliceForAlice,
       'store',
       capdata('args string', [alice, bob]),
@@ -869,22 +883,24 @@ export default function runTests() {
     }
     kernel.addGenesisVat('vatB', setupB);
     await kernel.start();
+    const vatA = kernel.vatNameToID('vatA');
+    const vatB = kernel.vatNameToID('vatB');
 
     const bobForB = 'o+6';
-    const bobForKernel = kernel.addExport('vatB', bobForB);
-    const bobForA = kernel.addImport('vatA', bobForKernel);
+    const bobForKernel = kernel.addExport(vatB, bobForB);
+    const bobForA = kernel.addImport(vatA, bobForKernel);
 
     const p1ForA = 'p+1';
     syscall.send(bobForA, 'foo', capdata('fooargs'), p1ForA);
-    const p1ForKernel = kernel.addExport('vatA', p1ForA);
+    const p1ForKernel = kernel.addExport(vatA, p1ForA);
 
     const p2ForA = 'p+2';
     syscall.send(p1ForA, 'bar', capdata('barargs'), p2ForA);
-    const p2ForKernel = kernel.addExport('vatA', p2ForA);
+    const p2ForKernel = kernel.addExport(vatA, p2ForA);
 
     const p3ForA = 'p+3';
     syscall.send(p2ForA, 'urgh', capdata('urghargs'), p3ForA);
-    const p3ForKernel = kernel.addExport('vatA', p3ForA);
+    const p3ForKernel = kernel.addExport(vatA, p3ForA);
 
     t.deepEqual(kernel.dump().promises, [
       {
@@ -912,7 +928,7 @@ export default function runTests() {
 
     await kernel.run();
 
-    const p1ForB = kernel.addImport('vatB', p1ForKernel);
+    const p1ForB = kernel.addImport(vatB, p1ForKernel);
     t.deepEqual(log.shift(), [bobForB, 'foo', capdata('fooargs'), p1ForB]);
     t.deepEqual(log, []);
 
@@ -920,7 +936,7 @@ export default function runTests() {
       {
         id: p1ForKernel,
         state: 'unresolved',
-        decider: 'vatB',
+        decider: vatB,
         subscribers: [],
         queue: [
           {
@@ -978,22 +994,24 @@ export default function runTests() {
     }
     kernel.addGenesisVat('vatB', setupB, { enablePipelining: true });
     await kernel.start();
+    const vatA = kernel.vatNameToID('vatA');
+    const vatB = kernel.vatNameToID('vatB');
 
     const bobForB = 'o+6';
-    const bobForKernel = kernel.addExport('vatB', bobForB);
-    const bobForA = kernel.addImport('vatA', bobForKernel);
+    const bobForKernel = kernel.addExport(vatB, bobForB);
+    const bobForA = kernel.addImport(vatA, bobForKernel);
 
     const p1ForA = 'p+1';
     syscall.send(bobForA, 'foo', capdata('fooargs'), p1ForA);
-    const p1ForKernel = kernel.addExport('vatA', p1ForA);
+    const p1ForKernel = kernel.addExport(vatA, p1ForA);
 
     const p2ForA = 'p+2';
     syscall.send(p1ForA, 'bar', capdata('barargs'), p2ForA);
-    const p2ForKernel = kernel.addExport('vatA', p2ForA);
+    const p2ForKernel = kernel.addExport(vatA, p2ForA);
 
     const p3ForA = 'p+3';
     syscall.send(p2ForA, 'urgh', capdata('urghargs'), p3ForA);
-    const p3ForKernel = kernel.addExport('vatA', p3ForA);
+    const p3ForKernel = kernel.addExport(vatA, p3ForA);
 
     t.deepEqual(kernel.dump().promises, [
       {
@@ -1021,9 +1039,9 @@ export default function runTests() {
 
     await kernel.run();
 
-    const p1ForB = kernel.addImport('vatB', p1ForKernel);
-    const p2ForB = kernel.addImport('vatB', p2ForKernel);
-    const p3ForB = kernel.addImport('vatB', p3ForKernel);
+    const p1ForB = kernel.addImport(vatB, p1ForKernel);
+    const p2ForB = kernel.addImport(vatB, p2ForKernel);
+    const p3ForB = kernel.addImport(vatB, p3ForKernel);
     t.deepEqual(log.shift(), [bobForB, 'foo', capdata('fooargs'), p1ForB]);
     t.deepEqual(log.shift(), [p1ForB, 'bar', capdata('barargs'), p2ForB]);
     t.deepEqual(log.shift(), [p2ForB, 'urgh', capdata('urghargs'), p3ForB]);
@@ -1033,21 +1051,21 @@ export default function runTests() {
       {
         id: p1ForKernel,
         state: 'unresolved',
-        decider: 'vatB',
+        decider: vatB,
         subscribers: [],
         queue: [],
       },
       {
         id: p2ForKernel,
         state: 'unresolved',
-        decider: 'vatB',
+        decider: vatB,
         subscribers: [],
         queue: [],
       },
       {
         id: p3ForKernel,
         state: 'unresolved',
-        decider: 'vatB',
+        decider: vatB,
         subscribers: [],
         queue: [],
       },

@@ -2,15 +2,16 @@ import harden from '@agoric/harden';
 import { insist } from '../../insist';
 import { parseKernelSlot } from '../parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
+import { insistDeviceID } from '../id';
 
-// makeVatKeeper is a pure function: all state is kept in the argument object
+export function initializeDeviceState(deviceID, state) {
+  state.kernelSlotToDevSlot = {}; // kdNN -> d+NN, koNN -> o-NN
+  state.devSlotToKernelSlot = {}; // d+NN -> kdNN, o-NN -> koNN
+  state.nextObjectID = 10; // for imports, the NN in o-NN
+}
 
-function makeDeviceKeeper(state, deviceName, addKernelObject, addKernelDevice) {
-  function createStartingDeviceState() {
-    state.kernelSlotToDevSlot = {}; // kdNN -> d+NN, koNN -> o-NN
-    state.devSlotToKernelSlot = {}; // d+NN -> kdNN, o-NN -> koNN
-    state.nextObjectID = 10; // for imports, the NN in o-NN
-  }
+export function makeDeviceKeeper(state, deviceID, addKernelDeviceNode) {
+  insistDeviceID(deviceID);
 
   function mapDeviceSlotToKernelSlot(devSlot) {
     insist(`${devSlot}` === devSlot, 'non-string devSlot');
@@ -22,11 +23,11 @@ function makeDeviceKeeper(state, deviceName, addKernelObject, addKernelDevice) {
       if (allocatedByVat) {
         let kernelSlot;
         if (type === 'object') {
-          kernelSlot = addKernelObject(deviceName);
+          throw new Error(`devices cannot export Objects`);
         } else if (type === 'promise') {
-          throw new Error(`devices do not accept Promises`);
+          throw new Error(`devices cannot export Promises`);
         } else if (type === 'device') {
-          kernelSlot = addKernelDevice(deviceName);
+          kernelSlot = addKernelDeviceNode(deviceID);
         } else {
           throw new Error(`unknown type ${type}`);
         }
@@ -82,13 +83,12 @@ function makeDeviceKeeper(state, deviceName, addKernelObject, addKernelDevice) {
     const res = [];
     Object.getOwnPropertyNames(state.kernelSlotToDevSlot).forEach(ks => {
       const ds = state.kernelSlotToDevSlot[ks];
-      res.push([ks, deviceName, ds]);
+      res.push([ks, deviceID, ds]);
     });
     return harden(res);
   }
 
   return harden({
-    createStartingDeviceState,
     mapDeviceSlotToKernelSlot,
     mapKernelSlotToDeviceSlot,
     getDeviceState,
@@ -96,5 +96,3 @@ function makeDeviceKeeper(state, deviceName, addKernelObject, addKernelDevice) {
     dumpState,
   });
 }
-
-export default makeDeviceKeeper;

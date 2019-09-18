@@ -27,10 +27,11 @@ async function simpleCall(t, withSES) {
   };
   const controller = await buildVatController(config, withSES);
   const data = controller.dump();
-  t.deepEqual(data.vatTables, [{ vatID: 'vat1', state: { transcript: [] } }]);
+  const vat1 = controller.vatNameToID('vat1');
+  t.deepEqual(data.vatTables, [{ vatID: vat1, state: { transcript: [] } }]);
   t.deepEqual(data.kernelTable, []);
 
-  controller.queueToExport('vat1', 'o+1', 'foo', capdata('args'));
+  controller.queueToVatExport('vat1', 'o+1', 'foo', capdata('args'));
   t.deepEqual(controller.dump().runQueue, [
     {
       msg: {
@@ -105,6 +106,9 @@ async function bootstrapExport(t, withSES) {
     path.resolve(__dirname, 'basedir-controller-3'),
   );
   const c = await buildVatController(config, withSES);
+  const bootstrapVatID = c.vatNameToID('_bootstrap');
+  const leftVatID = c.vatNameToID('left');
+  const rightVatID = c.vatNameToID('right');
   // console.log(c.dump());
   // console.log('SLOTS: ', c.dump().runQueue[0].slots);
 
@@ -113,9 +117,9 @@ async function bootstrapExport(t, withSES) {
   const left0 = 'ko21';
   const right0 = 'ko22';
   const kt = [
-    [boot0, '_bootstrap', 'o+0'],
-    [left0, 'left', 'o+0'],
-    [right0, 'right', 'o+0'],
+    [boot0, bootstrapVatID, 'o+0'],
+    [left0, leftVatID, 'o+0'],
+    [right0, rightVatID, 'o+0'],
   ];
   checkKT(t, c, kt);
 
@@ -150,9 +154,9 @@ async function bootstrapExport(t, withSES) {
     'bootstrap called',
     'bootstrap.obj0.bootstrap()',
   ]);
-  kt.push([left0, '_bootstrap', 'o-50']);
-  kt.push([right0, '_bootstrap', 'o-51']);
-  kt.push([fooP, '_bootstrap', 'p+5']);
+  kt.push([left0, bootstrapVatID, 'o-50']);
+  kt.push([right0, bootstrapVatID, 'o-51']);
+  kt.push([fooP, bootstrapVatID, 'p+5']);
   checkKT(t, c, kt);
   t.deepEqual(c.dump().runQueue, [
     {
@@ -178,9 +182,9 @@ async function bootstrapExport(t, withSES) {
     'bootstrap.obj0.bootstrap()',
     'left.foo 1',
   ]);
-  kt.push([right0, 'left', 'o-50']);
-  kt.push([fooP, 'left', 'p-60']);
-  kt.push([barP, 'left', 'p+5']);
+  kt.push([right0, leftVatID, 'o-50']);
+  kt.push([fooP, leftVatID, 'p-60']);
+  kt.push([barP, leftVatID, 'p+5']);
   checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [
@@ -196,7 +200,7 @@ async function bootstrapExport(t, withSES) {
         result: barP,
       },
     },
-    { type: 'notify', vatID: '_bootstrap', kpid: fooP },
+    { type: 'notify', vatID: bootstrapVatID, kpid: fooP },
   ]);
 
   await c.step();
@@ -210,12 +214,12 @@ async function bootstrapExport(t, withSES) {
     'right.obj0.bar 2 true',
   ]);
 
-  kt.push([barP, 'right', 'p-60']);
+  kt.push([barP, rightVatID, 'p-60']);
   checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [
-    { type: 'notify', vatID: '_bootstrap', kpid: fooP },
-    { type: 'notify', vatID: 'left', kpid: barP },
+    { type: 'notify', vatID: bootstrapVatID, kpid: fooP },
+    { type: 'notify', vatID: leftVatID, kpid: barP },
   ]);
 
   await c.step();
@@ -231,7 +235,7 @@ async function bootstrapExport(t, withSES) {
   checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [
-    { type: 'notify', vatID: 'left', kpid: barP },
+    { type: 'notify', vatID: leftVatID, kpid: barP },
   ]);
 
   await c.step();

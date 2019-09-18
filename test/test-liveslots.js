@@ -46,12 +46,15 @@ test('calls', async t => {
   kernel.addGenesisVat('vat', setup);
 
   await kernel.start('bootstrap', `[]`);
+  const bootstrapVatID = kernel.vatNameToID('bootstrap');
+  const vatID = kernel.vatNameToID('vat');
+
   // cycle past the bootstrap() call
   await kernel.step();
   log.shift();
   t.deepEqual(kernel.dump().runQueue, []);
 
-  const root = kernel.addImport('bootstrap', kernel.addExport('vat', 'o+0'));
+  const root = kernel.addImport(bootstrapVatID, kernel.addExport(vatID, 'o+0'));
 
   // root!one() // sendOnly
   syscall.send(root, 'one', capargs(['args']), undefined);
@@ -127,9 +130,12 @@ test('liveslots pipelines to syscall.send', async t => {
   kernel.addGenesisVat('b', setupB);
 
   await kernel.start(); // no bootstrap
+  const a = kernel.vatNameToID('a');
+  const b = kernel.vatNameToID('b');
+
   t.deepEqual(kernel.dump().runQueue, []);
 
-  const root = kernel.addImport('b', kernel.addExport('a', 'o+0'));
+  const root = kernel.addImport(b, kernel.addExport(a, 'o+0'));
 
   // root!one(x) // sendOnly
   syscall.send(

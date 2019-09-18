@@ -1,8 +1,10 @@
 import harden from '@agoric/harden';
-import makeVatKeeper from './vatKeeper';
-import makeDeviceKeeper from './deviceKeeper';
+import { initializeVatState, makeVatKeeper } from './vatKeeper';
+import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper';
+import { insist } from '../../insist';
 import { insistKernelType, makeKernelSlot } from '../parseKernelSlots';
 import { insistCapData } from '../../capdata';
+import { insistVatID, insistDeviceID, makeDeviceID, makeVatID } from '../id';
 
 // This holds all the kernel state, including that of each Vat and Device, in
 // a single JSON-serializable object. At any moment (well, really only
@@ -10,8 +12,19 @@ import { insistCapData } from '../../capdata';
 // be used as the 'initialState' argument of some future makeKernelKeeper()
 // call, and that future instance should behave identically to this one.
 
+// todo: this is temporary, until we replace the state object with proper
+// Maps, but that requires the new state-management scheme
+function hasOwnProperty(obj, name) {
+  return Object.prototype.hasOwnProperty.call(obj, name);
+}
+
 function makeKernelKeeper(initialState) {
   const state = JSON.parse(`${initialState}`);
+
+  const ephemeral = harden({
+    vatKeepers: new Map(), // vatID -> vatKeeper
+    deviceKeepers: new Map(), // deviceID -> deviceKeeper
+  });
 
   function getInitialized() {
     return !!Object.getOwnPropertyDescriptor(state, 'initialized');
@@ -22,8 +35,15 @@ function makeKernelKeeper(initialState) {
   }
 
   function createStartingKernelState() {
-    state.vats = {};
-    state.devices = {};
+    // TODO: fear not, all of this will be replaced by DB lookups
+    state.namedVats = {}; // name -> vatID
+    state.nextVatID = 1;
+    state.vats = {}; // vatID -> { kernelSlotToVatSlot, transcript, .. }
+
+    state.namedDevices = {}; // name -> deviceID
+    state.devices = {}; // deviceID -> { kernelSlotToDevSlot, .. }
+    state.nextDeviceID = 7;
+
     state.runQueue = [];
     state.kernelObjects = {}; // kernelObjects[koNN] = { owner: vatID }
     state.nextObjectIndex = 20;
@@ -33,12 +53,13 @@ function makeKernelKeeper(initialState) {
     state.nextPromiseIndex = 40;
   }
 
-  function addKernelObject(ownerVatID) {
+  function addKernelObject(ownerID) {
+    insistVatID(ownerID);
     const id = state.nextObjectIndex;
     state.nextObjectIndex = id + 1;
     const s = makeKernelSlot('object', id);
     state.kernelObjects[s] = harden({
-      owner: ownerVatID,
+      owner: ownerID,
     });
     return s;
   }
@@ -48,12 +69,13 @@ function makeKernelKeeper(initialState) {
     return state.kernelObjects[kernelSlot].owner;
   }
 
-  function addKernelDevice(deviceName) {
+  function addKernelDeviceNode(deviceID) {
+    insistDeviceID(deviceID);
     const id = state.nextDeviceIndex;
     state.nextDeviceIndex = id + 1;
     const s = makeKernelSlot('device', id);
     state.kernelDevices[s] = harden({
-      owner: deviceName,
+      owner: deviceID,
     });
     return s;
   }
@@ -64,6 +86,7 @@ function makeKernelKeeper(initialState) {
   }
 
   function addKernelPromise(deciderVatID) {
+    insistVatID(deciderVatID);
     const kpid = state.nextPromiseIndex;
     state.nextPromiseIndex = kpid + 1;
     const s = makeKernelSlot('promise', kpid);
@@ -138,6 +161,7 @@ function makeKernelKeeper(initialState) {
 
   function addSubscriberToPromise(kernelSlot, vatID) {
     insistKernelType('promise', kernelSlot);
+    insistVatID(vatID);
     const p = state.kernelPromises[kernelSlot];
     if (p === undefined) {
       throw new Error(`unknown kernelPromise '${kernelSlot}'`);
@@ -163,69 +187,93 @@ function makeKernelKeeper(initialState) {
     return state.runQueue.shift();
   }
 
-  // vatID must already exist
-  function getVat(vatID) {
-    const vatState = state.vats[vatID];
-    if (vatState === undefined) {
-      throw new Error(`unknown vatID id '${vatID}'`);
+  function getVatIDForName(name) {
+    insist(name === `${name}`, `${name} is not a string`);
+    if (!hasOwnProperty(state.namedVats, name)) {
+      throw new Error(`vat name ${name} must exist, but doesn't`);
     }
-    return makeVatKeeper(vatState, vatID, addKernelObject, addKernelPromise);
+    return state.namedVats[name];
   }
 
-  function createVat(vatID) {
-    vatID = `${vatID}`;
-    if (vatID in state.vats) {
-      throw new Error(`vatID '${vatID}' already exists in state.vats`);
+  function provideVatIDForName(name) {
+    insist(name === `${name}`);
+    if (!hasOwnProperty(state.namedVats, name)) {
+      const index = state.nextVatID;
+      state.nextVatID += 1;
+      state.namedVats[name] = makeVatID(index);
     }
-    const vatState = {};
-    state.vats[vatID] = vatState;
-    const vk = makeVatKeeper(
-      vatState,
-      vatID,
-      addKernelObject,
-      addKernelPromise,
-    );
-    vk.createStartingVatState();
-    return vk;
+    return state.namedVats[name];
+  }
+
+  function provideVatKeeper(vatID) {
+    insistVatID(vatID);
+    if (!hasOwnProperty(state.vats, vatID)) {
+      const vatState = {};
+      initializeVatState(vatID, vatState);
+      state.vats[vatID] = vatState;
+    }
+    if (!ephemeral.vatKeepers.has(vatID)) {
+      const vk = makeVatKeeper(
+        state.vats[vatID],
+        vatID,
+        addKernelObject,
+        addKernelPromise,
+      );
+      ephemeral.vatKeepers.set(vatID, vk);
+    }
+    return ephemeral.vatKeepers.get(vatID);
+  }
+
+  function getAllVatIDs() {
+    return Array.from(Object.getOwnPropertyNames(state.vats)).sort();
   }
 
   function getAllVatNames() {
-    return Object.getOwnPropertyNames(state.vats).sort();
+    return Array.from(Object.getOwnPropertyNames(state.namedVats)).sort();
   }
 
-  // deviceID must already exist
-  function getDevice(deviceID) {
-    const deviceState = state.devices[deviceID];
-    if (deviceState === undefined) {
-      throw new Error(`unknown deviceID id '${deviceID}'`);
+  function getDeviceIDForName(name) {
+    insist(name === `${name}`);
+    if (!hasOwnProperty(state.namedDevices, name)) {
+      throw new Error(`device name ${name} must exist, but doesn't`);
     }
-    return makeDeviceKeeper(
-      deviceState,
-      deviceID,
-      addKernelObject,
-      addKernelDevice,
-    );
+    return state.namedDevices[name];
   }
 
-  function createDevice(deviceID) {
-    deviceID = `${deviceID}`;
-    if (deviceID in state.devices) {
-      throw new Error(`deviceID '${deviceID}' already exists in state.devices`);
+  function provideDeviceIDForName(name) {
+    insist(name === `${name}`);
+    if (!hasOwnProperty(state.namedDevices, name)) {
+      const index = state.nextDeviceID;
+      state.nextDeviceID += 1;
+      state.namedDevices[name] = makeDeviceID(index);
     }
-    const deviceState = {};
-    state.devices[deviceID] = deviceState;
-    const dk = makeDeviceKeeper(
-      deviceState,
-      deviceID,
-      addKernelObject,
-      addKernelDevice,
-    );
-    dk.createStartingDeviceState();
-    return dk;
+    return state.namedDevices[name];
+  }
+
+  function provideDeviceKeeper(deviceID) {
+    insistDeviceID(deviceID);
+    if (!hasOwnProperty(state.devices, deviceID)) {
+      const deviceState = {};
+      initializeDeviceState(deviceID, deviceState);
+      state.devices[deviceID] = deviceState;
+    }
+    if (!ephemeral.deviceKeepers.has(deviceID)) {
+      const dk = makeDeviceKeeper(
+        state.devices[deviceID],
+        deviceID,
+        addKernelDeviceNode,
+      );
+      ephemeral.deviceKeepers.set(deviceID, dk);
+    }
+    return ephemeral.deviceKeepers.get(deviceID);
+  }
+
+  function getAllDeviceIDs() {
+    return Array.from(Object.getOwnPropertyNames(state.devices)).sort();
   }
 
   function getAllDeviceNames() {
-    return Object.getOwnPropertyNames(state.devices).sort();
+    return Array.from(Object.getOwnPropertyNames(state.namedDevices)).sort();
   }
 
   // used for persistence. This returns a JSON-serialized string, suitable to
@@ -242,8 +290,8 @@ function makeKernelKeeper(initialState) {
     const vatTables = [];
     const kernelTable = [];
 
-    for (const vatID of getAllVatNames()) {
-      const vk = getVat(vatID);
+    for (const vatID of getAllVatIDs()) {
+      const vk = provideVatKeeper(vatID);
 
       // TODO: find some way to expose the liveSlots internal tables, the
       // kernel doesn't see them
@@ -255,8 +303,8 @@ function makeKernelKeeper(initialState) {
       vk.dumpState().forEach(e => kernelTable.push(e));
     }
 
-    for (const deviceName of getAllDeviceNames()) {
-      const dk = getDevice(deviceName);
+    for (const deviceID of getAllDeviceIDs()) {
+      const dk = provideDeviceKeeper(deviceID);
       dk.dumpState().forEach(e => kernelTable.push(e));
     }
 
@@ -332,12 +380,14 @@ function makeKernelKeeper(initialState) {
     getRunQueueLength,
     getNextMsg,
 
-    getVat,
-    createVat,
+    getVatIDForName,
+    provideVatIDForName,
+    provideVatKeeper,
     getAllVatNames,
 
-    getDevice,
-    createDevice,
+    getDeviceIDForName,
+    provideDeviceIDForName,
+    provideDeviceKeeper,
     getAllDeviceNames,
 
     getState,

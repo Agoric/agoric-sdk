@@ -12,7 +12,9 @@ import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
 import bundleSource from './build-source-bundle';
+import { insist } from './insist';
 import { insistCapData } from './capdata';
+import { parseVatSlot } from './parseVatSlots';
 
 const evaluateOptions = makeDefaultEvaluateOptions();
 
@@ -133,8 +135,8 @@ export async function buildVatController(config, withSES = true, argv = []) {
     : buildNonSESKernel(initialState);
   // console.log('kernel', kernel);
 
-  async function addGenesisVat(vatID, sourceIndex, options = {}) {
-    console.log(`= adding vat '${vatID}' from ${sourceIndex}`);
+  async function addGenesisVat(name, sourceIndex, options = {}) {
+    console.log(`= adding vat '${name}' from ${sourceIndex}`);
     if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
       throw Error(
         'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
@@ -163,7 +165,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
       // eslint-disable-next-line global-require,import/no-dynamic-require
       setup = require(`${sourceIndex}`).default;
     }
-    kernel.addGenesisVat(vatID, setup, options);
+    kernel.addGenesisVat(name, setup, options);
   }
 
   async function addGenesisDevice(name, sourceIndex, endowments) {
@@ -185,13 +187,35 @@ export async function buildVatController(config, withSES = true, argv = []) {
     kernel.addGenesisDevice(name, setup, endowments);
   }
 
+  if (config.devices) {
+    for (const [name, srcpath, endowments] of config.devices) {
+      // eslint-disable-next-line no-await-in-loop
+      await addGenesisDevice(name, srcpath, endowments);
+    }
+  }
+
+  if (config.vats) {
+    for (const name of config.vats.keys()) {
+      const v = config.vats.get(name);
+      // eslint-disable-next-line no-await-in-loop
+      await addGenesisVat(name, v.sourcepath, v.options || {});
+    }
+  }
+
+  let bootstrapVatName;
+  if (config.bootstrapIndexJS) {
+    bootstrapVatName = '_bootstrap';
+    await addGenesisVat(bootstrapVatName, config.bootstrapIndexJS, {});
+  }
+
+  // start() may queue bootstrap if state doesn't say we did it already. It
+  // also replays the transcripts from a previous run, if any, which will
+  // execute vat code (but all syscalls will be disabled)
+  await kernel.start(bootstrapVatName, JSON.stringify(argv));
+
   // the kernel won't leak our objects into the Vats, we must do
   // the same in this wrapper
   const controller = harden({
-    addVat(vatID, sourceIndex, options = {}) {
-      return addGenesisVat(vatID, sourceIndex, options);
-    },
-
     log(str) {
       kernel.log(str);
     },
@@ -212,40 +236,24 @@ export async function buildVatController(config, withSES = true, argv = []) {
       await kernel.step();
     },
 
-    queueToExport(vatID, facetID, method, args) {
-      insistCapData(args);
-      kernel.addExport(vatID, facetID);
-      kernel.queueToExport(vatID, facetID, method, args);
+    // these are for tests
+
+    vatNameToID(vatName) {
+      return kernel.vatNameToID(vatName);
+    },
+    deviceNameToID(deviceName) {
+      return kernel.deviceNameToID(deviceName);
     },
 
-    callBootstrap(vatID, bootstrapArgv) {
-      kernel.callBootstrap(`${vatID}`, JSON.stringify(bootstrapArgv));
+    queueToVatExport(vatName, exportID, method, args) {
+      const vatID = kernel.vatNameToID(vatName);
+      parseVatSlot(exportID);
+      insist(method === `${method}`);
+      insistCapData(args);
+      kernel.addExport(vatID, exportID);
+      kernel.queueToExport(vatID, exportID, method, args);
     },
   });
-
-  if (config.devices) {
-    for (const [name, srcpath, endowments] of config.devices) {
-      // eslint-disable-next-line no-await-in-loop
-      await addGenesisDevice(name, srcpath, endowments);
-    }
-  }
-
-  if (config.vats) {
-    for (const vatID of config.vats.keys()) {
-      const v = config.vats.get(vatID);
-      // eslint-disable-next-line no-await-in-loop
-      await addGenesisVat(vatID, v.sourcepath, v.options || {});
-    }
-  }
-
-  if (config.bootstrapIndexJS) {
-    await addGenesisVat('_bootstrap', config.bootstrapIndexJS, {});
-  }
-
-  // start() may queue bootstrap if state doesn't say we did it already. It
-  // also replays the transcripts from a previous run, if any, which will
-  // execute vat code (but all syscalls will be disabled)
-  await kernel.start('_bootstrap', JSON.stringify(argv));
 
   return controller;
 }
