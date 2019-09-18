@@ -1,5 +1,29 @@
 User-visible changes in SwingSet:
 
+## Release 0.0.22 (18-Sep-2019)
+
+* Upgrade to SES v0.6.1, which closes a sandbox escape discovered by @XmiliaH
+  in https://github.com/Agoric/realms-shim/issues/48
+* The syscall/dispatch API was changed to use a consistent "CapData"
+  structure for all arguments, promise resolution data, and device-invocation
+  return values. This structure contains exactly `{ body, slots }`, where
+  "body" is a string (JSON-serialized object graph), and "slots" is an array
+  of VatSlot identifiers (like `o+123` for an exported object, or `p-42` for
+  an imported Promise). The signature of `syscall.send()` was changed from
+  `send(target, method, argsString, vatSlots, result)` to `send(target,
+  method, args, result)`. This also updates the signatures for
+  `syscall.fulfillToData`, `syscall.reject`, `syscall.callNow`,
+  `dispatch.deliver`, `dispatch.notifyFulfillToData`,
+  `dispatch.notifyReject`, and (for devices) `dispatch.invoke`. OCap-style
+  "vat code" should not notice these changes, as the "liveSlots" layer was
+  updated to match, but non-OCap-style vats must change to use the new
+  format.
+* The kernel now tolerates Vats (and Devices) which export more than the
+  single default "setup" function. This is useful for writing unit tests that
+  want to exercise the internals of the device. Previously, naming problems
+  prevented the use of vat modules that had both default and named exports.
+
+
 ## Release 0.0.21 (09-Sep-2019)
 
 * Enable "Promise Pipelining" between remote SwingSet machines connected by
