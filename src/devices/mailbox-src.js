@@ -52,7 +52,7 @@ export default function setup(syscall, state, helpers, endowments) {
   // we keep no state in the device, it all lives elsewhere, as decided by
   // the host
 
-  function build({ SO, getDeviceState, setDeviceState }) {
+  function makeRootDevice({ SO, getDeviceState, setDeviceState }) {
     let { inboundHandler } = getDeviceState() || {};
     // console.log(`mailbox-src build: inboundHandler is`, inboundHandler);
     deliverInboundMessages = (peer, newMessages) => {
@@ -77,6 +77,7 @@ export default function setup(syscall, state, helpers, endowments) {
       }
     };
 
+    // the Root Device Node.
     return harden({
       registerInboundHandler(handler) {
         if (inboundHandler) {
@@ -112,5 +113,6 @@ export default function setup(syscall, state, helpers, endowments) {
     });
   }
 
-  return helpers.makeDeviceSlots(syscall, state, build, helpers.name);
+  // return the dispatch object.
+  return helpers.makeDeviceSlots(syscall, state, makeRootDevice, helpers.name);
 }

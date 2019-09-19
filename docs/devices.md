@@ -108,14 +108,18 @@ The `buildVatController()` call is supplied with a `config` object that
 describes the initial set of vats (including the bootstrap vat). We use
 `config.devices` to define the set of host devices that will be made
 available to `bootstrap()`. `config.devices` is a list (or other iterable),
-in which each value is a 3-item list. The first element is the device name,
-the second is the pathname of the attenuator source (a file which must export
-a default function whose signature is `function setup(syscall, helpers,
-endowments) -> dispatch`), and an object containing endowments that will be
-passed into the setup function. Like vats, the file will be evaluated with a
-`require` endowment that provides access to `@agoric/harden`, `@agoric/nat`,
-and `@agoric/evaluate` (unlike `SES.makeRequire()`, which doesn't
-provide a `require` to the evaluated string).
+in which each value is a 3-item list.
+ * the device name,
+ * the pathname of the device source (a file which must
+   export a default function whose signature is
+   `function setup(syscall, state, helpers, endowments) -> dispatch`), and
+ * an object containing endowments that will be passed into the setup
+   function.
+
+Like vats, the file will be evaluated with a `require` endowment that
+provides access to `@agoric/harden`, `@agoric/nat`, and `@agoric/evaluate`
+(unlike `SES.makeRequire()`, which doesn't provide a `require` to the
+evaluated string).
 
 "Kernel devices" do not need to be configured by the host. The only kernel
 device currently envisioned is one which provides the `addVat` call, which
@@ -123,18 +127,6 @@ allows new Vats to be created at runtime.
 
 It is an error to provide an entry in `config.devices` which collides with
 the name of a kernel device, or to have two devices with the same name.
-
-### Device API
-
-Devices are very much like Vats: the attenuator function is invoked with a
-`syscall` object that the device can use to talk to the kernel, and it must
-return a `dispatch` object with which the kernel can invoke the device. The
-specific methods on `syscall` and `dispatch` are different for devices:
-
-* `syscall.sendOnly(targetSlot, method, argsString, argsSlots) -> undefined`
-* `dispatch.invoke(target, method, argsString, argsSlots) -> { args, slots }`
-* `dispatch.getState() -> { STATE }`
-* `dispatch.setState(STATE)`
 
 ### New Vat APIs
 
@@ -152,18 +144,71 @@ The `liveSlots` helper for constructing Vats provides both an `E()` wrapper
 (for constructing `syscall.send()` messages to Presences) and a `D()` wrapper
 (for constructing `syscall.callNow` messages to device nodes).
 
-### Device State Persistence
+### Device API
 
-Devices are expected to return their state as a JSON-serializable object
-whenever the kernel asks for it. Devices are not expected to use
-transcript-based persistence.
+Devices are very much like Vats, and they way they are constructed reflects
+that. The factory function for each is called with `syscall` object that
+they can use to talk to the kernel, and they return a `dispatch` object
+with which the kernel can invoke them. The specific methods on `syscall`
+and `dispatch` are different for devices:
 
+* `syscall.sendOnly(targetSlot, method, args) -> undefined`
+* `dispatch.invoke(deviceID, method, args) -> results`
+
+Notice that args and results are CapData structures, which look like
+`{ body, slots }`.
+
+#### Device Construction
+
+Devices are built with `makeDeviceSlots(syscall, state, makeRootDevice, name)`.
+`makeDeviceSlots` calls `makeRootDevice`, which should return an object with
+methods that can be called from the kernel.
+
+```js
+// exampledevice-src.js
+import harden from '@agoric/harden';
+export default function setup(syscall, state, helpers, endowments) {
+  const { stuff } = endowments;
+  // use stuff
+  function makeRootDeviceNode({ SO, getDeviceState, setDeviceState }) {
+    return harden({
+     // methods using stuff and more
+    });
+  }
+  const dispatch =
+    helpers.makeDeviceSlots(syscall, state, makeRootDeviceNode, helpers.name);
+  return dispatch;
+}
+```
+
+This lets the `makeRootDeviceNode` function provide the root device node with
+access to the endowments, and to kernel methods to manage persistent state.
+The `makeDeviceSlots` helper function behaves much like `makeLiveSlots` for
+regular Vat code, except:
+
+* It does not provide the `E()` wrapper, since devices cannot manage promises
+  or eventual-sends
+* Instead, it provides an `SO()` wrapper, which exposes `syscall.sendonly`.
+* All pass-by-presence objects returned by device methods are passed as
+  device nodes
+* The dispatch object built by `makeDeviceSlots` is exposed as the root
+  device node to the bootstrap function.
+
+## Device Drivers
+
+Host devices consist of a kernel-realm wrapper function, which closes over
+any host-realm authorities that it needs. The wrapper function is responsible
+for preventing confinement breaches: it must prevent kernel-realm callers
+from accessing host-realm objects, even under adversarial use. In particular,
+any exceptions raised by the host-realm functions must be caught and wrapped
+with kernel-realm replacements. Callbacks must be intercepted too. The
+wrapper function must act as a limited Membrane between the two worlds.
 
 ## Initial Device Types
 
 ### Mailbox Device
 
-Most off-machine communication takes place through an "mailbox". This is a
+Most off-machine communication takes place through a "mailbox". This is a
 special portion of the kernel state vector into which the VatTP layer can
 write message bodies destined for other machines, using the `add(recipient,
 msgnum, body)` method of the outbox device. The host loop is expected to
@@ -176,12 +221,11 @@ message delivery until the kernel state has been checkpointed, we avoid the
 VatTP code can remove messages from the outbox when it receives an
 acknowledgment of receipt, by using the `remove(recipient, msgnum)` method.
 
-Each mailbox is paired with a partnet in some other machine. To send an
+Each mailbox is paired with a partner in some other machine. To send an
 acknowledgment to that remote mailbox, VatTP can use the
 `ackInbound(recipient, msgnum)` method. This ack is written into the state
 vector next to the outbox where it can be delivered to the remote end by the
 same host loop.
-
 
 ### TCP Device
 
@@ -230,48 +274,3 @@ object reference. It must also know how to verify the per-machine VatTP layer
 on each message: cryptographic signatures of the sending SoloVat (not just
 the relayer's signature), or chain-specific proofs from vats hosted inside a
 foreign blockchain (i.e. IBC).
-
-## Device Drivers
-
-Host devices consist of a kernel-realm wrapper function, which closes over
-any host-realm authorities that it needs. The wrapper function is responsible
-for preventing confinement breaches: it must prevent kernel-realm callers
-from accessing host-realm objects, even under adversarial use. In particular,
-any exceptions raised by the host-realm functions must be caught and wrapped
-with kernel-realm replacements. Callbacks must be intercepted too. The
-wrapper function must act as a limited Membrane between the two worlds.
-
-
-## DeviceSlots helper
-
-Device code can use a helper function named `deviceSlots` to build the
-required `dispatch` function. This behaves much like `liveSlots` for regular
-Vat code, except:
-
-* It does not provide the `E()` wrapper, since devices cannot manage promises
-  or eventual-sends
-* Instead, it provides an `SO()` wrapper, which exposes `syscall.sendonly`.
-* All pass-by-presence objects returned by device methods are passed as
-  device nodes
-* The root object provided to the `deviceSlots` helper is exposed as the root
-  device node to the bootstrap function
-
-```js
-// exampledevice-src.js
-import harden from '@agoric/harden';
-export default function setup(syscall, helpers, endowments) {
-  const { stuff } = endowments;
-  function getState() { return 'state'; }
-  function setState(newState) { throw new Error('not implemented'); }
-  return helpers.makeDeviceSlots(
-    syscall,
-    SO => harden({
-      devfunc1(arg, arg2) {
-        SO(arg1).methname(arg3);
-      },
-    },
-    getState, setState,
-    helpers.name,
-  );
-}
-```

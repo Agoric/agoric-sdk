@@ -7,12 +7,11 @@
 
    mailboxDevice <-> vat-VatTP <-> vat-comms <-> vat-target
 
-  In the outbound direction, the mailbox device manages a special section of
-  the kernel special section of the kernel state vector. For each peer, this
-  'mailboxState' object contains a list of outstanding messages (each with a
-  msgnum integer and a string body), and an 'ackNum' (an integer which
-  indicates the highest-numbered inbound message that has been processed,
-  where '1' is the first message).
+  In the outbound direction, the mailbox device manages a special section of the
+  kernel state vector. For each peer, this 'mailboxState' object contains a list
+  of outstanding messages (each with a msgnum integer and a string body), and an
+  'ackNum' (an integer which indicates the highest-numbered inbound message that
+  has been processed, where '1' is the first message).
 
   When the comms vat wants to send a message, it sends a 'send()' message to
   the vatTP, as 'send(peer, msg)'. When this arrives on vat-VatTP, it invokes
@@ -37,7 +36,7 @@
 
   If the host lives in a replicated consensus environment (i.e. a
   blockchain), it doesn't need to do anything else. External followers will
-  notice that the outbox has changed, and react to it be delivering the new
+  notice that the outbox has changed, and react to it by delivering the new
   messages into the receiving side.
 
   On the intended recipient, outside of the swingset codebase, something
@@ -153,11 +152,10 @@ export function buildMailbox(state) {
     state.setAcknum(`${peer}`, Nat(msgnum));
   }
 
-  // Functions made available to the host: these are used for inbound
+  // deliverInbound is made available to the host; it is used for inbound
   // messages and acks. The outbound direction uses the mailboxState object.
-
   // deliverInbound returns true if something changed, and the caller should
-  // run the kernel's event loop
+  // run the kernel's event loop.
   function deliverInbound(peer, messages, ack) {
     try {
       return Boolean(inboundCallback(peer, messages, ack));
@@ -166,6 +164,8 @@ export function buildMailbox(state) {
     }
   }
 
+  // srcPath and endowments are used at confg time by makeDeviceSlots.
+  // deliverInbound is called to deliver each incoming message.
   return {
     srcPath,
     endowments: { registerInboundCallback, add, remove, setAcknum },
