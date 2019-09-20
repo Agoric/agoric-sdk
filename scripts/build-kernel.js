@@ -3,10 +3,10 @@ import process from 'process';
 import bundleSource from '../src/build-source-bundle';
 
 async function main() {
-  let source = await bundleSource('../src/kernel/index.js');
-  source = `export default ${source}`;
+  const { source, sourceMap } = await bundleSource('../src/kernel/index.js');
+  const actualSource = `export default ${source}\n${sourceMap}`;
   const f = await fs.promises.open('src/bundles/kernel', 'w', 0o644);
-  await f.write(source);
+  await f.write(actualSource);
   await f.close();
 }
 
