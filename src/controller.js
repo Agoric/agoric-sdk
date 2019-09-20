@@ -158,9 +158,9 @@ export async function buildVatController(config, withSES = true, argv = []) {
       // comms problem exists between otherwise-isolated code within a single
       // Vat so it doesn't really help anyways
       // const r = s.makeRequire({ '@agoric/harden': true, '@agoric/nat': Nat });
-      let source = await bundleSource(`${sourceIndex}`);
-      source = `(${source})`;
-      setup = s.evaluate(source, { require: r })().default;
+      const { source, sourceMap } = await bundleSource(`${sourceIndex}`);
+      const actualSource = `(${source})\n${sourceMap}`;
+      setup = s.evaluate(actualSource, { require: r })().default;
     } else {
       // eslint-disable-next-line global-require,import/no-dynamic-require
       setup = require(`${sourceIndex}`).default;
@@ -177,9 +177,9 @@ export async function buildVatController(config, withSES = true, argv = []) {
 
     let setup;
     if (withSES) {
-      let source = await bundleSource(`${sourceIndex}`);
-      source = `(${source})`;
-      setup = s.evaluate(source, { require: r })().default;
+      const { source, sourceMap } = await bundleSource(`${sourceIndex}`);
+      const actualSource = `(${source})\n${sourceMap}`;
+      setup = s.evaluate(actualSource, { require: r })().default;
     } else {
       // eslint-disable-next-line global-require,import/no-dynamic-require
       setup = require(`${sourceIndex}`).default;
