@@ -133,7 +133,8 @@ export default function makeVatManager(
         p.decider === vatID,
         `send() result ${result} is decided by ${p.decider} not ${vatID}`,
       );
-      p.decider = undefined; // resolution authority now held by run-queue
+      kernelKeeper.clearDecider(result);
+      // resolution authority now held by run-queue
     }
 
     const msg = harden({
@@ -308,7 +309,7 @@ export default function makeVatManager(
       );
       resultSlot = vatKeeper.mapKernelSlotToVatSlot(msg.result);
       insistVatType('promise', resultSlot);
-      p.decider = vatID; // todo: depends on mutable keeper promises
+      kernelKeeper.setDecider(msg.result, vatID);
     }
     await doProcess(
       [

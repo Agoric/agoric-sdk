@@ -159,6 +159,20 @@ function makeKernelKeeper(initialState) {
     p.queue.push(msg);
   }
 
+  function setDecider(kpid, decider) {
+    insistVatID(decider);
+    const p = getKernelPromise(kpid);
+    insist(p.state === 'unresolved', `${kpid} was already resolved`);
+    insist(!p.decider, `${kpid} has decider ${p.decider}, not empty`);
+    p.decider = decider;
+  }
+
+  function clearDecider(kpid) {
+    const p = getKernelPromise(kpid);
+    insist(p.state === 'unresolved', `${kpid} was already resolved`);
+    p.decider = undefined;
+  }
+
   function addSubscriberToPromise(kernelSlot, vatID) {
     insistKernelType('promise', kernelSlot);
     insistVatID(vatID);
@@ -374,6 +388,8 @@ function makeKernelKeeper(initialState) {
     deleteKernelPromiseData,
     addMessageToPromiseQueue,
     addSubscriberToPromise,
+    setDecider,
+    clearDecider,
 
     addToRunQueue,
     isRunQueueEmpty,
