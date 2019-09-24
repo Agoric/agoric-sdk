@@ -1,5 +1,5 @@
-# Acorn Infix Bang
+# Acorn Wavy Dot
 
-This Acorn parser plugin understands infix bang (eventual send).
+This Acorn parser plugin understands wavy dot (eventual send syntax).
 
-More docs will be added when the proposal reaches stage 0.
+See the ECMAScript Proposal [proposal-wavy-dot](https://github.com/Agoric/proposal-wavy-dot).
