@@ -1,7 +1,7 @@
 {
-  "name": "@agoric/acorn-infix-bang",
+  "name": "@agoric/acorn-eventual-send",
   "version": "0.0.5-dev.0",
-  "description": "Eventual send (infix bang) parser plugin for Acorn",
+  "description": "Eventual send (wavy dot) parser plugin for Acorn",
   "main": "index.js",
   "scripts": {
     "test": "tape -r esm 'test/**/*.js'",
