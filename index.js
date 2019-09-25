@@ -10,6 +10,7 @@ const zero = '0'.charCodeAt(0);
 const nine = '9'.charCodeAt(0);
 function plugin(options, Parser) {
   return class extends Parser {
+    // eslint-disable-next-line camelcase
     readToken_tilde() {
       const next1 = this.input.charCodeAt(this.start + 1);
       const next2 = this.input.charCodeAt(this.start + 2);
@@ -75,12 +76,12 @@ function plugin(options, Parser) {
         args.push(expr);
       } else if (this.eat(tt.eq)) {
         // x ~. [i] = foo := HandledPromise.set(base, i)
-        method = "set";
+        method = 'set';
         args.push(this.parseMaybeAssign());
       } else {
         // x ~. [i] := HandledPromise.get(base, i)
         // Method may change to HandledPromise.delete(base, i)
-        method = "get";
+        method = 'get';
       }
 
       let callee = this.startNodeAtNode(node);
@@ -93,16 +94,16 @@ function plugin(options, Parser) {
         method,
       );
       callee.computed = false;
-      callee = this.finishNode(callee, "MemberExpression");
+      callee = this.finishNode(callee, 'MemberExpression');
 
       // Create a WavyDot CallExpression.
       const wdot = this.startNodeAtNode(node);
-      if (method === "get") {
+      if (method === 'get') {
         wdot.maybeDeleteWavyDot = true;
       }
       wdot.callee = callee;
       wdot.arguments = args;
-      return this.finishNode(wdot, "CallExpression");
+      return this.finishNode(wdot, 'CallExpression');
     }
 
     parseMaybeUnary(refDestructuringErrors, sawUnary) {
