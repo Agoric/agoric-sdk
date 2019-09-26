@@ -1,3 +1,40 @@
+// Create HandledPromise static methods as a bridge from v0.2.4 to
+// new proposal support (wavy dot's infrastructure).
+export function makeHandledPromise(EPromise) {
+  return {
+    get(target, key) {
+      return EPromise.resolve(target).get(key);
+    },
+    getSendOnly(target, key) {
+      EPromise.resolve(target).get(key);
+    },
+    set(target, key, val) {
+      return EPromise.resolve(target).put(key, val);
+    },
+    setSendOnly(target, key, val) {
+      EPromise.resolve(target).put(key, val);
+    },
+    delete(target, key) {
+      return EPromise.resolve(target).delete(key);
+    },
+    deleteSendOnly(target, key) {
+      EPromise.resolve(target).delete(key);
+    },
+    apply(target, args) {
+      return EPromise.resolve(target).post(undefined, args);
+    },
+    applySendOnly(target, args) {
+      EPromise.resolve(target).post(undefined, args);
+    },
+    applyMethod(target, key, args) {
+      return EPromise.resolve(target).post(key, args);
+    },
+    applyMethodSendOnly(target, key, args) {
+      EPromise.resolve(target).post(key, args);
+    },
+  };
+};
+
 /**
  * Modify a Promise class to have it support eventual send
  * (infix-bang) operations.
@@ -11,7 +48,7 @@
  * @param {typeof Promise} Promise ES6 Promise class to shim
  * @return {typeof EPromise} Extended promise
  */
-export default function maybeExtendPromise(Promise) {
+export function maybeExtendPromise(Promise) {
   // Make idempotent, so we don't layer on top of a BasePromise that
   // is adequate.
   if (typeof Promise.makeHandled === 'function') {

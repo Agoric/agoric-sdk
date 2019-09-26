@@ -1,5 +1,5 @@
 import test from 'tape-promise/tape';
-import maybeExtendPromise from '../src/index';
+import { maybeExtendPromise } from '../src/index';
 
 if (typeof window !== 'undefined') {
   // Let the browser detect when the tests are done.
