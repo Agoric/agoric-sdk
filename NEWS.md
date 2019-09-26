@@ -1,11 +1,12 @@
 User-visible changes in Cosmic SwingSet:
 
-## Release v0.10.0 (2019-09-25)
+## Release v0.10.0 (2019-09-26)
 
-* Upgrade to SwingSet v0.0.23.
+* Breaking: change infix bang (**!**) to wavy dot (**~.**)
+* Upgrade to SwingSet v0.0.24.
   - new timer device
-  - change from infix bang (**!**) to wavy dot (**~.**)
-  - allow IDE debuggers to set breakpoints in SwingSet vats
+  - wavy dot
+  - better SwingSet vat debugger and stack trace support
 
 ## Release v0.9.1 (2019-09-18)
 
