@@ -1,5 +1,11 @@
 User-visible changes in SwingSet:
 
+## Release 0.0.24 (26-Sep-2019)
+
+* update to @agoric/(evaluate,default-evaluate-options,eventual-send), to
+  allow wavy-dot in Vat code (and code evaluated by Vats) too. (#163)
+
+
 ## Release 0.0.23 (25-Sep-2019)
 
 * Add a "Timer Device", which allows authorized objects to receive a message
