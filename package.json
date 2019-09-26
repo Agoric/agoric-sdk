@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@agoric/babel-parser": "^7.6.2",
-    "@agoric/eventual-send": "^0.2.5",
+    "@agoric/eventual-send": "^0.3.0",
     "@agoric/transform-eventual-send": "^1.0.0",
     "@babel/generator": "^7.5.5",
     "esm": "^3.2.5"
