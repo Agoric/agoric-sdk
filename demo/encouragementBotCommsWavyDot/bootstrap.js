@@ -11,7 +11,7 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    (E, D) =>
+    (_E, D) =>
       harden({
         async bootstrap(argv, vats, devices) {
           console.log('=> bootstrap() called');
@@ -23,12 +23,20 @@ export default function setup(syscall, state, helpers) {
           D(devices.loopbox).registerInboundHandler(USER, vats.uservattp);
           const usersender = D(devices.loopbox).makeSender(USER);
           await vats.uservattp~.registerMailboxDevice(usersender);
-          await vats.usercomms~.init(vats.uservattp);
+          const {
+            transmitter: txToBotForUser,
+            setReceiver: setRxFromBotForUser,
+          } = await vats.uservattp~.addRemote(BOT);
+          const rxFromBotForUser = await vats.usercomms~.addRemote(BOT, txToBotForUser, setRxFromBotForUser);
 
           D(devices.loopbox).registerInboundHandler(BOT, vats.botvattp);
           const botsender = D(devices.loopbox).makeSender(BOT);
           await vats.botvattp~.registerMailboxDevice(botsender);
-          await vats.botcomms~.init(vats.botvattp);
+          const {
+            transmitter: txToUserForBot,
+            setReceiver: setRxFromUserForBot,
+          } = await vats.botvattp~.addRemote(USER);
+          const rxFromUserForBot = await vats.botcomms~.addRemote(USER, txToUserForBot, setRxFromUserForBot);
 
           await vats.botcomms~.addEgress(
             USER,
