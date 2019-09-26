@@ -1,6 +1,6 @@
 {
   "name": "@agoric/eventual-send",
-  "version": "0.2.5-dev.0",
+  "version": "0.2.5",
   "description": "Extend a Promise class to implement the eventual-send API",
   "main": "dist/eventual-send.cjs.js",
   "module": "dist/eventual-send.esm.js",
