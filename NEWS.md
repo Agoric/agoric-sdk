@@ -1,5 +1,22 @@
 User-visible changes in SwingSet:
 
+## Release 0.0.23 (25-Sep-2019)
+
+* Add a "Timer Device", which allows authorized objects to receive a message
+  at some specified point in the future. This requires support from the host,
+  to call a `poll(now)` function on a periodic basis. (#123)
+* Use (mostly) numeric vatID/deviceIDs within the kernel, instead of
+  user-provided names, to support upcoming dynamic (unnamed) vats and more
+  efficient state representation. (#146)
+* Include the sourceURL line in bundled sources (vats and the kernel), which
+  should improve stack traces and debugger support. (#158)
+* Switch from infix-bang (`x!foo()`) to wavy-dot (`x~.foo()`) syntax, because
+  infix-bang conflicted with certain Typescript annotations. Wavy-dot can
+  also be pronounced "tildot" (tilde-dot), "twiddledot", or by the
+  INTERCAL-specified "squigglespot".
+* Doc updates (#155)
+
+
 ## Release 0.0.22 (18-Sep-2019)
 
 * Upgrade to SES v0.6.1, which closes a sandbox escape discovered by @XmiliaH
