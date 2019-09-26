@@ -13,7 +13,7 @@ export default [
     plugins: [
       replace({
         delimiters: ['', ''],
-        "import makeEPromiseClass from '../src/index';": '',
+        "import * as EventualSend from '../src/index';": '',
       }),
     ],
   },

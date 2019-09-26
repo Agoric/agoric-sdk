@@ -5,7 +5,7 @@ export default [
       {
         file: 'dist/eventual-send.umd.js',
         format: 'umd',
-        name: 'makeEPromiseClass',
+        name: 'EventualSend',
       },
       {
         file: 'dist/eventual-send.esm.js',

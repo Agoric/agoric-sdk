@@ -33,7 +33,7 @@ export function makeHandledPromise(EPromise) {
       EPromise.resolve(target).post(key, args);
     },
   };
-};
+}
 
 /**
  * Modify a Promise class to have it support eventual send

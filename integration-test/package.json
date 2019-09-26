@@ -24,7 +24,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@agoric/eventual-send": "file:agoric-eventual-send-0.0.1.tgz"
+    "@agoric/eventual-send": "file:agoric-eventual-send-0.2.5.tgz"
   },
   "devDependencies": {
     "browserify": "^16.2.3",

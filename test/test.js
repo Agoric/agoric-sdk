@@ -1,5 +1,7 @@
 import test from 'tape-promise/tape';
-import { maybeExtendPromise } from '../src/index';
+import * as EventualSend from '../src/index';
+
+const { maybeExtendPromise } = EventualSend;
 
 if (typeof window !== 'undefined') {
   // Let the browser detect when the tests are done.

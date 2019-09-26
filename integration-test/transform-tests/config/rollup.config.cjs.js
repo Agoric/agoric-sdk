@@ -12,8 +12,8 @@ export default [
     plugins: [
       replace({
         delimiters: ['', ''],
-        "import makeEPromiseClass from '../src/index';":
-          "import makeEPromiseClass from '@agoric/eventual-send';",
+        "import * as EventualSend from '../src/index';":
+          "import * as EventualSend from '@agoric/eventual-send';",
       }),
     ],
   },

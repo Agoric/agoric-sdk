@@ -10,9 +10,9 @@ export default [
       {
         file: path.resolve(__dirname, '../../bundles/rollup.js'),
         format: 'iife',
-        name: 'makeEPromiseClass',
+        name: 'EventualSend',
         globals: {
-          '@agoric/eventual-send': 'makeEPromiseClass',
+          '@agoric/eventual-send': 'EventualSend',
         },
       },
     ],
