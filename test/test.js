@@ -8,7 +8,7 @@ test('parser', async t => {
     const parser = src => MyParser.parse(src);
 
     // FIXME: Compare parse trees.
-    t.ok(parser('x ~. p(y, z, q)'), 'post');
+    t.equal(parser('x ~. p(y, z, q)'), 'post');
     t.ok(parser('x ~. [i](y, z)'), 'computed post');
     t.ok(parser('x ~. (y, z)'), 'apply');
     t.ok(parser('x ~. ()'), 'apply nothing');

@@ -144,7 +144,7 @@ module.exports = function curryOptions(options) {
   return function extendParser(Parser) {
     return plugin(
       {
-        resolverObject: options.HandledPromise || 'HandledPromise',
+        HandledPromise: options.HandledPromise || 'HandledPromise',
       },
       Parser,
     );
