@@ -12,8 +12,8 @@ export default function setup(syscall, state, helpers) {
       harden({
         talkToBot(pbot, botName) {
           log(`=> user.talkToBot is called with ${botName}`);
-          pbot!
-            encourageMe('user')
+          pbot
+            ~.encourageMe('user')
             .then(myEncouragement =>
               log(`=> user receives the encouragement: ${myEncouragement}`),
             );

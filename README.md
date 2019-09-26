@@ -132,7 +132,7 @@ will be made available to the Bootstrap Vat.
 When a Callable Object is sent to another Vat, it arrives as a Presence. This
 is a special (empty) object that represents the Callable Object, and can be
 used to send it messages.  If you are running SwingSet under SES (the default),
-then the so-called "bang syntax" ([proposed for future ECMAScript](https://github.com/Agoric/proposal-infix-bang))
+then the so-called "wavy dot syntax" ([proposed for future ECMAScript](https://github.com/Agoric/proposal-wavy-dot))
 can be used to invoke eventual send methods.
 
 Suppose Vat "bob" defines a Root Object with a method named `bar`. The
@@ -140,15 +140,15 @@ bootstrap receives this as `vats.bob`, and can send a message like this:
 
 ```js
 function bootstrap(argv, vats) {
-  vats.bob!bar('hello bob');
+  vats.bob~.bar('hello bob');
 }
 ```
 
-The `!` operator (pronounced "bang") has the same left-to-right precedence as
+The `~.` operator (pronounced "wavy dot") has the same left-to-right precedence as
 the `.` "dot" operator, so that example is equivalent to
-`Promise.resolve(vats.bob).post('bar', ['hello bob'])`.
+`HandledPromise.applyMethod(vats.bob, 'bar', ['hello bob'])`.
 
-If you are not running under SES and your Javascript environment does not yet support "bang syntax" (i.e. running `"abc"![2]` results in a syntax error, not a Promise), then the special `E()` wrapper can be used to get a proxy from which methods can be invoked, which looks like:
+If you are not running under SES and your Javascript environment does not yet support "wavy dot syntax" (i.e. running `"abc"~.[2]` results in a syntax error, not a Promise), then the special `E()` wrapper can be used to get a proxy from which methods can be invoked, which looks like:
 
 ```js
 function bootstrap(argv, vats) {
@@ -156,9 +156,9 @@ function bootstrap(argv, vats) {
 }
 ```
 
-## Other uses for bang syntax
+## Other uses for wavy dot syntax
 
-The main purpose of the bang syntax (and E wrapper) is to provide an
+The main purpose of the wavy dot syntax (and E wrapper) is to provide an
 "eventual send" operator, in which the message is always delivered on some
 later turn of the event loop. This happens regardless of whether the target
 is local or in some other Vat:
@@ -167,26 +167,26 @@ is local or in some other Vat:
 const t1 = {
   foo() { console.log('foo called'); },
 };
-t1!foo()
-console.log('bang called');
+t1~.foo()
+console.log('wavy dot called');
 ```
 
 will print:
 
 ```
-bang called
+wavy dot called
 foo called
 ```
 
 This is equivalent to:
 
-```
-Promise.resolve(t1).then(x => x.foo())
+```js
+HandledPromise.applyMethod(t1, 'foo', [])
 ```
 
 or
 
-```
+```js
 E(t1).foo()
 ```
 
@@ -195,51 +195,50 @@ E(t1).foo()
 Eventual-sends return a Promise for their eventual result:
 
 ```js
-const fooP = bob!foo();
+const fooP = bob~.foo();
 fooP.then(resolution => console.log('foo said', resolution),
           rejection => console.log('foo errored with', rejection));
 ```
 
 ## Sending Messages to Promises
 
-Bang syntax also accepts Promises, just like `Promise.resolve`. The
+Wavy dot syntax also accepts Promises, just like `Promise.resolve`. The
 method will be invoked (on some future turn) on whatever the Promise resolves
 to.
 
-If bang syntax is used on a Promise which rejects, the method is not invoked, and
+If wavy dot syntax is used on a Promise which rejects, the method is not invoked, and
 the return promise's `rejection` function is called instead:
 
 ```js
 const badP = Promise.reject(new Error());
-const p2 = badP!foo();
+const p2 = badP~.foo();
 p2.then(undefined, rej => console.log('rejected', rej));
 // prints 'rejected'
 ```
 
-If the Promise resolves to a non-object (e.g. a number, or undefined), there
-will be nothing to look up the method name on, and the method delivery will
-fail with a `ReferenceError`.
+If the Promise resolves to something which does not support the method,
+the method delivery will reject with a `TypeError`.
 
 ## Promise Pipelining
 
-In `fooP = bob!foo()`, `fooP` represents the (eventual) return value of
+In `fooP = bob~.foo()`, `fooP` represents the (eventual) return value of
 whatever `foo()` executes. If that return value is also a Callable Object, it
 is possible to queue messages to be delivered to that future target. The
-Promise returned by an eventual-send can be used by bang syntax too, and
+Promise returned by an eventual-send can be used by wavy dot syntax too, and
 the method invoked will be turned into a queued message that won't be
 delivered until the first promise resolves:
 
 ```js
-const db = databaseServer!openDB();
-const row = db!select(criteria)
-const success = row!modify(newValue);
+const db = databaseServer~.openDB();
+const row = db~.select(criteria)
+const success = row~.modify(newValue);
 success.then(res => console.log('row modified'));
 ```
 
 If you don't care about them, the intermediate values can be discarded:
 
 ```js
-databaseServer!openDB()!select(criteria)!modify(newValue)
+databaseServer~.openDB()~.select(criteria)~.modify(newValue)
   .then(res => console.log('row modified'));
 ```
 

@@ -3,7 +3,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import { makeMarshal, mustPassByPresence } from '@agoric/marshal';
-import maybeExtendPromise from '@agoric/eventual-send';
+import { maybeExtendPromise } from '@agoric/eventual-send';
 
 import { makeMarshaller } from '../src/kernel/liveSlots';
 import makePromise from '../src/makePromise';

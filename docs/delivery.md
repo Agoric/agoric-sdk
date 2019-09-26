@@ -12,7 +12,7 @@ corresponds to the unix program written in C or some other language. For
 SwingSet, most Vat Code is in the SES subset of Javascript, using orthogonal
 persistence, native platform Promises, and making eventual-send calls to
 local or remote objects with either the `E()` wrapper `p=E(x).foo(args)` or
-(eventually) the infix-bang syntax `p=x!foo(args)`. Other forms of Vat Code
+(eventually) the wavy dot syntax `p=x~.foo(args)`. Other forms of Vat Code
 could exist, such as non-orthogonal (database/ORM-based) persistence, or in a
 non-SES language (e.g. a WASM box).
 

@@ -1,5 +1,4 @@
 /dist
 /src/bundles/
-# Until we have eslint parsing of infix bang
-/demo/encouragementBotCommsBang/
-
+# Until we have eslint parsing of wavy dot
+/demo/encouragementBotCommsWavyDot/
