@@ -5,16 +5,16 @@ export default [
     input: 'src/index.js',
     output: [
       {
-        file: 'dist/transform-bang.umd.js',
+        file: 'dist/transform-eventual-send.umd.js',
         format: 'umd',
-        name: 'makeBangTransformer',
+        name: 'makeEventalSendTransformer',
       },
       {
-        file: 'dist/transform-bang.esm.js',
+        file: 'dist/transform-eventual-send.esm.js',
         format: 'esm',
       },
       {
-        file: 'dist/transform-bang.cjs.js',
+        file: 'dist/transform-eventual-send.cjs.js',
         format: 'cjs',
       },
     ],

@@ -1,10 +1,10 @@
 {
-  "name": "@agoric/transform-bang",
+  "name": "@agoric/transform-eventual-send",
   "version": "0.3.4-dev.0",
-  "description": "transform-bang",
-  "main": "dist/transform-bang.cjs.js",
-  "module": "dist/transform-bang.esm.js",
-  "browser": "dist/transform-bang.umd.js",
+  "description": "transform-eventual-send",
+  "main": "dist/transform-eventual-send.cjs.js",
+  "module": "dist/transform-eventual-send.esm.js",
+  "browser": "dist/transform-eventual-send.umd.js",
   "scripts": {
     "test": "tape -r esm 'test/**/*.js'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
@@ -12,9 +12,9 @@
     "build": "rollup -c rollup.config.js"
   },
   "devDependencies": {
-    "@agoric/acorn-infix-bang": "0.0.3",
-    "@agoric/babel-parser": "^7.5.0-infixBang.1",
-    "@agoric/eventual-send": "^0.1.3",
+    "@agoric/acorn-eventual-send": "^1.0.1",
+    "@agoric/babel-parser": "^7.6.2",
+    "@agoric/eventual-send": "^0.2.4",
     "@babel/generator": "^7.5.0",
     "acorn": "^6.2.0",
     "astring": "^1.4.0",
@@ -43,12 +43,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Agoric/transform-bang"
+    "url": "git+https://github.com/Agoric/transform-eventual-send"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/Agoric/transform-bang/issues"
+    "url": "https://github.com/Agoric/transform-eventual-send/issues"
   },
-  "homepage": "https://github.com/Agoric/transform-bang#readme"
+  "homepage": "https://github.com/Agoric/transform-eventual-send#readme"
 }

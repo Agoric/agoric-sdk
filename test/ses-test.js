@@ -3,20 +3,23 @@
 import { test } from 'tape-promise/tape';
 import * as SES from 'ses';
 
-import maybeExtendPromise from '@agoric/eventual-send';
+import { maybeExtendPromise, makeHandledPromise } from '@agoric/eventual-send';
 
 import * as babelParser from '@agoric/babel-parser';
 import babelGenerate from '@babel/generator';
 
 import { Parser as AcornRawParser } from 'acorn';
-import acornInfixBang from '@agoric/acorn-infix-bang';
+import acornEventualSend from '@agoric/acorn-eventual-send';
 import * as astring from 'astring';
 
-import makeBangTransformer from '../src';
+import makeEventualSendTransformer from '../src';
 
-const shims = [`(${maybeExtendPromise})(Promise)`];
+const shims = [
+  `(${maybeExtendPromise})(Promise)`,
+  `this.HandledPromise = (${makeHandledPromise})(Promise)`,
+];
 
-const AcornParser = AcornRawParser.extend(acornInfixBang());
+const AcornParser = AcornRawParser.extend(acornEventualSend());
 const acornParser = {
   parse(src) {
     return AcornParser.parse(src);
@@ -29,18 +32,20 @@ const acornGenerate = (ast, _options, _src) => ({
   code: astring.generate(ast),
 });
 
-test('infix bang is disabled by default', t => {
+test('eventual send is disabled by default', t => {
   try {
     const s = SES.makeSESRootRealm();
     t.throws(
       () =>
-        s.evaluate('"abc"!length', {
-          E(obj) {
-            return obj;
+        s.evaluate('"abc"~.length', {
+          HandledPromise: {
+            get(target, _prop) {
+              return target;
+            },
           },
         }),
       SyntaxError,
-      `infix bang fails`,
+      `eventual send fails`,
     );
     t.equals(s.evaluate('(1,eval)("123")'), 123, `indirect eval works`);
   } catch (e) {
@@ -54,7 +59,7 @@ test('expression source is parsable', async t => {
   try {
     const s = SES.makeSESRootRealm({
       shims,
-      transforms: makeBangTransformer(babelParser, babelGenerate),
+      transforms: makeEventualSendTransformer(babelParser, babelGenerate),
     });
     t.equal(
       s.evaluate(`123; 456`, {}, { sourceType: 'program' }),
@@ -66,12 +71,13 @@ test('expression source is parsable', async t => {
       123,
       'semicolon program succeeds',
     );
-    /* FIXME: When sourceType matters to realms-shim, use this.
+    /* FIXME: Do when Realms honour sourceType.
     t.throws(
       () => s.evaluate(`123;`, {}, { sourceType: 'expression' }),
       SyntaxError,
       'non-expression fails',
-    ); */
+    );
+    */
     t.equal(
       s.evaluate(`123`, {}, { sourceType: 'expression' }),
       123,
@@ -84,25 +90,29 @@ test('expression source is parsable', async t => {
   }
 });
 
-test('infix bang can be enabled twice', async t => {
+test('eventual send can be enabled twice', async t => {
   try {
     const s = SES.makeSESRootRealm({
       shims,
       transforms: [
-        ...makeBangTransformer(babelParser, babelGenerate),
-        ...makeBangTransformer(babelParser, babelGenerate),
-      ],
-    });
-    t.equal(await s.evaluate('"abc"![2]'), 'c', `babel double transform works`);
-    const s2 = SES.makeSESRootRealm({
-      shims,
-      transforms: [
-        ...makeBangTransformer(acornParser, acornGenerate),
-        ...makeBangTransformer(acornParser, acornGenerate),
+        ...makeEventualSendTransformer(babelParser, babelGenerate),
+        ...makeEventualSendTransformer(babelParser, babelGenerate),
       ],
     });
     t.equal(
-      await s2.evaluate('"abc"![2]'),
+      await s.evaluate('"abc"~.[2]'),
+      'c',
+      `babel double transform works`,
+    );
+    const s2 = SES.makeSESRootRealm({
+      shims,
+      transforms: [
+        ...makeEventualSendTransformer(acornParser, acornGenerate),
+        ...makeEventualSendTransformer(acornParser, acornGenerate),
+      ],
+    });
+    t.equal(
+      await s2.evaluate('"abc"~.[2]'),
       'c',
       `acorn double transform works`,
     );
@@ -113,7 +123,7 @@ test('infix bang can be enabled twice', async t => {
   }
 });
 
-test('infix bang can be enabled', async t => {
+test('eventual send can be enabled', async t => {
   try {
     for (const [name, parser, generate] of [
       ['babel', babelParser, babelGenerate],
@@ -121,38 +131,38 @@ test('infix bang can be enabled', async t => {
     ]) {
       const s = SES.makeSESRootRealm({
         shims,
-        transforms: makeBangTransformer(parser, generate),
+        transforms: makeEventualSendTransformer(parser, generate),
       });
-      t.equals(await s.evaluate(`"abc"!length`), 3, `${name} .get() works`);
+      t.equals(await s.evaluate(`"abc"~.length`), 3, `${name} .get() works`);
       t.equals(
         await s.evaluate(
-          `({foo(nick) { return "hello " + nick; }})!foo('person')`,
+          `({foo(nick) { return "hello " + nick; }})~.foo('person')`,
         ),
         'hello person',
-        `${name} .post() works`,
+        `${name} .applyMethod() works`,
       );
       t.equals(
-        await s.evaluate(`((punct) => "world" + punct)!('!')`),
+        await s.evaluate(`((punct) => "world" + punct)~.('!')`),
         'world!',
-        `${name} .post(undefined, ...) works`,
+        `${name} .apply() works`,
       );
       t.equals(
-        await s.evaluate(`["a", "b", "c"]![2]`),
+        await s.evaluate(`["a", "b", "c"]~.[2]`),
         'c',
         `${name} computed .get works`,
       );
 
       t.equals(
         await s.evaluate(
-          `({foo(greeting) { return greeting + ' world';}})!foo!('hello')`,
+          `({foo(greeting) { return greeting + ' world';}})~.foo~.('hello')`,
         ),
         'hello world',
-        `${name} double bang evaluates`,
+        `${name} double eventual send evaluates`,
       );
 
       const o = { gone: 'away', here: 'world' };
       t.equals(
-        await s.evaluate('o => delete o!gone')(o),
+        await s.evaluate('o => delete o~.gone')(o),
         true,
         `${name} .delete works`,
       );
@@ -160,11 +170,11 @@ test('infix bang can be enabled', async t => {
       t.equals(o.here, 'world', `${name} .delete other property stays`);
 
       t.equals(
-        await s.evaluate(`o => (o!back = 'here')`)(o),
+        await s.evaluate(`o => (o~.back = 'here')`)(o),
         'here',
-        `${name} .put works`,
+        `${name} .set works`,
       );
-      t.equals(o.back, 'here', `${name} .put changes assignment`);
+      t.equals(o.back, 'here', `${name} .set changes assignment`);
 
       const noReject = fn => fn();
 
@@ -187,19 +197,19 @@ test('infix bang can be enabled', async t => {
       );
       await directEval(async () =>
         t.equals(
-          await s.evaluate(`eval('eval(\\'"abc"!length\\')')`),
+          await s.evaluate(`eval('eval(\\'"abc"~.length\\')')`),
           3,
           `${name} nested direct eval works`,
         ),
       );
 
       t.equals(
-        await s.evaluate(`(1,eval)('"abc"!length')`),
+        await s.evaluate(`(1,eval)('"abc"~.length')`),
         3,
         `${name} indirect eval works`,
       );
       t.equals(
-        await s.evaluate(`(1,eval)('(1,eval)(\\'"abc"!length\\')')`),
+        await s.evaluate(`(1,eval)('(1,eval)(\\'"abc"~.length\\')')`),
         3,
         `${name} nested indirect eval works`,
       );

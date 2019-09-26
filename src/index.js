@@ -1,12 +1,12 @@
-function makeBangTransformer(parser, generate) {
+function makeEventualSendTransformer(parser, generate) {
   const transform = {
     rewrite(ss) {
-      // Parse with infixBang enabled, rewriting to
-      // Promise.resolve(...).get/put/post/delete
+      // Parse with eventualSend enabled, rewriting to
+      // HandledPromise.got/set/apply/applyMethod/delete(...)
       const source = ss.src;
       const parseFunc = parser.parse;
       const ast = (parseFunc || parser)(source, {
-        plugins: ['infixBang'],
+        plugins: ['eventualSend'],
       });
       // Create the source from the ast.
       const output = generate(ast, {}, source);
@@ -31,4 +31,4 @@ function makeBangTransformer(parser, generate) {
   return [transform];
 }
 
-export default makeBangTransformer;
+export default makeEventualSendTransformer;
