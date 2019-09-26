@@ -12,12 +12,12 @@ test('sanity', async t => {
     );
     const sourceState = options.transforms.reduce(
       (ss, transform) => (transform.rewrite ? transform.rewrite(ss) : ss),
-      { src: `foo!bar` },
+      { src: `foo~.bar` },
     );
 
     t.equal(
       sourceState.src,
-      `Promise.resolve(foo).get("bar");`,
+      `HandledPromise.get(foo, "bar");`,
       `infix bang is rewritten`,
     );
   } catch (e) {
