@@ -1,6 +1,6 @@
 {
   "name": "@agoric/transform-eventual-send",
-  "version": "0.3.4-dev.0",
+  "version": "1.0.0",
   "description": "transform-eventual-send",
   "main": "dist/transform-eventual-send.cjs.js",
   "module": "dist/transform-eventual-send.esm.js",
