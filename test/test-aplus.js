@@ -1,6 +1,6 @@
 import test from 'tape';
 import promisesAplusTests from 'promises-aplus-tests';
-import maybeExtendPromise from '../src/index';
+import { maybeExtendPromise } from '../src/index';
 
 test('Promises/A+ 1.1', t => {
   try {
