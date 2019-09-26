@@ -61,13 +61,14 @@ function makeEvaluate(e) {
     const c = makeCompartment({
       ...rootOptions,
       ...realmOptions,
-      // Global shims need to take effect before realm shims.
-      shims: (rootOptions.shims || []).concat(realmOptions.shims || []),
       // Realm transforms need to be vetted by global transforms.
       transforms: (realmOptions.transforms || []).concat(
         rootOptions.transforms || [],
       ),
     });
+    // Global shims need to take effect before realm shims.
+    const shims = (rootOptions.shims || []).concat(realmOptions.shims || []);
+    shims.forEach(shim => c.evaluate(shim));
     return {
       evaluateExpr(source, endowments = {}, options = {}) {
         return c.evaluate(`(${source}\n)`, endowments, options);
