@@ -1,6 +1,6 @@
 {
   "name": "@agoric/default-evaluate-options",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Agoric default evaluation options for Realms and SES",
   "main": "dist/default-evaluate-options.cjs.js",
   "module": "dist/default-evaluate-options.esm.js",
