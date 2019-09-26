@@ -179,17 +179,16 @@ sell them, and buy more.
 To access the gallery, type `home.gallery` in the REPL. `home.gallery`
 is a remote object (what we call a *presence*). It actually lives in
 another environment (what we call a *vat*). Instead of obj.foo(), we
-can write E(obj).foo() or the syntactic sugar, obj!foo() and get a
-promise for the result. We call this syntactic sugar ['infix
-bang'](https://github.com/Agoric/proposal-infix-bang). The syntax
+can write E(obj).foo() or the syntactic sugar, obj~.foo() and get a
+promise for the result. We call this syntactic sugar ['wavy dot'](https://github.com/Agoric/proposal-wavy-dot). The syntax
 means "deliver the message foo() to the actual object asynchronously,
 in its own turn, wherever and whenever it is, even if it is local."
-Using E or !, you can talk asynchronously to local and remote objects
+Using E or ~., you can talk asynchronously to local and remote objects
 in exactly the same way. For example, the first thing you might want
 to do is tap the gallery faucet to get a pixel for free:
 
 ```js
-px = home.gallery!tapFaucet()
+px = home.gallery~.tapFaucet()
 ```
 
 `tapFaucet` returns a pixel and saves it under `px`. The pixel that you receive is
@@ -199,7 +198,7 @@ Payments have a few functions. Let's call `getBalance()` on our payment
 to see which pixel we received. 
 
 ```js
-px!getBalance()
+px~.getBalance()
 ```
 
 You might see something like: 
@@ -216,14 +215,14 @@ JavaScript object that just happens to be associated with an ERTP
 payment. 
 
 ```js
-use = px!getUse()
+use = px~.getUse()
 ```
 
 Your use object will be stored under `use`. Now we
 can use it to color. 
 
 ```js
-use!changeColorAll('#FF69B4')
+use~.changeColorAll('#FF69B4')
 ```
 
 The following commands show a pixel being obtained from the faucet,
@@ -231,21 +230,21 @@ getting the 'use' object, coloring the pixel, and selling a pixel to the gallery
 escrow smart contract.  
 
 ```
-px = home.gallery!tapFaucet();
-px!getBalance();
-use = px!getUse();
-use!changeColorAll('yellow');
-px2 = home.gallery!tapFaucet();
-amt2 = px2!getBalance();
-amt2.then(a => home.gallery!pricePixelAmount(a));
-hostInvite = home.gallery!sellToGallery(amt2);
-seat = hostInvite!host!redeem(hostInvite!inviteP);
-offered = seat!offer(px2);
-issuers = home.gallery!getIssuers();
-pxPurse = issuers!pixelIssuer!makeEmptyPurse();
-dustPurse = issuers!dustIssuer!makeEmptyPurse();
-collected = offered.then(() => home.gallery!collectFromGallery(seat, dustPurse, pxPurse, 'my escrow'));
-collected.then(() => dustPurse!getBalance());
+px = home.gallery~.tapFaucet();
+px~.getBalance();
+use = px~.getUse();
+use~.changeColorAll('yellow');
+px2 = home.gallery~.tapFaucet();
+amt2 = px2~.getBalance();
+amt2.then(a => home.gallery~.pricePixelAmount(a));
+hostInvite = home.gallery~.sellToGallery(amt2);
+seat = hostInvite~.host~.redeem(hostInvite~.inviteP);
+offered = seat~.offer(px2);
+issuers = home.gallery~.getIssuers();
+pxPurse = issuers~.pixelIssuer~.makeEmptyPurse();
+dustPurse = issuers~.dustIssuer~.makeEmptyPurse();
+collected = offered.then(() => home.gallery~.collectFromGallery(seat, dustPurse, pxPurse, 'my escrow'));
+collected.then(() => dustPurse~.getBalance());
 ```
 
 Woohoo! We're now a few dust richer than when we started.
