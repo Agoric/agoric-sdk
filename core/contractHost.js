@@ -37,7 +37,7 @@ function makeContractHost(E, evaluate) {
 
   function redeem(allegedInvitePayment) {
     const allegedInviteAmount = allegedInvitePayment.getBalance();
-    const inviteAmount = inviteAssay.vouch(allegedInviteAmount);
+    const inviteAmount = inviteAssay.coerce(allegedInviteAmount);
     insist(!inviteAssay.isEmpty(inviteAmount))`\
 No invites left`;
     const desc = inviteAssay.quantity(inviteAmount);

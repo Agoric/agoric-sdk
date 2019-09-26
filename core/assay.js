@@ -1,6 +1,5 @@
 import harden from '@agoric/harden';
 
-import { insist } from '../util/insist';
 import { mustBeSameStructure, mustBeComparable } from '../util/sameStructure';
 
 // This module treats labels as black boxes. It is not aware
@@ -48,14 +47,6 @@ function makeAssay(label, strategy) {
       return amount;
     },
 
-    // Is this an amount object made by this assay? If so, return
-    // it. Otherwise error.
-    vouch(amount) {
-      insist(brand.has(amount))`\
-  Unrecognized amount: ${amount}`;
-      return amount;
-    },
-
     // Is this like an amount object made by this assay, such as one
     // received by pass-by-copy from an otherwise-identical remote
     // amount? On success, return an amount object made by this
@@ -78,7 +69,7 @@ function makeAssay(label, strategy) {
 
     // Return the raw quantity that this amount labels.
     quantity(amount) {
-      return assay.vouch(amount).quantity;
+      return assay.coerce(amount).quantity;
     },
 
     // Represents the empty set of erights, i.e., no erights

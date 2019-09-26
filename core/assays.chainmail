@@ -42,13 +42,6 @@ interface Assay (Amount (Quantity, Label)) {
   make(allegedQuantity :Quantity) -> (Amount);
 
   /**
-   * Verify that an Amount was created by this Assay. Notice that this is
-   * different from coerce(), which will accept manually constructed amounts and
-   * amounts from other assays.
-   */
-  vouch(amount :Amount) -> (Amount);
-
-  /**
    * Is this like an Amount object made by this Assay, such as one received by
    * pass-by-copy from an otherwise-identical remote Amount? If so, return an
    * Amount object made by this Assay. Otherwise error.
@@ -97,8 +90,7 @@ interface Assay (Amount (Quantity, Label)) {
  *
  * Every amount created by the Assay will have the same label, but recipients
  * cannot use the label by itself to verify that a purported amount is
- * authentic, since the label can be copied. To validate an amount call
- * assay.vouch(amount).
+ * authentic, since the label can be copied. 
  */
 struct Label {
   issuer :Issuer;
