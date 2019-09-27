@@ -499,7 +499,7 @@ export default function runTests() {
         msg: {
           method: 'foo1',
           args: capdata('args', ['kp40']),
-          result: undefined,
+          result: null,
         },
       },
     ]);
@@ -846,12 +846,12 @@ export default function runTests() {
         aliceForAlice,
         'store',
         capdata('args string', [aliceForAlice, bobForAlice]),
-        undefined,
+        null,
       ],
       syscalls: [
         {
           d: ['send', bobForAlice, 'foo', capdata('fooarg'), 'p+5'],
-          response: undefined,
+          response: null,
         },
       ],
     });

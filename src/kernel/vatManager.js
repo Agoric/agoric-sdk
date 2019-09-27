@@ -115,7 +115,7 @@ export default function makeVatManager(
     kdebug(`syscall[${vatID}].send(vat:${targetSlot}=ker:${target}).${method}`);
     const kernelSlots = args.slots.map(slot => mapVatSlotToKernelSlot(slot));
     const kernelArgs = harden({ ...args, slots: kernelSlots });
-    let result;
+    let result = null;
     if (resultSlot) {
       insistVatType('promise', resultSlot);
       result = mapVatSlotToKernelSlot(resultSlot);
@@ -133,7 +133,8 @@ export default function makeVatManager(
         p.decider === vatID,
         `send() result ${result} is decided by ${p.decider} not ${vatID}`,
       );
-      p.decider = undefined; // resolution authority now held by run-queue
+      kernelKeeper.clearDecider(result);
+      // resolution authority now held by run-queue
     }
 
     const msg = harden({
@@ -221,29 +222,27 @@ export default function makeVatManager(
 
   const syscall = harden({
     send(...args) {
-      const promiseID = inReplay ? replay('send', ...args) : doSend(...args);
-      // todo: remove return value
-      transcriptAddSyscall(['send', ...args], promiseID);
-      return promiseID;
+      transcriptAddSyscall(['send', ...args], null);
+      return inReplay ? replay('send', ...args) : doSend(...args);
     },
     subscribe(...args) {
-      transcriptAddSyscall(['subscribe', ...args]);
+      transcriptAddSyscall(['subscribe', ...args], null);
       return inReplay ? replay('subscribe', ...args) : doSubscribe(...args);
     },
     fulfillToData(...args) {
-      transcriptAddSyscall(['fulfillToData', ...args]);
+      transcriptAddSyscall(['fulfillToData', ...args], null);
       return inReplay
         ? replay('fulfillToData', ...args)
         : doFulfillToData(...args);
     },
     fulfillToPresence(...args) {
-      transcriptAddSyscall(['fulfillToPresence', ...args]);
+      transcriptAddSyscall(['fulfillToPresence', ...args], null);
       return inReplay
         ? replay('fulfillToPresence', ...args)
         : doFulfillToPresence(...args);
     },
     reject(...args) {
-      transcriptAddSyscall(['reject', ...args]);
+      transcriptAddSyscall(['reject', ...args], null);
       return inReplay ? replay('reject', ...args) : doReject(...args);
     },
 
@@ -297,7 +296,7 @@ export default function makeVatManager(
       insist(p.decider === vatID, `wrong decider`);
     }
     const inputSlots = msg.args.slots.map(slot => mapKernelSlotToVatSlot(slot));
-    let resultSlot;
+    let resultSlot = null;
     if (msg.result) {
       insistKernelType('promise', msg.result);
       const p = kernelKeeper.getKernelPromise(msg.result);
@@ -308,7 +307,7 @@ export default function makeVatManager(
       );
       resultSlot = vatKeeper.mapKernelSlotToVatSlot(msg.result);
       insistVatType('promise', resultSlot);
-      p.decider = vatID; // todo: depends on mutable keeper promises
+      kernelKeeper.setDecider(msg.result, vatID);
     }
     await doProcess(
       [
@@ -363,10 +362,8 @@ export default function makeVatManager(
       throw new Error("userspace doesn't do transcripts");
     }
 
-    const transcript = vatKeeper.getTranscript();
     inReplay = true;
-    for (let i = 0; i < transcript.length; i += 1) {
-      const t = transcript[i];
+    for (const t of vatKeeper.getTranscript()) {
       playbackSyscalls = Array.from(t.syscalls);
       // eslint-disable-next-line no-await-in-loop
       await doProcess(t.d, 'errmsg');

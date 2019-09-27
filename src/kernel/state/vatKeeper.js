@@ -1,4 +1,5 @@
 import harden from '@agoric/harden';
+import Nat from '@agoric/nat';
 import { insist } from '../../insist';
 import { parseKernelSlot } from '../parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
@@ -6,31 +7,25 @@ import { insistVatID } from '../id';
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
-export function initializeVatState(vatID, state) {
-  state.kernelSlotToVatSlot = {}; // kpNN -> p+NN, etc
-  state.vatSlotToKernelSlot = {}; // p+NN -> kpNN, etc
-
-  state.nextObjectID = 50;
-  state.nextPromiseID = 60;
-  state.nextDeviceID = 70;
-
-  state.transcript = [];
+export function initializeVatState(storage, vatID) {
+  storage.set(`${vatID}.o.nextID`, '50');
+  storage.set(`${vatID}.p.nextID`, '60');
+  storage.set(`${vatID}.d.nextID`, '70');
+  storage.set(`${vatID}.t.nextID`, '0');
 }
 
-export function makeVatKeeper(state, vatID, addKernelObject, addKernelPromise) {
+export function makeVatKeeper(
+  storage,
+  vatID,
+  addKernelObject,
+  addKernelPromise,
+) {
   insistVatID(vatID);
-
-  function insistVatSlotType(type, slot) {
-    insist(
-      type === parseVatSlot(slot).type,
-      `vatSlot ${slot} is not of type ${type}`,
-    );
-  }
 
   function mapVatSlotToKernelSlot(vatSlot) {
     insist(`${vatSlot}` === vatSlot, 'non-string vatSlot');
-    const existing = state.vatSlotToKernelSlot[vatSlot];
-    if (existing === undefined) {
+    const vatKey = `${vatID}.c.${vatSlot}`;
+    if (!storage.has(vatKey)) {
       const { type, allocatedByVat } = parseVatSlot(vatSlot);
 
       if (allocatedByVat) {
@@ -44,8 +39,9 @@ export function makeVatKeeper(state, vatID, addKernelObject, addKernelPromise) {
         } else {
           throw new Error(`unknown type ${type}`);
         }
-        state.vatSlotToKernelSlot[vatSlot] = kernelSlot;
-        state.kernelSlotToVatSlot[kernelSlot] = vatSlot;
+        const kernelKey = `${vatID}.c.${kernelSlot}`;
+        storage.set(kernelKey, vatSlot);
+        storage.set(vatKey, kernelSlot);
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
         // (else it would have been in the c-list), so it must be bogus
@@ -53,54 +49,64 @@ export function makeVatKeeper(state, vatID, addKernelObject, addKernelPromise) {
       }
     }
 
-    return state.vatSlotToKernelSlot[vatSlot];
+    return storage.get(vatKey);
   }
 
   function mapKernelSlotToVatSlot(kernelSlot) {
     insist(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
-    const existing = state.kernelSlotToVatSlot[kernelSlot];
-    if (existing === undefined) {
+    const kernelKey = `${vatID}.c.${kernelSlot}`;
+    if (!storage.has(kernelKey)) {
       const { type } = parseKernelSlot(kernelSlot);
 
-      let vatSlot;
+      let id;
       if (type === 'object') {
-        const id = state.nextObjectID;
-        state.nextObjectID += 1;
-        vatSlot = makeVatSlot(type, false, id);
+        id = Nat(Number(storage.get(`${vatID}.o.nextID`)));
+        storage.set(`${vatID}.o.nextID`, `${id + 1}`);
       } else if (type === 'device') {
-        const id = state.nextDeviceID;
-        state.nextDeviceID += 1;
-        vatSlot = makeVatSlot(type, false, id);
+        id = Nat(Number(storage.get(`${vatID}.d.nextID`)));
+        storage.set(`${vatID}.d.nextID`, `${id + 1}`);
       } else if (type === 'promise') {
-        const id = state.nextPromiseID;
-        state.nextPromiseID += 1;
-        vatSlot = makeVatSlot(type, false, id);
+        id = Nat(Number(storage.get(`${vatID}.p.nextID`)));
+        storage.set(`${vatID}.p.nextID`, `${id + 1}`);
       } else {
         throw new Error(`unknown type ${type}`);
       }
+      const vatSlot = makeVatSlot(type, false, id);
 
-      state.vatSlotToKernelSlot[vatSlot] = kernelSlot;
-      state.kernelSlotToVatSlot[kernelSlot] = vatSlot;
+      const vatKey = `${vatID}.c.${vatSlot}`;
+      storage.set(vatKey, kernelSlot);
+      storage.set(kernelKey, vatSlot);
     }
 
-    return state.kernelSlotToVatSlot[kernelSlot];
+    return storage.get(kernelKey);
   }
 
-  function getTranscript() {
-    return Array.from(state.transcript);
+  function* getTranscript() {
+    for (const value of storage.getPrefixedValues(`${vatID}.t.`)) {
+      yield JSON.parse(value);
+    }
   }
 
   function addToTranscript(msg) {
-    state.transcript.push(msg);
+    const id = Nat(Number(storage.get(`${vatID}.t.nextID`)));
+    storage.set(`${vatID}.t.nextID`, `${id + 1}`);
+    storage.set(`${vatID}.t.${id}`, JSON.stringify(msg));
   }
 
   // pretty print for logging and testing
   function dumpState() {
     const res = [];
-    Object.getOwnPropertyNames(state.kernelSlotToVatSlot).forEach(ks => {
-      const vs = state.kernelSlotToVatSlot[ks];
-      res.push([ks, vatID, vs]);
-    });
+    const prefix = `${vatID}.c.`;
+    for (const k of storage.getKeys(prefix, `${vatID}.c/`)) {
+      if (k.startsWith(prefix)) {
+        const slot = k.slice(prefix.length);
+        if (!slot.startsWith('k')) {
+          const vatSlot = slot;
+          const kernelSlot = storage.get(k);
+          res.push([kernelSlot, vatID, vatSlot]);
+        }
+      }
+    }
     return harden(res);
   }
 
@@ -108,8 +114,7 @@ export function makeVatKeeper(state, vatID, addKernelObject, addKernelPromise) {
     mapVatSlotToKernelSlot,
     mapKernelSlotToVatSlot,
     getTranscript,
-    dumpState,
     addToTranscript,
-    insistVatSlotType,
+    dumpState,
   });
 }

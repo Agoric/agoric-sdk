@@ -58,6 +58,18 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
   // in the kernel table, promises and resolvers are both indexed by the same
   // value. kernelPromises[promiseID] = { decider, subscribers }
 
+  function send(target, msg) {
+    parseKernelSlot(target);
+    insistMessage(msg);
+    const m = harden({ type: 'send', target, msg });
+    kernelKeeper.addToRunQueue(m);
+  }
+
+  function notify(vatID, kpid) {
+    const m = harden({ type: 'notify', vatID, kpid });
+    kernelKeeper.addToRunQueue(m);
+  }
+
   function makeError(s) {
     // TODO: create a @qclass=error, once we define those
     // or maybe replicate whatever happens with {}.foo()
@@ -68,31 +80,18 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
   function notifySubscribersAndQueue(kpid, subscribers, queue) {
     insistKernelType('promise', kpid);
     for (const vatID of subscribers) {
-      kernelKeeper.addToRunQueue(
-        harden({
-          type: 'notify',
-          vatID,
-          kpid,
-        }),
-      );
+      notify(vatID, kpid);
     }
     // re-deliver msg to the now-settled promise, which will forward or
     // reject depending on the new state of the promise
     for (const msg of queue) {
-      insistMessage(msg);
       // todo: this is slightly lazy, sending the message back to the same
       // promise that just got resolved. When this message makes it to the
       // front of the run-queue, we'll look up the resolution. Instead, we
       // could maybe look up the resolution *now* and set the correct target
       // early. Doing that might make it easier to remove the Promise Table
       // entry earlier.
-      kernelKeeper.addToRunQueue(
-        harden({
-          type: 'send',
-          target: kpid,
-          msg,
-        }),
-      );
+      send(kpid, msg);
     }
   }
 
@@ -115,13 +114,6 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     then();
   }
 
-  function send(target, msg) {
-    parseKernelSlot(target);
-    insistMessage(msg);
-    const m = harden({ type: 'send', target, msg });
-    kernelKeeper.addToRunQueue(m);
-  }
-
   function invoke(deviceSlot, method, args) {
     insistKernelType('device', deviceSlot);
     insistCapData(args);
@@ -141,8 +133,7 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
       kernelKeeper.addSubscriberToPromise(kpid, vatID);
     } else {
       // otherwise it's already resolved, you probably want to know how
-      const m = harden({ type: 'notify', vatID, kpid });
-      kernelKeeper.addToRunQueue(m);
+      notify(vatID, kpid);
     }
   }
 
@@ -264,15 +255,8 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     args.slots.forEach(s => parseKernelSlot(s)); // typecheck
     // we use result=null because this will be json stringified
     const msg = harden({ method, args, result: null });
-    insistMessage(msg);
     const kernelSlot = addExport(vatID, vatSlot);
-    kernelKeeper.addToRunQueue(
-      harden({
-        type: 'send',
-        target: kernelSlot,
-        msg,
-      }),
-    );
+    send(kernelSlot, msg);
   }
 
   async function deliverToVat(vatID, target, msg) {
@@ -644,14 +628,12 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     },
 
     dump() {
-      const stateDump = kernelKeeper.dump();
       // note: dump().log is not deterministic, since log() does not go
       // through the syscall interface (and we replay transcripts one vat at
       // a time, so any log() calls that were interleaved during their
       // original execution will be sorted by vat in the replace). Logs are
       // not kept in the persistent state, only in ephemeral state.
-      stateDump.log = ephemeral.log;
-      return stateDump;
+      return { log: ephemeral.log, ...kernelKeeper.dump() };
     },
 
     addImport,
