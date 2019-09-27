@@ -1,8 +1,8 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
+import { makeStorage } from './storage';
 import { initializeVatState, makeVatKeeper } from './vatKeeper';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper';
-import { prefixedKeys, deletePrefixedKeys, commaSplit } from './keyutil';
 import { insist } from '../../insist';
 import {
   insistKernelType,
@@ -26,8 +26,10 @@ import { insistVatID, insistDeviceID, makeDeviceID, makeVatID } from '../id';
 //
 // The schema is:
 //
+// vat.names = JSON([names..])
 // vat.name.$NAME = $vatID = v$NN
 // vat.nextID = $NN
+// device.names = JSON([names..])
 // device.name.$NAME = $deviceID = d$NN
 // device.nextID = $NN
 
@@ -63,14 +65,15 @@ import { insistVatID, insistDeviceID, makeDeviceID, makeVatID } from '../id';
 // for now we hold this in a plain object, but soon it will move to a
 // host-side database
 
-export default function makeKernelKeeper(initialState) {
-  const state = JSON.parse(`${initialState}`);
-
-  // todo: this is temporary, until we replace the state object with proper
-  // Maps, but that requires the new state-management scheme
-  function stateHasKey(name) {
-    return Object.prototype.hasOwnProperty.call(state, name);
+export function commaSplit(s) {
+  if (s === '') {
+    return [];
   }
+  return s.split(',');
+}
+
+export default function makeKernelKeeper(initialState) {
+  const storage = makeStorage(`${initialState}`);
 
   const ephemeral = harden({
     vatKeepers: new Map(), // vatID -> vatKeeper
@@ -78,98 +81,100 @@ export default function makeKernelKeeper(initialState) {
   });
 
   function getInitialized() {
-    return !!state.initialized;
+    return !!storage.get('initialized');
   }
 
   function setInitialized() {
-    state.initialized = true;
+    storage.set('initialized', true);
   }
 
   function createStartingKernelState() {
-    state['vat.nextID'] = '1';
-    state['device.nextID'] = '7';
-    state['ko.nextID'] = '20';
-    state['kd.nextID'] = '30';
-    state['kp.nextID'] = '40';
-    state.runQueue = JSON.stringify([]);
+    storage.set('vat.names', '[]');
+    storage.set('vat.nextID', '1');
+    storage.set('device.names', '[]');
+    storage.set('device.nextID', '7');
+    storage.set('ko.nextID', '20');
+    storage.set('kd.nextID', '30');
+    storage.set('kp.nextID', '40');
+    storage.set('runQueue', JSON.stringify([]));
   }
 
   function addKernelObject(ownerID) {
     insistVatID(ownerID);
-    const id = Nat(Number(state['ko.nextID']));
-    state['ko.nextID'] = `${id + 1}`;
+    const id = Nat(Number(storage.get('ko.nextID')));
+    storage.set('ko.nextID', `${id + 1}`);
     const s = makeKernelSlot('object', id);
-    state[`${s}.owner`] = ownerID;
+    storage.set(`${s}.owner`, ownerID);
     return s;
   }
 
   function ownerOfKernelObject(kernelSlot) {
     insistKernelType('object', kernelSlot);
-    const owner = state[`${kernelSlot}.owner`];
+    const owner = storage.get(`${kernelSlot}.owner`);
     insistVatID(owner);
     return owner;
   }
 
   function addKernelDeviceNode(deviceID) {
     insistDeviceID(deviceID);
-    const id = Nat(Number(state['kd.nextID']));
-    state['kd.nextID'] = `${id + 1}`;
+    const id = Nat(Number(storage.get('kd.nextID')));
+    storage.set('kd.nextID', `${id + 1}`);
     const s = makeKernelSlot('device', id);
-    state[`${s}.owner`] = deviceID;
+    storage.set(`${s}.owner`, deviceID);
     return s;
   }
 
   function ownerOfKernelDevice(kernelSlot) {
     insistKernelType('device', kernelSlot);
-    const owner = state[`${kernelSlot}.owner`];
+    const owner = storage.get(`${kernelSlot}.owner`);
     insistDeviceID(owner);
     return owner;
   }
 
   function addKernelPromise(deciderVatID) {
     insistVatID(deciderVatID);
-    const kpid = Nat(Number(state['kp.nextID']));
-    state['kp.nextID'] = `${kpid + 1}`;
+    const kpid = Nat(Number(storage.get('kp.nextID')));
+    storage.set('kp.nextID', `${kpid + 1}`);
     const s = makeKernelSlot('promise', kpid);
-    state[`${s}.state`] = 'unresolved';
-    state[`${s}.decider`] = deciderVatID;
-    state[`${s}.subscribers`] = '';
-    state[`${s}.queue.nextID`] = `0`;
+    storage.set(`${s}.state`, 'unresolved');
+    storage.set(`${s}.decider`, deciderVatID);
+    storage.set(`${s}.subscribers`, '');
+    storage.set(`${s}.queue.nextID`, `0`);
     // queue is empty, so no state[kp$NN.queue.$NN] keys yet
     return s;
   }
 
   function getKernelPromise(kernelSlot) {
     insistKernelType('promise', kernelSlot);
-    const p = { state: state[`${kernelSlot}.state`] };
+    const p = { state: storage.get(`${kernelSlot}.state`) };
     switch (p.state) {
       case undefined:
         throw new Error(`unknown kernelPromise '${kernelSlot}'`);
       case 'unresolved':
-        p.decider = state[`${kernelSlot}.decider`];
+        p.decider = storage.get(`${kernelSlot}.decider`);
         if (p.decider === '') {
           p.decider = undefined;
         }
-        p.subscribers = commaSplit(state[`${kernelSlot}.subscribers`]);
-        p.queue = Array.from(prefixedKeys(state, `${kernelSlot}.queue.`)).map(
-          JSON.parse,
-        );
+        p.subscribers = commaSplit(storage.get(`${kernelSlot}.subscribers`));
+        p.queue = Array.from(
+          storage.getPrefixedValues(`${kernelSlot}.queue.`),
+        ).map(JSON.parse);
         break;
       case 'fulfilledToPresence':
-        p.slot = state[`${kernelSlot}.slot`];
+        p.slot = storage.get(`${kernelSlot}.slot`);
         parseKernelSlot(p.slot);
         break;
       case 'fulfilledToData':
         p.data = {
-          body: state[`${kernelSlot}.data.body`],
-          slots: commaSplit(state[`${kernelSlot}.data.slots`]),
+          body: storage.get(`${kernelSlot}.data.body`),
+          slots: commaSplit(storage.get(`${kernelSlot}.data.slots`)),
         };
         p.data.slots.map(parseKernelSlot);
         break;
       case 'rejected':
         p.data = {
-          body: state[`${kernelSlot}.data.body`],
-          slots: commaSplit(state[`${kernelSlot}.data.slots`]),
+          body: storage.get(`${kernelSlot}.data.body`),
+          slots: commaSplit(storage.get(`${kernelSlot}.data.slots`)),
         };
         p.data.slots.map(parseKernelSlot);
         break;
@@ -181,43 +186,44 @@ export default function makeKernelKeeper(initialState) {
 
   function hasKernelPromise(kernelSlot) {
     insistKernelType('promise', kernelSlot);
-    return !!state[`${kernelSlot}.state`];
+    return storage.has(`${kernelSlot}.state`);
   }
 
   function deleteKernelPromise(kpid) {
-    delete state[`${kpid}.state`];
-    delete state[`${kpid}.decider`];
-    delete state[`${kpid}.subscribers`];
-    deletePrefixedKeys(state, `${kpid}.queue.`);
-    delete state[`${kpid}.queue.nextID`];
-    delete state[`${kpid}.slot`];
-    delete state[`${kpid}.data.body`];
-    delete state[`${kpid}.data.slots`];
+    // storage.deleteRange(`${kpid}.`, `${kpid}/`);
+    storage.delete(`${kpid}.state`);
+    storage.delete(`${kpid}.decider`);
+    storage.delete(`${kpid}.subscribers`);
+    storage.deletePrefixedKeys(`${kpid}.queue.`);
+    storage.delete(`${kpid}.queue.nextID`);
+    storage.delete(`${kpid}.slot`);
+    storage.delete(`${kpid}.data.body`);
+    storage.delete(`${kpid}.data.slots`);
   }
 
   function fulfillKernelPromiseToPresence(kernelSlot, targetSlot) {
     insistKernelType('promise', kernelSlot);
     deleteKernelPromise(kernelSlot);
-    state[`${kernelSlot}.state`] = 'fulfilledToPresence';
-    state[`${kernelSlot}.slot`] = targetSlot;
+    storage.set(`${kernelSlot}.state`, 'fulfilledToPresence');
+    storage.set(`${kernelSlot}.slot`, targetSlot);
   }
 
   function fulfillKernelPromiseToData(kernelSlot, capdata) {
     insistKernelType('promise', kernelSlot);
     insistCapData(capdata);
     deleteKernelPromise(kernelSlot);
-    state[`${kernelSlot}.state`] = 'fulfilledToData';
-    state[`${kernelSlot}.data.body`] = capdata.body;
-    state[`${kernelSlot}.data.slots`] = capdata.slots.join(',');
+    storage.set(`${kernelSlot}.state`, 'fulfilledToData');
+    storage.set(`${kernelSlot}.data.body`, capdata.body);
+    storage.set(`${kernelSlot}.data.slots`, capdata.slots.join(','));
   }
 
   function rejectKernelPromise(kernelSlot, capdata) {
     insistKernelType('promise', kernelSlot);
     insistCapData(capdata);
     deleteKernelPromise(kernelSlot);
-    state[`${kernelSlot}.state`] = 'rejected';
-    state[`${kernelSlot}.data.body`] = capdata.body;
-    state[`${kernelSlot}.data.slots`] = capdata.slots.join(',');
+    storage.set(`${kernelSlot}.state`, 'rejected');
+    storage.set(`${kernelSlot}.data.body`, capdata.body);
+    storage.set(`${kernelSlot}.data.slots`, capdata.slots.join(','));
   }
 
   function addMessageToPromiseQueue(kernelSlot, msg) {
@@ -228,10 +234,10 @@ export default function makeKernelKeeper(initialState) {
       throw new Error(`${kernelSlot} is '${p.state}', not 'unresolved'`);
     }
     const nkey = `${kernelSlot}.queue.nextID`;
-    const nextID = Nat(Number(state[nkey]));
-    state[nkey] = `${nextID + 1}`;
+    const nextID = Nat(Number(storage.get(nkey)));
+    storage.set(nkey, `${nextID + 1}`);
     const qid = `${kernelSlot}.queue.${nextID}`;
-    state[qid] = JSON.stringify(msg);
+    storage.set(qid, JSON.stringify(msg));
   }
 
   function setDecider(kpid, decider) {
@@ -239,13 +245,13 @@ export default function makeKernelKeeper(initialState) {
     const p = getKernelPromise(kpid);
     insist(p.state === 'unresolved', `${kpid} was already resolved`);
     insist(!p.decider, `${kpid} has decider ${p.decider}, not empty`);
-    state[`${kpid}.decider`] = decider;
+    storage.set(`${kpid}.decider`, decider);
   }
 
   function clearDecider(kpid) {
     const p = getKernelPromise(kpid);
     insist(p.state === 'unresolved', `${kpid} was already resolved`);
-    state[`${kpid}.decider`] = '';
+    storage.set(`${kpid}.decider`, '');
   }
 
   function addSubscriberToPromise(kernelSlot, vatID) {
@@ -257,72 +263,80 @@ export default function makeKernelKeeper(initialState) {
     const v = Array.from(s)
       .sort()
       .join(',');
-    state[`${kernelSlot}.subscribers`] = v;
+    storage.set(`${kernelSlot}.subscribers`, v);
   }
 
   function addToRunQueue(msg) {
     // the runqueue is usually empty between blocks, so we can afford a
     // non-delta-friendly format
-    const queue = JSON.parse(state.runQueue);
+    const queue = JSON.parse(storage.get('runQueue'));
     queue.push(msg);
-    state.runQueue = JSON.stringify(queue);
+    storage.set('runQueue', JSON.stringify(queue));
   }
 
   function isRunQueueEmpty() {
-    const queue = JSON.parse(state.runQueue);
+    const queue = JSON.parse(storage.get('runQueue'));
     return queue.length <= 0;
   }
 
   function getRunQueueLength() {
-    const queue = JSON.parse(state.runQueue);
+    const queue = JSON.parse(storage.get('runQueue'));
     return queue.length;
   }
 
   function getNextMsg() {
-    const queue = JSON.parse(state.runQueue);
+    const queue = JSON.parse(storage.get('runQueue'));
     const msg = queue.shift();
-    state.runQueue = JSON.stringify(queue);
+    storage.set('runQueue', JSON.stringify(queue));
     return msg;
   }
 
   function getVatIDForName(name) {
     insist(name === `${name}`, `${name} is not a string`);
     const k = `vat.name.${name}`;
-    if (!stateHasKey(k)) {
+    if (!storage.has(k)) {
       throw new Error(`vat name ${name} must exist, but doesn't`);
     }
-    return state[k];
+    return storage.get(k);
   }
 
   function provideVatIDForName(name) {
     insist(name === `${name}`);
     const k = `vat.name.${name}`;
-    if (!stateHasKey(k)) {
-      const nextID = Nat(Number(state[`vat.nextID`]));
-      state[`vat.nextID`] = `${nextID + 1}`;
-      state[k] = makeVatID(nextID);
+    if (!storage.has(k)) {
+      const nextID = Nat(Number(storage.get(`vat.nextID`)));
+      storage.set(`vat.nextID`, `${nextID + 1}`);
+      storage.set(k, makeVatID(nextID));
+      const names = JSON.parse(storage.get('vat.names'));
+      names.push(name);
+      storage.set('vat.names', JSON.stringify(names));
     }
-    return state[k];
+    return storage.get(k);
   }
 
   function provideVatKeeper(vatID) {
     insistVatID(vatID);
-    if (!stateHasKey(`${vatID}.o.nextID`)) {
-      initializeVatState(state, vatID);
+    if (!storage.has(`${vatID}.o.nextID`)) {
+      initializeVatState(storage, vatID);
     }
     if (!ephemeral.vatKeepers.has(vatID)) {
-      const vk = makeVatKeeper(state, vatID, addKernelObject, addKernelPromise);
+      const vk = makeVatKeeper(
+        storage,
+        vatID,
+        addKernelObject,
+        addKernelPromise,
+      );
       ephemeral.vatKeepers.set(vatID, vk);
     }
     return ephemeral.vatKeepers.get(vatID);
   }
 
   function getAllVatIDs() {
-    const nextID = Nat(Number(state[`vat.nextID`]));
+    const nextID = Nat(Number(storage.get(`vat.nextID`)));
     const vatIDs = [];
     for (let i = 1; i < nextID; i += 1) {
       const vatID = makeVatID(i);
-      if (stateHasKey(`${vatID}.o.nextID`)) {
+      if (storage.has(`${vatID}.o.nextID`)) {
         vatIDs.push(vatID);
       }
     }
@@ -330,55 +344,51 @@ export default function makeKernelKeeper(initialState) {
   }
 
   function getAllVatNames() {
-    const prefix = 'vat.name.';
-    const names = [];
-    // todo: db.getKeys(start='vat.name', end='vat.name/')
-    for (const k of Object.getOwnPropertyNames(state)) {
-      if (k.startsWith(prefix)) {
-        names.push(k.slice(prefix.length));
-      }
-    }
+    const names = JSON.parse(storage.get('vat.names'));
     return harden(names.sort());
   }
 
   function getDeviceIDForName(name) {
     insist(name === `${name}`);
     const k = `device.name.${name}`;
-    if (!stateHasKey(k)) {
+    if (!storage.has(k)) {
       throw new Error(`device name ${name} must exist, but doesn't`);
     }
-    return state[k];
+    return storage.get(k);
   }
 
   function provideDeviceIDForName(name) {
     insist(name === `${name}`);
     const k = `device.name.${name}`;
-    if (!stateHasKey(k)) {
-      const nextID = Nat(Number(state[`device.nextID`]));
-      state[`device.nextID`] = `${nextID + 1}`;
-      state[k] = makeDeviceID(nextID);
+    if (!storage.has(k)) {
+      const nextID = Nat(Number(storage.get(`device.nextID`)));
+      storage.set(`device.nextID`, `${nextID + 1}`);
+      storage.set(k, makeDeviceID(nextID));
+      const names = JSON.parse(storage.get('device.names'));
+      names.push(name);
+      storage.set('device.names', JSON.stringify(names));
     }
-    return state[k];
+    return storage.get(k);
   }
 
   function provideDeviceKeeper(deviceID) {
     insistDeviceID(deviceID);
-    if (!stateHasKey(`${deviceID}.o.nextID`)) {
-      initializeDeviceState(state, deviceID);
+    if (!storage.has(`${deviceID}.o.nextID`)) {
+      initializeDeviceState(storage, deviceID);
     }
     if (!ephemeral.deviceKeepers.has(deviceID)) {
-      const dk = makeDeviceKeeper(state, deviceID, addKernelDeviceNode);
+      const dk = makeDeviceKeeper(storage, deviceID, addKernelDeviceNode);
       ephemeral.deviceKeepers.set(deviceID, dk);
     }
     return ephemeral.deviceKeepers.get(deviceID);
   }
 
   function getAllDeviceIDs() {
-    const nextID = Nat(Number(state[`device.nextID`]));
+    const nextID = Nat(Number(storage.get(`device.nextID`)));
     const deviceIDs = [];
     for (let i = 1; i < nextID; i += 1) {
       const deviceID = makeDeviceID(i);
-      if (stateHasKey(`${deviceID}.o.nextID`)) {
+      if (storage.has(`${deviceID}.o.nextID`)) {
         deviceIDs.push(deviceID);
       }
     }
@@ -386,21 +396,14 @@ export default function makeKernelKeeper(initialState) {
   }
 
   function getAllDeviceNames() {
-    const prefix = 'device.name.';
-    const names = [];
-    // todo: db.getKeys(start='device.name', end='device.name/')
-    for (const k of Object.getOwnPropertyNames(state)) {
-      if (k.startsWith(prefix)) {
-        names.push(k.slice(prefix.length));
-      }
-    }
+    const names = JSON.parse(storage.get('device.names'));
     return harden(names.sort());
   }
 
   // used for persistence. This returns a JSON-serialized string, suitable to
   // be passed back into makeKernelKeeper() as 'initialState'.
   function getState() {
-    return JSON.stringify(state);
+    return storage.serialize();
   }
 
   // used for debugging, and tests. This returns a JSON-serializable object.
@@ -456,7 +459,7 @@ export default function makeKernelKeeper(initialState) {
 
     const promises = [];
 
-    const nextPromiseID = Nat(Number(state['kp.nextID']));
+    const nextPromiseID = Nat(Number(storage.get('kp.nextID')));
     for (let i = 0; i < nextPromiseID; i += 1) {
       const kpid = makeKernelSlot('promise', i);
       if (hasKernelPromise(kpid)) {
@@ -465,7 +468,7 @@ export default function makeKernelKeeper(initialState) {
     }
     promises.sort((a, b) => compareStrings(a.id, b.id));
 
-    const runQueue = JSON.parse(state.runQueue);
+    const runQueue = JSON.parse(storage.get('runQueue'));
 
     return harden({
       vatTables,

@@ -5,22 +5,18 @@ import { parseKernelSlot } from '../parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
 import { insistDeviceID } from '../id';
 
-export function initializeDeviceState(state, deviceID) {
-  state[`${deviceID}.o.nextID`] = '10';
+export function initializeDeviceState(storage, deviceID) {
+  storage.set(`${deviceID}.o.nextID`, '10');
 }
 
-export function makeDeviceKeeper(state, deviceID, addKernelDeviceNode) {
+export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
   insistDeviceID(deviceID);
-
-  function stateHasKey(name) {
-    return Object.prototype.hasOwnProperty.call(state, name);
-  }
 
   function mapDeviceSlotToKernelSlot(devSlot) {
     insist(`${devSlot}` === devSlot, 'non-string devSlot');
     // kdebug(`mapOutbound ${devSlot}`);
     const devKey = `${deviceID}.c.${devSlot}`;
-    if (!stateHasKey(devKey)) {
+    if (!storage.has(devKey)) {
       const { type, allocatedByVat } = parseVatSlot(devSlot);
 
       if (allocatedByVat) {
@@ -35,8 +31,8 @@ export function makeDeviceKeeper(state, deviceID, addKernelDeviceNode) {
           throw new Error(`unknown type ${type}`);
         }
         const kernelKey = `${deviceID}.c.${kernelSlot}`;
-        state[kernelKey] = devSlot;
-        state[devKey] = kernelSlot;
+        storage.set(kernelKey, devSlot);
+        storage.set(devKey, kernelSlot);
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
         // (else it would have been in the c-list), so it must be bogus
@@ -44,7 +40,7 @@ export function makeDeviceKeeper(state, deviceID, addKernelDeviceNode) {
       }
     }
 
-    return state[devKey];
+    return storage.get(devKey);
   }
 
   // mapInbound: convert from absolute slot to deviceName-relative slot. This
@@ -52,13 +48,13 @@ export function makeDeviceKeeper(state, deviceID, addKernelDeviceNode) {
   function mapKernelSlotToDeviceSlot(kernelSlot) {
     insist(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
     const kernelKey = `${deviceID}.c.${kernelSlot}`;
-    if (!stateHasKey(kernelKey)) {
+    if (!storage.has(kernelKey)) {
       const { type } = parseKernelSlot(kernelSlot);
 
       let id;
       if (type === 'object') {
-        id = Nat(Number(state[`${deviceID}.o.nextID`]));
-        state[`${deviceID}.o.nextID`] = `${id + 1}`;
+        id = Nat(Number(storage.get(`${deviceID}.o.nextID`)));
+        storage.set(`${deviceID}.o.nextID`, `${id + 1}`);
       } else if (type === 'device') {
         throw new Error('devices cannot import other device nodes');
       } else if (type === 'promise') {
@@ -69,18 +65,18 @@ export function makeDeviceKeeper(state, deviceID, addKernelDeviceNode) {
       const devSlot = makeVatSlot(type, false, id);
 
       const devKey = `${deviceID}.c.${devSlot}`;
-      state[devKey] = kernelSlot;
-      state[kernelKey] = devSlot;
+      storage.set(devKey, kernelSlot);
+      storage.set(kernelKey, devSlot);
     }
 
-    return state[kernelKey];
+    return storage.get(kernelKey);
   }
 
   function getDeviceState() {
     // this should return an object, generally CapData, or undefined
     const key = `${deviceID}.deviceState`;
-    if (stateHasKey(key)) {
-      return JSON.parse(state[key]);
+    if (storage.has(key)) {
+      return JSON.parse(storage.get(key));
       // todo: formalize the CapData, and store .deviceState.body, and
       // .deviceState.slots as 'vatSlot[,vatSlot..]'
     }
@@ -88,19 +84,18 @@ export function makeDeviceKeeper(state, deviceID, addKernelDeviceNode) {
   }
 
   function setDeviceState(value) {
-    state[`${deviceID}.deviceState`] = JSON.stringify(value);
+    storage.set(`${deviceID}.deviceState`, JSON.stringify(value));
   }
 
   function dumpState() {
     const res = [];
     const prefix = `${deviceID}.c.`;
-    // todo: db.getKeys(start='${deviceID}.c.', end='${deviceID}.c/')
-    for (const k of Object.getOwnPropertyNames(state)) {
+    for (const k of storage.getKeys(prefix, `${deviceID}.c/`)) {
       if (k.startsWith(prefix)) {
         const slot = k.slice(prefix.length);
         if (!slot.startsWith('k')) {
           const devSlot = slot;
-          const kernelSlot = state[k];
+          const kernelSlot = storage.get(k);
           res.push([kernelSlot, deviceID, devSlot]);
         }
       }
