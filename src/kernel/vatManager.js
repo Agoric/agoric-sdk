@@ -364,10 +364,8 @@ export default function makeVatManager(
       throw new Error("userspace doesn't do transcripts");
     }
 
-    const transcript = vatKeeper.getTranscript();
     inReplay = true;
-    for (let i = 0; i < transcript.length; i += 1) {
-      const t = transcript[i];
+    for (const t of vatKeeper.getTranscript()) {
       playbackSyscalls = Array.from(t.syscalls);
       // eslint-disable-next-line no-await-in-loop
       await doProcess(t.d, 'errmsg');

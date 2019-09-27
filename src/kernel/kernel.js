@@ -628,14 +628,12 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     },
 
     dump() {
-      const stateDump = kernelKeeper.dump();
       // note: dump().log is not deterministic, since log() does not go
       // through the syscall interface (and we replay transcripts one vat at
       // a time, so any log() calls that were interleaved during their
       // original execution will be sorted by vat in the replace). Logs are
       // not kept in the persistent state, only in ephemeral state.
-      stateDump.log = ephemeral.log;
-      return stateDump;
+      return { log: ephemeral.log, ...kernelKeeper.dump() };
     },
 
     addImport,
