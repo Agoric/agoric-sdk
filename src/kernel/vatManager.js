@@ -115,7 +115,7 @@ export default function makeVatManager(
     kdebug(`syscall[${vatID}].send(vat:${targetSlot}=ker:${target}).${method}`);
     const kernelSlots = args.slots.map(slot => mapVatSlotToKernelSlot(slot));
     const kernelArgs = harden({ ...args, slots: kernelSlots });
-    let result;
+    let result = null;
     if (resultSlot) {
       insistVatType('promise', resultSlot);
       result = mapVatSlotToKernelSlot(resultSlot);
@@ -222,29 +222,27 @@ export default function makeVatManager(
 
   const syscall = harden({
     send(...args) {
-      const promiseID = inReplay ? replay('send', ...args) : doSend(...args);
-      // todo: remove return value
-      transcriptAddSyscall(['send', ...args], promiseID);
-      return promiseID;
+      transcriptAddSyscall(['send', ...args], null);
+      return inReplay ? replay('send', ...args) : doSend(...args);
     },
     subscribe(...args) {
-      transcriptAddSyscall(['subscribe', ...args]);
+      transcriptAddSyscall(['subscribe', ...args], null);
       return inReplay ? replay('subscribe', ...args) : doSubscribe(...args);
     },
     fulfillToData(...args) {
-      transcriptAddSyscall(['fulfillToData', ...args]);
+      transcriptAddSyscall(['fulfillToData', ...args], null);
       return inReplay
         ? replay('fulfillToData', ...args)
         : doFulfillToData(...args);
     },
     fulfillToPresence(...args) {
-      transcriptAddSyscall(['fulfillToPresence', ...args]);
+      transcriptAddSyscall(['fulfillToPresence', ...args], null);
       return inReplay
         ? replay('fulfillToPresence', ...args)
         : doFulfillToPresence(...args);
     },
     reject(...args) {
-      transcriptAddSyscall(['reject', ...args]);
+      transcriptAddSyscall(['reject', ...args], null);
       return inReplay ? replay('reject', ...args) : doReject(...args);
     },
 
@@ -298,7 +296,7 @@ export default function makeVatManager(
       insist(p.decider === vatID, `wrong decider`);
     }
     const inputSlots = msg.args.slots.map(slot => mapKernelSlotToVatSlot(slot));
-    let resultSlot;
+    let resultSlot = null;
     if (msg.result) {
       insistKernelType('promise', msg.result);
       const p = kernelKeeper.getKernelPromise(msg.result);
