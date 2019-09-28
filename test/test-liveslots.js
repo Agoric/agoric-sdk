@@ -4,6 +4,7 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 // eslint-disable-next-line no-unused-vars
 import evaluateExpr from '@agoric/evaluate'; // to get Promise.makeHandled
+import { buildStorageInMemory } from '../src/hostStorage';
 import buildKernel from '../src/kernel/index';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
@@ -15,8 +16,12 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
+function makeEndowments() {
+  return { setImmediate, hostStorage: buildStorageInMemory().storage };
+}
+
 test('calls', async t => {
-  const kernel = buildKernel({ setImmediate });
+  const kernel = buildKernel(makeEndowments());
   const log = [];
   let syscall;
 
@@ -103,7 +108,7 @@ test('calls', async t => {
 });
 
 test('liveslots pipelines to syscall.send', async t => {
-  const kernel = buildKernel({ setImmediate });
+  const kernel = buildKernel(makeEndowments());
   const log = [];
 
   function setupA(syscallA, state, helpers) {

@@ -6,10 +6,12 @@ import { makeDeviceSlots } from './deviceSlots';
 import makePromise from '../makePromise';
 import makeVatManager from './vatManager';
 import makeDeviceManager from './deviceManager';
+import { wrapStorage } from './state/storageWrapper';
 import makeKernelKeeper from './state/kernelKeeper';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../parseVatSlots';
 import { insist } from '../insist';
+import { insistStorageAPI } from '../storageAPI';
 import { insistCapData } from '../capdata';
 import { insistMessage } from '../message';
 import { insistDeviceID, insistVatID } from './id';
@@ -22,10 +24,11 @@ function abbreviateReviver(_, arg) {
   return arg;
 }
 
-export default function buildKernel(kernelEndowments, initialState = '{}') {
-  const { setImmediate } = kernelEndowments;
-
-  const kernelKeeper = makeKernelKeeper(initialState);
+export default function buildKernel(kernelEndowments) {
+  const { setImmediate, hostStorage } = kernelEndowments;
+  insistStorageAPI(hostStorage);
+  const { enhancedCrankBuffer, commitCrank } = wrapStorage(hostStorage);
+  const kernelKeeper = makeKernelKeeper(enhancedCrankBuffer);
 
   let started = false;
   // this holds externally-added vats, which are present at startup, but not
@@ -359,6 +362,7 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     } else {
       throw Error(`unable to process message.type ${message.type}`);
     }
+    commitCrank();
   }
 
   function addGenesisVat(name, setup, options = {}) {
@@ -607,10 +611,6 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
     }
   }
 
-  function getState() {
-    return kernelKeeper.getState();
-  }
-
   const kernel = harden({
     // these are meant for the controller
     addGenesisVat,
@@ -619,7 +619,6 @@ export default function buildKernel(kernelEndowments, initialState = '{}') {
 
     step,
     run,
-    getState,
 
     // the rest are for testing and debugging
 

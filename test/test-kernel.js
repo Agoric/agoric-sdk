@@ -3,6 +3,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import buildKernel from '../src/kernel/index';
+import { buildStorageInMemory } from '../src/hostStorage';
 import { makeVatSlot } from '../src/parseVatSlots';
 import { checkKT } from './util';
 
@@ -29,9 +30,13 @@ function emptySetup(_syscall) {
   return { deliver };
 }
 
+function makeEndowments() {
+  return { setImmediate, hostStorage: buildStorageInMemory().storage };
+}
+
 export default function runTests() {
   test('build kernel', async t => {
-    const kernel = buildKernel({ setImmediate });
+    const kernel = buildKernel(makeEndowments());
     await kernel.start(); // empty queue
     const data = kernel.dump();
     t.deepEqual(data.vatTables, []);
@@ -40,7 +45,7 @@ export default function runTests() {
   });
 
   test('simple call', async t => {
-    const kernel = buildKernel({ setImmediate });
+    const kernel = buildKernel(makeEndowments());
     const log = [];
     function setup1(syscall, state, helpers) {
       function deliver(facetID, method, args) {
@@ -86,7 +91,7 @@ export default function runTests() {
   });
 
   test('map inbound', async t => {
-    const kernel = buildKernel({ setImmediate });
+    const kernel = buildKernel(makeEndowments());
     const log = [];
     function setup1(_syscall) {
       function deliver(facetID, method, args) {
@@ -135,7 +140,7 @@ export default function runTests() {
   });
 
   test('addImport', async t => {
-    const kernel = buildKernel({ setImmediate });
+    const kernel = buildKernel(makeEndowments());
     function setup(_syscall) {
       function deliver(_facetID, _method, _args) {}
       return { deliver };
@@ -156,7 +161,7 @@ export default function runTests() {
   });
 
   test('outbound call', async t => {
-    const kernel = buildKernel({ setImmediate });
+    const kernel = buildKernel(makeEndowments());
     const log = [];
     let v1tovat25;
     const p7 = 'p+7';
@@ -324,7 +329,7 @@ export default function runTests() {
   });
 
   test('three-party', async t => {
-    const kernel = buildKernel({ setImmediate });
+    const kernel = buildKernel(makeEndowments());
     const log = [];
     let bobForA;
     let carolForA;
@@ -444,7 +449,7 @@ export default function runTests() {
   });
 
   test('transfer promise', async t => {
-    const kernel = buildKernel({ setImmediate });
+    const kernel = buildKernel(makeEndowments());
     let syscallA;
     const logA = [];
     function setupA(syscall) {
@@ -547,7 +552,7 @@ export default function runTests() {
   });
 
   test('subscribe to promise', async t => {
-    const kernel = buildKernel({ setImmediate });
+    const kernel = buildKernel(makeEndowments());
     let syscall;
     const log = [];
     function setup(s) {
@@ -586,7 +591,7 @@ export default function runTests() {
   });
 
   test('promise resolveToData', async t => {
-    const kernel = buildKernel({ setImmediate });
+    const kernel = buildKernel(makeEndowments());
     const log = [];
 
     let syscallA;
@@ -659,7 +664,7 @@ export default function runTests() {
   });
 
   test('promise resolveToPresence', async t => {
-    const kernel = buildKernel({ setImmediate });
+    const kernel = buildKernel(makeEndowments());
     const log = [];
 
     let syscallA;
@@ -735,7 +740,7 @@ export default function runTests() {
   });
 
   test('promise reject', async t => {
-    const kernel = buildKernel({ setImmediate });
+    const kernel = buildKernel(makeEndowments());
     const log = [];
 
     let syscallA;
@@ -809,7 +814,7 @@ export default function runTests() {
 
   test('transcript', async t => {
     const aliceForAlice = 'o+1';
-    const kernel = buildKernel({ setImmediate });
+    const kernel = buildKernel(makeEndowments());
     function setup(syscall, _state) {
       function deliver(facetID, _method, args) {
         if (facetID === aliceForAlice) {
@@ -864,7 +869,7 @@ export default function runTests() {
   // have a decider. Make sure p3 gets queued in p2 rather than exploding.
 
   test('non-pipelined promise queueing', async t => {
-    const kernel = buildKernel({ setImmediate });
+    const kernel = buildKernel(makeEndowments());
     const log = [];
 
     let syscall;
@@ -975,7 +980,7 @@ export default function runTests() {
   // get delivered to vat-with-x.
 
   test('pipelined promise queueing', async t => {
-    const kernel = buildKernel({ setImmediate });
+    const kernel = buildKernel(makeEndowments());
     const log = [];
 
     let syscall;
