@@ -1,18 +1,34 @@
-import E from './E';
+import makeE from './E';
 
 // 'E' and 'HandledPromise' are exports of the module
 
-export const HandledPromise = makeHandledPromise(Promise);
+// For now:
+// import { HandledPromise, E } from '@agoric/eventual-send';
+// ...
 
-export { E };
+// TODO: Maybe rename the global to something only the tildot rewriter uses.
+if (!globalThis.HandledPromise) {
+  // Install the shim as best we can.
+  maybeExtendPromise(Promise);
+  globalThis.HandledPromise = makeHandledPromise(Promise);
+}
+
+// Provide a handled platform Promise if SES has not run.
+export const HandledPromise = globalThis.HandledPromise;
+export const E = makeE(HandledPromise);
 
 // the following methods (makeHandledPromise and maybeExtendPromise) are part
 // of the shim, and will not be exported by the module once the feature
 // becomes a part of standard javascript
 
-// Create HandledPromise static methods as a bridge from v0.2.4 to
-// new proposal support (wavy dot's infrastructure).
+// Create HandledPromise static methods as a bridge from v0.2.4
+// to new proposal support (wavy dot's infrastructure).
 export function makeHandledPromise(EPromise) {
+  // TODO: Use HandledPromise.resolve to store our weakmap, and
+  // install it on Promise.resolve.
+  function HandledPromise(executor, unfulfilledHandler = undefined) {
+    throw Error(`FIXME: unimplemented`);
+  }
   const staticMethods = {
     get(target, key) {
       return EPromise.resolve(target).get(key);
@@ -46,20 +62,7 @@ export function makeHandledPromise(EPromise) {
     },
   };
 
-  function HandledPromise(executor, unfulfilledHandler) {
-    const xx = (resolve, reject, resolveWithPresence) => {
-      const xxresolve = (target, presenceHandler) => {
-        if (!presenceHandler) {
-          return resolve(target);
-        }
-        
-      executor(xxresolve, reject);
-      
-    };
-    return EPromise.makeHandled(xx, unfulfilledHandler);
-  }
-
-  return HandledPromise;
+  return Object.assign(HandledPromise, staticMethods);
 }
 
 /**

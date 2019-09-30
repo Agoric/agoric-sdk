@@ -6,7 +6,7 @@ import harden from '@agoric/harden';
  * @param {Promise} ep Promise with eventual send API
  * @returns {ProxyHandler} the Proxy handler
  */
-function EPromiseHandler(ep) {
+function EProxyHandler(ep, HandledPromise) {
   return harden({
     get(_target, p, _receiver) {
       if (`${p}` !== p) {
@@ -17,16 +17,16 @@ function EPromiseHandler(ep) {
       // allow the handler to synchronously influence the promise returned
       // by the handled methods, so we must freeze it from the outside. See
       // #95 for details.
-      return (...args) => harden(ep.post(p, args));
+      return (...args) => harden(HandledPromise.applyMethod(ep, p, args));
     },
     deleteProperty(_target, p) {
-      return harden(ep.delete(p));
+      return harden(HandledPromise.delete(ep, p));
     },
     set(_target, p, value, _receiver) {
-      return harden(ep.put(p, value));
+      return harden(HandledPromise.set(ep, p, value));
     },
     apply(_target, _thisArg, argArray = []) {
-      return harden(ep.post(undefined, argArray));
+      return harden(HandledPromise.apply(ep, argArray));
     },
     has(_target, _p) {
       // We just pretend everything exists.
@@ -35,23 +35,18 @@ function EPromiseHandler(ep) {
   });
 }
 
-export default function E(x) {
-  // p = E(x).name(args)
-  //
-  // E(x) returns a proxy on which you can call arbitrary methods. Each of
-  // these method calls returns a promise. The method will be invoked on
-  // whatever 'x' designates (or resolves to) in a future turn, not this
-  // one.
+export default function makeE(HandledPromise) {
+  return function E(x) {
+    // p = E(x).name(args)
+    //
+    // E(x) returns a proxy on which you can call arbitrary methods. Each of
+    // these method calls returns a promise. The method will be invoked on
+    // whatever 'x' designates (or resolves to) in a future turn, not this
+    // one.
 
-  const targetP = Promise.resolve(x);
-  // targetP might resolve to a Presence
-  const handler = EPromiseHandler(targetP);
-  return harden(new Proxy({}, handler));
+    const targetP = Promise.resolve(x);
+    // targetP might resolve to a Presence
+    const handler = EProxyHandler(targetP, HandledPromise);
+    return harden(new Proxy({}, handler));
+  };
 }
-
-// Like Promise.resolve, except that if applied to a presence, it
-// would be better for it to return the remote promise for this
-// specimen, rather than a fresh local promise fulfilled by this
-// specimen.
-// TODO: for now, just alias Promise.resolve.
-E.resolve = specimen => Promise.resolve(specimen);

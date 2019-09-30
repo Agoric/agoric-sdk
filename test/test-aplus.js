@@ -1,16 +1,15 @@
 import test from 'tape';
 import promisesAplusTests from 'promises-aplus-tests';
-import { maybeExtendPromise } from '../src/index';
+import '../src/index';
 
 test('Promises/A+ 1.1', t => {
   try {
-    const EPromise = maybeExtendPromise(Promise);
     const adapter = {
-      resolved: EPromise.resolve,
-      rejected: EPromise.rejected,
+      resolved: Promise.resolve,
+      rejected: Promise.rejected,
       deferred() {
         const ret = {};
-        ret.promise = new EPromise((resolve, reject) => {
+        ret.promise = new Promise((resolve, reject) => {
           ret.resolve = resolve;
           ret.reject = reject;
         });

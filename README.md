@@ -11,7 +11,7 @@ Extend a Promise class to implements the eventual-send API.  This API is used by
 
 ## How to use
 
-> Note: If you're writing an application, you probably don't want to use this package directly. You'll want to use the eventual-send `!` operator (infix bang) provided in [SES](https://github.com/Agoric/SES) or other platforms.
+> Note: If you're writing an application, you probably don't want to use this package directly. You'll want to use the eventual-send `~.` operator (tildot) provided in [SES](https://github.com/Agoric/SES) or other platforms.
 
 The updated `EPromise` class can be used as described in `test/test.js`.
 
