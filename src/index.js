@@ -1,11 +1,19 @@
 import E from './E';
 
+// 'E' and 'HandledPromise' are exports of the module
+
+export const HandledPromise = makeHandledPromise(Promise);
+
 export { E };
+
+// the following methods (makeHandledPromise and maybeExtendPromise) are part
+// of the shim, and will not be exported by the module once the feature
+// becomes a part of standard javascript
 
 // Create HandledPromise static methods as a bridge from v0.2.4 to
 // new proposal support (wavy dot's infrastructure).
 export function makeHandledPromise(EPromise) {
-  return {
+  const staticMethods = {
     get(target, key) {
       return EPromise.resolve(target).get(key);
     },
@@ -37,6 +45,21 @@ export function makeHandledPromise(EPromise) {
       EPromise.resolve(target).post(key, args);
     },
   };
+
+  function HandledPromise(executor, unfulfilledHandler) {
+    const xx = (resolve, reject, resolveWithPresence) => {
+      const xxresolve = (target, presenceHandler) => {
+        if (!presenceHandler) {
+          return resolve(target);
+        }
+        
+      executor(xxresolve, reject);
+      
+    };
+    return EPromise.makeHandled(xx, unfulfilledHandler);
+  }
+
+  return HandledPromise;
 }
 
 /**
