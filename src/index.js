@@ -1,3 +1,7 @@
+import E from './E';
+
+export { E };
+
 // Create HandledPromise static methods as a bridge from v0.2.4 to
 // new proposal support (wavy dot's infrastructure).
 export function makeHandledPromise(EPromise) {
