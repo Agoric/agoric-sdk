@@ -48,24 +48,50 @@ def restart():
     os.execvp(AG_SOLO, [AG_SOLO, 'start', '--role=client'])
 
 @defer.inlineCallbacks
-def run_client(reactor, o, pubkey):
-    w = wormhole.create(APPID, MAILBOX_URL, reactor)
-    wormhole.input_with_completion("Provisioning code: ", w.input_code(), reactor)
-    cm = json.dumps({
-        "pubkey": pubkey,
-        })
-    w.send_message(cm.encode("utf-8"))
-    server_message = yield w.get_message()
-    sm = json.loads(server_message.decode("utf-8"))
-    print("server message is", sm)
-    yield w.close()
+def run_client(reactor, o, pkeyFile):
+    def cleanup():
+        try:
+            # Delete the basedir if we failed
+            shutil.rmtree(o['basedir'])
+        except FileNotFoundError:
+            pass
 
-    if not sm['ok']:
-        print("error from server:", sm['error'])
-        return
+    try:
+        # Try to initialize the client
+        print("initializing ag-solo", o['basedir'])
+        doInit(o)
 
-    BASEDIR = o['basedir']
-    setIngress(sm)
+        # read the pubkey out of BASEDIR/ag-cosmos-helper-address
+        f = open(pkeyFile)
+        pubkey = f.read()
+        f.close()
+        pubkey = pubkey.strip()
+
+        # Use the provisioning code to register our pubkey.
+        w = wormhole.create(APPID, MAILBOX_URL, reactor)
+
+        # Ensure cleanup gets called before aborting
+        t = reactor.addSystemEventTrigger("before", "shutdown", cleanup)
+        yield wormhole.input_with_completion("Provisioning code: ", w.input_code(), reactor)
+        reactor.removeSystemEventTrigger(t)
+
+        cm = json.dumps({
+            "pubkey": pubkey,
+            })
+        w.send_message(cm.encode("utf-8"))
+        server_message = yield w.get_message()
+        sm = json.loads(server_message.decode("utf-8"))
+        print("server message is", sm)
+        yield w.close()
+
+        if not sm['ok']:
+            raise Exception("error from server: " + sm['error'])
+
+        BASEDIR = o['basedir']
+        setIngress(sm)
+    except:
+        cleanup()
+        raise
     restart()
 
 def doInit(o):
@@ -79,14 +105,7 @@ def main():
     pkeyFile = os.path.join(o['basedir'], 'ag-cosmos-helper-address')
     # If the public key file does not exist, just init and run.
     if not os.path.exists(pkeyFile):
-        doInit(o)
-
-        # read the pubkey out of BASEDIR/ag-cosmos-helper-address
-        pkfile = open(pkeyFile)
-        pubkey = pkfile.read()
-        pkfile.close()
-        pubkey = pubkey.strip()
-        react(run_client, (o,pubkey))
+        react(run_client, (o,pkeyFile))
         sys.exit(1)
 
     yesno = input('Type "yes" to reset state from ' + o['netconfig'] + ', anything else cancels: ')
