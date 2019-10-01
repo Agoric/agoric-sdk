@@ -12,8 +12,7 @@ export default [
     plugins: [
       replace({
         delimiters: ['', ''],
-        "import '../src/index';":
-          "import '@agoric/eventual-send';",
+        "import '../src/index';": "import '@agoric/eventual-send';",
       }),
     ],
   },
