@@ -22,12 +22,13 @@ function build(syscall, _state, makeRoot, forVatID) {
   function makeQueued(slot) {
     /* eslint-disable no-use-before-define */
     const handler = {
-      GET(_o, prop) {
-        // Support: o![prop]!(...args)
-        return (...args) => queueMessage(slot, prop, args);
+      GET(target, prop) {
+        // Support: o~.[prop] remote property lookup
+        // FIXME: Do not stall the pipeline!
+        return target.then(o => o[prop]);
       },
       POST(_o, prop, args) {
-        // Support: o![prop](...args).
+        // Support: o~.[prop](...args) remote method invocation
         return queueMessage(slot, prop, args);
       },
     };
