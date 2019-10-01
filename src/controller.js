@@ -17,6 +17,7 @@ import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
 
 const evaluateOptions = makeDefaultEvaluateOptions();
+evaluateOptions.shims.unshift('this.globalThis = this');
 
 export function loadBasedir(basedir) {
   console.log(`= loading config from basedir ${basedir}`);
