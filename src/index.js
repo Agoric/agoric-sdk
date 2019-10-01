@@ -1,4 +1,8 @@
+/* global globalThis */
+
 import makeE from './E';
+
+const harden = (globalThis.SES && globalThis.SES.harden) || Object.freeze;
 
 // 'E' and 'HandledPromise' are exports of the module
 
@@ -8,13 +12,15 @@ import makeE from './E';
 
 // TODO: Maybe rename the global to something only the tildot rewriter uses.
 if (!globalThis.HandledPromise) {
+  /* eslint-disable no-use-before-define */
   // Install the shim as best we can.
   maybeExtendPromise(Promise);
   globalThis.HandledPromise = makeHandledPromise(Promise);
+  /* eslint-enable no-use-before-define */
 }
 
 // Provide a handled platform Promise if SES has not run.
-export const HandledPromise = globalThis.HandledPromise;
+export const { HandledPromise } = globalThis;
 export const E = makeE(HandledPromise);
 
 // the following methods (makeHandledPromise and maybeExtendPromise) are part
@@ -26,7 +32,8 @@ export const E = makeE(HandledPromise);
 export function makeHandledPromise(EPromise) {
   // TODO: Use HandledPromise.resolve to store our weakmap, and
   // install it on Promise.resolve.
-  function HandledPromise(executor, unfulfilledHandler = undefined) {
+  // eslint-disable-next-line no-shadow
+  function HandledPromise(executor, _unfulfilledHandler = undefined) {
     throw Error(`FIXME: unimplemented`);
   }
   const staticMethods = {
@@ -62,7 +69,7 @@ export function makeHandledPromise(EPromise) {
     },
   };
 
-  return Object.assign(HandledPromise, staticMethods);
+  return harden(Object.assign(HandledPromise, staticMethods));
 }
 
 /**
@@ -328,7 +335,7 @@ export function maybeExtendPromise(Promise) {
 
         // Return a handled Promise, which wil be resolved/rejected
         // by the executor.
-        return handledP;
+        return harden(handledP);
       },
     }),
   );

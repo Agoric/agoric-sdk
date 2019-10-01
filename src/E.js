@@ -1,4 +1,5 @@
-import harden from '@agoric/harden';
+/* global globalThis */
+const harden = (globalThis.SES && globalThis.SES.harden) || Object.freeze;
 
 /**
  * A Proxy handler for E(x).
@@ -36,7 +37,7 @@ function EProxyHandler(x, HandledPromise) {
 }
 
 export default function makeE(HandledPromise) {
-  return function E(x) {
+  return harden(function E(x) {
     // p = E(x).name(args)
     //
     // E(x) returns a proxy on which you can call arbitrary methods. Each of
@@ -46,5 +47,5 @@ export default function makeE(HandledPromise) {
 
     const handler = EProxyHandler(x, HandledPromise);
     return harden(new Proxy({}, handler));
-  };
+  });
 }
