@@ -23,7 +23,6 @@
     "lint-check": "eslint '**/*.{js,jsx}'"
   },
   "devDependencies": {
-    "@agoric/eventual-send": "^0.3.2",
     "eslint": "^6.4.0",
     "eslint-config-airbnb": "^18.0.1",
     "eslint-config-prettier": "^6.3.0",
@@ -41,6 +40,7 @@
     "@agoric/acorn-eventual-send": "^1.0.1",
     "@agoric/default-evaluate-options": "^0.2.3",
     "@agoric/evaluate": "^2.1.0",
+    "@agoric/eventual-send": "^0.3.2",
     "@agoric/harden": "^0.0.4",
     "@agoric/marshal": "^0.1.0",
     "@agoric/nat": "^2.0.0",
