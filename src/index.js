@@ -2,15 +2,13 @@
 
 import makeE from './E';
 
-const harden = (globalThis.SES && globalThis.SES.harden) || Object.freeze;
-
 // 'E' and 'HandledPromise' are exports of the module
 
 // For now:
 // import { HandledPromise, E } from '@agoric/eventual-send';
 // ...
 
-// TODO: Maybe rename the global to something only the tildot rewriter uses.
+// TODO: Maybe rename the global HandledPromise to something only the tildot rewriter uses.
 if (!globalThis.HandledPromise) {
   /* eslint-disable no-use-before-define */
   // Install the shim as best we can.
@@ -30,6 +28,8 @@ export const E = makeE(HandledPromise);
 // Create HandledPromise static methods as a bridge from v0.2.4
 // to new proposal support (wavy dot's infrastructure).
 export function makeHandledPromise(EPromise) {
+  const harden = (globalThis.SES && globalThis.SES.harden) || Object.freeze;
+
   // TODO: Use HandledPromise.resolve to store our weakmap, and
   // install it on Promise.resolve.
   // eslint-disable-next-line no-shadow
@@ -91,6 +91,8 @@ export function maybeExtendPromise(Promise) {
   if (typeof Promise.makeHandled === 'function') {
     return Promise;
   }
+
+  const harden = (globalThis.SES && globalThis.SES.harden) || Object.freeze;
 
   // xs doesn't support WeakMap in pre-loaded closures
   // aka "vetted customization code"
