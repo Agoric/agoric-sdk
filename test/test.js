@@ -1,7 +1,5 @@
 import test from 'tape-promise/tape';
-import * as EventualSend from '../src/index';
-
-const { maybeExtendPromise } = EventualSend;
+import '../src/index';
 
 if (typeof window !== 'undefined') {
   // Let the browser detect when the tests are done.
@@ -16,8 +14,7 @@ if (typeof window !== 'undefined') {
 
 test('reject/resolve returns undefined', async t => {
   try {
-    const EPromise = maybeExtendPromise(Promise);
-    const ret = await EPromise.makeHandled((resolve, reject) => {
+    const ret = await Promise.makeHandled((resolve, reject) => {
       t.equal(resolve(123), undefined, 'resolver undefined');
       t.equal(reject(999), undefined, 'rejector undefined');
     });
@@ -32,8 +29,6 @@ test('reject/resolve returns undefined', async t => {
 
 test('handlers are always async', async t => {
   try {
-    const EPromise = maybeExtendPromise(Promise);
-
     const queue = [];
     const target = {
       is: 'target',
@@ -45,7 +40,7 @@ test('handlers are always async', async t => {
       },
     };
     let resolver2;
-    const ep2 = EPromise.makeHandled(resolve => (resolver2 = resolve), {
+    const ep2 = Promise.makeHandled(resolve => (resolver2 = resolve), {
       POST(p, fn, args) {
         queue.push(['ep2', fn, args]);
         return 'un';
@@ -58,7 +53,7 @@ test('handlers are always async', async t => {
       },
     };
     let resolver;
-    const ep = EPromise.makeHandled(resolve => {
+    const ep = Promise.makeHandled(resolve => {
       resolver = resolve;
     }, unfulfilledHandler);
 
@@ -153,22 +148,8 @@ test('handlers are always async', async t => {
   }
 });
 
-test('maybeExtendPromise will not overwrite', async t => {
+test('Promise.makeHandled expected errors', async t => {
   try {
-    const { makeHandled: makeHandled2 } = maybeExtendPromise(Promise);
-    const { makeHandled: makeHandled3 } = maybeExtendPromise(Promise);
-    t.equal(makeHandled3, makeHandled2, `Promise.makeHandled is the same`);
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
-  }
-});
-
-test('EPromise.makeHandled expected errors', async t => {
-  try {
-    const EPromise = maybeExtendPromise(Promise);
-
     const handler = {
       GET(key) {
         return key;
@@ -187,14 +168,14 @@ test('EPromise.makeHandled expected errors', async t => {
     // Full handler succeeds.
     const fullObj = {};
     t.equal(
-      await EPromise.makeHandled(resolve => resolve(fullObj, handler)),
+      await Promise.makeHandled(resolve => resolve(fullObj, handler)),
       fullObj,
       `resolved handled Promise is equal`,
     );
 
     // Primitive handler fails.
     await t.rejects(
-      EPromise.makeHandled(resolve => resolve({}, 123)),
+      Promise.makeHandled(resolve => resolve({}, 123)),
       /cannot be a primitive/,
       'primitive handler rejects',
     );
@@ -222,7 +203,7 @@ test('EPromise.makeHandled expected errors', async t => {
       }
       // eslint-disable-next-line no-await-in-loop
       await t.rejects(
-        op(EPromise.makeHandled(resolve => resolve({}, handler2))),
+        op(Promise.makeHandled(resolve => resolve({}, handler2))),
         new RegExp(`fulfilledHandler.${method} is not a function`),
         `missing ${method} is rejected`,
       );
@@ -230,15 +211,15 @@ test('EPromise.makeHandled expected errors', async t => {
 
     // Primitive resolve fails.
     await t.rejects(
-      EPromise.makeHandled(resolve => resolve(123, handler)),
+      Promise.makeHandled(resolve => resolve(123, handler)),
       /cannot be a primitive/,
       `primitive handled presence rejects`,
     );
 
     // Promise resolve fails.
-    const promise = EPromise.resolve({});
+    const promise = Promise.resolve({});
     await t.rejects(
-      EPromise.makeHandled(resolve => resolve(promise, handler)),
+      Promise.makeHandled(resolve => resolve(promise, handler)),
       /cannot be a Promise/,
       `Promise handled presence rejects`,
     );
@@ -246,7 +227,7 @@ test('EPromise.makeHandled expected errors', async t => {
     // First resolve succeeds.
     const obj = {};
     let resolveHandled;
-    const p = EPromise.makeHandled(resolve => (resolveHandled = resolve));
+    const p = Promise.makeHandled(resolve => (resolveHandled = resolve));
     resolveHandled(obj, handler);
     t.equals(await p, obj, `first resolve succeeds`);
 
@@ -259,11 +240,9 @@ test('EPromise.makeHandled expected errors', async t => {
   }
 });
 
-test('EPromise.makeHandled(executor, undefined)', async t => {
+test('Promise.makeHandled(executor, undefined)', async t => {
   try {
-    const EPromise = maybeExtendPromise(Promise);
-
-    const handledP = EPromise.makeHandled(resolve => {
+    const handledP = Promise.makeHandled(resolve => {
       setTimeout(() => {
         const o = {
           num: 123,
@@ -320,24 +299,21 @@ test('EPromise.makeHandled(executor, undefined)', async t => {
   }
 });
 
-test('EPromise.all', async t => {
-  let EPromise;
+test('Promise.all', async t => {
   function* generator() {
     yield 9;
-    yield EPromise.resolve(8).then(res => res * 10);
+    yield Promise.resolve(8).then(res => res * 10);
     yield Promise.resolve(7).then(res => -res);
   }
 
   try {
-    EPromise = maybeExtendPromise(Promise);
-
     t.deepEqual(
-      await EPromise.all([1, Promise.resolve(2), 3]),
+      await Promise.all([1, Promise.resolve(2), 3]),
       [1, 2, 3],
       `.all works`,
     );
     t.deepEqual(
-      await EPromise.all(generator()),
+      await Promise.all(generator()),
       [9, 80, -7],
       `.all on generator works`,
     );
@@ -345,7 +321,7 @@ test('EPromise.all', async t => {
     // Ensure that a rejected promise rejects all.
     const toThrow = RangeError('expected');
     await t.rejects(
-      EPromise.all([1, Promise.reject(toThrow), 3]),
+      Promise.all([1, Promise.reject(toThrow), 3]),
       toThrow,
       `.all rejects properly`,
     );
@@ -356,21 +332,18 @@ test('EPromise.all', async t => {
   }
 });
 
-test.skip('EPromise.allSettled', async t => {
-  let EPromise;
+test.skip('Promise.allSettled', async t => {
   let shouldThrow;
   function* generator() {
     yield 9;
     shouldThrow = Error('expected');
-    yield EPromise.reject(shouldThrow).catch(_ => 80);
+    yield Promise.reject(shouldThrow).catch(_ => 80);
     yield Promise.resolve(7).then(res => -res);
   }
 
   try {
-    EPromise = maybeExtendPromise(Promise);
-
     t.deepEqual(
-      await EPromise.allSettled([1, Promise.resolve(2), 3]),
+      await Promise.allSettled([1, Promise.resolve(2), 3]),
       [
         { status: 'fulfilled', value: 1 },
         { status: 'fulfilled', value: 2 },
@@ -380,7 +353,7 @@ test.skip('EPromise.allSettled', async t => {
     );
 
     t.deepEqual(
-      await EPromise.allSettled(generator()),
+      await Promise.allSettled(generator()),
       [
         { status: 'fulfilled', value: 9 },
         { status: 'fulfilled', value: 80 },
@@ -392,7 +365,7 @@ test.skip('EPromise.allSettled', async t => {
     // Ensure that a rejected promise still settles.
     shouldThrow = Error('expected');
     t.deepEqual(
-      await EPromise.allSettled([1, Promise.reject(shouldThrow), 3]),
+      await Promise.allSettled([1, Promise.reject(shouldThrow), 3]),
       [
         { status: 'fulfilled', value: 1 },
         { status: 'rejected', reason: shouldThrow },
@@ -407,25 +380,22 @@ test.skip('EPromise.allSettled', async t => {
   }
 });
 
-test('EPromise.race', async t => {
-  let EPromise;
+test('Promise.race', async t => {
   let shouldThrow;
   const delay = (value, millis, ...args) =>
-    new EPromise(resolve => setTimeout(() => resolve(value), millis), ...args);
+    new Promise(resolve => setTimeout(() => resolve(value), millis), ...args);
 
   function* generator() {
     yield delay(9, 500);
     shouldThrow = Error('expected');
-    yield EPromise.reject(shouldThrow);
+    yield Promise.reject(shouldThrow);
     yield delay(7, 1000);
   }
 
   try {
-    EPromise = maybeExtendPromise(Promise);
-
     try {
       t.equal(
-        await EPromise.race([1, delay(2, 1000), delay(3, 500)]),
+        await Promise.race([1, delay(2, 1000), delay(3, 500)]),
         1,
         `.race works`,
       );
@@ -434,7 +404,7 @@ test('EPromise.race', async t => {
     }
 
     await t.rejects(
-      EPromise.race(generator()),
+      Promise.race(generator()),
       shouldThrow,
       `.race generator throws`,
     );
@@ -447,8 +417,7 @@ test('EPromise.race', async t => {
 
 test('get', async t => {
   try {
-    const EPromise = maybeExtendPromise(Promise);
-    const res = await EPromise.resolve([123, 456, 789]).get(1);
+    const res = await Promise.resolve([123, 456, 789]).get(1);
     t.equal(res, 456, `.get works`);
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
@@ -459,9 +428,8 @@ test('get', async t => {
 
 test('put', async t => {
   try {
-    const EPromise = maybeExtendPromise(Promise);
     const a = [123, 456, 789];
-    const ep = EPromise.resolve(a);
+    const ep = Promise.resolve(a);
     t.equal(await ep.put(1, 999), 999, `.put works`);
     t.deepEqual(a, [123, 999, 789], `.put actually changed`);
   } catch (e) {
@@ -473,11 +441,10 @@ test('put', async t => {
 
 test('post', async t => {
   try {
-    const EPromise = maybeExtendPromise(Promise);
     const fn = () => 'hello';
     fn.a = n => n + 1;
     fn[2] = (n1, n2) => n1 * n2;
-    const ep = EPromise.resolve(fn);
+    const ep = Promise.resolve(fn);
     t.equal(await ep.post('a', [3]), 4, `.post('a', args) works`);
     t.equal(await ep.post(2, [3, 4]), 12, `.post(2, args) works`);
     t.equal(
@@ -499,11 +466,10 @@ test('post', async t => {
 
 test('invoke', async t => {
   try {
-    const EPromise = maybeExtendPromise(Promise);
     const fn = () => 'hello';
     fn.a = n => n + 1;
     fn[2] = (n1, n2) => n1 * n2;
-    const ep = EPromise.resolve(fn);
+    const ep = Promise.resolve(fn);
     t.equal(await ep.invoke('a', 3), 4, `.invoke(two args) works`);
     t.equal(await ep.invoke(2, 3, 4), 12, `.invoke(three args) works`);
     t.equal(await ep.invoke(undefined), 'hello', `.invoke(undefined) works`);
@@ -516,8 +482,7 @@ test('invoke', async t => {
 
 test('fcall', async t => {
   try {
-    const EPromise = maybeExtendPromise(Promise);
-    const ep = EPromise.resolve((a, b) => a * b);
+    const ep = Promise.resolve((a, b) => a * b);
     t.equal(await ep.fcall(3, 6), 18, `.fcall works`);
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
@@ -528,8 +493,7 @@ test('fcall', async t => {
 
 test('fapply', async t => {
   try {
-    const EPromise = maybeExtendPromise(Promise);
-    const ep = EPromise.resolve((a, b) => a * b);
+    const ep = Promise.resolve((a, b) => a * b);
     t.equal(await ep.fapply([3, 6]), 18, `.fapply works`);
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);

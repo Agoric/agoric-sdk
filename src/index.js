@@ -1,7 +1,42 @@
-// Create HandledPromise static methods as a bridge from v0.2.4 to
-// new proposal support (wavy dot's infrastructure).
+/* global globalThis */
+
+import makeE from './E';
+
+const harden = (globalThis.SES && globalThis.SES.harden) || Object.freeze;
+
+// 'E' and 'HandledPromise' are exports of the module
+
+// For now:
+// import { HandledPromise, E } from '@agoric/eventual-send';
+// ...
+
+// TODO: Maybe rename the global to something only the tildot rewriter uses.
+if (!globalThis.HandledPromise) {
+  /* eslint-disable no-use-before-define */
+  // Install the shim as best we can.
+  maybeExtendPromise(Promise);
+  globalThis.HandledPromise = makeHandledPromise(Promise);
+  /* eslint-enable no-use-before-define */
+}
+
+// Provide a handled platform Promise if SES has not run.
+export const { HandledPromise } = globalThis;
+export const E = makeE(HandledPromise);
+
+// the following methods (makeHandledPromise and maybeExtendPromise) are part
+// of the shim, and will not be exported by the module once the feature
+// becomes a part of standard javascript
+
+// Create HandledPromise static methods as a bridge from v0.2.4
+// to new proposal support (wavy dot's infrastructure).
 export function makeHandledPromise(EPromise) {
-  return {
+  // TODO: Use HandledPromise.resolve to store our weakmap, and
+  // install it on Promise.resolve.
+  // eslint-disable-next-line no-shadow
+  function HandledPromise(executor, _unfulfilledHandler = undefined) {
+    throw Error(`FIXME: unimplemented`);
+  }
+  const staticMethods = {
     get(target, key) {
       return EPromise.resolve(target).get(key);
     },
@@ -33,6 +68,8 @@ export function makeHandledPromise(EPromise) {
       EPromise.resolve(target).post(key, args);
     },
   };
+
+  return harden(Object.assign(HandledPromise, staticMethods));
 }
 
 /**
@@ -298,7 +335,7 @@ export function maybeExtendPromise(Promise) {
 
         // Return a handled Promise, which wil be resolved/rejected
         // by the executor.
-        return handledP;
+        return harden(handledP);
       },
     }),
   );
