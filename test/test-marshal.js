@@ -3,7 +3,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import { makeMarshal, mustPassByPresence } from '@agoric/marshal';
-import { maybeExtendPromise } from '@agoric/eventual-send';
+import '@agoric/eventual-send'; // for side-effect: ensure HandledPromise is installed
 
 import { makeMarshaller } from '../src/kernel/liveSlots';
 import makePromise from '../src/makePromise';
@@ -19,8 +19,6 @@ export default function runTests() {
     const controller = await buildVatController(config, false);
     await controller.run();
   }
-
-  maybeExtendPromise(Promise);
 
   test('serialize static data', t => {
     const m = makeMarshal();

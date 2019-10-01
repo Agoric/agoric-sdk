@@ -17,6 +17,9 @@ import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
 
 const evaluateOptions = makeDefaultEvaluateOptions();
+// globalThis is standard, we want it to be frozen
+// as one of our root realm's global properties.
+evaluateOptions.shims.unshift('this.globalThis = this');
 
 export function loadBasedir(basedir) {
   console.log(`= loading config from basedir ${basedir}`);
