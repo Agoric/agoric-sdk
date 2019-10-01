@@ -25,7 +25,7 @@ scenario0-setup:
 	ve3/bin/pip install setup-solo/
 
 scenario0-run-client:
-	ve3/bin/ag-setup-solo
+	AG_SOLO_BASEDIR=t9 ve3/bin/ag-setup-solo
 
 scenario0-run-chain:
 	@echo 'No local chain needs to run in scenario0'
@@ -34,9 +34,10 @@ scenario1-setup: scenario0-setup
 scenario1-run-chain:
 	@test "`uname -s`" = Linux || \
 		{ echo 'Must run under Linux; use "make docker-build && docker/ag-setup-cosmos bootstrap"'; exit 1; }
-	setup/ag-setup-cosmos bootstrap
+	AG_SETUP_COSMOS_HOME=t8 setup/ag-setup-cosmos bootstrap
 
-scenario1-run-client: scenario0-run-client
+scenario1-run-client:
+	AG_SOLO_BASEDIR=t7 ve3/bin/ag-setup-solo
 
 AGC = ./lib/ag-chain-cosmos
 scenario2-setup:
