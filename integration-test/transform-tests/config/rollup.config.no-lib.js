@@ -13,7 +13,7 @@ export default [
     plugins: [
       replace({
         delimiters: ['', ''],
-        "import * as EventualSend from '../src/index';": '',
+        "import '../src/index';": '',
       }),
     ],
   },

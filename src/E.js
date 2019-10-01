@@ -3,10 +3,10 @@ import harden from '@agoric/harden';
 /**
  * A Proxy handler for E(x).
  *
- * @param {Promise} ep Promise with eventual send API
+ * @param {*} x Any value passed to E(x)
  * @returns {ProxyHandler} the Proxy handler
  */
-function EProxyHandler(ep, HandledPromise) {
+function EProxyHandler(x, HandledPromise) {
   return harden({
     get(_target, p, _receiver) {
       if (`${p}` !== p) {
@@ -17,16 +17,16 @@ function EProxyHandler(ep, HandledPromise) {
       // allow the handler to synchronously influence the promise returned
       // by the handled methods, so we must freeze it from the outside. See
       // #95 for details.
-      return (...args) => harden(HandledPromise.applyMethod(ep, p, args));
+      return (...args) => harden(HandledPromise.applyMethod(x, p, args));
     },
     deleteProperty(_target, p) {
-      return harden(HandledPromise.delete(ep, p));
+      return harden(HandledPromise.delete(x, p));
     },
     set(_target, p, value, _receiver) {
-      return harden(HandledPromise.set(ep, p, value));
+      return harden(HandledPromise.set(x, p, value));
     },
     apply(_target, _thisArg, argArray = []) {
-      return harden(HandledPromise.apply(ep, argArray));
+      return harden(HandledPromise.apply(x, argArray));
     },
     has(_target, _p) {
       // We just pretend everything exists.
@@ -44,9 +44,7 @@ export default function makeE(HandledPromise) {
     // whatever 'x' designates (or resolves to) in a future turn, not this
     // one.
 
-    const targetP = Promise.resolve(x);
-    // targetP might resolve to a Presence
-    const handler = EProxyHandler(targetP, HandledPromise);
+    const handler = EProxyHandler(x, HandledPromise);
     return harden(new Proxy({}, handler));
   };
 }

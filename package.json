@@ -7,7 +7,7 @@
   "browser": "dist/eventual-send.umd.js",
   "types": "src/index.d.ts",
   "scripts": {
-    "test": "node -r esm test/test-all.js",
+    "test": "node -r esm test/**/test*.js",
     "build": "rollup -c",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'"
@@ -35,7 +35,6 @@
     "eslint-plugin-react": "^7.12.4",
     "esm": "^3.2.7",
     "prettier": "^1.16.4",
-    "promises-aplus-tests": "^2.1.2",
     "rollup": "^1.2.2",
     "tape": "^4.11.0",
     "tape-promise": "^4.0.0"
@@ -45,9 +44,7 @@
   },
   "keywords": [
     "eventual send",
-    "infix bang",
-    "promises-aplus",
-    "promises"
+    "wavy dot"
   ],
   "files": [
     "src/index.d.ts",
