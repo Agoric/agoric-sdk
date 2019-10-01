@@ -11,9 +11,12 @@ export default function setup(syscall, state, helpers) {
     state,
     _E =>
       harden({
-        encourageMe(name) {
-          log(`=> encouragementBot.encourageMe got the name: ${name}`);
-          return `${name}, you are awesome, keep it up!`;
+        encourageMe(nameObj) {
+          // Test of tildot property get.
+          return nameObj~.name.then(name => {
+            log(`=> encouragementBot.encourageMe got the name: ${name}`);
+            return `${name}, you are awesome, keep it up!`;
+          });
         },
       }),
     helpers.vatID,

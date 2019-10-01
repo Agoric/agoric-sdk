@@ -13,7 +13,7 @@ export default function setup(syscall, state, helpers) {
         talkToBot(pbot, botName) {
           log(`=> user.talkToBot is called with ${botName}`);
           pbot
-            ~.encourageMe('user')
+            ~.encourageMe({ name: 'user' })
             .then(myEncouragement =>
               log(`=> user receives the encouragement: ${myEncouragement}`),
             );
