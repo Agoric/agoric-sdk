@@ -1,4 +1,10 @@
-/* global globalThis */
+/* global globalThis window */
+// Shim globalThis when we don't have it.
+if (typeof globalThis === 'undefined') {
+  const myGlobal = typeof window === 'undefined' ? global : window;
+  myGlobal.globalThis = myGlobal;
+}
+
 const harden = (globalThis.SES && globalThis.SES.harden) || Object.freeze;
 
 /**
