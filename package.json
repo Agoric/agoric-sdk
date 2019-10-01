@@ -7,7 +7,7 @@
   "browser": "dist/eventual-send.umd.js",
   "types": "src/index.d.ts",
   "scripts": {
-    "test": "node -r esm test/**/test*.js",
+    "test": "tape -r esm 'test/**/test*.js'",
     "build": "rollup -c",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'"
