@@ -22,9 +22,7 @@
     "url": "https://github.com/Agoric/eventual-send/issues"
   },
   "homepage": "https://github.com/Agoric/eventual-send#readme",
-  "dependencies": {
-    "@agoric/harden": "^0.0.4"
-  },
+  "dependencies": {},
   "devDependencies": {
     "eslint": "^5.3.0",
     "eslint-config-airbnb": "^17.1.0",
