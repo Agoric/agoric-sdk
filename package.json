@@ -42,12 +42,12 @@
     "@agoric/evaluate": "^2.1.0",
     "@agoric/eventual-send": "^0.3.2",
     "@agoric/harden": "^0.0.4",
-    "@agoric/marshal": "^0.1.0",
+    "@agoric/marshal": "^0.1.1",
     "@agoric/nat": "^2.0.0",
     "rollup": "^1.21.4",
     "rollup-plugin-node-resolve": "^5.2.0",
     "semver": "^6.3.0",
-    "ses": "^0.6.2",
+    "ses": "^0.6.3",
     "yargs": "^14.0.0"
   },
   "files": [
