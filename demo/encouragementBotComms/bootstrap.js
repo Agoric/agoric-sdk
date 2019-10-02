@@ -1,4 +1,5 @@
 import harden from '@agoric/harden';
+import { E } from '@agoric/eventual-send';
 
 console.log(`=> loading bootstrap.js`);
 
@@ -11,7 +12,7 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    (E, D) =>
+    (_E, D) =>
       harden({
         async bootstrap(argv, vats, devices) {
           console.log('=> bootstrap() called');
