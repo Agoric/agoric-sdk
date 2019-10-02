@@ -32,10 +32,6 @@ export function makeHandledPromise(EPromise) {
 
   // TODO: Use HandledPromise.resolve to store our weakmap, and
   // install it on Promise.resolve.
-  // eslint-disable-next-line no-shadow
-  function HandledPromise(executor, _unfulfilledHandler = undefined) {
-    throw Error(`FIXME: unimplemented`);
-  }
   const staticMethods = {
     get(target, key) {
       return EPromise.resolve(target).get(key);
@@ -49,12 +45,16 @@ export function makeHandledPromise(EPromise) {
     setSendOnly(target, key, val) {
       EPromise.resolve(target).put(key, val);
     },
+    // TODO: Change HandledPromise.delete to HandledPromise.deleteProperty
     delete(target, key) {
       return EPromise.resolve(target).delete(key);
     },
     deleteSendOnly(target, key) {
       EPromise.resolve(target).delete(key);
     },
+    // TODO: Change HandledPromise.apply(target, args) to be
+    // HandledPromise.applyMethod(target, undefined, args)
+    // to avoid conflict with constructor .apply behaviour.
     apply(target, args) {
       return EPromise.resolve(target).post(undefined, args);
     },
@@ -69,7 +69,7 @@ export function makeHandledPromise(EPromise) {
     },
   };
 
-  return harden(Object.assign(HandledPromise, staticMethods));
+  return harden(staticMethods);
 }
 
 /**
