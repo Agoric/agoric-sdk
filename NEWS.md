@@ -1,5 +1,10 @@
 User-visible changes in SwingSet:
 
+## Release 0.0.26 (02-Oct-2019)
+
+* update eventual-send to fix bugs revealed in cosmic-swingset testing (#169)
+
+
 ## Release 0.0.25 (02-Oct-2019)
 
 * update to SES-0.6.3 to fix a sandbox breach
