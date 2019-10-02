@@ -38,9 +38,9 @@
   },
   "dependencies": {
     "@agoric/acorn-eventual-send": "^1.0.1",
-    "@agoric/default-evaluate-options": "^0.2.3",
-    "@agoric/evaluate": "^2.1.0",
-    "@agoric/eventual-send": "^0.3.2",
+    "@agoric/default-evaluate-options": "^0.2.4",
+    "@agoric/evaluate": "^2.1.1",
+    "@agoric/eventual-send": "^0.3.3",
     "@agoric/harden": "^0.0.4",
     "@agoric/marshal": "^0.1.1",
     "@agoric/nat": "^2.0.0",
