@@ -1,6 +1,6 @@
 {
   "name": "@agoric/marshal",
-  "version": "0.1.1-dev.0",
+  "version": "0.1.1",
   "description": "marshal",
   "main": "marshal.js",
   "directories": {

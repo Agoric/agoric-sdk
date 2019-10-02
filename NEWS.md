@@ -1,5 +1,10 @@
 User-visible changes in marshal:
 
+## Release 0.1.1 (02-Oct-2019)
+
+Remove unneeded SES dependency.
+
+
 ## Release 0.1.0 (11-Sep-2019)
 
 Breaking API change: applications must change how they use m.serialize()
