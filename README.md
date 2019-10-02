@@ -27,6 +27,12 @@ If you want to build and install from sources, you need to install
     - **Warning:** There are some [known issues](https://github.com/Agoric/cosmic-swingset/issues/71) installing cosmic-swingset with [snap-based version of node.js on Ubuntu](https://github.com/nodesource/distributions/blob/master/README.md#snap). **We recommend** using a non-snap version
 - [Golang](https://golang.org/doc/install) (you need at least version 1.12)
     - **(optional)** If installing the GO language didn't setup a `$GOPATH` variable, you'll need to find the directory and set the variable. Typically `GOPATH="$HOME/go"`
+- (scenarios 1 and 0) [Python3](https://www.python.org/downloads/)
+- (scenarios 1 and 0) python3-venv
+- (scenarios 1 only) [terraform](https://learn.hashicorp.com/terraform/getting-started/install.html)
+- (scenarios 1 only) [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+
+
 
 ```sh
 git clone git@github.com:Agoric/cosmic-swingset.git
