@@ -4,7 +4,7 @@ User-visible changes in Cosmic SwingSet:
 
 * Upgrade to Tendermint v0.32.5
   - [p2p denial of service fix](https://github.com/tendermint/tendermint/blob/v0.32/CHANGELOG.md#v0325)
-* Upgrade to SwingSet v0.0.25
+* Upgrade to SwingSet v0.0.26
   - [security fixes for realms-shim and SES](https://github.com/Agoric/realms-shim/security/advisories/GHSA-6jg8-7333-554w)
   - allow promise property gets with `targetP~.prop~.method()~.`
     (fixes `TypeError: o[optKey] is not a function`), though currently requires a round trip
