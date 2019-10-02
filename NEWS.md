@@ -1,5 +1,19 @@
 User-visible changes in SwingSet:
 
+## Release 0.0.25 (02-Oct-2019)
+
+* update to SES-0.6.3 to fix a sandbox breach
+* Vat code can now `import { E } from '@agoric/eventual-send'`, in addition
+  to receiving the `E` wrapper function from the liveSlots `createRootObject`
+  call. This allows downstream Vat code (like ERTP) to run unit tests without
+  SwingSet, by importing E like any other dependency. Note that `D` (used to
+  invoke device nodes) is not importable in this fashion. (#166)
+* Vat code can now use async property get with `x.~foo`, which will behave
+  somewhat like `Promise.resolve(x).then(obj => obj.foo)`. This does not
+  pipeline yet, but watch #167 for progress in fixing this. (#165)
+* internal state-management improvements
+
+
 ## Release 0.0.24 (26-Sep-2019)
 
 * update to @agoric/(evaluate,default-evaluate-options,eventual-send), to
