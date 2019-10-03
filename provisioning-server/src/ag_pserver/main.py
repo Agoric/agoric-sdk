@@ -53,19 +53,21 @@ class SendInputAndWaitProtocol(protocol.ProcessProtocol):
     def __init__(self, d, input):
         self.deferred = d
         self.input = input
+        self.output = b''
 
     def connectionMade(self):
         self.transport.write(self.input)
         self.transport.closeStdin()
     
     def outReceived(self, data):
-        print(str(data))
+        self.output += data
+        print(data.decode('latin-1'))
 
     def errReceived(self, data):
-        print(str(data), file=sys.stderr)
+        print(data.decode('latin-1'), file=sys.stderr)
     
     def processEnded(self, reason):
-        self.deferred.callback(reason.value.exitCode)
+        self.deferred.callback((reason.value.exitCode, self.output))
 
 def cosmosConfigFile(home):
     return os.path.join(home, 'cosmos-chain.json')
@@ -201,13 +203,16 @@ def enablePubkey(reactor, opts, config, nickname, pubkey):
             reactor.spawnProcess(processProtocol, '/usr/local/bin/' + program, args=[
                 program, 'tx', 'send', config['bootstrapAddress'], pubkey,
                 INITIAL_TOKEN,
-                '--yes', '--chain-id', config['chainName'],
+                '--yes', '--chain-id', config['chainName'], '-ojson',
                 '--node',
                 'tcp://' + rpcAddr,
                 '--home', os.path.join(opts['home'], 'ag-cosmos-helper-statedir'),
                 '--broadcast-mode', 'block' # Don't return until committed.
                 ])
-            code = yield d
+            code, output = yield d
+            if code == 0:
+                oj = json.loads(output.decode('utf-8'))
+                code = oj.get('code', code)
             print('transfer returned ' + str(code))
         if code != 0:
             return ret({"ok": False, "error": 'transfer returned ' + str(code)})

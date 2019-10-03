@@ -10,6 +10,7 @@ User-visible changes in Cosmic SwingSet:
     (fixes `TypeError: o[optKey] is not a function`), though currently requires a round trip
   - `import { E } from '@agoric/eventual-send'` to write smart contracts that
     use the `E()` proxy maker compatible with both SwingSet and without it
+* Don't leave behind a corrupt installation if ag-setup-solo provisioning fails
 
 ## Release v0.10.0 (2019-09-26)
 
