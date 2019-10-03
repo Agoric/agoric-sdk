@@ -28,10 +28,10 @@ const coveredCall = harden({
       harden({ left: moneyNeeded, right: stockNeeded }),
     );
 
-    const aliceEscrowSeatP = E.resolve(pairP).then(pair =>
+    const aliceEscrowSeatP = Promise.resolve(pairP).then(pair =>
       inviteMaker.redeem(pair.left),
     );
-    const bobEscrowSeatP = E.resolve(pairP).then(pair =>
+    const bobEscrowSeatP = Promise.resolve(pairP).then(pair =>
       inviteMaker.redeem(pair.right),
     );
 

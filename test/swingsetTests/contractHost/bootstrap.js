@@ -31,7 +31,7 @@ function build(E, log) {
   const fakeNowTimer = harden({
     delayUntil(deadline, resolution = undefined) {
       log(`Pretend ${deadline} passed`);
-      return E.resolve(resolution);
+      return Promise.resolve(resolution);
     },
   });
   */
@@ -50,7 +50,7 @@ function build(E, log) {
     log('starting mintTestAssay');
     const mMintP = E(mint).makeMint('bucks');
     const mIssuerP = E(mMintP).getIssuer();
-    E.resolve(mIssuerP).then(issuer => {
+    Promise.resolve(mIssuerP).then(issuer => {
       // By using an unforgeable issuer presence and a pass-by-copy
       // description together as a unit label, we check that both
       // agree. The veracity of the description is, however, only as
@@ -61,7 +61,7 @@ function build(E, log) {
 
       const alicePurseP = E(mMintP).mint(bucks1000, 'alice');
       const paymentP = E(alicePurseP).withdraw(bucks50);
-      E.resolve(paymentP).then(_ => {
+      Promise.resolve(paymentP).then(_ => {
         showPurseBalances('alice', alicePurseP);
         showPaymentBalance('payment', paymentP);
       });
@@ -78,7 +78,7 @@ function build(E, log) {
 
     const alicePurseP = E(mMintP).mint(1000, 'alice');
     const paymentP = E(alicePurseP).withdraw(50);
-    E.resolve(paymentP).then(_ => {
+    Promise.resolve(paymentP).then(_ => {
       showPurseBalances('alice', alicePurseP);
       showPaymentBalance('payment', paymentP);
     });
@@ -103,19 +103,21 @@ function build(E, log) {
 
         const fooInviteP = E(installationP).spawn('foo terms');
 
-        return E.resolve(showPaymentBalance('foo', fooInviteP)).then(_ => {
-          const eightP = E(host).redeem(fooInviteP);
+        return Promise.resolve(showPaymentBalance('foo', fooInviteP)).then(
+          _ => {
+            const eightP = E(host).redeem(fooInviteP);
 
-          eightP.then(res => {
-            showPaymentBalance('foo', fooInviteP);
-            log('++ eightP resolved to ', res, ' (should be 8)');
-            if (res !== 8) {
-              throw new Error(`eightP resolved to ${res}, not 8`);
-            }
-            log('++ DONE');
-          });
-          return eightP;
-        });
+            eightP.then(res => {
+              showPaymentBalance('foo', fooInviteP);
+              log('++ eightP resolved to ', res, ' (should be 8)');
+              if (res !== 8) {
+                throw new Error(`eightP resolved to ${res}, not 8`);
+              }
+              log('++ DONE');
+            });
+            return eightP;
+          },
+        );
       });
   }
 

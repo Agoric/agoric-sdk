@@ -42,7 +42,7 @@ function makeContractHost(E, evaluate) {
 No invites left`;
     const desc = inviteAssay.quantity(inviteAmount);
     const { seatIdentity } = desc;
-    return E.resolve(
+    return Promise.resolve(
       inviteIssuer.burnExactly(inviteAmount, allegedInvitePayment),
     ).then(_ => seats.get(seatIdentity));
   }
@@ -107,7 +107,7 @@ No invites left`;
       // source code itself. The check... methods must be evaluated on install,
       // since they become properties of the installation.
       function spawn(termsP) {
-        return E.resolve(allComparable(termsP)).then(terms => {
+        return Promise.resolve(allComparable(termsP)).then(terms => {
           const inviteMaker = harden({
             // Used by the contract to make invites for credibly
             // participating in the contract. The returned invite
@@ -152,7 +152,7 @@ No invites left`;
     // code. Thus, all genuine installations are transparent if one
     // has their contractHost.
     getInstallationSourceCode(installationP) {
-      return E.resolve(installationP).then(installation =>
+      return Promise.resolve(installationP).then(installation =>
         installationSources.get(installation),
       );
     },
@@ -161,9 +161,11 @@ No invites left`;
     // host, redeem it for the associated seat. Else error. Redeeming
     // consumes the invite payment and also transfers the use rights.
     redeem(allegedInvitePaymentP) {
-      return E.resolve(allegedInvitePaymentP).then(allegedInvitePayment => {
-        return redeem(allegedInvitePayment);
-      });
+      return Promise.resolve(allegedInvitePaymentP).then(
+        allegedInvitePayment => {
+          return redeem(allegedInvitePayment);
+        },
+      );
     },
   });
   return contractHost;
@@ -187,7 +189,7 @@ function makeCollect(E, log) {
         .then(refund => refund && E(refundPurseP).depositAll(refund)),
     ]);
     const doneP = allSettled(results);
-    E.resolve(doneP).then(([wins, refs]) => {
+    Promise.resolve(doneP).then(([wins, refs]) => {
       log(`${name} wins: `, wins, ` refs: `, refs);
     });
     // Use Promise.all here rather than allSettled in order to

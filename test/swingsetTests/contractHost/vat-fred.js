@@ -31,11 +31,11 @@ function makeFredMaker(E, host, log) {
           const verifiedSaleInvitePaymentP = E(allegedSaleInvitePaymentP)
             .getBalance()
             .then(allegedInviteAmount => {
-              return E.resolve(allComparable(fin55P)).then(f55 => {
+              return Promise.resolve(allComparable(fin55P)).then(f55 => {
                 return E(escrowExchangeInstallationP)
                   .checkPartialAmount(allegedInviteAmount, f55, 'left')
                   .then(coveredCallAmount =>
-                    E.resolve(Promise.all(coveredCallTermsP)).then(terms => {
+                    Promise.all(coveredCallTermsP).then(terms => {
                       return E(coveredCallInstallationP)
                         .checkAmount(coveredCallAmount, terms)
                         .then(() => {
@@ -60,11 +60,11 @@ function makeFredMaker(E, host, log) {
             myFinPurseP,
             'fred buys escrowed option',
           );
-          return E.resolve(gotOptionP).then(_ => {
+          return Promise.resolve(gotOptionP).then(_ => {
             // Fred bought the option. Now fred tries to exercise the option.
             const optionInvitePaymentP = E(optionInvitePurseP).withdrawAll();
             const optionSeatP = E(host).redeem(optionInvitePaymentP);
-            return E.resolve(allComparable(dough10P)).then(d10 => {
+            return Promise.resolve(allComparable(dough10P)).then(d10 => {
               const doughPaymentP = E(myMoneyPurseP).withdraw(d10);
               E(optionSeatP).offer(doughPaymentP);
               return collect(

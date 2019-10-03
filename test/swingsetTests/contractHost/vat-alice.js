@@ -45,7 +45,7 @@ function makeAliceMaker(E, host, log) {
           const verifiedInvitePaymentP = E(allegedInvitePaymentP)
             .getBalance()
             .then(allegedInviteAmount => {
-              return E.resolve(Promise.all([clams10P, fudco7P])).then(terms => {
+              return Promise.all([clams10P, fudco7P]).then(terms => {
                 const [left, right] = terms;
                 return E(escrowExchangeInstallationP)
                   .checkAmount(allegedInviteAmount, { left, right }, 'left')
@@ -59,7 +59,7 @@ function makeAliceMaker(E, host, log) {
               });
             });
 
-          return E.resolve(
+          return Promise.resolve(
             showPaymentBalance('verified invite', verifiedInvitePaymentP),
           ).then(_ => {
             const seatP = E(host).redeem(verifiedInvitePaymentP);
@@ -82,19 +82,19 @@ function makeAliceMaker(E, host, log) {
 
           const allegedInviteAmountP = E(allegedInvitePaymentP).getBalance();
 
-          const verifiedInvitePaymentP = E.resolve(allegedInviteAmountP).then(
-            allegedInviteAmount => {
-              const smackers10P = E(E(myMoneyPurseP).getIssuer()).makeAmount(
-                10,
-              );
-              const yoyodyne7P = E(E(myStockPurseP).getIssuer()).makeAmount(7);
-              const coveredCallTermsP = harden([
-                smackers10P,
-                yoyodyne7P,
-                timerP,
-                'singularity',
-              ]);
-              return E.resolve(allComparable(coveredCallTermsP)).then(terms => {
+          const verifiedInvitePaymentP = Promise.resolve(
+            allegedInviteAmountP,
+          ).then(allegedInviteAmount => {
+            const smackers10P = E(E(myMoneyPurseP).getIssuer()).makeAmount(10);
+            const yoyodyne7P = E(E(myStockPurseP).getIssuer()).makeAmount(7);
+            const coveredCallTermsP = harden([
+              smackers10P,
+              yoyodyne7P,
+              timerP,
+              'singularity',
+            ]);
+            return Promise.resolve(allComparable(coveredCallTermsP)).then(
+              terms => {
                 return E(coveredCallInstallationP)
                   .checkAmount(allegedInviteAmount, terms)
                   .then(_ => {
@@ -104,11 +104,11 @@ function makeAliceMaker(E, host, log) {
                       'verified invite',
                     );
                   });
-              });
-            },
-          );
+              },
+            );
+          });
 
-          return E.resolve(
+          return Promise.resolve(
             showPaymentBalance('verified invite', verifiedInvitePaymentP),
           ).then(_ => {
             const seatP = E(host).redeem(verifiedInvitePaymentP);
