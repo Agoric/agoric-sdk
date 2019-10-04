@@ -1,5 +1,18 @@
 User-visible changes in ERTP:
 
+## Release v0.1.5 (10/4/2019)
+
+* Updated to `@agoric/swingset-vat` v0.0.26. Also updated a number of
+  other packages.
+
+* Fixed two bugs: `issuer.split` was trying to `vouch` for the amounts
+  that were passed into the `split` function. When these amounts were
+  created in a different vat, `vouch` failed. We realized that
+  `assay.vouch` was unnecessary and `assay.coerce` could be used
+  instead. The second bug fix was to replace `E.resolve` (deprecated)
+  with `Promise.resolve` when we did the update of
+  `@agoric/swingset-vat`.
+
 ## Release v0.1.4 (9/3/2019)
 
 Core ERTP:
