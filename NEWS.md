@@ -1,5 +1,10 @@
 User-visible changes in Cosmic SwingSet:
 
+## Release v0.10.2 (2019-10-04)
+
+* Upgrade to ERTP v0.1.5
+  - fix problem with missing `E.resolve()` method
+
 ## Release v0.10.1 (2019-10-02)
 
 * Upgrade to Tendermint v0.32.5

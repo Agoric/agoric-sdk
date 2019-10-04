@@ -18,7 +18,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/ertp": "^0.1.4",
+    "@agoric/ertp": "^0.1.5",
     "@agoric/evaluate": "^2.1.1",
     "@agoric/swingset-vat": "^0.0.26",
     "@iarna/toml": "^2.2.3",

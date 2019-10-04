@@ -249,8 +249,8 @@ offered = seat~.offer(px2);
 issuers = home.gallery~.getIssuers();
 pxPurse = issuers~.pixelIssuer~.makeEmptyPurse();
 dustPurse = issuers~.dustIssuer~.makeEmptyPurse();
-collected = offered.then(() => home.gallery~.collectFromGallery(seat, dustPurse, pxPurse, 'my escrow'));
-collected.then(() => dustPurse~.getBalance());
+collected = Promise.all([offered, dustPurse, pxPurse]).then(_ => home.gallery~.collectFromGallery(seat, dustPurse, pxPurse, 'my escrow'));
+collected.then(_ => dustPurse~.getBalance());
 ```
 
 Woohoo! We're now a few dust richer than when we started.
