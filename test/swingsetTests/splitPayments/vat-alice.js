@@ -7,14 +7,14 @@ function makeAliceMaker(E, log) {
         async testSplitPayments() {
           const oldPayment = await E(myMoneyPurseP).withdrawAll();
           log('oldPayment balance:', await E(oldPayment).getBalance());
-          const issuer = await E(myMoneyPurseP).getIssuer();
-          const goodAmountsArray = [
-            await E(issuer).makeAmount(900),
-            await E(issuer).makeAmount(100),
+          const assay = await E(myMoneyPurseP).getAssay();
+          const goodAssetDescsArray = [
+            await E(assay).makeAssetDesc(900),
+            await E(assay).makeAssetDesc(100),
           ];
-          const splitPayments = await E(issuer).split(
+          const splitPayments = await E(assay).split(
             oldPayment,
-            goodAmountsArray,
+            goodAssetDescsArray,
           );
           log(
             'splitPayment[0] balance: ',

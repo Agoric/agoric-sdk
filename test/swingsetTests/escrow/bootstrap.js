@@ -3,28 +3,38 @@
 import harden from '@agoric/harden';
 
 import { escrowExchangeSrcs } from '../../../core/escrow';
-import { makeUniAssayConfigMaker } from '../../../core/config/uniAssayConfig';
+import { makeUniDescOpsConfigMaker } from '../../../core/config/uniDescOpsConfig';
 import { insist } from '../../../util/insist';
-import { makeMint } from '../../../core/issuers';
+import { makeMint } from '../../../core/mint';
 import { allComparable } from '../../../util/sameStructure';
 
 function build(E, log) {
   function testEscrowServiceMismatches(host, randMintP, artMintP) {
     log('starting testEscrowServiceCheckMismatches');
     const installationP = E(host).install(escrowExchangeSrcs);
-    const randAmountP = E(E(randMintP).getIssuer()).makeAmount(3);
-    const blueBoyAmount = E(E(artMintP).getIssuer()).makeAmount('Blue Boy');
-    const blueGirlAmount = E(E(artMintP).getIssuer()).makeAmount('Blue Girl');
-    const actualTermsP = harden({ left: randAmountP, right: blueBoyAmount });
-    const allegedTermsP = harden({ left: randAmountP, right: blueGirlAmount });
+    const randAssetDescP = E(E(randMintP).getAssay()).makeAssetDesc(3);
+    const blueBoyAssetDesc = E(E(artMintP).getAssay()).makeAssetDesc(
+      'Blue Boy',
+    );
+    const blueGirlAssetDesc = E(E(artMintP).getAssay()).makeAssetDesc(
+      'Blue Girl',
+    );
+    const actualTermsP = harden({
+      left: randAssetDescP,
+      right: blueBoyAssetDesc,
+    });
+    const allegedTermsP = harden({
+      left: randAssetDescP,
+      right: blueGirlAssetDesc,
+    });
     const invitesP = E(installationP).spawn(actualTermsP);
     const result = invitesP.then(invites => {
       return E(invites.left)
         .getBalance()
-        .then(allegedLeftInviteAmount => {
+        .then(allegedLeftInviteAssetDesc => {
           return allComparable(allegedTermsP).then(terms => {
-            return E(installationP).checkAmount(
-              allegedLeftInviteAmount,
+            return E(installationP).checkAssetDesc(
+              allegedLeftInviteAssetDesc,
               terms,
               'left',
             );
@@ -44,16 +54,21 @@ function build(E, log) {
   function testEscrowServiceSuccess(host, randMintP, artMintP) {
     log('starting testEscrowServiceSuccess');
     const installationP = E(host).install(escrowExchangeSrcs);
-    const randAmountP = E(E(randMintP).getIssuer()).makeAmount(3);
-    const screamAmountP = E(E(artMintP).getIssuer()).makeAmount('The Scream');
-    const termsP = harden({ left: randAmountP, right: screamAmountP });
+    const randAssetDescP = E(E(randMintP).getAssay()).makeAssetDesc(3);
+    const screamAssetDescP = E(E(artMintP).getAssay()).makeAssetDesc(
+      'The Scream',
+    );
+    const termsP = harden({ left: randAssetDescP, right: screamAssetDescP });
     const invitesP = E(installationP).spawn(termsP);
     const result = invitesP.then(invites => {
       return E(invites.left)
         .getBalance()
-        .then(allegedLeftInviteAmount => {
+        .then(allegedLeftInviteAssetDesc => {
           return allComparable(termsP).then(terms => {
-            return E(installationP).checkAmount(allegedLeftInviteAmount, terms);
+            return E(installationP).checkAssetDesc(
+              allegedLeftInviteAssetDesc,
+              terms,
+            );
           });
         });
     });
@@ -66,18 +81,23 @@ expected successful check ${result}`;
   function testEscrowCheckPartialWrongPrice(host, randMintP, artMintP) {
     log('starting testEscrowServiceCheckPartial wrong price');
     const installationP = E(host).install(escrowExchangeSrcs);
-    const randAmountP = E(E(randMintP).getIssuer()).makeAmount(3);
-    const otherRandAmountP = E(E(randMintP).getIssuer()).makeAmount(5);
-    const blueBoyAmount = E(E(artMintP).getIssuer()).makeAmount('Blue Boy');
-    const actualTermsP = harden({ left: randAmountP, right: blueBoyAmount });
+    const randAssetDescP = E(E(randMintP).getAssay()).makeAssetDesc(3);
+    const otherRandAssetDescP = E(E(randMintP).getAssay()).makeAssetDesc(5);
+    const blueBoyAssetDesc = E(E(artMintP).getAssay()).makeAssetDesc(
+      'Blue Boy',
+    );
+    const actualTermsP = harden({
+      left: randAssetDescP,
+      right: blueBoyAssetDesc,
+    });
     const invitesP = E(installationP).spawn(actualTermsP);
     const result = invitesP.then(invites => {
       return E(invites.left)
         .getBalance()
-        .then(allegedLeftInviteAmount => {
-          return allComparable(otherRandAmountP).then(otherLeftTerms => {
-            return E(installationP).checkPartialAmount(
-              allegedLeftInviteAmount,
+        .then(allegedLeftInviteAssetDesc => {
+          return allComparable(otherRandAssetDescP).then(otherLeftTerms => {
+            return E(installationP).checkPartialAssetDesc(
+              allegedLeftInviteAssetDesc,
               otherLeftTerms,
               'left',
             );
@@ -98,18 +118,25 @@ expected successful check ${result}`;
   function testEscrowCheckPartialWrongStock(host, randMintP, artMintP) {
     log('starting testEscrowServiceCheckPartial wrong stock');
     const installationP = E(host).install(escrowExchangeSrcs);
-    const randAmountP = E(E(randMintP).getIssuer()).makeAmount(3);
-    const blueBoyAmount = E(E(artMintP).getIssuer()).makeAmount('Blue Boy');
-    const blueGirlAmount = E(E(artMintP).getIssuer()).makeAmount('Blue Girl');
-    const actualTermsP = harden({ left: randAmountP, right: blueBoyAmount });
+    const randAssetDescP = E(E(randMintP).getAssay()).makeAssetDesc(3);
+    const blueBoyAssetDesc = E(E(artMintP).getAssay()).makeAssetDesc(
+      'Blue Boy',
+    );
+    const blueGirlAssetDesc = E(E(artMintP).getAssay()).makeAssetDesc(
+      'Blue Girl',
+    );
+    const actualTermsP = harden({
+      left: randAssetDescP,
+      right: blueBoyAssetDesc,
+    });
     const invitesP = E(installationP).spawn(actualTermsP);
     const result = invitesP.then(invites => {
       return E(invites.left)
         .getBalance()
-        .then(allegedLeftInviteAmount => {
-          return allComparable(blueGirlAmount).then(otherRightTerms => {
-            return E(installationP).checkPartialAmount(
-              allegedLeftInviteAmount,
+        .then(allegedLeftInviteAssetDesc => {
+          return allComparable(blueGirlAssetDesc).then(otherRightTerms => {
+            return E(installationP).checkPartialAssetDesc(
+              allegedLeftInviteAssetDesc,
               otherRightTerms,
               'right',
             );
@@ -130,17 +157,22 @@ expected successful check ${result}`;
   function testEscrowCheckPartialWrongSeat(host, randMintP, artMintP) {
     log('starting testEscrowServiceCheckPartial wrong seat');
     const installationP = E(host).install(escrowExchangeSrcs);
-    const randAmountP = E(E(randMintP).getIssuer()).makeAmount(3);
-    const blueBoyAmount = E(E(artMintP).getIssuer()).makeAmount('Blue Boy');
-    const actualTermsP = harden({ left: randAmountP, right: blueBoyAmount });
+    const randAssetDescP = E(E(randMintP).getAssay()).makeAssetDesc(3);
+    const blueBoyAssetDesc = E(E(artMintP).getAssay()).makeAssetDesc(
+      'Blue Boy',
+    );
+    const actualTermsP = harden({
+      left: randAssetDescP,
+      right: blueBoyAssetDesc,
+    });
     const invitesP = E(installationP).spawn(actualTermsP);
     const result = invitesP.then(invites => {
       return E(invites.left)
         .getBalance()
-        .then(allegedLeftInviteAmount => {
+        .then(allegedLeftInviteAssetDesc => {
           return allComparable(actualTermsP).then(terms => {
-            return E(installationP).checkPartialAmount(
-              allegedLeftInviteAmount,
+            return E(installationP).checkPartialAssetDesc(
+              allegedLeftInviteAssetDesc,
               terms,
               'right',
             );
@@ -163,9 +195,9 @@ expected successful check ${result}`;
       const host = await E(vats.host).makeHost();
       const randMintP = E(vats.mint).makeMint('rand');
 
-      const makeUniAssayConfig = makeUniAssayConfigMaker();
+      const makeUniDescOpsConfig = makeUniDescOpsConfigMaker();
 
-      const artMintP = makeMint('art', makeUniAssayConfig);
+      const artMintP = makeMint('art', makeUniDescOpsConfig);
       switch (argv[0]) {
         case 'escrow misMatches': {
           return testEscrowServiceMismatches(host, randMintP, artMintP);

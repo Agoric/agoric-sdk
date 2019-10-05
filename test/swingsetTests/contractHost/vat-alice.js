@@ -14,7 +14,7 @@ function makeAliceMaker(E, host, log) {
   function showPaymentBalance(name, paymentP) {
     return E(paymentP)
       .getBalance()
-      .then(amount => log(name, ' balance ', amount))
+      .then(assetDesc => log(name, ' balance ', assetDesc))
       .catch(err => console.log(err));
   }
 
@@ -28,7 +28,7 @@ function makeAliceMaker(E, host, log) {
       myOptFinPurseP = undefined,
       optFredP = undefined,
     ) {
-      const inviteIssuerP = E(host).getInviteIssuer();
+      const inviteAssayP = E(host).getInviteAssay();
 
       const alice = harden({
         payBobWell(bob) {
@@ -40,18 +40,22 @@ function makeAliceMaker(E, host, log) {
         acceptInvite(allegedInvitePaymentP) {
           log('++ alice.acceptInvite starting');
           showPaymentBalance('alice invite', allegedInvitePaymentP);
-          const clams10P = E(E(myMoneyPurseP).getIssuer()).makeAmount(10);
-          const fudco7P = E(E(myStockPurseP).getIssuer()).makeAmount(7);
+          const clams10P = E(E(myMoneyPurseP).getAssay()).makeAssetDesc(10);
+          const fudco7P = E(E(myStockPurseP).getAssay()).makeAssetDesc(7);
           const verifiedInvitePaymentP = E(allegedInvitePaymentP)
             .getBalance()
-            .then(allegedInviteAmount => {
+            .then(allegedInviteAssetDesc => {
               return Promise.all([clams10P, fudco7P]).then(terms => {
                 const [left, right] = terms;
                 return E(escrowExchangeInstallationP)
-                  .checkAmount(allegedInviteAmount, { left, right }, 'left')
+                  .checkAssetDesc(
+                    allegedInviteAssetDesc,
+                    { left, right },
+                    'left',
+                  )
                   .then(() => {
-                    return E(inviteIssuerP).claimExactly(
-                      allegedInviteAmount,
+                    return E(inviteAssayP).claimExactly(
+                      allegedInviteAssetDesc,
                       allegedInvitePaymentP,
                       'verified invite',
                     );
@@ -80,13 +84,15 @@ function makeAliceMaker(E, host, log) {
           log('++ alice.acceptOptionDirectly starting');
           showPaymentBalance('alice invite', allegedInvitePaymentP);
 
-          const allegedInviteAmountP = E(allegedInvitePaymentP).getBalance();
+          const allegedInviteAssetDescP = E(allegedInvitePaymentP).getBalance();
 
           const verifiedInvitePaymentP = Promise.resolve(
-            allegedInviteAmountP,
-          ).then(allegedInviteAmount => {
-            const smackers10P = E(E(myMoneyPurseP).getIssuer()).makeAmount(10);
-            const yoyodyne7P = E(E(myStockPurseP).getIssuer()).makeAmount(7);
+            allegedInviteAssetDescP,
+          ).then(allegedInviteAssetDesc => {
+            const smackers10P = E(E(myMoneyPurseP).getAssay()).makeAssetDesc(
+              10,
+            );
+            const yoyodyne7P = E(E(myStockPurseP).getAssay()).makeAssetDesc(7);
             const coveredCallTermsP = harden([
               smackers10P,
               yoyodyne7P,
@@ -96,10 +102,10 @@ function makeAliceMaker(E, host, log) {
             return Promise.resolve(allComparable(coveredCallTermsP)).then(
               terms => {
                 return E(coveredCallInstallationP)
-                  .checkAmount(allegedInviteAmount, terms)
+                  .checkAssetDesc(allegedInviteAssetDesc, terms)
                   .then(_ => {
-                    return E(inviteIssuerP).claimExactly(
-                      allegedInviteAmount,
+                    return E(inviteAssayP).claimExactly(
+                      allegedInviteAssetDesc,
                       allegedInvitePaymentP,
                       'verified invite',
                     );
@@ -120,7 +126,7 @@ function makeAliceMaker(E, host, log) {
 
         acceptOptionForFred(allegedInvitePaymentP) {
           log('++ alice.acceptOptionForFred starting');
-          const finNeededP = E(E(myOptFinPurseP).getIssuer()).makeAmount(55);
+          const finNeededP = E(E(myOptFinPurseP).getAssay()).makeAssetDesc(55);
           const inviteNeededP = E(allegedInvitePaymentP).getBalance();
 
           const terms = harden({ left: finNeededP, right: inviteNeededP });
@@ -150,7 +156,7 @@ function makeAliceMaker(E, host, log) {
           const aliceForFredSeatP = E(host).redeem(aliceForFredInvitePaymentP);
 
           E(aliceForFredSeatP).offer(allegedInvitePaymentP);
-          const myInvitePurseP = E(inviteIssuerP).makeEmptyPurse();
+          const myInvitePurseP = E(inviteAssayP).makeEmptyPurse();
           return collect(
             aliceForFredSeatP,
             myOptFinPurseP,

@@ -2,8 +2,8 @@
 
 // These represent two functions that could be provided by different sources,
 // but which we want to call polymorphically using the import manager.
-function numIsEmpty(quantity) {
-  return quantity === 0;
+function numIsEmpty(extent) {
+  return extent === 0;
 }
 
 function listIsEmpty(list) {

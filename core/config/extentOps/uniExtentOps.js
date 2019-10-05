@@ -7,14 +7,14 @@ import {
   mustBeComparable,
 } from '../../../util/sameStructure';
 
-// A uniAssay makes uni amounts, which are either empty or have unique
-// descriptions. The quantity must either be null, in which case it is
+// A uniDescOps makes uni assetDescs, which are either empty or have unique
+// descriptions. The extent must either be null, in which case it is
 // empty, or be some truthy comparable value, in which case it
 // represents a single unique unit described by that truthy
-// quantity. Combining two uni amounts with different truthy
-// quantities fails, as they represent non-combinable rights.
-const makeUniStrategy = (descriptionCoercer = d => d) => {
-  const uniStrategy = harden({
+// extent. Combining two uni assetDescs with different truthy
+// extents fails, as they represent non-combinable rights.
+const makeUniExtentOps = (descriptionCoercer = d => d) => {
+  const uniExtentOps = harden({
     insistKind: optDescription => {
       if (optDescription === null) {
         return null;
@@ -37,7 +37,7 @@ const makeUniStrategy = (descriptionCoercer = d => d) => {
       return sameStructure(whole, part);
     },
     equals: (left, right) =>
-      uniStrategy.includes(left, right) && uniStrategy.includes(right, left),
+      uniExtentOps.includes(left, right) && uniExtentOps.includes(right, left),
     with: (left, right) => {
       if (left === null) {
         return right;
@@ -50,7 +50,7 @@ const makeUniStrategy = (descriptionCoercer = d => d) => {
         // throw anyway. Rather, it informs IDEs of this control flow.
         throw insist(
           false,
-        )`Even identical non-empty uni amounts cannot be added together ${left}`;
+        )`Even identical non-empty uni assetDescs cannot be added together ${left}`;
       } else {
         // The "throw" is useless since insist(false) will unconditionally
         // throw anyway. Rather, it informs IDEs of this control flow.
@@ -70,12 +70,12 @@ const makeUniStrategy = (descriptionCoercer = d => d) => {
         part,
         'Cannot subtract different uni descriptions',
       );
-      return uniStrategy.empty();
+      return uniExtentOps.empty();
     },
   });
-  return uniStrategy;
+  return uniExtentOps;
 };
 
-harden(makeUniStrategy);
+harden(makeUniExtentOps);
 
-export { makeUniStrategy };
+export { makeUniExtentOps };

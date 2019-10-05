@@ -6,18 +6,24 @@ import {
   includesPixel,
 } from '../../../../../more/pixels/types/pixelList';
 
-import { makePixelStrategy } from '../../../../../more/pixels/pixelStrategy';
+import { makePixelExtentOps } from '../../../../../more/pixels/pixelExtentOps';
 
 test('pixelList insistKind', t => {
   const startPixel = harden({ x: 0, y: 0 });
   const secondPixel = harden({ x: 0, y: 1 });
   const thirdPixel = harden({ x: 0, y: 2 });
   const pixelList = harden([startPixel, secondPixel, thirdPixel]);
-  const pixelStrategy = makePixelStrategy();
-  t.doesNotThrow(() => pixelStrategy.insistKind(pixelList));
-  t.throws(() => pixelStrategy.insistKind(startPixel), /list must be an array/);
-  t.throws(() => pixelStrategy.insistKind(harden({})), /list must be an array/);
-  t.doesNotThrow(() => pixelStrategy.insistKind(harden([thirdPixel])));
+  const pixelExtentOps = makePixelExtentOps();
+  t.doesNotThrow(() => pixelExtentOps.insistKind(pixelList));
+  t.throws(
+    () => pixelExtentOps.insistKind(startPixel),
+    /list must be an array/,
+  );
+  t.throws(
+    () => pixelExtentOps.insistKind(harden({})),
+    /list must be an array/,
+  );
+  t.doesNotThrow(() => pixelExtentOps.insistKind(harden([thirdPixel])));
   t.end();
 });
 
@@ -39,23 +45,23 @@ test('pixelList includes', t => {
   const secondPixel = harden({ x: 0, y: 1 });
   const thirdPixel = harden({ x: 0, y: 2 });
   const fourthPixel = harden({ x: 9, y: 1 });
-  const strategy = makePixelStrategy();
-  t.true(strategy.includes(harden([]), harden([])));
-  t.true(strategy.includes(harden([startPixel]), harden([])));
-  t.true(strategy.includes(harden([startPixel]), harden([startPixel])));
+  const extentOps = makePixelExtentOps();
+  t.true(extentOps.includes(harden([]), harden([])));
+  t.true(extentOps.includes(harden([startPixel]), harden([])));
+  t.true(extentOps.includes(harden([startPixel]), harden([startPixel])));
   t.true(
-    strategy.includes(harden([startPixel, secondPixel]), harden([startPixel])),
+    extentOps.includes(harden([startPixel, secondPixel]), harden([startPixel])),
   );
-  t.false(strategy.includes(harden([]), harden([startPixel])));
-  t.false(strategy.includes(harden([startPixel]), harden([secondPixel])));
+  t.false(extentOps.includes(harden([]), harden([startPixel])));
+  t.false(extentOps.includes(harden([startPixel]), harden([secondPixel])));
   t.false(
-    strategy.includes(
+    extentOps.includes(
       harden([startPixel, thirdPixel]),
       harden([secondPixel, fourthPixel]),
     ),
   );
   t.false(
-    strategy.includes(
+    extentOps.includes(
       [startPixel, secondPixel, thirdPixel],
       [thirdPixel, fourthPixel],
     ),
@@ -66,19 +72,19 @@ test('pixelList includes', t => {
 test('pixelList with', t => {
   const startPixel = harden({ x: 0, y: 0 });
   const secondPixel = harden({ x: 0, y: 1 });
-  const strategy = makePixelStrategy();
-  t.deepEqual(strategy.with(harden([]), harden([])), []);
-  t.deepEqual(strategy.with(harden([startPixel]), harden([])), [startPixel]);
-  t.deepEqual(strategy.with(harden([]), harden([startPixel])), [startPixel]);
-  t.deepEqual(strategy.with(harden([startPixel]), harden([startPixel])), [
+  const extentOps = makePixelExtentOps();
+  t.deepEqual(extentOps.with(harden([]), harden([])), []);
+  t.deepEqual(extentOps.with(harden([startPixel]), harden([])), [startPixel]);
+  t.deepEqual(extentOps.with(harden([]), harden([startPixel])), [startPixel]);
+  t.deepEqual(extentOps.with(harden([startPixel]), harden([startPixel])), [
     startPixel,
   ]);
-  t.deepEqual(strategy.with(harden([startPixel]), harden([secondPixel])), [
+  t.deepEqual(extentOps.with(harden([startPixel]), harden([secondPixel])), [
     startPixel,
     secondPixel,
   ]);
   t.deepEqual(
-    strategy.with(harden([startPixel, secondPixel]), harden([secondPixel])),
+    extentOps.with(harden([startPixel, secondPixel]), harden([secondPixel])),
     [startPixel, secondPixel],
   );
   t.end();
@@ -92,8 +98,8 @@ test('pixelList with deduplication', t => {
 
   // Left and right have two of everything, and right includes all of left.
 
-  const strategy = makePixelStrategy();
-  const result = strategy.with(left, right);
+  const extentOps = makePixelExtentOps();
+  const result = extentOps.with(left, right);
   t.equal(result.length, 100);
   t.deepEqual(result, [
     { x: 0, y: 0 },
@@ -203,17 +209,22 @@ test('pixelList with deduplication', t => {
 test('pixelList without', t => {
   const startPixel = harden({ x: 0, y: 0 });
   const secondPixel = harden({ x: 0, y: 1 });
-  const strategy = makePixelStrategy();
-  t.deepEqual(strategy.without(harden([]), harden([])), []);
-  t.deepEqual(strategy.without(harden([startPixel]), harden([])), [startPixel]);
-  t.throws(() => strategy.without(harden([]), harden([startPixel])));
-  t.deepEqual(strategy.without(harden([startPixel]), harden([startPixel])), []);
+  const extentOps = makePixelExtentOps();
+  t.deepEqual(extentOps.without(harden([]), harden([])), []);
+  t.deepEqual(extentOps.without(harden([startPixel]), harden([])), [
+    startPixel,
+  ]);
+  t.throws(() => extentOps.without(harden([]), harden([startPixel])));
   t.deepEqual(
-    strategy.without(harden([startPixel, secondPixel]), harden([secondPixel])),
+    extentOps.without(harden([startPixel]), harden([startPixel])),
+    [],
+  );
+  t.deepEqual(
+    extentOps.without(harden([startPixel, secondPixel]), harden([secondPixel])),
     [startPixel],
   );
   t.deepEqual(
-    strategy.without(
+    extentOps.without(
       harden([{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 0 }, { x: 1, y: 1 }]),
       harden([{ x: 0, y: 0 }, { x: 0, y: 1 }]),
     ),

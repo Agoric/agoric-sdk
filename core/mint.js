@@ -5,15 +5,15 @@ import harden from '@agoric/harden';
 
 import { insist } from '../util/insist';
 import { makeBasicFungibleConfig } from './config/basicFungibleConfig';
-import { makeAssay } from './assay';
+import { makeDescOps } from './descOps';
 
 /**
  * makeMint takes in a string description as well as a function to
  * make a configuration. This configuration can be used to add custom
- * methods to issuers, payments, purses, and mints, and it also
+ * methods to assays, payments, purses, and mints, and it also
  * defines the functions to make the "mintKeeper" (the actual holder
- * of the mappings from purses/payments to amounts) and to make the
- * "assay" (the object that describes the strategy of how amounts are
+ * of the mappings from purses/payments to assetDescs) and to make the
+ * "descOps" (the object that describes the extentOps of how assetDescs are
  * withdrawn or deposited, among other things).
  * @param  {string} description
  * @param  {function} makeConfig=makeBasicFungibleConfig
@@ -25,40 +25,40 @@ Description must be truthy: ${description}`;
   // Each of these methods is used below and must be defined (even in
   // a trivial way) in any configuration
   const {
-    makeIssuerTrait,
+    makeAssayTrait,
     makePaymentTrait,
     makePurseTrait,
     makeMintTrait,
     makeMintKeeper,
-    strategy,
+    extentOps,
   } = makeConfig();
 
-  // Methods like depositExactly() pass in an amount which is supposed
+  // Methods like depositExactly() pass in an assetDesc which is supposed
   // to be equal to the balance of the payment. These methods
-  // use this helper function to check that the amount is equal
-  function insistAmountEqualsPaymentBalance(amount, payment) {
-    amount = assay.coerce(amount);
-    const paymentAmount = paymentKeeper.getAmount(payment);
+  // use this helper function to check that the assetDesc is equal
+  function insistAssetDescEqualsPaymentBalance(assetDesc, payment) {
+    assetDesc = descOps.coerce(assetDesc);
+    const paymentAssetDesc = paymentKeeper.getAssetDesc(payment);
     insist(
-      assay.equals(amount, paymentAmount),
-    )`payment balance ${paymentAmount} must equal amount ${amount}`;
-    return paymentAmount;
+      descOps.equals(assetDesc, paymentAssetDesc),
+    )`payment balance ${paymentAssetDesc} must equal assetDesc ${assetDesc}`;
+    return paymentAssetDesc;
   }
 
   // assetSrc is a purse or payment. Return a fresh payment.  One internal
   // function used for both cases, since they are so similar.
-  function takePayment(assetSrc, srcKeeper, paymentAmount, name) {
+  function takePayment(assetHolderSrc, srcKeeper, paymentAssetDesc, name) {
     name = `${name}`;
-    paymentAmount = assay.coerce(paymentAmount);
-    const oldSrcAmount = srcKeeper.getAmount(assetSrc);
-    const newSrcAmount = assay.without(oldSrcAmount, paymentAmount);
+    paymentAssetDesc = descOps.coerce(paymentAssetDesc);
+    const oldSrcAssetDesc = srcKeeper.getAssetDesc(assetHolderSrc);
+    const newSrcAssetDesc = descOps.without(oldSrcAssetDesc, paymentAssetDesc);
 
     const corePayment = harden({
-      getIssuer() {
-        return issuer;
+      getAssay() {
+        return assay;
       },
       getBalance() {
-        return paymentKeeper.getAmount(payment);
+        return paymentKeeper.getAssetDesc(payment);
       },
       getName() {
         return name;
@@ -68,7 +68,7 @@ Description must be truthy: ${description}`;
     // makePaymentTrait is defined in the passed-in configuration and adds
     // additional methods to corePayment
     const payment = harden({
-      ...makePaymentTrait(corePayment, issuer),
+      ...makePaymentTrait(corePayment, assay),
       ...corePayment,
     });
 
@@ -76,8 +76,8 @@ Description must be truthy: ${description}`;
     // All queries above passed with no side effects.
     // During side effects below, any early exits should be made into
     // fatal turn aborts.
-    paymentKeeper.recordNew(payment, paymentAmount);
-    srcKeeper.updateAmount(assetSrc, newSrcAmount);
+    paymentKeeper.recordNew(payment, paymentAssetDesc);
+    srcKeeper.updateAssetDesc(assetHolderSrc, newSrcAssetDesc);
     return payment;
   }
 
@@ -85,14 +85,14 @@ Description must be truthy: ${description}`;
   // oldPayment (assetSrc) rather than reducing its balance.
   function takePaymentAndKill(oldPayment, name) {
     name = `${name}`;
-    const paymentAmount = paymentKeeper.getAmount(oldPayment);
+    const paymentAssetDesc = paymentKeeper.getAssetDesc(oldPayment);
 
     const corePayment = harden({
-      getIssuer() {
-        return issuer;
+      getAssay() {
+        return assay;
       },
       getBalance() {
-        return paymentKeeper.getAmount(payment);
+        return paymentKeeper.getAssetDesc(payment);
       },
       getName() {
         return name;
@@ -101,7 +101,7 @@ Description must be truthy: ${description}`;
     // makePaymentTrait is defined in the passed-in configuration and adds
     // additional methods to corePayment
     const payment = harden({
-      ...makePaymentTrait(corePayment, issuer),
+      ...makePaymentTrait(corePayment, assay),
       ...corePayment,
     });
 
@@ -109,43 +109,43 @@ Description must be truthy: ${description}`;
     // All queries above passed with no side effects.
     // During side effects below, any early exits should be made into
     // fatal turn aborts.
-    paymentKeeper.recordNew(payment, paymentAmount);
+    paymentKeeper.recordNew(payment, paymentAssetDesc);
     paymentKeeper.remove(oldPayment);
     return payment;
   }
 
-  const coreIssuer = harden({
+  const coreAssay = harden({
     getLabel() {
-      return assay.getLabel();
+      return descOps.getLabel();
     },
 
-    getAssay() {
-      return assay;
+    getDescOps() {
+      return descOps;
     },
 
-    getStrategy() {
-      return assay.getStrategy();
+    getExtentOps() {
+      return descOps.getExtentOps();
     },
 
-    makeAmount(quantity) {
-      return assay.make(quantity);
+    makeAssetDesc(extent) {
+      return descOps.make(extent);
     },
 
     makeEmptyPurse(name = 'a purse') {
-      return mint.mint(assay.empty(), name); // mint and issuer call each other
+      return mint.mint(descOps.empty(), name); // mint and assay call each other
     },
 
     combine(paymentsArray, name = 'combined payment') {
-      const totalAmount = paymentsArray.reduce((soFar, payment) => {
-        return assay.with(soFar, paymentKeeper.getAmount(payment));
-      }, assay.empty());
+      const totalAssetDesc = paymentsArray.reduce((soFar, payment) => {
+        return descOps.with(soFar, paymentKeeper.getAssetDesc(payment));
+      }, descOps.empty());
 
       const combinedPayment = harden({
-        getIssuer() {
-          return issuer;
+        getAssay() {
+          return assay;
         },
         getBalance() {
-          return paymentKeeper.getAmount(combinedPayment);
+          return paymentKeeper.getAssetDesc(combinedPayment);
         },
         getName() {
           return name;
@@ -159,27 +159,30 @@ Description must be truthy: ${description}`;
       for (const payment of paymentsArray) {
         paymentKeeper.remove(payment);
       }
-      paymentKeeper.recordNew(combinedPayment, totalAmount);
+      paymentKeeper.recordNew(combinedPayment, totalAssetDesc);
       return combinedPayment;
     },
 
-    split(payment, amountsArray, namesArray) {
+    split(payment, assetDescsArray, namesArray) {
       namesArray =
         namesArray !== undefined
           ? namesArray
-          : Array(amountsArray.length).fill('a split payment');
+          : Array(assetDescsArray.length).fill('a split payment');
       insist(
-        amountsArray.length === namesArray.length,
-      )`the amounts and names should have the same length`;
+        assetDescsArray.length === namesArray.length,
+      )`the assetDescs and names should have the same length`;
 
-      const paymentMinusAmounts = amountsArray.reduce((soFar, amount) => {
-        amount = assay.coerce(amount);
-        return assay.without(soFar, amount);
-      }, paymentKeeper.getAmount(payment));
+      const paymentMinusAssetDescs = assetDescsArray.reduce(
+        (soFar, assetDesc) => {
+          assetDesc = descOps.coerce(assetDesc);
+          return descOps.without(soFar, assetDesc);
+        },
+        paymentKeeper.getAssetDesc(payment),
+      );
 
       insist(
-        assay.isEmpty(paymentMinusAmounts),
-      )`the amounts of the proposed new payments do not equal the amount of the source payment`;
+        descOps.isEmpty(paymentMinusAssetDescs),
+      )`the assetDescs of the proposed new payments do not equal the assetDesc of the source payment`;
 
       // ///////////////// commit point //////////////////
       // All queries above passed with no side effects.
@@ -188,18 +191,23 @@ Description must be truthy: ${description}`;
 
       const newPayments = [];
 
-      for (let i = 0; i < amountsArray.length; i += 1) {
+      for (let i = 0; i < assetDescsArray.length; i += 1) {
         newPayments.push(
-          takePayment(payment, paymentKeeper, amountsArray[i], namesArray[i]),
+          takePayment(
+            payment,
+            paymentKeeper,
+            assetDescsArray[i],
+            namesArray[i],
+          ),
         );
       }
       paymentKeeper.remove(payment);
       return harden(newPayments);
     },
 
-    claimExactly(amount, srcPaymentP, name) {
+    claimExactly(assetDesc, srcPaymentP, name) {
       return Promise.resolve(srcPaymentP).then(srcPayment => {
-        insistAmountEqualsPaymentBalance(amount, srcPayment);
+        insistAssetDescEqualsPaymentBalance(assetDesc, srcPayment);
         name = name !== undefined ? name : srcPayment.getName(); // use old name
         return takePaymentAndKill(srcPayment, name);
       });
@@ -212,68 +220,68 @@ Description must be truthy: ${description}`;
       });
     },
 
-    burnExactly(amount, srcPaymentP) {
-      const sinkPurse = coreIssuer.makeEmptyPurse('sink purse');
-      return sinkPurse.depositExactly(amount, srcPaymentP);
+    burnExactly(assetDesc, srcPaymentP) {
+      const sinkPurse = coreAssay.makeEmptyPurse('sink purse');
+      return sinkPurse.depositExactly(assetDesc, srcPaymentP);
     },
 
     burnAll(srcPaymentP) {
-      const sinkPurse = coreIssuer.makeEmptyPurse('sink purse');
+      const sinkPurse = coreAssay.makeEmptyPurse('sink purse');
       return sinkPurse.depositAll(srcPaymentP);
     },
   });
 
-  // makeIssuerTrait is defined in the passed-in configuration and adds
-  // additional methods to coreIssuer.
-  const issuer = harden({
-    ...makeIssuerTrait(coreIssuer),
-    ...coreIssuer,
+  // makeAssayTrait is defined in the passed-in configuration and adds
+  // additional methods to coreAssay.
+  const assay = harden({
+    ...makeAssayTrait(coreAssay),
+    ...coreAssay,
   });
 
-  const label = harden({ issuer, description });
+  const label = harden({ assay, description });
 
-  const assay = makeAssay(label, strategy);
-  const mintKeeper = makeMintKeeper(assay);
+  const descOps = makeDescOps(label, extentOps);
+  const mintKeeper = makeMintKeeper(descOps);
   const { purseKeeper, paymentKeeper } = mintKeeper;
 
-  // depositInto always deposits the entire payment amount
+  // depositInto always deposits the entire payment assetDesc
   function depositInto(purse, payment) {
-    const oldPurseAmount = purseKeeper.getAmount(purse);
-    const paymentAmount = paymentKeeper.getAmount(payment);
+    const oldPurseAssetDesc = purseKeeper.getAssetDesc(purse);
+    const paymentAssetDesc = paymentKeeper.getAssetDesc(payment);
     // Also checks that the union is representable
-    const newPurseAmount = assay.with(oldPurseAmount, paymentAmount);
+    const newPurseAssetDesc = descOps.with(oldPurseAssetDesc, paymentAssetDesc);
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
     // During side effects below, any early exits should be made into
     // fatal turn aborts.
     paymentKeeper.remove(payment);
-    purseKeeper.updateAmount(purse, newPurseAmount);
+    purseKeeper.updateAssetDesc(purse, newPurseAssetDesc);
 
-    return paymentAmount;
+    return paymentAssetDesc;
   }
 
   const coreMint = harden({
-    getIssuer() {
-      return issuer;
+    getAssay() {
+      return assay;
     },
     mint(initialBalance, name = 'a purse') {
-      initialBalance = assay.coerce(initialBalance);
+      initialBalance = descOps.coerce(initialBalance);
       name = `${name}`;
 
       const corePurse = harden({
         getName() {
           return name;
         },
-        getIssuer() {
-          return issuer;
+        getAssay() {
+          return assay;
         },
         getBalance() {
-          return purseKeeper.getAmount(purse);
+          return purseKeeper.getAssetDesc(purse);
         },
-        depositExactly(amount, srcPaymentP) {
+        depositExactly(assetDesc, srcPaymentP) {
           return Promise.resolve(srcPaymentP).then(srcPayment => {
-            insistAmountEqualsPaymentBalance(amount, srcPayment);
+            insistAssetDescEqualsPaymentBalance(assetDesc, srcPayment);
             return depositInto(purse, srcPayment);
           });
         },
@@ -282,14 +290,14 @@ Description must be truthy: ${description}`;
             return depositInto(purse, srcPayment);
           });
         },
-        withdraw(amount, paymentName = 'a withdrawal payment') {
-          return takePayment(purse, purseKeeper, amount, paymentName);
+        withdraw(assetDesc, paymentName = 'a withdrawal payment') {
+          return takePayment(purse, purseKeeper, assetDesc, paymentName);
         },
         withdrawAll(paymentName = 'a withdrawal payment') {
           return takePayment(
             purse,
             purseKeeper,
-            purseKeeper.getAmount(purse),
+            purseKeeper.getAssetDesc(purse),
             paymentName,
           );
         },
@@ -298,7 +306,7 @@ Description must be truthy: ${description}`;
       // makePurseTrait is defined in the passed-in configuration and
       // adds additional methods to corePurse
       const purse = harden({
-        ...makePurseTrait(corePurse, issuer),
+        ...makePurseTrait(corePurse, assay),
         ...corePurse,
       });
 
@@ -310,7 +318,7 @@ Description must be truthy: ${description}`;
   // makeMintTrait is defined in the passed-in configuration and
   // adds additional methods to coreMint
   const mint = harden({
-    ...makeMintTrait(coreMint, issuer, assay, mintKeeper),
+    ...makeMintTrait(coreMint, assay, descOps, mintKeeper),
     ...coreMint,
   });
 

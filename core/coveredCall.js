@@ -6,7 +6,7 @@ import { mustBeSameStructure, sameStructure } from '../util/sameStructure';
 
 /**
  * The coveredCall is an asymmetric contract. One party will put some goods in
- * escrow, and is transferring the right to buy them for a specified amount of
+ * escrow, and is transferring the right to buy them for a specified assetDesc of
  * some currency. start() specifies the terms, and returns the seat that has the
  * ability to offer() the goods. The counterparty seat is returned from offer(),
  * so the originator can offer it to a someone of their choice. To simplify
@@ -43,8 +43,8 @@ const coveredCall = harden({
 
     const bobSeat = harden({
       offer(stockPayment) {
-        const sIssuer = stockNeeded.label.issuer;
-        return E(sIssuer)
+        const sAssay = stockNeeded.label.assay;
+        return E(sAssay)
           .claimExactly(stockNeeded, stockPayment, 'prePay')
           .then(prePayment => {
             E(bobEscrowSeatP).offer(prePayment);
@@ -61,18 +61,18 @@ const coveredCall = harden({
 
     return inviteMaker.make('writer', bobSeat);
   },
-  checkAmount: (installation, allegedInviteAmount, expectedTerms) => {
+  checkAssetDesc: (installation, allegedInviteAssetDesc, expectedTerms) => {
     mustBeSameStructure(
-      allegedInviteAmount.quantity.installation,
+      allegedInviteAssetDesc.extent.installation,
       installation,
-      'coveredCall checkAmount installation',
+      'coveredCall checkAssetDesc installation',
     );
     const [termsMoney, termsStock, termsTimer, termsDeadline] = expectedTerms;
-    const allegedInviteTerms = allegedInviteAmount.quantity.terms;
+    const allegedInviteTerms = allegedInviteAssetDesc.extent.terms;
     const allegedInviteMoney = allegedInviteTerms.money;
-    if (allegedInviteMoney.quantity !== termsMoney.quantity) {
+    if (allegedInviteMoney.extent !== termsMoney.extent) {
       throw new Error(
-        `Wrong money quantity: ${allegedInviteMoney.quantity}, expected ${termsMoney.quantity}`,
+        `Wrong money extent: ${allegedInviteMoney.extent}, expected ${termsMoney.extent}`,
       );
     }
     if (!sameStructure(allegedInviteMoney, termsMoney)) {
@@ -102,7 +102,7 @@ const coveredCall = harden({
 
 const coveredCallSrcs = harden({
   start: `${coveredCall.start}`,
-  checkAmount: `${coveredCall.checkAmount}`,
+  checkAssetDesc: `${coveredCall.checkAssetDesc}`,
 });
 
 export { coveredCallSrcs };

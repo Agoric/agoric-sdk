@@ -40,8 +40,8 @@ reference, it can't. For more on object capabilities, see [Chip
 Morningstar's
 post](http://habitatchronicles.com/2017/05/what-are-capabilities/).
 For more on ERTP, [see a quick tutorial](README.md) and the ERTP
-interface descriptions [for issuers.js](core/issuers.chainmail),
-[assays.js](core/assays.chainmail) and [contractHost.js](core/contractHost.chainmail).
+interface descriptions [for assay.js](core/assay.chainmail),
+[descOps.js](core/descOps.chainmail) and [contractHost.js](core/contractHost.chainmail).
 
 
 ## A preemption hierarchy of rights
@@ -101,8 +101,8 @@ payment.
 ## Buying and selling pixels
 
 The users can buy and sell pixels with the gallery at any time by
-calling `sellToGallery(pixelAmount)` and
-`buyFromGallery(pixelAmount)`. They must pass in an `amount` that
+calling `sellToGallery(pixelAssetDesc)` and
+`buyFromGallery(pixelAssetDesc)`. They must pass in an `assetDesc` that
 describes exactly what they want to sell or buy. If successful, they
 will get an invitation from the gallery for a simple, secure escrow
 exchange of the pixels for "dust", the currency that the gallery

@@ -4,7 +4,7 @@ import harden from '@agoric/harden';
 // parameter. In other configurations, these methods would be used to
 // add custom methods (or otherwise customize) payments, purses, etc.
 
-// These methods must be paired with a mintKeeper and Assay to be a
+// These methods must be paired with a mintKeeper and DescOps to be a
 // full configuration that can be passed into `makeMint`.
 const noCustomization = harden({
   makePaymentTrait(_superPayment) {
@@ -16,7 +16,7 @@ const noCustomization = harden({
   makeMintTrait(_superMint) {
     return harden({});
   },
-  makeIssuerTrait(_superIssuer) {
+  makeAssayTrait(_superAssay) {
     return harden({});
   },
 });

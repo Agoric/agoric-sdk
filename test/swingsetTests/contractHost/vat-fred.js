@@ -18,10 +18,10 @@ function makeFredMaker(E, host, log) {
       myStockPurseP,
       myFinPurseP,
     ) {
-      const inviteIssuerP = E(host).getInviteIssuer();
-      const dough10P = E(E(myMoneyPurseP).getIssuer()).makeAmount(10);
-      const wonka7P = E(E(myStockPurseP).getIssuer()).makeAmount(7);
-      const fin55P = E(E(myFinPurseP).getIssuer()).makeAmount(55);
+      const inviteAssayP = E(host).getInviteAssay();
+      const dough10P = E(E(myMoneyPurseP).getAssay()).makeAssetDesc(10);
+      const wonka7P = E(E(myStockPurseP).getAssay()).makeAssetDesc(7);
+      const fin55P = E(E(myFinPurseP).getAssay()).makeAssetDesc(55);
 
       const fred = harden({
         acceptOptionOffer(allegedSaleInvitePaymentP) {
@@ -30,17 +30,17 @@ function makeFredMaker(E, host, log) {
           const coveredCallTermsP = [dough10P, wonka7P, timerP, 'singularity'];
           const verifiedSaleInvitePaymentP = E(allegedSaleInvitePaymentP)
             .getBalance()
-            .then(allegedInviteAmount => {
+            .then(allegedInviteAssetDesc => {
               return Promise.resolve(allComparable(fin55P)).then(f55 => {
                 return E(escrowExchangeInstallationP)
-                  .checkPartialAmount(allegedInviteAmount, f55, 'left')
-                  .then(coveredCallAmount =>
+                  .checkPartialAssetDesc(allegedInviteAssetDesc, f55, 'left')
+                  .then(coveredCallAssetDesc =>
                     Promise.all(coveredCallTermsP).then(terms => {
                       return E(coveredCallInstallationP)
-                        .checkAmount(coveredCallAmount, terms)
+                        .checkAssetDesc(coveredCallAssetDesc, terms)
                         .then(() => {
-                          return E(inviteIssuerP).claimExactly(
-                            allegedInviteAmount,
+                          return E(inviteAssayP).claimExactly(
+                            allegedInviteAssetDesc,
                             allegedSaleInvitePaymentP,
                             'verified sale invite',
                           );
@@ -53,7 +53,7 @@ function makeFredMaker(E, host, log) {
           const saleSeatP = E(host).redeem(verifiedSaleInvitePaymentP);
           const finPaymentP = E(myFinPurseP).withdraw(55);
           E(saleSeatP).offer(finPaymentP);
-          const optionInvitePurseP = E(inviteIssuerP).makeEmptyPurse();
+          const optionInvitePurseP = E(inviteAssayP).makeEmptyPurse();
           const gotOptionP = collect(
             saleSeatP,
             optionInvitePurseP,

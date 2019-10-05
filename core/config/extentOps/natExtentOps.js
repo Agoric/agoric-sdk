@@ -1,17 +1,17 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-// The default kind of amount is a labeled natural number describing a
-// quantity of fungible erights. The label describes what kinds of
+// The default kind of assetDesc is a labeled natural number describing a
+// extent of fungible erights. The label describes what kinds of
 // rights these are. This is a form of labeled unit, as in unit
 // typing.
 
 // Natural numbers are used for fungible erights such as money because
 // rounding issues make floats problematic. All operations should be
-// done with the smallest whole unit such that the NatAssay never
+// done with the smallest whole unit such that the NatDescOps never
 // deals with fractional parts.
 
-const natStrategy = harden({
+const natExtentOps = harden({
   insistKind: Nat,
   empty: _ => 0,
   isEmpty: nat => nat === 0,
@@ -21,4 +21,4 @@ const natStrategy = harden({
   without: (whole, part) => Nat(whole - part),
 });
 
-export { natStrategy };
+export { natExtentOps };

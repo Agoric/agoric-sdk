@@ -14,9 +14,9 @@ const escrowExchange = harden({
   start: (terms, inviteMaker) => {
     const { left: moneyNeeded, right: stockNeeded } = terms;
 
-    function makeTransfer(amount, srcPaymentP) {
-      const { issuer } = amount.label;
-      const escrowP = E(issuer).claimExactly(amount, srcPaymentP, 'escrow');
+    function makeTransfer(assetDesc, srcPaymentP) {
+      const { assay } = assetDesc.label;
+      const escrowP = E(assay).claimExactly(assetDesc, srcPaymentP, 'escrow');
       const winnings = makePromise();
       const refund = makePromise();
       return harden({
@@ -92,32 +92,37 @@ const escrowExchange = harden({
     });
   },
 
-  checkAmount: (installation, allegedInviteAmount, expectedTerms, seat) => {
-    mustBeSameStructure(allegedInviteAmount.quantity.seatDesc, seat);
-    const allegedTerms = allegedInviteAmount.quantity.terms;
-    mustBeSameStructure(allegedTerms, expectedTerms, 'Escrow checkAmount');
+  checkAssetDesc: (
+    installation,
+    allegedInviteAssetDesc,
+    expectedTerms,
+    seat,
+  ) => {
+    mustBeSameStructure(allegedInviteAssetDesc.extent.seatDesc, seat);
+    const allegedTerms = allegedInviteAssetDesc.extent.terms;
+    mustBeSameStructure(allegedTerms, expectedTerms, 'Escrow checkAssetDesc');
     mustBeSameStructure(
-      allegedInviteAmount.quantity.installation,
+      allegedInviteAssetDesc.extent.installation,
       installation,
-      'escrow checkAmount installation',
+      'escrow checkAssetDesc installation',
     );
     return true;
   },
 
   // Check the left or right side, and return the other. Useful when this is a
   // trade of goods for an invite, for example.
-  checkPartialAmount: (installation, allegedInvite, expectedTerms, seat) => {
-    const allegedSeat = allegedInvite.quantity.terms;
+  checkPartialAssetDesc: (installation, allegedInvite, expectedTerms, seat) => {
+    const allegedSeat = allegedInvite.extent.terms;
     mustBeSameStructure(
       allegedSeat[seat],
       expectedTerms,
-      'Escrow checkPartialAmount seat',
+      'Escrow checkPartialAssetDesc seat',
     );
 
     mustBeSameStructure(
-      allegedInvite.quantity.installation,
+      allegedInvite.extent.installation,
       installation,
-      'escrow checkPartialAmount installation',
+      'escrow checkPartialAssetDesc installation',
     );
 
     return seat === 'left' ? allegedSeat.right : allegedSeat.left;
@@ -126,8 +131,8 @@ const escrowExchange = harden({
 
 const escrowExchangeSrcs = harden({
   start: `${escrowExchange.start}`,
-  checkAmount: `${escrowExchange.checkAmount}`,
-  checkPartialAmount: `${escrowExchange.checkPartialAmount}`,
+  checkAssetDesc: `${escrowExchange.checkAssetDesc}`,
+  checkPartialAssetDesc: `${escrowExchange.checkPartialAssetDesc}`,
 });
 
 export { escrowExchangeSrcs };

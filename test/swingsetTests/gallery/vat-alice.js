@@ -8,7 +8,7 @@ import { makeCollect } from '../../../core/contractHost';
 import { escrowExchangeSrcs } from '../../../core/escrow';
 
 // only used by doCreateFakeChild test below
-import { makeMint } from '../../../core/issuers';
+import { makeMint } from '../../../core/mint';
 import { makePixelConfigMaker } from '../../../more/pixels/pixelConfig';
 
 let storedUseObj;
@@ -23,7 +23,7 @@ function makeAliceMaker(E, log, contractHost) {
   function showPaymentBalance(name, paymentP) {
     return E(paymentP)
       .getBalance()
-      .then(amount => log(name, ' balance ', amount))
+      .then(assetDesc => log(name, ' balance ', assetDesc))
       .catch(err => console.log(err));
   }
 
@@ -31,10 +31,10 @@ function makeAliceMaker(E, log, contractHost) {
     make(gallery) {
       function createSaleOffer(pixelPaymentP, dustPurseP) {
         return Promise.resolve(pixelPaymentP).then(async pixelPayment => {
-          const { pixelIssuer, dustIssuer } = await E(gallery).getIssuers();
-          const pixelAmount = await E(pixelPayment).getBalance();
-          const dustAmount = await E(E(dustIssuer).getAssay()).make(37);
-          const terms = harden({ left: dustAmount, right: pixelAmount });
+          const { pixelAssay, dustAssay } = await E(gallery).getAssays();
+          const pixelAssetDesc = await E(pixelPayment).getBalance();
+          const dustAssetDesc = await E(E(dustAssay).getDescOps()).make(37);
+          const terms = harden({ left: dustAssetDesc, right: pixelAssetDesc });
           const escrowExchangeInstallationP = E(contractHost).install(
             escrowExchangeSrcs,
           );
@@ -46,9 +46,9 @@ function makeAliceMaker(E, log, contractHost) {
           E(E(seatP).getWinnings())
             .getBalance()
             .then(b =>
-              log(`Alice collected ${b.quantity} ${b.label.description}`),
+              log(`Alice collected ${b.extent} ${b.label.description}`),
             );
-          const pixelPurseP = E(pixelIssuer).makeEmptyPurse();
+          const pixelPurseP = E(pixelAssay).makeEmptyPurse();
           collect(seatP, dustPurseP, pixelPurseP, 'alice escrow');
           return harden({ buyerInviteP, contractHost });
         });
@@ -64,9 +64,9 @@ function makeAliceMaker(E, log, contractHost) {
           log('++ alice.doChangeColor starting');
           const pixelPaymentP = E(gallery).tapFaucet();
           const pixels = E(pixelPaymentP).getUse();
-          const changedAmount = await E(pixels).changeColorAll('#000000');
+          const changedAssetDesc = await E(pixels).changeColorAll('#000000');
           log('tapped Faucet');
-          return changedAmount;
+          return changedAssetDesc;
         },
         async doSendOnlyUseRight(bob) {
           log('++ alice.doOnlySendUseRight starting');
@@ -92,7 +92,7 @@ function makeAliceMaker(E, log, contractHost) {
           // Check that Alice's childPayment2 subsumed childPayment.
           // Note that claimChild() does not "kill" previously created
           // childPayments. This is because the revocation occurs on
-          // the pixels in the amount, and not on a per payment basis,
+          // the pixels in the assetDesc, and not on a per payment basis,
           // so payment linearity rules cannot apply. For instance, we
           // may be destroying one pixel from a childPayment and
           // leaving the rest.
@@ -101,7 +101,7 @@ function makeAliceMaker(E, log, contractHost) {
           // exclusively by Bob.
           showPaymentBalance('childPayment2', childPayment2);
 
-          const bobsRawPixel = result.quantity[0];
+          const bobsRawPixel = result.extent[0];
           insist(
             bobsRawPixel.x === rawPixel.x && bobsRawPixel.y === rawPixel.y,
           );
@@ -174,27 +174,27 @@ function makeAliceMaker(E, log, contractHost) {
               rej => log(`successfully threw ${rej}`),
             );
 
-          const amount = await E(storedERTPAsset).getBalance();
+          const assetDesc = await E(storedERTPAsset).getBalance();
           log(
-            `amount quantity should be an array of length 0: ${amount.quantity.length}`,
+            `assetDesc extent should be an array of length 0: ${assetDesc.extent.length}`,
           );
         },
         async doSellAndBuy() {
           log('++ alice.doSellAndBuy starting');
           const pixelPaymentP = E(gallery).tapFaucet();
-          const { pixelIssuer, dustIssuer } = await E(gallery).getIssuers();
+          const { pixelAssay, dustAssay } = await E(gallery).getAssays();
 
-          const amount = await E(pixelPaymentP).getBalance();
+          const assetDesc = await E(pixelPaymentP).getBalance();
 
           // sellToGallery creates a escrow smart contract with the
-          // terms of the amount parameter plus what the gallery is
+          // terms of the assetDesc parameter plus what the gallery is
           // willing to offer for it
           // sellToGallery returns an invite to the smart contract
-          const { inviteP, host } = await E(gallery).sellToGallery(amount);
+          const { inviteP, host } = await E(gallery).sellToGallery(assetDesc);
           const seatP = E(host).redeem(inviteP);
           await E(seatP).offer(pixelPaymentP);
-          const dustPurseP = E(dustIssuer).makeEmptyPurse();
-          const pixelPurseP = E(pixelIssuer).makeEmptyPurse();
+          const dustPurseP = E(dustAssay).makeEmptyPurse();
+          const pixelPurseP = E(pixelAssay).makeEmptyPurse();
           await E(gallery).collectFromGallery(
             seatP,
             dustPurseP,
@@ -206,7 +206,7 @@ function makeAliceMaker(E, log, contractHost) {
             inviteP: buyBackInviteP,
             host: buyBackHost,
             dustNeeded,
-          } = await E(gallery).buyFromGallery(amount);
+          } = await E(gallery).buyFromGallery(assetDesc);
           const buyBackSeatP = await E(buyBackHost).redeem(buyBackInviteP);
           const dustPaymentP = await E(dustPurseP).withdraw(dustNeeded);
 
@@ -224,7 +224,7 @@ function makeAliceMaker(E, log, contractHost) {
         },
         async doTapFaucetAndOfferViaCorkboard(handoffSvc, dustPurseP) {
           log('++ alice.doTapFaucetAndOfferViaCorkboard starting');
-          const { pixelIssuer } = await E(gallery).getIssuers();
+          const { pixelAssay } = await E(gallery).getAssays();
           const pixelPaymentP = E(gallery).tapFaucet();
 
           const { buyerInviteP } = await createSaleOffer(
@@ -240,7 +240,7 @@ function makeAliceMaker(E, log, contractHost) {
             contractHost,
           );
 
-          const pixelRefundP = E(pixelIssuer).makeEmptyPurse('refund');
+          const pixelRefundP = E(pixelAssay).makeEmptyPurse('refund');
           return harden({
             aliceRefundP: pixelRefundP,
             alicePaymentP: dustPurseP,
@@ -250,20 +250,20 @@ function makeAliceMaker(E, log, contractHost) {
         },
         async doCreateFakeChild(bob) {
           log('++ alice.doCreateFakeChild starting');
-          const { pixelIssuer } = await E(gallery).getIssuers();
+          const { pixelAssay } = await E(gallery).getAssays();
 
           // create a fake childMint controlled entirely by Alice
-          function makeUseObj(issuer, asset) {
+          function makeUseObj(assay, asset) {
             const useObj = harden({
-              changeColor(amount, _newColor) {
-                return amount;
+              changeColor(assetDesc, _newColor) {
+                return assetDesc;
               },
               changeColorAll(newColor) {
                 return useObj.changeColor(asset.getBalance(), newColor);
               },
               getRawPixels() {
-                const assay = issuer.getAssay();
-                const pixelList = assay.quantity(asset.getBalance());
+                const descOps = assay.getDescOps();
+                const pixelList = descOps.extent(asset.getBalance());
                 return pixelList;
               },
               getColors() {
@@ -281,16 +281,16 @@ function makeAliceMaker(E, log, contractHost) {
           const makePixelConfig = makePixelConfigMaker(
             harden(makeUseObj),
             10,
-            harden(pixelIssuer),
+            harden(pixelAssay),
           );
 
           const fakeChildMint = makeMint('pixels', makePixelConfig);
 
           // use the fakeChildMint to create a payment to trick Bob
-          const fakeChildIssuer = E(fakeChildMint).getIssuer();
-          const fakeChildAssay = await E(fakeChildIssuer).getAssay();
+          const fakeChildAssay = E(fakeChildMint).getAssay();
+          const fakeChildDescOps = await E(fakeChildAssay).getDescOps();
           const fakeChildPurse = E(fakeChildMint).mint(
-            fakeChildAssay.make(harden([{ x: 0, y: 1 }])),
+            fakeChildDescOps.make(harden([{ x: 0, y: 1 }])),
           );
           const fakeChildPayment = E(fakeChildPurse).withdrawAll();
 
@@ -307,12 +307,12 @@ function makeAliceMaker(E, log, contractHost) {
           const childPaymentP = E(pixelPaymentP).claimChild();
           const grandchildPaymentP = E(childPaymentP).claimChild();
 
-          const { pixelIssuer } = await E(gallery).getIssuers();
-          const purseP = E(pixelIssuer).makeEmptyPurse();
-          const childIssuerP = E(pixelIssuer).getChildIssuer();
-          const childPurseP = E(childIssuerP).makeEmptyPurse();
-          const grandchildIssuerP = E(childIssuerP).getChildIssuer();
-          const grandchildPurseP = E(grandchildIssuerP).makeEmptyPurse();
+          const { pixelAssay } = await E(gallery).getAssays();
+          const purseP = E(pixelAssay).makeEmptyPurse();
+          const childAssayP = E(pixelAssay).getChildAssay();
+          const childPurseP = E(childAssayP).makeEmptyPurse();
+          const grandchildAssayP = E(childAssayP).getChildAssay();
+          const grandchildPurseP = E(grandchildAssayP).makeEmptyPurse();
 
           showPaymentBalance('originalPixelPayment', pixelPaymentP);
           showPaymentBalance('childPayment', childPaymentP);
@@ -384,8 +384,8 @@ function makeAliceMaker(E, log, contractHost) {
         async doGetAllPixels() {
           log('++ alice.doGetAllPixels starting');
 
-          const { pixelIssuer } = await E(gallery).getIssuers();
-          const purse = await E(pixelIssuer).makeEmptyPurse();
+          const { pixelAssay } = await E(gallery).getAssays();
+          const purse = await E(pixelAssay).makeEmptyPurse();
           for (let i = 0; i < 100; i += 1) {
             // eslint-disable-next-line no-await-in-loop
             const pixelPayment = await E(gallery).tapFaucet();
@@ -393,8 +393,8 @@ function makeAliceMaker(E, log, contractHost) {
             await E(purse).depositAll(pixelPayment);
           }
           showPaymentBalance('purse', purse);
-          const amount = await E(purse).getBalance();
-          log(amount.quantity.length);
+          const assetDesc = await E(purse).getBalance();
+          log(assetDesc.extent.length);
 
           // we have successfully obtained all the pixels from the gallery
 

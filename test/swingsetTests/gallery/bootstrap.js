@@ -13,8 +13,8 @@ function build(E, log) {
   async function testAliceChangesColor(aliceMaker, gallery) {
     log('starting testAliceChangesColor');
     const aliceP = E(aliceMaker).make(gallery.userFacet);
-    const alicePixelAmount = await E(aliceP).doChangeColor();
-    const rawPixel = alicePixelAmount.quantity[0];
+    const alicePixelAssetDesc = await E(aliceP).doChangeColor();
+    const rawPixel = alicePixelAssetDesc.extent[0];
     log(
       `current color ${gallery.userFacet.getPixelColor(
         rawPixel.x,
@@ -47,8 +47,8 @@ function build(E, log) {
     const { userFacet, adminFacet } = gallery;
     const aliceP = E(aliceMaker).make(userFacet);
     const bobP = E(bobMaker).make(userFacet);
-    const { dustIssuer } = userFacet.getIssuers();
-    const aliceDust = dustIssuer.makeEmptyPurse('Alice dust purse');
+    const { dustAssay } = userFacet.getAssays();
+    const aliceDust = dustAssay.makeEmptyPurse('Alice dust purse');
     const bobDust = adminFacet.dustMint.mint(37, 'bob purse');
     const {
       aliceRefundP,

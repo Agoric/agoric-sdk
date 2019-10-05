@@ -14,11 +14,11 @@ function makeBobMaker(E, log) {
         async receiveChildPayment(paymentP) {
           log('++ bob.receiveChildPayment starting');
 
-          const { pixelIssuer: originalPixelIssuer } = await E(
+          const { pixelAssay: originalPixelAssay } = await E(
             gallery,
-          ).getIssuers();
-          const childIssuer = E(originalPixelIssuer).getChildIssuer();
-          const childPixelPurse = E(childIssuer).makeEmptyPurse();
+          ).getAssays();
+          const childAssay = E(originalPixelAssay).getChildAssay();
+          const childPixelPurse = E(childAssay).makeEmptyPurse();
 
           // putting it in a purse isn't useful but it allows us to
           // test the functionality and exclusivity
@@ -29,35 +29,35 @@ function makeBobMaker(E, log) {
           const useObj = await E(newPayment).getUse();
 
           // bob actually changes the color to light purple
-          const amountP = await E(useObj).changeColorAll('#B695C0');
+          const assetDescP = await E(useObj).changeColorAll('#B695C0');
 
           storedERTPAsset = newPayment;
           storedPixels = useObj;
-          return amountP;
+          return assetDescP;
         },
         async tryToColorPixels() {
           // bob tries to change the color to light purple
-          const amountP = await E(storedPixels).changeColorAll('#B695C0');
-          return amountP;
+          const assetDescP = await E(storedPixels).changeColorAll('#B695C0');
+          return assetDescP;
         },
         async tryToColorERTP() {
           // bob tries to change the color to light purple
           const pixels = await E(storedERTPAsset).getUse();
-          const amountP = await E(pixels).changeColorAll('#B695C0');
-          return amountP;
+          const assetDescP = await E(pixels).changeColorAll('#B695C0');
+          return assetDescP;
         },
         async buyFromCorkBoard(handoffSvc, dustPurseP) {
-          const { pixelIssuer, dustIssuer } = await E(gallery).getIssuers();
+          const { pixelAssay, dustAssay } = await E(gallery).getAssays();
           const collect = makeCollect(E, log);
           const boardP = E(handoffSvc).grabBoard('MeetPoint');
           const contractHostP = E(boardP).lookup('contractHost');
           const buyerInviteP = E(boardP).lookup('buyerSeat');
           const buyerSeatP = E(contractHostP).redeem(buyerInviteP);
 
-          const pixelPurseP = E(pixelIssuer).makeEmptyPurse('purchase');
+          const pixelPurseP = E(pixelAssay).makeEmptyPurse('purchase');
           const dustPaymentP = E(dustPurseP).withdrawAll();
           E(buyerSeatP).offer(dustPaymentP);
-          const dustRefundP = E(dustIssuer).makeEmptyPurse('dust refund');
+          const dustRefundP = E(dustAssay).makeEmptyPurse('dust refund');
           await collect(buyerSeatP, pixelPurseP, dustRefundP, 'bob option');
 
           const exclusivePayment = await E(pixelPurseP).withdrawAll();
@@ -68,9 +68,9 @@ function makeBobMaker(E, log) {
           E(useObj)
             .changeColorAll('#B695C0')
             .then(
-              amountP => {
+              assetDescP => {
                 E(gallery)
-                  .getPixelColor(amountP.quantity[0].x, amountP.quantity[0].y)
+                  .getPixelColor(assetDescP.extent[0].x, assetDescP.extent[0].y)
                   .then(color =>
                     log(`bob tried to color, and produced ${color}`),
                   );
@@ -85,17 +85,17 @@ function makeBobMaker(E, log) {
         async receiveSuspiciousPayment(suspiciousPayment) {
           log('++ bob.receiveSuspiciousPayment starting');
 
-          const { pixelIssuer: originalPixelIssuer } = await E(
+          const { pixelAssay: originalPixelAssay } = await E(
             gallery,
-          ).getIssuers();
-          const childIssuer = E(originalPixelIssuer).getChildIssuer();
-          const childPixelPurse = E(childIssuer).makeEmptyPurse();
+          ).getAssays();
+          const childAssay = E(originalPixelAssay).getChildAssay();
+          const childPixelPurse = E(childAssay).makeEmptyPurse();
 
           // There are two ways that bob can test the validity of the
           // payment.
 
           // 1) He can try to deposit it in a purse whose
-          // issuer is a validated descendant of the originalPixelIssuer
+          // assay is a validated descendant of the originalPixelAssay
 
           try {
             await E(childPixelPurse).depositAll(suspiciousPayment);
@@ -103,15 +103,15 @@ function makeBobMaker(E, log) {
             log('the payment could not be deposited in childPixelPurse');
           }
 
-          // 2) He can see if the issuer of the payment is a
-          //    descendant of the originalPixelIssuer
+          // 2) He can see if the assay of the payment is a
+          //    descendant of the originalPixelAssay
 
-          const suspiciousIssuer = E(suspiciousPayment).getIssuer();
-          const isReal = await E(originalPixelIssuer).isDescendantIssuer(
-            suspiciousIssuer,
+          const suspiciousAssay = E(suspiciousPayment).getAssay();
+          const isReal = await E(originalPixelAssay).isDescendantAssay(
+            suspiciousAssay,
           );
 
-          log(`is the issuer of the payment a real descendant? ${isReal}`);
+          log(`is the assay of the payment a real descendant? ${isReal}`);
         },
       });
       return bob;

@@ -6,8 +6,8 @@ import harden from '@agoric/harden';
 function makeBobMaker(E, _host, log) {
   return harden({
     make(myMoneyPurseP) {
-      const moneyIssuerP = E(myMoneyPurseP).getIssuer();
-      const TenSimoleans = E(E(moneyIssuerP).getAssay()).make(10);
+      const moneyAssayP = E(myMoneyPurseP).getAssay();
+      const TenSimoleans = E(E(moneyAssayP).getDescOps()).make(10);
       TenSimoleans.then(
         () => log('++ Expect creation of purse'),
         () => log('++ Rejection is a surprise.'),

@@ -5,60 +5,60 @@ import { getString } from './types/pixel';
 
 // This custom mintKeeper does the usual recordings of new
 // purses/payments and updated balances but it also allows for a
-// special capability to destroy amounts: effectively remove pixels
+// special capability to destroy assetDescs: effectively remove pixels
 // from the purses or payments they were in. In order to do that, we
 // must continuously record every movement of a pixel to a new purse
 // or payment. We need this functionality in order to have the ability to revoke
 // childPayments/childPurses
-export function makePixelMintKeeper(assay) {
+export function makePixelMintKeeper(descOps) {
   // individual pixel to purse/payment
   const pixelToAsset = new Map();
 
-  // This helper function takes an amount, takes out the pixelList within it,
+  // This helper function takes an assetDesc, takes out the pixelList within it,
   // and makes sure that the mapping of each pixel to asset is updated.
-  function recordPixelsAsAsset(amount, asset) {
-    amount = assay.coerce(amount);
-    const pixelList = assay.quantity(amount);
+  function recordPixelsAsAsset(assetDesc, asset) {
+    assetDesc = descOps.coerce(assetDesc);
+    const pixelList = descOps.extent(assetDesc);
     for (const pixel of pixelList) {
       pixelToAsset.set(getString(pixel), asset);
     }
   }
 
-  function deletePixelToAssetMapping(amount) {
-    amount = assay.coerce(amount);
-    const pixelList = assay.quantity(amount);
+  function deletePixelToAssetMapping(assetDesc) {
+    assetDesc = descOps.coerce(assetDesc);
+    const pixelList = descOps.extent(assetDesc);
     for (const pixel of pixelList) {
       pixelToAsset.delete(getString(pixel));
     }
   }
 
   function makeAssetKeeper() {
-    // asset to amount
-    const amounts = makePrivateName();
+    // asset to assetDesc
+    const assetDescs = makePrivateName();
     return harden({
-      // updateAmount and recordNew are the same as the core
+      // updateAssetDesc and recordNew are the same as the core
       // mintKeeper, except that we also record the movement of the
       // pixels when they are called.
-      updateAmount(asset, newAmount) {
-        amounts.set(asset, newAmount);
-        recordPixelsAsAsset(newAmount, asset);
+      updateAssetDesc(asset, newAssetDesc) {
+        assetDescs.set(asset, newAssetDesc);
+        recordPixelsAsAsset(newAssetDesc, asset);
       },
-      recordNew(asset, initialAmount) {
-        amounts.init(asset, initialAmount);
-        recordPixelsAsAsset(initialAmount, asset);
+      recordNew(asset, initialAssetDesc) {
+        assetDescs.init(asset, initialAssetDesc);
+        recordPixelsAsAsset(initialAssetDesc, asset);
       },
-      getAmount(asset) {
-        return amounts.get(asset);
+      getAssetDesc(asset) {
+        return assetDescs.get(asset);
       },
       has(asset) {
-        return amounts.has(asset);
+        return assetDescs.has(asset);
       },
       remove(asset) {
-        const amount = amounts.get(asset);
-        amounts.delete(asset);
+        const assetDesc = assetDescs.get(asset);
+        assetDescs.delete(asset);
         // the pixels will be remapped in a later step, but let's
         // delete the map here as well to be safe
-        deletePixelToAssetMapping(amount);
+        deletePixelToAssetMapping(assetDesc);
       },
     });
   }
@@ -86,29 +86,29 @@ export function makePixelMintKeeper(assay) {
     purseKeeper,
     paymentKeeper,
 
-    // This amount containing a pixelList of uniquely identifiable
+    // This assetDesc containing a pixelList of uniquely identifiable
     // pixels will be forcibly taken out of all purses and payments
     // that it is currently in. Destroy is outside of an assetKeeper
     // because it could affect purses *or* payments
-    destroy(removePixelAmount) {
-      removePixelAmount = assay.coerce(removePixelAmount);
-      const pixelList = assay.quantity(removePixelAmount);
+    destroy(removePixelAssetDesc) {
+      removePixelAssetDesc = descOps.coerce(removePixelAssetDesc);
+      const pixelList = descOps.extent(removePixelAssetDesc);
       pixelList.forEach(pixel => {
         const strPixel = getString(pixel);
         if (pixelToAsset.has(strPixel)) {
           const asset = pixelToAsset.get(strPixel);
           const keeper = getKeeper(asset);
-          const originalAmount = keeper.getAmount(asset);
-          const newAmount = assay.without(
-            originalAmount,
-            assay.make(harden([pixel])),
+          const originalAssetDesc = keeper.getAssetDesc(asset);
+          const newAssetDesc = descOps.without(
+            originalAssetDesc,
+            descOps.make(harden([pixel])),
           );
 
           // ///////////////// commit point //////////////////
           // All queries above passed with no side effects.
           // During side effects below, any early exits should be made into
           // fatal turn aborts.
-          keeper.updateAmount(asset, newAmount);
+          keeper.updateAssetDesc(asset, newAssetDesc);
 
           // delete pixel from pixelToAsset
           pixelToAsset.delete(pixel);

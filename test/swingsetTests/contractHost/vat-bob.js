@@ -16,11 +16,11 @@ function makeBobMaker(E, host, log) {
       myMoneyPurseP,
       myStockPurseP,
     ) {
-      const moneyIssuerP = E(myMoneyPurseP).getIssuer();
-      const moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
+      const moneyAssayP = E(myMoneyPurseP).getAssay();
+      const moneyNeededP = E(E(moneyAssayP).getDescOps()).make(10);
 
-      const stockIssuerP = E(myStockPurseP).getIssuer();
-      const stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
+      const stockAssayP = E(myStockPurseP).getAssay();
+      const stockNeededP = E(E(stockAssayP).getDescOps()).make(7);
 
       const bob = harden({
         /**
@@ -31,12 +31,12 @@ function makeBobMaker(E, host, log) {
          */
         buy(desc, paymentP) {
           /* eslint-disable-next-line no-unused-vars */
-          let amount;
+          let assetDesc;
           let good;
           desc = `${desc}`;
           switch (desc) {
             case 'shoe': {
-              amount = 10;
+              assetDesc = 10;
               good = 'If it fits, ware it.';
               break;
             }
@@ -46,7 +46,7 @@ function makeBobMaker(E, host, log) {
           }
 
           return E(myMoneyPurseP)
-            .depositExactly(amount, paymentP)
+            .depositExactly(assetDesc, paymentP)
             .then(_ => good);
         },
 

@@ -3,9 +3,9 @@ import { passStyleOf } from '@agoric/marshal';
 
 import { insist } from '../../../util/insist';
 
-// This list strategy follows the Strategy interface defined in
-// issuers.chainmail.
-const makeListStrategy = (
+// This list extentOps follows the ExtentOps interface defined in
+// assays.chainmail.
+const makeListExtentOps = (
   insistElementKind,
   isElementEqual,
   compareElements,
@@ -19,7 +19,7 @@ const makeListStrategy = (
     return false;
   }
 
-  const listStrategy = harden({
+  const listExtentOps = harden({
     insistKind: list => {
       insist(passStyleOf(list) === 'copyArray')`list must be an array`;
       for (const element of list) {
@@ -41,7 +41,8 @@ const makeListStrategy = (
       return true;
     },
     equals: (left, right) =>
-      listStrategy.includes(left, right) && listStrategy.includes(right, left),
+      listExtentOps.includes(left, right) &&
+      listExtentOps.includes(right, left),
     with: (left, right) => {
       const combinedList = left.concat(right);
       combinedList.sort(compareElements);
@@ -56,7 +57,7 @@ const makeListStrategy = (
       return harden(dedupedList);
     },
     without: (whole, part) => {
-      insist(listStrategy.includes(whole, part))`part is not in whole`;
+      insist(listExtentOps.includes(whole, part))`part is not in whole`;
       const wholeMinusPart = [];
       for (const wholeElement of whole) {
         if (!includesElement(part, wholeElement)) {
@@ -66,9 +67,9 @@ const makeListStrategy = (
       return harden(wholeMinusPart);
     },
   });
-  return listStrategy;
+  return listExtentOps;
 };
 
-harden(makeListStrategy);
+harden(makeListExtentOps);
 
-export { makeListStrategy };
+export { makeListExtentOps };

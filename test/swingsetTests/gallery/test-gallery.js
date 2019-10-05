@@ -21,7 +21,7 @@ const expectedTapFaucetLog = [
   'alice is made',
   'starting testTapFaucet',
   '++ alice.doTapFaucet starting',
-  'pixel from faucet balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
+  'pixel from faucet balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
 ];
 
 test('run gallery demo tapFaucet with SES', async t => {
@@ -68,11 +68,11 @@ const expectedAliceSendsOnlyUseRightLog = [
   'tapped Faucet',
   'pixel x:1, y:4 has original color #a903be',
   '++ bob.receiveChildPayment starting',
-  'childPayment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
+  'childPayment balance {"label":{"assay":{},"description":"pixels"},"extent":[]}',
   "pixel x:1, y:4 changed to bob's color #B695C0",
   "pixel x:1, y:4 changed to alice's color #9FBF95",
-  'bob was unable to color: Error:       no use rights present in amount (a object)\nSee console for error data.',
-  'bob was unable to color: Error:       no use rights present in amount (a object)\nSee console for error data.',
+  'bob was unable to color: Error:       no use rights present in assetDesc (a object)\nSee console for error data.',
+  'bob was unable to color: Error:       no use rights present in assetDesc (a object)\nSee console for error data.',
 ];
 
 test('run gallery demo aliceSendsOnlyUseRight with SES', async t => {
@@ -93,8 +93,8 @@ const expectedGalleryRevokesLog = [
   'starting testGalleryRevokes',
   '++ alice.doTapFaucetAndStore starting',
   '++ alice.checkAfterRevoked starting',
-  'successfully threw Error:       no use rights present in amount (a object)\nSee console for error data.',
-  'amount quantity should be an array of length 0: 0',
+  'successfully threw Error:       no use rights present in assetDesc (a object)\nSee console for error data.',
+  'assetDesc extent should be an array of length 0: 0',
 ];
 
 test('run gallery demo galleryRevokes with SES', async t => {
@@ -114,12 +114,12 @@ const expectedAliceSellsAndBuysLog = [
   'starting aliceSellsAndBuys',
   'starting testAliceSellsAndBuys',
   '++ alice.doSellAndBuy starting',
-  'gallery escrow wins: {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]} refs: null',
-  'alice escrow wins: {"label":{"issuer":{},"description":"dust"},"quantity":6} refs: null',
-  'gallery escrow wins: {"label":{"issuer":{},"description":"dust"},"quantity":6} refs: null',
-  'alice escrow 2 wins: {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]} refs: null',
-  'alice pixel purse balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'alice dust purse balance {"label":{"issuer":{},"description":"dust"},"quantity":0}',
+  'gallery escrow wins: {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]} refs: null',
+  'alice escrow wins: {"label":{"assay":{},"description":"dust"},"extent":6} refs: null',
+  'gallery escrow wins: {"label":{"assay":{},"description":"dust"},"extent":6} refs: null',
+  'alice escrow 2 wins: {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]} refs: null',
+  'alice pixel purse balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
+  'alice dust purse balance {"label":{"assay":{},"description":"dust"},"extent":0}',
 ];
 
 test('run gallery demo aliceSellsAndBuys with SES', async t => {
@@ -140,8 +140,8 @@ const expectedAliceSellsToBobLog = [
   'starting testAliceSellsToBob',
   '++ alice.doTapFaucetAndOfferViaCorkboard starting',
   'Alice collected 37 dust',
-  'alice escrow wins: {"label":{"issuer":{},"description":"dust"},"quantity":37} refs: null',
-  'bob option wins: {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]} refs: null',
+  'alice escrow wins: {"label":{"assay":{},"description":"dust"},"extent":37} refs: null',
+  'bob option wins: {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]} refs: null',
   '++ aliceSellsToBob done',
   'bob tried to color, and produced #B695C0',
 ];
@@ -165,21 +165,21 @@ const expectedAliceCreatesFakeChild = [
   '++ alice.doCreateFakeChild starting',
   '++ bob.receiveSuspiciousPayment starting',
   'the payment could not be deposited in childPixelPurse',
-  'is the issuer of the payment a real descendant? false',
+  'is the assay of the payment a real descendant? false',
 ];
 
 // Alice tries an attack. She somehow gets access to makeMint,
-// makeMintKeeper, and makePixelListAssayMaker. She uses these to
+// makeMintKeeper, and makePixelListDescOpsMaker. She uses these to
 // create a childMint that she controls entirely. She wants to fool
 // Bob into accepting a payment from her mint (which costs her nothing
 // to make) for real money. Note that Alice has no control over the
 // gallery and cannot change the color of pixels with her mint. Bob
 // receives a payment, and is able to stop the attack in two ways - 1)
 // he can create a new purse for that sublevel by getting the
-// pixelIssuer's child and calling makeEmpty purse on that. When he
+// pixelAssay's child and calling makeEmpty purse on that. When he
 // tries to put the payment into the purse, it will fail. 2) he can
-// check whether the issuer of the payment is a descendant of the
-// pixelIssuer that he gets from the gallery,
+// check whether the assay of the payment is a descendant of the
+// pixelAssay that he gets from the gallery,
 
 test('run gallery demo aliceCreatesFakeChild with SES', async t => {
   const dump = await main(true, 'gallery', ['aliceCreatesFakeChild']);
@@ -197,35 +197,35 @@ const expectedSpendAndRevoke = [
   '=> setup called',
   'starting spendAndRevoke',
   'starting testSpendAndRevoke',
-  'originalPixelPayment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'childPayment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'grandchildPayment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'purse balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
-  'childPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
-  'grandchildPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
+  'originalPixelPayment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
+  'childPayment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
+  'grandchildPayment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
+  'purse balance {"label":{"assay":{},"description":"pixels"},"extent":[]}',
+  'childPurseP balance {"label":{"assay":{},"description":"pixels"},"extent":[]}',
+  'grandchildPurseP balance {"label":{"assay":{},"description":"pixels"},"extent":[]}',
   'childPayment deposited in childPurse',
-  'originalPixelPayment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'purse balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
+  'originalPixelPayment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
+  'purse balance {"label":{"assay":{},"description":"pixels"},"extent":[]}',
   'originalPixelPayment deposited in purse',
-  'grandchildPayment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'childPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'grandchildPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
-  'purse balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'grandchildPayment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'childPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'grandchildPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
+  'grandchildPayment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
+  'childPurseP balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
+  'grandchildPurseP balance {"label":{"assay":{},"description":"pixels"},"extent":[]}',
+  'purse balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
+  'grandchildPayment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
+  'childPurseP balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
+  'grandchildPurseP balance {"label":{"assay":{},"description":"pixels"},"extent":[]}',
   'grandchildPayment deposited in grandchildPurse',
-  'purse balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
+  'purse balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
   'childPayment.claimChild() does nothing',
-  'childPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'grandchildPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'purse balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
+  'childPurseP balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
+  'grandchildPurseP balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
+  'purse balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
   'purse.claimChild() revokes childPurse and grandchildPurse',
-  'childPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
-  'grandchildPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
-  'purse balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'childPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
-  'grandchildPurseP balance {"label":{"issuer":{},"description":"pixels"},"quantity":[]}',
+  'childPurseP balance {"label":{"assay":{},"description":"pixels"},"extent":[]}',
+  'grandchildPurseP balance {"label":{"assay":{},"description":"pixels"},"extent":[]}',
+  'purse balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
+  'childPurseP balance {"label":{"assay":{},"description":"pixels"},"extent":[]}',
+  'grandchildPurseP balance {"label":{"assay":{},"description":"pixels"},"extent":[]}',
 ];
 
 // Mark asks: If the customized payment is spent (or even if the original payment
@@ -266,18 +266,18 @@ const expectedGetAllPixels = [
   'starting getAllPixels',
   'starting testGetAllPixels',
   '++ alice.doGetAllPixels starting',
-  'purse balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":0,"y":0},{"x":1,"y":0},{"x":2,"y":0},{"x":3,"y":0},{"x":4,"y":0},{"x":5,"y":0},{"x":6,"y":0},{"x":7,"y":0},{"x":8,"y":0},{"x":9,"y":0},{"x":0,"y":1},{"x":1,"y":1},{"x":2,"y":1},{"x":3,"y":1},{"x":4,"y":1},{"x":5,"y":1},{"x":6,"y":1},{"x":7,"y":1},{"x":8,"y":1},{"x":9,"y":1},{"x":0,"y":2},{"x":1,"y":2},{"x":2,"y":2},{"x":3,"y":2},{"x":4,"y":2},{"x":5,"y":2},{"x":6,"y":2},{"x":7,"y":2},{"x":8,"y":2},{"x":9,"y":2},{"x":0,"y":3},{"x":1,"y":3},{"x":2,"y":3},{"x":3,"y":3},{"x":4,"y":3},{"x":5,"y":3},{"x":6,"y":3},{"x":7,"y":3},{"x":8,"y":3},{"x":9,"y":3},{"x":0,"y":4},{"x":1,"y":4},{"x":2,"y":4},{"x":3,"y":4},{"x":4,"y":4},{"x":5,"y":4},{"x":6,"y":4},{"x":7,"y":4},{"x":8,"y":4},{"x":9,"y":4},{"x":0,"y":5},{"x":1,"y":5},{"x":2,"y":5},{"x":3,"y":5},{"x":4,"y":5},{"x":5,"y":5},{"x":6,"y":5},{"x":7,"y":5},{"x":8,"y":5},{"x":9,"y":5},{"x":0,"y":6},{"x":1,"y":6},{"x":2,"y":6},{"x":3,"y":6},{"x":4,"y":6},{"x":5,"y":6},{"x":6,"y":6},{"x":7,"y":6},{"x":8,"y":6},{"x":9,"y":6},{"x":0,"y":7},{"x":1,"y":7},{"x":2,"y":7},{"x":3,"y":7},{"x":4,"y":7},{"x":5,"y":7},{"x":6,"y":7},{"x":7,"y":7},{"x":8,"y":7},{"x":9,"y":7},{"x":0,"y":8},{"x":1,"y":8},{"x":2,"y":8},{"x":3,"y":8},{"x":4,"y":8},{"x":5,"y":8},{"x":6,"y":8},{"x":7,"y":8},{"x":8,"y":8},{"x":9,"y":8},{"x":0,"y":9},{"x":1,"y":9},{"x":2,"y":9},{"x":3,"y":9},{"x":4,"y":9},{"x":5,"y":9},{"x":6,"y":9},{"x":7,"y":9},{"x":8,"y":9},{"x":9,"y":9}]}',
+  'purse balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":0,"y":0},{"x":1,"y":0},{"x":2,"y":0},{"x":3,"y":0},{"x":4,"y":0},{"x":5,"y":0},{"x":6,"y":0},{"x":7,"y":0},{"x":8,"y":0},{"x":9,"y":0},{"x":0,"y":1},{"x":1,"y":1},{"x":2,"y":1},{"x":3,"y":1},{"x":4,"y":1},{"x":5,"y":1},{"x":6,"y":1},{"x":7,"y":1},{"x":8,"y":1},{"x":9,"y":1},{"x":0,"y":2},{"x":1,"y":2},{"x":2,"y":2},{"x":3,"y":2},{"x":4,"y":2},{"x":5,"y":2},{"x":6,"y":2},{"x":7,"y":2},{"x":8,"y":2},{"x":9,"y":2},{"x":0,"y":3},{"x":1,"y":3},{"x":2,"y":3},{"x":3,"y":3},{"x":4,"y":3},{"x":5,"y":3},{"x":6,"y":3},{"x":7,"y":3},{"x":8,"y":3},{"x":9,"y":3},{"x":0,"y":4},{"x":1,"y":4},{"x":2,"y":4},{"x":3,"y":4},{"x":4,"y":4},{"x":5,"y":4},{"x":6,"y":4},{"x":7,"y":4},{"x":8,"y":4},{"x":9,"y":4},{"x":0,"y":5},{"x":1,"y":5},{"x":2,"y":5},{"x":3,"y":5},{"x":4,"y":5},{"x":5,"y":5},{"x":6,"y":5},{"x":7,"y":5},{"x":8,"y":5},{"x":9,"y":5},{"x":0,"y":6},{"x":1,"y":6},{"x":2,"y":6},{"x":3,"y":6},{"x":4,"y":6},{"x":5,"y":6},{"x":6,"y":6},{"x":7,"y":6},{"x":8,"y":6},{"x":9,"y":6},{"x":0,"y":7},{"x":1,"y":7},{"x":2,"y":7},{"x":3,"y":7},{"x":4,"y":7},{"x":5,"y":7},{"x":6,"y":7},{"x":7,"y":7},{"x":8,"y":7},{"x":9,"y":7},{"x":0,"y":8},{"x":1,"y":8},{"x":2,"y":8},{"x":3,"y":8},{"x":4,"y":8},{"x":5,"y":8},{"x":6,"y":8},{"x":7,"y":8},{"x":8,"y":8},{"x":9,"y":8},{"x":0,"y":9},{"x":1,"y":9},{"x":2,"y":9},{"x":3,"y":9},{"x":4,"y":9},{"x":5,"y":9},{"x":6,"y":9},{"x":7,"y":9},{"x":8,"y":9},{"x":9,"y":9}]}',
   '100',
-  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":1,"y":4}]}',
-  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":2,"y":2}]}',
-  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":3,"y":0}]}',
-  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":3,"y":8}]}',
-  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":4,"y":6}]}',
-  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":5,"y":4}]}',
-  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":6,"y":2}]}',
-  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":7,"y":0}]}',
-  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":7,"y":8}]}',
-  'payment balance {"label":{"issuer":{},"description":"pixels"},"quantity":[{"x":8,"y":6}]}',
+  'payment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":1,"y":4}]}',
+  'payment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":2,"y":2}]}',
+  'payment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":3,"y":0}]}',
+  'payment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":3,"y":8}]}',
+  'payment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":4,"y":6}]}',
+  'payment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":5,"y":4}]}',
+  'payment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":6,"y":2}]}',
+  'payment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":7,"y":0}]}',
+  'payment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":7,"y":8}]}',
+  'payment balance {"label":{"assay":{},"description":"pixels"},"extent":[{"x":8,"y":6}]}',
 ];
 
 // What is the behavior of the gallery when we call tapFaucet enough

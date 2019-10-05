@@ -1,0 +1,189 @@
+/**
+ * Holding an Assay provides the ability to create assetDescs and empty purses,
+ * but confers no rights. It is also the mechanism used to get exclusive access
+ * to a Purse or Payment that you already hold, or to burn some or all of the
+ * contained rights.
+ */
+interface Assay (AssetDesc (Extent)) {
+  /**
+   * Get the label for this Assay.
+   *
+   * Labels can be used to manually construct assetDescs
+   */
+  getLabel() -> (Comparable);
+
+  /* Get the DescOps for this Assay. */
+  getDescOps() -> (DescOps);
+
+  /* Get the ExtentOps for this Assay. */
+  getExtentOps() -> (ExtentOps);
+
+  /** Make an AssetDesc that contains the indicated extent. */
+  makeAssetDesc(extent :Extent) -> (AssetDesc);
+
+  /** Make an empty purse associated with this kind of right. */
+  makeEmptyPurse(name :String) -> (Purse);
+
+  /** Combine multiple payments into one payment. */
+  combine(paymentsArray :List(Payment), name :String = 'combined payment')
+    -> (Payment);
+
+  /** 
+   * Split a single payment into multiple payments, according to the
+   * assetDescs and names passed in. 
+   */
+  split(payment :Payment, assetDescsArray :List(AssetDesc), namesArray :List(String))
+    -> (List(Payment));
+
+  /**
+   * Make a new Payment that has exclusive rights to all the contents
+   * of src. If assetDesc does not equal the balance of the src payment,
+   * throws error.
+   */
+  claimExactly(assetDesc :AssetDesc, src :Payment, name :String = 'a payment')
+    -> (Payment);
+
+  /**
+   * Make a new Payment that has exclusive rights to all the contents of src.
+   */
+  claimAll(src :Payment, name :String = 'a payment') -> (Payment);
+
+  /** 
+   * Burn all of the rights from src. If assetDesc does not equal the
+   * balance of the src payment, throw error. 
+   */
+  burnExactly(assetDesc :AssetDesc, src :Payment) -> (AssetDesc);
+
+  /** Burn all of the rights from src. */
+  burnAll(src :Payment) -> (AssetDesc);
+}
+
+/**
+ * Makes Mints.
+ *
+ * The description becomes part of the label, used by the descOps to identify
+ * assetDescs authorized/acknowledged by the mint. The MintController and DescOps
+ * must be compatible with the type of asset managed by the mint.
+ *
+ * Description doesn't have to be a string, but it will only be used for its
+ * value.
+ */
+interface MintMaker {
+  makeMint(
+      description :Comparable,
+      makeConfig :MintConfigMaker) -> (Mint);
+}
+
+/**
+ * Holding a Mint carries the right to control issuance and destruction of
+ * purses and payments containing assetDescs of a particular currency. Purses (and
+ * payments) associated with a particular assay can only transfer value to
+ * others using the same mint.
+ */
+interface Mint (AssetDesc (Extent)) {
+  /** Get the Assay for this mint. */
+  getAssay() -> (Assay);
+
+  /**
+   * Create a new Purse containing the assetDesc. Give it the specified name or 'fa
+   * purse'.
+   */
+  mint(initialBalance :AssetDesc, name :String = 'a purse') -> (Purse);
+}
+
+/**
+ * Purses hold verified assetDescs of certain rights issued by Mints. Purses can
+ * transfer part of the balance they hold in a payment, which has a narrower
+ * interface. A purse's balance can rise and fall, through the action of
+ * depositExactly() and withdraw(). Operations on payments
+ * (burnExactly(), depositExactly(), assay.claimExactly()) kill the
+ * original payment and create new payments if applicable.
+ *
+ * The primary use for Purses and Payments is for currency-like and goods-like
+ * valuables, but they can also be used to represent other kinds of rights, such
+ * as the right to participate in a particular contract.
+ */
+interface Purse (AssetDesc) {
+  /** Get the name of this purse. */
+  getName() -> (String);
+
+  /** Get the Assay for this mint. */
+  getAssay() -> (Assay);
+
+  /** Get the assetDesc contained in this purse, confirmed by the assay. */
+  getBalance() -> (AssetDesc);
+
+  /**
+   * Deposit all the contents of srcPayment into this purse, returning the
+   * assetDesc. If the assetDesc does not equal the balance of srcPayment,
+   * throw error.
+   */
+  depositExactly(assetDesc :AssetDesc, srcPayment :Payment) -> (AssetDesc);
+
+  /**
+   * Deposit all the contents of srcPayment into this purse, returning the
+   * assetDesc.
+   */
+  depositAll(srcPayment :Payment) -> (AssetDesc);
+
+  /** Withdraw assetDesc from this purse into a new Payment. */
+  withdraw(assetDesc :AssetDesc, name :String) -> (Payment);
+
+  /** Withdraw entire content of this purse into a new Payment. */
+  withdrawAll(name :String) -> (Payment);
+}
+
+/**
+ * Payments hold verified assetDescs of certain rights issued by Mints. AssetDescs
+ * from payments can be deposited in purses, but otherwise, the entire assetDesc is
+ * available when the payment is transferred. A payment's balance can only fall,
+ * through the action of depositExactly(), claimExactly() or burnExactly().
+ *
+ * Payments can be converted to Purses by getting a verified assay and calling
+ * assay.makeEmptyPurse().depositAll(payment);
+ */
+interface Payment (AssetDesc) {
+  /** Get the name of this purse. */
+  getName() -> (String);
+
+  /** Get the Assay for this mint. */
+  getAssay() -> (Assay);
+
+  /** Get the assetDesc contained in this payment, confirmed by the assay. */
+  getBalance() -> (AssetDesc);
+}
+
+/** 
+ * All of the difference in how an descOps behaves can be reduced to
+ * the behavior of the set operations on extents (think: arithmetic)
+ * such as `empty`, `with`, `without`, `includes`, etc. We extract this
+ * custom logic into a extentOps. Strategies are about extent
+ * arithmetic, whereas DescOps are about AssetDescs, which are labeled
+ * extents. DescOps use Strategies to do their extent arithmetic,
+ * and then label the results, making new AssetDescs. 
+ */ 
+interface ExtentOps () {
+  /** 
+   * Check the kind of this extent and throw if it is not the
+   * expected kind. 
+   */
+  insistKind(allegedExtent :Extent) -> (Extent);
+
+  /** Get the representation for empty */
+  empty() -> (Extent);
+
+  /** Is the extent empty? */
+  isEmpty(extent :Extent) -> (boolean);
+
+  /** Does the whole include the part? */
+  includes(whole :Extent, part :Extent) -> (boolean);
+
+  /** Does left equal right? */
+  equals(left :Extent, right :Extent) -> (boolean);
+
+  /** Return the left combined with the right */
+  with(left :Extent, right :Extent) -> (Extent);
+
+  /** Return what remains after removing the part from the whole */
+  without(whole :Extent, part :Extent) -> (Extent);
+}

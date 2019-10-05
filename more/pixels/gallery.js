@@ -4,7 +4,7 @@ import harden from '@agoric/harden';
 import { makeCollect } from '../../core/contractHost';
 import { insist } from '../../util/insist';
 import { makePixelConfigMaker } from './pixelConfig';
-import { makeMint } from '../../core/issuers';
+import { makeMint } from '../../core/mint';
 import { makeWholePixelList } from './types/pixelList';
 import {
   makeInsistPixel,
@@ -55,18 +55,18 @@ export function makeGallery(
     isEqualPixel,
   );
 
-  function insistNonEmptyAmount(issuer, amount) {
-    insist(!issuer.getAssay().isEmpty(amount))`\
-      no use rights present in amount ${amount}`;
+  function insistNonEmptyAssetDesc(assay, assetDesc) {
+    insist(!assay.getDescOps().isEmpty(assetDesc))`\
+      no use rights present in assetDesc ${assetDesc}`;
   }
 
-  function insistAssetHasAmount(issuer, asset, amount) {
-    insist(issuer.getAssay().includes(asset.getBalance(), amount))`\
-      ERTP asset ${asset} does not include amount ${amount}`;
+  function insistAssetHasAssetDesc(assay, asset, assetDesc) {
+    insist(assay.getDescOps().includes(asset.getBalance(), assetDesc))`\
+      ERTP asset ${asset} does not include assetDesc ${assetDesc}`;
   }
 
-  function getPixelList(issuer, amount) {
-    return issuer.getAssay().quantity(amount);
+  function getPixelList(assay, assetDesc) {
+    return assay.getDescOps().extent(assetDesc);
   }
 
   const collect = makeCollect(E, log);
@@ -99,19 +99,19 @@ export function makeGallery(
   // underlying asset (purse or payment). In this case, the use object
   // has the methods for changing the color of pixels
 
-  function makeUseObj(issuer, asset) {
+  function makeUseObj(assay, asset) {
     const useObj = harden({
-      // change the color of the pixels in the amount after checking
+      // change the color of the pixels in the assetDesc after checking
       // that the asset has the authority to do so.
-      changeColor(amount, newColor) {
-        // TODO: allow empty amounts to be used without throwing
+      changeColor(assetDesc, newColor) {
+        // TODO: allow empty assetDescs to be used without throwing
         // an error, but because there is no authority, nothing happens.
-        insistNonEmptyAmount(issuer, amount);
-        insistAssetHasAmount(issuer, asset, amount);
+        insistNonEmptyAssetDesc(assay, assetDesc);
+        insistAssetHasAssetDesc(assay, asset, assetDesc);
         insistColor(newColor);
-        const pixelList = getPixelList(issuer, amount);
+        const pixelList = getPixelList(assay, assetDesc);
         setPixelListState(pixelList, newColor);
-        return amount;
+        return assetDesc;
       },
       // Call changeColor, just with the entire balance of the
       // underlying asset.
@@ -121,11 +121,11 @@ export function makeGallery(
       // A helper function for getting a literal list of pixels from
       // the asset. For example, [ { x:0, y:0 } ]
       getRawPixels() {
-        const assay = issuer.getAssay();
-        const pixelList = assay.quantity(asset.getBalance());
+        const descOps = assay.getDescOps();
+        const pixelList = descOps.extent(asset.getBalance());
         return pixelList;
       },
-      // returns an array where each item is a pixel in this asset amount
+      // returns an array where each item is a pixel in this asset assetDesc
       // as well as its color
       getColors() {
         const pixelList = useObj.getRawPixels();
@@ -147,20 +147,20 @@ export function makeGallery(
   const makePixelConfig = makePixelConfigMaker(makeUseObj);
 
   const galleryPixelMint = makeMint('pixels', makePixelConfig);
-  const galleryPixelIssuer = galleryPixelMint.getIssuer();
-  const galleryPixelAssay = galleryPixelIssuer.getAssay();
+  const galleryPixelAssay = galleryPixelMint.getAssay();
+  const galleryPixelDescOps = galleryPixelAssay.getDescOps();
 
-  // For lack of a better word, the issuer below the gallery issuer is
-  // the "consumer issuer" - this is the issuer of the pixel payments
+  // For lack of a better word, the assay below the gallery assay is
+  // the "consumer assay" - this is the assay of the pixel payments
   // that consumers get from calling `tapFaucet`
 
-  const consumerPixelIssuer = galleryPixelIssuer.getChildIssuer();
-  const consumerPixelAssay = consumerPixelIssuer.getAssay();
+  const consumerPixelAssay = galleryPixelAssay.getChildAssay();
+  const consumerPixelDescOps = consumerPixelAssay.getDescOps();
 
   // Dust is the currency that the Gallery accepts for pixels
   const dustMint = makeMint('dust');
-  const dustIssuer = dustMint.getIssuer();
-  const dustAssay = dustIssuer.getAssay();
+  const dustAssay = dustMint.getAssay();
+  const dustDescOps = dustAssay.getDescOps();
 
   const pixelToPayment = new Map();
 
@@ -171,8 +171,8 @@ export function makeGallery(
   // TODO: build lruQueue from an array, without iterating here
   for (const pixel of allPixels) {
     lruQueueBuilder.push(pixel);
-    const amount = galleryPixelAssay.make(harden([pixel]));
-    const purse = galleryPixelMint.mint(amount);
+    const assetDesc = galleryPixelDescOps.make(harden([pixel]));
+    const purse = galleryPixelMint.mint(assetDesc);
     const payment = purse.withdrawAll();
     pixelToPayment.set(getPixelStr(pixel), payment);
   }
@@ -198,32 +198,32 @@ export function makeGallery(
     return rawPrice;
   }
 
-  function pricePixelAmount(pixelAmount) {
-    pixelAmount = consumerPixelAssay.coerce(pixelAmount);
-    const rawPixelList = consumerPixelAssay.quantity(pixelAmount);
+  function pricePixelAssetDesc(pixelAssetDesc) {
+    pixelAssetDesc = consumerPixelDescOps.coerce(pixelAssetDesc);
+    const rawPixelList = consumerPixelDescOps.extent(pixelAssetDesc);
     let totalPriceInDust = 0;
     for (const rawPixel of rawPixelList) {
       totalPriceInDust += pricePixelInternal(rawPixel);
     }
-    return dustAssay.make(totalPriceInDust);
+    return dustDescOps.make(totalPriceInDust);
   }
 
-  const sellBuyPixelPurseP = consumerPixelIssuer.makeEmptyPurse();
-  const sellBuyDustPurseP = dustIssuer.makeEmptyPurse();
+  const sellBuyPixelPurseP = consumerPixelAssay.makeEmptyPurse();
+  const sellBuyDustPurseP = dustAssay.makeEmptyPurse();
 
   // only direct child pixels of the galleryPixels can be sold to the gallery
-  function sellToGallery(pixelAmountP) {
-    return Promise.resolve(pixelAmountP).then(async pixelAmount => {
-      pixelAmount = consumerPixelAssay.coerce(pixelAmount);
-      const dustAmount = pricePixelAmount(pixelAmount);
+  function sellToGallery(pixelAssetDescP) {
+    return Promise.resolve(pixelAssetDescP).then(async pixelAssetDesc => {
+      pixelAssetDesc = consumerPixelDescOps.coerce(pixelAssetDesc);
+      const dustAssetDesc = pricePixelAssetDesc(pixelAssetDesc);
       // just mint the dust that we need
-      const tempDustPurseP = dustMint.mint(dustAmount);
+      const tempDustPurseP = dustMint.mint(dustAssetDesc);
       const dustPaymentP = tempDustPurseP.withdraw(
-        dustAmount,
+        dustAssetDesc,
         'dust for pixel',
       );
       // dustPurse is dropped
-      const terms = harden({ left: dustAmount, right: pixelAmount });
+      const terms = harden({ left: dustAssetDesc, right: pixelAssetDesc });
       const escrowExchangeInstallationP = await E(contractHost).install(
         escrowExchangeSrcs,
       );
@@ -241,27 +241,29 @@ export function makeGallery(
   }
 
   // only direct children of the gallery pixels can be bought from gallery
-  function buyFromGallery(pixelAmountP) {
-    return Promise.resolve(pixelAmountP).then(async pixelAmount => {
-      pixelAmount = consumerPixelAssay.coerce(pixelAmount);
+  function buyFromGallery(pixelAssetDescP) {
+    return Promise.resolve(pixelAssetDescP).then(async pixelAssetDesc => {
+      pixelAssetDesc = consumerPixelDescOps.coerce(pixelAssetDesc);
 
-      // if the gallery purse contains this pixelAmount, we will
+      // if the gallery purse contains this pixelAssetDesc, we will
       // create a invite to trade, otherwise we return a message
-      const pixelPurseAmount = sellBuyPixelPurseP.getBalance();
-      if (!consumerPixelAssay.includes(pixelPurseAmount, pixelAmount)) {
+      const pixelPurseAssetDesc = sellBuyPixelPurseP.getBalance();
+      if (!consumerPixelDescOps.includes(pixelPurseAssetDesc, pixelAssetDesc)) {
         return harden({
           inviteP: undefined,
           host: undefined,
           message: 'gallery did not have the pixels required',
         });
       }
-      const pixelPaymentP = await E(sellBuyPixelPurseP).withdraw(pixelAmount);
-      const dustAmount = pricePixelAmount(pixelAmount);
+      const pixelPaymentP = await E(sellBuyPixelPurseP).withdraw(
+        pixelAssetDesc,
+      );
+      const dustAssetDesc = pricePixelAssetDesc(pixelAssetDesc);
 
       // same order as in sellToGallery
       // the left will have to provide dust, right will have to
       // provide pixels. Left is the user, right is the gallery
-      const terms = harden({ left: dustAmount, right: pixelAmount });
+      const terms = harden({ left: dustAssetDesc, right: pixelAssetDesc });
       const escrowExchangeInstallationP = E(contractHost).install(
         escrowExchangeSrcs,
       );
@@ -278,7 +280,7 @@ export function makeGallery(
       return harden({
         inviteP: userInviteP,
         host: contractHost,
-        dustNeeded: dustAmount,
+        dustNeeded: dustAssetDesc,
       });
     });
   }
@@ -287,10 +289,10 @@ export function makeGallery(
     return collect(seatP, purseLeftP, purseRightP, name);
   }
 
-  function getIssuers() {
+  function getAssays() {
     return harden({
-      pixelIssuer: consumerPixelIssuer,
-      dustIssuer,
+      pixelAssay: consumerPixelAssay,
+      dustAssay,
     });
   }
 
@@ -301,11 +303,11 @@ export function makeGallery(
   const userFacet = harden({
     getPixelColor,
     tapFaucet,
-    getIssuers,
+    getAssays,
     getCanvasSize() {
       return canvasSize;
     },
-    pricePixelAmount, // transparent pricing for now
+    pricePixelAssetDesc, // transparent pricing for now
     sellToGallery,
     buyFromGallery,
     collectFromGallery,
@@ -315,7 +317,7 @@ export function makeGallery(
     getDistance,
     getDistanceFromCenter,
     reportPosition,
-    pricePixelAmount,
+    pricePixelAssetDesc,
     dustMint,
     getPayment,
   });

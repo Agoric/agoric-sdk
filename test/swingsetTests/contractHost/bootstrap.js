@@ -12,7 +12,7 @@ function build(E, log) {
   function showPaymentBalance(name, paymentP) {
     return E(paymentP)
       .getBalance()
-      .then(amount => log(name, ' balance ', amount))
+      .then(assetDesc => log(name, ' balance ', assetDesc))
       .catch(err => console.log(err));
   }
   // TODO BUG: All callers should wait until settled before doing
@@ -22,7 +22,7 @@ function build(E, log) {
     return Promise.all([
       E(purseP)
         .getBalance()
-        .then(amount => log(name, ' balance ', amount))
+        .then(assetDesc => log(name, ' balance ', assetDesc))
         .catch(err => console.log(err)),
     ]);
   }
@@ -42,22 +42,22 @@ function build(E, log) {
     },
   });
 
-  // This is written in the full assay style, where bare number
-  // objects are never used in lieu of full amount objects. This has
+  // This is written in the full descOps style, where bare number
+  // objects are never used in lieu of full assetDesc objects. This has
   // the virtue of unit typing, where 3 dollars cannot be confused
   // with 3 seconds.
-  function mintTestAssay(mint) {
-    log('starting mintTestAssay');
+  function mintTestDescOps(mint) {
+    log('starting mintTestDescOps');
     const mMintP = E(mint).makeMint('bucks');
-    const mIssuerP = E(mMintP).getIssuer();
-    Promise.resolve(mIssuerP).then(issuer => {
-      // By using an unforgeable issuer presence and a pass-by-copy
+    const mAssayP = E(mMintP).getAssay();
+    Promise.resolve(mAssayP).then(assay => {
+      // By using an unforgeable assay presence and a pass-by-copy
       // description together as a unit label, we check that both
       // agree. The veracity of the description is, however, only as
-      // good as the issuer doing the check.
-      const label = harden({ issuer, description: 'bucks' });
-      const bucks1000 = harden({ label, quantity: 1000 });
-      const bucks50 = harden({ label, quantity: 50 });
+      // good as the assay doing the check.
+      const label = harden({ assay, description: 'bucks' });
+      const bucks1000 = harden({ label, extent: 1000 });
+      const bucks50 = harden({ label, extent: 50 });
 
       const alicePurseP = E(mMintP).mint(bucks1000, 'alice');
       const paymentP = E(alicePurseP).withdraw(bucks50);
@@ -68,8 +68,8 @@ function build(E, log) {
     });
   }
 
-  // Uses raw numbers rather than amounts. Until we have support for
-  // pass-by-presence, the full assay style shown in mintTestAssay is
+  // Uses raw numbers rather than assetDescs. Until we have support for
+  // pass-by-presence, the full descOps style shown in mintTestDescOps is
   // too awkward.
   function mintTestNumber(mint) {
     log('starting mintTestNumber');
@@ -322,7 +322,7 @@ function build(E, log) {
     async bootstrap(argv, vats) {
       switch (argv[0]) {
         case 'mint': {
-          mintTestAssay(vats.mint);
+          mintTestDescOps(vats.mint);
           return mintTestNumber(vats.mint);
         }
         case 'trivial': {
