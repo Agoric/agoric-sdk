@@ -1,5 +1,9 @@
 User-visible changes in Cosmic SwingSet:
 
+## Release v0.10.3 (2019-10-07)
+
+* Fix missing cosmos-sdk supply module initialization
+
 ## Release v0.10.2 (2019-10-04)
 
 * Upgrade to ERTP v0.1.5
