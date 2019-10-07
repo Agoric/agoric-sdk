@@ -218,6 +218,7 @@ func NewSwingSetApp(
 		bank.ModuleName,
 		slashing.ModuleName,
 		swingset.ModuleName,
+		supply.ModuleName,
 		genutil.ModuleName,
 	)
 
