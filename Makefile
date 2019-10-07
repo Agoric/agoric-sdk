@@ -15,6 +15,8 @@ endif
 BREAK_CHAIN = false
 NODE_DEBUG = node --inspect-port=$(INSPECT_ADDRESS):9229
 
+MOD_READONLY = # -mod=readonly
+
 include Makefile.ledger
 all: build install
 
@@ -125,7 +127,7 @@ docker-push-setup-solo:
 	docker push $(REPOSITORY)-setup-solo:$(TAG)
 
 compile-go: go.sum
-	go build -v -mod=readonly -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go
+	go build -v $(MOD_READONLY) -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go
 	test "`uname -s 2>/dev/null`" != Darwin || install_name_tool -id `pwd`/lib/libagcosmosdaemon.so lib/libagcosmosdaemon.so
 
 build: compile-go
@@ -134,7 +136,7 @@ compile-node:
 	test ! -d node_modules/bindings || npm run build
 
 install: go.sum
-	go install -v -mod=readonly -tags "$(build_tags)" ./cmd/ag-cosmos-helper
+	go install -v $(MOD_READONLY) -tags "$(build_tags)" ./cmd/ag-cosmos-helper
 
 go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"

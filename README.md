@@ -249,7 +249,7 @@ offered = seat~.offer(px2);
 issuers = home.gallery~.getIssuers();
 pxPurse = issuers~.pixelIssuer~.makeEmptyPurse();
 dustPurse = issuers~.dustIssuer~.makeEmptyPurse();
-collected = Promise.all([offered, dustPurse, pxPurse]).then(_ => home.gallery~.collectFromGallery(seat, dustPurse, pxPurse, 'my escrow'));
+collected = offered.then(_ => home.gallery~.collectFromGallery(seat, dustPurse, pxPurse, 'my escrow'));
 collected.then(_ => dustPurse~.getBalance());
 ```
 
