@@ -12,7 +12,7 @@ import {
 } from '../src/kernel/state/storageWrapper';
 
 function checkState(t, getState, expected) {
-  const state = JSON.parse(getState());
+  const state = getState();
   const got = [];
   for (const key of Object.getOwnPropertyNames(state)) {
     got.push([key, state[key]]);

@@ -196,7 +196,7 @@ async function testState(t, withSES) {
   const d3 = c1.deviceNameToID('d3');
   await c1.run();
   t.deepEqual(c1.dump().log, ['undefined', 'w+r', 'called', 'got {"s":"new"}']);
-  const s = JSON.parse(getState());
+  const s = getState();
   t.deepEqual(JSON.parse(s[`${d3}.deviceState`]), { s: 'new' });
   t.deepEqual(JSON.parse(s[`${d3}.o.nextID`]), 10);
 

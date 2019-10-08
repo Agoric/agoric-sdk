@@ -25,7 +25,7 @@ async function testSaveState(t, withSES) {
   const states1 = await buildTrace(c1, storage);
   /*
   states1.forEach( (s, i) =>
-    fs.writeFileSync(`kdata-${i}.json`, s)
+    fs.writeFileSync(`kdata-${i}.json`, JSON.stringify(s))
   ); */
 
   const storage2 = buildStorageInMemory();
@@ -56,7 +56,8 @@ async function testLoadState(t, withSES) {
   const c0 = await buildVatController(config, withSES, ['one']);
   const states = await buildTrace(c0, s0);
   // states.forEach((s,j) =>
-  //               fs.writeFileSync(`kdata-${j}.json`, states[j]));
+  //               fs.writeFileSync(`kdata-${j}.json`,
+  //                                JSON.stringify(states[j])));
 
   for (let i = 0; i < states.length; i += 1) {
     // eslint-disable-next-line no-await-in-loop
@@ -70,7 +71,8 @@ async function testLoadState(t, withSES) {
     // eslint-disable-next-line no-await-in-loop
     const newstates = await buildTrace(c, s);
     // newstates.forEach((s,j) =>
-    //                  fs.writeFileSync(`kdata-${i+j}-${i}+${j}.json`, newstates[j]));
+    //                  fs.writeFileSync(`kdata-${i+j}-${i}+${j}.json`,
+    //                                   JSON.stringify(newstates[j])));
     t.deepEqual(states.slice(i), newstates);
   }
   t.end();

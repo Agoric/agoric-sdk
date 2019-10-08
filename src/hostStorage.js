@@ -22,12 +22,11 @@ import harden from '@agoric/harden';
 // A more sophisticated host will build a hostDB that writes changes to disk
 // directly.
 
-export function buildStorageInMemory(initialState = '{}') {
+export function buildStorageInMemory(initialState = {}) {
   const state = new Map();
 
-  const initialData = JSON.parse(initialState);
-  for (const k of Object.getOwnPropertyNames(initialData)) {
-    state.set(k, initialData[k]);
+  for (const k of Object.getOwnPropertyNames(initialState)) {
+    state.set(k, initialState[k]);
   }
 
   function has(key) {
@@ -92,7 +91,7 @@ export function buildStorageInMemory(initialState = '{}') {
     for (const k of Array.from(state.keys()).sort()) {
       data[k] = state.get(k);
     }
-    return JSON.stringify(data);
+    return data;
   }
 
   return { storage, getState };
