@@ -23,11 +23,6 @@ function build(syscall, _state, makeRoot, forVatID) {
   function makeQueued(slot) {
     /* eslint-disable no-use-before-define */
     const handler = {
-      GET(target, prop) {
-        // Support: o~.[prop] remote property lookup
-        // FIXME: Do not stall the pipeline!
-        return target.then(o => o[prop]);
-      },
       POST(_o, prop, args) {
         // Support: o~.[prop](...args) remote method invocation
         return queueMessage(slot, prop, args);
@@ -36,15 +31,10 @@ function build(syscall, _state, makeRoot, forVatID) {
     /* eslint-enable no-use-before-define */
 
     const pr = {};
-    pr.p = Promise.makeHandled((res, rej) => {
+    pr.p = Promise.makeHandled((res, rej, resolveWithPresence) => {
       pr.rej = rej;
-      pr.res = target => {
-        if (Object(target) !== target) {
-          // Not an object, needs no additional handler.
-          return res(target);
-        }
-        return res(target, handler);
-      };
+      pr.resPres = () => resolveWithPresence(handler);
+      pr.res = res;
     }, handler);
     // We harden this Promise because it feeds importPromise(), which is
     // where remote promises inside inbound arguments and resolutions are
@@ -161,14 +151,11 @@ function build(syscall, _state, makeRoot, forVatID) {
       if (type === 'object') {
         // this is a new import value
         // lsdebug(`assigning new import ${slot}`);
-        const presence = harden({
-          toString() {
-            return `[Presence ${slot}]`;
-          },
-        });
         // prepare a Promise for this Presence, so E(val) can work
         const pr = makeQueued(slot);
-        pr.res(presence);
+        const presence = pr.resPres();
+        presence.toString = () => `[Presence ${slot}]`;
+        harden(presence);
         val = presence;
         // lsdebug(` for presence`, val);
       } else if (type === 'promise') {
