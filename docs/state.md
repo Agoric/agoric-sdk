@@ -93,7 +93,7 @@ set, delete }`, with the usual semantics (`has` takes a string and returns a
 boolean, `get` returns `undefined` for missing objects). `getKeys(start,
 end)` returns an iterator of sorted keys `start <= key < end`.
 
-We also define a **HostDB* as an object with functions `{ has, getKeys, get,
+We also define a **HostDB** as an object with functions `{ has, getKeys, get,
 applyBatch }`. The batch is a list of `{op: 'set', key, value}` or `{op:
 'delete', key}`, and is used to perform an atomic mutation.
 
