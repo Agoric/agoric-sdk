@@ -40,7 +40,7 @@
     "@agoric/acorn-eventual-send": "^1.0.1",
     "@agoric/default-evaluate-options": "^0.2.5",
     "@agoric/evaluate": "^2.1.2",
-    "@agoric/eventual-send": "^0.3.3",
+    "@agoric/eventual-send": "^0.4.0",
     "@agoric/harden": "^0.0.4",
     "@agoric/marshal": "^0.1.1",
     "@agoric/nat": "^2.0.0",
