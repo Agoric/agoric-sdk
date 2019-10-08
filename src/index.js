@@ -207,8 +207,14 @@ export function maybeExtendPromise(Promise) {
         let fulfilled = false;
         let continueForwarding = () => {};
         const handledP = new Promise((resolve, reject) => {
-          handledResolve = resolve;
-          handledReject = reject;
+          handledResolve = value => {
+            fulfilled = true;
+            resolve(value);
+          };
+          handledReject = err => {
+            fulfilled = true;
+            reject(err);
+          };
         });
 
         if (!unfulfilledHandler) {
@@ -268,37 +274,35 @@ export function maybeExtendPromise(Promise) {
           if (fulfilled) {
             return;
           }
-          fulfilled = true;
           handledReject(reason);
           continueForwarding(reason);
         }
 
-        let presence = null;
+        let resolvedPresence = null;
         function resolveWithPresence(presenceHandler) {
           if (fulfilled) {
-            return presence;
+            return resolvedPresence;
           }
-          fulfilled = true;
           try {
             // Sanity checks.
             validateHandler(presenceHandler);
 
             // Validate and install our mapped target (i.e. presence).
-            presence = Object.create(null);
+            resolvedPresence = Object.create(null);
 
             // Create table entries for the presence mapped to the
             // fulfilledHandler.
-            presenceToPromise.set(presence, handledP);
-            presenceToHandler.set(presence, presenceHandler);
+            presenceToPromise.set(resolvedPresence, handledP);
+            presenceToHandler.set(resolvedPresence, presenceHandler);
 
             // Remove the mapping, as our presenceHandler should be
             // used instead.
             promiseToHandler.delete(handledP);
 
             // We committed to this presence, so resolve.
-            handledResolve(presence);
+            handledResolve(resolvedPresence);
             continueForwarding();
-            return presence;
+            return resolvedPresence;
           } catch (e) {
             handledReject(e);
             continueForwarding();
@@ -310,7 +314,6 @@ export function maybeExtendPromise(Promise) {
           if (fulfilled) {
             return undefined;
           }
-          fulfilled = true;
           try {
             if (deprecatedPresenceHandler) {
               throw TypeError(
