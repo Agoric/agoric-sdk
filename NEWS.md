@@ -1,5 +1,22 @@
 User-visible changes in SwingSet:
 
+## Release 0.0.27 (08-Oct-2019)
+
+* Rewritten state management: hosts must now provide a "HostStorage" object
+  in the config record, and the kernel will use it for all state changes.
+  This HostStorage can be implemented with an in-memory Map object, or a
+  proper on-disk database. Hosts commit per-block checkpoints through their
+  HostStorage object, rather than asking the controller for the current
+  kernel state. (#144)
+* Fixed infinite loop caused by `x~.foo~.bar()` on a Presence `x`. This
+  performs an asynchronous property lookup followed by a method invocation,
+  and should behave mostly like `Promise.resolve(x).then(y => y.foo).then(z
+  => z.bar())`, except that `x` references a remote object, so cross-Vat
+  message sends are involved. Caused by
+  https://github.com/Agoric/eventual-send/issues/38 , fixed by updating to
+  eventual-send-0.4.0 .
+
+
 ## Release 0.0.26 (02-Oct-2019)
 
 * update eventual-send to fix bugs revealed in cosmic-swingset testing (#169)
