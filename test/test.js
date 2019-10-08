@@ -18,7 +18,7 @@ test('sanity', async t => {
     t.equal(
       sourceState.src,
       `HandledPromise.get(foo, "bar");`,
-      `infix bang is rewritten`,
+      `eventual send operator is rewritten`,
     );
   } catch (e) {
     t.assert(false, e);
