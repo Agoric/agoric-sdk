@@ -19,15 +19,16 @@ import (
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
 	"github.com/cosmos/cosmos-sdk/x/genaccounts"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
- 	"github.com/cosmos/cosmos-sdk/x/params"
+	"github.com/cosmos/cosmos-sdk/x/params"
 	"github.com/cosmos/cosmos-sdk/x/slashing"
- 	"github.com/cosmos/cosmos-sdk/x/staking"
+	"github.com/cosmos/cosmos-sdk/x/staking"
 	"github.com/cosmos/cosmos-sdk/x/supply"
 
 	"github.com/Agoric/cosmic-swingset/x/swingset"
 )
 
 const appName = "swingset"
+
 var (
 	// default home directories for the application CLI
 	DefaultCLIHome = os.ExpandEnv("$HOME/.ag-cosmos-helper")
@@ -109,8 +110,8 @@ func NewSwingSetApp(
 		BaseApp: bApp,
 		cdc:     cdc,
 
-		keys:    keys,
-		tkeys:   tkeys,
+		keys:  keys,
+		tkeys: tkeys,
 	}
 
 	// The ParamsKeeper handles parameter storage for the application
@@ -244,7 +245,7 @@ func NewSwingSetApp(
 	app.MountTransientStores(tkeys)
 
 	err := app.LoadLatestVersion(app.keys[bam.MainStoreKey])
- 	if err != nil {
+	if err != nil {
 		cmn.Exit(err.Error())
 	}
 
