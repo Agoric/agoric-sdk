@@ -52,8 +52,8 @@ export function makeHandledPromise(EPromise) {
     deleteSendOnly(target, key) {
       EPromise.resolve(target).delete(key);
     },
-    // TODO: Change HandledPromise.apply(target, args) to be
-    // HandledPromise.applyMethod(target, undefined, args)
+    // TODO: Change HandledPromise.apply to be
+    // HandledPromise.applyFunction
     // to avoid conflict with constructor .apply behaviour.
     apply(target, args) {
       return EPromise.resolve(target).post(undefined, args);
@@ -111,13 +111,13 @@ export function maybeExtendPromise(Promise) {
   // handled Promises to their corresponding fulfilledHandler.
   let forwardingHandler;
   function handle(p, operation, ...args) {
+    ensureMaps();
     const unfulfilledHandler = promiseToHandler.get(p);
     let executor;
-    if (unfulfilledHandler) {
-      if (typeof unfulfilledHandler[operation] !== 'function') {
-        throw TypeError(`unfulfilledHandler.${operation} is not a function`);
-      }
-
+    if (
+      unfulfilledHandler &&
+      typeof unfulfilledHandler[operation] === 'function'
+    ) {
       executor = (resolve, reject) => {
         // We run in a future turn to prevent synchronous attacks,
         Promise.resolve()
@@ -204,6 +204,7 @@ export function maybeExtendPromise(Promise) {
         ensureMaps();
         let handledResolve;
         let handledReject;
+        let fulfilled = false;
         let continueForwarding = () => {};
         const handledP = new Promise((resolve, reject) => {
           handledResolve = resolve;
@@ -217,8 +218,12 @@ export function maybeExtendPromise(Promise) {
           // This is insufficient for actual remote handled Promises
           // (too many round-trips), but is an easy way to create a
           // local handled Promise.
-          const interlockP = new Promise(resolve => {
-            continueForwarding = (targetP = undefined) => {
+          const interlockP = new Promise((resolve, reject) => {
+            continueForwarding = (err = null, targetP = undefined) => {
+              if (err !== null) {
+                reject(err);
+                return;
+              }
               // Box the target promise so that it isn't further resolved.
               resolve([targetP]);
               // Return undefined.
@@ -228,7 +233,7 @@ export function maybeExtendPromise(Promise) {
           const makePostponed = postponedOperation => {
             // Just wait until the handler is resolved/rejected.
             return function postpone(x, ...args) {
-              // console.log(`forwarding ${postponedOperation}`);
+              // console.log(`forwarding ${postponedOperation} ${args[0]}`);
               return Promise.makeHandled((resolve, reject) => {
                 interlockP
                   .then(([targetP]) => {
@@ -260,70 +265,80 @@ export function maybeExtendPromise(Promise) {
         promiseToHandler.set(handledP, unfulfilledHandler);
 
         function rejectHandled(reason) {
-          continueForwarding();
+          if (fulfilled) {
+            return;
+          }
+          fulfilled = true;
           handledReject(reason);
+          continueForwarding(reason);
         }
 
-        async function resolveHandled(target, fulfilledHandler) {
+        let presence = null;
+        function resolveWithPresence(presenceHandler) {
+          if (fulfilled) {
+            return presence;
+          }
+          fulfilled = true;
           try {
             // Sanity checks.
-            if (fulfilledHandler) {
-              validateHandler(fulfilledHandler);
-            }
-
-            if (!fulfilledHandler) {
-              // Resolve with the target when it's ready.
-              handledResolve(target);
-
-              const existingUnfulfilledHandler = promiseToHandler.get(target);
-              if (existingUnfulfilledHandler) {
-                // Reuse the unfulfilled handler.
-                promiseToHandler.set(handledP, existingUnfulfilledHandler);
-                return continueForwarding(target);
-              }
-
-              // See if the target is a presence we already know of.
-              const presence = await target;
-              const existingFulfilledHandler = presenceToHandler.get(presence);
-              if (existingFulfilledHandler) {
-                promiseToHandler.set(handledP, existingFulfilledHandler);
-                return continueForwarding();
-              }
-
-              // Remove the mapping, as we don't need a handler.
-              promiseToHandler.delete(handledP);
-              return continueForwarding();
-            }
+            validateHandler(presenceHandler);
 
             // Validate and install our mapped target (i.e. presence).
-            const presence = target;
-            if (Object(presence) !== presence) {
-              throw TypeError(`Presence ${presence} cannot be a primitive`);
-            }
-            if (presence === null) {
-              throw TypeError(`Presence ${presence} cannot be null`);
-            }
-            if (presence && typeof presence.then === 'function') {
-              throw TypeError(
-                `Presence ${presence} cannot be a Promise or other thenable`,
-              );
-            }
+            presence = Object.create(null);
 
-            // Just like platform Promises, multiple calls to resolve
-            // don't fail.
-            if (!presenceToHandler.has(presence)) {
-              // Create table entries for the presence mapped to the
-              // fulfilledHandler.
-              presenceToPromise.set(presence, handledP);
-              presenceToHandler.set(presence, fulfilledHandler);
-            }
+            // Create table entries for the presence mapped to the
+            // fulfilledHandler.
+            presenceToPromise.set(presence, handledP);
+            presenceToHandler.set(presence, presenceHandler);
 
-            // Remove the mapping, as our fulfilledHandler should be
+            // Remove the mapping, as our presenceHandler should be
             // used instead.
             promiseToHandler.delete(handledP);
 
             // We committed to this presence, so resolve.
             handledResolve(presence);
+            continueForwarding();
+            return presence;
+          } catch (e) {
+            handledReject(e);
+            continueForwarding();
+            throw e;
+          }
+        }
+
+        async function resolveHandled(target, deprecatedPresenceHandler) {
+          if (fulfilled) {
+            return undefined;
+          }
+          fulfilled = true;
+          try {
+            if (deprecatedPresenceHandler) {
+              throw TypeError(
+                `resolveHandled no longer accepts a handler; use resolveWithPresence`,
+              );
+            }
+
+            // Resolve with the target when it's ready.
+            handledResolve(target);
+
+            const existingUnfulfilledHandler = promiseToHandler.get(target);
+            if (existingUnfulfilledHandler) {
+              // Reuse the unfulfilled handler.
+              promiseToHandler.set(handledP, existingUnfulfilledHandler);
+              return continueForwarding(null, target);
+            }
+
+            // See if the target is a presence we already know of.
+            const presence = await target;
+            const existingPresenceHandler = presenceToHandler.get(presence);
+            if (existingPresenceHandler) {
+              promiseToHandler.set(handledP, existingPresenceHandler);
+              return continueForwarding(null, handledP);
+            }
+
+            // Remove the mapping, as we don't need a handler.
+            promiseToHandler.delete(handledP);
+            return continueForwarding();
           } catch (e) {
             handledReject(e);
           }
@@ -331,9 +346,13 @@ export function maybeExtendPromise(Promise) {
         }
 
         // Invoke the callback to let the user resolve/reject.
-        executor((...args) => {
-          resolveHandled(...args);
-        }, rejectHandled);
+        executor(
+          (...args) => {
+            resolveHandled(...args);
+          },
+          rejectHandled,
+          resolveWithPresence,
+        );
 
         // Return a handled Promise, which wil be resolved/rejected
         // by the executor.
@@ -346,11 +365,11 @@ export function maybeExtendPromise(Promise) {
     return (o, ...args) => {
       // We are in another turn already, and have the naked object.
       const fulfilledHandler = presenceToHandler.get(o);
-      if (fulfilledHandler) {
+      if (
+        fulfilledHandler &&
+        typeof fulfilledHandler[operation] === 'function'
+      ) {
         // The handler was resolved, so use it.
-        if (typeof fulfilledHandler[operation] !== 'function') {
-          throw TypeError(`fulfilledHandler.${operation} is not a function`);
-        }
         return fulfilledHandler[operation](o, ...args);
       }
 
@@ -367,6 +386,7 @@ export function maybeExtendPromise(Promise) {
       if (optKey === undefined || optKey === null) {
         return o(...args);
       }
+      // console.log(`sending`, optKey, o[optKey], o);
       return o[optKey](...args);
     }),
   };

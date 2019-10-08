@@ -39,13 +39,14 @@ interface RejectedStatus {
 type SettledStatus = FulfilledStatus | RejectedStatus;
 
 type HandledExecutor<R> = (
-  resolveHandled: (value?: R, resolvedHandler?: EHandler) => void,
+  resolveHandled: (value?: R) => void,
   rejectHandled: (reason?: unknown) => void,
+  resolveWithPresence: (presenceHandler: EHandler) => object,
 ) => void;
 
 interface EPromiseConstructor extends PromiseConstructor {
   prototype: EPromise<unknown>;
-  makeHandled<R>(executor: HandledExecutor<R>, unresolvedHandler?: EHandler): EPromise<R>;
+  makeHandled<R>(executor: HandledExecutor<R>, unfulfilledHandler?: EHandler): EPromise<R>;
   resolve<R>(value: R): EPromise<R>;
   reject(reason: unknown): EPromise<never>;
   all(iterable: Iterable): EPromise<unknown[]>;

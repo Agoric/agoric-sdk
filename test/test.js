@@ -30,9 +30,7 @@ test('reject/resolve returns undefined', async t => {
 test('handlers are always async', async t => {
   try {
     const queue = [];
-    const target = {
-      is: 'target',
-    };
+    let target;
     const handler = {
       POST(o, fn, args) {
         queue.push([o, fn, args]);
@@ -52,9 +50,9 @@ test('handlers are always async', async t => {
         return ep2;
       },
     };
-    let resolver;
-    const ep = Promise.makeHandled(resolve => {
-      resolver = resolve;
+    let resolveWithPresence;
+    const ep = Promise.makeHandled((_, _2, resolver) => {
+      resolveWithPresence = resolver;
     }, unfulfilledHandler);
 
     // Make sure asynchronous posts go through.
@@ -103,7 +101,8 @@ test('handlers are always async', async t => {
       'second post is queued after await',
     );
 
-    resolver(target, handler);
+    target = resolveWithPresence(handler);
+    target.is = 'target';
     resolver2('un');
 
     const thirdPost = ep.post('mythirdfn', ['ghi', 789]).then(v => {
@@ -166,72 +165,74 @@ test('Promise.makeHandled expected errors', async t => {
     };
 
     // Full handler succeeds.
-    const fullObj = {};
+    let fullObj;
     t.equal(
-      await Promise.makeHandled(resolve => resolve(fullObj, handler)),
+      await Promise.makeHandled((_, _2, rwp) => (fullObj = rwp(handler))),
       fullObj,
       `resolved handled Promise is equal`,
     );
 
-    // Primitive handler fails.
-    await t.rejects(
-      Promise.makeHandled(resolve => resolve({}, 123)),
-      /cannot be a primitive/,
-      'primitive handler rejects',
-    );
-
     // Relay missing a method fails.
     for (const method of Object.keys(handler)) {
+      /* eslint-disable no-await-in-loop */
       const { [method]: elide, ...handler2 } = handler;
       t.equal(elide, handler[method], `method ${method} is elided`);
-      let op;
       switch (method) {
         case 'GET':
-          op = p => p.get('foo');
+          t.equals(
+            await Promise.makeHandled((_, _2, rwp) => {
+              const obj = rwp(handler2);
+              obj.foo = 'bar';
+            }).get('foo'),
+            'bar',
+            `missing ${method} defaults`,
+          );
           break;
         case 'PUT':
-          op = p => p.put('foo', 123);
+          t.equals(
+            await Promise.makeHandled((_, _2, rwp) => rwp(handler2)).put(
+              'foo',
+              123,
+            ),
+            123,
+            `missing ${method} defaults`,
+          );
           break;
         case 'POST':
-          op = p => p.post('bar', ['abc', 123]);
+          t.equals(
+            await Promise.makeHandled((_, _2, rwp) => {
+              const obj = rwp(handler2);
+              obj.bar = (str, num) => {
+                t.equals(str, 'abc', `default ${method} str argument`);
+                t.equals(num, 123, `default ${method} num argument`);
+                return str + num;
+              };
+            }).post('bar', ['abc', 123]),
+            'abc123',
+            `missing ${method} defaults`,
+          );
           break;
         case 'DELETE':
-          op = p => p.delete('foo');
+          t.equals(
+            await Promise.makeHandled((_, _2, rwp) => rwp(handler2)).delete(
+              'foo',
+            ),
+            true,
+            `missing ${method} defaults`,
+          );
           break;
         default:
           throw TypeError(`Unrecognized method type ${method}`);
       }
-      // eslint-disable-next-line no-await-in-loop
-      await t.rejects(
-        op(Promise.makeHandled(resolve => resolve({}, handler2))),
-        new RegExp(`fulfilledHandler.${method} is not a function`),
-        `missing ${method} is rejected`,
-      );
     }
 
-    // Primitive resolve fails.
-    await t.rejects(
-      Promise.makeHandled(resolve => resolve(123, handler)),
-      /cannot be a primitive/,
-      `primitive handled presence rejects`,
-    );
-
-    // Promise resolve fails.
-    const promise = Promise.resolve({});
-    await t.rejects(
-      Promise.makeHandled(resolve => resolve(promise, handler)),
-      /cannot be a Promise/,
-      `Promise handled presence rejects`,
-    );
-
     // First resolve succeeds.
-    const obj = {};
-    let resolveHandled;
-    const p = Promise.makeHandled(resolve => (resolveHandled = resolve));
-    resolveHandled(obj, handler);
+    let resolveWithPresence;
+    const p = Promise.makeHandled((_, _2, rwp) => (resolveWithPresence = rwp));
+    const obj = resolveWithPresence(handler);
     t.equals(await p, obj, `first resolve succeeds`);
 
-    resolveHandled({ ...obj, noMatch: false }, handler);
+    resolveWithPresence(handler);
     t.equals(await p, obj, `second resolve ignored`);
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
@@ -242,7 +243,7 @@ test('Promise.makeHandled expected errors', async t => {
 
 test('Promise.makeHandled(executor, undefined)', async t => {
   try {
-    const handledP = Promise.makeHandled(resolve => {
+    const handledP = Promise.makeHandled((_, _2, resolveWithPresence) => {
       setTimeout(() => {
         const o = {
           num: 123,
@@ -266,7 +267,7 @@ test('Promise.makeHandled(executor, undefined)', async t => {
             return o[key](...args);
           },
         };
-        resolve({}, resolvedRelay);
+        resolveWithPresence(resolvedRelay);
       }, 200);
     });
 
