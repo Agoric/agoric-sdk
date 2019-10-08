@@ -13,8 +13,10 @@ import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
 import bundleSource from './build-source-bundle';
 import { insist } from './insist';
+import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
+import { buildStorageInMemory } from './hostStorage';
 
 const evaluateOptions = makeDefaultEvaluateOptions();
 // globalThis is standard, we want it to be frozen
@@ -95,7 +97,7 @@ function makeEvaluate(e) {
   });
 }
 
-function buildSESKernel(initialState) {
+function buildSESKernel(hostStorage) {
   // console.log('transforms', transforms);
   const s = SES.makeSESRootRealm({
     ...evaluateOptions,
@@ -116,27 +118,28 @@ function buildSESKernel(initialState) {
   const kernelSource = getKernelSource();
   // console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })().default;
-  const kernelEndowments = { setImmediate };
-  const kernel = buildKernel(kernelEndowments, initialState);
+  const kernelEndowments = { setImmediate, hostStorage };
+  const kernel = buildKernel(kernelEndowments);
   return { kernel, s, r };
 }
 
-function buildNonSESKernel(initialState) {
+function buildNonSESKernel(hostStorage) {
   // Evaluate shims to produce desired globals.
   // eslint-disable-next-line no-eval
   (evaluateOptions.shims || []).forEach(shim => (1, eval)(shim));
 
-  const kernelEndowments = { setImmediate };
-  const kernel = buildKernelNonSES(kernelEndowments, initialState);
+  const kernelEndowments = { setImmediate, hostStorage };
+  const kernel = buildKernelNonSES(kernelEndowments);
   return { kernel };
 }
 
 export async function buildVatController(config, withSES = true, argv = []) {
   // todo: move argv into the config
-  const initialState = config.initialState || JSON.stringify({});
+  const hostStorage = config.hostStorage || buildStorageInMemory().storage;
+  insistStorageAPI(hostStorage);
   const { kernel, s, r } = withSES
-    ? buildSESKernel(initialState)
-    : buildNonSESKernel(initialState);
+    ? buildSESKernel(hostStorage)
+    : buildNonSESKernel(hostStorage);
   // console.log('kernel', kernel);
 
   async function addGenesisVat(name, sourceIndex, options = {}) {
@@ -226,10 +229,6 @@ export async function buildVatController(config, withSES = true, argv = []) {
 
     dump() {
       return JSON.parse(JSON.stringify(kernel.dump()));
-    },
-
-    getState() {
-      return `${kernel.getState()}`;
     },
 
     async run() {

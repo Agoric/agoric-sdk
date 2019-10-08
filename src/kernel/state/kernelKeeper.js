@@ -1,9 +1,9 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import { makeStorage } from './storage';
 import { initializeVatState, makeVatKeeper } from './vatKeeper';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper';
 import { insist } from '../../insist';
+import { insistEnhancedStorageAPI } from '../../storageAPI';
 import {
   insistKernelType,
   makeKernelSlot,
@@ -72,8 +72,31 @@ export function commaSplit(s) {
   return s.split(',');
 }
 
-export default function makeKernelKeeper(initialState) {
-  const storage = makeStorage(`${initialState}`);
+// we use different starting index values for the various vNN/koNN/kdNN/kpNN
+// slots, to reduce confusing overlap when looking at debug messages (e.g.
+// seeing both kp1 and ko1, which are completely unrelated despite having the
+// same integer), and as a weak safety mechanism to guard against slots being
+// misinterpreted (if "kp1" is somehow transmuted to "ko1", then there is
+// probably already a real ko1 in the table, but "kp40" being corrupted into
+// "ko40" is marginally less likely to collide with koNN that start at a
+// different index). The safety mechanism is only likely to help during very
+// limited unit tests, where we only allocate a handful of items, but it's
+// proven useful even there.
+const FIRST_VAT_ID = 1;
+const FIRST_DEVICE_ID = 7;
+const FIRST_OBJECT_ID = 20;
+const FIRST_DEVNODE_ID = 30;
+const FIRST_PROMISE_ID = 40;
+
+export default function makeKernelKeeper(storage) {
+  insistEnhancedStorageAPI(storage);
+
+  function getRequired(key) {
+    if (!storage.has(key)) {
+      throw new Error(`storage lacks required key ${key}`);
+    }
+    return storage.get(key);
+  }
 
   const ephemeral = harden({
     vatKeepers: new Map(), // vatID -> vatKeeper
@@ -90,18 +113,18 @@ export default function makeKernelKeeper(initialState) {
 
   function createStartingKernelState() {
     storage.set('vat.names', '[]');
-    storage.set('vat.nextID', '1');
+    storage.set('vat.nextID', JSON.stringify(FIRST_VAT_ID));
     storage.set('device.names', '[]');
-    storage.set('device.nextID', '7');
-    storage.set('ko.nextID', '20');
-    storage.set('kd.nextID', '30');
-    storage.set('kp.nextID', '40');
+    storage.set('device.nextID', JSON.stringify(FIRST_DEVICE_ID));
+    storage.set('ko.nextID', JSON.stringify(FIRST_OBJECT_ID));
+    storage.set('kd.nextID', JSON.stringify(FIRST_DEVNODE_ID));
+    storage.set('kp.nextID', JSON.stringify(FIRST_PROMISE_ID));
     storage.set('runQueue', JSON.stringify([]));
   }
 
   function addKernelObject(ownerID) {
     insistVatID(ownerID);
-    const id = Nat(Number(storage.get('ko.nextID')));
+    const id = Nat(Number(getRequired('ko.nextID')));
     storage.set('ko.nextID', `${id + 1}`);
     const s = makeKernelSlot('object', id);
     storage.set(`${s}.owner`, ownerID);
@@ -110,14 +133,14 @@ export default function makeKernelKeeper(initialState) {
 
   function ownerOfKernelObject(kernelSlot) {
     insistKernelType('object', kernelSlot);
-    const owner = storage.get(`${kernelSlot}.owner`);
+    const owner = getRequired(`${kernelSlot}.owner`);
     insistVatID(owner);
     return owner;
   }
 
   function addKernelDeviceNode(deviceID) {
     insistDeviceID(deviceID);
-    const id = Nat(Number(storage.get('kd.nextID')));
+    const id = Nat(Number(getRequired('kd.nextID')));
     storage.set('kd.nextID', `${id + 1}`);
     const s = makeKernelSlot('device', id);
     storage.set(`${s}.owner`, deviceID);
@@ -133,7 +156,7 @@ export default function makeKernelKeeper(initialState) {
 
   function addKernelPromise(deciderVatID) {
     insistVatID(deciderVatID);
-    const kpid = Nat(Number(storage.get('kp.nextID')));
+    const kpid = Nat(Number(getRequired('kp.nextID')));
     storage.set('kp.nextID', `${kpid + 1}`);
     const s = makeKernelSlot('promise', kpid);
     storage.set(`${s}.state`, 'unresolved');
@@ -269,23 +292,23 @@ export default function makeKernelKeeper(initialState) {
   function addToRunQueue(msg) {
     // the runqueue is usually empty between blocks, so we can afford a
     // non-delta-friendly format
-    const queue = JSON.parse(storage.get('runQueue'));
+    const queue = JSON.parse(getRequired('runQueue'));
     queue.push(msg);
     storage.set('runQueue', JSON.stringify(queue));
   }
 
   function isRunQueueEmpty() {
-    const queue = JSON.parse(storage.get('runQueue'));
+    const queue = JSON.parse(getRequired('runQueue'));
     return queue.length <= 0;
   }
 
   function getRunQueueLength() {
-    const queue = JSON.parse(storage.get('runQueue'));
+    const queue = JSON.parse(getRequired('runQueue'));
     return queue.length;
   }
 
   function getNextMsg() {
-    const queue = JSON.parse(storage.get('runQueue'));
+    const queue = JSON.parse(getRequired('runQueue'));
     const msg = queue.shift();
     storage.set('runQueue', JSON.stringify(queue));
     return msg;
@@ -304,10 +327,10 @@ export default function makeKernelKeeper(initialState) {
     insist(name === `${name}`);
     const k = `vat.name.${name}`;
     if (!storage.has(k)) {
-      const nextID = Nat(Number(storage.get(`vat.nextID`)));
+      const nextID = Nat(Number(getRequired(`vat.nextID`)));
       storage.set(`vat.nextID`, `${nextID + 1}`);
       storage.set(k, makeVatID(nextID));
-      const names = JSON.parse(storage.get('vat.names'));
+      const names = JSON.parse(getRequired('vat.names'));
       names.push(name);
       storage.set('vat.names', JSON.stringify(names));
     }
@@ -332,9 +355,9 @@ export default function makeKernelKeeper(initialState) {
   }
 
   function getAllVatIDs() {
-    const nextID = Nat(Number(storage.get(`vat.nextID`)));
+    const nextID = Nat(Number(getRequired(`vat.nextID`)));
     const vatIDs = [];
-    for (let i = 1; i < nextID; i += 1) {
+    for (let i = FIRST_VAT_ID; i < nextID; i += 1) {
       const vatID = makeVatID(i);
       if (storage.has(`${vatID}.o.nextID`)) {
         vatIDs.push(vatID);
@@ -344,7 +367,7 @@ export default function makeKernelKeeper(initialState) {
   }
 
   function getAllVatNames() {
-    const names = JSON.parse(storage.get('vat.names'));
+    const names = JSON.parse(getRequired('vat.names'));
     return harden(names.sort());
   }
 
@@ -361,10 +384,10 @@ export default function makeKernelKeeper(initialState) {
     insist(name === `${name}`);
     const k = `device.name.${name}`;
     if (!storage.has(k)) {
-      const nextID = Nat(Number(storage.get(`device.nextID`)));
+      const nextID = Nat(Number(getRequired(`device.nextID`)));
       storage.set(`device.nextID`, `${nextID + 1}`);
       storage.set(k, makeDeviceID(nextID));
-      const names = JSON.parse(storage.get('device.names'));
+      const names = JSON.parse(getRequired('device.names'));
       names.push(name);
       storage.set('device.names', JSON.stringify(names));
     }
@@ -384,9 +407,9 @@ export default function makeKernelKeeper(initialState) {
   }
 
   function getAllDeviceIDs() {
-    const nextID = Nat(Number(storage.get(`device.nextID`)));
+    const nextID = Nat(Number(getRequired(`device.nextID`)));
     const deviceIDs = [];
-    for (let i = 1; i < nextID; i += 1) {
+    for (let i = FIRST_DEVICE_ID; i < nextID; i += 1) {
       const deviceID = makeDeviceID(i);
       if (storage.has(`${deviceID}.o.nextID`)) {
         deviceIDs.push(deviceID);
@@ -396,14 +419,8 @@ export default function makeKernelKeeper(initialState) {
   }
 
   function getAllDeviceNames() {
-    const names = JSON.parse(storage.get('device.names'));
+    const names = JSON.parse(getRequired('device.names'));
     return harden(names.sort());
-  }
-
-  // used for persistence. This returns a JSON-serialized string, suitable to
-  // be passed back into makeKernelKeeper() as 'initialState'.
-  function getState() {
-    return storage.serialize();
   }
 
   // used for debugging, and tests. This returns a JSON-serializable object.
@@ -459,8 +476,8 @@ export default function makeKernelKeeper(initialState) {
 
     const promises = [];
 
-    const nextPromiseID = Nat(Number(storage.get('kp.nextID')));
-    for (let i = 0; i < nextPromiseID; i += 1) {
+    const nextPromiseID = Nat(Number(getRequired('kp.nextID')));
+    for (let i = FIRST_PROMISE_ID; i < nextPromiseID; i += 1) {
       const kpid = makeKernelSlot('promise', i);
       if (hasKernelPromise(kpid)) {
         promises.push({ id: kpid, ...getKernelPromise(kpid) });
@@ -468,7 +485,7 @@ export default function makeKernelKeeper(initialState) {
     }
     promises.sort((a, b) => compareStrings(a.id, b.id));
 
-    const runQueue = JSON.parse(storage.get('runQueue'));
+    const runQueue = JSON.parse(getRequired('runQueue'));
 
     return harden({
       vatTables,
@@ -512,7 +529,6 @@ export default function makeKernelKeeper(initialState) {
     provideDeviceKeeper,
     getAllDeviceNames,
 
-    getState,
     dump,
   });
 }
