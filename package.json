@@ -44,11 +44,11 @@
     "@agoric/harden": "^0.0.4",
     "@agoric/marshal": "^0.1.1",
     "@agoric/nat": "^2.0.0",
-    "rollup": "^1.22.0",
+    "rollup": "^1.23.1",
     "rollup-plugin-node-resolve": "^5.2.0",
     "semver": "^6.3.0",
     "ses": "^0.6.3",
-    "yargs": "^14.0.0"
+    "yargs": "^14.2.0"
   },
   "files": [
     "bin/vat",
