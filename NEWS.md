@@ -1,5 +1,12 @@
 User-visible changes in Cosmic SwingSet:
 
+## Release v0.10.4 (2019-10-09)
+
+* Upgrade to cosmos-sdk v0.37.1 with override for Tendermint v0.32.5
+* Upgrade to SwingSet v0.0.27
+  - rewritten state management in preparation for on-disk database
+  - fix infinite loop involving async property lookup
+
 ## Release v0.10.3 (2019-10-07)
 
 * Fix missing cosmos-sdk supply module initialization
