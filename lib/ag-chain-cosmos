@@ -42,7 +42,7 @@ const nodePort = registerPortHandler(toSwingSet);
 setInterval(() => undefined, 30000);
 agcc.runAG_COSMOS(nodePort, fromGo, process.argv.slice(1));
 
-let deliverInbound;
+let deliverInboundToMbx;
 // this storagePort changes for every single message. We define it out here
 // so the 'externalStorage' object can close over the single mutable
 // instance, and we update the 'sPort' value each time toSwingSet is called
@@ -77,7 +77,7 @@ async function toSwingSet0(action, _replier) {
   }
 
   // launch the swingset once
-  if (!deliverInbound) {
+  if (!deliverInboundToMbx) {
     // this object is used to store the mailbox state. we only ever use
     // key='mailbox'
     const mailboxStorage = {
@@ -115,16 +115,10 @@ async function toSwingSet0(action, _replier) {
     }
 console.log(` calling LAUNCH, then deliver`);
     const s = await launch(mailboxStorage, stateFile, vatsdir, argv);
-    deliverInbound = s.deliverInbound;
+    deliverInboundToMbx = s.deliverInbound;
   }
 
-  const d = deliverInbound(
-    action.peer,
-    action.messages,
-    action.ack,
-    action.blockHeight,
-    action.blockTime,
-  );
+  const d = deliverInboundToMbx(action.peer, action.messages, action.ack);
   d.then(undefined,
          rej => {
            console.log(`deliverInbound failed`, rej);
