@@ -4,6 +4,9 @@ DO_PUSH_LATEST :=
 CHAIN_ID = agoric
 INITIAL_TOKENS = 1000agmedallion
 
+NUM_SOLOS = 1
+BASE_PORT = 8000
+
 ifneq ("$(wildcard /vagrant)","")
 # Within a VM.  We need to get to the outside.
 INSPECT_ADDRESS = 0.0.0.0
@@ -27,7 +30,7 @@ scenario0-setup:
 	ve3/bin/pip install setup-solo/
 
 scenario0-run-client:
-	AG_SOLO_BASEDIR=t9 ve3/bin/ag-setup-solo
+	AG_SOLO_BASEDIR=t9 ve3/bin/ag-setup-solo --webhost=127.0.0.1:$(BASE_PORT)
 
 scenario0-run-chain:
 	@echo 'No local chain needs to run in scenario0'
@@ -39,7 +42,7 @@ scenario1-run-chain:
 	AG_SETUP_COSMOS_HOME=t8 setup/ag-setup-cosmos bootstrap
 
 scenario1-run-client:
-	AG_SOLO_BASEDIR=t7 ve3/bin/ag-setup-solo
+	AG_SOLO_BASEDIR=t7 ve3/bin/ag-setup-solo --webhost=127.0.0.1:$(BASE_PORT)
 
 AGC = ./lib/ag-chain-cosmos
 scenario2-setup:
@@ -47,20 +50,31 @@ scenario2-setup:
 	rm -f ag-cosmos-chain-state.json
 	$(AGC) init scenario2-chain --chain-id=$(CHAIN_ID)
 	rm -rf t1
-	bin/ag-solo init t1
-	$(AGC) add-genesis-account `cat t1/ag-cosmos-helper-address` $(INITIAL_TOKENS),100000000stake
-	echo 'mmmmmmmm' | $(AGC) gentx --home-client=t1/ag-cosmos-helper-statedir --name=ag-solo --amount=1000000stake
+	mkdir t1
+	set -e; for port in `seq $(BASE_PORT) $$(($(BASE_PORT) + $(NUM_SOLOS) - 1))`; do \
+		bin/ag-solo init t1/$$port --webport=$$port; \
+		case $$port in \
+			$(BASE_PORT)) toks=$(INITIAL_TOKENS),100000000stake ;; \
+			*) toks=1agmedallion ;; \
+		esac; \
+		$(AGC) add-genesis-account `cat t1/$$port/ag-cosmos-helper-address` $$toks; \
+	done
+	echo 'mmmmmmmm' | $(AGC) gentx --home-client=t1/$(BASE_PORT)/ag-cosmos-helper-statedir --name=ag-solo --amount=1000000stake
 	$(AGC) collect-gentxs
 	$(AGC) validate-genesis
 	./setup/set-json.js ~/.ag-chain-cosmos/config/genesis.json --agoric-genesis-overrides
 	$(MAKE) set-local-gci-ingress
-	@echo "ROLE=two_chain BOOT_ADDRESS=\`cat t1/ag-cosmos-helper-address\` agc start"
-	@echo "(cd t1 && ../bin/ag-solo start --role=two_client)"
+	@echo "ROLE=two_chain BOOT_ADDRESS=\`cat t1/$(BASE_PORT)/ag-cosmos-helper-address\` agc start"
+	@echo "(cd t1/$(BASE_PORT) && ../bin/ag-solo start --role=two_client)"
 
 scenario2-run-chain:
-	ROLE=two_chain BOOT_ADDRESS=`cat t1/ag-cosmos-helper-address` $(NODE_DEBUG) `$(BREAK_CHAIN) && echo --inspect-brk` $(AGC) start
+	set -e; ba=; for acha in t1/*/ag-cosmos-helper-address; do \
+		ba="$$ba "`cat $$acha`; \
+	done; \
+	ROLE=two_chain BOOT_ADDRESS="$$ba" $(NODE_DEBUG) \
+	  `$(BREAK_CHAIN) && echo --inspect-brk` $(AGC) start
 scenario2-run-client:
-	cd t1 && ../bin/ag-solo start --role=two_client
+	cd t1/$(BASE_PORT) && ../../bin/ag-solo start --role=two_client
 
 scenario3-setup:
 	rm -rf t3
@@ -151,7 +165,13 @@ show-local-gci:
 	@./calc-gci.js ~/.ag-cosmos-chain/config/genesis.json
 
 set-local-gci-ingress:
-	cd t1 && ../bin/ag-solo set-gci-ingress --chainID=$(CHAIN_ID) `../calc-gci.js ~/.ag-chain-cosmos/config/genesis.json` `../calc-rpcport.js ~/.ag-chain-cosmos/config/config.toml`
+	set -e; \
+	gci=`./calc-gci.js ~/.ag-chain-cosmos/config/genesis.json`; \
+	rpcport=`./calc-rpcport.js ~/.ag-chain-cosmos/config/config.toml`; \
+	for dir in t1/*; do \
+		(cd $$dir && \
+			../../bin/ag-solo set-gci-ingress --chainID=$(CHAIN_ID) $$gci $$rpcport); \
+	done
 
 start-ag-solo-connected-to-local:
 	rm -rf t1

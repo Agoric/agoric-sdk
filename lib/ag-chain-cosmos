@@ -50,7 +50,7 @@ let sPort;
 
 function toSwingSet(action, replier) {
   console.log(`toSwingSet`, action, replier);
-  return _toSwingSet(action, replier)
+  return toSwingSet0(action, replier)
     .then(ret => {
       console.log(`toSwingSet returning:`, ret);
       return ret;
@@ -60,7 +60,7 @@ function toSwingSet(action, replier) {
     });
 }
 
-async function _toSwingSet(action, replier) {
+async function toSwingSet0(action, _replier) {
   if (action.type === 'AG_COSMOS_INIT') {
     return true;
   }
@@ -109,7 +109,10 @@ async function _toSwingSet(action, replier) {
     };
 
     const vatsdir = path.resolve(__dirname, '../lib/ag-solo/vats');
-    const argv = [`--role=${ROLE}`, bootAddress];
+    const argv = [`--role=${ROLE}`];
+    if (bootAddress) {
+      argv.push(...bootAddress.trim().split(/\s+/));
+    }
     const s = await launch(mailboxStorage, stateFile, vatsdir, argv);
     deliverInbound = s.deliverInbound;
   }
