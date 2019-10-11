@@ -43,7 +43,7 @@ function EProxyHandler(x, HandledPromise) {
 }
 
 export default function makeE(HandledPromise) {
-  return harden(function E(x) {
+  function E(x) {
     // p = E(x).name(args)
     //
     // E(x) returns a proxy on which you can call arbitrary methods. Each of
@@ -53,5 +53,91 @@ export default function makeE(HandledPromise) {
 
     const handler = EProxyHandler(x, HandledPromise);
     return harden(new Proxy({}, handler));
-  });
+  }
+
+  let EChain;
+  const makers = {
+    G(x) {
+      // Return getter.
+      return new Proxy(
+        {},
+        {
+          has(_target, _prop) {
+            return true;
+          },
+          get(_target, prop) {
+            return EChain(HandledPromise.get(x, prop));
+          },
+        },
+      );
+    },
+    D(x) {
+      // Return deleter.
+      return new Proxy(
+        {},
+        {
+          has(_target, _prop) {
+            return true;
+          },
+          get(_target, prop) {
+            return EChain(HandledPromise.delete(x, prop));
+          },
+        },
+      );
+    },
+    S(x) {
+      // Return setter.
+      return new Proxy(
+        {},
+        {
+          has(_target, _prop) {
+            return true;
+          },
+          get(_target, prop) {
+            return harden(value => EChain(HandledPromise.set(x, prop, value)));
+          },
+        },
+      );
+    },
+    M(x) {
+      // Return method-caller.
+      return new Proxy(
+        {},
+        {
+          has(_target, _prop) {
+            return true;
+          },
+          get(_target, prop) {
+            return harden((...args) =>
+              EChain(HandledPromise.applyMethod(x, prop, args)),
+            );
+          },
+          apply(_target, _thisArg, args = []) {
+            return EChain(HandledPromise.applyFunction(x, args));
+          },
+        },
+      );
+    },
+    P(x) {
+      // Return as promise.
+      return Promise.resolve(x);
+    },
+  };
+
+  EChain = x => {
+    return new Proxy(
+      {}, // empty shadow
+      {
+        has(_target, prop) {
+          return Object.keys(makers).indexOf(prop) >= 0;
+        },
+        get(_target, prop) {
+          return harden(makers[prop](x));
+        },
+      },
+    );
+  };
+
+  E.C = EChain;
+  return harden(E);
 }
