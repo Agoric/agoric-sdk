@@ -52,13 +52,18 @@ export function makeHandledPromise(EPromise) {
     deleteSendOnly(target, key) {
       EPromise.resolve(target).delete(key);
     },
-    // TODO: Change HandledPromise.apply to be
-    // HandledPromise.applyFunction
-    // to avoid conflict with constructor .apply behaviour.
+    // TODO: Remove when making HandledPromise a constructor
+    // to avoid conflict with Function.prototype.apply
     apply(target, args) {
       return EPromise.resolve(target).post(undefined, args);
     },
     applySendOnly(target, args) {
+      EPromise.resolve(target).post(undefined, args);
+    },
+    applyFunction(target, args) {
+      return EPromise.resolve(target).post(undefined, args);
+    },
+    applyFunctionSendOnly(target, args) {
       EPromise.resolve(target).post(undefined, args);
     },
     applyMethod(target, key, args) {
