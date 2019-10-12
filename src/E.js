@@ -1,4 +1,6 @@
 /* global globalThis window */
+// eslint-disable-next-line spaced-comment
+/// <reference path="index.d.ts" />
 // Shim globalThis when we don't have it.
 if (typeof globalThis === 'undefined') {
   const myGlobal = typeof window === 'undefined' ? global : window;
@@ -44,13 +46,6 @@ function EProxyHandler(x, HandledPromise) {
 
 export default function makeE(HandledPromise) {
   function E(x) {
-    // p = E(x).name(args)
-    //
-    // E(x) returns a proxy on which you can call arbitrary methods. Each of
-    // these method calls returns a promise. The method will be invoked on
-    // whatever 'x' designates (or resolves to) in a future turn, not this
-    // one.
-
     const handler = EProxyHandler(x, HandledPromise);
     return harden(new Proxy({}, handler));
   }
