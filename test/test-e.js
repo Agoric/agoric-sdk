@@ -18,7 +18,7 @@ test('E method calls', async t => {
   }
 });
 
-test.only('E.C chains', async t => {
+test('E.C chains', async t => {
   try {
     const x = {
       name: 'buddy',
@@ -34,8 +34,7 @@ test.only('E.C chains', async t => {
     };
     const xC = E.C(x);
     t.equal(await xC.M.hello('Hello').P, 'Hello, buddy!', 'method call works');
-    // console.log(await xC.G.y.G.fn.P);
-    // t.equal(await xC.G.y.G.fn.M(4).P, 8, 'anonymous method works');
+    t.equal(await xC.G.y.G.fn.M(4).P, 8, 'anonymous method works');
     t.equal(await xC.G.val.P, 123, 'property get');
     t.equal(await xC.S.val(999).P, 999, 'property set');
     t.equal(x.val, 999, 'property set works');
