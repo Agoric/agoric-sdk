@@ -93,9 +93,27 @@ No invites left`;
     // number of functions with names beginning 'check', each of which can be
     // used by clients to help validate that they have terms that match the
     // contract.
-    install(contractSrcs) {
-      const installation = extractCheckFunctions(contractSrcs);
-      const startFn = evaluateStringToFn(contractSrcs.start);
+    install(contractSrcs, moduleFormat = 'object') {
+      let installation;
+      let startFn;
+      if (moduleFormat === 'object') {
+        installation = extractCheckFunctions(contractSrcs);
+        startFn = evaluateStringToFn(contractSrcs.start);
+      } else if (moduleFormat === 'getExport') {
+        const getExports = evaluateStringToFn(contractSrcs);
+        const ns = getExports();
+        installation = {};
+        for (const fname of Object.getOwnPropertyNames(ns)) {
+          if (typeof fname === 'string' && fname.startsWith('check')) {
+            const fn = ns[fname];
+            installation[fname] = (...args) => fn(installation, ...args);
+          }
+        }
+        startFn = ns.default;
+      } else {
+        insist(false)`\
+Unrecognized moduleFormat ${moduleFormat}`;
+      }
 
       // TODO: The `spawn` method should spin off a new vat for each new
       // contract instance.  In the current single-vat implementation we
