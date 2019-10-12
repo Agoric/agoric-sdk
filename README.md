@@ -1,8 +1,18 @@
-# New Repo
+# `@agoric/mini-captp`
 
-This repository should be a compilation of everything that a new
-Agoric repo should have, including ESLint settings, prettier settings,
-package.json dependencies and scripts, licenses, sample tests, CircleCI config, and
-VSCode testing config.
+A miniature CapTP implementation leveraging Agoric's published modules.
 
-See [SETUP-DELETEME](SETUP-DELETEME.md) for starting steps.
+## Usage
+
+```
+import makeCapTP from '@agoric/mini-captp';
+import { E } from '@agoric/eventual-send';
+
+// Create a message handler and bootstrap.
+// Messages on myconn are exchanged with JSON-able objects.
+const [handler, getBootstrap] = makeCapTP('myid', myconn.send, myBootstrap);
+myconn.onReceive = obj => handler[obj.type](obj);
+
+// Get the remote's bootstrap object and call a remote method.
+E(getBootstrap()).method(args).then(res => console.log('got res', res));
+```

@@ -1,10 +1,27 @@
 {
-  "name": "@agoric/@PACKAGE@",
-  "version": "0.0.1",
-  "description": "???",
-  "main": "dist/@PACKAGE@.cjs.js",
-  "module": "dist/@PACKAGE@.esm.js",
-  "browser": "dist/@PACKAGE@.umd.js",
+  "name": "@agoric/captp",
+  "version": "0.1.0",
+  "description": "Capability Transfer Protocol for distributed objects",
+  "keywords": [
+    "agoric",
+    "captp",
+    "eventual-send"
+  ],
+  "author": "Michael FIG <michael@fig.org>",
+  "homepage": "https://github.com/Agoric/CapTP#readme",
+  "license": "Apache-2.0",
+  "main": "lib/captp.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "files": [
+    "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/CapTP.git"
+  },
   "scripts": {
     "test": "tape -r esm 'test/**/*.js'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
@@ -25,20 +42,13 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
+    "@agoric/eventual-send": "^0.4.1",
+    "@agoric/harden": "^0.0.4",
+    "@agoric/marshal": "^0.1.1",
+    "@agoric/nat": "^2.0.1",
     "esm": "^3.2.5"
   },
-  "keywords": [],
-  "files": [
-    "dist"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Agoric/@REPO@"
-  },
-  "author": "Agoric",
-  "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/Agoric/@REPO@/issues"
-  },
-  "homepage": "https://github.com/Agoric/@REPO@#readme"
+    "url": "https://github.com/Agoric/CapTP/issues"
+  }
 }
