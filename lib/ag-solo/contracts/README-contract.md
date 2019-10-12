@@ -1,5 +1,7 @@
 This folder contains contracts that are bundled and installed when ag-solo first starts.
 
+## Writing
+
 Each contract entrypoint is named `contract-NAME.js`, where **NAME** is any kind of identifier.  These files are ES modules which can import other modules, and whose default export is:
 
 ```js
@@ -33,4 +35,6 @@ ag-solo upload-contract NAME=ENTRYPOINT.js [NAME=ENTRYPOINT.js...]
 #   NAME#nnn
 ```
 
-The numeric suffix **nnn** is chosen to make a unique ID by the registry.
+The numeric suffix **nnn** is chosen by the registry to make a unique ID.
+
+Again, note that all the `contract-*.js` in this directory are automatically uploaded when ag-solo first starts.
