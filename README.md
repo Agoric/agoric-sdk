@@ -4,7 +4,7 @@ A miniature CapTP implementation leveraging Agoric's published modules.
 
 ## Usage
 
-```
+```js
 import makeCapTP from '@agoric/mini-captp';
 import { E } from '@agoric/eventual-send';
 
