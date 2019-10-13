@@ -18,8 +18,10 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
+    "@agoric/captp": "^0.1.0",
     "@agoric/ertp": "^0.1.5",
     "@agoric/evaluate": "^2.1.2",
+    "@agoric/eventual-send": "^0.4.2",
     "@agoric/swingset-vat": "0.0.27",
     "@iarna/toml": "^2.2.3",
     "bindings": "^1.2.1",
