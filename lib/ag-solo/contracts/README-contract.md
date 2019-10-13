@@ -18,7 +18,7 @@ The following global variables are available to all modules in your Zoe contract
 
 ## Legacy contractHost uploads
 
-Each contract entrypoint is named `contract-NAME.js`, where **NAME** is an identifier.  These files are ES modules which can import other modules, and whose default export is:
+Each contractHost entrypoint is named `contractHost-NAME.js`, where **NAME** is an identifier.  These files are ES modules which can import other modules, and whose default export is:
 
 ```js
 // This function is called to instantiate a contract.
@@ -34,23 +34,19 @@ The following global variables are available to all modules in your contractHost
 * console
 * E
 * makePromise
-
-And until these are importable from an ERTP ES module:
 * sameStructure
 * mustBeSameStructure
 
 ## Uploading
 
-The upload process installs the contract and registers the installation as `NAME#nnn` in the object registry (either on or off-chain).  This process can be run at any time by using ag-solo's upload-contract functionality:
+The upload process installs the contract and registers the installation as `NAME` in the `home.uploads` privote scratch pad.  This process can be run at any time by using ag-solo's upload-contract functionality:
 
 ```sh
 ag-solo upload-contract NAME=ENTRYPOINT.js [NAME=ENTRYPOINT.js...]
 # To create contract instance, use:
-#   home.registry~.get(ID)~.spawn(TERMS)
-# where ID is the registered installation id, one of:
-#   NAME#nnn
+#   home.uploads~.get(NAME)
+# or to list all:
+#   home.uploads~.list()
 ```
 
-The numeric suffix **nnn** is chosen by the registry to make a unique ID.
-
-Again, note that all the `contract-*.js` in this directory are automatically uploaded when ag-solo first starts.
+Again, note that all the `contractHost-*.js` and `zoe-*.js` in this directory are automatically uploaded when ag-solo first starts.
