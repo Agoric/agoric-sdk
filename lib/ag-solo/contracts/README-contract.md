@@ -39,14 +39,14 @@ The following global variables are available to all modules in your contractHost
 
 ## Uploading
 
-The upload process installs the contract and registers the installation as `NAME` in the `home.uploads` privote scratch pad.  This process can be run at any time by using ag-solo's upload-contract functionality:
+The upload process installs the contract and registers the installation as `NAME` in the `home.uploads` private scratch pad.  This process can be run at any time by using ag-solo's upload-contract functionality:
 
 ```sh
 ag-solo upload-contract NAME=ENTRYPOINT.js [NAME=ENTRYPOINT.js...]
-# To create contract instance, use:
-#   home.uploads~.get(NAME)
-# or to list all:
-#   home.uploads~.list()
 ```
+
+To access the contract installation object, use `home.uploads~.get(NAME)`.
+
+To list all contracts in the uploads scratch pad: `home.uploads~.list()`.
 
 Again, note that all the `contractHost-*.js` and `zoe-*.js` in this directory are automatically uploaded when ag-solo first starts.
