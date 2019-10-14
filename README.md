@@ -1,11 +1,11 @@
-# `@agoric/mini-captp`
+# `@agoric/captp`
 
-A miniature CapTP implementation leveraging Agoric's published modules.
+A minimal CapTP implementation leveraging Agoric's published modules.
 
 ## Usage
 
 ```
-import makeCapTP from '@agoric/mini-captp';
+import makeCapTP from '@agoric/captp';
 import { E } from '@agoric/eventual-send';
 
 // Create a message handler and bootstrap.
