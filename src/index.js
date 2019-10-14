@@ -395,6 +395,9 @@ export function maybeExtendPromise(Promise) {
         return o(...args);
       }
       // console.log(`sending`, optKey, o[optKey], o);
+      if (typeof o[optKey] !== 'function') {
+        throw TypeError(`o[${JSON.stringify(optKey)}] is not a function`);
+      }
       return o[optKey](...args);
     }),
   };
