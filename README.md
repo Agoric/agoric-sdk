@@ -257,6 +257,13 @@ Woohoo! We're now a few dust richer than when we started.
 
 Learn more about ERTP and our pixel demo [here](https://github.com/Agoric/ERTP). 
 
+To see the contracts you've uploaded [as per the README](lib/ag-solo/contracts/README-contract.md), try:
+
+```js
+home.uploads~.list()
+home.uploads~.get('encouragementBot')~.spawn()~.encourageMe('Person')
+```
+
 ### Initial Endowments
 
 When a client is started up, it has a few items in a record named home.
@@ -265,6 +272,8 @@ When a client is started up, it has a few items in a record named home.
 * purse: a purse that can hold pixel Dust
 * handoffService: a handoff service, which makes it possible to pass capabilities between vats
 * canvasStatePublisher: a service with the message subscribe(callback)
+* uploads: a private directory of contracts you've uploaded
+* registry: a public directory for published objects
 
 #### handoffService
 
