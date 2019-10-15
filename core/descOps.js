@@ -1,14 +1,15 @@
 import harden from '@agoric/harden';
 
 import { mustBeSameStructure, mustBeComparable } from '../util/sameStructure';
+import { extentOpsLib } from './config/extentOpsLib';
 
 // This module treats labels as black boxes. It is not aware
-// of assays, and so can handle labels whose assays are merely
-// presences of remote assays.
+// of descOps, and so can handle labels whose descOps are merely
+// presences of remote descOps.
 
 // `makeDescOps` takes in a 'extentOps' object which defines set
 // operations for a particular kind of descOps. For instance, for the
-// natExtentOps, these operations are arithmetic.
+// natDescOps, these operations are arithmetic.
 
 // Return an descOps, which makes assetDescs, validates assetDescs, and
 // provides set operations over assetDescs. An assetDesc is a pass-by-copy
@@ -16,12 +17,15 @@ import { mustBeSameStructure, mustBeComparable } from '../util/sameStructure';
 // extent. All assetDescs made by the same descOps have the same label
 // but differ in extent.
 //
-// An descOps is pass-by-presence, but is not designed to be usefully
+// A descOps is pass-by-presence, but is not designed to be usefully
 // passed. Rather, we expect each vat that needs to operate on assetDescs
 // will have its own local descOps to do so.
 
-function makeDescOps(label, extentOps) {
+function makeDescOps(label, extentOpsName, extentOpsArgs = []) {
   mustBeComparable(label);
+
+  const makeExtentOps = extentOpsLib[extentOpsName];
+  const extentOps = makeExtentOps(...extentOpsArgs);
 
   // The brand represents recognition of the assetDesc as authorized.
   const brand = new WeakSet();
@@ -31,9 +35,11 @@ function makeDescOps(label, extentOps) {
       return label;
     },
 
-    getExtentOps() {
-      return extentOps;
-    },
+    getExtentOps: () =>
+      harden({
+        name: extentOpsName,
+        args: extentOpsArgs,
+      }),
 
     // Given the raw extent that this kind of assetDesc would label, return
     // an assetDesc so labeling that extent.

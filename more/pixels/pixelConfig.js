@@ -1,7 +1,6 @@
 import harden from '@agoric/harden';
 
 import { makePixelMintKeeper } from './pixelMintKeeper';
-import { makePixelExtentOps } from './pixelExtentOps';
 import { makeMint } from '../../core/mint';
 
 /**
@@ -58,104 +57,109 @@ function makePixelConfigMaker(
       return childAssay.makeAssetDesc(extent);
     }
 
-    return harden({
-      makePaymentTrait(superPayment, assay) {
-        return harden({
-          // This creates a new use object on every call. Please see
-          // the gallery for the definition of the use object that is
-          // created here by calling `makeUseObj`
-          getUse() {
-            return makeUseObj(assay, superPayment);
-          },
-          // Revoke all descendants of this payment and mint a new
-          // payment from the child mint with the same extent as the
-          // original payment
-          claimChild() {
-            prepareChildMint(assay);
-            const childAssetDesc = getChildAssetDesc(
-              assay,
-              superPayment.getBalance(),
-            );
-            // Remove the assetDesc of this payment from the purses and
-            // payments of the childMint. Removes recursively down the
-            // chain until it fails to find a childMint.
-            childMint.revoke(childAssetDesc);
-            const childPurse = childMint.mint(childAssetDesc);
-            return childPurse.withdrawAll();
-          },
-        });
-      },
-      makePurseTrait(superPurse, assay) {
-        return harden({
-          // This creates a new use object on every call. Please see
-          // the gallery for the definition of the use object that is
-          // created here by calling `makeUseObj`
-          getUse() {
-            return makeUseObj(assay, superPurse);
-          },
-          // Revoke all descendants of this purse and mint a new purse
-          // from the child mint with the same extent as the
-          // original purse
-          claimChild() {
-            prepareChildMint(assay);
-            const childAssetDesc = getChildAssetDesc(
-              assay,
-              superPurse.getBalance(),
-            );
-            // Remove the assetDesc of this payment from the purses and
-            // payments of the childMint. Removes recursively down the
-            // chain until it fails to find a childMint.
-            childMint.revoke(childAssetDesc);
-            return childMint.mint(childAssetDesc);
-          },
-        });
-      },
-      makeMintTrait(_superMint, assay, descOps, mintKeeper) {
-        return harden({
-          // revoke destroys the assetDesc from this mint and calls
-          // revoke on the childMint with an assetDesc of the same
-          // extent. Destroying the assetDesc depends on the fact that
-          // pixels are uniquely identifiable by their `x` and `y`
-          // coordinates. Therefore, destroy can look for purses and
-          // payments that include those particular pixels and remove
-          // the particular pixels from those purses or payments
-          revoke(assetDesc) {
-            assetDesc = descOps.coerce(assetDesc);
+    function* makePaymentTrait(corePayment, assay) {
+      yield harden({
+        // This creates a new use object on every call. Please see
+        // the gallery for the definition of the use object that is
+        // created here by calling `makeUseObj`
+        getUse() {
+          return makeUseObj(assay, corePayment);
+        },
+        // Revoke all descendants of this payment and mint a new
+        // payment from the child mint with the same extent as the
+        // original payment
+        claimChild() {
+          prepareChildMint(assay);
+          const childAssetDesc = getChildAssetDesc(
+            assay,
+            corePayment.getBalance(),
+          );
+          // Remove the assetDesc of this payment from the purses and
+          // payments of the childMint. Removes recursively down the
+          // chain until it fails to find a childMint.
+          childMint.revoke(childAssetDesc);
+          const childPurse = childMint.mint(childAssetDesc);
+          return childPurse.withdrawAll();
+        },
+      });
+    }
+    function* makePurseTrait(corePurse, assay) {
+      yield harden({
+        // This creates a new use object on every call. Please see
+        // the gallery for the definition of the use object that is
+        // created here by calling `makeUseObj`
+        getUse() {
+          return makeUseObj(assay, corePurse);
+        },
+        // Revoke all descendants of this purse and mint a new purse
+        // from the child mint with the same extent as the
+        // original purse
+        claimChild() {
+          prepareChildMint(assay);
+          const childAssetDesc = getChildAssetDesc(
+            assay,
+            corePurse.getBalance(),
+          );
+          // Remove the assetDesc of this payment from the purses and
+          // payments of the childMint. Removes recursively down the
+          // chain until it fails to find a childMint.
+          childMint.revoke(childAssetDesc);
+          return childMint.mint(childAssetDesc);
+        },
+      });
+    }
+    function* makeMintTrait(_coreMint, assay, descOps, mintKeeper) {
+      yield harden({
+        // revoke destroys the assetDesc from this mint and calls
+        // revoke on the childMint with an assetDesc of the same
+        // extent. Destroying the assetDesc depends on the fact that
+        // pixels are uniquely identifiable by their `x` and `y`
+        // coordinates. Therefore, destroy can look for purses and
+        // payments that include those particular pixels and remove
+        // the particular pixels from those purses or payments
+        revoke(assetDesc) {
+          assetDesc = descOps.coerce(assetDesc);
 
-            mintKeeper.destroy(assetDesc);
-            if (childMint !== undefined) {
-              childMint.revoke(getChildAssetDesc(assay, assetDesc)); // recursively revoke child assets
-            }
-          },
-        });
-      },
-      makeAssayTrait(superAssay) {
-        return harden({
-          // The parent assay is one level up in the chain of
-          // assays.
-          getParentAssay() {
-            return parentAssay;
-          },
-          // The child assay is one level down in the chain of assays.
-          getChildAssay() {
-            prepareChildMint(superAssay);
-            return childAssay;
-          },
-          // Returns true if the alleged descendant assay is either a
-          // child, grandchild, or any other kind of descendant
-          isDescendantAssay(allegedDescendant) {
-            if (childAssay === undefined) {
-              return false;
-            }
-            if (childAssay === allegedDescendant) {
-              return true;
-            }
-            return childAssay.isDescendantAssay(allegedDescendant);
-          },
-        });
-      },
+          mintKeeper.destroy(assetDesc);
+          if (childMint !== undefined) {
+            childMint.revoke(getChildAssetDesc(assay, assetDesc)); // recursively revoke child assets
+          }
+        },
+      });
+    }
+    function* makeAssayTrait(coreAssay) {
+      yield harden({
+        // The parent assay is one level up in the chain of
+        // assays.
+        getParentAssay() {
+          return parentAssay;
+        },
+        // The child assay is one level down in the chain of assays.
+        getChildAssay() {
+          prepareChildMint(coreAssay);
+          return childAssay;
+        },
+        // Returns true if the alleged descendant assay is either a
+        // child, grandchild, or any other kind of descendant
+        isDescendantAssay(allegedDescendant) {
+          if (childAssay === undefined) {
+            return false;
+          }
+          if (childAssay === allegedDescendant) {
+            return true;
+          }
+          return childAssay.isDescendantAssay(allegedDescendant);
+        },
+      });
+    }
+    return harden({
+      makePaymentTrait,
+      makePurseTrait,
+      makeMintTrait,
+      makeAssayTrait,
       makeMintKeeper: makePixelMintKeeper,
-      extentOps: makePixelExtentOps(canvasSize),
+      extentOpsName: 'pixelExtentOps',
+      extentOpsArgs: [10],
     });
   }
   return makePixelConfig;

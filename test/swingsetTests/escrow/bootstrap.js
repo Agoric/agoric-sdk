@@ -3,7 +3,7 @@
 import harden from '@agoric/harden';
 
 import { escrowExchangeSrcs } from '../../../core/escrow';
-import { makeUniDescOpsConfigMaker } from '../../../core/config/uniDescOpsConfig';
+import { makeInviteConfig } from '../../../core/config/inviteConfig';
 import { insist } from '../../../util/insist';
 import { makeMint } from '../../../core/mint';
 import { allComparable } from '../../../util/sameStructure';
@@ -195,9 +195,7 @@ expected successful check ${result}`;
       const host = await E(vats.host).makeHost();
       const randMintP = E(vats.mint).makeMint('rand');
 
-      const makeUniDescOpsConfig = makeUniDescOpsConfigMaker();
-
-      const artMintP = makeMint('art', makeUniDescOpsConfig);
+      const artMintP = makeMint('art', makeInviteConfig);
       switch (argv[0]) {
         case 'escrow misMatches': {
           return testEscrowServiceMismatches(host, randMintP, artMintP);

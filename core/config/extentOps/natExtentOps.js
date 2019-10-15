@@ -11,14 +11,15 @@ import harden from '@agoric/harden';
 // done with the smallest whole unit such that the NatDescOps never
 // deals with fractional parts.
 
-const natExtentOps = harden({
-  insistKind: Nat,
-  empty: _ => 0,
-  isEmpty: nat => nat === 0,
-  includes: (whole, part) => whole >= part,
-  equals: (left, right) => left === right,
-  with: (left, right) => Nat(left + right),
-  without: (whole, part) => Nat(whole - part),
-});
+const makeNatExtentOps = () =>
+  harden({
+    insistKind: Nat,
+    empty: _ => 0,
+    isEmpty: nat => nat === 0,
+    includes: (whole, part) => whole >= part,
+    equals: (left, right) => left === right,
+    with: (left, right) => Nat(left + right),
+    without: (whole, part) => Nat(whole - part),
+  });
 
-export { natExtentOps };
+export { makeNatExtentOps };

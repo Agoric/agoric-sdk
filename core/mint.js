@@ -30,7 +30,8 @@ Description must be truthy: ${description}`;
     makePurseTrait,
     makeMintTrait,
     makeMintKeeper,
-    extentOps,
+    extentOpsName,
+    extentOpsArgs,
   } = makeConfig();
 
   // Methods like depositExactly() pass in an assetDesc which is supposed
@@ -67,10 +68,13 @@ Description must be truthy: ${description}`;
 
     // makePaymentTrait is defined in the passed-in configuration and adds
     // additional methods to corePayment
+    const makePaymentTraitIter = makePaymentTrait(corePayment, assay);
+    const paymentTrait = makePaymentTraitIter.next().value;
     const payment = harden({
-      ...makePaymentTrait(corePayment, assay),
+      ...paymentTrait,
       ...corePayment,
     });
+    makePaymentTraitIter.next(payment);
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -100,10 +104,13 @@ Description must be truthy: ${description}`;
     });
     // makePaymentTrait is defined in the passed-in configuration and adds
     // additional methods to corePayment
+    const makePaymentTraitIter = makePaymentTrait(corePayment, assay);
+    const paymentTrait = makePaymentTraitIter.next().value;
     const payment = harden({
-      ...makePaymentTrait(corePayment, assay),
+      ...paymentTrait,
       ...corePayment,
     });
+    makePaymentTraitIter.next(payment);
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -233,14 +240,17 @@ Description must be truthy: ${description}`;
 
   // makeAssayTrait is defined in the passed-in configuration and adds
   // additional methods to coreAssay.
+  const makeAssayTraitIter = makeAssayTrait(coreAssay);
+  const assayTrait = makeAssayTraitIter.next().value;
   const assay = harden({
-    ...makeAssayTrait(coreAssay),
+    ...assayTrait,
     ...coreAssay,
   });
+  makeAssayTraitIter.next(assay);
 
   const label = harden({ assay, description });
 
-  const descOps = makeDescOps(label, extentOps);
+  const descOps = makeDescOps(label, extentOpsName, extentOpsArgs);
   const mintKeeper = makeMintKeeper(descOps);
   const { purseKeeper, paymentKeeper } = mintKeeper;
 
@@ -305,10 +315,13 @@ Description must be truthy: ${description}`;
 
       // makePurseTrait is defined in the passed-in configuration and
       // adds additional methods to corePurse
+      const makePurseTraitIter = makePurseTrait(corePurse, assay);
+      const purseTrait = makePurseTraitIter.next().value;
       const purse = harden({
-        ...makePurseTrait(corePurse, assay),
+        ...purseTrait,
         ...corePurse,
       });
+      makePurseTraitIter.next(purse);
 
       purseKeeper.recordNew(purse, initialBalance);
       return purse;
@@ -317,10 +330,13 @@ Description must be truthy: ${description}`;
 
   // makeMintTrait is defined in the passed-in configuration and
   // adds additional methods to coreMint
+  const makeMintTraitIter = makeMintTrait(coreMint, assay, descOps, mintKeeper);
+  const mintTrait = makeMintTraitIter.next().value;
   const mint = harden({
-    ...makeMintTrait(coreMint, assay, descOps, mintKeeper),
+    ...mintTrait,
     ...coreMint,
   });
+  makeMintTraitIter.next(mint);
 
   return mint;
 }

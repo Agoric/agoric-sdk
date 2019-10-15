@@ -9,7 +9,7 @@ struct AssetDesc (Extent, Label) {
 }
 
 /**
- * Quantities describe the extent of something that can be owned or shared.
+ * Extents describe the extent of something that can be owned or shared.
  * The format is determined by its descOps. Fungible extents are normally
  * represented by natural numbers. Other extents may be represented as
  * strings naming a particular right, or an arbitrary object that sensibly

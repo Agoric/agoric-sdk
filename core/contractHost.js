@@ -11,7 +11,7 @@ import {
   mustBeSameStructure,
   sameStructure,
 } from '../util/sameStructure';
-import { makeUniDescOpsConfigMaker } from './config/uniDescOpsConfig';
+import { makeInviteConfig } from './config/inviteConfig';
 import { makeMint } from './mint';
 import makePromise from '../util/makePromise';
 
@@ -24,14 +24,7 @@ function makeContractHost(E, evaluate) {
   // from installation to source code string
   const installationSources = makePrivateName();
 
-  function descriptionCoercer(allegedDescription) {
-    const seatDesc = seatDescriptions.get(allegedDescription.seatIdentity);
-    mustBeSameStructure(seatDesc, allegedDescription);
-    return seatDesc;
-  }
-
-  const makeUniDescOpsConfig = makeUniDescOpsConfigMaker(descriptionCoercer);
-  const inviteMint = makeMint('contract host', makeUniDescOpsConfig);
+  const inviteMint = makeMint('contract host', makeInviteConfig);
   const inviteAssay = inviteMint.getAssay();
   const inviteDescOps = inviteAssay.getDescOps();
 

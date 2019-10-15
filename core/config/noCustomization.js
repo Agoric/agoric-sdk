@@ -6,19 +6,28 @@ import harden from '@agoric/harden';
 
 // These methods must be paired with a mintKeeper and DescOps to be a
 // full configuration that can be passed into `makeMint`.
+
+function* makePaymentTrait(_corePayment) {
+  yield harden({});
+}
+
+function* makePurseTrait(_corePurse) {
+  yield harden({});
+}
+
+function* makeMintTrait(_coreMint) {
+  yield harden({});
+}
+
+function* makeAssayTrait(_coreAssay) {
+  yield harden({});
+}
+
 const noCustomization = harden({
-  makePaymentTrait(_superPayment) {
-    return harden({});
-  },
-  makePurseTrait(_superPurse) {
-    return harden({});
-  },
-  makeMintTrait(_superMint) {
-    return harden({});
-  },
-  makeAssayTrait(_superAssay) {
-    return harden({});
-  },
+  makePaymentTrait,
+  makePurseTrait,
+  makeMintTrait,
+  makeAssayTrait,
 });
 
 export { noCustomization };
