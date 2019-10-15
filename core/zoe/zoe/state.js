@@ -9,8 +9,7 @@ const makeState = () => {
   const offerIdToResults = new WeakMap();
   const offerIdToInstanceId = new WeakMap();
   const instanceIdToInstance = new WeakMap();
-  const instanceIdToMiddleLayerId = new WeakMap();
-  const instanceIdToPureFnId = new WeakMap();
+  const instanceIdToInstallationId = new WeakMap();
   const assayToPurse = new WeakMap();
   const instanceIdToDescOps = new WeakMap();
   const instanceIdToExtentOps = new WeakMap();
@@ -48,16 +47,9 @@ const makeState = () => {
     },
     getInstallation: installationId =>
       installationIdToInstallation.get(installationId),
-    addInstance: async (
-      instanceId,
-      instance,
-      middleLayerId,
-      pureFnId,
-      assays,
-    ) => {
+    addInstance: async (instanceId, instance, installationId, assays) => {
       instanceIdToInstance.set(instanceId, instance);
-      instanceIdToMiddleLayerId.set(instanceId, middleLayerId);
-      instanceIdToPureFnId.set(instanceId, pureFnId);
+      instanceIdToInstallationId.set(instanceId, installationId);
       instanceIdToAssays.set(instanceId, assays);
 
       const descOps = await Promise.all(
@@ -84,10 +76,8 @@ const makeState = () => {
       instanceIdToPurses.set(instanceId, purses);
     },
     getInstance: instanceId => instanceIdToInstance.get(instanceId),
-    getMiddleLayerIdForInstanceId: instanceId =>
-      instanceIdToMiddleLayerId.get(instanceId),
-    getPureFnIdForInstanceId: instanceId =>
-      instanceIdToPureFnId.get(instanceId),
+    getInstallationIdForInstanceId: instanceId =>
+      instanceIdToInstallationId.get(instanceId),
     getPurses: instanceId => instanceIdToPurses.get(instanceId),
     getOrMakePurseForAssay: async assay => {
       if (!assayToPurse.has(assay)) {

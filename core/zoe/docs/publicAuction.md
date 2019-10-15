@@ -7,14 +7,10 @@ private) bids to have the right economic incentives, so this version
 which is entirely public should not be used in production for real
 items.
 
-## "SimpleOffer" Second-price auction
+## Public second-price auction
 
-In this particular second-price auction, we use the "SimpleOffer"
-framework on top of Zoe to create the interface exposed to the user.
-All of the logic particular to the second-price auction is within the
-"secondPriceSrcs" passed into the SimpleOffer framework. The
-secondPriceSrcs are parameterized on the number of bids that are
-allowed before the auction is closed.
+In this particular "public" second-price auction, anyone who has
+access to the auction instance can make a bid by making an offer.
 
 Alice can create an auction by doing:
 
@@ -68,7 +64,7 @@ minimum bid in simoleans is.)
 
 ```js
 const bobAssays = zoe.getAssaysForInstance(instanceId);
-t.deepEquals(bobAssays, assays);
+sameStructure(bobAssays, assays);
 ```
 
 Bob decides to join the contract and

@@ -75,7 +75,7 @@ test('zoe.makeInstance with automaticRefund', async t => {
 
     const {
       instance: bobAutomaticRefund,
-      middleLayerId: bobInstallationId,
+      installationId: bobInstallationId,
     } = zoe.getInstance(instanceId);
     t.equals(bobInstallationId, installationId);
 

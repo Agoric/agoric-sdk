@@ -256,29 +256,21 @@ Unrecognized moduleFormat ${moduleFormat}`;
      * description elements and offer payments accepted by the
      * governing contract.
      */
-    makeInstance: async (assays, middleLayerId, pureFnId) => {
-      const middleLayerFns = adminState.getInstallation(middleLayerId);
-      const pureFns = adminState.getInstallation(pureFnId);
-      if (!middleLayerFns) {
-        throw new Error('installation was not found');
-      }
-      // pureFns can be undefined.
+    makeInstance: async (assays, installationId) => {
+      const installation = adminState.getInstallation(installationId);
       const instanceId = harden({});
       const governingContractFacet = makeGoverningContractFacet(instanceId);
-      const makeContractFn = middleLayerFns.makeContract(pureFns);
-      const instance = makeContractFn(governingContractFacet);
+      const instance = installation.makeContract(governingContractFacet);
       await adminState.addInstance(
         instanceId,
         instance,
-        middleLayerId,
-        pureFnId,
+        installationId,
         assays,
       );
       return harden({
         instance,
         instanceId,
-        middleLayerId,
-        pureFnId,
+        installationId,
       });
     },
     /**
@@ -287,15 +279,13 @@ Unrecognized moduleFormat ${moduleFormat}`;
      */
     getInstance: instanceId => {
       const instance = adminState.getInstance(instanceId);
-      const middleLayerId = adminState.getMiddleLayerIdForInstanceId(
+      const installationId = adminState.getInstallationIdForInstanceId(
         instanceId,
       );
-      const pureFnId = adminState.getPureFnIdForInstanceId(instanceId);
       return harden({
         instance,
         instanceId,
-        middleLayerId,
-        pureFnId,
+        installationId,
       });
     },
 

@@ -4,10 +4,9 @@ import harden from '@agoric/harden';
 import { makeZoe } from '../../../../../core/zoe/zoe/zoe';
 import { setup } from '../setupBasicMints';
 
-import { simpleOfferSrcs } from '../../../../../core/zoe/contracts/simpleOffer/simpleOffer';
-import { swapSrcs } from '../../../../../core/zoe/contracts/simpleOffer/srcs/swapSrcs';
+import { publicSwapSrcs } from '../../../../../core/zoe/contracts/publicSwap';
 
-test('zoe.makeInstance - simpleOfferSwap', async t => {
+test('zoe - publicSwap', async t => {
   try {
     const { assays: originalAssays, mints } = setup();
     const assays = originalAssays.slice(0, 2);
@@ -29,12 +28,10 @@ test('zoe.makeInstance - simpleOfferSwap', async t => {
     const carolSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
 
     // 1: Alice creates a simpleSwap instance
-    const simpleOfferInstallationId = zoe.install(simpleOfferSrcs);
-    const swapSrcsInstallationId = zoe.install(swapSrcs);
+    const installationId = zoe.install(publicSwapSrcs);
     const { instance: aliceSwap, instanceId } = await zoe.makeInstance(
       assays,
-      simpleOfferInstallationId,
-      swapSrcsInstallationId,
+      installationId,
     );
 
     // 2: Alice escrows with zoe
@@ -88,12 +85,10 @@ test('zoe.makeInstance - simpleOfferSwap', async t => {
 
     const {
       instance: bobSwap,
-      middleLayerId: bobMiddleLayerId,
-      pureFnId: bobPureFnId,
+      installationId: bobInstallationId,
     } = zoe.getInstance(instanceId);
 
-    t.equals(bobMiddleLayerId, simpleOfferInstallationId);
-    t.equals(bobPureFnId, swapSrcsInstallationId);
+    t.equals(bobInstallationId, installationId);
     const bobAssays = zoe.getAssaysForInstance(instanceId);
     t.deepEquals(bobAssays, assays);
 

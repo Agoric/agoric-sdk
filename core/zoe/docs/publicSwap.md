@@ -8,18 +8,19 @@ securely trade one kind of eright for another kind, leveraging Zoe for
 escrow and offer-safety. At no time does any user have the ability to
 behave opportunistically.
 
-## Simple Offer Swap
+## Public Swap
 
-In the "Simple Offer" swap, the governing contract is the
-`simpleOffer` interface with the `swapSrcs` installed. 
+In the "public swap", anyone who has access to the swap instance can
+make an offer, no invites necessary.
 
 Let's say that Alice wants to create a swap that anyone can be the
 counter-party for. She creates a swap instance:
 
 ```js
+const installationId = zoe.install(publicSwapSrcs);
 const { instance: aliceSwap, instanceId } = await zoe.makeInstance(
-  'simpleOfferSwap',
   assays,
+  installationId,
 );
 ```
 
@@ -56,10 +57,14 @@ contract and he decides to look up the `instanceId` to see if it
 matches Alice's claims.
 
 ```js
-const { instance: bobSwap, libraryName } = zoe.getInstance(instanceId);
-t.equals(libraryName, 'simpleOfferSwap');
+const {
+  instance: bobSwap,
+  installationId: bobInstallationId,
+} = zoe.getInstance(instanceId);
+
+t.equals(bobInstallationId, installationId);
 const bobAssays = zoe.getAssaysForInstance(instanceId);
-t.deepEquals(bobAssays, assays);
+sameStructure(bobAssays, assays);
 ```
 
 Bob decides to be the counter-party. He also escrows his payment and
