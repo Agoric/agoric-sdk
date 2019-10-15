@@ -1,5 +1,10 @@
 User-visible changes in ERTP:
 
+## Release v0.1.7 (10/15/2019)
+
+* Added configurable endowments in contract evaluation for `Zoe` and the
+  `contractHost`.
+
 ## Release v0.1.6 (10/14/2019)
 
 * [Renamed many aspects of ERTP](https://github.com/Agoric/ERTP/commit/a34dad171eb8693b807a7fd959b14e938fedf42a):
