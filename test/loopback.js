@@ -1,26 +1,27 @@
 import { test } from 'tape-promise/tape';
-import { E } from '@agoric/eventual-send';
-import harden from '@agoric/harden';
-import makeCapTP from '../lib/captp';
+import { E, harden, makeCapTP } from '../lib/captp';
 
 // TODO: remove .only when you have this test working
 test('try loopback captp', async t => {
   try {
     const debug = false;
-    let right;
-    const left = makeCapTP('left', obj => {
-      if (debug) {
-        console.log('toRight', obj);
-      }
-      right[0][obj.type](obj);
-    });
-    right = makeCapTP(
+    let rightDispatch;
+    const { dispatch: leftDispatch, getBootstrap: leftBootstrap } = makeCapTP(
+      'left',
+      obj => {
+        if (debug) {
+          console.log('toRight', obj);
+        }
+        rightDispatch(obj);
+      },
+    );
+    ({ dispatch: rightDispatch } = makeCapTP(
       'right',
       obj => {
         if (debug) {
           console.log('toLeft', obj);
         }
-        left[0][obj.type](obj);
+        leftDispatch(obj);
       },
       harden({
         encourager: {
@@ -40,8 +41,8 @@ test('try loopback captp', async t => {
           },
         },
       }),
-    );
-    const rightRef = left[1]();
+    ));
+    const rightRef = leftBootstrap();
     const { comment, bang } = await E.C(rightRef).G.encourager.M.encourage(
       'buddy',
     ).P;
