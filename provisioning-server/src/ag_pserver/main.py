@@ -225,7 +225,10 @@ def enablePubkey(reactor, opts, config, nickname, pubkey):
     # be routed to vat-provisioning.js and the pleaseProvision() method.
     try:
         resp = yield treq.post(controller_url, m.encode('utf-8'), reactor=reactor,
-                                headers={b'Content-Type': [b'application/json']})
+                                headers={
+                                    b'Content-Type': [b'application/json'],
+                                    b'Origin': [controller_url.encode('utf-8')],
+                                })
         if resp.code < 200 or resp.code >= 300:
             raise Exception('invalid response code ' + str(resp.code))
         rawResp = yield treq.json_content(resp)
