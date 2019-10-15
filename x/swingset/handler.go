@@ -19,6 +19,7 @@ type deliverInboundAction struct {
 	Ack         int             `json:"ack"`
 	StoragePort int             `json:"storagePort"`
 	BlockHeight int64           `json:"blockHeight"`
+	BlockTime   int64           `json:"blockTime"`
 }
 
 // FIXME: Get rid of this global in exchange for a field on some object.
@@ -90,7 +91,6 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 	}
 
 	storageHandler := NewStorageHandler(ctx, keeper)
-
 	// Allow the storageHandler to consume unlimited gas.
 	storageHandler.Context = storageHandler.Context.WithGasMeter(sdk.NewInfiniteGasMeter())
 
@@ -100,8 +100,9 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 		Peer:        msg.Peer,
 		Messages:    messages,
 		Ack:         msg.Ack,
-		BlockHeight: ctx.BlockHeight(),
 		StoragePort: newPort,
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
 	}
 	b, err := json.Marshal(action)
 	if err != nil {

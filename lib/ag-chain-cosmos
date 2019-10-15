@@ -113,11 +113,18 @@ async function toSwingSet0(action, _replier) {
     if (bootAddress) {
       argv.push(...bootAddress.trim().split(/\s+/));
     }
+console.log(` calling LAUNCH, then deliver`);
     const s = await launch(mailboxStorage, stateFile, vatsdir, argv);
     deliverInbound = s.deliverInbound;
   }
 
-  const d = deliverInbound(action.peer, action.messages, action.ack);
+  const d = deliverInbound(
+    action.peer,
+    action.messages,
+    action.ack,
+    action.blockHeight,
+    action.blockTime,
+  );
   d.then(undefined,
          rej => {
            console.log(`deliverInbound failed`, rej);
