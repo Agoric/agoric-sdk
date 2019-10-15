@@ -1,6 +1,6 @@
 {
   "name": "@agoric/captp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Capability Transfer Protocol for distributed objects",
   "keywords": [
     "agoric",
