@@ -1,4 +1,4 @@
-#Tic Tac Toe Game with React Hooks
+# Wallet Demo
 
 ## Running the demo
 

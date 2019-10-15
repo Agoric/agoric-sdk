@@ -4,15 +4,16 @@ import { makeStyles } from '@material-ui/core/styles';
 import { CssBaseline } from '@material-ui/core';
 
 import Header from '../components/Header';
-import Game from '../components/Game';
+import Web3Status from '../components/Web3Status';
+import Wallet from '../components/Wallet';
 
 const useStyles = makeStyles(theme => ({
   layout: {
     width: 'auto',
     marginLeft: theme.spacing(2),
     marginRight: theme.spacing(2),
-    [theme.breakpoints.up(600 + theme.spacing(2) * 2)]: {
-      width: 600,
+    [theme.breakpoints.up(800 + theme.spacing(2) * 2)]: {
+      width: 800,
       marginLeft: 'auto',
       marginRight: 'auto',
     },
@@ -25,9 +26,11 @@ export default function App() {
   return (
     <>
       <CssBaseline />
-      <Header />
+      <Header>
+        <Web3Status />
+      </Header>
       <main className={classes.layout}>
-        <Game />
+        <Wallet />
       </main>
     </>
   );

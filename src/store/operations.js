@@ -1,25 +1,30 @@
-export function newGame() {
-  return {
-    board: Array(9).fill(null),
-    player: 1,
-  };
+export function activateConnection(state) {
+  return { ...state, active: true };
+}
+export function deactivateConnection(state) {
+  return { ...state, active: false };
 }
 
-export function playTurn({ board, player, index }) {
-  if (board[index] > 0) {
-    return {
-      board,
-      player,
-    };
-  }
+export function serverConnected(state) {
+  return { ...state, connected: true };
+}
+export function serverDisconnected(state) {
+  return { ...state, connected: false };
+}
 
-  board = board.slice();
-  board[index] = player;
+export function updatePurses(state, purses) {
+  return { ...state, purses };
+}
 
-  player = 3 - player;
+export function updateTransactions(state, transactions) {
+  console.log('*** payload', transactions);
+  return { ...state, transactions };
+}
 
-  return {
-    board,
-    player,
-  };
+export function confirmTrade(state) {
+  return { ...state };
+}
+
+export function rejectTrade(state) {
+  return { ...state };
 }
