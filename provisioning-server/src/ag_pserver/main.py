@@ -227,7 +227,7 @@ def enablePubkey(reactor, opts, config, nickname, pubkey):
         resp = yield treq.post(controller_url, m.encode('utf-8'), reactor=reactor,
                                 headers={
                                     b'Content-Type': [b'application/json'],
-                                    b'Origin': [controller_url.encode('utf-8')],
+                                    b'Origin': [b'http://127.0.0.1'],
                                 })
         if resp.code < 200 or resp.code >= 300:
             raise Exception('invalid response code ' + str(resp.code))
