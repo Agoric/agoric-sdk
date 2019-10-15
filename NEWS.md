@@ -1,5 +1,35 @@
 User-visible changes in ERTP:
 
+## Release v0.1.6 (10/14/2019)
+
+* [Renamed many aspects of ERTP](https://github.com/Agoric/ERTP/commit/a34dad171eb8693b807a7fd959b14e938fedf42a):
+    1. `amount`, the description of an asset (e.g. 3 bucks), is now
+       `assetDesc`, short for 'asset description'.
+    2. `quantity`, the measure of "how much" is in an asset (the '3'
+       of '3 bucks') is now `extent`. We did this so that we
+       can reference the extent of non-fungible assets as easily as
+       fungible assets.
+    3. `assay`, the operations for manipulating labeled
+       extents/quantities, is now `descOps`. `DescOps` are the set
+       operations on asset descriptions. This change makes it clear
+       that the `descOps` are not an institution in the same sense as
+       the mint and are merely operations.
+    4. `strategy`, the operations for manipulating unlabeled extents,
+       is now `extentOps`. This change makes it clear that it is the
+       operations on extents, and it acts on extents in the same way
+       that `descOps` acts on descriptions.
+    5. Purses and payments are now together called `assetHolders`.
+       Assets are the intangible (i.e. there is no asset object) erights held by purses and payments.
+    6. `issuer` has been renamed to `assay`. `assay` and `mint` are
+       two facets of the same institution. The `mint` has the
+       authority to create new assets. The `assay` is the
+       public-facing facet that is often widely known and can be used
+       to claim exclusive access to a payment or make an empty purse,
+       among other things. 
+* Added [support for uploading contracts](https://github.com/Agoric/cosmic-swingset/blob/master/lib/ag-solo/contracts/README-contract.md) at the start of the Agoric testnet. 
+* Added an [initial version of Zoe](https://github.com/Agoric/ERTP/commit/a32426aab307d31bd0fe1b6e1241d4a270964e31), our offer-safety enforcement layer.
+  More on this to come.
+
 ## Release v0.1.5 (10/4/2019)
 
 * Updated to `@agoric/swingset-vat` v0.0.26. Also updated a number of
