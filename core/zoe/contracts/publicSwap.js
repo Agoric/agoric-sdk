@@ -82,3 +82,6 @@ const publicSwapSrcs = harden({
 });
 
 export { publicSwapSrcs };
+
+// eslint-disable-next-line spaced-comment
+//# sourceURL=publicSwap.js
