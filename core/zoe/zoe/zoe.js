@@ -6,6 +6,7 @@ import { isOfferSafeForAll } from './isOfferSafe';
 import { areRightsConserved } from './areRightsConserved';
 import { toAssetDescMatrix, makeEmptyExtents } from '../contractUtils';
 import makePromise from '../../../util/makePromise';
+import { sameStructure } from '../../../util/sameStructure';
 
 import {
   makePayments,
@@ -51,6 +52,7 @@ const makeZoe = async (additionalEndowments = {}) => {
     harden,
     makePromise,
     insist,
+    sameStructure,
   };
   const fullEndowments = Object.create(null, {
     ...Object.getOwnPropertyDescriptors(defaultEndowments),
