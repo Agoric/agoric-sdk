@@ -1,5 +1,10 @@
 User-visible changes in Cosmic SwingSet:
 
+## Release v0.10.6 (2019-10-16)
+
+* Upgrade to SwingSet v0.1.0
+  - [security fixes for realms-shim and SES](https://github.com/Agoric/realms-shim/security/advisories/GHSA-7cg8-pq9v-x98q)
+
 ## Release v0.10.5 (2019-10-16)
 
 * Implement `ag-solo upload-contract`
