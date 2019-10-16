@@ -1,5 +1,10 @@
 User-visible changes in SwingSet:
 
+## Release 0.1.0 (16-Oct-2019)
+
+* update to SES-0.6.4 to fix a sandbox breach
+
+
 ## Release 0.0.27 (08-Oct-2019)
 
 * Rewritten state management: hosts must now provide a "HostStorage" object
