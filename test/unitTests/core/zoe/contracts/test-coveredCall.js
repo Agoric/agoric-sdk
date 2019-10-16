@@ -4,20 +4,15 @@ import harden from '@agoric/harden';
 import { makeZoe } from '../../../../../core/zoe/zoe/zoe';
 import { setup } from '../setupBasicMints';
 
-import { offerEqual } from '../../../../../core/zoe/contractUtils';
+import { sameStructure } from '../../../../../util/sameStructure';
 
 import { coveredCallSrcs } from '../../../../../core/zoe/contracts/coveredCall';
 
 test('zoe - coveredCall', async t => {
   try {
-    const {
-      mints: defaultMints,
-      assays: defaultAssays,
-      extentOps: defaultExtentOps,
-    } = setup();
+    const { mints: defaultMints, assays: defaultAssays } = setup();
     const mints = defaultMints.slice(0, 2);
     const assays = defaultAssays.slice(0, 2);
-    const extentOps = defaultExtentOps.slice(0, 2);
     const zoe = await makeZoe();
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
 
@@ -90,8 +85,9 @@ test('zoe - coveredCall', async t => {
     // 3: Imagine that Alice sends the invite to Bob (not done here
     // since this test doesn't actually have separate vats/parties)
 
-    // 4: Bob inspects the invite payment and checks that the offerToBeMade
-    // matches what he expects
+    // 4: Bob inspects the invite payment and checks that it is the
+    // contract instance that he expects as well as that Alice has
+    // already escrowed.
 
     const bobIntendedOffer = harden([
       {
@@ -104,15 +100,12 @@ test('zoe - coveredCall', async t => {
       },
     ]);
 
-    t.ok(
-      offerEqual(
-        extentOps,
-        bobInvitePayment.getBalance().extent.offerToBeMade,
-        bobIntendedOffer,
-      ),
-    );
-
-    t.equal(bobInvitePayment.getBalance().extent.instanceId, instanceId);
+    const inviteExtent = bobInvitePayment.getBalance().extent;
+    t.equal(inviteExtent.instanceId, instanceId);
+    t.equal(inviteExtent.installationId, coveredCallInstallationId);
+    t.equal(inviteExtent.status, 'acceptingOffers');
+    t.ok(sameStructure(inviteExtent.offerMade, aliceOffer));
+    t.ok(sameStructure(inviteExtent.offerToBeMade, bobIntendedOffer));
 
     // Bob claims all with the Zoe inviteAssay
     const inviteAssay = zoe.getInviteAssay();
@@ -137,8 +130,14 @@ test('zoe - coveredCall', async t => {
     // 8: Bob makes an offer with his escrow receipt
     const bobOutcome = await bobInvite.makeOffer(bobEscrowReceipt);
 
-    t.equals(bobOutcome, 'offer successfully made');
-    t.equals(aliceOutcome, 'offer successfully made');
+    t.equals(
+      bobOutcome,
+      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+    );
+    t.equals(
+      aliceOutcome,
+      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+    );
 
     const aliceResult = await alicePayoffP;
     const bobResult = await bobPayoffP;

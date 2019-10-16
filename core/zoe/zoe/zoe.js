@@ -199,11 +199,15 @@ const makeZoe = async (additionalEndowments = {}) => {
         return assetDesc.extent;
       },
 
-      makeInvite: (offerToBeMade, useObj) => {
+      makeInvite: (contractDefinedProperties, useObj) => {
+        const installationId = adminState.getInstallationIdForInstanceId(
+          instanceId,
+        );
         const inviteExtent = harden({
+          ...contractDefinedProperties,
           id: harden({}),
           instanceId,
-          offerToBeMade,
+          installationId,
         });
         const invitePurseP = inviteMint.mint(inviteExtent);
         inviteAddUseObj(inviteExtent.id, useObj);

@@ -1,83 +1,16 @@
 import harden from '@agoric/harden';
 
-import makePromise from '../../../util/makePromise';
 import { insist } from '../../../util/insist';
+import { sameStructure } from '../../../util/sameStructure';
 
-// Will be refactored
 const makeContract = harden(zoe => {
-  const isValidInitialOfferDesc = newOfferDesc => {
-    const makeHasOkRules = validRules => offer =>
-      validRules.every((rule, i) => rule === offer[i].rule, true);
+  let firstOfferId;
+  let firstOfferDesc;
+  let matchingOfferId;
 
-    const hasOkLength = array => array.length === 2;
-    const hasOkRules = offer =>
-      makeHasOkRules(['offerExactly', 'wantExactly'])(offer) ||
-      makeHasOkRules(['wantExactly', 'offerExactly'])(offer);
-    return hasOkLength(newOfferDesc) && hasOkRules(newOfferDesc);
-  };
-
-  const makeWantedOfferDescs = firstOfferDesc => {
-    const makeSecondOffer = firstOffer =>
-      harden([
-        {
-          rule: firstOffer[1].rule,
-          assetDesc: firstOffer[0].assetDesc,
-        },
-        {
-          rule: firstOffer[0].rule,
-          assetDesc: firstOffer[1].assetDesc,
-        },
-      ]);
-    return harden([makeSecondOffer(firstOfferDesc)]);
-  };
-
-  const isValidOfferDesc = (extentOps, offerDescToBeMade, offerDescMade) => {
-    const ruleEqual = (leftRule, rightRule) => leftRule.rule === rightRule.rule;
-
-    const extentEqual = (extentOp, leftRule, rightRule) =>
-      extentOp.equals(leftRule.assetDesc.extent, rightRule.assetDesc.extent);
-
-    const assayEqual = (leftRule, rightRule) =>
-      leftRule.assetDesc.label.assay === rightRule.assetDesc.label.assay;
-
-    // Check that two offers are equal in both their rules and their assetDescs
-    const offerEqual = (leftOffer, rightOffer) => {
-      const isLengthEqual = leftOffer.length === rightOffer.length;
-      if (!isLengthEqual) {
-        return false;
-      }
-      return leftOffer.every(
-        (leftRule, i) =>
-          ruleEqual(leftRule, rightOffer[i]) &&
-          assayEqual(leftRule, rightOffer[i]) &&
-          extentEqual(extentOps[i], leftRule, rightOffer[i]),
-        true,
-      );
-    };
-
-    return offerEqual(offerDescToBeMade, offerDescMade);
-  };
-
-  const canReallocate = offerIds => offerIds.length === 2;
-
-  const reallocate = allocations => harden([allocations[1], allocations[0]]);
-
-  const makeOfferKeeper = () => {
-    const validOfferIdsToDescs = new WeakMap();
-    const validOfferIds = [];
-    return harden({
-      keepOffer: (offerId, offerDesc) => {
-        validOfferIdsToDescs.set(offerId, offerDesc);
-        validOfferIds.push(offerId);
-      },
-      getValidOfferIds: () => validOfferIds,
-    });
-  };
-
-  const { keepOffer, getValidOfferIds } = makeOfferKeeper();
-
-  const coveredCallallowedTransitions = [
-    ['open', ['closed', 'cancelled']],
+  const coveredCallAllowedTransitions = [
+    ['uninitialized', ['acceptingOffers']],
+    ['acceptingOffers', ['closed', 'cancelled']],
     ['closed', []],
     ['cancelled', []],
   ];
@@ -96,44 +29,76 @@ const makeContract = harden(zoe => {
     });
   };
 
-  const sm = makeStateMachine('open', coveredCallallowedTransitions);
+  const sm = makeStateMachine('uninitialized', coveredCallAllowedTransitions);
 
-  const makeOfferMaker = offerToBeMadeDesc => {
-    const makeOffer = async escrowReceipt => {
-      const offerResult = makePromise();
-      const { id, offerMade: offerMadeDesc } = await zoe.burnEscrowReceipt(
-        escrowReceipt,
+  const makeMatchingOfferDesc = () =>
+    harden([
+      {
+        rule: firstOfferDesc[1].rule,
+        assetDesc: firstOfferDesc[0].assetDesc,
+      },
+      {
+        rule: firstOfferDesc[0].rule,
+        assetDesc: firstOfferDesc[1].assetDesc,
+      },
+    ]);
+
+  const makeOffer = async escrowReceipt => {
+    const { id, offerMade: offerMadeDesc } = await zoe.burnEscrowReceipt(
+      escrowReceipt,
+    );
+
+    const isMatchingOfferDesc = (extentOps, leftOffer, rightOffer) => {
+      // "matching" means that assetDescs are the same, but that the
+      // rules have switched places in the array
+      return (
+        extentOps[0].equals(
+          leftOffer[0].assetDesc.extent,
+          rightOffer[0].assetDesc.extent,
+        ) &&
+        extentOps[1].equals(
+          leftOffer[1].assetDesc.extent,
+          rightOffer[1].assetDesc.extent,
+        ) &&
+        sameStructure(
+          leftOffer[0].assetDesc.label,
+          rightOffer[0].assetDesc.label,
+        ) &&
+        sameStructure(
+          leftOffer[1].assetDesc.label,
+          rightOffer[1].assetDesc.label,
+        ) &&
+        leftOffer[0].rule === rightOffer[1].rule &&
+        leftOffer[1].rule === rightOffer[0].rule
       );
-      if (sm.getStatus() !== 'open') {
-        zoe.complete(harden([id]));
-        offerResult.rej('offers are not accepted at this time');
-        return offerResult.p;
-      }
-
-      // fail-fast if the offerDesc isn't valid
-      if (
-        !isValidOfferDesc(zoe.getExtentOps(), offerToBeMadeDesc, offerMadeDesc)
-      ) {
-        zoe.complete(harden([id]));
-        offerResult.rej('offer was invalid');
-        return offerResult.p;
-      }
-
-      // keep valid offer
-      keepOffer(id, offerMadeDesc);
-      const validIds = getValidOfferIds();
-
-      if (sm.canTransitionTo('closed') && canReallocate(validIds)) {
-        sm.transitionTo('closed');
-        const extents = zoe.getExtentsFor(validIds);
-        const reallocation = reallocate(extents);
-        zoe.reallocate(validIds, reallocation);
-        zoe.complete(validIds);
-      }
-      offerResult.res('offer successfully made');
-      return offerResult.p;
     };
-    return harden(makeOffer);
+
+    // fail-fast if offers are not accepted or offer is not valid.
+    if (
+      sm.getStatus() !== 'acceptingOffers' ||
+      !isMatchingOfferDesc(zoe.getExtentOps(), firstOfferDesc, offerMadeDesc)
+    ) {
+      zoe.complete(harden([id]));
+      return Promise.reject(
+        new Error(
+          `The offer was invalid or the contract is not accepting offers. Please check your refund.`,
+        ),
+      );
+    }
+
+    // Save the valid offer
+    matchingOfferId = id;
+
+    sm.transitionTo('closed');
+    const offerIds = harden([firstOfferId, matchingOfferId]);
+    const [firstOfferExtents, matchingOfferExtents] = zoe.getExtentsFor(
+      offerIds,
+    );
+    // reallocate by switching the extents of the firstOffer and matchingOffer
+    zoe.reallocate(offerIds, harden([matchingOfferExtents, firstOfferExtents]));
+    zoe.complete(offerIds);
+
+    return `The offer has been accepted. Once the contract has been completed, please check your winnings`;
   };
 
   const institution = harden({
@@ -141,35 +106,42 @@ const makeContract = harden(zoe => {
       const { id, offerMade: offerMadeDesc } = await zoe.burnEscrowReceipt(
         escrowReceipt,
       );
-      const outcomeP = makePromise();
+
+      const isValidFirstOfferDesc = newOfferDesc =>
+        ['offerExactly', 'wantExactly'].every(
+          (rule, i) => rule === newOfferDesc[i].rule,
+          true,
+        );
+
       // Eject if the offer is invalid
-      if (!isValidInitialOfferDesc(offerMadeDesc)) {
+      if (
+        sm.getStatus() !== 'uninitialized' ||
+        !isValidFirstOfferDesc(offerMadeDesc)
+      ) {
         zoe.complete(harden([id]));
-        outcomeP.rej('The offer was invalid. Please check your refund.');
-        return outcomeP.p;
+        return Promise.reject(
+          new Error(`The offer was invalid. Please check your refund.`),
+        );
       }
 
-      keepOffer(id, offerMadeDesc);
+      // Save the valid offer
+      firstOfferId = id;
+      firstOfferDesc = offerMadeDesc;
+      sm.transitionTo('acceptingOffers');
 
-      const wantedOffers = makeWantedOfferDescs(offerMadeDesc);
+      const customInviteExtent = {
+        status: sm.getStatus(),
+        offerMade: firstOfferDesc,
+        offerToBeMade: makeMatchingOfferDesc(firstOfferDesc),
+      };
 
-      const invites = wantedOffers.map(async offer =>
-        zoe.makeInvite(offer, harden({ makeOffer: makeOfferMaker(offer) })),
+      const invite = await zoe.makeInvite(
+        customInviteExtent,
+        harden({ makeOffer }),
       );
 
-      const inviteP = invites[0];
-
-      outcomeP.res('offer successfully made');
-      const [outcome, invite] = await Promise.all([outcomeP.p, inviteP]);
-      /**
-       * Seat: the seat for the initial player
-       * Invites: invitations for all of the other seats that can
-       * be sent to other players.
-       * Both seat and invites are ERTP payments that can be
-       * `unwrap`ed to get a use object.
-       */
       return harden({
-        outcome,
+        outcome: `The offer has been accepted. Once the contract has been completed, please check your winnings`,
         invite,
       });
     },
