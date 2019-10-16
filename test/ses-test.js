@@ -1,7 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable no-await-in-loop */
 import { test } from 'tape-promise/tape';
-import * as SES from 'ses';
+import SES from 'ses';
 
 import { maybeExtendPromise, makeHandledPromise } from '@agoric/eventual-send';
 
@@ -15,6 +15,7 @@ import * as astring from 'astring';
 import makeEventualSendTransformer from '../src';
 
 const shims = [
+  'this.globalThis = this',
   `(${maybeExtendPromise})(Promise)`,
   `this.HandledPromise = (${makeHandledPromise})(Promise)`,
 ];
@@ -133,6 +134,7 @@ test('eventual send can be enabled', async t => {
         shims,
         transforms: makeEventualSendTransformer(parser, generate),
       });
+      // console.log(parser('"abc"~.length', { plugins: ['eventualSend'] }));
       t.equals(await s.evaluate(`"abc"~.length`), 3, `${name} .get() works`);
       t.equals(
         await s.evaluate(
@@ -215,7 +217,7 @@ test('eventual send can be enabled', async t => {
       );
     }
   } catch (e) {
-    t.assert(false, e);
+    t.isNot(e, e, 'unexpected exception');
   } finally {
     t.end();
   }
