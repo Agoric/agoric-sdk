@@ -1,5 +1,16 @@
 User-visible changes in Cosmic SwingSet:
 
+## Release v0.10.5 (2019-10-16)
+
+* Implement `ag-solo upload-contract`
+  - contracts can be dynamically installed on the running chain
+  - upload `lib/ag-solo/contracts` directory on initialization
+  - see the [README](lib/ag-solo/contracts/README-contract.md)
+* Upgrade to ERTP v0.1.7
+  - support bundled modules for `home.contractHost` and pre-alpha `home.zoe`
+* Restrict origin to localhost for `ag-solo` WebSocket and `/vat` POST
+  so that remote sites cannot manipulate `ag-solo`
+
 ## Release v0.10.4 (2019-10-09)
 
 * Upgrade to cosmos-sdk v0.37.1 with override for Tendermint v0.32.5
