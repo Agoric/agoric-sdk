@@ -9,6 +9,21 @@ if (typeof globalThis === 'undefined') {
 
 const harden = (globalThis.SES && globalThis.SES.harden) || Object.freeze;
 
+const readOnlyProxy = {
+  set(_target, _prop, _value) {
+    return false;
+  },
+  isExtensible(_target) {
+    return false;
+  },
+  setPrototypeOf(_target, _value) {
+    return false;
+  },
+  deleteProperty(_target, _prop) {
+    return false;
+  },
+};
+
 /**
  * A Proxy handler for E(x).
  *
@@ -17,6 +32,7 @@ const harden = (globalThis.SES && globalThis.SES.harden) || Object.freeze;
  */
 function EProxyHandler(x, HandledPromise) {
   return harden({
+    ...readOnlyProxy,
     get(_target, p, _receiver) {
       if (`${p}` !== p) {
         return undefined;
@@ -28,14 +44,8 @@ function EProxyHandler(x, HandledPromise) {
       // #95 for details.
       return (...args) => harden(HandledPromise.applyMethod(x, p, args));
     },
-    deleteProperty(_target, p) {
-      return harden(HandledPromise.delete(x, p));
-    },
-    set(_target, p, value, _receiver) {
-      return harden(HandledPromise.set(x, p, value));
-    },
     apply(_target, _thisArg, argArray = []) {
-      return harden(HandledPromise.apply(x, argArray));
+      return harden(HandledPromise.applyFunction(x, argArray));
     },
     has(_target, _p) {
       // We just pretend everything exists.
@@ -50,74 +60,97 @@ export default function makeE(HandledPromise) {
     return harden(new Proxy({}, handler));
   }
 
-  const EChain = x => {
-    return harden({
+  const makeEGetterProxy = (x, wrap = o => o) =>
+    new Proxy(
+      Object.create(null),
+      {
+        ...readOnlyProxy,
+        has(_target, _prop) {
+          return true;
+        },
+        get(_target, prop) {
+          return wrap(HandledPromise.get(x, prop));
+        },
+      },
+    );
+  
+
+  const makeEDeleterProxy = (x, wrap = o => o) =>
+    new Proxy(
+      Object.create(null),
+      {
+        ...readOnlyProxy,
+        has(_target, _prop) {
+          return true;
+        },
+        get(_target, prop) {
+          return wrap(HandledPromise.delete(x, prop));
+        },
+      },
+    );
+
+  const makeESetterProxy = (x, wrap = o => o) =>
+    new Proxy(
+      Object.create(null),
+      {
+        ...readOnlyProxy,
+        has(_target, _prop) {
+          return true;
+        },
+        get(_target, prop) {
+          return harden(value =>
+            wrap(HandledPromise.set(x, prop, value)),
+          );
+        },
+      },
+    );
+
+  const makeEMethodProxy = (x, wrap = o => o) =>
+    new Proxy(
+      (..._args) => {},
+      {
+        ...readOnlyProxy,
+        has(_target, _prop) {
+          return true;
+        },
+        get(_target, prop) {
+          return harden((...args) =>
+            wrap(HandledPromise.applyMethod(x, prop, args)),
+          );
+        },
+        apply(_target, _thisArg, args = []) {
+          return wrap(HandledPromise.applyFunction(x, args));
+        },
+      });
+
+  E.G = makeEGetterProxy;
+  E.D = makeEDeleterProxy;
+  E.S = makeESetterProxy;
+  E.M = makeEMethodProxy;
+
+  const EChain = x =>
+    harden({
       get G() {
         // Return getter.
-        return new Proxy(
-          { EChain: 'getter' },
-          {
-            has(_target, _prop) {
-              return true;
-            },
-            get(_target, prop) {
-              return EChain(HandledPromise.get(x, prop));
-            },
-          },
-        );
+        return makeEGetterProxy(x, EChain);
       },
       get D() {
         // Return deleter.
-        return new Proxy(
-          { EChain: 'deleter' },
-          {
-            has(_target, _prop) {
-              return true;
-            },
-            get(_target, prop) {
-              return EChain(HandledPromise.delete(x, prop));
-            },
-          },
-        );
+        return makeEDeleterProxy(x, EChain);
       },
       get S() {
         // Return setter.
-        return new Proxy(
-          { EChain: 'setter' },
-          {
-            has(_target, _prop) {
-              return true;
-            },
-            get(_target, prop) {
-              return harden(value =>
-                EChain(HandledPromise.set(x, prop, value)),
-              );
-            },
-          },
-        );
+        return makeESetterProxy(x, EChain);
       },
       get M() {
         // Return method-caller.
-        return new Proxy((..._args) => {}, {
-          has(_target, _prop) {
-            return true;
-          },
-          get(_target, prop) {
-            return harden((...args) =>
-              EChain(HandledPromise.applyMethod(x, prop, args)),
-            );
-          },
-          apply(_target, _thisArg, args = []) {
-            return EChain(HandledPromise.applyFunction(x, args));
-          },
-        });
+        return makeEMethodProxy(x, EChain);
       },
       get P() {
         // Return as promise.
         return Promise.resolve(x);
       },
     });
-  };
 
   E.C = EChain;
   return harden(E);
