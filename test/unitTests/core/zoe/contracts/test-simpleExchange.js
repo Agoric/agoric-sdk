@@ -4,18 +4,18 @@ import harden from '@agoric/harden';
 import { makeZoe } from '../../../../../core/zoe/zoe/zoe';
 import { setup } from '../setupBasicMints';
 
-import { publicSwapSrcs } from '../../../../../core/zoe/contracts/publicSwap';
+import { simpleExchangeSrcs } from '../../../../../core/zoe/contracts/simpleExchange';
 
-test('zoe - publicSwap', async t => {
+test('zoe - simpleExchange', async t => {
   try {
-    const { assays: originalAssays, mints } = setup();
+    const { assays: originalAssays, mints, descOps } = setup();
     const assays = originalAssays.slice(0, 2);
     const zoe = await makeZoe();
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
-    const payoffAssay = zoe.getPayoffAssay();
 
     // Setup Alice
     const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
+    const aliceSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
 
     // Setup Bob
@@ -23,39 +23,41 @@ test('zoe - publicSwap', async t => {
     const bobSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(7));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
-    // SetupCarol
-    const carolMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-    const carolSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
+    // Setup Carol
+    // const carolMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
+    // const carolSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(7));
+    // const carolSimoleanPayment = carolSimoleanPurse.withdrawAll();
 
-    // 1: Alice creates a publicSwap instance
-    const installationId = zoe.install(publicSwapSrcs);
-    const { instance: aliceSwap, instanceId } = await zoe.makeInstance(
+    // // Setup Dave
+    // const daveMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
+    // const daveSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(5));
+    // const daveSimoleanPayment = daveSimoleanPurse.withdrawAll();
+
+    // 1: Alice creates a simpleExchange instance
+    const installationId = zoe.install(simpleExchangeSrcs);
+    const { instance: aliceExchange, instanceId } = await zoe.makeInstance(
       assays,
       installationId,
     );
 
-    // 2: Alice escrows with zoe
-    const aliceOfferDesc = harden([
+    // 2: Alice escrows with zoe to create a sell order. She wants to
+    // sell 3 moola and wants to receive at least 4 simoleans in
+    // return.
+    const aliceSellOrder = harden([
       {
         rule: 'offerExactly',
         assetDesc: assays[0].makeAssetDesc(3),
       },
       {
-        rule: 'wantExactly',
-        assetDesc: assays[1].makeAssetDesc(7),
+        rule: 'wantAtLeast',
+        assetDesc: assays[1].makeAssetDesc(4),
       },
     ]);
     const alicePayments = [aliceMoolaPayment, undefined];
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
       payoff: alicePayoffP,
-      makePayoffPaymentObj,
-    } = await zoe.escrow(aliceOfferDesc, alicePayments);
-
-    t.rejects(
-      alicePayoffP,
-      /A new payoff ERTP payment was made, making this invalid./,
-    );
+    } = await zoe.escrow(aliceSellOrder, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment. It's
     // unnecessary if she trusts Zoe but we will do it for the tests.
@@ -63,28 +65,14 @@ test('zoe - publicSwap', async t => {
       allegedAliceEscrowReceipt,
     );
 
-    // 4: Alice initializes the swap with her escrow receipt
-    const aliceOfferResult = await aliceSwap.makeOffer(aliceEscrowReceipt);
-
-    // Alice gives Carol her payoff by creating a payoff payment.
-    // Carol is able to inspect the payoff payment to see what she can
-    // expect.
-
-    const alicePayoffPayment = makePayoffPaymentObj.makePayoffPayment();
-
-    const carolPayoffPayment = await payoffAssay.claimAll(alicePayoffPayment);
-    const payoffPaymentExtent = carolPayoffPayment.getBalance().extent;
-    t.deepEquals(payoffPaymentExtent.instanceId, instanceId);
-    t.deepEquals(payoffPaymentExtent.offerMade, aliceOfferDesc);
-    const carolPayoffObj = await carolPayoffPayment.unwrap();
-    const carolPayoffP = carolPayoffObj.getPayoff();
+    // 4: Alice adds her sell order to the exchange
+    const aliceOfferResult = await aliceExchange.addOrder(aliceEscrowReceipt);
 
     // 5: Alice spreads the instanceId far and wide with instructions
-    // on how to use it and Bob decides he wants to be the
-    // counter-party.
+    // on how to use it and Bob decides he wants to join.
 
     const {
-      instance: bobSwap,
+      instance: bobExchange,
       installationId: bobInstallationId,
     } = zoe.getInstance(instanceId);
 
@@ -92,13 +80,16 @@ test('zoe - publicSwap', async t => {
     const bobAssays = zoe.getAssaysForInstance(instanceId);
     t.deepEquals(bobAssays, assays);
 
-    const bobOfferDesc = harden([
+    // Bob creates a buy order, saying that he wants exactly 3 moola,
+    // and is willing to pay up to 7 simoleans.
+
+    const bobBuyOrder = harden([
       {
         rule: 'wantExactly',
         assetDesc: bobAssays[0].makeAssetDesc(3),
       },
       {
-        rule: 'offerExactly',
+        rule: 'offerAtMost',
         assetDesc: bobAssays[1].makeAssetDesc(7),
       },
     ]);
@@ -108,7 +99,7 @@ test('zoe - publicSwap', async t => {
     const {
       escrowReceipt: allegedBobEscrowReceipt,
       payoff: bobPayoffP,
-    } = await zoe.escrow(bobOfferDesc, bobPayments);
+    } = await zoe.escrow(bobBuyOrder, bobPayments);
 
     // 7: Bob does a claimAll on the escrowReceipt payment. This is
     // unnecessary but we will do it anyways for the test
@@ -116,8 +107,8 @@ test('zoe - publicSwap', async t => {
       allegedBobEscrowReceipt,
     );
 
-    // 8: Bob makes an offer with his escrow receipt
-    const bobOfferResult = await bobSwap.makeOffer(bobEscrowReceipt);
+    // 8: Bob submits the buy order to the exchange
+    const bobOfferResult = await bobExchange.addOrder(bobEscrowReceipt);
 
     t.equals(
       bobOfferResult,
@@ -128,17 +119,22 @@ test('zoe - publicSwap', async t => {
       'The offer has been accepted. Once the contract has been completed, please check your winnings',
     );
     const bobPayoff = await bobPayoffP;
-    const carolPayoff = await carolPayoffP;
+    const [aliceMoolaPayoff, aliceSimoleanPayoff] = await alicePayoffP;
 
-    // Carol gets what Alice wanted
-    t.deepEquals(carolPayoff[1].getBalance(), aliceOfferDesc[1].assetDesc);
+    // Alice gets paid at least what she wanted
+    t.ok(
+      descOps[1].includes(
+        aliceSimoleanPayoff.getBalance(),
+        aliceSellOrder[1].assetDesc,
+      ),
+    );
 
-    // Carol didn't get any of what Alice put in
-    t.equals(carolPayoff[0].getBalance().extent, 0);
+    // Alice sold all of her moola
+    t.equals(aliceMoolaPayoff.getBalance().extent, 0);
 
-    // 13: Carol deposits her winnings to ensure she can
-    await carolMoolaPurse.depositAll(carolPayoff[0]);
-    await carolSimoleanPurse.depositAll(carolPayoff[1]);
+    // 13: Alice deposits her winnings to ensure she can
+    await aliceMoolaPurse.depositAll(aliceMoolaPayoff);
+    await aliceSimoleanPurse.depositAll(aliceSimoleanPayoff);
 
     // 14: Bob deposits his original payments to ensure he can
     await bobMoolaPurse.depositAll(bobPayoff[0]);
@@ -147,8 +143,8 @@ test('zoe - publicSwap', async t => {
     // Assert that the correct winnings were received.
     // Alice had 3 moola and 0 simoleans.
     // Bob had 0 moola and 7 simoleans.
-    t.equals(carolMoolaPurse.getBalance().extent, 0);
-    t.equals(carolSimoleanPurse.getBalance().extent, 7);
+    t.equals(aliceMoolaPurse.getBalance().extent, 0);
+    t.equals(aliceSimoleanPurse.getBalance().extent, 7);
     t.equals(bobMoolaPurse.getBalance().extent, 3);
     t.equals(bobSimoleanPurse.getBalance().extent, 0);
   } catch (e) {
