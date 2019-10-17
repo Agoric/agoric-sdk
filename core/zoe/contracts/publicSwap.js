@@ -49,7 +49,7 @@ const makeContract = harden(zoe => {
         (isFirstOffer && isValidFirstOfferDesc(offerMadeDesc)) ||
         (!isFirstOffer &&
           isMatchingOfferDesc(
-            zoe.getExtentOps(),
+            zoe.getExtentOpsArray(),
             firstOfferDesc,
             offerMadeDesc,
           ));

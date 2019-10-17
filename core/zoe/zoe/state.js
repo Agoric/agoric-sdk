@@ -11,8 +11,8 @@ const makeState = () => {
   const instanceIdToInstance = new WeakMap();
   const instanceIdToInstallationId = new WeakMap();
   const assayToPurse = new WeakMap();
-  const instanceIdToDescOps = new WeakMap();
-  const instanceIdToExtentOps = new WeakMap();
+  const instanceIdToDescOpsArray = new WeakMap();
+  const instanceIdToExtentOpsArray = new WeakMap();
   const instanceIdToLabels = new WeakMap();
   const instanceIdToAssays = new WeakMap();
   const instanceIdToPurses = new WeakMap();
@@ -23,8 +23,8 @@ const makeState = () => {
   const readOnlyState = harden({
     // per instance id
     getAssays: instanceId => instanceIdToAssays.get(instanceId),
-    getDescOps: instanceId => instanceIdToDescOps.get(instanceId),
-    getExtentOps: instanceId => instanceIdToExtentOps.get(instanceId),
+    getDescOps: instanceId => instanceIdToDescOpsArray.get(instanceId),
+    getExtentOpsArray: instanceId => instanceIdToExtentOpsArray.get(instanceId),
     getLabels: instanceId => instanceIdToLabels.get(instanceId),
 
     // per offerIds array
@@ -55,15 +55,15 @@ const makeState = () => {
       const descOps = await Promise.all(
         assays.map(assay => E(assay).getDescOps()),
       );
-      instanceIdToDescOps.set(instanceId, descOps);
+      instanceIdToDescOpsArray.set(instanceId, descOps);
 
-      const extentOps = await Promise.all(
+      const extentOpsArray = await Promise.all(
         assays.map(async assay => {
           const { name, args } = await E(assay).getExtentOps();
           return extentOpsLib[name](...args);
         }),
       );
-      instanceIdToExtentOps.set(instanceId, extentOps);
+      instanceIdToExtentOpsArray.set(instanceId, extentOpsArray);
 
       const labels = await Promise.all(
         assays.map(assay => E(assay).getLabel()),

@@ -13,13 +13,13 @@ import { calculateSwap, getTokenIndices } from '../calculateSwap';
  */
 const makeGetPrice = (zoeInstance, poolOfferId) => assetDescsIn => {
   const poolExtents = zoeInstance.getExtentsFor(harden([poolOfferId]))[0];
-  const extentOps = zoeInstance.getExtentOps();
+  const extentOpsArray = zoeInstance.getExtentOpsArray();
   const labels = zoeInstance.getLabels();
-  const extentsIn = assetDescsToExtentsArray(extentOps, assetDescsIn);
+  const extentsIn = assetDescsToExtentsArray(extentOpsArray, assetDescsIn);
   const { tokenOutIndex } = getTokenIndices(extentsIn);
   const { tokenOutQ } = calculateSwap(poolExtents, extentsIn);
   return makeAssetDesc(
-    extentOps[tokenOutIndex],
+    extentOpsArray[tokenOutIndex],
     labels[tokenOutIndex],
     tokenOutQ,
   );

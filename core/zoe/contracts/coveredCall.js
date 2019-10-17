@@ -76,7 +76,11 @@ const makeContract = harden(zoe => {
     // fail-fast if offers are not accepted or offer is not valid.
     if (
       sm.getStatus() !== 'acceptingOffers' ||
-      !isMatchingOfferDesc(zoe.getExtentOps(), firstOfferDesc, offerMadeDesc)
+      !isMatchingOfferDesc(
+        zoe.getExtentOpsArray(),
+        firstOfferDesc,
+        offerMadeDesc,
+      )
     ) {
       zoe.complete(harden([id]));
       return Promise.reject(

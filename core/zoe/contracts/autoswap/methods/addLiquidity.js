@@ -21,7 +21,7 @@ const makeHandleOfferF = (
   const [oldPoolExtents, playerExtents] = zoeInstance.getExtentsFor(
     harden([poolOfferId, offerId]),
   );
-  const extentOps = zoeInstance.getExtentOps();
+  const extentOpsArray = zoeInstance.getExtentOpsArray();
   const liqTokenSupply = liquidityMint.getTotalSupply().extent;
 
   // Calculate how many liquidity tokens we should be minting.
@@ -36,7 +36,11 @@ const makeHandleOfferF = (
 
   // Calculate the new pool extents by adding together the old
   // extents plus the liquidity that was just added
-  const newPoolExtents = vectorWith(extentOps, oldPoolExtents, playerExtents);
+  const newPoolExtents = vectorWith(
+    extentOpsArray,
+    oldPoolExtents,
+    playerExtents,
+  );
 
   // Set the liquidity token extent in the array of extents that
   // will be turned into payments sent back to the user.
@@ -50,7 +54,11 @@ const makeHandleOfferF = (
   const newPayment = newPurse.withdrawAll();
 
   const rules = ['wantAtLeast', 'wantAtLeast', 'offerExactly'];
-  const extents = [extentOps[0].empty(), extentOps[1].empty(), liquidityQOut];
+  const extents = [
+    extentOpsArray[0].empty(),
+    extentOpsArray[1].empty(),
+    liquidityQOut,
+  ];
   const liquidityOfferDesc = zoeInstance.makeOfferDesc(rules, extents);
 
   const liquidityOfferId = await zoeInstance.escrowOffer(

@@ -89,7 +89,7 @@ export const makeContract = harden(zoe => {
       if (creatorOfferId === undefined) {
         creatorOfferId = id;
         creatorOfferDesc = offerMadeDesc;
-        [itemExtentOps, bidExtentOps] = zoe.getExtentOps();
+        [itemExtentOps, bidExtentOps] = zoe.getExtentOpsArray();
         itemExtentUpForAuction = offerMadeDesc[ITEM_INDEX].assetDesc.extent;
       } else {
         bidIds.push(id);

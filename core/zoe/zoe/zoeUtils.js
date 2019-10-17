@@ -123,9 +123,11 @@ const fillInUndefinedExtents = async (
   instanceId,
 ) => {
   const [extents] = readOnlyState.getExtentsFor(offerIds);
-  const extentOps = await Promise.all(readOnlyState.getExtentOps(instanceId));
+  const extentOpsArray = await Promise.all(
+    readOnlyState.getExtentOpsArray(instanceId),
+  );
   const filledInExtents = extents.map((extent, i) =>
-    extent === undefined ? extentOps[i].empty() : extent,
+    extent === undefined ? extentOpsArray[i].empty() : extent,
   );
   adminState.setExtentsFor(offerIds, harden([filledInExtents]));
 };

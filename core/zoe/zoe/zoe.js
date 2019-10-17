@@ -115,16 +115,16 @@ const makeZoe = async (additionalEndowments = {}) => {
       reallocate: (offerIds, reallocation) => {
         const offerDescs = readOnlyState.getOfferDescsFor(offerIds);
         const currentExtents = readOnlyState.getExtentsFor(offerIds);
-        const extentOps = readOnlyState.getExtentOps(instanceId);
+        const extentOpsArray = readOnlyState.getExtentOpsArray(instanceId);
 
         // 1) ensure that rights are conserved
         insist(
-          areRightsConserved(extentOps, currentExtents, reallocation),
+          areRightsConserved(extentOpsArray, currentExtents, reallocation),
         )`Rights are not conserved in the proposed reallocation`;
 
         // 2) ensure 'offer safety' for each player
         insist(
-          isOfferSafeForAll(extentOps, offerDescs, reallocation),
+          isOfferSafeForAll(extentOpsArray, offerDescs, reallocation),
         )`The proposed reallocation was not offer safe`;
 
         // 3) save the reallocation
@@ -143,9 +143,9 @@ const makeZoe = async (additionalEndowments = {}) => {
        */
       complete: async offerIds => {
         const extents = readOnlyState.getExtentsFor(offerIds);
-        const extentOps = readOnlyState.getExtentOps(instanceId);
+        const extentOpsArray = readOnlyState.getExtentOpsArray(instanceId);
         const labels = readOnlyState.getLabels(instanceId);
-        const assetDescs = toAssetDescMatrix(extentOps, labels, extents);
+        const assetDescs = toAssetDescMatrix(extentOpsArray, labels, extents);
         const purses = adminState.getPurses(instanceId);
         const payments = await makePayments(purses, assetDescs);
         const results = adminState.getResultsFor(offerIds);
@@ -216,8 +216,9 @@ const makeZoe = async (additionalEndowments = {}) => {
       },
 
       // read-only, side-effect-free access below this line:
-      makeEmptyExtents: () => makeEmptyExtents(readOnlyState.getExtentOps()),
-      getExtentOps: () => readOnlyState.getExtentOps(instanceId),
+      makeEmptyExtents: () =>
+        makeEmptyExtents(readOnlyState.getExtentOpsArray(instanceId)),
+      getExtentOpsArray: () => readOnlyState.getExtentOpsArray(instanceId),
       getExtentsFor: readOnlyState.getExtentsFor,
       getOfferDescsFor: readOnlyState.getOfferDescsFor,
       getInviteAssay: () => inviteAssay,
