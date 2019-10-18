@@ -88,26 +88,36 @@ The HTML frontend code is pure JS/DOM (no additional libraries yet), in
 #### Scenario 2: a single local testnet node (develop on-chain demo)
 
 In this scenario, you run: 
-- a **solo node** exposing an HTTP server in localhost
+- one or several **solo node(s)** each exposing an HTTP server in localhost (each to a different port)
 - a **single local blockchain testnet node** with the server-side Pixel Demo running
-- a **web browser** connecting to the solo node and enabling user interaction with the Pixel Demo
+- a **web browser** connecting to each solo node via a different port and enabling user interaction with the Pixel Demo
 
-The solo node communicates with the testnet node
-
-you install the pixel demo is run 
+The solo nodes communicate with the testnet node
 
 Before using this scenario, it is recommanded that you test your code with Scenario 3.
 
-Run:
+Prepare the chain and solo nodes:
 ```sh
-make scenario2-setup
+make scenario2-setup BASE_PORT=8000 NUM_SOLOS=3
+```
+
+This prepare for create 3 solo nodes. Each node exposes a web server to a different port. The ports start at `8000` (`BASE_PORT`). So the solo node ports here will be `8000`, `8001` and `8002`
+
+Start the chain:
+```sh
 make scenario2-run-chain
 ```
 
 Wait about 5 seconds for the chain to produce its first block, then switch to another terminal:
 ```sh
-make scenario2-run-client
+make scenario2-run-client BASE_PORT=8000
 ```
+
+You can communicate with the node by opening http://localhost:8000/
+
+You can start other solo nodes with `make scenario2-run-client BASE_PORT=8001` and `make scenario2-run-client BASE_PORT=8002` and communicate with them respectively with on http://localhost:8001/ and http://localhost:8002/
+
+
   
 #### Scenario 1: your own local testnet (develop testnet provisioner)
 
