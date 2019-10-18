@@ -1,8 +1,7 @@
 import harden from '@agoric/harden';
 
-export const makeContract = harden(zoe => {
+export const makeContract = harden((zoe, numBidsAllowed = 3) => {
   let creatorOfferId;
-  let creatorOfferDesc;
   const bidIds = [];
 
   let bidExtentOps;
@@ -14,8 +13,28 @@ export const makeContract = harden(zoe => {
   const ITEM_INDEX = 0;
   const BID_INDEX = 1;
 
-  // TODO: stop hard-coding this and allow installations to be parameterized
-  const numBidsAllowed = 3;
+  const isValidCreatorOfferDesc = newOfferDesc =>
+    ['offerExactly', 'wantAtLeast'].every(
+      (rule, i) => rule === newOfferDesc[i].rule,
+      true,
+    );
+
+  const hasOkRulesForBid = newOfferDesc =>
+    ['wantExactly', 'offerAtMost'].every(
+      (rule, i) => rule === newOfferDesc[i].rule,
+      true,
+    );
+
+  const getBidExtent = offerDesc => offerDesc[BID_INDEX].assetDesc.extent;
+  const canAcceptBid = bidIds.length < numBidsAllowed;
+
+  const isValidBidOfferDesc = (creatorOfferDesc, newOfferDesc) =>
+    canAcceptBid &&
+    hasOkRulesForBid(newOfferDesc) &&
+    bidExtentOps.includes(
+      getBidExtent(newOfferDesc),
+      getBidExtent(creatorOfferDesc),
+    );
 
   const findWinnerAndPrice = (bidOfferIds, bids) => {
     let highestBid = bidExtentOps.empty();
@@ -42,85 +61,75 @@ export const makeContract = harden(zoe => {
     };
   };
 
+  const reallocate = () => {
+    let bids;
+    try {
+      bids = zoe.getExtentsFor(bidIds).map(extents => extents[BID_INDEX]);
+    } catch (err) {
+      throw new Error(`Some of the bids were cancelled`);
+    }
+    const { winnerOfferId, winnerBid, price } = findWinnerAndPrice(
+      bidIds,
+      bids,
+    );
+
+    // The winner gets to keep the difference between their bid and the
+    // price paid.
+    const winnerRefund = bidExtentOps.without(winnerBid, price);
+
+    const newCreatorExtents = [itemExtentOps.empty(), price];
+    const newWinnerExtents = [itemExtentUpForAuction, winnerRefund];
+
+    // Everyone else gets a refund so their extents remain the
+    // same.
+    zoe.reallocate(
+      harden([creatorOfferId, winnerOfferId]),
+      harden([newCreatorExtents, newWinnerExtents]),
+    );
+    const allOfferIds = harden([creatorOfferId, ...bidIds]);
+    zoe.complete(allOfferIds);
+  };
+
   return harden({
     makeOffer: async escrowReceipt => {
-      const { id, offerMade: offerMadeDesc } = await zoe.burnEscrowReceipt(
-        escrowReceipt,
-      );
+      const { id, conditions } = await zoe.burnEscrowReceipt(escrowReceipt);
+      const { offerDesc: offerMadeDesc } = conditions;
 
-      const isFirstOffer = creatorOfferId === undefined;
+      const offerAcceptedMessage = `The offer has been accepted. Once the contract has been completed, please check your winnings`;
 
-      const isValidFirstOfferDesc = newOfferDesc =>
-        ['offerExactly', 'wantAtLeast'].every(
-          (rule, i) => rule === newOfferDesc[i].rule,
-          true,
-        );
-
-      const hasOkRulesForBid = newOfferDesc =>
-        ['wantExactly', 'offerAtMost'].every(
-          (rule, i) => rule === newOfferDesc[i].rule,
-          true,
-        );
-
-      const getBidExtent = offerDesc => offerDesc[BID_INDEX].assetDesc.extent;
-      const canAcceptBid = bidIds.length < numBidsAllowed;
-
-      const isValidBid = newOfferDesc =>
-        canAcceptBid &&
-        hasOkRulesForBid(newOfferDesc) &&
-        bidExtentOps.includes(
-          getBidExtent(newOfferDesc),
-          getBidExtent(creatorOfferDesc),
-        );
-
-      const isValidOffer =
-        (isFirstOffer && isValidFirstOfferDesc(offerMadeDesc)) ||
-        (!isFirstOffer && isValidBid(offerMadeDesc));
-
-      // Eject if the offer is invalid
-      if (!isValidOffer) {
-        zoe.complete(harden([id]));
-        return Promise.reject(
-          new Error(`The offer was invalid. Please check your refund.`),
-        );
-      }
-
-      // Save the valid offer
-      if (creatorOfferId === undefined) {
+      if (isValidCreatorOfferDesc(offerMadeDesc)) {
+        // save the valid offer
         creatorOfferId = id;
-        creatorOfferDesc = offerMadeDesc;
         [itemExtentOps, bidExtentOps] = zoe.getExtentOpsArray();
         itemExtentUpForAuction = offerMadeDesc[ITEM_INDEX].assetDesc.extent;
-      } else {
+        return offerAcceptedMessage;
+      }
+
+      let creatorOfferDesc;
+
+      try {
+        [creatorOfferDesc] = zoe.getOfferDescsFor(harden([creatorOfferId]));
+      } catch (err) {
+        zoe.complete(harden([id]));
+        return Promise.reject(
+          new Error(`The item up for auction has been withdrawn`),
+        );
+      }
+
+      if (isValidBidOfferDesc(creatorOfferDesc, offerMadeDesc)) {
+        // save the valid offer
         bidIds.push(id);
+        if (bidIds.length >= numBidsAllowed) {
+          reallocate();
+        }
+        return offerAcceptedMessage;
       }
 
-      // Check if we can reallocate and reallocate.
-      if (bidIds.length >= numBidsAllowed) {
-        const bids = zoe
-          .getExtentsFor(bidIds)
-          .map(extents => extents[BID_INDEX]);
-        const { winnerOfferId, winnerBid, price } = findWinnerAndPrice(
-          bidIds,
-          bids,
-        );
-
-        // The winner gets to keep the difference between their bid and the
-        // price paid.
-        const winnerRefund = bidExtentOps.without(winnerBid, price);
-
-        const newCreatorExtents = [itemExtentOps.empty(), price];
-        const newWinnerExtents = [itemExtentUpForAuction, winnerRefund];
-
-        // Everyone else gets a refund so their extents remain the same.
-        zoe.reallocate(
-          harden([creatorOfferId, winnerOfferId]),
-          harden([newCreatorExtents, newWinnerExtents]),
-        );
-        const allOfferIds = harden([creatorOfferId, ...bidIds]);
-        zoe.complete(allOfferIds);
-      }
-      return `The offer has been accepted. Once the contract has been completed, please check your winnings`;
+      // Eject because the offer must be invalid
+      zoe.complete(harden([id]));
+      return Promise.reject(
+        new Error(`The offer was invalid. Please check your refund.`),
+      );
     },
   });
 });
@@ -130,6 +139,3 @@ const publicAuctionSrcs = harden({
 });
 
 export { publicAuctionSrcs };
-
-// eslint-disable-next-line spaced-comment
-//# sourceURL=publicAuction.js

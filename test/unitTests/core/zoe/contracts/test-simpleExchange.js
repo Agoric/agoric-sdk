@@ -23,16 +23,6 @@ test('zoe - simpleExchange', async t => {
     const bobSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(7));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
-    // Setup Carol
-    // const carolMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-    // const carolSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(7));
-    // const carolSimoleanPayment = carolSimoleanPurse.withdrawAll();
-
-    // // Setup Dave
-    // const daveMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-    // const daveSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(5));
-    // const daveSimoleanPayment = daveSimoleanPurse.withdrawAll();
-
     // 1: Alice creates a simpleExchange instance
     const installationId = zoe.install(simpleExchangeSrcs);
     const { instance: aliceExchange, instanceId } = await zoe.makeInstance(
@@ -43,21 +33,26 @@ test('zoe - simpleExchange', async t => {
     // 2: Alice escrows with zoe to create a sell order. She wants to
     // sell 3 moola and wants to receive at least 4 simoleans in
     // return.
-    const aliceSellOrder = harden([
-      {
-        rule: 'offerExactly',
-        assetDesc: assays[0].makeAssetDesc(3),
+    const aliceSellOrderConditions = harden({
+      offerDesc: [
+        {
+          rule: 'offerExactly',
+          assetDesc: assays[0].makeAssetDesc(3),
+        },
+        {
+          rule: 'wantAtLeast',
+          assetDesc: assays[1].makeAssetDesc(4),
+        },
+      ],
+      exit: {
+        kind: 'noExit',
       },
-      {
-        rule: 'wantAtLeast',
-        assetDesc: assays[1].makeAssetDesc(4),
-      },
-    ]);
+    });
     const alicePayments = [aliceMoolaPayment, undefined];
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
       payoff: alicePayoffP,
-    } = await zoe.escrow(aliceSellOrder, alicePayments);
+    } = await zoe.escrow(aliceSellOrderConditions, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment. It's
     // unnecessary if she trusts Zoe but we will do it for the tests.
@@ -74,32 +69,37 @@ test('zoe - simpleExchange', async t => {
     const {
       instance: bobExchange,
       installationId: bobInstallationId,
+      assays: bobAssays,
     } = zoe.getInstance(instanceId);
 
     t.equals(bobInstallationId, installationId);
-    const bobAssays = zoe.getAssaysForInstance(instanceId);
     t.deepEquals(bobAssays, assays);
 
     // Bob creates a buy order, saying that he wants exactly 3 moola,
     // and is willing to pay up to 7 simoleans.
 
-    const bobBuyOrder = harden([
-      {
-        rule: 'wantExactly',
-        assetDesc: bobAssays[0].makeAssetDesc(3),
+    const bobBuyOrderConditions = harden({
+      offerDesc: [
+        {
+          rule: 'wantExactly',
+          assetDesc: bobAssays[0].makeAssetDesc(3),
+        },
+        {
+          rule: 'offerAtMost',
+          assetDesc: bobAssays[1].makeAssetDesc(7),
+        },
+      ],
+      exit: {
+        kind: 'noExit',
       },
-      {
-        rule: 'offerAtMost',
-        assetDesc: bobAssays[1].makeAssetDesc(7),
-      },
-    ]);
+    });
     const bobPayments = [undefined, bobSimoleanPayment];
 
     // 6: Bob escrows with zoe
     const {
       escrowReceipt: allegedBobEscrowReceipt,
       payoff: bobPayoffP,
-    } = await zoe.escrow(bobBuyOrder, bobPayments);
+    } = await zoe.escrow(bobBuyOrderConditions, bobPayments);
 
     // 7: Bob does a claimAll on the escrowReceipt payment. This is
     // unnecessary but we will do it anyways for the test
@@ -125,7 +125,7 @@ test('zoe - simpleExchange', async t => {
     t.ok(
       descOps[1].includes(
         aliceSimoleanPayoff.getBalance(),
-        aliceSellOrder[1].assetDesc,
+        aliceSellOrderConditions.offerDesc[1].assetDesc,
       ),
     );
 

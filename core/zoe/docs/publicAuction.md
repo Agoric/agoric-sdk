@@ -15,9 +15,12 @@ access to the auction instance can make a bid by making an offer.
 Alice can create an auction by doing:
 
 ```js
+const installationId = zoe.install(publicAuctionSrcs);
+const numBidsAllowed = 3;
 const { instance: aliceAuction, instanceId } = await zoe.makeInstance(
-  'secondPriceAuction3Bids',
   assays,
+  installationId,
+  [numBidsAllowed],
 );
 ```
 
@@ -51,11 +54,14 @@ the offer description.
 Now Alice can spread her auction `instanceId` far and wide and see if
 there are any bidders. Let's say that Bob gets the instanceId and
 wants to see if it is the kind of contract that he wants to join. He
-can check that the libraryName installed is the auction he is expecting.
+can check that the installationId installed is the auction he is expecting.
 
 ```js
-const { instance: bobAuction, libraryName } = zoe.getInstance(instanceId);
-t.equals(libraryName, 'secondPriceAuction3Bids');
+const {
+  instance: bobAuction,
+  installationId: bobInstallationId,
+  assays: contractAssays,
+} = zoe.getInstance(instanceId);
 ```
 He can also check that the item up for sale is the kind that he wants,
 as well as checking what Alice wants in return. (In this
@@ -63,8 +69,7 @@ implementation, Alice will have to tell Bob out of band what the
 minimum bid in simoleans is.)
 
 ```js
-const bobAssays = zoe.getAssaysForInstance(instanceId);
-sameStructure(bobAssays, assays);
+insist(sameStructure(contractAssays, assays))`assays are not the same`;
 ```
 
 Bob decides to join the contract and

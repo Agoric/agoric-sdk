@@ -35,27 +35,26 @@ test('zoe - publicSwap', async t => {
     );
 
     // 2: Alice escrows with zoe
-    const aliceOfferDesc = harden([
-      {
-        rule: 'offerExactly',
-        assetDesc: assays[0].makeAssetDesc(3),
+    const aliceConditions = harden({
+      offerDesc: [
+        {
+          rule: 'offerExactly',
+          assetDesc: assays[0].makeAssetDesc(3),
+        },
+        {
+          rule: 'wantExactly',
+          assetDesc: assays[1].makeAssetDesc(7),
+        },
+      ],
+      exit: {
+        kind: 'noExit',
       },
-      {
-        rule: 'wantExactly',
-        assetDesc: assays[1].makeAssetDesc(7),
-      },
-    ]);
+    });
     const alicePayments = [aliceMoolaPayment, undefined];
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
-      payoff: alicePayoffP,
       makePayoffPaymentObj,
-    } = await zoe.escrow(aliceOfferDesc, alicePayments);
-
-    t.rejects(
-      alicePayoffP,
-      /A new payoff ERTP payment was made, making this invalid./,
-    );
+    } = await zoe.escrow(aliceConditions, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment. It's
     // unnecessary if she trusts Zoe but we will do it for the tests.
@@ -75,7 +74,7 @@ test('zoe - publicSwap', async t => {
     const carolPayoffPayment = await payoffAssay.claimAll(alicePayoffPayment);
     const payoffPaymentExtent = carolPayoffPayment.getBalance().extent;
     t.deepEquals(payoffPaymentExtent.instanceId, instanceId);
-    t.deepEquals(payoffPaymentExtent.offerMade, aliceOfferDesc);
+    t.deepEquals(payoffPaymentExtent.conditions, aliceConditions);
     const carolPayoffObj = await carolPayoffPayment.unwrap();
     const carolPayoffP = carolPayoffObj.getPayoff();
 
@@ -86,29 +85,34 @@ test('zoe - publicSwap', async t => {
     const {
       instance: bobSwap,
       installationId: bobInstallationId,
+      assays: bobAssays,
     } = zoe.getInstance(instanceId);
 
     t.equals(bobInstallationId, installationId);
-    const bobAssays = zoe.getAssaysForInstance(instanceId);
     t.deepEquals(bobAssays, assays);
 
-    const bobOfferDesc = harden([
-      {
-        rule: 'wantExactly',
-        assetDesc: bobAssays[0].makeAssetDesc(3),
+    const bobConditions = harden({
+      offerDesc: [
+        {
+          rule: 'wantExactly',
+          assetDesc: bobAssays[0].makeAssetDesc(3),
+        },
+        {
+          rule: 'offerExactly',
+          assetDesc: bobAssays[1].makeAssetDesc(7),
+        },
+      ],
+      exit: {
+        kind: 'noExit',
       },
-      {
-        rule: 'offerExactly',
-        assetDesc: bobAssays[1].makeAssetDesc(7),
-      },
-    ]);
+    });
     const bobPayments = [undefined, bobSimoleanPayment];
 
     // 6: Bob escrows with zoe
     const {
       escrowReceipt: allegedBobEscrowReceipt,
       payoff: bobPayoffP,
-    } = await zoe.escrow(bobOfferDesc, bobPayments);
+    } = await zoe.escrow(bobConditions, bobPayments);
 
     // 7: Bob does a claimAll on the escrowReceipt payment. This is
     // unnecessary but we will do it anyways for the test
@@ -131,7 +135,10 @@ test('zoe - publicSwap', async t => {
     const carolPayoff = await carolPayoffP;
 
     // Carol gets what Alice wanted
-    t.deepEquals(carolPayoff[1].getBalance(), aliceOfferDesc[1].assetDesc);
+    t.deepEquals(
+      carolPayoff[1].getBalance(),
+      aliceConditions.offerDesc[1].assetDesc,
+    );
 
     // Carol didn't get any of what Alice put in
     t.equals(carolPayoff[0].getBalance().extent, 0);

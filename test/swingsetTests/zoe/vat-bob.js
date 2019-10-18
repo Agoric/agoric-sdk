@@ -1,7 +1,8 @@
 import harden from '@agoric/harden';
 import { insist } from '../../../util/insist';
+import { sameStructure } from '../../../util/sameStructure';
 
-const makeBobMaker = async (E, log, zoe) => {
+const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
   const showPaymentBalance = async (paymentP, name) => {
     try {
       const assetDesc = await E(paymentP).getBalance();
@@ -12,80 +13,299 @@ const makeBobMaker = async (E, log, zoe) => {
   };
 
   return harden({
-    make(moolaPurse, simoleanPurse) {
-      const bob = harden({
-        doAutomaticRefund: async instanceId => {
-          const { instance: automaticRefund } = await E(zoe).getInstance(
-            instanceId,
-          );
+    doAutomaticRefund: async instanceId => {
+      const {
+        instance: automaticRefund,
+        installationId: automaticRefundInstallationId,
+        assays: contractAssays,
+      } = await E(zoe).getInstance(instanceId);
 
-          const moolaAssay = await E(moolaPurse).getAssay();
-          const simoleanAssay = await E(simoleanPurse).getAssay();
+      // Bob ensures it's the contract he expects
+      insist(
+        installId === automaticRefundInstallationId,
+      )`should be the expected automaticRefund`;
 
-          const assays = [moolaAssay, simoleanAssay];
+      const moolaAssay = await E(moolaPurseP).getAssay();
+      const simoleanAssay = await E(simoleanPurseP).getAssay();
 
-          const contractAssays = await E(zoe).getAssaysForInstance(instanceId);
-          insist(
-            contractAssays[0] === moolaAssay,
-          )`The first assay should be the moola assay`;
-          insist(
-            contractAssays[1] === simoleanAssay,
-          )`The second assay should be the simolean assay`;
+      const assays = harden([moolaAssay, simoleanAssay]);
 
-          // 1. Bob escrows his offer
-          const bobOfferDesc = harden([
-            {
-              rule: 'wantExactly',
-              assetDesc: await E(assays[0]).makeAssetDesc(15),
-            },
-            {
-              rule: 'offerExactly',
-              assetDesc: await E(assays[1]).makeAssetDesc(17),
-            },
-          ]);
+      insist(
+        contractAssays[0] === moolaAssay,
+      )`The first assay should be the moola assay`;
+      insist(
+        contractAssays[1] === simoleanAssay,
+      )`The second assay should be the simolean assay`;
 
-          const bobSimoleanPayment = await E(simoleanPurse).withdrawAll();
-
-          const bobPayments = [undefined, bobSimoleanPayment];
-
-          const { escrowReceipt, payoff: payoffP } = await E(zoe).escrow(
-            bobOfferDesc,
-            bobPayments,
-          );
-
-          // 2. Bob makes an offer with his escrow receipt
-          const bobOfferMadeDesc = await E(automaticRefund).makeOffer(
-            escrowReceipt,
-          );
-
-          log(bobOfferMadeDesc);
-
-          const bobResult = await payoffP;
-
-          // 5: Bob deposits his winnings
-          await E(moolaPurse).depositAll(bobResult[0]);
-          await E(simoleanPurse).depositAll(bobResult[1]);
-
-          await showPaymentBalance(moolaPurse, 'bobMoolaPurse');
-          await showPaymentBalance(simoleanPurse, 'bobSimoleanPurse;');
+      // 1. Bob escrows his offer
+      const bobConditions = harden({
+        offerDesc: [
+          {
+            rule: 'wantExactly',
+            assetDesc: await E(assays[0]).makeAssetDesc(15),
+          },
+          {
+            rule: 'offerExactly',
+            assetDesc: await E(assays[1]).makeAssetDesc(17),
+          },
+        ],
+        exit: {
+          kind: 'noExit',
         },
       });
-      return bob;
+
+      const bobSimoleanPayment = await E(simoleanPurseP).withdrawAll();
+
+      const bobPayments = [undefined, bobSimoleanPayment];
+
+      const { escrowReceipt, payoff: payoffP } = await E(zoe).escrow(
+        bobConditions,
+        bobPayments,
+      );
+
+      // 2. Bob makes an offer with his escrow receipt
+      const bobOfferMadeDesc = await E(automaticRefund).makeOffer(
+        escrowReceipt,
+      );
+
+      log(bobOfferMadeDesc);
+
+      const bobResult = await payoffP;
+
+      // 5: Bob deposits his winnings
+      await E(moolaPurseP).depositAll(bobResult[0]);
+      await E(simoleanPurseP).depositAll(bobResult[1]);
+
+      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse');
+      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;');
+    },
+
+    doCoveredCall: async (inviteP, instanceId) => {
+      // Bob claims all with the Zoe inviteAssay
+      const inviteAssay = await E(zoe).getInviteAssay();
+      const invite = await E(inviteAssay).claimAll(inviteP);
+
+      const moolaAssay = await E(moolaPurseP).getAssay();
+      const simoleanAssay = await E(simoleanPurseP).getAssay();
+
+      const assays = harden([moolaAssay, simoleanAssay]);
+
+      const bobIntendedConditions = harden({
+        offerDesc: [
+          {
+            rule: 'wantExactly',
+            assetDesc: await E(assays[0]).makeAssetDesc(3),
+          },
+          {
+            rule: 'offerExactly',
+            assetDesc: await E(assays[1]).makeAssetDesc(7),
+          },
+        ],
+        exit: {
+          kind: 'noExit',
+        },
+      });
+
+      // Bob checks that the invite is for the right covered call
+      const { extent: inviteExtent } = await E(invite).getBalance();
+      insist(inviteExtent.instanceId === instanceId)`wrong instance`;
+      insist(inviteExtent.installationId === installId)`wrong installation`;
+      insist(inviteExtent.status, 'acceptingOffers')`not accepting offers`;
+      insist(
+        sameStructure(
+          inviteExtent.offerToBeMade,
+          bobIntendedConditions.offerDesc,
+        ),
+      )`the offer to be made was not as expected`;
+
+      const contractAssays = await E(zoe).getAssaysForInstance(instanceId);
+      insist(
+        contractAssays[0] === moolaAssay,
+      )`The first assay should be the moola assay`;
+      insist(
+        contractAssays[1] === simoleanAssay,
+      )`The second assay should be the simolean assay`;
+
+      // Only after assaying the invite does he unwrap it (destroying
+      // the ERTP invite) and accept it
+      const unwrappedInvite = await E(invite).unwrap();
+      const bobSimoleanPayment = await E(simoleanPurseP).withdrawAll();
+      const bobPayments = [undefined, bobSimoleanPayment];
+
+      // Bob escrows
+      const { escrowReceipt, payoff: payoffP } = await E(zoe).escrow(
+        bobIntendedConditions,
+        bobPayments,
+      );
+
+      // 8: Bob makes an offer with his escrow receipt
+      const bobOutcome = await E(unwrappedInvite).makeOffer(escrowReceipt);
+
+      log(bobOutcome);
+
+      const bobResult = await payoffP;
+
+      // 5: Bob deposits his winnings
+      await E(moolaPurseP).depositAll(bobResult[0]);
+      await E(simoleanPurseP).depositAll(bobResult[1]);
+
+      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse');
+      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;');
+    },
+    doPublicAuction: async instanceId => {
+      const moolaAssay = await E(moolaPurseP).getAssay();
+      const simoleanAssay = await E(simoleanPurseP).getAssay();
+
+      const assays = harden([moolaAssay, simoleanAssay]);
+      const {
+        instance: auction,
+        installationId,
+        assays: auctionAssays,
+      } = await E(zoe).getInstance(instanceId);
+
+      insist(installationId === installId)`wrong installation`;
+      insist(sameStructure(assays, auctionAssays))`assays were not as expected`;
+
+      const conditions = harden({
+        offerDesc: [
+          {
+            rule: 'wantExactly',
+            assetDesc: await E(assays[0]).makeAssetDesc(1),
+          },
+          {
+            rule: 'offerAtMost',
+            assetDesc: await E(assays[1]).makeAssetDesc(11),
+          },
+        ],
+        exit: {
+          kind: 'noExit',
+        },
+      });
+      const simoleanPayment = await E(simoleanPurseP).withdrawAll();
+      const offerPayments = [undefined, simoleanPayment];
+
+      const { escrowReceipt, payoff: payoffP } = await E(zoe).escrow(
+        conditions,
+        offerPayments,
+      );
+
+      const offerResult = await E(auction).makeOffer(escrowReceipt);
+
+      log(offerResult);
+
+      const bobResult = await payoffP;
+
+      await E(moolaPurseP).depositAll(bobResult[0]);
+      await E(simoleanPurseP).depositAll(bobResult[1]);
+
+      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse');
+      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;');
+    },
+    doPublicSwap: async instanceId => {
+      const moolaAssay = await E(moolaPurseP).getAssay();
+      const simoleanAssay = await E(simoleanPurseP).getAssay();
+
+      const assays = harden([moolaAssay, simoleanAssay]);
+      const { instance: swap, installationId, assays: swapAssays } = await E(
+        zoe,
+      ).getInstance(instanceId);
+
+      insist(installationId === installId)`wrong installation`;
+      insist(sameStructure(assays, swapAssays))`assays were not as expected`;
+
+      const conditions = harden({
+        offerDesc: [
+          {
+            rule: 'wantExactly',
+            assetDesc: await E(assays[0]).makeAssetDesc(3),
+          },
+          {
+            rule: 'offerExactly',
+            assetDesc: await E(assays[1]).makeAssetDesc(7),
+          },
+        ],
+        exit: {
+          kind: 'noExit',
+        },
+      });
+      const simoleanPayment = await E(simoleanPurseP).withdrawAll();
+      const offerPayments = [undefined, simoleanPayment];
+
+      const { escrowReceipt, payoff: payoffP } = await E(zoe).escrow(
+        conditions,
+        offerPayments,
+      );
+
+      const offerResult = await E(swap).makeOffer(escrowReceipt);
+
+      log(offerResult);
+
+      const bobResult = await payoffP;
+
+      await E(moolaPurseP).depositAll(bobResult[0]);
+      await E(simoleanPurseP).depositAll(bobResult[1]);
+
+      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse');
+      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;');
+    },
+    doSimpleExchange: async instanceId => {
+      const moolaAssay = await E(moolaPurseP).getAssay();
+      const simoleanAssay = await E(simoleanPurseP).getAssay();
+
+      const assays = harden([moolaAssay, simoleanAssay]);
+      const {
+        instance: exchange,
+        installationId,
+        assays: contractAssays,
+      } = await E(zoe).getInstance(instanceId);
+
+      insist(installationId === installId)`wrong installation`;
+      insist(
+        sameStructure(assays, contractAssays),
+      )`assays were not as expected`;
+
+      const bobBuyOrderConditions = harden({
+        offerDesc: [
+          {
+            rule: 'wantExactly',
+            assetDesc: await E(assays[0]).makeAssetDesc(3),
+          },
+          {
+            rule: 'offerAtMost',
+            assetDesc: await E(assays[1]).makeAssetDesc(7),
+          },
+        ],
+        exit: {
+          kind: 'noExit',
+        },
+      });
+      const simoleanPayment = await E(simoleanPurseP).withdrawAll();
+      const offerPayments = [undefined, simoleanPayment];
+
+      const { escrowReceipt, payoff: payoffP } = await E(zoe).escrow(
+        bobBuyOrderConditions,
+        offerPayments,
+      );
+
+      const offerResult = await E(exchange).addOrder(escrowReceipt);
+
+      log(offerResult);
+
+      const bobResult = await payoffP;
+
+      await E(moolaPurseP).depositAll(bobResult[0]);
+      await E(simoleanPurseP).depositAll(bobResult[1]);
+
+      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse');
+      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;');
     },
   });
 };
 
-function setup(syscall, state, helpers) {
-  function log(...args) {
-    helpers.log(...args);
-    console.log(...args);
-  }
-  return helpers.makeLiveSlots(syscall, state, E =>
+const setup = (syscall, state, helpers) =>
+  helpers.makeLiveSlots(syscall, state, E =>
     harden({
-      makeBobMaker(zoeHelpers) {
-        return harden(makeBobMaker(E, log, zoeHelpers));
-      },
+      build: (...args) => build(E, helpers.log, ...args),
     }),
   );
-}
 export default harden(setup);

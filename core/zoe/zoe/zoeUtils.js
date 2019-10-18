@@ -3,6 +3,7 @@ import { E } from '@agoric/eventual-send';
 
 import makePromise from '../../../util/makePromise';
 import { insist } from '../../../util/insist';
+import { toAssetDescMatrix } from '../contractUtils';
 
 // These utilities are used within Zoe itself. Importantly, there is
 // no ambient authority for these utilities. Any authority must be
@@ -10,13 +11,13 @@ import { insist } from '../../../util/insist';
 const mintPayoffPayment = (
   seatMint,
   addUseObj,
-  offerDesc,
+  conditions,
   result,
   instanceId,
 ) => {
   const payoffExtent = harden({
     id: harden({}),
-    offerMade: offerDesc,
+    conditions,
     instanceId,
   });
   const payoffPurseP = seatMint.mint(payoffExtent);
@@ -27,63 +28,92 @@ const mintPayoffPayment = (
   return payoffPurseP.withdrawAll();
 };
 
-const mintEscrowReceiptPayment = (escrowReceiptMint, offerId, offerDesc) => {
+const mintEscrowReceiptPayment = (escrowReceiptMint, offerId, conditions) => {
   const escrowReceiptExtent = harden({
     id: offerId,
-    offerMade: offerDesc,
+    conditions,
   });
   const escrowReceiptPurse = escrowReceiptMint.mint(escrowReceiptExtent);
   const escrowReceiptPaymentP = escrowReceiptPurse.withdrawAll();
   return escrowReceiptPaymentP;
 };
 
-const escrowAllPayments = async (
-  getOrMakePurseForAssay,
-  offerDesc,
-  offerPayments,
-) => {
-  const extentsArrayPromises = offerDesc.map(async (offerDescElement, i) => {
-    // if the user's contractual understanding includes
-    // "offerExactly" or "offerAtMost", make sure that they have supplied a
-    // payment with that exact balance
-    if (['offerExactly', 'offerAtMost'].includes(offerDescElement.rule)) {
-      const { assay } = offerDescElement.assetDesc.label;
-      const purse = await getOrMakePurseForAssay(assay);
-      const assetDesc = await E(purse).depositExactly(
-        offerDesc[i].assetDesc,
-        offerPayments[i],
-      );
-      return assetDesc.extent;
-    }
+const escrowPayment = async (offerDescElem, offerPayment, purse, extentOps) => {
+  // if the user's contractual understanding includes
+  // "offerExactly" or "offerAtMost", make sure that they have supplied a
+  // payment with that exact balance
+  if (['offerExactly', 'offerAtMost'].includes(offerDescElem.rule)) {
+    const { extent } = await E(purse).depositExactly(
+      offerDescElem.assetDesc,
+      offerPayment,
+    );
+    return extent;
+  }
+  insist(
+    offerPayment === undefined,
+  )`payment was included, but the rule was ${offerDescElem.rule}`;
+  return extentOps.empty();
+};
+
+const insistValidRules = offerDesc => {
+  const acceptedRules = [
+    'offerExactly',
+    'offerAtMost',
+    'wantExactly',
+    'wantAtLeast',
+  ];
+  for (const offerDescElement of offerDesc) {
     insist(
-      offerPayments[i] === undefined,
-    )`payment was included, but the rule was ${offerDesc[i].rule}`;
-    // TODO: we should require that offerDescElement cannot be
-    // undefined. That way we can get the issuers and this undefined
-    // should be strategy.empty()
-    return undefined;
-  });
-  return Promise.all(extentsArrayPromises);
+      acceptedRules.includes(offerDescElement.rule),
+    )`rule ${offerDescElement.rule} is not one of the accepted rules`;
+  }
+};
+
+const insistValidExitCondition = exit => {
+  const acceptedExitConditionKinds = [
+    'noExit',
+    'onDemand',
+    'afterDeadline',
+    // 'onDemandAfterDeadline', // not yet supported
+  ];
+
+  insist(
+    acceptedExitConditionKinds.includes(exit.kind),
+  )`exit ${exit} is not one of the accepted options`;
 };
 
 const escrowOffer = async (
   recordOffer,
-  getOrMakePurseForAssay,
-  offerDesc,
+  recordAssay,
+  conditions,
   offerPayments,
 ) => {
   const result = makePromise();
+  const { offerDesc, exit = { kind: 'noExit' } } = conditions;
 
-  const extentsArray = await escrowAllPayments(
-    getOrMakePurseForAssay,
-    offerDesc,
-    offerPayments,
+  insistValidRules(offerDesc);
+  insistValidExitCondition(exit);
+
+  // Escrow the payments and store the assays from the offerDesc. We
+  // assume that the offerDesc has elements for each expected assay,
+  // and none are undefined.
+  // TODO: handle bad offers more robustly
+  const extents = await Promise.all(
+    offerDesc.map(async (offerDescElem, i) => {
+      const { assay } = offerDescElem.assetDesc.label;
+      const { purse, extentOps } = await recordAssay(assay);
+      return escrowPayment(offerDescElem, offerPayments[i], purse, extentOps);
+    }),
   );
+
+  const assays = offerDesc.map(offerDescElem => {
+    const { assay } = offerDescElem.assetDesc.label;
+    return assay;
+  });
 
   const offerId = harden({});
 
-  // has side effects
-  recordOffer(offerId, offerDesc, extentsArray, result);
+  recordOffer(offerId, conditions, extents, assays, result);
 
   return harden({
     offerId,
@@ -116,27 +146,24 @@ const makePayments = (purses, assetDescsMatrix) => {
   return Promise.all(paymentsMatrix);
 };
 
-const fillInUndefinedExtents = async (
-  adminState,
-  readOnlyState,
-  offerIds,
-  instanceId,
-) => {
-  const [extents] = readOnlyState.getExtentsFor(offerIds);
-  const extentOpsArray = await Promise.all(
-    readOnlyState.getExtentOpsArray(instanceId),
-  );
-  const filledInExtents = extents.map((extent, i) =>
-    extent === undefined ? extentOpsArray[i].empty() : extent,
-  );
-  adminState.setExtentsFor(offerIds, harden([filledInExtents]));
+// Note: offerIds must be for the same assays.
+const completeOffers = async (adminState, readOnlyState, offerIds) => {
+  const [assays] = readOnlyState.getAssaysFor(offerIds);
+  const extents = readOnlyState.getExtentsFor(offerIds);
+  const extentOps = readOnlyState.getExtentOpsArrayForAssays(assays);
+  const labels = readOnlyState.getLabelsForAssays(assays);
+  const assetDescs = toAssetDescMatrix(extentOps, labels, extents);
+  const purses = adminState.getPurses(assays);
+  const payments = await makePayments(purses, assetDescs);
+  const results = adminState.getResultsFor(offerIds);
+  results.map((result, i) => result.res(payments[i]));
+  adminState.removeOffers(offerIds);
 };
 
 export {
-  makePayments,
   escrowEmptyOffer,
   escrowOffer,
   mintEscrowReceiptPayment,
   mintPayoffPayment,
-  fillInUndefinedExtents,
+  completeOffers,
 };

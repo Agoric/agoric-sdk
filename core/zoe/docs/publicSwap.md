@@ -60,11 +60,11 @@ matches Alice's claims.
 const {
   instance: bobSwap,
   installationId: bobInstallationId,
+  assays: contractAssays,
 } = zoe.getInstance(instanceId);
 
-t.equals(bobInstallationId, installationId);
-const bobAssays = zoe.getAssaysForInstance(instanceId);
-sameStructure(bobAssays, assays);
+insist(bobInstallationId === installationId)`wrong installation`;
+insist(sameStructure(bobAssays, assays)`wrong assays`;
 ```
 
 Bob decides to be the counter-party. He also escrows his payment and

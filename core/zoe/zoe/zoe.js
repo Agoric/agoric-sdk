@@ -4,17 +4,16 @@ import evaluate from '@agoric/evaluate';
 import { insist } from '../../../util/insist';
 import { isOfferSafeForAll } from './isOfferSafe';
 import { areRightsConserved } from './areRightsConserved';
-import { toAssetDescMatrix, makeEmptyExtents } from '../contractUtils';
+import { makeEmptyExtents } from '../contractUtils';
 import makePromise from '../../../util/makePromise';
 import { sameStructure } from '../../../util/sameStructure';
 
 import {
-  makePayments,
   escrowEmptyOffer,
   escrowOffer,
   mintEscrowReceiptPayment,
   mintPayoffPayment,
-  fillInUndefinedExtents,
+  completeOffers,
 } from './zoeUtils';
 
 import { makeState } from './state';
@@ -115,7 +114,9 @@ const makeZoe = async (additionalEndowments = {}) => {
       reallocate: (offerIds, reallocation) => {
         const offerDescs = readOnlyState.getOfferDescsFor(offerIds);
         const currentExtents = readOnlyState.getExtentsFor(offerIds);
-        const extentOpsArray = readOnlyState.getExtentOpsArray(instanceId);
+        const extentOpsArray = readOnlyState.getExtentOpsArrayForInstanceId(
+          instanceId,
+        );
 
         // 1) ensure that rights are conserved
         insist(
@@ -141,17 +142,7 @@ const makeZoe = async (additionalEndowments = {}) => {
        * invariants hold.
        * @param  {object[]} offerIds - an array of offerIds
        */
-      complete: async offerIds => {
-        const extents = readOnlyState.getExtentsFor(offerIds);
-        const extentOpsArray = readOnlyState.getExtentOpsArray(instanceId);
-        const labels = readOnlyState.getLabels(instanceId);
-        const assetDescs = toAssetDescMatrix(extentOpsArray, labels, extents);
-        const purses = adminState.getPurses(instanceId);
-        const payments = await makePayments(purses, assetDescs);
-        const results = adminState.getResultsFor(offerIds);
-        results.map((result, i) => result.res(payments[i]));
-        adminState.removeOffers(offerIds);
-      },
+      complete: offerIds => completeOffers(adminState, readOnlyState, offerIds),
 
       /**
        *  The governing contract can create an empty offer and get
@@ -178,7 +169,7 @@ const makeZoe = async (additionalEndowments = {}) => {
         // promise object and only passing the offerId
         const { offerId } = await escrowOffer(
           adminState.recordOffer,
-          adminState.getOrMakePurseForAssay,
+          adminState.recordAssay,
           offerDesc,
           offerPayments,
         );
@@ -188,13 +179,6 @@ const makeZoe = async (additionalEndowments = {}) => {
       burnEscrowReceipt: async escrowReceipt => {
         const assetDesc = await escrowReceiptAssay.burnAll(escrowReceipt);
         const { id } = assetDesc.extent;
-        const offerIds = harden([id]);
-        await fillInUndefinedExtents(
-          adminState,
-          readOnlyState,
-          offerIds,
-          instanceId,
-        );
         adminState.recordUsedInInstance(instanceId, id);
         return assetDesc.extent;
       },
@@ -217,8 +201,11 @@ const makeZoe = async (additionalEndowments = {}) => {
 
       // read-only, side-effect-free access below this line:
       makeEmptyExtents: () =>
-        makeEmptyExtents(readOnlyState.getExtentOpsArray(instanceId)),
-      getExtentOpsArray: () => readOnlyState.getExtentOpsArray(instanceId),
+        makeEmptyExtents(
+          readOnlyState.getExtentOpsArrayForInstanceId(instanceId),
+        ),
+      getExtentOpsArray: () =>
+        readOnlyState.getExtentOpsArrayForInstanceId(instanceId),
       getExtentsFor: readOnlyState.getExtentsFor,
       getOfferDescsFor: readOnlyState.getOfferDescsFor,
       getInviteAssay: () => inviteAssay,
@@ -256,28 +243,30 @@ Unrecognized moduleFormat ${moduleFormat}`;
      * Installs a governing contract and returns a reference to the
      * instance object, a unique id for the instance that can be
      * shared, and the name of the governing contract installed.
-     * @param  {string} libraryName - the wellknown name for the
-     * governing contract to be installed
      * @param  {object[]} assays - an array of assays to be used in
      * the governing contract. This determines the order of the offer
      * description elements and offer payments accepted by the
      * governing contract.
+     * @param  {object} installationId - the unique id for the installation
+     * @param  {[]} args - arguments to the contract. These arguments
+     * depend on the contract.
      */
-    makeInstance: async (assays, installationId) => {
+    makeInstance: async (assays, installationId, args = []) => {
       const installation = adminState.getInstallation(installationId);
       const instanceId = harden({});
+      await adminState.recordAssaysForInstance(instanceId, assays);
       const governingContractFacet = makeGoverningContractFacet(instanceId);
-      const instance = installation.makeContract(governingContractFacet);
-      await adminState.addInstance(
+      const instance = installation.makeContract(
+        governingContractFacet,
+        ...args,
+      );
+      adminState.addInstance(instanceId, instance, installationId, args);
+      return harden({
         instanceId,
         instance,
         installationId,
         assays,
-      );
-      return harden({
-        instance,
-        instanceId,
-        installationId,
+        args,
       });
     },
     /**
@@ -289,10 +278,14 @@ Unrecognized moduleFormat ${moduleFormat}`;
       const installationId = adminState.getInstallationIdForInstanceId(
         instanceId,
       );
+      const assays = readOnlyState.getAssays(instanceId);
+      const args = readOnlyState.getArgs(instanceId);
       return harden({
-        instance,
         instanceId,
+        instance,
         installationId,
+        assays,
+        args,
       });
     },
 
@@ -303,21 +296,21 @@ Unrecognized moduleFormat ${moduleFormat}`;
      * the offer description. A payment may be `undefined` in the case
      * of specifying a `want`.
      */
-    escrow: async (offerDesc, offerPayments) => {
+    escrow: async (conditions, offerPayments) => {
       const { offerId, result } = await escrowOffer(
         adminState.recordOffer,
-        adminState.getOrMakePurseForAssay,
-        offerDesc,
+        adminState.recordAssay,
+        conditions,
         offerPayments,
       );
 
       const escrowReceiptPaymentP = mintEscrowReceiptPayment(
         escrowReceiptMint,
         offerId,
-        offerDesc,
+        conditions,
       );
 
-      return {
+      const escrowResult = {
         escrowReceipt: escrowReceiptPaymentP,
         payoff: result.p,
         makePayoffPaymentObj: harden({
@@ -326,21 +319,33 @@ Unrecognized moduleFormat ${moduleFormat}`;
             if (!readOnlyState.isOfferIdActive(offerId)) {
               throw new Error('offer has already completed');
             }
-            result.reject(
-              'A new payoff ERTP payment was made, making this invalid.',
-            );
+            result.res([]);
             const newResult = makePromise();
             adminState.replaceResult(offerId, newResult);
             return mintPayoffPayment(
               payoffMint,
               payoffAddUseObj,
-              offerDesc,
+              conditions,
               newResult,
               adminState.getInstanceIdForOfferId(offerId),
             );
           },
         }),
       };
+      if (conditions.exit.kind === 'afterDeadline') {
+        conditions.exit.timer
+          .delayUntil(conditions.exit.deadline)
+          .then(_ticks =>
+            completeOffers(adminState, readOnlyState, harden([offerId])),
+          );
+      }
+      if (conditions.exit.kind === 'onDemand') {
+        escrowResult.cancelObj = {
+          cancel: () =>
+            completeOffers(adminState, readOnlyState, harden([offerId])),
+        };
+      }
+      return harden(escrowResult);
     },
   });
   return publicFacet;

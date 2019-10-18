@@ -68,9 +68,8 @@ const makeContract = harden(zoe => {
 
   return harden({
     addOrder: async escrowReceipt => {
-      const { id, offerMade: offerMadeDesc } = await zoe.burnEscrowReceipt(
-        escrowReceipt,
-      );
+      const { id, conditions } = await zoe.burnEscrowReceipt(escrowReceipt);
+      const { offerDesc: offerMadeDesc } = conditions;
       const extentOpsArray = zoe.getExtentOpsArray();
 
       const offerAcceptedMessage = `The offer has been accepted. Once the contract has been completed, please check your winnings`;

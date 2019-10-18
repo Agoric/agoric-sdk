@@ -8,9 +8,8 @@ const makeContract = harden(zoe => {
 
   return harden({
     makeOffer: async escrowReceipt => {
-      const { id, offerMade: offerMadeDesc } = await zoe.burnEscrowReceipt(
-        escrowReceipt,
-      );
+      const { id, conditions } = await zoe.burnEscrowReceipt(escrowReceipt);
+      const { offerDesc: offerMadeDesc } = conditions;
 
       const isMatchingOfferDesc = (extentOps, leftOffer, rightOffer) => {
         // "matching" means that assetDescs are the same, but that the

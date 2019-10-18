@@ -2,39 +2,64 @@ import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
 import { extentOpsLib } from '../../config/extentOpsLib';
+import { makePrivateName } from '../../../util/PrivateName';
 
 const makeState = () => {
-  const offerIdToExtents = new WeakMap();
-  const offerIdToOfferDescs = new WeakMap();
-  const offerIdToResults = new WeakMap();
-  const offerIdToInstanceId = new WeakMap();
-  const instanceIdToInstance = new WeakMap();
+  const offerIdToExtents = makePrivateName();
+  const offerIdToAssays = makePrivateName();
+  const offerIdToOfferDesc = makePrivateName();
+  const offerIdToExitCondition = makePrivateName();
+  const offerIdToResult = makePrivateName();
+  const offerIdToInstanceId = makePrivateName();
+
   const instanceIdToInstallationId = new WeakMap();
-  const assayToPurse = new WeakMap();
-  const instanceIdToDescOpsArray = new WeakMap();
-  const instanceIdToExtentOpsArray = new WeakMap();
-  const instanceIdToLabels = new WeakMap();
+  const instanceIdToInstance = new WeakMap();
+  const instanceIdToArgs = new WeakMap();
   const instanceIdToAssays = new WeakMap();
-  const instanceIdToPurses = new WeakMap();
+
+  const assayToPurse = new WeakMap();
+  const assayToExtentOps = new WeakMap();
+  const assayToDescOps = new WeakMap();
+  const assayToLabel = new WeakMap();
 
   const installationIdToInstallation = new WeakMap();
   const installationToInstallationId = new WeakMap();
 
   const readOnlyState = harden({
     // per instance id
+    getArgs: instanceId => instanceIdToArgs.get(instanceId),
     getAssays: instanceId => instanceIdToAssays.get(instanceId),
-    getDescOps: instanceId => instanceIdToDescOpsArray.get(instanceId),
-    getExtentOpsArray: instanceId => instanceIdToExtentOpsArray.get(instanceId),
-    getLabels: instanceId => instanceIdToLabels.get(instanceId),
+
+    // per instanceId
+    getDescOpsArrayForInstanceId: instanceId =>
+      readOnlyState
+        .getAssays(instanceId)
+        .map(assay => assayToDescOps.get(assay)),
+    getExtentOpsArrayForInstanceId: instanceId =>
+      readOnlyState
+        .getAssays(instanceId)
+        .map(assay => assayToExtentOps.get(assay)),
+    getLabelsForInstanceId: instanceId =>
+      readOnlyState.getAssays(instanceId).map(assay => assayToLabel.get(assay)),
+
+    // per assays array (this can be used before an offer is
+    // associated with an instance)
+    getDescOpsArrayForAssays: assays =>
+      assays.map(assay => assayToDescOps.get(assay)),
+    getExtentOpsArrayForAssays: assays =>
+      assays.map(assay => assayToExtentOps.get(assay)),
+    getLabelsForAssays: assays => assays.map(assay => assayToLabel.get(assay)),
 
     // per offerIds array
+    getAssaysFor: offerIds =>
+      offerIds.map(offerId => offerIdToAssays.get(offerId)),
     getExtentsFor: offerIds =>
       offerIds.map(offerId => offerIdToExtents.get(offerId)),
     getOfferDescsFor: offerIds =>
-      offerIds.map(offerId => offerIdToOfferDescs.get(offerId)),
+      offerIds.map(offerId => offerIdToOfferDesc.get(offerId)),
 
     // per offerId
-    isOfferIdActive: offerId => offerIdToInstanceId.has(offerId),
+    isOfferIdActive: offerId => offerIdToAssays.has(offerId),
   });
 
   // The adminState should never leave Zoe and should be closely held
@@ -47,77 +72,71 @@ const makeState = () => {
     },
     getInstallation: installationId =>
       installationIdToInstallation.get(installationId),
-    addInstance: async (instanceId, instance, installationId, assays) => {
+    recordAssaysForInstance: async (instanceId, assays) => {
+      instanceIdToAssays.set(instanceId, assays);
+      await Promise.all(
+        assays.map(async assay => adminState.recordAssay(assay)),
+      );
+    },
+    addInstance: (instanceId, instance, installationId, args) => {
       instanceIdToInstance.set(instanceId, instance);
       instanceIdToInstallationId.set(instanceId, installationId);
-      instanceIdToAssays.set(instanceId, assays);
-
-      const descOps = await Promise.all(
-        assays.map(assay => E(assay).getDescOps()),
-      );
-      instanceIdToDescOpsArray.set(instanceId, descOps);
-
-      const extentOpsArray = await Promise.all(
-        assays.map(async assay => {
-          const { name, args } = await E(assay).getExtentOps();
-          return extentOpsLib[name](...args);
-        }),
-      );
-      instanceIdToExtentOpsArray.set(instanceId, extentOpsArray);
-
-      const labels = await Promise.all(
-        assays.map(assay => E(assay).getLabel()),
-      );
-      instanceIdToLabels.set(instanceId, labels);
-
-      const purses = await Promise.all(
-        assays.map(assay => adminState.getOrMakePurseForAssay(assay)),
-      );
-      instanceIdToPurses.set(instanceId, purses);
+      instanceIdToArgs.set(instanceId, args);
     },
     getInstance: instanceId => instanceIdToInstance.get(instanceId),
     getInstallationIdForInstanceId: instanceId =>
       instanceIdToInstallationId.get(instanceId),
-    getPurses: instanceId => instanceIdToPurses.get(instanceId),
-    getOrMakePurseForAssay: async assay => {
+    getPurses: assays => assays.map(assay => assayToPurse.get(assay)),
+    recordAssay: async assay => {
       if (!assayToPurse.has(assay)) {
-        const purse = await E(assay).makeEmptyPurse();
-        assayToPurse.set(assay, purse);
+        assayToDescOps.set(assay, await E(assay).getDescOps());
+        assayToLabel.set(assay, await E(assay).getLabel());
+        assayToPurse.set(assay, await E(assay).makeEmptyPurse());
+        const { name, extentOpArgs = [] } = await E(assay).getExtentOps();
+        assayToExtentOps.set(assay, extentOpsLib[name](...extentOpArgs));
       }
-      return assayToPurse.get(assay);
+
+      return harden({
+        descOps: assayToDescOps.get(assay),
+        label: assayToLabel.get(assay),
+        purse: assayToPurse.get(assay),
+        extentOps: assayToExtentOps.get(assay),
+      });
     },
-    recordOffer: (offerId, offerDesc, extentsForPlayer, result) => {
-      offerIdToExtents.set(offerId, extentsForPlayer);
-      offerIdToOfferDescs.set(offerId, offerDesc);
-      offerIdToResults.set(offerId, result);
+    recordOffer: (offerId, conditions, extents, assays, result) => {
+      const { offerDesc, exit } = conditions;
+      offerIdToExtents.init(offerId, extents);
+      offerIdToAssays.init(offerId, assays);
+      offerIdToOfferDesc.init(offerId, offerDesc);
+      offerIdToExitCondition.init(offerId, exit);
+      offerIdToResult.init(offerId, result);
     },
     replaceResult: (offerId, newResult) => {
-      // check exists first before replacing
-      if (!offerIdToResults.has(offerId)) {
-        throw new Error('offerId not found. Offer may have completed');
-      }
-      offerIdToResults.set(offerId, newResult);
+      offerIdToResult.set(offerId, newResult);
     },
-    recordUsedInInstance: (instanceId, offerId) => {
+    recordUsedInInstance: (instanceId, offerId) =>
+      offerIdToInstanceId.init(offerId, instanceId),
+    getInstanceIdForOfferId: offerId => {
       if (offerIdToInstanceId.has(offerId)) {
-        throw new Error('offer id was already used');
+        return offerIdToInstanceId.get(offerId);
       }
-      offerIdToInstanceId.set(offerId, instanceId);
+      return undefined;
     },
-    getInstanceIdForOfferId: offerId => offerIdToInstanceId.get(offerId),
     setExtentsFor: (offerIds, reallocation) =>
       offerIds.map((offerId, i) =>
         offerIdToExtents.set(offerId, reallocation[i]),
       ),
     getResultsFor: offerIds =>
-      offerIds.map(objId => offerIdToResults.get(objId)),
+      offerIds.map(objId => offerIdToResult.get(objId)),
     removeOffers: offerIds => {
       // has-side-effects
       // eslint-disable-next-line array-callback-return
       offerIds.map(objId => {
         offerIdToExtents.delete(objId);
-        offerIdToOfferDescs.delete(objId);
-        offerIdToResults.delete(objId);
+        offerIdToAssays.delete(objId);
+        offerIdToOfferDesc.delete(objId);
+        offerIdToExitCondition.delete(objId);
+        offerIdToResult.delete(objId);
         offerIdToInstanceId.delete(objId);
       });
     },

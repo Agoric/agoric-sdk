@@ -2,6 +2,11 @@ import harden from '@agoric/harden';
 
 import { makeMint } from '../../../core/mint';
 import { automaticRefundSrcs } from '../../../core/zoe/contracts/automaticRefund';
+import { coveredCallSrcs } from '../../../core/zoe/contracts/coveredCall';
+import { publicAuctionSrcs } from '../../../core/zoe/contracts/publicAuction';
+import { publicSwapSrcs } from '../../../core/zoe/contracts/publicSwap';
+import { simpleExchangeSrcs } from '../../../core/zoe/contracts/simpleExchange';
+// TODO: test autoswap
 
 const setupBasicMints = () => {
   const moolaMint = makeMint('moola');
@@ -23,40 +28,100 @@ const setupBasicMints = () => {
   });
 };
 
+const makeVats = (E, log, vats, zoe, installationId, startingExtents) => {
+  const { mints, assays } = setupBasicMints();
+  const [aliceExtents, bobExtents, carolExtents, daveExtents] = startingExtents;
+  // Setup Alice
+  const aliceMoolaPurse = mints[0].mint(
+    assays[0].makeAssetDesc(aliceExtents[0]),
+  );
+  const aliceSimoleanPurse = mints[1].mint(
+    assays[1].makeAssetDesc(aliceExtents[1]),
+  );
+  const aliceP = E(vats.alice).build(
+    zoe,
+    aliceMoolaPurse,
+    aliceSimoleanPurse,
+    installationId,
+  );
+
+  // Setup Bob
+  const bobMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(bobExtents[0]));
+  const bobSimoleanPurse = mints[1].mint(
+    assays[1].makeAssetDesc(bobExtents[1]),
+  );
+  const bobP = E(vats.bob).build(
+    zoe,
+    bobMoolaPurse,
+    bobSimoleanPurse,
+    installationId,
+  );
+
+  const result = {
+    aliceP,
+    bobP,
+  };
+
+  if (carolExtents) {
+    const carolMoolaPurse = mints[0].mint(
+      assays[0].makeAssetDesc(carolExtents[0]),
+    );
+    const carolSimoleanPurse = mints[1].mint(
+      assays[1].makeAssetDesc(carolExtents[1]),
+    );
+    const carolP = E(vats.carol).build(
+      zoe,
+      carolMoolaPurse,
+      carolSimoleanPurse,
+      installationId,
+    );
+    result.carolP = carolP;
+  }
+
+  if (daveExtents) {
+    const daveMoolaPurse = mints[0].mint(
+      assays[0].makeAssetDesc(daveExtents[0]),
+    );
+    const daveSimoleanPurse = mints[1].mint(
+      assays[1].makeAssetDesc(daveExtents[1]),
+    );
+    const daveP = E(vats.dave).build(
+      zoe,
+      daveMoolaPurse,
+      daveSimoleanPurse,
+      installationId,
+    );
+    result.daveP = daveP;
+  }
+
+  log(`=> alice, bob, carol and dave are set up`);
+  return harden(result);
+};
+
 function build(E, log) {
   const obj0 = {
     async bootstrap(argv, vats) {
-      async function automaticRefundOk() {
-        log(`=> automaticRefundOk called`);
-        const zoe = await E(vats.zoe).getZoe();
-        const aliceMaker = await E(vats.alice).makeAliceMaker(zoe);
-        const bobMaker = await E(vats.bob).makeBobMaker(zoe);
-        const { mints, assays } = setupBasicMints();
+      const zoe = await E(vats.zoe).getZoe();
 
-        // Setup Alice
-        const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
-        const aliceSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
-        const aliceP = E(aliceMaker).make(aliceMoolaPurse, aliceSimoleanPurse);
+      const installations = {
+        automaticRefund: await E(zoe).install(automaticRefundSrcs),
+        coveredCall: await E(zoe).install(coveredCallSrcs),
+        publicAuction: await E(zoe).install(publicAuctionSrcs),
+        publicSwap: await E(zoe).install(publicSwapSrcs),
+        simpleExchange: await E(zoe).install(simpleExchangeSrcs),
+      };
 
-        // Setup Bob
-        const bobMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-        const bobSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(17));
-        const bobP = E(bobMaker).make(bobMoolaPurse, bobSimoleanPurse);
+      const [testName, installation, startingExtents] = argv;
 
-        const installationId = E(zoe).install(automaticRefundSrcs);
-
-        log(`=> alice and bob are setup`);
-        await E(aliceP).doCreateAutomaticRefund(bobP, installationId);
-      }
-
-      switch (argv[0]) {
-        case 'automaticRefundOk': {
-          return automaticRefundOk();
-        }
-        default: {
-          throw new Error(`unrecognized argument value ${argv[0]}`);
-        }
-      }
+      const { aliceP, bobP, carolP, daveP } = makeVats(
+        E,
+        log,
+        vats,
+        zoe,
+        installations[installation],
+        startingExtents,
+      );
+      await E(aliceP).startTest(testName, bobP, carolP, daveP);
     },
   };
   return harden(obj0);
@@ -64,15 +129,10 @@ function build(E, log) {
 harden(build);
 
 function setup(syscall, state, helpers) {
-  function log(...args) {
-    helpers.log(...args);
-    console.log(...args);
-  }
-  log(`=> setup called`);
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E => build(E, log),
+    E => build(E, helpers.log),
     helpers.vatID,
   );
 }

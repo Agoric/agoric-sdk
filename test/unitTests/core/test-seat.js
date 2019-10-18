@@ -7,20 +7,8 @@ import { setup } from './zoe/setupBasicMints';
 import { insist } from '../../../util/insist';
 
 /*
- * A seat extent may look like:
- *
- * {
- *   id: {},
- *   offerToBeMade: [rule1, rule2],
- * }
- *
- * or:
- *
- * {
- *   id: {},
- *   offerMade: [rule1, rule2],
- * }
- *
+ * A seat extent must have an id but otherwise can have arbitrary
+ * properties as long as the extent is a copyRecord
  */
 
 test('seatMint', async t => {
@@ -33,7 +21,9 @@ test('seatMint', async t => {
       if (extent.offerToBeMade) {
         return harden({
           makeOffer: offer => {
-            insist(offerEqual(extentOps, offer, extent.offerToBeMade));
+            insist(
+              offerEqual(extentOps, offer, extent.offerToBeMade.offerDesc),
+            );
             // do things with the offer
             return true;
           },
@@ -51,10 +41,12 @@ test('seatMint', async t => {
 
     const purse1Extent = harden({
       id: harden({}),
-      offerToBeMade: [
-        { rule: 'offerExactly', assetDesc: assays[0].makeAssetDesc(8) },
-        { rule: 'wantExactly', assetDesc: assays[1].makeAssetDesc(6) },
-      ],
+      offerToBeMade: {
+        offerDesc: [
+          { rule: 'offerExactly', assetDesc: assays[0].makeAssetDesc(8) },
+          { rule: 'wantExactly', assetDesc: assays[1].makeAssetDesc(6) },
+        ],
+      },
     });
 
     const purse1 = seatMint.mint(purse1Extent);
@@ -68,14 +60,16 @@ test('seatMint', async t => {
 
     t.rejects(purse1.unwrap(), /the purse is empty or already used/);
 
-    t.equal(useObjPurse1.makeOffer(purse1Extent.offerToBeMade), true);
+    t.equal(useObjPurse1.makeOffer(purse1Extent.offerToBeMade.offerDesc), true);
 
     const purse2Extent = harden({
       id: harden({}),
-      offerMade: [
-        { rule: 'offerExactly', assetDesc: assays[0].makeAssetDesc(8) },
-        { rule: 'wantExactly', assetDesc: assays[1].makeAssetDesc(6) },
-      ],
+      offerMade: {
+        offerDesc: [
+          { rule: 'offerExactly', assetDesc: assays[0].makeAssetDesc(8) },
+          { rule: 'wantExactly', assetDesc: assays[1].makeAssetDesc(6) },
+        ],
+      },
     });
 
     const purse2 = seatMint.mint(purse2Extent);

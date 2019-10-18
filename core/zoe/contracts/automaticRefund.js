@@ -13,10 +13,10 @@ const makeContract = zoe => {
   let count = 0;
   return harden({
     makeOffer: async escrowReceipt => {
-      const { id, offerMade } = await zoe.burnEscrowReceipt(escrowReceipt);
+      const { id, conditions } = await zoe.burnEscrowReceipt(escrowReceipt);
       count += 1;
       zoe.complete(harden([id]));
-      return offerMade;
+      return conditions;
     },
     getOffersCount: () => count,
   });
