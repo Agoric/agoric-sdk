@@ -12,12 +12,13 @@ import harden from '@agoric/harden';
 // partial fills of orders.
 
 const makeContract = harden(zoe => {
-  let sellOfferIds = [];
-  let buyOfferIds = [];
+  const sellOfferIds = [];
+  const buyOfferIds = [];
 
-  const offerIdToOffer = new WeakMap();
-  const getBuyOffers = () => buyOfferIds.map(id => offerIdToOffer.get(id));
-  const getSellOffers = () => sellOfferIds.map(id => offerIdToOffer.get(id));
+  const getActiveOfferDescs = offerIds => {
+    const { active } = zoe.getStatusFor(offerIds);
+    return zoe.getOfferDescsFor(active);
+  };
 
   const canMatch = (extentOpsArray, sellOffer, buyOffer) => {
     const assetEqual = extentOpsArray[0].equals(
@@ -47,12 +48,6 @@ const makeContract = harden(zoe => {
 
     zoe.reallocate(offerIds, harden([newSellOrderExtents, newBuyOrderExtents]));
     zoe.complete(offerIds);
-
-    // remove completed orders from state
-    sellOfferIds = sellOfferIds.filter(offerId => offerId !== sellOfferId);
-    buyOfferIds = buyOfferIds.filter(offerId => offerId !== buyOfferId);
-    offerIdToOffer.delete(sellOfferId);
-    offerIdToOffer.delete(buyOfferId);
   };
 
   // TODO: check assays as well
@@ -71,40 +66,34 @@ const makeContract = harden(zoe => {
       const { id, conditions } = await zoe.burnEscrowReceipt(escrowReceipt);
       const { offerDesc: offerMadeDesc } = conditions;
       const extentOpsArray = zoe.getExtentOpsArray();
-
       const offerAcceptedMessage = `The offer has been accepted. Once the contract has been completed, please check your winnings`;
 
       if (isValidSellOrder(offerMadeDesc)) {
         // Save the valid offer
         sellOfferIds.push(id);
-        offerIdToOffer.set(id, offerMadeDesc);
 
         // Try to match
-        const buyOffers = getBuyOffers(); // same order as buyOfferIds
-        for (let i = 0; i < buyOffers.length; i += 1) {
-          const buyOrder = buyOffers[i];
-          const buyOrderOfferId = buyOfferIds[i];
-          if (canMatch(extentOpsArray, offerMadeDesc, buyOrder)) {
-            reallocate(extentOpsArray, id, buyOrderOfferId);
+        const buyOffers = getActiveOfferDescs(buyOfferIds); // same order as buyOfferIds
+        // eslint-disable-next-line array-callback-return
+        buyOffers.map((buyOffer, i) => {
+          if (canMatch(extentOpsArray, offerMadeDesc, buyOffer)) {
+            reallocate(extentOpsArray, id, buyOfferIds[i]);
           }
-        }
+        });
         return offerAcceptedMessage;
       }
 
       if (isValidBuyOrder(offerMadeDesc)) {
-        // Save the valid offer
         buyOfferIds.push(id);
-        offerIdToOffer.set(id, offerMadeDesc);
 
         // Try to match
-        const sellOffers = getSellOffers(); // same order as sellOfferIds
-        for (let i = 0; i < sellOffers.length; i += 1) {
-          const sellOrder = sellOffers[i];
-          const sellOrderOfferId = sellOfferIds[i];
-          if (canMatch(extentOpsArray, sellOrder, offerMadeDesc)) {
-            reallocate(extentOpsArray, sellOrderOfferId, id);
+        const sellOffers = getActiveOfferDescs(sellOfferIds); // same order as sellOfferIds
+        // eslint-disable-next-line array-callback-return
+        sellOffers.map((sellOffer, i) => {
+          if (canMatch(extentOpsArray, sellOffer, offerMadeDesc)) {
+            reallocate(extentOpsArray, sellOfferIds[i], id);
           }
-        }
+        });
         return offerAcceptedMessage;
       }
 
