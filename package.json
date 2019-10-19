@@ -33,19 +33,19 @@
   },
   "homepage": "https://github.com/Agoric/ertp#readme",
   "dependencies": {
-    "@agoric/evaluate": "^2.1.1",
-    "@agoric/eventual-send": "^0.3.3",
+    "@agoric/evaluate": "^2.1.2",
+    "@agoric/eventual-send": "^0.4.4",
     "@agoric/harden": "^0.0.4",
     "@agoric/marshal": "^0.1.1",
     "@agoric/nat": "^2.0.1",
-    "ses": "^0.6.3"
+    "ses": "^0.6.4"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "0.0.26",
+    "@agoric/swingset-vat": "^0.1.0",
     "eslint": "^6.5.1",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-config-jessie": "0.0.3",
-    "eslint-config-prettier": "^6.3.0",
+    "eslint-config-prettier": "^6.4.0",
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-prettier": "^3.1.1",
     "esm": "^3.2.25",
