@@ -68,25 +68,29 @@ const makeContract = harden(zoe => {
     );
   };
 
+  const ejectPlayer = (
+    offerId,
+    message = `The offer was invalid. Please check your refund.`,
+  ) => {
+    zoe.complete(harden([offerId]));
+    return Promise.reject(new Error(`${message}`));
+  };
+
   const makeOffer = async escrowReceipt => {
     const { id, conditions } = await zoe.burnEscrowReceipt(escrowReceipt);
     const { offerDesc: offerMadeDesc } = conditions;
+    const { inactive } = zoe.getStatusFor(harden([firstOfferId]));
+    if (inactive.length > 0) {
+      return ejectPlayer(id, 'The first offer was withdrawn');
+    }
 
-    // fail-fast if offers are not accepted or offer is not valid.
-    try {
-      const [firstOfferDesc] = zoe.getOfferDescsFor(harden([firstOfferId]));
-      if (
-        sm.getStatus() !== 'acceptingOffers' ||
-        !isMatchingOfferDesc(extentOpsArray, firstOfferDesc, offerMadeDesc)
-      ) {
-        throw new Error();
-      }
-    } catch (err) {
-      zoe.complete(harden([id]));
-      const externalError = new Error(
-        `The offer was invalid or the contract is not accepting offers. Please check your refund.`,
-      );
-      return Promise.reject(externalError);
+    // fail-fast if offer is not valid.
+    const [firstOfferDesc] = zoe.getOfferDescsFor(harden([firstOfferId]));
+    if (
+      sm.getStatus() !== 'acceptingOffers' ||
+      !isMatchingOfferDesc(extentOpsArray, firstOfferDesc, offerMadeDesc)
+    ) {
+      return ejectPlayer(id);
     }
 
     // Save the valid offer
@@ -100,7 +104,6 @@ const makeContract = harden(zoe => {
     // reallocate by switching the extents of the firstOffer and matchingOffer
     zoe.reallocate(offerIds, harden([matchingOfferExtents, firstOfferExtents]));
     zoe.complete(offerIds);
-
     return `The offer has been accepted. Once the contract has been completed, please check your winnings`;
   };
 
@@ -119,10 +122,7 @@ const makeContract = harden(zoe => {
         sm.getStatus() !== 'uninitialized' ||
         !isValidFirstOfferDesc(offerMadeDesc)
       ) {
-        zoe.complete(harden([id]));
-        return Promise.reject(
-          new Error(`The offer was invalid. Please check your refund.`),
-        );
+        return ejectPlayer(id);
       }
 
       // Save the valid offer
@@ -135,14 +135,11 @@ const makeContract = harden(zoe => {
         offerToBeMade: makeMatchingOfferDesc(offerMadeDesc),
       };
 
-      const invite = await zoe.makeInvite(
-        customInviteExtent,
-        harden({ makeOffer }),
-      );
+      const inviteP = zoe.makeInvite(customInviteExtent, harden({ makeOffer }));
 
       return harden({
         outcome: `The offer has been accepted. Once the contract has been completed, please check your winnings`,
-        invite,
+        invite: inviteP,
       });
     },
     getStatus: _ => sm.getStatus(),

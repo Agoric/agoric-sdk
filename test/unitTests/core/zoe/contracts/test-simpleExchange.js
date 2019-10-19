@@ -45,7 +45,7 @@ test('zoe - simpleExchange', async t => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
     const alicePayments = [aliceMoolaPayment, undefined];
@@ -90,7 +90,7 @@ test('zoe - simpleExchange', async t => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
     const bobPayments = [undefined, bobSimoleanPayment];

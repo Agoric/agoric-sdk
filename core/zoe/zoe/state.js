@@ -12,6 +12,8 @@ const makeState = () => {
   const offerIdToResult = makePrivateName();
   const offerIdToInstanceId = makePrivateName();
 
+  const activeOffers = new WeakSet();
+
   const instanceIdToInstallationId = new WeakMap();
   const instanceIdToInstance = new WeakMap();
   const instanceIdToArgs = new WeakMap();
@@ -57,9 +59,21 @@ const makeState = () => {
       offerIds.map(offerId => offerIdToExtents.get(offerId)),
     getOfferDescsFor: offerIds =>
       offerIds.map(offerId => offerIdToOfferDesc.get(offerId)),
-
-    // per offerId
-    isOfferIdActive: offerId => offerIdToAssays.has(offerId),
+    getStatusFor: offerIds => {
+      const active = [];
+      const inactive = [];
+      for (const offerId of offerIds) {
+        if (activeOffers.has(offerId)) {
+          active.push(offerId);
+        } else {
+          inactive.push(offerId);
+        }
+      }
+      return harden({
+        active,
+        inactive,
+      });
+    },
   });
 
   // The adminState should never leave Zoe and should be closely held
@@ -110,6 +124,7 @@ const makeState = () => {
       offerIdToOfferDesc.init(offerId, offerDesc);
       offerIdToExitCondition.init(offerId, exit);
       offerIdToResult.init(offerId, result);
+      activeOffers.add(offerId);
     },
     replaceResult: (offerId, newResult) => {
       offerIdToResult.set(offerId, newResult);
@@ -137,8 +152,13 @@ const makeState = () => {
         offerIdToOfferDesc.delete(objId);
         offerIdToExitCondition.delete(objId);
         offerIdToResult.delete(objId);
-        offerIdToInstanceId.delete(objId);
+        if (offerIdToInstanceId.has(objId)) {
+          offerIdToInstanceId.delete(objId);
+        }
       });
+    },
+    setOffersAsInactive: offerIds => {
+      offerIds.map(offerId => activeOffers.delete(offerId));
     },
   });
   return {

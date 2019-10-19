@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 
 export const makeContract = harden((zoe, numBidsAllowed = 3) => {
   let creatorOfferId;
-  const bidIds = [];
+  const allBidIds = [];
 
   let bidExtentOps;
   let itemExtentOps;
@@ -26,7 +26,7 @@ export const makeContract = harden((zoe, numBidsAllowed = 3) => {
     );
 
   const getBidExtent = offerDesc => offerDesc[BID_INDEX].assetDesc.extent;
-  const canAcceptBid = bidIds.length < numBidsAllowed;
+  const canAcceptBid = allBidIds.length < numBidsAllowed;
 
   const isValidBidOfferDesc = (creatorOfferDesc, newOfferDesc) =>
     canAcceptBid &&
@@ -62,14 +62,12 @@ export const makeContract = harden((zoe, numBidsAllowed = 3) => {
   };
 
   const reallocate = () => {
-    let bids;
-    try {
-      bids = zoe.getExtentsFor(bidIds).map(extents => extents[BID_INDEX]);
-    } catch (err) {
-      throw new Error(`Some of the bids were cancelled`);
-    }
+    const { active: activeBidIds } = zoe.getStatusFor(harden(allBidIds));
+    const bids = zoe
+      .getExtentsFor(activeBidIds)
+      .map(extents => extents[BID_INDEX]);
     const { winnerOfferId, winnerBid, price } = findWinnerAndPrice(
-      bidIds,
+      activeBidIds,
       bids,
     );
 
@@ -86,8 +84,13 @@ export const makeContract = harden((zoe, numBidsAllowed = 3) => {
       harden([creatorOfferId, winnerOfferId]),
       harden([newCreatorExtents, newWinnerExtents]),
     );
-    const allOfferIds = harden([creatorOfferId, ...bidIds]);
+    const allOfferIds = harden([creatorOfferId, ...activeBidIds]);
     zoe.complete(allOfferIds);
+  };
+
+  const ejectPlayer = (offerId, message) => {
+    zoe.complete(harden([offerId]));
+    return Promise.reject(new Error(`${message}`));
   };
 
   return harden({
@@ -98,38 +101,27 @@ export const makeContract = harden((zoe, numBidsAllowed = 3) => {
       const offerAcceptedMessage = `The offer has been accepted. Once the contract has been completed, please check your winnings`;
 
       if (isValidCreatorOfferDesc(offerMadeDesc)) {
-        // save the valid offer
         creatorOfferId = id;
         [itemExtentOps, bidExtentOps] = zoe.getExtentOpsArray();
         itemExtentUpForAuction = offerMadeDesc[ITEM_INDEX].assetDesc.extent;
         return offerAcceptedMessage;
       }
 
-      let creatorOfferDesc;
-
-      try {
-        [creatorOfferDesc] = zoe.getOfferDescsFor(harden([creatorOfferId]));
-      } catch (err) {
-        zoe.complete(harden([id]));
-        return Promise.reject(
-          new Error(`The item up for auction has been withdrawn`),
-        );
+      const { inactive } = zoe.getStatusFor(harden([creatorOfferId]));
+      if (inactive.length > 0) {
+        return ejectPlayer(id, 'The item up for auction has been withdrawn');
       }
 
+      const [creatorOfferDesc] = zoe.getOfferDescsFor(harden([creatorOfferId]));
       if (isValidBidOfferDesc(creatorOfferDesc, offerMadeDesc)) {
-        // save the valid offer
-        bidIds.push(id);
-        if (bidIds.length >= numBidsAllowed) {
+        allBidIds.push(id);
+        if (allBidIds.length >= numBidsAllowed) {
           reallocate();
         }
         return offerAcceptedMessage;
       }
 
-      // Eject because the offer must be invalid
-      zoe.complete(harden([id]));
-      return Promise.reject(
-        new Error(`The offer was invalid. Please check your refund.`),
-      );
+      return ejectPlayer(`The offer was invalid. Please check your refund.`);
     },
   });
 });

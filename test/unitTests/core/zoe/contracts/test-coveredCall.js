@@ -49,7 +49,7 @@ test('zoe - coveredCall', async t => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
     const alicePayments = [aliceMoolaPayment, undefined];
@@ -106,7 +106,7 @@ test('zoe - coveredCall', async t => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
 
@@ -294,7 +294,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
 
@@ -333,7 +333,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     // 8: Bob makes an offer with his escrow receipt
     t.rejects(
       bobInvite.makeOffer(bobEscrowReceipt),
-      /The offer was invalid or the contract is not accepting offers. Please check your refund./,
+      /The first offer was withdrawn/,
     );
 
     t.equals(

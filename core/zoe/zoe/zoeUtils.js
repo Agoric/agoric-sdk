@@ -71,7 +71,7 @@ const insistValidRules = offerDesc => {
 
 const insistValidExitCondition = exit => {
   const acceptedExitConditionKinds = [
-    'noExit',
+    'onDemand',
     'onDemand',
     'afterDeadline',
     // 'onDemandAfterDeadline', // not yet supported
@@ -148,6 +148,11 @@ const makePayments = (purses, assetDescsMatrix) => {
 
 // Note: offerIds must be for the same assays.
 const completeOffers = async (adminState, readOnlyState, offerIds) => {
+  const { inactive } = readOnlyState.getStatusFor(offerIds);
+  if (inactive.length > 0) {
+    throw new Error('offer has already completed');
+  }
+  adminState.setOffersAsInactive(offerIds);
   const [assays] = readOnlyState.getAssaysFor(offerIds);
   const extents = readOnlyState.getExtentsFor(offerIds);
   const extentOps = readOnlyState.getExtentOpsArrayForAssays(assays);

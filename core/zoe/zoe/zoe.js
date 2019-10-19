@@ -92,8 +92,8 @@ const makeZoe = async (additionalEndowments = {}) => {
   // new offer itself for recordkeeping and other various
   // purposes.
 
-  const makeGoverningContractFacet = instanceId =>
-    harden({
+  const makeGoverningContractFacet = instanceId => {
+    const governingContractFacet = harden({
       /**
        * The governing contract can propose a reallocation of
        * extents per player, which will only succeed if the
@@ -179,6 +179,10 @@ const makeZoe = async (additionalEndowments = {}) => {
       burnEscrowReceipt: async escrowReceipt => {
         const assetDesc = await escrowReceiptAssay.burnAll(escrowReceipt);
         const { id } = assetDesc.extent;
+        const { inactive } = readOnlyState.getStatusFor(harden([id]));
+        if (inactive.length > 0) {
+          return Promise.reject(new Error('offer was cancelled'));
+        }
         adminState.recordUsedInInstance(instanceId, id);
         return assetDesc.extent;
       },
@@ -200,6 +204,7 @@ const makeZoe = async (additionalEndowments = {}) => {
       },
 
       // read-only, side-effect-free access below this line:
+      getStatusFor: readOnlyState.getStatusFor,
       makeEmptyExtents: () =>
         makeEmptyExtents(
           readOnlyState.getExtentOpsArrayForInstanceId(instanceId),
@@ -211,6 +216,8 @@ const makeZoe = async (additionalEndowments = {}) => {
       getInviteAssay: () => inviteAssay,
       getEscrowReceiptAssay: () => escrowReceiptAssay,
     });
+    return governingContractFacet;
+  };
 
   // The `publicFacet` of the zoe has three main methods: `makeInstance`
   // installs a governing contract and creates an instance,
@@ -316,7 +323,8 @@ Unrecognized moduleFormat ${moduleFormat}`;
         makePayoffPaymentObj: harden({
           makePayoffPayment: () => {
             // if offer has already completed, we cannot make a payment
-            if (!readOnlyState.isOfferIdActive(offerId)) {
+            const { active } = readOnlyState.getStatusFor(harden([offerId]));
+            if (active.length !== 1) {
               throw new Error('offer has already completed');
             }
             result.res([]);

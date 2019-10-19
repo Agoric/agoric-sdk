@@ -35,7 +35,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
 
@@ -82,7 +82,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
 
@@ -129,7 +129,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
     const moolaPayment = await E(moolaPurseP).withdrawAll();
@@ -181,7 +181,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
     const moolaPayment = await E(moolaPurseP).withdrawAll();
@@ -232,7 +232,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
     const moolaPayment = await E(moolaPurseP).withdrawAll();

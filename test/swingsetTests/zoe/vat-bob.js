@@ -50,7 +50,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
           },
         ],
         exit: {
-          kind: 'noExit',
+          kind: 'onDemand',
         },
       });
 
@@ -102,7 +102,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
           },
         ],
         exit: {
-          kind: 'noExit',
+          kind: 'onDemand',
         },
       });
 
@@ -178,7 +178,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
           },
         ],
         exit: {
-          kind: 'noExit',
+          kind: 'onDemand',
         },
       });
       const simoleanPayment = await E(simoleanPurseP).withdrawAll();
@@ -225,7 +225,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
           },
         ],
         exit: {
-          kind: 'noExit',
+          kind: 'onDemand',
         },
       });
       const simoleanPayment = await E(simoleanPurseP).withdrawAll();
@@ -276,7 +276,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
           },
         ],
         exit: {
-          kind: 'noExit',
+          kind: 'onDemand',
         },
       });
       const simoleanPayment = await E(simoleanPurseP).withdrawAll();

@@ -56,7 +56,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
     const alicePayments = [aliceMoolaPayment, undefined];
@@ -103,7 +103,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
     const bobPayments = [undefined, bobSimoleanPayment];
@@ -151,7 +151,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
     const carolPayments = [undefined, carolSimoleanPayment];
@@ -191,7 +191,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
     const davePayments = [undefined, daveSimoleanPayment];
@@ -388,7 +388,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
     const bobPayments = [undefined, bobSimoleanPayment];
@@ -434,7 +434,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
     const carolPayments = [undefined, carolSimoleanPayment];
@@ -472,7 +472,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
         },
       ],
       exit: {
-        kind: 'noExit',
+        kind: 'onDemand',
       },
     });
     const davePayments = [undefined, daveSimoleanPayment];
