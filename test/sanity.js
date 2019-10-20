@@ -1,5 +1,5 @@
 import { test } from 'tape-promise/tape';
-import bundleSource from '../src';
+import bundleSource from '..';
 
 test('sanity', async t => {
   try {

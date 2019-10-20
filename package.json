@@ -2,10 +2,10 @@
   "name": "@agoric/bundle-source",
   "version": "0.0.1",
   "description": "Create source bundles from ES Modules",
-  "main": "dist/bundle-source.cjs.js",
-  "module": "dist/bundle-source.esm.js",
-  "browser": "dist/bundle-source.umd.js",
+  "main": "src/index.js",
+  "type": "module",
   "scripts": {
+    "build": "exit 0",
     "test": "tape -r esm 'test/**/*.js'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
