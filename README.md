@@ -1,8 +1,11 @@
-# New Repo
+# Bundle Source
 
-This repository should be a compilation of everything that a new
-Agoric repo should have, including ESLint settings, prettier settings,
-package.json dependencies and scripts, licenses, sample tests, CircleCI config, and
-VSCode testing config.
+This package creates source bundles from ES Modules, compatible with Agoric contracts and SwingSet vats.
 
-See [SETUP-DELETEME](SETUP-DELETEME.md) for starting steps.
+To bundle your sources:
+
+```js
+import makeSourceBundle from '@agoric/bundle-source';
+
+const { moduleFormat, source, sourceMap } = bundleSource(`${__dirname}/../path/to/toplevel`);
+```

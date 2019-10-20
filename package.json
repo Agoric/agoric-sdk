@@ -1,10 +1,10 @@
 {
-  "name": "@agoric/@PACKAGE@",
+  "name": "@agoric/bundle-source",
   "version": "0.0.1",
-  "description": "???",
-  "main": "dist/@PACKAGE@.cjs.js",
-  "module": "dist/@PACKAGE@.esm.js",
-  "browser": "dist/@PACKAGE@.umd.js",
+  "description": "Create source bundles from ES Modules",
+  "main": "dist/bundle-source.cjs.js",
+  "module": "dist/bundle-source.esm.js",
+  "browser": "dist/bundle-source.umd.js",
   "scripts": {
     "test": "tape -r esm 'test/**/*.js'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
@@ -25,7 +25,10 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
-    "esm": "^3.2.5"
+    "@agoric/acorn-eventual-send": "^1.0.1",
+    "esm": "^3.2.5",
+    "rollup": "^1.25.1",
+    "rollup-plugin-node-resolve": "^5.2.0"
   },
   "keywords": [],
   "files": [
@@ -33,12 +36,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Agoric/@REPO@"
+    "url": "git+https://github.com/Agoric/bundle-source"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/Agoric/@REPO@/issues"
+    "url": "https://github.com/Agoric/bundle-source/issues"
   },
-  "homepage": "https://github.com/Agoric/@REPO@#readme"
+  "homepage": "https://github.com/Agoric/bundle-source#readme"
 }
