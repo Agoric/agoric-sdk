@@ -1,15 +1,15 @@
-This folder contains contracts that are bundled and installed when ag-solo first starts.
+This folder contains contracts that can be bundled and installed after ag-solo starts.
 
 ## Zoe uploads
 
 Each Zoe contract entrypoint is named `zoe-NAME.js`, where **NAME** is an identifier.  These files are ES modules which can import other modules.  The direct exports from `zoe-NAME.js` become properties on **NAME**'s installation.
 
-Note that the `makeContract` export accepts a `pureFns` argument and returns a instantiation function that receives a Zoe instance as an argument.
+Note that the `makeContract` export accepts a Zoe instance as an argument.
 
 ```js
 import harden from '@agoric/harden';
 
-export const makeContract = harden(pureFns => zoe => { ... });
+export const makeContract = harden(zoe => { ... });
 ```
 
 The following global variables are available to all modules in your Zoe contract:
@@ -52,5 +52,3 @@ ag-solo upload-contract NAME=ENTRYPOINT.js [NAME=ENTRYPOINT.js...]
 To access the contract installation object, use `home.uploads~.get(NAME)`.
 
 To list all contracts in the uploads scratch pad: `home.uploads~.list()`.
-
-Again, note that all the `contractHost-*.js` and `zoe-*.js` in this directory are automatically uploaded when ag-solo first starts.
