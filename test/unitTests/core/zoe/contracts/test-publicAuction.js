@@ -38,9 +38,8 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const installationId = zoe.install(publicAuctionSrcs);
     const numBidsAllowed = 3;
     const { instance: aliceAuction, instanceId } = await zoe.makeInstance(
-      assays,
       installationId,
-      [numBidsAllowed],
+      { assays, numBidsAllowed },
     );
 
     // 2: Alice escrows with zoe
@@ -85,11 +84,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const {
       instance: bobAuction,
       installationId: bobInstallationId,
-      assays: bobAssays,
+      terms,
     } = zoe.getInstance(instanceId);
 
     t.equals(bobInstallationId, installationId);
-    t.deepEquals(bobAssays, assays);
+    t.deepEquals(terms.assays, assays);
 
     const bobConditions = harden({
       offerDesc: [
@@ -133,11 +132,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const {
       instance: carolAuction,
       installationId: carolInstallationId,
-      assays: carolAssays,
+      terms: carolTerms,
     } = zoe.getInstance(instanceId);
 
     t.equals(carolInstallationId, installationId);
-    t.deepEquals(carolAssays, assays);
+    t.deepEquals(carolTerms.assays, assays);
 
     const carolConditions = harden({
       offerDesc: [
@@ -174,11 +173,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const {
       instance: daveAuction,
       installationId: daveInstallationId,
-      assays: daveAssays,
+      terms: daveTerms,
     } = zoe.getInstance(instanceId);
 
     t.equals(daveInstallationId, installationId);
-    t.deepEquals(daveAssays, assays);
+    t.deepEquals(daveTerms.assays, assays);
     const daveConditions = harden({
       offerDesc: [
         {
@@ -318,9 +317,8 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const installationId = zoe.install(publicAuctionSrcs);
     const numBidsAllowed = 3;
     const { instance: aliceAuction, instanceId } = await zoe.makeInstance(
-      assays,
       installationId,
-      [numBidsAllowed],
+      { assays, numBidsAllowed },
     );
 
     // 2: Alice escrows with zoe
@@ -370,11 +368,11 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const {
       instance: bobAuction,
       installationId: bobInstallationId,
-      assays: bobAssays,
+      terms,
     } = zoe.getInstance(instanceId);
 
     t.equals(bobInstallationId, installationId);
-    t.deepEquals(bobAssays, assays);
+    t.deepEquals(terms.assays, assays);
 
     const bobConditions = harden({
       offerDesc: [
@@ -416,11 +414,11 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const {
       instance: carolAuction,
       installationId: carolInstallationId,
-      assays: carolAssays,
+      terms: carolTerms,
     } = zoe.getInstance(instanceId);
 
     t.equals(carolInstallationId, installationId);
-    t.deepEquals(carolAssays, assays);
+    t.deepEquals(carolTerms.assays, assays);
 
     const carolConditions = harden({
       offerDesc: [
@@ -455,11 +453,11 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const {
       instance: daveAuction,
       installationId: daveInstallationId,
-      assays: daveAssays,
+      terms: daveTerms,
     } = zoe.getInstance(instanceId);
 
     t.equals(daveInstallationId, installationId);
-    t.deepEquals(daveAssays, assays);
+    t.deepEquals(daveTerms.assays, assays);
     const daveConditions = harden({
       offerDesc: [
         {

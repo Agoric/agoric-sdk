@@ -11,17 +11,12 @@ Based on UniSwap.
 
 ## Initialization
 
-First, we initialize the `autoSwapMaker` so that we have access to the
-liquidity assay for this particular autoswap. We then pass the
-liquidity assay in as part of the assays array. 
-
 ```js
-const { liquidityAssay, makeAutoSwap } = makeAutoSwapMaker();
-const allAssays = [moolaAssay, simoleanAssay, liquidityAssay];
-
-const { zoeInstance, governingContract: autoswap } = zoe.makeInstance(
-  makeAutoSwap,
-  allAssays,
+const tokenAssays = [moolaAssay, simoleanAssay];
+const installationId = zoe.install(autoswapSrcs);
+const { instance: autoswap } = zoe.makeInstance(
+  installationId,
+  { assays },
 );
 ```
 
@@ -60,7 +55,7 @@ const alicePayments = [aliceMoolaPayment, aliceSimoleanPayment, undefined];
 const {
   escrowReceipt: allegedAliceEscrowReceipt,
   payoff,
-} = await zoeInstance.escrow(aliceOffer, alicePayments);
+} = await zoe.escrow(aliceOffer, alicePayments);
 
 ```
 She is able to ensure that she will get a minimum number of liquidity
@@ -94,7 +89,7 @@ const bobMoolaForSimPayments = [bobMoolaPayment, undefined, undefined];
 const {
   escrowReceipt: allegedBobEscrowReceipt,
   payoff: bobPayoffP,
-} = await zoeInstance.escrow(
+} = await zoe.escrow(
   bobMoolaForSimOfferDesc,
   bobMoolaForSimPayments,
 );

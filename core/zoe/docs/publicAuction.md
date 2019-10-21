@@ -16,11 +16,12 @@ Alice can create an auction by doing:
 
 ```js
 const installationId = zoe.install(publicAuctionSrcs);
-const numBidsAllowed = 3;
 const { instance: aliceAuction, instanceId } = await zoe.makeInstance(
-  assays,
   installationId,
-  [numBidsAllowed],
+  {
+    assays,
+    numBidsAllowed: 3
+  },
 );
 ```
 
@@ -60,7 +61,7 @@ can check that the installationId installed is the auction he is expecting.
 const {
   instance: bobAuction,
   installationId: bobInstallationId,
-  assays: contractAssays,
+  terms,
 } = zoe.getInstance(instanceId);
 ```
 He can also check that the item up for sale is the kind that he wants,
@@ -69,7 +70,7 @@ implementation, Alice will have to tell Bob out of band what the
 minimum bid in simoleans is.)
 
 ```js
-insist(sameStructure(contractAssays, assays))`assays are not the same`;
+insist(sameStructure(terms.assays, assays))`assays are not the same`;
 ```
 
 Bob decides to join the contract and

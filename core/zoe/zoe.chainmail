@@ -44,12 +44,14 @@ interface Zoe {
   /** 
    * Zoe is long-lived. We can use Zoe to create governing contract
    * instances by specifying a particular governing contract 
-   * installation to use, as well as the array of assays for that 
-   * particular instance. We get back an instance, an id for that 
-   * instance, and the id for the installation. Additionally, we can
-   * optionally pass in `args`, an array of arguments for the contract.
+   * installation to use, as well as the `terms` of the contract. The
+   * contract terms are the arguments to the contract, and must include
+   * the expected assays for the underlying rights. (Other than the
+   * `assays` property of `terms`, the `terms` properties are up to 
+   * the discretion of the governing contract.) We get back an instance, an
+   * id for that instance, and the id for the installation.
    */
-  makeInstance(assays :List(Assay), installationId :Object, args :List) -> (InstanceInformation);
+  makeInstance(installationId :Object, terms :Object) -> (InstanceInformation);
   
   /**
    * Credibly get the instance from the instanceId.

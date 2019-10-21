@@ -18,14 +18,12 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const simoleanAssay = await E(simoleanPurseP).getAssay();
 
       const assays = harden([moolaAssay, simoleanAssay]);
-      const {
-        instance: auction,
-        installationId,
-        assays: auctionAssays,
-      } = await E(zoe).getInstance(instanceId);
+      const { instance: auction, installationId, terms } = await E(
+        zoe,
+      ).getInstance(instanceId);
 
       insist(installationId === installId)`wrong installation`;
-      insist(sameStructure(assays, auctionAssays))`assays were not as expected`;
+      insist(sameStructure(assays, terms.assays))`assays were not as expected`;
 
       const conditions = harden({
         offerDesc: [
@@ -93,12 +91,10 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const carolPayoffObj = await E(carolPayoffPaymentP).unwrap();
       const payoffP = await E(carolPayoffObj).getPayoff();
 
-      const { installationId, assays: auctionAssays } = await E(
-        zoe,
-      ).getInstance(instanceId);
+      const { installationId, terms } = await E(zoe).getInstance(instanceId);
 
       insist(installationId === installId)`wrong installation`;
-      insist(sameStructure(assays, auctionAssays))`assays were not as expected`;
+      insist(sameStructure(assays, terms.assays))`assays were not as expected`;
 
       const carolResult = await payoffP;
 

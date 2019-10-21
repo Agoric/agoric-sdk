@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { sameStructure } from '../../../util/sameStructure';
 
-const makeContract = harden(zoe => {
+const makeContract = harden((zoe, terms) => {
   let firstOfferId;
 
   const isMatchingOfferDesc = (extentOps, leftOffer, rightOffer) => {
@@ -34,7 +34,7 @@ const makeContract = harden(zoe => {
       (rule, i) => rule === newOfferDesc[i].rule,
     );
 
-  return harden({
+  const publicSwap = harden({
     makeOffer: async escrowReceipt => {
       const { id, conditions } = await zoe.burnEscrowReceipt(escrowReceipt);
       const { offerDesc: offerMadeDesc } = conditions;
@@ -75,6 +75,10 @@ const makeContract = harden(zoe => {
         new Error(`The offer was invalid. Please check your refund.`),
       );
     },
+  });
+  return harden({
+    instance: publicSwap,
+    assays: terms.assays,
   });
 });
 

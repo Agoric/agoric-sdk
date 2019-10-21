@@ -27,14 +27,17 @@ test('zoe - coveredCall', async t => {
 
     // 1: Alice creates a coveredCall instance
     const coveredCallInstallationId = zoe.install(coveredCallSrcs);
+    const terms = {
+      assays,
+    };
     const {
       instance: aliceCoveredCall,
       instanceId,
-      assays: contractAssays,
-    } = await zoe.makeInstance(assays, coveredCallInstallationId);
+      terms: aliceTerms,
+    } = await zoe.makeInstance(coveredCallInstallationId, terms);
 
     // The assays are defined at this step
-    t.deepEquals(contractAssays, assays);
+    t.deepEquals(aliceTerms.assays, assays);
 
     // 2: Alice escrows with Zoe
     const aliceConditions = harden({
@@ -210,14 +213,17 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 
     // 1: Alice creates a coveredCall instance
     const coveredCallInstallationId = zoe.install(coveredCallSrcs);
+    const terms = {
+      assays,
+    };
     const {
       instance: aliceCoveredCall,
       instanceId,
-      assays: contractAssays,
-    } = await zoe.makeInstance(assays, coveredCallInstallationId);
+      terms: aliceTerms,
+    } = await zoe.makeInstance(coveredCallInstallationId, terms);
 
     // The assays are defined at this step
-    t.deepEquals(contractAssays, assays);
+    t.deepEquals(aliceTerms.assays, assays);
 
     // 2: Alice escrows with Zoe
     const timer = buildManualTimer(console.log);

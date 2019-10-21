@@ -19,8 +19,8 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const assays = harden([moolaAssay, simoleanAssay]);
 
     const { instance: automaticRefund, instanceId } = await E(zoe).makeInstance(
-      assays,
       installId,
+      { assays },
     );
 
     const conditions = harden({
@@ -66,8 +66,8 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const assays = harden([moolaAssay, simoleanAssay]);
 
     const { instance: coveredCall, instanceId } = await E(zoe).makeInstance(
-      assays,
       installId,
+      { assays },
     );
 
     const conditions = harden({
@@ -112,9 +112,8 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
 
     const numBidsAllowed = 3;
     const { instance: auction, instanceId } = await E(zoe).makeInstance(
-      assays,
       installId,
-      [numBidsAllowed],
+      { assays, numBidsAllowed },
     );
 
     const conditions = harden({
@@ -147,7 +146,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const carolDoneP = E(carolP).doPublicAuction(instanceId);
     const daveDoneP = E(daveP).doPublicAuction(instanceId);
 
-    await Promise.all(bobDoneP, carolDoneP, daveDoneP);
+    await Promise.all([bobDoneP, carolDoneP, daveDoneP]);
 
     const payoff = await payoffP;
 
@@ -165,8 +164,8 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const assays = harden([moolaAssay, simoleanAssay]);
 
     const { instance: swap, instanceId } = await E(zoe).makeInstance(
-      assays,
       installId,
+      { assays },
     );
 
     const conditions = harden({
@@ -216,8 +215,8 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const assays = harden([moolaAssay, simoleanAssay]);
 
     const { instance: exchange, instanceId } = await E(zoe).makeInstance(
-      assays,
       installId,
+      { assays },
     );
 
     const aliceSellOrderConditions = harden({

@@ -1,6 +1,8 @@
 import harden from '@agoric/harden';
 
-export const makeContract = harden((zoe, numBidsAllowed = 3) => {
+export const makeContract = harden((zoe, terms) => {
+  const numBidsAllowed = terms.numBidsAllowed || 3;
+
   let creatorOfferId;
   const allBidIds = [];
 
@@ -93,7 +95,7 @@ export const makeContract = harden((zoe, numBidsAllowed = 3) => {
     return Promise.reject(new Error(`${message}`));
   };
 
-  return harden({
+  const publicAuction = harden({
     makeOffer: async escrowReceipt => {
       const { id, conditions } = await zoe.burnEscrowReceipt(escrowReceipt);
       const { offerDesc: offerMadeDesc } = conditions;
@@ -123,6 +125,11 @@ export const makeContract = harden((zoe, numBidsAllowed = 3) => {
 
       return ejectPlayer(`The offer was invalid. Please check your refund.`);
     },
+  });
+
+  return harden({
+    instance: publicAuction,
+    assays: terms.assays,
   });
 });
 

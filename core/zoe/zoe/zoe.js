@@ -1,5 +1,6 @@
 import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
+import Nat from '@agoric/nat';
 
 import { insist } from '../../../util/insist';
 import { isOfferSafeForAll } from './isOfferSafe';
@@ -52,6 +53,8 @@ const makeZoe = async (additionalEndowments = {}) => {
     makePromise,
     insist,
     sameStructure,
+    makeMint,
+    Nat,
   };
   const fullEndowments = Object.create(null, {
     ...Object.getOwnPropertyDescriptors(defaultEndowments),
@@ -151,10 +154,22 @@ const makeZoe = async (additionalEndowments = {}) => {
        *  represent a pool, the governing contract can create an
        *  empty offer and then reallocate other extents to this offer.
        */
-      escrowEmptyOffer: length => {
+      escrowEmptyOffer: () => {
         // attenuate the authority by not passing along the result
         // promise object and only passing the offerId
-        const { offerId } = escrowEmptyOffer(adminState.recordOffer, length);
+
+        const assays = readOnlyState.getAssays(instanceId);
+        const labels = readOnlyState.getLabelsForInstanceId(instanceId);
+        const extentOpsArray = readOnlyState.getExtentOpsArrayForInstanceId(
+          instanceId,
+        );
+
+        const { offerId } = escrowEmptyOffer(
+          adminState.recordOffer,
+          assays,
+          labels,
+          extentOpsArray,
+        );
         return offerId;
       },
       /**
@@ -164,13 +179,13 @@ const makeZoe = async (additionalEndowments = {}) => {
        *  offers on the users' behalf, as happens in the
        *  `addLiquidity` step of the `autoswap` contract.
        */
-      escrowOffer: async (offerDesc, offerPayments) => {
+      escrowOffer: async (conditions, offerPayments) => {
         // attenuate the authority by not passing along the result
         // promise object and only passing the offerId
         const { offerId } = await escrowOffer(
           adminState.recordOffer,
           adminState.recordAssay,
-          offerDesc,
+          conditions,
           offerPayments,
         );
         return offerId;
@@ -203,7 +218,21 @@ const makeZoe = async (additionalEndowments = {}) => {
         return invitePaymentP;
       },
 
-      // read-only, side-effect-free access below this line:
+      makeConditions: (rules, extents, exit) => {
+        const assays = readOnlyState.getAssays(instanceId);
+        const offerDesc = assays.map((assay, i) =>
+          harden({
+            rule: rules[i],
+            assetDesc: assay.makeAssetDesc(extents[i]),
+          }),
+        );
+        return harden({
+          offerDesc,
+          exit,
+        });
+      },
+
+      // read-only, side-effect-free access below this line
       getStatusFor: readOnlyState.getStatusFor,
       makeEmptyExtents: () =>
         makeEmptyExtents(
@@ -211,6 +240,7 @@ const makeZoe = async (additionalEndowments = {}) => {
         ),
       getExtentOpsArray: () =>
         readOnlyState.getExtentOpsArrayForInstanceId(instanceId),
+      getLabels: () => readOnlyState.getLabelsForInstanceId(instanceId),
       getExtentsFor: readOnlyState.getExtentsFor,
       getOfferDescsFor: readOnlyState.getOfferDescsFor,
       getInviteAssay: () => inviteAssay,
@@ -258,22 +288,26 @@ Unrecognized moduleFormat ${moduleFormat}`;
      * @param  {[]} args - arguments to the contract. These arguments
      * depend on the contract.
      */
-    makeInstance: async (assays, installationId, args = []) => {
+    makeInstance: async (installationId, terms) => {
       const installation = adminState.getInstallation(installationId);
       const instanceId = harden({});
-      await adminState.recordAssaysForInstance(instanceId, assays);
       const governingContractFacet = makeGoverningContractFacet(instanceId);
-      const instance = installation.makeContract(
+      const { instance, assays } = installation.makeContract(
         governingContractFacet,
-        ...args,
+        terms,
       );
-      adminState.addInstance(instanceId, instance, installationId, args);
-      return harden({
+      await adminState.addInstance(
         instanceId,
         instance,
         installationId,
+        terms,
         assays,
-        args,
+      );
+      return harden({
+        installationId,
+        instanceId,
+        instance,
+        terms,
       });
     },
     /**
@@ -285,14 +319,12 @@ Unrecognized moduleFormat ${moduleFormat}`;
       const installationId = adminState.getInstallationIdForInstanceId(
         instanceId,
       );
-      const assays = readOnlyState.getAssays(instanceId);
-      const args = readOnlyState.getArgs(instanceId);
+      const terms = readOnlyState.getTerms(instanceId);
       return harden({
         instanceId,
         instance,
         installationId,
-        assays,
-        args,
+        terms,
       });
     },
 

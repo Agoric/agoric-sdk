@@ -19,8 +19,8 @@ counter-party for. She creates a swap instance:
 ```js
 const installationId = zoe.install(publicSwapSrcs);
 const { instance: aliceSwap, instanceId } = await zoe.makeInstance(
-  assays,
   installationId,
+  { assays },
 );
 ```
 
@@ -60,11 +60,11 @@ matches Alice's claims.
 const {
   instance: bobSwap,
   installationId: bobInstallationId,
-  assays: contractAssays,
+  terms,
 } = zoe.getInstance(instanceId);
 
 insist(bobInstallationId === installationId)`wrong installation`;
-insist(sameStructure(bobAssays, assays)`wrong assays`;
+insist(sameStructure(terms.assays, assays)`wrong assays`;
 ```
 
 Bob decides to be the counter-party. He also escrows his payment and

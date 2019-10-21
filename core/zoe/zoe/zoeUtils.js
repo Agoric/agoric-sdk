@@ -71,7 +71,7 @@ const insistValidRules = offerDesc => {
 
 const insistValidExitCondition = exit => {
   const acceptedExitConditionKinds = [
-    'onDemand',
+    'noExit',
     'onDemand',
     'afterDeadline',
     // 'onDemandAfterDeadline', // not yet supported
@@ -121,14 +121,28 @@ const escrowOffer = async (
   });
 };
 
-const escrowEmptyOffer = (recordOffer, length) => {
+const escrowEmptyOffer = (recordOffer, assays, labels, extentOpsArray) => {
   const offerId = harden({});
-  const offerDesc = Array(length).fill(undefined);
-  const extentsArray = Array(length).fill(undefined);
+  const offerDesc = labels.map((label, i) =>
+    harden({
+      rule: 'wantAtLeast',
+      assetDesc: {
+        label,
+        extent: extentOpsArray[i].empty(),
+      },
+    }),
+  );
+  const conditions = harden({
+    offerDesc,
+    exit: {
+      kind: 'onDemand',
+    },
+  });
+  const extents = extentOpsArray.map(extentOps => extentOps.empty());
   const result = makePromise();
 
   // has side effects
-  recordOffer(offerId, offerDesc, extentsArray, result);
+  recordOffer(offerId, conditions, extents, assays, result);
 
   return harden({
     offerId,

@@ -1,8 +1,6 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
-import makePromise from '../../util/makePromise';
-
 // These utilities are likely to be helpful to developers writing
 // governing contracts.
 
@@ -54,66 +52,14 @@ const makeHasOkRules = validRules => offer =>
   validRules.every((rule, i) => rule === offer[i].rule, true);
 
 // Vector addition of two extent arrays
-const vectorWith = (extentOps, leftExtents, rightExtents) =>
-  leftExtents.map((leftQ, i) => extentOps[i].with(leftQ, rightExtents[i]));
+const vectorWith = (extentOpsArray, leftExtents, rightExtents) =>
+  leftExtents.map((leftQ, i) => extentOpsArray[i].with(leftQ, rightExtents[i]));
 
 // Vector subtraction of two extent arrays
-const vectorWithout = (extentOps, leftExtents, rightExtents) =>
-  leftExtents.map((leftQ, i) => extentOps[i].without(leftQ, rightExtents[i]));
-
-/**
- * Make a function that implements a common invocation pattern for
- * contract developers:
- * 1) Take an `escrowReceipt` as input.
- * 2) Validate it
- * 3) Check that the offer gotten from the `escrowReceipt` is valid
- *    for this particular contract
- * 4) Fail-fast if the offer isn't valid
- * 5) Handle the valid offer
- * 6) Reallocate and eject the player.
- * @param  {object} zoe - the governing contract facet of zoe
- * @param  {function} isValidOfferFn - a predicate that takes in an offerDesc
- * and returns whether it is a valid offer or not
- * @param  {string} successMessage - the message that the promise should
- * resolve to if the offer is successful
- * @param  {string} rejectMessage - the message that the promise should
- * reject with if the offer is not valid
- * @param  {function} handleOfferFn - the function to do custom logic before
- * reallocating and ejecting the user. The function takes in the
- * `offerId` and should return an object with `offerIds` and
- * `newExtents` as properties
- * @param {object} instanceId - the id for the governing contract instance
- * @param  {} }
- */
-const makeAPIMethod = ({
-  zoe,
-  isValidOfferFn,
-  successMessage,
-  rejectMessage,
-  handleOfferFn,
-  instanceId,
-}) => async escrowReceipt => {
-  const result = makePromise();
-  const { id, offerMade: offerMadeDesc } = await zoe.burnEscrowReceipt(
-    instanceId,
-    escrowReceipt,
+const vectorWithout = (extentOpsArray, leftExtents, rightExtents) =>
+  leftExtents.map((leftQ, i) =>
+    extentOpsArray[i].without(leftQ, rightExtents[i]),
   );
-  // fail-fast if the offerDesc isn't valid
-  if (!isValidOfferFn(offerMadeDesc)) {
-    zoe.complete(instanceId, harden([id]));
-    result.rej(`${rejectMessage}`);
-    return result.p;
-  }
-  const { offerIds, newExtents, burnExtents } = await handleOfferFn(id);
-  if (burnExtents !== undefined) {
-    await zoe.reallocateAndBurn(instanceId, offerIds, newExtents, burnExtents);
-  } else {
-    zoe.reallocate(instanceId, offerIds, newExtents);
-  }
-  zoe.complete(instanceId, harden([id]));
-  result.res(`${successMessage}`);
-  return result.p;
-};
 
 const makeAssetDesc = (extentOps, label, allegedExtent) => {
   extentOps.insistKind(allegedExtent);
@@ -149,7 +95,6 @@ const basicFungibleTokenOperations = harden({
   divide: (x, y) => Nat(Math.floor(x / y)),
 });
 
-// reproduced, got lost in merge, not sure if correct
 const assetDescsToExtentsArray = (extentOps, assetDescs) =>
   assetDescs.map((assetDesc, i) =>
     assetDesc === undefined ? extentOps[i].empty() : assetDesc.extent,
@@ -163,7 +108,6 @@ export {
   makeHasOkRules,
   vectorWith,
   vectorWithout,
-  makeAPIMethod,
   basicFungibleTokenOperations,
   makeAssetDesc,
   makeOfferDesc,

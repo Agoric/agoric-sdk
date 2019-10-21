@@ -17,7 +17,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const {
         instance: automaticRefund,
         installationId: automaticRefundInstallationId,
-        assays: contractAssays,
+        terms,
       } = await E(zoe).getInstance(instanceId);
 
       // Bob ensures it's the contract he expects
@@ -31,10 +31,10 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const assays = harden([moolaAssay, simoleanAssay]);
 
       insist(
-        contractAssays[0] === moolaAssay,
+        terms.assays[0] === moolaAssay,
       )`The first assay should be the moola assay`;
       insist(
-        contractAssays[1] === simoleanAssay,
+        terms.assays[1] === simoleanAssay,
       )`The second assay should be the simolean assay`;
 
       // 1. Bob escrows his offer
@@ -157,14 +157,12 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const simoleanAssay = await E(simoleanPurseP).getAssay();
 
       const assays = harden([moolaAssay, simoleanAssay]);
-      const {
-        instance: auction,
-        installationId,
-        assays: auctionAssays,
-      } = await E(zoe).getInstance(instanceId);
+      const { instance: auction, installationId, terms } = await E(
+        zoe,
+      ).getInstance(instanceId);
 
       insist(installationId === installId)`wrong installation`;
-      insist(sameStructure(assays, auctionAssays))`assays were not as expected`;
+      insist(sameStructure(assays, terms.assays))`assays were not as expected`;
 
       const conditions = harden({
         offerDesc: [
@@ -206,12 +204,12 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const simoleanAssay = await E(simoleanPurseP).getAssay();
 
       const assays = harden([moolaAssay, simoleanAssay]);
-      const { instance: swap, installationId, assays: swapAssays } = await E(
+      const { instance: swap, installationId, terms } = await E(
         zoe,
       ).getInstance(instanceId);
 
       insist(installationId === installId)`wrong installation`;
-      insist(sameStructure(assays, swapAssays))`assays were not as expected`;
+      insist(sameStructure(assays, terms.assays))`assays were not as expected`;
 
       const conditions = harden({
         offerDesc: [
@@ -253,16 +251,12 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const simoleanAssay = await E(simoleanPurseP).getAssay();
 
       const assays = harden([moolaAssay, simoleanAssay]);
-      const {
-        instance: exchange,
-        installationId,
-        assays: contractAssays,
-      } = await E(zoe).getInstance(instanceId);
+      const { instance: exchange, installationId, terms } = await E(
+        zoe,
+      ).getInstance(instanceId);
 
       insist(installationId === installId)`wrong installation`;
-      insist(
-        sameStructure(assays, contractAssays),
-      )`assays were not as expected`;
+      insist(sameStructure(assays, terms.assays))`assays were not as expected`;
 
       const bobBuyOrderConditions = harden({
         offerDesc: [

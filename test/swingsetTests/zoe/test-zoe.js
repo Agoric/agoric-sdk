@@ -113,6 +113,8 @@ const expectedPublicAuctionOkLog = [
   'bobSimoleanPurse;: balance {"label":{"assay":{},"description":"simoleans"},"extent":4}',
   'carolSimoleanPurse;: balance {"label":{"assay":{},"description":"simoleans"},"extent":7}',
   'daveSimoleanPurse;: balance {"label":{"assay":{},"description":"simoleans"},"extent":5}',
+  'aliceMoolaPurse: balance {"label":{"assay":{},"description":"moola"},"extent":0}',
+  'aliceSimoleanPurse;: balance {"label":{"assay":{},"description":"simoleans"},"extent":7}',
 ];
 
 test('zoe - publicAuction - valid inputs - with SES', async t => {

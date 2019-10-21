@@ -11,7 +11,7 @@ import harden from '@agoric/harden';
 // may be less than expected. This simple exchange does not support
 // partial fills of orders.
 
-const makeContract = harden(zoe => {
+const makeContract = harden((zoe, terms) => {
   const sellOfferIds = [];
   const buyOfferIds = [];
 
@@ -61,7 +61,7 @@ const makeContract = harden(zoe => {
       (rule, i) => rule === newOfferDesc[i].rule,
     );
 
-  return harden({
+  const simpleExchange = harden({
     addOrder: async escrowReceipt => {
       const { id, conditions } = await zoe.burnEscrowReceipt(escrowReceipt);
       const { offerDesc: offerMadeDesc } = conditions;
@@ -103,6 +103,11 @@ const makeContract = harden(zoe => {
         new Error(`The offer was invalid. Please check your refund.`),
       );
     },
+  });
+
+  return harden({
+    instance: simpleExchange,
+    assays: terms.assays,
   });
 });
 

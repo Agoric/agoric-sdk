@@ -26,8 +26,8 @@ test('zoe - simpleExchange', async t => {
     // 1: Alice creates a simpleExchange instance
     const installationId = zoe.install(simpleExchangeSrcs);
     const { instance: aliceExchange, instanceId } = await zoe.makeInstance(
-      assays,
       installationId,
+      { assays },
     );
 
     // 2: Alice escrows with zoe to create a sell order. She wants to
@@ -69,11 +69,11 @@ test('zoe - simpleExchange', async t => {
     const {
       instance: bobExchange,
       installationId: bobInstallationId,
-      assays: bobAssays,
+      terms: bobTerms,
     } = zoe.getInstance(instanceId);
 
     t.equals(bobInstallationId, installationId);
-    t.deepEquals(bobAssays, assays);
+    t.deepEquals(bobTerms.assays, assays);
 
     // Bob creates a buy order, saying that he wants exactly 3 moola,
     // and is willing to pay up to 7 simoleans.
@@ -82,11 +82,11 @@ test('zoe - simpleExchange', async t => {
       offerDesc: [
         {
           rule: 'wantExactly',
-          assetDesc: bobAssays[0].makeAssetDesc(3),
+          assetDesc: bobTerms.assays[0].makeAssetDesc(3),
         },
         {
           rule: 'offerAtMost',
-          assetDesc: bobAssays[1].makeAssetDesc(7),
+          assetDesc: bobTerms.assays[1].makeAssetDesc(7),
         },
       ],
       exit: {

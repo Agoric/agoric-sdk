@@ -3,10 +3,9 @@ import harden from '@agoric/harden';
 import { insist } from '../../../util/insist';
 import { sameStructure } from '../../../util/sameStructure';
 
-const makeContract = harden(zoe => {
+const makeContract = harden((zoe, terms) => {
   let firstOfferId;
   let matchingOfferId;
-  const extentOpsArray = zoe.getExtentOpsArray();
 
   const coveredCallAllowedTransitions = [
     ['uninitialized', ['acceptingOffers']],
@@ -86,6 +85,7 @@ const makeContract = harden(zoe => {
 
     // fail-fast if offer is not valid.
     const [firstOfferDesc] = zoe.getOfferDescsFor(harden([firstOfferId]));
+    const extentOpsArray = zoe.getExtentOpsArray();
     if (
       sm.getStatus() !== 'acceptingOffers' ||
       !isMatchingOfferDesc(extentOpsArray, firstOfferDesc, offerMadeDesc)
@@ -107,7 +107,7 @@ const makeContract = harden(zoe => {
     return `The offer has been accepted. Once the contract has been completed, please check your winnings`;
   };
 
-  const institution = harden({
+  const coveredCall = harden({
     async init(escrowReceipt) {
       const { id, conditions } = await zoe.burnEscrowReceipt(escrowReceipt);
       const { offerDesc: offerMadeDesc } = conditions;
@@ -144,7 +144,10 @@ const makeContract = harden(zoe => {
     },
     getStatus: _ => sm.getStatus(),
   });
-  return institution;
+  return harden({
+    instance: coveredCall,
+    assays: terms.assays,
+  });
 });
 
 const coveredCallSrcs = harden({

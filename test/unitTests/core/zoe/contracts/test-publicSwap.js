@@ -30,8 +30,8 @@ test('zoe - publicSwap', async t => {
     // 1: Alice creates a publicSwap instance
     const installationId = zoe.install(publicSwapSrcs);
     const { instance: aliceSwap, instanceId } = await zoe.makeInstance(
-      assays,
       installationId,
+      { assays },
     );
 
     // 2: Alice escrows with zoe
@@ -85,21 +85,21 @@ test('zoe - publicSwap', async t => {
     const {
       instance: bobSwap,
       installationId: bobInstallationId,
-      assays: bobAssays,
+      terms: bobTerms,
     } = zoe.getInstance(instanceId);
 
     t.equals(bobInstallationId, installationId);
-    t.deepEquals(bobAssays, assays);
+    t.deepEquals(bobTerms.assays, assays);
 
     const bobConditions = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
-          assetDesc: bobAssays[0].makeAssetDesc(3),
+          assetDesc: bobTerms.assays[0].makeAssetDesc(3),
         },
         {
           rule: 'offerExactly',
-          assetDesc: bobAssays[1].makeAssetDesc(7),
+          assetDesc: bobTerms.assays[1].makeAssetDesc(7),
         },
       ],
       exit: {

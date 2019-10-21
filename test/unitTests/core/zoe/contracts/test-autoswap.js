@@ -2,14 +2,14 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
 import { makeZoe } from '../../../../../core/zoe/zoe/zoe';
-import { makeAutoSwapMaker } from '../../../../../core/zoe/contracts/autoswap/autoswap';
 import { setup } from '../setupBasicMints';
+import { autoswapSrcs } from '../../../../../core/zoe/contracts/autoswap';
 
-test.skip('autoSwap with valid offers', async t => {
+test('autoSwap with valid offers', async t => {
   try {
     const { assays: defaultAssays, mints } = setup();
-    const assays = defaultAssays.slice(0, 2);
     const zoe = await makeZoe();
+    const assays = defaultAssays.slice(0, 2);
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
 
     // Setup Alice
@@ -29,50 +29,54 @@ test.skip('autoSwap with valid offers', async t => {
 
     // 1: Alice creates an autoswap instance
 
-    const { liquidityAssay, makeAutoSwap } = makeAutoSwapMaker();
-    const allAssays = [...assays, liquidityAssay];
-
-    const { zoeInstance, governingContract: autoswap } = zoe.makeInstance(
-      makeAutoSwap,
-      allAssays,
-    );
-
-    // The assays are defined at this step
-    t.deepEquals(zoeInstance.getAssays(), allAssays);
-
-    const actualLiquidityAssay = autoswap.getLiquidityAssay();
-    t.deepEquals(actualLiquidityAssay, liquidityAssay);
+    const installationId = zoe.install(autoswapSrcs);
+    const terms = {
+      assays,
+    };
+    const {
+      instance: aliceAutoswap,
+      instanceId,
+      terms: aliceTerms,
+    } = await zoe.makeInstance(installationId, terms);
+    const liquidityAssay = aliceAutoswap.getLiquidityAssay();
+    const allAssays = [...aliceTerms.assays, liquidityAssay];
+    t.deepEquals([...aliceTerms.assays, liquidityAssay], allAssays);
 
     // 2: Alice adds liquidity
     // 10 moola = 5 simoleans at the time of the liquidity adding
     // aka 2 moola = 1 simolean
-    const aliceOffer = harden([
-      {
-        rule: 'offerExactly',
-        assetDesc: allAssays[0].makeAssetDesc(10),
+    const aliceConditions = harden({
+      offerDesc: [
+        {
+          rule: 'offerExactly',
+          assetDesc: allAssays[0].makeAssetDesc(10),
+        },
+        {
+          rule: 'offerExactly',
+          assetDesc: allAssays[1].makeAssetDesc(5),
+        },
+        {
+          rule: 'wantAtLeast',
+          assetDesc: allAssays[2].makeAssetDesc(10),
+        },
+      ],
+      exit: {
+        kind: 'onDemand',
       },
-      {
-        rule: 'offerExactly',
-        assetDesc: allAssays[1].makeAssetDesc(5),
-      },
-      {
-        rule: 'wantAtLeast',
-        assetDesc: allAssays[2].makeAssetDesc(10),
-      },
-    ]);
+    });
     const alicePayments = [aliceMoolaPayment, aliceSimoleanPayment, undefined];
 
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
       payoff: aliceAddLiquidityPayoffP,
-    } = await zoeInstance.escrow(aliceOffer, alicePayments);
+    } = await zoe.escrow(aliceConditions, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment
     const aliceEscrowReceipt = await escrowReceiptAssay.claimAll(
       allegedAliceEscrowReceipt,
     );
 
-    const liquidityOk = await autoswap.addLiquidity(aliceEscrowReceipt);
+    const liquidityOk = await aliceAutoswap.addLiquidity(aliceEscrowReceipt);
 
     t.equals(liquidityOk, 'Added liquidity.');
 
@@ -82,44 +86,52 @@ test.skip('autoSwap with valid offers', async t => {
       liquidityPayments[2].getBalance(),
       liquidityAssay.makeAssetDesc(10),
     );
-    t.deepEquals(autoswap.getPoolExtents(), [10, 5, 0]);
+    t.deepEquals(aliceAutoswap.getPoolExtents(), [10, 5, 0]);
 
-    // 4: Imagine that Alice gives bob access to autoswap
+    // 4: Imagine that Alice sends bob the autoswap instanceId
+    const {
+      instance: bobAutoswap,
+      installationId: bobInstallationId,
+      terms: bobTerms,
+    } = zoe.getInstance(instanceId);
+    t.equals(bobInstallationId, installationId);
 
     // 5: Bob looks up the price of 2 moola in simoleans
-    const assetDesc2Moola = assays[0].makeAssetDesc(2);
-    const simoleanAssetDesc = autoswap.getPrice([
+    const assetDesc2Moola = bobTerms.assays[0].makeAssetDesc(2);
+    const simoleanAssetDesc = bobAutoswap.getPrice([
       assetDesc2Moola,
       undefined,
       undefined,
     ]);
-    t.deepEquals(simoleanAssetDesc, assays[1].makeAssetDesc(1));
+    t.deepEquals(simoleanAssetDesc, bobTerms.assays[1].makeAssetDesc(1));
 
     // 6: Bob escrows
 
-    const bobMoolaForSimOfferDesc = harden([
-      {
-        rule: 'offerExactly',
-        assetDesc: allAssays[0].makeAssetDesc(2),
+    const bobMoolaForSimConditions = harden({
+      offerDesc: [
+        {
+          rule: 'offerExactly',
+          assetDesc: allAssays[0].makeAssetDesc(2),
+        },
+        {
+          rule: 'wantAtLeast',
+          assetDesc: allAssays[1].makeAssetDesc(1),
+        },
+        {
+          rule: 'wantAtLeast',
+          assetDesc: allAssays[2].makeAssetDesc(0),
+        },
+      ],
+      exit: {
+        kind: 'onDemand',
       },
-      {
-        rule: 'wantAtLeast',
-        assetDesc: allAssays[1].makeAssetDesc(1),
-      },
-      {
-        rule: 'wantAtLeast',
-        assetDesc: allAssays[2].makeAssetDesc(0),
-      },
-    ]);
+    });
     const bobMoolaForSimPayments = [bobMoolaPayment, undefined, undefined];
 
     const {
       escrowReceipt: allegedBobEscrowReceipt,
       payoff: bobPayoffP,
-    } = await zoeInstance.escrow(
-      bobMoolaForSimOfferDesc,
-      bobMoolaForSimPayments,
-    );
+    } = await zoe.escrow(bobMoolaForSimConditions, bobMoolaForSimPayments);
 
     // 3: Bob does a claimAll on the escrowReceipt payment
     const bobEscrowReceipt = await escrowReceiptAssay.claimAll(
@@ -127,47 +139,49 @@ test.skip('autoSwap with valid offers', async t => {
     );
 
     // 7: Bob swaps
-    const offerOk = await autoswap.makeOffer(bobEscrowReceipt);
+    const offerOk = await bobAutoswap.makeOffer(bobEscrowReceipt);
     t.equal(offerOk, 'Swap successfully completed.');
 
     const bobPayoff = await bobPayoffP;
 
-    t.deepEqual(bobPayoff[0].getBalance(), assays[0].makeAssetDesc(0));
-    t.deepEqual(bobPayoff[1].getBalance(), assays[1].makeAssetDesc(1));
-    t.deepEquals(autoswap.getPoolExtents(), [12, 4, 0]);
+    t.deepEqual(bobPayoff[0].getBalance(), allAssays[0].makeAssetDesc(0));
+    t.deepEqual(bobPayoff[1].getBalance(), allAssays[1].makeAssetDesc(1));
+    t.deepEquals(bobAutoswap.getPoolExtents(), [12, 4, 0]);
 
     // 7: Bob looks up the price of 3 simoleans
 
-    const assetDesc3Sims = assays[1].makeAssetDesc(3);
-    const moolaAssetDesc = autoswap.getPrice([undefined, assetDesc3Sims]);
-    t.deepEquals(moolaAssetDesc, assays[0].makeAssetDesc(6));
+    const assetDesc3Sims = allAssays[1].makeAssetDesc(3);
+    const moolaAssetDesc = bobAutoswap.getPrice([undefined, assetDesc3Sims]);
+    t.deepEquals(moolaAssetDesc, allAssays[0].makeAssetDesc(6));
 
     // 8: Bob makes another offer and swaps
-    const bobSimsForMoolaOfferDesc = harden([
-      {
-        rule: 'wantAtLeast',
-        assetDesc: assays[0].makeAssetDesc(6),
+    const bobSimsForMoolaConditions = harden({
+      offerDesc: [
+        {
+          rule: 'wantAtLeast',
+          assetDesc: allAssays[0].makeAssetDesc(6),
+        },
+        {
+          rule: 'offerExactly',
+          assetDesc: allAssays[1].makeAssetDesc(3),
+        },
+        {
+          rule: 'wantAtLeast',
+          assetDesc: allAssays[2].makeAssetDesc(0),
+        },
+      ],
+      exit: {
+        kind: 'onDemand',
       },
-      {
-        rule: 'offerExactly',
-        assetDesc: assays[1].makeAssetDesc(3),
-      },
-      {
-        rule: 'wantAtLeast',
-        assetDesc: allAssays[2].makeAssetDesc(0),
-      },
-    ]);
+    });
     const simsForMoolaPayments = [undefined, bobSimoleanPayment, undefined];
 
     const {
       escrowReceipt: bobsSimsForMoolaEscrowReceipt,
       payoff: bobSimsForMoolaPayoffP,
-    } = await zoeInstance.escrow(
-      bobSimsForMoolaOfferDesc,
-      simsForMoolaPayments,
-    );
+    } = await zoe.escrow(bobSimsForMoolaConditions, simsForMoolaPayments);
 
-    const simsForMoolaOk = await autoswap.makeOffer(
+    const simsForMoolaOk = await bobAutoswap.makeOffer(
       bobsSimsForMoolaEscrowReceipt,
     );
     t.equal(simsForMoolaOk, 'Swap successfully completed.');
@@ -176,40 +190,45 @@ test.skip('autoSwap with valid offers', async t => {
 
     t.deepEqual(
       bobsNewMoolaPayment[0].getBalance(),
-      assays[0].makeAssetDesc(6),
+      allAssays[0].makeAssetDesc(6),
     );
     t.deepEqual(
       bobsNewMoolaPayment[1].getBalance(),
-      assays[1].makeAssetDesc(0),
+      allAssays[1].makeAssetDesc(0),
     );
-    t.deepEqual(autoswap.getPoolExtents(), [6, 7, 0]);
+    t.deepEqual(bobAutoswap.getPoolExtents(), [6, 7, 0]);
 
     // 8: Alice removes her liquidity
     // She's not picky...
-    const aliceRemoveLiquidityOfferDesc = harden([
-      {
-        rule: 'wantAtLeast',
-        assetDesc: allAssays[0].makeAssetDesc(0),
+    const aliceRemoveLiquidityOfferDesc = harden({
+      offerDesc: [
+        {
+          rule: 'wantAtLeast',
+          assetDesc: allAssays[0].makeAssetDesc(0),
+        },
+        {
+          rule: 'wantAtLeast',
+          assetDesc: allAssays[1].makeAssetDesc(0),
+        },
+        {
+          rule: 'offerExactly',
+          assetDesc: allAssays[2].makeAssetDesc(10),
+        },
+      ],
+      exit: {
+        kind: 'onDemand',
       },
-      {
-        rule: 'wantAtLeast',
-        assetDesc: allAssays[1].makeAssetDesc(0),
-      },
-      {
-        rule: 'offerExactly',
-        assetDesc: allAssays[2].makeAssetDesc(10),
-      },
-    ]);
+    });
 
     const {
       escrowReceipt: aliceRemoveLiquidityEscrowReceipt,
       payoff: aliceRemoveLiquidityPayoffP,
-    } = await zoeInstance.escrow(
+    } = await zoe.escrow(
       aliceRemoveLiquidityOfferDesc,
-      liquidityPayments,
+      harden([undefined, undefined, liquidityPayments[2]]),
     );
 
-    const removeLiquidityResult = await autoswap.removeLiquidity(
+    const removeLiquidityResult = await aliceAutoswap.removeLiquidity(
       aliceRemoveLiquidityEscrowReceipt,
     );
     t.equals(removeLiquidityResult, 'Liquidity successfully removed.');
@@ -228,7 +247,7 @@ test.skip('autoSwap with valid offers', async t => {
       alicePayoffPayments[2].getBalance(),
       allAssays[2].makeAssetDesc(0),
     );
-    t.deepEquals(autoswap.getPoolExtents(), [0, 0, 0]);
+    t.deepEquals(aliceAutoswap.getPoolExtents(), [0, 0, 10]);
   } catch (e) {
     t.assert(false, e);
     console.log(e);

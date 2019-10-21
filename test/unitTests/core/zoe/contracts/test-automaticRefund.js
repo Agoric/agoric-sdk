@@ -24,12 +24,15 @@ test('zoe.makeInstance with automaticRefund', async t => {
 
     // 1: Alice creates an automatic refund instance
     const installationId = zoe.install(automaticRefundSrcs);
+    const terms = harden({
+      assays,
+    });
     const {
       instance: aliceAutomaticRefund,
       instanceId,
-      assays: contractAssays,
-    } = await zoe.makeInstance(assays, installationId);
-    t.deepEquals(contractAssays, assays);
+    } = await zoe.makeInstance(installationId, terms);
+    const actualAssays = zoe.getAssaysForInstance(instanceId);
+    t.deepEquals(actualAssays, assays);
 
     // 2: Alice escrows with zoe
     const aliceConditions = harden({
@@ -81,9 +84,10 @@ test('zoe.makeInstance with automaticRefund', async t => {
     const {
       instance: bobAutomaticRefund,
       installationId: bobInstallationId,
-      assays: bobAssays,
+      terms: bobTerms,
     } = zoe.getInstance(instanceId);
     t.equals(bobInstallationId, installationId);
+    const bobAssays = bobTerms.assays;
 
     // bob wants to know what assays this contract is about and in
     // what order. Is it what he expects?
@@ -187,19 +191,22 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
 
     // 1: Alice creates 3 automatic refund instances
     const installationId = zoe.install(automaticRefundSrcs);
-    const { instance: automaticRefund1 } = await zoe.makeInstance(
+    const terms = harden({
       assays,
+    });
+    const { instance: automaticRefund1 } = await zoe.makeInstance(
       installationId,
+      terms,
     );
 
     const { instance: automaticRefund2 } = await zoe.makeInstance(
-      assays,
       installationId,
+      terms,
     );
 
     const { instance: automaticRefund3 } = await zoe.makeInstance(
-      assays,
       installationId,
+      terms,
     );
 
     // 2: Alice escrows with zoe
@@ -311,9 +318,12 @@ test('zoe - alice cancels before entering a contract', async t => {
     const alicePayoff = await payoffP;
 
     const installationId = zoe.install(automaticRefundSrcs);
-    const { instance: aliceAutomaticRefund } = await zoe.makeInstance(
+    const terms = harden({
       assays,
+    });
+    const { instance: aliceAutomaticRefund } = await zoe.makeInstance(
       installationId,
+      terms,
     );
 
     t.rejects(
@@ -383,9 +393,12 @@ test('zoe - alice cancels after completion', async t => {
     } = await zoe.escrow(aliceConditions, alicePayments);
 
     const installationId = zoe.install(automaticRefundSrcs);
-    const { instance: aliceAutomaticRefund } = await zoe.makeInstance(
+    const terms = harden({
       assays,
+    });
+    const { instance: aliceAutomaticRefund } = await zoe.makeInstance(
       installationId,
+      terms,
     );
 
     await aliceAutomaticRefund.makeOffer(aliceEscrowReceipt);

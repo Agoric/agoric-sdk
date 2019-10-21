@@ -14,22 +14,22 @@ const makeState = () => {
 
   const activeOffers = new WeakSet();
 
-  const instanceIdToInstallationId = new WeakMap();
-  const instanceIdToInstance = new WeakMap();
-  const instanceIdToArgs = new WeakMap();
-  const instanceIdToAssays = new WeakMap();
+  const instanceIdToInstallationId = makePrivateName();
+  const instanceIdToInstance = makePrivateName();
+  const instanceIdToTerms = makePrivateName();
+  const instanceIdToAssays = makePrivateName();
 
-  const assayToPurse = new WeakMap();
-  const assayToExtentOps = new WeakMap();
-  const assayToDescOps = new WeakMap();
-  const assayToLabel = new WeakMap();
+  const assayToPurse = makePrivateName();
+  const assayToExtentOps = makePrivateName();
+  const assayToDescOps = makePrivateName();
+  const assayToLabel = makePrivateName();
 
-  const installationIdToInstallation = new WeakMap();
-  const installationToInstallationId = new WeakMap();
+  const installationIdToInstallation = makePrivateName();
+  const installationToInstallationId = makePrivateName();
 
   const readOnlyState = harden({
     // per instance id
-    getArgs: instanceId => instanceIdToArgs.get(instanceId),
+    getTerms: instanceId => instanceIdToTerms.get(instanceId),
     getAssays: instanceId => instanceIdToAssays.get(instanceId),
 
     // per instanceId
@@ -80,22 +80,24 @@ const makeState = () => {
   const adminState = harden({
     addInstallation: installation => {
       const installationId = harden({});
-      installationToInstallationId.set(installation, installationId);
-      installationIdToInstallation.set(installationId, installation);
+      installationToInstallationId.init(installation, installationId);
+      installationIdToInstallation.init(installationId, installation);
       return installationId;
     },
     getInstallation: installationId =>
       installationIdToInstallation.get(installationId),
-    recordAssaysForInstance: async (instanceId, assays) => {
-      instanceIdToAssays.set(instanceId, assays);
-      await Promise.all(
-        assays.map(async assay => adminState.recordAssay(assay)),
-      );
-    },
-    addInstance: (instanceId, instance, installationId, args) => {
-      instanceIdToInstance.set(instanceId, instance);
-      instanceIdToInstallationId.set(instanceId, installationId);
-      instanceIdToArgs.set(instanceId, args);
+    addInstance: async (
+      instanceId,
+      instance,
+      installationId,
+      terms,
+      assays,
+    ) => {
+      instanceIdToInstance.init(instanceId, instance);
+      instanceIdToInstallationId.init(instanceId, installationId);
+      instanceIdToTerms.init(instanceId, terms);
+      instanceIdToAssays.init(instanceId, assays);
+      await Promise.all(assays.map(assay => adminState.recordAssay(assay)));
     },
     getInstance: instanceId => instanceIdToInstance.get(instanceId),
     getInstallationIdForInstanceId: instanceId =>
@@ -103,13 +105,24 @@ const makeState = () => {
     getPurses: assays => assays.map(assay => assayToPurse.get(assay)),
     recordAssay: async assay => {
       if (!assayToPurse.has(assay)) {
-        assayToDescOps.set(assay, await E(assay).getDescOps());
-        assayToLabel.set(assay, await E(assay).getLabel());
-        assayToPurse.set(assay, await E(assay).makeEmptyPurse());
-        const { name, extentOpArgs = [] } = await E(assay).getExtentOps();
-        assayToExtentOps.set(assay, extentOpsLib[name](...extentOpArgs));
-      }
+        const descOpsP = E(assay).getDescOps();
+        const labelP = E(assay).getLabel();
+        const purseP = E(assay).makeEmptyPurse();
+        const extentOpsDescP = E(assay).getExtentOps();
 
+        const [descOps, label, purse, extentOpsDesc] = await Promise.all([
+          descOpsP,
+          labelP,
+          purseP,
+          extentOpsDescP,
+        ]);
+
+        assayToDescOps.init(assay, descOps);
+        assayToLabel.init(assay, label);
+        assayToPurse.init(assay, purse);
+        const { name, extentOpArgs = [] } = extentOpsDesc;
+        assayToExtentOps.init(assay, extentOpsLib[name](...extentOpArgs));
+      }
       return harden({
         descOps: assayToDescOps.get(assay),
         label: assayToLabel.get(assay),
