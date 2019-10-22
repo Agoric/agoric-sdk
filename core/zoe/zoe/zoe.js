@@ -5,7 +5,7 @@ import Nat from '@agoric/nat';
 import { insist } from '../../../util/insist';
 import { isOfferSafeForAll } from './isOfferSafe';
 import { areRightsConserved } from './areRightsConserved';
-import { makeEmptyExtents } from '../contractUtils';
+import { makeEmptyExtents, makeAssetDesc } from '../contractUtils';
 import makePromise from '../../../util/makePromise';
 import { sameStructure } from '../../../util/sameStructure';
 
@@ -220,11 +220,14 @@ const makeZoe = async (additionalEndowments = {}) => {
       },
 
       makeConditions: (rules, extents, exit) => {
-        const assays = readOnlyState.getAssays(instanceId);
-        const offerDesc = assays.map((assay, i) =>
+        const extentOpsArray = readOnlyState.getExtentOpsArrayForInstanceId(
+          instanceId,
+        );
+        const labels = readOnlyState.getLabelsForInstanceId(instanceId);
+        const offerDesc = extentOpsArray.map((extentOps, i) =>
           harden({
             rule: rules[i],
-            assetDesc: assay.makeAssetDesc(extents[i]),
+            assetDesc: makeAssetDesc(extentOps, labels[i], extents[i]),
           }),
         );
         return harden({

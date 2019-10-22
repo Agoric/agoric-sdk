@@ -253,3 +253,50 @@ test('zoe - simpleExchange - valid inputs - no SES', async t => {
     t.end();
   }
 });
+
+const expectedAutoswapOkLog = [
+  '=> alice, bob, carol and dave are set up',
+  'Added liquidity.',
+  '{"label":{"assay":{},"description":"simoleans"},"extent":1}',
+  'Swap successfully completed.',
+  '{"label":{"assay":{},"description":"moola"},"extent":6}',
+  'Swap successfully completed.',
+  'bobMoolaPurse: balance {"label":{"assay":{},"description":"moola"},"extent":6}',
+  'bobSimoleanPurse;: balance {"label":{"assay":{},"description":"simoleans"},"extent":5}',
+  'Liquidity successfully removed.',
+  '[0,0,10]',
+  'aliceMoolaPurse: balance {"label":{"assay":{},"description":"moola"},"extent":6}',
+  'aliceSimoleanPurse;: balance {"label":{"assay":{},"description":"simoleans"},"extent":7}',
+  'aliceLiquidityTokenPurse: balance {"label":{"assay":{},"description":"liquidity"},"extent":0}',
+];
+test('zoe - autoswap - valid inputs - with SES', async t => {
+  try {
+    const startingExtents = [[10, 5], [2, 7]];
+    const dump = await main(true, 'zoe', [
+      'autoswapOk',
+      'autoswap',
+      startingExtents,
+    ]);
+    t.deepEquals(dump.log, expectedAutoswapOkLog);
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  } finally {
+    t.end();
+  }
+});
+
+test('zoe - autoswap - valid inputs - no SES', async t => {
+  try {
+    const startingExtents = [[10, 5], [2, 7]];
+    const dump = await main(false, 'zoe', [
+      'autoswapOk',
+      'autoswap',
+      startingExtents,
+    ]);
+    t.deepEquals(dump.log, expectedAutoswapOkLog);
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  } finally {
+    t.end();
+  }
+});

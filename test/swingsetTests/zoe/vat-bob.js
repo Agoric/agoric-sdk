@@ -293,6 +293,119 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       await showPaymentBalance(moolaPurseP, 'bobMoolaPurse');
       await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;');
     },
+    doAutoswap: async instanceId => {
+      const moolaAssay = await E(moolaPurseP).getAssay();
+      const simoleanAssay = await E(simoleanPurseP).getAssay();
+
+      const assays = harden([moolaAssay, simoleanAssay]);
+      const { instance: autoswap, installationId, terms } = await E(
+        zoe,
+      ).getInstance(instanceId);
+
+      insist(installationId === installId)`wrong installation`;
+      const liquidityAssay = await E(autoswap).getLiquidityAssay();
+      const allAssays = harden([...assays, liquidityAssay]);
+      insist(
+        sameStructure(allAssays, terms.assays),
+      )`assays were not as expected`;
+
+      // bob checks the price of 2 moola. The price is 1 simolean
+      const assetDesc2Moola = await E(moolaAssay).makeAssetDesc(2);
+      const simoleanAssetDesc = await E(autoswap).getPrice([
+        assetDesc2Moola,
+        undefined,
+        undefined,
+      ]);
+      log(simoleanAssetDesc);
+
+      const moolaForSimConditions = harden({
+        offerDesc: [
+          {
+            rule: 'offerExactly',
+            assetDesc: await E(allAssays[0]).makeAssetDesc(2),
+          },
+          {
+            rule: 'wantAtLeast',
+            assetDesc: await E(allAssays[1]).makeAssetDesc(1),
+          },
+          {
+            rule: 'wantAtLeast',
+            assetDesc: await E(allAssays[2]).makeAssetDesc(0),
+          },
+        ],
+        exit: {
+          kind: 'onDemand',
+        },
+      });
+
+      const moolaPayment = E(moolaPurseP).withdrawAll();
+      const moolaForSimPayments = [moolaPayment, undefined, undefined];
+      const { escrowReceipt, payoff: moolaForSimPayoffP } = await E(zoe).escrow(
+        moolaForSimConditions,
+        moolaForSimPayments,
+      );
+
+      const offerResult = await E(autoswap).makeOffer(escrowReceipt);
+
+      log(offerResult);
+
+      const moolaForSimPayoff = await moolaForSimPayoffP;
+
+      await E(moolaPurseP).depositAll(moolaForSimPayoff[0]);
+      await E(simoleanPurseP).depositAll(moolaForSimPayoff[1]);
+
+      // Bob looks up the price of 3 simoleans. It's 6 moola
+      const assetDesc3Sims = await E(allAssays[1]).makeAssetDesc(3);
+      const moolaAssetDesc = await E(autoswap).getPrice([
+        undefined,
+        assetDesc3Sims,
+      ]);
+      log(moolaAssetDesc);
+
+      // Bob makes another offer and swaps
+      const bobSimsForMoolaConditions = harden({
+        offerDesc: [
+          {
+            rule: 'wantAtLeast',
+            assetDesc: await E(allAssays[0]).makeAssetDesc(6),
+          },
+          {
+            rule: 'offerExactly',
+            assetDesc: await E(allAssays[1]).makeAssetDesc(3),
+          },
+          {
+            rule: 'wantAtLeast',
+            assetDesc: await E(allAssays[2]).makeAssetDesc(0),
+          },
+        ],
+        exit: {
+          kind: 'onDemand',
+        },
+      });
+      const simoleanAssetDesc2 = await E(assays[1]).makeAssetDesc(3);
+      const bobSimoleanPayment = await E(simoleanPurseP).withdraw(
+        simoleanAssetDesc2,
+      );
+      const simsForMoolaPayments = [undefined, bobSimoleanPayment, undefined];
+
+      const {
+        escrowReceipt: bobsSimsForMoolaEscrowReceipt,
+        payoff: bobSimsForMoolaPayoffP,
+      } = await E(zoe).escrow(bobSimsForMoolaConditions, simsForMoolaPayments);
+
+      const simsForMoolaOutcome = await E(autoswap).makeOffer(
+        bobsSimsForMoolaEscrowReceipt,
+      );
+      log(simsForMoolaOutcome);
+
+      const simsForMoolaPayoff = await bobSimsForMoolaPayoffP;
+
+      await E(moolaPurseP).depositAll(simsForMoolaPayoff[0]);
+      await E(simoleanPurseP).depositAll(simsForMoolaPayoff[1]);
+
+      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse');
+      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;');
+    },
   });
 };
 

@@ -7,7 +7,7 @@ import coveredCallBundle from './bundle-coveredCall';
 import publicAuctionBundle from './bundle-publicAuction';
 import publicSwapBundle from './bundle-publicSwap';
 import simpleExchangeBundle from './bundle-simpleExchange';
-// TODO: test autoswap
+import autoswapBundle from './bundle-autoswap';
 
 const setupBasicMints = () => {
   const moolaMint = makeMint('moola');
@@ -124,6 +124,10 @@ function build(E, log) {
         simpleExchange: await E(zoe).install(
           simpleExchangeBundle.source,
           simpleExchangeBundle.moduleFormat,
+        ),
+        autoswap: await E(zoe).install(
+          autoswapBundle.source,
+          autoswapBundle.moduleFormat,
         ),
       };
 
