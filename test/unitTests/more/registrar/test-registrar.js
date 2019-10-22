@@ -33,7 +33,7 @@ test('Registrar operations', async t => {
   }
 });
 
-test.only('Registrar collisions', async t => {
+test('Registrar collisions', async t => {
   try {
     const registrarService = makeRegistrar('collide');
     const iterations = 3000;
