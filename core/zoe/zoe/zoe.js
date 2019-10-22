@@ -211,6 +211,7 @@ const makeZoe = async (additionalEndowments = {}) => {
           id: harden({}),
           instanceId,
           installationId,
+          terms: readOnlyState.getTerms(instanceId),
         });
         const invitePurseP = inviteMint.mint(inviteExtent);
         inviteAddUseObj(inviteExtent.id, useObj);
@@ -296,18 +297,19 @@ Unrecognized moduleFormat ${moduleFormat}`;
         governingContractFacet,
         terms,
       );
+      const newTerms = harden({ ...terms, assays });
       await adminState.addInstance(
         instanceId,
         instance,
         installationId,
-        terms,
+        newTerms,
         assays,
       );
       return harden({
         installationId,
         instanceId,
         instance,
-        terms,
+        terms: newTerms,
       });
     },
     /**

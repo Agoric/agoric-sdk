@@ -26,7 +26,7 @@ import {
 //   offerToBeMade: [rule1, rule2],
 // }
 
-const makeUniExtentOps = customInsistKind => {
+const makeUniExtentOps = (customInsistKind = () => {}) => {
   const uniExtentOps = harden({
     insistKind: extent => {
       if (extent === null) {
