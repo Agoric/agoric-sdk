@@ -1,21 +1,26 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
+import bundleSource from '@agoric/bundle-source';
 
 import { makeZoe } from '../../../../../core/zoe/zoe/zoe';
 import { setup } from '../setupBasicMints';
 import buildManualTimer from '../../../../../tools/manualTimer';
 import { sameStructure } from '../../../../../util/sameStructure';
-import { coveredCallSrcs } from '../../../../../core/zoe/contracts/coveredCall';
-import { publicSwapSrcs } from '../../../../../core/zoe/contracts/publicSwap';
+
+const coveredCallRoot = `${__dirname}/../../../../../core/zoe/contracts/coveredCall`;
+const publicSwapRoot = `${__dirname}/../../../../../core/zoe/contracts/publicSwap`;
 
 test('zoe - coveredCall', async t => {
   try {
     const { mints: defaultMints, assays: defaultAssays } = setup();
     const mints = defaultMints.slice(0, 2);
     const assays = defaultAssays.slice(0, 2);
-    const zoe = await makeZoe();
+    const zoe = await makeZoe({ require });
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
-    const coveredCallInstallationId = zoe.install(coveredCallSrcs);
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(coveredCallRoot);
+
+    const coveredCallInstallationId = zoe.install(source, moduleFormat);
 
     // Setup Alice
     const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
@@ -199,9 +204,12 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const { mints: defaultMints, assays: defaultAssays } = setup();
     const mints = defaultMints.slice(0, 2);
     const assays = defaultAssays.slice(0, 2);
-    const zoe = await makeZoe();
+    const zoe = await makeZoe({ require });
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
-    const coveredCallInstallationId = zoe.install(coveredCallSrcs);
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(coveredCallRoot);
+
+    const coveredCallInstallationId = zoe.install(source, moduleFormat);
 
     // Setup Alice
     const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
@@ -391,9 +399,17 @@ test('zoe - coveredCall with swap for invite', async t => {
     const [moolaMint, simoleanMint, bucksMint] = mints;
     const [moolaAssay, simoleanAssay, bucksAssay] = assays;
     const timer = buildManualTimer(console.log);
-    const zoe = await makeZoe();
-    const coveredCallInstallationId = zoe.install(coveredCallSrcs);
-    const swapInstallationId = zoe.install(publicSwapSrcs);
+    const zoe = await makeZoe({ require });
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(coveredCallRoot);
+
+    const coveredCallInstallationId = zoe.install(source, moduleFormat);
+    const {
+      source: swapSource,
+      moduleFormat: swapModuleFormat,
+    } = await bundleSource(publicSwapRoot);
+
+    const swapInstallationId = zoe.install(swapSource, swapModuleFormat);
 
     // Setup Alice
     // Alice starts with 3 moola
@@ -765,8 +781,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const [moolaMint, simoleanMint, bucksMint] = mints;
     const [moolaAssay, simoleanAssay, bucksAssay] = assays;
     const timer = buildManualTimer(console.log);
-    const zoe = await makeZoe();
-    const coveredCallInstallationId = zoe.install(coveredCallSrcs);
+    const zoe = await makeZoe({ require });
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(coveredCallRoot);
+
+    const coveredCallInstallationId = zoe.install(source, moduleFormat);
 
     // Setup Alice
     // Alice starts with 3 moola

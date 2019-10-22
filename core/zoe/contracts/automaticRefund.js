@@ -9,7 +9,7 @@ import harden from '@agoric/harden';
  * @param {governingContractFacet} zoe - the governing
  * contract facet of zoe
  */
-const makeContract = (zoe, terms) => {
+export const makeContract = harden((zoe, terms) => {
   let count = 0;
   const automaticRefund = harden({
     makeOffer: async escrowReceipt => {
@@ -24,10 +24,4 @@ const makeContract = (zoe, terms) => {
     instance: automaticRefund,
     assays: terms.assays,
   });
-};
-
-const automaticRefundSrcs = harden({
-  makeContract: `${makeContract}`,
 });
-
-export { automaticRefundSrcs };

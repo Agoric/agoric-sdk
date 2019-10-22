@@ -1,16 +1,17 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
+import bundleSource from '@agoric/bundle-source';
 
 import { makeZoe } from '../../../../../core/zoe/zoe/zoe';
 import { setup } from '../setupBasicMints';
 
-import { publicAuctionSrcs } from '../../../../../core/zoe/contracts/publicAuction';
+const publicAuctionRoot = `${__dirname}/../../../../../core/zoe/contracts/publicAuction`;
 
 test('zoe - secondPriceAuction w/ 3 bids', async t => {
   try {
     const { assays: originalAssays, mints, descOps } = setup();
     const assays = originalAssays.slice(0, 2);
-    const zoe = await makeZoe();
+    const zoe = await makeZoe({ require });
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
 
     // Setup Alice
@@ -35,7 +36,10 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     // 1: Alice creates a secondPriceAuction instance
 
-    const installationId = zoe.install(publicAuctionSrcs);
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(publicAuctionRoot);
+
+    const installationId = zoe.install(source, moduleFormat);
     const numBidsAllowed = 3;
     const { instance: aliceAuction, instanceId } = await zoe.makeInstance(
       installationId,
@@ -289,7 +293,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
   try {
     const { assays: originalAssays, mints, descOps } = setup();
     const assays = originalAssays.slice(0, 2);
-    const zoe = await makeZoe();
+    const zoe = await makeZoe({ require });
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
 
     // Setup Alice
@@ -314,7 +318,10 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     // 1: Alice creates a secondPriceAuction instance
 
-    const installationId = zoe.install(publicAuctionSrcs);
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(publicAuctionRoot);
+
+    const installationId = zoe.install(source, moduleFormat);
     const numBidsAllowed = 3;
     const { instance: aliceAuction, instanceId } = await zoe.makeInstance(
       installationId,

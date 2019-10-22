@@ -1,15 +1,18 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
+import bundleSource from '@agoric/bundle-source';
+
 import { makeZoe } from '../../../../../core/zoe/zoe/zoe';
 import { setup } from '../setupBasicMints';
-import { automaticRefundSrcs } from '../../../../../core/zoe/contracts/automaticRefund';
+
+const automaticRefundRoot = `${__dirname}/../../../../../core/zoe/contracts/automaticRefund`;
 
 test('zoe.makeInstance with automaticRefund', async t => {
   try {
     // Setup zoe and mints
     const { assays: defaultAssays, mints } = setup();
     const assays = defaultAssays.slice(0, 2);
-    const zoe = await makeZoe();
+    const zoe = await makeZoe({ require });
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
 
     // Setup Alice
@@ -22,8 +25,11 @@ test('zoe.makeInstance with automaticRefund', async t => {
     const bobSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(17));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
+
     // 1: Alice creates an automatic refund instance
-    const installationId = zoe.install(automaticRefundSrcs);
+    const installationId = zoe.install(source, moduleFormat);
     const terms = harden({
       assays,
     });
@@ -177,7 +183,7 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
     // Setup zoe and mints
     const { assays: originalAssays, mints } = setup();
     const assays = originalAssays.slice(0, 2);
-    const zoe = await makeZoe();
+    const zoe = await makeZoe({ require });
 
     // Setup Alice
     const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(30));
@@ -190,7 +196,10 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
     ]);
 
     // 1: Alice creates 3 automatic refund instances
-    const installationId = zoe.install(automaticRefundSrcs);
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
+
+    const installationId = zoe.install(source, moduleFormat);
     const terms = harden({
       assays,
     });
@@ -282,7 +291,7 @@ test('zoe - alice cancels before entering a contract', async t => {
     // Setup zoe and mints
     const { assays: defaultAssays, mints } = setup();
     const assays = defaultAssays.slice(0, 2);
-    const zoe = await makeZoe();
+    const zoe = await makeZoe({ require });
 
     // Setup Alice
     const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
@@ -317,7 +326,9 @@ test('zoe - alice cancels before entering a contract', async t => {
 
     const alicePayoff = await payoffP;
 
-    const installationId = zoe.install(automaticRefundSrcs);
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
+    const installationId = zoe.install(source, moduleFormat);
     const terms = harden({
       assays,
     });
@@ -361,7 +372,7 @@ test('zoe - alice cancels after completion', async t => {
     // Setup zoe and mints
     const { assays: defaultAssays, mints } = setup();
     const assays = defaultAssays.slice(0, 2);
-    const zoe = await makeZoe();
+    const zoe = await makeZoe({ require });
 
     // Setup Alice
     const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
@@ -392,7 +403,9 @@ test('zoe - alice cancels after completion', async t => {
       payoff: payoffP,
     } = await zoe.escrow(aliceConditions, alicePayments);
 
-    const installationId = zoe.install(automaticRefundSrcs);
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
+    const installationId = zoe.install(source, moduleFormat);
     const terms = harden({
       assays,
     });

@@ -1,11 +1,12 @@
 import harden from '@agoric/harden';
 
 import { makeMint } from '../../../core/mint';
-import { automaticRefundSrcs } from '../../../core/zoe/contracts/automaticRefund';
-import { coveredCallSrcs } from '../../../core/zoe/contracts/coveredCall';
-import { publicAuctionSrcs } from '../../../core/zoe/contracts/publicAuction';
-import { publicSwapSrcs } from '../../../core/zoe/contracts/publicSwap';
-import { simpleExchangeSrcs } from '../../../core/zoe/contracts/simpleExchange';
+
+import automaticRefundBundle from './bundle-automaticRefund';
+import coveredCallBundle from './bundle-coveredCall';
+import publicAuctionBundle from './bundle-publicAuction';
+import publicSwapBundle from './bundle-publicSwap';
+import simpleExchangeBundle from './bundle-simpleExchange';
 // TODO: test autoswap
 
 const setupBasicMints = () => {
@@ -104,11 +105,26 @@ function build(E, log) {
       const zoe = await E(vats.zoe).getZoe();
 
       const installations = {
-        automaticRefund: await E(zoe).install(automaticRefundSrcs),
-        coveredCall: await E(zoe).install(coveredCallSrcs),
-        publicAuction: await E(zoe).install(publicAuctionSrcs),
-        publicSwap: await E(zoe).install(publicSwapSrcs),
-        simpleExchange: await E(zoe).install(simpleExchangeSrcs),
+        automaticRefund: await E(zoe).install(
+          automaticRefundBundle.source,
+          automaticRefundBundle.moduleFormat,
+        ),
+        coveredCall: await E(zoe).install(
+          coveredCallBundle.source,
+          coveredCallBundle.moduleFormat,
+        ),
+        publicAuction: await E(zoe).install(
+          publicAuctionBundle.source,
+          publicAuctionBundle.moduleFormat,
+        ),
+        publicSwap: await E(zoe).install(
+          publicSwapBundle.source,
+          publicSwapBundle.moduleFormat,
+        ),
+        simpleExchange: await E(zoe).install(
+          simpleExchangeBundle.source,
+          simpleExchangeBundle.moduleFormat,
+        ),
       };
 
       const [testName, installation, startingExtents] = argv;

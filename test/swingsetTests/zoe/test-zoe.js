@@ -1,6 +1,29 @@
 import { test } from 'tape-promise/tape';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import path from 'path';
+import fs from 'fs';
+import bundleSource from '@agoric/bundle-source';
+
+const CONTRACT_FILES = [
+  'automaticRefund',
+  'autoswap',
+  'coveredCall',
+  'publicAuction',
+  'publicSwap',
+  'simpleExchange',
+];
+const generateBundlesP = Promise.all(
+  CONTRACT_FILES.map(async contract => {
+    const { source, moduleFormat } = await bundleSource(
+      `${__dirname}/../../../core/zoe/contracts/${contract}`,
+    );
+    const obj = { source, moduleFormat, contract };
+    fs.writeFileSync(
+      `${__dirname}/bundle-${contract}.js`,
+      `export default ${JSON.stringify(obj)};`,
+    );
+  }),
+);
 
 async function main(withSES, basedir, argv) {
   const dir = path.resolve('test/swingsetTests', basedir);
@@ -9,7 +32,7 @@ async function main(withSES, basedir, argv) {
     '@agoric/swingset-vat/src/devices/loopbox-src',
   );
   config.devices = [['loopbox', ldSrcPath, {}]];
-
+  await generateBundlesP;
   const controller = await buildVatController(config, withSES, argv);
   await controller.run();
   return controller.dump();

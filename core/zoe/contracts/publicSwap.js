@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { sameStructure } from '../../../util/sameStructure';
 
-const makeContract = harden((zoe, terms) => {
+export const makeContract = harden((zoe, terms) => {
   let firstOfferId;
 
   const isMatchingOfferDesc = (extentOps, leftOffer, rightOffer) => {
@@ -81,9 +81,3 @@ const makeContract = harden((zoe, terms) => {
     assays: terms.assays,
   });
 });
-
-const publicSwapSrcs = harden({
-  makeContract: `${makeContract}`,
-});
-
-export { publicSwapSrcs };

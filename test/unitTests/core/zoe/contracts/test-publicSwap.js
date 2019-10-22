@@ -1,18 +1,23 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
+import bundleSource from '@agoric/bundle-source';
 
 import { makeZoe } from '../../../../../core/zoe/zoe/zoe';
 import { setup } from '../setupBasicMints';
 
-import { publicSwapSrcs } from '../../../../../core/zoe/contracts/publicSwap';
+const publicSwapRoot = `${__dirname}/../../../../../core/zoe/contracts/publicSwap`;
 
 test('zoe - publicSwap', async t => {
   try {
     const { assays: originalAssays, mints } = setup();
     const assays = originalAssays.slice(0, 2);
-    const zoe = await makeZoe();
+    const zoe = await makeZoe({ require });
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
     const payoffAssay = zoe.getPayoffAssay();
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(publicSwapRoot);
+
+    const installationId = zoe.install(source, moduleFormat);
 
     // Setup Alice
     const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
@@ -28,7 +33,7 @@ test('zoe - publicSwap', async t => {
     const carolSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
 
     // 1: Alice creates a publicSwap instance
-    const installationId = zoe.install(publicSwapSrcs);
+
     const { instance: aliceSwap, instanceId } = await zoe.makeInstance(
       installationId,
       { assays },

@@ -361,9 +361,3 @@ export const makeContract = harden((zoe, terms) => {
     assays,
   });
 });
-
-const autoswapSrcs = harden({
-  makeContract: `${makeContract}`,
-});
-
-export { autoswapSrcs };

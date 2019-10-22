@@ -3,7 +3,7 @@ import harden from '@agoric/harden';
 import { insist } from '../../../util/insist';
 import { sameStructure } from '../../../util/sameStructure';
 
-const makeContract = harden((zoe, terms) => {
+export const makeContract = harden((zoe, terms) => {
   let firstOfferId;
   let matchingOfferId;
 
@@ -149,9 +149,3 @@ const makeContract = harden((zoe, terms) => {
     assays: terms.assays,
   });
 });
-
-const coveredCallSrcs = harden({
-  makeContract: `${makeContract}`,
-});
-
-export { coveredCallSrcs };

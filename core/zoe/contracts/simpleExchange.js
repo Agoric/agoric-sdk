@@ -11,7 +11,7 @@ import harden from '@agoric/harden';
 // may be less than expected. This simple exchange does not support
 // partial fills of orders.
 
-const makeContract = harden((zoe, terms) => {
+export const makeContract = harden((zoe, terms) => {
   const sellOfferIds = [];
   const buyOfferIds = [];
 
@@ -110,9 +110,3 @@ const makeContract = harden((zoe, terms) => {
     assays: terms.assays,
   });
 });
-
-const simpleExchangeSrcs = harden({
-  makeContract: `${makeContract}`,
-});
-
-export { simpleExchangeSrcs };

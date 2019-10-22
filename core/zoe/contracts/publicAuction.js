@@ -132,9 +132,3 @@ export const makeContract = harden((zoe, terms) => {
     assays: terms.assays,
   });
 });
-
-const publicAuctionSrcs = harden({
-  makeContract: `${makeContract}`,
-});
-
-export { publicAuctionSrcs };

@@ -1,17 +1,22 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
+import bundleSource from '@agoric/bundle-source';
 
 import { makeZoe } from '../../../../../core/zoe/zoe/zoe';
 import { setup } from '../setupBasicMints';
 
-import { simpleExchangeSrcs } from '../../../../../core/zoe/contracts/simpleExchange';
+const simpleExchangeRoot = `${__dirname}/../../../../../core/zoe/contracts/simpleExchange`;
 
 test('zoe - simpleExchange', async t => {
   try {
     const { assays: originalAssays, mints, descOps } = setup();
     const assays = originalAssays.slice(0, 2);
-    const zoe = await makeZoe();
+    const zoe = await makeZoe({ require });
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(simpleExchangeRoot);
+
+    const installationId = zoe.install(source, moduleFormat);
 
     // Setup Alice
     const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
@@ -24,7 +29,6 @@ test('zoe - simpleExchange', async t => {
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
     // 1: Alice creates a simpleExchange instance
-    const installationId = zoe.install(simpleExchangeSrcs);
     const { instance: aliceExchange, instanceId } = await zoe.makeInstance(
       installationId,
       { assays },

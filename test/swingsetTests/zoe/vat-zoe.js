@@ -3,7 +3,7 @@ import harden from '@agoric/harden';
 import { makeZoe } from '../../../core/zoe/zoe/zoe';
 
 const build = (_E, _log) => {
-  const zoe = makeZoe();
+  const zoe = makeZoe({ require });
   return harden({
     getZoe: () => zoe,
   });

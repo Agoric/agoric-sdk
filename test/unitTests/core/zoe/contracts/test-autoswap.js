@@ -1,14 +1,16 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
+import bundleSource from '@agoric/bundle-source';
 
 import { makeZoe } from '../../../../../core/zoe/zoe/zoe';
 import { setup } from '../setupBasicMints';
-import { autoswapSrcs } from '../../../../../core/zoe/contracts/autoswap';
+
+const autoswapRoot = `${__dirname}/../../../../../core/zoe/contracts/autoswap`;
 
 test('autoSwap with valid offers', async t => {
   try {
     const { assays: defaultAssays, mints } = setup();
-    const zoe = await makeZoe();
+    const zoe = await makeZoe({ require });
     const assays = defaultAssays.slice(0, 2);
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
 
@@ -29,7 +31,10 @@ test('autoSwap with valid offers', async t => {
 
     // 1: Alice creates an autoswap instance
 
-    const installationId = zoe.install(autoswapSrcs);
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(autoswapRoot);
+
+    const installationId = zoe.install(source, moduleFormat);
     const terms = {
       assays,
     };
