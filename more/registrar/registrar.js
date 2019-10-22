@@ -24,12 +24,16 @@ function makeRegistrar(systemVersion, seed = 0) {
       const useCount = (useCounts.get(realName) || 0) + 1;
       useCounts.set(realName, useCount);
       const depth = Math.max(4, Math.floor(Math.log10(useCount) + 1.6));
-      const uniqueString = sparseInts.next().value.toString();
-      const keyString = uniqueString.slice(-depth).padStart(depth, '0');
-      // console.log(`RAND ${useCount} ${uniqueString} ${keyString}`);
-      const key = `${realName}_${keyString}`;
-      // if it was a random keyString, then we need to detect collision
-      insist(!contents.has(key), 'Generated name must not collide');
+
+      // Retry until we have a unique key.
+      let key;
+      do {
+        const uniqueString = sparseInts.next().value.toString();
+        const keyString = uniqueString.slice(-depth).padStart(depth, '0');
+        // console.log(`RAND ${useCount} ${uniqueString} ${keyString}`);
+        key = `${realName}_${keyString}`;
+      } while (contents.has(key));
+
       contents.set(key, value);
       return key;
     },
