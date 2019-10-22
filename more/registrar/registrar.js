@@ -1,15 +1,17 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import harden from "@agoric/harden";
-import { insist } from "../../util/insist";
-import { generateSparseInts } from "../../util/sparseInts";
+import harden from '@agoric/harden';
+import { insist } from '../../util/insist';
+import { generateSparseInts } from '../../util/sparseInts';
 
 // Example REPL imnvocations
 // home.registrar~.register('handoff', home.handoffService)
 // for (let i = 0; i < 3000; i++) { home.registrar~.register('handoff', home.handoffService); }
 
+const minimumDigits = 4;
+
 // Generated keys must end with _ and digits.
-const keyFormat = new RegExp('.*_[0-9]+');
+const keyFormat = new RegExp(`.*_\\d{${minimumDigits},}$`);
 
 function makeRegistrar(systemVersion, seed = 0) {
   // TODO make a better token algorithm.
@@ -23,7 +25,10 @@ function makeRegistrar(systemVersion, seed = 0) {
       const realName = name.toLowerCase();
       const useCount = (useCounts.get(realName) || 0) + 1;
       useCounts.set(realName, useCount);
-      const depth = Math.max(4, Math.floor(Math.log10(useCount) + 1.6));
+      const depth = Math.max(
+        minimumDigits,
+        Math.floor(Math.log10(useCount) + 1.6),
+      );
 
       // Retry until we have a unique key.
       let key;
@@ -34,14 +39,14 @@ function makeRegistrar(systemVersion, seed = 0) {
         key = `${realName}_${keyString}`;
       } while (contents.has(key));
 
-      contents.set(key, value);
+      contents.set(key, harden(value));
       return key;
     },
     get(key, version = null) {
       insist(typeof key === 'string')`\
 Key must be string ${key}`;
       insist(keyFormat.test(key))`\
-Key must end with _<digits> ${key}`
+Key must end with _<digits> ${key}`;
       if (version) {
         insist(version === systemVersion)`\
 Key is from incompatible version: ${version} should be ${systemVersion}`;
@@ -49,7 +54,7 @@ Key is from incompatible version: ${version} should be ${systemVersion}`;
       return contents.get(key);
     },
     keys() {
-      return contents.keys();
+      return harden([...contents.keys()]);
     },
   });
 
