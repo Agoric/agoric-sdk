@@ -1,7 +1,6 @@
 import { test } from 'tape-promise/tape';
 import { E, harden, makeCapTP } from '../lib/captp';
 
-// TODO: remove .only when you have this test working
 test('try loopback captp', async t => {
   try {
     const debug = false;
@@ -15,6 +14,11 @@ test('try loopback captp', async t => {
         rightDispatch(obj);
       },
     );
+    const pr = {};
+    pr.p = new Promise((resolve, reject) => {
+      pr.res = resolve;
+      pr.rej = reject;
+    });
     ({ dispatch: rightDispatch } = makeCapTP(
       'right',
       obj => {
@@ -24,6 +28,7 @@ test('try loopback captp', async t => {
         leftDispatch(obj);
       },
       harden({
+        promise: pr.p,
         encourager: {
           encourage(name) {
             const bang = new Promise(resolve => {
@@ -48,6 +53,9 @@ test('try loopback captp', async t => {
     ).P;
     t.equal(comment, 'good work, buddy', 'got encouragement');
     t.equal(await E(bang).trigger(), 'buddy BANG!', 'called on promise');
+    pr.res('resolution');
+    t.equal(await E.G(rightRef).promise, 'resolution', 'got resolution');
+    t.equal(await E.C(rightRef).G.promise.P, 'resolution', 'chained resolution');
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {
