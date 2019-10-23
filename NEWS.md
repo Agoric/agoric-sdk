@@ -1,5 +1,27 @@
 User-visible changes in ERTP:
 
+## Release v0.1.8 (10/22/2019)
+
+* Added the registrar naming service. Objects can be registered with a
+  name. The name supplied by the user is concatenated with a random
+  string to produce a value like `myName_4409`, if `myName` was the
+  user-supplied string. Then, this full name can be used to `get` the
+  object back from the registrar naming service. This can be used to
+  give public names to objects meant to be shared. 
+* The contracts that run on Zoe have been updated. There are now six
+  contracts: `automaticRefund`, used for testing and tutorials, which
+  just gives the user their digital assets back, `autoswap`, a Uniswap
+  implementation, `coveredCall` which involves an invite to make an
+  offer that can act as an option, `publicAuction` which is a
+  second-price auction, `publicSwap` which has the same swap logic
+  as the `coveredCall` contract, but which doesn't use invites, and
+  `simpleExchange` which is a naive decentralized exchange. 
+* Tests have been written for "higher order" contract uses. That is, a
+  invite for one contract used as the underlying right in another
+  contract. 
+* Exit conditions were added to Zoe. This allows the user to specify
+  their exit conditions when they escrow an offer with Zoe. 
+
 ## Release v0.1.7 (10/15/2019)
 
 * Added configurable endowments in contract evaluation for `Zoe` and the
