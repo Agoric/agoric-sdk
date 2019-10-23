@@ -21,7 +21,7 @@
     "@agoric/acorn-eventual-send": "^1.0.1",
     "@agoric/bundle-source": "^0.1.0",
     "@agoric/captp": "^0.1.2",
-    "@agoric/ertp": "^0.1.7",
+    "@agoric/ertp": "^0.1.8",
     "@agoric/evaluate": "^2.1.2",
     "@agoric/eventual-send": "^0.4.2",
     "@agoric/harden": "0.0.4",
