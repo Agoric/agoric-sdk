@@ -1,5 +1,13 @@
 User-visible changes in Cosmic SwingSet:
 
+## Release v0.10.7 (2019-10-23)
+
+* Upgrade to ERTP v0.1.8
+  - Zoe contracts updated to use ESM format
+  - exit conditions have been added to Zoe
+* Create the `home.moolah` purse with balance 1000 to have some currency to trade
+* Create `home.registrar` to publish objects
+
 ## Release v0.10.6 (2019-10-16)
 
 * Upgrade to SwingSet v0.1.0
