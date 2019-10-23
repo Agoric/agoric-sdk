@@ -15,6 +15,10 @@ esac
 if test "$1" = shell; then
   FLAGS=--entrypoint=/bin/bash
   shift
+elif test "$1" = upload-contract; then
+  shift
+  exec `dirname "$0"`/../bin/ag-solo upload-contract --ag-solo=ws://127.0.0.1:$HOST_PORT/captp ${1+"$@"}
+  exit $?
 else
   FLAGS=-p127.0.0.1:$HOST_PORT:$PORT
 fi
