@@ -472,27 +472,28 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
         if code != 0:
             raise Exception('Cannot broadcast transaction')
 
-    controller_url = opts["controller"]
-    print('contacting ' + controller_url)
+    if len(needIngress) > 0:
+        controller_url = opts["controller"]
+        print('contacting ' + controller_url)
 
-    mobj = {
-        "type": "pleaseProvisionMany",
-        "applies": [[pkobj['nickname'], pkobj['pubkey']] for pkobj in needIngress]
-    }
-    m = json.dumps(mobj)
+        mobj = {
+            "type": "pleaseProvisionMany",
+            "applies": [[pkobj['nickname'], pkobj['pubkey']] for pkobj in needIngress]
+        }
+        m = json.dumps(mobj)
 
-    # this HTTP request goes to the controller machine, where it should
-    # be routed to vat-provisioning.js and the pleaseProvision() method.
-    resp = yield treq.post(controller_url, m.encode('utf-8'), reactor=reactor,
-                            headers={
-                                b'Content-Type': [b'application/json'],
-                                b'Origin': [b'http://127.0.0.1'],
-                            })
-    if resp.code < 200 or resp.code >= 300:
-        raise Exception('invalid response code ' + str(resp.code))
-    rawResp = yield treq.json_content(resp)
-    if not rawResp['ok']:
-        raise rawResp
+        # this HTTP request goes to the controller machine, where it should
+        # be routed to vat-provisioning.js and the pleaseProvision() method.
+        resp = yield treq.post(controller_url, m.encode('utf-8'), reactor=reactor,
+                                headers={
+                                    b'Content-Type': [b'application/json'],
+                                    b'Origin': [b'http://127.0.0.1'],
+                                })
+        if resp.code < 200 or resp.code >= 300:
+            raise Exception('invalid response code ' + str(resp.code))
+        rawResp = yield treq.json_content(resp)
+        if not rawResp.get('ok', False):
+            raise rawResp
 
 def main():
     o = Options()
