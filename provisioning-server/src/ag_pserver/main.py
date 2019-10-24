@@ -85,29 +85,29 @@ class ConfigElement(Element):
         config = f.read()
         gr = '/usr/src/app/lib/git-revision.txt'
         if os.path.exists(gr):
-          f = open(gr)
-          meta['package_git'] = f.read().strip()
+            f = open(gr)
+            meta['package_git'] = f.read().strip()
         else:
-          f = os.popen('git rev-parse --short HEAD')
-          sha = f.read().strip()
-          f = os.popen('git diff --quiet || echo -dirty')
-          meta['package_git'] = sha + f.read().strip()
+            f = os.popen('git rev-parse --short HEAD')
+            sha = f.read().strip()
+            f = os.popen('git diff --quiet || echo -dirty')
+            meta['package_git'] = sha + f.read().strip()
 
         pj = '/usr/src/app/package.json'
         pjson = {}
         if os.path.exists(pj):
-          f = open(pj)
-          pjson = json.load(f)
+            f = open(pj)
+            pjson = json.load(f)
         else:
-          pjpath = None
-          # Walk upwards from the current directory.
-          pj = os.path.abspath('package.json')
-          while pj != pjpath:
-            pjpath = pj
-            if os.path.exists(pjpath):
-              f = open(pjpath)
-              pjson = json.load(f)
-              break
+            pjpath = None
+            # Walk upwards from the current directory.
+            pj = os.path.abspath('package.json')
+            while pj != pjpath:
+                pjpath = pj
+                if os.path.exists(pjpath):
+                    f = open(pjpath)
+                    pjson = json.load(f)
+                    break
             pj = os.path.join(os.path.dirname(pjpath), '../package.json')
             pj = os.path.abspath(pj)
 
@@ -131,8 +131,8 @@ class ConfigElement(Element):
 
     @renderer
     def meta(self, request, tag):
-      tag.fillSlots(**self._meta)
-      return tag
+        tag.fillSlots(**self._meta)
+        return tag
 
 class ResponseElement(ConfigElement):
     loader = XMLFile(os.path.join(htmldir, "response-template.html"))
@@ -177,13 +177,13 @@ class Provisioner(resource.Resource):
 @defer.inlineCallbacks
 def enablePubkey(reactor, opts, config, nickname, pubkey):
     mobj = {
-      "type": "pleaseProvision",
-      "nickname": nickname,
-      "pubkey": pubkey,
+        "type": "pleaseProvision",
+        "nickname": nickname,
+        "pubkey": pubkey,
     }
     # print("mobj:", mobj)
     def ret(server_message):
-      return [mobj, server_message, config]
+        return [mobj, server_message, config]
 
     # FIXME: Make more resilient to DOS attacks, or attempts
     # to drain all our agmedallions.
@@ -247,7 +247,7 @@ def enablePubkey(reactor, opts, config, nickname, pubkey):
         "rpcAddrs": config['rpcAddrs'],
         "chainName": config['chainName'],
         "ingressIndex": ingressIndex,
-        }
+    }
     print("send server_message", server_message)
     return ret(server_message)
 
@@ -273,29 +273,29 @@ class RequestCode(resource.Resource):
         w.send_message(sm)
         d = w.close()
         def complete(_):
-          print("provisioning complete")
-          pkobj = {
-            'chainName': config['chainName'],
-            'pubkey': mobj['pubkey'],
-            'nickname': mobj['nickname'][:32],
-          }
-          print("save public key to database", pkobj)
-          pkobj_str = json.dumps(pkobj)
-          with open(pubkeyDatabase(self.opts['home']), 'a') as db:
-            db.write(pkobj_str + ',\n')
+            print("provisioning complete")
+            pkobj = {
+                'chainName': config['chainName'],
+                'pubkey': mobj['pubkey'],
+                'nickname': mobj['nickname'][:32],
+            }
+            print("save public key to database", pkobj)
+            pkobj_str = json.dumps(pkobj)
+            with open(pubkeyDatabase(self.opts['home']), 'a') as db:
+                db.write(pkobj_str + ',\n')
         d.addCallbacks(complete,
                        lambda f: print("provisioning error", f))
 
     @defer.inlineCallbacks
     def process_wormhole(self, nickname):
-      w = wormhole.create(APPID, MAILBOX_URL, self.reactor)
-      w.allocate_code()
-      code = yield w.get_code()
+        w = wormhole.create(APPID, MAILBOX_URL, self.reactor)
+        w.allocate_code()
+        code = yield w.get_code()
 
-      d = w.get_message()
-      d.addCallback(self.got_message, nickname.decode('utf-8'))
-      d.addCallback(self.send_provisioning_response, w)
-      return code
+        d = w.get_message()
+        d.addCallback(self.got_message, nickname.decode('utf-8'))
+        d.addCallback(self.send_provisioning_response, w)
+        return code
 
     @defer.inlineCallbacks
     def build_provisioning_response(self, nickname):
@@ -316,26 +316,26 @@ class RequestCode(resource.Resource):
         return server.NOT_DONE_YET
 
     def render_GET(self, req):
-      nickname = req.args[b"nickname"][0]
-      d = self.process_wormhole(nickname)
-      def built(code):
-        req.setHeader('Content-Type', 'text/plain; charset=UTF-8')
-        req.write((code + '\n').encode('utf-8'))
-        req.finish()
-      d.addCallback(built)
-      d.addErrback(log.err)
-      return server.NOT_DONE_YET
+        nickname = req.args[b"nickname"][0]
+        d = self.process_wormhole(nickname)
+        def built(code):
+            req.setHeader('Content-Type', 'text/plain; charset=UTF-8')
+            req.write((code + '\n').encode('utf-8'))
+            req.finish()
+        d.addCallback(built)
+        d.addErrback(log.err)
+        return server.NOT_DONE_YET
 
 
 class ConfigJSON(resource.Resource):
-  def __init__(self, o):
-    self.opts = o
+    def __init__(self, o):
+        self.opts = o
 
-  def render_GET(self, req):
-    f = open(cosmosConfigFile(self.opts['home']))
-    config = f.read()
-    req.setHeader('Content-Type', 'application/json')
-    return config.encode('utf-8')
+    def render_GET(self, req):
+        f = open(cosmosConfigFile(self.opts['home']))
+        config = f.read()
+        req.setHeader('Content-Type', 'application/json')
+        return config.encode('utf-8')
 
 def run_server(reactor, o):
     print("dir is", __file__)
@@ -365,29 +365,29 @@ def run_server(reactor, o):
     return defer.Deferred()
 
 def doEnablePubkeys(reactor, opts, config, pkobjs):
-  finished = defer.Deferred()
+    finished = defer.Deferred()
 
-  def showError(e):
-    print(e)
+    def showError(e):
+        print(e)
+        doLatest(None)
+
+    def doLatest(d):
+        if d is not None:
+            print(d)
+        if len(pkobjs) == 0:
+            finished.callback(d)
+            return
+
+        pkobj = pkobjs.pop()
+        try:
+            print('enabling', pkobj['chainName'], pkobj['nickname'], pkobj['pubkey'])
+            d = enablePubkey(reactor, opts, config, pkobj['nickname'], pkobj['pubkey'])
+            d.addErrback(showError)
+            d.addCallback(doLatest)
+        except Exception as e:
+            showError(e)
     doLatest(None)
-
-  def doLatest(d):
-    if d is not None:
-      print(d)
-    if len(pkobjs) == 0:
-      finished.callback(d)
-      return
-
-    pkobj = pkobjs.pop()
-    try:
-      print('enabling', pkobj['chainName'], pkobj['nickname'], pkobj['pubkey'])
-      d = enablePubkey(reactor, opts, config, pkobj['nickname'], pkobj['pubkey'])
-      d.addErrback(showError)
-      d.addCallback(doLatest)
-    except Exception as e:
-      showError(e)
-  doLatest(None)
-  return finished
+    return finished
 
 def main():
     o = Options()
@@ -401,17 +401,17 @@ def main():
         print('Reading %s from stdin; hit Ctrl-D to finish' % fname)
         cfgJson = sys.stdin.read()
         with open(fname, 'w') as f:
-          f.write(cfgJson)
+            f.write(cfgJson)
     elif o.subCommand == 'add-pubkeys':
         # Now that we have our files, add all the accounts.
         f = open(cosmosConfigFile(o['home']), 'r')
         config = json.loads(f.read())
         try:
-          f = open(pubkeyDatabase(o['home']))
-          pkobjs_str = f.read().strip(', \r\n');
-          pkobjs = json.loads('[' + pkobjs_str + ']')
+            f = open(pubkeyDatabase(o['home']))
+            pkobjs_str = f.read().strip(', \r\n');
+            pkobjs = json.loads('[' + pkobjs_str + ']')
         except FileNotFoundError:
-          return
+            return
         react(doEnablePubkeys, ({**o, **o.subOptions}, config, pkobjs))
     elif o.subCommand == 'start':
         react(run_server, ({**o, **o.subOptions},))
