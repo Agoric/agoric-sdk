@@ -191,32 +191,12 @@ def enablePubkey(reactor, opts, config, nickname, pubkey, initialToken = INITIAL
     # FIXME: Make more resilient to DOS attacks, or attempts
     # to drain all our agmedallions.
     if initialToken is not None:
-        retries = 10
-        code = None
         amountToken = ''.join([str(o) for o in initialToken])
-        while code != 0 and retries > 0:
-            if code is not None:
-                # Wait 3 seconds between sends.
-                yield deferLater(reactor, 3, lambda: None)
-            retries -= 1
-            rpcAddr = random.choice(config['rpcAddrs'])
-            print('transferring ' + amountToken + ' to ' + pubkey + ' via ' + rpcAddr)
-            d = defer.Deferred()
-            processProtocol = SendInputAndWaitProtocol(d, AG_BOOTSTRAP_PASSWORD + b'\n')
-            program = 'ag-cosmos-helper' 
-            reactor.spawnProcess(processProtocol, '/usr/local/bin/' + program, args=[
-                program,
-                'tx', 'send', config['bootstrapAddress'], pubkey, amountToken,
-                '--yes', '--broadcast-mode', 'block', # Don't return until committed.
-                '--chain-id', config['chainName'], '-ojson',
-                '--node', 'tcp://' + rpcAddr,
-                '--home', os.path.join(opts['home'], 'ag-cosmos-helper-statedir'),
-                ])
-            code, output = yield d
-            if code == 0:
-                oj = json.loads(output.decode('utf-8'))
-                code = oj.get('code', code)
-            print('transfer returned ' + str(code))
+        args = [
+            'tx', 'send', config['bootstrapAddress'], pubkey, amountToken,
+            '--yes', '--broadcast-mode', 'block', # Don't return until committed.
+        ]
+        code, output = yield agCosmosHelper(reactor, opts, config, AG_BOOTSTRAP_PASSWORD + b'\n', args, 10)
         if code != 0:
             return ret({"ok": False, "error": 'transfer returned ' + str(code)})
 
