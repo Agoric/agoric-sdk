@@ -9,13 +9,14 @@ import os.path
 import os
 import json
 import random
+from tempfile import NamedTemporaryFile
 
 from twisted.python import log
 import sys
 log.startLogging(sys.stdout)
 
 # TODO: Don't hardcode these.
-INITIAL_TOKEN = '1agmedallion'
+INITIAL_TOKEN = [1, 'agmedallion']
 AG_BOOTSTRAP_PASSWORD = b'mmmmmmmm'
 
 MAILBOX_URL = u"ws://relay.magic-wormhole.io:4000/v1"
@@ -54,6 +55,7 @@ class SendInputAndWaitProtocol(protocol.ProcessProtocol):
         self.deferred = d
         self.input = input
         self.output = b''
+        self.error = b''
 
     def connectionMade(self):
         self.transport.write(self.input)
@@ -64,10 +66,11 @@ class SendInputAndWaitProtocol(protocol.ProcessProtocol):
         print(data.decode('latin-1'))
 
     def errReceived(self, data):
+        self.error += data
         print(data.decode('latin-1'), file=sys.stderr)
     
     def processEnded(self, reason):
-        self.deferred.callback((reason.value.exitCode, self.output))
+        self.deferred.callback((reason.value.exitCode, self.output, self.error))
 
 def cosmosConfigFile(home):
     return os.path.join(home, 'cosmos-chain.json')
@@ -175,7 +178,7 @@ class Provisioner(resource.Resource):
 
 
 @defer.inlineCallbacks
-def enablePubkey(reactor, opts, config, nickname, pubkey):
+def enablePubkey(reactor, opts, config, nickname, pubkey, initialToken = INITIAL_TOKEN):
     mobj = {
         "type": "pleaseProvision",
         "nickname": nickname,
@@ -187,27 +190,27 @@ def enablePubkey(reactor, opts, config, nickname, pubkey):
 
     # FIXME: Make more resilient to DOS attacks, or attempts
     # to drain all our agmedallions.
-    if INITIAL_TOKEN is not None:
+    if initialToken is not None:
         retries = 10
         code = None
+        amountToken = ''.join([str(o) for o in initialToken])
         while code != 0 and retries > 0:
             if code is not None:
                 # Wait 3 seconds between sends.
                 yield deferLater(reactor, 3, lambda: None)
             retries -= 1
             rpcAddr = random.choice(config['rpcAddrs'])
-            print('transferring ' + INITIAL_TOKEN + ' to ' + pubkey + ' via ' + rpcAddr)
+            print('transferring ' + amountToken + ' to ' + pubkey + ' via ' + rpcAddr)
             d = defer.Deferred()
             processProtocol = SendInputAndWaitProtocol(d, AG_BOOTSTRAP_PASSWORD + b'\n')
             program = 'ag-cosmos-helper' 
             reactor.spawnProcess(processProtocol, '/usr/local/bin/' + program, args=[
-                program, 'tx', 'send', config['bootstrapAddress'], pubkey,
-                INITIAL_TOKEN,
-                '--yes', '--chain-id', config['chainName'], '-ojson',
-                '--node',
-                'tcp://' + rpcAddr,
+                program,
+                'tx', 'send', config['bootstrapAddress'], pubkey, amountToken,
+                '--yes', '--broadcast-mode', 'block', # Don't return until committed.
+                '--chain-id', config['chainName'], '-ojson',
+                '--node', 'tcp://' + rpcAddr,
                 '--home', os.path.join(opts['home'], 'ag-cosmos-helper-statedir'),
-                '--broadcast-mode', 'block' # Don't return until committed.
                 ])
             code, output = yield d
             if code == 0:
@@ -364,30 +367,132 @@ def run_server(reactor, o):
     print("server running")
     return defer.Deferred()
 
+@defer.inlineCallbacks
+def agCosmosHelper(reactor, opts, config, input, args, retries = 1):
+    code = None
+    while code != 0 and retries > 0:
+        if code is not None:
+            # Wait 3 seconds between sends.
+            yield deferLater(reactor, 3, lambda: None)
+        retries -= 1
+        rpcAddr = random.choice(config['rpcAddrs'])
+        print('running', rpcAddr, args)
+        d = defer.Deferred()
+        processProtocol = SendInputAndWaitProtocol(d, input)
+        program = 'ag-cosmos-helper' 
+        reactor.spawnProcess(processProtocol, '/usr/local/bin/' + program, args=[
+            program, *args,
+            '--chain-id', config['chainName'], '-ojson',
+            '--node',
+            'tcp://' + rpcAddr,
+            '--home', os.path.join(opts['home'], 'ag-cosmos-helper-statedir'),
+            ])
+        code, output, stderr = yield d
+        if code == 0:
+            oj = json.loads(output.decode('utf-8'))
+            code = oj.get('code', code)
+            output = oj
+        elif stderr[0:8] == b'ERROR: {':
+            try:
+                oj = json.loads(stderr[7:].decode('utf-8'))
+                code = oj.get('code', code)
+                output = oj
+            except:
+                pass
+
+    return code, output
+
+@defer.inlineCallbacks
 def doEnablePubkeys(reactor, opts, config, pkobjs):
-    finished = defer.Deferred()
+    amountToken = ''.join([str(o) for o in INITIAL_TOKEN])
 
-    def showError(e):
-        print(e)
-        doLatest(None)
-
-    def doLatest(d):
-        if d is not None:
-            print(d)
-        if len(pkobjs) == 0:
-            finished.callback(d)
-            return
-
-        pkobj = pkobjs.pop()
+    txes = []
+    needIngress = []
+    for pkobj in pkobjs:
+        pubkey = pkobj['pubkey']
+        missing = False
         try:
-            print('enabling', pkobj['chainName'], pkobj['nickname'], pkobj['pubkey'])
-            d = enablePubkey(reactor, opts, config, pkobj['nickname'], pkobj['pubkey'])
-            d.addErrback(showError)
-            d.addCallback(doLatest)
+            print('checking account', pubkey)
+            code, output = yield agCosmosHelper(reactor, opts, config, b'', ['query', 'account', pubkey])
+            if code == 0 and output['type'] == 'cosmos-sdk/Account':
+                needIngress.append(pkobj)
+                missing = True
+                for coin in output['value']['coins']:
+                    # Check if they have some of our coins.
+                    if coin['denom'] == INITIAL_TOKEN[1] and int(coin['amount']) >= INITIAL_TOKEN[0]:
+                        missing = False
+                        break
+            elif code == 9:
+                missing = True
         except Exception as e:
-            showError(e)
-    doLatest(None)
-    return finished
+            missing = False
+            print(e)
+
+        if missing:
+            print('generating transaction for', pubkey)
+            args = ['tx', 'send', config['bootstrapAddress'], pubkey, amountToken, '--generate-only']
+            code, output = yield agCosmosHelper(reactor, opts, config, b'', args, 1)
+            if code == 0:
+                txes.append(output)
+
+    if len(txes) > 0:
+        tx0 = txes[0]
+        msgs = tx0['value']['msg']
+        for tx in txes[1:]:
+            for msg in tx['value']['msg']:
+                msgs.append(msg)
+        # Create a temporary file that is automatically deleted.
+        with NamedTemporaryFile() as temp:
+            # Save the amalgamated transaction.
+            temp.write(json.dumps(tx0).encode('utf-8'))
+            temp.flush()
+
+            # Now the temp.name contents are available
+            args = [
+                'tx', 'sign', temp.name, '--from', config['bootstrapAddress'],
+                '--yes', '--gas=auto', '--append=false',
+            ]
+
+            # Use the temp file in the sign request.
+            code, output = yield agCosmosHelper(reactor, opts, config, AG_BOOTSTRAP_PASSWORD + b'\n', args, 10)
+        if code != 0:
+            raise Exception('Cannot sign transaction')
+        with NamedTemporaryFile() as temp:
+            # Save the signed transaction.
+            temp.write(json.dumps(output).encode('utf-8'))
+            temp.flush()
+
+            # Now the temp.name contents are available
+            args = [
+                'tx', 'broadcast', temp.name,
+                '--broadcast-mode', 'block',
+            ]
+
+            code, output = yield agCosmosHelper(reactor, opts, config, b'', args, 10)
+        if code != 0:
+            raise Exception('Cannot broadcast transaction')
+
+    controller_url = opts["controller"]
+    print('contacting ' + controller_url)
+
+    mobj = {
+        "type": "pleaseProvisionMany",
+        "applies": [[pkobj['nickname'], pkobj['pubkey']] for pkobj in needIngress]
+    }
+    m = json.dumps(mobj)
+
+    # this HTTP request goes to the controller machine, where it should
+    # be routed to vat-provisioning.js and the pleaseProvision() method.
+    resp = yield treq.post(controller_url, m.encode('utf-8'), reactor=reactor,
+                            headers={
+                                b'Content-Type': [b'application/json'],
+                                b'Origin': [b'http://127.0.0.1'],
+                            })
+    if resp.code < 200 or resp.code >= 300:
+        raise Exception('invalid response code ' + str(resp.code))
+    rawResp = yield treq.json_content(resp)
+    if not rawResp['ok']:
+        raise rawResp
 
 def main():
     o = Options()
@@ -412,6 +517,7 @@ def main():
             pkobjs = json.loads('[' + pkobjs_str + ']')
         except FileNotFoundError:
             return
+        pkobjs.reverse()
         react(doEnablePubkeys, ({**o, **o.subOptions}, config, pkobjs))
     elif o.subCommand == 'start':
         react(run_server, ({**o, **o.subOptions},))
