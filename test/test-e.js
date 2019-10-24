@@ -33,13 +33,21 @@ test('E.* shortcuts', async t => {
       },
     };
     t.equal(await E.M(x).hello('Hello'), 'Hello, buddy!', 'method call works');
-    t.equal(await E.M(await E.G(await E.G(x).y).fn)(4), 8, 'anonymous method works');
+    t.equal(
+      await E.M(await E.G(await E.G(x).y).fn)(4),
+      8,
+      'anonymous method works',
+    );
     t.equal(await E.G(x).val, 123, 'property get');
     t.equal(await E.S(x).val(999), 999, 'property set');
     t.equal(x.val, 999, 'property set works');
     t.equal(await E.D(x).val, true, 'property delete');
     t.equal(x.val, undefined, 'delete worked');
-    await t.rejects(E.D(await E.G(x).y).val2, TypeError, 'property delete fails');
+    await t.rejects(
+      E.D(await E.G(x).y).val2,
+      TypeError,
+      'property delete fails',
+    );
     t.equal(x.y.val2, 456, 'delete failed');
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');

@@ -61,67 +61,53 @@ export default function makeE(HandledPromise) {
   }
 
   const makeEGetterProxy = (x, wrap = o => o) =>
-    new Proxy(
-      Object.create(null),
-      {
-        ...readOnlyProxy,
-        has(_target, _prop) {
-          return true;
-        },
-        get(_target, prop) {
-          return wrap(HandledPromise.get(x, prop));
-        },
+    new Proxy(Object.create(null), {
+      ...readOnlyProxy,
+      has(_target, _prop) {
+        return true;
       },
-    );
-  
+      get(_target, prop) {
+        return wrap(HandledPromise.get(x, prop));
+      },
+    });
 
   const makeEDeleterProxy = (x, wrap = o => o) =>
-    new Proxy(
-      Object.create(null),
-      {
-        ...readOnlyProxy,
-        has(_target, _prop) {
-          return true;
-        },
-        get(_target, prop) {
-          return wrap(HandledPromise.delete(x, prop));
-        },
+    new Proxy(Object.create(null), {
+      ...readOnlyProxy,
+      has(_target, _prop) {
+        return true;
       },
-    );
+      get(_target, prop) {
+        return wrap(HandledPromise.delete(x, prop));
+      },
+    });
 
   const makeESetterProxy = (x, wrap = o => o) =>
-    new Proxy(
-      Object.create(null),
-      {
-        ...readOnlyProxy,
-        has(_target, _prop) {
-          return true;
-        },
-        get(_target, prop) {
-          return harden(value =>
-            wrap(HandledPromise.set(x, prop, value)),
-          );
-        },
+    new Proxy(Object.create(null), {
+      ...readOnlyProxy,
+      has(_target, _prop) {
+        return true;
       },
-    );
+      get(_target, prop) {
+        return harden(value => wrap(HandledPromise.set(x, prop, value)));
+      },
+    });
 
   const makeEMethodProxy = (x, wrap = o => o) =>
-    new Proxy(
-      (..._args) => {},
-      {
-        ...readOnlyProxy,
-        has(_target, _prop) {
-          return true;
-        },
-        get(_target, prop) {
-          return harden((...args) =>
-            wrap(HandledPromise.applyMethod(x, prop, args)),
-          );
-        },
-        apply(_target, _thisArg, args = []) {
-          return wrap(HandledPromise.applyFunction(x, args));
-        },
-      });
+    new Proxy((..._args) => {}, {
+      ...readOnlyProxy,
+      has(_target, _prop) {
+        return true;
+      },
+      get(_target, prop) {
+        return harden((...args) =>
+          wrap(HandledPromise.applyMethod(x, prop, args)),
+        );
+      },
+      apply(_target, _thisArg, args = []) {
+        return wrap(HandledPromise.applyFunction(x, args));
+      },
+    });
 
   E.G = makeEGetterProxy;
   E.D = makeEDeleterProxy;
