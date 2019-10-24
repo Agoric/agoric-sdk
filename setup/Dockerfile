@@ -2,7 +2,7 @@ ARG TAG=latest
 FROM golang:stretch AS go-build
 
 WORKDIR /usr/src/journalbeat
-RUN apt-get update && apt-get install libsystemd-dev
+RUN apt-get update -y && apt-get install -y libsystemd-dev
 RUN go get github.com/mheese/journalbeat
 
 FROM agoric/cosmic-swingset:$TAG
