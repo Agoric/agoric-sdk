@@ -35,8 +35,11 @@ export const isExactlyMatchingOfferDesc = (
   );
 };
 
-export const hasRules = (rules, newOfferDesc) =>
+const hasRules = (rules, newOfferDesc) =>
   rules.every((rule, i) => rule === newOfferDesc[i].rule);
 
-export const hasAssays = (assays, newOfferDesc) =>
+const hasAssays = (assays, newOfferDesc) =>
   assays.every((assay, i) => assay === newOfferDesc[i].assetDesc.label.assay);
+
+export const hasRulesAndAssays = (rules, assays, newOfferDesc) =>
+  hasRules(rules, newOfferDesc) && hasAssays(assays, newOfferDesc);

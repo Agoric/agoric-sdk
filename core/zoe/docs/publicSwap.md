@@ -59,11 +59,11 @@ matches Alice's claims.
 ```js
 const {
   instance: bobSwap,
-  installationHandle: bobInstallationId,
+  installationHandle: bobInstallationHandle,
   terms,
 } = zoe.getInstance(instanceHandle);
 
-insist(bobInstallationId === installationHandle)`wrong installation`;
+insist(bobInstallationHandle === installationHandle)`wrong installation`;
 insist(sameStructure(terms.assays, assays)`wrong assays`;
 ```
 

@@ -187,7 +187,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
         offerPayments,
       );
 
-      const offerResult = await E(auction).makeOffer(escrowReceipt);
+      const offerResult = await E(auction).bid(escrowReceipt);
 
       log(offerResult);
 

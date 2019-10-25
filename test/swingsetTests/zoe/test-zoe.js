@@ -126,10 +126,10 @@ test('zoe - coveredCall - valid inputs - no SES', async t => {
 
 const expectedPublicAuctionOkLog = [
   '=> alice, bob, carol and dave are set up',
-  'The offer has been accepted. Once the contract has been completed, please check your winnings',
-  'The offer has been accepted. Once the contract has been completed, please check your winnings',
-  'The offer has been accepted. Once the contract has been completed, please check your winnings',
-  'The offer has been accepted. Once the contract has been completed, please check your winnings',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"label":{"assay":{},"description":"moola"},"extent":1}',
   'carolMoolaPurse: balance {"label":{"assay":{},"description":"moola"},"extent":0}',
   'daveMoolaPurse: balance {"label":{"assay":{},"description":"moola"},"extent":0}',

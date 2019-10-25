@@ -3,8 +3,7 @@ import harden from '@agoric/harden';
 import { rejectOffer, defaultAcceptanceMsg } from './helpers/userFlow';
 import {
   isExactlyMatchingOfferDesc,
-  hasRules,
-  hasAssays,
+  hasRulesAndAssays,
 } from './helpers/offerDesc';
 
 export const makeContract = harden((zoe, terms) => {
@@ -18,11 +17,8 @@ export const makeContract = harden((zoe, terms) => {
         conditions: { offerDesc: offerMadeDesc },
       } = await zoe.burnEscrowReceipt(escrowReceipt);
 
-      if (!hasRules(['offerExactly', 'wantExactly'], offerMadeDesc)) {
-        return rejectOffer(zoe, offerHandle);
-      }
-
-      if (!hasAssays(terms.assays, offerMadeDesc)) {
+      const rulesFormat = ['offerExactly', 'wantExactly'];
+      if (!hasRulesAndAssays(rulesFormat, terms.assays, offerMadeDesc)) {
         return rejectOffer(zoe, offerHandle);
       }
 

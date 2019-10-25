@@ -75,11 +75,13 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     );
 
     // 4: Alice initializes the auction with her escrow receipt
-    const aliceOfferResult = await aliceAuction.makeOffer(aliceEscrowReceipt);
+    const aliceOfferResult = await aliceAuction.startAuction(
+      aliceEscrowReceipt,
+    );
 
     t.equals(
       aliceOfferResult,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
     // 5: Alice spreads the instanceHandle far and wide with
@@ -124,11 +126,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     );
 
     // 8: Bob makes an offer with his escrow receipt
-    const bobOfferResult = await bobAuction.makeOffer(bobEscrowReceipt);
+    const bobOfferResult = await bobAuction.bid(bobEscrowReceipt);
 
     t.equals(
       bobOfferResult,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
     // 9: Carol decides to bid for the one moola
@@ -166,11 +168,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     } = await zoe.escrow(carolConditions, carolPayments);
 
     // 11: Carol makes an offer with her escrow receipt
-    const carolOfferResult = await carolAuction.makeOffer(carolEscrowReceipt);
+    const carolOfferResult = await carolAuction.bid(carolEscrowReceipt);
 
     t.equals(
       carolOfferResult,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
     // 12: Dave decides to bid for the one moola
@@ -206,11 +208,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     } = await zoe.escrow(daveConditions, davePayments);
 
     // 14: Dave makes an offer with his escrow receipt
-    const daveOfferResult = await daveAuction.makeOffer(daveEscrowReceipt);
+    const daveOfferResult = await daveAuction.bid(daveEscrowReceipt);
 
     t.equals(
       daveOfferResult,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
     const aliceResult = await alicePayoutP;
@@ -227,7 +229,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     // Alice didn't get any of what she put in
     t.equals(aliceResult[0].getBalance().extent, 0);
 
-    // 23: Alice deposits her winnings to ensure she can
+    // 23: Alice deposits her payout to ensure she can
     await aliceMoolaPurse.depositAll(aliceResult[0]);
     await aliceSimoleanPurse.depositAll(aliceResult[1]);
 
@@ -236,7 +238,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.deepEquals(bobResult[0].getBalance(), descOps[0].make(1));
     t.deepEquals(bobResult[1].getBalance(), descOps[1].make(4));
 
-    // 24: Bob deposits his winnings to ensure he can
+    // 24: Bob deposits his payout to ensure he can
     await bobMoolaPurse.depositAll(bobResult[0]);
     await bobSimoleanPurse.depositAll(bobResult[1]);
 
@@ -247,7 +249,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       carolConditions.offerDesc[1].assetDesc,
     );
 
-    // 25: Carol deposits her winnings to ensure she can
+    // 25: Carol deposits her payout to ensure she can
     await carolMoolaPurse.depositAll(carolResult[0]);
     await carolSimoleanPurse.depositAll(carolResult[1]);
 
@@ -258,11 +260,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       daveConditions.offerDesc[1].assetDesc,
     );
 
-    // 24: Dave deposits his winnings to ensure he can
+    // 24: Dave deposits his payout to ensure he can
     await daveMoolaPurse.depositAll(daveResult[0]);
     await daveSimoleanPurse.depositAll(daveResult[1]);
 
-    // Assert that the correct winnings were received.
+    // Assert that the correct payout were received.
     // Alice had 1 moola and 0 simoleans.
     // Bob had 0 moola and 11 simoleans.
     // Carol had 0 moola and 7 simoleans.
@@ -358,11 +360,13 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     );
 
     // 4: Alice initializes the auction with her escrow receipt
-    const aliceOfferResult = await aliceAuction.makeOffer(aliceEscrowReceipt);
+    const aliceOfferResult = await aliceAuction.startAuction(
+      aliceEscrowReceipt,
+    );
 
     t.equals(
       aliceOfferResult,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
     // 5: Alice cancels her offer, making the auction stop accepting
@@ -412,7 +416,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     // 8: Bob makes an offer with his escrow receipt
     t.rejects(
-      bobAuction.makeOffer(bobEscrowReceipt),
+      bobAuction.bid(bobEscrowReceipt),
       `The item up for auction has been withdrawn`,
     );
 
@@ -452,7 +456,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     // 11: Carol makes an offer with her escrow receipt
     t.rejects(
-      carolAuction.makeOffer(carolEscrowReceipt),
+      carolAuction.bid(carolEscrowReceipt),
       `The item up for auction has been withdrawn`,
     );
 
@@ -490,7 +494,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     // 14: Dave makes an offer with his escrow receipt
     t.rejects(
-      daveAuction.makeOffer(daveEscrowReceipt),
+      daveAuction.bid(daveEscrowReceipt),
       `The item up for auction has been withdrawn`,
     );
 
@@ -508,7 +512,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // Alice didn't get any of what she wanted
     t.equals(aliceResult[1].getBalance().extent, 0);
 
-    // 23: Alice deposits her winnings to ensure she can
+    // 23: Alice deposits her payout to ensure she can
     await aliceMoolaPurse.depositAll(aliceResult[0]);
     await aliceSimoleanPurse.depositAll(aliceResult[1]);
 
@@ -519,7 +523,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       bobConditions.offerDesc[1].assetDesc,
     );
 
-    // 24: Bob deposits his winnings to ensure he can
+    // 24: Bob deposits his payout to ensure he can
     await bobMoolaPurse.depositAll(bobResult[0]);
     await bobSimoleanPurse.depositAll(bobResult[1]);
 
@@ -530,7 +534,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       carolConditions.offerDesc[1].assetDesc,
     );
 
-    // 25: Carol deposits her winnings to ensure she can
+    // 25: Carol deposits her payout to ensure she can
     await carolMoolaPurse.depositAll(carolResult[0]);
     await carolSimoleanPurse.depositAll(carolResult[1]);
 
@@ -541,7 +545,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       daveConditions.offerDesc[1].assetDesc,
     );
 
-    // 24: Dave deposits his winnings to ensure he can
+    // 24: Dave deposits his payout to ensure he can
     await daveMoolaPurse.depositAll(daveResult[0]);
     await daveSimoleanPurse.depositAll(daveResult[1]);
 
