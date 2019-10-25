@@ -5,44 +5,44 @@ import { extentOpsLib } from '../../config/extentOpsLib';
 import { makePrivateName } from '../../../util/PrivateName';
 
 const makeState = () => {
-  const offerIdToExtents = makePrivateName();
-  const offerIdToAssays = makePrivateName();
-  const offerIdToOfferDesc = makePrivateName();
-  const offerIdToExitCondition = makePrivateName();
-  const offerIdToResult = makePrivateName();
-  const offerIdToInstanceId = makePrivateName();
+  const offerHandleToExtents = makePrivateName();
+  const offerHandleToAssays = makePrivateName();
+  const offerHandleToOfferDesc = makePrivateName();
+  const offerHandleToExitCondition = makePrivateName();
+  const offerHandleToResult = makePrivateName();
+  const offerHandleToInstanceHandle = makePrivateName();
 
   const activeOffers = new WeakSet();
 
-  const instanceIdToInstallationId = makePrivateName();
-  const instanceIdToInstance = makePrivateName();
-  const instanceIdToTerms = makePrivateName();
-  const instanceIdToAssays = makePrivateName();
+  const instanceHandleToInstallationHandle = makePrivateName();
+  const instanceHandleToInstance = makePrivateName();
+  const instanceHandleToTerms = makePrivateName();
+  const instanceHandleToAssays = makePrivateName();
 
   const assayToPurse = makePrivateName();
   const assayToExtentOps = makePrivateName();
   const assayToDescOps = makePrivateName();
   const assayToLabel = makePrivateName();
 
-  const installationIdToInstallation = makePrivateName();
-  const installationToInstallationId = makePrivateName();
+  const installationHandleToInstallation = makePrivateName();
+  const installationToInstallationHandle = makePrivateName();
 
   const readOnlyState = harden({
-    // per instance id
-    getTerms: instanceId => instanceIdToTerms.get(instanceId),
-    getAssays: instanceId => instanceIdToAssays.get(instanceId),
-
-    // per instanceId
-    getDescOpsArrayForInstanceId: instanceId =>
+    // per instanceHandle
+    getTerms: instanceHandle => instanceHandleToTerms.get(instanceHandle),
+    getAssays: instanceHandle => instanceHandleToAssays.get(instanceHandle),
+    getDescOpsArrayForInstanceHandle: instanceHandle =>
       readOnlyState
-        .getAssays(instanceId)
+        .getAssays(instanceHandle)
         .map(assay => assayToDescOps.get(assay)),
-    getExtentOpsArrayForInstanceId: instanceId =>
+    getExtentOpsArrayForInstanceHandle: instanceHandle =>
       readOnlyState
-        .getAssays(instanceId)
+        .getAssays(instanceHandle)
         .map(assay => assayToExtentOps.get(assay)),
-    getLabelsForInstanceId: instanceId =>
-      readOnlyState.getAssays(instanceId).map(assay => assayToLabel.get(assay)),
+    getLabelsForInstanceHandle: instanceHandle =>
+      readOnlyState
+        .getAssays(instanceHandle)
+        .map(assay => assayToLabel.get(assay)),
 
     // per assays array (this can be used before an offer is
     // associated with an instance)
@@ -52,21 +52,21 @@ const makeState = () => {
       assays.map(assay => assayToExtentOps.get(assay)),
     getLabelsForAssays: assays => assays.map(assay => assayToLabel.get(assay)),
 
-    // per offerIds array
-    getAssaysFor: offerIds =>
-      offerIds.map(offerId => offerIdToAssays.get(offerId)),
-    getExtentsFor: offerIds =>
-      offerIds.map(offerId => offerIdToExtents.get(offerId)),
-    getOfferDescsFor: offerIds =>
-      offerIds.map(offerId => offerIdToOfferDesc.get(offerId)),
-    getStatusFor: offerIds => {
+    // per offerHandles array
+    getAssaysFor: offerHandles =>
+      offerHandles.map(offerHandle => offerHandleToAssays.get(offerHandle)),
+    getExtentsFor: offerHandles =>
+      offerHandles.map(offerHandle => offerHandleToExtents.get(offerHandle)),
+    getOfferDescsFor: offerHandles =>
+      offerHandles.map(offerHandle => offerHandleToOfferDesc.get(offerHandle)),
+    getStatusFor: offerHandles => {
       const active = [];
       const inactive = [];
-      for (const offerId of offerIds) {
-        if (activeOffers.has(offerId)) {
-          active.push(offerId);
+      for (const offerHandle of offerHandles) {
+        if (activeOffers.has(offerHandle)) {
+          active.push(offerHandle);
         } else {
-          inactive.push(offerId);
+          inactive.push(offerHandle);
         }
       }
       return harden({
@@ -79,29 +79,32 @@ const makeState = () => {
   // The adminState should never leave Zoe and should be closely held
   const adminState = harden({
     addInstallation: installation => {
-      const installationId = harden({});
-      installationToInstallationId.init(installation, installationId);
-      installationIdToInstallation.init(installationId, installation);
-      return installationId;
+      const installationHandle = harden({});
+      installationToInstallationHandle.init(installation, installationHandle);
+      installationHandleToInstallation.init(installationHandle, installation);
+      return installationHandle;
     },
-    getInstallation: installationId =>
-      installationIdToInstallation.get(installationId),
+    getInstallation: installationHandle =>
+      installationHandleToInstallation.get(installationHandle),
     addInstance: async (
-      instanceId,
+      instanceHandle,
       instance,
-      installationId,
+      installationHandle,
       terms,
       assays,
     ) => {
-      instanceIdToInstance.init(instanceId, instance);
-      instanceIdToInstallationId.init(instanceId, installationId);
-      instanceIdToTerms.init(instanceId, terms);
-      instanceIdToAssays.init(instanceId, assays);
+      instanceHandleToInstance.init(instanceHandle, instance);
+      instanceHandleToInstallationHandle.init(
+        instanceHandle,
+        installationHandle,
+      );
+      instanceHandleToTerms.init(instanceHandle, terms);
+      instanceHandleToAssays.init(instanceHandle, assays);
       await Promise.all(assays.map(assay => adminState.recordAssay(assay)));
     },
-    getInstance: instanceId => instanceIdToInstance.get(instanceId),
-    getInstallationIdForInstanceId: instanceId =>
-      instanceIdToInstallationId.get(instanceId),
+    getInstance: instanceHandle => instanceHandleToInstance.get(instanceHandle),
+    getInstallationHandleForInstanceHandle: instanceHandle =>
+      instanceHandleToInstallationHandle.get(instanceHandle),
     getPurses: assays => assays.map(assay => assayToPurse.get(assay)),
     recordAssay: async assay => {
       if (!assayToPurse.has(assay)) {
@@ -130,48 +133,48 @@ const makeState = () => {
         extentOps: assayToExtentOps.get(assay),
       });
     },
-    recordOffer: (offerId, conditions, extents, assays, result) => {
+    recordOffer: (offerHandle, conditions, extents, assays, result) => {
       const { offerDesc, exit } = conditions;
-      offerIdToExtents.init(offerId, extents);
-      offerIdToAssays.init(offerId, assays);
-      offerIdToOfferDesc.init(offerId, offerDesc);
-      offerIdToExitCondition.init(offerId, exit);
-      offerIdToResult.init(offerId, result);
-      activeOffers.add(offerId);
+      offerHandleToExtents.init(offerHandle, extents);
+      offerHandleToAssays.init(offerHandle, assays);
+      offerHandleToOfferDesc.init(offerHandle, offerDesc);
+      offerHandleToExitCondition.init(offerHandle, exit);
+      offerHandleToResult.init(offerHandle, result);
+      activeOffers.add(offerHandle);
     },
-    replaceResult: (offerId, newResult) => {
-      offerIdToResult.set(offerId, newResult);
+    replaceResult: (offerHandle, newResult) => {
+      offerHandleToResult.set(offerHandle, newResult);
     },
-    recordUsedInInstance: (instanceId, offerId) =>
-      offerIdToInstanceId.init(offerId, instanceId),
-    getInstanceIdForOfferId: offerId => {
-      if (offerIdToInstanceId.has(offerId)) {
-        return offerIdToInstanceId.get(offerId);
+    recordUsedInInstance: (instanceHandle, offerHandle) =>
+      offerHandleToInstanceHandle.init(offerHandle, instanceHandle),
+    getInstanceHandleForOfferHandle: offerHandle => {
+      if (offerHandleToInstanceHandle.has(offerHandle)) {
+        return offerHandleToInstanceHandle.get(offerHandle);
       }
       return undefined;
     },
-    setExtentsFor: (offerIds, reallocation) =>
-      offerIds.map((offerId, i) =>
-        offerIdToExtents.set(offerId, reallocation[i]),
+    setExtentsFor: (offerHandles, reallocation) =>
+      offerHandles.map((offerHandle, i) =>
+        offerHandleToExtents.set(offerHandle, reallocation[i]),
       ),
-    getResultsFor: offerIds =>
-      offerIds.map(objId => offerIdToResult.get(objId)),
-    removeOffers: offerIds => {
+    getResultsFor: offerHandles =>
+      offerHandles.map(offerHandle => offerHandleToResult.get(offerHandle)),
+    removeOffers: offerHandles => {
       // has-side-effects
       // eslint-disable-next-line array-callback-return
-      offerIds.map(objId => {
-        offerIdToExtents.delete(objId);
-        offerIdToAssays.delete(objId);
-        offerIdToOfferDesc.delete(objId);
-        offerIdToExitCondition.delete(objId);
-        offerIdToResult.delete(objId);
-        if (offerIdToInstanceId.has(objId)) {
-          offerIdToInstanceId.delete(objId);
+      offerHandles.map(offerHandle => {
+        offerHandleToExtents.delete(offerHandle);
+        offerHandleToAssays.delete(offerHandle);
+        offerHandleToOfferDesc.delete(offerHandle);
+        offerHandleToExitCondition.delete(offerHandle);
+        offerHandleToResult.delete(offerHandle);
+        if (offerHandleToInstanceHandle.has(offerHandle)) {
+          offerHandleToInstanceHandle.delete(offerHandle);
         }
       });
     },
-    setOffersAsInactive: offerIds => {
-      offerIds.map(offerId => activeOffers.delete(offerId));
+    setOffersAsInactive: offerHandles => {
+      offerHandles.map(offerHandle => activeOffers.delete(offerHandle));
     },
   });
   return {

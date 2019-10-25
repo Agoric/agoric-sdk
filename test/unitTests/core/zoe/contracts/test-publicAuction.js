@@ -39,10 +39,10 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(publicAuctionRoot);
 
-    const installationId = zoe.install(source, moduleFormat);
+    const installationHandle = zoe.install(source, moduleFormat);
     const numBidsAllowed = 3;
-    const { instance: aliceAuction, instanceId } = await zoe.makeInstance(
-      installationId,
+    const { instance: aliceAuction, instanceHandle } = await zoe.makeInstance(
+      installationHandle,
       { assays, numBidsAllowed },
     );
 
@@ -65,7 +65,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const alicePayments = [aliceMoolaPayment, undefined];
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
-      payoff: alicePayoffP,
+      payout: alicePayoutP,
     } = await zoe.escrow(aliceConditions, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment. It's
@@ -82,16 +82,16 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       'The offer has been accepted. Once the contract has been completed, please check your winnings',
     );
 
-    // 5: Alice spreads the instanceId far and wide with
+    // 5: Alice spreads the instanceHandle far and wide with
     // instructions on how to use it and Bob decides he wants to
     // participate in the auction.
     const {
       instance: bobAuction,
-      installationId: bobInstallationId,
+      installationHandle: bobInstallationId,
       terms,
-    } = zoe.getInstance(instanceId);
+    } = zoe.getInstance(instanceHandle);
 
-    t.equals(bobInstallationId, installationId);
+    t.equals(bobInstallationId, installationHandle);
     t.deepEquals(terms.assays, assays);
 
     const bobConditions = harden({
@@ -114,7 +114,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     // 6: Bob escrows with zoe
     const {
       escrowReceipt: allegedBobEscrowReceipt,
-      payoff: bobPayoffP,
+      payout: bobPayoutP,
     } = await zoe.escrow(bobConditions, bobPayments);
 
     // 7: Bob does a claimAll on the escrowReceipt payment. This is
@@ -135,11 +135,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     const {
       instance: carolAuction,
-      installationId: carolInstallationId,
+      installationHandle: carolInstallationId,
       terms: carolTerms,
-    } = zoe.getInstance(instanceId);
+    } = zoe.getInstance(instanceHandle);
 
-    t.equals(carolInstallationId, installationId);
+    t.equals(carolInstallationId, installationHandle);
     t.deepEquals(carolTerms.assays, assays);
 
     const carolConditions = harden({
@@ -162,7 +162,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     // 10: Carol escrows with zoe
     const {
       escrowReceipt: carolEscrowReceipt,
-      payoff: carolPayoffP,
+      payout: carolPayoutP,
     } = await zoe.escrow(carolConditions, carolPayments);
 
     // 11: Carol makes an offer with her escrow receipt
@@ -176,11 +176,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     // 12: Dave decides to bid for the one moola
     const {
       instance: daveAuction,
-      installationId: daveInstallationId,
+      installationHandle: daveInstallationId,
       terms: daveTerms,
-    } = zoe.getInstance(instanceId);
+    } = zoe.getInstance(instanceHandle);
 
-    t.equals(daveInstallationId, installationId);
+    t.equals(daveInstallationId, installationHandle);
     t.deepEquals(daveTerms.assays, assays);
     const daveConditions = harden({
       offerDesc: [
@@ -202,7 +202,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     // 13: Dave escrows with zoe
     const {
       escrowReceipt: daveEscrowReceipt,
-      payoff: davePayoffP,
+      payout: davePayoutP,
     } = await zoe.escrow(daveConditions, davePayments);
 
     // 14: Dave makes an offer with his escrow receipt
@@ -213,10 +213,10 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       'The offer has been accepted. Once the contract has been completed, please check your winnings',
     );
 
-    const aliceResult = await alicePayoffP;
-    const bobResult = await bobPayoffP;
-    const carolResult = await carolPayoffP;
-    const daveResult = await davePayoffP;
+    const aliceResult = await alicePayoutP;
+    const bobResult = await bobPayoutP;
+    const carolResult = await carolPayoutP;
+    const daveResult = await davePayoutP;
 
     // Alice (the creator of the auction) gets back the second highest bid
     t.deepEquals(
@@ -321,10 +321,10 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(publicAuctionRoot);
 
-    const installationId = zoe.install(source, moduleFormat);
+    const installationHandle = zoe.install(source, moduleFormat);
     const numBidsAllowed = 3;
-    const { instance: aliceAuction, instanceId } = await zoe.makeInstance(
-      installationId,
+    const { instance: aliceAuction, instanceHandle } = await zoe.makeInstance(
+      installationHandle,
       { assays, numBidsAllowed },
     );
 
@@ -347,7 +347,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const alicePayments = [aliceMoolaPayment, undefined];
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
-      payoff: alicePayoffP,
+      payout: alicePayoutP,
       cancelObj,
     } = await zoe.escrow(aliceConditions, alicePayments);
 
@@ -369,16 +369,16 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // offers
     cancelObj.cancel();
 
-    // 5: Alice spreads the instanceId far and wide with
+    // 5: Alice spreads the instanceHandle far and wide with
     // instructions on how to use it and Bob decides he wants to
     // participate in the auction.
     const {
       instance: bobAuction,
-      installationId: bobInstallationId,
+      installationHandle: bobInstallationId,
       terms,
-    } = zoe.getInstance(instanceId);
+    } = zoe.getInstance(instanceHandle);
 
-    t.equals(bobInstallationId, installationId);
+    t.equals(bobInstallationId, installationHandle);
     t.deepEquals(terms.assays, assays);
 
     const bobConditions = harden({
@@ -401,7 +401,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // 6: Bob escrows with zoe
     const {
       escrowReceipt: allegedBobEscrowReceipt,
-      payoff: bobPayoffP,
+      payout: bobPayoutP,
     } = await zoe.escrow(bobConditions, bobPayments);
 
     // 7: Bob does a claimAll on the escrowReceipt payment. This is
@@ -420,11 +420,11 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     const {
       instance: carolAuction,
-      installationId: carolInstallationId,
+      installationHandle: carolInstallationId,
       terms: carolTerms,
-    } = zoe.getInstance(instanceId);
+    } = zoe.getInstance(instanceHandle);
 
-    t.equals(carolInstallationId, installationId);
+    t.equals(carolInstallationId, installationHandle);
     t.deepEquals(carolTerms.assays, assays);
 
     const carolConditions = harden({
@@ -447,7 +447,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // 10: Carol escrows with zoe
     const {
       escrowReceipt: carolEscrowReceipt,
-      payoff: carolPayoffP,
+      payout: carolPayoutP,
     } = await zoe.escrow(carolConditions, carolPayments);
 
     // 11: Carol makes an offer with her escrow receipt
@@ -459,11 +459,11 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // 12: Dave decides to bid for the one moola
     const {
       instance: daveAuction,
-      installationId: daveInstallationId,
+      installationHandle: daveInstallationId,
       terms: daveTerms,
-    } = zoe.getInstance(instanceId);
+    } = zoe.getInstance(instanceHandle);
 
-    t.equals(daveInstallationId, installationId);
+    t.equals(daveInstallationId, installationHandle);
     t.deepEquals(daveTerms.assays, assays);
     const daveConditions = harden({
       offerDesc: [
@@ -485,7 +485,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // 13: Dave escrows with zoe
     const {
       escrowReceipt: daveEscrowReceipt,
-      payoff: davePayoffP,
+      payout: davePayoutP,
     } = await zoe.escrow(daveConditions, davePayments);
 
     // 14: Dave makes an offer with his escrow receipt
@@ -494,10 +494,10 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       `The item up for auction has been withdrawn`,
     );
 
-    const aliceResult = await alicePayoffP;
-    const bobResult = await bobPayoffP;
-    const carolResult = await carolPayoffP;
-    const daveResult = await davePayoffP;
+    const aliceResult = await alicePayoutP;
+    const bobResult = await bobPayoutP;
+    const carolResult = await carolPayoutP;
+    const daveResult = await davePayoutP;
 
     // Alice (the creator of the auction) gets back what she put in
     t.deepEquals(

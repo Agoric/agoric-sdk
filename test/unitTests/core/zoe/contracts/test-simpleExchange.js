@@ -16,7 +16,7 @@ test('zoe - simpleExchange', async t => {
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(simpleExchangeRoot);
 
-    const installationId = zoe.install(source, moduleFormat);
+    const installationHandle = zoe.install(source, moduleFormat);
 
     // Setup Alice
     const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
@@ -29,8 +29,8 @@ test('zoe - simpleExchange', async t => {
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
     // 1: Alice creates a simpleExchange instance
-    const { instance: aliceExchange, instanceId } = await zoe.makeInstance(
-      installationId,
+    const { instance: aliceExchange, instanceHandle } = await zoe.makeInstance(
+      installationHandle,
       { assays },
     );
 
@@ -55,7 +55,7 @@ test('zoe - simpleExchange', async t => {
     const alicePayments = [aliceMoolaPayment, undefined];
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
-      payoff: alicePayoffP,
+      payout: alicePayoutP,
     } = await zoe.escrow(aliceSellOrderConditions, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment. It's
@@ -67,16 +67,16 @@ test('zoe - simpleExchange', async t => {
     // 4: Alice adds her sell order to the exchange
     const aliceOfferResult = await aliceExchange.addOrder(aliceEscrowReceipt);
 
-    // 5: Alice spreads the instanceId far and wide with instructions
+    // 5: Alice spreads the instanceHandle far and wide with instructions
     // on how to use it and Bob decides he wants to join.
 
     const {
       instance: bobExchange,
-      installationId: bobInstallationId,
+      installationHandle: bobInstallationId,
       terms: bobTerms,
-    } = zoe.getInstance(instanceId);
+    } = zoe.getInstance(instanceHandle);
 
-    t.equals(bobInstallationId, installationId);
+    t.equals(bobInstallationId, installationHandle);
     t.deepEquals(bobTerms.assays, assays);
 
     // Bob creates a buy order, saying that he wants exactly 3 moola,
@@ -102,7 +102,7 @@ test('zoe - simpleExchange', async t => {
     // 6: Bob escrows with zoe
     const {
       escrowReceipt: allegedBobEscrowReceipt,
-      payoff: bobPayoffP,
+      payout: bobPayoutP,
     } = await zoe.escrow(bobBuyOrderConditions, bobPayments);
 
     // 7: Bob does a claimAll on the escrowReceipt payment. This is
@@ -122,27 +122,27 @@ test('zoe - simpleExchange', async t => {
       aliceOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your winnings',
     );
-    const bobPayoff = await bobPayoffP;
-    const [aliceMoolaPayoff, aliceSimoleanPayoff] = await alicePayoffP;
+    const bobPayout = await bobPayoutP;
+    const [aliceMoolaPayout, aliceSimoleanPayout] = await alicePayoutP;
 
     // Alice gets paid at least what she wanted
     t.ok(
       descOps[1].includes(
-        aliceSimoleanPayoff.getBalance(),
+        aliceSimoleanPayout.getBalance(),
         aliceSellOrderConditions.offerDesc[1].assetDesc,
       ),
     );
 
     // Alice sold all of her moola
-    t.equals(aliceMoolaPayoff.getBalance().extent, 0);
+    t.equals(aliceMoolaPayout.getBalance().extent, 0);
 
     // 13: Alice deposits her winnings to ensure she can
-    await aliceMoolaPurse.depositAll(aliceMoolaPayoff);
-    await aliceSimoleanPurse.depositAll(aliceSimoleanPayoff);
+    await aliceMoolaPurse.depositAll(aliceMoolaPayout);
+    await aliceSimoleanPurse.depositAll(aliceSimoleanPayout);
 
     // 14: Bob deposits his original payments to ensure he can
-    await bobMoolaPurse.depositAll(bobPayoff[0]);
-    await bobSimoleanPurse.depositAll(bobPayoff[1]);
+    await bobMoolaPurse.depositAll(bobPayout[0]);
+    await bobSimoleanPurse.depositAll(bobPayout[1]);
 
     // Assert that the correct winnings were received.
     // Alice had 3 moola and 0 simoleans.

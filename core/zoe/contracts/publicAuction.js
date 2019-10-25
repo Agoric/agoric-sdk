@@ -3,8 +3,8 @@ import harden from '@agoric/harden';
 export const makeContract = harden((zoe, terms) => {
   const numBidsAllowed = terms.numBidsAllowed || 3;
 
-  let creatorOfferId;
-  const allBidIds = [];
+  let creatorOfferHandle;
+  const allBidHandles = [];
 
   let bidExtentOps;
   let itemExtentOps;
@@ -28,7 +28,7 @@ export const makeContract = harden((zoe, terms) => {
     );
 
   const getBidExtent = offerDesc => offerDesc[BID_INDEX].assetDesc.extent;
-  const canAcceptBid = allBidIds.length < numBidsAllowed;
+  const canAcceptBid = allBidHandles.length < numBidsAllowed;
 
   const isValidBidOfferDesc = (creatorOfferDesc, newOfferDesc) =>
     canAcceptBid &&
@@ -38,18 +38,18 @@ export const makeContract = harden((zoe, terms) => {
       getBidExtent(creatorOfferDesc),
     );
 
-  const findWinnerAndPrice = (bidOfferIds, bids) => {
+  const findWinnerAndPrice = (bidOfferHandles, bids) => {
     let highestBid = bidExtentOps.empty();
     let secondHighestBid = bidExtentOps.empty();
-    let highestBidOfferId;
+    let highestBidOfferHandle;
     // eslint-disable-next-line array-callback-return
-    bidOfferIds.map((offerId, i) => {
+    bidOfferHandles.map((offerHandle, i) => {
       const bid = bids[i];
       // If the bid is greater than the highestBid, it's the new highestBid
       if (bidExtentOps.includes(bid, highestBid)) {
         secondHighestBid = highestBid;
         highestBid = bid;
-        highestBidOfferId = offerId;
+        highestBidOfferHandle = offerHandle;
       } else if (bidExtentOps.includes(bid, secondHighestBid)) {
         // If the bid is not greater than the highest bid, but is greater
         // than the second highest bid, it is the new second highest bid.
@@ -57,19 +57,21 @@ export const makeContract = harden((zoe, terms) => {
       }
     });
     return {
-      winnerOfferId: highestBidOfferId,
+      winnerOfferHandle: highestBidOfferHandle,
       winnerBid: highestBid,
       price: secondHighestBid,
     };
   };
 
   const reallocate = () => {
-    const { active: activeBidIds } = zoe.getStatusFor(harden(allBidIds));
+    const { active: activeBidHandles } = zoe.getStatusFor(
+      harden(allBidHandles),
+    );
     const bids = zoe
-      .getExtentsFor(activeBidIds)
+      .getExtentsFor(activeBidHandles)
       .map(extents => extents[BID_INDEX]);
-    const { winnerOfferId, winnerBid, price } = findWinnerAndPrice(
-      activeBidIds,
+    const { winnerOfferHandle, winnerBid, price } = findWinnerAndPrice(
+      activeBidHandles,
       bids,
     );
 
@@ -83,41 +85,48 @@ export const makeContract = harden((zoe, terms) => {
     // Everyone else gets a refund so their extents remain the
     // same.
     zoe.reallocate(
-      harden([creatorOfferId, winnerOfferId]),
+      harden([creatorOfferHandle, winnerOfferHandle]),
       harden([newCreatorExtents, newWinnerExtents]),
     );
-    const allOfferIds = harden([creatorOfferId, ...activeBidIds]);
-    zoe.complete(allOfferIds);
+    const allOfferHandles = harden([creatorOfferHandle, ...activeBidHandles]);
+    zoe.complete(allOfferHandles);
   };
 
-  const ejectPlayer = (offerId, message) => {
-    zoe.complete(harden([offerId]));
+  const ejectPlayer = (offerHandle, message) => {
+    zoe.complete(harden([offerHandle]));
     return Promise.reject(new Error(`${message}`));
   };
 
   const publicAuction = harden({
     makeOffer: async escrowReceipt => {
-      const { id, conditions } = await zoe.burnEscrowReceipt(escrowReceipt);
+      const { offerHandle, conditions } = await zoe.burnEscrowReceipt(
+        escrowReceipt,
+      );
       const { offerDesc: offerMadeDesc } = conditions;
 
       const offerAcceptedMessage = `The offer has been accepted. Once the contract has been completed, please check your winnings`;
 
       if (isValidCreatorOfferDesc(offerMadeDesc)) {
-        creatorOfferId = id;
+        creatorOfferHandle = offerHandle;
         [itemExtentOps, bidExtentOps] = zoe.getExtentOpsArray();
         itemExtentUpForAuction = offerMadeDesc[ITEM_INDEX].assetDesc.extent;
         return offerAcceptedMessage;
       }
 
-      const { inactive } = zoe.getStatusFor(harden([creatorOfferId]));
+      const { inactive } = zoe.getStatusFor(harden([creatorOfferHandle]));
       if (inactive.length > 0) {
-        return ejectPlayer(id, 'The item up for auction has been withdrawn');
+        return ejectPlayer(
+          offerHandle,
+          'The item up for auction has been withdrawn',
+        );
       }
 
-      const [creatorOfferDesc] = zoe.getOfferDescsFor(harden([creatorOfferId]));
+      const [creatorOfferDesc] = zoe.getOfferDescsFor(
+        harden([creatorOfferHandle]),
+      );
       if (isValidBidOfferDesc(creatorOfferDesc, offerMadeDesc)) {
-        allBidIds.push(id);
-        if (allBidIds.length >= numBidsAllowed) {
+        allBidHandles.push(offerHandle);
+        if (allBidHandles.length >= numBidsAllowed) {
           reallocate();
         }
         return offerAcceptedMessage;

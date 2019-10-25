@@ -29,7 +29,7 @@ const setupBasicMints = () => {
   });
 };
 
-const makeVats = (E, log, vats, zoe, installationId, startingExtents) => {
+const makeVats = (E, log, vats, zoe, installationHandle, startingExtents) => {
   const { mints, assays } = setupBasicMints();
   const [aliceExtents, bobExtents, carolExtents, daveExtents] = startingExtents;
   // Setup Alice
@@ -43,7 +43,7 @@ const makeVats = (E, log, vats, zoe, installationId, startingExtents) => {
     zoe,
     aliceMoolaPurse,
     aliceSimoleanPurse,
-    installationId,
+    installationHandle,
   );
 
   // Setup Bob
@@ -55,7 +55,7 @@ const makeVats = (E, log, vats, zoe, installationId, startingExtents) => {
     zoe,
     bobMoolaPurse,
     bobSimoleanPurse,
-    installationId,
+    installationHandle,
   );
 
   const result = {
@@ -74,7 +74,7 @@ const makeVats = (E, log, vats, zoe, installationId, startingExtents) => {
       zoe,
       carolMoolaPurse,
       carolSimoleanPurse,
-      installationId,
+      installationHandle,
     );
     result.carolP = carolP;
   }
@@ -90,7 +90,7 @@ const makeVats = (E, log, vats, zoe, installationId, startingExtents) => {
       zoe,
       daveMoolaPurse,
       daveSimoleanPurse,
-      installationId,
+      installationHandle,
     );
     result.daveP = daveP;
   }

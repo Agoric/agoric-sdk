@@ -174,12 +174,14 @@ test('zoe - publicAuction - valid inputs - no SES', async t => {
 
 const expectedPublicSwapOkLog = [
   '=> alice, bob, carol and dave are set up',
-  'The offer has been accepted. Once the contract has been completed, please check your winnings',
-  'The offer has been accepted. Once the contract has been completed, please check your winnings',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"label":{"assay":{},"description":"moola"},"extent":3}',
   'bobSimoleanPurse;: balance {"label":{"assay":{},"description":"simoleans"},"extent":0}',
   'carolMoolaPurse: balance {"label":{"assay":{},"description":"moola"},"extent":0}',
   'carolSimoleanPurse;: balance {"label":{"assay":{},"description":"simoleans"},"extent":7}',
+  'aliceMoolaPurse: balance {"label":{"assay":{},"description":"moola"},"extent":0}',
+  'aliceSimoleanPurse;: balance {"label":{"assay":{},"description":"simoleans"},"extent":0}',
 ];
 test('zoe - publicSwap - valid inputs - with SES', async t => {
   try {

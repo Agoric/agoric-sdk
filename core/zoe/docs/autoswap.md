@@ -13,9 +13,9 @@ Based on UniSwap.
 
 ```js
 const tokenAssays = [moolaAssay, simoleanAssay];
-const installationId = zoe.install(autoswapSrcs);
+const installationHandle = zoe.install(autoswapSrcs);
 const { instance: autoswap } = zoe.makeInstance(
-  installationId,
+  installationHandle,
   { assays },
 );
 ```
@@ -54,7 +54,7 @@ const alicePayments = [aliceMoolaPayment, aliceSimoleanPayment, undefined];
 
 const {
   escrowReceipt: allegedAliceEscrowReceipt,
-  payoff,
+  payout,
 } = await zoe.escrow(aliceOffer, alicePayments);
 
 ```
@@ -88,7 +88,7 @@ const bobMoolaForSimPayments = [bobMoolaPayment, undefined, undefined];
 
 const {
   escrowReceipt: allegedBobEscrowReceipt,
-  payoff: bobPayoffP,
+  payout: bobPayoutP,
 } = await zoe.escrow(
   bobMoolaForSimOfferDesc,
   bobMoolaForSimPayments,
@@ -101,8 +101,8 @@ Then Bob uses this escrow receipt to make an offer.
 const offerOk = await autoswap.makeOffer(bobEscrowReceipt);
 ```
 
-Now Bob can get his payoff:
+Now Bob can get his payout:
 
 ```js
-const [bobMoolaPayoff, bobSimoleanPayoff, ...] = await bobPayoffP;
+const [bobMoolaPayout, bobSimoleanPayout, ...] = await bobPayoutP;
 ```

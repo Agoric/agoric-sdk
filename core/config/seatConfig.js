@@ -6,12 +6,12 @@ import { insist } from '../../util/insist';
 
 const insistSeat = seat => {
   const properties = Object.getOwnPropertyNames(seat);
-  insist(properties.includes('id'))`must include 'id'`;
+  insist(properties.includes('offerHandle'))`must include 'offerHandle'`;
   insist(
-    passStyleOf(seat.id) === 'presence' &&
-      Object.entries(seat.id).length === 0 &&
-      seat.id.constructor === Object,
-  )`id should be an empty object`;
+    passStyleOf(seat.offerHandle) === 'presence' &&
+      Object.entries(seat.offerHandle).length === 0 &&
+      seat.offerHandle.constructor === Object,
+  )`offerHandle should be an empty object`;
   insist(passStyleOf(seat) === 'copyRecord')`seat should be a record`;
   return seat;
 };

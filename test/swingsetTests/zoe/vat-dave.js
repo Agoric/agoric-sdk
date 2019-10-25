@@ -13,16 +13,16 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
   };
 
   return harden({
-    doPublicAuction: async instanceId => {
+    doPublicAuction: async instanceHandle => {
       const moolaAssay = await E(moolaPurseP).getAssay();
       const simoleanAssay = await E(simoleanPurseP).getAssay();
 
       const assays = harden([moolaAssay, simoleanAssay]);
-      const { instance: auction, installationId, terms } = await E(
+      const { instance: auction, installationHandle, terms } = await E(
         zoe,
-      ).getInstance(instanceId);
+      ).getInstance(instanceHandle);
 
-      insist(installationId === installId)`wrong installation`;
+      insist(installationHandle === installId)`wrong installation`;
       insist(sameStructure(assays, terms.assays))`assays were not as expected`;
 
       const conditions = harden({
@@ -43,7 +43,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const simoleanPayment = await E(simoleanPurseP).withdrawAll();
       const offerPayments = [undefined, simoleanPayment];
 
-      const { escrowReceipt, payoff: payoffP } = await E(zoe).escrow(
+      const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
         conditions,
         offerPayments,
       );
@@ -52,7 +52,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
 
       log(offerResult);
 
-      const daveResult = await payoffP;
+      const daveResult = await payoutP;
 
       await E(moolaPurseP).depositAll(daveResult[0]);
       await E(simoleanPurseP).depositAll(daveResult[1]);

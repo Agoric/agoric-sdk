@@ -12,11 +12,11 @@ import harden from '@agoric/harden';
 // partial fills of orders.
 
 export const makeContract = harden((zoe, terms) => {
-  const sellOfferIds = [];
-  const buyOfferIds = [];
+  const sellOfferHandles = [];
+  const buyOfferHandles = [];
 
-  const getActiveOfferDescs = offerIds => {
-    const { active } = zoe.getStatusFor(offerIds);
+  const getActiveOfferDescs = offerHandles => {
+    const { active } = zoe.getStatusFor(offerHandles);
     return zoe.getOfferDescsFor(active);
   };
 
@@ -32,10 +32,10 @@ export const makeContract = harden((zoe, terms) => {
     return assetEqual && priceOk;
   };
 
-  const reallocate = (extentOpsArray, sellOfferId, buyOfferId) => {
-    const offerIds = harden([sellOfferId, buyOfferId]);
+  const reallocate = (extentOpsArray, sellOfferHandle, buyOfferHandle) => {
+    const offerHandles = harden([sellOfferHandle, buyOfferHandle]);
 
-    const [sellOfferExtents, buyOfferExtents] = zoe.getExtentsFor(offerIds);
+    const [sellOfferExtents, buyOfferExtents] = zoe.getExtentsFor(offerHandles);
 
     // If there is a difference in what the seller will accept at
     // least and what the buyer will pay at most, we will award
@@ -46,8 +46,11 @@ export const makeContract = harden((zoe, terms) => {
     const newSellOrderExtents = [extentOpsArray[0].empty(), buyOfferExtents[1]];
     const newBuyOrderExtents = [sellOfferExtents[0], extentOpsArray[0].empty()];
 
-    zoe.reallocate(offerIds, harden([newSellOrderExtents, newBuyOrderExtents]));
-    zoe.complete(offerIds);
+    zoe.reallocate(
+      offerHandles,
+      harden([newSellOrderExtents, newBuyOrderExtents]),
+    );
+    zoe.complete(offerHandles);
   };
 
   // TODO: check assays as well
@@ -63,42 +66,44 @@ export const makeContract = harden((zoe, terms) => {
 
   const simpleExchange = harden({
     addOrder: async escrowReceipt => {
-      const { id, conditions } = await zoe.burnEscrowReceipt(escrowReceipt);
+      const { offerHandle, conditions } = await zoe.burnEscrowReceipt(
+        escrowReceipt,
+      );
       const { offerDesc: offerMadeDesc } = conditions;
       const extentOpsArray = zoe.getExtentOpsArray();
       const offerAcceptedMessage = `The offer has been accepted. Once the contract has been completed, please check your winnings`;
 
       if (isValidSellOrder(offerMadeDesc)) {
         // Save the valid offer
-        sellOfferIds.push(id);
+        sellOfferHandles.push(offerHandle);
 
         // Try to match
-        const buyOffers = getActiveOfferDescs(buyOfferIds); // same order as buyOfferIds
+        const buyOffers = getActiveOfferDescs(buyOfferHandles); // same order as buyOfferHandles
         // eslint-disable-next-line array-callback-return
         buyOffers.map((buyOffer, i) => {
           if (canMatch(extentOpsArray, offerMadeDesc, buyOffer)) {
-            reallocate(extentOpsArray, id, buyOfferIds[i]);
+            reallocate(extentOpsArray, offerHandle, buyOfferHandles[i]);
           }
         });
         return offerAcceptedMessage;
       }
 
       if (isValidBuyOrder(offerMadeDesc)) {
-        buyOfferIds.push(id);
+        buyOfferHandles.push(offerHandle);
 
         // Try to match
-        const sellOffers = getActiveOfferDescs(sellOfferIds); // same order as sellOfferIds
+        const sellOffers = getActiveOfferDescs(sellOfferHandles); // same order as sellOfferHandles
         // eslint-disable-next-line array-callback-return
         sellOffers.map((sellOffer, i) => {
           if (canMatch(extentOpsArray, sellOffer, offerMadeDesc)) {
-            reallocate(extentOpsArray, sellOfferIds[i], id);
+            reallocate(extentOpsArray, sellOfferHandles[i], offerHandle);
           }
         });
         return offerAcceptedMessage;
       }
 
       // Eject because the offer must be invalid
-      zoe.complete(harden([id]));
+      zoe.complete(harden([offerHandle]));
       return Promise.reject(
         new Error(`The offer was invalid. Please check your refund.`),
       );

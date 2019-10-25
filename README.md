@@ -8,6 +8,21 @@ assets in JavaScript. All kinds of digital assets can be easily
 created, but importantly, they can be transferred in exactly the same
 ways, with exactly the same security properties. 
 
+Learn more about [ERTP fundamentals like mints, assays, purses and payments](#a-quick-tutorial).
+
+ERTP is also home to Zoe, our smart contract framework. Zoe enforces
+what we call "offer-safety". Offer-safety means that a user of a smart
+contract is guaranteed to either get what they wanted or get a refund.
+Smart contracts built on Zoe can't steal a user's money, even if they
+are buggy or malicious.
+
+For smart contract developers, Zoe makes things easier. Zoe handles
+escrowing and payouts and checks invariants like offer-safety and
+conservation of supply, meaning that developers can just focus on the
+particular logic of their contract. 
+
+Learn more about how to write a smart contract on [Zoe](core/zoe/docs/zoe.md).
+
 ## A quick tutorial
 
 Let's look at an example. In ERTP, all digital assets, including fungible and
@@ -47,7 +62,7 @@ Now let's send the payment to Alice as message:
 alice.receivePayment(paymentForAlice);
 ```
 
-This may seem strange, but ERTP is built on top of [an
+This may seem strange at first, but ERTP is built on top of [an
 infrastructure](https://github.com/Agoric/SwingSet) in which
 everything is an object. In this example, we have a reference to the
 object `alice`, and can call her `receivePayment` to ask her to
@@ -60,7 +75,7 @@ How does Alice know that she got paid real money? She could have been
 sent fake money, or she could have been sent money that was
 [double-spent](https://en.wikipedia.org/wiki/Double-spending). 
 
-When alice receives an alleged payment, she can call a method to know
+When Alice receives an alleged payment, she can call a method to know
 that the alleged payment was valid, and get a new payment that is
 exclusively hers:
 
@@ -97,47 +112,14 @@ concepts:
   infrastructure](https://github.com/Agoric/SwingSet) creates the vats
   and makes communication between vats possible. 
 
-* __E() and infix bang (!)__: Instead of `obj.foo()`, we can write
-  `E(obj).foo()` or the syntactic sugar, `obj!foo()` and get a promise
+* __E() and tildot (~.)__: Instead of `obj.foo()`, we can write
+  `E(obj).foo()` or the syntactic sugar, `obj~.foo()` and get a promise
   for the result. The syntax means "deliver the message foo() to the
   actual object asynchronously, in its own turn, wherever and whenever
-  it is, even if it is local." Using E or !, you can talk
-  asynchronously to local and remote objects in exactly the same way,
-  which is really cool!
+  it is, even if it is local." Using E or ~., you can talk
+  asynchronously to local and remote objects in exactly the same way.
 
 * __Presences__: Presences are our name for the local object that
   stands in for the remote object. If `obj` is a presence of a remote
   object, we can send messages to the remote object by using
-  "!" on `obj`, as in the above example. 
-
-## More ERTP resources
-
-Mark Miller explained ERTP on Oct 10, 2018 in his [Programming Secure Smart Contracts][watch] presentation
-during San Francisco Blockchain Week at a
-[SF Cryptocurrency Devs meetup](https://www.meetup.com/SF-Cryptocurrency-Devs/events/253457222/).
-
-[![miller-sfbw-erights](https://user-images.githubusercontent.com/150986/59150095-b8a65200-89e3-11e9-9b5d-43a9be8a3c90.png)][watch]
-
-## Install and Test
-
-Note node >= 11.0 is required.
-
-```
-$ npm install
-$ npm test
-```
-
-## Higher Order Smart Contracts
-
-The `contractHost` tests detail the composition of a covered call option
-with an escrow exchange contract.
-
-```
-npx tape -r esm test/swingsetTests/contractHost/test-contractHost.js
-```
-
-For more examples, please see the code for Alice and Bob in `test/swingsetTests/contractHost/`. 
-
-![higher-order-smart-contract-covered-call-escrow](https://user-images.githubusercontent.com/150986/59150181-f3f55080-89e4-11e9-8046-fcb9c10831b1.png)
-
-[watch]: https://www.youtube.com/watch?v=YXUqfgdDbr8
+  "~." on `obj`, as in the above example. 

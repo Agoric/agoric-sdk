@@ -34,15 +34,15 @@ test('autoSwap with valid offers', async t => {
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(autoswapRoot);
 
-    const installationId = zoe.install(source, moduleFormat);
+    const installationHandle = zoe.install(source, moduleFormat);
     const terms = {
       assays,
     };
     const {
       instance: aliceAutoswap,
-      instanceId,
+      instanceHandle,
       terms: aliceTerms,
-    } = await zoe.makeInstance(installationId, terms);
+    } = await zoe.makeInstance(installationHandle, terms);
     const liquidityAssay = aliceAutoswap.getLiquidityAssay();
     const allAssays = [...aliceTerms.assays, liquidityAssay];
     t.deepEquals([...aliceTerms.assays, liquidityAssay], allAssays);
@@ -73,7 +73,7 @@ test('autoSwap with valid offers', async t => {
 
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
-      payoff: aliceAddLiquidityPayoffP,
+      payout: aliceAddLiquidityPayoutP,
     } = await zoe.escrow(aliceConditions, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment
@@ -85,7 +85,7 @@ test('autoSwap with valid offers', async t => {
 
     t.equals(liquidityOk, 'Added liquidity.');
 
-    const liquidityPayments = await aliceAddLiquidityPayoffP;
+    const liquidityPayments = await aliceAddLiquidityPayoutP;
 
     t.deepEquals(
       liquidityPayments[2].getBalance(),
@@ -93,13 +93,13 @@ test('autoSwap with valid offers', async t => {
     );
     t.deepEquals(aliceAutoswap.getPoolExtents(), [10, 5, 0]);
 
-    // 4: Imagine that Alice sends bob the autoswap instanceId
+    // 4: Imagine that Alice sends bob the autoswap instanceHandle
     const {
       instance: bobAutoswap,
-      installationId: bobInstallationId,
+      installationHandle: bobInstallationId,
       terms: bobTerms,
-    } = zoe.getInstance(instanceId);
-    t.equals(bobInstallationId, installationId);
+    } = zoe.getInstance(instanceHandle);
+    t.equals(bobInstallationId, installationHandle);
 
     // 5: Bob looks up the price of 2 moola in simoleans
     const assetDesc2Moola = bobTerms.assays[0].makeAssetDesc(2);
@@ -135,7 +135,7 @@ test('autoSwap with valid offers', async t => {
 
     const {
       escrowReceipt: allegedBobEscrowReceipt,
-      payoff: bobPayoffP,
+      payout: bobPayoutP,
     } = await zoe.escrow(bobMoolaForSimConditions, bobMoolaForSimPayments);
 
     // 3: Bob does a claimAll on the escrowReceipt payment
@@ -147,10 +147,10 @@ test('autoSwap with valid offers', async t => {
     const offerOk = await bobAutoswap.makeOffer(bobEscrowReceipt);
     t.equal(offerOk, 'Swap successfully completed.');
 
-    const bobPayoff = await bobPayoffP;
+    const bobPayout = await bobPayoutP;
 
-    t.deepEqual(bobPayoff[0].getBalance(), allAssays[0].makeAssetDesc(0));
-    t.deepEqual(bobPayoff[1].getBalance(), allAssays[1].makeAssetDesc(1));
+    t.deepEqual(bobPayout[0].getBalance(), allAssays[0].makeAssetDesc(0));
+    t.deepEqual(bobPayout[1].getBalance(), allAssays[1].makeAssetDesc(1));
     t.deepEquals(bobAutoswap.getPoolExtents(), [12, 4, 0]);
 
     // 7: Bob looks up the price of 3 simoleans
@@ -183,7 +183,7 @@ test('autoSwap with valid offers', async t => {
 
     const {
       escrowReceipt: bobsSimsForMoolaEscrowReceipt,
-      payoff: bobSimsForMoolaPayoffP,
+      payout: bobSimsForMoolaPayoutP,
     } = await zoe.escrow(bobSimsForMoolaConditions, simsForMoolaPayments);
 
     const simsForMoolaOk = await bobAutoswap.makeOffer(
@@ -191,7 +191,7 @@ test('autoSwap with valid offers', async t => {
     );
     t.equal(simsForMoolaOk, 'Swap successfully completed.');
 
-    const bobsNewMoolaPayment = await bobSimsForMoolaPayoffP;
+    const bobsNewMoolaPayment = await bobSimsForMoolaPayoutP;
 
     t.deepEqual(
       bobsNewMoolaPayment[0].getBalance(),
@@ -227,7 +227,7 @@ test('autoSwap with valid offers', async t => {
 
     const {
       escrowReceipt: aliceRemoveLiquidityEscrowReceipt,
-      payoff: aliceRemoveLiquidityPayoffP,
+      payout: aliceRemoveLiquidityPayoutP,
     } = await zoe.escrow(
       aliceRemoveLiquidityOfferDesc,
       harden([undefined, undefined, liquidityPayments[2]]),
@@ -238,18 +238,18 @@ test('autoSwap with valid offers', async t => {
     );
     t.equals(removeLiquidityResult, 'Liquidity successfully removed.');
 
-    const alicePayoffPayments = await aliceRemoveLiquidityPayoffP;
+    const alicePayoutPayments = await aliceRemoveLiquidityPayoutP;
 
     t.deepEquals(
-      alicePayoffPayments[0].getBalance(),
+      alicePayoutPayments[0].getBalance(),
       allAssays[0].makeAssetDesc(6),
     );
     t.deepEquals(
-      alicePayoffPayments[1].getBalance(),
+      alicePayoutPayments[1].getBalance(),
       allAssays[1].makeAssetDesc(7),
     );
     t.deepEquals(
-      alicePayoffPayments[2].getBalance(),
+      alicePayoutPayments[2].getBalance(),
       allAssays[2].makeAssetDesc(0),
     );
     t.deepEquals(aliceAutoswap.getPoolExtents(), [0, 0, 10]);

@@ -38,7 +38,7 @@ test('zoe - coveredCall', async t => {
     };
     const {
       instance: aliceCoveredCall,
-      instanceId,
+      instanceHandle,
       terms: aliceTerms,
     } = await zoe.makeInstance(coveredCallInstallationId, terms);
 
@@ -64,7 +64,7 @@ test('zoe - coveredCall', async t => {
     const alicePayments = [aliceMoolaPayment, undefined];
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
-      payoff: alicePayoffP,
+      payout: alicePayoutP,
     } = await zoe.escrow(aliceConditions, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment
@@ -84,7 +84,10 @@ test('zoe - coveredCall', async t => {
     } = await aliceCoveredCall.init(aliceEscrowReceipt);
 
     // Check that the assays and bobInvitePayment are as expected
-    t.deepEquals(bobInvitePayment.getBalance().extent.instanceId, instanceId);
+    t.deepEquals(
+      bobInvitePayment.getBalance().extent.instanceHandle,
+      instanceHandle,
+    );
     t.deepEquals(bobInvitePayment.getBalance().extent.offerToBeMade, [
       {
         rule: 'wantExactly',
@@ -120,8 +123,8 @@ test('zoe - coveredCall', async t => {
     });
 
     const inviteExtent = bobInvitePayment.getBalance().extent;
-    t.equal(inviteExtent.instanceId, instanceId);
-    t.equal(inviteExtent.installationId, coveredCallInstallationId);
+    t.equal(inviteExtent.instanceHandle, instanceHandle);
+    t.equal(inviteExtent.installationHandle, coveredCallInstallationId);
     t.equal(inviteExtent.status, 'acceptingOffers');
     t.ok(sameStructure(inviteExtent.conditions, aliceConditions));
     t.ok(
@@ -143,7 +146,7 @@ test('zoe - coveredCall', async t => {
     // 6: Bob escrows
     const {
       escrowReceipt: allegedBobEscrowReceipt,
-      payoff: bobPayoffP,
+      payout: bobPayoutP,
     } = await zoe.escrow(bobIntendedConditions, bobPayments);
 
     // 7: Bob does a claimAll on the escrowReceipt payment
@@ -163,8 +166,8 @@ test('zoe - coveredCall', async t => {
       'The offer has been accepted. Once the contract has been completed, please check your winnings',
     );
 
-    const aliceResult = await alicePayoffP;
-    const bobResult = await bobPayoffP;
+    const aliceResult = await alicePayoutP;
+    const bobResult = await bobPayoutP;
 
     // Alice gets back 0 of the kind she put in
     t.equals(aliceResult[0].getBalance().extent, 0);
@@ -228,7 +231,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     };
     const {
       instance: aliceCoveredCall,
-      instanceId,
+      instanceHandle,
       terms: aliceTerms,
     } = await zoe.makeInstance(coveredCallInstallationId, terms);
 
@@ -257,7 +260,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const alicePayments = [aliceMoolaPayment, undefined];
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
-      payoff: alicePayoffP,
+      payout: alicePayoutP,
     } = await zoe.escrow(aliceConditions, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment
@@ -277,7 +280,10 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     } = await aliceCoveredCall.init(aliceEscrowReceipt);
 
     // Check that the assays and bobInvitePayment are as expected
-    t.deepEquals(bobInvitePayment.getBalance().extent.instanceId, instanceId);
+    t.deepEquals(
+      bobInvitePayment.getBalance().extent.instanceHandle,
+      instanceHandle,
+    );
     t.deepEquals(bobInvitePayment.getBalance().extent.offerToBeMade, [
       {
         rule: 'wantExactly',
@@ -315,8 +321,8 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     });
 
     const inviteExtent = bobInvitePayment.getBalance().extent;
-    t.equal(inviteExtent.instanceId, instanceId);
-    t.equal(inviteExtent.installationId, coveredCallInstallationId);
+    t.equal(inviteExtent.instanceHandle, instanceHandle);
+    t.equal(inviteExtent.installationHandle, coveredCallInstallationId);
     t.equal(inviteExtent.status, 'acceptingOffers');
     t.ok(sameStructure(inviteExtent.conditions, aliceConditions));
     t.ok(
@@ -338,7 +344,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     // 6: Bob escrows
     const {
       escrowReceipt: allegedBobEscrowReceipt,
-      payoff: bobPayoffP,
+      payout: bobPayoutP,
     } = await zoe.escrow(bobIntendedConditions, bobPayments);
 
     // 7: Bob does a claimAll on the escrowReceipt payment
@@ -357,8 +363,8 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
       'The offer has been accepted. Once the contract has been completed, please check your winnings',
     );
 
-    const aliceResult = await alicePayoffP;
-    const bobResult = await bobPayoffP;
+    const aliceResult = await alicePayoutP;
+    const bobResult = await bobPayoutP;
 
     // Alice gets back what she put in
     t.deepEquals(aliceResult[0].getBalance(), assays[0].makeAssetDesc(3));
@@ -437,10 +443,10 @@ test('zoe - coveredCall with swap for invite', async t => {
     const terms = harden({
       assays: [moolaAssay, simoleanAssay],
     });
-    const { instance: aliceCoveredCall, instanceId } = await zoe.makeInstance(
-      coveredCallInstallationId,
-      terms,
-    );
+    const {
+      instance: aliceCoveredCall,
+      instanceHandle,
+    } = await zoe.makeInstance(coveredCallInstallationId, terms);
 
     // 2: Alice escrows with Zoe. She specifies her offer conditions,
     // which include an offer description as well as the exit
@@ -469,7 +475,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     const alicePayments = [aliceMoolaPayment, undefined];
     const {
       escrowReceipt: aliceEscrowReceipt,
-      payoff: alicePayoffP,
+      payout: alicePayoutP,
     } = await zoe.escrow(aliceConditions, alicePayments);
 
     // 3: Alice initializes the coveredCall with her escrow receipt
@@ -491,7 +497,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     );
 
     // 4: Imagine that Alice sends the invite to Bob as well as the
-    // instanceId (not done here since this test doesn't actually have
+    // instanceHandle (not done here since this test doesn't actually have
     // separate vats/parties)
 
     // 5: Bob inspects the invite payment and checks its information against the
@@ -503,10 +509,10 @@ test('zoe - coveredCall with swap for invite', async t => {
     const inviteExtent = bobInvitePayment.getBalance().extent;
 
     // Is the installation as expected?
-    t.equal(inviteExtent.installationId, coveredCallInstallationId);
+    t.equal(inviteExtent.installationHandle, coveredCallInstallationId);
 
-    // Does the instanceId in the invite match what Alice told him?
-    t.equal(inviteExtent.instanceId, instanceId);
+    // Does the instanceHandle in the invite match what Alice told him?
+    t.equal(inviteExtent.instanceHandle, instanceHandle);
 
     // Are the assays and other terms as expected?
     t.ok(
@@ -579,7 +585,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     // invite for bucks.
     const {
       instance: bobSwap,
-      instanceId: bobSwapInstanceId,
+      instanceHandle: bobSwapInstanceHandle,
     } = await zoe.makeInstance(swapInstallationId, {
       assays: harden([inviteAssay, bucksAssay]),
     });
@@ -607,28 +613,28 @@ test('zoe - coveredCall with swap for invite', async t => {
     // 6: Bob escrows his invite
     const {
       escrowReceipt: bobEscrowReceipt,
-      payoff: bobPayoffP,
+      payout: bobPayoutP,
     } = await zoe.escrow(bobConditionsSwap, bobPayments);
 
     // 8: Bob makes an offer to the swap with his "higher order" escrow receipt
-    const bobOutcome = await bobSwap.makeOffer(bobEscrowReceipt);
+    const bobOutcome = await bobSwap.makeFirstOffer(bobEscrowReceipt);
 
     t.equals(
       bobOutcome,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
     // Bob passes the swap instance id to Dave and tells him about
     // what kind of offer the swap is for (Dave doesn't necessarily
     // trust this, but he can use the information). This swap is a
-    // public swap in that only having the instanceId for the swap is
+    // public swap in that only having the instanceHandle for the swap is
     // enough to get access to the swap.
 
     const {
       instance: daveSwapInstance,
-      installationId: daveSwapInstallId,
+      installationHandle: daveSwapInstallId,
       terms: daveSwapTerms,
-    } = zoe.getInstance(bobSwapInstanceId);
+    } = zoe.getInstance(bobSwapInstanceHandle);
 
     // Dave is looking to buy the option to trade his 7 simoleans for
     // 3 moola, and is willing to pay 1 buck for the option. He
@@ -673,18 +679,18 @@ test('zoe - coveredCall with swap for invite', async t => {
     const daveSwapPayments = [undefined, daveBucksPayment];
     const {
       escrowReceipt: daveSwapEscrowReceipt,
-      payoff: daveSwapPayoffP,
+      payout: daveSwapPayoutP,
     } = await zoe.escrow(daveSwapConditions, daveSwapPayments);
 
-    const daveSwapOutcome = await daveSwapInstance.makeOffer(
+    const daveSwapOutcome = await daveSwapInstance.matchOffer(
       daveSwapEscrowReceipt,
     );
     t.equals(
       daveSwapOutcome,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
-    const [coveredCallInvite, daveBucksPayoff] = await daveSwapPayoffP;
+    const [coveredCallInvite, daveBucksPayout] = await daveSwapPayoutP;
 
     const coveredCallObj = await coveredCallInvite.unwrap();
 
@@ -709,7 +715,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     const daveCoveredCallPayments = [undefined, daveSimoleanPayment];
     const {
       escrowReceipt: daveCoveredCallEscrowReceipt,
-      payoff: daveCoveredCallPayoffP,
+      payout: daveCoveredCallPayoutP,
     } = await zoe.escrow(daveCoveredCallConditions, daveCoveredCallPayments);
 
     const daveCoveredCallOutcome = await coveredCallObj.makeOffer(
@@ -722,9 +728,9 @@ test('zoe - coveredCall with swap for invite', async t => {
 
     // Dave should get 3 moola, Bob should get 1 buck, and Alice
     // get 7 simoleans
-    const daveCoveredCallResult = await daveCoveredCallPayoffP;
-    const aliceResult = await alicePayoffP;
-    const bobResult = await bobPayoffP;
+    const daveCoveredCallResult = await daveCoveredCallPayoutP;
+    const aliceResult = await alicePayoutP;
+    const bobResult = await bobPayoutP;
 
     t.deepEquals(
       daveCoveredCallResult[0].getBalance(),
@@ -741,17 +747,17 @@ test('zoe - coveredCall with swap for invite', async t => {
     t.deepEquals(bobResult[0].getBalance(), inviteAssay.makeAssetDesc(null));
     t.deepEquals(bobResult[1].getBalance(), bucksAssay.makeAssetDesc(1));
 
-    // Alice deposits her payoffs
+    // Alice deposits her payouts
     await aliceMoolaPurse.depositAll(aliceResult[0]);
     await aliceSimoleanPurse.depositAll(aliceResult[1]);
 
-    // Bob deposits his payoffs
+    // Bob deposits his payouts
     await bobBucksPurse.depositAll(bobResult[1]);
 
-    // Dave deposits his payoffs
+    // Dave deposits his payouts
     await daveMoolaPurse.depositAll(daveCoveredCallResult[0]);
     await daveSimoleanPurse.depositAll(daveCoveredCallResult[1]);
-    await daveBucksPurse.depositAll(daveBucksPayoff);
+    await daveBucksPurse.depositAll(daveBucksPayout);
 
     t.equals(aliceMoolaPurse.getBalance().extent, 0);
     t.equals(aliceSimoleanPurse.getBalance().extent, 7);
@@ -813,10 +819,10 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const terms = harden({
       assays: [moolaAssay, simoleanAssay],
     });
-    const { instance: aliceCoveredCall, instanceId } = await zoe.makeInstance(
-      coveredCallInstallationId,
-      terms,
-    );
+    const {
+      instance: aliceCoveredCall,
+      instanceHandle,
+    } = await zoe.makeInstance(coveredCallInstallationId, terms);
 
     // 2: Alice escrows with Zoe. She specifies her offer conditions,
     // which include an offer description as well as the exit
@@ -845,7 +851,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const alicePayments = [aliceMoolaPayment, undefined];
     const {
       escrowReceipt: aliceEscrowReceipt,
-      payoff: alicePayoffP,
+      payout: alicePayoutP,
     } = await zoe.escrow(aliceConditions, alicePayments);
 
     // 3: Alice initializes the coveredCall with her escrow receipt
@@ -867,7 +873,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     );
 
     // 4: Imagine that Alice sends the invite to Bob as well as the
-    // instanceId (not done here since this test doesn't actually have
+    // instanceHandle (not done here since this test doesn't actually have
     // separate vats/parties)
 
     // 5: Bob inspects the invite payment and checks its information against the
@@ -879,10 +885,10 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const inviteExtent = bobInvitePayment.getBalance().extent;
 
     // Is the installation as expected?
-    t.equal(inviteExtent.installationId, coveredCallInstallationId);
+    t.equal(inviteExtent.installationHandle, coveredCallInstallationId);
 
-    // Does the instanceId in the invite match what Alice told him?
-    t.equal(inviteExtent.instanceId, instanceId);
+    // Does the instanceHandle in the invite match what Alice told him?
+    t.equal(inviteExtent.instanceHandle, instanceHandle);
 
     // Are the assays and other terms as expected?
     t.ok(
@@ -955,7 +961,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     // this time to trade this invite for bucks.
     const {
       instance: bobSecondCoveredCall,
-      instanceId: secondCoveredCallInstanceId,
+      instanceHandle: secondCoveredCallInstanceHandle,
     } = await zoe.makeInstance(
       coveredCallInstallationId,
       harden({
@@ -989,7 +995,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     // 6: Bob escrows his invite
     const {
       escrowReceipt: bobEscrowReceipt,
-      payoff: bobPayoffP,
+      payout: bobPayoutP,
     } = await zoe.escrow(bobConditionsSecondCoveredCall, bobPayments);
 
     // 8: Bob makes an offer to the swap with his "higher order" escrow receipt
@@ -1004,7 +1010,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     );
 
     // Bob passes the invite to the higher order covered call and
-    // instanceId to Dave
+    // instanceHandle to Dave
 
     // Dave is looking to buy the option to trade his 7 simoleans for
     // 3 moola, and is willing to pay 1 buck for the option. He
@@ -1013,10 +1019,10 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const daveInviteExtent = inviteForDave.getBalance().extent;
 
     // Is the installation as expected?
-    t.equal(daveInviteExtent.installationId, coveredCallInstallationId);
+    t.equal(daveInviteExtent.installationHandle, coveredCallInstallationId);
 
-    // Does the instanceId in the invite match what Bob told him?
-    t.equal(daveInviteExtent.instanceId, secondCoveredCallInstanceId);
+    // Does the instanceHandle in the invite match what Bob told him?
+    t.equal(daveInviteExtent.instanceHandle, secondCoveredCallInstanceHandle);
 
     // Are the assays and other terms as expected?
     t.ok(
@@ -1092,7 +1098,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const daveSecondCoveredCallPayments = [undefined, daveBucksPayment];
     const {
       escrowReceipt: daveCoveredCallEscrowReceipt,
-      payoff: daveSecondCoveredCallPayoffP,
+      payout: daveSecondCoveredCallPayoutP,
     } = await zoe.escrow(
       daveConditionsCoveredCall,
       daveSecondCoveredCallPayments,
@@ -1108,8 +1114,8 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
 
     const [
       firstCoveredCallInvite,
-      daveBucksPayoff,
-    ] = await daveSecondCoveredCallPayoffP;
+      daveBucksPayout,
+    ] = await daveSecondCoveredCallPayoutP;
 
     const firstCoveredCallObj = await firstCoveredCallInvite.unwrap();
 
@@ -1134,7 +1140,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const daveFirstCoveredCallPayments = [undefined, daveSimoleanPayment];
     const {
       escrowReceipt: daveFirstCoveredCallEscrowReceipt,
-      payoff: daveFirstCoveredCallPayoffP,
+      payout: daveFirstCoveredCallPayoutP,
     } = await zoe.escrow(
       daveFirstCoveredCallConditions,
       daveFirstCoveredCallPayments,
@@ -1150,9 +1156,9 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
 
     // Dave should get 3 moola, Bob should get 1 buck, and Alice
     // get 7 simoleans
-    const daveFirstCoveredCallResult = await daveFirstCoveredCallPayoffP;
-    const aliceResult = await alicePayoffP;
-    const bobResult = await bobPayoffP;
+    const daveFirstCoveredCallResult = await daveFirstCoveredCallPayoutP;
+    const aliceResult = await alicePayoutP;
+    const bobResult = await bobPayoutP;
 
     t.deepEquals(
       daveFirstCoveredCallResult[0].getBalance(),
@@ -1169,17 +1175,17 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     t.deepEquals(bobResult[0].getBalance(), inviteAssay.makeAssetDesc(null));
     t.deepEquals(bobResult[1].getBalance(), bucksAssay.makeAssetDesc(1));
 
-    // Alice deposits her payoffs
+    // Alice deposits her payouts
     await aliceMoolaPurse.depositAll(aliceResult[0]);
     await aliceSimoleanPurse.depositAll(aliceResult[1]);
 
-    // Bob deposits his payoffs
+    // Bob deposits his payouts
     await bobBucksPurse.depositAll(bobResult[1]);
 
-    // Dave deposits his payoffs
+    // Dave deposits his payouts
     await daveMoolaPurse.depositAll(daveFirstCoveredCallResult[0]);
     await daveSimoleanPurse.depositAll(daveFirstCoveredCallResult[1]);
-    await daveBucksPurse.depositAll(daveBucksPayoff);
+    await daveBucksPurse.depositAll(daveBucksPayout);
 
     t.equals(aliceMoolaPurse.getBalance().extent, 0);
     t.equals(aliceSimoleanPurse.getBalance().extent, 7);

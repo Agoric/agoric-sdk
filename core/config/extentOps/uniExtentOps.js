@@ -22,7 +22,7 @@ import {
 // `customInsistKind` enforces the particular kind of thing represented. For
 // example, the extent in an invitation to join a contract might look like:
 // {
-//   id: harden({}),
+//   offerHandle: harden({}),
 //   offerToBeMade: [rule1, rule2],
 // }
 

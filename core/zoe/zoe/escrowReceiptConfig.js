@@ -9,14 +9,14 @@ const insistEscrowReceipt = extent => {
   const properties = Object.getOwnPropertyNames(extent);
   insist(
     properties.length === 2,
-  )`must have the properties 'id', and 'conditions'`;
-  insist(properties.includes('id'))`must include 'id'`;
+  )`must have the properties 'offerHandle', and 'conditions'`;
+  insist(properties.includes('offerHandle'))`must include 'offerHandle'`;
   insist(properties.includes('conditions'))`must include 'conditions'`;
   insist(
-    passStyleOf(extent.id) === 'presence' &&
-      Object.entries(extent.id).length === 0 &&
-      extent.id.constructor === Object,
-  )`id should be an empty object`;
+    passStyleOf(extent.offerHandle) === 'presence' &&
+      Object.entries(extent.offerHandle).length === 0 &&
+      extent.offerHandle.constructor === Object,
+  )`offerHandle should be an empty object`;
   insist(
     passStyleOf(extent.conditions) === 'copyRecord',
   )`conditions should be a record`;

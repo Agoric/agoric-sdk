@@ -17,15 +17,15 @@ Let's say that Alice wants to create a swap that anyone can be the
 counter-party for. She creates a swap instance:
 
 ```js
-const installationId = zoe.install(publicSwapSrcs);
-const { instance: aliceSwap, instanceId } = await zoe.makeInstance(
-  installationId,
+const installationHandle = zoe.install(publicSwapSrcs);
+const { instance: aliceSwap, instanceHandle } = await zoe.makeInstance(
+  installationHandle,
   { assays },
 );
 ```
 
 Then escrows her offer with Zoe and gets an escrowReceipt
-and a promise that resolves to her payoff:
+and a promise that resolves to her payout:
 
 ```js
 const aliceOfferDesc = harden([
@@ -41,7 +41,7 @@ const aliceOfferDesc = harden([
 const alicePayments = [aliceMoolaPayment, undefined];
 const {
   escrowReceipt: allegedAliceEscrowReceipt,
-  payoff: alicePayoffP,
+  payout: alicePayoutP,
 } = await zoe.escrow(aliceOfferDesc, alicePayments);
 ```
 
@@ -52,18 +52,18 @@ const aliceOfferResultP = aliceSwap.makeOffer(aliceEscrowReceipt);
 
 ```
 
-She then spreads the `instanceId` widely. Bob hears about Alice's
-contract and he decides to look up the `instanceId` to see if it
+She then spreads the `instanceHandle` widely. Bob hears about Alice's
+contract and he decides to look up the `instanceHandle` to see if it
 matches Alice's claims.
 
 ```js
 const {
   instance: bobSwap,
-  installationId: bobInstallationId,
+  installationHandle: bobInstallationId,
   terms,
-} = zoe.getInstance(instanceId);
+} = zoe.getInstance(instanceHandle);
 
-insist(bobInstallationId === installationId)`wrong installation`;
+insist(bobInstallationId === installationHandle)`wrong installation`;
 insist(sameStructure(terms.assays, assays)`wrong assays`;
 ```
 
@@ -86,13 +86,13 @@ const bobPayments = [undefined, bobSimoleanPayment];
 
 const {
   escrowReceipt: bobEscrowReceipt,
-  payoff: bobPayoffP,
+  payout: bobPayoutP,
 } = await zoe.escrow(bobOfferDesc, bobPayments);
 
 const bobOfferResult = await bobSwap.makeOffer(bobEscrowReceipt);
 ```
 
-Now that Bob has made his offer, `alicePayoffP` resolves to an array
+Now that Bob has made his offer, `alicePayoutP` resolves to an array
 of ERTP payments `[moolaPayment, simoleanPayment]` where the
 moolaPayment is empty, and the simoleanPayment has a balance of 7. 
 

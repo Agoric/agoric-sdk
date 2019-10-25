@@ -11,16 +11,16 @@ export const makeContract = harden((zoe, terms) => {
   // along with the `makeAutoSwap` function.
   const liquidityMint = makeMint('liquidity');
   const liquidityAssay = liquidityMint.getAssay();
-  let poolOfferId;
+  let poolOfferHandle;
 
   const assays = [...terms.assays, liquidityAssay];
   let liqTokenSupply = 0;
 
   const ejectPlayer = (
-    offerId,
+    offerHandle,
     message = `The offer was invalid. Please check your refund.`,
   ) => {
-    zoe.complete(harden([offerId]));
+    zoe.complete(harden([offerHandle]));
     return Promise.reject(new Error(`${message}`));
   };
 
@@ -70,26 +70,26 @@ export const makeContract = harden((zoe, terms) => {
 
   const addLiquidity = async escrowReceipt => {
     const extentOpsArray = zoe.getExtentOpsArray();
-    const { id: offerId, conditions } = await zoe.burnEscrowReceipt(
+    const { offerHandle, conditions } = await zoe.burnEscrowReceipt(
       escrowReceipt,
     );
     const { offerDesc: offerMadeDesc } = conditions;
 
     // Create an empty offer to represent the extents of the
     // liquidity pool.
-    if (poolOfferId === undefined) {
-      poolOfferId = zoe.escrowEmptyOffer();
+    if (poolOfferHandle === undefined) {
+      poolOfferHandle = zoe.escrowEmptyOffer();
     }
 
     const successMessage = 'Added liquidity.';
     const rejectMessage = 'The offer to add liquidity was invalid.';
 
     if (!isValidOfferAddingLiquidity(offerMadeDesc)) {
-      return ejectPlayer(offerId, rejectMessage);
+      return ejectPlayer(offerHandle, rejectMessage);
     }
 
     const [oldPoolExtents, playerExtents] = zoe.getExtentsFor(
-      harden([poolOfferId, offerId]),
+      harden([poolOfferHandle, offerHandle]),
     );
 
     // Calculate how many liquidity tokens we should be minting.
@@ -136,7 +136,7 @@ export const makeContract = harden((zoe, terms) => {
       extents,
       exitCondition,
     );
-    const liquidityOfferId = await zoe.escrowOffer(
+    const liquidityOfferHandle = await zoe.escrowOffer(
       liquidityConditions,
       harden([undefined, undefined, newPayment]),
     );
@@ -144,16 +144,16 @@ export const makeContract = harden((zoe, terms) => {
     // user's liquidity to the pool, and setting the liquidity offer
     // extents to empty.
     zoe.reallocate(
-      harden([offerId, poolOfferId, liquidityOfferId]),
+      harden([offerHandle, poolOfferHandle, liquidityOfferHandle]),
       harden([newPlayerExtents, newPoolExtents, zoe.makeEmptyExtents()]),
     );
     // The newly created liquidityOffer is temporary and is dropped
-    zoe.complete(harden([liquidityOfferId, offerId]));
+    zoe.complete(harden([liquidityOfferHandle, offerHandle]));
     return `${successMessage}`;
   };
 
   const removeLiquidity = async escrowReceipt => {
-    const { id: offerId, conditions } = await zoe.burnEscrowReceipt(
+    const { offerHandle, conditions } = await zoe.burnEscrowReceipt(
       escrowReceipt,
     );
     const extentOpsArray = zoe.getExtentOpsArray();
@@ -162,10 +162,10 @@ export const makeContract = harden((zoe, terms) => {
     const rejectMessage = 'The offer to remove liquidity was invalid';
 
     if (!isValidOfferRemovingLiquidity(offerMadeDesc)) {
-      return ejectPlayer(offerId, rejectMessage);
+      return ejectPlayer(offerHandle, rejectMessage);
     }
-    const offerIds = harden([poolOfferId, offerId]);
-    const [poolExtents, playerExtents] = zoe.getExtentsFor(offerIds);
+    const offerHandles = harden([poolOfferHandle, offerHandle]);
+    const [poolExtents, playerExtents] = zoe.getExtentsFor(offerHandles);
     const liquidityTokenIn = playerExtents[2];
 
     const newPlayerExtents = poolExtents.map(poolQ =>
@@ -181,10 +181,10 @@ export const makeContract = harden((zoe, terms) => {
     liqTokenSupply -= liquidityTokenIn;
 
     zoe.reallocate(
-      harden([offerId, poolOfferId]),
+      harden([offerHandle, poolOfferHandle]),
       harden([newPlayerExtents, newPoolExtents]),
     );
-    zoe.complete(harden([offerId]));
+    zoe.complete(harden([offerHandle]));
     return `${successMessage}`;
   };
 
@@ -252,7 +252,7 @@ export const makeContract = harden((zoe, terms) => {
    * of tokens in.
    */
   const getPrice = assetDescIn => {
-    const [poolExtents] = zoe.getExtentsFor(harden([poolOfferId]));
+    const [poolExtents] = zoe.getExtentsFor(harden([poolOfferHandle]));
     const extentOpsArray = zoe.getExtentOpsArray();
     const [tokenAPoolQ, tokenBPoolQ] = poolExtents;
     const labels = zoe.getLabels();
@@ -277,7 +277,7 @@ export const makeContract = harden((zoe, terms) => {
   };
 
   const makeOffer = async escrowReceipt => {
-    const { id: offerId, conditions } = await zoe.burnEscrowReceipt(
+    const { offerHandle, conditions } = await zoe.burnEscrowReceipt(
       escrowReceipt,
     );
     const { offerDesc: offerMadeDesc } = conditions;
@@ -285,7 +285,7 @@ export const makeContract = harden((zoe, terms) => {
     const rejectMessage = 'The offer to swap was invalid.';
 
     const [poolExtents, playerExtents] = zoe.getExtentsFor(
-      harden([poolOfferId, offerId]),
+      harden([poolOfferHandle, offerHandle]),
     );
     const [tokenAPoolQ, tokenBPoolQ] = poolExtents;
 
@@ -298,7 +298,7 @@ export const makeContract = harden((zoe, terms) => {
         tokenInQ,
       );
       if (tokenOutQ < wantAtLeastQ) {
-        return ejectPlayer(offerId, rejectMessage);
+        return ejectPlayer(offerHandle, rejectMessage);
       }
 
       const newPoolExtents = [
@@ -309,10 +309,10 @@ export const makeContract = harden((zoe, terms) => {
       const newPlayerExtents = [0, tokenOutQ, 0];
 
       zoe.reallocate(
-        harden([offerId, poolOfferId]),
+        harden([offerHandle, poolOfferHandle]),
         harden([newPlayerExtents, newPoolExtents]),
       );
-      zoe.complete(harden([offerId]));
+      zoe.complete(harden([offerHandle]));
       return `${successMessage}`;
     }
 
@@ -325,7 +325,7 @@ export const makeContract = harden((zoe, terms) => {
         tokenInQ,
       );
       if (tokenOutQ < wantAtLeastQ) {
-        return ejectPlayer(offerId, rejectMessage);
+        return ejectPlayer(offerHandle, rejectMessage);
       }
 
       const newPoolExtents = [
@@ -336,15 +336,15 @@ export const makeContract = harden((zoe, terms) => {
       const newPlayerExtents = [tokenOutQ, 0, 0];
 
       zoe.reallocate(
-        harden([offerId, poolOfferId]),
+        harden([offerHandle, poolOfferHandle]),
         harden([newPlayerExtents, newPoolExtents]),
       );
-      zoe.complete(harden([offerId]));
+      zoe.complete(harden([offerHandle]));
       return `${successMessage}`;
     }
 
     // Offer must be invalid
-    return ejectPlayer(offerId, rejectMessage);
+    return ejectPlayer(offerHandle, rejectMessage);
   };
 
   // The API exposed to the user
@@ -354,7 +354,7 @@ export const makeContract = harden((zoe, terms) => {
     getPrice,
     makeOffer,
     getLiquidityAssay: () => liquidityAssay,
-    getPoolExtents: () => zoe.getExtentsFor(harden([poolOfferId]))[0],
+    getPoolExtents: () => zoe.getExtentsFor(harden([poolOfferHandle]))[0],
   });
   return harden({
     instance: autoswap,

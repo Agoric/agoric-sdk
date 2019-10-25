@@ -5,18 +5,18 @@ import { makeMint } from './mint';
 
 /**
  * `makeSeatMint` creates an instance of the seatMint with an
- * associated WeakMap mapping ids (represented by unique empty
- * objects) to use objects
+ * associated WeakMap mapping handles (represented by unique,
+ * unforgeable empty objects) to use objects
  */
 const makeSeatMint = (description = 'seats') => {
-  const idObjsToSeats = new WeakMap();
+  const offerHandleToSeat = new WeakMap();
 
-  const addUseObj = (idObj, useObj) => {
-    idObjsToSeats.set(idObj, useObj);
+  const addUseObj = (handle, useObj) => {
+    offerHandleToSeat.set(handle, useObj);
   };
 
   const makeUseObj = seatExtent => {
-    return harden(idObjsToSeats.get(seatExtent.id));
+    return harden(offerHandleToSeat.get(seatExtent.offerHandle));
   };
 
   const paymentMakeUseAndBurn = async (assay, payment) => {

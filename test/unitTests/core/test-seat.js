@@ -7,7 +7,7 @@ import { setup } from './zoe/setupBasicMints';
 import { insist } from '../../../util/insist';
 
 /*
- * A seat extent must have an id but otherwise can have arbitrary
+ * A seat extent must have an offerHandle but otherwise can have arbitrary
  * properties as long as the extent is a copyRecord
  */
 
@@ -40,7 +40,7 @@ test('seatMint', async t => {
     };
 
     const purse1Extent = harden({
-      id: harden({}),
+      offerHandle: harden({}),
       offerToBeMade: {
         offerDesc: [
           { rule: 'offerExactly', assetDesc: assays[0].makeAssetDesc(8) },
@@ -51,7 +51,7 @@ test('seatMint', async t => {
 
     const purse1 = seatMint.mint(purse1Extent);
     t.deepEqual(purse1.getBalance().extent, purse1Extent);
-    addUseObj(purse1Extent.id, makeUseObj(purse1Extent));
+    addUseObj(purse1Extent.offerHandle, makeUseObj(purse1Extent));
 
     const useObjPurse1 = await purse1.unwrap();
     // purse1 should be empty at this point. Note that `withdrawAll` doesn't
@@ -63,7 +63,7 @@ test('seatMint', async t => {
     t.equal(useObjPurse1.makeOffer(purse1Extent.offerToBeMade.offerDesc), true);
 
     const purse2Extent = harden({
-      id: harden({}),
+      offerHandle: harden({}),
       offerMade: {
         offerDesc: [
           { rule: 'offerExactly', assetDesc: assays[0].makeAssetDesc(8) },
@@ -74,7 +74,7 @@ test('seatMint', async t => {
 
     const purse2 = seatMint.mint(purse2Extent);
     t.deepEqual(purse2.getBalance().extent, purse2Extent);
-    addUseObj(purse2Extent.id, makeUseObj(purse2Extent));
+    addUseObj(purse2Extent.offerHandle, makeUseObj(purse2Extent));
 
     const useObjPurse2 = await purse2.unwrap();
     // purse1 should be empty at this point. Note that `withdrawAll` doesn't

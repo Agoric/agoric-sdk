@@ -15,9 +15,9 @@ access to the auction instance can make a bid by making an offer.
 Alice can create an auction by doing:
 
 ```js
-const installationId = zoe.install(publicAuctionSrcs);
-const { instance: aliceAuction, instanceId } = await zoe.makeInstance(
-  installationId,
+const installationHandle = zoe.install(publicAuctionSrcs);
+const { instance: aliceAuction, instanceHandle } = await zoe.makeInstance(
+  installationHandle,
   {
     assays,
     numBidsAllowed: 3
@@ -42,7 +42,7 @@ const aliceOfferDesc = harden([
 const alicePayments = [aliceMoolaPayment, undefined];
 const {
   escrowReceipt: allegedAliceEscrowReceipt,
-  payoff: alicePayoffP,
+  payout: alicePayoutP,
 } = await zoe.escrow(aliceOfferDesc, alicePayments);
 
 const aliceOfferResult = await aliceAuction.makeOffer(aliceEscrowReceipt);
@@ -52,17 +52,17 @@ Note that in this implementation, the item that will be auctioned is
 described at index 0, and Alice's minimum bid assetDesc is at index 1 in
 the offer description. 
 
-Now Alice can spread her auction `instanceId` far and wide and see if
-there are any bidders. Let's say that Bob gets the instanceId and
+Now Alice can spread her auction `instanceHandle` far and wide and see if
+there are any bidders. Let's say that Bob gets the instanceHandle and
 wants to see if it is the kind of contract that he wants to join. He
-can check that the installationId installed is the auction he is expecting.
+can check that the installationHandle installed is the auction he is expecting.
 
 ```js
 const {
   instance: bobAuction,
-  installationId: bobInstallationId,
+  installationHandle: bobInstallationId,
   terms,
-} = zoe.getInstance(instanceId);
+} = zoe.getInstance(instanceHandle);
 ```
 He can also check that the item up for sale is the kind that he wants,
 as well as checking what Alice wants in return. (In this
@@ -90,7 +90,7 @@ const bobOfferDesc = harden([
 const bobPayments = [undefined, bobSimoleanPayment];
 const {
   escrowReceipt: allegedBobEscrowReceipt,
-  payoff: bobPayoffP,
+  payout: bobPayoutP,
 } = await zoe.escrow(bobOfferDesc, bobPayments);
 
 const bobOfferResult = await bobAuction.makeOffer(bobEscrowReceipt);

@@ -8,29 +8,33 @@ import { toAssetDescMatrix } from '../contractUtils';
 // These utilities are used within Zoe itself. Importantly, there is
 // no ambient authority for these utilities. Any authority must be
 // passed in, making it easy to see which functions can affect what.
-const mintPayoffPayment = (
+const mintPayoutPayment = (
   seatMint,
   addUseObj,
   conditions,
   result,
-  instanceId,
+  instanceHandle,
 ) => {
-  const payoffExtent = harden({
-    id: harden({}),
+  const payoutExtent = harden({
+    offerHandle: harden({}),
     conditions,
-    instanceId,
+    instanceHandle,
   });
-  const payoffPurseP = seatMint.mint(payoffExtent);
+  const payoutPurseP = seatMint.mint(payoutExtent);
   const seat = harden({
-    getPayoff: () => result.p,
+    getPayout: () => result.p,
   });
-  addUseObj(payoffExtent.id, seat);
-  return payoffPurseP.withdrawAll();
+  addUseObj(payoutExtent.offerHandle, seat);
+  return payoutPurseP.withdrawAll();
 };
 
-const mintEscrowReceiptPayment = (escrowReceiptMint, offerId, conditions) => {
+const mintEscrowReceiptPayment = (
+  escrowReceiptMint,
+  offerHandle,
+  conditions,
+) => {
   const escrowReceiptExtent = harden({
-    id: offerId,
+    offerHandle,
     conditions,
   });
   const escrowReceiptPurse = escrowReceiptMint.mint(escrowReceiptExtent);
@@ -89,7 +93,7 @@ const escrowOffer = async (
   offerPayments,
 ) => {
   const result = makePromise();
-  const { offerDesc, exit = { kind: 'noExit' } } = conditions;
+  const { offerDesc, exit = { kind: 'onDemand' } } = conditions;
 
   insistValidRules(offerDesc);
   insistValidExitCondition(exit);
@@ -111,18 +115,18 @@ const escrowOffer = async (
     return assay;
   });
 
-  const offerId = harden({});
+  const offerHandle = harden({});
 
-  recordOffer(offerId, conditions, extents, assays, result);
+  recordOffer(offerHandle, conditions, extents, assays, result);
 
   return harden({
-    offerId,
+    offerHandle,
     result,
   });
 };
 
 const escrowEmptyOffer = (recordOffer, assays, labels, extentOpsArray) => {
-  const offerId = harden({});
+  const offerHandle = harden({});
   const offerDesc = labels.map((label, i) =>
     harden({
       rule: 'wantAtLeast',
@@ -142,10 +146,10 @@ const escrowEmptyOffer = (recordOffer, assays, labels, extentOpsArray) => {
   const result = makePromise();
 
   // has side effects
-  recordOffer(offerId, conditions, extents, assays, result);
+  recordOffer(offerHandle, conditions, extents, assays, result);
 
   return harden({
-    offerId,
+    offerHandle,
     result,
   });
 };
@@ -160,29 +164,29 @@ const makePayments = (purses, assetDescsMatrix) => {
   return Promise.all(paymentsMatrix);
 };
 
-// Note: offerIds must be for the same assays.
-const completeOffers = async (adminState, readOnlyState, offerIds) => {
-  const { inactive } = readOnlyState.getStatusFor(offerIds);
+// Note: offerHandles must be for the same assays.
+const completeOffers = async (adminState, readOnlyState, offerHandles) => {
+  const { inactive } = readOnlyState.getStatusFor(offerHandles);
   if (inactive.length > 0) {
     throw new Error('offer has already completed');
   }
-  adminState.setOffersAsInactive(offerIds);
-  const [assays] = readOnlyState.getAssaysFor(offerIds);
-  const extents = readOnlyState.getExtentsFor(offerIds);
+  adminState.setOffersAsInactive(offerHandles);
+  const [assays] = readOnlyState.getAssaysFor(offerHandles);
+  const extents = readOnlyState.getExtentsFor(offerHandles);
   const extentOps = readOnlyState.getExtentOpsArrayForAssays(assays);
   const labels = readOnlyState.getLabelsForAssays(assays);
   const assetDescs = toAssetDescMatrix(extentOps, labels, extents);
   const purses = adminState.getPurses(assays);
   const payments = await makePayments(purses, assetDescs);
-  const results = adminState.getResultsFor(offerIds);
+  const results = adminState.getResultsFor(offerHandles);
   results.map((result, i) => result.res(payments[i]));
-  adminState.removeOffers(offerIds);
+  adminState.removeOffers(offerHandles);
 };
 
 export {
   escrowEmptyOffer,
   escrowOffer,
   mintEscrowReceiptPayment,
-  mintPayoffPayment,
+  mintPayoutPayment,
   completeOffers,
 };

@@ -4,8 +4,8 @@ import { insist } from '../../../util/insist';
 import { sameStructure } from '../../../util/sameStructure';
 
 export const makeContract = harden((zoe, terms) => {
-  let firstOfferId;
-  let matchingOfferId;
+  let firstOfferHandle;
+  let matchingOfferHandle;
 
   const coveredCallAllowedTransitions = [
     ['uninitialized', ['acceptingOffers']],
@@ -68,48 +68,55 @@ export const makeContract = harden((zoe, terms) => {
   };
 
   const ejectPlayer = (
-    offerId,
+    offerHandle,
     message = `The offer was invalid. Please check your refund.`,
   ) => {
-    zoe.complete(harden([offerId]));
+    zoe.complete(harden([offerHandle]));
     return Promise.reject(new Error(`${message}`));
   };
 
   const makeOffer = async escrowReceipt => {
-    const { id, conditions } = await zoe.burnEscrowReceipt(escrowReceipt);
+    const { offerHandle, conditions } = await zoe.burnEscrowReceipt(
+      escrowReceipt,
+    );
     const { offerDesc: offerMadeDesc } = conditions;
-    const { inactive } = zoe.getStatusFor(harden([firstOfferId]));
+    const { inactive } = zoe.getStatusFor(harden([firstOfferHandle]));
     if (inactive.length > 0) {
-      return ejectPlayer(id, 'The first offer was withdrawn');
+      return ejectPlayer(offerHandle, 'The first offer was withdrawn');
     }
 
     // fail-fast if offer is not valid.
-    const [firstOfferDesc] = zoe.getOfferDescsFor(harden([firstOfferId]));
+    const [firstOfferDesc] = zoe.getOfferDescsFor(harden([firstOfferHandle]));
     const extentOpsArray = zoe.getExtentOpsArray();
     if (
       sm.getStatus() !== 'acceptingOffers' ||
       !isMatchingOfferDesc(extentOpsArray, firstOfferDesc, offerMadeDesc)
     ) {
-      return ejectPlayer(id);
+      return ejectPlayer(offerHandle);
     }
 
     // Save the valid offer
-    matchingOfferId = id;
+    matchingOfferHandle = offerHandle;
 
     sm.transitionTo('closed');
-    const offerIds = harden([firstOfferId, matchingOfferId]);
+    const offerHandles = harden([firstOfferHandle, matchingOfferHandle]);
     const [firstOfferExtents, matchingOfferExtents] = zoe.getExtentsFor(
-      offerIds,
+      offerHandles,
     );
     // reallocate by switching the extents of the firstOffer and matchingOffer
-    zoe.reallocate(offerIds, harden([matchingOfferExtents, firstOfferExtents]));
-    zoe.complete(offerIds);
+    zoe.reallocate(
+      offerHandles,
+      harden([matchingOfferExtents, firstOfferExtents]),
+    );
+    zoe.complete(offerHandles);
     return `The offer has been accepted. Once the contract has been completed, please check your winnings`;
   };
 
   const coveredCall = harden({
     async init(escrowReceipt) {
-      const { id, conditions } = await zoe.burnEscrowReceipt(escrowReceipt);
+      const { offerHandle, conditions } = await zoe.burnEscrowReceipt(
+        escrowReceipt,
+      );
       const { offerDesc: offerMadeDesc } = conditions;
 
       const isValidFirstOfferDesc = newOfferDesc =>
@@ -122,11 +129,11 @@ export const makeContract = harden((zoe, terms) => {
         sm.getStatus() !== 'uninitialized' ||
         !isValidFirstOfferDesc(offerMadeDesc)
       ) {
-        return ejectPlayer(id);
+        return ejectPlayer(offerHandle);
       }
 
       // Save the valid offer
-      firstOfferId = id;
+      firstOfferHandle = offerHandle;
       sm.transitionTo('acceptingOffers');
 
       const customInviteExtent = {

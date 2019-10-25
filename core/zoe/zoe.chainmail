@@ -1,12 +1,12 @@
 /**
  * This is returned by a call to `escrow` on Zoe.
  * An escrowReceipt is an ERTP payment which acts as proof of escrow
- * and is normally passed in to a governingContract method. The payoff
+ * and is normally passed in to a governingContract method. The payout
  * is a promise that resolves to an array of payments.
  */
-struct EscrowReceiptAndClaimPayoff ( ) {
+struct EscrowReceiptAndClaimPayout ( ) {
   escrowReceipt :Payment;
-  payoff :List(Payment);
+  payout :List(Payment);
 }
 
 /**
@@ -23,7 +23,7 @@ interface Zoe {
   /**
    * Get the long-lived seatAssay. The mint associated with the
    * seatAssay creates the ERTP payments that represent the right to
-   * claim the payoffs of involvement in a contract.
+   * claim the payouts of involvement in a contract.
    */
   getSeatAssay() -> (Assay);
 
@@ -51,12 +51,12 @@ interface Zoe {
    * the discretion of the governing contract.) We get back an instance, an
    * id for that instance, and the id for the installation.
    */
-  makeInstance(installationId :Object, terms :Object) -> (InstanceInformation);
+  makeInstance(installationHandle :Object, terms :Object) -> (InstanceInformation);
   
   /**
-   * Credibly get the instance from the instanceId.
+   * Credibly get the instance from the instanceHandle.
    */
-  getInstance(instanceId :Object) -> (InstanceInformation);
+  getInstance(instanceHandle :Object) -> (InstanceInformation);
 
   /** 
    * To escrow, the user must provide an `offerDesc` which is a list of
@@ -71,7 +71,7 @@ interface Zoe {
    * rule is 'wantAtLeast' or 'wantExactly' then the payment will be
    * ignored and should be `undefined`.
    */
-  escrow (offerDesc :List(OfferDescElement), payments :List(Payment)) -> (EscrowReceiptAndClaimPayoff);
+  escrow (offerDesc :List(OfferDescElement), payments :List(Payment)) -> (EscrowReceiptAndClaimPayout);
 }
 
 /**
@@ -87,36 +87,36 @@ struct OfferDescElement ( ) {
 interface ZoeGoverningContractFacet () {
 
   /** 
-   * Instruct Zoe to try reallocating for the given offerIds.
+   * Instruct Zoe to try reallocating for the given offerHandles.
    * Reallocation is a matrix (array of arrays) where the rows are the
    * extents to be paid to the player who made the offer at the same
-   * index in the offerIds array. The reallocation will only happen if
+   * index in the offerHandles array. The reallocation will only happen if
    * 'offer safety' and conservation of rights are true, as enforced by Zoe.
    */
-  reallocate (instanceId :Object, offerIds :List(Object), reallocation :List(List(Extent)));
+  reallocate (instanceHandle :Object, offerHandles :List(Object), reallocation :List(List(Extent)));
 
   /** 
    * Eject the offer, taking the current allocation for that offer and
    * creating payments to be returned to the user. No 'offer safety' checks are
    * done here because any previous reallocation performed those checks.
    */
-  complete (instanceId :Object, offerIds :List(Object));
+  complete (instanceHandle :Object, offerHandles :List(Object));
 
   /**
    * Create an empty offer for recordkeeping purposes (Autoswap uses
    * this to create the liquidity pool). 
    */
-  escrowEmptyOffer ( ) -> (offerId);
+  escrowEmptyOffer ( ) -> (offerHandle);
   
   /**
    * Escrow an offer created by the governing contract. Autoswap uses
    * this to mint liquidity tokens and add them to the rights managed
    * by Zoe.
    */
-  escrowOffer (offerDesc :List(OfferDescElem), offerPayments :List(Payment)) -> (offerId);
+  escrowOffer (offerDesc :List(OfferDescElem), offerPayments :List(Payment)) -> (offerHandle);
 
   /** Burn and validate an escrowReceipt received from the user. */
-  burnEscrowReceipt (instanceId :Object, escrowReceipt :Payment) -> (Extent);
+  burnEscrowReceipt (instanceHandle :Object, escrowReceipt :Payment) -> (Extent);
   
   /** Create an invite using the Zoe inviteMint */
   makeInvite (offerToBeMade :List(OfferDescElem), useObj :Object) -> (Payment);
@@ -130,20 +130,20 @@ interface ZoeGoverningContractFacet () {
   makeEmptyExtents ( ) -> (List(Extent));
 
   /** Get the array of extentOps, the logic from the descOps */
-  getExtentOps (instanceId :Object) -> (List(ExtentOps));
+  getExtentOps (instanceHandle :Object) -> (List(ExtentOps));
 
   /** 
-   * Pass in an array of offerIds and get a matrix (array of arrays)
-   * containing the extents, in the same order as the offerIds array.
+   * Pass in an array of offerHandles and get a matrix (array of arrays)
+   * containing the extents, in the same order as the offerHandles array.
    */
-  getExtentsFor (offerIds :List(Object)) -> (List(List(Extent)));
+  getExtentsFor (offerHandles :List(Object)) -> (List(List(Extent)));
 
   /** 
-   * Pass in an array of offerIds and get a matrix (array of arrays)
+   * Pass in an array of offerHandles and get a matrix (array of arrays)
    * containing the offer descriptions for the offers, in the same 
-   * order as the offerIds array.
+   * order as the offerHandles array.
    */
-  getOfferDescsFor (offerIds :List(Object)) -> (List(OfferDesc));
+  getOfferDescsFor (offerHandles :List(Object)) -> (List(OfferDesc));
 
   /** Get the Zoe seatAssay */
   getSeatAssay ( ) -> (Assay);

@@ -18,10 +18,9 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
 
     const assays = harden([moolaAssay, simoleanAssay]);
 
-    const { instance: automaticRefund, instanceId } = await E(zoe).makeInstance(
-      installId,
-      { assays },
-    );
+    const { instance: automaticRefund, instanceHandle } = await E(
+      zoe,
+    ).makeInstance(installId, { assays });
 
     const conditions = harden({
       offerDesc: [
@@ -41,7 +40,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
 
     const aliceMoolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [aliceMoolaPayment, undefined];
-    const { escrowReceipt, payoff: payoffP } = await E(zoe).escrow(
+    const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
       conditions,
       offerPayments,
     );
@@ -49,11 +48,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const offerMadeDesc = await E(automaticRefund).makeOffer(escrowReceipt);
     log(offerMadeDesc);
 
-    await E(bobP).doAutomaticRefund(instanceId);
-    const payoff = await payoffP;
+    await E(bobP).doAutomaticRefund(instanceHandle);
+    const payout = await payoutP;
 
-    await E(moolaPurseP).depositAll(payoff[0]);
-    await E(simoleanPurseP).depositAll(payoff[1]);
+    await E(moolaPurseP).depositAll(payout[0]);
+    await E(simoleanPurseP).depositAll(payout[1]);
 
     await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse');
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;');
@@ -65,7 +64,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const simoleanAssay = await E(simoleanPurseP).getAssay();
     const assays = harden([moolaAssay, simoleanAssay]);
 
-    const { instance: coveredCall, instanceId } = await E(zoe).makeInstance(
+    const { instance: coveredCall, instanceHandle } = await E(zoe).makeInstance(
       installId,
       { assays },
     );
@@ -88,18 +87,18 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
 
     const aliceMoolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [aliceMoolaPayment, undefined];
-    const { escrowReceipt: aliceEscrowReceipt, payoff: payoffP } = await E(
+    const { escrowReceipt: aliceEscrowReceipt, payout: payoutP } = await E(
       zoe,
     ).escrow(conditions, offerPayments);
 
     const { outcome, invite } = await E(coveredCall).init(aliceEscrowReceipt);
     log(outcome);
 
-    await E(bobP).doCoveredCall(invite, instanceId);
-    const payoff = await payoffP;
+    await E(bobP).doCoveredCall(invite, instanceHandle);
+    const payout = await payoutP;
 
-    await E(moolaPurseP).depositAll(payoff[0]);
-    await E(simoleanPurseP).depositAll(payoff[1]);
+    await E(moolaPurseP).depositAll(payout[0]);
+    await E(simoleanPurseP).depositAll(payout[1]);
 
     await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse');
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;');
@@ -111,7 +110,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const assays = harden([moolaAssay, simoleanAssay]);
 
     const numBidsAllowed = 3;
-    const { instance: auction, instanceId } = await E(zoe).makeInstance(
+    const { instance: auction, instanceHandle } = await E(zoe).makeInstance(
       installId,
       { assays, numBidsAllowed },
     );
@@ -133,7 +132,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     });
     const moolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [moolaPayment, undefined];
-    const { escrowReceipt, payoff: payoffP } = await E(zoe).escrow(
+    const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
       conditions,
       offerPayments,
     );
@@ -142,17 +141,17 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
 
     log(offerResult);
 
-    const bobDoneP = E(bobP).doPublicAuction(instanceId);
-    const carolDoneP = E(carolP).doPublicAuction(instanceId);
-    const daveDoneP = E(daveP).doPublicAuction(instanceId);
+    const bobDoneP = E(bobP).doPublicAuction(instanceHandle);
+    const carolDoneP = E(carolP).doPublicAuction(instanceHandle);
+    const daveDoneP = E(daveP).doPublicAuction(instanceHandle);
 
     await Promise.all([bobDoneP, carolDoneP, daveDoneP]);
 
-    const payoff = await payoffP;
+    const payout = await payoutP;
 
     // Alice deposits her winnings to ensure she can
-    await E(moolaPurseP).depositAll(payoff[0]);
-    await E(simoleanPurseP).depositAll(payoff[1]);
+    await E(moolaPurseP).depositAll(payout[0]);
+    await E(simoleanPurseP).depositAll(payout[1]);
 
     await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse');
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;');
@@ -163,7 +162,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const simoleanAssay = await E(simoleanPurseP).getAssay();
     const assays = harden([moolaAssay, simoleanAssay]);
 
-    const { instance: swap, instanceId } = await E(zoe).makeInstance(
+    const { instance: swap, instanceHandle } = await E(zoe).makeInstance(
       installId,
       { assays },
     );
@@ -185,25 +184,25 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     });
     const moolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [moolaPayment, undefined];
-    const { escrowReceipt, makePayoffPaymentObj } = await E(zoe).escrow(
+    const { escrowReceipt, makePayoutPaymentObj } = await E(zoe).escrow(
       conditions,
       offerPayments,
     );
 
-    const offerResult = await E(swap).makeOffer(escrowReceipt);
+    const offerResult = await E(swap).makeFirstOffer(escrowReceipt);
 
-    const payoffPaymentForCarolP = await E(
-      makePayoffPaymentObj,
-    ).makePayoffPayment();
+    const payoutPaymentForCarolP = await E(
+      makePayoutPaymentObj,
+    ).makePayoutPayment();
 
     log(offerResult);
 
     const carolDoneP = E(carolP).doPublicSwap(
-      instanceId,
-      payoffPaymentForCarolP,
+      instanceHandle,
+      payoutPaymentForCarolP,
     );
-    const bobDoneP = E(bobP).doPublicSwap(instanceId);
-    await Promise.all(carolDoneP, bobDoneP);
+    const bobDoneP = E(bobP).doPublicSwap(instanceHandle);
+    await Promise.all([carolDoneP, bobDoneP]);
 
     await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse');
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;');
@@ -214,7 +213,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const simoleanAssay = await E(simoleanPurseP).getAssay();
     const assays = harden([moolaAssay, simoleanAssay]);
 
-    const { instance: exchange, instanceId } = await E(zoe).makeInstance(
+    const { instance: exchange, instanceHandle } = await E(zoe).makeInstance(
       installId,
       { assays },
     );
@@ -236,7 +235,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     });
     const moolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [moolaPayment, undefined];
-    const { escrowReceipt, payoff: payoffP } = await E(zoe).escrow(
+    const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
       aliceSellOrderConditions,
       offerPayments,
     );
@@ -245,12 +244,12 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
 
     log(offerResult);
 
-    await E(bobP).doSimpleExchange(instanceId);
+    await E(bobP).doSimpleExchange(instanceHandle);
 
-    const payoff = await payoffP;
+    const payout = await payoutP;
 
-    await E(moolaPurseP).depositAll(payoff[0]);
-    await E(simoleanPurseP).depositAll(payoff[1]);
+    await E(moolaPurseP).depositAll(payout[0]);
+    await E(simoleanPurseP).depositAll(payout[1]);
 
     await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse');
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;');
@@ -261,7 +260,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const simoleanAssay = await E(simoleanPurseP).getAssay();
     const assays = harden([moolaAssay, simoleanAssay]);
 
-    const { instance: autoswap, instanceId } = await E(zoe).makeInstance(
+    const { instance: autoswap, instanceHandle } = await E(zoe).makeInstance(
       installId,
       { assays },
     );
@@ -293,7 +292,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const moolaPaymentP = E(moolaPurseP).withdrawAll();
     const simoleanPaymentP = E(simoleanPurseP).withdrawAll();
     const offerPayments = [moolaPaymentP, simoleanPaymentP, undefined];
-    const { escrowReceipt, payoff: payoffP } = await E(zoe).escrow(
+    const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
       addLiquidityConditions,
       offerPayments,
     );
@@ -302,12 +301,12 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
 
     log(addLiquidityOutcome);
 
-    const addLiquidityPayments = await payoffP;
+    const addLiquidityPayments = await payoutP;
 
     const liquidityTokenPurseP = E(liquidityAssay).makeEmptyPurse();
     await E(liquidityTokenPurseP).depositAll(addLiquidityPayments[2]);
 
-    await E(bobP).doAutoswap(instanceId);
+    await E(bobP).doAutoswap(instanceHandle);
 
     // remove the liquidity
     const aliceRemoveLiquidityOfferDesc = harden({
@@ -334,7 +333,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
 
     const {
       escrowReceipt: aliceRemoveLiquidityEscrowReceipt,
-      payoff: aliceRemoveLiquidityPayoffP,
+      payout: aliceRemoveLiquidityPayoutP,
     } = await E(zoe).escrow(
       aliceRemoveLiquidityOfferDesc,
       harden([undefined, undefined, liquidityTokenPayment]),
@@ -345,9 +344,9 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     );
     log(removeLiquidityOutcome);
 
-    const removeLiquidityPayoffs = await aliceRemoveLiquidityPayoffP;
-    await E(moolaPurseP).depositAll(removeLiquidityPayoffs[0]);
-    await E(simoleanPurseP).depositAll(removeLiquidityPayoffs[1]);
+    const removeLiquidityPayouts = await aliceRemoveLiquidityPayoutP;
+    await E(moolaPurseP).depositAll(removeLiquidityPayouts[0]);
+    await E(simoleanPurseP).depositAll(removeLiquidityPayouts[1]);
 
     log(await E(autoswap).getPoolExtents());
 
