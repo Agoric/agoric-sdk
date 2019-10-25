@@ -75,6 +75,8 @@ test('E.C chains', async t => {
     t.equal(await xC.G.y.G.fn.M(4).P, 8, 'anonymous method works');
     t.equal(await xC.G.val.P, 123, 'property get');
     t.equal(await xC.S.val(999).P, 999, 'property set');
+    t.equal(await xC.H.val.P, true, 'property has');
+    t.equal(await xC.H.notval.P, false, 'missing property has not');
     t.equal(x.val, 999, 'property set works');
     t.equal(await xC.D.val.P, true, 'property delete');
     t.equal(x.val, undefined, 'delete worked');

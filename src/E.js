@@ -82,6 +82,17 @@ export default function makeE(HandledPromise) {
       },
     });
 
+  const makeEHasProxy = (x, wrap = o => o) =>
+    new Proxy(Object.create(null), {
+      ...readOnlyProxy,
+      has(_target, _prop) {
+        return true;
+      },
+      get(_target, prop) {
+        return wrap(HandledPromise.has(x, prop));
+      },
+    });
+
   const makeESetterProxy = (x, wrap = o => o) =>
     new Proxy(Object.create(null), {
       ...readOnlyProxy,
@@ -110,6 +121,7 @@ export default function makeE(HandledPromise) {
     });
 
   E.G = makeEGetterProxy;
+  E.H = makeEHasProxy;
   E.D = makeEDeleterProxy;
   E.S = makeESetterProxy;
   E.M = makeEMethodProxy;
@@ -123,6 +135,10 @@ export default function makeE(HandledPromise) {
       get D() {
         // Return deleter.
         return makeEDeleterProxy(x, EChain);
+      },
+      get H() {
+        // Return has.
+        return makeEHasProxy(x, EChain);
       },
       get S() {
         // Return setter.

@@ -39,6 +39,12 @@ export function makeHandledPromise(EPromise) {
     getSendOnly(target, key) {
       EPromise.resolve(target).get(key);
     },
+    has(target, key) {
+      return EPromise.resolve(target).has(key);
+    },
+    hasSendOnly(target, key) {
+      EPromise.resolve(target).has(key);
+    },
     set(target, key, val) {
       return EPromise.resolve(target).put(key, val);
     },
@@ -155,6 +161,10 @@ export function maybeExtendPromise(Promise) {
         return handle(this, 'GET', key);
       },
 
+      has(key) {
+        return handle(this, 'HAS', key);
+      },
+
       put(key, val) {
         return handle(this, 'PUT', key, val);
       },
@@ -251,6 +261,7 @@ export function maybeExtendPromise(Promise) {
 
           unfulfilledHandler = {
             GET: makePostponed('get'),
+            HAS: makePostponed('has'),
             PUT: makePostponed('put'),
             DELETE: makePostponed('delete'),
             POST: makePostponed('post'),
@@ -380,6 +391,7 @@ export function maybeExtendPromise(Promise) {
 
   forwardingHandler = {
     GET: makeForwarder('GET', (o, key) => o[key]),
+    HAS: makeForwarder('HAS', (o, key) => key in o),
     PUT: makeForwarder('PUT', (o, key, val) => (o[key] = val)),
     DELETE: makeForwarder('DELETE', (o, key) => delete o[key]),
     POST: makeForwarder('POST', (o, optKey, args) => {
