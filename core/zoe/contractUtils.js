@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
 // These utilities are likely to be helpful to developers writing
-// governing contracts.
+// smart contracts on Zoe.
 
 // https://stackoverflow.com/questions/17428587/transposing-a-2d-array-in-javascript/41772644#41772644
 const transpose = matrix =>

@@ -4,10 +4,9 @@ import harden from '@agoric/harden';
  * AutomaticRefund just gives you back what you put in. It has one
  * method: `makeOffer`, which takes an `escrowReceipt` as a parameter.
  * AutomaticRefund then burns the `escrowReceipt` and then completes the
- * offer. Other governing contracts will use these same steps, but
+ * offer. Other contracts will use these same steps, but
  * they will have more sophisticated logic and interfaces.
- * @param {governingContractFacet} zoe - the governing
- * contract facet of zoe
+ * @param {contractFacet} zoe - the contract facet of zoe
  */
 export const makeContract = harden((zoe, terms) => {
   let count = 0;

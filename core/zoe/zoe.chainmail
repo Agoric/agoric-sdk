@@ -1,7 +1,7 @@
 /**
  * This is returned by a call to `escrow` on Zoe.
  * An escrowReceipt is an ERTP payment which acts as proof of escrow
- * and is normally passed in to a governingContract method. The payout
+ * and is normally passed in to a smart contract. The payout
  * is a promise that resolves to an array of payments.
  */
 struct EscrowReceiptAndClaimPayout ( ) {
@@ -31,7 +31,7 @@ interface Zoe {
    * Get the long-lived escrowReceiptAssay. The mint associated
    * with the escrowReceiptAssay creates the ERTP payments that
    * represent proof of escrow and may be passed into a
-   * governingContract method.
+   * smart contract method.
    */
   getEscrowReceiptAssay() -> (Assay);
 
@@ -42,14 +42,15 @@ interface Zoe {
   getAssaysForInstance() -> (List(Assay));
 
   /** 
-   * Zoe is long-lived. We can use Zoe to create governing contract
-   * instances by specifying a particular governing contract 
-   * installation to use, as well as the `terms` of the contract. The
-   * contract terms are the arguments to the contract, and must include
+   * Zoe is long-lived. We can use Zoe to create smart contract
+   * instances by specifying a particular contract installation to 
+   * use, as well as the `terms` of the contract. The contract terms 
+   * are the arguments to the contract, and must include
    * the expected assays for the underlying rights. (Other than the
    * `assays` property of `terms`, the `terms` properties are up to 
-   * the discretion of the governing contract.) We get back an instance, an
-   * id for that instance, and the id for the installation.
+   * the discretion of the smart contract.) We get back an instance, a
+   * handle for that instance, the handle for the installation, and the
+   * terms.
    */
   makeInstance(installationHandle :Object, terms :Object) -> (InstanceInformation);
   
@@ -62,7 +63,7 @@ interface Zoe {
    * To escrow, the user must provide an `offerDesc` which is a list of
    * objects with a rule property (such as 'offerExactly') and an assetDesc
    * property. The objects in the `offerDesc` must be in the same order
-   * as the assays associated with a governing contract. That is, the
+   * as the assays associated with a smart contract. That is, the
    * assetDesc in index 0 of `offerDesc` should be an assetDesc for the assay
    * in index 0 of the assays array.`payments` is an array of the
    * actual payments to be escrowed, following the rules in the
@@ -109,7 +110,7 @@ interface ZoeGoverningContractFacet () {
   escrowEmptyOffer ( ) -> (offerHandle);
   
   /**
-   * Escrow an offer created by the governing contract. Autoswap uses
+   * Escrow an offer created by the smart contract. Autoswap uses
    * this to mint liquidity tokens and add them to the rights managed
    * by Zoe.
    */

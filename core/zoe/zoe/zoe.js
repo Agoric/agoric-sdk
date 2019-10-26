@@ -82,37 +82,36 @@ const makeZoe = async (additionalEndowments = {}) => {
 
   const { adminState, readOnlyState } = await makeState();
 
-  // Zoe has two different facets: the public facet and the
-  // governingContract facet. Neither facet should give direct access
+  // Zoe has two different facets: the public Zoe service and the
+  // contract facet. Neither facet should give direct access
   // to the `adminState`.
 
-  // The `governingContractFacet` is what is accessible by the
-  // governing contract. The governing contract at no time has
-  // access to the users' payments or the Zoe purses, or any of
-  // the `adminState` of Zoe. The governing contract can do a
-  // couple of things. It can propose a reallocation of
-  // extents, complete an offer, and interestingly, can create a
-  // new offer itself for recordkeeping and other various
-  // purposes.
+  // The contract facet is what is accessible to the smart contract
+  // instance and is remade for each instance. The contract at no time
+  // has access to the users' payments or the Zoe purses, or any of
+  // the `adminState` of Zoe. The contract can only do a few things
+  // through the Zoe contract fact. It can propose a reallocation of
+  // extents, complete an offer, and interestingly, can create a new
+  // offer itself for record-keeping and other various purposes.
 
-  const makeGoverningContractFacet = instanceHandle => {
-    const governingContractFacet = harden({
+  const makeContractFacet = instanceHandle => {
+    const contractFacet = harden({
       /**
-       * The governing contract can propose a reallocation of
-       * extents per player, which will only succeed if the
-       * reallocation 1) conserves rights, and 2) is 'offer safe' for
-       * all parties involved. This reallocation is partial, meaning
-       * that it applies only to the extents associated with the
-       * offerHandles that are passed in, rather than applying to all of
-       * the extents in the extentMatrix. We are able to ensure
-       * that with each reallocation, rights are conserved and offer
-       * safety is enforced for all extents, even though the
-       * reallocation is partial, because once these invariants are
-       * true, they will remain true until changes are made.
+       * The contract can propose a reallocation of extents per
+       * player, which will only succeed if the reallocation 1)
+       * conserves rights, and 2) is 'offer-safe' for all parties
+       * involved. This reallocation is partial, meaning that it
+       * applies only to the extents associated with the offerHandles
+       * that are passed in, rather than applying to all of the
+       * extents in the extentMatrix. We are able to ensure that with
+       * each reallocation, rights are conserved and offer safety is
+       * enforced for all extents, even though the reallocation is
+       * partial, because once these invariants are true, they will
+       * remain true until changes are made.
        * @param  {object[]} offerHandles - an array of offerHandles
-       * @param  {extent[][]} reallocation - a matrix of extents,
-       * with one array of extents per offerHandle. This is likely
-       * a subset of the full extentsMatrix.
+       * @param  {extent[][]} reallocation - a matrix of extents, with
+       * one array of extents per offerHandle. This is likely a subset
+       * of the full extentsMatrix.
        */
       reallocate: (offerHandles, reallocation) => {
         const offerDescs = readOnlyState.getOfferDescsFor(offerHandles);
@@ -136,11 +135,11 @@ const makeZoe = async (additionalEndowments = {}) => {
       },
 
       /**
-       * The governing contract can "complete" an offer to remove it
-       * from the ongoing governing contract and resolve the
+       * The contract can "complete" an offer to remove it
+       * from the ongoing contract and resolve the
        * `result` promise with the player's payouts (either winnings or
        * refunds). Because Zoe only allows for reallocations that
-       * conserve rights and are 'offer safe', we don't need to do
+       * conserve rights and are 'offer-safe', we don't need to do
        * those checks at this step and can assume that the
        * invariants hold.
        * @param  {object[]} offerHandles - an array of offerHandles
@@ -149,16 +148,13 @@ const makeZoe = async (additionalEndowments = {}) => {
         completeOffers(adminState, readOnlyState, offerHandles),
 
       /**
-       *  The governing contract can create an empty offer and get
-       *  the associated offerHandle. This allows the governing contract
-       *  to use this offer slot for recordkeeping. For instance, to
-       *  represent a pool, the governing contract can create an
+       *  The contract can create an empty offer and get
+       *  the associated offerHandle. This allows the contract
+       *  to use this offer slot for record-keeping. For instance, to
+       *  represent a pool, the contract can create an
        *  empty offer and then reallocate other extents to this offer.
        */
       escrowEmptyOffer: () => {
-        // attenuate the authority by not passing along the result
-        // promise object and only passing the offerHandle
-
         const assays = readOnlyState.getAssays(instanceHandle);
         const labels = readOnlyState.getLabelsForInstanceHandle(instanceHandle);
         const extentOpsArray = readOnlyState.getExtentOpsArrayForInstanceHandle(
@@ -174,15 +170,13 @@ const makeZoe = async (additionalEndowments = {}) => {
         return offerHandle;
       },
       /**
-       *  The governing contract can also create a real offer and
-       *  get the associated offerHandle, bypassing the seat and receipt
-       *  creation. This allows the governing contract to make
-       *  offers on the users' behalf, as happens in the
-       *  `addLiquidity` step of the `autoswap` contract.
+       *  The contract can also create a real offer and get the
+       *  associated offerHandle, bypassing the escrow receipt
+       *  creation. This allows the contract to make offers on the
+       *  users' behalf, as happens in the `addLiquidity` step of the
+       *  `autoswap` contract.
        */
       escrowOffer: async (conditions, offerPayments) => {
-        // attenuate the authority by not passing along the result
-        // promise object and only passing the offerHandle
         const { offerHandle } = await escrowOffer(
           adminState.recordOffer,
           adminState.recordAssay,
@@ -251,16 +245,17 @@ const makeZoe = async (additionalEndowments = {}) => {
       getInviteAssay: () => inviteAssay,
       getEscrowReceiptAssay: () => escrowReceiptAssay,
     });
-    return governingContractFacet;
+    return contractFacet;
   };
 
-  // The `publicFacet` of the zoe has three main methods: `makeInstance`
-  // installs a governing contract and creates an instance,
-  // `getInstance` credibly retrieves an instance from zoe, and
-  // `escrow` allows users to securely escrow and get an escrow
-  // receipt and payouts in return.
+  // The public Zoe service has four main methods: `install` takes
+  // contract code and registers it with Zoe associated with an
+  // `installationHandle` for identification, `makeInstance` creates
+  // an instance from an installation, `getInstance` credibly
+  // retrieves an instance from zoe, and `escrow` allows users to
+  // securely escrow and get an escrow receipt and payouts in return.
 
-  const publicFacet = harden({
+  const zoeService = harden({
     getEscrowReceiptAssay: () => escrowReceiptAssay,
     getInviteAssay: () => inviteAssay,
     getPayoutAssay: () => payoutAssay,
@@ -283,23 +278,21 @@ Unrecognized moduleFormat ${moduleFormat}`;
       return installationHandle;
     },
     /**
-     * Installs a governing contract and returns a reference to the
-     * instance object, a unique handle for the instance that can be
-     * shared, and the name of the governing contract installed.
-     * @param  {object[]} assays - an array of assays to be used in
-     * the governing contract. This determines the order of the offer
-     * description elements and offer payments accepted by the
-     * governing contract.
-     * @param  {object} installationHandle - the unique handle for the installation
-     * @param  {[]} args - arguments to the contract. These arguments
-     * depend on the contract.
+     * Makes a contract instance from an installation and returns a
+     * unique handle for the instance that can be shared, as well as
+     * other information, such as the terms used in the instance.
+     * @param  {object} installationHandle - the unique handle for the
+     * installation
+     * @param  {object} terms - arguments to the contract. These
+     * arguments depend on the contract, apart from the `assays`
+     * property, which is required.
      */
     makeInstance: async (installationHandle, terms) => {
       const installation = adminState.getInstallation(installationHandle);
       const instanceHandle = harden({});
-      const governingContractFacet = makeGoverningContractFacet(instanceHandle);
+      const contractFacet = makeContractFacet(instanceHandle);
       const { instance, assays } = installation.makeContract(
-        governingContractFacet,
+        contractFacet,
         terms,
       );
       const newTerms = harden({ ...terms, assays });
@@ -398,7 +391,7 @@ Unrecognized moduleFormat ${moduleFormat}`;
       return harden(escrowResult);
     },
   });
-  return publicFacet;
+  return zoeService;
 };
 
 export { makeZoe };

@@ -129,7 +129,7 @@ test('zoe with automaticRefund', async t => {
 
     // In the 'automaticRefund' trivial contract, you just get your
     // offerDesc back when you make an offer. The effect of calling
-    // makeOffer will vary widely depending on the governing contract.
+    // makeOffer will vary widely depending on the smart  contract.
     const aliceOfferMadeDesc = await aliceAutomaticRefund.makeOffer(
       aliceEscrowReceipt,
     );

@@ -255,7 +255,7 @@ reallocating, depending on the logic of the contract.
 
 More:
 
-* [How do I write a governing contract and upload and install it?](TODO)
+* [How do I write a smart contract on Zoe and upload and install it?](TODO)
 
 * [How can I build an application with my Zoe smart contract?](TODO)
 

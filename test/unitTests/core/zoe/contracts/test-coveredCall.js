@@ -571,7 +571,7 @@ test('zoe - coveredCall with swap for invite', async t => {
       ),
     );
 
-    // What was the governing contract status when the invite was
+    // What was the smart contract status when the invite was
     // made? (Note: This check may be superfluous, and the
     // status/state machine may be taken out of this contract)
     t.equal(inviteExtent.status, 'acceptingOffers');
@@ -947,7 +947,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       ),
     );
 
-    // What was the governing contract status when the invite was
+    // What was the smart contract status when the invite was
     // made? (Note: This check may be superfluous, and the
     // status/state machine may be taken out of this contract)
     t.equal(inviteExtent.status, 'acceptingOffers');
@@ -1084,7 +1084,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       ),
     );
 
-    // What was the governing contract status when the invite was
+    // What was the smart contract status when the invite was
     // made? (Note: This check may be superfluous, and the
     // status/state machine may be taken out of this contract)
     t.equal(daveInviteExtent.status, 'acceptingOffers');
