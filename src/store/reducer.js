@@ -4,8 +4,9 @@ import {
   SERVER_CONNECTED,
   SERVER_DISCONNECTED,
   UPDATE_PURSES,
+  UPDATE_EXCHANGE_AMOUNT,
   CHANGE_PURSE,
-  SWAP_PURSES,
+  SWAP_INPUTS,
   CHANGE_AMOUNT,
   CREATE_OFFER,
   RESET_STATE,
@@ -16,9 +17,10 @@ import {
   serverConnected,
   serverDisconnected,
   updatePurses,
-  swapPurses,
+  updateExchangeAmount,
   changePurse,
   changeAmount,
+  swapInputs,
   createOffer,
   resetState,
 } from './operations';
@@ -33,6 +35,7 @@ export function createDefaultState() {
     outputPurse: '',
     inputAmount: '',
     outputAmount: '',
+    isInputAmount: '',
   };
 }
 
@@ -50,13 +53,15 @@ export const reducer = (state, { type, payload }) => {
 
     case UPDATE_PURSES:
       return updatePurses(state, payload);
+    case UPDATE_EXCHANGE_AMOUNT:
+      return updateExchangeAmount(state, payload);
 
     case CHANGE_PURSE:
       return changePurse(state, payload);
-    case SWAP_PURSES:
-      return swapPurses(state);
     case CHANGE_AMOUNT:
       return changeAmount(state, payload);
+    case SWAP_INPUTS:
+      return swapInputs(state);
 
     case CREATE_OFFER:
       return createOffer(state, payload);

@@ -5,7 +5,7 @@ import {
   SERVER_DISCONNECTED,
   UPDATE_PURSES,
   CHANGE_PURSE,
-  SWAP_PURSES,
+  SWAP_INPUTS,
   CHANGE_AMOUNT,
   CREATE_OFFER,
   RESET_STATE,
@@ -32,18 +32,18 @@ export const updatePurses = purses => ({
   payload: purses,
 });
 
-export const changePurse = (purse, isInput) => ({
+export const changePurse = (purse, isInputPurse) => ({
   type: CHANGE_PURSE,
-  payload: { purse, isInput },
+  payload: { purse, isInputPurse },
 });
 
-export const swapPurses = () => ({
-  type: SWAP_PURSES,
+export const swapInputs = () => ({
+  type: SWAP_INPUTS,
 });
 
-export const changeAmount = (amount, isInput) => ({
+export const changeAmount = (amount, isInputAmount) => ({
   type: CHANGE_AMOUNT,
-  payload: { amount, isInput },
+  payload: { amount, isInputAmount },
 });
 
 export const createOffer = () => ({

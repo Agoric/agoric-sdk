@@ -31,7 +31,7 @@ export default function Provider({ children }) {
       }
     }
 
-    function fetchGetWalletState() {
+    function getWalletPursesState() {
       return doFetch({ type: 'getWalletPursesState' }).then(messageHandler);
     }
 
@@ -39,7 +39,7 @@ export default function Provider({ children }) {
       activateWebSocket({
         onConnect() {
           dispatch(serverConnected());
-          fetchGetWalletState();
+          getWalletPursesState();
         },
         onDisconnect() {
           dispatch(serverDisconnected());
@@ -53,6 +53,41 @@ export default function Provider({ children }) {
       deactivateWebSocket();
     }
   }, [active]);
+
+  const {
+    inputPurse,
+    outputPurse,
+    inputAmount,
+    outputAmount,
+    isInputAmount,
+  } = state;
+
+  useEffect(() => {
+    function messageHandler(message) {
+      if (message.type === 'updateAutoswapExchange') {
+        // const exchangeAmount = JSON.parse(message.state);
+        console.log(message.state);
+      }
+    }
+
+    if (inputPurse && outputPurse && inputAmount > 0 && outputAmount > 0) {
+      if (isInputAmount) {
+        doFetch({
+          type: 'getAutoswapExchange',
+          amount: inputAmount,
+          inputDesc: inputPurse.description,
+          outputDesc: outputPurse.description,
+        }).then(messageHandler);
+      } else {
+        doFetch({
+          type: 'getAutoswapExchange',
+          amount: outputAmount,
+          inputDesc: outputPurse.description,
+          outputDesc: inputPurse.description,
+        }).then(messageHandler);
+      }
+    }
+  }, [inputPurse, outputPurse, inputAmount, outputAmount, isInputAmount]);
 
   return (
     <ApplicationContext.Provider value={{ state, dispatch }}>

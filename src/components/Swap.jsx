@@ -16,7 +16,11 @@ import AssetInput from './AssetInput';
 import Steps from './Steps';
 
 import { useApplicationContext } from '../contexts/Application';
-import { changePurse, swapPurses, changeAmount } from '../store/actions';
+import {
+  changePurse,
+  swapInputs,
+  changeAmount,
+} from '../store/actions';
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -62,12 +66,20 @@ export default function Swap() {
     dispatch(changePurse(event.target.value, isInput));
   }
 
-  function handleSwapPurses(event, isInput) {
-    dispatch(swapPurses(event.target.value, isInput));
+  function handleswapInputs(event, isInput) {
+    dispatch(swapInputs(event.target.value, isInput));
   }
 
   function handleChangeAmount(event, isInput) {
     dispatch(changeAmount(event.target.value, isInput));
+  }
+
+  function getExchangeRate(decimal) {
+    if (inputAmount > 0 && outputAmount > 0) {
+      const exchangeRate = (outputAmount / inputAmount).toFixed(decimal);
+      return `Exchange rate: 1 ${inputPurse.description} = ${exchangeRate} ${outputPurse.description}`;
+    }
+    return '';
   }
 
   function handleSwap(event) {}
@@ -77,7 +89,7 @@ export default function Swap() {
       <Typography component="h1" variant="h4" align="center">
         Swap
       </Typography>
-            
+
       <Steps
         connected={connected}
         inputPurse={inputPurse}
@@ -85,7 +97,7 @@ export default function Swap() {
         inputAmount={inputAmount}
         outputAmount={outputAmount}
       />
-      
+
       <Grid
         container
         direction="column"
@@ -105,7 +117,7 @@ export default function Swap() {
 
         <IconButton
           size="medium"
-          onClick={handleSwapPurses}
+          onClick={handleswapInputs}
           disabled={!connected}
         >
           <ArrowDownIcon />
@@ -120,16 +132,11 @@ export default function Swap() {
           amount={outputAmount}
           disabled={!connected}
         />
-        {/*        <InputLabel className={classes.message}>
-          {exchangeRate &&
-            `${t('exchangeRate')} ${inputSymbol} = ${amountFormatter(
-              exchangeRate,
-              18,
-              4,
-              false,
-            )} ${outputSymbol}`}
+        <InputLabel className={classes.message}>
+          {connected &&
+            isValid && getExchangeRate()
+          }
         </InputLabel>
-        */}
       </Grid>
       <div className={classes.buttons}>
         <Button

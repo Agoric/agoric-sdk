@@ -22,7 +22,7 @@ const useStyles = makeStyles(theme => ({
 
 export default function App() {
   const classes = useStyles();
-  
+
   return (
     <>
       <CssBaseline />

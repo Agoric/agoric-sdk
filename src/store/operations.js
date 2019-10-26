@@ -15,10 +15,13 @@ export function serverDisconnected(state) {
 export function updatePurses(state, purses) {
   return { ...state, purses };
 }
+export function updateExchangeAmount(state, exchangeAmount) {
+  return { ...state, exchangeAmount };
+}
 
-export function changePurse(state, { purse, isInput }) {
+export function changePurse(state, { purse, isInputPurse }) {
   let { inputPurse, outputPurse } = state;
-  if (isInput) {
+  if (isInputPurse) {
     inputPurse = purse;
     if (inputPurse === outputPurse) {
       outputPurse = undefined;
@@ -31,16 +34,27 @@ export function changePurse(state, { purse, isInput }) {
   }
   return { ...state, inputPurse, outputPurse };
 }
-
-export function swapPurses(state) {
-  const { inputPurse, outputPurse } = state;
-  return { ...state, inputPurse: outputPurse, outputPurse: inputPurse };
+export function changeAmount(state, { amount, isInputAmount }) {
+  return isInputAmount
+    ? { ...state, inputAmount: amount, isInputAmount }
+    : { ...state, outputAmount: amount, isInputAmount };
 }
-
-export function changeAmount(state, { amount, isInput }) {
-  return isInput
-    ? { ...state, inputAmount: amount }
-    : { ...state, outputAmount: amount };
+export function swapInputs(state) {
+  const {
+    inputPurse,
+    outputPurse,
+    inputAmount,
+    outputAmount,
+    isInputAmount,
+  } = state;
+  return {
+    ...state,
+    inputPurse: outputPurse,
+    outputPurse: inputPurse,
+    inputAmount: outputAmount,
+    outputAmount: inputAmount,
+    isInputAmount: !isInputAmount, // swap dependent and free variable
+  };
 }
 
 export function createOffer(state) {
