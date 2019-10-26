@@ -28,13 +28,13 @@ Then escrows her offer with Zoe and gets an escrowReceipt
 and a promise that resolves to her payout:
 
 ```js
-const aliceOfferDesc = harden([
+const alicePayoutRules = harden([
   {
-    rule: 'offerExactly',
+    kind: 'offerExactly',
     assetDesc: moolaAssay.makeAssetDesc(3),
   },
   {
-    rule: 'wantExactly',
+    kind: 'wantExactly',
     assetDesc: simoleanAssay.makeAssetDesc(7),
   },
 ]);
@@ -42,7 +42,7 @@ const alicePayments = [aliceMoolaPayment, undefined];
 const {
   escrowReceipt: allegedAliceEscrowReceipt,
   payout: alicePayoutP,
-} = await zoe.escrow(aliceOfferDesc, alicePayments);
+} = await zoe.escrow(alicePayoutRules, alicePayments);
 ```
 
 And then makes an offer using the escrowReceipt and tries to collect her winnings:
@@ -72,13 +72,13 @@ makes an offer in the same way as Alice, but his offer description is
 the opposite of Alice's:
 
 ```js
-const bobOfferDesc = harden([
+const bobPayoutRules = harden([
   {
-    rule: 'wantExactly',
+    kind: 'wantExactly',
     assetDesc: bobAssays[0].makeAssetDesc(3),
   },
   {
-    rule: 'offerExactly',
+    kind: 'offerExactly',
     assetDesc: bobAssays[1].makeAssetDesc(7),
   },
 ]);
@@ -87,7 +87,7 @@ const bobPayments = [undefined, bobSimoleanPayment];
 const {
   escrowReceipt: bobEscrowReceipt,
   payout: bobPayoutP,
-} = await zoe.escrow(bobOfferDesc, bobPayments);
+} = await zoe.escrow(bobPayoutRules, bobPayments);
 
 const bobOfferResult = await bobSwap.makeOffer(bobEscrowReceipt);
 ```

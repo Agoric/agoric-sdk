@@ -38,15 +38,15 @@ escrows them:
 ```js
 const aliceOffer = harden([
   {
-    rule: 'offerExactly',
+    kind: 'offerExactly',
     assetDesc: allAssays[0].makeAssetDesc(10),
   },
   {
-    rule: 'offerExactly',
+    kind: 'offerExactly',
     assetDesc: allAssays[1].makeAssetDesc(5),
   },
   {
-    rule: 'wantAtLeast',
+    kind: 'wantAtLeast',
     assetDesc: allAssays[2].makeAssetDesc(10),
   },
 ]);
@@ -70,17 +70,17 @@ to exchange 2 moola for 1 simolean. He escrows 2 moola with Zoe and
 receives an escrow receipt.
 
 ```js
- const bobMoolaForSimOfferDesc = harden([
+ const bobMoolaForSimPayoutRules = harden([
   {
-    rule: 'offerExactly',
+    kind: 'offerExactly',
     assetDesc: allAssays[0].makeAssetDesc(2),
   },
   {
-    rule: 'wantAtLeast',
+    kind: 'wantAtLeast',
     assetDesc: allAssays[1].makeAssetDesc(1),
   },
   {
-    rule: 'wantAtLeast',
+    kind: 'wantAtLeast',
     assetDesc: allAssays[2].makeAssetDesc(0),
   },
 ]);
@@ -90,7 +90,7 @@ const {
   escrowReceipt: allegedBobEscrowReceipt,
   payout: bobPayoutP,
 } = await zoe.escrow(
-  bobMoolaForSimOfferDesc,
+  bobMoolaForSimPayoutRules,
   bobMoolaForSimPayments,
 );
 ```

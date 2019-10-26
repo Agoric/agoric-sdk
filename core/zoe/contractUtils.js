@@ -19,7 +19,7 @@ const mapArrayOnMatrix = (matrix, arrayFn) => {
   return matrix.map(row => row.map((x, i) => arrayFn[i](x, i)));
 };
 
-const ruleEqual = (leftRule, rightRule) => leftRule.rule === rightRule.rule;
+const ruleEqual = (leftRule, rightRule) => leftRule.kind === rightRule.kind;
 
 const extentEqual = (extentOps, leftRule, rightRule) =>
   extentOps.equals(leftRule.assetDesc.extent, rightRule.assetDesc.extent);
@@ -49,7 +49,7 @@ const makeEmptyExtents = extentOpsArray =>
 // validRules is the rule portion of a offer description in array
 // form, such as ['offerExactly', 'wantExactly']
 const makeHasOkRules = validRules => offer =>
-  validRules.every((rule, i) => rule === offer[i].rule, true);
+  validRules.every((rule, i) => rule === offer[i].kind, true);
 
 // Vector addition of two extent arrays
 const vectorWith = (extentOpsArray, leftExtents, rightExtents) =>
@@ -76,10 +76,10 @@ const toAssetDescMatrix = (extentOps, labels, extentsMatrix) =>
     extents.map((extent, i) => makeAssetDesc(extentOps[i], labels[i], extent)),
   );
 
-const makeOfferDesc = (extentOpsArray, labels, rules, extents) =>
+const makePayoutRules = (extentOpsArray, labels, kinds, extents) =>
   extentOpsArray.map((extentOps, i) =>
     harden({
-      rule: rules[i],
+      kind: kinds[i],
       assetDesc: makeAssetDesc(extentOps, labels[i], extents[i]),
     }),
   );
@@ -110,7 +110,7 @@ export {
   vectorWithout,
   basicFungibleTokenOperations,
   makeAssetDesc,
-  makeOfferDesc,
+  makePayoutRules,
   toAssetDescMatrix,
   assetDescsToExtentsArray,
 };

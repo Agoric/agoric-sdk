@@ -41,17 +41,17 @@ test('zoe - publicSwap', async t => {
 
     // 2: Alice escrows with zoe
     const aliceOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: assays[0].makeAssetDesc(3),
         },
         {
-          rule: 'wantExactly',
+          kind: 'wantExactly',
           assetDesc: assays[1].makeAssetDesc(7),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -96,21 +96,21 @@ test('zoe - publicSwap', async t => {
     t.equals(bobInstallationId, installationHandle);
     t.deepEquals(bobTerms.assays, assays);
 
-    const firstOfferDesc = bobSwap.getFirstOfferDesc();
-    t.deepEquals(firstOfferDesc, aliceOfferRules.offerDesc);
+    const firstPayoutRules = bobSwap.getFirstPayoutRules();
+    t.deepEquals(firstPayoutRules, aliceOfferRules.payoutRules);
 
     const bobOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'wantExactly',
+          kind: 'wantExactly',
           assetDesc: bobTerms.assays[0].makeAssetDesc(3),
         },
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: bobTerms.assays[1].makeAssetDesc(7),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -145,7 +145,7 @@ test('zoe - publicSwap', async t => {
     // Carol gets what Alice wanted
     t.deepEquals(
       carolPayout[1].getBalance(),
-      aliceOfferRules.offerDesc[1].assetDesc,
+      aliceOfferRules.payoutRules[1].assetDesc,
     );
 
     // Carol didn't get any of what Alice put in

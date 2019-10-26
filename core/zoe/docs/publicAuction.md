@@ -29,13 +29,13 @@ She can put up something at auction by escrowing it with Zoe and
 calling `makeOffer` on the auction instance with her escrow receipt.
 
 ```js
-const aliceOfferDesc = harden([
+const alicePayoutRules = harden([
   {
-    rule: 'offerExactly',
+    kind: 'offerExactly',
     assetDesc: moolaAssay.makeAssetDesc(1),
   },
   {
-    rule: 'wantAtLeast',
+    kind: 'wantAtLeast',
     assetDesc: simoleanAssay.makeAssetDesc(3),
   },
 ]);
@@ -43,7 +43,7 @@ const alicePayments = [aliceMoolaPayment, undefined];
 const {
   escrowReceipt: allegedAliceEscrowReceipt,
   payout: alicePayoutP,
-} = await zoe.escrow(aliceOfferDesc, alicePayments);
+} = await zoe.escrow(alicePayoutRules, alicePayments);
 
 const aliceOfferResult = await aliceAuction.makeOffer(aliceEscrowReceipt);
 ```
@@ -77,13 +77,13 @@ Bob decides to join the contract and
 makes an offer:
 
 ```js
-const bobOfferDesc = harden([
+const bobPayoutRules = harden([
   {
-    rule: 'wantExactly',
+    kind: 'wantExactly',
     assetDesc: moolaAssay.makeAssetDesc(1),
   },
   {
-    rule: 'offerAtMost',
+    kind: 'offerAtMost',
     assetDesc: simoleanAssay.makeAssetDesc(11),
   },
 ]);
@@ -91,7 +91,7 @@ const bobPayments = [undefined, bobSimoleanPayment];
 const {
   escrowReceipt: allegedBobEscrowReceipt,
   payout: bobPayoutP,
-} = await zoe.escrow(bobOfferDesc, bobPayments);
+} = await zoe.escrow(bobPayoutRules, bobPayments);
 
 const bobOfferResult = await bobAuction.makeOffer(bobEscrowReceipt);
 ```

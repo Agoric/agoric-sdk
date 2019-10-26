@@ -2,36 +2,36 @@ import harden from '@agoric/harden';
 
 import { rejectOffer, defaultAcceptanceMsg } from './helpers/userFlow';
 import {
-  isExactlyMatchingOfferDesc,
-  hasRulesAndAssays,
-} from './helpers/offerDesc';
+  isExactlyMatchingPayoutRules,
+  hasValidPayoutRules,
+} from './helpers/payoutRules';
 
 export const makeContract = harden((zoe, terms) => {
   let firstOfferHandle;
-  let firstOfferDesc;
+  let firstPayoutRules;
 
   const publicSwap = harden({
     makeFirstOffer: async escrowReceipt => {
       const {
         offerHandle,
-        offerRules: { offerDesc: offerMadeDesc },
+        offerRules: { payoutRules },
       } = await zoe.burnEscrowReceipt(escrowReceipt);
 
-      const rulesFormat = ['offerExactly', 'wantExactly'];
-      if (!hasRulesAndAssays(rulesFormat, terms.assays, offerMadeDesc)) {
+      const ruleKinds = ['offerExactly', 'wantExactly'];
+      if (!hasValidPayoutRules(ruleKinds, terms.assays, payoutRules)) {
         return rejectOffer(zoe, offerHandle);
       }
 
       // The offer is valid, so save information about the first offer
       firstOfferHandle = offerHandle;
-      firstOfferDesc = offerMadeDesc;
+      firstPayoutRules = payoutRules;
       return defaultAcceptanceMsg;
     },
-    getFirstOfferDesc: () => firstOfferDesc,
+    getFirstPayoutRules: () => firstPayoutRules,
     matchOffer: async escrowReceipt => {
       const {
         offerHandle: matchingOfferHandle,
-        offerRules: { offerDesc: offerMadeDesc },
+        offerRules: { payoutRules },
       } = await zoe.burnEscrowReceipt(escrowReceipt);
 
       if (!firstOfferHandle) {
@@ -47,7 +47,7 @@ export const makeContract = harden((zoe, terms) => {
         );
       }
 
-      if (!isExactlyMatchingOfferDesc(zoe, firstOfferDesc, offerMadeDesc)) {
+      if (!isExactlyMatchingPayoutRules(zoe, firstPayoutRules, payoutRules)) {
         return rejectOffer(zoe, matchingOfferHandle);
       }
       const [firstOfferExtents, matchingOfferExtents] = zoe.getExtentsFor(

@@ -51,21 +51,21 @@ test('autoSwap with valid offers', async t => {
     // 10 moola = 5 simoleans at the time of the liquidity adding
     // aka 2 moola = 1 simolean
     const aliceOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: allAssays[0].makeAssetDesc(10),
         },
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: allAssays[1].makeAssetDesc(5),
         },
         {
-          rule: 'wantAtLeast',
+          kind: 'wantAtLeast',
           assetDesc: allAssays[2].makeAssetDesc(10),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -113,21 +113,21 @@ test('autoSwap with valid offers', async t => {
     // 6: Bob escrows
 
     const bobMoolaForSimOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: allAssays[0].makeAssetDesc(2),
         },
         {
-          rule: 'wantAtLeast',
+          kind: 'wantAtLeast',
           assetDesc: allAssays[1].makeAssetDesc(1),
         },
         {
-          rule: 'wantAtLeast',
+          kind: 'wantAtLeast',
           assetDesc: allAssays[2].makeAssetDesc(0),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -161,21 +161,21 @@ test('autoSwap with valid offers', async t => {
 
     // 8: Bob makes another offer and swaps
     const bobSimsForMoolaOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'wantAtLeast',
+          kind: 'wantAtLeast',
           assetDesc: allAssays[0].makeAssetDesc(6),
         },
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: allAssays[1].makeAssetDesc(3),
         },
         {
-          rule: 'wantAtLeast',
+          kind: 'wantAtLeast',
           assetDesc: allAssays[2].makeAssetDesc(0),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -205,22 +205,22 @@ test('autoSwap with valid offers', async t => {
 
     // 8: Alice removes her liquidity
     // She's not picky...
-    const aliceRemoveLiquidityOfferDesc = harden({
-      offerDesc: [
+    const aliceRemoveLiquidityPayoutRules = harden({
+      payoutRules: [
         {
-          rule: 'wantAtLeast',
+          kind: 'wantAtLeast',
           assetDesc: allAssays[0].makeAssetDesc(0),
         },
         {
-          rule: 'wantAtLeast',
+          kind: 'wantAtLeast',
           assetDesc: allAssays[1].makeAssetDesc(0),
         },
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: allAssays[2].makeAssetDesc(10),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -229,7 +229,7 @@ test('autoSwap with valid offers', async t => {
       escrowReceipt: aliceRemoveLiquidityEscrowReceipt,
       payout: aliceRemoveLiquidityPayoutP,
     } = await zoe.escrow(
-      aliceRemoveLiquidityOfferDesc,
+      aliceRemoveLiquidityPayoutRules,
       harden([undefined, undefined, liquidityPayments[2]]),
     );
 

@@ -42,39 +42,39 @@ const mintEscrowReceiptPayment = (
   return escrowReceiptPaymentP;
 };
 
-const escrowPayment = async (offerDescElem, offerPayment, purse, extentOps) => {
+const escrowPayment = async (payoutRule, offerPayment, purse, extentOps) => {
   // if the user's contractual understanding includes
   // "offerExactly" or "offerAtMost", make sure that they have supplied a
   // payment with that exact balance
-  if (['offerExactly', 'offerAtMost'].includes(offerDescElem.rule)) {
+  if (['offerExactly', 'offerAtMost'].includes(payoutRule.kind)) {
     const { extent } = await E(purse).depositExactly(
-      offerDescElem.assetDesc,
+      payoutRule.assetDesc,
       offerPayment,
     );
     return extent;
   }
   insist(
     offerPayment === undefined,
-  )`payment was included, but the rule was ${offerDescElem.rule}`;
+  )`payment was included, but the rule kind was ${payoutRule.kind}`;
   return extentOps.empty();
 };
 
-const insistValidRules = offerDesc => {
-  const acceptedRules = [
+const insistValidPayoutRuleKinds = payoutRules => {
+  const acceptedKinds = [
     'offerExactly',
     'offerAtMost',
     'wantExactly',
     'wantAtLeast',
   ];
-  for (const offerDescElement of offerDesc) {
+  for (const payoutRule of payoutRules) {
     insist(
-      acceptedRules.includes(offerDescElement.rule),
-    )`rule ${offerDescElement.rule} is not one of the accepted rules`;
+      acceptedKinds.includes(payoutRule.kind),
+    )`kind ${payoutRule.kind} is not one of the accepted kind`;
   }
 };
 
-const insistValidExitCondition = exit => {
-  const acceptedExitConditionKinds = [
+const insistValidExitRule = exitRule => {
+  const acceptedExitRuleKinds = [
     'noExit',
     'onDemand',
     'afterDeadline',
@@ -82,8 +82,8 @@ const insistValidExitCondition = exit => {
   ];
 
   insist(
-    acceptedExitConditionKinds.includes(exit.kind),
-  )`exit ${exit} is not one of the accepted options`;
+    acceptedExitRuleKinds.includes(exitRule.kind),
+  )`exitRule.kind ${exitRule.kind} is not one of the accepted options`;
 };
 
 const escrowOffer = async (
@@ -93,25 +93,25 @@ const escrowOffer = async (
   offerPayments,
 ) => {
   const result = makePromise();
-  const { offerDesc, exit = { kind: 'onDemand' } } = offerRules;
+  const { payoutRules, exit = { kind: 'onDemand' } } = offerRules;
 
-  insistValidRules(offerDesc);
-  insistValidExitCondition(exit);
+  insistValidPayoutRuleKinds(payoutRules);
+  insistValidExitRule(exit);
 
-  // Escrow the payments and store the assays from the offerDesc. We
-  // assume that the offerDesc has elements for each expected assay,
+  // Escrow the payments and store the assays from the payoutRules. We
+  // assume that the payoutRules has elements for each expected assay,
   // and none are undefined.
   // TODO: handle bad offers more robustly
   const extents = await Promise.all(
-    offerDesc.map(async (offerDescElem, i) => {
-      const { assay } = offerDescElem.assetDesc.label;
+    payoutRules.map(async (payoutRule, i) => {
+      const { assay } = payoutRule.assetDesc.label;
       const { purse, extentOps } = await recordAssay(assay);
-      return escrowPayment(offerDescElem, offerPayments[i], purse, extentOps);
+      return escrowPayment(payoutRule, offerPayments[i], purse, extentOps);
     }),
   );
 
-  const assays = offerDesc.map(offerDescElem => {
-    const { assay } = offerDescElem.assetDesc.label;
+  const assays = payoutRules.map(payoutRule => {
+    const { assay } = payoutRule.assetDesc.label;
     return assay;
   });
 
@@ -127,9 +127,9 @@ const escrowOffer = async (
 
 const escrowEmptyOffer = (recordOffer, assays, labels, extentOpsArray) => {
   const offerHandle = harden({});
-  const offerDesc = labels.map((label, i) =>
+  const payoutRules = labels.map((label, i) =>
     harden({
-      rule: 'wantAtLeast',
+      kind: 'wantAtLeast',
       assetDesc: {
         label,
         extent: extentOpsArray[i].empty(),
@@ -137,8 +137,8 @@ const escrowEmptyOffer = (recordOffer, assays, labels, extentOpsArray) => {
     }),
   );
   const offerRules = harden({
-    offerDesc,
-    exit: {
+    payoutRules,
+    exitRule: {
       kind: 'onDemand',
     },
   });

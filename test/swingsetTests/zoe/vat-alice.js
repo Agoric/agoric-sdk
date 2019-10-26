@@ -23,17 +23,17 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     ).makeInstance(installId, { assays });
 
     const offerRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: await E(assays[0]).makeAssetDesc(3),
         },
         {
-          rule: 'wantExactly',
+          kind: 'wantExactly',
           assetDesc: await E(assays[1]).makeAssetDesc(7),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -45,8 +45,8 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       offerPayments,
     );
 
-    const offerMadeDesc = await E(automaticRefund).makeOffer(escrowReceipt);
-    log(offerMadeDesc);
+    const outcome = await E(automaticRefund).makeOffer(escrowReceipt);
+    log(outcome);
 
     await E(bobP).doAutomaticRefund(instanceHandle);
     const payout = await payoutP;
@@ -70,17 +70,17 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     );
 
     const offerRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: await E(assays[0]).makeAssetDesc(3),
         },
         {
-          rule: 'wantExactly',
+          kind: 'wantExactly',
           assetDesc: await E(assays[1]).makeAssetDesc(7),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -116,17 +116,17 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     );
 
     const offerRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: await E(assays[0]).makeAssetDesc(1),
         },
         {
-          rule: 'wantAtLeast',
+          kind: 'wantAtLeast',
           assetDesc: await E(assays[1]).makeAssetDesc(3),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -168,17 +168,17 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     );
 
     const offerRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: await E(assays[0]).makeAssetDesc(3),
         },
         {
-          rule: 'wantExactly',
+          kind: 'wantExactly',
           assetDesc: await E(assays[1]).makeAssetDesc(7),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -219,17 +219,17 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     );
 
     const aliceSellOrderOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: await E(assays[0]).makeAssetDesc(3),
         },
         {
-          rule: 'wantAtLeast',
+          kind: 'wantAtLeast',
           assetDesc: await E(assays[1]).makeAssetDesc(4),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -271,21 +271,21 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     // 10 moola = 5 simoleans at the time of the liquidity adding
     // aka 2 moola = 1 simolean
     const addLiquidityOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: await E(allAssays[0]).makeAssetDesc(10),
         },
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: await E(allAssays[1]).makeAssetDesc(5),
         },
         {
-          rule: 'wantAtLeast',
+          kind: 'wantAtLeast',
           assetDesc: await E(allAssays[2]).makeAssetDesc(10),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -309,22 +309,22 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     await E(bobP).doAutoswap(instanceHandle);
 
     // remove the liquidity
-    const aliceRemoveLiquidityOfferDesc = harden({
-      offerDesc: [
+    const aliceRemoveLiquidityPayoutRules = harden({
+      payoutRules: [
         {
-          rule: 'wantAtLeast',
+          kind: 'wantAtLeast',
           assetDesc: await E(allAssays[0]).makeAssetDesc(0),
         },
         {
-          rule: 'wantAtLeast',
+          kind: 'wantAtLeast',
           assetDesc: await E(allAssays[1]).makeAssetDesc(0),
         },
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: await E(allAssays[2]).makeAssetDesc(10),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -335,7 +335,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       escrowReceipt: aliceRemoveLiquidityEscrowReceipt,
       payout: aliceRemoveLiquidityPayoutP,
     } = await E(zoe).escrow(
-      aliceRemoveLiquidityOfferDesc,
+      aliceRemoveLiquidityPayoutRules,
       harden([undefined, undefined, liquidityTokenPayment]),
     );
 

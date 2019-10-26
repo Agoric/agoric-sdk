@@ -30,21 +30,21 @@ export const makeContract = harden((zoe, terms) => {
 
   const sm = makeStateMachine('uninitialized', coveredCallAllowedTransitions);
 
-  const makeMatchingOfferDesc = firstOfferDesc =>
+  const makeMatchingPayoutRules = firstPayoutRules =>
     harden([
       {
-        rule: firstOfferDesc[1].rule,
-        assetDesc: firstOfferDesc[0].assetDesc,
+        kind: firstPayoutRules[1].kind,
+        assetDesc: firstPayoutRules[0].assetDesc,
       },
       {
-        rule: firstOfferDesc[0].rule,
-        assetDesc: firstOfferDesc[1].assetDesc,
+        kind: firstPayoutRules[0].kind,
+        assetDesc: firstPayoutRules[1].assetDesc,
       },
     ]);
 
-  const isMatchingOfferDesc = (extentOps, leftOffer, rightOffer) => {
+  const isMatchingPayoutRules = (extentOps, leftOffer, rightOffer) => {
     // "matching" means that assetDescs are the same, but that the
-    // rules have switched places in the array
+    // kinds have switched places in the array
     return (
       extentOps[0].equals(
         leftOffer[0].assetDesc.extent,
@@ -62,8 +62,8 @@ export const makeContract = harden((zoe, terms) => {
         leftOffer[1].assetDesc.label,
         rightOffer[1].assetDesc.label,
       ) &&
-      leftOffer[0].rule === rightOffer[1].rule &&
-      leftOffer[1].rule === rightOffer[0].rule
+      leftOffer[0].kind === rightOffer[1].kind &&
+      leftOffer[1].kind === rightOffer[0].kind
     );
   };
 
@@ -76,21 +76,23 @@ export const makeContract = harden((zoe, terms) => {
   };
 
   const makeOffer = async escrowReceipt => {
-    const { offerHandle, offerRules } = await zoe.burnEscrowReceipt(
-      escrowReceipt,
-    );
-    const { offerDesc: offerMadeDesc } = offerRules;
+    const {
+      offerHandle,
+      offerRules: { payoutRules },
+    } = await zoe.burnEscrowReceipt(escrowReceipt);
     const { inactive } = zoe.getStatusFor(harden([firstOfferHandle]));
     if (inactive.length > 0) {
       return ejectPlayer(offerHandle, 'The first offer was withdrawn');
     }
 
     // fail-fast if offer is not valid.
-    const [firstOfferDesc] = zoe.getOfferDescsFor(harden([firstOfferHandle]));
+    const [firstPayoutRules] = zoe.getPayoutRulessFor(
+      harden([firstOfferHandle]),
+    );
     const extentOpsArray = zoe.getExtentOpsArray();
     if (
       sm.getStatus() !== 'acceptingOffers' ||
-      !isMatchingOfferDesc(extentOpsArray, firstOfferDesc, offerMadeDesc)
+      !isMatchingPayoutRules(extentOpsArray, firstPayoutRules, payoutRules)
     ) {
       return ejectPlayer(offerHandle);
     }
@@ -117,17 +119,17 @@ export const makeContract = harden((zoe, terms) => {
       const { offerHandle, offerRules } = await zoe.burnEscrowReceipt(
         escrowReceipt,
       );
-      const { offerDesc: offerMadeDesc } = offerRules;
+      const { payoutRules } = offerRules;
 
-      const isValidFirstOfferDesc = newOfferDesc =>
+      const isValidFirstPayoutRules = newPayoutRules =>
         ['offerExactly', 'wantExactly'].every(
-          (rule, i) => rule === newOfferDesc[i].rule,
+          (kind, i) => kind === newPayoutRules[i].kind,
         );
 
       // Eject if the offer is invalid
       if (
         sm.getStatus() !== 'uninitialized' ||
-        !isValidFirstOfferDesc(offerMadeDesc)
+        !isValidFirstPayoutRules(payoutRules)
       ) {
         return ejectPlayer(offerHandle);
       }
@@ -138,8 +140,8 @@ export const makeContract = harden((zoe, terms) => {
 
       const customInviteExtent = {
         status: sm.getStatus(),
-        offerMadeOfferRules: offerRules,
-        offerToBeMade: makeMatchingOfferDesc(offerMadeDesc),
+        offerMadeRules: offerRules,
+        offerToBeMade: makeMatchingPayoutRules(payoutRules),
       };
 
       const inviteP = zoe.makeInvite(customInviteExtent, harden({ makeOffer }));

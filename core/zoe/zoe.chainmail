@@ -4,7 +4,7 @@
  * and is normally passed in to a smart contract. The payout
  * is a promise that resolves to an array of payments.
  */
-struct EscrowReceiptAndClaimPayout ( ) {
+struct EscrowReceiptAndPayout ( ) {
   escrowReceipt :Payment;
   payout :List(Payment);
 }
@@ -60,29 +60,49 @@ interface Zoe {
   getInstance(instanceHandle :Object) -> (InstanceInformation);
 
   /** 
-   * To escrow, the user must provide an `offerDesc` which is a list of
-   * objects with a rule property (such as 'offerExactly') and an assetDesc
-   * property. The objects in the `offerDesc` must be in the same order
+   * To escrow, the user must provide a list of payments as well as
+   * their rules for the offer. 
+   * 
+   * The rules for the offer are in two parts: `payoutRules` are used 
+   * by Zoe to enforce offer-safety, and `exitRule` is used by Zoe 
+   * to enforce exit-safety. `payoutRules` is a list of objects, each 
+   * with a `kind` property (such as 'offerExactly') and an assetDesc
+   * property. The objects in the `payoutRules` must be in the same order
    * as the assays associated with a smart contract. That is, the
-   * assetDesc in index 0 of `offerDesc` should be an assetDesc for the assay
+   * assetDesc in index 0 of `payoutRules` should be an assetDesc for the assay
    * in index 0 of the assays array.`payments` is an array of the
    * actual payments to be escrowed, following the rules in the
-   * offerDesc. If the offerDesc rule is 'offerExactly' or 'offerAtMost',
-   * then a payment matching the assetDesc is expected. If the offerDesc
-   * rule is 'wantAtLeast' or 'wantExactly' then the payment will be
-   * ignored and should be `undefined`.
+   * payoutRules. If the payoutRules kind is 'offerExactly' or 'offerAtMost',
+   * then a payment matching the assetDesc is expected. If the payoutRules
+   * kind is 'wantAtLeast' or 'wantExactly' then the payment will be
+   * ignored at escrow and should be `undefined`.
    */
-  escrow (offerDesc :List(OfferDescElement), payments :List(Payment)) -> (EscrowReceiptAndClaimPayout);
+  escrow (offerRules :OfferRules, payments :List(Payment)) -> (EscrowReceiptAndPayout);
+}
+
+struct OfferRules ( ) {
+  payoutRules :List(PayoutRule),
+  exitRule :ExitRule,
 }
 
 /**
- * An offer description is an array of OfferDescElements. The possible
- * rules are 'offerExactly', 'offerAtMost', 'wantExactly', and 
+ * payoutRules are an array of PayoutRule. The possible
+ * kinds are 'offerExactly', 'offerAtMost', 'wantExactly', and 
  * 'wantAtLeast'.
  */
-struct OfferDescElement ( ) {
-  rule :Rule;
+struct PayoutRule ( ) {
+  kind :PayoutRuleKind;
   assetDesc :AssetDesc;
+}
+
+/**
+ * The possible kinds are 'noExit', 'onDemand', and 'afterDeadline'.
+ * `timer` and `deadline` only are used for the `afterDeadline` kind.
+ */
+struct ExitRule ( ) {
+  kind :ExitRuleKind;
+  timer :Timer;
+  deadline :Number;
 }
 
 interface ZoeGoverningContractFacet () {
@@ -114,13 +134,13 @@ interface ZoeGoverningContractFacet () {
    * this to mint liquidity tokens and add them to the rights managed
    * by Zoe.
    */
-  escrowOffer (offerDesc :List(OfferDescElem), offerPayments :List(Payment)) -> (offerHandle);
+  escrowOffer (payoutRules :List(PayoutRulesElem), offerPayments :List(Payment)) -> (offerHandle);
 
   /** Burn and validate an escrowReceipt received from the user. */
   burnEscrowReceipt (instanceHandle :Object, escrowReceipt :Payment) -> (Extent);
   
   /** Create an invite using the Zoe inviteMint */
-  makeInvite (offerToBeMade :List(OfferDescElem), useObj :Object) -> (Payment);
+  makeInvite (offerToBeMade :List(PayoutRulesElem), useObj :Object) -> (Payment);
 
   ////// The methods below are pure and have no side-effects. ////////
 
@@ -144,7 +164,7 @@ interface ZoeGoverningContractFacet () {
    * containing the offer descriptions for the offers, in the same 
    * order as the offerHandles array.
    */
-  getOfferDescsFor (offerHandles :List(Object)) -> (List(OfferDesc));
+  getPayoutRulessFor (offerHandles :List(Object)) -> (List(PayoutRules));
 
   /** Get the Zoe seatAssay */
   getSeatAssay ( ) -> (Assay);

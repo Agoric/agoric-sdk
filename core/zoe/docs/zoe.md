@@ -152,7 +152,7 @@ make sure our user-facing API has a method for that:
 const makeFirstOffer = async escrowReceipt => {
   const {
     offerHandle,
-    offerRules: { offerDesc: offerMadeDesc },
+    offerRules: { payoutRules: offerMadeDesc },
   } = await zoe.burnEscrowReceipt(escrowReceipt);
 
   if (!hasRules(['offerExactly', 'wantExactly'], offerMadeDesc)) {
@@ -165,7 +165,7 @@ const makeFirstOffer = async escrowReceipt => {
 
   // The offer is valid, so save information about the first offer
   firstOfferHandle = offerHandle;
-  firstOfferDesc = offerMadeDesc;
+  firstPayoutRules = offerMadeDesc;
   return defaultAcceptanceMsg;
 };
 ```
@@ -174,10 +174,10 @@ This is pretty similar in format to the `automaticRefund`, but there
 are a few changes. First, in this contract, we actually check what was
 escrowed with Zoe to see if it's the kind of offer that we want to
 accept. In this case, we only want to accept offers that have an
-`offerDesc` of the
+`payoutRules` of the
 form: 
 ```js 
-[{ rule: 'offerExactly', assetDesc: x}, { rule: 'wantExactly', assetDesc: y}]
+[{ kind: 'offerExactly', assetDesc: x}, { kind: 'wantExactly', assetDesc: y}]
 ```
 where `x` and `y` are asset descriptions with the correct assays. 
 
@@ -196,14 +196,14 @@ method, `matchOffer`:
 const matchOffer = async escrowReceipt => {
   const {
     offerHandle: matchingOfferHandle,
-    offerRules: { offerDesc: offerMadeDesc },
+    offerRules: { payoutRules: offerMadeDesc },
   } = await zoe.burnEscrowReceipt(escrowReceipt);
 
   if (!firstOfferHandle) {
     return rejectOffer(zoe, matchingOfferHandle, `no offer to match`);
   }
 
-  if (!isExactlyMatchingOfferDesc(zoe, firstOfferDesc, offerMadeDesc)) {
+  if (!isExactlyMatchingPayoutRules(zoe, firstPayoutRules, offerMadeDesc)) {
     return rejectOffer(zoe, matchingOfferHandle);
   }
   const [firstOfferExtents, matchingOfferExtents] = zoe.getExtentsFor(

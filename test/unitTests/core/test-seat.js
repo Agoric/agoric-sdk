@@ -22,7 +22,7 @@ test('seatMint', async t => {
         return harden({
           makeOffer: offer => {
             insist(
-              offerEqual(extentOps, offer, extent.offerToBeMade.offerDesc),
+              offerEqual(extentOps, offer, extent.offerToBeMade.payoutRules),
             );
             // do things with the offer
             return true;
@@ -42,9 +42,9 @@ test('seatMint', async t => {
     const purse1Extent = harden({
       offerHandle: harden({}),
       offerToBeMade: {
-        offerDesc: [
-          { rule: 'offerExactly', assetDesc: assays[0].makeAssetDesc(8) },
-          { rule: 'wantExactly', assetDesc: assays[1].makeAssetDesc(6) },
+        payoutRules: [
+          { kind: 'offerExactly', assetDesc: assays[0].makeAssetDesc(8) },
+          { kind: 'wantExactly', assetDesc: assays[1].makeAssetDesc(6) },
         ],
       },
     });
@@ -60,14 +60,17 @@ test('seatMint', async t => {
 
     t.rejects(purse1.unwrap(), /the purse is empty or already used/);
 
-    t.equal(useObjPurse1.makeOffer(purse1Extent.offerToBeMade.offerDesc), true);
+    t.equal(
+      useObjPurse1.makeOffer(purse1Extent.offerToBeMade.payoutRules),
+      true,
+    );
 
     const purse2Extent = harden({
       offerHandle: harden({}),
       offerMade: {
-        offerDesc: [
-          { rule: 'offerExactly', assetDesc: assays[0].makeAssetDesc(8) },
-          { rule: 'wantExactly', assetDesc: assays[1].makeAssetDesc(6) },
+        payoutRules: [
+          { kind: 'offerExactly', assetDesc: assays[0].makeAssetDesc(8) },
+          { kind: 'wantExactly', assetDesc: assays[1].makeAssetDesc(6) },
         ],
       },
     });

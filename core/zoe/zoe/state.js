@@ -7,8 +7,8 @@ import { makePrivateName } from '../../../util/PrivateName';
 const makeState = () => {
   const offerHandleToExtents = makePrivateName();
   const offerHandleToAssays = makePrivateName();
-  const offerHandleToOfferDesc = makePrivateName();
-  const offerHandleToExitCondition = makePrivateName();
+  const offerHandleToPayoutRules = makePrivateName();
+  const offerHandleToExitRule = makePrivateName();
   const offerHandleToResult = makePrivateName();
   const offerHandleToInstanceHandle = makePrivateName();
 
@@ -57,8 +57,10 @@ const makeState = () => {
       offerHandles.map(offerHandle => offerHandleToAssays.get(offerHandle)),
     getExtentsFor: offerHandles =>
       offerHandles.map(offerHandle => offerHandleToExtents.get(offerHandle)),
-    getOfferDescsFor: offerHandles =>
-      offerHandles.map(offerHandle => offerHandleToOfferDesc.get(offerHandle)),
+    getPayoutRulessFor: offerHandles =>
+      offerHandles.map(offerHandle =>
+        offerHandleToPayoutRules.get(offerHandle),
+      ),
     getStatusFor: offerHandles => {
       const active = [];
       const inactive = [];
@@ -134,11 +136,11 @@ const makeState = () => {
       });
     },
     recordOffer: (offerHandle, offerRules, extents, assays, result) => {
-      const { offerDesc, exit } = offerRules;
+      const { payoutRules, exit } = offerRules;
       offerHandleToExtents.init(offerHandle, extents);
       offerHandleToAssays.init(offerHandle, assays);
-      offerHandleToOfferDesc.init(offerHandle, offerDesc);
-      offerHandleToExitCondition.init(offerHandle, exit);
+      offerHandleToPayoutRules.init(offerHandle, payoutRules);
+      offerHandleToExitRule.init(offerHandle, exit);
       offerHandleToResult.init(offerHandle, result);
       activeOffers.add(offerHandle);
     },
@@ -165,8 +167,8 @@ const makeState = () => {
       offerHandles.map(offerHandle => {
         offerHandleToExtents.delete(offerHandle);
         offerHandleToAssays.delete(offerHandle);
-        offerHandleToOfferDesc.delete(offerHandle);
-        offerHandleToExitCondition.delete(offerHandle);
+        offerHandleToPayoutRules.delete(offerHandle);
+        offerHandleToExitRule.delete(offerHandle);
         offerHandleToResult.delete(offerHandle);
         if (offerHandleToInstanceHandle.has(offerHandle)) {
           offerHandleToInstanceHandle.delete(offerHandle);

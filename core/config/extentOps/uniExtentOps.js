@@ -19,13 +19,6 @@ import {
 // rights. In a commonly used pattern, uni extents contain an id
 // represented by a unique empty object.
 
-// `customInsistKind` enforces the particular kind of thing represented. For
-// example, the extent in an invitation to join a contract might look like:
-// {
-//   offerHandle: harden({}),
-//   offerToBeMade: [rule1, rule2],
-// }
-
 const makeUniExtentOps = (customInsistKind = () => {}) => {
   const uniExtentOps = harden({
     insistKind: extent => {

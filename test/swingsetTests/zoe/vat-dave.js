@@ -26,17 +26,17 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       insist(sameStructure(assays, terms.assays))`assays were not as expected`;
 
       const offerRules = harden({
-        offerDesc: [
+        payoutRules: [
           {
-            rule: 'wantExactly',
+            kind: 'wantExactly',
             assetDesc: await E(assays[0]).makeAssetDesc(1),
           },
           {
-            rule: 'offerAtMost',
+            kind: 'offerAtMost',
             assetDesc: await E(assays[1]).makeAssetDesc(5),
           },
         ],
-        exit: {
+        exitRule: {
           kind: 'onDemand',
         },
       });

@@ -6,16 +6,16 @@ import {
 } from '../../../../core/zoe/zoe/isOfferSafe';
 import { setup } from './setupBasicMints';
 
-// The player must have offerDesc for each assay
-test('isOfferSafeForPlayer - empty offerDesc', t => {
+// The player must have payoutRules for each assay
+test('isOfferSafeForPlayer - empty payoutRules', t => {
   try {
     const { extentOps } = setup();
-    const offerDesc = [];
+    const payoutRules = [];
     const extents = [8, 6, 7];
 
     t.throws(
-      _ => isOfferSafeForPlayer(extentOps, offerDesc, extents),
-      'extentOps, offerDesc, and extents must be arrays of the same length',
+      _ => isOfferSafeForPlayer(extentOps, payoutRules, extents),
+      'extentOps, payoutRules, and extents must be arrays of the same length',
     );
   } catch (e) {
     t.assert(false, e);
@@ -28,16 +28,16 @@ test('isOfferSafeForPlayer - empty offerDesc', t => {
 test('isOfferSafeForPlayer - empty extents', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'wantExactly', assetDesc: assetDescOps[0].make(8) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[1].make(6) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[2].make(7) },
+    const payoutRules = [
+      { kind: 'wantExactly', assetDesc: assetDescOps[0].make(8) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[1].make(6) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[2].make(7) },
     ];
     const extents = [];
 
     t.throws(
-      _ => isOfferSafeForPlayer(extentOps, offerDesc, extents),
-      'extentOps, offerDesc, and extents must be arrays of the same length',
+      _ => isOfferSafeForPlayer(extentOps, payoutRules, extents),
+      'extentOps, payoutRules, and extents must be arrays of the same length',
     );
   } catch (e) {
     t.assert(false, e);
@@ -51,14 +51,14 @@ test('isOfferSafeForPlayer - empty extents', t => {
 test('isOfferSafeForPlayer - gets wantExactly, with offerExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'offerExactly', assetDesc: assetDescOps[0].make(8) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[1].make(6) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[2].make(7) },
+    const payoutRules = [
+      { kind: 'offerExactly', assetDesc: assetDescOps[0].make(8) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[1].make(6) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[2].make(7) },
     ];
     const extents = [0, 6, 7];
 
-    t.ok(isOfferSafeForPlayer(extentOps, offerDesc, extents));
+    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -70,14 +70,14 @@ test('isOfferSafeForPlayer - gets wantExactly, with offerExactly', t => {
 test('isOfferSafeForPlayer - gets wantExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'wantExactly', assetDesc: assetDescOps[0].make(8) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[1].make(6) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[2].make(7) },
+    const payoutRules = [
+      { kind: 'wantExactly', assetDesc: assetDescOps[0].make(8) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[1].make(6) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[2].make(7) },
     ];
     const extents = [8, 6, 7];
 
-    t.ok(isOfferSafeForPlayer(extentOps, offerDesc, extents));
+    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -92,14 +92,14 @@ test('isOfferSafeForPlayer - gets wantExactly', t => {
 test('isOfferSafeForPlayer - gets wantExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'wantExactly', assetDesc: assetDescOps[0].make(8) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[1].make(6) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[2].make(7) },
+    const payoutRules = [
+      { kind: 'wantExactly', assetDesc: assetDescOps[0].make(8) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[1].make(6) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[2].make(7) },
     ];
     const extents = [9, 6, 7];
 
-    t.ok(isOfferSafeForPlayer(extentOps, offerDesc, extents));
+    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -111,14 +111,14 @@ test('isOfferSafeForPlayer - gets wantExactly', t => {
 test(`isOfferSafeForPlayer - gets offerExactly, doesn't get wantExactly`, t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'offerExactly', assetDesc: assetDescOps[0].make(1) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[1].make(2) },
-      { rule: 'offerExactly', assetDesc: assetDescOps[2].make(3) },
+    const payoutRules = [
+      { kind: 'offerExactly', assetDesc: assetDescOps[0].make(1) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[1].make(2) },
+      { kind: 'offerExactly', assetDesc: assetDescOps[2].make(3) },
     ];
     const extents = [1, 0, 3];
 
-    t.ok(isOfferSafeForPlayer(extentOps, offerDesc, extents));
+    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -130,14 +130,14 @@ test(`isOfferSafeForPlayer - gets offerExactly, doesn't get wantExactly`, t => {
 test('isOfferSafeForPlayer - gets offerExactly, no wantExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'offerExactly', assetDesc: assetDescOps[0].make(1) },
-      { rule: 'offerExactly', assetDesc: assetDescOps[1].make(2) },
-      { rule: 'offerExactly', assetDesc: assetDescOps[2].make(3) },
+    const payoutRules = [
+      { kind: 'offerExactly', assetDesc: assetDescOps[0].make(1) },
+      { kind: 'offerExactly', assetDesc: assetDescOps[1].make(2) },
+      { kind: 'offerExactly', assetDesc: assetDescOps[2].make(3) },
     ];
     const extents = [1, 2, 3];
 
-    t.ok(isOfferSafeForPlayer(extentOps, offerDesc, extents));
+    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -149,13 +149,13 @@ test('isOfferSafeForPlayer - gets offerExactly, no wantExactly', t => {
 test('isOfferSafeForPlayer - refund and winnings', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[1].make(3) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[2].make(3) },
+    const payoutRules = [
+      { kind: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[1].make(3) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[2].make(3) },
     ];
     const extents = [2, 3, 3];
-    t.ok(isOfferSafeForPlayer(extentOps, offerDesc, extents));
+    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -167,13 +167,13 @@ test('isOfferSafeForPlayer - refund and winnings', t => {
 test('isOfferSafeForPlayer - more than wantExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[1].make(3) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[2].make(4) },
+    const payoutRules = [
+      { kind: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[1].make(3) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[2].make(4) },
     ];
     const extents = [0, 3, 5];
-    t.notOk(isOfferSafeForPlayer(extentOps, offerDesc, extents));
+    t.notOk(isOfferSafeForPlayer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -185,13 +185,13 @@ test('isOfferSafeForPlayer - more than wantExactly', t => {
 test('isOfferSafeForPlayer - more than wantAtLeast', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'wantAtLeast', assetDesc: assetDescOps[0].make(2) },
-      { rule: 'wantAtLeast', assetDesc: assetDescOps[1].make(3) },
-      { rule: 'wantAtLeast', assetDesc: assetDescOps[2].make(4) },
+    const payoutRules = [
+      { kind: 'wantAtLeast', assetDesc: assetDescOps[0].make(2) },
+      { kind: 'wantAtLeast', assetDesc: assetDescOps[1].make(3) },
+      { kind: 'wantAtLeast', assetDesc: assetDescOps[2].make(4) },
     ];
     const extents = [2, 6, 7];
-    t.ok(isOfferSafeForPlayer(extentOps, offerDesc, extents));
+    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -203,13 +203,13 @@ test('isOfferSafeForPlayer - more than wantAtLeast', t => {
 test('isOfferSafeForPlayer - more than offerExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
-      { rule: 'offerExactly', assetDesc: assetDescOps[1].make(3) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[2].make(4) },
+    const payoutRules = [
+      { kind: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
+      { kind: 'offerExactly', assetDesc: assetDescOps[1].make(3) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[2].make(4) },
     ];
     const extents = [5, 6, 8];
-    t.notOk(isOfferSafeForPlayer(extentOps, offerDesc, extents));
+    t.notOk(isOfferSafeForPlayer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -223,13 +223,13 @@ test('isOfferSafeForPlayer - more than offerExactly', t => {
 test('isOfferSafeForPlayer - more than offerExactly, no wants', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
-      { rule: 'offerExactly', assetDesc: assetDescOps[1].make(3) },
-      { rule: 'offerExactly', assetDesc: assetDescOps[2].make(4) },
+    const payoutRules = [
+      { kind: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
+      { kind: 'offerExactly', assetDesc: assetDescOps[1].make(3) },
+      { kind: 'offerExactly', assetDesc: assetDescOps[2].make(4) },
     ];
     const extents = [5, 6, 8];
-    t.ok(isOfferSafeForPlayer(extentOps, offerDesc, extents));
+    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -241,13 +241,13 @@ test('isOfferSafeForPlayer - more than offerExactly, no wants', t => {
 test('isOfferSafeForPlayer - more than offerAtMost', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'offerAtMost', assetDesc: assetDescOps[0].make(2) },
-      { rule: 'offerAtMost', assetDesc: assetDescOps[1].make(3) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[2].make(4) },
+    const payoutRules = [
+      { kind: 'offerAtMost', assetDesc: assetDescOps[0].make(2) },
+      { kind: 'offerAtMost', assetDesc: assetDescOps[1].make(3) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[2].make(4) },
     ];
     const extents = [5, 3, 0];
-    t.ok(isOfferSafeForPlayer(extentOps, offerDesc, extents));
+    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -259,13 +259,13 @@ test('isOfferSafeForPlayer - more than offerAtMost', t => {
 test('isOfferSafeForPlayer - less than wantExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[1].make(3) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[2].make(5) },
+    const payoutRules = [
+      { kind: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[1].make(3) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[2].make(5) },
     ];
     const extents = [0, 2, 1];
-    t.notOk(isOfferSafeForPlayer(extentOps, offerDesc, extents));
+    t.notOk(isOfferSafeForPlayer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -277,13 +277,13 @@ test('isOfferSafeForPlayer - less than wantExactly', t => {
 test('isOfferSafeForPlayer - less than wantExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
-      { rule: 'wantAtLeast', assetDesc: assetDescOps[1].make(3) },
-      { rule: 'wantAtLeast', assetDesc: assetDescOps[2].make(9) },
+    const payoutRules = [
+      { kind: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
+      { kind: 'wantAtLeast', assetDesc: assetDescOps[1].make(3) },
+      { kind: 'wantAtLeast', assetDesc: assetDescOps[2].make(9) },
     ];
     const extents = [0, 2, 1];
-    t.notOk(isOfferSafeForPlayer(extentOps, offerDesc, extents));
+    t.notOk(isOfferSafeForPlayer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -295,13 +295,13 @@ test('isOfferSafeForPlayer - less than wantExactly', t => {
 test('isOfferSafeForPlayer - less than wantExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
-      { rule: 'wantAtLeast', assetDesc: assetDescOps[1].make(3) },
-      { rule: 'wantAtLeast', assetDesc: assetDescOps[2].make(3) },
+    const payoutRules = [
+      { kind: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
+      { kind: 'wantAtLeast', assetDesc: assetDescOps[1].make(3) },
+      { kind: 'wantAtLeast', assetDesc: assetDescOps[2].make(3) },
     ];
     const extents = [1, 0, 0];
-    t.notOk(isOfferSafeForPlayer(extentOps, offerDesc, extents));
+    t.notOk(isOfferSafeForPlayer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -312,10 +312,10 @@ test('isOfferSafeForPlayer - less than wantExactly', t => {
 test('isOfferSafeForPlayer - empty arrays', t => {
   try {
     const { extentOps } = setup();
-    const offerDesc = [];
+    const payoutRules = [];
     const extents = [];
     t.throws(
-      () => isOfferSafeForPlayer(extentOps, offerDesc, extents),
+      () => isOfferSafeForPlayer(extentOps, payoutRules, extents),
       /extentOps, the offer description, and extents must be arrays of the same length/,
     );
   } catch (e) {
@@ -328,13 +328,13 @@ test('isOfferSafeForPlayer - empty arrays', t => {
 test('isOfferSafeForPlayer - null for some assays', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
+    const payoutRules = [
+      { kind: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
       null,
-      { rule: 'offerExactly', assetDesc: assetDescOps[2].make(4) },
+      { kind: 'offerExactly', assetDesc: assetDescOps[2].make(4) },
     ];
     const extents = [5, 6, 8];
-    t.ok(isOfferSafeForPlayer(extentOps, offerDesc, extents));
+    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -346,13 +346,13 @@ test('isOfferSafeForPlayer - null for some assays', t => {
 test('isOfferSafeForAll - get wantExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[1].make(3) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[2].make(3) },
+    const payoutRules = [
+      { kind: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[1].make(3) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[2].make(3) },
     ];
 
-    const offerMatrix = [offerDesc, offerDesc, offerDesc];
+    const offerMatrix = [payoutRules, payoutRules, payoutRules];
     const extents = [0, 3, 3];
     const extentsMatrix = [extents, extents, extents];
     t.ok(isOfferSafeForAll(extentOps, offerMatrix, extentsMatrix));
@@ -367,13 +367,13 @@ test('isOfferSafeForAll - get wantExactly', t => {
 test(`isOfferSafeForAll - get wantExactly - one doesn't`, t => {
   try {
     const { extentOps, assetDescOps } = setup();
-    const offerDesc = [
-      { rule: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[1].make(3) },
-      { rule: 'wantExactly', assetDesc: assetDescOps[2].make(3) },
+    const payoutRules = [
+      { kind: 'offerExactly', assetDesc: assetDescOps[0].make(2) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[1].make(3) },
+      { kind: 'wantExactly', assetDesc: assetDescOps[2].make(3) },
     ];
 
-    const offerMatrix = [offerDesc, offerDesc, offerDesc];
+    const offerMatrix = [payoutRules, payoutRules, payoutRules];
     const extents = [0, 3, 3];
     const unsatisfiedUserextents = [
       assetDescOps[0].make(0),

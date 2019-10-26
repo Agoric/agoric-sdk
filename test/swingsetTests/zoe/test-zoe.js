@@ -41,8 +41,8 @@ async function main(withSES, basedir, argv) {
 const expectedAutomaticRefundOkLog = [
   '=> alice, bob, carol and dave are set up',
   '=> alice.doCreateAutomaticRefund called',
-  '{"offerDesc":[{"rule":"offerExactly","assetDesc":{"label":{"assay":{},"allegedName":"moola"},"extent":3}},{"rule":"wantExactly","assetDesc":{"label":{"assay":{},"allegedName":"simoleans"},"extent":7}}],"exit":{"kind":"onDemand"}}',
-  '{"offerDesc":[{"rule":"wantExactly","assetDesc":{"label":{"assay":{},"allegedName":"moola"},"extent":15}},{"rule":"offerExactly","assetDesc":{"label":{"assay":{},"allegedName":"simoleans"},"extent":17}}],"exit":{"kind":"onDemand"}}',
+  '{"payoutRules":[{"kind":"offerExactly","assetDesc":{"label":{"assay":{},"allegedName":"moola"},"extent":3}},{"kind":"wantExactly","assetDesc":{"label":{"assay":{},"allegedName":"simoleans"},"extent":7}}],"exitRule":{"kind":"onDemand"}}',
+  '{"payoutRules":[{"kind":"wantExactly","assetDesc":{"label":{"assay":{},"allegedName":"moola"},"extent":15}},{"kind":"offerExactly","assetDesc":{"label":{"assay":{},"allegedName":"simoleans"},"extent":17}}],"exitRule":{"kind":"onDemand"}}',
   'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":0}',
   'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":17}',
   'aliceMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":3}',

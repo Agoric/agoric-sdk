@@ -38,17 +38,17 @@ test('zoe - simpleExchange', async t => {
     // sell 3 moola and wants to receive at least 4 simoleans in
     // return.
     const aliceSellOrderOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: assays[0].makeAssetDesc(3),
         },
         {
-          rule: 'wantAtLeast',
+          kind: 'wantAtLeast',
           assetDesc: assays[1].makeAssetDesc(4),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -83,17 +83,17 @@ test('zoe - simpleExchange', async t => {
     // and is willing to pay up to 7 simoleans.
 
     const bobBuyOrderOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'wantExactly',
+          kind: 'wantExactly',
           assetDesc: bobTerms.assays[0].makeAssetDesc(3),
         },
         {
-          rule: 'offerAtMost',
+          kind: 'offerAtMost',
           assetDesc: bobTerms.assays[1].makeAssetDesc(7),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -129,7 +129,7 @@ test('zoe - simpleExchange', async t => {
     t.ok(
       assetDescOps[1].includes(
         aliceSimoleanPayout.getBalance(),
-        aliceSellOrderOfferRules.offerDesc[1].assetDesc,
+        aliceSellOrderOfferRules.payoutRules[1].assetDesc,
       ),
     );
 

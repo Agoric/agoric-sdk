@@ -48,17 +48,17 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     // 2: Alice escrows with zoe
     const aliceOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: assays[0].makeAssetDesc(1),
         },
         {
-          rule: 'wantAtLeast',
+          kind: 'wantAtLeast',
           assetDesc: assays[1].makeAssetDesc(3),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -97,17 +97,17 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.deepEquals(terms.assays, assays);
 
     const bobOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'wantExactly',
+          kind: 'wantExactly',
           assetDesc: assays[0].makeAssetDesc(1),
         },
         {
-          rule: 'offerAtMost',
+          kind: 'offerAtMost',
           assetDesc: assays[1].makeAssetDesc(11),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -145,17 +145,17 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.deepEquals(carolTerms.assays, assays);
 
     const carolOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'wantExactly',
+          kind: 'wantExactly',
           assetDesc: assays[0].makeAssetDesc(1),
         },
         {
-          rule: 'offerAtMost',
+          kind: 'offerAtMost',
           assetDesc: assays[1].makeAssetDesc(7),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -185,17 +185,17 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.equals(daveInstallationId, installationHandle);
     t.deepEquals(daveTerms.assays, assays);
     const daveOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'wantExactly',
+          kind: 'wantExactly',
           assetDesc: assays[0].makeAssetDesc(1),
         },
         {
-          rule: 'offerAtMost',
+          kind: 'offerAtMost',
           assetDesc: assays[1].makeAssetDesc(5),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -223,7 +223,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     // Alice (the creator of the auction) gets back the second highest bid
     t.deepEquals(
       aliceResult[1].getBalance(),
-      carolOfferRules.offerDesc[1].assetDesc,
+      carolOfferRules.payoutRules[1].assetDesc,
     );
 
     // Alice didn't get any of what she put in
@@ -246,7 +246,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.deepEquals(carolResult[0].getBalance(), assetDescOps[0].make(0));
     t.deepEquals(
       carolResult[1].getBalance(),
-      carolOfferRules.offerDesc[1].assetDesc,
+      carolOfferRules.payoutRules[1].assetDesc,
     );
 
     // 25: Carol deposits her payout to ensure she can
@@ -257,7 +257,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.deepEquals(daveResult[0].getBalance(), assetDescOps[0].make(0));
     t.deepEquals(
       daveResult[1].getBalance(),
-      daveOfferRules.offerDesc[1].assetDesc,
+      daveOfferRules.payoutRules[1].assetDesc,
     );
 
     // 24: Dave deposits his payout to ensure he can
@@ -332,17 +332,17 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     // 2: Alice escrows with zoe
     const aliceOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'offerExactly',
+          kind: 'offerExactly',
           assetDesc: assays[0].makeAssetDesc(1),
         },
         {
-          rule: 'wantAtLeast',
+          kind: 'wantAtLeast',
           assetDesc: assays[1].makeAssetDesc(3),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -386,17 +386,17 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     t.deepEquals(terms.assays, assays);
 
     const bobOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'wantExactly',
+          kind: 'wantExactly',
           assetDesc: assays[0].makeAssetDesc(1),
         },
         {
-          rule: 'offerAtMost',
+          kind: 'offerAtMost',
           assetDesc: assays[1].makeAssetDesc(11),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -432,17 +432,17 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     t.deepEquals(carolTerms.assays, assays);
 
     const carolOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'wantExactly',
+          kind: 'wantExactly',
           assetDesc: assays[0].makeAssetDesc(1),
         },
         {
-          rule: 'offerAtMost',
+          kind: 'offerAtMost',
           assetDesc: assays[1].makeAssetDesc(7),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -470,17 +470,17 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     t.equals(daveInstallationId, installationHandle);
     t.deepEquals(daveTerms.assays, assays);
     const daveOfferRules = harden({
-      offerDesc: [
+      payoutRules: [
         {
-          rule: 'wantExactly',
+          kind: 'wantExactly',
           assetDesc: assays[0].makeAssetDesc(1),
         },
         {
-          rule: 'offerAtMost',
+          kind: 'offerAtMost',
           assetDesc: assays[1].makeAssetDesc(5),
         },
       ],
-      exit: {
+      exitRule: {
         kind: 'onDemand',
       },
     });
@@ -506,7 +506,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // Alice (the creator of the auction) gets back what she put in
     t.deepEquals(
       aliceResult[0].getBalance(),
-      aliceOfferRules.offerDesc[0].assetDesc,
+      aliceOfferRules.payoutRules[0].assetDesc,
     );
 
     // Alice didn't get any of what she wanted
@@ -520,7 +520,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     t.deepEquals(bobResult[0].getBalance(), assetDescOps[0].make(0));
     t.deepEquals(
       bobResult[1].getBalance(),
-      bobOfferRules.offerDesc[1].assetDesc,
+      bobOfferRules.payoutRules[1].assetDesc,
     );
 
     // 24: Bob deposits his payout to ensure he can
@@ -531,7 +531,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     t.deepEquals(carolResult[0].getBalance(), assetDescOps[0].make(0));
     t.deepEquals(
       carolResult[1].getBalance(),
-      carolOfferRules.offerDesc[1].assetDesc,
+      carolOfferRules.payoutRules[1].assetDesc,
     );
 
     // 25: Carol deposits her payout to ensure she can
@@ -542,7 +542,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     t.deepEquals(daveResult[0].getBalance(), assetDescOps[0].make(0));
     t.deepEquals(
       daveResult[1].getBalance(),
-      daveOfferRules.offerDesc[1].assetDesc,
+      daveOfferRules.payoutRules[1].assetDesc,
     );
 
     // 24: Dave deposits his payout to ensure he can

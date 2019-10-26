@@ -1,16 +1,19 @@
 import harden from '@agoric/harden';
 
 import { rejectOffer, defaultAcceptanceMsg } from './helpers/userFlow';
-import { hasRulesAndAssays, getActiveOfferDescs } from './helpers/offerDesc';
+import {
+  hasValidPayoutRules,
+  getActivePayoutRules,
+} from './helpers/payoutRules';
 import {
   isMatchingLimitOrder,
   reallocateSurplusToSeller as reallocate,
 } from './helpers/exchanges';
 
 // This exchange only accepts limit orders. A limit order is defined
-// as either a sell order: [ { rule: 'offerExactly', assetDesc1 }, {
-// rule: 'wantAtLeast', assetDesc2 }] or a buy order: [ { rule:
-// 'wantExactly', assetDesc1 }, { rule: 'offerAtMost', assetDesc2 }].
+// as either a sell order: [ { kind: 'offerExactly', assetDesc1 }, {
+// kind: 'wantAtLeast', assetDesc2 }] or a buy order: [ { kind:
+// 'wantExactly', assetDesc1 }, { kind: 'offerAtMost', assetDesc2 }].
 // Note that the asset in the first slot of the offer description will
 // always be bought or sold in exact amounts, whereas the amount of
 // the second asset received in a sell order may be greater than
@@ -26,22 +29,22 @@ export const makeContract = harden((zoe, terms) => {
     addOrder: async escrowReceipt => {
       const {
         offerHandle,
-        offerRules: { offerDesc: offerMadeDesc },
+        offerRules: { payoutRules },
       } = await zoe.burnEscrowReceipt(escrowReceipt);
 
       // Is it a valid sell offer?
-      const sellOfferFormat = ['offerExactly', 'wantAtLeast'];
-      if (hasRulesAndAssays(sellOfferFormat, terms.assays, offerMadeDesc)) {
+      const sellOfferKinds = ['offerExactly', 'wantAtLeast'];
+      if (hasValidPayoutRules(sellOfferKinds, terms.assays, payoutRules)) {
         // Save the valid offer
         sellOfferHandles.push(offerHandle);
 
         // Try to match
         const {
           offerHandles: activeBuyHandles,
-          offerDescs: activeBuyDescs,
-        } = getActiveOfferDescs(zoe, buyOfferHandles);
+          payoutRulesArray: activeBuyDescs,
+        } = getActivePayoutRules(zoe, buyOfferHandles);
         for (let i = 0; i < activeBuyHandles.length; i += 1) {
-          if (isMatchingLimitOrder(zoe, offerMadeDesc, activeBuyDescs[i])) {
+          if (isMatchingLimitOrder(zoe, payoutRules, activeBuyDescs[i])) {
             return reallocate(zoe, offerHandle, activeBuyHandles[i]);
           }
         }
@@ -50,16 +53,16 @@ export const makeContract = harden((zoe, terms) => {
 
       // Is it a valid buy offer?
       const buyOfferFormat = ['wantExactly', 'offerAtMost'];
-      if (hasRulesAndAssays(buyOfferFormat, terms.assays, offerMadeDesc)) {
+      if (hasValidPayoutRules(buyOfferFormat, terms.assays, payoutRules)) {
         buyOfferHandles.push(offerHandle);
 
         // Try to match
         const {
           offerHandles: activeSellHandles,
-          offerDescs: activeSellDescs,
-        } = getActiveOfferDescs(zoe, sellOfferHandles);
+          payoutRulesArray: activeSellDescs,
+        } = getActivePayoutRules(zoe, sellOfferHandles);
         for (let i = 0; i < activeSellHandles.length; i += 1) {
-          if (isMatchingLimitOrder(zoe, activeSellDescs[i], offerMadeDesc)) {
+          if (isMatchingLimitOrder(zoe, activeSellDescs[i], payoutRules)) {
             reallocate(zoe, activeSellHandles[i], offerHandle);
           }
         }
