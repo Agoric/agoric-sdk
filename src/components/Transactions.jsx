@@ -8,14 +8,12 @@ export default function Transactions() {
   const { state } = useApplicationContext();
   const { transactions } = state;
 
-  const entries = Object.entries(transactions);
-
   return (
     <>
       <Typography variant="h6">Transactions</Typography>
-      {entries.length > 0 ? (
+      {Array.isArray(transactions) && transactions.length > 0 ? (
         <List>
-          {entries.map(([label, extent]) => (
+          {transactions.map(([label, extent]) => (
             <ListItem key={label} value={label}>
               <ListItemText
                 primary={label.description}

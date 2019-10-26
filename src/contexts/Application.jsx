@@ -43,8 +43,8 @@ export default function Provider({ children }) {
         },
         onDisconnect() {
           dispatch(serverDisconnected());
-          dispatch(updatePurses({}));
-          dispatch(updateTransactions({}));
+          dispatch(updatePurses(null));
+          dispatch(updateTransactions(null));
         },
         onMessage(message) {
           messageHandler(JSON.parse(message));

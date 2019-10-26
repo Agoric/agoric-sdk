@@ -24,8 +24,8 @@ export function createDefaultState() {
     active: false,
     connected: false,
     account: null,
-    purses: [],
-    transactions: [],
+    purses: null,
+    transactions: null,
   };
 }
 

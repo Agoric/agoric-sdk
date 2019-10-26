@@ -20,6 +20,10 @@ const useStyles = makeStyles(theme => ({
       borderTopWidth: 1,
     },
   },
+  icon: {
+    minWidth: 24,
+    marginRight: theme.spacing(2),
+  },
 }));
 
 export default function Purses() {
@@ -30,11 +34,11 @@ export default function Purses() {
   return (
     <>
       <Typography variant="h6">Purses</Typography>
-      {purses.length > 0 ? (
+      {Array.isArray(purses) && purses.length > 0 ? (
         <List>
-          {purses.map(([name, { description, extent }]) => (
+          {purses.map(({ name, description, extent }) => (
             <ListItem key={name} value={name} className={classes.item}>
-              <ListItemIcon>
+              <ListItemIcon className={classes.icon}>
                 <PurseIcon />
               </ListItemIcon>
               <ListItemText
