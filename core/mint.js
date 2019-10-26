@@ -8,19 +8,19 @@ import { makeBasicFungibleConfig } from './config/basicFungibleConfig';
 import { makeAssetDescOps } from './assetDescOps';
 
 /**
- * makeMint takes in a string description as well as a function to
+ * makeMint takes in an allegedName as well as a function to
  * make a configuration. This configuration can be used to add custom
  * methods to assays, payments, purses, and mints, and it also
  * defines the functions to make the "mintKeeper" (the actual holder
  * of the mappings from purses/payments to assetDescs) and to make the
  * "assetDescOps" (the object that describes the extentOps of how assetDescs are
  * withdrawn or deposited, among other things).
- * @param  {string} description
+ * @param  {string} allegedName
  * @param  {function} makeConfig=makeBasicFungibleConfig
  */
-function makeMint(description, makeConfig = makeBasicFungibleConfig) {
-  insist(description)`\
-Description must be truthy: ${description}`;
+function makeMint(allegedName, makeConfig = makeBasicFungibleConfig) {
+  insist(allegedName)`\
+allegedName must be truthy: ${allegedName}`;
 
   // Each of these methods is used below and must be defined (even in
   // a trivial way) in any configuration
@@ -251,7 +251,7 @@ Description must be truthy: ${description}`;
   });
   makeAssayTraitIter.next(assay);
 
-  const label = harden({ assay, description });
+  const label = harden({ assay, allegedName });
 
   const assetDescOps = makeAssetDescOps(label, extentOpsName, extentOpsArgs);
   const mintKeeper = makeMintKeeper(assetDescOps);

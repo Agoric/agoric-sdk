@@ -52,10 +52,10 @@ function build(E, log) {
     const mAssayP = E(mMintP).getAssay();
     Promise.resolve(mAssayP).then(assay => {
       // By using an unforgeable assay presence and a pass-by-copy
-      // description together as a unit label, we check that both
-      // agree. The veracity of the description is, however, only as
+      // allegedName together as a unit label, we check that both
+      // agree. The veracity of the allegedName is, however, only as
       // good as the assay doing the check.
-      const label = harden({ assay, description: 'bucks' });
+      const label = harden({ assay, allegedName: 'bucks' });
       const bucks1000 = harden({ label, extent: 1000 });
       const bucks50 = harden({ label, extent: 50 });
 

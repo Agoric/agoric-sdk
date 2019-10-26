@@ -18,8 +18,8 @@ async function main(withSES, basedir, argv) {
 const expectedTapFaucetLog = [
   '=> setup called',
   'start test splitPayments',
-  'oldPayment balance:{"label":{"assay":{},"description":"moola"},"extent":1000}',
-  'splitPayment[0] balance: {"label":{"assay":{},"description":"moola"},"extent":900}',
+  'oldPayment balance:{"label":{"assay":{},"allegedName":"moola"},"extent":1000}',
+  'splitPayment[0] balance: {"label":{"assay":{},"allegedName":"moola"},"extent":900}',
 ];
 
 test('test splitPayments with SES', async t => {

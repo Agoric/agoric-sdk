@@ -41,8 +41,8 @@ function makePixelConfigMaker(
           canvasSize,
           assay,
         );
-        const { description } = assay.getLabel();
-        childMint = makeMint(description, makePixelConfigChild);
+        const { allegedName } = assay.getLabel();
+        childMint = makeMint(allegedName, makePixelConfigChild);
         childAssay = childMint.getAssay();
       }
     }

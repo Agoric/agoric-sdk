@@ -85,8 +85,10 @@ interface AssetDescOps (AssetDesc (Extent, Label)) {
 }
 
 /**
- * The label for an assetDesc identifies the assay, and includes a description of
- * the rights it represents.
+ * The label for an assetDesc identifies the assay, and includes the
+ * alleged name for the kind of asset described. The alleged name (such
+ * as 'BTC' or 'moola') is provided by the maker of the mint and should 
+ * not be trusted.
  *
  * Every assetDesc created by the AssetDescOps will have the same label, but recipients
  * cannot use the label by itself to verify that a purported assetDesc is
@@ -94,16 +96,18 @@ interface AssetDescOps (AssetDesc (Extent, Label)) {
  */
 struct Label {
   assay :Assay;
-  description :Description;
+  allegedName :AllegedName;
 }
 
 /**
- * Human-readable description of a kind of rights.
+ * Human-readable name of a kind of rights. The alleged name should 
+ * not be trusted as an accurate depiction, since it is provided by 
+ * the maker of the mint and could be deceptive.
  *
- * The Descriptions must be Comparables. (This IDL doesn't yet provide a way to
+ * The AllegedName must be Comparable. (This IDL doesn't yet provide a way to
  * specify subtype relationships for structs.)
  */
-struct Description {
+struct AllegedName {
 }
 
 /**

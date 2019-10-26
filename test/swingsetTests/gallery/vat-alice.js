@@ -48,7 +48,7 @@ function makeAliceMaker(E, log, contractHost) {
           E(E(seatP).getWinnings())
             .getBalance()
             .then(b =>
-              log(`Alice collected ${b.extent} ${b.label.description}`),
+              log(`Alice collected ${b.extent} ${b.label.allegedName}`),
             );
           const pixelPurseP = E(pixelAssay).makeEmptyPurse();
           collect(seatP, dustPurseP, pixelPurseP, 'alice escrow');

@@ -61,16 +61,18 @@ interface Assay (AssetDesc (Extent)) {
 /**
  * Makes Mints.
  *
- * The description becomes part of the label, used by the assetDescOps to identify
- * assetDescs authorized/acknowledged by the mint. The MintController and AssetDescOps
- * must be compatible with the type of asset managed by the mint.
- *
- * Description doesn't have to be a string, but it will only be used for its
- * value.
+ * The allegedName becomes part of the label in asset descriptions. The
+ * allegedName doesn't have to be a string, but it will only be used for
+ * its value. The allegedName is useful for debugging and double-checking
+ * assumptions, but should not be trusted. 
+ * 
+ * The config has settings and custom behavior. Different kinds of assets
+ * (for instance, fungible versus non-fungible assets) will use different
+ * configs. 
  */
 interface MintMaker {
   makeMint(
-      description :Comparable,
+      allegedName :Comparable,
       makeConfig :MintConfigMaker) -> (Mint);
 }
 
