@@ -70,10 +70,10 @@ export const makeContract = harden((zoe, terms) => {
 
   const addLiquidity = async escrowReceipt => {
     const extentOpsArray = zoe.getExtentOpsArray();
-    const { offerHandle, conditions } = await zoe.burnEscrowReceipt(
+    const { offerHandle, offerConditions } = await zoe.burnEscrowReceipt(
       escrowReceipt,
     );
-    const { offerDesc: offerMadeDesc } = conditions;
+    const { offerDesc: offerMadeDesc } = offerConditions;
 
     // Create an empty offer to represent the extents of the
     // liquidity pool.
@@ -153,11 +153,11 @@ export const makeContract = harden((zoe, terms) => {
   };
 
   const removeLiquidity = async escrowReceipt => {
-    const { offerHandle, conditions } = await zoe.burnEscrowReceipt(
+    const { offerHandle, offerConditions } = await zoe.burnEscrowReceipt(
       escrowReceipt,
     );
     const extentOpsArray = zoe.getExtentOpsArray();
-    const { offerDesc: offerMadeDesc } = conditions;
+    const { offerDesc: offerMadeDesc } = offerConditions;
     const successMessage = 'Liquidity successfully removed.';
     const rejectMessage = 'The offer to remove liquidity was invalid';
 
@@ -277,10 +277,10 @@ export const makeContract = harden((zoe, terms) => {
   };
 
   const makeOffer = async escrowReceipt => {
-    const { offerHandle, conditions } = await zoe.burnEscrowReceipt(
+    const { offerHandle, offerConditions } = await zoe.burnEscrowReceipt(
       escrowReceipt,
     );
-    const { offerDesc: offerMadeDesc } = conditions;
+    const { offerDesc: offerMadeDesc } = offerConditions;
     const successMessage = 'Swap successfully completed.';
     const rejectMessage = 'The offer to swap was invalid.';
 

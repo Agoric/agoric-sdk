@@ -25,7 +25,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       insist(installationHandle === installId)`wrong installation`;
       insist(sameStructure(assays, terms.assays))`assays were not as expected`;
 
-      const conditions = harden({
+      const offerConditions = harden({
         offerDesc: [
           {
             rule: 'wantExactly',
@@ -44,7 +44,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const offerPayments = [undefined, simoleanPayment];
 
       const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
-        conditions,
+        offerConditions,
         offerPayments,
       );
 

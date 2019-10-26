@@ -26,7 +26,7 @@ export const makeContract = harden((zoe, terms) => {
     addOrder: async escrowReceipt => {
       const {
         offerHandle,
-        conditions: { offerDesc: offerMadeDesc },
+        offerConditions: { offerDesc: offerMadeDesc },
       } = await zoe.burnEscrowReceipt(escrowReceipt);
 
       // Is it a valid sell offer?

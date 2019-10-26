@@ -79,7 +79,7 @@ test('zoe - publicSwap', async t => {
     const carolPayoutPayment = await payoutAssay.claimAll(alicePayoutPayment);
     const payoutPaymentExtent = carolPayoutPayment.getBalance().extent;
     t.deepEquals(payoutPaymentExtent.instanceHandle, instanceHandle);
-    t.deepEquals(payoutPaymentExtent.conditions, aliceConditions);
+    t.deepEquals(payoutPaymentExtent.offerConditions, aliceConditions);
     const carolPayoutObj = await carolPayoutPayment.unwrap();
     const carolPayoutP = carolPayoutObj.getPayout();
 

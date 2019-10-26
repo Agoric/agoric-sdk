@@ -76,10 +76,10 @@ export const makeContract = harden((zoe, terms) => {
   };
 
   const makeOffer = async escrowReceipt => {
-    const { offerHandle, conditions } = await zoe.burnEscrowReceipt(
+    const { offerHandle, offerConditions } = await zoe.burnEscrowReceipt(
       escrowReceipt,
     );
-    const { offerDesc: offerMadeDesc } = conditions;
+    const { offerDesc: offerMadeDesc } = offerConditions;
     const { inactive } = zoe.getStatusFor(harden([firstOfferHandle]));
     if (inactive.length > 0) {
       return ejectPlayer(offerHandle, 'The first offer was withdrawn');
@@ -114,10 +114,10 @@ export const makeContract = harden((zoe, terms) => {
 
   const coveredCall = harden({
     async init(escrowReceipt) {
-      const { offerHandle, conditions } = await zoe.burnEscrowReceipt(
+      const { offerHandle, offerConditions } = await zoe.burnEscrowReceipt(
         escrowReceipt,
       );
-      const { offerDesc: offerMadeDesc } = conditions;
+      const { offerDesc: offerMadeDesc } = offerConditions;
 
       const isValidFirstOfferDesc = newOfferDesc =>
         ['offerExactly', 'wantExactly'].every(
@@ -138,7 +138,7 @@ export const makeContract = harden((zoe, terms) => {
 
       const customInviteExtent = {
         status: sm.getStatus(),
-        conditions,
+        offerMadeConditions: offerConditions,
         offerToBeMade: makeMatchingOfferDesc(offerMadeDesc),
       };
 

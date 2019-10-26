@@ -22,7 +22,7 @@ export const makeContract = harden((zoe, terms) => {
     startAuction: async escrowReceipt => {
       const {
         offerHandle,
-        conditions: { offerDesc: offerMadeDesc },
+        offerConditions: { offerDesc: offerMadeDesc },
       } = await zoe.burnEscrowReceipt(escrowReceipt);
 
       const ruleFormat = ['offerExactly', 'wantAtLeast'];
@@ -37,7 +37,7 @@ export const makeContract = harden((zoe, terms) => {
     bid: async escrowReceipt => {
       const {
         offerHandle,
-        conditions: { offerDesc: offerMadeDesc },
+        offerConditions: { offerDesc: offerMadeDesc },
       } = await zoe.burnEscrowReceipt(escrowReceipt);
 
       // Check that the item is still up for auction

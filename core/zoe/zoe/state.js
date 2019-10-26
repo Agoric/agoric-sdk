@@ -133,8 +133,8 @@ const makeState = () => {
         extentOps: assayToExtentOps.get(assay),
       });
     },
-    recordOffer: (offerHandle, conditions, extents, assays, result) => {
-      const { offerDesc, exit } = conditions;
+    recordOffer: (offerHandle, offerConditions, extents, assays, result) => {
+      const { offerDesc, exit } = offerConditions;
       offerHandleToExtents.init(offerHandle, extents);
       offerHandleToAssays.init(offerHandle, assays);
       offerHandleToOfferDesc.init(offerHandle, offerDesc);

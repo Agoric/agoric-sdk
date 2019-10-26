@@ -176,11 +176,11 @@ const makeZoe = async (additionalEndowments = {}) => {
        *  users' behalf, as happens in the `addLiquidity` step of the
        *  `autoswap` contract.
        */
-      escrowOffer: async (conditions, offerPayments) => {
+      escrowOffer: async (offerConditions, offerPayments) => {
         const { offerHandle } = await escrowOffer(
           adminState.recordOffer,
           adminState.recordAssay,
-          conditions,
+          offerConditions,
           offerPayments,
         );
         return offerHandle;
@@ -335,18 +335,18 @@ Unrecognized moduleFormat ${moduleFormat}`;
      * the offer description. A payment may be `undefined` in the case
      * of specifying a `want`.
      */
-    escrow: async (conditions, offerPayments) => {
+    escrow: async (offerConditions, offerPayments) => {
       const { offerHandle, result } = await escrowOffer(
         adminState.recordOffer,
         adminState.recordAssay,
-        conditions,
+        offerConditions,
         offerPayments,
       );
 
       const escrowReceiptPaymentP = mintEscrowReceiptPayment(
         escrowReceiptMint,
         offerHandle,
-        conditions,
+        offerConditions,
       );
 
       const escrowResult = {
@@ -367,17 +367,17 @@ Unrecognized moduleFormat ${moduleFormat}`;
             return mintPayoutPayment(
               payoutMint,
               payoutAddUseObj,
-              conditions,
+              offerConditions,
               newResult,
               adminState.getInstanceHandleForOfferHandle(offerHandle),
             );
           },
         }),
       };
-      const { exit: exitCondition = { kind: 'onDemand' } } = conditions;
+      const { exit: exitCondition = { kind: 'onDemand' } } = offerConditions;
       if (exitCondition.kind === 'afterDeadline') {
-        conditions.exit.timer
-          .delayUntil(conditions.exit.deadline)
+        offerConditions.exit.timer
+          .delayUntil(offerConditions.exit.deadline)
           .then(_ticks =>
             completeOffers(adminState, readOnlyState, harden([offerHandle])),
           );
