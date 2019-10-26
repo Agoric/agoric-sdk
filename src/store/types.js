@@ -11,3 +11,5 @@ export const CHANGE_PURSE = 'CHANGE_PURSE';
 export const CHANGE_AMOUNT = 'CHANGE_AMOUNT';
 
 export const CREATE_OFFER = 'CREATE_OFFER';
+
+export const RESET_STATE = 'RESET_STATE';

@@ -10,10 +10,11 @@ const useStyles = makeStyles(theme => ({
 }));
 
 export default function TransactionSummary({
-  account,
-  inputCurrency,
-  independentValue,
-  outputCurrency,
+  connected,
+  inputPurse,
+  outputPurse,
+  inputAmount,
+  outputAmount,
 }) {
   const classes = useStyles();
 
@@ -22,16 +23,16 @@ export default function TransactionSummary({
   const [activeStep, setActiveStep] = useState(0);
 
   useEffect(() => {
-    if (!account) {
+    if (!connected) {
       setActiveStep(0);
-    } else if (!inputCurrency || !outputCurrency) {
+    } else if (!inputPurse || !outputPurse) {
       setActiveStep(1);
-    } else if (!independentValue) {
+    } else if (!inputAmount || !outputAmount) {
       setActiveStep(2);
     } else {
       setActiveStep(3);
     }
-  }, [account, inputCurrency, outputCurrency, independentValue]);
+  }, [connected, inputPurse, outputPurse, inputAmount, outputAmount]);
 
   return (
     <Stepper

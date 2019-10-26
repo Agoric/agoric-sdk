@@ -46,3 +46,13 @@ export function changeAmount(state, { amount, isInput }) {
 export function createOffer(state) {
   return { ...state };
 }
+
+export function resetState(state) {
+  return {
+    ...state,
+    inputAmount: '',
+    outputAmount: '',
+    inputPurse: '',
+    outputPurse: '',
+  };
+}

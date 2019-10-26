@@ -40,6 +40,7 @@ export default function AssetInput({
   onAmountChange,
   purse,
   amount,
+  disabled,
 }) {
   const classes = useStyles();
 
@@ -64,7 +65,6 @@ export default function AssetInput({
               min: 0,
             },
           }}
-          error={purse && amount > purse.extent}
           onChange={onAmountChange}
           onKeyPress={e => {
             const charCode = e.which ? e.which : e.keyCode;
@@ -76,6 +76,8 @@ export default function AssetInput({
             }
           }}
           value={amount}
+          error={purse && amount > purse.extent}
+          disabled={disabled}
         />
       </Grid>
       <Grid item xs={12} sm={4}>
@@ -89,6 +91,7 @@ export default function AssetInput({
           inputProps={{
             className: clsx(purse && classes.noPadding, classes.select),
           }}
+          disabled={disabled}
         >
           {Array.isArray(purses) &&
             purses.map(([name, { description, extent }]) => (

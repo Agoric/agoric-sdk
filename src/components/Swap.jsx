@@ -55,6 +55,7 @@ export default function Swap() {
     inputAmount,
     outputAmount,
     isValid,
+    connected,
   } = state;
 
   function handleChangePurse(event, isInput) {
@@ -76,16 +77,15 @@ export default function Swap() {
       <Typography component="h1" variant="h4" align="center">
         Swap
       </Typography>
-      {/*      
-        <Steps
-        account={account}
-        inputCurrency={inputCurrency}
-        inputError={inputError}
-        independentError={independentError}
-        independentValue={independentValue}
-        outputCurrency={outputCurrency}
+            
+      <Steps
+        connected={connected}
+        inputPurse={inputPurse}
+        outputPurse={outputPurse}
+        inputAmount={inputAmount}
+        outputAmount={outputAmount}
       />
-      */}
+      
       <Grid
         container
         direction="column"
@@ -100,9 +100,14 @@ export default function Swap() {
           onAmountChange={event => handleChangeAmount(event, true)}
           purse={inputPurse}
           amount={inputAmount}
+          disabled={!connected}
         />
 
-        <IconButton size="medium" onClick={handleSwapPurses}>
+        <IconButton
+          size="medium"
+          onClick={handleSwapPurses}
+          disabled={!connected}
+        >
           <ArrowDownIcon />
         </IconButton>
 
@@ -113,6 +118,7 @@ export default function Swap() {
           onAmountChange={event => handleChangeAmount(event, false)}
           purse={outputPurse}
           amount={outputAmount}
+          disabled={!connected}
         />
         {/*        <InputLabel className={classes.message}>
           {exchangeRate &&
@@ -130,7 +136,7 @@ export default function Swap() {
           variant="contained"
           color="primary"
           className={classes.button}
-          disabled={!isValid}
+          disabled={!connected || !isValid}
           onClick={handleSwap}
         >
           Swap

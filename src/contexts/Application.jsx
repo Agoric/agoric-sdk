@@ -9,6 +9,7 @@ import {
   updatePurses,
   serverConnected,
   serverDisconnected,
+  resetState,
 } from '../store/actions';
 import { reducer, createDefaultState } from '../store/reducer';
 
@@ -42,7 +43,7 @@ export default function Provider({ children }) {
         },
         onDisconnect() {
           dispatch(serverDisconnected());
-          dispatch(updatePurses(null));
+          dispatch(resetState());
         },
         onMessage(message) {
           messageHandler(JSON.parse(message));

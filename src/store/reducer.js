@@ -8,6 +8,7 @@ import {
   SWAP_PURSES,
   CHANGE_AMOUNT,
   CREATE_OFFER,
+  RESET_STATE,
 } from './types';
 import {
   activateConnection,
@@ -19,6 +20,7 @@ import {
   changePurse,
   changeAmount,
   createOffer,
+  resetState,
 } from './operations';
 
 export function createDefaultState() {
@@ -27,10 +29,10 @@ export function createDefaultState() {
     connected: false,
     account: null,
     purses: null,
-    inputPurse: null,
-    outputPurse: null,
-    inputValue: 0,
-    outputValue: 0,
+    inputPurse: '',
+    outputPurse: '',
+    inputAmount: '',
+    outputAmount: '',
   };
 }
 
@@ -58,6 +60,9 @@ export const reducer = (state, { type, payload }) => {
 
     case CREATE_OFFER:
       return createOffer(state, payload);
+
+    case RESET_STATE:
+      return resetState(state);
 
     default:
       throw new TypeError(`Action not supported ${type}`);

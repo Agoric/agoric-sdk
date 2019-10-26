@@ -8,6 +8,7 @@ import {
   SWAP_PURSES,
   CHANGE_AMOUNT,
   CREATE_OFFER,
+  RESET_STATE,
 } from './types';
 
 export const activateConnection = () => ({
@@ -47,4 +48,8 @@ export const changeAmount = (amount, isInput) => ({
 
 export const createOffer = () => ({
   type: CREATE_OFFER,
+});
+
+export const resetState = () => ({
+  type: RESET_STATE,
 });
