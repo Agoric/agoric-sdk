@@ -286,7 +286,7 @@ When a client is started up, it has a few items in a record named home.
 * [uploads](./lib/ag-solo/contracts/README-contract.md): a private directory
  of contracts you've uploaded
 * registrar: a public directory for published objects
-* localTimerHandler and chainTimerHandler: tools for scheduling
+* localTimerService and chainTimerService: tools for scheduling
 * [zoe](https://github.com/Agoric/ERTP/core/zoe/docs/zoe.md): support for contracts with Offer-Safety Enforcement
 * [contractHost](https://github.com/Agoric/Documentation): secure smart contracts
 

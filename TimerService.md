@@ -1,15 +1,15 @@
-There will be one or two timerHandlers in home. One is from the chain (if
+There will be one or two timerServices in home. One is from the chain (if
 present), the other from the local vat. It would probably be sensible to use a
 chain-based timer for contracts, but more efficient to use the local timer
-for operations that don't need consensus or consistency. Each timerHandler
+for operations that don't need consensus or consistency. Each timerService
 gives the ability to get the current time, schedule a single wake() call,
 create a repeater that will allow scheduling of events at regular intervals,
 or remove scheduled calls.
 
-The timerHandler's API is 
+The timerService's API is 
 
 ```
-interface TimerHandler {
+interface TimerService {
   // Retrieve the time of the start of the current block.
   getCurrentTimestamp() -> (integer);
 
@@ -55,11 +55,11 @@ Here's a transcript of a session showing the use of the repeater.
 command[0]  home
 history[0]  {"LOADING":[Promise],"gallery":[Presence o-50],"handoffService":[Presence o-51],
 "purse":[Presence o-52],"canvasStatePublisher":[Presence o-53],"contractHost":[Presence o-54],
-"chainTimerHandler":[Presence o-55],"handoff":[Presence o-56],"registry":[Presence o-57],"zoe":
-[Presence o-58],"localTimerHandler":[Presence o-59],"uploads":[Presence o-60]}
-command[1]  home.localTimerHandler~.getCurrentTimestamp()
+"chainTimerService":[Presence o-55],"handoff":[Presence o-56],"registry":[Presence o-57],"zoe":
+[Presence o-58],"localTimerService":[Presence o-59],"uploads":[Presence o-60]}
+command[1]  home.localTimerService~.getCurrentTimestamp()
 history[1]  1571782780000
-command[2]  home.chainTimerHandler~.getCurrentTimestamp()
+command[2]  home.chainTimerService~.getCurrentTimestamp()
 history[2]  1571782793
 command[3]  makeHandler = () => { let calls = 0; const args = []; return { getCalls() {
 return calls; }, getArgs() { return args; }, wake(arg) { args.push(arg); calls += 1; }, }; }
@@ -68,9 +68,9 @@ command[4]  h1 = makeHandler()
 history[4]  {"getCalls":[Function getCalls],"getArgs":[Function getArgs],"wake":[Function wake]}
 command[5]  h2 = makeHandler()
 history[5]  {"getCalls":[Function getCalls],"getArgs":[Function getArgs],"wake":[Function wake]}
-command[6]  tl = home.localTimerHandler
+command[6]  tl = home.localTimerService
 history[6]  [Presence o-59]  
-command[7]  tc = home.chainTimerHandler
+command[7]  tc = home.chainTimerService
 history[7]  [Presence o-55]  
 command[8]  rl = tl~.createRepeater(7, 1500)
 history[8]  [Presence o-64]  
