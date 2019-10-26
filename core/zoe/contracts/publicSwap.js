@@ -14,7 +14,7 @@ export const makeContract = harden((zoe, terms) => {
     makeFirstOffer: async escrowReceipt => {
       const {
         offerHandle,
-        offerConditions: { offerDesc: offerMadeDesc },
+        offerRules: { offerDesc: offerMadeDesc },
       } = await zoe.burnEscrowReceipt(escrowReceipt);
 
       const rulesFormat = ['offerExactly', 'wantExactly'];
@@ -31,7 +31,7 @@ export const makeContract = harden((zoe, terms) => {
     matchOffer: async escrowReceipt => {
       const {
         offerHandle: matchingOfferHandle,
-        offerConditions: { offerDesc: offerMadeDesc },
+        offerRules: { offerDesc: offerMadeDesc },
       } = await zoe.burnEscrowReceipt(escrowReceipt);
 
       if (!firstOfferHandle) {

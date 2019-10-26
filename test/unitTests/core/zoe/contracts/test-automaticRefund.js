@@ -27,7 +27,7 @@ test('zoe - simplest automaticRefund', async t => {
       installationHandle,
       { assays: harden([moolaAssay]) },
     );
-    const aliceConditions = harden({
+    const aliceOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -38,7 +38,7 @@ test('zoe - simplest automaticRefund', async t => {
     const alicePayments = [aliceMoolaPayment];
 
     const { escrowReceipt, payout: payoutP } = await zoe.escrow(
-      aliceConditions,
+      aliceOfferRules,
       alicePayments,
     );
 
@@ -48,7 +48,7 @@ test('zoe - simplest automaticRefund', async t => {
     // Alice got back what she put in
     t.deepEquals(
       alicePayout[0].getBalance(),
-      aliceConditions.offerDesc[0].assetDesc,
+      aliceOfferRules.offerDesc[0].assetDesc,
     );
   } catch (e) {
     t.assert(false, e);
@@ -92,7 +92,7 @@ test('zoe with automaticRefund', async t => {
     t.deepEquals(actualAssays, assays);
 
     // 2: Alice escrows with zoe
-    const aliceConditions = harden({
+    const aliceOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -117,7 +117,7 @@ test('zoe with automaticRefund', async t => {
       escrowReceipt: allegedAliceEscrowReceipt,
       payout: alicePayoutP,
       makePayoutPaymentObj,
-    } = await zoe.escrow(aliceConditions, alicePayments);
+    } = await zoe.escrow(aliceOfferRules, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment. (This is
     // unnecessary if she trusts zoe, but we will do it in the tests.)
@@ -153,7 +153,7 @@ test('zoe with automaticRefund', async t => {
     // 6: Bob also wants to get an automaticRefund (why? we don't
     // know) so he escrows his offer and his offer payments.
 
-    const bobConditions = harden({
+    const bobOfferRules = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -175,7 +175,7 @@ test('zoe with automaticRefund', async t => {
     const {
       escrowReceipt: allegedBobEscrowReceipt,
       payout: bobPayoutP,
-    } = await zoe.escrow(bobConditions, bobPayments);
+    } = await zoe.escrow(bobOfferRules, bobPayments);
 
     // 7: Bob does a claimAll on the escrowReceipt payment
     const bobEscrowReceipt = await escrowReceiptAssay.claimAll(
@@ -187,8 +187,8 @@ test('zoe with automaticRefund', async t => {
       bobEscrowReceipt,
     );
 
-    t.equals(bobOfferMadeDesc, bobConditions);
-    t.equals(aliceOfferMadeDesc, aliceConditions);
+    t.equals(bobOfferMadeDesc, bobOfferRules);
+    t.equals(aliceOfferMadeDesc, aliceOfferRules);
 
     const alicePayout = await alicePayoutP;
     t.throws(
@@ -200,7 +200,7 @@ test('zoe with automaticRefund', async t => {
     // Alice got back what she put in
     t.deepEquals(
       alicePayout[0].getBalance(),
-      aliceConditions.offerDesc[0].assetDesc,
+      aliceOfferRules.offerDesc[0].assetDesc,
     );
 
     // Alice didn't get any of what she wanted
@@ -270,7 +270,7 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
     );
 
     // 2: Alice escrows with zoe
-    const aliceConditions = harden({
+    const aliceOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -288,19 +288,19 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
     const {
       escrowReceipt: aliceEscrowReceipt1,
       payout: payoutP1,
-    } = await zoe.escrow(aliceConditions, [aliceMoolaPayments[0], undefined]);
+    } = await zoe.escrow(aliceOfferRules, [aliceMoolaPayments[0], undefined]);
 
     // 3: Alice escrows with zoe
     const {
       escrowReceipt: aliceEscrowReceipt2,
       payout: payoutP2,
-    } = await zoe.escrow(aliceConditions, [aliceMoolaPayments[1], undefined]);
+    } = await zoe.escrow(aliceOfferRules, [aliceMoolaPayments[1], undefined]);
 
     // 4: Alice escrows with zoe
     const {
       escrowReceipt: aliceEscrowReceipt3,
       payout: payoutP3,
-    } = await zoe.escrow(aliceConditions, [aliceMoolaPayments[2], undefined]);
+    } = await zoe.escrow(aliceOfferRules, [aliceMoolaPayments[2], undefined]);
 
     // 5: Alice makes an offer with each of her escrow receipts
     await automaticRefund1.makeOffer(aliceEscrowReceipt1);
@@ -314,15 +314,15 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
     // Ensure that she got what she put in for each
     t.deepEquals(
       payout1[0].getBalance(),
-      aliceConditions.offerDesc[0].assetDesc,
+      aliceOfferRules.offerDesc[0].assetDesc,
     );
     t.deepEquals(
       payout2[0].getBalance(),
-      aliceConditions.offerDesc[0].assetDesc,
+      aliceOfferRules.offerDesc[0].assetDesc,
     );
     t.deepEquals(
       payout3[0].getBalance(),
-      aliceConditions.offerDesc[0].assetDesc,
+      aliceOfferRules.offerDesc[0].assetDesc,
     );
 
     // Ensure that the number of offers received by each instance is one
@@ -350,7 +350,7 @@ test('zoe - alice cancels before entering a contract', async t => {
     const aliceSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
 
     // 2: Alice escrows with zoe
-    const aliceConditions = harden({
+    const aliceOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -371,7 +371,7 @@ test('zoe - alice cancels before entering a contract', async t => {
       escrowReceipt: aliceEscrowReceipt,
       cancelObj,
       payout: payoutP,
-    } = await zoe.escrow(aliceConditions, alicePayments);
+    } = await zoe.escrow(aliceOfferRules, alicePayments);
 
     cancelObj.cancel();
 
@@ -396,7 +396,7 @@ test('zoe - alice cancels before entering a contract', async t => {
     // Alice got back what she put in
     t.deepEquals(
       alicePayout[0].getBalance(),
-      aliceConditions.offerDesc[0].assetDesc,
+      aliceOfferRules.offerDesc[0].assetDesc,
     );
 
     // Alice didn't get any of what she wanted
@@ -431,7 +431,7 @@ test('zoe - alice cancels after completion', async t => {
     const aliceSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
 
     // 2: Alice escrows with zoe
-    const aliceConditions = harden({
+    const aliceOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -452,7 +452,7 @@ test('zoe - alice cancels after completion', async t => {
       escrowReceipt: aliceEscrowReceipt,
       cancelObj,
       payout: payoutP,
-    } = await zoe.escrow(aliceConditions, alicePayments);
+    } = await zoe.escrow(aliceOfferRules, alicePayments);
 
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
@@ -474,7 +474,7 @@ test('zoe - alice cancels after completion', async t => {
     // Alice got back what she put in
     t.deepEquals(
       alicePayout[0].getBalance(),
-      aliceConditions.offerDesc[0].assetDesc,
+      aliceOfferRules.offerDesc[0].assetDesc,
     );
 
     // Alice didn't get any of what she wanted

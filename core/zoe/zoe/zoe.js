@@ -176,11 +176,11 @@ const makeZoe = async (additionalEndowments = {}) => {
        *  users' behalf, as happens in the `addLiquidity` step of the
        *  `autoswap` contract.
        */
-      escrowOffer: async (offerConditions, offerPayments) => {
+      escrowOffer: async (offerRules, offerPayments) => {
         const { offerHandle } = await escrowOffer(
           adminState.recordOffer,
           adminState.recordAssay,
-          offerConditions,
+          offerRules,
           offerPayments,
         );
         return offerHandle;
@@ -214,7 +214,7 @@ const makeZoe = async (additionalEndowments = {}) => {
         return invitePaymentP;
       },
 
-      makeConditions: (rules, extents, exit) => {
+      makeOfferRules: (rules, extents, exit) => {
         const extentOpsArray = readOnlyState.getExtentOpsArrayForInstanceHandle(
           instanceHandle,
         );
@@ -335,18 +335,18 @@ Unrecognized moduleFormat ${moduleFormat}`;
      * the offer description. A payment may be `undefined` in the case
      * of specifying a `want`.
      */
-    escrow: async (offerConditions, offerPayments) => {
+    escrow: async (offerRules, offerPayments) => {
       const { offerHandle, result } = await escrowOffer(
         adminState.recordOffer,
         adminState.recordAssay,
-        offerConditions,
+        offerRules,
         offerPayments,
       );
 
       const escrowReceiptPaymentP = mintEscrowReceiptPayment(
         escrowReceiptMint,
         offerHandle,
-        offerConditions,
+        offerRules,
       );
 
       const escrowResult = {
@@ -367,17 +367,17 @@ Unrecognized moduleFormat ${moduleFormat}`;
             return mintPayoutPayment(
               payoutMint,
               payoutAddUseObj,
-              offerConditions,
+              offerRules,
               newResult,
               adminState.getInstanceHandleForOfferHandle(offerHandle),
             );
           },
         }),
       };
-      const { exit: exitCondition = { kind: 'onDemand' } } = offerConditions;
+      const { exit: exitCondition = { kind: 'onDemand' } } = offerRules;
       if (exitCondition.kind === 'afterDeadline') {
-        offerConditions.exit.timer
-          .delayUntil(offerConditions.exit.deadline)
+        offerRules.exit.timer
+          .delayUntil(offerRules.exit.deadline)
           .then(_ticks =>
             completeOffers(adminState, readOnlyState, harden([offerHandle])),
           );

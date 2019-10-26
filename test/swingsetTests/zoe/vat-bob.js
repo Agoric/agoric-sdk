@@ -38,7 +38,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       )`The second assay should be the simolean assay`;
 
       // 1. Bob escrows his offer
-      const bobConditions = harden({
+      const bobOfferRules = harden({
         offerDesc: [
           {
             rule: 'wantExactly',
@@ -59,7 +59,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const bobPayments = [undefined, bobSimoleanPayment];
 
       const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
-        bobConditions,
+        bobOfferRules,
         bobPayments,
       );
 
@@ -90,7 +90,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
 
       const assays = harden([moolaAssay, simoleanAssay]);
 
-      const bobIntendedConditions = harden({
+      const bobIntendedOfferRules = harden({
         offerDesc: [
           {
             rule: 'wantExactly',
@@ -114,7 +114,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       insist(
         sameStructure(
           inviteExtent.offerToBeMade,
-          bobIntendedConditions.offerDesc,
+          bobIntendedOfferRules.offerDesc,
         ),
       )`the offer to be made was not as expected`;
 
@@ -134,7 +134,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
 
       // Bob escrows
       const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
-        bobIntendedConditions,
+        bobIntendedOfferRules,
         bobPayments,
       );
 
@@ -164,7 +164,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       insist(installationHandle === installId)`wrong installation`;
       insist(sameStructure(assays, terms.assays))`assays were not as expected`;
 
-      const offerConditions = harden({
+      const offerRules = harden({
         offerDesc: [
           {
             rule: 'wantExactly',
@@ -183,7 +183,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const offerPayments = [undefined, simoleanPayment];
 
       const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
-        offerConditions,
+        offerRules,
         offerPayments,
       );
 
@@ -226,7 +226,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
         sameStructure(firstOfferDesc, expectedFirstOfferDesc),
       )`Alice's first offer was not what she said`;
 
-      const offerConditions = harden({
+      const offerRules = harden({
         offerDesc: [
           {
             rule: 'wantExactly',
@@ -245,7 +245,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const offerPayments = [undefined, simoleanPayment];
 
       const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
-        offerConditions,
+        offerRules,
         offerPayments,
       );
 
@@ -273,7 +273,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       insist(installationHandle === installId)`wrong installation`;
       insist(sameStructure(assays, terms.assays))`assays were not as expected`;
 
-      const bobBuyOrderConditions = harden({
+      const bobBuyOrderOfferRules = harden({
         offerDesc: [
           {
             rule: 'wantExactly',
@@ -292,7 +292,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const offerPayments = [undefined, simoleanPayment];
 
       const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
-        bobBuyOrderConditions,
+        bobBuyOrderOfferRules,
         offerPayments,
       );
 
@@ -333,7 +333,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       ]);
       log(simoleanAssetDesc);
 
-      const moolaForSimConditions = harden({
+      const moolaForSimOfferRules = harden({
         offerDesc: [
           {
             rule: 'offerExactly',
@@ -356,7 +356,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const moolaPayment = E(moolaPurseP).withdrawAll();
       const moolaForSimPayments = [moolaPayment, undefined, undefined];
       const { escrowReceipt, payout: moolaForSimPayoutP } = await E(zoe).escrow(
-        moolaForSimConditions,
+        moolaForSimOfferRules,
         moolaForSimPayments,
       );
 
@@ -378,7 +378,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       log(moolaAssetDesc);
 
       // Bob makes another offer and swaps
-      const bobSimsForMoolaConditions = harden({
+      const bobSimsForMoolaOfferRules = harden({
         offerDesc: [
           {
             rule: 'wantAtLeast',
@@ -406,7 +406,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const {
         escrowReceipt: bobsSimsForMoolaEscrowReceipt,
         payout: bobSimsForMoolaPayoutP,
-      } = await E(zoe).escrow(bobSimsForMoolaConditions, simsForMoolaPayments);
+      } = await E(zoe).escrow(bobSimsForMoolaOfferRules, simsForMoolaPayments);
 
       const simsForMoolaOutcome = await E(autoswap).makeOffer(
         bobsSimsForMoolaEscrowReceipt,

@@ -11,13 +11,13 @@ import { toAssetDescMatrix } from '../contractUtils';
 const mintPayoutPayment = (
   seatMint,
   addUseObj,
-  offerConditions,
+  offerRules,
   result,
   instanceHandle,
 ) => {
   const payoutExtent = harden({
     offerHandle: harden({}),
-    offerConditions,
+    offerRules,
     instanceHandle,
   });
   const payoutPurseP = seatMint.mint(payoutExtent);
@@ -31,11 +31,11 @@ const mintPayoutPayment = (
 const mintEscrowReceiptPayment = (
   escrowReceiptMint,
   offerHandle,
-  offerConditions,
+  offerRules,
 ) => {
   const escrowReceiptExtent = harden({
     offerHandle,
-    offerConditions,
+    offerRules,
   });
   const escrowReceiptPurse = escrowReceiptMint.mint(escrowReceiptExtent);
   const escrowReceiptPaymentP = escrowReceiptPurse.withdrawAll();
@@ -89,11 +89,11 @@ const insistValidExitCondition = exit => {
 const escrowOffer = async (
   recordOffer,
   recordAssay,
-  offerConditions,
+  offerRules,
   offerPayments,
 ) => {
   const result = makePromise();
-  const { offerDesc, exit = { kind: 'onDemand' } } = offerConditions;
+  const { offerDesc, exit = { kind: 'onDemand' } } = offerRules;
 
   insistValidRules(offerDesc);
   insistValidExitCondition(exit);
@@ -117,7 +117,7 @@ const escrowOffer = async (
 
   const offerHandle = harden({});
 
-  recordOffer(offerHandle, offerConditions, extents, assays, result);
+  recordOffer(offerHandle, offerRules, extents, assays, result);
 
   return harden({
     offerHandle,
@@ -136,7 +136,7 @@ const escrowEmptyOffer = (recordOffer, assays, labels, extentOpsArray) => {
       },
     }),
   );
-  const offerConditions = harden({
+  const offerRules = harden({
     offerDesc,
     exit: {
       kind: 'onDemand',
@@ -146,7 +146,7 @@ const escrowEmptyOffer = (recordOffer, assays, labels, extentOpsArray) => {
   const result = makePromise();
 
   // has side effects
-  recordOffer(offerHandle, offerConditions, extents, assays, result);
+  recordOffer(offerHandle, offerRules, extents, assays, result);
 
   return harden({
     offerHandle,

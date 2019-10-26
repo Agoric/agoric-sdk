@@ -47,7 +47,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     );
 
     // 2: Alice escrows with zoe
-    const aliceConditions = harden({
+    const aliceOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -66,7 +66,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
       payout: alicePayoutP,
-    } = await zoe.escrow(aliceConditions, alicePayments);
+    } = await zoe.escrow(aliceOfferRules, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment. It's
     // unnecessary if she trusts Zoe but we will do it for the tests.
@@ -96,7 +96,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.equals(bobInstallationId, installationHandle);
     t.deepEquals(terms.assays, assays);
 
-    const bobConditions = harden({
+    const bobOfferRules = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -117,7 +117,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const {
       escrowReceipt: allegedBobEscrowReceipt,
       payout: bobPayoutP,
-    } = await zoe.escrow(bobConditions, bobPayments);
+    } = await zoe.escrow(bobOfferRules, bobPayments);
 
     // 7: Bob does a claimAll on the escrowReceipt payment. This is
     // unnecessary but we will do it anyways for the test
@@ -144,7 +144,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.equals(carolInstallationId, installationHandle);
     t.deepEquals(carolTerms.assays, assays);
 
-    const carolConditions = harden({
+    const carolOfferRules = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -165,7 +165,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const {
       escrowReceipt: carolEscrowReceipt,
       payout: carolPayoutP,
-    } = await zoe.escrow(carolConditions, carolPayments);
+    } = await zoe.escrow(carolOfferRules, carolPayments);
 
     // 11: Carol makes an offer with her escrow receipt
     const carolOfferResult = await carolAuction.bid(carolEscrowReceipt);
@@ -184,7 +184,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     t.equals(daveInstallationId, installationHandle);
     t.deepEquals(daveTerms.assays, assays);
-    const daveConditions = harden({
+    const daveOfferRules = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -205,7 +205,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const {
       escrowReceipt: daveEscrowReceipt,
       payout: davePayoutP,
-    } = await zoe.escrow(daveConditions, davePayments);
+    } = await zoe.escrow(daveOfferRules, davePayments);
 
     // 14: Dave makes an offer with his escrow receipt
     const daveOfferResult = await daveAuction.bid(daveEscrowReceipt);
@@ -223,7 +223,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     // Alice (the creator of the auction) gets back the second highest bid
     t.deepEquals(
       aliceResult[1].getBalance(),
-      carolConditions.offerDesc[1].assetDesc,
+      carolOfferRules.offerDesc[1].assetDesc,
     );
 
     // Alice didn't get any of what she put in
@@ -246,7 +246,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.deepEquals(carolResult[0].getBalance(), assetDescOps[0].make(0));
     t.deepEquals(
       carolResult[1].getBalance(),
-      carolConditions.offerDesc[1].assetDesc,
+      carolOfferRules.offerDesc[1].assetDesc,
     );
 
     // 25: Carol deposits her payout to ensure she can
@@ -257,7 +257,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.deepEquals(daveResult[0].getBalance(), assetDescOps[0].make(0));
     t.deepEquals(
       daveResult[1].getBalance(),
-      daveConditions.offerDesc[1].assetDesc,
+      daveOfferRules.offerDesc[1].assetDesc,
     );
 
     // 24: Dave deposits his payout to ensure he can
@@ -331,7 +331,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     );
 
     // 2: Alice escrows with zoe
-    const aliceConditions = harden({
+    const aliceOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -351,7 +351,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       escrowReceipt: allegedAliceEscrowReceipt,
       payout: alicePayoutP,
       cancelObj,
-    } = await zoe.escrow(aliceConditions, alicePayments);
+    } = await zoe.escrow(aliceOfferRules, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment. It's
     // unnecessary if she trusts Zoe but we will do it for the tests.
@@ -385,7 +385,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     t.equals(bobInstallationId, installationHandle);
     t.deepEquals(terms.assays, assays);
 
-    const bobConditions = harden({
+    const bobOfferRules = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -406,7 +406,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const {
       escrowReceipt: allegedBobEscrowReceipt,
       payout: bobPayoutP,
-    } = await zoe.escrow(bobConditions, bobPayments);
+    } = await zoe.escrow(bobOfferRules, bobPayments);
 
     // 7: Bob does a claimAll on the escrowReceipt payment. This is
     // unnecessary but we will do it anyways for the test
@@ -431,7 +431,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     t.equals(carolInstallationId, installationHandle);
     t.deepEquals(carolTerms.assays, assays);
 
-    const carolConditions = harden({
+    const carolOfferRules = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -452,7 +452,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const {
       escrowReceipt: carolEscrowReceipt,
       payout: carolPayoutP,
-    } = await zoe.escrow(carolConditions, carolPayments);
+    } = await zoe.escrow(carolOfferRules, carolPayments);
 
     // 11: Carol makes an offer with her escrow receipt
     t.rejects(
@@ -469,7 +469,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     t.equals(daveInstallationId, installationHandle);
     t.deepEquals(daveTerms.assays, assays);
-    const daveConditions = harden({
+    const daveOfferRules = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -490,7 +490,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const {
       escrowReceipt: daveEscrowReceipt,
       payout: davePayoutP,
-    } = await zoe.escrow(daveConditions, davePayments);
+    } = await zoe.escrow(daveOfferRules, davePayments);
 
     // 14: Dave makes an offer with his escrow receipt
     t.rejects(
@@ -506,7 +506,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // Alice (the creator of the auction) gets back what she put in
     t.deepEquals(
       aliceResult[0].getBalance(),
-      aliceConditions.offerDesc[0].assetDesc,
+      aliceOfferRules.offerDesc[0].assetDesc,
     );
 
     // Alice didn't get any of what she wanted
@@ -520,7 +520,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     t.deepEquals(bobResult[0].getBalance(), assetDescOps[0].make(0));
     t.deepEquals(
       bobResult[1].getBalance(),
-      bobConditions.offerDesc[1].assetDesc,
+      bobOfferRules.offerDesc[1].assetDesc,
     );
 
     // 24: Bob deposits his payout to ensure he can
@@ -531,7 +531,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     t.deepEquals(carolResult[0].getBalance(), assetDescOps[0].make(0));
     t.deepEquals(
       carolResult[1].getBalance(),
-      carolConditions.offerDesc[1].assetDesc,
+      carolOfferRules.offerDesc[1].assetDesc,
     );
 
     // 25: Carol deposits her payout to ensure she can
@@ -542,7 +542,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     t.deepEquals(daveResult[0].getBalance(), assetDescOps[0].make(0));
     t.deepEquals(
       daveResult[1].getBalance(),
-      daveConditions.offerDesc[1].assetDesc,
+      daveOfferRules.offerDesc[1].assetDesc,
     );
 
     // 24: Dave deposits his payout to ensure he can

@@ -152,7 +152,7 @@ make sure our user-facing API has a method for that:
 const makeFirstOffer = async escrowReceipt => {
   const {
     offerHandle,
-    offerConditions: { offerDesc: offerMadeDesc },
+    offerRules: { offerDesc: offerMadeDesc },
   } = await zoe.burnEscrowReceipt(escrowReceipt);
 
   if (!hasRules(['offerExactly', 'wantExactly'], offerMadeDesc)) {
@@ -196,7 +196,7 @@ method, `matchOffer`:
 const matchOffer = async escrowReceipt => {
   const {
     offerHandle: matchingOfferHandle,
-    offerConditions: { offerDesc: offerMadeDesc },
+    offerRules: { offerDesc: offerMadeDesc },
   } = await zoe.burnEscrowReceipt(escrowReceipt);
 
   if (!firstOfferHandle) {

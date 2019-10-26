@@ -50,7 +50,7 @@ test('autoSwap with valid offers', async t => {
     // 2: Alice adds liquidity
     // 10 moola = 5 simoleans at the time of the liquidity adding
     // aka 2 moola = 1 simolean
-    const aliceConditions = harden({
+    const aliceOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -74,7 +74,7 @@ test('autoSwap with valid offers', async t => {
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
       payout: aliceAddLiquidityPayoutP,
-    } = await zoe.escrow(aliceConditions, alicePayments);
+    } = await zoe.escrow(aliceOfferRules, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment
     const aliceEscrowReceipt = await escrowReceiptAssay.claimAll(
@@ -112,7 +112,7 @@ test('autoSwap with valid offers', async t => {
 
     // 6: Bob escrows
 
-    const bobMoolaForSimConditions = harden({
+    const bobMoolaForSimOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -136,7 +136,7 @@ test('autoSwap with valid offers', async t => {
     const {
       escrowReceipt: allegedBobEscrowReceipt,
       payout: bobPayoutP,
-    } = await zoe.escrow(bobMoolaForSimConditions, bobMoolaForSimPayments);
+    } = await zoe.escrow(bobMoolaForSimOfferRules, bobMoolaForSimPayments);
 
     // 3: Bob does a claimAll on the escrowReceipt payment
     const bobEscrowReceipt = await escrowReceiptAssay.claimAll(
@@ -160,7 +160,7 @@ test('autoSwap with valid offers', async t => {
     t.deepEquals(moolaAssetDesc, allAssays[0].makeAssetDesc(6));
 
     // 8: Bob makes another offer and swaps
-    const bobSimsForMoolaConditions = harden({
+    const bobSimsForMoolaOfferRules = harden({
       offerDesc: [
         {
           rule: 'wantAtLeast',
@@ -184,7 +184,7 @@ test('autoSwap with valid offers', async t => {
     const {
       escrowReceipt: bobsSimsForMoolaEscrowReceipt,
       payout: bobSimsForMoolaPayoutP,
-    } = await zoe.escrow(bobSimsForMoolaConditions, simsForMoolaPayments);
+    } = await zoe.escrow(bobSimsForMoolaOfferRules, simsForMoolaPayments);
 
     const simsForMoolaOk = await bobAutoswap.makeOffer(
       bobsSimsForMoolaEscrowReceipt,

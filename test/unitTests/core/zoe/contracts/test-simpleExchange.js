@@ -37,7 +37,7 @@ test('zoe - simpleExchange', async t => {
     // 2: Alice escrows with zoe to create a sell order. She wants to
     // sell 3 moola and wants to receive at least 4 simoleans in
     // return.
-    const aliceSellOrderConditions = harden({
+    const aliceSellOrderOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -56,7 +56,7 @@ test('zoe - simpleExchange', async t => {
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
       payout: alicePayoutP,
-    } = await zoe.escrow(aliceSellOrderConditions, alicePayments);
+    } = await zoe.escrow(aliceSellOrderOfferRules, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment. It's
     // unnecessary if she trusts Zoe but we will do it for the tests.
@@ -82,7 +82,7 @@ test('zoe - simpleExchange', async t => {
     // Bob creates a buy order, saying that he wants exactly 3 moola,
     // and is willing to pay up to 7 simoleans.
 
-    const bobBuyOrderConditions = harden({
+    const bobBuyOrderOfferRules = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -103,7 +103,7 @@ test('zoe - simpleExchange', async t => {
     const {
       escrowReceipt: allegedBobEscrowReceipt,
       payout: bobPayoutP,
-    } = await zoe.escrow(bobBuyOrderConditions, bobPayments);
+    } = await zoe.escrow(bobBuyOrderOfferRules, bobPayments);
 
     // 7: Bob does a claimAll on the escrowReceipt payment. This is
     // unnecessary but we will do it anyways for the test
@@ -129,7 +129,7 @@ test('zoe - simpleExchange', async t => {
     t.ok(
       assetDescOps[1].includes(
         aliceSimoleanPayout.getBalance(),
-        aliceSellOrderConditions.offerDesc[1].assetDesc,
+        aliceSellOrderOfferRules.offerDesc[1].assetDesc,
       ),
     );
 

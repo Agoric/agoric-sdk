@@ -25,7 +25,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       insist(installationHandle === installId)`wrong installation`;
       insist(sameStructure(assays, terms.assays))`assays were not as expected`;
 
-      const offerConditions = harden({
+      const offerRules = harden({
         offerDesc: [
           {
             rule: 'wantExactly',
@@ -44,7 +44,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const offerPayments = [undefined, simoleanPayment];
 
       const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
-        offerConditions,
+        offerRules,
         offerPayments,
       );
 
@@ -68,7 +68,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
 
       const payoutAssay = await E(zoe).getPayoutAssay();
 
-      const offerConditions = harden({
+      const offerRules = harden({
         offerDesc: [
           {
             rule: 'offerExactly',
@@ -87,9 +87,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const carolPayoutPaymentP = await E(payoutAssay).claimAll(payoutPaymentP);
       const { extent } = await E(carolPayoutPaymentP).getBalance();
       insist(extent.instanceHandle === instanceHandle)`same instance`;
-      insist(
-        sameStructure(extent.offerConditions, offerConditions),
-      )`same offerConditions`;
+      insist(sameStructure(extent.offerRules, offerRules))`same offerRules`;
       const carolPayoutObj = await E(carolPayoutPaymentP).unwrap();
       const payoutP = await E(carolPayoutObj).getPayout();
 

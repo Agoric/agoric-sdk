@@ -40,7 +40,7 @@ test('zoe - publicSwap', async t => {
     );
 
     // 2: Alice escrows with zoe
-    const aliceConditions = harden({
+    const aliceOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -59,7 +59,7 @@ test('zoe - publicSwap', async t => {
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
       makePayoutPaymentObj,
-    } = await zoe.escrow(aliceConditions, alicePayments);
+    } = await zoe.escrow(aliceOfferRules, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment. It's
     // unnecessary if she trusts Zoe but we will do it for the tests.
@@ -79,7 +79,7 @@ test('zoe - publicSwap', async t => {
     const carolPayoutPayment = await payoutAssay.claimAll(alicePayoutPayment);
     const payoutPaymentExtent = carolPayoutPayment.getBalance().extent;
     t.deepEquals(payoutPaymentExtent.instanceHandle, instanceHandle);
-    t.deepEquals(payoutPaymentExtent.offerConditions, aliceConditions);
+    t.deepEquals(payoutPaymentExtent.offerRules, aliceOfferRules);
     const carolPayoutObj = await carolPayoutPayment.unwrap();
     const carolPayoutP = carolPayoutObj.getPayout();
 
@@ -97,9 +97,9 @@ test('zoe - publicSwap', async t => {
     t.deepEquals(bobTerms.assays, assays);
 
     const firstOfferDesc = bobSwap.getFirstOfferDesc();
-    t.deepEquals(firstOfferDesc, aliceConditions.offerDesc);
+    t.deepEquals(firstOfferDesc, aliceOfferRules.offerDesc);
 
-    const bobConditions = harden({
+    const bobOfferRules = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -120,7 +120,7 @@ test('zoe - publicSwap', async t => {
     const {
       escrowReceipt: allegedBobEscrowReceipt,
       payout: bobPayoutP,
-    } = await zoe.escrow(bobConditions, bobPayments);
+    } = await zoe.escrow(bobOfferRules, bobPayments);
 
     // 7: Bob does a claimAll on the escrowReceipt payment. This is
     // unnecessary but we will do it anyways for the test
@@ -145,7 +145,7 @@ test('zoe - publicSwap', async t => {
     // Carol gets what Alice wanted
     t.deepEquals(
       carolPayout[1].getBalance(),
-      aliceConditions.offerDesc[1].assetDesc,
+      aliceOfferRules.offerDesc[1].assetDesc,
     );
 
     // Carol didn't get any of what Alice put in

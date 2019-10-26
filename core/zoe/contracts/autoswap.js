@@ -70,10 +70,10 @@ export const makeContract = harden((zoe, terms) => {
 
   const addLiquidity = async escrowReceipt => {
     const extentOpsArray = zoe.getExtentOpsArray();
-    const { offerHandle, offerConditions } = await zoe.burnEscrowReceipt(
+    const { offerHandle, offerRules } = await zoe.burnEscrowReceipt(
       escrowReceipt,
     );
-    const { offerDesc: offerMadeDesc } = offerConditions;
+    const { offerDesc: offerMadeDesc } = offerRules;
 
     // Create an empty offer to represent the extents of the
     // liquidity pool.
@@ -131,13 +131,13 @@ export const makeContract = harden((zoe, terms) => {
     const exitCondition = {
       kind: 'noExit',
     };
-    const liquidityConditions = zoe.makeConditions(
+    const liquidityOfferRules = zoe.makeOfferRules(
       rules,
       extents,
       exitCondition,
     );
     const liquidityOfferHandle = await zoe.escrowOffer(
-      liquidityConditions,
+      liquidityOfferRules,
       harden([undefined, undefined, newPayment]),
     );
     // Reallocate, giving the liquidity tokens to the user, adding the
@@ -153,11 +153,11 @@ export const makeContract = harden((zoe, terms) => {
   };
 
   const removeLiquidity = async escrowReceipt => {
-    const { offerHandle, offerConditions } = await zoe.burnEscrowReceipt(
+    const { offerHandle, offerRules } = await zoe.burnEscrowReceipt(
       escrowReceipt,
     );
     const extentOpsArray = zoe.getExtentOpsArray();
-    const { offerDesc: offerMadeDesc } = offerConditions;
+    const { offerDesc: offerMadeDesc } = offerRules;
     const successMessage = 'Liquidity successfully removed.';
     const rejectMessage = 'The offer to remove liquidity was invalid';
 
@@ -277,10 +277,10 @@ export const makeContract = harden((zoe, terms) => {
   };
 
   const makeOffer = async escrowReceipt => {
-    const { offerHandle, offerConditions } = await zoe.burnEscrowReceipt(
+    const { offerHandle, offerRules } = await zoe.burnEscrowReceipt(
       escrowReceipt,
     );
-    const { offerDesc: offerMadeDesc } = offerConditions;
+    const { offerDesc: offerMadeDesc } = offerRules;
     const successMessage = 'Swap successfully completed.';
     const rejectMessage = 'The offer to swap was invalid.';
 

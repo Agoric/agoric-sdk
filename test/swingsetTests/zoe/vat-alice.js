@@ -22,7 +22,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       zoe,
     ).makeInstance(installId, { assays });
 
-    const offerConditions = harden({
+    const offerRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -41,7 +41,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const aliceMoolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [aliceMoolaPayment, undefined];
     const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
-      offerConditions,
+      offerRules,
       offerPayments,
     );
 
@@ -69,7 +69,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       { assays },
     );
 
-    const offerConditions = harden({
+    const offerRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -89,7 +89,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const offerPayments = [aliceMoolaPayment, undefined];
     const { escrowReceipt: aliceEscrowReceipt, payout: payoutP } = await E(
       zoe,
-    ).escrow(offerConditions, offerPayments);
+    ).escrow(offerRules, offerPayments);
 
     const { outcome, invite } = await E(coveredCall).init(aliceEscrowReceipt);
     log(outcome);
@@ -115,7 +115,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       { assays, numBidsAllowed },
     );
 
-    const offerConditions = harden({
+    const offerRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -133,7 +133,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const moolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [moolaPayment, undefined];
     const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
-      offerConditions,
+      offerRules,
       offerPayments,
     );
 
@@ -167,7 +167,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       { assays },
     );
 
-    const offerConditions = harden({
+    const offerRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -185,7 +185,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const moolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [moolaPayment, undefined];
     const { escrowReceipt, makePayoutPaymentObj } = await E(zoe).escrow(
-      offerConditions,
+      offerRules,
       offerPayments,
     );
 
@@ -218,7 +218,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       { assays },
     );
 
-    const aliceSellOrderConditions = harden({
+    const aliceSellOrderOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -236,7 +236,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const moolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [moolaPayment, undefined];
     const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
-      aliceSellOrderConditions,
+      aliceSellOrderOfferRules,
       offerPayments,
     );
 
@@ -270,7 +270,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     // Alice adds liquidity
     // 10 moola = 5 simoleans at the time of the liquidity adding
     // aka 2 moola = 1 simolean
-    const addLiquidityConditions = harden({
+    const addLiquidityOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -293,7 +293,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const simoleanPaymentP = E(simoleanPurseP).withdrawAll();
     const offerPayments = [moolaPaymentP, simoleanPaymentP, undefined];
     const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
-      addLiquidityConditions,
+      addLiquidityOfferRules,
       offerPayments,
     );
 

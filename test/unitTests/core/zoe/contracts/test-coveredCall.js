@@ -46,7 +46,7 @@ test('zoe - coveredCall', async t => {
     t.deepEquals(aliceTerms.assays, assays);
 
     // 2: Alice escrows with Zoe
-    const aliceConditions = harden({
+    const aliceOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -65,7 +65,7 @@ test('zoe - coveredCall', async t => {
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
       payout: alicePayoutP,
-    } = await zoe.escrow(aliceConditions, alicePayments);
+    } = await zoe.escrow(aliceOfferRules, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment
     const aliceEscrowReceipt = await escrowReceiptAssay.claimAll(
@@ -106,7 +106,7 @@ test('zoe - coveredCall', async t => {
     // contract instance that he expects as well as that Alice has
     // already escrowed.
 
-    const bobIntendedConditions = harden({
+    const bobIntendedOfferRules = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -126,11 +126,11 @@ test('zoe - coveredCall', async t => {
     t.equal(inviteExtent.instanceHandle, instanceHandle);
     t.equal(inviteExtent.installationHandle, coveredCallInstallationId);
     t.equal(inviteExtent.status, 'acceptingOffers');
-    t.ok(sameStructure(inviteExtent.offerMadeConditions, aliceConditions));
+    t.ok(sameStructure(inviteExtent.offerMadeOfferRules, aliceOfferRules));
     t.ok(
       sameStructure(
         inviteExtent.offerToBeMade,
-        bobIntendedConditions.offerDesc,
+        bobIntendedOfferRules.offerDesc,
       ),
     );
 
@@ -147,7 +147,7 @@ test('zoe - coveredCall', async t => {
     const {
       escrowReceipt: allegedBobEscrowReceipt,
       payout: bobPayoutP,
-    } = await zoe.escrow(bobIntendedConditions, bobPayments);
+    } = await zoe.escrow(bobIntendedOfferRules, bobPayments);
 
     // 7: Bob does a claimAll on the escrowReceipt payment
     const bobEscrowReceipt = await escrowReceiptAssay.claimAll(
@@ -175,7 +175,7 @@ test('zoe - coveredCall', async t => {
     // Alice got what she wanted
     t.deepEquals(
       aliceResult[1].getBalance(),
-      aliceConditions.offerDesc[1].assetDesc,
+      aliceOfferRules.offerDesc[1].assetDesc,
     );
 
     // 11: Alice deposits her winnings to ensure she can
@@ -240,7 +240,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 
     // 2: Alice escrows with Zoe
     const timer = buildManualTimer(console.log);
-    const aliceConditions = harden({
+    const aliceOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -261,7 +261,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
       payout: alicePayoutP,
-    } = await zoe.escrow(aliceConditions, alicePayments);
+    } = await zoe.escrow(aliceOfferRules, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment
     const aliceEscrowReceipt = await escrowReceiptAssay.claimAll(
@@ -304,7 +304,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     // contract instance that he expects as well as that Alice has
     // already escrowed.
 
-    const bobIntendedConditions = harden({
+    const bobIntendedOfferRules = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -324,11 +324,11 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     t.equal(inviteExtent.instanceHandle, instanceHandle);
     t.equal(inviteExtent.installationHandle, coveredCallInstallationId);
     t.equal(inviteExtent.status, 'acceptingOffers');
-    t.ok(sameStructure(inviteExtent.offerMadeConditions, aliceConditions));
+    t.ok(sameStructure(inviteExtent.offerMadeOfferRules, aliceOfferRules));
     t.ok(
       sameStructure(
         inviteExtent.offerToBeMade,
-        bobIntendedConditions.offerDesc,
+        bobIntendedOfferRules.offerDesc,
       ),
     );
 
@@ -345,7 +345,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const {
       escrowReceipt: allegedBobEscrowReceipt,
       payout: bobPayoutP,
-    } = await zoe.escrow(bobIntendedConditions, bobPayments);
+    } = await zoe.escrow(bobIntendedOfferRules, bobPayments);
 
     // 7: Bob does a claimAll on the escrowReceipt payment
     const bobEscrowReceipt = await escrowReceiptAssay.claimAll(
@@ -448,14 +448,14 @@ test('zoe - coveredCall with swap for invite', async t => {
       instanceHandle,
     } = await zoe.makeInstance(coveredCallInstallationId, terms);
 
-    // 2: Alice escrows with Zoe. She specifies her offer offerConditions,
+    // 2: Alice escrows with Zoe. She specifies her offer offerRules,
     // which include an offer description as well as the exit
-    // offerConditions. In this case, she choses an exit condition of after
+    // offerRules. In this case, she choses an exit condition of after
     // the deadline of "100" according to a particular timer. This is
     // meant to be something far in the future, and will not be
     // reached in this test.
 
-    const aliceConditions = harden({
+    const aliceOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -476,7 +476,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     const {
       escrowReceipt: aliceEscrowReceipt,
       payout: alicePayoutP,
-    } = await zoe.escrow(aliceConditions, alicePayments);
+    } = await zoe.escrow(aliceOfferRules, alicePayments);
 
     // 3: Alice initializes the coveredCall with her escrow receipt
 
@@ -522,10 +522,10 @@ test('zoe - coveredCall with swap for invite', async t => {
       ),
     );
 
-    // Do bob's expected offer offerConditions match what the covered call
+    // Do bob's expected offer offerRules match what the covered call
     // expects from a counter-party?
 
-    const bobExpectationsOfAliceConditions = harden({
+    const bobExpectationsOfAliceOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -545,13 +545,13 @@ test('zoe - coveredCall with swap for invite', async t => {
 
     t.ok(
       sameStructure(
-        inviteExtent.offerMadeConditions,
-        bobExpectationsOfAliceConditions,
+        inviteExtent.offerMadeOfferRules,
+        bobExpectationsOfAliceOfferRules,
       ),
     );
 
-    // Bob's planned offerConditions
-    const bobConditionsCoveredCall = harden({
+    // Bob's planned offerRules
+    const bobOfferRulesCoveredCall = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -570,7 +570,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     t.ok(
       sameStructure(
         inviteExtent.offerToBeMade,
-        bobConditionsCoveredCall.offerDesc,
+        bobOfferRulesCoveredCall.offerDesc,
       ),
     );
 
@@ -595,7 +595,7 @@ test('zoe - coveredCall with swap for invite', async t => {
 
     // Bob wants to swap an invite with the same asset desc as his
     // current invite from Alice. He wants 1 buck in return.
-    const bobConditionsSwap = harden({
+    const bobOfferRulesSwap = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -617,7 +617,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     const {
       escrowReceipt: bobEscrowReceipt,
       payout: bobPayoutP,
-    } = await zoe.escrow(bobConditionsSwap, bobPayments);
+    } = await zoe.escrow(bobOfferRulesSwap, bobPayments);
 
     // 8: Bob makes an offer to the swap with his "higher order" escrow receipt
     const bobOutcome = await bobSwap.makeFirstOffer(bobEscrowReceipt);
@@ -662,12 +662,12 @@ test('zoe - coveredCall with swap for invite', async t => {
     // Dave's offer will be rejected and he will get a refund. Dave
     // knows this to be true because he knows the swap.
 
-    // Dave escrows his 1 buck with Zoe and forms his offer offerConditions
-    const daveSwapConditions = harden({
+    // Dave escrows his 1 buck with Zoe and forms his offer offerRules
+    const daveSwapOfferRules = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
-          assetDesc: bobConditionsSwap.offerDesc[0].assetDesc,
+          assetDesc: bobOfferRulesSwap.offerDesc[0].assetDesc,
         },
         {
           rule: 'offerExactly',
@@ -683,7 +683,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     const {
       escrowReceipt: daveSwapEscrowReceipt,
       payout: daveSwapPayoutP,
-    } = await zoe.escrow(daveSwapConditions, daveSwapPayments);
+    } = await zoe.escrow(daveSwapOfferRules, daveSwapPayments);
 
     const daveSwapOutcome = await daveSwapInstance.matchOffer(
       daveSwapEscrowReceipt,
@@ -700,7 +700,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     // Dave exercises his option by making an offer to the covered
     // call. First, he escrows with Zoe.
 
-    const daveCoveredCallConditions = harden({
+    const daveCoveredCallOfferRules = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -719,7 +719,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     const {
       escrowReceipt: daveCoveredCallEscrowReceipt,
       payout: daveCoveredCallPayoutP,
-    } = await zoe.escrow(daveCoveredCallConditions, daveCoveredCallPayments);
+    } = await zoe.escrow(daveCoveredCallOfferRules, daveCoveredCallPayments);
 
     const daveCoveredCallOutcome = await coveredCallObj.makeOffer(
       daveCoveredCallEscrowReceipt,
@@ -827,14 +827,14 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       instanceHandle,
     } = await zoe.makeInstance(coveredCallInstallationId, terms);
 
-    // 2: Alice escrows with Zoe. She specifies her offer offerConditions,
+    // 2: Alice escrows with Zoe. She specifies her offer offerRules,
     // which include an offer description as well as the exit
-    // offerConditions. In this case, she choses an exit condition of after
+    // offerRules. In this case, she choses an exit condition of after
     // the deadline of "100" according to a particular timer. This is
     // meant to be something far in the future, and will not be
     // reached in this test.
 
-    const aliceConditions = harden({
+    const aliceOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -855,7 +855,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const {
       escrowReceipt: aliceEscrowReceipt,
       payout: alicePayoutP,
-    } = await zoe.escrow(aliceConditions, alicePayments);
+    } = await zoe.escrow(aliceOfferRules, alicePayments);
 
     // 3: Alice initializes the coveredCall with her escrow receipt
 
@@ -901,10 +901,10 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       ),
     );
 
-    // Do bob's expected offer offerConditions match what the covered call
+    // Do bob's expected offer offerRules match what the covered call
     // expects from a counter-party?
 
-    const bobExpectationsOfAliceConditions = harden({
+    const bobExpectationsOfAliceOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -924,13 +924,13 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
 
     t.ok(
       sameStructure(
-        inviteExtent.offerMadeConditions,
-        bobExpectationsOfAliceConditions,
+        inviteExtent.offerMadeOfferRules,
+        bobExpectationsOfAliceOfferRules,
       ),
     );
 
-    // Bob's planned offerConditions
-    const bobConditionsCoveredCall = harden({
+    // Bob's planned offerRules
+    const bobOfferRulesCoveredCall = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -949,7 +949,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     t.ok(
       sameStructure(
         inviteExtent.offerToBeMade,
-        bobConditionsCoveredCall.offerDesc,
+        bobOfferRulesCoveredCall.offerDesc,
       ),
     );
 
@@ -978,7 +978,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     // Bob wants to swap an invite with the same asset desc as his
     // current invite from Alice. He wants 1 buck in return.
     const firstCoveredCallInviteAssetDec = bobExclInvitePayment.getBalance();
-    const bobConditionsSecondCoveredCall = harden({
+    const bobOfferRulesSecondCoveredCall = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -1002,7 +1002,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const {
       escrowReceipt: bobEscrowReceipt,
       payout: bobPayoutP,
-    } = await zoe.escrow(bobConditionsSecondCoveredCall, bobPayments);
+    } = await zoe.escrow(bobOfferRulesSecondCoveredCall, bobPayments);
 
     // 8: Bob makes an offer to the swap with his "higher order" escrow receipt
     const {
@@ -1038,10 +1038,10 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       ),
     );
 
-    // Do dave's expected offer offerConditions match what the covered call
+    // Do dave's expected offer offerRules match what the covered call
     // expects from a counter-party?
 
-    const daveExpectationsOfBobConditions = harden({
+    const daveExpectationsOfBobOfferRules = harden({
       offerDesc: [
         {
           rule: 'offerExactly',
@@ -1061,13 +1061,13 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
 
     t.ok(
       sameStructure(
-        daveInviteExtent.offerMadeConditions,
-        daveExpectationsOfBobConditions,
+        daveInviteExtent.offerMadeOfferRules,
+        daveExpectationsOfBobOfferRules,
       ),
     );
 
-    // Dave's planned offerConditions
-    const daveConditionsCoveredCall = harden({
+    // Dave's planned offerRules
+    const daveOfferRulesCoveredCall = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -1086,7 +1086,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     t.ok(
       sameStructure(
         daveInviteExtent.offerToBeMade,
-        daveConditionsCoveredCall.offerDesc,
+        daveOfferRulesCoveredCall.offerDesc,
       ),
     );
 
@@ -1099,14 +1099,14 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     // inviteAssay and can therefore know that it was a valid invite
     const secondCoveredCallInvite = await inviteAssay.claimAll(inviteForDave);
 
-    // Dave escrows his 1 buck with Zoe and forms his offer offerConditions
+    // Dave escrows his 1 buck with Zoe and forms his offer offerRules
 
     const daveSecondCoveredCallPayments = [undefined, daveBucksPayment];
     const {
       escrowReceipt: daveCoveredCallEscrowReceipt,
       payout: daveSecondCoveredCallPayoutP,
     } = await zoe.escrow(
-      daveConditionsCoveredCall,
+      daveOfferRulesCoveredCall,
       daveSecondCoveredCallPayments,
     );
     const secondCoveredCallObj = await secondCoveredCallInvite.unwrap();
@@ -1128,7 +1128,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     // Dave exercises his option by making an offer to the covered
     // call. First, he escrows with Zoe.
 
-    const daveFirstCoveredCallConditions = harden({
+    const daveFirstCoveredCallOfferRules = harden({
       offerDesc: [
         {
           rule: 'wantExactly',
@@ -1148,7 +1148,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       escrowReceipt: daveFirstCoveredCallEscrowReceipt,
       payout: daveFirstCoveredCallPayoutP,
     } = await zoe.escrow(
-      daveFirstCoveredCallConditions,
+      daveFirstCoveredCallOfferRules,
       daveFirstCoveredCallPayments,
     );
 
