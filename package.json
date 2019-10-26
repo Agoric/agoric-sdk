@@ -1,6 +1,6 @@
 {
   "name": "@agoric/cosmic-swingset",
-  "version": "0.10.7",
+  "version": "0.10.8-dev.0",
   "description": "Agoric's Cosmos blockchain integration",
   "main": "index.js",
   "repository": "https://github.com/Agoric/cosmic-swingset",
