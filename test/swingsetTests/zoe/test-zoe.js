@@ -217,8 +217,8 @@ test('zoe - publicSwap - valid inputs - no SES', async t => {
 
 const expectedSimpleExchangeOkLog = [
   '=> alice, bob, carol and dave are set up',
-  'The offer has been accepted. Once the contract has been completed, please check your winnings',
-  'The offer has been accepted. Once the contract has been completed, please check your winnings',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"label":{"assay":{},"description":"moola"},"extent":3}',
   'bobSimoleanPurse;: balance {"label":{"assay":{},"description":"simoleans"},"extent":0}',
   'aliceMoolaPurse: balance {"label":{"assay":{},"description":"moola"},"extent":0}',

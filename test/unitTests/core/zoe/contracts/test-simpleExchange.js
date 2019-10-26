@@ -116,11 +116,11 @@ test('zoe - simpleExchange', async t => {
 
     t.equals(
       bobOfferResult,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
     t.equals(
       aliceOfferResult,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
     const bobPayout = await bobPayoutP;
     const [aliceMoolaPayout, aliceSimoleanPayout] = await alicePayoutP;
@@ -136,7 +136,7 @@ test('zoe - simpleExchange', async t => {
     // Alice sold all of her moola
     t.equals(aliceMoolaPayout.getBalance().extent, 0);
 
-    // 13: Alice deposits her winnings to ensure she can
+    // 13: Alice deposits her payout to ensure she can
     await aliceMoolaPurse.depositAll(aliceMoolaPayout);
     await aliceSimoleanPurse.depositAll(aliceSimoleanPayout);
 
@@ -144,7 +144,7 @@ test('zoe - simpleExchange', async t => {
     await bobMoolaPurse.depositAll(bobPayout[0]);
     await bobSimoleanPurse.depositAll(bobPayout[1]);
 
-    // Assert that the correct winnings were received.
+    // Assert that the correct payout were received.
     // Alice had 3 moola and 0 simoleans.
     // Bob had 0 moola and 7 simoleans.
     t.equals(aliceMoolaPurse.getBalance().extent, 0);

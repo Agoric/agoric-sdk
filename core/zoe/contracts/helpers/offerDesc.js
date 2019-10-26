@@ -1,3 +1,4 @@
+import harden from '@agoric/harden';
 import { sameStructure } from '../../../../util/sameStructure';
 
 export const isExactlyMatchingOfferDesc = (
@@ -43,3 +44,11 @@ const hasAssays = (assays, newOfferDesc) =>
 
 export const hasRulesAndAssays = (rules, assays, newOfferDesc) =>
   hasRules(rules, newOfferDesc) && hasAssays(assays, newOfferDesc);
+
+export const getActiveOfferDescs = (zoe, offerHandles) => {
+  const { active } = zoe.getStatusFor(offerHandles);
+  return harden({
+    offerHandles: active,
+    offerDescs: zoe.getOfferDescsFor(active),
+  });
+};
