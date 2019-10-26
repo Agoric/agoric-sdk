@@ -27,7 +27,7 @@ export default function TransactionSummary({
       setActiveStep(0);
     } else if (!inputPurse || !outputPurse) {
       setActiveStep(1);
-    } else if (!inputAmount || !outputAmount) {
+    } else if (!(inputAmount > 0) || !(outputAmount > 0)) {
       setActiveStep(2);
     } else {
       setActiveStep(3);

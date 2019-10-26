@@ -31,11 +31,11 @@ export function createDefaultState() {
     connected: false,
     account: null,
     purses: null,
-    inputPurse: '',
-    outputPurse: '',
-    inputAmount: '',
-    outputAmount: '',
-    isInputAmount: '',
+    inputPurse: null,
+    outputPurse: null,
+    inputAmount: null,
+    outputAmount: null,
+    isInputAmount: null,
   };
 }
 

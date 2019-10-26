@@ -16,11 +16,7 @@ import AssetInput from './AssetInput';
 import Steps from './Steps';
 
 import { useApplicationContext } from '../contexts/Application';
-import {
-  changePurse,
-  swapInputs,
-  changeAmount,
-} from '../store/actions';
+import { changePurse, swapInputs, changeAmount } from '../store/actions';
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -54,28 +50,49 @@ export default function Swap() {
   const { state, dispatch } = useApplicationContext();
   const {
     purses,
-    inputPurse,
-    outputPurse,
+    inputPurse = {},
+    outputPurse = {},
     inputAmount,
     outputAmount,
-    isValid,
     connected,
   } = state;
 
-  function handleChangePurse(event, isInput) {
-    dispatch(changePurse(event.target.value, isInput));
-  }
+  const inputAmountError =
+    inputAmount < 0 || (inputPurse && inputAmount > inputPurse.extent);
+  const outputAmountError =
+    outputAmount < 0 || (outputPurse && outputAmount > outputPurse.extent);
 
-  function handleswapInputs(event, isInput) {
-    dispatch(swapInputs(event.target.value, isInput));
+  const pursesError =
+    inputPurse &&
+    outputPurse &&
+    inputPurse.description === outputPurse.description;
+
+  const hasError = pursesError || inputAmountError || outputAmountError;
+
+  const isValid =
+    !hasError &&
+    inputPurse &&
+    outputPurse &&
+    inputAmount > 0 &&
+    outputAmount > 0;
+
+  function handleChangePurse(event, isInput) {
+    const purseName = event.target.value;
+    const purse = purses.find(p => p.name === purseName);
+    dispatch(changePurse(purse, isInput));
   }
 
   function handleChangeAmount(event, isInput) {
-    dispatch(changeAmount(event.target.value, isInput));
+    const amount = event.target.value;
+    dispatch(changeAmount(amount, isInput));
+  }
+
+  function handleswapInputs() {
+    dispatch(swapInputs());
   }
 
   function getExchangeRate(decimal) {
-    if (inputAmount > 0 && outputAmount > 0) {
+    if (isValid) {
       const exchangeRate = (outputAmount / inputAmount).toFixed(decimal);
       return `Exchange rate: 1 ${inputPurse.description} = ${exchangeRate} ${outputPurse.description}`;
     }
@@ -113,6 +130,8 @@ export default function Swap() {
           purse={inputPurse}
           amount={inputAmount}
           disabled={!connected}
+          purseError={pursesError}
+          amountError={inputAmountError}
         />
 
         <IconButton
@@ -131,11 +150,11 @@ export default function Swap() {
           purse={outputPurse}
           amount={outputAmount}
           disabled={!connected}
+          purseError={pursesError}
+          amountError={outputAmountError}
         />
         <InputLabel className={classes.message}>
-          {connected &&
-            isValid && getExchangeRate()
-          }
+          {connected && isValid && getExchangeRate()}
         </InputLabel>
       </Grid>
       <div className={classes.buttons}>

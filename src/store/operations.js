@@ -24,12 +24,12 @@ export function changePurse(state, { purse, isInputPurse }) {
   if (isInputPurse) {
     inputPurse = purse;
     if (inputPurse === outputPurse) {
-      outputPurse = undefined;
+      outputPurse = null;
     }
   } else {
     outputPurse = purse;
     if (outputPurse === inputPurse) {
-      inputPurse = undefined;
+      inputPurse = null;
     }
   }
   return { ...state, inputPurse, outputPurse };
@@ -64,9 +64,9 @@ export function createOffer(state) {
 export function resetState(state) {
   return {
     ...state,
-    inputAmount: '',
-    outputAmount: '',
-    inputPurse: '',
-    outputPurse: '',
+    inputPurse: null,
+    outputPurse: null,
+    inputAmount: null,
+    outputAmount: null,
   };
 }

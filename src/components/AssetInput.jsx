@@ -41,6 +41,8 @@ export default function AssetInput({
   purse,
   amount,
   disabled,
+  purseError,
+  amountError,
 }) {
   const classes = useStyles();
 
@@ -75,9 +77,9 @@ export default function AssetInput({
               e.stopPropagation();
             }
           }}
-          value={amount}
-          error={purse && amount > purse.extent}
+          value={amount === null ? '' : amount}
           disabled={disabled}
+          error={amountError}
         />
       </Grid>
       <Grid item xs={12} sm={4}>
@@ -86,15 +88,16 @@ export default function AssetInput({
           label="Currency"
           variant="outlined"
           fullWidth
-          value={purse}
+          value={purse === null ? '' : purse.name}
           onChange={onPurseChange}
           inputProps={{
             className: clsx(purse && classes.noPadding, classes.select),
           }}
           disabled={disabled}
+          error={purseError}
         >
           {Array.isArray(purses) &&
-            purses.map(([name, { description, extent }]) => (
+            purses.map(({ name, description, extent }) => (
               <MenuItem key={name} value={name} className={classes.divider}>
                 <ListItemIcon className={classes.icon}>
                   <PurseIcon />
