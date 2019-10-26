@@ -5,7 +5,7 @@ import harden from '@agoric/harden';
 
 import { insist } from '../util/insist';
 import { makeBasicFungibleConfig } from './config/basicFungibleConfig';
-import { makeDescOps } from './descOps';
+import { makeAssetDescOps } from './assetDescOps';
 
 /**
  * makeMint takes in a string description as well as a function to
@@ -13,7 +13,7 @@ import { makeDescOps } from './descOps';
  * methods to assays, payments, purses, and mints, and it also
  * defines the functions to make the "mintKeeper" (the actual holder
  * of the mappings from purses/payments to assetDescs) and to make the
- * "descOps" (the object that describes the extentOps of how assetDescs are
+ * "assetDescOps" (the object that describes the extentOps of how assetDescs are
  * withdrawn or deposited, among other things).
  * @param  {string} description
  * @param  {function} makeConfig=makeBasicFungibleConfig
@@ -38,10 +38,10 @@ Description must be truthy: ${description}`;
   // to be equal to the balance of the payment. These methods
   // use this helper function to check that the assetDesc is equal
   function insistAssetDescEqualsPaymentBalance(assetDesc, payment) {
-    assetDesc = descOps.coerce(assetDesc);
+    assetDesc = assetDescOps.coerce(assetDesc);
     const paymentAssetDesc = paymentKeeper.getAssetDesc(payment);
     insist(
-      descOps.equals(assetDesc, paymentAssetDesc),
+      assetDescOps.equals(assetDesc, paymentAssetDesc),
     )`payment balance ${paymentAssetDesc} must equal assetDesc ${assetDesc}`;
     return paymentAssetDesc;
   }
@@ -50,9 +50,12 @@ Description must be truthy: ${description}`;
   // function used for both cases, since they are so similar.
   function takePayment(assetHolderSrc, srcKeeper, paymentAssetDesc, name) {
     name = `${name}`;
-    paymentAssetDesc = descOps.coerce(paymentAssetDesc);
+    paymentAssetDesc = assetDescOps.coerce(paymentAssetDesc);
     const oldSrcAssetDesc = srcKeeper.getAssetDesc(assetHolderSrc);
-    const newSrcAssetDesc = descOps.without(oldSrcAssetDesc, paymentAssetDesc);
+    const newSrcAssetDesc = assetDescOps.without(
+      oldSrcAssetDesc,
+      paymentAssetDesc,
+    );
 
     const corePayment = harden({
       getAssay() {
@@ -123,29 +126,29 @@ Description must be truthy: ${description}`;
 
   const coreAssay = harden({
     getLabel() {
-      return descOps.getLabel();
+      return assetDescOps.getLabel();
     },
 
-    getDescOps() {
-      return descOps;
+    getAssetDescOps() {
+      return assetDescOps;
     },
 
     getExtentOps() {
-      return descOps.getExtentOps();
+      return assetDescOps.getExtentOps();
     },
 
     makeAssetDesc(extent) {
-      return descOps.make(extent);
+      return assetDescOps.make(extent);
     },
 
     makeEmptyPurse(name = 'a purse') {
-      return mint.mint(descOps.empty(), name); // mint and assay call each other
+      return mint.mint(assetDescOps.empty(), name); // mint and assay call each other
     },
 
     combine(paymentsArray, name = 'combined payment') {
       const totalAssetDesc = paymentsArray.reduce((soFar, payment) => {
-        return descOps.with(soFar, paymentKeeper.getAssetDesc(payment));
-      }, descOps.empty());
+        return assetDescOps.with(soFar, paymentKeeper.getAssetDesc(payment));
+      }, assetDescOps.empty());
 
       const combinedPayment = harden({
         getAssay() {
@@ -181,14 +184,14 @@ Description must be truthy: ${description}`;
 
       const paymentMinusAssetDescs = assetDescsArray.reduce(
         (soFar, assetDesc) => {
-          assetDesc = descOps.coerce(assetDesc);
-          return descOps.without(soFar, assetDesc);
+          assetDesc = assetDescOps.coerce(assetDesc);
+          return assetDescOps.without(soFar, assetDesc);
         },
         paymentKeeper.getAssetDesc(payment),
       );
 
       insist(
-        descOps.isEmpty(paymentMinusAssetDescs),
+        assetDescOps.isEmpty(paymentMinusAssetDescs),
       )`the assetDescs of the proposed new payments do not equal the assetDesc of the source payment`;
 
       // ///////////////// commit point //////////////////
@@ -250,8 +253,8 @@ Description must be truthy: ${description}`;
 
   const label = harden({ assay, description });
 
-  const descOps = makeDescOps(label, extentOpsName, extentOpsArgs);
-  const mintKeeper = makeMintKeeper(descOps);
+  const assetDescOps = makeAssetDescOps(label, extentOpsName, extentOpsArgs);
+  const mintKeeper = makeMintKeeper(assetDescOps);
   const { purseKeeper, paymentKeeper } = mintKeeper;
 
   // depositInto always deposits the entire payment assetDesc
@@ -259,7 +262,10 @@ Description must be truthy: ${description}`;
     const oldPurseAssetDesc = purseKeeper.getAssetDesc(purse);
     const paymentAssetDesc = paymentKeeper.getAssetDesc(payment);
     // Also checks that the union is representable
-    const newPurseAssetDesc = descOps.with(oldPurseAssetDesc, paymentAssetDesc);
+    const newPurseAssetDesc = assetDescOps.with(
+      oldPurseAssetDesc,
+      paymentAssetDesc,
+    );
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -276,7 +282,7 @@ Description must be truthy: ${description}`;
       return assay;
     },
     mint(initialBalance, name = 'a purse') {
-      initialBalance = descOps.coerce(initialBalance);
+      initialBalance = assetDescOps.coerce(initialBalance);
       name = `${name}`;
 
       const corePurse = harden({
@@ -330,7 +336,12 @@ Description must be truthy: ${description}`;
 
   // makeMintTrait is defined in the passed-in configuration and
   // adds additional methods to coreMint
-  const makeMintTraitIter = makeMintTrait(coreMint, assay, descOps, mintKeeper);
+  const makeMintTraitIter = makeMintTrait(
+    coreMint,
+    assay,
+    assetDescOps,
+    mintKeeper,
+  );
   const mintTrait = makeMintTraitIter.next().value;
   const mint = harden({
     ...mintTrait,

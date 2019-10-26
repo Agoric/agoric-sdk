@@ -10,7 +10,7 @@ const setup = () => {
 
   const mints = [moolaMint, simoleanMint, bucksMint];
   const assays = mints.map(mint => mint.getAssay());
-  const descOps = assays.map(assay => assay.getDescOps());
+  const assetDescOps = assays.map(assay => assay.getAssetDescOps());
   const extentOps = assays.map(assay => {
     const { name, args } = assay.getExtentOps();
     return extentOpsLib[name](...args);
@@ -20,7 +20,7 @@ const setup = () => {
   return harden({
     mints,
     assays,
-    descOps,
+    assetDescOps,
     extentOps,
     labels,
   });

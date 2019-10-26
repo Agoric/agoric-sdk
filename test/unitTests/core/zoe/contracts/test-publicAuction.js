@@ -9,7 +9,7 @@ const publicAuctionRoot = `${__dirname}/../../../../../core/zoe/contracts/public
 
 test('zoe - secondPriceAuction w/ 3 bids', async t => {
   try {
-    const { assays: originalAssays, mints, descOps } = setup();
+    const { assays: originalAssays, mints, assetDescOps } = setup();
     const assays = originalAssays.slice(0, 2);
     const zoe = await makeZoe({ require });
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
@@ -235,15 +235,15 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     // Bob (the winner of the auction) gets the one moola and the
     // difference between his bid and the price back
-    t.deepEquals(bobResult[0].getBalance(), descOps[0].make(1));
-    t.deepEquals(bobResult[1].getBalance(), descOps[1].make(4));
+    t.deepEquals(bobResult[0].getBalance(), assetDescOps[0].make(1));
+    t.deepEquals(bobResult[1].getBalance(), assetDescOps[1].make(4));
 
     // 24: Bob deposits his payout to ensure he can
     await bobMoolaPurse.depositAll(bobResult[0]);
     await bobSimoleanPurse.depositAll(bobResult[1]);
 
     // Carol gets a full refund
-    t.deepEquals(carolResult[0].getBalance(), descOps[0].make(0));
+    t.deepEquals(carolResult[0].getBalance(), assetDescOps[0].make(0));
     t.deepEquals(
       carolResult[1].getBalance(),
       carolConditions.offerDesc[1].assetDesc,
@@ -254,7 +254,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     await carolSimoleanPurse.depositAll(carolResult[1]);
 
     // Dave gets a full refund
-    t.deepEquals(daveResult[0].getBalance(), descOps[0].make(0));
+    t.deepEquals(daveResult[0].getBalance(), assetDescOps[0].make(0));
     t.deepEquals(
       daveResult[1].getBalance(),
       daveConditions.offerDesc[1].assetDesc,
@@ -293,7 +293,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
 test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
   try {
-    const { assays: originalAssays, mints, descOps } = setup();
+    const { assays: originalAssays, mints, assetDescOps } = setup();
     const assays = originalAssays.slice(0, 2);
     const zoe = await makeZoe({ require });
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
@@ -517,7 +517,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     await aliceSimoleanPurse.depositAll(aliceResult[1]);
 
     // Bob gets a refund
-    t.deepEquals(bobResult[0].getBalance(), descOps[0].make(0));
+    t.deepEquals(bobResult[0].getBalance(), assetDescOps[0].make(0));
     t.deepEquals(
       bobResult[1].getBalance(),
       bobConditions.offerDesc[1].assetDesc,
@@ -528,7 +528,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     await bobSimoleanPurse.depositAll(bobResult[1]);
 
     // Carol gets a full refund
-    t.deepEquals(carolResult[0].getBalance(), descOps[0].make(0));
+    t.deepEquals(carolResult[0].getBalance(), assetDescOps[0].make(0));
     t.deepEquals(
       carolResult[1].getBalance(),
       carolConditions.offerDesc[1].assetDesc,
@@ -539,7 +539,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     await carolSimoleanPurse.depositAll(carolResult[1]);
 
     // Dave gets a full refund
-    t.deepEquals(daveResult[0].getBalance(), descOps[0].make(0));
+    t.deepEquals(daveResult[0].getBalance(), assetDescOps[0].make(0));
     t.deepEquals(
       daveResult[1].getBalance(),
       daveConditions.offerDesc[1].assetDesc,

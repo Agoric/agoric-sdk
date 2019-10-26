@@ -10,7 +10,7 @@ import { makeMint } from '../../core/mint';
 // currency. Returns a promise for a peg object that asynchonously
 // converts between the two. The local currency is synchronously
 // transferable locally.
-function makePeg(E, remoteAssayP, makeMintKeeper, makeDescOps = makeNatDescOps) {
+function makePeg(E, remoteAssayP, makeMintKeeper, makeAssetDescOps = makeNatDescOps) {
   const remoteLabelP = E(remoteAssayP).getLabel();
 
   // The remoteLabel is a local copy of the remote pass-by-copy
@@ -22,7 +22,7 @@ function makePeg(E, remoteAssayP, makeMintKeeper, makeDescOps = makeNatDescOps) 
     const backingPurseP = E(remoteAssayP).makeEmptyPurse('backing');
 
     const { description } = remoteLabel;
-    const localMint = makeMint(description, makeMintKeeper, makeDescOps);
+    const localMint = makeMint(description, makeMintKeeper, makeAssetDescOps);
     const localAssay = localMint.getAssay();
     const localLabel = localAssay.getLabel();
 

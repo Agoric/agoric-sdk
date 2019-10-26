@@ -70,7 +70,7 @@ const makeAssetDesc = (extentOps, label, allegedExtent) => {
 };
 
 // Transform a extentsMatrix to a matrix of assetDescs given an array
-// of the associated descOps.
+// of the associated assetDescOps.
 const toAssetDescMatrix = (extentOps, labels, extentsMatrix) =>
   extentsMatrix.map(extents =>
     extents.map((extent, i) => makeAssetDesc(extentOps[i], labels[i], extent)),

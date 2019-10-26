@@ -11,7 +11,7 @@ test('tapFaucet', t => {
   const { pixelAssay } = userFacet.getAssays();
   const pixelPayment = userFacet.tapFaucet();
   const assetDesc = pixelPayment.getBalance();
-  const pixelDescOps = pixelAssay.getDescOps();
+  const pixelDescOps = pixelAssay.getAssetDescOps();
   const extent = pixelDescOps.extent(assetDesc);
   const extentOps = makePixelExtentOps();
   t.doesNotThrow(() => extentOps.insistKind(extent));
@@ -21,7 +21,7 @@ test('tapFaucet', t => {
 test('get all pixels repeatedly', async t => {
   const { userFacet: gallery } = makeGallery();
   const { pixelAssay } = await gallery.getAssays();
-  const pixelDescOps = pixelAssay.getDescOps();
+  const pixelDescOps = pixelAssay.getAssetDescOps();
   const purse = await pixelAssay.makeEmptyPurse();
   for (let i = 0; i < 100; i += 1) {
     // eslint-disable-next-line no-await-in-loop
@@ -74,7 +74,7 @@ test('get exclusive pixel payment from faucet', t => {
   const { pixelAssay } = userFacet.getAssays();
   pixelAssay.claimAll(payment).then(pixelPayment => {
     const assetDesc = pixelPayment.getBalance();
-    const pixelDescOps = pixelAssay.getDescOps();
+    const pixelDescOps = pixelAssay.getAssetDescOps();
     const extent = pixelDescOps.extent(assetDesc);
     const extentOps = makePixelExtentOps();
     t.doesNotThrow(() => extentOps.insistKind(extent));
@@ -127,8 +127,8 @@ test('pricePixel Internal', t => {
   // default canvasSize is 10
   const { pricePixelAssetDesc, getAssays } = userFacet;
   const { dustAssay, pixelAssay } = getAssays();
-  const dustDescOps = dustAssay.getDescOps();
-  const pixelDescOps = pixelAssay.getDescOps();
+  const dustDescOps = dustAssay.getAssetDescOps();
+  const pixelDescOps = pixelAssay.getAssetDescOps();
   t.deepEqual(
     pricePixelAssetDesc(pixelDescOps.make(harden([{ x: 0, y: 1 }]))),
     dustDescOps.make(4),

@@ -56,17 +56,17 @@ export function makeGallery(
   );
 
   function insistNonEmptyAssetDesc(assay, assetDesc) {
-    insist(!assay.getDescOps().isEmpty(assetDesc))`\
+    insist(!assay.getAssetDescOps().isEmpty(assetDesc))`\
       no use rights present in assetDesc ${assetDesc}`;
   }
 
   function insistAssetHasAssetDesc(assay, asset, assetDesc) {
-    insist(assay.getDescOps().includes(asset.getBalance(), assetDesc))`\
+    insist(assay.getAssetDescOps().includes(asset.getBalance(), assetDesc))`\
       ERTP asset ${asset} does not include assetDesc ${assetDesc}`;
   }
 
   function getPixelList(assay, assetDesc) {
-    return assay.getDescOps().extent(assetDesc);
+    return assay.getAssetDescOps().extent(assetDesc);
   }
 
   const collect = makeCollect(E, log);
@@ -121,8 +121,8 @@ export function makeGallery(
       // A helper function for getting a literal list of pixels from
       // the asset. For example, [ { x:0, y:0 } ]
       getRawPixels() {
-        const descOps = assay.getDescOps();
-        const pixelList = descOps.extent(asset.getBalance());
+        const assetDescOps = assay.getAssetDescOps();
+        const pixelList = assetDescOps.extent(asset.getBalance());
         return pixelList;
       },
       // returns an array where each item is a pixel in this asset assetDesc
@@ -148,19 +148,19 @@ export function makeGallery(
 
   const galleryPixelMint = makeMint('pixels', makePixelConfig);
   const galleryPixelAssay = galleryPixelMint.getAssay();
-  const galleryPixelDescOps = galleryPixelAssay.getDescOps();
+  const galleryPixelDescOps = galleryPixelAssay.getAssetDescOps();
 
   // For lack of a better word, the assay below the gallery assay is
   // the "consumer assay" - this is the assay of the pixel payments
   // that consumers get from calling `tapFaucet`
 
   const consumerPixelAssay = galleryPixelAssay.getChildAssay();
-  const consumerPixelDescOps = consumerPixelAssay.getDescOps();
+  const consumerPixelDescOps = consumerPixelAssay.getAssetDescOps();
 
   // Dust is the currency that the Gallery accepts for pixels
   const dustMint = makeMint('dust');
   const dustAssay = dustMint.getAssay();
-  const dustDescOps = dustAssay.getDescOps();
+  const dustDescOps = dustAssay.getAssetDescOps();
 
   const pixelToPayment = new Map();
 

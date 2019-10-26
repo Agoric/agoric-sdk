@@ -18,14 +18,14 @@ const setupBasicMints = () => {
   const simoleanAssay = simoleanMint.getAssay();
   const bucksAssay = bucksMint.getAssay();
 
-  const moolaDescOps = moolaAssay.getDescOps();
-  const simoleanDescOps = simoleanAssay.getDescOps();
-  const bucksDescOps = bucksAssay.getDescOps();
+  const moolaDescOps = moolaAssay.getAssetDescOps();
+  const simoleanDescOps = simoleanAssay.getAssetDescOps();
+  const bucksDescOps = bucksAssay.getAssetDescOps();
 
   return harden({
     mints: [moolaMint, simoleanMint, bucksMint],
     assays: [moolaAssay, simoleanAssay, bucksAssay],
-    descOps: [moolaDescOps, simoleanDescOps, bucksDescOps],
+    assetDescOps: [moolaDescOps, simoleanDescOps, bucksDescOps],
   });
 };
 

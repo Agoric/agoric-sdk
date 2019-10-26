@@ -42,7 +42,7 @@ function build(E, log) {
     },
   });
 
-  // This is written in the full descOps style, where bare number
+  // This is written in the full assetDescOps style, where bare number
   // objects are never used in lieu of full assetDesc objects. This has
   // the virtue of unit typing, where 3 dollars cannot be confused
   // with 3 seconds.
@@ -69,7 +69,7 @@ function build(E, log) {
   }
 
   // Uses raw numbers rather than assetDescs. Until we have support for
-  // pass-by-presence, the full descOps style shown in mintTestDescOps is
+  // pass-by-presence, the full assetDescOps style shown in mintTestDescOps is
   // too awkward.
   function mintTestNumber(mint) {
     log('starting mintTestNumber');

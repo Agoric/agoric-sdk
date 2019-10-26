@@ -129,7 +129,7 @@ interface ZoeGoverningContractFacet () {
    */
   makeEmptyExtents ( ) -> (List(Extent));
 
-  /** Get the array of extentOps, the logic from the descOps */
+  /** Get the array of extentOps, the logic from the assetDescOps */
   getExtentOps (instanceHandle :Object) -> (List(ExtentOps));
 
   /** 

@@ -9,7 +9,7 @@ const simpleExchangeRoot = `${__dirname}/../../../../../core/zoe/contracts/simpl
 
 test('zoe - simpleExchange', async t => {
   try {
-    const { assays: originalAssays, mints, descOps } = setup();
+    const { assays: originalAssays, mints, assetDescOps } = setup();
     const assays = originalAssays.slice(0, 2);
     const zoe = await makeZoe({ require });
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
@@ -127,7 +127,7 @@ test('zoe - simpleExchange', async t => {
 
     // Alice gets paid at least what she wanted
     t.ok(
-      descOps[1].includes(
+      assetDescOps[1].includes(
         aliceSimoleanPayout.getBalance(),
         aliceSellOrderConditions.offerDesc[1].assetDesc,
       ),

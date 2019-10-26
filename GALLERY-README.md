@@ -41,7 +41,7 @@ Morningstar's
 post](http://habitatchronicles.com/2017/05/what-are-capabilities/).
 For more on ERTP, [see a quick tutorial](README.md) and the ERTP
 interface descriptions [for assay.js](core/assay.chainmail),
-[descOps.js](core/descOps.chainmail) and [contractHost.js](core/contractHost.chainmail).
+[assetDescOps.js](core/assetDescOps.chainmail) and [contractHost.js](core/contractHost.chainmail).
 
 
 ## A preemption hierarchy of rights

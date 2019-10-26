@@ -10,23 +10,23 @@ import { getString } from './types/pixel';
 // must continuously record every movement of a pixel to a new purse
 // or payment. We need this functionality in order to have the ability to revoke
 // childPayments/childPurses
-export function makePixelMintKeeper(descOps) {
+export function makePixelMintKeeper(assetDescOps) {
   // individual pixel to purse/payment
   const pixelToAsset = new Map();
 
   // This helper function takes an assetDesc, takes out the pixelList within it,
   // and makes sure that the mapping of each pixel to asset is updated.
   function recordPixelsAsAsset(assetDesc, asset) {
-    assetDesc = descOps.coerce(assetDesc);
-    const pixelList = descOps.extent(assetDesc);
+    assetDesc = assetDescOps.coerce(assetDesc);
+    const pixelList = assetDescOps.extent(assetDesc);
     for (const pixel of pixelList) {
       pixelToAsset.set(getString(pixel), asset);
     }
   }
 
   function deletePixelToAssetMapping(assetDesc) {
-    assetDesc = descOps.coerce(assetDesc);
-    const pixelList = descOps.extent(assetDesc);
+    assetDesc = assetDescOps.coerce(assetDesc);
+    const pixelList = assetDescOps.extent(assetDesc);
     for (const pixel of pixelList) {
       pixelToAsset.delete(getString(pixel));
     }
@@ -91,17 +91,17 @@ export function makePixelMintKeeper(descOps) {
     // that it is currently in. Destroy is outside of an assetKeeper
     // because it could affect purses *or* payments
     destroy(removePixelAssetDesc) {
-      removePixelAssetDesc = descOps.coerce(removePixelAssetDesc);
-      const pixelList = descOps.extent(removePixelAssetDesc);
+      removePixelAssetDesc = assetDescOps.coerce(removePixelAssetDesc);
+      const pixelList = assetDescOps.extent(removePixelAssetDesc);
       pixelList.forEach(pixel => {
         const strPixel = getString(pixel);
         if (pixelToAsset.has(strPixel)) {
           const asset = pixelToAsset.get(strPixel);
           const keeper = getKeeper(asset);
           const originalAssetDesc = keeper.getAssetDesc(asset);
-          const newAssetDesc = descOps.without(
+          const newAssetDesc = assetDescOps.without(
             originalAssetDesc,
-            descOps.make(harden([pixel])),
+            assetDescOps.make(harden([pixel])),
           );
 
           // ///////////////// commit point //////////////////

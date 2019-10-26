@@ -39,11 +39,19 @@ test('mapArrayOnMatrix', t => {
 
 test('toAssetDescMatrix', t => {
   try {
-    const { extentOps, labels, descOps } = setup();
+    const { extentOps, labels, assetDescOps } = setup();
     const matrix = [[1, 2, 3], [4, 5, 6]];
     t.deepEquals(toAssetDescMatrix(extentOps, labels, matrix), [
-      [descOps[0].make(1), descOps[1].make(2), descOps[2].make(3)],
-      [descOps[0].make(4), descOps[1].make(5), descOps[2].make(6)],
+      [
+        assetDescOps[0].make(1),
+        assetDescOps[1].make(2),
+        assetDescOps[2].make(3),
+      ],
+      [
+        assetDescOps[0].make(4),
+        assetDescOps[1].make(5),
+        assetDescOps[2].make(6),
+      ],
     ]);
   } catch (e) {
     t.assert(false, e);

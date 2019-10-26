@@ -1,6 +1,6 @@
 /**
- * AssetDescs are wrappers on extents that have been validated by an DescOps, and
- * can be verified as having been issued by the DescOps. They contain their
+ * AssetDescs are wrappers on extents that have been validated by an AssetDescOps, and
+ * can be verified as having been issued by the AssetDescOps. They contain their
  * extent and a Label. The label identifies a particular assay.
  */
 struct AssetDesc (Extent, Label) {
@@ -10,10 +10,10 @@ struct AssetDesc (Extent, Label) {
 
 /**
  * Extents describe the extent of something that can be owned or shared.
- * The format is determined by its descOps. Fungible extents are normally
+ * The format is determined by its assetDescOps. Fungible extents are normally
  * represented by natural numbers. Other extents may be represented as
  * strings naming a particular right, or an arbitrary object that sensibly
- * represents the rights at issue. All AssetDescs made by the same DescOps have the
+ * represents the rights at issue. All AssetDescs made by the same AssetDescOps have the
  * same label.
  *
  * Extent must be Comparable. (This IDL doesn't yet provide a way to specify
@@ -30,24 +30,24 @@ struct Extent {
  * payments. They can be used to represent things like currency, stock, and the
  * abstract right to participate in a particular exchange.
  *
- * The descOps treats the Label as an opaque object. It's used in the
- * assetDescs produced by this descOps.
+ * The assetDescOps treats the Label as an opaque object. It's used in the
+ * assetDescs produced by this assetDescOps.
  */
-interface DescOps (AssetDesc (Extent, Label)) {
+interface AssetDescOps (AssetDesc (Extent, Label)) {
 
-  /** Return this descOps's label. */
+  /** Return this assetDescOps's label. */
   getLabel() -> (Label);
 
   /** Make a new verified AssetDesc containing the allegedExtent. */
   make(allegedExtent :Extent) -> (AssetDesc);
 
   /**
-   * Is this like an AssetDesc object made by this DescOps, such as one received by
+   * Is this like an AssetDesc object made by this AssetDescOps, such as one received by
    * pass-by-copy from an otherwise-identical remote AssetDesc? If so, return an
-   * AssetDesc object made by this DescOps. Otherwise error.
+   * AssetDesc object made by this AssetDescOps. Otherwise error.
    *
    * For fungible assetDescs based on natural numbers, coerce also accepts a bare
-   * number which it will coerce to a labeled number via descOps.make().
+   * number which it will coerce to a labeled number via assetDescOps.make().
    */
   coerce(allegedAssetDesc :AssetDesc) -> (AssetDesc);
 
@@ -88,7 +88,7 @@ interface DescOps (AssetDesc (Extent, Label)) {
  * The label for an assetDesc identifies the assay, and includes a description of
  * the rights it represents.
  *
- * Every assetDesc created by the DescOps will have the same label, but recipients
+ * Every assetDesc created by the AssetDescOps will have the same label, but recipients
  * cannot use the label by itself to verify that a purported assetDesc is
  * authentic, since the label can be copied. 
  */
@@ -108,7 +108,7 @@ struct Description {
 
 /**
  * UniDescOps represents assetDescs that have unique descriptions. It is a
- * refinement of DescOps that we've found useful, but has no special
+ * refinement of AssetDescOps that we've found useful, but has no special
  * place in the protocol.
  *
  * The extent must either be null, in which case it is empty, or be some
@@ -120,9 +120,9 @@ interface UniDescOps extends (DescOps) {
 }
 
 /**
- * DescOps for a labeled natural number describing a extent of fungible
+ * AssetDescOps for a labeled natural number describing a extent of fungible
  * erights. The label describes what kinds of rights these are. NatDescOps is a
- * refinement of DescOps that we've found useful, but has no special place in the
+ * refinement of AssetDescOps that we've found useful, but has no special place in the
  * protocol.
  *
  * Empty assetDescs have zero units. 'includes()' verifies that leftAssetDesc is

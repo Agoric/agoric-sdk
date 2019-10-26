@@ -32,7 +32,7 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
 
   const inviteMint = makeMint('contract host', makeInviteConfig);
   const inviteAssay = inviteMint.getAssay();
-  const inviteDescOps = inviteAssay.getDescOps();
+  const inviteDescOps = inviteAssay.getAssetDescOps();
 
   function redeem(allegedInvitePayment) {
     const allegedInviteAssetDesc = allegedInvitePayment.getBalance();

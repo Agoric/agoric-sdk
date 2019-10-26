@@ -12,8 +12,8 @@ interface Assay (AssetDesc (Extent)) {
    */
   getLabel() -> (Comparable);
 
-  /* Get the DescOps for this Assay. */
-  getDescOps() -> (DescOps);
+  /* Get the AssetDescOps for this Assay. */
+  getAssetDescOps() -> (DescOps);
 
   /* Get the ExtentOps for this Assay. */
   getExtentOps() -> (ExtentOps);
@@ -61,8 +61,8 @@ interface Assay (AssetDesc (Extent)) {
 /**
  * Makes Mints.
  *
- * The description becomes part of the label, used by the descOps to identify
- * assetDescs authorized/acknowledged by the mint. The MintController and DescOps
+ * The description becomes part of the label, used by the assetDescOps to identify
+ * assetDescs authorized/acknowledged by the mint. The MintController and AssetDescOps
  * must be compatible with the type of asset managed by the mint.
  *
  * Description doesn't have to be a string, but it will only be used for its
@@ -154,12 +154,12 @@ interface Payment (AssetDesc) {
 }
 
 /** 
- * All of the difference in how an descOps behaves can be reduced to
+ * All of the difference in how an assetDescOps behaves can be reduced to
  * the behavior of the set operations on extents (think: arithmetic)
  * such as `empty`, `with`, `without`, `includes`, etc. We extract this
  * custom logic into a extentOps. ExtentOps are about extent
- * arithmetic, whereas DescOps are about AssetDescs, which are labeled
- * extents. DescOps use ExtentOps to do their extent arithmetic,
+ * arithmetic, whereas AssetDescOps are about AssetDescs, which are labeled
+ * extents. AssetDescOps use ExtentOps to do their extent arithmetic,
  * and then label the results, making new AssetDescs. 
  */ 
 interface ExtentOps () {

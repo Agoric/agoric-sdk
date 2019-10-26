@@ -17,10 +17,10 @@ function makeBobMaker(E, host, log) {
       myStockPurseP,
     ) {
       const moneyAssayP = E(myMoneyPurseP).getAssay();
-      const moneyNeededP = E(E(moneyAssayP).getDescOps()).make(10);
+      const moneyNeededP = E(E(moneyAssayP).getAssetDescOps()).make(10);
 
       const stockAssayP = E(myStockPurseP).getAssay();
-      const stockNeededP = E(E(stockAssayP).getDescOps()).make(7);
+      const stockNeededP = E(E(stockAssayP).getAssetDescOps()).make(7);
 
       const bob = harden({
         /**

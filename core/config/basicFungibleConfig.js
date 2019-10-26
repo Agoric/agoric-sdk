@@ -6,7 +6,7 @@ import { makeCoreMintKeeper } from './coreMintKeeper';
 // Fungible tokens (our default for mints) do not customize
 // payments, purses, etc. They use the "basic" mintKeeper (the place
 // where the assetDescs per purse and payment are recorded) and use the
-// "Nat" descOps, in which assetDescs are natural numbers and use
+// "Nat" assetDescOps, in which assetDescs are natural numbers and use
 // substraction and addition.
 
 // This configuration and others like it are passed into `makeMint` in
