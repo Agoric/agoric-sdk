@@ -366,7 +366,12 @@ export default function makeVatManager(
     for (const t of vatKeeper.getTranscript()) {
       playbackSyscalls = Array.from(t.syscalls);
       // eslint-disable-next-line no-await-in-loop
-      await doProcess(t.d, 'errmsg');
+      await doProcess(
+        t.d,
+        `Replay failed: [${t.d[0]}, ${t.d[1]}, ${t.d[2]}, ${JSON.stringify(
+          t.d[3],
+        )}]`,
+      );
     }
     inReplay = false;
   }
