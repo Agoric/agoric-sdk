@@ -5,7 +5,7 @@ you the asset and ask you to send me the other kind back. But, you
 could choose to behave opportunistically: receive my asset and give
 nothing back. To solve this problem, swap contracts allow users to
 securely trade one kind of eright for another kind, leveraging Zoe for
-escrow and offer-safety. At no time does any user have the ability to
+escrow and offer safety. At no time does any user have the ability to
 behave opportunistically.
 
 ## Public Swap
@@ -30,8 +30,8 @@ two things, the actual ERTP payments that are part of her offer, and
 an object called `offerRules`. The `offerRules` will be used by Zoe to
 protect Alice from the smart contract and other participants. The
 `offerRules` have two parts: `payoutRules`, which is used for
-enforcing offer-safety, and `exitRule,` which is used to enforce
-exit-safety. In this case, Alice's exit rule is `onDemand`, meaning
+enforcing offer safety, and `exitRule,` which is used to enforce
+exit safety. In this case, Alice's exit rule is `onDemand`, meaning
 that she can exit at any time. Once Alice escrows, she gets an
 escrowReceipt and a promise that resolves to her payout.
 

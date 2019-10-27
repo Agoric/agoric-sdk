@@ -46,3 +46,5 @@ test(`areRightsConserved - empty arrays`, t => {
     t.end();
   }
 });
+
+// TODO: add tests for non-Nat extents

@@ -11,7 +11,7 @@ struct EscrowReceiptAndPayout ( ) {
 
 /**
  * Zoe is a long-lived and well-trusted contract that enforces
- * offer-safety for the contracts that use it. Zoe has a single
+ * offer safety for the contracts that use it. Zoe has a single
  * `seatAssay` and a single `escrowReceiptAssay` for the entirety of its
  * lifetime. By having a reference to Zoe, a user can get the `seatAssay`
  * or `escrowReceiptAssay` and thus validate any `seat` or `escrowReceipt`
@@ -64,8 +64,8 @@ interface Zoe {
    * their rules for the offer. 
    * 
    * The rules for the offer are in two parts: `payoutRules` are used 
-   * by Zoe to enforce offer-safety, and `exitRule` is used by Zoe 
-   * to enforce exit-safety. `payoutRules` is a list of objects, each 
+   * by Zoe to enforce offer safety, and `exitRule` is used by Zoe 
+   * to enforce exit safety. `payoutRules` is a list of objects, each 
    * with a `kind` property (such as 'offerExactly') and an assetDesc
    * property. The objects in the `payoutRules` must be in the same order
    * as the assays associated with a smart contract. That is, the

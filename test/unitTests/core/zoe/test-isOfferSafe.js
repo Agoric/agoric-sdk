@@ -1,20 +1,20 @@
 import { test } from 'tape-promise/tape';
 
 import {
-  isOfferSafeForPlayer,
+  isOfferSafeForOffer,
   isOfferSafeForAll,
 } from '../../../../core/zoe/zoe/isOfferSafe';
 import { setup } from './setupBasicMints';
 
 // The player must have payoutRules for each assay
-test('isOfferSafeForPlayer - empty payoutRules', t => {
+test('isOfferSafeForOffer - empty payoutRules', t => {
   try {
     const { extentOps } = setup();
     const payoutRules = [];
     const extents = [8, 6, 7];
 
     t.throws(
-      _ => isOfferSafeForPlayer(extentOps, payoutRules, extents),
+      _ => isOfferSafeForOffer(extentOps, payoutRules, extents),
       'extentOps, payoutRules, and extents must be arrays of the same length',
     );
   } catch (e) {
@@ -25,7 +25,7 @@ test('isOfferSafeForPlayer - empty payoutRules', t => {
 });
 
 // The extents array must have an item for each assay/rule
-test('isOfferSafeForPlayer - empty extents', t => {
+test('isOfferSafeForOffer - empty extents', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -36,7 +36,7 @@ test('isOfferSafeForPlayer - empty extents', t => {
     const extents = [];
 
     t.throws(
-      _ => isOfferSafeForPlayer(extentOps, payoutRules, extents),
+      _ => isOfferSafeForOffer(extentOps, payoutRules, extents),
       'extentOps, payoutRules, and extents must be arrays of the same length',
     );
   } catch (e) {
@@ -48,7 +48,7 @@ test('isOfferSafeForPlayer - empty extents', t => {
 
 // The player puts in something and gets exactly what they wanted,
 // with no refund
-test('isOfferSafeForPlayer - gets wantExactly, with offerExactly', t => {
+test('isOfferSafeForOffer - gets wantExactly, with offerExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -58,7 +58,7 @@ test('isOfferSafeForPlayer - gets wantExactly, with offerExactly', t => {
     ];
     const extents = [0, 6, 7];
 
-    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
+    t.ok(isOfferSafeForOffer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -66,8 +66,8 @@ test('isOfferSafeForPlayer - gets wantExactly, with offerExactly', t => {
   }
 });
 
-// The player gets exactly what they wanted, with no 'have'
-test('isOfferSafeForPlayer - gets wantExactly', t => {
+// The player gets exactly what they wanted, with no 'offer'
+test('isOfferSafeForOffer - gets wantExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -77,7 +77,7 @@ test('isOfferSafeForPlayer - gets wantExactly', t => {
     ];
     const extents = [8, 6, 7];
 
-    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
+    t.ok(isOfferSafeForOffer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -85,11 +85,11 @@ test('isOfferSafeForPlayer - gets wantExactly', t => {
   }
 });
 
-// The player gets more than what they wanted, with no 'have'. Note:
-// This returns 'true' counterintuitively because no 'have' assetDesc was
-// specified and none were given back, so the refund condition was
-// fulfilled.
-test('isOfferSafeForPlayer - gets wantExactly', t => {
+// The player gets more than what they wanted, with no 'offer' rule
+// kind. Note: This returns 'true' counterintuitively because no
+// 'offer' rule kind was specified and none were given back, so the
+// refund condition was fulfilled trivially.
+test('isOfferSafeForOffer - gets wantExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -99,7 +99,7 @@ test('isOfferSafeForPlayer - gets wantExactly', t => {
     ];
     const extents = [9, 6, 7];
 
-    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
+    t.ok(isOfferSafeForOffer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -108,7 +108,7 @@ test('isOfferSafeForPlayer - gets wantExactly', t => {
 });
 
 // The user gets refunded exactly what they put in, with a 'wantExactly'
-test(`isOfferSafeForPlayer - gets offerExactly, doesn't get wantExactly`, t => {
+test(`isOfferSafeForOffer - gets offerExactly, doesn't get wantExactly`, t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -118,7 +118,7 @@ test(`isOfferSafeForPlayer - gets offerExactly, doesn't get wantExactly`, t => {
     ];
     const extents = [1, 0, 3];
 
-    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
+    t.ok(isOfferSafeForOffer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -127,7 +127,7 @@ test(`isOfferSafeForPlayer - gets offerExactly, doesn't get wantExactly`, t => {
 });
 
 // The user gets refunded exactly what they put in, with no 'wantExactly'
-test('isOfferSafeForPlayer - gets offerExactly, no wantExactly', t => {
+test('isOfferSafeForOffer - gets offerExactly, no wantExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -137,7 +137,7 @@ test('isOfferSafeForPlayer - gets offerExactly, no wantExactly', t => {
     ];
     const extents = [1, 2, 3];
 
-    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
+    t.ok(isOfferSafeForOffer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -146,7 +146,7 @@ test('isOfferSafeForPlayer - gets offerExactly, no wantExactly', t => {
 });
 
 // The user gets a refund *and* winnings. This is 'offer safe'.
-test('isOfferSafeForPlayer - refund and winnings', t => {
+test('isOfferSafeForOffer - refund and winnings', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -155,7 +155,7 @@ test('isOfferSafeForPlayer - refund and winnings', t => {
       { kind: 'wantExactly', assetDesc: assetDescOps[2].make(3) },
     ];
     const extents = [2, 3, 3];
-    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
+    t.ok(isOfferSafeForOffer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -164,7 +164,7 @@ test('isOfferSafeForPlayer - refund and winnings', t => {
 });
 
 // The user gets more than they wanted - wantExactly
-test('isOfferSafeForPlayer - more than wantExactly', t => {
+test('isOfferSafeForOffer - more than wantExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -173,7 +173,7 @@ test('isOfferSafeForPlayer - more than wantExactly', t => {
       { kind: 'wantExactly', assetDesc: assetDescOps[2].make(4) },
     ];
     const extents = [0, 3, 5];
-    t.notOk(isOfferSafeForPlayer(extentOps, payoutRules, extents));
+    t.notOk(isOfferSafeForOffer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -182,7 +182,7 @@ test('isOfferSafeForPlayer - more than wantExactly', t => {
 });
 
 // The user gets more than they wanted - wantAtLeast
-test('isOfferSafeForPlayer - more than wantAtLeast', t => {
+test.only('isOfferSafeForOffer - more than wantAtLeast', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -191,7 +191,7 @@ test('isOfferSafeForPlayer - more than wantAtLeast', t => {
       { kind: 'wantAtLeast', assetDesc: assetDescOps[2].make(4) },
     ];
     const extents = [2, 6, 7];
-    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
+    t.ok(isOfferSafeForOffer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -200,7 +200,7 @@ test('isOfferSafeForPlayer - more than wantAtLeast', t => {
 });
 
 // The user gets refunded more than what they put in
-test('isOfferSafeForPlayer - more than offerExactly', t => {
+test('isOfferSafeForOffer - more than offerExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -209,7 +209,7 @@ test('isOfferSafeForPlayer - more than offerExactly', t => {
       { kind: 'wantExactly', assetDesc: assetDescOps[2].make(4) },
     ];
     const extents = [5, 6, 8];
-    t.notOk(isOfferSafeForPlayer(extentOps, payoutRules, extents));
+    t.notOk(isOfferSafeForOffer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -220,7 +220,7 @@ test('isOfferSafeForPlayer - more than offerExactly', t => {
 // The user gets refunded more than what they put in, with no
 // wantExactly. Note: This returns 'true' counterintuitively
 // because no winnings were specified and none were given back.
-test('isOfferSafeForPlayer - more than offerExactly, no wants', t => {
+test('isOfferSafeForOffer - more than offerExactly, no wants', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -229,7 +229,7 @@ test('isOfferSafeForPlayer - more than offerExactly, no wants', t => {
       { kind: 'offerExactly', assetDesc: assetDescOps[2].make(4) },
     ];
     const extents = [5, 6, 8];
-    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
+    t.ok(isOfferSafeForOffer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -238,7 +238,7 @@ test('isOfferSafeForPlayer - more than offerExactly, no wants', t => {
 });
 
 // The user gets refunded more than what they put in, with 'offerAtMost'
-test('isOfferSafeForPlayer - more than offerAtMost', t => {
+test('isOfferSafeForOffer - more than offerAtMost', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -247,7 +247,7 @@ test('isOfferSafeForPlayer - more than offerAtMost', t => {
       { kind: 'wantExactly', assetDesc: assetDescOps[2].make(4) },
     ];
     const extents = [5, 3, 0];
-    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
+    t.ok(isOfferSafeForOffer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -256,7 +256,7 @@ test('isOfferSafeForPlayer - more than offerAtMost', t => {
 });
 
 // The user gets less than what they wanted - wantExactly
-test('isOfferSafeForPlayer - less than wantExactly', t => {
+test('isOfferSafeForOffer - less than wantExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -265,7 +265,7 @@ test('isOfferSafeForPlayer - less than wantExactly', t => {
       { kind: 'wantExactly', assetDesc: assetDescOps[2].make(5) },
     ];
     const extents = [0, 2, 1];
-    t.notOk(isOfferSafeForPlayer(extentOps, payoutRules, extents));
+    t.notOk(isOfferSafeForOffer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -274,7 +274,7 @@ test('isOfferSafeForPlayer - less than wantExactly', t => {
 });
 
 // The user gets less than what they wanted - wantAtLeast
-test('isOfferSafeForPlayer - less than wantExactly', t => {
+test('isOfferSafeForOffer - less than wantExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -283,7 +283,7 @@ test('isOfferSafeForPlayer - less than wantExactly', t => {
       { kind: 'wantAtLeast', assetDesc: assetDescOps[2].make(9) },
     ];
     const extents = [0, 2, 1];
-    t.notOk(isOfferSafeForPlayer(extentOps, payoutRules, extents));
+    t.notOk(isOfferSafeForOffer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -292,7 +292,7 @@ test('isOfferSafeForPlayer - less than wantExactly', t => {
 });
 
 // The user gets refunded less than they put in
-test('isOfferSafeForPlayer - less than wantExactly', t => {
+test('isOfferSafeForOffer - less than wantExactly', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -301,7 +301,7 @@ test('isOfferSafeForPlayer - less than wantExactly', t => {
       { kind: 'wantAtLeast', assetDesc: assetDescOps[2].make(3) },
     ];
     const extents = [1, 0, 0];
-    t.notOk(isOfferSafeForPlayer(extentOps, payoutRules, extents));
+    t.notOk(isOfferSafeForOffer(extentOps, payoutRules, extents));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -309,14 +309,14 @@ test('isOfferSafeForPlayer - less than wantExactly', t => {
   }
 });
 
-test('isOfferSafeForPlayer - empty arrays', t => {
+test('isOfferSafeForOffer - empty arrays', t => {
   try {
     const { extentOps } = setup();
     const payoutRules = [];
     const extents = [];
     t.throws(
-      () => isOfferSafeForPlayer(extentOps, payoutRules, extents),
-      /extentOps, the offer description, and extents must be arrays of the same length/,
+      () => isOfferSafeForOffer(extentOps, payoutRules, extents),
+      /extentOpsArray, the offer description, and extents must be arrays of the same length/,
     );
   } catch (e) {
     t.assert(false, e);
@@ -325,7 +325,7 @@ test('isOfferSafeForPlayer - empty arrays', t => {
   }
 });
 
-test('isOfferSafeForPlayer - null for some assays', t => {
+test('isOfferSafeForOffer - null for some assays', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [
@@ -334,7 +334,10 @@ test('isOfferSafeForPlayer - null for some assays', t => {
       { kind: 'offerExactly', assetDesc: assetDescOps[2].make(4) },
     ];
     const extents = [5, 6, 8];
-    t.ok(isOfferSafeForPlayer(extentOps, payoutRules, extents));
+    t.throws(
+      () => isOfferSafeForOffer(extentOps, payoutRules, extents),
+      /payoutRule must be specified/,
+    );
   } catch (e) {
     t.assert(false, e);
   } finally {

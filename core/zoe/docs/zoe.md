@@ -43,7 +43,7 @@ The offer doesn't say whether the item you want is up for auction, in
 an exchange, or part of a private trade. The offer doesn't mention the
 particular mechanism because an important part of the design of Zoe is
 a __separation of concerns__. Zoe is responsible for enforcing what we
-call "offer-safety", and the smart contract that runs on top of Zoe is
+call "offer safety", and the smart contract that runs on top of Zoe is
 responsible for figuring out a proposed reallocation of resources. To
 use an auction as an example, the smart contract is responsible for
 figuring out who wins the auction and how much they pay, but Zoe
@@ -52,9 +52,9 @@ this as similar to e-commerce websites using a separate
 payment-processor so that they don't have to handle the credit cards
 themselves.
 
-### What is "offer-safety"?
+### What is "offer safety"?
 
-Zoe guarantees offer-safety, meaning that when a user makes an offer
+Zoe guarantees offer safety, meaning that when a user makes an offer
 that is escrowed with Zoe, Zoe guarantees that the user will either
 get back why they said they wanted, or the user will get back what they
 originally offered. 
@@ -238,7 +238,7 @@ contract makes a call to `zoe.reallocate` in order to tell Zoe about
 this reallocation for the two offers. 
 
 Zoe checks two invariants before changing its bookkeeping. First, Zoe
-checks that offer-safety holds for these offers. In other words, does
+checks that offer safety holds for these offers. In other words, does
 this reallocation either give a refund or give the user what they
 wanted? Second, Zoe checks that asset supply is conserved. This means
 that we haven't lost or added any digital assets on the whole as a

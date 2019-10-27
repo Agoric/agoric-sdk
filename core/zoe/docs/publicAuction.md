@@ -31,8 +31,8 @@ order to escrow something with Zoe, she needs to provide a payment for
 what she wants to put up at auction, and she needs to decide what her
 `offerRules` are. The `offerRules` will be enforced by Zoe and will
 protect Alice from misbehavior by the smart contract and other
-participants. `payoutRules` are used to enforce offer-safety, and
-`exitRule` is used to enforce exit-safety. 
+participants. `payoutRules` are used to enforce offer safety, and
+`exitRule` is used to enforce exit safety. 
 
 ```js
 const aliceOfferRules = harden({
