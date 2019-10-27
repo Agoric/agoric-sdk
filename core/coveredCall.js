@@ -37,9 +37,13 @@ const coveredCall = harden({
 
     // Seats
 
-    E(timerP)
-      .delayUntil(deadline)
-      .then(_ => E(bobEscrowSeatP).cancel('expired'));
+    const canceller = {
+      wake: () => {
+        E(bobEscrowSeatP).cancel('expired');
+      },
+    };
+
+    E(timerP).setWakeup(deadline, canceller);
 
     const bobSeat = harden({
       offer(stockPayment) {

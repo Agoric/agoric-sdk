@@ -376,11 +376,11 @@ Unrecognized moduleFormat ${moduleFormat}`;
       };
       const { exitRule = { kind: 'onDemand' } } = offerRules;
       if (exitRule.kind === 'afterDeadline') {
-        offerRules.exitRule.timer
-          .delayUntil(offerRules.exitRule.deadline)
-          .then(_ticks =>
+        const exit = harden({
+          wake: () =>
             completeOffers(adminState, readOnlyState, harden([offerHandle])),
-          );
+        });
+        offerRules.exitRule.timer.setWakeup(offerRules.exitRule.deadline, exit);
       }
       if (exitRule.kind === 'onDemand') {
         escrowResult.cancelObj = {
