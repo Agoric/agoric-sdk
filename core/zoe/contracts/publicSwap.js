@@ -8,7 +8,7 @@ import {
 
 export const makeContract = harden((zoe, terms) => {
   let firstOfferHandle;
-  let firstPayoutRules;
+  let firstOfferPayoutRules;
 
   const publicSwap = harden({
     makeFirstOffer: async escrowReceipt => {
@@ -24,10 +24,10 @@ export const makeContract = harden((zoe, terms) => {
 
       // The offer is valid, so save information about the first offer
       firstOfferHandle = offerHandle;
-      firstPayoutRules = payoutRules;
+      firstOfferPayoutRules = payoutRules;
       return defaultAcceptanceMsg;
     },
-    getFirstPayoutRules: () => firstPayoutRules,
+    getFirstPayoutRules: () => firstOfferPayoutRules,
     matchOffer: async escrowReceipt => {
       const {
         offerHandle: matchingOfferHandle,
@@ -47,7 +47,9 @@ export const makeContract = harden((zoe, terms) => {
         );
       }
 
-      if (!isExactlyMatchingPayoutRules(zoe, firstPayoutRules, payoutRules)) {
+      if (
+        !isExactlyMatchingPayoutRules(zoe, firstOfferPayoutRules, payoutRules)
+      ) {
         return rejectOffer(zoe, matchingOfferHandle);
       }
       const [firstOfferExtents, matchingOfferExtents] = zoe.getExtentsFor(

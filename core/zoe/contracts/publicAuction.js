@@ -12,6 +12,8 @@ export const makeContract = harden((zoe, terms) => {
   const numBidsAllowed = terms.numBidsAllowed || 3;
 
   let creatorOfferHandle;
+  let minimumBid;
+  let auctionedAssets;
   const allBidHandles = [];
 
   // The item up for auction is described first in the payoutRules array
@@ -26,18 +28,25 @@ export const makeContract = harden((zoe, terms) => {
       } = await zoe.burnEscrowReceipt(escrowReceipt);
 
       const ruleKinds = ['offerExactly', 'wantAtLeast'];
-      if (!hasValidPayoutRules(ruleKinds, terms.assays, payoutRules)) {
+      if (
+        creatorOfferHandle ||
+        !hasValidPayoutRules(ruleKinds, terms.assays, payoutRules)
+      ) {
         return rejectOffer(offerHandle);
       }
 
       // Save the valid offer
       creatorOfferHandle = offerHandle;
+      auctionedAssets = payoutRules[0].assetDesc;
+      minimumBid = payoutRules[1].assetDesc;
       return defaultAcceptanceMsg;
     },
+    getMinimumBid: () => minimumBid,
+    getAuctionedAssets: () => auctionedAssets,
     bid: async escrowReceipt => {
       const {
         offerHandle,
-        offerRules: { payoutRules: offerMadeDesc },
+        offerRules: { payoutRules },
       } = await zoe.burnEscrowReceipt(escrowReceipt);
 
       // Check that the item is still up for auction
@@ -55,7 +64,7 @@ export const makeContract = harden((zoe, terms) => {
       }
 
       const ruleKinds = ['wantExactly', 'offerAtMost'];
-      if (!hasValidPayoutRules(ruleKinds, terms.assays, offerMadeDesc)) {
+      if (!hasValidPayoutRules(ruleKinds, terms.assays, payoutRules)) {
         return rejectOffer(zoe, offerHandle);
       }
 

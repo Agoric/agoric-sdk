@@ -36,7 +36,7 @@ I expect *at least* three wood back." [Learn more about the particulars
 of structuring an offer here](TODO). 
 
 Offers are a structured way of describing user intent. To a certain
-extent, an offer description is the user's *contractual understanding*
+extent, an offer's rules are the user's *contractual understanding*
 of the agreement they are entering into. You might have noticed that
 the offer doesn't specify the mechanism by which the exchange happens.
 The offer doesn't say whether the item you want is up for auction, in
@@ -76,7 +76,7 @@ even if we don't trust one another. We are assured that at worst, if
 the swap contract behaves badly, we will both get a refund, and at
 best, we'll get what we each wanted.
 
-Let's use the basic `publicSwap` contract ([full text of
+Let's look at the basic `publicSwap` contract ([full text of
 the real contract](/core/zoe/contracts/publicSwap.js)). 
 
 Here's a high-level overview of what would happen:
@@ -152,14 +152,11 @@ make sure our user-facing API has a method for that:
 const makeFirstOffer = async escrowReceipt => {
   const {
     offerHandle,
-    offerRules: { payoutRules: offerMadeDesc },
+    offerRules: { payoutRules },
   } = await zoe.burnEscrowReceipt(escrowReceipt);
 
-  if (!hasRules(['offerExactly', 'wantExactly'], offerMadeDesc)) {
-    return rejectOffer(zoe, offerHandle);
-  }
-
-  if (!hasAssays(terms.assays, offerMadeDesc)) {
+  const ruleKinds = ['offerExactly', 'wantExactly']
+  if (!hasValidPayoutRules(ruleKinds, terms.assays, payoutRules))
     return rejectOffer(zoe, offerHandle);
   }
 
@@ -196,7 +193,7 @@ method, `matchOffer`:
 const matchOffer = async escrowReceipt => {
   const {
     offerHandle: matchingOfferHandle,
-    offerRules: { payoutRules: offerMadeDesc },
+    offerRules: { payoutRules },
   } = await zoe.burnEscrowReceipt(escrowReceipt);
 
   if (!firstOfferHandle) {

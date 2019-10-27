@@ -6,7 +6,6 @@ import {
   offerEqual,
   toAssetDescMatrix,
   makeEmptyExtents,
-  vectorWith,
   makeAssetDesc,
   makePayoutRules,
 } from '../../../../core/zoe/contractUtils';
@@ -245,19 +244,6 @@ test('offerEqual - wantExactly vs wantAtLeast - returns false', t => {
       },
     ];
     t.notOk(offerEqual(extentOps, offer1, offer2));
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
-  }
-});
-
-test('vectorWith', t => {
-  try {
-    const { extentOps } = setup();
-    const leftExtents = [4, 5, 6];
-    const rightExtents = [3, 5, 10];
-    t.deepEquals(vectorWith(extentOps, leftExtents, rightExtents), [7, 10, 16]);
   } catch (e) {
     t.assert(false, e);
   } finally {

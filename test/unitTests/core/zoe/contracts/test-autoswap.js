@@ -205,7 +205,7 @@ test('autoSwap with valid offers', async t => {
 
     // 8: Alice removes her liquidity
     // She's not picky...
-    const aliceRemoveLiquidityPayoutRules = harden({
+    const aliceRemoveLiquidityOfferRules = harden({
       payoutRules: [
         {
           kind: 'wantAtLeast',
@@ -229,7 +229,7 @@ test('autoSwap with valid offers', async t => {
       escrowReceipt: aliceRemoveLiquidityEscrowReceipt,
       payout: aliceRemoveLiquidityPayoutP,
     } = await zoe.escrow(
-      aliceRemoveLiquidityPayoutRules,
+      aliceRemoveLiquidityOfferRules,
       harden([undefined, undefined, liquidityPayments[2]]),
     );
 

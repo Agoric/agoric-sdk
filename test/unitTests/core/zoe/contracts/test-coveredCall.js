@@ -81,7 +81,7 @@ test('zoe - coveredCall', async t => {
     const {
       outcome: aliceOutcome,
       invite: bobInvitePayment,
-    } = await aliceCoveredCall.init(aliceEscrowReceipt);
+    } = await aliceCoveredCall.makeFirstOffer(aliceEscrowReceipt);
 
     // Check that the assays and bobInvitePayment are as expected
     t.deepEquals(
@@ -125,7 +125,6 @@ test('zoe - coveredCall', async t => {
     const inviteExtent = bobInvitePayment.getBalance().extent;
     t.equal(inviteExtent.instanceHandle, instanceHandle);
     t.equal(inviteExtent.installationHandle, coveredCallInstallationId);
-    t.equal(inviteExtent.status, 'acceptingOffers');
     t.ok(sameStructure(inviteExtent.offerMadeRules, aliceOfferRules));
     t.ok(
       sameStructure(
@@ -155,15 +154,15 @@ test('zoe - coveredCall', async t => {
     );
 
     // 8: Bob makes an offer with his escrow receipt
-    const bobOutcome = await bobInvite.makeOffer(bobEscrowReceipt);
+    const bobOutcome = await bobInvite.matchOffer(bobEscrowReceipt);
 
     t.equals(
       bobOutcome,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
     t.equals(
       aliceOutcome,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
     const aliceResult = await alicePayoutP;
@@ -277,7 +276,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const {
       outcome: aliceOutcome,
       invite: bobInvitePayment,
-    } = await aliceCoveredCall.init(aliceEscrowReceipt);
+    } = await aliceCoveredCall.makeFirstOffer(aliceEscrowReceipt);
 
     // Check that the assays and bobInvitePayment are as expected
     t.deepEquals(
@@ -323,7 +322,6 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const inviteExtent = bobInvitePayment.getBalance().extent;
     t.equal(inviteExtent.instanceHandle, instanceHandle);
     t.equal(inviteExtent.installationHandle, coveredCallInstallationId);
-    t.equal(inviteExtent.status, 'acceptingOffers');
     t.ok(sameStructure(inviteExtent.offerMadeRules, aliceOfferRules));
     t.ok(
       sameStructure(
@@ -354,13 +352,13 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 
     // 8: Bob makes an offer with his escrow receipt
     t.rejects(
-      bobInvite.makeOffer(bobEscrowReceipt),
+      bobInvite.matchOffer(bobEscrowReceipt),
       /The first offer was withdrawn/,
     );
 
     t.equals(
       aliceOutcome,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
     const aliceResult = await alicePayoutP;
@@ -483,17 +481,17 @@ test('zoe - coveredCall with swap for invite', async t => {
     // Alice gets two kinds of things back - she gets an 'outcome'
     // which is just a message that the offer was accepted or
     // rejected. She also gets an invite, which is an ERTP payment
-    // that can be unwrapped to get an object with a `makeOffer`
+    // that can be unwrapped to get an object with a `matchOffer`
     // method. The invite is the only way to make a counter-offer in
     // this particular contract. It is not public.
     const {
       outcome: aliceOutcome,
       invite: bobInvitePayment,
-    } = await aliceCoveredCall.init(aliceEscrowReceipt);
+    } = await aliceCoveredCall.makeFirstOffer(aliceEscrowReceipt);
 
     t.equals(
       aliceOutcome,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
     // 4: Imagine that Alice sends the invite to Bob as well as the
@@ -573,11 +571,6 @@ test('zoe - coveredCall with swap for invite', async t => {
         bobOfferRulesCoveredCall.payoutRules,
       ),
     );
-
-    // What was the smart contract status when the invite was
-    // made? (Note: This check may be superfluous, and the
-    // status/state machine may be taken out of this contract)
-    t.equal(inviteExtent.status, 'acceptingOffers');
 
     // Satisfied with the description, Bob claims all with the Zoe
     // inviteAssay and can therefore know that it was a valid invite
@@ -721,12 +714,12 @@ test('zoe - coveredCall with swap for invite', async t => {
       payout: daveCoveredCallPayoutP,
     } = await zoe.escrow(daveCoveredCallOfferRules, daveCoveredCallPayments);
 
-    const daveCoveredCallOutcome = await coveredCallObj.makeOffer(
+    const daveCoveredCallOutcome = await coveredCallObj.matchOffer(
       daveCoveredCallEscrowReceipt,
     );
     t.equals(
       daveCoveredCallOutcome,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
     // Dave should get 3 moola, Bob should get 1 buck, and Alice
@@ -862,17 +855,17 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     // Alice gets two kinds of things back - she gets an 'outcome'
     // which is just a message that the offer was accepted or
     // rejected. She also gets an invite, which is an ERTP payment
-    // that can be unwrapped to get an object with a `makeOffer`
+    // that can be unwrapped to get an object with a `matchOffer`
     // method. The invite is the only way to make a counter-offer in
     // this particular contract. It is not public.
     const {
       outcome: aliceOutcome,
       invite: bobInvitePayment,
-    } = await aliceCoveredCall.init(aliceEscrowReceipt);
+    } = await aliceCoveredCall.makeFirstOffer(aliceEscrowReceipt);
 
     t.equals(
       aliceOutcome,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
     // 4: Imagine that Alice sends the invite to Bob as well as the
@@ -953,11 +946,6 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       ),
     );
 
-    // What was the smart contract status when the invite was
-    // made? (Note: This check may be superfluous, and the
-    // status/state machine may be taken out of this contract)
-    t.equal(inviteExtent.status, 'acceptingOffers');
-
     // Satisfied with the description, Bob claims all with the Zoe
     // inviteAssay and can therefore know that it was a valid invite
     const inviteAssay = zoe.getInviteAssay();
@@ -1008,11 +996,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const {
       outcome: bobOutcome,
       invite: inviteForDave,
-    } = await bobSecondCoveredCall.init(bobEscrowReceipt);
+    } = await bobSecondCoveredCall.makeFirstOffer(bobEscrowReceipt);
 
     t.equals(
       bobOutcome,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
     // Bob passes the invite to the higher order covered call and
@@ -1090,11 +1078,6 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       ),
     );
 
-    // What was the smart contract status when the invite was
-    // made? (Note: This check may be superfluous, and the
-    // status/state machine may be taken out of this contract)
-    t.equal(daveInviteExtent.status, 'acceptingOffers');
-
     // Satisfied with the description, Dave claims all with the Zoe
     // inviteAssay and can therefore know that it was a valid invite
     const secondCoveredCallInvite = await inviteAssay.claimAll(inviteForDave);
@@ -1110,12 +1093,12 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       daveSecondCoveredCallPayments,
     );
     const secondCoveredCallObj = await secondCoveredCallInvite.unwrap();
-    const daveSecondCoveredCallOutcome = await secondCoveredCallObj.makeOffer(
+    const daveSecondCoveredCallOutcome = await secondCoveredCallObj.matchOffer(
       daveCoveredCallEscrowReceipt,
     );
     t.equals(
       daveSecondCoveredCallOutcome,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
     const [
@@ -1152,12 +1135,12 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       daveFirstCoveredCallPayments,
     );
 
-    const daveFirstCoveredCallOutcome = await firstCoveredCallObj.makeOffer(
+    const daveFirstCoveredCallOutcome = await firstCoveredCallObj.matchOffer(
       daveFirstCoveredCallEscrowReceipt,
     );
     t.equals(
       daveFirstCoveredCallOutcome,
-      'The offer has been accepted. Once the contract has been completed, please check your winnings',
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
     // Dave should get 3 moola, Bob should get 1 buck, and Alice

@@ -57,7 +57,7 @@ const makeState = () => {
       offerHandles.map(offerHandle => offerHandleToAssays.get(offerHandle)),
     getExtentsFor: offerHandles =>
       offerHandles.map(offerHandle => offerHandleToExtents.get(offerHandle)),
-    getPayoutRulessFor: offerHandles =>
+    getPayoutRulesFor: offerHandles =>
       offerHandles.map(offerHandle =>
         offerHandleToPayoutRules.get(offerHandle),
       ),

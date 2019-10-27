@@ -164,7 +164,7 @@ interface ZoeGoverningContractFacet () {
    * containing the offer descriptions for the offers, in the same 
    * order as the offerHandles array.
    */
-  getPayoutRulessFor (offerHandles :List(Object)) -> (List(PayoutRules));
+  getPayoutRulesFor (offerHandles :List(Object)) -> (List(PayoutRules));
 
   /** Get the Zoe seatAssay */
   getSeatAssay ( ) -> (Assay);

@@ -96,6 +96,12 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.equals(bobInstallationId, installationHandle);
     t.deepEquals(terms.assays, assays);
 
+    const minBid = bobAuction.getMinimumBid();
+    const auctionedAssets = bobAuction.getAuctionedAssets();
+
+    t.deepEquals(minBid, assays[1].makeAssetDesc(3));
+    t.deepEquals(auctionedAssets, assays[0].makeAssetDesc(1));
+
     const bobOfferRules = harden({
       payoutRules: [
         {

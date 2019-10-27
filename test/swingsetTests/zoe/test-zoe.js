@@ -41,8 +41,8 @@ async function main(withSES, basedir, argv) {
 const expectedAutomaticRefundOkLog = [
   '=> alice, bob, carol and dave are set up',
   '=> alice.doCreateAutomaticRefund called',
-  '{"payoutRules":[{"kind":"offerExactly","assetDesc":{"label":{"assay":{},"allegedName":"moola"},"extent":3}},{"kind":"wantExactly","assetDesc":{"label":{"assay":{},"allegedName":"simoleans"},"extent":7}}],"exitRule":{"kind":"onDemand"}}',
-  '{"payoutRules":[{"kind":"wantExactly","assetDesc":{"label":{"assay":{},"allegedName":"moola"},"extent":15}},{"kind":"offerExactly","assetDesc":{"label":{"assay":{},"allegedName":"simoleans"},"extent":17}}],"exitRule":{"kind":"onDemand"}}',
+  'The offer was accepted',
+  'The offer was accepted',
   'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":0}',
   'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":17}',
   'aliceMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":3}',
@@ -84,8 +84,8 @@ test('zoe - automaticRefund - valid inputs - no SES', async t => {
 const expectedCoveredCallOkLog = [
   '=> alice, bob, carol and dave are set up',
   '=> alice.doCreateCoveredCall called',
-  'The offer has been accepted. Once the contract has been completed, please check your winnings',
-  'The offer has been accepted. Once the contract has been completed, please check your winnings',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":3}',
   'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":0}',
   'aliceMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":0}',

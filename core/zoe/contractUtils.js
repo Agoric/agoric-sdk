@@ -1,5 +1,4 @@
 import harden from '@agoric/harden';
-import Nat from '@agoric/nat';
 
 // These utilities are likely to be helpful to developers writing
 // smart contracts on Zoe.
@@ -46,21 +45,6 @@ const offerEqual = (extentOps, leftOffer, rightOffer) => {
 const makeEmptyExtents = extentOpsArray =>
   extentOpsArray.map(extentOps => extentOps.empty());
 
-// validRules is the rule portion of a offer description in array
-// form, such as ['offerExactly', 'wantExactly']
-const makeHasOkRules = validRules => offer =>
-  validRules.every((rule, i) => rule === offer[i].kind, true);
-
-// Vector addition of two extent arrays
-const vectorWith = (extentOpsArray, leftExtents, rightExtents) =>
-  leftExtents.map((leftQ, i) => extentOpsArray[i].with(leftQ, rightExtents[i]));
-
-// Vector subtraction of two extent arrays
-const vectorWithout = (extentOpsArray, leftExtents, rightExtents) =>
-  leftExtents.map((leftQ, i) =>
-    extentOpsArray[i].without(leftQ, rightExtents[i]),
-  );
-
 const makeAssetDesc = (extentOps, label, allegedExtent) => {
   extentOps.insistKind(allegedExtent);
   return harden({
@@ -84,17 +68,6 @@ const makePayoutRules = (extentOpsArray, labels, kinds, extents) =>
     }),
   );
 
-/**
- * These operations should be used for calculations with the
- * extents of basic fungible tokens.
- */
-const basicFungibleTokenOperations = harden({
-  add: (x, y) => Nat(x + y),
-  subtract: (x, y) => Nat(x - y),
-  multiply: (x, y) => Nat(x * y),
-  divide: (x, y) => Nat(Math.floor(x / y)),
-});
-
 const assetDescsToExtentsArray = (extentOps, assetDescs) =>
   assetDescs.map((assetDesc, i) =>
     assetDesc === undefined ? extentOps[i].empty() : assetDesc.extent,
@@ -105,10 +78,6 @@ export {
   mapArrayOnMatrix,
   offerEqual,
   makeEmptyExtents,
-  makeHasOkRules,
-  vectorWith,
-  vectorWithout,
-  basicFungibleTokenOperations,
   makeAssetDesc,
   makePayoutRules,
   toAssetDescMatrix,

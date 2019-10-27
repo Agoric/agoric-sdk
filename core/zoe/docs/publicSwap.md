@@ -10,25 +10,34 @@ behave opportunistically.
 
 ## Public Swap
 
-In the "public swap", anyone who has access to the swap instance can
-make an offer, no invites necessary.
+In the `publicSwap` contract, anyone who has access to the swap instance can
+make an offer, with no invites necessary.
 
 Let's say that Alice wants to create a swap that anyone can be the
-counter-party for. She creates a swap instance:
+counter-party for. She knows that the code for the swap has already
+been installed, so she can create a swap instance from the swap
+installation (`handle` is the unique, unforgeable identifier):
 
 ```js
-const installationHandle = zoe.install(publicSwapSrcs);
-const { instance: aliceSwap, instanceHandle } = await zoe.makeInstance(
+const { instance: swap, instanceHandle } = await zoe.makeInstance(
   installationHandle,
   { assays },
 );
 ```
 
-Then escrows her offer with Zoe and gets an escrowReceipt
-and a promise that resolves to her payout:
+Then she escrows her offer with Zoe. When she escrows, she passes in
+two things, the actual ERTP payments that are part of her offer, and
+an object called `offerRules`. The `offerRules` will be used by Zoe to
+protect Alice from the smart contract and other participants. The
+`offerRules` have two parts: `payoutRules`, which is used for
+enforcing offer-safety, and `exitRule,` which is used to enforce
+exit-safety. In this case, Alice's exit rule is `onDemand`, meaning
+that she can exit at any time. Once Alice escrows, she gets an
+escrowReceipt and a promise that resolves to her payout.
 
 ```js
-const alicePayoutRules = harden([
+const aliceOfferRules = harden(
+  payoutRules: [
   {
     kind: 'offerExactly',
     assetDesc: moolaAssay.makeAssetDesc(3),
@@ -37,19 +46,22 @@ const alicePayoutRules = harden([
     kind: 'wantExactly',
     assetDesc: simoleanAssay.makeAssetDesc(7),
   },
+  exitRule: {
+    kind: 'onDemand',
+  },
 ]);
 const alicePayments = [aliceMoolaPayment, undefined];
 const {
-  escrowReceipt: allegedAliceEscrowReceipt,
-  payout: alicePayoutP,
-} = await zoe.escrow(alicePayoutRules, alicePayments);
+  escrowReceipt,
+  payout,
+} = await zoe.escrow(aliceOfferRules, alicePayments);
 ```
 
-And then makes an offer using the escrowReceipt and tries to collect her winnings:
+Alice then makes an offer using the escrowReceipt and tries to collect her payout:
 
 ```js
-const aliceOfferResultP = aliceSwap.makeOffer(aliceEscrowReceipt);
-
+swap.makeFirstOffer(escrowReceipt);
+const payments = await payout;
 ```
 
 She then spreads the `instanceHandle` widely. Bob hears about Alice's
@@ -58,42 +70,48 @@ matches Alice's claims.
 
 ```js
 const {
-  instance: bobSwap,
-  installationHandle: bobInstallationHandle,
+  instance: swap,
+  installationHandle,
   terms,
 } = zoe.getInstance(instanceHandle);
 
-insist(bobInstallationHandle === installationHandle)`wrong installation`;
-insist(sameStructure(terms.assays, assays)`wrong assays`;
+// Bob does checks
+insist(installationHandle === swapInstallationHandle)`wrong installation`;
+insist(sameStructure(terms.assays, swapAssays)`wrong assays`;
 ```
 
-Bob decides to be the counter-party. He also escrows his payment and
-makes an offer in the same way as Alice, but his offer description is
-the opposite of Alice's:
+Bob decides to be the counter-party. He also escrows his payments and
+makes an offer in the same way as Alice, but his `offerRules` match Alice's:
 
 ```js
-const bobPayoutRules = harden([
-  {
-    kind: 'wantExactly',
-    assetDesc: bobAssays[0].makeAssetDesc(3),
-  },
-  {
-    kind: 'offerExactly',
-    assetDesc: bobAssays[1].makeAssetDesc(7),
-  },
-]);
+const bobOfferRules = harden({
+  payoutRules: [
+    {
+      kind: 'wantExactly',
+      assetDesc: bobAssays[0].makeAssetDesc(3),
+    },
+    {
+      kind: 'offerExactly',
+      assetDesc: bobAssays[1].makeAssetDesc(7),
+    },
+  ],
+  exitRule: {
+    kind: 'onDemand',
+  }
+);
 const bobPayments = [undefined, bobSimoleanPayment];
 
 const {
-  escrowReceipt: bobEscrowReceipt,
-  payout: bobPayoutP,
-} = await zoe.escrow(bobPayoutRules, bobPayments);
+  escrowReceipt,
+  payout,
+} = await zoe.escrow(bobOfferRules, bobPayments);
 
-const bobOfferResult = await bobSwap.makeOffer(bobEscrowReceipt);
+swap.matchOffer(escrowReceipt);
+payments = await payout;
 ```
 
-Now that Bob has made his offer, `alicePayoutP` resolves to an array
+Now that Bob has made his offer, Alice's `payout` resolves to an array
 of ERTP payments `[moolaPayment, simoleanPayment]` where the
 moolaPayment is empty, and the simoleanPayment has a balance of 7. 
 
-The same is true for Bob, but for his specific winnings.
+The same is true for Bob, but for his specific payout.

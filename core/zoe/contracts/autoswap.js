@@ -1,79 +1,34 @@
 import harden from '@agoric/harden';
-import Nat from '@agoric/nat';
+import { natSafeMath } from './helpers/safeMath';
+import { rejectOffer } from './helpers/userFlow';
+import { vectorWith, vectorWithout } from './helpers/extents';
+import { hasValidPayoutRules } from './helpers/payoutRules';
 
 import { makeMint } from '../../mint';
 
 export const makeContract = harden((zoe, terms) => {
-  // Liquidity tokens are a basic fungible token. We need to be able
-  // to instantiate a new zoe with 3 starting assays: two for
-  // the underlying rights to be swapped, and this liquidityAssay. So
-  // we will make the liquidityAssay now and return it to the user
-  // along with the `makeAutoSwap` function.
+  // The user passes in an array of two assays for the two kinds of
+  // assets to be swapped.
+  const startingAssays = terms.assays;
+
+  // There is also a third assay, the assay for the liquidity token,
+  // which is created in this contract. We will return all three as
+  // the canonical array of assays for this contract
   const liquidityMint = makeMint('liquidity');
   const liquidityAssay = liquidityMint.getAssay();
-  let poolOfferHandle;
+  const assays = [...startingAssays, liquidityAssay];
 
-  const assays = [...terms.assays, liquidityAssay];
+  let poolOfferHandle;
   let liqTokenSupply = 0;
 
-  const ejectPlayer = (
-    offerHandle,
-    message = `The offer was invalid. Please check your refund.`,
-  ) => {
-    zoe.complete(harden([offerHandle]));
-    return Promise.reject(new Error(`${message}`));
-  };
-
-  /**
-   * These operations should be used for calculations with the
-   * extents of basic fungible tokens.
-   */
-  const operations = harden({
-    add: (x, y) => Nat(x + y),
-    subtract: (x, y) => Nat(x - y),
-    multiply: (x, y) => Nat(x * y),
-    divide: (x, y) => Nat(Math.floor(x / y)),
-  });
-  const { add, subtract, multiply, divide } = operations;
-
-  // Vector addition of two extent arrays
-  const vectorWith = (extentOpsArray, leftExtents, rightExtents) =>
-    leftExtents.map((leftQ, i) =>
-      extentOpsArray[i].with(leftQ, rightExtents[i]),
-    );
-
-  // Vector subtraction of two extent arrays
-  const vectorWithout = (extentOpsArray, leftExtents, rightExtents) =>
-    leftExtents.map((leftQ, i) =>
-      extentOpsArray[i].without(leftQ, rightExtents[i]),
-    );
-
-  const isValidOfferAddingLiquidity = newPayoutRules =>
-    ['offerExactly', 'offerExactly', 'wantAtLeast'].every(
-      (kind, i) => kind === newPayoutRules[i].kind,
-    );
-
-  const isValidOfferRemovingLiquidity = newPayoutRules =>
-    ['wantAtLeast', 'wantAtLeast', 'offerExactly'].every(
-      (kind, i) => kind === newPayoutRules[i].kind,
-    );
-
-  const isValidOfferSwappingOfferFirst = newPayoutRules =>
-    ['offerExactly', 'wantAtLeast', 'wantAtLeast'].every(
-      (kind, i) => kind === newPayoutRules[i].kind,
-    );
-
-  const isValidOfferSwappingWantFirst = newPayoutRules =>
-    ['wantAtLeast', 'offerExactly', 'wantAtLeast'].every(
-      (kind, i) => kind === newPayoutRules[i].kind,
-    );
+  const { add, subtract, multiply, divide } = natSafeMath;
 
   const addLiquidity = async escrowReceipt => {
     const extentOpsArray = zoe.getExtentOpsArray();
-    const { offerHandle, offerRules } = await zoe.burnEscrowReceipt(
-      escrowReceipt,
-    );
-    const { payoutRules } = offerRules;
+    const {
+      offerHandle,
+      offerRules: { payoutRules },
+    } = await zoe.burnEscrowReceipt(escrowReceipt);
 
     // Create an empty offer to represent the extents of the
     // liquidity pool.
@@ -81,11 +36,13 @@ export const makeContract = harden((zoe, terms) => {
       poolOfferHandle = zoe.escrowEmptyOffer();
     }
 
-    const successMessage = 'Added liquidity.';
-    const rejectMessage = 'The offer to add liquidity was invalid.';
-
-    if (!isValidOfferAddingLiquidity(payoutRules)) {
-      return ejectPlayer(offerHandle, rejectMessage);
+    const kinds = ['offerExactly', 'offerExactly', 'wantAtLeast'];
+    if (!hasValidPayoutRules(kinds, assays, payoutRules)) {
+      return rejectOffer(
+        zoe,
+        offerHandle,
+        'The offer to add liquidity was invalid.',
+      );
     }
 
     const [oldPoolExtents, playerExtents] = zoe.getExtentsFor(
@@ -97,7 +54,7 @@ export const makeContract = harden((zoe, terms) => {
     // If the current supply is zero, start off by just taking the
     // extent at index 0 and using it as the extent for the
     // liquidity token.
-    const liquidityQOut =
+    const liquidityEOut =
       liqTokenSupply > 0
         ? divide(multiply(playerExtents[0], liqTokenSupply), oldPoolExtents[0])
         : playerExtents[0];
@@ -113,25 +70,29 @@ export const makeContract = harden((zoe, terms) => {
     // Set the liquidity token extent in the array of extents that
     // will be turned into payments sent back to the user.
     const newPlayerExtents = zoe.makeEmptyExtents();
-    newPlayerExtents[2] = liquidityQOut;
+    newPlayerExtents[2] = liquidityEOut;
 
     // Now we need to mint the liquidity tokens and make sure that the
     // `zoe` knows about them. We will need to create an offer
     // that escrows the liquidity tokens, and then drop the result.
-    const newPurse = liquidityMint.mint(liquidityQOut);
+    const newPurse = liquidityMint.mint(liquidityEOut);
     const newPayment = newPurse.withdrawAll();
-    liqTokenSupply += liquidityQOut;
+    liqTokenSupply += liquidityEOut;
 
-    const kinds = ['wantAtLeast', 'wantAtLeast', 'offerExactly'];
+    const liquidityOfferKinds = ['wantAtLeast', 'wantAtLeast', 'offerExactly'];
     const extents = [
       extentOpsArray[0].empty(),
       extentOpsArray[1].empty(),
-      liquidityQOut,
+      liquidityEOut,
     ];
     const exitRule = {
       kind: 'noExit',
     };
-    const liquidityOfferRules = zoe.makeOfferRules(kinds, extents, exitRule);
+    const liquidityOfferRules = zoe.makeOfferRules(
+      liquidityOfferKinds,
+      extents,
+      exitRule,
+    );
     const liquidityOfferHandle = await zoe.escrowOffer(
       liquidityOfferRules,
       harden([undefined, undefined, newPayment]),
@@ -145,7 +106,7 @@ export const makeContract = harden((zoe, terms) => {
     );
     // The newly created liquidityOffer is temporary and is dropped
     zoe.complete(harden([liquidityOfferHandle, offerHandle]));
-    return `${successMessage}`;
+    return 'Added liquidity.';
   };
 
   const removeLiquidity = async escrowReceipt => {
@@ -154,18 +115,21 @@ export const makeContract = harden((zoe, terms) => {
       offerRules: { payoutRules },
     } = await zoe.burnEscrowReceipt(escrowReceipt);
     const extentOpsArray = zoe.getExtentOpsArray();
-    const successMessage = 'Liquidity successfully removed.';
-    const rejectMessage = 'The offer to remove liquidity was invalid';
 
-    if (!isValidOfferRemovingLiquidity(payoutRules)) {
-      return ejectPlayer(offerHandle, rejectMessage);
+    const kinds = ['wantAtLeast', 'wantAtLeast', 'offerExactly'];
+    if (!hasValidPayoutRules(kinds, assays, payoutRules)) {
+      return rejectOffer(
+        zoe,
+        offerHandle,
+        'The offer to remove liquidity was invalid',
+      );
     }
     const offerHandles = harden([poolOfferHandle, offerHandle]);
     const [poolExtents, playerExtents] = zoe.getExtentsFor(offerHandles);
     const liquidityTokenIn = playerExtents[2];
 
-    const newPlayerExtents = poolExtents.map(poolQ =>
-      divide(multiply(liquidityTokenIn, poolQ), liqTokenSupply),
+    const newPlayerExtents = poolExtents.map(poolE =>
+      divide(multiply(liquidityTokenIn, poolE), liqTokenSupply),
     );
 
     const newPoolExtents = vectorWith(
@@ -181,52 +145,52 @@ export const makeContract = harden((zoe, terms) => {
       harden([newPlayerExtents, newPoolExtents]),
     );
     zoe.complete(harden([offerHandle]));
-    return `${successMessage}`;
+    return 'Liquidity successfully removed.';
   };
 
   /**
-   * `calculateSwap` contains the logic for calculating how many tokens
-   * should be given back to the user in exchange for what they sent in.
-   * It also calculates the fee as well as the new extents of the
-   * assets in the pool. `calculateSwapMath` is reused in several different
-   * places, including to check whether an offer is valid, getting the
-   * current price for an asset on user request, and to do the actual
-   * reallocation after an offer has been made. The `Q` in variable
-   * names stands for extent.
-   * @param  {number} tokenInPoolQ - the extent in the liquidity pool
+   * `calculateSwap` contains the logic for calculating how many
+   * tokens should be given back to the user in exchange for what they
+   * sent in. It also calculates the fee as well as the new extents of
+   * the assets in the pool. `calculateSwap` is reused in several
+   * different places, including to check whether an offer is valid,
+   * getting the current price for an asset on user request, and to do
+   * the actual reallocation after an offer has been made. The `E` in
+   * variable names stands for extent.
+   * @param  {number} tokenInPoolE - the extent in the liquidity pool
    * of the kind of token that was sent in.
-   * @param  {number} tokenOutPoolQ - the extent in the liquidity pool
+   * @param  {number} tokenOutPoolE - the extent in the liquidity pool
    * of the other kind of token, the kind that will be sent out.
-   * @param  {number} tokenInQ - the extent that was sent in to be
+   * @param  {number} tokenInE - the extent that was sent in to be
    * exchanged
-   * @param  {number} feeInTenthOfPercent=3 - the fee taken in tenths of
-   * a percent. The default is 0.3%. The fee is taken in terms of token
-   * A, which is the kind that was sent in.
+   * @param  {number} feeInTenthOfPercent=3 - the fee taken in tenths
+   * of a percent. The default is 0.3%. The fee is taken in terms of
+   * tokenIn, which is the kind that was sent in.
    */
   const calculateSwap = (
-    tokenInPoolQ,
-    tokenOutPoolQ,
-    tokenInQ,
+    tokenInPoolE,
+    tokenOutPoolE,
+    tokenInE,
     feeInTenthOfPercent = 3,
   ) => {
-    const feeTokenInQ = multiply(divide(tokenInQ, 1000), feeInTenthOfPercent);
-    const invariant = multiply(tokenInPoolQ, tokenOutPoolQ);
-    const newTokenInPoolQ = add(tokenInPoolQ, tokenInQ);
-    const newTokenOutPoolQ = divide(
+    const feeTokenInE = multiply(divide(tokenInE, 1000), feeInTenthOfPercent);
+    const invariant = multiply(tokenInPoolE, tokenOutPoolE);
+    const newTokenInPoolE = add(tokenInPoolE, tokenInE);
+    const newTokenOutPoolE = divide(
       invariant,
-      subtract(newTokenInPoolQ, feeTokenInQ),
+      subtract(newTokenInPoolE, feeTokenInE),
     );
-    const tokenOutQ = subtract(tokenOutPoolQ, newTokenOutPoolQ);
+    const tokenOutE = subtract(tokenOutPoolE, newTokenOutPoolE);
 
     // Note: We add the fee to the pool extent, but could do something
     // different.
     return {
-      tokenOutQ,
+      tokenOutE,
       // Since the fee is already added to the pool, this property
       // should only be used to report on fees and test.
-      feeQ: feeTokenInQ,
-      newTokenInPoolQ: add(newTokenInPoolQ, feeTokenInQ),
-      newTokenOutPoolQ,
+      feeE: feeTokenInE,
+      newTokenInPoolE: add(newTokenInPoolE, feeTokenInE),
+      newTokenOutPoolE,
     };
   };
 
@@ -250,23 +214,23 @@ export const makeContract = harden((zoe, terms) => {
   const getPrice = assetDescIn => {
     const [poolExtents] = zoe.getExtentsFor(harden([poolOfferHandle]));
     const extentOpsArray = zoe.getExtentOpsArray();
-    const [tokenAPoolQ, tokenBPoolQ] = poolExtents;
+    const [tokenAPoolE, tokenBPoolE] = poolExtents;
     const labels = zoe.getLabels();
-    const [tokenAInQ, tokenBInQ] = assetDescsToExtentsArray(
+    const [tokenAInE, tokenBInE] = assetDescsToExtentsArray(
       extentOpsArray,
       assetDescIn,
     );
 
     // offer tokenA, want tokenB
-    if (tokenAInQ > 0 && tokenBInQ === 0) {
-      const { tokenOutQ } = calculateSwap(tokenAPoolQ, tokenBPoolQ, tokenAInQ);
-      return makeAssetDesc(extentOpsArray[1], labels[1], tokenOutQ);
+    if (tokenAInE > 0 && tokenBInE === 0) {
+      const { tokenOutE } = calculateSwap(tokenAPoolE, tokenBPoolE, tokenAInE);
+      return makeAssetDesc(extentOpsArray[1], labels[1], tokenOutE);
     }
 
     // want tokenA, offer tokenB
-    if (tokenAInQ === 0 && tokenBInQ > 0) {
-      const { tokenOutQ } = calculateSwap(tokenBPoolQ, tokenAPoolQ, tokenBInQ);
-      return makeAssetDesc(extentOpsArray[0], labels[0], tokenOutQ);
+    if (tokenAInE === 0 && tokenBInE > 0) {
+      const { tokenOutE } = calculateSwap(tokenBPoolE, tokenAPoolE, tokenBInE);
+      return makeAssetDesc(extentOpsArray[0], labels[0], tokenOutE);
     }
 
     throw new Error(`The asset descriptions were invalid`);
@@ -283,26 +247,27 @@ export const makeContract = harden((zoe, terms) => {
     const [poolExtents, playerExtents] = zoe.getExtentsFor(
       harden([poolOfferHandle, offerHandle]),
     );
-    const [tokenAPoolQ, tokenBPoolQ] = poolExtents;
+    const [tokenAPoolE, tokenBPoolE] = poolExtents;
 
     // offer token A, want token B
-    if (isValidOfferSwappingOfferFirst(payoutRules)) {
-      const [tokenInQ, wantAtLeastQ] = playerExtents;
-      const { tokenOutQ, newTokenInPoolQ, newTokenOutPoolQ } = calculateSwap(
-        tokenAPoolQ,
-        tokenBPoolQ,
-        tokenInQ,
+    const kindsOfferFirst = ['offerExactly', 'wantAtLeast', 'wantAtLeast'];
+    if (hasValidPayoutRules(kindsOfferFirst, assays, payoutRules)) {
+      const [tokenInE, wantAtLeastE] = playerExtents;
+      const { tokenOutE, newTokenInPoolE, newTokenOutPoolE } = calculateSwap(
+        tokenAPoolE,
+        tokenBPoolE,
+        tokenInE,
       );
-      if (tokenOutQ < wantAtLeastQ) {
-        return ejectPlayer(offerHandle, rejectMessage);
+      if (tokenOutE < wantAtLeastE) {
+        return rejectOffer(zoe, offerHandle, rejectMessage);
       }
 
       const newPoolExtents = [
-        newTokenInPoolQ,
-        newTokenOutPoolQ,
+        newTokenInPoolE,
+        newTokenOutPoolE,
         poolExtents[2],
       ];
-      const newPlayerExtents = [0, tokenOutQ, 0];
+      const newPlayerExtents = [0, tokenOutE, 0];
 
       zoe.reallocate(
         harden([offerHandle, poolOfferHandle]),
@@ -313,23 +278,24 @@ export const makeContract = harden((zoe, terms) => {
     }
 
     // want token A, offer token B
-    if (isValidOfferSwappingWantFirst(payoutRules)) {
-      const [wantAtLeastQ, tokenInQ] = playerExtents;
-      const { tokenOutQ, newTokenInPoolQ, newTokenOutPoolQ } = calculateSwap(
-        tokenBPoolQ,
-        tokenAPoolQ,
-        tokenInQ,
+    const kindsWantFirst = ['wantAtLeast', 'offerExactly', 'wantAtLeast'];
+    if (hasValidPayoutRules(kindsWantFirst, assays, payoutRules)) {
+      const [wantAtLeastE, tokenInE] = playerExtents;
+      const { tokenOutE, newTokenInPoolE, newTokenOutPoolE } = calculateSwap(
+        tokenBPoolE,
+        tokenAPoolE,
+        tokenInE,
       );
-      if (tokenOutQ < wantAtLeastQ) {
-        return ejectPlayer(offerHandle, rejectMessage);
+      if (tokenOutE < wantAtLeastE) {
+        return rejectOffer(zoe, offerHandle, rejectMessage);
       }
 
       const newPoolExtents = [
-        newTokenOutPoolQ,
-        newTokenInPoolQ,
+        newTokenOutPoolE,
+        newTokenInPoolE,
         poolExtents[2],
       ];
-      const newPlayerExtents = [tokenOutQ, 0, 0];
+      const newPlayerExtents = [tokenOutE, 0, 0];
 
       zoe.reallocate(
         harden([offerHandle, poolOfferHandle]),
@@ -340,7 +306,7 @@ export const makeContract = harden((zoe, terms) => {
     }
 
     // Offer must be invalid
-    return ejectPlayer(offerHandle, rejectMessage);
+    return rejectOffer(zoe, offerHandle, rejectMessage);
   };
 
   // The API exposed to the user

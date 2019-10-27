@@ -91,7 +91,9 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       zoe,
     ).escrow(offerRules, offerPayments);
 
-    const { outcome, invite } = await E(coveredCall).init(aliceEscrowReceipt);
+    const { outcome, invite } = await E(coveredCall).makeFirstOffer(
+      aliceEscrowReceipt,
+    );
     log(outcome);
 
     await E(bobP).doCoveredCall(invite, instanceHandle);

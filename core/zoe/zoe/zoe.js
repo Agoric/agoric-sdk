@@ -69,17 +69,6 @@ const makeZoe = async (additionalEndowments = {}) => {
     return fn;
   };
 
-  const makeInstallationFromSrcs = srcs => {
-    const installation = {};
-    for (const fname of Object.getOwnPropertyNames(srcs)) {
-      if (typeof fname === 'string') {
-        const fn = evaluateStringToFn(srcs[fname]);
-        installation[fname] = fn;
-      }
-    }
-    return installation;
-  };
-
   const { adminState, readOnlyState } = await makeState();
 
   // Zoe has two different facets: the public Zoe service and the
@@ -114,7 +103,7 @@ const makeZoe = async (additionalEndowments = {}) => {
        * of the full extentsMatrix.
        */
       reallocate: (offerHandles, reallocation) => {
-        const payoutRulesArray = readOnlyState.getPayoutRulessFor(offerHandles);
+        const payoutRulesArray = readOnlyState.getPayoutRulesFor(offerHandles);
         const currentExtents = readOnlyState.getExtentsFor(offerHandles);
         const extentOpsArray = readOnlyState.getExtentOpsArrayForInstanceHandle(
           instanceHandle,
@@ -241,7 +230,7 @@ const makeZoe = async (additionalEndowments = {}) => {
         readOnlyState.getExtentOpsArrayForInstanceHandle(instanceHandle),
       getLabels: () => readOnlyState.getLabelsForInstanceHandle(instanceHandle),
       getExtentsFor: readOnlyState.getExtentsFor,
-      getPayoutRulessFor: readOnlyState.getPayoutRulessFor,
+      getPayoutRulesFor: readOnlyState.getPayoutRulesFor,
       getInviteAssay: () => inviteAssay,
       getEscrowReceiptAssay: () => escrowReceiptAssay,
     });
@@ -261,19 +250,11 @@ const makeZoe = async (additionalEndowments = {}) => {
     getPayoutAssay: () => payoutAssay,
     getAssaysForInstance: instanceHandle =>
       readOnlyState.getAssays(instanceHandle),
-    install: (srcs, moduleFormat = 'object') => {
-      let installation;
-      if (moduleFormat === 'object') {
-        installation = makeInstallationFromSrcs(srcs);
-      } else if (moduleFormat === 'getExport') {
-        // Evaluate the export function, and use the resulting
-        // module namespace as our installation.
-        const getExport = evaluateStringToFn(srcs);
-        installation = getExport();
-      } else {
-        insist(false)`\
-Unrecognized moduleFormat ${moduleFormat}`;
-      }
+    install: bundle => {
+      // Evaluate the export function, and use the resulting
+      // module namespace as our installation.
+      const getExport = evaluateStringToFn(bundle);
+      const installation = getExport();
       const installationHandle = adminState.addInstallation(installation);
       return installationHandle;
     },

@@ -130,7 +130,7 @@ test('zoe with automaticRefund', async t => {
     // In the 'automaticRefund' trivial contract, you just get your
     // payoutRules back when you make an offer. The effect of calling
     // makeOffer will vary widely depending on the smart  contract.
-    const aliceOfferMadeDesc = await aliceAutomaticRefund.makeOffer(
+    const aliceOutcome = await aliceAutomaticRefund.makeOffer(
       aliceEscrowReceipt,
     );
 
@@ -183,12 +183,10 @@ test('zoe with automaticRefund', async t => {
     );
 
     // 8: Bob makes an offer with his escrow receipt
-    const bobOfferMadeDesc = await bobAutomaticRefund.makeOffer(
-      bobEscrowReceipt,
-    );
+    const bobOutcome = await bobAutomaticRefund.makeOffer(bobEscrowReceipt);
 
-    t.equals(bobOfferMadeDesc, bobOfferRules);
-    t.equals(aliceOfferMadeDesc, aliceOfferRules);
+    t.equals(aliceOutcome, 'The offer was accepted');
+    t.equals(bobOutcome, 'The offer was accepted');
 
     const alicePayout = await alicePayoutP;
     t.throws(

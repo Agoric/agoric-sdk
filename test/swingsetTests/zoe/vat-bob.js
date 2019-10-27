@@ -110,7 +110,6 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const { extent: inviteExtent } = await E(invite).getBalance();
       insist(inviteExtent.instanceHandle === instanceHandle)`wrong instance`;
       insist(inviteExtent.installationHandle === installId)`wrong installation`;
-      insist(inviteExtent.status, 'acceptingOffers')`not accepting offers`;
       insist(
         sameStructure(
           inviteExtent.offerToBeMade,
@@ -139,7 +138,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       );
 
       // 8: Bob makes an offer with his escrow receipt
-      const bobOutcome = await E(unwrappedInvite).makeOffer(escrowReceipt);
+      const bobOutcome = await E(unwrappedInvite).matchOffer(escrowReceipt);
 
       log(bobOutcome);
 
