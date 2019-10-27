@@ -44,8 +44,8 @@ test('autoSwap with valid offers', async t => {
       terms: aliceTerms,
     } = await zoe.makeInstance(installationHandle, terms);
     const liquidityAssay = aliceAutoswap.getLiquidityAssay();
-    const allAssays = [...aliceTerms.assays, liquidityAssay];
-    t.deepEquals([...aliceTerms.assays, liquidityAssay], allAssays);
+    const allAssays = [...terms.assays, liquidityAssay];
+    t.deepEquals(aliceTerms.assays, allAssays);
 
     // 2: Alice adds liquidity
     // 10 moola = 5 simoleans at the time of the liquidity adding
