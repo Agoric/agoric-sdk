@@ -94,7 +94,7 @@ export function buildStorageInMemory(initialState = {}) {
     return data;
   }
 
-  return { storage, getState };
+  return { storage, getState, map: state };
 }
 
 export function buildHostDBInMemory(storage) {
