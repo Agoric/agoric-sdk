@@ -1,12 +1,10 @@
 import harden from '@agoric/harden';
-import evaluate from '@agoric/evaluate';
-import Nat from '@agoric/nat';
 
 import { insist } from '../../../util/insist';
+
 import { isOfferSafeForAll } from './isOfferSafe';
 import { areRightsConserved } from './areRightsConserved';
-import makePromise from '../../../util/makePromise';
-import { sameStructure } from '../../../util/sameStructure';
+import { evalContractCode } from './evalContractCode';
 
 import {
   escrowEmptyOffer,
@@ -41,27 +39,6 @@ const makeZoe = async (additionalEndowments = {}) => {
     makeEscrowReceiptConfig,
   );
   const escrowReceiptAssay = escrowReceiptMint.getAssay();
-
-  const defaultEndowments = {
-    harden,
-    makePromise,
-    insist,
-    sameStructure,
-    makeMint,
-    Nat,
-  };
-  const fullEndowments = Object.create(null, {
-    ...Object.getOwnPropertyDescriptors(defaultEndowments),
-    ...Object.getOwnPropertyDescriptors(additionalEndowments),
-  });
-  const evaluateStringToFn = functionSrcString => {
-    insist(typeof functionSrcString === 'string')`\n
-"${functionSrcString}" must be a string, but was ${typeof functionSrcString}`;
-    const fn = evaluate(functionSrcString, fullEndowments);
-    insist(typeof fn === 'function')`\n
-"${functionSrcString}" must be a string for a function, but produced ${typeof fn}`;
-    return fn;
-  };
 
   const { adminState, readOnlyState } = makeState();
 
@@ -243,11 +220,8 @@ const makeZoe = async (additionalEndowments = {}) => {
     getInviteAssay: () => inviteAssay,
     getAssaysForInstance: instanceHandle =>
       readOnlyState.getAssays(instanceHandle),
-    install: bundle => {
-      // Evaluate the export function, and use the resulting
-      // module namespace as our installation.
-      const getExport = evaluateStringToFn(bundle);
-      const installation = getExport();
+    install: code => {
+      const installation = evalContractCode(code, additionalEndowments);
       const installationHandle = adminState.addInstallation(installation);
       return installationHandle;
     },
