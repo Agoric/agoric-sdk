@@ -32,18 +32,18 @@ export const updatePurses = purses => ({
   payload: purses,
 });
 
-export const changePurse = (purse, isInputPurse) => ({
+export const changePurse = (purse, fieldNumber, freeVariable) => ({
   type: CHANGE_PURSE,
-  payload: { purse, isInputPurse },
+  payload: { purse, fieldNumber, freeVariable },
 });
 
 export const swapInputs = () => ({
   type: SWAP_INPUTS,
 });
 
-export const changeAmount = (amount, isInputAmount) => ({
+export const changeAmount = (amount, fieldNumber, freeVariable) => ({
   type: CHANGE_AMOUNT,
-  payload: { amount, isInputAmount },
+  payload: { amount, fieldNumber, freeVariable },
 });
 
 export const createOffer = () => ({

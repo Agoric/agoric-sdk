@@ -19,25 +19,31 @@ export function updateExchangeAmount(state, exchangeAmount) {
   return { ...state, exchangeAmount };
 }
 
-export function changePurse(state, { purse, isInputPurse }) {
+export function changePurse(state, { purse, fieldNumber, freeVariable = null }) {
   let { inputPurse, outputPurse } = state;
-  if (isInputPurse) {
+  if (fieldNumber === 0) {
     inputPurse = purse;
     if (inputPurse === outputPurse) {
       outputPurse = null;
     }
-  } else {
+  }
+  if (fieldNumber === 1) {
     outputPurse = purse;
     if (outputPurse === inputPurse) {
       inputPurse = null;
     }
   }
-  return { ...state, inputPurse, outputPurse };
+  return { ...state, inputPurse, outputPurse, freeVariable };
 }
-export function changeAmount(state, { amount, isInputAmount }) {
-  return isInputAmount
-    ? { ...state, inputAmount: amount, isInputAmount }
-    : { ...state, outputAmount: amount, isInputAmount };
+export function changeAmount(state, { amount, fieldNumber, freeVariable = null }) {
+  let { inputAmount, outputAmount } = state;
+  if (fieldNumber === 0) {
+    inputAmount = amount;
+  }
+  if (fieldNumber === 1) {
+    outputAmount = amount;
+  }
+  return { ...state, inputAmount, outputAmount, freeVariable };
 }
 export function swapInputs(state) {
   const {
@@ -45,7 +51,7 @@ export function swapInputs(state) {
     outputPurse,
     inputAmount,
     outputAmount,
-    isInputAmount,
+    freeVariable,
   } = state;
   return {
     ...state,
@@ -53,7 +59,7 @@ export function swapInputs(state) {
     outputPurse: inputPurse,
     inputAmount: outputAmount,
     outputAmount: inputAmount,
-    isInputAmount: !isInputAmount, // swap dependent and free variable
+    freeVariable: 1 - freeVariable, // swap dependent and free variable
   };
 }
 

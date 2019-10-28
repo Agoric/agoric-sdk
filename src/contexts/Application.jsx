@@ -9,6 +9,7 @@ import {
   updatePurses,
   serverConnected,
   serverDisconnected,
+  changeAmount,
   resetState,
 } from '../store/actions';
 import { reducer, createDefaultState } from '../store/reducer';
@@ -21,13 +22,21 @@ export function useApplicationContext() {
 
 export default function Provider({ children }) {
   const [state, dispatch] = useReducer(reducer, createDefaultState());
-  const { active } = state;
+  const {
+    active,
+    inputPurse,
+    outputPurse,
+    inputAmount,
+    outputAmount,
+    freeVariable,
+  } = state;
 
   useEffect(() => {
     function messageHandler(message) {
-      if (message.type === 'updateWalletPurses') {
-        const pursesState = JSON.parse(message.state);
-        dispatch(updatePurses(pursesState));
+      if (!message) return;
+      const { type, purses } = message;
+      if (type === 'updateWalletPurses' && purses) {
+        dispatch(updatePurses(JSON.parse(purses)));
       }
     }
 
@@ -54,40 +63,33 @@ export default function Provider({ children }) {
     }
   }, [active]);
 
-  const {
-    inputPurse,
-    outputPurse,
-    inputAmount,
-    outputAmount,
-    isInputAmount,
-  } = state;
-
   useEffect(() => {
     function messageHandler(message) {
-      if (message.type === 'updateAutoswapExchange') {
-        // const exchangeAmount = JSON.parse(message.state);
-        console.log(message.state);
+      if (!message) return;
+      const { type, extent } = message;
+      if (type === 'autoswapPrice' && extent) {
+        dispatch(changeAmount(extent, 1 - freeVariable));
       }
     }
 
-    if (inputPurse && outputPurse && inputAmount > 0 && outputAmount > 0) {
-      if (isInputAmount) {
-        doFetch({
-          type: 'getAutoswapExchange',
-          amount: inputAmount,
-          inputDesc: inputPurse.description,
-          outputDesc: outputPurse.description,
-        }).then(messageHandler);
-      } else {
-        doFetch({
-          type: 'getAutoswapExchange',
-          amount: outputAmount,
-          inputDesc: outputPurse.description,
-          outputDesc: inputPurse.description,
-        }).then(messageHandler);
-      }
+    if (inputPurse && outputPurse && freeVariable === 0 && inputAmount > 0) {
+      doFetch({
+        type: 'getAutoswapPrice',
+        extent: inputAmount,
+        desc0: inputPurse.description,
+        desc1: outputPurse.description,
+      }).then(messageHandler);
     }
-  }, [inputPurse, outputPurse, inputAmount, outputAmount, isInputAmount]);
+
+    if (inputPurse && outputPurse && freeVariable === 1 && outputAmount > 0) {
+      doFetch({
+        type: 'getAutoswapPrice',
+        extent: outputAmount,
+        desc0: outputPurse.description,
+        desc1: inputPurse.description,
+      }).then(messageHandler);
+    }
+  }, [inputPurse, outputPurse, inputAmount, outputAmount, freeVariable]);
 
   return (
     <ApplicationContext.Provider value={{ state, dispatch }}>

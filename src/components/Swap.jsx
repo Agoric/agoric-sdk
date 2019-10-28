@@ -76,15 +76,26 @@ export default function Swap() {
     inputAmount > 0 &&
     outputAmount > 0;
 
-  function handleChangePurse(event, isInput) {
+  function handleChangePurse(event, fieldNumber) {
     const purseName = event.target.value;
     const purse = purses.find(p => p.name === purseName);
-    dispatch(changePurse(purse, isInput));
+
+    let freeVariable = null;
+    if (inputAmount > 0 && outputAmount > 0) {
+      freeVariable = fieldNumber;
+    } else if (inputAmount > 0) {
+      freeVariable = 0;
+    } else if (outputAmount > 0) {
+      freeVariable = 1;
+    }
+
+    dispatch(changePurse(purse, fieldNumber, freeVariable));
   }
 
-  function handleChangeAmount(event, isInput) {
-    const amount = event.target.value;
-    dispatch(changeAmount(amount, isInput));
+  function handleChangeAmount(event, fieldNumber) {
+    const amount = parseInt(event.target.value, 10);
+    const freeVariable = fieldNumber;
+    dispatch(changeAmount(amount, fieldNumber, freeVariable));
   }
 
   function handleswapInputs() {
@@ -93,6 +104,7 @@ export default function Swap() {
 
   function getExchangeRate(decimal) {
     if (isValid) {
+debugger;
       const exchangeRate = (outputAmount / inputAmount).toFixed(decimal);
       return `Exchange rate: 1 ${inputPurse.description} = ${exchangeRate} ${outputPurse.description}`;
     }
@@ -125,8 +137,8 @@ export default function Swap() {
         <AssetInput
           title="Input"
           purses={purses}
-          onPurseChange={event => handleChangePurse(event, true)}
-          onAmountChange={event => handleChangeAmount(event, true)}
+          onPurseChange={event => handleChangePurse(event, 0)}
+          onAmountChange={event => handleChangeAmount(event, 0)}
           purse={inputPurse}
           amount={inputAmount}
           disabled={!connected}
@@ -145,8 +157,8 @@ export default function Swap() {
         <AssetInput
           title="Output"
           purses={purses}
-          onPurseChange={event => handleChangePurse(event, false)}
-          onAmountChange={event => handleChangeAmount(event, false)}
+          onPurseChange={event => handleChangePurse(event, 1)}
+          onAmountChange={event => handleChangeAmount(event, 1)}
           purse={outputPurse}
           amount={outputAmount}
           disabled={!connected}
@@ -154,7 +166,7 @@ export default function Swap() {
           amountError={outputAmountError}
         />
         <InputLabel className={classes.message}>
-          {connected && isValid && getExchangeRate()}
+          {connected && isValid && getExchangeRate(4)}
         </InputLabel>
       </Grid>
       <div className={classes.buttons}>

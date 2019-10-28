@@ -35,7 +35,7 @@ export function createDefaultState() {
     outputPurse: null,
     inputAmount: null,
     outputAmount: null,
-    isInputAmount: null,
+    freeVariable: null,
   };
 }
 
