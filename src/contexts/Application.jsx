@@ -25,9 +25,10 @@ export default function Provider({ children }) {
 
   useEffect(() => {
     function messageHandler(message) {
-      if (message.type === 'updateWalletPurses') {
-        const pursesState = JSON.parse(message.state);
-        dispatch(updatePurses(pursesState));
+      if (!message) return;
+      const { type, purses } = message;
+      if (type === 'updateWalletPurses' && purses) {
+        dispatch(updatePurses(JSON.parse(purses)));
       }
     }
 
