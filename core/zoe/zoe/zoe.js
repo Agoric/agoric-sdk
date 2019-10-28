@@ -5,7 +5,6 @@ import Nat from '@agoric/nat';
 import { insist } from '../../../util/insist';
 import { isOfferSafeForAll } from './isOfferSafe';
 import { areRightsConserved } from './areRightsConserved';
-import { makeEmptyExtents, makeAssetDesc } from '../contractUtils';
 import makePromise from '../../../util/makePromise';
 import { sameStructure } from '../../../util/sameStructure';
 
@@ -15,6 +14,8 @@ import {
   mintEscrowReceiptPayment,
   mintPayoutPayment,
   completeOffers,
+  makeAssetDesc,
+  makeEmptyExtents,
 } from './zoeUtils';
 
 import { makeState } from './state';

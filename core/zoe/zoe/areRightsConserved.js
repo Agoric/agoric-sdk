@@ -1,4 +1,13 @@
-import { transpose } from '../contractUtils';
+/**
+ * Transpose an array of arrays
+ * @param {matrix} matrix
+ */
+// https://stackoverflow.com/questions/17428587/transposing-a-2d-array-in-javascript/41772644#41772644
+const transpose = matrix =>
+  matrix.reduce(
+    (acc, row) => row.map((_, i) => [...(acc[i] || []), row[i]]),
+    [],
+  );
 
 /**
  * The columns in a `extents` matrix are per assay, and the rows
@@ -48,4 +57,4 @@ function areRightsConserved(
   return isEqualPerAssay(extentOpsArray, sumsPrevExtents, sumsNewExtents);
 }
 
-export { areRightsConserved };
+export { areRightsConserved, transpose };

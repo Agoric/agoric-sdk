@@ -182,7 +182,7 @@ test('isOfferSafeForOffer - more than wantExactly', t => {
 });
 
 // The user gets more than they wanted - wantAtLeast
-test.only('isOfferSafeForOffer - more than wantAtLeast', t => {
+test('isOfferSafeForOffer - more than wantAtLeast', t => {
   try {
     const { extentOps, assetDescOps } = setup();
     const payoutRules = [

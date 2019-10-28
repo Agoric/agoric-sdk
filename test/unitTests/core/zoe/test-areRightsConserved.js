@@ -1,7 +1,20 @@
 import { test } from 'tape-promise/tape';
 
-import { areRightsConserved } from '../../../../core/zoe/zoe/areRightsConserved';
+import {
+  areRightsConserved,
+  transpose,
+} from '../../../../core/zoe/zoe/areRightsConserved';
 import { setup } from './setupBasicMints';
+
+test('transpose', t => {
+  try {
+    t.deepEquals(transpose([[1, 2, 3], [4, 5, 6]]), [[1, 4], [2, 5], [3, 6]]);
+  } catch (e) {
+    t.assert(false, e);
+  } finally {
+    t.end();
+  }
+});
 
 // rights are conserved for Nat extents
 test(`areRightsConserved - true for nat extents`, t => {

@@ -3,7 +3,6 @@ import { E } from '@agoric/eventual-send';
 
 import makePromise from '../../../util/makePromise';
 import { insist } from '../../../util/insist';
-import { toAssetDescMatrix } from '../contractUtils';
 
 // These utilities are used within Zoe itself. Importantly, there is
 // no ambient authority for these utilities. Any authority must be
@@ -164,6 +163,25 @@ const makePayments = (purses, assetDescsMatrix) => {
   return Promise.all(paymentsMatrix);
 };
 
+// an array of empty extents per extentOps
+const makeEmptyExtents = extentOpsArray =>
+  extentOpsArray.map(extentOps => extentOps.empty());
+
+const makeAssetDesc = (extentOps, label, allegedExtent) => {
+  extentOps.insistKind(allegedExtent);
+  return harden({
+    label,
+    extent: allegedExtent,
+  });
+};
+
+// Transform a extentsMatrix to a matrix of assetDescs given an array
+// of the associated assetDescOps.
+const toAssetDescMatrix = (extentOps, labels, extentsMatrix) =>
+  extentsMatrix.map(extents =>
+    extents.map((extent, i) => makeAssetDesc(extentOps[i], labels[i], extent)),
+  );
+
 // Note: offerHandles must be for the same assays.
 const completeOffers = async (adminState, readOnlyState, offerHandles) => {
   const { inactive } = readOnlyState.getStatusFor(offerHandles);
@@ -189,4 +207,7 @@ export {
   mintEscrowReceiptPayment,
   mintPayoutPayment,
   completeOffers,
+  makeEmptyExtents,
+  makeAssetDesc,
+  toAssetDescMatrix,
 };

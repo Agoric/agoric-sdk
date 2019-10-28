@@ -2,7 +2,6 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
 import { makeSeatMint } from '../../../core/seatMint';
-import { offerEqual } from '../../../core/zoe/contractUtils';
 import { setup } from './zoe/setupBasicMints';
 import { insist } from '../../../util/insist';
 
@@ -13,17 +12,14 @@ import { insist } from '../../../util/insist';
 
 test('seatMint', async t => {
   try {
-    const { assays, extentOps } = setup();
+    const { assays } = setup();
     const { seatMint, addUseObj } = makeSeatMint();
 
     const makeUseObj = extent => {
       insist(extent !== null)`the asset is empty or already used`;
       if (extent.offerToBeMade) {
         return harden({
-          makeOffer: offer => {
-            insist(
-              offerEqual(extentOps, offer, extent.offerToBeMade.payoutRules),
-            );
+          makeOffer: _offer => {
             // do things with the offer
             return true;
           },
