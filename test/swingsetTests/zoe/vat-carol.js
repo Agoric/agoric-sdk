@@ -60,52 +60,6 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       await showPaymentBalance(moolaPurseP, 'carolMoolaPurse');
       await showPaymentBalance(simoleanPurseP, 'carolSimoleanPurse;');
     },
-    doPublicSwap: async (instanceHandle, payoutPaymentP) => {
-      const moolaAssay = await E(moolaPurseP).getAssay();
-      const simoleanAssay = await E(simoleanPurseP).getAssay();
-
-      const assays = harden([moolaAssay, simoleanAssay]);
-
-      const payoutAssay = await E(zoe).getPayoutAssay();
-
-      const offerRules = harden({
-        payoutRules: [
-          {
-            kind: 'offerExactly',
-            assetDesc: await E(assays[0]).makeAssetDesc(3),
-          },
-          {
-            kind: 'wantExactly',
-            assetDesc: await E(assays[1]).makeAssetDesc(7),
-          },
-        ],
-        exitRule: {
-          kind: 'onDemand',
-        },
-      });
-
-      const carolPayoutPaymentP = await E(payoutAssay).claimAll(payoutPaymentP);
-      const { extent } = await E(carolPayoutPaymentP).getBalance();
-      insist(extent.instanceHandle === instanceHandle)`same instance`;
-      insist(sameStructure(extent.offerRules, offerRules))`same offerRules`;
-      const carolPayoutObj = await E(carolPayoutPaymentP).unwrap();
-      const payoutP = await E(carolPayoutObj).getPayout();
-
-      const { installationHandle, terms } = await E(zoe).getInstance(
-        instanceHandle,
-      );
-
-      insist(installationHandle === installId)`wrong installation`;
-      insist(sameStructure(assays, terms.assays))`assays were not as expected`;
-
-      const carolResult = await payoutP;
-
-      await E(moolaPurseP).depositAll(carolResult[0]);
-      await E(simoleanPurseP).depositAll(carolResult[1]);
-
-      await showPaymentBalance(moolaPurseP, 'carolMoolaPurse');
-      await showPaymentBalance(simoleanPurseP, 'carolSimoleanPurse;');
-    },
   });
 };
 

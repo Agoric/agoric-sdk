@@ -13,7 +13,6 @@ test('zoe - publicSwap', async t => {
     const assays = defaultAssays.slice(0, 2);
     const zoe = await makeZoe({ require });
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
-    const payoutAssay = zoe.getPayoutAssay();
     // pack the contract
     const { source, moduleFormat } = await bundleSource(publicSwapRoot);
     // install the contract
@@ -22,18 +21,14 @@ test('zoe - publicSwap', async t => {
     // Setup Alice
     const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
+    const aliceSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
 
     // Setup Bob
     const bobMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
     const bobSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(7));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
-    // SetupCarol
-    const carolMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-    const carolSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
-
     // 1: Alice creates a publicSwap instance
-
     const { instance: aliceSwap, instanceHandle } = await zoe.makeInstance(
       installationHandle,
       { assays },
@@ -58,7 +53,7 @@ test('zoe - publicSwap', async t => {
     const alicePayments = [aliceMoolaPayment, undefined];
     const {
       escrowReceipt: allegedAliceEscrowReceipt,
-      makePayoutPaymentObj,
+      payout: alicePayoutP,
     } = await zoe.escrow(aliceOfferRules, alicePayments);
 
     // 3: Alice does a claimAll on the escrowReceipt payment. It's
@@ -69,19 +64,6 @@ test('zoe - publicSwap', async t => {
 
     // 4: Alice initializes the swap with her escrow receipt
     const aliceOfferResult = await aliceSwap.makeFirstOffer(aliceEscrowReceipt);
-
-    // Alice gives Carol her payout by creating a payout payment.
-    // Carol is able to inspect the payout payment to see what she can
-    // expect.
-
-    const alicePayoutPayment = makePayoutPaymentObj.makePayoutPayment();
-
-    const carolPayoutPayment = await payoutAssay.claimAll(alicePayoutPayment);
-    const payoutPaymentExtent = carolPayoutPayment.getBalance().extent;
-    t.deepEquals(payoutPaymentExtent.instanceHandle, instanceHandle);
-    t.deepEquals(payoutPaymentExtent.offerRules, aliceOfferRules);
-    const carolPayoutObj = await carolPayoutPayment.unwrap();
-    const carolPayoutP = carolPayoutObj.getPayout();
 
     // 5: Alice spreads the instanceHandle far and wide with instructions
     // on how to use it and Bob decides he wants to be the
@@ -140,20 +122,20 @@ test('zoe - publicSwap', async t => {
       'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
     const bobPayout = await bobPayoutP;
-    const carolPayout = await carolPayoutP;
+    const alicePayout = await alicePayoutP;
 
-    // Carol gets what Alice wanted
+    // Alice gets what Alice wanted
     t.deepEquals(
-      carolPayout[1].getBalance(),
+      alicePayout[1].getBalance(),
       aliceOfferRules.payoutRules[1].assetDesc,
     );
 
-    // Carol didn't get any of what Alice put in
-    t.equals(carolPayout[0].getBalance().extent, 0);
+    // Alice didn't get any of what Alice put in
+    t.equals(alicePayout[0].getBalance().extent, 0);
 
-    // 13: Carol deposits her payout to ensure she can
-    await carolMoolaPurse.depositAll(carolPayout[0]);
-    await carolSimoleanPurse.depositAll(carolPayout[1]);
+    // 13: Alice deposits her payout to ensure she can
+    await aliceMoolaPurse.depositAll(alicePayout[0]);
+    await aliceSimoleanPurse.depositAll(alicePayout[1]);
 
     // 14: Bob deposits his original payments to ensure he can
     await bobMoolaPurse.depositAll(bobPayout[0]);
@@ -162,8 +144,8 @@ test('zoe - publicSwap', async t => {
     // Assert that the correct payouts were received.
     // Alice had 3 moola and 0 simoleans.
     // Bob had 0 moola and 7 simoleans.
-    t.equals(carolMoolaPurse.getBalance().extent, 0);
-    t.equals(carolSimoleanPurse.getBalance().extent, 7);
+    t.equals(aliceMoolaPurse.getBalance().extent, 0);
+    t.equals(aliceSimoleanPurse.getBalance().extent, 7);
     t.equals(bobMoolaPurse.getBalance().extent, 3);
     t.equals(bobSimoleanPurse.getBalance().extent, 0);
   } catch (e) {

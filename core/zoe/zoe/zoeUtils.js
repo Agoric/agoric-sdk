@@ -7,25 +7,6 @@ import { insist } from '../../../util/insist';
 // These utilities are used within Zoe itself. Importantly, there is
 // no ambient authority for these utilities. Any authority must be
 // passed in, making it easy to see which functions can affect what.
-const mintPayoutPayment = (
-  seatMint,
-  addUseObj,
-  offerRules,
-  result,
-  instanceHandle,
-) => {
-  const payoutExtent = harden({
-    offerHandle: harden({}),
-    offerRules,
-    instanceHandle,
-  });
-  const payoutPurseP = seatMint.mint(payoutExtent);
-  const seat = harden({
-    getPayout: () => result.p,
-  });
-  addUseObj(payoutExtent.offerHandle, seat);
-  return payoutPurseP.withdrawAll();
-};
 
 const mintEscrowReceiptPayment = (
   escrowReceiptMint,
@@ -205,7 +186,6 @@ export {
   escrowEmptyOffer,
   escrowOffer,
   mintEscrowReceiptPayment,
-  mintPayoutPayment,
   completeOffers,
   makeEmptyExtents,
   makeAssetDesc,

@@ -12,7 +12,6 @@ import {
   escrowEmptyOffer,
   escrowOffer,
   mintEscrowReceiptPayment,
-  mintPayoutPayment,
   completeOffers,
   makeAssetDesc,
   makeEmptyExtents,
@@ -36,12 +35,6 @@ const makeZoe = async (additionalEndowments = {}) => {
     seatAssay: inviteAssay,
     addUseObj: inviteAddUseObj,
   } = makeSeatMint('zoeInvite');
-
-  const {
-    seatMint: payoutMint,
-    seatAssay: payoutAssay,
-    addUseObj: payoutAddUseObj,
-  } = makeSeatMint('zoePayout');
 
   const escrowReceiptMint = makeMint(
     'zoeEscrowReceipts',
@@ -248,7 +241,6 @@ const makeZoe = async (additionalEndowments = {}) => {
   const zoeService = harden({
     getEscrowReceiptAssay: () => escrowReceiptAssay,
     getInviteAssay: () => inviteAssay,
-    getPayoutAssay: () => payoutAssay,
     getAssaysForInstance: instanceHandle =>
       readOnlyState.getAssays(instanceHandle),
     install: bundle => {
@@ -334,27 +326,6 @@ const makeZoe = async (additionalEndowments = {}) => {
       const escrowResult = {
         escrowReceipt: escrowReceiptPaymentP,
         payout: result.p,
-        makePayoutPaymentObj: harden({
-          makePayoutPayment: () => {
-            // if offer has already completed, we cannot make a payment
-            const { active } = readOnlyState.getStatusFor(
-              harden([offerHandle]),
-            );
-            if (active.length !== 1) {
-              throw new Error('offer has already completed');
-            }
-            result.res([]);
-            const newResult = makePromise();
-            adminState.replaceResult(offerHandle, newResult);
-            return mintPayoutPayment(
-              payoutMint,
-              payoutAddUseObj,
-              offerRules,
-              newResult,
-              adminState.getInstanceHandleForOfferHandle(offerHandle),
-            );
-          },
-        }),
       };
       const { exitRule = { kind: 'onDemand' } } = offerRules;
       if (exitRule.kind === 'afterDeadline') {

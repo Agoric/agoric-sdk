@@ -144,9 +144,6 @@ const makeState = () => {
       offerHandleToResult.init(offerHandle, result);
       activeOffers.add(offerHandle);
     },
-    replaceResult: (offerHandle, newResult) => {
-      offerHandleToResult.set(offerHandle, newResult);
-    },
     recordUsedInInstance: (instanceHandle, offerHandle) =>
       offerHandleToInstanceHandle.init(offerHandle, instanceHandle),
     getInstanceHandleForOfferHandle: offerHandle => {
