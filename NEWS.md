@@ -1,5 +1,11 @@
 User-visible changes in SwingSet:
 
+## Release 0.2.0 (27-Oct-2019)
+
+* add TimerVat (#178)
+* buildStorageInMemory: expose the Map too (#144)
+
+
 ## Release 0.1.0 (16-Oct-2019)
 
 * update to SES-0.6.4 to fix a sandbox breach
