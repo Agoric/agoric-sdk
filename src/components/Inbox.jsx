@@ -54,15 +54,17 @@ const GreenIconButton = withStyles(theme => ({
 
 const RedChip = withStyles(theme => ({
   root: {
-    color: theme.palette.getContrastText(red[500]),
-    backgroundColor: red[500],
+    width: theme.spacing(10),
+    color: red[800],
+    borderColor: red[800],
   },
 }))(Chip);
 
 const GreenChip = withStyles(theme => ({
   root: {
-    color: theme.palette.getContrastText(green[500]),
-    backgroundColor: green[500],
+    width: theme.spacing(10),
+    color: green[800],
+    borderColor: green[800],
   },
 }))(Chip);
 
@@ -102,8 +104,8 @@ export default function Inbox() {
               date,
               name0,
               name1,
-              desc0,
-              desc1,
+              assetId0,
+              assetId1,
               extent0,
               extent1,
               status,
@@ -124,7 +126,7 @@ export default function Inbox() {
                       <Box component="span" fontWeight={800}>
                         {extent0}
                         &nbsp;
-                        {desc0}
+                        {assetId0}
                         &nbsp;
                       </Box>
                       from&nbsp;
@@ -135,7 +137,7 @@ export default function Inbox() {
                       <Box component="span" fontWeight={800}>
                         {extent1}
                         &nbsp;
-                        {desc1}
+                        {assetId1}
                         &nbsp;
                       </Box>
                       into&nbsp;
@@ -144,8 +146,8 @@ export default function Inbox() {
                   </Grid>
                 </Grid>
                 <ListItemSecondaryAction className={classes.buttons}>
-                  {status === 'reject' && <RedChip label="Rejected" />}
-                  {status === 'confirm' && <GreenChip label="Confirmed" />}
+                  {status === 'reject' && <RedChip  variant="outlined" label="Rejected" />}
+                  {status === 'confirm' && <GreenChip  variant="outlined" label="Confirmed" />}
                   {!status && (
                     <>
                       <RedIconButton

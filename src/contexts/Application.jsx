@@ -27,11 +27,12 @@ export default function Provider({ children }) {
   useEffect(() => {
     function messageHandler(message) {
       if (!message) return;
-      if (message.type === 'walletUpdatePurses') {
-        dispatch(updatePurses(JSON.parse(message.state)));
+      const { type, data } = message;
+      if (type === 'walletUpdatePurses') {
+        dispatch(updatePurses(JSON.parse(data)));
       }
-      if (message.type === 'walletUpdateInbox') {
-        dispatch(updateInbox(JSON.parse(message.state)));
+      if (type === 'walletUpdateInbox') {
+        dispatch(updateInbox(JSON.parse(data)));
       }
     }
 

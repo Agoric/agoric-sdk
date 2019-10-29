@@ -24,7 +24,7 @@ export function updateInbox(state, inbox) {
 export function rejectOffer(state, date) {
   doFetch({
     type: 'walletRejectOffer',
-    date,
+    data: date,
   }); // todo toast
 
   return state;
@@ -32,7 +32,7 @@ export function rejectOffer(state, date) {
 export function confirmOffer(state, date) {
   doFetch({
     type: 'walletConfirmOffer',
-    date,
+    data: date,
   }); // todo toast
 
   return state;
