@@ -32,12 +32,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Agoric/acorn-infix-bang"
+    "url": "https://github.com/Agoric/acorn-eventual-send"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/Agoric/acorn-infix-bang/issues"
+    "url": "https://github.com/Agoric/acorn-eventual-send/issues"
   },
-  "homepage": "https://github.com/acorn-infix-bang#readme"
+  "homepage": "https://github.com/acorn-eventual-send#readme"
 }
