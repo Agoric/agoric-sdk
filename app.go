@@ -205,7 +205,7 @@ func NewSwingSetApp(
 		staking.NewAppModule(app.stakingKeeper, app.distrKeeper, app.accountKeeper, app.supplyKeeper),
 	)
 
-	app.mm.SetOrderBeginBlockers(distr.ModuleName, slashing.ModuleName)
+	app.mm.SetOrderBeginBlockers(distr.ModuleName, slashing.ModuleName,  swingset.ModuleName)
 	app.mm.SetOrderEndBlockers(staking.ModuleName)
 
 	// Sets the order of Genesis - Order matters, genutil is to always come last

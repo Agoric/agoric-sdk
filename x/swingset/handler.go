@@ -22,6 +22,13 @@ type deliverInboundAction struct {
 	BlockTime   int64           `json:"blockTime"`
 }
 
+type beginBlockAction struct {
+	Type        string `json:"type"`
+	StoragePort int    `json:"storagePort"`
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
+}
+
 // FIXME: Get rid of this global in exchange for a field on some object.
 var NodeMessageSender func(needReply bool, str string) (string, error)
 
@@ -47,6 +54,10 @@ func NewHandler(keeper Keeper) sdk.Handler {
 			return sdk.ErrUnknownRequest(errMsg).Result()
 		}
 	}
+}
+
+func BeginBlock(ctx sdk.Context, keeper Keeper) {
+	handleMsgBeginBlock(ctx, keeper)
 }
 
 type PortHandler interface {
@@ -117,4 +128,32 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 		return sdk.ErrInternal(err.Error()).Result()
 	}
 	return sdk.Result{} // return
+}
+
+func handleMsgBeginBlock(ctx sdk.Context, keeper Keeper) {
+	storageHandler := NewStorageHandler(ctx, keeper)
+
+	// Allow the storageHandler to consume unlimited gas.
+	storageHandler.Context = storageHandler.Context.WithGasMeter(sdk.NewInfiniteGasMeter())
+
+	newPort := RegisterPortHandler(storageHandler)
+
+	action := &beginBlockAction{
+		Type:        "BEGIN_BLOCK",
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
+		StoragePort: newPort,
+	}
+	b, err := json.Marshal(action)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error marshalling", err)
+		return
+	}
+
+	fmt.Fprintln(os.Stderr, "About to call SwingSet")
+
+	out, err := CallToNode(string(b))
+	fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	UnregisterPortHandler(newPort)
+	return
 }
