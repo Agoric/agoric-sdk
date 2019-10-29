@@ -280,10 +280,15 @@ When a client is started up, it has a few items in a record named home.
 
 * gallery: the Pixel Gallery, described above
 * purse: a purse that can hold pixel Dust
+* moolah: a purse that starts out with 1000 `moolah`
 * handoffService: a handoff service, which makes it possible to pass capabilities between vats
 * canvasStatePublisher: a service with the message subscribe(callback)
-* uploads: a private directory of contracts you've uploaded
-* registry: a public directory for published objects
+* [uploads](./lib/ag-solo/contracts/README-contract.md): a private directory
+ of contracts you've uploaded
+* registrar: a public directory for published objects
+* localTimerService and chainTimerService: tools for scheduling
+* [zoe](https://github.com/Agoric/ERTP/core/zoe/docs/zoe.md): support for contracts with Offer-Safety Enforcement
+* [contractHost](https://github.com/Agoric/Documentation): secure smart contracts
 
 #### handoffService
 
