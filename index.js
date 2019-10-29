@@ -52,7 +52,7 @@ function plugin(options, Parser) {
         args.push(this.parseExpression());
         this.expect(tt.bracketR);
       } else if (this.eat(tt.parenL)) {
-        // x ~. (y, z) := HandledPromise.apply(base, [y, z])
+        // x ~. (y, z) := HandledPromise.applyFunction(base, [y, z])
         // No argument other than base.
         eatenParenL = true;
       } else {
@@ -67,8 +67,8 @@ function plugin(options, Parser) {
 
       if (eatenParenL || this.eat(tt.parenL)) {
         // x ~. [i](y, z) := HandledPromise.applyMethod(base, i, [y, z])
-        // x ~. (y, z) := HandledPromise.apply(base, [y, z]);
-        method = eatenParenL ? 'apply' : 'applyMethod';
+        // x ~. (y, z) := HandledPromise.applyFunction(base, [y, z]);
+        method = eatenParenL ? 'applyFunction' : 'applyMethod';
         // The rest of the arguments are in parens.
         let expr = this.startNode();
         expr.elements = this.parseCallExpressionArguments(tt.parenR, false);
