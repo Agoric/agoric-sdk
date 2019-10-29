@@ -13,8 +13,8 @@ function build(E, log) {
   async function testAliceChangesColor(aliceMaker, gallery) {
     log('starting testAliceChangesColor');
     const aliceP = E(aliceMaker).make(gallery.userFacet);
-    const alicePixelAssetDesc = await E(aliceP).doChangeColor();
-    const rawPixel = alicePixelAssetDesc.extent[0];
+    const alicePixelUnits = await E(aliceP).doChangeColor();
+    const rawPixel = alicePixelUnits.extent[0];
     log(
       `current color ${gallery.userFacet.getPixelColor(
         rawPixel.x,

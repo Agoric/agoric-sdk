@@ -4,7 +4,7 @@ import { rejectOffer } from './helpers/userFlow';
 import { vectorWith, vectorWithout } from './helpers/extents';
 import {
   hasValidPayoutRules,
-  makeAssetDesc,
+  makeUnits,
   makeOfferRules,
 } from './helpers/offerRules';
 
@@ -199,35 +199,32 @@ export const makeContract = harden((zoe, terms) => {
     };
   };
 
-  const assetDescsToExtentsArray = (extentOps, assetDescs) =>
-    assetDescs.map((assetDesc, i) =>
-      assetDesc === undefined ? extentOps[i].empty() : assetDesc.extent,
+  const unitsToExtentsArray = (extentOps, unitsArray) =>
+    unitsArray.map((units, i) =>
+      units === undefined ? extentOps[i].empty() : units.extent,
     );
 
   /**
-   * `getPrice` calculates the result of a trade, given a certain assetDesc
+   * `getPrice` calculates the result of a trade, given a certain units
    * of tokens in.
    */
-  const getPrice = assetDescIn => {
+  const getPrice = unitsIn => {
     const [poolExtents] = zoe.getExtentsFor(harden([poolOfferHandle]));
     const extentOpsArray = zoe.getExtentOpsArray();
     const [tokenAPoolE, tokenBPoolE] = poolExtents;
     const labels = zoe.getLabels();
-    const [tokenAInE, tokenBInE] = assetDescsToExtentsArray(
-      extentOpsArray,
-      assetDescIn,
-    );
+    const [tokenAInE, tokenBInE] = unitsToExtentsArray(extentOpsArray, unitsIn);
 
     // offer tokenA, want tokenB
     if (tokenAInE > 0 && tokenBInE === 0) {
       const { tokenOutE } = calculateSwap(tokenAPoolE, tokenBPoolE, tokenAInE);
-      return makeAssetDesc(extentOpsArray[1], labels[1], tokenOutE);
+      return makeUnits(extentOpsArray[1], labels[1], tokenOutE);
     }
 
     // want tokenA, offer tokenB
     if (tokenAInE === 0 && tokenBInE > 0) {
       const { tokenOutE } = calculateSwap(tokenBPoolE, tokenAPoolE, tokenBInE);
-      return makeAssetDesc(extentOpsArray[0], labels[0], tokenOutE);
+      return makeUnits(extentOpsArray[0], labels[0], tokenOutE);
     }
 
     throw new Error(`The asset descriptions were invalid`);

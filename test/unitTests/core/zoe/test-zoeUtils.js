@@ -1,26 +1,18 @@
 import { test } from 'tape-promise/tape';
 
 import {
-  toAssetDescMatrix,
+  toUnitsMatrix,
   makeEmptyExtents,
 } from '../../../../core/zoe/zoe/zoeUtils';
 import { setup } from './setupBasicMints';
 
-test('toAssetDescMatrix', t => {
+test('toUnitsMatrix', t => {
   try {
-    const { extentOps, labels, assetDescOps } = setup();
+    const { extentOps, labels, unitOps } = setup();
     const matrix = [[1, 2, 3], [4, 5, 6]];
-    t.deepEquals(toAssetDescMatrix(extentOps, labels, matrix), [
-      [
-        assetDescOps[0].make(1),
-        assetDescOps[1].make(2),
-        assetDescOps[2].make(3),
-      ],
-      [
-        assetDescOps[0].make(4),
-        assetDescOps[1].make(5),
-        assetDescOps[2].make(6),
-      ],
+    t.deepEquals(toUnitsMatrix(extentOps, labels, matrix), [
+      [unitOps[0].make(1), unitOps[1].make(2), unitOps[2].make(3)],
+      [unitOps[0].make(4), unitOps[1].make(5), unitOps[2].make(6)],
     ]);
   } catch (e) {
     t.assert(false, e);

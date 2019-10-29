@@ -5,15 +5,15 @@ import harden from '@agoric/harden';
 
 import { insist } from '../util/insist';
 import { makeBasicFungibleConfig } from './config/basicFungibleConfig';
-import { makeAssetDescOps } from './assetDescOps';
+import { makeUnitOps } from './unitOps';
 
 /**
  * makeMint takes in an allegedName as well as a function to
  * make a configuration. This configuration can be used to add custom
  * methods to assays, payments, purses, and mints, and it also
  * defines the functions to make the "mintKeeper" (the actual holder
- * of the mappings from purses/payments to assetDescs) and to make the
- * "assetDescOps" (the object that describes the extentOps of how assetDescs are
+ * of the mappings from purses/payments to units) and to make the
+ * "unitOps" (the object that describes the extentOps of how units are
  * withdrawn or deposited, among other things).
  * @param  {string} allegedName
  * @param  {function} makeConfig=makeBasicFungibleConfig
@@ -34,35 +34,32 @@ allegedName must be truthy: ${allegedName}`;
     extentOpsArgs,
   } = makeConfig();
 
-  // Methods like depositExactly() pass in an assetDesc which is supposed
+  // Methods like depositExactly() pass in a units which is supposed
   // to be equal to the balance of the payment. These methods
-  // use this helper function to check that the assetDesc is equal
-  function insistAssetDescEqualsPaymentBalance(assetDesc, payment) {
-    assetDesc = assetDescOps.coerce(assetDesc);
-    const paymentAssetDesc = paymentKeeper.getAssetDesc(payment);
+  // use this helper function to check that the units is equal
+  function insistUnitsEqualsPaymentBalance(units, payment) {
+    units = unitOps.coerce(units);
+    const paymentUnits = paymentKeeper.getUnits(payment);
     insist(
-      assetDescOps.equals(assetDesc, paymentAssetDesc),
-    )`payment balance ${paymentAssetDesc} must equal assetDesc ${assetDesc}`;
-    return paymentAssetDesc;
+      unitOps.equals(units, paymentUnits),
+    )`payment balance ${paymentUnits} must equal units ${units}`;
+    return paymentUnits;
   }
 
   // assetSrc is a purse or payment. Return a fresh payment.  One internal
   // function used for both cases, since they are so similar.
-  function takePayment(assetHolderSrc, srcKeeper, paymentAssetDesc, name) {
+  function takePayment(assetHolderSrc, srcKeeper, paymentUnits, name) {
     name = `${name}`;
-    paymentAssetDesc = assetDescOps.coerce(paymentAssetDesc);
-    const oldSrcAssetDesc = srcKeeper.getAssetDesc(assetHolderSrc);
-    const newSrcAssetDesc = assetDescOps.without(
-      oldSrcAssetDesc,
-      paymentAssetDesc,
-    );
+    paymentUnits = unitOps.coerce(paymentUnits);
+    const oldSrcUnits = srcKeeper.getUnits(assetHolderSrc);
+    const newSrcUnits = unitOps.without(oldSrcUnits, paymentUnits);
 
     const corePayment = harden({
       getAssay() {
         return assay;
       },
       getBalance() {
-        return paymentKeeper.getAssetDesc(payment);
+        return paymentKeeper.getUnits(payment);
       },
       getName() {
         return name;
@@ -83,8 +80,8 @@ allegedName must be truthy: ${allegedName}`;
     // All queries above passed with no side effects.
     // During side effects below, any early exits should be made into
     // fatal turn aborts.
-    paymentKeeper.recordNew(payment, paymentAssetDesc);
-    srcKeeper.updateAssetDesc(assetHolderSrc, newSrcAssetDesc);
+    paymentKeeper.recordNew(payment, paymentUnits);
+    srcKeeper.updateUnits(assetHolderSrc, newSrcUnits);
     return payment;
   }
 
@@ -92,14 +89,14 @@ allegedName must be truthy: ${allegedName}`;
   // oldPayment (assetSrc) rather than reducing its balance.
   function takePaymentAndKill(oldPayment, name) {
     name = `${name}`;
-    const paymentAssetDesc = paymentKeeper.getAssetDesc(oldPayment);
+    const paymentUnits = paymentKeeper.getUnits(oldPayment);
 
     const corePayment = harden({
       getAssay() {
         return assay;
       },
       getBalance() {
-        return paymentKeeper.getAssetDesc(payment);
+        return paymentKeeper.getUnits(payment);
       },
       getName() {
         return name;
@@ -119,43 +116,43 @@ allegedName must be truthy: ${allegedName}`;
     // All queries above passed with no side effects.
     // During side effects below, any early exits should be made into
     // fatal turn aborts.
-    paymentKeeper.recordNew(payment, paymentAssetDesc);
+    paymentKeeper.recordNew(payment, paymentUnits);
     paymentKeeper.remove(oldPayment);
     return payment;
   }
 
   const coreAssay = harden({
     getLabel() {
-      return assetDescOps.getLabel();
+      return unitOps.getLabel();
     },
 
-    getAssetDescOps() {
-      return assetDescOps;
+    getUnitOps() {
+      return unitOps;
     },
 
     getExtentOps() {
-      return assetDescOps.getExtentOps();
+      return unitOps.getExtentOps();
     },
 
-    makeAssetDesc(extent) {
-      return assetDescOps.make(extent);
+    makeUnits(extent) {
+      return unitOps.make(extent);
     },
 
     makeEmptyPurse(name = 'a purse') {
-      return mint.mint(assetDescOps.empty(), name); // mint and assay call each other
+      return mint.mint(unitOps.empty(), name); // mint and assay call each other
     },
 
     combine(paymentsArray, name = 'combined payment') {
-      const totalAssetDesc = paymentsArray.reduce((soFar, payment) => {
-        return assetDescOps.with(soFar, paymentKeeper.getAssetDesc(payment));
-      }, assetDescOps.empty());
+      const totalUnits = paymentsArray.reduce((soFar, payment) => {
+        return unitOps.with(soFar, paymentKeeper.getUnits(payment));
+      }, unitOps.empty());
 
       const combinedPayment = harden({
         getAssay() {
           return assay;
         },
         getBalance() {
-          return paymentKeeper.getAssetDesc(combinedPayment);
+          return paymentKeeper.getUnits(combinedPayment);
         },
         getName() {
           return name;
@@ -169,30 +166,27 @@ allegedName must be truthy: ${allegedName}`;
       for (const payment of paymentsArray) {
         paymentKeeper.remove(payment);
       }
-      paymentKeeper.recordNew(combinedPayment, totalAssetDesc);
+      paymentKeeper.recordNew(combinedPayment, totalUnits);
       return combinedPayment;
     },
 
-    split(payment, assetDescsArray, namesArray) {
+    split(payment, unitsArray, namesArray) {
       namesArray =
         namesArray !== undefined
           ? namesArray
-          : Array(assetDescsArray.length).fill('a split payment');
+          : Array(unitsArray.length).fill('a split payment');
       insist(
-        assetDescsArray.length === namesArray.length,
-      )`the assetDescs and names should have the same length`;
+        unitsArray.length === namesArray.length,
+      )`the units and names should have the same length`;
 
-      const paymentMinusAssetDescs = assetDescsArray.reduce(
-        (soFar, assetDesc) => {
-          assetDesc = assetDescOps.coerce(assetDesc);
-          return assetDescOps.without(soFar, assetDesc);
-        },
-        paymentKeeper.getAssetDesc(payment),
-      );
+      const paymentMinusUnitss = unitsArray.reduce((soFar, units) => {
+        units = unitOps.coerce(units);
+        return unitOps.without(soFar, units);
+      }, paymentKeeper.getUnits(payment));
 
       insist(
-        assetDescOps.isEmpty(paymentMinusAssetDescs),
-      )`the assetDescs of the proposed new payments do not equal the assetDesc of the source payment`;
+        unitOps.isEmpty(paymentMinusUnitss),
+      )`the units of the proposed new payments do not equal the units of the source payment`;
 
       // ///////////////// commit point //////////////////
       // All queries above passed with no side effects.
@@ -201,23 +195,18 @@ allegedName must be truthy: ${allegedName}`;
 
       const newPayments = [];
 
-      for (let i = 0; i < assetDescsArray.length; i += 1) {
+      for (let i = 0; i < unitsArray.length; i += 1) {
         newPayments.push(
-          takePayment(
-            payment,
-            paymentKeeper,
-            assetDescsArray[i],
-            namesArray[i],
-          ),
+          takePayment(payment, paymentKeeper, unitsArray[i], namesArray[i]),
         );
       }
       paymentKeeper.remove(payment);
       return harden(newPayments);
     },
 
-    claimExactly(assetDesc, srcPaymentP, name) {
+    claimExactly(units, srcPaymentP, name) {
       return Promise.resolve(srcPaymentP).then(srcPayment => {
-        insistAssetDescEqualsPaymentBalance(assetDesc, srcPayment);
+        insistUnitsEqualsPaymentBalance(units, srcPayment);
         name = name !== undefined ? name : srcPayment.getName(); // use old name
         return takePaymentAndKill(srcPayment, name);
       });
@@ -230,9 +219,9 @@ allegedName must be truthy: ${allegedName}`;
       });
     },
 
-    burnExactly(assetDesc, srcPaymentP) {
+    burnExactly(units, srcPaymentP) {
       const sinkPurse = coreAssay.makeEmptyPurse('sink purse');
-      return sinkPurse.depositExactly(assetDesc, srcPaymentP);
+      return sinkPurse.depositExactly(units, srcPaymentP);
     },
 
     burnAll(srcPaymentP) {
@@ -253,28 +242,25 @@ allegedName must be truthy: ${allegedName}`;
 
   const label = harden({ assay, allegedName });
 
-  const assetDescOps = makeAssetDescOps(label, extentOpsName, extentOpsArgs);
-  const mintKeeper = makeMintKeeper(assetDescOps);
+  const unitOps = makeUnitOps(label, extentOpsName, extentOpsArgs);
+  const mintKeeper = makeMintKeeper(unitOps);
   const { purseKeeper, paymentKeeper } = mintKeeper;
 
-  // depositInto always deposits the entire payment assetDesc
+  // depositInto always deposits the entire payment units
   function depositInto(purse, payment) {
-    const oldPurseAssetDesc = purseKeeper.getAssetDesc(purse);
-    const paymentAssetDesc = paymentKeeper.getAssetDesc(payment);
+    const oldPurseUnits = purseKeeper.getUnits(purse);
+    const paymentUnits = paymentKeeper.getUnits(payment);
     // Also checks that the union is representable
-    const newPurseAssetDesc = assetDescOps.with(
-      oldPurseAssetDesc,
-      paymentAssetDesc,
-    );
+    const newPurseUnits = unitOps.with(oldPurseUnits, paymentUnits);
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
     // During side effects below, any early exits should be made into
     // fatal turn aborts.
     paymentKeeper.remove(payment);
-    purseKeeper.updateAssetDesc(purse, newPurseAssetDesc);
+    purseKeeper.updateUnits(purse, newPurseUnits);
 
-    return paymentAssetDesc;
+    return paymentUnits;
   }
 
   const coreMint = harden({
@@ -282,7 +268,7 @@ allegedName must be truthy: ${allegedName}`;
       return assay;
     },
     mint(initialBalance, name = 'a purse') {
-      initialBalance = assetDescOps.coerce(initialBalance);
+      initialBalance = unitOps.coerce(initialBalance);
       name = `${name}`;
 
       const corePurse = harden({
@@ -293,11 +279,11 @@ allegedName must be truthy: ${allegedName}`;
           return assay;
         },
         getBalance() {
-          return purseKeeper.getAssetDesc(purse);
+          return purseKeeper.getUnits(purse);
         },
-        depositExactly(assetDesc, srcPaymentP) {
+        depositExactly(units, srcPaymentP) {
           return Promise.resolve(srcPaymentP).then(srcPayment => {
-            insistAssetDescEqualsPaymentBalance(assetDesc, srcPayment);
+            insistUnitsEqualsPaymentBalance(units, srcPayment);
             return depositInto(purse, srcPayment);
           });
         },
@@ -306,14 +292,14 @@ allegedName must be truthy: ${allegedName}`;
             return depositInto(purse, srcPayment);
           });
         },
-        withdraw(assetDesc, paymentName = 'a withdrawal payment') {
-          return takePayment(purse, purseKeeper, assetDesc, paymentName);
+        withdraw(units, paymentName = 'a withdrawal payment') {
+          return takePayment(purse, purseKeeper, units, paymentName);
         },
         withdrawAll(paymentName = 'a withdrawal payment') {
           return takePayment(
             purse,
             purseKeeper,
-            purseKeeper.getAssetDesc(purse),
+            purseKeeper.getUnits(purse),
             paymentName,
           );
         },
@@ -336,12 +322,7 @@ allegedName must be truthy: ${allegedName}`;
 
   // makeMintTrait is defined in the passed-in configuration and
   // adds additional methods to coreMint
-  const makeMintTraitIter = makeMintTrait(
-    coreMint,
-    assay,
-    assetDescOps,
-    mintKeeper,
-  );
+  const makeMintTraitIter = makeMintTrait(coreMint, assay, unitOps, mintKeeper);
   const mintTrait = makeMintTraitIter.next().value;
   const mint = harden({
     ...mintTrait,

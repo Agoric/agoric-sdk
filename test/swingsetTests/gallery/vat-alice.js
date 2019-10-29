@@ -23,7 +23,7 @@ function makeAliceMaker(E, log, contractHost) {
   function showPaymentBalance(name, paymentP) {
     return E(paymentP)
       .getBalance()
-      .then(assetDesc => log(name, ' balance ', assetDesc))
+      .then(units => log(name, ' balance ', units))
       .catch(err => console.log(err));
   }
 
@@ -32,11 +32,9 @@ function makeAliceMaker(E, log, contractHost) {
       function createSaleOffer(pixelPaymentP, dustPurseP) {
         return Promise.resolve(pixelPaymentP).then(async pixelPayment => {
           const { pixelAssay, dustAssay } = await E(gallery).getAssays();
-          const pixelAssetDesc = await E(pixelPayment).getBalance();
-          const dustAssetDesc = await E(E(dustAssay).getAssetDescOps()).make(
-            37,
-          );
-          const terms = harden({ left: dustAssetDesc, right: pixelAssetDesc });
+          const pixelUnits = await E(pixelPayment).getBalance();
+          const dustUnits = await E(E(dustAssay).getUnitOps()).make(37);
+          const terms = harden({ left: dustUnits, right: pixelUnits });
           const escrowExchangeInstallationP = E(contractHost).install(
             escrowExchangeSrcs,
           );
@@ -66,9 +64,9 @@ function makeAliceMaker(E, log, contractHost) {
           log('++ alice.doChangeColor starting');
           const pixelPaymentP = E(gallery).tapFaucet();
           const pixels = E(pixelPaymentP).getUse();
-          const changedAssetDesc = await E(pixels).changeColorAll('#000000');
+          const changedUnits = await E(pixels).changeColorAll('#000000');
           log('tapped Faucet');
-          return changedAssetDesc;
+          return changedUnits;
         },
         async doSendOnlyUseRight(bob) {
           log('++ alice.doOnlySendUseRight starting');
@@ -94,7 +92,7 @@ function makeAliceMaker(E, log, contractHost) {
           // Check that Alice's childPayment2 subsumed childPayment.
           // Note that claimChild() does not "kill" previously created
           // childPayments. This is because the revocation occurs on
-          // the pixels in the assetDesc, and not on a per payment basis,
+          // the pixels in the units, and not on a per payment basis,
           // so payment linearity rules cannot apply. For instance, we
           // may be destroying one pixel from a childPayment and
           // leaving the rest.
@@ -176,9 +174,9 @@ function makeAliceMaker(E, log, contractHost) {
               rej => log(`successfully threw ${rej}`),
             );
 
-          const assetDesc = await E(storedERTPAsset).getBalance();
+          const units = await E(storedERTPAsset).getBalance();
           log(
-            `assetDesc extent should be an array of length 0: ${assetDesc.extent.length}`,
+            `units extent should be an array of length 0: ${units.extent.length}`,
           );
         },
         async doSellAndBuy() {
@@ -186,13 +184,13 @@ function makeAliceMaker(E, log, contractHost) {
           const pixelPaymentP = E(gallery).tapFaucet();
           const { pixelAssay, dustAssay } = await E(gallery).getAssays();
 
-          const assetDesc = await E(pixelPaymentP).getBalance();
+          const units = await E(pixelPaymentP).getBalance();
 
           // sellToGallery creates a escrow smart contract with the
-          // terms of the assetDesc parameter plus what the gallery is
+          // terms of the units parameter plus what the gallery is
           // willing to offer for it
           // sellToGallery returns an invite to the smart contract
-          const { inviteP, host } = await E(gallery).sellToGallery(assetDesc);
+          const { inviteP, host } = await E(gallery).sellToGallery(units);
           const seatP = E(host).redeem(inviteP);
           await E(seatP).offer(pixelPaymentP);
           const dustPurseP = E(dustAssay).makeEmptyPurse();
@@ -208,7 +206,7 @@ function makeAliceMaker(E, log, contractHost) {
             inviteP: buyBackInviteP,
             host: buyBackHost,
             dustNeeded,
-          } = await E(gallery).buyFromGallery(assetDesc);
+          } = await E(gallery).buyFromGallery(units);
           const buyBackSeatP = await E(buyBackHost).redeem(buyBackInviteP);
           const dustPaymentP = await E(dustPurseP).withdraw(dustNeeded);
 
@@ -257,15 +255,15 @@ function makeAliceMaker(E, log, contractHost) {
           // create a fake childMint controlled entirely by Alice
           function makeUseObj(assay, asset) {
             const useObj = harden({
-              changeColor(assetDesc, _newColor) {
-                return assetDesc;
+              changeColor(units, _newColor) {
+                return units;
               },
               changeColorAll(newColor) {
                 return useObj.changeColor(asset.getBalance(), newColor);
               },
               getRawPixels() {
-                const assetDescOps = assay.getAssetDescOps();
-                const pixelList = assetDescOps.extent(asset.getBalance());
+                const unitOps = assay.getUnitOps();
+                const pixelList = unitOps.extent(asset.getBalance());
                 return pixelList;
               },
               getColors() {
@@ -290,7 +288,7 @@ function makeAliceMaker(E, log, contractHost) {
 
           // use the fakeChildMint to create a payment to trick Bob
           const fakeChildAssay = E(fakeChildMint).getAssay();
-          const fakeChildDescOps = await E(fakeChildAssay).getAssetDescOps();
+          const fakeChildDescOps = await E(fakeChildAssay).getUnitOps();
           const fakeChildPurse = E(fakeChildMint).mint(
             fakeChildDescOps.make(harden([{ x: 0, y: 1 }])),
           );
@@ -395,8 +393,8 @@ function makeAliceMaker(E, log, contractHost) {
             await E(purse).depositAll(pixelPayment);
           }
           showPaymentBalance('purse', purse);
-          const assetDesc = await E(purse).getBalance();
-          log(assetDesc.extent.length);
+          const units = await E(purse).getBalance();
+          log(units.extent.length);
 
           // we have successfully obtained all the pixels from the gallery
 

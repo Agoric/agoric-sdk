@@ -28,7 +28,7 @@ const escrowPayment = async (payoutRule, offerPayment, purse, extentOps) => {
   // payment with that exact balance
   if (['offerExactly', 'offerAtMost'].includes(payoutRule.kind)) {
     const { extent } = await E(purse).depositExactly(
-      payoutRule.assetDesc,
+      payoutRule.units,
       offerPayment,
     );
     return extent;
@@ -84,14 +84,14 @@ const escrowOffer = async (
   // TODO: handle bad offers more robustly
   const extents = await Promise.all(
     payoutRules.map(async (payoutRule, i) => {
-      const { assay } = payoutRule.assetDesc.label;
+      const { assay } = payoutRule.units.label;
       const { purse, extentOps } = await recordAssay(assay);
       return escrowPayment(payoutRule, offerPayments[i], purse, extentOps);
     }),
   );
 
   const assays = payoutRules.map(payoutRule => {
-    const { assay } = payoutRule.assetDesc.label;
+    const { assay } = payoutRule.units.label;
     return assay;
   });
 
@@ -110,7 +110,7 @@ const escrowEmptyOffer = (recordOffer, assays, labels, extentOpsArray) => {
   const payoutRules = labels.map((label, i) =>
     harden({
       kind: 'wantAtLeast',
-      assetDesc: {
+      units: {
         label,
         extent: extentOpsArray[i].empty(),
       },
@@ -134,10 +134,10 @@ const escrowEmptyOffer = (recordOffer, assays, labels, extentOpsArray) => {
   });
 };
 
-const makePayments = (purses, assetDescsMatrix) => {
-  const paymentsMatrix = assetDescsMatrix.map(row => {
+const makePayments = (purses, unitsMatrix) => {
+  const paymentsMatrix = unitsMatrix.map(row => {
     const payments = Promise.all(
-      row.map((assetDesc, i) => E(purses[i]).withdraw(assetDesc, 'payout')),
+      row.map((units, i) => E(purses[i]).withdraw(units, 'payout')),
     );
     return payments;
   });
@@ -148,7 +148,7 @@ const makePayments = (purses, assetDescsMatrix) => {
 const makeEmptyExtents = extentOpsArray =>
   extentOpsArray.map(extentOps => extentOps.empty());
 
-const makeAssetDesc = (extentOps, label, allegedExtent) => {
+const makeUnits = (extentOps, label, allegedExtent) => {
   extentOps.insistKind(allegedExtent);
   return harden({
     label,
@@ -156,11 +156,11 @@ const makeAssetDesc = (extentOps, label, allegedExtent) => {
   });
 };
 
-// Transform a extentsMatrix to a matrix of assetDescs given an array
-// of the associated assetDescOps.
-const toAssetDescMatrix = (extentOps, labels, extentsMatrix) =>
+// Transform a extentsMatrix to a matrix of units given an array
+// of the associated unitOps.
+const toUnitsMatrix = (extentOps, labels, extentsMatrix) =>
   extentsMatrix.map(extents =>
-    extents.map((extent, i) => makeAssetDesc(extentOps[i], labels[i], extent)),
+    extents.map((extent, i) => makeUnits(extentOps[i], labels[i], extent)),
   );
 
 // Note: offerHandles must be for the same assays.
@@ -174,9 +174,9 @@ const completeOffers = async (adminState, readOnlyState, offerHandles) => {
   const extents = readOnlyState.getExtentsFor(offerHandles);
   const extentOps = readOnlyState.getExtentOpsArrayForAssays(assays);
   const labels = readOnlyState.getLabelsForAssays(assays);
-  const assetDescs = toAssetDescMatrix(extentOps, labels, extents);
+  const units = toUnitsMatrix(extentOps, labels, extents);
   const purses = adminState.getPurses(assays);
-  const payments = await makePayments(purses, assetDescs);
+  const payments = await makePayments(purses, units);
   const results = adminState.getResultsFor(offerHandles);
   results.map((result, i) => result.res(payments[i]));
   adminState.removeOffers(offerHandles);
@@ -188,5 +188,5 @@ export {
   mintEscrowReceiptPayment,
   completeOffers,
   makeEmptyExtents,
-  toAssetDescMatrix,
+  toUnitsMatrix,
 };

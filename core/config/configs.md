@@ -64,7 +64,7 @@ const corePayment = harden({
     return assay;
   },
   getBalance() {
-    return paymentKeeper.getAssetDesc(payment);
+    return paymentKeeper.getUnits(payment);
   },
   getName() {
     return name;

@@ -41,7 +41,7 @@ Morningstar's
 post](http://habitatchronicles.com/2017/05/what-are-capabilities/).
 For more on ERTP, [see a quick tutorial](README.md) and the ERTP
 interface descriptions [for assay.js](core/assay.chainmail),
-[assetDescOps.js](core/assetDescOps.chainmail) and [contractHost.js](core/contractHost.chainmail).
+[unitOps.js](core/unitOps.chainmail) and [contractHost.js](core/contractHost.chainmail).
 
 
 ## A preemption hierarchy of rights
@@ -101,8 +101,8 @@ payment.
 ## Buying and selling pixels
 
 The users can buy and sell pixels with the gallery at any time by
-calling `sellToGallery(pixelAssetDesc)` and
-`buyFromGallery(pixelAssetDesc)`. They must pass in an `assetDesc` that
+calling `sellToGallery(pixelUnits)` and
+`buyFromGallery(pixelUnits)`. They must pass in a `units` that
 describes exactly what they want to sell or buy. If successful, they
 will get an invitation from the gallery for a simple, secure escrow
 exchange of the pixels for "dust", the currency that the gallery

@@ -7,7 +7,7 @@ function makeBobMaker(E, _host, log) {
   return harden({
     make(myMoneyPurseP) {
       const moneyAssayP = E(myMoneyPurseP).getAssay();
-      const TenSimoleans = E(E(moneyAssayP).getAssetDescOps()).make(10);
+      const TenSimoleans = E(E(moneyAssayP).getUnitOps()).make(10);
       TenSimoleans.then(
         () => log('++ Expect creation of purse'),
         () => log('++ Rejection is a surprise.'),

@@ -10,9 +10,9 @@ test('tapFaucet', t => {
   const { userFacet } = makeGallery();
   const { pixelAssay } = userFacet.getAssays();
   const pixelPayment = userFacet.tapFaucet();
-  const assetDesc = pixelPayment.getBalance();
-  const pixelDescOps = pixelAssay.getAssetDescOps();
-  const extent = pixelDescOps.extent(assetDesc);
+  const units = pixelPayment.getBalance();
+  const pixelDescOps = pixelAssay.getUnitOps();
+  const extent = pixelDescOps.extent(units);
   const extentOps = makePixelExtentOps();
   t.doesNotThrow(() => extentOps.insistKind(extent));
   t.end();
@@ -21,7 +21,7 @@ test('tapFaucet', t => {
 test('get all pixels repeatedly', async t => {
   const { userFacet: gallery } = makeGallery();
   const { pixelAssay } = await gallery.getAssays();
-  const pixelDescOps = pixelAssay.getAssetDescOps();
+  const pixelDescOps = pixelAssay.getUnitOps();
   const purse = await pixelAssay.makeEmptyPurse();
   for (let i = 0; i < 100; i += 1) {
     // eslint-disable-next-line no-await-in-loop
@@ -73,9 +73,9 @@ test('get exclusive pixel payment from faucet', t => {
   const payment = userFacet.tapFaucet();
   const { pixelAssay } = userFacet.getAssays();
   pixelAssay.claimAll(payment).then(pixelPayment => {
-    const assetDesc = pixelPayment.getBalance();
-    const pixelDescOps = pixelAssay.getAssetDescOps();
-    const extent = pixelDescOps.extent(assetDesc);
+    const units = pixelPayment.getBalance();
+    const pixelDescOps = pixelAssay.getUnitOps();
+    const extent = pixelDescOps.extent(units);
     const extentOps = makePixelExtentOps();
     t.doesNotThrow(() => extentOps.insistKind(extent));
     t.end();
@@ -125,32 +125,32 @@ test('getDistanceFromCenter', t => {
 test('pricePixel Internal', t => {
   const { userFacet } = makeGallery();
   // default canvasSize is 10
-  const { pricePixelAssetDesc, getAssays } = userFacet;
+  const { pricePixelUnits, getAssays } = userFacet;
   const { dustAssay, pixelAssay } = getAssays();
-  const dustDescOps = dustAssay.getAssetDescOps();
-  const pixelDescOps = pixelAssay.getAssetDescOps();
+  const dustDescOps = dustAssay.getUnitOps();
+  const pixelDescOps = pixelAssay.getUnitOps();
   t.deepEqual(
-    pricePixelAssetDesc(pixelDescOps.make(harden([{ x: 0, y: 1 }]))),
+    pricePixelUnits(pixelDescOps.make(harden([{ x: 0, y: 1 }]))),
     dustDescOps.make(4),
   );
   t.deepEqual(
-    pricePixelAssetDesc(pixelDescOps.make(harden([{ x: 2, y: 1 }]))),
+    pricePixelUnits(pixelDescOps.make(harden([{ x: 2, y: 1 }]))),
     dustDescOps.make(5),
   );
   t.deepEqual(
-    pricePixelAssetDesc(pixelDescOps.make(harden([{ x: 2, y: 3 }]))),
+    pricePixelUnits(pixelDescOps.make(harden([{ x: 2, y: 3 }]))),
     dustDescOps.make(7),
   );
   t.deepEqual(
-    pricePixelAssetDesc(pixelDescOps.make(harden([{ x: 4, y: 1 }]))),
+    pricePixelUnits(pixelDescOps.make(harden([{ x: 4, y: 1 }]))),
     dustDescOps.make(6),
   );
   t.deepEqual(
-    pricePixelAssetDesc(pixelDescOps.make(harden([{ x: 0, y: 7 }]))),
+    pricePixelUnits(pixelDescOps.make(harden([{ x: 0, y: 7 }]))),
     dustDescOps.make(5),
   );
   t.deepEqual(
-    pricePixelAssetDesc(pixelDescOps.make(harden([{ x: 5, y: 5 }]))),
+    pricePixelUnits(pixelDescOps.make(harden([{ x: 5, y: 5 }]))),
     dustDescOps.make(10),
   );
   t.end();

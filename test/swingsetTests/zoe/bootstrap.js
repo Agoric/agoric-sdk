@@ -18,14 +18,14 @@ const setupBasicMints = () => {
   const simoleanAssay = simoleanMint.getAssay();
   const bucksAssay = bucksMint.getAssay();
 
-  const moolaDescOps = moolaAssay.getAssetDescOps();
-  const simoleanDescOps = simoleanAssay.getAssetDescOps();
-  const bucksDescOps = bucksAssay.getAssetDescOps();
+  const moolaDescOps = moolaAssay.getUnitOps();
+  const simoleanDescOps = simoleanAssay.getUnitOps();
+  const bucksDescOps = bucksAssay.getUnitOps();
 
   return harden({
     mints: [moolaMint, simoleanMint, bucksMint],
     assays: [moolaAssay, simoleanAssay, bucksAssay],
-    assetDescOps: [moolaDescOps, simoleanDescOps, bucksDescOps],
+    unitOps: [moolaDescOps, simoleanDescOps, bucksDescOps],
   });
 };
 
@@ -33,11 +33,9 @@ const makeVats = (E, log, vats, zoe, installationHandle, startingExtents) => {
   const { mints, assays } = setupBasicMints();
   const [aliceExtents, bobExtents, carolExtents, daveExtents] = startingExtents;
   // Setup Alice
-  const aliceMoolaPurse = mints[0].mint(
-    assays[0].makeAssetDesc(aliceExtents[0]),
-  );
+  const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(aliceExtents[0]));
   const aliceSimoleanPurse = mints[1].mint(
-    assays[1].makeAssetDesc(aliceExtents[1]),
+    assays[1].makeUnits(aliceExtents[1]),
   );
   const aliceP = E(vats.alice).build(
     zoe,
@@ -47,10 +45,8 @@ const makeVats = (E, log, vats, zoe, installationHandle, startingExtents) => {
   );
 
   // Setup Bob
-  const bobMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(bobExtents[0]));
-  const bobSimoleanPurse = mints[1].mint(
-    assays[1].makeAssetDesc(bobExtents[1]),
-  );
+  const bobMoolaPurse = mints[0].mint(assays[0].makeUnits(bobExtents[0]));
+  const bobSimoleanPurse = mints[1].mint(assays[1].makeUnits(bobExtents[1]));
   const bobP = E(vats.bob).build(
     zoe,
     bobMoolaPurse,
@@ -64,11 +60,9 @@ const makeVats = (E, log, vats, zoe, installationHandle, startingExtents) => {
   };
 
   if (carolExtents) {
-    const carolMoolaPurse = mints[0].mint(
-      assays[0].makeAssetDesc(carolExtents[0]),
-    );
+    const carolMoolaPurse = mints[0].mint(assays[0].makeUnits(carolExtents[0]));
     const carolSimoleanPurse = mints[1].mint(
-      assays[1].makeAssetDesc(carolExtents[1]),
+      assays[1].makeUnits(carolExtents[1]),
     );
     const carolP = E(vats.carol).build(
       zoe,
@@ -80,11 +74,9 @@ const makeVats = (E, log, vats, zoe, installationHandle, startingExtents) => {
   }
 
   if (daveExtents) {
-    const daveMoolaPurse = mints[0].mint(
-      assays[0].makeAssetDesc(daveExtents[0]),
-    );
+    const daveMoolaPurse = mints[0].mint(assays[0].makeUnits(daveExtents[0]));
     const daveSimoleanPurse = mints[1].mint(
-      assays[1].makeAssetDesc(daveExtents[1]),
+      assays[1].makeUnits(daveExtents[1]),
     );
     const daveP = E(vats.dave).build(
       zoe,

@@ -8,13 +8,13 @@ function makeAliceMaker(E, log) {
           const oldPayment = await E(myMoneyPurseP).withdrawAll();
           log('oldPayment balance:', await E(oldPayment).getBalance());
           const assay = await E(myMoneyPurseP).getAssay();
-          const goodAssetDescsArray = [
-            await E(assay).makeAssetDesc(900),
-            await E(assay).makeAssetDesc(100),
+          const goodUnitssArray = [
+            await E(assay).makeUnits(900),
+            await E(assay).makeUnits(100),
           ];
           const splitPayments = await E(assay).split(
             oldPayment,
-            goodAssetDescsArray,
+            goodUnitssArray,
           );
           log(
             'splitPayment[0] balance: ',

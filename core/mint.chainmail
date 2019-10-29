@@ -1,25 +1,25 @@
 /**
- * Holding an Assay provides the ability to create assetDescs and empty purses,
+ * Holding an Assay provides the ability to create units and empty purses,
  * but confers no rights. It is also the mechanism used to get exclusive access
  * to a Purse or Payment that you already hold, or to burn some or all of the
  * contained rights.
  */
-interface Assay (AssetDesc (Extent)) {
+interface Assay (Units (Extent)) {
   /**
    * Get the label for this Assay.
    *
-   * Labels can be used to manually construct assetDescs
+   * Labels can be used to manually construct units
    */
   getLabel() -> (Comparable);
 
-  /* Get the AssetDescOps for this Assay. */
-  getAssetDescOps() -> (DescOps);
+  /* Get the UnitOps for this Assay. */
+  getUnitOps() -> (DescOps);
 
   /* Get the ExtentOps for this Assay. */
   getExtentOps() -> (ExtentOps);
 
-  /** Make an AssetDesc that contains the indicated extent. */
-  makeAssetDesc(extent :Extent) -> (AssetDesc);
+  /** Make an Units that contains the indicated extent. */
+  makeUnits(extent :Extent) -> (Units);
 
   /** Make an empty purse associated with this kind of right. */
   makeEmptyPurse(name :String) -> (Purse);
@@ -30,17 +30,17 @@ interface Assay (AssetDesc (Extent)) {
 
   /** 
    * Split a single payment into multiple payments, according to the
-   * assetDescs and names passed in. 
+   * units and names passed in. 
    */
-  split(payment :Payment, assetDescsArray :List(AssetDesc), namesArray :List(String))
+  split(payment :Payment, unitsArray :List(Units), namesArray :List(String))
     -> (List(Payment));
 
   /**
    * Make a new Payment that has exclusive rights to all the contents
-   * of src. If assetDesc does not equal the balance of the src payment,
+   * of src. If units does not equal the balance of the src payment,
    * throws error.
    */
-  claimExactly(assetDesc :AssetDesc, src :Payment, name :String = 'a payment')
+  claimExactly(units :Units, src :Payment, name :String = 'a payment')
     -> (Payment);
 
   /**
@@ -49,13 +49,13 @@ interface Assay (AssetDesc (Extent)) {
   claimAll(src :Payment, name :String = 'a payment') -> (Payment);
 
   /** 
-   * Burn all of the rights from src. If assetDesc does not equal the
+   * Burn all of the rights from src. If units does not equal the
    * balance of the src payment, throw error. 
    */
-  burnExactly(assetDesc :AssetDesc, src :Payment) -> (AssetDesc);
+  burnExactly(units :Units, src :Payment) -> (Units);
 
   /** Burn all of the rights from src. */
-  burnAll(src :Payment) -> (AssetDesc);
+  burnAll(src :Payment) -> (Units);
 }
 
 /**
@@ -78,23 +78,23 @@ interface MintMaker {
 
 /**
  * Holding a Mint carries the right to control issuance and destruction of
- * purses and payments containing assetDescs of a particular currency. Purses (and
+ * purses and payments containing units of a particular currency. Purses (and
  * payments) associated with a particular assay can only transfer value to
  * others using the same mint.
  */
-interface Mint (AssetDesc (Extent)) {
+interface Mint (Units (Extent)) {
   /** Get the Assay for this mint. */
   getAssay() -> (Assay);
 
   /**
-   * Create a new Purse containing the assetDesc. Give it the specified name or 'fa
+   * Create a new Purse containing the units. Give it the specified name or 'fa
    * purse'.
    */
-  mint(initialBalance :AssetDesc, name :String = 'a purse') -> (Purse);
+  mint(initialBalance :Units, name :String = 'a purse') -> (Purse);
 }
 
 /**
- * Purses hold verified assetDescs of certain rights issued by Mints. Purses can
+ * Purses hold verified units of certain rights issued by Mints. Purses can
  * transfer part of the balance they hold in a payment, which has a narrower
  * interface. A purse's balance can rise and fall, through the action of
  * depositExactly() and withdraw(). Operations on payments
@@ -105,64 +105,64 @@ interface Mint (AssetDesc (Extent)) {
  * valuables, but they can also be used to represent other kinds of rights, such
  * as the right to participate in a particular contract.
  */
-interface Purse (AssetDesc) {
+interface Purse (Units) {
   /** Get the name of this purse. */
   getName() -> (String);
 
   /** Get the Assay for this mint. */
   getAssay() -> (Assay);
 
-  /** Get the assetDesc contained in this purse, confirmed by the assay. */
-  getBalance() -> (AssetDesc);
+  /** Get the units contained in this purse, confirmed by the assay. */
+  getBalance() -> (Units);
 
   /**
    * Deposit all the contents of srcPayment into this purse, returning the
-   * assetDesc. If the assetDesc does not equal the balance of srcPayment,
+   * units. If the units does not equal the balance of srcPayment,
    * throw error.
    */
-  depositExactly(assetDesc :AssetDesc, srcPayment :Payment) -> (AssetDesc);
+  depositExactly(units :Units, srcPayment :Payment) -> (Units);
 
   /**
    * Deposit all the contents of srcPayment into this purse, returning the
-   * assetDesc.
+   * units.
    */
-  depositAll(srcPayment :Payment) -> (AssetDesc);
+  depositAll(srcPayment :Payment) -> (Units);
 
-  /** Withdraw assetDesc from this purse into a new Payment. */
-  withdraw(assetDesc :AssetDesc, name :String) -> (Payment);
+  /** Withdraw units from this purse into a new Payment. */
+  withdraw(units :Units, name :String) -> (Payment);
 
   /** Withdraw entire content of this purse into a new Payment. */
   withdrawAll(name :String) -> (Payment);
 }
 
 /**
- * Payments hold verified assetDescs of certain rights issued by Mints. AssetDescs
- * from payments can be deposited in purses, but otherwise, the entire assetDesc is
+ * Payments hold verified units of certain rights issued by Mints. Unitss
+ * from payments can be deposited in purses, but otherwise, the entire units is
  * available when the payment is transferred. A payment's balance can only fall,
  * through the action of depositExactly(), claimExactly() or burnExactly().
  *
  * Payments can be converted to Purses by getting a verified assay and calling
  * assay.makeEmptyPurse().depositAll(payment);
  */
-interface Payment (AssetDesc) {
+interface Payment (Units) {
   /** Get the name of this purse. */
   getName() -> (String);
 
   /** Get the Assay for this mint. */
   getAssay() -> (Assay);
 
-  /** Get the assetDesc contained in this payment, confirmed by the assay. */
-  getBalance() -> (AssetDesc);
+  /** Get the units contained in this payment, confirmed by the assay. */
+  getBalance() -> (Units);
 }
 
 /** 
- * All of the difference in how an assetDescOps behaves can be reduced to
+ * All of the difference in how an unitOps behaves can be reduced to
  * the behavior of the set operations on extents (think: arithmetic)
  * such as `empty`, `with`, `without`, `includes`, etc. We extract this
  * custom logic into a extentOps. ExtentOps are about extent
- * arithmetic, whereas AssetDescOps are about AssetDescs, which are labeled
- * extents. AssetDescOps use ExtentOps to do their extent arithmetic,
- * and then label the results, making new AssetDescs. 
+ * arithmetic, whereas UnitOps are about Unitss, which are labeled
+ * extents. UnitOps use ExtentOps to do their extent arithmetic,
+ * and then label the results, making new Unitss. 
  */ 
 interface ExtentOps () {
   /** 

@@ -6,7 +6,7 @@ import { mustBeSameStructure, sameStructure } from '../util/sameStructure';
 
 /**
  * The coveredCall is an asymmetric contract. One party will put some goods in
- * escrow, and is transferring the right to buy them for a specified assetDesc of
+ * escrow, and is transferring the right to buy them for a specified units of
  * some currency. start() specifies the terms, and returns the seat that has the
  * ability to offer() the goods. The counterparty seat is returned from offer(),
  * so the originator can offer it to a someone of their choice. To simplify
@@ -65,14 +65,14 @@ const coveredCall = harden({
 
     return inviteMaker.make('writer', bobSeat);
   },
-  checkAssetDesc: (installation, allegedInviteAssetDesc, expectedTerms) => {
+  checkUnits: (installation, allegedInviteUnits, expectedTerms) => {
     mustBeSameStructure(
-      allegedInviteAssetDesc.extent.installation,
+      allegedInviteUnits.extent.installation,
       installation,
-      'coveredCall checkAssetDesc installation',
+      'coveredCall checkUnits installation',
     );
     const [termsMoney, termsStock, termsTimer, termsDeadline] = expectedTerms;
-    const allegedInviteTerms = allegedInviteAssetDesc.extent.terms;
+    const allegedInviteTerms = allegedInviteUnits.extent.terms;
     const allegedInviteMoney = allegedInviteTerms.money;
     if (allegedInviteMoney.extent !== termsMoney.extent) {
       throw new Error(
@@ -106,7 +106,7 @@ const coveredCall = harden({
 
 const coveredCallSrcs = harden({
   start: `${coveredCall.start}`,
-  checkAssetDesc: `${coveredCall.checkAssetDesc}`,
+  checkUnits: `${coveredCall.checkUnits}`,
 });
 
 export { coveredCallSrcs };

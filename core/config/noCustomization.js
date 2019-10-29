@@ -4,7 +4,7 @@ import harden from '@agoric/harden';
 // parameter. In other configurations, these methods would be used to
 // add custom methods (or otherwise customize) payments, purses, etc.
 
-// These methods must be paired with a mintKeeper and AssetDescOps to be a
+// These methods must be paired with a mintKeeper and UnitOps to be a
 // full configuration that can be passed into `makeMint`.
 
 function* makePaymentTrait(_corePayment) {

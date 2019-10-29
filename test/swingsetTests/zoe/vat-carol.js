@@ -5,8 +5,8 @@ import { sameStructure } from '../../../util/sameStructure';
 const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
   const showPaymentBalance = async (paymentP, name) => {
     try {
-      const assetDesc = await E(paymentP).getBalance();
-      log(name, ': balance ', assetDesc);
+      const units = await E(paymentP).getBalance();
+      log(name, ': balance ', units);
     } catch (err) {
       console.error(err);
     }
@@ -29,11 +29,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
         payoutRules: [
           {
             kind: 'wantExactly',
-            assetDesc: await E(assays[0]).makeAssetDesc(1),
+            units: await E(assays[0]).makeUnits(1),
           },
           {
             kind: 'offerAtMost',
-            assetDesc: await E(assays[1]).makeAssetDesc(7),
+            units: await E(assays[1]).makeUnits(7),
           },
         ],
         exitRule: {

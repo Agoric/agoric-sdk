@@ -3,8 +3,8 @@ import harden from '@agoric/harden';
 const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
   const showPaymentBalance = async (paymentP, name) => {
     try {
-      const assetDesc = await E(paymentP).getBalance();
-      log(name, ': balance ', assetDesc);
+      const units = await E(paymentP).getBalance();
+      log(name, ': balance ', units);
     } catch (err) {
       console.error(err);
     }
@@ -26,11 +26,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: await E(assays[0]).makeAssetDesc(3),
+          units: await E(assays[0]).makeUnits(3),
         },
         {
           kind: 'wantExactly',
-          assetDesc: await E(assays[1]).makeAssetDesc(7),
+          units: await E(assays[1]).makeUnits(7),
         },
       ],
       exitRule: {
@@ -73,11 +73,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: await E(assays[0]).makeAssetDesc(3),
+          units: await E(assays[0]).makeUnits(3),
         },
         {
           kind: 'wantExactly',
-          assetDesc: await E(assays[1]).makeAssetDesc(7),
+          units: await E(assays[1]).makeUnits(7),
         },
       ],
       exitRule: {
@@ -121,11 +121,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: await E(assays[0]).makeAssetDesc(1),
+          units: await E(assays[0]).makeUnits(1),
         },
         {
           kind: 'wantAtLeast',
-          assetDesc: await E(assays[1]).makeAssetDesc(3),
+          units: await E(assays[1]).makeUnits(3),
         },
       ],
       exitRule: {
@@ -173,11 +173,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: await E(assays[0]).makeAssetDesc(3),
+          units: await E(assays[0]).makeUnits(3),
         },
         {
           kind: 'wantExactly',
-          assetDesc: await E(assays[1]).makeAssetDesc(7),
+          units: await E(assays[1]).makeUnits(7),
         },
       ],
       exitRule: {
@@ -219,11 +219,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: await E(assays[0]).makeAssetDesc(3),
+          units: await E(assays[0]).makeUnits(3),
         },
         {
           kind: 'wantAtLeast',
-          assetDesc: await E(assays[1]).makeAssetDesc(4),
+          units: await E(assays[1]).makeUnits(4),
         },
       ],
       exitRule: {
@@ -271,15 +271,15 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: await E(allAssays[0]).makeAssetDesc(10),
+          units: await E(allAssays[0]).makeUnits(10),
         },
         {
           kind: 'offerExactly',
-          assetDesc: await E(allAssays[1]).makeAssetDesc(5),
+          units: await E(allAssays[1]).makeUnits(5),
         },
         {
           kind: 'wantAtLeast',
-          assetDesc: await E(allAssays[2]).makeAssetDesc(10),
+          units: await E(allAssays[2]).makeUnits(10),
         },
       ],
       exitRule: {
@@ -310,15 +310,15 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          assetDesc: await E(allAssays[0]).makeAssetDesc(0),
+          units: await E(allAssays[0]).makeUnits(0),
         },
         {
           kind: 'wantAtLeast',
-          assetDesc: await E(allAssays[1]).makeAssetDesc(0),
+          units: await E(allAssays[1]).makeUnits(0),
         },
         {
           kind: 'offerExactly',
-          assetDesc: await E(allAssays[2]).makeAssetDesc(10),
+          units: await E(allAssays[2]).makeUnits(10),
         },
       ],
       exitRule: {

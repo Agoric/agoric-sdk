@@ -10,7 +10,7 @@ import { makeMint } from '../../core/mint';
 // currency. Returns a promise for a peg object that asynchonously
 // converts between the two. The local currency is synchronously
 // transferable locally.
-function makePeg(E, remoteAssayP, makeMintKeeper, makeAssetDescOps = makeNatDescOps) {
+function makePeg(E, remoteAssayP, makeMintKeeper, makeUnitOps = makeNatDescOps) {
   const remoteLabelP = E(remoteAssayP).getLabel();
 
   // The remoteLabel is a local copy of the remote pass-by-copy
@@ -22,21 +22,21 @@ function makePeg(E, remoteAssayP, makeMintKeeper, makeAssetDescOps = makeNatDesc
     const backingPurseP = E(remoteAssayP).makeEmptyPurse('backing');
 
     const { description } = remoteLabel;
-    const localMint = makeMint(description, makeMintKeeper, makeAssetDescOps);
+    const localMint = makeMint(description, makeMintKeeper, makeUnitOps);
     const localAssay = localMint.getAssay();
     const localLabel = localAssay.getLabel();
 
-    function localAssetDescOf(remoteAssetDesc) {
+    function localUnitsOf(remoteUnits) {
       return harden({
         label: localLabel,
-        extent: remoteAssetDesc.extent,
+        extent: remoteUnits.extent,
       });
     }
 
-    function remoteAssetDescOf(localAssetDesc) {
+    function remoteUnitsOf(localUnits) {
       return harden({
         label: remoteLabel,
-        extent: localAssetDesc.extent,
+        extent: localUnits.extent,
       });
     }
 
@@ -52,9 +52,9 @@ function makePeg(E, remoteAssayP, makeMintKeeper, makeAssetDescOps = makeNatDesc
       retainAll(remotePaymentP, name = 'backed') {
         return E(backingPurseP)
           .depositAll(remotePaymentP)
-          .then(remoteAssetDesc =>
+          .then(remoteUnits =>
             localMint
-              .mint(localAssetDescOf(remoteAssetDesc), `${name} purse`)
+              .mint(localUnitsOf(remoteUnits), `${name} purse`)
               .withdrawAll(name),
           );
       },
@@ -62,8 +62,8 @@ function makePeg(E, remoteAssayP, makeMintKeeper, makeAssetDescOps = makeNatDesc
       redeemAll(localPayment, name = 'redeemed') {
         return localAssay
           .burnAll(localPayment)
-          .then(localAssetDesc =>
-            E(backingPurseP).withdraw(remoteAssetDescOf(localAssetDesc), name),
+          .then(localUnits =>
+            E(backingPurseP).withdraw(remoteUnitsOf(localUnits), name),
           );
       },
     });

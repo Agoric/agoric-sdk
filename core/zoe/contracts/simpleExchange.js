@@ -12,9 +12,9 @@ import {
 
 // This exchange only accepts limit orders. A limit order is defined
 // as either a sell order with payoutRules: [ { kind: 'offerExactly',
-// assetDesc1 }, {kind: 'wantAtLeast', assetDesc2 }] or a buy order:
-// [ { kind: 'wantExactly', assetDesc1 }, { kind: 'offerAtMost',
-// assetDesc2 }]. Note that the asset in the first slot of the
+// units1 }, {kind: 'wantAtLeast', units2 }] or a buy order:
+// [ { kind: 'wantExactly', units1 }, { kind: 'offerAtMost',
+// units2 }]. Note that the asset in the first slot of the
 // payoutRules will always be bought or sold in exact amounts, whereas
 // the amount of the second asset received in a sell order may be
 // greater than expected, and the amount of the second asset paid in a

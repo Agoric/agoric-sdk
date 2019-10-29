@@ -3,13 +3,13 @@ import harden from '@agoric/harden';
 export const isMatchingLimitOrder = (zoe, sellOffer, buyOffer) => {
   const extentOpsArray = zoe.getExtentOpsArray();
   const assetEqual = extentOpsArray[0].equals(
-    sellOffer[0].assetDesc.extent,
-    buyOffer[0].assetDesc.extent,
+    sellOffer[0].units.extent,
+    buyOffer[0].units.extent,
   );
   // Buy extent must be higher than sell extent
   const buyPriceHigher = extentOpsArray[1].includes(
-    buyOffer[1].assetDesc.extent,
-    sellOffer[1].assetDesc.extent,
+    buyOffer[1].units.extent,
+    sellOffer[1].units.extent,
   );
   return assetEqual && buyPriceHigher;
 };

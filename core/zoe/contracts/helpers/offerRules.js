@@ -6,28 +6,28 @@ export const isExactlyMatchingPayoutRules = (
   leftPayoutRules,
   rightPayoutRules,
 ) => {
-  // "exactly matching" means that assetDescs are the same, but that the
+  // "exactly matching" means that units are the same, but that the
   // kinds have switched places in the array
   const extentOpsArray = zoe.getExtentOpsArray();
   const exactlyKinds = ['wantExactly', 'offerExactly'];
   return (
     // Are the extents equal according to the extentOps?
     extentOpsArray[0].equals(
-      leftPayoutRules[0].assetDesc.extent,
-      rightPayoutRules[0].assetDesc.extent,
+      leftPayoutRules[0].units.extent,
+      rightPayoutRules[0].units.extent,
     ) &&
     extentOpsArray[1].equals(
-      leftPayoutRules[1].assetDesc.extent,
-      rightPayoutRules[1].assetDesc.extent,
+      leftPayoutRules[1].units.extent,
+      rightPayoutRules[1].units.extent,
     ) &&
     // Are the labels (allegedName + assay) the same?
     sameStructure(
-      leftPayoutRules[0].assetDesc.label,
-      rightPayoutRules[0].assetDesc.label,
+      leftPayoutRules[0].units.label,
+      rightPayoutRules[0].units.label,
     ) &&
     sameStructure(
-      leftPayoutRules[1].assetDesc.label,
-      rightPayoutRules[1].assetDesc.label,
+      leftPayoutRules[1].units.label,
+      rightPayoutRules[1].units.label,
     ) &&
     // Are the kinds "exactly" kinds?
     exactlyKinds.includes(leftPayoutRules[0].kind) &&
@@ -45,11 +45,11 @@ export const makeExactlyMatchingPayoutRules = firstPayoutRules =>
   harden([
     {
       kind: firstPayoutRules[1].kind,
-      assetDesc: firstPayoutRules[0].assetDesc,
+      units: firstPayoutRules[0].units,
     },
     {
       kind: firstPayoutRules[0].kind,
-      assetDesc: firstPayoutRules[1].assetDesc,
+      units: firstPayoutRules[1].units,
     },
   ]);
 
@@ -57,7 +57,7 @@ const hasKinds = (kinds, newPayoutRules) =>
   kinds.every((kind, i) => kind === newPayoutRules[i].kind);
 
 const hasAssays = (assays, newPayoutRules) =>
-  assays.every((assay, i) => assay === newPayoutRules[i].assetDesc.label.assay);
+  assays.every((assay, i) => assay === newPayoutRules[i].units.label.assay);
 
 export const hasValidPayoutRules = (kinds, assays, newPayoutRules) =>
   hasKinds(kinds, newPayoutRules) && hasAssays(assays, newPayoutRules);
@@ -71,13 +71,13 @@ export const getActivePayoutRules = (zoe, offerHandles) => {
 };
 
 /**
- * Make an assetDesc without access to the assay, which we don't want
+ * Make a units without access to the assay, which we don't want
  * to use because it may be remote.
  * @param {object} extentOps - the extent ops for the assay
- * @param {object} label - the label for the assay to use in the assetDesc
- * @param {*} allegedExtent - the extent to use in the assetDesc
+ * @param {object} label - the label for the assay to use in the units
+ * @param {*} allegedExtent - the extent to use in the units
  */
-export const makeAssetDesc = (extentOps, label, allegedExtent) => {
+export const makeUnits = (extentOps, label, allegedExtent) => {
   extentOps.insistKind(allegedExtent);
   return harden({
     label,
@@ -102,7 +102,7 @@ export const makeOfferRules = (zoe, kinds, extents, exitRule) => {
   const payoutRules = extentOpsArray.map((extentOps, i) =>
     harden({
       kind: kinds[i],
-      assetDesc: makeAssetDesc(extentOps, labels[i], extents[i]),
+      units: makeUnits(extentOps, labels[i], extents[i]),
     }),
   );
   return harden({

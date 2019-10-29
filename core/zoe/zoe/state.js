@@ -31,7 +31,7 @@ const makeState = () => {
     // per instanceHandle
     getTerms: instanceHandle => instanceHandleToTerms.get(instanceHandle),
     getAssays: instanceHandle => instanceHandleToAssays.get(instanceHandle),
-    getAssetDescOpsArrayForInstanceHandle: instanceHandle =>
+    getUnitOpsArrayForInstanceHandle: instanceHandle =>
       readOnlyState
         .getAssays(instanceHandle)
         .map(assay => assayToDescOps.get(assay)),
@@ -46,7 +46,7 @@ const makeState = () => {
 
     // per assays array (this can be used before an offer is
     // associated with an instance)
-    getAssetDescOpsArrayForAssays: assays =>
+    getUnitOpsArrayForAssays: assays =>
       assays.map(assay => assayToDescOps.get(assay)),
     getExtentOpsArrayForAssays: assays =>
       assays.map(assay => assayToExtentOps.get(assay)),
@@ -110,26 +110,26 @@ const makeState = () => {
     getPurses: assays => assays.map(assay => assayToPurse.get(assay)),
     recordAssay: async assay => {
       if (!assayToPurse.has(assay)) {
-        const assetDescOpsP = E(assay).getAssetDescOps();
+        const unitOpsP = E(assay).getUnitOps();
         const labelP = E(assay).getLabel();
         const purseP = E(assay).makeEmptyPurse();
         const extentOpsDescP = E(assay).getExtentOps();
 
-        const [assetDescOps, label, purse, extentOpsDesc] = await Promise.all([
-          assetDescOpsP,
+        const [unitOps, label, purse, extentOpsDesc] = await Promise.all([
+          unitOpsP,
           labelP,
           purseP,
           extentOpsDescP,
         ]);
 
-        assayToDescOps.init(assay, assetDescOps);
+        assayToDescOps.init(assay, unitOps);
         assayToLabel.init(assay, label);
         assayToPurse.init(assay, purse);
         const { name, extentOpArgs = [] } = extentOpsDesc;
         assayToExtentOps.init(assay, extentOpsLib[name](...extentOpArgs));
       }
       return harden({
-        assetDescOps: assayToDescOps.get(assay),
+        unitOps: assayToDescOps.get(assay),
         label: assayToLabel.get(assay),
         purse: assayToPurse.get(assay),
         extentOps: assayToExtentOps.get(assay),

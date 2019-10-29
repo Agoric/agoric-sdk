@@ -19,13 +19,13 @@ test('zoe - publicSwap', async t => {
     const installationHandle = zoe.install(source, moduleFormat);
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
+    const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(3));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const aliceSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
+    const aliceSimoleanPurse = mints[1].mint(assays[1].makeUnits(0));
 
     // Setup Bob
-    const bobMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-    const bobSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(7));
+    const bobMoolaPurse = mints[0].mint(assays[0].makeUnits(0));
+    const bobSimoleanPurse = mints[1].mint(assays[1].makeUnits(7));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
     // 1: Alice creates a publicSwap instance
@@ -39,11 +39,11 @@ test('zoe - publicSwap', async t => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: assays[0].makeAssetDesc(3),
+          units: assays[0].makeUnits(3),
         },
         {
           kind: 'wantExactly',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -85,11 +85,11 @@ test('zoe - publicSwap', async t => {
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: bobTerms.assays[0].makeAssetDesc(3),
+          units: bobTerms.assays[0].makeUnits(3),
         },
         {
           kind: 'offerExactly',
-          assetDesc: bobTerms.assays[1].makeAssetDesc(7),
+          units: bobTerms.assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -127,7 +127,7 @@ test('zoe - publicSwap', async t => {
     // Alice gets what Alice wanted
     t.deepEquals(
       alicePayout[1].getBalance(),
-      aliceOfferRules.payoutRules[1].assetDesc,
+      aliceOfferRules.payoutRules[1].units,
     );
 
     // Alice didn't get any of what Alice put in

@@ -9,7 +9,7 @@ const simpleExchangeRoot = `${__dirname}/../../../../../core/zoe/contracts/simpl
 
 test('zoe - simpleExchange', async t => {
   try {
-    const { assays: originalAssays, mints, assetDescOps } = setup();
+    const { assays: originalAssays, mints, unitOps } = setup();
     const assays = originalAssays.slice(0, 2);
     const zoe = await makeZoe({ require });
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
@@ -19,13 +19,13 @@ test('zoe - simpleExchange', async t => {
     const installationHandle = zoe.install(source, moduleFormat);
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
-    const aliceSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
+    const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(3));
+    const aliceSimoleanPurse = mints[1].mint(assays[1].makeUnits(0));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
 
     // Setup Bob
-    const bobMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-    const bobSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(7));
+    const bobMoolaPurse = mints[0].mint(assays[0].makeUnits(0));
+    const bobSimoleanPurse = mints[1].mint(assays[1].makeUnits(7));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
     // 1: Alice creates a simpleExchange instance
@@ -41,11 +41,11 @@ test('zoe - simpleExchange', async t => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: assays[0].makeAssetDesc(3),
+          units: assays[0].makeUnits(3),
         },
         {
           kind: 'wantAtLeast',
-          assetDesc: assays[1].makeAssetDesc(4),
+          units: assays[1].makeUnits(4),
         },
       ],
       exitRule: {
@@ -86,11 +86,11 @@ test('zoe - simpleExchange', async t => {
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: bobTerms.assays[0].makeAssetDesc(3),
+          units: bobTerms.assays[0].makeUnits(3),
         },
         {
           kind: 'offerAtMost',
-          assetDesc: bobTerms.assays[1].makeAssetDesc(7),
+          units: bobTerms.assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -127,9 +127,9 @@ test('zoe - simpleExchange', async t => {
 
     // Alice gets paid at least what she wanted
     t.ok(
-      assetDescOps[1].includes(
+      unitOps[1].includes(
         aliceSimoleanPayout.getBalance(),
-        aliceSellOrderOfferRules.payoutRules[1].assetDesc,
+        aliceSellOrderOfferRules.payoutRules[1].units,
       ),
     );
 

@@ -29,22 +29,22 @@ function makeBobMaker(E, log) {
           const useObj = await E(newPayment).getUse();
 
           // bob actually changes the color to light purple
-          const assetDescP = await E(useObj).changeColorAll('#B695C0');
+          const unitsP = await E(useObj).changeColorAll('#B695C0');
 
           storedERTPAsset = newPayment;
           storedPixels = useObj;
-          return assetDescP;
+          return unitsP;
         },
         async tryToColorPixels() {
           // bob tries to change the color to light purple
-          const assetDescP = await E(storedPixels).changeColorAll('#B695C0');
-          return assetDescP;
+          const unitsP = await E(storedPixels).changeColorAll('#B695C0');
+          return unitsP;
         },
         async tryToColorERTP() {
           // bob tries to change the color to light purple
           const pixels = await E(storedERTPAsset).getUse();
-          const assetDescP = await E(pixels).changeColorAll('#B695C0');
-          return assetDescP;
+          const unitsP = await E(pixels).changeColorAll('#B695C0');
+          return unitsP;
         },
         async buyFromCorkBoard(handoffSvc, dustPurseP) {
           const { pixelAssay, dustAssay } = await E(gallery).getAssays();
@@ -68,9 +68,9 @@ function makeBobMaker(E, log) {
           E(useObj)
             .changeColorAll('#B695C0')
             .then(
-              assetDescP => {
+              unitsP => {
                 E(gallery)
-                  .getPixelColor(assetDescP.extent[0].x, assetDescP.extent[0].y)
+                  .getPixelColor(unitsP.extent[0].x, unitsP.extent[0].y)
                   .then(color =>
                     log(`bob tried to color, and produced ${color}`),
                   );

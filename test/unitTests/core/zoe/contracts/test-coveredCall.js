@@ -23,13 +23,13 @@ test('zoe - coveredCall', async t => {
     const coveredCallInstallationHandle = zoe.install(source, moduleFormat);
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
+    const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(3));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const aliceSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
+    const aliceSimoleanPurse = mints[1].mint(assays[1].makeUnits(0));
 
     // Setup Bob
-    const bobMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-    const bobSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(7));
+    const bobMoolaPurse = mints[0].mint(assays[0].makeUnits(0));
+    const bobSimoleanPurse = mints[1].mint(assays[1].makeUnits(7));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
     // 1: Alice creates a coveredCall instance
@@ -50,11 +50,11 @@ test('zoe - coveredCall', async t => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: assays[0].makeAssetDesc(3),
+          units: assays[0].makeUnits(3),
         },
         {
           kind: 'wantExactly',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -91,11 +91,11 @@ test('zoe - coveredCall', async t => {
     t.deepEquals(bobInvitePayment.getBalance().extent.offerToBeMade, [
       {
         kind: 'wantExactly',
-        assetDesc: assays[0].makeAssetDesc(3),
+        units: assays[0].makeUnits(3),
       },
       {
         kind: 'offerExactly',
-        assetDesc: assays[1].makeAssetDesc(7),
+        units: assays[1].makeUnits(7),
       },
     ]);
 
@@ -110,11 +110,11 @@ test('zoe - coveredCall', async t => {
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: assays[0].makeAssetDesc(3),
+          units: assays[0].makeUnits(3),
         },
         {
           kind: 'offerExactly',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -173,7 +173,7 @@ test('zoe - coveredCall', async t => {
     // Alice got what she wanted
     t.deepEquals(
       aliceResult[1].getBalance(),
-      aliceOfferRules.payoutRules[1].assetDesc,
+      aliceOfferRules.payoutRules[1].units,
     );
 
     // 11: Alice deposits her winnings to ensure she can
@@ -213,13 +213,13 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const coveredCallInstallationHandle = zoe.install(source, moduleFormat);
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
+    const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(3));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const aliceSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
+    const aliceSimoleanPurse = mints[1].mint(assays[1].makeUnits(0));
 
     // Setup Bob
-    const bobMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-    const bobSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(7));
+    const bobMoolaPurse = mints[0].mint(assays[0].makeUnits(0));
+    const bobSimoleanPurse = mints[1].mint(assays[1].makeUnits(7));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
     // 1: Alice creates a coveredCall instance
@@ -242,11 +242,11 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: assays[0].makeAssetDesc(3),
+          units: assays[0].makeUnits(3),
         },
         {
           kind: 'wantExactly',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -285,11 +285,11 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     t.deepEquals(bobInvitePayment.getBalance().extent.offerToBeMade, [
       {
         kind: 'wantExactly',
-        assetDesc: assays[0].makeAssetDesc(3),
+        units: assays[0].makeUnits(3),
       },
       {
         kind: 'offerExactly',
-        assetDesc: assays[1].makeAssetDesc(7),
+        units: assays[1].makeUnits(7),
       },
     ]);
 
@@ -306,11 +306,11 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: assays[0].makeAssetDesc(3),
+          units: assays[0].makeUnits(3),
         },
         {
           kind: 'offerExactly',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -363,10 +363,10 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const bobResult = await bobPayoutP;
 
     // Alice gets back what she put in
-    t.deepEquals(aliceResult[0].getBalance(), assays[0].makeAssetDesc(3));
+    t.deepEquals(aliceResult[0].getBalance(), assays[0].makeUnits(3));
 
     // Alice doesn't get what she wanted
-    t.deepEquals(aliceResult[1].getBalance(), assays[1].makeAssetDesc(0));
+    t.deepEquals(aliceResult[1].getBalance(), assays[1].makeUnits(0));
 
     // 11: Alice deposits her winnings to ensure she can
     await aliceMoolaPurse.depositAll(aliceResult[0]);
@@ -379,10 +379,10 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     // Assert that the correct outcome was achieved.
     // Alice had 3 moola and 0 simoleans.
     // Bob had 0 moola and 7 simoleans.
-    t.deepEquals(aliceMoolaPurse.getBalance(), assays[0].makeAssetDesc(3));
-    t.deepEquals(aliceSimoleanPurse.getBalance(), assays[1].makeAssetDesc(0));
-    t.deepEquals(bobMoolaPurse.getBalance(), assays[0].makeAssetDesc(0));
-    t.deepEquals(bobSimoleanPurse.getBalance(), assays[1].makeAssetDesc(7));
+    t.deepEquals(aliceMoolaPurse.getBalance(), assays[0].makeUnits(3));
+    t.deepEquals(aliceSimoleanPurse.getBalance(), assays[1].makeUnits(0));
+    t.deepEquals(bobMoolaPurse.getBalance(), assays[0].makeUnits(0));
+    t.deepEquals(bobSimoleanPurse.getBalance(), assays[1].makeUnits(7));
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {
@@ -415,23 +415,21 @@ test('zoe - coveredCall with swap for invite', async t => {
 
     // Setup Alice
     // Alice starts with 3 moola
-    const aliceMoolaPurse = moolaMint.mint(moolaAssay.makeAssetDesc(3));
+    const aliceMoolaPurse = moolaMint.mint(moolaAssay.makeUnits(3));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const aliceSimoleanPurse = simoleanMint.mint(
-      simoleanAssay.makeAssetDesc(0),
-    );
+    const aliceSimoleanPurse = simoleanMint.mint(simoleanAssay.makeUnits(0));
 
     // Setup Bob
     // Bob starts with nothing
-    const bobMoolaPurse = moolaMint.mint(moolaAssay.makeAssetDesc(0));
-    const bobSimoleanPurse = simoleanMint.mint(simoleanAssay.makeAssetDesc(0));
-    const bobBucksPurse = bucksMint.mint(bucksAssay.makeAssetDesc(0));
+    const bobMoolaPurse = moolaMint.mint(moolaAssay.makeUnits(0));
+    const bobSimoleanPurse = simoleanMint.mint(simoleanAssay.makeUnits(0));
+    const bobBucksPurse = bucksMint.mint(bucksAssay.makeUnits(0));
 
     // Setup Dave
     // Dave starts with 1 buck
-    const daveMoolaPurse = moolaMint.mint(moolaAssay.makeAssetDesc(0));
-    const daveSimoleanPurse = simoleanMint.mint(simoleanAssay.makeAssetDesc(7));
-    const daveBucksPurse = bucksMint.mint(bucksAssay.makeAssetDesc(1));
+    const daveMoolaPurse = moolaMint.mint(moolaAssay.makeUnits(0));
+    const daveSimoleanPurse = simoleanMint.mint(simoleanAssay.makeUnits(7));
+    const daveBucksPurse = bucksMint.mint(bucksAssay.makeUnits(1));
     const daveBucksPayment = daveBucksPurse.withdrawAll();
     const daveSimoleanPayment = daveSimoleanPurse.withdrawAll();
 
@@ -455,11 +453,11 @@ test('zoe - coveredCall with swap for invite', async t => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: assays[0].makeAssetDesc(3),
+          units: assays[0].makeUnits(3),
         },
         {
           kind: 'wantExactly',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -530,11 +528,11 @@ test('zoe - coveredCall with swap for invite', async t => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: assays[0].makeAssetDesc(3),
+          units: assays[0].makeUnits(3),
         },
         {
           kind: 'wantExactly',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -556,11 +554,11 @@ test('zoe - coveredCall with swap for invite', async t => {
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: assays[0].makeAssetDesc(3),
+          units: assays[0].makeUnits(3),
         },
         {
           kind: 'offerExactly',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -589,17 +587,17 @@ test('zoe - coveredCall with swap for invite', async t => {
       assays: harden([inviteAssay, bucksAssay]),
     });
 
-    // Bob wants to swap an invite with the same asset desc as his
+    // Bob wants to swap an invite with the same units as his
     // current invite from Alice. He wants 1 buck in return.
     const bobOfferRulesSwap = harden({
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: bobExclInvitePayment.getBalance(),
+          units: bobExclInvitePayment.getBalance(),
         },
         {
           kind: 'wantExactly',
-          assetDesc: bucksAssay.makeAssetDesc(1),
+          units: bucksAssay.makeUnits(1),
         },
       ],
       exitRule: {
@@ -663,11 +661,11 @@ test('zoe - coveredCall with swap for invite', async t => {
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: bobOfferRulesSwap.payoutRules[0].assetDesc,
+          units: bobOfferRulesSwap.payoutRules[0].units,
         },
         {
           kind: 'offerExactly',
-          assetDesc: bucksAssay.makeAssetDesc(1),
+          units: bucksAssay.makeUnits(1),
         },
       ],
       exitRule: {
@@ -700,11 +698,11 @@ test('zoe - coveredCall with swap for invite', async t => {
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: moolaAssay.makeAssetDesc(3),
+          units: moolaAssay.makeUnits(3),
         },
         {
           kind: 'offerExactly',
-          assetDesc: simoleanAssay.makeAssetDesc(7),
+          units: simoleanAssay.makeUnits(7),
         },
       ],
       exitRule: {
@@ -733,18 +731,18 @@ test('zoe - coveredCall with swap for invite', async t => {
 
     t.deepEquals(
       daveCoveredCallResult[0].getBalance(),
-      moolaAssay.makeAssetDesc(3),
+      moolaAssay.makeUnits(3),
     );
     t.deepEquals(
       daveCoveredCallResult[1].getBalance(),
-      simoleanAssay.makeAssetDesc(0),
+      simoleanAssay.makeUnits(0),
     );
 
-    t.deepEquals(aliceResult[0].getBalance(), moolaAssay.makeAssetDesc(0));
-    t.deepEquals(aliceResult[1].getBalance(), simoleanAssay.makeAssetDesc(7));
+    t.deepEquals(aliceResult[0].getBalance(), moolaAssay.makeUnits(0));
+    t.deepEquals(aliceResult[1].getBalance(), simoleanAssay.makeUnits(7));
 
-    t.deepEquals(bobResult[0].getBalance(), inviteAssay.makeAssetDesc(null));
-    t.deepEquals(bobResult[1].getBalance(), bucksAssay.makeAssetDesc(1));
+    t.deepEquals(bobResult[0].getBalance(), inviteAssay.makeUnits(null));
+    t.deepEquals(bobResult[1].getBalance(), bucksAssay.makeUnits(1));
 
     // Alice deposits her payouts
     await aliceMoolaPurse.depositAll(aliceResult[0]);
@@ -794,23 +792,21 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
 
     // Setup Alice
     // Alice starts with 3 moola
-    const aliceMoolaPurse = moolaMint.mint(moolaAssay.makeAssetDesc(3));
-    const aliceSimoleanPurse = simoleanMint.mint(
-      simoleanAssay.makeAssetDesc(0),
-    );
+    const aliceMoolaPurse = moolaMint.mint(moolaAssay.makeUnits(3));
+    const aliceSimoleanPurse = simoleanMint.mint(simoleanAssay.makeUnits(0));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
 
     // Setup Bob
     // Bob starts with nothing
-    const bobMoolaPurse = moolaMint.mint(moolaAssay.makeAssetDesc(0));
-    const bobSimoleanPurse = simoleanMint.mint(simoleanAssay.makeAssetDesc(0));
-    const bobBucksPurse = bucksMint.mint(bucksAssay.makeAssetDesc(0));
+    const bobMoolaPurse = moolaMint.mint(moolaAssay.makeUnits(0));
+    const bobSimoleanPurse = simoleanMint.mint(simoleanAssay.makeUnits(0));
+    const bobBucksPurse = bucksMint.mint(bucksAssay.makeUnits(0));
 
     // Setup Dave
     // Dave starts with 1 buck and 7 simoleans
-    const daveMoolaPurse = moolaMint.mint(moolaAssay.makeAssetDesc(0));
-    const daveSimoleanPurse = simoleanMint.mint(simoleanAssay.makeAssetDesc(7));
-    const daveBucksPurse = bucksMint.mint(bucksAssay.makeAssetDesc(1));
+    const daveMoolaPurse = moolaMint.mint(moolaAssay.makeUnits(0));
+    const daveSimoleanPurse = simoleanMint.mint(simoleanAssay.makeUnits(7));
+    const daveBucksPurse = bucksMint.mint(bucksAssay.makeUnits(1));
     const daveBucksPayment = daveBucksPurse.withdrawAll();
     const daveSimoleanPayment = daveSimoleanPurse.withdrawAll();
 
@@ -834,11 +830,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: assays[0].makeAssetDesc(3),
+          units: assays[0].makeUnits(3),
         },
         {
           kind: 'wantExactly',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -909,11 +905,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: assays[0].makeAssetDesc(3),
+          units: assays[0].makeUnits(3),
         },
         {
           kind: 'wantExactly',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -935,11 +931,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: assays[0].makeAssetDesc(3),
+          units: assays[0].makeUnits(3),
         },
         {
           kind: 'offerExactly',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -971,18 +967,18 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       }),
     );
 
-    // Bob wants to swap an invite with the same asset desc as his
+    // Bob wants to swap an invite with the same units as his
     // current invite from Alice. He wants 1 buck in return.
     const firstCoveredCallInviteAssetDec = bobExclInvitePayment.getBalance();
     const bobOfferRulesSecondCoveredCall = harden({
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: firstCoveredCallInviteAssetDec,
+          units: firstCoveredCallInviteAssetDec,
         },
         {
           kind: 'wantExactly',
-          assetDesc: bucksAssay.makeAssetDesc(1),
+          units: bucksAssay.makeUnits(1),
         },
       ],
       exitRule: {
@@ -1046,11 +1042,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: firstCoveredCallInviteAssetDec,
+          units: firstCoveredCallInviteAssetDec,
         },
         {
           kind: 'wantExactly',
-          assetDesc: bucksAssay.makeAssetDesc(1),
+          units: bucksAssay.makeUnits(1),
         },
       ],
       exitRule: {
@@ -1072,11 +1068,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: firstCoveredCallInviteAssetDec,
+          units: firstCoveredCallInviteAssetDec,
         },
         {
           kind: 'offerExactly',
-          assetDesc: bucksAssay.makeAssetDesc(1),
+          units: bucksAssay.makeUnits(1),
         },
       ],
       exitRule: {
@@ -1128,11 +1124,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: moolaAssay.makeAssetDesc(3),
+          units: moolaAssay.makeUnits(3),
         },
         {
           kind: 'offerExactly',
-          assetDesc: simoleanAssay.makeAssetDesc(7),
+          units: simoleanAssay.makeUnits(7),
         },
       ],
       exitRule: {
@@ -1164,18 +1160,18 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
 
     t.deepEquals(
       daveFirstCoveredCallResult[0].getBalance(),
-      moolaAssay.makeAssetDesc(3),
+      moolaAssay.makeUnits(3),
     );
     t.deepEquals(
       daveFirstCoveredCallResult[1].getBalance(),
-      simoleanAssay.makeAssetDesc(0),
+      simoleanAssay.makeUnits(0),
     );
 
-    t.deepEquals(aliceResult[0].getBalance(), moolaAssay.makeAssetDesc(0));
-    t.deepEquals(aliceResult[1].getBalance(), simoleanAssay.makeAssetDesc(7));
+    t.deepEquals(aliceResult[0].getBalance(), moolaAssay.makeUnits(0));
+    t.deepEquals(aliceResult[1].getBalance(), simoleanAssay.makeUnits(7));
 
-    t.deepEquals(bobResult[0].getBalance(), inviteAssay.makeAssetDesc(null));
-    t.deepEquals(bobResult[1].getBalance(), bucksAssay.makeAssetDesc(1));
+    t.deepEquals(bobResult[0].getBalance(), inviteAssay.makeUnits(null));
+    t.deepEquals(bobResult[1].getBalance(), bucksAssay.makeUnits(1));
 
     // Alice deposits her payouts
     await aliceMoolaPurse.depositAll(aliceResult[0]);

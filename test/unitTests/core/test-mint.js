@@ -2,15 +2,15 @@ import { test } from 'tape-promise/tape';
 
 import { makeMint } from '../../../core/mint';
 
-test('split bad assetDescs', t => {
+test('split bad units', t => {
   try {
     const mint = makeMint('fungible');
     const assay = mint.getAssay();
     const purse = mint.mint(1000);
     const payment = purse.withdrawAll();
 
-    const badAssetDescsArray = Array(2).fill(assay.makeAssetDesc(10));
-    t.throws(_ => assay.split(payment, badAssetDescsArray));
+    const badUnitssArray = Array(2).fill(assay.makeUnits(10));
+    t.throws(_ => assay.split(payment, badUnitssArray));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -18,18 +18,18 @@ test('split bad assetDescs', t => {
   }
 });
 
-test('split good assetDescs', t => {
+test('split good units', t => {
   try {
     const mint = makeMint('fungible');
     const assay = mint.getAssay();
     const purse = mint.mint(100);
     const oldPayment = purse.withdrawAll();
 
-    const goodAssetDescsArray = Array(10).fill(assay.makeAssetDesc(10));
-    const splitPayments = assay.split(oldPayment, goodAssetDescsArray);
+    const goodUnitssArray = Array(10).fill(assay.makeUnits(10));
+    const splitPayments = assay.split(oldPayment, goodUnitssArray);
 
     for (const payment of splitPayments) {
-      t.deepEqual(payment.getBalance(), assay.makeAssetDesc(10));
+      t.deepEqual(payment.getBalance(), assay.makeUnits(10));
     }
     t.throws(() => oldPayment.getBalance());
   } catch (e) {
@@ -50,7 +50,7 @@ test('combine good payments', t => {
     }
 
     const combinedPayment = assay.combine(payments);
-    t.deepEqual(combinedPayment.getBalance(), assay.makeAssetDesc(100));
+    t.deepEqual(combinedPayment.getBalance(), assay.makeUnits(100));
     for (const payment of payments) {
       t.throws(() => payment.getBalance());
     }
@@ -84,7 +84,7 @@ test('combine bad payments', t => {
   }
 });
 
-test('depositExactly badAssetDesc', async t => {
+test('depositExactly badUnits', async t => {
   try {
     const mint = makeMint('fungible');
     const assay = mint.getAssay();
@@ -92,12 +92,12 @@ test('depositExactly badAssetDesc', async t => {
     const targetPurse = assay.makeEmptyPurse();
     const payment = await purse.withdraw(7);
     try {
-      await targetPurse.depositExactly(assay.makeAssetDesc(6), payment);
+      await targetPurse.depositExactly(assay.makeUnits(6), payment);
       t.fail();
     } catch (err) {
       t.equal(
         err.message,
-        'payment balance (a object) must equal assetDesc (a object)\nSee console for error data.',
+        'payment balance (a object) must equal units (a object)\nSee console for error data.',
       );
     }
   } catch (e) {
@@ -107,7 +107,7 @@ test('depositExactly badAssetDesc', async t => {
   }
 });
 
-test('depositExactly goodAssetDesc', async t => {
+test('depositExactly goodUnits', async t => {
   try {
     const mint = makeMint('fungible');
     const assay = mint.getAssay();
@@ -115,7 +115,7 @@ test('depositExactly goodAssetDesc', async t => {
     const targetPurse = assay.makeEmptyPurse();
     const payment = await purse.withdraw(7);
     await targetPurse.depositExactly(7, payment);
-    t.deepEqual(targetPurse.getBalance(), assay.makeAssetDesc(7));
+    t.deepEqual(targetPurse.getBalance(), assay.makeUnits(7));
     t.throws(() => payment.getBalance());
   } catch (e) {
     t.assert(false, e);
@@ -124,7 +124,7 @@ test('depositExactly goodAssetDesc', async t => {
   }
 });
 
-test('depositAll goodAssetDesc', async t => {
+test('depositAll goodUnits', async t => {
   try {
     const mint = makeMint('fungible');
     const assay = mint.getAssay();
@@ -132,7 +132,7 @@ test('depositAll goodAssetDesc', async t => {
     const targetPurse = assay.makeEmptyPurse();
     const payment = await purse.withdraw(7);
     await targetPurse.depositAll(payment);
-    t.deepEqual(targetPurse.getBalance(), assay.makeAssetDesc(7));
+    t.deepEqual(targetPurse.getBalance(), assay.makeUnits(7));
     t.throws(() => payment.getBalance());
   } catch (e) {
     t.assert(false, e);
@@ -141,7 +141,7 @@ test('depositAll goodAssetDesc', async t => {
   }
 });
 
-test('burnExactly badAssetDesc', async t => {
+test('burnExactly badUnits', async t => {
   try {
     const mint = makeMint('fungible');
     const assay = mint.getAssay();
@@ -153,7 +153,7 @@ test('burnExactly badAssetDesc', async t => {
     } catch (err) {
       t.equal(
         err.message,
-        'payment balance (a object) must equal assetDesc (a object)\nSee console for error data.',
+        'payment balance (a object) must equal units (a object)\nSee console for error data.',
       );
     }
   } catch (e) {
@@ -163,7 +163,7 @@ test('burnExactly badAssetDesc', async t => {
   }
 });
 
-test('burnExactly goodAssetDesc', async t => {
+test('burnExactly goodUnits', async t => {
   try {
     const mint = makeMint('fungible');
     const assay = mint.getAssay();
@@ -178,7 +178,7 @@ test('burnExactly goodAssetDesc', async t => {
   }
 });
 
-test('burnAll goodAssetDesc', async t => {
+test('burnAll goodUnits', async t => {
   try {
     const mint = makeMint('fungible');
     const assay = mint.getAssay();
@@ -193,7 +193,7 @@ test('burnAll goodAssetDesc', async t => {
   }
 });
 
-test('claimExactly badAssetDesc', async t => {
+test('claimExactly badUnits', async t => {
   try {
     const mint = makeMint('fungible');
     const assay = mint.getAssay();
@@ -205,7 +205,7 @@ test('claimExactly badAssetDesc', async t => {
     } catch (err) {
       t.equal(
         err.message,
-        'payment balance (a object) must equal assetDesc (a object)\nSee console for error data.',
+        'payment balance (a object) must equal units (a object)\nSee console for error data.',
       );
     }
   } catch (e) {
@@ -215,7 +215,7 @@ test('claimExactly badAssetDesc', async t => {
   }
 });
 
-test('claimExactly goodAssetDesc', async t => {
+test('claimExactly goodUnits', async t => {
   try {
     const mint = makeMint('fungible');
     const assay = mint.getAssay();
@@ -223,7 +223,7 @@ test('claimExactly goodAssetDesc', async t => {
     const payment = await purse.withdraw(7);
     const newPayment = await assay.claimExactly(7, payment);
     t.throws(() => payment.getBalance());
-    t.deepEqual(newPayment.getBalance(), assay.makeAssetDesc(7));
+    t.deepEqual(newPayment.getBalance(), assay.makeUnits(7));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -231,7 +231,7 @@ test('claimExactly goodAssetDesc', async t => {
   }
 });
 
-test('claimAll goodAssetDesc', async t => {
+test('claimAll goodUnits', async t => {
   try {
     const mint = makeMint('fungible');
     const assay = mint.getAssay();
@@ -239,7 +239,7 @@ test('claimAll goodAssetDesc', async t => {
     const payment = await purse.withdraw(7);
     const newPayment = await assay.claimAll(payment);
     t.throws(() => payment.getBalance());
-    t.deepEqual(newPayment.getBalance(), assay.makeAssetDesc(7));
+    t.deepEqual(newPayment.getBalance(), assay.makeUnits(7));
   } catch (e) {
     t.assert(false, e);
   } finally {

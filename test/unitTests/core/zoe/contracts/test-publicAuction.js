@@ -9,29 +9,29 @@ const publicAuctionRoot = `${__dirname}/../../../../../core/zoe/contracts/public
 
 test('zoe - secondPriceAuction w/ 3 bids', async t => {
   try {
-    const { assays: originalAssays, mints, assetDescOps } = setup();
+    const { assays: originalAssays, mints, unitOps } = setup();
     const assays = originalAssays.slice(0, 2);
     const zoe = await makeZoe({ require });
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(1));
+    const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(1));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const aliceSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
+    const aliceSimoleanPurse = mints[1].mint(assays[1].makeUnits(0));
 
     // Setup Bob
-    const bobMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-    const bobSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(11));
+    const bobMoolaPurse = mints[0].mint(assays[0].makeUnits(0));
+    const bobSimoleanPurse = mints[1].mint(assays[1].makeUnits(11));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
     // Setup Carol
-    const carolMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-    const carolSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(7));
+    const carolMoolaPurse = mints[0].mint(assays[0].makeUnits(0));
+    const carolSimoleanPurse = mints[1].mint(assays[1].makeUnits(7));
     const carolSimoleanPayment = carolSimoleanPurse.withdrawAll();
 
     // Setup Dave
-    const daveMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-    const daveSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(5));
+    const daveMoolaPurse = mints[0].mint(assays[0].makeUnits(0));
+    const daveSimoleanPurse = mints[1].mint(assays[1].makeUnits(5));
     const daveSimoleanPayment = daveSimoleanPurse.withdrawAll();
 
     // 1: Alice creates a secondPriceAuction instance
@@ -51,11 +51,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: assays[0].makeAssetDesc(1),
+          units: assays[0].makeUnits(1),
         },
         {
           kind: 'wantAtLeast',
-          assetDesc: assays[1].makeAssetDesc(3),
+          units: assays[1].makeUnits(3),
         },
       ],
       exitRule: {
@@ -99,18 +99,18 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const minBid = bobAuction.getMinimumBid();
     const auctionedAssets = bobAuction.getAuctionedAssets();
 
-    t.deepEquals(minBid, assays[1].makeAssetDesc(3));
-    t.deepEquals(auctionedAssets, assays[0].makeAssetDesc(1));
+    t.deepEquals(minBid, assays[1].makeUnits(3));
+    t.deepEquals(auctionedAssets, assays[0].makeUnits(1));
 
     const bobOfferRules = harden({
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: assays[0].makeAssetDesc(1),
+          units: assays[0].makeUnits(1),
         },
         {
           kind: 'offerAtMost',
-          assetDesc: assays[1].makeAssetDesc(11),
+          units: assays[1].makeUnits(11),
         },
       ],
       exitRule: {
@@ -154,11 +154,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: assays[0].makeAssetDesc(1),
+          units: assays[0].makeUnits(1),
         },
         {
           kind: 'offerAtMost',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -194,11 +194,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: assays[0].makeAssetDesc(1),
+          units: assays[0].makeUnits(1),
         },
         {
           kind: 'offerAtMost',
-          assetDesc: assays[1].makeAssetDesc(5),
+          units: assays[1].makeUnits(5),
         },
       ],
       exitRule: {
@@ -229,7 +229,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     // Alice (the creator of the auction) gets back the second highest bid
     t.deepEquals(
       aliceResult[1].getBalance(),
-      carolOfferRules.payoutRules[1].assetDesc,
+      carolOfferRules.payoutRules[1].units,
     );
 
     // Alice didn't get any of what she put in
@@ -241,18 +241,18 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     // Bob (the winner of the auction) gets the one moola and the
     // difference between his bid and the price back
-    t.deepEquals(bobResult[0].getBalance(), assetDescOps[0].make(1));
-    t.deepEquals(bobResult[1].getBalance(), assetDescOps[1].make(4));
+    t.deepEquals(bobResult[0].getBalance(), unitOps[0].make(1));
+    t.deepEquals(bobResult[1].getBalance(), unitOps[1].make(4));
 
     // 24: Bob deposits his payout to ensure he can
     await bobMoolaPurse.depositAll(bobResult[0]);
     await bobSimoleanPurse.depositAll(bobResult[1]);
 
     // Carol gets a full refund
-    t.deepEquals(carolResult[0].getBalance(), assetDescOps[0].make(0));
+    t.deepEquals(carolResult[0].getBalance(), unitOps[0].make(0));
     t.deepEquals(
       carolResult[1].getBalance(),
-      carolOfferRules.payoutRules[1].assetDesc,
+      carolOfferRules.payoutRules[1].units,
     );
 
     // 25: Carol deposits her payout to ensure she can
@@ -260,10 +260,10 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     await carolSimoleanPurse.depositAll(carolResult[1]);
 
     // Dave gets a full refund
-    t.deepEquals(daveResult[0].getBalance(), assetDescOps[0].make(0));
+    t.deepEquals(daveResult[0].getBalance(), unitOps[0].make(0));
     t.deepEquals(
       daveResult[1].getBalance(),
-      daveOfferRules.payoutRules[1].assetDesc,
+      daveOfferRules.payoutRules[1].units,
     );
 
     // 24: Dave deposits his payout to ensure he can
@@ -299,29 +299,29 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
 test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
   try {
-    const { assays: originalAssays, mints, assetDescOps } = setup();
+    const { assays: originalAssays, mints, unitOps } = setup();
     const assays = originalAssays.slice(0, 2);
     const zoe = await makeZoe({ require });
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(1));
+    const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(1));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const aliceSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
+    const aliceSimoleanPurse = mints[1].mint(assays[1].makeUnits(0));
 
     // Setup Bob
-    const bobMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-    const bobSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(11));
+    const bobMoolaPurse = mints[0].mint(assays[0].makeUnits(0));
+    const bobSimoleanPurse = mints[1].mint(assays[1].makeUnits(11));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
     // Setup Carol
-    const carolMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-    const carolSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(7));
+    const carolMoolaPurse = mints[0].mint(assays[0].makeUnits(0));
+    const carolSimoleanPurse = mints[1].mint(assays[1].makeUnits(7));
     const carolSimoleanPayment = carolSimoleanPurse.withdrawAll();
 
     // Setup Dave
-    const daveMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-    const daveSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(5));
+    const daveMoolaPurse = mints[0].mint(assays[0].makeUnits(0));
+    const daveSimoleanPurse = mints[1].mint(assays[1].makeUnits(5));
     const daveSimoleanPayment = daveSimoleanPurse.withdrawAll();
 
     // 1: Alice creates a secondPriceAuction instance
@@ -341,11 +341,11 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: assays[0].makeAssetDesc(1),
+          units: assays[0].makeUnits(1),
         },
         {
           kind: 'wantAtLeast',
-          assetDesc: assays[1].makeAssetDesc(3),
+          units: assays[1].makeUnits(3),
         },
       ],
       exitRule: {
@@ -395,11 +395,11 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: assays[0].makeAssetDesc(1),
+          units: assays[0].makeUnits(1),
         },
         {
           kind: 'offerAtMost',
-          assetDesc: assays[1].makeAssetDesc(11),
+          units: assays[1].makeUnits(11),
         },
       ],
       exitRule: {
@@ -441,11 +441,11 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: assays[0].makeAssetDesc(1),
+          units: assays[0].makeUnits(1),
         },
         {
           kind: 'offerAtMost',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -479,11 +479,11 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: assays[0].makeAssetDesc(1),
+          units: assays[0].makeUnits(1),
         },
         {
           kind: 'offerAtMost',
-          assetDesc: assays[1].makeAssetDesc(5),
+          units: assays[1].makeUnits(5),
         },
       ],
       exitRule: {
@@ -512,7 +512,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // Alice (the creator of the auction) gets back what she put in
     t.deepEquals(
       aliceResult[0].getBalance(),
-      aliceOfferRules.payoutRules[0].assetDesc,
+      aliceOfferRules.payoutRules[0].units,
     );
 
     // Alice didn't get any of what she wanted
@@ -523,21 +523,18 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     await aliceSimoleanPurse.depositAll(aliceResult[1]);
 
     // Bob gets a refund
-    t.deepEquals(bobResult[0].getBalance(), assetDescOps[0].make(0));
-    t.deepEquals(
-      bobResult[1].getBalance(),
-      bobOfferRules.payoutRules[1].assetDesc,
-    );
+    t.deepEquals(bobResult[0].getBalance(), unitOps[0].make(0));
+    t.deepEquals(bobResult[1].getBalance(), bobOfferRules.payoutRules[1].units);
 
     // 24: Bob deposits his payout to ensure he can
     await bobMoolaPurse.depositAll(bobResult[0]);
     await bobSimoleanPurse.depositAll(bobResult[1]);
 
     // Carol gets a full refund
-    t.deepEquals(carolResult[0].getBalance(), assetDescOps[0].make(0));
+    t.deepEquals(carolResult[0].getBalance(), unitOps[0].make(0));
     t.deepEquals(
       carolResult[1].getBalance(),
-      carolOfferRules.payoutRules[1].assetDesc,
+      carolOfferRules.payoutRules[1].units,
     );
 
     // 25: Carol deposits her payout to ensure she can
@@ -545,10 +542,10 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     await carolSimoleanPurse.depositAll(carolResult[1]);
 
     // Dave gets a full refund
-    t.deepEquals(daveResult[0].getBalance(), assetDescOps[0].make(0));
+    t.deepEquals(daveResult[0].getBalance(), unitOps[0].make(0));
     t.deepEquals(
       daveResult[1].getBalance(),
-      daveOfferRules.payoutRules[1].assetDesc,
+      daveOfferRules.payoutRules[1].units,
     );
 
     // 24: Dave deposits his payout to ensure he can

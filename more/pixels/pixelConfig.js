@@ -48,13 +48,13 @@ function makePixelConfigMaker(
     }
 
     // This method is used in the creation of childPayments and
-    // childPurses where we want the assetDesc to be the same as in the
+    // childPurses where we want the units to be the same as in the
     // original asset apart from the difference in assays.
-    function getChildAssetDesc(assay, assetDesc) {
-      // extent is the same, but assetDescs are different for
+    function getChildUnits(assay, units) {
+      // extent is the same, but units are different for
       // different assays
-      const { extent } = assetDesc;
-      return childAssay.makeAssetDesc(extent);
+      const { extent } = units;
+      return childAssay.makeUnits(extent);
     }
 
     function* makePaymentTrait(corePayment, assay) {
@@ -70,15 +70,12 @@ function makePixelConfigMaker(
         // original payment
         claimChild() {
           prepareChildMint(assay);
-          const childAssetDesc = getChildAssetDesc(
-            assay,
-            corePayment.getBalance(),
-          );
-          // Remove the assetDesc of this payment from the purses and
+          const childUnits = getChildUnits(assay, corePayment.getBalance());
+          // Remove the units of this payment from the purses and
           // payments of the childMint. Removes recursively down the
           // chain until it fails to find a childMint.
-          childMint.revoke(childAssetDesc);
-          const childPurse = childMint.mint(childAssetDesc);
+          childMint.revoke(childUnits);
+          const childPurse = childMint.mint(childUnits);
           return childPurse.withdrawAll();
         },
       });
@@ -96,33 +93,30 @@ function makePixelConfigMaker(
         // original purse
         claimChild() {
           prepareChildMint(assay);
-          const childAssetDesc = getChildAssetDesc(
-            assay,
-            corePurse.getBalance(),
-          );
-          // Remove the assetDesc of this payment from the purses and
+          const childUnits = getChildUnits(assay, corePurse.getBalance());
+          // Remove the units of this payment from the purses and
           // payments of the childMint. Removes recursively down the
           // chain until it fails to find a childMint.
-          childMint.revoke(childAssetDesc);
-          return childMint.mint(childAssetDesc);
+          childMint.revoke(childUnits);
+          return childMint.mint(childUnits);
         },
       });
     }
-    function* makeMintTrait(_coreMint, assay, assetDescOps, mintKeeper) {
+    function* makeMintTrait(_coreMint, assay, unitOps, mintKeeper) {
       yield harden({
-        // revoke destroys the assetDesc from this mint and calls
-        // revoke on the childMint with an assetDesc of the same
-        // extent. Destroying the assetDesc depends on the fact that
+        // revoke destroys the units from this mint and calls
+        // revoke on the childMint with a units of the same
+        // extent. Destroying the units depends on the fact that
         // pixels are uniquely identifiable by their `x` and `y`
         // coordinates. Therefore, destroy can look for purses and
         // payments that include those particular pixels and remove
         // the particular pixels from those purses or payments
-        revoke(assetDesc) {
-          assetDesc = assetDescOps.coerce(assetDesc);
+        revoke(units) {
+          units = unitOps.coerce(units);
 
-          mintKeeper.destroy(assetDesc);
+          mintKeeper.destroy(units);
           if (childMint !== undefined) {
-            childMint.revoke(getChildAssetDesc(assay, assetDesc)); // recursively revoke child assets
+            childMint.revoke(getChildUnits(assay, units)); // recursively revoke child assets
           }
         },
       });

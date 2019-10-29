@@ -5,8 +5,8 @@ import { sameStructure } from '../../../util/sameStructure';
 const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
   const showPaymentBalance = async (paymentP, name) => {
     try {
-      const assetDesc = await E(paymentP).getBalance();
-      log(name, ': balance ', assetDesc);
+      const units = await E(paymentP).getBalance();
+      log(name, ': balance ', units);
     } catch (err) {
       console.error(err);
     }
@@ -42,11 +42,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
         payoutRules: [
           {
             kind: 'wantExactly',
-            assetDesc: await E(assays[0]).makeAssetDesc(15),
+            units: await E(assays[0]).makeUnits(15),
           },
           {
             kind: 'offerExactly',
-            assetDesc: await E(assays[1]).makeAssetDesc(17),
+            units: await E(assays[1]).makeUnits(17),
           },
         ],
         exitRule: {
@@ -94,11 +94,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
         payoutRules: [
           {
             kind: 'wantExactly',
-            assetDesc: await E(assays[0]).makeAssetDesc(3),
+            units: await E(assays[0]).makeUnits(3),
           },
           {
             kind: 'offerExactly',
-            assetDesc: await E(assays[1]).makeAssetDesc(7),
+            units: await E(assays[1]).makeUnits(7),
           },
         ],
         exitRule: {
@@ -170,11 +170,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
         payoutRules: [
           {
             kind: 'wantExactly',
-            assetDesc: await E(assays[0]).makeAssetDesc(1),
+            units: await E(assays[0]).makeUnits(1),
           },
           {
             kind: 'offerAtMost',
-            assetDesc: await E(assays[1]).makeAssetDesc(11),
+            units: await E(assays[1]).makeUnits(11),
           },
         ],
         exitRule: {
@@ -217,11 +217,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const expectedFirstPayoutRules = harden([
         {
           kind: 'offerExactly',
-          assetDesc: await E(assays[0]).makeAssetDesc(3),
+          units: await E(assays[0]).makeUnits(3),
         },
         {
           kind: 'wantExactly',
-          assetDesc: await E(assays[1]).makeAssetDesc(7),
+          units: await E(assays[1]).makeUnits(7),
         },
       ]);
       insist(
@@ -232,11 +232,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
         payoutRules: [
           {
             kind: 'wantExactly',
-            assetDesc: await E(assays[0]).makeAssetDesc(3),
+            units: await E(assays[0]).makeUnits(3),
           },
           {
             kind: 'offerExactly',
-            assetDesc: await E(assays[1]).makeAssetDesc(7),
+            units: await E(assays[1]).makeUnits(7),
           },
         ],
         exitRule: {
@@ -279,11 +279,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
         payoutRules: [
           {
             kind: 'wantExactly',
-            assetDesc: await E(assays[0]).makeAssetDesc(3),
+            units: await E(assays[0]).makeUnits(3),
           },
           {
             kind: 'offerAtMost',
-            assetDesc: await E(assays[1]).makeAssetDesc(7),
+            units: await E(assays[1]).makeUnits(7),
           },
         ],
         exitRule: {
@@ -327,27 +327,27 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       )`assays were not as expected`;
 
       // bob checks the price of 2 moola. The price is 1 simolean
-      const assetDesc2Moola = await E(moolaAssay).makeAssetDesc(2);
-      const simoleanAssetDesc = await E(autoswap).getPrice([
-        assetDesc2Moola,
+      const units2Moola = await E(moolaAssay).makeUnits(2);
+      const simoleanUnits = await E(autoswap).getPrice([
+        units2Moola,
         undefined,
         undefined,
       ]);
-      log(simoleanAssetDesc);
+      log(simoleanUnits);
 
       const moolaForSimOfferRules = harden({
         payoutRules: [
           {
             kind: 'offerExactly',
-            assetDesc: await E(allAssays[0]).makeAssetDesc(2),
+            units: await E(allAssays[0]).makeUnits(2),
           },
           {
             kind: 'wantAtLeast',
-            assetDesc: await E(allAssays[1]).makeAssetDesc(1),
+            units: await E(allAssays[1]).makeUnits(1),
           },
           {
             kind: 'wantAtLeast',
-            assetDesc: await E(allAssays[2]).makeAssetDesc(0),
+            units: await E(allAssays[2]).makeUnits(0),
           },
         ],
         exitRule: {
@@ -372,36 +372,33 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       await E(simoleanPurseP).depositAll(moolaForSimPayout[1]);
 
       // Bob looks up the price of 3 simoleans. It's 6 moola
-      const assetDesc3Sims = await E(allAssays[1]).makeAssetDesc(3);
-      const moolaAssetDesc = await E(autoswap).getPrice([
-        undefined,
-        assetDesc3Sims,
-      ]);
-      log(moolaAssetDesc);
+      const units3Sims = await E(allAssays[1]).makeUnits(3);
+      const moolaUnits = await E(autoswap).getPrice([undefined, units3Sims]);
+      log(moolaUnits);
 
       // Bob makes another offer and swaps
       const bobSimsForMoolaOfferRules = harden({
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            assetDesc: await E(allAssays[0]).makeAssetDesc(6),
+            units: await E(allAssays[0]).makeUnits(6),
           },
           {
             kind: 'offerExactly',
-            assetDesc: await E(allAssays[1]).makeAssetDesc(3),
+            units: await E(allAssays[1]).makeUnits(3),
           },
           {
             kind: 'wantAtLeast',
-            assetDesc: await E(allAssays[2]).makeAssetDesc(0),
+            units: await E(allAssays[2]).makeUnits(0),
           },
         ],
         exitRule: {
           kind: 'onDemand',
         },
       });
-      const simoleanAssetDesc2 = await E(assays[1]).makeAssetDesc(3);
+      const simoleanUnits2 = await E(assays[1]).makeUnits(3);
       const bobSimoleanPayment = await E(simoleanPurseP).withdraw(
-        simoleanAssetDesc2,
+        simoleanUnits2,
       );
       const simsForMoolaPayments = [undefined, bobSimoleanPayment, undefined];
 

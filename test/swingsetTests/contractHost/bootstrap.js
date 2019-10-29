@@ -12,7 +12,7 @@ function build(E, log) {
   function showPaymentBalance(name, paymentP) {
     return E(paymentP)
       .getBalance()
-      .then(assetDesc => log(name, ' balance ', assetDesc))
+      .then(units => log(name, ' balance ', units))
       .catch(err => console.log(err));
   }
   // TODO BUG: All callers should wait until settled before doing
@@ -22,7 +22,7 @@ function build(E, log) {
     return Promise.all([
       E(purseP)
         .getBalance()
-        .then(assetDesc => log(name, ' balance ', assetDesc))
+        .then(units => log(name, ' balance ', units))
         .catch(err => console.log(err)),
     ]);
   }
@@ -34,8 +34,8 @@ function build(E, log) {
     },
   });
 
-  // This is written in the full assetDescOps style, where bare number
-  // objects are never used in lieu of full assetDesc objects. This has
+  // This is written in the full unitOps style, where bare number
+  // objects are never used in lieu of full units objects. This has
   // the virtue of unit typing, where 3 dollars cannot be confused
   // with 3 seconds.
   function mintTestDescOps(mint) {
@@ -60,8 +60,8 @@ function build(E, log) {
     });
   }
 
-  // Uses raw numbers rather than assetDescs. Until we have support for
-  // pass-by-presence, the full assetDescOps style shown in mintTestDescOps is
+  // Uses raw numbers rather tha units. Until we have support for
+  // pass-by-presence, the full unitOps style shown in mintTestDescOps is
   // too awkward.
   function mintTestNumber(mint) {
     log('starting mintTestNumber');

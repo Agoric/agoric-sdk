@@ -19,9 +19,9 @@ function makeFredMaker(E, host, log) {
       myFinPurseP,
     ) {
       const inviteAssayP = E(host).getInviteAssay();
-      const dough10P = E(E(myMoneyPurseP).getAssay()).makeAssetDesc(10);
-      const wonka7P = E(E(myStockPurseP).getAssay()).makeAssetDesc(7);
-      const fin55P = E(E(myFinPurseP).getAssay()).makeAssetDesc(55);
+      const dough10P = E(E(myMoneyPurseP).getAssay()).makeUnits(10);
+      const wonka7P = E(E(myStockPurseP).getAssay()).makeUnits(7);
+      const fin55P = E(E(myFinPurseP).getAssay()).makeUnits(55);
 
       const fred = harden({
         acceptOptionOffer(allegedSaleInvitePaymentP) {
@@ -30,17 +30,17 @@ function makeFredMaker(E, host, log) {
           const coveredCallTermsP = [dough10P, wonka7P, timerP, 'singularity'];
           const verifiedSaleInvitePaymentP = E(allegedSaleInvitePaymentP)
             .getBalance()
-            .then(allegedInviteAssetDesc => {
+            .then(allegedInviteUnits => {
               return Promise.resolve(allComparable(fin55P)).then(f55 => {
                 return E(escrowExchangeInstallationP)
-                  .checkPartialAssetDesc(allegedInviteAssetDesc, f55, 'left')
-                  .then(coveredCallAssetDesc =>
+                  .checkPartialUnits(allegedInviteUnits, f55, 'left')
+                  .then(coveredCallUnits =>
                     Promise.all(coveredCallTermsP).then(terms => {
                       return E(coveredCallInstallationP)
-                        .checkAssetDesc(coveredCallAssetDesc, terms)
+                        .checkUnits(coveredCallUnits, terms)
                         .then(() => {
                           return E(inviteAssayP).claimExactly(
-                            allegedInviteAssetDesc,
+                            allegedInviteUnits,
                             allegedSaleInvitePaymentP,
                             'verified sale invite',
                           );

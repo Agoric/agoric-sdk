@@ -19,7 +19,7 @@ test('zoe - simplest automaticRefund', async t => {
     const installationHandle = zoe.install(source, moduleFormat);
 
     // Setup Alice
-    const aliceMoolaPurse = moolaMint.mint(moolaAssay.makeAssetDesc(3));
+    const aliceMoolaPurse = moolaMint.mint(moolaAssay.makeUnits(3));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
 
     // 1: Alice creates an automatic refund instance
@@ -31,7 +31,7 @@ test('zoe - simplest automaticRefund', async t => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: moolaAssay.makeAssetDesc(3),
+          units: moolaAssay.makeUnits(3),
         },
       ],
     });
@@ -48,7 +48,7 @@ test('zoe - simplest automaticRefund', async t => {
     // Alice got back what she put in
     t.deepEquals(
       alicePayout[0].getBalance(),
-      aliceOfferRules.payoutRules[0].assetDesc,
+      aliceOfferRules.payoutRules[0].units,
     );
   } catch (e) {
     t.assert(false, e);
@@ -67,13 +67,13 @@ test('zoe with automaticRefund', async t => {
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
+    const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(3));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const aliceSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
+    const aliceSimoleanPurse = mints[1].mint(assays[1].makeUnits(0));
 
     // Setup Bob
-    const bobMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(0));
-    const bobSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(17));
+    const bobMoolaPurse = mints[0].mint(assays[0].makeUnits(0));
+    const bobSimoleanPurse = mints[1].mint(assays[1].makeUnits(17));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
     // Pack the contract.
@@ -96,11 +96,11 @@ test('zoe with automaticRefund', async t => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: assays[0].makeAssetDesc(3),
+          units: assays[0].makeUnits(3),
         },
         {
           kind: 'wantExactly',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -156,11 +156,11 @@ test('zoe with automaticRefund', async t => {
       payoutRules: [
         {
           kind: 'wantExactly',
-          assetDesc: bobAssays[0].makeAssetDesc(15),
+          units: bobAssays[0].makeUnits(15),
         },
         {
           kind: 'offerExactly',
-          assetDesc: bobAssays[1].makeAssetDesc(17),
+          units: bobAssays[1].makeUnits(17),
         },
       ],
       exitRule: {
@@ -193,7 +193,7 @@ test('zoe with automaticRefund', async t => {
     // Alice got back what she put in
     t.deepEquals(
       alicePayout[0].getBalance(),
-      aliceOfferRules.payoutRules[0].assetDesc,
+      aliceOfferRules.payoutRules[0].units,
     );
 
     // Alice didn't get any of what she wanted
@@ -230,9 +230,9 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
     const zoe = await makeZoe({ require });
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(30));
+    const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(30));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const moola10 = assays[0].makeAssetDesc(10);
+    const moola10 = assays[0].makeUnits(10);
     const aliceMoolaPayments = assays[0].split(aliceMoolaPayment, [
       moola10,
       moola10,
@@ -267,11 +267,11 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: assays[0].makeAssetDesc(10),
+          units: assays[0].makeUnits(10),
         },
         {
           kind: 'wantExactly',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -305,18 +305,9 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
     const payout3 = await payoutP3;
 
     // Ensure that she got what she put in for each
-    t.deepEquals(
-      payout1[0].getBalance(),
-      aliceOfferRules.payoutRules[0].assetDesc,
-    );
-    t.deepEquals(
-      payout2[0].getBalance(),
-      aliceOfferRules.payoutRules[0].assetDesc,
-    );
-    t.deepEquals(
-      payout3[0].getBalance(),
-      aliceOfferRules.payoutRules[0].assetDesc,
-    );
+    t.deepEquals(payout1[0].getBalance(), aliceOfferRules.payoutRules[0].units);
+    t.deepEquals(payout2[0].getBalance(), aliceOfferRules.payoutRules[0].units);
+    t.deepEquals(payout3[0].getBalance(), aliceOfferRules.payoutRules[0].units);
 
     // Ensure that the number of offers received by each instance is one
     t.equals(automaticRefund1.getOffersCount(), 1);
@@ -338,20 +329,20 @@ test('zoe - alice cancels before entering a contract', async t => {
     const zoe = await makeZoe({ require });
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
+    const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(3));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const aliceSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
+    const aliceSimoleanPurse = mints[1].mint(assays[1].makeUnits(0));
 
     // 2: Alice escrows with zoe
     const aliceOfferRules = harden({
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: assays[0].makeAssetDesc(3),
+          units: assays[0].makeUnits(3),
         },
         {
           kind: 'wantExactly',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -389,7 +380,7 @@ test('zoe - alice cancels before entering a contract', async t => {
     // Alice got back what she put in
     t.deepEquals(
       alicePayout[0].getBalance(),
-      aliceOfferRules.payoutRules[0].assetDesc,
+      aliceOfferRules.payoutRules[0].units,
     );
 
     // Alice didn't get any of what she wanted
@@ -419,20 +410,20 @@ test('zoe - alice cancels after completion', async t => {
     const zoe = await makeZoe({ require });
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
+    const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(3));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const aliceSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(0));
+    const aliceSimoleanPurse = mints[1].mint(assays[1].makeUnits(0));
 
     // 2: Alice escrows with zoe
     const aliceOfferRules = harden({
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: assays[0].makeAssetDesc(3),
+          units: assays[0].makeUnits(3),
         },
         {
           kind: 'wantExactly',
-          assetDesc: assays[1].makeAssetDesc(7),
+          units: assays[1].makeUnits(7),
         },
       ],
       exitRule: {
@@ -467,7 +458,7 @@ test('zoe - alice cancels after completion', async t => {
     // Alice got back what she put in
     t.deepEquals(
       alicePayout[0].getBalance(),
-      aliceOfferRules.payoutRules[0].assetDesc,
+      aliceOfferRules.payoutRules[0].units,
     );
 
     // Alice didn't get any of what she wanted

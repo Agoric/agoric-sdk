@@ -152,7 +152,7 @@ const makeZoe = async (additionalEndowments = {}) => {
        * Burn the escrowReceipt ERTP payment using the escrowReceipt
        * assay. Burning in ERTP also validates that the alleged payment was
        * produced by the assay, and returns the
-       * assetDesc of the payment.
+       * units of the payment.
        *
        * This method also checks if the offer has been completed and
        * errors if it has, so that a smart contract doesn't continue
@@ -164,14 +164,14 @@ const makeZoe = async (additionalEndowments = {}) => {
        */
 
       burnEscrowReceipt: async escrowReceipt => {
-        const assetDesc = await escrowReceiptAssay.burnAll(escrowReceipt);
-        const { offerHandle } = assetDesc.extent;
+        const units = await escrowReceiptAssay.burnAll(escrowReceipt);
+        const { offerHandle } = units.extent;
         const { inactive } = readOnlyState.getStatusFor(harden([offerHandle]));
         if (inactive.length > 0) {
           return Promise.reject(new Error('offer was cancelled'));
         }
         adminState.recordUsedInInstance(instanceHandle, offerHandle);
-        return assetDesc.extent;
+        return units.extent;
       },
       /**
        * Make a credible Zoe invite for a particular smart contract
@@ -289,7 +289,7 @@ const makeZoe = async (additionalEndowments = {}) => {
 
     /**
      * @param  {payoutRule[]} payoutRules - the offer description, an
-     * array of objects with `kind` and `assetDesc` properties.
+     * array of objects with `kind` and `units` properties.
      * @param  {payment[]} offerPayments - payments corresponding to
      * the offer description. A payment may be `undefined` in the case
      * of specifying a `want`.

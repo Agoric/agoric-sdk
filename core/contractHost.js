@@ -32,17 +32,16 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
 
   const inviteMint = makeMint('contract host', makeInviteConfig);
   const inviteAssay = inviteMint.getAssay();
-  const inviteDescOps = inviteAssay.getAssetDescOps();
+  const inviteUnitOps = inviteAssay.getUnitOps();
 
   function redeem(allegedInvitePayment) {
-    const allegedInviteAssetDesc = allegedInvitePayment.getBalance();
-    const inviteAssetDesc = inviteDescOps.coerce(allegedInviteAssetDesc);
-    insist(!inviteDescOps.isEmpty(inviteAssetDesc))`\
+    const allegedInviteUnits = allegedInvitePayment.getBalance();
+    const inviteUnits = inviteUnitOps.coerce(allegedInviteUnits);
+    insist(!inviteUnitOps.isEmpty(inviteUnits))`\
 No invites left`;
-    const desc = inviteDescOps.extent(inviteAssetDesc);
-    const { seatIdentity } = desc;
+    const { seatIdentity } = inviteUnitOps.extent(inviteUnits);
     return Promise.resolve(
-      inviteAssay.burnExactly(inviteAssetDesc, allegedInvitePayment),
+      inviteAssay.burnExactly(inviteUnits, allegedInvitePayment),
     ).then(_ => seats.get(seatIdentity));
   }
 
@@ -152,13 +151,13 @@ Unrecognized moduleFormat ${moduleFormat}`;
               });
               seats.init(seatIdentity, seat);
               seatDescriptions.init(seatIdentity, seatDescription);
-              const inviteAssetDesc = inviteDescOps.make(seatDescription);
+              const inviteUnits = inviteUnitOps.make(seatDescription);
               // This should be the only use of the invite mint, to
               // make an invite purse whose extent describes this
               // seat. This invite purse makes the invite payment,
               // and then the invite purse is dropped, in the sense
               // that it becomes inaccessible.
-              const invitePurse = inviteMint.mint(inviteAssetDesc, name);
+              const invitePurse = inviteMint.mint(inviteUnits, name);
               return invitePurse.withdrawAll(name);
             },
             redeem,

@@ -37,8 +37,8 @@ export const makeContract = harden((zoe, terms) => {
 
       // Save the valid offer
       creatorOfferHandle = offerHandle;
-      auctionedAssets = payoutRules[0].assetDesc;
-      minimumBid = payoutRules[1].assetDesc;
+      auctionedAssets = payoutRules[0].units;
+      minimumBid = payoutRules[1].units;
       return defaultAcceptanceMsg;
     },
     getMinimumBid: () => minimumBid,

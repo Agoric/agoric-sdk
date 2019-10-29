@@ -5,25 +5,25 @@ import { makePrivateName } from '../../util/PrivateName';
 export function makeCoreMintKeeper() {
   // An asset can either be a purse or payment. An asset keeper
   // keeps track of either all of the purses (purseKeeper) or all
-  // of the payments (paymentKeeper) and their respective assetDescs.
+  // of the payments (paymentKeeper) and their respective units.
   function makeAssetKeeper() {
-    // asset to assetDesc
-    const assetDescs = makePrivateName();
+    // asset to units
+    const units = makePrivateName();
     return harden({
-      updateAssetDesc(asset, newAssetDesc) {
-        assetDescs.set(asset, newAssetDesc);
+      updateUnits(asset, newUnits) {
+        units.set(asset, newUnits);
       },
-      recordNew(asset, initialAssetDesc) {
-        assetDescs.init(asset, initialAssetDesc);
+      recordNew(asset, initialUnits) {
+        units.init(asset, initialUnits);
       },
-      getAssetDesc(asset) {
-        return assetDescs.get(asset);
+      getUnits(asset) {
+        return units.get(asset);
       },
       has(asset) {
-        return assetDescs.has(asset);
+        return units.has(asset);
       },
       remove(asset) {
-        assetDescs.delete(asset);
+        units.delete(asset);
       },
     });
   }

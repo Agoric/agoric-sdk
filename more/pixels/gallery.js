@@ -55,18 +55,18 @@ export function makeGallery(
     isEqualPixel,
   );
 
-  function insistNonEmptyAssetDesc(assay, assetDesc) {
-    insist(!assay.getAssetDescOps().isEmpty(assetDesc))`\
-      no use rights present in assetDesc ${assetDesc}`;
+  function insistNonEmptyUnits(assay, units) {
+    insist(!assay.getUnitOps().isEmpty(units))`\
+      no use rights present in units ${units}`;
   }
 
-  function insistAssetHasAssetDesc(assay, asset, assetDesc) {
-    insist(assay.getAssetDescOps().includes(asset.getBalance(), assetDesc))`\
-      ERTP asset ${asset} does not include assetDesc ${assetDesc}`;
+  function insistAssetHasUnits(assay, asset, units) {
+    insist(assay.getUnitOps().includes(asset.getBalance(), units))`\
+      ERTP asset ${asset} does not include units ${units}`;
   }
 
-  function getPixelList(assay, assetDesc) {
-    return assay.getAssetDescOps().extent(assetDesc);
+  function getPixelList(assay, units) {
+    return assay.getUnitOps().extent(units);
   }
 
   const collect = makeCollect(E, log);
@@ -101,17 +101,17 @@ export function makeGallery(
 
   function makeUseObj(assay, asset) {
     const useObj = harden({
-      // change the color of the pixels in the assetDesc after checking
+      // change the color of the pixels in the units after checking
       // that the asset has the authority to do so.
-      changeColor(assetDesc, newColor) {
-        // TODO: allow empty assetDescs to be used without throwing
+      changeColor(units, newColor) {
+        // TODO: allow empty units to be used without throwing
         // an error, but because there is no authority, nothing happens.
-        insistNonEmptyAssetDesc(assay, assetDesc);
-        insistAssetHasAssetDesc(assay, asset, assetDesc);
+        insistNonEmptyUnits(assay, units);
+        insistAssetHasUnits(assay, asset, units);
         insistColor(newColor);
-        const pixelList = getPixelList(assay, assetDesc);
+        const pixelList = getPixelList(assay, units);
         setPixelListState(pixelList, newColor);
-        return assetDesc;
+        return units;
       },
       // Call changeColor, just with the entire balance of the
       // underlying asset.
@@ -121,11 +121,11 @@ export function makeGallery(
       // A helper function for getting a literal list of pixels from
       // the asset. For example, [ { x:0, y:0 } ]
       getRawPixels() {
-        const assetDescOps = assay.getAssetDescOps();
-        const pixelList = assetDescOps.extent(asset.getBalance());
+        const unitOps = assay.getUnitOps();
+        const pixelList = unitOps.extent(asset.getBalance());
         return pixelList;
       },
-      // returns an array where each item is a pixel in this asset assetDesc
+      // returns an array where each item is a pixel in this asset units
       // as well as its color
       getColors() {
         const pixelList = useObj.getRawPixels();
@@ -148,19 +148,19 @@ export function makeGallery(
 
   const galleryPixelMint = makeMint('pixels', makePixelConfig);
   const galleryPixelAssay = galleryPixelMint.getAssay();
-  const galleryPixelDescOps = galleryPixelAssay.getAssetDescOps();
+  const galleryPixelDescOps = galleryPixelAssay.getUnitOps();
 
   // For lack of a better word, the assay below the gallery assay is
   // the "consumer assay" - this is the assay of the pixel payments
   // that consumers get from calling `tapFaucet`
 
   const consumerPixelAssay = galleryPixelAssay.getChildAssay();
-  const consumerPixelDescOps = consumerPixelAssay.getAssetDescOps();
+  const consumerPixelDescOps = consumerPixelAssay.getUnitOps();
 
   // Dust is the currency that the Gallery accepts for pixels
   const dustMint = makeMint('dust');
   const dustAssay = dustMint.getAssay();
-  const dustDescOps = dustAssay.getAssetDescOps();
+  const dustDescOps = dustAssay.getUnitOps();
 
   const pixelToPayment = new Map();
 
@@ -171,8 +171,8 @@ export function makeGallery(
   // TODO: build lruQueue from an array, without iterating here
   for (const pixel of allPixels) {
     lruQueueBuilder.push(pixel);
-    const assetDesc = galleryPixelDescOps.make(harden([pixel]));
-    const purse = galleryPixelMint.mint(assetDesc);
+    const units = galleryPixelDescOps.make(harden([pixel]));
+    const purse = galleryPixelMint.mint(units);
     const payment = purse.withdrawAll();
     pixelToPayment.set(getPixelStr(pixel), payment);
   }
@@ -198,9 +198,9 @@ export function makeGallery(
     return rawPrice;
   }
 
-  function pricePixelAssetDesc(pixelAssetDesc) {
-    pixelAssetDesc = consumerPixelDescOps.coerce(pixelAssetDesc);
-    const rawPixelList = consumerPixelDescOps.extent(pixelAssetDesc);
+  function pricePixelUnits(pixelUnits) {
+    pixelUnits = consumerPixelDescOps.coerce(pixelUnits);
+    const rawPixelList = consumerPixelDescOps.extent(pixelUnits);
     let totalPriceInDust = 0;
     for (const rawPixel of rawPixelList) {
       totalPriceInDust += pricePixelInternal(rawPixel);
@@ -212,18 +212,15 @@ export function makeGallery(
   const sellBuyDustPurseP = dustAssay.makeEmptyPurse();
 
   // only direct child pixels of the galleryPixels can be sold to the gallery
-  function sellToGallery(pixelAssetDescP) {
-    return Promise.resolve(pixelAssetDescP).then(async pixelAssetDesc => {
-      pixelAssetDesc = consumerPixelDescOps.coerce(pixelAssetDesc);
-      const dustAssetDesc = pricePixelAssetDesc(pixelAssetDesc);
+  function sellToGallery(pixelUnitsP) {
+    return Promise.resolve(pixelUnitsP).then(async pixelUnits => {
+      pixelUnits = consumerPixelDescOps.coerce(pixelUnits);
+      const dustUnits = pricePixelUnits(pixelUnits);
       // just mint the dust that we need
-      const tempDustPurseP = dustMint.mint(dustAssetDesc);
-      const dustPaymentP = tempDustPurseP.withdraw(
-        dustAssetDesc,
-        'dust for pixel',
-      );
+      const tempDustPurseP = dustMint.mint(dustUnits);
+      const dustPaymentP = tempDustPurseP.withdraw(dustUnits, 'dust for pixel');
       // dustPurse is dropped
-      const terms = harden({ left: dustAssetDesc, right: pixelAssetDesc });
+      const terms = harden({ left: dustUnits, right: pixelUnits });
       const escrowExchangeInstallationP = await E(contractHost).install(
         escrowExchangeSrcs,
       );
@@ -241,29 +238,27 @@ export function makeGallery(
   }
 
   // only direct children of the gallery pixels can be bought from gallery
-  function buyFromGallery(pixelAssetDescP) {
-    return Promise.resolve(pixelAssetDescP).then(async pixelAssetDesc => {
-      pixelAssetDesc = consumerPixelDescOps.coerce(pixelAssetDesc);
+  function buyFromGallery(pixelUnitsP) {
+    return Promise.resolve(pixelUnitsP).then(async pixelUnits => {
+      pixelUnits = consumerPixelDescOps.coerce(pixelUnits);
 
-      // if the gallery purse contains this pixelAssetDesc, we will
+      // if the gallery purse contains this pixelUnits, we will
       // create a invite to trade, otherwise we return a message
-      const pixelPurseAssetDesc = sellBuyPixelPurseP.getBalance();
-      if (!consumerPixelDescOps.includes(pixelPurseAssetDesc, pixelAssetDesc)) {
+      const pixelPurseUnits = sellBuyPixelPurseP.getBalance();
+      if (!consumerPixelDescOps.includes(pixelPurseUnits, pixelUnits)) {
         return harden({
           inviteP: undefined,
           host: undefined,
           message: 'gallery did not have the pixels required',
         });
       }
-      const pixelPaymentP = await E(sellBuyPixelPurseP).withdraw(
-        pixelAssetDesc,
-      );
-      const dustAssetDesc = pricePixelAssetDesc(pixelAssetDesc);
+      const pixelPaymentP = await E(sellBuyPixelPurseP).withdraw(pixelUnits);
+      const dustUnits = pricePixelUnits(pixelUnits);
 
       // same order as in sellToGallery
       // the left will have to provide dust, right will have to
       // provide pixels. Left is the user, right is the gallery
-      const terms = harden({ left: dustAssetDesc, right: pixelAssetDesc });
+      const terms = harden({ left: dustUnits, right: pixelUnits });
       const escrowExchangeInstallationP = E(contractHost).install(
         escrowExchangeSrcs,
       );
@@ -280,7 +275,7 @@ export function makeGallery(
       return harden({
         inviteP: userInviteP,
         host: contractHost,
-        dustNeeded: dustAssetDesc,
+        dustNeeded: dustUnits,
       });
     });
   }
@@ -307,7 +302,7 @@ export function makeGallery(
     getCanvasSize() {
       return canvasSize;
     },
-    pricePixelAssetDesc, // transparent pricing for now
+    pricePixelUnits, // transparent pricing for now
     sellToGallery,
     buyFromGallery,
     collectFromGallery,
@@ -317,7 +312,7 @@ export function makeGallery(
     getDistance,
     getDistanceFromCenter,
     reportPosition,
-    pricePixelAssetDesc,
+    pricePixelUnits,
     dustMint,
     getPayment,
   });

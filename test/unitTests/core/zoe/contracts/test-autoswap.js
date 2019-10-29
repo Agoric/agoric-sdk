@@ -15,18 +15,18 @@ test('autoSwap with valid offers', async t => {
     const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(10));
+    const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(10));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
     // Let's assume that simoleans are worth 2x as much as moola
-    const aliceSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(5));
+    const aliceSimoleanPurse = mints[1].mint(assays[1].makeUnits(5));
     const aliceSimoleanPayment = aliceSimoleanPurse.withdrawAll();
 
     // Setup Bob
-    const bobMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(2));
+    const bobMoolaPurse = mints[0].mint(assays[0].makeUnits(2));
     const bobMoolaPayment = bobMoolaPurse.withdrawAll();
-    const bobSimoleanPurse = mints[1].mint(assays[1].makeAssetDesc(7));
+    const bobSimoleanPurse = mints[1].mint(assays[1].makeUnits(7));
     const bobSimoleanPayment = bobSimoleanPurse.withdraw(
-      assays[1].makeAssetDesc(3),
+      assays[1].makeUnits(3),
     );
 
     // 1: Alice creates an autoswap instance
@@ -54,15 +54,15 @@ test('autoSwap with valid offers', async t => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: allAssays[0].makeAssetDesc(10),
+          units: allAssays[0].makeUnits(10),
         },
         {
           kind: 'offerExactly',
-          assetDesc: allAssays[1].makeAssetDesc(5),
+          units: allAssays[1].makeUnits(5),
         },
         {
           kind: 'wantAtLeast',
-          assetDesc: allAssays[2].makeAssetDesc(10),
+          units: allAssays[2].makeUnits(10),
         },
       ],
       exitRule: {
@@ -89,7 +89,7 @@ test('autoSwap with valid offers', async t => {
 
     t.deepEquals(
       liquidityPayments[2].getBalance(),
-      liquidityAssay.makeAssetDesc(10),
+      liquidityAssay.makeUnits(10),
     );
     t.deepEquals(aliceAutoswap.getPoolExtents(), [10, 5, 0]);
 
@@ -102,13 +102,13 @@ test('autoSwap with valid offers', async t => {
     t.equals(bobInstallationId, installationHandle);
 
     // 5: Bob looks up the price of 2 moola in simoleans
-    const assetDesc2Moola = bobTerms.assays[0].makeAssetDesc(2);
-    const simoleanAssetDesc = bobAutoswap.getPrice([
-      assetDesc2Moola,
+    const units2Moola = bobTerms.assays[0].makeUnits(2);
+    const simoleanUnits = bobAutoswap.getPrice([
+      units2Moola,
       undefined,
       undefined,
     ]);
-    t.deepEquals(simoleanAssetDesc, bobTerms.assays[1].makeAssetDesc(1));
+    t.deepEquals(simoleanUnits, bobTerms.assays[1].makeUnits(1));
 
     // 6: Bob escrows
 
@@ -116,15 +116,15 @@ test('autoSwap with valid offers', async t => {
       payoutRules: [
         {
           kind: 'offerExactly',
-          assetDesc: allAssays[0].makeAssetDesc(2),
+          units: allAssays[0].makeUnits(2),
         },
         {
           kind: 'wantAtLeast',
-          assetDesc: allAssays[1].makeAssetDesc(1),
+          units: allAssays[1].makeUnits(1),
         },
         {
           kind: 'wantAtLeast',
-          assetDesc: allAssays[2].makeAssetDesc(0),
+          units: allAssays[2].makeUnits(0),
         },
       ],
       exitRule: {
@@ -149,30 +149,30 @@ test('autoSwap with valid offers', async t => {
 
     const bobPayout = await bobPayoutP;
 
-    t.deepEqual(bobPayout[0].getBalance(), allAssays[0].makeAssetDesc(0));
-    t.deepEqual(bobPayout[1].getBalance(), allAssays[1].makeAssetDesc(1));
+    t.deepEqual(bobPayout[0].getBalance(), allAssays[0].makeUnits(0));
+    t.deepEqual(bobPayout[1].getBalance(), allAssays[1].makeUnits(1));
     t.deepEquals(bobAutoswap.getPoolExtents(), [12, 4, 0]);
 
     // 7: Bob looks up the price of 3 simoleans
 
-    const assetDesc3Sims = allAssays[1].makeAssetDesc(3);
-    const moolaAssetDesc = bobAutoswap.getPrice([undefined, assetDesc3Sims]);
-    t.deepEquals(moolaAssetDesc, allAssays[0].makeAssetDesc(6));
+    const units3Sims = allAssays[1].makeUnits(3);
+    const moolaUnits = bobAutoswap.getPrice([undefined, units3Sims]);
+    t.deepEquals(moolaUnits, allAssays[0].makeUnits(6));
 
     // 8: Bob makes another offer and swaps
     const bobSimsForMoolaOfferRules = harden({
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          assetDesc: allAssays[0].makeAssetDesc(6),
+          units: allAssays[0].makeUnits(6),
         },
         {
           kind: 'offerExactly',
-          assetDesc: allAssays[1].makeAssetDesc(3),
+          units: allAssays[1].makeUnits(3),
         },
         {
           kind: 'wantAtLeast',
-          assetDesc: allAssays[2].makeAssetDesc(0),
+          units: allAssays[2].makeUnits(0),
         },
       ],
       exitRule: {
@@ -193,14 +193,8 @@ test('autoSwap with valid offers', async t => {
 
     const bobsNewMoolaPayment = await bobSimsForMoolaPayoutP;
 
-    t.deepEqual(
-      bobsNewMoolaPayment[0].getBalance(),
-      allAssays[0].makeAssetDesc(6),
-    );
-    t.deepEqual(
-      bobsNewMoolaPayment[1].getBalance(),
-      allAssays[1].makeAssetDesc(0),
-    );
+    t.deepEqual(bobsNewMoolaPayment[0].getBalance(), allAssays[0].makeUnits(6));
+    t.deepEqual(bobsNewMoolaPayment[1].getBalance(), allAssays[1].makeUnits(0));
     t.deepEqual(bobAutoswap.getPoolExtents(), [6, 7, 0]);
 
     // 8: Alice removes her liquidity
@@ -209,15 +203,15 @@ test('autoSwap with valid offers', async t => {
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          assetDesc: allAssays[0].makeAssetDesc(0),
+          units: allAssays[0].makeUnits(0),
         },
         {
           kind: 'wantAtLeast',
-          assetDesc: allAssays[1].makeAssetDesc(0),
+          units: allAssays[1].makeUnits(0),
         },
         {
           kind: 'offerExactly',
-          assetDesc: allAssays[2].makeAssetDesc(10),
+          units: allAssays[2].makeUnits(10),
         },
       ],
       exitRule: {
@@ -242,15 +236,15 @@ test('autoSwap with valid offers', async t => {
 
     t.deepEquals(
       alicePayoutPayments[0].getBalance(),
-      allAssays[0].makeAssetDesc(6),
+      allAssays[0].makeUnits(6),
     );
     t.deepEquals(
       alicePayoutPayments[1].getBalance(),
-      allAssays[1].makeAssetDesc(7),
+      allAssays[1].makeUnits(7),
     );
     t.deepEquals(
       alicePayoutPayments[2].getBalance(),
-      allAssays[2].makeAssetDesc(0),
+      allAssays[2].makeUnits(0),
     );
     t.deepEquals(aliceAutoswap.getPoolExtents(), [0, 0, 10]);
   } catch (e) {

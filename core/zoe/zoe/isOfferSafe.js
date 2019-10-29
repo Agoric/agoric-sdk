@@ -14,11 +14,11 @@ import { insist } from '../../../util/insist';
  * @param  {payoutRule[]} payoutRules - the rules that accompanied the
  * escrow of payments that dictate what the user expected to get back
  * from Zoe. The payoutRules are an array of objects that have a kind
- * and assetDesc, in the same order as the corresponding assays. The
+ * and units, in the same order as the corresponding assays. The
  * offerRules, including the payoutRules, are a player's understanding
  * of the contract that they are entering when they make an offer.
  * A payoutRule is structured in the form `{ kind:
- * descriptionString, assetDesc}`
+ * descriptionString, units}`
  * @param  {extent[]} extents - an array of extents ordered in the
  * same order as the corresponding assays. This array of extents is
  * the reallocation to be given to a player.
@@ -51,13 +51,10 @@ function isOfferSafeForOffer(extentOpsArray, payoutRules, extents) {
     // 'offerAtMost' we need to ensure that the user gets back the
     // extent or greater.
     if (payoutRule.kind === 'offerExactly') {
-      return extentOpsArray[i].equals(extents[i], payoutRule.assetDesc.extent);
+      return extentOpsArray[i].equals(extents[i], payoutRule.units.extent);
     }
     if (payoutRules.kind === 'offerAtMost') {
-      return extentOpsArray[i].includes(
-        extents[i],
-        payoutRule.assetDesc.extent,
-      );
+      return extentOpsArray[i].includes(extents[i], payoutRule.units.extent);
     }
     // If the kind is something else, anything we give back is fine.
     return true;
@@ -78,13 +75,10 @@ function isOfferSafeForOffer(extentOpsArray, payoutRules, extents) {
     // the kind is 'wantAtLeast', we need to ensure that the user
     // gets back winnings that are equal or greater to the extent.
     if (payoutRule.kind === 'wantExactly') {
-      return extentOpsArray[i].equals(extents[i], payoutRule.assetDesc.extent);
+      return extentOpsArray[i].equals(extents[i], payoutRule.units.extent);
     }
     if (payoutRule.kind === 'wantAtLeast') {
-      return extentOpsArray[i].includes(
-        extents[i],
-        payoutRule.assetDesc.extent,
-      );
+      return extentOpsArray[i].includes(extents[i], payoutRule.units.extent);
     }
     // If the kind is something else, anything we give back is fine.
     return true;

@@ -1,7 +1,7 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-// The default kind of assetDesc is a labeled natural number describing a
+// The default kind of units is a labeled natural number describing a
 // extent of fungible erights. The label describes what kinds of
 // rights these are. This is a form of labeled unit, as in unit
 // typing.
