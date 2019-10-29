@@ -20,10 +20,10 @@
   "dependencies": {
     "@agoric/acorn-eventual-send": "^1.0.1",
     "@agoric/bundle-source": "^0.1.0",
-    "@agoric/captp": "^0.1.2",
+    "@agoric/captp": "^1.0.0",
     "@agoric/ertp": "^0.1.8",
     "@agoric/evaluate": "^2.1.2",
-    "@agoric/eventual-send": "^0.4.2",
+    "@agoric/eventual-send": "^0.4.4",
     "@agoric/harden": "0.0.4",
     "@agoric/swingset-vat": "^0.2.0",
     "@iarna/toml": "^2.2.3",
