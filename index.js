@@ -1,4 +1,4 @@
-const { tokTypes: tt, TokenType } = require('acorn');
+const { tokTypes: tt, TokenType, Parser: AcornParser } = require('acorn');
 
 const tok = {
   tildeDot: new TokenType('~.'),
@@ -21,11 +21,11 @@ function plugin(options, Parser) {
       return this.finishOp(tt.prefix, 1);
     }
 
-    readToken(code) {
+    getTokenFromCode(code) {
       if (code === tilde) {
         return this.readToken_tilde();
       }
-      return super.readToken(code);
+      return super.getTokenFromCode(code);
     }
 
     parseSubscript(base, startPos, startLoc, noCalls, maybeAsyncArrow) {
@@ -64,7 +64,6 @@ function plugin(options, Parser) {
         arg = this.finishNode(arg, 'Literal');
         args.push(arg);
       }
-
       if (eatenParenL || this.eat(tt.parenL)) {
         // x ~. [i](y, z) := HandledPromise.applyMethod(base, i, [y, z])
         // x ~. (y, z) := HandledPromise.applyFunction(base, [y, z]);
@@ -151,3 +150,5 @@ module.exports = function curryOptions(options) {
   };
 };
 module.exports.tokTypes = tok;
+module.exports.Parser = AcornParser;
+
