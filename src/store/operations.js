@@ -1,3 +1,5 @@
+import { doFetch } from '../utils/fetch-websocket';
+
 export function activateConnection(state) {
   return { ...state, active: true };
 }
@@ -63,8 +65,21 @@ export function swapInputs(state) {
   };
 }
 
-export function createOffer(state) {
-  return { ...state };
+export function createOffer(state, { inputAmount, inputPurse, outputPurse }) {
+  doFetch({
+    type: 'walletCreateOffer',
+    extent: inputAmount,
+    desc0: inputPurse.description,
+    desc1: outputPurse.description,
+  }); // todo response callback
+
+  return {
+    ...state,
+    inputPurse: null,
+    outputPurse: null,
+    inputAmount: null,
+    outputAmount: null,
+  };
 }
 
 export function resetState(state) {

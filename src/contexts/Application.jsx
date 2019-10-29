@@ -35,20 +35,20 @@ export default function Provider({ children }) {
     function messageHandler(message) {
       if (!message) return;
       const { type, purses } = message;
-      if (type === 'updateWalletPurses' && purses) {
+      if (type === 'walletUpdatePurses' && purses) {
         dispatch(updatePurses(JSON.parse(purses)));
       }
     }
 
-    function getWalletPursesState() {
-      return doFetch({ type: 'getWalletPursesState' }).then(messageHandler);
+    function walletGetPurses() {
+      return doFetch({ type: 'walletGetPurses' }).then(messageHandler);
     }
 
     if (active) {
       activateWebSocket({
         onConnect() {
           dispatch(serverConnected());
-          getWalletPursesState();
+          walletGetPurses();
         },
         onDisconnect() {
           dispatch(serverDisconnected());
@@ -74,7 +74,7 @@ export default function Provider({ children }) {
 
     if (inputPurse && outputPurse && freeVariable === 0 && inputAmount > 0) {
       doFetch({
-        type: 'getAutoswapPrice',
+        type: 'autoswapGetPrice',
         extent: inputAmount,
         desc0: inputPurse.description,
         desc1: outputPurse.description,
@@ -83,7 +83,7 @@ export default function Provider({ children }) {
 
     if (inputPurse && outputPurse && freeVariable === 1 && outputAmount > 0) {
       doFetch({
-        type: 'getAutoswapPrice',
+        type: 'autoswapGetPrice',
         extent: outputAmount,
         desc0: outputPurse.description,
         desc1: inputPurse.description,

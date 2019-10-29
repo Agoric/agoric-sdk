@@ -16,7 +16,12 @@ import AssetInput from './AssetInput';
 import Steps from './Steps';
 
 import { useApplicationContext } from '../contexts/Application';
-import { changePurse, swapInputs, changeAmount } from '../store/actions';
+import {
+  changePurse,
+  changeAmount,
+  swapInputs,
+  createOffer,
+} from '../store/actions';
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -104,14 +109,15 @@ export default function Swap() {
 
   function getExchangeRate(decimal) {
     if (isValid) {
-debugger;
       const exchangeRate = (outputAmount / inputAmount).toFixed(decimal);
       return `Exchange rate: 1 ${inputPurse.description} = ${exchangeRate} ${outputPurse.description}`;
     }
     return '';
   }
 
-  function handleSwap(event) {}
+  function handleSwap() {
+    dispatch(createOffer(inputAmount, inputPurse, outputPurse));
+  }
 
   return (
     <Paper className={classes.paper}>
