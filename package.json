@@ -14,9 +14,8 @@
   "devDependencies": {
     "@agoric/acorn-eventual-send": "^1.0.1",
     "@agoric/babel-parser": "^7.6.4",
-    "@agoric/eventual-send": "^0.4.3",
+    "@agoric/eventual-send": "^0.4.4",
     "@babel/generator": "^7.5.0",
-    "acorn": "^6.2.0",
     "astring": "^1.4.0",
     "eslint": "^5.11.1",
     "eslint-config-airbnb": "^17.1.0",

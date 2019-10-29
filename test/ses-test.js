@@ -8,7 +8,6 @@ import { maybeExtendPromise, makeHandledPromise } from '@agoric/eventual-send';
 import * as babelParser from '@agoric/babel-parser';
 import babelGenerate from '@babel/generator';
 
-import { Parser as AcornRawParser } from 'acorn';
 import acornEventualSend from '@agoric/acorn-eventual-send';
 import * as astring from 'astring';
 
@@ -20,7 +19,7 @@ const shims = [
   `this.HandledPromise = (${makeHandledPromise})(Promise)`,
 ];
 
-const AcornParser = AcornRawParser.extend(acornEventualSend());
+const AcornParser = acornEventualSend.Parser.extend(acornEventualSend());
 const acornParser = {
   parse(src) {
     return AcornParser.parse(src);
@@ -29,9 +28,10 @@ const acornParser = {
     return AcornParser.parseExpressionAt(src, 0);
   },
 };
-const acornGenerate = (ast, _options, _src) => ({
-  code: astring.generate(ast),
-});
+const acornGenerate = (ast, _options, _src) => {
+  const code = astring.generate(ast);
+  return { code };
+};
 
 test('eventual send is disabled by default', t => {
   try {
