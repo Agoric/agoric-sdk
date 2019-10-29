@@ -68,18 +68,31 @@ export function createOffer(
   state,
   { contractId, inputAmount, outputAmount, inputPurse, outputPurse },
 ) {
+  const meta = {
+    contractId,
+    date: Date.now(),
+    extent0: inputAmount,
+    extent1: outputAmount,
+    name0: inputPurse.name,
+    name1: outputPurse.name,
+    desc0: inputPurse.description,
+    desc1: outputPurse.description,
+  };
   doFetch({
-    type: 'walletAddOffer',
-    offer: {
-      contractId,
-      date: Date.now(),
-      extent0: inputAmount,
-      extent1: outputAmount,
-      name0: inputPurse.name,
-      name1: outputPurse.name,
-      desc0: inputPurse.description,
-      desc1: outputPurse.description,
-    },
+    type: 'autoswapGetOfferRules',
+    data: meta,
+  }).then(response => {
+    const { type, data } = response;
+    if (type === 'autoswapOfferRules') {
+      return doFetch({
+        type: 'walletAddOffer',
+        data: {
+          meta,
+          offerRules: data,
+        },
+      });
+    }
+    return null;
   });
 
   return {

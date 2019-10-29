@@ -37,8 +37,9 @@ export default function Provider({ children }) {
   useEffect(() => {
     function messageHandler(message) {
       if (!message) return;
-      if (message.type === 'walletUpdatePurses') {
-        dispatch(updatePurses(JSON.parse(message.state)));
+      const { type, data } = message;
+      if (type === 'walletUpdatePurses') {
+        dispatch(updatePurses(JSON.parse(data)));
       }
     }
 
@@ -69,29 +70,33 @@ export default function Provider({ children }) {
   useEffect(() => {
     function messageHandler(message) {
       if (!message) return;
-      const { type, extent } = message;
-      if (type === 'autoswapPrice' && extent) {
-        dispatch(changeAmount(extent, 1 - freeVariable));
+      const { type, data } = message;
+      if (type === 'autoswapPrice') {
+        dispatch(changeAmount(data, 1 - freeVariable));
       }
     }
 
     if (inputPurse && outputPurse && freeVariable === 0 && inputAmount > 0) {
       doFetch({
         type: 'autoswapGetPrice',
-        contractId: CONTRACT_NAME,
-        extent: inputAmount,
-        desc0: inputPurse.description,
-        desc1: outputPurse.description,
+        data: {
+          contractId: CONTRACT_NAME,
+          extent0: inputAmount,
+          desc0: inputPurse.description,
+          desc1: outputPurse.description,
+        },
       }).then(messageHandler);
     }
 
     if (inputPurse && outputPurse && freeVariable === 1 && outputAmount > 0) {
       doFetch({
         type: 'autoswapGetPrice',
-        contractId: CONTRACT_NAME,
-        extent: outputAmount,
-        desc0: outputPurse.description,
-        desc1: inputPurse.description,
+        data: {
+          contractId: CONTRACT_NAME,
+          extent0: outputAmount,
+          desc0: outputPurse.description,
+          desc1: inputPurse.description,
+        },
       }).then(messageHandler);
     }
   }, [inputPurse, outputPurse, inputAmount, outputAmount, freeVariable]);

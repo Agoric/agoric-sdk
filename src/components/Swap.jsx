@@ -64,6 +64,13 @@ export default function Swap() {
     connected,
   } = state;
 
+  // const purses = [
+  //   { name: 'Marketing', extent: 230, description: 'simolean' },
+  //   { name: 'Operating Account', extent: 194, description: 'moola ' },
+  //   { name: 'Savings', extent: 3500, description: 'moola ' },
+  //   { name: 'Concert Tickets', extent: 64, description: 'tickets' },
+  // ];
+
   const inputAmountError =
     inputAmount < 0 || (inputPurse && inputAmount > inputPurse.extent);
   const outputAmountError = outputAmount < 0;
@@ -117,6 +124,9 @@ export default function Swap() {
   }
 
   function handleSwap() {
+    // swap
+    // pass offer rules
+
     dispatch(
       createOffer(
         CONTRACT_NAME,
