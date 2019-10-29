@@ -1,3 +1,5 @@
+import { doFetch } from '../utils/fetch-websocket';
+
 export function activateConnection(state) {
   return { ...state, active: true };
 }
@@ -19,10 +21,19 @@ export function updateInbox(state, inbox) {
   return { ...state, inbox };
 }
 
-export function confirmTrade(state) {
-  return { ...state };
-}
+export function rejectOffer(state, date) {
+  doFetch({
+    type: 'walletRejectOffer',
+    date,
+  }); // todo toast
 
-export function rejectTrade(state) {
-  return { ...state };
+  return state;
+}
+export function confirmOffer(state, date) {
+  doFetch({
+    type: 'walletConfirmOffer',
+    date,
+  }); // todo toast
+
+  return state;
 }

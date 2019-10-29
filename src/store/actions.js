@@ -5,8 +5,8 @@ import {
   SERVER_DISCONNECTED,
   UPDATE_PURSES,
   UPDATE_INBOX,
-  CONFIRM_TRADE,
-  REJECT_TRADE,
+  REJECT_OFFER,
+  CONFIRM_OFFER,
 } from './types';
 
 export const activateConnection = () => ({
@@ -34,10 +34,11 @@ export const updateInbox = payload => ({
   payload,
 });
 
-export const confirmTrade = () => ({
-  type: CONFIRM_TRADE,
+export const rejectOffer = payload => ({
+  type: REJECT_OFFER,
+  payload,
 });
-
-export const rejectTrade = () => ({
-  type: REJECT_TRADE,
+export const confirmOffer = payload => ({
+  type: CONFIRM_OFFER,
+  payload,
 });

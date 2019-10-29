@@ -5,8 +5,8 @@ import {
   SERVER_DISCONNECTED,
   UPDATE_PURSES,
   UPDATE_INBOX,
-  CONFIRM_TRADE,
-  REJECT_TRADE,
+  REJECT_OFFER,
+  CONFIRM_OFFER,
 } from './types';
 import {
   activateConnection,
@@ -15,8 +15,8 @@ import {
   serverDisconnected,
   updatePurses,
   updateInbox,
-  confirmTrade,
-  rejectTrade,
+  rejectOffer,
+  confirmOffer,
 } from './operations';
 
 export function createDefaultState() {
@@ -46,10 +46,11 @@ export const reducer = (state, { type, payload }) => {
     case UPDATE_INBOX:
       return updateInbox(state, payload);
 
-    case CONFIRM_TRADE:
-      return confirmTrade(state, payload);
-    case REJECT_TRADE:
-      return rejectTrade(state, payload);
+    case REJECT_OFFER:
+      return rejectOffer(state, payload);
+    case CONFIRM_OFFER:
+      return confirmOffer(state, payload);
+
     default:
       throw new TypeError(`Action not supported ${type}`);
   }

@@ -13,13 +13,6 @@ import PurseIcon from '@material-ui/icons/BusinessCenter';
 import { useApplicationContext } from '../contexts/Application';
 
 const useStyles = makeStyles(theme => ({
-  item: {
-    '&:not(:first-child)': {
-      borderTopColor: theme.palette.divider,
-      borderTopStyle: 'solid',
-      borderTopWidth: 1,
-    },
-  },
   icon: {
     minWidth: 24,
     marginRight: theme.spacing(2),
@@ -37,7 +30,7 @@ export default function Purses() {
       {Array.isArray(purses) && purses.length > 0 ? (
         <List>
           {purses.map(({ name, description, extent }) => (
-            <ListItem key={name} value={name} className={classes.item}>
+            <ListItem key={name} value={name} divider>
               <ListItemIcon className={classes.icon}>
                 <PurseIcon />
               </ListItemIcon>

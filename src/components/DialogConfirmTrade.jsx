@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@material-ui/core';
 
-export default function DialogConfirmTrade({ open, onClick, onClose }) {
+export default function DialogconfirmOffer({ open, onClick, onClose }) {
   return (
     <Dialog
       open={open}

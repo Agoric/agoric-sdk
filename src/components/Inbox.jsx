@@ -1,26 +1,173 @@
 import React from 'react';
 
-import { List, ListItem, ListItemText, Typography } from '@material-ui/core';
+import { makeStyles, withStyles } from '@material-ui/core/styles';
+import { green, red } from '@material-ui/core/colors';
+import {
+  Box,
+  Chip,
+  Grid,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemSecondaryAction,
+  IconButton,
+  Typography,
+} from '@material-ui/core';
+import AutoswapIcon from '@material-ui/icons/SwapHorizontalCircle';
+import ClearIcon from '@material-ui/icons/Clear';
+import CheckIcon from '@material-ui/icons/Check';
 
 import { useApplicationContext } from '../contexts/Application';
 
+import { rejectOffer, confirmOffer } from '../store/actions';
+
+const useStyles = makeStyles(theme => ({
+  icon: {
+    margin: theme.spacing(1),
+  },
+  buttons: {
+    '& button ~ button': {
+      marginLeft: theme.spacing(1),
+    },
+  },
+}));
+
+const RedIconButton = withStyles(theme => ({
+  root: {
+    color: theme.palette.getContrastText(red[500]),
+    backgroundColor: red[500],
+    '&:hover': {
+      backgroundColor: red[700],
+    },
+  },
+}))(IconButton);
+
+const GreenIconButton = withStyles(theme => ({
+  root: {
+    color: theme.palette.getContrastText(green[500]),
+    backgroundColor: green[500],
+    '&:hover': {
+      backgroundColor: green[700],
+    },
+  },
+}))(IconButton);
+
+const RedChip = withStyles(theme => ({
+  root: {
+    color: theme.palette.getContrastText(red[500]),
+    backgroundColor: red[500],
+  },
+}))(Chip);
+
+const GreenChip = withStyles(theme => ({
+  root: {
+    color: theme.palette.getContrastText(green[500]),
+    backgroundColor: green[500],
+  },
+}))(Chip);
+
 export default function Inbox() {
-  const { state } = useApplicationContext();
+  const classes = useStyles();
+  const { state, dispatch } = useApplicationContext();
   const { inbox } = state;
+
+  function formatDate(date) {
+    const options = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    };
+    return new Date(date).toLocaleDateString('en-US', options);
+  }
+
+  function handleReject(date) {
+    dispatch(rejectOffer(date));
+  }
+
+  function handleConfirm(date) {
+    dispatch(confirmOffer(date));
+  }
 
   return (
     <>
       <Typography variant="h6">Transactions</Typography>
       {Array.isArray(inbox) && inbox.length > 0 ? (
         <List>
-          {inbox.map(([label, extent]) => (
-            <ListItem key={label} value={label}>
-              <ListItemText
-                primary={label.description}
-                secondary={`Balance ${extent}`}
-              />
-            </ListItem>
-          ))}
+          {inbox.map(
+            ({
+              contractId,
+              date,
+              name0,
+              name1,
+              desc0,
+              desc1,
+              extent0,
+              extent1,
+              status,
+            }) => (
+              <ListItem key={date} value={date} divider>
+                <ListItemIcon>
+                  <AutoswapIcon edge="start" className={classes.icon} />
+                </ListItemIcon>
+                <Grid container direction="column">
+                  <Grid item>
+                    <Typography variant="body2" display="block">
+                      {`${contractId} - ${formatDate(date)}`}
+                    </Typography>
+                  </Grid>
+                  <Grid item>
+                    <Typography variant="body1">
+                      Pay&nbsp;
+                      <Box component="span" fontWeight={800}>
+                        {extent0}
+                        &nbsp;
+                        {desc0}
+                        &nbsp;
+                      </Box>
+                      from&nbsp;
+                      {name0}
+                    </Typography>
+                    <Typography variant="body1">
+                      to receive&nbsp;
+                      <Box component="span" fontWeight={800}>
+                        {extent1}
+                        &nbsp;
+                        {desc1}
+                        &nbsp;
+                      </Box>
+                      into&nbsp;
+                      {name1}
+                    </Typography>
+                  </Grid>
+                </Grid>
+                <ListItemSecondaryAction className={classes.buttons}>
+                  {status === 'reject' && <RedChip label="Rejected" />}
+                  {status === 'confirm' && <GreenChip label="Confirmed" />}
+                  {!status && (
+                    <>
+                      <RedIconButton
+                        size="small"
+                        aria-label="Reject"
+                        onClick={() => handleReject(date)}
+                      >
+                        <ClearIcon />
+                      </RedIconButton>
+                      <GreenIconButton
+                        size="small"
+                        aria-label="Confirm"
+                        onClick={() => handleConfirm(date)}
+                      >
+                        <CheckIcon />
+                      </GreenIconButton>
+                    </>
+                  )}
+                </ListItemSecondaryAction>
+              </ListItem>
+            ),
+          )}
         </List>
       ) : (
         <Typography color="inherit">No transactions.</Typography>

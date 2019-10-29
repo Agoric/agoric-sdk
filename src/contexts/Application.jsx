@@ -10,6 +10,7 @@ import {
   updateInbox,
   serverConnected,
   serverDisconnected,
+  deactivateConnection,
 } from '../store/actions';
 import { reducer, createDefaultState } from '../store/reducer';
 
@@ -26,19 +27,17 @@ export default function Provider({ children }) {
   useEffect(() => {
     function messageHandler(message) {
       if (!message) return;
-      const { type, purses, inbox } = message;
-      if (type === 'walletUpdatePurses' && purses) {
-        dispatch(updatePurses(JSON.parse(purses)));
+      if (message.type === 'walletUpdatePurses') {
+        dispatch(updatePurses(JSON.parse(message.state)));
       }
-      if (type === 'walletUpdateInbox' && inbox) {
-        dispatch(updateInbox(JSON.parse(inbox)));
+      if (message.type === 'walletUpdateInbox') {
+        dispatch(updateInbox(JSON.parse(message.state)));
       }
     }
 
     function walletGetPurses() {
       return doFetch({ type: 'walletGetPurses' }).then(messageHandler);
     }
-
     function walletGetInbox() {
       return doFetch({ type: 'walletGetInbox' }).then(messageHandler);
     }
@@ -52,6 +51,7 @@ export default function Provider({ children }) {
         },
         onDisconnect() {
           dispatch(serverDisconnected());
+          dispatch(deactivateConnection());
           dispatch(updatePurses(null));
           dispatch(updateInbox(null));
         },
