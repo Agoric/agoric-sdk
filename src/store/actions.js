@@ -46,9 +46,15 @@ export const changeAmount = (amount, fieldNumber, freeVariable) => ({
   payload: { amount, fieldNumber, freeVariable },
 });
 
-export const createOffer = (amount, inputPurse, outputPurse) => ({
+export const createOffer = (
+  contractId,
+  inputAmount,
+  outputAmount,
+  inputPurse,
+  outputPurse,
+) => ({
   type: CREATE_OFFER,
-  payload: { amount, inputPurse, outputPurse },
+  payload: { contractId, inputAmount, outputAmount, inputPurse, outputPurse },
 });
 
 export const resetState = () => ({

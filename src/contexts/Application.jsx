@@ -9,10 +9,13 @@ import {
   updatePurses,
   serverConnected,
   serverDisconnected,
+  deactivateConnection,
   changeAmount,
   resetState,
 } from '../store/actions';
 import { reducer, createDefaultState } from '../store/reducer';
+
+import { CONTRACT_NAME } from '../utils/constants';
 
 export const ApplicationContext = createContext();
 
@@ -34,9 +37,8 @@ export default function Provider({ children }) {
   useEffect(() => {
     function messageHandler(message) {
       if (!message) return;
-      const { type, purses } = message;
-      if (type === 'walletUpdatePurses' && purses) {
-        dispatch(updatePurses(JSON.parse(purses)));
+      if (message.type === 'walletUpdatePurses') {
+        dispatch(updatePurses(JSON.parse(message.state)));
       }
     }
 
@@ -52,6 +54,7 @@ export default function Provider({ children }) {
         },
         onDisconnect() {
           dispatch(serverDisconnected());
+          dispatch(deactivateConnection());
           dispatch(resetState());
         },
         onMessage(message) {
@@ -75,6 +78,7 @@ export default function Provider({ children }) {
     if (inputPurse && outputPurse && freeVariable === 0 && inputAmount > 0) {
       doFetch({
         type: 'autoswapGetPrice',
+        contractId: CONTRACT_NAME,
         extent: inputAmount,
         desc0: inputPurse.description,
         desc1: outputPurse.description,
@@ -84,6 +88,7 @@ export default function Provider({ children }) {
     if (inputPurse && outputPurse && freeVariable === 1 && outputAmount > 0) {
       doFetch({
         type: 'autoswapGetPrice',
+        contractId: CONTRACT_NAME,
         extent: outputAmount,
         desc0: outputPurse.description,
         desc1: inputPurse.description,

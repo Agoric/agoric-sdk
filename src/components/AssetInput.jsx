@@ -20,13 +20,6 @@ const useStyles = makeStyles(theme => ({
     paddingTop: 0,
     paddingBottom: 0,
   },
-  divider: {
-    '&:not(:first-child)': {
-      borderTopColor: theme.palette.divider,
-      borderTopStyle: 'solid',
-      borderTopWidth: 1,
-    },
-  },
   icon: {
     minWidth: 24,
     marginRight: theme.spacing(2),
@@ -98,7 +91,7 @@ export default function AssetInput({
         >
           {Array.isArray(purses) &&
             purses.map(({ name, description, extent }) => (
-              <MenuItem key={name} value={name} className={classes.divider}>
+              <MenuItem key={name} value={name} divider>
                 <ListItemIcon className={classes.icon}>
                   <PurseIcon />
                 </ListItemIcon>

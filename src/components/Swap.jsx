@@ -23,6 +23,8 @@ import {
   createOffer,
 } from '../store/actions';
 
+import { CONTRACT_NAME } from '../utils/constants';
+
 const useStyles = makeStyles(theme => ({
   paper: {
     marginTop: theme.spacing(3),
@@ -64,8 +66,7 @@ export default function Swap() {
 
   const inputAmountError =
     inputAmount < 0 || (inputPurse && inputAmount > inputPurse.extent);
-  const outputAmountError =
-    outputAmount < 0 || (outputPurse && outputAmount > outputPurse.extent);
+  const outputAmountError = outputAmount < 0;
 
   const pursesError =
     inputPurse &&
@@ -116,7 +117,15 @@ export default function Swap() {
   }
 
   function handleSwap() {
-    dispatch(createOffer(inputAmount, inputPurse, outputPurse));
+    dispatch(
+      createOffer(
+        CONTRACT_NAME,
+        inputAmount,
+        outputAmount,
+        inputPurse,
+        outputPurse,
+      ),
+    );
   }
 
   return (

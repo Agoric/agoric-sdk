@@ -21,7 +21,10 @@ export function updateExchangeAmount(state, exchangeAmount) {
   return { ...state, exchangeAmount };
 }
 
-export function changePurse(state, { purse, fieldNumber, freeVariable = null }) {
+export function changePurse(
+  state,
+  { purse, fieldNumber, freeVariable = null },
+) {
   let { inputPurse, outputPurse } = state;
   if (fieldNumber === 0) {
     inputPurse = purse;
@@ -37,7 +40,10 @@ export function changePurse(state, { purse, fieldNumber, freeVariable = null }) 
   }
   return { ...state, inputPurse, outputPurse, freeVariable };
 }
-export function changeAmount(state, { amount, fieldNumber, freeVariable = null }) {
+export function changeAmount(
+  state,
+  { amount, fieldNumber, freeVariable = null },
+) {
   let { inputAmount, outputAmount } = state;
   if (fieldNumber === 0) {
     inputAmount = amount;
@@ -48,30 +54,33 @@ export function changeAmount(state, { amount, fieldNumber, freeVariable = null }
   return { ...state, inputAmount, outputAmount, freeVariable };
 }
 export function swapInputs(state) {
-  const {
-    inputPurse,
-    outputPurse,
-    inputAmount,
-    outputAmount,
-    freeVariable,
-  } = state;
+  const { inputPurse, outputPurse, inputAmount, outputAmount } = state;
   return {
     ...state,
     inputPurse: outputPurse,
     outputPurse: inputPurse,
     inputAmount: outputAmount,
     outputAmount: inputAmount,
-    freeVariable: 1 - freeVariable, // swap dependent and free variable
   };
 }
 
-export function createOffer(state, { inputAmount, inputPurse, outputPurse }) {
+export function createOffer(
+  state,
+  { contractId, inputAmount, outputAmount, inputPurse, outputPurse },
+) {
   doFetch({
-    type: 'walletCreateOffer',
-    extent: inputAmount,
-    desc0: inputPurse.description,
-    desc1: outputPurse.description,
-  }); // todo response callback
+    type: 'walletAddOffer',
+    offer: {
+      contractId,
+      date: Date.now(),
+      extent0: inputAmount,
+      extent1: outputAmount,
+      name0: inputPurse.name,
+      name1: outputPurse.name,
+      desc0: inputPurse.description,
+      desc1: outputPurse.description,
+    },
+  });
 
   return {
     ...state,
