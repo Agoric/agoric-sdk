@@ -7,7 +7,7 @@ import {
 } from '../utils/fetch-websocket';
 import {
   updatePurses,
-  updateTransactions,
+  updateInbox,
   serverConnected,
   serverDisconnected,
 } from '../store/actions';
@@ -26,26 +26,34 @@ export default function Provider({ children }) {
   useEffect(() => {
     function messageHandler(message) {
       if (!message) return;
-      const { type, purses } = message;
-      if (type === 'updateWalletPurses' && purses) {
+      const { type, purses, inbox } = message;
+      if (type === 'walletUpdatePurses' && purses) {
         dispatch(updatePurses(JSON.parse(purses)));
+      }
+      if (type === 'walletUpdateInbox' && inbox) {
+        dispatch(updateInbox(JSON.parse(inbox)));
       }
     }
 
-    function fetchGetWalletState() {
-      return doFetch({ type: 'getWalletPursesState' }).then(messageHandler);
+    function walletGetPurses() {
+      return doFetch({ type: 'walletGetPurses' }).then(messageHandler);
+    }
+
+    function walletGetInbox() {
+      return doFetch({ type: 'walletGetInbox' }).then(messageHandler);
     }
 
     if (active) {
       activateWebSocket({
         onConnect() {
           dispatch(serverConnected());
-          fetchGetWalletState();
+          walletGetPurses();
+          walletGetInbox();
         },
         onDisconnect() {
           dispatch(serverDisconnected());
           dispatch(updatePurses(null));
-          dispatch(updateTransactions(null));
+          dispatch(updateInbox(null));
         },
         onMessage(message) {
           messageHandler(JSON.parse(message));

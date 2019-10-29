@@ -4,16 +4,16 @@ import { List, ListItem, ListItemText, Typography } from '@material-ui/core';
 
 import { useApplicationContext } from '../contexts/Application';
 
-export default function Transactions() {
+export default function Inbox() {
   const { state } = useApplicationContext();
-  const { transactions } = state;
+  const { inbox } = state;
 
   return (
     <>
       <Typography variant="h6">Transactions</Typography>
-      {Array.isArray(transactions) && transactions.length > 0 ? (
+      {Array.isArray(inbox) && inbox.length > 0 ? (
         <List>
-          {transactions.map(([label, extent]) => (
+          {inbox.map(([label, extent]) => (
             <ListItem key={label} value={label}>
               <ListItemText
                 primary={label.description}

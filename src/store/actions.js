@@ -4,7 +4,7 @@ import {
   SERVER_CONNECTED,
   SERVER_DISCONNECTED,
   UPDATE_PURSES,
-  UPDATE_TRANSACTIONS,
+  UPDATE_INBOX,
   CONFIRM_TRADE,
   REJECT_TRADE,
 } from './types';
@@ -29,9 +29,8 @@ export const updatePurses = payload => ({
   type: UPDATE_PURSES,
   payload,
 });
-
-export const updateTransactions = payload => ({
-  type: UPDATE_TRANSACTIONS,
+export const updateInbox = payload => ({
+  type: UPDATE_INBOX,
   payload,
 });
 

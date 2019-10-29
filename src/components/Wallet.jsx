@@ -4,7 +4,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import { Grid, Paper, Typography } from '@material-ui/core';
 
 import Purses from './Purses';
-import Transactions from './Transactions';
+import Inbox from './Inbox';
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -46,7 +46,7 @@ export default function Wallet() {
           <Purses />
         </Grid>
         <Grid item xs={8}>
-          <Transactions />
+          <Inbox />
         </Grid>
       </Grid>
     </Paper>

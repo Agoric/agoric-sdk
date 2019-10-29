@@ -4,7 +4,7 @@ import {
   SERVER_CONNECTED,
   SERVER_DISCONNECTED,
   UPDATE_PURSES,
-  UPDATE_TRANSACTIONS,
+  UPDATE_INBOX,
   CONFIRM_TRADE,
   REJECT_TRADE,
 } from './types';
@@ -14,7 +14,7 @@ import {
   serverConnected,
   serverDisconnected,
   updatePurses,
-  updateTransactions,
+  updateInbox,
   confirmTrade,
   rejectTrade,
 } from './operations';
@@ -25,7 +25,7 @@ export function createDefaultState() {
     connected: false,
     account: null,
     purses: null,
-    transactions: null,
+    inbox: null,
   };
 }
 
@@ -43,8 +43,8 @@ export const reducer = (state, { type, payload }) => {
 
     case UPDATE_PURSES:
       return updatePurses(state, payload);
-    case UPDATE_TRANSACTIONS:
-      return updateTransactions(state, payload);
+    case UPDATE_INBOX:
+      return updateInbox(state, payload);
 
     case CONFIRM_TRADE:
       return confirmTrade(state, payload);

@@ -15,10 +15,8 @@ export function serverDisconnected(state) {
 export function updatePurses(state, purses) {
   return { ...state, purses };
 }
-
-export function updateTransactions(state, transactions) {
-  console.log('*** payload', transactions);
-  return { ...state, transactions };
+export function updateInbox(state, inbox) {
+  return { ...state, inbox };
 }
 
 export function confirmTrade(state) {
