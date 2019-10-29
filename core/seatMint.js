@@ -9,14 +9,14 @@ import { makeMint } from './mint';
  * unforgeable empty objects) to use objects
  */
 const makeSeatMint = (description = 'seats') => {
-  const offerHandleToSeat = new WeakMap();
+  const handleToSeat = new WeakMap();
 
   const addUseObj = (handle, useObj) => {
-    offerHandleToSeat.set(handle, useObj);
+    handleToSeat.set(handle, useObj);
   };
 
   const makeUseObj = seatExtent => {
-    return harden(offerHandleToSeat.get(seatExtent.offerHandle));
+    return harden(handleToSeat.get(seatExtent.handle));
   };
 
   const paymentMakeUseAndBurn = async (assay, payment) => {

@@ -20,7 +20,7 @@ test('zoe - coveredCall', async t => {
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(coveredCallRoot);
 
-    const coveredCallInstallationId = zoe.install(source, moduleFormat);
+    const coveredCallInstallationHandle = zoe.install(source, moduleFormat);
 
     // Setup Alice
     const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
@@ -40,7 +40,7 @@ test('zoe - coveredCall', async t => {
       instance: aliceCoveredCall,
       instanceHandle,
       terms: aliceTerms,
-    } = await zoe.makeInstance(coveredCallInstallationId, terms);
+    } = await zoe.makeInstance(coveredCallInstallationHandle, terms);
 
     // The assays are defined at this step
     t.deepEquals(aliceTerms.assays, assays);
@@ -124,7 +124,6 @@ test('zoe - coveredCall', async t => {
 
     const inviteExtent = bobInvitePayment.getBalance().extent;
     t.equal(inviteExtent.instanceHandle, instanceHandle);
-    t.equal(inviteExtent.installationHandle, coveredCallInstallationId);
     t.ok(sameStructure(inviteExtent.offerMadeRules, aliceOfferRules));
     t.ok(
       sameStructure(
@@ -211,7 +210,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(coveredCallRoot);
 
-    const coveredCallInstallationId = zoe.install(source, moduleFormat);
+    const coveredCallInstallationHandle = zoe.install(source, moduleFormat);
 
     // Setup Alice
     const aliceMoolaPurse = mints[0].mint(assays[0].makeAssetDesc(3));
@@ -232,7 +231,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
       instance: aliceCoveredCall,
       instanceHandle,
       terms: aliceTerms,
-    } = await zoe.makeInstance(coveredCallInstallationId, terms);
+    } = await zoe.makeInstance(coveredCallInstallationHandle, terms);
 
     // The assays are defined at this step
     t.deepEquals(aliceTerms.assays, assays);
@@ -321,7 +320,6 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 
     const inviteExtent = bobInvitePayment.getBalance().extent;
     t.equal(inviteExtent.instanceHandle, instanceHandle);
-    t.equal(inviteExtent.installationHandle, coveredCallInstallationId);
     t.ok(sameStructure(inviteExtent.offerMadeRules, aliceOfferRules));
     t.ok(
       sameStructure(
@@ -407,7 +405,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(coveredCallRoot);
 
-    const coveredCallInstallationId = zoe.install(source, moduleFormat);
+    const coveredCallInstallationHandle = zoe.install(source, moduleFormat);
     const {
       source: swapSource,
       moduleFormat: swapModuleFormat,
@@ -444,7 +442,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     const {
       instance: aliceCoveredCall,
       instanceHandle,
-    } = await zoe.makeInstance(coveredCallInstallationId, terms);
+    } = await zoe.makeInstance(coveredCallInstallationHandle, terms);
 
     // 2: Alice escrows with Zoe. She specifies her offer offerRules,
     // which include an offer description as well as the exit
@@ -506,16 +504,21 @@ test('zoe - coveredCall with swap for invite', async t => {
 
     const inviteExtent = bobInvitePayment.getBalance().extent;
 
-    // Is the installation as expected?
-    t.equal(inviteExtent.installationHandle, coveredCallInstallationId);
-
     // Does the instanceHandle in the invite match what Alice told him?
     t.equal(inviteExtent.instanceHandle, instanceHandle);
+
+    const {
+      terms: inviteTerms,
+      installationHandle: inviteInstallationHandle,
+    } = zoe.getInstance(instanceHandle);
+
+    // Is the installation as expected?
+    t.equal(inviteInstallationHandle, coveredCallInstallationHandle);
 
     // Are the assays and other terms as expected?
     t.ok(
       sameStructure(
-        inviteExtent.terms,
+        inviteTerms,
         harden({ assays: [moolaAssay, simoleanAssay] }),
       ),
     );
@@ -787,7 +790,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(coveredCallRoot);
 
-    const coveredCallInstallationId = zoe.install(source, moduleFormat);
+    const coveredCallInstallationHandle = zoe.install(source, moduleFormat);
 
     // Setup Alice
     // Alice starts with 3 moola
@@ -818,7 +821,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const {
       instance: aliceCoveredCall,
       instanceHandle,
-    } = await zoe.makeInstance(coveredCallInstallationId, terms);
+    } = await zoe.makeInstance(coveredCallInstallationHandle, terms);
 
     // 2: Alice escrows with Zoe. She specifies her offer offerRules,
     // which include an offer description as well as the exit
@@ -880,16 +883,21 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
 
     const inviteExtent = bobInvitePayment.getBalance().extent;
 
-    // Is the installation as expected?
-    t.equal(inviteExtent.installationHandle, coveredCallInstallationId);
-
     // Does the instanceHandle in the invite match what Alice told him?
     t.equal(inviteExtent.instanceHandle, instanceHandle);
+
+    const {
+      installationHandle: inviteInstallationHandle,
+      terms: inviteTerms,
+    } = zoe.getInstance(instanceHandle);
+
+    // Is the installation as expected?
+    t.equal(inviteInstallationHandle, coveredCallInstallationHandle);
 
     // Are the assays and other terms as expected?
     t.ok(
       sameStructure(
-        inviteExtent.terms,
+        inviteTerms,
         harden({ assays: [moolaAssay, simoleanAssay] }),
       ),
     );
@@ -957,7 +965,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       instance: bobSecondCoveredCall,
       instanceHandle: secondCoveredCallInstanceHandle,
     } = await zoe.makeInstance(
-      coveredCallInstallationId,
+      coveredCallInstallationHandle,
       harden({
         assays: [inviteAssay, bucksAssay],
       }),
@@ -1012,16 +1020,21 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
 
     const daveInviteExtent = inviteForDave.getBalance().extent;
 
-    // Is the installation as expected?
-    t.equal(daveInviteExtent.installationHandle, coveredCallInstallationId);
-
     // Does the instanceHandle in the invite match what Bob told him?
     t.equal(daveInviteExtent.instanceHandle, secondCoveredCallInstanceHandle);
+
+    const {
+      installationHandle: daveInviteInstallationHandle,
+      terms: daveInviteTerms,
+    } = zoe.getInstance(daveInviteExtent.instanceHandle);
+
+    // Is the installation as expected?
+    t.equal(daveInviteInstallationHandle, coveredCallInstallationHandle);
 
     // Are the assays and other terms as expected?
     t.ok(
       sameStructure(
-        daveInviteExtent.terms,
+        daveInviteTerms,
         harden({ assays: [inviteAssay, bucksAssay] }),
       ),
     );

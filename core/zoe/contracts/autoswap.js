@@ -2,7 +2,11 @@ import harden from '@agoric/harden';
 import { natSafeMath } from './helpers/safeMath';
 import { rejectOffer } from './helpers/userFlow';
 import { vectorWith, vectorWithout } from './helpers/extents';
-import { hasValidPayoutRules } from './helpers/payoutRules';
+import {
+  hasValidPayoutRules,
+  makeAssetDesc,
+  makeOfferRules,
+} from './helpers/offerRules';
 
 import { makeMint } from '../../mint';
 
@@ -88,7 +92,8 @@ export const makeContract = harden((zoe, terms) => {
     const exitRule = {
       kind: 'noExit',
     };
-    const liquidityOfferRules = zoe.makeOfferRules(
+    const liquidityOfferRules = makeOfferRules(
+      zoe,
       liquidityOfferKinds,
       extents,
       exitRule,
@@ -192,14 +197,6 @@ export const makeContract = harden((zoe, terms) => {
       newTokenInPoolE: add(newTokenInPoolE, feeTokenInE),
       newTokenOutPoolE,
     };
-  };
-
-  const makeAssetDesc = (extentOps, label, allegedExtent) => {
-    extentOps.insistKind(allegedExtent);
-    return harden({
-      label,
-      extent: allegedExtent,
-    });
   };
 
   const assetDescsToExtentsArray = (extentOps, assetDescs) =>

@@ -4,7 +4,7 @@ import { rejectOffer, defaultAcceptanceMsg } from './helpers/userFlow';
 import {
   hasValidPayoutRules,
   getActivePayoutRules,
-} from './helpers/payoutRules';
+} from './helpers/offerRules';
 import {
   isMatchingLimitOrder,
   reallocateSurplusToSeller as reallocate,

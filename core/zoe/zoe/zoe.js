@@ -11,7 +11,6 @@ import {
   escrowOffer,
   mintEscrowReceiptPayment,
   completeOffers,
-  makeAssetDesc,
   makeEmptyExtents,
 } from './zoeUtils';
 
@@ -26,8 +25,11 @@ import { makeMint } from '../../mint';
  * @param additionalEndowments pure or pure-ish endowments to add to evaluator
  */
 const makeZoe = async (additionalEndowments = {}) => {
-  // The escrowReceiptAssay is a long-lived identity over many
-  // contract instances
+  // Zoe has two mints: a mint for invites and a mint for
+  // escrowReceipts. The invite mint can be used by a smart contract
+  // to create invites to take certain actions in the smart contract.
+  // An escrowReceipt is an ERTP payment that is proof of
+  // escrowing assets with Zoe.
   const {
     seatMint: inviteMint,
     seatAssay: inviteAssay,
@@ -108,11 +110,11 @@ const makeZoe = async (additionalEndowments = {}) => {
         completeOffers(adminState, readOnlyState, offerHandles),
 
       /**
-       *  The contract can create an empty offer and get
-       *  the associated offerHandle. This allows the contract
-       *  to use this offer slot for record-keeping. For instance, to
-       *  represent a pool, the contract can create an
-       *  empty offer and then reallocate other extents to this offer.
+       *  The contract can create an empty offer and get the
+       *  associated offerHandle. This allows the contract to use this
+       *  offer slot for record-keeping. For instance, to represent a
+       *  pool, the contract can create an empty offer and then
+       *  reallocate other extents to this offer.
        */
       escrowEmptyOffer: () => {
         const assays = readOnlyState.getAssays(instanceHandle);
@@ -146,6 +148,21 @@ const makeZoe = async (additionalEndowments = {}) => {
         return offerHandle;
       },
 
+      /**
+       * Burn the escrowReceipt ERTP payment using the escrowReceipt
+       * assay. Burning in ERTP also validates that the alleged payment was
+       * produced by the assay, and returns the
+       * assetDesc of the payment.
+       *
+       * This method also checks if the offer has been completed and
+       * errors if it has, so that a smart contract doesn't continue
+       * thinking that the offer is live. Additionally, we record that
+       * the escrowReceipt is used in this particular contract.
+       *
+       * @param  {object} escrowReceipt - an ERTP payment
+       * representing proof of escrowing specific assets with Zoe.
+       */
+
       burnEscrowReceipt: async escrowReceipt => {
         const assetDesc = await escrowReceiptAssay.burnAll(escrowReceipt);
         const { offerHandle } = assetDesc.extent;
@@ -156,42 +173,37 @@ const makeZoe = async (additionalEndowments = {}) => {
         adminState.recordUsedInInstance(instanceHandle, offerHandle);
         return assetDesc.extent;
       },
-
-      makeInvite: (contractDefinedProperties, useObj) => {
-        const installationHandle = adminState.getInstallationHandleForInstanceHandle(
-          instanceHandle,
-        );
+      /**
+       * Make a credible Zoe invite for a particular smart contract
+       * indicated by the unique `instanceHandle`. The other
+       * information in the extent of this invite is decided by the
+       * governing contract and should include whatever information is
+       * necessary for a potential buyer of the invite to know what
+       * they are getting. Note: if information can be derived in
+       * queries based on other information, we choose to omit it. For
+       * instance, `installationHandle` can be derived from
+       * `instanceId` and is omitted even though it is useful.
+       * @param  {object} contractDefinedExtent - an object of
+       * information to include in the extent, as defined by the smart
+       * contract
+       * @param  {object} useObj - an object defined by the smart
+       * contract that is the use right associated with the invite. In
+       * other words, buying the invite is buying the right to call
+       * methods on this object.
+       */
+      makeInvite: (contractDefinedExtent, useObj) => {
         const inviteExtent = harden({
-          ...contractDefinedProperties,
-          offerHandle: harden({}),
+          ...contractDefinedExtent,
+          handle: harden({}),
           instanceHandle,
-          installationHandle,
-          terms: readOnlyState.getTerms(instanceHandle),
         });
         const invitePurseP = inviteMint.mint(inviteExtent);
-        inviteAddUseObj(inviteExtent.offerHandle, useObj);
+        inviteAddUseObj(inviteExtent.handle, useObj);
         const invitePaymentP = invitePurseP.withdrawAll();
         return invitePaymentP;
       },
 
-      makeOfferRules: (kinds, extents, exitRule) => {
-        const extentOpsArray = readOnlyState.getExtentOpsArrayForInstanceHandle(
-          instanceHandle,
-        );
-        const labels = readOnlyState.getLabelsForInstanceHandle(instanceHandle);
-        const payoutRules = extentOpsArray.map((extentOps, i) =>
-          harden({
-            kind: kinds[i],
-            assetDesc: makeAssetDesc(extentOps, labels[i], extents[i]),
-          }),
-        );
-        return harden({
-          payoutRules,
-          exitRule,
-        });
-      },
-
-      // read-only, side-effect-free access below this line
+      /** read-only, side-effect-free access below this line */
       getStatusFor: readOnlyState.getStatusFor,
       makeEmptyExtents: () =>
         makeEmptyExtents(
@@ -203,7 +215,6 @@ const makeZoe = async (additionalEndowments = {}) => {
       getExtentsFor: readOnlyState.getExtentsFor,
       getPayoutRulesFor: readOnlyState.getPayoutRulesFor,
       getInviteAssay: () => inviteAssay,
-      getEscrowReceiptAssay: () => escrowReceiptAssay,
     });
     return contractFacet;
   };

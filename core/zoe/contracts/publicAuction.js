@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 
 import { rejectOffer, defaultAcceptanceMsg } from './helpers/userFlow';
-import { hasValidPayoutRules } from './helpers/payoutRules';
+import { hasValidPayoutRules } from './helpers/offerRules';
 import {
   isOverMinimumBid,
   secondPriceLogic,

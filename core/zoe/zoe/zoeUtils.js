@@ -188,6 +188,5 @@ export {
   mintEscrowReceiptPayment,
   completeOffers,
   makeEmptyExtents,
-  makeAssetDesc,
   toAssetDescMatrix,
 };

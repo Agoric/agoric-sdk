@@ -109,7 +109,10 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       // Bob checks that the invite is for the right covered call
       const { extent: inviteExtent } = await E(invite).getBalance();
       insist(inviteExtent.instanceHandle === instanceHandle)`wrong instance`;
-      insist(inviteExtent.installationHandle === installId)`wrong installation`;
+
+      const instanceInfo = await E(zoe).getInstance(instanceHandle);
+
+      insist(instanceInfo.installationHandle === installId)`wrong installation`;
       insist(
         sameStructure(
           inviteExtent.offerToBeMade,

@@ -69,3 +69,44 @@ export const getActivePayoutRules = (zoe, offerHandles) => {
     payoutRulesArray: zoe.getPayoutRulesFor(active),
   });
 };
+
+/**
+ * Make an assetDesc without access to the assay, which we don't want
+ * to use because it may be remote.
+ * @param {object} extentOps - the extent ops for the assay
+ * @param {object} label - the label for the assay to use in the assetDesc
+ * @param {*} allegedExtent - the extent to use in the assetDesc
+ */
+export const makeAssetDesc = (extentOps, label, allegedExtent) => {
+  extentOps.insistKind(allegedExtent);
+  return harden({
+    label,
+    extent: allegedExtent,
+  });
+};
+
+/**
+ * A helper to make offerRules without having to write out the rules
+ * manually, and without using an assay (which we don't want to use
+ * because it may be remote).
+ * @param {object} zoe - the contract facet of Zoe
+ * @param  {array} kinds - an array of payoutRule kinds, in the order
+ * of the intended payoutRules
+ * @param  {array} extents - an array of extents, in the order of the
+ * intended payoutRules
+ * @param  {object} exitRule - an exitRule
+ */
+export const makeOfferRules = (zoe, kinds, extents, exitRule) => {
+  const extentOpsArray = zoe.getExtentOpsArray();
+  const labels = zoe.getLabels();
+  const payoutRules = extentOpsArray.map((extentOps, i) =>
+    harden({
+      kind: kinds[i],
+      assetDesc: makeAssetDesc(extentOps, labels[i], extents[i]),
+    }),
+  );
+  return harden({
+    payoutRules,
+    exitRule,
+  });
+};

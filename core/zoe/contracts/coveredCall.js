@@ -5,7 +5,7 @@ import {
   isExactlyMatchingPayoutRules,
   makeExactlyMatchingPayoutRules,
   hasValidPayoutRules,
-} from './helpers/payoutRules';
+} from './helpers/offerRules';
 
 export const makeContract = harden((zoe, terms) => {
   let firstOfferHandle;
