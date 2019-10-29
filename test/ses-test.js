@@ -118,7 +118,7 @@ test('eventual send can be enabled twice', async t => {
       `acorn double transform works`,
     );
   } catch (e) {
-    t.assert(false, e);
+    t.isNot(e, e, 'unexpected exception');
   } finally {
     t.end();
   }
@@ -146,7 +146,7 @@ test('eventual send can be enabled', async t => {
       t.equals(
         await s.evaluate(`((punct) => "world" + punct)~.('!')`),
         'world!',
-        `${name} .apply() works`,
+        `${name} .applyFunction() works`,
       );
       t.equals(
         await s.evaluate(`["a", "b", "c"]~.[2]`),
