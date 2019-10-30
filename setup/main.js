@@ -188,14 +188,16 @@ show-config      display the client connection parameters
       break;
     }
     case 'bootstrap': {
-      const { _: subArgs, ...subOpts } = parseArgs(args.slice(1), {
+      const {
+        _: subArgs,
+        'boot-tokens': bootTokens,
+        ...subOpts
+      } = parseArgs(args.slice(1), {
+        default: {
+          'boot-tokens': DEFAULT_BOOT_TOKENS,
+        },
         stopEarly: true,
       });
-
-      let [bootTokens] = subArgs;
-      if (!bootTokens) {
-        bootTokens = DEFAULT_BOOT_TOKENS;
-      }
 
       const dir = SETUP_HOME;
       if (await exists(`${dir}/network.txt`)) {
@@ -211,8 +213,6 @@ show-config      display the client connection parameters
             : []),
         ]);
       }
-
-      guardFile('boot-tokens.txt', makeFile => makeFile(bootTokens));
 
       await guardFile(`${PROVISION_DIR}/hosts`, async makeFile => {
         await needReMain(['provision', '-auto-approve']);
@@ -236,11 +236,26 @@ show-config      display the client connection parameters
       await guardFile(`${PROVISION_DIR}/prepare.stamp`, () =>
         needReMain(['play', 'prepare-machine']),
       );
-      const bootOpts = [];
-      if (subOpts.bump) {
-        bootOpts.push(`--bump=${subOpts.bump}`);
+
+      switch (subArgs[0]) {
+        case 'dapp': {
+          await needReMain(['bootstrap-cosmos-dapp', ...subArgs.slice(1)]);
+          break;
+        }
+
+        case undefined: {
+          guardFile('boot-tokens.txt', makeFile => makeFile(bootTokens));
+          const bootOpts = [];
+          if (subOpts.bump) {
+            bootOpts.push(`--bump=${subOpts.bump}`);
+          }
+          await needReMain(['bootstrap-cosmos', ...bootOpts]);
+          break;
+        }
+        default: {
+          throw Error(`Unrecognized bootstrap argument ${subArgs[0]}`);
+        }
       }
-      await needReMain(['bootstrap-cosmos', ...bootOpts]);
       break;
     }
 

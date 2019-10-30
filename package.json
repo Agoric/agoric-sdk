@@ -18,7 +18,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/acorn-eventual-send": "^1.0.1",
+    "@agoric/acorn-eventual-send": "^1.0.2",
     "@agoric/bundle-source": "^0.1.0",
     "@agoric/captp": "^1.0.0",
     "@agoric/ertp": "^0.1.8",
