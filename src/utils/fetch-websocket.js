@@ -2,7 +2,7 @@
 
 // todo: refactor this to a class
 
-const target = process.env.REACT_APP_API_URL;
+import { API_URL } from './constants';
 
 // === FETCH
 
@@ -25,7 +25,7 @@ let websocket = null;
 
 function getWebsocketEndpoint() {
   // TODO proxy websocket.
-  const url = new URL(target || window.origin);
+  const url = new URL(API_URL || window.origin);
   url.protocol = 'ws';
   return url;
 }

@@ -15,7 +15,7 @@ import {
 } from '../store/actions';
 import { reducer, createDefaultState } from '../store/reducer';
 
-import { CONTRACT_NAME } from '../utils/constants';
+import { CONTRACT_ID } from '../utils/constants';
 
 export const ApplicationContext = createContext();
 
@@ -80,10 +80,10 @@ export default function Provider({ children }) {
       doFetch({
         type: 'autoswapGetPrice',
         data: {
-          contractId: CONTRACT_NAME,
+          instanceId: CONTRACT_ID,
           extent0: inputAmount,
-          desc0: inputPurse.description,
-          desc1: outputPurse.description,
+          assayId0: inputPurse.assayId,
+          assayId1: outputPurse.assayId,
         },
       }).then(messageHandler);
     }
@@ -92,10 +92,10 @@ export default function Provider({ children }) {
       doFetch({
         type: 'autoswapGetPrice',
         data: {
-          contractId: CONTRACT_NAME,
+          instanceId: CONTRACT_ID,
           extent0: outputAmount,
-          desc0: outputPurse.description,
-          desc1: inputPurse.description,
+          assayId0: outputPurse.assayId,
+          assayId1: inputPurse.assayId,
         },
       }).then(messageHandler);
     }

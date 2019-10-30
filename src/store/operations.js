@@ -66,17 +66,17 @@ export function swapInputs(state) {
 
 export function createOffer(
   state,
-  { contractId, inputAmount, outputAmount, inputPurse, outputPurse },
+  { instanceId, inputAmount, outputAmount, inputPurse, outputPurse },
 ) {
   const meta = {
-    contractId,
+    instanceId,
     date: Date.now(),
     extent0: inputAmount,
     extent1: outputAmount,
-    name0: inputPurse.name,
-    name1: outputPurse.name,
-    desc0: inputPurse.description,
-    desc1: outputPurse.description,
+    purseName0: inputPurse.purseName,
+    purseName1: outputPurse.purseName,
+    assayId0: inputPurse.assayId,
+    assayId1: outputPurse.assayId,
   };
   doFetch({
     type: 'autoswapGetOfferRules',
@@ -88,7 +88,7 @@ export function createOffer(
         type: 'walletAddOffer',
         data: {
           meta,
-          offerRules: data,
+          ...data,
         },
       });
     }

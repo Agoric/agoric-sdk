@@ -23,7 +23,7 @@ import {
   createOffer,
 } from '../store/actions';
 
-import { CONTRACT_NAME } from '../utils/constants';
+import { CONTRACT_ID } from '../utils/constants';
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -76,9 +76,7 @@ export default function Swap() {
   const outputAmountError = outputAmount < 0;
 
   const pursesError =
-    inputPurse &&
-    outputPurse &&
-    inputPurse.description === outputPurse.description;
+    inputPurse && outputPurse && inputPurse.allegedName === outputPurse.allegedName;
 
   const hasError = pursesError || inputAmountError || outputAmountError;
 
@@ -90,8 +88,10 @@ export default function Swap() {
     outputAmount > 0;
 
   function handleChangePurse(event, fieldNumber) {
+    if (!purses) return;
+
     const purseName = event.target.value;
-    const purse = purses.find(p => p.name === purseName);
+    const purse = purses.find(p => p.purseName === purseName);
 
     let freeVariable = null;
     if (inputAmount > 0 && outputAmount > 0) {
@@ -124,12 +124,9 @@ export default function Swap() {
   }
 
   function handleSwap() {
-    // swap
-    // pass offer rules
-
     dispatch(
       createOffer(
-        CONTRACT_NAME,
+        CONTRACT_ID,
         inputAmount,
         outputAmount,
         inputPurse,
