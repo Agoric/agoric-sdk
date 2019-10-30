@@ -15,8 +15,8 @@ import {
   serverDisconnected,
   updatePurses,
   updateInbox,
-  rejectOffer,
-  confirmOffer,
+  declineOffer,
+  acceptOffer,
 } from './operations';
 
 export function createDefaultState() {
@@ -47,9 +47,9 @@ export const reducer = (state, { type, payload }) => {
       return updateInbox(state, payload);
 
     case REJECT_OFFER:
-      return rejectOffer(state, payload);
+      return declineOffer(state, payload);
     case CONFIRM_OFFER:
-      return confirmOffer(state, payload);
+      return acceptOffer(state, payload);
 
     default:
       throw new TypeError(`Action not supported ${type}`);

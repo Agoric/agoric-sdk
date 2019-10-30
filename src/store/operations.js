@@ -21,17 +21,17 @@ export function updateInbox(state, inbox) {
   return { ...state, inbox };
 }
 
-export function rejectOffer(state, date) {
+export function declineOffer(state, date) {
   doFetch({
-    type: 'walletRejectOffer',
+    type: 'walletDeclineOffer',
     data: date,
   }); // todo toast
 
   return state;
 }
-export function confirmOffer(state, date) {
+export function acceptOffer(state, date) {
   doFetch({
-    type: 'walletConfirmOffer',
+    type: 'walletAcceptOffer',
     data: date,
   }); // todo toast
 

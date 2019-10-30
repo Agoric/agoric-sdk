@@ -34,11 +34,11 @@ export const updateInbox = payload => ({
   payload,
 });
 
-export const rejectOffer = payload => ({
+export const declineOffer = payload => ({
   type: REJECT_OFFER,
   payload,
 });
-export const confirmOffer = payload => ({
+export const acceptOffer = payload => ({
   type: CONFIRM_OFFER,
   payload,
 });

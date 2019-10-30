@@ -19,7 +19,7 @@ import CheckIcon from '@material-ui/icons/Check';
 
 import { useApplicationContext } from '../contexts/Application';
 
-import { rejectOffer, confirmOffer } from '../store/actions';
+import { declineOffer, acceptOffer } from '../store/actions';
 
 const useStyles = makeStyles(theme => ({
   icon: {
@@ -85,12 +85,12 @@ export default function Inbox() {
     return new Date(date).toLocaleDateString('en-US', options);
   }
 
-  function handleReject(date) {
-    dispatch(rejectOffer(date));
+  function handleDecline(date) {
+    dispatch(declineOffer(date));
   }
 
-  function handleConfirm(date) {
-    dispatch(confirmOffer(date));
+  function handleAccept(date) {
+    dispatch(acceptOffer(date));
   }
 
   return (
@@ -100,12 +100,12 @@ export default function Inbox() {
         <List>
           {inbox.map(
             ({
-              contractId,
+              instanceId,
               date,
-              name0,
-              name1,
-              assetId0,
-              assetId1,
+              purseName0,
+              purseName1,
+              assayId0,
+              assayId1,
               extent0,
               extent1,
               status,
@@ -117,7 +117,7 @@ export default function Inbox() {
                 <Grid container direction="column">
                   <Grid item>
                     <Typography variant="body2" display="block">
-                      {`${contractId} - ${formatDate(date)}`}
+                      {`${instanceId} - ${formatDate(date)}`}
                     </Typography>
                   </Grid>
                   <Grid item>
@@ -126,41 +126,41 @@ export default function Inbox() {
                       <Box component="span" fontWeight={800}>
                         {extent0}
                         &nbsp;
-                        {assetId0}
+                        {assayId0}
                         &nbsp;
                       </Box>
                       from&nbsp;
-                      {name0}
+                      {purseName0}
                     </Typography>
                     <Typography variant="body1">
                       to receive&nbsp;
                       <Box component="span" fontWeight={800}>
                         {extent1}
                         &nbsp;
-                        {assetId1}
+                        {assayId1}
                         &nbsp;
                       </Box>
                       into&nbsp;
-                      {name1}
+                      {purseName1}
                     </Typography>
                   </Grid>
                 </Grid>
                 <ListItemSecondaryAction className={classes.buttons}>
-                  {status === 'reject' && <RedChip  variant="outlined" label="Rejected" />}
-                  {status === 'confirm' && <GreenChip  variant="outlined" label="Confirmed" />}
+                  {status === 'decline' && <RedChip  variant="outlined" label="Declined" />}
+                  {status === 'accept' && <GreenChip  variant="outlined" label="Accepted" />}
                   {!status && (
                     <>
                       <RedIconButton
                         size="small"
-                        aria-label="Reject"
-                        onClick={() => handleReject(date)}
+                        aria-label="Decline"
+                        onClick={() => handleDecline(date)}
                       >
                         <ClearIcon />
                       </RedIconButton>
                       <GreenIconButton
                         size="small"
-                        aria-label="Confirm"
-                        onClick={() => handleConfirm(date)}
+                        aria-label="Accept"
+                        onClick={() => handleAccept(date)}
                       >
                         <CheckIcon />
                       </GreenIconButton>
