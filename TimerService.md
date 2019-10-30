@@ -53,9 +53,9 @@ Here's a transcript of a session showing the use of the repeater.
 
 ```
 command[0]  home
-history[0]  {"LOADING":[Promise],"gallery":[Presence o-50],"handoffService":[Presence o-51],
+history[0]  {"LOADING":[Promise],"gallery":[Presence o-50],"sharingService":[Presence o-51],
 "purse":[Presence o-52],"canvasStatePublisher":[Presence o-53],"contractHost":[Presence o-54],
-"chainTimerService":[Presence o-55],"handoff":[Presence o-56],"registry":[Presence o-57],"zoe":
+"chainTimerService":[Presence o-55],"sharing":[Presence o-56],"registry":[Presence o-57],"zoe":
 [Presence o-58],"localTimerService":[Presence o-59],"uploads":[Presence o-60]}
 command[1]  home.localTimerService~.getCurrentTimestamp()
 history[1]  1571782780000
