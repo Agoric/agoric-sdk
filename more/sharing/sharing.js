@@ -5,13 +5,13 @@ import harden from '@agoric/harden';
 import { makeCorkboard } from './corkboard';
 import { insist } from '../../util/insist';
 
-function makeHandoffService() {
+function makeSharingService() {
   // I'd have used PrivateNames, but they want objects (not Strings) as Keys.
   const boards = new Map();
   const brand = new WeakSet();
   const tombstone = [];
 
-  const handoffService = harden({
+  const sharingService = harden({
     // retrieve and remove from the map.
     grabBoard(key) {
       if (!boards.has(key)) {
@@ -42,7 +42,7 @@ Unrecognized board: ${allegedBoard}`;
     // We don't need remove, since grabBoard can be used for that.
   });
 
-  return handoffService;
+  return sharingService;
 }
 
-export { makeHandoffService };
+export { makeSharingService };

@@ -4,9 +4,9 @@ import harden from '@agoric/harden';
 import { insist } from '../../util/insist';
 import { generateSparseInts } from '../../util/sparseInts';
 
-// Example REPL imnvocations
-// home.registrar~.register('handoff', home.handoffService)
-// for (let i = 0; i < 3000; i++) { home.registrar~.register('handoff', home.handoffService); }
+// Example REPL invocations
+// home.registrar~.register('sharing', home.sharingService)
+// for (let i = 0; i < 3000; i++) { home.registrar~.register('sharing', home.sharingService); }
 
 const minimumDigits = 4;
 

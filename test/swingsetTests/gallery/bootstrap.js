@@ -42,7 +42,7 @@ function build(E, log) {
     const aliceP = E(aliceMaker).make(gallery.userFacet);
     await E(aliceP).doSellAndBuy();
   }
-  async function testAliceSellsToBob(aliceMaker, bobMaker, gallery, handoff) {
+  async function testAliceSellsToBob(aliceMaker, bobMaker, gallery, sharing) {
     log('starting testAliceSellsToBob');
     const { userFacet, adminFacet } = gallery;
     const aliceP = E(aliceMaker).make(userFacet);
@@ -55,12 +55,12 @@ function build(E, log) {
       alicePaymentP,
       buyerSeatReceipt,
       contractHostReceipt,
-    } = await E(aliceP).doTapFaucetAndOfferViaCorkboard(handoff, aliceDust);
+    } = await E(aliceP).doTapFaucetAndOfferViaCorkboard(sharing, aliceDust);
     // Don't start Bob until Alice has created and stored the buyerSeat
     const { bobRefundP, bobPixelP } = await Promise.all([
       contractHostReceipt,
       buyerSeatReceipt,
-    ]).then(_ => E(bobP).buyFromCorkBoard(handoff, bobDust));
+    ]).then(_ => E(bobP).buyFromCorkBoard(sharing, bobDust));
     Promise.all([aliceRefundP, alicePaymentP, bobRefundP, bobPixelP]).then(
       _res => log('++ aliceSellsToBob done'),
       rej => log('++ aliceSellsToBob reject: ', rej),
@@ -147,8 +147,8 @@ function build(E, log) {
         case 'aliceSellsToBob': {
           log('starting aliceSellsToBob');
           const { aliceMaker, bobMaker, gallery } = await makeStartingObjs();
-          const handoffSvc = await E(vats.handoff).makeHandoffService();
-          return testAliceSellsToBob(aliceMaker, bobMaker, gallery, handoffSvc);
+          const sharingSvc = await E(vats.sharing).makeSharingService();
+          return testAliceSellsToBob(aliceMaker, bobMaker, gallery, sharingSvc);
         }
         case 'aliceCreatesFakeChild': {
           log('starting aliceCreatesFakeChild');

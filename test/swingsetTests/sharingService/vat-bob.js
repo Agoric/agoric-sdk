@@ -4,13 +4,13 @@ import harden from '@agoric/harden';
 
 function makeBobMaker(E, _host, _log) {
   return harden({
-    make(handoffServiceP) {
+    make(sharingServiceP) {
       const bob = harden({
         findSomething(key) {
-          return E(handoffServiceP)
+          return E(sharingServiceP)
             .grabBoard(key)
             .then(board => {
-              return E(E(handoffServiceP).validate(board)).lookup(key);
+              return E(E(sharingServiceP).validate(board)).lookup(key);
             });
         },
       });

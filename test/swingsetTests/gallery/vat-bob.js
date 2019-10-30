@@ -46,10 +46,10 @@ function makeBobMaker(E, log) {
           const unitsP = await E(pixels).changeColorAll('#B695C0');
           return unitsP;
         },
-        async buyFromCorkBoard(handoffSvc, dustPurseP) {
+        async buyFromCorkBoard(sharingSvc, dustPurseP) {
           const { pixelAssay, dustAssay } = await E(gallery).getAssays();
           const collect = makeCollect(E, log);
-          const boardP = E(handoffSvc).grabBoard('MeetPoint');
+          const boardP = E(sharingSvc).grabBoard('MeetPoint');
           const contractHostP = E(boardP).lookup('contractHost');
           const buyerInviteP = E(boardP).lookup('buyerSeat');
           const buyerSeatP = E(contractHostP).redeem(buyerInviteP);

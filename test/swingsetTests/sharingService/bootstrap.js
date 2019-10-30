@@ -2,8 +2,8 @@
 
 import harden from '@agoric/harden';
 
-import { makeCorkboard } from '../../../more/handoff/corkboard';
-import { makeHandoffService } from '../../../more/handoff/handoff';
+import { makeCorkboard } from '../../../more/sharing/corkboard';
+import { makeSharingService } from '../../../more/sharing/sharing';
 
 function build(E, log) {
   function testCorkboardStorage() {
@@ -14,9 +14,9 @@ function build(E, log) {
     }
   }
 
-  function testHandoffStorage(handoff) {
-    log('starting testHandoffStorage');
-    const h = makeHandoffService(handoff);
+  function testSharingStorage() {
+    log('starting testSharingStorage');
+    const h = makeSharingService();
     if (h.grabBoard('missing') !== undefined) {
       log('empty services should have no entries');
     }
@@ -57,10 +57,10 @@ function build(E, log) {
     }
   }
 
-  function testTwoVatHandoff(aliceMaker, bobMaker, handoffService) {
-    const aliceP = E(aliceMaker).make(handoffService);
-    const bobP = E(bobMaker).make(handoffService);
-    log('starting testHandoffStorage');
+  function testTwoVatSharing(aliceMaker, bobMaker, sharingService) {
+    const aliceP = E(aliceMaker).make(sharingService);
+    const bobP = E(bobMaker).make(sharingService);
+    log('starting testSharingStorage');
     E(aliceP)
       .shareSomething('schelling')
       .then(count => {
@@ -85,14 +85,14 @@ function build(E, log) {
         case 'corkboard': {
           return testCorkboardStorage();
         }
-        case 'handoff': {
-          return testHandoffStorage(vats.handoff);
+        case 'sharing': {
+          return testSharingStorage();
         }
-        case 'twoVatHandoff': {
-          const handoffService = await E(vats.handoff).makeHandoffService();
-          const aliceMaker = await E(vats.alice).makeAliceMaker(handoffService);
-          const bobMaker = await E(vats.bob).makeBobMaker(handoffService);
-          return testTwoVatHandoff(aliceMaker, bobMaker, handoffService);
+        case 'twoVatSharing': {
+          const sharingService = await E(vats.sharing).makeSharingService();
+          const aliceMaker = await E(vats.alice).makeAliceMaker(sharingService);
+          const bobMaker = await E(vats.bob).makeBobMaker(sharingService);
+          return testTwoVatSharing(aliceMaker, bobMaker, sharingService);
         }
         default: {
           throw new Error(`unrecognized argument value ${argv[0]}`);

@@ -3,7 +3,7 @@
 import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 
-import { makeHandoffService } from '../../../more/handoff/handoff';
+import { makeSharingService } from '../../../more/sharing/sharing';
 
 function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
@@ -11,8 +11,8 @@ function setup(syscall, state, helpers) {
     state,
     E =>
       harden({
-        makeHandoffService() {
-          return harden(makeHandoffService(E, evaluate));
+        makeSharingService() {
+          return harden(makeSharingService(E, evaluate));
         },
       }),
     helpers.vatID,

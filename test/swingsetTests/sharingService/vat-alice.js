@@ -4,10 +4,10 @@ import harden from '@agoric/harden';
 
 function makeAliceMaker(E, _host, _log) {
   return harden({
-    make(handoffServiceP) {
+    make(sharingServiceP) {
       const alice = harden({
         shareSomething(someKey) {
-          return E(handoffServiceP)
+          return E(sharingServiceP)
             .createBoard(someKey)
             .then(board => E(board).addEntry(someKey, 42));
         },
