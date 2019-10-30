@@ -9,6 +9,7 @@
     "lint-check": "eslint '**/*.{js,jsx}'"
   },
   "devDependencies": {
+    "acorn": "^6.2.0",
     "eslint": "^5.11.1",
     "eslint-config-airbnb": "^17.1.0",
     "eslint-config-prettier": "^3.3.0",
@@ -22,9 +23,6 @@
     "tap-spec": "^5.0.0",
     "tape": "^4.9.2",
     "tape-promise": "^4.0.0"
-  },
-  "dependencies": {
-    "acorn": "^6.2.0"
   },
   "keywords": [],
   "files": [

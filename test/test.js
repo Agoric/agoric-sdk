@@ -1,10 +1,10 @@
 import { test } from 'tape-promise/tape';
-import { Parser } from 'acorn';
+import * as acorn from 'acorn';
 import eventualSend from '..';
 
 test('parser', async t => {
   try {
-    const MyParser = Parser.extend(eventualSend());
+    const MyParser = acorn.Parser.extend(eventualSend(acorn));
     const parser = src => MyParser.parse(src);
 
     // FIXME: Compare parse trees.
@@ -22,7 +22,7 @@ test('parser', async t => {
     t.ok(parser('x\n  /* foo */ ~.p'), 'no asi2');
     t.ok(parser('x~.p~.()'), 'chained get/post');
   } catch (e) {
-    t.assert(false, e);
+    t.isNot(e, e, 'unexpected exception');
   } finally {
     t.end();
   }
