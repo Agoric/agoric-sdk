@@ -281,7 +281,7 @@ When a client is started up, it has a few items in a record named home.
 * gallery: the Pixel Gallery, described above
 * purse: a purse that can hold pixel Dust
 * moolah: a purse that starts out with 1000 `moolah`
-* handoffService: a handoff service, which makes it possible to pass capabilities between vats
+* sharingService: a service that makes it possible to pass capabilities between vats
 * canvasStatePublisher: a service with the message subscribe(callback)
 * [uploads](./lib/ag-solo/contracts/README-contract.md): a private directory
  of contracts you've uploaded
@@ -290,19 +290,19 @@ When a client is started up, it has a few items in a record named home.
 * [zoe](https://github.com/Agoric/ERTP/core/zoe/docs/zoe.md): support for contracts with Offer-Safety Enforcement
 * [contractHost](https://github.com/Agoric/Documentation): secure smart contracts
 
-#### handoffService
+#### sharingService
 
-home.handoffService is a handoff service that lets you connect to
-other vats that are connected to the same remote vat. handoffService
-has three methods: createBoard(name), grabBoard(name), and
-validate(board). These allow you to create a 'corkboard' which you can
-use to pass items to and from another vat. The handoff service's
-methods are designed to allow you to share a newly created corkboard
+home.sharingService is a service that lets you connect to
+other vats that are connected to the same remote chain vat. sharingService
+has three methods: createSharedMap(name), grabSharedMap(name), and
+validate(sharedMap). These allow you to create a SharedMap which you can
+use to pass items to and from another vat. The sharingService's
+methods are designed to allow you to share a newly created sharedMap
 with one other vat, after which the name can't be reused.
 
-The way to use it is to call createBoard() with a name that you share
-with someone else. They then call grabBoard() and pass the name you
-gave. If they get a valid corkboard, then you have a private
+The way to use it is to call createSharedMap() with a name that you share
+with someone else. They then call grabSharedMap() and pass the name you
+gave. If they get a valid SharedMap, then you have a private
 channel. If they don't get it, then someone else must have tried to
 grab the name first, and you can discard that one and try again.
 
