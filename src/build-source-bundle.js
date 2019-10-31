@@ -1,6 +1,7 @@
 import { rollup } from 'rollup';
 import resolve from 'rollup-plugin-node-resolve';
-import acornEventualSend from '@agoric/acorn-eventual-send';
+import eventualSend from '@agoric/acorn-eventual-send';
+import * as acorn from 'acorn';
 
 export default async function bundleSource(startFilename) {
   const resolvedPath = require.resolve(startFilename);
@@ -9,7 +10,7 @@ export default async function bundleSource(startFilename) {
     treeshake: false,
     external: ['@agoric/evaluate', '@agoric/nat', '@agoric/harden'],
     plugins: [resolve()],
-    acornInjectPlugins: [acornEventualSend()],
+    acornInjectPlugins: [eventualSend(acorn)],
   });
   const { output } = await bundle.generate({
     exports: 'named',
