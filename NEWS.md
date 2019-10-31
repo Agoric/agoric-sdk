@@ -1,5 +1,10 @@
 User-visible changes in ERTP:
 
+## Release v0.1.10 (10/31/2019)
+
+* Updated how fees are calculated in autoswap so that conservation of
+  supply is not violated.
+
 ## Release v0.1.9 (10/30/2019)
 
 * Added a write up of Zoe and smart contracts. This documentation
