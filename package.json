@@ -12,7 +12,7 @@
     "build": "rollup -c rollup.config.js"
   },
   "devDependencies": {
-    "@agoric/acorn-eventual-send": "^1.0.2",
+    "@agoric/acorn-eventual-send": "^2.0.0",
     "@agoric/babel-parser": "^7.6.4",
     "@agoric/eventual-send": "^0.4.4",
     "@babel/generator": "^7.5.0",

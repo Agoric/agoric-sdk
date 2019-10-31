@@ -8,7 +8,8 @@ import { maybeExtendPromise, makeHandledPromise } from '@agoric/eventual-send';
 import * as babelParser from '@agoric/babel-parser';
 import babelGenerate from '@babel/generator';
 
-import acornEventualSend from '@agoric/acorn-eventual-send';
+import eventualSend from '@agoric/acorn-eventual-send';
+import * as acorn from 'acorn';
 import * as astring from 'astring';
 
 import makeEventualSendTransformer from '../src';
@@ -19,7 +20,7 @@ const shims = [
   `this.HandledPromise = (${makeHandledPromise})(Promise)`,
 ];
 
-const AcornParser = acornEventualSend.Parser.extend(acornEventualSend());
+const AcornParser = acorn.Parser.extend(eventualSend(acorn));
 const acornParser = {
   parse(src) {
     return AcornParser.parse(src);
