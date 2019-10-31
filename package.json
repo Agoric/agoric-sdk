@@ -1,6 +1,6 @@
 {
   "name": "@agoric/bundle-source",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Create source bundles from ES Modules",
   "main": "src/index.js",
   "type": "module",
@@ -25,7 +25,7 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
-    "@agoric/acorn-eventual-send": "^1.0.1",
+    "@agoric/acorn-eventual-send": "^2.0.0",
     "esm": "^3.2.5",
     "rollup": "^1.25.1",
     "rollup-plugin-node-resolve": "^5.2.0"
