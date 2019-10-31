@@ -1,5 +1,19 @@
 User-visible changes in ERTP:
 
+## Release v0.1.9 (10/30/2019)
+
+* Added a write up of Zoe and smart contracts. This documentation
+  now lives at [https://agoric.com/Documentation/](https://agoric.com/Documentation/)
+* Cleaned up Zoe and the smart contracts running on Zoe
+* Renamed a number of terms:
+   * descOps -> unitOps
+   * assetDesc -> units
+   * conditions/offerConditions -> offerRules
+   * offerDesc -> payoutRules
+   * label.description -> label.allegedName
+   * handoff service to sharing service
+* Updated the timer interface to match timerServices
+
 ## Release v0.1.8 (10/22/2019)
 
 * Added the registrar naming service. Objects can be registered with a
