@@ -178,23 +178,28 @@ export const makeContract = harden((zoe, terms) => {
     tokenInE,
     feeInTenthOfPercent = 3,
   ) => {
-    const feeTokenInE = multiply(divide(tokenInE, 1000), feeInTenthOfPercent);
-    const invariant = multiply(tokenInPoolE, tokenOutPoolE);
-    const newTokenInPoolE = add(tokenInPoolE, tokenInE);
-    const newTokenOutPoolE = divide(
-      invariant,
-      subtract(newTokenInPoolE, feeTokenInE),
-    );
-    const tokenOutE = subtract(tokenOutPoolE, newTokenOutPoolE);
+    // Constant product invariant means:
+    // tokenInPoolE * tokenOutPoolE =
+    //   (tokenInPoolE + tokenInE) *
+    //   (tokenOutPoolE - tokensOutE)
 
-    // Note: We add the fee to the pool extent, but could do something
-    // different.
+    // newTokenInPoolE = tokenInPoolE + tokenInE;
+    const newTokenInPoolE = add(tokenInPoolE, tokenInE);
+
+    // newTokenOutPool = tokenOutPool / (1 + (tokenInE/tokenInPoolE)*(1-.003))
+
+    // the order in which we do this makes a difference because of
+    // rounding to floor.
+    const numerator = multiply(multiply(tokenOutPoolE, tokenInPoolE), 1000);
+    const denominator = add(
+      multiply(tokenInPoolE, 1000),
+      multiply(tokenInE, subtract(1000, feeInTenthOfPercent)),
+    );
+    // save divide for last
+    const newTokenOutPoolE = divide(numerator, denominator);
     return {
-      tokenOutE,
-      // Since the fee is already added to the pool, this property
-      // should only be used to report on fees and test.
-      feeE: feeTokenInE,
-      newTokenInPoolE: add(newTokenInPoolE, feeTokenInE),
+      tokenOutE: tokenOutPoolE - newTokenOutPoolE,
+      newTokenInPoolE,
       newTokenOutPoolE,
     };
   };
