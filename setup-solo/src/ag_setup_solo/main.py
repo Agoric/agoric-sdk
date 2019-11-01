@@ -34,7 +34,10 @@ class Options(usage.Options):
     optParameters = [
         ["webhost", "h", "127.0.0.1", "client-visible HTTP listening address"],
         ["webport", "p", "8000", "client-visible HTTP listening port"],
-        ["netconfig", None, NETWORK_CONFIG, "website for network config"]
+        ["netconfig", None, NETWORK_CONFIG, "website for network config"],
+    ]
+    optFlags = [
+        ["destroy", None, "destroy all chain state"],
     ]
     def parseArgs(self, basedir=os.environ.get('AG_SOLO_BASEDIR', 'agoric')):
         self['basedir'] = os.environ['AG_SOLO_BASEDIR'] = basedir
@@ -99,20 +102,7 @@ def doInit(o):
     # run 'ag-solo init BASEDIR'
     subprocess.run([AG_SOLO, 'init', BASEDIR, '--webhost=' + o['webhost'], '--webport=' + o['webport']], check=True)
 
-def main():
-    o = Options()
-    o.parseOptions()
-    pkeyFile = os.path.join(o['basedir'], 'ag-cosmos-helper-address')
-    # If the public key file does not exist, just init and run.
-    if not os.path.exists(pkeyFile):
-        react(run_client, (o,pkeyFile))
-        sys.exit(1)
-
-    yesno = input('Type "yes" to reset state from ' + o['netconfig'] + ', anything else cancels: ')
-    if yesno.strip() != 'yes':
-        print('Cancelling!')
-        sys.exit(1)
-
+def resetNetconfig(o):
     # Download the netconfig.
     print('downloading netconfig from', o['netconfig'])
     req = urllib.request.Request(o['netconfig'], data=None, headers={'User-Agent': USER_AGENT})
@@ -136,6 +126,28 @@ def main():
         restart()
         sys.exit(1)
 
+def main():
+    o = Options()
+    o.parseOptions()
+    pkeyFile = os.path.join(o['basedir'], 'ag-cosmos-helper-address')
+
+    # If the public key file does not exist, just init and run.
+    if not os.path.exists(pkeyFile):
+        react(run_client, (o,pkeyFile))
+        sys.exit(1)
+
+    if o['destroy']:
+        yesno = input('DESTROY ALL CHAIN CONNECTION STATE (type "yes" if so): ')
+        if yesno.strip() != 'yes':
+            print('Cancelling!')
+            sys.exit(1)
+    else:
+        yesno = input('Type "yes" to reset state from ' + o['netconfig'] + ', anything else cancels: ')
+        if yesno.strip() != 'yes':
+            print('Cancelling!')
+            sys.exit(1)
+        resetNetconfig(o)
+
     # Blow away everything except the key file and state dir.
     helperStateDir = os.path.join(o['basedir'], 'ag-cosmos-helper-statedir')
     for name in os.listdir(o['basedir']):
@@ -146,6 +158,10 @@ def main():
         shutil.rmtree(p)
       else:
         os.remove(p)
+
+    if o['destroy']:
+        react(run_client, (o,pkeyFile))
+        sys.exit(1)
 
     # Upgrade the ag-solo files.
     doInit(o)

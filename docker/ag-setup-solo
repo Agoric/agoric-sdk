@@ -16,7 +16,7 @@ if test "$1" = shell; then
   ARGS=
   shift
 else
-  set dummy ${1+"$@"} --webport=$PORT --webhost=0.0.0.0
+  set dummy --webport=$PORT --webhost=0.0.0.0 ${1+"$@"}
   shift
 fi
 exec docker run \

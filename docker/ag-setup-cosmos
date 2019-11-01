@@ -16,8 +16,6 @@ case "$1" in
 shell)
   shift
   FLAGS=--entrypoint=/bin/bash
-  set dummy ${1+"$@"}
-  shift
   ;;
 show-*)
   TTY=-i
