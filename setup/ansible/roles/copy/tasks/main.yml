@@ -13,6 +13,12 @@
     path: "/vagrant"
   register: dev
 
+- name: Workspace exists
+  delegate_to: localhost
+  stat:
+    path: "/usr/src/cosmic-workspace"
+  register: ws
+
 - name: Synchronize install directory
   synchronize:
     src: "{{APPDIR}}/"
@@ -28,7 +34,23 @@
     - "--exclude=x"
     - "--exclude=t[0-9]*"
     - "--exclude=provisioning-server"
-  when: not dev.stat.exists
+  when: not dev.stat.exists and not ws.stat.exists
+
+- name: Synchronize cosmic-workspace
+  synchronize:
+    src: "/usr/src/cosmic-workspace/"
+    dest: "/usr/src/cosmic-workspace/"
+    dirs: yes
+    delete: yes
+    mode: push
+  when: ws.stat.exists
+
+- name: Link cosmic-swingset
+  file:
+    src: /usr/src/cosmic-workspace/cosmic-swingset
+    dest: /usr/src/cosmic-swingset
+    state: link
+  when: not dev.stat.exists and ws.stat.exists
 
 - name: "Symlink /vagrant/cosmic-swingset"
   file:

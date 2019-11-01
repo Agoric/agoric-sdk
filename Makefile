@@ -2,6 +2,7 @@ REPOSITORY = agoric/cosmic-swingset
 TAG := $(shell test ! -f package.json || sed -ne 's/.*"version": "\(.*\)".*/\1/p' package.json)
 DO_PUSH_LATEST :=
 CHAIN_ID = agoric
+DEV :=
 INITIAL_TOKENS = 1000agmedallion
 
 NUM_SOLOS = 1
@@ -93,10 +94,13 @@ docker-pull:
 docker-install: docker-pull
 	install -m 755 docker/* /usr/local/bin/
 
-docker-build: docker-build-base docker-build-solo docker-build-pserver docker-build-setup docker-build-setup-solo
+docker-build: docker-build-base docker-build-base$(DEV) docker-build-solo docker-build-pserver docker-build-setup docker-build-setup-solo
+
+docker-build-base-dev:
+	docker build -t $(REPOSITORY)-dev:latest --file=../docker/Dockerfile.dev ..
 
 docker-build-setup:
-	docker build -t $(REPOSITORY)-setup:latest ./setup
+	docker build -t $(REPOSITORY)-setup:latest --build-arg=REPO=$(REPOSITORY)$(DEV) ./setup
 
 docker-build-base:
 	hash=`git rev-parse --short HEAD`; \
@@ -116,14 +120,14 @@ docker-build-setup-solo:
 docker-push: docker-push-base docker-push-solo docker-push-setup docker-push-pserver docker-push-setup-solo
 
 docker-push-setup:
-	docker tag $(REPOSITORY)-setup:latest $(REPOSITORY)-setup:$(TAG)
-	$(DO_PUSH_LATEST) docker push $(REPOSITORY)-setup:latest
-	docker push $(REPOSITORY)-setup:$(TAG)
+	docker tag $(REPOSITORY)-setup:latest$(DEV) $(REPOSITORY)-setup:$(TAG)$(DEV)
+	$(DO_PUSH_LATEST) docker push $(REPOSITORY)-setup:latest$(DEV)
+	docker push $(REPOSITORY)-setup:$(TAG)$(DEV)
 
 docker-push-base:
-	docker tag $(REPOSITORY):latest $(REPOSITORY):$(TAG)
-	$(DO_PUSH_LATEST) docker push $(REPOSITORY):latest
-	docker push $(REPOSITORY):$(TAG)
+	docker tag $(REPOSITORY)$(DEV):latest $(REPOSITORY)$(DEV):$(TAG)
+	$(DO_PUSH_LATEST) docker push $(REPOSITORY)$(DEV):latest
+	docker push $(REPOSITORY)$(DEV):$(TAG)
 
 docker-push-pserver:
 	docker tag $(REPOSITORY)-pserver:latest $(REPOSITORY)-pserver:$(TAG)

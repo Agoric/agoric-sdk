@@ -1,11 +1,12 @@
 ARG TAG=latest
+ARG REPO=agoric/cosmic-swingset
 FROM golang:stretch AS go-build
 
 WORKDIR /usr/src/journalbeat
 RUN apt-get update -y && apt-get install -y libsystemd-dev
 RUN go get github.com/mheese/journalbeat
 
-FROM agoric/cosmic-swingset:$TAG
+FROM $REPO:$TAG
 
 # Install Terraform.
 ARG TERRAFORM_VERSION=0.11.14
