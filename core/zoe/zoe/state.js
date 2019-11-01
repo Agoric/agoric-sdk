@@ -102,7 +102,12 @@ const makeState = () => {
       );
       instanceHandleToTerms.init(instanceHandle, terms);
       instanceHandleToAssays.init(instanceHandle, assays);
-      await Promise.all(assays.map(assay => adminState.recordAssay(assay)));
+      for (let i = 0; i < assays.length; i += 1) {
+        // we want to wait until the first call returns before moving
+        // onto the next in case it is a duplicate assay
+        // eslint-disable-next-line no-await-in-loop
+        await adminState.recordAssay(assays[i]);
+      }
     },
     getInstance: instanceHandle => instanceHandleToInstance.get(instanceHandle),
     getInstallationHandleForInstanceHandle: instanceHandle =>

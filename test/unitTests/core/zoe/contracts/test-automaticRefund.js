@@ -58,6 +58,56 @@ test('zoe - simplest automaticRefund', async t => {
   }
 });
 
+test('zoe - automaticRefund same assay', async t => {
+  try {
+    // Setup zoe and mints
+    const { assays } = setup();
+    const [moolaAssay] = assays;
+    const zoe = await makeZoe({ require });
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
+    const installationHandle = zoe.install(source, moduleFormat);
+
+    // 1: Alice creates an automatic refund instance
+    const { instance: automaticRefund } = await zoe.makeInstance(
+      installationHandle,
+      { assays: harden([moolaAssay, moolaAssay]) },
+    );
+    const aliceOfferRules = harden({
+      payoutRules: [
+        {
+          kind: 'wantAtLeast',
+          units: moolaAssay.makeUnits(0),
+        },
+        {
+          kind: 'wantAtLeast',
+          units: moolaAssay.makeUnits(0),
+        },
+      ],
+    });
+    const alicePayments = [undefined, undefined];
+
+    const { escrowReceipt, payout: payoutP } = await zoe.escrow(
+      aliceOfferRules,
+      alicePayments,
+    );
+
+    automaticRefund.makeOffer(escrowReceipt);
+    const alicePayout = await payoutP;
+
+    // Alice got back what she put in
+    t.deepEquals(
+      alicePayout[0].getBalance(),
+      aliceOfferRules.payoutRules[0].units,
+    );
+  } catch (e) {
+    t.assert(false, e);
+    console.log(e);
+  } finally {
+    t.end();
+  }
+});
+
 test('zoe with automaticRefund', async t => {
   try {
     // Setup zoe and mints
