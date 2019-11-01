@@ -231,6 +231,10 @@ const makeZoe = async (additionalEndowments = {}) => {
     getInviteAssay: () => inviteAssay,
     getAssaysForInstance: instanceHandle =>
       readOnlyState.getAssays(instanceHandle),
+    /**
+     * Create an installation by safely evaluating the code and
+     * registering it with Zoe.
+     */
     install: code => {
       const installation = evalContractCode(code, additionalEndowments);
       const installationHandle = adminState.addInstallation(installation);

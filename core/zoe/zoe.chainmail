@@ -12,8 +12,8 @@ struct EscrowReceiptAndPayout ( ) {
 /**
  * Zoe is a long-lived and well-trusted contract that enforces
  * offer safety for the contracts that use it. Zoe has a single
- * `seatAssay` and a single `escrowReceiptAssay` for the entirety of its
- * lifetime. By having a reference to Zoe, a user can get the `seatAssay`
+ * `inviteAssay` and a single `escrowReceiptAssay` for the entirety of its
+ * lifetime. By having a reference to Zoe, a user can get the `inviteAssay`
  * or `escrowReceiptAssay` and thus validate any `seat` or `escrowReceipt`
  * they receive from someone else. 
  */
@@ -21,11 +21,11 @@ struct EscrowReceiptAndPayout ( ) {
 interface Zoe {
 
   /**
-   * Get the long-lived seatAssay. The mint associated with the
-   * seatAssay creates the ERTP payments that represent the right to
-   * claim the payouts of involvement in a contract.
+   * Get the long-lived inviteAssay. The mint associated with the
+   * inviteAssay creates the ERTP payments that represent the right
+   * interact with a smart contract in particular ways.
    */
-  getSeatAssay() -> (Assay);
+  getInviteAssay() -> (Assay);
 
   /**
    * Get the long-lived escrowReceiptAssay. The mint associated
@@ -40,6 +40,12 @@ interface Zoe {
    * helpful in the case that the user has forgotten the order.
    */
   getAssaysForInstance() -> (List(Assay));
+
+  /**
+   * Create an installation by safely evaluating the code and
+   * registering it with Zoe. Returns an installationHandle.
+   */
+  install(code :String) -> Object
 
   /** 
    * Zoe is long-lived. We can use Zoe to create smart contract
@@ -114,14 +120,14 @@ interface ZoeGoverningContractFacet () {
    * index in the offerHandles array. The reallocation will only happen if
    * 'offer safety' and conservation of rights are true, as enforced by Zoe.
    */
-  reallocate (instanceHandle :Object, offerHandles :List(Object), reallocation :List(List(Extent)));
+  reallocate (offerHandles :List(Object), reallocation :List(List(Extent)));
 
   /** 
    * Eject the offer, taking the current allocation for that offer and
    * creating payments to be returned to the user. No 'offer safety' checks are
    * done here because any previous reallocation performed those checks.
    */
-  complete (instanceHandle :Object, offerHandles :List(Object));
+  complete (offerHandles :List(Object));
 
   /**
    * Create an empty offer for recordkeeping purposes (Autoswap uses
@@ -137,7 +143,7 @@ interface ZoeGoverningContractFacet () {
   escrowOffer (payoutRules :List(PayoutRulesElem), offerPayments :List(Payment)) -> (offerHandle);
 
   /** Burn and validate an escrowReceipt received from the user. */
-  burnEscrowReceipt (instanceHandle :Object, escrowReceipt :Payment) -> (Extent);
+  burnEscrowReceipt (escrowReceipt :Payment) -> (Extent);
   
   /** Create an invite using the Zoe inviteMint */
   makeInvite (offerToBeMade :List(PayoutRulesElem), useObj :Object) -> (Payment);
@@ -151,7 +157,7 @@ interface ZoeGoverningContractFacet () {
   makeEmptyExtents ( ) -> (List(Extent));
 
   /** Get the array of extentOps, the logic from the unitOps */
-  getExtentOps (instanceHandle :Object) -> (List(ExtentOps));
+  getExtentOps ( ) -> (List(ExtentOps));
 
   /** 
    * Pass in an array of offerHandles and get a matrix (array of arrays)
@@ -166,8 +172,8 @@ interface ZoeGoverningContractFacet () {
    */
   getPayoutRulesFor (offerHandles :List(Object)) -> (List(PayoutRules));
 
-  /** Get the Zoe seatAssay */
-  getSeatAssay ( ) -> (Assay);
+  /** Get the Zoe inviteAssay */
+  getInviteAssay ( ) -> (Assay);
 
   /** Get the Zoe escrowReceiptAssay */
   getEscrowReceiptAssay ( ) -> (Assay);
