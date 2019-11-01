@@ -88,7 +88,7 @@ export function createOffer(
         type: 'walletAddOffer',
         data: {
           meta,
-          ...data,
+          offerRules: data,
         },
       });
     }
