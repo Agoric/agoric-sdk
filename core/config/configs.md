@@ -116,7 +116,7 @@ hand, we do know that there is a genuine need to have slightly
 different purposes expressed.
 
 This is why we've chosen to use the [Trait
-pattern](https://en.wikipedia.org/wiki/Trait_(computer_programming),
+pattern](https://en.wikipedia.org/wiki/Trait_%28computer_programming%29),
 in which custom behavior can be defined and recombined easily.
 Furthermore, if we always combine the methods such that the "core"
 methods are last, they cannot be overridden by the custom methods.
@@ -136,6 +136,6 @@ function* makePaymentTrait(_corePayment, assay) {
 
 Above, the `payment` object is the actual payment to which this trait contributes the `unwrap` method. We introduce this peculiar generator pattern to solve this self-reference problem. The `payment` variable refers to the object as a whole. However, the object-as-a-whole is not yet assembled, and will be assembled only by a distinct piece of code written in a distinct scope.
 
-In the generator function pattern shown above, the trait methods of a given layer are defined in the scope of the `payment` variableis bound on the left of the yield. The `payment` variable is bound to the value that the yield returns. However, before that happens, the generator yields the argument to yield, the object containing the trait's methods, to be combined to make the object itself. The pattern above containing `makeMintTraitIter` first runs one step of the trait generartor to obtain the trait methods, combining them into the overall object. Only when the object is complete does it go back to the generator, in order to bind that object to that trait's variable for the object itself, such as `payment`.
+In the generator function pattern shown above, the trait methods of a given layer are defined in the scope of the `payment` variable bound on the left of the yield. The `payment` variable is bound to the value that the yield returns. However, before that happens, the generator yields the argument to yield, which is the object containing the trait's methods, to be combined to make the object itself. The pattern above containing `makeMintTraitIter` first runs one step of the trait generator to obtain the trait methods, combining them into the overall object. Only when the object is complete does it go back to the generator, in order to bind that object to that trait's variable for the object itself, such as `payment`.
 
 This is an ad-hoc version of a special case for supporting trait composition. See [Making Layer Cakes](https://github.com/Agoric/layer-cake) for our draft of a reusable library for supporting such patterns of trait composition. When it is ready we expect to switch to it.
