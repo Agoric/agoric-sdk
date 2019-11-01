@@ -2,14 +2,14 @@
 
 The `makeMint` function in `assays.js` takes in a configuration
 function that can change a number of things about how mints, assays,
-purses, and payments are made. 
+purses, and payments are made.
 
 By default, `makeBasicFungibleConfig` is used. This creates a mint for
 a fungible token with no custom methods.
 
 But, imagine that we want to add a custom method to the `mint` object.
 Maybe we want to be able to know how much has been minted so far. To
-do so, we will need to create our own custom configuration. 
+do so, we will need to create our own custom configuration.
 
 Our custom configuration will look like this:
 
@@ -25,7 +25,7 @@ const makeTotalSupplyConfig = () => {
   }
 
   function* makeMintTrait(_coreMint, _assay, _assay, mintKeeper) {
-    return yield harden({
+    yield harden({
       getTotalSupply: () => mintKeeper.getTotalSupply(),
     });
   }
@@ -49,10 +49,10 @@ const makeTotalSupplyConfig = () => {
 In this custom configuration, we've done two things: we've added a
 method to `mint` called `getTotalSupply`, and we've changed the
 `mintKeeper` to a custom mintKeeper that keeps track of the total
-supply for us (more on this in separate documentation). 
+supply for us (more on this in separate documentation).
 
 Let's take a look into how we are able to add new methods to mints,
-assays, purses, and payments. 
+assays, purses, and payments.
 
 In `makePaymentTrait`, we take `corePayment` as a parameter. The
 `corePayment` is constructed in `assays.js` and has all of the
@@ -88,7 +88,7 @@ However, we do want to add an extra method to mints. So,
 
 ```js
 function* makeMintTrait(_coreMint, _assay, _assay, mintKeeper) {
-  return yield harden({
+  yield harden({
     getTotalSupply: () => mintKeeper.getTotalSupply(),
   });
 }
@@ -116,35 +116,26 @@ hand, we do know that there is a genuine need to have slightly
 different purposes expressed.
 
 This is why we've chosen to use the [Trait
-pattern](https://en.wikipedia.org/wiki/Trait_(computer_programming)),
+pattern](https://en.wikipedia.org/wiki/Trait_%28computer_programming%29),
 in which custom behavior can be defined and recombined easily.
 Furthermore, if we always combine the methods such that the "core"
-methods are last, they cannot be overridden by the custom methods. 
-
-So we're good, right? Well, almost.
+methods are last, they cannot be overridden by the custom methods.
 
 ## Why generator functions?
 
-Sometimes, we want to burn the payment in the custom method. That
-caused a problem because with normal functions we don't actually have
-access to the full payment, the one which is built by adding methods to the
-`corePayment`. We only have access to the `corePayment` that
-is passed in as a parameter. When we call `assay.burnAll(payment)`,
-the payment gets looked up in a WeakMap of all the payments and their
-current balances. However, the corePayment won't be in that WeakMap.
-The finished payment (the corePayment plus the custom methods) is what
-is in the WeakMap. So we must have access to *that* payment. 
+To use the trait pattern defensively, we must arrange for robust self-reference. In the examples above, the trait code does not refer to the object itself. But we also define traits like
 
-There's a contradiction there. We wanted to ensure that the custom
-code couldn't override or mess with the core methods, but now we're
-saying that we should hand off the whole, un-`hardened` payment to the
-custom code. 
+```js
+function* makePaymentTrait(_corePayment, assay) {
+  const payment = yield harden({
+    // This creates a new use object which destroys the payment
+    unwrap: () => makeUseObjForPayment(assay, payment),
+  });
+}
+```
 
-There's a way to get around this contradiction: generator functions.
-We can still use the trait pattern. However, we can also give access
-to the `hardened`, final version of the payment that is the core + custom methods.
+Above, the `payment` object is the actual payment to which this trait contributes the `unwrap` method. We introduce this peculiar generator pattern to solve this self-reference problem. The `payment` variable refers to the object as a whole. However, the object-as-a-whole is not yet assembled, and will be assembled only by a distinct piece of code written in a distinct scope.
 
-Here's how that happens:
+In the generator function pattern shown above, the trait methods of a given layer are defined in the scope of the `payment` variable bound on the left of the yield. The `payment` variable is bound to the value that the yield returns. However, before that happens, the generator yields the argument to yield, which is the object containing the trait's methods, to be combined to make the object itself. The pattern above containing `makeMintTraitIter` first runs one step of the trait generator to obtain the trait methods, combining them into the overall object. Only when the object is complete does it go back to the generator, in order to bind that object to that trait's variable for the object itself, such as `payment`.
 
-* temporal dead zone
-* ??
+This is an ad-hoc version of a special case for supporting trait composition. See [Making Layer Cakes](https://github.com/Agoric/layer-cake) for our draft of a reusable library for supporting such patterns of trait composition. When it is ready we expect to switch to it.

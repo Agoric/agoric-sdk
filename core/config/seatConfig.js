@@ -36,7 +36,6 @@ function makeSeatConfigMaker(makeUseObjForPayment, makeUseObjForPurse) {
         // This creates a new use object which destroys the payment
         unwrap: () => makeUseObjForPayment(assay, payment),
       });
-      return payment;
     }
 
     function* makePurseTrait(_corePurse, assay) {
@@ -44,15 +43,14 @@ function makeSeatConfigMaker(makeUseObjForPayment, makeUseObjForPurse) {
         // This creates a new use object which empties the purse
         unwrap: () => makeUseObjForPurse(assay, purse),
       });
-      return purse;
     }
 
     function* makeMintTrait(_coreMint) {
-      return yield harden({});
+      yield harden({});
     }
 
     function* makeAssayTrait(_coreAssay) {
-      return yield harden({});
+      yield harden({});
     }
 
     return harden({
