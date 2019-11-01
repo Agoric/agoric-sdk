@@ -1,8 +1,12 @@
-# New Repo
+# Agoric Javascript Smart Contract Platform
 
-This repository should be a compilation of everything that a new
-Agoric repo should have, including ESLint settings, prettier settings,
-package.json dependencies and scripts, licenses, sample tests, CircleCI config, and
-VSCode testing config.
+## Getting Started
 
-See [SETUP-DELETEME](SETUP-DELETEME.md) for starting steps.
+```sh
+agoric init dapp
+# agoric init --ui=react dapp
+cd dapp
+agoric start
+agoric deploy
+# Navigate to http://localhost:8000/
+```

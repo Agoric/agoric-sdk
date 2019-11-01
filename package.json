@@ -24,6 +24,7 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
+    "@agoric/cosmic-swingset": "^0.10.8-dev.0",
     "chalk": "^2.4.2",
     "esm": "^3.2.5",
     "minimist": "^1.2.0"
