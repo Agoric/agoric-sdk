@@ -24,7 +24,9 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
-    "esm": "^3.2.5"
+    "chalk": "^2.4.2",
+    "esm": "^3.2.5",
+    "minimist": "^1.2.0"
   },
   "keywords": [],
   "files": [

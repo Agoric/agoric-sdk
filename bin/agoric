@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+
+const path = require('path');
+
+esmRequire = require('esm')(module);
+const main = esmRequire('../lib/main.js').default;
+const progname = process.argv[1];
+
+process.on('SIGINT', () => process.exit(-1));
+
+main(path.basename(process.argv[1]), process.argv.splice(2)).then(
+  res => res === undefined || process.exit(res),
+  rej => {
+    console.error(`${progname}: error:`, rej);
+    process.exit(1);
+  },
+);
