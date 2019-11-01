@@ -1,5 +1,13 @@
 User-visible changes in ERTP:
 
+## Release v0.1.11 (11/1/2019)
+
+* Added documentation explaining how the "trait" pattern can be used
+  to customize the functionality of ERTP interfaces like purses and
+  payments.
+* Fix a race condition in Zoe that occurred when the same assay is
+  used multiple times in the smart contract's array of assays.
+
 ## Release v0.1.10 (10/31/2019)
 
 * Updated how fees are calculated in autoswap so that conservation of
