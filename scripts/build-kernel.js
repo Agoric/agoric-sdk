@@ -1,9 +1,11 @@
 import fs from 'fs';
 import process from 'process';
-import bundleSource from '../src/build-source-bundle';
+import bundleSource from '@agoric/bundle-source';
 
 async function main() {
-  const { source, sourceMap } = await bundleSource('../src/kernel/index.js');
+  const { source, sourceMap } = await bundleSource(
+    `${__dirname}/../src/kernel/index.js`,
+  );
   const actualSource = `export default ${source}\n${sourceMap}`;
   const f = await fs.promises.open('src/bundles/kernel', 'w', 0o644);
   await f.write(actualSource);
