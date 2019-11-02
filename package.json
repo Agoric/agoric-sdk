@@ -1,6 +1,6 @@
 {
   "name": "agoric",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Manage the Agoric Javascript smart contract platform",
   "main": "lib/main.js",
   "bin": "bin/agoric",
