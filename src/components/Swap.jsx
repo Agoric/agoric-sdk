@@ -118,7 +118,7 @@ export default function Swap() {
   function getExchangeRate(decimal) {
     if (isValid) {
       const exchangeRate = (outputAmount / inputAmount).toFixed(decimal);
-      return `Exchange rate: 1 ${inputPurse.description} = ${exchangeRate} ${outputPurse.description}`;
+      return `Exchange rate: 1 ${inputPurse.assayId} = ${exchangeRate} ${outputPurse.assayId}`;
     }
     return '';
   }
