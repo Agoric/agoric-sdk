@@ -5,8 +5,7 @@ A minimal CapTP implementation leveraging Agoric's published modules.
 ## Usage
 
 ```
-import makeCapTP from '@agoric/captp';
-import { E } from '@agoric/eventual-send';
+import { E, makeCapTP } from '@agoric/captp';
 
 // Create a message handler and bootstrap.
 // Messages on myconn are exchanged with JSON-able objects.
