@@ -59,7 +59,7 @@ Vagrant.configure("2") do |config|
     config.vm.network "private_network", ip: private_network_ip
 
     config.vm.provision "shell", inline: $script
-    config.vm.provision "shell", inline: "echo 'cd /vagrant' >> .bash_profile", privileged: false
+    config.vm.provision "shell", inline: "echo 'cd /vagrant/dapps' >> .bash_profile", privileged: false
 
     config.vm.post_up_message = \
       "The private network IP address is: #{private_network_ip}\n\n" \

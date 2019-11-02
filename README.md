@@ -40,7 +40,6 @@ npx agoric [...options]
 Here is a simple script for how to get started.
 
 ```sh
-cd dapps
 # Initialize your dapp project.
 # Note: Change the `demo` name to something meaningful.
 agoric init demo
