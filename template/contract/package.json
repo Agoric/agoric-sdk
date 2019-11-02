@@ -27,9 +27,6 @@
     "esm": "^3.2.5"
   },
   "keywords": [],
-  "files": [
-    "dist"
-  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Agoric/agoric"
