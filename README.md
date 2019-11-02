@@ -2,6 +2,8 @@
 
 ## Getting Started
 
+NOTE: You will need Go 1.12 or newer to run the Agoric VM.
+
 ```sh
 # Install the agoric devtool.
 # NOTE: If you can't do this, use `npx agoric` each time you see `agoric`
