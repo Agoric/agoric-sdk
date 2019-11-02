@@ -3,6 +3,7 @@
 ## Getting Started
 
 ```sh
+npm install -g agoric
 agoric init dapp
 cd dapp
 agoric install

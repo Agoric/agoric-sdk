@@ -14,7 +14,7 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   });
 
   // Save the contractID somewhere where the UI can find it.
-  const cjfile = pathResolve(`../ui/contracts.json`);
+  const cjfile = pathResolve(`../api/contracts.json`);
   console.log('writing', cjfile);
   await fs.promises.writeFile(cjfile, contractsJson);
 }
