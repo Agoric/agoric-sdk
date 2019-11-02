@@ -4,6 +4,7 @@
 
 ```sh
 # Install the agoric devtool.
+# NOTE: If you can't do this, use `npx agoric` each time you see `agoric`
 npm install -g agoric
 # Initialize your dapp project.
 agoric init my-dapp

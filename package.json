@@ -4,6 +4,10 @@
   "description": "Manage the Agoric Javascript smart contract platform",
   "main": "lib/main.js",
   "bin": "bin/agoric",
+  "files": [
+    "lib",
+    "template"
+  ],
   "scripts": {
     "test": "tape -r esm 'test/**/*.js'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
