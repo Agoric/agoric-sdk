@@ -34,9 +34,6 @@
     "ws": "^7.2.0"
   },
   "keywords": [],
-  "files": [
-    "dist"
-  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Agoric/agoric"
