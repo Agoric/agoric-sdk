@@ -5,17 +5,22 @@
 
 const proxy = require('http-proxy-middleware');
 
-const target = process.env.REACT_APP_API_URL;
+const API_URL = process.env.REACT_APP_DAPP_API_URL;
+const BRIDGE_URL = process.env.REACT_APP_WALLET_BRIDGE_URL;
 
 module.exports = function(app) {
-  if (target > '') {
-    app.use('/vat', proxy({ target }));
+  if (API_URL > '') {
+    app.use('/vat', proxy({ target: API_URL }));
   }
-  // TODO proxy websocket.
-  // app.use(
-  //   '/socket',
-  //   proxy({
-  //     ws: true,
-  //   }),
-  // );
+  if (BRIDGE_URL > '') {
+    app.use(
+      '/bridge',
+      proxy({
+        target: BRIDGE_URL,
+        pathRewrite: {
+          '^/bridge': '/vat',
+        },
+      }),
+    );
+  }
 };

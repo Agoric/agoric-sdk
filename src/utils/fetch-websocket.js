@@ -1,13 +1,11 @@
 /* globals window, WebSocket, fetch */
 
-// todo: refactor this to a class
-
 import { API_URL } from './constants';
 
 // === FETCH
 
-export async function doFetch(req) {
-  return fetch('/vat', {
+export async function doFetch(req, toBridge = false) {
+  return fetch(toBridge ? '/bridge' : '/vat', {
     method: 'POST',
     body: JSON.stringify(req),
     headers: { 'Content-Type': 'application/json' },

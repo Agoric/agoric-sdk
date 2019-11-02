@@ -90,7 +90,7 @@ export function createOffer(
           meta,
           offerRules: data,
         },
-      });
+      }, true);
     }
     return null;
   });
