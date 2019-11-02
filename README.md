@@ -4,8 +4,8 @@
 
 ```sh
 agoric init dapp
-# agoric init --ui=react dapp
 cd dapp
+agoric install
 agoric start
 agoric deploy
 # Navigate to http://localhost:8000/
