@@ -38,7 +38,7 @@ function ObjectFromEntries(iter) {
 //
 // TODO: Currently, all algorithms here treat the pass-by-copy
 // superstructure as a tree. This means that dags are unwound at
-// potentially exponential code, and cycles cause failure to
+// potentially exponential cost, and cycles cause failure to
 // terminate. We must fix both problems, making all these algorthms
 // graph-aware.
 
