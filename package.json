@@ -1,8 +1,7 @@
 {
-  "name": "wallet-frontend",
-  "version": "0.0.1",
-  "description": "Wallet Frontend",
-  "private": true,
+  "name": "@agoric/wallet-frontend",
+  "version": "0.1.0",
+  "description": "Agoric Wallet Frontend",
   "scripts": {
     "clean": "rimraf ./build",
     "lint": "eslint './src/**/*.{js,jsx}'",
