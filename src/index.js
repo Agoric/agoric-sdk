@@ -15,7 +15,7 @@ export default async function bundleSource(
     input: resolvedPath,
     treeshake: false,
     external: ['@agoric/evaluate', '@agoric/nat', '@agoric/harden'],
-    plugins: [resolve()],
+    plugins: [resolve({ preferBuiltins: true })],
     acornInjectPlugins: [eventualSend(acorn)],
   });
   const { output } = await bundle.generate({
