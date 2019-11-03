@@ -5,7 +5,8 @@ import harden from '@agoric/harden';
 
 const DAPP_NAME = "@DIR@";
 
-export default async function deployContract(homeP, { bundleSource, pathResolve }, CONTRACT_NAME = 'myFirstDapp') {
+export default async function deployContract(homeP, { bundleSource, pathResolve },
+  CONTRACT_NAME = 'autoswap') {
 
   // Create a source bundle for the "myFirstDapp" smart contract.
   const { source, moduleFormat } = await bundleSource(`./${CONTRACT_NAME}.js`);
