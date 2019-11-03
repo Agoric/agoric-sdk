@@ -4,51 +4,84 @@ import fs from 'fs';
 import harden from '@agoric/harden';
 
 const DAPP_NAME = "@DIR@";
+const CONTRACT_NAME = 'myFirstDapp';
 
 export default async function deployContract(homeP, { bundleSource, pathResolve }) {
+
   // Create a source bundle for the "myFirstDapp" smart contract.
   //const { source, moduleFormat } = await bundleSource(`./myFirstDapp.js`);
   const { source, moduleFormat } = await bundleSource(`./autoswap.js`);
 
+  // =====================
+  // === AWAITING TURN ===
+  // =====================
+
   const installationHandle = await homeP~.zoe~.install(source, moduleFormat);
-  const contractId = await homeP~.registrar~.register(DAPP_NAME, installationHandle);
 
-  const CONTRACT_NAME = 'myFirstDapp';
-
-  console.log('- myFirstDapp installed', CONTRACT_NAME, '=>',  installationHandle);
+  // =====================
+  // === AWAITING TURN ===
+  // =====================
   
-  // 1. Assays
-  const assays = await Promise.all([
-    homeP~.moolaMint~.getAssay(),
-    homeP~.simoleanMint~.getAssay(),
+  // 1. Assays and payments
+  const purse0P = homeP~.wallet~.getPurse('Moola purse');
+  const purse1P = homeP~.wallet~.getPurse('Simolean purse');
+  const assay0P = purse0P~.getAssay();
+  const assay1P = purse1P~.getAssay();
+  const payment0P = purse0P~.withdraw(1);
+  const payment1P = purse1P~.withdraw(1);
+
+  const [
+    purse0,
+    purse1,
+    assay0,
+    assay1,
+    payment0,
+    payment1
+  ] = await Promise.all([
+    purse0P,
+    purse1P,
+    assay0P,
+    assay1P,
+    payment0P,
+    payment1P
   ]);
+
+  // =====================
+  // === AWAITING TURN ===
+  // =====================
 
   // 2. Contract instance.
-  try {
-    await homeP~.zoe~.makeInstance(installationHandle, { assays });
-  } catch(e) {}
-  const { instance, instanceHandle, terms } = await homeP~.zoe~.makeInstance(installationHandle, { assays });
+  const { instance, instanceHandle, terms: { assays } } 
+    = await homeP~.zoe~.makeInstance(installationHandle, { assays: [assay0, assay1] });
+
+  // =====================
+  // === AWAITING TURN ===
+  // =====================
 
   // 3. Offer rules
-  const units = await Promise.all([
-    terms~.assays~.[0]~.makeUnits(1),
-    terms~.assays~.[1]~.makeUnits(1),
-    terms~.assays~.[2]~.makeUnits(0),
+  const [unit0, unit1, unit2] = await Promise.all([
+    assays~.[0]~.makeUnits(1),
+    assays~.[1]~.makeUnits(1),
+    assays~.[2]~.makeUnits(0),
   ]);
+
+  // =====================
+  // === AWAITING TURN ===
+  // =====================
 
   const offerRules = harden({
     payoutRules: [
       {
         kind: 'offerExactly',
-        units: units[0],
+        units: unit0,
       },
       {
         kind: 'offerExactly',
-        units: units[1],
+        units: unit1,
       },
       {
         kind: 'wantAtLeast',
-        units: units[2],
+        units: unit2,
       },
     ],
     exitRule: {
@@ -56,31 +89,38 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
     },
   });
 
-  // 4. Payments (from mint, not from purse)
+  // 4. Liquidities.
 
-  const faucets = await Promise.all([
-    homeP~.moolaMint~.mint(units[0]),
-    homeP~.simoleanMint~.mint(units[1]),
-  ]);
+  const payments = [payment0, payment1];
 
-  const payments = await Promise.all([
-    faucets[0]~.withdrawAll(),
-    faucets[1]~.withdrawAll(),
-  ]);
-
-  // 5. Liquidities.
   const { escrowReceipt } = await homeP~.zoe~.escrow(offerRules, payments);
-  const liquidityOk = await instance~.addLiquidity(escrowReceipt);
+
+  // =====================
+  // === AWAITING TURN ===
+  // =====================
+
+  const [liquidityOk, contractId, instanceId] = await Promise.all([
+    instance~.addLiquidity(escrowReceipt),
+    homeP~.registrar~.register(DAPP_NAME, installationHandle),
+    homeP~.registrar~.register(CONTRACT_NAME, instanceHandle),
+  ]);
+
+  // =====================
+  // === AWAITING TURN ===
+  // =====================
+
+  console.log('- myFirstDapp installation made', CONTRACT_NAME, '=>',  installationHandle);
+  console.log('- myFirstDapp instance made', CONTRACT_NAME, '=>', instanceId);
   console.log(liquidityOk);
 
-  if (liquidityOk) {
-    // Only store if the contract instance has liquidity.    
-    const instanceId = await homeP~.registrar~.register(CONTRACT_NAME, instanceHandle);
-    console.log('- Autoswap instance', CONTRACT_NAME, '=>', instanceId);
-
     // Save the instanceId somewhere where the UI can find it.
+  if (liquidityOk) {
     const cjfile = pathResolve(`../ui/src/utils/contractID.js`);
     console.log('writing', cjfile);
     await fs.promises.writeFile(cjfile, `export default ${JSON.stringify(instanceId)};`);
+
+    // =====================
+    // === AWAITING TURN ===
+    // =====================
   }
 }
