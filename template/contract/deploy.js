@@ -33,8 +33,8 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
 
   // 3. Offer rules
   const units = await Promise.all([
-    terms~.assays~.[0]~.makeUnits(10000),
-    terms~.assays~.[1]~.makeUnits(10000),
+    terms~.assays~.[0]~.makeUnits(1),
+    terms~.assays~.[1]~.makeUnits(1),
     terms~.assays~.[2]~.makeUnits(0),
   ]);
 
@@ -76,7 +76,7 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   console.log(liquidityOk);
 
   if (liquidityOk) {
-    // Only store if the contract instance has liquidities.    
+    // Only store if the contract instance has liquidity.    
     const instanceId = await homeP~.registrar~.register(CONTRACT_NAME, instanceHandle);
     console.log('- Autoswap instance', CONTRACT_NAME, '=>', instanceId);
   }
