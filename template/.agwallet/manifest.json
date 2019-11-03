@@ -1,6 +1,6 @@
 {
-  "short_name": "Autoswap",
-  "name": "Autoswap Exchange",
+  "short_name": "Wallet",
+  "name": "Simple Wallet",
   "icons": [
     {
       "src": "favicon.ico",
