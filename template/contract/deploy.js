@@ -9,12 +9,9 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
 
   const contractHandle = homeP~.zoe~.install(source, moduleFormat);
   const contractID = await homeP~.registrar~.register(DAPP_NAME, contractHandle);
-  const contractsJson = JSON.stringify({
-    [DAPP_NAME]: contractID,
-  });
 
   // Save the contractID somewhere where the UI can find it.
-  const cjfile = pathResolve(`../api/contracts.json`);
+  const cjfile = pathResolve(`../ui/src/utils/contractID.js`);
   console.log('writing', cjfile);
-  await fs.promises.writeFile(cjfile, contractsJson);
+  await fs.promises.writeFile(cjfile, `export default ${JSON.stringify(contractID)};`);
 }
