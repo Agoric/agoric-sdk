@@ -40,10 +40,8 @@ export const makeContract = harden((zoe, terms) => {
     const kindsOfferFirst = ['offerExactly', 'wantAtLeast', 'wantAtLeast'];
     const kindsWantFirst = ['wantAtLeast', 'offerExactly', 'wantAtLeast'];
     return (
-      (hasValidPayoutRules(kindsOfferFirst, assays, myPayoutRules) ||
-        hasValidPayoutRules(kindsWantFirst, assays, myPayoutRules)) &&
-      myPayoutRules[0].units.extent === 1 &&
-      myPayoutRules[1].units.extent === 1
+      hasValidPayoutRules(kindsOfferFirst, assays, myPayoutRules) ||
+      hasValidPayoutRules(kindsWantFirst, assays, myPayoutRules)
     );
   };
 
