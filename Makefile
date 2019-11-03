@@ -5,8 +5,8 @@ CHAIN_ID = agoric
 DEV :=
 INITIAL_TOKENS = 1000agmedallion
 
-NUM_SOLOS = 1
-BASE_PORT = 8000
+NUM_SOLOS?=1
+BASE_PORT?=8000
 
 ifneq ("$(wildcard /vagrant)","")
 # Within a VM.  We need to get to the outside.
