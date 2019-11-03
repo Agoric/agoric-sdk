@@ -1,20 +1,16 @@
 {
-  "name": "ui",
-  "version": "0.1.0",
+  "name": "autoswap-frontend",
+  "version": "0.0.1",
+  "description": "Autoswap Frontend",
   "private": true,
-  "dependencies": {
-    "react": "^16.11.0",
-    "react-dom": "^16.11.0",
-    "react-scripts": "3.2.0"
-  },
   "scripts": {
+    "clean": "rimraf ./build",
+    "lint": "eslint './src/**/*.{js,jsx}'",
+    "prettier": "prettier './src/**/*.{js,jsx,scss}' --write",
     "start": "react-scripts start",
+    "test": "react-scripts test --env=jsdom",
     "build": "react-scripts build",
-    "test": "react-scripts test",
     "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": "react-app"
   },
   "browserslist": {
     "production": [
@@ -27,5 +23,26 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "dependencies": {
+    "@material-ui/core": "^4.2.1",
+    "@material-ui/icons": "^4.5.1",
+    "clsx": "^1.0.4",
+    "http-proxy-middleware": "^0.20.0",
+    "react": "^16.11.0",
+    "react-dom": "^16.11.0"
+  },
+  "devDependencies": {
+    "eslint": "^6.5.1",
+    "eslint-config-airbnb": "^18.0.1",
+    "eslint-config-prettier": "^6.3.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-prettier": "^3.1.1",
+    "eslint-plugin-react": "^7.15.1",
+    "eslint-plugin-react-hooks": "^2.2.0",
+    "prettier": "^1.18.2",
+    "react-scripts": "^3.2.0",
+    "rimraf": "^3.0.0"
   }
 }
