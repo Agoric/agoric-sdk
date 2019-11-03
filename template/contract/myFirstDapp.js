@@ -37,6 +37,7 @@ export const makeContract = harden((zoe, terms) => {
   // Let's make sure the swap offer that we get has the correct
   // structure.
   const isValidSimpleSwapOffer = myPayoutRules => {
+    console.log(myPayoutRules);
     const kindsOfferFirst = ['offerExactly', 'wantExactly', 'wantAtLeast'];
     const kindsWantFirst = ['wantExactly', 'offerExactly', 'wantAtLeast'];
     return (

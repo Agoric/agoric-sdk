@@ -4,13 +4,11 @@ import fs from 'fs';
 import harden from '@agoric/harden';
 
 const DAPP_NAME = "@DIR@";
-const CONTRACT_NAME = 'myFirstDapp';
 
-export default async function deployContract(homeP, { bundleSource, pathResolve }) {
+export default async function deployContract(homeP, { bundleSource, pathResolve }, CONTRACT_NAME = 'myFirstDapp') {
 
   // Create a source bundle for the "myFirstDapp" smart contract.
-  //const { source, moduleFormat } = await bundleSource(`./myFirstDapp.js`);
-  const { source, moduleFormat } = await bundleSource(`./autoswap.js`);
+  const { source, moduleFormat } = await bundleSource(`./${CONTRACT_NAME}.js`);
 
   // =====================
   // === AWAITING TURN ===
@@ -109,8 +107,8 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   // === AWAITING TURN ===
   // =====================
 
-  console.log('- myFirstDapp installation made', CONTRACT_NAME, '=>',  installationHandle);
-  console.log('- myFirstDapp instance made', CONTRACT_NAME, '=>', instanceId);
+  console.log('- installation made', CONTRACT_NAME, '=>',  installationHandle);
+  console.log('- instance made', CONTRACT_NAME, '=>', instanceId);
   console.log(liquidityOk);
 
     // Save the instanceId somewhere where the UI can find it.
