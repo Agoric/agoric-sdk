@@ -12,7 +12,7 @@ const progname = path.basename(process.argv[1]);
 const error = (...args) => {
   console.error(`${progname}: ${chalk.red('ERROR')}:`, ...args);
 };
-const stat = require('fs').promises.stat;
+const fs = require('fs').promises;
 const makeWebSocket = (...args) => new WebSocket(...args);
 
 process.on('SIGINT', () => process.exit(-1));

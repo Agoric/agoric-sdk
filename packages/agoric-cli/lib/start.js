@@ -1,10 +1,8 @@
 import parseArgs from 'minimist';
 import chalk from 'chalk';
-import { spawn } from 'child_process';
-import { promises as fs } from 'fs';
 
 export default async function startMain(progname, rawArgs, priv) {
-  const { console, error } = priv;
+  const { console, error, fs, spawn } = priv;
   const {
     reset,
     _: args,

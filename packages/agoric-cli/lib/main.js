@@ -5,7 +5,7 @@ const VERSION = 'Agoric <some version>';
 const STAMP = '.agservers';
 
 const main = async (progname, rawArgs, privs) => {
-  const { console, error, stat } = privs;
+  const { console, error, fs } = privs;
   const { _: args, ...opts } = parseArgs(rawArgs, {
     boolean: ['version', 'help'],
     stopEarly: true,
@@ -13,7 +13,7 @@ const main = async (progname, rawArgs, privs) => {
 
   const isNotBasedir = async () => {
     try {
-      await stat('.agservers');
+      await fs.stat('.agservers');
       return false;
     } catch (e) {
       error(`current directory wasn't created by '${progname} init'`);
