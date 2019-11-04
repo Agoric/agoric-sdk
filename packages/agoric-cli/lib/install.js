@@ -1,9 +1,8 @@
 import parseArgs from 'minimist';
 import chalk from 'chalk';
-import { spawn } from 'child_process';
 
 export default async function installMain(progname, rawArgs, priv) {
-  const { console, error } = priv;
+  const { console, error, spawn } = priv;
   const {
     _: args,
   } = parseArgs(rawArgs);
