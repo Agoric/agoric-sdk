@@ -10,11 +10,12 @@ const progname = path.basename(process.argv[1]);
 const error = (...args) => {
   console.error(`${progname}: ${chalk.red('ERROR')}:`, ...args);
 };
+const stat = require('fs').promises.stat;
 
 process.on('SIGINT', () => process.exit(-1));
 
 const rawArgs = process.argv.splice(2);
-main(progname, rawArgs, { console, error }).then(
+main(progname, rawArgs, { console, error, stat }).then(
   res => res === undefined || process.exit(res),
   rej => {
     error(rej);
