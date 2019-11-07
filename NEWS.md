@@ -1,5 +1,12 @@
 User-visible changes in SwingSet:
 
+## Release 0.3.0 (06-Nov-2019)
+
+* change Command Device (`buildCommand()`) to take `broadcastCallback` as an
+  argument, rather than set in a subsequent call (#185)
+* outsource vat/kernel source bundling with @agoric/bundle-source
+
+
 ## Release 0.2.0 (27-Oct-2019)
 
 * add TimerVat (#178)
