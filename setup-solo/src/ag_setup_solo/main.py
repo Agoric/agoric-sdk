@@ -125,6 +125,8 @@ def resetNetconfig(o):
         print('Already have an entry for ' + conn['GCI'] + '; not replacing')
         restart()
         sys.exit(1)
+    
+    return netconfig
 
 def main():
     o = Options()
@@ -146,7 +148,7 @@ def main():
         if yesno.strip() != 'yes':
             print('Cancelling!')
             sys.exit(1)
-        resetNetconfig(o)
+        netconfig = resetNetconfig(o)
 
     # Blow away everything except the key file and state dir.
     helperStateDir = os.path.join(o['basedir'], 'ag-cosmos-helper-statedir')
