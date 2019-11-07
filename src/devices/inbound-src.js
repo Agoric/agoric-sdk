@@ -11,7 +11,9 @@ export default function setup(syscall, state, helpers, endowments) {
       const { SO } = s;
       bridge.inboundCallback = (sender, message) => {
         if (!inboundHandler) {
-          throw new Error(`inboundCallback before registerInboundHandler`);
+          throw new Error(
+            `inboundHandler not set before bridge.inboundCallback`,
+          );
         }
         try {
           SO(inboundHandler).inbound(`${sender}`, `${message}`);

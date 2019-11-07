@@ -13,7 +13,9 @@ export default function setup(syscall, state, helpers, endowments) {
 
     registerInboundCallback((count, bodyString) => {
       if (!inboundHandler) {
-        throw new Error(`inboundCallback before registerInboundHandler`);
+        throw new Error(
+          `CMD inboundHandler not set before registerInboundHandler`,
+        );
       }
       try {
         const body = JSON.parse(`${bodyString}`);

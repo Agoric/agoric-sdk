@@ -337,15 +337,13 @@ test('mailbox inbound with SES', async t => {
 });
 
 async function testCommandBroadcast(t, withSES) {
-  const cm = buildCommand();
+  const broadcasts = [];
+  const cm = buildCommand(body => broadcasts.push(body));
   const config = {
     vats: new Map(),
     devices: [['command', cm.srcPath, cm.endowments]],
     bootstrapIndexJS: require.resolve('./files-devices/bootstrap-2'),
   };
-
-  const broadcasts = [];
-  cm.registerBroadcastCallback(body => broadcasts.push(body));
 
   const c = await buildVatController(config, withSES, ['command1']);
   await c.run();
@@ -363,7 +361,7 @@ test('command broadcast with SES', async t => {
 });
 
 async function testCommandDeliver(t, withSES) {
-  const cm = buildCommand();
+  const cm = buildCommand(() => {});
   const config = {
     vats: new Map(),
     devices: [['command', cm.srcPath, cm.endowments]],
