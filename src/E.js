@@ -120,11 +120,11 @@ export default function makeE(HandledPromise) {
       },
     });
 
-  E.G = makeEGetterProxy;
-  E.H = makeEHasProxy;
-  E.D = makeEDeleterProxy;
-  E.S = makeESetterProxy;
-  E.M = makeEMethodProxy;
+  E.G = o => makeEGetterProxy(o);
+  E.H = o => makeEHasProxy(o);
+  E.D = o => makeEDeleterProxy(o);
+  E.S = o => makeESetterProxy(o);
+  E.M = o => makeEMethodProxy(o);
 
   const EChain = x =>
     harden({
