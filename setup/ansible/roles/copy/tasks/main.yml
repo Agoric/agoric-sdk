@@ -19,12 +19,13 @@
     path: "/usr/src/cosmic-workspace"
   register: ws
 
-- name: Synchronize install directory
+- name: "Synchronize install directory {{APPDIR}}"
   synchronize:
     src: "{{APPDIR}}/"
     dest: "/usr/src/cosmic-swingset/"
     dirs: yes
     delete: yes
+    checksum: yes
     mode: push
     rsync_opts:
     - "--exclude=.git"
@@ -42,6 +43,7 @@
     dest: "/usr/src/cosmic-workspace/"
     dirs: yes
     delete: yes
+    checksum: yes
     mode: push
   when: ws.stat.exists
 
