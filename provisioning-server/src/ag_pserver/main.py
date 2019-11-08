@@ -379,6 +379,22 @@ def agCosmosHelper(reactor, opts, config, input, args, retries = 1):
                 output = oj
             except:
                 pass
+        elif stderr[0:14] == b'gas estimate: ':
+            lines = stderr.split(b'\n')
+            oj = json.loads(lines[1].decode('utf-8'))
+            if oj.get('type') is None:
+                # Reformat the message into what --generate-only produces.
+                output = {
+                    'type': 'cosmos-sdk/StdTx',
+                    'value': {
+                        'msg': oj['msgs'],
+                        'fee': oj['fee'],
+                        'signatures': None,
+                        'memo': '',
+                    }}
+            else:
+                output = oj
+            code = 0
 
     return code, output
 
@@ -403,6 +419,7 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
                         missing = False
                         break
             elif code == 9:
+                needIngress.append(pkobj)
                 missing = True
         except Exception as e:
             missing = False
@@ -410,7 +427,8 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
 
         if missing:
             print('generating transaction for', pubkey)
-            args = ['tx', 'send', config['bootstrapAddress'], pubkey, amountToken, '--generate-only']
+            # Estimate the gas, with a little bit of padding.
+            args = ['tx', 'send', config['bootstrapAddress'], pubkey, amountToken, '--gas=auto', '--gas-adjustment=1.05']
             code, output = yield agCosmosHelper(reactor, opts, config, b'', args, 1)
             if code == 0:
                 txes.append(output)
@@ -418,9 +436,14 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
     if len(txes) > 0:
         tx0 = txes[0]
         msgs = tx0['value']['msg']
+        # Add up all the gases.
+        gas = int(tx0['value']['fee']['gas'])
         for tx in txes[1:]:
-            for msg in tx['value']['msg']:
+            val = tx['value']
+            gas += int(val['fee']['gas'])
+            for msg in val['msg']:
                 msgs.append(msg)
+        tx0['value']['fee']['gas'] = str(gas)
         # Create a temporary file that is automatically deleted.
         with NamedTemporaryFile() as temp:
             # Save the amalgamated transaction.
@@ -430,7 +453,7 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
             # Now the temp.name contents are available
             args = [
                 'tx', 'sign', temp.name, '--from', config['bootstrapAddress'],
-                '--yes', '--gas=auto', '--append=false',
+                '--yes', '--append=false',
             ]
 
             # Use the temp file in the sign request.
@@ -473,7 +496,7 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
             raise Exception('invalid response code ' + str(resp.code))
         rawResp = yield treq.json_content(resp)
         if not rawResp.get('ok', False):
-            raise rawResp
+            raise Exception('response not ok ' + str(rawResp))
 
 def main():
     o = Options()
