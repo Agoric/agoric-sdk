@@ -1,5 +1,16 @@
 User-visible changes in ERTP:
 
+## Release v0.1.12 (11/13/2019)
+
+* Added "myFirstDapp", a smart contract with the same interface as our
+  autoswap (Uniswap) contract, but which does not have the same
+  functionality. Instead, the developer building on Zoe is prompted to
+  add their own custom logic at various points of the contract. By
+  default, users can use the contract to trade one unit of one kind of
+  digital assets for one unit of another kind of digital asset
+  indefinitely as long as they alternate, but this behavior is meant
+  to be altered by the smart contract developer. 
+
 ## Release v0.1.11 (11/1/2019)
 
 * Added documentation explaining how the "trait" pattern can be used
