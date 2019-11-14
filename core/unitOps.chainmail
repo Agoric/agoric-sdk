@@ -1,20 +1,24 @@
 /**
- * Unitss are wrappers on extents that have been validated by an UnitOps, and
- * can be verified as having been issued by the UnitOps. They contain their
- * extent and a Label. The label identifies a particular assay.
+ * Units are asset descriptions and take the form of labeled extents. 
+ * UnitOps execute the logic of how units are changed when digital 
+ * assets are merged, separated, or otherwise manipulated. For
+ * example, a deposit of 2 bucks into a purse that already has 3 bucks
+ * gives a new balance of 5 bucks. An empty purse has 0 bucks. UnitOps 
+ * relies heavily on ExtentOps, which manipulates the non-labeled
+ * portion.
  */
-struct Units (Extent, Label) {
+struct Units (Label, Extent) {
   label :Label;
   extent :Extent;
 }
 
 /**
  * Extents describe the extent of something that can be owned or shared.
- * The format is determined by its unitOps. Fungible extents are normally
- * represented by natural numbers. Other extents may be represented as
- * strings naming a particular right, or an arbitrary object that sensibly
- * represents the rights at issue. All Unitss made by the same UnitOps have the
- * same label.
+ * Fungible extents are normally represented by natural numbers. Other 
+ * extents may be represented as strings naming a particular right, or 
+ * an arbitrary object that sensibly represents the rights at issue. 
+ * All Units that represent the same "kind" of digital asset
+ * (originating from the same mint) will have the same label.
  *
  * Extent must be Comparable. (This IDL doesn't yet provide a way to specify
  * subtype relationships for structs.)
@@ -23,9 +27,9 @@ struct Extent {
 }
 
 /**
- * Creator and validator of asset Unitss.
+ * Creator and validator of asset Units.
  *
- * Unitss are the canonical description of tradable goods. They are manipulated
+ * Units are the canonical description of tradable goods. They are manipulated
  * by mints, and represent the goods and currency carried by purses and
  * payments. They can be used to represent things like currency, stock, and the
  * abstract right to participate in a particular exchange.

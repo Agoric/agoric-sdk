@@ -136,7 +136,7 @@ interface Purse (Units) {
 }
 
 /**
- * Payments hold verified units of certain rights issued by Mints. Unitss
+ * Payments hold verified units of certain rights issued by Mints. Units
  * from payments can be deposited in purses, but otherwise, the entire units is
  * available when the payment is transferred. A payment's balance can only fall,
  * through the action of depositExactly(), claimExactly() or burnExactly().
@@ -160,9 +160,9 @@ interface Payment (Units) {
  * the behavior of the set operations on extents (think: arithmetic)
  * such as `empty`, `with`, `without`, `includes`, etc. We extract this
  * custom logic into a extentOps. ExtentOps are about extent
- * arithmetic, whereas UnitOps are about Unitss, which are labeled
+ * arithmetic, whereas UnitOps are about Units, which are labeled
  * extents. UnitOps use ExtentOps to do their extent arithmetic,
- * and then label the results, making new Unitss. 
+ * and then label the results, making new Units. 
  */ 
 interface ExtentOps () {
   /** 

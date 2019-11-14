@@ -179,13 +179,13 @@ allegedName must be truthy: ${allegedName}`;
         unitsArray.length === namesArray.length,
       )`the units and names should have the same length`;
 
-      const paymentMinusUnitss = unitsArray.reduce((soFar, units) => {
+      const paymentMinusUnits = unitsArray.reduce((soFar, units) => {
         units = unitOps.coerce(units);
         return unitOps.without(soFar, units);
       }, paymentKeeper.getUnits(payment));
 
       insist(
-        unitOps.isEmpty(paymentMinusUnitss),
+        unitOps.isEmpty(paymentMinusUnits),
       )`the units of the proposed new payments do not equal the units of the source payment`;
 
       // ///////////////// commit point //////////////////

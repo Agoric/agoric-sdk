@@ -9,8 +9,8 @@ test('split bad units', t => {
     const purse = mint.mint(1000);
     const payment = purse.withdrawAll();
 
-    const badUnitssArray = Array(2).fill(assay.makeUnits(10));
-    t.throws(_ => assay.split(payment, badUnitssArray));
+    const badUnitsArray = Array(2).fill(assay.makeUnits(10));
+    t.throws(_ => assay.split(payment, badUnitsArray));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -25,8 +25,8 @@ test('split good units', t => {
     const purse = mint.mint(100);
     const oldPayment = purse.withdrawAll();
 
-    const goodUnitssArray = Array(10).fill(assay.makeUnits(10));
-    const splitPayments = assay.split(oldPayment, goodUnitssArray);
+    const goodUnitsArray = Array(10).fill(assay.makeUnits(10));
+    const splitPayments = assay.split(oldPayment, goodUnitsArray);
 
     for (const payment of splitPayments) {
       t.deepEqual(payment.getBalance(), assay.makeUnits(10));
