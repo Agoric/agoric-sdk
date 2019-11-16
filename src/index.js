@@ -11,7 +11,7 @@ export {
 };
 
 export function getVatTPSourcePath() {
-  return require.resolve('./vats/vat-tp/vattp');
+  return require.resolve('./vats/vat-tp');
 }
 
 export function getCommsSourcePath() {

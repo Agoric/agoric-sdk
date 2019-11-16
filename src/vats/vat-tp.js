@@ -1,5 +1,21 @@
 import harden from '@agoric/harden';
-import { insist } from '../../insist';
+import { insist } from '../insist';
+
+// See ../../docs/delivery.md for a description of the architecture of the
+// comms system.
+
+// In order for a mailbox-using machine to glue together the three comms pieces
+// (mailbox device, VatTP vat, comms vat) code like the following must be added
+// to the bootstrap vat.
+//
+//   D(devices.mailbox).registerInboundHandler(vats.vattp);
+//   E(vats.vattp).registerMailboxDevice(devices.mailbox);
+//   const name = 'remote1';
+//   const { transmitter, setReceiver } = await E(vats.vattp).addRemote(name);
+//   const receiver = await E(vats.comms).addRemote(name, transmitter);
+//   await E(setReceiver).setReceiver(receiver);
+//   const receiver = await E(vats.comms).addRemote(name, transmitter);
+//   await E(setReceiver).setReceiver(receiver);
 
 function build(E, D) {
   let mailbox; // mailbox device
