@@ -24,8 +24,12 @@ function build(E, D) {
       },
       createRepeater(delaySecs, interval) {
         insist(
-          Nat(delaySecs) && Nat(interval),
-          `createRepeater takes two numbers as arguments. ${delaySecs}, ${interval}`,
+          Nat(delaySecs) >= 0,
+          `createRepeater's first parameter must be a non-negative integer. ${delaySecs}`,
+        );
+        insist(
+          Nat(interval),
+          `createRepeater's second parameter must be an integer, ${interval}`,
         );
 
         const index = D(timerNode).createRepeater(delaySecs, interval);
