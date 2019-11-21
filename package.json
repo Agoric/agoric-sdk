@@ -41,8 +41,8 @@
     "ses": "^0.6.4"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^0.1.0",
-    "@agoric/swingset-vat": "^0.2.0",
+    "@agoric/bundle-source": "^1.0.4",
+    "@agoric/swingset-vat": "^0.3.0",
     "eslint": "^6.6.0",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-config-jessie": "0.0.3",
