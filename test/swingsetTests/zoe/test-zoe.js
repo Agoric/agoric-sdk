@@ -108,7 +108,7 @@ test('zoe - coveredCall - valid inputs - with SES', async t => {
   }
 });
 
-test('zoe - coveredCall - valid inputs - no SES', async t => {
+test.only('zoe - coveredCall - valid inputs - no SES', async t => {
   try {
     const startingExtents = [[3, 0], [0, 7]];
     const dump = await main(false, 'zoe', [

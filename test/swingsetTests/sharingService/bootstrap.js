@@ -2,44 +2,44 @@
 
 import harden from '@agoric/harden';
 
-import { makeCorkboard } from '../../../more/sharing/corkboard';
+import { makeSharedMap } from '../../../more/sharing/sharedMap';
 import { makeSharingService } from '../../../more/sharing/sharing';
 
 function build(E, log) {
-  function testCorkboardStorage() {
-    log('starting testCorkboardStorage');
-    const bb = makeCorkboard('whiteboard');
-    if (bb.getName() !== 'whiteboard') {
-      log(`bboard name should be 'whiteboard', not ${bb.getName()}`);
+  function testSharedMapStorage() {
+    log('starting testSharedMapStorage');
+    const wb = makeSharedMap('whiteboard');
+    if (wb.getName() !== 'whiteboard') {
+      log(`sharedMap name should be 'whiteboard', not ${wb.getName()}`);
     }
   }
 
   function testSharingStorage() {
     log('starting testSharingStorage');
     const h = makeSharingService();
-    if (h.grabBoard('missing') !== undefined) {
+    if (h.grabSharedMap('missing') !== undefined) {
       log('empty services should have no entries');
     }
-    const entry = h.createBoard('rendezvous');
+    const entry = h.createSharedMap('rendezvous');
     if (entry === undefined) {
-      log('should be able to create new new corkboard');
+      log('should be able to create new new sharedMap');
     }
     if (h.validate(entry) !== entry) {
-      log('expected new corkboard to validate');
+      log('expected new sharedMap to validate');
     }
-    const cork = h.grabBoard('rendezvous');
+    const cork = h.grabSharedMap('rendezvous');
     if (cork === undefined) {
-      log('should be able to grabBoard new corkboard');
+      log('should be able to grabSharedMap new sharedMap');
     }
     if (cork.getName() !== 'rendezvous') {
-      log('new board name should match');
+      log('new sharedMap name should match');
     }
 
     if (h.validate(cork) !== cork) {
-      log('expected corkboard to validate');
+      log('expected sharedMap to validate');
     }
 
-    const fakeBoard = harden({
+    const fakeSharedMap = harden({
       lookup(propertyName) {
         return `${propertyName}: value`;
       },
@@ -51,7 +51,7 @@ function build(E, log) {
       },
     });
     try {
-      h.validate(fakeBoard);
+      h.validate(fakeSharedMap);
     } catch (error) {
       log('expected validate to throw');
     }
@@ -82,8 +82,8 @@ function build(E, log) {
   const obj0 = {
     async bootstrap(argv, vats) {
       switch (argv[0]) {
-        case 'corkboard': {
-          return testCorkboardStorage();
+        case 'sharedMap': {
+          return testSharedMapStorage();
         }
         case 'sharing': {
           return testSharingStorage();

@@ -15,20 +15,20 @@ async function main(withSES, basedir, argv) {
   return controller.dump();
 }
 
-const corkboardContentsGolden = [
+const sharedMapContentsGolden = [
   '=> setup called',
-  'starting testCorkboardStorage',
+  'starting testSharedMapStorage',
 ];
 
-test('run sharing Demo --corkboard contents', async t => {
-  const dump = await main(false, 'sharingService', ['corkboard']);
-  t.deepEquals(dump.log, corkboardContentsGolden);
+test('run sharing Demo --sharedMap contents', async t => {
+  const dump = await main(false, 'sharingService', ['sharedMap']);
+  t.deepEquals(dump.log, sharedMapContentsGolden);
   t.end();
 });
 
-test('run sharing Demo --corkboard contents', async t => {
-  const dump = await main(true, 'sharingService', ['corkboard']);
-  t.deepEquals(dump.log, corkboardContentsGolden);
+test('run sharing Demo --sharedMap contents', async t => {
+  const dump = await main(true, 'sharingService', ['sharedMap']);
+  t.deepEquals(dump.log, sharedMapContentsGolden);
   t.end();
 });
 

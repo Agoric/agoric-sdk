@@ -8,9 +8,9 @@ function makeBobMaker(E, _host, _log) {
       const bob = harden({
         findSomething(key) {
           return E(sharingServiceP)
-            .grabBoard(key)
-            .then(board => {
-              return E(E(sharingServiceP).validate(board)).lookup(key);
+            .grabSharedMap(key)
+            .then(sharedMap => {
+              return E(E(sharingServiceP).validate(sharedMap)).lookup(key);
             });
         },
       });

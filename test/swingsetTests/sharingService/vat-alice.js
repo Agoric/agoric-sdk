@@ -8,8 +8,8 @@ function makeAliceMaker(E, _host, _log) {
       const alice = harden({
         shareSomething(someKey) {
           return E(sharingServiceP)
-            .createBoard(someKey)
-            .then(board => E(board).addEntry(someKey, 42));
+            .createSharedMap(someKey)
+            .then(sharedMap => E(sharedMap).addEntry(someKey, 42));
         },
       });
       return alice;

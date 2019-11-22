@@ -3,17 +3,17 @@ import { makeSharingService } from '../../../../more/sharing/sharing';
 
 test('Sharing creation', t => {
   const sharingService = makeSharingService();
-  const first = sharingService.createBoard('first');
+  const first = sharingService.createSharedMap('first');
   t.assert(sharingService.validate(first));
   t.end();
 });
 
 test('Sharing repeated creation', t => {
   const sharingService = makeSharingService();
-  const first = sharingService.createBoard('first');
+  const first = sharingService.createSharedMap('first');
   t.assert(sharingService.validate(first));
   t.throws(
-    _ => sharingService.createBoard('first'),
+    _ => sharingService.createSharedMap('first'),
     /already exists/,
     'should throw on repeated call.',
   );
@@ -23,13 +23,13 @@ test('Sharing repeated creation', t => {
 test('Sharing grab value', t => {
   const sharingService = makeSharingService();
   const firstName = 'first';
-  const first = sharingService.createBoard(firstName);
+  const first = sharingService.createSharedMap(firstName);
   t.assert(sharingService.validate(first));
-  const second = sharingService.grabBoard(firstName);
+  const second = sharingService.grabSharedMap(firstName);
   t.assert(sharingService.validate(second));
   t.equals(second, first);
   t.throws(
-    _ => sharingService.grabBoard(firstName),
+    _ => sharingService.grabSharedMap(firstName),
     /has already been collected/,
     'should throw on repeated call.',
   );
@@ -40,7 +40,7 @@ test('Sharing validate non service', t => {
   const sharingService = makeSharingService();
   t.throws(
     _ => sharingService.validate([]),
-    /Unrecognized board:/,
+    /Unrecognized sharedMap:/,
     'throws on non sharing service.',
   );
   t.end();

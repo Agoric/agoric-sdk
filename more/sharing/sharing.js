@@ -2,44 +2,44 @@
 
 import harden from '@agoric/harden';
 
-import { makeCorkboard } from './corkboard';
+import { makeSharedMap } from './sharedMap';
 import { insist } from '../../util/insist';
 
 function makeSharingService() {
   // I'd have used PrivateNames, but they want objects (not Strings) as Keys.
-  const boards = new Map();
+  const sharedMaps = new Map();
   const brand = new WeakSet();
   const tombstone = [];
 
   const sharingService = harden({
     // retrieve and remove from the map.
-    grabBoard(key) {
-      if (!boards.has(key)) {
+    grabSharedMap(key) {
+      if (!sharedMaps.has(key)) {
         return undefined;
       }
-      if (boards.get(key) === tombstone) {
+      if (sharedMaps.get(key) === tombstone) {
         throw new Error(`Entry for ${key} has already been collected.`);
       }
-      const result = boards.get(key);
+      const result = sharedMaps.get(key);
       // these are single-use entries. Leave a tombstone to prevent MITM.
-      boards.set(key, tombstone);
+      sharedMaps.set(key, tombstone);
       return result;
     },
-    createBoard(preferredName) {
-      if (boards.has(preferredName)) {
+    createSharedMap(preferredName) {
+      if (sharedMaps.has(preferredName)) {
         throw new Error(`Entry already exists: ${preferredName}`);
       }
-      const corkBoard = makeCorkboard(preferredName);
-      boards.set(preferredName, corkBoard);
-      brand.add(corkBoard);
-      return corkBoard;
+      const sharedMap = makeSharedMap(preferredName);
+      sharedMaps.set(preferredName, sharedMap);
+      brand.add(sharedMap);
+      return sharedMap;
     },
-    validate(allegedBoard) {
-      insist(brand.has(allegedBoard))`\
-Unrecognized board: ${allegedBoard}`;
-      return allegedBoard;
+    validate(allegedSharedMap) {
+      insist(brand.has(allegedSharedMap))`\
+Unrecognized sharedMap: ${allegedSharedMap}`;
+      return allegedSharedMap;
     },
-    // We don't need remove, since grabBoard can be used for that.
+    // We don't need remove, since grabSharedMap can be used for that.
   });
 
   return sharingService;

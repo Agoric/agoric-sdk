@@ -222,8 +222,8 @@ function makeAliceMaker(E, log, contractHost) {
           showPaymentBalance('alice pixel purse', pixelPurseP);
           showPaymentBalance('alice dust purse', dustPurseP);
         },
-        async doTapFaucetAndOfferViaCorkboard(sharingSvc, dustPurseP) {
-          log('++ alice.doTapFaucetAndOfferViaCorkboard starting');
+        async doTapFaucetAndOfferViaSharedMap(sharingSvc, dustPurseP) {
+          log('++ alice.doTapFaucetAndOfferViaSharedMap starting');
           const { pixelAssay } = await E(gallery).getAssays();
           const pixelPaymentP = E(gallery).tapFaucet();
 
@@ -232,8 +232,8 @@ function makeAliceMaker(E, log, contractHost) {
             dustPurseP,
           );
 
-          // store buyerInviteP and contractHost in corkboard
-          const cbP = E(sharingSvc).createBoard('MeetPoint');
+          // store buyerInviteP and contractHost in sharedMap
+          const cbP = E(sharingSvc).createSharedMap('MeetPoint');
           const buyerSeatReceipt = E(cbP).addEntry('buyerSeat', buyerInviteP);
           const contractHostReceipt = E(cbP).addEntry(
             'contractHost',

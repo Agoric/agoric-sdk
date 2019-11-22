@@ -55,12 +55,12 @@ function build(E, log) {
       alicePaymentP,
       buyerSeatReceipt,
       contractHostReceipt,
-    } = await E(aliceP).doTapFaucetAndOfferViaCorkboard(sharing, aliceDust);
+    } = await E(aliceP).doTapFaucetAndOfferViaSharedMap(sharing, aliceDust);
     // Don't start Bob until Alice has created and stored the buyerSeat
     const { bobRefundP, bobPixelP } = await Promise.all([
       contractHostReceipt,
       buyerSeatReceipt,
-    ]).then(_ => E(bobP).buyFromCorkBoard(sharing, bobDust));
+    ]).then(_ => E(bobP).buyFromSharedMap(sharing, bobDust));
     Promise.all([aliceRefundP, alicePaymentP, bobRefundP, bobPixelP]).then(
       _res => log('++ aliceSellsToBob done'),
       rej => log('++ aliceSellsToBob reject: ', rej),

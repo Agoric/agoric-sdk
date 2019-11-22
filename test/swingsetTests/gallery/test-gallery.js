@@ -138,7 +138,7 @@ const expectedAliceSellsToBobLog = [
   '=> setup called',
   'starting aliceSellsToBob',
   'starting testAliceSellsToBob',
-  '++ alice.doTapFaucetAndOfferViaCorkboard starting',
+  '++ alice.doTapFaucetAndOfferViaSharedMap starting',
   'Alice collected 37 dust',
   'alice escrow wins: {"label":{"assay":{},"allegedName":"dust"},"extent":37} refs: null',
   'bob option wins: {"label":{"assay":{},"allegedName":"pixels"},"extent":[{"x":1,"y":4}]} refs: null',
