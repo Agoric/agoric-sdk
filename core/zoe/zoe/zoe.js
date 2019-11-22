@@ -234,9 +234,22 @@ const makeZoe = async (additionalEndowments = {}) => {
     /**
      * Create an installation by safely evaluating the code and
      * registering it with Zoe.
+     *
+     * We have a moduleFormat to allow for different future formats
+     * without silent failures.
      */
-    install: code => {
-      const installation = evalContractCode(code, additionalEndowments);
+    install: (code, moduleFormat = 'getExport') => {
+      let installation;
+      switch (moduleFormat) {
+        case 'getExport': {
+          installation = evalContractCode(code, additionalEndowments);
+          break;
+        }
+        default: {
+          insist(false)`\
+Unimplemented installation moduleFormat ${moduleFormat}`;
+        }
+      }
       const installationHandle = adminState.addInstallation(installation);
       return installationHandle;
     },
