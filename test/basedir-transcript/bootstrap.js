@@ -9,7 +9,10 @@ function build(E, log) {
       if (mode === 'one') {
         E(vats.left)
           .callRight(1, vats.right)
-          .then(r => log(`b.resolved ${r}`), err => log(`b.rejected ${err}`));
+          .then(
+            r => log(`b.resolved ${r}`),
+            err => log(`b.rejected ${err}`),
+          );
       } else {
         throw Error(`unknown mode ${mode}`);
       }

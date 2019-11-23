@@ -13,7 +13,10 @@ function build(E, log) {
       } else if (mode === 'e-then') {
         E(vats.left)
           .callRight(1, vats.right)
-          .then(r => log(`b.resolved ${r}`), err => log(`b.rejected ${err}`));
+          .then(
+            r => log(`b.resolved ${r}`),
+            err => log(`b.rejected ${err}`),
+          );
       } else if (mode === 'chain1') {
         const p1 = E(vats.left).call2(1);
         const p2 = E(p1).call3(2);

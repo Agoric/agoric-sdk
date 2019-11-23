@@ -16,7 +16,17 @@ async function testVatTP(t, withSES) {
   await c.run();
   t.deepEqual(s.exportToData(), {});
 
-  t.equal(mb.deliverInbound('remote1', [[1, 'msg1'], [2, 'msg2']], 0), true);
+  t.equal(
+    mb.deliverInbound(
+      'remote1',
+      [
+        [1, 'msg1'],
+        [2, 'msg2'],
+      ],
+      0,
+    ),
+    true,
+  );
   await c.run();
   t.deepEqual(c.dump().log, [
     'not sending anything',
@@ -25,7 +35,17 @@ async function testVatTP(t, withSES) {
   ]);
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
 
-  t.equal(mb.deliverInbound('remote1', [[1, 'msg1'], [2, 'msg2']], 0), false);
+  t.equal(
+    mb.deliverInbound(
+      'remote1',
+      [
+        [1, 'msg1'],
+        [2, 'msg2'],
+      ],
+      0,
+    ),
+    false,
+  );
   await c.run();
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
 
@@ -68,7 +88,17 @@ async function testVatTP2(t, withSES) {
 
   t.equal(mb.deliverInbound('remote1', [[1, 'msg1']], 1), false);
 
-  t.equal(mb.deliverInbound('remote1', [[1, 'msg1'], [2, 'msg2']], 1), true);
+  t.equal(
+    mb.deliverInbound(
+      'remote1',
+      [
+        [1, 'msg1'],
+        [2, 'msg2'],
+      ],
+      1,
+    ),
+    true,
+  );
   await c.run();
   t.deepEqual(c.dump().log, ['ch.receive msg1', 'ch.receive msg2']);
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });

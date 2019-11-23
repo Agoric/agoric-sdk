@@ -52,7 +52,11 @@ function testStorage(t, s, getState, commit) {
     checkState(t, getState, []);
     commit();
   }
-  checkState(t, getState, [['foo', 'f'], ['foo1', 'f1'], ['foo3', 'f3']]);
+  checkState(t, getState, [
+    ['foo', 'f'],
+    ['foo1', 'f1'],
+    ['foo3', 'f3'],
+  ]);
 }
 
 test('storageInMemory', t => {
@@ -94,7 +98,11 @@ test('hostDBInMemory', t => {
   t.equal(hostDB.get('foo2'), undefined);
   t.deepEqual(Array.from(hostDB.getKeys('foo1', 'foo4')), ['foo1', 'foo3']);
 
-  checkState(t, getState, [['foo', 'f'], ['foo1', 'f1'], ['foo3', 'f3']]);
+  checkState(t, getState, [
+    ['foo', 'f'],
+    ['foo1', 'f1'],
+    ['foo3', 'f3'],
+  ]);
   t.end();
 });
 
@@ -148,12 +156,20 @@ test('crankBuffer can abortCrank', t => {
   checkState(t, getState, []);
 
   commitBlock();
-  checkState(t, getState, [['foo', 'f'], ['foo1', 'f1'], ['foo3', 'f3']]);
+  checkState(t, getState, [
+    ['foo', 'f'],
+    ['foo1', 'f1'],
+    ['foo3', 'f3'],
+  ]);
 
   s.set('foo4', 'f4');
   abortCrank();
   commitBlock();
-  checkState(t, getState, [['foo', 'f'], ['foo1', 'f1'], ['foo3', 'f3']]);
+  checkState(t, getState, [
+    ['foo', 'f'],
+    ['foo1', 'f1'],
+    ['foo3', 'f3'],
+  ]);
 
   s.set('foo5', 'f5');
   commitCrank();
@@ -355,7 +371,10 @@ test('storage helpers', t => {
   t.notOk(s.has('foo.3'));
   t.notOk(s.has('foo.4'));
   t.ok(s.has('foo.5'));
-  checkState(t, getState, [['foo.0', 'f0'], ['foo.5', 'f5']]);
+  checkState(t, getState, [
+    ['foo.0', 'f0'],
+    ['foo.5', 'f5'],
+  ]);
 
   t.end();
 });

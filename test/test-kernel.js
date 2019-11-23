@@ -572,7 +572,10 @@ export default function runTests() {
     const kp = kernel.addExport(vat2, 'p+5');
     const pr = kernel.addImport(vat1, kp);
     t.deepEqual(pr, 'p-60');
-    t.deepEqual(kernel.dump().kernelTable, [[kp, vat1, pr], [kp, vat2, 'p+5']]);
+    t.deepEqual(kernel.dump().kernelTable, [
+      [kp, vat1, pr],
+      [kp, vat2, 'p+5'],
+    ]);
 
     syscall.subscribe(pr);
     t.deepEqual(kernel.dump().promises, [

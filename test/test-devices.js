@@ -225,7 +225,10 @@ async function testMailboxOutbound(t, withSES) {
   t.deepEqual(s.exportToData(), {
     peer1: {
       inboundAck: 13,
-      outbox: [[2, 'data2'], [3, 'data3']],
+      outbox: [
+        [2, 'data2'],
+        [3, 'data3'],
+      ],
     },
     peer2: {
       inboundAck: 0,
@@ -265,25 +268,54 @@ async function testMailboxInbound(t, withSES) {
 
   const c = await buildVatController(config, withSES, ['mailbox2']);
   await c.run();
-  rc = mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2']], 0);
+  rc = mb.deliverInbound(
+    'peer1',
+    [
+      [1, 'msg1'],
+      [2, 'msg2'],
+    ],
+    0,
+  );
   t.ok(rc);
   await c.run();
   t.deepEqual(c.dump().log, ['dm-peer1', 'm-1-msg1', 'm-2-msg2']);
 
   // delivering the same messages should not trigger sends, but the ack is new
-  rc = mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2']], 3);
+  rc = mb.deliverInbound(
+    'peer1',
+    [
+      [1, 'msg1'],
+      [2, 'msg2'],
+    ],
+    3,
+  );
   t.ok(rc);
   await c.run();
   t.deepEqual(c.dump().log, ['dm-peer1', 'm-1-msg1', 'm-2-msg2', 'da-peer1-3']);
 
   // no new messages/acks makes deliverInbound return 'false'
-  rc = mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2']], 3);
+  rc = mb.deliverInbound(
+    'peer1',
+    [
+      [1, 'msg1'],
+      [2, 'msg2'],
+    ],
+    3,
+  );
   t.notOk(rc);
   await c.run();
   t.deepEqual(c.dump().log, ['dm-peer1', 'm-1-msg1', 'm-2-msg2', 'da-peer1-3']);
 
   // but new messages should be sent
-  rc = mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2'], [3, 'msg3']], 3);
+  rc = mb.deliverInbound(
+    'peer1',
+    [
+      [1, 'msg1'],
+      [2, 'msg2'],
+      [3, 'msg3'],
+    ],
+    3,
+  );
   t.ok(rc);
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -296,7 +328,15 @@ async function testMailboxInbound(t, withSES) {
   ]);
 
   // and a higher ack should be sent
-  rc = mb.deliverInbound('peer1', [[1, 'msg1'], [2, 'msg2'], [3, 'msg3']], 4);
+  rc = mb.deliverInbound(
+    'peer1',
+    [
+      [1, 'msg1'],
+      [2, 'msg2'],
+      [3, 'msg3'],
+    ],
+    4,
+  );
   t.ok(rc);
   await c.run();
   t.deepEqual(c.dump().log, [

@@ -42,7 +42,10 @@ test('calls', async t => {
         },
         two(p) {
           log.push(`two ${Promise.resolve(p) === p}`);
-          p.then(res => log.push(['res', res]), rej => log.push(['rej', rej]));
+          p.then(
+            res => log.push(['res', res]),
+            rej => log.push(['rej', rej]),
+          );
         },
       });
     }
