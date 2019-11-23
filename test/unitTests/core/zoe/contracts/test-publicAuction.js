@@ -41,10 +41,10 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     const installationHandle = zoe.install(source, moduleFormat);
     const numBidsAllowed = 3;
-    const { instance: aliceAuction, instanceHandle } = await zoe.makeInstance(
-      installationHandle,
-      { assays, numBidsAllowed },
-    );
+    const {
+      instance: aliceAuction,
+      instanceHandle,
+    } = await zoe.makeInstance(installationHandle, { assays, numBidsAllowed });
 
     // 2: Alice escrows with zoe
     const aliceOfferRules = harden({
@@ -331,10 +331,10 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     const installationHandle = zoe.install(source, moduleFormat);
     const numBidsAllowed = 3;
-    const { instance: aliceAuction, instanceHandle } = await zoe.makeInstance(
-      installationHandle,
-      { assays, numBidsAllowed },
-    );
+    const {
+      instance: aliceAuction,
+      instanceHandle,
+    } = await zoe.makeInstance(installationHandle, { assays, numBidsAllowed });
 
     // 2: Alice escrows with zoe
     const aliceOfferRules = harden({

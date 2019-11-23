@@ -51,7 +51,10 @@ const expectedAutomaticRefundOkLog = [
 
 test('zoe - automaticRefund - valid inputs - with SES', async t => {
   try {
-    const startingExtents = [[3, 0], [0, 17]];
+    const startingExtents = [
+      [3, 0],
+      [0, 17],
+    ];
     const dump = await main(true, 'zoe', [
       'automaticRefundOk',
       'automaticRefund',
@@ -67,7 +70,10 @@ test('zoe - automaticRefund - valid inputs - with SES', async t => {
 
 test('zoe - automaticRefund - valid inputs - no SES', async t => {
   try {
-    const startingExtents = [[3, 0], [0, 17]];
+    const startingExtents = [
+      [3, 0],
+      [0, 17],
+    ];
     const dump = await main(false, 'zoe', [
       'automaticRefundOk',
       'automaticRefund',
@@ -94,7 +100,10 @@ const expectedCoveredCallOkLog = [
 
 test('zoe - coveredCall - valid inputs - with SES', async t => {
   try {
-    const startingExtents = [[3, 0], [0, 7]];
+    const startingExtents = [
+      [3, 0],
+      [0, 7],
+    ];
     const dump = await main(true, 'zoe', [
       'coveredCallOk',
       'coveredCall',
@@ -110,7 +119,10 @@ test('zoe - coveredCall - valid inputs - with SES', async t => {
 
 test('zoe - coveredCall - valid inputs - no SES', async t => {
   try {
-    const startingExtents = [[3, 0], [0, 7]];
+    const startingExtents = [
+      [3, 0],
+      [0, 7],
+    ];
     const dump = await main(false, 'zoe', [
       'coveredCallOk',
       'coveredCall',
@@ -142,7 +154,12 @@ const expectedPublicAuctionOkLog = [
 
 test('zoe - publicAuction - valid inputs - with SES', async t => {
   try {
-    const startingExtents = [[1, 0], [0, 11], [0, 7], [0, 5]];
+    const startingExtents = [
+      [1, 0],
+      [0, 11],
+      [0, 7],
+      [0, 5],
+    ];
     const dump = await main(true, 'zoe', [
       'publicAuctionOk',
       'publicAuction',
@@ -158,7 +175,12 @@ test('zoe - publicAuction - valid inputs - with SES', async t => {
 
 test('zoe - publicAuction - valid inputs - no SES', async t => {
   try {
-    const startingExtents = [[1, 0], [0, 11], [0, 7], [0, 5]];
+    const startingExtents = [
+      [1, 0],
+      [0, 11],
+      [0, 7],
+      [0, 5],
+    ];
     const dump = await main(false, 'zoe', [
       'publicAuctionOk',
       'publicAuction',
@@ -183,7 +205,10 @@ const expectedPublicSwapOkLog = [
 ];
 test('zoe - publicSwap - valid inputs - with SES', async t => {
   try {
-    const startingExtents = [[3, 0], [0, 7]];
+    const startingExtents = [
+      [3, 0],
+      [0, 7],
+    ];
     const dump = await main(true, 'zoe', [
       'publicSwapOk',
       'publicSwap',
@@ -199,7 +224,11 @@ test('zoe - publicSwap - valid inputs - with SES', async t => {
 
 test('zoe - publicSwap - valid inputs - no SES', async t => {
   try {
-    const startingExtents = [[3, 0], [0, 7], [0, 0]];
+    const startingExtents = [
+      [3, 0],
+      [0, 7],
+      [0, 0],
+    ];
     const dump = await main(false, 'zoe', [
       'publicSwapOk',
       'publicSwap',
@@ -224,7 +253,10 @@ const expectedSimpleExchangeOkLog = [
 ];
 test('zoe - simpleExchange - valid inputs - with SES', async t => {
   try {
-    const startingExtents = [[3, 0], [0, 7]];
+    const startingExtents = [
+      [3, 0],
+      [0, 7],
+    ];
     const dump = await main(true, 'zoe', [
       'simpleExchangeOk',
       'simpleExchange',
@@ -240,7 +272,10 @@ test('zoe - simpleExchange - valid inputs - with SES', async t => {
 
 test('zoe - simpleExchange - valid inputs - no SES', async t => {
   try {
-    const startingExtents = [[3, 0], [0, 7]];
+    const startingExtents = [
+      [3, 0],
+      [0, 7],
+    ];
     const dump = await main(false, 'zoe', [
       'simpleExchangeOk',
       'simpleExchange',
@@ -271,7 +306,10 @@ const expectedAutoswapOkLog = [
 ];
 test('zoe - autoswap - valid inputs - with SES', async t => {
   try {
-    const startingExtents = [[10, 5], [2, 7]];
+    const startingExtents = [
+      [10, 5],
+      [2, 7],
+    ];
     const dump = await main(true, 'zoe', [
       'autoswapOk',
       'autoswap',
@@ -287,7 +325,10 @@ test('zoe - autoswap - valid inputs - with SES', async t => {
 
 test('zoe - autoswap - valid inputs - no SES', async t => {
   try {
-    const startingExtents = [[10, 5], [2, 7]];
+    const startingExtents = [
+      [10, 5],
+      [2, 7],
+    ];
     const dump = await main(false, 'zoe', [
       'autoswapOk',
       'autoswap',

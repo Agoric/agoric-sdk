@@ -25,7 +25,9 @@ test('zoe - simplest automaticRefund', async t => {
     // 1: Alice creates an automatic refund instance
     const { instance: automaticRefund } = await zoe.makeInstance(
       installationHandle,
-      { assays: harden([moolaAssay]) },
+      {
+        assays: harden([moolaAssay]),
+      },
     );
     const aliceOfferRules = harden({
       payoutRules: [
@@ -71,7 +73,9 @@ test('zoe - automaticRefund same assay', async t => {
     // 1: Alice creates an automatic refund instance
     const { instance: automaticRefund } = await zoe.makeInstance(
       installationHandle,
-      { assays: harden([moolaAssay, moolaAssay]) },
+      {
+        assays: harden([moolaAssay, moolaAssay]),
+      },
     );
     const aliceOfferRules = harden({
       payoutRules: [

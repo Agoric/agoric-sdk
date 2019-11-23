@@ -64,10 +64,9 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const simoleanAssay = await E(simoleanPurseP).getAssay();
     const assays = harden([moolaAssay, simoleanAssay]);
 
-    const { instance: coveredCall, instanceHandle } = await E(zoe).makeInstance(
-      installId,
-      { assays },
-    );
+    const { instance: coveredCall, instanceHandle } = await E(
+      zoe,
+    ).makeInstance(installId, { assays });
 
     const offerRules = harden({
       payoutRules: [
@@ -112,10 +111,9 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const assays = harden([moolaAssay, simoleanAssay]);
 
     const numBidsAllowed = 3;
-    const { instance: auction, instanceHandle } = await E(zoe).makeInstance(
-      installId,
-      { assays, numBidsAllowed },
-    );
+    const { instance: auction, instanceHandle } = await E(
+      zoe,
+    ).makeInstance(installId, { assays, numBidsAllowed });
 
     const offerRules = harden({
       payoutRules: [
@@ -164,10 +162,9 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const simoleanAssay = await E(simoleanPurseP).getAssay();
     const assays = harden([moolaAssay, simoleanAssay]);
 
-    const { instance: swap, instanceHandle } = await E(zoe).makeInstance(
-      installId,
-      { assays },
-    );
+    const { instance: swap, instanceHandle } = await E(
+      zoe,
+    ).makeInstance(installId, { assays });
 
     const offerRules = harden({
       payoutRules: [
@@ -210,10 +207,9 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const simoleanAssay = await E(simoleanPurseP).getAssay();
     const assays = harden([moolaAssay, simoleanAssay]);
 
-    const { instance: exchange, instanceHandle } = await E(zoe).makeInstance(
-      installId,
-      { assays },
-    );
+    const { instance: exchange, instanceHandle } = await E(
+      zoe,
+    ).makeInstance(installId, { assays });
 
     const aliceSellOrderOfferRules = harden({
       payoutRules: [
@@ -257,10 +253,9 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const simoleanAssay = await E(simoleanPurseP).getAssay();
     const assays = harden([moolaAssay, simoleanAssay]);
 
-    const { instance: autoswap, instanceHandle } = await E(zoe).makeInstance(
-      installId,
-      { assays },
-    );
+    const { instance: autoswap, instanceHandle } = await E(
+      zoe,
+    ).makeInstance(installId, { assays });
     const liquidityAssay = await E(autoswap).getLiquidityAssay();
     const allAssays = [...assays, liquidityAssay];
 

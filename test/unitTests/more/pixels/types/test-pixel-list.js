@@ -225,10 +225,21 @@ test('pixelList without', t => {
   );
   t.deepEqual(
     extentOps.without(
-      harden([{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 0 }, { x: 1, y: 1 }]),
-      harden([{ x: 0, y: 0 }, { x: 0, y: 1 }]),
+      harden([
+        { x: 0, y: 0 },
+        { x: 0, y: 1 },
+        { x: 1, y: 0 },
+        { x: 1, y: 1 },
+      ]),
+      harden([
+        { x: 0, y: 0 },
+        { x: 0, y: 1 },
+      ]),
     ),
-    [{ x: 1, y: 0 }, { x: 1, y: 1 }],
+    [
+      { x: 1, y: 0 },
+      { x: 1, y: 1 },
+    ],
   );
 
   t.end();

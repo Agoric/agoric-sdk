@@ -29,10 +29,10 @@ test('zoe - simpleExchange', async t => {
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
     // 1: Alice creates a simpleExchange instance
-    const { instance: aliceExchange, instanceHandle } = await zoe.makeInstance(
-      installationHandle,
-      { assays },
-    );
+    const {
+      instance: aliceExchange,
+      instanceHandle,
+    } = await zoe.makeInstance(installationHandle, { assays });
 
     // 2: Alice escrows with zoe to create a sell order. She wants to
     // sell 3 moola and wants to receive at least 4 simoleans in

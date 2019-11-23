@@ -29,10 +29,10 @@ test('zoe - publicSwap', async t => {
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
     // 1: Alice creates a publicSwap instance
-    const { instance: aliceSwap, instanceHandle } = await zoe.makeInstance(
-      installationHandle,
-      { assays },
-    );
+    const {
+      instance: aliceSwap,
+      instanceHandle,
+    } = await zoe.makeInstance(installationHandle, { assays });
 
     // 2: Alice escrows with zoe
     const aliceOfferRules = harden({
