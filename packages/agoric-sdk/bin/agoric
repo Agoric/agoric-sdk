@@ -1,0 +1,23 @@
+#!/usr/bin/env node
+
+esmRequire = require('esm')(module);
+const path = esmRequire('path');
+const chalk = esmRequire('chalk').default;
+
+const main = esmRequire('../lib/main.js').default;
+const progname = path.basename(process.argv[1]);
+
+const error = (...args) => {
+  console.error(`${progname}: ${chalk.red('ERROR')}:`, ...args);
+};
+
+process.on('SIGINT', () => process.exit(-1));
+
+const rawArgs = process.argv.splice(2);
+main(progname, rawArgs, { console, error }).then(
+  res => res === undefined || process.exit(res),
+  rej => {
+    error(rej);
+    process.exit(2);
+  },
+);

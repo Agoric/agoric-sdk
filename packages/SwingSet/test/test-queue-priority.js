@@ -1,0 +1,23 @@
+// eslint-disable-next-line no-redeclare
+/* global setImmediate setTimeout */
+import { test } from 'tape-promise/tape';
+
+test('Promise queue should be higher priority than IO/timer queue', async t => {
+  const log = [];
+  setImmediate(() => log.push(1));
+  setImmediate(() => {
+    log.push(2);
+    Promise.resolve().then(() => log.push(4));
+    log.push(3);
+  });
+  setImmediate(() => log.push(5));
+  setImmediate(() => log.push(6));
+
+  let r;
+  const p = new Promise(r0 => (r = r0));
+  setTimeout(() => r(), 0.1 * 1000);
+  await p;
+
+  t.deepEqual(log, [1, 2, 3, 4, 5, 6]);
+  return t.end();
+});

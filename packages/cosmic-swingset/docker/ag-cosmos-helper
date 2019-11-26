@@ -1,0 +1,42 @@
+#! /bin/sh
+{ test -t 1 || test -t 0; } && FLAGS=-t
+thisdir=`dirname "$0"`
+ABS=`cd "$thisdir" && pwd`
+COSSD_PORT=26657
+REST_PORT=1317
+ENTRY=./ag-cosmos-helper
+ARGS=
+IMAGE=agoric/cosmic-swingset
+
+case "$1" in
+--pull)
+  shift
+  docker pull "$IMAGE"
+  ;;
+esac
+
+case "$1" in
+rest-server)
+  # FIXME: Does this actually work?
+  FLAGS="-p127.0.0.1:$REST_PORT:$REST_PORT"
+  case " $@ " in
+  *" --help "*) ;;
+  *)
+    if test `uname -s 2>/dev/null` = Darwin; then
+      # On MacOS, run the tunnel to host.docker.internal:$COSSD_PORT.
+      # FIXME: Windows needs the same.
+      ENTRY=/ssh-tunnel
+      FLAGS="$FLAGS -t --volume=$HOME/.ssh:/root/.ssh" # --volume=$ABS/ssh-tunnel:/ssh-tunnel"
+      ARGS=" $USER@host.docker.internal $COSSD_PORT ./ag-cosmos-helper"
+    fi
+    ;;
+  esac
+  ;;
+*)
+  FLAGS="$FLAGS --net=host"
+  ;;
+esac
+
+exec docker run -i $FLAGS --entrypoint="$ENTRY" \
+  --volume=ag-cosmos-helper-state:/root/.ag-cosmos-helper \
+  --rm "$IMAGE"$ARGS ${1+"$@"}

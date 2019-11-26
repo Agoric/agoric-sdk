@@ -1,0 +1,53 @@
+{
+  "name": "@agoric/transform-eventual-send",
+  "version": "1.0.3",
+  "description": "transform-eventual-send",
+  "main": "dist/transform-eventual-send.cjs.js",
+  "module": "dist/transform-eventual-send.esm.js",
+  "browser": "dist/transform-eventual-send.umd.js",
+  "scripts": {
+    "test": "tape -r esm 'test/**/*.js'",
+    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
+    "lint-check": "eslint '**/*.{js,jsx}'",
+    "build": "rollup -c rollup.config.js"
+  },
+  "devDependencies": {
+    "@agoric/acorn-eventual-send": "^2.0.0",
+    "@agoric/babel-parser": "^7.6.4",
+    "@agoric/eventual-send": "^0.4.4",
+    "@babel/generator": "^7.5.0",
+    "astring": "^1.4.0",
+    "eslint": "^5.11.1",
+    "eslint-config-airbnb": "^17.1.0",
+    "eslint-config-prettier": "^3.3.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-jsx-a11y": "^6.1.2",
+    "eslint-plugin-prettier": "^3.0.1",
+    "eslint-plugin-react": "^7.12.0",
+    "prettier": "^1.16.4",
+    "rollup": "^1.16.6",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "ses": "^0.6.3",
+    "tap-spec": "^5.0.0",
+    "tape": "^4.9.2",
+    "tape-promise": "^4.0.0"
+  },
+  "dependencies": {
+    "@agoric/harden": "0.0.4",
+    "esm": "^3.2.5"
+  },
+  "keywords": [],
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/transform-eventual-send"
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/transform-eventual-send/issues"
+  },
+  "homepage": "https://github.com/Agoric/transform-eventual-send#readme"
+}

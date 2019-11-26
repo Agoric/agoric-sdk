@@ -1,0 +1,12 @@
+---
+
+- hosts: ag-pserver
+  user: root
+  #any_errors_fatal: true
+  gather_facts: yes
+  strategy: free
+  vars:
+    - service: ag-pserver
+    - data: "{{ SETUP_HOME }}/{{ service }}/data"
+  roles:
+    - fetch-controller

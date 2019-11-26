@@ -1,0 +1,17 @@
+---
+
+- hosts: "{{ service }}"
+  user: root
+  #any_errors_fatal: true
+  gather_facts: yes
+  strategy: free
+  vars:
+    - service: ag-chain-cosmos
+    - HELPER_BINARY: "{{lookup('env', 'GOPATH') or '/usr/local'}}/bin/ag-cosmos-helper"
+    - APPDIR: "{{lookup('pipe', 'pwd')}}/../.."
+  roles:
+    - stop
+    - copy
+    - unsafe_reset
+    - start
+

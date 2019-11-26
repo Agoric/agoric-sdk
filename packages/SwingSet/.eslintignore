@@ -1,0 +1,4 @@
+/dist
+/src/bundles/
+# Until we have eslint parsing of wavy dot
+/demo/encouragementBotCommsWavyDot/

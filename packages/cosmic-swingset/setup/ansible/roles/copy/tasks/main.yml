@@ -1,0 +1,86 @@
+---
+
+- name: Synchronize helper
+  synchronize:
+    src: "{{HELPER_BINARY}}"
+    dest: /usr/local/bin/
+    mode: push
+  when: HELPER_BINARY is defined
+
+- name: "Development mode?"
+  delegate_to: localhost
+  stat:
+    path: "/vagrant"
+  register: dev
+
+- name: Workspace exists
+  delegate_to: localhost
+  stat:
+    path: "/usr/src/cosmic-workspace"
+  register: ws
+
+- name: "Synchronize install directory {{APPDIR}}"
+  synchronize:
+    src: "{{APPDIR}}/"
+    dest: "/usr/src/cosmic-swingset/"
+    dirs: yes
+    delete: yes
+    checksum: yes
+    mode: push
+    rsync_opts:
+    - "--exclude=.git"
+    - "--exclude=setup"
+    - "--exclude=.vscode"
+    - "--exclude=chains"
+    - "--exclude=x"
+    - "--exclude=t[0-9]*"
+    - "--exclude=provisioning-server"
+  when: not dev.stat.exists and not ws.stat.exists
+
+- name: Synchronize cosmic-workspace
+  synchronize:
+    src: "/usr/src/cosmic-workspace/"
+    dest: "/usr/src/cosmic-workspace/"
+    dirs: yes
+    delete: yes
+    checksum: yes
+    mode: push
+  when: ws.stat.exists
+
+- name: Link cosmic-swingset
+  file:
+    src: /usr/src/cosmic-workspace/cosmic-swingset
+    dest: /usr/src/cosmic-swingset
+    state: link
+  when: not dev.stat.exists and ws.stat.exists
+
+- name: "Symlink /vagrant/cosmic-swingset"
+  file:
+    src: /vagrant/cosmic-swingset
+    dest: /usr/src/cosmic-swingset
+    state: link
+  when: dev.stat.exists
+
+- name: "Symlink /usr/src/app"
+  file:
+    src: "/usr/src/cosmic-swingset"
+    dest: /usr/src/app
+    state: link
+
+- name: "Symlink ag-chain-cosmos"
+  file:
+    src: "/usr/src/cosmic-swingset/lib/ag-chain-cosmos"
+    dest: "/usr/local/bin/ag-chain-cosmos"
+    state: link
+
+- name: "Symlink /usr/src/ag-solo"
+  file:
+    src: "/usr/src/cosmic-swingset"
+    dest: /usr/src/ag-solo
+    state: link
+
+- name: "Symlink /usr/local/bin/ag-solo"
+  file:
+    src: "/usr/src/cosmic-swingset/bin/ag-solo"
+    dest: "/usr/local/bin/ag-solo"
+    state: link

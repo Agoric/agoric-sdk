@@ -1,0 +1,157 @@
+#! /usr/bin/env node
+//console.log('Starting Node');
+require = require('esm')(module);
+
+const bootAddress = process.env.BOOT_ADDRESS;
+const ROLE = process.env.ROLE || 'chain';
+const BEGIN_BLOCK = 'BEGIN_BLOCK';
+const DELIVER_INBOUND = 'DELIVER_INBOUND';
+const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
+
+// TODO: use the 'basedir' pattern, or find the cosmos state directory
+// (~/.ag-chain-cosmos ?), or something anything better than scribbling
+// into the current directory.
+const stateFile = 'ag-cosmos-chain-state.json';
+
+const { launch } = require('./launch-chain');
+const path = require('path');
+const stringify = require('@agoric/swingset-vat/src/kernel/json-stable-stringify').default;
+
+const agcc = require('bindings')('agcosmosdaemon.node');
+//console.log('Have AG_COSMOS', agcc);
+
+const portHandlers = {};
+let lastPort = 0;
+function registerPortHandler(portHandler) {
+  const port = ++lastPort;
+  portHandlers[port] = portHandler;
+  return port;
+}
+function fromGo(port, str, replier) {
+  const handler = portHandlers[port];
+  if (!handler) {
+    return replier.reject(`invalid requested port ${port}`);
+  }
+  const action = JSON.parse(str);
+  const p = Promise.resolve(handler(action));
+  p.then(res => replier.resolve(`${res}`),
+         rej => replier.reject(`rejection ${rej} ignored`));
+}
+
+// Actually run the main ag-chain-cosmos program.  Before we start the daemon,
+// there will be a call to nodePort/AG_COSMOS_INIT, otherwise exit.
+const nodePort = registerPortHandler(toSwingSet);
+// Need to keep the process alive until Go exits.
+setInterval(() => undefined, 30000);
+agcc.runAG_COSMOS(nodePort, fromGo, process.argv.slice(1));
+
+let deliverInbound;
+let deliverStartBlock;
+let deliveryFunctionsInitialized = false;
+
+// this storagePort changes for every single message. We define it out here
+// so the 'externalStorage' object can close over the single mutable
+// instance, and we update the 'sPort' value each time toSwingSet is called
+let sPort;
+
+function toSwingSet(action, replier) {
+  console.log(`toSwingSet`, action, replier);
+  return toSwingSet0(action, replier)
+    .then(ret => {
+      console.log(`toSwingSet returning:`, ret);
+      return ret;
+    }, err => {
+      console.log('toSwingSet threw error:', err);
+      throw err;
+    });
+}
+
+async function launchAndInitializeDeliverInbound() {
+  // this object is used to store the mailbox state. we only ever use
+  // key='mailbox'
+  const mailboxStorage = {
+    has(key) {
+      // x/swingset/storage.go returns "true" or "false"
+      const retStr = agcc.send(sPort, stringify({ method: 'has', key }));
+      const ret = JSON.parse(retStr);
+      if (Boolean(ret) !== ret) {
+        throw new Error(`agcc.send(has) returned ${ret} not Boolean`);
+      }
+      return ret;
+    },
+    set(key, value) {
+      if (value !== `${value}`) {
+        throw new Error(`golang storage API only takes string values, not '${JSON.stringify(value)}'`);
+      }
+      const encodedValue = stringify(value);
+      agcc.send(sPort, stringify({ method: 'set', key, value: encodedValue }));
+    },
+    get(key) {
+      const retStr = agcc.send(sPort, stringify({ method: 'get', key }));
+      //console.log(`s.get(${key}) retstr=${retstr}`);
+      const encodedValue = JSON.parse(retStr);
+      //console.log(` encodedValue=${encodedValue}`);
+      const value = JSON.parse(encodedValue);
+      //console.log(` value=${value}`);
+      return value;
+    },
+  };
+
+  const vatsdir = path.resolve(__dirname, '../lib/ag-solo/vats');
+  const argv = [`--role=${ROLE}`];
+  if (bootAddress) {
+    argv.push(...bootAddress.trim().split(/\s+/));
+  }
+  const s = await launch(mailboxStorage, stateFile, vatsdir, argv);
+  return s;
+}
+
+async function toSwingSet0(action, _replier) {
+  if (action.type === AG_COSMOS_INIT) {
+    return true;
+  }
+
+  // Only start running for DELIVER_INBOUND.
+  if (action.type !== DELIVER_INBOUND && action.type !== BEGIN_BLOCK) {
+    throw `Unknown action type ${action.type}`;
+  }
+
+  if (action.storagePort) {
+    // Initialize the storage for this particular transaction.
+    // console.log(` setting sPort to`, action.storagePort);
+    sPort = action.storagePort;
+  }
+
+  // launch the swingset once
+  if (!deliveryFunctionsInitialized) {
+    const deliveryFunctions = await launchAndInitializeDeliverInbound();
+    deliverInbound = deliveryFunctions.deliverInbound;
+    deliverStartBlock = deliveryFunctions.deliverStartBlock;
+    deliveryFunctionsInitialized = true;
+  }
+
+  let d;
+  switch (action.type) {
+    case DELIVER_INBOUND:
+      d = deliverInbound(
+        action.peer,
+        action.messages,
+        action.ack,
+        action.blockHeight,
+        action.blockTime,
+      );
+      break;
+    case BEGIN_BLOCK:
+      d = deliverStartBlock(action.blockHeight, action.blockTime);
+      break;
+    default:
+      throw new Error(`${action.type} not recognized. must be DELIVER_INBOUND or BEGIN_BLOCK`);
+  }
+
+  d.then(undefined,
+    rej => {
+      console.log(`${action.type} failed`, rej);
+      throw rej;
+    });
+  return d;
+}

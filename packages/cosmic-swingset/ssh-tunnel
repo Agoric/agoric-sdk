@@ -1,0 +1,8 @@
+#! /bin/sh
+USER_HOST="$1"
+PORT="$2"
+shift 2
+echo "Tunneling to $USER_HOST"
+ssh -f -L "$PORT:localhost:$PORT" "$USER_HOST" sleep 30
+echo "Running $@"
+exec ${1+"$@"}

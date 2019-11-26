@@ -1,0 +1,30 @@
+- name: Synchronize vat directory
+  synchronize:
+    src: "{{ APPDIR }}/lib/ag-solo/vats/"
+    dest: /usr/src/ag-solo/lib/ag-solo/vats/
+    dirs: yes
+    delete: yes
+    mode: push
+
+- name: "Initialize {{ service }}"
+  become: yes
+  become_user: "{{ service }}"
+  shell:
+    cmd: "ag-solo init controller"
+    creates: controller
+    chdir: "/home/{{ service }}"
+
+- name: "Ensure /home/{{ service }}/.ag-pserver exists"
+  become: yes
+  become_user: "{{ service }}"
+  file:
+    path: "/home/{{ service }}/.ag-pserver"
+    state: directory
+
+- name: "Clone ag-cosmos-helper-statedir to pserver"
+  become: yes
+  become_user: "{{ service }}"
+  delegate_to: "{{ inventory_hostname }}"
+  synchronize:
+    src: "/home/{{ service }}/controller/ag-cosmos-helper-statedir/"
+    dest: "/home/{{ service }}/.ag-pserver/ag-cosmos-helper-statedir/"

@@ -1,0 +1,141 @@
+/**
+ * Units are asset descriptions and take the form of labeled extents. 
+ * UnitOps execute the logic of how units are changed when digital 
+ * assets are merged, separated, or otherwise manipulated. For
+ * example, a deposit of 2 bucks into a purse that already has 3 bucks
+ * gives a new balance of 5 bucks. An empty purse has 0 bucks. UnitOps 
+ * relies heavily on ExtentOps, which manipulates the non-labeled
+ * portion.
+ */
+struct Units (Label, Extent) {
+  label :Label;
+  extent :Extent;
+}
+
+/**
+ * Extents describe the extent of something that can be owned or shared.
+ * Fungible extents are normally represented by natural numbers. Other 
+ * extents may be represented as strings naming a particular right, or 
+ * an arbitrary object that sensibly represents the rights at issue. 
+ * All Units that represent the same "kind" of digital asset
+ * (originating from the same mint) will have the same label.
+ *
+ * Extent must be Comparable. (This IDL doesn't yet provide a way to specify
+ * subtype relationships for structs.)
+ */
+struct Extent {
+}
+
+/**
+ * Creator and validator of asset Units.
+ *
+ * Units are the canonical description of tradable goods. They are manipulated
+ * by mints, and represent the goods and currency carried by purses and
+ * payments. They can be used to represent things like currency, stock, and the
+ * abstract right to participate in a particular exchange.
+ *
+ * The unitOps treats the Label as an opaque object. It's used in the
+ * units produced by this unitOps.
+ */
+interface UnitOps (Units (Extent, Label)) {
+
+  /** Return this unitOps's label. */
+  getLabel() -> (Label);
+
+  /** Make a new verified Units containing the allegedExtent. */
+  make(allegedExtent :Extent) -> (Units);
+
+  /**
+   * Is this like an Units object made by this UnitOps, such as one received by
+   * pass-by-copy from an otherwise-identical remote Units? If so, return an
+   * Units object made by this UnitOps. Otherwise error.
+   *
+   * For fungible units based on natural numbers, coerce also accepts a bare
+   * number which it will coerce to a labeled number via unitOps.make().
+   */
+  coerce(allegedUnits :Units) -> (Units);
+
+  /** Return a Extent representing the Units parameter. */
+  extent(units :Units) -> (Extent);
+
+  /** Return an empty units. Conveys no authority. */
+  empty() -> (Units);
+
+  /** Return true if the Units is empty. Otherwise false. */
+  isEmpty(units :Units) -> (boolean);
+
+  /** Returns true if the leftUnits contains the rightUnits. */
+  includes(leftUnits :Units, rightUnits :Units) -> (boolean);
+
+  /** 
+   * Returns true if the leftUnits equals the rightUnits. We assume
+   * that if includes is true in both directions, equals is also true 
+   */
+  equals(leftUnits :Units, rightUnits :Units) -> (boolean);
+
+  /**
+   * Returns a new units that includes both leftUnits and rightUnits.
+   *
+   * For fungible units this means adding the extents. For other kinds of
+   * units, it usually means including both.
+   */
+  with(leftUnits :Units, rightUnits :Units) -> (Units);
+
+  /**
+   * Returns a new units that includes the portion of leftUnits not included
+   * in rightUnits. If leftUnits doesn't include rightAmout, throw an error.
+   */
+  without(leftUnits :Units, rightUnits :Units) -> (Units);
+}
+
+/**
+ * The label for a units identifies the assay, and includes the
+ * alleged name for the kind of asset described. The alleged name (such
+ * as 'BTC' or 'moola') is provided by the maker of the mint and should 
+ * not be trusted.
+ *
+ * Every units created by the UnitOps will have the same label, but recipients
+ * cannot use the label by itself to verify that a purported units is
+ * authentic, since the label can be copied. 
+ */
+struct Label {
+  assay :Assay;
+  allegedName :AllegedName;
+}
+
+/**
+ * Human-readable name of a kind of rights. The alleged name should 
+ * not be trusted as an accurate depiction, since it is provided by 
+ * the maker of the mint and could be deceptive.
+ *
+ * The AllegedName must be Comparable. (This IDL doesn't yet provide a way to
+ * specify subtype relationships for structs.)
+ */
+struct AllegedName {
+}
+
+/**
+ * UniDescOps represents units that have unique descriptions. It is a
+ * refinement of UnitOps that we've found useful, but has no special
+ * place in the protocol.
+ *
+ * The extent must either be null, in which case it is empty, or be some
+ * truthy comparable value, in which case it represents a single unique unit
+ * described by that truthy extent. Combining two uni units with different
+ * truthy extents fails, as they represent non-combinable rights.
+ */
+interface UniDescOps extends (DescOps) {
+}
+
+/**
+ * UnitOps for a labeled natural number describing a extent of fungible
+ * erights. The label describes what kinds of rights these are. NatDescOps is a
+ * refinement of UnitOps that we've found useful, but has no special place in the
+ * protocol.
+ *
+ * Empty units have zero units. 'includes()' verifies that leftUnits is
+ * greater than or equal to rightUnits. 'with()' and 'without()' add and
+ * subtract their contents.
+ */
+interface NatDescOps extends (DescOps) {
+}

@@ -1,0 +1,11 @@
+#! /usr/bin/env node
+
+require = require('esm')(module);
+const deploy = require(`${__dirname}/main.js`).default;
+process.on('SIGINT', () => process.exit(-1));
+deploy(process.argv[1], process.argv.splice(2))
+  .then(res => process.exit(res || 0),
+    rej => {
+      console.error(`error running ag-setup-cosmos:`, rej);
+      process.exit(1);
+    });

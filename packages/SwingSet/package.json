@@ -1,0 +1,71 @@
+{
+  "name": "@agoric/swingset-vat",
+  "version": "0.3.0",
+  "description": "Vat/Container Launcher",
+  "main": "src/main.js",
+  "module": "src/index.js",
+  "engines": {
+    "node": ">=11.0"
+  },
+  "bin": {
+    "vat": "bin/vat"
+  },
+  "scripts": {
+    "build": "npm run-script build-kernel",
+    "build-kernel": "node -r esm scripts/build-kernel.js",
+    "pack": "npm run-script build-kernel && npm pack",
+    "publish": "npm run-script pack && npm publish --access public",
+    "test": "npm run-script build-kernel && tape -r esm test/test-node-version.js && tape -r esm 'test/**/test*.js' | tap-spec",
+    "test-nosort": "npm run-script build-kernel && tape -r esm test/test-node-version.js && tape -r esm 'test/**/test*.js'",
+    "pretty-fix": "prettier --write '**/*.{js,jsx}'",
+    "pretty-check": "prettier --check '**/*.{js,jsx}'",
+    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
+    "lint-check": "eslint '**/*.{js,jsx}'"
+  },
+  "devDependencies": {
+    "eslint": "^6.6.0",
+    "eslint-config-airbnb": "^18.0.1",
+    "eslint-config-prettier": "^6.4.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-prettier": "^3.1.1",
+    "eslint-plugin-react": "^7.16.0",
+    "esm": "^3.2.5",
+    "prettier": "^1.19.1",
+    "tap-spec": "^5.0.0",
+    "tape": "^4.11.0",
+    "tape-promise": "^4.0.0"
+  },
+  "dependencies": {
+    "@agoric/bundle-source": "^1.0.2",
+    "@agoric/default-evaluate-options": "^0.2.5",
+    "@agoric/evaluate": "^2.1.2",
+    "@agoric/eventual-send": "^0.4.0",
+    "@agoric/harden": "^0.0.4",
+    "@agoric/marshal": "^0.1.1",
+    "@agoric/nat": "^2.0.0",
+    "rollup": "^1.23.1",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "semver": "^6.3.0",
+    "ses": "^0.6.4",
+    "yargs": "^14.2.0"
+  },
+  "files": [
+    "bin/vat",
+    "src/**/*.js",
+    "src/bundles/kernel"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/SwingSet.git"
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/SwingSet/issues"
+  },
+  "homepage": "https://github.com/Agoric/SwingSet#readme",
+  "directories": {
+    "example": "examples"
+  }
+}

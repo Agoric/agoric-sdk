@@ -1,0 +1,14 @@
+.vagrant
+
+# Demo
+demo
+dapps
+
+# scripts
+scripts
+
+# test
+test
+
+# Travis CI
+.travis.yml

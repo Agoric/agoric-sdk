@@ -1,0 +1,36 @@
+#! /bin/sh
+PORT=26657
+NETWORK_NAME=${NETWORK_NAME-agoric}
+SETUP_HOME=${SETUP_HOME-$NETWORK_NAME}
+IMAGE=agoric/cosmic-swingset-setup:latest$DEV
+TTY=-i
+test -t 0 && test -t 1 && TTY=-it
+FLAGS=
+case "$1" in
+--pull)
+  shift
+  docker pull "$IMAGE"
+  ;;
+esac
+case "$1" in
+shell)
+  shift
+  FLAGS=--entrypoint=/bin/bash
+  ;;
+show-*)
+  TTY=-i
+  ;;
+esac
+if test -n "$CONTROLLER_VATS"; then
+  # Mount the specified controller vats directory.
+  FLAGS="$FLAGS --volume=`cd "$CONTROLLER_VATS" && pwd`:/usr/src/app/lib/ag-solo/vats"
+fi
+exec docker run --rm $TTY $FLAGS \
+  --volume=ag-setup-cosmos-chains:/usr/src/app/chains \
+  --volume=ag-cosmos-helper-state:/root/.ag-cosmos-helper \
+  --volume=/var/run/docker.sock:/var/run/docker.sock \
+  --env AG_SETUP_COSMOS_NAME=$NETWORK_NAME \
+  --env AG_SETUP_COSMOS_HOME=$SETUP_HOME \
+  --env AG_SETUP_COSMOS_BACKEND=$AG_SETUP_COSMOS_BACKEND \
+  --env DO_API_TOKEN=$DO_API_TOKEN \
+  "$IMAGE" ${1+"$@"}

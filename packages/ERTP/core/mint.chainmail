@@ -1,0 +1,191 @@
+/**
+ * Holding an Assay provides the ability to create units and empty purses,
+ * but confers no rights. It is also the mechanism used to get exclusive access
+ * to a Purse or Payment that you already hold, or to burn some or all of the
+ * contained rights.
+ */
+interface Assay (Units (Extent)) {
+  /**
+   * Get the label for this Assay.
+   *
+   * Labels can be used to manually construct units
+   */
+  getLabel() -> (Comparable);
+
+  /* Get the UnitOps for this Assay. */
+  getUnitOps() -> (DescOps);
+
+  /* Get the ExtentOps for this Assay. */
+  getExtentOps() -> (ExtentOps);
+
+  /** Make an Units that contains the indicated extent. */
+  makeUnits(extent :Extent) -> (Units);
+
+  /** Make an empty purse associated with this kind of right. */
+  makeEmptyPurse(name :String) -> (Purse);
+
+  /** Combine multiple payments into one payment. */
+  combine(paymentsArray :List(Payment), name :String = 'combined payment')
+    -> (Payment);
+
+  /** 
+   * Split a single payment into multiple payments, according to the
+   * units and names passed in. 
+   */
+  split(payment :Payment, unitsArray :List(Units), namesArray :List(String))
+    -> (List(Payment));
+
+  /**
+   * Make a new Payment that has exclusive rights to all the contents
+   * of src. If units does not equal the balance of the src payment,
+   * throws error.
+   */
+  claimExactly(units :Units, src :Payment, name :String = 'a payment')
+    -> (Payment);
+
+  /**
+   * Make a new Payment that has exclusive rights to all the contents of src.
+   */
+  claimAll(src :Payment, name :String = 'a payment') -> (Payment);
+
+  /** 
+   * Burn all of the rights from src. If units does not equal the
+   * balance of the src payment, throw error. 
+   */
+  burnExactly(units :Units, src :Payment) -> (Units);
+
+  /** Burn all of the rights from src. */
+  burnAll(src :Payment) -> (Units);
+}
+
+/**
+ * Makes Mints.
+ *
+ * The allegedName becomes part of the label in asset descriptions. The
+ * allegedName doesn't have to be a string, but it will only be used for
+ * its value. The allegedName is useful for debugging and double-checking
+ * assumptions, but should not be trusted. 
+ * 
+ * The config has settings and custom behavior. Different kinds of assets
+ * (for instance, fungible versus non-fungible assets) will use different
+ * configs. 
+ */
+interface MintMaker {
+  makeMint(
+      allegedName :Comparable,
+      makeConfig :MintConfigMaker) -> (Mint);
+}
+
+/**
+ * Holding a Mint carries the right to control issuance and destruction of
+ * purses and payments containing units of a particular currency. Purses (and
+ * payments) associated with a particular assay can only transfer value to
+ * others using the same mint.
+ */
+interface Mint (Units (Extent)) {
+  /** Get the Assay for this mint. */
+  getAssay() -> (Assay);
+
+  /**
+   * Create a new Purse containing the units. Give it the specified name or 'fa
+   * purse'.
+   */
+  mint(initialBalance :Units, name :String = 'a purse') -> (Purse);
+}
+
+/**
+ * Purses hold verified units of certain rights issued by Mints. Purses can
+ * transfer part of the balance they hold in a payment, which has a narrower
+ * interface. A purse's balance can rise and fall, through the action of
+ * depositExactly() and withdraw(). Operations on payments
+ * (burnExactly(), depositExactly(), assay.claimExactly()) kill the
+ * original payment and create new payments if applicable.
+ *
+ * The primary use for Purses and Payments is for currency-like and goods-like
+ * valuables, but they can also be used to represent other kinds of rights, such
+ * as the right to participate in a particular contract.
+ */
+interface Purse (Units) {
+  /** Get the name of this purse. */
+  getName() -> (String);
+
+  /** Get the Assay for this mint. */
+  getAssay() -> (Assay);
+
+  /** Get the units contained in this purse, confirmed by the assay. */
+  getBalance() -> (Units);
+
+  /**
+   * Deposit all the contents of srcPayment into this purse, returning the
+   * units. If the units does not equal the balance of srcPayment,
+   * throw error.
+   */
+  depositExactly(units :Units, srcPayment :Payment) -> (Units);
+
+  /**
+   * Deposit all the contents of srcPayment into this purse, returning the
+   * units.
+   */
+  depositAll(srcPayment :Payment) -> (Units);
+
+  /** Withdraw units from this purse into a new Payment. */
+  withdraw(units :Units, name :String) -> (Payment);
+
+  /** Withdraw entire content of this purse into a new Payment. */
+  withdrawAll(name :String) -> (Payment);
+}
+
+/**
+ * Payments hold verified units of certain rights issued by Mints. Units
+ * from payments can be deposited in purses, but otherwise, the entire units is
+ * available when the payment is transferred. A payment's balance can only fall,
+ * through the action of depositExactly(), claimExactly() or burnExactly().
+ *
+ * Payments can be converted to Purses by getting a verified assay and calling
+ * assay.makeEmptyPurse().depositAll(payment);
+ */
+interface Payment (Units) {
+  /** Get the name of this purse. */
+  getName() -> (String);
+
+  /** Get the Assay for this mint. */
+  getAssay() -> (Assay);
+
+  /** Get the units contained in this payment, confirmed by the assay. */
+  getBalance() -> (Units);
+}
+
+/** 
+ * All of the difference in how an unitOps behaves can be reduced to
+ * the behavior of the set operations on extents (think: arithmetic)
+ * such as `empty`, `with`, `without`, `includes`, etc. We extract this
+ * custom logic into a extentOps. ExtentOps are about extent
+ * arithmetic, whereas UnitOps are about Units, which are labeled
+ * extents. UnitOps use ExtentOps to do their extent arithmetic,
+ * and then label the results, making new Units. 
+ */ 
+interface ExtentOps () {
+  /** 
+   * Check the kind of this extent and throw if it is not the
+   * expected kind. 
+   */
+  insistKind(allegedExtent :Extent) -> (Extent);
+
+  /** Get the representation for empty */
+  empty() -> (Extent);
+
+  /** Is the extent empty? */
+  isEmpty(extent :Extent) -> (boolean);
+
+  /** Does the whole include the part? */
+  includes(whole :Extent, part :Extent) -> (boolean);
+
+  /** Does left equal right? */
+  equals(left :Extent, right :Extent) -> (boolean);
+
+  /** Return the left combined with the right */
+  with(left :Extent, right :Extent) -> (Extent);
+
+  /** Return what remains after removing the part from the whole */
+  without(whole :Extent, part :Extent) -> (Extent);
+}

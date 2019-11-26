@@ -1,0 +1,14 @@
+<store>
+  @type logzio_buffered
+  endpoint_url https://listener.logz.io:8071?token={{ LOGZIO_TOKEN }}
+  output_include_time false
+  output_include_tags false
+  http_idle_timeout 10
+  <buffer>
+      @type memory
+      flush_thread_count 4
+      flush_interval 3s
+      chunk_limit_size 16m      # Logz.io bulk limit is decoupled from chunk_limit_size. Set whatever you want.
+      queue_limit_length 4096
+  </buffer>
+</store>

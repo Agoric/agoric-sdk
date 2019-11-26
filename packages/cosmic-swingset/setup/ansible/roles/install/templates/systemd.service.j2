@@ -1,0 +1,19 @@
+[Unit]
+Description={{service}}
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+{{ serviceLines | default('') }}
+WorkingDirectory={{chdir}}
+Restart=on-failure
+User={{user}}
+Group={{user}}
+PermissionsStartOnly=true
+ExecStart={{execline}}
+ExecReload=/bin/kill -HUP $MAINPID
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target
+

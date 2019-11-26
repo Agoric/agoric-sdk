@@ -1,0 +1,43 @@
+- name: "Check {{ STAKER }}-* exists"
+  become: yes
+  become_user: "{{ service }}"
+  delegate_to: "{{ STAKER_NODE }}"
+  shell: "ag-cosmos-helper keys show {{ STAKER }}-{{ inventory_hostname }}"
+  ignore_errors: true
+  register: staker_exists
+
+- name: "Create {{ STAKER }}-*"
+  become_user: "{{ service }}"
+  become: true
+  delegate_to: "{{ STAKER_NODE }}"
+  shell: "echo 'mmmmmmmm' | ag-cosmos-helper keys add {{ staker }}"
+  vars:
+    staker: "{{ STAKER }}-{{ inventory_hostname }}"
+  when: inventory_hostname != STAKER_NODE and staker_exists.rc != 0
+
+- name: "Transfer {{ STAKER_AMOUNT }} to {{ STAKER }}-*"
+  become_user: "{{ service }}"
+  become: true
+  delegate_to: "{{ STAKER_NODE }}"
+  shell: "\
+    echo 'mmmmmmmm' | ag-cosmos-helper tx send {{ STAKER }}-{{ STAKER_NODE }} \
+      $(ag-cosmos-helper keys show {{ staker }} -a) \
+      {{ STAKER_AMOUNT }} --yes --broadcast-mode=block --chain-id={{ CHAIN_NAME }}"
+  vars:
+    staker: "{{ STAKER }}-{{ inventory_hostname }}"
+  when: inventory_hostname != STAKER_NODE
+
+- name: "Create validator for {{ STAKER }}-*"
+  become_user: "{{ service }}"
+  become: true
+  delegate_to: "{{ STAKER_NODE }}"
+  shell: "\
+    echo 'mmmmmmmm' | ag-cosmos-helper tx staking create-validator \
+      --chain-id={{ CHAIN_NAME }} --amount={{ STAKER_AMOUNT }} \
+      --moniker={{ inventory_hostname }} --pubkey={{ valconspub }} \
+      --commission-rate=0.1 --commission-max-rate=0.2 --commission-max-change-rate=0.01 \
+      --min-self-delegation=1 --broadcast-mode=block --from={{ staker }} --yes"
+  vars:
+    staker: "{{ STAKER }}-{{ inventory_hostname }}"
+    valconspub: "{{ lookup('file', data + '/' + inventory_hostname + '/pubkey') }}"
+  when: inventory_hostname != STAKER_NODE
