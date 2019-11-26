@@ -44,14 +44,7 @@
   "devDependencies": {
     "@agoric/bundle-source": "^1.0.4",
     "@agoric/swingset-vat": "^0.3.0",
-    "eslint": "^6.7.1",
-    "eslint-config-airbnb-base": "^14.0.0",
-    "eslint-config-jessie": "0.0.3",
-    "eslint-config-prettier": "^6.7.0",
-    "eslint-plugin-import": "^2.18.2",
-    "eslint-plugin-prettier": "^3.1.1",
     "esm": "^3.2.25",
-    "prettier": "^1.19.1",
     "tap-spec": "^5.0.0",
     "tape": "^4.11.0",
     "tape-promise": "^4.0.0"
