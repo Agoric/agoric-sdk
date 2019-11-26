@@ -1,0 +1,31 @@
+{
+  "name": "root",
+  "version": "independent",
+  "private": true,
+  "useWorkspaces": true,
+  "workspaces": [
+    "packages/acorn-eventual-send",
+    "packages/eventual-send",
+    "packages/transform-eventual-send",
+    "packages/default-evaluate-options",
+    "packages/evaluate",
+    "packages/bundle-source",
+    "packages/marshal",
+    "packages/captp",
+    "packages/SwingSet",
+    "packages/ERTP",
+    "packages/cosmic-swingset",
+    "packages/agoric-sdk"
+  ],
+  "devDependencies": {
+  },
+  "scripts": {
+    "OFF-clean": "yarn workspaces run clean",
+    "prettier": "yarn workspaces run prettier",
+    "lint-fix": "yarn workspaces run lint-fix",
+    "lint-check": "cd packages/marshal && yarn lint-check && cd ../SwingSet && yarn lint-check && cd ../ERTP && yarn lint-check",
+    "lint-check-all": "yarn workspaces run lint-check",
+    "test": "yarn workspaces run test",
+    "build": "yarn workspaces run build"
+  }
+}
