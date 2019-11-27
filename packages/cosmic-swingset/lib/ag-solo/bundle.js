@@ -112,12 +112,12 @@ export default async function bundle(insistIsBasedir, args) {
       });
 
       // Wait for the chain to become ready.
-      let bootC = E.C(getBootstrap());
-      console.error('Chain loaded:', await bootC.G.LOADING.P);
+      let boot = getBootstrap();
+      console.error('Chain loaded:', await E.G(boot).LOADING);
       // Take a new copy, since the chain objects have been added to bootstrap.
-      bootC = E.C(getBootstrap());
+      boot = getBootstrap();
       if (once) {
-        if (await bootC.G.READY.M.isReady().P) {
+        if (await E(E.G(boot).READY).isReady()) {
           console.error('Singleton bundle already installed');
           ws.close();
           exit.res(1);
@@ -135,11 +135,11 @@ export default async function bundle(insistIsBasedir, args) {
           continue;
         }
     
-        await main({ bundle: bundled, home: bootC.P });
+        await main({ bundle: bundled, home: boot });
       }
       console.error('Done!');
       if (once) {
-        await bootC.G.READY.M.resolve('initialized').P;
+        await E(E.G(boot).READY).resolve('initialized');
       }
       ws.close();
       exit.res(0);
