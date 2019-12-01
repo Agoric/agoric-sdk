@@ -41,7 +41,7 @@ jobs:
       run: cd packages/ERTP && yarn test
     - name: yarn test (cosmic-swingset)
       run: cd packages/cosmic-swingset && yarn test
-    - name: yarn test (agoric-sdk)
-      run: cd packages/agoric-sdk && yarn test
+    - name: yarn test (agoric-cli)
+      run: cd packages/agoric-cli && yarn test
     - name: lint check (marshal, SwingSet, ERTP)
       run: yarn lint-check

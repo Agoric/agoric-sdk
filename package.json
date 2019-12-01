@@ -15,7 +15,7 @@
     "packages/SwingSet",
     "packages/ERTP",
     "packages/cosmic-swingset",
-    "packages/agoric-sdk"
+    "packages/agoric-cli"
   ],
   "devDependencies": {
     "eslint": "^6.6.0",
