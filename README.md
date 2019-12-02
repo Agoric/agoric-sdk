@@ -82,13 +82,17 @@ ignored.
 * All work should have an Issue. All branches names should include the issue
   number as a prefix (e.g. `123-description`). Use "Labels" on the Issues to
   mark which packages are affected.
+* Add user-visible changes to a new file in the `changelogs/` directory,
+  named after the Issue number. See the README in those directories for
+  instructions.
 * Unless the issue spans multiple packages, each branch should only modify
   a single package.
 * Releases should be made from the package subdirectories, with a tag like
   `SwingSet-v0.3.0` or `eventual-send-v0.4.5`. Retain mutual compatibility
   between all packages in the monorepo (run `yarn workspaces info` and make
   sure there are no `mismatchedWorkspaceDependencies`). Do not use
-  post-release `-dev.0` suffixes.
+  post-release `-dev.0` suffixes. Merge all the `changelogs/*` fragment files
+  together and add to the `NEWS.md` file, then delete the fragments.
 
 ## Running without Go
 
