@@ -15,7 +15,8 @@
     "packages/SwingSet",
     "packages/ERTP",
     "packages/cosmic-swingset",
-    "packages/agoric-cli"
+    "packages/agoric-cli",
+    "packages/zoe"
   ],
   "devDependencies": {
     "eslint": "^6.6.0",

@@ -45,3 +45,5 @@ jobs:
       run: cd packages/agoric-cli && yarn test
     - name: lint check (marshal, SwingSet, ERTP)
       run: yarn lint-check
+    - name: yarn test (zoe)
+      run: cd packages/zoe && yarn test

@@ -1,0 +1,51 @@
+{
+  "name": "@agoric/zoe",
+  "version": "0.0.1",
+  "description": "Zoe: the Smart Contract Framework for Offer Enforcement",
+  "main": "index.js",
+  "engines": {
+    "node": ">=11.0"
+  },
+  "scripts": {
+    "build": "exit 0",
+    "test": "tape -r esm 'test/**/test*.js' | tap-spec",
+    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
+    "lint-check": "eslint '**/*.{js,jsx}'",
+    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx}'",
+    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
+  "keywords": [
+    "smart",
+    "contract",
+    "cryptocurrency",
+    "exchange",
+    "tokens"
+  ],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
+  },
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "dependencies": {
+    "@agoric/ertp": "^0.1.12",
+    "@agoric/evaluate": "^2.1.3",
+    "@agoric/eventual-send": "^0.4.5",
+    "@agoric/harden": "^0.0.4",
+    "@agoric/marshal": "^0.1.1",
+    "@agoric/nat": "^2.0.1",
+    "ses": "^0.6.4"
+  },
+  "devDependencies": {
+    "@agoric/bundle-source": "^1.0.4",
+    "@agoric/swingset-vat": "^0.3.0",
+    "esm": "^3.2.25",
+    "tap-spec": "^5.0.0",
+    "tape": "^4.11.0",
+    "tape-promise": "^4.0.0"
+  }
+}
