@@ -1,4 +1,5 @@
 import harden from '@agoric/harden';
+import { makeMint } from '@agoric/ertp/core/mint';
 import { natSafeMath } from './helpers/safeMath';
 import { rejectOffer } from './helpers/userFlow';
 import { vectorWith, vectorWithout } from './helpers/extents';
@@ -7,8 +8,6 @@ import {
   makeUnits,
   makeOfferRules,
 } from './helpers/offerRules';
-
-import { makeMint } from '@agoric/ertp/core/mint';
 
 export const makeContract = harden((zoe, terms) => {
   // The user passes in an array of two assays for the two kinds of

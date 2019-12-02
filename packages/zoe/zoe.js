@@ -2,6 +2,7 @@ import harden from '@agoric/harden';
 
 import { insist } from '@agoric/ertp/util/insist';
 
+import { makeMint } from '@agoric/ertp/core/mint';
 import { isOfferSafeForAll } from './isOfferSafe';
 import { areRightsConserved } from './areRightsConserved';
 import { evalContractCode } from './evalContractCode';
@@ -17,7 +18,6 @@ import {
 import { makeState } from './state';
 import { makeSeatMint } from './seatMint';
 import { makeEscrowReceiptConfig } from './escrowReceiptConfig';
-import { makeMint } from '@agoric/ertp/core/mint';
 
 /**
  * Create an instance of Zoe.

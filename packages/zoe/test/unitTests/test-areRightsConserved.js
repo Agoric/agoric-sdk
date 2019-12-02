@@ -1,9 +1,6 @@
 import { test } from 'tape-promise/tape';
 
-import {
-  areRightsConserved,
-  transpose,
-} from '../../areRightsConserved';
+import { areRightsConserved, transpose } from '../../areRightsConserved';
 import { setup } from './setupBasicMints';
 
 test('transpose', t => {

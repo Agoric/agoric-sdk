@@ -1,9 +1,8 @@
 import harden from '@agoric/harden';
+import { makeMint } from '@agoric/ertp/core/mint';
 import { hasValidPayoutRules, makeUnits } from './helpers/offerRules';
 import { rejectOffer, defaultAcceptanceMsg } from './helpers/userFlow';
 import { vectorWith, vectorWithout } from './helpers/extents';
-
-import { makeMint } from '@agoric/ertp/core/mint';
 
 /**  EDIT THIS CONTRACT WITH YOUR OWN BUSINESS LOGIC */
 

@@ -1,9 +1,9 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
+import { insist } from '@agoric/ertp/util/insist';
 import { makeSeatMint } from '../../seatMint';
 import { setup } from './setupBasicMints';
-import { insist } from '@agoric/ertp/util/insist';
 
 /*
  * A seat extent must have a handle but otherwise can have arbitrary

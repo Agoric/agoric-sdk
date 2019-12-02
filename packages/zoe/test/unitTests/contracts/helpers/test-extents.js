@@ -1,6 +1,6 @@
 import { test } from 'tape-promise/tape';
 
-import { vectorWith } from '../../../../contracts/helpers/extents.js';
+import { vectorWith } from '../../../../contracts/helpers/extents';
 import { setup } from '../../setupBasicMints';
 
 test('vectorWith', t => {

@@ -1,6 +1,6 @@
 import { test } from 'tape-promise/tape';
 
-import { makeUnits } from '../../../..//contracts/helpers/offerRules';
+import { makeUnits } from '../../../../contracts/helpers/offerRules';
 import { setup } from '../../setupBasicMints';
 
 test('makeUnits', t => {

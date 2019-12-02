@@ -1,9 +1,6 @@
 import { test } from 'tape-promise/tape';
 
-import {
-  toUnitsMatrix,
-  makeEmptyExtents,
-} from '../../zoeUtils';
+import { toUnitsMatrix, makeEmptyExtents } from '../../zoeUtils';
 import { setup } from './setupBasicMints';
 
 test('toUnitsMatrix', t => {

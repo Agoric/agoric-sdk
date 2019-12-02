@@ -2,10 +2,10 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import bundleSource from '@agoric/bundle-source';
 
-import { makeZoe } from '../../../zoe';
-import { setup } from '../setupBasicMints';
 import buildManualTimer from '@agoric/ertp/tools/manualTimer';
 import { sameStructure } from '@agoric/ertp/util/sameStructure';
+import { makeZoe } from '../../../zoe';
+import { setup } from '../setupBasicMints';
 
 const coveredCallRoot = `${__dirname}/../../../contracts/coveredCall`;
 const publicSwapRoot = `${__dirname}/../../../contracts/publicSwap`;

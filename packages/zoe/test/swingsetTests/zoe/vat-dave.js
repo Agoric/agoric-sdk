@@ -2,7 +2,6 @@ import harden from '@agoric/harden';
 import { insist } from '@agoric/ertp/util/insist';
 import { sameStructure } from '@agoric/ertp/util/sameStructure';
 
-
 const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
   const showPaymentBalance = async (paymentP, name) => {
     try {
