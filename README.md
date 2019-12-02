@@ -2,8 +2,7 @@
 
 This repository contains most of the packages that make up the Agoric
 platform. If you want to build on top of this platform, you don't need this
-repository: instead you should `npm install -g agoric` and run `agoric init`,
-following the instructions (TODO: write those instructions).
+repository: instead you should [follow our instructions for getting started](https://agoric.com/documentation/getting-started/) with the Agoric SDK.
 
 But if you are improving the platform itself, this is the repository to use.
 
