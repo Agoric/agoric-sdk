@@ -220,13 +220,20 @@ allegedName must be truthy: ${allegedName}`;
     },
 
     burnExactly(units, srcPaymentP) {
-      const sinkPurse = coreAssay.makeEmptyPurse('sink purse');
-      return sinkPurse.depositExactly(units, srcPaymentP);
+      return Promise.resolve(srcPaymentP).then(srcPayment => {
+        insistUnitsEqualsPaymentBalance(units, srcPayment);
+        const paymentUnits = paymentKeeper.getUnits(srcPayment);
+        paymentKeeper.remove(srcPayment);
+        return paymentUnits;
+      });
     },
 
     burnAll(srcPaymentP) {
-      const sinkPurse = coreAssay.makeEmptyPurse('sink purse');
-      return sinkPurse.depositAll(srcPaymentP);
+      return Promise.resolve(srcPaymentP).then(srcPayment => {
+        const paymentUnits = paymentKeeper.getUnits(srcPayment);
+        paymentKeeper.remove(srcPayment);
+        return paymentUnits;
+      });
     },
   });
 
