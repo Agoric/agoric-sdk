@@ -3,29 +3,42 @@ import eventualSendBundle from './bundles/eventual-send';
 function makeEventualSendTransformer(parser, generate) {
   let HandledPromise;
   let evaluateProgram;
+  let myRequire;
+  let recursive = false;
   const transform = {
     closeOverSES(s) {
+      // FIXME: This will go away when we can bundle an @agoric/harden that understands SES.
+      myRequire = name => {
+        if (name === '@agoric/harden') {
+          return s.global.SES.harden;
+        }
+        throw Error(`Unrecognized require ${name}`);
+      };
       // FIXME: This should be replaced with ss.evaluateProgram support in SES.
-      evaluateProgram = src => s.evaluate(src);
+      evaluateProgram = (src, endowments = {}) => s.evaluate(src, endowments);
     },
     rewrite(ss) {
       const source = ss.src;
-      if (!source.includes(`${'~'}.`)) {
-        // Short circuit: no instance of tildot.
-        return ss;
-      }
       const endowments = ss.endowments || {};
-      if (!('HandledPromise' in endowments)) {
+      if (!recursive && !('HandledPromise' in endowments)) {
         // Use a getter to postpone initialization.
         Object.defineProperty(endowments, 'HandledPromise', {
           get() {
             if (!HandledPromise) {
               // Get a HandledPromise endowment for the evaluator.
               // It will be hardened in the evaluator's context.
-              const { source, moduleFormat } = eventualSendBundle;
+              const { source: evSendSrc, moduleFormat } = eventualSendBundle;
               if (moduleFormat === 'getExport') {
-                const ns = (evaluateProgram || ss.evaluateProgram)(`(${source})()`);
-                HandledPromise = ns.HandledPromise;
+                recursive = true;
+                try {
+                  const ns = (evaluateProgram || ss.evaluateProgram)(
+                    `(${evSendSrc})()`,
+                    { require: myRequire || require },
+                  );
+                  HandledPromise = ns.HandledPromise;
+                } finally {
+                  recursive = false;
+                }
               } else {
                 throw Error(`Unrecognized moduleFormat ${moduleFormat}`);
               }

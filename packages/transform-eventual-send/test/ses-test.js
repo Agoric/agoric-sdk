@@ -125,9 +125,7 @@ test('eventual send can be enabled', async t => {
       ['babel', babelParser, babelGenerate],
       ['acorn', acornParser, acornGenerate],
     ]) {
-      const transforms = [
-        ...makeEventualSendTransformer(parser, generate),
-      ];
+      const transforms = [...makeEventualSendTransformer(parser, generate)];
       const s = SES.makeSESRootRealm({ transforms });
       closeOverSES(transforms, s);
 

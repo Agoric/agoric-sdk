@@ -100,7 +100,7 @@ function build(syscall, _state, makeRoot, forVatID) {
       if (!valToSlot.has(val)) {
         // must be a new export
         // lsdebug('must be a new export', JSON.stringify(val));
-        if (Promise.resolve(val) === val) {
+        if (HandledPromise.resolve(val) === val) {
           slot = exportPromise(val);
         } else {
           mustPassByPresence(val);

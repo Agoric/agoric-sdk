@@ -1,9 +1,8 @@
 /* eslint-disable no-await-in-loop */
 import parseArgs from 'minimist';
 import WebSocket from 'ws';
-import { E } from '@agoric/eventual-send';
 import { evaluateProgram } from '@agoric/evaluate';
-import { makeCapTP } from '@agoric/captp';
+import { E, makeCapTP } from '@agoric/captp';
 
 import bundleSource from '@agoric/bundle-source';
 

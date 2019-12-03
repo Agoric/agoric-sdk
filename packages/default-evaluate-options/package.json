@@ -14,6 +14,7 @@
     "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
   },
   "devDependencies": {
+    "esm": "^3.2.5",
     "rollup": "^1.23.1",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-resolve": "^5.2.0",
@@ -23,10 +24,8 @@
   },
   "dependencies": {
     "@agoric/babel-parser": "^7.6.4",
-    "@agoric/eventual-send": "^0.5.0",
     "@agoric/transform-eventual-send": "^1.0.4",
-    "@babel/generator": "^7.6.4",
-    "esm": "^3.2.5"
+    "@babel/generator": "^7.6.4"
   },
   "keywords": [],
   "files": [

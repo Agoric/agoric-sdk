@@ -34,13 +34,13 @@ test('calls', async t => {
   kernel.addGenesisVat('bootstrap', setupBootstrap);
 
   function setup(syscallVat, state, helpers) {
-    function build(_E, _D) {
+    function build(E, _D) {
       return harden({
         one() {
           log.push('one');
         },
         two(p) {
-          log.push(`two ${Promise.resolve(p) === p}`);
+          log.push(`two ${E.resolve(p) === p}`);
           p.then(
             res => log.push(['res', res]),
             rej => log.push(['rej', rej]),
