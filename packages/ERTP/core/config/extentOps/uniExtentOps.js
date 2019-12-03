@@ -23,10 +23,10 @@ const makeUniExtentOps = (customInsistKind = () => {}) => {
   const uniExtentOps = harden({
     insistKind: extent => {
       if (extent === null) {
-        return null;
+        return;
       }
       mustBeComparable(extent);
-      return customInsistKind(extent);
+      customInsistKind(extent);
     },
     empty: _ => null,
     isEmpty: uni => uni === null,
