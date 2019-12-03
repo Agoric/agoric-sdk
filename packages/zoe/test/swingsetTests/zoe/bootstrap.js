@@ -2,11 +2,17 @@ import harden from '@agoric/harden';
 
 import { makeMint } from '@agoric/ertp/core/mint';
 
+// eslint-disable-next-line import/no-unresolved
 import automaticRefundBundle from './bundle-automaticRefund';
+// eslint-disable-next-line import/no-unresolved
 import coveredCallBundle from './bundle-coveredCall';
+// eslint-disable-next-line import/no-unresolved
 import publicAuctionBundle from './bundle-publicAuction';
+// eslint-disable-next-line import/no-unresolved
 import publicSwapBundle from './bundle-publicSwap';
+// eslint-disable-next-line import/no-unresolved
 import simpleExchangeBundle from './bundle-simpleExchange';
+// eslint-disable-next-line import/no-unresolved
 import autoswapBundle from './bundle-autoswap';
 
 const setupBasicMints = () => {
