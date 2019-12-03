@@ -25,7 +25,6 @@ const makeListExtentOps = (
       for (const element of list) {
         insistElementKind(element);
       }
-      return harden(list);
     },
     empty: _ => harden([]),
     isEmpty: list => {
