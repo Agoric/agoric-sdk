@@ -23,9 +23,9 @@
   },
   "dependencies": {
     "@agoric/bundle-source": "^1.0.3",
-    "@agoric/captp": "^1.0.2",
+    "@agoric/captp": "^1.1.0",
     "@agoric/evaluate": "^2.1.3",
-    "@agoric/eventual-send": "^0.4.4",
+    "@agoric/eventual-send": "^0.5.0",
     "chalk": "^2.4.2",
     "esm": "^3.2.5",
     "minimist": "^1.2.0",

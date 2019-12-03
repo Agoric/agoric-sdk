@@ -22,7 +22,7 @@ const sendJSON = (ws, obj) => {
   if (ws.readyState !== ws.OPEN) {
     return;
   }
-  //console.log('sending', obj);
+  // console.log('sending', obj);
   ws.send(JSON.stringify(obj));
 };
 
@@ -30,7 +30,7 @@ export default async function deployMain(progname, rawArgs, priv) {
   const { console, error } = priv;
   const { _: args, hostport } = parseArgs(rawArgs, {
     default: {
-      hostport: '127.0.0.1:8000'
+      hostport: '127.0.0.1:8000',
     },
   });
 
@@ -70,7 +70,8 @@ export default async function deployMain(progname, rawArgs, priv) {
 
       for (const arg of args) {
         const moduleFile = path.resolve(process.cwd(), arg);
-        const pathResolve = (...args) => path.resolve(path.dirname(moduleFile), ...args);
+        const pathResolve = (...resArgs) =>
+          path.resolve(path.dirname(moduleFile), ...resArgs);
         console.log('running', moduleFile);
         const { source, sourceMap } = await bundleSource(moduleFile);
 
@@ -78,14 +79,15 @@ export default async function deployMain(progname, rawArgs, priv) {
         const mainNS = evaluateProgram(actualSource, { require })();
         const main = mainNS.default;
         if (typeof main !== 'function') {
-          console.error(`${moduleFile} does not have an export default function main`);
-          continue;
+          console.error(
+            `${moduleFile} does not have an export default function main`,
+          );
+        } else {
+          await main(bootC.P, {
+            bundleSource: file => bundleSource(pathResolve(file)),
+            pathResolve,
+          });
         }
-      
-        await main(bootC.P, {
-          bundleSource: file => bundleSource(pathResolve(file)),
-          pathResolve,
-        });
       }
 
       console.error('Done!');

@@ -3,7 +3,7 @@
 import { test } from 'tape-promise/tape';
 import SES from 'ses';
 
-import { maybeExtendPromise, makeHandledPromise } from '@agoric/eventual-send';
+import { makeHandledPromise } from '@agoric/eventual-send';
 
 import * as babelParser from '@agoric/babel-parser';
 import babelGenerate from '@babel/generator';
@@ -14,11 +14,7 @@ import * as astring from 'astring';
 
 import makeEventualSendTransformer from '../src';
 
-const shims = [
-  'this.globalThis = this',
-  `(${maybeExtendPromise})(Promise)`,
-  `this.HandledPromise = (${makeHandledPromise})(Promise)`,
-];
+const shims = [`this.HandledPromise = (${makeHandledPromise})(Promise)`];
 
 const AcornParser = acorn.Parser.extend(eventualSend(acorn));
 const acornParser = {
@@ -163,22 +159,6 @@ test('eventual send can be enabled', async t => {
         `${name} double eventual send evaluates`,
       );
 
-      const o = { gone: 'away', here: 'world' };
-      t.equals(
-        await s.evaluate('o => delete o~.gone')(o),
-        true,
-        `${name} .delete works`,
-      );
-      t.equals(o.gone, undefined, `${name} .delete actually does`);
-      t.equals(o.here, 'world', `${name} .delete other property stays`);
-
-      t.equals(
-        await s.evaluate(`o => (o~.back = 'here')`)(o),
-        'here',
-        `${name} .set works`,
-      );
-      t.equals(o.back, 'here', `${name} .set changes assignment`);
-
       const noReject = fn => fn();
 
       let directEval = noReject;
@@ -193,7 +173,7 @@ test('eventual send can be enabled', async t => {
       }
       await directEval(async () =>
         t.equals(
-          await s.evaluate(`eval('"abc"!length')`),
+          await s.evaluate(`eval('"abc"~.length')`),
           3,
           `${name} direct eval works`,
         ),

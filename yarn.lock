@@ -7,7 +7,7 @@
   resolved "https://registry.yarnpkg.com/@agoric/babel-parser/-/babel-parser-7.6.4.tgz#8dd5d36554cc758c29042713b5aa57dc58ee5273"
   integrity sha512-3FQC3eP2hekhz1zn+2LcSL7tAG2dGgSqbmCeRfIFqhVS8bbE1hR7EvrC6jYlvqdU6yzlly43VykyRy9MHBvUAw==
 
-"@agoric/eventual-send@^0.4.0", "@agoric/eventual-send@^0.4.4", "@agoric/eventual-send@^0.4.5":
+"@agoric/eventual-send@^0.4.4", "@agoric/eventual-send@^0.4.5":
   version "0.4.5"
   resolved "https://registry.yarnpkg.com/@agoric/eventual-send/-/eventual-send-0.4.5.tgz#73d4238b856eef6086b45e3bcf219aeb9e516056"
   integrity sha512-d4jngAU8LWmntZ3PXcFoOygC/tqHOl+JlA318LXuxK1/3/oU5UfNoYboa0Bm8xms8KEtcKFtPpcD5EgGzXO1NQ==

@@ -30,9 +30,9 @@
   },
   "dependencies": {
     "@agoric/bundle-source": "^1.0.2",
-    "@agoric/default-evaluate-options": "^0.2.5",
-    "@agoric/evaluate": "^2.1.2",
-    "@agoric/eventual-send": "^0.4.0",
+    "@agoric/default-evaluate-options": "^0.3.0",
+    "@agoric/evaluate": "^2.2.0",
+    "@agoric/eventual-send": "^0.5.0",
     "@agoric/harden": "^0.0.4",
     "@agoric/marshal": "^0.1.1",
     "@agoric/nat": "^2.0.0",

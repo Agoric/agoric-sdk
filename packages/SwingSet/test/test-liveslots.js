@@ -3,7 +3,6 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 // eslint-disable-next-line no-unused-vars
-import evaluateExpr from '@agoric/evaluate'; // to get Promise.makeHandled
 import { buildStorageInMemory } from '../src/hostStorage';
 import buildKernel from '../src/kernel/index';
 import { makeLiveSlots } from '../src/kernel/liveSlots';

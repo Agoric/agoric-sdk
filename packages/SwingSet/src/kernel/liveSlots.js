@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import { E } from '@agoric/eventual-send';
+import { E, HandledPromise } from '@agoric/eventual-send';
 import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
 import { insist } from '../insist';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
@@ -23,7 +23,7 @@ function build(syscall, _state, makeRoot, forVatID) {
   function makeQueued(slot) {
     /* eslint-disable no-use-before-define */
     const handler = {
-      POST(_o, prop, args) {
+      applyMethod(_o, prop, args) {
         // Support: o~.[prop](...args) remote method invocation
         return queueMessage(slot, prop, args);
       },
@@ -31,7 +31,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     /* eslint-enable no-use-before-define */
 
     const pr = {};
-    pr.p = Promise.makeHandled((res, rej, resolveWithPresence) => {
+    pr.p = new HandledPromise((res, rej, resolveWithPresence) => {
       pr.rej = rej;
       pr.resPres = () => resolveWithPresence(handler);
       pr.res = res;

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/transform-eventual-send",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "transform-eventual-send",
   "main": "dist/transform-eventual-send.cjs.js",
   "module": "dist/transform-eventual-send.esm.js",
@@ -14,20 +14,17 @@
   "devDependencies": {
     "@agoric/acorn-eventual-send": "^2.0.0",
     "@agoric/babel-parser": "^7.6.4",
-    "@agoric/eventual-send": "^0.4.4",
+    "@agoric/eventual-send": "^0.5.0",
     "@babel/generator": "^7.5.0",
     "astring": "^1.4.0",
-    "rollup": "^1.16.6",
+    "esm": "^3.2.5",
     "rollup-plugin-node-resolve": "^5.2.0",
     "ses": "^0.6.3",
     "tap-spec": "^5.0.0",
     "tape": "^4.9.2",
     "tape-promise": "^4.0.0"
   },
-  "dependencies": {
-    "@agoric/harden": "0.0.4",
-    "esm": "^3.2.5"
-  },
+  "dependencies": {},
   "keywords": [],
   "files": [
     "dist"

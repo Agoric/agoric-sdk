@@ -8,7 +8,6 @@ import readlines from 'n-readlines';
 // import connect from 'lotion-connect';
 // import harden from '@agoric/harden';
 // import djson from 'deterministic-json';
-// import maybeExtendPromise from '@agoric/transform-bang';
 
 import {
   loadBasedir,

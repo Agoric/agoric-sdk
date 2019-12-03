@@ -1,6 +1,6 @@
 {
   "name": "@agoric/default-evaluate-options",
-  "version": "0.2.7",
+  "version": "0.3.0",
   "description": "Agoric default evaluation options for Realms and SES",
   "main": "dist/default-evaluate-options.cjs.js",
   "module": "dist/default-evaluate-options.esm.js",
@@ -23,8 +23,8 @@
   },
   "dependencies": {
     "@agoric/babel-parser": "^7.6.4",
-    "@agoric/eventual-send": "^0.4.4",
-    "@agoric/transform-eventual-send": "^1.0.3",
+    "@agoric/eventual-send": "^0.5.0",
+    "@agoric/transform-eventual-send": "^1.0.4",
     "@babel/generator": "^7.6.4",
     "esm": "^3.2.5"
   },
