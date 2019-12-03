@@ -62,7 +62,10 @@ test('get all pixels and use them', async t => {
 
   t.deepEquals(bundles[0].getRawPixels(), []);
 
-  t.throws(() => bundles[0].changeColorAll('blue'));
+  t.throws(
+    () => bundles[0].changeColorAll('blue'),
+    /no use rights present in units/,
+  );
   t.doesNotThrow(() => bundles[1].changeColorAll('blue'));
   t.doesNotThrow(() => bundles[bundles.length - 1].changeColorAll('blue'));
   t.end();

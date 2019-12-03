@@ -214,7 +214,10 @@ test('pixelList without', t => {
   t.deepEqual(extentOps.without(harden([startPixel]), harden([])), [
     startPixel,
   ]);
-  t.throws(() => extentOps.without(harden([]), harden([startPixel])));
+  t.throws(
+    () => extentOps.without(harden([]), harden([startPixel])),
+    /part is not in whole/,
+  );
   t.deepEqual(
     extentOps.without(harden([startPixel]), harden([startPixel])),
     [],

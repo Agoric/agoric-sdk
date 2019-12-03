@@ -10,7 +10,10 @@ test('split bad units', t => {
     const payment = purse.withdrawAll();
 
     const badUnitsArray = Array(2).fill(assay.makeUnits(10));
-    t.throws(_ => assay.split(payment, badUnitsArray));
+    t.throws(
+      _ => assay.split(payment, badUnitsArray),
+      /Error: the units of the proposed new payments do not equal the units of the source payment/,
+    );
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -31,7 +34,8 @@ test('split good units', t => {
     for (const payment of splitPayments) {
       t.deepEqual(payment.getBalance(), assay.makeUnits(10));
     }
-    t.throws(() => oldPayment.getBalance());
+    // TODO: Improve error message for a deleted payment
+    t.throws(() => oldPayment.getBalance(), /Error: key not found/);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -52,7 +56,7 @@ test('combine good payments', t => {
     const combinedPayment = assay.combine(payments);
     t.deepEqual(combinedPayment.getBalance(), assay.makeUnits(100));
     for (const payment of payments) {
-      t.throws(() => payment.getBalance());
+      t.throws(() => payment.getBalance(), /Error: key not found/);
     }
   } catch (e) {
     t.assert(false, e);
@@ -76,7 +80,7 @@ test('combine bad payments', t => {
     const otherPayment = otherPurse.withdrawAll();
     payments.push(otherPayment);
 
-    t.throws(() => assay.combine(payments));
+    t.throws(() => assay.combine(payments), /Error: key not found/);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -116,7 +120,7 @@ test('depositExactly goodUnits', async t => {
     const payment = await purse.withdraw(7);
     await targetPurse.depositExactly(7, payment);
     t.deepEqual(targetPurse.getBalance(), assay.makeUnits(7));
-    t.throws(() => payment.getBalance());
+    t.throws(() => payment.getBalance(), /Error: key not found/);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -133,7 +137,7 @@ test('depositAll goodUnits', async t => {
     const payment = await purse.withdraw(7);
     await targetPurse.depositAll(payment);
     t.deepEqual(targetPurse.getBalance(), assay.makeUnits(7));
-    t.throws(() => payment.getBalance());
+    t.throws(() => payment.getBalance(), /Error: key not found/);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -170,7 +174,7 @@ test('burnExactly goodUnits', async t => {
     const purse = mint.mint(1000);
     const payment = await purse.withdraw(7);
     await assay.burnExactly(7, payment);
-    t.throws(() => payment.getBalance());
+    t.throws(() => payment.getBalance(), /Error: key not found/);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -185,7 +189,7 @@ test('burnAll goodUnits', async t => {
     const purse = mint.mint(1000);
     const payment = await purse.withdraw(7);
     await assay.burnAll(payment);
-    t.throws(() => payment.getBalance());
+    t.throws(() => payment.getBalance(), /Error: key not found/);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -222,7 +226,7 @@ test('claimExactly goodUnits', async t => {
     const purse = mint.mint(1000);
     const payment = await purse.withdraw(7);
     const newPayment = await assay.claimExactly(7, payment);
-    t.throws(() => payment.getBalance());
+    t.throws(() => payment.getBalance(), /Error: key not found/);
     t.deepEqual(newPayment.getBalance(), assay.makeUnits(7));
   } catch (e) {
     t.assert(false, e);
@@ -238,7 +242,7 @@ test('claimAll goodUnits', async t => {
     const purse = mint.mint(1000);
     const payment = await purse.withdraw(7);
     const newPayment = await assay.claimAll(payment);
-    t.throws(() => payment.getBalance());
+    t.throws(() => payment.getBalance(), /Error: key not found/);
     t.deepEqual(newPayment.getBalance(), assay.makeUnits(7));
   } catch (e) {
     t.assert(false, e);
