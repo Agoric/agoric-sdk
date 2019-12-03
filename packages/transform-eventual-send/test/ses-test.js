@@ -3,8 +3,6 @@
 import { test } from 'tape-promise/tape';
 import SES from 'ses';
 
-import { makeHandledPromise } from '@agoric/eventual-send';
-
 import * as babelParser from '@agoric/babel-parser';
 import babelGenerate from '@babel/generator';
 
@@ -14,7 +12,10 @@ import * as astring from 'astring';
 
 import makeEventualSendTransformer from '../src';
 
-const shims = [`this.HandledPromise = (${makeHandledPromise})(Promise)`];
+// FIXME: This should be unnecessary when SES has support
+// for passing `evaluateProgram` through to the rewriter state.
+const closeOverSES = (transforms, ses) =>
+  transforms.forEach(t => t.closeOverSES && t.closeOverSES(ses));
 
 const AcornParser = acorn.Parser.extend(eventualSend(acorn));
 const acornParser = {
@@ -56,7 +57,6 @@ test('eventual send is disabled by default', t => {
 test('expression source is parsable', async t => {
   try {
     const s = SES.makeSESRootRealm({
-      shims,
       transforms: makeEventualSendTransformer(babelParser, babelGenerate),
     });
     t.equal(
@@ -90,25 +90,23 @@ test('expression source is parsable', async t => {
 
 test('eventual send can be enabled twice', async t => {
   try {
-    const s = SES.makeSESRootRealm({
-      shims,
-      transforms: [
-        ...makeEventualSendTransformer(babelParser, babelGenerate),
-        ...makeEventualSendTransformer(babelParser, babelGenerate),
-      ],
-    });
+    const transforms = [
+      ...makeEventualSendTransformer(babelParser, babelGenerate),
+      ...makeEventualSendTransformer(babelParser, babelGenerate),
+    ];
+    const s = SES.makeSESRootRealm({ transforms });
+    closeOverSES(transforms, s);
     t.equal(
       await s.evaluate('"abc"~.[2]'),
       'c',
       `babel double transform works`,
     );
-    const s2 = SES.makeSESRootRealm({
-      shims,
-      transforms: [
-        ...makeEventualSendTransformer(acornParser, acornGenerate),
-        ...makeEventualSendTransformer(acornParser, acornGenerate),
-      ],
-    });
+    const transforms2 = [
+      ...makeEventualSendTransformer(acornParser, acornGenerate),
+      ...makeEventualSendTransformer(acornParser, acornGenerate),
+    ];
+    const s2 = SES.makeSESRootRealm({ transforms: transforms2 });
+    closeOverSES(transforms2, s2);
     t.equal(
       await s2.evaluate('"abc"~.[2]'),
       'c',
@@ -127,10 +125,12 @@ test('eventual send can be enabled', async t => {
       ['babel', babelParser, babelGenerate],
       ['acorn', acornParser, acornGenerate],
     ]) {
-      const s = SES.makeSESRootRealm({
-        shims,
-        transforms: makeEventualSendTransformer(parser, generate),
-      });
+      const transforms = [
+        ...makeEventualSendTransformer(parser, generate),
+      ];
+      const s = SES.makeSESRootRealm({ transforms });
+      closeOverSES(transforms, s);
+
       // console.log(parser('"abc"~.length', { plugins: ['eventualSend'] }));
       t.equals(await s.evaluate(`"abc"~.length`), 3, `${name} .get() works`);
       t.equals(
