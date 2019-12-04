@@ -7,10 +7,7 @@ import { insist } from '../../util/insist';
 import { mustBeComparable } from '../../util/sameStructure';
 
 const insistOptDescription = optDescription => {
-  insist(
-    !!optDescription,
-  )`Uni optDescription must be either null or truthy: ${optDescription}`;
-  insist(!!optDescription)`Uni description must be truthy ${optDescription}`;
+  insist(!!optDescription)`optDescription must be truthy ${optDescription}`;
   mustBeComparable(optDescription);
 };
 
