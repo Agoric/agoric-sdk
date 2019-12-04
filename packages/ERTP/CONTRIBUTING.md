@@ -40,6 +40,6 @@ Before submitting a pull request, please:
   * and does NOT do a `git commit` and `git tag`
 * `git commit -m "bump version`
 * `git tag -a ERTP-v$VERSION -m "ERTP-v$VERSION"
-* `npm publish --access public`
+* `yarn publish --access public`
 * `git push`
 * `git push --tags`
