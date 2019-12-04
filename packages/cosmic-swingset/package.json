@@ -3,7 +3,7 @@
   "version": "0.11.0",
   "description": "Agoric's Cosmos blockchain integration",
   "main": "index.js",
-  "repository": "https://github.com/Agoric/cosmic-swingset",
+  "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "prebuild": "make all",
     "preinstall": "make all",

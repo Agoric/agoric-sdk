@@ -13,10 +13,10 @@
     path: "/vagrant"
   register: dev
 
-- name: Workspace exists
+- name: Agoric SDK exists
   delegate_to: localhost
   stat:
-    path: "/usr/src/cosmic-workspace"
+    path: "/usr/src/agoric-sdk"
   register: ws
 
 - name: "Synchronize install directory {{APPDIR}}"
@@ -37,26 +37,32 @@
     - "--exclude=provisioning-server"
   when: not dev.stat.exists and not ws.stat.exists
 
-- name: Synchronize cosmic-workspace
+- name: Synchronize Agoric SDK
   synchronize:
-    src: "/usr/src/cosmic-workspace/"
-    dest: "/usr/src/cosmic-workspace/"
+    src: "/usr/src/agoric-sdk/"
+    dest: "/usr/src/agoric-sdk/"
     dirs: yes
     delete: yes
     checksum: yes
     mode: push
   when: ws.stat.exists
 
-- name: Link cosmic-swingset
+- name: Remove cosmic-swingset to prepare for linking
   file:
-    src: /usr/src/cosmic-workspace/cosmic-swingset
+    path: /usr/src/cosmic-swingset
+    state: absent
+  when: dev.stat.exists or ws.stat.exists
+
+- name: Symlink cosmic-swingset
+  file:
+    src: /usr/src/agoric-sdk/packages/cosmic-swingset
     dest: /usr/src/cosmic-swingset
     state: link
   when: not dev.stat.exists and ws.stat.exists
 
 - name: "Symlink /vagrant/cosmic-swingset"
   file:
-    src: /vagrant/cosmic-swingset
+    src: /vagrant/packages/cosmic-swingset
     dest: /usr/src/cosmic-swingset
     state: link
   when: dev.stat.exists

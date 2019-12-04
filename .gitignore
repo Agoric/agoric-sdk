@@ -55,3 +55,4 @@ typings/
 
 # bundles
 bundle-*.js
+/.vagrant
