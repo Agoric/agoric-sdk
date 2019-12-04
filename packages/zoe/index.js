@@ -1,3 +1,1 @@
-import { makeZoe } from './zoe';
-
-export { makeZoe };
+export { makeZoe } from './zoe';
