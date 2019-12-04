@@ -33,11 +33,13 @@ Before submitting a pull request, please:
 
 * edit NEWS.md enumerating any user-visible changes (this will be done
   automatically in the future?)
+* make sure `yarn config set version-git-tag false` is the current
+  setting
 * `yarn version` (interactive) or `yarn version --major` or `yarn version --minor`
   * that changes `package.json`
-  * and does a `git commit` and `git tag` by default
-  * to do `git commit` and `git tag` manually, use `yarn config set version-git-tag false`
-  * to get signed tags, start with `yarn config set version-sign-git-tag true`
+  * and does NOT do a `git commit` and `git tag`
+* `git commit -m "bump version`
+* `git tag -a ERTP-v$VERSION -m "ERTP-v$VERSION"
 * `npm publish --access public`
 * `git push`
 * `git push --tags`
