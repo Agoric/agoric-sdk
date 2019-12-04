@@ -32,7 +32,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/ertp": "0.2.0",
+    "@agoric/ertp": "^0.2.0",
     "@agoric/evaluate": "^2.1.3",
     "@agoric/eventual-send": "^0.4.5",
     "@agoric/harden": "^0.0.4",
