@@ -227,6 +227,7 @@ const makeZoe = async (additionalEndowments = {}) => {
   // securely escrow and get an escrow receipt and payouts in return.
 
   const zoeService = harden({
+    getVersion: () => 'v0.1.0',
     getEscrowReceiptAssay: () => escrowReceiptAssay,
     getInviteAssay: () => inviteAssay,
     getAssaysForInstance: instanceHandle =>
