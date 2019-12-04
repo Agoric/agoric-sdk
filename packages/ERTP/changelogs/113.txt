@@ -1,0 +1,1 @@
+Move Zoe to packages/zoe and publish as @agoric/zoe

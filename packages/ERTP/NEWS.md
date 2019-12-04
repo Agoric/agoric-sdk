@@ -1,5 +1,9 @@
 User-visible changes in ERTP:
 
+## Release v0.2.0 (12/4/2019)
+
+* Remove Zoe from ERTP and publish as @agoric/zoe
+
 ## Release v0.1.12 (11/13/2019)
 
 * Added "myFirstDapp", a smart contract with the same interface as our
