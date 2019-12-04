@@ -1,6 +1,6 @@
 {
   "name": "@agoric/zoe",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Zoe: the Smart Contract Framework for Offer Enforcement",
   "main": "index.js",
   "engines": {
@@ -47,5 +47,17 @@
     "tap-spec": "^5.0.0",
     "tape": "^4.11.0",
     "tape-promise": "^4.0.0"
-  }
+  },
+  "files": [
+    "index.js",
+    "contracts/*.js",
+    "areRightsConserved.js",
+    "escrowReceiptConfig.js",
+    "evalContractCode.js",
+    "isOfferSafe.js",
+    "seatMint.js",
+    "state.js",
+    "zoe.js",
+    "zoeUtils.js"
+  ]
 }
