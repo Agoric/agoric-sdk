@@ -1,5 +1,5 @@
 ARG TAG=latest
-ARG REPO=agoric/cosmic-swingset
+ARG REPO=agoric/agoric-sdk
 FROM golang:stretch AS go-build
 
 WORKDIR /usr/src/journalbeat
