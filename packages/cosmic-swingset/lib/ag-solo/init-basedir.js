@@ -62,15 +62,6 @@ export default function initBasedir(
     const stdout = execFileSync('git', ['describe', '--always', '--dirty']);
     fs.writeFileSync(path.join(dest_htmldir, gr), stdout);
   }
-  const plj = 'package-lock.json';
-  try {
-    fs.copyFileSync(
-      path.join(`${here}/../..`, plj),
-      path.join(dest_htmldir, plj),
-    );
-  } catch (e) {
-    console.log(`Cannot copy ${plj}:`, e);
-  }
 
   const source_vatdir = subdir
     ? path.join(here, 'vats', subdir)
