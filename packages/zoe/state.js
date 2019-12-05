@@ -1,71 +1,170 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-import { extentOpsLib } from '@agoric/ertp/core/config/extentOpsLib';
 import { makePrivateName } from '@agoric/ertp/util/PrivateName';
+import { insist } from '@agoric/ertp/util/insist';
+import { makeUnitOps } from '@agoric/ertp/core/unitOps';
+import { extentOpsLib } from '@agoric/ertp/core/config/extentOpsLib';
 
-const makeState = () => {
-  const offerHandleToExtents = makePrivateName();
-  const offerHandleToAssays = makePrivateName();
-  const offerHandleToPayoutRules = makePrivateName();
-  const offerHandleToExitRule = makePrivateName();
-  const offerHandleToResult = makePrivateName();
-  const offerHandleToInstanceHandle = makePrivateName();
+// Installation Table
+// Columns: installationHandle | installation
+const makeInstallationTable = () => {
+  // The WeakMap that stores the records
+  const handleToRecord = makePrivateName();
 
-  const activeOffers = new WeakSet();
+  const installationTable = harden({
+    // TODO validate installation record (use insist to throw)
+    validate: _allegedInstallationRecord => true,
+    create: (installationHandle, installationRecord) => {
+      installationTable.validate(installationRecord);
+      const newInstallationRecord = harden({
+        ...installationRecord,
+        installationHandle,
+      });
+      handleToRecord.init(installationHandle, newInstallationRecord);
 
-  const instanceHandleToInstallationHandle = makePrivateName();
-  const instanceHandleToInstance = makePrivateName();
-  const instanceHandleToTerms = makePrivateName();
-  const instanceHandleToAssays = makePrivateName();
+      // TODO: decide whether this is the correct way to go
+      // We do not return the whole record here, but only return the
+      // installationHandle
+      return installationHandle;
+    },
+    get: handleToRecord.get,
+    has: handleToRecord.has,
+  });
 
-  const assayToPurse = makePrivateName();
-  const assayToExtentOps = makePrivateName();
-  const assayToDescOps = makePrivateName();
-  const assayToLabel = makePrivateName();
+  return installationTable;
+};
 
-  const installationHandleToInstallation = makePrivateName();
-  const installationToInstallationHandle = makePrivateName();
+// Instance Table
+// Columns: instanceHandle | installationHandle | instance | terms | assays
+const makeInstanceTable = () => {
+  // The WeakMap that stores the records
+  const handleToRecord = makePrivateName();
 
-  const readOnlyState = harden({
-    // per instanceHandle
-    getTerms: instanceHandle => instanceHandleToTerms.get(instanceHandle),
-    getAssays: instanceHandle => instanceHandleToAssays.get(instanceHandle),
-    getUnitOpsArrayForInstanceHandle: instanceHandle =>
-      readOnlyState
-        .getAssays(instanceHandle)
-        .map(assay => assayToDescOps.get(assay)),
-    getExtentOpsArrayForInstanceHandle: instanceHandle =>
-      readOnlyState
-        .getAssays(instanceHandle)
-        .map(assay => assayToExtentOps.get(assay)),
-    getLabelsForInstanceHandle: instanceHandle =>
-      readOnlyState
-        .getAssays(instanceHandle)
-        .map(assay => assayToLabel.get(assay)),
+  const instanceTable = harden({
+    // TODO validate instance record (use insist to throw)
+    validate: _allegedInstanceRecord => true,
+    create: (instanceHandle, instanceRecord) => {
+      instanceTable.validate(instanceRecord);
+      const newInstanceRecord = harden({
+        ...instanceRecord,
+        instanceHandle,
+      });
+      handleToRecord.init(instanceHandle, newInstanceRecord);
+      return handleToRecord.get(instanceHandle);
+    },
+    get: handleToRecord.get,
+    has: handleToRecord.has,
 
-    // per assays array (this can be used before an offer is
-    // associated with an instance)
-    getUnitOpsArrayForAssays: assays =>
-      assays.map(assay => assayToDescOps.get(assay)),
-    getExtentOpsArrayForAssays: assays =>
-      assays.map(assay => assayToExtentOps.get(assay)),
-    getLabelsForAssays: assays => assays.map(assay => assayToLabel.get(assay)),
+    // Custom methods below. //
+    getAssays: instanceHandle => handleToRecord.get(instanceHandle).assays,
+  });
 
-    // per offerHandles array
-    getAssaysFor: offerHandles =>
-      offerHandles.map(offerHandle => offerHandleToAssays.get(offerHandle)),
-    getExtentsFor: offerHandles =>
-      offerHandles.map(offerHandle => offerHandleToExtents.get(offerHandle)),
-    getPayoutRulesFor: offerHandles =>
-      offerHandles.map(offerHandle =>
-        offerHandleToPayoutRules.get(offerHandle),
+  return instanceTable;
+};
+
+// Offer Table
+// Columns: offerHandle | instanceHandle | assays | exitRule | payoutPromise
+const makeOfferTable = () => {
+  // The WeakMap that stores the records
+  const handleToRecord = makePrivateName();
+
+  const insistValidPayoutRuleKinds = payoutRules => {
+    const acceptedKinds = [
+      'offerExactly',
+      'offerAtMost',
+      'wantExactly',
+      'wantAtLeast',
+    ];
+    for (const payoutRule of payoutRules) {
+      insist(
+        acceptedKinds.includes(payoutRule.kind),
+      )`${payoutRule.kind} must be one of the accepted kinds.`;
+    }
+  };
+  const insistValidExitRule = exitRule => {
+    const acceptedExitRuleKinds = [
+      'noExit',
+      'onDemand',
+      'afterDeadline',
+      // 'onDemandAfterDeadline', // not yet supported
+    ];
+    insist(
+      acceptedExitRuleKinds.includes(exitRule.kind),
+    )`exitRule.kind ${exitRule.kind} is not one of the accepted options`;
+  };
+
+  const offerTable = harden({
+    // TODO validate offer record
+    validate: allegedOfferRecord => {
+      insistValidPayoutRuleKinds(allegedOfferRecord.payoutRules);
+      insistValidExitRule(allegedOfferRecord.exitRule);
+      return true;
+    },
+    create: (offerHandle, offerRecord) => {
+      offerTable.validate(offerRecord);
+      // Currently we do not harden this so we can change the units
+      // associated with an offer.
+      // TODO: handle units separately
+      const newOfferRecord = {
+        ...offerRecord,
+        offerHandle,
+      };
+      handleToRecord.init(offerHandle, newOfferRecord);
+      return handleToRecord.get(offerHandle);
+    },
+    get: handleToRecord.get,
+    has: handleToRecord.has,
+    delete: handleToRecord.delete,
+
+    // Custom methods below. //
+    createUnits: (offerHandle, units) => {
+      const offerRecord = handleToRecord.get(offerHandle);
+      insist(
+        offerRecord.units === undefined,
+      )`units must be undefined to be created`;
+      offerRecord.units = units;
+    },
+    updateUnits: (offerHandle, units) => {
+      const offerRecord = handleToRecord.get(offerHandle);
+      offerRecord.units = units;
+    },
+    getPayoutRuleMatrix: (offerHandles, _assays) => {
+      // Currently, we assume that all of the payoutRules for these
+      // offerHandles are in the same order as the `assays` array. In
+      // the future, we want to be able to use the offerHandle and assay
+      // to select the payoutRule. Note that there may be more than one
+      // payoutRule per offerHandle and assay, so (offerHandle, assay)
+      // is not unique and cannot be used as a key.
+      return offerHandles.map(
+        offerHandle => offerTable.get(offerHandle).payoutRules,
+      );
+    },
+    getPayoutRules: offerHandle => offerTable.get(offerHandle).payoutRules,
+    getExitRule: offerHandle => offerTable.get(offerHandle).exitRule,
+    getUnitMatrix: (offerHandles, _assays) =>
+      // Currently, we assume that all of the units for these
+      // offerHandles are in the same order as the `assays` array. In
+      // the future, we want to be able to use the offerHandle and assay
+      // to select the unit. Note that there may be more than one
+      // payoutRule per offerHandle and assay, so (offerHandle, assay)
+      // is not unique and cannot be used as a key.
+      offerHandles.map(offerHandle => offerTable.get(offerHandle).units),
+    updateUnitMatrix: (offerHandles, _assays, newUnitMatrix) =>
+      // Currently, we assume that all of the units for these
+      // offerHandles are in the same order as the `assays` array. In
+      // the future, we want to be able to use the offerHandle and assay
+      // to select the unit. Note that there may be more than one
+      // unit per offerHandle and assay, so (offerHandle, assay)
+      // is not unique and cannot be used as a key.
+      offerHandles.map((offerHandle, i) =>
+        offerTable.updateUnits(offerHandle, newUnitMatrix[i]),
       ),
-    getStatusFor: offerHandles => {
+    getOfferStatuses: offerHandles => {
       const active = [];
       const inactive = [];
       for (const offerHandle of offerHandles) {
-        if (activeOffers.has(offerHandle)) {
+        if (handleToRecord.has(offerHandle)) {
           active.push(offerHandle);
         } else {
           inactive.push(offerHandle);
@@ -76,115 +175,133 @@ const makeState = () => {
         inactive,
       });
     },
-  });
-
-  // The adminState should never leave Zoe and should be closely held
-  const adminState = harden({
-    addInstallation: installation => {
-      const installationHandle = harden({});
-      installationToInstallationHandle.init(installation, installationHandle);
-      installationHandleToInstallation.init(installationHandle, installation);
-      return installationHandle;
-    },
-    getInstallation: installationHandle =>
-      installationHandleToInstallation.get(installationHandle),
-    addInstance: async (
-      instanceHandle,
-      instance,
-      installationHandle,
-      terms,
-      assays,
-    ) => {
-      instanceHandleToInstance.init(instanceHandle, instance);
-      instanceHandleToInstallationHandle.init(
-        instanceHandle,
-        installationHandle,
-      );
-      instanceHandleToTerms.init(instanceHandle, terms);
-      instanceHandleToAssays.init(instanceHandle, assays);
-      for (let i = 0; i < assays.length; i += 1) {
-        // we want to wait until the first call returns before moving
-        // onto the next in case it is a duplicate assay
-        // eslint-disable-next-line no-await-in-loop
-        await adminState.recordAssay(assays[i]);
-      }
-    },
-    getInstance: instanceHandle => instanceHandleToInstance.get(instanceHandle),
-    getInstallationHandleForInstanceHandle: instanceHandle =>
-      instanceHandleToInstallationHandle.get(instanceHandle),
-    getPurses: assays => assays.map(assay => assayToPurse.get(assay)),
-    recordAssay: async assay => {
-      if (!assayToPurse.has(assay)) {
-        const unitOpsP = E(assay).getUnitOps();
-        const labelP = E(assay).getLabel();
-        const purseP = E(assay).makeEmptyPurse();
-        const extentOpsDescP = E(assay).getExtentOps();
-
-        const [unitOps, label, purse, extentOpsDesc] = await Promise.all([
-          unitOpsP,
-          labelP,
-          purseP,
-          extentOpsDescP,
-        ]);
-
-        assayToDescOps.init(assay, unitOps);
-        assayToLabel.init(assay, label);
-        assayToPurse.init(assay, purse);
-        const { name, extentOpArgs = [] } = extentOpsDesc;
-        assayToExtentOps.init(assay, extentOpsLib[name](...extentOpArgs));
-      }
-      return harden({
-        unitOps: assayToDescOps.get(assay),
-        label: assayToLabel.get(assay),
-        purse: assayToPurse.get(assay),
-        extentOps: assayToExtentOps.get(assay),
-      });
-    },
-    recordOffer: (offerHandle, offerRules, extents, assays, result) => {
-      const { payoutRules, exit } = offerRules;
-      offerHandleToExtents.init(offerHandle, extents);
-      offerHandleToAssays.init(offerHandle, assays);
-      offerHandleToPayoutRules.init(offerHandle, payoutRules);
-      offerHandleToExitRule.init(offerHandle, exit);
-      offerHandleToResult.init(offerHandle, result);
-      activeOffers.add(offerHandle);
-    },
-    recordUsedInInstance: (instanceHandle, offerHandle) =>
-      offerHandleToInstanceHandle.init(offerHandle, instanceHandle),
-    getInstanceHandleForOfferHandle: offerHandle => {
-      if (offerHandleToInstanceHandle.has(offerHandle)) {
-        return offerHandleToInstanceHandle.get(offerHandle);
-      }
-      return undefined;
-    },
-    setExtentsFor: (offerHandles, reallocation) =>
-      offerHandles.map((offerHandle, i) =>
-        offerHandleToExtents.set(offerHandle, reallocation[i]),
+    isOfferActive: offerHandle => handleToRecord.has(offerHandle),
+    getPayoutPromises: offerHandles =>
+      offerHandles.map(
+        offerHandle => offerTable.get(offerHandle).payoutPromise,
       ),
-    getResultsFor: offerHandles =>
-      offerHandles.map(offerHandle => offerHandleToResult.get(offerHandle)),
-    removeOffers: offerHandles => {
-      // has-side-effects
-      // eslint-disable-next-line array-callback-return
-      offerHandles.map(offerHandle => {
-        offerHandleToExtents.delete(offerHandle);
-        offerHandleToAssays.delete(offerHandle);
-        offerHandleToPayoutRules.delete(offerHandle);
-        offerHandleToExitRule.delete(offerHandle);
-        offerHandleToResult.delete(offerHandle);
-        if (offerHandleToInstanceHandle.has(offerHandle)) {
-          offerHandleToInstanceHandle.delete(offerHandle);
-        }
-      });
+    deleteOffers: offerHandles =>
+      offerHandles.map(offerHandle => offerTable.delete(offerHandle)),
+    // For backwards-compatibility. To be deprecated in future PRs
+    recordUsedInInstance: (offerHandle, instanceHandle) => {
+      const offerRecord = handleToRecord.get(offerHandle);
+      offerRecord.instanceHandle = instanceHandle;
     },
-    setOffersAsInactive: offerHandles => {
-      offerHandles.map(offerHandle => activeOffers.delete(offerHandle));
+    // backwards compatibility
+    getExtentsFor: offerHandles =>
+      offerHandles.map(offerHandle => offerTable.get(offerHandle).extents),
+    // backwards compatibility
+    createExtents: (offerHandle, extents) => {
+      const offerRecord = handleToRecord.get(offerHandle);
+      offerRecord.extents = extents;
     },
+    // backwards compatibility
+    getExtentMatrix: (offerHandles, _assays) =>
+      offerHandles.map(offerHandle => offerTable.get(offerHandle).extents),
+    updateExtents: (offerHandle, extents) => {
+      const offerRecord = handleToRecord.get(offerHandle);
+      offerRecord.extents = extents;
+    },
+    updateExtentMatrix: (offerHandles, _assays, newExtentMatrix) =>
+      offerHandles.map((offerHandle, i) =>
+        offerTable.updateExtents(offerHandle, newExtentMatrix[i]),
+      ),
   });
-  return {
-    adminState,
-    readOnlyState,
-  };
+
+  return offerTable;
 };
 
-export { makeState };
+// Assay Table
+// Columns: assay | purse | unitOps | label
+const makeAssayTable = () => {
+  // The WeakMap that stores the records
+  const handleToRecord = makePrivateName();
+
+  const assayTable = harden({
+    // TODO validate assay record (use insist to throw)
+    validate: _allegedAssayRecord => true,
+    create: (assay, assayRecord) => {
+      assayTable.validate(assayRecord);
+      // TODO: How can we harden this?
+      const newAssayRecord = {
+        ...assayRecord,
+        assay,
+      };
+      handleToRecord.init(assay, newAssayRecord);
+      return handleToRecord.get(assay);
+    },
+    get: handleToRecord.get,
+    has: handleToRecord.has,
+    update: handleToRecord.set,
+
+    // custom
+    getUnitOpsForAssays: assays =>
+      assays.map(assay => assayTable.get(assay).unitOps),
+
+    getLabelsForAssays: assays =>
+      assays.map(assay => assayTable.get(assay).label),
+
+    getPursesForAssays: assays =>
+      assays.map(assay => assayTable.get(assay).purseP),
+
+    getOrCreateAssay: assay => {
+      const setUnitOpsForAssay = unitOps => {
+        const updatedAssayRecord = assayTable.get(assay);
+        updatedAssayRecord.unitOps = unitOps;
+        assayTable.update(assay, updatedAssayRecord);
+      };
+
+      // backwards-compatibility
+      const setExtentOpsForAssay = extentOps => {
+        const updatedAssayRecord = assayTable.get(assay);
+        updatedAssayRecord.extentOps = extentOps;
+        assayTable.update(assay, updatedAssayRecord);
+      };
+
+      const setLabelForAssay = label => {
+        const updatedAssayRecord = assayTable.get(assay);
+        updatedAssayRecord.label = label;
+        assayTable.update(assay, updatedAssayRecord);
+      };
+
+      if (!assayTable.has(assay)) {
+        const extentOpsDescP = E(assay).getExtentOps();
+        const labelP = E(assay).getLabel();
+        const assayRecord = {
+          assay,
+          purseP: E(assay).makeEmptyPurse(),
+          labelP,
+          unitOpsP: Promise.all([labelP, extentOpsDescP]).then(
+            ([label, { name, extentOpsArgs = [] }]) => {
+              const unitOps = makeUnitOps(label, name, extentOpsArgs);
+              const makeExtentOps = extentOpsLib[name];
+              const extentOps = makeExtentOps(...extentOpsArgs);
+              setUnitOpsForAssay(unitOps);
+              // backwards-compatibility
+              setExtentOpsForAssay(extentOps);
+              setLabelForAssay(label);
+              return unitOps;
+            },
+          ),
+        };
+        return assayTable.create(assay, assayRecord);
+      }
+      return assayTable.get(assay);
+    },
+    // backwards compatibility
+    getExtentOpsForAssays: assays =>
+      assays.map(assay => assayTable.get(assay).extentOps),
+  });
+
+  return assayTable;
+};
+
+const makeTables = () =>
+  harden({
+    installationTable: makeInstallationTable(),
+    instanceTable: makeInstanceTable(),
+    offerTable: makeOfferTable(),
+    assayTable: makeAssayTable(),
+  });
+
+export { makeTables };
