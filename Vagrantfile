@@ -1,7 +1,11 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 #
-# Vagrant box for Debian with cosmic-swingset dependencies
+# Vagrant box for Debian with agoric-sdk development dependencies
+#
+# You can use this if you're familiar with Vagrant and you don't
+# want to (or can't) install all the development tools (Node.js,
+# yarn, golang), on your host environment.
 #
 # use one of:
 #  vagrant up --provider=docker
@@ -124,7 +128,7 @@ Vagrant.configure("2") do |config|
 
     config.vm.provider :docker do |docker, override|
       override.vm.box = nil
-      docker.build_dir = "docker"
+      docker.build_dir = "vagrant"
       docker.build_args = ['-t', 'agoric/agoric-sdk:local']
       docker.name = "agoric-sdk-docker"
       docker.ports = ['127.0.0.1:8000:8000', '127.0.0.1:9229:9229']
