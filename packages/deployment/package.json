@@ -1,15 +1,14 @@
 {
-  "name": "@agoric/cosmic-swingset-setup",
-  "version": "1.0.0",
-  "description": "Set up the Agoric Cosmos chain nodes",
+  "name": "@agoric/deployment",
+  "version": "1.16.6",
+  "description": "Set up Agoric public chain nodes",
+  "private": true,
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "exit 0",
+    "build": "exit 0"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Agoric/cosmic-swingset/setup"
-  },
+  "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
