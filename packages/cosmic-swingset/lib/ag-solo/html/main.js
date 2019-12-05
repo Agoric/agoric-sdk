@@ -323,7 +323,7 @@ Promise.all(fetches)
     const pr = document.getElementById('package_repo');
     if (pr) {
       const repo =
-        pjson.repository || 'https://github.com/Agoric/cosmic-swingset';
+        pjson.repository || 'https://github.com/Agoric/agoric-sdk';
       const cleanRev = rev.replace(/-dirty$/, '');
       const href = rev ? `${repo}/commit/${cleanRev}` : repo;
       pr.setAttribute('href', href);

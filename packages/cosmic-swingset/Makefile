@@ -97,7 +97,7 @@ docker-install: docker-pull
 docker-build: docker-build-base docker-build-base$(DEV) docker-build-solo docker-build-pserver docker-build-setup docker-build-setup-solo
 
 docker-build-base-dev:
-	docker build -t $(REPOSITORY)-dev:latest --file=../docker/Dockerfile.dev ..
+	docker build -t $(REPOSITORY)-dev:latest --file=../../testnet/Dockerfile ../..
 
 docker-build-setup:
 	docker build -t $(REPOSITORY)-setup:latest --build-arg=REPO=$(REPOSITORY)$(DEV) ./setup

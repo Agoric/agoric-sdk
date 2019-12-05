@@ -2,7 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
 
-export default function initBasedir(basedir, webport, webhost, subdir, egresses) {
+export default function initBasedir(
+  basedir,
+  webport,
+  webhost,
+  subdir,
+  egresses,
+) {
   const here = __dirname;
   try {
     fs.mkdirSync(basedir);
@@ -81,14 +87,23 @@ export default function initBasedir(basedir, webport, webhost, subdir, egresses)
     });
 
   // Enable our node_modules to be found.
-  fs.symlinkSync(
-    path.resolve(here, '../../node_modules'),
-    path.join(basedir, 'node_modules'),
-  );
+  let dots = '';
+  let nm = path.resolve(here, dots, 'node_modules');
+  while (
+    !nm.startsWith('/node_modules/') &&
+    !fs.existsSync(path.join(nm, '@agoric'))
+  ) {
+    dots += '../';
+    nm = path.resolve(here, dots, 'node_modules');
+  }
+  fs.symlinkSync(nm, path.join(basedir, 'node_modules'));
 
   const mailboxStateFile = path.resolve(basedir, 'swingset-mailbox-state.json');
   fs.writeFileSync(mailboxStateFile, `{}\n`);
-  const kernelStateFile = path.resolve(basedir, 'swingset-kernel-state.jsonlines');
+  const kernelStateFile = path.resolve(
+    basedir,
+    'swingset-kernel-state.jsonlines',
+  );
   // this contains newline-terminated lines of JSON.stringify(['key', 'value'])
   fs.writeFileSync(kernelStateFile, ``);
 

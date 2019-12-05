@@ -4,8 +4,8 @@ import { upload } from './upload-contract';
 const CONTRACT_NAME = 'zoe:autoswap';
 const INITIAL_LIQUIDITY = 900;
 
-// Usage:
-// ag-solo bundle -e init-autoswap zoe:autoswap=../node_modules/@agoric/zoe/contracts/autoswap.js
+// Usage from within an initialized ag-solo directory:
+// ag-solo bundle -e init-autoswap zoe:autoswap=node_modules/@agoric/zoe/contracts/autoswap.js
 
 export default async ({ home, bundle }) => {
 

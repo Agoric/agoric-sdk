@@ -1,0 +1,15 @@
+node_modules
+*/node_modules
+*/*/node_modules
+*/*/*/node_modules
+*/*/*/*/node_modules
+.git
+*/.git
+*/*/.git
+*/*/*/.git
+*/*/*/*/.git
+docker
+packages/cosmic-swingset/ve[0-9]
+packages/cosmic-swingset/t[0-9]
+packages/cosmic-swingset/lib/lib*.h
+packages/cosmic-swingset/lib/lib*.so
