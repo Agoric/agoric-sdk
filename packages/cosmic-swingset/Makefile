@@ -120,9 +120,9 @@ docker-build-setup-solo:
 docker-push: docker-push-base docker-push-solo docker-push-setup docker-push-pserver docker-push-setup-solo
 
 docker-push-setup:
-	docker tag $(REPOSITORY)-setup:latest$(DEV) $(REPOSITORY)-setup:$(TAG)$(DEV)
-	$(DO_PUSH_LATEST) docker push $(REPOSITORY)-setup:latest$(DEV)
-	docker push $(REPOSITORY)-setup:$(TAG)$(DEV)
+	docker tag $(REPOSITORY)-setup:latest $(REPOSITORY)-setup:$(TAG)
+	$(DO_PUSH_LATEST) docker push $(REPOSITORY)-setup:latest
+	docker push $(REPOSITORY)-setup:$(TAG)
 
 docker-push-base:
 	docker tag $(REPOSITORY)$(DEV):latest $(REPOSITORY)$(DEV):$(TAG)
