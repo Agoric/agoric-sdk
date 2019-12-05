@@ -1,8 +1,5 @@
 REPOSITORY = agoric/cosmic-swingset
-TAG := $(shell test ! -f package.json || sed -ne 's/.*"version": "\(.*\)".*/\1/p' package.json)
-DO_PUSH_LATEST :=
 CHAIN_ID = agoric
-DEV :=
 INITIAL_TOKENS = 1000agmedallion
 
 NUM_SOLOS?=1
@@ -63,7 +60,7 @@ scenario2-setup:
 	echo 'mmmmmmmm' | $(AGC) gentx --home-client=t1/$(BASE_PORT)/ag-cosmos-helper-statedir --name=ag-solo --amount=1000000stake
 	$(AGC) collect-gentxs
 	$(AGC) validate-genesis
-	./setup/set-json.js ~/.ag-chain-cosmos/config/genesis.json --agoric-genesis-overrides
+	../deployment/set-json.js ~/.ag-chain-cosmos/config/genesis.json --agoric-genesis-overrides
 	$(MAKE) set-local-gci-ingress
 	@echo "ROLE=two_chain BOOT_ADDRESS=\`cat t1/$(BASE_PORT)/ag-cosmos-helper-address\` agc start"
 	@echo "(cd t1/$(BASE_PORT) && ../bin/ag-solo start --role=two_client)"
@@ -93,56 +90,6 @@ docker-pull:
 
 docker-install: docker-pull
 	install -m 755 docker/* /usr/local/bin/
-
-docker-build: docker-build-base docker-build-base$(DEV) docker-build-solo docker-build-pserver docker-build-setup docker-build-setup-solo
-
-docker-build-base-dev:
-	docker build -t $(REPOSITORY)-dev:latest --file=../../testnet/Dockerfile ../..
-
-docker-build-setup:
-	docker build -t $(REPOSITORY)-setup:latest --build-arg=REPO=$(REPOSITORY)$(DEV) ./setup
-
-docker-build-base:
-	hash=`git rev-parse --short HEAD`; \
-	  dirty=`git diff --quiet || echo -dirty`; \
-	  echo "$$hash$$dirty" > lib/git-revision.txt
-	docker build -t $(REPOSITORY):latest .
-
-docker-build-pserver:
-	docker build -t $(REPOSITORY)-pserver:latest ./provisioning-server
-
-docker-build-solo:
-	docker build -t $(REPOSITORY)-solo:latest ./lib/ag-solo
-
-docker-build-setup-solo:
-	docker build -t $(REPOSITORY)-setup-solo:latest ./setup-solo
-
-docker-push: docker-push-base docker-push-solo docker-push-setup docker-push-pserver docker-push-setup-solo
-
-docker-push-setup:
-	docker tag $(REPOSITORY)-setup:latest $(REPOSITORY)-setup:$(TAG)
-	$(DO_PUSH_LATEST) docker push $(REPOSITORY)-setup:latest
-	docker push $(REPOSITORY)-setup:$(TAG)
-
-docker-push-base:
-	docker tag $(REPOSITORY)$(DEV):latest $(REPOSITORY)$(DEV):$(TAG)
-	$(DO_PUSH_LATEST) docker push $(REPOSITORY)$(DEV):latest
-	docker push $(REPOSITORY)$(DEV):$(TAG)
-
-docker-push-pserver:
-	docker tag $(REPOSITORY)-pserver:latest $(REPOSITORY)-pserver:$(TAG)
-	$(DO_PUSH_LATEST) docker push $(REPOSITORY)-pserver:latest
-	docker push $(REPOSITORY)-pserver:$(TAG)
-
-docker-push-solo:
-	docker tag $(REPOSITORY)-solo:latest $(REPOSITORY)-solo:$(TAG)
-	$(DO_PUSH_LATEST) docker push $(REPOSITORY)-solo:latest
-	docker push $(REPOSITORY)-solo:$(TAG)
-
-docker-push-setup-solo:
-	docker tag $(REPOSITORY)-setup-solo:latest $(REPOSITORY)-setup-solo:$(TAG)
-	$(DO_PUSH_LATEST) docker push $(REPOSITORY)-setup-solo:latest
-	docker push $(REPOSITORY)-setup-solo:$(TAG)
 
 compile-go: go.sum
 	go build -v $(MOD_READONLY) -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go
