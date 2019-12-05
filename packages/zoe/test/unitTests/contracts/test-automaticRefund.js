@@ -36,6 +36,9 @@ test('zoe - simplest automaticRefund', async t => {
           units: moolaAssay.makeUnits(3),
         },
       ],
+      exitRule: {
+        kind: 'onDemand',
+      },
     });
     const alicePayments = [aliceMoolaPayment];
 
@@ -88,6 +91,9 @@ test('zoe - automaticRefund same assay', async t => {
           units: moolaAssay.makeUnits(0),
         },
       ],
+      exitRule: {
+        kind: 'onDemand',
+      },
     });
     const alicePayments = [undefined, undefined];
 
@@ -505,7 +511,7 @@ test('zoe - alice cancels after completion', async t => {
 
     await aliceAutomaticRefund.makeOffer(aliceEscrowReceipt);
 
-    t.rejects(() => cancelObj.cancel(), /Error: offer has already completed/);
+    t.throws(() => cancelObj.cancel(), /Error: offer has already completed/);
 
     const alicePayout = await payoutP;
 

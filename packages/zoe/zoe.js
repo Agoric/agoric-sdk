@@ -1,30 +1,27 @@
 import harden from '@agoric/harden';
+import { E } from '@agoric/eventual-send';
 
 import { insist } from '@agoric/ertp/util/insist';
-
+import makePromise from '@agoric/ertp/util/makePromise';
 import { makeMint } from '@agoric/ertp/core/mint';
+
 import { isOfferSafeForAll } from './isOfferSafe';
 import { areRightsConserved } from './areRightsConserved';
 import { evalContractCode } from './evalContractCode';
 
-import {
-  escrowEmptyOffer,
-  escrowOffer,
-  mintEscrowReceiptPayment,
-  completeOffers,
-  makeEmptyExtents,
-} from './zoeUtils';
-
-import { makeState } from './state';
+import { makeTables } from './state';
 import { makeSeatMint } from './seatMint';
 import { makeEscrowReceiptConfig } from './escrowReceiptConfig';
+
+const getAssaysFromPayoutRules = payoutRules =>
+  payoutRules.map(payoutRule => payoutRule.units.label.assay);
 
 /**
  * Create an instance of Zoe.
  *
  * @param additionalEndowments pure or pure-ish endowments to add to evaluator
  */
-const makeZoe = async (additionalEndowments = {}) => {
+const makeZoe = (additionalEndowments = {}) => {
   // Zoe has two mints: a mint for invites and a mint for
   // escrowReceipts. The invite mint can be used by a smart contract
   // to create invites to take certain actions in the smart contract.
@@ -33,7 +30,7 @@ const makeZoe = async (additionalEndowments = {}) => {
   const {
     seatMint: inviteMint,
     seatAssay: inviteAssay,
-    addUseObj: inviteAddUseObj,
+    addUseObj: addInviteSeat,
   } = makeSeatMint('zoeInvite');
 
   const escrowReceiptMint = makeMint(
@@ -41,138 +38,213 @@ const makeZoe = async (additionalEndowments = {}) => {
     makeEscrowReceiptConfig,
   );
   const escrowReceiptAssay = escrowReceiptMint.getAssay();
+  const {
+    installationTable,
+    instanceTable,
+    offerTable,
+    assayTable,
+  } = makeTables();
 
-  const { adminState, readOnlyState } = makeState();
+  const completeOffers = offerHandles => {
+    const { inactive } = offerTable.getOfferStatuses(offerHandles);
+    if (inactive.length > 0) {
+      throw new Error(`offer has already completed`);
+    }
+    // For backwards compatibility, we retain this function signature
+    // and try to derive the assays from the first offerHandle. In the
+    // future, this function will take `offerHandles` and `assays` as parameters.
+    const payoutRules = offerTable.getPayoutRules(offerHandles[0]);
+    const assays = getAssaysFromPayoutRules(payoutRules);
+    const unitMatrix = offerTable.getUnitMatrix(offerHandles, assays);
+    const payoutPromises = offerTable.getPayoutPromises(offerHandles);
+    offerTable.deleteOffers(offerHandles);
+    const pursesP = assayTable.getPursesForAssays(assays);
+    Promise.all(pursesP).then(purses => {
+      for (let i = 0; i < offerHandles.length; i += 1) {
+        const unitsForOffer = unitMatrix[i];
+        // This Promise.all will be taken out in a later PR.
+        const payout = Promise.all(
+          unitsForOffer.map((units, j) =>
+            E(purses[j]).withdraw(units, 'payout'),
+          ),
+        );
+        payoutPromises[i].res(payout);
+      }
+    });
+  };
+
+  const makeEmptyPayoutRules = unitOpsArray =>
+    unitOpsArray.map(unitOps =>
+      harden({
+        kind: 'wantAtLeast',
+        units: unitOps.empty(),
+      }),
+    );
+
+  const makeInvite = (
+    instanceHandle,
+    seat,
+    contractDefinedExtent = harden({}),
+  ) => {
+    const inviteHandle = harden({});
+    const inviteUnits = inviteAssay.makeUnits(
+      harden({
+        ...contractDefinedExtent,
+        handle: inviteHandle,
+        instanceHandle,
+      }),
+    );
+    const invitePurse = inviteMint.mint(inviteUnits);
+    addInviteSeat(inviteHandle, seat);
+    const invitePayment = invitePurse.withdrawAll();
+    return invitePayment;
+  };
 
   // Zoe has two different facets: the public Zoe service and the
-  // contract facet. Neither facet should give direct access
-  // to the `adminState`.
-
-  // The contract facet is what is accessible to the smart contract
-  // instance and is remade for each instance. The contract at no time
-  // has access to the users' payments or the Zoe purses, or any of
-  // the `adminState` of Zoe. The contract can only do a few things
-  // through the Zoe contract fact. It can propose a reallocation of
-  // extents, complete an offer, and interestingly, can create a new
-  // offer itself for record-keeping and other various purposes.
+  // contract facet. The contract facet is what is accessible to the
+  // smart contract instance and is remade for each instance. The
+  // contract at no time has access to the users' payments or the Zoe
+  // purses. The contract can only do a few things through the Zoe
+  // contract facet. It can propose a reallocation of units,
+  // complete an offer, and can create a new offer itself for
+  // record-keeping and other various purposes.
 
   const makeContractFacet = instanceHandle => {
     const contractFacet = harden({
       /**
-       * The contract can propose a reallocation of extents per
-       * player, which will only succeed if the reallocation 1)
+       * The contract can propose a reallocation of units per
+       * offer, which will only succeed if the reallocation 1)
        * conserves rights, and 2) is 'offer-safe' for all parties
        * involved. This reallocation is partial, meaning that it
-       * applies only to the extents associated with the offerHandles
-       * that are passed in, rather than applying to all of the
-       * extents in the extentMatrix. We are able to ensure that with
+       * applies only to the units associated with the offerHandles
+       * that are passed in. We are able to ensure that with
        * each reallocation, rights are conserved and offer safety is
-       * enforced for all extents, even though the reallocation is
+       * enforced for all offers, even though the reallocation is
        * partial, because once these invariants are true, they will
        * remain true until changes are made.
        * @param  {object[]} offerHandles - an array of offerHandles
-       * @param  {extent[][]} reallocation - a matrix of extents, with
-       * one array of extents per offerHandle. This is likely a subset
-       * of the full extentsMatrix.
+       * @param  {assay[]} assays - the canonical ordering of assays
+       * for this reallocation. The units in each newUnitMatrix row
+       * will be in this order.
+       * @param  {unit[][]} newUnitMatrix - a matrix of units, with
+       * one array of units per offerHandle.
        */
-      reallocate: (offerHandles, reallocation) => {
-        const payoutRulesArray = readOnlyState.getPayoutRulesFor(offerHandles);
-        const currentExtents = readOnlyState.getExtentsFor(offerHandles);
-        const extentOpsArray = readOnlyState.getExtentOpsArrayForInstanceHandle(
-          instanceHandle,
+      reallocate: (offerHandles, newExtentMatrix) => {
+        const { assays } = instanceTable.get(instanceHandle);
+
+        const payoutRuleMatrix = offerTable.getPayoutRuleMatrix(
+          offerHandles,
+          assays,
         );
+        const currentExtentMatrix = offerTable.getExtentMatrix(
+          offerHandles,
+          assays,
+        );
+        const extentOpsArray = assayTable.getExtentOpsForAssays(assays);
 
         // 1) ensure that rights are conserved
         insist(
-          areRightsConserved(extentOpsArray, currentExtents, reallocation),
+          areRightsConserved(
+            extentOpsArray,
+            currentExtentMatrix,
+            newExtentMatrix,
+          ),
         )`Rights are not conserved in the proposed reallocation`;
 
         // 2) ensure 'offer safety' for each player
         insist(
-          isOfferSafeForAll(extentOpsArray, payoutRulesArray, reallocation),
+          isOfferSafeForAll(extentOpsArray, payoutRuleMatrix, newExtentMatrix),
         )`The proposed reallocation was not offer safe`;
 
         // 3) save the reallocation
-        adminState.setExtentsFor(offerHandles, reallocation);
+        // for backwards compatibility, we update extents and units
+        offerTable.updateExtentMatrix(offerHandles, assays, newExtentMatrix);
+        const unitOpsArray = assayTable.getUnitOpsForAssays(assays);
+        const newUnitMatrix = newExtentMatrix.map(extentsRow =>
+          extentsRow.map((extent, i) => unitOpsArray[i].make(extent)),
+        );
+        offerTable.updateUnitMatrix(offerHandles, assays, newUnitMatrix);
       },
 
       /**
-       * The contract can "complete" an offer to remove it
-       * from the ongoing contract and resolve the
-       * `result` promise with the player's payouts (either winnings or
-       * refunds). Because Zoe only allows for reallocations that
-       * conserve rights and are 'offer-safe', we don't need to do
-       * those checks at this step and can assume that the
-       * invariants hold.
+       * The contract can "complete" an offer to remove it from the
+       * ongoing contract and resolve the player's payouts (either
+       * winnings or refunds). Because Zoe only allows for
+       * reallocations that conserve rights and are 'offer-safe', we
+       * don't need to do those checks at this step and can assume
+       * that the invariants hold.
        * @param  {object[]} offerHandles - an array of offerHandles
        */
-      complete: offerHandles =>
-        completeOffers(adminState, readOnlyState, offerHandles),
+      complete: completeOffers,
 
-      /**
-       *  The contract can create an empty offer and get the
-       *  associated offerHandle. This allows the contract to use this
-       *  offer slot for record-keeping. For instance, to represent a
-       *  pool, the contract can create an empty offer and then
-       *  reallocate other extents to this offer.
-       */
       escrowEmptyOffer: () => {
-        const assays = readOnlyState.getAssays(instanceHandle);
-        const labels = readOnlyState.getLabelsForInstanceHandle(instanceHandle);
-        const extentOpsArray = readOnlyState.getExtentOpsArrayForInstanceHandle(
+        const assays = instanceTable.getAssays(instanceHandle);
+        const offerHandle = harden({});
+        const unitOpsArray = assayTable.getUnitOpsForAssays(assays);
+        const extentOpsArray = assayTable.getExtentOpsForAssays(assays);
+        const offerImmutableRecord = {
+          offerHandle,
           instanceHandle,
-        );
-
-        const { offerHandle } = escrowEmptyOffer(
-          adminState.recordOffer,
+          payoutRules: makeEmptyPayoutRules(unitOpsArray),
+          exitRule: { kind: 'onDemand' },
           assays,
-          labels,
-          extentOpsArray,
-        );
-        return offerHandle;
-      },
-      /**
-       *  The contract can also create a real offer and get the
-       *  associated offerHandle, bypassing the escrow receipt
-       *  creation. This allows the contract to make offers on the
-       *  users' behalf, as happens in the `addLiquidity` step of the
-       *  `autoswap` contract.
-       */
-      escrowOffer: async (offerRules, offerPayments) => {
-        const { offerHandle } = await escrowOffer(
-          adminState.recordOffer,
-          adminState.recordAssay,
-          offerRules,
-          offerPayments,
-        );
+          units: unitOpsArray.map(unitOps => unitOps.empty()),
+          extents: extentOpsArray.map(extentOps => extentOps.empty()),
+          payoutPromise: makePromise(),
+        };
+        offerTable.create(offerHandle, offerImmutableRecord);
         return offerHandle;
       },
 
-      /**
-       * Burn the escrowReceipt ERTP payment using the escrowReceipt
-       * assay. Burning in ERTP also validates that the alleged payment was
-       * produced by the assay, and returns the
-       * units of the payment.
-       *
-       * This method also checks if the offer has been completed and
-       * errors if it has, so that a smart contract doesn't continue
-       * thinking that the offer is live. Additionally, we record that
-       * the escrowReceipt is used in this particular contract.
-       *
-       * @param  {object} escrowReceipt - an ERTP payment
-       * representing proof of escrowing specific assets with Zoe.
-       */
+      escrowOffer: (offerRules, offerPayments) => {
+        const assays = instanceTable.getAssays(instanceHandle);
+        const offerHandle = harden({});
+        const offerImmutableRecord = {
+          offerHandle,
+          instanceHandle,
+          payoutRules: offerRules.payoutRules, // use makeEmptyPayoutRules
+          exitRule: offerRules.exitRule,
+          assays,
+          payoutPromise: makePromise(),
+        };
+        offerTable.create(offerHandle, offerImmutableRecord);
+
+        // Promise flow = assay -> purse -> deposit payment -> record units
+        const paymentBalancesP = assays.map((assay, i) => {
+          const { purseP, unitOpsP } = assayTable.getOrCreateAssay(assay);
+          const offerPayment = offerPayments[i];
+
+          return Promise.all([purseP, unitOpsP]).then(([purse, unitOps]) => {
+            if (offerPayment !== undefined) {
+              // We cannot trust these units since they come directly
+              // from the remote assay and must coerce them.
+              return E(purse)
+                .depositAll(offerPayment)
+                .then(units => unitOps.coerce(units));
+            }
+            return Promise.resolve(unitOps.empty());
+          });
+        });
+        const allDepositedP = Promise.all(paymentBalancesP);
+        return allDepositedP
+          .then(unitsArray => {
+            offerTable.createUnits(offerHandle, unitsArray);
+            const extentsArray = unitsArray.map(units => units.extent);
+            offerTable.createExtents(offerHandle, extentsArray);
+          })
+          .then(_ => offerHandle);
+      },
 
       burnEscrowReceipt: async escrowReceipt => {
         const units = await escrowReceiptAssay.burnAll(escrowReceipt);
         const { offerHandle } = units.extent;
-        const { inactive } = readOnlyState.getStatusFor(harden([offerHandle]));
-        if (inactive.length > 0) {
+        if (!offerTable.isOfferActive(offerHandle)) {
           return Promise.reject(new Error('offer was cancelled'));
         }
-        adminState.recordUsedInInstance(instanceHandle, offerHandle);
+        offerTable.recordUsedInInstance(offerHandle, instanceHandle);
         return units.extent;
       },
+
       /**
        * Make a credible Zoe invite for a particular smart contract
        * indicated by the unique `instanceHandle`. The other
@@ -182,7 +254,7 @@ const makeZoe = async (additionalEndowments = {}) => {
        * they are getting. Note: if information can be derived in
        * queries based on other information, we choose to omit it. For
        * instance, `installationHandle` can be derived from
-       * `instanceId` and is omitted even though it is useful.
+       * `instanceHandle` and is omitted even though it is useful.
        * @param  {object} contractDefinedExtent - an object of
        * information to include in the extent, as defined by the smart
        * contract
@@ -191,30 +263,36 @@ const makeZoe = async (additionalEndowments = {}) => {
        * other words, buying the invite is buying the right to call
        * methods on this object.
        */
-      makeInvite: (contractDefinedExtent, useObj) => {
-        const inviteExtent = harden({
-          ...contractDefinedExtent,
-          handle: harden({}),
-          instanceHandle,
-        });
-        const invitePurseP = inviteMint.mint(inviteExtent);
-        inviteAddUseObj(inviteExtent.handle, useObj);
-        const invitePaymentP = invitePurseP.withdrawAll();
-        return invitePaymentP;
-      },
-
-      /** read-only, side-effect-free access below this line */
-      getStatusFor: readOnlyState.getStatusFor,
-      makeEmptyExtents: () =>
-        makeEmptyExtents(
-          readOnlyState.getExtentOpsArrayForInstanceHandle(instanceHandle),
-        ),
-      getExtentOpsArray: () =>
-        readOnlyState.getExtentOpsArrayForInstanceHandle(instanceHandle),
-      getLabels: () => readOnlyState.getLabelsForInstanceHandle(instanceHandle),
-      getExtentsFor: readOnlyState.getExtentsFor,
-      getPayoutRulesFor: readOnlyState.getPayoutRulesFor,
+      makeInvite: (inviteExtent, seat) =>
+        makeInvite(instanceHandle, seat, inviteExtent),
       getInviteAssay: () => inviteAssay,
+      getPayoutRuleMatrix: offerTable.getPayoutRuleMatrix,
+      getUnitOpsForAssays: assayTable.getUnitOpsForAssays,
+      getOfferStatuses: offerTable.getOfferStatuses,
+      getUnitMatrix: offerTable.getUnitMatrix,
+
+      // for a particular offer
+      getPayoutRules: offerTable.getPayoutRules,
+      getExitRule: offerTable.getExitRule,
+      isOfferActive: offerTable.isOfferActive,
+
+      // backwards compatible methods, to be deprecated
+      getStatusFor: offerTable.getOfferStatuses,
+      getExtentsFor: offerTable.getExtentsFor,
+      getExtentOpsArray: () => {
+        const { assays } = instanceTable.get(instanceHandle);
+        return assayTable.getExtentOpsForAssays(assays);
+      },
+      getPayoutRulesFor: offerTable.getPayoutRuleMatrix,
+      makeEmptyExtents: () => {
+        const { assays } = instanceTable.get(instanceHandle);
+        const extentOpsArray = assayTable.getExtentOpsForAssays(assays);
+        return extentOpsArray.map(extentOps => extentOps.empty());
+      },
+      getLabels: () => {
+        const { assays } = instanceTable.get(instanceHandle);
+        return assayTable.getLabelsForAssays(assays);
+      },
     });
     return contractFacet;
   };
@@ -227,33 +305,25 @@ const makeZoe = async (additionalEndowments = {}) => {
   // securely escrow and get an escrow receipt and payouts in return.
 
   const zoeService = harden({
-    getVersion: () => 'v0.1.0',
-    getEscrowReceiptAssay: () => escrowReceiptAssay,
     getInviteAssay: () => inviteAssay,
+    getEscrowReceiptAssay: () => escrowReceiptAssay,
+    // backwards compatibility
     getAssaysForInstance: instanceHandle =>
-      readOnlyState.getAssays(instanceHandle),
+      instanceTable.get(instanceHandle).assays,
     /**
      * Create an installation by safely evaluating the code and
      * registering it with Zoe.
-     *
-     * We have a moduleFormat to allow for different future formats
-     * without silent failures.
      */
-    install: (code, moduleFormat = 'getExport') => {
-      let installation;
-      switch (moduleFormat) {
-        case 'getExport': {
-          installation = evalContractCode(code, additionalEndowments);
-          break;
-        }
-        default: {
-          insist(false)`\
-Unimplemented installation moduleFormat ${moduleFormat}`;
-        }
-      }
-      const installationHandle = adminState.addInstallation(installation);
-      return installationHandle;
+    install: code => {
+      const installation = evalContractCode(code, additionalEndowments);
+      const installationHandle = harden({});
+      const installationRecord = installationTable.create(
+        installationHandle,
+        harden({ installation }),
+      );
+      return installationRecord;
     },
+
     /**
      * Makes a contract instance from an installation and returns a
      * unique handle for the instance that can be shared, as well as
@@ -264,87 +334,128 @@ Unimplemented installation moduleFormat ${moduleFormat}`;
      * arguments depend on the contract, apart from the `assays`
      * property, which is required.
      */
-    makeInstance: async (installationHandle, terms) => {
-      const installation = adminState.getInstallation(installationHandle);
+    makeInstance: (installationHandle, userDefinedTerms) => {
+      const { installation } = installationTable.get(installationHandle);
       const instanceHandle = harden({});
       const contractFacet = makeContractFacet(instanceHandle);
       const { instance, assays } = installation.makeContract(
         contractFacet,
-        terms,
+        userDefinedTerms,
       );
-      const newTerms = harden({ ...terms, assays });
-      await adminState.addInstance(
-        instanceHandle,
-        instance,
-        installationHandle,
-        newTerms,
+
+      const terms = {
+        ...userDefinedTerms,
         assays,
-      );
-      return harden({
-        installationHandle,
+      };
+      const instanceRecord = harden({
         instanceHandle,
+        installationHandle,
         instance,
-        terms: newTerms,
+        assays,
+        terms,
       });
+
+      instanceTable.create(instanceHandle, instanceRecord);
+      return instanceRecord;
     },
     /**
-     * Credibly retrieves an instance given an instanceHandle.
-     * @param {object} instanceHandle - the unique object for the instance
+     * Credibly retrieves an instance record given an instanceHandle.
+     * @param {object} instanceHandle - the unique, unforgeable
+     * identifier (empty object) for the instance
      */
-    getInstance: instanceHandle => {
-      const instance = adminState.getInstance(instanceHandle);
-      const installationHandle = adminState.getInstallationHandleForInstanceHandle(
-        instanceHandle,
-      );
-      const terms = readOnlyState.getTerms(instanceHandle);
-      return harden({
-        instanceHandle,
-        instance,
-        installationHandle,
-        terms,
-      });
-    },
+    getInstance: instanceTable.get,
 
     /**
-     * @param  {payoutRule[]} payoutRules - the offer description, an
-     * array of objects with `kind` and `units` properties.
+     * @param  {object} instanceHandle - unique, unforgeable
+     * identifier for instances. (This is an empty object.)
+     * @param  {offerRule[]} offerRules - the offer rules, an object
+     * with properties `payoutRules` and `exitRule`.
      * @param  {payment[]} offerPayments - payments corresponding to
-     * the offer description. A payment may be `undefined` in the case
+     * the offer rules. A payment may be `undefined` in the case
      * of specifying a `want`.
      */
-    escrow: async (offerRules, offerPayments) => {
-      const { offerHandle, result } = await escrowOffer(
-        adminState.recordOffer,
-        adminState.recordAssay,
-        offerRules,
-        offerPayments,
-      );
+    escrow: (offerRules, offerPayments) => {
+      const assays = getAssaysFromPayoutRules(offerRules.payoutRules);
 
-      const escrowReceiptPaymentP = mintEscrowReceiptPayment(
-        escrowReceiptMint,
+      const offerHandle = harden({});
+
+      const offerImmutableRecord = {
         offerHandle,
-        offerRules,
-      );
-
-      const escrowResult = {
-        escrowReceipt: escrowReceiptPaymentP,
-        payout: result.p,
+        payoutRules: offerRules.payoutRules,
+        exitRule: offerRules.exitRule,
+        assays,
+        payoutPromise: makePromise(),
       };
-      const { exitRule = { kind: 'onDemand' } } = offerRules;
-      if (exitRule.kind === 'afterDeadline') {
-        const exit = harden({
-          wake: () =>
-            completeOffers(adminState, readOnlyState, harden([offerHandle])),
+
+      // units should only be gotten after the payments are deposited
+      offerTable.create(offerHandle, offerImmutableRecord);
+
+      // Promise flow = assay -> purse -> deposit payment -> escrow receipt
+      const paymentBalancesP = assays.map((assay, i) => {
+        const { purseP, unitOpsP } = assayTable.getOrCreateAssay(assay);
+        const payoutRule = offerRules.payoutRules[i];
+        const offerPayment = offerPayments[i];
+
+        return Promise.all([purseP, unitOpsP]).then(([purse, unitOps]) => {
+          if (
+            payoutRule.kind === 'offerExactly' ||
+            payoutRule.kind === 'offerAtMost'
+          ) {
+            // We cannot trust these units since they come directly
+            // from the remote assay and must coerce them.
+            return E(purse)
+              .depositExactly(payoutRule.units, offerPayment)
+              .then(units => unitOps.coerce(units));
+          }
+          insist(
+            offerPayments[i] === undefined,
+          )`payment was included, but the rule kind was ${payoutRule.kind}`;
+          return Promise.resolve(unitOps.empty());
         });
-        offerRules.exitRule.timer.setWakeup(offerRules.exitRule.deadline, exit);
-      }
-      if (exitRule.kind === 'onDemand') {
-        escrowResult.cancelObj = {
-          cancel: () =>
-            completeOffers(adminState, readOnlyState, harden([offerHandle])),
+      });
+
+      const giveEscrowReceipt = unitsArray => {
+        // Record units for offer.
+        offerTable.createUnits(offerHandle, unitsArray);
+        const extentsArray = unitsArray.map(units => units.extent);
+        offerTable.createExtents(offerHandle, extentsArray);
+
+        const escrowReceiptExtent = harden({
+          offerHandle,
+          offerRules,
+        });
+        const escrowReceiptPurse = escrowReceiptMint.mint(escrowReceiptExtent);
+        const escrowReceipt = escrowReceiptPurse.withdrawAll();
+
+        // Create escrow result to be returned. Depends on exitRules.
+        const escrowResult = {
+          escrowReceipt,
+          payout: offerImmutableRecord.payoutPromise.p,
         };
-      }
-      return harden(escrowResult);
+        const { exitRule } = offerRules;
+
+        // Automatically cancel on deadline.
+        if (exitRule.kind === 'afterDeadline') {
+          exitRule.timer.setWakeup(
+            exitRule.deadline,
+            harden({
+              wake: () => completeOffers(harden([offerHandle]), assays),
+            }),
+          );
+        }
+
+        // Add an object with a cancel method to escrow result in
+        // order to cancel on demand.
+        if (exitRule.kind === 'onDemand') {
+          escrowResult.cancelObj = {
+            cancel: () => completeOffers(harden([offerHandle]), assays),
+          };
+        }
+        return harden(escrowResult);
+      };
+
+      const allDepositedP = Promise.all(paymentBalancesP);
+      return allDepositedP.then(giveEscrowReceipt);
     },
   });
   return zoeService;
