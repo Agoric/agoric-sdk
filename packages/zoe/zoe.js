@@ -158,12 +158,12 @@ const makeZoe = (additionalEndowments = {}) => {
 
         // 3) save the reallocation
         // for backwards compatibility, we update extents and units
-        offerTable.updateExtentMatrix(offerHandles, assays, newExtentMatrix);
+        offerTable.updateExtentMatrix(offerHandles, newExtentMatrix);
         const unitOpsArray = assayTable.getUnitOpsForAssays(assays);
         const newUnitMatrix = newExtentMatrix.map(extentsRow =>
           extentsRow.map((extent, i) => unitOpsArray[i].make(extent)),
         );
-        offerTable.updateUnitMatrix(offerHandles, assays, newUnitMatrix);
+        offerTable.updateUnitMatrix(offerHandles, newUnitMatrix);
       },
 
       /**
@@ -178,12 +178,11 @@ const makeZoe = (additionalEndowments = {}) => {
       complete: completeOffers,
 
       escrowEmptyOffer: () => {
-        const assays = instanceTable.getAssays(instanceHandle);
+        const { assays } = instanceTable.get(instanceHandle);
         const offerHandle = harden({});
         const unitOpsArray = assayTable.getUnitOpsForAssays(assays);
         const extentOpsArray = assayTable.getExtentOpsForAssays(assays);
         const offerImmutableRecord = {
-          offerHandle,
           instanceHandle,
           payoutRules: makeEmptyPayoutRules(unitOpsArray),
           exitRule: { kind: 'onDemand' },
@@ -197,15 +196,16 @@ const makeZoe = (additionalEndowments = {}) => {
       },
 
       escrowOffer: (offerRules, offerPayments) => {
-        const assays = instanceTable.getAssays(instanceHandle);
+        const { assays } = instanceTable.get(instanceHandle);
         const offerHandle = harden({});
         const offerImmutableRecord = {
-          offerHandle,
           instanceHandle,
           payoutRules: offerRules.payoutRules, // use makeEmptyPayoutRules
           exitRule: offerRules.exitRule,
           assays,
           payoutPromise: makePromise(),
+          units: undefined,
+          extents: undefined,
         };
         offerTable.create(offerHandle, offerImmutableRecord);
 
@@ -228,9 +228,11 @@ const makeZoe = (additionalEndowments = {}) => {
         const allDepositedP = Promise.all(paymentBalancesP);
         return allDepositedP
           .then(unitsArray => {
-            offerTable.createUnits(offerHandle, unitsArray);
             const extentsArray = unitsArray.map(units => units.extent);
-            offerTable.createExtents(offerHandle, extentsArray);
+            offerTable.update(offerHandle, {
+              units: unitsArray,
+              extents: extentsArray,
+            });
           })
           .then(_ => offerHandle);
       },
@@ -317,11 +319,11 @@ const makeZoe = (additionalEndowments = {}) => {
     install: code => {
       const installation = evalContractCode(code, additionalEndowments);
       const installationHandle = harden({});
-      const installationRecord = installationTable.create(
+      const { handle } = installationTable.create(
         installationHandle,
         harden({ installation }),
       );
-      return installationRecord;
+      return handle;
     },
 
     /**
@@ -348,7 +350,6 @@ const makeZoe = (additionalEndowments = {}) => {
         assays,
       };
       const instanceRecord = harden({
-        instanceHandle,
         installationHandle,
         instance,
         assays,
@@ -356,7 +357,10 @@ const makeZoe = (additionalEndowments = {}) => {
       });
 
       instanceTable.create(instanceHandle, instanceRecord);
-      return instanceRecord;
+      return harden({
+        ...instanceRecord,
+        instanceHandle,
+      });
     },
     /**
      * Credibly retrieves an instance record given an instanceHandle.
@@ -380,11 +384,13 @@ const makeZoe = (additionalEndowments = {}) => {
       const offerHandle = harden({});
 
       const offerImmutableRecord = {
-        offerHandle,
+        instanceHandle: undefined,
         payoutRules: offerRules.payoutRules,
         exitRule: offerRules.exitRule,
         assays,
         payoutPromise: makePromise(),
+        units: undefined,
+        extents: undefined,
       };
 
       // units should only be gotten after the payments are deposited
@@ -416,9 +422,12 @@ const makeZoe = (additionalEndowments = {}) => {
 
       const giveEscrowReceipt = unitsArray => {
         // Record units for offer.
-        offerTable.createUnits(offerHandle, unitsArray);
+        // Record the extents as well for backwards compatibility.
         const extentsArray = unitsArray.map(units => units.extent);
-        offerTable.createExtents(offerHandle, extentsArray);
+        offerTable.update(offerHandle, {
+          units: unitsArray,
+          extents: extentsArray,
+        });
 
         const escrowReceiptExtent = harden({
           offerHandle,
