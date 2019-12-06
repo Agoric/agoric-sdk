@@ -1,0 +1,6 @@
+Introduce "fake chain" to scenario3 configuration.
+
+Notably, have a simulated 5-second block time.  To
+reset this to the old behaviour, use:
+
+make scenario3-setup FAKE_CHAIN_DELAY=0

@@ -26,6 +26,7 @@ import { deliver, addDeliveryTarget } from './outbound';
 import { makeHTTPListener } from './web';
 
 import { connectToChain } from './chain-cosmos-sdk';
+import { connectToFakeChain } from './fake-chain';
 import bundle from './bundle';
 
 // import { makeChainFollower } from './follower';
@@ -230,6 +231,18 @@ export default async function start(basedir, withSES, argv) {
             addDeliveryTarget(c.GCI, deliverator);
           }
           break;
+        case 'fake-chain': {
+          console.log(`adding follower/sender for fake chain ${c.role} ${c.GCI}`);
+          const deliverator = await connectToFakeChain(
+            basedir,
+            c.GCI,
+            c.role,
+            c.fakeDelay,
+            inbound,
+          );
+          addDeliveryTarget(c.GCI, deliverator);
+          break;
+        }
         case 'http':
           console.log(`adding HTTP/WS listener on ${c.host}:${c.port}`);
           if (broadcastJSON) {

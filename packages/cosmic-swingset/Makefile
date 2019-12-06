@@ -2,6 +2,10 @@ REPOSITORY = agoric/cosmic-swingset
 CHAIN_ID = agoric
 INITIAL_TOKENS = 1000agmedallion
 
+# By default, make the fake chain in scenario3 produce
+# "blocks" at 5-second intervals.
+FAKE_CHAIN_DELAY = 5
+
 NUM_SOLOS?=1
 BASE_PORT?=8000
 
@@ -76,12 +80,15 @@ scenario2-run-client:
 
 scenario3-setup:
 	rm -rf t3
-	bin/ag-solo init t3 --egresses=none
+	bin/ag-solo init t3 --egresses=fake
+	(cd t3 && \
+			../bin/ag-solo set-fake-chain --role=two_chain --delay=$(FAKE_CHAIN_DELAY) myFakeGCI)
 	@echo 'Ignore advice above, instead run `make scenario3-run-client`'
+
 scenario3-run-client:
-	cd t3 && ../bin/ag-solo start --role=three_client
+	cd t3 && ../bin/ag-solo start --role=two_client
 scenario3-run-chain:
-	@echo 'No local chain needs to run in scenario3'
+	@echo 'No separate chain needs to run in scenario3'
 
 docker-pull:
 	for f in '' -pserver -setup -setup-solo -solo; do \

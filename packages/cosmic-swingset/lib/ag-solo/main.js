@@ -8,6 +8,7 @@ import { insist } from './insist';
 import bundle from './bundle';
 import initBasedir from './init-basedir';
 import setGCIIngress from './set-gci-ingress';
+import setFakeChain from './set-fake-chain';
 import start from './start';
 
 // As we add more egress types, put the default types in a comma-separated
@@ -71,6 +72,11 @@ start
     const chainID = subOpts.chainID || 'agoric';
     const rpcAddresses = subArgs.slice(1);
     setGCIIngress(basedir, GCI, rpcAddresses, chainID);
+  } else if (argv[0] === 'set-fake-chain') {
+    const basedir = insistIsBasedir();
+    const { _: subArgs, role, delay } = parseArgs(argv.slice(1), {});
+    const GCI = subArgs[0];
+    setFakeChain(basedir, GCI, role, delay);
   } else if (argv[0] === 'start') {
     const basedir = insistIsBasedir();
     const withSES = true;
