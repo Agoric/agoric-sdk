@@ -33,6 +33,8 @@ test('import listIsEmpty (true)', t => {
   t.end();
 });
 
+// TODO: This test throws because `lookupImport` does not exist. This
+// test needs to be fixed.
 test.skip('import not found', t => {
   const importer = makeGoodImportManager();
   t.throws(
