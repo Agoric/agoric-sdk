@@ -11,10 +11,16 @@ import {
 test('pixel insistWithinBounds', t => {
   t.doesNotThrow(() => insistWithinBounds(0, 1));
   t.doesNotThrow(() => insistWithinBounds(1, 2));
-  t.throws(() => insistWithinBounds(2, 2));
-  t.throws(() => insistWithinBounds('a', 2));
-  t.throws(() => insistWithinBounds(0, 0));
-  t.throws(() => insistWithinBounds(0, 'a'));
+  t.throws(
+    () => insistWithinBounds(2, 2),
+    /pixel position must be within bounds/,
+  );
+  t.throws(() => insistWithinBounds('a', 2), /not a safe integer/);
+  t.throws(
+    () => insistWithinBounds(0, 0),
+    /pixel position must be within bounds/,
+  );
+  t.throws(() => insistWithinBounds(0, 'a'), /not a safe integer/);
   t.end();
 });
 

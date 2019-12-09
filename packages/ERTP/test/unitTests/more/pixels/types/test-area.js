@@ -27,31 +27,37 @@ test('area insistArea', t => {
       5,
     ),
   );
-  t.throws(() =>
-    insistArea(
-      {
-        end: { x: 0, y: 0 },
-      },
-      5,
-    ),
+  t.throws(
+    () =>
+      insistArea(
+        {
+          end: { x: 0, y: 0 },
+        },
+        5,
+      ),
+    /areas must have start, end properties only/,
   );
-  t.throws(() =>
-    insistArea(
-      {
-        start: { x: 0, y: 0 },
-        end: { x: 3, y: 0 },
-      },
-      1,
-    ),
+  t.throws(
+    () =>
+      insistArea(
+        {
+          start: { x: 0, y: 0 },
+          end: { x: 3, y: 0 },
+        },
+        1,
+      ),
+    /pixel position must be within bounds/,
   );
-  t.throws(() =>
-    insistArea(
-      {
-        start: { x: 3, y: 0 },
-        end: { x: 0, y: 0 },
-      },
-      5,
-    ),
+  t.throws(
+    () =>
+      insistArea(
+        {
+          start: { x: 3, y: 0 },
+          end: { x: 0, y: 0 },
+        },
+        5,
+      ),
+    /the starting pixel must be "less than or equal" to the ending pixel/,
   );
   t.end();
 });

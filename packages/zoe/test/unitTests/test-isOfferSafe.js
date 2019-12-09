@@ -12,7 +12,7 @@ test('isOfferSafeForOffer - empty payoutRules', t => {
 
     t.throws(
       _ => isOfferSafeForOffer(extentOps, payoutRules, extents),
-      'extentOps, payoutRules, and extents must be arrays of the same length',
+      /Error: extentOpsArray, the offer description, and extents must be arrays of the same length/,
     );
   } catch (e) {
     t.assert(false, e);
@@ -34,7 +34,7 @@ test('isOfferSafeForOffer - empty extents', t => {
 
     t.throws(
       _ => isOfferSafeForOffer(extentOps, payoutRules, extents),
-      'extentOps, payoutRules, and extents must be arrays of the same length',
+      /Error: extentOpsArray, the offer description, and extents must be arrays of the same length/,
     );
   } catch (e) {
     t.assert(false, e);
@@ -313,7 +313,7 @@ test('isOfferSafeForOffer - empty arrays', t => {
     const extents = [];
     t.throws(
       () => isOfferSafeForOffer(extentOps, payoutRules, extents),
-      /extentOpsArray, the offer description, and extents must be arrays of the same length/,
+      /Error: extentOpsArray, the offer description, and extents must be arrays of the same length/,
     );
   } catch (e) {
     t.assert(false, e);
