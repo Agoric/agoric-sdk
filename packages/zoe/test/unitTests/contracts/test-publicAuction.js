@@ -423,7 +423,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // 8: Bob makes an offer with his escrow receipt
     t.rejects(
       bobAuction.bid(bobEscrowReceipt),
-      `The item up for auction has been withdrawn`,
+      /The item up for auction has been withdrawn/,
     );
 
     // 9: Carol decides to bid for the one moola
@@ -463,7 +463,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // 11: Carol makes an offer with her escrow receipt
     t.rejects(
       carolAuction.bid(carolEscrowReceipt),
-      `The item up for auction has been withdrawn`,
+      /The item up for auction has been withdrawn/,
     );
 
     // 12: Dave decides to bid for the one moola
@@ -501,7 +501,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // 14: Dave makes an offer with his escrow receipt
     t.rejects(
       daveAuction.bid(daveEscrowReceipt),
-      `The item up for auction has been withdrawn`,
+      /The item up for auction has been withdrawn/,
     );
 
     const aliceResult = await alicePayoutP;
