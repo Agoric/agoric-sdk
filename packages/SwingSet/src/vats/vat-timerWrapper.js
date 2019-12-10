@@ -3,14 +3,9 @@ import Nat from '@agoric/nat';
 import { insist } from '../insist';
 
 function build(E, D) {
-  let timerNode; // Timer device
   const repeaters = new Map();
 
-  function registerTimerDevice(TimerDeviceNode) {
-    timerNode = TimerDeviceNode;
-  }
-
-  async function createTimerService() {
+  async function createTimerService(timerNode) {
     return harden({
       getCurrentTimestamp() {
         return Nat(D(timerNode).getLastPolled());
@@ -49,7 +44,7 @@ function build(E, D) {
     });
   }
 
-  return harden({ registerTimerDevice, createTimerService });
+  return harden({ createTimerService });
 }
 
 export default function setup(syscall, state, helpers) {
