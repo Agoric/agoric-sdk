@@ -1,0 +1,2 @@
+fix timer interface to correspond to doc
+prevent overly strict timer monotonicity

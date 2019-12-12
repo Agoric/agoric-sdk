@@ -37,8 +37,7 @@ In `bootstrap()` for a particular SwingSet, we create a timerService, and
 make it accessible to the user in `home`
 
 ```
-await vats.timerWrapper~.registerTimerDevice(devices.timer);
-const timerService = vats.timerWrapper~.createTimerService();
+const timerService = vats.timerWrapper~.createTimerService(devices.timer);
 ```
 
 Then users in the REPL can use the timerService to schedule wakeups.
