@@ -214,8 +214,8 @@ export default function setup(syscall, state, helpers, endowments) {
 
     function updateTime(time) {
       insist(
-        time > lastPolled,
-        `Time is monotonic. ${time} must be greater than ${lastPolled}`,
+        time >= lastPolled,
+        `Time is monotonic. ${time} cannot be less than ${lastPolled}`,
       );
       lastPolled = time;
       saveState();
