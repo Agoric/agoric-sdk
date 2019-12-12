@@ -31,7 +31,7 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
       let slot;
       if (!valToSlot.has(val)) {
         // new export
-        if (Promise.resolve(val) === val) {
+        if (HandledPromise.resolve(val) === val) {
           lastPromiseID += 1;
           const promiseID = lastPromiseID;
           slot = `p+${promiseID}`;
@@ -74,6 +74,7 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
   function makeQuestion() {
     lastQuestionID += 1;
     const questionID = lastQuestionID;
+    // eslint-disable-next-line no-use-before-define
     const pr = makeRemote(questionID);
     questions.set(questionID, pr);
     return [questionID, pr];
@@ -81,7 +82,7 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
 
   function makeRemote(target) {
     const handler = {
-      GET(_o, prop) {
+      get(_o, prop) {
         const [questionID, pr] = makeQuestion();
         send({
           type: 'CTP_CALL',
@@ -91,7 +92,7 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
         });
         return harden(pr.p);
       },
-      POST(_o, prop, args) {
+      applyMethod(_o, prop, args) {
         // Support: o~.[prop](...args) remote method invocation
         const [questionID, pr] = makeQuestion();
         send({
@@ -105,7 +106,7 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
     };
 
     const pr = {};
-    pr.p = Promise.makeHandled((res, rej, resolveWithPresence) => {
+    pr.p = new HandledPromise((res, rej, resolveWithPresence) => {
       pr.rej = rej;
       pr.resPres = () => resolveWithPresence(handler);
       pr.res = res;
@@ -171,19 +172,18 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
         : HandledPromise.get(val, prop);
       answers.set(questionID, hp);
       hp.then(res =>
-          send({
-            type: 'CTP_RETURN',
-            answerID: questionID,
-            result: serialize(harden(res)),
-          }),
-        )
-        .catch(rej =>
-          send({
-            type: 'CTP_RETURN',
-            answerID: questionID,
-            exception: serialize(harden(rej)),
-          }),
-        );
+        send({
+          type: 'CTP_RETURN',
+          answerID: questionID,
+          result: serialize(harden(res)),
+        }),
+      ).catch(rej =>
+        send({
+          type: 'CTP_RETURN',
+          answerID: questionID,
+          exception: serialize(harden(rej)),
+        }),
+      );
     },
     CTP_RETURN(obj) {
       const { result, exception, answerID } = obj;
@@ -206,7 +206,7 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
       imports.delete(promiseID);
     },
     CTP_ABORT(obj) {
-      const {exception} = obj;
+      const { exception } = obj;
       unplug = true;
       for (const pr of questions.values()) {
         pr.rej(exception);
@@ -229,10 +229,6 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
   };
   harden(handler);
 
-  // Abort a connection.
-  const abort = exception =>
-    dispatch({ type: 'CTP_ABORT', exception });
-
   // Return a dispatch function.
   const dispatch = obj => {
     if (unplug) {
@@ -245,6 +241,9 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
     }
     return false;
   };
+
+  // Abort a connection.
+  const abort = exception => dispatch({ type: 'CTP_ABORT', exception });
 
   return harden({ abort, dispatch, getBootstrap });
 }

@@ -12,7 +12,7 @@ test('sanity', async t => {
     );
     const sourceState = options.transforms.reduce(
       (ss, transform) => (transform.rewrite ? transform.rewrite(ss) : ss),
-      { src: `foo~.bar` },
+      { src: `foo~.bar`, endowments: {} },
     );
 
     t.equal(

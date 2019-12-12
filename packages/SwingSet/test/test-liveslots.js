@@ -3,7 +3,6 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 // eslint-disable-next-line no-unused-vars
-import evaluateExpr from '@agoric/evaluate'; // to get Promise.makeHandled
 import { buildStorageInMemory } from '../src/hostStorage';
 import buildKernel from '../src/kernel/index';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
@@ -35,13 +34,13 @@ test('calls', async t => {
   kernel.addGenesisVat('bootstrap', setupBootstrap);
 
   function setup(syscallVat, state, helpers) {
-    function build(_E, _D) {
+    function build(E, _D) {
       return harden({
         one() {
           log.push('one');
         },
         two(p) {
-          log.push(`two ${Promise.resolve(p) === p}`);
+          log.push(`two ${E.resolve(p) === p}`);
           p.then(
             res => log.push(['res', res]),
             rej => log.push(['rej', rej]),

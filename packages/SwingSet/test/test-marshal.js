@@ -3,7 +3,6 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import { makeMarshal, mustPassByPresence } from '@agoric/marshal';
-import '@agoric/eventual-send'; // for side-effect: ensure HandledPromise is installed
 
 import { makeMarshaller } from '../src/kernel/liveSlots';
 import makePromise from '../src/makePromise';

@@ -18,11 +18,6 @@ import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
 import { buildStorageInMemory } from './hostStorage';
 
-const evaluateOptions = makeDefaultEvaluateOptions();
-// globalThis is standard, we want it to be frozen
-// as one of our root realm's global properties.
-evaluateOptions.shims.unshift('this.globalThis = this');
-
 export function loadBasedir(basedir) {
   console.log(`= loading config from basedir ${basedir}`);
   const vats = new Map(); // name -> { sourcepath, options }
@@ -63,14 +58,17 @@ function getKernelSource() {
 function makeEvaluate(e) {
   const { makeCompartment, rootOptions, confine, confineExpr } = e;
   const makeEvaluators = (realmOptions = {}) => {
+    // Realm transforms need to be vetted by global transforms.
+    const transforms = (realmOptions.transforms || []).concat(
+      rootOptions.transforms || [],
+    );
+
     const c = makeCompartment({
       ...rootOptions,
       ...realmOptions,
-      // Realm transforms need to be vetted by global transforms.
-      transforms: (realmOptions.transforms || []).concat(
-        rootOptions.transforms || [],
-      ),
+      transforms,
     });
+    transforms.forEach(t => t.closeOverSES && t.closeOverSES(c));
     // Global shims need to take effect before realm shims.
     const shims = (rootOptions.shims || []).concat(realmOptions.shims || []);
     shims.forEach(shim => c.evaluate(shim));
@@ -99,11 +97,18 @@ function makeEvaluate(e) {
 
 function buildSESKernel(hostStorage) {
   // console.log('transforms', transforms);
+  const evaluateOptions = makeDefaultEvaluateOptions();
+  const { transforms, ...otherOptions } = evaluateOptions;
   const s = SES.makeSESRootRealm({
-    ...evaluateOptions,
+    ...otherOptions,
+    transforms,
     consoleMode: 'allow',
     errorStackMode: 'allow',
   });
+  transforms.forEach(t => {
+    t.closeOverSES && t.closeOverSES(s);
+  });
+
   const r = s.makeRequire({
     '@agoric/evaluate': {
       attenuatorSource: `${makeEvaluate}`,
@@ -125,6 +130,7 @@ function buildSESKernel(hostStorage) {
 
 function buildNonSESKernel(hostStorage) {
   // Evaluate shims to produce desired globals.
+  const evaluateOptions = makeDefaultEvaluateOptions();
   // eslint-disable-next-line no-eval
   (evaluateOptions.shims || []).forEach(shim => (1, eval)(shim));
 
