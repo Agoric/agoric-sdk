@@ -17,7 +17,7 @@ docker-build-base:
 	hash=`git rev-parse --short HEAD`; \
 	  dirty=`git diff --quiet || echo -dirty`; \
 	  echo "$$hash$$dirty" > $(SS)lib/git-revision.txt
-	docker build -t $(REPOSITORY)-go:latest $(SS)
+	docker build -t $(REPOSITORY):latest $(SS)
 
 docker-build-pserver:
 	docker build -t $(REPOSITORY)-pserver:latest $(SS)provisioning-server
