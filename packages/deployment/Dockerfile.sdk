@@ -1,11 +1,11 @@
-# The Node install container
-FROM agoric/cosmic-swingset:latest
+# The install container
+FROM node:stretch AS install
 
 WORKDIR /usr/src/agoric-sdk
 COPY . .
-RUN (cd packages/cosmic-swingset && tar -cf - .) | (cd ../app && tar -xBpf -) && \
-  rm -rf packages/cosmic-swingset && mv ../app packages/cosmic-swingset && \
-  ln -s agoric-sdk/packages/cosmic-swingset ../app
+COPY --from=agoric/cosmic-swingset-go:latest /usr/src/app/lib/ packages/cosmic-swingset/lib/
+COPY --from=agoric/cosmic-swingset-go:latest /go/bin/ag-cosmos-helper /usr/local/bin/
+RUN ln -s agoric-sdk/packages/cosmic-swingset ../app
 RUN echo 'all:' > packages/cosmic-swingset/Makefile
 
 RUN yarn install
