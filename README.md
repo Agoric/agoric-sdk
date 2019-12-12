@@ -60,7 +60,7 @@ To run the unit tests of just a single package (e.g. `eventual-send`):
 ## Edit Loop
 
 * modify something in e.g. `SwingSet/`
-* run `yarn build` (at the top level or in `SwingSet/`
+* run `yarn build` (at the top level or in `SwingSet/`)
 * re-run tests or setup/run-chain/run-client
 * repeat
 
