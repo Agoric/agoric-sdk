@@ -37,8 +37,8 @@ docker-push-setup:
 	docker push $(REPOSITORY)-setup:$(TAG)
 
 docker-push-base:
-	docker tag $(REPOSITORY_SDK):latest $(REPOSITORY)-sdk:$(TAG)
-	$(DO_PUSH_LATEST) docker push $(REPOSITORY)-sdk:latest
+	docker tag $(REPOSITORY_SDK):latest $(REPOSITORY_SDK):$(TAG)
+	$(DO_PUSH_LATEST) docker push $(REPOSITORY_SDK):latest
 	docker push $(REPOSITORY_SDK):$(TAG)
 
 docker-push-pserver:
