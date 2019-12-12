@@ -10,4 +10,3 @@ COPY lib/*.go lib/
 COPY lib/daemon/ lib/daemon/
 COPY lib/helper/ lib/helper/
 RUN make compile-go install
-COPY lib/git-revision.txt lib/

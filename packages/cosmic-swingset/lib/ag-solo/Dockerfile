@@ -1,7 +1,7 @@
 ARG TAG=latest
-FROM agoric/cosmic-swingset:$TAG
+FROM agoric/agoric-sdk:$TAG
 
-WORKDIR /usr/src/app
+WORKDIR /usr/src/agoric-sdk/packages/cosmic-swingset
 RUN ln -sf $PWD/bin/ag-solo /usr/local/bin/
 COPY . lib/ag-solo/
 WORKDIR /usr/src/app/solo
