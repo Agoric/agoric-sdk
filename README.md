@@ -10,7 +10,7 @@ But if you are improving the platform itself, this is the repository to use.
 
 * Git
 * Node.js (version 11 or higher)
-* Golang (1.12 or higher) (TODO: only require this for cosmic-swingset)
+* Golang (1.13 or higher) (TODO: only require this for cosmic-swingset)
 * Yarn (`npm install -g yarn`)
 
 ## Build
@@ -120,3 +120,8 @@ set up the monorepo's cross-package symlinks.
 Until we change this, to build everything else without a Go install, just
 edit the top-level `package.json` and remove `packages/cosmic-swingset` from
 the `workspaces` clause.
+
+We recommend Go `1.13`. The `1.12` release will work, but it will modify
+`packages/cosmic-swingset/go.mod` upon each build (by adding a dependency
+upon `appengine`). The `1.13` release will leave the `go.mod` file correctly
+unmodified.
