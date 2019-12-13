@@ -47,12 +47,12 @@ To run all unit tests (in all packages):
 
 To run the unit tests of just a single package (e.g. `eventual-send`):
 
-* `cd eventual-send`
+* `cd packages/eventual-send`
 * `yarn test`
 
 ## Run the larger demo
 
-* `cd cosmic-swingset`
+* `cd packages/cosmic-swingset`
 * `make scenario2-setup`
 * `make scenario2-run-chain` (in one shell)
 * `make scenario2-run-client` (in a second shell)
