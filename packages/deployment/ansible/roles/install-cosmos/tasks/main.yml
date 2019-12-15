@@ -22,6 +22,36 @@
     regexp: '^addr_book_strict *='
     line: 'addr_book_strict = false'
 
+- name: "check if prometheus-tendermint.txt exists"
+  delegate_to: localhost
+  stat:
+    path: "{{ SETUP_HOME }}/prometheus-tendermint.txt"
+  register: "prommint"
+
+# NOTE: This is protected by the server firewall
+#- name: Set prometheus_listen_addr=127.0.0.1:26660
+#  lineinfile:
+#    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
+#    state: present
+#    regexp: '^prometheus_listen_addr *='
+#    line: 'prometheus_listen_addr = "127.0.0.1:26660"'
+
+- name: Set prometheus=true
+  lineinfile:
+    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    state: present
+    regexp: '^prometheus *='
+    line: 'prometheus = true'
+  when: prommint.stat.exists
+
+- name: Set prometheus=false
+  lineinfile:
+    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    state: present
+    regexp: '^prometheus *='
+    line: 'prometheus = false'
+  when: not prommint.stat.exists
+
 - name: Listen for public RPC
   lineinfile:
     path: "/home/{{ service }}/.{{ service }}/config/config.toml"

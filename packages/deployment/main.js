@@ -402,6 +402,7 @@ show-config      display the client connection parameters
         needReMain([
           'play',
           'install',
+          `-eexecline=${shellEscape('/usr/src/cosmic-swingset/lib/ag-chain-cosmos start --proxy_app=kvstore')}`,
           `-eserviceLines="Environment=BOOT_ADDRESS=${bootAddress}"`,
         ]),
       );

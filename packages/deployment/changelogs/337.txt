@@ -1,0 +1,9 @@
+* to configure Prometheus endpoints on your deployed testnet nodes:
+  1. for validator (i.e. Tendermint) on TCP port 26660 /metrics
+    - to enable: `date | ag-chain-cosmos shell -c 'tee MYTESTNET/prometheus-tendermint.txt'`
+      - takes effect on next `NETWORK_NAME=MYTESTNET ag-chain-cosmos bootstrap --bump`
+    - to disable: `ag-chain-cosmos shell -c 'rm MYTESTNET/prometheus-tendermint.txt'`
+      - takes effect on next `NETWORK_NAME=MYTESTNET ag-chain-cosmos bootstrap --bump`
+  2. for host-level (i.e. node_exporter) on TCP port 9100 /metrics
+    - to enable: `ag-chain-cosmos play prometheus-node-enable`
+    - to disable: `ag-chain-cosmos play prometheus-node-disable`
