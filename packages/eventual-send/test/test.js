@@ -1,6 +1,8 @@
 import test from 'tape-promise/tape';
 import { HandledPromise } from '../src/index';
 
+const { getPrototypeOf } = Object;
+
 if (typeof window !== 'undefined') {
   // Let the browser detect when the tests are done.
   /* eslint-disable-next-line no-undef */
@@ -86,7 +88,10 @@ test('handlers are always async', async t => {
       t.equal(v, 'un', 'second post return value is un');
       t.deepEqual(
         queue,
-        [['ep', 'myfn', ['abc', 123]], ['ep2', 'myotherfn', ['def', 456]]],
+        [
+          ['ep', 'myfn', ['abc', 123]],
+          ['ep2', 'myotherfn', ['def', 456]],
+        ],
         'both posts in queue after second resolves',
       );
       return 'second';
@@ -100,7 +105,10 @@ test('handlers are always async', async t => {
     await Promise.resolve();
     t.deepEqual(
       queue,
-      [['ep', 'myfn', ['abc', 123]], ['ep2', 'myotherfn', ['def', 456]]],
+      [
+        ['ep', 'myfn', ['abc', 123]],
+        ['ep2', 'myotherfn', ['def', 456]],
+      ],
       'second post is queued after await',
     );
 
@@ -127,7 +135,10 @@ test('handlers are always async', async t => {
 
     t.deepEqual(
       queue,
-      [['ep', 'myfn', ['abc', 123]], ['ep2', 'myotherfn', ['def', 456]]],
+      [
+        ['ep', 'myfn', ['abc', 123]],
+        ['ep2', 'myotherfn', ['def', 456]],
+      ],
       'third post is asynchronous',
     );
     await Promise.resolve();
@@ -269,6 +280,24 @@ test('new HandledPromise(executor, undefined)', async t => {
       'Hello, World',
       `.applyMethod works`,
     );
+  } catch (e) {
+    t.assert(false, `Unexpected exception ${e}`);
+  } finally {
+    t.end();
+  }
+});
+
+test('handled promises are promises', t => {
+  try {
+    const hp = new HandledPromise(() => {});
+    t.equal(Promise.resolve(hp), hp, 'Promise.resolve of a HandledPromise');
+    t.equal(
+      getPrototypeOf(hp),
+      Promise.prototype,
+      'handled promises inherit as promises',
+    );
+    t.equal(hp.constructor, Promise, 'The constructor is Promise');
+    t.equal(HandledPromise.prototype, Promise.prototype, 'shared prototype');
   } catch (e) {
     t.assert(false, `Unexpected exception ${e}`);
   } finally {
