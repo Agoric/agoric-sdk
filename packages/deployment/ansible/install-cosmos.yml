@@ -8,6 +8,7 @@
   vars:
     - service: ag-chain-cosmos
     - data: "{{ SETUP_HOME }}/{{ service }}/data"
+    - execline: "/usr/src/cosmic-swingset/lib/ag-chain-cosmos start --proxy_app=kvstore"
     - PERSISTENT_PEERS: "{{ lookup('file', SETUP_HOME + '/' + service + '/data/peers.txt') }}"
     - NUM_FILE_DESCRIPTORS: 2048
   roles:

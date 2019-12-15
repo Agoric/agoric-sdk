@@ -6,7 +6,6 @@
   gather_facts: yes
   strategy: free
   vars:
-    - service: ag-chain-cosmos
     - NODEJS_VERSION: 12
   roles:
     - prereq
