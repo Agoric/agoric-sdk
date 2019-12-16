@@ -12,14 +12,14 @@ const makeTable = (validateFn, makeCustomMethodsFn = () => {}) => {
 
   const table = harden({
     validate: validateFn,
-    create: (handle, record) => {
+    create: (record, handle = harden({})) => {
       record = harden({
         ...record,
         handle, // reliably add the handle to the record
       });
       table.validate(record);
       handleToRecord.init(handle, record);
-      return record;
+      return handle;
     },
     get: handleToRecord.get,
     has: handleToRecord.has,
@@ -228,7 +228,7 @@ const makeAssayTable = () => {
             extentOps: undefined,
             label: undefined,
           };
-          return table.create(assay, assayRecord);
+          table.create(assayRecord, assay);
         }
         return table.get(assay);
       },

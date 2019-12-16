@@ -188,7 +188,6 @@ const makeZoe = (additionalEndowments = {}) => {
        */
       escrowEmptyOffer: () => {
         const { assays } = instanceTable.get(instanceHandle);
-        const offerHandle = harden({});
         const unitOpsArray = assayTable.getUnitOpsForAssays(assays);
         const extentOpsArray = assayTable.getExtentOpsForAssays(assays);
         const offerRecord = {
@@ -199,7 +198,7 @@ const makeZoe = (additionalEndowments = {}) => {
           units: unitOpsArray.map(unitOps => unitOps.empty()),
           extents: extentOpsArray.map(extentOps => extentOps.empty()),
         };
-        offerTable.create(offerHandle, offerRecord);
+        const offerHandle = offerTable.create(offerRecord);
         payoutMap.init(offerHandle, makePromise());
         return offerHandle;
       },
@@ -211,7 +210,6 @@ const makeZoe = (additionalEndowments = {}) => {
        */
       escrowOffer: (offerRules, offerPayments) => {
         const { assays } = instanceTable.get(instanceHandle);
-        const offerHandle = harden({});
         const offerImmutableRecord = {
           instanceHandle,
           payoutRules: offerRules.payoutRules,
@@ -220,7 +218,7 @@ const makeZoe = (additionalEndowments = {}) => {
           units: undefined,
           extents: undefined,
         };
-        offerTable.create(offerHandle, offerImmutableRecord);
+        const offerHandle = offerTable.create(offerImmutableRecord);
         payoutMap.init(offerHandle, makePromise());
 
         // Promise flow = assay -> purse -> deposit payment -> record units
@@ -349,12 +347,10 @@ const makeZoe = (additionalEndowments = {}) => {
 Unimplemented installation moduleFormat ${moduleFormat}`;
         }
       }
-      const installationHandle = harden({});
-      const { handle } = installationTable.create(
-        installationHandle,
+      const installationHandle = installationTable.create(
         harden({ installation }),
       );
-      return handle;
+      return installationHandle;
     },
 
     /**
@@ -387,7 +383,13 @@ Unimplemented installation moduleFormat ${moduleFormat}`;
         terms: finalTerms,
       });
 
-      instanceTable.create(instanceHandle, instanceRecord);
+      instanceTable.create(instanceRecord, instanceHandle);
+
+      // This is the only place where we return a record rather than a
+      // handle after creation. The return value of this method will
+      // change in the PR to use invites rather than escrow receipts.
+      // Also, the contracts expect a property named 'instanceHandle'
+      // whereas our tables name the primary key just 'handle'.
       return harden({
         ...instanceRecord,
         instanceHandle,
@@ -411,9 +413,6 @@ Unimplemented installation moduleFormat ${moduleFormat}`;
      */
     escrow: (offerRules, offerPayments) => {
       const assays = getAssaysFromPayoutRules(offerRules.payoutRules);
-
-      const offerHandle = harden({});
-
       const offerImmutableRecord = {
         instanceHandle: undefined,
         payoutRules: offerRules.payoutRules,
@@ -424,7 +423,7 @@ Unimplemented installation moduleFormat ${moduleFormat}`;
       };
 
       // units should only be gotten after the payments are deposited
-      offerTable.create(offerHandle, offerImmutableRecord);
+      const offerHandle = offerTable.create(offerImmutableRecord);
       payoutMap.init(offerHandle, makePromise());
 
       // Promise flow = assay -> purse -> deposit payment -> escrow receipt
