@@ -61,8 +61,6 @@ const makeZoe = (additionalEndowments = {}) => {
     // line can be deleted
     const assays = getAssaysFromPayoutRules(offers[0].payoutRules);
 
-    const unitMatrix = offers.map(offer => offer.units);
-
     // Remove the offers from the offerTable so that they are no
     // longer active.
     offerTable.deleteOffers(offerHandles);
@@ -72,9 +70,7 @@ const makeZoe = (additionalEndowments = {}) => {
     for (const offer of offers) {
       // This Promise.all will be taken out in a later PR.
       const payout = Promise.all(
-        offer.units.map((units, j) =>
-          E(pursePs[j]).withdraw(units, 'payout'),
-        ),
+        offer.units.map((units, j) => E(pursePs[j]).withdraw(units, 'payout')),
       );
       payoutMap.get(offer.handle).res(payout);
     }
