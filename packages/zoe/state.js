@@ -130,6 +130,7 @@ const makeOfferTable = () => {
 
   const makeCustomMethods = table => {
     const customMethods = harden({
+      getOffers: offerHandles => offerHandles.map(table.get),
       getPayoutRuleMatrix: offerHandles =>
         offerHandles.map(offerHandle => table.get(offerHandle).payoutRules),
       getPayoutRules: offerHandle => table.get(offerHandle).payoutRules,

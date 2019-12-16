@@ -55,13 +55,15 @@ const makeZoe = (additionalEndowments = {}) => {
     if (inactive.length > 0) {
       throw new Error(`offer has already completed`);
     }
+    const offers = offerTable.getOffers(offerHandles);
 
-    // In the future, when `assays` is a parameter, these next two
-    // lines can be deleted
-    const payoutRules = offerTable.getPayoutRules(offerHandles[0]);
-    const assays = getAssaysFromPayoutRules(payoutRules);
+    // In the future, when `assays` is a parameter, these next
+    // line can be deleted
+    const assays = getAssaysFromPayoutRules(offers[0].payoutRules);
 
-    const unitMatrix = offerTable.getUnitMatrix(offerHandles, assays);
+    // Not sure this is correct, because original had an "extra" assays
+    // argument
+    const unitMatrix = offers.map(offer => offer.units);
 
     // Remove the offers from the offerTable so that they are no
     // longer active.
@@ -147,8 +149,10 @@ const makeZoe = (additionalEndowments = {}) => {
       reallocate: (offerHandles, newExtentMatrix) => {
         const { assays } = instanceTable.get(instanceHandle);
 
-        const payoutRuleMatrix = offerTable.getPayoutRuleMatrix(offerHandles);
-        const currentExtentMatrix = offerTable.getExtentMatrix(offerHandles);
+        const offers = offerTable.getOffers(offerHandles);
+
+        const payoutRuleMatrix = offers.map(offer => offer.payoutRules);
+        const currentExtentMatrix = offers.map(offer => offer.extents);
         const extentOpsArray = assayTable.getExtentOpsForAssays(assays);
 
         // 1) ensure that rights are conserved
