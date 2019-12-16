@@ -40,6 +40,7 @@ const makeZoe = (additionalEndowments = {}) => {
     installationTable,
     instanceTable,
     offerTable,
+    payoutMap,
     assayTable,
   } = makeTables();
 
@@ -61,7 +62,6 @@ const makeZoe = (additionalEndowments = {}) => {
     const assays = getAssaysFromPayoutRules(payoutRules);
 
     const unitMatrix = offerTable.getUnitMatrix(offerHandles, assays);
-    const payoutPromises = offerTable.getPayoutPromises(offerHandles);
 
     // Remove the offers from the offerTable so that they are no
     // longer active.
@@ -71,6 +71,7 @@ const makeZoe = (additionalEndowments = {}) => {
     const pursesP = assayTable.getPursesForAssays(assays);
     Promise.all(pursesP).then(purses => {
       for (let i = 0; i < offerHandles.length; i += 1) {
+        const offerHandle = offerHandles[i];
         const unitsForOffer = unitMatrix[i];
         // This Promise.all will be taken out in a later PR.
         const payout = Promise.all(
@@ -78,7 +79,7 @@ const makeZoe = (additionalEndowments = {}) => {
             E(purses[j]).withdraw(units, 'payout'),
           ),
         );
-        payoutPromises[i].res(payout);
+        payoutMap.get(offerHandle).res(payout);
       }
     });
   };
@@ -203,9 +204,9 @@ const makeZoe = (additionalEndowments = {}) => {
           assays,
           units: unitOpsArray.map(unitOps => unitOps.empty()),
           extents: extentOpsArray.map(extentOps => extentOps.empty()),
-          payoutPromise: makePromise(),
         };
         offerTable.create(offerHandle, offerRecord);
+        payoutMap.init(offerHandle, makePromise());
         return offerHandle;
       },
 
@@ -222,11 +223,11 @@ const makeZoe = (additionalEndowments = {}) => {
           payoutRules: offerRules.payoutRules,
           exitRule: offerRules.exitRule,
           assays,
-          payoutPromise: makePromise(),
           units: undefined,
           extents: undefined,
         };
         offerTable.create(offerHandle, offerImmutableRecord);
+        payoutMap.init(offerHandle, makePromise());
 
         // Promise flow = assay -> purse -> deposit payment -> record units
         const paymentBalancesP = assays.map((assay, i) => {
@@ -427,13 +428,13 @@ Unimplemented installation moduleFormat ${moduleFormat}`;
         payoutRules: offerRules.payoutRules,
         exitRule: offerRules.exitRule,
         assays,
-        payoutPromise: makePromise(),
         units: undefined,
         extents: undefined,
       };
 
       // units should only be gotten after the payments are deposited
       offerTable.create(offerHandle, offerImmutableRecord);
+      payoutMap.init(offerHandle, makePromise());
 
       // Promise flow = assay -> purse -> deposit payment -> escrow receipt
       const paymentBalancesP = assays.map((assay, i) => {
@@ -478,7 +479,7 @@ Unimplemented installation moduleFormat ${moduleFormat}`;
         // Create escrow result to be returned. Depends on exitRules.
         const escrowResult = {
           escrowReceipt,
-          payout: offerImmutableRecord.payoutPromise.p,
+          payout: payoutMap.get(offerHandle).p,
         };
         const { exitRule } = offerRules;
 

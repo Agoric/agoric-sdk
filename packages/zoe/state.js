@@ -84,7 +84,7 @@ const makeInstanceTable = () => {
 
 // Offer Table
 // Columns: handle | instanceHandle | assays | payoutRules | exitRule
-// | payoutPromise | units | extents
+// | units | extents
 const makeOfferTable = () => {
   const insistValidPayoutRuleKinds = payoutRules => {
     const acceptedKinds = [
@@ -118,7 +118,6 @@ const makeOfferTable = () => {
         'assays',
         'payoutRules',
         'exitRule',
-        'payoutPromise',
         'units',
         'extents',
       ],
@@ -153,8 +152,6 @@ const makeOfferTable = () => {
         });
       },
       isOfferActive: offerHandle => table.has(offerHandle),
-      getPayoutPromises: offerHandles =>
-        offerHandles.map(offerHandle => table.get(offerHandle).payoutPromise),
       deleteOffers: offerHandles =>
         offerHandles.map(offerHandle => table.delete(offerHandle)),
       updateUnitMatrix: (offerHandles, newUnitMatrix) =>
@@ -191,6 +188,10 @@ const makeOfferTable = () => {
 
   return makeTable(validate, makeCustomMethods);
 };
+
+// Payout Map
+// PrivateName: offerHandle | payoutPromise
+const makePayoutMap = makePrivateName;
 
 // Assay Table
 // Columns: assay | purseP | unitOps | label
@@ -252,6 +253,7 @@ const makeTables = () =>
     installationTable: makeInstallationTable(),
     instanceTable: makeInstanceTable(),
     offerTable: makeOfferTable(),
+    payoutMap: makePayoutMap(),
     assayTable: makeAssayTable(),
   });
 
