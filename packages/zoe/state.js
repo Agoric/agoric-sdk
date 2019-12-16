@@ -50,7 +50,8 @@ const validateProperties = (expectedProperties, obj) => {
   const actualProperties = Object.getOwnPropertyNames(obj);
   insist(
     actualProperties.length === expectedProperties.length,
-  )`the actual properties (${actualProperties}) did not match the expected properties (${expectedProperties})`;
+  )`the actual properties (${actualProperties}) did not match the \
+  expected properties (${expectedProperties})`;
   for (const prop of actualProperties) {
     insist(
       expectedProperties.includes(prop),
