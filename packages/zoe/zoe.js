@@ -68,7 +68,11 @@ const makeZoe = (additionalEndowments = {}) => {
     // Resolve the payout promises with the payouts
     const pursePs = assayTable.getPursesForAssays(assays);
     for (const offer of offers) {
-      // This Promise.all will be taken out in a later PR.
+      // This Promise.all will be taken out in a later PR. The
+      // resolution of the promise for the payouts should instead
+      // fulfill to indicate promptly that the player has been ejected
+      // from Zoe, rather than have it wait for all issuers (which btw
+      // Zoe doesn't trust) to complete these withdrawals.
       const payout = Promise.all(
         offer.units.map((units, j) => E(pursePs[j]).withdraw(units, 'payout')),
       );
