@@ -61,8 +61,6 @@ const makeZoe = (additionalEndowments = {}) => {
     // line can be deleted
     const assays = getAssaysFromPayoutRules(offers[0].payoutRules);
 
-    // Not sure this is correct, because original had an "extra" assays
-    // argument
     const unitMatrix = offers.map(offer => offer.units);
 
     // Remove the offers from the offerTable so that they are no
