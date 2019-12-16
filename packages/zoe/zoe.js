@@ -300,9 +300,6 @@ const makeZoe = (additionalEndowments = {}) => {
       // To be used by contracts in the near future.
       // getUnitOpsForAssays: assayTable.getUnitOpsForAssays,
       // getOfferStatuses: offerTable.getOfferStatuses,
-      // getUnitMatrix: offerTable.getUnitMatrix,
-      // getPayoutRules: offerTable.getPayoutRules,
-      // getExitRule: offerTable.getExitRule,
       // isOfferActive: offerTable.isOfferActive,
 
       // This methods will be replaced by the above methods in the

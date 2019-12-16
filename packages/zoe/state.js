@@ -131,10 +131,6 @@ const makeOfferTable = () => {
   const makeCustomMethods = table => {
     const customMethods = harden({
       getOffers: offerHandles => offerHandles.map(table.get),
-      getPayoutRules: offerHandle => table.get(offerHandle).payoutRules,
-      getExitRule: offerHandle => table.get(offerHandle).exitRule,
-      getUnitMatrix: offerHandles =>
-        offerHandles.map(offerHandle => table.get(offerHandle).units),
       getOfferStatuses: offerHandles => {
         const active = [];
         const inactive = [];
@@ -171,10 +167,6 @@ const makeOfferTable = () => {
       updateExtents: (offerHandle, extents) => {
         table.update(offerHandle, { extents });
       },
-
-      // For backwards-compatibility. To be deprecated in future PRs
-      getExtentMatrix: offerHandles =>
-        offerHandles.map(offerHandle => table.get(offerHandle).extents),
 
       // For backwards-compatibility. To be deprecated in future PRs
       updateExtentMatrix: (offerHandles, newExtentMatrix) =>
