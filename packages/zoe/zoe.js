@@ -57,7 +57,7 @@ const makeZoe = (additionalEndowments = {}) => {
     }
     const offers = offerTable.getOffers(offerHandles);
 
-    // In the future, when `assays` is a parameter, these next
+    // In the future, when `assays` is a parameter, the next
     // line can be deleted
     const assays = getAssaysFromPayoutRules(offers[0].payoutRules);
 
@@ -68,20 +68,16 @@ const makeZoe = (additionalEndowments = {}) => {
     offerTable.deleteOffers(offerHandles);
 
     // Resolve the payout promises with the payouts
-    const pursesP = assayTable.getPursesForAssays(assays);
-    Promise.all(pursesP).then(purses => {
-      for (let i = 0; i < offerHandles.length; i += 1) {
-        const offerHandle = offerHandles[i];
-        const unitsForOffer = unitMatrix[i];
-        // This Promise.all will be taken out in a later PR.
-        const payout = Promise.all(
-          unitsForOffer.map((units, j) =>
-            E(purses[j]).withdraw(units, 'payout'),
-          ),
-        );
-        payoutMap.get(offerHandle).res(payout);
-      }
-    });
+    const pursePs = assayTable.getPursesForAssays(assays);
+    for (const offer of offers) {
+      // This Promise.all will be taken out in a later PR.
+      const payout = Promise.all(
+        offer.units.map((units, j) =>
+          E(pursePs[j]).withdraw(units, 'payout'),
+        ),
+      );
+      payoutMap.get(offer.handle).res(payout);
+    }
   };
 
   // Create payoutRules in which nothing is offered and anything
