@@ -26,10 +26,10 @@ const makeTable = (validateFn, makeCustomMethodsFn = () => {}) => {
     delete: handleToRecord.delete,
     update: (handle, partialRecord) => {
       const record = handleToRecord.get(handle);
-      const updatedRecord = {
+      const updatedRecord = harden({
         ...record,
         ...partialRecord,
-      };
+      });
       table.validate(updatedRecord);
       handleToRecord.set(handle, updatedRecord);
       return record;
@@ -164,8 +164,7 @@ const makeOfferTable = () => {
 
       // For backwards-compatibility. To be deprecated in future PRs
       recordUsedInInstance: (offerHandle, instanceHandle) => {
-        const offerRecord = table.get(offerHandle);
-        offerRecord.instanceHandle = instanceHandle;
+        table.update(offerHandle, { instanceHandle });
       },
 
       // For backwards-compatibility. To be deprecated in future PRs
