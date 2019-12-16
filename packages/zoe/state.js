@@ -48,19 +48,17 @@ const validateProperties = (expectedProperties, obj) => {
   // add handle to expected properties
   expectedProperties.push('handle');
   const actualProperties = Object.getOwnPropertyNames(obj);
+  // Sorts in-place
+  expectedProperties.sort();
+  actualProperties.sort();
   insist(
     actualProperties.length === expectedProperties.length,
   )`the actual properties (${actualProperties}) did not match the \
   expected properties (${expectedProperties})`;
-  for (const prop of actualProperties) {
+  for (let i = 0; i < actualProperties.length; i += 1) {
     insist(
-      expectedProperties.includes(prop),
-    )`property ${prop} was not expected`;
-  }
-  for (const prop of expectedProperties) {
-    insist(
-      actualProperties.includes(prop),
-    )`property ${prop} was expected but not present`;
+      expectedProperties[i] === actualProperties[i],
+    )`property ${expectedProperties[i]} did not equal actual property ${actualProperties[i]}`;
   }
   return true;
 };
