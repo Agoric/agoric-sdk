@@ -298,7 +298,6 @@ const makeZoe = (additionalEndowments = {}) => {
       getInviteAssay: () => inviteAssay,
 
       // To be used by contracts in the near future.
-      // getPayoutRuleMatrix: offerTable.getPayoutRuleMatrix,
       // getUnitOpsForAssays: assayTable.getUnitOpsForAssays,
       // getOfferStatuses: offerTable.getOfferStatuses,
       // getUnitMatrix: offerTable.getUnitMatrix,
@@ -308,13 +307,13 @@ const makeZoe = (additionalEndowments = {}) => {
 
       // This methods will be replaced by the above methods in the
       // near future.
+      getOffers: offerTable.getOffers,
       getStatusFor: offerTable.getOfferStatuses,
       getExtentsFor: offerTable.getExtentsFor,
       getExtentOpsArray: () => {
         const { assays } = instanceTable.get(instanceHandle);
         return assayTable.getExtentOpsForAssays(assays);
       },
-      getPayoutRulesFor: offerTable.getPayoutRuleMatrix,
       makeEmptyExtents: () => {
         const { assays } = instanceTable.get(instanceHandle);
         const extentOpsArray = assayTable.getExtentOpsForAssays(assays);

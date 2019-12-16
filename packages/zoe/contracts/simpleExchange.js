@@ -3,7 +3,7 @@ import harden from '@agoric/harden';
 import { rejectOffer, defaultAcceptanceMsg } from './helpers/userFlow';
 import {
   hasValidPayoutRules,
-  getActivePayoutRules,
+  getActiveOffers,
 } from './helpers/offerRules';
 import {
   isMatchingLimitOrder,
@@ -39,13 +39,10 @@ export const makeContract = harden((zoe, terms) => {
         sellOfferHandles.push(offerHandle);
 
         // Try to match
-        const {
-          offerHandles: activeBuyHandles,
-          payoutRulesArray: activeBuyPayoutRules,
-        } = getActivePayoutRules(zoe, buyOfferHandles);
-        for (let i = 0; i < activeBuyHandles.length; i += 1) {
-          if (isMatchingLimitOrder(zoe, payoutRules, activeBuyPayoutRules[i])) {
-            return reallocate(zoe, offerHandle, activeBuyHandles[i]);
+        const activeBuyOffers = getActiveOffers(zoe, buyOfferHandles);
+        for (const buyOffer of activeBuyOffers) {
+          if (isMatchingLimitOrder(zoe, payoutRules, butOffer.payoutRules)) {
+            return reallocate(zoe, offerHandle, activeBuyOffer.handle);
           }
         }
         return defaultAcceptanceMsg;
@@ -58,15 +55,10 @@ export const makeContract = harden((zoe, terms) => {
         buyOfferHandles.push(offerHandle);
 
         // Try to match
-        const {
-          offerHandles: activeSellHandles,
-          payoutRulesArray: activeSellPayoutRules,
-        } = getActivePayoutRules(zoe, sellOfferHandles);
-        for (let i = 0; i < activeSellHandles.length; i += 1) {
-          if (
-            isMatchingLimitOrder(zoe, activeSellPayoutRules[i], payoutRules)
-          ) {
-            reallocate(zoe, activeSellHandles[i], offerHandle);
+        const activeSellOffers = getActiveOffers(zoe, sellOfferHandles);
+        for (const sellOffer of activeSellOffers) {
+          if (isMatchingLimitOrder(zoe, sellOffer.payoutRules, payoutRules)) {
+            reallocate(zoe, sellOffer.handle, offerHandle);
           }
         }
         return defaultAcceptanceMsg;
