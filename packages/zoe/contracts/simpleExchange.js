@@ -1,10 +1,7 @@
 import harden from '@agoric/harden';
 
 import { rejectOffer, defaultAcceptanceMsg } from './helpers/userFlow';
-import {
-  hasValidPayoutRules,
-  getActiveOffers,
-} from './helpers/offerRules';
+import { hasValidPayoutRules, getActiveOffers } from './helpers/offerRules';
 import {
   isMatchingLimitOrder,
   reallocateSurplusToSeller as reallocate,
@@ -41,8 +38,8 @@ export const makeContract = harden((zoe, terms) => {
         // Try to match
         const activeBuyOffers = getActiveOffers(zoe, buyOfferHandles);
         for (const buyOffer of activeBuyOffers) {
-          if (isMatchingLimitOrder(zoe, payoutRules, butOffer.payoutRules)) {
-            return reallocate(zoe, offerHandle, activeBuyOffer.handle);
+          if (isMatchingLimitOrder(zoe, payoutRules, buyOffer.payoutRules)) {
+            return reallocate(zoe, offerHandle, buyOffer.handle);
           }
         }
         return defaultAcceptanceMsg;
