@@ -15,7 +15,7 @@ struct EscrowReceiptAndPayout ( ) {
  * `inviteAssay` and a single `escrowReceiptAssay` for the entirety of its
  * lifetime. By having a reference to Zoe, a user can get the `inviteAssay`
  * or `escrowReceiptAssay` and thus validate any `seat` or `escrowReceipt`
- * they receive from someone else. 
+ * they receive from someone else.
  */
 
 interface Zoe {
@@ -36,7 +36,7 @@ interface Zoe {
   getEscrowReceiptAssay() -> (Assay);
 
   /**
-   * Returns the array of assays for the particular instance. This is 
+   * Returns the array of assays for the particular instance. This is
    * helpful in the case that the user has forgotten the order.
    */
   getAssaysForInstance() -> (List(Assay));
@@ -47,31 +47,31 @@ interface Zoe {
    */
   install(code :String) -> Object
 
-  /** 
+  /**
    * Zoe is long-lived. We can use Zoe to create smart contract
-   * instances by specifying a particular contract installation to 
-   * use, as well as the `terms` of the contract. The contract terms 
+   * instances by specifying a particular contract installation to
+   * use, as well as the `terms` of the contract. The contract terms
    * are the arguments to the contract, and must include
    * the expected assays for the underlying rights. (Other than the
-   * `assays` property of `terms`, the `terms` properties are up to 
+   * `assays` property of `terms`, the `terms` properties are up to
    * the discretion of the smart contract.) We get back an instance, a
    * handle for that instance, the handle for the installation, and the
    * terms.
    */
   makeInstance(installationHandle :Object, terms :Object) -> (InstanceInformation);
-  
+
   /**
    * Credibly get the instance from the instanceHandle.
    */
   getInstance(instanceHandle :Object) -> (InstanceInformation);
 
-  /** 
+  /**
    * To escrow, the user must provide a list of payments as well as
-   * their rules for the offer. 
-   * 
-   * The rules for the offer are in two parts: `payoutRules` are used 
-   * by Zoe to enforce offer safety, and `exitRule` is used by Zoe 
-   * to enforce exit safety. `payoutRules` is a list of objects, each 
+   * their rules for the offer.
+   *
+   * The rules for the offer are in two parts: `payoutRules` are used
+   * by Zoe to enforce offer safety, and `exitRule` is used by Zoe
+   * to enforce exit safety. `payoutRules` is a list of objects, each
    * with a `kind` property (such as 'offerExactly') and a units
    * property. The objects in the `payoutRules` must be in the same order
    * as the assays associated with a smart contract. That is, the
@@ -93,7 +93,7 @@ struct OfferRules ( ) {
 
 /**
  * payoutRules are an array of PayoutRule. The possible
- * kinds are 'offerExactly', 'offerAtMost', 'wantExactly', and 
+ * kinds are 'offerExactly', 'offerAtMost', 'wantExactly', and
  * 'wantAtLeast'.
  */
 struct PayoutRule ( ) {
@@ -113,7 +113,7 @@ struct ExitRule ( ) {
 
 interface ZoeGoverningContractFacet () {
 
-  /** 
+  /**
    * Instruct Zoe to try reallocating for the given offerHandles.
    * Reallocation is a matrix (array of arrays) where the rows are the
    * extents to be paid to the player who made the offer at the same
@@ -122,7 +122,7 @@ interface ZoeGoverningContractFacet () {
    */
   reallocate (offerHandles :List(Object), reallocation :List(List(Extent)));
 
-  /** 
+  /**
    * Eject the offer, taking the current allocation for that offer and
    * creating payments to be returned to the user. No 'offer safety' checks are
    * done here because any previous reallocation performed those checks.
@@ -131,10 +131,10 @@ interface ZoeGoverningContractFacet () {
 
   /**
    * Create an empty offer for recordkeeping purposes (Autoswap uses
-   * this to create the liquidity pool). 
+   * this to create the liquidity pool).
    */
   escrowEmptyOffer ( ) -> (offerHandle);
-  
+
   /**
    * Escrow an offer created by the smart contract. Autoswap uses
    * this to mint liquidity tokens and add them to the rights managed
@@ -144,33 +144,26 @@ interface ZoeGoverningContractFacet () {
 
   /** Burn and validate an escrowReceipt received from the user. */
   burnEscrowReceipt (escrowReceipt :Payment) -> (Extent);
-  
+
   /** Create an invite using the Zoe inviteMint */
   makeInvite (offerToBeMade :List(PayoutRulesElem), useObj :Object) -> (Payment);
 
   ////// The methods below are pure and have no side-effects. ////////
 
   /**
-   * Create an array of empty extents per assay. Note that if the 
-   * mint is not a basic fungible mint, this may be something other than 0. 
+   * Create an array of empty extents per assay. Note that if the
+   * mint is not a basic fungible mint, this may be something other than 0.
    */
   makeEmptyExtents ( ) -> (List(Extent));
 
   /** Get the array of extentOps, the logic from the unitOps */
   getExtentOps ( ) -> (List(ExtentOps));
 
-  /** 
+  /**
    * Pass in an array of offerHandles and get a matrix (array of arrays)
    * containing the extents, in the same order as the offerHandles array.
    */
   getExtentsFor (offerHandles :List(Object)) -> (List(List(Extent)));
-
-  /** 
-   * Pass in an array of offerHandles and get a matrix (array of arrays)
-   * containing the offer descriptions for the offers, in the same 
-   * order as the offerHandles array.
-   */
-  getPayoutRulesFor (offerHandles :List(Object)) -> (List(PayoutRules));
 
   /** Get the Zoe inviteAssay */
   getInviteAssay ( ) -> (Assay);

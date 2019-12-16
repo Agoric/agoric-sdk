@@ -26,10 +26,10 @@ const makeTable = (validateFn, makeCustomMethodsFn = () => {}) => {
     delete: handleToRecord.delete,
     update: (handle, partialRecord) => {
       const record = handleToRecord.get(handle);
-      const updatedRecord = {
+      const updatedRecord = harden({
         ...record,
         ...partialRecord,
-      };
+      });
       table.validate(updatedRecord);
       handleToRecord.set(handle, updatedRecord);
       return record;
@@ -50,7 +50,8 @@ const validateProperties = (expectedProperties, obj) => {
   const actualProperties = Object.getOwnPropertyNames(obj);
   insist(
     actualProperties.length === expectedProperties.length,
-  )`the actual properties (${actualProperties}) did not match the expected properties (${expectedProperties})`;
+  )`the actual properties (${actualProperties}) did not match the \
+  expected properties (${expectedProperties})`;
   for (const prop of actualProperties) {
     insist(
       expectedProperties.includes(prop),
@@ -84,7 +85,7 @@ const makeInstanceTable = () => {
 
 // Offer Table
 // Columns: handle | instanceHandle | assays | payoutRules | exitRule
-// | payoutPromise | units | extents
+// | units | extents
 const makeOfferTable = () => {
   const insistValidPayoutRuleKinds = payoutRules => {
     const acceptedKinds = [
@@ -118,7 +119,6 @@ const makeOfferTable = () => {
         'assays',
         'payoutRules',
         'exitRule',
-        'payoutPromise',
         'units',
         'extents',
       ],
@@ -131,12 +131,7 @@ const makeOfferTable = () => {
 
   const makeCustomMethods = table => {
     const customMethods = harden({
-      getPayoutRuleMatrix: offerHandles =>
-        offerHandles.map(offerHandle => table.get(offerHandle).payoutRules),
-      getPayoutRules: offerHandle => table.get(offerHandle).payoutRules,
-      getExitRule: offerHandle => table.get(offerHandle).exitRule,
-      getUnitMatrix: offerHandles =>
-        offerHandles.map(offerHandle => table.get(offerHandle).units),
+      getOffers: offerHandles => offerHandles.map(table.get),
       getOfferStatuses: offerHandles => {
         const active = [];
         const inactive = [];
@@ -153,8 +148,6 @@ const makeOfferTable = () => {
         });
       },
       isOfferActive: offerHandle => table.has(offerHandle),
-      getPayoutPromises: offerHandles =>
-        offerHandles.map(offerHandle => table.get(offerHandle).payoutPromise),
       deleteOffers: offerHandles =>
         offerHandles.map(offerHandle => table.delete(offerHandle)),
       updateUnitMatrix: (offerHandles, newUnitMatrix) =>
@@ -164,8 +157,7 @@ const makeOfferTable = () => {
 
       // For backwards-compatibility. To be deprecated in future PRs
       recordUsedInInstance: (offerHandle, instanceHandle) => {
-        const offerRecord = table.get(offerHandle);
-        offerRecord.instanceHandle = instanceHandle;
+        table.update(offerHandle, { instanceHandle });
       },
 
       // For backwards-compatibility. To be deprecated in future PRs
@@ -178,10 +170,6 @@ const makeOfferTable = () => {
       },
 
       // For backwards-compatibility. To be deprecated in future PRs
-      getExtentMatrix: offerHandles =>
-        offerHandles.map(offerHandle => table.get(offerHandle).extents),
-
-      // For backwards-compatibility. To be deprecated in future PRs
       updateExtentMatrix: (offerHandles, newExtentMatrix) =>
         offerHandles.map((offerHandle, i) =>
           customMethods.updateExtents(offerHandle, newExtentMatrix[i]),
@@ -192,6 +180,10 @@ const makeOfferTable = () => {
 
   return makeTable(validate, makeCustomMethods);
 };
+
+// Payout Map
+// PrivateName: offerHandle | payoutPromise
+const makePayoutMap = makePrivateName;
 
 // Assay Table
 // Columns: assay | purseP | unitOps | label
@@ -253,6 +245,7 @@ const makeTables = () =>
     installationTable: makeInstallationTable(),
     instanceTable: makeInstanceTable(),
     offerTable: makeOfferTable(),
+    payoutMap: makePayoutMap(),
     assayTable: makeAssayTable(),
   });
 

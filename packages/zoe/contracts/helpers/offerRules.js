@@ -62,13 +62,8 @@ const hasAssays = (assays, newPayoutRules) =>
 export const hasValidPayoutRules = (kinds, assays, newPayoutRules) =>
   hasKinds(kinds, newPayoutRules) && hasAssays(assays, newPayoutRules);
 
-export const getActivePayoutRules = (zoe, offerHandles) => {
-  const { active } = zoe.getStatusFor(offerHandles);
-  return harden({
-    offerHandles: active,
-    payoutRulesArray: zoe.getPayoutRulesFor(active),
-  });
-};
+export const getActiveOffers = (zoe, offerHandles) =>
+  zoe.getOffers(zoe.getStatusFor(offerHandles).active);
 
 /**
  * Make a units without access to the assay, which we don't want
