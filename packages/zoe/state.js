@@ -75,12 +75,14 @@ const makeInstallationTable = () => {
 // Instance Table
 // Columns: handle | installationHandle | instance | terms | assays
 const makeInstanceTable = () => {
-  const validate = obj =>
+  // TODO: make sure this validate function protects against malicious
+  // misshapen objects rather than just a general check.
+  const validateSomewhat = obj =>
     validateProperties(
       ['installationHandle', 'instance', 'terms', 'assays'],
       obj,
     );
-  return makeTable(validate);
+  return makeTable(validateSomewhat);
 };
 
 // Offer Table
@@ -112,7 +114,9 @@ const makeOfferTable = () => {
     )`exitRule.kind ${exitRule.kind} is not one of the accepted options`;
   };
 
-  const validate = obj => {
+  // TODO: make sure this validate function protects against malicious
+  // misshapen objects rather than just a general check.
+  const validateSomewhat = obj => {
     validateProperties(
       [
         'instanceHandle',
@@ -126,6 +130,8 @@ const makeOfferTable = () => {
     );
     insistValidPayoutRuleKinds(obj.payoutRules);
     insistValidExitRule(obj.exitRule);
+    // TODO: Should check the rest of the representation of the payout rule
+    // TODO: Should check that the deadline representation is itself valid.
     return true;
   };
 
@@ -182,7 +188,7 @@ const makeOfferTable = () => {
     return customMethods;
   };
 
-  return makeTable(validate, makeCustomMethods);
+  return makeTable(validateSomewhat, makeCustomMethods);
 };
 
 // Payout Map
@@ -192,7 +198,9 @@ const makePayoutMap = makePrivateName;
 // Assay Table
 // Columns: assay | purseP | unitOps | label
 const makeAssayTable = () => {
-  const validate = obj =>
+  // TODO: make sure this validate function protects against malicious
+  // misshapen objects rather than just a general check.
+  const validateSomewhat = obj =>
     validateProperties(
       ['assay', 'purseP', 'unitOpsP', 'unitOps', 'extentOps', 'label'],
       obj,
@@ -241,7 +249,7 @@ const makeAssayTable = () => {
     return customMethods;
   };
 
-  return makeTable(validate, makeCustomMethods);
+  return makeTable(validateSomewhat, makeCustomMethods);
 };
 
 const makeTables = () =>
