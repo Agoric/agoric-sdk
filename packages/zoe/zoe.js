@@ -291,10 +291,11 @@ const makeZoe = (additionalEndowments = {}) => {
       // getUnitOpsForAssays: assayTable.getUnitOpsForAssays,
       // getOfferStatuses: offerTable.getOfferStatuses,
       // isOfferActive: offerTable.isOfferActive,
+      // getOffers: offerTable.getOffers,
 
       // This methods will be replaced by the above methods in the
       // near future.
-      getOffers: offerTable.getOffers,
+      getPayoutRulesFor: offerTable.getPayoutRulesFor,
       getStatusFor: offerTable.getOfferStatuses,
       getExtentsFor: offerTable.getExtentsFor,
       getExtentOpsArray: () => {

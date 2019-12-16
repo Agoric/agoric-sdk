@@ -1,7 +1,10 @@
 import harden from '@agoric/harden';
 
 import { rejectOffer, defaultAcceptanceMsg } from './helpers/userFlow';
-import { hasValidPayoutRules, getActiveOffers } from './helpers/offerRules';
+import {
+  hasValidPayoutRules,
+  getActivePayoutRules,
+} from './helpers/offerRules';
 import {
   isMatchingLimitOrder,
   reallocateSurplusToSeller as reallocate,
@@ -36,10 +39,13 @@ export const makeContract = harden((zoe, terms) => {
         sellOfferHandles.push(offerHandle);
 
         // Try to match
-        const activeBuyOffers = getActiveOffers(zoe, buyOfferHandles);
-        for (const buyOffer of activeBuyOffers) {
-          if (isMatchingLimitOrder(zoe, payoutRules, buyOffer.payoutRules)) {
-            return reallocate(zoe, offerHandle, buyOffer.handle);
+        const {
+          offerHandles: activeBuyHandles,
+          payoutRulesArray: activeBuyPayoutRules,
+        } = getActivePayoutRules(zoe, buyOfferHandles);
+        for (let i = 0; i < activeBuyHandles.length; i += 1) {
+          if (isMatchingLimitOrder(zoe, payoutRules, activeBuyPayoutRules[i])) {
+            return reallocate(zoe, offerHandle, activeBuyHandles[i]);
           }
         }
         return defaultAcceptanceMsg;
@@ -52,10 +58,15 @@ export const makeContract = harden((zoe, terms) => {
         buyOfferHandles.push(offerHandle);
 
         // Try to match
-        const activeSellOffers = getActiveOffers(zoe, sellOfferHandles);
-        for (const sellOffer of activeSellOffers) {
-          if (isMatchingLimitOrder(zoe, sellOffer.payoutRules, payoutRules)) {
-            reallocate(zoe, sellOffer.handle, offerHandle);
+        const {
+          offerHandles: activeSellHandles,
+          payoutRulesArray: activeSellPayoutRules,
+        } = getActivePayoutRules(zoe, sellOfferHandles);
+        for (let i = 0; i < activeSellHandles.length; i += 1) {
+          if (
+            isMatchingLimitOrder(zoe, activeSellPayoutRules[i], payoutRules)
+          ) {
+            reallocate(zoe, activeSellHandles[i], offerHandle);
           }
         }
         return defaultAcceptanceMsg;
