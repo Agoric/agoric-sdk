@@ -156,6 +156,10 @@ const makeOfferTable = () => {
         ),
 
       // For backwards-compatibility. To be deprecated in future PRs
+      getPayoutRulesFor: offerHandles =>
+        offerHandles.map(offerHandle => table.get(offerHandle).payoutRules),
+
+      // For backwards-compatibility. To be deprecated in future PRs
       recordUsedInInstance: (offerHandle, instanceHandle) => {
         table.update(offerHandle, { instanceHandle });
       },
