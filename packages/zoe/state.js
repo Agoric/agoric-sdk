@@ -6,7 +6,7 @@ import { insist } from '@agoric/ertp/util/insist';
 import { makeUnitOps } from '@agoric/ertp/core/unitOps';
 import { extentOpsLib } from '@agoric/ertp/core/config/extentOpsLib';
 
-const makeTable = (validateFn, makeCustomMethodsFn = () => {}) => {
+const makeTable = (validateFn, makeCustomMethodsFn = () => undefined) => {
   // The WeakMap that stores the records
   const handleToRecord = makePrivateName();
 
@@ -34,7 +34,6 @@ const makeTable = (validateFn, makeCustomMethodsFn = () => {}) => {
       handleToRecord.set(handle, updatedRecord);
       return handle;
     },
-    // eslint-disable-next-line no-use-before-define
   });
 
   const customMethodsTable = harden({
@@ -44,30 +43,33 @@ const makeTable = (validateFn, makeCustomMethodsFn = () => {}) => {
   return customMethodsTable;
 };
 
-const validateProperties = (expectedProperties, obj) => {
+const makeValidateProperties = expectedProperties => {
   // add handle to expected properties
   expectedProperties.push('handle');
-  const actualProperties = Object.getOwnPropertyNames(obj);
   // Sorts in-place
   expectedProperties.sort();
-  actualProperties.sort();
-  insist(
-    actualProperties.length === expectedProperties.length,
-  )`the actual properties (${actualProperties}) did not match the \
-  expected properties (${expectedProperties})`;
-  for (let i = 0; i < actualProperties.length; i += 1) {
+  harden(expectedProperties);
+  return obj => {
+    const actualProperties = Object.getOwnPropertyNames(obj);
+    actualProperties.sort();
     insist(
-      expectedProperties[i] === actualProperties[i],
-    )`property ${expectedProperties[i]} did not equal actual property ${actualProperties[i]}`;
-  }
-  return true;
+      actualProperties.length === expectedProperties.length,
+    )`the actual properties (${actualProperties}) did not match the \
+      expected properties (${expectedProperties})`;
+    for (let i = 0; i < actualProperties.length; i += 1) {
+      insist(
+        expectedProperties[i] === actualProperties[i],
+      )`property ${expectedProperties[i]} did not equal actual property ${actualProperties[i]}`;
+    }
+    return true;
+  };
 };
 
 // Installation Table
 // Columns: handle | installation
 const makeInstallationTable = () => {
-  const validate = obj => validateProperties(['installation'], obj);
-  return makeTable(validate);
+  const validateSomewhat = makeValidateProperties(['installation']);
+  return makeTable(validateSomewhat);
 };
 
 // Instance Table
@@ -75,11 +77,12 @@ const makeInstallationTable = () => {
 const makeInstanceTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
-  const validateSomewhat = obj =>
-    validateProperties(
-      ['installationHandle', 'instance', 'terms', 'assays'],
-      obj,
-    );
+  const validateSomewhat = makeValidateProperties([
+    'installationHandle',
+    'instance',
+    'terms',
+    'assays',
+  ]);
   return makeTable(validateSomewhat);
 };
 
@@ -114,18 +117,16 @@ const makeOfferTable = () => {
 
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
+  const validateProperties = makeValidateProperties([
+    'instanceHandle',
+    'assays',
+    'payoutRules',
+    'exitRule',
+    'units',
+    'extents',
+  ]);
   const validateSomewhat = obj => {
-    validateProperties(
-      [
-        'instanceHandle',
-        'assays',
-        'payoutRules',
-        'exitRule',
-        'units',
-        'extents',
-      ],
-      obj,
-    );
+    validateProperties(obj);
     insistValidPayoutRuleKinds(obj.payoutRules);
     insistValidExitRule(obj.exitRule);
     // TODO: Should check the rest of the representation of the payout rule
@@ -198,11 +199,13 @@ const makePayoutMap = makePrivateName;
 const makeAssayTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
-  const validateSomewhat = obj =>
-    validateProperties(
-      ['assay', 'purse', 'unitOps', 'extentOps', 'label'],
-      obj,
-    );
+  const validateSomewhat = makeValidateProperties([
+    'assay',
+    'purse',
+    'unitOps',
+    'extentOps',
+    'label',
+  ]);
 
   const makeCustomMethods = table => {
     const assaysInProgress = makePrivateName();
