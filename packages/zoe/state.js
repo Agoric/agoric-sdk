@@ -194,49 +194,63 @@ const makeOfferTable = () => {
 const makePayoutMap = makePrivateName;
 
 // Assay Table
-// Columns: assay | purseP | unitOps | label
+// Columns: assay | purse | unitOps | extentOps, label
 const makeAssayTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateSomewhat = obj =>
     validateProperties(
-      ['assay', 'purseP', 'unitOpsP', 'unitOps', 'extentOps', 'label'],
+      ['assay', 'purse', 'unitOps', 'extentOps', 'label'],
       obj,
     );
 
   const makeCustomMethods = table => {
+    const assaysInProgress = makePrivateName();
+
     const customMethods = harden({
       getUnitOpsForAssays: assays =>
         assays.map(assay => table.get(assay).unitOps),
 
-      getPursesForAssays: assays =>
-        assays.map(assay => table.get(assay).purseP),
+      getPursesForAssays: assays => assays.map(assay => table.get(assay).purse),
 
-      getOrCreateAssay: assay => {
-        if (!table.has(assay)) {
-          const extentOpsDescP = E(assay).getExtentOps();
-          const labelP = E(assay).getLabel();
-          const assayRecord = {
-            assay,
-            purseP: E(assay).makeEmptyPurse(),
-            // when the extentOps promise and label promise resolve,
-            // update the record to have local unitOps, extentOps, and label
-            unitOpsP: Promise.all([labelP, extentOpsDescP]).then(
-              ([label, { name, extentOpsArgs = [] }]) => {
-                const unitOps = makeUnitOps(label, name, extentOpsArgs);
-                const makeExtentOps = extentOpsLib[name];
-                const extentOps = makeExtentOps(...extentOpsArgs);
-                table.update(assay, { unitOps, extentOps, label });
-                return unitOps;
-              },
-            ),
-            unitOps: undefined,
-            extentOps: undefined,
-            label: undefined,
-          };
-          table.create(assayRecord, assay);
-        }
-        return table.get(assay);
+      // `assayP` may be a promise, presence, or local object
+      getPromiseForAssayRecord: assayP => {
+        return Promise.resolve(assayP).then(assay => {
+          if (!table.has(assay)) {
+            if (assaysInProgress.has(assay)) {
+              // a promise which resolves to the assay record
+              return assaysInProgress.get(assay);
+            }
+            // remote calls which immediately return a promise
+            const extentOpsDescP = E(assay).getExtentOps();
+            const labelP = E(assay).getLabel();
+            const purseP = E(assay).makeEmptyPurse();
+
+            // a promise for a synchronously accessible record
+            const synchronousRecordP = Promise.all([
+              labelP,
+              extentOpsDescP,
+              purseP,
+            ]).then(([label, { name, extentOpsArgs = [] }, purse]) => {
+              const unitOps = makeUnitOps(label, name, extentOpsArgs);
+              const makeExtentOps = extentOpsLib[name];
+              const extentOps = makeExtentOps(...extentOpsArgs);
+              const assayRecord = {
+                assay,
+                purse,
+                unitOps,
+                extentOps,
+                label,
+              };
+              table.create(assayRecord, assay);
+              assaysInProgress.delete(assay);
+              return table.get(assay);
+            });
+            assaysInProgress.init(assay, synchronousRecordP);
+            return synchronousRecordP;
+          }
+          return table.get(assay);
+        });
       },
       // For backwards-compatibility. To be deprecated in future PRs
       getExtentOpsForAssays: assays =>

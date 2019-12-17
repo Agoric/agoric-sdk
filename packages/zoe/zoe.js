@@ -227,10 +227,10 @@ const makeZoe = (additionalEndowments = {}) => {
 
         // Promise flow = assay -> purse -> deposit payment -> record units
         const paymentBalancesP = assays.map((assay, i) => {
-          const { purseP, unitOpsP } = assayTable.getOrCreateAssay(assay);
+          const assayRecordP = assayTable.getPromiseForAssayRecord(assay);
           const offerPayment = offerPayments[i];
 
-          return Promise.all([purseP, unitOpsP]).then(([purse, unitOps]) => {
+          return assayRecordP.then(({ purse, unitOps }) => {
             if (offerPayment !== undefined) {
               // We cannot trust these units since they come directly
               // from the remote assay. We must coerce them.
@@ -432,11 +432,11 @@ Unimplemented installation moduleFormat ${moduleFormat}`;
 
       // Promise flow = assay -> purse -> deposit payment -> escrow receipt
       const paymentBalancesP = assays.map((assay, i) => {
-        const { purseP, unitOpsP } = assayTable.getOrCreateAssay(assay);
+        const assayRecordP = assayTable.getPromiseForAssayRecord(assay);
         const payoutRule = offerRules.payoutRules[i];
         const offerPayment = offerPayments[i];
 
-        return Promise.all([purseP, unitOpsP]).then(([purse, unitOps]) => {
+        return assayRecordP.then(({ purse, unitOps }) => {
           if (
             payoutRule.kind === 'offerExactly' ||
             payoutRule.kind === 'offerAtMost'
