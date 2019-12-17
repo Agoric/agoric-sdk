@@ -48,7 +48,11 @@ const makeZoe = (additionalEndowments = {}) => {
   const getAssaysFromPayoutRules = payoutRules =>
     payoutRules.map(payoutRule => payoutRule.units.label.assay);
 
-  const depositPayments = (offerRules, offerPayments) => {
+  const depositPayments = (
+    offerRules,
+    offerPayments,
+    instanceHandle = undefined,
+  ) => {
     const assays = getAssaysFromPayoutRules(offerRules.payoutRules);
 
     // Promise flow = assay -> purse -> deposit payment -> escrow receipt
@@ -78,7 +82,7 @@ const makeZoe = (additionalEndowments = {}) => {
     return Promise.all(paymentDepositedPs).then(unitsArray => {
       const extentsArray = unitsArray.map(units => units.extent);
       const offerImmutableRecord = {
-        instanceHandle: undefined,
+        instanceHandle,
         payoutRules: offerRules.payoutRules,
         exitRule: offerRules.exitRule,
         assays,
@@ -251,9 +255,8 @@ const makeZoe = (additionalEndowments = {}) => {
        * ERTP payments. Autoswap uses this method to introduce newly
        * minted liquidity tokens to Zoe.
        */
-      escrowOffer: (offerRules, offerPayments) => {
-        return depositPayments(offerRules, offerPayments);
-      },
+      escrowOffer: (offerRules, offerPayments) =>
+        depositPayments(offerRules, offerPayments, instanceHandle),
 
       // This method will be eliminated in the near future in favor of
       // requiring invites to make offers.
