@@ -43,7 +43,7 @@ const makeTable = (validateFn, makeCustomMethodsFn = () => undefined) => {
   return customMethodsTable;
 };
 
-const makeValidateProperties = expectedProperties => {
+const makeValidateProperties = ([...expectedProperties]) => {
   // add handle to expected properties
   expectedProperties.push('handle');
   // Sorts in-place
@@ -68,7 +68,7 @@ const makeValidateProperties = expectedProperties => {
 // Installation Table
 // Columns: handle | installation
 const makeInstallationTable = () => {
-  const validateSomewhat = makeValidateProperties(['installation']);
+  const validateSomewhat = makeValidateProperties(harden(['installation']));
   return makeTable(validateSomewhat);
 };
 
@@ -77,12 +77,9 @@ const makeInstallationTable = () => {
 const makeInstanceTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
-  const validateSomewhat = makeValidateProperties([
-    'installationHandle',
-    'instance',
-    'terms',
-    'assays',
-  ]);
+  const validateSomewhat = makeValidateProperties(
+    harden(['installationHandle', 'instance', 'terms', 'assays']),
+  );
   return makeTable(validateSomewhat);
 };
 
@@ -117,14 +114,16 @@ const makeOfferTable = () => {
 
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
-  const validateProperties = makeValidateProperties([
-    'instanceHandle',
-    'assays',
-    'payoutRules',
-    'exitRule',
-    'units',
-    'extents',
-  ]);
+  const validateProperties = makeValidateProperties(
+    harden([
+      'instanceHandle',
+      'assays',
+      'payoutRules',
+      'exitRule',
+      'units',
+      'extents',
+    ]),
+  );
   const validateSomewhat = obj => {
     validateProperties(obj);
     insistValidPayoutRuleKinds(obj.payoutRules);
@@ -199,13 +198,9 @@ const makePayoutMap = makePrivateName;
 const makeAssayTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
-  const validateSomewhat = makeValidateProperties([
-    'assay',
-    'purse',
-    'unitOps',
-    'extentOps',
-    'label',
-  ]);
+  const validateSomewhat = makeValidateProperties(
+    harden(['assay', 'purse', 'unitOps', 'extentOps', 'label']),
+  );
 
   const makeCustomMethods = table => {
     const assaysInProgress = makePrivateName();
