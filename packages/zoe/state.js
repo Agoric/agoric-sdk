@@ -1,5 +1,6 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
+import makePromise from '@agoric/ertp/util/makePromise';
 
 import { makePrivateName } from '@agoric/ertp/util/PrivateName';
 import { insist } from '@agoric/ertp/util/insist';
@@ -190,15 +191,19 @@ const makeOfferTable = () => {
 const makePayoutMap = makePrivateName;
 
 // Assay Table
-// Columns: assay | purseP | unitOps | label
+// Columns: assay | purseP | unitOps | extentOps | label
+// where the extentOps column is deprecated, to disappear shortly
 const makeAssayTable = () => {
   const validate = obj =>
     validateProperties(
-      ['assay', 'purseP', 'unitOpsP', 'unitOps', 'extentOps', 'label'],
+      ['assay', 'purseP', 'unitOps', 'extentOps', 'label'],
       obj,
     );
 
   const makeCustomMethods = table => {
+    // maps from assay presences to assay promise/resolver pairs
+    const assaysInProgress = makePrivateName();
+
     const customMethods = harden({
       getUnitOpsForAssays: assays =>
         assays.map(assay => table.get(assay).unitOps),
@@ -206,32 +211,45 @@ const makeAssayTable = () => {
       getPursesForAssays: assays =>
         assays.map(assay => table.get(assay).purseP),
 
-      getOrCreateAssay: assay => {
-        if (!table.has(assay)) {
+      // Given a promise for an assay, return a promise for that same assay
+      // which only fulfills to the assay once it has been entered into the
+      // assayTable.
+      getReadyAssay: assayP => {
+        Promise.resolve(assayP).then(assay => {
+          if (table.has(assay)) {
+            return assayP;
+          }
+          if (assaysInProgress.has(assay)) {
+            return assaysInProgress.get(assay).p;
+          }
+          const pair = makePromise();
+          assaysInProgress.init(assay, pair);
+
           const extentOpsDescP = E(assay).getExtentOps();
           const labelP = E(assay).getLabel();
-          const assayRecord = {
-            assay,
-            purseP: E(assay).makeEmptyPurse(),
-            // when the extentOps promise and label promise resolve,
-            // update the record to have local unitOps, extentOps, and label
-            unitOpsP: Promise.all([labelP, extentOpsDescP]).then(
-              ([label, { name, extentOpsArgs = [] }]) => {
-                const unitOps = makeUnitOps(label, name, extentOpsArgs);
-                const makeExtentOps = extentOpsLib[name];
-                const extentOps = makeExtentOps(...extentOpsArgs);
-                table.update(assay, { unitOps, extentOps, label });
-                return unitOps;
-              },
-            ),
-            unitOps: undefined,
-            extentOps: undefined,
-            label: undefined,
-          };
-          return table.create(assay, assayRecord);
-        }
-        return table.get(assay);
+          const purseP = E(assayP).makeEmptyPurse();
+
+          Promise.all([labelP, extentOpsDescP]).then(
+            ([label, { name, extentOpsArgs = [] }]) => {
+              const makeExtentOps = extentOpsLib[name];
+              const assayRecord = harden({
+                assay,
+                purseP,
+                unitOps: makeUnitOps(label, name, extentOpsArgs),
+                extentOps: makeExtentOps(...extentOpsArgs),
+                label,
+              });
+              table.create(assay, assayRecord);
+              assaysInProgress.get(assay).res(assay);
+              assaysInProgress.delete(assay);
+            },
+          );
+          return pair.p;
+        });
       },
+
+      getReadyAssays: assayPs => Promise.all(assayPs.map(table.getReadyAssay)),
+
       // For backwards-compatibility. To be deprecated in future PRs
       getExtentOpsForAssays: assays =>
         assays.map(assay => table.get(assay).extentOps),

@@ -367,30 +367,34 @@ Unimplemented installation moduleFormat ${moduleFormat}`;
      * arguments depend on the contract, apart from the `assays`
      * property, which is required.
      */
-    makeInstance: (installationHandle, terms) => {
+    makeInstance: (installationHandle, termPs) => {
       const { installation } = installationTable.get(installationHandle);
       const instanceHandle = harden({});
       const contractFacet = makeContractFacet(instanceHandle);
-      const { instance, assays } = installation.makeContract(
-        contractFacet,
-        terms,
-      );
+      return assayTable.getReadyAssays(termPs.assays).then(assaysPre => {
+        const terms = harden({ ...termPs, assays: assaysPre });
+        const { instance, assays: assayPs } = installation.makeContract(
+          contractFacet,
+          terms,
+        );
+        return assayTable.getReadyAssays(assayPs).then(assays => {
+          const finalTerms = {
+            ...terms,
+            assays,
+          };
+          const instanceRecord = harden({
+            installationHandle,
+            instance,
+            assays,
+            terms: finalTerms,
+          });
 
-      const finalTerms = {
-        ...terms,
-        assays,
-      };
-      const instanceRecord = harden({
-        installationHandle,
-        instance,
-        assays,
-        terms: finalTerms,
-      });
-
-      instanceTable.create(instanceHandle, instanceRecord);
-      return harden({
-        ...instanceRecord,
-        instanceHandle,
+          instanceTable.create(instanceHandle, instanceRecord);
+          return harden({
+            ...instanceRecord,
+            instanceHandle,
+          });
+        });
       });
     },
     /**
@@ -410,92 +414,94 @@ Unimplemented installation moduleFormat ${moduleFormat}`;
      * specifying a `want`.
      */
     escrow: (offerRules, offerPayments) => {
-      const assays = getAssaysFromPayoutRules(offerRules.payoutRules);
+      assayTable
+        .getReadyAssays(getAssaysFromPayoutRules(offerRules.payoutRules))
+        .then(assays => {
+          const offerHandle = harden({});
 
-      const offerHandle = harden({});
-
-      const offerImmutableRecord = {
-        instanceHandle: undefined,
-        payoutRules: offerRules.payoutRules,
-        exitRule: offerRules.exitRule,
-        assays,
-        units: undefined,
-        extents: undefined,
-      };
-
-      // units should only be gotten after the payments are deposited
-      offerTable.create(offerHandle, offerImmutableRecord);
-      payoutMap.init(offerHandle, makePromise());
-
-      // Promise flow = assay -> purse -> deposit payment -> escrow receipt
-      const paymentBalancesP = assays.map((assay, i) => {
-        const { purseP, unitOpsP } = assayTable.getOrCreateAssay(assay);
-        const payoutRule = offerRules.payoutRules[i];
-        const offerPayment = offerPayments[i];
-
-        return Promise.all([purseP, unitOpsP]).then(([purse, unitOps]) => {
-          if (
-            payoutRule.kind === 'offerExactly' ||
-            payoutRule.kind === 'offerAtMost'
-          ) {
-            // We cannot trust these units since they come directly
-            // from the remote assay and must coerce them.
-            return E(purse)
-              .depositExactly(payoutRule.units, offerPayment)
-              .then(units => unitOps.coerce(units));
-          }
-          insist(
-            offerPayments[i] === undefined,
-          )`payment was included, but the rule kind was ${payoutRule.kind}`;
-          return Promise.resolve(unitOps.empty());
-        });
-      });
-
-      const giveEscrowReceipt = unitsArray => {
-        // Record units for offer.
-        // Record the extents as well for backwards compatibility.
-        const extentsArray = unitsArray.map(units => units.extent);
-        offerTable.update(offerHandle, {
-          units: unitsArray,
-          extents: extentsArray,
-        });
-
-        const escrowReceiptExtent = harden({
-          offerHandle,
-          offerRules,
-        });
-        const escrowReceiptPurse = escrowReceiptMint.mint(escrowReceiptExtent);
-        const escrowReceipt = escrowReceiptPurse.withdrawAll();
-
-        // Create escrow result to be returned. Depends on exitRules.
-        const escrowResult = {
-          escrowReceipt,
-          payout: payoutMap.get(offerHandle).p,
-        };
-        const { exitRule } = offerRules;
-
-        // Automatically cancel on deadline.
-        if (exitRule.kind === 'afterDeadline') {
-          exitRule.timer.setWakeup(
-            exitRule.deadline,
-            harden({
-              wake: () => completeOffers(harden([offerHandle])),
-            }),
-          );
-        }
-
-        // Add an object with a cancel method to escrow result in
-        // order to cancel on demand.
-        if (exitRule.kind === 'onDemand') {
-          escrowResult.cancelObj = {
-            cancel: () => completeOffers(harden([offerHandle])),
+          const offerImmutableRecord = {
+            instanceHandle: undefined,
+            payoutRules: offerRules.payoutRules,
+            exitRule: offerRules.exitRule,
+            assays,
+            units: undefined,
+            extents: undefined,
           };
-        }
-        return harden(escrowResult);
-      };
 
-      const allDepositedP = Promise.all(paymentBalancesP);
-      return allDepositedP.then(giveEscrowReceipt);
+          // units should only be gotten after the payments are deposited
+          offerTable.create(offerHandle, offerImmutableRecord);
+          payoutMap.init(offerHandle, makePromise());
+
+          // Promise flow = assay -> purse -> deposit payment -> escrow receipt
+          const paymentBalancesP = assays.map((assay, i) => {
+            const { purseP, unitOps } = assayTable.get(assay);
+            const payoutRule = offerRules.payoutRules[i];
+            const offerPayment = offerPayments[i];
+
+            if (
+              payoutRule.kind === 'offerExactly' ||
+              payoutRule.kind === 'offerAtMost'
+            ) {
+              // We cannot trust these units since they come directly
+              // from the remote assay and must coerce them.
+              return E(purseP)
+                .depositExactly(payoutRule.units, offerPayment)
+                .then(units => unitOps.coerce(units));
+            }
+            insist(
+              offerPayments[i] === undefined,
+            )`payment was included, but the rule kind was ${payoutRule.kind}`;
+            return Promise.resolve(unitOps.empty());
+          });
+
+          const giveEscrowReceipt = unitsArray => {
+            // Record units for offer.
+            // Record the extents as well for backwards compatibility.
+            const extentsArray = unitsArray.map(units => units.extent);
+            offerTable.update(offerHandle, {
+              units: unitsArray,
+              extents: extentsArray,
+            });
+
+            const escrowReceiptExtent = harden({
+              offerHandle,
+              offerRules,
+            });
+            const escrowReceiptPurse = escrowReceiptMint.mint(
+              escrowReceiptExtent,
+            );
+            const escrowReceipt = escrowReceiptPurse.withdrawAll();
+
+            // Create escrow result to be returned. Depends on exitRules.
+            const escrowResult = {
+              escrowReceipt,
+              payout: payoutMap.get(offerHandle).p,
+            };
+            const { exitRule } = offerRules;
+
+            // Automatically cancel on deadline.
+            if (exitRule.kind === 'afterDeadline') {
+              exitRule.timer.setWakeup(
+                exitRule.deadline,
+                harden({
+                  wake: () => completeOffers(harden([offerHandle])),
+                }),
+              );
+            }
+
+            // Add an object with a cancel method to escrow result in
+            // order to cancel on demand.
+            if (exitRule.kind === 'onDemand') {
+              escrowResult.cancelObj = {
+                cancel: () => completeOffers(harden([offerHandle])),
+              };
+            }
+            return harden(escrowResult);
+          };
+
+          const allDepositedP = Promise.all(paymentBalancesP);
+          return allDepositedP.then(giveEscrowReceipt);
+        });
     },
   });
   return zoeService;
