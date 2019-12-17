@@ -32,7 +32,7 @@ const makeTable = (validateFn, makeCustomMethodsFn = () => {}) => {
       });
       table.validate(updatedRecord);
       handleToRecord.set(handle, updatedRecord);
-      return record;
+      return handle;
     },
     // eslint-disable-next-line no-use-before-define
   });
