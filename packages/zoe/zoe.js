@@ -232,6 +232,9 @@ const makeZoe = (additionalEndowments = {}) => {
        * The contract can create an "empty" offer. This is used by the
        * autoswap contract to create an offer representing the
        * liquidity pool balances.
+       *
+       * We do not use the `depositPayments` helper here so that
+       * escrowEmptyOffer is synchronous.
        */
       escrowEmptyOffer: () => {
         const { assays } = instanceTable.get(instanceHandle);
