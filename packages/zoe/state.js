@@ -252,6 +252,9 @@ const makeAssayTable = () => {
           return table.get(assay);
         });
       },
+      getPromiseForAssayRecords: assayPs =>
+        Promise.all(assayPs.map(customMethods.getPromiseForAssayRecord)),
+
       // For backwards-compatibility. To be deprecated in future PRs
       getExtentOpsForAssays: assays =>
         assays.map(assay => table.get(assay).extentOps),

@@ -371,33 +371,53 @@ Unimplemented installation moduleFormat ${moduleFormat}`;
       const { installation } = installationTable.get(installationHandle);
       const instanceHandle = harden({});
       const contractFacet = makeContractFacet(instanceHandle);
-      const { instance, assays } = installation.makeContract(
-        contractFacet,
-        terms,
-      );
 
-      const finalTerms = {
-        ...terms,
-        assays,
+      const makeContractInstance = assayRecords => {
+        const synchronousTerms = {
+          ...terms,
+          assays: assayRecords.map(record => record.assay),
+        };
+        return installation.makeContract(contractFacet, synchronousTerms);
       };
-      const instanceRecord = harden({
-        installationHandle,
-        instance,
-        assays,
-        terms: finalTerms,
-      });
 
-      instanceTable.create(instanceRecord, instanceHandle);
+      const storeContractInstance = ({ instance, assays }) => {
+        return assayTable
+          .getPromiseForAssayRecords(assays)
+          .then(assayRecords => {
+            const finalAssays = assayRecords.map(record => record.assay);
 
-      // This is the only place where we return a record rather than a
-      // handle after creation. The return value of this method will
-      // change in the PR to use invites rather than escrow receipts.
-      // Also, the contracts expect a property named 'instanceHandle'
-      // whereas our tables name the primary key just 'handle'.
-      return harden({
-        ...instanceRecord,
-        instanceHandle,
-      });
+            const finalTerms = {
+              ...terms,
+              assays: finalAssays,
+            };
+
+            const instanceRecord = harden({
+              installationHandle,
+              instance,
+              assays: finalAssays,
+              terms: finalTerms,
+            });
+
+            instanceTable.create(instanceRecord, instanceHandle);
+
+            // This is the only place where we return a record rather than a
+            // handle after creation. The return value of this method will
+            // change in the PR to use invites rather than escrow receipts.
+            // Also, the contracts expect a property named 'instanceHandle'
+            // whereas our tables name the primary key just 'handle'.
+            return harden({
+              ...instanceRecord,
+              instanceHandle,
+            });
+          });
+      };
+
+      // The assays may not have been seen before, so we must wait for
+      // the assay records to be available synchronously
+      return assayTable
+        .getPromiseForAssayRecords(terms.assays)
+        .then(makeContractInstance)
+        .then(storeContractInstance);
     },
     /**
      * Credibly retrieves an instance record given an instanceHandle.
