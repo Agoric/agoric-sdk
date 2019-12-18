@@ -101,7 +101,7 @@ struct PayoutRule ( ) {
 }
 
 /**
- * The possible kinds are 'noExit', 'onDemand', and 'afterDeadline'.
+ * The possible kinds are 'waived', 'onDemand', and 'afterDeadline'.
  * `timer` and `deadline` only are used for the `afterDeadline` kind.
  */
 struct ExitRule ( ) {

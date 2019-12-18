@@ -97,7 +97,7 @@ const makeOfferTable = () => {
   };
   const insistValidExitRule = exitRule => {
     const acceptedExitRuleKinds = [
-      'noExit',
+      'waived',
       'onDemand',
       'afterDeadline',
       // 'onDemandAfterDeadline', // not yet supported

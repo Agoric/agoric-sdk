@@ -89,7 +89,7 @@ export const makeContract = harden((zoe, terms) => {
       liquidityEOut,
     ];
     const exitRule = {
-      kind: 'noExit',
+      kind: 'waived',
     };
     const liquidityOfferRules = makeOfferRules(
       zoe,
