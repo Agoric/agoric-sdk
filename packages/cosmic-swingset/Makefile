@@ -99,7 +99,7 @@ build-cosmos: compile-go node-compile-gyp
 
 # We need this so that node-gyp can be found.
 node-compile-gyp:
-	if yarn -v >&/dev/null; then \
+	if yarn -v >/dev/null 2>&1; then \
 		yarn build:gyp; \
 	else \
 		npm run build:gyp; \
