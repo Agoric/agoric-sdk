@@ -1,190 +1,277 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-import { extentOpsLib } from '@agoric/ertp/core/config/extentOpsLib';
 import { makePrivateName } from '@agoric/ertp/util/PrivateName';
+import { insist } from '@agoric/ertp/util/insist';
+import { makeUnitOps } from '@agoric/ertp/core/unitOps';
+import { extentOpsLib } from '@agoric/ertp/core/config/extentOpsLib';
 
-const makeState = () => {
-  const offerHandleToExtents = makePrivateName();
-  const offerHandleToAssays = makePrivateName();
-  const offerHandleToPayoutRules = makePrivateName();
-  const offerHandleToExitRule = makePrivateName();
-  const offerHandleToResult = makePrivateName();
-  const offerHandleToInstanceHandle = makePrivateName();
+const makeTable = (validateFn, makeCustomMethodsFn = () => undefined) => {
+  // The WeakMap that stores the records
+  const handleToRecord = makePrivateName();
 
-  const activeOffers = new WeakSet();
-
-  const instanceHandleToInstallationHandle = makePrivateName();
-  const instanceHandleToInstance = makePrivateName();
-  const instanceHandleToTerms = makePrivateName();
-  const instanceHandleToAssays = makePrivateName();
-
-  const assayToPurse = makePrivateName();
-  const assayToExtentOps = makePrivateName();
-  const assayToDescOps = makePrivateName();
-  const assayToLabel = makePrivateName();
-
-  const installationHandleToInstallation = makePrivateName();
-  const installationToInstallationHandle = makePrivateName();
-
-  const readOnlyState = harden({
-    // per instanceHandle
-    getTerms: instanceHandle => instanceHandleToTerms.get(instanceHandle),
-    getAssays: instanceHandle => instanceHandleToAssays.get(instanceHandle),
-    getUnitOpsArrayForInstanceHandle: instanceHandle =>
-      readOnlyState
-        .getAssays(instanceHandle)
-        .map(assay => assayToDescOps.get(assay)),
-    getExtentOpsArrayForInstanceHandle: instanceHandle =>
-      readOnlyState
-        .getAssays(instanceHandle)
-        .map(assay => assayToExtentOps.get(assay)),
-    getLabelsForInstanceHandle: instanceHandle =>
-      readOnlyState
-        .getAssays(instanceHandle)
-        .map(assay => assayToLabel.get(assay)),
-
-    // per assays array (this can be used before an offer is
-    // associated with an instance)
-    getUnitOpsArrayForAssays: assays =>
-      assays.map(assay => assayToDescOps.get(assay)),
-    getExtentOpsArrayForAssays: assays =>
-      assays.map(assay => assayToExtentOps.get(assay)),
-    getLabelsForAssays: assays => assays.map(assay => assayToLabel.get(assay)),
-
-    // per offerHandles array
-    getAssaysFor: offerHandles =>
-      offerHandles.map(offerHandle => offerHandleToAssays.get(offerHandle)),
-    getExtentsFor: offerHandles =>
-      offerHandles.map(offerHandle => offerHandleToExtents.get(offerHandle)),
-    getPayoutRulesFor: offerHandles =>
-      offerHandles.map(offerHandle =>
-        offerHandleToPayoutRules.get(offerHandle),
-      ),
-    getStatusFor: offerHandles => {
-      const active = [];
-      const inactive = [];
-      for (const offerHandle of offerHandles) {
-        if (activeOffers.has(offerHandle)) {
-          active.push(offerHandle);
-        } else {
-          inactive.push(offerHandle);
-        }
-      }
-      return harden({
-        active,
-        inactive,
+  const table = harden({
+    validate: validateFn,
+    create: (record, handle = harden({})) => {
+      record = harden({
+        ...record,
+        handle, // reliably add the handle to the record
       });
+      table.validate(record);
+      handleToRecord.init(handle, record);
+      return handle;
+    },
+    get: handleToRecord.get,
+    has: handleToRecord.has,
+    delete: handleToRecord.delete,
+    update: (handle, partialRecord) => {
+      const record = handleToRecord.get(handle);
+      const updatedRecord = harden({
+        ...record,
+        ...partialRecord,
+      });
+      table.validate(updatedRecord);
+      handleToRecord.set(handle, updatedRecord);
+      return handle;
     },
   });
 
-  // The adminState should never leave Zoe and should be closely held
-  const adminState = harden({
-    addInstallation: installation => {
-      const installationHandle = harden({});
-      installationToInstallationHandle.init(installation, installationHandle);
-      installationHandleToInstallation.init(installationHandle, installation);
-      return installationHandle;
-    },
-    getInstallation: installationHandle =>
-      installationHandleToInstallation.get(installationHandle),
-    addInstance: async (
-      instanceHandle,
-      instance,
-      installationHandle,
-      terms,
-      assays,
-    ) => {
-      instanceHandleToInstance.init(instanceHandle, instance);
-      instanceHandleToInstallationHandle.init(
-        instanceHandle,
-        installationHandle,
-      );
-      instanceHandleToTerms.init(instanceHandle, terms);
-      instanceHandleToAssays.init(instanceHandle, assays);
-      for (let i = 0; i < assays.length; i += 1) {
-        // we want to wait until the first call returns before moving
-        // onto the next in case it is a duplicate assay
-        // eslint-disable-next-line no-await-in-loop
-        await adminState.recordAssay(assays[i]);
-      }
-    },
-    getInstance: instanceHandle => instanceHandleToInstance.get(instanceHandle),
-    getInstallationHandleForInstanceHandle: instanceHandle =>
-      instanceHandleToInstallationHandle.get(instanceHandle),
-    getPurses: assays => assays.map(assay => assayToPurse.get(assay)),
-    recordAssay: async assay => {
-      if (!assayToPurse.has(assay)) {
-        const unitOpsP = E(assay).getUnitOps();
-        const labelP = E(assay).getLabel();
-        const purseP = E(assay).makeEmptyPurse();
-        const extentOpsDescP = E(assay).getExtentOps();
-
-        const [unitOps, label, purse, extentOpsDesc] = await Promise.all([
-          unitOpsP,
-          labelP,
-          purseP,
-          extentOpsDescP,
-        ]);
-
-        assayToDescOps.init(assay, unitOps);
-        assayToLabel.init(assay, label);
-        assayToPurse.init(assay, purse);
-        const { name, extentOpArgs = [] } = extentOpsDesc;
-        assayToExtentOps.init(assay, extentOpsLib[name](...extentOpArgs));
-      }
-      return harden({
-        unitOps: assayToDescOps.get(assay),
-        label: assayToLabel.get(assay),
-        purse: assayToPurse.get(assay),
-        extentOps: assayToExtentOps.get(assay),
-      });
-    },
-    recordOffer: (offerHandle, offerRules, extents, assays, result) => {
-      const { payoutRules, exit } = offerRules;
-      offerHandleToExtents.init(offerHandle, extents);
-      offerHandleToAssays.init(offerHandle, assays);
-      offerHandleToPayoutRules.init(offerHandle, payoutRules);
-      offerHandleToExitRule.init(offerHandle, exit);
-      offerHandleToResult.init(offerHandle, result);
-      activeOffers.add(offerHandle);
-    },
-    recordUsedInInstance: (instanceHandle, offerHandle) =>
-      offerHandleToInstanceHandle.init(offerHandle, instanceHandle),
-    getInstanceHandleForOfferHandle: offerHandle => {
-      if (offerHandleToInstanceHandle.has(offerHandle)) {
-        return offerHandleToInstanceHandle.get(offerHandle);
-      }
-      return undefined;
-    },
-    setExtentsFor: (offerHandles, reallocation) =>
-      offerHandles.map((offerHandle, i) =>
-        offerHandleToExtents.set(offerHandle, reallocation[i]),
-      ),
-    getResultsFor: offerHandles =>
-      offerHandles.map(offerHandle => offerHandleToResult.get(offerHandle)),
-    removeOffers: offerHandles => {
-      // has-side-effects
-      // eslint-disable-next-line array-callback-return
-      offerHandles.map(offerHandle => {
-        offerHandleToExtents.delete(offerHandle);
-        offerHandleToAssays.delete(offerHandle);
-        offerHandleToPayoutRules.delete(offerHandle);
-        offerHandleToExitRule.delete(offerHandle);
-        offerHandleToResult.delete(offerHandle);
-        if (offerHandleToInstanceHandle.has(offerHandle)) {
-          offerHandleToInstanceHandle.delete(offerHandle);
-        }
-      });
-    },
-    setOffersAsInactive: offerHandles => {
-      offerHandles.map(offerHandle => activeOffers.delete(offerHandle));
-    },
+  const customMethodsTable = harden({
+    ...makeCustomMethodsFn(table),
+    ...table,
   });
-  return {
-    adminState,
-    readOnlyState,
+  return customMethodsTable;
+};
+
+const makeValidateProperties = ([...expectedProperties]) => {
+  // add handle to expected properties
+  expectedProperties.push('handle');
+  // Sorts in-place
+  expectedProperties.sort();
+  harden(expectedProperties);
+  return obj => {
+    const actualProperties = Object.getOwnPropertyNames(obj);
+    actualProperties.sort();
+    insist(
+      actualProperties.length === expectedProperties.length,
+    )`the actual properties (${actualProperties}) did not match the \
+      expected properties (${expectedProperties})`;
+    for (let i = 0; i < actualProperties.length; i += 1) {
+      insist(
+        expectedProperties[i] === actualProperties[i],
+      )`property ${expectedProperties[i]} did not equal actual property ${actualProperties[i]}`;
+    }
+    return true;
   };
 };
 
-export { makeState };
+// Installation Table
+// Columns: handle | installation
+const makeInstallationTable = () => {
+  const validateSomewhat = makeValidateProperties(harden(['installation']));
+  return makeTable(validateSomewhat);
+};
+
+// Instance Table
+// Columns: handle | installationHandle | instance | terms | assays
+const makeInstanceTable = () => {
+  // TODO: make sure this validate function protects against malicious
+  // misshapen objects rather than just a general check.
+  const validateSomewhat = makeValidateProperties(
+    harden(['installationHandle', 'instance', 'terms', 'assays']),
+  );
+  return makeTable(validateSomewhat);
+};
+
+// Offer Table
+// Columns: handle | instanceHandle | assays | payoutRules | exitRule
+// | units | extents
+const makeOfferTable = () => {
+  const insistValidPayoutRuleKinds = payoutRules => {
+    const acceptedKinds = [
+      'offerExactly',
+      'offerAtMost',
+      'wantExactly',
+      'wantAtLeast',
+    ];
+    for (const payoutRule of payoutRules) {
+      insist(
+        acceptedKinds.includes(payoutRule.kind),
+      )`${payoutRule.kind} must be one of the accepted kinds.`;
+    }
+  };
+  const insistValidExitRule = exitRule => {
+    const acceptedExitRuleKinds = [
+      'noExit',
+      'onDemand',
+      'afterDeadline',
+      // 'onDemandAfterDeadline', // not yet supported
+    ];
+    insist(
+      acceptedExitRuleKinds.includes(exitRule.kind),
+    )`exitRule.kind ${exitRule.kind} is not one of the accepted options`;
+  };
+
+  // TODO: make sure this validate function protects against malicious
+  // misshapen objects rather than just a general check.
+  const validateProperties = makeValidateProperties(
+    harden([
+      'instanceHandle',
+      'assays',
+      'payoutRules',
+      'exitRule',
+      'units',
+      'extents',
+    ]),
+  );
+  const validateSomewhat = obj => {
+    validateProperties(obj);
+    insistValidPayoutRuleKinds(obj.payoutRules);
+    insistValidExitRule(obj.exitRule);
+    // TODO: Should check the rest of the representation of the payout rule
+    // TODO: Should check that the deadline representation is itself valid.
+    return true;
+  };
+
+  const makeCustomMethods = table => {
+    const customMethods = harden({
+      getOffers: offerHandles => offerHandles.map(table.get),
+      getOfferStatuses: offerHandles => {
+        const active = [];
+        const inactive = [];
+        for (const offerHandle of offerHandles) {
+          if (table.has(offerHandle)) {
+            active.push(offerHandle);
+          } else {
+            inactive.push(offerHandle);
+          }
+        }
+        return harden({
+          active,
+          inactive,
+        });
+      },
+      isOfferActive: offerHandle => table.has(offerHandle),
+      deleteOffers: offerHandles =>
+        offerHandles.map(offerHandle => table.delete(offerHandle)),
+      updateUnitMatrix: (offerHandles, newUnitMatrix) =>
+        offerHandles.map((offerHandle, i) =>
+          table.update(offerHandle, harden({ units: newUnitMatrix[i] })),
+        ),
+
+      // For backwards-compatibility. To be deprecated in future PRs
+      getPayoutRulesFor: offerHandles =>
+        offerHandles.map(offerHandle => table.get(offerHandle).payoutRules),
+
+      // For backwards-compatibility. To be deprecated in future PRs
+      recordUsedInInstance: (offerHandle, instanceHandle) => {
+        table.update(offerHandle, { instanceHandle });
+      },
+
+      // For backwards-compatibility. To be deprecated in future PRs
+      getExtentsFor: offerHandles =>
+        offerHandles.map(offerHandle => table.get(offerHandle).extents),
+
+      // For backwards-compatibility. To be deprecated in future PRs
+      updateExtents: (offerHandle, extents) => {
+        table.update(offerHandle, { extents });
+      },
+
+      // For backwards-compatibility. To be deprecated in future PRs
+      updateExtentMatrix: (offerHandles, newExtentMatrix) =>
+        offerHandles.map((offerHandle, i) =>
+          customMethods.updateExtents(offerHandle, newExtentMatrix[i]),
+        ),
+    });
+    return customMethods;
+  };
+
+  return makeTable(validateSomewhat, makeCustomMethods);
+};
+
+// Payout Map
+// PrivateName: offerHandle | payoutPromise
+const makePayoutMap = makePrivateName;
+
+// Assay Table
+// Columns: assay | purse | unitOps | extentOps, label
+const makeAssayTable = () => {
+  // TODO: make sure this validate function protects against malicious
+  // misshapen objects rather than just a general check.
+  const validateSomewhat = makeValidateProperties(
+    harden(['assay', 'purse', 'unitOps', 'extentOps', 'label']),
+  );
+
+  const makeCustomMethods = table => {
+    const assaysInProgress = makePrivateName();
+
+    const customMethods = harden({
+      getUnitOpsForAssays: assays =>
+        assays.map(assay => table.get(assay).unitOps),
+
+      getPursesForAssays: assays => assays.map(assay => table.get(assay).purse),
+
+      // `assayP` may be a promise, presence, or local object
+      getPromiseForAssayRecord: assayP => {
+        return Promise.resolve(assayP).then(assay => {
+          if (!table.has(assay)) {
+            if (assaysInProgress.has(assay)) {
+              // a promise which resolves to the assay record
+              return assaysInProgress.get(assay);
+            }
+            // remote calls which immediately return a promise
+            const extentOpsDescP = E(assay).getExtentOps();
+            const labelP = E(assay).getLabel();
+            const purseP = E(assay).makeEmptyPurse();
+
+            // a promise for a synchronously accessible record
+            const synchronousRecordP = Promise.all([
+              labelP,
+              extentOpsDescP,
+              purseP,
+            ]).then(([label, { name, extentOpsArgs = [] }, purse]) => {
+              const unitOps = makeUnitOps(label, name, extentOpsArgs);
+              const makeExtentOps = extentOpsLib[name];
+              const extentOps = makeExtentOps(...extentOpsArgs);
+              const assayRecord = {
+                assay,
+                purse,
+                unitOps,
+                extentOps,
+                label,
+              };
+              table.create(assayRecord, assay);
+              assaysInProgress.delete(assay);
+              return table.get(assay);
+            });
+            assaysInProgress.init(assay, synchronousRecordP);
+            return synchronousRecordP;
+          }
+          return table.get(assay);
+        });
+      },
+      getPromiseForAssayRecords: assayPs =>
+        Promise.all(assayPs.map(customMethods.getPromiseForAssayRecord)),
+
+      // For backwards-compatibility. To be deprecated in future PRs
+      getExtentOpsForAssays: assays =>
+        assays.map(assay => table.get(assay).extentOps),
+      // For backwards-compatibility. To be deprecated in future PRs
+      getLabelsForAssays: assays => assays.map(assay => table.get(assay).label),
+    });
+    return customMethods;
+  };
+
+  return makeTable(validateSomewhat, makeCustomMethods);
+};
+
+const makeTables = () =>
+  harden({
+    installationTable: makeInstallationTable(),
+    instanceTable: makeInstanceTable(),
+    offerTable: makeOfferTable(),
+    payoutMap: makePayoutMap(),
+    assayTable: makeAssayTable(),
+  });
+
+export { makeTables };
