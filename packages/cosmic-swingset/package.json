@@ -5,9 +5,8 @@
   "main": "index.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
-    "prebuild": "make all",
-    "preinstall": "make all",
-    "build": "node-gyp configure build",
+    "build": "exit 0",
+    "build:gyp": "make compile-gyp",
     "test": "tape -r esm 'test/**/test*.js' | tap-spec",
     "pretty-fix": "prettier --write '**/*.{js,jsx}'",
     "pretty-check": "prettier --check '**/*.{js,jsx}'",
