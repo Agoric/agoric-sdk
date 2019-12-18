@@ -3,6 +3,9 @@ import { test } from 'tape-promise/tape';
 import { areRightsConserved, transpose } from '../../areRightsConserved';
 import { setup } from './setupBasicMints';
 
+const makeUnitMatrix = (unitOps, extentMatrix) =>
+  extentMatrix.map(row => row.map((extent, i) => unitOps[i].make(extent)));
+
 test('transpose', t => {
   try {
     t.deepEquals(
@@ -23,10 +26,10 @@ test('transpose', t => {
   }
 });
 
-// rights are conserved for Nat extents
-test(`areRightsConserved - true for nat extents`, t => {
+// rights are conserved for units with Nat extents
+test(`areRightsConserved - true for units with nat extents`, t => {
   try {
-    const { extentOps } = setup();
+    const { unitOps } = setup();
     const oldExtents = [
       [0, 1, 0],
       [4, 1, 0],
@@ -38,7 +41,10 @@ test(`areRightsConserved - true for nat extents`, t => {
       [6, 2, 0],
     ];
 
-    t.ok(areRightsConserved(extentOps, oldExtents, newExtents));
+    const oldUnits = makeUnitMatrix(unitOps, oldExtents);
+    const newUnits = makeUnitMatrix(unitOps, newExtents);
+
+    t.ok(areRightsConserved(unitOps, oldUnits, newUnits));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -46,10 +52,10 @@ test(`areRightsConserved - true for nat extents`, t => {
   }
 });
 
-// rights are *not* conserved for Nat extents
-test(`areRightsConserved - false for nat extents`, t => {
+// rights are *not* conserved for units with Nat extents
+test(`areRightsConserved - false for units with Nat extents`, t => {
   try {
-    const { extentOps } = setup();
+    const { unitOps } = setup();
     const oldExtents = [
       [0, 1, 4],
       [4, 1, 0],
@@ -61,7 +67,10 @@ test(`areRightsConserved - false for nat extents`, t => {
       [6, 2, 0],
     ];
 
-    t.notOk(areRightsConserved(extentOps, oldExtents, newExtents));
+    const oldUnits = makeUnitMatrix(unitOps, oldExtents);
+    const newUnits = makeUnitMatrix(unitOps, newExtents);
+
+    t.notOk(areRightsConserved(unitOps, oldUnits, newUnits));
   } catch (e) {
     t.assert(false, e);
   } finally {

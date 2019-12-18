@@ -180,7 +180,7 @@ const makeZoe = (additionalEndowments = {}) => {
        * partial, because once these invariants are true, they will
        * remain true until changes are made.
        * @param  {object[]} offerHandles - an array of offerHandles
-       * @param  {unit[][]} newExtentMatrix - a matrix of extents, with
+       * @param  {extent[][]} newExtentMatrix - a matrix of extents, with
        * one array of extents per offerHandle.
        */
       reallocate: (offerHandles, newExtentMatrix) => {
@@ -189,31 +189,26 @@ const makeZoe = (additionalEndowments = {}) => {
         const offers = offerTable.getOffers(offerHandles);
 
         const payoutRuleMatrix = offers.map(offer => offer.payoutRules);
-        const currentExtentMatrix = offers.map(offer => offer.extents);
-        const extentOpsArray = assayTable.getExtentOpsForAssays(assays);
+        const currentUnitMatrix = offers.map(offer => offer.units);
+        const unitOpsArray = assayTable.getUnitOpsForAssays(assays);
+        const newUnitMatrix = newExtentMatrix.map(extentsRow =>
+          extentsRow.map((extent, i) => unitOpsArray[i].make(extent)),
+        );
 
         // 1) ensure that rights are conserved
         insist(
-          areRightsConserved(
-            extentOpsArray,
-            currentExtentMatrix,
-            newExtentMatrix,
-          ),
+          areRightsConserved(unitOpsArray, currentUnitMatrix, newUnitMatrix),
         )`Rights are not conserved in the proposed reallocation`;
 
         // 2) ensure 'offer safety' for each player
         insist(
-          isOfferSafeForAll(extentOpsArray, payoutRuleMatrix, newExtentMatrix),
+          isOfferSafeForAll(unitOpsArray, payoutRuleMatrix, newUnitMatrix),
         )`The proposed reallocation was not offer safe`;
 
         // 3) save the reallocation
         //    Note: We update both extents and units so that units can be
         //    used in the future.
         offerTable.updateExtentMatrix(offerHandles, newExtentMatrix);
-        const unitOpsArray = assayTable.getUnitOpsForAssays(assays);
-        const newUnitMatrix = newExtentMatrix.map(extentsRow =>
-          extentsRow.map((extent, i) => unitOpsArray[i].make(extent)),
-        );
         offerTable.updateUnitMatrix(offerHandles, newUnitMatrix);
       },
 

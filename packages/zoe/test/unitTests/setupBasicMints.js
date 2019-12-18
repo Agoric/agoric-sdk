@@ -23,6 +23,9 @@ const setup = () => {
     unitOps,
     extentOps,
     labels,
+    moola: unitOps[0].make,
+    simoleans: unitOps[1].make,
+    bucks: unitOps[2].make,
   });
 };
 harden(setup);
