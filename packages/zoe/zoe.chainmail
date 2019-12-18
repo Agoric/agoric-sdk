@@ -72,15 +72,15 @@ interface Zoe {
    * The rules for the offer are in two parts: `payoutRules` are used 
    * by Zoe to enforce offer safety, and `exitRule` is used by Zoe 
    * to enforce exit safety. `payoutRules` is a list of objects, each 
-   * with a `kind` property (such as 'offerExactly') and a units
+   * with a `kind` property (such as 'offerAtMost') and a units
    * property. The objects in the `payoutRules` must be in the same order
    * as the assays associated with a smart contract. That is, the
    * units in index 0 of `payoutRules` should be a units for the assay
    * in index 0 of the assays array.`payments` is an array of the
    * actual payments to be escrowed, following the rules in the
-   * payoutRules. If the payoutRules kind is 'offerExactly' or 'offerAtMost',
+   * payoutRules. If the payoutRules kind is 'offerAtMost',
    * then a payment matching the units is expected. If the payoutRules
-   * kind is 'wantAtLeast' or 'wantExactly' then the payment will be
+   * kind is 'wantAtLeast' then the payment will be
    * ignored at escrow and should be `undefined`.
    */
   escrow (offerRules :OfferRules, payments :List(Payment)) -> (EscrowReceiptAndPayout);
@@ -93,8 +93,7 @@ struct OfferRules ( ) {
 
 /**
  * payoutRules are an array of PayoutRule. The possible
- * kinds are 'offerExactly', 'offerAtMost', 'wantExactly', and 
- * 'wantAtLeast'.
+ * kinds are 'offerAtMost' and 'wantAtLeast'.
  */
 struct PayoutRule ( ) {
   kind :PayoutRuleKind;

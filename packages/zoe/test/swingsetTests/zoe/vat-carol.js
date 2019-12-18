@@ -28,7 +28,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const offerRules = harden({
         payoutRules: [
           {
-            kind: 'wantExactly',
+            kind: 'wantAtLeast',
             units: await E(assays[0]).makeUnits(1),
           },
           {

@@ -88,12 +88,7 @@ const makeInstanceTable = () => {
 // | units | extents
 const makeOfferTable = () => {
   const insistValidPayoutRuleKinds = payoutRules => {
-    const acceptedKinds = [
-      'offerExactly',
-      'offerAtMost',
-      'wantExactly',
-      'wantAtLeast',
-    ];
+    const acceptedKinds = ['offerAtMost', 'wantAtLeast'];
     for (const payoutRule of payoutRules) {
       insist(
         acceptedKinds.includes(payoutRule.kind),

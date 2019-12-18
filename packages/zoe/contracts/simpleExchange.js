@@ -11,9 +11,9 @@ import {
 } from './helpers/exchanges';
 
 // This exchange only accepts limit orders. A limit order is defined
-// as either a sell order with payoutRules: [ { kind: 'offerExactly',
+// as either a sell order with payoutRules: [ { kind: 'offerAtMost',
 // units1 }, {kind: 'wantAtLeast', units2 }] or a buy order:
-// [ { kind: 'wantExactly', units1 }, { kind: 'offerAtMost',
+// [ { kind: 'wantAtLeast', units1 }, { kind: 'offerAtMost',
 // units2 }]. Note that the asset in the first slot of the
 // payoutRules will always be bought or sold in exact amounts, whereas
 // the amount of the second asset received in a sell order may be
@@ -33,7 +33,7 @@ export const makeContract = harden((zoe, terms) => {
       } = await zoe.burnEscrowReceipt(escrowReceipt);
 
       // Is it a valid sell offer?
-      const sellOfferKinds = ['offerExactly', 'wantAtLeast'];
+      const sellOfferKinds = ['offerAtMost', 'wantAtLeast'];
       if (hasValidPayoutRules(sellOfferKinds, terms.assays, payoutRules)) {
         // Save the valid offer
         sellOfferHandles.push(offerHandle);
@@ -52,7 +52,7 @@ export const makeContract = harden((zoe, terms) => {
       }
 
       // Is it a valid buy offer?
-      const buyOfferFormat = ['wantExactly', 'offerAtMost'];
+      const buyOfferFormat = ['wantAtLeast', 'offerAtMost'];
       if (hasValidPayoutRules(buyOfferFormat, terms.assays, payoutRules)) {
         // Save the valid offer
         buyOfferHandles.push(offerHandle);

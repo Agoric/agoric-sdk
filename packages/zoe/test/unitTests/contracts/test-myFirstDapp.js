@@ -39,11 +39,11 @@ test('myFirstDapp with valid offers', async t => {
     const aliceOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: allAssays[0].makeUnits(1),
         },
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: allAssays[1].makeUnits(1),
         },
         {
@@ -84,7 +84,7 @@ test('myFirstDapp with valid offers', async t => {
     const bobMoolaForSimOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: allAssays[0].makeUnits(1),
         },
         {
@@ -128,7 +128,7 @@ test('myFirstDapp with valid offers', async t => {
           units: assays[0].makeUnits(1),
         },
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[1].makeUnits(1),
         },
         {

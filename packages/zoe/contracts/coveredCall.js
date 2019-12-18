@@ -45,7 +45,7 @@ export const makeContract = harden((zoe, terms) => {
       );
       const { payoutRules } = offerRules;
 
-      const ruleKinds = ['offerExactly', 'wantExactly'];
+      const ruleKinds = ['offerAtMost', 'wantAtLeast'];
       if (!hasValidPayoutRules(ruleKinds, terms.assays, payoutRules)) {
         return rejectOffer(zoe, offerHandle);
       }

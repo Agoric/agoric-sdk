@@ -62,10 +62,7 @@ const makeZoe = (additionalEndowments = {}) => {
       const offerPayment = offerPayments[i];
 
       return assayRecordP.then(({ purse, unitOps }) => {
-        if (
-          payoutRule.kind === 'offerExactly' ||
-          payoutRule.kind === 'offerAtMost'
-        ) {
+        if (payoutRule.kind === 'offerAtMost') {
           // We cannot trust these units since they come directly
           // from the remote assay and must coerce them.
           return E(purse)

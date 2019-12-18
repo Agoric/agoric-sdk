@@ -9,7 +9,7 @@ export const isExactlyMatchingPayoutRules = (
   // "exactly matching" means that units are the same, but that the
   // kinds have switched places in the array
   const extentOpsArray = zoe.getExtentOpsArray();
-  const exactlyKinds = ['wantExactly', 'offerExactly'];
+  const exactlyKinds = ['wantAtLeast', 'offerAtMost'];
   return (
     // Are the extents equal according to the extentOps?
     extentOpsArray[0].equals(

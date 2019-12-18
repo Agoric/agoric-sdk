@@ -39,7 +39,7 @@ export const makeContract = harden((zoe, terms) => {
       poolOfferHandle = zoe.escrowEmptyOffer();
     }
 
-    const kinds = ['offerExactly', 'offerExactly', 'wantAtLeast'];
+    const kinds = ['offerAtMost', 'offerAtMost', 'wantAtLeast'];
     if (!hasValidPayoutRules(kinds, assays, payoutRules)) {
       return rejectOffer(
         zoe,
@@ -82,7 +82,7 @@ export const makeContract = harden((zoe, terms) => {
     const newPayment = newPurse.withdrawAll();
     liqTokenSupply += liquidityEOut;
 
-    const liquidityOfferKinds = ['wantAtLeast', 'wantAtLeast', 'offerExactly'];
+    const liquidityOfferKinds = ['wantAtLeast', 'wantAtLeast', 'offerAtMost'];
     const extents = [
       extentOpsArray[0].empty(),
       extentOpsArray[1].empty(),
@@ -120,7 +120,7 @@ export const makeContract = harden((zoe, terms) => {
     } = await zoe.burnEscrowReceipt(escrowReceipt);
     const extentOpsArray = zoe.getExtentOpsArray();
 
-    const kinds = ['wantAtLeast', 'wantAtLeast', 'offerExactly'];
+    const kinds = ['wantAtLeast', 'wantAtLeast', 'offerAtMost'];
     if (!hasValidPayoutRules(kinds, assays, payoutRules)) {
       return rejectOffer(
         zoe,
@@ -248,7 +248,7 @@ export const makeContract = harden((zoe, terms) => {
     const [tokenAPoolE, tokenBPoolE] = poolExtents;
 
     // offer token A, want token B
-    const kindsOfferFirst = ['offerExactly', 'wantAtLeast', 'wantAtLeast'];
+    const kindsOfferFirst = ['offerAtMost', 'wantAtLeast', 'wantAtLeast'];
     if (hasValidPayoutRules(kindsOfferFirst, assays, payoutRules)) {
       const [tokenInE, wantAtLeastE] = playerExtents;
       const { tokenOutE, newTokenInPoolE, newTokenOutPoolE } = calculateSwap(
@@ -276,7 +276,7 @@ export const makeContract = harden((zoe, terms) => {
     }
 
     // want token A, offer token B
-    const kindsWantFirst = ['wantAtLeast', 'offerExactly', 'wantAtLeast'];
+    const kindsWantFirst = ['wantAtLeast', 'offerAtMost', 'wantAtLeast'];
     if (hasValidPayoutRules(kindsWantFirst, assays, payoutRules)) {
       const [wantAtLeastE, tokenInE] = playerExtents;
       const { tokenOutE, newTokenInPoolE, newTokenOutPoolE } = calculateSwap(
