@@ -1,4 +1,4 @@
-User-visible changes in marshal:
+User-visible changes in transform-eventual-send:
 
 ## Release 1.1.0 (17-Dec-2019)
 
