@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@agoric/ertp": "^0.2.0",
+    "@agoric/zoe": "^0.1.2",
     "@agoric/harden": "0.0.4",
     "@agoric/nat": "^2.0.1",
     "esm": "^3.2.5"
