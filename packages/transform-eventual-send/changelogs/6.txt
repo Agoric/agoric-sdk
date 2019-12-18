@@ -1,2 +1,0 @@
-depend on @agoric/eventual-send
-endow HandledPromise through the transform
