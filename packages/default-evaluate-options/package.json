@@ -3,7 +3,7 @@
   "version": "0.3.0",
   "description": "Agoric default evaluation options for Realms and SES",
   "main": "dist/default-evaluate-options.cjs.js",
-  "module": "dist/default-evaluate-options.esm.js",
+  "module": "src/index.js",
   "browser": "dist/default-evaluate-options.umd.js",
   "scripts": {
     "build": "rollup -c",
@@ -29,7 +29,8 @@
   },
   "keywords": [],
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "repository": {
     "type": "git",
