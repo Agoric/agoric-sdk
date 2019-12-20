@@ -18,6 +18,11 @@ import { makeInviteConfig } from './inviteConfig';
  * @param additionalEndowments pure or pure-ish endowments to add to evaluator
  */
 const makeZoe = (additionalEndowments = {}) => {
+  // Zoe maps the inviteHandles to contract seats
+  const handleToSeat = makePrivateName();
+  const inviteMint = makeMint('zoeInvite', makeInviteConfig);
+  const inviteAssay = inviteMint.getAssay();
+
   // All of the Zoe state is stored in these tables built on WeakMaps
   const {
     installationTable,
@@ -28,21 +33,6 @@ const makeZoe = (additionalEndowments = {}) => {
   } = makeTables();
 
   // Helper functions
-  const prepareInviteMethods = () => {
-    const handleToSeat = makePrivateName();
-    const inviteMint = makeMint('zoeInvite', makeInviteConfig);
-    return harden({
-      inviteAssay: inviteMint.getAssay(),
-      mintInvite: (handle, seat, units) => {
-        handleToSeat.init(handle, seat);
-        const purse = inviteMint.mint(units);
-        return purse.withdrawAll();
-      },
-      getInviteSeat: handle => handleToSeat.get(handle),
-    });
-  };
-  const { inviteAssay, mintInvite, getInviteSeat } = prepareInviteMethods();
-
   const getAssaysFromPayoutRules = payoutRules =>
     payoutRules.map(payoutRule => payoutRule.units.label.assay);
 
@@ -146,7 +136,9 @@ const makeZoe = (additionalEndowments = {}) => {
         instanceHandle,
       }),
     );
-    const invitePayment = mintInvite(inviteHandle, seat, inviteUnits);
+    handleToSeat.init(inviteHandle, seat);
+    const purse = inviteMint.mint(inviteUnits);
+    const invitePayment = purse.withdrawAll();
     return harden({ invite: invitePayment, inviteHandle });
   };
 
@@ -384,7 +376,7 @@ Unimplemented installation moduleFormat ${moduleFormat}`;
       // Create result to be returned. Depends on exitRule
       const makeRedemptionResult = offerHandle => {
         const redemptionResult = {
-          seat: getInviteSeat(offerHandle),
+          seat: handleToSeat.get(offerHandle),
           payout: payoutMap.get(offerHandle).p,
         };
         const { exitRule } = offerRules;
