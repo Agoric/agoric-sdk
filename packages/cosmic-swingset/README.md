@@ -1,6 +1,6 @@
 # Agoric's Cosmic SwingSet
 
-Agoric's Cosmic SwingSet enables developers to test smart contracts build with [ERTP](https://github.com/Agoric/ERTP) in various blockchain setup environments
+Agoric's Cosmic SwingSet enables developers to test smart contracts built with [ERTP](https://github.com/Agoric/ERTP) in various blockchain setup environments.
 
 This repository currently hosts various pieces:
 - Code to set up a **solo node** (a local peer which can host objects for testing or interaction with a blockchain)
@@ -9,15 +9,15 @@ This repository currently hosts various pieces:
 - Code that runs in a web browser and interacts with the server-side of the Pixel Demo
 
 
-If you're coming to this repo with a **provisioning code** from Agoric, you can jump to the [relevant section](#with-a-provisioning-code-from-agoric)
+If you're coming to this repo with a [**provisioning code** from Agoric](https://testnet.agoric.com/), you can jump to the [relevant section](#with-a-provisioning-code-from-agoric).
 
-Otherwise, you can continue to the next section to choose one of the setups for the Pixel Demo
+Otherwise, you can continue to the next section to choose one of the setups for the Pixel Demo.
 
 
 ## Different setups to run the Pixel Demo
 
 Running the demo requires a local solo node to serve as your access point.
-In any case, for now, you will be needing to build the solo node from the source code
+In any case, for now, you will be needing to build the solo node from the source code.
 
 ### Build from source
 
@@ -25,7 +25,7 @@ If you want to build and install from sources, you need to install
 - [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - [node.js](https://nodejs.org/en/) (you need at least version 11). This installs 2 binaries named `node` (JavaScript runtime) and `npm` (JavaScript package manager)
     - **Warning:** There are some [known issues](https://github.com/Agoric/cosmic-swingset/issues/71) installing cosmic-swingset with [snap-based version of node.js on Ubuntu](https://github.com/nodesource/distributions/blob/master/README.md#snap). **We recommend** using a non-snap version
-- [Golang](https://golang.org/doc/install) (you need at least version 1.12)
+- [Golang](https://golang.org/doc/install) (you need at least version 1.13)
     - **(optional)** If installing the GO language didn't setup a `$GOPATH` variable, you'll need to find the directory and set the variable. Typically `GOPATH="$HOME/go"`
 - (scenarios 1 and 0) [Python3](https://www.python.org/downloads/)
 - (scenarios 1 and 0) python3-venv
@@ -220,10 +220,10 @@ px~.getBalance()
 You might see something like: 
 
 ```js
-{"label":{"issuer":[Presence 15],"description":"pixels"},"quantity":[{"x":1,"y":4}]}
+{"label":{"assay":[Presence o-69],"allegedName":"pixels"},"extent":[{"x":1,"y":4}]}
 ```
 
-The `quantity` tells us which pixels we've received. `{ x:1, y:4 }`
+The `extent` tells us which pixels we've received. `{ x:1, y:4 }`
 means that we got a pixel that is in the fifth row (`y:4`) and 2 pixels
 from the left (`x:1`). To color the pixel, we need to get the use
 object from the payment. You can think of the use object as a regular
@@ -251,9 +251,9 @@ px~.getBalance();
 use = px~.getUse();
 use~.changeColorAll('yellow');
 px2 = home.gallery~.tapFaucet();
-asset2 = px2~.getBalance();
-asset2.then(a => home.gallery~.pricePixelAssetDesc(a));
-hostInvite = home.gallery~.sellToGallery(asset2);
+units2 = px2~.getBalance();
+units2.then(u => home.gallery~.pricePixelUnits(u));
+hostInvite = home.gallery~.sellToGallery(units2);
 seat = hostInvite~.host~.redeem(hostInvite~.inviteP);
 offered = seat~.offer(px2);
 assays = home.gallery~.getAssays();
