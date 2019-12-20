@@ -15,7 +15,7 @@ export const makeContract = harden((zoe, terms) => {
       makeOffer: () => {
         offersCount += 1;
         // eslint-disable-next-line no-use-before-define
-        zoe.complete(harden([inviteHandle]), terms.assays);
+        zoe.complete(harden([inviteHandle]));
         return `The offer was accepted`;
       },
     });
