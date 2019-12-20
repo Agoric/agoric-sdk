@@ -191,9 +191,11 @@ const build = async (
   };
 
   const doSimpleExchange = async bobP => {
-    const { instance: exchange, instanceHandle } = await E(
-      zoe,
-    ).makeInstance(installId, { assays });
+    const invite = await E(zoe).makeInstance(installId, { assays });
+    const {
+      extent: { instanceHandle },
+    } = await E(invite).getBalance();
+    const { publicAPI } = await E(zoe).getInstance(instanceHandle);
 
     const aliceSellOrderOfferRules = harden({
       payoutRules: [
@@ -212,24 +214,26 @@ const build = async (
     });
     const moolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [moolaPayment, undefined];
-    const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
+    const { seat, payout: payoutP } = await E(zoe).redeem(
+      invite,
       aliceSellOrderOfferRules,
       offerPayments,
     );
 
-    const offerResult = await E(exchange).addOrder(escrowReceipt);
+    const offerResult = await E(seat).addOrder();
 
     log(offerResult);
 
-    await E(bobP).doSimpleExchange(instanceHandle);
+    const bobInviteP = E(publicAPI).makeInvite();
+    await E(bobP).doSimpleExchange(bobInviteP);
 
     const payout = await payoutP;
 
     await E(moolaPurseP).depositAll(payout[0]);
     await E(simoleanPurseP).depositAll(payout[1]);
 
-    await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse');
-    await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;');
+    await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse', log);
+    await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
   };
 
   const doAutoswap = async bobP => {
