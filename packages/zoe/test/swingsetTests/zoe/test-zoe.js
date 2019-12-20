@@ -98,7 +98,7 @@ const expectedCoveredCallOkLog = [
   'aliceSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
 ];
 
-test('zoe - coveredCall - valid inputs - with SES', async t => {
+test.skip('zoe - coveredCall - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
       [3, 0],
@@ -117,7 +117,7 @@ test('zoe - coveredCall - valid inputs - with SES', async t => {
   }
 });
 
-test('zoe - coveredCall - valid inputs - no SES', async t => {
+test.skip('zoe - coveredCall - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
       [3, 0],
@@ -152,7 +152,7 @@ const expectedPublicAuctionOkLog = [
   'aliceSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
 ];
 
-test('zoe - publicAuction - valid inputs - with SES', async t => {
+test.skip('zoe - publicAuction - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
       [1, 0],
@@ -173,7 +173,7 @@ test('zoe - publicAuction - valid inputs - with SES', async t => {
   }
 });
 
-test('zoe - publicAuction - valid inputs - no SES', async t => {
+test.skip('zoe - publicAuction - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
       [1, 0],
@@ -203,7 +203,7 @@ const expectedPublicSwapOkLog = [
   'aliceSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
   'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":0}',
 ];
-test('zoe - publicSwap - valid inputs - with SES', async t => {
+test.skip('zoe - publicSwap - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
       [3, 0],
@@ -222,7 +222,7 @@ test('zoe - publicSwap - valid inputs - with SES', async t => {
   }
 });
 
-test('zoe - publicSwap - valid inputs - no SES', async t => {
+test.skip('zoe - publicSwap - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
       [3, 0],
@@ -251,7 +251,7 @@ const expectedSimpleExchangeOkLog = [
   'aliceMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":0}',
   'aliceSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
 ];
-test('zoe - simpleExchange - valid inputs - with SES', async t => {
+test.skip('zoe - simpleExchange - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
       [3, 0],
@@ -270,7 +270,7 @@ test('zoe - simpleExchange - valid inputs - with SES', async t => {
   }
 });
 
-test('zoe - simpleExchange - valid inputs - no SES', async t => {
+test.skip('zoe - simpleExchange - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
       [3, 0],
@@ -304,7 +304,7 @@ const expectedAutoswapOkLog = [
   'aliceSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
   'aliceLiquidityTokenPurse: balance {"label":{"assay":{},"allegedName":"liquidity"},"extent":0}',
 ];
-test('zoe - autoswap - valid inputs - with SES', async t => {
+test.skip('zoe - autoswap - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
       [10, 5],
@@ -323,7 +323,7 @@ test('zoe - autoswap - valid inputs - with SES', async t => {
   }
 });
 
-test('zoe - autoswap - valid inputs - no SES', async t => {
+test.skip('zoe - autoswap - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
       [10, 5],

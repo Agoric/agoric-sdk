@@ -1,36 +1,38 @@
 import harden from '@agoric/harden';
+import { showPaymentBalance, setupAssays } from './helpers';
 
-const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
-  const showPaymentBalance = async (paymentP, name) => {
-    try {
-      const units = await E(paymentP).getBalance();
-      log(name, ': balance ', units);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+const build = async (
+  E,
+  log,
+  zoe,
+  moolaPurseP,
+  simoleanPurseP,
+  installId,
+  _timer,
+) => {
+  const { assays, moola, simoleans } = await setupAssays(
+    zoe,
+    moolaPurseP,
+    simoleanPurseP,
+  );
 
   const doAutomaticRefund = async bobP => {
     log(`=> alice.doCreateAutomaticRefund called`);
-
-    const moolaAssay = await E(moolaPurseP).getAssay();
-    const simoleanAssay = await E(simoleanPurseP).getAssay();
-
-    const assays = harden([moolaAssay, simoleanAssay]);
-
-    const { instance: automaticRefund, instanceHandle } = await E(
-      zoe,
-    ).makeInstance(installId, { assays });
+    const invite = await E(zoe).makeInstance(installId, { assays });
+    const {
+      extent: { instanceHandle },
+    } = await E(invite).getBalance();
+    const { publicAPI } = await E(zoe).getInstance(instanceHandle);
 
     const offerRules = harden({
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: await E(assays[0]).makeUnits(3),
+          units: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: await E(assays[1]).makeUnits(7),
+          units: simoleans(7),
         },
       ],
       exitRule: {
@@ -40,30 +42,28 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
 
     const aliceMoolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [aliceMoolaPayment, undefined];
-    const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
+    const { seat, payout: payoutP } = await E(zoe).redeem(
+      invite,
       offerRules,
       offerPayments,
     );
 
-    const outcome = await E(automaticRefund).makeOffer(escrowReceipt);
+    const outcome = await E(seat).makeOffer();
     log(outcome);
 
-    await E(bobP).doAutomaticRefund(instanceHandle);
+    const bobInvite = E(publicAPI).makeInvite();
+    await E(bobP).doAutomaticRefund(bobInvite);
     const payout = await payoutP;
 
     await E(moolaPurseP).depositAll(payout[0]);
     await E(simoleanPurseP).depositAll(payout[1]);
 
-    await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse');
-    await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;');
+    await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse', log);
+    await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
   };
 
   const doCoveredCall = async bobP => {
     log(`=> alice.doCreateCoveredCall called`);
-    const moolaAssay = await E(moolaPurseP).getAssay();
-    const simoleanAssay = await E(simoleanPurseP).getAssay();
-    const assays = harden([moolaAssay, simoleanAssay]);
-
     const { instance: coveredCall, instanceHandle } = await E(
       zoe,
     ).makeInstance(installId, { assays });
@@ -106,10 +106,6 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
   };
 
   const doPublicAuction = async (bobP, carolP, daveP) => {
-    const moolaAssay = await E(moolaPurseP).getAssay();
-    const simoleanAssay = await E(simoleanPurseP).getAssay();
-    const assays = harden([moolaAssay, simoleanAssay]);
-
     const numBidsAllowed = 3;
     const { instance: auction, instanceHandle } = await E(
       zoe,
@@ -158,10 +154,6 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
   };
 
   const doPublicSwap = async bobP => {
-    const moolaAssay = await E(moolaPurseP).getAssay();
-    const simoleanAssay = await E(simoleanPurseP).getAssay();
-    const assays = harden([moolaAssay, simoleanAssay]);
-
     const { instance: swap, instanceHandle } = await E(
       zoe,
     ).makeInstance(installId, { assays });
@@ -203,10 +195,6 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
   };
 
   const doSimpleExchange = async bobP => {
-    const moolaAssay = await E(moolaPurseP).getAssay();
-    const simoleanAssay = await E(simoleanPurseP).getAssay();
-    const assays = harden([moolaAssay, simoleanAssay]);
-
     const { instance: exchange, instanceHandle } = await E(
       zoe,
     ).makeInstance(installId, { assays });
@@ -249,10 +237,6 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
   };
 
   const doAutoswap = async bobP => {
-    const moolaAssay = await E(moolaPurseP).getAssay();
-    const simoleanAssay = await E(simoleanPurseP).getAssay();
-    const assays = harden([moolaAssay, simoleanAssay]);
-
     const { instance: autoswap, instanceHandle } = await E(
       zoe,
     ).makeInstance(installId, { assays });

@@ -4,7 +4,6 @@ import { E } from '@agoric/eventual-send';
 import { makePrivateName } from '@agoric/ertp/util/PrivateName';
 import { insist } from '@agoric/ertp/util/insist';
 import { makeUnitOps } from '@agoric/ertp/core/unitOps';
-import { extentOpsLib } from '@agoric/ertp/core/config/extentOpsLib';
 
 const makeTable = (validateFn, makeCustomMethodsFn = () => undefined) => {
   // The WeakMap that stores the records
@@ -73,19 +72,19 @@ const makeInstallationTable = () => {
 };
 
 // Instance Table
-// Columns: handle | installationHandle | instance | terms | assays
+// Columns: handle | installationHandle | publicAPI | terms | assays
 const makeInstanceTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateSomewhat = makeValidateProperties(
-    harden(['installationHandle', 'instance', 'terms', 'assays']),
+    harden(['installationHandle', 'publicAPI', 'terms', 'assays']),
   );
   return makeTable(validateSomewhat);
 };
 
 // Offer Table
 // Columns: handle | instanceHandle | assays | payoutRules | exitRule
-// | units | extents
+// | units
 const makeOfferTable = () => {
   const insistValidPayoutRuleKinds = payoutRules => {
     const acceptedKinds = ['offerAtMost', 'wantAtLeast'];
@@ -110,14 +109,7 @@ const makeOfferTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateProperties = makeValidateProperties(
-    harden([
-      'instanceHandle',
-      'assays',
-      'payoutRules',
-      'exitRule',
-      'units',
-      'extents',
-    ]),
+    harden(['instanceHandle', 'assays', 'payoutRules', 'exitRule', 'units']),
   );
   const validateSomewhat = obj => {
     validateProperties(obj);
@@ -153,30 +145,6 @@ const makeOfferTable = () => {
         offerHandles.map((offerHandle, i) =>
           table.update(offerHandle, harden({ units: newUnitMatrix[i] })),
         ),
-
-      // For backwards-compatibility. To be deprecated in future PRs
-      getPayoutRulesFor: offerHandles =>
-        offerHandles.map(offerHandle => table.get(offerHandle).payoutRules),
-
-      // For backwards-compatibility. To be deprecated in future PRs
-      recordUsedInInstance: (offerHandle, instanceHandle) => {
-        table.update(offerHandle, { instanceHandle });
-      },
-
-      // For backwards-compatibility. To be deprecated in future PRs
-      getExtentsFor: offerHandles =>
-        offerHandles.map(offerHandle => table.get(offerHandle).extents),
-
-      // For backwards-compatibility. To be deprecated in future PRs
-      updateExtents: (offerHandle, extents) => {
-        table.update(offerHandle, { extents });
-      },
-
-      // For backwards-compatibility. To be deprecated in future PRs
-      updateExtentMatrix: (offerHandles, newExtentMatrix) =>
-        offerHandles.map((offerHandle, i) =>
-          customMethods.updateExtents(offerHandle, newExtentMatrix[i]),
-        ),
     });
     return customMethods;
   };
@@ -189,12 +157,12 @@ const makeOfferTable = () => {
 const makePayoutMap = makePrivateName;
 
 // Assay Table
-// Columns: assay | purse | unitOps | extentOps, label
+// Columns: assay | purse | unitOps
 const makeAssayTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateSomewhat = makeValidateProperties(
-    harden(['assay', 'purse', 'unitOps', 'extentOps', 'label']),
+    harden(['assay', 'purse', 'unitOps']),
   );
 
   const makeCustomMethods = table => {
@@ -226,14 +194,10 @@ const makeAssayTable = () => {
               purseP,
             ]).then(([label, { name, extentOpsArgs = [] }, purse]) => {
               const unitOps = makeUnitOps(label, name, extentOpsArgs);
-              const makeExtentOps = extentOpsLib[name];
-              const extentOps = makeExtentOps(...extentOpsArgs);
               const assayRecord = {
                 assay,
                 purse,
                 unitOps,
-                extentOps,
-                label,
               };
               table.create(assayRecord, assay);
               assaysInProgress.delete(assay);
@@ -247,12 +211,6 @@ const makeAssayTable = () => {
       },
       getPromiseForAssayRecords: assayPs =>
         Promise.all(assayPs.map(customMethods.getPromiseForAssayRecord)),
-
-      // For backwards-compatibility. To be deprecated in future PRs
-      getExtentOpsForAssays: assays =>
-        assays.map(assay => table.get(assay).extentOps),
-      // For backwards-compatibility. To be deprecated in future PRs
-      getLabelsForAssays: assays => assays.map(assay => table.get(assay).label),
     });
     return customMethods;
   };

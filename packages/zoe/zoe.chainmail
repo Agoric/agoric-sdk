@@ -1,21 +1,22 @@
 /**
- * This is returned by a call to `escrow` on Zoe.
- * An escrowReceipt is an ERTP payment which acts as proof of escrow
- * and is normally passed in to a smart contract. The payout
- * is a promise that resolves to an array of payments.
+ * This is returned by a call to `redeem` on Zoe.
+ * A seat is an arbitrary object whose methods allow the user to take
+ * certain actions. The payout is a promise that resolves to an array
+ * of promises for payments. Note that while the payout promise
+ * resolves when an offer is completed, the promises for each payment
+ * resolves after the remote issuer successfully withdraws the payment.
  */
-struct EscrowReceiptAndPayout ( ) {
-  escrowReceipt :Payment;
+struct SeatAndPayout ( ) {
+  seat :Object;
   payout :List(Payment);
 }
 
 /**
  * Zoe is a long-lived and well-trusted contract that enforces
  * offer safety for the contracts that use it. Zoe has a single
- * `inviteAssay` and a single `escrowReceiptAssay` for the entirety of its
- * lifetime. By having a reference to Zoe, a user can get the `inviteAssay`
- * or `escrowReceiptAssay` and thus validate any `seat` or `escrowReceipt`
- * they receive from someone else. 
+ * `inviteAssay` for the entirety of its lifetime. By having a
+ * reference to Zoe, a user can get the `inviteAssay` and thus validate
+ * any `invite` they receive from someone else. 
  */
 
 interface Zoe {
@@ -28,24 +29,10 @@ interface Zoe {
   getInviteAssay() -> (Assay);
 
   /**
-   * Get the long-lived escrowReceiptAssay. The mint associated
-   * with the escrowReceiptAssay creates the ERTP payments that
-   * represent proof of escrow and may be passed into a
-   * smart contract method.
-   */
-  getEscrowReceiptAssay() -> (Assay);
-
-  /**
-   * Returns the array of assays for the particular instance. This is 
-   * helpful in the case that the user has forgotten the order.
-   */
-  getAssaysForInstance() -> (List(Assay));
-
-  /**
    * Create an installation by safely evaluating the code and
    * registering it with Zoe. Returns an installationHandle.
    */
-  install(code :String) -> Object
+  install(code :String, moduleFormat :String) -> Object
 
   /** 
    * Zoe is long-lived. We can use Zoe to create smart contract
@@ -54,11 +41,10 @@ interface Zoe {
    * are the arguments to the contract, and must include
    * the expected assays for the underlying rights. (Other than the
    * `assays` property of `terms`, the `terms` properties are up to 
-   * the discretion of the smart contract.) We get back an instance, a
-   * handle for that instance, the handle for the installation, and the
-   * terms.
+   * the discretion of the smart contract.) We get back an invite (an
+   * ERTP payment) to participate in the contract.
    */
-  makeInstance(installationHandle :Object, terms :Object) -> (InstanceInformation);
+  makeInstance(installationHandle :Object, terms :Object) -> (Payment);
   
   /**
    * Credibly get the instance from the instanceHandle.
@@ -66,7 +52,7 @@ interface Zoe {
   getInstance(instanceHandle :Object) -> (InstanceInformation);
 
   /** 
-   * To escrow, the user must provide a list of payments as well as
+   * To redeem an invite, the user must provide a list of payments as well as
    * their rules for the offer. 
    * 
    * The rules for the offer are in two parts: `payoutRules` are used 
@@ -81,9 +67,9 @@ interface Zoe {
    * payoutRules. If the payoutRules kind is 'offerAtMost',
    * then a payment matching the units is expected. If the payoutRules
    * kind is 'wantAtLeast' then the payment will be
-   * ignored at escrow and should be `undefined`.
+   * ignored and should be `undefined`.
    */
-  escrow (offerRules :OfferRules, payments :List(Payment)) -> (EscrowReceiptAndPayout);
+  redeem (invite :Payment, offerRules :OfferRules, payments :List(Payment)) -> (SeatAndPayout);
 }
 
 struct OfferRules ( ) {
@@ -110,16 +96,24 @@ struct ExitRule ( ) {
   deadline :Number;
 }
 
+/**
+ * `active` and `inactive` lists of offerHandles.
+ */
+ struct OfferStatusesRecord ( ) {
+  active :List(Object);
+  inactive :List(Object);
+}
+
 interface ZoeGoverningContractFacet () {
 
   /** 
    * Instruct Zoe to try reallocating for the given offerHandles.
    * Reallocation is a matrix (array of arrays) where the rows are the
-   * extents to be paid to the player who made the offer at the same
+   * units to be paid to the player who made the offer at the same
    * index in the offerHandles array. The reallocation will only happen if
    * 'offer safety' and conservation of rights are true, as enforced by Zoe.
    */
-  reallocate (offerHandles :List(Object), reallocation :List(List(Extent)));
+  reallocate (offerHandles :List(Object), reallocation :List(List(Unit)));
 
   /** 
    * Eject the offer, taking the current allocation for that offer and
@@ -139,41 +133,33 @@ interface ZoeGoverningContractFacet () {
    * this to mint liquidity tokens and add them to the rights managed
    * by Zoe.
    */
-  escrowOffer (payoutRules :List(PayoutRulesElem), offerPayments :List(Payment)) -> (offerHandle);
-
-  /** Burn and validate an escrowReceipt received from the user. */
-  burnEscrowReceipt (escrowReceipt :Payment) -> (Extent);
+  escrowOffer (offerRules :OfferRules, offerPayments :List(Payment)) -> (offerHandle);
   
   /** Create an invite using the Zoe inviteMint */
-  makeInvite (offerToBeMade :List(PayoutRulesElem), useObj :Object) -> (Payment);
+  makeInvite (seat :Object, customProperties :Object ) -> (Payment);
 
   ////// The methods below are pure and have no side-effects. ////////
 
-  /**
-   * Create an array of empty extents per assay. Note that if the 
-   * mint is not a basic fungible mint, this may be something other than 0. 
-   */
-  makeEmptyExtents ( ) -> (List(Extent));
-
-  /** Get the array of extentOps, the logic from the unitOps */
-  getExtentOps ( ) -> (List(ExtentOps));
-
-  /** 
-   * Pass in an array of offerHandles and get a matrix (array of arrays)
-   * containing the extents, in the same order as the offerHandles array.
-   */
-  getExtentsFor (offerHandles :List(Object)) -> (List(List(Extent)));
-
-  /** 
-   * Pass in an array of offerHandles and get a matrix (array of arrays)
-   * containing the offer descriptions for the offers, in the same 
-   * order as the offerHandles array.
-   */
-  getPayoutRulesFor (offerHandles :List(Object)) -> (List(PayoutRules));
-
   /** Get the Zoe inviteAssay */
-  getInviteAssay ( ) -> (Assay);
+  getInviteAssay ( ) -> Assay;
 
-  /** Get the Zoe escrowReceiptAssay */
-  getEscrowReceiptAssay ( ) -> (Assay);
+  /** Get a list of unitOps per assay */
+  getUnitOpsForAssays (assays :List(Assay)) -> (List(UnitOps));
+
+  /** Divide the offerHandles into 'active' and 'inactive' lists */
+  getOfferStatuses ( offerHandles :List(Object)) ->
+  (OfferStatusesRecord);
+
+  /** 
+   * Check if the offer is still active. This method does not throw
+   * if the offer is inactive.
+   */
+  isOfferActive ( offerHandle :Object ) -> (Boolean);
+
+  /** Get a list of offer records */
+  getOffers ( offerHandles :List(Object)) -> (List(OfferRecord));
+
+  /** Get the offer record */
+  getOffer ( offerHandle :Object) -> (List(OfferRecord));
+
 }

@@ -52,12 +52,10 @@
     "index.js",
     "contracts/*.js",
     "areRightsConserved.js",
-    "escrowReceiptConfig.js",
     "evalContractCode.js",
     "isOfferSafe.js",
-    "seatMint.js",
+    "inviteConfig.js",
     "state.js",
-    "zoe.js",
-    "zoeUtils.js"
+    "zoe.js"
   ]
 }
