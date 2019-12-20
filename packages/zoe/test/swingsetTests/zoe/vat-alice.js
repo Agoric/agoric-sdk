@@ -8,7 +8,7 @@ const build = async (
   moolaPurseP,
   simoleanPurseP,
   installId,
-  _timer,
+  timer,
 ) => {
   const { assays, moola, simoleans } = await setupAssays(
     zoe,
@@ -64,45 +64,43 @@ const build = async (
 
   const doCoveredCall = async bobP => {
     log(`=> alice.doCreateCoveredCall called`);
-    const { instance: coveredCall, instanceHandle } = await E(
-      zoe,
-    ).makeInstance(installId, { assays });
+    const invite = await E(zoe).makeInstance(installId, { assays });
 
     const offerRules = harden({
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: await E(assays[0]).makeUnits(3),
+          units: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: await E(assays[1]).makeUnits(7),
+          units: simoleans(7),
         },
       ],
       exitRule: {
-        kind: 'onDemand',
+        kind: 'afterDeadline',
+        deadline: 1,
+        timer,
       },
     });
 
     const aliceMoolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [aliceMoolaPayment, undefined];
-    const { escrowReceipt: aliceEscrowReceipt, payout: payoutP } = await E(
-      zoe,
-    ).escrow(offerRules, offerPayments);
-
-    const { outcome, invite } = await E(coveredCall).makeFirstOffer(
-      aliceEscrowReceipt,
+    const { seat, payout: payoutP } = await E(zoe).redeem(
+      invite,
+      offerRules,
+      offerPayments,
     );
-    log(outcome);
 
-    await E(bobP).doCoveredCall(invite, instanceHandle);
+    const option = await E(seat).makeCallOption();
+    await E(bobP).doCoveredCall(option);
     const payout = await payoutP;
 
     await E(moolaPurseP).depositAll(payout[0]);
     await E(simoleanPurseP).depositAll(payout[1]);
 
-    await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse');
-    await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;');
+    await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse', log);
+    await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
   };
 
   const doPublicAuction = async (bobP, carolP, daveP) => {

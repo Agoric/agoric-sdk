@@ -10,13 +10,15 @@ const build = async (
   moolaPurseP,
   simoleanPurseP,
   installId,
-  _timer,
+  timer,
 ) => {
   const {
     inviteAssay,
     assays,
     moolaAssay,
     simoleanAssay,
+    moolaUnitOps,
+    simoleanUnitOps,
     moola,
     simoleans,
   } = await setupAssays(zoe, moolaPurseP, simoleanPurseP);
@@ -86,7 +88,7 @@ const build = async (
       await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
     },
 
-    doCoveredCall: async (inviteP, instanceHandle) => {
+    doCoveredCall: async inviteP => {
       // Bob claims all with the Zoe inviteAssay
       const invite = await E(inviteAssay).claimAll(inviteP);
 
@@ -94,11 +96,11 @@ const build = async (
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: await E(assays[0]).makeUnits(3),
+            units: moola(3),
           },
           {
             kind: 'offerAtMost',
-            units: await E(assays[1]).makeUnits(7),
+            units: simoleans(7),
           },
         ],
         exitRule: {
@@ -107,41 +109,38 @@ const build = async (
       });
 
       // Bob checks that the invite is for the right covered call
-      const { extent: inviteExtent } = await E(invite).getBalance();
-      insist(inviteExtent.instanceHandle === instanceHandle)`wrong instance`;
+      const { extent: optionExtent } = await E(invite).getBalance();
 
-      const instanceInfo = await E(zoe).getInstance(instanceHandle);
+      const instanceInfo = await E(zoe).getInstance(
+        optionExtent.instanceHandle,
+      );
 
       insist(instanceInfo.installationHandle === installId)`wrong installation`;
-      insist(
-        sameStructure(
-          inviteExtent.offerToBeMade,
-          bobIntendedOfferRules.payoutRules,
-        ),
-      )`the offer to be made was not as expected`;
+      insist(optionExtent.seatDesc === 'exerciseOption')`wrong seat`;
+      insist(moolaUnitOps.equals(optionExtent.underlyingAsset, moola(3)));
+      insist(simoleanUnitOps.equals(optionExtent.strikePrice, simoleans(7)));
+      insist(optionExtent.expirationDate === 1)`wrong expirationDate`;
+      insist(optionExtent.timerAuthority === timer)`wrong timer`;
 
-      const contractAssays = await E(zoe).getAssaysForInstance(instanceHandle);
       insist(
-        contractAssays[0] === moolaAssay,
+        instanceInfo.terms.assays[0] === moolaAssay,
       )`The first assay should be the moola assay`;
       insist(
-        contractAssays[1] === simoleanAssay,
+        instanceInfo.terms.assays[1] === simoleanAssay,
       )`The second assay should be the simolean assay`;
 
-      // Only after assaying the invite does he unwrap it (destroying
-      // the ERTP invite) and accept it
-      const unwrappedInvite = await E(invite).unwrap();
       const bobSimoleanPayment = await E(simoleanPurseP).withdrawAll();
       const bobPayments = [undefined, bobSimoleanPayment];
 
       // Bob escrows
-      const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
+      const { seat, payout: payoutP } = await E(zoe).redeem(
+        invite,
         bobIntendedOfferRules,
         bobPayments,
       );
 
       // 8: Bob makes an offer with his escrow receipt
-      const bobOutcome = await E(unwrappedInvite).matchOffer(escrowReceipt);
+      const bobOutcome = await E(seat).exercise();
 
       log(bobOutcome);
 
@@ -151,8 +150,8 @@ const build = async (
       await E(moolaPurseP).depositAll(bobResult[0]);
       await E(simoleanPurseP).depositAll(bobResult[1]);
 
-      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse');
-      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;');
+      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse', log);
+      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
     },
     doPublicAuction: async inviteP => {
       const invite = await E(inviteAssay).claimAll(inviteP);
