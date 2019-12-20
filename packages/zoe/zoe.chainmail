@@ -32,8 +32,8 @@ interface Zoe {
    * Create an installation by safely evaluating the code and
    * registering it with Zoe. Returns an installationHandle.
    */
-  install(code :String, moduleFormat :String) -> Object
-
+  install(code :String, moduleFormat :String) -> (Object);
+  
   /** 
    * Zoe is long-lived. We can use Zoe to create smart contract
    * instances by specifying a particular contract installation to 
@@ -73,8 +73,8 @@ interface Zoe {
 }
 
 struct OfferRules ( ) {
-  payoutRules :List(PayoutRule),
-  exitRule :ExitRule,
+  payoutRules :List(PayoutRule);
+  exitRule :ExitRule;
 }
 
 /**
@@ -141,7 +141,7 @@ interface ZoeGoverningContractFacet () {
   ////// The methods below are pure and have no side-effects. ////////
 
   /** Get the Zoe inviteAssay */
-  getInviteAssay ( ) -> Assay;
+  getInviteAssay ( ) -> (Assay);
 
   /** Get a list of unitOps per assay */
   getUnitOpsForAssays (assays :List(Assay)) -> (List(UnitOps));
@@ -154,7 +154,7 @@ interface ZoeGoverningContractFacet () {
    * Check if the offer is still active. This method does not throw
    * if the offer is inactive.
    */
-  isOfferActive ( offerHandle :Object ) -> (Boolean);
+  isOfferActive ( offerHandle :Object ) -> (Bool);
 
   /** Get a list of offer records */
   getOffers ( offerHandles :List(Object)) -> (List(OfferRecord));
