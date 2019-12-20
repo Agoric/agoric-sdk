@@ -3,6 +3,7 @@ import { E } from '@agoric/eventual-send';
 
 import { insist } from '@agoric/ertp/util/insist';
 import makePromise from '@agoric/ertp/util/makePromise';
+import { makePrivateName } from '@agoric/ertp/util/PrivateName';
 import { makeMint } from '@agoric/ertp/core/mint';
 
 import { isOfferSafeForAll } from './isOfferSafe';
@@ -17,21 +18,6 @@ import { makeInviteConfig } from './inviteConfig';
  * @param additionalEndowments pure or pure-ish endowments to add to evaluator
  */
 const makeZoe = (additionalEndowments = {}) => {
-  const makeInviteMint = () => {
-    const handleToSeat = new WeakMap();
-    const inviteMint = makeMint('zoeInvite', makeInviteConfig);
-    return harden({
-      inviteAssay: inviteMint.getAssay(),
-      mintInvite: (handle, seat, units) => {
-        handleToSeat.set(handle, seat);
-        const purse = inviteMint.mint(units);
-        return purse.withdrawAll();
-      },
-      getInviteSeat: handle => handleToSeat.get(handle),
-    });
-  };
-  const { inviteAssay, mintInvite, getInviteSeat } = makeInviteMint();
-
   // All of the Zoe state is stored in these tables built on WeakMaps
   const {
     installationTable,
@@ -42,6 +28,21 @@ const makeZoe = (additionalEndowments = {}) => {
   } = makeTables();
 
   // Helper functions
+  const prepareInviteMethods = () => {
+    const handleToSeat = makePrivateName();
+    const inviteMint = makeMint('zoeInvite', makeInviteConfig);
+    return harden({
+      inviteAssay: inviteMint.getAssay(),
+      mintInvite: (handle, seat, units) => {
+        handleToSeat.init(handle, seat);
+        const purse = inviteMint.mint(units);
+        return purse.withdrawAll();
+      },
+      getInviteSeat: handle => handleToSeat.get(handle),
+    });
+  };
+  const { inviteAssay, mintInvite, getInviteSeat } = prepareInviteMethods();
+
   const getAssaysFromPayoutRules = payoutRules =>
     payoutRules.map(payoutRule => payoutRule.units.label.assay);
 
