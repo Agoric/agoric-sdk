@@ -203,7 +203,7 @@ const expectedPublicSwapOkLog = [
   'aliceSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
   'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":0}',
 ];
-test.skip('zoe - publicSwap - valid inputs - with SES', async t => {
+test('zoe - publicSwap - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
       [3, 0],
@@ -222,7 +222,7 @@ test.skip('zoe - publicSwap - valid inputs - with SES', async t => {
   }
 });
 
-test.skip('zoe - publicSwap - valid inputs - no SES', async t => {
+test('zoe - publicSwap - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
       [3, 0],

@@ -1,71 +1,45 @@
+/* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 
-import { rejectOffer, defaultAcceptanceMsg } from './helpers/userFlow';
-import {
-  isExactlyMatchingPayoutRules,
-  hasValidPayoutRules,
-} from './helpers/offerRules';
+import { defaultAcceptanceMsg, makeHelpers } from './helpers/userFlow';
 
 export const makeContract = harden((zoe, terms) => {
-  let firstOfferHandle;
-  let firstOfferPayoutRules;
+  const { assays } = terms;
+  const { rejectOffer, swap, hasValidPayoutRules } = makeHelpers(zoe, assays);
+  let firstInviteHandle;
 
-  const publicSwap = harden({
-    makeFirstOffer: async escrowReceipt => {
-      const {
-        offerHandle,
-        offerRules: { payoutRules },
-      } = await zoe.burnEscrowReceipt(escrowReceipt);
+  const makeFirstOfferInvite = () => {
+    const seat = harden({
+      makeFirstOffer: () => {
+        if (
+          !hasValidPayoutRules(['offerAtMost', 'wantAtLeast'], inviteHandle)
+        ) {
+          throw rejectOffer(inviteHandle);
+        }
+        firstInviteHandle = inviteHandle;
+        return defaultAcceptanceMsg;
+      },
+    });
+    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+      seatDesc: 'firstOffer',
+    });
+    return invite;
+  };
 
-      const ruleKinds = ['offerAtMost', 'wantAtLeast'];
-      if (!hasValidPayoutRules(ruleKinds, terms.assays, payoutRules)) {
-        return rejectOffer(zoe, offerHandle);
-      }
+  const makeMatchingInvite = () => {
+    const seat = harden({
+      matchOffer: () => swap(firstInviteHandle, inviteHandle),
+    });
+    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+      offerMadeRules: zoe.getOffer(firstInviteHandle).payoutRules,
+      seatDesc: 'matchOffer',
+    });
+    return invite;
+  };
 
-      // The offer is valid, so save information about the first offer
-      firstOfferHandle = offerHandle;
-      firstOfferPayoutRules = payoutRules;
-      return defaultAcceptanceMsg;
-    },
-    getFirstPayoutRules: () => firstOfferPayoutRules,
-    matchOffer: async escrowReceipt => {
-      const {
-        offerHandle: matchingOfferHandle,
-        offerRules: { payoutRules },
-      } = await zoe.burnEscrowReceipt(escrowReceipt);
-
-      if (!firstOfferHandle) {
-        return rejectOffer(zoe, matchingOfferHandle, `no offer to match`);
-      }
-
-      const { inactive } = zoe.getStatusFor(harden([firstOfferHandle]));
-      if (inactive.length > 0) {
-        return rejectOffer(
-          zoe,
-          matchingOfferHandle,
-          `The first offer was withdrawn or completed.`,
-        );
-      }
-
-      if (
-        !isExactlyMatchingPayoutRules(zoe, firstOfferPayoutRules, payoutRules)
-      ) {
-        return rejectOffer(zoe, matchingOfferHandle);
-      }
-      const [firstOfferExtents, matchingOfferExtents] = zoe.getExtentsFor(
-        harden([firstOfferHandle, matchingOfferHandle]),
-      );
-      // reallocate by switching the extents of the firstOffer and matchingOffer
-      zoe.reallocate(
-        harden([firstOfferHandle, matchingOfferHandle]),
-        harden([matchingOfferExtents, firstOfferExtents]),
-      );
-      zoe.complete(harden([firstOfferHandle, matchingOfferHandle]));
-      return defaultAcceptanceMsg;
-    },
-  });
   return harden({
-    instance: publicSwap,
-    assays: terms.assays,
+    invite: makeFirstOfferInvite(),
+    publicAPI: { makeMatchingInvite },
+    terms,
   });
 });

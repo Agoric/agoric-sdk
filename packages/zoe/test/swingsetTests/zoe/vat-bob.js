@@ -197,38 +197,44 @@ const build = async (
       await showPaymentBalance(moolaPurseP, 'bobMoolaPurse');
       await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;');
     },
-    doPublicSwap: async instanceHandle => {
-      const { instance: swap, installationHandle, terms } = await E(
-        zoe,
-      ).getInstance(instanceHandle);
+    doPublicSwap: async inviteP => {
+      const invite = await E(inviteAssay).claimAll(inviteP);
+      const { extent: inviteExtent } = await E(invite).getBalance();
 
+      const { installationHandle, terms } = await E(zoe).getInstance(
+        inviteExtent.instanceHandle,
+      );
       insist(installationHandle === installId)`wrong installation`;
-      insist(sameStructure(assays, terms.assays))`assays were not as expected`;
+      insist(
+        sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
+      )`assays were not as expected`;
 
-      const firstPayoutRules = await E(swap).getFirstPayoutRules();
-      const expectedFirstPayoutRules = harden([
+      const expectedFirstOfferPayoutRules = harden([
         {
           kind: 'offerAtMost',
-          units: await E(assays[0]).makeUnits(3),
+          units: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: await E(assays[1]).makeUnits(7),
+          units: simoleans(7),
         },
       ]);
       insist(
-        sameStructure(firstPayoutRules, expectedFirstPayoutRules),
-      )`Alice's first offer was not what she said`;
+        sameStructure(
+          inviteExtent.offerMadeRules,
+          expectedFirstOfferPayoutRules,
+        ),
+      )`Alice made a different offer than expected`;
 
       const offerRules = harden({
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: await E(assays[0]).makeUnits(3),
+            units: moola(3),
           },
           {
             kind: 'offerAtMost',
-            units: await E(assays[1]).makeUnits(7),
+            units: simoleans(7),
           },
         ],
         exitRule: {
@@ -238,12 +244,13 @@ const build = async (
       const simoleanPayment = await E(simoleanPurseP).withdrawAll();
       const offerPayments = [undefined, simoleanPayment];
 
-      const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
+      const { seat, payout: payoutP } = await E(zoe).redeem(
+        invite,
         offerRules,
         offerPayments,
       );
 
-      const offerResult = await E(swap).matchOffer(escrowReceipt);
+      const offerResult = await E(seat).matchOffer();
 
       log(offerResult);
 
@@ -252,8 +259,8 @@ const build = async (
       await E(moolaPurseP).depositAll(bobResult[0]);
       await E(simoleanPurseP).depositAll(bobResult[1]);
 
-      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse');
-      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;');
+      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse', log);
+      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
     },
     doSimpleExchange: async instanceHandle => {
       const { instance: exchange, installationHandle, terms } = await E(
