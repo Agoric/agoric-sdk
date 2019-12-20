@@ -46,56 +46,62 @@ export const firstPriceLogic = (bidExtentOps, bidOfferHandles, bids) => {
 
 export const isOverMinimumBid = (
   zoe,
+  assays,
   BID_INDEX,
   creatorOfferHandle,
   bidOfferHandle,
 ) => {
-  const [creatorExtents, bidExtents] = zoe.getExtentsFor(
-    harden([creatorOfferHandle, bidOfferHandle]),
-  );
-  const bidExtentOps = zoe.getExtentOpsArray()[BID_INDEX];
-  const minimumBid = creatorExtents[BID_INDEX];
-  const bidMade = bidExtents[BID_INDEX];
-  return bidExtentOps.includes(bidMade, minimumBid);
+  const { units: creatorUnits } = zoe.getOffer(creatorOfferHandle);
+  const { units: bidUnits } = zoe.getOffer(bidOfferHandle);
+  const bidUnitOps = zoe.getUnitOpsForAssays(assays)[BID_INDEX];
+  const minimumBid = creatorUnits[BID_INDEX];
+  const bidMade = bidUnits[BID_INDEX];
+  return bidUnitOps.includes(bidMade, minimumBid);
 };
 
 export const closeAuction = (
   zoe,
-  { auctionLogicFn, itemIndex, bidIndex, creatorOfferHandle, allBidHandles },
+  assays,
+  { auctionLogicFn, itemIndex, bidIndex, sellerInviteHandle, allBidHandles },
 ) => {
-  const extentOpsArray = zoe.getExtentOpsArray();
-  const bidExtentOps = extentOpsArray[bidIndex];
-  const itemExtentOps = extentOpsArray[itemIndex];
+  const unitOpsArray = zoe.getUnitOpsForAssays(assays);
+  const bidUnitOps = unitOpsArray[bidIndex];
+  const itemUnitOps = unitOpsArray[itemIndex];
 
   // Filter out any inactive bids
-  const { active: activeBidHandles } = zoe.getStatusFor(harden(allBidHandles));
-
-  const bids = zoe
-    .getExtentsFor(activeBidHandles)
-    .map(extents => extents[bidIndex]);
-  const itemExtentUpForAuction = zoe.getExtentsFor(
-    harden([creatorOfferHandle]),
-  )[0][itemIndex];
-
-  const { winnerOfferHandle, winnerBid, price } = auctionLogicFn(
-    bidExtentOps,
-    activeBidHandles,
-    bids,
+  const { active: activeBidHandles } = zoe.getOfferStatuses(
+    harden(allBidHandles),
   );
+
+  const getUnits = offer => offer.units;
+  const getBids = units => units[bidIndex];
+  const bids = zoe
+    .getOffers(activeBidHandles)
+    .map(getUnits)
+    .map(getBids);
+  const itemUnitsUpForAuction = zoe.getOffer(sellerInviteHandle).payoutRules[
+    itemIndex
+  ].units;
+
+  const {
+    winnerOfferHandle: winnerInviteHandle,
+    winnerBid,
+    price,
+  } = auctionLogicFn(bidUnitOps, activeBidHandles, bids);
 
   // The winner gets to keep the difference between their bid and the
   // price paid.
-  const winnerRefund = bidExtentOps.without(winnerBid, price);
+  const winnerRefund = bidUnitOps.without(winnerBid, price);
 
-  const newCreatorExtents = [itemExtentOps.empty(), price];
-  const newWinnerExtents = [itemExtentUpForAuction, winnerRefund];
+  const newCreatorUnits = [itemUnitOps.empty(), price];
+  const newWinnerUnits = [itemUnitsUpForAuction, winnerRefund];
 
   // Everyone else gets a refund so their extents remain the
   // same.
   zoe.reallocate(
-    harden([creatorOfferHandle, winnerOfferHandle]),
-    harden([newCreatorExtents, newWinnerExtents]),
+    harden([sellerInviteHandle, winnerInviteHandle]),
+    harden([newCreatorUnits, newWinnerUnits]),
   );
-  const allOfferHandles = harden([creatorOfferHandle, ...activeBidHandles]);
-  zoe.complete(allOfferHandles);
+  const allOfferHandles = harden([sellerInviteHandle, ...activeBidHandles]);
+  zoe.complete(allOfferHandles, assays);
 };

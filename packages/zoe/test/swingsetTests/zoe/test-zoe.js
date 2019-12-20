@@ -146,13 +146,12 @@ const expectedPublicAuctionOkLog = [
   'carolMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":0}',
   'daveMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":0}',
   'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":4}',
-  'carolSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
-  'daveSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":5}',
+  'carolSimoleanPurse: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
+  'daveSimoleanPurse: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":5}',
   'aliceMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":0}',
   'aliceSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
 ];
-
-test.skip('zoe - publicAuction - valid inputs - with SES', async t => {
+test('zoe - publicAuction - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
       [1, 0],
@@ -173,7 +172,7 @@ test.skip('zoe - publicAuction - valid inputs - with SES', async t => {
   }
 });
 
-test.skip('zoe - publicAuction - valid inputs - no SES', async t => {
+test('zoe - publicAuction - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
       [1, 0],

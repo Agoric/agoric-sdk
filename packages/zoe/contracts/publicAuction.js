@@ -1,17 +1,18 @@
+/* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 
-import { rejectOffer, defaultAcceptanceMsg } from './helpers/userFlow';
-import { hasValidPayoutRules } from './helpers/offerRules';
-import {
-  isOverMinimumBid,
-  secondPriceLogic,
-  closeAuction,
-} from './helpers/auctions';
+import { defaultAcceptanceMsg, makeHelpers } from './helpers/userFlow';
+import { secondPriceLogic, closeAuction } from './helpers/auctions';
 
 export const makeContract = harden((zoe, terms) => {
+  const { assays } = terms;
+  const { rejectOffer, canTradeWith, hasValidPayoutRules } = makeHelpers(
+    zoe,
+    assays,
+  );
   const numBidsAllowed = terms.numBidsAllowed || 3;
 
-  let creatorOfferHandle;
+  let sellerInviteHandle;
   let minimumBid;
   let auctionedAssets;
   const allBidHandles = [];
@@ -20,75 +21,90 @@ export const makeContract = harden((zoe, terms) => {
   const ITEM_INDEX = 0;
   const BID_INDEX = 1;
 
-  const publicAuction = harden({
-    startAuction: async escrowReceipt => {
-      const {
-        offerHandle,
-        offerRules: { payoutRules },
-      } = await zoe.burnEscrowReceipt(escrowReceipt);
+  const makeBidderSeat = () => {
+    const seat = harden({
+      bid: () => {
+        // Check that the item is still up for auction
+        if (!zoe.isOfferActive(sellerInviteHandle)) {
+          throw rejectOffer(
+            inviteHandle,
+            `The item up for auction has been withdrawn or the auction has completed`,
+          );
+        }
+        if (allBidHandles.length >= numBidsAllowed) {
+          throw rejectOffer(inviteHandle, `No further bids allowed.`);
+        }
+        if (
+          !hasValidPayoutRules(['wantAtLeast', 'offerAtMost'], inviteHandle)
+        ) {
+          throw rejectOffer(inviteHandle);
+        }
+        if (!canTradeWith(harden([sellerInviteHandle, inviteHandle]))) {
+          throw rejectOffer(
+            inviteHandle,
+            `Bid was under minimum bid or for the wrong assets`,
+          );
+        }
 
-      const ruleKinds = ['offerAtMost', 'wantAtLeast'];
-      if (
-        creatorOfferHandle ||
-        !hasValidPayoutRules(ruleKinds, terms.assays, payoutRules)
-      ) {
-        return rejectOffer(offerHandle);
-      }
+        // Save valid bid and try to close.
+        allBidHandles.push(inviteHandle);
+        if (allBidHandles.length >= numBidsAllowed) {
+          closeAuction(zoe, assays, {
+            auctionLogicFn: secondPriceLogic,
+            itemIndex: ITEM_INDEX,
+            bidIndex: BID_INDEX,
+            sellerInviteHandle,
+            allBidHandles,
+          });
+        }
+        return defaultAcceptanceMsg;
+      },
+    });
+    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+      seatDesc: 'bid',
+      auctionedAssets,
+      minimumBid,
+    });
+    return invite;
+  };
 
-      // Save the valid offer
-      creatorOfferHandle = offerHandle;
-      auctionedAssets = payoutRules[0].units;
-      minimumBid = payoutRules[1].units;
-      return defaultAcceptanceMsg;
-    },
-    getMinimumBid: () => minimumBid,
-    getAuctionedAssets: () => auctionedAssets,
-    bid: async escrowReceipt => {
-      const {
-        offerHandle,
-        offerRules: { payoutRules },
-      } = await zoe.burnEscrowReceipt(escrowReceipt);
+  const makeSellerInvite = () => {
+    const seat = harden({
+      sellAssets: () => {
+        if (
+          auctionedAssets ||
+          !hasValidPayoutRules(['offerAtMost', 'wantAtLeast'], inviteHandle)
+        ) {
+          throw rejectOffer(inviteHandle);
+        }
 
-      // Check that the item is still up for auction
-      const { inactive } = zoe.getStatusFor(harden([creatorOfferHandle]));
-      if (inactive.length > 0) {
-        return rejectOffer(
-          zoe,
-          offerHandle,
-          'The item up for auction has been withdrawn or the auction has completed',
-        );
-      }
-
-      if (allBidHandles.length >= numBidsAllowed) {
-        return rejectOffer(zoe, offerHandle, `No further bids allowed.`);
-      }
-
-      const ruleKinds = ['wantAtLeast', 'offerAtMost'];
-      if (!hasValidPayoutRules(ruleKinds, terms.assays, payoutRules)) {
-        return rejectOffer(zoe, offerHandle);
-      }
-
-      if (!isOverMinimumBid(zoe, BID_INDEX, creatorOfferHandle, offerHandle)) {
-        return rejectOffer(zoe, offerHandle, `Bid was under minimum bid`);
-      }
-
-      // Save valid bid and try to close.
-      allBidHandles.push(offerHandle);
-      if (allBidHandles.length >= numBidsAllowed) {
-        closeAuction(zoe, {
-          auctionLogicFn: secondPriceLogic,
-          itemIndex: ITEM_INDEX,
-          bidIndex: BID_INDEX,
-          creatorOfferHandle,
-          allBidHandles,
-        });
-      }
-      return defaultAcceptanceMsg;
-    },
-  });
+        // Save the valid offer
+        sellerInviteHandle = inviteHandle;
+        const { payoutRules } = zoe.getOffer(inviteHandle);
+        auctionedAssets = payoutRules[0].units;
+        minimumBid = payoutRules[1].units;
+        return defaultAcceptanceMsg;
+      },
+    });
+    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+      seatDesc: 'sellAssets',
+    });
+    return invite;
+  };
 
   return harden({
-    instance: publicAuction,
-    assays: terms.assays,
+    invite: makeSellerInvite(),
+    publicAPI: {
+      makeInvites: numInvites => {
+        const invites = [];
+        for (let i = 0; i < numInvites; i += 1) {
+          invites.push(makeBidderSeat());
+        }
+        return invites;
+      },
+      getAuctionedAssetsUnits: () => auctionedAssets,
+      getMinimumBid: () => minimumBid,
+    },
+    terms,
   });
 });
