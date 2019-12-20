@@ -13,9 +13,9 @@ export const makeHelpers = (zoe, assays) => {
   const helpers = harden({
     getActiveOffers: handles =>
       zoe.getOffers(zoe.getOfferStatuses(handles).active),
-    completeOffers: handles => zoe.complete(harden([...handles]), assays),
+    completeOffers: handles => zoe.complete(harden([...handles])),
     rejectOffer: (inviteHandle, msg = defaultRejectMsg) => {
-      zoe.complete(harden([inviteHandle]), assays);
+      zoe.complete(harden([inviteHandle]));
       throw new Error(msg);
     },
     canTradeWith: inviteHandles => {
@@ -57,7 +57,7 @@ export const makeHelpers = (zoe, assays) => {
       const tryUnits = zoe.getOffer(tryHandle).units;
       // reallocate by switching the units
       zoe.reallocate(handles, harden([tryUnits, keepUnits]));
-      zoe.complete(handles, assays);
+      zoe.complete(handles);
       return defaultAcceptanceMsg;
     },
     // Vector addition of two units arrays
