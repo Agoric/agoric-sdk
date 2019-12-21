@@ -13,7 +13,6 @@ export const makeHelpers = (zoe, assays) => {
   const helpers = harden({
     getActiveOffers: handles =>
       zoe.getOffers(zoe.getOfferStatuses(handles).active),
-    completeOffers: handles => zoe.complete(harden([...handles])),
     rejectOffer: (inviteHandle, msg = defaultRejectMsg) => {
       zoe.complete(harden([inviteHandle]));
       throw new Error(msg);
