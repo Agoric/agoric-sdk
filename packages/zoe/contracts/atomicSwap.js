@@ -37,7 +37,6 @@ export const makeContract = harden((zoe, terms) => {
 
   return harden({
     invite: makeFirstOfferInvite(),
-    publicAPI: {},
     terms,
   });
 });
