@@ -5,15 +5,15 @@ import bundleSource from '@agoric/bundle-source';
 import { makeZoe } from '../../../zoe';
 import { setup } from '../setupBasicMints';
 
-const publicSwapRoot = `${__dirname}/../../../contracts/publicSwap`;
+const atomicSwapRoot = `${__dirname}/../../../contracts/atomicSwap`;
 
-test('zoe - publicSwap', async t => {
+test('zoe -atomicSwap', async t => {
   try {
     const { assays: defaultAssays, mints } = setup();
     const assays = defaultAssays.slice(0, 2);
     const zoe = makeZoe({ require });
     // pack the contract
-    const { source, moduleFormat } = await bundleSource(publicSwapRoot);
+    const { source, moduleFormat } = await bundleSource(atomicSwapRoot);
     // install the contract
     const installationHandle = zoe.install(source, moduleFormat);
 
@@ -27,12 +27,10 @@ test('zoe - publicSwap', async t => {
     const bobSimoleanPurse = mints[1].mint(assays[1].makeUnits(7));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
-    // 1: Alice creates a publicSwap instance
+    // 1: Alice creates an atomicSwap instance
     const aliceInvite = await zoe.makeInstance(installationHandle, {
       assays,
     });
-    const { instanceHandle } = aliceInvite.getBalance().extent;
-    const { publicAPI } = zoe.getInstance(instanceHandle);
 
     // 2: Alice escrows with zoe
     const aliceOfferRules = harden({
@@ -60,8 +58,7 @@ test('zoe - publicSwap', async t => {
     );
 
     // 4: Alice makes the first offer in the swap.
-    const aliceOutcome = aliceSeat.makeFirstOffer();
-    const bobInviteP = publicAPI.makeMatchingInvite();
+    const bobInviteP = aliceSeat.makeFirstOffer();
 
     // 5: Alice spreads the invite far and wide with instructions
     // on how to use it and Bob decides he wants to be the
@@ -109,11 +106,6 @@ test('zoe - publicSwap', async t => {
 
     t.equals(
       bobOfferResult,
-      'The offer has been accepted. Once the contract has been completed, please check your payout',
-    );
-
-    t.equals(
-      await aliceOutcome,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
     const bobPayout = await bobPayoutP;

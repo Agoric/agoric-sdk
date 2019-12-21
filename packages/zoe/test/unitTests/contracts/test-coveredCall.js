@@ -8,7 +8,7 @@ import { makeZoe } from '../../../zoe';
 import { setup } from '../setupBasicMints';
 
 const coveredCallRoot = `${__dirname}/../../../contracts/coveredCall`;
-const publicSwapRoot = `${__dirname}/../../../contracts/publicSwap`;
+const atomicSwapRoot = `${__dirname}/../../../contracts/atomicSwap`;
 
 test.skip('zoe - coveredCall', async t => {
   try {
@@ -409,7 +409,7 @@ test.skip('zoe - coveredCall with swap for invite', async t => {
     const {
       source: swapSource,
       moduleFormat: swapModuleFormat,
-    } = await bundleSource(publicSwapRoot);
+    } = await bundleSource(atomicSwapRoot);
 
     const swapInstallationId = zoe.install(swapSource, swapModuleFormat);
 

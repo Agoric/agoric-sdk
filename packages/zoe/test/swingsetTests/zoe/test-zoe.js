@@ -9,7 +9,7 @@ const CONTRACT_FILES = [
   'autoswap',
   'coveredCall',
   'publicAuction',
-  'publicSwap',
+  'atomicSwap',
   'simpleExchange',
 ];
 const generateBundlesP = Promise.all(
@@ -194,27 +194,26 @@ test.skip('zoe - publicAuction - valid inputs - no SES', async t => {
   }
 });
 
-const expectedPublicSwapOkLog = [
+const expectedAtomicSwapOkLog = [
   '=> alice, bob, carol and dave are set up',
-  'The offer has been accepted. Once the contract has been completed, please check your payout',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'aliceMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":0}',
   'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":3}',
   'aliceSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
   'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":0}',
 ];
-test('zoe - publicSwap - valid inputs - with SES', async t => {
+test('zoe - atomicSwap - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
       [3, 0],
       [0, 7],
     ];
     const dump = await main(true, 'zoe', [
-      'publicSwapOk',
-      'publicSwap',
+      'atomicSwapOk',
+      'atomicSwap',
       startingExtents,
     ]);
-    t.deepEquals(dump.log, expectedPublicSwapOkLog);
+    t.deepEquals(dump.log, expectedAtomicSwapOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {
@@ -222,7 +221,7 @@ test('zoe - publicSwap - valid inputs - with SES', async t => {
   }
 });
 
-test('zoe - publicSwap - valid inputs - no SES', async t => {
+test('zoe - atomicSwap - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
       [3, 0],
@@ -230,11 +229,11 @@ test('zoe - publicSwap - valid inputs - no SES', async t => {
       [0, 0],
     ];
     const dump = await main(false, 'zoe', [
-      'publicSwapOk',
-      'publicSwap',
+      'atomicSwapOk',
+      'atomicSwap',
       startingExtents,
     ]);
-    t.deepEquals(dump.log, expectedPublicSwapOkLog);
+    t.deepEquals(dump.log, expectedAtomicSwapOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {

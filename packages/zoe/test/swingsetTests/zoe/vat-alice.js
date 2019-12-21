@@ -153,7 +153,7 @@ const build = async (
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;');
   };
 
-  const doPublicSwap = async bobP => {
+  const doAtomicSwap = async bobP => {
     const invite = await E(zoe).makeInstance(installId, { assays });
 
     const offerRules = harden({
@@ -173,24 +173,14 @@ const build = async (
     });
     const moolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [moolaPayment, undefined];
-
-    const {
-      extent: { instanceHandle },
-    } = await E(invite).getBalance();
-    const { publicAPI } = await E(zoe).getInstance(instanceHandle);
-
     const { seat, payout: payoutP } = await E(zoe).redeem(
       invite,
       offerRules,
       offerPayments,
     );
 
-    const offerResult = await E(seat).makeFirstOffer();
-    const bobInviteP = E(publicAPI).makeMatchingInvite();
-
-    log(offerResult);
-
-    E(bobP).doPublicSwap(bobInviteP);
+    const bobInviteP = await E(seat).makeFirstOffer();
+    E(bobP).doAtomicSwap(bobInviteP);
 
     const payout = await payoutP;
     await E(moolaPurseP).depositAll(payout[0]);
@@ -349,8 +339,8 @@ const build = async (
         case 'publicAuctionOk': {
           return doPublicAuction(bobP, carolP, daveP);
         }
-        case 'publicSwapOk': {
-          return doPublicSwap(bobP, carolP, daveP);
+        case 'atomicSwapOk': {
+          return doAtomicSwap(bobP, carolP, daveP);
         }
         case 'simpleExchangeOk': {
           return doSimpleExchange(bobP, carolP, daveP);

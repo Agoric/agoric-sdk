@@ -197,7 +197,7 @@ const build = async (
       await showPaymentBalance(moolaPurseP, 'bobMoolaPurse');
       await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;');
     },
-    doPublicSwap: async inviteP => {
+    doAtomicSwap: async inviteP => {
       const invite = await E(inviteAssay).claimAll(inviteP);
       const { extent: inviteExtent } = await E(invite).getBalance();
 
