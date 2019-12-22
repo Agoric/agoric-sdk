@@ -10,6 +10,7 @@ const hasAssays = (assays, newPayoutRules) =>
   assays.every((assay, i) => assay === newPayoutRules[i].units.label.assay);
 
 export const makeHelpers = (zoe, assays) => {
+  const unitOpsArray = zoe.getUnitOpsForAssays(assays);
   const helpers = harden({
     getActiveOffers: handles =>
       zoe.getOffers(zoe.getOfferStatuses(handles).active),
@@ -17,8 +18,12 @@ export const makeHelpers = (zoe, assays) => {
       zoe.complete(harden([inviteHandle]));
       throw new Error(msg);
     },
+    areAssetsEqualAtIndex: (index, leftHandle, rightHandle) =>
+      unitOpsArray[index].equals(
+        zoe.getOffer(leftHandle).payoutRules[index].units,
+        zoe.getOffer(rightHandle).payoutRules[index].units,
+      ),
     canTradeWith: inviteHandles => {
-      const unitOpsArray = zoe.getUnitOpsForAssays(assays);
       const { payoutRules: leftPayoutRules } = zoe.getOffer(inviteHandles[0]);
       const { payoutRules: rightPayoutRules } = zoe.getOffer(inviteHandles[1]);
       const satisfied = (wants, offers) =>
@@ -61,7 +66,6 @@ export const makeHelpers = (zoe, assays) => {
     },
     // Vector addition of two units arrays
     vectorWith: (leftUnitsArray, rightUnitsArray) => {
-      const unitOpsArray = zoe.getUnitOpsForAssays(assays);
       const withUnits = leftUnitsArray.map((leftUnits, i) =>
         unitOpsArray[i].with(leftUnits, rightUnitsArray[i]),
       );
@@ -69,16 +73,12 @@ export const makeHelpers = (zoe, assays) => {
     },
     // Vector subtraction of two units arrays
     vectorWithout: (leftUnitsArray, rightUnitsArray) => {
-      const unitOpsArray = zoe.getUnitOpsForAssays(assays);
       const withoutUnits = leftUnitsArray.map((leftUnits, i) =>
         unitOpsArray[i].without(leftUnits, rightUnitsArray[i]),
       );
       return withoutUnits;
     },
-    makeEmptyUnits: () => {
-      const unitOpsArray = zoe.getUnitOpsForAssays(assays);
-      return unitOpsArray.map(unitOps => unitOps.empty());
-    },
+    makeEmptyUnits: () => unitOpsArray.map(unitOps => unitOps.empty()),
   });
   return helpers;
 };

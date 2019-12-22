@@ -2,7 +2,6 @@
 import harden from '@agoric/harden';
 
 import { defaultAcceptanceMsg, makeHelpers } from './helpers/userFlow';
-import { makeExchangeHelpers } from './helpers/exchanges';
 
 // This exchange only accepts limit orders. A limit order is defined
 // as either a sell order with payoutRules: [ { kind: 'offerAtMost',
@@ -19,11 +18,12 @@ export const makeContract = harden((zoe, terms) => {
   const sellInviteHandles = [];
   const buyInviteHandles = [];
   const { assays } = terms;
-  const { rejectOffer, hasValidPayoutRules } = makeHelpers(zoe, assays);
   const {
-    isMatchingLimitOrder,
-    reallocateSurplusToSeller: reallocate,
-  } = makeExchangeHelpers(zoe, assays);
+    rejectOffer,
+    hasValidPayoutRules,
+    swap,
+    areAssetsEqualAtIndex,
+  } = makeHelpers(zoe, assays);
 
   const makeInvite = () => {
     const seat = harden({
@@ -32,10 +32,10 @@ export const makeContract = harden((zoe, terms) => {
         if (hasValidPayoutRules(['offerAtMost', 'wantAtLeast'], inviteHandle)) {
           // Save the valid offer and try to match
           sellInviteHandles.push(inviteHandle);
-          const { active } = zoe.getOfferStatuses(buyInviteHandles);
-          for (let i = 0; i < active.length; i += 1) {
-            if (isMatchingLimitOrder(inviteHandle, active[i])) {
-              return reallocate(inviteHandle, active[i]);
+          for (const buyHandle of zoe.getOfferStatuses(buyInviteHandles)
+            .active) {
+            if (areAssetsEqualAtIndex(0, inviteHandle, buyHandle)) {
+              swap(inviteHandle, buyHandle);
             }
           }
           return defaultAcceptanceMsg;
@@ -44,10 +44,10 @@ export const makeContract = harden((zoe, terms) => {
         if (hasValidPayoutRules(['wantAtLeast', 'offerAtMost'], inviteHandle)) {
           // Save the valid offer and try to match
           buyInviteHandles.push(inviteHandle);
-          const { active } = zoe.getOfferStatuses(sellInviteHandles);
-          for (let i = 0; i < active.length; i += 1) {
-            if (isMatchingLimitOrder(active[i], inviteHandle)) {
-              reallocate(active[i], inviteHandle);
+          for (const sellHandle of zoe.getOfferStatuses(sellInviteHandles)
+            .active) {
+            if (areAssetsEqualAtIndex(0, inviteHandle, sellHandle)) {
+              swap(inviteHandle, sellHandle);
             }
           }
           return defaultAcceptanceMsg;
