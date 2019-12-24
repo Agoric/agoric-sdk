@@ -10,8 +10,8 @@
   "scripts": {
     "test": "tape -r esm test/**/test*.js",
     "build": "exit 0",
-    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
-    "lint-check": "eslint '**/*.{js,jsx}'"
+    "lint-fix": "eslint --fix '**/*.js'",
+    "lint-check": "eslint '**/*.js'"
   },
   "devDependencies": {
     "tape": "^4.10.0",
