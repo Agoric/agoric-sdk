@@ -1,7 +1,16 @@
 import harden from '@agoric/harden';
-import { hasValidPayoutRules, makeUnits } from '@agoric/zoe/contracts/helpers/offerRules';
-import { rejectOffer, defaultAcceptanceMsg } from '@agoric/zoe/contracts/helpers/userFlow';
-import { vectorWith, vectorWithout } from '@agoric/zoe/contracts/helpers/extents';
+import {
+  hasValidPayoutRules,
+  makeUnits,
+} from '@agoric/zoe/contracts/helpers/offerRules';
+import {
+  rejectOffer,
+  defaultAcceptanceMsg,
+} from '@agoric/zoe/contracts/helpers/userFlow';
+import {
+  vectorWith,
+  vectorWithout,
+} from '@agoric/zoe/contracts/helpers/extents';
 
 import { makeMint } from '@agoric/ertp/core/mint';
 

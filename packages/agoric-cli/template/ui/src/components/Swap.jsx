@@ -76,7 +76,9 @@ export default function Swap() {
   const outputAmountError = outputAmount < 0;
 
   const pursesError =
-    inputPurse && outputPurse && inputPurse.allegedName === outputPurse.allegedName;
+    inputPurse &&
+    outputPurse &&
+    inputPurse.allegedName === outputPurse.allegedName;
 
   const hasError = pursesError || inputAmountError || outputAmountError;
 
