@@ -64,7 +64,7 @@ export async function launch(mailboxStorage, stateFile, vatsDir, argv) {
   try {
     // stateFile will be missing the first time we launch
     l = new readlines(stateFile);
-  } catch(e) {
+  } catch (e) {
     console.log(`initializing empty swingset state`);
   }
   if (l) {

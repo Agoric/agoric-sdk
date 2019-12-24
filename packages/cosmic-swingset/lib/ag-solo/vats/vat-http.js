@@ -20,8 +20,13 @@ function build(E, D) {
   let exportedToCapTP = {
     LOADING: loaded.p,
     READY: {
-      resolve(value) { isReady = true; readyForClient.res(value); },
-      isReady() { return isReady; },
+      resolve(value) {
+        isReady = true;
+        readyForClient.res(value);
+      },
+      isReady() {
+        return isReady;
+      },
     },
   };
 
@@ -118,11 +123,17 @@ function build(E, D) {
         };
         handler.pleaseProvisionMany = obj => {
           const { applies } = obj;
-          return Promise.all(applies.map(args =>
-            // Emulate allSettled.
-            E(provisioner).pleaseProvision(...args).then(
-              value => ({status: 'fulfilled', value}),
-              reason => ({status: 'rejected', reason}))));
+          return Promise.all(
+            applies.map(args =>
+              // Emulate allSettled.
+              E(provisioner)
+                .pleaseProvision(...args)
+                .then(
+                  value => ({ status: 'fulfilled', value }),
+                  reason => ({ status: 'rejected', reason }),
+                ),
+            ),
+          );
         };
       }
     },
@@ -179,9 +190,12 @@ function build(E, D) {
           // todo fixme avoid the loop
           // For now, go from the end to beginning so that handlers
           // override.
-          const hardObjects = harden({...homeObjects});
+          const hardObjects = harden({ ...homeObjects });
           for (let i = registeredHandlers.length - 1; i >= 0; i--) {
-            res = await E(registeredHandlers[i]).processInbound(obj, hardObjects);
+            res = await E(registeredHandlers[i]).processInbound(
+              obj,
+              hardObjects,
+            );
             if (res) {
               break;
             }
