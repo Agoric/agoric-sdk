@@ -19,8 +19,8 @@ import {
   getCommsSourcePath,
   getTimerWrapperSourcePath,
 } from '@agoric/swingset-vat';
-import { buildStorageInMemory } from '@agoric/swingset-vat/src/hostStorage';
-import buildCommand from '@agoric/swingset-vat/src/devices/command';
+import { buildStorageInMemory } from '@agoric/swingset-vat';
+import { buildCommand } from '@agoric/swingset-vat';
 
 import { deliver, addDeliveryTarget } from './outbound';
 import { makeHTTPListener } from './web';
