@@ -21,15 +21,16 @@ jobs:
     - name: cache Modddable SDK
       uses: actions/cache@v1
       with:
-        path: moddable
-        key: ${{ runner.os }}-moddable-ag04
+        path: ~/moddable
+        key: ${{ runner.os }}-moddable-home-ag04
     - name: install moddable SDK with x-cli-lin platform
       run: |
+        cd $HOME
         test -d moddable || curl -L https://github.com/dckc/moddable/archive/ag04.tar.gz | tar xzf -
         test -d moddalbe || mv moddable-ag04 moddable
     - name: build moddable tools
       run: |
-        export MODDABLE=$PWD/moddable
+        export MODDABLE=$HOME/moddable
         export XS_DIR=$MODDABLE/xs
         cd $MODDABLE/build/makefiles/lin
         # debug
@@ -48,3 +49,29 @@ jobs:
         mcconfig -m -p x-cli-lin
         # ISSUE: support scripts with no main()?
         # $MODDABLE/build/bin/lin/release/helloworld
+    - name: install tape-xs
+      # ISSUE: merge into agoric-sdk?
+      run: |
+        cd $HOME
+        curl -L https://github.com/dckc/tape-xs/archive/ag01.tar.gz | tar xzf -
+        mv tape-xs-ag01 tape-xs
+        cd tape-xs
+        yarn install
+    - name: test eventual-send on xs
+      run: |
+        export MODDABLE=$HOME/moddable
+        export PATH=$MODDABLE/build/bin/lin/release:$PATH
+        export TAPE=$HOME/tape-xs
+        cd packages/eventual-send
+        node -r esm $TAPE/bin/tape-xs-build.js $PWD test/test*.js
+        mcconfig -m -p x-cli-lin test-xs-manifest.json
+        $MODDABLE/build/bin/lin/release/eventual-send
+        # TODO: exit event loop when done
+    - name: build and run ag-solo for xs
+      run: |
+        export MODDABLE=$HOME/moddable
+        export PATH=$MODDABLE/build/bin/lin/release:$PATH
+        cd packages/cosmic-swingset
+        mcconfig -m -p x-cli-lin ag-solo-xs-manifest.json
+        $MODDABLE/build/bin/lin/release/cosmic-swingset
+        # TODO: fix `SyntaxError: import promisify not found` etc.
