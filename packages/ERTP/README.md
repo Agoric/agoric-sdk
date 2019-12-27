@@ -21,7 +21,7 @@ escrowing and payouts and checks invariants like offer-safety and
 conservation of supply, meaning that developers can just focus on the
 particular logic of their contract. 
 
-Learn more about how to write a smart contract on [Zoe](core/zoe/docs/zoe.md).
+Learn more about how to write a smart contract on [Zoe](https://agoric.com/documentation/zoe/guide/).
 
 ## A quick tutorial
 
