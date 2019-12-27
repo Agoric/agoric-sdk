@@ -22,12 +22,12 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/moddable
-        key: ${{ runner.os }}-moddable-home-ag04
+        key: ${{ runner.os }}-moddable-home-ag05
     - name: install moddable SDK with x-cli-lin platform
       run: |
         cd $HOME
-        test -d moddable || curl -L https://github.com/dckc/moddable/archive/ag04.tar.gz | tar xzf -
-        test -d moddalbe || mv moddable-ag04 moddable
+        test -d moddable || curl -L https://github.com/dckc/moddable/archive/ag05.tar.gz | tar xzf -
+        test -d moddalbe || mv moddable-ag05 moddable
     - name: build moddable tools
       run: |
         export MODDABLE=$HOME/moddable
