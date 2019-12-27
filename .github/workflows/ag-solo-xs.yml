@@ -39,12 +39,12 @@ jobs:
         node -r esm $TAPE/bin/tape-xs-build.js $PWD test/test*.js
         mcconfig -m -p x-cli-lin test-xs-manifest.json
         $MODDABLE/build/bin/lin/release/eventual-send
-        # TODO: exit event loop when done
-    - name: build and run ag-solo for xs
+    - name: test marshal on xs
       run: |
         export MODDABLE=$HOME/moddable
         export PATH=$MODDABLE/build/bin/lin/release:$PATH
-        cd packages/cosmic-swingset
-        mcconfig -m -p x-cli-lin ag-solo-xs-manifest.json
-        $MODDABLE/build/bin/lin/release/cosmic-swingset
-        # TODO: fix `SyntaxError: import promisify not found` etc.
+        export TAPE=$HOME/tape-xs
+        cd packages/marshal
+        node -r esm $TAPE/bin/tape-xs-build.js $PWD test/test*.js
+        mcconfig -m -p x-cli-lin test-xs-manifest.json
+        $MODDABLE/build/bin/lin/release/marshal
