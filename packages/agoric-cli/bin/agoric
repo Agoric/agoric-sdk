@@ -5,6 +5,7 @@ const path = esmRequire('path');
 const chalk = esmRequire('chalk').default;
 const WebSocket = esmRequire('ws');
 const { spawn } = esmRequire('child_process');
+const fs = esmRequire('fs').promises;
 
 const main = esmRequire('../lib/main.js').default;
 const progname = path.basename(process.argv[1]);
@@ -12,7 +13,6 @@ const progname = path.basename(process.argv[1]);
 const error = (...args) => {
   console.error(`${progname}: ${chalk.red('ERROR')}:`, ...args);
 };
-const fs = require('fs').promises;
 const makeWebSocket = (...args) => new WebSocket(...args);
 
 process.on('SIGINT', () => process.exit(-1));
