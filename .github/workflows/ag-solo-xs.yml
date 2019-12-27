@@ -18,37 +18,10 @@ jobs:
       run: yarn install
     - name: yarn build
       run: yarn build
-    - name: cache Modddable SDK
-      uses: actions/cache@v1
-      with:
-        path: ~/moddable
-        key: ${{ runner.os }}-moddable-home-ag05
-    - name: install moddable SDK with x-cli-lin platform
+    - name: install moddable linux CLI SDK ag08
       run: |
         cd $HOME
-        test -d moddable || curl -L https://github.com/dckc/moddable/archive/ag05.tar.gz | tar xzf -
-        test -d moddalbe || mv moddable-ag05 moddable
-    - name: build moddable tools
-      run: |
-        export MODDABLE=$HOME/moddable
-        export XS_DIR=$MODDABLE/xs
-        cd $MODDABLE/build/makefiles/lin
-        # debug
-        # ISSUE: why are debug tools needed?
-        make -f $XS_DIR/makefiles/lin/xsc.mk
-        make -f $XS_DIR/makefiles/lin/xsid.mk
-        make -f $XS_DIR/makefiles/lin/xsl.mk
-        make -f tools.mk
-        # release
-        make GOAL=release -f $XS_DIR/makefiles/lin/xsc.mk
-        make GOAL=release -f $XS_DIR/makefiles/lin/xsid.mk
-        make GOAL=release -f $XS_DIR/makefiles/lin/xsl.mk
-        make GOAL=release -f tools.mk
-        export PATH=$MODDABLE/build/bin/lin/release:$PATH
-        cd $MODDABLE/examples/helloworld
-        mcconfig -m -p x-cli-lin
-        # ISSUE: support scripts with no main()?
-        # $MODDABLE/build/bin/lin/release/helloworld
+        curl -L https://github.com/dckc/moddable/releases/download/ag08/moddable-linux-sdk.tgz | tar xzf -
     - name: install tape-xs
       # ISSUE: merge into agoric-sdk?
       run: |
