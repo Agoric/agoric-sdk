@@ -15,14 +15,16 @@ import { defaultAcceptanceMsg, makeHelpers } from './helpers/userFlow';
 // support partial fills of orders.
 
 export const makeContract = harden((zoe, terms) => {
-  const sellInviteHandles = [];
-  const buyInviteHandles = [];
+  const ASSET_INDEX = 0;
+  let sellInviteHandles = [];
+  let buyInviteHandles = [];
   const { assays } = terms;
   const {
     rejectOffer,
     hasValidPayoutRules,
     swap,
     areAssetsEqualAtIndex,
+    canTradeWith,
   } = makeHelpers(zoe, assays);
 
   const makeInvite = () => {
@@ -32,10 +34,13 @@ export const makeContract = harden((zoe, terms) => {
         if (hasValidPayoutRules(['offerAtMost', 'wantAtLeast'], inviteHandle)) {
           // Save the valid offer and try to match
           sellInviteHandles.push(inviteHandle);
-          for (const buyHandle of zoe.getOfferStatuses(buyInviteHandles)
-            .active) {
-            if (areAssetsEqualAtIndex(0, inviteHandle, buyHandle)) {
-              swap(inviteHandle, buyHandle);
+          buyInviteHandles = [...zoe.getOfferStatuses(buyInviteHandles).active];
+          for (const buyHandle of buyInviteHandles) {
+            if (
+              areAssetsEqualAtIndex(ASSET_INDEX, inviteHandle, buyHandle) &&
+              canTradeWith(inviteHandle, buyHandle)
+            ) {
+              return swap(inviteHandle, buyHandle);
             }
           }
           return defaultAcceptanceMsg;
@@ -44,10 +49,15 @@ export const makeContract = harden((zoe, terms) => {
         if (hasValidPayoutRules(['wantAtLeast', 'offerAtMost'], inviteHandle)) {
           // Save the valid offer and try to match
           buyInviteHandles.push(inviteHandle);
-          for (const sellHandle of zoe.getOfferStatuses(sellInviteHandles)
-            .active) {
-            if (areAssetsEqualAtIndex(0, inviteHandle, sellHandle)) {
-              swap(inviteHandle, sellHandle);
+          sellInviteHandles = [
+            ...zoe.getOfferStatuses(sellInviteHandles).active,
+          ];
+          for (const sellHandle of sellInviteHandles) {
+            if (
+              areAssetsEqualAtIndex(ASSET_INDEX, inviteHandle, sellHandle) &&
+              canTradeWith(inviteHandle, sellHandle)
+            ) {
+              return swap(inviteHandle, sellHandle);
             }
           }
           return defaultAcceptanceMsg;

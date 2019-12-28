@@ -23,9 +23,9 @@ export const makeHelpers = (zoe, assays) => {
         zoe.getOffer(leftHandle).payoutRules[index].units,
         zoe.getOffer(rightHandle).payoutRules[index].units,
       ),
-    canTradeWith: inviteHandles => {
-      const { payoutRules: leftPayoutRules } = zoe.getOffer(inviteHandles[0]);
-      const { payoutRules: rightPayoutRules } = zoe.getOffer(inviteHandles[1]);
+    canTradeWith: (leftInviteHandle, rightInviteHandle) => {
+      const { payoutRules: leftPayoutRules } = zoe.getOffer(leftInviteHandle);
+      const { payoutRules: rightPayoutRules } = zoe.getOffer(rightInviteHandle);
       const satisfied = (wants, offers) =>
         wants.every((want, i) => {
           if (want.kind === 'wantAtLeast') {
@@ -53,13 +53,13 @@ export const makeHelpers = (zoe, assays) => {
       if (!zoe.isOfferActive(keepHandle)) {
         throw helpers.rejectOffer(tryHandle, keepHandleInactiveMsg);
       }
-      const handles = [keepHandle, tryHandle];
-      if (!helpers.canTradeWith(handles)) {
+      if (!helpers.canTradeWith(keepHandle, tryHandle)) {
         throw helpers.rejectOffer(tryHandle);
       }
       const keepUnits = zoe.getOffer(keepHandle).units;
       const tryUnits = zoe.getOffer(tryHandle).units;
       // reallocate by switching the units
+      const handles = harden([keepHandle, tryHandle]);
       zoe.reallocate(handles, harden([tryUnits, keepUnits]));
       zoe.complete(handles);
       return defaultAcceptanceMsg;
