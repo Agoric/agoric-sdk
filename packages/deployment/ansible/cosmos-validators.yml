@@ -11,6 +11,6 @@
     - CHAIN_NAME: "{{ lookup('file', SETUP_HOME + '/' + service + '/chain-name.txt') }}"
     - STAKER: ag-staker
     - STAKER_NODE: node0
-    - STAKER_AMOUNT: 1000000stake
+    - STAKER_AMOUNT: 2000000stake
   roles:
     - cosmos-validators
