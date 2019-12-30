@@ -1,10 +1,10 @@
 // Start a network service
-const path = require('path');
-const http = require('http');
-const express = require('express');
-const WebSocket = require('ws');
-const morgan = require('morgan');
-const fs = require('fs');
+import path from 'path';
+import http from 'http';
+import express from 'express';
+import WebSocket from 'ws';
+import morgan from 'morgan';
+import fs from 'fs';
 
 const points = new Map();
 const broadcasts = new Map();
