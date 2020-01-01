@@ -23,9 +23,10 @@ export const makeContract = harden((zoe, terms) => {
     zoe,
     terms.assays,
   );
-  let sellerHandle;
+  const ASSET_INDEX = 0;
+  const PRICE_INDEX = 1;
 
-  const makeCallOptionInvite = () => {
+  const makeCallOptionInvite = sellerHandle => {
     const seat = harden({
       exercise: () =>
         swap(sellerHandle, inviteHandle, `The covered call option is expired.`),
@@ -35,8 +36,8 @@ export const makeContract = harden((zoe, terms) => {
       seatDesc: 'exerciseOption',
       expirationDate: exitRule.deadline,
       timerAuthority: exitRule.timer,
-      underlyingAsset: payoutRules[0].units,
-      strikePrice: payoutRules[1].units,
+      underlyingAsset: payoutRules[ASSET_INDEX].units,
+      strikePrice: payoutRules[PRICE_INDEX].units,
     });
     return callOption;
   };
@@ -51,8 +52,7 @@ export const makeContract = harden((zoe, terms) => {
         ) {
           throw rejectOffer(inviteHandle);
         }
-        sellerHandle = inviteHandle;
-        return makeCallOptionInvite();
+        return makeCallOptionInvite(inviteHandle);
       },
     });
     const { invite, inviteHandle } = zoe.makeInvite(seat, {
