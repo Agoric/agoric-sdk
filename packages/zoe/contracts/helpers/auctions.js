@@ -47,15 +47,15 @@ export const firstPriceLogic = (bidExtentOps, bidOfferHandles, bids) => {
 export const isOverMinimumBid = (
   zoe,
   assays,
-  BID_INDEX,
+  bidIndex,
   creatorOfferHandle,
   bidOfferHandle,
 ) => {
   const { units: creatorUnits } = zoe.getOffer(creatorOfferHandle);
   const { units: bidUnits } = zoe.getOffer(bidOfferHandle);
-  const bidUnitOps = zoe.getUnitOpsForAssays(assays)[BID_INDEX];
-  const minimumBid = creatorUnits[BID_INDEX];
-  const bidMade = bidUnits[BID_INDEX];
+  const bidUnitOps = zoe.getUnitOpsForAssays(assays)[bidIndex];
+  const minimumBid = creatorUnits[bidIndex];
+  const bidMade = bidUnits[bidIndex];
   return bidUnitOps.includes(bidMade, minimumBid);
 };
 

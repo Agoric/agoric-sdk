@@ -1,5 +1,6 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
+import Nat from '@agoric/nat';
 
 import { defaultAcceptanceMsg, makeHelpers } from './helpers/userFlow';
 import { secondPriceLogic, closeAuction } from './helpers/auctions';
@@ -10,7 +11,8 @@ export const makeContract = harden((zoe, terms) => {
     zoe,
     assays,
   );
-  const numBidsAllowed = terms.numBidsAllowed || 3;
+  const numBidsAllowed =
+    terms.numBidsAllowed !== undefined ? Nat(terms.numBidsAllowed) : Nat(3);
 
   let sellerInviteHandle;
   let minimumBid;
@@ -21,7 +23,7 @@ export const makeContract = harden((zoe, terms) => {
   const ITEM_INDEX = 0;
   const BID_INDEX = 1;
 
-  const makeBidderSeat = () => {
+  const makeBidderInvite = () => {
     const seat = harden({
       bid: () => {
         // Check that the item is still up for auction
@@ -39,7 +41,7 @@ export const makeContract = harden((zoe, terms) => {
         ) {
           throw rejectOffer(inviteHandle);
         }
-        if (!canTradeWith(harden([sellerInviteHandle, inviteHandle]))) {
+        if (!canTradeWith(sellerInviteHandle, inviteHandle)) {
           throw rejectOffer(
             inviteHandle,
             `Bid was under minimum bid or for the wrong assets`,
@@ -96,9 +98,12 @@ export const makeContract = harden((zoe, terms) => {
     invite: makeSellerInvite(),
     publicAPI: {
       makeInvites: numInvites => {
+        if (auctionedAssets === undefined) {
+          throw new Error(`No assets are up for auction.`);
+        }
         const invites = [];
         for (let i = 0; i < numInvites; i += 1) {
-          invites.push(makeBidderSeat());
+          invites.push(makeBidderInvite());
         }
         return invites;
       },
