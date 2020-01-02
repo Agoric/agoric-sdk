@@ -450,9 +450,6 @@ test('zoe - coveredCall with swap for invite', async t => {
 
     const bobPayments = [bobExclOption, undefined];
 
-    const { instanceHandle } = bobSwapInvite.getBalance().extent;
-    const { publicAPI } = zoe.getInstance(instanceHandle);
-
     // 6: Bob escrows his option in the swap
     const { seat: bobSwapSeat, payout: bobPayoutP } = await zoe.redeem(
       bobSwapInvite,
@@ -461,14 +458,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     );
 
     // 8: Bob makes an offer to the swap with his "higher order"
-    const bobOutcome = await bobSwapSeat.makeFirstOffer();
-
-    t.equals(
-      bobOutcome,
-      'The offer has been accepted. Once the contract has been completed, please check your payout',
-    );
-
-    const daveSwapInvite = publicAPI.makeMatchingInvite();
+    const daveSwapInvite = await bobSwapSeat.makeFirstOffer();
 
     // Bob passes the swap invite to Dave and tells him about
     // what kind of offer the swap is for (Dave doesn't necessarily
