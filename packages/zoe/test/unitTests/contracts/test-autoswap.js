@@ -7,7 +7,7 @@ import { setup } from '../setupBasicMints';
 
 const autoswapRoot = `${__dirname}/../../../contracts/autoswap`;
 
-test.only('autoSwap with valid offers', async t => {
+test('autoSwap with valid offers', async t => {
   try {
     const {
       mints: defaultMints,

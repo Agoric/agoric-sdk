@@ -19,61 +19,58 @@ const { add, subtract, multiply, divide } = natSafeMath;
  * @param  {number} feeInTenthOfPercent=3 - the fee taken in tenths of
  * a percent. The default is 0.3%. The fee is taken from unitsIn
  */
-export const calculateConstProduct = (
-  assays,
-  unitOpsArray,
-  poolUnits,
-  unitsIn,
-  feeInTenthOfPercent = 3,
-) => {
-  let IN_INDEX;
-  let OUT_INDEX;
-  // the user has sent in units of kind assays[0]
-  if (unitsIn.label.assay === assays[0]) {
-    IN_INDEX = 0;
-    OUT_INDEX = 1;
-    // the user has sent in units of kind assays[1]
-  } else if (unitsIn.label.assay === assays[1]) {
-    IN_INDEX = 1;
-    OUT_INDEX = 0;
-  } else {
-    throw new Error(`unitsIn ${unitsIn} were malformed`);
-  }
 
-  // Constant product invariant means:
-  // tokenInPoolE * tokenOutPoolE =
-  //   (tokenInPoolE + tokenInE) *
-  //   (tokenOutPoolE - tokensOutE)
+export const makeCalculateConstProduct = (zoe, assays) => {
+  const unitOpsArray = zoe.getUnitOpsForAssays(assays);
+  return (poolUnitsArray, unitsIn, feeInTenthOfPercent = 3) => {
+    const brandIn = unitsIn.label.assay;
+    if (brandIn !== assays[0] && brandIn !== assays[1]) {
+      throw new Error(`unitsIn ${unitsIn} were malformed`);
+    }
+    const IN_INDEX = brandIn === assays[0] ? 0 : 1;
+    const OUT_INDEX = 1 - IN_INDEX;
 
-  // newTokenInPoolE = tokenInPoolE + tokenInE;
-  const newPoolUnits = [...poolUnits];
-  newPoolUnits[IN_INDEX] = unitOpsArray.with(poolUnits[IN_INDEX], unitsIn);
+    // Constant product invariant means:
+    // tokenInPoolE * tokenOutPoolE =
+    //   (tokenInPoolE + tokenInE) *
+    //   (tokenOutPoolE - tokensOutE)
 
-  // newTokenOutPool = tokenOutPool / (1 + (tokenInE/tokenInPoolE)*(1-.003))
+    // newTokenInPoolE = tokenInPoolE + tokenInE;
+    const newPoolUnitsArray = [...poolUnitsArray];
+    newPoolUnitsArray[IN_INDEX] = unitOpsArray.with(
+      poolUnitsArray[IN_INDEX],
+      unitsIn,
+    );
 
-  // the order in which we do this makes a difference because of
-  // rounding to floor.
+    // newTokenOutPool = tokenOutPool / (1 + (tokenInE/tokenInPoolE)*(1-.003))
 
-  // We use extents here because we are multiplying two different
-  // kinds of digital assets
-  const constantProduct = multiply(poolUnits[0].extent, poolUnits[1].extent);
-  const numerator = multiply(constantProduct, 1000);
-  const denominator = add(
-    multiply(poolUnits[IN_INDEX].extent, 1000),
-    multiply(unitsIn.extent, subtract(1000, feeInTenthOfPercent)),
-  );
-  // save divide for last
-  newPoolUnits[OUT_INDEX] = unitOpsArray[OUT_INDEX].make(
-    divide(numerator, denominator),
-  );
+    // the order in which we do this makes a difference because of
+    // rounding to floor.
 
-  const unitsOut = unitOpsArray[OUT_INDEX].without(
-    poolUnits[OUT_INDEX],
-    newPoolUnits[OUT_INDEX],
-  );
+    // We use extents here because we are multiplying two different
+    // kinds of digital assets
+    const constantProduct = multiply(
+      poolUnitsArray[IN_INDEX].extent,
+      poolUnitsArray[OUT_INDEX].extent,
+    );
+    const numerator = multiply(constantProduct, 1000);
+    const denominator = add(
+      multiply(poolUnitsArray[IN_INDEX].extent, 1000),
+      multiply(unitsIn.extent, subtract(1000, feeInTenthOfPercent)),
+    );
+    // save divide for last
+    newPoolUnitsArray[OUT_INDEX] = unitOpsArray[OUT_INDEX].make(
+      divide(numerator, denominator),
+    );
 
-  return {
-    unitsOut,
-    newPoolUnits,
+    const unitsOut = unitOpsArray[OUT_INDEX].without(
+      poolUnitsArray[OUT_INDEX],
+      newPoolUnitsArray[OUT_INDEX],
+    );
+
+    return {
+      unitsOut,
+      newPoolUnitsArray,
+    };
   };
 };

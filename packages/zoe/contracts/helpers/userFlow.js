@@ -82,6 +82,3 @@ export const makeHelpers = (zoe, assays) => {
   });
   return helpers;
 };
-
-// REMOVE THIS: only used to temporarily fool ESLINT
-export const rejectOffer = () => {};
