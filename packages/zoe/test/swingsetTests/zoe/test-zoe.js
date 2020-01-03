@@ -318,12 +318,12 @@ const expectedAutoswapOkLog = [
   'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":6}',
   'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":5}',
   'Liquidity successfully removed.',
-  '[0,0,10]',
+  '[{"label":{"assay":{},"allegedName":"moola"},"extent":0},{"label":{"assay":{},"allegedName":"simoleans"},"extent":0},{"label":{"assay":{},"allegedName":"liquidity"},"extent":10}]',
   'aliceMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":6}',
-  'aliceSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
+  'aliceSimoleanPurse: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
   'aliceLiquidityTokenPurse: balance {"label":{"assay":{},"allegedName":"liquidity"},"extent":0}',
 ];
-test.skip('zoe - autoswap - valid inputs - with SES', async t => {
+test('zoe - autoswap - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
       [10, 5, 0],
@@ -338,7 +338,7 @@ test.skip('zoe - autoswap - valid inputs - with SES', async t => {
   }
 });
 
-test.skip('zoe - autoswap - valid inputs - no SES', async t => {
+test('zoe - autoswap - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
       [10, 5, 0],

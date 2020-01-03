@@ -7,7 +7,7 @@ import { setup } from '../setupBasicMints';
 
 const myFirstDappRoot = `${__dirname}/../../../contracts/myFirstDapp`;
 
-test.skip('myFirstDapp with valid offers', async t => {
+test('myFirstDapp with valid offers', async t => {
   try {
     const { assays: defaultAssays, mints } = setup();
     const zoe = await makeZoe({ require });

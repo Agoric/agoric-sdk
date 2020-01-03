@@ -11,6 +11,7 @@ const hasAssays = (assays, newPayoutRules) =>
 
 export const makeHelpers = (zoe, assays) => {
   const unitOpsArray = zoe.getUnitOpsForAssays(assays);
+  const zoeService = zoe.getZoeService();
   const helpers = harden({
     getActiveOffers: handles =>
       zoe.getOffers(zoe.getOfferStatuses(handles).active),
@@ -79,6 +80,24 @@ export const makeHelpers = (zoe, assays) => {
       return withoutUnits;
     },
     makeEmptyUnits: () => unitOpsArray.map(unitOps => unitOps.empty()),
+    makeEmptyOffer: () => {
+      const { inviteHandle, invite } = zoe.makeInvite();
+      const offerRules = harden({
+        payoutRules: unitOpsArray.map(unitOps => {
+          return {
+            kind: 'wantAtLeast',
+            units: unitOps.empty(),
+          };
+        }),
+        exitRule: {
+          kind: 'waived',
+        },
+      });
+      const offerPayments = unitOpsArray.map(() => undefined);
+      return zoeService
+        .redeem(invite, offerRules, offerPayments)
+        .then(() => inviteHandle);
+    },
   });
   return helpers;
 };

@@ -14,7 +14,6 @@ test('autoSwap with valid offers', async t => {
       assays: defaultAssays,
       moola,
       simoleans,
-      unitOps,
     } = setup();
     const mints = defaultMints.slice(0, 2);
     const assays = defaultAssays.slice(0, 2);
@@ -39,14 +38,13 @@ test('autoSwap with valid offers', async t => {
     const { source, moduleFormat } = await bundleSource(autoswapRoot);
 
     const installationHandle = zoe.install(source, moduleFormat);
-    const terms = {
+    const aliceInvite = await zoe.makeInstance(installationHandle, {
       assays,
-    };
-    const aliceInvite = await zoe.makeInstance(installationHandle, terms);
+    });
     const { instanceHandle } = aliceInvite.getBalance().extent;
     const { publicAPI } = zoe.getInstance(instanceHandle);
     const liquidityAssay = publicAPI.getLiquidityAssay();
-    const allAssays = [...terms.assays, liquidityAssay];
+    const liquidity = liquidityAssay.makeUnits;
 
     // Alice adds liquidity
     // 10 moola = 5 simoleans at the time of the liquidity adding
@@ -55,15 +53,15 @@ test('autoSwap with valid offers', async t => {
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: allAssays[0].makeUnits(10),
+          units: moola(10),
         },
         {
           kind: 'offerAtMost',
-          units: allAssays[1].makeUnits(5),
+          units: simoleans(5),
         },
         {
           kind: 'wantAtLeast',
-          units: allAssays[2].makeUnits(10),
+          units: liquidity(10),
         },
       ],
       exitRule: {
@@ -82,23 +80,23 @@ test('autoSwap with valid offers', async t => {
 
     const liquidityPayments = await aliceAddLiquidityPayoutP;
 
-    t.deepEquals(
-      liquidityPayments[2].getBalance(),
-      liquidityAssay.makeUnits(10),
-    );
-    t.deepEquals(publicAPI.getPoolExtents(), [10, 5, 0]);
+    t.deepEquals(liquidityPayments[2].getBalance(), liquidity(10));
+    t.deepEquals(publicAPI.getPoolUnits(), [
+      moola(10),
+      simoleans(5),
+      liquidity(0),
+    ]);
 
     // Alice creates an invite for autoswap and sends it to Bob
     const bobInvite = publicAPI.makeInvite();
 
     // Bob claims it
     const inviteAssay = zoe.getInviteAssay();
-    const bobExclInvite = inviteAssay.claimAll(bobInvite);
+    const bobExclInvite = await inviteAssay.claimAll(bobInvite);
     const bobInviteExtent = bobExclInvite.getBalance().extent;
     const {
       publicAPI: bobAutoswap,
       installationHandle: bobInstallationId,
-      terms: bobTerms,
     } = zoe.getInstance(bobInviteExtent.instanceHandle);
     t.equals(bobInstallationId, installationHandle);
 
@@ -144,7 +142,11 @@ test('autoSwap with valid offers', async t => {
 
     t.deepEqual(bobPayout[0].getBalance(), moola(0));
     t.deepEqual(bobPayout[1].getBalance(), simoleans(1));
-    t.deepEquals(bobAutoswap.getPoolExtents(), [12, 4, 0]);
+    t.deepEquals(bobAutoswap.getPoolUnits(), [
+      moola(12),
+      simoleans(4),
+      liquidity(0),
+    ]);
 
     // Bob looks up the price of 3 simoleans
 
@@ -153,6 +155,7 @@ test('autoSwap with valid offers', async t => {
     t.deepEquals(moolaUnits, moola(6));
 
     // 8: Bob makes another offer and swaps
+    const bobSecondInvite = bobAutoswap.makeInvite();
     const bobSimsForMoolaOfferRules = harden({
       payoutRules: [
         {
@@ -165,7 +168,7 @@ test('autoSwap with valid offers', async t => {
         },
         {
           kind: 'wantAtLeast',
-          units: liquidityAssay.makeUnits(0),
+          units: liquidity(0),
         },
       ],
       exitRule: {
@@ -177,7 +180,11 @@ test('autoSwap with valid offers', async t => {
     const {
       seat: bobSeatSimsForMoola,
       payout: bobSimsForMoolaPayoutP,
-    } = await zoe.escrow(bobSimsForMoolaOfferRules, simsForMoolaPayments);
+    } = await zoe.redeem(
+      bobSecondInvite,
+      bobSimsForMoolaOfferRules,
+      simsForMoolaPayments,
+    );
 
     const simsForMoolaOk = bobSeatSimsForMoola.swap();
     t.equal(simsForMoolaOk, 'Swap successfully completed.');
@@ -186,10 +193,15 @@ test('autoSwap with valid offers', async t => {
 
     t.deepEqual(bobsNewMoolaPayment[0].getBalance(), moola(6));
     t.deepEqual(bobsNewMoolaPayment[1].getBalance(), simoleans(0));
-    t.deepEqual(bobAutoswap.getPoolExtents(), [6, 7, 0]);
+    t.deepEqual(bobAutoswap.getPoolUnits(), [
+      moola(6),
+      simoleans(7),
+      liquidity(0),
+    ]);
 
     // 8: Alice removes her liquidity
     // She's not picky...
+    const aliceSecondInvite = publicAPI.makeInvite();
     const aliceRemoveLiquidityOfferRules = harden({
       payoutRules: [
         {
@@ -202,7 +214,7 @@ test('autoSwap with valid offers', async t => {
         },
         {
           kind: 'offerAtMost',
-          units: liquidityAssay.makeUnits(10),
+          units: liquidity(10),
         },
       ],
       exitRule: {
@@ -214,7 +226,7 @@ test('autoSwap with valid offers', async t => {
       seat: aliceRemoveLiquiditySeat,
       payout: aliceRemoveLiquidityPayoutP,
     } = await zoe.redeem(
-      aliceRemoveLiquidityInvite,
+      aliceSecondInvite,
       aliceRemoveLiquidityOfferRules,
       harden([undefined, undefined, liquidityPayments[2]]),
     );
@@ -226,11 +238,12 @@ test('autoSwap with valid offers', async t => {
 
     t.deepEquals(alicePayoutPayments[0].getBalance(), moola(6));
     t.deepEquals(alicePayoutPayments[1].getBalance(), simoleans(7));
-    t.deepEquals(
-      alicePayoutPayments[2].getBalance(),
-      liquidityAssay.makeUnits(0),
-    );
-    t.deepEquals(publicAPI.getPoolExtents(), [0, 0, 10]);
+    t.deepEquals(alicePayoutPayments[2].getBalance(), liquidity(0));
+    t.deepEquals(publicAPI.getPoolUnits(), [
+      moola(0),
+      simoleans(0),
+      liquidity(10),
+    ]);
   } catch (e) {
     t.assert(false, e);
     console.log(e);
@@ -239,7 +252,7 @@ test('autoSwap with valid offers', async t => {
   }
 });
 
-test.skip('autoSwap - test fee', async t => {
+test('autoSwap - test fee', async t => {
   try {
     const { assays: defaultAssays, mints } = setup();
     const zoe = await makeZoe({ require });

@@ -37,7 +37,7 @@ export const makeCalculateConstProduct = (zoe, assays) => {
 
     // newTokenInPoolE = tokenInPoolE + tokenInE;
     const newPoolUnitsArray = [...poolUnitsArray];
-    newPoolUnitsArray[IN_INDEX] = unitOpsArray.with(
+    newPoolUnitsArray[IN_INDEX] = unitOpsArray[IN_INDEX].with(
       poolUnitsArray[IN_INDEX],
       unitsIn,
     );

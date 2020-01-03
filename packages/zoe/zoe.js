@@ -214,6 +214,10 @@ const makeZoe = (additionalEndowments = {}) => {
         makeInvite(instanceHandle, seat, customProperties),
       getInviteAssay: () => inviteAssay,
 
+      // informs Zoe about an assay and returns a promise for the
+      // assay record
+      addAssays: assays => assayTable.getPromiseForAssayRecords(assays),
+
       getUnitOpsForAssays: assayTable.getUnitOpsForAssays,
       getOfferStatuses: offerTable.getOfferStatuses,
       isOfferActive: offerTable.isOfferActive,
