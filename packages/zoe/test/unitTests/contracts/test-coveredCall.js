@@ -37,7 +37,7 @@ test('zoe - coveredCall', async t => {
     const bobSimoleanPurse = mints[1].mint(simoleans(7));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
-    // 1: Alice creates a coveredCall instance
+    // Alice creates a coveredCall instance
     const terms = {
       assays,
     };
@@ -46,7 +46,7 @@ test('zoe - coveredCall', async t => {
       terms,
     );
 
-    // 2: Alice escrows with Zoe
+    // Alice escrows with Zoe
     const aliceOfferRules = harden({
       payoutRules: [
         {
@@ -71,14 +71,14 @@ test('zoe - coveredCall', async t => {
       alicePayments,
     );
 
-    // 3: Alice creates a call option
+    // Alice creates a call option
 
     const option = aliceSeat.makeCallOption();
 
     // Imagine that Alice sends the option to Bob for free (not done here
     // since this test doesn't actually have separate vats/parties)
 
-    // 4: Bob inspects the option (an invite payment) and checks that it is the
+    // Bob inspects the option (an invite payment) and checks that it is the
     // contract instance that he expects as well as that Alice has
     // already escrowed.
 
@@ -111,14 +111,14 @@ test('zoe - coveredCall', async t => {
       },
     });
 
-    // 6: Bob escrows
+    // Bob redeems his invite and escrows with Zoe
     const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
       bobExclOption,
       bobOfferRules,
       bobPayments,
     );
 
-    // 8: Bob makes an offer with his escrow receipt
+    // Bob exercises the option
     const bobOutcome = await bobSeat.exercise();
 
     t.equals(
@@ -143,11 +143,11 @@ test('zoe - coveredCall', async t => {
     // Alice didn't get any of what Alice put in
     t.equals(aliceMoolaPayout.getBalance().extent, 0);
 
-    // 13: Alice deposits her payout to ensure she can
+    // Alice deposits her payout to ensure she can
     await aliceMoolaPurse.depositAll(aliceMoolaPayout);
     await aliceSimoleanPurse.depositAll(aliceSimoleanPayout);
 
-    // 14: Bob deposits his original payments to ensure he can
+    // Bob deposits his original payments to ensure he can
     await bobMoolaPurse.depositAll(bobMoolaPayout);
     await bobSimoleanPurse.depositAll(bobSimoleanPayout);
 
@@ -192,7 +192,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const bobSimoleanPurse = mints[1].mint(simoleans(7));
     const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
 
-    // 1: Alice creates a coveredCall instance
+    // Alice creates a coveredCall instance
     const terms = {
       assays,
     };
@@ -201,7 +201,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
       terms,
     );
 
-    // 2: Alice escrows with Zoe
+    // Alice escrows with Zoe
     const aliceOfferRules = harden({
       payoutRules: [
         {
@@ -226,14 +226,14 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
       alicePayments,
     );
 
-    // 3: Alice gets an option
+    // Alice makes an option
     const option = aliceSeat.makeCallOption();
     timer.tick();
 
     // Imagine that Alice sends the option to Bob for free (not done here
     // since this test doesn't actually have separate vats/parties)
 
-    // 4: Bob inspects the option (an invite payment) and checks that it is the
+    // Bob inspects the option (an invite payment) and checks that it is the
     // contract instance that he expects as well as that Alice has
     // already escrowed.
 
@@ -266,7 +266,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
       },
     });
 
-    // 6: Bob escrows
+    // Bob escrows
     const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
       bobExclOption,
       bobOfferRules,
@@ -289,11 +289,11 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     // Alice doesn't get what she wanted
     t.deepEquals(aliceSimoleanPayout.getBalance(), simoleans(0));
 
-    // 11: Alice deposits her winnings to ensure she can
+    // Alice deposits her winnings to ensure she can
     await aliceMoolaPurse.depositAll(aliceMoolaPayout);
     await aliceSimoleanPurse.depositAll(aliceSimoleanPayout);
 
-    // 12: Bob deposits his winnings to ensure he can
+    // Bob deposits his winnings to ensure he can
     await bobMoolaPurse.depositAll(bobMoolaPayout);
     await bobSimoleanPurse.depositAll(bobSimoleanPayout);
 
@@ -354,7 +354,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     const daveBucksPayment = daveBucksPurse.withdrawAll();
     const daveSimoleanPayment = daveSimoleanPurse.withdrawAll();
 
-    // 1: Alice creates a coveredCall instance of moola for simoleans
+    // Alice creates a coveredCall instance of moola for simoleans
     const terms = harden({
       assays: [moolaAssay, simoleanAssay],
     });
@@ -363,7 +363,7 @@ test('zoe - coveredCall with swap for invite', async t => {
       terms,
     );
 
-    // 2: Alice escrows with Zoe. She specifies her offer offerRules,
+    // Alice escrows with Zoe. She specifies her offer offerRules,
     // which include an offer description as well as the exit
     // offerRules. In this case, she choses an exit condition of after
     // the deadline of "100" according to a particular timer. This is
@@ -394,28 +394,21 @@ test('zoe - coveredCall with swap for invite', async t => {
       alicePayments,
     );
 
-    // 3: Alice initializes the coveredCall with her escrow receipt
-
-    // Alice gets two kinds of things back - she gets an 'outcome'
-    // which is just a message that the offer was accepted or
-    // rejected. She also gets an invite, which is an ERTP payment
-    // that can be unwrapped to get an object with a `matchOffer`
-    // method. The invite is the only way to make a counter-offer in
-    // this particular contract. It is not public.
+    // Alice makes an option.
     const option = aliceSeat.makeCallOption();
 
-    // 4: Imagine that Alice sends the invite to Bob as well as the
-    // instanceHandle (not done here since this test doesn't actually have
-    // separate vats/parties)
+    // Imagine that Alice sends the invite to Bob (not done here since
+    // this test doesn't actually have separate vats/parties)
 
-    // 5: Bob inspects the invite payment and checks its information against the
+    // Bob inspects the invite payment and checks its information against the
     // questions that he has about whether it is worth being a counter
     // party in the covered call: Did the covered call use the
     // expected covered call installation (code)? Does it use the assays
     // that he expects (moola and simoleans)?
     const inviteAssay = zoe.getInviteAssay();
     const bobExclOption = await inviteAssay.claimAll(option);
-    const optionExtent = bobExclOption.getBalance().extent;
+    const optionUnits = bobExclOption.getBalance();
+    const optionExtent = optionUnits.extent;
     const { installationHandle } = zoe.getInstance(optionExtent.instanceHandle);
     t.equal(installationHandle, coveredCallInstallationHandle);
     t.equal(optionExtent.seatDesc, 'exerciseOption');
@@ -450,21 +443,18 @@ test('zoe - coveredCall with swap for invite', async t => {
 
     const bobPayments = [bobExclOption, undefined];
 
-    // 6: Bob escrows his option in the swap
+    // Bob escrows his option in the swap
     const { seat: bobSwapSeat, payout: bobPayoutP } = await zoe.redeem(
       bobSwapInvite,
       bobOfferRulesSwap,
       bobPayments,
     );
 
-    // 8: Bob makes an offer to the swap with his "higher order"
+    // Bob makes an offer to the swap with his "higher order" invite
     const daveSwapInvite = await bobSwapSeat.makeFirstOffer();
 
-    // Bob passes the swap invite to Dave and tells him about
-    // what kind of offer the swap is for (Dave doesn't necessarily
-    // trust this, but he can use the information). This swap is a
-    // public swap in that only having the instanceHandle for the swap is
-    // enough to get an invite for the swap.
+    // Bob passes the swap invite to Dave and tells him the
+    // optionUnits (basically, the description of the option)
 
     const {
       extent: { instanceHandle: swapInstanceHandle },
@@ -503,7 +493,7 @@ test('zoe - coveredCall with swap for invite', async t => {
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          units: bobOfferRulesSwap.payoutRules[0].units,
+          units: optionUnits,
         },
         {
           kind: 'offerAtMost',
@@ -645,7 +635,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const daveBucksPayment = daveBucksPurse.withdrawAll();
     const daveSimoleanPayment = daveSimoleanPurse.withdrawAll();
 
-    // 1: Alice creates a coveredCall instance of moola for simoleans
+    // Alice creates a coveredCall instance of moola for simoleans
     const terms = harden({
       assays: [moolaAssay, simoleanAssay],
     });
@@ -654,7 +644,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       terms,
     );
 
-    // 2: Alice escrows with Zoe. She specifies her offer offerRules,
+    // Alice escrows with Zoe. She specifies her offer offerRules,
     // which include an offer description as well as the exit
     // offerRules. In this case, she choses an exit condition of after
     // the deadline of "100" according to a particular timer. This is
@@ -685,15 +675,15 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       alicePayments,
     );
 
-    // 3: Alice makes a call option, which is an invite to join the
+    // Alice makes a call option, which is an invite to join the
     // covered call contract
     const option = await aliceSeat.makeCallOption();
 
-    // 4: Imagine that Alice sends the invite to Bob as well as the
+    // Imagine that Alice sends the invite to Bob as well as the
     // instanceHandle (not done here since this test doesn't actually have
     // separate vats/parties)
 
-    // 5: Bob inspects the invite payment and checks its information against the
+    // Bob inspects the invite payment and checks its information against the
     // questions that he has about whether it is worth being a counter
     // party in the covered call: Did the covered call use the
     // expected covered call installation (code)? Does it use the assays
@@ -740,7 +730,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
 
     const bobPayments = [bobExclOption, undefined];
 
-    // 6: Bob escrows his invite
+    // Bob escrows his invite
     const {
       seat: bobSecondCoveredCallSeat,
       payout: bobPayoutP,
@@ -750,11 +740,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       bobPayments,
     );
 
-    // 8: Bob makes an offer to the swap with his "higher order" escrow receipt
+    // Bob makes an offer to the swap with his "higher order" option
     const inviteForDave = await bobSecondCoveredCallSeat.makeCallOption();
 
-    // Bob passes the invite to the higher order covered call and
-    // instanceHandle to Dave
+    // Bob passes the higher order invite and
+    // optionUnits to Dave
 
     // Dave is looking to buy the option to trade his 7 simoleans for
     // 3 moola, and is willing to pay 1 buck for the option. He
