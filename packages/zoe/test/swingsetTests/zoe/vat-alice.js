@@ -1,23 +1,13 @@
 import harden from '@agoric/harden';
 import { showPaymentBalance, setupAssays } from './helpers';
 
-const build = async (
-  E,
-  log,
-  zoe,
-  moolaPurseP,
-  simoleanPurseP,
-  installId,
-  timer,
-) => {
-  const { assays, moola, simoleans } = await setupAssays(
-    zoe,
-    moolaPurseP,
-    simoleanPurseP,
-  );
+const build = async (E, log, zoe, purses, installations, timer) => {
+  const { assays, moola, simoleans } = await setupAssays(zoe, purses);
+  const [moolaPurseP, simoleanPurseP] = purses;
 
   const doAutomaticRefund = async bobP => {
     log(`=> alice.doCreateAutomaticRefund called`);
+    const installId = installations.automaticRefund;
     const invite = await E(zoe).makeInstance(installId, { assays });
     const {
       extent: { instanceHandle },
@@ -64,6 +54,7 @@ const build = async (
 
   const doCoveredCall = async bobP => {
     log(`=> alice.doCreateCoveredCall called`);
+    const installId = installations.coveredCall;
     const invite = await E(zoe).makeInstance(installId, { assays });
 
     const offerRules = harden({
@@ -103,9 +94,53 @@ const build = async (
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
   };
 
+  const doSwapForOption = async (bobP, _carolP, daveP) => {
+    log(`=> alice.doSwapForOption called`);
+    const invite = await E(zoe).makeInstance(installations.coveredCall, {
+      assays,
+    });
+
+    const offerRules = harden({
+      payoutRules: [
+        {
+          kind: 'offerAtMost',
+          units: moola(3),
+        },
+        {
+          kind: 'wantAtLeast',
+          units: simoleans(7),
+        },
+      ],
+      exitRule: {
+        kind: 'afterDeadline',
+        deadline: 100,
+        timer,
+      },
+    });
+
+    const aliceMoolaPayment = await E(moolaPurseP).withdrawAll();
+    const offerPayments = [aliceMoolaPayment, undefined];
+    const { seat, payout: payoutP } = await E(zoe).redeem(
+      invite,
+      offerRules,
+      offerPayments,
+    );
+
+    const option = await E(seat).makeCallOption();
+    log('call option made');
+    await E(bobP).doSwapForOption(option, daveP);
+    const payout = await payoutP;
+
+    await E(moolaPurseP).depositAll(payout[0]);
+    await E(simoleanPurseP).depositAll(payout[1]);
+
+    await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse', log);
+    await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
+  };
+
   const doPublicAuction = async (bobP, carolP, daveP) => {
     const numBidsAllowed = 3;
-    const invite = await E(zoe).makeInstance(installId, {
+    const invite = await E(zoe).makeInstance(installations.publicAuction, {
       assays,
       numBidsAllowed,
     });
@@ -161,7 +196,9 @@ const build = async (
   };
 
   const doAtomicSwap = async bobP => {
-    const invite = await E(zoe).makeInstance(installId, { assays });
+    const invite = await E(zoe).makeInstance(installations.atomicSwap, {
+      assays,
+    });
 
     const offerRules = harden({
       payoutRules: [
@@ -198,7 +235,9 @@ const build = async (
   };
 
   const doSimpleExchange = async bobP => {
-    const invite = await E(zoe).makeInstance(installId, { assays });
+    const invite = await E(zoe).makeInstance(installations.simpleExchange, {
+      assays,
+    });
     const {
       extent: { instanceHandle },
     } = await E(invite).getBalance();
@@ -246,7 +285,7 @@ const build = async (
   const doAutoswap = async bobP => {
     const { instance: autoswap, instanceHandle } = await E(
       zoe,
-    ).makeInstance(installId, { assays });
+    ).makeInstance(installations.autoswap, { assays });
     const liquidityAssay = await E(autoswap).getLiquidityAssay();
     const allAssays = [...assays, liquidityAssay];
 
@@ -346,6 +385,9 @@ const build = async (
         }
         case 'coveredCallOk': {
           return doCoveredCall(bobP, carolP, daveP);
+        }
+        case 'swapForOptionOk': {
+          return doSwapForOption(bobP, carolP, daveP);
         }
         case 'publicAuctionOk': {
           return doPublicAuction(bobP, carolP, daveP);

@@ -3,25 +3,20 @@ import { insist } from '@agoric/ertp/util/insist';
 import { sameStructure } from '@agoric/ertp/util/sameStructure';
 import { showPaymentBalance, setupAssays } from './helpers';
 
-const build = async (
-  E,
-  log,
-  zoe,
-  moolaPurseP,
-  simoleanPurseP,
-  installId,
-  timer,
-) => {
+const build = async (E, log, zoe, purses, installations, timer) => {
   const {
     inviteAssay,
     assays,
     moolaAssay,
     simoleanAssay,
+    bucksAssay,
     moolaUnitOps,
     simoleanUnitOps,
     moola,
     simoleans,
-  } = await setupAssays(zoe, moolaPurseP, simoleanPurseP);
+    bucks,
+  } = await setupAssays(zoe, purses);
+  const [moolaPurseP, simoleanPurseP, bucksPurseP] = purses;
 
   return harden({
     doAutomaticRefund: async inviteP => {
@@ -36,7 +31,7 @@ const build = async (
 
       // Bob ensures it's the contract he expects
       insist(
-        installId === installationHandle,
+        installations.automaticRefund === installationHandle,
       )`should be the expected automaticRefund`;
 
       insist(
@@ -115,7 +110,9 @@ const build = async (
         optionExtent.instanceHandle,
       );
 
-      insist(instanceInfo.installationHandle === installId)`wrong installation`;
+      insist(
+        instanceInfo.installationHandle === installations.coveredCall,
+      )`wrong installation`;
       insist(optionExtent.seatDesc === 'exerciseOption')`wrong seat`;
       insist(moolaUnitOps.equals(optionExtent.underlyingAsset, moola(3)));
       insist(simoleanUnitOps.equals(optionExtent.strikePrice, simoleans(7)));
@@ -153,6 +150,86 @@ const build = async (
       await showPaymentBalance(moolaPurseP, 'bobMoolaPurse', log);
       await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
     },
+    doSwapForOption: async (inviteP, daveP) => {
+      // Bob claims all with the Zoe inviteAssay
+      const invite = await E(inviteAssay).claimAll(inviteP);
+
+      // Bob checks that the invite is for the right covered call
+      const optionUnits = await E(invite).getBalance();
+      const optionExtent = optionUnits.extent;
+
+      const instanceInfo = await E(zoe).getInstance(
+        optionExtent.instanceHandle,
+      );
+      insist(
+        instanceInfo.installationHandle === installations.coveredCall,
+      )`wrong installation`;
+      insist(optionExtent.seatDesc === 'exerciseOption')`wrong seat`;
+      insist(
+        moolaUnitOps.equals(optionExtent.underlyingAsset, moola(3)),
+      )`wrong underlying asset`;
+      insist(
+        simoleanUnitOps.equals(optionExtent.strikePrice, simoleans(7)),
+      )`wrong strike price`;
+      insist(optionExtent.expirationDate === 100)`wrong expiration date`;
+      insist(optionExtent.timerAuthority === timer)`wrong timer`;
+      insist(
+        instanceInfo.terms.assays[0] === moolaAssay,
+      )`The first assay should be the moola assay`;
+      insist(
+        instanceInfo.terms.assays[1] === simoleanAssay,
+      )`The second assay should be the simolean assay`;
+
+      // Let's imagine that Bob wants to create a swap to trade this
+      // invite for bucks. He wants to invite Dave as the
+      // counter-party.
+      const swapAssays = harden([inviteAssay, bucksAssay]);
+      const bobSwapInvite = await E(zoe).makeInstance(
+        installations.atomicSwap,
+        { assays: swapAssays },
+      );
+
+      // Bob wants to swap an invite with the same units as his
+      // current invite from Alice. He wants 1 buck in return.
+      const bobOfferRulesSwap = harden({
+        payoutRules: [
+          {
+            kind: 'offerAtMost',
+            units: optionUnits,
+          },
+          {
+            kind: 'wantAtLeast',
+            units: bucks(1),
+          },
+        ],
+        exitRule: {
+          kind: 'onDemand',
+        },
+      });
+
+      const bobSwapPayments = [invite, undefined];
+
+      // Bob escrows his option in the swap
+      const { seat: bobSwapSeat, payout: payoutP } = await E(zoe).redeem(
+        bobSwapInvite,
+        bobOfferRulesSwap,
+        bobSwapPayments,
+      );
+
+      // Bob makes an offer to the swap with his "higher order"
+      const daveSwapInviteP = E(bobSwapSeat).makeFirstOffer();
+      log('swap invite made');
+      await E(daveP).doSwapForOption(daveSwapInviteP, optionUnits);
+
+      const bobResult = await payoutP;
+
+      // Bob deposits his winnings
+      await E(bucksPurseP).depositAll(bobResult[1]);
+
+      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse', log);
+      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
+      await showPaymentBalance(bucksPurseP, 'bobBucksPurse;', log);
+    },
     doPublicAuction: async inviteP => {
       const invite = await E(inviteAssay).claimAll(inviteP);
       const { extent: inviteExtent } = await E(invite).getBalance();
@@ -160,7 +237,9 @@ const build = async (
       const { installationHandle, terms } = await E(zoe).getInstance(
         inviteExtent.instanceHandle,
       );
-      insist(installationHandle === installId)`wrong installation`;
+      insist(
+        installationHandle === installations.publicAuction,
+      )`wrong installation`;
       insist(
         sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
       )`assays were not as expected`;
@@ -210,7 +289,9 @@ const build = async (
       const { installationHandle, terms } = await E(zoe).getInstance(
         inviteExtent.instanceHandle,
       );
-      insist(installationHandle === installId)`wrong installation`;
+      insist(
+        installationHandle === installations.atomicSwap,
+      )`wrong installation`;
       insist(
         sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
       )`assays were not as expected`;
@@ -275,7 +356,9 @@ const build = async (
       const { installationHandle, terms } = await E(zoe).getInstance(
         inviteExtent.instanceHandle,
       );
-      insist(installationHandle === installId)`wrong installation`;
+      insist(
+        installationHandle === installations.simpleExchange,
+      )`wrong installation`;
       insist(
         sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
       )`assays were not as expected`;
@@ -321,7 +404,7 @@ const build = async (
         zoe,
       ).getInstance(instanceHandle);
 
-      insist(installationHandle === installId)`wrong installation`;
+      insist(installationHandle === installations.autoswap)`wrong installation`;
       const liquidityAssay = await E(autoswap).getLiquidityAssay();
       const allAssays = harden([...assays, liquidityAssay]);
       insist(

@@ -3,14 +3,15 @@ import { insist } from '@agoric/ertp/util/insist';
 import { sameStructure } from '@agoric/ertp/util/sameStructure';
 import { showPaymentBalance, setupAssays } from './helpers';
 
-const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
+const build = async (E, log, zoe, purses, installations) => {
   const {
     inviteAssay,
     moolaAssay,
     simoleanAssay,
     moola,
     simoleans,
-  } = await setupAssays(zoe, moolaPurseP, simoleanPurseP);
+  } = await setupAssays(zoe, purses);
+  const [moolaPurseP, simoleanPurseP] = purses;
 
   return harden({
     doPublicAuction: async inviteP => {
@@ -20,7 +21,9 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const { installationHandle, terms } = await E(zoe).getInstance(
         inviteExtent.instanceHandle,
       );
-      insist(installationHandle === installId)`wrong installation`;
+      insist(
+        installationHandle === installations.publicAuction,
+      )`wrong installation`;
       insist(
         sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
       )`assays were not as expected`;
