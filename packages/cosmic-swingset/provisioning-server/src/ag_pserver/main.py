@@ -43,6 +43,7 @@ class StartOptions(usage.Options):
 class Options(usage.Options):
     subCommands = [
         ['set-cosmos-config', None, SetConfigOptions, "Pipe output of 'ag-setup-cosmos show-config' to this command"],
+        ['set-cosmos-genesis', None, SetConfigOptions, "Pipe output of 'ag-setup-cosmos show-genesis' to this commmand"],
         ['add-pubkeys', None, AddPubkeysOptions, 'Add public keys from saved database'],
         ['start', None, StartOptions, 'Start the HTTP server'],
         ]
@@ -74,6 +75,9 @@ class SendInputAndWaitProtocol(protocol.ProcessProtocol):
 
 def cosmosConfigFile(home):
     return os.path.join(home, 'cosmos-chain.json')
+
+def cosmosGenesisFile(home):
+    return os.path.join(home, 'cosmos-genesis.json')
 
 def pubkeyDatabase(home):
     return os.path.join(home, 'pubkeys.jsona')
@@ -309,6 +313,15 @@ class RequestCode(resource.Resource):
         d.addErrback(log.err)
         return server.NOT_DONE_YET
 
+class GenesisJSON(resource.Resource):
+    def __init__(self, o):
+        self.opts = o
+
+    def render_GET(self, req):
+        f = open(cosmosGenesisFile(self.opts['home']))
+        config = f.read()
+        req.setHeader('Content-Type', 'application/json')
+        return config.encode('utf-8')
 
 class ConfigJSON(resource.Resource):
     def __init__(self, o):
@@ -340,6 +353,7 @@ def run_server(reactor, o):
 
     # Display the JSON config.
     root.putChild(b"network-config", ConfigJSON(o))
+    root.putChild(b"genesis.json", GenesisJSON(o))
 
     site = server.Site(root)
     s = endpoints.serverFromString(reactor, o["listen"])
@@ -501,24 +515,33 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
 def main():
     o = Options()
     o.parseOptions()
-    if o.subCommand == 'set-cosmos-config':
+    if o.subCommand.startswith('set-cosmos-'):
         try:
             os.mkdir(o['home'])
         except FileExistsError:
             pass
-        fname = cosmosConfigFile(o['home'])
+        if o.subCommand == 'set-cosmos-config':
+            fname = cosmosConfigFile(o['home'])
+        elif o.subCommand == 'set-cosmos-genesis':
+            fname = cosmosGenesisFile(o['home'])
         print('Reading %s from stdin; hit Ctrl-D to finish' % fname)
         cfgJson = sys.stdin.read()
+        # Check that the JSON input is properly-formatted.
+        json.loads(cfgJson)
+        # Write out the JSON.
         with open(fname, 'w') as f:
             f.write(cfgJson)
     elif o.subCommand == 'add-pubkeys':
         # Now that we have our files, add all the accounts.
-        f = open(cosmosConfigFile(o['home']), 'r')
-        config = json.loads(f.read())
+        with open(cosmosConfigFile(o['home']), 'r') as f:
+            config = json.loads(f.read())
         try:
-            f = open(pubkeyDatabase(o['home']))
-            pkobjs_str = f.read().strip(', \r\n');
-            pkobjs = json.loads('[' + pkobjs_str + ']')
+            # This file is comma-terminated lines of JSON objects.
+            with open(pubkeyDatabase(o['home'])) as f:
+                # Strip the trailing newlines and comma.
+                pkobjs_str = f.read().rstrip().rstrip(',')
+                # Interpret as an array.
+                pkobjs = json.loads('[' + pkobjs_str + ']')
         except FileNotFoundError:
             return
         pkobjs.reverse()
