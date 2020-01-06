@@ -526,16 +526,22 @@ def main():
             fname = cosmosGenesisFile(o['home'])
         print('Reading %s from stdin; hit Ctrl-D to finish' % fname)
         cfgJson = sys.stdin.read()
+        # Check that the JSON input is properly-formatted.
+        json.loads(cfgJson)
+        # Write out the JSON.
         with open(fname, 'w') as f:
             f.write(cfgJson)
     elif o.subCommand == 'add-pubkeys':
         # Now that we have our files, add all the accounts.
-        f = open(cosmosConfigFile(o['home']), 'r')
-        config = json.loads(f.read())
+        with open(cosmosConfigFile(o['home']), 'r') as f:
+            config = json.loads(f.read())
         try:
-            f = open(pubkeyDatabase(o['home']))
-            pkobjs_str = f.read().strip(', \r\n')
-            pkobjs = json.loads('[' + pkobjs_str + ']')
+            # This file is comma-terminated lines of JSON objects.
+            with open(pubkeyDatabase(o['home'])) as f:
+                # Strip the trailing newlines and comma.
+                pkobjs_str = f.read().rstrip().rstrip(',')
+                # Interpret as an array.
+                pkobjs = json.loads('[' + pkobjs_str + ']')
         except FileNotFoundError:
             return
         pkobjs.reverse()
