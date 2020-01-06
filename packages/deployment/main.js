@@ -601,10 +601,11 @@ or "${chalk.yellow.bold(
       setSilent(true);
       await chdir(SETUP_HOME);
       await inited();
-      const [chainName, gci, rpcAddrs, bootstrapAddress] = await Promise.all(
+      const [chainName, gci, peers, rpcAddrs, bootstrapAddress] = await Promise.all(
         [
           'show-chain-name',
           'show-gci',
+          'show-peers',
           'show-rpcaddrs',
           'show-bootstrap-address',
         ].map(cmd => needBacktick([progname, cmd].map(shellEscape).join(' '))),
@@ -612,6 +613,7 @@ or "${chalk.yellow.bold(
       const obj = {
         chainName,
         gci,
+        peers: peers.split(','),
         rpcAddrs: rpcAddrs.split(','),
         bootstrapAddress,
       };
