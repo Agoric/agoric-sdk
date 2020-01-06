@@ -3,31 +3,32 @@ import { natSafeMath } from './safeMath';
 const { add, subtract, multiply, divide } = natSafeMath;
 
 /**
- * `calculateConstProduct` contains the logic for calculating how many
- * units should be given back to the user in exchange for what they
- * sent in. It also calculates the new units of the assets in the
- * pool. `calculateConstProduct` is reused in several different
- * places, including to check whether an offer is valid, getting the
- * current price for an asset on user request, and to do the actual
- * reallocation after an offer has been made.
+ * Contains the logic for calculating how many units should be given
+ * back to the user in exchange for what they sent in. It also
+ * calculates the new units of the assets in the pool. Reused in
+ * several different places, including to check whether an offer is
+ * valid, getting the current price for an asset on user request, and
+ * to do the actual reallocation after an offer has been made.
+ * @param  {object} zoe - the contract facet of Zoe
  * @param  {assay[]} assays - an array of assays
- * @param  {unitOps[]} unitOpsArray - an array of unitOps, in the same
- * order as the corresponding assays array
- * @param  {units[]} poolUnits - an array of the current units in the
+ *
+ * Once the function is made, it has the following parameters:
+ * @param  {units[]} poolUnitsArray - an array of the current units in the
  * liquidity pool
  * @param  {units} unitsIn - the units sent in by a user
  * @param  {number} feeInTenthOfPercent=3 - the fee taken in tenths of
  * a percent. The default is 0.3%. The fee is taken from unitsIn
  */
 
-export const makeCalculateConstProduct = (zoe, assays) => {
+export const makeCalculateConstProductFn = (zoe, assays) => {
   const unitOpsArray = zoe.getUnitOpsForAssays(assays);
+
   return (poolUnitsArray, unitsIn, feeInTenthOfPercent = 3) => {
-    const brandIn = unitsIn.label.assay;
-    if (brandIn !== assays[0] && brandIn !== assays[1]) {
+    const assayIn = unitsIn.label.assay;
+    if (assayIn !== assays[0] && assayIn !== assays[1]) {
       throw new Error(`unitsIn ${unitsIn} were malformed`);
     }
-    const IN_INDEX = brandIn === assays[0] ? 0 : 1;
+    const IN_INDEX = assayIn === assays[0] ? 0 : 1;
     const OUT_INDEX = 1 - IN_INDEX;
 
     // Constant product invariant means:
