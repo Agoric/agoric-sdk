@@ -128,9 +128,6 @@ export const makeContract = harden((zoe, terms) => {
               .then(() => {
                 liqTokenSupply += liquidityExtentOut;
                 const newPoolUnits = vectorWith(poolUnits, userUnits);
-
-                // Set the lfiquidity token extent in the array of extents that
-                // will be turned into payments sent back to the user.
                 const newUserUnits = unitOpsArray.map(unitOps =>
                   unitOps.empty(),
                 );
