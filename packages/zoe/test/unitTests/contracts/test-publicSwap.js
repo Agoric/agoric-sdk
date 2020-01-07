@@ -7,7 +7,7 @@ import { setup } from '../setupBasicMints';
 
 const publicSwapRoot = `${__dirname}/../../../contracts/publicSwap`;
 
-test('zoe - publicSwap', async t => {
+test.skip('zoe - publicSwap', async t => {
   try {
     const { assays: defaultAssays, mints } = setup();
     const assays = defaultAssays.slice(0, 2);

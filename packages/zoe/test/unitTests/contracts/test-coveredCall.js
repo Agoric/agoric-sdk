@@ -10,7 +10,7 @@ import { setup } from '../setupBasicMints';
 const coveredCallRoot = `${__dirname}/../../../contracts/coveredCall`;
 const publicSwapRoot = `${__dirname}/../../../contracts/publicSwap`;
 
-test('zoe - coveredCall', async t => {
+test.skip('zoe - coveredCall', async t => {
   try {
     const { mints: defaultMints, assays: defaultAssays } = setup();
     const mints = defaultMints.slice(0, 2);
@@ -200,7 +200,7 @@ test('zoe - coveredCall', async t => {
   }
 });
 
-test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, async t => {
+test.skip(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, async t => {
   try {
     const { mints: defaultMints, assays: defaultAssays } = setup();
     const mints = defaultMints.slice(0, 2);
@@ -394,7 +394,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 // Bob. Bob tries to sell the invite to Dave through a swap. Can Bob
 // trick Dave? Can Dave describe what it is that he wants in the swap
 // offer description?
-test('zoe - coveredCall with swap for invite', async t => {
+test.skip('zoe - coveredCall with swap for invite', async t => {
   try {
     // Setup the environment
     const { mints, assays } = setup();
@@ -777,7 +777,7 @@ test('zoe - coveredCall with swap for invite', async t => {
 // Bob. Bob tries to sell the invite to Dave through another covered
 // call. Can Bob trick Dave? Can Dave describe what it is that he
 // wants in his offer description in the second covered call?
-test('zoe - coveredCall with coveredCall for invite', async t => {
+test.skip('zoe - coveredCall with coveredCall for invite', async t => {
   try {
     // Setup the environment
     const { mints, assays } = setup();

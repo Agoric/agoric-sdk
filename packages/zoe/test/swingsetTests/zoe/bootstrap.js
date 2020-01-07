@@ -1,6 +1,7 @@
 import harden from '@agoric/harden';
 
 import { makeMint } from '@agoric/ertp/core/mint';
+import buildManualTimer from '@agoric/ertp/tools/manualTimer';
 
 // eslint-disable-next-line import/no-unresolved, import/extensions
 import automaticRefundBundle from './bundle-automaticRefund';
@@ -36,6 +37,7 @@ const setupBasicMints = () => {
 };
 
 const makeVats = (E, log, vats, zoe, installationHandle, startingExtents) => {
+  const timer = buildManualTimer(log);
   const { mints, assays } = setupBasicMints();
   const [aliceExtents, bobExtents, carolExtents, daveExtents] = startingExtents;
   // Setup Alice
@@ -48,6 +50,7 @@ const makeVats = (E, log, vats, zoe, installationHandle, startingExtents) => {
     aliceMoolaPurse,
     aliceSimoleanPurse,
     installationHandle,
+    timer,
   );
 
   // Setup Bob
@@ -58,6 +61,7 @@ const makeVats = (E, log, vats, zoe, installationHandle, startingExtents) => {
     bobMoolaPurse,
     bobSimoleanPurse,
     installationHandle,
+    timer,
   );
 
   const result = {

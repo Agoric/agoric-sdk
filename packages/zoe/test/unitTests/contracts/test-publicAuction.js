@@ -7,7 +7,7 @@ import { setup } from '../setupBasicMints';
 
 const publicAuctionRoot = `${__dirname}/../../../contracts/publicAuction`;
 
-test('zoe - secondPriceAuction w/ 3 bids', async t => {
+test.skip('zoe - secondPriceAuction w/ 3 bids', async t => {
   try {
     const { assays: originalAssays, mints, unitOps } = setup();
     const assays = originalAssays.slice(0, 2);
@@ -297,7 +297,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   }
 });
 
-test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
+test.skip('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
   try {
     const { assays: originalAssays, mints, unitOps } = setup();
     const assays = originalAssays.slice(0, 2);
