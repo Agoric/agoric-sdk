@@ -88,23 +88,23 @@ class ConfigElement(Element):
     @staticmethod
     def gatherArgs(opts):
         meta = {}
-        f = open(cosmosConfigFile(opts['home']))
-        config = f.read()
+        with open(cosmosConfigFile(opts['home'])) as f:
+            config = f.read()
         gr = '/usr/src/app/lib/git-revision.txt'
         if os.path.exists(gr):
-            f = open(gr)
-            meta['package_git'] = f.read().strip()
+            with open(gr) as f:
+                meta['package_git'] = f.read().strip()
         else:
-            f = os.popen('git rev-parse --short HEAD')
-            sha = f.read().strip()
-            f = os.popen('git diff --quiet || echo -dirty')
-            meta['package_git'] = sha + f.read().strip()
+            with os.popen('git rev-parse --short HEAD') as f:
+                sha = f.read().strip()
+            with os.popen('git diff --quiet || echo -dirty') as f:
+                meta['package_git'] = sha + f.read().strip()
 
         pj = '/usr/src/app/package.json'
         pjson = {}
         if os.path.exists(pj):
-            f = open(pj)
-            pjson = json.load(f)
+            with open(pj) as f:
+                pjson = json.load(f)
         else:
             pjpath = None
             # Walk upwards from the current directory.
@@ -112,8 +112,8 @@ class ConfigElement(Element):
             while pj != pjpath:
                 pjpath = pj
                 if os.path.exists(pjpath):
-                    f = open(pjpath)
-                    pjson = json.load(f)
+                    with open(pjpath) as f:
+                        pjson = json.load(f)
                     break
             pj = os.path.join(os.path.dirname(pjpath), '../package.json')
             pj = os.path.abspath(pj)
@@ -164,8 +164,8 @@ class Provisioner(resource.Resource):
 
     @defer.inlineCallbacks
     def build_page(self):
-        f = open(cosmosConfigFile(self.opts['home']))
-        config = f.read()
+        with open(cosmosConfigFile(self.opts['home'])) as f:
+            config = f.read()
 
         args = ConfigElement.gatherArgs(self.opts)
         html = yield flattenString(None, ConfigElement(*args))
@@ -247,8 +247,8 @@ class RequestCode(resource.Resource):
     @defer.inlineCallbacks
     def got_message(self, client_message, nickname):
         cm = json.loads(client_message.decode("utf-8"))
-        f = open(cosmosConfigFile(self.opts['home']))
-        config = json.loads(f.read())
+        with open(cosmosConfigFile(self.opts['home'])) as f:
+            config = json.loads(f.read())
 
         msgs = yield enablePubkey(self.reactor, self.opts, config, nickname, cm['pubkey'])
         return msgs
@@ -318,8 +318,8 @@ class GenesisJSON(resource.Resource):
         self.opts = o
 
     def render_GET(self, req):
-        f = open(cosmosGenesisFile(self.opts['home']))
-        config = f.read()
+        with open(cosmosGenesisFile(self.opts['home'])) as f:
+            config = f.read()
         req.setHeader('Content-Type', 'application/json')
         return config.encode('utf-8')
 
@@ -328,8 +328,8 @@ class ConfigJSON(resource.Resource):
         self.opts = o
 
     def render_GET(self, req):
-        f = open(cosmosConfigFile(self.opts['home']))
-        config = f.read()
+        with open(cosmosConfigFile(self.opts['home'])) as f:
+            config = f.read()
         req.setHeader('Content-Type', 'application/json')
         return config.encode('utf-8')
 
