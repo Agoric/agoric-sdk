@@ -1,12 +1,11 @@
 import chalk from 'chalk';
 import parseArgs from 'minimist';
-import fs from 'fs';
 
 const VERSION = 'Agoric <some version>';
 const STAMP = '.agservers';
 
 const main = async (progname, rawArgs, privs) => {
-  const { console, error } = privs;
+  const { console, error, fs } = privs;
   const { _: args, ...opts } = parseArgs(rawArgs, {
     boolean: ['version', 'help'],
     stopEarly: true,
@@ -14,7 +13,7 @@ const main = async (progname, rawArgs, privs) => {
 
   const isNotBasedir = async () => {
     try {
-      await fs.promises.stat('.agservers');
+      await fs.stat('.agservers');
       return false;
     } catch (e) {
       error(`current directory wasn't created by '${progname} init'`);

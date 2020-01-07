@@ -18,3 +18,4 @@ t[0-9]
 build
 
 *.egg-info
+binding.gyp
