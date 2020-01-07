@@ -32,7 +32,7 @@ test('zoe - simplest automaticRefund', async t => {
     const aliceOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: moolaAssay.makeUnits(3),
         },
       ],
@@ -155,11 +155,11 @@ test('zoe with automaticRefund', async t => {
     const aliceOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[0].makeUnits(3),
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[1].makeUnits(7),
         },
       ],
@@ -215,11 +215,11 @@ test('zoe with automaticRefund', async t => {
     const bobOfferRules = harden({
       payoutRules: [
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: bobAssays[0].makeUnits(15),
         },
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: bobAssays[1].makeUnits(17),
         },
       ],
@@ -326,11 +326,11 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
     const aliceOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[0].makeUnits(10),
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[1].makeUnits(7),
         },
       ],
@@ -397,11 +397,11 @@ test('zoe - alice cancels before entering a contract', async t => {
     const aliceOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[0].makeUnits(3),
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[1].makeUnits(7),
         },
       ],
@@ -478,11 +478,11 @@ test('zoe - alice cancels after completion', async t => {
     const aliceOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[0].makeUnits(3),
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[1].makeUnits(7),
         },
       ],

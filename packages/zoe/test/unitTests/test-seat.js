@@ -39,8 +39,8 @@ test('seatMint', async t => {
       handle: harden({}),
       offerToBeMade: {
         payoutRules: [
-          { kind: 'offerExactly', units: assays[0].makeUnits(8) },
-          { kind: 'wantExactly', units: assays[1].makeUnits(6) },
+          { kind: 'offerAtMost', units: assays[0].makeUnits(8) },
+          { kind: 'wantAtLeast', units: assays[1].makeUnits(6) },
         ],
       },
     });
@@ -65,8 +65,8 @@ test('seatMint', async t => {
       handle: harden({}),
       offerMade: {
         payoutRules: [
-          { kind: 'offerExactly', units: assays[0].makeUnits(8) },
-          { kind: 'wantExactly', units: assays[1].makeUnits(6) },
+          { kind: 'offerAtMost', units: assays[0].makeUnits(8) },
+          { kind: 'wantAtLeast', units: assays[1].makeUnits(6) },
         ],
       },
     });

@@ -50,7 +50,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const aliceOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[0].makeUnits(1),
         },
         {
@@ -105,7 +105,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const bobOfferRules = harden({
       payoutRules: [
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[0].makeUnits(1),
         },
         {
@@ -153,7 +153,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const carolOfferRules = harden({
       payoutRules: [
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[0].makeUnits(1),
         },
         {
@@ -193,7 +193,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const daveOfferRules = harden({
       payoutRules: [
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[0].makeUnits(1),
         },
         {
@@ -340,7 +340,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const aliceOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[0].makeUnits(1),
         },
         {
@@ -394,7 +394,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const bobOfferRules = harden({
       payoutRules: [
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[0].makeUnits(1),
         },
         {
@@ -440,7 +440,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const carolOfferRules = harden({
       payoutRules: [
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[0].makeUnits(1),
         },
         {
@@ -478,7 +478,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const daveOfferRules = harden({
       payoutRules: [
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[0].makeUnits(1),
         },
         {
