@@ -1,39 +1,41 @@
 import harden from '@agoric/harden';
 import { insist } from '@agoric/ertp/util/insist';
 import { sameStructure } from '@agoric/ertp/util/sameStructure';
+import { showPaymentBalance, setupAssays } from './helpers';
 
 const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
-  const showPaymentBalance = async (paymentP, name) => {
-    try {
-      const units = await E(paymentP).getBalance();
-      log(name, ': balance ', units);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const {
+    inviteAssay,
+    moolaAssay,
+    simoleanAssay,
+    moola,
+    simoleans,
+  } = await setupAssays(zoe, moolaPurseP, simoleanPurseP);
 
   return harden({
-    doPublicAuction: async instanceHandle => {
-      const moolaAssay = await E(moolaPurseP).getAssay();
-      const simoleanAssay = await E(simoleanPurseP).getAssay();
+    doPublicAuction: async inviteP => {
+      const invite = await E(inviteAssay).claimAll(inviteP);
+      const { extent: inviteExtent } = await E(invite).getBalance();
 
-      const assays = harden([moolaAssay, simoleanAssay]);
-      const { instance: auction, installationHandle, terms } = await E(
-        zoe,
-      ).getInstance(instanceHandle);
-
+      const { installationHandle, terms } = await E(zoe).getInstance(
+        inviteExtent.instanceHandle,
+      );
       insist(installationHandle === installId)`wrong installation`;
-      insist(sameStructure(assays, terms.assays))`assays were not as expected`;
+      insist(
+        sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
+      )`assays were not as expected`;
+      insist(sameStructure(inviteExtent.minimumBid, simoleans(3)));
+      insist(sameStructure(inviteExtent.auctionedAssets, moola(1)));
 
       const offerRules = harden({
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: await E(assays[0]).makeUnits(1),
+            units: moola(1),
           },
           {
             kind: 'offerAtMost',
-            units: await E(assays[1]).makeUnits(5),
+            units: simoleans(5),
           },
         ],
         exitRule: {
@@ -43,12 +45,13 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       const simoleanPayment = await E(simoleanPurseP).withdrawAll();
       const offerPayments = [undefined, simoleanPayment];
 
-      const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
+      const { seat, payout: payoutP } = await E(zoe).redeem(
+        invite,
         offerRules,
         offerPayments,
       );
 
-      const offerResult = await E(auction).bid(escrowReceipt);
+      const offerResult = await E(seat).bid();
 
       log(offerResult);
 
@@ -57,8 +60,8 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
       await E(moolaPurseP).depositAll(daveResult[0]);
       await E(simoleanPurseP).depositAll(daveResult[1]);
 
-      await showPaymentBalance(moolaPurseP, 'daveMoolaPurse');
-      await showPaymentBalance(simoleanPurseP, 'daveSimoleanPurse;');
+      await showPaymentBalance(moolaPurseP, 'daveMoolaPurse', log);
+      await showPaymentBalance(simoleanPurseP, 'daveSimoleanPurse', log);
     },
   });
 };

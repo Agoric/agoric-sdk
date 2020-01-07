@@ -107,19 +107,24 @@ const build = async (
 
   const doPublicAuction = async (bobP, carolP, daveP) => {
     const numBidsAllowed = 3;
-    const { instance: auction, instanceHandle } = await E(
-      zoe,
-    ).makeInstance(installId, { assays, numBidsAllowed });
+    const invite = await E(zoe).makeInstance(installId, {
+      assays,
+      numBidsAllowed,
+    });
+    const {
+      extent: { instanceHandle },
+    } = await E(invite).getBalance();
+    const { publicAPI } = await E(zoe).getInstance(instanceHandle);
 
     const offerRules = harden({
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: await E(assays[0]).makeUnits(1),
+          units: moola(1),
         },
         {
           kind: 'wantAtLeast',
-          units: await E(assays[1]).makeUnits(3),
+          units: simoleans(3),
         },
       ],
       exitRule: {
@@ -128,18 +133,22 @@ const build = async (
     });
     const moolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [moolaPayment, undefined];
-    const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
+    const { seat, payout: payoutP } = await E(zoe).redeem(
+      invite,
       offerRules,
       offerPayments,
     );
 
-    const offerResult = await E(auction).startAuction(escrowReceipt);
+    const offerResult = await E(seat).sellAssets();
+    const [bobInvite, carolInvite, daveInvite] = await E(publicAPI).makeInvites(
+      3,
+    );
 
     log(offerResult);
 
-    const bobDoneP = E(bobP).doPublicAuction(instanceHandle);
-    const carolDoneP = E(carolP).doPublicAuction(instanceHandle);
-    const daveDoneP = E(daveP).doPublicAuction(instanceHandle);
+    const bobDoneP = E(bobP).doPublicAuction(bobInvite);
+    const carolDoneP = E(carolP).doPublicAuction(carolInvite);
+    const daveDoneP = E(daveP).doPublicAuction(daveInvite);
 
     await Promise.all([bobDoneP, carolDoneP, daveDoneP]);
 
@@ -149,8 +158,8 @@ const build = async (
     await E(moolaPurseP).depositAll(payout[0]);
     await E(simoleanPurseP).depositAll(payout[1]);
 
-    await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse');
-    await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;');
+    await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse', log);
+    await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
   };
 
   const doAtomicSwap = async bobP => {

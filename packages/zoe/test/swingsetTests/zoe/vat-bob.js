@@ -154,23 +154,29 @@ const build = async (
       await showPaymentBalance(moolaPurseP, 'bobMoolaPurse');
       await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;');
     },
-    doPublicAuction: async instanceHandle => {
-      const { instance: auction, installationHandle, terms } = await E(
-        zoe,
-      ).getInstance(instanceHandle);
+    doPublicAuction: async inviteP => {
+      const invite = await E(inviteAssay).claimAll(inviteP);
+      const { extent: inviteExtent } = await E(invite).getBalance();
 
+      const { installationHandle, terms } = await E(zoe).getInstance(
+        inviteExtent.instanceHandle,
+      );
       insist(installationHandle === installId)`wrong installation`;
-      insist(sameStructure(assays, terms.assays))`assays were not as expected`;
+      insist(
+        sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
+      )`assays were not as expected`;
+      insist(sameStructure(inviteExtent.minimumBid, simoleans(3)));
+      insist(sameStructure(inviteExtent.auctionedAssets, moola(1)));
 
       const offerRules = harden({
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: await E(assays[0]).makeUnits(1),
+            units: moola(1),
           },
           {
             kind: 'offerAtMost',
-            units: await E(assays[1]).makeUnits(11),
+            units: simoleans(11),
           },
         ],
         exitRule: {
@@ -180,12 +186,13 @@ const build = async (
       const simoleanPayment = await E(simoleanPurseP).withdrawAll();
       const offerPayments = [undefined, simoleanPayment];
 
-      const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
+      const { seat, payout: payoutP } = await E(zoe).redeem(
+        invite,
         offerRules,
         offerPayments,
       );
 
-      const offerResult = await E(auction).bid(escrowReceipt);
+      const offerResult = await E(seat).bid();
 
       log(offerResult);
 
@@ -194,8 +201,8 @@ const build = async (
       await E(moolaPurseP).depositAll(bobResult[0]);
       await E(simoleanPurseP).depositAll(bobResult[1]);
 
-      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse');
-      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;');
+      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse', log);
+      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
     },
     doAtomicSwap: async inviteP => {
       const invite = await E(inviteAssay).claimAll(inviteP);
