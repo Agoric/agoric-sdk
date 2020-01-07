@@ -7,7 +7,7 @@ import { setup } from '../setupBasicMints';
 
 const simpleExchangeRoot = `${__dirname}/../../../contracts/simpleExchange`;
 
-test.skip('zoe - simpleExchange', async t => {
+test('zoe - simpleExchange', async t => {
   try {
     const { assays: originalAssays, mints, unitOps } = setup();
     const assays = originalAssays.slice(0, 2);
