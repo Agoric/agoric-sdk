@@ -29,12 +29,7 @@ function isOfferSafeForOffer(unitOpsArray, payoutRules, units) {
       unitOpsArray.length === units.length,
   )`unitOpsArray, payoutRules, and units must be arrays of the same length`;
 
-  const allowedRules = [
-    'offerExactly',
-    'offerAtMost',
-    'wantExactly',
-    'wantAtLeast',
-  ];
+  const allowedRules = ['offerAtMost', 'wantAtLeast'];
 
   for (const payoutRule of payoutRules) {
     if (payoutRule === null || payoutRule === undefined) {
@@ -49,10 +44,7 @@ function isOfferSafeForOffer(unitOpsArray, payoutRules, units) {
   // units must be greater than or equal to what was originally
   // offered.
   const refundOk = payoutRules.every((payoutRule, i) => {
-    if (payoutRule.kind === 'offerExactly') {
-      return unitOpsArray[i].equals(units[i], payoutRule.units);
-    }
-    if (payoutRules.kind === 'offerAtMost') {
+    if (payoutRule.kind === 'offerAtMost') {
       return unitOpsArray[i].includes(units[i], payoutRule.units);
     }
     // If the kind is 'want', anything we give back is fine for a refund.
@@ -63,9 +55,6 @@ function isOfferSafeForOffer(unitOpsArray, payoutRules, units) {
   // wanted, their allocated units must be greater than or equal to
   // what the payoutRules said they wanted.
   const winningsOk = payoutRules.every((payoutRule, i) => {
-    if (payoutRule.kind === 'wantExactly') {
-      return unitOpsArray[i].equals(units[i], payoutRule.units);
-    }
     if (payoutRule.kind === 'wantAtLeast') {
       return unitOpsArray[i].includes(units[i], payoutRule.units);
     }

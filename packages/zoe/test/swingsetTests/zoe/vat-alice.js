@@ -25,11 +25,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const offerRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: await E(assays[0]).makeUnits(3),
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: await E(assays[1]).makeUnits(7),
         },
       ],
@@ -71,11 +71,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const offerRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: await E(assays[0]).makeUnits(3),
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: await E(assays[1]).makeUnits(7),
         },
       ],
@@ -118,7 +118,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const offerRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: await E(assays[0]).makeUnits(1),
         },
         {
@@ -169,11 +169,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const offerRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: await E(assays[0]).makeUnits(3),
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: await E(assays[1]).makeUnits(7),
         },
       ],
@@ -214,7 +214,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const aliceSellOrderOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: await E(assays[0]).makeUnits(3),
         },
         {
@@ -265,11 +265,11 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
     const addLiquidityOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: await E(allAssays[0]).makeUnits(10),
         },
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: await E(allAssays[1]).makeUnits(5),
         },
         {
@@ -312,7 +312,7 @@ const build = async (E, log, zoe, moolaPurseP, simoleanPurseP, installId) => {
           units: await E(allAssays[1]).makeUnits(0),
         },
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: await E(allAssays[2]).makeUnits(10),
         },
       ],

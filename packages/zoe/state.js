@@ -88,12 +88,7 @@ const makeInstanceTable = () => {
 // | units | extents
 const makeOfferTable = () => {
   const insistValidPayoutRuleKinds = payoutRules => {
-    const acceptedKinds = [
-      'offerExactly',
-      'offerAtMost',
-      'wantExactly',
-      'wantAtLeast',
-    ];
+    const acceptedKinds = ['offerAtMost', 'wantAtLeast'];
     for (const payoutRule of payoutRules) {
       insist(
         acceptedKinds.includes(payoutRule.kind),
@@ -102,7 +97,7 @@ const makeOfferTable = () => {
   };
   const insistValidExitRule = exitRule => {
     const acceptedExitRuleKinds = [
-      'noExit',
+      'waived',
       'onDemand',
       'afterDeadline',
       // 'onDemandAfterDeadline', // not yet supported

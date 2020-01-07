@@ -49,11 +49,11 @@ test('zoe - coveredCall', async t => {
     const aliceOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[0].makeUnits(3),
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[1].makeUnits(7),
         },
       ],
@@ -90,11 +90,11 @@ test('zoe - coveredCall', async t => {
     );
     t.deepEquals(bobInvitePayment.getBalance().extent.offerToBeMade, [
       {
-        kind: 'wantExactly',
+        kind: 'wantAtLeast',
         units: assays[0].makeUnits(3),
       },
       {
-        kind: 'offerExactly',
+        kind: 'offerAtMost',
         units: assays[1].makeUnits(7),
       },
     ]);
@@ -109,11 +109,11 @@ test('zoe - coveredCall', async t => {
     const bobIntendedOfferRules = harden({
       payoutRules: [
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[0].makeUnits(3),
         },
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[1].makeUnits(7),
         },
       ],
@@ -241,11 +241,11 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const aliceOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[0].makeUnits(3),
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[1].makeUnits(7),
         },
       ],
@@ -284,11 +284,11 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     );
     t.deepEquals(bobInvitePayment.getBalance().extent.offerToBeMade, [
       {
-        kind: 'wantExactly',
+        kind: 'wantAtLeast',
         units: assays[0].makeUnits(3),
       },
       {
-        kind: 'offerExactly',
+        kind: 'offerAtMost',
         units: assays[1].makeUnits(7),
       },
     ]);
@@ -305,11 +305,11 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const bobIntendedOfferRules = harden({
       payoutRules: [
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[0].makeUnits(3),
         },
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[1].makeUnits(7),
         },
       ],
@@ -452,11 +452,11 @@ test('zoe - coveredCall with swap for invite', async t => {
     const aliceOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[0].makeUnits(3),
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[1].makeUnits(7),
         },
       ],
@@ -527,11 +527,11 @@ test('zoe - coveredCall with swap for invite', async t => {
     const bobExpectationsOfAliceOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[0].makeUnits(3),
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[1].makeUnits(7),
         },
       ],
@@ -553,11 +553,11 @@ test('zoe - coveredCall with swap for invite', async t => {
     const bobOfferRulesCoveredCall = harden({
       payoutRules: [
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[0].makeUnits(3),
         },
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[1].makeUnits(7),
         },
       ],
@@ -592,11 +592,11 @@ test('zoe - coveredCall with swap for invite', async t => {
     const bobOfferRulesSwap = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: bobExclInvitePayment.getBalance(),
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: bucksAssay.makeUnits(1),
         },
       ],
@@ -660,11 +660,11 @@ test('zoe - coveredCall with swap for invite', async t => {
     const daveSwapOfferRules = harden({
       payoutRules: [
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: bobOfferRulesSwap.payoutRules[0].units,
         },
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: bucksAssay.makeUnits(1),
         },
       ],
@@ -697,11 +697,11 @@ test('zoe - coveredCall with swap for invite', async t => {
     const daveCoveredCallOfferRules = harden({
       payoutRules: [
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: moolaAssay.makeUnits(3),
         },
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: simoleanAssay.makeUnits(7),
         },
       ],
@@ -829,11 +829,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const aliceOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[0].makeUnits(3),
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[1].makeUnits(7),
         },
       ],
@@ -904,11 +904,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const bobExpectationsOfAliceOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[0].makeUnits(3),
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[1].makeUnits(7),
         },
       ],
@@ -930,11 +930,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const bobOfferRulesCoveredCall = harden({
       payoutRules: [
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: assays[0].makeUnits(3),
         },
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: assays[1].makeUnits(7),
         },
       ],
@@ -973,11 +973,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const bobOfferRulesSecondCoveredCall = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: firstCoveredCallInviteAssetDec,
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: bucksAssay.makeUnits(1),
         },
       ],
@@ -1041,11 +1041,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const daveExpectationsOfBobOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: firstCoveredCallInviteAssetDec,
         },
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: bucksAssay.makeUnits(1),
         },
       ],
@@ -1067,11 +1067,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const daveOfferRulesCoveredCall = harden({
       payoutRules: [
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: firstCoveredCallInviteAssetDec,
         },
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: bucksAssay.makeUnits(1),
         },
       ],
@@ -1123,11 +1123,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const daveFirstCoveredCallOfferRules = harden({
       payoutRules: [
         {
-          kind: 'wantExactly',
+          kind: 'wantAtLeast',
           units: moolaAssay.makeUnits(3),
         },
         {
-          kind: 'offerExactly',
+          kind: 'offerAtMost',
           units: simoleanAssay.makeUnits(7),
         },
       ],
