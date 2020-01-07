@@ -10,7 +10,7 @@ import coveredCallBundle from './bundle-coveredCall';
 // eslint-disable-next-line import/no-unresolved, import/extensions
 import publicAuctionBundle from './bundle-publicAuction';
 // eslint-disable-next-line import/no-unresolved, import/extensions
-import publicSwapBundle from './bundle-publicSwap';
+import atomicSwapBundle from './bundle-atomicSwap';
 // eslint-disable-next-line import/no-unresolved, import/extensions
 import simpleExchangeBundle from './bundle-simpleExchange';
 // eslint-disable-next-line import/no-unresolved, import/extensions
@@ -119,9 +119,9 @@ function build(E, log) {
           publicAuctionBundle.source,
           publicAuctionBundle.moduleFormat,
         ),
-        publicSwap: await E(zoe).install(
-          publicSwapBundle.source,
-          publicSwapBundle.moduleFormat,
+        atomicSwap: await E(zoe).install(
+          atomicSwapBundle.source,
+          atomicSwapBundle.moduleFormat,
         ),
         simpleExchange: await E(zoe).install(
           simpleExchangeBundle.source,

@@ -153,20 +153,18 @@ const build = async (
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;');
   };
 
-  const doPublicSwap = async bobP => {
-    const { instance: swap, instanceHandle } = await E(
-      zoe,
-    ).makeInstance(installId, { assays });
+  const doAtomicSwap = async bobP => {
+    const invite = await E(zoe).makeInstance(installId, { assays });
 
     const offerRules = harden({
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: await E(assays[0]).makeUnits(3),
+          units: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: await E(assays[1]).makeUnits(7),
+          units: simoleans(7),
         },
       ],
       exitRule: {
@@ -175,23 +173,21 @@ const build = async (
     });
     const moolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [moolaPayment, undefined];
-    const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
+    const { seat, payout: payoutP } = await E(zoe).redeem(
+      invite,
       offerRules,
       offerPayments,
     );
 
-    const offerResult = await E(swap).makeFirstOffer(escrowReceipt);
-
-    log(offerResult);
-
-    E(bobP).doPublicSwap(instanceHandle);
+    const bobInviteP = await E(seat).makeFirstOffer();
+    E(bobP).doAtomicSwap(bobInviteP);
 
     const payout = await payoutP;
     await E(moolaPurseP).depositAll(payout[0]);
     await E(simoleanPurseP).depositAll(payout[1]);
 
-    await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse');
-    await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;');
+    await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse', log);
+    await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
   };
 
   const doSimpleExchange = async bobP => {
@@ -343,8 +339,8 @@ const build = async (
         case 'publicAuctionOk': {
           return doPublicAuction(bobP, carolP, daveP);
         }
-        case 'publicSwapOk': {
-          return doPublicSwap(bobP, carolP, daveP);
+        case 'atomicSwapOk': {
+          return doAtomicSwap(bobP, carolP, daveP);
         }
         case 'simpleExchangeOk': {
           return doSimpleExchange(bobP, carolP, daveP);
