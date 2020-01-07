@@ -7,7 +7,7 @@ import { setup } from '../setupBasicMints';
 
 const autoswapRoot = `${__dirname}/../../../contracts/autoswap`;
 
-test('autoSwap with valid offers', async t => {
+test.skip('autoSwap with valid offers', async t => {
   try {
     const { assays: defaultAssays, mints } = setup();
     const zoe = await makeZoe({ require });
@@ -255,7 +255,7 @@ test('autoSwap with valid offers', async t => {
   }
 });
 
-test('autoSwap - test fee', async t => {
+test.skip('autoSwap - test fee', async t => {
   try {
     const { assays: defaultAssays, mints } = setup();
     const zoe = await makeZoe({ require });
