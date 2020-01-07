@@ -1,14 +1,7 @@
+/* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 
-import { rejectOffer, defaultAcceptanceMsg } from './helpers/userFlow';
-import {
-  hasValidPayoutRules,
-  getActivePayoutRules,
-} from './helpers/offerRules';
-import {
-  isMatchingLimitOrder,
-  reallocateSurplusToSeller as reallocate,
-} from './helpers/exchanges';
+import { defaultAcceptanceMsg, makeHelpers } from './helpers/userFlow';
 
 // This exchange only accepts limit orders. A limit order is defined
 // as either a sell order with payoutRules: [ { kind: 'offerAtMost',
@@ -22,63 +15,63 @@ import {
 // support partial fills of orders.
 
 export const makeContract = harden((zoe, terms) => {
-  const sellOfferHandles = [];
-  const buyOfferHandles = [];
+  const ASSET_INDEX = 0;
+  let sellInviteHandles = [];
+  let buyInviteHandles = [];
+  const { assays } = terms;
+  const {
+    rejectOffer,
+    hasValidPayoutRules,
+    swap,
+    areAssetsEqualAtIndex,
+    canTradeWith,
+  } = makeHelpers(zoe, assays);
 
-  const simpleExchange = harden({
-    addOrder: async escrowReceipt => {
-      const {
-        offerHandle,
-        offerRules: { payoutRules },
-      } = await zoe.burnEscrowReceipt(escrowReceipt);
-
-      // Is it a valid sell offer?
-      const sellOfferKinds = ['offerAtMost', 'wantAtLeast'];
-      if (hasValidPayoutRules(sellOfferKinds, terms.assays, payoutRules)) {
-        // Save the valid offer
-        sellOfferHandles.push(offerHandle);
-
-        // Try to match
-        const {
-          offerHandles: activeBuyHandles,
-          payoutRulesArray: activeBuyPayoutRules,
-        } = getActivePayoutRules(zoe, buyOfferHandles);
-        for (let i = 0; i < activeBuyHandles.length; i += 1) {
-          if (isMatchingLimitOrder(zoe, payoutRules, activeBuyPayoutRules[i])) {
-            return reallocate(zoe, offerHandle, activeBuyHandles[i]);
+  const makeInvite = () => {
+    const seat = harden({
+      addOrder: () => {
+        // Is it a valid sell offer?
+        if (hasValidPayoutRules(['offerAtMost', 'wantAtLeast'], inviteHandle)) {
+          // Save the valid offer and try to match
+          sellInviteHandles.push(inviteHandle);
+          buyInviteHandles = [...zoe.getOfferStatuses(buyInviteHandles).active];
+          for (const buyHandle of buyInviteHandles) {
+            if (
+              areAssetsEqualAtIndex(ASSET_INDEX, inviteHandle, buyHandle) &&
+              canTradeWith(inviteHandle, buyHandle)
+            ) {
+              return swap(inviteHandle, buyHandle);
+            }
           }
+          return defaultAcceptanceMsg;
         }
-        return defaultAcceptanceMsg;
-      }
-
-      // Is it a valid buy offer?
-      const buyOfferFormat = ['wantAtLeast', 'offerAtMost'];
-      if (hasValidPayoutRules(buyOfferFormat, terms.assays, payoutRules)) {
-        // Save the valid offer
-        buyOfferHandles.push(offerHandle);
-
-        // Try to match
-        const {
-          offerHandles: activeSellHandles,
-          payoutRulesArray: activeSellPayoutRules,
-        } = getActivePayoutRules(zoe, sellOfferHandles);
-        for (let i = 0; i < activeSellHandles.length; i += 1) {
-          if (
-            isMatchingLimitOrder(zoe, activeSellPayoutRules[i], payoutRules)
-          ) {
-            reallocate(zoe, activeSellHandles[i], offerHandle);
+        // Is it a valid buy offer?
+        if (hasValidPayoutRules(['wantAtLeast', 'offerAtMost'], inviteHandle)) {
+          // Save the valid offer and try to match
+          buyInviteHandles.push(inviteHandle);
+          sellInviteHandles = [
+            ...zoe.getOfferStatuses(sellInviteHandles).active,
+          ];
+          for (const sellHandle of sellInviteHandles) {
+            if (
+              areAssetsEqualAtIndex(ASSET_INDEX, inviteHandle, sellHandle) &&
+              canTradeWith(inviteHandle, sellHandle)
+            ) {
+              return swap(inviteHandle, sellHandle);
+            }
           }
+          return defaultAcceptanceMsg;
         }
-        return defaultAcceptanceMsg;
-      }
-
-      // Eject because the offer must be invalid
-      return rejectOffer(zoe, offerHandle);
-    },
-  });
-
+        // Eject because the offer must be invalid
+        throw rejectOffer(inviteHandle);
+      },
+    });
+    const { invite, inviteHandle } = zoe.makeInvite(seat);
+    return invite;
+  };
   return harden({
-    instance: simpleExchange,
-    assays: terms.assays,
+    invite: makeInvite(),
+    publicAPI: { makeInvite },
+    terms,
   });
 });

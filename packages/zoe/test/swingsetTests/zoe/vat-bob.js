@@ -262,23 +262,27 @@ const build = async (
       await showPaymentBalance(moolaPurseP, 'bobMoolaPurse', log);
       await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
     },
-    doSimpleExchange: async instanceHandle => {
-      const { instance: exchange, installationHandle, terms } = await E(
-        zoe,
-      ).getInstance(instanceHandle);
+    doSimpleExchange: async inviteP => {
+      const invite = await E(inviteAssay).claimAll(inviteP);
+      const { extent: inviteExtent } = await E(invite).getBalance();
 
+      const { installationHandle, terms } = await E(zoe).getInstance(
+        inviteExtent.instanceHandle,
+      );
       insist(installationHandle === installId)`wrong installation`;
-      insist(sameStructure(assays, terms.assays))`assays were not as expected`;
+      insist(
+        sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
+      )`assays were not as expected`;
 
       const bobBuyOrderOfferRules = harden({
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: await E(assays[0]).makeUnits(3),
+            units: moola(3),
           },
           {
             kind: 'offerAtMost',
-            units: await E(assays[1]).makeUnits(7),
+            units: simoleans(7),
           },
         ],
         exitRule: {
@@ -288,12 +292,13 @@ const build = async (
       const simoleanPayment = await E(simoleanPurseP).withdrawAll();
       const offerPayments = [undefined, simoleanPayment];
 
-      const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
+      const { seat, payout: payoutP } = await E(zoe).redeem(
+        invite,
         bobBuyOrderOfferRules,
         offerPayments,
       );
 
-      const offerResult = await E(exchange).addOrder(escrowReceipt);
+      const offerResult = await E(seat).addOrder();
 
       log(offerResult);
 
@@ -302,8 +307,8 @@ const build = async (
       await E(moolaPurseP).depositAll(bobResult[0]);
       await E(simoleanPurseP).depositAll(bobResult[1]);
 
-      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse');
-      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;');
+      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse', log);
+      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
     },
     doAutoswap: async instanceHandle => {
       const { instance: autoswap, installationHandle, terms } = await E(
