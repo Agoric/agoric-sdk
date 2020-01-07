@@ -14,3 +14,4 @@ lib/lib*.h
 lib/lib*.so
 ve[0-9]
 t[0-9]
+binding.gyp

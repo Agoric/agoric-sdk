@@ -1,6 +1,5 @@
 /* eslint-disable no-await-in-loop */
 import parseArgs from 'minimist';
-import WebSocket from 'ws';
 import { evaluateProgram } from '@agoric/evaluate';
 import { E, makeCapTP } from '@agoric/captp';
 
@@ -26,7 +25,7 @@ const sendJSON = (ws, obj) => {
 };
 
 export default async function deployMain(progname, rawArgs, priv) {
-  const { console, error } = priv;
+  const { console, error, makeWebSocket } = priv;
   const { _: args, hostport } = parseArgs(rawArgs, {
     default: {
       hostport: '127.0.0.1:8000',
@@ -39,7 +38,7 @@ export default async function deployMain(progname, rawArgs, priv) {
   }
 
   const wsurl = `ws://${hostport}/captp`;
-  const ws = new WebSocket(wsurl, { origin: 'http://127.0.0.1' });
+  const ws = makeWebSocket(wsurl, { origin: 'http://127.0.0.1' });
 
   const exit = makePromise();
   ws.on('open', async () => {

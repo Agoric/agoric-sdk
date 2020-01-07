@@ -3,7 +3,10 @@
 FROM golang:stretch
 
 WORKDIR /usr/src/app
-COPY Makefile* *.go go.* ./
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY Makefile* *.go ./
 COPY x/ x/
 COPY cmd/ cmd/
 COPY lib/*.go lib/
