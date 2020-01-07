@@ -88,3 +88,4 @@ typings/
 ag-cosmos-chain-state.json
 lib/git-revision.txt
 agoric/
+/binding.gyp
