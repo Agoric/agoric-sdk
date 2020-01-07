@@ -52,12 +52,11 @@ const expectedAutomaticRefundOkLog = [
 test('zoe - automaticRefund - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
-      [3, 0],
-      [0, 17],
+      [3, 0, 0],
+      [0, 17, 0],
     ];
     const dump = await main(true, 'zoe', [
       'automaticRefundOk',
-      'automaticRefund',
       startingExtents,
     ]);
     t.deepEquals(dump.log, expectedAutomaticRefundOkLog);
@@ -71,12 +70,11 @@ test('zoe - automaticRefund - valid inputs - with SES', async t => {
 test('zoe - automaticRefund - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
-      [3, 0],
-      [0, 17],
+      [3, 0, 0],
+      [0, 17, 0],
     ];
     const dump = await main(false, 'zoe', [
       'automaticRefundOk',
-      'automaticRefund',
       startingExtents,
     ]);
     t.deepEquals(dump.log, expectedAutomaticRefundOkLog);
@@ -90,7 +88,7 @@ test('zoe - automaticRefund - valid inputs - no SES', async t => {
 const expectedCoveredCallOkLog = [
   '=> alice, bob, carol and dave are set up',
   '=> alice.doCreateCoveredCall called',
-  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  '@@ schedule task for:1, currently: 0 @@',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":3}',
   'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":0}',
@@ -98,17 +96,13 @@ const expectedCoveredCallOkLog = [
   'aliceSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
 ];
 
-test.skip('zoe - coveredCall - valid inputs - with SES', async t => {
+test('zoe - coveredCall - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
-      [3, 0],
-      [0, 7],
+      [3, 0, 0],
+      [0, 7, 0],
     ];
-    const dump = await main(true, 'zoe', [
-      'coveredCallOk',
-      'coveredCall',
-      startingExtents,
-    ]);
+    const dump = await main(true, 'zoe', ['coveredCallOk', startingExtents]);
     t.deepEquals(dump.log, expectedCoveredCallOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -117,18 +111,66 @@ test.skip('zoe - coveredCall - valid inputs - with SES', async t => {
   }
 });
 
-test.skip('zoe - coveredCall - valid inputs - no SES', async t => {
+test('zoe - coveredCall - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
-      [3, 0],
-      [0, 7],
+      [3, 0, 0],
+      [0, 7, 0],
     ];
-    const dump = await main(false, 'zoe', [
-      'coveredCallOk',
-      'coveredCall',
-      startingExtents,
-    ]);
+    const dump = await main(false, 'zoe', ['coveredCallOk', startingExtents]);
     t.deepEquals(dump.log, expectedCoveredCallOkLog);
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  } finally {
+    t.end();
+  }
+});
+
+const expectedSwapForOptionOkLog = [
+  '=> alice, bob, carol and dave are set up',
+  '=> alice.doSwapForOption called',
+  '@@ schedule task for:100, currently: 0 @@',
+  'call option made',
+  'swap invite made',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  'daveMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":3}',
+  'daveSimoleanPurse: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":0}',
+  'daveBucksPurse: balance {"label":{"assay":{},"allegedName":"bucks"},"extent":0}',
+  'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":0}',
+  'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":0}',
+  'bobBucksPurse;: balance {"label":{"assay":{},"allegedName":"bucks"},"extent":1}',
+  'aliceMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":0}',
+  'aliceSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
+];
+
+test('zoe - swapForOption - valid inputs - with SES', async t => {
+  try {
+    const startingExtents = [
+      [3, 0, 0], // Alice starts with 3 moola
+      [0, 0, 0], // Bob starts with nothing
+      [0, 0, 0], // Carol starts with nothing
+      [0, 7, 1], // Dave starts with 7 simoleans and 1 buck
+    ];
+    const dump = await main(true, 'zoe', ['swapForOptionOk', startingExtents]);
+    t.deepEquals(dump.log, expectedSwapForOptionOkLog);
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  } finally {
+    t.end();
+  }
+});
+
+test('zoe - swap for option - valid inputs - no SES', async t => {
+  try {
+    const startingExtents = [
+      [3, 0, 0], // Alice starts with 3 moola
+      [0, 0, 0], // Bob starts with nothing
+      [0, 0, 0], // Carol starts with nothing
+      [0, 7, 1], // Dave starts with 7 simoleans and 1 buck
+    ];
+    const dump = await main(false, 'zoe', ['swapForOptionOk', startingExtents]);
+    t.deepEquals(dump.log, expectedSwapForOptionOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {
@@ -154,16 +196,12 @@ const expectedPublicAuctionOkLog = [
 test('zoe - publicAuction - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
-      [1, 0],
-      [0, 11],
-      [0, 7],
-      [0, 5],
+      [1, 0, 0],
+      [0, 11, 0],
+      [0, 7, 0],
+      [0, 5, 0],
     ];
-    const dump = await main(true, 'zoe', [
-      'publicAuctionOk',
-      'publicAuction',
-      startingExtents,
-    ]);
+    const dump = await main(true, 'zoe', ['publicAuctionOk', startingExtents]);
     t.deepEquals(dump.log, expectedPublicAuctionOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -175,16 +213,12 @@ test('zoe - publicAuction - valid inputs - with SES', async t => {
 test('zoe - publicAuction - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
-      [1, 0],
-      [0, 11],
-      [0, 7],
-      [0, 5],
+      [1, 0, 0],
+      [0, 11, 0],
+      [0, 7, 0],
+      [0, 5, 0],
     ];
-    const dump = await main(false, 'zoe', [
-      'publicAuctionOk',
-      'publicAuction',
-      startingExtents,
-    ]);
+    const dump = await main(false, 'zoe', ['publicAuctionOk', startingExtents]);
     t.deepEquals(dump.log, expectedPublicAuctionOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -204,14 +238,10 @@ const expectedAtomicSwapOkLog = [
 test('zoe - atomicSwap - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
-      [3, 0],
-      [0, 7],
+      [3, 0, 0],
+      [0, 7, 0],
     ];
-    const dump = await main(true, 'zoe', [
-      'atomicSwapOk',
-      'atomicSwap',
-      startingExtents,
-    ]);
+    const dump = await main(true, 'zoe', ['atomicSwapOk', startingExtents]);
     t.deepEquals(dump.log, expectedAtomicSwapOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -223,15 +253,11 @@ test('zoe - atomicSwap - valid inputs - with SES', async t => {
 test('zoe - atomicSwap - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
-      [3, 0],
-      [0, 7],
-      [0, 0],
+      [3, 0, 0],
+      [0, 7, 0],
+      [0, 0, 0],
     ];
-    const dump = await main(false, 'zoe', [
-      'atomicSwapOk',
-      'atomicSwap',
-      startingExtents,
-    ]);
+    const dump = await main(false, 'zoe', ['atomicSwapOk', startingExtents]);
     t.deepEquals(dump.log, expectedAtomicSwapOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -252,14 +278,10 @@ const expectedSimpleExchangeOkLog = [
 test('zoe - simpleExchange - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
-      [3, 0],
-      [0, 7],
+      [3, 0, 0],
+      [0, 7, 0],
     ];
-    const dump = await main(true, 'zoe', [
-      'simpleExchangeOk',
-      'simpleExchange',
-      startingExtents,
-    ]);
+    const dump = await main(true, 'zoe', ['simpleExchangeOk', startingExtents]);
     t.deepEquals(dump.log, expectedSimpleExchangeOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -271,12 +293,11 @@ test('zoe - simpleExchange - valid inputs - with SES', async t => {
 test('zoe - simpleExchange - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
-      [3, 0],
-      [0, 7],
+      [3, 0, 0],
+      [0, 7, 0],
     ];
     const dump = await main(false, 'zoe', [
       'simpleExchangeOk',
-      'simpleExchange',
       startingExtents,
     ]);
     t.deepEquals(dump.log, expectedSimpleExchangeOkLog);
@@ -305,14 +326,10 @@ const expectedAutoswapOkLog = [
 test.skip('zoe - autoswap - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
-      [10, 5],
-      [2, 7],
+      [10, 5, 0],
+      [2, 7, 0],
     ];
-    const dump = await main(true, 'zoe', [
-      'autoswapOk',
-      'autoswap',
-      startingExtents,
-    ]);
+    const dump = await main(true, 'zoe', ['autoswapOk', startingExtents]);
     t.deepEquals(dump.log, expectedAutoswapOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
@@ -324,14 +341,10 @@ test.skip('zoe - autoswap - valid inputs - with SES', async t => {
 test.skip('zoe - autoswap - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
-      [10, 5],
-      [2, 7],
+      [10, 5, 0],
+      [2, 7, 0],
     ];
-    const dump = await main(false, 'zoe', [
-      'autoswapOk',
-      'autoswap',
-      startingExtents,
-    ]);
+    const dump = await main(false, 'zoe', ['autoswapOk', startingExtents]);
     t.deepEquals(dump.log, expectedAutoswapOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
