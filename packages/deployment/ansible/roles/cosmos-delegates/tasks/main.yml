@@ -1,0 +1,22 @@
+- name: "Check if /home/{{ service }}/cosmos-stakers.txt exists"
+  stat:
+    path: "/home/{{ service }}/cosmos-stakers.txt"
+  register: stakers
+
+- name: "Get pubkeys and amounts from /home/{{ service }}/cosmos-stakers.txt"
+  command: "\
+    sed -e 's/^\\([^:]*\\):\\([^:]*\\).*$/\\1 \\2/' \
+      /home/{{ service }}/cosmos-stakers.txt"
+  args:
+    warn: false
+  register: stakers_data
+  when: stakers.stat.exists
+
+- name: "Transfer stake to delegates"
+  become_user: "{{ service }}"
+  become: true
+  shell: "\
+    echo 'mmmmmmmm' | ag-cosmos-helper tx send {{ STAKER }}-{{ STAKER_NODE }} \
+      {{ item }} --yes --chain-id={{ CHAIN_NAME }}"
+  with_items:
+    - "{{ stakers_data.stdout_lines }}"

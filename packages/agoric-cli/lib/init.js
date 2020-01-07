@@ -1,9 +1,8 @@
 import parseArgs from 'minimist';
-import fs from 'fs';
 import chalk from 'chalk';
 
 export default async function initMain(progname, rawArgs, priv) {
-  const { console, error } = priv;
+  const { console, error, fs } = priv;
   const {
     _: args,
     force,
@@ -22,7 +21,7 @@ export default async function initMain(progname, rawArgs, priv) {
     readdir,
     readFile,
     writeFile,
-  } = fs.promises;
+  } = fs;
 
   console.log(`initializing ${DIR}`);
   try {
@@ -60,7 +59,7 @@ export default async function initMain(progname, rawArgs, priv) {
           console.log(`mkdir ${DIR}${stem}`);
           await mkdir(`${DIR}${stem}`);
         }
-        await recursiveTemplate(templateDir, `${stem}`)
+        await recursiveTemplate(templateDir, `${stem}`);
       } else {
         console.log(`write ${DIR}${stem}`);
         await writeTemplate(stem);
