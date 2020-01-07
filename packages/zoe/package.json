@@ -56,6 +56,7 @@
     "isOfferSafe.js",
     "inviteConfig.js",
     "state.js",
-    "zoe.js"
+    "zoe.js",
+    "NEWS.md"
   ]
 }
