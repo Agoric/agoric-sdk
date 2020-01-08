@@ -2,9 +2,10 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { makeMint } from '@agoric/ertp/core/mint';
+import { insist } from '@agoric/ertp/util/insist';
+
 import { natSafeMath } from './helpers/safeMath';
 import { makeHelpers } from './helpers/userFlow';
-
 import { makeGetPrice } from './helpers/bondingCurves';
 
 export const makeContract = harden((zoe, terms) => {
@@ -27,6 +28,12 @@ export const makeContract = harden((zoe, terms) => {
 
   return zoe.addAssays(assays).then(() => {
     const unitOpsArray = zoe.getUnitOpsForAssays(assays);
+    unitOpsArray.map(
+      unitOps =>
+        insist(
+          unitOps.getExtentOps().name === 'natExtentOps',
+        )`assays must have natExtentOps`,
+    );
     const {
       rejectOffer,
       hasValidPayoutRules,
