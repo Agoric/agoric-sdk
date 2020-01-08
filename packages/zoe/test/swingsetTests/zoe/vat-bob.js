@@ -419,15 +419,15 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         sameStructure(allAssays, terms.assays),
       )`assays were not as expected`;
 
-      // bob checks the price of 2 moola. The price is 1 simolean
-      const simoleanUnits = await E(publicAPI).getPrice(moola(2));
+      // bob checks the price of 3 moola. The price is 1 simolean
+      const simoleanUnits = await E(publicAPI).getPrice(moola(3));
       log(simoleanUnits);
 
       const moolaForSimOfferRules = harden({
         payoutRules: [
           {
             kind: 'offerAtMost',
-            units: moola(2),
+            units: moola(3),
           },
           {
             kind: 'wantAtLeast',
@@ -460,7 +460,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       await E(moolaPurseP).depositAll(moolaForSimPayout[0]);
       await E(simoleanPurseP).depositAll(moolaForSimPayout[1]);
 
-      // Bob looks up the price of 3 simoleans. It's 6 moola
+      // Bob looks up the price of 3 simoleans. It's 5 moola
       const moolaUnits = await E(publicAPI).getPrice(simoleans(3));
       log(moolaUnits);
 
@@ -469,7 +469,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: moola(6),
+            units: moola(5),
           },
           {
             kind: 'offerAtMost',

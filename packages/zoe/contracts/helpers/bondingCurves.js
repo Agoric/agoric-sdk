@@ -1,6 +1,10 @@
+import Nat from '@agoric/nat';
+import harden from '@agoric/harden';
+import { insist } from '@agoric/ertp/util/insist';
+
 import { natSafeMath } from './safeMath';
 
-const { add, subtract, multiply, divide } = natSafeMath;
+const { add, subtract, multiply, floorDivide } = natSafeMath;
 
 /**
  * Contains the logic for calculating how many units should be given
@@ -20,58 +24,59 @@ const { add, subtract, multiply, divide } = natSafeMath;
  * a percent. The default is 0.3%. The fee is taken from unitsIn
  */
 
-export const makeCalculateConstProductFn = (zoe, assays) => {
-  const unitOpsArray = zoe.getUnitOpsForAssays(assays);
+export const makeGetPrice = (zoe, assays) => (
+  poolUnitsArray,
+  unitsIn,
+  feeInTenthOfPercent = 3,
+) => {
+  Nat(feeInTenthOfPercent);
+  insist(feeInTenthOfPercent < 1000)`fee is not less than 1000`;
+  const oneMinusFee = subtract(1000, feeInTenthOfPercent);
 
-  return (poolUnitsArray, unitsIn, feeInTenthOfPercent = 3) => {
-    const assayIn = unitsIn.label.assay;
-    if (assayIn !== assays[0] && assayIn !== assays[1]) {
-      throw new Error(`unitsIn ${unitsIn} were malformed`);
-    }
-    const IN_INDEX = assayIn === assays[0] ? 0 : 1;
-    const OUT_INDEX = 1 - IN_INDEX;
-
-    // Constant product invariant means:
-    // tokenInPoolE * tokenOutPoolE =
-    //   (tokenInPoolE + tokenInE) *
-    //   (tokenOutPoolE - tokensOutE)
-
-    // newTokenInPoolE = tokenInPoolE + tokenInE;
-    const newPoolUnitsArray = [...poolUnitsArray];
-    newPoolUnitsArray[IN_INDEX] = unitOpsArray[IN_INDEX].with(
-      poolUnitsArray[IN_INDEX],
-      unitsIn,
-    );
-
-    // newTokenOutPool = tokenOutPool / (1 + (tokenInE/tokenInPoolE)*(1-.003))
-
-    // the order in which we do this makes a difference because of
-    // rounding to floor.
-
-    // We use extents here because we are multiplying two different
-    // kinds of digital assets
-    const constantProduct = multiply(
-      poolUnitsArray[IN_INDEX].extent,
-      poolUnitsArray[OUT_INDEX].extent,
-    );
-    const numerator = multiply(constantProduct, 1000);
-    const denominator = add(
-      multiply(poolUnitsArray[IN_INDEX].extent, 1000),
-      multiply(unitsIn.extent, subtract(1000, feeInTenthOfPercent)),
-    );
-    // save divide for last
-    newPoolUnitsArray[OUT_INDEX] = unitOpsArray[OUT_INDEX].make(
-      divide(numerator, denominator),
-    );
-
-    const unitsOut = unitOpsArray[OUT_INDEX].without(
-      poolUnitsArray[OUT_INDEX],
-      newPoolUnitsArray[OUT_INDEX],
-    );
-
-    return {
-      unitsOut,
-      newPoolUnitsArray,
-    };
+  // Calculates how much can be bought by selling input
+  const getInputPrice = (input, inputReserve, outputReserve) => {
+    const inputWithFee = multiply(input, oneMinusFee);
+    const numerator = multiply(inputWithFee, outputReserve);
+    const denominator = add(multiply(inputReserve, 1000), inputWithFee);
+    return floorDivide(numerator, denominator);
   };
+
+  // Calculates how much needed to buy output
+  // Not currently used in this version of autoswap
+  // eslint-disable-next-line no-unused-vars
+  const getOutputPrice = (output, inputReserve, outputReserve) => {
+    const numerator = multiply(multiply(inputReserve, output), 1000);
+    const denominator = multiply(subtract(outputReserve, output), oneMinusFee);
+    return add(floorDivide(numerator, denominator), 1);
+  };
+
+  const assayIn = unitsIn.label.assay;
+  const X = 0;
+  const Y = 1;
+  const [xUnitOps, yUnitOps] = zoe.getUnitOpsForAssays(assays);
+  const xReserve = poolUnitsArray[X].extent;
+  const yReserve = poolUnitsArray[Y].extent;
+  if (assayIn === assays[X]) {
+    const xExtentIn = unitsIn.extent;
+    const yExtentOut = getInputPrice(xExtentIn, xReserve, yReserve);
+    const newPoolUnitsArray = [...poolUnitsArray];
+    newPoolUnitsArray[X] = xUnitOps.make(add(xReserve, xExtentIn));
+    newPoolUnitsArray[Y] = yUnitOps.make(subtract(yReserve, yExtentOut));
+    return {
+      unitsOut: yUnitOps.make(yExtentOut),
+      newPoolUnitsArray: harden(newPoolUnitsArray),
+    };
+  }
+  if (assayIn === assays[Y]) {
+    const yExtentIn = unitsIn.extent;
+    const xExtentOut = getInputPrice(yExtentIn, yReserve, xReserve);
+    const newPoolUnitsArray = [...poolUnitsArray];
+    newPoolUnitsArray[X] = xUnitOps.make(subtract(xReserve, xExtentOut));
+    newPoolUnitsArray[Y] = yUnitOps.make(add(yReserve, yExtentIn));
+    return {
+      unitsOut: xUnitOps.make(xExtentOut),
+      newPoolUnitsArray: harden(newPoolUnitsArray),
+    };
+  }
+  throw new Error(`unitsIn ${unitsIn} were malformed`);
 };

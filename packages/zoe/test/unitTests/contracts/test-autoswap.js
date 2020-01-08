@@ -27,7 +27,7 @@ test('autoSwap with valid offers', async t => {
     const aliceSimoleanPayment = aliceSimoleanPurse.withdrawAll();
 
     // Setup Bob
-    const bobMoolaPurse = mints[0].mint(moola(2));
+    const bobMoolaPurse = mints[0].mint(moola(3));
     const bobMoolaPayment = bobMoolaPurse.withdrawAll();
     const bobSimoleanPurse = mints[1].mint(simoleans(7));
     const bobSimoleanPayment = bobSimoleanPurse.withdraw(simoleans(3));
@@ -100,9 +100,8 @@ test('autoSwap with valid offers', async t => {
     } = zoe.getInstance(bobInviteExtent.instanceHandle);
     t.equals(bobInstallationId, installationHandle);
 
-    // Bob looks up the price of 2 moola in simoleans
-    const units2Moola = moola(2);
-    const simoleanUnits = bobAutoswap.getPrice(units2Moola);
+    // Bob looks up the price of 3 moola in simoleans
+    const simoleanUnits = bobAutoswap.getPrice(moola(3));
     t.deepEquals(simoleanUnits, simoleans(1));
 
     // Bob escrows
@@ -111,7 +110,7 @@ test('autoSwap with valid offers', async t => {
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: moola(2),
+          units: moola(3),
         },
         {
           kind: 'wantAtLeast',
@@ -143,16 +142,14 @@ test('autoSwap with valid offers', async t => {
     t.deepEqual(bobPayout[0].getBalance(), moola(0));
     t.deepEqual(bobPayout[1].getBalance(), simoleans(1));
     t.deepEquals(bobAutoswap.getPoolUnits(), [
-      moola(12),
+      moola(13),
       simoleans(4),
       liquidity(0),
     ]);
 
     // Bob looks up the price of 3 simoleans
-
-    const units3Sims = simoleans(3);
-    const moolaUnits = bobAutoswap.getPrice(units3Sims);
-    t.deepEquals(moolaUnits, moola(6));
+    const moolaUnits = bobAutoswap.getPrice(simoleans(3));
+    t.deepEquals(moolaUnits, moola(5));
 
     // Bob makes another offer and swaps
     const bobSecondInvite = bobAutoswap.makeInvite();
@@ -160,7 +157,7 @@ test('autoSwap with valid offers', async t => {
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          units: moola(6),
+          units: moola(5),
         },
         {
           kind: 'offerAtMost',
@@ -191,10 +188,10 @@ test('autoSwap with valid offers', async t => {
 
     const bobsNewMoolaPayment = await bobSimsForMoolaPayoutP;
 
-    t.deepEqual(bobsNewMoolaPayment[0].getBalance(), moola(6));
+    t.deepEqual(bobsNewMoolaPayment[0].getBalance(), moola(5));
     t.deepEqual(bobsNewMoolaPayment[1].getBalance(), simoleans(0));
     t.deepEqual(bobAutoswap.getPoolUnits(), [
-      moola(6),
+      moola(8),
       simoleans(7),
       liquidity(0),
     ]);
@@ -236,7 +233,7 @@ test('autoSwap with valid offers', async t => {
 
     const alicePayoutPayments = await aliceRemoveLiquidityPayoutP;
 
-    t.deepEquals(alicePayoutPayments[0].getBalance(), moola(6));
+    t.deepEquals(alicePayoutPayments[0].getBalance(), moola(8));
     t.deepEquals(alicePayoutPayments[1].getBalance(), simoleans(7));
     t.deepEquals(alicePayoutPayments[2].getBalance(), liquidity(0));
     t.deepEquals(publicAPI.getPoolUnits(), [
@@ -342,7 +339,7 @@ test('autoSwap - test fee', async t => {
 
     // Bob looks up the price of 1000 moola in simoleans
     const simoleanUnits = bobAutoswap.getPrice(moola(1000));
-    t.deepEquals(simoleanUnits, simoleans(907));
+    t.deepEquals(simoleanUnits, simoleans(906));
 
     // Bob escrows
     const bobMoolaForSimOfferRules = harden({
@@ -379,10 +376,10 @@ test('autoSwap - test fee', async t => {
     const bobPayout = await bobPayoutP;
 
     t.deepEqual(bobPayout[0].getBalance(), moola(0));
-    t.deepEqual(bobPayout[1].getBalance(), simoleans(907));
+    t.deepEqual(bobPayout[1].getBalance(), simoleans(906));
     t.deepEquals(bobAutoswap.getPoolUnits(), [
       moola(11000),
-      simoleans(9093),
+      simoleans(9094),
       liquidity(0),
     ]);
   } catch (e) {
