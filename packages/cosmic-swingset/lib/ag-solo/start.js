@@ -11,16 +11,16 @@ import readlines from 'n-readlines';
 
 import {
   loadBasedir,
+  buildCommand,
   buildVatController,
   buildMailboxStateMap,
   buildMailbox,
+  buildStorageInMemory,
   buildTimer,
   getVatTPSourcePath,
   getCommsSourcePath,
   getTimerWrapperSourcePath,
 } from '@agoric/swingset-vat';
-import { buildStorageInMemory } from '@agoric/swingset-vat/src/hostStorage';
-import buildCommand from '@agoric/swingset-vat/src/devices/command';
 
 import { deliver, addDeliveryTarget } from './outbound';
 import { makeHTTPListener } from './web';
