@@ -6,7 +6,7 @@ import harden from '@agoric/harden';
 import { makeTraitCake } from '@agoric/layer-cake';
 
 import { insist } from '../util/insist';
-import { makeBasicFungibleConfig } from './config/basicFungibleConfig';
+import { basicFungibleConfig } from './config/basicFungibleConfig';
 import { makeUnitOps } from './unitOps';
 
 /**
@@ -20,7 +20,7 @@ import { makeUnitOps } from './unitOps';
  * @param  {string} allegedName
  * @param  {function} makeConfig=makeBasicFungibleConfig
  */
-function makeMint(allegedName, makeConfig = makeBasicFungibleConfig) {
+function makeMint(allegedName, config = basicFungibleConfig) {
   insist(allegedName)`\
 allegedName must be truthy: ${allegedName}`;
 
@@ -34,7 +34,7 @@ allegedName must be truthy: ${allegedName}`;
     makeMintKeeper,
     extentOpsName,
     extentOpsArgs,
-  } = makeConfig();
+  } = config;
 
 
   function makePayment(){

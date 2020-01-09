@@ -28,7 +28,7 @@ test('makeMint with partial config', t => {
   }
   
   t.throws( () => {
-    const mint = makeMint('test', () => ({makeMintTrait}));
+    const mint = makeMint('test', {makeMintTrait});
   })
 })
 
@@ -55,7 +55,7 @@ test('makeMint with specific makePaymentTrait config', t => {
     });
   }
   
-  const mint = makeMint('test', () => completeConfig({makePaymentTrait}));
+  const mint = makeMint('test', completeConfig({makePaymentTrait}));
   const purse = mint.mint(12);
   const payment = purse.withdrawAll()
 
@@ -73,7 +73,7 @@ test('makeMint with specific makePurseTrait config', t => {
     });
   }
   
-  const mint = makeMint('test', () => completeConfig({makePurseTrait}));
+  const mint = makeMint('test', completeConfig({makePurseTrait}));
   const purse = mint.mint(13);
 
   t.equals(purse.getBalance().extent, 13)
@@ -90,7 +90,7 @@ test('makeMint with specific makeMintTrait config', t => {
     });
   }
   
-  const mint = makeMint('test bloublou', () => completeConfig({makeMintTrait}));
+  const mint = makeMint('test bloublou', completeConfig({makeMintTrait}));
 
   t.equals(mint.getAssay().getLabel().allegedName, 'test bloublou')
   t.equals(mint.get37(), 37)
@@ -106,7 +106,7 @@ test('makeMint with specific makeAssayTrait config', t => {
     });
   }
   
-  const mint = makeMint('test bloublou', () => completeConfig({makeAssayTrait}));
+  const mint = makeMint('test bloublou', completeConfig({makeAssayTrait}));
   const assay = mint.getAssay()
 
   t.equals(assay.getLabel().allegedName, 'test bloublou')
