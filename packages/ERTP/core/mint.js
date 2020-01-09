@@ -36,6 +36,30 @@ allegedName must be truthy: ${allegedName}`;
     extentOpsArgs,
   } = makeConfig();
 
+
+  function makePayment(){
+    const corePayment = harden({
+      getAssay() {
+        return assay;
+      },
+      getBalance() {
+        return paymentKeeper.getUnits(payment);
+      },
+      getName() {
+        return name;
+      },
+    });
+
+    // makePaymentTrait is defined in the passed-in configuration and adds
+    // additional methods to corePayment
+    const payment = makeTraitCake([
+      (() => corePayment),
+      makePaymentTrait(makeMintContext)
+    ])
+
+    return payment;
+  }
+
   // Methods like depositExactly() pass in a units which is supposed
   // to be equal to the balance of the payment. These methods
   // use this helper function to check that the units is equal
@@ -56,24 +80,7 @@ allegedName must be truthy: ${allegedName}`;
     const oldSrcUnits = srcKeeper.getUnits(assetHolderSrc);
     const newSrcUnits = unitOps.without(oldSrcUnits, paymentUnits);
 
-    const corePayment = harden({
-      getAssay() {
-        return assay;
-      },
-      getBalance() {
-        return paymentKeeper.getUnits(payment);
-      },
-      getName() {
-        return name;
-      },
-    });
-
-    // makePaymentTrait is defined in the passed-in configuration and adds
-    // additional methods to corePayment
-    const payment = makeTraitCake([
-      (() => corePayment),
-      makePaymentTrait(makeMintContext)
-    ])
+    const payment = makePayment()
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -90,23 +97,7 @@ allegedName must be truthy: ${allegedName}`;
     name = `${name}`;
     const paymentUnits = paymentKeeper.getUnits(oldPayment);
 
-    const corePayment = harden({
-      getAssay() {
-        return assay;
-      },
-      getBalance() {
-        return paymentKeeper.getUnits(payment);
-      },
-      getName() {
-        return name;
-      },
-    });
-    // makePaymentTrait is defined in the passed-in configuration and adds
-    // additional methods to corePayment
-    const payment = makeTraitCake([
-      (() => corePayment),
-      makePaymentTrait(makeMintContext)
-    ])
+    const payment = makePayment()
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -172,17 +163,7 @@ allegedName must be truthy: ${allegedName}`;
         return unitOps.with(soFar, paymentKeeper.getUnits(payment));
       }, unitOps.empty());
 
-      const combinedPayment = harden({
-        getAssay() {
-          return assay;
-        },
-        getBalance() {
-          return paymentKeeper.getUnits(combinedPayment);
-        },
-        getName() {
-          return name;
-        },
-      });
+      const combinedPayment = makePayment()
 
       // ///////////////// commit point //////////////////
       // All queries above passed with no side effects.
