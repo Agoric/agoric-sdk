@@ -10,7 +10,7 @@ import { areRightsConserved } from './areRightsConserved';
 import { evalContractCode } from './evalContractCode';
 import { makeTables } from './state';
 import { makeSeatMint } from './seatMint';
-import { makeEscrowReceiptConfig } from './escrowReceiptConfig';
+import { escrowReceiptConfig } from './escrowReceiptConfig';
 
 /**
  * Create an instance of Zoe.
@@ -31,7 +31,7 @@ const makeZoe = (additionalEndowments = {}) => {
 
   const escrowReceiptMint = makeMint(
     'zoeEscrowReceipts',
-    makeEscrowReceiptConfig,
+    escrowReceiptConfig,
   );
   const escrowReceiptAssay = escrowReceiptMint.getAssay();
 
