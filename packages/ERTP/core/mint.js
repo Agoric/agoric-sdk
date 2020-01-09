@@ -72,7 +72,7 @@ allegedName must be truthy: ${allegedName}`;
     // additional methods to corePayment
     const payment = makeTraitCake([
       (() => corePayment),
-      makePaymentTrait
+      makePaymentTrait(makeMintContext)
     ])
 
     // ///////////////// commit point //////////////////
@@ -105,7 +105,7 @@ allegedName must be truthy: ${allegedName}`;
     // additional methods to corePayment
     const payment = makeTraitCake([
       (() => corePayment),
-      makePaymentTrait
+      makePaymentTrait(makeMintContext)
     ])
 
     // ///////////////// commit point //////////////////
@@ -116,6 +116,35 @@ allegedName must be truthy: ${allegedName}`;
     paymentKeeper.remove(oldPayment);
     return payment;
   }
+
+  // depositInto always deposits the entire payment units
+  function depositInto(purse, payment) {
+    const oldPurseUnits = purseKeeper.getUnits(purse);
+    const paymentUnits = paymentKeeper.getUnits(payment);
+    // Also checks that the union is representable
+    const newPurseUnits = unitOps.with(oldPurseUnits, paymentUnits);
+
+    // ///////////////// commit point //////////////////
+    // All queries above passed with no side effects.
+    // During side effects below, any early exits should be made into
+    // fatal turn aborts.
+    paymentKeeper.remove(payment);
+    purseKeeper.updateUnits(purse, newPurseUnits);
+
+    return paymentUnits;
+  }
+
+  const makeMintContext = harden({
+    takePayment,
+    takePaymentAndKill,
+    depositInto,
+    get assay(){ return assay; },
+    get unitOps(){ return unitOps; },
+    get mintKeeper(){ return mintKeeper; },
+    get purseKeeper(){ return purseKeeper; },
+    get paymentKeeper(){ return paymentKeeper; },
+    get mint(){ return mint; },
+  })
 
   const coreAssay = harden({
     getLabel() {
@@ -237,7 +266,7 @@ allegedName must be truthy: ${allegedName}`;
   // additional methods to coreAssay.
   const assay = makeTraitCake([
     (() => coreAssay),
-    makeAssayTrait
+    makeAssayTrait(makeMintContext)
   ])
 
   const label = harden({ assay, allegedName });
@@ -245,23 +274,6 @@ allegedName must be truthy: ${allegedName}`;
   const unitOps = makeUnitOps(label, extentOpsName, extentOpsArgs);
   const mintKeeper = makeMintKeeper(unitOps);
   const { purseKeeper, paymentKeeper } = mintKeeper;
-
-  // depositInto always deposits the entire payment units
-  function depositInto(purse, payment) {
-    const oldPurseUnits = purseKeeper.getUnits(purse);
-    const paymentUnits = paymentKeeper.getUnits(payment);
-    // Also checks that the union is representable
-    const newPurseUnits = unitOps.with(oldPurseUnits, paymentUnits);
-
-    // ///////////////// commit point //////////////////
-    // All queries above passed with no side effects.
-    // During side effects below, any early exits should be made into
-    // fatal turn aborts.
-    paymentKeeper.remove(payment);
-    purseKeeper.updateUnits(purse, newPurseUnits);
-
-    return paymentUnits;
-  }
 
   const coreMint = harden({
     getAssay() {
@@ -309,7 +321,7 @@ allegedName must be truthy: ${allegedName}`;
       // adds additional methods to corePurse
       const purse = makeTraitCake([
         (() => corePurse),
-        makePurseTrait
+        makePurseTrait(makeMintContext)
       ])
 
       purseKeeper.recordNew(purse, initialBalance);
@@ -321,7 +333,7 @@ allegedName must be truthy: ${allegedName}`;
   // adds additional methods to coreMint
   const mint = makeTraitCake([
     (() => coreMint),
-    makeMintTrait
+    makeMintTrait(makeMintContext)
   ])
 
   return mint;

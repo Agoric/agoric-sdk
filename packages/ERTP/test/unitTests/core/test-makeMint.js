@@ -34,10 +34,10 @@ test('makeMint with partial config', t => {
 
 function completeConfig(partialConfig){
   return {
-    makeAssayTrait: self => { return {} },
-    makePaymentTrait: self => { return {} },
-    makePurseTrait: self => { return {} },
-    makeMintTrait: self => { return {} },
+    makeAssayTrait: makeMintContext => self => { return {} },
+    makePaymentTrait: makeMintContext => self => { return {} },
+    makePurseTrait: makeMintContext => self => { return {} },
+    makeMintTrait: makeMintContext => self => { return {} },
     makeMintKeeper: makeCoreMintKeeper,
     extentOpsName: 'natExtentOps',
     extentOpsArgs: [],
@@ -49,10 +49,10 @@ function completeConfig(partialConfig){
 test('makeMint with specific makePaymentTrait config', t => {
   t.plan(2);
 
-  function makePaymentTrait(_corePayment) {
-    return {
+  function makePaymentTrait(makeMintContext){
+    return corePayment => ({
       get37: () => 37,
-    };
+    });
   }
   
   const mint = makeMint('test', () => completeConfig({makePaymentTrait}));
@@ -67,10 +67,10 @@ test('makeMint with specific makePaymentTrait config', t => {
 test('makeMint with specific makePurseTrait config', t => {
   t.plan(2);
 
-  function makePurseTrait(_corePurse) {
-    return {
+  function makePurseTrait(makeMintContext){
+    return corePurse => ({
       get37: () => 37,
-    };
+    });
   }
   
   const mint = makeMint('test', () => completeConfig({makePurseTrait}));
@@ -84,10 +84,10 @@ test('makeMint with specific makePurseTrait config', t => {
 test('makeMint with specific makeMintTrait config', t => {
   t.plan(2);
 
-  function makeMintTrait(_coreMint) {
-    return {
+  function makeMintTrait(makeMintContext){
+    return coreMint => ({
       get37: () => 37,
-    };
+    });
   }
   
   const mint = makeMint('test bloublou', () => completeConfig({makeMintTrait}));
@@ -100,10 +100,10 @@ test('makeMint with specific makeMintTrait config', t => {
 test('makeMint with specific makeAssayTrait config', t => {
   t.plan(2);
 
-  function makeAssayTrait(_coreAssay) {
-    return {
+  function makeAssayTrait(makeMintContext){
+    return coreAssay => ({
       get37: () => 37,
-    };
+    });
   }
   
   const mint = makeMint('test bloublou', () => completeConfig({makeAssayTrait}));
