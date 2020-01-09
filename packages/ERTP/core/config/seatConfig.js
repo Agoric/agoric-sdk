@@ -18,7 +18,7 @@ const insistSeat = seat => {
 };
 
 /**
- * `makeSeatConfigMaker` exists in order to pass in two makeUseObj
+ * `makeSeatConfig` is passed in two makeUseObj
  * functions, one for payments and one for purses. A "use object" has
  * all of the non-ERTP methods for assets that are designed to be
  * used. For instance, a stock might have vote() and
@@ -29,41 +29,38 @@ const insistSeat = seat => {
  * @param {function} makeUseObjForPurse creates a "use object" for
  * purses
  */
-function makeSeatConfigMaker(makeUseObjForPayment, makeUseObjForPurse) {
-  function makeSeatConfig() {
-    function* makePaymentTrait(_corePayment, assay) {
-      const payment = yield harden({
-        // This creates a new use object which destroys the payment
-        unwrap: () => makeUseObjForPayment(assay, payment),
-      });
-    }
-
-    function* makePurseTrait(_corePurse, assay) {
-      const purse = yield harden({
-        // This creates a new use object which empties the purse
-        unwrap: () => makeUseObjForPurse(assay, purse),
-      });
-    }
-
-    function* makeMintTrait(_coreMint) {
-      yield harden({});
-    }
-
-    function* makeAssayTrait(_coreAssay) {
-      yield harden({});
-    }
-
-    return harden({
-      makePaymentTrait,
-      makePurseTrait,
-      makeMintTrait,
-      makeAssayTrait,
-      makeMintKeeper: makeCoreMintKeeper,
-      extentOpsName: 'uniExtentOps',
-      extentOpsArgs: [insistSeat],
+function makeSeatConfig(makeUseObjForPayment, makeUseObjForPurse) {
+  function makePaymentTrait({assay}) {
+    return payment => harden({
+      // This creates a new use object which destroys the payment
+      unwrap: () => makeUseObjForPayment(assay, payment),
     });
   }
-  return makeSeatConfig;
+
+  function makePurseTrait({assay}) {
+    return purse => harden({
+      // This creates a new use object which empties the purse
+      unwrap: () => makeUseObjForPurse(assay, purse),
+    });
+  }
+
+  function makeMintTrait() {
+    return _coreMint => harden({});
+  }
+
+  function makeAssayTrait() {
+    return _coreAssay => harden({});
+  }
+
+  return harden({
+    makePaymentTrait,
+    makePurseTrait,
+    makeMintTrait,
+    makeAssayTrait,
+    makeMintKeeper: makeCoreMintKeeper,
+    extentOpsName: 'uniExtentOps',
+    extentOpsArgs: [insistSeat],
+  });
 }
 
-export { makeSeatConfigMaker };
+export { makeSeatConfig };

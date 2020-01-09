@@ -37,7 +37,7 @@ allegedName must be truthy: ${allegedName}`;
   } = config;
 
 
-  function makePayment(){
+  function makePayment(name){
     const corePayment = harden({
       getAssay() {
         return assay;
@@ -80,7 +80,7 @@ allegedName must be truthy: ${allegedName}`;
     const oldSrcUnits = srcKeeper.getUnits(assetHolderSrc);
     const newSrcUnits = unitOps.without(oldSrcUnits, paymentUnits);
 
-    const payment = makePayment()
+    const payment = makePayment(name)
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -97,7 +97,7 @@ allegedName must be truthy: ${allegedName}`;
     name = `${name}`;
     const paymentUnits = paymentKeeper.getUnits(oldPayment);
 
-    const payment = makePayment()
+    const payment = makePayment(name)
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -163,7 +163,7 @@ allegedName must be truthy: ${allegedName}`;
         return unitOps.with(soFar, paymentKeeper.getUnits(payment));
       }, unitOps.empty());
 
-      const combinedPayment = makePayment()
+      const combinedPayment = makePayment(name)
 
       // ///////////////// commit point //////////////////
       // All queries above passed with no side effects.

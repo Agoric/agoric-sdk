@@ -24,13 +24,11 @@ const insistEscrowReceipt = extent => {
 };
 
 // This is used by Zoe to create the EscrowReceipt ERTP payments
-function makeEscrowReceiptConfig() {
-  return harden({
-    ...noCustomization,
-    makeMintKeeper: makeCoreMintKeeper,
-    extentOpsName: 'uniExtentOps',
-    extentOpsArgs: [insistEscrowReceipt],
-  });
-}
+const escrowReceiptConfig = harden({
+  ...noCustomization,
+  makeMintKeeper: makeCoreMintKeeper,
+  extentOpsName: 'uniExtentOps',
+  extentOpsArgs: [insistEscrowReceipt],
+});
 
-export { makeEscrowReceiptConfig };
+export { escrowReceiptConfig };

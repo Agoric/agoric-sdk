@@ -1,8 +1,7 @@
 import harden from '@agoric/harden';
 
-import { makeSeatConfigMaker } from '@agoric/ertp/core/config/seatConfig';
+import { makeSeatConfig } from '@agoric/ertp/core/config/seatConfig';
 import { makeMint } from '@agoric/ertp/core/mint';
-
 /**
  * `makeSeatMint` creates an instance of the seatMint with an
  * associated WeakMap mapping handles (represented by unique,
@@ -42,12 +41,12 @@ const makeSeatMint = (description = 'seats') => {
     return useObj;
   };
 
-  const makeSeatConfig = makeSeatConfigMaker(
+  const seatConfig = makeSeatConfig(
     paymentMakeUseAndBurn,
     purseMakeUseAndBurn,
   );
 
-  const seatMint = makeMint(description, makeSeatConfig);
+  const seatMint = makeMint(description, seatConfig);
   const seatAssay = seatMint.getAssay();
 
   return harden({

@@ -3,7 +3,7 @@ import harden from '@agoric/harden';
 
 import { makeCollect } from '../../core/contractHost';
 import { insist } from '../../util/insist';
-import { makePixelConfigMaker } from './pixelConfig';
+import { makePixelConfig } from './pixelConfig';
 import { makeMint } from '../../core/mint';
 import { makeWholePixelList } from './types/pixelList';
 import {
@@ -144,9 +144,9 @@ export function makeGallery(
     return useObj;
   }
 
-  const makePixelConfig = makePixelConfigMaker(makeUseObj);
+  const pixelConfig = makePixelConfig(makeUseObj);
 
-  const galleryPixelMint = makeMint('pixels', makePixelConfig);
+  const galleryPixelMint = makeMint('pixels', pixelConfig);
   const galleryPixelAssay = galleryPixelMint.getAssay();
   const galleryPixelDescOps = galleryPixelAssay.getUnitOps();
 
