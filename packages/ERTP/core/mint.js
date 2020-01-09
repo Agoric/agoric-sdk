@@ -3,6 +3,8 @@
 
 import harden from '@agoric/harden';
 
+import { makeTraitCake } from '@agoric/layer-cake';
+
 import { insist } from '../util/insist';
 import { makeBasicFungibleConfig } from './config/basicFungibleConfig';
 import { makeUnitOps } from './unitOps';
@@ -68,13 +70,10 @@ allegedName must be truthy: ${allegedName}`;
 
     // makePaymentTrait is defined in the passed-in configuration and adds
     // additional methods to corePayment
-    const makePaymentTraitIter = makePaymentTrait(corePayment, assay);
-    const paymentTrait = makePaymentTraitIter.next().value;
-    const payment = harden({
-      ...paymentTrait,
-      ...corePayment,
-    });
-    makePaymentTraitIter.next(payment);
+    const payment = makeTraitCake([
+      (() => corePayment),
+      makePaymentTrait
+    ])
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -104,13 +103,10 @@ allegedName must be truthy: ${allegedName}`;
     });
     // makePaymentTrait is defined in the passed-in configuration and adds
     // additional methods to corePayment
-    const makePaymentTraitIter = makePaymentTrait(corePayment, assay);
-    const paymentTrait = makePaymentTraitIter.next().value;
-    const payment = harden({
-      ...paymentTrait,
-      ...corePayment,
-    });
-    makePaymentTraitIter.next(payment);
+    const payment = makeTraitCake([
+      (() => corePayment),
+      makePaymentTrait
+    ])
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -239,13 +235,10 @@ allegedName must be truthy: ${allegedName}`;
 
   // makeAssayTrait is defined in the passed-in configuration and adds
   // additional methods to coreAssay.
-  const makeAssayTraitIter = makeAssayTrait(coreAssay);
-  const assayTrait = makeAssayTraitIter.next().value;
-  const assay = harden({
-    ...assayTrait,
-    ...coreAssay,
-  });
-  makeAssayTraitIter.next(assay);
+  const assay = makeTraitCake([
+    (() => coreAssay),
+    makeAssayTrait
+  ])
 
   const label = harden({ assay, allegedName });
 
@@ -314,13 +307,10 @@ allegedName must be truthy: ${allegedName}`;
 
       // makePurseTrait is defined in the passed-in configuration and
       // adds additional methods to corePurse
-      const makePurseTraitIter = makePurseTrait(corePurse, assay);
-      const purseTrait = makePurseTraitIter.next().value;
-      const purse = harden({
-        ...purseTrait,
-        ...corePurse,
-      });
-      makePurseTraitIter.next(purse);
+      const purse = makeTraitCake([
+        (() => corePurse),
+        makePurseTrait
+      ])
 
       purseKeeper.recordNew(purse, initialBalance);
       return purse;
@@ -329,13 +319,10 @@ allegedName must be truthy: ${allegedName}`;
 
   // makeMintTrait is defined in the passed-in configuration and
   // adds additional methods to coreMint
-  const makeMintTraitIter = makeMintTrait(coreMint, assay, unitOps, mintKeeper);
-  const mintTrait = makeMintTraitIter.next().value;
-  const mint = harden({
-    ...mintTrait,
-    ...coreMint,
-  });
-  makeMintTraitIter.next(mint);
+  const mint = makeTraitCake([
+    (() => coreMint),
+    makeMintTrait
+  ])
 
   return mint;
 }

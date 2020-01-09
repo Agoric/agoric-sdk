@@ -2,7 +2,6 @@ import { test } from 'tape-promise/tape';
 
 import { makeMint } from '../../../core/mint';
 
-import { noCustomization } from '../../../core/config/noCustomization.js';
 import { makeCoreMintKeeper } from '../../../core/config/coreMintKeeper';
 
 test('makeMint with no config', t => {
@@ -22,10 +21,10 @@ test('makeMint with no config', t => {
 test('makeMint with partial config', t => {
   t.plan(1);
 
-  function* makeMintTrait(_coreMint) {
-    yield harden({
+  function makeMintTrait(_coreMint) {
+    return {
       get37: () => 37,
-    });
+    };
   }
   
   t.throws( () => {
@@ -35,7 +34,10 @@ test('makeMint with partial config', t => {
 
 function completeConfig(partialConfig){
   return {
-    ...noCustomization,
+    makeAssayTrait: self => { return {} },
+    makePaymentTrait: self => { return {} },
+    makePurseTrait: self => { return {} },
+    makeMintTrait: self => { return {} },
     makeMintKeeper: makeCoreMintKeeper,
     extentOpsName: 'natExtentOps',
     extentOpsArgs: [],
@@ -47,8 +49,8 @@ function completeConfig(partialConfig){
 test('makeMint with specific makePaymentTrait config', t => {
   t.plan(2);
 
-  function* makePaymentTrait(_coreMint) {
-    yield {
+  function makePaymentTrait(_corePayment) {
+    return {
       get37: () => 37,
     };
   }
@@ -65,8 +67,8 @@ test('makeMint with specific makePaymentTrait config', t => {
 test('makeMint with specific makePurseTrait config', t => {
   t.plan(2);
 
-  function* makePurseTrait(_coreMint) {
-    yield {
+  function makePurseTrait(_corePurse) {
+    return {
       get37: () => 37,
     };
   }
@@ -82,8 +84,8 @@ test('makeMint with specific makePurseTrait config', t => {
 test('makeMint with specific makeMintTrait config', t => {
   t.plan(2);
 
-  function* makeMintTrait(_coreMint) {
-    yield {
+  function makeMintTrait(_coreMint) {
+    return {
       get37: () => 37,
     };
   }
@@ -98,8 +100,8 @@ test('makeMint with specific makeMintTrait config', t => {
 test('makeMint with specific makeAssayTrait config', t => {
   t.plan(2);
 
-  function* makeAssayTrait(_coreMint) {
-    yield {
+  function makeAssayTrait(_coreAssay) {
+    return {
       get37: () => 37,
     };
   }
