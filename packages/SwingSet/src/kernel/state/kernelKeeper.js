@@ -4,13 +4,9 @@ import { initializeVatState, makeVatKeeper } from './vatKeeper';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper';
 import { insist } from '../../insist';
 import { insistEnhancedStorageAPI } from '../../storageAPI';
-import {
-  insistKernelType,
-  makeKernelSlot,
-  parseKernelSlot,
-} from '../parseKernelSlots';
+import { insistKernelType, makeKernelSlot, parseKernelSlot } from '../parseKernelSlots';
 import { insistCapData } from '../../capdata';
-import { insistVatID, insistDeviceID, makeDeviceID, makeVatID } from '../id';
+import { insistDeviceID, insistVatID, makeDeviceID, makeVatID } from '../id';
 
 // This holds all the kernel state, including that of each Vat and Device, in
 // a single JSON-serializable object. At any moment (well, really only
@@ -91,6 +87,13 @@ const FIRST_PROMISE_ID = 40;
 export default function makeKernelKeeper(storage) {
   insistEnhancedStorageAPI(storage);
 
+  const enableKDebug = false;
+  function kdebug(...args) {
+    if (enableKDebug) {
+      console.log(...args);
+    }
+  }
+
   function getRequired(key) {
     if (!storage.has(key)) {
       throw new Error(`storage lacks required key ${key}`);
@@ -125,6 +128,7 @@ export default function makeKernelKeeper(storage) {
   function addKernelObject(ownerID) {
     insistVatID(ownerID);
     const id = Nat(Number(getRequired('ko.nextID')));
+    kdebug(`Adding kernel object ${id} for ${ownerID}`);
     storage.set('ko.nextID', `${id + 1}`);
     const s = makeKernelSlot('object', id);
     storage.set(`${s}.owner`, ownerID);

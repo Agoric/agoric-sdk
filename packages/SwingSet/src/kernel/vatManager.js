@@ -80,10 +80,13 @@ export default function makeVatManager(
   // mapInbound: e.g. arguments of dispatch.deliver()
   function mapKernelSlotToVatSlot(kernelSlot) {
     insist(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
+    const vatSlot = vatKeeper.mapKernelSlotToVatSlot(kernelSlot);
     kdebug(
-      `mapKernelSlotToVatSlot for ${vatID} of ${JSON.stringify(kernelSlot)}`,
+      `mapKernelSlotToVatSlot for ${vatID} of ${JSON.stringify(
+        kernelSlot,
+      )} to ${vatSlot}`,
     );
-    return vatKeeper.mapKernelSlotToVatSlot(kernelSlot);
+    return vatSlot;
   }
 
   let inReplay = false;
@@ -160,8 +163,9 @@ export default function makeVatManager(
     const kpid = mapVatSlotToKernelSlot(promiseID);
     const targetSlot = mapVatSlotToKernelSlot(slot);
     kdebug(
-      `syscall[${vatID}].fulfillToPresence(${promiseID / kpid}) = ${slot /
-        targetSlot})`,
+      `syscall[${vatID}].fulfillToPresence(${promiseID} / ${kpid}) = ${
+        slot
+      } / ${targetSlot})`,
     );
     syscallManager.fulfillToPresence(vatID, kpid, targetSlot);
   }
