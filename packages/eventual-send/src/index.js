@@ -15,9 +15,6 @@ const {
 const { prototype: promiseProto } = Promise;
 const { then: originalThen } = promiseProto;
 
-// Relax some of the frozen tests if not running under SES.
-const isSES = typeof SES !== 'undefined' && typeof SES.harden === 'function';
-
 // 'E' and 'HandledPromise' are exports of the module
 
 // For now:
@@ -243,14 +240,13 @@ export function makeHandledPromise(Promise) {
   // our mind.
   // Object.setPrototypeOf(HandledPromise, Promise);
 
-  function isNormalPromiseThen(p) {
+  function isFrozenPromiseThen(p) {
     return (
-      (!isSES || isFrozen(p)) &&
-      // isFrozen(promiseProto) && // unnecessary under SES and too strict outside SES
+      isFrozen(p) &&
       getPrototypeOf(p) === promiseProto &&
       promiseResolve(p) === p &&
       gopd(p, 'then') === undefined &&
-      (isSES || gopd(promiseProto, 'then').value === originalThen) // unnecessary under SES
+      gopd(promiseProto, 'then').value === originalThen // unnecessary under SES
     );
   }
 
@@ -280,13 +276,17 @@ export function makeHandledPromise(Promise) {
       if (!resolvedPromise) {
         resolvedPromise = promiseResolve(value);
       }
-      if (isNormalPromiseThen(resolvedPromise)) {
+      // Prevent any proxy trickery.
+      harden(resolvedPromise);
+      if (isFrozenPromiseThen(resolvedPromise)) {
         return resolvedPromise;
       }
       // Assimilate the thenable.
       const executeThen = (resolve, reject) =>
         resolvedPromise.then(resolve, reject);
-      return promiseResolve().then(_ => new HandledPromise(executeThen));
+      return harden(
+        promiseResolve().then(_ => new HandledPromise(executeThen)),
+      );
     },
   });
 
