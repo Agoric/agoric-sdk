@@ -507,6 +507,15 @@ export default function makeKernelKeeper(storage) {
     });
   }
 
+  function vatStats(vatID) {
+    return harden({
+      nextObjectId: storage.get(`${vatID}.o.nextID`),
+      nextPromiseId: storage.get(`${vatID}.p.nextID`),
+      nextDeviceId: storage.get(`${vatID}.d.nextID`),
+      nextTranscriptId: storage.get(`${vatID}.t.nextID`),
+    });
+  }
+
   return harden({
     getInitialized,
     setInitialized,
@@ -536,6 +545,8 @@ export default function makeKernelKeeper(storage) {
     provideUnusedVatID,
     provideVatKeeper,
     getAllVatNames,
+
+    vatStats,
 
     getDeviceIDForName,
     provideDeviceIDForName,
