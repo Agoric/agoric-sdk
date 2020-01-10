@@ -1,6 +1,6 @@
 name: ag-solo on xs
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
