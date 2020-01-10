@@ -36,8 +36,7 @@ allegedName must be truthy: ${allegedName}`;
     extentOpsArgs,
   } = config;
 
-
-  function makePayment(name){
+  function makePayment(name) {
     const corePayment = harden({
       getAssay() {
         return assay;
@@ -53,9 +52,9 @@ allegedName must be truthy: ${allegedName}`;
     // makePaymentTrait is defined in the passed-in configuration and adds
     // additional methods to corePayment
     const payment = makeTraitCake([
-      (() => corePayment),
-      makePaymentTrait(makeMintContext)
-    ])
+      () => corePayment,
+      makePaymentTrait(makeMintContext),
+    ]);
 
     return payment;
   }
@@ -80,7 +79,7 @@ allegedName must be truthy: ${allegedName}`;
     const oldSrcUnits = srcKeeper.getUnits(assetHolderSrc);
     const newSrcUnits = unitOps.without(oldSrcUnits, paymentUnits);
 
-    const payment = makePayment(name)
+    const payment = makePayment(name);
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -97,7 +96,7 @@ allegedName must be truthy: ${allegedName}`;
     name = `${name}`;
     const paymentUnits = paymentKeeper.getUnits(oldPayment);
 
-    const payment = makePayment(name)
+    const payment = makePayment(name);
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -129,13 +128,25 @@ allegedName must be truthy: ${allegedName}`;
     takePayment,
     takePaymentAndKill,
     depositInto,
-    get assay(){ return assay; },
-    get unitOps(){ return unitOps; },
-    get mintKeeper(){ return mintKeeper; },
-    get purseKeeper(){ return purseKeeper; },
-    get paymentKeeper(){ return paymentKeeper; },
-    get mint(){ return mint; },
-  })
+    get assay() {
+      return assay;
+    },
+    get unitOps() {
+      return unitOps;
+    },
+    get mintKeeper() {
+      return mintKeeper;
+    },
+    get purseKeeper() {
+      return purseKeeper;
+    },
+    get paymentKeeper() {
+      return paymentKeeper;
+    },
+    get mint() {
+      return mint;
+    },
+  });
 
   const coreAssay = harden({
     getLabel() {
@@ -163,7 +174,7 @@ allegedName must be truthy: ${allegedName}`;
         return unitOps.with(soFar, paymentKeeper.getUnits(payment));
       }, unitOps.empty());
 
-      const combinedPayment = makePayment(name)
+      const combinedPayment = makePayment(name);
 
       // ///////////////// commit point //////////////////
       // All queries above passed with no side effects.
@@ -246,9 +257,9 @@ allegedName must be truthy: ${allegedName}`;
   // makeAssayTrait is defined in the passed-in configuration and adds
   // additional methods to coreAssay.
   const assay = makeTraitCake([
-    (() => coreAssay),
-    makeAssayTrait(makeMintContext)
-  ])
+    () => coreAssay,
+    makeAssayTrait(makeMintContext),
+  ]);
 
   const label = harden({ assay, allegedName });
 
@@ -301,9 +312,9 @@ allegedName must be truthy: ${allegedName}`;
       // makePurseTrait is defined in the passed-in configuration and
       // adds additional methods to corePurse
       const purse = makeTraitCake([
-        (() => corePurse),
-        makePurseTrait(makeMintContext)
-      ])
+        () => corePurse,
+        makePurseTrait(makeMintContext),
+      ]);
 
       purseKeeper.recordNew(purse, initialBalance);
       return purse;
@@ -312,10 +323,7 @@ allegedName must be truthy: ${allegedName}`;
 
   // makeMintTrait is defined in the passed-in configuration and
   // adds additional methods to coreMint
-  const mint = makeTraitCake([
-    (() => coreMint),
-    makeMintTrait(makeMintContext)
-  ])
+  const mint = makeTraitCake([() => coreMint, makeMintTrait(makeMintContext)]);
 
   return mint;
 }

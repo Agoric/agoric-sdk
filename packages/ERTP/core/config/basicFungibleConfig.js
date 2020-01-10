@@ -18,5 +18,4 @@ const basicFungibleConfig = harden({
   extentOpsArgs: [],
 });
 
-
 export { basicFungibleConfig };

@@ -7,19 +7,19 @@ import harden from '@agoric/harden';
 // These methods must be paired with a mintKeeper and UnitOps to be a
 // full configuration that can be passed into `makeMint`.
 
-function makePaymentTrait(makeMintContext){
+function makePaymentTrait(_makeMintContext) {
   return _corePayment => harden({});
 }
 
-function makePurseTrait(makeMintContext) {
+function makePurseTrait(_makeMintContext) {
   return _corePurse => harden({});
 }
 
-function makeMintTrait(makeMintContext) {
+function makeMintTrait(_makeMintContext) {
   return _coreMint => harden({});
 }
 
-function makeAssayTrait(makeMintContext) {
+function makeAssayTrait(_makeMintContext) {
   return _coreAssay => harden({});
 }
 

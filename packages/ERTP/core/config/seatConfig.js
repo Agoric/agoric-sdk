@@ -30,18 +30,20 @@ const insistSeat = seat => {
  * purses
  */
 function makeSeatConfig(makeUseObjForPayment, makeUseObjForPurse) {
-  function makePaymentTrait({assay}) {
-    return payment => harden({
-      // This creates a new use object which destroys the payment
-      unwrap: () => makeUseObjForPayment(assay, payment),
-    });
+  function makePaymentTrait({ assay }) {
+    return payment =>
+      harden({
+        // This creates a new use object which destroys the payment
+        unwrap: () => makeUseObjForPayment(assay, payment),
+      });
   }
 
-  function makePurseTrait({assay}) {
-    return purse => harden({
-      // This creates a new use object which empties the purse
-      unwrap: () => makeUseObjForPurse(assay, purse),
-    });
+  function makePurseTrait({ assay }) {
+    return purse =>
+      harden({
+        // This creates a new use object which empties the purse
+        unwrap: () => makeUseObjForPurse(assay, purse),
+      });
   }
 
   function makeMintTrait() {
