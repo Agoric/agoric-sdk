@@ -234,11 +234,7 @@ export function makeHandledPromise(Promise) {
   }
 
   HandledPromise.prototype = promiseProto;
-
-  // Uncomment this line if needed for conformance to the proposal.
-  // Currently the proposal does not specify this, but we might change
-  // our mind.
-  // Object.setPrototypeOf(HandledPromise, Promise);
+  Object.setPrototypeOf(HandledPromise, Promise);
 
   function isFrozenPromiseThen(p) {
     return (
