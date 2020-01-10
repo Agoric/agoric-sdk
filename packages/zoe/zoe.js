@@ -29,10 +29,7 @@ const makeZoe = (additionalEndowments = {}) => {
     addUseObj: addInviteSeat,
   } = makeSeatMint('zoeInvite');
 
-  const escrowReceiptMint = makeMint(
-    'zoeEscrowReceipts',
-    escrowReceiptConfig,
-  );
+  const escrowReceiptMint = makeMint('zoeEscrowReceipts', escrowReceiptConfig);
   const escrowReceiptAssay = escrowReceiptMint.getAssay();
 
   // All of the Zoe state is stored in these tables built on WeakMaps

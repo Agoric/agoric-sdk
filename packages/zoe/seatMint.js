@@ -41,10 +41,7 @@ const makeSeatMint = (description = 'seats') => {
     return useObj;
   };
 
-  const seatConfig = makeSeatConfig(
-    paymentMakeUseAndBurn,
-    purseMakeUseAndBurn,
-  );
+  const seatConfig = makeSeatConfig(paymentMakeUseAndBurn, purseMakeUseAndBurn);
 
   const seatMint = makeMint(description, seatConfig);
   const seatAssay = seatMint.getAssay();
