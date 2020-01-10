@@ -291,9 +291,10 @@ export default function makeVatManager(
   async function deliverOneMessage(target, msg) {
     insistMessage(msg);
     const targetSlot = mapKernelSlotToVatSlot(target);
-    if (targetSlot.type === 'object') {
+    const { type } = parseVatSlot(targetSlot);
+    if (type === 'object') {
       insist(parseVatSlot(targetSlot).allocatedByVat, `deliver() to wrong vat`);
-    } else if (targetSlot.type === 'promise') {
+    } else if (type === 'promise') {
       const p = kernelKeeper.getKernelPromise(target);
       insist(p.decider === vatID, `wrong decider`);
     }
