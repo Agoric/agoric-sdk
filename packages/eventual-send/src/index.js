@@ -1,10 +1,22 @@
-/* global HandledPromise */
+/* global HandledPromise SES */
 
 import harden from '@agoric/harden';
 
 import makeE from './E';
 
-const { defineProperties, getOwnPropertyDescriptors } = Object;
+const {
+  defineProperties,
+  getOwnPropertyDescriptors,
+  getOwnPropertyDescriptor: gopd,
+  getPrototypeOf,
+  isFrozen,
+} = Object;
+
+const { prototype: promiseProto } = Promise;
+const { then: originalThen } = promiseProto;
+
+// Relax some of the frozen tests if not running under SES.
+const isSES = typeof SES !== 'undefined' && typeof SES.harden === 'function';
 
 // 'E' and 'HandledPromise' are exports of the module
 
@@ -56,7 +68,7 @@ export function makeHandledPromise(Promise) {
   // handled Promises to their corresponding fulfilledHandler.
   let forwardingHandler;
   let handle;
-  let handledPromiseResolve;
+  let promiseResolve;
 
   function HandledPromise(executor, unfulfilledHandler = undefined) {
     if (new.target === undefined) {
@@ -224,12 +236,23 @@ export function makeHandledPromise(Promise) {
     return handledP;
   }
 
-  HandledPromise.prototype = Promise.prototype;
+  HandledPromise.prototype = promiseProto;
 
   // Uncomment this line if needed for conformance to the proposal.
   // Currently the proposal does not specify this, but we might change
   // our mind.
   // Object.setPrototypeOf(HandledPromise, Promise);
+
+  function isNormalPromiseThen(p) {
+    return (
+      (!isSES || isFrozen(p)) &&
+      // isFrozen(promiseProto) && // unnecessary under SES and too strict outside SES
+      getPrototypeOf(p) === promiseProto &&
+      promiseResolve(p) === p &&
+      gopd(p, 'then') === undefined &&
+      (isSES || gopd(promiseProto, 'then').value === originalThen) // unnecessary under SES
+    );
+  }
 
   const staticMethods = harden({
     get(target, key) {
@@ -253,15 +276,17 @@ export function makeHandledPromise(Promise) {
     resolve(value) {
       ensureMaps();
       // Resolving a Presence returns the pre-registered handled promise.
-      const handledPromise = presenceToPromise.get(value);
-      if (handledPromise) {
-        return handledPromise;
+      let resolvedPromise = presenceToPromise.get(value);
+      if (!resolvedPromise) {
+        resolvedPromise = promiseResolve(value);
       }
-      const basePromise = Promise.resolve(value);
-      if (basePromise === value) {
-        return value;
+      if (isNormalPromiseThen(resolvedPromise)) {
+        return resolvedPromise;
       }
-      return handledPromiseResolve(value);
+      // Assimilate the thenable.
+      const executeThen = (resolve, reject) =>
+        resolvedPromise.then(resolve, reject);
+      return promiseResolve().then(_ => new HandledPromise(executeThen));
     },
   });
 
@@ -340,6 +365,6 @@ export function makeHandledPromise(Promise) {
     return new HandledPromise(executor);
   };
 
-  handledPromiseResolve = Promise.resolve.bind(HandledPromise);
+  promiseResolve = Promise.resolve.bind(Promise);
   return harden(HandledPromise);
 }
