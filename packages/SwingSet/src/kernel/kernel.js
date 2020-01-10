@@ -603,6 +603,11 @@ export default function buildKernel(kernelEndowments) {
     );
   }
 
+  function collectVatStats(vatID) {
+    insistVatID(vatID);
+    return kernelKeeper.vatStats(vatID);
+  }
+
   async function start(bootstrapVatName, argvString) {
     if (started) {
       throw new Error('kernel.start already called');
@@ -641,7 +646,11 @@ export default function buildKernel(kernelEndowments) {
     if (vatAdminDevSetup) {
       const params = {
         setup: vatAdminDevSetup,
-        endowments: { create: createVatDynamically /* vatStats, terminate */ },
+        endowments: {
+          create: createVatDynamically,
+          vatStats: collectVatStats,
+          /* terminate */
+        },
       };
       genesisDevices.set('vatAdmin', params);
     }
