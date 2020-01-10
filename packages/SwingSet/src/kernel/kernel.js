@@ -1,10 +1,9 @@
 import harden from '@agoric/harden';
-import { QCLASS, makeMarshal } from '@agoric/marshal';
-
+import { makeMarshal, QCLASS } from '@agoric/marshal';
+import makeVatManager from './vatManager';
 import { makeLiveSlots } from './liveSlots';
 import { makeDeviceSlots } from './deviceSlots';
 import makePromise from '../makePromise';
-import makeVatManager from './vatManager';
 import makeDeviceManager from './deviceManager';
 import { wrapStorage } from './state/storageWrapper';
 import makeKernelKeeper from './state/kernelKeeper';
@@ -365,8 +364,7 @@ export default function buildKernel(kernelEndowments) {
     commitCrank();
   }
 
-  function addGenesisVat(name, setup, options = {}) {
-    name = `${name}`;
+  function validateVatSetupFn(setup) {
     harden(setup);
     // 'setup' must be an in-realm function. This test guards against
     // accidents, but not against malice. MarkM thinks there is no reliable
@@ -374,6 +372,10 @@ export default function buildKernel(kernelEndowments) {
     if (!(setup instanceof Function)) {
       throw Error('setup is not an in-realm function');
     }
+  }
+
+  function addGenesisVat(name, setup, options = {}) {
+    name = `${name}`;
     // for now, we guard against 'options' by treating it as JSON-able data
     options = JSON.parse(JSON.stringify(options));
     // todo: consider having vats indicate 'enablePipelining' during setup(),
@@ -483,6 +485,61 @@ export default function buildKernel(kernelEndowments) {
     queueToExport(bootstrapVatID, boot0, 'bootstrap', m.serialize(args));
   }
 
+  function buildVatManager(vatID, name, setup, options) {
+    validateVatSetupFn(setup);
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+
+    const helpers = harden({
+      vatID: name, // TODO: rename to 'name', update vats to match
+      makeLiveSlots,
+      log(...args) {
+        const rendered = args.map(arg =>
+          typeof arg === 'string'
+            ? arg
+            : JSON.stringify(arg, abbreviateReviver),
+        );
+        ephemeral.log.push(rendered.join(''));
+      },
+    });
+
+    // the vatManager invokes setup() to build the userspace image
+    const manager = makeVatManager(
+      vatID,
+      syscallManager,
+      setup,
+      helpers,
+      kernelKeeper,
+      vatKeeper,
+    );
+    ephemeral.vats.set(
+      vatID,
+      harden({
+        manager,
+        enablePipelining: Boolean(options.enablePipelining),
+      }),
+    );
+  }
+
+  function buildDeviceManager(deviceID, name, setup, endowments) {
+    const deviceKeeper = kernelKeeper.provideDeviceKeeper(deviceID);
+    const helpers = harden({
+      name,
+      makeDeviceSlots,
+      log(str) {
+        ephemeral.log.push(`${str}`);
+      },
+    });
+
+    return makeDeviceManager(
+      name,
+      syscallManager,
+      setup,
+      helpers,
+      endowments,
+      deviceKeeper,
+    );
+  }
+
   async function start(bootstrapVatName, argvString) {
     if (started) {
       throw new Error('kernel.start already called');
@@ -496,69 +553,31 @@ export default function buildKernel(kernelEndowments) {
       kernelKeeper.createStartingKernelState();
     }
 
-    // instantiate all vats and devices
-    for (const name of genesisVats.keys()) {
-      const { setup, options } = genesisVats.get(name);
+    function assignIdAndBuildVatManager(name, setup, options) {
       const vatID = kernelKeeper.provideVatIDForName(name);
       console.log(`Assigned VatID ${vatID} for Genesis vat ${name}`);
-      const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-
-      const helpers = harden({
-        vatID: name, // TODO: rename to 'name', update vats to match
-        makeLiveSlots,
-        log(...args) {
-          const rendered = args.map(arg =>
-            typeof arg === 'string'
-              ? arg
-              : JSON.stringify(arg, abbreviateReviver),
-          );
-          ephemeral.log.push(rendered.join(''));
-        },
-      });
-
-      // the vatManager invokes setup() to build the userspace image
-      const manager = makeVatManager(
-        vatID,
-        syscallManager,
-        setup,
-        helpers,
-        kernelKeeper,
-        vatKeeper,
-      );
-      ephemeral.vats.set(
-        vatID,
-        harden({
-          manager,
-          enablePipelining: Boolean(options.enablePipelining),
-        }),
-      );
+      buildVatManager(vatID, name, setup, options);
     }
 
-    for (const name of genesisDevices.keys()) {
-      const { setup, endowments } = genesisDevices.get(name);
+    // instantiate all other vats
+    for (const name of genesisVats.keys()) {
+      const { setup, options } = genesisVats.get(name);
+      assignIdAndBuildVatManager(name, setup, options);
+    }
+
+    function setupDeviceManger(name, setup, endowments) {
       const deviceID = kernelKeeper.provideDeviceIDForName(name);
-      const deviceKeeper = kernelKeeper.provideDeviceKeeper(deviceID);
-
-      const helpers = harden({
-        name,
-        makeDeviceSlots,
-        log(str) {
-          ephemeral.log.push(`${str}`);
-        },
-      });
-
-      const manager = makeDeviceManager(
-        name,
-        syscallManager,
-        setup,
-        helpers,
-        endowments,
-        deviceKeeper,
-      );
+      const manager = buildDeviceManager(deviceID, name, setup, endowments);
       // the vat record is not hardened: it holds mutable next-ID values
       ephemeral.devices.set(deviceID, {
         manager,
       });
+    }
+
+    // instantiate all devices
+    for (const name of genesisDevices.keys()) {
+      const { setup, endowments } = genesisDevices.get(name);
+      setupDeviceManger(name, setup, endowments);
     }
 
     // And enqueue the bootstrap() call. If we're reloading from an
