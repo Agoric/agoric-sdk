@@ -331,13 +331,17 @@ export default function makeKernelKeeper(storage) {
     return storage.get(k);
   }
 
+  function provideUnusedVatID() {
+    const nextID = Nat(Number(getRequired(`vat.nextID`)));
+    storage.set(`vat.nextID`, `${nextID + 1}`);
+    return makeVatID(nextID);
+  }
+
   function provideVatIDForName(name) {
     insist(name === `${name}`);
     const k = `vat.name.${name}`;
     if (!storage.has(k)) {
-      const nextID = Nat(Number(getRequired(`vat.nextID`)));
-      storage.set(`vat.nextID`, `${nextID + 1}`);
-      storage.set(k, makeVatID(nextID));
+      storage.set(k, provideUnusedVatID());
       const names = JSON.parse(getRequired('vat.names'));
       names.push(name);
       storage.set('vat.names', JSON.stringify(names));
@@ -529,6 +533,7 @@ export default function makeKernelKeeper(storage) {
 
     getVatIDForName,
     provideVatIDForName,
+    provideUnusedVatID,
     provideVatKeeper,
     getAllVatNames,
 
