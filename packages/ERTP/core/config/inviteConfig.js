@@ -6,9 +6,9 @@ import { makeCoreMintKeeper } from './coreMintKeeper';
 import { insist } from '../../util/insist';
 import { mustBeComparable } from '../../util/sameStructure';
 
-const insistOptDescription = optDescription => {
-  insist(!!optDescription)`optDescription must be truthy ${optDescription}`;
-  mustBeComparable(optDescription);
+const insistDescription = description => {
+  insist(!!description)`description must be truthy ${description}`;
+  mustBeComparable(description);
 };
 
 function makeInviteConfig() {
@@ -16,7 +16,7 @@ function makeInviteConfig() {
     ...noCustomization,
     makeMintKeeper: makeCoreMintKeeper,
     extentOpsName: 'inviteExtentOps',
-    extentOpsArgs: [insistOptDescription],
+    extentOpsArgs: [insistDescription],
   });
 }
 
