@@ -233,6 +233,8 @@ export async function buildVatController(config, withSES = true, argv = []) {
     await addGenesisVat(bootstrapVatName, config.bootstrapIndexJS, {});
   }
 
+  kernel.configVatAdminSetup(r, s);
+
   // start() may queue bootstrap if state doesn't say we did it already. It
   // also replays the transcripts from a previous run, if any, which will
   // execute vat code (but all syscalls will be disabled)

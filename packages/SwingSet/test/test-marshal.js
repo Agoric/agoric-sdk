@@ -15,7 +15,7 @@ export default function runTests() {
       vats: new Map(),
       bootstrapIndexJS: undefined,
     };
-    const controller = await buildVatController(config, false);
+    const controller = await buildVatController(config, true);
     await controller.run();
   }
 
