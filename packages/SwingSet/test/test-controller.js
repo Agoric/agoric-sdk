@@ -29,7 +29,10 @@ async function simpleCall(t, withSES) {
   const data = controller.dump();
   const vat1 = controller.vatNameToID('vatAdmin');
   const vat2 = controller.vatNameToID('vat1');
-  t.deepEqual(data.vatTables, [{ vatID: vat1, state: { transcript: [] } }, { vatID: vat2, state: { transcript: [] } }]);
+  t.deepEqual(data.vatTables, [
+    { vatID: vat1, state: { transcript: [] } },
+    { vatID: vat2, state: { transcript: [] } },
+  ]);
   t.deepEqual(data.kernelTable, []);
 
   controller.queueToVatExport('vat1', 'o+1', 'foo', capdata('args'));

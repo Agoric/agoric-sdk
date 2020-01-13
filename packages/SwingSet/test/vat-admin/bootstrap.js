@@ -2,6 +2,7 @@ const harden = require('@agoric/harden');
 
 const serviceHolder = {
   build: E => {
+    // eslint-disable-next-line no-shadow,global-require
     const harden = require('@agoric/harden');
     return harden({
       getANumber() {
@@ -28,7 +29,7 @@ export default function setup(syscall, state, helpers) {
             const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
               devices.vatAdmin,
             );
-            const { adminNode, root } = await E(vatAdminSvc).createVat(src);
+            const { root } = await E(vatAdminSvc).createVat(src);
             const n = await E(root).getANumber();
             log(n);
 

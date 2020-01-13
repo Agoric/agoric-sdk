@@ -18,16 +18,14 @@ async function testVatCreationFromBuild(t, withSES) {
   t.equal(c.vatNameToID('vatAdmin'), 'v1');
   t.equal(c.vatNameToID('_bootstrap'), 'v2');
   for (let i = 0; i < 11; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
     await c.step();
   }
-  t.deepEqual(c.dump().log, [
-    'starting wake test',
-    '13',
-  ]);
+  t.deepEqual(c.dump().log, ['starting wake test', '13']);
   t.end();
 }
 
-test('VatAdmin inner vat creation', async t => {
+test.only('VatAdmin inner vat creation', async t => {
   await testVatCreationFromBuild(t, true);
 });
 

@@ -21,6 +21,7 @@ const vatAdminDevice = {
   setup: (syscall, state, helpers, endowments) => {
     let kernelVatCreationFn;
     let kernelVatStatsFn;
+    // eslint-disable-next-line no-unused-vars
     let kernelTerminateFn;
 
     // Kernel calls this to give the device access to kernel functions for
@@ -57,7 +58,7 @@ const vatAdminDevice = {
       return kernelVatStatsFn(vatId);
     }
 
-    function makeRootDevice({ SO, getDeviceState, setDeviceState }) {
+    function makeRootDevice({ _SO, getDeviceState, setDeviceState }) {
       const restart = getDeviceState();
       // entries are [adminID, vatID]
       const adminIdsToVatIds = restart ? restart.idMap : [];
@@ -91,8 +92,7 @@ const vatAdminDevice = {
           saveState();
           return vatId;
         },
-        terminate(adminId) {
-          const vatID = adminIdToVatId(adminId);
+        terminate(_adminId) {
           // TODO(hibbert)
         },
         adminStats(adminId) {
