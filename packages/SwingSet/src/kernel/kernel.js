@@ -595,7 +595,6 @@ export default function buildKernel(kernelEndowments) {
   // initialized at the same time as other vats and devices in start() below.
   function configVatAdminSetup(require, sesRootRealm) {
     // import the vat code, evaluate it, and build the vat
-    // TODO(hibbert): figure out how to invoke the harden provided by require
     const endowments = { harden, require };
     sesEvaluate = fn => sesRootRealm.evaluate(fn, endowments);
 
