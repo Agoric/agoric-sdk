@@ -163,9 +163,7 @@ export default function makeVatManager(
     const kpid = mapVatSlotToKernelSlot(promiseID);
     const targetSlot = mapVatSlotToKernelSlot(slot);
     kdebug(
-      `syscall[${vatID}].fulfillToPresence(${promiseID} / ${kpid}) = ${
-        slot
-      } / ${targetSlot})`,
+      `syscall[${vatID}].fulfillToPresence(${promiseID} / ${kpid}) = ${slot} / ${targetSlot})`,
     );
     syscallManager.fulfillToPresence(vatID, kpid, targetSlot);
   }

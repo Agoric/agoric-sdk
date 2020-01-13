@@ -4,7 +4,11 @@ import { initializeVatState, makeVatKeeper } from './vatKeeper';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper';
 import { insist } from '../../insist';
 import { insistEnhancedStorageAPI } from '../../storageAPI';
-import { insistKernelType, makeKernelSlot, parseKernelSlot } from '../parseKernelSlots';
+import {
+  insistKernelType,
+  makeKernelSlot,
+  parseKernelSlot,
+} from '../parseKernelSlots';
 import { insistCapData } from '../../capdata';
 import { insistDeviceID, insistVatID, makeDeviceID, makeVatID } from '../id';
 
