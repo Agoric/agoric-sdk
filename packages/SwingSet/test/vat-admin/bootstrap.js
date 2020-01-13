@@ -2,8 +2,6 @@ const harden = require('@agoric/harden');
 
 const serviceHolder = {
   build: E => {
-    // eslint-disable-next-line no-shadow,global-require
-    const harden = require('@agoric/harden');
     return harden({
       getANumber() {
         return 13;

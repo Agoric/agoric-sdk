@@ -25,7 +25,7 @@ async function testVatCreationFromBuild(t, withSES) {
   t.end();
 }
 
-test.only('VatAdmin inner vat creation', async t => {
+test('VatAdmin inner vat creation', async t => {
   await testVatCreationFromBuild(t, true);
 });
 
