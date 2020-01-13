@@ -31,7 +31,7 @@ const vatAdminWrapper = {
           createVat(code) {
             const adminId = nextAdminId;
             nextAdminId += 1;
-            const vatId = D(vatAdminNode).create(adminId, code);
+            const vatId = D(vatAdminNode).create(code);
             const vatPromise = makePromiseForVat();
             vatIdsToAdminIds.set(vatId, adminId);
             adminIdsToRoots.set(adminId, vatPromise);

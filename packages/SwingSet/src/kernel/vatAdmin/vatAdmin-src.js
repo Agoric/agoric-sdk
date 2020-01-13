@@ -58,45 +58,20 @@ const vatAdminDevice = {
       return kernelVatStatsFn(vatId);
     }
 
-    function makeRootDevice({ _SO, getDeviceState, setDeviceState }) {
-      const restart = getDeviceState();
-      // entries are [adminID, vatID]
-      const adminIdsToVatIds = restart ? restart.idMap : [];
-      function adminIdToVatId(adminId) {
-        for (const [key, value] of adminIdsToVatIds) {
-          if (key === adminId) {
-            return value;
-          }
-        }
-        return undefined;
-      }
-
-      function saveState() {
-        setDeviceState(
-          harden({
-            // save a copy to be hardened so we can still modify it.
-            idMap: adminIdsToVatIds.slice(0),
-          }),
-        );
-      }
-
+    function makeRootDevice({ _SO, _getDeviceState, _setDeviceState }) {
       // The Root Device Node.
       return harden({
         // Called by the wrapper vat to create a new vat. Gets a new ID from the
         // kernel's vat creator fn. Remember that the root object will arrive
         // separately.
-        create(adminId, code) {
-          const vatId = callKernelVatCreation(code);
-          adminIdsToVatIds.push([adminId, vatId]);
-
-          saveState();
-          return vatId;
+        create(code) {
+          return callKernelVatCreation(code);
         },
-        terminate(_adminId) {
+        terminate(_vatID) {
           // TODO(hibbert)
         },
-        adminStats(adminId) {
-          return callKernelVatStats(adminIdToVatId(adminId));
+        adminStats(vatID) {
+          return callKernelVatStats(vatID);
         },
       });
     }
