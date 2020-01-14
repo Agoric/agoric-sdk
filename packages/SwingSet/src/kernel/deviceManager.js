@@ -25,8 +25,11 @@ export default function makeDeviceManager(
   // is used when building the arguments for dispatch.invoke.
   function mapKernelSlotToDeviceSlot(kernelSlot) {
     insist(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
-    kdebug(`mapInbound for device-${deviceName} of ${kernelSlot}`);
-    return deviceKeeper.mapKernelSlotToDeviceSlot(kernelSlot);
+    const deviceSlot = deviceKeeper.mapKernelSlotToDeviceSlot(kernelSlot);
+    kdebug(
+      `mapInbound for device-${deviceName} of ${kernelSlot} to ${deviceSlot}`,
+    );
+    return deviceSlot;
   }
 
   // syscall handlers: these are wrapped by the 'syscall' object and made

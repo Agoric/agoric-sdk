@@ -22,6 +22,13 @@ export function makeVatKeeper(
 ) {
   insistVatID(vatID);
 
+  const enableKDebug = false;
+  function kdebug(...args) {
+    if (enableKDebug) {
+      console.log(...args);
+    }
+  }
+
   function mapVatSlotToKernelSlot(vatSlot) {
     insist(`${vatSlot}` === vatSlot, 'non-string vatSlot');
     const vatKey = `${vatID}.c.${vatSlot}`;
@@ -42,6 +49,7 @@ export function makeVatKeeper(
         const kernelKey = `${vatID}.c.${kernelSlot}`;
         storage.set(kernelKey, vatSlot);
         storage.set(vatKey, kernelSlot);
+        kdebug(`Mapping ${kernelKey}<=>${vatKey}`);
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
         // (else it would have been in the c-list), so it must be bogus
