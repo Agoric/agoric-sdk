@@ -415,6 +415,10 @@ export default function buildKernel(kernelEndowments) {
     genesisDevices.set(name, { setup, endowments });
   }
 
+  function makeVatRootObjectSlot() {
+    return makeVatSlot('object', true, 0);
+  }
+
   function callBootstrap(bootstrapVatID, argvString) {
     // we invoke obj[0].bootstrap with an object that contains 'vats' and
     // 'argv'.
@@ -423,6 +427,7 @@ export default function buildKernel(kernelEndowments) {
     // each key of 'vats' will be serialized as a reference to its obj0
     const vrefs = new Map();
     const vatObj0s = {};
+    const vatSlot = makeVatRootObjectSlot();
     kernelKeeper.getAllVatNames().forEach(name => {
       const vatID = kernelKeeper.getVatIDForName(name);
       const { manager } = ephemeral.vats.get(vatID);
@@ -437,7 +442,6 @@ export default function buildKernel(kernelEndowments) {
         },
       }); // marker
       vatObj0s[name] = vref;
-      const vatSlot = makeVatSlot('object', true, 0);
       const kernelSlot = manager.mapVatSlotToKernelSlot(vatSlot);
       vrefs.set(vref, kernelSlot);
       console.log(`adding vref ${name} [${vatID}]`);
@@ -484,8 +488,8 @@ export default function buildKernel(kernelEndowments) {
     const m = makeMarshal(serializeSlot);
     const args = harden([argv, vatObj0s, deviceObj0s]);
     // queueToExport() takes kernel-refs (ko+NN, kd+NN) in s.slots
-    const boot0 = makeVatSlot('object', true, 0);
-    queueToExport(bootstrapVatID, boot0, 'bootstrap', m.serialize(args));
+    const rootSlot = makeVatRootObjectSlot();
+    queueToExport(bootstrapVatID, rootSlot, 'bootstrap', m.serialize(args));
   }
 
   function buildVatManager(vatID, name, setup, options) {
@@ -527,44 +531,46 @@ export default function buildKernel(kernelEndowments) {
 
   // Create a new vat, wait for the results, and notify the vat admin device.
   function createVatAndNotify(buildFn, vatID) {
+    function serializeSlot(slot) {
+      const marker = {};
+      const args = harden([`${vatID}`, marker]);
+
+      // Single use serializer, replaces marker with slot. Enforces
+      // that its expectations are met.
+      let firstUse = true;
+
+      function serializeOnce(ref, slots, slotMap) {
+        if (!firstUse) {
+          throw Error('Should be used to serialize a single slot');
+        }
+        firstUse = false;
+
+        if (marker !== ref) {
+          throw Error(`expecting ref to be marker: ${marker}, ${ref}`);
+        }
+
+        slots.push(slot);
+        slotMap.set(ref, 0);
+
+        return harden({ [QCLASS]: 'slot', index: 0 });
+      }
+
+      return makeMarshal(serializeOnce).serialize(args);
+    }
+
     const setup = (syscall, state, helpers) => {
       return helpers.makeLiveSlots(syscall, state, buildFn, helpers.vatID);
     };
 
     buildVatManager(vatID, `dynamicVat${vatID}`, setup, {});
-    // const kernelSlot = kernelKeeper.addKernelObject(vatID);
-    const vatSlot = makeVatSlot('object', true, 0);
-    const kernelrootObjSlot = addExport(vatID, vatSlot);
-    // const promiseSlot = kernelKeeper.addKernelPromise(vatID);
+    const vatSlot = makeVatRootObjectSlot();
     const newVatManager = ephemeral.vats.get(vatID).manager;
-    newVatManager.mapKernelSlotToVatSlot(kernelrootObjSlot);
-    vatAdminVatMgr.mapKernelSlotToVatSlot(kernelrootObjSlot);
-    const marker = {};
-    const args = harden([`${vatID}`, marker]);
-    // The vat will receive the callback on a future turn.
-
-    // Single use serializer, replaces marker with kernelRootObjSlot. Enforces
-    // that its expectations are met.
-    let firstUse = true;
-    function serializeSlot(ref, slots, slotMap) {
-      if (!firstUse) {
-        throw Error('Should be used to serialize a single slot');
-      }
-      firstUse = false;
-
-      if (marker !== ref) {
-        throw Error(`expecting ref to be marker: ${marker}, ${ref}`);
-      }
-
-      slots.push(kernelrootObjSlot);
-      slotMap.set(ref, 0);
-
-      return harden({ [QCLASS]: 'slot', index: 0 });
-    }
-
-    const m = makeMarshal(serializeSlot);
+    const kernelRootObjSlot = addExport(vatID, vatSlot);
+    newVatManager.mapKernelSlotToVatSlot(kernelRootObjSlot);
+    vatAdminVatMgr.mapKernelSlotToVatSlot(kernelRootObjSlot);
+    const serializedArgs = serializeSlot(kernelRootObjSlot);
     const vatAdminVatId = vatNameToID('vatAdmin');
-    queueToExport(vatAdminVatId, vatSlot, 'newVatCallback', m.serialize(args));
+    queueToExport(vatAdminVatId, vatSlot, 'newVatCallback', serializedArgs);
   }
 
   function buildDeviceManager(deviceID, name, setup, endowments) {
