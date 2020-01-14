@@ -14,10 +14,12 @@
   dependencies:
     "@agoric/make-hardener" "0.0.4"
 
-"@agoric/layer-cake@https://github.com/DavidBruant/layer-cake.git#generator-less":
+"@agoric/layer-cake@^0.0.1":
   version "0.0.1"
-  resolved "https://github.com/DavidBruant/layer-cake.git#a8e743a0c8161926f147b6f334009e03e32b2afe"
+  resolved "https://registry.yarnpkg.com/@agoric/layer-cake/-/layer-cake-0.0.1.tgz#fb131324b35d0b6e2f9e5ef7a72d8729993c3605"
+  integrity sha512-IhaLWRn1aX42WdAZF3B5aTL+d4QaB++6SaDg8kDPj92cgmZcY8XVrWH7lKFOxks2Kz2yocgoBxdJTEq6pyN5XA==
   dependencies:
+    "@agoric/harden" "^0.0.4"
     esm "^3.2.5"
 
 "@agoric/make-hardener@0.0.4":
