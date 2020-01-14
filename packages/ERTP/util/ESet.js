@@ -3,12 +3,12 @@
 
 import harden from '@agoric/harden';
 
-import { makePrivateName } from './PrivateName';
+import { makeStore } from './store';
 import { insist } from './insist';
 
 // Maps from ESets to encapsulated Sets. All lookups from this table
 // are only queries. (Except for the one in the FlexSet constructor)
-const hiddenESet = makePrivateName();
+const hiddenESet = makeStore();
 
 // Abstract superclass with query-only methods.
 class ESet {
@@ -96,7 +96,7 @@ harden(FixedSet);
 
 // Maps from FlexSets to encapsulated Sets, a subset of
 // hiddenESet. Lookups from this table can mutate.
-const hiddenFlexSet = makePrivateName();
+const hiddenFlexSet = makeStore();
 
 // Supports mutation.
 class FlexSet extends ESet {

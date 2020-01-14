@@ -1,14 +1,14 @@
 import harden from '@agoric/harden';
 
-import { makePrivateName } from '../../util/PrivateName';
+import { makeStore } from '../../util/store';
 
 export function makeCoreMintKeeper() {
   // An asset can either be a purse or payment. An asset keeper
   // keeps track of either all of the purses (purseKeeper) or all
   // of the payments (paymentKeeper) and their respective units.
-  function makeAssetKeeper() {
+  function makeAssetKeeper(keyName) {
     // asset to units
-    const units = makePrivateName();
+    const units = makeStore(keyName);
     return harden({
       updateUnits(asset, newUnits) {
         units.set(asset, newUnits);
@@ -28,8 +28,8 @@ export function makeCoreMintKeeper() {
     });
   }
 
-  const purseKeeper = makeAssetKeeper();
-  const paymentKeeper = makeAssetKeeper();
+  const purseKeeper = makeAssetKeeper('purse');
+  const paymentKeeper = makeAssetKeeper('payment');
 
   const mintKeeper = harden({
     purseKeeper,

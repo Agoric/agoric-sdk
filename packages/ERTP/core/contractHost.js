@@ -3,7 +3,7 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-import { makePrivateName } from '../util/PrivateName';
+import { makeStore } from '../util/store';
 import { allSettled } from '../util/allSettled';
 import { insist } from '../util/insist';
 import {
@@ -24,11 +24,11 @@ import makePromise from '../util/makePromise';
  */
 function makeContractHost(E, evaluate, additionalEndowments = {}) {
   // Maps from seat identity to seats
-  const seats = makePrivateName();
+  const seats = makeStore('seatIdentity');
   // from seat identity to invite description.
-  const seatDescriptions = makePrivateName();
+  const seatDescriptions = makeStore('seatIdentity');
   // from installation to source code string
-  const installationSources = makePrivateName();
+  const installationSources = makeStore('installation');
 
   const inviteMint = makeMint('contract host', makeInviteConfig);
   const inviteAssay = inviteMint.getAssay();
