@@ -15,6 +15,7 @@
     "packages/acorn-eventual-send",
     "packages/eventual-send",
     "packages/transform-eventual-send",
+    "packages/transform-metering",
     "packages/default-evaluate-options",
     "packages/evaluate",
     "packages/bundle-source",
