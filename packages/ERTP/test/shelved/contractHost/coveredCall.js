@@ -2,7 +2,10 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
-import { mustBeSameStructure, sameStructure } from '../util/sameStructure';
+import {
+  mustBeSameStructure,
+  sameStructure,
+} from '../../../util/sameStructure';
 
 /**
  * The coveredCall is an asymmetric contract. One party will put some goods in

@@ -4,7 +4,7 @@
 import harden from '@agoric/harden';
 
 import { allComparable } from '../../../util/sameStructure';
-import { makeCollect } from '../../../core/contractHost';
+import { makeCollect } from '../../shelved/contractHost/contractHost';
 
 function makeFredMaker(E, host, log) {
   const collect = makeCollect(E, log);

@@ -2,7 +2,7 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
-import { makeCollect } from '../../../core/contractHost';
+import { makeCollect } from '../../shelved/contractHost/contractHost';
 
 let storedERTPAsset;
 let storedPixels;

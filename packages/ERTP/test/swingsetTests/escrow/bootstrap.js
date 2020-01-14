@@ -2,7 +2,7 @@
 
 import harden from '@agoric/harden';
 
-import { escrowExchangeSrcs } from '../../../core/escrow';
+import { escrowExchangeSrcs } from '../../shelved/contractHost/escrow';
 import { makeInviteConfig } from '../../../core/config/inviteConfig';
 import { insist } from '../../../util/insist';
 import { makeMint } from '../../../core/mint';

@@ -4,8 +4,8 @@
 import harden from '@agoric/harden';
 
 import { insist } from '../../../util/insist';
-import { makeCollect } from '../../../core/contractHost';
-import { escrowExchangeSrcs } from '../../../core/escrow';
+import { makeCollect } from '../../shelved/contractHost/contractHost';
+import { escrowExchangeSrcs } from '../../shelved/contractHost/escrow';
 
 // only used by doCreateFakeChild test below
 import { makeMint } from '../../../core/mint';

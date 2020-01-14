@@ -2,7 +2,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
-import { mustBeSameStructure } from '../util/sameStructure';
+import { mustBeSameStructure } from '../../../util/sameStructure';
 
 // For clarity, the code below internally speaks of a scenario is which Alice is
 // trading some of her money for some of Bob's stock. However, for generality,

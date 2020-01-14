@@ -3,17 +3,17 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-import { makePrivateName } from '../util/PrivateName';
-import { allSettled } from '../util/allSettled';
-import { insist } from '../util/insist';
+import { makePrivateName } from '../../../util/PrivateName';
+import { allSettled } from '../../../util/allSettled';
+import { insist } from '../../../util/insist';
 import {
   allComparable,
   mustBeSameStructure,
   sameStructure,
-} from '../util/sameStructure';
-import { makeInviteConfig } from './config/inviteConfig';
-import { makeMint } from './mint';
-import makePromise from '../util/makePromise';
+} from '../../../util/sameStructure';
+import { makeInviteConfig } from '../../../core/config/inviteConfig';
+import { makeMint } from '../../../core/mint';
+import makePromise from '../../../util/makePromise';
 
 /**
  * Make a reusable host that can reliably install and execute contracts.
