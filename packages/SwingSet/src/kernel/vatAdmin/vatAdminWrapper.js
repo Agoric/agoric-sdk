@@ -22,22 +22,17 @@ const vatAdminWrapper = {
     }
 
     function build(E, D) {
-      let nextAdminId = 5;
-      const vatIdsToAdminIds = new Map();
-      const adminIdsToRoots = new Map();
+      const vatIdsToRoots = new Map();
 
       function createVatAdminService(vatAdminNode) {
         return harden({
           createVat(code) {
-            const adminId = nextAdminId;
-            nextAdminId += 1;
             const vatId = D(vatAdminNode).create(code);
             const vatPromise = makePromiseForVat();
-            vatIdsToAdminIds.set(vatId, adminId);
-            adminIdsToRoots.set(adminId, vatPromise);
+            vatIdsToRoots.set(vatId, vatPromise);
             const adminNode = harden({
               terminate() {
-                D(vatAdminNode).terminate(adminId);
+                D(vatAdminNode).terminate(vatId);
                 // TODO(hibbert): cleanup admin vat data structures
               },
               adminData() {
@@ -50,10 +45,9 @@ const vatAdminWrapper = {
       }
 
       function newVatCallback(vatId, rootObject) {
-        const adminId = vatIdsToAdminIds.get(vatId);
-        const rootPromise = adminIdsToRoots.get(adminId);
+        const rootPromise = vatIdsToRoots.get(vatId);
         rootPromise.res(rootObject);
-        adminIdsToRoots.set(vatId, rootObject);
+        vatIdsToRoots.set(vatId, rootObject);
       }
 
       return harden({
