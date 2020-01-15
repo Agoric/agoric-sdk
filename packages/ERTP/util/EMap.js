@@ -3,12 +3,12 @@
 
 import harden from '@agoric/harden';
 
-import { makePrivateName } from './PrivateName';
+import { makeStore } from './store';
 import { insist } from './insist';
 
 // Maps from EMaps to encapsulated Maps. All lookups from this table
 // are only queries. (Except for the one in the FlexMap constructor)
-const hiddenEMap = makePrivateName();
+const hiddenEMap = makeStore();
 
 // Abstract superclass with query-only methods.
 class EMap {
@@ -100,7 +100,7 @@ harden(FixedMap);
 
 // Maps from FlexMaps to encapsulated Maps, a subset of
 // hiddenEMap. Lookups from this table can mutate.
-const hiddenFlexMap = makePrivateName();
+const hiddenFlexMap = makeStore();
 
 // Supports mutation.
 class FlexMap extends EMap {

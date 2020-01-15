@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import { makePrivateName } from '../../util/PrivateName';
+import { makeStore } from '../../util/store';
 import { getString } from './types/pixel';
 
 // This custom mintKeeper does the usual recordings of new
@@ -32,9 +32,9 @@ export function makePixelMintKeeper(unitOps) {
     }
   }
 
-  function makeAssetKeeper() {
+  function makeAssetKeeper(keyName) {
     // assetHolder to units
-    const assetHolderToBalance = makePrivateName();
+    const assetHolderToBalance = makeStore(keyName);
     return harden({
       // updateUnits and recordNew are the same as the core
       // mintKeeper, except that we also record the movement of the
