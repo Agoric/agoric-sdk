@@ -1,13 +1,13 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-import { makePrivateName } from '@agoric/ertp/util/PrivateName';
+import { makeStore } from '@agoric/ertp/util/store';
 import { insist } from '@agoric/ertp/util/insist';
 import { makeUnitOps } from '@agoric/ertp/core/unitOps';
 
 const makeTable = (validateFn, makeCustomMethodsFn = () => undefined) => {
   // The WeakMap that stores the records
-  const handleToRecord = makePrivateName();
+  const handleToRecord = makeStore();
 
   const table = harden({
     validate: validateFn,
@@ -154,7 +154,7 @@ const makeOfferTable = () => {
 
 // Payout Map
 // PrivateName: offerHandle | payoutPromise
-const makePayoutMap = makePrivateName;
+const makePayoutMap = makeStore;
 
 // Assay Table
 // Columns: assay | purse | unitOps
@@ -166,7 +166,7 @@ const makeAssayTable = () => {
   );
 
   const makeCustomMethods = table => {
-    const assaysInProgress = makePrivateName();
+    const assaysInProgress = makeStore();
 
     const customMethods = harden({
       getUnitOpsForAssays: assays =>
