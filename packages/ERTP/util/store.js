@@ -14,9 +14,9 @@ import { insist } from './insist';
 function makeStore(keyName = 'key') {
   const wm = new WeakMap();
   const insistKeyDoesNotExist = key =>
-    insist(!wm.has(key))`${keyName} already registered`;
+    insist(!wm.has(key))([`${keyName} already registered`]);
   const insistKeyExists = key =>
-    insist(wm.has(key))`${keyName} not found: ${key}`;
+    insist(wm.has(key))([`${keyName} not found: `, ''], key);
   return harden({
     has: key => wm.has(key),
     init: (key, value) => {

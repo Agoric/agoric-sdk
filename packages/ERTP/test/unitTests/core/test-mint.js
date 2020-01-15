@@ -35,7 +35,7 @@ test('split good units', t => {
       t.deepEqual(payment.getBalance(), assay.makeUnits(10));
     }
     // TODO: Improve error message for a deleted payment
-    t.throws(() => oldPayment.getBalance(), /not found/);
+    t.throws(() => oldPayment.getBalance(), /payment not found/);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -56,7 +56,7 @@ test('combine good payments', t => {
     const combinedPayment = assay.combine(payments);
     t.deepEqual(combinedPayment.getBalance(), assay.makeUnits(100));
     for (const payment of payments) {
-      t.throws(() => payment.getBalance(), /not found/);
+      t.throws(() => payment.getBalance(), /payment not found/);
     }
   } catch (e) {
     t.assert(false, e);
@@ -80,7 +80,7 @@ test('combine bad payments', t => {
     const otherPayment = otherPurse.withdrawAll();
     payments.push(otherPayment);
 
-    t.throws(() => assay.combine(payments), /not found/);
+    t.throws(() => assay.combine(payments), /payment not found/);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -120,7 +120,7 @@ test('depositExactly goodUnits', async t => {
     const payment = await purse.withdraw(7);
     await targetPurse.depositExactly(7, payment);
     t.deepEqual(targetPurse.getBalance(), assay.makeUnits(7));
-    t.throws(() => payment.getBalance(), /not found/);
+    t.throws(() => payment.getBalance(), /payment not found/);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -137,7 +137,7 @@ test('depositAll goodUnits', async t => {
     const payment = await purse.withdraw(7);
     await targetPurse.depositAll(payment);
     t.deepEqual(targetPurse.getBalance(), assay.makeUnits(7));
-    t.throws(() => payment.getBalance(), /not found/);
+    t.throws(() => payment.getBalance(), /payment not found/);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -174,7 +174,7 @@ test('burnExactly goodUnits', async t => {
     const purse = mint.mint(1000);
     const payment = await purse.withdraw(7);
     await assay.burnExactly(7, payment);
-    t.throws(() => payment.getBalance(), /not found/);
+    t.throws(() => payment.getBalance(), /payment not found/);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -189,7 +189,7 @@ test('burnAll goodUnits', async t => {
     const purse = mint.mint(1000);
     const payment = await purse.withdraw(7);
     await assay.burnAll(payment);
-    t.throws(() => payment.getBalance(), /not found/);
+    t.throws(() => payment.getBalance(), /payment not found/);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -226,7 +226,7 @@ test('claimExactly goodUnits', async t => {
     const purse = mint.mint(1000);
     const payment = await purse.withdraw(7);
     const newPayment = await assay.claimExactly(7, payment);
-    t.throws(() => payment.getBalance(), /not found/);
+    t.throws(() => payment.getBalance(), /payment not found/);
     t.deepEqual(newPayment.getBalance(), assay.makeUnits(7));
   } catch (e) {
     t.assert(false, e);
@@ -242,7 +242,7 @@ test('claimAll goodUnits', async t => {
     const purse = mint.mint(1000);
     const payment = await purse.withdraw(7);
     const newPayment = await assay.claimAll(payment);
-    t.throws(() => payment.getBalance(), /not found/);
+    t.throws(() => payment.getBalance(), /payment not found/);
     t.deepEqual(newPayment.getBalance(), assay.makeUnits(7));
   } catch (e) {
     t.assert(false, e);
