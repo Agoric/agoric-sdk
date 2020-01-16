@@ -7,7 +7,14 @@
 {% if LOKI_PASSWORD is defined %}
   password "{{ LOKI_PASSWORD }}"
 {% endif %}
-  flush_interval 10s
-  flush_at_shutdown true
-  buffer_chunk_limit 1m
+  <label>
+    chain
+    hostname
+  </label>
+  line_format "json"
+  <buffer>
+    flush_interval 10s
+    flush_at_shutdown true
+    buffer_chunk_limit 1m
+  </buffer>
 </store>
