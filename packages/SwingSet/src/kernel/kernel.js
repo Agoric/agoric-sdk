@@ -527,8 +527,6 @@ export default function buildKernel(kernelEndowments) {
     );
   }
 
-  let vatAdminVatMgr;
-
   // Create a new vat, wait for the results, and notify the vat admin device.
   function createVatAndNotify(buildFn, vatID) {
     function serializeSlot(slot) {
@@ -564,10 +562,7 @@ export default function buildKernel(kernelEndowments) {
 
     buildVatManager(vatID, `dynamicVat${vatID}`, setup, {});
     const vatSlot = makeVatRootObjectSlot();
-    const newVatManager = ephemeral.vats.get(vatID).manager;
     const kernelRootObjSlot = addExport(vatID, vatSlot);
-    newVatManager.mapKernelSlotToVatSlot(kernelRootObjSlot);
-    vatAdminVatMgr.mapKernelSlotToVatSlot(kernelRootObjSlot);
     const serializedArgs = serializeSlot(kernelRootObjSlot);
     const vatAdminVatId = vatNameToID('vatAdmin');
     queueToExport(vatAdminVatId, vatSlot, 'newVatCallback', serializedArgs);
@@ -644,9 +639,7 @@ export default function buildKernel(kernelEndowments) {
     // some kernel tests don't care about vats and devices and so don't
     // initialize properly. We should fix those tests.
     if (vatAdminVatSetup) {
-      // instantiate and hookup vatAdmin Vat
-      assignIdAndBuildVatManager('vatAdmin', vatAdminVatSetup, {});
-      vatAdminVatMgr = ephemeral.vats.get(vatNameToID('vatAdmin')).manager;
+      genesisVats.set('vatAdmin', { setup: vatAdminVatSetup, options: {} });
     }
 
     // instantiate all other vats
@@ -668,8 +661,8 @@ export default function buildKernel(kernelEndowments) {
     const { endowments: endow, registerVatCreationFunction } = buildVatAdmin();
 
     if (vatAdminDevSetup) {
-      setupDeviceManger('vatAdmin', vatAdminDevSetup, endow);
-      ephemeral.devices.get(deviceNameToID('vatAdmin')).manager;
+      const params = { setup: vatAdminDevSetup, endowments: endow };
+      genesisDevices.set('vatAdmin', params);
     }
 
     // instantiate all devices

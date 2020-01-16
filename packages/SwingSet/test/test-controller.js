@@ -27,8 +27,8 @@ async function simpleCall(t, withSES) {
   };
   const controller = await buildVatController(config, withSES);
   const data = controller.dump();
-  const vat1 = controller.vatNameToID('vatAdmin');
-  const vat2 = controller.vatNameToID('vat1');
+  const vat1 = controller.vatNameToID('vat1');
+  const vat2 = controller.vatNameToID('vatAdmin');
   t.deepEqual(data.vatTables, [
     { vatID: vat1, state: { transcript: [] } },
     { vatID: vat2, state: { transcript: [] } },
@@ -127,7 +127,7 @@ async function bootstrapExport(t, withSES) {
     [boot0, bootstrapVatID, 'o+0'],
     [left0, leftVatID, 'o+0'],
     [right0, rightVatID, 'o+0'],
-    [vatAdminSvc, 'v1', 'o+0'],
+    [vatAdminSvc, 'v4', 'o+0'],
   ];
   checkKT(t, c, kt);
 
@@ -165,8 +165,8 @@ async function bootstrapExport(t, withSES) {
   kt.push([left0, bootstrapVatID, 'o-50']);
   kt.push([right0, bootstrapVatID, 'o-51']);
   kt.push([fooP, bootstrapVatID, 'p+5']);
-  kt.push([adminDev, 'v4', 'd-70']);
-  kt.push([vatAdminSvc, 'v4', 'o-52']);
+  kt.push([adminDev, 'v3', 'd-70']);
+  kt.push([vatAdminSvc, 'v3', 'o-52']);
   checkKT(t, c, kt);
   t.deepEqual(c.dump().runQueue, [
     {

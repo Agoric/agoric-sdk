@@ -15,8 +15,8 @@ async function createConfig() {
 async function testVatCreationFromBuild(t, withSES) {
   const config = await createConfig();
   const c = await buildVatController(config, withSES, ['newVat']);
-  t.equal(c.vatNameToID('vatAdmin'), 'v1');
-  t.equal(c.vatNameToID('_bootstrap'), 'v2');
+  t.equal(c.vatNameToID('vatAdmin'), 'v2');
+  t.equal(c.vatNameToID('_bootstrap'), 'v1');
   for (let i = 0; i < 11; i += 1) {
     // eslint-disable-next-line no-await-in-loop
     await c.step();
