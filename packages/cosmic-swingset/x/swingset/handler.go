@@ -119,7 +119,6 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 	if err != nil {
 		return sdk.ErrInternal(err.Error()).Result()
 	}
-	// fmt.Fprintln(os.Stderr, "About to call SwingSet")
 
 	_, err = CallToNode(string(b))
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
@@ -127,7 +126,7 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 	if err != nil {
 		return sdk.ErrInternal(err.Error()).Result()
 	}
-	return sdk.Result{} // return
+	return sdk.Result{}
 }
 
 func handleMsgBeginBlock(ctx sdk.Context, keeper Keeper) sdk.Result {
@@ -150,8 +149,6 @@ func handleMsgBeginBlock(ctx sdk.Context, keeper Keeper) sdk.Result {
 		return sdk.ErrInternal(err.Error()).Result()
 	}
 
-	// fmt.Fprintln(os.Stderr, "About to call SwingSet")
-
 	_, err = CallToNode(string(b))
 
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
@@ -159,5 +156,5 @@ func handleMsgBeginBlock(ctx sdk.Context, keeper Keeper) sdk.Result {
 	if err != nil {
 		return sdk.ErrInternal(err.Error()).Result()
 	}
-	return sdk.Result{} // return
+	return sdk.Result{}
 }
