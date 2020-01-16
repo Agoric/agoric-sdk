@@ -55,10 +55,10 @@ let deliveryFunctionsInitialized = false;
 let sPort;
 
 function toSwingSet(action, replier) {
-  console.log(`toSwingSet`, action, replier);
+  // console.log(`toSwingSet`, action, replier);
   return toSwingSet0(action, replier)
     .then(ret => {
-      console.log(`toSwingSet returning:`, ret);
+      // console.log(`toSwingSet returning:`, ret);
       return ret;
     }, err => {
       console.log('toSwingSet threw error:', err);
@@ -130,28 +130,18 @@ async function toSwingSet0(action, _replier) {
     deliveryFunctionsInitialized = true;
   }
 
-  let d;
   switch (action.type) {
     case DELIVER_INBOUND:
-      d = deliverInbound(
+      return deliverInbound(
         action.peer,
         action.messages,
         action.ack,
         action.blockHeight,
         action.blockTime,
       );
-      break;
     case BEGIN_BLOCK:
-      d = deliverStartBlock(action.blockHeight, action.blockTime);
-      break;
+      return deliverStartBlock(action.blockHeight, action.blockTime);
     default:
       throw new Error(`${action.type} not recognized. must be DELIVER_INBOUND or BEGIN_BLOCK`);
   }
-
-  d.then(undefined,
-    rej => {
-      console.log(`${action.type} failed`, rej);
-      throw rej;
-    });
-  return d;
 }
