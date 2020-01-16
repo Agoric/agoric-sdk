@@ -1,6 +1,6 @@
 {
   "name": "@agoric/deployment",
-  "version": "1.16.7",
+  "version": "1.16.8",
   "description": "Set up Agoric public chain nodes",
   "private": true,
   "main": "main.js",
