@@ -119,10 +119,10 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 	if err != nil {
 		return sdk.ErrInternal(err.Error()).Result()
 	}
-	fmt.Fprintln(os.Stderr, "About to call SwingSet")
+	// fmt.Fprintln(os.Stderr, "About to call SwingSet")
 
-	out, err := CallToNode(string(b))
-	fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	_, err = CallToNode(string(b))
+	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	UnregisterPortHandler(newPort)
 	if err != nil {
 		return sdk.ErrInternal(err.Error()).Result()
@@ -130,7 +130,7 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 	return sdk.Result{} // return
 }
 
-func handleMsgBeginBlock(ctx sdk.Context, keeper Keeper) {
+func handleMsgBeginBlock(ctx sdk.Context, keeper Keeper) sdk.Result {
 	storageHandler := NewStorageHandler(ctx, keeper)
 
 	// Allow the storageHandler to consume unlimited gas.
@@ -147,13 +147,17 @@ func handleMsgBeginBlock(ctx sdk.Context, keeper Keeper) {
 	b, err := json.Marshal(action)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error marshalling", err)
-		return
+		return sdk.ErrInternal(err.Error()).Result()
 	}
 
-	fmt.Fprintln(os.Stderr, "About to call SwingSet")
+	// fmt.Fprintln(os.Stderr, "About to call SwingSet")
 
-	out, err := CallToNode(string(b))
-	fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	_, err = CallToNode(string(b))
+
+	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	UnregisterPortHandler(newPort)
-	return
+	if err != nil {
+		return sdk.ErrInternal(err.Error()).Result()
+	}
+	return sdk.Result{} // return
 }
