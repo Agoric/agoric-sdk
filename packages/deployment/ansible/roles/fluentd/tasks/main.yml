@@ -31,6 +31,17 @@
     dest: /etc/td-agent/
   notify: restart fluentd
 
+- name: Install fluent-plugin-grafana-loki
+  shell: "td-agent-gem install fluent-plugin-grafana-loki"
+  when: LOKI_URL is defined
+
+- name: Copy Loki store
+  template:
+    src: loki.store.j2
+    dest: /etc/td-agent/config.d/loki.store
+  notify: restart fluentd
+  when: LOKI_URL is defined
+
 - name: Install fluent-plugin-honeycomb
   shell: "td-agent-gem install fluent-plugin-honeycomb"
   when: HONEYCOMB_API_KEY is defined and HONEYCOMB_DATASET is defined

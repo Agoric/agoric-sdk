@@ -1,0 +1,13 @@
+<store>
+  @type loki
+  url "{{ LOKI_URL }}"
+{% if LOKI_USERNAME is defined %}
+  username "{{ LOKI_USERNAME }}"
+{% endif %}
+{% if LOKI_PASSWORD is defined %}
+  password "{{ LOKI_PASSWORD }}"
+{% endif %}
+  flush_interval 10s
+  flush_at_shutdown true
+  buffer_chunk_limit 1m
+</store>
