@@ -10,7 +10,9 @@
   <label>
     chain
     hostname
+    app syslog_identifier
   </label>
+  remove_keys "transport,syslog_facility,cap_effective,systemd_cgroup,systemd_slice,systemd_invocation_id,boot_id,machine_id,time"
   line_format "json"
   <buffer>
     flush_interval 10s
