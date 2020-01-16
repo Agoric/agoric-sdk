@@ -7,6 +7,7 @@
 - name: Install fluentd prerequisites
   apt:
     name: "{{ packages }}"
+    update_cache: yes
     state: present
   vars:
     packages:
