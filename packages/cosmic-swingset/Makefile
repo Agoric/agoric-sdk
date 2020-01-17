@@ -66,7 +66,7 @@ scenario2-setup: build-cosmos
 	$(AGC) validate-genesis
 	../deployment/set-json.js ~/.ag-chain-cosmos/config/genesis.json --agoric-genesis-overrides
 	$(MAKE) set-local-gci-ingress
-	@echo "ROLE=two_chain BOOT_ADDRESS=\`cat t1/$(BASE_PORT)/ag-cosmos-helper-address\` agc start"
+	@echo "ROLE=two_chain BOOT_ADDRESS=\`cat t1/$(BASE_PORT)/ag-cosmos-helper-address\` $(AGC) start"
 	@echo "(cd t1/$(BASE_PORT) && ../bin/ag-solo start --role=two_client)"
 
 scenario2-run-chain:
@@ -78,17 +78,34 @@ scenario2-run-chain:
 scenario2-run-client:
 	cd t1/$(BASE_PORT) && ../../bin/ag-solo start --role=two_client
 
+# scenario3 is a single JS process without any Golang.  However,
+# the client and the chain within the process run two separate
+# kernels.  There is an artificial delay when handling messages
+# destined for the chain kernel, to prevent you from accidentally
+# creating programs that won't work on the real blockchain.
+#
+# If you still want the client/chain separation without delay,
+# then run: make scenario3-setup FAKE_CHAIN_DELAY=0
 scenario3-setup:
 	rm -rf t3
 	bin/ag-solo init t3 --egresses=fake
 	(cd t3 && \
 			../bin/ag-solo set-fake-chain --role=two_chain --delay=$(FAKE_CHAIN_DELAY) myFakeGCI)
-	@echo 'Ignore advice above, instead run `make scenario3-run-client`'
+	@echo 'Execute `make scenario3-run` to run the client and simulated chain'
 
-scenario3-run-client:
+# This runs both the client and the fake chain.
+scenario3-run-client: scenario3-run
+scenario3-run:
 	cd t3 && ../bin/ag-solo start --role=two_client
-scenario3-run-chain:
-	@echo 'No separate chain needs to run in scenario3'
+
+# These rules are the old scenario3.  No fake delay at all.
+# It's generally better to use the new scenario3.
+deprecated-scenario3-setup:
+	rm -rf t3
+	bin/ag-solo init t3 --egresses=none
+
+deprecated-scenario3-run-client:
+	cd t3 && ../bin/ag-solo start --role=three_client
 
 docker-pull:
 	for f in '' -pserver -setup -setup-solo -solo; do \

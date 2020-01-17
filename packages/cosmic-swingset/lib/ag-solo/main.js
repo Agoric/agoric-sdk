@@ -64,7 +64,7 @@ start
     const subdir = subArgs[1];
     insist(basedir !== undefined, 'you must provide a BASEDIR');
     initBasedir(basedir, webport, webhost, subdir, egresses.split(','));
-    console.error(`Run '(cd ${basedir} && ${progname} start)' to start the vat machine`);
+    // console.error(`Run '(cd ${basedir} && ${progname} start)' to start the vat machine`);
   } else if (argv[0] === 'set-gci-ingress') {
     const basedir = insistIsBasedir();
     const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {});
