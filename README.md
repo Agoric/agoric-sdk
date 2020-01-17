@@ -6,12 +6,18 @@ repository: instead you should [follow our instructions for getting started](htt
 
 But if you are improving the platform itself, this is the repository to use.
 
-## Pre-requisites
+## Prerequisites
 
 * Git
 * Node.js (version 11 or higher)
-* Golang (1.13 or higher) (TODO: only require this for cosmic-swingset)
 * Yarn (`npm install -g yarn`)
+
+You don't need Golang if you just want to test contracts and run the
+"scenario3" simulator.  Golang (1.13 or higher) is needed only if you
+want to build/debug Cosmos SDK support.  (The `1.12` release will work, but
+it will modify `packages/cosmic-swingset/go.mod` upon each build (by adding
+a dependency upon `appengine`). The `1.13` release will leave the `go.mod`
+file correctly unmodified.
 
 ## Build
 
@@ -36,8 +42,7 @@ section tells us when symlinks could not be used (generally because e.g.
 `ERTP` wants `marshal@0.1.0`, but `packages/marshal/package.json` says it's
 actually `0.2.0`). We want to get rid of all mismatched dependencies.
 
-The `yarn build` step generates kernel bundles, and compiles the Go code in
-cosmic-swingset.
+The `yarn build` step generates kernel bundles.
 
 ## Test
 
@@ -110,18 +115,3 @@ To create a new (empty) package (e.g. spinning Zoe out from ERTP):
 * commit everything to a new branch, push, check the GitHub `Actions` tab to
   make sure CI tested everything properly
 * merge with a PR
-
-## Running without Go
-
-A golang installation is necessary for building `cosmic-swingset`. At
-present, this build happens during `yarn install`, which is also necessary to
-set up the monorepo's cross-package symlinks.
-
-Until we change this, to build everything else without a Go install, just
-edit the top-level `package.json` and remove `packages/cosmic-swingset` from
-the `workspaces` clause.
-
-We recommend Go `1.13`. The `1.12` release will work, but it will modify
-`packages/cosmic-swingset/go.mod` upon each build (by adding a dependency
-upon `appengine`). The `1.13` release will leave the `go.mod` file correctly
-unmodified.
