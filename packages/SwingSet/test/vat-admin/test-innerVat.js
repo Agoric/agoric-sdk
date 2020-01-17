@@ -29,7 +29,7 @@ test('VatAdmin inner vat creation', async t => {
   await testVatCreationFromBuild(t, true);
 });
 
-test.skip('VatAdmin inner vat creation non-SES', async t => {
+test('VatAdmin inner vat creation non-SES', async t => {
   await testVatCreationFromBuild(t, false);
 });
 
