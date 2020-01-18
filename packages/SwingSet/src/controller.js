@@ -149,7 +149,7 @@ function makeSESEvaluator() {
 function buildSESKernel(sesEvaluator, endowments) {
   const kernelSource = getKernelSource();
   const buildKernel = sesEvaluator(kernelSource);
-  return { kernel: buildKernel(endowments) };
+  return buildKernel(endowments);
 }
 
 function buildNonSESKernel(endowments) {
@@ -158,14 +158,14 @@ function buildNonSESKernel(endowments) {
   // eslint-disable-next-line no-eval
   (evaluateOptions.shims || []).forEach(shim => (1, eval)(shim));
 
-  const kernel = buildKernelNonSES(endowments);
-  return { kernel };
+  return buildKernelNonSES(endowments);
 }
 
 export async function buildVatController(config, withSES = true, argv = []) {
   // todo: move argv into the config
 
-  // sesEvaluator is only valid when withSES === true
+  // sesEvaluator is only valid when withSES === true. It might be nice to
+  // untangle this so we don't have to check withSES in three different places.
   let sesEvaluator;
   if (withSES) {
     sesEvaluator = makeSESEvaluator();
@@ -186,7 +186,6 @@ export async function buildVatController(config, withSES = true, argv = []) {
     // bootstrap.js gets a 'controller' object which can invoke start()
     // (which is expected to initialize some state and export some facetIDs)
     let setup;
-
     if (withSES) {
       const { source, sourceMap } = await bundleSource(`${sourceIndex}`);
       const actualSource = `(${source})\n${sourceMap}`;
@@ -198,15 +197,16 @@ export async function buildVatController(config, withSES = true, argv = []) {
     return setup;
   }
 
-  insistStorageAPI(config.hostStorage || buildStorageInMemory().storage);
+  const hostStorage = config.hostStorage || buildStorageInMemory().storage;
+  insistStorageAPI(hostStorage);
   const kernelEndowments = {
     setImmediate,
-    hostStorage: config.hostStorage || buildStorageInMemory().storage,
+    hostStorage,
     vatAdminDevSetup: await evaluateToSetup(ADMIN_DEVICE_PATH),
     vatAdminVatSetup: await evaluateToSetup(ADMIN_VAT_PATH),
   };
 
-  const { kernel } = withSES
+  const kernel = withSES
     ? buildSESKernel(sesEvaluator, kernelEndowments)
     : buildNonSESKernel(kernelEndowments);
 

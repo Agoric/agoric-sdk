@@ -545,6 +545,7 @@ export default function buildKernel(kernelEndowments) {
     }
   }
 
+  // Enqueue a message to the adminVat giving it the new vat's root object
   function notifyAdminVatOfNewVat(vatID) {
     function serializeSlot(slot) {
       return {
@@ -559,7 +560,7 @@ export default function buildKernel(kernelEndowments) {
     queueToExport(vatAdminVatId, vatSlot, 'newVatCallback', serializedArgs);
   }
 
-  // Create a new vat, wait for the results, and notify the vat admin device.
+  // Create a new vat and return the vatID without waiting for the root object.
   function createVat(buildFn) {
     const vatID = kernelKeeper.provideUnusedVatID();
 
