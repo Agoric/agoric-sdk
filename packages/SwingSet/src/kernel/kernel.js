@@ -14,7 +14,6 @@ import { insistStorageAPI } from '../storageAPI';
 import { insistCapData } from '../capdata';
 import { insistMessage } from '../message';
 import { insistDeviceID, insistVatID } from './id';
-import { buildVatAdmin } from './vatAdmin/vatAdmin';
 
 function abbreviateReviver(_, arg) {
   if (typeof arg === 'string' && arg.length >= 40) {
@@ -495,10 +494,8 @@ export default function buildKernel(kernelEndowments) {
     queueToExport(bootstrapVatID, rootSlot, 'bootstrap', m.serialize(args));
   }
 
-  function buildVatManager(vatID, name, setup, options) {
+  function buildVatManager(vatID, name, setup) {
     validateVatSetupFn(setup);
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-
     const helpers = harden({
       vatID: name, // TODO: rename to 'name', update vats to match
       makeLiveSlots,
@@ -513,61 +510,13 @@ export default function buildKernel(kernelEndowments) {
     });
 
     // the vatManager invokes setup() to build the userspace image
-    const manager = makeVatManager(
+    return makeVatManager(
       vatID,
       syscallManager,
       setup,
       helpers,
       kernelKeeper,
-      vatKeeper,
-    );
-    ephemeral.vats.set(
-      vatID,
-      harden({
-        manager,
-        enablePipelining: Boolean(options.enablePipelining),
-      }),
-    );
-  }
-
-  // Create a new vat, wait for the results, and notify the vat admin device.
-  function createVatAndNotify(buildFn, vatID) {
-    function serializeSlot(slot) {
-      return {
-        body: `["${vatID}",{"@qclass":"slot","index":0}]`,
-        slots: [slot],
-      };
-    }
-
-    const setup = (syscall, state, helpers) => {
-      return helpers.makeLiveSlots(syscall, state, buildFn, helpers.vatID);
-    };
-
-    buildVatManager(vatID, `dynamicVat${vatID}`, setup, {});
-    const vatSlot = makeVatRootObjectSlot();
-    const kernelRootObjSlot = addExport(vatID, vatSlot);
-    const serializedArgs = serializeSlot(kernelRootObjSlot);
-    const vatAdminVatId = vatNameToID('vatAdmin');
-    queueToExport(vatAdminVatId, vatSlot, 'newVatCallback', serializedArgs);
-  }
-
-  function buildDeviceManager(deviceID, name, setup, endowments) {
-    const deviceKeeper = kernelKeeper.provideDeviceKeeper(deviceID);
-    const helpers = harden({
-      name,
-      makeDeviceSlots,
-      log(str) {
-        ephemeral.log.push(`${str}`);
-      },
-    });
-
-    return makeDeviceManager(
-      name,
-      syscallManager,
-      setup,
-      helpers,
-      endowments,
-      deviceKeeper,
+      kernelKeeper.provideVatKeeper(vatID),
     );
   }
 
@@ -596,18 +545,75 @@ export default function buildKernel(kernelEndowments) {
     }
   }
 
+  function notifyAdminVatOfNewVat(vatID) {
+    function serializeSlot(slot) {
+      return {
+        body: `["${vatID}",{"@qclass":"slot","index":0}]`,
+        slots: [slot],
+      };
+    }
+    const vatSlot = makeVatRootObjectSlot();
+    const kernelRootObjSlot = addExport(vatID, vatSlot);
+    const serializedArgs = serializeSlot(kernelRootObjSlot);
+    const vatAdminVatId = vatNameToID('vatAdmin');
+    queueToExport(vatAdminVatId, vatSlot, 'newVatCallback', serializedArgs);
+  }
+
+  // Create a new vat, wait for the results, and notify the vat admin device.
+  function createVat(buildFn) {
+    const vatID = kernelKeeper.provideUnusedVatID();
+
+    const setup = (syscall, state, helpers) => {
+      return helpers.makeLiveSlots(syscall, state, buildFn, helpers.vatID);
+    };
+
+    let manager;
+    try {
+      manager = buildVatManager(vatID, `dynamicVat${vatID}`, setup);
+    } catch (e) {
+      return `${e}`;
+    }
+    ephemeral.vats.set(vatID, harden({ manager }));
+    return vatID;
+  }
+
   // A function to be called from the vatAdmin device to create a new vat. It
-  // create the vat and sends a notification to the device, but immediately
-  // returns the vatID so the ultimate requestor doesn't have to wait.
+  // creates the vat and sends a notification to the device. The root object
+  // will be available soon, but we immediately return the vatID so the ultimate
+  // requestor doesn't have to wait.
   function createVatDynamically(buildFnSrc) {
-    const vatId = kernelKeeper.provideUnusedVatID();
     // use kernelRequire to get the evaluate we want.
     const kernelEvaluate = kernelRequire('@agoric/evaluate');
     // pass kernelRequire to evaluate for buildFn's use
     const req = { require: kernelRequire };
     const buildFn = kernelEvaluate.evaluateProgram(buildFnSrc, req);
-    createVatAndNotify(buildFn, vatId);
-    return vatId;
+    const vatID = createVat(buildFn);
+
+    if (`${vatID}`.startsWith('v')) {
+      notifyAdminVatOfNewVat(vatID);
+    }
+
+    return `${vatID}`;
+  }
+
+  function buildDeviceManager(deviceID, name, setup, endowments) {
+    const deviceKeeper = kernelKeeper.provideDeviceKeeper(deviceID);
+    const helpers = harden({
+      name,
+      makeDeviceSlots,
+      log(str) {
+        ephemeral.log.push(`${str}`);
+      },
+    });
+
+    return makeDeviceManager(
+      name,
+      syscallManager,
+      setup,
+      helpers,
+      endowments,
+      deviceKeeper,
+    );
   }
 
   async function start(bootstrapVatName, argvString) {
@@ -635,14 +641,25 @@ export default function buildKernel(kernelEndowments) {
       const { setup, options } = genesisVats.get(name);
       const vatID = kernelKeeper.provideVatIDForName(name);
       console.log(`Assigned VatID ${vatID} for genesis vat ${name}`);
-      buildVatManager(vatID, name, setup, options);
+      const manager = buildVatManager(vatID, name, setup);
+      ephemeral.vats.set(
+        vatID,
+        harden({
+          manager,
+          enablePipelining: Boolean(options.enablePipelining),
+        }),
+      );
     }
 
-    // evaluate the outer vatAdmin device code for two registration functions
-    const { endowments, registerVatCreationFunction } = buildVatAdmin();
+    function getVatControlFns() {
+      return harden({ create: createVatDynamically /* vatStats, terminate */ });
+    }
 
     if (vatAdminDevSetup) {
-      const params = { setup: vatAdminDevSetup, endowments };
+      const params = {
+        setup: vatAdminDevSetup,
+        endowments: { getVatControlFns },
+      };
       genesisDevices.set('vatAdmin', params);
     }
 
@@ -654,10 +671,6 @@ export default function buildKernel(kernelEndowments) {
       ephemeral.devices.set(deviceID, {
         manager: buildDeviceManager(deviceID, name, setup, devEndowments),
       });
-    }
-
-    if (vatAdminVatSetup) {
-      registerVatCreationFunction(createVatDynamically);
     }
 
     // And enqueue the bootstrap() call. If we're reloading from an

@@ -57,7 +57,7 @@ export function parseVatOrDeviceID(s) {
   if (s.startsWith('v')) {
     type = 'vat';
     idSuffix = s.slice(1);
-  } else if (s.startsWith('v')) {
+  } else if (s.startsWith('d')) {
     type = 'device';
     idSuffix = s.slice(1);
   } else {

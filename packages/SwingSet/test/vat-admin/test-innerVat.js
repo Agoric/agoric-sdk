@@ -49,3 +49,22 @@ test('VatAdmin inner vat creation', async t => {
 test('VatAdmin inner vat creation non-SES', async t => {
   await testVatCreationAndObjectHosting(t, false);
 });
+
+async function testBrokenVatCreation(t, withSES) {
+  const config = await createConfig();
+  const c = await buildVatController(config, withSES, ['brokenVat']);
+  await c.run();
+  t.deepEqual(c.dump().log, [
+    'starting brokenVat test',
+    'Error: cannot serialize non-objects like undefined',
+  ]);
+  t.end();
+}
+
+test('VatAdmin inner vat creation', async t => {
+  await testBrokenVatCreation(t, true);
+});
+
+test('VatAdmin inner vat creation non-SES', async t => {
+  await testBrokenVatCreation(t, false);
+});

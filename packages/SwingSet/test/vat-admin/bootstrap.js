@@ -11,7 +11,6 @@ const serviceHolder = {
         increment(val) {
           sum += val;
           count += 1;
-    debugger
           return sum;
         },
         ticker() {
@@ -30,6 +29,14 @@ const serviceHolder = {
         return rcvrMaker(init);
       },
     });
+  },
+};
+
+const brokenServiceHolder = {
+  build: () => {
+    function brokenMaker() {
+      return harden({});
+    }
   },
 };
 
@@ -65,6 +72,15 @@ export default function setup(syscall, state, helpers) {
               log(await E(c).increment(3));
               log(await E(c).increment(5));
               log(await E(c).ticker());
+              return;
+            }
+            case 'brokenVat': {
+              log(`starting brokenVat test`);
+              const src = `${brokenServiceHolder.build}`;
+              const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+                devices.vatAdmin,
+              );
+              log(await E(vatAdminSvc).createVat(src));
               return;
             }
             default:

@@ -25,14 +25,6 @@ export default function setup(syscall, state, helpers, endowments) {
   // eslint-disable-next-line no-unused-vars
   let kernelTerminateFn;
 
-  // Kernel calls this to give the device access to kernel functions for
-  // creating a vat, requesting stats, and terminating vat.
-  function setVatManagementFunctions(createFn, statsFn, terminateFn) {
-    kernelVatCreationFn = createFn;
-    kernelVatStatsFn = statsFn;
-    kernelTerminateFn = terminateFn;
-  }
-
   // call the registered kernel function to create a new vat, and receive a
   // vatId in return. Clean up the outgoing and incoming arguments.
   function callKernelVatCreation(src) {
@@ -41,11 +33,7 @@ export default function setup(syscall, state, helpers, endowments) {
         `Attempted to create vat before registering kernel function`,
       );
     }
-    const vatId = kernelVatCreationFn(`${src}`);
-    if (typeof vatId !== 'string' || !vatId.match('v\\d+$')) {
-      throw new Error(`createDynamicVat should return a vatID: ${vatId}`);
-    }
-    return vatId;
+    return kernelVatCreationFn(`${src}`);
   }
 
   // Call the registered kernel function to request vat stats. Clean up the
@@ -60,7 +48,9 @@ export default function setup(syscall, state, helpers, endowments) {
     return `${kernelVatStatsFn(cleanVatId)}`;
   }
 
-  function makeRootDevice({ _SO, _getDeviceState, _setDeviceState }) {
+  // makeRootDevice is called with { _SO, _getDeviceState, _setDeviceState } as
+  // a parameter, but we don't need these, as discussed above.
+  function makeRootDevice() {
     // The Root Device Node.
     return harden({
       // Called by the wrapper vat to create a new vat. Gets a new ID from the
@@ -78,7 +68,12 @@ export default function setup(syscall, state, helpers, endowments) {
     });
   }
 
-  endowments.registerVatCreationSetter(setVatManagementFunctions);
+  // javascript wants parens around non-declaration destructuring assignments
+  ({
+    create: kernelVatCreationFn,
+    // stats: kernelVatStatsFn,
+    // terminate: kernelTerminateFn,
+  } = endowments.getVatControlFns());
 
   // return dispatch object
   return helpers.makeDeviceSlots(syscall, state, makeRootDevice, helpers.name);

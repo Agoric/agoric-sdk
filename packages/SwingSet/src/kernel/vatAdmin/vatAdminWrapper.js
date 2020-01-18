@@ -27,6 +27,9 @@ export default function setup(syscall, state, helpers) {
       return harden({
         createVat(code) {
           const vatId = D(vatAdminNode).create(code);
+          if (!vatId.startsWith('v')) {
+            return vatId;
+          }
           const vatPromise = makePromiseForVat();
           vatIdsToRoots.set(vatId, vatPromise);
           const adminNode = harden({
