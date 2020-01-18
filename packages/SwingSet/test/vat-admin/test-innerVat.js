@@ -56,7 +56,7 @@ async function testBrokenVatCreation(t, withSES) {
   await c.run();
   t.deepEqual(c.dump().log, [
     'starting brokenVat test',
-    'Error: cannot serialize non-objects like undefined',
+    'ReferenceError: harden is not defined',
   ]);
   t.end();
 }

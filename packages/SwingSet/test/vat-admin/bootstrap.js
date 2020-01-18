@@ -34,9 +34,7 @@ const serviceHolder = {
 
 const brokenServiceHolder = {
   build: () => {
-    function brokenMaker() {
-      return harden({});
-    }
+    return harden({});
   },
 };
 
