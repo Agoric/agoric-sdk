@@ -1,36 +1,25 @@
 /**
- * This is returned by a call to `redeem` on Zoe.
- * A seat is an arbitrary object whose methods allow the user to take
- * certain actions. The payout is a promise that resolves to an array
- * of promises for payments. Note that while the payout promise
- * resolves when an offer is completed, the promises for each payment
- * resolves after the remote issuer successfully withdraws the payment.
- */
-struct SeatAndPayout ( ) {
-  seat :Object;
-  payout :List(Payment);
-}
-
-/**
  * Zoe is a long-lived and well-trusted contract that enforces
- * offer safety for the contracts that use it. Zoe has a single
- * `inviteAssay` for the entirety of its lifetime. By having a
- * reference to Zoe, a user can get the `inviteAssay` and thus validate
- * any `invite` they receive from someone else. 
+ * offer safety for the contracts that run on it. The ZoeService is the
+ * client- or user-facing Zoe API. There is also a separate API exposed
+ * to the contracts.
  */
 
-interface Zoe {
+interface ZoeService {
 
   /**
-   * Get the long-lived inviteAssay. The mint associated with the
-   * inviteAssay creates the ERTP payments that represent the right
-   * interact with a smart contract in particular ways.
+   * Zoe has a single `inviteAssay` for the entirety of its lifetime. 
+   * By having a reference to Zoe, a user can get the `inviteAssay` 
+   * and thus validate any `invite` they receive from someone else. The
+   * mint associated with the inviteAssay creates the ERTP payments 
+   * that represent the right to interact with a smart contract in 
+   * particular ways.
    */
   getInviteAssay() -> (Assay);
 
   /**
    * Create an installation by safely evaluating the code and
-   * registering it with Zoe. Returns an installationHandle.
+   * registering it with Zoe. Returns an installationHandle. 
    */
   install(code :String, moduleFormat :String) -> (Object);
   
@@ -47,9 +36,10 @@ interface Zoe {
   makeInstance(installationHandle :Object, terms :Object) -> (Payment);
   
   /**
-   * Credibly get the instance from the instanceHandle.
+   * Credibly get information about the instance (such as the installation
+   * and terms used).
    */
-  getInstance(instanceHandle :Object) -> (InstanceInformation);
+  getInstance(instanceHandle :Object) -> (InstanceRecord);
 
   /** 
    * To redeem an invite, the user must provide a list of payments as well as
@@ -71,6 +61,19 @@ interface Zoe {
    * ignored and should be `undefined`.
    */
   redeem (invite :Payment, offerRules :OfferRules, payments :List(Payment)) -> (SeatAndPayout);
+}
+
+/**
+ * This is returned by a call to `redeem` on Zoe.
+ * A seat is an arbitrary object whose methods allow the user to take
+ * certain actions in a contract. The payout is a promise that resolves to an array
+ * of promises for payments. Note that while the payout promise
+ * resolves when an offer is completed, the promises for each payment
+ * resolves after the remote issuer successfully withdraws the payment.
+ */
+struct SeatAndPayout ( ) {
+  seat :Object;
+  payout :List(Payment);
 }
 
 struct OfferRules ( ) {
@@ -97,15 +100,7 @@ struct ExitRule ( ) {
   deadline :Number;
 }
 
-/**
- * `active` and `inactive` lists of offerHandles.
- */
- struct OfferStatusesRecord ( ) {
-  active :List(Object);
-  inactive :List(Object);
-}
-
-interface ZoeGoverningContractFacet () {
+interface ZoeContractFacet () {
 
   /** 
    * Instruct Zoe to try reallocating for the given offerHandles.
@@ -122,29 +117,27 @@ interface ZoeGoverningContractFacet () {
    * done here because any previous reallocation performed those checks.
    */
   complete (offerHandles :List(Object));
-
-  /**
-   * Create an empty offer for recordkeeping purposes (Autoswap uses
-   * this to create the liquidity pool). 
-   */
-  escrowEmptyOffer ( ) -> (offerHandle);
-  
-  /**
-   * Escrow an offer created by the smart contract. Autoswap uses
-   * this to mint liquidity tokens and add them to the rights managed
-   * by Zoe.
-   */
-  escrowOffer (offerRules :OfferRules, offerPayments :List(Payment)) -> (offerHandle);
   
   /** Create an invite using the Zoe inviteMint */
   makeInvite (seat :Object, customProperties :Object ) -> (Payment);
+
+  /** 
+   * Inform Zoe about new assays. Returns a promise for acknowledging
+   * when the assays are added and ready.
+   */
+  addAssays (assays :List(Object));
+
+  /**
+   * Expose the user-facing Zoe Service API to the contracts as well.
+   */
+  getZoeService ( ) -> (ZoeService);
 
   ////// The methods below are pure and have no side-effects. ////////
 
   /** Get the Zoe inviteAssay */
   getInviteAssay ( ) -> (Assay);
 
-  /** Get a list of unitOps per assay */
+  /** Get a list of local unitOps per assay */
   getUnitOpsForAssays (assays :List(Assay)) -> (List(UnitOps));
 
   /** Divide the offerHandles into 'active' and 'inactive' lists */
@@ -163,4 +156,12 @@ interface ZoeGoverningContractFacet () {
   /** Get the offer record */
   getOffer ( offerHandle :Object) -> (List(OfferRecord));
 
+}
+
+/**
+ * `active` and `inactive` lists of offerHandles.
+ */
+ struct OfferStatusesRecord ( ) {
+  active :List(Object);
+  inactive :List(Object);
 }
