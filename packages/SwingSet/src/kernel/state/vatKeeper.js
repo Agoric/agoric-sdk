@@ -4,6 +4,7 @@ import { insist } from '../../insist';
 import { parseKernelSlot } from '../parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
 import { insistVatID } from '../id';
+import kdebug from '../kdebug';
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
@@ -21,13 +22,6 @@ export function makeVatKeeper(
   addKernelPromise,
 ) {
   insistVatID(vatID);
-
-  const enableKDebug = false;
-  function kdebug(...args) {
-    if (enableKDebug) {
-      console.log(...args);
-    }
-  }
 
   function mapVatSlotToKernelSlot(vatSlot) {
     insist(`${vatSlot}` === vatSlot, 'non-string vatSlot');

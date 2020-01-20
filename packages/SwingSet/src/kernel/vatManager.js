@@ -5,6 +5,7 @@ import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
 import { insistMessage } from '../message';
+import kdebug from './kdebug';
 
 export default function makeVatManager(
   vatID,
@@ -14,7 +15,7 @@ export default function makeVatManager(
   kernelKeeper,
   vatKeeper,
 ) {
-  const { kdebug, process } = syscallManager;
+  const { process } = syscallManager;
 
   // We use vat-centric terminology here, so "inbound" means "into a vat",
   // generally from the kernel. We also have "comms vats" which use special

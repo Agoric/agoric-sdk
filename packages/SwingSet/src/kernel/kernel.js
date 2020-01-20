@@ -9,6 +9,7 @@ import makePromise from '../makePromise';
 import makeDeviceManager from './deviceManager';
 import { wrapStorage } from './state/storageWrapper';
 import makeKernelKeeper from './state/kernelKeeper';
+import kdebug from './kdebug';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../parseVatSlots';
 import { insist } from '../insist';
@@ -49,13 +50,6 @@ export default function buildKernel(kernelEndowments) {
     devices: new Map(), // deviceID -> { manager }
     log: [],
   };
-
-  const enableKDebug = false;
-  function kdebug(...args) {
-    if (enableKDebug) {
-      console.log(...args);
-    }
-  }
 
   let running = false;
 

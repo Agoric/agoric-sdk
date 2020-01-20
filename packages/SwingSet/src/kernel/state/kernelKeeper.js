@@ -11,6 +11,7 @@ import {
 } from '../parseKernelSlots';
 import { insistCapData } from '../../capdata';
 import { insistDeviceID, insistVatID, makeDeviceID, makeVatID } from '../id';
+import kdebug from '../kdebug';
 
 // This holds all the kernel state, including that of each Vat and Device, in
 // a single JSON-serializable object. At any moment (well, really only
@@ -90,13 +91,6 @@ const FIRST_PROMISE_ID = 40;
 
 export default function makeKernelKeeper(storage) {
   insistEnhancedStorageAPI(storage);
-
-  const enableKDebug = false;
-  function kdebug(...args) {
-    if (enableKDebug) {
-      console.log(...args);
-    }
-  }
 
   function getRequired(key) {
     if (!storage.has(key)) {

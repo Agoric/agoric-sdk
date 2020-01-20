@@ -4,6 +4,7 @@ import { insistKernelType } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
 import { insistMessage } from '../message';
+import kdebug from './kdebug';
 
 export default function makeDeviceManager(
   deviceName,
@@ -13,7 +14,7 @@ export default function makeDeviceManager(
   endowments,
   deviceKeeper,
 ) {
-  const { kdebug, send, log } = syscallManager;
+  const { send, log } = syscallManager;
 
   function mapDeviceSlotToKernelSlot(devSlot) {
     insist(`${devSlot}` === devSlot, 'non-string devSlot');
