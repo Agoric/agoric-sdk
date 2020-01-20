@@ -2,10 +2,10 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import bundleSource from '@agoric/bundle-source';
 
-import { makeZoe } from '../../../zoe';
+import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
 
-const atomicSwapRoot = `${__dirname}/../../../contracts/atomicSwap`;
+const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
 test('zoe -atomicSwap', async t => {
   try {

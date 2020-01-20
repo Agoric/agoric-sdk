@@ -1,6 +1,6 @@
 import { test } from 'tape-promise/tape';
 
-import { isOfferSafeForOffer, isOfferSafeForAll } from '../../isOfferSafe';
+import { isOfferSafeForOffer, isOfferSafeForAll } from '../../src/isOfferSafe';
 import { setup } from './setupBasicMints';
 
 // The player must have payoutRules for each assay

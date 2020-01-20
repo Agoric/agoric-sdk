@@ -2,10 +2,10 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import bundleSource from '@agoric/bundle-source';
 
-import { makeZoe } from '../../../zoe';
+import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
 
-const autoswapRoot = `${__dirname}/../../../contracts/autoswap`;
+const autoswapRoot = `${__dirname}/../../../src/contracts/autoswap`;
 
 test('autoSwap with valid offers', async t => {
   try {
