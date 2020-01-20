@@ -56,10 +56,11 @@ interface Zoe {
    * their rules for the offer. 
    * 
    * The rules for the offer are in two parts: `payoutRules` are used 
-   * by Zoe to enforce offer safety, and `exitRule` is used by Zoe 
-   * to enforce exit safety. `payoutRules` is a list of objects, each 
-   * with a `kind` property (such as 'offerAtMost') and a units
-   * property. The objects in the `payoutRules` must be in the same order
+   * by Zoe to enforce offer safety, and `exitRule` is used to specify
+   * the extent of payout liveness that Zoe can guarantee.
+   * `payoutRules` is a list of objects, each with a `kind` property 
+   * (such as 'offerAtMost') and a units property. The objects in the 
+   * `payoutRules` must be in the same order
    * as the assays associated with a smart contract. That is, the
    * units in index 0 of `payoutRules` should be a units for the assay
    * in index 0 of the assays array.`payments` is an array of the

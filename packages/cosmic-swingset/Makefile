@@ -19,7 +19,7 @@ NODE_DEBUG = node --inspect-port=$(INSPECT_ADDRESS):9229
 MOD_READONLY = # -mod=readonly
 
 include Makefile.ledger
-all: build install
+all: build-cosmos install
 
 scenario0-setup:
 	rm -rf ~/.ag-chain-cosmos
@@ -36,14 +36,14 @@ scenario0-run-chain:
 scenario1-setup: scenario0-setup
 scenario1-run-chain:
 	@test "`uname -s`" = Linux || \
-		{ echo 'Must run under Linux; use "make docker-build && docker/ag-setup-cosmos bootstrap"'; exit 1; }
+		{ echo 'Must run under Linux; use "(cd ../deployment && make docker-build) && docker/ag-setup-cosmos bootstrap"'; exit 1; }
 	AG_SETUP_COSMOS_HOME=t8 setup/ag-setup-cosmos bootstrap
 
 scenario1-run-client:
 	AG_SOLO_BASEDIR=t7 ve3/bin/ag-setup-solo --webhost=127.0.0.1:$(BASE_PORT)
 
 AGC = ./lib/ag-chain-cosmos
-scenario2-setup:
+scenario2-setup: build-cosmos
 	rm -rf ~/.ag-chain-cosmos
 	rm -f ag-cosmos-chain-state.json
 	$(AGC) init scenario2-chain --chain-id=$(CHAIN_ID)
@@ -95,10 +95,21 @@ compile-go: go.sum
 	go build -v $(MOD_READONLY) -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go
 	test "`uname -s 2>/dev/null`" != Darwin || install_name_tool -id `pwd`/lib/libagcosmosdaemon.so lib/libagcosmosdaemon.so
 
-build: compile-go
+build-cosmos: compile-go node-compile-gyp
 
-compile-node:
-	test ! -d node_modules/bindings || npm run build
+# We need this so that node-gyp can be found.
+node-compile-gyp:
+	if yarn -v >/dev/null 2>&1; then \
+		yarn build:gyp; \
+	else \
+		npm run build:gyp; \
+	fi
+
+# Only run from the package.json build:gyp script.
+compile-gyp:
+	cp binding.gyp.in binding.gyp
+	node-gyp configure build || { status=$$?; rm -f binding.gyp; exit $$status; }
+	rm -f binding.gyp
 
 install: go.sum
 	go install -v $(MOD_READONLY) -tags "$(build_tags)" ./cmd/ag-cosmos-helper

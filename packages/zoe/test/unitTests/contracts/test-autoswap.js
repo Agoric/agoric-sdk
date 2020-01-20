@@ -249,7 +249,7 @@ test('autoSwap with valid offers', async t => {
   }
 });
 
-test('autoSwap - test fee', async t => {
+test.skip('autoSwap - test fee', async t => {
   try {
     const {
       mints: defaultMints,
