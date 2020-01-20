@@ -313,21 +313,21 @@ const expectedAutoswapOkLog = [
   'Added liquidity.',
   '{"label":{"assay":{},"allegedName":"simoleans"},"extent":1}',
   'Swap successfully completed.',
-  '{"label":{"assay":{},"allegedName":"moola"},"extent":6}',
+  '{"label":{"assay":{},"allegedName":"moola"},"extent":5}',
   'Swap successfully completed.',
-  'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":6}',
+  'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":5}',
   'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":5}',
   'Liquidity successfully removed.',
-  '[0,0,10]',
-  'aliceMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":6}',
-  'aliceSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
+  '[{"label":{"assay":{},"allegedName":"moola"},"extent":0},{"label":{"assay":{},"allegedName":"simoleans"},"extent":0},{"label":{"assay":{},"allegedName":"liquidity"},"extent":10}]',
+  'aliceMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":8}',
+  'aliceSimoleanPurse: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
   'aliceLiquidityTokenPurse: balance {"label":{"assay":{},"allegedName":"liquidity"},"extent":0}',
 ];
-test.skip('zoe - autoswap - valid inputs - with SES', async t => {
+test('zoe - autoswap - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
       [10, 5, 0],
-      [2, 7, 0],
+      [3, 7, 0],
     ];
     const dump = await main(true, 'zoe', ['autoswapOk', startingExtents]);
     t.deepEquals(dump.log, expectedAutoswapOkLog);
@@ -338,11 +338,11 @@ test.skip('zoe - autoswap - valid inputs - with SES', async t => {
   }
 });
 
-test.skip('zoe - autoswap - valid inputs - no SES', async t => {
+test('zoe - autoswap - valid inputs - no SES', async t => {
   try {
     const startingExtents = [
       [10, 5, 0],
-      [2, 7, 0],
+      [3, 7, 0],
     ];
     const dump = await main(false, 'zoe', ['autoswapOk', startingExtents]);
     t.deepEquals(dump.log, expectedAutoswapOkLog);

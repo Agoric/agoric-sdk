@@ -112,16 +112,6 @@ const makeZoe = (additionalEndowments = {}) => {
     }
   };
 
-  // Create payoutRules in which nothing is offered and anything
-  // greater than or equal to 'empty' satisfies offer safety.
-  const makeEmptyPayoutRules = unitOpsArray =>
-    unitOpsArray.map(unitOps =>
-      harden({
-        kind: 'wantAtLeast',
-        units: unitOps.empty(),
-      }),
-    );
-
   // Make a Zoe invite with an extent that is a mix of credible
   // information from Zoe (the `handle` and `instanceHandle`) and
   // other information defined by the smart contract. Note that the
@@ -203,37 +193,6 @@ const makeZoe = (additionalEndowments = {}) => {
       complete: completeOffers,
 
       /**
-       * The contract can create an "empty" offer. This is used by the
-       * autoswap contract to create an offer representing the
-       * liquidity pool balances.
-       *
-       * We do not use the `depositPayments` helper here so that
-       * escrowEmptyOffer is synchronous.
-       */
-      escrowEmptyOffer: () => {
-        const { assays } = instanceTable.get(instanceHandle);
-        const unitOpsArray = assayTable.getUnitOpsForAssays(assays);
-        const offerRecord = {
-          instanceHandle,
-          payoutRules: makeEmptyPayoutRules(unitOpsArray),
-          exitRule: { kind: 'onDemand' },
-          assays,
-          units: unitOpsArray.map(unitOps => unitOps.empty()),
-        };
-        const offerHandle = offerTable.create(offerRecord);
-        payoutMap.init(offerHandle, makePromise());
-        return offerHandle;
-      },
-
-      /**
-       * The contract can also make an real offer with offerRules and
-       * ERTP payments. Autoswap uses this method to introduce newly
-       * minted liquidity tokens to Zoe.
-       */
-      escrowOffer: (offerRules, offerPayments) =>
-        depositPayments(offerRules, offerPayments, instanceHandle),
-
-      /**
        * Make a credible Zoe invite for a particular smart contract
        * indicated by the unique `instanceHandle`. The other
        * information in the extent of this invite is decided by the
@@ -255,11 +214,19 @@ const makeZoe = (additionalEndowments = {}) => {
         makeInvite(instanceHandle, seat, customProperties),
       getInviteAssay: () => inviteAssay,
 
+      // informs Zoe about an assay and returns a promise for acknowledging
+      // when the assays are added and ready.
+      addAssays: assays =>
+        assayTable.getPromiseForAssayRecords(assays).then(_ => undefined),
+
       getUnitOpsForAssays: assayTable.getUnitOpsForAssays,
       getOfferStatuses: offerTable.getOfferStatuses,
       isOfferActive: offerTable.isOfferActive,
       getOffers: offerTable.getOffers,
       getOffer: offerTable.get,
+
+      // eslint-disable-next-line no-use-before-define
+      getZoeService: () => zoeService,
     });
     return contractFacet;
   };
