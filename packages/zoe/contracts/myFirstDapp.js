@@ -1,8 +1,7 @@
+/* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 import { makeMint } from '@agoric/ertp/core/mint';
-import { hasValidPayoutRules, makeUnits } from './helpers/offerRules';
-import { rejectOffer, defaultAcceptanceMsg } from './helpers/userFlow';
-import { vectorWith, vectorWithout } from './helpers/extents';
+import { makeHelpers } from './helpers/userFlow';
 
 /**  EDIT THIS CONTRACT WITH YOUR OWN BUSINESS LOGIC */
 
@@ -30,102 +29,92 @@ export const makeContract = harden((zoe, terms) => {
   const liquidityAssay = liquidityMint.getAssay();
   const assays = [...startingAssays, liquidityAssay];
 
-  // This offer handle is used to store the assets in the liquidity pool.
-  let poolOfferHandle;
+  return zoe.addAssays(assays).then(() => {
+    // This handle is used to store the assets in the liquidity pool.
+    let poolHandle;
 
-  // Let's make sure the swap offer that we get has the correct
-  // structure.
-  const isValidSimpleSwapOffer = myPayoutRules => {
-    const kindsOfferFirst = ['offerAtMost', 'wantAtLeast', 'wantAtLeast'];
-    const kindsWantFirst = ['wantAtLeast', 'offerAtMost', 'wantAtLeast'];
-    return (
-      hasValidPayoutRules(kindsOfferFirst, assays, myPayoutRules) ||
-      hasValidPayoutRules(kindsWantFirst, assays, myPayoutRules)
+    const unitOpsArray = zoe.getUnitOpsForAssays(assays);
+    const { vectorWith, vectorWithout, makeEmptyOffer } = makeHelpers(
+      zoe,
+      assays,
     );
-  };
 
-  // This dumb contract assumes that the first offer this
-  // receives is to add 1 unit of liquidity for both assays. If we
-  // don't do this, this contract will break.
-  const addLiquidity = async escrowReceipt => {
-    const { offerHandle } = await zoe.burnEscrowReceipt(escrowReceipt);
-    // TODO: CHECK HERE THAT OFFER IS A VALID LIQUIDITY OFFER
+    const getPoolUnits = () => zoe.getOffer(poolHandle).units;
 
-    // Create an empty offer to represent the extents of the
-    // liquidity pool.
-    if (poolOfferHandle === undefined) {
-      poolOfferHandle = zoe.escrowEmptyOffer();
-    }
+    const makeInvite = () => {
+      const seat = harden({
+        addLiquidity: () => {
+          // This contract assumes that the first offer this
+          // receives is to add 1 unit of liquidity for both assays. If we
+          // don't do this, this contract will break.
+          // TODO: CHECK HERE THAT OFFER IS A VALID LIQUIDITY OFFER
 
-    // This will only happen once so we will just swap the pool
-    // extents and the offer extents to put what was offered in the
-    // pool.
-    const offerHandles = harden([poolOfferHandle, offerHandle]);
-    const [poolExtents, offerExtents] = await zoe.getExtentsFor(offerHandles);
+          // This will only happen once so we will just swap the pool
+          // extents and the offer extents to put what was offered in the
+          // pool.
+          const poolUnits = zoe.getOffer(poolHandle).units;
+          const userUnits = zoe.getOffer(inviteHandle).units;
+          zoe.reallocate(
+            harden([poolHandle, inviteHandle]),
+            harden([userUnits, poolUnits]),
+          );
+          zoe.complete(harden([inviteHandle]));
 
-    zoe.reallocate(offerHandles, [offerExtents, poolExtents]);
-    zoe.complete(harden([offerHandle]));
+          // TODO: MINT LIQUIDITY TOKENS AND REALLOCATE THEM TO THE USER
+          // THROUGH ZOE HERE
+          return 'Added liquidity.';
+        },
+        swap: () => {
+          const poolUnits = zoe.getOffer(poolHandle).units;
+          const userUnits = zoe.getOffer(inviteHandle).units;
+          const [firstUserUnits, secondUserUnits] = userUnits;
+          const newUserUnits = [
+            unitOpsArray[0].make(secondUserUnits.extent),
+            unitOpsArray[1].make(firstUserUnits.extent),
+            unitOpsArray[2].empty(),
+          ];
+          // We want to add the thing offered to the pool and give back the
+          // other thing
+          // TODO: ADD YOUR OWN LOGIC HERE
+          const newPoolUnits = vectorWithout(
+            vectorWith(poolUnits, userUnits),
+            newUserUnits,
+          );
+          zoe.reallocate(
+            harden([poolHandle, inviteHandle]),
+            harden([newPoolUnits, newUserUnits]),
+          );
+          zoe.complete(harden([inviteHandle]));
+          return 'Swap successfully completed.';
+        },
+        // TODO: IMPLEMENT (see autoswap.js for an example)
+        removeLiquidity: () => {},
+      });
+      const { invite, inviteHandle } = zoe.makeInvite(seat, {
+        seatDesc: 'autoswapSeat',
+      });
+      return invite;
+    };
 
-    // TODO: MINT LIQUIDITY TOKENS AND REALLOCATE THEM TO THE USER
-    // THROUGH ZOE HERE
-    return 'Added liquidity';
-  };
+    return makeEmptyOffer().then(handle => {
+      poolHandle = handle;
 
-  // The price is always 1. Always.
-  // TODO: CHANGE THIS AND CREATE YOUR OWN BONDING CURVE
-  const getPrice = unitsIn => {
-    const indexIn = unitsIn[0].extent === 1 ? 0 : 1;
-    const indexOut = 1 - indexIn;
-    const extentOpsArray = zoe.getExtentOpsArray();
-    const labels = zoe.getLabels();
-    const unitsOut = makeUnits(extentOpsArray[indexOut], labels[indexOut], 1);
-    return unitsOut;
-  };
-
-  const makeOffer = async escrowReceipt => {
-    const {
-      offerHandle,
-      offerRules: { payoutRules },
-    } = await zoe.burnEscrowReceipt(escrowReceipt);
-
-    // TODO: CHANGE THIS TO ADD YOUR OWN CHECKS HERE
-    if (!isValidSimpleSwapOffer(payoutRules)) {
-      return rejectOffer(zoe, offerHandle, 'The swap offer was invalid.');
-    }
-    const offerHandles = harden([poolOfferHandle, offerHandle]);
-    const [poolExtents, offerExtents] = zoe.getExtentsFor(offerHandles);
-    const extentOpsArray = zoe.getExtentOpsArray();
-    const [firstExtent, secondExtent] = offerExtents;
-    const offerExtentsOut = [
-      secondExtent,
-      firstExtent,
-      extentOpsArray[2].empty(),
-    ];
-    // we want to add the thing offered to the pool and give back the
-    // other thing
-    // TODO: ADD YOUR OWN LOGIC HERE
-    const newPoolExtents = vectorWithout(
-      extentOpsArray,
-      vectorWith(extentOpsArray, poolExtents, offerExtents),
-      offerExtentsOut,
-    );
-    zoe.reallocate(offerHandles, harden([newPoolExtents, offerExtentsOut]));
-    zoe.complete(harden([offerHandle]));
-    return defaultAcceptanceMsg;
-  };
-
-  // The API exposed to the user
-  const simpleSwap = harden({
-    addLiquidity,
-    getPrice,
-    makeOffer,
-    getLiquidityAssay: () => liquidityAssay,
-    // IMPLEMENT THIS
-    // removeLiquidity,
-    getPoolExtents: () => zoe.getExtentsFor(harden([poolOfferHandle]))[0],
-  });
-  return harden({
-    instance: simpleSwap,
-    assays,
+      return harden({
+        invite: makeInvite(),
+        publicAPI: {
+          // The price is always 1. Always.
+          // TODO: CHANGE THIS AND CREATE YOUR OWN BONDING CURVE
+          getPrice: unitsIn => {
+            const IN_INDEX = unitsIn.label.assay === assays[0] ? 0 : 1;
+            const OUT_INDEX = 1 - IN_INDEX;
+            return unitOpsArray[OUT_INDEX].make(1);
+          },
+          getLiquidityAssay: () => liquidityAssay,
+          getPoolUnits,
+          makeInvite,
+        },
+        terms: { assays },
+      });
+    });
   });
 });

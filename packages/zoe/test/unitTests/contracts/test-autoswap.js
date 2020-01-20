@@ -7,62 +7,61 @@ import { setup } from '../setupBasicMints';
 
 const autoswapRoot = `${__dirname}/../../../contracts/autoswap`;
 
-test.skip('autoSwap with valid offers', async t => {
+test('autoSwap with valid offers', async t => {
   try {
-    const { assays: defaultAssays, mints } = setup();
-    const zoe = await makeZoe({ require });
+    const {
+      mints: defaultMints,
+      assays: defaultAssays,
+      moola,
+      simoleans,
+    } = setup();
+    const mints = defaultMints.slice(0, 2);
     const assays = defaultAssays.slice(0, 2);
-    const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
+    const zoe = makeZoe({ require });
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(10));
+    const aliceMoolaPurse = mints[0].mint(moola(10));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
     // Let's assume that simoleans are worth 2x as much as moola
-    const aliceSimoleanPurse = mints[1].mint(assays[1].makeUnits(5));
+    const aliceSimoleanPurse = mints[1].mint(simoleans(5));
     const aliceSimoleanPayment = aliceSimoleanPurse.withdrawAll();
 
     // Setup Bob
-    const bobMoolaPurse = mints[0].mint(assays[0].makeUnits(2));
+    const bobMoolaPurse = mints[0].mint(moola(3));
     const bobMoolaPayment = bobMoolaPurse.withdrawAll();
-    const bobSimoleanPurse = mints[1].mint(assays[1].makeUnits(7));
-    const bobSimoleanPayment = bobSimoleanPurse.withdraw(
-      assays[1].makeUnits(3),
-    );
+    const bobSimoleanPurse = mints[1].mint(simoleans(7));
+    const bobSimoleanPayment = bobSimoleanPurse.withdraw(simoleans(3));
 
-    // 1: Alice creates an autoswap instance
+    // Alice creates an autoswap instance
 
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(autoswapRoot);
 
     const installationHandle = zoe.install(source, moduleFormat);
-    const terms = {
+    const aliceInvite = await zoe.makeInstance(installationHandle, {
       assays,
-    };
-    const {
-      instance: aliceAutoswap,
-      instanceHandle,
-      terms: aliceTerms,
-    } = await zoe.makeInstance(installationHandle, terms);
-    const liquidityAssay = aliceAutoswap.getLiquidityAssay();
-    const allAssays = [...terms.assays, liquidityAssay];
-    t.deepEquals(aliceTerms.assays, allAssays);
+    });
+    const { instanceHandle } = aliceInvite.getBalance().extent;
+    const { publicAPI } = zoe.getInstance(instanceHandle);
+    const liquidityAssay = publicAPI.getLiquidityAssay();
+    const liquidity = liquidityAssay.makeUnits;
 
-    // 2: Alice adds liquidity
+    // Alice adds liquidity
     // 10 moola = 5 simoleans at the time of the liquidity adding
     // aka 2 moola = 1 simolean
     const aliceOfferRules = harden({
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: allAssays[0].makeUnits(10),
+          units: moola(10),
         },
         {
           kind: 'offerAtMost',
-          units: allAssays[1].makeUnits(5),
+          units: simoleans(5),
         },
         {
           kind: 'wantAtLeast',
-          units: allAssays[2].makeUnits(10),
+          units: liquidity(10),
         },
       ],
       exitRule: {
@@ -72,59 +71,54 @@ test.skip('autoSwap with valid offers', async t => {
     const alicePayments = [aliceMoolaPayment, aliceSimoleanPayment, undefined];
 
     const {
-      escrowReceipt: allegedAliceEscrowReceipt,
+      seat: aliceSeat,
       payout: aliceAddLiquidityPayoutP,
-    } = await zoe.escrow(aliceOfferRules, alicePayments);
+    } = await zoe.redeem(aliceInvite, aliceOfferRules, alicePayments);
 
-    // 3: Alice does a claimAll on the escrowReceipt payment
-    const aliceEscrowReceipt = await escrowReceiptAssay.claimAll(
-      allegedAliceEscrowReceipt,
-    );
-
-    const liquidityOk = await aliceAutoswap.addLiquidity(aliceEscrowReceipt);
-
+    const liquidityOk = await aliceSeat.addLiquidity();
     t.equals(liquidityOk, 'Added liquidity.');
 
     const liquidityPayments = await aliceAddLiquidityPayoutP;
 
-    t.deepEquals(
-      liquidityPayments[2].getBalance(),
-      liquidityAssay.makeUnits(10),
-    );
-    t.deepEquals(aliceAutoswap.getPoolExtents(), [10, 5, 0]);
+    t.deepEquals(liquidityPayments[2].getBalance(), liquidity(10));
+    t.deepEquals(publicAPI.getPoolUnits(), [
+      moola(10),
+      simoleans(5),
+      liquidity(0),
+    ]);
 
-    // 4: Imagine that Alice sends bob the autoswap instanceHandle
+    // Alice creates an invite for autoswap and sends it to Bob
+    const bobInvite = publicAPI.makeInvite();
+
+    // Bob claims it
+    const inviteAssay = zoe.getInviteAssay();
+    const bobExclInvite = await inviteAssay.claimAll(bobInvite);
+    const bobInviteExtent = bobExclInvite.getBalance().extent;
     const {
-      instance: bobAutoswap,
+      publicAPI: bobAutoswap,
       installationHandle: bobInstallationId,
-      terms: bobTerms,
-    } = zoe.getInstance(instanceHandle);
+    } = zoe.getInstance(bobInviteExtent.instanceHandle);
     t.equals(bobInstallationId, installationHandle);
 
-    // 5: Bob looks up the price of 2 moola in simoleans
-    const units2Moola = bobTerms.assays[0].makeUnits(2);
-    const simoleanUnits = bobAutoswap.getPrice([
-      units2Moola,
-      undefined,
-      undefined,
-    ]);
-    t.deepEquals(simoleanUnits, bobTerms.assays[1].makeUnits(1));
+    // Bob looks up the price of 3 moola in simoleans
+    const simoleanUnits = bobAutoswap.getPrice(moola(3));
+    t.deepEquals(simoleanUnits, simoleans(1));
 
-    // 6: Bob escrows
+    // Bob escrows
 
     const bobMoolaForSimOfferRules = harden({
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: allAssays[0].makeUnits(2),
+          units: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: allAssays[1].makeUnits(1),
+          units: simoleans(1),
         },
         {
           kind: 'wantAtLeast',
-          units: allAssays[2].makeUnits(0),
+          units: liquidityAssay.makeUnits(0),
         },
       ],
       exitRule: {
@@ -133,46 +127,45 @@ test.skip('autoSwap with valid offers', async t => {
     });
     const bobMoolaForSimPayments = [bobMoolaPayment, undefined, undefined];
 
-    const {
-      escrowReceipt: allegedBobEscrowReceipt,
-      payout: bobPayoutP,
-    } = await zoe.escrow(bobMoolaForSimOfferRules, bobMoolaForSimPayments);
-
-    // 3: Bob does a claimAll on the escrowReceipt payment
-    const bobEscrowReceipt = await escrowReceiptAssay.claimAll(
-      allegedBobEscrowReceipt,
+    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+      bobExclInvite,
+      bobMoolaForSimOfferRules,
+      bobMoolaForSimPayments,
     );
 
-    // 7: Bob swaps
-    const offerOk = await bobAutoswap.makeOffer(bobEscrowReceipt);
+    // Bob swaps
+    const offerOk = bobSeat.swap();
     t.equal(offerOk, 'Swap successfully completed.');
 
     const bobPayout = await bobPayoutP;
 
-    t.deepEqual(bobPayout[0].getBalance(), allAssays[0].makeUnits(0));
-    t.deepEqual(bobPayout[1].getBalance(), allAssays[1].makeUnits(1));
-    t.deepEquals(bobAutoswap.getPoolExtents(), [12, 4, 0]);
+    t.deepEqual(bobPayout[0].getBalance(), moola(0));
+    t.deepEqual(bobPayout[1].getBalance(), simoleans(1));
+    t.deepEquals(bobAutoswap.getPoolUnits(), [
+      moola(13),
+      simoleans(4),
+      liquidity(0),
+    ]);
 
-    // 7: Bob looks up the price of 3 simoleans
+    // Bob looks up the price of 3 simoleans
+    const moolaUnits = bobAutoswap.getPrice(simoleans(3));
+    t.deepEquals(moolaUnits, moola(5));
 
-    const units3Sims = allAssays[1].makeUnits(3);
-    const moolaUnits = bobAutoswap.getPrice([undefined, units3Sims]);
-    t.deepEquals(moolaUnits, allAssays[0].makeUnits(6));
-
-    // 8: Bob makes another offer and swaps
+    // Bob makes another offer and swaps
+    const bobSecondInvite = bobAutoswap.makeInvite();
     const bobSimsForMoolaOfferRules = harden({
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          units: allAssays[0].makeUnits(6),
+          units: moola(5),
         },
         {
           kind: 'offerAtMost',
-          units: allAssays[1].makeUnits(3),
+          units: simoleans(3),
         },
         {
           kind: 'wantAtLeast',
-          units: allAssays[2].makeUnits(0),
+          units: liquidity(0),
         },
       ],
       exitRule: {
@@ -182,36 +175,43 @@ test.skip('autoSwap with valid offers', async t => {
     const simsForMoolaPayments = [undefined, bobSimoleanPayment, undefined];
 
     const {
-      escrowReceipt: bobsSimsForMoolaEscrowReceipt,
+      seat: bobSeatSimsForMoola,
       payout: bobSimsForMoolaPayoutP,
-    } = await zoe.escrow(bobSimsForMoolaOfferRules, simsForMoolaPayments);
-
-    const simsForMoolaOk = await bobAutoswap.makeOffer(
-      bobsSimsForMoolaEscrowReceipt,
+    } = await zoe.redeem(
+      bobSecondInvite,
+      bobSimsForMoolaOfferRules,
+      simsForMoolaPayments,
     );
+
+    const simsForMoolaOk = bobSeatSimsForMoola.swap();
     t.equal(simsForMoolaOk, 'Swap successfully completed.');
 
     const bobsNewMoolaPayment = await bobSimsForMoolaPayoutP;
 
-    t.deepEqual(bobsNewMoolaPayment[0].getBalance(), allAssays[0].makeUnits(6));
-    t.deepEqual(bobsNewMoolaPayment[1].getBalance(), allAssays[1].makeUnits(0));
-    t.deepEqual(bobAutoswap.getPoolExtents(), [6, 7, 0]);
+    t.deepEqual(bobsNewMoolaPayment[0].getBalance(), moola(5));
+    t.deepEqual(bobsNewMoolaPayment[1].getBalance(), simoleans(0));
+    t.deepEqual(bobAutoswap.getPoolUnits(), [
+      moola(8),
+      simoleans(7),
+      liquidity(0),
+    ]);
 
-    // 8: Alice removes her liquidity
+    // Alice removes her liquidity
     // She's not picky...
+    const aliceSecondInvite = publicAPI.makeInvite();
     const aliceRemoveLiquidityOfferRules = harden({
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          units: allAssays[0].makeUnits(0),
+          units: moola(0),
         },
         {
           kind: 'wantAtLeast',
-          units: allAssays[1].makeUnits(0),
+          units: simoleans(0),
         },
         {
           kind: 'offerAtMost',
-          units: allAssays[2].makeUnits(10),
+          units: liquidity(10),
         },
       ],
       exitRule: {
@@ -220,33 +220,27 @@ test.skip('autoSwap with valid offers', async t => {
     });
 
     const {
-      escrowReceipt: aliceRemoveLiquidityEscrowReceipt,
+      seat: aliceRemoveLiquiditySeat,
       payout: aliceRemoveLiquidityPayoutP,
-    } = await zoe.escrow(
+    } = await zoe.redeem(
+      aliceSecondInvite,
       aliceRemoveLiquidityOfferRules,
       harden([undefined, undefined, liquidityPayments[2]]),
     );
 
-    const removeLiquidityResult = await aliceAutoswap.removeLiquidity(
-      aliceRemoveLiquidityEscrowReceipt,
-    );
+    const removeLiquidityResult = aliceRemoveLiquiditySeat.removeLiquidity();
     t.equals(removeLiquidityResult, 'Liquidity successfully removed.');
 
     const alicePayoutPayments = await aliceRemoveLiquidityPayoutP;
 
-    t.deepEquals(
-      alicePayoutPayments[0].getBalance(),
-      allAssays[0].makeUnits(6),
-    );
-    t.deepEquals(
-      alicePayoutPayments[1].getBalance(),
-      allAssays[1].makeUnits(7),
-    );
-    t.deepEquals(
-      alicePayoutPayments[2].getBalance(),
-      allAssays[2].makeUnits(0),
-    );
-    t.deepEquals(aliceAutoswap.getPoolExtents(), [0, 0, 10]);
+    t.deepEquals(alicePayoutPayments[0].getBalance(), moola(8));
+    t.deepEquals(alicePayoutPayments[1].getBalance(), simoleans(7));
+    t.deepEquals(alicePayoutPayments[2].getBalance(), liquidity(0));
+    t.deepEquals(publicAPI.getPoolUnits(), [
+      moola(0),
+      simoleans(0),
+      liquidity(10),
+    ]);
   } catch (e) {
     t.assert(false, e);
     console.log(e);
@@ -257,53 +251,54 @@ test.skip('autoSwap with valid offers', async t => {
 
 test.skip('autoSwap - test fee', async t => {
   try {
-    const { assays: defaultAssays, mints } = setup();
-    const zoe = await makeZoe({ require });
+    const {
+      mints: defaultMints,
+      assays: defaultAssays,
+      moola,
+      simoleans,
+    } = setup();
+    const mints = defaultMints.slice(0, 2);
     const assays = defaultAssays.slice(0, 2);
-    const escrowReceiptAssay = zoe.getEscrowReceiptAssay();
+    const zoe = makeZoe({ require });
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(10000));
+    const aliceMoolaPurse = mints[0].mint(moola(10000));
     const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const aliceSimoleanPurse = mints[1].mint(assays[1].makeUnits(10000));
+    const aliceSimoleanPurse = mints[1].mint(simoleans(10000));
     const aliceSimoleanPayment = aliceSimoleanPurse.withdrawAll();
 
     // Setup Bob
-    const bobMoolaPurse = mints[0].mint(assays[0].makeUnits(1000));
+    const bobMoolaPurse = mints[0].mint(moola(1000));
     const bobMoolaPayment = bobMoolaPurse.withdrawAll();
 
-    // 1: Alice creates an autoswap instance
+    // Alice creates an autoswap instance
 
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(autoswapRoot);
 
     const installationHandle = zoe.install(source, moduleFormat);
-    const terms = {
+    const aliceInvite = await zoe.makeInstance(installationHandle, {
       assays,
-    };
-    const {
-      instance: aliceAutoswap,
-      instanceHandle,
-      terms: aliceTerms,
-    } = await zoe.makeInstance(installationHandle, terms);
-    const liquidityAssay = aliceAutoswap.getLiquidityAssay();
-    const allAssays = [...terms.assays, liquidityAssay];
-    t.deepEquals(aliceTerms.assays, allAssays);
+    });
+    const { instanceHandle } = aliceInvite.getBalance().extent;
+    const { publicAPI } = zoe.getInstance(instanceHandle);
+    const liquidityAssay = publicAPI.getLiquidityAssay();
+    const liquidity = liquidityAssay.makeUnits;
 
-    // 2: Alice adds liquidity
+    // Alice adds liquidity
     const aliceOfferRules = harden({
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: allAssays[0].makeUnits(10000),
+          units: moola(10000),
         },
         {
           kind: 'offerAtMost',
-          units: allAssays[1].makeUnits(10000),
+          units: simoleans(10000),
         },
         {
           kind: 'wantAtLeast',
-          units: allAssays[2].makeUnits(0),
+          units: liquidity(0),
         },
       ],
       exitRule: {
@@ -313,55 +308,53 @@ test.skip('autoSwap - test fee', async t => {
     const alicePayments = [aliceMoolaPayment, aliceSimoleanPayment, undefined];
 
     const {
-      escrowReceipt: allegedAliceEscrowReceipt,
+      seat: aliceSeat,
       payout: aliceAddLiquidityPayoutP,
-    } = await zoe.escrow(aliceOfferRules, alicePayments);
+    } = await zoe.redeem(aliceInvite, aliceOfferRules, alicePayments);
 
-    // 3: Alice does a claimAll on the escrowReceipt payment
-    const aliceEscrowReceipt = await escrowReceiptAssay.claimAll(
-      allegedAliceEscrowReceipt,
-    );
-
-    const liquidityOk = await aliceAutoswap.addLiquidity(aliceEscrowReceipt);
-
+    const liquidityOk = await aliceSeat.addLiquidity();
     t.equals(liquidityOk, 'Added liquidity.');
 
-    await aliceAddLiquidityPayoutP;
+    const liquidityPayments = await aliceAddLiquidityPayoutP;
 
-    t.deepEquals(aliceAutoswap.getPoolExtents(), [10000, 10000, 0]);
+    t.deepEquals(liquidityPayments[2].getBalance(), liquidity(10000));
+    t.deepEquals(publicAPI.getPoolUnits(), [
+      moola(10000),
+      simoleans(10000),
+      liquidity(0),
+    ]);
 
-    // 4: Imagine that Alice sends bob the autoswap instanceHandle
+    // Alice creates an invite for autoswap and sends it to Bob
+    const bobInvite = publicAPI.makeInvite();
+
+    // Bob claims it
+    const inviteAssay = zoe.getInviteAssay();
+    const bobExclInvite = await inviteAssay.claimAll(bobInvite);
+    const bobInviteExtent = bobExclInvite.getBalance().extent;
     const {
-      instance: bobAutoswap,
+      publicAPI: bobAutoswap,
       installationHandle: bobInstallationId,
-      terms: bobTerms,
-    } = zoe.getInstance(instanceHandle);
+    } = zoe.getInstance(bobInviteExtent.instanceHandle);
     t.equals(bobInstallationId, installationHandle);
 
-    // 5: Bob looks up the price of 1000 moola in simoleans
-    const units1000Moola = bobTerms.assays[0].makeUnits(1000);
-    const simoleanUnits = bobAutoswap.getPrice([
-      units1000Moola,
-      undefined,
-      undefined,
-    ]);
-    t.deepEquals(simoleanUnits, bobTerms.assays[1].makeUnits(907));
+    // Bob looks up the price of 1000 moola in simoleans
+    const simoleanUnits = bobAutoswap.getPrice(moola(1000));
+    t.deepEquals(simoleanUnits, simoleans(906));
 
-    // 6: Bob escrows
-
+    // Bob escrows
     const bobMoolaForSimOfferRules = harden({
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: allAssays[0].makeUnits(1000),
+          units: moola(1000),
         },
         {
           kind: 'wantAtLeast',
-          units: allAssays[1].makeUnits(0),
+          units: simoleans(0),
         },
         {
           kind: 'wantAtLeast',
-          units: allAssays[2].makeUnits(0),
+          units: liquidity(0),
         },
       ],
       exitRule: {
@@ -370,25 +363,25 @@ test.skip('autoSwap - test fee', async t => {
     });
     const bobMoolaForSimPayments = [bobMoolaPayment, undefined, undefined];
 
-    const {
-      escrowReceipt: allegedBobEscrowReceipt,
-      payout: bobPayoutP,
-    } = await zoe.escrow(bobMoolaForSimOfferRules, bobMoolaForSimPayments);
-
-    // 3: Bob does a claimAll on the escrowReceipt payment
-    const bobEscrowReceipt = await escrowReceiptAssay.claimAll(
-      allegedBobEscrowReceipt,
+    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+      bobExclInvite,
+      bobMoolaForSimOfferRules,
+      bobMoolaForSimPayments,
     );
 
-    // 7: Bob swaps
-    const offerOk = await bobAutoswap.makeOffer(bobEscrowReceipt);
+    // Bob swaps
+    const offerOk = bobSeat.swap();
     t.equal(offerOk, 'Swap successfully completed.');
 
     const bobPayout = await bobPayoutP;
 
-    t.deepEqual(bobPayout[0].getBalance(), allAssays[0].makeUnits(0));
-    t.deepEqual(bobPayout[1].getBalance(), allAssays[1].makeUnits(907));
-    t.deepEquals(bobAutoswap.getPoolExtents(), [11000, 9093, 0]);
+    t.deepEqual(bobPayout[0].getBalance(), moola(0));
+    t.deepEqual(bobPayout[1].getBalance(), simoleans(906));
+    t.deepEquals(bobAutoswap.getPoolUnits(), [
+      moola(11000),
+      simoleans(9094),
+      liquidity(0),
+    ]);
   } catch (e) {
     t.assert(false, e);
     console.log(e);
