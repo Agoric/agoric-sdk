@@ -6,7 +6,7 @@ import { insist } from '@agoric/ertp/util/insist';
 
 import { natSafeMath } from './helpers/safeMath';
 import { makeHelpers } from './helpers/userFlow';
-import { makeGetPrice } from './helpers/bondingCurves';
+import { makeConstProductBC } from './helpers/bondingCurves';
 
 export const makeContract = harden((zoe, terms) => {
   // The user passes in an array of two assays for the two kinds of
@@ -24,11 +24,11 @@ export const makeContract = harden((zoe, terms) => {
   let poolHandle;
   let liqTokenSupply = 0;
 
-  const { subtract, multiply, floorDivide } = natSafeMath;
+  const { subtract } = natSafeMath;
 
   return zoe.addAssays(assays).then(() => {
     const unitOpsArray = zoe.getUnitOpsForAssays(assays);
-    unitOpsArray.map(
+    unitOpsArray.forEach(
       unitOps =>
         insist(
           unitOps.getExtentOps().name === 'natExtentOps',
@@ -41,7 +41,11 @@ export const makeContract = harden((zoe, terms) => {
       vectorWithout,
       makeEmptyOffer,
     } = makeHelpers(zoe, assays);
-    const getPrice = makeGetPrice(zoe, assays);
+    const {
+      getPrice,
+      calcLiqExtentToMint,
+      calcUnitsToRemove,
+    } = makeConstProductBC(zoe, assays);
     const getPoolUnits = () => zoe.getOffer(poolHandle).units;
 
     return makeEmptyOffer().then(handle => {
@@ -99,13 +103,11 @@ export const makeContract = harden((zoe, terms) => {
             // If the current supply is zero, start off by just taking the
             // extent at index 0 and using it as the extent for the
             // liquidity token.
-            const liquidityExtentOut =
-              liqTokenSupply > 0
-                ? floorDivide(
-                    multiply(userUnits[0].extent, liqTokenSupply),
-                    poolUnits[0].extent,
-                  )
-                : userUnits[0].extent;
+            const liquidityExtentOut = calcLiqExtentToMint(
+              liqTokenSupply,
+              poolUnits,
+              userUnits,
+            );
 
             const liquidityUnitsOut = unitOpsArray[LIQ_INDEX].make(
               liquidityExtentOut,
@@ -161,13 +163,10 @@ export const makeContract = harden((zoe, terms) => {
 
             const poolUnits = getPoolUnits();
 
-            const newUserUnits = poolUnits.map((units, i) =>
-              unitOpsArray[i].make(
-                floorDivide(
-                  multiply(liquidityUnitsIn.extent, units.extent),
-                  liqTokenSupply,
-                ),
-              ),
+            const newUserUnits = calcUnitsToRemove(
+              liqTokenSupply,
+              poolUnits,
+              liquidityUnitsIn,
             );
 
             const newPoolUnits = vectorWith(

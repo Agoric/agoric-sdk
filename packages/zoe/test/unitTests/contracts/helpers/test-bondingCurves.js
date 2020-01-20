@@ -1,7 +1,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
-import { makeGetPrice } from '../../../../contracts/helpers/bondingCurves';
+import { makeConstProductBC } from '../../../../contracts/helpers/bondingCurves';
 import { setup } from '../../setupBasicMints';
 
 const testGetPrice = (t, input, output) => {
@@ -10,8 +10,8 @@ const testGetPrice = (t, input, output) => {
     getUnitOpsForAssays: assaysArray =>
       assaysArray.map(assay => assay.getUnitOps()),
   });
-  // poolUnitsArray, unitsIn, feeInTenthOfPercent = 3
-  const getPrice = makeGetPrice(zoe, assays);
+
+  const { getPrice } = makeConstProductBC(zoe, assays);
   const poolUnitsArray = [moola(input.xReserve), simoleans(input.yReserve)];
   let unitsIn;
   let expectedUnitsOut;
