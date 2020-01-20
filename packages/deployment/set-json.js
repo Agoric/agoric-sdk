@@ -11,6 +11,7 @@ const assigns = sargs.reduce((prior, assign) => {
   if (assign === '--agoric-genesis-overrides') {
     prior.push(
       `app_state.auth.params.tx_size_cost_per_byte="0"`,
+      `app_state.staking.params.bond_denom="ustake"`,
     );
   } else {
     prior.push(assign);

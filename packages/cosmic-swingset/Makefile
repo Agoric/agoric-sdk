@@ -56,12 +56,12 @@ scenario2-setup: build-cosmos
 	set -e; for port in `seq $(BASE_PORT) $$(($(BASE_PORT) + $(NUM_SOLOS) - 1))`; do \
 		bin/ag-solo init t1/$$port --webport=$$port; \
 		case $$port in \
-			$(BASE_PORT)) toks=$(INITIAL_TOKENS),100000000stake ;; \
+			$(BASE_PORT)) toks=$(INITIAL_TOKENS),100000000ustake ;; \
 			*) toks=1agmedallion ;; \
 		esac; \
 		$(AGC) add-genesis-account `cat t1/$$port/ag-cosmos-helper-address` $$toks; \
 	done
-	echo 'mmmmmmmm' | $(AGC) gentx --home-client=t1/$(BASE_PORT)/ag-cosmos-helper-statedir --name=ag-solo --amount=1000000stake
+	echo 'mmmmmmmm' | $(AGC) gentx --home-client=t1/$(BASE_PORT)/ag-cosmos-helper-statedir --name=ag-solo --amount=1000000ustake
 	$(AGC) collect-gentxs
 	$(AGC) validate-genesis
 	../deployment/set-json.js ~/.ag-chain-cosmos/config/genesis.json --agoric-genesis-overrides
