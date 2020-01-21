@@ -212,21 +212,22 @@ const makeZoe = (additionalEndowments = {}) => {
        */
       makeInvite: (seat, customProperties) =>
         makeInvite(instanceHandle, seat, customProperties),
-      getInviteAssay: () => inviteAssay,
 
       // informs Zoe about an assay and returns a promise for acknowledging
       // when the assays are added and ready.
       addAssays: assays =>
         assayTable.getPromiseForAssayRecords(assays).then(_ => undefined),
 
+      // eslint-disable-next-line no-use-before-define
+      getZoeService: () => zoeService,
+
+      // The methods below are pure and have no side-effects //
+      getInviteAssay: () => inviteAssay,
       getUnitOpsForAssays: assayTable.getUnitOpsForAssays,
       getOfferStatuses: offerTable.getOfferStatuses,
       isOfferActive: offerTable.isOfferActive,
       getOffers: offerTable.getOffers,
       getOffer: offerTable.get,
-
-      // eslint-disable-next-line no-use-before-define
-      getZoeService: () => zoeService,
     });
     return contractFacet;
   };
