@@ -1,7 +1,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
-import { makeConstProductBC } from '../../../../contracts/helpers/bondingCurves';
+import { makeConstProductBC } from '../../../../src/contracts/helpers/bondingCurves';
 import { setup } from '../../setupBasicMints';
 
 const testGetPrice = (t, input, output) => {

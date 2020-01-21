@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import { makeZoe } from '../../../zoe';
+import { makeZoe } from '../../../src/zoe';
 
 const build = (_E, _log) => {
   const zoe = makeZoe({ require });

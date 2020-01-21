@@ -15,7 +15,7 @@ const CONTRACT_FILES = [
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
     const { source, moduleFormat } = await bundleSource(
-      `${__dirname}/../../../contracts/${contract}`,
+      `${__dirname}/../../../src/contracts/${contract}`,
     );
     const obj = { source, moduleFormat, contract };
     fs.writeFileSync(

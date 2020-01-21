@@ -4,11 +4,11 @@ import bundleSource from '@agoric/bundle-source';
 
 import buildManualTimer from '@agoric/ertp/tools/manualTimer';
 import { sameStructure } from '@agoric/ertp/util/sameStructure';
-import { makeZoe } from '../../../zoe';
+import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
 
-const coveredCallRoot = `${__dirname}/../../../contracts/coveredCall`;
-const atomicSwapRoot = `${__dirname}/../../../contracts/atomicSwap`;
+const coveredCallRoot = `${__dirname}/../../../src/contracts/coveredCall`;
+const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
 test('zoe - coveredCall', async t => {
   try {
