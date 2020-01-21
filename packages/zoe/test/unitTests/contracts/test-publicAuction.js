@@ -2,10 +2,10 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import bundleSource from '@agoric/bundle-source';
 
-import { makeZoe } from '../../../zoe';
+import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
 
-const publicAuctionRoot = `${__dirname}/../../../contracts/publicAuction`;
+const publicAuctionRoot = `${__dirname}/../../../src/contracts/publicAuction`;
 
 test('zoe - secondPriceAuction w/ 3 bids', async t => {
   try {

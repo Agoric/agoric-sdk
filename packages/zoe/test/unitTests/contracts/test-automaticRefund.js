@@ -2,10 +2,10 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import bundleSource from '@agoric/bundle-source';
 
-import { makeZoe } from '../../../zoe';
+import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
 
-const automaticRefundRoot = `${__dirname}/../../../contracts/automaticRefund`;
+const automaticRefundRoot = `${__dirname}/../../../src/contracts/automaticRefund`;
 
 test('zoe - simplest automaticRefund', async t => {
   try {
