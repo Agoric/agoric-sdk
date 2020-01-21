@@ -1,6 +1,6 @@
 {
   "name": "@agoric/zoe",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Zoe: the Smart Contract Framework for Offer Enforcement",
   "main": "src/zoe.js",
   "engines": {
@@ -85,7 +85,9 @@
       "import/prefer-default-export": "off"
     }
   },
-  "eslintIgnore": ["bundle-*.js"],
+  "eslintIgnore": [
+    "bundle-*.js"
+  ],
   "prettier": {
     "trailingComma": "all",
     "singleQuote": true
