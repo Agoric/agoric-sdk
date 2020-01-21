@@ -40,7 +40,6 @@ all: build-cosmos install
 
 scenario0-setup:
 	rm -rf ~/.ag-chain-cosmos
-	rm -f ag-cosmos-chain-state.json
 	python3 -mvenv ve3
 	ve3/bin/pip install setup-solo/
 
@@ -62,7 +61,6 @@ scenario1-run-client:
 AGC = ./lib/ag-chain-cosmos
 scenario2-setup: build-cosmos
 	rm -rf ~/.ag-chain-cosmos
-	rm -f ag-cosmos-chain-state.json
 	$(AGC) init scenario2-chain --chain-id=$(CHAIN_ID)
 	rm -rf t1
 	mkdir t1
@@ -161,7 +159,7 @@ start-ag-solo:
 	cd t1 && ../bin/ag-solo start
 
 show-local-gci:
-	@./calc-gci.js ~/.ag-cosmos-chain/config/genesis.json
+	@./calc-gci.js ~/.ag-chain-cosmos/config/genesis.json
 
 set-local-gci-ingress:
 	set -e; \

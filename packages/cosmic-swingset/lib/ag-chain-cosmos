@@ -8,10 +8,33 @@ const BEGIN_BLOCK = 'BEGIN_BLOCK';
 const DELIVER_INBOUND = 'DELIVER_INBOUND';
 const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
 
-// TODO: use the 'basedir' pattern, or find the cosmos state directory
-// (~/.ag-chain-cosmos ?), or something anything better than scribbling
-// into the current directory.
-const stateFile = 'ag-cosmos-chain-state.json';
+// TODO: use the 'basedir' pattern
+
+// Try to determine the cosmos chain home.
+function getFlagValue(flagName, deflt) {
+  let flagValue = deflt;
+  const envValue = process.env[`AG_CHAIN_COSMOS_${flagName.toUpperCase()}`];
+  if (envValue !== undefined) {
+    flagValue = envValue;
+  }
+  const flag = `--${flagName}`;
+  const flagEquals = `--${flagName}=`;
+  for (let i = 0; i < process.argv.length; i += 1) {
+    const arg = process.argv[i];
+    if (arg === flag) {
+      i += 1;
+      flagValue = process.argv[i];
+    } else if (arg.startsWith(flagEquals)) {
+      flagValue = arg.substr(flagEquals.length);
+    }
+  }
+  return flagValue;
+}
+
+// We try to find the actual cosmos state directory (default=~/.ag-chain-cosmos), which
+// is better than scribbling into the current directory.
+const cosmosHome = getFlagValue('home', `${process.env.HOME}/.ag-chain-cosmos`);
+const stateFile = `${cosmosHome}/data/ag-cosmos-chain-state.json`;
 
 const { launch } = require('./launch-chain');
 const path = require('path');
