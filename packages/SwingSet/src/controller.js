@@ -10,6 +10,7 @@ import SES from 'ses';
 import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 import bundleSource from '@agoric/bundle-source';
 
+// eslint-disable-next-line import/extensions
 import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
 import { insist } from './insist';
