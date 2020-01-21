@@ -41,8 +41,9 @@ Before submitting a pull request, please:
 * `yarn version` (interactive) or `yarn version --major` or `yarn version --minor`
   * that changes `package.json`
   * and does NOT do a `git commit` and `git tag`
+* `git add .`
 * `git commit -m "bump version"`
-* `git tag -a -v$VERSION -m "zoe-v$VERSION"`
+* `git tag -a v$VERSION -m "zoe-v$VERSION"`
 * `yarn publish --access public`
 * `git push`
 * `git push --tags`
