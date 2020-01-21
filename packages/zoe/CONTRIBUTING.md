@@ -83,19 +83,3 @@ To test that that the Zoe update works (in the most basic sense) with cosmic-swi
 20. `E(seatAndPayout.seat).makeOffer();`
 21. `seatAndPayout.payout.then(p => moolaPayment = p[0]);`
 20. `E(moolaPayment).getBalance();` (should be an extent of 0)
-
-
-To test that the update works with agoric-cli, do:
-
-1. Run `yarn install` from the workspace root
-2. Run `yarn build` from the workspace root
-3. `cd packages/agoric-cli`
-4. `yarn link`
-5. Then in another external directory, do `mkdir temp`
-6. `cd temp`
-7. `yarn link "agoric"`
-8. `agoric init demo`
-9. `cd demo`
-10. `agoric install`
-11. `agoric start` (errors currently)
-12. ??
