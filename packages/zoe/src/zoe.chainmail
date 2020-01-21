@@ -21,7 +21,7 @@ interface ZoeService {
    * Create an installation by safely evaluating the code and
    * registering it with Zoe. Returns an installationHandle. 
    */
-  install(code :String, moduleFormat :String) -> (Object);
+  install(code :String, moduleFormat :String) -> (InstallationHandle);
   
   /** 
    * Zoe is long-lived. We can use Zoe to create smart contract
@@ -33,13 +33,13 @@ interface ZoeService {
    * the discretion of the smart contract.) We get back an invite (an
    * ERTP payment) to participate in the contract.
    */
-  makeInstance(installationHandle :Object, terms :Object) -> (Payment);
+  makeInstance(installationHandle :InstallationHandle, terms :Object) -> (Invite);
   
   /**
    * Credibly get information about the instance (such as the installation
    * and terms used).
    */
-  getInstance(instanceHandle :Object) -> (InstanceRecord);
+  getInstance(instanceHandle :InstanceHandle) -> (InstanceRecord);
 
   /** 
    * To redeem an invite, the user must provide a list of payments as well as
@@ -60,7 +60,7 @@ interface ZoeService {
    * kind is 'wantAtLeast' then the payment will be
    * ignored and should be `undefined`.
    */
-  redeem (invite :Payment, offerRules :OfferRules, payments :List(Payment)) -> (SeatAndPayout);
+  redeem (invite :Invite, offerRules :OfferRules, payments :List(Payment)) -> (SeatAndPayout);
 }
 
 /**
@@ -109,23 +109,23 @@ interface ZoeContractFacet () {
    * index in the offerHandles array. The reallocation will only happen if
    * 'offer safety' and conservation of rights are true, as enforced by Zoe.
    */
-  reallocate (offerHandles :List(Object), reallocation :List(List(Unit)));
+  reallocate (offerHandles :List(OfferHandle), reallocation :List(List(Unit)));
 
   /** 
    * Eject the offer, taking the current allocation for that offer and
    * creating payments to be returned to the user. No 'offer safety' checks are
    * done here because any previous reallocation performed those checks.
    */
-  complete (offerHandles :List(Object));
+  complete (offerHandles :List(OfferHandle));
   
   /** Create an invite using the Zoe inviteMint */
-  makeInvite (seat :Object, customProperties :Object ) -> (Payment);
+  makeInvite (seat :Object, customProperties :Object ) -> (Invite);
 
   /** 
    * Inform Zoe about new assays. Returns a promise for acknowledging
    * when the assays are added and ready.
    */
-  addAssays (assays :List(Object));
+  addAssays (assays :List(Assay));
 
   /**
    * Expose the user-facing Zoe Service API to the contracts as well.
@@ -141,20 +141,20 @@ interface ZoeContractFacet () {
   getUnitOpsForAssays (assays :List(Assay)) -> (List(UnitOps));
 
   /** Divide the offerHandles into 'active' and 'inactive' lists */
-  getOfferStatuses ( offerHandles :List(Object)) ->
+  getOfferStatuses ( offerHandles :List(OfferHandle)) ->
   (OfferStatusesRecord);
 
   /** 
    * Check if the offer is still active. This method does not throw
    * if the offer is inactive.
    */
-  isOfferActive ( offerHandle :Object ) -> (Bool);
+  isOfferActive ( offerHandle :OfferHandle ) -> (Bool);
 
   /** Get a list of offer records */
-  getOffers ( offerHandles :List(Object)) -> (List(OfferRecord));
+  getOffers ( offerHandles :List(OfferHandle)) -> (List(OfferRecord));
 
   /** Get the offer record */
-  getOffer ( offerHandle :Object) -> (List(OfferRecord));
+  getOffer ( offerHandle :OfferHandle) -> (List(OfferRecord));
 
 }
 
@@ -162,6 +162,6 @@ interface ZoeContractFacet () {
  * `active` and `inactive` lists of offerHandles.
  */
  struct OfferStatusesRecord ( ) {
-  active :List(Object);
-  inactive :List(Object);
+  active :List(OfferRecord);
+  inactive :List(OfferRecord);
 }
