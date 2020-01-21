@@ -125,7 +125,7 @@ interface ZoeContractFacet () {
    * Inform Zoe about new assays. Returns a promise for acknowledging
    * when the assays are added and ready.
    */
-  addAssays (assays :List(Assay));
+  addAssays (assays :List(Assay)) -> (Promise(Undefined));
 
   /**
    * Expose the user-facing Zoe Service API to the contracts as well.
