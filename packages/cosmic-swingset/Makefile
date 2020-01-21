@@ -22,6 +22,19 @@ NODE_DEBUG = node --inspect-port=$(INSPECT_ADDRESS):9229
 
 MOD_READONLY = # -mod=readonly
 
+NAME := $(shell sed -ne 's/.*"name": "\([^"]*\)".*/\1/p' package.json)
+VERSION := $(shell sed -ne 's/.*"version": "\([^"]*\)".*/\1/p' package.json)
+COMMIT := $(shell git log -1 --format='%H' || cat lib/git-revision.txt)
+
+ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(NAME) \
+	-X github.com/cosmos/cosmos-sdk/version.ServerName=ag-chain-cosmos \
+	-X github.com/cosmos/cosmos-sdk/version.ClientName=ag-cosmos-helper \
+	-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
+	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
+	-X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags)"
+
+BUILD_FLAGS := -tags "$(build_tags)" -ldflags '$(ldflags)'
+
 include Makefile.ledger
 all: build-cosmos install
 
@@ -116,7 +129,7 @@ docker-install: docker-pull
 	install -m 755 docker/* /usr/local/bin/
 
 compile-go: go.sum
-	go build -v $(MOD_READONLY) -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go
+	go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go
 	test "`uname -s 2>/dev/null`" != Darwin || install_name_tool -id `pwd`/lib/libagcosmosdaemon.so lib/libagcosmosdaemon.so
 
 build-cosmos: compile-go node-compile-gyp
@@ -136,7 +149,7 @@ compile-gyp:
 	rm -f binding.gyp
 
 install: go.sum
-	go install -v $(MOD_READONLY) -tags "$(build_tags)" ./cmd/ag-cosmos-helper
+	go install -v $(MOD_READONLY) $(BUILD_FLAGS) ./cmd/ag-cosmos-helper
 
 go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"
