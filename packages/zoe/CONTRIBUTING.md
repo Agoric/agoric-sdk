@@ -43,7 +43,7 @@ Before submitting a pull request, please:
   * and does NOT do a `git commit` and `git tag`
 * `git add .`
 * `git commit -m "bump version"`
-* `git tag -a v$VERSION -m "zoe-v$VERSION"`
+* `git tag -a zoe-v$VERSION -m "zoe-v$VERSION"`
 * `yarn publish --access public`
 * `git push`
 * `git push --tags`
