@@ -1,6 +1,6 @@
 import { test } from 'tape-promise/tape';
 
-import { makeStateMachine } from '../../../../contracts/helpers/stateMachine';
+import { makeStateMachine } from '../../../../src/contracts/helpers/stateMachine';
 
 test('stateMachine', t => {
   try {

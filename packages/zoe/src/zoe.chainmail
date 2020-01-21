@@ -1,0 +1,167 @@
+/**
+ * Zoe is a long-lived and well-trusted contract that enforces
+ * offer safety for the contracts that run on it. The ZoeService is the
+ * client- or user-facing Zoe API. There is also a separate API exposed
+ * to the contracts.
+ */
+
+interface ZoeService {
+
+  /**
+   * Zoe has a single `inviteAssay` for the entirety of its lifetime. 
+   * By having a reference to Zoe, a user can get the `inviteAssay` 
+   * and thus validate any `invite` they receive from someone else. The
+   * mint associated with the inviteAssay creates the ERTP payments 
+   * that represent the right to interact with a smart contract in 
+   * particular ways.
+   */
+  getInviteAssay() -> (Assay);
+
+  /**
+   * Create an installation by safely evaluating the code and
+   * registering it with Zoe. Returns an installationHandle. 
+   */
+  install(code :String, moduleFormat :String) -> (InstallationHandle);
+  
+  /** 
+   * Zoe is long-lived. We can use Zoe to create smart contract
+   * instances by specifying a particular contract installation to 
+   * use, as well as the `terms` of the contract. The contract terms 
+   * are the arguments to the contract, and must include
+   * the expected assays for the underlying rights. (Other than the
+   * `assays` property of `terms`, the `terms` properties are up to 
+   * the discretion of the smart contract.) We get back an invite (an
+   * ERTP payment) to participate in the contract.
+   */
+  makeInstance(installationHandle :InstallationHandle, terms :Object) -> (Invite);
+  
+  /**
+   * Credibly get information about the instance (such as the installation
+   * and terms used).
+   */
+  getInstance(instanceHandle :InstanceHandle) -> (InstanceRecord);
+
+  /** 
+   * To redeem an invite, the user must provide a list of payments as well as
+   * their rules for the offer. 
+   * 
+   * The rules for the offer are in two parts: `payoutRules` are used 
+   * by Zoe to enforce offer safety, and `exitRule` is used to specify
+   * the extent of payout liveness that Zoe can guarantee.
+   * `payoutRules` is a list of objects, each with a `kind` property 
+   * (such as 'offerAtMost') and a units property. The objects in the 
+   * `payoutRules` must be in the same order
+   * as the assays associated with a smart contract. That is, the
+   * units in index 0 of `payoutRules` should be a units for the assay
+   * in index 0 of the assays array.`payments` is an array of the
+   * actual payments to be escrowed, following the rules in the
+   * payoutRules. If the payoutRules kind is 'offerAtMost',
+   * then a payment matching the units is expected. If the payoutRules
+   * kind is 'wantAtLeast' then the payment will be
+   * ignored and should be `undefined`.
+   */
+  redeem (invite :Invite, offerRules :OfferRules, payments :List(Payment)) -> (SeatAndPayout);
+}
+
+/**
+ * This is returned by a call to `redeem` on Zoe.
+ * A seat is an arbitrary object whose methods allow the user to take
+ * certain actions in a contract. The payout is a promise that resolves to an array
+ * of promises for payments. Note that while the payout promise
+ * resolves when an offer is completed, the promises for each payment
+ * resolves after the remote issuer successfully withdraws the payment.
+ */
+struct SeatAndPayout ( ) {
+  seat :Object;
+  payout :List(Payment);
+}
+
+struct OfferRules ( ) {
+  payoutRules :List(PayoutRule);
+  exitRule :ExitRule;
+}
+
+/**
+ * payoutRules are an array of PayoutRule. The possible
+ * kinds are 'offerAtMost' and 'wantAtLeast'.
+ */
+struct PayoutRule ( ) {
+  kind :PayoutRuleKind;
+  units :Units;
+}
+
+/**
+ * The possible kinds are 'waived', 'onDemand', and 'afterDeadline'.
+ * `timer` and `deadline` only are used for the `afterDeadline` kind.
+ */
+struct ExitRule ( ) {
+  kind :ExitRuleKind;
+  timer :Timer;
+  deadline :Number;
+}
+
+interface ZoeContractFacet () {
+
+  /** 
+   * Instruct Zoe to try reallocating for the given offerHandles.
+   * Reallocation is a matrix (array of arrays) where the rows are the
+   * units to be paid to the player who made the offer at the same
+   * index in the offerHandles array. The reallocation will only happen if
+   * 'offer safety' and conservation of rights are true, as enforced by Zoe.
+   */
+  reallocate (offerHandles :List(OfferHandle), reallocation :List(List(Unit)));
+
+  /** 
+   * Eject the offer, taking the current allocation for that offer and
+   * creating payments to be returned to the user. No 'offer safety' checks are
+   * done here because any previous reallocation performed those checks.
+   */
+  complete (offerHandles :List(OfferHandle));
+  
+  /** Create an invite using the Zoe inviteMint */
+  makeInvite (seat :Object, customProperties :Object ) -> (Invite);
+
+  /** 
+   * Inform Zoe about new assays. Returns a promise for acknowledging
+   * when the assays are added and ready.
+   */
+  addAssays (assays :List(Assay)) -> (Promise(Undefined));
+
+  /**
+   * Expose the user-facing Zoe Service API to the contracts as well.
+   */
+  getZoeService ( ) -> (ZoeService);
+
+  ////// The methods below are pure and have no side-effects. ////////
+
+  /** Get the Zoe inviteAssay */
+  getInviteAssay ( ) -> (Assay);
+
+  /** Get a list of local unitOps per assay */
+  getUnitOpsForAssays (assays :List(Assay)) -> (List(UnitOps));
+
+  /** Divide the offerHandles into 'active' and 'inactive' lists */
+  getOfferStatuses ( offerHandles :List(OfferHandle)) ->
+  (OfferStatusesRecord);
+
+  /** 
+   * Check if the offer is still active. This method does not throw
+   * if the offer is inactive.
+   */
+  isOfferActive ( offerHandle :OfferHandle ) -> (Bool);
+
+  /** Get a list of offer records */
+  getOffers ( offerHandles :List(OfferHandle)) -> (List(OfferRecord));
+
+  /** Get the offer record */
+  getOffer ( offerHandle :OfferHandle) -> (List(OfferRecord));
+
+}
+
+/**
+ * `active` and `inactive` lists of offerHandles.
+ */
+ struct OfferStatusesRecord ( ) {
+  active :List(OfferRecord);
+  inactive :List(OfferRecord);
+}

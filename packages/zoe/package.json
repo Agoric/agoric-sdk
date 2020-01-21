@@ -2,7 +2,7 @@
   "name": "@agoric/zoe",
   "version": "0.1.2",
   "description": "Zoe: the Smart Contract Framework for Offer Enforcement",
-  "main": "index.js",
+  "main": "src/zoe.js",
   "engines": {
     "node": ">=11.0"
   },
@@ -49,15 +49,45 @@
     "tape-promise": "^4.0.0"
   },
   "files": [
-    "index.js",
-    "contracts/*.js",
-    "areRightsConserved.js",
-    "escrowReceiptConfig.js",
-    "evalContractCode.js",
-    "isOfferSafe.js",
-    "seatMint.js",
-    "state.js",
-    "zoe.js",
-    "zoeUtils.js"
-  ]
+    "src/",
+    "NEWS.md"
+  ],
+  "eslintConfig": {
+    "extends": [
+      "airbnb-base",
+      "plugin:prettier/recommended"
+    ],
+    "env": {
+      "es6": true
+    },
+    "rules": {
+      "implicit-arrow-linebreak": "off",
+      "function-paren-newline": "off",
+      "arrow-parens": "off",
+      "strict": "off",
+      "no-console": "off",
+      "no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_"
+        }
+      ],
+      "no-return-assign": "off",
+      "no-param-reassign": "off",
+      "no-restricted-syntax": [
+        "off",
+        "ForOfStatement"
+      ],
+      "no-unused-expressions": "off",
+      "no-loop-func": "off",
+      "no-inner-declarations": "off",
+      "import/prefer-default-export": "off"
+    }
+  },
+  "eslintIgnore": ["bundle-*.js"],
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  }
 }

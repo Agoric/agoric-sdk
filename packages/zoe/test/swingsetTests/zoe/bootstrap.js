@@ -1,6 +1,7 @@
 import harden from '@agoric/harden';
 
 import { makeMint } from '@agoric/ertp/core/mint';
+import buildManualTimer from '@agoric/ertp/tools/manualTimer';
 
 // eslint-disable-next-line import/no-unresolved, import/extensions
 import automaticRefundBundle from './bundle-automaticRefund';
@@ -9,7 +10,7 @@ import coveredCallBundle from './bundle-coveredCall';
 // eslint-disable-next-line import/no-unresolved, import/extensions
 import publicAuctionBundle from './bundle-publicAuction';
 // eslint-disable-next-line import/no-unresolved, import/extensions
-import publicSwapBundle from './bundle-publicSwap';
+import atomicSwapBundle from './bundle-atomicSwap';
 // eslint-disable-next-line import/no-unresolved, import/extensions
 import simpleExchangeBundle from './bundle-simpleExchange';
 // eslint-disable-next-line import/no-unresolved, import/extensions
@@ -35,29 +36,27 @@ const setupBasicMints = () => {
   });
 };
 
-const makeVats = (E, log, vats, zoe, installationHandle, startingExtents) => {
+const makeVats = (E, log, vats, zoe, installations, startingExtents) => {
+  const timer = buildManualTimer(log);
   const { mints, assays } = setupBasicMints();
+  const makePurses = extents =>
+    mints.map((mint, i) => mint.mint(assays[i].makeUnits(extents[i])));
   const [aliceExtents, bobExtents, carolExtents, daveExtents] = startingExtents;
+
   // Setup Alice
-  const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(aliceExtents[0]));
-  const aliceSimoleanPurse = mints[1].mint(
-    assays[1].makeUnits(aliceExtents[1]),
-  );
   const aliceP = E(vats.alice).build(
     zoe,
-    aliceMoolaPurse,
-    aliceSimoleanPurse,
-    installationHandle,
+    makePurses(aliceExtents),
+    installations,
+    timer,
   );
 
   // Setup Bob
-  const bobMoolaPurse = mints[0].mint(assays[0].makeUnits(bobExtents[0]));
-  const bobSimoleanPurse = mints[1].mint(assays[1].makeUnits(bobExtents[1]));
   const bobP = E(vats.bob).build(
     zoe,
-    bobMoolaPurse,
-    bobSimoleanPurse,
-    installationHandle,
+    makePurses(bobExtents),
+    installations,
+    timer,
   );
 
   const result = {
@@ -66,29 +65,21 @@ const makeVats = (E, log, vats, zoe, installationHandle, startingExtents) => {
   };
 
   if (carolExtents) {
-    const carolMoolaPurse = mints[0].mint(assays[0].makeUnits(carolExtents[0]));
-    const carolSimoleanPurse = mints[1].mint(
-      assays[1].makeUnits(carolExtents[1]),
-    );
     const carolP = E(vats.carol).build(
       zoe,
-      carolMoolaPurse,
-      carolSimoleanPurse,
-      installationHandle,
+      makePurses(carolExtents),
+      installations,
+      timer,
     );
     result.carolP = carolP;
   }
 
   if (daveExtents) {
-    const daveMoolaPurse = mints[0].mint(assays[0].makeUnits(daveExtents[0]));
-    const daveSimoleanPurse = mints[1].mint(
-      assays[1].makeUnits(daveExtents[1]),
-    );
     const daveP = E(vats.dave).build(
       zoe,
-      daveMoolaPurse,
-      daveSimoleanPurse,
-      installationHandle,
+      makePurses(daveExtents),
+      installations,
+      timer,
     );
     result.daveP = daveP;
   }
@@ -115,9 +106,9 @@ function build(E, log) {
           publicAuctionBundle.source,
           publicAuctionBundle.moduleFormat,
         ),
-        publicSwap: await E(zoe).install(
-          publicSwapBundle.source,
-          publicSwapBundle.moduleFormat,
+        atomicSwap: await E(zoe).install(
+          atomicSwapBundle.source,
+          atomicSwapBundle.moduleFormat,
         ),
         simpleExchange: await E(zoe).install(
           simpleExchangeBundle.source,
@@ -129,14 +120,14 @@ function build(E, log) {
         ),
       };
 
-      const [testName, installation, startingExtents] = argv;
+      const [testName, startingExtents] = argv;
 
       const { aliceP, bobP, carolP, daveP } = makeVats(
         E,
         log,
         vats,
         zoe,
-        installations[installation],
+        installations,
         startingExtents,
       );
       await E(aliceP).startTest(testName, bobP, carolP, daveP);
