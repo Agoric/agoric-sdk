@@ -139,9 +139,14 @@ export function cacheHeuristic(key) {
   // this encodes our heuristics about which keys are worth caching
 
   // v$NN.t.$NN is a transcript entry, which is basically write-only at
-  // runtime. But v$NN.t.nextID is the index of the next transcript to be
-  // written, which gets a read/increment/write cycle on each crank.
-  if (key.indexOf('.t.') !== -1 && key.indexOf('.t.nextID') !== -1) {
+  // runtime, so don't bother caching it
+  if (key.indexOf('.t.') !== -1) {
+    // But v$NN.t.nextID is the index of the next transcript to be written,
+    // which gets a read/increment/write cycle on each crank, and perhaps
+    // worthy of a cache
+    if (key.indexOf('.t.nextID') !== -1) {
+      return true;
+    }
     return false;
   }
 
