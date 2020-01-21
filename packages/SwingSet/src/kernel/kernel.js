@@ -97,7 +97,7 @@ export default function buildKernel(kernelEndowments) {
     }
   }
 
-  async function process(f, then, logerr) {
+  async function process(f, whenDone, logerr) {
     // the delivery might cause some number of (native) Promises to be
     // created and resolved, so we use the IO queue to detect when the
     // Promise queue is empty. The IO queue (setImmediate and setTimeout) is
@@ -113,7 +113,7 @@ export default function buildKernel(kernelEndowments) {
       .then(f)
       .then(undefined, logerr);
     await queueEmptyP;
-    then();
+    whenDone();
   }
 
   function invoke(deviceSlot, method, args) {
