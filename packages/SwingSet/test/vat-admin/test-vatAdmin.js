@@ -41,7 +41,7 @@ test('VatAdmin outer vat order dependence', t => {
   const fake = createFakeVatCreationFunction();
   t.throws(
     () => registerVatCreationFunction(fake.fakeVatCreationFunction),
-    /must be set before this/,
+    /must already be set/,
   );
   t.end();
 });

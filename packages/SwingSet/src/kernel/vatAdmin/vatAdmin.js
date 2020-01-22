@@ -1,8 +1,8 @@
 /**
- * Endowments for a Vat management device that can be made available to
- * SwingSet vats.
+ * Endowments for a Vat management device that can be made available to SwingSet
+ * vats.
  *
- * This is code that runs in the outer half of the device, which is in the
+ * This is code that runs in the outer part of the device, which is in the
  * primal realm. Provides functions to allow the kernel to register a function
  * with the inner device which will create a new vat.
  */
@@ -11,7 +11,7 @@ export function buildVatAdmin() {
 
   function registerVatCreationFunction(create, admin, terminate) {
     if (!vatCreationSetterFunction) {
-      throw new Error(`vatCreationSetterFunction must be set before this`);
+      throw new Error(`vatCreationSetterFunction must already be set.`);
     }
     vatCreationSetterFunction(create, admin, terminate);
   }
@@ -23,8 +23,6 @@ export function buildVatAdmin() {
     vatCreationSetterFunction = vatCreationSetterFn;
   }
 
-  // srcPath and endowments are provided to makeDeviceSlots() for use during
-  // configuration.
   return {
     endowments: { registerVatCreationSetter },
     registerVatCreationFunction,

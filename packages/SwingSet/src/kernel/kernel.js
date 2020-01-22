@@ -14,8 +14,6 @@ import { insistStorageAPI } from '../storageAPI';
 import { insistCapData } from '../capdata';
 import { insistMessage } from '../message';
 import { insistDeviceID, insistVatID } from './id';
-import { vatAdminDeviceSrc } from './vatAdmin/vatAdmin-src';
-import { vatAdminVatSrc } from './vatAdmin/vatAdminWrapper';
 import { buildVatAdmin } from './vatAdmin/vatAdmin';
 
 function abbreviateReviver(_, arg) {
@@ -27,7 +25,12 @@ function abbreviateReviver(_, arg) {
 }
 
 export default function buildKernel(kernelEndowments) {
-  const { setImmediate, hostStorage } = kernelEndowments;
+  const {
+    setImmediate,
+    hostStorage,
+    vatAdminVatSetup,
+    vatAdminDevSetup,
+  } = kernelEndowments;
   insistStorageAPI(hostStorage);
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(hostStorage);
   const kernelKeeper = makeKernelKeeper(enhancedCrankBuffer);
@@ -530,30 +533,10 @@ export default function buildKernel(kernelEndowments) {
   // Create a new vat, wait for the results, and notify the vat admin device.
   function createVatAndNotify(buildFn, vatID) {
     function serializeSlot(slot) {
-      const marker = {};
-      const args = harden([`${vatID}`, marker]);
-
-      // Single use serializer, replaces marker with slot. Enforces
-      // that its expectations are met.
-      let firstUse = true;
-
-      function serializeOnce(ref, slots, slotMap) {
-        if (!firstUse) {
-          throw Error('Should be used to serialize a single slot');
-        }
-        firstUse = false;
-
-        if (marker !== ref) {
-          throw Error(`expecting ref to be marker: ${marker}, ${ref}`);
-        }
-
-        slots.push(slot);
-        slotMap.set(ref, 0);
-
-        return harden({ [QCLASS]: 'slot', index: 0 });
-      }
-
-      return makeMarshal(serializeOnce).serialize(args);
+      return {
+        body: `["${vatID}",{"@qclass":"slot","index":0}]`,
+        slots: [slot],
+      };
     }
 
     const setup = (syscall, state, helpers) => {
@@ -588,22 +571,29 @@ export default function buildKernel(kernelEndowments) {
     );
   }
 
-  let sesEvaluate;
-  let vatAdminVatSetup;
-  let vatAdminDevSetup;
-
-  // assign values to vatAdminVatSetup and vatAdminDevSetup so they can be
-  // initialized at the same time as other vats and devices in start() below.
-  function configVatAdminSetup(require, sesRootRealm) {
-    // import the vat code, evaluate it, and build the vat
-    const endowments = { harden, require };
-    sesEvaluate = fn => sesRootRealm.evaluate(fn, endowments);
-
-    // import the inner vat code, evaluate it, and wire stuff together
-    vatAdminDevSetup = sesEvaluate(vatAdminDeviceSrc.setup);
-
-    // eval the wrapper Vat and initialize it.
-    vatAdminVatSetup = sesEvaluate(vatAdminVatSrc.setup);
+  // This kernel (and the genesis vats) will have been evaluated in a context in
+  // which these canonical symbols were available (which is why the require
+  // statements here work). That was achieved by running makeRequire() in
+  // controller.js. We want to provide the same context when we evaluate dynamic
+  // vats.
+  function kernelRequire(nameArg) {
+    const name = `${nameArg}`;
+    const HARDEN = '@agoric/harden';
+    const NAT = '@agoric/nat';
+    const EVALUATE = '@agoric/evaluate';
+    switch (name) {
+      case HARDEN:
+        // eslint-disable-next-line global-require,import/no-dynamic-require
+        return require(HARDEN);
+      case NAT:
+        // eslint-disable-next-line global-require,import/no-dynamic-require
+        return require(NAT);
+      case EVALUATE:
+        // eslint-disable-next-line global-require,import/no-dynamic-require
+        return require(EVALUATE);
+      default:
+        throw Error(`require ${name} is not supported`);
+    }
   }
 
   // A function to be called from the vatAdmin device to create a new vat. It
@@ -611,7 +601,11 @@ export default function buildKernel(kernelEndowments) {
   // returns the vatID so the ultimate requestor doesn't have to wait.
   function createVatDynamically(buildFnSrc) {
     const vatId = kernelKeeper.provideUnusedVatID();
-    const buildFn = sesEvaluate(buildFnSrc);
+    // use kernelRequire to get the evaluate we want.
+    const kernelEvaluate = kernelRequire('@agoric/evaluate');
+    // pass kernelRequire to evaluate for buildFn's use
+    const req = { require: kernelRequire };
+    const buildFn = kernelEvaluate.evaluateProgram(buildFnSrc, req);
     createVatAndNotify(buildFn, vatId);
     return vatId;
   }
@@ -629,12 +623,6 @@ export default function buildKernel(kernelEndowments) {
       kernelKeeper.createStartingKernelState();
     }
 
-    function assignIdAndBuildVatManager(name, setup, options) {
-      const vatID = kernelKeeper.provideVatIDForName(name);
-      console.log(`Assigned VatID ${vatID} for Genesis vat ${name}`);
-      buildVatManager(vatID, name, setup, options);
-    }
-
     // TESTONLY: we condition on vatAdminVatSetup and vatAdminDevSetup because
     // some kernel tests don't care about vats and devices and so don't
     // initialize properly. We should fix those tests.
@@ -642,49 +630,43 @@ export default function buildKernel(kernelEndowments) {
       genesisVats.set('vatAdmin', { setup: vatAdminVatSetup, options: {} });
     }
 
-    // instantiate all other vats
+    // instantiate all vats
     for (const name of genesisVats.keys()) {
       const { setup, options } = genesisVats.get(name);
-      assignIdAndBuildVatManager(name, setup, options);
+      const vatID = kernelKeeper.provideVatIDForName(name);
+      console.log(`Assigned VatID ${vatID} for genesis vat ${name}`);
+      buildVatManager(vatID, name, setup, options);
     }
 
-    function setupDeviceManger(name, setup, endowments) {
-      const deviceID = kernelKeeper.provideDeviceIDForName(name);
-      const manager = buildDeviceManager(deviceID, name, setup, endowments);
-      // the vat record is not hardened: it holds mutable next-ID values
-      ephemeral.devices.set(deviceID, {
-        manager,
-      });
-    }
-
-    // evaluate the outer vatAdmin vat for two registration functions
-    const { endowments: endow, registerVatCreationFunction } = buildVatAdmin();
+    // evaluate the outer vatAdmin device code for two registration functions
+    const { endowments, registerVatCreationFunction } = buildVatAdmin();
 
     if (vatAdminDevSetup) {
-      const params = { setup: vatAdminDevSetup, endowments: endow };
+      const params = { setup: vatAdminDevSetup, endowments };
       genesisDevices.set('vatAdmin', params);
     }
 
     // instantiate all devices
     for (const name of genesisDevices.keys()) {
-      const { setup, endowments } = genesisDevices.get(name);
-      setupDeviceManger(name, setup, endowments);
+      const { setup, endowments: devEndowments } = genesisDevices.get(name);
+      const deviceID = kernelKeeper.provideDeviceIDForName(name);
+      console.log(`Assigned DeviceID ${deviceID} for genesis device ${name}`);
+      ephemeral.devices.set(deviceID, {
+        manager: buildDeviceManager(deviceID, name, setup, devEndowments),
+      });
     }
 
     if (vatAdminVatSetup) {
-      // register createVatDynamically with the vatAdmin Device.
       registerVatCreationFunction(createVatDynamically);
     }
 
     // And enqueue the bootstrap() call. If we're reloading from an
     // initialized state vector, this call will already be in the bootstrap
     // vat's transcript, so we don't re-queue it.
-    if (!wasInitialized) {
-      if (bootstrapVatName) {
-        const bootstrapVatID = vatNameToID(bootstrapVatName);
-        console.log(`=> queueing bootstrap()`);
-        callBootstrap(bootstrapVatID, argvString);
-      }
+    if (!wasInitialized && bootstrapVatName) {
+      const bootstrapVatID = vatNameToID(bootstrapVatName);
+      console.log(`=> queueing bootstrap()`);
+      callBootstrap(bootstrapVatID, argvString);
     }
 
     // if it *was* initialized, replay the transcripts
@@ -735,7 +717,6 @@ export default function buildKernel(kernelEndowments) {
     addGenesisVat,
     addGenesisDevice,
     start,
-    configVatAdminSetup,
 
     step,
     run,

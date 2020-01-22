@@ -9,59 +9,51 @@
 
 import harden from '@agoric/harden';
 
-const vatAdminWrapper = {
-  setup: (syscall, state, helpers) => {
-    function makePromiseForVat() {
-      let res;
-      let reject;
-      const p = new Promise((rsv, rj) => {
-        res = rsv;
-        reject = rj;
-      });
-      return harden({ p, res, reject });
-    }
+export default function setup(syscall, state, helpers) {
+  function makePromiseForVat() {
+    let res;
+    let reject;
+    const p = new Promise((rsv, rj) => {
+      res = rsv;
+      reject = rj;
+    });
+    return harden({ p, res, reject });
+  }
 
-    function build(E, D) {
-      const vatIdsToRoots = new Map();
+  function build(E, D) {
+    const vatIdsToRoots = new Map();
 
-      function createVatAdminService(vatAdminNode) {
-        return harden({
-          createVat(code) {
-            const vatId = D(vatAdminNode).create(code);
-            const vatPromise = makePromiseForVat();
-            vatIdsToRoots.set(vatId, vatPromise);
-            const adminNode = harden({
-              terminate() {
-                D(vatAdminNode).terminate(vatId);
-                // TODO(hibbert): cleanup admin vat data structures
-              },
-              adminData() {
-                return D(vatAdminNode).adminStats(vatId);
-              },
-            });
-            return { adminNode, root: vatPromise.p };
-          },
-        });
-      }
-
-      function newVatCallback(vatId, rootObject) {
-        const rootPromise = vatIdsToRoots.get(vatId);
-        rootPromise.res(rootObject);
-        vatIdsToRoots.set(vatId, rootObject);
-      }
-
+    function createVatAdminService(vatAdminNode) {
       return harden({
-        createVatAdminService,
-        newVatCallback,
+        createVat(code) {
+          const vatId = D(vatAdminNode).create(code);
+          const vatPromise = makePromiseForVat();
+          vatIdsToRoots.set(vatId, vatPromise);
+          const adminNode = harden({
+            terminate() {
+              D(vatAdminNode).terminate(vatId);
+              // TODO(hibbert): cleanup admin vat data structures
+            },
+            adminData() {
+              return D(vatAdminNode).adminStats(vatId);
+            },
+          });
+          return { adminNode, root: vatPromise.p };
+        },
       });
     }
 
-    return helpers.makeLiveSlots(syscall, state, build, helpers.vatID);
-  },
-};
+    function newVatCallback(vatId, rootObject) {
+      const rootPromise = vatIdsToRoots.get(vatId);
+      rootPromise.res(rootObject);
+      vatIdsToRoots.set(vatId, rootObject);
+    }
 
-const vatAdminVatSrc = harden({
-  setup: `${vatAdminWrapper.setup}`,
-});
+    return harden({
+      createVatAdminService,
+      newVatCallback,
+    });
+  }
 
-export { vatAdminVatSrc };
+  return helpers.makeLiveSlots(syscall, state, build, helpers.vatID);
+}

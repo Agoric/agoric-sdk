@@ -19,6 +19,9 @@ import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
 import { buildStorageInMemory } from './hostStorage';
 
+const ADMIN_DEVICE_PATH = require.resolve('./kernel/vatAdmin/vatAdmin-src');
+const ADMIN_VAT_PATH = require.resolve('./kernel/vatAdmin/vatAdminWrapper');
+
 function byName(a, b) {
   if (a.name < b.name) {
     return -1;
@@ -107,8 +110,7 @@ function makeEvaluate(e) {
   });
 }
 
-function buildSESKernel(hostStorage) {
-  // console.log('transforms', transforms);
+function makeSESEvaluator() {
   const evaluateOptions = makeDefaultEvaluateOptions();
   const { transforms, ...otherOptions } = evaluateOptions;
   const s = SES.makeSESRootRealm({
@@ -121,6 +123,13 @@ function buildSESKernel(hostStorage) {
     t.closeOverSES && t.closeOverSES(s);
   });
 
+  // TODO: if the 'require' we provide here supplies a non-pure module,
+  // that could open a communication channel between otherwise isolated
+  // Vats. For now that's just harden and Nat, but others might get added
+  // in the future, so pay attention to what we allow in. We could build
+  // a new makeRequire for each Vat, but 1: performance and 2: the same
+  // comms problem exists between otherwise-isolated code within a single
+  // Vat so it doesn't really help anyways
   const r = s.makeRequire({
     '@agoric/evaluate': {
       attenuatorSource: `${makeEvaluate}`,
@@ -132,36 +141,40 @@ function buildSESKernel(hostStorage) {
     '@agoric/harden': true,
     '@agoric/nat': Nat,
   });
-  const kernelSource = getKernelSource();
-  // console.log('building kernel');
-  const buildKernel = s.evaluate(kernelSource, { require: r })().default;
-  const kernelEndowments = { setImmediate, hostStorage };
-  const kernel = buildKernel(kernelEndowments);
-  return { kernel, s, r };
+  return src => {
+    return s.evaluate(src, { require: r })().default;
+  };
 }
 
-function buildNonSESKernel(hostStorage) {
+function buildSESKernel(sesEvaluator, endowments) {
+  const kernelSource = getKernelSource();
+  const buildKernel = sesEvaluator(kernelSource);
+  return { kernel: buildKernel(endowments) };
+}
+
+function buildNonSESKernel(endowments) {
   // Evaluate shims to produce desired globals.
   const evaluateOptions = makeDefaultEvaluateOptions();
   // eslint-disable-next-line no-eval
   (evaluateOptions.shims || []).forEach(shim => (1, eval)(shim));
 
-  const kernelEndowments = { setImmediate, hostStorage };
-  const kernel = buildKernelNonSES(kernelEndowments);
+  const kernel = buildKernelNonSES(endowments);
   return { kernel };
 }
 
 export async function buildVatController(config, withSES = true, argv = []) {
   // todo: move argv into the config
-  const hostStorage = config.hostStorage || buildStorageInMemory().storage;
-  insistStorageAPI(hostStorage);
-  const { kernel, s, r } = withSES
-    ? buildSESKernel(hostStorage)
-    : buildNonSESKernel(hostStorage);
-  // console.log('kernel', kernel);
 
-  async function addGenesisVat(name, sourceIndex, options = {}) {
-    console.log(`= adding vat '${name}' from ${sourceIndex}`);
+  // sesEvaluator is only valid when withSES === true
+  let sesEvaluator;
+  if (withSES) {
+    sesEvaluator = makeSESEvaluator();
+  }
+
+  // Evaluate source to produce a setup function. This binds withSES from the
+  // enclosing context and evaluates it either in a SES context, or without SES
+  // by directly calling require().
+  async function evaluateToSetup(sourceIndex) {
     if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
       throw Error(
         'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
@@ -175,40 +188,36 @@ export async function buildVatController(config, withSES = true, argv = []) {
     let setup;
 
     if (withSES) {
-      // TODO: if the 'require' we provide here supplies a non-pure module,
-      // that could open a communication channel between otherwise isolated
-      // Vats. For now that's just harden and Nat, but others might get added
-      // in the future, so pay attention to what we allow in. We could build
-      // a new makeRequire for each Vat, but 1: performance and 2: the same
-      // comms problem exists between otherwise-isolated code within a single
-      // Vat so it doesn't really help anyways
-      // const r = s.makeRequire({ '@agoric/harden': true, '@agoric/nat': Nat });
       const { source, sourceMap } = await bundleSource(`${sourceIndex}`);
       const actualSource = `(${source})\n${sourceMap}`;
-      setup = s.evaluate(actualSource, { require: r })().default;
+      setup = sesEvaluator(actualSource);
     } else {
       // eslint-disable-next-line global-require,import/no-dynamic-require
       setup = require(`${sourceIndex}`).default;
     }
+    return setup;
+  }
+
+  insistStorageAPI(config.hostStorage || buildStorageInMemory().storage);
+  const kernelEndowments = {
+    setImmediate,
+    hostStorage: config.hostStorage || buildStorageInMemory().storage,
+    vatAdminDevSetup: await evaluateToSetup(ADMIN_DEVICE_PATH),
+    vatAdminVatSetup: await evaluateToSetup(ADMIN_VAT_PATH),
+  };
+
+  const { kernel } = withSES
+    ? buildSESKernel(sesEvaluator, kernelEndowments)
+    : buildNonSESKernel(kernelEndowments);
+
+  async function addGenesisVat(name, sourceIndex, options = {}) {
+    console.log(`= adding vat '${name}' from ${sourceIndex}`);
+    const setup = await evaluateToSetup(sourceIndex);
     kernel.addGenesisVat(name, setup, options);
   }
 
   async function addGenesisDevice(name, sourceIndex, endowments) {
-    if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
-      throw Error(
-        'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
-      );
-    }
-
-    let setup;
-    if (withSES) {
-      const { source, sourceMap } = await bundleSource(`${sourceIndex}`);
-      const actualSource = `(${source})\n${sourceMap}`;
-      setup = s.evaluate(actualSource, { require: r })().default;
-    } else {
-      // eslint-disable-next-line global-require,import/no-dynamic-require
-      setup = require(`${sourceIndex}`).default;
-    }
+    const setup = await evaluateToSetup(sourceIndex);
     kernel.addGenesisDevice(name, setup, endowments);
   }
 
@@ -232,8 +241,6 @@ export async function buildVatController(config, withSES = true, argv = []) {
     bootstrapVatName = '_bootstrap';
     await addGenesisVat(bootstrapVatName, config.bootstrapIndexJS, {});
   }
-
-  kernel.configVatAdminSetup(r, s);
 
   // start() may queue bootstrap if state doesn't say we did it already. It
   // also replays the transcripts from a previous run, if any, which will
