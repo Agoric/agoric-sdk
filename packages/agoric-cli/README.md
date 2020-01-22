@@ -1,49 +1,54 @@
 # Agoric Javascript Smart Contract Platform
 
-## Prerequisites
+## Choose your Prerequisite
 
-### Use as part of Agoric SDK
-
-If you have cloned the Agoric SDK, you can use the Agoric CLI directly.
-
-```sh
-export AGORIC="$PWD/bin/agoric --sdk"
-```
-
-### Install from NPM
-
-NOTE: This doesn't work right now due to missing published packages.
+<details><summary>Run directly from NPM using `npx`</summary>
+**NOTE: This doesn't work right now due to missing published packages.**
 
 You will need a local installation of Node.js, at least version 11.
 
 ```sh
-# Install the agoric devtool from NPM.
-npm install -g agoric
-export AGORIC=agoric
+export AGCLI='npx agoric'
 ```
+</details>
 
-or:
+<details><summary>Install from NPM globally on your host</summary>
+**NOTE: This doesn't work right now due to missing published packages.**
+
+You will need a local installation of Node.js, at least version 11.
 
 ```sh
-# Run the agoric devtool from NPM directly.
-export AGORIC='npx agoric'
+npm install -g agoric
+export AGCLI=agoric
+```
+</details>
+
+<details><summary>Use as part of Agoric SDK</summary>
+
+If you have cloned and installed the Agoric SDK as described by its [README](/Agoric/agoric-sdk/#readme), you can use the Agoric CLI directly.
+
+```sh
+export AGCLI="/PATH/TO/agoric-sdk/packages/agoric-cli/bin/agoric --sdk"
 ```
 
-## Your first Agoric Dapp
+If you want to modify the `template` directory used by Agoric SDK, you can `cd` to it and skip the `$AGCLI init` stage below.  Then, create a PR from your changes.
+</details>
 
-Here is a simple script for how to get started.
+## Your first Agoric dApp
+
+Here is a simple script for how to get started.  Be sure to type `$AGCLI` verbatim; it is the results of `export AGCLI=...` from the [above section](#Choose-your-Prerequisites).
 
 ```sh
 # Initialize your dapp project.
 # Note: Change the `demo` name to something meaningful.
-$AGORIC init demo
+$AGCLI init demo
 # Go to its directory.
 cd demo
 # Install Javascript dependencies.
-$AGORIC install
+$AGCLI install
 # Run the local vat machine.
-$AGORIC start
+$AGCLI start
 # Install your smart contract and web api (can be done separately)
-$AGORIC deploy ./contract/deploy.js ./api/deploy.js
+$AGCLI deploy ./contract/deploy.js ./api/deploy.js
 # Navigate to http://localhost:8000/
 ```
