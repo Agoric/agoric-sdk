@@ -17,11 +17,11 @@ async function testVatCreationFromBuild(t, withSES) {
   const c = await buildVatController(config, withSES, ['newVat']);
   t.equal(c.vatNameToID('vatAdmin'), 'v2');
   t.equal(c.vatNameToID('_bootstrap'), 'v1');
-  for (let i = 0; i < 11; i += 1) {
+  for (let i = 0; i < 9; i += 1) {
     // eslint-disable-next-line no-await-in-loop
     await c.step();
   }
-  t.deepEqual(c.dump().log, ['starting wake test', '13']);
+  t.deepEqual(c.dump().log, ['starting newVat test', '13']);
   t.end();
 }
 
