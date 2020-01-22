@@ -35,8 +35,7 @@ function makeEndowments() {
 }
 
 export default function runTests() {
-  // TODO(hibbert) reinstate this test
-  test.skip('build kernel', async t => {
+  test('build kernel', async t => {
     const kernel = buildKernel(makeEndowments());
     await kernel.start(); // empty queue
     const data = kernel.dump();

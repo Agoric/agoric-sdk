@@ -59,7 +59,7 @@ export async function runVatsLocally(t, withSES, name) {
 }
 
 function testLocalPatterns() {
-  const withSES = true;
+  const withSES = false;
   const bp = buildPatterns();
   for (const name of Array.from(bp.patterns.keys()).sort()) {
     const mode = bp.patterns.get(name).local;
@@ -92,7 +92,7 @@ export async function runVatsInComms(t, withSES, enablePipelining, name) {
 }
 
 function testCommsPatterns() {
-  const withSES = true;
+  const withSES = false;
   const enablePipelining = true;
   const bp = buildPatterns();
   for (const name of Array.from(bp.patterns.keys()).sort()) {

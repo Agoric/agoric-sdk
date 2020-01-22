@@ -32,3 +32,20 @@ test('VatAdmin inner vat creation', async t => {
 test.skip('VatAdmin inner vat creation non-SES', async t => {
   await testVatCreationFromBuild(t, false);
 });
+
+async function testVatCreationAndObjectHosting(t, withSES) {
+  const config = await createConfig();
+  const c = await buildVatController(config, withSES, ['counters']);
+  await c.run();
+  await c.run();
+  t.deepEqual(c.dump().log, ['starting counter test', '4', '9', '2']);
+  t.end();
+}
+
+test('VatAdmin inner vat creation', async t => {
+  await testVatCreationAndObjectHosting(t, true);
+});
+
+test('VatAdmin inner vat creation non-SES', async t => {
+  await testVatCreationAndObjectHosting(t, false);
+});
