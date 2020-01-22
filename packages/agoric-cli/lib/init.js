@@ -45,7 +45,7 @@ export default async function initMain(progname, rawArgs, priv) {
     const cur = `${templateDir}${suffix}`;
     const list = await readdir(cur);
     await Promise.all(list.map(async name => {
-      if (name === 'node_modules') {
+      if (name === 'node_modules' || name === 'solo') {
         return;
       }
       const stem = `${suffix}/${name}`;

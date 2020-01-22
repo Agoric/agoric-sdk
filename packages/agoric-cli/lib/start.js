@@ -1,8 +1,8 @@
 import parseArgs from 'minimist';
 import chalk from 'chalk';
 
-export default async function startMain(progname, rawArgs, priv) {
-  const { console, error, fs, spawn } = priv;
+export default async function startMain(progname, rawArgs, priv, opts) {
+  const { console, error, fs, spawn, process } = priv;
   const {
     reset,
     _: args,
@@ -25,8 +25,14 @@ export default async function startMain(progname, rawArgs, priv) {
     }
   };
 
-  if (!await exists('.agservers/node_modules')) {
-    return error(`you must first run '${progname} install' with Go 1.12 or later`);
+  let agSolo;
+  if (opts.sdk) {
+    agSolo = `${__dirname}/../../cosmic-swingset/bin/ag-solo`;
+  } else {
+    if (!await exists('.agservers/node_modules')) {
+      return error(`you must first run '${progname} install'`);
+    }
+    agSolo = `${process.cwd()}/node_modules/@agoric/cosmic-swingset/bin/ag-solo`;
   }
 
   if (reset) {
@@ -35,10 +41,9 @@ export default async function startMain(progname, rawArgs, priv) {
   }
 
   // Run scenario3.
-  const css = 'node_modules/\@agoric/cosmic-swingset';
   if (!await exists('.agservers/solo')) {
     console.log(chalk.yellow('initializing solo'))
-    await pspawn(`${css}/bin/ag-solo`, ['init', 'solo', '--egresses=none'], {
+    await pspawn(agSolo, ['init', 'solo', '--egresses=none'], {
       stdio: 'inherit',
       cwd: '.agservers',
     });
@@ -51,7 +56,7 @@ export default async function startMain(progname, rawArgs, priv) {
   await Promise.all([fs.symlink('../../ui/build', dappHtml).catch(() => {}), 
     fs.symlink('../../../.agwallet', htmlWallet).catch(() => {})]);
 
-  await pspawn(`../${css}/bin/ag-solo`, ['start', '--role=three_client'], {
+  await pspawn(agSolo, ['start', '--role=three_client'], {
     stdio: 'inherit',
     cwd: '.agservers/solo',
   });

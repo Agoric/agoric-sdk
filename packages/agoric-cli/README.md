@@ -2,37 +2,31 @@
 
 ## Prerequisites
 
-### Vagrant
+### Use as part of Agoric SDK
 
-To run a standardized Linux distribution with all the required development tools, you probably want [Vagrant](https://www.vagrantup.com/docs/):
+If you have cloned the Agoric SDK, you can use the Agoric CLI directly.
 
 ```sh
-vagrant up --provider=docker
-# or
-vagrant up --provider=virtualbox
-# then
-vagrant ssh
+export AGORIC="$PWD/bin/agoric --sdk"
 ```
 
-The Vagrant setup has synchronized filesystem access with the workspace directory on your host system, so you can use your favourite IDE to modify the files, and just run Linux commands on the SSH connection.
+### Install from NPM
 
+NOTE: This doesn't work right now due to missing published packages.
 
-### Developing on the current OS
-
-If you don't use Vagrant, you can develop on your own local operating system.
-
-NOTE: You will need Go 1.12 or newer to run the Agoric VM.
+You will need a local installation of Node.js, at least version 11.
 
 ```sh
-# Install the agoric devtool.
+# Install the agoric devtool from NPM.
 npm install -g agoric
+export AGORIC=agoric
 ```
 
 or:
 
 ```sh
-# Run the agoric devtool.
-npx agoric [...options]
+# Run the agoric devtool from NPM directly.
+export AGORIC='npx agoric'
 ```
 
 ## Your first Agoric Dapp
@@ -42,14 +36,14 @@ Here is a simple script for how to get started.
 ```sh
 # Initialize your dapp project.
 # Note: Change the `demo` name to something meaningful.
-agoric init demo
+$AGORIC init demo
 # Go to its directory.
 cd demo
-# Install Javascript/Go dependencies.
-agoric install
+# Install Javascript dependencies.
+$AGORIC install
 # Run the local vat machine.
-agoric start
+$AGORIC start
 # Install your smart contract and web api (can be done separately)
-agoric deploy ./contract/deploy.js ./api/deploy.js
+$AGORIC deploy ./contract/deploy.js ./api/deploy.js
 # Navigate to http://localhost:8000/
 ```
