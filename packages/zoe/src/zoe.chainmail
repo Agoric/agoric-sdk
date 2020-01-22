@@ -162,6 +162,6 @@ interface ZoeContractFacet () {
  * `active` and `inactive` lists of offerHandles.
  */
  struct OfferStatusesRecord ( ) {
-  active :List(OfferRecord);
-  inactive :List(OfferRecord);
+  active :List(OfferHandle);
+  inactive :List(OfferHandle);
 }
