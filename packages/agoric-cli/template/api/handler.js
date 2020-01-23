@@ -7,12 +7,12 @@ export default harden((terms, _inviteMaker) => {
         processInbound(obj, home) {
           switch (obj.type) {
             case '@DIR@Message': {
-              return harden({type: '@DIR@Response', orig: obj});
+              return harden({ type: '@DIR@Response', orig: obj });
             }
           }
           return undefined;
         },
       });
-    }
+    },
   });
 });

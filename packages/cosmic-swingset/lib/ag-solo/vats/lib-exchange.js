@@ -61,44 +61,50 @@ export function makeExchange(E, log, host, zoe, registrar) {
       ([instanceHandle, regAssay0, regAssay1]) =>
         E(zoe)
           .getInstance(instanceHandle)
-          .then(({ terms: { assays: [contractAssay0, contractAssay1] } }) => {
-            // Check whether we sell on contract assay 0 or 1.
-            const normal = checkOrder(
-              regAssay0,
-              regAssay1,
-              contractAssay0,
-              contractAssay1,
-            );
-
-            // Contrust the rules for serialization (no instance).
-            // This rule is the payment
-            const rule0 = {
-              kind: 'offerExactly',
-              units: { assayId: assayId0, extent: extent0 },
-            };
-            // This rule is the payout
-            const rule1 = {
-              kind: 'wantAtLeast',
-              units: { assayId: assayId1 },
-            };
-
-            // Order the rules accordingly.
-            const offerRules = harden({
-              payoutRules: [
-                normal ? rule0 : rule1,
-                normal ? rule1 : rule0,
-                {
-                  kind: 'wantAtLeast',
-                  units: {},
-                },
-              ],
-              exitRule: {
-                kind: 'onDemand',
+          .then(
+            ({
+              terms: {
+                assays: [contractAssay0, contractAssay1],
               },
-            });
+            }) => {
+              // Check whether we sell on contract assay 0 or 1.
+              const normal = checkOrder(
+                regAssay0,
+                regAssay1,
+                contractAssay0,
+                contractAssay1,
+              );
 
-            return offerRules;
-          }),
+              // Contrust the rules for serialization (no instance).
+              // This rule is the payment
+              const rule0 = {
+                kind: 'offerExactly',
+                units: { assayId: assayId0, extent: extent0 },
+              };
+              // This rule is the payout
+              const rule1 = {
+                kind: 'wantAtLeast',
+                units: { assayId: assayId1 },
+              };
+
+              // Order the rules accordingly.
+              const offerRules = harden({
+                payoutRules: [
+                  normal ? rule0 : rule1,
+                  normal ? rule1 : rule0,
+                  {
+                    kind: 'wantAtLeast',
+                    units: {},
+                  },
+                ],
+                exitRule: {
+                  kind: 'onDemand',
+                },
+              });
+
+              return offerRules;
+            },
+          ),
     );
   }
 

@@ -78,7 +78,7 @@ async function buildSwingset(
   vatsDir,
   argv,
   broadcast,
-  ) {
+) {
   const initialMailboxState = JSON.parse(fs.readFileSync(mailboxStateFile));
 
   const mbs = buildMailboxStateMap();
@@ -183,7 +183,10 @@ async function buildSwingset(
 
 export default async function start(basedir, withSES, argv) {
   const mailboxStateFile = path.resolve(basedir, 'swingset-mailbox-state.json');
-  const kernelStateFile = path.resolve(basedir, 'swingset-kernel-state.jsonlines');
+  const kernelStateFile = path.resolve(
+    basedir,
+    'swingset-kernel-state.jsonlines',
+  );
   const connections = JSON.parse(
     fs.readFileSync(path.join(basedir, 'connections.json')),
   );
@@ -274,13 +277,13 @@ export default async function start(basedir, withSES, argv) {
   let list = [];
   try {
     list = await fs.promises.readdir(initDir);
-  } catch (e) {
-
-  }
+  } catch (e) {}
   for (const initName of list.sort()) {
     console.log('loading init bundle', initName);
     const initFile = path.join(initDir, initName);
-    if (await bundle(() => '.', ['--evaluate', '--once', '--input', initFile])) {
+    if (
+      await bundle(() => '.', ['--evaluate', '--once', '--input', initFile])
+    ) {
       return 0;
     }
   }

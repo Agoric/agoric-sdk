@@ -27,14 +27,19 @@ const sendJSON = (ws, obj) => {
 };
 
 export default async function bundle(insistIsBasedir, args) {
-  const { _: a, evaluate, input, once, output, 'ag-solo': agSolo } = parseArgs(args, {
-    boolean: ['once', 'evaluate', 'input'],
-    alias: {o: 'output', e: 'evaluate', i: 'input'},
-    stopEarly: true,
-  });
+  const { _: a, evaluate, input, once, output, 'ag-solo': agSolo } = parseArgs(
+    args,
+    {
+      boolean: ['once', 'evaluate', 'input'],
+      alias: { o: 'output', e: 'evaluate', i: 'input' },
+      stopEarly: true,
+    },
+  );
 
   if (!output && !evaluate) {
-    console.error(`You must specify at least one of '--output' or '--evaluate'`);
+    console.error(
+      `You must specify at least one of '--output' or '--evaluate'`,
+    );
     return 1;
   }
 
@@ -51,21 +56,23 @@ export default async function bundle(insistIsBasedir, args) {
       console.error('You must specify a main module to bundle');
       return 1;
     }
-      
+
     const bundled = {};
     let moduleFile = mainModule;
     if (moduleFile[0] !== '.' && moduleFile[0] !== '/') {
       moduleFile = `${__dirname}/${mainModule}.js`;
     }
-    await Promise.all([`main=${moduleFile}`, ...namePaths].map(async namePath => {
-      const match = namePath.match(/^([^=]+)=(.+)$/);
-      if (!match) {
-        throw Error(`${namePath} isn't NAME=PATH`);
-      }
-      const name = match[1];
-      const filepath = match[2];
-      bundled[name] = await buildSourceBundle(filepath);
-    }));
+    await Promise.all(
+      [`main=${moduleFile}`, ...namePaths].map(async namePath => {
+        const match = namePath.match(/^([^=]+)=(.+)$/);
+        if (!match) {
+          throw Error(`${namePath} isn't NAME=PATH`);
+        }
+        const name = match[1];
+        const filepath = match[2];
+        bundled[name] = await buildSourceBundle(filepath);
+      }),
+    );
     bundles.push(bundled);
 
     if (output) {
@@ -134,7 +141,7 @@ export default async function bundle(insistIsBasedir, args) {
           console.error(`Bundle main does not have an export default function`);
           continue;
         }
-    
+
         await main({ bundle: bundled, home: boot });
       }
       console.error('Done!');

@@ -110,7 +110,10 @@ function run() {
       galleryNode.removeChild(galleryNode.firstChild);
     }
     // We need to render increasing x followed by increasing y.
-    const maxHeight = state.reduce((prior, column) => Math.max(prior, column.length), 0);
+    const maxHeight = state.reduce(
+      (prior, column) => Math.max(prior, column.length),
+      0,
+    );
     for (let y = 0; y < maxHeight; y += 1) {
       for (let x = 0; x < state.length; x += 1) {
         const px = document.createElement('div');
@@ -322,8 +325,7 @@ Promise.all(fetches)
     }
     const pr = document.getElementById('package_repo');
     if (pr) {
-      const repo =
-        pjson.repository || 'https://github.com/Agoric/agoric-sdk';
+      const repo = pjson.repository || 'https://github.com/Agoric/agoric-sdk';
       const cleanRev = rev.replace(/-dirty$/, '');
       const href = rev ? `${repo}/commit/${cleanRev}` : repo;
       pr.setAttribute('href', href);

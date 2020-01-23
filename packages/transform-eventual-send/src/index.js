@@ -31,10 +31,9 @@ function makeEventualSendTransformer(parser, generate) {
               if (moduleFormat === 'getExport') {
                 recursive = true;
                 try {
-                  const ns = (evaluateProgram || ss.evaluateProgram)(
-                    `(${evSendSrc})()`,
-                    { require: myRequire || require },
-                  );
+                  const ns = (
+                    evaluateProgram || ss.evaluateProgram
+                  )(`(${evSendSrc})()`, { require: myRequire || require });
                   HandledPromise = ns.HandledPromise;
                 } finally {
                   recursive = false;

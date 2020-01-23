@@ -59,10 +59,12 @@ export function getReplHandler(E, homeObjects, sendBroadcast) {
 
   function updateHistorySlot(histnum, s) {
     //console.log(`sendBroadcast ${histnum}`);
-    sendBroadcast({ type: 'updateHistory', histnum,
-                    command: commands[histnum],
-                    display: display[histnum],
-                    });
+    sendBroadcast({
+      type: 'updateHistory',
+      histnum,
+      command: commands[histnum],
+      display: display[histnum],
+    });
   }
 
   function addException(histnum, e) {
@@ -103,7 +105,14 @@ export function getReplHandler(E, homeObjects, sendBroadcast) {
       display[histnum] = `working on eval` + `(${body})`;
       updateHistorySlot(histnum);
 
-      const endowments = { console, E, commands, history, home: homeObjects, harden };
+      const endowments = {
+        console,
+        E,
+        commands,
+        history,
+        home: homeObjects,
+        harden,
+      };
       let r;
       try {
         r = evaluateProgram(body, endowments);
@@ -125,7 +134,8 @@ export function getReplHandler(E, homeObjects, sendBroadcast) {
           rej => {
             // leave history[] alone: leave the rejected promise in place
             display[histnum] = `Promise.reject(${stringify(`${rej}`)})`;
-          }).then(_ => updateHistorySlot(histnum));
+          },
+        ).then(_ => updateHistorySlot(histnum));
       }
       updateHistorySlot(histnum);
       return {};
