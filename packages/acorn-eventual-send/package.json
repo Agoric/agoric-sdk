@@ -10,7 +10,7 @@
     "lint-check": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "acorn": "^6.2.0",
+    "acorn": "^7.1.0",
     "esm": "^3.2.25",
     "rollup": "^1.16.7",
     "tap-spec": "^5.0.0",

@@ -18,7 +18,14 @@ const makeWebSocket = (...args) => new WebSocket(...args);
 process.on('SIGINT', () => process.exit(-1));
 
 const rawArgs = process.argv.splice(2);
-main(progname, rawArgs, { console, error, makeWebSocket, fs, spawn }).then(
+main(progname, rawArgs, {
+  console,
+  error,
+  makeWebSocket,
+  fs,
+  process,
+  spawn,
+}).then(
   res => res === undefined || process.exit(res),
   rej => {
     error(rej);

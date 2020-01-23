@@ -41,26 +41,20 @@ export default async function initMain(progname, rawArgs, priv) {
   const recursiveTemplate = async (templateDir, suffix = '') => {
     const cur = `${templateDir}${suffix}`;
     const list = await readdir(cur);
-    await Promise.all(
-      list.map(async name => {
-        if (name === 'node_modules') {
-          return;
-        }
-        const stem = `${suffix}/${name}`;
-        const st = await lstat(`${templateDir}${stem}`);
-        let target;
-        try {
-          target = await stat(`${DIR}${stem}`);
-        } catch (e) {}
-        if (st.isDirectory()) {
-          if (!target) {
-            console.log(`mkdir ${DIR}${stem}`);
-            await mkdir(`${DIR}${stem}`);
-          }
-          await recursiveTemplate(templateDir, `${stem}`);
-        } else {
-          console.log(`write ${DIR}${stem}`);
-          await writeTemplate(stem);
+    await Promise.all(list.map(async name => {
+      if (name === 'node_modules' || name === 'solo') {
+        return;
+      }
+      const stem = `${suffix}/${name}`;
+      const st = await lstat(`${templateDir}${stem}`);
+      let target;
+      try {
+        target = await stat(`${DIR}${stem}`);
+      } catch (e) {}
+      if (st.isDirectory()) {
+        if (!target) {
+          console.log(`mkdir ${DIR}${stem}`);
+          await mkdir(`${DIR}${stem}`);
         }
       }),
     );

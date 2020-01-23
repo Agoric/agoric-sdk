@@ -61,10 +61,10 @@ export default async function deployMain(progname, rawArgs, priv) {
       });
 
       // Wait for the chain to become ready.
-      let bootC = E.C(getBootstrap());
-      console.error('Chain loaded:', await bootC.G.LOADING.P);
+      let bootP = getBootstrap();
+      console.error('Chain loaded:', await E.G(bootP).LOADING);
       // Take a new copy, since the chain objects have been added to bootstrap.
-      bootC = E.C(getBootstrap());
+      bootP = getBootstrap();
 
       for (const arg of args) {
         const moduleFile = path.resolve(process.cwd(), arg);
@@ -81,7 +81,7 @@ export default async function deployMain(progname, rawArgs, priv) {
             `${moduleFile} does not have an export default function main`,
           );
         } else {
-          await main(bootC.P, {
+          await main(bootP, {
             bundleSource: file => bundleSource(pathResolve(file)),
             pathResolve,
           });

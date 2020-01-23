@@ -7,7 +7,7 @@ const STAMP = '.agservers';
 const main = async (progname, rawArgs, privs) => {
   const { console, error, fs } = privs;
   const { _: args, ...opts } = parseArgs(rawArgs, {
-    boolean: ['version', 'help'],
+    boolean: ['version', 'help', 'sdk'],
     stopEarly: true,
   });
 
@@ -23,7 +23,7 @@ const main = async (progname, rawArgs, privs) => {
   
   const subMain = (fn, args) => {
     const subError = (...rest) => error(`${args[0]}:`, ...rest);
-    return fn(progname, args.slice(1), { ...privs, error: subError });
+    return fn(progname, args.slice(1), { ...privs, error: subError }, opts);
   };
 
   const usage = status => {

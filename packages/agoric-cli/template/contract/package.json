@@ -1,8 +1,10 @@
 {
-  "name": "agoric-dapp-@DIR@-contract",
+  "name": "agoric-dapp-contract",
   "version": "0.1.0",
+  "private": true,
   "description": "Contract for the @DIR@ Agoric Dapp",
   "scripts": {
+    "build": "exit 0",
     "test": "tape -r esm 'test/**/*.js'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
@@ -23,7 +25,7 @@
   },
   "dependencies": {
     "@agoric/ertp": "^0.2.0",
-    "@agoric/zoe": "^0.1.2",
+    "@agoric/zoe": "^0.2.0",
     "@agoric/harden": "0.0.4",
     "@agoric/nat": "^2.0.1",
     "esm": "^3.2.5"
