@@ -1,5 +1,7 @@
 import harden from '@agoric/harden';
 import { makeMarshal, QCLASS } from '@agoric/marshal';
+import Nat from '@agoric/nat';
+import evaluateProgram from '@agoric/evaluate';
 import makeVatManager from './vatManager';
 import { makeLiveSlots } from './liveSlots';
 import { makeDeviceSlots } from './deviceSlots';
@@ -521,27 +523,20 @@ export default function buildKernel(kernelEndowments) {
   }
 
   // This kernel (and the genesis vats) will have been evaluated in a context in
-  // which these canonical symbols were available (which is why the require
-  // statements here work). That was achieved by running makeRequire() in
-  // controller.js. We want to provide the same context when we evaluate dynamic
-  // vats.
+  // which these canonical symbols were available. That was achieved by running
+  // makeRequire() in controller.js. We want to provide the same context when we
+  // evaluate dynamic vats.
   function kernelRequire(nameArg) {
     const name = `${nameArg}`;
-    const HARDEN = '@agoric/harden';
-    const NAT = '@agoric/nat';
-    const EVALUATE = '@agoric/evaluate';
     switch (name) {
-      case HARDEN:
-        // eslint-disable-next-line global-require,import/no-dynamic-require
-        return require(HARDEN);
-      case NAT:
-        // eslint-disable-next-line global-require,import/no-dynamic-require
-        return require(NAT);
-      case EVALUATE:
-        // eslint-disable-next-line global-require,import/no-dynamic-require
-        return require(EVALUATE);
+      case '@agoric/harden':
+        return harden;
+      case '@agoric/nat':
+        return Nat;
+      case '@agoric/evaluate':
+        return evaluateProgram;
       default:
-        throw Error(`require ${name} is not supported`);
+        throw Error(`require "${name}" is not supported`);
     }
   }
 
@@ -580,11 +575,8 @@ export default function buildKernel(kernelEndowments) {
   // will be available soon, but we immediately return the vatID so the ultimate
   // requestor doesn't have to wait.
   function createVatDynamically(buildFnSrc) {
-    // use kernelRequire to get the evaluate we want.
-    const kernelEvaluate = kernelRequire('@agoric/evaluate');
-    // pass kernelRequire to evaluate for buildFn's use
     const endowments = { require: kernelRequire };
-    const buildFn = kernelEvaluate.evaluateProgram(buildFnSrc, endowments);
+    const buildFn = evaluateProgram(buildFnSrc, endowments);
     const vatIDOrError = createVat(buildFn);
 
     // When there's an error creating the vat or evaluating the code, createVat
