@@ -68,3 +68,22 @@ test('VatAdmin broken vat creation', async t => {
 test('VatAdmin broken vat creation non-SES', async t => {
   await testBrokenVatCreation(t, false);
 });
+
+async function testGetVatStats(t, withSES) {
+  const config = await createConfig();
+  const c = await buildVatController(config, withSES, ['vatStats']);
+  await c.run();
+  t.deepEqual(c.dump().log, [
+    'starting stats test',
+    '{"objectCount":0,"promiseCount":0,"deviceCount":0,"transcriptCount":0}',
+  ]);
+  t.end();
+}
+
+test('VatAdmin get vat stats', async t => {
+  await testGetVatStats(t, true);
+});
+
+test('VatAdmin get vat stats non-SES', async t => {
+  await testGetVatStats(t, false);
+});

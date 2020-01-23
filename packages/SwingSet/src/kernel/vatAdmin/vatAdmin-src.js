@@ -22,7 +22,7 @@ import harden from '@agoric/harden';
 export default function setup(syscall, state, helpers, endowments) {
   const {
     create: kernelVatCreationFn,
-    // stats: kernelVatStatsFn,
+    stats: kernelVatStatsFn,
     // terminate: kernelTerminateFn,
   } = endowments;
 
@@ -30,6 +30,18 @@ export default function setup(syscall, state, helpers, endowments) {
   // vatId in return. Clean up the outgoing and incoming arguments.
   function callKernelVatCreation(src) {
     return kernelVatCreationFn(`${src}`);
+  }
+
+  // Call the registered kernel function to request vat stats. Clean up the
+  // outgoing and incoming arguments.
+  function callKernelVatStats(vatId) {
+    if (!kernelVatStatsFn || typeof kernelVatStatsFn !== 'function') {
+      throw new Error(
+        `Attempted to request stats before registering kernel function`,
+      );
+    }
+    const cleanVatId = `${vatId}`;
+    return kernelVatStatsFn(cleanVatId);
   }
 
   // makeRootDevice is called with { _SO, _getDeviceState, _setDeviceState } as
@@ -46,8 +58,8 @@ export default function setup(syscall, state, helpers, endowments) {
       terminate(_vatID) {
         // TODO(hibbert)
       },
-      adminStats(_vatID) {
-        // TODO(hibbert)
+      adminStats(vatID) {
+        return callKernelVatStats(vatID);
       },
     });
   }
