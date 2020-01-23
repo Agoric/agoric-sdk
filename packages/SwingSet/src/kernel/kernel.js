@@ -24,7 +24,12 @@ function abbreviateReviver(_, arg) {
 }
 
 export default function buildKernel(kernelEndowments) {
-  const { setImmediate, hostStorage } = kernelEndowments;
+  const {
+    setImmediate,
+    hostStorage,
+    vatAdminVatSetup,
+    vatAdminDevSetup,
+  } = kernelEndowments;
   insistStorageAPI(hostStorage);
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(hostStorage);
   const kernelKeeper = makeKernelKeeper(enhancedCrankBuffer);
@@ -412,6 +417,10 @@ export default function buildKernel(kernelEndowments) {
     genesisDevices.set(name, { setup, endowments });
   }
 
+  function makeVatRootObjectSlot() {
+    return makeVatSlot('object', true, 0);
+  }
+
   function callBootstrap(bootstrapVatID, argvString) {
     // we invoke obj[0].bootstrap with an object that contains 'vats' and
     // 'argv'.
@@ -420,6 +429,7 @@ export default function buildKernel(kernelEndowments) {
     // each key of 'vats' will be serialized as a reference to its obj0
     const vrefs = new Map();
     const vatObj0s = {};
+    const vatSlot = makeVatRootObjectSlot();
     kernelKeeper.getAllVatNames().forEach(name => {
       const vatID = kernelKeeper.getVatIDForName(name);
       const { manager } = ephemeral.vats.get(vatID);
@@ -434,7 +444,6 @@ export default function buildKernel(kernelEndowments) {
         },
       }); // marker
       vatObj0s[name] = vref;
-      const vatSlot = makeVatSlot('object', true, 0);
       const kernelSlot = manager.mapVatSlotToKernelSlot(vatSlot);
       vrefs.set(vref, kernelSlot);
       console.log(`adding vref ${name} [${vatID}]`);
@@ -481,14 +490,12 @@ export default function buildKernel(kernelEndowments) {
     const m = makeMarshal(serializeSlot);
     const args = harden([argv, vatObj0s, deviceObj0s]);
     // queueToExport() takes kernel-refs (ko+NN, kd+NN) in s.slots
-    const boot0 = makeVatSlot('object', true, 0);
-    queueToExport(bootstrapVatID, boot0, 'bootstrap', m.serialize(args));
+    const rootSlot = makeVatRootObjectSlot();
+    queueToExport(bootstrapVatID, rootSlot, 'bootstrap', m.serialize(args));
   }
 
-  function buildVatManager(vatID, name, setup, options) {
+  function buildVatManager(vatID, name, setup) {
     validateVatSetupFn(setup);
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-
     const helpers = harden({
       vatID: name, // TODO: rename to 'name', update vats to match
       makeLiveSlots,
@@ -503,21 +510,92 @@ export default function buildKernel(kernelEndowments) {
     });
 
     // the vatManager invokes setup() to build the userspace image
-    const manager = makeVatManager(
+    return makeVatManager(
       vatID,
       syscallManager,
       setup,
       helpers,
       kernelKeeper,
-      vatKeeper,
+      kernelKeeper.provideVatKeeper(vatID),
     );
-    ephemeral.vats.set(
-      vatID,
-      harden({
-        manager,
-        enablePipelining: Boolean(options.enablePipelining),
-      }),
-    );
+  }
+
+  // This kernel (and the genesis vats) will have been evaluated in a context in
+  // which these canonical symbols were available (which is why the require
+  // statements here work). That was achieved by running makeRequire() in
+  // controller.js. We want to provide the same context when we evaluate dynamic
+  // vats.
+  function kernelRequire(nameArg) {
+    const name = `${nameArg}`;
+    const HARDEN = '@agoric/harden';
+    const NAT = '@agoric/nat';
+    const EVALUATE = '@agoric/evaluate';
+    switch (name) {
+      case HARDEN:
+        // eslint-disable-next-line global-require,import/no-dynamic-require
+        return require(HARDEN);
+      case NAT:
+        // eslint-disable-next-line global-require,import/no-dynamic-require
+        return require(NAT);
+      case EVALUATE:
+        // eslint-disable-next-line global-require,import/no-dynamic-require
+        return require(EVALUATE);
+      default:
+        throw Error(`require ${name} is not supported`);
+    }
+  }
+
+  // Enqueue a message to the adminVat giving it the new vat's root object
+  function notifyAdminVatOfNewVat(vatID) {
+    const vatSlot = makeVatRootObjectSlot();
+    const kernelRootObjSlot = addExport(vatID, vatSlot);
+    const serializedArgs = {
+      body: `["${vatID}",{"@qclass":"slot","index":0}]`,
+      slots: [kernelRootObjSlot],
+    };
+    const vatAdminVatId = vatNameToID('vatAdmin');
+    queueToExport(vatAdminVatId, vatSlot, 'newVatCallback', serializedArgs);
+  }
+
+  // Create a new vat and return the vatID.
+  function createVat(buildFn) {
+    const vatID = kernelKeeper.provideUnusedVatID();
+
+    const setup = (syscall, state, helpers) => {
+      return helpers.makeLiveSlots(syscall, state, buildFn, helpers.vatID);
+    };
+
+    let manager;
+    try {
+      manager = buildVatManager(vatID, `dynamicVat${vatID}`, setup);
+    } catch (e) {
+      return `Error: ${e}`;
+    }
+    ephemeral.vats.set(vatID, harden({ manager }));
+    return vatID;
+  }
+
+  // A function to be called from the vatAdmin device to create a new vat. It
+  // creates the vat and sends a notification to the device. The root object
+  // will be available soon, but we immediately return the vatID so the ultimate
+  // requestor doesn't have to wait.
+  function createVatDynamically(buildFnSrc) {
+    // use kernelRequire to get the evaluate we want.
+    const kernelEvaluate = kernelRequire('@agoric/evaluate');
+    // pass kernelRequire to evaluate for buildFn's use
+    const endowments = { require: kernelRequire };
+    const buildFn = kernelEvaluate.evaluateProgram(buildFnSrc, endowments);
+    const vatIDOrError = createVat(buildFn);
+
+    // When there's an error creating the vat or evaluating the code, createVat
+    // returns an error message instead of a vatID. We return the error message
+    // and skip the notification step. All the fns for parsing and verifying
+    // formatting of vatIDs throw, so we look at the purported ID directly here.
+    if (`${vatIDOrError}`.startsWith('v')) {
+      notifyAdminVatOfNewVat(vatIDOrError);
+    }
+
+    return `${vatIDOrError}`;
   }
 
   function buildDeviceManager(deviceID, name, setup, endowments) {
@@ -553,42 +631,53 @@ export default function buildKernel(kernelEndowments) {
       kernelKeeper.createStartingKernelState();
     }
 
-    function assignIdAndBuildVatManager(name, setup, options) {
-      const vatID = kernelKeeper.provideVatIDForName(name);
-      console.log(`Assigned VatID ${vatID} for Genesis vat ${name}`);
-      buildVatManager(vatID, name, setup, options);
+    // TESTONLY: we condition on vatAdminVatSetup and vatAdminDevSetup because
+    // some kernel tests don't care about vats and devices and so don't
+    // initialize properly. We should fix those tests.
+    if (vatAdminVatSetup) {
+      genesisVats.set('vatAdmin', { setup: vatAdminVatSetup, options: {} });
     }
 
-    // instantiate all other vats
+    // instantiate all vats
     for (const name of genesisVats.keys()) {
       const { setup, options } = genesisVats.get(name);
-      assignIdAndBuildVatManager(name, setup, options);
+      const vatID = kernelKeeper.provideVatIDForName(name);
+      console.log(`Assigned VatID ${vatID} for genesis vat ${name}`);
+      const manager = buildVatManager(vatID, name, setup);
+      ephemeral.vats.set(
+        vatID,
+        harden({
+          manager,
+          enablePipelining: Boolean(options.enablePipelining),
+        }),
+      );
     }
 
-    function setupDeviceManger(name, setup, endowments) {
-      const deviceID = kernelKeeper.provideDeviceIDForName(name);
-      const manager = buildDeviceManager(deviceID, name, setup, endowments);
-      // the vat record is not hardened: it holds mutable next-ID values
-      ephemeral.devices.set(deviceID, {
-        manager,
-      });
+    if (vatAdminDevSetup) {
+      const params = {
+        setup: vatAdminDevSetup,
+        endowments: { create: createVatDynamically /* vatStats, terminate */ },
+      };
+      genesisDevices.set('vatAdmin', params);
     }
 
     // instantiate all devices
     for (const name of genesisDevices.keys()) {
-      const { setup, endowments } = genesisDevices.get(name);
-      setupDeviceManger(name, setup, endowments);
+      const { setup, endowments: devEndowments } = genesisDevices.get(name);
+      const deviceID = kernelKeeper.provideDeviceIDForName(name);
+      console.log(`Assigned DeviceID ${deviceID} for genesis device ${name}`);
+      ephemeral.devices.set(deviceID, {
+        manager: buildDeviceManager(deviceID, name, setup, devEndowments),
+      });
     }
 
     // And enqueue the bootstrap() call. If we're reloading from an
     // initialized state vector, this call will already be in the bootstrap
     // vat's transcript, so we don't re-queue it.
-    if (!wasInitialized) {
-      if (bootstrapVatName) {
-        const bootstrapVatID = vatNameToID(bootstrapVatName);
-        console.log(`=> queueing bootstrap()`);
-        callBootstrap(bootstrapVatID, argvString);
-      }
+    if (!wasInitialized && bootstrapVatName) {
+      const bootstrapVatID = vatNameToID(bootstrapVatName);
+      console.log(`=> queueing bootstrap()`);
+      callBootstrap(bootstrapVatID, argvString);
     }
 
     // if it *was* initialized, replay the transcripts

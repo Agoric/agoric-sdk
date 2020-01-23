@@ -26,13 +26,15 @@ async function test0(t, withSES) {
     [],
     {
       _bootstrap: { '@qclass': 'slot', index: 0 },
+      vatAdmin: { '@qclass': 'slot', index: 1 },
     },
     {
       _dummy: 'dummy',
-      d0: { '@qclass': 'slot', index: 1 },
+      d0: { '@qclass': 'slot', index: 2 },
+      vatAdmin: { '@qclass': 'slot', index: 3 },
     },
   ]);
-  t.deepEqual(JSON.parse(c.dump().log[1]), ['o+0', 'd-70']);
+  t.deepEqual(JSON.parse(c.dump().log[1]), ['o+0', 'o-50', 'd-70', 'd-71']);
   t.end();
 }
 

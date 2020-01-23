@@ -28,7 +28,11 @@ async function simpleCall(t, withSES) {
   const controller = await buildVatController(config, withSES);
   const data = controller.dump();
   const vat1 = controller.vatNameToID('vat1');
-  t.deepEqual(data.vatTables, [{ vatID: vat1, state: { transcript: [] } }]);
+  const vat2 = controller.vatNameToID('vatAdmin');
+  t.deepEqual(data.vatTables, [
+    { vatID: vat1, state: { transcript: [] } },
+    { vatID: vat2, state: { transcript: [] } },
+  ]);
   t.deepEqual(data.kernelTable, []);
 
   controller.queueToVatExport('vat1', 'o+1', 'foo', capdata('args'));
@@ -116,10 +120,14 @@ async function bootstrapExport(t, withSES) {
   const boot0 = 'ko20';
   const left0 = 'ko21';
   const right0 = 'ko22';
+  const adminDev = 'kd30';
+  const vatAdminSvc = 'ko23';
   const kt = [
+    [adminDev, 'd7', 'd+0'],
     [boot0, bootstrapVatID, 'o+0'],
     [left0, leftVatID, 'o+0'],
     [right0, rightVatID, 'o+0'],
+    [vatAdminSvc, 'v4', 'o+0'],
   ];
   checkKT(t, c, kt);
 
@@ -130,8 +138,8 @@ async function bootstrapExport(t, withSES) {
         method: 'bootstrap',
         args: {
           body:
-            '[[],{"_bootstrap":{"@qclass":"slot","index":0},"left":{"@qclass":"slot","index":1},"right":{"@qclass":"slot","index":2}},{"_dummy":"dummy"}]',
-          slots: [boot0, left0, right0],
+            '[[],{"_bootstrap":{"@qclass":"slot","index":0},"left":{"@qclass":"slot","index":1},"right":{"@qclass":"slot","index":2},"vatAdmin":{"@qclass":"slot","index":3}},{"_dummy":"dummy","vatAdmin":{"@qclass":"slot","index":4}}]',
+          slots: [boot0, left0, right0, vatAdminSvc, adminDev],
         },
       },
       target: boot0,
@@ -157,6 +165,8 @@ async function bootstrapExport(t, withSES) {
   kt.push([left0, bootstrapVatID, 'o-50']);
   kt.push([right0, bootstrapVatID, 'o-51']);
   kt.push([fooP, bootstrapVatID, 'p+5']);
+  kt.push([adminDev, 'v3', 'd-70']);
+  kt.push([vatAdminSvc, 'v3', 'o-52']);
   checkKT(t, c, kt);
   t.deepEqual(c.dump().runQueue, [
     {
