@@ -56,15 +56,15 @@ async function testBrokenVatCreation(t, withSES) {
   await c.run();
   t.deepEqual(c.dump().log, [
     'starting brokenVat test',
-    'ReferenceError: harden is not defined',
+    'Error: ReferenceError: harden is not defined',
   ]);
   t.end();
 }
 
-test('VatAdmin inner vat creation', async t => {
+test('VatAdmin broken vat creation', async t => {
   await testBrokenVatCreation(t, true);
 });
 
-test('VatAdmin inner vat creation non-SES', async t => {
+test('VatAdmin broken vat creation non-SES', async t => {
   await testBrokenVatCreation(t, false);
 });

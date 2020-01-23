@@ -20,32 +20,16 @@ import harden from '@agoric/harden';
  * vat sends the VatID on every call.
  */
 export default function setup(syscall, state, helpers, endowments) {
-  let kernelVatCreationFn;
-  let kernelVatStatsFn;
-  // eslint-disable-next-line no-unused-vars
-  let kernelTerminateFn;
+  const {
+    create: kernelVatCreationFn,
+    // stats: kernelVatStatsFn,
+    // terminate: kernelTerminateFn,
+  } = endowments;
 
   // call the registered kernel function to create a new vat, and receive a
   // vatId in return. Clean up the outgoing and incoming arguments.
   function callKernelVatCreation(src) {
-    if (!kernelVatCreationFn || typeof kernelVatCreationFn !== 'function') {
-      throw new Error(
-        `Attempted to create vat before registering kernel function`,
-      );
-    }
     return kernelVatCreationFn(`${src}`);
-  }
-
-  // Call the registered kernel function to request vat stats. Clean up the
-  // outgoing and incoming arguments.
-  function callKernelVatStats(vatId) {
-    if (!kernelVatStatsFn || typeof kernelVatStatsFn !== 'function') {
-      throw new Error(
-        `Attempted to request stats before registering kernel function`,
-      );
-    }
-    const cleanVatId = `${vatId}`;
-    return `${kernelVatStatsFn(cleanVatId)}`;
   }
 
   // makeRootDevice is called with { _SO, _getDeviceState, _setDeviceState } as
@@ -62,18 +46,11 @@ export default function setup(syscall, state, helpers, endowments) {
       terminate(_vatID) {
         // TODO(hibbert)
       },
-      adminStats(vatID) {
-        return callKernelVatStats(vatID);
+      adminStats(_vatID) {
+        // TODO(hibbert)
       },
     });
   }
-
-  // javascript wants parens around non-declaration destructuring assignments
-  ({
-    create: kernelVatCreationFn,
-    // stats: kernelVatStatsFn,
-    // terminate: kernelTerminateFn,
-  } = endowments.getVatControlFns());
 
   // return dispatch object
   return helpers.makeDeviceSlots(syscall, state, makeRootDevice, helpers.name);

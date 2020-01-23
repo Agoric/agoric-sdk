@@ -547,20 +547,17 @@ export default function buildKernel(kernelEndowments) {
 
   // Enqueue a message to the adminVat giving it the new vat's root object
   function notifyAdminVatOfNewVat(vatID) {
-    function serializeSlot(slot) {
-      return {
-        body: `["${vatID}",{"@qclass":"slot","index":0}]`,
-        slots: [slot],
-      };
-    }
     const vatSlot = makeVatRootObjectSlot();
     const kernelRootObjSlot = addExport(vatID, vatSlot);
-    const serializedArgs = serializeSlot(kernelRootObjSlot);
+    const serializedArgs = {
+      body: `["${vatID}",{"@qclass":"slot","index":0}]`,
+      slots: [kernelRootObjSlot],
+    };
     const vatAdminVatId = vatNameToID('vatAdmin');
     queueToExport(vatAdminVatId, vatSlot, 'newVatCallback', serializedArgs);
   }
 
-  // Create a new vat and return the vatID without waiting for the root object.
+  // Create a new vat and return the vatID.
   function createVat(buildFn) {
     const vatID = kernelKeeper.provideUnusedVatID();
 
@@ -572,7 +569,7 @@ export default function buildKernel(kernelEndowments) {
     try {
       manager = buildVatManager(vatID, `dynamicVat${vatID}`, setup);
     } catch (e) {
-      return `${e}`;
+      return `Error: ${e}`;
     }
     ephemeral.vats.set(vatID, harden({ manager }));
     return vatID;
@@ -586,15 +583,19 @@ export default function buildKernel(kernelEndowments) {
     // use kernelRequire to get the evaluate we want.
     const kernelEvaluate = kernelRequire('@agoric/evaluate');
     // pass kernelRequire to evaluate for buildFn's use
-    const req = { require: kernelRequire };
-    const buildFn = kernelEvaluate.evaluateProgram(buildFnSrc, req);
-    const vatID = createVat(buildFn);
+    const endowments = { require: kernelRequire };
+    const buildFn = kernelEvaluate.evaluateProgram(buildFnSrc, endowments);
+    const vatIDOrError = createVat(buildFn);
 
-    if (`${vatID}`.startsWith('v')) {
-      notifyAdminVatOfNewVat(vatID);
+    // When there's an error creating the vat or evaluating the code, createVat
+    // returns an error message instead of a vatID. We return the error message
+    // and skip the notification step. All the fns for parsing and verifying
+    // formatting of vatIDs throw, so we look at the purported ID directly here.
+    if (`${vatIDOrError}`.startsWith('v')) {
+      notifyAdminVatOfNewVat(vatIDOrError);
     }
 
-    return `${vatID}`;
+    return `${vatIDOrError}`;
   }
 
   function buildDeviceManager(deviceID, name, setup, endowments) {
@@ -652,14 +653,10 @@ export default function buildKernel(kernelEndowments) {
       );
     }
 
-    function getVatControlFns() {
-      return harden({ create: createVatDynamically /* vatStats, terminate */ });
-    }
-
     if (vatAdminDevSetup) {
       const params = {
         setup: vatAdminDevSetup,
-        endowments: { getVatControlFns },
+        endowments: { create: createVatDynamically /* vatStats, terminate */ },
       };
       genesisDevices.set('vatAdmin', params);
     }

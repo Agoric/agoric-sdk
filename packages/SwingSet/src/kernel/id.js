@@ -49,7 +49,7 @@ export function makeDeviceID(index) {
 
 export function parseVatOrDeviceID(s) {
   if (s !== `${s}`) {
-    throw new Error(`${s} is not a string, so cannot be a VatID/DevieID`);
+    throw new Error(`${s} is not a string, so cannot be a VatID/DeviceID`);
   }
   s = `${s}`;
   let type;

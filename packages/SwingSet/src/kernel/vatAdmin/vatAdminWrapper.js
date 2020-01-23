@@ -27,6 +27,8 @@ export default function setup(syscall, state, helpers) {
       return harden({
         createVat(code) {
           const vatId = D(vatAdminNode).create(code);
+          // If vat creation fails, we get the error message here, (Guaranteed
+          // not to start with a 'v'), so we don't create the promise or node.
           if (!vatId.startsWith('v')) {
             return vatId;
           }
