@@ -1,43 +1,42 @@
 # Agoric Javascript Smart Contract Platform
 
-## Prerequisites
+## Choose your Prerequisite
 
-### Vagrant
+<details><summary>Run directly from NPM using `npx`</summary>
+**NOTE: This doesn't work right now due to missing published packages.**
 
-To run a standardized Linux distribution with all the required development tools, you probably want [Vagrant](https://www.vagrantup.com/docs/):
+You will need a local installation of Node.js, at least version 11.
 
 ```sh
-vagrant up --provider=docker
-# or
-vagrant up --provider=virtualbox
-# then
-vagrant ssh
+alias agoric='npx agoric'
 ```
+</details>
 
-The Vagrant setup has synchronized filesystem access with the workspace directory on your host system, so you can use your favourite IDE to modify the files, and just run Linux commands on the SSH connection.
+<details><summary>Install from NPM globally on your host</summary>
+**NOTE: This doesn't work right now due to missing published packages.**
 
-
-### Developing on the current OS
-
-If you don't use Vagrant, you can develop on your own local operating system.
-
-NOTE: You will need Go 1.12 or newer to run the Agoric VM.
+You will need a local installation of Node.js, at least version 11.
 
 ```sh
-# Install the agoric devtool.
 npm install -g agoric
+unalias agoric
 ```
+</details>
 
-or:
+<details><summary>Use as part of Agoric SDK</summary>
+
+If you have cloned and installed the Agoric SDK as described by its [README](/Agoric/agoric-sdk/#readme), you can use the Agoric CLI directly.
 
 ```sh
-# Run the agoric devtool.
-npx agoric [...options]
+alias agoric="/PATH/TO/agoric-sdk/packages/agoric-cli/bin/agoric --sdk"
 ```
 
-## Your first Agoric Dapp
+If you want to modify the `template` directory used by Agoric SDK, you can `cd` to it and skip the `agoric init` stage below.  Then, create a PR from your changes.
+</details>
 
-Here is a simple script for how to get started.
+## Your first Agoric dApp
+
+Here is a simple script for how to get started.  Be sure to have run the appropriate instructions from the [above section](#Choose-your-Prerequisites).
 
 ```sh
 # Initialize your dapp project.
@@ -45,7 +44,7 @@ Here is a simple script for how to get started.
 agoric init demo
 # Go to its directory.
 cd demo
-# Install Javascript/Go dependencies.
+# Install Javascript dependencies.
 agoric install
 # Run the local vat machine.
 agoric start
