@@ -88,8 +88,7 @@ export default function setup(syscall, state, helpers) {
                 devices.vatAdmin,
               );
               const { adminNode } = await E(vatAdminSvc).createVat(src);
-              const stats = await E(adminNode).adminData();
-              log(stats);
+              log(await E(adminNode).adminData());
               return;
             }
             default:
