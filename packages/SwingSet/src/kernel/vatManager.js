@@ -288,6 +288,10 @@ export default function makeVatManager(
     );
   }
 
+  function vatStats() {
+    return vatKeeper.vatStats();
+  }
+
   async function deliverOneMessage(target, msg) {
     insistMessage(msg);
     const targetSlot = mapKernelSlotToVatSlot(target);
@@ -385,6 +389,7 @@ export default function makeVatManager(
     deliverOneMessage,
     deliverOneNotification,
     replayTranscript,
+    vatStats,
   };
   return manager;
 }

@@ -620,7 +620,8 @@ export default function buildKernel(kernelEndowments) {
 
   function collectVatStats(vatID) {
     insistVatID(vatID);
-    return kernelKeeper.vatStats(vatID);
+    const vatManager = ephemeral.vats.get(vatID).manager;
+    return vatManager.vatStats();
   }
 
   async function start(bootstrapVatName, argvString) {
@@ -663,7 +664,7 @@ export default function buildKernel(kernelEndowments) {
         setup: vatAdminDevSetup,
         endowments: {
           create: createVatDynamically,
-          vatStats: collectVatStats,
+          stats: collectVatStats,
           /* terminate */
         },
       };
