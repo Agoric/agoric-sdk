@@ -89,13 +89,8 @@ To test that the update works with agoric-cli, do:
 
 1. Run `yarn install` from the workspace root
 2. Run `yarn build` from the workspace root
-3. `cd packages/agoric-cli`
-4. `yarn link`
-5. Then in another external directory, do `mkdir temp`
-6. `cd temp`
-7. `yarn link "agoric"`
-8. `agoric init demo`
-9. `cd demo`
-10. `agoric install`
-11. `agoric start` (errors currently)
-12. ??
+3. `cd packages/agoric-cli/template`
+4. `../bin/agoric --sdk start`
+5. now can browse http://localhost:8000/
+6. in another tab: `../bin/agoric --sdk deploy api/deploy.js contract/deploy.js`
+ -- Note that this will currently fail! TODO: fix in a future PR
