@@ -12,88 +12,61 @@ export function makeMeteringEndowments(
 ) {
   const wrapped = new WeakMap();
   const meterId = overrideMeterId;
-  function wrap(target, needBeFunction = false) {
-    if (
-      Object(target) !== target ||
-      (needBeFunction && typeof target !== 'function')
-    ) {
+
+  const wrapDescriptor = desc =>
+    Object.fromEntries(Object.entries(desc).map(([k, v]) =>
+      [k, wrap(v)]
+    ));
+
+  function wrap(target) {
+    if (Object(target) !== target) {
       return target;
     }
+
     let wrapper = wrapped.get(target);
     if (wrapper) {
       return wrapper;
     }
 
-    let t;
     if (typeof target === 'function') {
-      if (getOwnPropertyDescriptor(target, 'prototype')) {
-        t = function fakeTarget() {};
-      } else {
-        t = () => {};
-      }
-    } else if (Array.isArray(target)) {
-      t = [];
-    } else {
-      t = {};
-    }
-
-    wrapper = new Proxy(t, {
-      apply(_t, thisArg, argArray) {
-        // Meter the call to the function.
+      // Meter the call to the function/constructor.
+      wrapper = function meterFunction(...args) {
         try {
           meter[c.METER_ENTER]();
-          const ret = Reflect.apply(target, thisArg, argArray);
-          return wrap(meter[c.METER_ALLOCATE](ret), true);
+          const newTarget = new.target;
+          let ret;
+          if (newTarget) {
+            ret = Reflect.construct(target, args, newTarget);
+          } else {
+            ret = Reflect.apply(target, this, args);
+          }
+          ret = meter[c.METER_ALLOCATE](ret);
+          // We are only scared of primitives that return functions.
+          // The other ones will be caught by the wrapped prototypes
+          // or instrumented user code.
+          if (typeof ret === 'function') {
+            return wrap(ret);
+          }
+          return ret;
         } catch (e) {
           throw meter[c.METER_ALLOCATE](e);
         } finally {
           meter[c.METER_LEAVE]();
         }
-      },
-      construct(_t, argArray, newTarget) {
-        // Meter the call to the constructor.
-        try {
-          meter[c.METER_ENTER]();
-          const ret = Reflect.construct(target, argArray, newTarget);
-          return wrap(meter[c.METER_ALLOCATE](ret), true);
-        } catch (e) {
-          throw meter[c.METER_ALLOCATE](e);
-        } finally {
-          meter[c.METER_LEAVE]();
-        }
-      },
-      get(_t, p, receiver) {
-        // Return a wrapped value.
-        return wrap(Reflect.get(target, p, receiver));
-      },
-      getOwnPropertyDescriptor(_t, p) {
-        // Return a wrapped descriptor.
-        // eslint-disable-next-line no-use-before-define
-        return wrapDescriptor(getOwnPropertyDescriptor(target, p));
-      },
-      getPrototypeOf(_t) {
-        return wrap(Reflect.getPrototypeOf(target));
-      },
-    });
-    wrapped.set(target, wrapper);
-    return wrapper;
-  }
-
-  function wrapDescriptor(desc) {
-    if (!desc) {
-      return desc;
-    }
-    if ('value' in desc) {
-      return {
-        ...desc,
-        value: wrap(desc.value),
       };
+    } else {
+      wrapper = create(Object.getPrototypeOf(target));
     }
-    return {
-      ...desc,
-      get: wrap(desc.get),
-      set: wrap(desc.set),
-    };
+
+    // We have a wrapper identity, so prevent recursion.
+    wrapped.set(target, wrapper);
+    wrapped.set(wrapper, wrapper);
+
+    // Assign the wrapped descriptors to the wrapper.
+    const descs = Object.fromEntries(Object.entries(getOwnPropertyDescriptors(target))
+      .map(([k, v]) => [k, wrapDescriptor(v)]));
+    Object.defineProperties(wrapper, descs);
+    return wrapper;
   }
 
   // Shadow the wrapped globals with the wrapped endowments.
