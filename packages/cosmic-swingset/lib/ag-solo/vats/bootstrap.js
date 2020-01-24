@@ -58,22 +58,14 @@ export default function setup(syscall, state, helpers) {
 
       // Make services that are provided on the real or virtual chain side
       async function makeChainBundler(vats, timerDevice) {
-        // Remember the assayIds to pass to the wallet
-        const assayIdMap = new Map();
+        // Remember the assayRegistrarKeys to pass to the wallet
+        const assayRegistrarKeys = new Map();
 
-        async function registerAssay(registrar, assayNameP, assayP) {
-          const [assayName, assay] = await Promise.all([assayNameP, assayP]);
-          const assayId = await E(registrar).register(assayName, assay);
-          assayIdMap.set(assayName, assayId);
-        }
-
-        async function registerAssays(mintVat, registrar, assayNames) {
-          for (const assayName of assayNames) {
-            const mint = E(mintVat).getMint(assayName);
-            const assay = E(mint).getAssay();
-            registerAssay(registrar, assayName, assay);
-          }
-        }
+        // Returns a promise
+        const registerAssay = (registrar, assayName, assay) =>
+          E(registrar)
+            .register(assayName, assay)
+            .then(assayKey => assayRegistrarKeys.set(assayName, assayKey));
 
         // Create singleton instances.
         const sharingService = await E(vats.sharing).getSharingService();
@@ -85,17 +77,20 @@ export default function setup(syscall, state, helpers) {
         const contractHost = await E(vats.host).makeHost();
 
         // dustAssay is built and registered in the pixel vat. Wallet needs it.
-        const dustAssay = E(vats.pixel).startup(contractHost);
-        await registerAssay(registrar, 'dust', dustAssay);
+        const dustAssay = await E(vats.pixel).startup(contractHost);
 
-        // Two purses were created in vats.mint
-        const assayNames = ['moola', 'simolean'];
-        await registerAssays(vats.mints, registrar, assayNames);
+        // vat-mint.js sets up two mints: moola and simoleans
+        const [moolaAssay, simoleanAssay] = await E(vats.mint).getAssays();
+
+        await registerAssay(registrar, 'dust', dustAssay);
+        await registerAssay(registrar, 'moola', moolaAssay);
+        await registerAssay(registrar, 'simolean', simoleanAssay);
 
         return harden({
           async createUserBundle(nickname) {
             const pBundle = await E(vats.pixel).createPixelBundle(nickname);
             const { purse: dust, bundle: pixelBundle } = pBundle;
+
             const bundle = harden({
               ...pixelBundle,
               chainTimerService,
@@ -105,15 +100,16 @@ export default function setup(syscall, state, helpers) {
               zoe,
             });
 
-            // assayNames mapped to [assayId, purse] for building wallet
-            const purses = {};
-            for (const assayName of assayNames) {
-              const purseName = `${assayName} purse`;
-              const purse = E(vats.mints).getNewPurse(assayName, purseName);
-              purses[assayName] = [assayIdMap.get(assayName), purse];
-            }
+            const [moolaPurse, simoleanPurse] = await E(
+              vats.mint,
+            ).mintInitialPurses();
 
-            purses.dust = [assayIdMap.get('dust'), dust];
+            // assayNames mapped to [assayId, purse] for building wallet
+            const purses = harden({
+              moola: [assayRegistrarKeys.get('moola'), moolaPurse],
+              simolean: [assayRegistrarKeys.get('simolean'), simoleanPurse],
+              dust: [assayRegistrarKeys.get('dust'), dust],
+            });
 
             // return purses separately so they can be added to local wallet
             return harden({ purses, bundle });

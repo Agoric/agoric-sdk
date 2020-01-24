@@ -2,8 +2,17 @@
 import fs from 'fs';
 
 import harden from '@agoric/harden';
+import { makeUnitOps } from '@agoric/ertp/core/unitOps';
 
 const DAPP_NAME = "@DIR@";
+
+const getLocalUnitOps = assay =>
+  Promise.all([
+    E(assay).getLabel(),
+    E(assay).getExtentOps(),
+  ]).then(([label, { name, extentOpsArgs = [] }]) =>
+    makeUnitOps(label, name, extentOpsArgs),
+  );
 
 export default async function deployContract(homeP, { bundleSource, pathResolve },
   CONTRACT_NAME = 'autoswap') {
@@ -49,38 +58,47 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   // === AWAITING TURN ===
   // =====================
 
-  // 2. Contract instance.
-  const { instance, instanceHandle, terms: { assays } } 
-    = await homeP~.zoe~.makeInstance(installationHandle, { assays: [assay0, assay1] });
+  // 2. Make contract and get instanceHandle
+  const inviteP
+    = homeP~.zoe~.makeInstance(installationHandle, { assays: [assay0, assay1] });
+  const {
+    extent: { instanceHandle },
+  } = await inviteP~.getBalance();
+    
+  // =====================
+  // === AWAITING TURN ===
+  // =====================
+
+  // 3. Get assays, including liquidity assay  
+  const { assays } = await homeP~.zoe~.getInstance(instanceHandle);
 
   // =====================
   // === AWAITING TURN ===
   // =====================
 
-  // 3. Offer rules
-  const [unit0, unit1, unit2] = await Promise.all([
-    assays~.[0]~.makeUnits(1),
-    assays~.[1]~.makeUnits(1),
-    assays~.[2]~.makeUnits(0),
-  ]);
+  // 4. Get local unitOps for all assays
+  const liquidityAssay = assays[2];
+  const [moolaUnitOps, simoleanUnitOps, liquidityUnitOps] = await Promise.all([getLocalUnitOps(assay0), getLocalUnitOps(assay1), getLocalUnitOps(liquidityAssay)]);
 
   // =====================
   // === AWAITING TURN ===
   // =====================
+
+  // 5. Redeem invite and escrow with Zoe
 
   const offerRules = harden({
     payoutRules: [
       {
         kind: 'offerExactly',
-        units: unit0,
+        units: moolaUnitOps.make(1),
       },
       {
         kind: 'offerExactly',
-        units: unit1,
+        units: simoleanUnitOps.make(1),
       },
       {
         kind: 'wantAtLeast',
-        units: unit2,
+        units: liquidityUnitOps.make(0),
       },
     ],
     exitRule: {
@@ -90,16 +108,16 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
 
   // 4. Liquidities.
 
-  const payments = [payment0, payment1];
+  const payments = [payment0, payment1, undefined];
 
-  const { escrowReceipt } = await homeP~.zoe~.escrow(offerRules, payments);
+  const { seat } = await homeP~.zoe~.redeem(inviteP, offerRules, payments);
 
   // =====================
   // === AWAITING TURN ===
   // =====================
 
   const [liquidityOk, contractId, instanceId] = await Promise.all([
-    instance~.addLiquidity(escrowReceipt),
+    seat~.addLiquidity(),
     homeP~.registrar~.register(DAPP_NAME, installationHandle),
     homeP~.registrar~.register(CONTRACT_NAME, instanceHandle),
   ]);

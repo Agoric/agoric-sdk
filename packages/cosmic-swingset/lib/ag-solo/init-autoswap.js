@@ -4,6 +4,14 @@ import { upload } from './upload-contract';
 const CONTRACT_NAME = 'zoe:autoswap';
 const INITIAL_LIQUIDITY = 900;
 
+const getLocalUnitOps = assay =>
+  Promise.all([
+    E(assay).getLabel(),
+    E(assay).getExtentOps(),
+  ]).then(([label, { name, extentOpsArgs = [] }]) =>
+    makeUnitOps(label, name, extentOpsArgs),
+  );
+
 // Usage from within an initialized ag-solo directory:
 // ag-solo bundle -e init-autoswap zoe:autoswap=node_modules/@agoric/zoe/src/contracts/autoswap.js
 
@@ -31,16 +39,16 @@ export default async ({ home, bundle }) => {
   // *********************
 
   const installationHandleP = home~.uploads~.get(CONTRACT_NAME);
-  const installationIdP = home~.registrar~.register(CONTRACT_NAME, installationHandleP);
+  const registrarKeyP = home~.registrar~.register(CONTRACT_NAME, installationHandleP);
 
-  const [installationHandle, installationId] 
-    = await Promise.all([installationHandleP, installationIdP]);
+  const [installationHandle, registrarKey] 
+    = await Promise.all([installationHandleP, registrarKeyP]);
 
   // =====================
   // === AWAITING TURN ===
   // =====================
 
-  console.log('- Autoswap intallation', CONTRACT_NAME, '=>',  installationId);
+  console.log('- Autoswap installation', CONTRACT_NAME, '=>',  registrarKey);
 
   // 1. Purses, assays, payments.
   const purse0P = home~.wallet~.getPurse('moola purse');
@@ -66,46 +74,46 @@ export default async ({ home, bundle }) => {
   // === AWAITING TURN ===
   // =====================
 
-  // 2. Contract instance, contract assays.
-  const { instance, instanceHandle, terms: { assays } } = 
-    await home~.zoe~.makeInstance(installationHandle, { assays: [assay0, assay1] });
+  // 2. Contract instance
+  const inviteP
+    = homeP~.zoe~.makeInstance(installationHandle, { assays: [assay0, assay1] });
+  const {
+    extent: { instanceHandle },
+  } = await inviteP~.getBalance();
 
   // =====================
   // === AWAITING TURN ===
   // =====================
 
-  // 3. Offer rules.
-  const unit0P = assays~.[0]~.makeUnits(INITIAL_LIQUIDITY);
-  const unit1P = assays~.[1]~.makeUnits(INITIAL_LIQUIDITY);
-  const unit2P = assays~.[2]~.makeUnits(0);
-
-  const [
-    unit0,
-    unit1, 
-    unit2,
-  ] = await Promise.all([
-    unit0P,
-    unit1P,
-    unit2P,
-  ]);
+  // 3. Get assays, including liquidity assay  
+  const { assays } = await homeP~.zoe~.getInstance(instanceHandle);
 
   // =====================
   // === AWAITING TURN ===
   // =====================
 
+  // 4. Get local unitOps for all assays
+  const liquidityAssay = assays[2];
+  const [moolaUnitOps, simoleanUnitOps, liquidityUnitOps] = await Promise.all([getLocalUnitOps(assay0), getLocalUnitOps(assay1), getLocalUnitOps(liquidityAssay)]);
+
+  // =====================
+  // === AWAITING TURN ===
+  // =====================
+
+  // 5. Offer rules.
   const offerRules = harden({
     payoutRules: [
       {
         kind: 'offerExactly',
-        units: unit0,
+        units: moolaUnitOps.make(INITIAL_LIQUIDITY),
       },
       {
         kind: 'offerExactly',
-        units: unit1,
+        units: simoleanUnitOps.make(INITIAL_LIQUIDITY),
       },
       {
         kind: 'wantAtLeast',
-        units: unit2,
+        units: liquidityUnitOps.make(0),
       },
     ],
     exitRule: {
@@ -113,14 +121,16 @@ export default async ({ home, bundle }) => {
     },
   });
 
-  const { escrowReceipt } = await home~.zoe~.escrow(offerRules, [payment0, payment1]);
+  const payments = [payment0, payment1, undefined];
+
+  const { seat } = await homeP~.zoe~.redeem(inviteP, offerRules, payments);
 
   // =====================
   // === AWAITING TURN ===
   // =====================
 
-  // 4. Initial liquidity.
-  const liquidityOkP = instance~.addLiquidity(escrowReceipt);
+  // 6. Initial liquidity.
+  const liquidityOkP = seat~.addLiquidity();
   const instanceIdP = home~.registrar~.register(CONTRACT_NAME, instanceHandle);
 
   const [liquidityOk, instanceId] = await Promise.all([liquidityOkP, instanceIdP]); 

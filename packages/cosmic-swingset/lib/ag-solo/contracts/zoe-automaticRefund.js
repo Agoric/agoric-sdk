@@ -2,22 +2,34 @@ import harden from '@agoric/harden';
 /**
  * This is a very trivial contract to explain and test Zoe.
  * AutomaticRefund just gives you back what you put in. It has one
- * method: `makeOffer`, which takes an `escrowReceipt` as a parameter.
- * AutomaticRefund then burns the `escrowReceipt` and then completes the
- * offer. Other governing contracts will use these same steps, but
- * they will have more sophisticated logic and interfaces.
- * @param {governingContractFacet} zoe - the governing
- * contract facet of zoe
+ * method: `makeOffer`. AutomaticRefund then tells Zoe to complete the
+ * offer, which gives the user their payout through Zoe. Other
+ * contracts will use these same steps, but they will have more
+ * sophisticated logic and interfaces.
+ * @param {contractFacet} zoe - the contract facet of zoe
  */
-export const makeContract = zoe => {
-  let count = 0;
+export const makeContract = harden((zoe, terms) => {
+  let offersCount = 0;
+  const makeSeatInvite = () => {
+    const seat = harden({
+      makeOffer: () => {
+        offersCount += 1;
+        // eslint-disable-next-line no-use-before-define
+        zoe.complete(harden([inviteHandle]));
+        return `The offer was accepted`;
+      },
+    });
+    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+      seatDesc: 'getRefund',
+    });
+    return invite;
+  };
   return harden({
-    makeOffer: async escrowReceipt => {
-      const { id, offerMade } = await zoe.burnEscrowReceipt(escrowReceipt);
-      count += 1;
-      zoe.complete(harden([id]));
-      return offerMade;
+    invite: makeSeatInvite(),
+    publicAPI: {
+      getOffersCount: () => offersCount,
+      makeInvite: makeSeatInvite,
     },
-    getOffersCount: () => count,
+    terms,
   });
-};
+});

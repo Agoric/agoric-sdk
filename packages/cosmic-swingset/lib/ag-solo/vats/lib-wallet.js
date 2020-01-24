@@ -1,22 +1,29 @@
 import harden from '@agoric/harden';
 import { insist } from '@agoric/ertp/util/insist';
+import { makePrivateName } from '@agoric/ertp/util/PrivateName';
 
-function mockStateChangeHandler(_newState) {
-  // does nothing
-}
+import { hydrateOfferRules } from './hydration';
+import { makeObservablePurse } from './observable';
 
 export async function makeWallet(
   E,
-  log,
-  host,
   zoe,
   registrar,
-  pursesStateChangeHandler = mockStateChangeHandler,
-  inboxStateChangeHandler = mockStateChangeHandler,
+  pursesStateChangeHandler = () => {},
+  inboxStateChangeHandler = () => {},
 ) {
-  // Map of purses in the wallet by pet name. Assume immutable.
-  const nameToPurse = new Map();
-  const nameToAssayId = new Map();
+  // Map of petnames to assay presences
+  const petnameToAssay = makePrivateName();
+
+  // Map of petnames to purse presences
+  const petnameToPurse = makePrivateName();
+
+  // Map of assay petNames to the key in the registrar for the
+  // associated assay.
+  const assayPetnameToRegKey = makePrivateName();
+
+  // Map of purses to their assays
+  const pursePetNameToAssayInfo = makePrivateName();
 
   // Offers that the wallet knows about (the inbox).
   const dateToOfferRec = new Map();
@@ -33,14 +40,18 @@ export async function makeWallet(
     return JSON.stringify([...inboxState.values()]);
   }
 
-  async function updatePursesState(purseName, purse) {
-    const balance = await E(purse).getBalance();
-    const {
-      extent,
-      label: { allegedName },
-    } = balance;
-    const assayId = nameToAssayId.get(purseName);
-    pursesState.set(purseName, { purseName, assayId, allegedName, extent });
+  async function updatePursesState(pursePetName, purse) {
+    const { extent } = await E(purse).getBalance();
+    const { assayId, assayPetName } = pursePetNameToAssayInfo.get(pursePetName);
+    pursesState.set(
+      pursePetName,
+      harden({
+        pursePetName,
+        assayId,
+        assayPetName,
+        extent,
+      }),
+    );
     pursesStateChangeHandler(getPursesState());
   }
 
@@ -50,231 +61,84 @@ export async function makeWallet(
     inboxStateChangeHandler(getInboxState());
   }
 
-  function makeObservablePurse(purse, onFulfilled) {
-    return {
-      getName() {
-        return E(purse).getName();
-      },
-      getAssay() {
-        return E(purse).getAssay();
-      },
-      getBalance() {
-        return E(purse).getBalance();
-      },
-      depositExactly(...args) {
-        return E(purse)
-          .depositExactly(...args)
-          .then(result => {
-            onFulfilled();
-            return result;
-          });
-      },
-      depositAll(...args) {
-        return E(purse)
-          .depositAll(...args)
-          .then(result => {
-            onFulfilled();
-            return result;
-          });
-      },
-      withdraw(...args) {
-        return E(purse)
-          .withdraw(...args)
-          .then(result => {
-            onFulfilled();
-            return result;
-          });
-      },
-      withdrawAll(...args) {
-        return E(purse)
-          .withdrawAll(...args)
-          .then(result => {
-            onFulfilled();
-            return result;
-          });
-      },
-    };
-  }
+  const makeAutoswapOffer = async (
+    autoswapInstanceRegKey,
+    proposedOfferRules,
+    pursePetnames,
+  ) => {
+    // Grab the autoswap instance handle from the registrar
+    const autoswapInstanceHandle = await E(registrar).get(
+      autoswapInstanceRegKey,
+    );
 
-  function checkOrder(a0, a1, b0, b1) {
-    if (a0 === b0 && a1 === b1) {
-      return true;
-    }
+    // =====================
+    // === AWAITING TURN ===
+    // =====================
 
-    if (a0 === b1 && a1 === b0) {
-      return false;
-    }
+    const { publicAPI } = await E(zoe).getInstance(autoswapInstanceHandle);
 
-    throw new TypeError('Canot resove assay ordering');
-  }
+    // =====================
+    // === AWAITING TURN ===
+    // =====================
 
-  async function makeOffer(date) {
-    const {
-      meta: { purseName0, purseName1, instanceId },
+    const invite = await E(publicAPI).getInvite();
+
+    // =====================
+    // === AWAITING TURN ===
+    // =====================
+
+    // The proposedOfferRules come originally from the autoswap UI
+    // which sends it to the wallet UI, which sends it to our offer
+    // inbox. Note that to send it across these boundaries, the assay presence
+    // in the units had to be replaced with a string identifier. We
+    // are using the key in the registrar for that assay.
+    const offerRules = hydrateOfferRules(proposedOfferRules);
+
+    const purses = pursePetnames.map(petnameToPurse.get);
+    const payments = offerRules.paymentRules.map((paymentRule, i) =>
+      purses[i].withdraw(paymentRule.units),
+    );
+
+    const { seat, payout: payoutP } = await E(zoe).redeem(
+      invite,
       offerRules,
-    } = dateToOfferRec.get(date);
-
-    const purse0 = nameToPurse.get(purseName0);
-    const purse1 = nameToPurse.get(purseName1);
-
-    const {
-      payoutRules: [
-        {
-          units: { extent: extent0, assayId: assayId0 },
-        },
-        {
-          units: { extent: extent1, assayId: assayId1 },
-        },
-        {
-          units: { extent: extent2 },
-        },
-      ],
-    } = offerRules;
-
-    const instanceHandleP = E(registrar).get(instanceId);
-    const regAssay0P = E(registrar).get(assayId0);
-    const regAssay1P = E(registrar).get(assayId1);
-    const purseAssay0P = E(purse0).getAssay();
-    const purseAssay1P = E(purse1).getAssay();
-    const purseUnit0P = E(purseAssay0P).makeUnits(extent0 || 0);
-    const purseUnit1P = E(purseAssay0P).makeUnits(extent1 || 0);
-
-    const [
-      instanceHandle,
-      regAssay0,
-      regAssay1,
-      purseAssay0,
-      purseAssay1,
-      purseUnit0,
-      purseUnit1,
-    ] = await Promise.all([
-      instanceHandleP,
-      regAssay0P,
-      regAssay1P,
-      purseAssay0P,
-      purseAssay1P,
-      purseUnit0P,
-      purseUnit1P,
-    ]);
-
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    const {
-      terms: {
-        assays: [contractAssay0, contractAssay1, contractAssay2],
-      },
-      instance,
-    } = await E(zoe).getInstance(instanceHandle);
-
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    insist(contractAssay0 === regAssay0 && regAssay1 === contractAssay1);
-
-    // Check whether we sell on contract assay 0 or 1.
-    const normal = checkOrder(
-      purseAssay0,
-      purseAssay1,
-      contractAssay0,
-      contractAssay1,
-    );
-
-    const payment0P = E(purse0).withdraw(normal ? purseUnit0 : purseUnit1);
-    const contractUnit0P = E(contractAssay0).makeUnits(extent0 || 0);
-    const contractUnit1P = E(contractAssay1).makeUnits(extent1 || 0);
-    const contractUnit2P = E(contractAssay2).makeUnits(extent2 || 0);
-
-    const [
-      payment0,
-      contractUnit0,
-      contractUnit1,
-      contractUnit2,
-    ] = await Promise.all([
-      payment0P,
-      contractUnit0P,
-      contractUnit1P,
-      contractUnit2P,
-    ]);
-
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    // Clone the offer rules to have a writable object.
-    const newOfferRules = JSON.parse(JSON.stringify(offerRules));
-
-    // Hydrate with the resolved units.
-    newOfferRules.payoutRules[0].units = contractUnit0;
-    newOfferRules.payoutRules[1].units = contractUnit1;
-    newOfferRules.payoutRules[2].units = contractUnit2;
-    harden(newOfferRules);
-
-    const payment = normal
-      ? [payment0, undefined, undefined]
-      : [undefined, payment0, undefined];
-
-    const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
-      newOfferRules,
-      payment,
+      payments,
     );
 
     // =====================
     // === AWAITING TURN ===
     // =====================
 
-    // IMPORTANT: payout will resolve only once makeOffer()
-    // resolves, so we technically only need to await on
-    // payout. For readability of the code, and to ease any
-    // eventual debugging, we await on both: it is not
-    // obvious that both are joined internally, and stumbling
-    // over a naked non-awaited invocation of E() would appear
-    // as an error.
+    const swapOk = seat.swap();
 
-    const [offerOk, payout] = await Promise.all([
-      E(instance).makeOffer(escrowReceipt),
-      payoutP,
-    ]);
+    payoutP.then(payouts =>
+      payouts.map((payout, i) => purses[i].depositAll(payout)),
+    );
 
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    const deposit0P = E(purse0).depositAll(payout[normal ? 0 : 1]);
-    const deposit1P = E(purse1).depositAll(payout[normal ? 1 : 0]);
-
-    await Promise.all([deposit0P, deposit1P]);
-
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    // updatePursesState(purseName0, purse0);
-    // updatePursesState(purseName1, purse1);
-
-    return offerOk;
-  }
+    return swapOk;
+  };
 
   // === API
+  function addAssay(petName, assay, registrarKey) {
+    petName = `${petName}`;
+    registrarKey = `${registrarKey}`;
+    petnameToAssay.init(petName, assay);
+    assayPetnameToRegKey.init(petName, registrarKey);
+  }
 
-  async function addPurse(purse, assayId) {
-    const purseNameP = E(purse).getName();
-    const assayP = E(purse).getAssay();
-    const labelP = E(assayP).getLabel();
+  async function makeEmptyPurse(assayPetname, pursePetname) {
+    // Validate pursePetname
+    pursePetname = `${pursePetname}`;
+    insist(
+      !petnameToPurse.has(pursePetname),
+    )`Purse name already used in wallet.`;
 
-    const [purseName, assay, { allegedName }] = await Promise.all([
-      purseNameP,
-      assayP,
-      labelP,
-    ]);
+    // Validate assayPetName
+    assayPetname = `${assayPetname}`;
 
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    insist(!nameToPurse.has(purseName))`Purse name already used in wallet.`;
+    // Create the new purse
+    const assay = petnameToAssay.get(assayPetname);
+    const purse = await E(assay).makeEmptyPurse(pursePetname);
 
     // =====================
     // === AWAITING TURN ===
@@ -284,21 +148,23 @@ export async function makeWallet(
     // be used otherwise the UI state will be out of sync.
 
     const observablePurse = makeObservablePurse(purse, () =>
-      updatePursesState(purseName, purse),
+      updatePursesState(pursePetname, purse),
     );
 
-    nameToPurse.set(purseName, observablePurse);
-    nameToAssayId.set(purseName, assayId);
-
-    updatePursesState(purseName, purse);
+    petnameToPurse.set(pursePetname, observablePurse);
+    updatePursesState(pursePetname, purse);
   }
 
+  function addPayment(_allegedPayment) {}
+
+  function depositPayment(_paymentName, _purseName) {}
+
   function getPurses() {
-    return harden([...nameToPurse.values()]);
+    return harden([...petnameToPurse.values()]);
   }
 
   function getPurse(name) {
-    return nameToPurse.get(name);
+    return petnameToPurse.get(name);
   }
 
   async function addOffer(offerRec) {
@@ -318,15 +184,21 @@ export async function makeWallet(
   }
 
   async function acceptOffer(date) {
-    const offerOk = await makeOffer(date);
+    const { meta } = dateToOfferRec.get(date);
+
+    const offerOk = await makeAutoswapOffer(
+      autoswapInstanceRegKey,
+      proposedOfferRules,
+      pursePetnames
+    );
 
     // =====================
     // === AWAITING TURN ===
     // =====================
 
+    // TODO: Error handling
     if (!offerOk) return;
 
-    const { meta } = dateToOfferRec.get(date);
     // Update status, drop the offerRules
     const acceptOfferRec = { meta: { ...meta, status: 'accept' } };
     dateToOfferRec.set(date, acceptOfferRec);
@@ -335,7 +207,10 @@ export async function makeWallet(
 
   const wallet = harden({
     userFacet: {
-      addPurse,
+      addAssay,
+      makeEmptyPurse,
+      addPayment,
+      depositPayment,
       getPurses,
       getPurse,
       addOffer,

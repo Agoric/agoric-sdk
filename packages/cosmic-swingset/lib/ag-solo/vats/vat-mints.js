@@ -1,25 +1,30 @@
 import harden from '@agoric/harden';
 import { makeMint } from '@agoric/ertp/core/mint';
 
-// This vat contains the registrar for the demo.
+// This vat contains two starting mints: moolaMint and simoleanMint
+// A third mint, the dustMint, is associated with the pixel demo
 
-function build(E, log) {
-  const mints = new Map([
-    ['moola', makeMint('moola')],
-    ['simolean', makeMint('simolean')],
-  ]);
+function build(_E, _log) {
+  const mints = new Map();
 
-  function getNewPurse(desc, nickname) {
-    return mints.get(desc).mint(1000, nickname);
-  }
+  const storeMint = assetNameSingular =>
+    mints.set(assetNameSingular, makeMint(assetNameSingular));
 
-  function getMint(desc) {
-    return harden(mints.get(desc));
+  const assetNames = harden(['moola', 'simolean']);
+
+  for (const assetName of assetNames) {
+    storeMint(assetName);
   }
 
   return harden({
-    getMint,
-    getNewPurse,
+    getAssetNames: () => assetNames,
+    getMints: () => assetNames.map(mints.get),
+    getAssays: () =>
+      assetNames.map(assetName => mints.get(assetName).getAssay()),
+    mintInitialPurses: () =>
+      assetNames.map(assetName =>
+        mints.get(assetName).mint(1000, `${assetName} purse`),
+      ),
   });
 }
 
