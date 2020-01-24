@@ -1,4 +1,5 @@
 import harden from '@agoric/harden';
+import { makePrivateName } from '@agoric/ertp/util/PrivateName';
 
 const replaceAssayInUnits = (map, units) => {
   const {
@@ -53,3 +54,9 @@ export const hydrateOfferRules = (
   dehydratedOfferRules,
 ) =>
   replaceInOfferRules(regKeyToAssayMap, regKeyToTimerMap, dehydratedOfferRules);
+
+export const hydrateMap = (keys, values) => {
+  const map = makePrivateName();
+  keys.forEach((key, i) => map.init(key, values[i]));
+  return map;
+};

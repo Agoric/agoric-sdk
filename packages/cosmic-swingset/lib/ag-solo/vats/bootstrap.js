@@ -168,7 +168,7 @@ export default function setup(syscall, state, helpers) {
         );
 
         // exchange is used for autoswap. Only needed for the dapp's Swingset
-        await E(vats.exchange).startup(zoe, registrar);
+        await E(vats.autoswap).startup(zoe, registrar);
         await E(vats.http).registerCommandHandler(vats.exchange);
         const exchange = E(vats.exchange).getExchange();
 

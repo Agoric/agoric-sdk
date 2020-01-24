@@ -194,7 +194,7 @@ export async function makeWallet(
     const offerOk = await makeAutoswapOffer(
       autoswapInstanceRegKey,
       proposedOfferRules,
-      pursePetnames
+      pursePetnames,
     );
 
     // =====================
@@ -220,6 +220,12 @@ export async function makeWallet(
       addOffer,
       declineOffer,
       acceptOffer,
+    },
+    inbox: {
+      receiveMoola: () => {},
+      receiveSimoleans: () => {},
+      receiveDust: () => {},
+      receiveInvite: () => {},
     },
     adminFacet: {},
     readFacet: {},
