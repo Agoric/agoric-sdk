@@ -2,11 +2,9 @@
  * The VatAdmin wrapper vat.
  *
  * This is the only vat that has a direct pointer to the vatAdmin device, so it
- * must act as a membrane, ensuring that only data goes in and out. It's also
- * responsible for turning device affordances into objects that can be used by
- * code in other vats.
+ * must ensure that only data goes in and out. It's also responsible for turning
+ * device affordances into objects that can be used by code in other vats.
  */
-
 import harden from '@agoric/harden';
 
 export default function setup(syscall, state, helpers) {
@@ -21,37 +19,39 @@ export default function setup(syscall, state, helpers) {
   }
 
   function build(E, D) {
-    const vatIdsToRoots = new Map();
+    const vatIdsToResolvers = new Map();
 
     function createVatAdminService(vatAdminNode) {
       return harden({
         createVat(code) {
-          const vatId = D(vatAdminNode).create(code);
-          // If vat creation fails, we get the error message here, (Guaranteed
-          // not to start with a 'v'), so we don't create the promise or node.
-          if (!vatId.startsWith('v')) {
-            return vatId;
+          const result = D(vatAdminNode).create(code);
+          if (result.error) {
+            throw Error(`Vat Creation Error: ${result.error}`);
+          } else {
+            const vatPromise = makePromiseForVat();
+            const vatId = result.ok;
+            vatIdsToResolvers.set(vatId, vatPromise.res);
+            const adminNode = harden({
+              terminate() {
+                D(vatAdminNode).terminate(vatId);
+                // TODO(hibbert): cleanup admin vat data structures
+              },
+              adminData() {
+                return D(vatAdminNode).adminStats(vatId);
+              },
+            });
+            return vatPromise.p.then(root => {
+              return { adminNode, root };
+            });
           }
-          const vatPromise = makePromiseForVat();
-          vatIdsToRoots.set(vatId, vatPromise);
-          const adminNode = harden({
-            terminate() {
-              D(vatAdminNode).terminate(vatId);
-              // TODO(hibbert): cleanup admin vat data structures
-            },
-            adminData() {
-              return D(vatAdminNode).adminStats(vatId);
-            },
-          });
-          return { adminNode, root: vatPromise.p };
         },
       });
     }
 
     function newVatCallback(vatId, rootObject) {
-      const rootPromise = vatIdsToRoots.get(vatId);
-      rootPromise.res(rootObject);
-      vatIdsToRoots.set(vatId, rootObject);
+      const rootResolver = vatIdsToResolvers.get(vatId);
+      rootResolver(rootObject);
+      vatIdsToResolvers.set(vatId, rootObject);
     }
 
     return harden({

@@ -78,7 +78,12 @@ export default function setup(syscall, state, helpers) {
               const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
                 devices.vatAdmin,
               );
-              log(await E(vatAdminSvc).createVat(src));
+              E(vatAdminSvc)
+                .createVat(src)
+                .then(
+                  result => log(`didn't expect success ${result}`),
+                  rejection => log(`yay, rejected: ${rejection}`),
+                );
               return;
             }
             default:

@@ -554,12 +554,7 @@ export default function buildKernel(kernelEndowments) {
       return helpers.makeLiveSlots(syscall, state, buildFn, helpers.vatID);
     };
 
-    let manager;
-    try {
-      manager = buildVatManager(vatID, `dynamicVat${vatID}`, setup);
-    } catch (e) {
-      return `Error: ${e}`;
-    }
+    const manager = buildVatManager(vatID, `dynamicVat${vatID}`, setup);
     ephemeral.vats.set(vatID, harden({ manager }));
     return vatID;
   }
@@ -571,17 +566,13 @@ export default function buildKernel(kernelEndowments) {
   function createVatDynamically(buildFnSrc) {
     const endowments = { require: kernelRequire };
     const buildFn = evaluateProgram(buildFnSrc, endowments);
-    const vatIDOrError = createVat(buildFn);
-
-    // When there's an error creating the vat or evaluating the code, createVat
-    // returns an error message instead of a vatID. We return the error message
-    // and skip the notification step. All the fns for parsing and verifying
-    // formatting of vatIDs throw, so we look at the purported ID directly here.
-    if (`${vatIDOrError}`.startsWith('v')) {
-      notifyAdminVatOfNewVat(vatIDOrError);
+    try {
+      const vatID = createVat(buildFn);
+      notifyAdminVatOfNewVat(vatID);
+      return harden({ ok: vatID });
+    } catch (e) {
+      return harden({ error: e });
     }
-
-    return `${vatIDOrError}`;
   }
 
   function buildDeviceManager(deviceID, name, setup, endowments) {
