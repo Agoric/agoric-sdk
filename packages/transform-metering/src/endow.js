@@ -2,7 +2,8 @@ import harden from '@agoric/harden';
 
 import * as c from './constants';
 
-const { create, getOwnPropertyDescriptor, getOwnPropertyDescriptors } = Object;
+const { create, defineProperties, entries, fromEntries,
+  getOwnPropertyDescriptors, getPrototypeOf } = Object;
 
 export function makeMeteringEndowments(
   meter,
@@ -14,7 +15,7 @@ export function makeMeteringEndowments(
   const meterId = overrideMeterId;
 
   const wrapDescriptor = desc =>
-    Object.fromEntries(Object.entries(desc).map(([k, v]) =>
+    fromEntries(entries(desc).map(([k, v]) =>
       [k, wrap(v)]
     ));
 
@@ -55,7 +56,7 @@ export function makeMeteringEndowments(
         }
       };
     } else {
-      wrapper = create(Object.getPrototypeOf(target));
+      wrapper = create(getPrototypeOf(target));
     }
 
     // We have a wrapper identity, so prevent recursion.
@@ -63,21 +64,21 @@ export function makeMeteringEndowments(
     wrapped.set(wrapper, wrapper);
 
     // Assign the wrapped descriptors to the wrapper.
-    const descs = Object.fromEntries(Object.entries(getOwnPropertyDescriptors(target))
+    const descs = fromEntries(entries(getOwnPropertyDescriptors(target))
       .map(([k, v]) => [k, wrapDescriptor(v)]));
-    Object.defineProperties(wrapper, descs);
+    defineProperties(wrapper, descs);
     return wrapper;
   }
 
   // Shadow the wrapped globals with the wrapped endowments.
   const shadowDescs = create(null);
-  Object.entries(getOwnPropertyDescriptors(globalsToShadow)).forEach(
+  entries(getOwnPropertyDescriptors(globalsToShadow)).forEach(
     ([p, desc]) => {
       shadowDescs[p] = wrapDescriptor(desc);
     },
   );
 
-  Object.entries(getOwnPropertyDescriptors(endowments)).forEach(([p, desc]) => {
+  entries(getOwnPropertyDescriptors(endowments)).forEach(([p, desc]) => {
     // We wrap the endowment descriptors, too.
     // If it is desirable to include a non-wrapped endowment, then add it to
     // the returned shadow object later.
