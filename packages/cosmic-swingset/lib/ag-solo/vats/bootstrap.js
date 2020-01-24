@@ -83,7 +83,7 @@ export default function setup(syscall, state, helpers) {
         const contractHost = await E(vats.host).makeHost();
 
         // dustAssay is built and registered in the pixel vat. Wallet needs it.
-        const dustAssay = await E(vats.pixel).startup(contractHost);
+        const { dustAssay } = await E(vats.pixel).startup(contractHost);
 
         // vat-mint.js sets up two mints: moola and simoleans
         const [moolaAssay, simoleanAssay] = await E(vats.mint).getAssays();
@@ -100,12 +100,14 @@ export default function setup(syscall, state, helpers) {
         await assaysRegistered;
 
         return harden({
-          async createUserBundle(nickname) {
-            const pBundle = await E(vats.pixel).createPixelBundle(nickname);
-            const { purse: dust, bundle: pixelBundle } = pBundle;
+          async createUserBundle() {
+            const { gallery, canvasStatePublisher } = await E(
+              vats.pixel,
+            ).createPixelBundle();
 
             const bundle = harden({
-              ...pixelBundle,
+              gallery,
+              canvasStatePublisher,
               chainTimerService,
               sharingService,
               contractHost,
@@ -124,11 +126,13 @@ export default function setup(syscall, state, helpers) {
                 assay: nameToAssay.get(name),
               });
 
+            const dustPurseP = E(dustAssay).makeEmptyPurse();
+
             const assayRecordArray = assayNames.map(makeAssayRecord);
             const payments = harden([
               moolaPayment,
               simoleanPayment,
-              E(dust).withdrawAll(),
+              E(dustPurseP).withdrawAll(),
             ]);
 
             // return assays and payments separately so they can be

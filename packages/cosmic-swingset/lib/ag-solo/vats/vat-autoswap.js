@@ -2,20 +2,20 @@ import harden from '@agoric/harden';
 import { makeAutoswapBackend } from './lib-autoswap';
 
 function build(E) {
-  let uiFacet;
+  let autoswapBackend;
 
   return harden({
     startup: (zoe, registrar, autoswapRegKey, assayRegKeys, assays) => {
-      ({ uiFacet } = makeAutoswapBackend(
+      autoswapBackend = makeAutoswapBackend(
         E,
         zoe,
         registrar,
         autoswapRegKey,
         assayRegKeys,
         assays,
-      ));
+      );
     },
-    getAutoswapBackend: () => harden(uiFacet),
+    getAutoswapBackend: () => harden(autoswapBackend),
     getCommandHandler: () =>
       harden({
         processInbound: async obj => {
@@ -23,13 +23,15 @@ function build(E) {
 
           if (type === 'autoswapGetPrice') {
             const { unitsIn } = data;
-            const unitsOut = await uiFacet.getPrice(unitsIn);
+            const unitsOut = await autoswapBackend.getPrice(unitsIn);
             return { type: 'autoswapPrice', data: unitsOut };
           }
 
           if (type === 'autoswapGetOfferRules') {
             const { offerRules } = data;
-            const hydratedOfferRules = await uiFacet.getOfferRules(offerRules);
+            const hydratedOfferRules = await autoswapBackend.getOfferRules(
+              offerRules,
+            );
             return { type: 'autoswapOfferRules', data: hydratedOfferRules };
           }
 

@@ -42,14 +42,11 @@ function build(E, log) {
     return sharedDustAssay;
   }
 
-  async function createPixelBundle(_nickname) {
-    const gallery = sharedGalleryUserFacet;
-    const purse = await sharedDustAssay.makeEmptyPurse();
-    const chainBundle = {
-      gallery,
+  async function createPixelBundle() {
+    return harden({
+      gallery: sharedGalleryUserFacet,
       canvasStatePublisher,
-    };
-    return { purse, bundle: harden(chainBundle) };
+    });
   }
 
   return harden({ startup, createPixelBundle });

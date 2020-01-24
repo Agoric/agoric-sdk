@@ -7,13 +7,13 @@ import { makeMint } from '@agoric/ertp/core/mint';
 function build(_E, _log) {
   const mints = new Map();
 
-  const storeMint = assetNameSingular =>
+  const makeAndStoreMint = assetNameSingular =>
     mints.set(assetNameSingular, makeMint(assetNameSingular));
 
   const assetNames = harden(['moola', 'simolean']);
 
   for (const assetName of assetNames) {
-    storeMint(assetName);
+    makeAndStoreMint(assetName);
   }
 
   return harden({
