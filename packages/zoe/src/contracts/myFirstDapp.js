@@ -29,7 +29,7 @@ export const makeContract = harden((zoe, terms) => {
   const liquidityAssay = liquidityMint.getAssay();
   const assays = [...startingAssays, liquidityAssay];
 
-  return zoe.addAssays(assays).then(() => {
+  return zoe.addNewAssay(liquidityAssay).then(() => {
     // This handle is used to store the assets in the liquidity pool.
     let poolHandle;
 
@@ -113,7 +113,6 @@ export const makeContract = harden((zoe, terms) => {
           getPoolUnits,
           makeInvite,
         },
-        terms: { assays },
       });
     });
   });

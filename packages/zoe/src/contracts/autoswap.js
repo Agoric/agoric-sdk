@@ -26,7 +26,7 @@ export const makeContract = harden((zoe, terms) => {
 
   const { subtract } = natSafeMath;
 
-  return zoe.addAssays(assays).then(() => {
+  return zoe.addNewAssay(liquidityAssay).then(() => {
     const unitOpsArray = zoe.getUnitOpsForAssays(assays);
     unitOpsArray.forEach(
       unitOps =>
@@ -117,11 +117,7 @@ export const makeContract = harden((zoe, terms) => {
               .mint(liquidityUnitsOut)
               .withdrawAll();
             const offerRules = harden({
-              payoutRules: [
-                { kind: 'wantAtLeast', units: unitOpsArray[0].empty() },
-                { kind: 'wantAtLeast', units: unitOpsArray[1].empty() },
-                { kind: 'offerAtMost', units: liquidityUnitsOut },
-              ],
+              payoutRules: [{ kind: 'offerAtMost', units: liquidityUnitsOut }],
               exitRule: {
                 kind: 'waived',
               },
@@ -206,7 +202,6 @@ export const makeContract = harden((zoe, terms) => {
           getPoolUnits,
           makeInvite,
         },
-        terms: { assays },
       });
     });
   });

@@ -83,12 +83,7 @@ export const makeHelpers = (zoe, assays) => {
     makeEmptyOffer: () => {
       const { inviteHandle, invite } = zoe.makeInvite();
       const offerRules = harden({
-        payoutRules: unitOpsArray.map(unitOps => {
-          return {
-            kind: 'wantAtLeast',
-            units: unitOps.empty(),
-          };
-        }),
+        payoutRules: [],
         exitRule: {
           kind: 'waived',
         },

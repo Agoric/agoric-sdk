@@ -6,6 +6,7 @@ import makePromise from '@agoric/ertp/util/makePromise';
 import { makePrivateName } from '@agoric/ertp/util/PrivateName';
 import { makeMint } from '@agoric/ertp/core/mint';
 
+import { sortPayoutRules } from './sortPayoutRules';
 import { isOfferSafeForAll } from './isOfferSafe';
 import { areRightsConserved } from './areRightsConserved';
 import { evalContractCode } from './evalContractCode';
@@ -42,12 +43,18 @@ const makeZoe = (additionalEndowments = {}) => {
     instanceHandle,
     offerHandle = undefined,
   ) => {
-    const assays = getAssaysFromPayoutRules(offerRules.payoutRules);
+    const { assays } = instanceTable.get(instanceHandle);
+    const unitOpsArray = assayTable.getUnitOpsForAssays(assays);
+    const sortedPayoutRules = sortPayoutRules(
+      assays,
+      unitOpsArray,
+      offerRules.payoutRules,
+    );
 
     // Promise flow = assay -> purse -> deposit payment -> escrow receipt
     const paymentDepositedPs = assays.map((assay, i) => {
       const assayRecordP = assayTable.getPromiseForAssayRecord(assay);
-      const payoutRule = offerRules.payoutRules[i];
+      const payoutRule = sortedPayoutRules[i];
       const offerPayment = offerPayments[i];
 
       return assayRecordP.then(({ purse, unitOps }) => {
@@ -68,7 +75,7 @@ const makeZoe = (additionalEndowments = {}) => {
     return Promise.all(paymentDepositedPs).then(unitsArray => {
       const offerImmutableRecord = {
         instanceHandle,
-        payoutRules: offerRules.payoutRules,
+        payoutRules: sortedPayoutRules,
         exitRule: offerRules.exitRule,
         assays,
         units: unitsArray,
@@ -215,8 +222,12 @@ const makeZoe = (additionalEndowments = {}) => {
 
       // informs Zoe about an assay and returns a promise for acknowledging
       // when the assays are added and ready.
-      addAssays: assays =>
-        assayTable.getPromiseForAssayRecords(assays).then(_ => undefined),
+      addNewAssay: assay =>
+        assayTable.getPromiseForAssayRecords(harden([assay])).then(_ => {
+          const { assays } = instanceTable.get(instanceHandle);
+          const newAssays = [...assays, assay];
+          instanceTable.update(instanceHandle, { assays: newAssays });
+        }),
 
       // eslint-disable-next-line no-use-before-define
       getZoeService: () => zoeService,
@@ -275,52 +286,39 @@ Unimplemented installation moduleFormat ${moduleFormat}`;
      * arguments depend on the contract, apart from the `assays`
      * property, which is required.
      */
-    makeInstance: (installationHandle, terms) => {
+    makeInstance: (installationHandle, userProvidedTerms) => {
       const { installation } = installationTable.get(installationHandle);
       const instanceHandle = harden({});
       const contractFacet = makeContractFacet(instanceHandle);
 
       const makeContractInstance = assayRecords => {
-        const synchronousTerms = {
-          ...terms,
+        const terms = {
+          ...userProvidedTerms,
           assays: assayRecords.map(record => record.assay),
         };
-        return installation.makeContract(contractFacet, synchronousTerms);
-      };
 
-      const storeContractInstance = ({
-        invite,
-        publicAPI,
-        terms: contractTerms,
-      }) => {
-        return assayTable
-          .getPromiseForAssayRecords(contractTerms.assays)
-          .then(assayRecords => {
-            const finalAssays = assayRecords.map(record => record.assay);
+        const instanceRecord = harden({
+          installationHandle,
+          assays: terms.assays,
+          terms,
+          publicAPI: undefined,
+        });
 
-            const finalTerms = {
-              ...terms,
-              assays: finalAssays,
-            };
-
-            const instanceRecord = harden({
-              installationHandle,
-              publicAPI,
-              assays: finalAssays,
-              terms: finalTerms,
-            });
-
-            instanceTable.create(instanceRecord, instanceHandle);
-            return invite;
-          });
+        instanceTable.create(instanceRecord, instanceHandle);
+        return Promise.resolve(
+          installation.makeContract(contractFacet, terms),
+        ).then(value => {
+          const { invite, publicAPI } = value;
+          instanceTable.update(instanceHandle, { publicAPI });
+          return invite;
+        });
       };
 
       // The assays may not have been seen before, so we must wait for
       // the assay records to be available synchronously
       return assayTable
-        .getPromiseForAssayRecords(terms.assays)
-        .then(makeContractInstance)
-        .then(storeContractInstance);
+        .getPromiseForAssayRecords(userProvidedTerms.assays)
+        .then(makeContractInstance);
     },
     /**
      * Credibly retrieves an instance record given an instanceHandle.

@@ -414,10 +414,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       const liquidityAssay = await E(publicAPI).getLiquidityAssay();
       const liquidityUnitOps = await getLocalUnitOps(liquidityAssay);
       const liquidity = liquidityUnitOps.make;
-      const allAssays = harden([...assays, liquidityAssay]);
-      insist(
-        sameStructure(allAssays, terms.assays),
-      )`assays were not as expected`;
+      insist(sameStructure(assays, terms.assays))`assays were not as expected`;
 
       // bob checks the price of 3 moola. The price is 1 simolean
       const simoleanUnits = await E(publicAPI).getPrice(moola(3));

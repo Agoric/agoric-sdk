@@ -110,6 +110,5 @@ export const makeContract = harden((zoe, terms) => {
       getAuctionedAssetsUnits: () => auctionedAssets,
       getMinimumBid: () => minimumBid,
     },
-    terms,
   });
 });
