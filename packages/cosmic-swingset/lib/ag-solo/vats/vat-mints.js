@@ -21,9 +21,12 @@ function build(_E, _log) {
     getMints: () => assetNames.map(mints.get),
     getAssays: () =>
       assetNames.map(assetName => mints.get(assetName).getAssay()),
-    mintInitialPurses: () =>
+    mintInitialPayments: extent =>
       assetNames.map(assetName =>
-        mints.get(assetName).mint(1000, `${assetName} purse`),
+        mints
+          .get(assetName)
+          .mint(extent, `${assetName} purse`)
+          .withdrawAll(),
       ),
   });
 }

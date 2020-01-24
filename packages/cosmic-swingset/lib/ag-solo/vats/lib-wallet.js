@@ -18,9 +18,8 @@ export async function makeWallet(
   // Map of petnames to purse presences
   const petnameToPurse = makePrivateName();
 
-  // Map of assay petNames to the key in the registrar for the
-  // associated assay.
-  const assayPetnameToRegKey = makePrivateName();
+  // Map of registrar keys to assays
+  const regKeyToAssayMap = makePrivateName();
 
   // Map of purses to their assays
   const pursePetNameToAssayInfo = makePrivateName();
@@ -92,7 +91,11 @@ export async function makeWallet(
     // inbox. Note that to send it across these boundaries, the assay presence
     // in the units had to be replaced with a string identifier. We
     // are using the key in the registrar for that assay.
-    const offerRules = hydrateOfferRules(proposedOfferRules);
+    const offerRules = hydrateOfferRules(
+      regKeyToAssayMap,
+      undefined,
+      proposedOfferRules,
+    );
 
     const purses = pursePetnames.map(petnameToPurse.get);
     const payments = offerRules.paymentRules.map((paymentRule, i) =>
@@ -123,7 +126,7 @@ export async function makeWallet(
     petName = `${petName}`;
     registrarKey = `${registrarKey}`;
     petnameToAssay.init(petName, assay);
-    assayPetnameToRegKey.init(petName, registrarKey);
+    regKeyToAssayMap.init(registrarKey, assay);
   }
 
   async function makeEmptyPurse(assayPetname, pursePetname) {
@@ -155,9 +158,11 @@ export async function makeWallet(
     updatePursesState(pursePetname, purse);
   }
 
-  function addPayment(_allegedPayment) {}
-
-  function depositPayment(_paymentName, _purseName) {}
+  function depositPayment(allegedPayment, pursePetname) {
+    // TODO: handle payments with unknown assays
+    const purse = petnameToPurse.get(pursePetname);
+    return E(purse).depositAll(allegedPayment);
+  }
 
   function getPurses() {
     return harden([...petnameToPurse.values()]);
@@ -209,7 +214,6 @@ export async function makeWallet(
     userFacet: {
       addAssay,
       makeEmptyPurse,
-      addPayment,
       depositPayment,
       getPurses,
       getPurse,

@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 import { makeWallet } from './lib-wallet';
 import pubsub from './pubsub';
 
-function build(E, D, log) {
+function build(E, D, _log) {
   let userFacet;
   let pursesState;
   let inboxState;
@@ -11,11 +11,9 @@ function build(E, D, log) {
   const { publish: pursesPublish, subscribe: purseSubscribe } = pubsub(E);
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
 
-  async function startup(host, zoe, registrar) {
+  async function startup(zoe, registrar) {
     const wallet = await makeWallet(
       E,
-      log,
-      host,
       zoe,
       registrar,
       pursesPublish,
