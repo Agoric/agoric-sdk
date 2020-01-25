@@ -65,7 +65,7 @@ function build(E, D, _log) {
         if (type === 'walletDeclineOffer') {
           const result = userFacet.declineOffer(data);
           return {
-            type: 'walletOfferDeclineed',
+            type: 'walletOfferDeclined',
             data: result,
           };
         }

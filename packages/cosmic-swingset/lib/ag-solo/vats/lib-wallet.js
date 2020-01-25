@@ -60,10 +60,15 @@ export async function makeWallet(
     inboxStateChangeHandler(getInboxState());
   }
 
+  // instanceRegKey,
+  // offerRules,
+  // inputPurse,
+  // outputPurse,
   const makeAutoswapOffer = async (
     autoswapInstanceRegKey,
     proposedOfferRules,
-    pursePetnames,
+    inputPursePetname,
+    outputPursePetname,
   ) => {
     // Grab the autoswap instance handle from the registrar
     const autoswapInstanceHandle = await E(registrar).get(
@@ -189,12 +194,19 @@ export async function makeWallet(
   }
 
   async function acceptOffer(date) {
-    const { meta } = dateToOfferRec.get(date);
+    const {
+      meta,
+      instanceRegKey,
+      offerRules,
+      inputPurse,
+      outputPurse,
+    } = dateToOfferRec.get(date);
 
     const offerOk = await makeAutoswapOffer(
-      autoswapInstanceRegKey,
-      proposedOfferRules,
-      pursePetnames,
+      instanceRegKey,
+      offerRules,
+      inputPurse,
+      outputPurse,
     );
 
     // =====================
