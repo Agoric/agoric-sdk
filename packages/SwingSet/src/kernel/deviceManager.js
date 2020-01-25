@@ -6,6 +6,17 @@ import { insistCapData } from '../capdata';
 import { insistMessage } from '../message';
 import kdebug from './kdebug';
 
+/**
+ * Produce an object that will serve as the kernel's handle onto a device.
+ *
+ * @param deviceName  The device's name, for human readable diagnostics
+ * @param syscallManager  The kernel's syscall interface
+ * @param setup  The device's own setup function
+ * @param helpers Generally useful kernel functions that aren't part of the
+ *    syscall interface
+ * @param endowments  The device's configured endowments
+ * @param deviceKeeper  The keeper of the device's persistent state
+ */
 export default function makeDeviceManager(
   deviceName,
   syscallManager,
@@ -16,14 +27,32 @@ export default function makeDeviceManager(
 ) {
   const { send, log } = syscallManager;
 
+  /**
+   * Provide the kernel slot corresponding to a given device slot.
+   *
+   * @param devSlot  The device slot of interest
+   *
+   * @return the kernel slot that devSlot maps to
+   *
+   * @throws if devSlot is not a kind of thing that can be exported by devices
+   *    or is otherwise invalid.
+   */
   function mapDeviceSlotToKernelSlot(devSlot) {
     insist(`${devSlot}` === devSlot, 'non-string devSlot');
     // kdebug(`mapOutbound ${devSlot}`);
     return deviceKeeper.mapDeviceSlotToKernelSlot(devSlot);
   }
 
-  // mapInbound: convert from absolute slot to deviceName-relative slot. This
-  // is used when building the arguments for dispatch.invoke.
+  /**
+   * Provide the device slot corresponding to a given kernel slot.
+   *
+   * @param kernelSlot  The kernel slot of interest
+   *
+   * @return the device slot kernelSlot maps to
+   *
+   * @throws if kernelSlot is not a kind of thing that can be imported by
+   *    devices or is otherwise invalid.
+   */
   function mapKernelSlotToDeviceSlot(kernelSlot) {
     insist(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
     const deviceSlot = deviceKeeper.mapKernelSlotToDeviceSlot(kernelSlot);
@@ -33,9 +62,15 @@ export default function makeDeviceManager(
     return deviceSlot;
   }
 
-  // syscall handlers: these are wrapped by the 'syscall' object and made
-  // available to userspace
-
+  /**
+   * Wrapper for the syscall 'send' method to be made available to userspace
+   * device code.  Does some type validation and maps slots from device space
+   * to kernel space.
+   *
+   * @param targetSlot  Target of the message send.  Must be an object slot.
+   * @param method  A string naming the method to be invoked.
+   * @param args  A capdata object containing the message arguments.
+   */
   function doSendOnly(targetSlot, method, args) {
     insist(`${targetSlot}` === targetSlot, 'non-string targetSlot');
     insistVatType('object', targetSlot);
@@ -56,6 +91,8 @@ export default function makeDeviceManager(
     send(target, msg);
   }
 
+  // Wrapped syscall interface to give to the device.  The device is only given
+  // the wrapped 'sendOnly' and 'log'.
   const syscall = harden({
     sendOnly(...args) {
       return doSendOnly(...args);
@@ -66,6 +103,7 @@ export default function makeDeviceManager(
     },
   });
 
+  // Wrapper for state, to give to the device to access its state.
   // Devices are allowed to get their state at startup, and set it anytime.
   // They do not use orthogonal persistence or transcripts.
   const state = harden({
@@ -77,12 +115,20 @@ export default function makeDeviceManager(
     },
   });
 
-  // now build the runtime, which gives us back a dispatch function
-
+  // Setting up the device runtime gives us back the device's dispatch function
   const dispatch = setup(syscall, state, helpers, endowments);
 
-  // dispatch handlers: these are used by the kernel core
-
+  /**
+   * Invoke a method on a device node.
+   *
+   * @param target  Kernel slot designating the device node that is the target
+   *    of the invocation
+   * @param method  A string naming the method to be invoked
+   * @param args  A capdata object containg the arguments to the invocation
+   *
+   * @return a capdata object containing the result of the invocation, or an
+   *    error data object if the invocation threw an exception
+   */
   function invoke(target, method, args) {
     insistKernelType('device', target);
     insistCapData(args);
@@ -102,7 +148,7 @@ export default function makeDeviceManager(
         `device[${deviceName}][${t}].${method} invoke failed: ${e}`,
         e,
       );
-      return { data: `ERROR: ${e}`, slots: [] };
+      return { body: `ERROR: ${e}`, slots: [] };
     }
   }
 

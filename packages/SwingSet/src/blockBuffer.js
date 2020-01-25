@@ -2,6 +2,19 @@ import harden from '@agoric/harden';
 
 // buildBlockBuffer() is used by all hosts, to wrap whatever hostDB they use
 
+// TODO rationalize naming pattern of buildFoo vs. makeFoo
+
+/**
+ * Make a wrapper around a hostDB that accumulates changes in memory until
+ * requested to commit them.
+ *
+ * @param hostDB  The hostDB object to be wrapped.
+ *
+ * @return an object: {
+ *      blockBuffer: HostDB,     // the wrapped hostDB
+ *      commitBlock: () => void  // a function that will commit changes
+ *    }
+ */
 export function buildBlockBuffer(hostDB) {
   // to avoid confusion, additions and deletions should never share a key
   const additions = new Map();

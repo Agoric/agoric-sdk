@@ -32,6 +32,22 @@ function byName(a, b) {
   return 0;
 }
 
+/**
+ * Scan a directory for files defining the vats to bootstrap for a swingset.
+ * Looks for files with names of the pattern `vat-NAME.js` as well as a file
+ * named 'bootstrap.js'.
+ *
+ * @param basedir  The directory to scan
+ *
+ * @return an object {
+ *    vats, // map from NAME to the full path to the corresponding .js file
+ *    bootstrapIndexJS, // path to the bootstrap.js file, or undefined if none
+ * }
+ *
+ * TODO: bootstrapIndexJS is a terrible name.  Rename to something like
+ * bootstrapSourcePath (renaming mildly complicated because it's referenced in
+ * lots of places).
+ */
 export function loadBasedir(basedir) {
   console.log(`= loading config from basedir ${basedir}`);
   const vats = new Map(); // name -> { sourcepath, options }
@@ -39,6 +55,9 @@ export function loadBasedir(basedir) {
   subs.sort(byName);
   subs.forEach(dirent => {
     if (dirent.name.endsWith('~')) {
+      // Special case crap filter to ignore emacs backup files and the like.
+      // Note that the regular filename parsing below will ignore such files
+      // anyway, but this skips logging them so as to reduce log spam.
       return;
     }
     if (
@@ -47,8 +66,8 @@ export function loadBasedir(basedir) {
       dirent.name.endsWith('.js')
     ) {
       const name = dirent.name.slice('vat-'.length, -'.js'.length);
-      const indexJS = path.resolve(basedir, dirent.name);
-      vats.set(name, { sourcepath: indexJS, options: {} });
+      const vatSourcePath = path.resolve(basedir, dirent.name);
+      vats.set(name, { sourcepath: vatSourcePath, options: {} });
     } else {
       console.log('ignoring ', dirent.name);
     }
@@ -57,6 +76,10 @@ export function loadBasedir(basedir) {
   try {
     fs.statSync(bootstrapIndexJS);
   } catch (e) {
+    // TODO this will catch the case of the file not existing but doesn't check
+    // that it's a plain file and not a directory or something else unreadable.
+    // Consider putting in a more sophisticated check if this whole directory
+    // scanning thing is something we decide we want to have long term.
     bootstrapIndexJS = undefined;
   }
   return { vats, bootstrapIndexJS };
@@ -97,7 +120,7 @@ function makeEvaluate(e) {
     };
   };
 
-  // As an optimisation, do not create a new compartment unless
+  // As an optimization, do not create a new compartment unless
   // they call makeEvaluators explicitly.
   const evaluateExpr = (source, endowments = {}, options = {}) =>
     confineExpr(source, endowments, options);
@@ -113,7 +136,7 @@ function makeEvaluate(e) {
 function makeSESEvaluator() {
   const evaluateOptions = makeDefaultEvaluateOptions();
   const { transforms, ...otherOptions } = evaluateOptions;
-  const s = SES.makeSESRootRealm({
+  const s = SES.makeSESRootRealm({ // TODO consider better var name than 's'
     ...otherOptions,
     transforms,
     consoleMode: 'allow',

@@ -504,6 +504,8 @@ export default function buildKernel(kernelEndowments) {
         ephemeral.log.push(rendered.join(''));
       },
     });
+    // XXX why does 'helpers' exist as a separate bucket of stuff instead of as
+    // just more params to makeVatManager?
 
     // the vatManager invokes setup() to build the userspace image
     return makeVatManager(

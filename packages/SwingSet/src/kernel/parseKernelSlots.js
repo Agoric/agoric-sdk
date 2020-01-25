@@ -10,6 +10,19 @@ import { insist } from '../insist';
 // object, they will receive 'o-NN', with the NN allocated by the kernel
 // clist for the recipient vat.
 
+/**
+ * Parse a kernel slot reference string into a kernel slot object:
+ *   {
+ *      type: STRING, // 'object', 'device', or 'promise'
+ *      id: Nat
+ *   }
+ *
+ * @param s  The string to be parsed, as described above.
+ *
+ * @return a kernel slot object corresponding to the parameter.
+ *
+ * @throws if the given string is syntactically incorrect.
+ */
 export function parseKernelSlot(s) {
   insist(s === `${s}`);
   let type;
@@ -30,6 +43,16 @@ export function parseKernelSlot(s) {
   return { type, id };
 }
 
+/**
+ * Generate a kernel slot reference string given a type and id.
+ *
+ * @param type  The type, 'object', 'device', or 'promise'.
+ * @param id    The id, a Nat.
+ *
+ * @return the corresponding kernel slot reference string.
+ *
+ * @throws if type is not one of the above known types.
+ */
 export function makeKernelSlot(type, id) {
   if (type === 'object') {
     return `ko${Nat(id)}`;
@@ -43,6 +66,17 @@ export function makeKernelSlot(type, id) {
   throw new Error(`unknown type ${type}`);
 }
 
+/**
+ * Assert function to ensure that a kernel slot reference string refers to a
+ * slot of a given type.
+ *
+ * @param type  The kernel slot type desired, a string.
+ * @param kernelSlot  The kernel slot reference string being tested
+ *
+ * @throws if kernelSlot is not of the given type or is malformed.
+ *
+ * @return nothing
+ */
 export function insistKernelType(type, kernelSlot) {
   insist(
     type === parseKernelSlot(kernelSlot).type,

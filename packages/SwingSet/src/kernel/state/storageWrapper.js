@@ -5,6 +5,25 @@ import { insistStorageAPI } from '../../storageAPI';
 // We must protect against cross-realm contamination, and add some
 // convenience methods.
 
+// NOTE: There's a lot of suspenders-and-belt paranoia here because we have to
+// be vewy, vewy careful with host-realm objects.  This raises a question
+// whether ad hoc paranoia is the best engineering practice.  Also, if it's
+// important for users of a parameter to be aware of the potentially suspect
+// nature of that parameter, perhaps we should establish some naming convention
+// that signals that the object could be foreign and thus deserving of
+// xenophobia.
+
+/**
+ * Wrap some paranoia around an alleged host storage object.  Checks that the
+ * given host storage object at least appears to implement the host storage
+ * API, and wrap each of the methods in a protective wrapper that logs any
+ * thrown errors and ensures that any return values that are supposed to be
+ * strings actually are.
+ *
+ * @param hostStorage  Alleged host storage object to be wrapped this way.
+ *
+ * @return a hardened version of hostStorage wrapped as described.
+ */
 export function guardStorage(hostStorage) {
   insistStorageAPI(hostStorage);
 
@@ -64,6 +83,18 @@ export function guardStorage(hostStorage) {
   return harden({ has, getKeys, get, set, delete: del });
 }
 
+/**
+ * Create and return a crank buffer, which wraps a storage object with logic
+ * that buffers any mutations until told to commit them.
+ *
+ * @param storage  The storage object that this crank buffer will be based on.
+ *
+ * @return an object {
+ *   crankBuffer,  // crank buffer as described, wrapping `storage`
+ *   commitCrank,  // capfn, saves buffered mutations to `storage` when invoked
+ *   abortCrank,   // capfn, discards buffered mutations when invoked
+ * }
+ */
 export function buildCrankBuffer(storage) {
   insistStorageAPI(storage);
 
@@ -118,6 +149,9 @@ export function buildCrankBuffer(storage) {
     },
   };
 
+  /**
+   * Flush any buffered mutations to the underlying storage.
+   */
   function commitCrank() {
     for (const [key, value] of additions) {
       storage.set(key, value);
@@ -127,6 +161,9 @@ export function buildCrankBuffer(storage) {
     }
   }
 
+  /**
+   * Discard any buffered mutations.
+   */
   function abortCrank() {
     additions.clear();
     deletions.clear();
@@ -154,10 +191,20 @@ export function cacheHeuristic(key) {
   if (key === 'runQueue') {
     return false;
   }
-
   return true;
 }
 
+/**
+ * Wrap a cache around a storage object.
+ *
+ * @param storage  The storage object to be given a cache.
+ * @param useCache  Predicate function to decide if a key should be cached.
+ *
+ * @return a new storage object based on `storage` that caches values
+ *
+ * NOTE: the value of caching here is somewhat speculative, and thus warrants
+ * some deeper examination when we have the time.
+ */
 export function addReadCache(storage, useCache) {
   // this embeds some assumptions:
   //  * the speed of 'get' on existing keys is the most important
@@ -213,6 +260,9 @@ export function addHelpers(storage) {
   // these functions are built on top of the DB interface
   insistStorageAPI(storage);
 
+  // NOTE: awkward naming: the thing that returns a stream of keys is named
+  // "enumerate..." while the thing that returns a stream of values is named
+  // "get..."
   function* enumeratePrefixedKeys(prefix, start = 0) {
     // Return an iterator over all existing keys `${prefix}${N}`, for N
     // starting at `start`, in numeric order. This is implemented with

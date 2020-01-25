@@ -1,3 +1,7 @@
+/**
+ * Kernel's keeper of persistent state for a vat.
+ */
+
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { insist } from '../../insist';
@@ -14,6 +18,14 @@ const FIRST_PROMISE_ID = 60;
 const FIRST_DEVICE_ID = 70;
 const FIRST_TRANSCRIPT_ID = 0;
 
+/**
+ * Establish a vat's state.
+ *
+ * @param storage  The storage in which the persistent state will be kept
+ * @param deviceID  The device ID string of the device in question
+ *
+ * TODO: consider making this part of makeVatKeeper
+ */
 export function initializeVatState(storage, vatID) {
   storage.set(`${vatID}.o.nextID`, `${FIRST_OBJECT_ID}`);
   storage.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
@@ -21,6 +33,18 @@ export function initializeVatState(storage, vatID) {
   storage.set(`${vatID}.t.nextID`, `${FIRST_TRANSCRIPT_ID}`);
 }
 
+/**
+ * Produce a vat keeper for a vat.
+ *
+ * @param storage  The storage in which the persistent state will be kept
+ * @param vatID  The vat ID string of the vat in question
+ * @param addKernelObject  Kernel function to add a new object to the kernel's
+ *    mapping tables.
+ * @param addKernelPromise  Kernel function to add a new promise to the
+ *    kernel's mapping tables.
+ *
+ * @return a object to hold and access the kernel's state for the given vat
+ */
 export function makeVatKeeper(
   storage,
   vatID,
@@ -29,6 +53,17 @@ export function makeVatKeeper(
 ) {
   insistVatID(vatID);
 
+  /**
+   * Provide the kernel slot corresponding to a given vat slot, including
+   * creating the kernel slot if it doesn't already exist.
+   *
+   * @param vatSlot  The vat slot of interest
+   *
+   * @return the kernel slot that vatSlot maps to
+   *
+   * @throws if vatSlot is not a kind of thing that can be exported by vats
+   *    or is otherwise invalid.
+   */
   function mapVatSlotToKernelSlot(vatSlot) {
     insist(`${vatSlot}` === vatSlot, 'non-string vatSlot');
     const vatKey = `${vatID}.c.${vatSlot}`;
@@ -60,6 +95,17 @@ export function makeVatKeeper(
     return storage.get(vatKey);
   }
 
+  /**
+   * Provide the vat slot corresponding to a given kernel slot, including
+   * creating the vat slot if it doesn't already exist.
+   *
+   * @param kernelSlot  The kernel slot of interest
+   *
+   * @return the vat slot kernelSlot maps to
+   *
+   * @throws if kernelSlot is not a kind of thing that can be imported by vats
+   *    or is otherwise invalid.
+   */
   function mapKernelSlotToVatSlot(kernelSlot) {
     insist(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
     const kernelKey = `${vatID}.c.${kernelSlot}`;
@@ -89,12 +135,20 @@ export function makeVatKeeper(
     return storage.get(kernelKey);
   }
 
+  /**
+   * Generator function to return the vat's transcript, one entry at a time.
+   */
   function* getTranscript() {
     for (const value of storage.getPrefixedValues(`${vatID}.t.`)) {
       yield JSON.parse(value);
     }
   }
 
+  /**
+   * Append a message to the vat's transcript.
+   *
+   * @param msg  The message to append.
+   */
   function addToTranscript(msg) {
     const id = Nat(Number(storage.get(`${vatID}.t.nextID`)));
     storage.set(`${vatID}.t.nextID`, `${id + 1}`);
@@ -119,7 +173,11 @@ export function makeVatKeeper(
     });
   }
 
-  // pretty print for logging and testing
+  /**
+   * Produce a dump of this vat's state for debugging purposes.
+   *
+   * @return an array of this vat's state information
+   */
   function dumpState() {
     const res = [];
     const prefix = `${vatID}.c.`;

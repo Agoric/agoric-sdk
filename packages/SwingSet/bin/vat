@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
 const process = require('process');
 const repl = require('repl');
 require = require('esm')(module);
@@ -47,7 +45,7 @@ async function main() {
       deepLog(d.promises);
       console.log('Run Queue:');
       deepLog(d.runQueue);
-    }; 
+    };
     r.context.dump2 = () => controller.dump();
     r.context.run = () => {console.log('run!'); controller.run();};
     r.context.step = () => {console.log('step!'); controller.step();};

@@ -11,6 +11,17 @@ import { insistCapData } from '../capdata';
 // beyond the runtime of the javascript environment, so this mechanism is not
 // going to work for our in-chain hosts.
 
+/**
+ * Instantiate the liveslots layer for a new vat and then populate the vat with
+ * a new root object and its initial associated object graph, if any.
+ *
+ * @param syscall  Kernel syscall interface that the vat will have access to
+ * @param state  Object to store and retrieve state; not used // TODO fix wart
+ * @param makeRoot  Function that will create a root object for the new vat
+ * @param forVatID  Vat ID label, for use in debug diagostics
+ *
+ * @return an extended dispatcher object for the new vat
+ */
 function build(syscall, _state, makeRoot, forVatID) {
   const enableLSDebug = false;
   function lsdebug(...args) {
@@ -51,11 +62,23 @@ function build(syscall, _state, makeRoot, forVatID) {
 
   const outstandingProxies = new WeakSet();
 
+  /** Map in-vat object references -> vat slot strings.  Uses a weak map so
+      that vat objects can be GC'd. */
   const valToSlot = new WeakMap();
+
+  /** Map vat slot strings -> in-vat object references. */
   const slotToVal = new Map();
+
   const importedPromisesByPromiseID = new Map();
   let nextExportID = 1;
   let nextPromiseID = 5;
+
+  // TODO: fix awkward non-orthogonality: allocateExportID() returns a number,
+  // allocatePromiseID() returns a slot, exportPromise() uses the slot from
+  // allocatePromiseID(), exportPassByPresence() generates a slot itself using
+  // the number from allocateExportID().  Both allocateX fns should return a
+  // number or return a lot; both exportY fns should either create a slot or
+  // use a slot from the corresponding allocateX
 
   function allocateExportID() {
     const exportID = nextExportID;
@@ -152,7 +175,7 @@ function build(syscall, _state, makeRoot, forVatID) {
         // this is a new import value
         // lsdebug(`assigning new import ${slot}`);
         // prepare a Promise for this Presence, so E(val) can work
-        const pr = makeQueued(slot);
+        const pr = makeQueued(slot); // TODO find a less confusing name than "pr"
         const presence = pr.resPres();
         presence.toString = () => `[Presence ${slot}]`;
         harden(presence);
@@ -240,6 +263,9 @@ function build(syscall, _state, makeRoot, forVatID) {
     }
     const args = m.unserialize(argsdata);
     const p = Promise.resolve().then(_ => {
+      // The idiom here results in scheduling the method invocation on the next
+      // turn, but more importantly arranges for errors to become promise
+      // rejections rather than errors in the kernel itself
       if (!(method in t)) {
         throw new TypeError(
           `target[${method}] does not exist, has ${Object.getOwnPropertyNames(
@@ -360,6 +386,36 @@ function build(syscall, _state, makeRoot, forVatID) {
   };
 }
 
+/**
+ * Instantiate the liveslots layer for a new vat and then populate the vat with
+ * a new root object and its initial associated object graph, if any.
+ *
+ * @param syscall  Kernel syscall interface that the vat will have access to
+ * @param state  Object to store and retrieve state
+ * @param makeRoot  Function that will create a root object for the new vat
+ * @param forVatID  Vat ID label, for use in debug diagostics
+ *
+ * @return a dispatcher object for the new vat
+ *
+ * The caller provided makeRoot function produces and returns the new vat's
+ * root object:
+ *
+ *     makeRoot(E, // eventual send facility for the vat
+ *              D) // device invocation facility for the vat
+ *
+ *     Within the vat, for any object x, E(x) returns a proxy object that
+ *     converts any method invocation into a corresponding eventual send to x.
+ *     That is, E(x).foo(arg1, arg2) is equivalent to x~.foo(arg1, arg2)
+ *
+ *     If x is the presence in this vat of a remote object (that is, an object
+ *     outside the vat), this will result in a message send out of the vat via
+ *     the kernel syscall interface.
+ *
+ *     In the same vein, if x is the presence in this vat of a kernel device,
+ *     D(x) returns a proxy such that a method invocation on it is translated
+ *     into the corresponding immediate invocation of the device (using, once
+ *     again, the kernel syscall interface).
+ */
 export function makeLiveSlots(syscall, state, makeRoot, forVatID = 'unknown') {
   const {
     deliver,
