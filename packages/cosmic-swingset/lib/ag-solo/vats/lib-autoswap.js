@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import { hydrateUnits, hydrateOfferRules, hydrateMap } from './hydration';
+import { hydrateUnits, hydrateMap } from './hydration';
 
 export function makeAutoswapBackend(
   E,
@@ -11,7 +11,6 @@ export function makeAutoswapBackend(
   assays,
 ) {
   const regKeyToAssayMap = hydrateMap(regKeys, assays);
-  const regKeyToTimerMap = undefined;
 
   const autoswapBackend = harden({
     uiFacet: {
@@ -21,13 +20,6 @@ export function makeAutoswapBackend(
         const units = hydrateUnits(regKeyToAssayMap, dehydratedUnits);
         return E(publicAPI).getPrice(units);
       },
-
-      getOfferRules: dehydratedOfferRules =>
-        hydrateOfferRules(
-          regKeyToAssayMap,
-          regKeyToTimerMap,
-          dehydratedOfferRules,
-        ),
     },
   });
 

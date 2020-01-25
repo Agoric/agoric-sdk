@@ -27,14 +27,6 @@ function build(E) {
             return { type: 'autoswapPrice', data: unitsOut };
           }
 
-          if (type === 'autoswapGetOfferRules') {
-            const { offerRules } = data;
-            const hydratedOfferRules = await autoswapBackend.getOfferRules(
-              offerRules,
-            );
-            return { type: 'autoswapOfferRules', data: hydratedOfferRules };
-          }
-
           return false;
         },
       }),
