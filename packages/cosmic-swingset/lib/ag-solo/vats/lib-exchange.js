@@ -13,42 +13,22 @@ function checkOrder(a0, a1, b0, b1) {
 }
 
 export function makeExchange(E, log, host, zoe, registrar) {
-  function getPrice(instanceId, extent0, assayId0, assayId1) {
+  function getPrice(instanceId, extent0, assayId0, _assayId1) {
     const instanceHandleP = E(registrar).get(instanceId);
     const regAssay0P = E(registrar).get(assayId0);
-    const regAssay1P = E(registrar).get(assayId1);
     const label0P = E(regAssay0P).getLabel();
 
-    return Promise.all([instanceHandleP, regAssay0P, regAssay1P, label0P]).then(
-      ([instanceHandle, regAssay0, regAssay1, label0]) =>
+    return Promise.all([instanceHandleP, label0P]).then(
+      ([instanceHandle, label0]) =>
         E(zoe)
           .getInstance(instanceHandle)
-          .then(
-            ({
-              terms: {
-                assays: [contractAssay0, contractAssay1],
-              },
-              instance,
-            }) => {
-              // Check whether we sell on contract assay 0 or 1.
-              const normal = checkOrder(
-                regAssay0,
-                regAssay1,
-                contractAssay0,
-                contractAssay1,
-              );
-              const unit0 = harden({ label: label0, extent: extent0 });
-              // Order the units accordingly.
-              const units = [
-                normal ? unit0 : undefined,
-                normal ? undefined : unit0,
-                undefined,
-              ];
-              return E(instance)
-                .getPrice(units)
-                .then(unit1 => unit1.extent);
-            },
-          ),
+          .then(({ publicAPI }) => {
+            const unit0 = harden({ label: label0, extent: extent0 });
+
+            return E(publicAPI)
+              .getPrice(unit0)
+              .then(unit1 => unit1.extent);
+          }),
     );
   }
 
