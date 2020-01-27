@@ -554,34 +554,33 @@ export default function buildKernel(kernelEndowments) {
       return helpers.makeLiveSlots(syscall, state, buildFn, helpers.vatID);
     };
 
-    let manager;
-    try {
-      manager = buildVatManager(vatID, `dynamicVat${vatID}`, setup);
-    } catch (e) {
-      return `Error: ${e}`;
-    }
+    const manager = buildVatManager(vatID, `dynamicVat${vatID}`, setup);
     ephemeral.vats.set(vatID, harden({ manager }));
     return vatID;
   }
 
-  // A function to be called from the vatAdmin device to create a new vat. It
-  // creates the vat and sends a notification to the device. The root object
-  // will be available soon, but we immediately return the vatID so the ultimate
-  // requestor doesn't have to wait.
+  /** A function to be called from the vatAdmin device to create a new vat. It
+   * creates the vat and sends a notification to the device. The root object
+   * will be available soon, but we immediately return the vatID so the ultimate
+   * requestor doesn't have to wait.
+   *
+   * @param buildFnSrc Souce code for a build function to be passed to
+   * makeLiveSlots(), which means it takes E as a parameter and returns a root
+   * object.
+   *
+   * @return { vatID, error } either the vatID for a newly created vat, or the
+   * error message for the problem.
+   */
   function createVatDynamically(buildFnSrc) {
     const endowments = { require: kernelRequire };
     const buildFn = evaluateProgram(buildFnSrc, endowments);
-    const vatIDOrError = createVat(buildFn);
-
-    // When there's an error creating the vat or evaluating the code, createVat
-    // returns an error message instead of a vatID. We return the error message
-    // and skip the notification step. All the fns for parsing and verifying
-    // formatting of vatIDs throw, so we look at the purported ID directly here.
-    if (`${vatIDOrError}`.startsWith('v')) {
-      notifyAdminVatOfNewVat(vatIDOrError);
+    try {
+      const vatID = createVat(buildFn);
+      notifyAdminVatOfNewVat(vatID);
+      return harden({ vatID });
+    } catch (e) {
+      return harden({ error: e });
     }
-
-    return `${vatIDOrError}`;
   }
 
   function buildDeviceManager(deviceID, name, setup, endowments) {
