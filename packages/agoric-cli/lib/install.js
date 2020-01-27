@@ -1,7 +1,7 @@
 import parseArgs from 'minimist';
 import chalk from 'chalk';
 
-export default async function installMain(progname, rawArgs, priv) {
+export default async function installMain(progname, rawArgs, priv, opts) {
   const { console, error, spawn } = priv;
   const { _: args } = parseArgs(rawArgs);
 
@@ -13,8 +13,8 @@ export default async function installMain(progname, rawArgs, priv) {
     });
 
   // Install via Yarn.
-  if (await pspawn('yarn', ['install'], { stdio: 'inherit'})) {
-    error('Cannot install');
+  if (!opts.sdk && await pspawn('yarn', ['install'], { stdio: 'inherit'})) {
+    error('Cannot yarn install');
     return 1;
   };
   console.log(chalk.bold.green('Done installing'));

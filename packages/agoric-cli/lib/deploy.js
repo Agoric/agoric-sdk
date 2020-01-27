@@ -1,7 +1,7 @@
 /* eslint-disable no-await-in-loop */
 import parseArgs from 'minimist';
 import { evaluateProgram } from '@agoric/evaluate';
-import { E, makeCapTP } from '@agoric/captp';
+import { E, HandledPromise, makeCapTP } from '@agoric/captp';
 
 import bundleSource from '@agoric/bundle-source';
 
@@ -74,7 +74,7 @@ export default async function deployMain(progname, rawArgs, priv) {
         const { source, sourceMap } = await bundleSource(moduleFile);
 
         const actualSource = `(${source}\n)\n${sourceMap}`;
-        const mainNS = evaluateProgram(actualSource, { require })();
+        const mainNS = evaluateProgram(actualSource, { require, HandledPromise })();
         const main = mainNS.default;
         if (typeof main !== 'function') {
           console.error(

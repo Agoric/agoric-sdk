@@ -31,7 +31,7 @@ If you have cloned and installed the Agoric SDK as described by its [README](/Ag
 alias agoric="/PATH/TO/agoric-sdk/packages/agoric-cli/bin/agoric --sdk"
 ```
 
-If you want to modify the `template` directory used by Agoric SDK, you can `cd` to it and skip the `agoric init` stage below.  Then, create a PR from your changes.
+If you want to modify the `template` directory used by Agoric SDK, you can `cd template` and skip to the `agoric install` stage below.  Then, iterate on editing the template and, when you're finished, create a PR from your changes.
 </details>
 
 ## Your first Agoric dApp
@@ -46,9 +46,11 @@ agoric init demo
 cd demo
 # Install Javascript dependencies.
 agoric install
-# Run the local vat machine.
-agoric start
-# Install your smart contract and web api (can be done separately)
+# Run the local vat machine, resetting to factory defaults.
+# Leave off `--reset` if you want to resume where you left off.
+agoric start --reset
+# Now you can navigate to http://localhost:8000/
+
+# Install your smart contract and web api
 agoric deploy ./contract/deploy.js ./api/deploy.js
-# Navigate to http://localhost:8000/
 ```
