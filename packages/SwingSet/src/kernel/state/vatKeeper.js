@@ -102,15 +102,19 @@ export function makeVatKeeper(
   }
 
   function vatStats() {
-    const objectCount = storage.get(`${vatID}.o.nextID`) - FIRST_OBJECT_ID;
-    const promiseCount = storage.get(`${vatID}.p.nextID`) - FIRST_PROMISE_ID;
-    const deviceCount = storage.get(`${vatID}.d.nextID`) - FIRST_DEVICE_ID;
+    function getStringAsNat(ostr) {
+      return Nat(Number(storage.get(ostr)));
+    }
+
+    const objectCount = getStringAsNat(`${vatID}.o.nextID`) - FIRST_OBJECT_ID;
+    const promiseCount = getStringAsNat(`${vatID}.p.nextID`) - FIRST_PROMISE_ID;
+    const deviceCount = getStringAsNat(`${vatID}.d.nextID`) - FIRST_DEVICE_ID;
     const transcriptCount =
       storage.get(`${vatID}.t.nextID`) - FIRST_TRANSCRIPT_ID;
     return harden({
-      objectCount: Nat(Number(objectCount)),
-      promiseCount: Nat(Number(promiseCount)),
-      deviceCount: Nat(Number(deviceCount)),
+      objectCount: Nat(objectCount),
+      promiseCount: Nat(promiseCount),
+      deviceCount: Nat(deviceCount),
       transcriptCount: Nat(Number(transcriptCount)),
     });
   }

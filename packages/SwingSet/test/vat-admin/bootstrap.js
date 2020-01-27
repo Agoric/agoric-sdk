@@ -92,7 +92,10 @@ export default function setup(syscall, state, helpers) {
               const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
                 devices.vatAdmin,
               );
-              const { adminNode } = await E(vatAdminSvc).createVat(src);
+              const { root, adminNode } = await E(vatAdminSvc).createVat(src);
+              log(await E(adminNode).adminData());
+              const c = E(root).createRcvr(1);
+              log(await E(c).increment(3));
               log(await E(adminNode).adminData());
               return;
             }
