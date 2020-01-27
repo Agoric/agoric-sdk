@@ -165,8 +165,14 @@ export async function makeWallet(
       terms: {
         assays: [contractAssay0, contractAssay1, contractAssay2],
       },
-      instance,
+      publicAPI,
     } = await E(zoe).getInstance(instanceHandle);
+
+    // =====================
+    // === AWAITING TURN ===
+    // =====================
+
+    const invite = await E(publicAPI).makeInvite();
 
     // =====================
     // === AWAITING TURN ===
@@ -216,7 +222,8 @@ export async function makeWallet(
       ? [payment0, undefined, undefined]
       : [undefined, payment0, undefined];
 
-    const { escrowReceipt, payout: payoutP } = await E(zoe).escrow(
+    const { seat, payout: payoutP } = await E(zoe).redeem(
+      invite,
       newOfferRules,
       payment,
     );
@@ -233,10 +240,7 @@ export async function makeWallet(
     // over a naked non-awaited invocation of E() would appear
     // as an error.
 
-    const [offerOk, payout] = await Promise.all([
-      E(instance).makeOffer(escrowReceipt),
-      payoutP,
-    ]);
+    const [offerOk, payout] = await Promise.all([E(seat).makeOffer(), payoutP]);
 
     // =====================
     // === AWAITING TURN ===

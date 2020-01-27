@@ -67,14 +67,32 @@ export default async ({ home, bundle }) => {
   // =====================
 
   // 2. Contract instance, contract assays.
-  const { instance, instanceHandle, terms: { assays } } = 
+  const invite = 
     await home~.zoe~.makeInstance(installationHandle, { assays: [assay0, assay1] });
+    
+  // =====================
+  // === AWAITING TURN ===
+  // =====================
+
+  // 3. Get the instanceHandle
+
+  const {
+    extent: { instanceHandle },
+  } = await invite~.getBalance();
 
   // =====================
   // === AWAITING TURN ===
   // =====================
 
-  // 3. Offer rules.
+  // 4. Get the contract terms and assays
+
+  const { terms: { assays }} = await home~.zoe~.getInstance(instanceHandle);
+
+  // =====================
+  // === AWAITING TURN ===
+  // =====================
+
+  // 5. Offer rules.
   const unit0P = assays~.[0]~.makeUnits(INITIAL_LIQUIDITY);
   const unit1P = assays~.[1]~.makeUnits(INITIAL_LIQUIDITY);
   const unit2P = assays~.[2]~.makeUnits(0);
@@ -96,11 +114,11 @@ export default async ({ home, bundle }) => {
   const offerRules = harden({
     payoutRules: [
       {
-        kind: 'offerExactly',
+        kind: 'offerAtMost',
         units: unit0,
       },
       {
-        kind: 'offerExactly',
+        kind: 'offerAtMost',
         units: unit1,
       },
       {
@@ -113,14 +131,14 @@ export default async ({ home, bundle }) => {
     },
   });
 
-  const { escrowReceipt } = await home~.zoe~.escrow(offerRules, [payment0, payment1]);
+  const { seat, payout } = await home~.zoe~.redeem(invite, offerRules, [payment0, payment1]);
 
   // =====================
   // === AWAITING TURN ===
   // =====================
 
   // 4. Initial liquidity.
-  const liquidityOkP = instance~.addLiquidity(escrowReceipt);
+  const liquidityOkP = invite~.addLiquidity();
   const instanceIdP = home~.registrar~.register(CONTRACT_NAME, instanceHandle);
 
   const [liquidityOk, instanceId] = await Promise.all([liquidityOkP, instanceIdP]); 

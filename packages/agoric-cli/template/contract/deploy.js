@@ -22,8 +22,8 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   // =====================
   
   // 1. Assays and payments
-  const purse0P = homeP~.wallet~.getPurse('Moola purse');
-  const purse1P = homeP~.wallet~.getPurse('Simolean purse');
+  const purse0P = homeP~.wallet~.getPurse('moola purse');
+  const purse1P = homeP~.wallet~.getPurse('simolean purse');
   const assay0P = purse0P~.getAssay();
   const assay1P = purse1P~.getAssay();
   const payment0P = purse0P~.withdraw(1);
@@ -50,14 +50,33 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   // =====================
 
   // 2. Contract instance.
-  const { instance, instanceHandle, terms: { assays } } 
+  const invite
     = await homeP~.zoe~.makeInstance(installationHandle, { assays: [assay0, assay1] });
+  
+  // =====================
+  // === AWAITING TURN ===
+  // =====================
+
+  // 3. Get the instanceHandle
+  
+  const {
+    extent: { instanceHandle },
+  } = await invite~.getBalance();
 
   // =====================
   // === AWAITING TURN ===
   // =====================
 
-  // 3. Offer rules
+  // 4. Get the contract terms and assays
+
+  const { terms: { assays }} = await homeP~.zoe~.getInstance(instanceHandle);
+
+
+  // =====================
+  // === AWAITING TURN ===
+  // =====================
+
+  // 5. Offer rules
   const [unit0, unit1, unit2] = await Promise.all([
     assays~.[0]~.makeUnits(1),
     assays~.[1]~.makeUnits(1),
@@ -71,11 +90,11 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   const offerRules = harden({
     payoutRules: [
       {
-        kind: 'offerExactly',
+        kind: 'offerAtMost',
         units: unit0,
       },
       {
-        kind: 'offerExactly',
+        kind: 'offerAtMost',
         units: unit1,
       },
       {
@@ -88,18 +107,18 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
     },
   });
 
-  // 4. Liquidities.
+  // 6. Liquidities.
 
   const payments = [payment0, payment1];
 
-  const { escrowReceipt } = await homeP~.zoe~.escrow(offerRules, payments);
+  const { seat, payout } = await homeP~.zoe~.redeem(invite, offerRules, payments);
 
   // =====================
   // === AWAITING TURN ===
   // =====================
 
   const [liquidityOk, contractId, instanceId] = await Promise.all([
-    instance~.addLiquidity(escrowReceipt),
+    seat~.addLiquidity(),
     homeP~.registrar~.register(DAPP_NAME, installationHandle),
     homeP~.registrar~.register(CONTRACT_NAME, instanceHandle),
   ]);

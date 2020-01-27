@@ -78,7 +78,7 @@ export function makeExchange(E, log, host, zoe, registrar) {
               // Contrust the rules for serialization (no instance).
               // This rule is the payment
               const rule0 = {
-                kind: 'offerExactly',
+                kind: 'offerAtMost',
                 units: { assayId: assayId0, extent: extent0 },
               };
               // This rule is the payout
