@@ -22,12 +22,12 @@ jobs:
       run: |
         cd $HOME
         curl -L https://github.com/dckc/moddable/releases/download/ag08/moddable-linux-sdk.tgz | tar xzf -
-    - name: install tape-xs
+    - name: install tape-xs ag03
       # ISSUE: merge into agoric-sdk?
       run: |
         cd $HOME
-        curl -L https://github.com/dckc/tape-xs/archive/ag01.tar.gz | tar xzf -
-        mv tape-xs-ag01 tape-xs
+        curl -L https://github.com/agoric-labs/tape-xs/archive/ag03.tar.gz | tar xzf -
+        mv tape-xs-ag03 tape-xs
         cd tape-xs
         yarn install
     - name: test eventual-send on xs
