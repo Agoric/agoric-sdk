@@ -136,7 +136,7 @@ function makeEvaluate(e) {
 function makeSESEvaluator() {
   const evaluateOptions = makeDefaultEvaluateOptions();
   const { transforms, ...otherOptions } = evaluateOptions;
-  const s = SES.makeSESRootRealm({ // TODO consider better var name than 's'
+  const s = SES.makeSESRootRealm({
     ...otherOptions,
     transforms,
     consoleMode: 'allow',

@@ -62,8 +62,12 @@ function build(syscall, _state, makeRoot, forVatID) {
 
   const outstandingProxies = new WeakSet();
 
-  /** Map in-vat object references -> vat slot strings.  Uses a weak map so
-      that vat objects can be GC'd. */
+  /** Map in-vat object references -> vat slot strings.
+
+      Uses a weak map so that vat objects can (in princple) be GC'd.  Note that
+      they currently can't actually be GC'd because the slotToVal table keeps
+      them alive, but that will have to be addressed by a different
+      mechanism. */
   const valToSlot = new WeakMap();
 
   /** Map vat slot strings -> in-vat object references. */

@@ -91,8 +91,8 @@ export function guardStorage(hostStorage) {
  *
  * @return an object {
  *   crankBuffer,  // crank buffer as described, wrapping `storage`
- *   commitCrank,  // capfn, saves buffered mutations to `storage` when invoked
- *   abortCrank,   // capfn, discards buffered mutations when invoked
+ *   commitCrank,  // function to save buffered mutations to `storage`
+ *   abortCrank,   // function to discard buffered mutations
  * }
  */
 export function buildCrankBuffer(storage) {

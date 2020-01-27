@@ -46,6 +46,8 @@ export default function makeDeviceManager(
   /**
    * Provide the device slot corresponding to a given kernel slot.
    *
+   * This is used when building the arguments for dispatch.invoke.
+   *
    * @param kernelSlot  The kernel slot of interest
    *
    * @return the device slot kernelSlot maps to
@@ -115,7 +117,7 @@ export default function makeDeviceManager(
     },
   });
 
-  // Setting up the device runtime gives us back the device's dispatch function
+  // Setting up the device runtime gives us back the device's dispatch object
   const dispatch = setup(syscall, state, helpers, endowments);
 
   /**
@@ -124,7 +126,7 @@ export default function makeDeviceManager(
    * @param target  Kernel slot designating the device node that is the target
    *    of the invocation
    * @param method  A string naming the method to be invoked
-   * @param args  A capdata object containg the arguments to the invocation
+   * @param args  A capdata object containing the arguments to the invocation
    *
    * @return a capdata object containing the result of the invocation, or an
    *    error data object if the invocation threw an exception

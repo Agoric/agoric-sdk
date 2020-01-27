@@ -54,8 +54,8 @@ export function makeVatKeeper(
   insistVatID(vatID);
 
   /**
-   * Provide the kernel slot corresponding to a given vat slot, including
-   * creating the kernel slot if it doesn't already exist.
+   * Provide the kernel slot corresponding to a given vat slot, creating the
+   * kernel slot if it doesn't already exist.
    *
    * @param vatSlot  The vat slot of interest
    *
