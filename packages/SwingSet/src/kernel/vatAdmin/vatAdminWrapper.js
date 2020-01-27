@@ -6,38 +6,28 @@
  * device affordances into objects that can be used by code in other vats.
  */
 import harden from '@agoric/harden';
+import makePromise from '../../makePromise';
 
 export default function setup(syscall, state, helpers) {
-  function makePromiseForVat() {
-    let res;
-    let reject;
-    const p = new Promise((rsv, rj) => {
-      res = rsv;
-      reject = rj;
-    });
-    return harden({ p, res, reject });
-  }
-
   function build(E, D) {
     const vatIdsToResolvers = new Map();
 
     function createVatAdminService(vatAdminNode) {
       return harden({
         createVat(code) {
-          const result = D(vatAdminNode).create(code);
-          if (result.error) {
-            throw Error(`Vat Creation Error: ${result.error}`);
+          const { vatID, error } = D(vatAdminNode).create(code);
+          if (error) {
+            throw Error(`Vat Creation Error: ${error}`);
           } else {
-            const vatPromise = makePromiseForVat();
-            const vatId = result.ok;
-            vatIdsToResolvers.set(vatId, vatPromise.res);
+            const vatPromise = makePromise();
+            vatIdsToResolvers.set(vatID, vatPromise.res);
             const adminNode = harden({
               terminate() {
-                D(vatAdminNode).terminate(vatId);
+                D(vatAdminNode).terminate(vatID);
                 // TODO(hibbert): cleanup admin vat data structures
               },
               adminData() {
-                return D(vatAdminNode).adminStats(vatId);
+                return D(vatAdminNode).adminStats(vatID);
               },
             });
             return vatPromise.p.then(root => {
@@ -50,8 +40,8 @@ export default function setup(syscall, state, helpers) {
 
     function newVatCallback(vatId, rootObject) {
       const rootResolver = vatIdsToResolvers.get(vatId);
+      vatIdsToResolvers.delete(vatId);
       rootResolver(rootObject);
-      vatIdsToResolvers.set(vatId, rootObject);
     }
 
     return harden({
