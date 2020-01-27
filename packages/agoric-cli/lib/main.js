@@ -38,8 +38,8 @@ Manage the Agoric Javascript smart contract platform.
 
 deploy    upload dapp to started Agoric servers
 help      display this help and exit
-init      initialize a dapp project
-install   load dapp dependencies
+init      initialize a dApp project
+install   load dApp dependencies
 start     run Agoric servers
 `);
     return 0;

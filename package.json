@@ -37,6 +37,7 @@
   "scripts": {
     "OFF-clean": "yarn workspaces run clean",
     "prettier": "yarn workspaces run prettier",
+    "link-cli": "node ./scripts/link-cli.js",
     "lint-fix": "yarn workspaces run lint-fix",
     "lint-check": "cd packages/marshal && yarn lint-check && cd ../SwingSet && yarn lint-check && cd ../ERTP && yarn lint-check && cd ../zoe && yarn lint-check",
     "lint-check-all": "yarn workspaces run lint-check",
