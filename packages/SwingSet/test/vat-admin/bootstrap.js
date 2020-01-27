@@ -86,6 +86,19 @@ export default function setup(syscall, state, helpers) {
                 );
               return;
             }
+            case 'vatStats': {
+              log(`starting stats test`);
+              const src = `${serviceHolder.build}`;
+              const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+                devices.vatAdmin,
+              );
+              const { root, adminNode } = await E(vatAdminSvc).createVat(src);
+              log(await E(adminNode).adminData());
+              const c = E(root).createRcvr(1);
+              log(await E(c).increment(3));
+              log(await E(adminNode).adminData());
+              return;
+            }
             default:
               throw new Error(`unknown argv mode '${argv[0]}'`);
           }

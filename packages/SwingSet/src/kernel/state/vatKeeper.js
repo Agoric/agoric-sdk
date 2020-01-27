@@ -8,11 +8,17 @@ import kdebug from '../kdebug';
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
+// TODO: tests rely on these numbers and haven't been updated to use names.
+const FIRST_OBJECT_ID = 50;
+const FIRST_PROMISE_ID = 60;
+const FIRST_DEVICE_ID = 70;
+const FIRST_TRANSCRIPT_ID = 0;
+
 export function initializeVatState(storage, vatID) {
-  storage.set(`${vatID}.o.nextID`, '50');
-  storage.set(`${vatID}.p.nextID`, '60');
-  storage.set(`${vatID}.d.nextID`, '70');
-  storage.set(`${vatID}.t.nextID`, '0');
+  storage.set(`${vatID}.o.nextID`, `${FIRST_OBJECT_ID}`);
+  storage.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
+  storage.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
+  storage.set(`${vatID}.t.nextID`, `${FIRST_TRANSCRIPT_ID}`);
 }
 
 export function makeVatKeeper(
@@ -95,6 +101,24 @@ export function makeVatKeeper(
     storage.set(`${vatID}.t.${id}`, JSON.stringify(msg));
   }
 
+  function vatStats() {
+    function getStringAsNat(ostr) {
+      return Nat(Number(storage.get(ostr)));
+    }
+
+    const objectCount = getStringAsNat(`${vatID}.o.nextID`) - FIRST_OBJECT_ID;
+    const promiseCount = getStringAsNat(`${vatID}.p.nextID`) - FIRST_PROMISE_ID;
+    const deviceCount = getStringAsNat(`${vatID}.d.nextID`) - FIRST_DEVICE_ID;
+    const transcriptCount =
+      storage.get(`${vatID}.t.nextID`) - FIRST_TRANSCRIPT_ID;
+    return harden({
+      objectCount: Nat(objectCount),
+      promiseCount: Nat(promiseCount),
+      deviceCount: Nat(deviceCount),
+      transcriptCount: Nat(Number(transcriptCount)),
+    });
+  }
+
   // pretty print for logging and testing
   function dumpState() {
     const res = [];
@@ -117,6 +141,7 @@ export function makeVatKeeper(
     mapKernelSlotToVatSlot,
     getTranscript,
     addToTranscript,
+    vatStats,
     dumpState,
   });
 }
