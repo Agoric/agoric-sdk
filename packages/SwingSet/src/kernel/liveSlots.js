@@ -81,7 +81,7 @@ function build(syscall, _state, makeRoot, forVatID) {
   // allocatePromiseID() returns a slot, exportPromise() uses the slot from
   // allocatePromiseID(), exportPassByPresence() generates a slot itself using
   // the number from allocateExportID().  Both allocateX fns should return a
-  // number or return a lot; both exportY fns should either create a slot or
+  // number or return a slot; both exportY fns should either create a slot or
   // use a slot from the corresponding allocateX
 
   function allocateExportID() {
