@@ -79,3 +79,4 @@ integration-test/transform-tests/output
 # generated Sphinx/ReadTheDocs files 
 /docs/build/
 /demo
+t[0-9]*

@@ -56,8 +56,12 @@ export default async function initMain(progname, rawArgs, priv) {
           console.log(`mkdir ${DIR}${stem}`);
           await mkdir(`${DIR}${stem}`);
         }
-      }),
-    );
+        await recursiveTemplate(templateDir, `${stem}`);
+      } else {
+        console.log(`write ${DIR}${stem}`);
+        await writeTemplate(stem);
+      }
+    }));
   };
   await recursiveTemplate(templateDir);
 

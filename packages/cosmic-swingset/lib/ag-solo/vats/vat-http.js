@@ -64,8 +64,8 @@ function build(E, D) {
       if (ROLES.client) {
         const conns = new Map();
         const forward = method => obj => {
-          const dispatch = conns.get(obj.connectionID);
-          if (!dispatch || !dispatch(obj)) {
+          const dispatchAbort = conns.get(obj.connectionID);
+          if (!dispatchAbort || !(1, dispatchAbort[0])(obj)) {
             console.log(
               `Could not find CapTP handler ${method}`,
               obj.connectionID,
@@ -91,14 +91,18 @@ function build(E, D) {
                 o.connectionID = obj.connectionID;
                 D(commandDevice).sendBroadcast(o);
               };
-              const { dispatch } = makeCapTP(obj.connectionID, sendObj, () =>
+              const { dispatch, abort } = makeCapTP(obj.connectionID, sendObj, () =>
                 // Harden only our exported objects.
                 harden(exportedToCapTP),
               );
-              conns.set(obj.connectionID, dispatch);
+              conns.set(obj.connectionID, [dispatch, abort]);
             },
             CTP_CLOSE(obj) {
               console.log(`Finishing CapTP`, obj.connectionID);
+              const dispatchAbort = conns.get(obj.connectionID);
+              if (dispatchAbort) {
+                (1, dispatchAbort[1])();
+              }
               conns.delete(obj.connectionID);
             },
             CTP_ERROR(obj) {
