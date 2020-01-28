@@ -1,56 +1,22 @@
-# Agoric Javascript Smart Contract Platform
+# Agoric CLI
 
-## Choose your Prerequisite
+If you just want to use the Agoric CLI for your own smart contract, please see the [Getting Started website](https://agoric.com/documentation/getting-started/) for information.
 
-<details><summary>Run directly from NPM using `npx`</summary>
-**NOTE: This doesn't work right now due to missing published packages.**
+## Developing Agoric CLI
 
-You will need a local installation of Node.js, at least version 11.
+**NOTE: these steps are only for modifying the Agoric CLI.  See the above for using it to create your own smart contracts.**
 
-```sh
-alias agoric='npx agoric'
-```
-</details>
-
-<details><summary>Install from NPM globally on your host</summary>
-**NOTE: This doesn't work right now due to missing published packages.**
-
-You will need a local installation of Node.js, at least version 11.
+If you want to modify the `template` directory used by Agoric CLI, you can run:
 
 ```sh
-npm install -g agoric
-unalias agoric
-```
-</details>
-
-<details><summary>Use as part of Agoric SDK</summary>
-
-If you have cloned and installed the Agoric SDK as described by its [README](/Agoric/agoric-sdk/#readme), you can use the Agoric CLI directly.
-
-```sh
-alias agoric="/PATH/TO/agoric-sdk/packages/agoric-cli/bin/agoric --sdk"
+# Change to the template directory
+cd template
+# Start the http://localhost:8000 Agoric VM
+../bin/agoric --sdk start --reset
+# Deploy the test contracts
+../bin/agoric --sdk deploy contract/deploy.js api/deploy.js
 ```
 
-If you want to modify the `template` directory used by Agoric SDK, you can `cd template` and skip to the `agoric install` stage below.  Then, iterate on editing the template and, when you're finished, create a PR from your changes.
-</details>
+Then, iterate on editing and rerunning the `start` and `deploy` steps above to test the new template.
 
-## Your first Agoric dApp
-
-Here is a simple script for how to get started.  Be sure to have run the appropriate instructions from the [above section](#Choose-your-Prerequisites).
-
-```sh
-# Initialize your dapp project.
-# Note: Change the `demo` name to something meaningful.
-agoric init demo
-# Go to its directory.
-cd demo
-# Install Javascript dependencies.
-agoric install
-# Run the local vat machine, resetting to factory defaults.
-# Leave off `--reset` if you want to resume where you left off.
-agoric start --reset
-# Now you can navigate to http://localhost:8000/
-
-# Install your smart contract and web api
-agoric deploy ./contract/deploy.js ./api/deploy.js
-```
+Please create a PR on this repository if you have an improvement for the template.
