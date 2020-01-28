@@ -160,6 +160,7 @@ test('eventual send can be enabled', async t => {
       const noReject = fn => fn();
 
       let directEval = noReject;
+      // eslint-disable-next-line no-constant-condition
       if (true) {
         // FIXME: Should be noReject.
         directEval = fn =>
