@@ -3,10 +3,16 @@ import { makeMint } from '@agoric/ertp/core/mint';
 
 // This vat contains the registrar for the demo.
 
-function build(E, log) {
+function build(_E, _log) {
+  const moolaMint = makeMint('moola');
+  const simoleanMint = makeMint('simolean');
+
+  const moolaAssay = moolaMint.getAssay();
+  const simoleanAssay = simoleanMint.getAssay();
+
   const mints = new Map([
-    ['moola', makeMint('moola')],
-    ['simolean', makeMint('simolean')],
+    ['moola', moolaMint],
+    ['simolean', simoleanMint],
   ]);
 
   function getNewPurse(desc, nickname) {
@@ -20,6 +26,11 @@ function build(E, log) {
   return harden({
     getMint,
     getNewPurse,
+    getAssays: () =>
+      harden({
+        moolaAssay,
+        simoleanAssay,
+      }),
   });
 }
 
