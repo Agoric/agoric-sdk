@@ -3,7 +3,7 @@ const dot = '.'.charCodeAt(0);
 const zero = '0'.charCodeAt(0);
 const nine = '9'.charCodeAt(0);
 
-function makeCurryOptions(acorn, options = {}) {
+function makeCurryOptions(acorn, allOptions = {}) {
   const { tokTypes: tt, TokenType } = acorn;
 
   const tok = {
@@ -143,7 +143,7 @@ function makeCurryOptions(acorn, options = {}) {
   return function extendParser(Parser) {
     return plugin(
       {
-        HandledPromise: options.HandledPromise || 'HandledPromise',
+        HandledPromise: allOptions.HandledPromise || 'HandledPromise',
       },
       Parser,
     );
