@@ -1,6 +1,12 @@
 name: Test all Packages
 
-on: [pull_request]
+# run CI on pushes to master, and on all PRs (even the ones that target other
+# branches)
+
+on:
+ push:
+   branches: [master]
+ pull_request:
 
 jobs:
   build:

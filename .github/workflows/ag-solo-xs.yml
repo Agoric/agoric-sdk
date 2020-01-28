@@ -1,6 +1,13 @@
 name: ag-solo on xs
 
-on: [pull_request]
+# xs builds are a bit more expensive, so only run them on PRs that target
+# master
+
+on:
+ push:
+   branches: [master]
+ pull_request:
+   branches: [master]
 
 jobs:
   build:
