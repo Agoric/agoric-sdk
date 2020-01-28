@@ -25,8 +25,8 @@ export default function makeVatManager(
   // "outbound" to describe the messages a comms vat is sending over a socket
   // or other communications channel.
 
-  // The mapVatSlotToKernelSlot() function is used to translate slot references on the
-  // vat->kernel pathway. mapKernelToVatSlot() is used for kernel->vat.
+  // The mapVatSlotToKernelSlot() function is used to translate slot references
+  // on the vat->kernel pathway. mapKernelToVatSlot() is used for kernel->vat.
 
   // The terms "import" and "export" are also vat-centric. "import" means
   // something a Vat has imported (from the kernel). Imports are tracked in a

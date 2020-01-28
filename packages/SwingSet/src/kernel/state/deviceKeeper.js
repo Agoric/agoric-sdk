@@ -1,3 +1,7 @@
+/**
+ * Kernel's keeper of persistent state for a device.
+ */
+
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { insist } from '../../insist';
@@ -5,13 +9,42 @@ import { parseKernelSlot } from '../parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
 import { insistDeviceID } from '../id';
 
+/**
+ * Establish a device's state.
+ *
+ * @param storage  The storage in which the persistent state will be kept
+ * @param deviceID  The device ID string of the device in question
+ *
+ * TODO move into makeDeviceKeeper?
+ */
 export function initializeDeviceState(storage, deviceID) {
   storage.set(`${deviceID}.o.nextID`, '10');
 }
 
+/**
+ * Produce a device keeper for a device.
+ *
+ * @param storage  The storage in which the persistent state will be kept
+ * @param deviceID  The device ID string of the device in question
+ * @param addKernelDeviceNode  Kernel function to add a new device node to the
+ *    kernel's mapping tables.
+ *
+ * @return a object to hold and access the kernel's state for the given device
+ */
 export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
   insistDeviceID(deviceID);
 
+  /**
+   * Provide the kernel slot corresponding to a given device slot, including
+   * creating the kernel slot if it doesn't already exist.
+   *
+   * @param devSlot  The device slot of interest
+   *
+   * @return the kernel slot that devSlot maps to
+   *
+   * @throws if devSlot is not a kind of thing that can be exported by devices
+   *    or is otherwise invalid.
+   */
   function mapDeviceSlotToKernelSlot(devSlot) {
     insist(`${devSlot}` === devSlot, 'non-string devSlot');
     // kdebug(`mapOutbound ${devSlot}`);
@@ -43,8 +76,17 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
     return storage.get(devKey);
   }
 
-  // mapInbound: convert from absolute slot to deviceName-relative slot. This
-  // is used when building the arguments for dispatch.invoke.
+  /**
+   * Provide the device slot corresponding to a given kernel slot, including
+   * creating the device slot if it doesn't already exist.
+   *
+   * @param kernelSlot  The kernel slot of interest
+   *
+   * @return the device slot kernelSlot maps to
+   *
+   * @throws if kernelSlot is not a kind of thing that can be imported by
+   *    devices or is otherwise invalid.
+   */
   function mapKernelSlotToDeviceSlot(kernelSlot) {
     insist(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
     const kernelKey = `${deviceID}.c.${kernelSlot}`;
@@ -72,6 +114,11 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
     return storage.get(kernelKey);
   }
 
+  /**
+   * Obtain the device's state.
+   *
+   * @return this device's state, or undefined if it has none.
+   */
   function getDeviceState() {
     // this should return an object, generally CapData, or undefined
     const key = `${deviceID}.deviceState`;
@@ -83,14 +130,28 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
     return undefined;
   }
 
+  /**
+   * Set this device's state.
+   *
+   * @param value The value to set the state to.  This should be serializable.
+   *    (NOTE: the intent is that the structure here will eventually be more
+   *    codified than it is now).
+   */
   function setDeviceState(value) {
     storage.set(`${deviceID}.deviceState`, JSON.stringify(value));
   }
 
+  /**
+   * Produce a dump of this device's state for debugging purposes.
+   *
+   * @return an array of this device's state information
+   */
   function dumpState() {
     const res = [];
     const prefix = `${deviceID}.c.`;
     for (const k of storage.getKeys(prefix, `${deviceID}.c/`)) {
+      // The bounds passed to getKeys() here work because '/' is the next
+      // character in ASCII after '.'
       if (k.startsWith(prefix)) {
         const slot = k.slice(prefix.length);
         if (!slot.startsWith('k')) {
