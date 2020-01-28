@@ -48,14 +48,31 @@ Every loop body (including single-statement bodies), and `catch` and `finally` b
    }
 ```
 
+### RegExp literals
+
+All regular expression literals (such as `/some-regexp/g`) are rewritten as follows:
+
+```js
+$h_re_1 = RegExp('some-regexp', 'g'); // endowment passed to evaluate
+... // existing use of /some-regexp/g replaced by $h_re_1
+```
+
+The `$h_re_1` identifier is also blacklisted for evaluated code.
+
+This makes it possible for a wrapped `RegExp` constructor (see [Host endowments](#Host-endowments)) to prevent ["catastrophic backtracking"](https://www.regular-expressions.info/catastrophic.html).
+
 ## Host endowments
 
 Without precisely instrumenting the host platform code, this package provides an option to wrap a global object with code that does a rough instrumentation of function calls.  This is not a Proxy/Membrane, rather a complete reconstruction of the globals and endowments as an object that can be supplied to the `endowments` parameter of the three-argument evaluator.
 
 The reason for this wrapping is to provide some basic accounting for the resources consumed by the host platform methods.  The wrapping makes some assumptions about the host, such as:
 
-1. only flat objects are allocated by builtins, and they are returned
+1. only flat objects are allocated by builtins, and they are returned by the builtin
 2. builtins that are costly in time- or space-complexity have large return values, or many calls to a supplied function argument
 3. builtins have been "tamed" by the SES platform to prevent nondeterminism and pathological behaviour
 
 This at least prevents user code from running after a builtin has exceeded a meter.
+
+### Special treatment
+
+The global object wrapper specially implements `RegExp` using [RE2](https://github.com/google/re2/#readme), which entirely prevents ["catastrophic backtracking"](https://www.regular-expressions.info/catastrophic.html).  However, in order to do this, the wrapped object supports neither lookahead nor backreferences.

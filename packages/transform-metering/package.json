@@ -23,7 +23,8 @@
   },
   "dependencies": {
     "@agoric/harden": "^0.0.4",
-    "@agoric/nat": "^2.0.1"
+    "@agoric/nat": "^2.0.1",
+    "re2": "^1.10.5"
   },
   "keywords": [],
   "files": [

@@ -1,4 +1,4 @@
-$m.c(67);a = {
+a = {
   f() {try {$m.e();
       doit();
     } finally {$m.l();}} };

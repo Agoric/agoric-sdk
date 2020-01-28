@@ -33,6 +33,15 @@ test('meter running', async t => {
       RangeError,
       'bound function exhausted',
     );
+
+    resetters.combined(50);
+    const re = e.RegExp('^ab*c');
+    t.equals(re.test('abbbc'), true, 'regexp test works');
+    t.equals(re.test('aac'), false, 'regexp test fails');
+    t.equals(!'aac'.match(re), true, 'string match works');
+    t.equals(!!'abbbc'.match(re), true, 'string match fails');
+    t.throws(() => e.RegExp('(foo)\\1'), SyntaxError, 'backreferences throw');
+    t.throws(() => e.RegExp('abc(?=def)'), SyntaxError, 'lookahead throws');
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {

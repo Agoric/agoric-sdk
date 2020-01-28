@@ -1,4 +1,4 @@
-$m.c(132);for (const f of b) {$m.c();
+for (const f of b) {$m.c();
   doit(f);}
 
 for (const p in bar) {$m.c();

@@ -4,6 +4,7 @@ import * as babelCore from '@babel/core';
 import fs from 'fs';
 
 import { makeMeteringTransformer } from '../src/index';
+import * as c from '../src/constants';
 
 test('meter transform', async t => {
   try {
@@ -11,15 +12,25 @@ test('meter transform', async t => {
       babelCore,
       undefined,
       '$m',
+      '$re_',
     );
-    const rewrite = source =>
-      meteringTransform.rewrite({
+    const rewrite = (source, testName) => {
+      let cMeter;
+      const ss = meteringTransform.rewrite({
         source,
-        endowments: {},
+        endowments: {
+          [meterId]: {
+            [c.METER_COMPUTE]: units => cMeter = units,
+          },
+        },
         sourceType: 'script',
-      }).source;
+      });
+      t.equals(cMeter, ss.source.length, `compute meter updated ${testName}`);
+      return ss.source;
+    };
+
     t.throws(
-      () => rewrite(`${meterId}.l()`),
+      () => rewrite(`${meterId}.l()`, 'blacklisted meterId'),
       SyntaxError,
       'meterId cannot appear in source',
     );
@@ -36,7 +47,7 @@ test('meter transform', async t => {
         'utf8',
       );
       t.equals(
-        rewrite(src.trimRight()),
+        rewrite(src.trimRight(), testDir),
         rewritten.trimRight(),
         `rewrite ${testDir}`,
       );

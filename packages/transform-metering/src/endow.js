@@ -1,4 +1,5 @@
 import harden from '@agoric/harden';
+import RE2 from 're2';
 
 import * as c from './constants';
 
@@ -20,6 +21,11 @@ export function makeMeteringEndowments(
     ));
 
   function wrap(target) {
+    if (target === globalsToShadow.RegExp) {
+      // Replace the RegExp object with RE2.
+      target = RE2;
+    }
+
     if (Object(target) !== target) {
       return target;
     }

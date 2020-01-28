@@ -1,4 +1,4 @@
-$m.c(115);while (a) {$m.c();}
+while (a) {$m.c();}
 
 while (a) {$m.c();doit();}
 
