@@ -26,8 +26,8 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   const purse1P = homeP~.wallet~.getPurse('simolean purse');
   const assay0P = purse0P~.getAssay();
   const assay1P = purse1P~.getAssay();
-  const payment0P = purse0P~.withdraw(1);
-  const payment1P = purse1P~.withdraw(1);
+  const payment0P = purse0P~.withdraw(900);
+  const payment1P = purse1P~.withdraw(900);
 
   const [
     purse0,
@@ -78,8 +78,8 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
 
   // 5. Offer rules
   const [unit0, unit1, unit2] = await Promise.all([
-    assays~.[0]~.makeUnits(1),
-    assays~.[1]~.makeUnits(1),
+    assays~.[0]~.makeUnits(900),
+    assays~.[1]~.makeUnits(900),
     assays~.[2]~.makeUnits(0),
   ]);
 

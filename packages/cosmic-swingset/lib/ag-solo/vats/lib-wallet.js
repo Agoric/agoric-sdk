@@ -240,7 +240,7 @@ export async function makeWallet(
     // over a naked non-awaited invocation of E() would appear
     // as an error.
 
-    const [offerOk, payout] = await Promise.all([E(seat).makeOffer(), payoutP]);
+    const [offerOk, payout] = await Promise.all([E(seat).swap(), payoutP]);
 
     // =====================
     // === AWAITING TURN ===
