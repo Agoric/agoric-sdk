@@ -67,14 +67,6 @@ export default function setup(syscall, state, helpers) {
           assayIdMap.set(assayName, assayId);
         }
 
-        async function registerAssays(mintVat, registrar, assayNames) {
-          for (const assayName of assayNames) {
-            const mint = E(mintVat).getMint(assayName);
-            const assay = E(mint).getAssay();
-            registerAssay(registrar, assayName, assay);
-          }
-        }
-
         // Create singleton instances.
         const sharingService = await E(vats.sharing).getSharingService();
         const registrar = await E(vats.registrar).getSharedRegistrar();
@@ -88,9 +80,11 @@ export default function setup(syscall, state, helpers) {
         const dustAssay = E(vats.pixel).startup(contractHost);
         await registerAssay(registrar, 'dust', dustAssay);
 
+        const { moolaAssay, simoleanAssay } = await E(vats.mints).getAssays();
+
         // Two purses were created in vats.mint
-        const assayNames = ['moola', 'simolean'];
-        await registerAssays(vats.mints, registrar, assayNames);
+        await registerAssay(registrar, 'moola', moolaAssay);
+        await registerAssay(registrar, 'simolean', simoleanAssay);
 
         return harden({
           async createUserBundle(nickname) {
@@ -107,7 +101,7 @@ export default function setup(syscall, state, helpers) {
 
             // assayNames mapped to [assayId, purse] for building wallet
             const purses = {};
-            for (const assayName of assayNames) {
+            for (const assayName of ['moola', 'simolean']) {
               const purseName = `${assayName} purse`;
               const purse = E(vats.mints).getNewPurse(assayName, purseName);
               purses[assayName] = [assayIdMap.get(assayName), purse];
