@@ -19,6 +19,11 @@ it will modify `packages/cosmic-swingset/go.mod` upon each build (by adding
 a dependency upon `appengine`). The `1.13` release will leave the `go.mod`
 file correctly unmodified.
 
+Any version of Yarn will do: the `.yarnrc` file should ensure that all
+commands use the specific checked-in version of Yarn (stored in
+`.yarn/releases/`), which we can update later with PRs in conjunction with
+any necessary compatibility fixes to our `package.json` files.
+
 ## Build
 
 From a new checkout of this repository, run:
