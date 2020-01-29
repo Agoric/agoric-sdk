@@ -17,16 +17,16 @@ test('meter transform', async t => {
     const rewrite = (source, testName) => {
       let cMeter;
       const ss = meteringTransform.rewrite({
-        source,
+        src: source,
         endowments: {
           [meterId]: {
-            [c.METER_COMPUTE]: units => cMeter = units,
+            [c.METER_COMPUTE]: units => (cMeter = units),
           },
         },
         sourceType: 'script',
       });
-      t.equals(cMeter, ss.source.length, `compute meter updated ${testName}`);
-      return ss.source;
+      t.equals(cMeter, source.length, `compute meter updated ${testName}`);
+      return ss.src;
     };
 
     t.throws(

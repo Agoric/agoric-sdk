@@ -14,4 +14,4 @@ export const DEFAULT_REGEXP_ID_PREFIX = '$h\u200d_re_';
 export const DEFAULT_COMBINED_METER = 1e6;
 export const DEFAULT_ALLOCATE_METER = true;
 export const DEFAULT_COMPUTE_METER = true;
-export const DEFAULT_STACK_METER = 32000;
+export const DEFAULT_STACK_METER = 8000;

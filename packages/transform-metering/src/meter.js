@@ -11,14 +11,16 @@ const bigIntWord = typeof BigInt !== 'undefined' && BigInt(1 << 32);
 const bigIntZero = bigIntWord && BigInt(0);
 
 // Stop deducting when we reach a negative number.
-const makeCounter = balance => {
+const makeCounter = initBalance => {
+  let balance = initBalance;
   const counter = increment => {
     if (balance > 0) {
       balance += increment;
     }
     return balance;
   };
-  counter.reset = newBalance => (balance = newBalance);
+  counter.reset = (newBalance = undefined) =>
+    (balance = newBalance === undefined ? initBalance : newBalance);
   return counter;
 };
 
@@ -174,7 +176,7 @@ export function makeMeterAndResetters(maxima = {}) {
   // Allocate meters need both stack and compute meters.
   const meterAllocate = makeAllocateMeter(maybeAbort, meter, allocateCounter);
 
-  const makeResetter = cnt => newBalance => {
+  const makeResetter = cnt => (newBalance = undefined) => {
     maybeAbort.reset();
     if (cnt) {
       cnt.reset(newBalance);

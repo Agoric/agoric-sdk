@@ -1,10 +1,17 @@
 import harden from '@agoric/harden';
-import RE2 from 're2';
-
 import * as c from './constants';
 
-const { create, defineProperties, entries, fromEntries,
-  getOwnPropertyDescriptors, getPrototypeOf } = Object;
+// We'd like to import this, but RE2 is cjs
+const RE2 = require('re2');
+
+const {
+  create,
+  defineProperties,
+  entries,
+  fromEntries,
+  getOwnPropertyDescriptors,
+  getPrototypeOf,
+} = Object;
 
 export function makeMeteringEndowments(
   meter,
@@ -13,15 +20,15 @@ export function makeMeteringEndowments(
   overrideMeterId = c.DEFAULT_METER_ID,
 ) {
   const wrapped = new WeakMap();
+  wrapped.set(meter, meter);
   const meterId = overrideMeterId;
 
   const wrapDescriptor = desc =>
-    fromEntries(entries(desc).map(([k, v]) =>
-      [k, wrap(v)]
-    ));
+    fromEntries(entries(desc).map(([k, v]) => [k, wrap(v)]));
 
+  const shadowedRegexp = globalsToShadow.RegExp;
   function wrap(target) {
-    if (target === globalsToShadow.RegExp) {
+    if (shadowedRegexp !== undefined && target === shadowedRegexp) {
       // Replace the RegExp object with RE2.
       target = RE2;
     }
@@ -70,19 +77,21 @@ export function makeMeteringEndowments(
     wrapped.set(wrapper, wrapper);
 
     // Assign the wrapped descriptors to the wrapper.
-    const descs = fromEntries(entries(getOwnPropertyDescriptors(target))
-      .map(([k, v]) => [k, wrapDescriptor(v)]));
+    const descs = fromEntries(
+      entries(getOwnPropertyDescriptors(target)).map(([k, v]) => [
+        k,
+        wrapDescriptor(v),
+      ]),
+    );
     defineProperties(wrapper, descs);
     return wrapper;
   }
 
   // Shadow the wrapped globals with the wrapped endowments.
   const shadowDescs = create(null);
-  entries(getOwnPropertyDescriptors(globalsToShadow)).forEach(
-    ([p, desc]) => {
-      shadowDescs[p] = wrapDescriptor(desc);
-    },
-  );
+  entries(getOwnPropertyDescriptors(globalsToShadow)).forEach(([p, desc]) => {
+    shadowDescs[p] = wrapDescriptor(desc);
+  });
 
   entries(getOwnPropertyDescriptors(endowments)).forEach(([p, desc]) => {
     // We wrap the endowment descriptors, too.
@@ -100,5 +109,6 @@ export function makeMeteringEndowments(
   };
 
   // Package up these endowments as an object.
-  return create(null, shadowDescs);
+  const e = create(null, shadowDescs);
+  return e;
 }
