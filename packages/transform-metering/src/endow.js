@@ -24,6 +24,7 @@ export function makeMeteringEndowments(
   const meterId = overrideMeterId;
 
   const wrapDescriptor = desc =>
+    // eslint-disable-next-line no-use-before-define
     fromEntries(entries(desc).map(([k, v]) => [k, wrap(v)]));
 
   const shadowedRegexp = globalsToShadow.RegExp;
