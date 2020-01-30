@@ -11,7 +11,7 @@ import {
   mustBeSameStructure,
   sameStructure,
 } from '../util/sameStructure';
-import { makeInviteConfig } from './config/inviteConfig';
+import { inviteConfig } from './config/inviteConfig';
 import { makeMint } from './mint';
 import makePromise from '../util/makePromise';
 
@@ -30,7 +30,7 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
   // from installation to source code string
   const installationSources = makeStore('installation');
 
-  const inviteMint = makeMint('contract host', makeInviteConfig);
+  const inviteMint = makeMint('contract host', inviteConfig);
   const inviteAssay = inviteMint.getAssay();
   const inviteUnitOps = inviteAssay.getUnitOps();
 

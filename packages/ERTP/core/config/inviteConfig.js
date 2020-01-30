@@ -11,13 +11,11 @@ const insistDescription = description => {
   mustBeComparable(description);
 };
 
-function makeInviteConfig() {
-  return harden({
-    ...noCustomization,
-    makeMintKeeper: makeCoreMintKeeper,
-    extentOpsName: 'inviteExtentOps',
-    extentOpsArgs: [insistDescription],
-  });
-}
+const inviteConfig = harden({
+  ...noCustomization,
+  makeMintKeeper: makeCoreMintKeeper,
+  extentOpsName: 'inviteExtentOps',
+  extentOpsArgs: [insistDescription],
+});
 
-export { makeInviteConfig };
+export { inviteConfig };

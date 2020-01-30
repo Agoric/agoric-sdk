@@ -9,7 +9,7 @@ import { escrowExchangeSrcs } from '../../../core/escrow';
 
 // only used by doCreateFakeChild test below
 import { makeMint } from '../../../core/mint';
-import { makePixelConfigMaker } from '../../../more/pixels/pixelConfig';
+import { makePixelConfig } from '../../../more/pixels/pixelConfig';
 
 let storedUseObj;
 let storedERTPAsset;
@@ -278,13 +278,13 @@ function makeAliceMaker(E, log, contractHost) {
             return useObj;
           }
 
-          const makePixelConfig = makePixelConfigMaker(
+          const pixelConfig = makePixelConfig(
             harden(makeUseObj),
             10,
             harden(pixelAssay),
           );
 
-          const fakeChildMint = makeMint('pixels', makePixelConfig);
+          const fakeChildMint = makeMint('pixels', pixelConfig);
 
           // use the fakeChildMint to create a payment to trick Bob
           const fakeChildAssay = E(fakeChildMint).getAssay();
