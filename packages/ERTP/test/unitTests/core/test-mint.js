@@ -465,3 +465,27 @@ test('makeMint with alternative mintKeeper', t => {
   // t.equals(purse3.getBalance().extent, 1);
   t.end();
 });
+
+// regression test against https://github.com/Agoric/agoric-sdk/issues/390
+test('payment created from call to combine contains payment trait methods', t => {
+  t.plan(2);
+
+  function makePaymentTrait(_makeMintContext) {
+    return _corePayment => ({
+      get37: () => 37,
+    });
+  }
+
+  const mint = makeMint('test', completeConfig({ makePaymentTrait }));
+  const assay = mint.getAssay();
+  const purse = mint.mint(1000);
+  const threeUnits = assay.makeUnits(3);
+
+  const fivePaymentsOf3 = Array(5)
+    .fill()
+    .map(() => purse.withdraw(threeUnits));
+  const combinedPayment = assay.combine(fivePaymentsOf3);
+
+  t.equals(combinedPayment.getBalance().extent, 15);
+  t.equals(combinedPayment.get37(), 37);
+});
