@@ -34,7 +34,7 @@ export default function setup(syscall, state, helpers, endowments) {
       // kernel's vat creator fn. Remember that the root object will arrive
       // separately. Clean up the outgoing and incoming arguments.
       create(code) {
-        return kernelVatCreationFn(`${code}`);
+        return kernelVatCreationFn(code);
       },
       terminate(_vatID) {
         // TODO(hibbert)

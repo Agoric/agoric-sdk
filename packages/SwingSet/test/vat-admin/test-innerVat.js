@@ -1,5 +1,6 @@
 import { test } from 'tape';
 import path from 'path';
+import bundleSource from '@agoric/bundle-source';
 import { buildVatController, loadBasedir } from '../../src';
 import { buildStorageInMemory } from '../../src/hostStorage';
 
@@ -14,7 +15,11 @@ async function createConfig() {
 
 async function testVatCreationFromBuild(t, withSES) {
   const config = await createConfig();
-  const c = await buildVatController(config, withSES, ['newVat']);
+  const SERVICE_BUNDLE = await bundleSource(`${__dirname}/simpleService`);
+  const c = await buildVatController(config, withSES, [
+    'newVat',
+    SERVICE_BUNDLE,
+  ]);
   t.equal(c.vatNameToID('vatAdmin'), 'v2');
   t.equal(c.vatNameToID('_bootstrap'), 'v1');
   for (let i = 0; i < 9; i += 1) {
@@ -35,28 +40,35 @@ test('VatAdmin inner vat creation non-SES', async t => {
 
 async function testVatCreationAndObjectHosting(t, withSES) {
   const config = await createConfig();
-  const c = await buildVatController(config, withSES, ['counters']);
+  const SERVICE_BUNDLE = await bundleSource(`${__dirname}/simpleService`);
+  const c = await buildVatController(config, withSES, [
+    'counters',
+    SERVICE_BUNDLE,
+  ]);
   await c.run();
   await c.run();
   t.deepEqual(c.dump().log, ['starting counter test', '4', '9', '2']);
   t.end();
 }
 
-test('VatAdmin inner vat creation', async t => {
+test('VatAdmin run inner vat', async t => {
   await testVatCreationAndObjectHosting(t, true);
 });
 
-test('VatAdmin inner vat creation non-SES', async t => {
+test('VatAdmin run inner vat non-SES', async t => {
   await testVatCreationAndObjectHosting(t, false);
 });
 
 async function testBrokenVatCreation(t, withSES) {
   const config = await createConfig();
-  const c = await buildVatController(config, withSES, ['brokenVat']);
+  const c = await buildVatController(config, withSES, [
+    'brokenVat',
+    '() => { return harden({}); }',
+  ]);
   await c.run();
   t.deepEqual(c.dump().log, [
     'starting brokenVat test',
-    'yay, rejected: Error: Vat Creation Error: ReferenceError: harden is not defined',
+    'yay, rejected: SyntaxError: Unexpected token E in JSON at position 0',
   ]);
   t.end();
 }
@@ -71,7 +83,11 @@ test('VatAdmin broken vat creation non-SES', async t => {
 
 async function testGetVatStats(t, withSES) {
   const config = await createConfig();
-  const c = await buildVatController(config, withSES, ['vatStats']);
+  const SERVICE_BUNDLE = await bundleSource(`${__dirname}/simpleService`);
+  const c = await buildVatController(config, withSES, [
+    'vatStats',
+    SERVICE_BUNDLE,
+  ]);
   await c.run();
   t.deepEqual(c.dump().log, [
     'starting stats test',

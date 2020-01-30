@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { makeMarshal, QCLASS } from '@agoric/marshal';
 import Nat from '@agoric/nat';
-import evaluateProgram from '@agoric/evaluate';
+import { evaluateExpr } from '@agoric/evaluate';
 import makeVatManager from './vatManager';
 import { makeLiveSlots } from './liveSlots';
 import { makeDeviceSlots } from './deviceSlots';
@@ -530,7 +530,7 @@ export default function buildKernel(kernelEndowments) {
       case '@agoric/nat':
         return Nat;
       case '@agoric/evaluate':
-        return evaluateProgram;
+        return evaluateExpr;
       default:
         throw Error(`require "${name}" is not supported`);
     }
@@ -575,7 +575,11 @@ export default function buildKernel(kernelEndowments) {
    */
   function createVatDynamically(buildFnSrc) {
     const endowments = { require: kernelRequire };
-    const buildFn = evaluateProgram(buildFnSrc, endowments);
+    insist(
+      buildFnSrc.moduleFormat === 'getExport',
+      'module must use getExport',
+    );
+    const buildFn = evaluateExpr(`${buildFnSrc.source}`, endowments)().default;
     try {
       const vatID = createVat(buildFn);
       notifyAdminVatOfNewVat(vatID);

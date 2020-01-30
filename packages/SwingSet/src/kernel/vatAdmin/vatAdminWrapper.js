@@ -14,8 +14,12 @@ export default function setup(syscall, state, helpers) {
 
     function createVatAdminService(vatAdminNode) {
       return harden({
-        createVat(code) {
-          const { vatID, error } = D(vatAdminNode).create(code);
+        createVat(bundle) {
+          const { vatID, error } = D(vatAdminNode).create({
+            source: `${bundle.source}`,
+            sourceMap: `${bundle.sourceMap}`,
+            moduleFormat: `${bundle.moduleFormat}`,
+          });
           if (error) {
             throw Error(`Vat Creation Error: ${error}`);
           } else {
