@@ -37,6 +37,7 @@
     "@agoric/evaluate": "^2.2.0",
     "@agoric/eventual-send": "^0.5.0",
     "@agoric/harden": "^0.0.4",
+    "@agoric/layer-cake": "^0.0.1",
     "@agoric/marshal": "^0.1.1",
     "@agoric/nat": "^2.0.1",
     "ses": "^0.6.4"

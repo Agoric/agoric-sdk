@@ -11,13 +11,11 @@ import { makeCoreMintKeeper } from './coreMintKeeper';
 
 // This configuration and others like it are passed into `makeMint` in
 // `mint.js`.
-function makeBasicFungibleConfig() {
-  return harden({
-    ...noCustomization,
-    makeMintKeeper: makeCoreMintKeeper,
-    extentOpsName: 'natExtentOps',
-    extentOpsArgs: [],
-  });
-}
+const basicFungibleConfig = harden({
+  ...noCustomization,
+  makeMintKeeper: makeCoreMintKeeper,
+  extentOpsName: 'natExtentOps',
+  extentOpsArgs: [],
+});
 
-export { makeBasicFungibleConfig };
+export { basicFungibleConfig };
