@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import { insist } from '../../../../insist/src/insist';
+import { insist } from '@agoric/insist';
 import {
   sameStructure,
   mustBeSameStructure,

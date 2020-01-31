@@ -1,7 +1,7 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-import { insist } from '../../../insist/src/insist';
+import { insist } from '@agoric/insist';
 
 function insistWithinBounds(num, canvasSize) {
   Nat(num);

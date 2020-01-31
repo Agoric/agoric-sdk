@@ -1,9 +1,6 @@
 import harden from '@agoric/harden';
 
-import {
-  mustBeSameStructure,
-  mustBeComparable,
-} from '../../same-structure/src/sameStructure';
+import { mustBeSameStructure, mustBeComparable } from '@agoric/same-structure';
 import { extentOpsLib } from './config/extentOpsLib';
 
 // This module treats labels as black boxes. It is not aware

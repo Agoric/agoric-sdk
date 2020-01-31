@@ -5,7 +5,7 @@ import harden from '@agoric/harden';
 
 import { makeTraitCake } from '@agoric/layer-cake';
 
-import { insist } from '../../insist/src/insist';
+import { insist } from '@agoric/insist';
 import { basicFungibleConfig } from './config/basicFungibleConfig';
 import { makeUnitOps } from './unitOps';
 
