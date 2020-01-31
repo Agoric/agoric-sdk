@@ -1,4 +1,4 @@
-import { importManager } from '../../../import-manager/importManager';
+import { importManager } from '@agoric/import-manager';
 
 import { makeNatExtentOps } from './extentOps/natExtentOps';
 import { makeUniExtentOps } from './extentOps/uniExtentOps';

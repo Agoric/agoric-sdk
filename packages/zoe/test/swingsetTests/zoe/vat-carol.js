@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { insist } from '@agoric/ertp/util/insist';
+import { insist } from '@agoric/insist';
 import { sameStructure } from '@agoric/ertp/util/sameStructure';
 import { showPaymentBalance, setupAssays } from './helpers';
 

@@ -5,7 +5,7 @@ import {
   sameStructure,
   mustBeSameStructure,
   mustBeComparable,
-} from '../../../../same-structure/src/sameStructure';
+} from '@agoric/same-structure';
 
 // The uniExtentOps represents extents that can never be combined.
 // For example, usually there is only one invite in an invite purse or

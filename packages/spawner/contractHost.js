@@ -3,17 +3,17 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-import { makeStore } from '../util/store';
+import makeStore from '@agoric/store';
 import { allSettled } from '../util/allSettled';
-import { insist } from '../util/insist';
+import { insist } from '@agoric/insist';
 import {
   allComparable,
   mustBeSameStructure,
   sameStructure,
-} from '../util/sameStructure';
+} from '@agoric/same-structure';
 import { inviteConfig } from '@agoric/ertp/src/config/inviteConfig';
-import { makeMint } from '@agoric/ertp/src/mint';
-import makePromise from '../util/makePromise';
+import { makeMint } from '@agoric/ertp';
+import makePromise from '@agoric/make-promise';
 
 /**
  * Make a reusable host that can reliably install and execute contracts.

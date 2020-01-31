@@ -1,5 +1,5 @@
 {
-  "name": "@agoric/import-manager",
+  "name": "@agoric/pixel-demo",
   "version": "0.0.1",
   "description": "Share code across vat boundaries",
   "main": "src/zoe.js",

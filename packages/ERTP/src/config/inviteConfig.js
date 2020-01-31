@@ -1,10 +1,9 @@
 import harden from '@agoric/harden';
 
+import { insist } from '@agoric/insist';
+import { mustBeComparable } from '@agoric/same-structure';
 import { noCustomization } from './noCustomization';
 import { makeCoreMintKeeper } from './coreMintKeeper';
-
-import { insist } from '../../util/insist';
-import { mustBeComparable } from '../../util/sameStructure';
 
 const insistDescription = description => {
   insist(!!description)`description must be truthy ${description}`;

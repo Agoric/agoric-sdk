@@ -3,8 +3,8 @@
 
 import harden from '@agoric/harden';
 
-import { makeStore } from '../../store/src/store';
-import { insist } from '../../insist/src/insist';
+import makeStore from '@agoric/store';
+import { insist } from '@agoric/insist';
 
 // Maps from ESets to encapsulated Sets. All lookups from this table
 // are only queries. (Except for the one in the FlexSet constructor)

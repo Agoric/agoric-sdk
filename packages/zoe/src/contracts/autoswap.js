@@ -2,7 +2,7 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { makeMint } from '@agoric/ertp';
-import { insist } from '@agoric/ertp/util/insist';
+import { insist } from '@agoric/insist';
 
 import { natSafeMath } from './helpers/safeMath';
 import { makeHelpers } from './helpers/userFlow';
