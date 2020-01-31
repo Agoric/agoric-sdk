@@ -2,8 +2,8 @@
 
 import harden from '@agoric/harden';
 
-import { makeSharedMap } from '../../../more/sharing/sharedMap';
-import { makeSharingService } from '../../../more/sharing/sharing';
+import { makeSharedMap } from '../../../src/sharedMap';
+import { makeSharingService } from '../../../src/sharing';
 
 function build(E, log) {
   function testSharedMapStorage() {

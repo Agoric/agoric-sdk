@@ -2,7 +2,7 @@
 
 import harden from '@agoric/harden';
 
-import { makeSharingService } from '../../../more/sharing/sharing';
+import { makeSharingService } from '../../../src/sharing';
 
 function build(_E, _log) {
   return harden({ makeSharingService });

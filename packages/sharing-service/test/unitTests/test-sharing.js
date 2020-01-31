@@ -1,5 +1,6 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import { test } from 'tape-promise/tape';
-import { makeSharingService } from '../../../../more/sharing/sharing';
+import { makeSharingService } from '../../src/sharing';
 
 test('Sharing creation', t => {
   const sharingService = makeSharingService();

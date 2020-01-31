@@ -1,3 +1,4 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import { test } from 'tape-promise/tape';
 import path from 'path';
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
