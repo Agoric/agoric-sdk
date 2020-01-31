@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import { makeStore } from '../../util/store';
+import { makeStore } from '../../../prev-ertp/util/store';
 
 export function makeCoreMintKeeper() {
   // An asset can either be a purse or payment. An asset keeper

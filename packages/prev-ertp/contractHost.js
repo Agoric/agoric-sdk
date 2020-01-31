@@ -11,8 +11,8 @@ import {
   mustBeSameStructure,
   sameStructure,
 } from '../util/sameStructure';
-import { inviteConfig } from './config/inviteConfig';
-import { makeMint } from './mint';
+import { inviteConfig } from '@agoric/ertp/src/config/inviteConfig';
+import { makeMint } from '@agoric/ertp/src/mint';
 import makePromise from '../util/makePromise';
 
 /**

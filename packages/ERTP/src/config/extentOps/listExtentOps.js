@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { passStyleOf } from '@agoric/marshal';
 
-import { insist } from '../../../util/insist';
+import { insist } from '../../../../prev-ertp/util/insist';
 
 // This list extentOps follows the ExtentOps interface defined in
 // assays.chainmail.

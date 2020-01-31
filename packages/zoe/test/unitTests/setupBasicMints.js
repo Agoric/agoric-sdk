@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import { makeMint } from '@agoric/ertp/core/mint';
+import { makeMint } from '@agoric/ertp';
 import { extentOpsLib } from '@agoric/ertp/core/config/extentOpsLib';
 
 const setup = () => {

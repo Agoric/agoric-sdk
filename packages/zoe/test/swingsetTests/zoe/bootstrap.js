@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import { makeMint } from '@agoric/ertp/core/mint';
+import { makeMint } from '@agoric/ertp';
 import buildManualTimer from '@agoric/ertp/tools/manualTimer';
 
 // eslint-disable-next-line import/no-unresolved, import/extensions

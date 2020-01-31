@@ -1,5 +1,6 @@
 import harden from '@agoric/harden';
-import { makeMint } from '@agoric/ertp/core/mint';
+import { makeMint } from '@agoric/ertp';
+
 import makeStore from './store';
 
 // This vat contains two starting mints for demos: moolaMint and

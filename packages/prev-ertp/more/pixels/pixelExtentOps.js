@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 
 import { makeInsistPixel, isEqual, compare } from './types/pixel';
-import { makeListExtentOps } from '../../core/config/extentOps/listExtentOps';
+import { makeListExtentOps } from '@agoric/ertp/src/config/extentOps/listExtentOps';
 
 // A pixelList is a naive collection of pixels in the form:
 // [ { x: 0, y: 0 }, { x: 1, y: 1} ...]

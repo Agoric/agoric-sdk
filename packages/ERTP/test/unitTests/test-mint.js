@@ -1,9 +1,9 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
-import { makeMint } from '../../../core/mint';
-import { makeCoreMintKeeper } from '../../../core/config/coreMintKeeper';
-import { makeStore } from '../../../util/store';
+import { makeMint } from '../../src/mint';
+import { makeCoreMintKeeper } from '../../src/config/coreMintKeeper';
+import { makeStore } from '../../../prev-ertp/util/store';
 
 test('split bad units', t => {
   try {

@@ -1,4 +1,4 @@
-import { insist } from '@agoric/ertp/util/insist';
+import { insist } from '../../prev-ertp/util/insist';
 
 /**
  * `isOfferSafeForOffer` checks offer safety for a single offer.

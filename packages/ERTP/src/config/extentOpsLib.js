@@ -1,8 +1,8 @@
-import { importManager } from '../../more/imports/importManager';
+import { importManager } from '../../../prev-ertp/more/imports/importManager';
 
 import { makeNatExtentOps } from './extentOps/natExtentOps';
 import { makeUniExtentOps } from './extentOps/uniExtentOps';
-import { makePixelExtentOps } from '../../more/pixels/pixelExtentOps';
+import { makePixelExtentOps } from '../../../prev-ertp/more/pixels/pixelExtentOps';
 
 const manager = importManager();
 const extentOpsLib = manager.addExports({
