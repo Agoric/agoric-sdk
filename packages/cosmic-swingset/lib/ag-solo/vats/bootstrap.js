@@ -72,16 +72,16 @@ export default function setup(syscall, state, helpers) {
         const dustAssay = await E(vats.pixel).startup(contractHost);
 
         // Make the other demo mints
-        const nonDustAssetNames = ['moola', 'simolean'];
-        const nonDustAssays = await Promise.all(
-          nonDustAssetNames.map(assetName =>
+        const otherAssetNames = ['moola', 'simolean'];
+        const otherAssays = await Promise.all(
+          otherAssetNames.map(assetName =>
             E(vats.mints).makeMintAndAssay(assetName),
           ),
         );
 
         // All the demo assays and assetNames
-        const assetNames = [...nonDustAssetNames, 'dust'];
-        const assays = [...nonDustAssays, dustAssay];
+        const assetNames = [...otherAssetNames, 'dust'];
+        const assays = [...otherAssays, dustAssay];
 
         // Register all of the starting assays. The assetName will
         // also serve as the assayName.
@@ -108,7 +108,7 @@ export default function setup(syscall, state, helpers) {
             });
 
             const payments = await E(vats.mints).mintInitialPayments(
-              nonDustAssetNames,
+              otherAssetNames,
               harden([1900, 1900]),
             );
 

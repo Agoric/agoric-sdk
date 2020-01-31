@@ -7,16 +7,15 @@ import makeObservablePurse from './observable';
 import makeStore from './store';
 import makeWeakStore from './weakStore';
 
-function mockStateChangeHandler(_newState) {
-  // does nothing
-}
+// does nothing
+const noActionStateChangeHandler = _newState => {};
 
 export async function makeWallet(
   E,
   zoe,
   registrar,
-  pursesStateChangeHandler = mockStateChangeHandler,
-  inboxStateChangeHandler = mockStateChangeHandler,
+  pursesStateChangeHandler = noActionStateChangeHandler,
+  inboxStateChangeHandler = noActionStateChangeHandler,
 ) {
   const petnameToPurse = makeStore();
   const assayPetnameToAssay = makeStore();
@@ -254,10 +253,10 @@ export async function makeWallet(
 
     // IMPORTANT: once wrapped, the original purse should never
     // be used otherwise the UI state will be out of sync.
-    const _ = await E(assay).makeEmptyPurse(memo);
+    const doNotUse = await E(assay).makeEmptyPurse(memo);
 
-    const purse = makeObservablePurse(E, _, () =>
-      updatePursesState(pursePetname, _),
+    const purse = makeObservablePurse(E, doNotUse, () =>
+      updatePursesState(pursePetname, doNotUse),
     );
 
     petnameToPurse.init(pursePetname, purse);

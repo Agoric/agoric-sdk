@@ -11,14 +11,17 @@ function build(_E, _log) {
 
   const api = harden({
     getAllAssetNames: () => mints.keys(),
-    getMint: mints.get,
-    getMints: assetNames => assetNames.map(api.getMint),
     getAssay: assetName => {
       const mint = mints.get(assetName);
       mint.getAssay();
     },
     getAssays: assetNames => assetNames.map(api.getAssay),
 
+    // NOTE: having a reference to a mint object gives the ability to mint
+    // new digital assets, a very powerful authority. This authority
+    // should be closely held.
+    getMint: mints.get,
+    getMints: assetNames => assetNames.map(api.getMint),
     // For example, assetNameSingular might be 'moola', or 'simolean'
     makeMintAndAssay: assetNameSingular => {
       const mint = makeMint(assetNameSingular);
