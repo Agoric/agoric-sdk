@@ -1,6 +1,6 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import { importManager } from '../../../../more/imports/importManager';
+import { importManager } from '../../src/importManager';
 import { listIsEmpty, numIsEmpty } from './extentOps';
 
 function makeBadImportManager() {

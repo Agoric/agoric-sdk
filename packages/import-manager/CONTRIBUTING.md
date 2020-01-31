@@ -6,7 +6,7 @@ Thank you!
 
 We use github issues for all bug reports:
 https://github.com/Agoric/agoric-sdk/issues Please add a [import-manager]
-prefix to the title and Zoe tag to import-manager-related issues.
+prefix to the title and `Import Manager` tag to import-manager-related issues.
 
 ## Installing, Testing
 
@@ -51,5 +51,4 @@ Before submitting a pull request, please:
 Then, once the release has been made, the packages dependent on import-manager
 should be updated in a PR reviewed by the owners of the packages.
 Those packages are:
-* packages/agoric-cli 
-* packages/cosmic-swingset 
+* packages/ERTP
