@@ -19,8 +19,8 @@ export async function makeWallet(
   inboxStateChangeHandler = mockStateChangeHandler,
 ) {
   const petnameToPurse = makeStore();
-  const petnameToAssay = makeStore();
-  const assayToPetname = makeWeakStore();
+  const assayPetnameToAssay = makeStore();
+  const assayToAssayPetname = makeWeakStore();
 
   const petnameToUnitOps = makeStore();
   const regKeyToAssayPetname = makeStore();
@@ -42,9 +42,11 @@ export async function makeWallet(
   }
 
   async function updatePursesState(pursePetname, purse) {
-    const { extent } = await E(purse).getBalance();
-    const assay = await E(purse).getAssay();
-    const assayPetname = assayToPetname.get(assay);
+    const [{ extent }, assay] = await Promise.all([
+      E(purse).getBalance(),
+      E(purse).getAssay(),
+    ]);
+    const assayPetname = assayToAssayPetname.get(assay);
     const assayRegKey = assayPetnameToRegKey.get(assayPetname);
     pursesState.set(pursePetname, {
       purseName: pursePetname,
@@ -237,19 +239,18 @@ export async function makeWallet(
   // === API
 
   async function addAssay(assayPetname, regKey, assay) {
-    petnameToAssay.init(assayPetname, assay);
-    assayToPetname.init(assay, assayPetname);
+    assayPetnameToAssay.init(assayPetname, assay);
+    assayToAssayPetname.init(assay, assayPetname);
     regKeyToAssayPetname.init(regKey, assayPetname);
     assayPetnameToRegKey.init(assayPetname, regKey);
     petnameToUnitOps.init(assayPetname, await getLocalUnitOps(assay));
   }
 
-
   async function makeEmptyPurse(assayPetname, pursePetname, memo = 'purse') {
     insist(
       !petnameToPurse.has(pursePetname),
     )`Purse name already used in wallet.`;
-    const assay = petnameToAssay.get(assayPetname);
+    const assay = assayPetnameToAssay.get(assayPetname);
 
     // IMPORTANT: once wrapped, the original purse should never
     // be used otherwise the UI state will be out of sync.
