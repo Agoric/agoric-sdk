@@ -1,8 +1,8 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-import { makeStore } from '../../prev-ertp/util/store';
-import { insist } from '../../prev-ertp/util/insist';
+import { makeStore } from '../../store/src/store';
+import { insist } from '../../insist/src/insist';
 import { makeUnitOps } from '@agoric/ertp/src/unitOps';
 
 const makeTable = (validateFn, makeCustomMethodsFn = () => undefined) => {

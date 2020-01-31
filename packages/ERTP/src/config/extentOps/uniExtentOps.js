@@ -1,11 +1,11 @@
 import harden from '@agoric/harden';
 
-import { insist } from '../../../../prev-ertp/util/insist';
+import { insist } from '../../../../insist/src/insist';
 import {
   sameStructure,
   mustBeSameStructure,
   mustBeComparable,
-} from '../../../../prev-ertp/util/sameStructure';
+} from '../../../../same-structure/src/sameStructure';
 
 // The uniExtentOps represents extents that can never be combined.
 // For example, usually there is only one invite in an invite purse or

@@ -3,9 +3,9 @@ import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
 import { makeMint } from '@agoric/ertp/src/mint';
-import { insist } from '../../prev-ertp/util/insist';
-import makePromise from '../../prev-ertp/util/makePromise';
-import { sameStructure } from '../../prev-ertp/util/sameStructure';
+import { insist } from '../../insist/src/insist';
+import makePromise from '../../make-promise/src/makePromise';
+import { sameStructure } from '../../same-structure/src/sameStructure';
 
 const evaluateStringToFn = (functionSrcString, endowments) => {
   insist(typeof functionSrcString === 'string')`\n
