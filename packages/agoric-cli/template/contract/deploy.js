@@ -22,8 +22,8 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   // =====================
   
   // 1. Assays and payments
-  const purse0P = homeP~.wallet~.getPurse('moola purse');
-  const purse1P = homeP~.wallet~.getPurse('simolean purse');
+  const purse0P = homeP~.wallet~.getPurse('moola');
+  const purse1P = homeP~.wallet~.getPurse('simolean');
   const assay0P = purse0P~.getAssay();
   const assay1P = purse1P~.getAssay();
   const payment0P = purse0P~.withdraw(900);
