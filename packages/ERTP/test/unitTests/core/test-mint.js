@@ -3,7 +3,7 @@ import harden from '@agoric/harden';
 
 import { makeMint } from '../../../core/mint';
 import { makeCoreMintKeeper } from '../../../core/config/coreMintKeeper';
-import { makePrivateName } from '../../../util/PrivateName';
+import { makeStore } from '../../../util/store';
 
 test('split bad units', t => {
   try {
@@ -375,7 +375,7 @@ test('makeMint with alternative mintKeeper', t => {
 
     function makeAssetKeeper() {
       // asset to units
-      const units = makePrivateName();
+      const units = makeStore();
       return harden({
         updateUnits(asset, newUnits) {
           const oldBalance = units.get(asset);

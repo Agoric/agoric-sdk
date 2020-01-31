@@ -3,14 +3,14 @@ import { E } from '@agoric/eventual-send';
 
 import { insist } from '@agoric/ertp/util/insist';
 import makePromise from '@agoric/ertp/util/makePromise';
-import { makePrivateName } from '@agoric/ertp/util/PrivateName';
+import { makeStore } from '@agoric/ertp/util/store';
 import { makeMint } from '@agoric/ertp/core/mint';
 
 import { isOfferSafeForAll } from './isOfferSafe';
 import { areRightsConserved } from './areRightsConserved';
 import { evalContractCode } from './evalContractCode';
 import { makeTables } from './state';
-import { makeInviteConfig } from './inviteConfig';
+import { inviteConfig } from './inviteConfig';
 
 /**
  * Create an instance of Zoe.
@@ -19,8 +19,8 @@ import { makeInviteConfig } from './inviteConfig';
  */
 const makeZoe = (additionalEndowments = {}) => {
   // Zoe maps the inviteHandles to contract seats
-  const handleToSeat = makePrivateName();
-  const inviteMint = makeMint('zoeInvite', makeInviteConfig);
+  const handleToSeat = makeStore();
+  const inviteMint = makeMint('zoeInvite', inviteConfig);
   const inviteAssay = inviteMint.getAssay();
 
   // All of the Zoe state is stored in these tables built on WeakMaps

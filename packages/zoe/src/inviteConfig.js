@@ -26,13 +26,11 @@ const insistInviteExtent = inviteExtent => {
   return true;
 };
 
-function makeInviteConfig() {
-  return harden({
-    ...noCustomization,
-    makeMintKeeper: makeCoreMintKeeper,
-    extentOpsName: 'uniExtentOps',
-    extentOpsArgs: [insistInviteExtent],
-  });
-}
+const inviteConfig = harden({
+  ...noCustomization,
+  makeMintKeeper: makeCoreMintKeeper,
+  extentOpsName: 'uniExtentOps',
+  extentOpsArgs: [insistInviteExtent],
+});
 
-export { makeInviteConfig };
+export { inviteConfig };
