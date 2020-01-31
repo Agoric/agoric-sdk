@@ -2,8 +2,8 @@ import harden from '@agoric/harden';
 import { makeWallet } from './lib-wallet';
 import pubsub from './pubsub';
 
-function build(E, D, log) {
-  let userFacet;
+function build(E, D, _log) {
+  let wallet;
   let pursesState;
   let inboxState;
   let commandDevice;
@@ -11,21 +11,12 @@ function build(E, D, log) {
   const { publish: pursesPublish, subscribe: purseSubscribe } = pubsub(E);
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
 
-  async function startup(host, zoe, registrar) {
-    const wallet = await makeWallet(
-      E,
-      log,
-      host,
-      zoe,
-      registrar,
-      pursesPublish,
-      inboxPublish,
-    );
-    userFacet = wallet.userFacet;
+  async function startup(zoe, registrar) {
+    wallet = await makeWallet(E, zoe, registrar, pursesPublish, inboxPublish);
   }
 
   async function getWallet() {
-    return harden(userFacet);
+    return harden(wallet);
   }
 
   function setCommandDevice(d, _ROLES) {
@@ -57,7 +48,7 @@ function build(E, D, log) {
         }
 
         if (type === 'walletAddOffer') {
-          const result = userFacet.addOffer(data);
+          const result = wallet.addOffer(data);
           return {
             type: 'walletOfferAdded',
             data: result,
@@ -65,7 +56,7 @@ function build(E, D, log) {
         }
 
         if (type === 'walletDeclineOffer') {
-          const result = userFacet.declineOffer(data);
+          const result = wallet.declineOffer(data);
           return {
             type: 'walletOfferDeclineed',
             data: result,
@@ -73,7 +64,7 @@ function build(E, D, log) {
         }
 
         if (type === 'walletAcceptOffer') {
-          const result = await userFacet.acceptOffer(data);
+          const result = await wallet.acceptOffer(data);
           return {
             type: 'walletOfferAccepted',
             data: result,

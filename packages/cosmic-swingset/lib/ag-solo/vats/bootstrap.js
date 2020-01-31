@@ -3,6 +3,7 @@ import { allComparable } from '@agoric/ertp/util/sameStructure';
 // this will return { undefined } until `ag-solo set-gci-ingress`
 // has been run to update gci.js
 import { GCI } from './gci';
+import makeStore from './store';
 
 console.log(`loading bootstrap.js`);
 
@@ -58,15 +59,6 @@ export default function setup(syscall, state, helpers) {
 
       // Make services that are provided on the real or virtual chain side
       async function makeChainBundler(vats, timerDevice) {
-        // Remember the assayIds to pass to the wallet
-        const assayIdMap = new Map();
-
-        async function registerAssay(registrar, assayNameP, assayP) {
-          const [assayName, assay] = await Promise.all([assayNameP, assayP]);
-          const assayId = await E(registrar).register(assayName, assay);
-          assayIdMap.set(assayName, assayId);
-        }
-
         // Create singleton instances.
         const sharingService = await E(vats.sharing).getSharingService();
         const registrar = await E(vats.registrar).getSharedRegistrar();
@@ -76,20 +68,36 @@ export default function setup(syscall, state, helpers) {
         const zoe = await E(vats.zoe).getZoe();
         const contractHost = await E(vats.host).makeHost();
 
-        // dustAssay is built and registered in the pixel vat. Wallet needs it.
-        const dustAssay = E(vats.pixel).startup(contractHost);
-        await registerAssay(registrar, 'dust', dustAssay);
+        // dustAssay is built in the pixel vat. Wallet needs it.
+        const dustAssay = await E(vats.pixel).startup(contractHost);
 
-        const { moolaAssay, simoleanAssay } = await E(vats.mints).getAssays();
+        // Make the other demo mints
+        const otherAssetNames = ['moola', 'simolean'];
+        const otherAssays = await Promise.all(
+          otherAssetNames.map(assetName =>
+            E(vats.mints).makeMintAndAssay(assetName),
+          ),
+        );
 
-        // Two purses were created in vats.mint
-        await registerAssay(registrar, 'moola', moolaAssay);
-        await registerAssay(registrar, 'simolean', simoleanAssay);
+        // All the demo assays and assetNames
+        const assetNames = [...otherAssetNames, 'dust'];
+        const assays = [...otherAssays, dustAssay];
+
+        // Register all of the starting assays. The assetName will
+        // also serve as the assayName.
+        const assayInfo = await Promise.all(
+          assetNames.map(async (assetName, i) =>
+            harden({
+              assay: assays[i],
+              petname: assetName,
+              regKey: await E(registrar).register(assetName, assays[i]),
+            }),
+          ),
+        );
 
         return harden({
           async createUserBundle(nickname) {
-            const pBundle = await E(vats.pixel).createPixelBundle(nickname);
-            const { purse: dust, bundle: pixelBundle } = pBundle;
+            const pixelBundle = await E(vats.pixel).createPixelBundle(nickname);
             const bundle = harden({
               ...pixelBundle,
               chainTimerService,
@@ -99,35 +107,23 @@ export default function setup(syscall, state, helpers) {
               zoe,
             });
 
-            // assayNames mapped to [assayId, purse] for building wallet
-            const purses = {};
-            for (const assayName of ['moola', 'simolean']) {
-              const purseName = `${assayName} purse`;
-              const purse = E(vats.mints).getNewPurse(assayName, purseName);
-              purses[assayName] = [assayIdMap.get(assayName), purse];
-            }
+            const payments = await E(vats.mints).mintInitialPayments(
+              otherAssetNames,
+              harden([1900, 1900]),
+            );
 
-            purses.dust = [assayIdMap.get('dust'), dust];
-
-            // return purses separately so they can be added to local wallet
-            return harden({ purses, bundle });
+            // return payments and assayInfo separately from the
+            // bundle so that they can be used to initialize a wallet
+            // per user
+            return harden({ payments, assayInfo, bundle });
           },
         });
-      }
-
-      function addPursesToWallet(purses, walletVat) {
-        const wallet = E(walletVat).getWallet();
-        for (const assayName of Object.keys(purses)) {
-          const [assayId, purse] = purses[assayName];
-          E(wallet).addPurse(purse, assayId);
-        }
-        return wallet;
       }
 
       // objects that live in the client's solo vat. Some services should only
       // be in the DApp environment (or only in end-user), but we're not yet
       // making a distinction, so the user also gets them.
-      async function createLocalBundle(vats, userBundle, purses) {
+      async function createLocalBundle(vats, userBundle, payments, assayInfo) {
         const { contractHost, zoe, registrar } = userBundle;
         // This will eventually be a vat spawning service. Only needed by dev
         // environments.
@@ -137,8 +133,26 @@ export default function setup(syscall, state, helpers) {
         const uploads = E(vats.uploads).getUploads();
 
         // Wallet for both end-user client and dapp dev client
-        E(vats.wallet).startup(contractHost, zoe, registrar);
-        const wallet = addPursesToWallet(purses, vats.wallet);
+        E(vats.wallet).startup(zoe, registrar);
+        const wallet = E(vats.wallet).getWallet();
+        await Promise.all(
+          assayInfo.map(({ petname, regKey, assay }) =>
+            E(wallet).addAssay(petname, regKey, assay),
+          ),
+        );
+
+        // Make empty purses. Reuse assay petname for purse petname.
+        await Promise.all(
+          assayInfo.map(({ petname }) =>
+            E(wallet).makeEmptyPurse(petname, petname),
+          ),
+        );
+
+        // deposit payments
+        const [moolaPayment, simoleanPayment] = payments;
+
+        await E(wallet).deposit('moola', moolaPayment);
+        await E(wallet).deposit('simolean', simoleanPayment);
 
         // exchange is used for autoswap. Only needed for the dapp's Swingset
         await E(vats.exchange).startup(contractHost, zoe, registrar);
@@ -262,10 +276,12 @@ export default function setup(syscall, state, helpers) {
                 GCI,
                 PROVISIONER_INDEX,
               );
-              const { purses, bundle } = await E(demoProvider).getDemoBundle();
+              const { payments, bundle, assayInfo } = await E(
+                demoProvider,
+              ).getDemoBundle();
               await E(vats.http).setPresences(
                 { ...bundle, localTimerService },
-                await createLocalBundle(vats, bundle, purses),
+                await createLocalBundle(vats, bundle, payments, assayInfo),
               );
               await setupWalletVat(devices.command, vats.http, vats.wallet);
               break;
@@ -311,10 +327,10 @@ export default function setup(syscall, state, helpers) {
               );
               // Get the demo bundle from the chain-side provider
               const b = await E(demoProvider).getDemoBundle('client');
-              const { purses, bundle } = b;
+              const { payments, bundle, assayInfo } = b;
               await E(vats.http).setPresences(
                 { ...bundle, localTimerService },
-                await createLocalBundle(vats, bundle, purses),
+                await createLocalBundle(vats, bundle, payments, assayInfo),
               );
               await setupWalletVat(devices.command, vats.http, vats.wallet);
               break;
@@ -327,14 +343,14 @@ export default function setup(syscall, state, helpers) {
               await setupCommandDevice(vats.http, devices.command, {
                 client: true,
               });
-              const { purses, bundle } = await E(
+              const { payments, bundle, assayInfo } = await E(
                 makeChainBundler(vats, devices.timer),
               ).createUserBundle('localuser');
 
               // Setup of the Local part /////////////////////////////////////
               await E(vats.http).setPresences(
                 { ...bundle, localTimerService: bundle.chainTimerService },
-                await createLocalBundle(vats, bundle, purses),
+                await createLocalBundle(vats, bundle, payments, assayInfo),
               );
 
               setupWalletVat(devices.command, vats.http, vats.wallet);

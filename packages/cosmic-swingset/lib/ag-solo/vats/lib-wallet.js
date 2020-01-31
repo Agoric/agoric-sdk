@@ -1,22 +1,29 @@
 import harden from '@agoric/harden';
 import { insist } from '@agoric/ertp/util/insist';
 
-function mockStateChangeHandler(_newState) {
-  // does nothing
-}
+import { makeUnitOps } from '@agoric/ertp/core/unitOps';
+
+import makeObservablePurse from './observable';
+import makeStore from './store';
+import makeWeakStore from './weakStore';
+
+// does nothing
+const noActionStateChangeHandler = _newState => {};
 
 export async function makeWallet(
   E,
-  log,
-  host,
   zoe,
   registrar,
-  pursesStateChangeHandler = mockStateChangeHandler,
-  inboxStateChangeHandler = mockStateChangeHandler,
+  pursesStateChangeHandler = noActionStateChangeHandler,
+  inboxStateChangeHandler = noActionStateChangeHandler,
 ) {
-  // Map of purses in the wallet by pet name. Assume immutable.
-  const nameToPurse = new Map();
-  const nameToAssayId = new Map();
+  const petnameToPurse = makeStore();
+  const assayPetnameToAssay = makeStore();
+  const assayToAssayPetname = makeWeakStore();
+
+  const petnameToUnitOps = makeStore();
+  const regKeyToAssayPetname = makeStore();
+  const assayPetnameToRegKey = makeStore();
 
   // Offers that the wallet knows about (the inbox).
   const dateToOfferRec = new Map();
@@ -33,14 +40,19 @@ export async function makeWallet(
     return JSON.stringify([...inboxState.values()]);
   }
 
-  async function updatePursesState(purseName, purse) {
-    const balance = await E(purse).getBalance();
-    const {
+  async function updatePursesState(pursePetname, purse) {
+    const [{ extent }, assay] = await Promise.all([
+      E(purse).getBalance(),
+      E(purse).getAssay(),
+    ]);
+    const assayPetname = assayToAssayPetname.get(assay);
+    const assayRegKey = assayPetnameToRegKey.get(assayPetname);
+    pursesState.set(pursePetname, {
+      purseName: pursePetname,
+      assayId: assayRegKey,
+      allegedName: assayPetname,
       extent,
-      label: { allegedName },
-    } = balance;
-    const assayId = nameToAssayId.get(purseName);
-    pursesState.set(purseName, { purseName, assayId, allegedName, extent });
+    });
     pursesStateChangeHandler(getPursesState());
   }
 
@@ -48,52 +60,6 @@ export async function makeWallet(
     // Only sent the metadata to the client.
     inboxState.set(date, offerRec.meta);
     inboxStateChangeHandler(getInboxState());
-  }
-
-  function makeObservablePurse(purse, onFulfilled) {
-    return {
-      getName() {
-        return E(purse).getName();
-      },
-      getAssay() {
-        return E(purse).getAssay();
-      },
-      getBalance() {
-        return E(purse).getBalance();
-      },
-      depositExactly(...args) {
-        return E(purse)
-          .depositExactly(...args)
-          .then(result => {
-            onFulfilled();
-            return result;
-          });
-      },
-      depositAll(...args) {
-        return E(purse)
-          .depositAll(...args)
-          .then(result => {
-            onFulfilled();
-            return result;
-          });
-      },
-      withdraw(...args) {
-        return E(purse)
-          .withdraw(...args)
-          .then(result => {
-            onFulfilled();
-            return result;
-          });
-      },
-      withdrawAll(...args) {
-        return E(purse)
-          .withdrawAll(...args)
-          .then(result => {
-            onFulfilled();
-            return result;
-          });
-      },
-    };
   }
 
   function checkOrder(a0, a1, b0, b1) {
@@ -105,7 +71,7 @@ export async function makeWallet(
       return false;
     }
 
-    throw new TypeError('Canot resove assay ordering');
+    throw new TypeError('Cannot resolve assay ordering');
   }
 
   async function makeOffer(date) {
@@ -114,8 +80,8 @@ export async function makeWallet(
       offerRules,
     } = dateToOfferRec.get(date);
 
-    const purse0 = nameToPurse.get(purseName0);
-    const purse1 = nameToPurse.get(purseName1);
+    const purse0 = petnameToPurse.get(purseName0);
+    const purse1 = petnameToPurse.get(purseName1);
 
     const {
       payoutRules: [
@@ -261,48 +227,49 @@ export async function makeWallet(
     return offerOk;
   }
 
+  const getLocalUnitOps = assay =>
+    Promise.all([
+      E(assay).getLabel(),
+      E(assay).getExtentOps(),
+    ]).then(([label, { name, extentOpsArgs = [] }]) =>
+      makeUnitOps(label, name, extentOpsArgs),
+    );
+
   // === API
 
-  async function addPurse(purse, assayId) {
-    const purseNameP = E(purse).getName();
-    const assayP = E(purse).getAssay();
-    const labelP = E(assayP).getLabel();
+  async function addAssay(assayPetname, regKey, assay) {
+    assayPetnameToAssay.init(assayPetname, assay);
+    assayToAssayPetname.init(assay, assayPetname);
+    regKeyToAssayPetname.init(regKey, assayPetname);
+    assayPetnameToRegKey.init(assayPetname, regKey);
+    petnameToUnitOps.init(assayPetname, await getLocalUnitOps(assay));
+  }
 
-    const [purseName, assay, { allegedName }] = await Promise.all([
-      purseNameP,
-      assayP,
-      labelP,
-    ]);
-
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    insist(!nameToPurse.has(purseName))`Purse name already used in wallet.`;
-
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
+  async function makeEmptyPurse(assayPetname, pursePetname, memo = 'purse') {
+    insist(
+      !petnameToPurse.has(pursePetname),
+    )`Purse name already used in wallet.`;
+    const assay = assayPetnameToAssay.get(assayPetname);
 
     // IMPORTANT: once wrapped, the original purse should never
     // be used otherwise the UI state will be out of sync.
+    const doNotUse = await E(assay).makeEmptyPurse(memo);
 
-    const observablePurse = makeObservablePurse(purse, () =>
-      updatePursesState(purseName, purse),
+    const purse = makeObservablePurse(E, doNotUse, () =>
+      updatePursesState(pursePetname, doNotUse),
     );
 
-    nameToPurse.set(purseName, observablePurse);
-    nameToAssayId.set(purseName, assayId);
+    petnameToPurse.init(pursePetname, purse);
+    updatePursesState(pursePetname, purse);
+  }
 
-    updatePursesState(purseName, purse);
+  function deposit(pursePetName, payment) {
+    const purse = petnameToPurse.get(pursePetName);
+    purse.depositAll(payment);
   }
 
   function getPurses() {
-    return harden([...nameToPurse.values()]);
-  }
-
-  function getPurse(name) {
-    return nameToPurse.get(name);
+    return harden([...petnameToPurse.values()]);
   }
 
   async function addOffer(offerRec) {
@@ -338,16 +305,14 @@ export async function makeWallet(
   }
 
   const wallet = harden({
-    userFacet: {
-      addPurse,
-      getPurses,
-      getPurse,
-      addOffer,
-      declineOffer,
-      acceptOffer,
-    },
-    adminFacet: {},
-    readFacet: {},
+    addAssay,
+    makeEmptyPurse,
+    deposit,
+    getPurses,
+    getPurse: petnameToPurse.get,
+    addOffer,
+    declineOffer,
+    acceptOffer,
   });
 
   return wallet;
