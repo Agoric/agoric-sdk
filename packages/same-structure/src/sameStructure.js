@@ -29,7 +29,7 @@ function ObjectFromEntries(iter) {
   return obj;
 }
 
-// A *passable* is something that may be mashalled. It consists of a
+// A *passable* is something that may be marshalled. It consists of a
 // graph of pass-by-copy data terminating in leaves of passable
 // non-pass-by-copy data. These leaves may be promises, or
 // pass-by-presence objects. A *comparable* is a passable whose leaves
@@ -39,7 +39,7 @@ function ObjectFromEntries(iter) {
 // TODO: Currently, all algorithms here treat the pass-by-copy
 // superstructure as a tree. This means that dags are unwound at
 // potentially exponential cost, and cycles cause failure to
-// terminate. We must fix both problems, making all these algorthms
+// terminate. We must fix both problems, making all these algorithms
 // graph-aware.
 
 // We say that a function *reveals* an X when it returns either an X
