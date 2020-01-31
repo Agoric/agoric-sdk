@@ -1,5 +1,6 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import { test } from 'tape-promise/tape';
-import { makeRegistrar } from '../../../../more/registrar/registrar';
+import { makeRegistrar } from '../../src/registrar';
 
 test('Registrar operations', async t => {
   try {

@@ -5,8 +5,8 @@ Thank you!
 ## Contact
 
 We use github issues for all bug reports:
-https://github.com/Agoric/agoric-sdk/issues Please add a [import-manager]
-prefix to the title and Zoe tag to import-manager-related issues.
+https://github.com/Agoric/agoric-sdk/issues Please add a [registrar]
+prefix to the title and `registrar` tag to registrar-related issues.
 
 ## Installing, Testing
 
@@ -17,14 +17,14 @@ You'll need Node.js version 11 or higher.
 * `yarn install`
 * `yarn build` (This *must* be done at the top level to build all of
   the packages)
-* `cd packages/import-manager`
+* `cd packages/registrar`
 * `yarn test`
 
 ## Pull Requests
 
 Before submitting a pull request, please:
 
-* run `yarn test` within `packages/import-manager` and make sure all the unit
+* run `yarn test` within `packages/registrar` and make sure all the unit
   tests pass (running `yarn test` at the top level will test all the
   monorepo packages, which can be a good integration test.)
 * run `yarn run lint-fix` to reformat the code according to our
@@ -43,12 +43,12 @@ Before submitting a pull request, please:
   * and does NOT do a `git commit` and `git tag`
 * `git add .`
 * `git commit -m "bump version"`
-* `git tag -a import-manager-v$VERSION -m "import-manager-v$VERSION"`
+* `git tag -a registrar-v$VERSION -m "registrar-v$VERSION"`
 * `yarn publish --access public`
 * `git push`
-* `git push origin import-manager-v$VERSION`
+* `git push origin registrar-v$VERSION`
 
-Then, once the release has been made, the packages dependent on import-manager
+Then, once the release has been made, the packages dependent on registrar
 should be updated in a PR reviewed by the owners of the packages.
 Those packages are:
 * packages/agoric-cli 

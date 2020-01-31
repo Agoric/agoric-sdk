@@ -1,7 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
-import { insist } from '../../util/insist';
+import { insist } from '../../insist';
 import { generateSparseInts } from '../../util/src/sparseInts';
 
 // Example REPL invocations
