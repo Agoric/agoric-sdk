@@ -2,7 +2,7 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import bundleSource from '@agoric/bundle-source';
 
-import buildManualTimer from '@agoric/ertp/tools/manualTimer';
+import buildManualTimer from '../../../tools/manualTimer';
 import { sameStructure } from '@agoric/ertp/util/sameStructure';
 import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
