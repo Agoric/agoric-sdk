@@ -18,13 +18,7 @@
     "type": "git",
     "url": "git+https://github.com/Agoric/agoric-sdk.git"
   },
-  "keywords": [
-    "smart",
-    "contract",
-    "cryptocurrency",
-    "exchange",
-    "tokens"
-  ],
+  "keywords": [],
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
@@ -32,8 +26,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/harden": "^0.0.4",
-    "eslint": "^6.8.0"
+    "@agoric/harden": "^0.0.4"
   },
   "devDependencies": {
     "esm": "^3.2.25",

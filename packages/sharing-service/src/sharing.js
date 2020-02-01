@@ -2,8 +2,8 @@
 
 import harden from '@agoric/harden';
 
+import { insist } from '@agoric/insist';
 import { makeSharedMap } from './sharedMap';
-import { insist } from '../../insist/src/insist';
 
 function makeSharingService() {
   // I'd have used PrivateNames, but they want objects (not Strings) as Keys.
