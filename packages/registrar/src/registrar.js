@@ -1,8 +1,8 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
-import { insist } from '../../insist';
-import { generateSparseInts } from '../../util/src/sparseInts';
+import { generateSparseInts } from '@agoric/sparse-ints';
+import { insist } from '@agoric/insist';
 
 // Example REPL invocations
 // home.registrar~.register('sharing', home.sharingService)

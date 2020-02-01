@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import makePromise from '../../make-promise/src/makePromise';
+import makePromise from '@agoric/make-promise';
 
 // TODO Reconcile with spec of Promise.allSettled
 function allSettled(promises) {

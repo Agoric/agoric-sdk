@@ -1,8 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
-
-import { makeMint } from '../../../core/mint';
+import { makeMint } from '@agoric/ertp';
 
 function build(_E, _log) {
   return harden({ makeMint });

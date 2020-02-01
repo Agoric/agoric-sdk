@@ -1,8 +1,8 @@
 {
-  "name": "@agoric/util",
+  "name": "@agoric/spawner",
   "version": "0.0.1",
-  "description": "Share code across vat boundaries",
-  "main": "src/zoe.js",
+  "description": "Wrapper for JavaScript map",
+  "main": "src/contractHost.js",
   "engines": {
     "node": ">=11.0"
   },
@@ -19,11 +19,7 @@
     "url": "git+https://github.com/Agoric/agoric-sdk.git"
   },
   "keywords": [
-    "smart",
-    "contract",
-    "cryptocurrency",
-    "exchange",
-    "tokens"
+    "map"
   ],
   "author": "Agoric",
   "license": "Apache-2.0",
@@ -34,19 +30,15 @@
   "dependencies": {
     "@agoric/ertp": "^0.2.0",
     "@agoric/evaluate": "^2.2.0",
-    "@agoric/eventual-send": "^0.5.0",
     "@agoric/harden": "^0.0.4",
-    "@agoric/marshal": "^0.1.1",
-    "@agoric/nat": "^2.0.1",
-    "ses": "^0.6.4"
+    "@agoric/nat": "agoric/nat"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^1.0.4",
-    "@agoric/swingset-vat": "^0.3.0",
     "esm": "^3.2.25",
     "tap-spec": "^5.0.0",
     "tape": "^4.11.0",
-    "tape-promise": "^4.0.0"
+    "tape-promise": "^4.0.0",
+    "@agoric/swingset-vat": "^0.3.0"
   },
   "files": [
     "src/",

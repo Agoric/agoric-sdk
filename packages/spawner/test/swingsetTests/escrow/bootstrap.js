@@ -1,12 +1,12 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
+import { makeMint } from '@agoric/ertp';
+import { allComparable } from '@agoric/same-structure';
+import { insist } from '@agoric/insist';
+import { inviteConfig } from '@agoric/ertp/src/config/inviteConfig';
 
-import { escrowExchangeSrcs } from '../../../core/escrow';
-import { inviteConfig } from '../../../core/config/inviteConfig';
-import { insist } from '../../../util/insist';
-import { makeMint } from '../../../core/mint';
-import { allComparable } from '../../../util/sameStructure';
+import { escrowExchangeSrcs } from '../../escrow';
 
 function build(E, log) {
   function testEscrowServiceMismatches(host, randMintP, artMintP) {

@@ -3,13 +3,13 @@
 
 import harden from '@agoric/harden';
 
-import { insist } from '../../../util/insist';
-import { makeCollect } from '../../../core/contractHost';
-import { escrowExchangeSrcs } from '../../../core/escrow';
+import { insist } from '@agoric/insist';
+import { makeCollect } from '@agoric/spawner';
+import { escrowExchangeSrcs } from '@agoric/spawner/src/escrow';
 
 // only used by doCreateFakeChild test below
-import { makeMint } from '../../../core/mint';
-import { makePixelConfig } from '../../../more/pixels/pixelConfig';
+import { makeMint } from '@agoric/ertp';
+import { makePixelConfig } from '@agoric/pixel-demo/src/pixels/pixelConfig';
 
 let storedUseObj;
 let storedERTPAsset;

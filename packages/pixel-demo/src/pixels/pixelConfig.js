@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
+import { makeMint } from '@agoric/ertp';
 
 import { makePixelMintKeeper } from './pixelMintKeeper';
-import { makeMint } from '../../core/mint';
 
 /**
  * @param  {function} makeUseObj creates a "use object", which has all

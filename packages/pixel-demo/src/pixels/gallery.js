@@ -1,10 +1,11 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
+import { makeCollect } from '@agoric/spawner';
+import { escrowExchangeSrcs } from '@agoric/spawner/src/escrow';
+import { insist } from '@agoric/insist';
+import { makeMint } from '@agoric/ertp';
 
-import { makeCollect } from '../../core/contractHost';
-import { insist } from '../../util/insist';
 import { makePixelConfig } from './pixelConfig';
-import { makeMint } from '../../core/mint';
 import { makeWholePixelList } from './types/pixelList';
 import {
   makeInsistPixel,
@@ -15,8 +16,6 @@ import {
 
 import { makeLruQueue } from './lruQueue';
 import { getRandomColor } from './randomColor';
-
-import { escrowExchangeSrcs } from '../../core/escrow';
 
 function mockStateChangeHandler(_newState) {
   // does nothing

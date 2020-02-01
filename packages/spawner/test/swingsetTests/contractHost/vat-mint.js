@@ -2,7 +2,7 @@
 
 import harden from '@agoric/harden';
 
-import { makeMint } from '../../../core/mint';
+import { makeMint } from '@agoric/ertp';
 
 function build(_E, _log) {
   return harden({ makeMint });

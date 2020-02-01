@@ -2,9 +2,9 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
+import { allComparable } from '@agoric/same-structure';
 
-import { allComparable } from '../../../util/sameStructure';
-import { makeCollect } from '../../../core/contractHost';
+import { makeCollect } from '../../../src/contractHost';
 
 function makeFredMaker(E, host, log) {
   const collect = makeCollect(E, log);

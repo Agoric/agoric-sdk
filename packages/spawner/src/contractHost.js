@@ -2,9 +2,7 @@
 
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
-
 import makeStore from '@agoric/store';
-import { allSettled } from '../util/allSettled';
 import { insist } from '@agoric/insist';
 import {
   allComparable,
@@ -14,6 +12,8 @@ import {
 import { inviteConfig } from '@agoric/ertp/src/config/inviteConfig';
 import { makeMint } from '@agoric/ertp';
 import makePromise from '@agoric/make-promise';
+
+import { allSettled } from './allSettled';
 
 /**
  * Make a reusable host that can reliably install and execute contracts.
