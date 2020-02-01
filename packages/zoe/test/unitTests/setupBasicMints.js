@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 
 import { makeMint } from '@agoric/ertp';
-import { extentOpsLib } from '@agoric/ertp/core/config/extentOpsLib';
+import { extentOpsLib } from '@agoric/ertp/src/config/extentOpsLib';
 
 const setup = () => {
   const moolaMint = makeMint('moola');

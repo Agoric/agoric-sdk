@@ -3,7 +3,7 @@ import { passStyleOf } from '@agoric/marshal';
 
 import { noCustomization } from '@agoric/ertp/src/config/noCustomization';
 import { makeCoreMintKeeper } from '@agoric/ertp/src/config/coreMintKeeper';
-import { insist } from '../../prev-ertp/util/insist';
+import { insist } from '@agoric/insist';
 
 const insistInviteExtent = inviteExtent => {
   insist(
