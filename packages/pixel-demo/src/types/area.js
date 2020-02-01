@@ -1,8 +1,8 @@
 import harden from '@agoric/harden';
+import { insist } from '@agoric/insist';
+
 import { makeInsistPixel, isLessThanOrEqual } from './pixel';
 import { includesPixel } from './pixelList';
-
-import { insist } from '../../../util/insist';
 
 function insistLessThanOrEqual(start, end) {
   insist(isLessThanOrEqual(start, end))`/

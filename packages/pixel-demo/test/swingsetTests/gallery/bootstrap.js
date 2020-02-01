@@ -2,7 +2,7 @@
 
 import harden from '@agoric/harden';
 
-import { makeGallery } from '../../../more/pixels/gallery';
+import { makeGallery } from '../../../src/gallery';
 
 function build(E, log) {
   function testTapFaucet(aliceMaker, gallery) {

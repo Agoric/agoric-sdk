@@ -4,9 +4,9 @@ import harden from '@agoric/harden';
 import {
   makeWholePixelList,
   includesPixel,
-} from '../../../../../more/pixels/types/pixelList';
+} from '../../../../src/types/pixelList';
 
-import { makePixelExtentOps } from '../../../../../more/pixels/pixelExtentOps';
+import { makePixelExtentOps } from '../../../../src/pixelExtentOps';
 
 test('pixelList insistKind', t => {
   const startPixel = harden({ x: 0, y: 0 });

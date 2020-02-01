@@ -9,7 +9,7 @@ import { escrowExchangeSrcs } from '@agoric/spawner/src/escrow';
 
 // only used by doCreateFakeChild test below
 import { makeMint } from '@agoric/ertp';
-import { makePixelConfig } from '@agoric/pixel-demo/src/pixels/pixelConfig';
+import { makePixelConfig } from '@agoric/pixel-demo/src/pixelConfig';
 
 let storedUseObj;
 let storedERTPAsset;

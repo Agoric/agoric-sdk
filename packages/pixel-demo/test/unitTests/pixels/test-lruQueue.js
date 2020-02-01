@@ -1,7 +1,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
-import { makeLruQueue } from '../../../../more/pixels/lruQueue';
+import { makeLruQueue } from '../../../src/lruQueue';
 
 test('LRU Queue creation', t => {
   const { lruQueue, lruQueueBuilder } = makeLruQueue();

@@ -31,14 +31,14 @@
     "@agoric/ertp": "^0.2.0",
     "@agoric/evaluate": "^2.2.0",
     "@agoric/harden": "^0.0.4",
-    "@agoric/nat": "agoric/nat"
+    "@agoric/nat": "^3.0.1"
   },
   "devDependencies": {
+    "@agoric/swingset-vat": "^0.3.0",
     "esm": "^3.2.25",
     "tap-spec": "^5.0.0",
     "tape": "^4.11.0",
-    "tape-promise": "^4.0.0",
-    "@agoric/swingset-vat": "^0.3.0"
+    "tape-promise": "^4.0.0"
   },
   "files": [
     "src/",

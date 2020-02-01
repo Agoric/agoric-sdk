@@ -5,8 +5,8 @@ Thank you!
 ## Contact
 
 We use github issues for all bug reports:
-https://github.com/Agoric/agoric-sdk/issues Please add a [import-manager]
-prefix to the title and Zoe tag to import-manager-related issues.
+https://github.com/Agoric/agoric-sdk/issues Please add a [pixel-demo]
+prefix to the title and `pixel-demo` tag to pixel-demo-related issues.
 
 ## Installing, Testing
 
@@ -17,14 +17,14 @@ You'll need Node.js version 11 or higher.
 * `yarn install`
 * `yarn build` (This *must* be done at the top level to build all of
   the packages)
-* `cd packages/import-manager`
+* `cd packages/pixel-demo`
 * `yarn test`
 
 ## Pull Requests
 
 Before submitting a pull request, please:
 
-* run `yarn test` within `packages/import-manager` and make sure all the unit
+* run `yarn test` within `packages/pixel-demo` and make sure all the unit
   tests pass (running `yarn test` at the top level will test all the
   monorepo packages, which can be a good integration test.)
 * run `yarn run lint-fix` to reformat the code according to our
@@ -43,13 +43,7 @@ Before submitting a pull request, please:
   * and does NOT do a `git commit` and `git tag`
 * `git add .`
 * `git commit -m "bump version"`
-* `git tag -a import-manager-v$VERSION -m "import-manager-v$VERSION"`
+* `git tag -a pixel-demo-v$VERSION -m "pixel-demo-v$VERSION"`
 * `yarn publish --access public`
 * `git push`
-* `git push origin import-manager-v$VERSION`
-
-Then, once the release has been made, the packages dependent on import-manager
-should be updated in a PR reviewed by the owners of the packages.
-Those packages are:
-* packages/agoric-cli 
-* packages/cosmic-swingset 
+* `git push origin pixel-demo-v$VERSION`

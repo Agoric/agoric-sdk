@@ -2,8 +2,7 @@
 
 import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
-
-import { makeSharingService } from '../../../more/sharing/sharing';
+import { makeSharingService } from '@agoric/sharing-service';
 
 function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(

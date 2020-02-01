@@ -1,8 +1,8 @@
 {
   "name": "@agoric/pixel-demo",
   "version": "0.0.1",
-  "description": "Share code across vat boundaries",
-  "main": "src/zoe.js",
+  "description": "An example non-fungible token and app using ERTP",
+  "main": "src/gallery.js",
   "engines": {
     "node": ">=11.0"
   },
@@ -32,17 +32,8 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/ertp": "^0.2.0",
-    "@agoric/evaluate": "^2.2.0",
-    "@agoric/eventual-send": "^0.5.0",
-    "@agoric/harden": "^0.0.4",
-    "@agoric/marshal": "^0.1.1",
-    "@agoric/nat": "^2.0.1",
-    "ses": "^0.6.4"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^1.0.4",
-    "@agoric/swingset-vat": "^0.3.0",
     "esm": "^3.2.25",
     "tap-spec": "^5.0.0",
     "tape": "^4.11.0",

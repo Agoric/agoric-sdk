@@ -6,7 +6,7 @@ import {
   makeInsistPixel,
   isEqual,
   isLessThanOrEqual,
-} from '../../../../../more/pixels/types/pixel';
+} from '../../../../src/types/pixel';
 
 test('pixel insistWithinBounds', t => {
   t.doesNotThrow(() => insistWithinBounds(0, 1));

@@ -1,8 +1,8 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
-import { makeGallery } from '../../../../more/pixels/gallery';
-import { makePixelExtentOps } from '../../../../more/pixels/pixelExtentOps';
+import { makeGallery } from '../../../src/gallery';
+import { makePixelExtentOps } from '../../../src/pixelExtentOps';
 
 // These tests do not require SwingSet or vats
 

@@ -6,7 +6,7 @@ import { allComparable } from '@agoric/same-structure';
 import { insist } from '@agoric/insist';
 import { inviteConfig } from '@agoric/ertp/src/config/inviteConfig';
 
-import { escrowExchangeSrcs } from '../../escrow';
+import { escrowExchangeSrcs } from '../../../src/escrow';
 
 function build(E, log) {
   function testEscrowServiceMismatches(host, randMintP, artMintP) {
