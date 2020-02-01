@@ -1,1 +1,3 @@
-# Import Manager
+# WeakStore
+
+Wrapper for JavaScript WeakMap

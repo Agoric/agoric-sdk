@@ -1,7 +1,7 @@
 {
   "name": "@agoric/weak-store",
   "version": "0.0.1",
-  "description": "Share code across vat boundaries",
+  "description": "Wrapper for JavaScript WeakMap",
   "main": "src/weakStore.js",
   "engines": {
     "node": ">=11.0"

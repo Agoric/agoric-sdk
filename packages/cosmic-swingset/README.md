@@ -287,7 +287,7 @@ When a client is started up, it has a few items in a record named home.
  of contracts you've uploaded
 * registrar: a public directory for published objects
 * localTimerService and chainTimerService: tools for scheduling
-* [zoe](https://github.com/Agoric/ERTP/core/zoe/docs/zoe.md): support for contracts with Offer-Safety Enforcement
+* [zoe](https://agoric.com/documentation/zoe/guide/): support for contracts with Offer-Safety Enforcement
 * [contractHost](https://github.com/Agoric/Documentation): secure smart contracts
 
 #### sharingService

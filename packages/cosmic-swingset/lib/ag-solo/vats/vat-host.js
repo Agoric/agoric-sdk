@@ -3,7 +3,7 @@
 import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 
-import { makeContractHost } from '@agoric/ertp/core/contractHost';
+import { makeContractHost } from '@agoric/spawner';
 
 function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(

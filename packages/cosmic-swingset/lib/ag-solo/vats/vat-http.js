@@ -162,7 +162,7 @@ function build(E, D) {
         const subscriber = harden({
           notify(m) {
             // m will be a string, JSON.stringify([[],[],..])
-            // created by ERTP/more/pixels/gallery.js setPixelState()
+            // created by @agoric/pixel-demo/gallery.js setPixelState()
             canvasState = m;
             if (commandDevice) {
               D(commandDevice).sendBroadcast({
