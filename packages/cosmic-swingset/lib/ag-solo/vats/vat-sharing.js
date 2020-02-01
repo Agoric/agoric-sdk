@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { makeSharingService } from '@agoric/sharings-service';
+import { makeSharingService } from '@agoric/sharing-service';
 
 // This vat contains the sharing service for the demo.
 

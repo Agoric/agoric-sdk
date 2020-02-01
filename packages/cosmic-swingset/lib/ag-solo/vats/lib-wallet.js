@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { insist } from '@agoric/insist';
 import makeStore from '@agoric/store';
-import makeWeakStore from '@agoric/weakStore';
+import makeWeakStore from '@agoric/weak-store';
 import { makeUnitOps } from '@agoric/ertp/src/unitOps';
 
 import makeObservablePurse from './observable';
