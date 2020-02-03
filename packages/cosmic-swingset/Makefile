@@ -129,7 +129,6 @@ docker-install: docker-pull
 compile-go: go.sum
 	go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go
 	test "`uname -s 2>/dev/null`" != Darwin || install_name_tool -id `pwd`/lib/libagcosmosdaemon.so lib/libagcosmosdaemon.so
-	-eval `go env` && ln -sf $$PWD/lib/ag-chain-cosmos $$GOPATH/bin/ag-chain-cosmos
 
 build-cosmos: compile-go node-compile-gyp
 
@@ -149,6 +148,7 @@ compile-gyp:
 
 install: go.sum
 	go install -v $(MOD_READONLY) $(BUILD_FLAGS) ./cmd/ag-cosmos-helper
+	bindir="$${GOBIN-$${GOPATH-$$HOME/go}/bin}"; ln -sf "$$PWD/lib/ag-chain-cosmos" "$$bindir/ag-chain-cosmos"
 
 go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"
