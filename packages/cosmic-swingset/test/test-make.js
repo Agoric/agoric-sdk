@@ -1,10 +1,10 @@
 import { test } from 'tape-promise/tape';
 import { spawn } from 'child_process';
 
-test('make build-cosmos', async t => {
+test('make', async t => {
   try {
     await new Promise(resolve =>
-      spawn('make', ['build-cosmos'], {
+      spawn('make', {
         cwd: `${__dirname}/..`,
         stdio: ['ignore', 'ignore', 'inherit'],
       }).addListener('exit', code => {
