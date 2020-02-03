@@ -1,6 +1,6 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
-import { insist } from '@agoric/ertp/util/insist';
+import { insist } from '@agoric/insist';
 
 import { natSafeMath } from './safeMath';
 

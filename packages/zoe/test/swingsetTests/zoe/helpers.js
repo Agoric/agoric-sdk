@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { makeUnitOps } from '@agoric/ertp/core/unitOps';
+import { makeUnitOps } from '@agoric/ertp/src/unitOps';
 import harden from '@agoric/harden';
 
 export const showPaymentBalance = async (paymentP, name, log) => {

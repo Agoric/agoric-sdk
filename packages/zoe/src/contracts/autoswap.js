@@ -1,8 +1,8 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import { makeMint } from '@agoric/ertp/core/mint';
-import { insist } from '@agoric/ertp/util/insist';
+import { makeMint } from '@agoric/ertp';
+import { insist } from '@agoric/insist';
 
 import { natSafeMath } from './helpers/safeMath';
 import { makeHelpers } from './helpers/userFlow';

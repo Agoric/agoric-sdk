@@ -37,6 +37,11 @@
   resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-2.0.1.tgz#28aba18367deba354bdd424bdf6daa48f5e7d37f"
   integrity sha512-puvWkoaJovQib/YaSRSGJ8Kn9rogi/yyaVa3d5znSZb5WiYfUiEKW35BfexHhAdi0VfPz2anFHoRBoBSUIijNA==
 
+"@agoric/nat@^3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-3.0.1.tgz#19cfe575e707ae1024f123b49a9c745d88381cbf"
+  integrity sha512-/i5d77UZSAw+9h19nvid4/YrEYO7E8xx4ZPcOKLvjH96mfALSjYR9QU77MRZbbqKOF4PwdS2xLupzo/vg46eKA==
+
 "@agoric/wallet-frontend@^0.1.0":
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/@agoric/wallet-frontend/-/wallet-frontend-0.1.2.tgz#abf54b5cfdddffa9935ee0d0008b4563cc445e8a"

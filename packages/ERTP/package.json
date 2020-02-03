@@ -2,7 +2,7 @@
   "name": "@agoric/ertp",
   "version": "0.2.0",
   "description": "Electronic Rights Transfer Protocol (ERTP). A smart contract framework for exchanging electronic rights",
-  "main": "core/mint.js",
+  "main": "src/mint.js",
   "engines": {
     "node": ">=11.0"
   },
@@ -50,7 +50,7 @@
     "tape": "^4.11.0",
     "tape-promise": "^4.0.0"
   },
-  "files": ["core", "more", "util", "NEWS.md"],
+  "files": ["src", "NEWS.md"],
   "eslintConfig": {
     "extends": [
       "airbnb-base",

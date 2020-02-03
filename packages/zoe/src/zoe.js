@@ -1,10 +1,9 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
-
-import { insist } from '@agoric/ertp/util/insist';
-import makePromise from '@agoric/ertp/util/makePromise';
-import { makeStore } from '@agoric/ertp/util/store';
-import { makeMint } from '@agoric/ertp/core/mint';
+import makeStore from '@agoric/weak-store';
+import { makeMint } from '@agoric/ertp';
+import { insist } from '@agoric/insist';
+import makePromise from '@agoric/make-promise';
 
 import { isOfferSafeForAll } from './isOfferSafe';
 import { areRightsConserved } from './areRightsConserved';

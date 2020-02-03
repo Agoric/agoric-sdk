@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
-import { makeMint } from '@agoric/ertp/core/mint';
+import { makeMint } from '@agoric/ertp';
 import { makeHelpers } from './helpers/userFlow';
 
 /**  EDIT THIS CONTRACT WITH YOUR OWN BUSINESS LOGIC */

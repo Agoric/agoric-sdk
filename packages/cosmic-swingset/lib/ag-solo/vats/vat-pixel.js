@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { makeGallery } from '@agoric/ertp/more/pixels/gallery';
+import { makeGallery } from '@agoric/pixel-demo/src/gallery';
 import pubsub from './pubsub';
 
 // This vat contains the server-side resources for the demo. To

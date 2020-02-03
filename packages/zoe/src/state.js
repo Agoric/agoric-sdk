@@ -1,9 +1,9 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-import { makeStore } from '@agoric/ertp/util/store';
-import { insist } from '@agoric/ertp/util/insist';
-import { makeUnitOps } from '@agoric/ertp/core/unitOps';
+import makeStore from '@agoric/store';
+import { insist } from '@agoric/insist';
+import { makeUnitOps } from '@agoric/ertp/src/unitOps';
 
 const makeTable = (validateFn, makeCustomMethodsFn = () => undefined) => {
   // The WeakMap that stores the records

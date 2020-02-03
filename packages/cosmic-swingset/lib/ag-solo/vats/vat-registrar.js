@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { makeRegistrar } from '@agoric/ertp/more/registrar/registrar';
+import { makeRegistrar } from '@agoric/registrar';
 
 // This vat contains the registrar for the demo.
 

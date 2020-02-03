@@ -1,11 +1,11 @@
 import harden from '@agoric/harden';
-import { insist } from '@agoric/ertp/util/insist';
-
-import { makeUnitOps } from '@agoric/ertp/core/unitOps';
+import { insist } from '@agoric/insist';
+import makeStore from '@agoric/store';
+import makeWeakStore from '@agoric/weak-store';
+import { makeUnitOps } from '@agoric/ertp/src/unitOps';
 
 import makeObservablePurse from './observable';
-import makeStore from './store';
-import makeWeakStore from './weakStore';
+
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};
