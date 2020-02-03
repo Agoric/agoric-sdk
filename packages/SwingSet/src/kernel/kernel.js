@@ -514,7 +514,7 @@ export default function buildKernel(kernelEndowments) {
       setup,
       helpers,
       kernelKeeper,
-      kernelKeeper.provideVatKeeper(vatID),
+      kernelKeeper.allocateVatKeeperIfNeeded(vatID),
     );
   }
 
@@ -550,7 +550,7 @@ export default function buildKernel(kernelEndowments) {
 
   // Create a new vat and return the vatID.
   function createVat(buildFn) {
-    const vatID = kernelKeeper.provideUnusedVatID();
+    const vatID = kernelKeeper.allocateUnusedVatID();
 
     const setup = (syscall, state, helpers) => {
       return helpers.makeLiveSlots(syscall, state, buildFn, helpers.vatID);
@@ -586,7 +586,7 @@ export default function buildKernel(kernelEndowments) {
   }
 
   function buildDeviceManager(deviceID, name, setup, endowments) {
-    const deviceKeeper = kernelKeeper.provideDeviceKeeper(deviceID);
+    const deviceKeeper = kernelKeeper.allocateDeviceKeeperIfNeeded(deviceID);
     const helpers = harden({
       name,
       makeDeviceSlots,
@@ -634,7 +634,7 @@ export default function buildKernel(kernelEndowments) {
     // instantiate all vats
     for (const name of genesisVats.keys()) {
       const { setup, options } = genesisVats.get(name);
-      const vatID = kernelKeeper.provideVatIDForName(name);
+      const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       console.log(`Assigned VatID ${vatID} for genesis vat ${name}`);
       const manager = buildVatManager(vatID, name, setup);
       ephemeral.vats.set(
@@ -661,7 +661,7 @@ export default function buildKernel(kernelEndowments) {
     // instantiate all devices
     for (const name of genesisDevices.keys()) {
       const { setup, endowments: devEndowments } = genesisDevices.get(name);
-      const deviceID = kernelKeeper.provideDeviceIDForName(name);
+      const deviceID = kernelKeeper.allocateDeviceIDForNameIfNeeded(name);
       console.log(`Assigned DeviceID ${deviceID} for genesis device ${name}`);
       ephemeral.devices.set(deviceID, {
         manager: buildDeviceManager(deviceID, name, setup, devEndowments),

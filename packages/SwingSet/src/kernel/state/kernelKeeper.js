@@ -325,17 +325,17 @@ export default function makeKernelKeeper(storage) {
     return storage.get(k);
   }
 
-  function provideUnusedVatID() {
+  function allocateUnusedVatID() {
     const nextID = Nat(Number(getRequired(`vat.nextID`)));
     storage.set(`vat.nextID`, `${nextID + 1}`);
     return makeVatID(nextID);
   }
 
-  function provideVatIDForName(name) {
+  function allocateVatIDForNameIfNeeded(name) {
     insist(name === `${name}`);
     const k = `vat.name.${name}`;
     if (!storage.has(k)) {
-      storage.set(k, provideUnusedVatID());
+      storage.set(k, allocateUnusedVatID());
       const names = JSON.parse(getRequired('vat.names'));
       names.push(name);
       storage.set('vat.names', JSON.stringify(names));
@@ -343,7 +343,7 @@ export default function makeKernelKeeper(storage) {
     return storage.get(k);
   }
 
-  function provideVatKeeper(vatID) {
+  function allocateVatKeeperIfNeeded(vatID) {
     insistVatID(vatID);
     if (!storage.has(`${vatID}.o.nextID`)) {
       initializeVatState(storage, vatID);
@@ -386,7 +386,7 @@ export default function makeKernelKeeper(storage) {
     return storage.get(k);
   }
 
-  function provideDeviceIDForName(name) {
+  function allocateDeviceIDForNameIfNeeded(name) {
     insist(name === `${name}`);
     const k = `device.name.${name}`;
     if (!storage.has(k)) {
@@ -400,7 +400,7 @@ export default function makeKernelKeeper(storage) {
     return storage.get(k);
   }
 
-  function provideDeviceKeeper(deviceID) {
+  function allocateDeviceKeeperIfNeeded(deviceID) {
     insistDeviceID(deviceID);
     if (!storage.has(`${deviceID}.o.nextID`)) {
       initializeDeviceState(storage, deviceID);
@@ -438,7 +438,7 @@ export default function makeKernelKeeper(storage) {
     const kernelTable = [];
 
     for (const vatID of getAllVatIDs()) {
-      const vk = provideVatKeeper(vatID);
+      const vk = allocateVatKeeperIfNeeded(vatID);
 
       // TODO: find some way to expose the liveSlots internal tables, the
       // kernel doesn't see them
@@ -451,7 +451,7 @@ export default function makeKernelKeeper(storage) {
     }
 
     for (const deviceID of getAllDeviceIDs()) {
-      const dk = provideDeviceKeeper(deviceID);
+      const dk = allocateDeviceKeeperIfNeeded(deviceID);
       dk.dumpState().forEach(e => kernelTable.push(e));
     }
 
@@ -526,14 +526,14 @@ export default function makeKernelKeeper(storage) {
     getNextMsg,
 
     getVatIDForName,
-    provideVatIDForName,
-    provideUnusedVatID,
-    provideVatKeeper,
+    allocateVatIDForNameIfNeeded,
+    allocateUnusedVatID,
+    allocateVatKeeperIfNeeded,
     getAllVatNames,
 
     getDeviceIDForName,
-    provideDeviceIDForName,
-    provideDeviceKeeper,
+    allocateDeviceIDForNameIfNeeded,
+    allocateDeviceKeeperIfNeeded,
     getAllDeviceNames,
 
     dump,
