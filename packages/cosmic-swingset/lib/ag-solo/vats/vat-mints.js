@@ -1,6 +1,7 @@
 import harden from '@agoric/harden';
-import { makeMint } from '@agoric/ertp/core/mint';
-import makeStore from './store';
+import { makeMint } from '@agoric/ertp';
+
+import makeStore from '@agoric/store';
 
 // This vat contains two starting mints for demos: moolaMint and
 // simoleanMint. A third mint, the dustMint, is made by the pixel

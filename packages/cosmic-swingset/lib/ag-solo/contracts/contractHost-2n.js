@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import makePromise from '@agoric/ertp/util/makePromise';
+import makePromise from '@agoric/make-promise';
 
 export default harden((_terms, inviteMaker) => {
   const result = makePromise();

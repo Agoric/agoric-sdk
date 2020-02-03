@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { insist } from '@agoric/ertp/util/insist';
+import { insist } from '@agoric/insist';
 
 /* allowedTransitions is an array of arrays which gets turned into a
  * map. The map maps string states to an array of potential next

@@ -1,0 +1,87 @@
+{
+  "name": "@agoric/spawner",
+  "version": "0.0.1",
+  "description": "Wrapper for JavaScript map",
+  "main": "src/contractHost.js",
+  "engines": {
+    "node": ">=11.0"
+  },
+  "scripts": {
+    "build": "exit 0",
+    "test": "tape -r esm 'test/**/test*.js' | tap-spec",
+    "lint-fix": "eslint --fix '**/*.js'",
+    "lint-check": "eslint '**/*.js'",
+    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
+    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.js'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
+  "keywords": [
+    "map"
+  ],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
+  },
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "dependencies": {
+    "@agoric/ertp": "^0.2.0",
+    "@agoric/evaluate": "^2.2.0",
+    "@agoric/harden": "^0.0.4",
+    "@agoric/nat": "^3.0.1"
+  },
+  "devDependencies": {
+    "@agoric/swingset-vat": "^0.3.0",
+    "esm": "^3.2.25",
+    "tap-spec": "^5.0.0",
+    "tape": "^4.11.0",
+    "tape-promise": "^4.0.0"
+  },
+  "files": [
+    "src/",
+    "NEWS.md"
+  ],
+  "eslintConfig": {
+    "extends": [
+      "airbnb-base",
+      "plugin:prettier/recommended"
+    ],
+    "env": {
+      "es6": true
+    },
+    "rules": {
+      "implicit-arrow-linebreak": "off",
+      "function-paren-newline": "off",
+      "arrow-parens": "off",
+      "strict": "off",
+      "no-console": "off",
+      "no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_"
+        }
+      ],
+      "no-return-assign": "off",
+      "no-param-reassign": "off",
+      "no-restricted-syntax": [
+        "off",
+        "ForOfStatement"
+      ],
+      "no-unused-expressions": "off",
+      "no-loop-func": "off",
+      "no-inner-declarations": "off",
+      "import/prefer-default-export": "off"
+    }
+  },
+  "eslintIgnore": [
+    "bundle-*.js"
+  ],
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  }
+}

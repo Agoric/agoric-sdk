@@ -62,3 +62,7 @@ typings/
 
 .idea/
 bundle-*.js
+
+# yarn pack
+.tgz
+package/

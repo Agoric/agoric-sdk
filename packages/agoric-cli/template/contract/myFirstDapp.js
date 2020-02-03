@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 import { makeHelpers } from '@agoric/zoe/src/contracts/helpers/userFlow';
-import { makeMint } from '@agoric/ertp/core/mint';
+import { makeMint } from '@agoric/ertp';
 
 /**  EDIT THIS CONTRACT WITH YOUR OWN BUSINESS LOGIC */
 

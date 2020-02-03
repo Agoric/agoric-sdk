@@ -1,9 +1,9 @@
 import harden from '@agoric/harden';
 import { passStyleOf } from '@agoric/marshal';
 
-import { noCustomization } from '@agoric/ertp/core/config/noCustomization';
-import { makeCoreMintKeeper } from '@agoric/ertp/core/config/coreMintKeeper';
-import { insist } from '@agoric/ertp/util/insist';
+import { noCustomization } from '@agoric/ertp/src/config/noCustomization';
+import { makeCoreMintKeeper } from '@agoric/ertp/src/config/coreMintKeeper';
+import { insist } from '@agoric/insist';
 
 const insistInviteExtent = inviteExtent => {
   insist(
@@ -26,13 +26,11 @@ const insistInviteExtent = inviteExtent => {
   return true;
 };
 
-function makeInviteConfig() {
-  return harden({
-    ...noCustomization,
-    makeMintKeeper: makeCoreMintKeeper,
-    extentOpsName: 'uniExtentOps',
-    extentOpsArgs: [insistInviteExtent],
-  });
-}
+const inviteConfig = harden({
+  ...noCustomization,
+  makeMintKeeper: makeCoreMintKeeper,
+  extentOpsName: 'uniExtentOps',
+  extentOpsArgs: [insistInviteExtent],
+});
 
-export { makeInviteConfig };
+export { inviteConfig };

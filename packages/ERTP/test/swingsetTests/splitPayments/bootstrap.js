@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import { makeMint } from '../../../core/mint';
+import { makeMint } from '../../../src/mint';
 
 function build(E, log) {
   function testSplitPayments(aliceMaker) {
