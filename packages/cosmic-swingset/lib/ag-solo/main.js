@@ -7,6 +7,7 @@ import { insist } from './insist';
 // Start a network service
 import bundle from './bundle';
 import initBasedir from './init-basedir';
+import resetState from './reset-state';
 import setGCIIngress from './set-gci-ingress';
 import setFakeChain from './set-fake-chain';
 import start from './start';
@@ -64,6 +65,7 @@ start
     const subdir = subArgs[1];
     insist(basedir !== undefined, 'you must provide a BASEDIR');
     initBasedir(basedir, webport, webhost, subdir, egresses.split(','));
+    await resetState(basedir);
     // console.error(
     //   `Run '(cd ${basedir} && ${progname} start)' to start the vat machine`,
     // );
@@ -83,6 +85,9 @@ start
     const basedir = insistIsBasedir();
     const withSES = true;
     await start(basedir, withSES, argv.slice(1));
+  } else if (argv[0] === 'reset-state') {
+    const basedir = insistIsBasedir();
+    await resetState(basedir);
   } else if (argv[0] === 'bundle') {
     await bundle(insistIsBasedir, argv.slice(1));
   } else if (argv[0] === 'upload-contract') {
