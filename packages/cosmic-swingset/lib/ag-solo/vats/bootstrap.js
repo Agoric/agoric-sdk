@@ -1,6 +1,5 @@
 import harden from '@agoric/harden';
 import { allComparable } from '@agoric/same-structure';
-import makeStore from '@agoric/store';
 // this will return { undefined } until `ag-solo set-gci-ingress`
 // has been run to update gci.js
 import { GCI } from './gci';
