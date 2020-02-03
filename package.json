@@ -47,6 +47,7 @@
   },
   "scripts": {
     "OFF-clean": "yarn workspaces run clean",
+    "check-dependencies": "node ./scripts/check-mismatched-dependencies.js",
     "prettier": "yarn workspaces run prettier",
     "link-cli": "node ./scripts/link-cli.js",
     "lint-fix": "yarn workspaces run lint-fix",

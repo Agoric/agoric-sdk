@@ -35,6 +35,8 @@ jobs:
     # cross-package symlinks
     - name: yarn install
       run: yarn install
+    - name: check dependencies
+      run: yarn check-dependencies
     # 'yarn build' loops over all workspaces
     - name: yarn build
       run: yarn build
