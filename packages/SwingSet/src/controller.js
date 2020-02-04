@@ -236,6 +236,9 @@ function buildNonSESKernel(endowments) {
 }
 
 export async function buildVatController(config, withSES = true, argv = []) {
+  if (!withSES) {
+    throw Error('SES is now mandatory');
+  }
   // todo: move argv into the config
 
   const endOfCrankHooks = new Set();
