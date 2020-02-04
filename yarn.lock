@@ -7,23 +7,6 @@
   resolved "https://registry.yarnpkg.com/@agoric/babel-parser/-/babel-parser-7.6.4.tgz#8dd5d36554cc758c29042713b5aa57dc58ee5273"
   integrity sha512-3FQC3eP2hekhz1zn+2LcSL7tAG2dGgSqbmCeRfIFqhVS8bbE1hR7EvrC6jYlvqdU6yzlly43VykyRy9MHBvUAw==
 
-"@agoric/ertp@^0.2.0":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@agoric/ertp/-/ertp-0.2.0.tgz#bad9867e8b287b82888d59da72b4243fdd2806ab"
-  integrity sha512-wkkATioGK/uCAqqU9+LXKszNYsjIN0k9w6JLs799N4g6KeM5CglVXyuim5Qd3Em0hERRzDqR8o+ZYdWSXnmw8g==
-  dependencies:
-    "@agoric/evaluate" "^2.1.3"
-    "@agoric/eventual-send" "^0.4.5"
-    "@agoric/harden" "^0.0.4"
-    "@agoric/marshal" "^0.1.1"
-    "@agoric/nat" "^2.0.1"
-    ses "^0.6.4"
-
-"@agoric/eventual-send@^0.4.5":
-  version "0.4.5"
-  resolved "https://registry.yarnpkg.com/@agoric/eventual-send/-/eventual-send-0.4.5.tgz#73d4238b856eef6086b45e3bcf219aeb9e516056"
-  integrity sha512-d4jngAU8LWmntZ3PXcFoOygC/tqHOl+JlA318LXuxK1/3/oU5UfNoYboa0Bm8xms8KEtcKFtPpcD5EgGzXO1NQ==
-
 "@agoric/harden@0.0.4", "@agoric/harden@^0.0.4":
   version "0.0.4"
   resolved "https://registry.yarnpkg.com/@agoric/harden/-/harden-0.0.4.tgz#b0d0b2fdfc1a8c7e60454374824442f5b37ea8bd"
@@ -58,32 +41,6 @@
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-3.0.1.tgz#19cfe575e707ae1024f123b49a9c745d88381cbf"
   integrity sha512-/i5d77UZSAw+9h19nvid4/YrEYO7E8xx4ZPcOKLvjH96mfALSjYR9QU77MRZbbqKOF4PwdS2xLupzo/vg46eKA==
-
-"@agoric/pixel-demo@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@agoric/pixel-demo/-/pixel-demo-0.0.1.tgz#cdebe5cae2e6289f3b44362233012a3d7affaae4"
-  integrity sha512-m7zJxs+pYgK5cPTJQ/84qnKhmMIqJ7sK2FgMb2ub2LY3nqUp+oD/DZslz/3Xgriezn7dHEbMiiFV76rCazRbHQ==
-  dependencies:
-    "@agoric/ertp" "^0.2.0"
-    "@agoric/harden" "^0.0.4"
-    "@agoric/insist" "^0.0.1"
-    "@agoric/nat" "^2.0.1"
-    "@agoric/spawner" "^0.0.1"
-    "@agoric/store" "^0.0.1"
-
-"@agoric/spawner@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@agoric/spawner/-/spawner-0.0.1.tgz#38f2ba577e390678512168b510c58b4b81de9acf"
-  integrity sha512-94B3v7YuhiY5qweCgWhmrh3twGKRFSA+lr9r2Ci99UztP2gr1q5/pmIes0MyGGlrdxn6nGaUMDK1vefWjuX9Dg==
-  dependencies:
-    "@agoric/ertp" "^0.2.0"
-    "@agoric/evaluate" "^2.2.0"
-    "@agoric/harden" "^0.0.4"
-    "@agoric/insist" "^0.0.1"
-    "@agoric/make-promise" "^0.0.1"
-    "@agoric/nat" "^3.0.1"
-    "@agoric/same-structure" "^0.0.1"
-    "@agoric/store" "^0.0.1"
 
 "@agoric/wallet-frontend@^0.1.0":
   version "0.1.2"
