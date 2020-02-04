@@ -42,6 +42,14 @@ export const makeEvaluators = (makerOptions = {}) => {
       evaluateProgram,
       sourceType,
     };
+    // Array.reduce() is used to apply an array of transforms cumulatively to a
+    // starting state. fullTransforms is an array of transforms that can process
+    // endowments or source code (or both). Each step takes a previous state
+    // and a transform and produces the next version of the state. The first
+    // pass produces endowments, while the second pass transforms the source
+    // code. All the elements of state can be modified by each transform. A
+    // transform may not be useful for both passes, so transforms opt in to each
+    // pass by whether or not it has a rewrite() or endow() function.
     const endowmentState = fullTransforms.reduce(
       (es, transform) => (transform.endow ? transform.endow(es) : es),
       staticOptions,
@@ -53,6 +61,8 @@ export const makeEvaluators = (makerOptions = {}) => {
       ...Object.getOwnPropertyDescriptors(endowmentState.endowments),
     });
 
+    // See comment above for an explanation of how reduce is used to apply a
+    // sequence of source code transforms cumulatively to the original source.
     const sourceState = fullTransforms.reduce(
       (ss, transform) => (transform.rewrite ? transform.rewrite(ss) : ss),
       { ...staticOptions, endowments: fullEndowments, src: source },
