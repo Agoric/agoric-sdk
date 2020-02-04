@@ -13,11 +13,6 @@ test('vat can require harden with SES', async t => {
   t.end();
 });
 
-test('vat can require harden without SES', async t => {
-  await requireHarden(t, false);
-  t.end();
-});
-
 async function requireEvaluate(t, withSES) {
   const config = { bootstrapIndexJS: require.resolve('./vat-imports-1.js') };
   const c = await buildVatController(config, withSES, ['evaluate']);
@@ -27,10 +22,5 @@ async function requireEvaluate(t, withSES) {
 
 test('vat can require evaluate with SES', async t => {
   await requireEvaluate(t, true);
-  t.end();
-});
-
-test('vat can require evaluate without SES', async t => {
-  await requireEvaluate(t, false);
   t.end();
 });

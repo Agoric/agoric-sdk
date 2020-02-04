@@ -43,10 +43,6 @@ test('d0 with SES', async t => {
   await test0(t, true);
 });
 
-test('d0 without SES', async t => {
-  await test0(t, false);
-});
-
 async function test1(t, withSES) {
   const sharedArray = [];
   const config = {
@@ -78,10 +74,6 @@ async function test1(t, withSES) {
 
 test('d1 with SES', async t => {
   await test1(t, true);
-});
-
-test('d1 without SES', async t => {
-  await test1(t, false);
 });
 
 async function test2(t, mode, withSES) {
@@ -148,40 +140,20 @@ test('d2.1 with SES', async t => {
   await test2(t, '1', true);
 });
 
-test('d2.1 without SES', async t => {
-  await test2(t, '1', false);
-});
-
 test('d2.2 with SES', async t => {
   await test2(t, '2', true);
-});
-
-test('d2.2 without SES', async t => {
-  await test2(t, '2', false);
 });
 
 test('d2.3 with SES', async t => {
   await test2(t, '3', true);
 });
 
-test('d2.3 without SES', async t => {
-  await test2(t, '3', false);
-});
-
 test('d2.4 with SES', async t => {
   await test2(t, '4', true);
 });
 
-test('d2.4 without SES', async t => {
-  await test2(t, '4', false);
-});
-
 test('d2.5 with SES', async t => {
   await test2(t, '5', true);
-});
-
-test('d2.5 without SES', async t => {
-  await test2(t, '5', false);
 });
 
 async function testState(t, withSES) {
@@ -208,10 +180,6 @@ async function testState(t, withSES) {
 
 test('device state with SES', async t => {
   await testState(t, true);
-});
-
-test('device state without SES', async t => {
-  await testState(t, false);
 });
 
 async function testMailboxOutbound(t, withSES) {
@@ -249,10 +217,6 @@ async function testMailboxOutbound(t, withSES) {
 
   t.end();
 }
-
-test('mailbox outbound without SES', async t => {
-  await testMailboxOutbound(t, false);
-});
 
 test('mailbox outbound with SES', async t => {
   await testMailboxOutbound(t, true);
@@ -371,10 +335,6 @@ async function testMailboxInbound(t, withSES) {
   t.end();
 }
 
-test('mailbox inbound without SES', async t => {
-  await testMailboxInbound(t, false);
-});
-
 test('mailbox inbound with SES', async t => {
   await testMailboxInbound(t, true);
 });
@@ -394,10 +354,6 @@ async function testCommandBroadcast(t, withSES) {
 
   t.end();
 }
-
-test('command broadcast without SES', async t => {
-  await testCommandBroadcast(t, false);
-});
 
 test('command broadcast with SES', async t => {
   await testCommandBroadcast(t, true);
@@ -433,10 +389,6 @@ async function testCommandDeliver(t, withSES) {
 
   t.end();
 }
-
-test('command deliver without SES', async t => {
-  await testCommandDeliver(t, false);
-});
 
 test('command deliver with SES', async t => {
   await testCommandDeliver(t, true);

@@ -25,12 +25,6 @@ test('run encouragementBotComms Demo with SES', async t => {
   t.end();
 });
 
-test('run encouragementBotComms Demo without SES', async t => {
-  const dump = await main(false, 'demo/encouragementBotComms');
-  t.deepEquals(dump.log, encouragementBotCommsGolden);
-  t.end();
-});
-
 test('run encouragementBotCommsWavyDot Demo with SES', async t => {
   const dump = await main(true, 'demo/encouragementBotCommsWavyDot', []);
   t.deepEquals(dump.log, encouragementBotCommsGolden);

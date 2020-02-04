@@ -47,10 +47,6 @@ test('transcript-one save with SES', async t => {
   await testSaveState(t, true);
 });
 
-test('transcript-one save without SES', async t => {
-  await testSaveState(t, false);
-});
-
 async function testLoadState(t, withSES) {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
@@ -85,8 +81,4 @@ async function testLoadState(t, withSES) {
 
 test('transcript-one load with SES', async t => {
   await testLoadState(t, true);
-});
-
-test('transcript-one load without SES', async t => {
-  await testLoadState(t, false);
 });
