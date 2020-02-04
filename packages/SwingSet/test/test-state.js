@@ -418,8 +418,8 @@ test('kernelKeeper vat names', async t => {
   const k = makeKernelKeeper(kstorage);
   k.createStartingKernelState();
 
-  const v1 = k.provideVatIDForName('vatname5');
-  const v2 = k.provideVatIDForName('Frank');
+  const v1 = k.allocateVatIDForNameIfNeeded('vatname5');
+  const v2 = k.allocateVatIDForNameIfNeeded('Frank');
   t.equal(v1, 'v1');
   t.equal(v2, 'v2');
 
@@ -438,12 +438,12 @@ test('kernelKeeper vat names', async t => {
   ]);
   t.deepEqual(k.getAllVatNames(), ['Frank', 'vatname5']);
   t.equal(k.getVatIDForName('Frank'), v2);
-  t.equal(k.provideVatIDForName('Frank'), v2);
+  t.equal(k.allocateVatIDForNameIfNeeded('Frank'), v2);
 
   const k2 = duplicateKeeper(getState);
   t.deepEqual(k2.getAllVatNames(), ['Frank', 'vatname5']);
   t.equal(k2.getVatIDForName('Frank'), v2);
-  t.equal(k2.provideVatIDForName('Frank'), v2);
+  t.equal(k2.allocateVatIDForNameIfNeeded('Frank'), v2);
   t.end();
 });
 
@@ -452,8 +452,8 @@ test('kernelKeeper device names', async t => {
   const k = makeKernelKeeper(kstorage);
   k.createStartingKernelState();
 
-  const d7 = k.provideDeviceIDForName('devicename5');
-  const d8 = k.provideDeviceIDForName('Frank');
+  const d7 = k.allocateDeviceIDForNameIfNeeded('devicename5');
+  const d8 = k.allocateDeviceIDForNameIfNeeded('Frank');
   t.equal(d7, 'd7');
   t.equal(d8, 'd8');
 
@@ -472,12 +472,12 @@ test('kernelKeeper device names', async t => {
   ]);
   t.deepEqual(k.getAllDeviceNames(), ['Frank', 'devicename5']);
   t.equal(k.getDeviceIDForName('Frank'), d8);
-  t.equal(k.provideDeviceIDForName('Frank'), d8);
+  t.equal(k.allocateDeviceIDForNameIfNeeded('Frank'), d8);
 
   const k2 = duplicateKeeper(getState);
   t.deepEqual(k2.getAllDeviceNames(), ['Frank', 'devicename5']);
   t.equal(k2.getDeviceIDForName('Frank'), d8);
-  t.equal(k2.provideDeviceIDForName('Frank'), d8);
+  t.equal(k2.allocateDeviceIDForNameIfNeeded('Frank'), d8);
   t.end();
 });
 
@@ -656,9 +656,9 @@ test('vatKeeper', async t => {
   const k = makeKernelKeeper(kstorage);
   k.createStartingKernelState();
 
-  const v1 = k.provideVatIDForName('name1');
-  const vk = k.provideVatKeeper(v1);
-  t.is(vk, k.provideVatKeeper(v1));
+  const v1 = k.allocateVatIDForNameIfNeeded('name1');
+  const vk = k.allocateVatKeeperIfNeeded(v1);
+  t.is(vk, k.allocateVatKeeperIfNeeded(v1));
 
   const vatExport1 = 'o+4';
   const kernelExport1 = vk.mapVatSlotToKernelSlot(vatExport1);
@@ -667,7 +667,7 @@ test('vatKeeper', async t => {
   t.equal(vk.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
 
   commitCrank();
-  let vk2 = duplicateKeeper(getState).provideVatKeeper(v1);
+  let vk2 = duplicateKeeper(getState).allocateVatKeeperIfNeeded(v1);
   t.equal(vk2.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
   t.equal(vk2.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
 
@@ -678,7 +678,7 @@ test('vatKeeper', async t => {
   t.equal(vk.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
 
   commitCrank();
-  vk2 = duplicateKeeper(getState).provideVatKeeper(v1);
+  vk2 = duplicateKeeper(getState).allocateVatKeeperIfNeeded(v1);
   t.equal(vk2.mapKernelSlotToVatSlot(kernelImport2), vatImport2);
   t.equal(vk2.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
 
