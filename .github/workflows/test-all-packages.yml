@@ -73,3 +73,25 @@ jobs:
       run: yarn lint-check
     - name: yarn test (zoe)
       run: cd packages/zoe && yarn test
+    - name: yarn test (import-manager)
+      run: cd packages/import-manager && yarn test
+    - name: yarn test (make-promise)
+      run: cd packages/make-promise && yarn test
+    - name: yarn test (sparse-ints)
+      run: cd packages/sparse-ints && yarn test
+    - name: yarn test (insist)
+      run: cd packages/insist && yarn test
+    - name: yarn test (registrar)
+      run: cd packages/registrar && yarn test
+    - name: yarn test (store)
+      run: cd packages/store && yarn test
+    - name: yarn test (weak-store)
+      run: cd packages/weak-store && yarn test
+    - name: yarn test (sharing-service)
+      run: cd packages/sharing-service && yarn test
+    - name: yarn test (same-structure)
+      run: cd packages/same-structure && yarn test
+    - name: yarn test (spawner)
+      run: cd packages/spawner && yarn test
+    - name: yarn test (pixel-demo)
+      run: cd packages/pixel-demo && yarn test
