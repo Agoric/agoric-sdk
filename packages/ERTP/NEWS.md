@@ -1,5 +1,22 @@
 User-visible changes in ERTP:
 
+## Release v0.3.0 (3-Feb-2020) 
+
+* Move a number of files out of ERTP and into their own packages in
+  this monorepo, including:
+  
+  1. `@agoric/import-manager`
+  2. `@agoric/make-promise`
+  3. `@agoric/sparse-ints`
+  4. `@agoric/insist`
+  5. `@agoric/registrar`
+  6. `@agoric/store`
+  7. `@agoric/weak-store`
+  8. `@agoric/sharing-service`
+  9. `@agoric/same-structure`
+  10. `@agoric/spawner` (formerly contractHost)
+  11. `@agoric/pixel-demo`
+
 ## Release v0.2.0 (12/4/2019)
 
 * Remove Zoe from ERTP and publish as @agoric/zoe
