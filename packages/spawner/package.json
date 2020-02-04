@@ -1,6 +1,6 @@
 {
   "name": "@agoric/spawner",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Wrapper for JavaScript map",
   "main": "src/contractHost.js",
   "engines": {
@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/ertp": "^0.3.0",
+    "@agoric/ertp": "^0.3.1",
     "@agoric/evaluate": "^2.2.0",
     "@agoric/harden": "^0.0.4",
     "@agoric/insist": "^0.0.1",

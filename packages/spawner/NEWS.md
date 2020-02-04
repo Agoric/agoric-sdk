@@ -1,4 +1,9 @@
 User-visible changes in @agoric/spawner:
+
+## Release 0.0.3 (4-Feb-2020)
+
+Update dependency on `@agoric/ertp` to v0.3.1
+
 ## Release 0.0.2 (3-Feb-2020)
 
 Update dependency on `@agoric/ertp` to v0.3.0
