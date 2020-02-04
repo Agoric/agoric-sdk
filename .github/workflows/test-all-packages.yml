@@ -45,34 +45,6 @@ jobs:
     # the top level.
     #- name: yarn test (everything)
     #  run: yarn test
-    - name: yarn test (acorn-eventual-send)
-      run: cd packages/acorn-eventual-send && yarn test
-    - name: yarn test (eventual-send)
-      run: cd packages/eventual-send && yarn test
-    - name: yarn test (transform-eventual-send)
-      run: cd packages/transform-eventual-send && yarn test
-    - name: yarn test (default-evaluate-options)
-      run: cd packages/default-evaluate-options && yarn test
-    - name: yarn test (evaluate)
-      run: cd packages/evaluate && yarn test
-    - name: yarn test (bundle-source)
-      run: cd packages/bundle-source && yarn test
-    - name: yarn test (marshal)
-      run: cd packages/marshal && yarn test
-    - name: yarn test (captp)
-      run: cd packages/captp && yarn test
-    - name: yarn test (SwingSet)
-      run: cd packages/SwingSet && yarn test
-    - name: yarn test (ERTP)
-      run: cd packages/ERTP && yarn test
-    - name: yarn test (cosmic-swingset)
-      run: cd packages/cosmic-swingset && yarn test
-    - name: yarn test (agoric-cli)
-      run: cd packages/agoric-cli && yarn test
-    - name: lint check (marshal, SwingSet, ERTP)
-      run: yarn lint-check
-    - name: yarn test (zoe)
-      run: cd packages/zoe && yarn test
     - name: yarn test (import-manager)
       run: cd packages/import-manager && yarn test
     - name: yarn test (make-promise)
@@ -89,9 +61,37 @@ jobs:
       run: cd packages/weak-store && yarn test
     - name: yarn test (sharing-service)
       run: cd packages/sharing-service && yarn test
+    - name: yarn test (acorn-eventual-send)
+      run: cd packages/acorn-eventual-send && yarn test
+    - name: yarn test (eventual-send)
+      run: cd packages/eventual-send && yarn test
+    - name: yarn test (transform-eventual-send)
+      run: cd packages/transform-eventual-send && yarn test
+    - name: yarn test (default-evaluate-options)
+      run: cd packages/default-evaluate-options && yarn test
+    - name: yarn test (evaluate)
+      run: cd packages/evaluate && yarn test
+    - name: yarn test (bundle-source)
+      run: cd packages/bundle-source && yarn test
+    - name: yarn test (marshal)
+      run: cd packages/marshal && yarn test
     - name: yarn test (same-structure)
       run: cd packages/same-structure && yarn test
+    - name: yarn test (captp)
+      run: cd packages/captp && yarn test
+    - name: yarn test (SwingSet)
+      run: cd packages/SwingSet && yarn test
+    - name: yarn test (ERTP)
+      run: cd packages/ERTP && yarn test
     - name: yarn test (spawner)
       run: cd packages/spawner && yarn test
     - name: yarn test (pixel-demo)
       run: cd packages/pixel-demo && yarn test
+    - name: yarn test (zoe)
+      run: cd packages/zoe && yarn test
+    - name: yarn test (cosmic-swingset)
+      run: cd packages/cosmic-swingset && yarn test
+    - name: yarn test (agoric-cli)
+      run: cd packages/agoric-cli && yarn test
+    - name: lint check (marshal, SwingSet, ERTP)
+      run: yarn lint-check
