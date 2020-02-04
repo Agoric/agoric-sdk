@@ -6,7 +6,6 @@ import { makeUnitOps } from '@agoric/ertp/src/unitOps';
 
 import makeObservablePurse from './observable';
 
-
 // does nothing
 const noActionStateChangeHandler = _newState => {};
 
