@@ -13,15 +13,10 @@
     - CHAIN_NAME: "{{ lookup('file', SETUP_HOME + '/' + service + '/chain-name.txt') }}"
     - STAKER: ag-staker
     - STAKER_AMOUNT: 2000000uagstake
-    - to_remove:
-      - "/home/{{ service }}/.{{ service }}"
-      - "/home/{{ service }}/.ag-cosmos-helper"
-      - "/home/{{ service }}/ag-cosmos-chain-state.json"
     - HELPER_BINARY: "{{lookup('env', 'GOPATH') or '/usr/local'}}/bin/ag-cosmos-helper"
     - APPDIR: "{{lookup('pipe', 'pwd')}}/../.."
   roles:
     - copy
     - init
-    - remove
     - init-cosmos
     - fetch-cosmos

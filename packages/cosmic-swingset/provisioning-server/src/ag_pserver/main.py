@@ -73,11 +73,33 @@ class SendInputAndWaitProtocol(protocol.ProcessProtocol):
     def processEnded(self, reason):
         self.deferred.callback((reason.value.exitCode, self.output, self.error))
 
+class RootResource(resource.Resource):
+    def __init__(self, home):
+        super().__init__()
+        print('serve', wwwroot(home), htmldir)
+        self.wwwroot = static.File(wwwroot(home))
+        self.htmldir = static.File(htmldir)
+
+    def getChildWithDefault(self, *args):
+        print('getChildWithDefault', *args)
+        res = super().getChildWithDefault(*args)
+        if isinstance(res, resource.NoResource):
+            print('missed first', res)
+            res = self.wwwroot.getChildWithDefault(*args)
+        if isinstance(res, resource.NoResource):
+            print('missed', res)
+            res = self.htmldir.getChildWithDefault(*args)
+        print('finally', res)
+        return res
+
+def wwwroot(home):
+    return os.path.join(home, 'wwwroot')
+
 def cosmosConfigFile(home):
-    return os.path.join(home, 'cosmos-chain.json')
+    return os.path.join(wwwroot(home), 'current', 'chain.json')
 
 def cosmosGenesisFile(home):
-    return os.path.join(home, 'cosmos-genesis.json')
+    return os.path.join(wwwroot(home), 'current', 'genesis.json')
 
 def pubkeyDatabase(home):
     return os.path.join(home, 'pubkeys.jsona')
@@ -335,7 +357,7 @@ class ConfigJSON(resource.Resource):
 
 def run_server(reactor, o):
     print("dir is", __file__)
-    root = static.File(htmldir)
+    root = RootResource(o['home'])
     provisioner = Provisioner(reactor, o)
     root.putChild(b"", provisioner)
     root.putChild(b"index.html", provisioner)
@@ -515,7 +537,7 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
 def main():
     o = Options()
     o.parseOptions()
-    if o.subCommand.startswith('set-cosmos-'):
+    if o.subCommand is not None and o.subCommand.startswith('set-cosmos-'):
         try:
             os.mkdir(o['home'])
         except FileExistsError:

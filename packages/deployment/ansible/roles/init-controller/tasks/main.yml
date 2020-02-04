@@ -14,11 +14,18 @@
     creates: controller
     chdir: "/home/{{ service }}"
 
-- name: "Ensure /home/{{ service }}/.ag-pserver exists"
+- name: "Reset {{ service }}"
+  become: yes
+  become_user: "{{ service }}"
+  shell:
+    cmd: "ag-solo reset-state"
+    chdir: "/home/{{ service }}/controller"
+
+- name: "Ensure /home/{{ service }}/.ag-pserver/wwwroot/{{ CHAIN_NAME }} exists"
   become: yes
   become_user: "{{ service }}"
   file:
-    path: "/home/{{ service }}/.ag-pserver"
+    path: "/home/{{ service }}/.ag-pserver/wwwroot/{{ CHAIN_NAME }}"
     state: directory
 
 - name: "Clone ag-cosmos-helper-statedir to pserver"

@@ -10,11 +10,9 @@
     - data: "{{ SETUP_HOME }}/{{ service }}/data"
     - APPDIR: "{{lookup('pipe', 'pwd')}}/../.."
     - HELPER_BINARY: "{{lookup('env', 'GOPATH') or '/usr/local'}}/bin/ag-cosmos-helper"
-    - to_remove:
-      - "/home/{{ service }}/controller"
+    - CHAIN_NAME: "{{ lookup('file', SETUP_HOME + '/ag-chain-cosmos/chain-name.txt') }}"
   roles:
     - copy
     - init
-    - remove
     - init-controller
     - fetch-controller

@@ -1,7 +1,24 @@
+- name: "Check for {{ service }} private key"
+  stat:
+    path: "/home/{{ service }}/.{{ service }}/config/priv_validator_key.json"
+  register: valkey
+
+- name: "Reset {{ service }}"
+  become: yes
+  become_user: "{{ service }}"
+  shell: "{{ service }} unsafe-reset-all"
+  when:
+    - valkey.stat.exists
+
+- name: "Remove gentxs (they are signed incorrectly)"
+  file:
+    path: "/home/{{ service }}/.{{ service }}/config/gentx"
+    state: absent
+
 - name: "Initialize {{ service }}"
   become: yes
   become_user: "{{ service }}"
-  shell: "{{ service }} init {{ inventory_hostname }} --chain-id={{ CHAIN_NAME }}"
+  shell: "{{ service }} init --overwrite {{ inventory_hostname }} --chain-id={{ CHAIN_NAME }}"
 
 #- name: "Add coins to {{ service }}"
 #  become: yes

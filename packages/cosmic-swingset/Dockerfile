@@ -12,4 +12,4 @@ COPY cmd/ cmd/
 COPY lib/*.go lib/
 COPY lib/daemon/ lib/daemon/
 COPY lib/helper/ lib/helper/
-RUN make
+RUN make compile-go install
