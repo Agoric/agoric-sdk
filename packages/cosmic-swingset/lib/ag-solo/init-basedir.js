@@ -89,15 +89,6 @@ export default function initBasedir(
   }
   fs.symlinkSync(nm, path.join(basedir, 'node_modules'));
 
-  const mailboxStateFile = path.resolve(basedir, 'swingset-mailbox-state.json');
-  fs.writeFileSync(mailboxStateFile, `{}\n`);
-  const kernelStateFile = path.resolve(
-    basedir,
-    'swingset-kernel-state.jsonlines',
-  );
-  // this contains newline-terminated lines of JSON.stringify(['key', 'value'])
-  fs.writeFileSync(kernelStateFile, ``);
-
   // cosmos-sdk keypair
   if (egresses.includes('cosmos')) {
     const agchServerDir = path.join(basedir, 'ag-cosmos-helper-statedir');
