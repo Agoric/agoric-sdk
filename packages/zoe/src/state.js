@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-import makeStore from '@agoric/store';
+import makeStore from '@agoric/weak-store';
 import { insist } from '@agoric/insist';
 import { makeUnitOps } from '@agoric/ertp/src/unitOps';
 

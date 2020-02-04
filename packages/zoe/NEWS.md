@@ -1,4 +1,8 @@
 User-visible changes in @agoric/zoe:
+## Release 0.2.1 (3-Feb-2020)
+
+Updates ERTP dependency to v0.3.0 and adds dependencies on new
+packages taken from ERTP. 
 
 ## Release 0.2.0 (21-Jan-2020)
 
