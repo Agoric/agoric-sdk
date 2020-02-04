@@ -1,5 +1,9 @@
 User-visible changes in ERTP:
 
+## Release v0.3.1 (4-Feb-2020)
+
+Update dependency on pixel-demo
+
 ## Release v0.3.0 (3-Feb-2020) 
 
 * Move a number of files out of ERTP and into their own packages in
