@@ -20,7 +20,6 @@ import * as babelCore from '@babel/core';
 
 // eslint-disable-next-line import/extensions
 import kernelSourceFunc from './bundles/kernel';
-import buildKernelNonSES from './kernel/index';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
@@ -226,15 +225,6 @@ function buildSESKernel(sesEvaluator, endowments) {
   return buildKernel(endowments);
 }
 
-function buildNonSESKernel(endowments) {
-  // Evaluate shims to produce desired globals.
-  const evaluateOptions = makeDefaultEvaluateOptions();
-  // eslint-disable-next-line no-eval
-  (evaluateOptions.shims || []).forEach(shim => (1, eval)(shim));
-
-  return buildKernelNonSES(endowments);
-}
-
 export async function buildVatController(config, withSES = true, argv = []) {
   if (!withSES) {
     throw Error('SES is now mandatory');
@@ -259,12 +249,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
     endOfCrankHooks.clear();
   };
 
-  // sesEvaluator is only valid when withSES === true. It might be nice to
-  // untangle this so we don't have to check withSES in three different places.
-  let sesEvaluator;
-  if (withSES) {
-    sesEvaluator = makeSESEvaluator(registerEndOfCrank);
-  }
+  const sesEvaluator = makeSESEvaluator(registerEndOfCrank);
 
   // Evaluate source to produce a setup function. This binds withSES from the
   // enclosing context and evaluates it either in a SES context, or without SES
@@ -280,18 +265,12 @@ export async function buildVatController(config, withSES = true, argv = []) {
     // two symbols from each Vat: 'start' and 'dispatch'. The code in
     // bootstrap.js gets a 'controller' object which can invoke start()
     // (which is expected to initialize some state and export some facetIDs)
-    let setup;
-    if (withSES) {
-      const { source, sourceMap } = await bundleSource(
-        `${sourceIndex}`,
-        'nestedEvaluate',
-      );
-      const actualSource = `(${source})\n${sourceMap}`;
-      setup = sesEvaluator(actualSource, filePrefix);
-    } else {
-      // eslint-disable-next-line global-require,import/no-dynamic-require
-      setup = require(`${sourceIndex}`).default;
-    }
+    const { source, sourceMap } = await bundleSource(
+      `${sourceIndex}`,
+      'nestedEvaluate',
+    );
+    const actualSource = `(${source})\n${sourceMap}`;
+    const setup = sesEvaluator(actualSource, filePrefix);
     return setup;
   }
 
@@ -305,9 +284,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
     vatAdminVatSetup: await evaluateToSetup(ADMIN_VAT_PATH, '/SwingSet/src'),
   };
 
-  const kernel = withSES
-    ? buildSESKernel(sesEvaluator, kernelEndowments)
-    : buildNonSESKernel(kernelEndowments);
+  const kernel = buildSESKernel(sesEvaluator, kernelEndowments);
 
   async function addGenesisVat(name, sourceIndex, options = {}) {
     console.log(`= adding vat '${name}' from ${sourceIndex}`);
