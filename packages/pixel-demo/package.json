@@ -1,6 +1,6 @@
 {
   "name": "@agoric/pixel-demo",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "An example non-fungible token and app using ERTP",
   "main": "src/gallery.js",
   "engines": {
@@ -36,7 +36,7 @@
     "@agoric/harden": "^0.0.4",
     "@agoric/insist": "^0.0.1",
     "@agoric/nat": "^2.0.1",
-    "@agoric/spawner": "^0.0.1",
+    "@agoric/spawner": "^0.0.2",
     "@agoric/store": "^0.0.1"
   },
   "devDependencies": {
