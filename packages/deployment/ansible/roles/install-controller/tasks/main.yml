@@ -11,7 +11,7 @@
   become: true
   copy:
     src: "{{ data | default(service + '/data') }}/../../ag-chain-cosmos/data/genesis.json"
-    dest: "/home/{{ service }}/.{{ service }}/cosmos-genesis.json"
+    dest: "/home/{{ service }}/.{{ service }}/wwwroot/{{ CHAIN_NAME }}/genesis.json"
     owner: "{{ service }}"
     group: "{{ service }}"
     mode: 0644
@@ -21,10 +21,18 @@
   become: true
   copy:
     src: "{{ data | default(service + '/data') }}/cosmos-chain.json"
-    dest: "/home/{{ service }}/.{{ service }}/cosmos-chain.json"
+    dest: "/home/{{ service }}/.{{ service }}/wwwroot/{{ CHAIN_NAME }}/chain.json"
     owner: "{{ service }}"
     group: "{{ service }}"
     mode: 0644
+
+- name: "Set wwwroot/current to {{ CHAIN_NAME }}"
+  become_user: "{{ service }}"
+  become: true
+  file:
+    state: link
+    path: "/home/{{ service }}/.{{ service }}/wwwroot/current"
+    src: "{{ CHAIN_NAME }}"
 
 - name: "set-gci-ingress for controller"
   become_user: "{{ service }}"
