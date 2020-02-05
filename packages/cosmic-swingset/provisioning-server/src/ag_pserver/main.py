@@ -73,18 +73,17 @@ class SendInputAndWaitProtocol(protocol.ProcessProtocol):
     def processEnded(self, reason):
         self.deferred.callback((reason.value.exitCode, self.output, self.error))
 
-class RootResource(resource.Resource):
-    def __init__(self, home):
+class StackedResource(resource.Resource):
+    def __init__(self, stack):
         super().__init__()
-        self.wwwroot = static.File(wwwroot(home))
-        self.htmldir = static.File(htmldir)
+        self.stack = stack
 
     def getChildWithDefault(self, *args):
         res = super().getChildWithDefault(*args)
-        if isinstance(res, resource.NoResource):
-            res = self.wwwroot.getChildWithDefault(*args)
-        if isinstance(res, resource.NoResource):
-            res = self.htmldir.getChildWithDefault(*args)
+        i = 0
+        while isinstance(res, resource.NoResource) and i < len(self.stack):
+            res = self.stack[i].getChildWithDefault(*args)
+            i += 1
         return res
 
 def wwwroot(home):
@@ -352,11 +351,11 @@ class ConfigJSON(resource.Resource):
 
 def run_server(reactor, o):
     print("dir is", __file__)
-    root = RootResource(o['home'])
+    provroot = static.File(htmldir)
     provisioner = Provisioner(reactor, o)
-    root.putChild(b"", provisioner)
-    root.putChild(b"index.html", provisioner)
-    root.putChild(b"request-code", RequestCode(reactor, o))
+    provroot.putChild(b"", provisioner)
+    provroot.putChild(b"index.html", provisioner)
+    provroot.putChild(b"request-code", RequestCode(reactor, o))
 
     # Prefix the mountpoints.
     revpaths = o['mountpoint'].split('/')
@@ -365,8 +364,13 @@ def run_server(reactor, o):
         # print('mount root under ' + dir)
         if dir != '':
             r = resource.Resource()
-            r.putChild(dir.encode('utf-8'), root)
-            root = r
+            r.putChild(dir.encode('utf-8'), provroot)
+            provroot = r
+
+    # Override the paths.
+    root = StackedResource([static.File(wwwroot(o['home'])), provroot])
+    if o['mountpoint'] == '/':
+        root.putChild(b"", provisioner)
 
     # Display the JSON config.
     root.putChild(b"network-config", ConfigJSON(o))
