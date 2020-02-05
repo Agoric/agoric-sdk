@@ -76,20 +76,15 @@ class SendInputAndWaitProtocol(protocol.ProcessProtocol):
 class RootResource(resource.Resource):
     def __init__(self, home):
         super().__init__()
-        print('serve', wwwroot(home), htmldir)
         self.wwwroot = static.File(wwwroot(home))
         self.htmldir = static.File(htmldir)
 
     def getChildWithDefault(self, *args):
-        print('getChildWithDefault', *args)
         res = super().getChildWithDefault(*args)
         if isinstance(res, resource.NoResource):
-            print('missed first', res)
             res = self.wwwroot.getChildWithDefault(*args)
         if isinstance(res, resource.NoResource):
-            print('missed', res)
             res = self.htmldir.getChildWithDefault(*args)
-        print('finally', res)
         return res
 
 def wwwroot(home):
