@@ -17,7 +17,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/.cache/yarn
-        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
         restore-keys: |
           ${{ runner.os }}-yarn-
     - name: Set up Go 1.13
@@ -28,7 +28,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
     # 'yarn install' must be done at the top level, to build all the
