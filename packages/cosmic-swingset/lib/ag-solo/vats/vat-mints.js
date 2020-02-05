@@ -4,8 +4,7 @@ import { makeMint } from '@agoric/ertp';
 import makeStore from '@agoric/store';
 
 // This vat contains two starting mints for demos: moolaMint and
-// simoleanMint. A third mint, the dustMint, is made by the pixel
-// demo.
+// simoleanMint.
 
 function build(_E, _log) {
   const mints = makeStore();

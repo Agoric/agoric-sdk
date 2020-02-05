@@ -93,89 +93,17 @@ function run() {
     return thisHistNum;
   }
 
-  const galleryNode = document.getElementById('galleryBoard');
-  const PIXEL_SIZE = 50; // actual pixels per pixel
-
-  galleryNode.addEventListener('mousemove', e => {
-    const x = Math.floor(e.clientX / PIXEL_SIZE) - 1;
-    const y = Math.floor(e.clientY / PIXEL_SIZE) - 1;
-    galleryNode.setAttribute('title', `x:${x},y:${y}`);
-  });
-
-  console.log('GALLERY SETUP');
-
-  function initCanvas(state) {
-    // remove any existing pixel cells
-    while (galleryNode.firstChild) {
-      galleryNode.removeChild(galleryNode.firstChild);
-    }
-    // We need to render increasing x followed by increasing y.
-    const maxHeight = state.reduce(
-      (prior, column) => Math.max(prior, column.length),
-      0,
-    );
-    for (let y = 0; y < maxHeight; y += 1) {
-      for (let x = 0; x < state.length; x += 1) {
-        const px = document.createElement('div');
-        px.id = `pix${x}.${y}`;
-        px.className = 'pixel';
-        px.style.backgroundColor = state[x][y];
-        galleryNode.appendChild(px);
-      }
-    }
-  }
-
-  let oldState;
-  function updateCanvas(state) {
-    if (!oldState) {
-      console.log(`initializing gallery: ${state}`);
-      oldState = state;
-      // gallery hasn't been initialized
-      initCanvas(state);
-      return;
-    }
-    console.log(state);
-    function renderPixel(x, y, color) {
-      const px = document.getElementById(`pix${x}.${y}`);
-      // First set the color to transparent so that the background error image shows through
-      // Then if the supplied color is bogus, the assigned it will fail
-      // and the user will see the error image underneath
-      px.style.backgroundColor = 'transparent';
-      px.style.backgroundColor = color;
-      oldState[x][y] = color;
-      // Trigger the animation, by removing the .updated class if present, forcing a re-layout,
-      // then adding the .updated class, which has the associated animation. The re-layout is
-      // forced by asking for the offsetWidth of the element. This ensures that on
-      // re-rendering after we return, that the animation will be triggered.
-      px.classList.remove('updated');
-      // the 'void' is required to force execution of the accessor
-      void px.offsetWidth;
-      px.classList.add('updated');
-    }
-    for (let x = 0; x < state.length; x += 1) {
-      for (let y = 0; y < state[x].length; y += 1) {
-        const newcolor = state[x][y];
-        if (newcolor !== oldState[x][y]) {
-          renderPixel(x, y, newcolor);
-        }
-      }
-    }
-  }
-
   function handleMessage(obj) {
     // we receive commands to update result boxes
     if (obj.type === 'updateHistory') {
       // these args come from calls to vat-http.js updateHistorySlot()
       updateHistory(obj.histnum, obj.command, obj.display);
-    } else if (obj.type === 'updateCanvas') {
-      updateCanvas(JSON.parse(obj.state));
     } else {
       console.log(`unknown WS type in:`, obj);
     }
   }
 
-  // history updates (promises being resolved) and canvas updates
-  // (pixels being colored) are delivered by websocket
+  // history updates (promises being resolved) are delivered by websocket
   // broadcasts
   ws.addEventListener('message', ev => {
     try {
@@ -197,19 +125,6 @@ function run() {
         console.error(`error resetting`, e);
       }
     }
-    call({ type: 'getCanvasState' })
-      .then(msg => {
-        handleMessage(msg);
-      })
-      .then(_ =>
-        call({ type: 'getHighestHistory' }).then(res => {
-          // eslint-disable-next-line no-use-before-define
-          setNextHistNum(res.highestHistory + 1);
-          // console.log(`nextHistNum is now ${nextHistNum}`, res);
-        }),
-      )
-      .then(_ => call({ type: 'rebroadcastHistory' }))
-      .catch(_ => ws.close());
   });
 
   const inp = document.getElementById('input');
