@@ -1,42 +1,64 @@
 const harden = require('@agoric/harden');
 
-const serviceHolder = {
-  build: E => {
-    // eslint-disable-next-line no-shadow,global-require
-    const harden = require('@agoric/harden');
-    function rcvrMaker(seed) {
-      let count = 0;
-      let sum = seed;
-      return harden({
-        increment(val) {
-          sum += val;
-          count += 1;
-          return sum;
-        },
-        ticker() {
-          return count;
-        },
-      });
-    }
+function buildContractBundle(makeContractSrc, mainFnName) {
+  const contractBundleSource = `
+function getExport() {
+  'use strict';
+   let exports = {};
+   const module = { exports };
+   Object.defineProperty(exports, '__esModule', { value: true });
+   function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+   var harden = _interopDefault(require('@agoric/harden'));
+   var Nat = _interopDefault(require('@agoric/nat'));
+
+  ${makeContractSrc}
+
+  exports.${mainFnName} = ${mainFnName};
+  return module.exports;
+}`;
+
+  return harden({
+    source: contractBundleSource,
+    moduleFormat: 'module',
+  });
+}
+
+const incrSrc = `const makeContract = harden({
+  start: seed => {
+    let count = 0;
+    let sum = seed;
+    return harden({
+      increment(val) {
+        sum += val;
+        count += 1;
+        return sum;
+      },
+      ticker() {
+        return count;
+      },
+    });
+  },
+});
+`;
+
+const incrBundle = buildContractBundle(incrSrc, 'makeContract');
+
+const serviceSrc = `const makeContract = harden({
+  start: () => {
     return harden({
       getANumber() {
         return 13;
       },
-      sendMsg(obj, arg) {
-        return E(obj).message(arg);
-      },
-      createRcvr(init) {
-        return rcvrMaker(init);
-      },
     });
   },
-};
+});
+`;
 
-const brokenServiceHolder = {
-  build: () => {
-    return harden({});
-  },
-};
+const serviceBundle = buildContractBundle(serviceSrc, 'makeContract');
+
+const brokenServiceSrc = `const makeContract = harden({ start: 37 }); `;
+
+const brokenSvcBundle = buildContractBundle(brokenServiceSrc, 'makeContract');
 
 export default function setup(syscall, state, helpers) {
   const { log } = helpers;
@@ -46,40 +68,42 @@ export default function setup(syscall, state, helpers) {
     E =>
       harden({
         async bootstrap(argv, vats, devices) {
+          const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+            devices.vatAdmin,
+          );
           switch (argv[0]) {
             case 'newVat':
               {
                 log(`starting newVat test`);
-                const src = `${serviceHolder.build}`;
-                const vatAdminSvc = await E(
-                  vats.vatAdmin,
-                ).createVatAdminService(devices.vatAdmin);
-                const { root } = await E(vatAdminSvc).createVat(src);
-                const n = await E(root).getANumber();
-                log(n);
+                const { root } = await E(vatAdminSvc).createVat(serviceBundle);
+                const c = E(root).start();
+                log(await E(c).getANumber());
               }
               break;
-            case 'counters': {
-              log(`starting counter test`);
-              const src = `${serviceHolder.build}`;
-              const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
-                devices.vatAdmin,
-              );
-              const { root } = await E(vatAdminSvc).createVat(src);
-              const c = E(root).createRcvr(1);
-              log(await E(c).increment(3));
-              log(await E(c).increment(5));
-              log(await E(c).ticker());
-              return;
-            }
+            case 'counters':
+              {
+                log(`starting counter test`);
+                const { root } = await E(vatAdminSvc).createVat(incrBundle);
+                const c = E(root).start(1);
+                log(await E(c).increment(3));
+                log(await E(c).increment(5));
+                log(await E(c).ticker());
+              }
+              break;
+            case 'vatFromBundle':
+              {
+                log(`starting vat from Bundle test`);
+                const { root } = await E(vatAdminSvc).createVat(incrBundle);
+                const c = E(root).start(1);
+                log(await E(c).increment(3));
+                log(await E(c).increment(5));
+                log(await E(c).ticker());
+              }
+              break;
             case 'brokenVat': {
               log(`starting brokenVat test`);
-              const src = `${brokenServiceHolder.build}`;
-              const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
-                devices.vatAdmin,
-              );
               E(vatAdminSvc)
-                .createVat(src)
+                .createVat(brokenSvcBundle)
                 .then(
                   result => log(`didn't expect success ${result}`),
                   rejection => log(`yay, rejected: ${rejection}`),
@@ -88,13 +112,11 @@ export default function setup(syscall, state, helpers) {
             }
             case 'vatStats': {
               log(`starting stats test`);
-              const src = `${serviceHolder.build}`;
-              const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
-                devices.vatAdmin,
+              const { root, adminNode } = await E(vatAdminSvc).createVat(
+                incrBundle,
               );
-              const { root, adminNode } = await E(vatAdminSvc).createVat(src);
               log(await E(adminNode).adminData());
-              const c = E(root).createRcvr(1);
+              const c = E(root).start(1);
               log(await E(c).increment(3));
               log(await E(adminNode).adminData());
               return;

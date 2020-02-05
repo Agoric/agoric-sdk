@@ -6,12 +6,13 @@ import { allComparable } from '@agoric/same-structure';
 import { assert, details } from '@agoric/assert';
 import { inviteConfig } from '@agoric/ertp/src/config/inviteConfig';
 
-import { escrowExchangeSrcs } from '../../../src/escrow';
+// eslint-disable-next-line import/no-unresolved, import/extensions
+import escrowBundle from './bundle-escrow';
 
 function build(E, log) {
   function testEscrowServiceMismatches(host, randMintP, artMintP) {
     log('starting testEscrowServiceCheckMismatches');
-    const installationP = E(host).install(escrowExchangeSrcs);
+    const installationP = E(host).install(escrowBundle, 'module');
     const randUnitsP = E(E(randMintP).getAssay()).makeUnits(3);
     const blueBoyUnits = E(E(artMintP).getAssay()).makeUnits('Blue Boy');
     const blueGirlUnits = E(E(artMintP).getAssay()).makeUnits('Blue Girl');
@@ -23,20 +24,24 @@ function build(E, log) {
       left: randUnitsP,
       right: blueGirlUnits,
     });
-    const invitesP = E(installationP).spawn(actualTermsP);
-    const result = invitesP.then(invites => {
-      return E(invites.left)
-        .getBalance()
-        .then(allegedLeftInviteUnits => {
-          return allComparable(allegedTermsP).then(terms => {
-            return E(installationP).checkUnits(
-              allegedLeftInviteUnits,
-              terms,
-              'left',
+    const result = E(installationP)
+      .spawn(actualTermsP)
+      .then(({ rootObject }) => {
+        const checkerInviteP = E(rootObject).checker();
+        return E(E(rootObject).left())
+          .getBalance()
+          .then(allegedLeftInviteUnits => {
+            return allComparable(allegedTermsP).then(terms =>
+              E(E(host).redeem(checkerInviteP)).checkUnits(
+                installationP,
+                allegedLeftInviteUnits,
+                terms,
+                'left',
+              ),
             );
           });
-        });
-    });
+      });
+
     result.then(
       r => {
         log(`didn't expect successful check ${r}`);
@@ -49,7 +54,7 @@ function build(E, log) {
 
   function testEscrowServiceSuccess(host, randMintP, artMintP) {
     log('starting testEscrowServiceSuccess');
-    const installationP = E(host).install(escrowExchangeSrcs);
+    const installationP = E(host).install(escrowBundle, 'module');
     const randUnitsP = E(E(randMintP).getAssay()).makeUnits(3);
     const screamUnitsP = E(E(artMintP).getAssay()).makeUnits('The Scream');
     const termsP = harden({ left: randUnitsP, right: screamUnitsP });
@@ -70,7 +75,7 @@ function build(E, log) {
 
   function testEscrowCheckPartialWrongPrice(host, randMintP, artMintP) {
     log('starting testEscrowServiceCheckPartial wrong price');
-    const installationP = E(host).install(escrowExchangeSrcs);
+    const installationP = E(host).install(escrowBundle, 'module');
     const randUnitsP = E(E(randMintP).getAssay()).makeUnits(3);
     const otherRandUnitsP = E(E(randMintP).getAssay()).makeUnits(5);
     const blueBoyUnits = E(E(artMintP).getAssay()).makeUnits('Blue Boy');
@@ -78,21 +83,23 @@ function build(E, log) {
       left: randUnitsP,
       right: blueBoyUnits,
     });
-    const invitesP = E(installationP).spawn(actualTermsP);
-    const result = invitesP.then(invites => {
-      return E(invites.left)
-        .getBalance()
-        .then(allegedLeftInviteUnits => {
-          return allComparable(otherRandUnitsP).then(otherLeftTerms => {
-            return E(installationP).checkPartialUnits(
-              allegedLeftInviteUnits,
-              otherLeftTerms,
-              'left',
-            );
-          });
-        });
-    });
-
+    const result = E(installationP)
+      .spawn(actualTermsP)
+      .then(({ rootObject }) => {
+        const checkerInviteP = E(rootObject).checker();
+        return E(E(rootObject).left())
+          .getBalance()
+          .then(allegedLeftInviteUnits =>
+            allComparable(otherRandUnitsP).then(otherLeftTerms => {
+              return E(E(host).redeem(checkerInviteP)).checkPartialUnits(
+                installationP,
+                allegedLeftInviteUnits,
+                otherLeftTerms,
+                'left',
+              );
+            }),
+          );
+      });
     result.then(
       r => {
         log(`didn't expect successful check ${r}`);
@@ -105,7 +112,7 @@ function build(E, log) {
 
   function testEscrowCheckPartialWrongStock(host, randMintP, artMintP) {
     log('starting testEscrowServiceCheckPartial wrong stock');
-    const installationP = E(host).install(escrowExchangeSrcs);
+    const installationP = E(host).install(escrowBundle, 'module');
     const randUnitsP = E(E(randMintP).getAssay()).makeUnits(3);
     const blueBoyUnits = E(E(artMintP).getAssay()).makeUnits('Blue Boy');
     const blueGirlUnits = E(E(artMintP).getAssay()).makeUnits('Blue Girl');
@@ -113,20 +120,25 @@ function build(E, log) {
       left: randUnitsP,
       right: blueBoyUnits,
     });
-    const invitesP = E(installationP).spawn(actualTermsP);
-    const result = invitesP.then(invites => {
-      return E(invites.left)
-        .getBalance()
-        .then(allegedLeftInviteUnits => {
-          return allComparable(blueGirlUnits).then(otherRightTerms => {
-            return E(installationP).checkPartialUnits(
-              allegedLeftInviteUnits,
-              otherRightTerms,
-              'right',
+    const result = E(installationP)
+      .spawn(actualTermsP)
+      .then(({ rootObject }) => {
+        const leftInviteP = E(rootObject).left();
+        return E(leftInviteP)
+          .getBalance()
+          .then(allegedLeftInviteUnits => {
+            const checkerInviteP = E(rootObject).checker();
+            const checker = E(host).redeem(checkerInviteP);
+            return allComparable(blueGirlUnits).then(otherRightTerms =>
+              E(checker).checkPartialUnits(
+                installationP,
+                allegedLeftInviteUnits,
+                otherRightTerms,
+                'right',
+              ),
             );
           });
-        });
-    });
+      });
 
     result.then(
       r => {
@@ -140,27 +152,30 @@ function build(E, log) {
 
   function testEscrowCheckPartialWrongSeat(host, randMintP, artMintP) {
     log('starting testEscrowServiceCheckPartial wrong seat');
-    const installationP = E(host).install(escrowExchangeSrcs);
+    const installationP = E(host).install(escrowBundle, 'module');
     const randUnitsP = E(E(randMintP).getAssay()).makeUnits(3);
     const blueBoyUnits = E(E(artMintP).getAssay()).makeUnits('Blue Boy');
     const actualTermsP = harden({
       left: randUnitsP,
       right: blueBoyUnits,
     });
-    const invitesP = E(installationP).spawn(actualTermsP);
-    const result = invitesP.then(invites => {
-      return E(invites.left)
-        .getBalance()
-        .then(allegedLeftInviteUnits => {
-          return allComparable(actualTermsP).then(terms => {
-            return E(installationP).checkPartialUnits(
-              allegedLeftInviteUnits,
-              terms,
-              'right',
-            );
+    const result = E(installationP)
+      .spawn(actualTermsP)
+      .then(({ rootObject }) => {
+        const checkerInviteP = E(rootObject).checker();
+        return E(E(rootObject).left())
+          .getBalance()
+          .then(allegedLeftInviteUnits => {
+            return allComparable(actualTermsP).then(terms => {
+              return E(E(host).redeem(checkerInviteP)).checkPartialUnits(
+                installationP,
+                allegedLeftInviteUnits,
+                terms,
+                'right',
+              );
+            });
           });
-        });
-    });
+      });
 
     result.then(
       r => {
@@ -173,9 +188,11 @@ function build(E, log) {
   }
 
   const obj0 = {
-    async bootstrap(argv, vats) {
-      const host = await E(vats.host).makeHost();
+    async bootstrap(argv, vats, devices) {
       const randMintP = E(vats.mint).makeMint('rand');
+      const adminVat = vats.vatAdmin;
+      const adminServiceP = E(adminVat).createVatAdminService(devices.vatAdmin);
+      const host = await E(vats.host).makeHost(adminServiceP);
 
       const artMintP = makeMint('art', inviteConfig);
       switch (argv[0]) {

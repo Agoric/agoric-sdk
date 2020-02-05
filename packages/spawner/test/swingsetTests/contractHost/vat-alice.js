@@ -37,73 +37,104 @@ function makeAliceMaker(E, host, log) {
           return E(bob).buy('shoe', paymentP);
         },
 
-        acceptInvite(allegedInvitePaymentP) {
+        acceptInvite(allegedInvitePaymentP, checkerPaymentP) {
+          function checkThenClaim(terms, checkerP, allegedInviteUnits) {
+            const [left, right, escrowExchangeInstallation] = terms;
+            return E(checkerP)
+              .checkUnits(
+                escrowExchangeInstallation,
+                allegedInviteUnits,
+                { left, right },
+                'left',
+              )
+              .then(() => {
+                return E(inviteAssayP).claimExactly(
+                  allegedInviteUnits,
+                  allegedInvitePaymentP,
+                  'verified invite',
+                );
+              });
+          }
+
           log('++ alice.acceptInvite starting');
-          showPaymentBalance('alice invite', allegedInvitePaymentP);
-          const clams10P = E(E(myMoneyPurseP).getAssay()).makeUnits(10);
-          const fudco7P = E(E(myStockPurseP).getAssay()).makeUnits(7);
-          const verifiedInvitePaymentP = E(allegedInvitePaymentP)
-            .getBalance()
-            .then(allegedInviteUnits => {
-              return Promise.all([clams10P, fudco7P]).then(terms => {
-                const [left, right] = terms;
-                return E(escrowExchangeInstallationP)
-                  .checkUnits(allegedInviteUnits, { left, right }, 'left')
-                  .then(() => {
+          return E(host)
+            .redeem(checkerPaymentP)
+            .then(checkerP => {
+              showPaymentBalance('alice invite', allegedInvitePaymentP);
+              const clams10P = E(E(myMoneyPurseP).getAssay()).makeUnits(10);
+              const fudco7P = E(E(myStockPurseP).getAssay()).makeUnits(7);
+              const verifiedInvitePaymentP = E(allegedInvitePaymentP)
+                .getBalance()
+                .then(allegedInviteUnits => {
+                  return Promise.all([
+                    clams10P,
+                    fudco7P,
+                    escrowExchangeInstallationP,
+                  ]).then(terms =>
+                    checkThenClaim(terms, checkerP, allegedInviteUnits),
+                  );
+                });
+
+              return Promise.resolve(
+                showPaymentBalance('verified invite', verifiedInvitePaymentP),
+              ).then(_ => {
+                const seatP = E(host).redeem(verifiedInvitePaymentP);
+                const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
+                E(seatP).offer(moneyPaymentP);
+                return collect(
+                  seatP,
+                  myStockPurseP,
+                  myMoneyPurseP,
+                  'alice escrow',
+                );
+              });
+            });
+        },
+
+        acceptOption(allegedInviteP, checkerInviteP) {
+          if (optFredP) {
+            return alice.acceptOptionForFred(allegedInviteP, checkerInviteP);
+          }
+          return alice.acceptOptionDirectly(allegedInviteP, checkerInviteP);
+        },
+
+        acceptOptionDirectly(allegedInviteP, checkerPaymentP) {
+          function checkThenClaim(installation, allegedInviteUnits, terms) {
+            return E(host)
+              .redeem(checkerPaymentP)
+              .then(checkerP => {
+                return E(checkerP)
+                  .checkUnits(installation, allegedInviteUnits, terms)
+                  .then(_ => {
                     return E(inviteAssayP).claimExactly(
                       allegedInviteUnits,
-                      allegedInvitePaymentP,
+                      allegedInviteP,
                       'verified invite',
                     );
                   });
               });
-            });
-
-          return Promise.resolve(
-            showPaymentBalance('verified invite', verifiedInvitePaymentP),
-          ).then(_ => {
-            const seatP = E(host).redeem(verifiedInvitePaymentP);
-            const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
-            E(seatP).offer(moneyPaymentP);
-            return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice escrow');
-          });
-        },
-
-        acceptOption(allegedInvitePaymentP) {
-          if (optFredP) {
-            return alice.acceptOptionForFred(allegedInvitePaymentP);
           }
-          return alice.acceptOptionDirectly(allegedInvitePaymentP);
-        },
 
-        acceptOptionDirectly(allegedInvitePaymentP) {
           log('++ alice.acceptOptionDirectly starting');
-          showPaymentBalance('alice invite', allegedInvitePaymentP);
-
-          const allegedInviteUnitsP = E(allegedInvitePaymentP).getBalance();
-
+          showPaymentBalance('alice invite', allegedInviteP);
+          const allegedInviteUnitsP = E(allegedInviteP).getBalance();
           const verifiedInvitePaymentP = Promise.resolve(
             allegedInviteUnitsP,
           ).then(allegedInviteUnits => {
             const smackers10P = E(E(myMoneyPurseP).getAssay()).makeUnits(10);
             const yoyodyne7P = E(E(myStockPurseP).getAssay()).makeUnits(7);
             const coveredCallTermsP = harden([
+              coveredCallInstallationP,
               smackers10P,
               yoyodyne7P,
               timerP,
               'singularity',
             ]);
             return Promise.resolve(allComparable(coveredCallTermsP)).then(
-              terms => {
-                return E(coveredCallInstallationP)
-                  .checkUnits(allegedInviteUnits, terms)
-                  .then(_ => {
-                    return E(inviteAssayP).claimExactly(
-                      allegedInviteUnits,
-                      allegedInvitePaymentP,
-                      'verified invite',
-                    );
-                  });
+              termsPlus => {
+                const installation = termsPlus[0];
+                const terms = termsPlus.slice(1);
+                return checkThenClaim(installation, allegedInviteUnits, terms);
               },
             );
           });
@@ -118,31 +149,40 @@ function makeAliceMaker(E, host, log) {
           });
         },
 
-        acceptOptionForFred(allegedInvitePaymentP) {
+        acceptOptionForFred(allegedInvitePaymentP, coveredCallCheckerInviteP) {
           log('++ alice.acceptOptionForFred starting');
           const finNeededP = E(E(myOptFinPurseP).getAssay()).makeUnits(55);
           const inviteNeededP = E(allegedInvitePaymentP).getBalance();
 
           const terms = harden({ left: finNeededP, right: inviteNeededP });
-          const invitePaymentsP = E(escrowExchangeInstallationP).spawn(terms);
-          const fredInvitePaymentP = invitePaymentsP.then(
-            invitePayments => invitePayments.left,
-          );
-          const aliceForFredInvitePaymentP = invitePaymentsP.then(
-            invitePayments => invitePayments.right,
-          );
-          const doneP = Promise.all([
-            E(optFredP).acceptOptionOffer(fredInvitePaymentP),
-            E(alice).completeOptionsSale(
-              aliceForFredInvitePaymentP,
-              allegedInvitePaymentP,
-            ),
-          ]);
-          doneP.then(
-            _res => log('++ alice.acceptOptionForFred done'),
-            rej => log('++ alice.acceptOptionForFred reject: ', rej),
-          );
-          return doneP;
+          return E(escrowExchangeInstallationP)
+            .spawn(terms)
+            .then(({ rootObject }) => {
+              const fredInvitePaymentP = rootObject.then(invitePayments =>
+                E(invitePayments).left(),
+              );
+              const aliceForFredInvitePaymentP = rootObject.then(
+                invitePayments => E(invitePayments).right(),
+              );
+              const escrowCheckerInviteP = E(rootObject).checker();
+
+              const doneP = Promise.all([
+                E(optFredP).acceptOptionOffer(
+                  fredInvitePaymentP,
+                  coveredCallCheckerInviteP,
+                  escrowCheckerInviteP,
+                ),
+                E(alice).completeOptionsSale(
+                  aliceForFredInvitePaymentP,
+                  allegedInvitePaymentP,
+                ),
+              ]);
+              doneP.then(
+                _res => log('++ alice.acceptOptionForFred done'),
+                rej => log('++ alice.acceptOptionForFred reject: ', rej),
+              );
+              return doneP;
+            });
         },
 
         completeOptionsSale(aliceForFredInvitePaymentP, allegedInvitePaymentP) {

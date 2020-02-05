@@ -1,8 +1,9 @@
-/* global E makePromise */
+/* global E */
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
 import { mustBeSameStructure } from '@agoric/same-structure';
+import makePromise from '@agoric/make-promise';
 
 // For clarity, the code below internally speaks of a scenario is which Alice is
 // trading some of her money for some of Bob's stock. However, for generality,
@@ -10,13 +11,50 @@ import { mustBeSameStructure } from '@agoric/same-structure';
 // Rather, Alice and Bob are left and right respectively. Money represents the
 // rights transferred from left to right, and Stock represents the rights
 // transferred from right to left.
-const escrowExchange = harden({
+export const makeContract = harden({
   start: (terms, inviteMaker) => {
+    // Check that the terms and allegedUnits match those of the actual contract
+    function checkUnits(installation, allegedInviteUnits, expectedTerms, seat) {
+      mustBeSameStructure(allegedInviteUnits.extent.seatDesc, seat);
+      const allegedTerms = allegedInviteUnits.extent.terms;
+      mustBeSameStructure(allegedTerms, expectedTerms, 'Escrow checkUnits');
+      mustBeSameStructure(
+        allegedInviteUnits.extent.installation,
+        installation,
+        'escrow checkUnits installation',
+      );
+      return true;
+    }
+
+    // Check the left or right side, and return the other. Useful when this is a
+    // trade of goods for an invite, for example.
+    function checkPartialUnits(
+      installation,
+      allegedInvite,
+      expectedTerms,
+      seat,
+    ) {
+      const allegedSeat = allegedInvite.extent.terms;
+      mustBeSameStructure(
+        allegedSeat[seat],
+        expectedTerms,
+        'Escrow checkPartialUnits seat',
+      );
+
+      mustBeSameStructure(
+        allegedInvite.extent.installation,
+        installation,
+        'escrow checkPartialUnits installation',
+      );
+
+      return seat === 'left' ? allegedSeat.right : allegedSeat.left;
+    }
+
     const { left: moneyNeeded, right: stockNeeded } = terms;
 
     function makeTransfer(units, srcPaymentP) {
       const { assay } = units.label;
-      const escrowP = E(assay).claimExactly(units, srcPaymentP, 'escrow');
+      const escrowP = assay~.claimExactly(units, srcPaymentP, 'escrow');
       const winnings = makePromise();
       const refund = makePromise();
       return harden({
@@ -44,7 +82,6 @@ const escrowExchange = harden({
 
     const moneyPayment = makePromise();
     const moneyTransfer = makeTransfer(moneyNeeded, moneyPayment.p);
-
     const stockPayment = makePromise();
     const stockTransfer = makeTransfer(stockNeeded, stockPayment.p);
 
@@ -86,48 +123,18 @@ const escrowExchange = harden({
       getRefund: stockTransfer.getRefund,
     });
 
+    const contractChecker = harden({
+      checkUnits,
+      checkPartialUnits,
+    });
+
+    const leftInvite = inviteMaker~.make('left', aliceSeat);
+    const rightInvite = inviteMaker~.make('right', bobSeat);
+    const checkerInvite = inviteMaker~.make('checker', contractChecker);
     return harden({
-      left: inviteMaker.make('left', aliceSeat),
-      right: inviteMaker.make('right', bobSeat),
+      left: () => leftInvite,
+      right: () => rightInvite,
+      checker: () => checkerInvite,
     });
   },
-
-  checkUnits: (installation, allegedInviteUnits, expectedTerms, seat) => {
-    mustBeSameStructure(allegedInviteUnits.extent.seatDesc, seat);
-    const allegedTerms = allegedInviteUnits.extent.terms;
-    mustBeSameStructure(allegedTerms, expectedTerms, 'Escrow checkUnits');
-    mustBeSameStructure(
-      allegedInviteUnits.extent.installation,
-      installation,
-      'escrow checkUnits installation',
-    );
-    return true;
-  },
-
-  // Check the left or right side, and return the other. Useful when this is a
-  // trade of goods for an invite, for example.
-  checkPartialUnits: (installation, allegedInvite, expectedTerms, seat) => {
-    const allegedSeat = allegedInvite.extent.terms;
-    mustBeSameStructure(
-      allegedSeat[seat],
-      expectedTerms,
-      'Escrow checkPartialUnits seat',
-    );
-
-    mustBeSameStructure(
-      allegedInvite.extent.installation,
-      installation,
-      'escrow checkPartialUnits installation',
-    );
-
-    return seat === 'left' ? allegedSeat.right : allegedSeat.left;
-  },
 });
-
-const escrowExchangeSrcs = harden({
-  start: `${escrowExchange.start}`,
-  checkUnits: `${escrowExchange.checkUnits}`,
-  checkPartialUnits: `${escrowExchange.checkPartialUnits}`,
-});
-
-export { escrowExchangeSrcs };

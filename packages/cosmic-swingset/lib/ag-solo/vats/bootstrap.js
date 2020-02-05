@@ -65,7 +65,7 @@ export default function setup(syscall, state, helpers) {
           timerDevice,
         );
         const zoe = await E(vats.zoe).getZoe();
-        const contractHost = await E(vats.host).makeHost();
+        const contractHost = await E(vats.host).makeHost(vats.adminVat);
 
 
         // Make the other demo mints

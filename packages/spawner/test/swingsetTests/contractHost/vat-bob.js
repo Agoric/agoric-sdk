@@ -53,18 +53,25 @@ function makeBobMaker(E, host, log) {
         tradeWell(alice) {
           log('++ bob.tradeWell starting');
           const terms = harden({ left: moneyNeededP, right: stockNeededP });
-          const invitesP = E(escrowExchangeInstallationP).spawn(terms);
-          const aliceInvitePaymentP = invitesP.then(invites => invites.left);
-          const bobInvitePaymentP = invitesP.then(invites => invites.right);
-          const doneP = Promise.all([
-            E(alice).acceptInvite(aliceInvitePaymentP),
-            E(bob).acceptInvite(bobInvitePaymentP),
-          ]);
-          doneP.then(
-            _res => log('++ bob.tradeWell done'),
-            rej => log('++ bob.tradeWell reject: ', rej),
-          );
-          return doneP;
+          return E(escrowExchangeInstallationP)
+            .spawn(terms)
+            .then(({ rootObject, adminNode }) => {
+              const aliceInviteP = E(rootObject).left();
+              const checkerInviteP = E(rootObject).checker();
+              const bobInvitePaymentP = E(rootObject).right();
+              const doneP = Promise.all([
+                E(alice).acceptInvite(aliceInviteP, checkerInviteP),
+                E(bob).acceptInvite(bobInvitePaymentP),
+              ]);
+              doneP.then(
+                _res => log('++ bob.tradeWell done'),
+                rej => log('++ bob.tradeWell reject: ', rej),
+              );
+              E(adminNode)
+                .adminData()
+                .then(d => log(`Admin data: `, d));
+              return doneP;
+            });
         },
 
         acceptInvite(inviteP) {
@@ -83,19 +90,24 @@ function makeBobMaker(E, host, log) {
             timer: timerP,
             deadline: 'singularity',
           });
-          const bobInviteP = E(coveredCallInstallationP).spawn(terms);
-          const bobSeatP = E(host).redeem(bobInviteP);
-          const stockPaymentP = E(myStockPurseP).withdraw(7);
-          const aliceInviteP = E(bobSeatP).offer(stockPaymentP);
-          const doneP = Promise.all([
-            E(alice).acceptOption(aliceInviteP),
-            collect(bobSeatP, myMoneyPurseP, myStockPurseP, 'bob option'),
-          ]);
-          doneP.then(
-            _res => log('++ bob.offerAliceOption done'),
-            rej => log('++ bob.offerAliceOption reject: ', rej),
-          );
-          return doneP;
+          return E(coveredCallInstallationP)
+            .spawn(terms)
+            .then(({ rootObject }) => {
+              const bobInviteP = E(rootObject).bob();
+              const bobSeatP = E(host).redeem(bobInviteP);
+              const checkerInviteP = E(rootObject).checker();
+              const stockPaymentP = E(myStockPurseP).withdraw(7);
+              const aliceInviteP = E(bobSeatP).offer(stockPaymentP);
+              const doneP = Promise.all([
+                E(alice).acceptOption(aliceInviteP, checkerInviteP),
+                collect(bobSeatP, myMoneyPurseP, myStockPurseP, 'bob option'),
+              ]);
+              doneP.then(
+                _res => log('++ bob.offerAliceOption done'),
+                rej => log('++ bob.offerAliceOption reject: ', rej),
+              );
+              return doneP;
+            });
         },
       });
       return bob;

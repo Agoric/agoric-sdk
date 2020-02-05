@@ -1,6 +1,22 @@
 import { test } from 'tape-promise/tape';
 import path from 'path';
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
+import bundleSource from '@agoric/bundle-source';
+import fs from 'fs';
+
+const CONTRACT_FILES = ['escrow', 'coveredCall'];
+const generateBundlesP = Promise.all(
+  CONTRACT_FILES.map(async contract => {
+    const { source, moduleFormat } = await bundleSource(
+      `${__dirname}/../../../src/${contract}`,
+    );
+    const obj = { source, moduleFormat, contract };
+    fs.writeFileSync(
+      `${__dirname}/bundle-${contract}.js`,
+      `export default ${JSON.stringify(obj)};`,
+    );
+  }),
+);
 
 async function main(withSES, basedir, argv) {
   const dir = path.resolve('test/swingsetTests', basedir);
@@ -10,6 +26,7 @@ async function main(withSES, basedir, argv) {
   );
   config.devices = [['loopbox', ldSrcPath, {}]];
 
+  await generateBundlesP;
   const controller = await buildVatController(config, withSES, argv);
   await controller.run();
   return controller.dump();
@@ -40,7 +57,7 @@ test('run contractHost Demo --mint without SES', async t => {
 const contractTrivialGolden = [
   '=> setup called',
   'starting trivialContractTest',
-  'Does source match? true',
+  `{"objectCount":1,"promiseCount":1,"deviceCount":0,"transcriptCount":1}`,
   'foo balance {"label":{"assay":{},"allegedName":"contract host"},"extent":{"installation":{},"terms":"foo terms","seatIdentity":{},"seatDesc":"foo"}}',
   '++ eightP resolved to 8 (should be 8)',
   '++ DONE',
@@ -81,6 +98,7 @@ const contractBobFirstGolden = [
   '=> setup called',
   '++ bob.tradeWell starting',
   '++ alice.acceptInvite starting',
+  'Admin data: {"objectCount":3,"promiseCount":4,"deviceCount":0,"transcriptCount":4}',
   'alice invite balance {"label":{"assay":{},"allegedName":"contract host"},"extent":{"installation":{},"terms":{"left":{"label":{"assay":{},"allegedName":"clams"},"extent":10},"right":{"label":{"assay":{},"allegedName":"fudco"},"extent":7}},"seatIdentity":{},"seatDesc":"left"}}',
   'verified invite balance {"label":{"assay":{},"allegedName":"contract host"},"extent":{"installation":{},"terms":{"left":{"label":{"assay":{},"allegedName":"clams"},"extent":10},"right":{"label":{"assay":{},"allegedName":"fudco"},"extent":7}},"seatIdentity":{},"seatDesc":"left"}}',
   'bob escrow wins: {"label":{"assay":{},"allegedName":"clams"},"extent":10} refs: null',
@@ -140,9 +158,9 @@ const contractCoveredCallSaleGolden = [
   '=> setup called',
   '++ bob.offerAliceOption starting',
   '++ alice.acceptOptionForFred starting',
+  'Pretend singularity never happens',
   '++ alice.completeOptionsSale starting',
   '++ fred.acceptOptionOffer starting',
-  'Pretend singularity never happens',
   'alice options sale wins: {"label":{"assay":{},"allegedName":"fins"},"extent":55} refs: null',
   'fred buys escrowed option wins: {"label":{"assay":{},"allegedName":"contract host"},"extent":{"installation":{},"terms":{"escrowExchangeInstallation":{},"money":{"label":{"assay":{},"allegedName":"dough"},"extent":10},"stock":{"label":{"assay":{},"allegedName":"wonka"},"extent":7},"timer":{},"deadline":"singularity"},"seatIdentity":{},"seatDesc":"holder"}} refs: null',
   'fred exercises option, buying stock wins: {"label":{"assay":{},"allegedName":"wonka"},"extent":7} refs: null',

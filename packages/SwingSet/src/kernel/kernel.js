@@ -3,6 +3,7 @@ import { makeMarshal, QCLASS } from '@agoric/marshal';
 import Nat from '@agoric/nat';
 import evaluateProgram from '@agoric/evaluate';
 import { assert, details } from '@agoric/assert';
+import { HandledPromise } from '@agoric/eventual-send';
 import makeVatManager from './vatManager';
 import { makeLiveSlots } from './liveSlots';
 import { makeDeviceSlots } from './deviceSlots';
@@ -577,10 +578,12 @@ export default function buildKernel(kernelEndowments) {
    * error message for the problem.
    */
   function createVatDynamically(buildFnSrc) {
-    const endowments = { require: kernelRequire };
-    const buildFn = evaluateProgram(buildFnSrc, endowments);
+    const endowments = { require: kernelRequire, HandledPromise };
+    const nameSpace = evaluateProgram(buildFnSrc.source, endowments)();
+    const buildFn = () => harden({ start: nameSpace.makeContract.start });
     try {
       const vatID = createVat(buildFn);
+      console.log(`added dynamic vat [${vatID}]`);
       notifyAdminVatOfNewVat(vatID);
       return harden({ vatID });
     } catch (e) {

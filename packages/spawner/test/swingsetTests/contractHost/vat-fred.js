@@ -24,57 +24,97 @@ function makeFredMaker(E, host, log) {
       const fin55P = E(E(myFinPurseP).getAssay()).makeUnits(55);
 
       const fred = harden({
-        acceptOptionOffer(allegedSaleInvitePaymentP) {
+        acceptOptionOffer(
+          allegedSaleInvitePaymentP,
+          coveredCallCheckerInviteP,
+          escrowCheckerInviteP,
+        ) {
           log('++ fred.acceptOptionOffer starting');
 
           const coveredCallTermsP = [dough10P, wonka7P, timerP, 'singularity'];
           const verifiedSaleInvitePaymentP = E(allegedSaleInvitePaymentP)
             .getBalance()
             .then(allegedInviteUnits => {
-              return Promise.resolve(allComparable(fin55P)).then(f55 => {
-                return E(escrowExchangeInstallationP)
-                  .checkPartialUnits(allegedInviteUnits, f55, 'left')
-                  .then(coveredCallUnits =>
-                    Promise.all(coveredCallTermsP).then(terms => {
-                      return E(coveredCallInstallationP)
-                        .checkUnits(coveredCallUnits, terms)
-                        .then(() => {
-                          return E(inviteAssayP).claimExactly(
-                            allegedInviteUnits,
-                            allegedSaleInvitePaymentP,
-                            'verified sale invite',
-                          );
-                        });
+              const escrowCheckerP = E(host).redeem(
+                escrowCheckerInviteP,
+
+              );
+              const ccCheckerP = E(host).redeem(
+                coveredCallCheckerInviteP,
+
+              );
+              return Promise.all([
+                ccCheckerP,
+                escrowCheckerP,
+                escrowExchangeInstallationP,
+                coveredCallInstallationP,
+              ]).then(resolves => {
+                const [
+                  ccChecker,
+                  escrowChecker,
+                  escrowExchangeInstallation,
+                  coveredCallInstallation,
+                ] = resolves;
+                return Promise.resolve(allComparable(fin55P)).then(f55 => {
+                  return E(escrowChecker)
+                    .checkPartialUnits(
+                      escrowExchangeInstallation,
+                      allegedInviteUnits,
+                      f55,
+                      'left',
+                    )
+                    .then(coveredCallUnits => {
+                      return Promise.all(coveredCallTermsP).then(terms => {
+                        return E(ccChecker)
+                          .checkUnits(
+                            coveredCallInstallation,
+                            coveredCallUnits,
+                            terms,
+                          )
+                          .then(() => {
+                            return E(inviteAssayP).claimExactly(
+                              allegedInviteUnits,
+                              allegedSaleInvitePaymentP,
+                              'verified sale invite',
+                            );
+                          });
+                      });
+                    });
+                });
+              });
+            });
+
+          return E(host)
+            .redeem(verifiedSaleInvitePaymentP)
+            .then(saleSeatP => {
+              const finPaymentP = E(myFinPurseP).withdraw(55);
+              E(saleSeatP).offer(finPaymentP);
+              const optionInvitePurseP = E(inviteAssayP).makeEmptyPurse();
+              const gotOptionP = collect(
+                saleSeatP,
+                optionInvitePurseP,
+                myFinPurseP,
+                'fred buys escrowed option',
+              );
+              return Promise.resolve(gotOptionP).then(_ => {
+                // Fred bought the option. Now fred tries to exercise the option.
+                const optionInvitePaymentP = E(optionInvitePurseP).withdrawAll();
+                return E(host)
+                  .redeem(optionInvitePaymentP)
+                  .then(optionSeatP =>
+                    Promise.resolve(allComparable(dough10P)).then(d10 => {
+                      const doughPaymentP = E(myMoneyPurseP).withdraw(d10);
+                      E(optionSeatP).offer(doughPaymentP);
+                      return collect(
+                        optionSeatP,
+                        myStockPurseP,
+                        myMoneyPurseP,
+                        'fred exercises option, buying stock',
+                      );
                     }),
                   );
               });
             });
-
-          const saleSeatP = E(host).redeem(verifiedSaleInvitePaymentP);
-          const finPaymentP = E(myFinPurseP).withdraw(55);
-          E(saleSeatP).offer(finPaymentP);
-          const optionInvitePurseP = E(inviteAssayP).makeEmptyPurse();
-          const gotOptionP = collect(
-            saleSeatP,
-            optionInvitePurseP,
-            myFinPurseP,
-            'fred buys escrowed option',
-          );
-          return Promise.resolve(gotOptionP).then(_ => {
-            // Fred bought the option. Now fred tries to exercise the option.
-            const optionInvitePaymentP = E(optionInvitePurseP).withdrawAll();
-            const optionSeatP = E(host).redeem(optionInvitePaymentP);
-            return Promise.resolve(allComparable(dough10P)).then(d10 => {
-              const doughPaymentP = E(myMoneyPurseP).withdraw(d10);
-              E(optionSeatP).offer(doughPaymentP);
-              return collect(
-                optionSeatP,
-                myStockPurseP,
-                myMoneyPurseP,
-                'fred exercises option, buying stock',
-              );
-            });
-          });
         },
       });
       return fred;

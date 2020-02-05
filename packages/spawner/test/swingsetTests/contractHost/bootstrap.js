@@ -2,8 +2,10 @@
 
 import harden from '@agoric/harden';
 
-import { escrowExchangeSrcs } from '../../../src/escrow';
-import { coveredCallSrcs } from '../../../src/coveredCall';
+// eslint-disable-next-line import/no-unresolved, import/extensions
+import escrowBundle from './bundle-escrow';
+// eslint-disable-next-line import/no-unresolved, import/extensions
+import coveredCallBundle from './bundle-coveredCall';
 
 function build(E, log) {
   // TODO BUG: All callers should wait until settled before doing
@@ -76,46 +78,70 @@ function build(E, log) {
     });
   }
 
+  function buildContractBundle(makeContractSrc, mainFnName) {
+    const contractBundleSource = `
+function getExport() {
+  'use strict';
+   let exports = {};
+   const module = { exports };
+   'use strict';
+   Object.defineProperty(exports, '__esModule', { value: true });
+   function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+   var harden = _interopDefault(require('@agoric/harden'));
+   var Nat = _interopDefault(require('@agoric/nat'));
+
+  ${makeContractSrc}
+
+  exports.${mainFnName} = ${mainFnName};
+  return module.exports;
+}`;
+
+    return harden({
+      source: contractBundleSource,
+      moduleFormat: 'module',
+    });
+  }
+
   function trivialContractTest(host) {
     log('starting trivialContractTest');
 
-    const trivContract = harden({
+    const makeContractSrc = `const makeContract = harden({
       start: (terms, inviteMaker) => {
-        return inviteMaker.make('foo', 8);
+        return inviteMaker~.make('foo', 8);
       },
-    });
-    const contractSrcs = harden({ start: `${trivContract.start} ` });
+    });`;
 
-    const installationP = E(host).install(contractSrcs);
+    const contractBundle = buildContractBundle(makeContractSrc, 'makeContract');
 
-    return E(host)
-      .getInstallationSourceCode(installationP)
-      .then(src => {
-        log('Does source match? ', src.start === contractSrcs.start);
+    const installationP = E(host).install(contractBundle, 'module');
 
-        const fooInviteP = E(installationP).spawn('foo terms');
-
-        return Promise.resolve(showPaymentBalance('foo', fooInviteP)).then(
-          _ => {
-            const eightP = E(host).redeem(fooInviteP);
-
-            eightP.then(res => {
-              showPaymentBalance('foo', fooInviteP);
-              log('++ eightP resolved to ', res, ' (should be 8)');
-              if (res !== 8) {
-                throw new Error(`eightP resolved to ${res}, not 8`);
-              }
-              log('++ DONE');
-            });
-            return eightP;
-          },
-        );
+    return E(installationP)
+      .spawn('foo terms')
+      .then(({ rootObject, adminNode }) => {
+        E(adminNode)
+          .adminData()
+          .then(d => log(d));
+        return rootObject.then(root => {
+          showPaymentBalance('foo', root);
+          const eightP = E(host).redeem(root);
+          eightP.then(res => {
+            log('++ eightP resolved to ', res, ' (should be 8)');
+            if (res !== 8) {
+              throw new Error(`eightP resolved to ${res}, not 8`);
+            }
+            log('++ DONE');
+          });
+          return eightP;
+        });
       });
   }
 
   function betterContractTestAliceFirst(host, mint, aliceMaker, bobMaker) {
-    const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
-    const coveredCallInstallationP = E(host).install(coveredCallSrcs);
+    const escrowExchangeInstallationP = E(host).install(escrowBundle, 'module');
+    const coveredCallInstallationP = E(host).install(
+      coveredCallBundle,
+      'module',
+    );
 
     const moneyMintP = E(mint).makeMint('moola');
     const aliceMoneyPurseP = E(moneyMintP).mint(1000);
@@ -153,8 +179,11 @@ function build(E, log) {
   }
 
   function betterContractTestBobFirst(host, mint, aliceMaker, bobMaker) {
-    const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
-    const coveredCallInstallationP = E(host).install(coveredCallSrcs);
+    const escrowExchangeInstallationP = E(host).install(escrowBundle, 'module');
+    const coveredCallInstallationP = E(host).install(
+      coveredCallBundle,
+      'module',
+    );
 
     const moneyMintP = E(mint).makeMint('clams');
     const aliceMoneyPurseP = E(moneyMintP).mint(1000, 'aliceMainMoney');
@@ -198,8 +227,11 @@ function build(E, log) {
   }
 
   function coveredCallTest(host, mint, aliceMaker, bobMaker) {
-    const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
-    const coveredCallInstallationP = E(host).install(coveredCallSrcs);
+    const escrowExchangeInstallationP = E(host).install(escrowBundle, 'module');
+    const coveredCallInstallationP = E(host).install(
+      coveredCallBundle,
+      'module',
+    );
 
     const moneyMintP = E(mint).makeMint('smackers');
     const aliceMoneyPurseP = E(moneyMintP).mint(1000, 'aliceMainMoney');
@@ -243,8 +275,11 @@ function build(E, log) {
   }
 
   function coveredCallSaleTest(host, mint, aliceMaker, bobMaker, fredMaker) {
-    const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
-    const coveredCallInstallationP = E(host).install(coveredCallSrcs);
+    const escrowExchangeInstallationP = E(host).install(escrowBundle, 'module');
+    const coveredCallInstallationP = E(host).install(
+      coveredCallBundle,
+      'module',
+    );
 
     const doughMintP = E(mint).makeMint('dough');
     const aliceDoughPurseP = E(doughMintP).mint(1000, 'aliceDough');
@@ -311,18 +346,19 @@ function build(E, log) {
   }
 
   const obj0 = {
-    async bootstrap(argv, vats) {
+    async bootstrap(argv, vats, devices) {
+      const adminVat = vats.vatAdmin;
+      const adminServiceP = E(adminVat).createVatAdminService(devices.vatAdmin);
+      const host = await E(vats.host).makeHost(adminServiceP);
       switch (argv[0]) {
         case 'mint': {
           mintTestDescOps(vats.mint);
           return mintTestNumber(vats.mint);
         }
         case 'trivial': {
-          const host = await E(vats.host).makeHost();
           return trivialContractTest(host);
         }
         case 'alice-first': {
-          const host = await E(vats.host).makeHost();
           const aliceMaker = await E(vats.alice).makeAliceMaker(host);
           const bobMaker = await E(vats.bob).makeBobMaker(host);
           return betterContractTestAliceFirst(
@@ -333,7 +369,6 @@ function build(E, log) {
           );
         }
         case 'bob-first': {
-          const host = await E(vats.host).makeHost();
           const aliceMaker = await E(vats.alice).makeAliceMaker(host);
           const bobMaker = await E(vats.bob).makeBobMaker(host);
           return betterContractTestBobFirst(
@@ -344,13 +379,11 @@ function build(E, log) {
           );
         }
         case 'covered-call': {
-          const host = await E(vats.host).makeHost();
           const aliceMaker = await E(vats.alice).makeAliceMaker(host);
           const bobMaker = await E(vats.bob).makeBobMaker(host);
           return coveredCallTest(host, vats.mint, aliceMaker, bobMaker);
         }
         case 'covered-call-sale': {
-          const host = await E(vats.host).makeHost();
           const aliceMaker = await E(vats.alice).makeAliceMaker(host);
           const bobMaker = await E(vats.bob).makeBobMaker(host);
           const fredMaker = await E(vats.fred).makeFredMaker(host);

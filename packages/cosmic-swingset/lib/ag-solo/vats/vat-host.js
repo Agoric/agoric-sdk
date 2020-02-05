@@ -11,8 +11,8 @@ function setup(syscall, state, helpers) {
     state,
     E =>
       harden({
-        makeHost() {
-          return harden(makeContractHost(E, evaluate, { require }));
+        makeHost(adminVat) {
+          return harden(makeContractHost(E, evaluate, adminVat));
         },
       }),
     helpers.vatID,

@@ -1,6 +1,22 @@
 import { test } from 'tape-promise/tape';
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 import path from 'path';
+import bundleSource from "@agoric/bundle-source";
+import fs from "fs";
+
+const CONTRACT_FILES = ['escrow'];
+const generateBundlesP = Promise.all(
+  CONTRACT_FILES.map(async contract => {
+    const { source, moduleFormat } = await bundleSource(
+      `${__dirname}/../../../src/${contract}`,
+    );
+    const obj = { source, moduleFormat, contract };
+    fs.writeFileSync(
+      `${__dirname}/bundle-${contract}.js`,
+      `export default ${JSON.stringify(obj)};`,
+    );
+  }),
+);
 
 async function main(withSES, basedir, argv) {
   const dir = path.resolve('test/swingsetTests', basedir);
@@ -10,6 +26,7 @@ async function main(withSES, basedir, argv) {
   );
   config.devices = [['loopbox', ldSrcPath, {}]];
 
+  await generateBundlesP;
   const controller = await buildVatController(config, withSES, argv);
   await controller.run();
   return controller.dump();
@@ -53,13 +70,13 @@ const escrowCheckPartialWrongPriceGolden = [
   'expected wrong price Error: Escrow checkPartialUnits seat: different at top.extent: ((a number)) vs ((a number))\nSee console for error data.',
 ];
 
-test('escrow check partial misMatches w/SES', async t => {
+test('escrow check partial wrong price w/SES', async t => {
   const dump = await main(true, 'escrow', ['escrow partial price']);
   t.deepEquals(dump.log, escrowCheckPartialWrongPriceGolden);
   t.end();
 });
 
-test('escrow check partial misMatches', async t => {
+test('escrow check partial wrong price', async t => {
   const dump = await main(false, 'escrow', ['escrow partial price']);
   t.deepEquals(dump.log, escrowCheckPartialWrongPriceGolden);
   t.end();
@@ -71,13 +88,13 @@ const escrowCheckPartialWrongStockGolden = [
   'expected wrong stock Error: Escrow checkPartialUnits seat: different at top.extent: ((a string)) vs ((a string))\nSee console for error data.',
 ];
 
-test('escrow check partial misMatches w/SES', async t => {
+test('escrow check partial wrong stock w/SES', async t => {
   const dump = await main(true, 'escrow', ['escrow partial stock']);
   t.deepEquals(dump.log, escrowCheckPartialWrongStockGolden);
   t.end();
 });
 
-test('escrow check partial misMatches', async t => {
+test('escrow check partial wrong stock', async t => {
   const dump = await main(false, 'escrow', ['escrow partial stock']);
   t.deepEquals(dump.log, escrowCheckPartialWrongStockGolden);
   t.end();

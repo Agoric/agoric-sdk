@@ -17,10 +17,7 @@ async function testVatCreationFromBuild(t, withSES) {
   const c = await buildVatController(config, withSES, ['newVat']);
   t.equal(c.vatNameToID('vatAdmin'), 'v2');
   t.equal(c.vatNameToID('_bootstrap'), 'v1');
-  for (let i = 0; i < 9; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
-    await c.step();
-  }
+  await c.run();
   t.deepEqual(c.dump().log, ['starting newVat test', '13']);
   t.end();
 }
@@ -37,7 +34,6 @@ async function testVatCreationAndObjectHosting(t, withSES) {
   const config = await createConfig();
   const c = await buildVatController(config, withSES, ['counters']);
   await c.run();
-  await c.run();
   t.deepEqual(c.dump().log, ['starting counter test', '4', '9', '2']);
   t.end();
 }
@@ -50,13 +46,29 @@ test('VatAdmin inner vat creation non-SES', async t => {
   await testVatCreationAndObjectHosting(t, false);
 });
 
+async function testVatCreationFromBundle(t, withSES) {
+  const config = await createConfig();
+  const c = await buildVatController(config, withSES, ['vatFromBundle']);
+  await c.run();
+  t.deepEqual(c.dump().log, ['starting vat from Bundle test', '4', '9', '2']);
+  t.end();
+}
+
+test('VatAdmin vat creation from Bundle', async t => {
+  await testVatCreationFromBundle(t, true);
+});
+
+test('VatAdmin vat creation from Bundle non-SES', async t => {
+  await testVatCreationFromBundle(t, false);
+});
+
 async function testBrokenVatCreation(t, withSES) {
   const config = await createConfig();
   const c = await buildVatController(config, withSES, ['brokenVat']);
   await c.run();
   t.deepEqual(c.dump().log, [
     'starting brokenVat test',
-    'yay, rejected: Error: Vat Creation Error: ReferenceError: harden is not defined',
+    'yay, rejected: Error: Vat Creation Error: Error: cannot serialize objects with non-methods like the .start in [object Object]',
   ]);
   t.end();
 }
