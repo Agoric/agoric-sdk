@@ -38,6 +38,7 @@ class Options(usage.Options):
     ]
     optFlags = [
         ["destroy", None, "destroy all chain state"],
+        ["no-restart", None, "do not restart the solo vat"],
     ]
     def parseArgs(self, basedir=os.environ.get('AG_SOLO_BASEDIR', 'agoric')):
         self['basedir'] = os.environ['AG_SOLO_BASEDIR'] = basedir
@@ -46,7 +47,9 @@ class Options(usage.Options):
 def setIngress(sm):
     print('Setting chain parameters with ' + AG_SOLO)
     subprocess.run([AG_SOLO, 'set-gci-ingress', '--chainID=%s' % sm['chainName'], sm['gci'], *sm['rpcAddrs']], check=True)
-def restart():
+def restart(o):
+    if o['no-restart']:
+        return
     print('Restarting ' + AG_SOLO)
     os.execvp(AG_SOLO, [AG_SOLO, 'start', '--role=client'])
 
@@ -95,7 +98,7 @@ def run_client(reactor, o, pkeyFile):
     except:
         cleanup()
         raise
-    restart()
+    restart(o)
 
 def doInit(o):
     BASEDIR = o['basedir']
@@ -123,7 +126,7 @@ def resetNetconfig(o):
     for conn in conns:
       if 'GCI' in conn and conn['GCI'] == netconfig['gci']:
         print('Already have an entry for ' + conn['GCI'] + '; not replacing')
-        restart()
+        restart(o)
         sys.exit(1)
     
     return netconfig
@@ -169,5 +172,5 @@ def main():
     doInit(o)
 
     setIngress(netconfig)
-    restart()
+    restart(o)
     sys.exit(1)
