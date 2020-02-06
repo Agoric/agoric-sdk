@@ -77,4 +77,6 @@ integration-test/transform-tests/output
 /docs/build/
 
 /solo
+/dev
+/testnet
 /chain
