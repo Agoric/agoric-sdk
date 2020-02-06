@@ -14,7 +14,7 @@ export default async function startMain(progname, rawArgs, priv, opts) {
 
   const pspawn = (cmd, cargs, ...rest) => {
     console.log(chalk.blueBright(cmd, ...cargs));
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       const cp = spawn(cmd, cargs, ...rest);
       cp.on('exit', resolve);
       cp.on('error', () => resolve(-1));

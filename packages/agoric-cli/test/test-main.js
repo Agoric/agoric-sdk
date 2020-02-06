@@ -4,8 +4,8 @@ import main from '../lib/main';
 test('sanity', async t => {
   try {
     const myConsole = {
-      error(...args) {},
-      log(...args) {},
+      error(..._args) {},
+      log(..._args) {},
     };
     const myMain = args =>
       main('foo', args, { console: myConsole, error: myConsole.error });
