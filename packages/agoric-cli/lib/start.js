@@ -11,9 +11,6 @@ const HOST_PORT = process.env.HOST_PORT || PORT;
 
 export default async function startMain(progname, rawArgs, priv, opts) {
   const { console, error, fs, spawn, os, process } = priv;
-  const { reset, _: args } = parseArgs(rawArgs, {
-    boolean: ['reset'],
-  });
 
   const pspawn = (cmd, cargs, ...rest) => {
     console.log(chalk.blueBright(cmd, ...cargs));
@@ -94,14 +91,16 @@ export default async function startMain(progname, rawArgs, priv, opts) {
     });
   }
 
-  async function startTestnetDocker(profileName, startArgs) {
+  async function startTestnetDocker(profileName, startArgs, popts) {
     const IMAGE = `agoric/cosmic-swingset-setup-solo`;
 
-    if (startArgs[0] === '--pull') {
-      startArgs.shift();
-      await pspawn('docker', ['pull', IMAGE], {
+    if (popts.pull) {
+      const status = await pspawn('docker', ['pull', IMAGE], {
         stdio: 'inherit',
       });
+      if (status) {
+        return status;
+      }
     }
 
     const setupRun = (...bonusArgs) =>
@@ -196,6 +195,10 @@ export default async function startMain(progname, rawArgs, priv, opts) {
     testnet: opts.sdk ? startTestnetSdk : startTestnetDocker,
   };
 
+  const { _: args, ...popts } = parseArgs(rawArgs, {
+    boolean: ['reset', 'pull'],
+  });
+
   const profileName = args[0] || 'dev';
   const startFn = profiles[profileName];
   if (!startFn) {
@@ -209,11 +212,12 @@ export default async function startMain(progname, rawArgs, priv, opts) {
   }
 
   agServer = `.agservers/${profileName}`;
-  if (reset) {
+
+  if (popts.reset) {
     console.log(chalk.green(`removing ${agServer}`));
     // rm is available on all the unix-likes, so use it for speed.
     await pspawn('rm', ['-rf', agServer], { stdio: 'inherit' });
   }
 
-  return startFn(profileName, args[0] ? args.slice(1) : args);
+  return startFn(profileName, args[0] ? args.slice(1) : args, popts);
 }
