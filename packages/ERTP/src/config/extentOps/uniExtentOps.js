@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 import {
   sameStructure,
   mustBeSameStructure,
@@ -44,7 +44,7 @@ const makeUniExtentOps = (customInsistKind = () => {}) => {
       if (uniExtentOps.isEmpty(right)) {
         return left;
       }
-      throw insist(false)`Cannot combine uni extents ${left} and ${right}`;
+      assert.fail(details`Cannot combine uni extents ${left} and ${right}`);
     },
     without: (whole, part) => {
       // we can only subtract the part from the whole if either part

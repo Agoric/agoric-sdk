@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import parseArgs from 'minimist';
 import process from 'process';
-import { insist } from './insist';
+import { assert } from '@agoric/assert';
 
 // Start a network service
 import bundle from './bundle';
@@ -63,7 +63,7 @@ start
     const { webhost, egresses } = subOpts;
     const basedir = subArgs[0] || AG_SOLO_BASEDIR;
     const subdir = subArgs[1];
-    insist(basedir !== undefined, 'you must provide a BASEDIR');
+    assert(basedir !== undefined, 'you must provide a BASEDIR');
     initBasedir(basedir, webport, webhost, subdir, egresses.split(','));
     await resetState(basedir);
     // console.error(

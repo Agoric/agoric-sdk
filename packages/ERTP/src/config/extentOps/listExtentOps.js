@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { passStyleOf } from '@agoric/marshal';
 
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 
 // This list extentOps follows the ExtentOps interface defined in
 // assays.chainmail.
@@ -21,14 +21,14 @@ const makeListExtentOps = (
 
   const listExtentOps = harden({
     insistKind: list => {
-      insist(passStyleOf(list) === 'copyArray')`list must be an array`;
+      assert.equal(passStyleOf(list), 'copyArray', details`${list} must be an array`);
       for (const element of list) {
         insistElementKind(element);
       }
     },
     empty: _ => harden([]),
     isEmpty: list => {
-      insist(passStyleOf(list) === 'copyArray')`list must be an array`;
+      assert.equal(passStyleOf(list), 'copyArray', details`${list} must be an array`);
       return list.length === 0;
     },
     includes: (whole, part) => {
@@ -56,7 +56,10 @@ const makeListExtentOps = (
       return harden(dedupedList);
     },
     without: (whole, part) => {
-      insist(listExtentOps.includes(whole, part))`part is not in whole`;
+      assert(
+        listExtentOps.includes(whole, part),
+        details`${part} must be in ${whole}`
+      );
       const wholeMinusPart = [];
       for (const wholeElement of whole) {
         if (!includesElement(part, wholeElement)) {

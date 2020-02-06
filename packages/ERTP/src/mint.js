@@ -5,7 +5,7 @@ import harden from '@agoric/harden';
 
 import { makeTraitCake } from '@agoric/layer-cake';
 
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 import { basicFungibleConfig } from './config/basicFungibleConfig';
 import { makeUnitOps } from './unitOps';
 
@@ -21,8 +21,7 @@ import { makeUnitOps } from './unitOps';
  * @param  {function} makeConfig=makeBasicFungibleConfig
  */
 function makeMint(allegedName, config = basicFungibleConfig) {
-  insist(allegedName)`\
-allegedName must be truthy: ${allegedName}`;
+  assert(allegedName, details`allegedName must be truthy: ${allegedName}`);
 
   // Each of these methods is used below and must be defined (even in
   // a trivial way) in any configuration
@@ -65,9 +64,9 @@ allegedName must be truthy: ${allegedName}`;
   function insistUnitsEqualsPaymentBalance(units, payment) {
     units = unitOps.coerce(units);
     const paymentUnits = paymentKeeper.getUnits(payment);
-    insist(
+    assert(
       unitOps.equals(units, paymentUnits),
-    )`payment balance ${paymentUnits} must equal units ${units}`;
+      details`payment balance ${paymentUnits} must equal units ${units}`);
     return paymentUnits;
   }
 
@@ -192,18 +191,19 @@ allegedName must be truthy: ${allegedName}`;
         namesArray !== undefined
           ? namesArray
           : Array(unitsArray.length).fill('a split payment');
-      insist(
-        unitsArray.length === namesArray.length,
-      )`the units and names should have the same length`;
+      assert.equal(
+        unitsArray.length,
+        namesArray.length,
+        details`the units and names should have the same length`);
 
       const paymentMinusUnits = unitsArray.reduce((soFar, units) => {
         units = unitOps.coerce(units);
         return unitOps.without(soFar, units);
       }, paymentKeeper.getUnits(payment));
 
-      insist(
+      assert(
         unitOps.isEmpty(paymentMinusUnits),
-      )`the units of the proposed new payments do not equal the units of the source payment`;
+        details`the units of the proposed new payments do not equal the units of the source payment`);
 
       // ///////////////// commit point //////////////////
       // All queries above passed with no side effects.
