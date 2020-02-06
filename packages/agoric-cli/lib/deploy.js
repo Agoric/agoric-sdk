@@ -74,7 +74,10 @@ export default async function deployMain(progname, rawArgs, priv) {
         const { source, sourceMap } = await bundleSource(moduleFile);
 
         const actualSource = `(${source}\n)\n${sourceMap}`;
-        const mainNS = evaluateProgram(actualSource, { require, HandledPromise })();
+        const mainNS = evaluateProgram(actualSource, {
+          require,
+          HandledPromise,
+        })();
         const main = mainNS.default;
         if (typeof main !== 'function') {
           console.error(

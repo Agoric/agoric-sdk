@@ -4,10 +4,10 @@ import chalk from 'chalk';
 
 export default async function installMain(progname, rawArgs, priv, opts) {
   const { console, error, fs, spawn } = priv;
-  const { _: args } = parseArgs(rawArgs);
+  const { _: _args } = parseArgs(rawArgs);
 
   const pspawn = (...args) =>
-    new Promise((resolve, reject) => {
+    new Promise((resolve, _reject) => {
       const cp = spawn(...args);
       cp.on('exit', resolve);
       cp.on('error', () => resolve(-1));
@@ -22,13 +22,15 @@ export default async function installMain(progname, rawArgs, priv, opts) {
 
   if (opts.sdk) {
     console.log(chalk.bold.green('link SDK node_modules'));
-    await fs.symlink(`${path.resolve(__dirname, '../../../node_modules')}`, 'node_modules');
-  } else {
-  // Install via Yarn.
-    if (await pspawn('yarn', ['install'], { stdio: 'inherit'})) {
-      error('Cannot yarn install');
-      return 1;
-    };
+    await fs.symlink(
+      `${path.resolve(__dirname, '../../../node_modules')}`,
+      'node_modules',
+    );
+  } else if (await pspawn('yarn', ['install'], { stdio: 'inherit' })) {
+    // Try to install via Yarn.
+    error('Cannot yarn install');
+    return 1;
   }
   console.log(chalk.bold.green('Done installing'));
+  return 0;
 }
