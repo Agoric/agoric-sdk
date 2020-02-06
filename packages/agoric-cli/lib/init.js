@@ -17,6 +17,7 @@ export default async function initMain(progname, rawArgs, priv) {
     symlink,
     readdir,
     readFile,
+    readlink,
     writeFile,
   } = fs;
 
@@ -29,8 +30,11 @@ export default async function initMain(progname, rawArgs, priv) {
     }
   }
 
-  const templateDir = `${__dirname}/../template`;
-  const writeTemplate = async stem => {
+  const isIgnored = (suffix, name) =>
+    name === 'node_modules' ||
+    (suffix === '/.agservers' && name !== 'package.json' && name[0] !== '.');
+
+  const writeTemplate = async (templateDir, stem) => {
     const template = await readFile(`${templateDir}${stem}`, 'utf-8');
     const content = template
       .replace(/['"]@DIR@['"]/g, JSON.stringify(DIR))
@@ -41,29 +45,42 @@ export default async function initMain(progname, rawArgs, priv) {
   const recursiveTemplate = async (templateDir, suffix = '') => {
     const cur = `${templateDir}${suffix}`;
     const list = await readdir(cur);
-    await Promise.all(list.map(async name => {
-      if (name === 'node_modules' || name === 'solo') {
-        return;
-      }
-      const stem = `${suffix}/${name}`;
-      const st = await lstat(`${templateDir}${stem}`);
-      let target;
-      try {
-        target = await stat(`${DIR}${stem}`);
-      } catch (e) {}
-      if (st.isDirectory()) {
-        if (!target) {
-          console.log(`mkdir ${DIR}${stem}`);
-          await mkdir(`${DIR}${stem}`);
+    await Promise.all(
+      list.map(async name => {
+        const stem = `${suffix}/${name}`;
+        if (isIgnored(suffix, name)) {
+          return;
         }
-        await recursiveTemplate(templateDir, `${stem}`);
-      } else {
-        console.log(`write ${DIR}${stem}`);
-        await writeTemplate(stem);
-      }
-    }));
+        const st = await lstat(`${templateDir}${stem}`);
+        let target;
+        try {
+          target = await stat(`${DIR}${stem}`);
+        } catch (e) {
+          if (e.code !== 'ENOENT') {
+            throw e;
+          }
+        }
+        if (st.isDirectory()) {
+          if (!target) {
+            console.log(`mkdir ${DIR}${stem}`);
+            await mkdir(`${DIR}${stem}`);
+          }
+          await recursiveTemplate(templateDir, `${stem}`);
+        } else if (st.isSymbolicLink()) {
+          console.log(`symlink ${DIR}${stem}`);
+          await symlink(
+            await readlink(`${templateDir}${stem}`),
+            `${DIR}${stem}`,
+          );
+        } else {
+          console.log(`write ${DIR}${stem}`);
+          await writeTemplate(templateDir, stem);
+        }
+      }),
+    );
   };
-  await recursiveTemplate(templateDir);
+  await recursiveTemplate(`${__dirname}/../template`);
 
   console.log(chalk.bold.yellow(`Done initializing`));
+  return 0;
 }
