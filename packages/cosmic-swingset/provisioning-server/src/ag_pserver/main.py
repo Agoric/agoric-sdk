@@ -76,14 +76,13 @@ class SendInputAndWaitProtocol(protocol.ProcessProtocol):
 class StackedResource(resource.Resource):
     def __init__(self, stack):
         super().__init__()
-        self.stack = stack
+        self.stack = [super(), *stack]
 
     def getChildWithDefault(self, *args):
-        res = super().getChildWithDefault(*args)
-        i = 0
-        while isinstance(res, resource.NoResource) and i < len(self.stack):
-            res = self.stack[i].getChildWithDefault(*args)
-            i += 1
+        for s in self.stack:
+            res = s.getChildWithDefault(*args)
+            if not isinstance(res, resource.NoResource):
+                return res
         return res
 
 def wwwroot(home):
