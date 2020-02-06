@@ -6,7 +6,7 @@ import { makePixelExtentOps } from '../../../src/pixelExtentOps';
 
 // These tests do not require SwingSet or vats
 
-test('tapFaucet', t => {
+test.skip('tapFaucet', t => {
   const { userFacet } = makeGallery();
   const { pixelAssay } = userFacet.getAssays();
   const pixelPayment = userFacet.tapFaucet();
@@ -18,7 +18,7 @@ test('tapFaucet', t => {
   t.end();
 });
 
-test('get all pixels repeatedly', async t => {
+test.skip('get all pixels repeatedly', async t => {
   const { userFacet: gallery } = makeGallery();
   const { pixelAssay } = await gallery.getAssays();
   const pixelDescOps = pixelAssay.getUnitOps();
@@ -145,7 +145,7 @@ test('get all pixels repeatedly', async t => {
   t.end();
 });
 
-test('get all pixels and use them', async t => {
+test.skip('get all pixels and use them', async t => {
   const { userFacet: gallery } = makeGallery();
   const bundles = [];
   for (let i = 0; i < 100; i += 1) {
@@ -172,7 +172,7 @@ test('get all pixels and use them', async t => {
   t.end();
 });
 
-test('get exclusive pixel payment from faucet', t => {
+test.skip('get exclusive pixel payment from faucet', t => {
   const { userFacet } = makeGallery();
   const payment = userFacet.tapFaucet();
   const { pixelAssay } = userFacet.getAssays();
@@ -186,7 +186,7 @@ test('get exclusive pixel payment from faucet', t => {
   });
 });
 
-test('the user changes the color of a pixel', async t => {
+test.skip('the user changes the color of a pixel', async t => {
   // setup
   const { userFacet } = makeGallery();
 
@@ -202,7 +202,7 @@ test('the user changes the color of a pixel', async t => {
 
 // tests that benefited from using SwingSet have been moved to test-gallery.js
 
-test('getDistance', t => {
+test.skip('getDistance', t => {
   const { adminFacet } = makeGallery();
   const { getDistance } = adminFacet;
   t.strictEqual(getDistance({ x: 0, y: 1 }, { x: 0, y: 1 }), 0);
@@ -213,7 +213,7 @@ test('getDistance', t => {
   t.end();
 });
 
-test('getDistanceFromCenter', t => {
+test.skip('getDistanceFromCenter', t => {
   const { adminFacet } = makeGallery();
   // default canvasSize is 10
   const { getDistanceFromCenter } = adminFacet;
@@ -226,7 +226,7 @@ test('getDistanceFromCenter', t => {
   t.end();
 });
 
-test('pricePixel Internal', t => {
+test.skip('pricePixel Internal', t => {
   const { userFacet } = makeGallery();
   // default canvasSize is 10
   const { pricePixelUnits, getAssays } = userFacet;

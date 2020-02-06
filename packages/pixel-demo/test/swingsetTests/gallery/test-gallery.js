@@ -24,13 +24,13 @@ const expectedTapFaucetLog = [
   'pixel from faucet balance {"label":{"assay":{},"allegedName":"pixels"},"extent":[{"x":1,"y":4}]}',
 ];
 
-test('run gallery demo tapFaucet with SES', async t => {
+test.skip('run gallery demo tapFaucet with SES', async t => {
   const dump = await main(true, 'gallery', ['tapFaucet']);
   t.deepEquals(dump.log, expectedTapFaucetLog);
   t.end();
 });
 
-test('run gallery demo tapFaucet without SES', async t => {
+test.skip('run gallery demo tapFaucet without SES', async t => {
   const dump = await main(false, 'gallery', ['tapFaucet']);
   t.deepEquals(dump.log, expectedTapFaucetLog);
   t.end();
@@ -47,13 +47,13 @@ const expectedAliceChangesColorLog = [
   'pixel index is 100 of 100',
 ];
 
-test('run gallery demo aliceChangesColor with SES', async t => {
+test.skip('run gallery demo aliceChangesColor with SES', async t => {
   const dump = await main(true, 'gallery', ['aliceChangesColor']);
   t.deepEquals(dump.log, expectedAliceChangesColorLog);
   t.end();
 });
 
-test('run gallery demo aliceChangesColor without SES', async t => {
+test.skip('run gallery demo aliceChangesColor without SES', async t => {
   const dump = await main(false, 'gallery', ['aliceChangesColor']);
   t.deepEquals(dump.log, expectedAliceChangesColorLog);
   t.end();
@@ -75,13 +75,13 @@ const expectedAliceSendsOnlyUseRightLog = [
   'bob was unable to color: Error:       no use rights present in units (a object)\nSee console for error data.',
 ];
 
-test('run gallery demo aliceSendsOnlyUseRight with SES', async t => {
+test.skip('run gallery demo aliceSendsOnlyUseRight with SES', async t => {
   const dump = await main(true, 'gallery', ['aliceSendsOnlyUseRight']);
   t.deepEquals(dump.log, expectedAliceSendsOnlyUseRightLog);
   t.end();
 });
 
-test('run gallery demo aliceSendsOnlyUseRight without SES', async t => {
+test.skip('run gallery demo aliceSendsOnlyUseRight without SES', async t => {
   const dump = await main(false, 'gallery', ['aliceSendsOnlyUseRight']);
   t.deepEquals(dump.log, expectedAliceSendsOnlyUseRightLog);
   t.end();
@@ -97,13 +97,13 @@ const expectedGalleryRevokesLog = [
   'units extent should be an array of length 0: 0',
 ];
 
-test('run gallery demo galleryRevokes with SES', async t => {
+test.skip('run gallery demo galleryRevokes with SES', async t => {
   const dump = await main(true, 'gallery', ['galleryRevokes']);
   t.deepEquals(dump.log, expectedGalleryRevokesLog);
   t.end();
 });
 
-test('run gallery demo galleryRevokes without SES', async t => {
+test.skip('run gallery demo galleryRevokes without SES', async t => {
   const dump = await main(false, 'gallery', ['galleryRevokes']);
   t.deepEquals(dump.log, expectedGalleryRevokesLog);
   t.end();
@@ -122,13 +122,13 @@ const expectedAliceSellsAndBuysLog = [
   'alice dust purse balance {"label":{"assay":{},"allegedName":"dust"},"extent":0}',
 ];
 
-test('run gallery demo aliceSellsAndBuys with SES', async t => {
+test.skip('run gallery demo aliceSellsAndBuys with SES', async t => {
   const dump = await main(true, 'gallery', ['aliceSellsAndBuys']);
   t.deepEquals(dump.log, expectedAliceSellsAndBuysLog);
   t.end();
 });
 
-test('run gallery demo aliceSellsAndBuys without SES', async t => {
+test.skip('run gallery demo aliceSellsAndBuys without SES', async t => {
   const dump = await main(false, 'gallery', ['aliceSellsAndBuys']);
   t.deepEquals(dump.log, expectedAliceSellsAndBuysLog);
   t.end();
@@ -146,13 +146,13 @@ const expectedAliceSellsToBobLog = [
   'bob tried to color, and produced #B695C0',
 ];
 
-test('run gallery demo aliceSellsToBob with SES', async t => {
+test.skip('run gallery demo aliceSellsToBob with SES', async t => {
   const dump = await main(true, 'gallery', ['aliceSellsToBob']);
   t.deepEquals(dump.log, expectedAliceSellsToBobLog);
   t.end();
 });
 
-test('run gallery demo aliceSellsToBob without SES', async t => {
+test.skip('run gallery demo aliceSellsToBob without SES', async t => {
   const dump = await main(false, 'gallery', ['aliceSellsToBob']);
   t.deepEquals(dump.log, expectedAliceSellsToBobLog);
   t.end();
@@ -181,13 +181,13 @@ const expectedAliceCreatesFakeChild = [
 // check whether the assay of the payment is a descendant of the
 // pixelAssay that he gets from the gallery,
 
-test('run gallery demo aliceCreatesFakeChild with SES', async t => {
+test.skip('run gallery demo aliceCreatesFakeChild with SES', async t => {
   const dump = await main(true, 'gallery', ['aliceCreatesFakeChild']);
   t.deepEquals(dump.log, expectedAliceCreatesFakeChild);
   t.end();
 });
 
-test('run gallery demo aliceCreatesFakeChild without SES', async t => {
+test.skip('run gallery demo aliceCreatesFakeChild without SES', async t => {
   const dump = await main(false, 'gallery', ['aliceCreatesFakeChild']);
   t.deepEquals(dump.log, expectedAliceCreatesFakeChild);
   t.end();
@@ -249,13 +249,13 @@ const expectedSpendAndRevoke = [
 // 6. Call claimChild() on the purse, which has a pixel in it.
 //    This revokes the same pixel from the childPurse and grandchildPurse
 
-test('gallery - create childPayment, spend, revoke with SES', async t => {
+test.skip('gallery - create childPayment, spend, revoke with SES', async t => {
   const dump = await main(true, 'gallery', ['spendAndRevoke']);
   t.deepEquals(dump.log, expectedSpendAndRevoke);
   t.end();
 });
 
-test('gallery - create childPayment, spend, revoke without SES', async t => {
+test.skip('gallery - create childPayment, spend, revoke without SES', async t => {
   const dump = await main(false, 'gallery', ['spendAndRevoke']);
   t.deepEquals(dump.log, expectedSpendAndRevoke);
   t.end();
@@ -283,13 +283,13 @@ const expectedGetAllPixels = [
 // What is the behavior of the gallery when we call tapFaucet enough
 // times to amass all of the pixels and start revoking from ourselves?
 
-test('gallery - get all pixels', async t => {
+test.skip('gallery - get all pixels', async t => {
   const dump = await main(true, 'gallery', ['getAllPixels']);
   t.deepEquals(dump.log, expectedGetAllPixels);
   t.end();
 });
 
-test('gallery - get all pixels without SES', async t => {
+test.skip('gallery - get all pixels without SES', async t => {
   const dump = await main(false, 'gallery', ['getAllPixels']);
   t.deepEquals(dump.log, expectedGetAllPixels);
   t.end();

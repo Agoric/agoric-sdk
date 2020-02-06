@@ -67,20 +67,14 @@ export default function setup(syscall, state, helpers) {
         const zoe = await E(vats.zoe).getZoe();
         const contractHost = await E(vats.host).makeHost();
 
-        // dustAssay is built in the pixel vat. Wallet needs it.
-        const dustAssay = await E(vats.pixel).startup(contractHost);
 
         // Make the other demo mints
-        const otherAssetNames = ['moola', 'simolean'];
-        const otherAssays = await Promise.all(
-          otherAssetNames.map(assetName =>
+        const assetNames = ['moola', 'simolean'];
+        const assays = await Promise.all(
+          assetNames.map(assetName =>
             E(vats.mints).makeMintAndAssay(assetName),
           ),
         );
-
-        // All the demo assays and assetNames
-        const assetNames = [...otherAssetNames, 'dust'];
-        const assays = [...otherAssays, dustAssay];
 
         // Register all of the starting assays. The assetName will
         // also serve as the assayName.
@@ -95,10 +89,8 @@ export default function setup(syscall, state, helpers) {
         );
 
         return harden({
-          async createUserBundle(nickname) {
-            const pixelBundle = await E(vats.pixel).createPixelBundle(nickname);
+          async createUserBundle(_nickname) {
             const bundle = harden({
-              ...pixelBundle,
               chainTimerService,
               sharingService,
               contractHost,
@@ -107,7 +99,7 @@ export default function setup(syscall, state, helpers) {
             });
 
             const payments = await E(vats.mints).mintInitialPayments(
-              otherAssetNames,
+              assetNames,
               harden([1900, 1900]),
             );
 
