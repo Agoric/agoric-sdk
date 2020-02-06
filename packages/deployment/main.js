@@ -286,7 +286,7 @@ show-config      display the client connection parameters
         tag = subOpts.tag;
       } else if (subArgs[0] === undefined || String(subArgs[0]) === 'true') {
         // Default bump.
-        versionKind = 'revision';
+        versionKind = 'patch';
       }
 
       switch (versionKind) {
@@ -302,9 +302,11 @@ show-config      display the client connection parameters
           break;
 
         case 'revision':
+        case 'patch':
           revision = Number(revision) + 1;
           break;
 
+        case 'none':
         case undefined:
           break;
 
@@ -346,7 +348,7 @@ show-config      display the client connection parameters
         `${COSMOS_DIR}/chain-name.txt`,
       ).catch(e => undefined);
 
-      if (currentChainName !== chainName) {
+      if (subOpts.bump || currentChainName !== chainName) {
         // We don't have matching parameters, so restart the chain.
         // Stop all the services.
         await reMain(['play', 'stop', '-eservice=ag-pserver']);

@@ -1,16 +1,11 @@
-- name: "Check if /home/{{ service }}/cosmos-stakers.txt exists"
-  stat:
-    path: "/home/{{ service }}/cosmos-stakers.txt"
-  register: stakers
-
 - name: "Get pubkeys and amounts from /home/{{ service }}/cosmos-stakers.txt"
   command: "\
     sed -e 's/^\\([^:]*\\):\\([^:]*\\).*$/\\1 \\2/' \
       /home/{{ service }}/cosmos-stakers.txt"
   args:
     warn: false
+  ignore_errors: true
   register: stakers_data
-  when: stakers.stat.exists
 
 - name: "Transfer stake to delegates"
   become_user: "{{ service }}"

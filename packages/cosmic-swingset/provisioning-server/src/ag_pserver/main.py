@@ -73,11 +73,26 @@ class SendInputAndWaitProtocol(protocol.ProcessProtocol):
     def processEnded(self, reason):
         self.deferred.callback((reason.value.exitCode, self.output, self.error))
 
+class StackedResource(resource.Resource):
+    def __init__(self, stack):
+        super().__init__()
+        self.stack = [super(), *stack]
+
+    def getChildWithDefault(self, *args):
+        for s in self.stack:
+            res = s.getChildWithDefault(*args)
+            if not isinstance(res, resource.NoResource):
+                return res
+        return res
+
+def wwwroot(home):
+    return os.path.join(home, 'wwwroot')
+
 def cosmosConfigFile(home):
-    return os.path.join(home, 'cosmos-chain.json')
+    return os.path.join(wwwroot(home), 'current', 'chain.json')
 
 def cosmosGenesisFile(home):
-    return os.path.join(home, 'cosmos-genesis.json')
+    return os.path.join(wwwroot(home), 'current', 'genesis.json')
 
 def pubkeyDatabase(home):
     return os.path.join(home, 'pubkeys.jsona')
@@ -335,11 +350,11 @@ class ConfigJSON(resource.Resource):
 
 def run_server(reactor, o):
     print("dir is", __file__)
-    root = static.File(htmldir)
+    provroot = static.File(htmldir)
     provisioner = Provisioner(reactor, o)
-    root.putChild(b"", provisioner)
-    root.putChild(b"index.html", provisioner)
-    root.putChild(b"request-code", RequestCode(reactor, o))
+    provroot.putChild(b"", provisioner)
+    provroot.putChild(b"index.html", provisioner)
+    provroot.putChild(b"request-code", RequestCode(reactor, o))
 
     # Prefix the mountpoints.
     revpaths = o['mountpoint'].split('/')
@@ -348,8 +363,13 @@ def run_server(reactor, o):
         # print('mount root under ' + dir)
         if dir != '':
             r = resource.Resource()
-            r.putChild(dir.encode('utf-8'), root)
-            root = r
+            r.putChild(dir.encode('utf-8'), provroot)
+            provroot = r
+
+    # Override the paths.
+    root = StackedResource([static.File(wwwroot(o['home'])), provroot])
+    if o['mountpoint'] == '/':
+        root.putChild(b"", provisioner)
 
     # Display the JSON config.
     root.putChild(b"network-config", ConfigJSON(o))
@@ -515,7 +535,7 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
 def main():
     o = Options()
     o.parseOptions()
-    if o.subCommand.startswith('set-cosmos-'):
+    if o.subCommand is not None and o.subCommand.startswith('set-cosmos-'):
         try:
             os.mkdir(o['home'])
         except FileExistsError:
