@@ -2,10 +2,15 @@ import parseArgs from 'minimist';
 import path from 'path';
 import chalk from 'chalk';
 
-const FAKE_CHAIN_DELAY = 5;
+const FAKE_CHAIN_DELAY =
+  process.env.FAKE_CHAIN_DELAY === undefined
+    ? 5
+    : Number(process.env.FAKE_CHAIN_DELAY);
+const PORT = process.env.PORT || 8000;
+const HOST_PORT = process.env.HOST_PORT || PORT;
 
 export default async function startMain(progname, rawArgs, priv, opts) {
-  const { console, error, fs, spawn, process } = priv;
+  const { console, error, fs, spawn, os, process } = priv;
   const { reset, _: args } = parseArgs(rawArgs, {
     boolean: ['reset'],
   });
@@ -40,17 +45,22 @@ export default async function startMain(progname, rawArgs, priv, opts) {
   };
 
   let agSolo;
+  let agSetupSolo;
   let agServer;
   if (opts.sdk) {
     agSolo = path.resolve(__dirname, '../../cosmic-swingset/bin/ag-solo');
+    agSetupSolo = path.resolve(__dirname, '../../cosmic-swingset/setup-solo');
   } else {
-    if (!(await exists('.agservers/node_modules'))) {
-      return error(`you must first run '${progname} install'`);
-    }
     agSolo = `${process.cwd()}/node_modules/@agoric/cosmic-swingset/bin/ag-solo`;
   }
 
-  async function startDev(profileName) {
+  async function startFakeChain(profileName) {
+    if (!opts.sdk) {
+      if (!(await exists('.agservers/node_modules'))) {
+        return error(`you must first run '${progname} install'`);
+      }
+    }
+
     const fakeGCI = 'myFakeGCI';
     if (!(await exists(agServer))) {
       console.log(chalk.yellow(`initializing ${profileName}`));
@@ -78,19 +88,112 @@ export default async function startMain(progname, rawArgs, priv, opts) {
     );
     await linkHtml(profileName);
 
-    await pspawn(agSolo, ['start', '--role=two_client'], {
+    return pspawn(agSolo, ['start', '--role=two_client'], {
       stdio: 'inherit',
       cwd: agServer,
     });
   }
 
-  async function startTestnet(profileName) {
+  async function startTestnetDocker(profileName, startArgs) {
+    const IMAGE = `agoric/cosmic-swingset-setup-solo`;
 
+    if (startArgs[0] === '--pull') {
+      startArgs.shift();
+      await pspawn('docker', ['pull', IMAGE], {
+        stdio: 'inherit',
+      });
+    }
+
+    const setupRun = (...bonusArgs) =>
+      pspawn(
+        'docker',
+        [
+          'run',
+          `-p127.0.0.1:${HOST_PORT}:${PORT}`,
+          `--volume=${process.cwd()}:/usr/src/dapp`,
+          `-eAG_SOLO_BASEDIR=/usr/src/dapp/.agservers/${profileName}`,
+          `--rm`,
+          `-it`,
+          IMAGE,
+          `--webport=${PORT}`,
+          `--webhost=0.0.0.0`,
+          ...bonusArgs,
+          ...startArgs,
+        ],
+        {
+          stdio: 'inherit',
+        },
+      );
+
+    if (!(await exists(agServer))) {
+      const status =
+        (await setupRun('--no-restart')) || (await linkHtml(profileName));
+      if (status) {
+        return status;
+      }
+    }
+
+    return setupRun();
+  }
+
+  async function startTestnetSdk(profileName, startArgs) {
+    const virtEnv = path.resolve(
+      `.agservers/ve3-${os.platform()}-${os.arch()}`,
+    );
+    if (!(await exists(`${virtEnv}/bin/pip`))) {
+      const status = await pspawn('python3', ['-mvenv', virtEnv], {
+        stdio: 'inherit',
+        cwd: agSetupSolo,
+      });
+      if (status) {
+        return status;
+      }
+    }
+
+    const pipRun = (...bonusArgs) =>
+      pspawn(`${virtEnv}/bin/pip`, bonusArgs, {
+        stdio: 'inherit',
+        cwd: agSetupSolo,
+      });
+
+    if (!(await exists(`${virtEnv}/bin/wheel`))) {
+      const status = await pipRun('install', 'wheel');
+      if (status) {
+        return status;
+      }
+    }
+
+    if (!(await exists(`${virtEnv}/bin/ag-setup-solo`))) {
+      const status = await pipRun('install', `--editable`, '.');
+      if (status) {
+        return status;
+      }
+    }
+
+    const setupRun = (...bonusArgs) =>
+      pspawn(
+        `${virtEnv}/bin/ag-setup-solo`,
+        [`--webport=${PORT}`, ...bonusArgs, ...startArgs],
+        {
+          stdio: 'inherit',
+          env: { ...process.env, AG_SOLO_BASEDIR: agServer },
+        },
+      );
+
+    if (!(await exists(agServer))) {
+      const status =
+        (await setupRun('--no-restart')) || (await linkHtml(profileName));
+      if (status) {
+        return status;
+      }
+    }
+
+    return setupRun();
   }
 
   const profiles = {
-    dev: startDev,
-    testnet: startTestnet,
+    dev: startFakeChain,
+    testnet: opts.sdk ? startTestnetSdk : startTestnetDocker,
   };
 
   const profileName = args[0] || 'dev';
@@ -108,9 +211,9 @@ export default async function startMain(progname, rawArgs, priv, opts) {
   agServer = `.agservers/${profileName}`;
   if (reset) {
     console.log(chalk.green(`removing ${agServer}`));
-    // FIXME: Use portable rimraf.
+    // rm is available on all the unix-likes, so use it for speed.
     await pspawn('rm', ['-rf', agServer], { stdio: 'inherit' });
   }
 
-  await startFn(profileName, agServer);
+  return startFn(profileName, args[0] ? args.slice(1) : args);
 }

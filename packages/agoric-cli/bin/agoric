@@ -6,6 +6,7 @@ const chalk = esmRequire('chalk').default;
 const WebSocket = esmRequire('ws');
 const { spawn } = esmRequire('child_process');
 const fs = esmRequire('fs').promises;
+const os = esmRequire('os');
 
 const main = esmRequire('../lib/main.js').default;
 const progname = path.basename(process.argv[1]);
@@ -23,6 +24,7 @@ main(progname, rawArgs, {
   error,
   makeWebSocket,
   fs,
+  os,
   process,
   spawn,
 }).then(

@@ -80,3 +80,4 @@ integration-test/transform-tests/output
 /dev
 /testnet
 /chain
+/ve*
