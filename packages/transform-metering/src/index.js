@@ -1,3 +1,4 @@
+export { makeMeteredEvaluator } from './evaluator';
 export { makeMeter, makeMeterAndResetters } from './meter';
-export { makeMeteringEndowments } from './endow';
 export { makeMeteringTransformer } from './transform';
+export { makeWithMeter } from './with';

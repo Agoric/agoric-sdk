@@ -1,18 +1,26 @@
+import harden from '@agoric/harden';
+
 import * as c from './constants';
+
+// We'd like to import this, but RE2 is cjs
+const RE2 = require('re2');
 
 const METER_GENERATED = Symbol('meter-generated');
 
 export function makeMeteringTransformer(
   babelCore,
-  overrideParser = undefined,
-  overrideMeterId = c.DEFAULT_METER_ID,
-  overrideRegexpIdPrefix = c.DEFAULT_REGEXP_ID_PREFIX,
+  {
+    overrideParser = undefined,
+    overrideRegExp = harden(RE2),
+    overrideMeterId = c.DEFAULT_METER_ID,
+    overrideRegExpIdPrefix = c.DEFAULT_REGEXP_ID_PREFIX,
+  } = {},
 ) {
   const parser = overrideParser
     ? overrideParser.parse || overrideParser
     : babelCore.parseSync;
   const meterId = overrideMeterId;
-  const regexpIdPrefix = overrideRegexpIdPrefix;
+  const regexpIdPrefix = overrideRegExpIdPrefix;
   let regexpNumber = 0;
 
   const meteringPlugin = regexpList => ({ types: t }) => {
@@ -167,10 +175,17 @@ const ${reid}=RegExp(${JSON.stringify(pattern)},${JSON.stringify(flags)});`);
           ? `(function(){${reSource}return ${maybeSource}})()`
           : `${reSource}${maybeSource}`;
 
+      if (overrideRegExp) {
+        // By default, override with RE2, which protects against
+        // catastrophic backtracking.
+        endowments.RegExp = overrideRegExp;
+      }
+
       // console.log('metered source:', actualSource);
       return {
         ...ss,
         ast,
+        endowments,
         src: actualSource,
       };
     },

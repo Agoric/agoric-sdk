@@ -8,12 +8,10 @@ import * as c from '../src/constants';
 
 test('meter transform', async t => {
   try {
-    const { meterId, meteringTransform } = makeMeteringTransformer(
-      babelCore,
-      undefined,
-      '$m',
-      '$re_',
-    );
+    const { meterId, meteringTransform } = makeMeteringTransformer(babelCore, {
+      overrideMeterId: '$m',
+      overrideRegExpIdPrefix: '$re_',
+    });
     const rewrite = (source, testName) => {
       let cMeter;
       const ss = meteringTransform.rewrite({

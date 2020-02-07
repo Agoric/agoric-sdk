@@ -4,6 +4,40 @@ The purpose of this package is to provide a loose, but deterministic way to inte
 
 This technique is not airtight, but it is at least is a best approximation in the absence of an instrumented host platform.
 
+## Quickstart
+
+```js
+import SES from 'ses';
+import * as babelCore from '@babel/core';
+import { makeMeteredEvaluator } from '@agoric/transform-metering';
+import tameMetering from '@agoric/tame-metering';
+
+// Override all the global objects with metered versions.
+const setGlobalMeter = tameMetering();
+
+const meteredEval = makeMeteredEvaluator({
+  // Needed for enabling metering of the global builtins.
+  setGlobalMeter,
+  // Needed for source transforms that prevent runaways.
+  babelCore,
+  // ({ transforms }) => { evaluate(src, endowments = {}) { [eval function] } }
+  makeEvaluator: SES.makeSESRootRealm, // TODO: change to new SES/Compartment API
+});
+
+// Now use the returned meteredEval: it should not throw.
+const { exhausted, exceptionBox, returned } = meteredEval(untrustedSource, /* endowments */);
+if (exhausted) {
+  console.log('the meter was exhausted');
+}
+if (exceptionBox) {
+  console.log('the source threw exception', exceptionBox[0]);
+} else {
+  console.log('the source returned', returned);
+}
+```
+
+# Implementation Details
+
 ## Meter types
 
 There are three types of meters:

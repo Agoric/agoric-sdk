@@ -24,6 +24,7 @@
   "dependencies": {
     "@agoric/harden": "^0.0.4",
     "@agoric/nat": "^2.0.1",
+    "@agoric/tame-metering": "^1.0.0",
     "re2": "^1.10.5"
   },
   "keywords": [],

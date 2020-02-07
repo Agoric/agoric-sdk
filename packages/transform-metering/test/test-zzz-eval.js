@@ -1,27 +1,32 @@
-/* global globalThis */
+// eslint-disable-next-line import/order
+import setGlobalMeter from '@agoric/tame-metering/src/install-global-metering';
+
 /* eslint-disable no-await-in-loop */
 import test from 'tape-promise/tape';
 import * as babelCore from '@babel/core';
 import SES from 'ses';
 
-import {
-  makeMeterAndResetters,
-  makeMeteringEndowments,
-  makeMeteringTransformer,
-} from '../src/index';
+import { makeMeteredEvaluator } from '../src/index';
 
-test('metering end-to-end', async t => {
+test('metering evaluator', async t => {
   try {
-    const [meter, reset] = makeMeterAndResetters();
-    const { meterId, meteringTransform } = makeMeteringTransformer(babelCore);
-    const endowments = makeMeteringEndowments(meter, globalThis, {}, meterId);
-    const transforms = [meteringTransform];
+    const meteredEval = makeMeteredEvaluator({
+      setGlobalMeter,
+      babelCore,
+      makeEvaluator: SES.makeSESRootRealm,
+    });
 
-    const s = SES.makeSESRootRealm({ transforms });
-
+    // Destructure the output of the meteredEval.
+    let exhaustedTimes = 0;
     const myEval = src => {
-      Object.values(reset).forEach(r => r());
-      return s.evaluate(src, endowments);
+      const { exhausted, exceptionBox, returned } = meteredEval(src);
+      if (exhausted) {
+        exhaustedTimes += 1;
+      }
+      if (exceptionBox) {
+        throw exceptionBox[0];
+      }
+      return returned;
     };
 
     const src1 = `123; 456;`;
@@ -57,7 +62,9 @@ while (true) {}
     const src5 = `\
 new Array(1e6).map(Object.create)
 `;
-    t.throws(() => myEval(src5), RangeError, 'long map fails');
+    t.throws(() => myEval(src5), /Allocate meter exceeded/, 'long map fails');
+
+    t.equals(exhaustedTimes, 3, `meter was exhausted as expected`);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {

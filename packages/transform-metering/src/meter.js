@@ -5,6 +5,8 @@ import * as c from './constants';
 
 const { isArray } = Array;
 const { getOwnPropertyDescriptors } = Object;
+const { ceil } = Math;
+const ObjectConstructor = Object;
 
 // eslint-disable-next-line no-bitwise
 const bigIntWord = typeof BigInt !== 'undefined' && BigInt(1 << 32);
@@ -64,7 +66,7 @@ export function makeAllocateMeter(maybeAbort, meter, allocateCounter = null) {
       meter[c.METER_ENTER]();
       maybeAbort();
       let cost = 1;
-      if (value && Object(value) === value) {
+      if (value && ObjectConstructor(value) === value) {
         // Either an array or an object with properties.
         if (isArray(value)) {
           // The size of the array.  This property cannot be overridden.
@@ -83,7 +85,7 @@ export function makeAllocateMeter(maybeAbort, meter, allocateCounter = null) {
         switch (t) {
           case 'string':
             // The size of the string, in approximate words.
-            cost += Math.ceil(value.length / 4);
+            cost += ceil(value.length / 4);
             break;
           case 'bigint': {
             // Compute the number of words in the bigint.
@@ -183,6 +185,14 @@ export function makeMeterAndResetters(maxima = {}) {
     }
   };
   const resetters = {
+    isExhausted() {
+      try {
+        maybeAbort();
+        return undefined;
+      } catch (e) {
+        return e;
+      }
+    },
     allocate: makeResetter(allocateCounter),
     stack: makeResetter(stackCounter),
     compute: makeResetter(computeCounter),
