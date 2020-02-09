@@ -1,15 +1,15 @@
 /* eslint-disable no-await-in-loop */
-import setGlobalMeter from '@agoric/tame-metering/src/install-global-metering';
+import replaceGlobalMeter from '@agoric/tame-metering/src/install-global-metering';
 
 // eslint-disable-next-line import/order
 import test from 'tape-promise/tape';
 
-import { makeMeterAndResetters, makeWithMeter } from '../src/index';
+import { makeMeter, makeWithMeter } from '../src/index';
 
 test('meter running', async t => {
   try {
-    const [meter, resetters] = makeMeterAndResetters({ maxCombined: 10 });
-    const { withMeter, withoutMeter } = makeWithMeter(setGlobalMeter, meter);
+    const { meter, adminFacet } = makeMeter({ budgetCombined: 10 });
+    const { withMeter, withoutMeter } = makeWithMeter(replaceGlobalMeter, meter);
     const withMeterFn = (thunk, newMeter = meter) => () =>
       withMeter(thunk, newMeter);
 
@@ -26,14 +26,14 @@ test('meter running', async t => {
       `withMeter works`,
     );
 
-    resetters.combined(10);
+    adminFacet.combined(10);
     t.throws(
       withMeterFn(() => new Array(10)),
       RangeError,
       'new Array exhausted',
     );
 
-    resetters.combined(20);
+    adminFacet.combined(20);
     withMeter(() => {
       const a = new Array(10);
       withoutMeter(() =>

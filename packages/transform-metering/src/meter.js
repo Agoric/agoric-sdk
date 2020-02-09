@@ -1,6 +1,4 @@
 /* global BigInt */
-import harden from '@agoric/harden';
-
 import * as c from './constants';
 
 const { isArray } = Array;
@@ -28,43 +26,46 @@ const makeCounter = initBalance => {
 
 export function makeAborter() {
   let abortReason;
-  const maybeAbort = (reason = undefined) => {
+  const maybeAbort = (reason = undefined, throwForever = true) => {
     if (reason !== undefined) {
       // Set a new reason.
-      abortReason = harden(reason);
+      abortReason = reason;
     }
-    if (abortReason !== undefined) {
+    if (abortReason !== undefined && throwForever) {
       // Keep throwing the same reason.
       throw abortReason;
     }
+    return abortReason;
   };
   maybeAbort.reset = () => (abortReason = undefined);
-  return harden(maybeAbort);
+  return maybeAbort;
 }
 
 export function makeComputeMeter(maybeAbort, meter, computeCounter = null) {
   if (computeCounter === null) {
-    return maybeAbort;
+    return (_cost = 1, throwForever = true) => {
+      maybeAbort(undefined, throwForever);
+    };
   }
-  return (cost = 1) => {
-    maybeAbort();
-    if (computeCounter(-cost) <= 0) {
-      throw maybeAbort(RangeError(`Compute meter exceeded`));
+  return (cost = 1, throwForever = true) => {
+    const already = maybeAbort(undefined, throwForever);
+    if (!already && computeCounter(-cost) <= 0) {
+      maybeAbort(RangeError(`Compute meter exceeded`), throwForever);
     }
   };
 }
 
 export function makeAllocateMeter(maybeAbort, meter, allocateCounter = null) {
   if (allocateCounter === null) {
-    return value => {
-      maybeAbort();
+    return (value, throwForever = true) => {
+      maybeAbort(undefined, throwForever);
       return value;
     };
   }
-  return value => {
+  return (value, throwForever = true) => {
     try {
-      meter[c.METER_ENTER]();
-      maybeAbort();
+      const already = maybeAbort(undefined, throwForever);
+      // meter[c.METER_ENTER](undefined, throwForever);
       let cost = 1;
       if (value && ObjectConstructor(value) === value) {
         // Either an array or an object with properties.
@@ -75,7 +76,7 @@ export function makeAllocateMeter(maybeAbort, meter, allocateCounter = null) {
           // Compute the number of own properties.
           // eslint-disable-next-line guard-for-in, no-unused-vars
           for (const p in getOwnPropertyDescriptors(value)) {
-            meter[c.METER_COMPUTE]();
+            meter[c.METER_COMPUTE](undefined, throwForever);
             cost += 1;
           }
         }
@@ -94,7 +95,7 @@ export function makeAllocateMeter(maybeAbort, meter, allocateCounter = null) {
               remaining = -remaining;
             }
             while (remaining > bigIntZero) {
-              meter[c.METER_COMPUTE]();
+              meter[c.METER_COMPUTE](undefined, throwForever);
               remaining /= bigIntWord;
               cost += 1;
             }
@@ -104,6 +105,7 @@ export function makeAllocateMeter(maybeAbort, meter, allocateCounter = null) {
             if (value !== null) {
               throw maybeAbort(
                 TypeError(`Allocate meter found unexpected non-null object`),
+                throwForever,
               );
             }
             // Otherwise, minimum cost.
@@ -117,56 +119,59 @@ export function makeAllocateMeter(maybeAbort, meter, allocateCounter = null) {
           default:
             throw maybeAbort(
               TypeError(`Allocate meter found unrecognized type ${t}`),
+              throwForever,
             );
         }
       }
 
-      if (allocateCounter(-cost) <= 0) {
-        throw maybeAbort(RangeError(`Allocate meter exceeded`));
+      if (!already && allocateCounter(-cost, throwForever) <= 0) {
+        maybeAbort(RangeError(`Allocate meter exceeded`), throwForever);
       }
       return value;
     } finally {
-      meter[c.METER_LEAVE]();
+      // meter[c.METER_LEAVE](undefined, throwForever);
     }
   };
 }
 
 export function makeStackMeter(maybeAbort, meter, stackCounter = null) {
   if (stackCounter === null) {
-    return _ => maybeAbort();
+    return (_cost, throwForever = true) => {
+      maybeAbort(undefined, throwForever);
+    };
   }
-  return (cost = 1) => {
+  return (cost = 1, throwForever = true) => {
     try {
-      maybeAbort();
-      if (stackCounter(-cost) <= 0) {
-        throw maybeAbort(RangeError(`Stack meter exceeded`));
+      meter[c.METER_COMPUTE](undefined, throwForever);
+      const already = maybeAbort(undefined, throwForever);
+      if (!already && stackCounter(-cost, throwForever) <= 0) {
+        maybeAbort(RangeError(`Stack meter exceeded`), throwForever);
       }
-      meter[c.METER_COMPUTE]();
     } catch (e) {
-      throw maybeAbort(e);
+      throw maybeAbort(e, throwForever);
     }
   };
 }
 
-export function makeMeterAndResetters(maxima = {}) {
+export function makeMeter(budgets = {}) {
   let combinedCounter;
   const counter = (vname, dflt) => {
-    const max = vname in maxima ? maxima[vname] : c[dflt];
-    if (max === true) {
+    const budget = vname in budgets ? budgets[vname] : c[dflt];
+    if (budget === true) {
       if (!combinedCounter) {
         throw TypeError(
-          `A maxCombined value must be set to use the combined meter for ${vname}`,
+          `A budgetCombined value must be set to use the combined meter for ${vname}`,
         );
       }
       return combinedCounter;
     }
-    return max === null ? null : makeCounter(max);
+    return budget === null ? null : makeCounter(budget);
   };
 
-  combinedCounter = counter('maxCombined', 'DEFAULT_COMBINED_METER');
-  const allocateCounter = counter('maxAllocate', 'DEFAULT_ALLOCATE_METER');
-  const computeCounter = counter('maxCompute', 'DEFAULT_COMPUTE_METER');
-  const stackCounter = counter('maxStack', 'DEFAULT_STACK_METER');
+  combinedCounter = counter('budgetCombined', 'DEFAULT_COMBINED_METER');
+  const allocateCounter = counter('budgetAllocate', 'DEFAULT_ALLOCATE_METER');
+  const computeCounter = counter('budgetCompute', 'DEFAULT_COMPUTE_METER');
+  const stackCounter = counter('budgetStack', 'DEFAULT_STACK_METER');
 
   // Link all the meters together with the same aborter.
   const maybeAbort = makeAborter();
@@ -184,15 +189,12 @@ export function makeMeterAndResetters(maxima = {}) {
       cnt.reset(newBalance);
     }
   };
-  const resetters = {
-    isExhausted() {
-      try {
-        maybeAbort();
-        return undefined;
-      } catch (e) {
-        return e;
-      }
-    },
+  const isExhausted = () => {
+    return maybeAbort(undefined, false);
+  };
+
+  const adminFacet = {
+    isExhausted,
     allocate: makeResetter(allocateCounter),
     stack: makeResetter(stackCounter),
     compute: makeResetter(computeCounter),
@@ -204,12 +206,12 @@ export function makeMeterAndResetters(maxima = {}) {
   meter[c.METER_COMPUTE] = meterCompute;
   meter[c.METER_ENTER] = meterStack;
   meter[c.METER_LEAVE] = () => meterStack(-1);
+  meter.isExhausted = isExhausted;
 
   // Export the allocate meter with other meters as properties.
   Object.assign(meterAllocate, meter);
-  return [harden(meterAllocate), harden(resetters)];
-}
-
-export function makeMeter(maxima = {}) {
-  return makeMeterAndResetters(maxima)[0];
+  return {
+    meter: meterAllocate,
+    adminFacet,
+  };
 }

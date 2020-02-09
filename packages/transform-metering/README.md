@@ -9,30 +9,37 @@ This technique is not airtight, but it is at least is a best approximation in th
 ```js
 import SES from 'ses';
 import * as babelCore from '@babel/core';
-import { makeMeteredEvaluator } from '@agoric/transform-metering';
+import { makeMeter, makeMeteredEvaluator } from '@agoric/transform-metering';
 import tameMetering from '@agoric/tame-metering';
 
 // Override all the global objects with metered versions.
-const setGlobalMeter = tameMetering();
+const replaceGlobalMeter = tameMetering();
+// TODO: Here is where `lockdown` would be run.
 
 const meteredEval = makeMeteredEvaluator({
   // Needed for enabling metering of the global builtins.
-  setGlobalMeter,
+  replaceGlobalMeter,
   // Needed for source transforms that prevent runaways.
   babelCore,
   // ({ transforms }) => { evaluate(src, endowments = {}) { [eval function] } }
   makeEvaluator: SES.makeSESRootRealm, // TODO: change to new SES/Compartment API
+  // Resolve a promise when the code inside the eval function is done evaluating.
+  makeQuiescenceP: () => new Promise(res => setImmediate(() => res())),
 });
 
 // Now use the returned meteredEval: it should not throw.
-const { exhausted, exceptionBox, returned } = meteredEval(untrustedSource, /* endowments */);
-if (exhausted) {
-  console.log('the meter was exhausted');
-}
-if (exceptionBox) {
-  console.log('the source threw exception', exceptionBox[0]);
-} else {
-  console.log('the source returned', returned);
+// It also doesn't return until the code has quiesced.
+const { meter } = makeMeter(); 
+const { exhaustedP, exceptionBox, returned } = meteredEval(meter, untrustedSource, /* endowments */);
+exhaustedP.then(exhausted =>
+  if (exhausted) {
+    console.log('the meter was exhausted');
+  }
+  if (exceptionBox) {
+    console.log('the source threw exception', exceptionBox[0]);
+  } else {
+    console.log('the source returned', returned);
+  }
 }
 ```
 

@@ -12,19 +12,23 @@ const { get: wmGet, set: wmSet } = WeakMap.prototype;
 
 const ObjectConstructor = Object;
 
-let setGlobalMeter;
+let replaceGlobalMeter;
 
 export default function tameMetering() {
-  if (setGlobalMeter) {
+  if (replaceGlobalMeter) {
     // Already installed.
-    return setGlobalMeter;
+    return replaceGlobalMeter;
   }
 
-  let globalMeter;
+  let globalMeter = null;
   const wrapped = new WeakMap();
   const setWrapped = (...args) => apply(wmSet, wrapped, args);
   const getWrapped = (...args) => apply(wmGet, wrapped, args);
 
+  /*
+    setWrapped(Error, Error); // FIGME: debugging
+    setWrapped(console, console); // FIGME
+  */
   const wrapDescriptor = desc => {
     const newDesc = {};
     for (const [k, v] of entries(desc)) {
@@ -34,13 +38,8 @@ export default function tameMetering() {
     return newDesc;
   };
 
-  function wrap(target, deepMeter = globalMeter) {
+  function wrap(target) {
     if (ObjectConstructor(target) !== target) {
-      return target;
-    }
-
-    const meter = globalMeter;
-    if (target === meter) {
       return target;
     }
 
@@ -52,33 +51,50 @@ export default function tameMetering() {
     if (typeof target === 'function') {
       // Meter the call to the function/constructor.
       wrapper = function meterFunction(...args) {
-        // We first install no meter to make metering explicit.
-        const userMeter = setGlobalMeter(null);
+        // We're careful not to use the replaceGlobalMeter function as
+        // it may consume some stack.
+        // Instead, directly manipulate the globalMeter variable.
+        const savedMeter = globalMeter;
         try {
-          userMeter && userMeter[c.METER_ENTER]();
+          // This is a common idiom to disable global metering so
+          // that the savedMeter can use builtins without
+          // recursively calling itself.
+
+          // Track the entry of the stack frame.
+          globalMeter = null;
+          // savedMeter && savedMeter[c.METER_ENTER](undefined, false);
           let ret;
-          try {
-            // Temporarily install the deep meter.
-            setGlobalMeter(deepMeter);
-            const newTarget = new.target;
-            if (newTarget) {
-              ret = construct(target, args, newTarget);
-            } else {
-              ret = apply(target, this, args);
-            }
-          } finally {
-            // Resume explicit metering.
-            setGlobalMeter(null);
+
+          // Reinstall the saved meter for the actual function invocation.
+          globalMeter = savedMeter;
+          const newTarget = new.target;
+          if (newTarget) {
+            ret = construct(target, args, newTarget);
+          } else {
+            ret = apply(target, this, args);
           }
-          userMeter && userMeter[c.METER_ALLOCATE](ret);
+
+          // Track the allocation of the return value.
+          globalMeter = null;
+          savedMeter && savedMeter[c.METER_ALLOCATE](ret, false);
+
           return ret;
         } catch (e) {
-          userMeter && userMeter[c.METER_ALLOCATE](e);
+          // Track the allocation of the exception value.
+          globalMeter = null;
+          savedMeter && savedMeter[c.METER_ALLOCATE](e, false);
           throw e;
         } finally {
-          // Resume the user meter.
-          userMeter && userMeter[c.METER_LEAVE]();
-          setGlobalMeter(userMeter);
+          // In case a try block consumes stack.
+          globalMeter = savedMeter;
+          try {
+            // Declare we left the stack frame.
+            globalMeter = null;
+            // savedMeter && savedMeter[c.METER_LEAVE](undefined, false);
+          } finally {
+            // Resume the saved meter, if there was one.
+            globalMeter = savedMeter;
+          }
         }
       };
 
@@ -105,13 +121,19 @@ export default function tameMetering() {
   }
 
   // Override the globals with wrappers.
-  wrap(globalThis, null);
+  wrap(globalThis);
 
   // Provide a way to set the meter.
-  setGlobalMeter = m => {
+  replaceGlobalMeter = m => {
     const oldMeter = globalMeter;
-    globalMeter = m;
+    if (m !== undefined) {
+      // console.log('replacing', oldMeter, 'with', m, Error('here')); // FIGME
+      globalMeter = m;
+    }
+    /* if (oldMeter === null) {
+      console.log('returning', oldMeter, Error('here'));
+    } */
     return oldMeter;
   };
-  return setGlobalMeter;
+  return replaceGlobalMeter;
 }

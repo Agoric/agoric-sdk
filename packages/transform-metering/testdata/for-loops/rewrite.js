@@ -1,4 +1,4 @@
-for (const f of b) {$m.c();
+const $m=$h‍_enterMeter();try{for (const f of b) {$m.c();
   doit(f);}
 
 for (const p in bar) {$m.c();
@@ -6,3 +6,4 @@ for (const p in bar) {$m.c();
 
 for (let i = 0; i < 3; i++) {$m.c();
   doit(i);}
+}finally{$m.l()}

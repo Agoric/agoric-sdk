@@ -3,6 +3,8 @@ export * from '@agoric/tame-metering/src/constants';
 export const METER_COMBINED = '*';
 
 export const DEFAULT_METER_ID = '$h\u200d_meter';
+export const DEFAULT_GET_METER_ID = '$h\u200d_meter_get';
+export const DEFAULT_SET_METER_ID = '$h\u200d_meter_set';
 export const DEFAULT_REGEXP_ID_PREFIX = '$h\u200d_re_';
 
 // Default metering values.  These can easily be overridden in meter.js.

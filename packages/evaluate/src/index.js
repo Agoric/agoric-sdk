@@ -5,7 +5,8 @@ import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 export const makeEvaluators = (makerOptions = {}) => {
   // Evaluate any shims, globally!
   if (typeof globalThis === 'undefined') {
-    const myGlobal = typeof window === 'undefined' ? global : window;
+    // eslint-disable-next-line no-new-func
+    const myGlobal = Function('return this')();
     myGlobal.globalThis = myGlobal;
   }
   // eslint-disable-next-line no-eval
@@ -93,8 +94,10 @@ export const makeEvaluators = (makerOptions = {}) => {
     // The eval below is direct, so that we have access to the named endowments.
     const scopedEval = `(function() {
       with (arguments[0]) {
+        console.log('endow', arguments[0]);
         return function() {
           'use strict';
+          console.log('src', arguments[0]);
           return eval(arguments[0]);
         };
       }
@@ -102,7 +105,7 @@ export const makeEvaluators = (makerOptions = {}) => {
 
     // The eval below is indirect, so that we are only in the global scope.
     // eslint-disable-next-line no-eval
-    return (1, eval)(scopedEval)(sourceState.endowments)(src);
+    return  (1, eval)(scopedEval)(sourceState.endowments)(src);
   };
 
   // We need to make this first so that it is available to the other evaluators.

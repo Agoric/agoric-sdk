@@ -8,27 +8,29 @@ import * as c from '../src/constants';
 
 test('meter transform', async t => {
   try {
-    const { meterId, meteringTransform } = makeMeteringTransformer(babelCore, {
+    let getGlobalMeter;
+    const meteringTransform = makeMeteringTransformer(babelCore, {
       overrideMeterId: '$m',
       overrideRegExpIdPrefix: '$re_',
     });
     const rewrite = (source, testName) => {
       let cMeter;
+      getGlobalMeter = () => ({
+        [c.METER_COMPUTE]: units => (cMeter = units),
+      });
+
       const ss = meteringTransform.rewrite({
         src: source,
-        endowments: {
-          [meterId]: {
-            [c.METER_COMPUTE]: units => (cMeter = units),
-          },
-        },
+        endowments: { getGlobalMeter },
         sourceType: 'script',
       });
+
       t.equals(cMeter, source.length, `compute meter updated ${testName}`);
       return ss.src;
     };
 
     t.throws(
-      () => rewrite(`${meterId}.l()`, 'blacklisted meterId'),
+      () => rewrite(`$m.l()`, 'blacklisted meterId'),
       SyntaxError,
       'meterId cannot appear in source',
     );

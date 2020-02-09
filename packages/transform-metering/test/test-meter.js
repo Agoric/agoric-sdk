@@ -29,12 +29,12 @@ const testAllExhausted = (t, meter, desc) => {
 
 test('meter running', async t => {
   try {
-    const meter = makeMeter({ maxCompute: 10 });
+    const { meter } = makeMeter({ budgetCompute: 10 });
     meter[c.METER_COMPUTE](9);
     t.throws(() => meter[c.METER_COMPUTE](), RangeError, 'compute exhausted');
     testAllExhausted(t, meter, 'compute meter');
 
-    const meter2 = makeMeter({ maxAllocate: 10 });
+    const { meter: meter2 } = makeMeter({ budgetAllocate: 10 });
     meter2[c.METER_ALLOCATE](new Array(8));
     t.throws(
       () => meter2[c.METER_ALLOCATE]([]),
@@ -43,7 +43,7 @@ test('meter running', async t => {
     );
     testAllExhausted(t, meter2, 'allocate meter');
 
-    const meter3 = makeMeter({ maxStack: 10 });
+    const { meter: meter3 } = makeMeter({ budgetStack: 10 });
     for (let i = 0; i < 9; i += 1) {
       meter3[c.METER_ENTER]();
     }
@@ -65,29 +65,29 @@ test('meter running', async t => {
 test('meter running', async t => {
   try {
     t.throws(
-      () => makeMeter({ maxAllocate: true, maxCombined: null }),
+      () => makeMeter({ budgetAllocate: true, budgetCombined: null }),
       TypeError,
       'missing combined allocate',
     );
 
     t.throws(
-      () => makeMeter({ maxCompute: true, maxCombined: null }),
+      () => makeMeter({ budgetCompute: true, budgetCombined: null }),
       TypeError,
       'missing combined compute',
     );
 
     t.throws(
-      () => makeMeter({ maxStack: true, maxCombined: null }),
+      () => makeMeter({ budgetStack: true, budgetCombined: null }),
       TypeError,
       'missing combined stack',
     );
 
     // Try a combined meter.
-    const meter = makeMeter({
-      maxAllocate: true,
-      maxCompute: true,
-      maxStack: true,
-      maxCombined: 10,
+    const { meter } = makeMeter({
+      budgetAllocate: true,
+      budgetCompute: true,
+      budgetStack: true,
+      budgetCombined: 10,
     });
     t.throws(
       () => {
@@ -97,7 +97,7 @@ test('meter running', async t => {
         meter[c.METER_COMPUTE]();
         meter[c.METER_ENTER]();
       },
-      RangeError,
+      /RangeError/,
       'combined meter exhausted',
     );
     testAllExhausted(t, meter, 'combined meter');
