@@ -3,7 +3,7 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 import makeStore from '@agoric/store';
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 import {
   allComparable,
   mustBeSameStructure,
@@ -37,8 +37,7 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
   function redeem(allegedInvitePayment) {
     const allegedInviteUnits = allegedInvitePayment.getBalance();
     const inviteUnits = inviteUnitOps.coerce(allegedInviteUnits);
-    insist(!inviteUnitOps.isEmpty(inviteUnits))`\
-No invites left`;
+    assert(!inviteUnitOps.isEmpty(inviteUnits), details`No invites left`);
     const { seatIdentity } = inviteUnitOps.extent(inviteUnits);
     return Promise.resolve(
       inviteAssay.burnExactly(inviteUnits, allegedInvitePayment),
@@ -64,11 +63,16 @@ No invites left`;
   });
 
   function evaluateStringToFn(functionSrcString) {
-    insist(typeof functionSrcString === 'string')`\n
-"${functionSrcString}" must be a string, but was ${typeof functionSrcString}`;
+    // TODO these function strings shoudl be `details` but that disrupts tests
+    assert(
+      typeof functionSrcString === 'string',
+      `"${functionSrcString}" must be a string, but was ${typeof functionSrcString}`,
+    );
     const fn = evaluate(functionSrcString, fullEndowments);
-    insist(typeof fn === 'function')`\n
-"${functionSrcString}" must be a string for a function, but produced ${typeof fn}`;
+    assert(
+      typeof fn === 'function',
+      `"${functionSrcString}" must be a string for a function, but produced ${typeof fn}`
+    );
     return fn;
   }
 
@@ -117,8 +121,7 @@ No invites left`;
         }
         startFn = ns.default;
       } else {
-        insist(false)`\
-Unrecognized moduleFormat ${moduleFormat}`;
+        assert.fail(details`Unrecognized moduleFormat ${moduleFormat}`);
       }
 
       // TODO: The `spawn` method should spin off a new vat for each new

@@ -1,8 +1,8 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
+import { assert, details } from '@agoric/assert';
 import { addRemote } from './remote';
 import { addEgress, addIngress } from './clist';
-import { insist } from '../../insist';
 
 const UNDEFINED = harden({
   body: JSON.stringify({ '@qclass': 'undefined' }),
@@ -38,7 +38,7 @@ export function deliverToController(
     const { slots } = controllerArgs;
 
     const name = args[0];
-    insist(name === `${name}`, `bad addRemote name ${name}`);
+    assert.equal(name, `${name}`, details`bad addRemote name ${name}`);
     if (args[1]['@qclass'] !== 'slot' || args[1].index !== 0) {
       throw new Error(`unexpected args for addRemote(): ${controllerArgs}`);
     }
@@ -68,7 +68,7 @@ export function deliverToController(
     const { slots } = controllerArgs;
 
     const remoteName = args[0];
-    insist(state.names.has(remoteName), `unknown remote name ${remoteName}`);
+    assert(state.names.has(remoteName), details`unknown remote name ${remoteName}`);
     const remoteID = state.names.get(remoteName);
     const remoteRefID = Nat(args[1]);
     if (args[2]['@qclass'] !== 'slot' || args[2].index !== 0) {
@@ -84,7 +84,7 @@ export function deliverToController(
     const args = JSON.parse(controllerArgs.body);
 
     const remoteName = args[0];
-    insist(state.names.has(remoteName), `unknown remote name ${remoteName}`);
+    assert(state.names.has(remoteName), details`unknown remote name ${remoteName}`);
     const remoteID = state.names.get(remoteName);
     const remoteRefID = Nat(args[1]);
     const localRef = addIngress(state, remoteID, remoteRefID);

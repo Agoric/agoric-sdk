@@ -2,7 +2,7 @@
 
 import harden from '@agoric/harden';
 import { generateSparseInts } from '@agoric/sparse-ints';
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 
 // Example REPL invocations
 // home.registrar~.register('sharing', home.sharingService)
@@ -43,13 +43,14 @@ function makeRegistrar(systemVersion, seed = 0) {
       return key;
     },
     get(key, version = null) {
-      insist(typeof key === 'string')`\
-Key must be string ${key}`;
-      insist(keyFormat.test(key))`\
-Key must end with _<digits> ${key}`;
+      assert.equal(typeof key, 'string', details`Key must be string ${key}`);
+      assert(keyFormat.test(key), details`Key must end with _<digits> ${key}`);
       if (version) {
-        insist(version === systemVersion)`\
-Key is from incompatible version: ${version} should be ${systemVersion}`;
+        assert.equal(
+          version,
+          systemVersion,
+          details`Key is from incompatible version: ${version} should be ${systemVersion}`,
+        );
       }
       return contents.get(key);
     },

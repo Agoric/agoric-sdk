@@ -16,7 +16,7 @@ The following global variables are available to all modules in your Zoe contract
 
 * harden
 * makePromise
-* insist
+* assert
 
 ## Legacy contractHost uploads
 

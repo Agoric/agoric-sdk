@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { insist } from '../insist';
+import { assert, details } from '@agoric/assert';
 
 // See ../../docs/delivery.md for a description of the architecture of the
 // comms system.
@@ -39,7 +39,7 @@ function build(E, D) {
     },
 
     addRemote(name) {
-      insist(!remotes.has(name), `already have remote ${name}`);
+      assert(!remotes.has(name), details`already have remote ${name}`);
       const r = getRemote(name);
       const transmitter = harden({
         transmit(msg) {

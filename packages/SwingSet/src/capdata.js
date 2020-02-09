@@ -1,4 +1,4 @@
-import { insist } from './insist';
+import { assert, details } from '@agoric/assert';
 
 /**
  * Assert function to ensure that something expected to be a capdata object
@@ -13,13 +13,14 @@ import { insist } from './insist';
  * @return nothing
  */
 export function insistCapData(capdata) {
-  insist(
-    capdata.body === `${capdata.body}`,
-    `capdata has non-string .body ${capdata.body}`,
+  assert.equal(
+    capdata.body,
+    `${capdata.body}`,
+    details`capdata has non-string .body ${capdata.body}`,
   );
-  insist(
+  assert(
     capdata.slots instanceof Array,
-    `capdata has non-Array slots ${capdata.slots}`,
+    details`capdata has non-Array slots ${capdata.slots}`,
   );
   // TODO check that the .slots array elements are actually strings
 }

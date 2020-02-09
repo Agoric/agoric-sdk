@@ -2,7 +2,7 @@ import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 import { makeCollect } from '@agoric/spawner';
 import { escrowExchangeSrcs } from '@agoric/spawner/src/escrow';
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 import { makeMint } from '@agoric/ertp';
 
 import { makePixelConfig } from './pixelConfig';
@@ -55,13 +55,17 @@ export function makeGallery(
   );
 
   function insistNonEmptyUnits(assay, units) {
-    insist(!assay.getUnitOps().isEmpty(units))`\
-      no use rights present in units ${units}`;
+    assert(
+      !assay.getUnitOps().isEmpty(units),
+      details`no use rights present in units ${units}`,
+    );
   }
 
   function insistAssetHasUnits(assay, asset, units) {
-    insist(assay.getUnitOps().includes(asset.getBalance(), units))`\
-      ERTP asset ${asset} does not include units ${units}`;
+    assert(
+      assay.getUnitOps().includes(asset.getBalance(), units),
+      details`ERTP asset ${asset} does not include units ${units}`,
+    );
   }
 
   function getPixelList(assay, units) {
@@ -72,7 +76,7 @@ export function makeGallery(
 
   function insistColor(allegedColor) {
     // TODO: write rules
-    insist(true)`color ${allegedColor} must be a valid color`;
+    assert(true, details`color ${allegedColor} must be a valid color`);
   }
 
   function setPixelListState(pixelList, newColor) {

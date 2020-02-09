@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { showPaymentBalance, setupAssays } from './helpers';
 
@@ -21,14 +21,14 @@ const build = async (E, log, zoe, purses, installations) => {
       const { installationHandle, terms } = await E(zoe).getInstance(
         inviteExtent.instanceHandle,
       );
-      insist(
+      assert(
         installationHandle === installations.publicAuction,
-      )`wrong installation`;
-      insist(
+        details`wrong installation`);
+      assert(
         sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
-      )`assays were not as expected`;
-      insist(sameStructure(inviteExtent.minimumBid, simoleans(3)));
-      insist(sameStructure(inviteExtent.auctionedAssets, moola(1)));
+        details`assays were not as expected`);
+      assert(sameStructure(inviteExtent.minimumBid, simoleans(3)));
+      assert(sameStructure(inviteExtent.auctionedAssets, moola(1)));
 
       const offerRules = harden({
         payoutRules: [

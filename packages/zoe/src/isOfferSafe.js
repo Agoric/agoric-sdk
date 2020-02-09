@@ -1,4 +1,4 @@
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 
 /**
  * `isOfferSafeForOffer` checks offer safety for a single offer.
@@ -24,10 +24,10 @@ import { insist } from '@agoric/insist';
  * reallocation to be given to a player.
  */
 function isOfferSafeForOffer(unitOpsArray, payoutRules, units) {
-  insist(
+  assert(
     unitOpsArray.length === payoutRules.length &&
       unitOpsArray.length === units.length,
-  )`unitOpsArray, payoutRules, and units must be arrays of the same length`;
+    details`unitOpsArray, payoutRules, and units must be arrays of the same length`);
 
   const allowedRules = ['offerAtMost', 'wantAtLeast'];
 
@@ -35,9 +35,9 @@ function isOfferSafeForOffer(unitOpsArray, payoutRules, units) {
     if (payoutRule === null || payoutRule === undefined) {
       throw new Error(`payoutRule must be specified`);
     }
-    insist(
+    assert(
       allowedRules.includes(payoutRule.kind),
-    )`The kind ${payoutRule.kind} was not recognized`;
+      details`The kind ${payoutRule.kind} was not recognized`);
   }
 
   // For this allocation to count as a full refund, the allocated

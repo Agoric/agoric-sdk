@@ -21,14 +21,14 @@ const makeListExtentOps = (
 
   const listExtentOps = harden({
     insistKind: list => {
-      assert.equal(passStyleOf(list), 'copyArray', details`${list} must be an array`);
+      assert.equal(passStyleOf(list), 'copyArray', details`list ${list} must be an array`);
       for (const element of list) {
         insistElementKind(element);
       }
     },
     empty: _ => harden([]),
     isEmpty: list => {
-      assert.equal(passStyleOf(list), 'copyArray', details`${list} must be an array`);
+      assert.equal(passStyleOf(list), 'copyArray', details`list ${list} must be an array`);
       return list.length === 0;
     },
     includes: (whole, part) => {
@@ -58,7 +58,7 @@ const makeListExtentOps = (
     without: (whole, part) => {
       assert(
         listExtentOps.includes(whole, part),
-        details`${part} must be in ${whole}`
+        details`part ${part} must be in whole ${whole}`
       );
       const wholeMinusPart = [];
       for (const wholeElement of whole) {

@@ -14,12 +14,12 @@ function an(str) {
 
 // We will change the API to take the message as an optional argument; e.g.,
 
-//   insist(sky.isBlue(), details`${sky.color} should be blue`);
+//   assert(sky.isBlue(), details`${sky.color} should be blue`);
 
 // The details helper will be available as a direct import and as insist.details.
-// It returns an object that can print itself with the formatted message, or when 
-// complain is invoked, will report the real details to the console but include 
-// only the typeof information in the exception to prevent revealing secrets up 
+// It returns an object that can print itself with the formatted message, or when
+// complain is invoked, will report the real details to the console but include
+// only the typeof information in the exception to prevent revealing secrets up
 // the exception path.
 function details(template, ...args) {
   const complainer = harden({
@@ -54,7 +54,7 @@ function fail(optDetails = details`Assert failed`) {
   throw optDetails.complain();
 }
 
-// assert that expr is truthy, with an optional details to describe 
+// assert that expr is truthy, with an optional details to describe
 // the assertion. It is a tagged template literal like
 // ```assert(expr, details`....`);```
 // If expr is falsy, then the template contents are reported to the
@@ -78,8 +78,12 @@ function assert(flag, optDetails = details`check failed`) {
 }
 assert.details = details;
 
-// Assert that two values must be `===`. 
-function equal(actual, expected, optDetails = details`Expected ${actual} === ${expected}`) {
+// Assert that two values must be `===`.
+function equal(
+  actual,
+  expected,
+  optDetails = details`Expected ${actual} === ${expected}`,
+) {
   assert(actual === expected, optDetails);
 }
 assert.equal = equal;

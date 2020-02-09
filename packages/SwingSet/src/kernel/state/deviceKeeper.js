@@ -4,7 +4,7 @@
 
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import { insist } from '../../insist';
+import { assert, details } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
 import { insistDeviceID } from '../id';
@@ -29,7 +29,7 @@ export function initializeDeviceState(storage, deviceID) {
  * @param addKernelDeviceNode  Kernel function to add a new device node to the
  *    kernel's mapping tables.
  *
- * @return a object to hold and access the kernel's state for the given device
+ * @return an object to hold and access the kernel's state for the given device
  */
 export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
   insistDeviceID(deviceID);
@@ -46,7 +46,7 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
    *    or is otherwise invalid.
    */
   function mapDeviceSlotToKernelSlot(devSlot) {
-    insist(`${devSlot}` === devSlot, 'non-string devSlot');
+    assert(`${devSlot}` === devSlot, details`non-string devSlot: ${devSlot}`);
     // kdebug(`mapOutbound ${devSlot}`);
     const devKey = `${deviceID}.c.${devSlot}`;
     if (!storage.has(devKey)) {
@@ -88,7 +88,7 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
    *    devices or is otherwise invalid.
    */
   function mapKernelSlotToDeviceSlot(kernelSlot) {
-    insist(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
+    assert(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
     const kernelKey = `${deviceID}.c.${kernelSlot}`;
     if (!storage.has(kernelKey)) {
       const { type } = parseKernelSlot(kernelSlot);

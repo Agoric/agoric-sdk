@@ -3,7 +3,7 @@
 
 import harden from '@agoric/harden';
 
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 import { makeCollect } from '@agoric/spawner';
 import { escrowExchangeSrcs } from '@agoric/spawner/src/escrow';
 
@@ -102,7 +102,9 @@ function makeAliceMaker(E, log, contractHost) {
           showPaymentBalance('childPayment2', childPayment2);
 
           const bobsRawPixel = result.extent[0];
-          insist(
+          // TODO this was previously unchecked
+          console.log(`UNCHECKED ASSERTION NOW CHECKED HERE: ${bobsRawPixel.x === rawPixel.x && bobsRawPixel.y === rawPixel.y}`);
+          assert(
             bobsRawPixel.x === rawPixel.x && bobsRawPixel.y === rawPixel.y,
           );
           const bobsColor = await E(gallery).getPixelColor(

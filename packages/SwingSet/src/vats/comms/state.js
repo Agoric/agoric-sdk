@@ -1,4 +1,4 @@
-import { insist } from '../../insist';
+import { assert, details } from '@agoric/assert';
 import { insistCapData } from '../../capdata';
 import { makeVatSlot } from '../../parseVatSlots';
 
@@ -53,7 +53,7 @@ export function dumpState(state) {
 }
 
 export function trackUnresolvedPromise(state, remoteID, pid) {
-  insist(!state.promiseTable.has(pid), `${pid} already present`);
+  assert(!state.promiseTable.has(pid), details`${pid} already present`);
   state.promiseTable.set(pid, {
     owner: remoteID,
     state: 'unresolved',
@@ -71,37 +71,37 @@ export function allocateUnresolvedPromise(state, remoteID) {
 }
 
 export function setPromiseDecider(state, promiseID, decider) {
-  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
   state.promiseTable.get(promiseID).decider = decider;
 }
 
 export function setPromiseSubscriber(state, promiseID, subscriber) {
-  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
   state.promiseTable.get(promiseID).subscriber = subscriber;
 }
 
 export function insistPromiseIsUnresolved(state, promiseID) {
-  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
   const pstate = state.promiseTable.get(promiseID).state;
-  insist(
+  assert(
     pstate === 'unresolved',
-    `${promiseID} has state ${pstate}, not 'unresolved'`,
+    details`${promiseID} has state ${pstate}, not 'unresolved'`,
   );
 }
 
 export function insistPromiseDeciderIs(state, promiseID, remoteID) {
-  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
   const { decider } = state.promiseTable.get(promiseID);
-  insist(
+  assert(
     decider === remoteID,
-    `${promiseID} is decided by ${decider}, not ${remoteID}`,
+    details`${promiseID} is decided by ${decider}, not ${remoteID}`,
   );
 }
 
 export function insistPromiseDeciderIsMe(state, promiseID) {
-  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
   const { decider } = state.promiseTable.get(promiseID);
-  insist(!decider, `${decider} is the decider for ${promiseID}, not me`);
+  assert(!decider, details`${decider} is the decider for ${promiseID}, not me`);
 }
 
 export function insistPromiseSubscriberIsNotDifferent(
@@ -109,32 +109,32 @@ export function insistPromiseSubscriberIsNotDifferent(
   promiseID,
   remoteID,
 ) {
-  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
   const { subscriber } = state.promiseTable.get(promiseID);
   if (subscriber) {
-    insist(
+    assert(
       subscriber === remoteID,
-      `${promiseID} subscriber is ${subscriber}, not ${remoteID}`,
+      details`${promiseID} subscriber is ${subscriber}, not ${remoteID}`,
     );
   }
 }
 
 export function getPromiseSubscriber(state, promiseID) {
-  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
   const { subscriber } = state.promiseTable.get(promiseID);
-  insist(subscriber, `${promiseID} has no subscriber`);
+  assert(subscriber, details`${promiseID} has no subscriber`);
   return subscriber;
 }
 
 export function markPromiseAsResolved(state, promiseID, resolution) {
-  insist(state.promiseTable.has(promiseID), `unknown ${promiseID}`);
+  assert(state.promiseTable.has(promiseID), details`unknown ${promiseID}`);
   const p = state.promiseTable.get(promiseID);
-  insist(
+  assert(
     p.state === 'unresolved',
-    `${promiseID} is already resolved (${p.state})`,
+    details`${promiseID} is already resolved (${p.state})`,
   );
   if (resolution.type === 'object') {
-    insist(resolution.slot, `resolution(object) requires .slot`);
+    assert(resolution.slot, details`resolution(object) requires .slot`);
   } else if (resolution.type === 'data') {
     insistCapData(resolution.data);
   } else if (resolution.type === 'reject') {

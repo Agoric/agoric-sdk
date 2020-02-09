@@ -34,11 +34,11 @@
   },
   "homepage": "https://github.com/Agoric/ertp#readme",
   "dependencies": {
+    "@agoric/assert": "^0.0.1",
     "@agoric/evaluate": "^2.2.0",
     "@agoric/eventual-send": "^0.5.0",
     "@agoric/harden": "^0.0.4",
     "@agoric/import-manager": "^0.0.1",
-    "@agoric/insist": "^0.0.1",
     "@agoric/layer-cake": "^0.0.1",
     "@agoric/marshal": "^0.1.1",
     "@agoric/nat": "^2.0.1",
@@ -94,6 +94,7 @@
   },
   "prettier": {
     "trailingComma": "all",
-    "singleQuote": true
+    "singleQuote": true,
+    "print-width": 120
   }
 }

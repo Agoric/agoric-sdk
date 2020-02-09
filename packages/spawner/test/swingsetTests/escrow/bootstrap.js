@@ -3,7 +3,7 @@
 import harden from '@agoric/harden';
 import { makeMint } from '@agoric/ertp';
 import { allComparable } from '@agoric/same-structure';
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 import { inviteConfig } from '@agoric/ertp/src/config/inviteConfig';
 
 import { escrowExchangeSrcs } from '../../../src/escrow';
@@ -64,8 +64,7 @@ function build(E, log) {
         });
     });
     result.then(r => {
-      insist(r)`\
-expected successful check ${result}`;
+      assert(r, details`expected successful check ${result}`);
     });
   }
 

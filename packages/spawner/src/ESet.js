@@ -4,7 +4,7 @@
 import harden from '@agoric/harden';
 
 import makeStore from '@agoric/store';
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 
 // Maps from ESets to encapsulated Sets. All lookups from this table
 // are only queries. (Except for the one in the FlexSet constructor)
@@ -13,8 +13,7 @@ const hiddenESet = makeStore();
 // Abstract superclass with query-only methods.
 class ESet {
   constructor(optIterable = undefined) {
-    insist(new.target !== ESet)`\
-ESet is abstract`;
+    assert(new.target !== ESet, details`ESet is abstract`);
     const newHidden = new Set(optIterable);
     hiddenESet.init(this, newHidden);
   }
@@ -76,8 +75,7 @@ harden(ESet);
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
 class FixedSet extends ESet {
   constructor(optIterable = undefined) {
-    insist(new.target === FixedSet)`\
-FixedSet is final`;
+    assert(new.target === FixedSet, details`FixedSet is final`);
     super(optIterable);
     harden(this);
   }
@@ -101,12 +99,11 @@ const hiddenFlexSet = makeStore();
 // Supports mutation.
 class FlexSet extends ESet {
   constructor(optIterable = undefined) {
-    insist(new.target === FlexSet)`\
-FlexSet is final`;
+    assert(new.target === FlexSet, details`FlexSet is final`);
     super(optIterable);
     // Be very scared of the following line, since it looks up on
     // hiddenESet for purposes of enabling mutation. We assume it is
-    // safe because the `new.target` insist check above ensures this
+    // safe because the `new.target` assert check above ensures this
     // constructor is being called as-if directly with `new`. We say
     // "as-if" because it might be invoked by `Reflect.construct`, but
     // only in an equivalent manner.
@@ -183,10 +180,8 @@ class InternalReadOnlySet extends ESet {
 // Guarantee that an instance of ReadOnlySet does not provide the
 // ability to modify.
 function ReadOnlySet() {
-  insist(new.target === ReadOnlySet)`\
-ReadOnlySet is final`;
-  insist(false)`\
-Use readOnlyView() to view an existing ESet`;
+  assert(new.target === ReadOnlySet, details`ReadOnlySet is final`);
+  assert.fail(details`Use readOnlyView() to view an existing ESet`);
 }
 Object.setPrototypeOf(ReadOnlySet, ESet);
 ReadOnlySet.prototype = InternalReadOnlySet.prototype;

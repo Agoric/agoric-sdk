@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { insist } from '../insist';
+import { assert, details } from '@agoric/assert';
 import { insistKernelType } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
@@ -38,7 +38,7 @@ export default function makeDeviceManager(
    *    or is otherwise invalid.
    */
   function mapDeviceSlotToKernelSlot(devSlot) {
-    insist(`${devSlot}` === devSlot, 'non-string devSlot');
+    assert.equal(devSlot, `${devSlot}`, details`non-string devSlot: ${devSlot}`);
     // kdebug(`mapOutbound ${devSlot}`);
     return deviceKeeper.mapDeviceSlotToKernelSlot(devSlot);
   }
@@ -56,7 +56,7 @@ export default function makeDeviceManager(
    *    devices or is otherwise invalid.
    */
   function mapKernelSlotToDeviceSlot(kernelSlot) {
-    insist(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
+    assert.equal(kernelSlot, `${kernelSlot}`, 'non-string kernelSlot');
     const deviceSlot = deviceKeeper.mapKernelSlotToDeviceSlot(kernelSlot);
     kdebug(
       `mapInbound for device-${deviceName} of ${kernelSlot} to ${deviceSlot}`,
@@ -74,11 +74,11 @@ export default function makeDeviceManager(
    * @param args  A capdata object containing the message arguments.
    */
   function doSendOnly(targetSlot, method, args) {
-    insist(`${targetSlot}` === targetSlot, 'non-string targetSlot');
+    assert.equal(targetSlot, `${targetSlot}`, 'non-string targetSlot');
     insistVatType('object', targetSlot);
     insistCapData(args);
     const target = mapDeviceSlotToKernelSlot(targetSlot);
-    insist(target, `unable to find target`);
+    assert(target, `unable to find target`);
     kdebug(`syscall[${deviceName}].send(${targetSlot}/${target}).${method}`);
     kdebug(`  ^target is ${target}`);
     const msg = {
@@ -135,7 +135,7 @@ export default function makeDeviceManager(
     insistKernelType('device', target);
     insistCapData(args);
     const t = mapKernelSlotToDeviceSlot(target);
-    insist(parseVatSlot(t).allocatedByVat, 'not allocated by me');
+    assert(parseVatSlot(t).allocatedByVat, 'not allocated by me');
     try {
       const results = dispatch.invoke(t, method, {
         ...args,

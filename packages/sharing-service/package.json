@@ -27,7 +27,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/harden": "^0.0.4",
-    "@agoric/insist": "^0.0.1"
+    "@agoric/assert": "^0.0.1"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.3.0",

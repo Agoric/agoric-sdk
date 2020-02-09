@@ -1,8 +1,8 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
+import { assert, details } from '@agoric/assert';
 import { initializeVatState, makeVatKeeper } from './vatKeeper';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper';
-import { insist } from '../../insist';
 import { insistEnhancedStorageAPI } from '../../storageAPI';
 import {
   insistKernelType,
@@ -268,14 +268,14 @@ export default function makeKernelKeeper(storage) {
   function setDecider(kpid, decider) {
     insistVatID(decider);
     const p = getKernelPromise(kpid);
-    insist(p.state === 'unresolved', `${kpid} was already resolved`);
-    insist(!p.decider, `${kpid} has decider ${p.decider}, not empty`);
+    assert(p.state === 'unresolved', details`${kpid} was already resolved`);
+    assert(!p.decider, details`${kpid} has decider ${p.decider}, not empty`);
     storage.set(`${kpid}.decider`, decider);
   }
 
   function clearDecider(kpid) {
     const p = getKernelPromise(kpid);
-    insist(p.state === 'unresolved', `${kpid} was already resolved`);
+    assert(p.state === 'unresolved', details`${kpid} was already resolved`);
     storage.set(`${kpid}.decider`, '');
   }
 
@@ -317,7 +317,7 @@ export default function makeKernelKeeper(storage) {
   }
 
   function getVatIDForName(name) {
-    insist(name === `${name}`, `${name} is not a string`);
+    assert(name === `${name}`, details`${name} is not a string`);
     const k = `vat.name.${name}`;
     if (!storage.has(k)) {
       throw new Error(`vat name ${name} must exist, but doesn't`);
@@ -332,7 +332,7 @@ export default function makeKernelKeeper(storage) {
   }
 
   function allocateVatIDForNameIfNeeded(name) {
-    insist(name === `${name}`);
+    assert.equal(name, `${name}`);
     const k = `vat.name.${name}`;
     if (!storage.has(k)) {
       storage.set(k, allocateUnusedVatID());
@@ -378,7 +378,7 @@ export default function makeKernelKeeper(storage) {
   }
 
   function getDeviceIDForName(name) {
-    insist(name === `${name}`);
+    assert.equal(name, `${name}`);
     const k = `device.name.${name}`;
     if (!storage.has(k)) {
       throw new Error(`device name ${name} must exist, but doesn't`);
@@ -387,7 +387,7 @@ export default function makeKernelKeeper(storage) {
   }
 
   function allocateDeviceIDForNameIfNeeded(name) {
-    insist(name === `${name}`);
+    assert.equal(name, `${name}`);
     const k = `device.name.${name}`;
     if (!storage.has(k)) {
       const nextID = Nat(Number(getRequired(`device.nextID`)));

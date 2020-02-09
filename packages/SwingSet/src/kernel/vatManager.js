@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
+import { assert, details } from '@agoric/assert';
 import djson from './djson';
-import { insist } from '../insist';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
@@ -74,13 +74,13 @@ export default function makeVatManager(
 
   // mapOutbound: e.g. arguments of syscall.send()
   function mapVatSlotToKernelSlot(vatSlot) {
-    insist(`${vatSlot}` === vatSlot, 'non-string vatSlot');
+    assert(`${vatSlot}` === vatSlot, 'non-string vatSlot');
     return vatKeeper.mapVatSlotToKernelSlot(vatSlot);
   }
 
   // mapInbound: e.g. arguments of dispatch.deliver()
   function mapKernelSlotToVatSlot(kernelSlot) {
-    insist(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
+    assert(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
     const vatSlot = vatKeeper.mapKernelSlotToVatSlot(kernelSlot);
     kdebug(
       `mapKernelSlotToVatSlot for ${vatID} of ${JSON.stringify(
@@ -112,7 +112,7 @@ export default function makeVatManager(
   // available to userspace
 
   function doSend(targetSlot, method, args, resultSlot) {
-    insist(`${targetSlot}` === targetSlot, 'non-string targetSlot');
+    assert(`${targetSlot}` === targetSlot, 'non-string targetSlot');
     insistCapData(args);
     // TODO: disable send-to-self for now, qv issue #43
     const target = mapVatSlotToKernelSlot(targetSlot);
@@ -129,13 +129,13 @@ export default function makeVatManager(
       // (p+NN). But it might be a previously-imported promise (p-NN) that
       // they got in a deliver() call, which gave them resolution authority.
       const p = kernelKeeper.getKernelPromise(result);
-      insist(
+      assert(
         p.state === 'unresolved',
-        `send() result ${result} is already resolved`,
+        details`send() result ${result} is already resolved`,
       );
-      insist(
+      assert(
         p.decider === vatID,
-        `send() result ${result} is decided by ${p.decider} not ${vatID}`,
+        details`send() result ${result} is decided by ${p.decider} not ${vatID}`,
       );
       kernelKeeper.clearDecider(result);
       // resolution authority now held by run-queue
@@ -298,20 +298,20 @@ export default function makeVatManager(
     const targetSlot = mapKernelSlotToVatSlot(target);
     const { type } = parseVatSlot(targetSlot);
     if (type === 'object') {
-      insist(parseVatSlot(targetSlot).allocatedByVat, `deliver() to wrong vat`);
+      assert(parseVatSlot(targetSlot).allocatedByVat, `deliver() to wrong vat`);
     } else if (type === 'promise') {
       const p = kernelKeeper.getKernelPromise(target);
-      insist(p.decider === vatID, `wrong decider`);
+      assert(p.decider === vatID, `wrong decider`);
     }
     const inputSlots = msg.args.slots.map(slot => mapKernelSlotToVatSlot(slot));
     let resultSlot = null;
     if (msg.result) {
       insistKernelType('promise', msg.result);
       const p = kernelKeeper.getKernelPromise(msg.result);
-      insist(p.state === 'unresolved', `result ${msg.result} already resolved`);
-      insist(
+      assert(p.state === 'unresolved', details`result ${msg.result} already resolved`);
+      assert(
         !p.decider,
-        `result ${msg.result} already has decider ${p.decider}`,
+        details`result ${msg.result} already has decider ${p.decider}`,
       );
       resultSlot = vatKeeper.mapKernelSlotToVatSlot(msg.result);
       insistVatType('promise', resultSlot);
@@ -330,7 +330,7 @@ export default function makeVatManager(
   }
 
   async function deliverOneNotification(kpid, kp) {
-    insist(kp.state !== 'unresolved', `spurious notification ${kpid}`);
+    assert(kp.state !== 'unresolved', details`spurious notification ${kpid}`);
     if (kp.state === 'fulfilledToPresence') {
       const vpid = mapKernelSlotToVatSlot(kpid);
       const slot = mapKernelSlotToVatSlot(kp.slot);

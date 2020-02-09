@@ -71,8 +71,8 @@ const expectedAliceSendsOnlyUseRightLog = [
   'childPayment balance {"label":{"assay":{},"allegedName":"pixels"},"extent":[]}',
   "pixel x:1, y:4 changed to bob's color #B695C0",
   "pixel x:1, y:4 changed to alice's color #9FBF95",
-  'bob was unable to color: Error:       no use rights present in units (a object)\nSee console for error data.',
-  'bob was unable to color: Error:       no use rights present in units (a object)\nSee console for error data.',
+  'bob was unable to color: Error: no use rights present in units (an object)\nSee console for error data.',
+  'bob was unable to color: Error: no use rights present in units (an object)\nSee console for error data.',
 ];
 
 test('run gallery demo aliceSendsOnlyUseRight with SES', async t => {
@@ -93,7 +93,7 @@ const expectedGalleryRevokesLog = [
   'starting testGalleryRevokes',
   '++ alice.doTapFaucetAndStore starting',
   '++ alice.checkAfterRevoked starting',
-  'successfully threw Error:       no use rights present in units (a object)\nSee console for error data.',
+  'successfully threw Error: no use rights present in units (an object)\nSee console for error data.',
   'units extent should be an array of length 0: 0',
 ];
 

@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 
 /* allowedTransitions is an array of arrays which gets turned into a
  * map. The map maps string states to an array of potential next
@@ -16,7 +16,7 @@ const makeStateMachine = (initialState, allowedTransitionsArray) => {
     canTransitionTo: nextState =>
       allowedTransitions.get(state).includes(nextState),
     transitionTo: nextState => {
-      insist(allowedTransitions.get(state).includes(nextState));
+      assert(allowedTransitions.get(state).includes(nextState));
       state = nextState;
     },
     getStatus: _ => state,

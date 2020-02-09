@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import { insist } from './insist';
+import { assert, details } from '@agoric/assert';
 
 // NOTE: confusing terminology: "slot" vs. "reference".  All these things
 // called "slots" are references, but the word "slot" suggests something into
@@ -34,7 +34,7 @@ import { insist } from './insist';
  * @throws if the given string is syntactically incorrect.
  */
 export function parseVatSlot(s) {
-  insist(s === `${s}`);
+  assert.equal(s, `${s}`);
   let type;
   let allocatedByVat;
   const typechar = s[0];
@@ -111,8 +111,9 @@ export function makeVatSlot(type, allocatedByVat, id) {
  * @return nothing
  */
 export function insistVatType(type, vatSlot) {
-  insist(
-    type === parseVatSlot(vatSlot).type,
-    `vatSlot ${vatSlot} is not of type ${type}`,
+  assert.equal(
+    type,
+    parseVatSlot(vatSlot).type,
+    details`vatSlot ${vatSlot} is not of type ${type}`,
   );
 }

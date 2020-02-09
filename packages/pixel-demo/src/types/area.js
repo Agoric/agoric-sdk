@@ -5,8 +5,7 @@ import { makeInsistPixel, isLessThanOrEqual } from './pixel';
 import { includesPixel } from './pixelList';
 
 function insistLessThanOrEqual(start, end) {
-  assert(isLessThanOrEqual(start, end),
-  details`the starting pixel must be "less than or equal" to the ending pixel`);
+  assert(isLessThanOrEqual(start, end), details`the starting pixel must be "less than or equal" to the ending pixel`);
 }
 
 function insistArea(area, canvasSize) {

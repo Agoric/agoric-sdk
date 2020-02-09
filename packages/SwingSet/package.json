@@ -29,6 +29,7 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
+    "@agoric/assert": "^0.0.1",
     "@agoric/bundle-source": "^1.0.2",
     "@agoric/default-evaluate-options": "^0.3.0",
     "@agoric/evaluate": "^2.2.0",

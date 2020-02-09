@@ -2,7 +2,7 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { makeMint } from '@agoric/ertp';
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 
 import { natSafeMath } from './helpers/safeMath';
 import { makeHelpers } from './helpers/userFlow';
@@ -30,9 +30,10 @@ export const makeContract = harden((zoe, terms) => {
     const unitOpsArray = zoe.getUnitOpsForAssays(assays);
     unitOpsArray.forEach(
       unitOps =>
-        insist(
+        assert(
           unitOps.getExtentOps().name === 'natExtentOps',
-        )`assays must have natExtentOps`,
+          details`assays must have natExtentOps`
+        ),
     );
     const {
       rejectOffer,

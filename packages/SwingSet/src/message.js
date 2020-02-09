@@ -1,4 +1,4 @@
-import { insist } from './insist';
+import { assert, details } from '@agoric/assert';
 import { insistCapData } from './capdata';
 
 /**
@@ -15,15 +15,17 @@ import { insistCapData } from './capdata';
  * @return nothing
  */
 export function insistMessage(message) {
-  insist(
-    message.method === `${message.method}`,
-    `message has non-string .method ${message.method}`,
+  assert.equal(
+    message.method,
+    `${message.method}`,
+    details`message has non-string .method ${message.method}`,
   );
   insistCapData(message.args);
   if (message.result) {
-    insist(
-      message.result === `${message.result}`,
-      `message has non-string non-null .result ${message.result}`,
+    assert.equal(
+      message.result,
+      `${message.result}`,
+      details`message has non-string non-null .result ${message.result}`,
     );
   }
 }

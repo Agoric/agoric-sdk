@@ -4,7 +4,7 @@
 import harden from '@agoric/harden';
 
 import makeStore from '@agoric/store';
-import insist from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 
 // Maps from EMaps to encapsulated Maps. All lookups from this table
 // are only queries. (Except for the one in the FlexMap constructor)
@@ -13,8 +13,7 @@ const hiddenEMap = makeStore();
 // Abstract superclass with query-only methods.
 class EMap {
   constructor(optIterable = undefined) {
-    insist(new.target !== EMap)`\
-EMap is abstract`;
+    assert(new.target !== EMap, details`EMap is abstract`);
     const newHidden = new Map(optIterable);
     hiddenEMap.init(this, newHidden);
   }
@@ -80,8 +79,7 @@ harden(EMap);
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
 class FixedMap extends EMap {
   constructor(optIterable = undefined) {
-    insist(new.target === FixedMap)`\
-FixedMap is final`;
+    assert(new.target === FixedMap, details`FixedMap is final`);
     super(optIterable);
     harden(this);
   }
@@ -105,12 +103,11 @@ const hiddenFlexMap = makeStore();
 // Supports mutation.
 class FlexMap extends EMap {
   constructor(optIterable = undefined) {
-    insist(new.target === FlexMap)`\
-FlexMap is final`;
+    assert.equal(new.target, FlexMap, details`FlexMap is final`);
     super(optIterable);
     // Be very scared of the following line, since it looks up on
     // hiddenEMap for purposes of enabling mutation. We assume it is
-    // safe because the `new.target` insist check above ensures this
+    // safe because the `new.target` assert check above ensures this
     // constructor is being called as-if directly with `new`. We say
     // "as-if" because it might be invoked by `Reflect.construct`, but
     // only in an equivalent manner.
@@ -187,10 +184,8 @@ class InternalReadOnlyMap extends EMap {
 // Guarantee that an instance of ReadOnlyMap does not provide the
 // ability to modify.
 function ReadOnlyMap() {
-  insist(new.target === ReadOnlyMap)`\
-ReadOnlyMap is final`;
-  insist(false)`\
-Use readOnlyView() to view an existing EMap`;
+  assert(new.target === ReadOnlyMap), details`ReadOnlyMap is final`);
+  assert.fail(details`Use readOnlyView() to view an existing EMap`);
 }
 Object.setPrototypeOf(ReadOnlyMap, EMap);
 ReadOnlyMap.prototype = InternalReadOnlyMap.prototype;

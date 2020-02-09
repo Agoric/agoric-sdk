@@ -4,7 +4,7 @@
 
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import { insist } from '../../insist';
+import { assert, details } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
 import { insistVatID } from '../id';
@@ -43,7 +43,7 @@ export function initializeVatState(storage, vatID) {
  * @param addKernelPromise  Kernel function to add a new promise to the
  *    kernel's mapping tables.
  *
- * @return a object to hold and access the kernel's state for the given vat
+ * @return an object to hold and access the kernel's state for the given vat
  */
 export function makeVatKeeper(
   storage,
@@ -65,7 +65,7 @@ export function makeVatKeeper(
    *    or is otherwise invalid.
    */
   function mapVatSlotToKernelSlot(vatSlot) {
-    insist(`${vatSlot}` === vatSlot, 'non-string vatSlot');
+    assert(`${vatSlot}` === vatSlot, details`non-string vatSlot: ${vatSlot}`);
     const vatKey = `${vatID}.c.${vatSlot}`;
     if (!storage.has(vatKey)) {
       const { type, allocatedByVat } = parseVatSlot(vatSlot);
@@ -107,7 +107,7 @@ export function makeVatKeeper(
    *    or is otherwise invalid.
    */
   function mapKernelSlotToVatSlot(kernelSlot) {
-    insist(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
+    assert(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     if (!storage.has(kernelKey)) {
       const { type } = parseKernelSlot(kernelSlot);

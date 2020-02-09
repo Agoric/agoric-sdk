@@ -17,11 +17,11 @@ test('pixelList insistKind', t => {
   t.doesNotThrow(() => pixelExtentOps.insistKind(pixelList));
   t.throws(
     () => pixelExtentOps.insistKind(startPixel),
-    /\(an object\) must be an array/,
+    /list \(an object\) must be an array/,
   );
   t.throws(
     () => pixelExtentOps.insistKind(harden({})),
-    /\(an object\) must be an array/,
+    /list \(an object\) must be an array/,
   );
   t.doesNotThrow(() => pixelExtentOps.insistKind(harden([thirdPixel])));
   t.end();
@@ -216,7 +216,7 @@ test('pixelList without', t => {
   ]);
   t.throws(
     () => extentOps.without(harden([]), harden([startPixel])),
-    /\(an object\) must be in \(an object\)/,
+    /part \(an object\) must be in whole \(an object\)/,
   );
   t.deepEqual(
     extentOps.without(harden([startPixel]), harden([startPixel])),

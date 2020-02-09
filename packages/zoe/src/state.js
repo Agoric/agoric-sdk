@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
 import makeStore from '@agoric/weak-store';
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 import { makeUnitOps } from '@agoric/ertp/src/unitOps';
 
 const makeTable = (validateFn, makeCustomMethodsFn = () => undefined) => {
@@ -51,14 +51,14 @@ const makeValidateProperties = ([...expectedProperties]) => {
   return obj => {
     const actualProperties = Object.getOwnPropertyNames(obj);
     actualProperties.sort();
-    insist(
+    assert(
       actualProperties.length === expectedProperties.length,
-    )`the actual properties (${actualProperties}) did not match the \
-      expected properties (${expectedProperties})`;
+      details`the actual properties (${actualProperties}) did not match the \
+      expected properties (${expectedProperties})`);
     for (let i = 0; i < actualProperties.length; i += 1) {
-      insist(
+      assert(
         expectedProperties[i] === actualProperties[i],
-      )`property ${expectedProperties[i]} did not equal actual property ${actualProperties[i]}`;
+        details`property ${expectedProperties[i]} did not equal actual property ${actualProperties[i]}`);
     }
     return true;
   };
@@ -89,9 +89,10 @@ const makeOfferTable = () => {
   const insistValidPayoutRuleKinds = payoutRules => {
     const acceptedKinds = ['offerAtMost', 'wantAtLeast'];
     for (const payoutRule of payoutRules) {
-      insist(
+      assert(
         acceptedKinds.includes(payoutRule.kind),
-      )`${payoutRule.kind} must be one of the accepted kinds.`;
+        details`${payoutRule.kind} must be one of the accepted kinds.`
+      );
     }
   };
   const insistValidExitRule = exitRule => {
@@ -101,9 +102,10 @@ const makeOfferTable = () => {
       'afterDeadline',
       // 'onDemandAfterDeadline', // not yet supported
     ];
-    insist(
+    assert(
       acceptedExitRuleKinds.includes(exitRule.kind),
-    )`exitRule.kind ${exitRule.kind} is not one of the accepted options`;
+      details`exitRule.kind ${exitRule.kind} is not one of the accepted options`
+    );
   };
 
   // TODO: make sure this validate function protects against malicious

@@ -1,5 +1,6 @@
 import harden from '@agoric/harden';
 import { passStyleOf } from '@agoric/marshal';
+import { assert, details } from '@agoric/assert';
 import { insist } from '@agoric/insist';
 
 // Shim of Object.fromEntries from
@@ -93,10 +94,14 @@ harden(allComparable);
 function sameStructure(left, right) {
   const leftStyle = passStyleOf(left);
   const rightStyle = passStyleOf(right);
-  insist(leftStyle !== 'promise')`\
-Cannot structurally compare promises: ${left}`;
-  insist(rightStyle !== 'promise')`\
-Cannot structurally compare promises: ${right}`;
+  assert(
+    leftStyle !== 'promise',
+    details`Cannot structurally compare promises: ${left}`,
+  );
+  assert(
+    rightStyle !== 'promise',
+    details`Cannot structurally compare promises: ${right}`,
+  );
 
   if (leftStyle !== rightStyle) {
     return false;

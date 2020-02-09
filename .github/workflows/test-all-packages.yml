@@ -53,6 +53,8 @@ jobs:
       run: cd packages/sparse-ints && yarn test
     - name: yarn test (insist)
       run: cd packages/insist && yarn test
+    - name: yarn test (assert)
+      run: cd packages/assert && yarn test
     - name: yarn test (registrar)
       run: cd packages/registrar && yarn test
     - name: yarn test (store)

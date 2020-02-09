@@ -1,25 +1,25 @@
 import Nat from '@agoric/nat';
+import { assert, details } from '@agoric/assert';
 import { makeVatSlot, insistVatType } from '../../parseVatSlots';
-import { insist } from '../../insist';
 
 function makeRemoteID(index) {
   return `remote${Nat(index)}`;
 }
 
 export function insistRemoteID(remoteID) {
-  insist(remoteID.startsWith('remote'), `not a remoteID: ${remoteID}`);
+  assert(remoteID.startsWith('remote'), details`not a remoteID: ${remoteID}`);
 }
 
 export function getRemote(state, remoteID) {
   insistRemoteID(remoteID);
   const remote = state.remotes.get(remoteID);
-  insist(remote !== undefined, `oops ${remoteID}`);
+  assert(remote !== undefined, details`oops ${remoteID}`);
   return remote;
 }
 
 export function addRemote(state, name, transmitterID) {
   insistVatType('object', transmitterID);
-  insist(!state.names.has(name), `remote name ${name} already in use`);
+  assert(!state.names.has(name), details`remote name ${name} already in use`);
 
   const remoteID = makeRemoteID(state.nextRemoteIndex);
   state.nextRemoteIndex += 1;

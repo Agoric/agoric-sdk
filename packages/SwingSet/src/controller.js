@@ -6,6 +6,7 @@ import path from 'path';
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import SES from 'ses';
+import { assert } from '@agoric/assert';
 
 import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 import bundleSource from '@agoric/bundle-source';
@@ -13,7 +14,6 @@ import bundleSource from '@agoric/bundle-source';
 // eslint-disable-next-line import/extensions
 import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
-import { insist } from './insist';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
@@ -301,7 +301,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
     queueToVatExport(vatName, exportID, method, args) {
       const vatID = kernel.vatNameToID(vatName);
       parseVatSlot(exportID);
-      insist(method === `${method}`);
+      assert.equal(method, `${method}`);
       insistCapData(args);
       kernel.addExport(vatID, exportID);
       kernel.queueToExport(vatID, exportID, method, args);
