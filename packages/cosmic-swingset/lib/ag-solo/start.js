@@ -182,7 +182,7 @@ async function buildSwingset(
 }
 
 export default async function start(basedir, withSES, argv) {
-  const mailboxStateFile = path.resolve(basedir, 'swingset-mailbox-state.json');
+  const mailboxStateFile = path.resolve(basedir, 'swingset-kernel-mailbox.json');
   const kernelStateFile = path.resolve(
     basedir,
     'swingset-kernel-state.jsonlines',
