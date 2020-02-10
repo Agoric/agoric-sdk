@@ -16,7 +16,7 @@ function an(str) {
 
 //   assert(sky.isBlue(), details`${sky.color} should be blue`);
 
-// The details helper will be available as a direct import and as insist.details.
+// The details helper will be available as a direct import and as assert.details.
 // It returns an object that can print itself with the formatted message, or when
 // complain is invoked, will report the real details to the console but include
 // only the typeof information in the exception to prevent revealing secrets up

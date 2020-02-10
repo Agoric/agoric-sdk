@@ -29,9 +29,8 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/agoric": "^0.0.1",
+    "@agoric/assert": "^0.0.1",
     "@agoric/harden": "^0.0.4",
-    "@agoric/insist": "^0.0.1",
     "@agoric/marshal": "^0.1.2"
   },
   "devDependencies": {

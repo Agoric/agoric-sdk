@@ -8,7 +8,6 @@
     "packages/import-manager",
     "packages/make-promise",
     "packages/sparse-ints",
-    "packages/insist",
     "packages/registrar",
     "packages/store",
     "packages/weak-store",
