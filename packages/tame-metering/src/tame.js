@@ -9,7 +9,7 @@ export function tameMetering() {
     return replaceGlobalMeter;
   }
 
-  const { defineProperties, entries, getOwnPropertyDescriptors } = Object;
+  const { defineProperty, entries, getOwnPropertyDescriptors } = Object;
   const { apply, construct, get } = Reflect;
   const { get: wmGet, set: wmSet } = WeakMap.prototype;
 
@@ -46,7 +46,10 @@ export function tameMetering() {
       return wrapper;
     }
 
-    if (typeof target === 'function') {
+    // FIXME: We skip over the Error constructor.
+    // Without this hack, SES 1.0 fails with:
+    // TypeError: prototype function Error() { [native code] } of unknown.global.EvalError is not already in the fringeSet
+    if (typeof target === 'function' && target !== Error) {
       wrapper = new ProxyConstructor(target, {
         apply(t, thisArg, argArray) {
           // We're careful not to use the replaceGlobalMeter function as
@@ -153,22 +156,25 @@ export function tameMetering() {
       }
     }
 
-    // Assign the wrapped descriptors to the wrapper.
-    const descs = {};
+    // Assign the wrapped descriptors to the target.
     for (const [p, desc] of entries(getOwnPropertyDescriptors(target))) {
       if (constructor && p === 'constructor') {
-        descs[p] = {
+        defineProperty(target, p, {
           value: constructor,
           writable: true,
           enumerable: false,
           configurable: true,
-        };
+        });
       } else if (p !== 'prototype') {
-        descs[p] = wrapDescriptor(desc, pname && `${pname}.${p}`);
+        const wdesc = wrapDescriptor(desc, pname && `${pname}.${p}`);
+        try {
+          defineProperty(target, p, wdesc);
+        } catch (e) {
+          // ignore
+        }
       }
     }
 
-    defineProperties(target, descs);
     return wrapper;
   }
 

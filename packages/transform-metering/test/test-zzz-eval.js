@@ -1,5 +1,5 @@
-// import * as tamer from '@agoric/tame-metering';
-import * as tamer from '@agoric/tame-metering/src/install-global-metering';
+import * as tamer from '@agoric/tame-metering';
+// import * as tamer from '@agoric/tame-metering/src/install-global-metering';
 import * as c from '@agoric/tame-metering/src/constants';
 
 import test from 'tape-promise/tape';
@@ -11,8 +11,6 @@ import { makeMeter, makeMeteredEvaluator } from '../src/index';
 let sesRealm;
 let replaceGlobalMeter;
 if (!sesRealm) {
-  // FIXME: lockdown() approach appears to be the only way to both secure
-  // this realm and make meters available to evaluators.
   const { lockdown, default: SES } = ses;
   const { tameMetering, default: globalReplaceGlobalMeter } = tamer;
   if (tameMetering && !lockdown) {
@@ -41,8 +39,6 @@ if (!sesRealm) {
       shims: [fixedShim],
     });
     replaceGlobalMeter = sesRealm.evaluate('Q()');
-    console.log('have', replaceGlobalMeter, replaceGlobalMeter());
-    process.exit(0);
   } else if (!lockdown) {
     // We already tamed globally.
     sesRealm = SES.makeSESRootRealm({
@@ -109,27 +105,20 @@ test('metering evaluator', async t => {
     const src1 = `123; 456;`;
     t.equals(await myEval(src1), 456, 'trivial source succeeds');
 
-    const failedToRejectUnderSES = () => {
-      // FIXME: This skips tests that aren't currently working under SES.
-      const times = makeEvaluator === makeSESEvaluator ? 0 : 1;
-      expectedExhaustedTimes += times;
-      return times === 0;
-    };
-
     const src5a = `\
 ('x'.repeat(1e8), 0)
 `;
-    failedToRejectUnderSES() ||
-      (await t.rejects(
-        myEval(src5a),
-        /Allocate meter exceeded/,
-        'big string exhausts',
-      ));
+    expectedExhaustedTimes += 1;
+    await t.rejects(
+      myEval(src5a),
+      /Allocate meter exceeded/,
+      'big string exhausts',
+    );
 
     const src5 = `\
-(new Array(1e8), 0)
+new Array(1e9)
 `;
-    failedToRejectUnderSES() ||
+    true || // FIXME: This always fails for some reason.
       (await t.rejects(
         myEval(src5),
         /Allocate meter exceeded/,
@@ -209,12 +198,12 @@ f();
     const src6 = `\
 new Array(1e8).map(Object.create); 0
 `;
-    failedToRejectUnderSES() ||
-      (await t.rejects(
-        myEval(src6),
-        /Allocate meter exceeded/,
-        'long map exhausts',
-      ));
+    expectedExhaustedTimes += 1;
+    await t.rejects(
+      myEval(src6),
+      /Allocate meter exceeded/,
+      'long map exhausts',
+    );
 
     t.equals(
       exhaustedTimes,
