@@ -13,9 +13,9 @@ import { assert, details } from '@agoric/assert';
 function makeStore(keyName = 'key') {
   const wm = new WeakMap();
   const assertKeyDoesNotExist = key =>
-    assert(!wm.has(key))([`${keyName} already registered`]);
+    assert(!wm.has(key), details([`${keyName} already registered: `, ''], key));
   const assertKeyExists = key =>
-    assert(wm.has(key))([`${keyName} not found: `, ''], key);
+    assert(wm.has(key), details([`${keyName} not found: `, ''], key));
   return harden({
     has: key => wm.has(key),
     init: (key, value) => {

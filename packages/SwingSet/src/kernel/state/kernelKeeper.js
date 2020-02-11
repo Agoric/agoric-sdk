@@ -317,7 +317,7 @@ export default function makeKernelKeeper(storage) {
   }
 
   function getVatIDForName(name) {
-    assert(name === `${name}`, details`${name} is not a string`);
+    assert.equal(name, `${name}`, details`${name} is not a string`);
     const k = `vat.name.${name}`;
     if (!storage.has(k)) {
       throw new Error(`vat name ${name} must exist, but doesn't`);

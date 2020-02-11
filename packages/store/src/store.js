@@ -13,9 +13,12 @@ import { assert, details } from '@agoric/assert';
 function makeStore(keyName = 'key') {
   const store = new Map();
   const assertKeyDoesNotExist = key =>
-    assert(!store.has(key))([`${keyName} already registered`]);
+    assert(
+      !store.has(key),
+      details([`${keyName} already registered: `, ''], key),
+    );
   const assertKeyExists = key =>
-    assert(store.has(key))([`${keyName} not found: `, ''], key);
+    assert(store.has(key), details([`${keyName} not found: `, ''], key));
   return harden({
     has: key => store.has(key),
     init: (key, value) => {
