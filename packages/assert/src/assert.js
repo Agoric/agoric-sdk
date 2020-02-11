@@ -96,6 +96,7 @@ function equal(
   assert(actual === expected, optDetails);
 }
 assert.equal = equal;
+assert.fail = fail;
 
 harden(assert);
 export { assert, details, an };

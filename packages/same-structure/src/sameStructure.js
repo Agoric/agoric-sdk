@@ -165,12 +165,13 @@ function pathStr(path) {
 // mustBeSameStructureInternal
 function mustBeSameStructureInternal(left, right, message, path) {
   function complain(problem) {
-    const template = harden([
-      `${message}: ${problem} at ${pathStr(path)}: (`,
-      ') vs (',
-      ')',
-    ]);
-    insist(false)(template, left, right);
+    assert.fail(
+      details(
+        [`${message}: ${problem} at ${pathStr(path)}: (`, ') vs (', ')'],
+        left,
+        right,
+      ),
+    );
   }
 
   const leftStyle = passStyleOf(left);

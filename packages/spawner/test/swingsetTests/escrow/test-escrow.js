@@ -86,7 +86,7 @@ test('escrow check partial misMatches', async t => {
 const escrowCheckPartialWrongSeatGolden = [
   '=> setup called',
   'starting testEscrowServiceCheckPartial wrong seat',
-  'expected wrong side Error: Escrow checkPartialUnits seat: label not found on right at top: ((a object)) vs ((a object))\nSee console for error data.',
+  'expected wrong side Error: Escrow checkPartialUnits seat: label not found on right at top: ((an object)) vs ((an object))\nSee console for error data.',
 ];
 
 test('escrow check partial wrong seat w/SES', async t => {
