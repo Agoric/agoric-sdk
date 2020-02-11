@@ -71,7 +71,7 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
     const fn = evaluate(functionSrcString, fullEndowments);
     assert(
       typeof fn === 'function',
-      `"${functionSrcString}" must be a string for a function, but produced ${typeof fn}`
+      `"${functionSrcString}" must be a string for a function, but produced ${typeof fn}`,
     );
     return fn;
   }
