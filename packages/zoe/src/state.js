@@ -54,11 +54,13 @@ const makeValidateProperties = ([...expectedProperties]) => {
     assert(
       actualProperties.length === expectedProperties.length,
       details`the actual properties (${actualProperties}) did not match the \
-      expected properties (${expectedProperties})`);
+      expected properties (${expectedProperties})`,
+    );
     for (let i = 0; i < actualProperties.length; i += 1) {
       assert(
         expectedProperties[i] === actualProperties[i],
-        details`property ${expectedProperties[i]} did not equal actual property ${actualProperties[i]}`);
+        details`property ${expectedProperties[i]} did not equal actual property ${actualProperties[i]}`,
+      );
     }
     return true;
   };
@@ -91,7 +93,7 @@ const makeOfferTable = () => {
     for (const payoutRule of payoutRules) {
       assert(
         acceptedKinds.includes(payoutRule.kind),
-        details`${payoutRule.kind} must be one of the accepted kinds.`
+        details`${payoutRule.kind} must be one of the accepted kinds.`,
       );
     }
   };
@@ -104,7 +106,7 @@ const makeOfferTable = () => {
     ];
     assert(
       acceptedExitRuleKinds.includes(exitRule.kind),
-      details`exitRule.kind ${exitRule.kind} is not one of the accepted options`
+      details`exitRule.kind ${exitRule.kind} is not one of the accepted options`,
     );
   };
 

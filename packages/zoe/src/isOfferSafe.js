@@ -27,7 +27,8 @@ function isOfferSafeForOffer(unitOpsArray, payoutRules, units) {
   assert(
     unitOpsArray.length === payoutRules.length &&
       unitOpsArray.length === units.length,
-    details`unitOpsArray, payoutRules, and units must be arrays of the same length`);
+    details`unitOpsArray, payoutRules, and units must be arrays of the same length`,
+  );
 
   const allowedRules = ['offerAtMost', 'wantAtLeast'];
 
@@ -37,7 +38,8 @@ function isOfferSafeForOffer(unitOpsArray, payoutRules, units) {
     }
     assert(
       allowedRules.includes(payoutRule.kind),
-      details`The kind ${payoutRule.kind} was not recognized`);
+      details`The kind ${payoutRule.kind} was not recognized`,
+    );
   }
 
   // For this allocation to count as a full refund, the allocated

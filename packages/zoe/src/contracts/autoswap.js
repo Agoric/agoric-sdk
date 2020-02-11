@@ -28,12 +28,11 @@ export const makeContract = harden((zoe, terms) => {
 
   return zoe.addAssays(assays).then(() => {
     const unitOpsArray = zoe.getUnitOpsForAssays(assays);
-    unitOpsArray.forEach(
-      unitOps =>
-        assert(
-          unitOps.getExtentOps().name === 'natExtentOps',
-          details`assays must have natExtentOps`
-        ),
+    unitOpsArray.forEach(unitOps =>
+      assert(
+        unitOps.getExtentOps().name === 'natExtentOps',
+        details`assays must have natExtentOps`,
+      ),
     );
     const {
       rejectOffer,

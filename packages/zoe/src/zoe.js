@@ -257,7 +257,9 @@ const makeZoe = (additionalEndowments = {}) => {
           break;
         }
         default: {
-          assert.fail(details`Unimplemented installation moduleFormat ${moduleFormat}`);
+          assert.fail(
+            details`Unimplemented installation moduleFormat ${moduleFormat}`,
+          );
         }
       }
       const installationHandle = installationTable.create(

@@ -27,10 +27,12 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       );
       assert(
         installationHandle === installations.publicAuction,
-        details`wrong installation`);
+        details`wrong installation`,
+      );
       assert(
         sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
-        details`assays were not as expected`);
+        details`assays were not as expected`,
+      );
       assert(sameStructure(inviteExtent.minimumBid, simoleans(3)));
       assert(sameStructure(inviteExtent.auctionedAssets, moola(1)));
 
@@ -81,10 +83,12 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       );
       assert(
         installationHandle === installations.atomicSwap,
-        details`wrong installation`);
+        details`wrong installation`,
+      );
       assert(
         sameStructure(harden([inviteAssay, bucksAssay]), terms.assays),
-        details`assays were not as expected`);
+        details`assays were not as expected`,
+      );
 
       // Dave expects that Bob has already made an offer in the swap
       // with the following rules:
@@ -110,11 +114,16 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       assert(optionExtent.seatDesc === 'exerciseOption', details`wrong seat`);
       assert(
         moolaUnitOps.equals(optionExtent.underlyingAsset, moola(3)),
-        details`wrong underlying asset`);
+        details`wrong underlying asset`,
+      );
       assert(
         simoleanUnitOps.equals(optionExtent.strikePrice, simoleans(7)),
-        details`wrong strike price`);
-      assert(optionExtent.expirationDate === 100, details`wrong expiration date`);
+        details`wrong strike price`,
+      );
+      assert(
+        optionExtent.expirationDate === 100,
+        details`wrong expiration date`,
+      );
       assert(optionExtent.timerAuthority === timer, details`wrong timer`);
 
       // Dave escrows his 1 buck with Zoe and forms his offerRules
@@ -124,7 +133,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
             kind: 'wantAtLeast',
             units: optionUnits,
           },
-            {
+          {
             kind: 'offerAtMost',
             units: bucks(1),
           },

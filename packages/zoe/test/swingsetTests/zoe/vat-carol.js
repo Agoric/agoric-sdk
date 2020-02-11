@@ -23,10 +23,12 @@ const build = async (E, log, zoe, purses, installations) => {
       );
       assert(
         installationHandle === installations.publicAuction,
-        details`wrong installation`);
+        details`wrong installation`,
+      );
       assert(
         sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
-        details`assays were not as expected`);
+        details`assays were not as expected`,
+      );
       assert(sameStructure(inviteExtent.minimumBid, simoleans(3)));
       assert(sameStructure(inviteExtent.auctionedAssets, moola(1)));
 
