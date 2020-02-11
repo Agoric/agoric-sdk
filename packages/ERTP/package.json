@@ -94,7 +94,6 @@
   },
   "prettier": {
     "trailingComma": "all",
-    "singleQuote": true,
-    "print-width": 120
+    "singleQuote": true
   }
 }

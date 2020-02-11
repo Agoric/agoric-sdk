@@ -66,7 +66,8 @@ function makeMint(allegedName, config = basicFungibleConfig) {
     const paymentUnits = paymentKeeper.getUnits(payment);
     assert(
       unitOps.equals(units, paymentUnits),
-      details`payment balance ${paymentUnits} must equal units ${units}`);
+      details`payment balance ${paymentUnits} must equal units ${units}`,
+    );
     return paymentUnits;
   }
 
@@ -194,7 +195,8 @@ function makeMint(allegedName, config = basicFungibleConfig) {
       assert.equal(
         unitsArray.length,
         namesArray.length,
-        details`the units and names should have the same length`);
+        details`the units and names should have the same length`,
+      );
 
       const paymentMinusUnits = unitsArray.reduce((soFar, units) => {
         units = unitOps.coerce(units);
@@ -203,7 +205,8 @@ function makeMint(allegedName, config = basicFungibleConfig) {
 
       assert(
         unitOps.isEmpty(paymentMinusUnits),
-        details`the units of the proposed new payments do not equal the units of the source payment`);
+        details`the units of the proposed new payments do not equal the units of the source payment`,
+      );
 
       // ///////////////// commit point //////////////////
       // All queries above passed with no side effects.

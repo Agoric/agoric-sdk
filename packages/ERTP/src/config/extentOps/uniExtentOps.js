@@ -44,7 +44,9 @@ const makeUniExtentOps = (customInsistKind = () => {}) => {
       if (uniExtentOps.isEmpty(right)) {
         return left;
       }
-      throw assert.fail(details`Cannot combine uni extents ${left} and ${right}`);
+      throw assert.fail(
+        details`Cannot combine uni extents ${left} and ${right}`,
+      );
     },
     without: (whole, part) => {
       // we can only subtract the part from the whole if either part
