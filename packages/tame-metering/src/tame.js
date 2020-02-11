@@ -4,8 +4,9 @@ import * as c from './constants';
 const {
   defineProperties,
   entries,
-  fromEntries,
   getOwnPropertyDescriptors,
+  getPrototypeOf,
+  setPrototypeOf,
 } = Object;
 const { apply, construct, get } = Reflect;
 const { get: wmGet, set: wmSet } = WeakMap.prototype;
@@ -29,16 +30,16 @@ export default function tameMetering() {
   setWrapped(Error, Error); // FIGME: debugging
   setWrapped(console, console); // FIGME
   */
-  const wrapDescriptor = desc => {
+  const wrapDescriptor = (desc, pname = undefined) => {
     const newDesc = {};
     for (const [k, v] of entries(desc)) {
       // eslint-disable-next-line no-use-before-define
-      newDesc[k] = wrap(v);
+      newDesc[k] = wrap(v, pname && `${pname}.${k}`);
     }
     return newDesc;
   };
 
-  function wrap(target) {
+  function wrap(target, pname) {
     if (ObjectConstructor(target) !== target) {
       return target;
     }
@@ -63,7 +64,7 @@ export default function tameMetering() {
 
           // Track the entry of the stack frame.
           globalMeter = null;
-          // savedMeter && savedMeter[c.METER_ENTER](undefined, false);
+          /* savedMeter && savedMeter[c.METER_ENTER](undefined, false); */
           savedMeter && savedMeter[c.METER_COMPUTE](undefined, false);
           let ret;
 
@@ -105,25 +106,37 @@ export default function tameMetering() {
       wrapper = target;
     }
 
-    // We have a wrapper identity, so prevent recursion.
+    // We have a wrapper identity, so prevent recursion by installing it now.
     setWrapped(target, wrapper);
     setWrapped(wrapper, wrapper);
 
     if (isFunction) {
-      // Replace the constructor.
       const proto = get(target, 'prototype');
+
       if (proto) {
-        const wproto = wrap(proto);
+        // Replace the constructor.
+        const wproto = wrap(proto, pname && `${pname}.prototype`);
         wproto.constructor = wrapper;
       }
     }
 
-    // Assign the wrapped descriptors to the wrapper.
-    const props = entries(
-      getOwnPropertyDescriptors(target),
-    ).map(([p, desc]) => [p, wrapDescriptor(desc)]);
-    defineProperties(wrapper, fromEntries(props));
+    // Ensure the prototype chain is also wrapped.
+    setPrototypeOf(
+      wrapper,
+      wrap(getPrototypeOf(target), pname && `${pname}.__proto__`),
+    );
 
+    // Assign the wrapped descriptors to the wrapper.
+    const descs = {};
+    for (const [p, desc] of entries(getOwnPropertyDescriptors(target))) {
+      const desc2 = wrapDescriptor(desc, pname && `${pname}.${p}`);
+      if (isFunction && p === 'name') {
+        desc2.value = target.name;
+      }
+      descs[p] = desc2;
+    }
+
+    defineProperties(wrapper, descs);
     return wrapper;
   }
 

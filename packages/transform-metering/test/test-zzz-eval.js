@@ -1,16 +1,73 @@
-import replaceGlobalMeter from '@agoric/tame-metering/src/install-global-metering';
+// import replaceGlobalMeter from '@agoric/tame-metering/src/install-global-metering';
+import * as tamer from '@agoric/tame-metering/src/install-global-metering';
+import * as c from '@agoric/tame-metering/src/constants';
 
 import test from 'tape-promise/tape';
 import * as babelCore from '@babel/core';
-import SES from 'ses';
+import * as ses from 'ses';
 
 import { makeMeter, makeMeteredEvaluator } from '../src/index';
 
 let sesRealm;
+let replaceGlobalMeter;
 if (!sesRealm) {
-  // FIXME: lockdown() approach is the only way to both secure
+  // FIXME: lockdown() approach appears to be the only way to both secure
   // this realm and make meters available to evaluators.
-  sesRealm = SES.makeSESRootRealm();
+  const { lockdown, default: SES } = ses;
+  const { tameMetering, default: globalReplaceGlobalMeter } = tamer;
+  if (tameMetering && !lockdown) {
+    const shim = `\
+(() => {
+  const globalThis = this;
+
+  const c = ${JSON.stringify(c)}
+  let replaceGlobalMeter;
+  const ObjectConstructor = Object;
+  const {
+    create,
+    defineProperties,
+    entries,
+    isExtensible,
+    getOwnPropertyDescriptors,
+    getPrototypeOf,
+    setPrototypeOf,
+  } = Object;
+  const { apply, construct, get } = Reflect;
+  const { get: wmGet, set: wmSet } = WeakMap.prototype;
+  
+  (${tamer.tameMetering})();
+
+  let neutered;
+  this.Q = () => {
+    if (!neutered) {
+      neutered = true;
+      return replaceGlobalMeter;
+    }
+    throw Error('Cannot execute twice');
+  };
+})()`;
+    sesRealm = SES.makeSESRootRealm({
+      consoleMode: 'allow',
+      errorStackMode: 'allow',
+      shims: [shim],
+    });
+    replaceGlobalMeter = sesRealm.evaluate('Q()');
+  } else if (!lockdown) {
+    // We already tamed globally.
+    sesRealm = SES.makeSESRootRealm({
+      consoleMode: 'allow',
+      errorStackMode: 'allow',
+    });
+    replaceGlobalMeter = globalReplaceGlobalMeter;
+  } else if (tameMetering) {
+    // FIXME: How to get sesRealm?
+    replaceGlobalMeter = tameMetering();
+    lockdown();
+  } else {
+    // FIXME: How to get sesRealm?
+    replaceGlobalMeter = tamer.default;
+    lockdown();
+  }
 }
 
 export const makeSESEvaluator = opts =>
