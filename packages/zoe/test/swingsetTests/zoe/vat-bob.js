@@ -121,7 +121,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       assert(moolaUnitOps.equals(optionExtent.underlyingAsset, moola(3)));
       assert(simoleanUnitOps.equals(optionExtent.strikePrice, simoleans(7)));
       assert(optionExtent.expirationDate === 1, details`wrong expirationDate`);
-      assert(optionExtent.timerAuthority === timer, `wrong timer`);
+      assert(optionExtent.timerAuthority === timer, 'wrong timer');
 
       assert(
         instanceInfo.terms.assays[0] === moolaAssay,

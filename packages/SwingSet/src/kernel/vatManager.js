@@ -298,10 +298,10 @@ export default function makeVatManager(
     const targetSlot = mapKernelSlotToVatSlot(target);
     const { type } = parseVatSlot(targetSlot);
     if (type === 'object') {
-      assert(parseVatSlot(targetSlot).allocatedByVat, `deliver() to wrong vat`);
+      assert(parseVatSlot(targetSlot).allocatedByVat, 'deliver() to wrong vat');
     } else if (type === 'promise') {
       const p = kernelKeeper.getKernelPromise(target);
-      assert(p.decider === vatID, `wrong decider`);
+      assert(p.decider === vatID, 'wrong decider');
     }
     const inputSlots = msg.args.slots.map(slot => mapKernelSlotToVatSlot(slot));
     let resultSlot = null;

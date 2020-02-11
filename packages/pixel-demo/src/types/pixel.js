@@ -15,7 +15,7 @@ function insistWithinBounds(num, canvasSize) {
 
 const makeInsistPixel = (canvasSize = 10) => pixel => {
   const properties = Object.getOwnPropertyNames(pixel);
-  assert(properties.length === 2, `pixels must have x, y properties only`);
+  assert(properties.length === 2, 'pixels must have x, y properties only');
 
   insistWithinBounds(pixel.x, canvasSize);
   insistWithinBounds(pixel.y, canvasSize);
