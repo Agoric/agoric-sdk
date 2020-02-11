@@ -1,25 +1,22 @@
 /* global globalThis */
 import * as c from './constants';
 
-const {
-  defineProperties,
-  entries,
-  getOwnPropertyDescriptors,
-  getPrototypeOf,
-  setPrototypeOf,
-} = Object;
-const { apply, construct, get } = Reflect;
-const { get: wmGet, set: wmSet } = WeakMap.prototype;
-
-const ObjectConstructor = Object;
-
 let replaceGlobalMeter;
 
-export default function tameMetering() {
+export function tameMetering() {
   if (replaceGlobalMeter) {
     // Already installed.
     return replaceGlobalMeter;
   }
+
+  const { defineProperties, entries, getOwnPropertyDescriptors } = Object;
+  const { apply, construct, get } = Reflect;
+  const { get: wmGet, set: wmSet } = WeakMap.prototype;
+
+  const ObjectConstructor = Object;
+  const ProxyConstructor = Proxy;
+
+  const FunctionPrototype = Function.prototype;
 
   let globalMeter = null;
   const wrapped = new WeakMap();
@@ -39,7 +36,7 @@ export default function tameMetering() {
     return newDesc;
   };
 
-  function wrap(target, pname) {
+  function wrap(target, pname = undefined, constructor = undefined) {
     if (ObjectConstructor(target) !== target) {
       return target;
     }
@@ -49,60 +46,97 @@ export default function tameMetering() {
       return wrapper;
     }
 
-    const isFunction = typeof target === 'function';
-    if (isFunction) {
-      // Meter the call to the function/constructor.
-      wrapper = function meterFunction(...args) {
-        // We're careful not to use the replaceGlobalMeter function as
-        // it may consume some stack.
-        // Instead, directly manipulate the globalMeter variable.
-        const savedMeter = globalMeter;
-        try {
-          // This is a common idiom to disable global metering so
-          // that the savedMeter can use builtins without
-          // recursively calling itself.
-
-          // Track the entry of the stack frame.
-          globalMeter = null;
-          /* savedMeter && savedMeter[c.METER_ENTER](undefined, false); */
-          savedMeter && savedMeter[c.METER_COMPUTE](undefined, false);
-          let ret;
-
-          // Reinstall the saved meter for the actual function invocation.
-          globalMeter = savedMeter;
-          const newTarget = new.target;
-          if (newTarget) {
-            ret = construct(target, args, newTarget);
-          } else {
-            ret = apply(target, this, args);
-          }
-
-          // Track the allocation of the return value.
-          globalMeter = null;
-          savedMeter && savedMeter[c.METER_ALLOCATE](ret, false);
-          return ret;
-        } catch (e) {
-          // Track the allocation of the exception value.
-          globalMeter = null;
-          savedMeter && savedMeter[c.METER_ALLOCATE](e, false);
-          throw e;
-        } finally {
-          // In case a try block consumes stack.
-          globalMeter = savedMeter;
-          /*
+    if (typeof target === 'function') {
+      wrapper = new ProxyConstructor(target, {
+        apply(t, thisArg, argArray) {
+          // We're careful not to use the replaceGlobalMeter function as
+          // it may consume some stack.
+          // Instead, directly manipulate the globalMeter variable.
+          const savedMeter = globalMeter;
           try {
-            // Declare we left the stack frame.
+            // This is a common idiom to disable global metering so
+            // that the savedMeter can use builtins without
+            // recursively calling itself.
+
+            // Track the entry of the stack frame.
             globalMeter = null;
-            savedMeter && savedMeter[c.METER_LEAVE](undefined, false);
-          } finally {
-            // Resume the saved meter, if there was one.
+            /* savedMeter && savedMeter[c.METER_ENTER](undefined, false); */
+            savedMeter && savedMeter[c.METER_COMPUTE](undefined, false);
+
+            // Reinstall the saved meter for the actual function invocation.
             globalMeter = savedMeter;
+            const ret = apply(t, thisArg, argArray);
+
+            // Track the allocation of the return value.
+            globalMeter = null;
+            savedMeter && savedMeter[c.METER_ALLOCATE](ret, false);
+            return ret;
+          } catch (e) {
+            // Track the allocation of the exception value.
+            globalMeter = null;
+            savedMeter && savedMeter[c.METER_ALLOCATE](e, false);
+            throw e;
+          } finally {
+            // In case a try block consumes stack.
+            globalMeter = savedMeter;
+            /*
+            try {
+              // Declare we left the stack frame.
+              globalMeter = null;
+              savedMeter && savedMeter[c.METER_LEAVE](undefined, false);
+            } finally {
+              // Resume the saved meter, if there was one.
+              globalMeter = savedMeter;
+            }
+            */
           }
-          */
-        }
-      };
+        },
+        construct(t, argArray, newTarget) {
+          // We're careful not to use the replaceGlobalMeter function as
+          // it may consume some stack.
+          // Instead, directly manipulate the globalMeter variable.
+          const savedMeter = globalMeter;
+          try {
+            // This is a common idiom to disable global metering so
+            // that the savedMeter can use builtins without
+            // recursively calling itself.
+
+            // Track the entry of the stack frame.
+            globalMeter = null;
+            /* savedMeter && savedMeter[c.METER_ENTER](undefined, false); */
+            savedMeter && savedMeter[c.METER_COMPUTE](undefined, false);
+
+            // Reinstall the saved meter for the actual function invocation.
+            globalMeter = savedMeter;
+            const ret = construct(t, argArray, newTarget);
+
+            // Track the allocation of the return value.
+            globalMeter = null;
+            savedMeter && savedMeter[c.METER_ALLOCATE](ret, false);
+            return ret;
+          } catch (e) {
+            // Track the allocation of the exception value.
+            globalMeter = null;
+            savedMeter && savedMeter[c.METER_ALLOCATE](e, false);
+            throw e;
+          } finally {
+            // In case a try block consumes stack.
+            globalMeter = savedMeter;
+            /*
+            try {
+              // Declare we left the stack frame.
+              globalMeter = null;
+              savedMeter && savedMeter[c.METER_LEAVE](undefined, false);
+            } finally {
+              // Resume the saved meter, if there was one.
+              globalMeter = savedMeter;
+            }
+            */
+          }
+        },
+      });
     } else {
-      // Don't redefine the object: mutate in place.
+      // Preserve identity and mutate in place.
       wrapper = target;
     }
 
@@ -110,33 +144,31 @@ export default function tameMetering() {
     setWrapped(target, wrapper);
     setWrapped(wrapper, wrapper);
 
-    if (isFunction) {
-      const proto = get(target, 'prototype');
-
-      if (proto) {
-        // Replace the constructor.
-        const wproto = wrap(proto, pname && `${pname}.prototype`);
-        wproto.constructor = wrapper;
+    const proto = get(target, 'prototype');
+    if (proto && proto !== FunctionPrototype) {
+      // Replace the constructor.
+      const wproto = wrap(proto, pname && `${pname}.prototype`, wrapper);
+      if (proto !== wproto) {
+        throw Error(`prototype wrapping didn't preserve identity ${pname}`);
       }
     }
-
-    // Ensure the prototype chain is also wrapped.
-    setPrototypeOf(
-      wrapper,
-      wrap(getPrototypeOf(target), pname && `${pname}.__proto__`),
-    );
 
     // Assign the wrapped descriptors to the wrapper.
     const descs = {};
     for (const [p, desc] of entries(getOwnPropertyDescriptors(target))) {
-      const desc2 = wrapDescriptor(desc, pname && `${pname}.${p}`);
-      if (isFunction && p === 'name') {
-        desc2.value = target.name;
+      if (constructor && p === 'constructor') {
+        descs[p] = {
+          value: constructor,
+          writable: true,
+          enumerable: false,
+          configurable: true,
+        };
+      } else if (p !== 'prototype') {
+        descs[p] = wrapDescriptor(desc, pname && `${pname}.${p}`);
       }
-      descs[p] = desc2;
     }
 
-    defineProperties(wrapper, descs);
+    defineProperties(target, descs);
     return wrapper;
   }
 

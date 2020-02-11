@@ -7,40 +7,72 @@ This technique is not airtight, but it is at least is a best approximation in th
 ## Quickstart
 
 ```js
-import SES from 'ses';
+import { lockdown } from 'ses';
 import * as babelCore from '@babel/core';
 import { makeMeter, makeMeteredEvaluator } from '@agoric/transform-metering';
-import tameMetering from '@agoric/tame-metering';
+import { tameMetering } from '@agoric/tame-metering';
 
 // Override all the global objects with metered versions.
 const replaceGlobalMeter = tameMetering();
-// TODO: Here is where `lockdown` would be run.
+
+// Enter SES.
+lockdown();
 
 const meteredEval = makeMeteredEvaluator({
   // Needed for enabling metering of the global builtins.
   replaceGlobalMeter,
   // Needed for source transforms that prevent runaways.
   babelCore,
-  // ({ transforms }) => { evaluate(src, endowments = {}) { [eval function] } }
-  makeEvaluator: SES.makeSESRootRealm, // TODO: change to new SES/Compartment API
-  // Resolve a promise when the code inside the eval function is done evaluating.
-  makeQuiescenceP: () => new Promise(res => setImmediate(() => res())),
+  makeEvaluator: opts => {
+    const c = new Compartment(undefined, undefined, opts);
+    return {
+      evaluate(src, endowments = {}) {
+        return c.evaluate(src, { endowments });
+      }
+    }
+  },
+  // Call a callback when the code inside the meteredEval is done evaluating.
+  quiesceCallback: cb => setTimeout(cb),
 });
 
 // Now use the returned meteredEval: it should not throw.
 // It also doesn't return until the code has quiesced.
-const { meter } = makeMeter(); 
-const { exhaustedP, exceptionBox, returned } = meteredEval(meter, untrustedSource, /* endowments */);
-exhaustedP.then(exhausted =>
-  if (exhausted) {
-    console.log('the meter was exhausted');
+const { meter } = makeMeter();
+const myEval = (srcOrThunk, endowments = {}) => {
+  let whenQuiesced;
+  const whenQuiescedP = new Promise(res => (whenQuiesced = res)).then(
+    ({ exhausted, returned, exceptionBox }) => {
+      if (exhausted) {
+        // The meter was exhausted.
+        throw exhausted;
+      }
+      if (exceptionBox) {
+        // The source threw an exception.
+        return [false, exceptionBox[0]];
+      } else {
+        // The source returned normally.
+        return [true, returned];
+      }
+    },
+  );
+  // Defer the evaluation for another turn.
+  Promise.resolve()
+    .then(_ => meteredEval(meter, srcOrThunk, endowments, whenQuiesced));
+  return whenQuiescedP;
+};
+
+// Then to evaluathe some source with endowments:
+myEval('abc + def', {abc: 123, def: 456}).then(
+  ([normalReturn, value]) => {
+    if (normalReturn) {
+      console.log('normal return', value);
+    } else {
+      console.log('exception', value);
+    }
   }
-  if (exceptionBox) {
-    console.log('the source threw exception', exceptionBox[0]);
-  } else {
-    console.log('the source returned', returned);
-  }
-}
+).catch(e => {
+  console.log('meter exhausted', e);
+});
 ```
 
 # Implementation Details
@@ -94,17 +126,17 @@ Every loop body (including single-statement bodies), and `catch` and `finally` b
 All regular expression literals (such as `/some-regexp/g`) are rewritten as follows:
 
 ```js
-$h_re_1 = RegExp('some-regexp', 'g'); // endowment passed to evaluate
+const $h_re_1 = RegExp('some-regexp', 'g');
 ... // existing use of /some-regexp/g replaced by $h_re_1
 ```
 
-The `$h_re_1` identifier is also blacklisted for evaluated code.
+The `$h_re_`-prefixed identifiers are blacklisted for pre-transformed evaluated sources.
 
-This makes it possible for a wrapped `RegExp` constructor (see [Host endowments](#Host-endowments)) to prevent ["catastrophic backtracking"](https://www.regular-expressions.info/catastrophic.html).
+This makes it possible for an endowedd `RegExp` constructor to prevent ["catastrophic backtracking"](https://www.regular-expressions.info/catastrophic.html).  One such suitable constructor is [RE2](https://github.com/google/re2/#readme).
 
 ## Host endowments
 
-Without precisely instrumenting the host platform code, this package provides an option to wrap a global object with code that does a rough instrumentation of function calls.  This is not a Proxy/Membrane, rather a complete reconstruction of the globals and endowments as an object that can be supplied to the `endowments` parameter of the three-argument evaluator.
+Without precisely instrumenting the host platform code, this package provides an option to wrap a global object with code that does a rough instrumentation of function calls.
 
 The reason for this wrapping is to provide some basic accounting for the resources consumed by the host platform methods.  The wrapping makes some assumptions about the host, such as:
 
@@ -113,7 +145,3 @@ The reason for this wrapping is to provide some basic accounting for the resourc
 3. builtins have been "tamed" by the SES platform to prevent nondeterminism and pathological behaviour
 
 This at least prevents user code from running after a builtin has exceeded a meter.
-
-### Special treatment
-
-The global object wrapper specially implements `RegExp` using [RE2](https://github.com/google/re2/#readme), which entirely prevents ["catastrophic backtracking"](https://www.regular-expressions.info/catastrophic.html).  However, in order to do this, the wrapped object supports neither lookahead nor backreferences.

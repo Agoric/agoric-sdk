@@ -213,7 +213,6 @@ try{${regexpSource}`;
       // console.log('metered source:', `\n${actualSource}`);
 
       // Install the specified user meter.
-      // console.log('installing', meter);
       const savedMeter = endowments.getGlobalMeter();
       endowments[setMeterId] = set => {
         endowments.getGlobalMeter(set ? meter : savedMeter);

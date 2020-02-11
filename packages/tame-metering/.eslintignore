@@ -1,3 +1,4 @@
 /dist/
 /scripts/
 /testdata/**
+/src/ses.esm.js

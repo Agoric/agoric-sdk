@@ -1,4 +1,4 @@
-// import replaceGlobalMeter from '@agoric/tame-metering/src/install-global-metering';
+// import * as tamer from '@agoric/tame-metering';
 import * as tamer from '@agoric/tame-metering/src/install-global-metering';
 import * as c from '@agoric/tame-metering/src/constants';
 
@@ -20,22 +20,10 @@ if (!sesRealm) {
 (() => {
   const globalThis = this;
 
+  // Provide imported references to the metering tamer.
   const c = ${JSON.stringify(c)}
   let replaceGlobalMeter;
-  const ObjectConstructor = Object;
-  const {
-    create,
-    defineProperties,
-    entries,
-    isExtensible,
-    getOwnPropertyDescriptors,
-    getPrototypeOf,
-    setPrototypeOf,
-  } = Object;
-  const { apply, construct, get } = Reflect;
-  const { get: wmGet, set: wmSet } = WeakMap.prototype;
-  
-  (${tamer.tameMetering})();
+  replaceGlobalMeter = (${tamer.tameMetering})();
 
   let neutered;
   this.Q = () => {
@@ -46,12 +34,15 @@ if (!sesRealm) {
     throw Error('Cannot execute twice');
   };
 })()`;
+    const fixedShim = shim.replace(/_[a-z0-9]{3}\u200d\.g\./gs, '');
     sesRealm = SES.makeSESRootRealm({
       consoleMode: 'allow',
       errorStackMode: 'allow',
-      shims: [shim],
+      shims: [fixedShim],
     });
     replaceGlobalMeter = sesRealm.evaluate('Q()');
+    console.log('have', replaceGlobalMeter, replaceGlobalMeter());
+    process.exit(0);
   } else if (!lockdown) {
     // We already tamed globally.
     sesRealm = SES.makeSESRootRealm({
@@ -91,7 +82,7 @@ test('metering evaluator', async t => {
     // Destructure the output of the meteredEval.
     let exhaustedTimes = 0;
     let expectedExhaustedTimes = 0;
-    const myEval = src => {
+    const myEval = (src, endowments = {}) => {
       Object.values(adminFacet).forEach(r => r());
       let whenQuiesced;
       const whenQuiescedP = new Promise(res => (whenQuiesced = res)).then(
@@ -102,6 +93,7 @@ test('metering evaluator', async t => {
             throw exhausted;
           }
           if (exceptionBox) {
+            console.log(exceptionBox[0]);
             throw exceptionBox[0];
           }
           return returned;
@@ -109,7 +101,7 @@ test('metering evaluator', async t => {
       );
       // Defer the evaluation for another turn.
       Promise.resolve()
-        .then(_ => meteredEval(meter, src, {}, whenQuiesced))
+        .then(_ => meteredEval(meter, src, endowments, whenQuiesced))
         .catch(_ => {});
       return whenQuiescedP;
     };
