@@ -78,7 +78,7 @@ export default function makeDeviceManager(
     insistVatType('object', targetSlot);
     insistCapData(args);
     const target = mapDeviceSlotToKernelSlot(targetSlot);
-    assert(target, `unable to find target`);
+    assert(target, 'unable to find target');
     kdebug(`syscall[${deviceName}].send(${targetSlot}/${target}).${method}`);
     kdebug(`  ^target is ${target}`);
     const msg = {
