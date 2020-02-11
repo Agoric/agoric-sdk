@@ -15,13 +15,44 @@ function an(str) {
   }
   return `a ${str}`;
 }
+harden(an);
+
+const declassifiers = new WeakSet();
+
+// To "declassify" a substitution value used in a details`...` template literal,
+// enclose that substitution expression in a call to openDetail. This states
+// that the argument should appear, stringified, in the error message of the
+// thrown error.
+//
+// Starting from the example in the `details` comment, say instead that the
+// color the sky is supposed to be is also computed. Say that we still don't
+// want to reveal the sky's actual color, but we do want the thrown error's
+// message to reveal what color the sky was supposed to be:
+// ```js
+// assert.equal(
+//   sky.color,
+//   color,
+//   details`${sky.color} should be ${openDetail(color)}`,
+// );
+// ```
+function openDetail(payload) {
+  const result = harden({
+    payload,
+    toString() {
+      return payload.toString();
+    },
+  });
+  declassifiers.add(result);
+  return result;
+}
+harden(openDetail);
 
 // Use the `details` function as a template literal tag to create
 // informative error messages. The assertion functions take such messages
 // as optional arguments:
-
-//   assert(sky.isBlue(), details`${sky.color} should be blue`);
-
+// ```js
+// assert(sky.isBlue(), details`${sky.color} should be blue`);
+// ```
 // The details template tag returns an object that can print itself with the
 // formatted message in two ways. It will report the real details to the
 // console but include only the typeof information in the thrown error
@@ -35,8 +66,16 @@ function details(template, ...args) {
       const interleaved = [template[0]];
       const parts = [template[0]];
       for (let i = 0; i < args.length; i += 1) {
-        interleaved.push(args[i], template[i + 1]);
-        parts.push('(', an(typeof args[i]), ')', template[i + 1]);
+        let arg = args[i];
+        let argStr;
+        if (declassifiers.has(arg)) {
+          arg = arg.payload;
+          argStr = `${arg}`;
+        } else {
+          argStr = `(${an(typeof arg)})`;
+        }
+        interleaved.push(arg, template[i + 1]);
+        parts.push(argStr, template[i + 1]);
       }
       if (args.length >= 1) {
         parts.push('\nSee console for error data.');
@@ -47,6 +86,7 @@ function details(template, ...args) {
   });
   return complainer;
 }
+harden(details);
 
 // Fail an assertion, recording details to the console and
 // raising an exception with just type information.
@@ -99,7 +139,7 @@ function equal(
 function assertTypeof(
   specimen,
   typename,
-  optDetails = details(['', ` must be ${an(typename)}`], specimen),
+  optDetails = details`${specimen} must be ${openDetail(an(typename))}`,
 ) {
   assert(typeof typename === 'string', details`${typename} must be a string`);
   equal(typeof specimen, typename, optDetails);
@@ -108,6 +148,6 @@ function assertTypeof(
 assert.equal = equal;
 assert.fail = fail;
 assert.typeof = assertTypeof;
-
 harden(assert);
-export { assert, details, an };
+
+export { assert, details, openDetail, an };

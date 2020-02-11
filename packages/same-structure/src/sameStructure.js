@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 import { passStyleOf } from '@agoric/marshal';
-import { assert, details } from '@agoric/assert';
+import { assert, details, openDetail } from '@agoric/assert';
 
 // Shim of Object.fromEntries from
 // https://github.com/tc39/proposal-object-from-entries/blob/master/polyfill.js
@@ -166,11 +166,9 @@ function pathStr(path) {
 function mustBeSameStructureInternal(left, right, message, path) {
   function complain(problem) {
     assert.fail(
-      details(
-        [`${message}: ${problem} at ${pathStr(path)}: (`, ') vs (', ')'],
-        left,
-        right,
-      ),
+      details`${openDetail(message)}: ${openDetail(problem)} at ${openDetail(
+        pathStr(path),
+      )}: (${left}) vs (${right})`,
     );
   }
 

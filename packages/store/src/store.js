@@ -1,7 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache license 2.0
 
 import harden from '@agoric/harden';
-import { assert, details } from '@agoric/assert';
+import { assert, details, openDetail } from '@agoric/assert';
 /**
  * Distinguishes between adding a new key (init) and updating or
  * referencing a key (get, set, delete).
@@ -15,10 +15,10 @@ function makeStore(keyName = 'key') {
   const assertKeyDoesNotExist = key =>
     assert(
       !store.has(key),
-      details([`${keyName} already registered: `, ''], key),
+      details`${openDetail(keyName)} already registered: ${key}`,
     );
   const assertKeyExists = key =>
-    assert(store.has(key), details([`${keyName} not found: `, ''], key));
+    assert(store.has(key), details`${openDetail(keyName)} not found: ${key}`);
   return harden({
     has: key => store.has(key),
     init: (key, value) => {
