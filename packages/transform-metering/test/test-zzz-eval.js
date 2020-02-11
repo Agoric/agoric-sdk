@@ -1,42 +1,20 @@
-/* global globalThis */
-/* eslint-disable no-await-in-loop */
+import replaceGlobalMeter from '@agoric/tame-metering/src/install-global-metering';
 
 import test from 'tape-promise/tape';
 import * as babelCore from '@babel/core';
 import SES from 'ses';
-import { makeEvaluators } from '@agoric/evaluate';
 
-import replaceGlobalMeter from '@agoric/tame-metering/src/install-global-metering';
 import { makeMeter, makeMeteredEvaluator } from '../src/index';
 
+let sesRealm;
+if (!sesRealm) {
+  // FIXME: lockdown() approach is the only way to both secure
+  // this realm and make meters available to evaluators.
+  sesRealm = SES.makeSESRootRealm();
+}
+
 export const makeSESEvaluator = opts =>
-  SES.makeSESRootRealm({ ...opts, consoleMode: 'allow' });
-
-export const makeAgoricEvaluator = opts => {
-  const { evaluateProgram } = makeEvaluators(opts);
-  return {
-    evaluate(src, endowments = {}) {
-      return evaluateProgram(src, endowments);
-    },
-  };
-};
-
-export const makeLocalEvaluator = opts => ({
-  evaluate(src, endowments = {}) {
-    // console.log('evaluating src', src);
-    const ss = opts.transforms.reduce(
-      (prior, t) => (t.rewrite ? t.rewrite(prior) : prior),
-      { src, endowments, sourceType: 'script' },
-    );
-
-    globalThis.getGlobalMeter = ss.endowments.getGlobalMeter;
-    // eslint-disable-next-line global-require
-    globalThis.RegExp = require('re2');
-
-    // eslint-disable-next-line no-eval
-    return (1, eval)(ss.src);
-  },
-});
+  sesRealm.global.Realm.makeCompartment(opts);
 
 test('metering evaluator', async t => {
   const rejectionHandler = (_e, _promise) => {
@@ -45,7 +23,7 @@ test('metering evaluator', async t => {
   try {
     process.on('unhandledRejection', rejectionHandler);
     const { meter, adminFacet } = makeMeter();
-    const makeEvaluator = makeSESEvaluator; // makeSESEvaluator; // ideal
+    const makeEvaluator = makeSESEvaluator; // ideal
     const meteredEval = makeMeteredEvaluator({
       replaceGlobalMeter,
       babelCore,
@@ -88,19 +66,6 @@ test('metering evaluator', async t => {
       expectedExhaustedTimes += times;
       return times === 0;
     };
-
-    const src3a = `\
-Promise.resolve().then(
-  () => {
-    while(true) {}
-  });
-0`;
-    expectedExhaustedTimes += 1;
-    await t.rejects(
-      myEval(src3a),
-      /Compute meter exceeded/,
-      'promised infinite loop exhausts',
-    );
 
     const src5a = `\
 ('x'.repeat(1e8), 0)
@@ -155,6 +120,34 @@ while (true) {}
       'nested loop exhausts',
     );
 
+    const src3a = `\
+Promise.resolve().then(
+  () => {
+    while(true) {}
+  });
+0
+`;
+    expectedExhaustedTimes += 1;
+    await t.rejects(
+      myEval(src3a),
+      /Compute meter exceeded/,
+      'promised infinite loop exhausts',
+    );
+
+    const src3c = `\
+function f() {
+  Promise.resolve().then(f);
+}
+f();
+0
+`;
+    expectedExhaustedTimes += 1;
+    await t.rejects(
+      myEval(src3c),
+      /Compute meter exceeded/,
+      'promise loop exhausts',
+    );
+
     const src4 = `\
 /(x+x+)+y/.test('x'.repeat(10000));
 `;
@@ -168,7 +161,11 @@ while (true) {}
 new Array(1e8).map(Object.create); 0
 `;
     failedToRejectUnderSES() ||
-    await t.rejects(myEval(src6), /Allocate meter exceeded/, 'long map exhausts');
+      (await t.rejects(
+        myEval(src6),
+        /Allocate meter exceeded/,
+        'long map exhausts',
+      ));
 
     t.equals(
       exhaustedTimes,

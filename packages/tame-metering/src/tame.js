@@ -2,9 +2,9 @@
 import * as c from './constants';
 
 const {
-  defineProperty,
+  defineProperties,
   entries,
-  getOwnPropertyDescriptor,
+  fromEntries,
   getOwnPropertyDescriptors,
 } = Object;
 const { apply, construct, get } = Reflect;
@@ -26,8 +26,8 @@ export default function tameMetering() {
   const getWrapped = (...args) => apply(wmGet, wrapped, args);
 
   /*
-    setWrapped(Error, Error); // FIGME: debugging
-    setWrapped(console, console); // FIGME
+  setWrapped(Error, Error); // FIGME: debugging
+  setWrapped(console, console); // FIGME
   */
   const wrapDescriptor = desc => {
     const newDesc = {};
@@ -48,7 +48,8 @@ export default function tameMetering() {
       return wrapper;
     }
 
-    if (typeof target === 'function') {
+    const isFunction = typeof target === 'function';
+    if (isFunction) {
       // Meter the call to the function/constructor.
       wrapper = function meterFunction(...args) {
         // We're careful not to use the replaceGlobalMeter function as
@@ -63,6 +64,7 @@ export default function tameMetering() {
           // Track the entry of the stack frame.
           globalMeter = null;
           // savedMeter && savedMeter[c.METER_ENTER](undefined, false);
+          savedMeter && savedMeter[c.METER_COMPUTE](undefined, false);
           let ret;
 
           // Reinstall the saved meter for the actual function invocation.
@@ -77,7 +79,6 @@ export default function tameMetering() {
           // Track the allocation of the return value.
           globalMeter = null;
           savedMeter && savedMeter[c.METER_ALLOCATE](ret, false);
-
           return ret;
         } catch (e) {
           // Track the allocation of the exception value.
@@ -87,22 +88,18 @@ export default function tameMetering() {
         } finally {
           // In case a try block consumes stack.
           globalMeter = savedMeter;
+          /*
           try {
             // Declare we left the stack frame.
             globalMeter = null;
-            // savedMeter && savedMeter[c.METER_LEAVE](undefined, false);
+            savedMeter && savedMeter[c.METER_LEAVE](undefined, false);
           } finally {
             // Resume the saved meter, if there was one.
             globalMeter = savedMeter;
           }
+          */
         }
       };
-
-      // Replace the constructor.
-      const proto = get(target, 'prototype');
-      if (proto && getOwnPropertyDescriptor(proto, 'constructor')) {
-        defineProperty(proto, 'constructor', { value: wrapper });
-      }
     } else {
       // Don't redefine the object: mutate in place.
       wrapper = target;
@@ -112,10 +109,20 @@ export default function tameMetering() {
     setWrapped(target, wrapper);
     setWrapped(wrapper, wrapper);
 
-    // Assign the wrapped descriptors to the wrapper.
-    for (const [p, desc] of entries(getOwnPropertyDescriptors(target))) {
-      defineProperty(wrapper, p, wrapDescriptor(desc));
+    if (isFunction) {
+      // Replace the constructor.
+      const proto = get(target, 'prototype');
+      if (proto) {
+        const wproto = wrap(proto);
+        wproto.constructor = wrapper;
+      }
     }
+
+    // Assign the wrapped descriptors to the wrapper.
+    const props = entries(
+      getOwnPropertyDescriptors(target),
+    ).map(([p, desc]) => [p, wrapDescriptor(desc)]);
+    defineProperties(wrapper, fromEntries(props));
 
     return wrapper;
   }

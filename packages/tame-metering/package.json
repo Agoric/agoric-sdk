@@ -2,7 +2,7 @@
   "name": "@agoric/tame-metering",
   "version": "1.0.0",
   "description": "tame-metering",
-  "module": "src/tame.js",
+  "main": "src/tame.js",
   "scripts": {
     "test": "tape -r esm 'test/**/*.js'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",

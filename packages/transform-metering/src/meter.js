@@ -13,7 +13,10 @@ const bigIntZero = bigIntWord && BigInt(0);
 // Stop deducting when we reach a negative number.
 const makeCounter = initBalance => {
   let balance = initBalance;
-  const counter = increment => {
+  const counter = (increment, alwaysDecrement = true) => {
+    if (balance <= 0 && !alwaysDecrement) {
+      return 1;
+    }
     if (balance > 0) {
       balance += increment;
     }
@@ -48,9 +51,9 @@ export function makeComputeMeter(maybeAbort, meter, computeCounter = null) {
     };
   }
   return (cost = 1, throwForever = true) => {
-    const already = maybeAbort(undefined, throwForever);
-    if (!already && computeCounter(-cost) <= 0) {
-      maybeAbort(RangeError(`Compute meter exceeded`), throwForever);
+    maybeAbort(undefined, throwForever);
+    if (computeCounter(-cost, throwForever) <= 0) {
+      throw maybeAbort(RangeError(`Compute meter exceeded`), throwForever);
     }
   };
 }
@@ -63,8 +66,8 @@ export function makeAllocateMeter(maybeAbort, meter, allocateCounter = null) {
     };
   }
   return (value, throwForever = true) => {
+    maybeAbort(undefined, throwForever);
     try {
-      const already = maybeAbort(undefined, throwForever);
       // meter[c.METER_ENTER](undefined, throwForever);
       let cost = 1;
       if (value && ObjectConstructor(value) === value) {
@@ -124,8 +127,8 @@ export function makeAllocateMeter(maybeAbort, meter, allocateCounter = null) {
         }
       }
 
-      if (!already && allocateCounter(-cost, throwForever) <= 0) {
-        maybeAbort(RangeError(`Allocate meter exceeded`), throwForever);
+      if (allocateCounter(-cost, throwForever) <= 0) {
+        throw maybeAbort(RangeError(`Allocate meter exceeded`), throwForever);
       }
       return value;
     } finally {
@@ -143,9 +146,9 @@ export function makeStackMeter(maybeAbort, meter, stackCounter = null) {
   return (cost = 1, throwForever = true) => {
     try {
       meter[c.METER_COMPUTE](undefined, throwForever);
-      const already = maybeAbort(undefined, throwForever);
-      if (!already && stackCounter(-cost, throwForever) <= 0) {
-        maybeAbort(RangeError(`Stack meter exceeded`), throwForever);
+      maybeAbort(undefined, throwForever);
+      if (stackCounter(-cost, throwForever) <= 0) {
+        throw maybeAbort(RangeError(`Stack meter exceeded`), throwForever);
       }
     } catch (e) {
       throw maybeAbort(e, throwForever);

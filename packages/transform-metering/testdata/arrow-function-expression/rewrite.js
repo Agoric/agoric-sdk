@@ -1,3 +1,3 @@
-const $m=$h‍_enterMeter();try{() => {const $m = $h‍_enterMeter();try {return (
-      f());} finally {$m.l();}};
-}finally{$m.l()}
+const $h‍_meter_get=getGlobalMeter;const $m=$h‍_meter_set(true);$m&&$m.e();try{() => {const $m = $h‍_meter_get();$m && $m.e();try {return (
+      f());} finally {$m && $m.l();}};
+}finally{$h‍_meter_set(false);$m && $m.l();}

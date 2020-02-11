@@ -9,7 +9,10 @@ import { makeMeter, makeWithMeter } from '../src/index';
 test('meter running', async t => {
   try {
     const { meter, adminFacet } = makeMeter({ budgetCombined: 10 });
-    const { withMeter, withoutMeter } = makeWithMeter(replaceGlobalMeter, meter);
+    const { withMeter, withoutMeter } = makeWithMeter(
+      replaceGlobalMeter,
+      meter,
+    );
     const withMeterFn = (thunk, newMeter = meter) => () =>
       withMeter(thunk, newMeter);
 
@@ -33,17 +36,20 @@ test('meter running', async t => {
       'new Array exhausted',
     );
 
-    adminFacet.combined(20);
-    withMeter(() => {
-      const a = new Array(10);
-      withoutMeter(() =>
-        t.throws(
-          withMeterFn(() => a.map(Object.create)),
-          RangeError,
-          'map to Object create exhausted',
-        ),
-      );
-    });
+    adminFacet.combined(100);
+    t.throws(
+      withMeterFn(() => 'x'.repeat(10000)),
+      RangeError,
+      'long string exhausted',
+    );
+
+    const a = new Array(10);
+    adminFacet.combined(10);
+    t.throws(
+      withMeterFn(() => a.map(Object.create)),
+      RangeError,
+      'map to Object create exhausted',
+    );
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {

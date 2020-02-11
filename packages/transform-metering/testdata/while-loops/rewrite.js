@@ -1,12 +1,12 @@
-const $m=$h‍_enterMeter();try{while (a) {$m.c();}
+const $h‍_meter_get=getGlobalMeter;const $m=$h‍_meter_set(true);$m&&$m.e();try{while (a) {$m && $m.c();}
 
-while (a) {$m.c();doit();}
+while (a) {$m && $m.c();doit();}
 
-while (a) {$m.c();
+while (a) {$m && $m.c();
   doit();}
 
 
-do {$m.c();
+do {$m && $m.c();
   doit();} while (
 a);
-}finally{$m.l()}
+}finally{$h‍_meter_set(false);$m && $m.l();}
