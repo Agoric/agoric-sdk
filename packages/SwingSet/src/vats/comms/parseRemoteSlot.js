@@ -7,7 +7,7 @@ import { assert, details } from '@agoric/assert';
 // message, and "-" when allocated by the sender of the message.
 
 export function parseRemoteSlot(s) {
-  assert.equal(s, `${s}`, details`${s} is not a string`);
+  assert.typeof(s, 'string');
   let type;
   let allocatedByRecipient;
   const typechars = s.slice(0, 2);

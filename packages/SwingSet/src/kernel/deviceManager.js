@@ -60,7 +60,7 @@ export default function makeDeviceManager(
    *    devices or is otherwise invalid.
    */
   function mapKernelSlotToDeviceSlot(kernelSlot) {
-    assert.equal(kernelSlot, `${kernelSlot}`, 'non-string kernelSlot');
+    assert.typeof(kernelSlot, 'string', 'non-string kernelSlot');
     const deviceSlot = deviceKeeper.mapKernelSlotToDeviceSlot(kernelSlot);
     kdebug(
       `mapInbound for device-${deviceName} of ${kernelSlot} to ${deviceSlot}`,
@@ -78,7 +78,7 @@ export default function makeDeviceManager(
    * @param args  A capdata object containing the message arguments.
    */
   function doSendOnly(targetSlot, method, args) {
-    assert.equal(targetSlot, `${targetSlot}`, 'non-string targetSlot');
+    assert.typeof(targetSlot, 'string', 'non-string targetSlot');
     insistVatType('object', targetSlot);
     insistCapData(args);
     const target = mapDeviceSlotToKernelSlot(targetSlot);

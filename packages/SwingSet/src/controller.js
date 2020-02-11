@@ -301,7 +301,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
     queueToVatExport(vatName, exportID, method, args) {
       const vatID = kernel.vatNameToID(vatName);
       parseVatSlot(exportID);
-      assert.equal(method, `${method}`);
+      assert.typeof(method, 'string');
       insistCapData(args);
       kernel.addExport(vatID, exportID);
       kernel.queueToExport(vatID, exportID, method, args);

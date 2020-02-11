@@ -317,7 +317,7 @@ export default function makeKernelKeeper(storage) {
   }
 
   function getVatIDForName(name) {
-    assert.equal(name, `${name}`, details`${name} is not a string`);
+    assert.typeof(name, 'string');
     const k = `vat.name.${name}`;
     if (!storage.has(k)) {
       throw new Error(`vat name ${name} must exist, but doesn't`);
@@ -332,7 +332,7 @@ export default function makeKernelKeeper(storage) {
   }
 
   function allocateVatIDForNameIfNeeded(name) {
-    assert.equal(name, `${name}`);
+    assert.typeof(name, 'string');
     const k = `vat.name.${name}`;
     if (!storage.has(k)) {
       storage.set(k, allocateUnusedVatID());
@@ -378,7 +378,7 @@ export default function makeKernelKeeper(storage) {
   }
 
   function getDeviceIDForName(name) {
-    assert.equal(name, `${name}`);
+    assert.typeof(name, 'string');
     const k = `device.name.${name}`;
     if (!storage.has(k)) {
       throw new Error(`device name ${name} must exist, but doesn't`);
@@ -387,7 +387,7 @@ export default function makeKernelKeeper(storage) {
   }
 
   function allocateDeviceIDForNameIfNeeded(name) {
-    assert.equal(name, `${name}`);
+    assert.typeof(name, 'string');
     const k = `device.name.${name}`;
     if (!storage.has(k)) {
       const nextID = Nat(Number(getRequired(`device.nextID`)));

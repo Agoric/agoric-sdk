@@ -38,7 +38,7 @@ export function deliverToController(
     const { slots } = controllerArgs;
 
     const name = args[0];
-    assert.equal(name, `${name}`, details`bad addRemote name ${name}`);
+    assert.typeof(name, 'string', details`bad addRemote name ${name}`);
     if (args[1]['@qclass'] !== 'slot' || args[1].index !== 0) {
       throw new Error(`unexpected args for addRemote(): ${controllerArgs}`);
     }

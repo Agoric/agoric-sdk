@@ -34,7 +34,7 @@ import { assert, details } from '@agoric/assert';
  * @throws if the given string is syntactically incorrect.
  */
 export function parseVatSlot(s) {
-  assert.equal(s, `${s}`);
+  assert.typeof(s, 'string');
   let type;
   let allocatedByVat;
   const typechar = s[0];
