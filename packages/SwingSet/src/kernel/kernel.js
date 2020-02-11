@@ -245,7 +245,10 @@ export default function buildKernel(kernelEndowments) {
     method = `${method}`;
     // we can't use insistCapData() here: .slots are from the controller's
     // Realm, not the kernel Realm, so it's the wrong kind of Array
-    assert(args.slots !== undefined, details`args not capdata, no .slots: ${args}`);
+    assert(
+      args.slots !== undefined,
+      details`args not capdata, no .slots: ${args}`,
+    );
     // now we must translate it into a kernel-realm object/array
     args = harden({
       body: `${args.body}`,

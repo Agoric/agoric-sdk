@@ -308,7 +308,10 @@ export default function makeVatManager(
     if (msg.result) {
       insistKernelType('promise', msg.result);
       const p = kernelKeeper.getKernelPromise(msg.result);
-      assert(p.state === 'unresolved', details`result ${msg.result} already resolved`);
+      assert(
+        p.state === 'unresolved',
+        details`result ${msg.result} already resolved`,
+      );
       assert(
         !p.decider,
         details`result ${msg.result} already has decider ${p.decider}`,

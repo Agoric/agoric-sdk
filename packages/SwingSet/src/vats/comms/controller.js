@@ -68,7 +68,10 @@ export function deliverToController(
     const { slots } = controllerArgs;
 
     const remoteName = args[0];
-    assert(state.names.has(remoteName), details`unknown remote name ${remoteName}`);
+    assert(
+      state.names.has(remoteName),
+      details`unknown remote name ${remoteName}`,
+    );
     const remoteID = state.names.get(remoteName);
     const remoteRefID = Nat(args[1]);
     if (args[2]['@qclass'] !== 'slot' || args[2].index !== 0) {
@@ -84,7 +87,10 @@ export function deliverToController(
     const args = JSON.parse(controllerArgs.body);
 
     const remoteName = args[0];
-    assert(state.names.has(remoteName), details`unknown remote name ${remoteName}`);
+    assert(
+      state.names.has(remoteName),
+      details`unknown remote name ${remoteName}`,
+    );
     const remoteID = state.names.get(remoteName);
     const remoteRefID = Nat(args[1]);
     const localRef = addIngress(state, remoteID, remoteRefID);
