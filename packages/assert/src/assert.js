@@ -95,8 +95,19 @@ function equal(
 ) {
   assert(actual === expected, optDetails);
 }
+
+function assertTypeof(
+  specimen,
+  typename,
+  optDetails = details(['', ` must be ${an(typename)}`], specimen),
+) {
+  assert(typeof typename === 'string', details`${typename} must be a string`);
+  equal(typeof specimen, typename, optDetails);
+}
+
 assert.equal = equal;
 assert.fail = fail;
+assert.typeof = assertTypeof;
 
 harden(assert);
 export { assert, details, an };

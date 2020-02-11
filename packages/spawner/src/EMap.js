@@ -184,7 +184,7 @@ class InternalReadOnlyMap extends EMap {
 // Guarantee that an instance of ReadOnlyMap does not provide the
 // ability to modify.
 function ReadOnlyMap() {
-  assert(new.target === ReadOnlyMap), details`ReadOnlyMap is final`);
+  assert(new.target === ReadOnlyMap, details`ReadOnlyMap is final`);
   assert.fail(details`Use readOnlyView() to view an existing EMap`);
 }
 Object.setPrototypeOf(ReadOnlyMap, EMap);

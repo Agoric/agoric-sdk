@@ -3,7 +3,7 @@
 
 import harden from '@agoric/harden';
 
-import { assert, details } from '@agoric/assert';
+import { assert } from '@agoric/assert';
 import { makeCollect } from '@agoric/spawner';
 import { escrowExchangeSrcs } from '@agoric/spawner/src/escrow';
 

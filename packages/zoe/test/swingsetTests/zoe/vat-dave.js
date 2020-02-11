@@ -90,6 +90,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         details`assays were not as expected`,
       );
 
+      /*
       // Dave expects that Bob has already made an offer in the swap
       // with the following rules:
       const expectedBobOfferRules = harden({
@@ -107,6 +108,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
           kind: 'onDemand',
         },
       });
+      */
 
       // TODO the following assert is not correct. It always fails when turned on
       // assert(sameStructure(inviteExtent.offerMadeRules, expectedBobOfferRules));
