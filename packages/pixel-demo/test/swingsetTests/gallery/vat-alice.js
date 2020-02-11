@@ -103,7 +103,10 @@ function makeAliceMaker(E, log, contractHost) {
 
           const bobsRawPixel = result.extent[0];
           // TODO this was previously unchecked
-          console.log(`UNCHECKED ASSERTION NOW CHECKED HERE: ${bobsRawPixel.x === rawPixel.x && bobsRawPixel.y === rawPixel.y}`);
+          console.log(
+            `UNCHECKED ASSERTION NOW CHECKED HERE: ${bobsRawPixel.x ===
+              rawPixel.x && bobsRawPixel.y === rawPixel.y}`,
+          );
           assert(
             bobsRawPixel.x === rawPixel.x && bobsRawPixel.y === rawPixel.y,
           );

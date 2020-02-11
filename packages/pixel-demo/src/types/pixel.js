@@ -7,7 +7,10 @@ function insistWithinBounds(num, canvasSize) {
   Nat(num);
   Nat(canvasSize);
   // 0 to canvasSize - 1
-  assert(num >= 0 && num < canvasSize, details`pixel position must be within bounds`);
+  assert(
+    num >= 0 && num < canvasSize,
+    details`pixel position must be within bounds`,
+  );
 }
 
 const makeInsistPixel = (canvasSize = 10) => pixel => {

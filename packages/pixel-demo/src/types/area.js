@@ -5,12 +5,19 @@ import { makeInsistPixel, isLessThanOrEqual } from './pixel';
 import { includesPixel } from './pixelList';
 
 function insistLessThanOrEqual(start, end) {
-  assert(isLessThanOrEqual(start, end), details`the starting pixel must be "less than or equal" to the ending pixel`);
+  assert(
+    isLessThanOrEqual(start, end),
+    details`the starting pixel must be "less than or equal" to the ending pixel`,
+  );
 }
 
 function insistArea(area, canvasSize) {
   const properties = Object.getOwnPropertyNames(area);
-  assert.equal(properties.length, 2, details`areas must have start, end properties only`);
+  assert.equal(
+    properties.length,
+    2,
+    details`areas must have start, end properties only`,
+  );
 
   const insistPixel = makeInsistPixel(canvasSize);
 
