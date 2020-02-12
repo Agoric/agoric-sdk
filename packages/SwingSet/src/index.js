@@ -1,7 +1,6 @@
 export { loadBasedir, buildVatController } from './controller';
 export { buildMailboxStateMap, buildMailbox } from './devices/mailbox';
 export { buildTimer } from './devices/timer';
-export { buildLoopbox } from './devices/loopbox';
 
 export { buildStorageInMemory } from './hostStorage';
 export { default as buildCommand } from './devices/command';

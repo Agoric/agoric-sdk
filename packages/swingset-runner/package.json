@@ -1,7 +1,6 @@
 {
-  "name": "swingset-runner",
+  "name": "SwingSetRunner",
   "version": "0.1.0",
-  "private": true,
   "description": "Application to launch SwingSet instances for development and testing",
   "main": "src/main.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
