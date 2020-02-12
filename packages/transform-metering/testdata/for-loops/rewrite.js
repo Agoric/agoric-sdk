@@ -1,4 +1,4 @@
-const $h‍_meter_get=getGlobalMeter;const $m=$h‍_meter_set(true);$m&&$m.e();try{for (const f of b) {$m && $m.c();
+const $h‍_meter_get=getGlobalMeter;const $m=$h‍_meter_get();$m&&$m.e();try{for (const f of b) {$m && $m.c();
   doit(f);}
 
 for (const p in bar) {$m && $m.c();
@@ -6,4 +6,4 @@ for (const p in bar) {$m && $m.c();
 
 for (let i = 0; i < 3; i++) {$m && $m.c();
   doit(i);}
-}finally{$h‍_meter_set(false);$m && $m.l();}
+}finally{$m && $m.l();}

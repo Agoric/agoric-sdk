@@ -71,6 +71,14 @@ export function tameMetering() {
       // The wrapper needs construct behaviour.
       isConstructor = true;
       wrapper = function meteredConstructor(...args) {
+        if (!globalMeter) {
+          // Fast path.
+          const newTarget = new.target;
+          if (newTarget) {
+            return construct(target, args, newTarget);
+          }
+          return apply(target, this, args);
+        }
         // We're careful not to use the replaceGlobalMeter function as
         // it may consume some stack.
         // Instead, directly manipulate the globalMeter variable.
@@ -116,6 +124,10 @@ export function tameMetering() {
       const { name = '' } = target;
       ({ [name]: wrapper } = {
         [name](...args) {
+          // Fast path:
+          if (!globalMeter) {
+            return apply(target, this, args);
+          }
           // We're careful not to use the replaceGlobalMeter function as
           // it may consume some stack.
           // Instead, directly manipulate the globalMeter variable.

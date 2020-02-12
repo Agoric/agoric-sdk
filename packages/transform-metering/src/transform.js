@@ -192,10 +192,10 @@ const ${reid}=RegExp(${JSON.stringify(pattern)},${JSON.stringify(flags)});`);
 
       // Meter by the regular expressions in use.
       const regexpSource = regexpList.join('');
-      const preSource = `const ${getMeterId}=getGlobalMeter;const ${meterId}=${setMeterId}(true);\
+      const preSource = `const ${getMeterId}=getGlobalMeter;const ${meterId}=${getMeterId}();\
 ${meterId}&&${meterId}.${c.METER_ENTER}();\
 try{${regexpSource}`;
-      const postSource = `\n}finally{${setMeterId}(false);${meterId} && ${meterId}.${c.METER_LEAVE}();}`;
+      const postSource = `\n}finally{${meterId} && ${meterId}.${c.METER_LEAVE}();}`;
 
       // Force into an IIFE, if necessary.
       const maybeSource = output.code;
@@ -211,14 +211,6 @@ try{${regexpSource}`;
       }
 
       // console.log('metered source:', `\n${actualSource}`);
-
-      // Install the specified user meter.
-      const savedMeter = endowments.getGlobalMeter();
-      endowments[setMeterId] = set => {
-        const m = set ? meter : savedMeter;
-        endowments.getGlobalMeter(m);
-        return m;
-      };
 
       return {
         ...ss,

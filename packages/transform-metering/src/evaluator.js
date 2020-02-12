@@ -38,8 +38,12 @@ export function makeMeteredEvaluator({
 
       if (typeof srcOrThunk === 'string') {
         // Transform the source on our own budget, then evaluate against the meter.
-        endowments.getGlobalMeter = m =>
-          m === true ? meter : replaceGlobalMeter(m);
+        endowments.getGlobalMeter = m => {
+          if (m !== true) {
+            replaceGlobalMeter(meter);
+          }
+          return meter;
+        };
         returned = ev.evaluate(srcOrThunk, endowments);
       } else {
         // Evaluate the thunk with the specified meter.

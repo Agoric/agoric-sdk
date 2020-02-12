@@ -19,7 +19,7 @@ import { makeMeteredEvaluator } from '@agoric/transform-metering';
 // Create a new SES instance (root realm).
 const sesRealm = SES1.makeSESRootRealm({
   shims: [SES1TameMeteringShim],
-  deoptimizeStableGlobals: true,
+  configurableGlobals: true,
 });
 
 const replaceGlobalMeter = SES1ReplaceGlobalMeter(sesRealm);
@@ -30,7 +30,15 @@ const meteredEval = makeMeteredEvaluator({
   // Needed for source transforms that prevent runaways.
   babelCore,
   // Create an object with an `evaluate(src, endowments, options)` method
-  makeEvaluator: opts => sesRealm.global.Realm.makeCompartment(opts);
+  makeEvaluator: opts => {
+    const c = sesRealm.global.Realm.makeCompartment(opts);
+    // FIXME: Realms bug doesn't propagate global properties.
+    Object.defineProperties(
+      c.global,
+      Object.getOwnPropertyDescriptors(sesRealm.global),
+    );
+    return c;
+  },
   // Call a callback when the code inside the meteredEval is done evaluating.
   quiesceCallback: cb => setTimeout(cb),
 });
