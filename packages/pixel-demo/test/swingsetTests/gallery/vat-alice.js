@@ -102,11 +102,6 @@ function makeAliceMaker(E, log, contractHost) {
           showPaymentBalance('childPayment2', childPayment2);
 
           const bobsRawPixel = result.extent[0];
-          // TODO this was previously unchecked
-          console.log(
-            `UNCHECKED ASSERTION NOW CHECKED HERE: ${bobsRawPixel.x ===
-              rawPixel.x && bobsRawPixel.y === rawPixel.y}`,
-          );
           assert(
             bobsRawPixel.x === rawPixel.x && bobsRawPixel.y === rawPixel.y,
           );
