@@ -11,7 +11,12 @@ export function makeMeteredEvaluator({
 
   const ev = makeEvaluator({ transforms });
 
-  return (meter, srcOrThunk, endowments = {}, whenQuiesced = undefined) => {
+  const syncEval = (
+    meter,
+    srcOrThunk,
+    endowments = {},
+    whenQuiesced = undefined,
+  ) => {
     let returned;
     let exceptionBox = false;
 
@@ -59,4 +64,32 @@ export function makeMeteredEvaluator({
       }
     }
   };
+
+  if (quiesceCallback) {
+    const quiescingEval = (meter, srcOrThunk, endowments = {}) => {
+      let whenQuiesced;
+      const whenQuiescedP = new Promise(res => (whenQuiesced = res)).then(
+        ({ exhausted, returned, exceptionBox }) => {
+          if (exhausted) {
+            // The meter was exhausted.
+            throw exhausted;
+          }
+          if (exceptionBox) {
+            // The source threw an exception.
+            return [false, exceptionBox[0]];
+          }
+          // The source returned normally.
+          return [true, returned];
+        },
+      );
+      // Defer the evaluation for another turn.
+      Promise.resolve().then(_ =>
+        syncEval(meter, srcOrThunk, endowments, whenQuiesced),
+      );
+      return whenQuiescedP;
+    };
+    return quiescingEval;
+  }
+
+  return syncEval;
 }

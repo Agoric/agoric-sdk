@@ -1,64 +1,52 @@
-import * as tamer from '@agoric/tame-metering';
-// import * as tamer from '@agoric/tame-metering/src/install-global-metering';
-import * as c from '@agoric/tame-metering/src/constants';
+/* global Compartment */
+import {
+  tameMetering,
+  SES1TameMeteringShim,
+  SES1ReplaceGlobalMeter,
+} from '@agoric/tame-metering';
 
 import test from 'tape-promise/tape';
 import * as babelCore from '@babel/core';
+
+// Here's how we can try lockdown.
+// import * as ses from '@agoric/tame-metering/src/ses.esm.js';
 import * as ses from 'ses';
 
 import { makeMeter, makeMeteredEvaluator } from '../src/index';
 
-let sesRealm;
 let replaceGlobalMeter;
-if (!sesRealm) {
-  const { lockdown, default: SES } = ses;
-  const { tameMetering, default: globalReplaceGlobalMeter } = tamer;
-  if (tameMetering && !lockdown) {
-    const shim = `\
-(() => {
-  const globalThis = this;
+let makeEvaluator;
 
-  // Provide imported references to the metering tamer.
-  const c = ${JSON.stringify(c)}
-  let replaceGlobalMeter;
-  replaceGlobalMeter = (${tamer.tameMetering})();
+// Find out whether we are using the lockdown() or SES1 API.
+const { lockdown, default: SES1 } = ses;
+if (lockdown) {
+  console.error(
+    'May be blocked by https://github.com/Agoric/SES-beta/issues/8',
+  );
 
-  let neutered;
-  this.Q = () => {
-    if (!neutered) {
-      neutered = true;
-      return replaceGlobalMeter;
-    }
-    throw Error('Cannot execute twice');
+  // Do our taming of the globals,
+  replaceGlobalMeter = tameMetering();
+  // then lock down the rest of SES.
+  lockdown();
+
+  // Our SES evaluator uses a Compartment.
+  makeEvaluator = opts => {
+    const c = new Compartment(undefined, undefined, opts);
+    return {
+      evaluate(src, endowments = {}) {
+        return c.evaluate(src, { endowments });
+      },
+    };
   };
-})()`;
-    const fixedShim = shim.replace(/_[a-z0-9]{3}\u200d\.g\./gs, '');
-    sesRealm = SES.makeSESRootRealm({
-      consoleMode: 'allow',
-      errorStackMode: 'allow',
-      shims: [fixedShim],
-    });
-    replaceGlobalMeter = sesRealm.evaluate('Q()');
-  } else if (!lockdown) {
-    // We already tamed globally.
-    sesRealm = SES.makeSESRootRealm({
-      consoleMode: 'allow',
-      errorStackMode: 'allow',
-    });
-    replaceGlobalMeter = globalReplaceGlobalMeter;
-  } else if (tameMetering) {
-    // FIXME: How to get sesRealm?
-    replaceGlobalMeter = tameMetering();
-    lockdown();
-  } else {
-    // FIXME: How to get sesRealm?
-    replaceGlobalMeter = tamer.default;
-    lockdown();
-  }
+} else {
+  const sesRealm = SES1.makeSESRootRealm({
+    consoleMode: 'allow',
+    errorStackMode: 'allow',
+    shims: [SES1TameMeteringShim],
+  });
+  replaceGlobalMeter = SES1ReplaceGlobalMeter(sesRealm);
+  makeEvaluator = opts => sesRealm.global.Realm.makeCompartment(opts);
 }
-
-export const makeSESEvaluator = opts =>
-  sesRealm.global.Realm.makeCompartment(opts);
 
 test('metering evaluator', async t => {
   const rejectionHandler = (_e, _promise) => {
@@ -67,7 +55,6 @@ test('metering evaluator', async t => {
   try {
     process.on('unhandledRejection', rejectionHandler);
     const { meter, adminFacet } = makeMeter();
-    const makeEvaluator = makeSESEvaluator; // ideal
     const meteredEval = makeMeteredEvaluator({
       replaceGlobalMeter,
       babelCore,
@@ -80,26 +67,18 @@ test('metering evaluator', async t => {
     let expectedExhaustedTimes = 0;
     const myEval = (src, endowments = {}) => {
       Object.values(adminFacet).forEach(r => r());
-      let whenQuiesced;
-      const whenQuiescedP = new Promise(res => (whenQuiesced = res)).then(
-        ({ exhausted, returned, exceptionBox }) => {
-          // console.log('quiesced returned', exhausted, exceptionBox, returned);
-          if (exhausted) {
-            exhaustedTimes += 1;
-            throw exhausted;
+      return meteredEval(meter, src, endowments).then(
+        ([normalReturn, value]) => {
+          if (!normalReturn) {
+            throw value;
           }
-          if (exceptionBox) {
-            console.log(exceptionBox[0]);
-            throw exceptionBox[0];
-          }
-          return returned;
+          return value;
+        },
+        e => {
+          exhaustedTimes += 1;
+          throw e;
         },
       );
-      // Defer the evaluation for another turn.
-      Promise.resolve()
-        .then(_ => meteredEval(meter, src, endowments, whenQuiesced))
-        .catch(_ => {});
-      return whenQuiescedP;
     };
 
     const src1 = `123; 456;`;
@@ -116,9 +95,9 @@ test('metering evaluator', async t => {
     );
 
     const src5 = `\
-new Array(1e9)
+new Array(1e9); 0
 `;
-    true || // FIXME: This always fails for some reason.
+    true || // FIXME: This always fails under SES for some reason.
       (await t.rejects(
         myEval(src5),
         /Allocate meter exceeded/,
@@ -182,7 +161,7 @@ f();
     expectedExhaustedTimes += 1;
     await t.rejects(
       myEval(src3c),
-      /Compute meter exceeded/,
+      /Allocate meter exceeded/,
       'promise loop exhausts',
     );
 

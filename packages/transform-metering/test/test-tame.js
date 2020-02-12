@@ -29,9 +29,9 @@ test('meter running', async t => {
       `withMeter works`,
     );
 
-    adminFacet.combined(10);
+    adminFacet.combined(1000);
     t.throws(
-      withMeterFn(() => new Array(10)),
+      withMeterFn(() => new Array(10000)),
       RangeError,
       'new Array exhausted',
     );

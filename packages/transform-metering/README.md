@@ -6,11 +6,45 @@ This technique is not airtight, but it is at least is a best approximation in th
 
 ## Quickstart
 
+### SES 1.0
+
+The following example is for legacy [SES-1.0](https://github.com/Agoric/SES#readme):
+
 ```js
+import { SES1TameMeteringShim, SES1ReplaceGlobalMeter } from '@agoric/tame-metering';
+import SES1 from 'ses';
+import * as babelCore from '@babel/core';
+import { makeMeteredEvaluator } from '@agoric/transform-metering';
+
+// Create a new SES instance (root realm).
+const sesRealm = SES1.makeSESRootRealm({
+  shims: [SES1TameMeteringShim],
+  deoptimizeStableGlobals: true,
+});
+
+const replaceGlobalMeter = SES1ReplaceGlobalMeter(sesRealm);
+
+const meteredEval = makeMeteredEvaluator({
+  // Needed for enabling metering of the global builtins.
+  replaceGlobalMeter,
+  // Needed for source transforms that prevent runaways.
+  babelCore,
+  // Create an object with an `evaluate(src, endowments, options)` method
+  makeEvaluator: opts => sesRealm.global.Realm.makeCompartment(opts);
+  // Call a callback when the code inside the meteredEval is done evaluating.
+  quiesceCallback: cb => setTimeout(cb),
+});
+```
+
+### SES 2.0
+
+This example is for the [SES 2.0 (beta)](https://github.com/Agoric/SES-beta#readme).  Note that it currently has issues that prevents it from working correctly, but YMMV.
+
+```js
+import { tameMetering } from '@agoric/tame-metering';
 import { lockdown } from 'ses';
 import * as babelCore from '@babel/core';
-import { makeMeter, makeMeteredEvaluator } from '@agoric/transform-metering';
-import { tameMetering } from '@agoric/tame-metering';
+import { makeMeteredEvaluator } from '@agoric/transform-metering';
 
 // Override all the global objects with metered versions.
 const replaceGlobalMeter = tameMetering();
@@ -23,6 +57,7 @@ const meteredEval = makeMeteredEvaluator({
   replaceGlobalMeter,
   // Needed for source transforms that prevent runaways.
   babelCore,
+  // Create an object with an `evaluate(src, endowments)` method
   makeEvaluator: opts => {
     const c = new Compartment(undefined, undefined, opts);
     return {
@@ -34,35 +69,17 @@ const meteredEval = makeMeteredEvaluator({
   // Call a callback when the code inside the meteredEval is done evaluating.
   quiesceCallback: cb => setTimeout(cb),
 });
+```
 
-// Now use the returned meteredEval: it should not throw.
-// It also doesn't return until the code has quiesced.
+### Using the new meteredEval
+
+```js
+import { makeMeter } from '@agoric/transform-metering';
+
 const { meter } = makeMeter();
-const myEval = (srcOrThunk, endowments = {}) => {
-  let whenQuiesced;
-  const whenQuiescedP = new Promise(res => (whenQuiesced = res)).then(
-    ({ exhausted, returned, exceptionBox }) => {
-      if (exhausted) {
-        // The meter was exhausted.
-        throw exhausted;
-      }
-      if (exceptionBox) {
-        // The source threw an exception.
-        return [false, exceptionBox[0]];
-      } else {
-        // The source returned normally.
-        return [true, returned];
-      }
-    },
-  );
-  // Defer the evaluation for another turn.
-  Promise.resolve()
-    .then(_ => meteredEval(meter, srcOrThunk, endowments, whenQuiesced));
-  return whenQuiescedP;
-};
 
-// Then to evaluathe some source with endowments:
-myEval('abc + def', {abc: 123, def: 456}).then(
+// Then to evaluate some source with endowments:
+meteredEval(meter, 'abc + def', {abc: 123, def: 456}).then(
   ([normalReturn, value]) => {
     if (normalReturn) {
       console.log('normal return', value);
@@ -74,6 +91,7 @@ myEval('abc + def', {abc: 123, def: 456}).then(
   console.log('meter exhausted', e);
 });
 ```
+
 
 # Implementation Details
 
