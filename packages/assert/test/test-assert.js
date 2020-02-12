@@ -21,6 +21,27 @@ test('an', t => {
   }
 });
 
+// Self-test of the example from the throwsAndLogs comment.
+test('throwsAndLogs', t => {
+  const err = {};
+  try {
+    throwsAndLogs(
+      t,
+      () => {
+        console.error('what ', err);
+        throw new Error('foo');
+      },
+      'foo',
+      [['error', 'what ', err]],
+    );
+  } catch (e) {
+    console.log('unexpected exception', e);
+    t.assert(false, e);
+  } finally {
+    t.end();
+  }
+});
+
 test('assert', t => {
   try {
     assert(2 + 3 === 5);

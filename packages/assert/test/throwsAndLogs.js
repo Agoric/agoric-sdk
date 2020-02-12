@@ -51,10 +51,12 @@ function takeLog() {
 
 const fakeConsole = makeFakeConsole(fakeLog);
 
+// Intended to be used with tape or something like it.
+//
 // Wraps t.throws(thunk, msg) but also checks the console.
 // TODO It currently checks the console by temporarily assigning
-// to the global `console` variable. Once we're on the full
-// Compartment support, we should run tests in a compartment
+// a fake console to the global `console` variable. Once we have
+// full Compartment support, we should run tests in a compartment
 // with a `console` of our choosing.
 //
 // During thunk(), each time a console method is called, it
@@ -67,7 +69,7 @@ const fakeConsole = makeFakeConsole(fakeLog);
 // the test code might check for exactly that with
 // ```js
 // throwsAndLogs(t, () => /*as above*/, 'foo',
-//               [['error', 'what', err]]);
+//               [['error', 'what ', err]]);
 // ```
 function throwsAndLogs(t, thunk, msg, goldenLog) {
   t.throws(() => {
