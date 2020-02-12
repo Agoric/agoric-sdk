@@ -32,9 +32,17 @@ export default function setup(syscall, state, helpers, endowments) {
     return harden({
       // Called by the wrapper vat to create a new vat. Gets a new ID from the
       // kernel's vat creator fn. Remember that the root object will arrive
-      // separately. Clean up the outgoing and incoming arguments.
+      // separately. We clean up the outgoing and incoming arguments.
       create(code) {
-        return kernelVatCreationFn(code);
+        const bundle = harden({
+          source: code.source,
+          moduleFormat: code.moduleFormat,
+        });
+        const result = kernelVatCreationFn(bundle);
+        if (result.vatID) {
+          return harden({ vatID: `${result.vatID}` });
+        }
+        return harden({ error: `${result.error}` });
       },
       terminate(_vatID) {
         // TODO(hibbert)

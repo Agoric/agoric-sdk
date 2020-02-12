@@ -1,21 +1,27 @@
 /**
- * ContractHost provides a way to install and run verifiable contracts.
+ * ContractHost provides a way to install and run verifiable contracts as
+ * independent vats.
  *
- * Install(source) creates Installations. Installations represent particular
- * contract forms, which can be spawn()'d to create Contract instances
- * initialized with specific terms. These Contracts manage invitations for
- * multiple seats, each of which represents a "role" in an interaction.
+ * Install(source, format) creates Installations. Installations represent
+ * particular contract forms, which can be spawn()'d to create Contract
+ * instances initialized with specific terms. These Contracts manage invitations
+ * for multiple seats, each of which represents a "role" in an interaction. At
+ * present, the only module format supported is 'module', which corresponds to
+ * ES6 modules.
  *
  * Some seats provide the methods getWinnings() and getRefunds(), which return
  * promises for payments for the outputs of the interaction. We provide the
  * collect() method (described later) to simplify collection of winnings and
  * refunds into appropriate purses.
+ *
+ * Vats are the unit of reliance and synchrony. Computations running in
+ * separate vats must communicate via eventual sends.
  */
 interface ContractHost {
   /**
    * ContractSrc is the source code for a Contract. See Contract for details.
    */
-  install(contractSrc :String) -> (Installation);
+  install(contractSrc :String, moduleFormat :String) -> (Installation);
 
   /** Returns the actual source of the Installation. */
   getInstallationSourceCode(installation :Installation) -> (String);
@@ -40,12 +46,6 @@ interface ContractHost {
   * or different terms. Each spawned instance has distinct invites and distinct
   * seats representing a specific group of agents interacting according to the
   * same prescribed roles.
-  *
-  * The Installation can also have functions with names starting `check`, as
-  * defined by the contract. They can be used to validate that the expected
-  * terms are actually the same as the terms of this spawned contract. The
-  * Installation is inserted by the ContactHost as the first parameter to these
-  * functions. The naming restriction is likely to be lifted.
   */
 interface Installation {
   /**
@@ -54,19 +54,6 @@ interface Installation {
    * for the seats in the contract, but see coveredCall for an exception.
    */
   spawn(terms :Terms) -> (invites :Object);
-
- /**
-  * The writer of the contract can provide methods to help users of the contract
-  * verify that the terms of the contract match their expectation. These methods
-  * are defined with the installation as the first parameter, so the verifiers
-  * can validate that the caller's invitation was issued by the same one. The
-  * invocation by clients should omit this parameter, as they will be supplied
-  * with a copy of the function with that information already supplied.
-  *
-  * Users usually want to validate their invitation, the terms of the deal
-  * they're attempting to participate in, and which seat they are taking.
-  */
-  checkUnits(installation :Installation, inviteUnits :Units, terms :Terms);
 }
 
 /**
@@ -100,7 +87,6 @@ interface Installation {
   *
   * const escrowExchangeSrcs = {
   *   start: `${escrowExchange.start}`,
-  *   checkUnits: `${escrowExchange.checkUnits}`,
   * };
   */
 interface Contract {
@@ -126,8 +112,7 @@ interface Contract {
   * {installation, terms, seatIdentity, seatDesc}. These are intended to be
   * sufficient for the recipient to verify that the contract and terms are the
   * ones they were expecting, and that the invite corresponds to the expected
-  * role in the contract. The installation can provide methods like
-  * checkUnits() to simplify verification.
+  * role in the contract.
   */
 interface InviteMaker {
   make(seatDesc :String, seat :Object, name :String = 'an invite payment')
@@ -164,9 +149,9 @@ interface Collector {
   * Arbitrary terms defined by each contract.
   *
   * These are defined by the contract, passed to spawn(), and available to be
-  * validated in the check methods (or manually) by contract participants to
-  * ensure they are connected to a contract with matching expectations about
-  * what will be traded, and which seat they will occupy.
+  * validated manually by contract participants to ensure they are connected to
+  * a contract with matching expectations about what will be traded, and which
+  * seat they will occupy.
   */
 interface Terms {
 }
