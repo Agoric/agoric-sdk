@@ -1,15 +1,15 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
-import { insist } from '../insist';
+import { assert, details } from '@agoric/assert';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
 
 // 'makeDeviceSlots' is a subset of makeLiveSlots, for device code
 
 function build(syscall, state, makeRoot, forDeviceName) {
-  insist(state.get && state.set, 'deviceSlots.build got bad "state" argument');
-  insist(
+  assert(state.get && state.set, 'deviceSlots.build got bad "state" argument');
+  assert(
     typeof makeRoot === 'function',
     'deviceSlots.build got bad "makeRoot"',
   );
@@ -83,7 +83,7 @@ function build(syscall, state, makeRoot, forDeviceName) {
     let val;
     if (!slotToVal.has(slot)) {
       const { type, allocatedByVat } = parseVatSlot(slot);
-      insist(!allocatedByVat, `I don't remember allocating ${slot}`);
+      assert(!allocatedByVat, details`I don't remember allocating ${slot}`);
       if (type === 'object') {
         // this is a new import value
         // lsdebug(`assigning new import ${slot}`);

@@ -104,7 +104,7 @@ test('depositExactly badUnits', async t => {
     } catch (err) {
       t.equal(
         err.message,
-        'payment balance (a object) must equal units (a object)\nSee console for error data.',
+        'payment balance (an object) must equal units (an object)\nSee console for error data.',
       );
     }
   } catch (e) {
@@ -160,7 +160,7 @@ test('burnExactly badUnits', async t => {
     } catch (err) {
       t.equal(
         err.message,
-        'payment balance (a object) must equal units (a object)\nSee console for error data.',
+        'payment balance (an object) must equal units (an object)\nSee console for error data.',
       );
     }
   } catch (e) {
@@ -212,7 +212,7 @@ test('claimExactly badUnits', async t => {
     } catch (err) {
       t.equal(
         err.message,
-        'payment balance (a object) must equal units (a object)\nSee console for error data.',
+        'payment balance (an object) must equal units (an object)\nSee console for error data.',
       );
     }
   } catch (e) {

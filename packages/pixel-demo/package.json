@@ -34,7 +34,7 @@
   "dependencies": {
     "@agoric/ertp": "^0.3.1",
     "@agoric/harden": "^0.0.4",
-    "@agoric/insist": "^0.0.1",
+    "@agoric/assert": "^0.0.1",
     "@agoric/nat": "^2.0.1",
     "@agoric/spawner": "^0.0.3",
     "@agoric/store": "^0.0.1"

@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 import makeStore from '@agoric/weak-store';
 import { makeMint } from '@agoric/ertp';
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 import makePromise from '@agoric/make-promise';
 
 import { isOfferSafeForAll } from './isOfferSafe';
@@ -57,9 +57,10 @@ const makeZoe = (additionalEndowments = {}) => {
             .depositExactly(payoutRule.units, offerPayment)
             .then(units => unitOps.coerce(units));
         }
-        insist(
+        assert(
           offerPayments[i] === undefined,
-        )`payment was included, but the rule kind was ${payoutRule.kind}`;
+          details`payment was included, but the rule kind was ${payoutRule.kind}`,
+        );
         return Promise.resolve(unitOps.empty());
       });
     });
@@ -167,14 +168,16 @@ const makeZoe = (additionalEndowments = {}) => {
         const unitOpsArray = assayTable.getUnitOpsForAssays(assays);
 
         // 1) ensure that rights are conserved
-        insist(
+        assert(
           areRightsConserved(unitOpsArray, currentUnitMatrix, newUnitMatrix),
-        )`Rights are not conserved in the proposed reallocation`;
+          details`Rights are not conserved in the proposed reallocation`,
+        );
 
         // 2) ensure 'offer safety' for each player
-        insist(
+        assert(
           isOfferSafeForAll(unitOpsArray, payoutRuleMatrix, newUnitMatrix),
-        )`The proposed reallocation was not offer safe`;
+          details`The proposed reallocation was not offer safe`,
+        );
 
         // 3) save the reallocation
         offerTable.updateUnitMatrix(offerHandles, newUnitMatrix);
@@ -254,8 +257,9 @@ const makeZoe = (additionalEndowments = {}) => {
           break;
         }
         default: {
-          insist(false)`\
-Unimplemented installation moduleFormat ${moduleFormat}`;
+          assert.fail(
+            details`Unimplemented installation moduleFormat ${moduleFormat}`,
+          );
         }
       }
       const installationHandle = installationTable.create(

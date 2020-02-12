@@ -1,4 +1,5 @@
 import Nat from '@agoric/nat';
+import { assert, details } from '@agoric/assert';
 import { makeVatSlot, parseVatSlot, insistVatType } from '../../parseVatSlots';
 import {
   flipRemoteSlot,
@@ -17,7 +18,6 @@ import {
   setPromiseDecider,
   setPromiseSubscriber,
 } from './state';
-import { insist } from '../../insist';
 
 export function getOutbound(state, remoteID, target) {
   const remote = getRemote(state, remoteID);
@@ -79,23 +79,23 @@ export function mapOutbound(state, remoteID, s, syscall) {
           // remote. That limits what we can do with it. We can only send the
           // promise if we allocated the index and we are the decider.
           const p = state.promiseTable.get(s);
-          insist(
+          assert(
             !p.owner,
-            `promise ${s} owner is ${p.owner}, not me, so I cannot send to ${remoteID}`,
+            details`promise ${s} owner is ${p.owner}, not me, so I cannot send to ${remoteID}`,
           );
           insistPromiseDeciderIsMe(state, s);
           // also we can't handle more than a single subscriber yet
-          insist(
+          assert(
             !p.subscriber,
-            `promise ${s} already has subscriber ${p.subscriber}`,
+            details`promise ${s} already has subscriber ${p.subscriber}`,
           );
           // TODO: we currently only handle sending unresolved promises, but
           // obviously we must fix that, by arranging to send a resolution
           // message just after we send the reference that creates it, or
           // perhaps tolerating sending the messages in the opposite order.
-          insist(
+          assert(
             !p.resolved,
-            `promise ${s} is already resolved and I can't deal with that yet`,
+            details`promise ${s} is already resolved and I can't deal with that yet`,
           );
         }
         const index = remote.nextPromiseIndex;
@@ -213,7 +213,7 @@ export function getInbound(state, remoteID, target) {
 
 export function mapInboundResult(state, remoteID, result) {
   insistRemoteType('promise', result);
-  insist(!parseRemoteSlot(result).allocatedByRecipient, result); // temp?
+  assert(!parseRemoteSlot(result).allocatedByRecipient, details`${result}`); // temp?
   const r = mapInbound(state, remoteID, result);
   insistVatType('promise', r);
   insistPromiseIsUnresolved(state, r);
@@ -236,18 +236,18 @@ export function addEgress(state, remoteID, remoteRefID, localRef) {
   Nat(remoteRefID);
   insistVatType('object', localRef);
   const { allocatedByVat } = parseVatSlot(localRef);
-  insist(!allocatedByVat, `localRef should be kernel-allocated`);
-  insist(!remote.toRemote.has(localRef), `already present ${localRef}`);
+  assert(!allocatedByVat, details`localRef should be kernel-allocated`);
+  assert(!remote.toRemote.has(localRef), details`already present ${localRef}`);
 
   const inboundRemoteRef = makeRemoteSlot('object', true, remoteRefID);
   const outboundRemoteRef = flipRemoteSlot(inboundRemoteRef);
-  insist(
+  assert(
     !remote.fromRemote.has(inboundRemoteRef),
-    `already present ${inboundRemoteRef}`,
+    details`already present ${inboundRemoteRef}`,
   );
-  insist(
+  assert(
     !remote.toRemote.has(outboundRemoteRef),
-    `already present ${outboundRemoteRef}`,
+    details`already present ${outboundRemoteRef}`,
   );
   remote.fromRemote.set(inboundRemoteRef, localRef);
   remote.toRemote.set(localRef, outboundRemoteRef);

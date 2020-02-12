@@ -5,7 +5,7 @@ import makeDefaultEvaluateOptions from '../src';
 test('sanity', async t => {
   try {
     const options = makeDefaultEvaluateOptions();
-    t.assert(Array.isArray(options.shims), `options.shims is an array`);
+    t.assert(Array.isArray(options.shims), 'options.shims is an array');
     t.assert(
       Array.isArray(options.transforms),
       `options.transforms is an array`,

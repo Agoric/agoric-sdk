@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 import { passStyleOf } from '@agoric/marshal';
-import { insist } from '@agoric/insist';
+import { assert, details, openDetail } from '@agoric/assert';
 
 // Shim of Object.fromEntries from
 // https://github.com/tc39/proposal-object-from-entries/blob/master/polyfill.js
@@ -93,10 +93,14 @@ harden(allComparable);
 function sameStructure(left, right) {
   const leftStyle = passStyleOf(left);
   const rightStyle = passStyleOf(right);
-  insist(leftStyle !== 'promise')`\
-Cannot structurally compare promises: ${left}`;
-  insist(rightStyle !== 'promise')`\
-Cannot structurally compare promises: ${right}`;
+  assert(
+    leftStyle !== 'promise',
+    details`Cannot structurally compare promises: ${left}`,
+  );
+  assert(
+    rightStyle !== 'promise',
+    details`Cannot structurally compare promises: ${right}`,
+  );
 
   if (leftStyle !== rightStyle) {
     return false;
@@ -161,12 +165,11 @@ function pathStr(path) {
 // mustBeSameStructureInternal
 function mustBeSameStructureInternal(left, right, message, path) {
   function complain(problem) {
-    const template = harden([
-      `${message}: ${problem} at ${pathStr(path)}: (`,
-      ') vs (',
-      ')',
-    ]);
-    insist(false)(template, left, right);
+    assert.fail(
+      details`${openDetail(message)}: ${openDetail(problem)} at ${openDetail(
+        pathStr(path),
+      )}: (${left}) vs (${right})`,
+    );
   }
 
   const leftStyle = passStyleOf(left);

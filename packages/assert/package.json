@@ -1,14 +1,14 @@
 {
-  "name": "@agoric/insist",
+  "name": "@agoric/assert",
   "version": "0.0.1",
-  "description": "Assert expression is truthy or throw error",
-  "main": "src/insist.js",
+  "description": "Assert expression support that protects sensitive data",
+  "main": "src/assert.js",
   "engines": {
     "node": ">=11.0"
   },
   "scripts": {
     "build": "exit 0",
-    "test": "exit 0",
+    "test": "tape -r esm test/**/test*.js",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
@@ -19,8 +19,8 @@
     "url": "git+https://github.com/Agoric/agoric-sdk.git"
   },
   "keywords": [
-    "insist",
-    "assert"
+    "assert",
+    "errors"
   ],
   "author": "Agoric",
   "license": "Apache-2.0",

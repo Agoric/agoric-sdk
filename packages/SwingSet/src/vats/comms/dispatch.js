@@ -1,11 +1,11 @@
 import harden from '@agoric/harden';
+import { assert, details } from '@agoric/assert';
 import { makeVatSlot } from '../../parseVatSlots';
 import { getRemote } from './remote';
 import { makeState } from './state';
 import { deliverToRemote, resolvePromiseToRemote } from './outbound';
 import { deliverFromRemote } from './inbound';
 import { deliverToController } from './controller';
-import { insist } from '../../insist';
 import { insistCapData } from '../../capdata';
 
 function transmit(syscall, state, remoteID, msg) {
@@ -34,9 +34,9 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
     // console.log(`comms.deliver ${target} r=${result}`);
     // dumpState(state);
     if (state.objectTable.has(target) || state.promiseTable.has(target)) {
-      insist(
+      assert(
         method.indexOf(':') === -1 && method.indexOf(';') === -1,
-        `illegal method name ${method}`,
+        details`illegal method name ${method}`,
       );
       return deliverToRemote(
         syscall,
@@ -49,7 +49,7 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
       );
     }
     if (state.remoteReceivers.has(target)) {
-      insist(method === 'receive', `unexpected method ${method}`);
+      assert(method === 'receive', details`unexpected method ${method}`);
       // the vat-tp integrity layer is a regular vat, so when they send the
       // received message to us, it will be embedded in a JSON array
       const message = JSON.parse(args.body)[0];

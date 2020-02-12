@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';
 import { makeUnitOps } from '@agoric/ertp/src/unitOps';
@@ -143,7 +143,7 @@ export async function makeWallet(
     // === AWAITING TURN ===
     // =====================
 
-    insist(contractAssay0 === regAssay0 && regAssay1 === contractAssay1);
+    assert(contractAssay0 === regAssay0 && regAssay1 === contractAssay1);
 
     // Check whether we sell on contract assay 0 or 1.
     const normal = checkOrder(
@@ -245,9 +245,10 @@ export async function makeWallet(
   }
 
   async function makeEmptyPurse(assayPetname, pursePetname, memo = 'purse') {
-    insist(
+    assert(
       !petnameToPurse.has(pursePetname),
-    )`Purse name already used in wallet.`;
+      details`Purse name already used in wallet.`,
+    );
     const assay = assayPetnameToAssay.get(assayPetname);
 
     // IMPORTANT: once wrapped, the original purse should never

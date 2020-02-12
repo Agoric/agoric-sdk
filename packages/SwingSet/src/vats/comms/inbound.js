@@ -1,4 +1,5 @@
 import harden from '@agoric/harden';
+import { assert, details } from '@agoric/assert';
 import { insistRemoteType } from './parseRemoteSlot';
 import { getInbound, mapInbound, mapInboundResult } from './clist';
 import {
@@ -6,7 +7,6 @@ import {
   insistPromiseDeciderIs,
   markPromiseAsResolved,
 } from './state';
-import { insist } from '../../insist';
 
 export function deliverFromRemote(syscall, state, remoteID, message) {
   const command = message.split(':', 1)[0];
@@ -14,7 +14,7 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
   if (command === 'deliver') {
     // deliver:$target:$method:[$result][:$slots..];body
     const sci = message.indexOf(';');
-    insist(sci !== -1, `missing semicolon in deliver ${message}`);
+    assert(sci !== -1, details`missing semicolon in deliver ${message}`);
     const slots = message
       .slice(0, sci)
       .split(':')
@@ -44,7 +44,7 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
     // console.log(`-- deliverFromRemote.resolve, ${message}, pre-state is:`);
     // dumpState(state);
     const sci = message.indexOf(';');
-    insist(sci !== -1, `missing semicolon in resolve ${message}`);
+    assert(sci !== -1, details`missing semicolon in resolve ${message}`);
     // message is created by resolvePromiseToRemote, so one of:
     // `resolve:object:${target}:${resolutionRef};`
     // `resolve:data:${target}${rmss};${resolution.body}`

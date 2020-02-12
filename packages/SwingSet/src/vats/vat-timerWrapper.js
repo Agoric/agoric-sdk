@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import { insist } from '../insist';
+import { assert, details } from '@agoric/assert';
 
 function build(E, D) {
   const repeaters = new Map();
@@ -18,13 +18,13 @@ function build(E, D) {
         return D(timerNode).removeWakeup(handler);
       },
       createRepeater(delaySecs, interval) {
-        insist(
+        assert(
           Nat(delaySecs) >= 0,
-          `createRepeater's first parameter must be a non-negative integer. ${delaySecs}`,
+          details`createRepeater's first parameter must be a non-negative integer. ${delaySecs}`,
         );
-        insist(
+        assert(
           Nat(interval),
-          `createRepeater's second parameter must be an integer, ${interval}`,
+          details`createRepeater's second parameter must be an integer, ${interval}`,
         );
 
         const index = D(timerNode).createRepeater(delaySecs, interval);

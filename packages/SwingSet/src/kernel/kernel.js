@@ -2,6 +2,7 @@ import harden from '@agoric/harden';
 import { makeMarshal, QCLASS } from '@agoric/marshal';
 import Nat from '@agoric/nat';
 import evaluateProgram from '@agoric/evaluate';
+import { assert, details } from '@agoric/assert';
 import makeVatManager from './vatManager';
 import { makeLiveSlots } from './liveSlots';
 import { makeDeviceSlots } from './deviceSlots';
@@ -12,7 +13,6 @@ import makeKernelKeeper from './state/kernelKeeper';
 import kdebug from './kdebug';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../parseVatSlots';
-import { insist } from '../insist';
 import { insistStorageAPI } from '../storageAPI';
 import { insistCapData } from '../capdata';
 import { insistMessage } from '../message';
@@ -144,10 +144,10 @@ export default function buildKernel(kernelEndowments) {
     insistKernelType('promise', kpid);
     insistVatID(resolvingVatID);
     const p = kernelKeeper.getKernelPromise(kpid);
-    insist(p.state === 'unresolved', `${kpid} was already resolved`);
-    insist(
+    assert(p.state === 'unresolved', details`${kpid} was already resolved`);
+    assert(
       p.decider === resolvingVatID,
-      `${kpid} is decided by ${p.decider}, not ${resolvingVatID}`,
+      details`${kpid} is decided by ${p.decider}, not ${resolvingVatID}`,
     );
     return p;
   }
@@ -245,7 +245,10 @@ export default function buildKernel(kernelEndowments) {
     method = `${method}`;
     // we can't use insistCapData() here: .slots are from the controller's
     // Realm, not the kernel Realm, so it's the wrong kind of Array
-    insist(args.slots !== undefined, `args not capdata, no .slots: ${args}`);
+    assert(
+      args.slots !== undefined,
+      details`args not capdata, no .slots: ${args}`,
+    );
     // now we must translate it into a kernel-realm object/array
     args = harden({
       body: `${args.body}`,
@@ -265,7 +268,7 @@ export default function buildKernel(kernelEndowments) {
   async function deliverToVat(vatID, target, msg) {
     insistMessage(msg);
     const vat = ephemeral.vats.get(vatID);
-    insist(vat, `unknown vatID ${vatID}`);
+    assert(vat, details`unknown vatID ${vatID}`);
     try {
       await vat.manager.deliverOneMessage(target, msg);
     } catch (e) {
@@ -278,8 +281,8 @@ export default function buildKernel(kernelEndowments) {
   function getKernelResolveablePromise(kpid) {
     insistKernelType('promise', kpid);
     const p = kernelKeeper.getKernelPromise(kpid);
-    insist(p.state === 'unresolved', `${kpid} was already resolved`);
-    insist(!p.decider, `${kpid} is decided by ${p.decider}, not kernel`);
+    assert(p.state === 'unresolved', details`${kpid} was already resolved`);
+    assert(!p.decider, details`${kpid} is decided by ${p.decider}, not kernel`);
     return p;
   }
 
@@ -342,7 +345,7 @@ export default function buildKernel(kernelEndowments) {
     insistVatID(vatID);
     insistKernelType('promise', kpid);
     const vat = ephemeral.vats.get(vatID);
-    insist(vat, `unknown vatID ${vatID}`);
+    assert(vat, details`unknown vatID ${vatID}`);
     const p = kernelKeeper.getKernelPromise(kpid);
     try {
       await vat.manager.deliverOneNotification(kpid, p);

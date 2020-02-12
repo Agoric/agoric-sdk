@@ -2,7 +2,7 @@
 
 import harden from '@agoric/harden';
 
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 import { makeSharedMap } from './sharedMap';
 
 function makeSharingService() {
@@ -35,8 +35,10 @@ function makeSharingService() {
       return sharedMap;
     },
     validate(allegedSharedMap) {
-      insist(brand.has(allegedSharedMap))`\
-Unrecognized sharedMap: ${allegedSharedMap}`;
+      assert(
+        brand.has(allegedSharedMap),
+        details`Unrecognized sharedMap: ${allegedSharedMap}`,
+      );
       return allegedSharedMap;
     },
     // We don't need remove, since grabSharedMap can be used for that.

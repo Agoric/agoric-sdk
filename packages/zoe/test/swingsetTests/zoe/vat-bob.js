@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { showPaymentBalance, setupAssays, getLocalUnitOps } from './helpers';
 
@@ -30,16 +30,19 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       );
 
       // Bob ensures it's the contract he expects
-      insist(
+      assert(
         installations.automaticRefund === installationHandle,
-      )`should be the expected automaticRefund`;
+        details`should be the expected automaticRefund`,
+      );
 
-      insist(
+      assert(
         terms.assays[0] === moolaAssay,
-      )`The first assay should be the moola assay`;
-      insist(
+        details`The first assay should be the moola assay`,
+      );
+      assert(
         terms.assays[1] === simoleanAssay,
-      )`The second assay should be the simolean assay`;
+        details`The second assay should be the simolean assay`,
+      );
 
       // 1. Bob escrows his offer
       const bobOfferRules = harden({
@@ -110,21 +113,24 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         optionExtent.instanceHandle,
       );
 
-      insist(
+      assert(
         instanceInfo.installationHandle === installations.coveredCall,
-      )`wrong installation`;
-      insist(optionExtent.seatDesc === 'exerciseOption')`wrong seat`;
-      insist(moolaUnitOps.equals(optionExtent.underlyingAsset, moola(3)));
-      insist(simoleanUnitOps.equals(optionExtent.strikePrice, simoleans(7)));
-      insist(optionExtent.expirationDate === 1)`wrong expirationDate`;
-      insist(optionExtent.timerAuthority === timer)`wrong timer`;
+        details`wrong installation`,
+      );
+      assert(optionExtent.seatDesc === 'exerciseOption', details`wrong seat`);
+      assert(moolaUnitOps.equals(optionExtent.underlyingAsset, moola(3)));
+      assert(simoleanUnitOps.equals(optionExtent.strikePrice, simoleans(7)));
+      assert(optionExtent.expirationDate === 1, details`wrong expirationDate`);
+      assert(optionExtent.timerAuthority === timer, 'wrong timer');
 
-      insist(
+      assert(
         instanceInfo.terms.assays[0] === moolaAssay,
-      )`The first assay should be the moola assay`;
-      insist(
+        details`The first assay should be the moola assay`,
+      );
+      assert(
         instanceInfo.terms.assays[1] === simoleanAssay,
-      )`The second assay should be the simolean assay`;
+        details`The second assay should be the simolean assay`,
+      );
 
       const bobSimoleanPayment = await E(simoleanPurseP).withdrawAll();
       const bobPayments = [undefined, bobSimoleanPayment];
@@ -161,24 +167,32 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       const instanceInfo = await E(zoe).getInstance(
         optionExtent.instanceHandle,
       );
-      insist(
+      assert(
         instanceInfo.installationHandle === installations.coveredCall,
-      )`wrong installation`;
-      insist(optionExtent.seatDesc === 'exerciseOption')`wrong seat`;
-      insist(
+        details`wrong installation`,
+      );
+      assert(optionExtent.seatDesc === 'exerciseOption', details`wrong seat`);
+      assert(
         moolaUnitOps.equals(optionExtent.underlyingAsset, moola(3)),
-      )`wrong underlying asset`;
-      insist(
+        details`wrong underlying asset`,
+      );
+      assert(
         simoleanUnitOps.equals(optionExtent.strikePrice, simoleans(7)),
-      )`wrong strike price`;
-      insist(optionExtent.expirationDate === 100)`wrong expiration date`;
-      insist(optionExtent.timerAuthority === timer)`wrong timer`;
-      insist(
+        details`wrong strike price`,
+      );
+      assert(
+        optionExtent.expirationDate === 100,
+        details`wrong expiration date`,
+      );
+      assert(optionExtent.timerAuthority === timer, details`wrong timer`);
+      assert(
         instanceInfo.terms.assays[0] === moolaAssay,
-      )`The first assay should be the moola assay`;
-      insist(
+        details`The first assay should be the moola assay`,
+      );
+      assert(
         instanceInfo.terms.assays[1] === simoleanAssay,
-      )`The second assay should be the simolean assay`;
+        details`The second assay should be the simolean assay`,
+      );
 
       // Let's imagine that Bob wants to create a swap to trade this
       // invite for bucks. He wants to invite Dave as the
@@ -237,14 +251,16 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       const { installationHandle, terms } = await E(zoe).getInstance(
         inviteExtent.instanceHandle,
       );
-      insist(
+      assert(
         installationHandle === installations.publicAuction,
-      )`wrong installation`;
-      insist(
+        details`wrong installation`,
+      );
+      assert(
         sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
-      )`assays were not as expected`;
-      insist(sameStructure(inviteExtent.minimumBid, simoleans(3)));
-      insist(sameStructure(inviteExtent.auctionedAssets, moola(1)));
+        details`assays were not as expected`,
+      );
+      assert(sameStructure(inviteExtent.minimumBid, simoleans(3)));
+      assert(sameStructure(inviteExtent.auctionedAssets, moola(1)));
 
       const offerRules = harden({
         payoutRules: [
@@ -289,12 +305,14 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       const { installationHandle, terms } = await E(zoe).getInstance(
         inviteExtent.instanceHandle,
       );
-      insist(
+      assert(
         installationHandle === installations.atomicSwap,
-      )`wrong installation`;
-      insist(
+        details`wrong installation`,
+      );
+      assert(
         sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
-      )`assays were not as expected`;
+        details`assays were not as expected`,
+      );
 
       const expectedFirstOfferPayoutRules = harden([
         {
@@ -306,12 +324,13 @@ const build = async (E, log, zoe, purses, installations, timer) => {
           units: simoleans(7),
         },
       ]);
-      insist(
+      assert(
         sameStructure(
           inviteExtent.offerMadeRules,
           expectedFirstOfferPayoutRules,
         ),
-      )`Alice made a different offer than expected`;
+        details`Alice made a different offer than expected`,
+      );
 
       const offerRules = harden({
         payoutRules: [
@@ -356,12 +375,14 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       const { installationHandle, terms } = await E(zoe).getInstance(
         inviteExtent.instanceHandle,
       );
-      insist(
+      assert(
         installationHandle === installations.simpleExchange,
-      )`wrong installation`;
-      insist(
+        details`wrong installation`,
+      );
+      assert(
         sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
-      )`assays were not as expected`;
+        details`assays were not as expected`,
+      );
 
       const bobBuyOrderOfferRules = harden({
         payoutRules: [
@@ -406,7 +427,10 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       const { installationHandle, terms } = await E(zoe).getInstance(
         inviteExtent.instanceHandle,
       );
-      insist(installationHandle === installations.autoswap)`wrong installation`;
+      assert(
+        installationHandle === installations.autoswap,
+        details`wrong installation`,
+      );
       const {
         extent: { instanceHandle },
       } = await E(invite).getBalance();
@@ -415,9 +439,10 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       const liquidityUnitOps = await getLocalUnitOps(liquidityAssay);
       const liquidity = liquidityUnitOps.make;
       const allAssays = harden([...assays, liquidityAssay]);
-      insist(
+      assert(
         sameStructure(allAssays, terms.assays),
-      )`assays were not as expected`;
+        details`assays were not as expected`,
+      );
 
       // bob checks the price of 3 moola. The price is 1 simolean
       const simoleanUnits = await E(publicAPI).getPrice(moola(3));

@@ -1,20 +1,21 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 
 function insistWithinBounds(num, canvasSize) {
   Nat(num);
   Nat(canvasSize);
   // 0 to canvasSize - 1
-  insist(num >= 0 && num < canvasSize)`\
-  pixel position must be within bounds`;
+  assert(
+    num >= 0 && num < canvasSize,
+    details`pixel position must be within bounds`,
+  );
 }
 
 const makeInsistPixel = (canvasSize = 10) => pixel => {
   const properties = Object.getOwnPropertyNames(pixel);
-  insist(properties.length === 2)`\
-  pixels must have x, y properties only`;
+  assert(properties.length === 2, 'pixels must have x, y properties only');
 
   insistWithinBounds(pixel.x, canvasSize);
   insistWithinBounds(pixel.y, canvasSize);

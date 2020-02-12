@@ -1,3 +1,4 @@
+import { assert, details } from '@agoric/assert';
 import { insistVatType } from '../../parseVatSlots';
 import { insistRemoteType } from './parseRemoteSlot';
 import { getOutbound, mapOutbound, mapOutboundResult } from './clist';
@@ -8,7 +9,6 @@ import {
   markPromiseAsResolved,
 } from './state';
 import { insistRemoteID } from './remote';
-import { insist } from '../../insist';
 import { insistCapData } from '../../capdata';
 
 function getRemoteFor(state, target) {
@@ -52,7 +52,7 @@ export function deliverToRemote(
 ) {
   // this object lives on 'remoteID', so we send messages at them
   const remoteID = getRemoteFor(state, target);
-  insist(remoteID, `oops ${target}`);
+  assert(remoteID, details`oops ${target}`);
   insistCapData(args);
 
   const remoteTargetSlot = getOutbound(state, remoteID, target);
@@ -101,7 +101,7 @@ export function resolvePromiseToRemote(
   const target = getOutbound(state, remoteID, promiseID);
   // target should be rp+NN
   insistRemoteType('promise', target);
-  // insist(parseRemoteSlot(target).allocatedByRecipient, target); // rp+NN for them
+  // assert(parseRemoteSlot(target).allocatedByRecipient, target); // rp+NN for them
   function mapSlots() {
     const { slots } = resolution.data;
     const rms = slots.map(s => mapOutbound(state, remoteID, s, syscall));

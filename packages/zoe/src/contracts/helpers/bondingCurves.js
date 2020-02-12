@@ -1,6 +1,6 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
-import { insist } from '@agoric/insist';
+import { assert, details } from '@agoric/assert';
 
 import { natSafeMath } from './safeMath';
 
@@ -24,7 +24,10 @@ export const makeConstProductBC = (zoe, assays) => {
      */
     getPrice: (poolUnitsArray, unitsIn, feeInTenthOfPercent = 3) => {
       Nat(feeInTenthOfPercent);
-      insist(feeInTenthOfPercent < 1000)`fee is not less than 1000`;
+      assert(
+        feeInTenthOfPercent < 1000,
+        details`fee ${feeInTenthOfPercent} is not less than 1000`,
+      );
       const oneMinusFeeInThousandths = subtract(1000, feeInTenthOfPercent);
 
       // Calculates how much can be bought by selling input

@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import { insist } from '../insist';
+import { assert, details } from '@agoric/assert';
 
 // Object/promise references (in the kernel) contain a two-tuple of (type,
 // index). All object references point to entries in the kernel Object
@@ -24,7 +24,7 @@ import { insist } from '../insist';
  * @throws if the given string is syntactically incorrect.
  */
 export function parseKernelSlot(s) {
-  insist(s === `${s}`);
+  assert.typeof(s, 'string');
   let type;
   let idSuffix;
   if (s.startsWith('ko')) {
@@ -78,8 +78,8 @@ export function makeKernelSlot(type, id) {
  * @return nothing
  */
 export function insistKernelType(type, kernelSlot) {
-  insist(
+  assert(
     type === parseKernelSlot(kernelSlot).type,
-    `kernelSlot ${kernelSlot} is not of type ${type}`,
+    details`kernelSlot ${kernelSlot} is not of type ${type}`,
   );
 }

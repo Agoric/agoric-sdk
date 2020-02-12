@@ -26,7 +26,7 @@
 
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import { insist } from '../insist';
+import { assert, details } from '@agoric/assert';
 
 // Since we use harden when saving the state, we need to copy the arrays so they
 // will continue to be mutable. each record inside handlers is immutable, so we
@@ -213,9 +213,9 @@ export default function setup(syscall, state, helpers, endowments) {
     }
 
     function updateTime(time) {
-      insist(
+      assert(
         time >= lastPolled,
-        `Time is monotonic. ${time} cannot be less than ${lastPolled}`,
+        details`Time is monotonic. ${time} cannot be less than ${lastPolled}`,
       );
       lastPolled = time;
       saveState();

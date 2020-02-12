@@ -5,8 +5,8 @@ Thank you!
 ## Contact
 
 We use github issues for all bug reports:
-https://github.com/Agoric/agoric-sdk/issues Please add a [insist]
-prefix to the title and `insist` tag to insist-related issues.
+https://github.com/Agoric/agoric-sdk/issues Please add a [assert]
+prefix to the title and `assert` tag to assert-related issues.
 
 ## Installing, Testing
 
@@ -17,14 +17,14 @@ You'll need Node.js version 11 or higher.
 * `yarn install`
 * `yarn build` (This *must* be done at the top level to build all of
   the packages)
-* `cd packages/insist`
+* `cd packages/assert`
 * `yarn test`
 
 ## Pull Requests
 
 Before submitting a pull request, please:
 
-* run `yarn test` within `packages/insist` and make sure all the unit
+* run `yarn test` within `packages/assert` and make sure all the unit
   tests pass (running `yarn test` at the top level will test all the
   monorepo packages, which can be a good integration test.)
 * run `yarn run lint-fix` to reformat the code according to our
@@ -43,7 +43,7 @@ Before submitting a pull request, please:
   * and does NOT do a `git commit` and `git tag`
 * `git add .`
 * `git commit -m "bump version"`
-* `git tag -a insist-v$VERSION -m "insist-v$VERSION"`
+* `git tag -a assert-v$VERSION -m "assert-v$VERSION"`
 * `yarn publish --access public`
 * `git push`
-* `git push origin insist-v$VERSION`
+* `git push origin assert-v$VERSION`

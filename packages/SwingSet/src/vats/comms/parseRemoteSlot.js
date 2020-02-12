@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import { insist } from '../../insist';
+import { assert, details } from '@agoric/assert';
 
 // Object/promise references (in remote messages) contain a three-tuple of
 // (type, allocator flag, index). The allocator flag inside an inbound
@@ -7,7 +7,7 @@ import { insist } from '../../insist';
 // message, and "-" when allocated by the sender of the message.
 
 export function parseRemoteSlot(s) {
-  insist(s === `${s}`, `${s} is not a string`);
+  assert.typeof(s, 'string');
   let type;
   let allocatedByRecipient;
   const typechars = s.slice(0, 2);
@@ -57,9 +57,9 @@ export function makeRemoteSlot(type, allocatedByRecipient, id) {
 }
 
 export function insistRemoteType(type, remoteSlot) {
-  insist(
+  assert(
     type === parseRemoteSlot(remoteSlot).type,
-    `remoteSlot ${remoteSlot} is not of type ${type}`,
+    details`remoteSlot ${remoteSlot} is not of type ${type}`,
   );
 }
 

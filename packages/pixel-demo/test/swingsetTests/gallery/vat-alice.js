@@ -3,7 +3,7 @@
 
 import harden from '@agoric/harden';
 
-import { insist } from '@agoric/insist';
+import { assert } from '@agoric/assert';
 import { makeCollect } from '@agoric/spawner';
 import { escrowExchangeSrcs } from '@agoric/spawner/src/escrow';
 
@@ -102,7 +102,7 @@ function makeAliceMaker(E, log, contractHost) {
           showPaymentBalance('childPayment2', childPayment2);
 
           const bobsRawPixel = result.extent[0];
-          insist(
+          assert(
             bobsRawPixel.x === rawPixel.x && bobsRawPixel.y === rawPixel.y,
           );
           const bobsColor = await E(gallery).getPixelColor(
