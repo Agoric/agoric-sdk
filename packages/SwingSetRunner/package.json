@@ -1,0 +1,12 @@
+{
+  "name": "SwingSetRunner",
+  "version": "0.1.0",
+  "description": "Application to launch SwingSet instances for development and testing",
+  "main": "src/main.js",
+  "repository": "https://github.com/Agoric/agoric-sdk",
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/swingset-vat": "^0.3.0"
+  }
+}
