@@ -3,7 +3,7 @@ const dot = '.'.charCodeAt(0);
 const zero = '0'.charCodeAt(0);
 const nine = '9'.charCodeAt(0);
 
-function makeCurryOptions(acorn, allOptions = {}) {
+export default function makeCurryOptions(acorn, allOptions = {}) {
   const { tokTypes: tt, TokenType } = acorn;
 
   const tok = {
@@ -149,5 +149,3 @@ function makeCurryOptions(acorn, allOptions = {}) {
     );
   };
 }
-
-module.exports = makeCurryOptions;

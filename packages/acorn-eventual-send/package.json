@@ -2,16 +2,16 @@
   "name": "@agoric/acorn-eventual-send",
   "version": "2.0.0",
   "description": "Eventual send (wavy dot) parser plugin for Acorn",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "build": "exit 0",
-    "test": "tap --no-coverage --reporter specy 'test/**/*.js'",
+    "test": "tap --no-esm --no-coverage --reporter specy 'test/**/*.js'",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'"
   },
   "devDependencies": {
     "acorn": "^7.1.0",
-    "esm": "^3.2.25",
     "rollup": "^1.16.7",
     "tap": "^14.10.5",
     "tap-spec": "^5.0.0",

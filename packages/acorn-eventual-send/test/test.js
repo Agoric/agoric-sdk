@@ -1,6 +1,6 @@
-import { test } from 'tape-promise/tape';
-import * as acorn from 'acorn';
-import eventualSend from '..';
+import test from 'tape';
+import acorn from 'acorn';
+import eventualSend from '../index.js';
 
 test('parser', async t => {
   try {
