@@ -1,4 +1,4 @@
-/* global Compartment */
+/* global Compartment lockdown */
 import {
   tameMetering,
   SES1TameMeteringShim,
@@ -8,18 +8,19 @@ import {
 import test from 'tape-promise/tape';
 import * as babelCore from '@babel/core';
 
+import SES1 from 'ses';
+
 // Here's how we can try lockdown.
-// import * as ses from '@agoric/tame-metering/src/ses.esm.js';
-import * as ses from 'ses';
+// import { lockdown } from '@agoric/tame-metering/src/ses.esm.js';
 
 import { makeMeter, makeMeteredEvaluator } from '../src/index';
 
 let replaceGlobalMeter;
 let makeEvaluator;
+let sesRealm;
 
 // Find out whether we are using the lockdown() or SES1 API.
-const { lockdown, default: SES1 } = ses;
-if (lockdown) {
+if (typeof lockdown !== 'undefined') {
   console.error(
     'May be blocked by https://github.com/Agoric/SES-beta/issues/8',
   );
@@ -39,13 +40,24 @@ if (lockdown) {
     };
   };
 } else {
-  const sesRealm = SES1.makeSESRootRealm({
+  sesRealm = SES1.makeSESRootRealm({
     consoleMode: 'allow',
     errorStackMode: 'allow',
     shims: [SES1TameMeteringShim],
+    configurableGlobals: true,
   });
   replaceGlobalMeter = SES1ReplaceGlobalMeter(sesRealm);
-  makeEvaluator = opts => sesRealm.global.Realm.makeCompartment(opts);
+  makeEvaluator = opts => {
+    const c = sesRealm.global.Realm.makeCompartment(opts);
+    // FIXME: This call should be unnecessary.
+    // We currently need it because fresh Compartments
+    // do not inherit the configured stable globals.
+    Object.defineProperties(
+      c.global,
+      Object.getOwnPropertyDescriptors(sesRealm.global),
+    );
+    return c;
+  };
 }
 
 test('metering evaluator', async t => {
@@ -65,9 +77,9 @@ test('metering evaluator', async t => {
     // Destructure the output of the meteredEval.
     let exhaustedTimes = 0;
     let expectedExhaustedTimes = 0;
-    const myEval = (src, endowments = {}) => {
+    const myEval = (m, src, endowments = {}) => {
       Object.values(adminFacet).forEach(r => r());
-      return meteredEval(meter, src, endowments).then(
+      return meteredEval(m, src, endowments).then(
         ([normalReturn, value]) => {
           if (!normalReturn) {
             throw value;
@@ -81,28 +93,37 @@ test('metering evaluator', async t => {
       );
     };
 
+    /*
+    const fakeMeter = {
+      isExhausted() { return false; },
+      a(...args) { console.log('a', ...args) },
+      c(...args) { console.log('c', ...args) },
+      l(...args) { console.log('l', ...args) },
+      e(...args) { console.log('e', ...args) },
+    };
+    */
     const src1 = `123; 456;`;
-    t.equals(await myEval(src1), 456, 'trivial source succeeds');
+    t.equals(await myEval(meter, src1), 456, 'trivial source succeeds');
 
     const src5a = `\
 ('x'.repeat(1e8), 0)
 `;
     expectedExhaustedTimes += 1;
     await t.rejects(
-      myEval(src5a),
+      myEval(meter, src5a),
       /Allocate meter exceeded/,
       'big string exhausts',
     );
 
     const src5 = `\
-new Array(1e9); 0
+(new Array(1e9), 0)
 `;
-    true || // FIXME: This always fails under SES for some reason.
-      (await t.rejects(
-        myEval(src5),
-        /Allocate meter exceeded/,
-        'big array exhausts',
-      ));
+    expectedExhaustedTimes += 1;
+    await t.rejects(
+      myEval(meter, src5),
+      /Allocate meter exceeded/,
+      'big array exhausts',
+    );
 
     const src2 = `\
 function f(a) {
@@ -112,7 +133,7 @@ f(1);
 `;
     expectedExhaustedTimes += 1;
     await t.rejects(
-      myEval(src2),
+      myEval(meter, src2),
       /Stack meter exceeded/,
       'stack overflow exhausts',
     );
@@ -122,7 +143,7 @@ while (true) {}
 `;
     expectedExhaustedTimes += 1;
     await t.rejects(
-      myEval(src3),
+      myEval(meter, src3),
       /Compute meter exceeded/,
       'infinite loop exhausts',
     );
@@ -132,7 +153,7 @@ while (true) {}
 `;
     expectedExhaustedTimes += 1;
     await t.rejects(
-      myEval(src3b),
+      myEval(meter, src3b),
       /Compute meter exceeded/,
       'nested loop exhausts',
     );
@@ -146,7 +167,7 @@ Promise.resolve().then(
 `;
     expectedExhaustedTimes += 1;
     await t.rejects(
-      myEval(src3a),
+      myEval(meter, src3a),
       /Compute meter exceeded/,
       'promised infinite loop exhausts',
     );
@@ -160,8 +181,8 @@ f();
 `;
     expectedExhaustedTimes += 1;
     await t.rejects(
-      myEval(src3c),
-      /Allocate meter exceeded/,
+      myEval(meter, src3c),
+      / meter exceeded/,
       'promise loop exhausts',
     );
 
@@ -169,7 +190,7 @@ f();
 /(x+x+)+y/.test('x'.repeat(10000));
 `;
     t.equals(
-      await myEval(src4),
+      await myEval(meter, src4),
       false,
       `catastrophic backtracking doesn't happen`,
     );
@@ -179,7 +200,7 @@ new Array(1e8).map(Object.create); 0
 `;
     expectedExhaustedTimes += 1;
     await t.rejects(
-      myEval(src6),
+      myEval(meter, src6),
       /Allocate meter exceeded/,
       'long map exhausts',
     );

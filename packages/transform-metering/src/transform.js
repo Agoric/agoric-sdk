@@ -215,8 +215,9 @@ try{${regexpSource}`;
       // Install the specified user meter.
       const savedMeter = endowments.getGlobalMeter();
       endowments[setMeterId] = set => {
-        endowments.getGlobalMeter(set ? meter : savedMeter);
-        return meter;
+        const m = set ? meter : savedMeter;
+        endowments.getGlobalMeter(m);
+        return m;
       };
 
       return {

@@ -75,6 +75,7 @@ export function tameMetering() {
         // it may consume some stack.
         // Instead, directly manipulate the globalMeter variable.
         const savedMeter = globalMeter;
+        let ret;
         try {
           // This is a common idiom to disable global metering so
           // that the savedMeter can use builtins without
@@ -86,10 +87,8 @@ export function tameMetering() {
 
           // Reinstall the saved meter for the actual function invocation.
           globalMeter = savedMeter;
-          let ret;
-
           const newTarget = new.target;
-          if (newTarget === undefined) {
+          if (!newTarget) {
             ret = apply(target, this, args);
           } else {
             ret = construct(target, args, newTarget);
@@ -114,13 +113,14 @@ export function tameMetering() {
       // The function wrapper must not have construct behaviour.
       // Defining it as a concise method ensures the correct
       // properties (type function, sensitive to `this`, but no `.prototype`).
-      const { name } = target;
-      const obj = {
+      const { name = '' } = target;
+      ({ [name]: wrapper } = {
         [name](...args) {
           // We're careful not to use the replaceGlobalMeter function as
           // it may consume some stack.
           // Instead, directly manipulate the globalMeter variable.
           const savedMeter = globalMeter;
+          let ret;
           try {
             // This is a common idiom to disable global metering so
             // that the savedMeter can use builtins without
@@ -132,7 +132,7 @@ export function tameMetering() {
 
             // Reinstall the saved meter for the actual function invocation.
             globalMeter = savedMeter;
-            const ret = apply(target, this, args);
+            ret = apply(target, this, args);
 
             // Track the allocation of the return value.
             globalMeter = null;
@@ -148,8 +148,7 @@ export function tameMetering() {
             globalMeter = savedMeter;
           }
         },
-      };
-      wrapper = obj[name];
+      });
     }
 
     // We have a wrapper identity, so prevent recursion by installing it now.
@@ -167,7 +166,10 @@ export function tameMetering() {
       }
     }
 
-    setPrototypeOf(wrapper, wrap(getPrototypeOf(target)));
+    setPrototypeOf(
+      wrapper,
+      wrap(getPrototypeOf(target), pname && `${pname}.__proto__`),
+    );
 
     // Assign the wrapped descriptors to the target.
     for (const [p, desc] of entries(getOwnPropertyDescriptors(target))) {
@@ -182,16 +184,8 @@ export function tameMetering() {
       } else {
         newDesc = wrapDescriptor(desc, pname && `${pname}.${p}`);
       }
-      try {
-        defineProperty(wrapper, p, newDesc);
-      } catch (e) {
-        // ignore
-      }
-      try {
-        defineProperty(target, p, newDesc);
-      } catch (e) {
-        // ignore
-      }
+      defineProperty(wrapper, p, newDesc);
+      defineProperty(target, p, newDesc);
     }
 
     return wrapper;
