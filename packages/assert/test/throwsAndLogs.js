@@ -68,10 +68,10 @@ const fakeConsole = makeFakeConsole(fakeLog);
 // ```
 // the test code might check for exactly that with
 // ```js
-// throwsAndLogs(t, () => /*as above*/, 'foo',
+// throwsAndLogs(t, () => /*as above*/, /foo/,
 //               [['error', 'what ', err]]);
 // ```
-function throwsAndLogs(t, thunk, msg, goldenLog) {
+function throwsAndLogs(t, thunk, regexp, goldenLog) {
   t.throws(() => {
     fakeLog.length = 0;
     const originalConsole = console;
@@ -85,7 +85,7 @@ function throwsAndLogs(t, thunk, msg, goldenLog) {
       // eslint-disable-next-line no-global-assign
       console = originalConsole;
     }
-  }, msg);
+  }, regexp);
   t.deepEqual(takeLog(), goldenLog);
 }
 harden(throwsAndLogs);

@@ -1,5 +1,5 @@
 import { test } from 'tape';
-import { an, assert /* details, openDetail, */ } from '../src/assert';
+import { an, assert, details, openDetail } from '../src/assert';
 import { throwsAndLogs } from './throwsAndLogs';
 
 test('an', t => {
@@ -31,7 +31,7 @@ test('throwsAndLogs', t => {
         console.error('what ', err);
         throw new Error('foo');
       },
-      'foo',
+      /foo/,
       [['error', 'what ', err]],
     );
   } catch (e) {
@@ -46,10 +46,41 @@ test('assert', t => {
   try {
     assert(2 + 3 === 5);
     assert.equal(2 + 3, 5);
-    throwsAndLogs(t, () => assert(false), 'check failed', [
+    throwsAndLogs(t, () => assert(false), /check failed/, [
       ['log', 'FAILED ASSERTION false'],
       ['error', 'check failed'],
     ]);
+    throwsAndLogs(
+      t,
+      () => assert.equal(5, 6),
+      /Expected \(a number\) === \(a number\)/,
+      [
+        ['log', 'FAILED ASSERTION false'],
+        ['error', 'Expected ', 5, ' === ', 6, ''],
+      ],
+    );
+    throwsAndLogs(t, () => assert.equal(5, 6, 'foo'), /foo/, [
+      ['log', 'FAILED ASSERTION false'],
+      ['error', 'Assertion failed: foo'],
+    ]);
+    throwsAndLogs(
+      t,
+      () => assert.equal(5, 6, details`${5} !== ${6}`),
+      /\(a number\) !== \(a number\)/,
+      [
+        ['log', 'FAILED ASSERTION false'],
+        ['error', '', 5, ' !== ', 6, ''],
+      ],
+    );
+    throwsAndLogs(
+      t,
+      () => assert.equal(5, 6, details`${5} !== ${openDetail(6)}`),
+      /\(a number\) !== 6/,
+      [
+        ['log', 'FAILED ASSERTION false'],
+        ['error', '', 5, ' !== ', 6, ''],
+      ],
+    );
   } catch (e) {
     console.log('unexpected exception', e);
     t.assert(false, e);
