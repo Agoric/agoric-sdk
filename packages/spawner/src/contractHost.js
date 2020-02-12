@@ -56,7 +56,10 @@ function makeContractHost(E, evaluate, adminVat) {
         // contract in seatDescriptions, and is known to and verifiable by
         // contractHost itself.
         spawn(termsP) {
-          insist(moduleFormat === 'module')`Module format is required in vats`;
+          assert(
+            moduleFormat === 'module',
+            details`Module format is required in vats`,
+          );
           const startFnP = E(adminVat).createVat(contractSrcs);
           return Promise.resolve(allComparable(termsP)).then(terms => {
             const inviteMaker = harden({
