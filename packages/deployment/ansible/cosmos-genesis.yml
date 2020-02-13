@@ -9,7 +9,7 @@
     - BOOTSTRAP_TOKENS: "{{ lookup('file', SETUP_HOME + '/boot-tokens.txt') }}"
     - BOOTSTRAP_ADDRESS: "{{ lookup('file', SETUP_HOME + '/ag-pserver/data/node0/boot-address.txt') }}"
     - STAKER: ag-staker
-    - STAKER_TOKENS: 200000000uagstake
+    - STAKER_TOKENS: 10000000000000000000000000uagstake
     - STAKER_AMOUNT: 2000000uagstake
     - STAKER_NODE: node0
   roles:

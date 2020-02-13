@@ -28,8 +28,8 @@ const SwingSetPort = 123
 var replies = map[int]chan goReturn{}
 var lastReply = 0
 
-//export RunAG_COSMOS
-func RunAG_COSMOS(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int {
+//export RunAgCosmosDaemon
+func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int {
 	// FIXME: Decouple the sending logic from the Cosmos app.
 	sendToNode := func(needReply bool, str string) (string, error) {
 		var rPort int
