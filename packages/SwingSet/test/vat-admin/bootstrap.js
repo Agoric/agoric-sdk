@@ -4,17 +4,13 @@ function buildContractBundle(makeContractSrc, mainFnName) {
   const contractBundleSource = `
 function getExport() {
   'use strict';
-   let exports = {};
-   const module = { exports };
-   Object.defineProperty(exports, '__esModule', { value: true });
    function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
    var harden = _interopDefault(require('@agoric/harden'));
    var Nat = _interopDefault(require('@agoric/nat'));
 
   ${makeContractSrc}
 
-  exports.${mainFnName} = ${mainFnName};
-  return module.exports;
+  return ${mainFnName};
 }`;
 
   return harden({

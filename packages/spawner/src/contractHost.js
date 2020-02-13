@@ -37,6 +37,15 @@ function makeContractHost(E, evaluate, adminVat) {
     ).then(_ => seats.get(seatIdentity));
   }
 
+  function wrapContractSource(contractSrc) {
+    return `function outerGetExport() {
+    // An adapter from the contract's bundle to the format expected by createVat
+    const exports = (${contractSrc})();
+  return { start: exports.makeContract.start };
+}
+`;
+  }
+
   /** The contract host is designed to have a long-lived credible identity. */
   const contractHost = harden({
     getInviteAssay() {
@@ -49,7 +58,7 @@ function makeContractHost(E, evaluate, adminVat) {
     // number of functions with names beginning 'check', each of which can be
     // used by clients to help validate that they have terms that match the
     // contract.
-    install(contractSrcs, moduleFormat = 'object') {
+    install(contractSrcBundle, moduleFormat = 'object') {
       const installation = harden({
         // spawn() spins up a new vat for each new contract instance. There is
         // one installation object per contract object, which represents the
@@ -60,7 +69,11 @@ function makeContractHost(E, evaluate, adminVat) {
             moduleFormat === 'module',
             details`Module format is required in vats`,
           );
-          const startFnP = E(adminVat).createVat(contractSrcs);
+          const bundle = {
+            ...contractSrcBundle,
+            source: wrapContractSource(contractSrcBundle.source),
+          };
+          const startFnP = E(adminVat).createVat(bundle);
           return Promise.resolve(allComparable(termsP)).then(terms => {
             const inviteMaker = harden({
               // Used by the contract to make invites for credibly participating
@@ -99,7 +112,7 @@ function makeContractHost(E, evaluate, adminVat) {
       });
 
       harden(installation);
-      installationSources.init(installation, contractSrcs);
+      installationSources.init(installation, contractSrcBundle.source);
       return installation;
     },
 

@@ -580,7 +580,7 @@ export default function buildKernel(kernelEndowments) {
   function createVatDynamically(buildFnSrc) {
     const endowments = { require: kernelRequire, HandledPromise };
     const nameSpace = evaluateProgram(buildFnSrc.source, endowments)();
-    const buildFn = () => harden({ start: nameSpace.makeContract.start });
+    const buildFn = () => harden(nameSpace);
     try {
       const vatID = createVat(buildFn);
       console.log(`added dynamic vat [${vatID}]`);
