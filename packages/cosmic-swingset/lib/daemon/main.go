@@ -7,35 +7,42 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/x/genaccounts"
-	genaccscli "github.com/cosmos/cosmos-sdk/x/genaccounts/client/cli"
+	"github.com/cosmos/cosmos-sdk/store"
 	"github.com/cosmos/cosmos-sdk/x/staking"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	app "github.com/Agoric/cosmic-swingset"
+	"github.com/cosmos/cosmos-sdk/client/debug"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/bank"
+	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/Agoric/cosmic-swingset/x/swingset"
+	appcodec "github.com/Agoric/cosmic-swingset/app/codec"
 )
 
 type Sender func(needReply bool, str string) (string, error)
 
 func Run() {
-	RunWithController(nil)
+	RunWithController(func(needReply bool, str string) (string, error) {
+		fmt.Fprintln(os.Stderr, "FIXME: Would upcall to controller with", str)
+		return "", nil
+	})
 }
 
-func RunWithController(sendToNode Sender) {
+func RunWithController(sendToController Sender) {
 	cobra.EnableCommandSorting = false
 
-	cdc := app.MakeCodec()
+	cdc := appcodec.MakeCodec(app.ModuleBasics)
+	appCodec := appcodec.NewAppCodec(cdc)
 
 	config := sdk.GetConfig()
 	config.SetBech32PrefixForAccount(sdk.Bech32PrefixAccAddr, sdk.Bech32PrefixAccPub)
@@ -51,22 +58,21 @@ func RunWithController(sendToNode Sender) {
 		PersistentPreRunE: server.PersistentPreRunEFn(ctx),
 	}
 	// CLI commands to initialize the chain
+	rootCmd.AddCommand(genutilcli.InitCmd(ctx, cdc, app.ModuleBasics, app.DefaultNodeHome))
+	rootCmd.AddCommand(genutilcli.CollectGenTxsCmd(ctx, cdc, bank.GenesisBalancesIterator{}, app.DefaultNodeHome))
+	rootCmd.AddCommand(genutilcli.MigrateGenesisCmd(ctx, cdc))
 	rootCmd.AddCommand(
-		genutilcli.InitCmd(ctx, cdc, app.ModuleBasics, app.DefaultNodeHome),
-		genutilcli.CollectGenTxsCmd(ctx, cdc, genaccounts.AppModuleBasic{}, app.DefaultNodeHome),
 		genutilcli.GenTxCmd(
 			ctx, cdc, app.ModuleBasics, staking.AppModuleBasic{},
-			genaccounts.AppModuleBasic{}, app.DefaultNodeHome, app.DefaultCLIHome,
+			bank.GenesisBalancesIterator{}, app.DefaultNodeHome, app.DefaultCLIHome,
 		),
-		genutilcli.ValidateGenesisCmd(ctx, cdc, app.ModuleBasics),
-		// AddGenesisAccountCmd allows users to add accounts to the genesis file
-		genaccscli.AddGenesisAccountCmd(ctx, cdc, app.DefaultNodeHome, app.DefaultCLIHome),
 	)
+	rootCmd.AddCommand(genutilcli.ValidateGenesisCmd(ctx, cdc, app.ModuleBasics))
+	// AddGenesisAccountCmd allows users to add accounts to the genesis file
+	rootCmd.AddCommand(AddGenesisAccountCmd(ctx, appCodec, app.DefaultNodeHome, app.DefaultCLIHome))
+	rootCmd.AddCommand(debug.Cmd(cdc))
 
-	// FIXME: Remove this global variable!
-	swingset.NodeMessageSender = sendToNode
-
-	server.AddCommands(ctx, cdc, rootCmd, makeNewApp(sendToNode), exportAppStateAndTMValidators)
+	server.AddCommands(ctx, cdc, rootCmd, makeNewApp(sendToController), makeExportAppStateAndTMValidators(sendToController))
 
 	// prepare and add flags
 	executor := cli.PrepareBaseCmd(rootCmd, "AG_CHAIN_COSMOS", app.DefaultNodeHome)
@@ -76,39 +82,61 @@ func RunWithController(sendToNode Sender) {
 	}
 }
 
-func makeNewApp(sendToNode Sender) func(logger log.Logger, db dbm.DB, traceStore io.Writer) abci.Application {
+func makeNewApp(sendToController Sender) func(logger log.Logger, db dbm.DB, traceStore io.Writer) abci.Application {
 	// fmt.Println("Constructing app!")
 	return func(logger log.Logger, db dbm.DB, traceStore io.Writer) abci.Application {
+		var cache sdk.MultiStorePersistentCache
+
+		if viper.GetBool(server.FlagInterBlockCache) {
+			cache = store.NewCommitKVStoreCacheManager()
+		}
+
+		skipUpgradeHeights := make(map[int64]bool)
+		for _, h := range viper.GetIntSlice(server.FlagUnsafeSkipUpgrades) {
+			skipUpgradeHeights[int64(h)] = true
+		}
+
 		// fmt.Println("Starting daemon!")
-		abci := app.NewSwingSetApp(logger, db)
-		if sendToNode != nil {
-			msg := `{"type":"AG_COSMOS_INIT"}`
-			// fmt.Println("Sending to Node", msg)
-			_, err := sendToNode(true, msg)
-			// fmt.Println("Received AG_COSMOS_INIT response", ret, err)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, "Cannot initialize Node", err)
-				os.Exit(1)
-			}
+		abci := app.NewSwingSetApp(
+			sendToController, logger, db, traceStore, true,
+			baseapp.SetPruning(store.NewPruningOptionsFromString(viper.GetString("pruning"))),
+			baseapp.SetMinGasPrices(viper.GetString(server.FlagMinGasPrices)),
+			baseapp.SetHaltHeight(viper.GetUint64(server.FlagHaltHeight)),
+			baseapp.SetHaltTime(viper.GetUint64(server.FlagHaltTime)),
+			baseapp.SetInterBlockCache(cache),
+		)
+		msg := `{"type":"AG_COSMOS_INIT"}`
+		// fmt.Println("Sending to Node", msg)
+		_, err := sendToController(true, msg)
+		// fmt.Println("Received AG_COSMOS_INIT response", ret, err)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Cannot initialize Controller", err)
+			os.Exit(1)
 		}
 		return abci
 	}
 }
 
-func exportAppStateAndTMValidators(
-	logger log.Logger, db dbm.DB, traceStore io.Writer, height int64, forZeroHeight bool, jailWhiteList []string,
+func makeExportAppStateAndTMValidators(sendToController Sender) func(
+	logger log.Logger, db dbm.DB, traceStore io.Writer, height int64,
+	forZeroHeight bool,
+	jailWhiteList []string,
 ) (json.RawMessage, []tmtypes.GenesisValidator, error) {
-
-	if height != -1 {
-		ssApp := app.NewSwingSetApp(logger, db)
-		err := ssApp.LoadHeight(height)
-		if err != nil {
-			return nil, nil, err
+	return func(
+		logger log.Logger, db dbm.DB, traceStore io.Writer, height int64, forZeroHeight bool,
+		jailWhiteList []string,
+	) (json.RawMessage, []tmtypes.GenesisValidator, error) {
+		if height != -1 {
+			ssApp := app.NewSwingSetApp(sendToController, logger, db, traceStore, false)
+			err := ssApp.LoadHeight(height)
+			if err != nil {
+				return nil, nil, err
+			}
+			return ssApp.ExportAppStateAndValidators(forZeroHeight, jailWhiteList)
 		}
+
+		ssApp := app.NewSwingSetApp(sendToController, logger, db, traceStore, true)
+
 		return ssApp.ExportAppStateAndValidators(forZeroHeight, jailWhiteList)
 	}
-
-	ssApp := app.NewSwingSetApp(logger, db)
-
-	return ssApp.ExportAppStateAndValidators(forZeroHeight, jailWhiteList)
 }

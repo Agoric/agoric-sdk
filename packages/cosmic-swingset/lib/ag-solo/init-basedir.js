@@ -102,23 +102,38 @@ export default function initBasedir(
       fs.mkdirSync(agchServerDir);
       // we assume 'ag-cosmos-helper' is on $PATH for now, see chain-cosmos-sdk.js
       const keyName = 'ag-solo';
-      const password = 'mmmmmmmm\n';
       // we suppress stderr because it displays the mnemonic phrase, but
       // unfortunately that means errors are harder to diagnose
       execFileSync(
         'ag-cosmos-helper',
-        ['keys', 'add', keyName, '--home', agchServerDir],
+        [
+          'keys',
+          'add',
+          '--keyring-backend=test',
+          keyName,
+          '--home',
+          agchServerDir,
+        ],
         {
-          input: Buffer.from(password),
+          input: Buffer.from(''),
           stdio: ['pipe', 'ignore', 'ignore'],
         },
       );
       console.log('key generated, now extracting address');
       const kout = execFileSync(
         'ag-cosmos-helper',
-        ['keys', 'show', keyName, '--address', '--home', agchServerDir],
+        [
+          'keys',
+          'show',
+          '--keyring-backend=test',
+          keyName,
+          '--address',
+          '--home',
+          agchServerDir,
+        ],
         {
-          stdio: ['ignore', 'pipe', 'inherit'],
+          input: Buffer.from(''),
+          stdio: ['pipe', 'pipe', 'inherit'],
         },
       );
       fs.writeFileSync(
