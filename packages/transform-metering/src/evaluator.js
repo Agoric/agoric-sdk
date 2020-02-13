@@ -2,7 +2,7 @@ import { makeMeteringTransformer } from './transform';
 
 export function makeMeteredEvaluator({
   replaceGlobalMeter,
-  refillMeterOncePerTurn,
+  refillMeterInNewTurn,
   makeEvaluator,
   babelCore,
   quiesceCallback = cb => cb(),
@@ -44,9 +44,9 @@ export function makeMeteredEvaluator({
       if (typeof srcOrThunk === 'string') {
         // Transform the source on our own budget, then evaluate against the meter.
         endowments.getGlobalMeter = m => {
-          if (refillMeterOncePerTurn && !metersSeenThisTurn.has(meter)) {
+          if (refillMeterInNewTurn && !metersSeenThisTurn.has(meter)) {
             metersSeenThisTurn.add(meter);
-            refillMeterOncePerTurn(meter);
+            refillMeterInNewTurn(meter);
           }
           if (m !== true) {
             replaceGlobalMeter(meter);
@@ -56,9 +56,9 @@ export function makeMeteredEvaluator({
         returned = ev.evaluate(srcOrThunk, endowments);
       } else {
         // Evaluate the thunk with the specified meter.
-        if (refillMeterOncePerTurn && !metersSeenThisTurn.has(meter)) {
+        if (refillMeterInNewTurn && !metersSeenThisTurn.has(meter)) {
           metersSeenThisTurn.add(meter);
-          refillMeterOncePerTurn(meter);
+          refillMeterInNewTurn(meter);
         }
         replaceGlobalMeter(meter);
         returned = srcOrThunk();

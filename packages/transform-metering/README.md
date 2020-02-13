@@ -88,16 +88,20 @@ const { meter } = makeMeter();
 
 // Then to evaluate some source with endowments:
 meteredEval(meter, 'abc + def', {abc: 123, def: 456}).then(
-  ([normalReturn, value]) => {
+  ([normalReturn, value, seenMeters]) => {
+    for (const m of seenMeters) {
+      const ex = m.isExhausted();
+      if (ex) {
+        console.log('meter', m, 'was exhausted with', ex);;
+      }
+    }
     if (normalReturn) {
       console.log('normal return', value);
     } else {
       console.log('exception', value);
     }
   }
-).catch(e => {
-  console.log('meter exhausted', e);
-});
+);
 ```
 
 

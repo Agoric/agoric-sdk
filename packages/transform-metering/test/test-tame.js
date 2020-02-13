@@ -8,7 +8,7 @@ import { makeMeter, makeWithMeter } from '../src/index';
 
 test('meter running', async t => {
   try {
-    const { meter, adminFacet } = makeMeter({ budgetCombined: 10 });
+    const { meter, refillFacet } = makeMeter({ budgetCombined: 10 });
     const { withMeter, withoutMeter } = makeWithMeter(
       replaceGlobalMeter,
       meter,
@@ -29,14 +29,14 @@ test('meter running', async t => {
       `withMeter works`,
     );
 
-    adminFacet.combined(1000);
+    refillFacet.combined(1000);
     t.throws(
       withMeterFn(() => new Array(10000)),
       RangeError,
       'new Array exhausted',
     );
 
-    adminFacet.combined(100);
+    refillFacet.combined(100);
     t.throws(
       withMeterFn(() => 'x'.repeat(10000)),
       RangeError,
@@ -44,7 +44,7 @@ test('meter running', async t => {
     );
 
     const a = new Array(10);
-    adminFacet.combined(10);
+    refillFacet.combined(10);
     t.throws(
       withMeterFn(() => a.map(Object.create)),
       RangeError,

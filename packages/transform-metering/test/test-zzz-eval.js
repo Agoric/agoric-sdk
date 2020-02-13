@@ -66,15 +66,20 @@ test('metering evaluator', async t => {
   };
   try {
     process.on('unhandledRejection', rejectionHandler);
-    const { meter, adminFacet } = makeMeter();
-    const meters = new Map();
-    meters.set(meter, adminFacet);
+    const { meter, refillFacet } = makeMeter();
+
+    const refillers = new Map();
+    refillers.set(meter, () => Object.values(refillFacet).forEach(r => r()));
+
     const meteredEval = makeMeteredEvaluator({
       replaceGlobalMeter,
-      refillMeterOncePerTurn: m => {
-        const a = meters.get(m);
-        if (a) {
-          Object.values(a).forEach(r => r());
+      refillMeterInNewTurn: m => {
+        const refiller = refillers.get(m);
+        if (refiller) {
+          // NOTE: Can check m.isExhausted() to see if the meter
+          // is exhausted and decide whether or not to refill based
+          // on that.
+          refiller();
         }
       },
       babelCore,
