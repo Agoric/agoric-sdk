@@ -51,13 +51,10 @@ function makeContractHost(E, evaluate, adminVat) {
     getInviteAssay() {
       return inviteAssay;
     },
-    // contractSrcs is a record containing source code for the functions
+    // contractSrcBundle is a bundle containing source code for the functions
     // comprising a contract. `spawn` evaluates the `start` function
     // (parameterized by `terms` and `inviteMaker`) to start the contract, and
-    // returns whatever the contract returns. The contract can also have any
-    // number of functions with names beginning 'check', each of which can be
-    // used by clients to help validate that they have terms that match the
-    // contract.
+    // returns whatever the contract returns.
     install(contractSrcBundle, moduleFormat = 'object') {
       const installation = harden({
         // spawn() spins up a new vat for each new contract instance. There is
