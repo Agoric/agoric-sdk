@@ -66,9 +66,22 @@ test('metering evaluator', async t => {
   };
   try {
     process.on('unhandledRejection', rejectionHandler);
-    const { meter, adminFacet } = makeMeter();
+    const { meter, refillFacet } = makeMeter();
+
+    const refillers = new Map();
+    refillers.set(meter, () => Object.values(refillFacet).forEach(r => r()));
+
     const meteredEval = makeMeteredEvaluator({
       replaceGlobalMeter,
+      refillMeterInNewTurn: m => {
+        const refiller = refillers.get(m);
+        if (refiller) {
+          // NOTE: Can check m.isExhausted() to see if the meter
+          // is exhausted and decide whether or not to refill based
+          // on that.
+          refiller();
+        }
+      },
       babelCore,
       makeEvaluator,
       quiesceCallback: cb => setTimeout(cb),
@@ -78,19 +91,20 @@ test('metering evaluator', async t => {
     let exhaustedTimes = 0;
     let expectedExhaustedTimes = 0;
     const myEval = (m, src, endowments = {}) => {
-      Object.values(adminFacet).forEach(r => r());
-      return meteredEval(m, src, endowments).then(
-        ([normalReturn, value]) => {
-          if (!normalReturn) {
-            throw value;
-          }
-          return value;
-        },
-        e => {
+      // Refill the meter as we're just starting the turn.
+      return meteredEval(m, src, endowments).then(evalReturn => {
+        const [normalReturn, value, metersSeen] = evalReturn;
+        t.deepEqual(metersSeen, [meter], 'my meter was the only one seen');
+        const e = meter.isExhausted();
+        if (e) {
           exhaustedTimes += 1;
           throw e;
-        },
-      );
+        }
+        if (!normalReturn) {
+          throw value;
+        }
+        return value;
+      });
     };
 
     /*

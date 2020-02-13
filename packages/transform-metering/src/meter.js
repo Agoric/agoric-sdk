@@ -196,7 +196,7 @@ export function makeMeter(budgets = {}) {
     return maybeAbort(undefined, false);
   };
 
-  const adminFacet = {
+  const refillFacet = {
     isExhausted,
     allocate: makeResetter(allocateCounter),
     stack: makeResetter(stackCounter),
@@ -215,6 +215,6 @@ export function makeMeter(budgets = {}) {
   Object.assign(meterAllocate, meter);
   return {
     meter: meterAllocate,
-    adminFacet,
+    refillFacet,
   };
 }
