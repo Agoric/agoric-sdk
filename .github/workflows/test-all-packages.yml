@@ -67,6 +67,8 @@ jobs:
       run: cd packages/eventual-send && yarn test
     - name: yarn test (transform-eventual-send)
       run: cd packages/transform-eventual-send && yarn test
+    - name: yarn test (transform-metering)
+      run: cd packages/transform-metering && yarn test
     - name: yarn test (default-evaluate-options)
       run: cd packages/default-evaluate-options && yarn test
     - name: yarn test (evaluate)

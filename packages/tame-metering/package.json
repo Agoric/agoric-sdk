@@ -1,0 +1,33 @@
+{
+  "name": "@agoric/tame-metering",
+  "version": "1.0.0",
+  "description": "tame-metering",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "tape -r esm 'test/**/*.js'",
+    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
+    "lint-check": "eslint '**/*.{js,jsx}'",
+    "build": "exit 0"
+  },
+  "devDependencies": {},
+  "dependencies": {
+    "@agoric/harden": "^0.0.4",
+    "@agoric/nat": "^2.0.1",
+    "re2": "^1.10.5"
+  },
+  "keywords": [],
+  "files": [
+    "dist",
+    "src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk"
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
+  },
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme"
+}
