@@ -2,9 +2,10 @@ import path from 'path';
 import url from 'url';
 import test from 'tape';
 import rollupNS from 'rollup';
-const { rollup } = rollupNS;
 import acorn from 'acorn';
 import eventualSend from '../index.js';
+
+const { rollup } = rollupNS;
 
 function resolvePath(what) {
   const filename = url.fileURLToPath(import.meta.url);

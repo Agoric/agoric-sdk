@@ -16,6 +16,7 @@
     "no-restricted-syntax": ["off", "ForOfStatement"],
     "no-unused-expressions": "off",
     "no-loop-func": "off",
+    "import/extensions": "off",
     "import/prefer-default-export": "off"
   }
 }
