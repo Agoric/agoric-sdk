@@ -1,7 +1,6 @@
 # ERTP - Electronic Rights Transfer Protocol
 
-Bitcoin has unspent transactions. Ethereum has account balances. Agoric
-has ERTP. 
+ERTP is Agoric's digital asset standard.
 
 ERTP is a uniform way of transferring tokens and other digital
 assets in JavaScript. All kinds of digital assets can be easily

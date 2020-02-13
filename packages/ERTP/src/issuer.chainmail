@@ -1,56 +1,53 @@
 /**
- * The assay cannot mint new units, but it can create empty purses and
- * payments. The assay can also transform payments (splitting payments,
+ * The issuer cannot mint new amount, but it can create empty purses and
+ * payments. The issuer can also transform payments (splitting payments,
  * combining payments, burning payments, and claiming payments
- * exclusively. The assay should be gotten from a trusted source and
+ * exclusively). The issuer should be gotten from a trusted source and
  * then relied upon as the decider of whether an untrusted payment is valid. 
  */
-interface Assay (Units (Extent)) {
+interface Issuer (Amount (Extent)) {
   /**
-   * Get the Brand for this Assay. The Brand indicates the kind of
-   * digital asset and is shared by the mint, the assay, and any purses
+   * Get the Brand for this Issuer. The Brand indicates the kind of
+   * digital asset and is shared by the mint, the issuer, and any purses
    * and payments of this particular kind. The brand is not closely
-   * held, so this function should not be trusted to identify an assay
-   * alone. Fake digital assets and units can use another mint's brand.
+   * held, so this function should not be trusted to identify an issuer
+   * alone. Fake digital assets and amount can use another issuer's brand.
    */
   getBrand() -> (Brand);
 
-  /* Get the allegedName for this mint/assay */
+  /* Get the allegedName for this mint/issuer */
   allegedName() -> (allegedName);
 
-  /* Get the UnitOps for this Assay. */
-  getUnitOps() -> (UnitOps);
+  /* Get the AmountMath for this Issuer. */
+  getAmountMath() -> (AmountMath);
 
-  /* Get the name of the extentOps for this Assay. */
-  getExtentOpsName() -> (String);
+  /* Get the name of the MathHelpers for this Issuer. */
+  getMathHelpersName() -> (String);
 
   /** Make an empty purse of this brand. */
   makeEmptyPurse(memo :String) -> (Purse);
 
-  /** Make an empty payment of this brand. */
-  makeEmptyPayment(memo :String) -> (Payment);
-
   /**
    * Get payment balance. Because the payment is not trusted, we
-   * cannot call a method on it directly, and must use the assay
+   * cannot call a method on it directly, and must use the issuer
    * instead.
    */ 
-  getBalance(payment :Payment) -> (Units);
+  getBalance(payment :Payment) -> (Amount);
 
   /** 
-   * Burn all of the digital assets in the payment. `Units` is optional.
-   * If `units` is present, the code will insist that the payment balance is equal
-   * to `units`, to prevent sending the wrong payment and other confusion.
+   * Burn all of the digital assets in the payment. `Amount` is optional.
+   * If `amount` is present, the code will insist that the payment balance is equal
+   * to `amount`, to prevent sending the wrong payment and other confusion.
    */
-  burnPayment(payment :Payment, units :Units) -> (Units);
+  burn(payment :Payment, amount :Amount) -> (Amount);
 
   /**
    * Transfer all digital assets from the payment to a new payment and
-   * delete the original. `memo` and `units` are optional.
-   * If `units` is present, the code will insist that the payment balance is equal
-   * to `units`, to prevent sending the wrong payment and other confusion.
+   * delete the original. `memo` and `amount` are optional.
+   * If `amount` is present, the code will insist that the payment balance is equal
+   * to `amount`, to prevent sending the wrong payment and other confusion.
    */
-  claim(payment :Payment, memo :String = 'payment', units :Units)
+  claim(payment :Payment, memo :String = 'payment', amount :Amount)
     -> (Payment);
 
   /** Combine multiple payments into one payment. */
@@ -59,62 +56,64 @@ interface Assay (Units (Extent)) {
 
   /** 
    * Split a single payment into two payments, A and B, according to the
-   * paymentAUnits and memoArray passed in. 
+   * paymentAAmount and memoArray passed in. 
    */
-  split(payment :Payment, paymentAUnits :Units, memoArray :List(String))
+  split(payment :Payment, paymentAAmount :Amount, memoArray :List(String))
     -> (List(Payment));
 
   /** 
    * Split a single payment into many payments, according to the
-   * unitsArray and memoArray passed in. 
+   * amountArray and memoArray passed in. 
    */
-  splitMany(payment :Payment, unitsArray :List(Units), memoArray :List(String))
+  splitMany(payment :Payment, amountArray :List(Amount), memoArray :List(String))
     -> (List(Payment));
 
 }
 
 /**
- * Makes Mints.
+ * Makes Issuers.
  *
  * The allegedName becomes part of the brand in asset descriptions. The
  * allegedName doesn't have to be a string, but it will only be used for
  * its value. The allegedName is useful for debugging and double-checking
  * assumptions, but should not be trusted. 
  * 
- * The extentOpsName will be used to import a specific extentOps. For
- * example, natExtentOps, the default, is used for basic fungible tokens.
+ * The mathHelpersName will be used to import a specific mathHelpers
+ * from the mathHelpers library. For example, natMathHelpers, the
+ * default, is used for basic fungible tokens.
  */
 interface MintMaker {
   produceIssuer(
       allegedName :Comparable,
-      extentOpsName :String) -> (MintAssayUnitOps);
+      mathHelperName :String) -> (IssuerObjs);
 }
 
 /**
  * The return value of produceIssuer
  */
-struct MintAssayUnitOps ( ) {
+struct IssuerObjs ( ) {
   mint :Mint;
-  assay :Assay;
-  unitOps :unitOps;
+  issuer :Issuer;
+  amountMath :AmountMath;
+  brand :Brand;
 }
 
 /**
  * Holding a Mint carries the right to issue new digital assets. These
  * assets all have the same kind, which is called a Brand.
  */
-interface Mint (Units (Extent)) {
-  /** Get the Assay for this mint. */
-  getAssay() -> (Assay);
+interface Mint (Amount (Extent)) {
+  /** Get the Issuer for this mint. */
+  getIssuer() -> (Issuer);
 
   /**
-   * Create a new Payment containing newly minted units. 
+   * Create a new Payment containing newly minted amount. 
    */
-  mintPayment(newUnits :Units, memo :String = 'payment') -> (Payment);
+  mintPayment(newAmount :Amount, memo :String = 'payment') -> (Payment);
 }
 
 /**
- * Purses hold units of digital assets of the same brand, but unlike Payments, they are
+ * Purses hold amount of digital assets of the same brand, but unlike Payments, they are
  * not meant to be sent to others. To transfer digital assets, a
  * Payment should be withdrawn from a Purse. A purse's balance can rise
  * and fall, through the action of deposit() and withdraw().
@@ -123,38 +122,30 @@ interface Mint (Units (Extent)) {
  * digital assets, but they can also be used to represent other kinds of rights, such
  * as the right to participate in a particular contract.
  */
-interface Purse (Units) {
-  /** Get the name of this purse. */
-  getName() -> (String);
+interface Purse (Amount) {
+  /** Get the memo field of this purse. */
+  getMemo() -> (String);
 
-  /** Get the Assay for this mint. */
-  getAssay() -> (Assay);
+  /** Get the Issuer for this mint. */
+  getIssuer() -> (Issuer);
 
-  /** Get the units contained in this purse, confirmed by the assay. */
-  getBalance() -> (Units);
+  /** Get the amount contained in this purse, confirmed by the issuer. */
+  getBalance() -> (Amount);
 
   /**
    * Deposit all the contents of srcPayment into this purse, returning the
-   * units. If the units does not equal the balance of srcPayment,
+   * amount. If the optional argument amount does not equal the balance of srcPayment,
    * throw error.
    */
-  depositExactly(units :Units, srcPayment :Payment) -> (Units);
+  deposit(srcPayment :Payment, amount :Amount) -> (Amount);
 
-  /**
-   * Deposit all the contents of srcPayment into this purse, returning the
-   * units.
-   */
-  depositAll(srcPayment :Payment) -> (Units);
+  /** Withdraw amount from this purse into a new Payment. */
+  withdraw(amount :Amount, name :String) -> (Payment);
 
-  /** Withdraw units from this purse into a new Payment. */
-  withdraw(units :Units, name :String) -> (Payment);
-
-  /** Withdraw entire content of this purse into a new Payment. */
-  withdrawAll(name :String) -> (Payment);
 }
 
 /**
- * Payments hold units of digital assets of the same brand in transit. Payments can
+ * Payments hold amount of digital assets of the same brand in transit. Payments can
  * be deposited in purses, split into multiple payments, combined, and
  * claimed (getting an exclusive payment). Payments are linear, meaning
  * that either a payment has its full original balance, or it is used up
@@ -162,18 +153,18 @@ interface Purse (Units) {
  *
  * Payments are often received from other actors and therefore should
  * not be trusted themselves. To get the balance of a payment, use the
- * trusted assay: assay.getBalance(payment),
+ * trusted issuer: issuer.getBalance(payment),
  *
- * Payments can be converted to Purses by getting a verified assay and calling
- * assay.makeEmptyPurse().deposit(payment);
+ * Payments can be converted to Purses by getting a verified issuer and calling
+ * issuer.makeEmptyPurse().deposit(payment);
  */
-interface Payment (Units) {
+interface Payment (Amount) {
   /** Get the memo string */
   getMemo() -> (String);
 
   /** 
    * Get the allegedBrand, indicating the kind of digital asset this
-   * payment purports to be, and which assay to use. Because payments 
+   * payment purports to be, and which issuer to use. Because payments 
    * are not trusted, any method calls on payments should be treated
    * with suspicion and verified elsewhere.
    */ 
@@ -181,36 +172,42 @@ interface Payment (Units) {
 }
 
 /** 
- * All of the difference in how an unitOps behaves can be reduced to
- * the behavior of the set operations on extents (think: arithmetic)
- * such as `empty`, `with`, `without`, `includes`, etc. We extract this
- * custom logic into a extentOps. ExtentOps are about extent
- * arithmetic, whereas UnitOps are about Units, which are labeled
- * extents. UnitOps use ExtentOps to do their extent arithmetic,
- * and then label the results, making new Units. 
+ * All of the difference in how digital asset amount are manipulated can be reduced to
+ * the behavior of the math on extents. We extract this
+ * custom logic into mathHelpers. MathHelpers are about extent
+ * arithmetic, whereas AmountMath is about amounts, which are the
+ * branded extents. AmountMath use mathHelpers to do their extent arithmetic,
+ * and then brand the results, making a new amount. 
  */ 
-interface ExtentOps () {
+interface mathHelpers () {
   /** 
    * Check the kind of this extent and throw if it is not the
    * expected kind. 
    */
-  insistKind(allegedExtent :Extent) -> (Extent);
+  doAssertKind(allegedExtent :Extent) -> (Extent);
 
-  /** Get the representation for empty */
-  empty() -> (Extent);
+  /**
+   * Get the representation for the identity element (often 0 or an
+   * empty array)
+   */
+  doGetIdentity() -> (Extent);
 
-  /** Is the extent empty? */
-  isEmpty(extent :Extent) -> (boolean);
+  /** Is the extent the identity element? */
+  doIsIdentity(extent :Extent) -> (boolean);
 
-  /** Does the whole include the part? */
-  includes(whole :Extent, part :Extent) -> (boolean);
+  /** Is the left greater than or equal to the right? */
+  doIsGTE(left :Extent, right :Extent) -> (boolean);
 
   /** Does left equal right? */
-  equals(left :Extent, right :Extent) -> (boolean);
+  doIsEqual(left :Extent, right :Extent) -> (boolean);
 
   /** Return the left combined with the right */
-  with(left :Extent, right :Extent) -> (Extent);
+  doAdd(left :Extent, right :Extent) -> (Extent);
 
-  /** Return what remains after removing the part from the whole */
-  without(whole :Extent, part :Extent) -> (Extent);
+  /**
+   * Return what remains after removing the right from the left. If
+   * the result is negative (i.e. something in the right was not in the
+   * left) we throw an error.
+   */
+  doSubtract(left :Extent, right :Extent) -> (Extent);
 }

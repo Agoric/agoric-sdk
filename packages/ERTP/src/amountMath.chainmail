@@ -1,13 +1,14 @@
 /**
- * Units are asset descriptions and take the form of branded extents. 
- * UnitOps execute the logic of how units are changed when digital 
+ * Amounts are descriptions of digital assets, answering the questions
+ * "how much" and "of what kind". Amounts are branded extents. 
+ * AmountMath executes the logic of how amounts are changed when digital 
  * assets are merged, separated, or otherwise manipulated. For
  * example, a deposit of 2 bucks into a purse that already has 3 bucks
- * gives a new balance of 5 bucks. An empty purse has 0 bucks. UnitOps 
- * relies heavily on ExtentOps, which manipulates the unbranded
+ * gives a new balance of 5 bucks. An empty purse has 0 bucks. AmountMath 
+ * relies heavily on polymorphic MathHelpers, which manipulate the unbranded
  * portion.
  */
-struct Units (Brand, Extent) {
+struct Amount (Brand, Extent) {
   brand :Brand;
   extent :Extent;
 }
@@ -25,98 +26,92 @@ struct Extent {
 }
 
 /**
- * Operations on Units.
+ * Logic for manipulating amounts.
  *
- * Units are the canonical description of tradable goods. They are manipulated
- * by mints, and represent the goods and currency carried by purses and
+ * Amounts are the canonical description of tradable goods. They are manipulated
+ * by issuers and mints, and represent the goods and currency carried by purses and
  * payments. They can be used to represent things like currency, stock, and the
  * abstract right to participate in a particular exchange.
  *
  */
-interface UnitOps (Units (Brand, Extent)) {
+interface AmountMath (Amount (Brand, Extent)) {
 
-  /** Return this unitOps's brand. */
+  /** Return the brand. */
   getBrand() -> (Brand);
 
-  /** Get the name of the extentOps used. */
-  getExtentOpsName -> (String);
+  /** Get the name of the mathHelpers used. */
+  getMathHelpersName -> (String);
 
-  /**  Make units from an extent by adding the brand. */
-  make(allegedExtent :Extent) -> (Units);
+  /**  Make an amount from an extent by adding the brand. */
+  make(allegedExtent :Extent) -> (Amount);
 
   /**
-   * Make sure these units (or extent) are valid and return them if so.
+   * Make sure this amount (or extent) is valid and return it if so.
    */
-  coerce(allegedUnitsOrExtent :Units) -> (Units);
+  coerce(allegedAmountOrExtent :Amount) -> (Amount);
 
   /** Remove the brand and return the extent. */
-  extent(units :Units) -> (Extent);
+  extent(amount :Amount) -> (Extent);
 
-  /** Return the units representing an empty amount. This is the
-   * identity element in ExtentOps.
+  /** Return the amount representing an empty amount. This is the
+   * identity element in MathHelpers.
    */
-  empty() -> (Units);
+  getEmpty() -> (Amount);
 
-  /** Return true if the Units is empty. Otherwise false. */
-  isEmpty(units :Units) -> (boolean);
+  /** Return true if the Amount is empty. Otherwise false. */
+  isEmpty(amount :Amount) -> (boolean);
 
-  /** Returns true if the leftUnits contains the rightUnits. */
-  includes(leftUnits :Units, rightUnits :Units) -> (boolean);
+  /** Returns true if the leftAmount is greater than or equal to the rightAmount. */
+  isGTE(leftAmount :Amount, rightAmount :Amount) -> (boolean);
 
   /** 
-   * Returns true if the leftUnits equals the rightUnits. We assume
-   * that if includes is true in both directions, equals is also true 
+   * Returns true if the leftAmount equals the rightAmount. We assume
+   * that if isGTE is true in both directions, isEqual is also true 
    */
-  equals(leftUnits :Units, rightUnits :Units) -> (boolean);
+  isEqual(leftAmount :Amount, rightAmount :Amount) -> (boolean);
 
   /**
-   * Returns a new units that includes both leftUnits and rightUnits.
+   * Returns a new amount that is the union of both leftAmount and rightAmount.
    *
-   * For fungible units this means adding the extents. For other kinds of
-   * units, it usually means including both.
+   * For fungible amount this means adding the extents. For other kinds of
+   * amount, it usually means including all of the elements from both
+   * left and right. 
    */
-  with(leftUnits :Units, rightUnits :Units) -> (Units);
+  add(leftAmount :Amount, rightAmount :Amount) -> (Amount);
 
   /**
-   * Returns a new units that includes the portion of leftUnits not included
-   * in rightUnits. If leftUnits doesn't include rightUnits, throw an error.
-   */
-  without(leftUnits :Units, rightUnits :Units) -> (Units);
+  * Returns a new amount that is the leftAmount minus the rightAmount
+  * (i.e. everything in the leftAmount that is not in the
+  * rightAmount). If leftAmount doesn't include rightAmount
+  * (subtraction results in a negative), throw  an error. Note: 
+  * because we throw an error if the result is "negative", this is NOT
+  * equivalent to set subtraction.
+  */
+  subtract(leftAmount :Amount, rightAmount :Amount) -> (Amount);
 }
 
 /**
- * The brand identifies the kind of assay, and has a function to get the
+ * The brand identifies the kind of issuer, and has a function to get the
  * alleged name for the kind of asset described. The alleged name (such
- * as 'BTC' or 'moola') is provided by the maker of the mint and should 
+ * as 'BTC' or 'moola') is provided by the maker of the issuer and should 
  * not be trusted as accurate.
  *
- * Every units created by the UnitOps will have the same brand, but recipients
- * cannot use the brand by itself to verify that a purported units is
+ * Every amount created by AmountMath will have the same brand, but recipients
+ * cannot use the brand by itself to verify that a purported amount is
  * authentic, since the brand can be copied. 
  */
 interface Brand ( ) {
-  isMyAssay (assay :Assay) -> (Boolean);
+  isMyIssuer (issuer :Issuer) -> (Boolean);
   allegedName ( ) -> (String);
 }
 
 /**
  * Human-readable name of a kind of digital asset. The alleged name should 
  * not be trusted as an accurate depiction, since it is provided by 
- * the maker of the mint and could be deceptive.
+ * the maker of the issuer and could be deceptive.
  *
  * The AllegedName must be Comparable. (This IDL doesn't yet provide a way to
  * specify subtype relationships for structs.)
  */
 struct AllegedName {
-}
-
-/**
- * ExtentOps for a branded natural number describing a extent of fungible
- * digital assets, used by unitOps by default. 
- *
- * Empty units have zero units. 'includes()' verifies that leftUnits is
- * greater than or equal to rightUnits. 'with()' and 'without()' add and
- * subtract their contents.
- */
-interface NatExtentOps () {
 }
