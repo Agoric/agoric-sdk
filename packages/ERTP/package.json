@@ -44,7 +44,7 @@
     "@agoric/nat": "^2.0.1",
     "@agoric/same-structure": "^0.0.1",
     "@agoric/store": "^0.0.1",
-    "ses": "^0.6.4"
+    "ses": "^0.6.5"
   },
   "devDependencies": {
     "@agoric/bundle-source": "^1.0.4",
