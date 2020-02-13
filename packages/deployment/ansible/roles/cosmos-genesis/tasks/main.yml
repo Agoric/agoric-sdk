@@ -7,14 +7,14 @@
 - name: "Check {{ STAKER }}-* exists"
   become: yes
   become_user: "{{ service }}"
-  shell: "ag-cosmos-helper keys show {{ STAKER }}-{{ STAKER_NODE }}"
+  shell: "ag-cosmos-helper keys show --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }}"
   ignore_errors: true
   register: staker_exists
 
 - name: "Create staking account for {{ service }}"
   become: yes
   become_user: "{{ service }}"
-  shell: "echo 'mmmmmmmm' | ag-cosmos-helper keys add {{ STAKER }}-{{ STAKER_NODE }}"
+  shell: "ag-cosmos-helper keys add --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }}"
   when: staker_exists.rc != 0
 
 - name: "Add staking coins to {{ service }}"
@@ -22,7 +22,7 @@
   become_user: "{{ service }}"
   shell: "\
     {{ service }} add-genesis-account \
-      $(ag-cosmos-helper keys show {{ STAKER }}-{{ STAKER_NODE }} -a) \
+      $(ag-cosmos-helper keys show --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }} -a) \
       {{ STAKER_TOKENS }}"
   ignore_errors: true
 
@@ -40,7 +40,7 @@
   become: yes
   become_user: "{{ service }}"
   shell: "\
-    echo 'mmmmmmmm' | {{ service }} gentx --amount={{ STAKER_AMOUNT }} \
+    {{ service }} gentx --keyring-backend=test --amount={{ STAKER_AMOUNT }} \
       --name={{ STAKER }}-{{ STAKER_NODE }} --output-document={{ json }}"
   vars:
     json: "/home/{{ service }}/.{{ service }}/config/gentx/{{ STAKER_NODE }}.json"

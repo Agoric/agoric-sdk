@@ -69,21 +69,12 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
     argv,
   );
 
-  function saveState() {
-    // save kernel state to the swing store, and the mailbox state to a cosmos
-    // kvstore where it can be queried externally
-    commit();
-    const mailboxStateData = djson.stringify(mbs.exportToData());
-    mailboxStorage.set(`mailbox`, mailboxStateData);
-    return mailboxStateData.length;
-  }
-
+  let mailboxLastData = djson.stringify(mbs.exportToData());
   // save the initial state immediately
-  saveState();
+  commit();
 
   // then arrange for inbound messages to be processed, after which we save
   async function turnCrank() {
-    const oldData = djson.stringify(mbs.exportToData());
     let start = Date.now();
     await controller.run();
     const runTime = Date.now() - start;
@@ -91,7 +82,7 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
     start = Date.now();
     const newState = mbs.exportToData();
     const newData = djson.stringify(newState);
-    if (newData !== oldData) {
+    if (newData !== mailboxLastData) {
       console.log(`outbox changed`);
       for (const peer of Object.getOwnPropertyNames(newState)) {
         const data = {
@@ -100,10 +91,12 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
         };
         mailboxStorage.set(`mailbox.${peer}`, djson.stringify(data));
       }
+      mailboxStorage.set(`mailbox`, newData);
+      mailboxLastData = newData;
     }
     const mbTime = Date.now() - start;
     start = Date.now();
-    const mailboxSize = saveState();
+    const mailboxSize = mailboxLastData.length;
     const saveTime = Date.now() - start;
     console.log(
       `wrote SwingSet checkpoint (mailbox=${mailboxSize}), [run=${runTime}ms, mb=${mbTime}ms, save=${saveTime}ms]`,
@@ -125,7 +118,9 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
     console.log(
       `polled; blockTime:${blockTime}, h:${blockHeight} ADDED: ${addedToQueue}`,
     );
-    await turnCrank();
+    if (addedToQueue) {
+      await turnCrank();
+    }
   }
 
   return { deliverInbound, deliverStartBlock };

@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/context"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
 	"github.com/spf13/cobra"
 )
 
@@ -19,14 +20,14 @@ func GetQueryCmd(storeKey string, cdc *codec.Codec) *cobra.Command {
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
 	}
-	swingsetQueryCmd.AddCommand(client.GetCommands(
+	swingsetQueryCmd.AddCommand(flags.GetCommands(
 		GetCmdGetStorage(storeKey, cdc),
 		GetCmdGetKeys(storeKey, cdc),
 		GetCmdMailbox(storeKey, cdc),
 	)...)
+
 	return swingsetQueryCmd
 }
-
 
 // GetCmdGetStorage queries information about storage
 func GetCmdGetStorage(queryRoute string, cdc *codec.Codec) *cobra.Command {

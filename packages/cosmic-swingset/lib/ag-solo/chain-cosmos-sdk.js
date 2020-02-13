@@ -4,7 +4,10 @@ import { execFile } from 'child_process';
 import djson from 'deterministic-json';
 import { createHash } from 'crypto';
 import { open as tempOpen } from 'temp';
-import Tendermint from 'tendermint';
+// FIXME: Use @agoric/tendermint until
+// https://github.com/nomic-io/js-tendermint/issues/25
+// is resolved.
+import Tendermint from '@agoric/tendermint';
 
 const HELPER = 'ag-cosmos-helper';
 
@@ -94,14 +97,10 @@ export async function connectToChain(
 
       const fullArgs = [
         ...args,
-        '--chain-id',
-        chainID,
-        '--output',
-        'json',
-        '--node',
-        `tcp://${rpcAddr}`,
-        '--home',
-        helperDir,
+        `--chain-id=${chainID}`,
+        '--output=json',
+        `--node=tcp://${rpcAddr}`,
+        `--home=${helperDir}`,
       ];
       console.log(HELPER, ...fullArgs);
       let ret;
@@ -219,7 +218,7 @@ export async function connectToChain(
     }
   }
 
-  const getMailbox = () =>
+  const getMailbox = _height =>
     queuedHelper(
       'getMailbox',
       1, // Only one helper running at a time.
@@ -275,12 +274,13 @@ export async function connectToChain(
         header: { height: LAST_KNOWN_BLOCKHEIGHT, chain_id: chainID },
       };
       const client = Tendermint(nodeAddr, clientState);
+      client.on('error', e => console.error(e));
       return new Promise((resolve, reject) => {
+        client.once('error', reject);
         client.once('synced', () => {
           client.removeListener('error', reject);
           resolve({ lightClient: client });
         });
-        client.once('error', reject);
       });
     });
 
@@ -297,16 +297,18 @@ export async function connectToChain(
   // That's more coarse than checking for only our own slot, but better than
   // hitting the rest-server on every single block.
 
-  c.lightClient.on('update', _a => {
+  c.lightClient.on('update', ({ height }) => {
     console.log(`new block on ${GCI}, fetching mailbox`);
-    return getMailbox()
+    return getMailbox(height)
       .then(({ outbox, ack }) => {
+        // console.log('have outbox', outbox, ack);
         if (outbox) {
           inbound(GCI, outbox, ack);
         }
       })
       .catch(e => console.log(`Failed to fetch ${GCI} mailbox:`, e));
   });
+  c.lightClient.on('close', e => console.log('closed', e));
   async function deliver(newMessages, acknum) {
     let tmpInfo;
     try {
@@ -354,16 +356,16 @@ export async function connectToChain(
         'tx',
         'swingset',
         'deliver',
+        '--keyring-backend=test',
         myAddr,
         `@${tmpInfo.path}`, // Deliver message over file, as it could be big.
-        '--from',
-        'ag-solo',
+        '--gas=auto',
+        '--gas-adjustment=1.05',
+        '--from=ag-solo',
         '-ojson',
-        '--broadcast-mode',
-        'block', // Don't return until committed.
+        '--broadcast-mode=block', // Don't return until committed.
         '--yes',
       ];
-      const password = 'mmmmmmmm';
 
       // If we send two messages back-to-back too quickly, the second one
       // may use the same seqnum as the first, so it will be rejected by the
@@ -382,7 +384,7 @@ export async function connectToChain(
           // not, look at .raw_log (also JSON) at .message.
           return {};
         },
-        `${password}\n`,
+        undefined,
         {}, // defaultIfCancelled
       );
       return qret;

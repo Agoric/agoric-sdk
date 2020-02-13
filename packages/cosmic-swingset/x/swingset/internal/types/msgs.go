@@ -2,6 +2,7 @@ package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 const RouterKey = ModuleName // this was defined in your key.go file
@@ -14,6 +15,8 @@ type MsgDeliverInbound struct {
 	Ack       int
 	Submitter sdk.AccAddress
 }
+
+var _ sdk.Msg = &MsgDeliverInbound{}
 
 func NewMsgDeliverInbound(peer string, msgs *Messages, submitter sdk.AccAddress) MsgDeliverInbound {
 	return MsgDeliverInbound{
@@ -32,26 +35,26 @@ func (msg MsgDeliverInbound) Route() string { return RouterKey }
 func (msg MsgDeliverInbound) Type() string { return "deliver" }
 
 // ValidateBasic runs stateless checks on the message
-func (msg MsgDeliverInbound) ValidateBasic() sdk.Error {
+func (msg MsgDeliverInbound) ValidateBasic() error {
 	if msg.Submitter.Empty() {
-		return sdk.ErrInvalidAddress(msg.Submitter.String())
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter.String())
 	}
 	if len(msg.Peer) == 0 {
-		return sdk.ErrUnknownRequest("Peer cannot be empty")
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Peer cannot be empty")
 	}
 	if len(msg.Messages) != len(msg.Nums) {
-		return sdk.ErrUnknownRequest("Messages and Nums must be the same length")
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages and Nums must be the same length")
 	}
 	for i, num := range msg.Nums {
 		if len(msg.Messages[i]) == 0 {
-			return sdk.ErrUnknownRequest("Messages cannot be empty")
+			return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages cannot be empty")
 		}
 		if num < 0 {
-			return sdk.ErrUnknownRequest("Nums cannot be negative")
+			return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Nums cannot be negative")
 		}
 	}
 	if msg.Ack < 0 {
-		return sdk.ErrUnknownRequest("Ack cannot be negative")
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Ack cannot be negative")
 	}
 	return nil
 }

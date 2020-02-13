@@ -66,7 +66,7 @@ function fromGo(port, str, replier) {
 const nodePort = registerPortHandler(toSwingSet);
 // Need to keep the process alive until Go exits.
 setInterval(() => undefined, 30000);
-agcc.runAG_COSMOS(nodePort, fromGo, process.argv.slice(1));
+agcc.runAgCosmosDaemon(nodePort, fromGo, process.argv.slice(1));
 
 let deliverInbound;
 let deliverStartBlock;
