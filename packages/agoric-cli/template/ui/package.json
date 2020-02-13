@@ -1,7 +1,7 @@
 {
-  "name": "autoswap-frontend",
+  "name": "agoric-dapp-ui",
   "version": "0.0.1",
-  "description": "Autoswap Frontend",
+  "description": "Frontend UI",
   "private": true,
   "scripts": {
     "build": "exit 0",
