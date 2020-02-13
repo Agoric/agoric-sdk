@@ -4,6 +4,10 @@
   "description": "Eventual send (wavy dot) parser plugin for Acorn",
   "type": "module",
   "main": "index.js",
+  "exports": {
+    "require": "./index.cjs",
+    "import": "./index.js"
+  },
   "scripts": {
     "build": "exit 0",
     "test": "tap --no-esm --no-coverage --reporter specy 'test/**/*.js'",
