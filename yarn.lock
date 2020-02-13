@@ -37,18 +37,6 @@
   resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-2.0.1.tgz#28aba18367deba354bdd424bdf6daa48f5e7d37f"
   integrity sha512-puvWkoaJovQib/YaSRSGJ8Kn9rogi/yyaVa3d5znSZb5WiYfUiEKW35BfexHhAdi0VfPz2anFHoRBoBSUIijNA==
 
-"@agoric/wallet-frontend@^0.1.0":
-  version "0.1.2"
-  resolved "https://registry.yarnpkg.com/@agoric/wallet-frontend/-/wallet-frontend-0.1.2.tgz#abf54b5cfdddffa9935ee0d0008b4563cc445e8a"
-  integrity sha512-FQB+yBgejzNe9hiVNgeGrO9xucTEHs7FjQqqdhpXO72Q+hQFY7DlyLFGjiu/WXjqhQ0CrCg8jAXB/viMBWKOGg==
-  dependencies:
-    "@material-ui/core" "^4.2.1"
-    "@material-ui/icons" "^4.5.1"
-    clsx "^1.0.4"
-    http-proxy-middleware "^0.20.0"
-    react "^16.11.0"
-    react-dom "^16.11.0"
-
 "@babel/code-frame@7.5.5", "@babel/code-frame@^7.0.0":
   version "7.5.5"
   resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.5.5.tgz#bc0782f6d69f7b7d49531219699b988f669a8f9d"

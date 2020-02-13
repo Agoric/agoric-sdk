@@ -27,6 +27,8 @@
     "packages/ERTP",
     "packages/spawner",
     "packages/pixel-demo",
+    "packages/autoswap-frontend",
+    "packages/wallet-frontend",
     "packages/zoe",
     "packages/cosmic-swingset",
     "packages/agoric-cli",
