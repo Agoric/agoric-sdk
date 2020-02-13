@@ -2,6 +2,7 @@ import { makeMeteringTransformer } from './transform';
 
 export function makeMeteredEvaluator({
   replaceGlobalMeter,
+  refillMeterOncePerTurn,
   makeEvaluator,
   babelCore,
   quiesceCallback = cb => cb(),
@@ -10,6 +11,7 @@ export function makeMeteredEvaluator({
   const transforms = [meteringTransform];
 
   const ev = makeEvaluator({ transforms });
+  const metersSeenThisTurn = new Set();
 
   const syncEval = (
     meter,
@@ -28,17 +30,24 @@ export function makeMeteredEvaluator({
         quiesceCallback(() => {
           // console.log('quiescer exited');
           replaceGlobalMeter(savedMeter);
-          whenQuiesced({
-            exhausted: meter.isExhausted(),
-            returned,
-            exceptionBox,
-          });
+          // Declare that we're done the meter
+          const seenMeters = [...metersSeenThisTurn.keys()];
+          metersSeenThisTurn.clear();
+          if (exceptionBox) {
+            whenQuiesced([false, exceptionBox[0], seenMeters]);
+          } else {
+            whenQuiesced([true, returned, seenMeters]);
+          }
         });
       }
 
       if (typeof srcOrThunk === 'string') {
         // Transform the source on our own budget, then evaluate against the meter.
         endowments.getGlobalMeter = m => {
+          if (refillMeterOncePerTurn && !metersSeenThisTurn.has(meter)) {
+            metersSeenThisTurn.add(meter);
+            refillMeterOncePerTurn(meter);
+          }
           if (m !== true) {
             replaceGlobalMeter(meter);
           }
@@ -47,6 +56,10 @@ export function makeMeteredEvaluator({
         returned = ev.evaluate(srcOrThunk, endowments);
       } else {
         // Evaluate the thunk with the specified meter.
+        if (refillMeterOncePerTurn && !metersSeenThisTurn.has(meter)) {
+          metersSeenThisTurn.add(meter);
+          refillMeterOncePerTurn(meter);
+        }
         replaceGlobalMeter(meter);
         returned = srcOrThunk();
       }
@@ -55,12 +68,11 @@ export function makeMeteredEvaluator({
     }
     try {
       replaceGlobalMeter(savedMeter);
-      const exhausted = meter.isExhausted();
-      return {
-        exhausted,
-        returned,
-        exceptionBox,
-      };
+      const seenMeters = [...metersSeenThisTurn.keys()];
+      if (exceptionBox) {
+        return [false, exceptionBox, seenMeters];
+      }
+      return [true, returned, seenMeters];
     } finally {
       if (whenQuiesced) {
         // Keep going with the specified meter while we're quiescing.
@@ -72,20 +84,8 @@ export function makeMeteredEvaluator({
   if (quiesceCallback) {
     const quiescingEval = (meter, srcOrThunk, endowments = {}) => {
       let whenQuiesced;
-      const whenQuiescedP = new Promise(res => (whenQuiesced = res)).then(
-        ({ exhausted, returned, exceptionBox }) => {
-          if (exhausted) {
-            // The meter was exhausted.
-            throw exhausted;
-          }
-          if (exceptionBox) {
-            // The source threw an exception.
-            return [false, exceptionBox[0]];
-          }
-          // The source returned normally.
-          return [true, returned];
-        },
-      );
+      const whenQuiescedP = new Promise(res => (whenQuiesced = res));
+
       // Defer the evaluation for another turn.
       Promise.resolve().then(_ =>
         syncEval(meter, srcOrThunk, endowments, whenQuiesced),

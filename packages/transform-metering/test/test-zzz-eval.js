@@ -67,8 +67,16 @@ test('metering evaluator', async t => {
   try {
     process.on('unhandledRejection', rejectionHandler);
     const { meter, adminFacet } = makeMeter();
+    const meters = new Map();
+    meters.set(meter, adminFacet);
     const meteredEval = makeMeteredEvaluator({
       replaceGlobalMeter,
+      refillMeterOncePerTurn: m => {
+        const a = meters.get(m);
+        if (a) {
+          Object.values(a).forEach(r => r());
+        }
+      },
       babelCore,
       makeEvaluator,
       quiesceCallback: cb => setTimeout(cb),
@@ -78,19 +86,20 @@ test('metering evaluator', async t => {
     let exhaustedTimes = 0;
     let expectedExhaustedTimes = 0;
     const myEval = (m, src, endowments = {}) => {
-      Object.values(adminFacet).forEach(r => r());
-      return meteredEval(m, src, endowments).then(
-        ([normalReturn, value]) => {
-          if (!normalReturn) {
-            throw value;
-          }
-          return value;
-        },
-        e => {
+      // Refill the meter as we're just starting the turn.
+      return meteredEval(m, src, endowments).then(evalReturn => {
+        const [normalReturn, value, metersSeen] = evalReturn;
+        t.deepEqual(metersSeen, [meter], 'my meter was the only one seen');
+        const e = meter.isExhausted();
+        if (e) {
           exhaustedTimes += 1;
           throw e;
-        },
-      );
+        }
+        if (!normalReturn) {
+          throw value;
+        }
+        return value;
+      });
     };
 
     /*
