@@ -1,4 +1,6 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import path from 'path';
 
@@ -18,8 +20,9 @@ async function main(withSES, basedir, argv) {
 const expectedTapFaucetLog = [
   '=> setup called',
   'start test splitPayments',
-  'oldPayment balance:{"label":{"assay":{},"allegedName":"moola"},"extent":1000}',
-  'splitPayment[0] balance: {"label":{"assay":{},"allegedName":"moola"},"extent":900}',
+  'oldPayment balance:{"brand":{},"extent":1000}',
+  'splitPayment[0] balance: {"brand":{},"extent":10}',
+  'splitPayment[1] balance: {"brand":{},"extent":990}',
 ];
 
 test('test splitPayments with SES', async t => {

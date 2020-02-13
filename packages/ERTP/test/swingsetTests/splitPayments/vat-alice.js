@@ -2,23 +2,21 @@ import harden from '@agoric/harden';
 
 function makeAliceMaker(E, log) {
   return harden({
-    make(myMoneyPurseP) {
+    make(issuer, unitOps, oldPaymentP) {
       const alice = harden({
         async testSplitPayments() {
-          const oldPayment = await E(myMoneyPurseP).withdrawAll();
-          log('oldPayment balance:', await E(oldPayment).getBalance());
-          const assay = await E(myMoneyPurseP).getAssay();
-          const goodUnitsArray = [
-            await E(assay).makeUnits(900),
-            await E(assay).makeUnits(100),
-          ];
-          const splitPayments = await E(assay).split(
-            oldPayment,
-            goodUnitsArray,
+          log('oldPayment balance:', await E(issuer).getBalance(oldPaymentP));
+          const splitPayments = await E(issuer).split(
+            oldPaymentP,
+            await E(unitOps).make(10),
           );
           log(
             'splitPayment[0] balance: ',
-            await E(splitPayments[0]).getBalance(),
+            await E(issuer).getBalance(splitPayments[0]),
+          );
+          log(
+            'splitPayment[1] balance: ',
+            await E(issuer).getBalance(splitPayments[1]),
           );
         },
       });
