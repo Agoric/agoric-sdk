@@ -176,7 +176,7 @@ interface Payment (Amount) {
  * the behavior of the math on extents. We extract this
  * custom logic into mathHelpers. MathHelpers are about extent
  * arithmetic, whereas AmountMath is about amounts, which are the
- * branded extents. AmountMath use mathHelpers to do their extent arithmetic,
+ * extents labeled with a brand. AmountMath use mathHelpers to do their extent arithmetic,
  * and then brand the results, making a new amount. 
  */ 
 interface mathHelpers () {

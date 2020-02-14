@@ -107,7 +107,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     // other uses.
 
     if (payments.length > 1) {
-      const paymentSet = new WeakSet();
+      const paymentSet = new Set();
       payments.forEach(payment => {
         if (paymentSet.has(payment)) {
           throw new Error('same payment seen twice');
