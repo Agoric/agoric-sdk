@@ -30,7 +30,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
   // Methods like deposit() have an optional second parameter `amount`
   // which, if present, is supposed to be equal to the balance of the
   // payment. This helper function does that check.
-  const assertExactly = (paymentBalance, amount) => {
+  const assertAmountEqual = (paymentBalance, amount) => {
     if (amount !== undefined) {
       assert(
         amountMath.isEqual(amount, paymentBalance),
@@ -44,7 +44,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
       deposit: (paymentP, optAmount = undefined) => {
         const srcPayment = E.unwrap(paymentP);
         const srcPaymentBalance = paymentLedger.get(srcPayment);
-        assertExactly(srcPaymentBalance, optAmount);
+        assertAmountEqual(srcPaymentBalance, optAmount);
         const purseBalance = purse.getBalance();
         const newPurseBalance = amountMath.add(srcPaymentBalance, purseBalance);
         // Commit point
@@ -157,7 +157,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     burn: (paymentP, optAmount = undefined) => {
       const payment = E.unwrap(paymentP);
       const paymentBalance = paymentLedger.get(payment);
-      assertExactly(paymentBalance, optAmount);
+      assertAmountEqual(paymentBalance, optAmount);
       paymentLedger.delete(payment);
       return paymentBalance;
     },
@@ -165,7 +165,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
       const srcPayment = E.unwrap(paymentP);
       memo = `${memo}`;
       const srcPaymentBalance = paymentLedger.get(srcPayment);
-      assertExactly(srcPaymentBalance, optAmount);
+      assertAmountEqual(srcPaymentBalance, optAmount);
       // Commit point.
       const [payment] = reallocate(
         harden({
@@ -182,7 +182,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
       const totalPaymentsB = fromPaymentsArray
         .map(paymentLedger.get)
         .reduce(add, empty);
-      assertExactly(totalPaymentsB, totalAmount);
+      assertAmountEqual(totalPaymentsB, totalAmount);
       // Commit point.
       const [payment] = reallocate(
         harden({
