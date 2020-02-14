@@ -8,6 +8,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/swingset-vat": "^0.3.0"
+    "@agoric/swingset-vat": "^0.3.0",
+    "node-lmdb": "^0.8.0"
   }
 }
