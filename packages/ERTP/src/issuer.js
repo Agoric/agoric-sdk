@@ -41,10 +41,10 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
 
   const makePurse = memo => {
     const purse = harden({
-      deposit: (paymentP, amount = undefined) => {
+      deposit: (paymentP, optAmount = undefined) => {
         const srcPayment = E.unwrap(paymentP);
         const srcPaymentBalance = paymentLedger.get(srcPayment);
-        assertExactly(srcPaymentBalance, amount);
+        assertExactly(srcPaymentBalance, optAmount);
         const purseBalance = purse.getBalance();
         const newPurseBalance = amountMath.add(srcPaymentBalance, purseBalance);
         // Commit point
@@ -154,18 +154,18 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     },
     isLive: paymentLedger.has,
     getBalance: paymentLedger.get,
-    burn: (paymentP, amount = undefined) => {
+    burn: (paymentP, optAmount = undefined) => {
       const payment = E.unwrap(paymentP);
       const paymentBalance = paymentLedger.get(payment);
-      assertExactly(paymentBalance, amount);
+      assertExactly(paymentBalance, optAmount);
       paymentLedger.delete(payment);
       return paymentBalance;
     },
-    claim: (paymentP, memo = 'payment', amount) => {
+    claim: (paymentP, memo = 'payment', optAmount) => {
       const srcPayment = E.unwrap(paymentP);
       memo = `${memo}`;
       const srcPaymentBalance = paymentLedger.get(srcPayment);
-      assertExactly(srcPaymentBalance, amount);
+      assertExactly(srcPaymentBalance, optAmount);
       // Commit point.
       const [payment] = reallocate(
         harden({

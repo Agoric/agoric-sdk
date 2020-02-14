@@ -1,4 +1,5 @@
 import harden from '@agoric/harden';
+import { assert } from '@agoric/assert';
 
 import { mustBeSameStructure, mustBeComparable } from '@agoric/same-structure';
 import mathHelpersLib from './mathHelpersLib';
@@ -54,6 +55,7 @@ function makeAmountMath(brand, mathHelpersName) {
   mathHelpersName = `${mathHelpersName}`;
 
   const helpers = mathHelpersLib[mathHelpersName];
+  assert(helpers !== undefined, 'helpers must be defined');
 
   // Cache the amount if we can.
   const cache = new WeakSet();
