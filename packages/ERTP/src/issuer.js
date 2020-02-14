@@ -194,16 +194,16 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
       return payment;
     },
     // payment to two payments, A and B
-    split: (paymentP, paymentAAmount, memos = []) => {
+    split: (paymentP, paymentAmountA, memos = []) => {
       const srcPayment = E.unwrap(paymentP);
-      paymentAAmount = amountMath.coerce(paymentAAmount);
+      paymentAmountA = amountMath.coerce(paymentAmountA);
       memos = memos.map(coerceStr);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
-      const paymentBAmount = amountMath.subtract(
+      const paymentAmountB = amountMath.subtract(
         srcPaymentBalance,
-        paymentAAmount,
+        paymentAmountA,
       );
-      const amounts = harden([paymentAAmount, paymentBAmount]);
+      const amounts = harden([paymentAmountA, paymentAmountB]);
       // Commit point
       const newPayments = reallocate(
         harden({

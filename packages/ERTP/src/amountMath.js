@@ -75,6 +75,8 @@ function makeAmountMath(brand, mathHelpersName) {
 
     // Make sure this amount (or extent) are valid and return them if so.
     coerce: allegedAmountOrExtent => {
+      // If the cache already has the allegedAmountOrExtent, that
+      // means it is a valid amount.
       if (cache.has(allegedAmountOrExtent)) {
         return allegedAmountOrExtent;
       }

@@ -56,9 +56,9 @@ interface Issuer (Amount (Extent)) {
 
   /** 
    * Split a single payment into two payments, A and B, according to the
-   * paymentAAmount and memoArray passed in. 
+   * paymentAmountA and memoArray passed in. 
    */
-  split(payment :Payment, paymentAAmount :Amount, memoArray :List(String))
+  split(payment :Payment, paymentAmountA :Amount, memoArray :List(String))
     -> (List(Payment));
 
   /** 
