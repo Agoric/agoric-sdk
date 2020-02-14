@@ -23,8 +23,8 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
 
   const makePayment = memo =>
     harden({
-      getAllegedBrand: () => brand,
-      getMemo: () => memo,
+      allegedBrand: () => brand,
+      memo: () => memo,
     });
 
   // Methods like deposit() have an optional second parameter `amount`
@@ -74,8 +74,8 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
         return payment;
       },
       getBalance: () => purseLedger.get(purse),
-      getAllegedBrand: () => brand,
-      getMemo: () => memo,
+      allegedBrand: () => brand,
+      memo: () => memo,
     });
     return purse;
   };

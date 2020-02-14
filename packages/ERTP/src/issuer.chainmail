@@ -124,7 +124,7 @@ interface Mint (Amount (Extent)) {
  */
 interface Purse (Amount) {
   /** Get the memo field of this purse. */
-  getMemo() -> (String);
+  memo() -> (String);
 
   /** Get the Issuer for this mint. */
   getIssuer() -> (Issuer);
@@ -160,7 +160,7 @@ interface Purse (Amount) {
  */
 interface Payment (Amount) {
   /** Get the memo string */
-  getMemo() -> (String);
+  memo() -> (String);
 
   /** 
    * Get the allegedBrand, indicating the kind of digital asset this
@@ -168,7 +168,7 @@ interface Payment (Amount) {
    * are not trusted, any method calls on payments should be treated
    * with suspicion and verified elsewhere.
    */ 
-  getAllegedBrand() -> (Brand);
+  allegedBrand() -> (Brand);
 }
 
 /** 

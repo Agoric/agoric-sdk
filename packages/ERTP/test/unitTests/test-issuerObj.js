@@ -64,8 +64,8 @@ test('issuer.makeEmptyPurse', t => {
       amountMath.isEqual(purse.getBalance(), amountMath.getEmpty()),
       `empty purse is empty`,
     );
-    t.equals(purse.getAllegedBrand(), brand, `purse's brand is correct`);
-    t.equals(purse.getMemo(), 'my new purse', `purse memo is correct`);
+    t.equals(purse.allegedBrand(), brand, `purse's brand is correct`);
+    t.equals(purse.memo(), 'my new purse', `purse memo is correct`);
     const fungible837 = amountMath.make(837);
 
     const checkDeposit = newPurseBalance => {
