@@ -1,14 +1,18 @@
 import harden from '@agoric/harden';
-import { showPaymentBalance, setupAssays, getLocalUnitOps } from './helpers';
+import {
+  showPaymentBalance,
+  setupIssuers,
+  getLocalAmountMath,
+} from './helpers';
 
 const build = async (E, log, zoe, purses, installations, timer) => {
-  const { assays, moola, simoleans } = await setupAssays(zoe, purses);
+  const { issuers, moola, simoleans } = await setupIssuers(zoe, purses);
   const [moolaPurseP, simoleanPurseP] = purses;
 
   const doAutomaticRefund = async bobP => {
     log(`=> alice.doCreateAutomaticRefund called`);
     const installId = installations.automaticRefund;
-    const invite = await E(zoe).makeInstance(installId, { assays });
+    const invite = await E(zoe).makeInstance(installId, { issuers });
     const {
       extent: { instanceHandle },
     } = await E(invite).getBalance();
@@ -18,11 +22,11 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: moola(3),
+          amount: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: simoleans(7),
+          amount: simoleans(7),
         },
       ],
       exitRule: {
@@ -30,7 +34,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       },
     });
 
-    const aliceMoolaPayment = await E(moolaPurseP).withdrawAll();
+    const aliceMoolaPayment = await E(moolaPurseP).withdraw();
     const offerPayments = [aliceMoolaPayment, undefined];
     const { seat, payout: payoutP } = await E(zoe).redeem(
       invite,
@@ -45,8 +49,8 @@ const build = async (E, log, zoe, purses, installations, timer) => {
     await E(bobP).doAutomaticRefund(bobInvite);
     const payout = await payoutP;
 
-    await E(moolaPurseP).depositAll(payout[0]);
-    await E(simoleanPurseP).depositAll(payout[1]);
+    await E(moolaPurseP).deposit(payout[0]);
+    await E(simoleanPurseP).deposit(payout[1]);
 
     await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse', log);
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
@@ -55,17 +59,17 @@ const build = async (E, log, zoe, purses, installations, timer) => {
   const doCoveredCall = async bobP => {
     log(`=> alice.doCreateCoveredCall called`);
     const installId = installations.coveredCall;
-    const invite = await E(zoe).makeInstance(installId, { assays });
+    const invite = await E(zoe).makeInstance(installId, { issuers });
 
     const offerRules = harden({
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: moola(3),
+          amount: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: simoleans(7),
+          amount: simoleans(7),
         },
       ],
       exitRule: {
@@ -75,7 +79,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       },
     });
 
-    const aliceMoolaPayment = await E(moolaPurseP).withdrawAll();
+    const aliceMoolaPayment = await E(moolaPurseP).withdraw();
     const offerPayments = [aliceMoolaPayment, undefined];
     const { seat, payout: payoutP } = await E(zoe).redeem(
       invite,
@@ -87,8 +91,8 @@ const build = async (E, log, zoe, purses, installations, timer) => {
     await E(bobP).doCoveredCall(option);
     const payout = await payoutP;
 
-    await E(moolaPurseP).depositAll(payout[0]);
-    await E(simoleanPurseP).depositAll(payout[1]);
+    await E(moolaPurseP).deposit(payout[0]);
+    await E(simoleanPurseP).deposit(payout[1]);
 
     await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse', log);
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
@@ -97,18 +101,18 @@ const build = async (E, log, zoe, purses, installations, timer) => {
   const doSwapForOption = async (bobP, _carolP, daveP) => {
     log(`=> alice.doSwapForOption called`);
     const invite = await E(zoe).makeInstance(installations.coveredCall, {
-      assays,
+      issuers,
     });
 
     const offerRules = harden({
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: moola(3),
+          amount: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: simoleans(7),
+          amount: simoleans(7),
         },
       ],
       exitRule: {
@@ -118,7 +122,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       },
     });
 
-    const aliceMoolaPayment = await E(moolaPurseP).withdrawAll();
+    const aliceMoolaPayment = await E(moolaPurseP).withdraw();
     const offerPayments = [aliceMoolaPayment, undefined];
     const { seat, payout: payoutP } = await E(zoe).redeem(
       invite,
@@ -131,8 +135,8 @@ const build = async (E, log, zoe, purses, installations, timer) => {
     await E(bobP).doSwapForOption(option, daveP);
     const payout = await payoutP;
 
-    await E(moolaPurseP).depositAll(payout[0]);
-    await E(simoleanPurseP).depositAll(payout[1]);
+    await E(moolaPurseP).deposit(payout[0]);
+    await E(simoleanPurseP).deposit(payout[1]);
 
     await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse', log);
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
@@ -141,7 +145,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
   const doPublicAuction = async (bobP, carolP, daveP) => {
     const numBidsAllowed = 3;
     const invite = await E(zoe).makeInstance(installations.publicAuction, {
-      assays,
+      issuers,
       numBidsAllowed,
     });
     const {
@@ -153,18 +157,18 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: moola(1),
+          amount: moola(1),
         },
         {
           kind: 'wantAtLeast',
-          units: simoleans(3),
+          amount: simoleans(3),
         },
       ],
       exitRule: {
         kind: 'onDemand',
       },
     });
-    const moolaPayment = await E(moolaPurseP).withdrawAll();
+    const moolaPayment = await E(moolaPurseP).withdraw();
     const offerPayments = [moolaPayment, undefined];
     const { seat, payout: payoutP } = await E(zoe).redeem(
       invite,
@@ -188,8 +192,8 @@ const build = async (E, log, zoe, purses, installations, timer) => {
     const payout = await payoutP;
 
     // Alice deposits her winnings to ensure she can
-    await E(moolaPurseP).depositAll(payout[0]);
-    await E(simoleanPurseP).depositAll(payout[1]);
+    await E(moolaPurseP).deposit(payout[0]);
+    await E(simoleanPurseP).deposit(payout[1]);
 
     await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse', log);
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
@@ -197,25 +201,25 @@ const build = async (E, log, zoe, purses, installations, timer) => {
 
   const doAtomicSwap = async bobP => {
     const invite = await E(zoe).makeInstance(installations.atomicSwap, {
-      assays,
+      issuers,
     });
 
     const offerRules = harden({
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: moola(3),
+          amount: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: simoleans(7),
+          amount: simoleans(7),
         },
       ],
       exitRule: {
         kind: 'onDemand',
       },
     });
-    const moolaPayment = await E(moolaPurseP).withdrawAll();
+    const moolaPayment = await E(moolaPurseP).withdraw();
     const offerPayments = [moolaPayment, undefined];
     const { seat, payout: payoutP } = await E(zoe).redeem(
       invite,
@@ -227,8 +231,8 @@ const build = async (E, log, zoe, purses, installations, timer) => {
     E(bobP).doAtomicSwap(bobInviteP);
 
     const payout = await payoutP;
-    await E(moolaPurseP).depositAll(payout[0]);
-    await E(simoleanPurseP).depositAll(payout[1]);
+    await E(moolaPurseP).deposit(payout[0]);
+    await E(simoleanPurseP).deposit(payout[1]);
 
     await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse', log);
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
@@ -236,7 +240,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
 
   const doSimpleExchange = async bobP => {
     const invite = await E(zoe).makeInstance(installations.simpleExchange, {
-      assays,
+      issuers,
     });
     const {
       extent: { instanceHandle },
@@ -247,18 +251,18 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: moola(3),
+          amount: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: simoleans(4),
+          amount: simoleans(4),
         },
       ],
       exitRule: {
         kind: 'onDemand',
       },
     });
-    const moolaPayment = await E(moolaPurseP).withdrawAll();
+    const moolaPayment = await E(moolaPurseP).withdraw();
     const offerPayments = [moolaPayment, undefined];
     const { seat, payout: payoutP } = await E(zoe).redeem(
       invite,
@@ -275,8 +279,8 @@ const build = async (E, log, zoe, purses, installations, timer) => {
 
     const payout = await payoutP;
 
-    await E(moolaPurseP).depositAll(payout[0]);
-    await E(simoleanPurseP).depositAll(payout[1]);
+    await E(moolaPurseP).deposit(payout[0]);
+    await E(simoleanPurseP).deposit(payout[1]);
 
     await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse', log);
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
@@ -284,15 +288,15 @@ const build = async (E, log, zoe, purses, installations, timer) => {
 
   const doAutoswap = async bobP => {
     const invite = await E(zoe).makeInstance(installations.autoswap, {
-      assays,
+      issuers,
     });
     const {
       extent: { instanceHandle },
     } = await E(invite).getBalance();
     const { publicAPI } = await E(zoe).getInstance(instanceHandle);
-    const liquidityAssay = await E(publicAPI).getLiquidityAssay();
-    const liquidityUnitOps = await getLocalUnitOps(liquidityAssay);
-    const liquidity = liquidityUnitOps.make;
+    const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
+    const liquidityAmountMath = await getLocalAmountMath(liquidityIssuer);
+    const liquidity = liquidityAmountMath.make;
 
     // Alice adds liquidity
     // 10 moola = 5 simoleans at the time of the liquidity adding
@@ -301,23 +305,23 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: moola(10),
+          amount: moola(10),
         },
         {
           kind: 'offerAtMost',
-          units: simoleans(5),
+          amount: simoleans(5),
         },
         {
           kind: 'wantAtLeast',
-          units: liquidity(10),
+          amount: liquidity(10),
         },
       ],
       exitRule: {
         kind: 'onDemand',
       },
     });
-    const moolaPaymentP = E(moolaPurseP).withdrawAll();
-    const simoleanPaymentP = E(simoleanPurseP).withdrawAll();
+    const moolaPaymentP = E(moolaPurseP).withdraw();
+    const simoleanPaymentP = E(simoleanPurseP).withdraw();
     const offerPayments = [moolaPaymentP, simoleanPaymentP, undefined];
     const { seat, payout: payoutP } = await E(zoe).redeem(
       invite,
@@ -331,8 +335,8 @@ const build = async (E, log, zoe, purses, installations, timer) => {
 
     const addLiquidityPayments = await payoutP;
 
-    const liquidityTokenPurseP = E(liquidityAssay).makeEmptyPurse();
-    await E(liquidityTokenPurseP).depositAll(addLiquidityPayments[2]);
+    const liquidityTokenPurseP = E(liquidityIssuer).makeEmptyPurse();
+    await E(liquidityTokenPurseP).deposit(addLiquidityPayments[2]);
 
     const bobInviteP = E(publicAPI).makeInvite();
     await E(bobP).doAutoswap(bobInviteP);
@@ -342,15 +346,15 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          units: moola(0),
+          amount: moola(0),
         },
         {
           kind: 'wantAtLeast',
-          units: simoleans(0),
+          amount: simoleans(0),
         },
         {
           kind: 'offerAtMost',
-          units: liquidity(10),
+          amount: liquidity(10),
         },
       ],
       exitRule: {
@@ -358,7 +362,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       },
     });
 
-    const liquidityTokenPayment = await E(liquidityTokenPurseP).withdrawAll();
+    const liquidityTokenPayment = await E(liquidityTokenPurseP).withdraw();
     const removeLiquidityInvite = await E(publicAPI).makeInvite();
 
     const {
@@ -376,10 +380,10 @@ const build = async (E, log, zoe, purses, installations, timer) => {
     log(removeLiquidityOutcome);
 
     const removeLiquidityPayouts = await aliceRemoveLiquidityPayoutP;
-    await E(moolaPurseP).depositAll(removeLiquidityPayouts[0]);
-    await E(simoleanPurseP).depositAll(removeLiquidityPayouts[1]);
+    await E(moolaPurseP).deposit(removeLiquidityPayouts[0]);
+    await E(simoleanPurseP).deposit(removeLiquidityPayouts[1]);
 
-    log(await E(publicAPI).getPoolUnits());
+    log(await E(publicAPI).getPoolAmounts());
 
     await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse', log);
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse', log);

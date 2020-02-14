@@ -2,7 +2,7 @@ import evaluate from '@agoric/evaluate';
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-import { makeMint } from '@agoric/ertp/src/mint';
+import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 import makePromise from '@agoric/make-promise';
 import { sameStructure } from '@agoric/same-structure';
@@ -24,7 +24,7 @@ const evalContractCode = (code, additionalEndowments) => {
     makePromise,
     assert,
     sameStructure,
-    makeMint,
+    produceIssuer,
     Nat,
   };
   const fullEndowments = Object.create(null, {

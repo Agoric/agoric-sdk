@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import { makeMint } from '@agoric/ertp';
+import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 
 import { natSafeMath } from './helpers/safeMath';
@@ -9,16 +9,17 @@ import { makeHelpers } from './helpers/userFlow';
 import { makeConstProductBC } from './helpers/bondingCurves';
 
 export const makeContract = harden((zoe, terms) => {
-  // The user passes in an array of two assays for the two kinds of
+  // The user passes in an array of two issuers for the two kinds of
   // assets to be swapped.
-  const startingAssays = terms.assays;
+  const startingIssuers = terms.issuers;
 
-  // There is also a third assay, the assay for the liquidity token,
+  // There is also a third issuer, the issuer for the liquidity token,
   // which is created in this contract. We will return all three as
-  // the canonical array of assays for this contract
-  const liquidityMint = makeMint('liquidity');
-  const liquidityAssay = liquidityMint.getAssay();
-  const assays = [...startingAssays, liquidityAssay];
+  // the canonical array of issuers for this contract
+  const { mint: liquidityMint, issuer: liquidityIssuer } = produceIssuer(
+    'liquidity',
+  );
+  const issuers = [...startingIssuers, liquidityIssuer];
 
   const LIQ_INDEX = 2;
   let poolHandle;
@@ -26,12 +27,12 @@ export const makeContract = harden((zoe, terms) => {
 
   const { subtract } = natSafeMath;
 
-  return zoe.addAssays(assays).then(() => {
-    const unitOpsArray = zoe.getUnitOpsForAssays(assays);
-    unitOpsArray.forEach(unitOps =>
+  return zoe.addIssuers(issuers).then(() => {
+    const amountMathArray = zoe.getAmountMathForIssuers(issuers);
+    amountMathArray.forEach(amountMath =>
       assert(
-        unitOps.getExtentOps().name === 'natExtentOps',
-        details`assays must have natExtentOps`,
+        amountMath.getExtentOps().name === 'natExtentOps',
+        details`issuers must have natExtentOps`,
       ),
     );
     const {
@@ -40,13 +41,13 @@ export const makeContract = harden((zoe, terms) => {
       vectorWith,
       vectorWithout,
       makeEmptyOffer,
-    } = makeHelpers(zoe, assays);
+    } = makeHelpers(zoe, issuers);
     const {
       getPrice,
       calcLiqExtentToMint,
-      calcUnitsToRemove,
-    } = makeConstProductBC(zoe, assays);
-    const getPoolUnits = () => zoe.getOffer(poolHandle).units;
+      calcAmountsToRemove,
+    } = makeConstProductBC(zoe, issuers);
+    const getPoolAmounts = () => zoe.getOffer(poolHandle).amounts;
 
     return makeEmptyOffer().then(handle => {
       poolHandle = handle;
@@ -55,36 +56,42 @@ export const makeContract = harden((zoe, terms) => {
         const seat = harden({
           swap: () => {
             let UNITS_IN_INDEX;
-            const unitsInFirst = ['offerAtMost', 'wantAtLeast', 'wantAtLeast'];
-            const unitsInSecond = ['wantAtLeast', 'offerAtMost', 'wantAtLeast'];
-            if (hasValidPayoutRules(unitsInFirst, inviteHandle)) {
+            const amountInFirst = ['offerAtMost', 'wantAtLeast', 'wantAtLeast'];
+            const amountInSecond = [
+              'wantAtLeast',
+              'offerAtMost',
+              'wantAtLeast',
+            ];
+            if (hasValidPayoutRules(amountInFirst, inviteHandle)) {
               UNITS_IN_INDEX = 0;
-            } else if (hasValidPayoutRules(unitsInSecond, inviteHandle)) {
+            } else if (hasValidPayoutRules(amountInSecond, inviteHandle)) {
               UNITS_IN_INDEX = 1;
             } else {
               throw rejectOffer(inviteHandle);
             }
             const UNITS_OUT_INDEX = Nat(1 - UNITS_IN_INDEX);
-            const { newPoolUnitsArray, unitsOut } = getPrice(
-              getPoolUnits(),
-              zoe.getOffer(inviteHandle).units[UNITS_IN_INDEX],
+            const { newPoolAmountsArray, amountOut } = getPrice(
+              getPoolAmounts(),
+              zoe.getOffer(inviteHandle).amounts[UNITS_IN_INDEX],
             );
 
-            const wantedUnits = zoe.getOffer(inviteHandle).units[
+            const wantedAmounts = zoe.getOffer(inviteHandle).amounts[
               UNITS_OUT_INDEX
             ];
-            const satisfiesWantedUnits = () =>
-              unitOpsArray[UNITS_OUT_INDEX].includes(unitsOut, wantedUnits);
-            if (!satisfiesWantedUnits()) {
+            const satisfiesWantedAmounts = () =>
+              amountMathArray[UNITS_OUT_INDEX].isGTE(amountOut, wantedAmounts);
+            if (!satisfiesWantedAmounts()) {
               throw rejectOffer(inviteHandle);
             }
 
-            const newUserUnits = unitOpsArray.map(unitOps => unitOps.empty());
-            newUserUnits[UNITS_OUT_INDEX] = unitsOut;
+            const newUserAmounts = amountMathArray.map(amountMath =>
+              amountMath.getEmpty(),
+            );
+            newUserAmounts[UNITS_OUT_INDEX] = amountOut;
 
             zoe.reallocate(
               harden([inviteHandle, poolHandle]),
-              harden([newUserUnits, newPoolUnitsArray]),
+              harden([newUserAmounts, newPoolAmountsArray]),
             );
             zoe.complete(harden([inviteHandle]));
             return `Swap successfully completed.`;
@@ -95,8 +102,8 @@ export const makeContract = harden((zoe, terms) => {
               throw rejectOffer(inviteHandle);
             }
 
-            const userUnits = zoe.getOffer(inviteHandle).units;
-            const poolUnits = getPoolUnits();
+            const userAmounts = zoe.getOffer(inviteHandle).amounts;
+            const poolAmounts = getPoolAmounts();
 
             // Calculate how many liquidity tokens we should be minting.
             // Calculations are based on the extents represented by index 0.
@@ -105,22 +112,22 @@ export const makeContract = harden((zoe, terms) => {
             // liquidity token.
             const liquidityExtentOut = calcLiqExtentToMint(
               liqTokenSupply,
-              poolUnits,
-              userUnits,
+              poolAmounts,
+              userAmounts,
             );
 
-            const liquidityUnitsOut = unitOpsArray[LIQ_INDEX].make(
+            const liquidityAmountsOut = amountMathArray[LIQ_INDEX].make(
               liquidityExtentOut,
             );
 
             const liquidityPaymentP = liquidityMint
-              .mint(liquidityUnitsOut)
-              .withdrawAll();
+              .mintPayment(liquidityAmountsOut)
+              .withdraw();
             const offerRules = harden({
               payoutRules: [
-                { kind: 'wantAtLeast', units: unitOpsArray[0].empty() },
-                { kind: 'wantAtLeast', units: unitOpsArray[1].empty() },
-                { kind: 'offerAtMost', units: liquidityUnitsOut },
+                { kind: 'wantAtLeast', amount: amountMathArray[0].empty() },
+                { kind: 'wantAtLeast', amount: amountMathArray[1].empty() },
+                { kind: 'offerAtMost', amount: liquidityAmountsOut },
               ],
               exitRule: {
                 kind: 'waived',
@@ -136,18 +143,18 @@ export const makeContract = harden((zoe, terms) => {
               )
               .then(() => {
                 liqTokenSupply += liquidityExtentOut;
-                const newPoolUnits = vectorWith(poolUnits, userUnits);
-                const newUserUnits = unitOpsArray.map(unitOps =>
-                  unitOps.empty(),
+                const newPoolAmounts = vectorWith(poolAmounts, userAmounts);
+                const newUserAmounts = amountMathArray.map(amountMath =>
+                  amountMath.getEmpty(),
                 );
-                const newTempLiqUnits = unitOpsArray.map(unitOps =>
-                  unitOps.empty(),
+                const newTempLiqAmounts = amountMathArray.map(amountMath =>
+                  amountMath.getEmpty(),
                 );
-                newUserUnits[LIQ_INDEX] = liquidityUnitsOut;
+                newUserAmounts[LIQ_INDEX] = liquidityAmountsOut;
 
                 zoe.reallocate(
                   harden([inviteHandle, poolHandle, tempLiqHandle]),
-                  harden([newUserUnits, newPoolUnits, newTempLiqUnits]),
+                  harden([newUserAmounts, newPoolAmounts, newTempLiqAmounts]),
                 );
                 zoe.complete(harden([inviteHandle, tempLiqHandle]));
                 return 'Added liquidity.';
@@ -158,30 +165,33 @@ export const makeContract = harden((zoe, terms) => {
             if (!hasValidPayoutRules(kinds, inviteHandle)) {
               throw rejectOffer(`The offer to remove liquidity was invalid`);
             }
-            const userUnits = zoe.getOffer(inviteHandle).units;
-            const liquidityUnitsIn = userUnits[LIQ_INDEX];
+            const userAmounts = zoe.getOffer(inviteHandle).amounts;
+            const liquidityAmountsIn = userAmounts[LIQ_INDEX];
 
-            const poolUnits = getPoolUnits();
+            const poolAmounts = getPoolAmounts();
 
-            const newUserUnits = calcUnitsToRemove(
+            const newUserAmounts = calcAmountsToRemove(
               liqTokenSupply,
-              poolUnits,
-              liquidityUnitsIn,
+              poolAmounts,
+              liquidityAmountsIn,
             );
 
-            const newPoolUnits = vectorWith(
-              vectorWithout(poolUnits, newUserUnits),
+            const newPoolAmounts = vectorWith(
+              vectorWithout(poolAmounts, newUserAmounts),
               [
-                unitOpsArray[0].empty(),
-                unitOpsArray[1].empty(),
-                liquidityUnitsIn,
+                amountMathArray[0].empty(),
+                amountMathArray[1].empty(),
+                liquidityAmountsIn,
               ],
             );
-            liqTokenSupply = subtract(liqTokenSupply, liquidityUnitsIn.extent);
+            liqTokenSupply = subtract(
+              liqTokenSupply,
+              liquidityAmountsIn.extent,
+            );
 
             zoe.reallocate(
               harden([inviteHandle, poolHandle]),
-              harden([newUserUnits, newPoolUnits]),
+              harden([newUserAmounts, newPoolAmounts]),
             );
             zoe.complete(harden([inviteHandle]));
             return 'Liquidity successfully removed.';
@@ -197,16 +207,16 @@ export const makeContract = harden((zoe, terms) => {
         invite: makeInvite(),
         publicAPI: {
           /**
-           * `getPrice` calculates the result of a trade, given a certain units
+           * `getPrice` calculates the result of a trade, given a certain amount
            * of digital assets in.
-           * @param {units} unitsIn - the units of digital assets to be sent in
+           * @param {amount} amountIn - the amount of digital assets to be sent in
            */
-          getPrice: unitsIn => getPrice(getPoolUnits(), unitsIn).unitsOut,
-          getLiquidityAssay: () => liquidityAssay,
-          getPoolUnits,
+          getPrice: amountIn => getPrice(getPoolAmounts(), amountIn).amountOut,
+          getLiquidityIssuer: () => liquidityIssuer,
+          getPoolAmounts,
           makeInvite,
         },
-        terms: { assays },
+        terms: { issuers },
       });
     });
   });

@@ -1,48 +1,46 @@
 import { E } from '@agoric/eventual-send';
-import { makeUnitOps } from '@agoric/ertp/src/unitOps';
+import { makeAmountMath } from '@agoric/ertp/src/amountMath';
 import harden from '@agoric/harden';
 
 export const showPaymentBalance = async (paymentP, name, log) => {
   try {
-    const units = await E(paymentP).getBalance();
-    log(name, ': balance ', units);
+    const amount = await E(paymentP).getBalance();
+    log(name, ': balance ', amount);
   } catch (err) {
     console.error(err);
   }
 };
 
-export const getLocalUnitOps = assay =>
+export const getLocalAmountMath = issuer =>
   Promise.all([
-    E(assay).getLabel(),
-    E(assay).getExtentOps(),
-  ]).then(([label, { name, extentOpsArgs = [] }]) =>
-    makeUnitOps(label, name, extentOpsArgs),
-  );
+    E(issuer).getBrand(),
+    E(issuer).getMathHelpersName(),
+  ]).then(([brand, mathHelpersName]) => makeAmountMath(brand, mathHelpersName));
 
-export const setupAssays = async (zoe, purses) => {
+export const setupIssuers = async (zoe, purses) => {
   const [moolaPurseP, simoleanPurseP, bucksPurseP] = purses;
-  const inviteAssay = await E(zoe).getInviteAssay();
-  const moolaAssay = await E(moolaPurseP).getAssay();
-  const simoleanAssay = await E(simoleanPurseP).getAssay();
-  const bucksAssay = await E(bucksPurseP).getAssay();
+  const inviteIssuer = await E(zoe).getInviteIssuer();
+  const moolaIssuer = await E(moolaPurseP).getIssuer();
+  const simoleanIssuer = await E(simoleanPurseP).getIssuer();
+  const bucksIssuer = await E(bucksPurseP).getIssuer();
 
-  const moolaUnitOps = await getLocalUnitOps(moolaAssay);
-  const simoleanUnitOps = await getLocalUnitOps(simoleanAssay);
-  const bucksUnitOps = await getLocalUnitOps(bucksAssay);
+  const moolaAmountMath = await getLocalAmountMath(moolaIssuer);
+  const simoleanAmountMath = await getLocalAmountMath(simoleanIssuer);
+  const bucksAmountMath = await getLocalAmountMath(bucksIssuer);
 
-  const moola = moolaUnitOps.make;
-  const simoleans = simoleanUnitOps.make;
-  const bucks = bucksUnitOps.make;
+  const moola = moolaAmountMath.make;
+  const simoleans = simoleanAmountMath.make;
+  const bucks = bucksAmountMath.make;
 
   return harden({
-    assays: harden([moolaAssay, simoleanAssay]),
-    inviteAssay,
-    moolaAssay,
-    simoleanAssay,
-    bucksAssay,
-    moolaUnitOps,
-    simoleanUnitOps,
-    bucksUnitOps,
+    issuers: harden([moolaIssuer, simoleanIssuer]),
+    inviteIssuer,
+    moolaIssuer,
+    simoleanIssuer,
+    bucksIssuer,
+    moolaAmountMath,
+    simoleanAmountMath,
+    bucksAmountMath,
     moola,
     simoleans,
     bucks,

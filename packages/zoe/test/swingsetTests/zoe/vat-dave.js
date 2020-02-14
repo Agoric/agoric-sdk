@@ -1,25 +1,25 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { showPaymentBalance, setupAssays } from './helpers';
+import { showPaymentBalance, setupIssuers } from './helpers';
 
 const build = async (E, log, zoe, purses, installations, timer) => {
   const {
-    inviteAssay,
-    moolaAssay,
-    simoleanAssay,
-    bucksAssay,
+    inviteIssuer,
+    moolaIssuer,
+    simoleanIssuer,
+    bucksIssuer,
     moola,
     simoleans,
     bucks,
-    moolaUnitOps,
-    simoleanUnitOps,
-  } = await setupAssays(zoe, purses);
+    moolaAmountMath,
+    simoleanAmountMath,
+  } = await setupIssuers(zoe, purses);
   const [moolaPurseP, simoleanPurseP, bucksPurseP] = purses;
 
   return harden({
     doPublicAuction: async inviteP => {
-      const invite = await E(inviteAssay).claimAll(inviteP);
+      const invite = await E(inviteIssuer).claim(inviteP);
       const { extent: inviteExtent } = await E(invite).getBalance();
 
       const { installationHandle, terms } = await E(zoe).getInstance(
@@ -30,8 +30,8 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         details`wrong installation`,
       );
       assert(
-        sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
-        details`assays were not as expected`,
+        sameStructure(harden([moolaIssuer, simoleanIssuer]), terms.issuers),
+        details`issuers were not as expected`,
       );
       assert(sameStructure(inviteExtent.minimumBid, simoleans(3)));
       assert(sameStructure(inviteExtent.auctionedAssets, moola(1)));
@@ -40,18 +40,18 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: moola(1),
+            amount: moola(1),
           },
           {
             kind: 'offerAtMost',
-            units: simoleans(5),
+            amount: simoleans(5),
           },
         ],
         exitRule: {
           kind: 'onDemand',
         },
       });
-      const simoleanPayment = await E(simoleanPurseP).withdrawAll();
+      const simoleanPayment = await E(simoleanPurseP).withdraw();
       const offerPayments = [undefined, simoleanPayment];
 
       const { seat, payout: payoutP } = await E(zoe).redeem(
@@ -66,17 +66,17 @@ const build = async (E, log, zoe, purses, installations, timer) => {
 
       const daveResult = await payoutP;
 
-      await E(moolaPurseP).depositAll(daveResult[0]);
-      await E(simoleanPurseP).depositAll(daveResult[1]);
+      await E(moolaPurseP).deposit(daveResult[0]);
+      await E(simoleanPurseP).deposit(daveResult[1]);
 
       await showPaymentBalance(moolaPurseP, 'daveMoolaPurse', log);
       await showPaymentBalance(simoleanPurseP, 'daveSimoleanPurse', log);
     },
-    doSwapForOption: async (inviteP, optionUnits) => {
+    doSwapForOption: async (inviteP, optionAmounts) => {
       // Dave is looking to buy the option to trade his 7 simoleans for
       // 3 moola, and is willing to pay 1 buck for the option.
 
-      const invite = await E(inviteAssay).claimAll(inviteP);
+      const invite = await E(inviteIssuer).claim(inviteP);
       const { extent: inviteExtent } = await E(invite).getBalance();
       const { installationHandle, terms } = await E(zoe).getInstance(
         inviteExtent.instanceHandle,
@@ -86,8 +86,8 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         details`wrong installation`,
       );
       assert(
-        sameStructure(harden([inviteAssay, bucksAssay]), terms.assays),
-        details`assays were not as expected`,
+        sameStructure(harden([inviteIssuer, bucksIssuer]), terms.issuers),
+        details`issuers were not as expected`,
       );
 
       /*
@@ -97,11 +97,11 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         payoutRules: [
           {
             kind: 'offerAtMost',
-            units: optionUnits,
+            amount: optionAmounts,
           },
           {
             kind: 'wantAtLeast',
-            units: bucks(1),
+            amount: bucks(1),
           },
         ],
         exitRule: {
@@ -112,14 +112,14 @@ const build = async (E, log, zoe, purses, installations, timer) => {
 
       // TODO the following assert is not correct. It always fails when turned on
       // assert(sameStructure(inviteExtent.offerMadeRules, expectedBobOfferRules));
-      const optionExtent = optionUnits.extent;
+      const optionExtent = optionAmounts.extent;
       assert(optionExtent.seatDesc === 'exerciseOption', details`wrong seat`);
       assert(
-        moolaUnitOps.equals(optionExtent.underlyingAsset, moola(3)),
+        moolaAmountMath.equals(optionExtent.underlyingAsset, moola(3)),
         details`wrong underlying asset`,
       );
       assert(
-        simoleanUnitOps.equals(optionExtent.strikePrice, simoleans(7)),
+        simoleanAmountMath.equals(optionExtent.strikePrice, simoleans(7)),
         details`wrong strike price`,
       );
       assert(
@@ -133,11 +133,11 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: optionUnits,
+            amount: optionAmounts,
           },
           {
             kind: 'offerAtMost',
-            units: bucks(1),
+            amount: bucks(1),
           },
         ],
         exitRule: {
@@ -145,7 +145,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         },
       });
 
-      const daveBucksPaymentP = E(bucksPurseP).withdrawAll();
+      const daveBucksPaymentP = E(bucksPurseP).withdraw();
       const daveSwapPayments = [undefined, daveBucksPaymentP];
       const { seat: daveSwapSeat, payout: daveSwapPayoutP } = await E(
         zoe,
@@ -163,18 +163,18 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: moola(3),
+            amount: moola(3),
           },
           {
             kind: 'offerAtMost',
-            units: simoleans(7),
+            amount: simoleans(7),
           },
         ],
         exitRule: {
           kind: 'onDemand',
         },
       });
-      const daveSimoleanPaymentP = E(simoleanPurseP).withdrawAll();
+      const daveSimoleanPaymentP = E(simoleanPurseP).withdraw();
       const daveCoveredCallPayments = [undefined, daveSimoleanPaymentP];
       const {
         seat: daveCoveredCallSeat,
@@ -190,9 +190,9 @@ const build = async (E, log, zoe, purses, installations, timer) => {
 
       const daveCoveredCallResult = await daveCoveredCallPayoutP;
 
-      await E(bucksPurseP).depositAll(daveBucksPayout);
-      await E(moolaPurseP).depositAll(daveCoveredCallResult[0]);
-      await E(simoleanPurseP).depositAll(daveCoveredCallResult[1]);
+      await E(bucksPurseP).deposit(daveBucksPayout);
+      await E(moolaPurseP).deposit(daveCoveredCallResult[0]);
+      await E(simoleanPurseP).deposit(daveCoveredCallResult[1]);
 
       await showPaymentBalance(moolaPurseP, 'daveMoolaPurse', log);
       await showPaymentBalance(simoleanPurseP, 'daveSimoleanPurse', log);

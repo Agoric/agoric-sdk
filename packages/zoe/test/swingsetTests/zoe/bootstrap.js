@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import { makeMint } from '@agoric/ertp';
+import produceIssuer from '@agoric/ertp';
 import buildManualTimer from '../../../tools/manualTimer';
 
 // eslint-disable-next-line import/no-unresolved, import/extensions
@@ -17,30 +17,27 @@ import simpleExchangeBundle from './bundle-simpleExchange';
 import autoswapBundle from './bundle-autoswap';
 
 const setupBasicMints = () => {
-  const moolaMint = makeMint('moola');
-  const simoleanMint = makeMint('simoleans');
-  const bucksMint = makeMint('bucks');
-
-  const moolaAssay = moolaMint.getAssay();
-  const simoleanAssay = simoleanMint.getAssay();
-  const bucksAssay = bucksMint.getAssay();
-
-  const moolaDescOps = moolaAssay.getUnitOps();
-  const simoleanDescOps = simoleanAssay.getUnitOps();
-  const bucksDescOps = bucksAssay.getUnitOps();
+  const all = [
+    produceIssuer('moola'),
+    produceIssuer('simoleans'),
+    produceIssuer('bucks'),
+  ];
+  const mints = all.map(objs => objs.mint);
+  const issuers = all.map(objs => objs.issuer);
+  const amountMaths = all.map(objs => objs.amountMath);
 
   return harden({
-    mints: [moolaMint, simoleanMint, bucksMint],
-    assays: [moolaAssay, simoleanAssay, bucksAssay],
-    unitOps: [moolaDescOps, simoleanDescOps, bucksDescOps],
+    mints,
+    issuers,
+    amountMaths,
   });
 };
 
 const makeVats = (E, log, vats, zoe, installations, startingExtents) => {
   const timer = buildManualTimer(log);
-  const { mints, assays } = setupBasicMints();
+  const { mints, amountMaths } = setupBasicMints();
   const makePurses = extents =>
-    mints.map((mint, i) => mint.mint(assays[i].makeUnits(extents[i])));
+    mints.map((mint, i) => mint.mintPayment(amountMaths[i].make(extents[i])));
   const [aliceExtents, bobExtents, carolExtents, daveExtents] = startingExtents;
 
   // Setup Alice

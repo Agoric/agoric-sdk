@@ -3,7 +3,7 @@ import { E } from '@agoric/eventual-send';
 
 import makeStore from '@agoric/weak-store';
 import { assert, details } from '@agoric/assert';
-import { makeUnitOps } from '@agoric/ertp/src/unitOps';
+import makeAmountMath from '@agoric/ertp/src/amountMath';
 
 const makeTable = (validateFn, makeCustomMethodsFn = () => undefined) => {
   // The WeakMap that stores the records
@@ -74,19 +74,19 @@ const makeInstallationTable = () => {
 };
 
 // Instance Table
-// Columns: handle | installationHandle | publicAPI | terms | assays
+// Columns: handle | installationHandle | publicAPI | terms | issuers
 const makeInstanceTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateSomewhat = makeValidateProperties(
-    harden(['installationHandle', 'publicAPI', 'terms', 'assays']),
+    harden(['installationHandle', 'publicAPI', 'terms', 'issuers']),
   );
   return makeTable(validateSomewhat);
 };
 
 // Offer Table
-// Columns: handle | instanceHandle | assays | payoutRules | exitRule
-// | units
+// Columns: handle | instanceHandle | issuers | payoutRules | exitRule
+// | amounts
 const makeOfferTable = () => {
   const insistValidPayoutRuleKinds = payoutRules => {
     const acceptedKinds = ['offerAtMost', 'wantAtLeast'];
@@ -113,7 +113,7 @@ const makeOfferTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateProperties = makeValidateProperties(
-    harden(['instanceHandle', 'assays', 'payoutRules', 'exitRule', 'units']),
+    harden(['instanceHandle', 'issuers', 'payoutRules', 'exitRule', 'amounts']),
   );
   const validateSomewhat = obj => {
     validateProperties(obj);
@@ -145,9 +145,9 @@ const makeOfferTable = () => {
       isOfferActive: offerHandle => table.has(offerHandle),
       deleteOffers: offerHandles =>
         offerHandles.map(offerHandle => table.delete(offerHandle)),
-      updateUnitMatrix: (offerHandles, newUnitMatrix) =>
+      updateAmountMatrix: (offerHandles, newAmountMatrix) =>
         offerHandles.map((offerHandle, i) =>
-          table.update(offerHandle, harden({ units: newUnitMatrix[i] })),
+          table.update(offerHandle, harden({ amounts: newAmountMatrix[i] })),
         ),
     });
     return customMethods;
@@ -160,61 +160,66 @@ const makeOfferTable = () => {
 // PrivateName: offerHandle | payoutPromise
 const makePayoutMap = makeStore;
 
-// Assay Table
-// Columns: assay | purse | unitOps
-const makeAssayTable = () => {
+// Issuer Table
+// Columns: issuer | brand| purse | amountMath
+const makeIssuerTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateSomewhat = makeValidateProperties(
-    harden(['assay', 'purse', 'unitOps']),
+    harden(['issuer', 'brand', 'purse', 'amountMath']),
   );
 
   const makeCustomMethods = table => {
-    const assaysInProgress = makeStore();
+    const issuersInProgress = makeStore();
 
     const customMethods = harden({
-      getUnitOpsForAssays: assays =>
-        assays.map(assay => table.get(assay).unitOps),
+      getAmountMathForIssuers: issuers =>
+        issuers.map(issuer => table.get(issuer).amountMath),
 
-      getPursesForAssays: assays => assays.map(assay => table.get(assay).purse),
+      getBrandsForIssuers: issuers =>
+        issuers.map(issuer => table.get(issuer).brand),
 
-      // `assayP` may be a promise, presence, or local object
-      getPromiseForAssayRecord: assayP => {
-        return Promise.resolve(assayP).then(assay => {
-          if (!table.has(assay)) {
-            if (assaysInProgress.has(assay)) {
-              // a promise which resolves to the assay record
-              return assaysInProgress.get(assay);
+      getPursesForIssuers: issuers =>
+        issuers.map(issuer => table.get(issuer).purse),
+
+      // `issuerP` may be a promise, presence, or local object
+      getPromiseForIssuerRecord: issuerP => {
+        return Promise.resolve(issuerP).then(issuer => {
+          if (!table.has(issuer)) {
+            if (issuersInProgress.has(issuer)) {
+              // a promise which resolves to the issuer record
+              return issuersInProgress.get(issuer);
             }
             // remote calls which immediately return a promise
-            const extentOpsDescP = E(assay).getExtentOps();
-            const labelP = E(assay).getLabel();
-            const purseP = E(assay).makeEmptyPurse();
+            const mathHelpersNameP = E(issuer).getMathHelpersName();
+            const brandP = E(issuer).getBrand();
+            const purseP = E(issuer).makeEmptyPurse();
 
             // a promise for a synchronously accessible record
             const synchronousRecordP = Promise.all([
-              labelP,
-              extentOpsDescP,
+              brandP,
+              mathHelpersNameP,
               purseP,
-            ]).then(([label, { name, extentOpsArgs = [] }, purse]) => {
-              const unitOps = makeUnitOps(label, name, extentOpsArgs);
-              const assayRecord = {
-                assay,
+            ]).then(([brand, mathHelpersName, purse]) => {
+              const amountMath = makeAmountMath(brand, mathHelpersName);
+              const issuerRecord = {
+                issuer,
+                brand,
                 purse,
-                unitOps,
+                amountMath,
               };
-              table.create(assayRecord, assay);
-              assaysInProgress.delete(assay);
-              return table.get(assay);
+              table.create(issuerRecord, issuer);
+              issuersInProgress.delete(issuer);
+              return table.get(issuer);
             });
-            assaysInProgress.init(assay, synchronousRecordP);
+            issuersInProgress.init(issuer, synchronousRecordP);
             return synchronousRecordP;
           }
-          return table.get(assay);
+          return table.get(issuer);
         });
       },
-      getPromiseForAssayRecords: assayPs =>
-        Promise.all(assayPs.map(customMethods.getPromiseForAssayRecord)),
+      getPromiseForIssuerRecords: issuerPs =>
+        Promise.all(issuerPs.map(customMethods.getPromiseForIssuerRecord)),
     });
     return customMethods;
   };
@@ -228,7 +233,7 @@ const makeTables = () =>
     instanceTable: makeInstanceTable(),
     offerTable: makeOfferTable(),
     payoutMap: makePayoutMap(),
-    assayTable: makeAssayTable(),
+    issuerTable: makeIssuerTable(),
   });
 
 export { makeTables };

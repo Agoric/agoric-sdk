@@ -9,8 +9,8 @@ const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
 test('zoe -atomicSwap', async t => {
   try {
-    const { assays: defaultAssays, mints } = setup();
-    const assays = defaultAssays.slice(0, 2);
+    const { issuers: defaultIssuers, mints } = setup();
+    const issuers = defaultIssuers.slice(0, 2);
     const zoe = makeZoe({ require });
     // pack the contract
     const { source, moduleFormat } = await bundleSource(atomicSwapRoot);
@@ -18,18 +18,18 @@ test('zoe -atomicSwap', async t => {
     const installationHandle = zoe.install(source, moduleFormat);
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(3));
-    const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const aliceSimoleanPurse = mints[1].mint(assays[1].makeUnits(0));
+    const aliceMoolaPurse = mints[0].mintPayment(issuers[0].makeAmounts(3));
+    const aliceMoolaPayment = aliceMoolaPurse.withdraw();
+    const aliceSimoleanPurse = mints[1].mintPayment(issuers[1].makeAmounts(0));
 
     // Setup Bob
-    const bobMoolaPurse = mints[0].mint(assays[0].makeUnits(0));
-    const bobSimoleanPurse = mints[1].mint(assays[1].makeUnits(7));
-    const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
+    const bobMoolaPurse = mints[0].mintPayment(issuers[0].makeAmounts(0));
+    const bobSimoleanPurse = mints[1].mintPayment(issuers[1].makeAmounts(7));
+    const bobSimoleanPayment = bobSimoleanPurse.withdraw();
 
     // 1: Alice creates an atomicSwap instance
     const aliceInvite = await zoe.makeInstance(installationHandle, {
-      assays,
+      issuers,
     });
 
     // 2: Alice escrows with zoe
@@ -37,11 +37,11 @@ test('zoe -atomicSwap', async t => {
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: assays[0].makeUnits(3),
+          amount: issuers[0].makeAmounts(3),
         },
         {
           kind: 'wantAtLeast',
-          units: assays[1].makeUnits(7),
+          amount: issuers[1].makeAmounts(7),
         },
       ],
       exitRule: {
@@ -64,9 +64,10 @@ test('zoe -atomicSwap', async t => {
     // on how to use it and Bob decides he wants to be the
     // counter-party.
 
-    const inviteAssay = zoe.getInviteAssay();
-    const bobExclusiveInvite = await inviteAssay.claimAll(bobInviteP);
-    const bobInviteExtent = bobExclusiveInvite.getBalance().extent;
+    const inviteIssuer = zoe.getInviteIssuer();
+    const bobExclusiveInvite = await inviteIssuer.claim(bobInviteP);
+    const bobInviteExtent = inviteIssuer.getBalance(bobExclusiveInvite)
+      .extent[0];
 
     const {
       installationHandle: bobInstallationId,
@@ -74,18 +75,18 @@ test('zoe -atomicSwap', async t => {
     } = zoe.getInstance(bobInviteExtent.instanceHandle);
 
     t.equals(bobInstallationId, installationHandle);
-    t.deepEquals(bobTerms.assays, assays);
+    t.deepEquals(bobTerms.issuers, issuers);
     t.deepEquals(bobInviteExtent.offerMadeRules, aliceOfferRules.payoutRules);
 
     const bobOfferRules = harden({
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          units: bobTerms.assays[0].makeUnits(3),
+          amount: bobTerms.issuers[0].makeAmounts(3),
         },
         {
           kind: 'offerAtMost',
-          units: bobTerms.assays[1].makeUnits(7),
+          amount: bobTerms.issuers[1].makeAmounts(7),
         },
       ],
       exitRule: {
@@ -118,20 +119,20 @@ test('zoe -atomicSwap', async t => {
 
     // Alice gets what Alice wanted
     t.deepEquals(
-      aliceSimoleanPayout.getBalance(),
-      aliceOfferRules.payoutRules[1].units,
+      issuers[1].getBalance(aliceSimoleanPayout),
+      aliceOfferRules.payoutRules[1].amount,
     );
 
     // Alice didn't get any of what Alice put in
-    t.equals(aliceMoolaPayout.getBalance().extent, 0);
+    t.equals(issuers[0].getBalance(aliceMoolaPayout), moola(0));
 
     // Alice deposits her payout to ensure she can
-    await aliceMoolaPurse.depositAll(aliceMoolaPayout);
-    await aliceSimoleanPurse.depositAll(aliceSimoleanPayout);
+    await aliceMoolaPurse.deposit(aliceMoolaPayout);
+    await aliceSimoleanPurse.deposit(aliceSimoleanPayout);
 
     // Bob deposits his original payments to ensure he can
-    await bobMoolaPurse.depositAll(bobMoolaPayout);
-    await bobSimoleanPurse.depositAll(bobSimoleanPayout);
+    await bobMoolaPurse.deposit(bobMoolaPayout);
+    await bobSimoleanPurse.deposit(bobSimoleanPayout);
 
     // Assert that the correct payouts were received.
     // Alice had 3 moola and 0 simoleans.

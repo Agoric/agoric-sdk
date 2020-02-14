@@ -1,31 +1,27 @@
 import harden from '@agoric/harden';
 
-import { makeMint } from '@agoric/ertp';
-import { extentOpsLib } from '@agoric/ertp/src/config/extentOpsLib';
+import produceIssuers from '@agoric/ertp';
 
 const setup = () => {
-  const moolaMint = makeMint('moola');
-  const simoleanMint = makeMint('simoleans');
-  const bucksMint = makeMint('bucks');
+  const moolaIssuerObjs = produceIssuers('moola');
+  const simoleanIssuerObjs = produceIssuers('simoleans');
+  const bucksIssuerObjs = produceIssuers('bucks');
 
-  const mints = [moolaMint, simoleanMint, bucksMint];
-  const assays = mints.map(mint => mint.getAssay());
-  const unitOps = assays.map(assay => assay.getUnitOps());
-  const extentOps = assays.map(assay => {
-    const { name, args } = assay.getExtentOps();
-    return extentOpsLib[name](...args);
-  });
-  const labels = assays.map(assay => assay.getLabel());
+  const all = [moolaIssuerObjs, simoleanIssuerObjs, bucksIssuerObjs];
+  const mints = all.map(objs => objs.mint);
+  const issuers = all.map(objs => objs.issuer);
+  const amountMaths = all.map(objs => objs.amountMath);
 
   return harden({
     mints,
-    assays,
-    unitOps,
-    extentOps,
-    labels,
-    moola: unitOps[0].make,
-    simoleans: unitOps[1].make,
-    bucks: unitOps[2].make,
+    issuers,
+    amountMaths,
+    moolaIssuerObjs,
+    simoleanIssuerObjs,
+    bucksIssuerObjs,
+    moola: moolaIssuerObjs.amountMath.make,
+    simoleans: simoleanIssuerObjs.amountMath.make,
+    bucks: bucksIssuerObjs.amountMath.make,
   });
 };
 harden(setup);

@@ -6,11 +6,12 @@ export const defaultAcceptanceMsg = `The offer has been accepted. Once the contr
 const hasKinds = (kinds, newPayoutRules) =>
   kinds.every((kind, i) => kind === newPayoutRules[i].kind);
 
-const hasAssays = (assays, newPayoutRules) =>
-  assays.every((assay, i) => assay === newPayoutRules[i].units.label.assay);
+const hasBrands = (brands, newPayoutRules) =>
+  brands.every((brand, i) => brand === newPayoutRules[i].amount.brand);
 
-export const makeHelpers = (zoe, assays) => {
-  const unitOpsArray = zoe.getUnitOpsForAssays(assays);
+export const makeHelpers = (zoe, issuers) => {
+  const amountMathArray = zoe.getAmountMathForIssuers(issuers);
+  const brands = zoe.getBrandsForIssuers(issuers);
   const zoeService = zoe.getZoeService();
   const helpers = harden({
     getActiveOffers: handles =>
@@ -20,9 +21,9 @@ export const makeHelpers = (zoe, assays) => {
       throw new Error(msg);
     },
     areAssetsEqualAtIndex: (index, leftHandle, rightHandle) =>
-      unitOpsArray[index].equals(
-        zoe.getOffer(leftHandle).payoutRules[index].units,
-        zoe.getOffer(rightHandle).payoutRules[index].units,
+      amountMathArray[index].isEqual(
+        zoe.getOffer(leftHandle).payoutRules[index].amount,
+        zoe.getOffer(rightHandle).payoutRules[index].amount,
       ),
     canTradeWith: (leftInviteHandle, rightInviteHandle) => {
       const { payoutRules: leftPayoutRules } = zoe.getOffer(leftInviteHandle);
@@ -32,7 +33,7 @@ export const makeHelpers = (zoe, assays) => {
           if (want.kind === 'wantAtLeast') {
             return (
               offers[i].kind === 'offerAtMost' &&
-              unitOpsArray[i].includes(offers[i].units, want.units)
+              amountMathArray[i].isGTE(offers[i].amount, want.amount)
             );
           }
           return true;
@@ -44,7 +45,7 @@ export const makeHelpers = (zoe, assays) => {
     },
     hasValidPayoutRules: (kinds, inviteHandle) => {
       const { payoutRules } = zoe.getOffer(inviteHandle);
-      return hasKinds(kinds, payoutRules) && hasAssays(assays, payoutRules);
+      return hasKinds(kinds, payoutRules) && hasBrands(brands, payoutRules);
     },
     swap: (
       keepHandle,
@@ -57,43 +58,44 @@ export const makeHelpers = (zoe, assays) => {
       if (!helpers.canTradeWith(keepHandle, tryHandle)) {
         throw helpers.rejectOffer(tryHandle);
       }
-      const keepUnits = zoe.getOffer(keepHandle).units;
-      const tryUnits = zoe.getOffer(tryHandle).units;
-      // reallocate by switching the units
+      const keepAmounts = zoe.getOffer(keepHandle).amounts;
+      const tryAmounts = zoe.getOffer(tryHandle).amounts;
+      // reallocate by switching the amount
       const handles = harden([keepHandle, tryHandle]);
-      zoe.reallocate(handles, harden([tryUnits, keepUnits]));
+      zoe.reallocate(handles, harden([tryAmounts, keepAmounts]));
       zoe.complete(handles);
       return defaultAcceptanceMsg;
     },
-    // Vector addition of two units arrays
-    vectorWith: (leftUnitsArray, rightUnitsArray) => {
-      const withUnits = leftUnitsArray.map((leftUnits, i) =>
-        unitOpsArray[i].with(leftUnits, rightUnitsArray[i]),
+    // Vector addition of two amount arrays
+    vectorWith: (leftAmountsArray, rightAmountsArray) => {
+      const withAmounts = leftAmountsArray.map((leftAmounts, i) =>
+        amountMathArray[i].add(leftAmounts, rightAmountsArray[i]),
       );
-      return withUnits;
+      return withAmounts;
     },
-    // Vector subtraction of two units arrays
-    vectorWithout: (leftUnitsArray, rightUnitsArray) => {
-      const withoutUnits = leftUnitsArray.map((leftUnits, i) =>
-        unitOpsArray[i].without(leftUnits, rightUnitsArray[i]),
+    // Vector subtraction of two amount arrays
+    vectorWithout: (leftAmountsArray, rightAmountsArray) => {
+      const withoutAmounts = leftAmountsArray.map((leftAmounts, i) =>
+        amountMathArray[i].subtract(leftAmounts, rightAmountsArray[i]),
       );
-      return withoutUnits;
+      return withoutAmounts;
     },
-    makeEmptyUnits: () => unitOpsArray.map(unitOps => unitOps.empty()),
+    makeEmptyAmounts: () =>
+      amountMathArray.map(amountMath => amountMath.getEmpty()),
     makeEmptyOffer: () => {
       const { inviteHandle, invite } = zoe.makeInvite();
       const offerRules = harden({
-        payoutRules: unitOpsArray.map(unitOps => {
+        payoutRules: amountMathArray.map(amountMath => {
           return {
             kind: 'wantAtLeast',
-            units: unitOps.empty(),
+            amount: amountMath.getEmpty(),
           };
         }),
         exitRule: {
           kind: 'waived',
         },
       });
-      const offerPayments = unitOpsArray.map(() => undefined);
+      const offerPayments = amountMathArray.map(() => undefined);
       return zoeService
         .redeem(invite, offerRules, offerPayments)
         .then(() => inviteHandle);

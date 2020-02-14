@@ -5,9 +5,9 @@ import { defaultAcceptanceMsg, makeHelpers } from './helpers/userFlow';
 
 // This exchange only accepts limit orders. A limit order is defined
 // as either a sell order with payoutRules: [ { kind: 'offerAtMost',
-// units1 }, {kind: 'wantAtLeast', units2 }] or a buy order:
-// [ { kind: 'wantAtLeast', units1 }, { kind: 'offerAtMost',
-// units2 }]. Note that the asset in the first slot of the
+// amount1 }, {kind: 'wantAtLeast', amount2 }] or a buy order:
+// [ { kind: 'wantAtLeast', amount1 }, { kind: 'offerAtMost',
+// amount2 }]. Note that the asset in the first slot of the
 // payoutRules will always be bought or sold in exact amounts, whereas
 // the amount of the second asset received in a sell order may be
 // greater than expected, and the amount of the second asset paid in a
@@ -18,14 +18,14 @@ export const makeContract = harden((zoe, terms) => {
   const ASSET_INDEX = 0;
   let sellInviteHandles = [];
   let buyInviteHandles = [];
-  const { assays } = terms;
+  const { issuers } = terms;
   const {
     rejectOffer,
     hasValidPayoutRules,
     swap,
     areAssetsEqualAtIndex,
     canTradeWith,
-  } = makeHelpers(zoe, assays);
+  } = makeHelpers(zoe, issuers);
 
   const makeInvite = () => {
     const seat = harden({

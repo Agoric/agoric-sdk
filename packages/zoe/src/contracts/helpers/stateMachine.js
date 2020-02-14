@@ -14,9 +14,9 @@ const makeStateMachine = (initialState, allowedTransitionsArray) => {
   const allowedTransitions = new Map(allowedTransitionsArray);
   return harden({
     canTransitionTo: nextState =>
-      allowedTransitions.get(state).includes(nextState),
+      allowedTransitions.get(state).isGTE(nextState),
     transitionTo: nextState => {
-      assert(allowedTransitions.get(state).includes(nextState));
+      assert(allowedTransitions.get(state).isGTE(nextState));
       state = nextState;
     },
     getStatus: _ => state,

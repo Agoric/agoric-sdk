@@ -1,6 +1,9 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
-import harden from '@agoric/harden';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
+
+import harden from '@agoric/harden';
 import { sameStructure } from '@agoric/same-structure';
 
 import buildManualTimer from '../../../tools/manualTimer';
@@ -14,13 +17,13 @@ test('zoe - coveredCall', async t => {
   try {
     const {
       mints: defaultMints,
-      assays: defaultAssays,
+      issuers: defaultIssuers,
       moola,
       simoleans,
-      unitOps,
+      amountMaths,
     } = setup();
     const mints = defaultMints.slice(0, 2);
-    const assays = defaultAssays.slice(0, 2);
+    const issuers = defaultIssuers.slice(0, 2);
     const zoe = makeZoe({ require });
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(coveredCallRoot);
@@ -28,18 +31,18 @@ test('zoe - coveredCall', async t => {
     const timer = buildManualTimer(console.log);
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(moola(3));
-    const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const aliceSimoleanPurse = mints[1].mint(simoleans(0));
+    const aliceMoolaPayment = mints[0].mintPayment(moola(3));
+    const aliceMoolaPurse = issuers[0].makeEmptyPurse();
+    const aliceSimoleanPurse = issuers[1].makeEmptyPurse();
 
     // Setup Bob
-    const bobMoolaPurse = mints[0].mint(moola(0));
-    const bobSimoleanPurse = mints[1].mint(simoleans(7));
-    const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
+    const bobSimoleanPayment = mints[1].mintPayment(simoleans(7));
+    const bobMoolaPurse = issuers[0].makeEmptyPurse();
+    const bobSimoleanPurse = issuers[1].makeEmptyPurse();
 
     // Alice creates a coveredCall instance
     const terms = {
-      assays,
+      issuers,
     };
     const aliceInvite = await zoe.makeInstance(
       coveredCallInstallationHandle,
@@ -51,11 +54,11 @@ test('zoe - coveredCall', async t => {
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: moola(3),
+          amount: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: simoleans(7),
+          amount: simoleans(7),
         },
       ],
       exitRule: {
@@ -82,14 +85,14 @@ test('zoe - coveredCall', async t => {
     // contract instance that he expects as well as that Alice has
     // already escrowed.
 
-    const inviteAssay = zoe.getInviteAssay();
-    const bobExclOption = await inviteAssay.claimAll(option);
-    const optionExtent = bobExclOption.getBalance().extent;
+    const inviteIssuer = zoe.getInviteIssuer();
+    const bobExclOption = await inviteIssuer.claim(option);
+    const optionExtent = inviteIssuer.getBalance(bobExclOption).extent[0];
     const { installationHandle } = zoe.getInstance(optionExtent.instanceHandle);
     t.equal(installationHandle, coveredCallInstallationHandle);
     t.equal(optionExtent.seatDesc, 'exerciseOption');
-    t.ok(unitOps[0].equals(optionExtent.underlyingAsset, moola(3)));
-    t.ok(unitOps[1].equals(optionExtent.strikePrice, simoleans(7)));
+    t.ok(amountMaths[0].isEqual(optionExtent.underlyingAsset, moola(3)));
+    t.ok(amountMaths[1].isEqual(optionExtent.strikePrice, simoleans(7)));
     t.equal(optionExtent.expirationDate, 1);
     t.deepEqual(optionExtent.timerAuthority, timer);
 
@@ -99,11 +102,11 @@ test('zoe - coveredCall', async t => {
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          units: optionExtent.underlyingAsset,
+          amount: optionExtent.underlyingAsset,
         },
         {
           kind: 'offerAtMost',
-          units: optionExtent.strikePrice,
+          amount: optionExtent.strikePrice,
         },
       ],
       exitRule: {
@@ -136,20 +139,20 @@ test('zoe - coveredCall', async t => {
 
     // Alice gets what Alice wanted
     t.deepEquals(
-      aliceSimoleanPayout.getBalance(),
-      aliceOfferRules.payoutRules[1].units,
+      issuers[1].getBalance(aliceSimoleanPayout),
+      aliceOfferRules.payoutRules[1].amount,
     );
 
     // Alice didn't get any of what Alice put in
-    t.equals(aliceMoolaPayout.getBalance().extent, 0);
+    t.deepEquals(issuers[0].getBalance(aliceMoolaPayout), moola(0));
 
     // Alice deposits her payout to ensure she can
-    await aliceMoolaPurse.depositAll(aliceMoolaPayout);
-    await aliceSimoleanPurse.depositAll(aliceSimoleanPayout);
+    await aliceMoolaPurse.deposit(aliceMoolaPayout);
+    await aliceSimoleanPurse.deposit(aliceSimoleanPayout);
 
     // Bob deposits his original payments to ensure he can
-    await bobMoolaPurse.depositAll(bobMoolaPayout);
-    await bobSimoleanPurse.depositAll(bobSimoleanPayout);
+    await bobMoolaPurse.deposit(bobMoolaPayout);
+    await bobSimoleanPurse.deposit(bobSimoleanPayout);
 
     // Assert that the correct payouts were received.
     // Alice had 3 moola and 0 simoleans.
@@ -169,13 +172,13 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   try {
     const {
       mints: defaultMints,
-      assays: defaultAssays,
+      issuers: defaultIssuers,
       moola,
       simoleans,
-      unitOps,
+      amountMaths,
     } = setup();
     const mints = defaultMints.slice(0, 2);
-    const assays = defaultAssays.slice(0, 2);
+    const issuers = defaultIssuers.slice(0, 2);
     const zoe = makeZoe({ require });
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(coveredCallRoot);
@@ -183,18 +186,18 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const timer = buildManualTimer(console.log);
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(moola(3));
-    const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const aliceSimoleanPurse = mints[1].mint(simoleans(0));
+    const aliceMoolaPayment = mints[0].mintPayment(moola(3));
+    const aliceMoolaPurse = issuers[0].makeEmptyPurse();
+    const aliceSimoleanPurse = issuers[1].makeEmptyPurse();
 
     // Setup Bob
-    const bobMoolaPurse = mints[0].mint(moola(0));
-    const bobSimoleanPurse = mints[1].mint(simoleans(7));
-    const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
+    const bobSimoleanPayment = mints[1].mintPayment(simoleans(7));
+    const bobMoolaPurse = issuers[0].makeEmptyPurse();
+    const bobSimoleanPurse = issuers[1].makeEmptyPurse();
 
     // Alice creates a coveredCall instance
     const terms = {
-      assays,
+      issuers,
     };
     const aliceInvite = await zoe.makeInstance(
       coveredCallInstallationHandle,
@@ -206,11 +209,11 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: moola(3),
+          amount: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: simoleans(7),
+          amount: simoleans(7),
         },
       ],
       exitRule: {
@@ -237,14 +240,14 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     // contract instance that he expects as well as that Alice has
     // already escrowed.
 
-    const inviteAssay = zoe.getInviteAssay();
-    const bobExclOption = await inviteAssay.claimAll(option);
-    const optionExtent = bobExclOption.getBalance().extent;
+    const inviteIssuer = zoe.getInviteIssuer();
+    const bobExclOption = await inviteIssuer.claim(option);
+    const optionExtent = inviteIssuer.getBalance(bobExclOption).extent[0];
     const { installationHandle } = zoe.getInstance(optionExtent.instanceHandle);
     t.equal(installationHandle, coveredCallInstallationHandle);
     t.equal(optionExtent.seatDesc, 'exerciseOption');
-    t.ok(unitOps[0].equals(optionExtent.underlyingAsset, moola(3)));
-    t.ok(unitOps[1].equals(optionExtent.strikePrice, simoleans(7)));
+    t.ok(amountMaths[0].isEqual(optionExtent.underlyingAsset, moola(3)));
+    t.ok(amountMaths[1].isEqual(optionExtent.strikePrice, simoleans(7)));
     t.equal(optionExtent.expirationDate, 1);
     t.deepEqual(optionExtent.timerAuthority, timer);
 
@@ -254,11 +257,11 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          units: optionExtent.underlyingAsset,
+          amount: optionExtent.underlyingAsset,
         },
         {
           kind: 'offerAtMost',
-          units: optionExtent.strikePrice,
+          amount: optionExtent.strikePrice,
         },
       ],
       exitRule: {
@@ -284,18 +287,18 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     );
 
     // Alice gets back what she put in
-    t.deepEquals(aliceMoolaPayout.getBalance(), moola(3));
+    t.deepEquals(issuers[0].getBalance(aliceMoolaPayout), moola(3));
 
     // Alice doesn't get what she wanted
-    t.deepEquals(aliceSimoleanPayout.getBalance(), simoleans(0));
+    t.deepEquals(issuers[1].getBalance(aliceSimoleanPayout), simoleans(0));
 
     // Alice deposits her winnings to ensure she can
-    await aliceMoolaPurse.depositAll(aliceMoolaPayout);
-    await aliceSimoleanPurse.depositAll(aliceSimoleanPayout);
+    await aliceMoolaPurse.deposit(aliceMoolaPayout);
+    await aliceSimoleanPurse.deposit(aliceSimoleanPayout);
 
     // Bob deposits his winnings to ensure he can
-    await bobMoolaPurse.depositAll(bobMoolaPayout);
-    await bobSimoleanPurse.depositAll(bobSimoleanPayout);
+    await bobMoolaPurse.deposit(bobMoolaPayout);
+    await bobSimoleanPurse.deposit(bobSimoleanPayout);
 
     // Assert that the correct outcome was achieved.
     // Alice had 3 moola and 0 simoleans.
@@ -315,13 +318,13 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 // Bob. Bob tries to sell the invite to Dave through a swap. Can Bob
 // trick Dave? Can Dave describe what it is that he wants in the swap
 // offer description?
-test('zoe - coveredCall with swap for invite', async t => {
+test.only('zoe - coveredCall with swap for invite', async t => {
   try {
     // Setup the environment
     const timer = buildManualTimer(console.log);
-    const { mints, assays, moola, simoleans, bucks, unitOps } = setup();
+    const { mints, issuers, moola, simoleans, bucks, amountMaths } = setup();
     const [moolaMint, simoleanMint, bucksMint] = mints;
-    const [moolaAssay, simoleanAssay, bucksAssay] = assays;
+    const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
     const zoe = makeZoe({ require });
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(coveredCallRoot);
@@ -336,27 +339,27 @@ test('zoe - coveredCall with swap for invite', async t => {
 
     // Setup Alice
     // Alice starts with 3 moola
-    const aliceMoolaPurse = moolaMint.mint(moola(3));
-    const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const aliceSimoleanPurse = simoleanMint.mint(simoleans(0));
+    const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
+    const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
+    const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
     // Setup Bob
     // Bob starts with nothing
-    const bobMoolaPurse = moolaMint.mint(moola(0));
-    const bobSimoleanPurse = simoleanMint.mint(simoleans(0));
-    const bobBucksPurse = bucksMint.mint(bucks(0));
+    const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
+    const bobSimoleanPurse = simoleanIssuer.makeEmptyPurse();
+    const bobBucksPurse = bucksIssuer.makeEmptyPurse();
 
     // Setup Dave
     // Dave starts with 1 buck
-    const daveMoolaPurse = moolaMint.mint(moola(0));
-    const daveSimoleanPurse = simoleanMint.mint(simoleans(7));
-    const daveBucksPurse = bucksMint.mint(bucks(1));
-    const daveBucksPayment = daveBucksPurse.withdrawAll();
-    const daveSimoleanPayment = daveSimoleanPurse.withdrawAll();
+    const daveSimoleanPayment = simoleanMint.mintPayment(simoleans(7));
+    const daveBucksPayment = bucksMint.mintPayment(bucks(1));
+    const daveMoolaPurse = moolaIssuer.makeEmptyPurse();
+    const daveSimoleanPurse = simoleanIssuer.makeEmptyPurse();
+    const daveBucksPurse = bucksIssuer.makeEmptyPurse();
 
     // Alice creates a coveredCall instance of moola for simoleans
     const terms = harden({
-      assays: [moolaAssay, simoleanAssay],
+      issuers: [moolaIssuer, simoleanIssuer],
     });
     const aliceInvite = await zoe.makeInstance(
       coveredCallInstallationHandle,
@@ -374,11 +377,11 @@ test('zoe - coveredCall with swap for invite', async t => {
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: moola(3),
+          amount: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: simoleans(7),
+          amount: simoleans(7),
         },
       ],
       exitRule: {
@@ -403,37 +406,38 @@ test('zoe - coveredCall with swap for invite', async t => {
     // Bob inspects the invite payment and checks its information against the
     // questions that he has about whether it is worth being a counter
     // party in the covered call: Did the covered call use the
-    // expected covered call installation (code)? Does it use the assays
+    // expected covered call installation (code)? Does it use the issuers
     // that he expects (moola and simoleans)?
-    const inviteAssay = zoe.getInviteAssay();
-    const bobExclOption = await inviteAssay.claimAll(option);
-    const optionUnits = bobExclOption.getBalance();
-    const optionExtent = optionUnits.extent;
-    const { installationHandle } = zoe.getInstance(optionExtent.instanceHandle);
+    const inviteIssuer = zoe.getInviteIssuer();
+    const inviteAmountMath = inviteIssuer.getAmountMath();
+    const bobExclOption = await inviteIssuer.claim(option);
+    const optionAmount = inviteIssuer.getBalance(bobExclOption);
+    const optionDesc = optionAmount.extent[0];
+    const { installationHandle } = zoe.getInstance(optionDesc.instanceHandle);
     t.equal(installationHandle, coveredCallInstallationHandle);
-    t.equal(optionExtent.seatDesc, 'exerciseOption');
-    t.ok(unitOps[0].equals(optionExtent.underlyingAsset, moola(3)));
-    t.ok(unitOps[1].equals(optionExtent.strikePrice, simoleans(7)));
-    t.equal(optionExtent.expirationDate, 100);
-    t.deepEqual(optionExtent.timerAuthority, timer);
+    t.equal(optionDesc.seatDesc, 'exerciseOption');
+    t.ok(amountMaths[0].isEqual(optionDesc.underlyingAsset, moola(3)));
+    t.ok(amountMaths[1].isEqual(optionDesc.strikePrice, simoleans(7)));
+    t.equal(optionDesc.expirationDate, 100);
+    t.deepEqual(optionDesc.timerAuthority, timer);
 
     // Let's imagine that Bob wants to create a swap to trade this
     // invite for bucks.
     const bobSwapInvite = await zoe.makeInstance(swapInstallationId, {
-      assays: harden([inviteAssay, bucksAssay]),
+      issuers: harden([inviteIssuer, bucksIssuer]),
     });
 
-    // Bob wants to swap an invite with the same units as his
+    // Bob wants to swap an invite with the same amount as his
     // current invite from Alice. He wants 1 buck in return.
     const bobOfferRulesSwap = harden({
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: bobExclOption.getBalance(),
+          amount: inviteIssuer.getBalance(bobExclOption),
         },
         {
           kind: 'wantAtLeast',
-          units: bucks(1),
+          amount: bucks(1),
         },
       ],
       exitRule: {
@@ -454,11 +458,11 @@ test('zoe - coveredCall with swap for invite', async t => {
     const daveSwapInvite = await bobSwapSeat.makeFirstOffer();
 
     // Bob passes the swap invite to Dave and tells him the
-    // optionUnits (basically, the description of the option)
+    // optionAmounts (basically, the description of the option)
 
     const {
-      extent: { instanceHandle: swapInstanceHandle },
-    } = daveSwapInvite.getBalance();
+      extent: [{ instanceHandle: swapInstanceHandle }],
+    } = inviteIssuer.getBalance(daveSwapInvite);
 
     const {
       installationHandle: daveSwapInstallId,
@@ -472,12 +476,12 @@ test('zoe - coveredCall with swap for invite', async t => {
     // Did this swap use the correct swap installation? Yes
     t.equal(daveSwapInstallId, swapInstallationId);
 
-    // Is this swap for the correct assays and has no other terms? Yes
+    // Is this swap for the correct issuers and has no other terms? Yes
     t.ok(
       sameStructure(
         daveSwapTerms,
         harden({
-          assays: harden([inviteAssay, bucksAssay]),
+          issuers: harden([inviteIssuer, bucksIssuer]),
         }),
       ),
     );
@@ -493,11 +497,11 @@ test('zoe - coveredCall with swap for invite', async t => {
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          units: optionUnits,
+          amount: optionAmount,
         },
         {
           kind: 'offerAtMost',
-          units: bucksAssay.makeUnits(1),
+          amount: bucks(1),
         },
       ],
       exitRule: {
@@ -518,7 +522,8 @@ test('zoe - coveredCall with swap for invite', async t => {
       'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
-    const [daveOption, daveBucksPayout] = await daveSwapPayoutP;
+    const daveSwapPayout = await daveSwapPayoutP;
+    const [daveOption, daveBucksPayout] = await Promise.all(daveSwapPayout);
 
     // Dave exercises his option by making an offer to the covered
     // call. First, he escrows with Zoe.
@@ -527,18 +532,18 @@ test('zoe - coveredCall with swap for invite', async t => {
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          units: moola(3),
+          amount: moola(3),
         },
         {
           kind: 'offerAtMost',
-          units: simoleans(7),
+          amount: simoleans(7),
         },
       ],
       exitRule: {
         kind: 'onDemand',
       },
     });
-    const daveCoveredCallPayments = [undefined, daveSimoleanPayment];
+    const daveCoveredCallPayments = harden([undefined, daveSimoleanPayment]);
     const {
       seat: daveCoveredCallSeat,
       payout: daveCoveredCallPayoutP,
@@ -566,20 +571,20 @@ test('zoe - coveredCall with swap for invite', async t => {
     t.deepEquals(aliceResult[0].getBalance(), moola(0));
     t.deepEquals(aliceResult[1].getBalance(), simoleans(7));
 
-    t.deepEquals(bobResult[0].getBalance(), inviteAssay.makeUnits(null));
+    t.deepEquals(bobResult[0].getBalance(), inviteAmountMath.make(null));
     t.deepEquals(bobResult[1].getBalance(), bucks(1));
 
     // Alice deposits her payouts
-    await aliceMoolaPurse.depositAll(aliceResult[0]);
-    await aliceSimoleanPurse.depositAll(aliceResult[1]);
+    await aliceMoolaPurse.deposit(aliceResult[0]);
+    await aliceSimoleanPurse.deposit(aliceResult[1]);
 
     // Bob deposits his payouts
-    await bobBucksPurse.depositAll(bobResult[1]);
+    await bobBucksPurse.deposit(bobResult[1]);
 
     // Dave deposits his payouts
-    await daveMoolaPurse.depositAll(daveCoveredCallResult[0]);
-    await daveSimoleanPurse.depositAll(daveCoveredCallResult[1]);
-    await daveBucksPurse.depositAll(daveBucksPayout);
+    await daveMoolaPurse.deposit(daveCoveredCallResult[0]);
+    await daveSimoleanPurse.deposit(daveCoveredCallResult[1]);
+    await daveBucksPurse.deposit(daveBucksPayout);
 
     t.equals(aliceMoolaPurse.getBalance().extent, 0);
     t.equals(aliceSimoleanPurse.getBalance().extent, 7);
@@ -606,9 +611,9 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
   try {
     // Setup the environment
     const timer = buildManualTimer(console.log);
-    const { mints, assays, moola, simoleans, bucks, unitOps } = setup();
+    const { mints, issuers, moola, simoleans, bucks, amountMath } = setup();
     const [moolaMint, simoleanMint, bucksMint] = mints;
-    const [moolaAssay, simoleanAssay, bucksAssay] = assays;
+    const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
     const zoe = makeZoe({ require });
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(coveredCallRoot);
@@ -617,27 +622,27 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
 
     // Setup Alice
     // Alice starts with 3 moola
-    const aliceMoolaPurse = moolaMint.mint(moola(3));
-    const aliceSimoleanPurse = simoleanMint.mint(simoleans(0));
-    const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
+    const aliceMoolaPurse = moolaMint.mintPayment(moola(3));
+    const aliceSimoleanPurse = simoleanMint.mintPayment(simoleans(0));
+    const aliceMoolaPayment = aliceMoolaPurse.withdraw();
 
     // Setup Bob
     // Bob starts with nothing
-    const bobMoolaPurse = moolaMint.mint(moola(0));
-    const bobSimoleanPurse = simoleanMint.mint(simoleans(0));
-    const bobBucksPurse = bucksMint.mint(bucks(0));
+    const bobMoolaPurse = moolaMint.mintPayment(moola(0));
+    const bobSimoleanPurse = simoleanMint.mintPayment(simoleans(0));
+    const bobBucksPurse = bucksMint.mintPayment(bucks(0));
 
     // Setup Dave
     // Dave starts with 1 buck and 7 simoleans
-    const daveMoolaPurse = moolaMint.mint(moola(0));
-    const daveSimoleanPurse = simoleanMint.mint(simoleans(7));
-    const daveBucksPurse = bucksMint.mint(bucks(1));
-    const daveBucksPayment = daveBucksPurse.withdrawAll();
-    const daveSimoleanPayment = daveSimoleanPurse.withdrawAll();
+    const daveMoolaPurse = moolaMint.mintPayment(moola(0));
+    const daveSimoleanPurse = simoleanMint.mintPayment(simoleans(7));
+    const daveBucksPurse = bucksMint.mintPayment(bucks(1));
+    const daveBucksPayment = daveBucksPurse.withdraw();
+    const daveSimoleanPayment = daveSimoleanPurse.withdraw();
 
     // Alice creates a coveredCall instance of moola for simoleans
     const terms = harden({
-      assays: [moolaAssay, simoleanAssay],
+      issuers: [moolaIssuer, simoleanIssuer],
     });
     const aliceCoveredCallInvite = await zoe.makeInstance(
       coveredCallInstallationHandle,
@@ -655,11 +660,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: assays[0].makeUnits(3),
+          amount: issuers[0].makeAmounts(3),
         },
         {
           kind: 'wantAtLeast',
-          units: assays[1].makeUnits(7),
+          amount: issuers[1].makeAmounts(7),
         },
       ],
       exitRule: {
@@ -686,16 +691,17 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     // Bob inspects the invite payment and checks its information against the
     // questions that he has about whether it is worth being a counter
     // party in the covered call: Did the covered call use the
-    // expected covered call installation (code)? Does it use the assays
+    // expected covered call installation (code)? Does it use the issuers
     // that he expects (moola and simoleans)?
-    const inviteAssay = zoe.getInviteAssay();
-    const bobExclOption = await inviteAssay.claimAll(option);
-    const optionExtent = bobExclOption.getBalance().extent;
+    const inviteIssuer = zoe.getInviteIssuer();
+    const inviteAmountMaths = inviteIssuer.getAmountMaths();
+    const bobExclOption = await inviteIssuer.claim(option);
+    const optionExtent = inviteIssuer.getBalance(bobExclOption).extent[0];
     const { installationHandle } = zoe.getInstance(optionExtent.instanceHandle);
     t.equal(installationHandle, coveredCallInstallationHandle);
     t.equal(optionExtent.seatDesc, 'exerciseOption');
-    t.ok(unitOps[0].equals(optionExtent.underlyingAsset, moola(3)));
-    t.ok(unitOps[1].equals(optionExtent.strikePrice, simoleans(7)));
+    t.ok(amountMath[0].equals(optionExtent.underlyingAsset, moola(3)));
+    t.ok(amountMath[1].equals(optionExtent.strikePrice, simoleans(7)));
     t.equal(optionExtent.expirationDate, 100);
     t.deepEqual(optionExtent.timerAuthority, timer);
 
@@ -704,21 +710,21 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const bobInviteForSecondCoveredCall = await zoe.makeInstance(
       coveredCallInstallationHandle,
       harden({
-        assays: [inviteAssay, bucksAssay],
+        issuers: [inviteIssuer, bucksIssuer],
       }),
     );
 
-    // Bob wants to swap an invite with the same units as his
+    // Bob wants to swap an invite with the same amount as his
     // current invite from Alice. He wants 1 buck in return.
     const bobOfferRulesSecondCoveredCall = harden({
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: bobExclOption.getBalance(),
+          amount: inviteIssuer.getBalance(bobExclOption),
         },
         {
           kind: 'wantAtLeast',
-          units: bucksAssay.makeUnits(1),
+          amount: bucks(1),
         },
       ],
       exitRule: {
@@ -744,19 +750,19 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const inviteForDave = await bobSecondCoveredCallSeat.makeCallOption();
 
     // Bob passes the higher order invite and
-    // optionUnits to Dave
+    // optionAmounts to Dave
 
     // Dave is looking to buy the option to trade his 7 simoleans for
     // 3 moola, and is willing to pay 1 buck for the option. He
     // checks that this invite matches what he wants
-    const daveExclOption = await inviteAssay.claimAll(inviteForDave);
+    const daveExclOption = await inviteIssuer.claim(inviteForDave);
     const daveOptionExtent = daveExclOption.getBalance().extent;
     const {
       installationHandle: daveOptionInstallationHandle,
     } = zoe.getInstance(daveOptionExtent.instanceHandle);
     t.equal(daveOptionInstallationHandle, coveredCallInstallationHandle);
     t.equal(daveOptionExtent.seatDesc, 'exerciseOption');
-    t.ok(unitOps[2].equals(daveOptionExtent.strikePrice, bucks(1)));
+    t.ok(amountMath[2].equals(daveOptionExtent.strikePrice, bucks(1)));
     t.equal(daveOptionExtent.expirationDate, 100);
     t.deepEqual(daveOptionExtent.timerAuthority, timer);
 
@@ -764,7 +770,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     t.equal(daveOptionExtent.underlyingAsset.extent.seatDesc, 'exerciseOption');
     t.equal(daveOptionExtent.underlyingAsset.extent.expirationDate, 100);
     t.ok(
-      unitOps[1].equals(
+      amountMath[1].equals(
         daveOptionExtent.underlyingAsset.extent.strikePrice,
         simoleans(7),
       ),
@@ -776,11 +782,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          units: daveOptionExtent.underlyingAsset,
+          amount: daveOptionExtent.underlyingAsset,
         },
         {
           kind: 'offerAtMost',
-          units: bucksAssay.makeUnits(1),
+          amount: bucksIssuer.makeAmounts(1),
         },
       ],
       exitRule: {
@@ -817,11 +823,11 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          units: moola(3),
+          amount: moola(3),
         },
         {
           kind: 'offerAtMost',
-          units: simoleans(7),
+          amount: simoleans(7),
         },
       ],
       exitRule: {
@@ -856,20 +862,20 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     t.deepEquals(aliceResult[0].getBalance(), moola(0));
     t.deepEquals(aliceResult[1].getBalance(), simoleans(7));
 
-    t.deepEquals(bobResult[0].getBalance(), inviteAssay.makeUnits(null));
+    t.deepEquals(bobResult[0].getBalance(), inviteAmountMaths.make(null));
     t.deepEquals(bobResult[1].getBalance(), bucks(1));
 
     // Alice deposits her payouts
-    await aliceMoolaPurse.depositAll(aliceResult[0]);
-    await aliceSimoleanPurse.depositAll(aliceResult[1]);
+    await aliceMoolaPurse.deposit(aliceResult[0]);
+    await aliceSimoleanPurse.deposit(aliceResult[1]);
 
     // Bob deposits his payouts
-    await bobBucksPurse.depositAll(bobResult[1]);
+    await bobBucksPurse.deposit(bobResult[1]);
 
     // Dave deposits his payouts
-    await daveMoolaPurse.depositAll(daveFirstCoveredCallResult[0]);
-    await daveSimoleanPurse.depositAll(daveFirstCoveredCallResult[1]);
-    await daveBucksPurse.depositAll(daveBucksPayout);
+    await daveMoolaPurse.deposit(daveFirstCoveredCallResult[0]);
+    await daveSimoleanPurse.deposit(daveFirstCoveredCallResult[1]);
+    await daveBucksPurse.deposit(daveBucksPayout);
 
     t.equals(aliceMoolaPurse.getBalance().extent, 0);
     t.equals(aliceSimoleanPurse.getBalance().extent, 7);
