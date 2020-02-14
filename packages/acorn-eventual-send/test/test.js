@@ -1,6 +1,6 @@
 import test from 'tape';
 import acorn from 'acorn';
-import eventualSend from '../index.js';
+import eventualSend from '../src/index.js';
 
 test('parser', async t => {
   try {

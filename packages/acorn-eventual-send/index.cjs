@@ -1,1 +1,1 @@
-module.exports = import('./index.js');
+module.exports = import('./src/index.js');

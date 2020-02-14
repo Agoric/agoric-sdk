@@ -3,10 +3,10 @@
   "version": "2.0.0",
   "description": "Eventual send (wavy dot) parser plugin for Acorn",
   "type": "module",
-  "main": "index.js",
+  "main": "index.mjs",
   "exports": {
     "require": "./index.cjs",
-    "import": "./index.js"
+    "import": "./index.mjs"
   },
   "scripts": {
     "build": "exit 0",

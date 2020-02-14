@@ -3,7 +3,7 @@ import url from 'url';
 import test from 'tape';
 import rollupNS from 'rollup';
 import acorn from 'acorn';
-import eventualSend from '../index.js';
+import eventualSend from '../src/index.js';
 
 const { rollup } = rollupNS;
 
