@@ -1,0 +1,24 @@
+
+interface SwingSetConfig {
+  devices: [string/*devicename*/, string/*sourcepath*/, object/*endowments*/][];
+  vats: Map<string/*vatname*/, VatConfig>;
+  bootstrapIndexJS: string;
+  hostStorage: StorageAPI
+}
+
+interface VatConfig {
+  sourcepath: string;
+  options: VatOptions;
+}
+
+interface VatOptions {
+  enablePipelining?: boolean;
+}
+
+interface StorageAPI {
+  has(key: string): boolean;
+  get(key: string): string;
+  *getKeys(start: string, end: string): string;
+  set(key: string, value: string): void;
+  delete(key: string): void;
+}
