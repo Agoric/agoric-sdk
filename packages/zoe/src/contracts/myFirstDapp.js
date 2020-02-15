@@ -1,120 +1,125 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
-import { makeMint } from '@agoric/ertp';
-import { makeHelpers } from './helpers/userFlow';
+import { makeHelpers, defaultAcceptanceMsg } from './helpers/userFlow';
 
 /**  EDIT THIS CONTRACT WITH YOUR OWN BUSINESS LOGIC */
 
 /**
- * This contract has a similar interface to the autoswap contract, but
- * doesn't do much. The contract assumes that the first offer it
- * receives adds 1 unit of each assay as liquidity. Then, a user can
- * trade 1 of the first assay for 1 of the second assay and vice versa
- * for as long as they want, as long as they alternate the direction
- * of the trade.
+ * This contract is like the simpleExchange contract. The exchange only accepts
+ * limit orders. A limit order is an order with payoutRules that specifies
+ * wantAtLeast on one side and offerAtMost on the other:
+ * [ { kind: 'wantAtLeast', units2 }, { kind: 'offerAtMost', units1 }]
+ * [ { kind: 'wantAtLeast', units1 }, { kind: 'offerAtMost', units2 }]
  *
- * Please see autoswap.js for the real version of a uniswap implementation.
+ * Note that the asset specified as wantAtLeast is treated as the exact amount
+ * to be exchanged, while the amount specified as offerAtMost is a limit that
+ * may be improved on. This simple exchange does not partially fill orders.
  */
 export const makeContract = harden((zoe, terms) => {
-  // The user passes in an array of two assays for the two kinds of
-  // assets to be swapped.
-  const startingAssays = terms.assays;
+  const ASSET_INDEX = 0;
+  let sellInviteHandles = [];
+  let buyInviteHandles = [];
+  const { assays } = terms;
+  const {
+    rejectOffer,
+    hasValidPayoutRules,
+    swap,
+    areAssetsEqualAtIndex,
+    canTradeWith,
+    getActiveOffers,
+  } = makeHelpers(zoe, assays);
 
-  // There is also a third assay, the assay for the liquidity token,
-  // which is created in this contract. We will return all three as
-  // the canonical array of assays for this contract
+  function flattenRule(r) {
+    const description = r.units;
+    let result;
+    switch (r.kind) {
+      case 'offerAtMost':
+        result = { offer: description };
+        break;
+      case 'wantAtLeast':
+        result = { want: description };
+        break;
+      default:
+        throw new Error(`${r.kind} not supported.`);
+    }
+    return harden(result);
+  }
 
-  // TODO: USE THE LIQUIDITY MINT TO MINT TOKENS
-  const liquidityMint = makeMint('liquidity');
-  const liquidityAssay = liquidityMint.getAssay();
-  const assays = [...startingAssays, liquidityAssay];
-
-  return zoe.addAssays(assays).then(() => {
-    // This handle is used to store the assets in the liquidity pool.
-    let poolHandle;
-
-    const unitOpsArray = zoe.getUnitOpsForAssays(assays);
-    const { vectorWith, vectorWithout, makeEmptyOffer } = makeHelpers(
-      zoe,
-      assays,
-    );
-
-    const getPoolUnits = () => zoe.getOffer(poolHandle).units;
-
-    const makeInvite = () => {
-      const seat = harden({
-        addLiquidity: () => {
-          // This contract assumes that the first offer this
-          // receives is to add 1 unit of liquidity for both assays. If we
-          // don't do this, this contract will break.
-          // TODO: CHECK HERE THAT OFFER IS A VALID LIQUIDITY OFFER
-
-          // This will only happen once so we will just swap the pool
-          // extents and the offer extents to put what was offered in the
-          // pool.
-          const poolUnits = zoe.getOffer(poolHandle).units;
-          const userUnits = zoe.getOffer(inviteHandle).units;
-          zoe.reallocate(
-            harden([poolHandle, inviteHandle]),
-            harden([userUnits, poolUnits]),
-          );
-          zoe.complete(harden([inviteHandle]));
-
-          // TODO: MINT LIQUIDITY TOKENS AND REALLOCATE THEM TO THE USER
-          // THROUGH ZOE HERE
-          return 'Added liquidity.';
-        },
-        swap: () => {
-          const poolUnits = zoe.getOffer(poolHandle).units;
-          const userUnits = zoe.getOffer(inviteHandle).units;
-          const [firstUserUnits, secondUserUnits] = userUnits;
-          const newUserUnits = [
-            unitOpsArray[0].make(secondUserUnits.extent),
-            unitOpsArray[1].make(firstUserUnits.extent),
-            unitOpsArray[2].empty(),
-          ];
-          // We want to add the thing offered to the pool and give back the
-          // other thing
-          // TODO: ADD YOUR OWN LOGIC HERE
-          const newPoolUnits = vectorWithout(
-            vectorWith(poolUnits, userUnits),
-            newUserUnits,
-          );
-          zoe.reallocate(
-            harden([poolHandle, inviteHandle]),
-            harden([newPoolUnits, newUserUnits]),
-          );
-          zoe.complete(harden([inviteHandle]));
-          return 'Swap successfully completed.';
-        },
-        // TODO: IMPLEMENT (see autoswap.js for an example)
-        removeLiquidity: () => {},
-      });
-      const { invite, inviteHandle } = zoe.makeInvite(seat, {
-        seatDesc: 'autoswapSeat',
-      });
-      return invite;
-    };
-
-    return makeEmptyOffer().then(handle => {
-      poolHandle = handle;
-
-      return harden({
-        invite: makeInvite(),
-        publicAPI: {
-          // The price is always 1. Always.
-          // TODO: CHANGE THIS AND CREATE YOUR OWN BONDING CURVE
-          getPrice: unitsIn => {
-            const IN_INDEX = unitsIn.label.assay === assays[0] ? 0 : 1;
-            const OUT_INDEX = 1 - IN_INDEX;
-            return unitOpsArray[OUT_INDEX].make(1);
-          },
-          getLiquidityAssay: () => liquidityAssay,
-          getPoolUnits,
-          makeInvite,
-        },
-        terms: { assays },
-      });
+  function flattenOffer(o) {
+    return harden({
+      ...flattenRule(o.payoutRules[0]),
+      ...flattenRule(o.payoutRules[1]),
     });
+  }
+
+  function flattenOrders(offerHandles) {
+    return zoe
+      .getOffers(zoe.getOfferStatuses(offerHandles).active)
+      .map(offer => flattenOffer(offer));
+  }
+
+  function getBookOrders() {
+    return {
+      buys: flattenOrders(buyInviteHandles),
+      sells: flattenOrders(sellInviteHandles),
+    };
+  }
+
+  function getOffer(inviteHandle) {
+    for (const handle of [...sellInviteHandles, ...buyInviteHandles]) {
+      if (inviteHandle === handle) {
+        return flattenOffer(getActiveOffers([inviteHandle])[0]);
+      }
+    }
+    return 'not an active offer';
+  }
+
+  function swapOrAddToBook(inviteHandles, inviteHandle) {
+    for (const iHandle of inviteHandles) {
+      if (
+        areAssetsEqualAtIndex(ASSET_INDEX, inviteHandle, iHandle) &&
+        canTradeWith(inviteHandle, iHandle)
+      ) {
+        return swap(inviteHandle, iHandle);
+      }
+    }
+    return defaultAcceptanceMsg;
+  }
+
+  const makeInvite = () => {
+    const seat = harden({
+      // This code might be modified to support immediate_or_cancel. Current
+      // implementation is effectively fill_or_kill.
+      addOrder: () => {
+        // Is it a valid sell offer?
+        if (hasValidPayoutRules(['offerAtMost', 'wantAtLeast'], inviteHandle)) {
+          // Save the valid offer and try to match
+
+          // IDEA: to implement matching against the best price, the orders
+          // should be sorted. (We'd also want to allow partial matches.)
+          sellInviteHandles.push(inviteHandle);
+          buyInviteHandles = [...zoe.getOfferStatuses(buyInviteHandles).active];
+          return swapOrAddToBook(buyInviteHandles, inviteHandle);
+        }
+        // Is it a valid buy offer?
+        if (hasValidPayoutRules(['wantAtLeast', 'offerAtMost'], inviteHandle)) {
+          // Save the valid offer and try to match
+          buyInviteHandles.push(inviteHandle);
+          sellInviteHandles = [
+            ...zoe.getOfferStatuses(sellInviteHandles).active,
+          ];
+          return swapOrAddToBook(sellInviteHandles, inviteHandle);
+        }
+        // Eject because the offer must be invalid
+        throw rejectOffer(inviteHandle);
+      },
+    });
+    const { invite, inviteHandle } = zoe.makeInvite(seat);
+    return { invite, inviteHandle };
+  };
+  return harden({
+    invite: makeInvite(),
+    publicAPI: { makeInvite, getBookOrders, getOffer },
+    terms,
   });
 });
