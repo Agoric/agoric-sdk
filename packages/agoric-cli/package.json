@@ -30,7 +30,7 @@
     "esm": "^3.2.5",
     "minimist": "^1.2.0",
     "ws": "^7.2.0",
-    "yarn": "^1.19.1"
+    "yarn": "^1.22.0"
   },
   "keywords": [],
   "repository": {
