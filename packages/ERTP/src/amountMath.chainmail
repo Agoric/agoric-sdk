@@ -54,14 +54,20 @@ interface AmountMath (Amount (Brand, Extent)) {
   extent(amount :Amount) -> (Extent);
 
   /** Return the amount representing an empty amount. This is the
-   * identity element in MathHelpers.
+   * identity element for MathHelpers.add and MatHelpers.subtract.
    */
   getEmpty() -> (Amount);
 
   /** Return true if the Amount is empty. Otherwise false. */
   isEmpty(amount :Amount) -> (boolean);
 
-  /** Returns true if the leftAmount is greater than or equal to the rightAmount. */
+  /**
+   * Returns true if the leftAmount is greater than or equal to the
+   * rightAmount. For non-scalars, "greater than or equal to" depends
+   * on the kind of amount, as defined by the MathHelpers. For example,
+   * whether rectangle A is greater than rectangle B depends on whether rectangle
+   * A includes rectangle B as defined by the logic in MathHelpers.
+  */
   isGTE(leftAmount :Amount, rightAmount :Amount) -> (boolean);
 
   /** 
@@ -83,9 +89,9 @@ interface AmountMath (Amount (Brand, Extent)) {
   * Returns a new amount that is the leftAmount minus the rightAmount
   * (i.e. everything in the leftAmount that is not in the
   * rightAmount). If leftAmount doesn't include rightAmount
-  * (subtraction results in a negative), throw  an error. Note: 
-  * because we throw an error if the result is "negative", this is NOT
-  * equivalent to set subtraction.
+  * (subtraction results in a negative), throw  an error. Because the
+  * left amount must include the right amount, this is NOT equivalent
+  * to set subtraction.
   */
   subtract(leftAmount :Amount, rightAmount :Amount) -> (Amount);
 }
@@ -98,7 +104,7 @@ interface AmountMath (Amount (Brand, Extent)) {
  *
  * Every amount created by AmountMath will have the same brand, but recipients
  * cannot use the brand by itself to verify that a purported amount is
- * authentic, since the brand can be copied. 
+ * authentic, since the brand can be reused by a misbehaving issuer. 
  */
 interface Brand ( ) {
   isMyIssuer (issuer :Issuer) -> (Boolean);
