@@ -66,7 +66,7 @@ export async function main() {
   const command = argv.shift();
   if (command !== 'run' && command !== 'shell' && command !== 'step') {
     throw new Error(
-      `use 'runner run', 'runner step', or 'runner shell', not 'runner ${command}'`
+      `use 'runner run', 'runner step', or 'runner shell', not 'runner ${command}'`,
     );
   }
 

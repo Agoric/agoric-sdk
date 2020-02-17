@@ -4,19 +4,24 @@ import { spawn } from 'child_process';
 async function innerTest(t, extraFlags) {
   try {
     await new Promise(resolve => {
-      const proc = spawn(`bin/runner --init ${extraFlags} run demo/encouragementBot`, {
-        cwd: `${__dirname}/..`,
-        shell: true,
-        stdio: ['ignore', 'pipe', 'inherit'],
-      });
+      const proc = spawn(
+        `bin/runner --init ${extraFlags} run demo/encouragementBot`,
+        {
+          cwd: `${__dirname}/..`,
+          shell: true,
+          stdio: ['ignore', 'pipe', 'inherit'],
+        },
+      );
       let output = '';
       proc.stdout.addListener('data', data => {
         output += data;
       });
       proc.addListener('exit', code => {
         t.equal(code, 0, 'exits successfully');
-        t.notEqual(output.indexOf('\nuser vat is happy\n'), -1, 'user vat is happy');
-        t.notEqual(output.indexOf('\nbot vat is happy\n'), -1, 'bot vat is happy');
+        const uMsg = 'user vat is happy';
+        t.notEqual(output.indexOf(`\n${uMsg}\n`), -1, uMsg);
+        const bMsg = 'bot vat is happy';
+        t.notEqual(output.indexOf(`\n${bMsg}\n`), -1, bMsg);
         resolve();
       });
     });

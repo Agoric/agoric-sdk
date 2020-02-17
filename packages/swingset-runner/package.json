@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@agoric/swingset-vat": "^0.3.0",
+    "@agoric/harden": "^0.0.4",
     "node-lmdb": "^0.8.0",
     "n-readlines": "^1.0.0"
   },
