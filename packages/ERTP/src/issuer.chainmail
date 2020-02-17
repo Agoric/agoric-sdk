@@ -155,8 +155,8 @@ interface Purse (Amount) {
  * not be trusted themselves. To get the balance of a payment, use the
  * trusted issuer: issuer.getBalance(payment),
  *
- * Payments can be converted to Purses by getting a verified issuer and calling
- * issuer.makeEmptyPurse().deposit(payment);
+ * Payments can be converted to Purses by getting a trusted issuer and
+ * calling `issuer.makeEmptyPurse()` to create a purse, then `purse.deposit(payment)`.
  */
 interface Payment (Amount) {
   /** Get the memo string */

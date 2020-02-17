@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { assert } from '@agoric/assert';
+import { assert, details } from '@agoric/assert';
 
 import { mustBeSameStructure, mustBeComparable } from '@agoric/same-structure';
 import mathHelpersLib from './mathHelpersLib';
@@ -8,7 +8,7 @@ import mathHelpersLib from './mathHelpersLib';
 // kind of digital asset as well as "how much" or "how many". Amounts
 // have two parts: a brand (the kind of digital asset) and the extent
 // (the answer to "how much"). For example, in the phrase "5 bucks",
-// the brand takes the role of "bucks" and the extent is 5. Amounts
+// "bucks" takes the role of the brand and the extent is 5. Amounts
 // can describe fungible and non-fungible digital assets. Amounts are
 // pass-by-copy and can be made by and sent to anyone.
 
@@ -55,7 +55,10 @@ function makeAmountMath(brand, mathHelpersName) {
   mathHelpersName = `${mathHelpersName}`;
 
   const helpers = mathHelpersLib[mathHelpersName];
-  assert(helpers !== undefined, 'helpers must be defined');
+  assert(
+    helpers !== undefined,
+    details`unrecognized mathHelpersName: ${mathHelpersName}`,
+  );
 
   // Cache the amount if we can.
   const cache = new WeakSet();
