@@ -3,9 +3,9 @@ import path from 'path';
 
 import lmdb from 'node-lmdb';
 
-function safeUnlink(path) {
+function safeUnlink(filePath) {
   try {
-    fs.unlinkSync(path);
+    fs.unlinkSync(filePath);
   } catch (e) {
     if (e.code !== 'ENOENT') {
       throw e;
@@ -37,12 +37,12 @@ export function makeLMDBStore(basedir, dbName, forceReset = false) {
   let lmdbEnv = new lmdb.Env();
   lmdbEnv.open({
     path: basedir,
-    mapSize: 2*1024*1024*1024 // XXX need to tune this
+    mapSize: 2 * 1024 * 1024 * 1024, // XXX need to tune this
   });
 
   let dbi = lmdbEnv.openDbi({
     name: dbName,
-    create: true
+    create: true,
   });
 
   function ensureTxn() {
@@ -52,19 +52,25 @@ export function makeLMDBStore(basedir, dbName, forceReset = false) {
   }
 
   /**
-   * Test if the state contains a value for a given key.
+   * Obtain the value stored for a given key.
    *
-   * @param key  The key that is of interest.
+   * @param key  The key whose value is sought.
    *
-   * @return true if a value is stored for the key, false if not.
+   * @return the (string) value for the given key, or undefined if there is no
+   *    such value.
    *
    * @throws if key is not a string.
    */
-  function has(key) {
+  function get(key) {
     if (`${key}` !== key) {
       throw new Error(`non-string key ${key}`);
     }
-    return get(key) !== undefined;
+    ensureTxn();
+    let result = txn.getString(dbi, key);
+    if (result === null) {
+      result = undefined;
+    }
+    return result;
   }
 
   /**
@@ -88,7 +94,7 @@ export function makeLMDBStore(basedir, dbName, forceReset = false) {
     }
 
     ensureTxn();
-    let cursor = new lmdb.Cursor(txn, dbi);
+    const cursor = new lmdb.Cursor(txn, dbi);
     let key = cursor.goToRange(start);
     while (key && key < end) {
       yield key;
@@ -98,25 +104,19 @@ export function makeLMDBStore(basedir, dbName, forceReset = false) {
   }
 
   /**
-   * Obtain the value stored for a given key.
+   * Test if the state contains a value for a given key.
    *
-   * @param key  The key whose value is sought.
+   * @param key  The key that is of interest.
    *
-   * @return the (string) value for the given key, or undefined if there is no
-   *    such value.
+   * @return true if a value is stored for the key, false if not.
    *
    * @throws if key is not a string.
    */
-  function get(key) {
+  function has(key) {
     if (`${key}` !== key) {
       throw new Error(`non-string key ${key}`);
     }
-    ensureTxn();
-    let result = txn.getString(dbi, key);
-    if (result === null) {
-      result = undefined;
-    }
-    return result;
+    return get(key) !== undefined;
   }
 
   /**

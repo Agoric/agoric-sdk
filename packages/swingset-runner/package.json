@@ -7,8 +7,13 @@
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
   "license": "Apache-2.0",
+  "scripts": {
+    "lint-fix": "eslint --fix '**/*.js'",
+    "lint-check": "eslint '**/*.js'"
+  },
   "dependencies": {
     "@agoric/swingset-vat": "^0.3.0",
-    "node-lmdb": "^0.8.0"
+    "node-lmdb": "^0.8.0",
+    "n-readlines": "^1.0.0"
   }
 }
