@@ -50,7 +50,7 @@ interface AmountMath (Amount (Brand, Extent)) {
    */
   coerce(allegedAmountOrExtent :Amount) -> (Amount);
 
-  /** Remove the brand and return the extent. */
+  /** Extract and return the extent. */
   extent(amount :Amount) -> (Extent);
 
   /** Return the amount representing an empty amount. This is the

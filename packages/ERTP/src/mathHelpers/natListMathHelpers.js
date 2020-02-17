@@ -15,8 +15,8 @@ const natListMathHelpers = harden({
   doIsIdentity: list => passStyleOf(list) === 'copyArray' && list.length === 0,
   doIsGTE: (left, right) => {
     const leftSet = new Set(left);
-    const has = elem => leftSet.has(elem);
-    return right.every(has);
+    const leftHas = elem => leftSet.has(elem);
+    return right.every(leftHas);
   },
   doIsEqual: (left, right) => {
     left = [...left];

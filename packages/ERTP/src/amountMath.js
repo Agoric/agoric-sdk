@@ -46,7 +46,7 @@ import mathHelpersLib from './mathHelpersLib';
 // in this module).
 
 // Each issuer of digital assets has an associated brand in a one-to-one
-// mapping. In untrusted contexts, such in analyzing payments and
+// mapping. In untrusted contexts, such as in analyzing payments and
 // amounts, we can get the brand and find the issuer which matches the
 // brand. The issuer and the brand mutually validate each other.
 
@@ -75,7 +75,7 @@ function makeAmountMath(brand, mathHelpersName) {
       return amount;
     },
 
-    // Make sure this amount (or extent) are valid and return them if so.
+    // Make sure this amount (or extent) is valid and return it if so.
     coerce: allegedAmountOrExtent => {
       // If the cache already has the allegedAmountOrExtent, that
       // means it is a valid amount.
@@ -97,21 +97,22 @@ function makeAmountMath(brand, mathHelpersName) {
     getExtent: amount => amountMath.coerce(amount).extent,
 
     // Represents the empty set/mathematical identity.
-    getEmpty: () => amountMath.make(helpers.doGetIdentity()),
+    // eslint-disable-next-line no-use-before-define
+    getEmpty: () => empty,
 
     // Is the amount equal to the empty set?
     isEmpty: amount => helpers.doIsIdentity(amountMath.getExtent(amount)),
 
     // Is leftAmount greater than or equal to rightAmount? In other
-    // words, is everything in the leftAmount included in the
-    // rightAmount?
+    // words, is everything in the rightAmount included in the
+    // leftAmount?
     isGTE: (leftAmount, rightAmount) =>
       helpers.doIsGTE(
         amountMath.getExtent(leftAmount),
         amountMath.getExtent(rightAmount),
       ),
 
-    // Are leftAmount equal to rightAmount?
+    // Is leftAmount equal to rightAmount?
     isEqual: (leftAmount, rightAmount) =>
       helpers.doIsEqual(
         amountMath.getExtent(leftAmount),
@@ -138,6 +139,7 @@ function makeAmountMath(brand, mathHelpersName) {
         ),
       ),
   });
+  const empty = amountMath.make(helpers.doGetIdentity());
   return amountMath;
 }
 

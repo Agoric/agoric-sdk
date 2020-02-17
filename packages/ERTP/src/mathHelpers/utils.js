@@ -16,8 +16,8 @@ const makeObjListMathHelpers = (customInsistFn, getIdentifierFn) => {
       const leftIds = left.map(getIdentifierFn);
       const rightIds = right.map(getIdentifierFn);
       const leftWeakSet = new WeakSet(leftIds);
-      const has = elem => leftWeakSet.has(elem);
-      return rightIds.every(has);
+      const leftHas = elem => leftWeakSet.has(elem);
+      return rightIds.every(leftHas);
     },
     doIsEqual: (left, right) =>
       helpers.doIsGTE(left, right) && helpers.doIsGTE(right, left),
