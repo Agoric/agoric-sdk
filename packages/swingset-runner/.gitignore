@@ -1,0 +1,3 @@
+# swingset persistence data
+*.mdb
+*.jsonlines
