@@ -7,8 +7,22 @@
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
   "license": "Apache-2.0",
+  "scripts": {
+    "build": "exit 0",
+    "test": "tape -r esm 'test/**/test*.js' | tap-spec",
+    "lint-fix": "eslint --fix '**/*.js'",
+    "lint-check": "eslint '**/*.js'"
+  },
   "dependencies": {
     "@agoric/swingset-vat": "^0.3.0",
-    "node-lmdb": "^0.8.0"
+    "@agoric/harden": "^0.0.4",
+    "node-lmdb": "^0.8.0",
+    "n-readlines": "^1.0.0"
+  },
+  "devDependencies": {
+    "esm": "^3.2.25",
+    "tap-spec": "^5.0.0",
+    "tape": "^4.10.2",
+    "tape-promise": "^4.0.0"
   }
 }

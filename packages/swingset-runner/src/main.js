@@ -35,7 +35,7 @@ export async function main() {
   //
   // Any remaining args are passed to the swingset's bootstrap vat.
 
-  let argv = process.argv.splice(2);
+  const argv = process.argv.splice(2);
 
   let withSES = true;
   let forceReset = false;
@@ -43,22 +43,37 @@ export async function main() {
   while (argv[0].startsWith('--')) {
     const flag = argv.shift();
     switch (flag) {
-      case '--no-ses': withSES = false; break;
-      case '--init': forceReset = true; break;
-      case '--filedb': dbMaker = makeSimpleStore; break;
-      case '--memdb': dbMaker = makeMemoryStore; break;
-      case '--lmdb': dbMaker = makeLMDBStore; break;
-      default: throw new Error(`invalid flag ${flag}`);
+      case '--no-ses':
+        withSES = false;
+        break;
+      case '--init':
+        forceReset = true;
+        break;
+      case '--filedb':
+        dbMaker = makeSimpleStore;
+        break;
+      case '--memdb':
+        dbMaker = makeMemoryStore;
+        break;
+      case '--lmdb':
+        dbMaker = makeLMDBStore;
+        break;
+      default:
+        throw new Error(`invalid flag ${flag}`);
     }
   }
 
   const command = argv.shift();
   if (command !== 'run' && command !== 'shell' && command !== 'step') {
-    throw new Error(`use 'runner run', 'runner step', or 'runner shell', not 'runner ${command}'`);
+    throw new Error(
+      `use 'runner run', 'runner step', or 'runner shell', not 'runner ${command}'`,
+    );
   }
 
+  // Prettier demands that the conditional not be parenthesized.  Prettier is wrong.
+  // eslint-disable-next-line prettier/prettier
   const basedir = (argv[0] === '--' || argv[0] === undefined) ? '.' : argv.shift();
-  const bootstrapVatArgv = argv[0] === '--' ? argv.slice(1) : argv;
+  const bootstrapArgv = argv[0] === '--' ? argv.slice(1) : argv;
 
   const config = await loadBasedir(basedir);
 
@@ -66,7 +81,7 @@ export async function main() {
 
   config.hostStorage = store.storage;
 
-  const controller = await buildVatController(config, withSES, bootstrapVatArgv);
+  const controller = await buildVatController(config, withSES, bootstrapArgv);
   switch (command) {
     case 'run': {
       await controller.run();
@@ -83,10 +98,13 @@ export async function main() {
       break;
     }
     case 'shell': {
-      const cli = repl.start({ prompt: 'runner> ',
-                               replMode: repl.REPL_MODE_STRICT,
-                             });
-      cli.on('exit', () => { store.close(); });
+      const cli = repl.start({
+        prompt: 'runner> ',
+        replMode: repl.REPL_MODE_STRICT,
+      });
+      cli.on('exit', () => {
+        store.close();
+      });
       cli.context.dump2 = () => controller.dump();
       cli.defineCommand('commit', {
         help: 'Commit current kernel state to persistent storage',
@@ -94,7 +112,7 @@ export async function main() {
           store.commit();
           console.log('committed');
           cli.displayPrompt();
-        }
+        },
       });
       cli.defineCommand('dump', {
         help: 'Dump the kernel tables',
@@ -107,7 +125,7 @@ export async function main() {
           console.log('Run Queue:');
           deepLog(d.runQueue);
           cli.displayPrompt();
-        }
+        },
       });
       cli.defineCommand('run', {
         help: 'Crank until the run queue is empty',
@@ -115,7 +133,7 @@ export async function main() {
           console.log('run!');
           await controller.run();
           cli.displayPrompt();
-        }
+        },
       });
       cli.defineCommand('step', {
         help: 'Step the swingset one crank',
@@ -123,9 +141,11 @@ export async function main() {
           console.log('step!');
           await controller.step();
           cli.displayPrompt();
-        }
+        },
       });
       break;
     }
+    default:
+      throw new Error(`invalid command ${command}`);
   }
 }

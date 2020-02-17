@@ -1,12 +1,12 @@
 import fs from 'fs';
 import path from 'path';
-import readlines from 'n-readlines';
+import Readlines from 'n-readlines';
 
 import { buildStorageInMemory } from '@agoric/swingset-vat';
 
-function safeUnlink(path) {
+function safeUnlink(filePath) {
   try {
-    fs.unlinkSync(path);
+    fs.unlinkSync(filePath);
   } catch (e) {
     if (e.code !== 'ENOENT') {
       throw e;
@@ -25,7 +25,7 @@ function safeUnlink(path) {
  */
 export function makeMemoryStore(_basedir, _dbName, _forceReset) {
   return {
-    storage: buildStorageInMemory(),
+    storage: buildStorageInMemory().storage,
     commit: () => {},
     close: () => {},
   };
@@ -53,7 +53,7 @@ export function makeSimpleStore(basedir, dbName, forceReset = false) {
   } else {
     let lines;
     try {
-      lines = new readlines(storeFile);
+      lines = new Readlines(storeFile);
     } catch (e) {
       // storeFile will be missing the first time we try to use it.  That's OK; commit will create it.
       if (e.code !== 'ENOENT') {
@@ -61,10 +61,11 @@ export function makeSimpleStore(basedir, dbName, forceReset = false) {
       }
     }
     if (lines) {
-      let line;
-      while (line = lines.next()) {
+      let line = lines.next();
+      while (line) {
         const [key, value] = JSON.parse(line);
         storage.set(key, value);
+        line = lines.next();
       }
     }
   }
@@ -90,6 +91,7 @@ export function makeSimpleStore(basedir, dbName, forceReset = false) {
    * commit() first).
    */
   function close() {
+    // Nothing to do here.
   }
 
   return { storage, commit, close };
