@@ -147,7 +147,7 @@ const makeOfferTable = () => {
         offerHandles.map(offerHandle => table.delete(offerHandle)),
       updateAmountMatrix: (offerHandles, newAmountMatrix) =>
         offerHandles.map((offerHandle, i) =>
-          table.update(offerHandle, harden({ amounts: newAmountMatrix[i] })),
+          table.update(offerHandle, { amounts: newAmountMatrix[i] }),
         ),
     });
     return customMethods;

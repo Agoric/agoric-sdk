@@ -54,8 +54,8 @@ const makeObjListMathHelpers = (customInsistFn, getIdentifierFn) => {
           throw new Error('right element was not in left');
         }
       });
-      return uniqueLeft.filter(
-        extent => !rightWeakSet.has(getIdentifierFn(extent)),
+      return harden(
+        uniqueLeft.filter(extent => !rightWeakSet.has(getIdentifierFn(extent))),
       );
     },
   });

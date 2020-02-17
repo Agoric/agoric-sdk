@@ -318,7 +318,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 // Bob. Bob tries to sell the invite to Dave through a swap. Can Bob
 // trick Dave? Can Dave describe what it is that he wants in the swap
 // offer description?
-test.only('zoe - coveredCall with swap for invite', async t => {
+test('zoe - coveredCall with swap for invite', async t => {
   try {
     // Setup the environment
     const timer = buildManualTimer(console.log);
@@ -562,28 +562,38 @@ test.only('zoe - coveredCall with swap for invite', async t => {
     // Dave should get 3 moola, Bob should get 1 buck, and Alice
     // get 7 simoleans
     const daveCoveredCallResult = await daveCoveredCallPayoutP;
+    const [daveMoolaPayout, daveSimoleanPayout] = await Promise.all(
+      daveCoveredCallResult,
+    );
     const aliceResult = await alicePayoutP;
+    const [aliceMoolaPayout, aliceSimoleanPayout] = await Promise.all(
+      aliceResult,
+    );
     const bobResult = await bobPayoutP;
+    const [bobInvitePayout, bobBucksPayout] = await Promise.all(bobResult);
 
-    t.deepEquals(daveCoveredCallResult[0].getBalance(), moola(3));
-    t.deepEquals(daveCoveredCallResult[1].getBalance(), simoleans(0));
+    t.deepEquals(moolaIssuer.getBalance(daveMoolaPayout), moola(3));
+    t.deepEquals(simoleanIssuer.getBalance(daveSimoleanPayout), simoleans(0));
 
-    t.deepEquals(aliceResult[0].getBalance(), moola(0));
-    t.deepEquals(aliceResult[1].getBalance(), simoleans(7));
+    t.deepEquals(moolaIssuer.getBalance(aliceMoolaPayout), moola(0));
+    t.deepEquals(simoleanIssuer.getBalance(aliceSimoleanPayout), simoleans(7));
 
-    t.deepEquals(bobResult[0].getBalance(), inviteAmountMath.make(null));
-    t.deepEquals(bobResult[1].getBalance(), bucks(1));
+    t.deepEquals(
+      inviteIssuer.getBalance(bobInvitePayout),
+      inviteAmountMath.getEmpty(),
+    );
+    t.deepEquals(bucksIssuer.getBalance(bobBucksPayout), bucks(1));
 
     // Alice deposits her payouts
-    await aliceMoolaPurse.deposit(aliceResult[0]);
-    await aliceSimoleanPurse.deposit(aliceResult[1]);
+    await aliceMoolaPurse.deposit(aliceMoolaPayout);
+    await aliceSimoleanPurse.deposit(aliceSimoleanPayout);
 
     // Bob deposits his payouts
-    await bobBucksPurse.deposit(bobResult[1]);
+    await bobBucksPurse.deposit(bobBucksPayout);
 
     // Dave deposits his payouts
-    await daveMoolaPurse.deposit(daveCoveredCallResult[0]);
-    await daveSimoleanPurse.deposit(daveCoveredCallResult[1]);
+    await daveMoolaPurse.deposit(daveMoolaPayout);
+    await daveSimoleanPurse.deposit(daveSimoleanPayout);
     await daveBucksPurse.deposit(daveBucksPayout);
 
     t.equals(aliceMoolaPurse.getBalance().extent, 0);
