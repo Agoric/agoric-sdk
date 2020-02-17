@@ -25,7 +25,7 @@ function safeUnlink(filePath) {
  */
 export function makeMemoryStore(_basedir, _dbName, _forceReset) {
   return {
-    storage: buildStorageInMemory(),
+    storage: buildStorageInMemory().storage,
     commit: () => {},
     close: () => {},
   };
