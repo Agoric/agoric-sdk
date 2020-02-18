@@ -7,8 +7,7 @@ import {
   makeSimpleSwingStore,
   makeMemorySwingStore,
 } from '@agoric/simple-swing-store';
-
-import { makeLMDBStore } from './lmdbStore';
+import { makeLMDBSwingStore } from '@agoric/lmdb-swing-store';
 
 function deepLog(item) {
   console.log(util.inspect(item, false, null, true));
@@ -59,7 +58,7 @@ export async function main() {
         dbMaker = makeMemorySwingStore;
         break;
       case '--lmdb':
-        dbMaker = makeLMDBStore;
+        dbMaker = makeLMDBSwingStore;
         break;
       default:
         throw new Error(`invalid flag ${flag}`);

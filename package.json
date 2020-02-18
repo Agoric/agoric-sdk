@@ -26,6 +26,7 @@
     "packages/SwingSet",
     "packages/swingset-runner",
     "packages/simple-swing-store",
+    "packages/lmdb-swing-store",
     "packages/ERTP",
     "packages/spawner",
     "packages/pixel-demo",
