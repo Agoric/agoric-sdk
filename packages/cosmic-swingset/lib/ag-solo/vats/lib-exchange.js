@@ -9,7 +9,7 @@ function checkOrder(a0, a1, b0, b1) {
     return false;
   }
 
-  throw new TypeError('Canot resove asset ordering');
+  throw new TypeError('Canot resolve asset ordering');
 }
 
 export function makeExchange(E, log, host, zoe, registrar) {
@@ -55,14 +55,14 @@ export function makeExchange(E, log, host, zoe, registrar) {
                 contractAssay1,
               );
 
-              // Contrust the rules for serialization (no instance).
+              // Construct the rules for serialization (no instance).
               // This rule is the payment
-              const rule0 = {
+              const payinRule = {
                 kind: 'offerAtMost',
                 units: { assayId: assayId0, extent: extent0 },
               };
               // This rule is the payout
-              const rule1 = {
+              const payoutRule = {
                 kind: 'wantAtLeast',
                 units: { assayId: assayId1 },
               };
@@ -70,8 +70,8 @@ export function makeExchange(E, log, host, zoe, registrar) {
               // Order the rules accordingly.
               const offerRules = harden({
                 payoutRules: [
-                  normal ? rule0 : rule1,
-                  normal ? rule1 : rule0,
+                  normal ? payinRule : payoutRule,
+                  normal ? payoutRule : payinRule,
                   {
                     kind: 'wantAtLeast',
                     units: {},
