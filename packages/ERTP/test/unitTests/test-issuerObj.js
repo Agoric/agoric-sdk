@@ -134,7 +134,7 @@ test('issuer.claim', t => {
     const { issuer, amountMath, mint } = produceIssuer('fungible');
     const payment1 = mint.mintPayment(2);
     E(issuer)
-      .claim(payment1, amountMath.make(837))
+      .claim(payment1, 'new payment', amountMath.make(2))
       .then(newPayment1 => {
         t.ok(
           amountMath.isEqual(
