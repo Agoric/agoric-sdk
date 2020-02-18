@@ -39,7 +39,7 @@ const natListMathHelpers = harden({
     const allRemovedCorrectly = right.every(remove);
     assert(
       allRemovedCorrectly,
-      details`the elements in right (${right}) were not present in left (${left})`,
+      details`some of the elements in right (${right}) were not present in left (${left})`,
     );
     return Array.from(leftSet);
   },
