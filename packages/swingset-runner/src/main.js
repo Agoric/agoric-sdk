@@ -3,8 +3,11 @@ import repl from 'repl';
 import util from 'util';
 
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
+import {
+  makeSimpleSwingStore,
+  makeMemorySwingStore,
+} from '@agoric/simple-swing-store';
 
-import { makeSimpleStore, makeMemoryStore } from './simpleStore';
 import { makeLMDBStore } from './lmdbStore';
 
 function deepLog(item) {
@@ -39,7 +42,7 @@ export async function main() {
 
   let withSES = true;
   let forceReset = false;
-  let dbMaker = makeSimpleStore;
+  let dbMaker = makeSimpleSwingStore;
   while (argv[0].startsWith('--')) {
     const flag = argv.shift();
     switch (flag) {
@@ -50,10 +53,10 @@ export async function main() {
         forceReset = true;
         break;
       case '--filedb':
-        dbMaker = makeSimpleStore;
+        dbMaker = makeSimpleSwingStore;
         break;
       case '--memdb':
-        dbMaker = makeMemoryStore;
+        dbMaker = makeMemorySwingStore;
         break;
       case '--lmdb':
         dbMaker = makeLMDBStore;

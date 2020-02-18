@@ -1,9 +1,8 @@
 {
-  "name": "swingset-runner",
+  "name": "@agoric/simple-swing-store",
   "version": "0.1.0",
-  "private": true,
-  "description": "Application to launch SwingSet instances for development and testing",
-  "main": "src/main.js",
+  "description": "Persistent storage for SwingSet, based on a Map, optionally backed by a simple JSON file",
+  "main": "simpleSwingStore.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
   "license": "Apache-2.0",
@@ -14,10 +13,6 @@
     "lint-check": "eslint '**/*.js'"
   },
   "dependencies": {
-    "@agoric/swingset-vat": "^0.3.0",
-    "@agoric/simple-swing-store": "^0.1.0",
-    "@agoric/harden": "^0.0.4",
-    "node-lmdb": "^0.8.0",
     "n-readlines": "^1.0.0"
   },
   "devDependencies": {

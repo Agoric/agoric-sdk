@@ -25,6 +25,7 @@
     "packages/captp",
     "packages/SwingSet",
     "packages/swingset-runner",
+    "packages/simple-swing-store",
     "packages/ERTP",
     "packages/spawner",
     "packages/pixel-demo",
