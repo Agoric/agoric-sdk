@@ -23,7 +23,9 @@ const natListMathHelpers = harden({
     right = [...right];
     left.sort();
     right.sort();
-    return left.every((num, i) => num === right[i]);
+    return (
+      left.length === right.length && left.every((num, i) => num === right[i])
+    );
   },
   doAdd: (left, right) => {
     const union = new Set(left);
@@ -34,7 +36,11 @@ const natListMathHelpers = harden({
   doSubtract: (left, right) => {
     const leftSet = new Set(left);
     const remove = elem => leftSet.delete(elem);
-    right.forEach(remove);
+    const allRemovedCorrectly = right.every(remove);
+    assert(
+      allRemovedCorrectly,
+      `the elements in right (${right}) could not be removed from left (${left})`,
+    );
     return Array.from(leftSet);
   },
 });

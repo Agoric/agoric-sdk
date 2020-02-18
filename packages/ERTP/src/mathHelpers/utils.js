@@ -2,6 +2,12 @@ import harden from '@agoric/harden';
 import { passStyleOf } from '@agoric/marshal';
 import { assert } from '@agoric/assert';
 
+// Note: Equality between elements is defined as getIdentifierFn(x)
+// === getIdentifierFn(y), even if x and y otherwise have different
+// properties (they shouldn't, but we do not check for that here.)
+// Furthermore, this code assumes getIdentifierFn(x) ===
+// getIdentifierFn(y) iff sameStructure(x, y) is true.
+
 const makeObjListMathHelpers = (customInsistFn, getIdentifierFn) => {
   const identity = harden([]);
   const helpers = harden({
@@ -20,7 +26,7 @@ const makeObjListMathHelpers = (customInsistFn, getIdentifierFn) => {
       return rightIds.every(leftHas);
     },
     doIsEqual: (left, right) =>
-      helpers.doIsGTE(left, right) && helpers.doIsGTE(right, left),
+      left.length === right.length && helpers.doIsGTE(right, left),
     doAdd: (left, right) => {
       const unionWeakSet = new WeakSet();
       const result = [];
