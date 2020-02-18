@@ -10,7 +10,7 @@ export const makeConstProductBC = (zoe, issuers) => {
   const amountMathArray = zoe.getAmountMathForIssuers(issuers);
   return harden({
     /**
-     * Contains the logic for calculating how many amount should be given
+     * Contains the logic for calculating how much should be given
      * back to the user in exchange for what they sent in. It also
      * calculates the new amount of the assets in the pool. Reused in
      * several different places, including to check whether an offer is

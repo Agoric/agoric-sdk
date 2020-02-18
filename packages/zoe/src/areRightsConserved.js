@@ -10,7 +10,7 @@ const transpose = matrix =>
   );
 
 /**
- * The columns in a `amount` matrix are per issuer, and the rows
+ * The columns in an `amount` matrix are per issuer, and the rows
  * are per offer. We want to transpose the matrix such that each
  * row is per issuer so we can do 'with' on the array to get a total
  * per issuer and make sure the rights are conserved.

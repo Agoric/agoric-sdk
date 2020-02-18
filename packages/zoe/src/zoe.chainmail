@@ -49,10 +49,10 @@ interface ZoeService {
    * by Zoe to enforce offer safety, and `exitRule` is used to specify
    * the extent of payout liveness that Zoe can guarantee.
    * `payoutRules` is a list of objects, each with a `kind` property 
-   * (such as 'offerAtMost') and a amount property. The objects in the 
+   * (such as 'offerAtMost') and an amount property. The objects in the 
    * `payoutRules` must be in the same order
    * as the issuers associated with a smart contract. That is, the
-   * amount in index 0 of `payoutRules` should be a amount for the issuer
+   * amount in index 0 of `payoutRules` should be an amount for the issuer
    * in index 0 of the issuers array.`payments` is an array of the
    * actual payments to be escrowed, following the rules in the
    * payoutRules. If the payoutRules kind is 'offerAtMost',
@@ -87,7 +87,7 @@ struct OfferRules ( ) {
  */
 struct PayoutRule ( ) {
   kind :PayoutRuleKind;
-  amount :Amounts;
+  amount :Amount;
 }
 
 /**
@@ -105,7 +105,7 @@ interface ZoeContractFacet () {
   /** 
    * Instruct Zoe to try reallocating for the given offerHandles.
    * Reallocation is a matrix (array of arrays) where the rows are the
-   * amount to be paid to the player who made the offer at the same
+   * amounts to be paid to the player who made the offer at the same
    * index in the offerHandles array. The reallocation will only happen if
    * 'offer safety' and conservation of rights are true, as enforced by Zoe.
    */

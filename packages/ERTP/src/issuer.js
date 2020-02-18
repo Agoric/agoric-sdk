@@ -10,6 +10,8 @@ import makeAmountMath from './amountMath';
 function produceIssuer(allegedName, mathHelpersName = 'nat') {
   assert(allegedName, details`allegedName must be truthy: ${allegedName}`);
 
+  const coerceStr = str => `${str}`;
+
   const brand = harden({
     // eslint-disable-next-line no-use-before-define
     isMyIssuer: allegedIssuer => allegedIssuer === issuer,
@@ -140,8 +142,6 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     return harden(newPayments);
   };
 
-  const coerceStr = str => `${str}`;
-
   const issuer = harden({
     getBrand: () => brand,
     allegedName: () => allegedName,
@@ -163,7 +163,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     },
     claim: (paymentP, memo = 'payment', optAmount) => {
       const srcPayment = E.unwrap(paymentP);
-      memo = `${memo}`;
+      memo = coerceStr(memo);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
       assertAmountEqual(srcPaymentBalance, optAmount);
       // Commit point.
@@ -197,6 +197,10 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     split: (paymentP, paymentAmountA, memos = []) => {
       const srcPayment = E.unwrap(paymentP);
       paymentAmountA = amountMath.coerce(paymentAmountA);
+      assert(
+        memos.length <= 2,
+        details`memos.length should not be more than 2`,
+      );
       memos = memos.map(coerceStr);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
       const paymentAmountB = amountMath.subtract(
@@ -234,7 +238,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     getIssuer: () => issuer,
     mintPayment: (newAmount, memo = 'payment') => {
       newAmount = amountMath.coerce(newAmount);
-      memo = `${memo}`;
+      memo = coerceStr(memo);
       const payment = makePayment(memo);
       paymentLedger.init(payment, newAmount);
       return payment;
