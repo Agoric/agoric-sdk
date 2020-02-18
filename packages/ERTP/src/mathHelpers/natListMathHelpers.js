@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 import { passStyleOf } from '@agoric/marshal';
-import { assert } from '@agoric/assert';
+import { assert, details } from '@agoric/assert';
 import Nat from '@agoric/nat';
 
 // Operations for arrays with unique Nat elements.
@@ -39,7 +39,7 @@ const natListMathHelpers = harden({
     const allRemovedCorrectly = right.every(remove);
     assert(
       allRemovedCorrectly,
-      `the elements in right (${right}) could not be removed from left (${left})`,
+      details`the elements in right (${right}) were not present in left (${left})`,
     );
     return Array.from(leftSet);
   },
