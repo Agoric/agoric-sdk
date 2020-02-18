@@ -10,8 +10,6 @@ import makeAmountMath from './amountMath';
 function produceIssuer(allegedName, mathHelpersName = 'nat') {
   assert(allegedName, details`allegedName must be truthy: ${allegedName}`);
 
-  const coerceStr = str => `${str}`;
-
   const brand = harden({
     // eslint-disable-next-line no-use-before-define
     isMyIssuer: allegedIssuer => allegedIssuer === issuer,
@@ -23,10 +21,9 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
   const paymentLedger = makeStore('payment');
   const purseLedger = makeStore('purse');
 
-  const makePayment = memo =>
+  const makePayment = () =>
     harden({
       allegedBrand: () => brand,
-      memo: () => memo,
     });
 
   // Methods like deposit() have an optional second parameter `amount`
@@ -41,7 +38,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     }
   };
 
-  const makePurse = memo => {
+  const makePurse = () => {
     const purse = harden({
       deposit: (paymentP, optAmount = undefined) => {
         const srcPayment = E.unwrap(paymentP);
@@ -77,7 +74,6 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
       },
       getBalance: () => purseLedger.get(purse),
       allegedBrand: () => brand,
-      memo: () => memo,
     });
     return purse;
   };
@@ -91,7 +87,6 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     payments = [],
     newPurseBalances = [],
     newPaymentBalances = [],
-    newPaymentMemos = [],
   }) => {
     // There may be zero or one purse and no more. No methods pass in
     // more than one purse.
@@ -133,8 +128,8 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     payments.map(payment => paymentLedger.delete(payment));
     purses.map((purse, i) => purseLedger.set(purse, newPurseBalances[i]));
 
-    const newPayments = newPaymentBalances.map((balance, i) => {
-      const newPayment = makePayment(newPaymentMemos[i]);
+    const newPayments = newPaymentBalances.map(balance => {
+      const newPayment = makePayment();
       paymentLedger.init(newPayment, balance);
       return newPayment;
     });
@@ -147,8 +142,8 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     allegedName: () => allegedName,
     getAmountMath: () => amountMath,
     getMathHelpersName: () => mathHelpersName,
-    makeEmptyPurse: (memo = 'purse') => {
-      const purse = makePurse(memo);
+    makeEmptyPurse: () => {
+      const purse = makePurse();
       purseLedger.init(purse, amountMath.getEmpty());
       return purse;
     },
@@ -161,9 +156,8 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
       paymentLedger.delete(payment);
       return paymentBalance;
     },
-    claim: (paymentP, memo = 'payment', optAmount) => {
+    claim: (paymentP, optAmount) => {
       const srcPayment = E.unwrap(paymentP);
-      memo = coerceStr(memo);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
       assertAmountEqual(srcPaymentBalance, optAmount);
       // Commit point.
@@ -171,14 +165,12 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
         harden({
           payments: [srcPayment],
           newPaymentBalances: [srcPaymentBalance],
-          newPaymentMemos: [memo],
         }),
       );
       return payment;
     },
-    combine: (fromPaymentsPArray, memo = 'payment', totalAmount) => {
+    combine: (fromPaymentsPArray, totalAmount) => {
       const fromPaymentsArray = fromPaymentsPArray.map(E.unwrap);
-      memo = `${memo}`;
       const totalPaymentsB = fromPaymentsArray
         .map(paymentLedger.get)
         .reduce(add, empty);
@@ -188,20 +180,14 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
         harden({
           payments: fromPaymentsArray,
           newPaymentBalances: [totalPaymentsB],
-          newPaymentMemos: [memo],
         }),
       );
       return payment;
     },
     // payment to two payments, A and B
-    split: (paymentP, paymentAmountA, memos = []) => {
+    split: (paymentP, paymentAmountA) => {
       const srcPayment = E.unwrap(paymentP);
       paymentAmountA = amountMath.coerce(paymentAmountA);
-      assert(
-        memos.length <= 2,
-        details`memos.length should not be more than 2`,
-      );
-      memos = memos.map(coerceStr);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
       const paymentAmountB = amountMath.subtract(
         srcPaymentBalance,
@@ -213,21 +199,18 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
         harden({
           payments: [srcPayment],
           newPaymentBalances: amounts,
-          newPaymentMemos: memos,
         }),
       );
       return newPayments;
     },
-    splitMany: (paymentP, amounts, memos = []) => {
+    splitMany: (paymentP, amounts) => {
       const srcPayment = E.unwrap(paymentP);
       amounts = amounts.map(amountMath.coerce);
-      memos = memos.map(coerceStr);
       // Commit point
       const newPayments = reallocate(
         harden({
           payments: [srcPayment],
           newPaymentBalances: amounts,
-          newPaymentMemos: memos,
         }),
       );
       return newPayments;
@@ -236,10 +219,9 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
 
   const mint = harden({
     getIssuer: () => issuer,
-    mintPayment: (newAmount, memo = 'payment') => {
+    mintPayment: newAmount => {
       newAmount = amountMath.coerce(newAmount);
-      memo = coerceStr(memo);
-      const payment = makePayment(memo);
+      const payment = makePayment();
       paymentLedger.init(payment, newAmount);
       return payment;
     },

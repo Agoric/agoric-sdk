@@ -65,7 +65,6 @@ test('issuer.makeEmptyPurse', t => {
       `empty purse is empty`,
     );
     t.equals(purse.allegedBrand(), brand, `purse's brand is correct`);
-    t.equals(purse.memo(), 'my new purse', `purse memo is correct`);
     const fungible837 = amountMath.make(837);
 
     const checkDeposit = newPurseBalance => {
@@ -134,7 +133,7 @@ test('issuer.claim', t => {
     const { issuer, amountMath, mint } = produceIssuer('fungible');
     const payment1 = mint.mintPayment(2);
     E(issuer)
-      .claim(payment1, 'new payment', amountMath.make(2))
+      .claim(payment1, amountMath.make(2))
       .then(newPayment1 => {
         t.ok(
           amountMath.isEqual(

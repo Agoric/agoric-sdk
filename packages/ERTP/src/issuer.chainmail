@@ -25,7 +25,7 @@ interface Issuer (Amount (Extent)) {
   getMathHelpersName() -> (String);
 
   /** Make an empty purse of this brand. */
-  makeEmptyPurse(memo :String) -> (Purse);
+  makeEmptyPurse() -> (Purse);
 
   /**
    * Get payment balance. Because the payment is not trusted, we
@@ -43,29 +43,29 @@ interface Issuer (Amount (Extent)) {
 
   /**
    * Transfer all digital assets from the payment to a new payment and
-   * delete the original. `memo` and `amount` are optional.
+   * delete the original. `amount`is optional.
    * If `amount` is present, the code will insist that the payment balance is equal
    * to `amount`, to prevent sending the wrong payment and other confusion.
    */
-  claim(payment :Payment, memo :String = 'payment', amount :Amount)
+  claim(payment :Payment, amount :Amount)
     -> (Payment);
 
   /** Combine multiple payments into one payment. */
-  combine(paymentsArray :List(Payment), memo :String = 'payment')
+  combine(paymentsArray :List(Payment))
     -> (Payment);
 
   /** 
    * Split a single payment into two payments, A and B, according to the
-   * paymentAmountA and memoArray passed in. 
+   * paymentAmountA passed in. 
    */
-  split(payment :Payment, paymentAmountA :Amount, memoArray :List(String))
+  split(payment :Payment, paymentAmountA :Amount)
     -> (List(Payment));
 
   /** 
    * Split a single payment into many payments, according to the
-   * amountArray and memoArray passed in. 
+   * amounts passed in. 
    */
-  splitMany(payment :Payment, amountArray :List(Amount), memoArray :List(String))
+  splitMany(payment :Payment, amounts :List(Amount))
     -> (List(Payment));
 
 }
@@ -109,7 +109,7 @@ interface Mint (Amount (Extent)) {
   /**
    * Create a new Payment containing newly minted amount. 
    */
-  mintPayment(newAmount :Amount, memo :String = 'payment') -> (Payment);
+  mintPayment(newAmount :Amount) -> (Payment);
 }
 
 /**
@@ -123,8 +123,6 @@ interface Mint (Amount (Extent)) {
  * as the right to participate in a particular contract.
  */
 interface Purse (Amount) {
-  /** Get the memo field of this purse. */
-  memo() -> (String);
 
   /** Get the Issuer for this mint. */
   getIssuer() -> (Issuer);
@@ -140,7 +138,7 @@ interface Purse (Amount) {
   deposit(srcPayment :Payment, amount :Amount) -> (Amount);
 
   /** Withdraw amount from this purse into a new Payment. */
-  withdraw(amount :Amount, name :String) -> (Payment);
+  withdraw(amount :Amount) -> (Payment);
 
 }
 
@@ -159,8 +157,6 @@ interface Purse (Amount) {
  * calling `issuer.makeEmptyPurse()` to create a purse, then `purse.deposit(payment)`.
  */
 interface Payment (Amount) {
-  /** Get the memo string */
-  memo() -> (String);
 
   /** 
    * Get the allegedBrand, indicating the kind of digital asset this
