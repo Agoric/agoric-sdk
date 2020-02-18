@@ -33,15 +33,15 @@ test('mint.mintPayment default natMathHelper', t => {
   }
 });
 
-test('mint.mintPayment natListMathHelpers', t => {
+test('mint.mintPayment strSetMathHelpers', t => {
   try {
-    const { mint, issuer, amountMath } = produceIssuer('items', 'natList');
-    const items1and2and4 = amountMath.make(harden([1, 2, 4]));
+    const { mint, issuer, amountMath } = produceIssuer('items', 'strSet');
+    const items1and2and4 = amountMath.make(harden(['1', '2', '4']));
     const payment1 = mint.mintPayment(items1and2and4);
     const paymentBalance1 = issuer.getBalance(payment1);
     t.ok(amountMath.isEqual(paymentBalance1, items1and2and4));
 
-    const items5and6 = amountMath.make(harden([5, 6]));
+    const items5and6 = amountMath.make(harden(['5', '6']));
     const payment2 = mint.mintPayment(items5and6);
     const paymentBalance2 = issuer.getBalance(payment2);
     t.ok(amountMath.isEqual(paymentBalance2, items5and6));
@@ -52,9 +52,9 @@ test('mint.mintPayment natListMathHelpers', t => {
   }
 });
 
-test('mint.mintPayment handleMathHelpers', t => {
+test('mint.mintPayment setMathHelpers', t => {
   try {
-    const { mint, issuer, amountMath } = produceIssuer('items', 'handle');
+    const { mint, issuer, amountMath } = produceIssuer('items', 'set');
     const item1handle = {};
     const item2handle = {};
     const item3handle = {};
@@ -80,9 +80,9 @@ test('mint.mintPayment handleMathHelpers', t => {
   }
 });
 
-test('mint.mintPayment inviteMathHelpers', t => {
+test('mint.mintPayment setMathHelpers with invites', t => {
   try {
-    const { mint, issuer, amountMath } = produceIssuer('items', 'invite');
+    const { mint, issuer, amountMath } = produceIssuer('items', 'set');
     const instanceHandle1 = {};
     const invite1Extent = { handle: {}, instanceHandle: instanceHandle1 };
     const invite2Extent = { handle: {}, instanceHandle: instanceHandle1 };

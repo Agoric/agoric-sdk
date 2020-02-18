@@ -1,6 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
-
 import natMathHelpers from '../../../src/mathHelpers/natMathHelpers';
 
 test('natMathHelpers', t => {

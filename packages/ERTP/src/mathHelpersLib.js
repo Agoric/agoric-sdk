@@ -1,15 +1,13 @@
 import { importManager } from '@agoric/import-manager';
 import natMathHelpers from './mathHelpers/natMathHelpers';
-import natListMathHelpers from './mathHelpers/natListMathHelpers';
-import handleMathHelpers from './mathHelpers/handleMathHelpers';
-import inviteMathHelpers from './mathHelpers/inviteMathHelpers';
+import strSetMathHelpers from './mathHelpers/strSetMathHelpers';
+import setMathHelpers from './mathHelpers/setMathHelpers';
 
 const manager = importManager();
 const mathHelpersLib = manager.addExports({
   nat: natMathHelpers,
-  natList: natListMathHelpers,
-  handle: handleMathHelpers,
-  invite: inviteMathHelpers,
+  strSet: strSetMathHelpers,
+  set: setMathHelpers,
 });
 
 export default mathHelpersLib;
