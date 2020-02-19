@@ -3,210 +3,173 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import setMathHelpers from '../../../src/mathHelpers/setMathHelpers';
 
-test('setMathHelpers', t => {
+const runSetMathHelpersTests = (t, [a, b, c]) => {
+  const {
+    doAssertKind,
+    doGetIdentity,
+    doIsIdentity,
+    doIsGTE,
+    doIsEqual,
+    doAdd,
+    doSubtract,
+  } = setMathHelpers;
+
+  t.doesNotThrow(
+    () => doAssertKind(harden([a])),
+    undefined,
+    `[a] is a valid set`,
+  );
+  t.doesNotThrow(
+    () => doAssertKind(harden([a, b])),
+    undefined,
+    `[a, b] is a valid set`,
+  );
+  t.doesNotThrow(
+    () => doAssertKind(harden([])),
+    undefined,
+    `[] is a valid set`,
+  );
+  t.doesNotThrow(
+    () => doAssertKind(harden([a, a])),
+    undefined,
+    `duplicates in doAssertKind ok`,
+  );
+  t.throws(
+    () => doAssertKind(harden(['a', 'b'])),
+    /should be a record/,
+    'lists of strings are not valid',
+  );
+  t.throws(
+    () => doAssertKind(harden('a')),
+    /list must be an array/,
+    'strings are not valid',
+  );
+
+  t.deepEquals(doGetIdentity(), harden([]), `identity is []`);
+
+  t.ok(doIsIdentity(harden([])), `doIsIdentity([]) is true`);
+  t.notOk(doIsIdentity(harden({})), `doIsIdentity({}) is false`);
+  t.notOk(doIsIdentity(harden(['abc'])), `doIsIdentity(['abc']) is false`);
+  t.notOk(doIsIdentity(harden([a])), `doIsIdentity([{}]) is false`);
+  t.notOk(
+    doIsIdentity(harden([a, a])),
+    `duplicates in doIsIdentity do not throw`,
+  );
+
+  t.throws(
+    () => doIsGTE(harden([a, a]), harden([b])),
+    /doIsGTE left duplicate found/,
+    `duplicates in the left of doIsGTE should throw`,
+  );
+  t.throws(
+    () => doIsGTE(harden([a]), harden([b, b])),
+    /doIsGTE right duplicate found/,
+    `duplicates in the right of doIsGTE should throw`,
+  );
+  t.ok(
+    doIsGTE(harden([a]), harden([a])),
+    `overlap between left and right of doIsGTE should not throw`,
+  );
+  t.ok(doIsGTE(harden([a, b]), harden([b])), '[a, b] is GTE [b]');
+  t.notOk(doIsGTE(harden([b]), harden([b, a])), '[b] does not include [b, a]');
+
+  t.throws(
+    () => doIsEqual(harden([a, a], [a])),
+    /doIsEqual left duplicate found/,
+    `duplicates in left of doIsEqual should throw`,
+  );
+  t.throws(
+    () => doIsEqual(harden([a]), harden([a, a])),
+    /doIsEqual right duplicate found/,
+    `duplicates in right of doIsEqual should throw`,
+  );
+  t.ok(
+    doIsEqual(harden([a]), harden([a])),
+    `overlap between left and right of doIsEqual is ok`,
+  );
+  t.ok(doIsEqual(harden([b, a, c]), harden([a, c, b])), `order doesn't matter`);
+  t.notOk(doIsEqual(harden([b, c]), harden([b, a])), `not equal`);
+
+  t.throws(
+    () => doAdd(harden([a, a]), harden([b])),
+    /doAdd left and right duplicate found/,
+    `duplicates in left of doAdd should throw`,
+  );
+  t.throws(
+    () => doAdd(harden([a]), harden([b, b])),
+    /doAdd left and right duplicate found/,
+    `duplicates in right of doAdd should throw`,
+  );
+  t.throws(
+    () => doAdd(harden([a]), harden([a])),
+    /doAdd left and right duplicate found/,
+    `overlap between left and right of doAdd should throw`,
+  );
+  t.deepEquals(
+    doAdd(harden([]), harden([b, c])),
+    harden([b, c]),
+    `anything + identity stays same`,
+  );
+  t.deepEquals(
+    doAdd(harden([b, c]), harden([])),
+    harden([b, c]),
+    `anything + identity stays same`,
+  );
+
+  t.throws(
+    () => doSubtract(harden([a, a]), harden([b])),
+    /doSubtract left duplicate found/,
+    `duplicates in left of doSubtract should throw`,
+  );
+  t.throws(
+    () => doSubtract(harden([a]), harden([b, b])),
+    /doSubtract right duplicate found/,
+    `duplicates in right of doSubtract should throw`,
+  );
+  t.deepEquals(
+    doSubtract(harden([a]), harden([a])),
+    harden([]),
+    `overlap between left and right of doSubtract should not throw`,
+  );
+  t.throws(
+    () => doSubtract(harden([a, b]), harden([c])),
+    /was not in left/,
+    `elements in right but not in left of doSubtract should throw`,
+  );
+  t.deepEquals(
+    doSubtract(harden([b, c]), harden([])),
+    harden([b, c]),
+    `anything - identity stays same`,
+  );
+  t.deepEquals(
+    doSubtract(harden([b, c]), harden([b])),
+    harden([c]),
+    `b, c - b is c`,
+  );
+};
+
+test('setMathHelpers with basic objects', t => {
   try {
-    const {
-      doAssertKind,
-      doGetIdentity,
-      doIsIdentity,
-      doIsGTE,
-      doIsEqual,
-      doAdd,
-      doSubtract,
-    } = setMathHelpers;
+    const a = harden({ name: 'a' });
+    const b = harden({ name: 'b' });
+    const c = harden({ name: 'c' });
 
-    // TODO: rewrite these tests copied from inviteMathHelpers and handleMathHelpers
+    runSetMathHelpersTests(t, harden([a, b, c]));
+  } catch (e) {
+    t.assert(false, e);
+  } finally {
+    t.end();
+  }
+});
 
+test('setMathHelpers with basic objects', t => {
+  try {
     // "name" property is for debugging purposes only
     const a = { handle: {}, instanceHandle: {}, name: 'a' };
-    // 'a2' is a different object but with the same identity and meaning
-    // as 'a', if 'a2' and 'a' are both present, they should be
-    // duplicated down to one of them.
-    const a2 = {
-      handle: a.handle,
-      instanceHandle: a.instanceHandle,
-      name: 'a2',
-    };
     const b = { handle: {}, instanceHandle: a.instanceHandle, name: 'b' };
     const c = { handle: {}, instanceHandle: {}, name: 'c' };
 
-    t.doesNotThrow(
-      () => doAssertKind(harden([a])),
-      undefined,
-      `[a] is a valid invite list`,
-    );
-    t.doesNotThrow(
-      () => doAssertKind(harden([a, a])),
-      undefined,
-      `[a, a] is a valid invite list`,
-    );
-    t.doesNotThrow(
-      () => doAssertKind(harden([])),
-      undefined,
-      `[] is a valid invite list`,
-    );
-    t.throws(
-      () => doAssertKind(harden(['a', 'b'])),
-      'lists of strings are not valid',
-    );
-    t.throws(() => doAssertKind(harden('a')), 'strings are not valid');
-    t.deepEquals(doGetIdentity(), harden([]), `identity is []`);
-    t.ok(doIsIdentity(harden([])), `doIsIdentity([]) is true`);
-    t.notOk(doIsIdentity(harden(a)), `doIsIdentity(a) is false`);
-    t.notOk(doIsIdentity(harden(['abc'])), `doIsIdentity(['abc']) is false`);
-    t.notOk(doIsIdentity(harden([a])), `doIsIdentity([a]) is false`);
-
-    t.ok(doIsGTE(harden([a]), harden([a2])), '[a] is GTE [a2]');
-    t.ok(doIsGTE(harden([a2]), harden([a])), '[a2] is GTE [a]');
-    t.ok(doIsGTE(harden([a2, a]), harden([a])), '[a2, a] is GTE [a]');
-    t.ok(doIsGTE(harden([a, b]), harden([b])), '[a, b] is GTE [b]');
-    t.notOk(doIsGTE(harden([b]), harden([b, a])), '[b] is not GTE [b, a]');
-    t.ok(
-      doIsEqual(harden([a]), harden([a2])),
-      `invites are equal if they have the same handle`,
-    );
-    t.notOk(
-      doIsEqual(harden([a]), harden([b])),
-      `invites are not equal if they have a different handle`,
-    );
-    t.ok(
-      doIsEqual(harden([b, a, c]), harden([a, c, b])),
-      `order doesn't matter`,
-    );
-    t.notOk(doIsEqual(harden([b, c]), harden([b, a])), `not equal`);
-    t.deepEquals(
-      doAdd(harden([a, a]), harden([a, a])),
-      harden([a]),
-      'deduplicate down to [a]',
-    );
-    t.deepEquals(
-      doAdd(harden([a, a2]), harden([a, a2])),
-      harden([a]),
-      'deduplicate down to [a]',
-    );
-    t.deepEquals(
-      doAdd(harden([a, c]), harden([c, b])),
-      harden([a, c, b]),
-      'a, b, c expected in any order',
-    );
-    t.deepEquals(
-      doAdd(harden([a, c]), harden([c, b])),
-      harden([a, c, b]),
-      'a, b, c expected in any order',
-    );
-    t.deepEquals(
-      doAdd(harden([]), harden([b, c])),
-      harden([b, c]),
-      `anything + identity stays same`,
-    );
-    t.deepEquals(
-      doAdd(harden([b, c]), harden([])),
-      harden([b, c]),
-      `anything + identity stays same`,
-    );
-    t.deepEquals(
-      doSubtract(harden([b, c]), harden([])),
-      harden([b, c]),
-      `anything - identity stays same`,
-    );
-    t.deepEquals(
-      doSubtract(harden([b, c]), harden([b])),
-      harden([c]),
-      `b, c - b is c`,
-    );
-    t.deepEquals(
-      doSubtract(harden([a, a]), harden([a2, a2])),
-      harden([]),
-      `a, a - a2, a2 is the identity`,
-    );
-    t.deepEquals(
-      doSubtract(harden([a, a, a2, b]), harden([a])),
-      harden([b]),
-      `a, a, a2, b - a is b`,
-    );
-    t.throws(
-      () => doSubtract(harden([a, a2]), harden([b])),
-      /Error: right element was not in left/,
-      `a, a2 - b is an error`,
-    );
-    t.doesNotThrow(
-      () => doAssertKind(harden([{}])),
-      undefined,
-      `[{}] is a valid handle list`,
-    );
-    t.doesNotThrow(
-      () => doAssertKind(harden([{}, {}])),
-      undefined,
-      `[{}, {}] is a valid handle list`,
-    );
-    t.doesNotThrow(
-      () => doAssertKind(harden([])),
-      undefined,
-      `[] is a valid handle list`,
-    );
-    t.throws(
-      () => doAssertKind(harden(['a', 'b'])),
-      'lists of strings are not valid',
-    );
-    t.throws(() => doAssertKind(harden('a')), 'strings are not valid');
-    t.deepEquals(doGetIdentity(), harden([]), `identity is []`);
-    t.ok(doIsIdentity(harden([])), `doIsIdentity([]) is true`);
-    t.notOk(doIsIdentity(harden({})), `doIsIdentity({}) is false`);
-    t.notOk(doIsIdentity(harden(['abc'])), `doIsIdentity(['abc']) is false`);
-    t.notOk(doIsIdentity(harden([{}])), `doIsIdentity([{}]) is false`);
-
-    t.ok(doIsGTE(harden([a, b]), harden([b])), '[a, b] is GTE [b]');
-    t.ok(doIsGTE(harden([a]), harden([a, a])), '[a] is GTE [a, a]');
-    t.notOk(
-      doIsGTE(harden([b]), harden([b, a])),
-      '[b] does not include [b, a]',
-    );
-    t.ok(
-      doIsEqual(harden([b, a, c]), harden([a, c, b])),
-      `order doesn't matter`,
-    );
-    t.ok(doIsEqual(harden([a]), harden([a, a])), `duplication doesn't matter`);
-    t.notOk(doIsEqual(harden([b, c]), harden([b, a])), `not equal`);
-    t.deepEquals(
-      doAdd(harden([a, c]), harden([c, b])),
-      harden([a, b, c]),
-      'a, b, c expected in any order',
-    );
-    t.deepEquals(
-      doAdd(harden([a, a]), harden([a, a])),
-      harden([a]),
-      '[a] de-duplicated',
-    );
-    t.deepEquals(
-      doAdd(harden([a, c]), harden([c, b])),
-      harden([b, a, c]),
-      'a, b, c expected in any order',
-    );
-    t.deepEquals(
-      doAdd(harden([]), harden([b, c])),
-      harden([b, c]),
-      `anything + identity stays same`,
-    );
-    t.deepEquals(
-      doAdd(harden([b, c]), harden([])),
-      harden([b, c]),
-      `anything + identity stays same`,
-    );
-    t.deepEquals(
-      doSubtract(harden([b, c]), harden([])),
-      harden([b, c]),
-      `anything - identity stays same`,
-    );
-    t.deepEquals(
-      doSubtract(harden([b, c]), harden([b])),
-      harden([c]),
-      `b, c - b is c`,
-    );
-    t.deepEquals(
-      doSubtract(harden([a, a, b]), harden([b, b])),
-      harden([a]),
-      `a, a, b - b, b is a`,
-    );
+    runSetMathHelpersTests(t, harden([a, b, c]));
   } catch (e) {
     t.assert(false, e);
   } finally {
