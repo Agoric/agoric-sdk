@@ -1,19 +1,18 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
+import { makeHelpers, defaultAcceptanceMsg } from './helpers/userFlow';
 
-import { defaultAcceptanceMsg, makeHelpers } from './helpers/userFlow';
-
-// This exchange only accepts limit orders. A limit order is defined
-// as either a sell order with payoutRules: [ { kind: 'offerAtMost',
-// units1 }, {kind: 'wantAtLeast', units2 }] or a buy order:
-// [ { kind: 'wantAtLeast', units1 }, { kind: 'offerAtMost',
-// units2 }]. Note that the asset in the first slot of the
-// payoutRules will always be bought or sold in exact amounts, whereas
-// the amount of the second asset received in a sell order may be
-// greater than expected, and the amount of the second asset paid in a
-// buy order may be less than expected. This simple exchange does not
-// support partial fills of orders.
-
+/**
+ * The SimpleExchange only accepts limit orders. A limit order is an order with
+ * payoutRules that specifies wantAtLeast on one side and offerAtMost on the
+ * other:
+ * [ { kind: 'wantAtLeast', units2 }, { kind: 'offerAtMost', units1 }]
+ * [ { kind: 'wantAtLeast', units1 }, { kind: 'offerAtMost', units2 }]
+ *
+ * Note that the asset specified as wantAtLeast is treated as the exact amount
+ * to be exchanged, while the amount specified as offerAtMost is a limit that
+ * may be improved on. This simple exchange does not partially fill orders.
+ */
 export const makeContract = harden((zoe, terms) => {
   const ASSET_INDEX = 0;
   let sellInviteHandles = [];
@@ -25,7 +24,66 @@ export const makeContract = harden((zoe, terms) => {
     swap,
     areAssetsEqualAtIndex,
     canTradeWith,
+    getActiveOffers,
   } = makeHelpers(zoe, assays);
+
+  function flattenRule(r) {
+    const description = r.units;
+    let result;
+    switch (r.kind) {
+      case 'offerAtMost':
+        result = { offer: description };
+        break;
+      case 'wantAtLeast':
+        result = { want: description };
+        break;
+      default:
+        throw new Error(`${r.kind} not supported.`);
+    }
+    return harden(result);
+  }
+
+  function flattenOffer(o) {
+    return harden({
+      ...flattenRule(o.payoutRules[0]),
+      ...flattenRule(o.payoutRules[1]),
+    });
+  }
+
+  function flattenOrders(offerHandles) {
+    return zoe
+      .getOffers(zoe.getOfferStatuses(offerHandles).active)
+      .map(offer => flattenOffer(offer));
+  }
+
+  function getBookOrders() {
+    return {
+      buys: flattenOrders(buyInviteHandles),
+      sells: flattenOrders(sellInviteHandles),
+    };
+  }
+
+  function getOffer(inviteHandle) {
+    if (
+      sellInviteHandles.includes(inviteHandle) ||
+      buyInviteHandles.includes(inviteHandle)
+    ) {
+      return flattenOffer(getActiveOffers([inviteHandle])[0]);
+    }
+    return 'not an active offer';
+  }
+
+  function swapOrAddToBook(inviteHandles, inviteHandle) {
+    for (const iHandle of inviteHandles) {
+      if (
+        areAssetsEqualAtIndex(ASSET_INDEX, inviteHandle, iHandle) &&
+        canTradeWith(inviteHandle, iHandle)
+      ) {
+        return swap(inviteHandle, iHandle);
+      }
+    }
+    return defaultAcceptanceMsg;
+  }
 
   const makeInvite = () => {
     const seat = harden({
@@ -35,15 +93,7 @@ export const makeContract = harden((zoe, terms) => {
           // Save the valid offer and try to match
           sellInviteHandles.push(inviteHandle);
           buyInviteHandles = [...zoe.getOfferStatuses(buyInviteHandles).active];
-          for (const buyHandle of buyInviteHandles) {
-            if (
-              areAssetsEqualAtIndex(ASSET_INDEX, inviteHandle, buyHandle) &&
-              canTradeWith(inviteHandle, buyHandle)
-            ) {
-              return swap(inviteHandle, buyHandle);
-            }
-          }
-          return defaultAcceptanceMsg;
+          return swapOrAddToBook(buyInviteHandles, inviteHandle);
         }
         // Is it a valid buy offer?
         if (hasValidPayoutRules(['wantAtLeast', 'offerAtMost'], inviteHandle)) {
@@ -52,26 +102,18 @@ export const makeContract = harden((zoe, terms) => {
           sellInviteHandles = [
             ...zoe.getOfferStatuses(sellInviteHandles).active,
           ];
-          for (const sellHandle of sellInviteHandles) {
-            if (
-              areAssetsEqualAtIndex(ASSET_INDEX, inviteHandle, sellHandle) &&
-              canTradeWith(inviteHandle, sellHandle)
-            ) {
-              return swap(inviteHandle, sellHandle);
-            }
-          }
-          return defaultAcceptanceMsg;
+          return swapOrAddToBook(sellInviteHandles, inviteHandle);
         }
         // Eject because the offer must be invalid
         throw rejectOffer(inviteHandle);
       },
     });
     const { invite, inviteHandle } = zoe.makeInvite(seat);
-    return invite;
+    return { invite, inviteHandle };
   };
   return harden({
     invite: makeInvite(),
-    publicAPI: { makeInvite },
+    publicAPI: { makeInvite, getBookOrders, getOffer },
     terms,
   });
 });

@@ -235,7 +235,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
   };
 
   const doSimpleExchange = async bobP => {
-    const invite = await E(zoe).makeInstance(installations.simpleExchange, {
+    const { invite } = await E(zoe).makeInstance(installations.simpleExchange, {
       assays,
     });
     const {
@@ -270,7 +270,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
 
     log(offerResult);
 
-    const bobInviteP = E(publicAPI).makeInvite();
+    const { invite: bobInviteP } = await E(publicAPI).makeInvite();
     await E(bobP).doSimpleExchange(bobInviteP);
 
     const payout = await payoutP;
