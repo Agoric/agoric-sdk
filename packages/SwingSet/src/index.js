@@ -2,7 +2,6 @@ export { loadBasedir, buildVatController } from './controller';
 export { buildMailboxStateMap, buildMailbox } from './devices/mailbox';
 export { buildTimer } from './devices/timer';
 
-export { buildStorageInMemory } from './hostStorage';
 export { default as buildCommand } from './devices/command';
 
 export function getVatTPSourcePath() {

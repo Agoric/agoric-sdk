@@ -1,6 +1,11 @@
 import harden from '@agoric/harden';
 import { test } from 'tape-promise/tape';
-import { buildStorageInMemory, buildHostDBInMemory } from '../src/hostStorage';
+import {
+  makeMemorySwingStore,
+  getAllState,
+  setAllState,
+} from '@agoric/simple-swing-store';
+import { buildHostDBInMemory } from '../src/hostStorage';
 import { buildBlockBuffer } from '../src/blockBuffer';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper';
 import {
@@ -60,15 +65,15 @@ function testStorage(t, s, getState, commit) {
 }
 
 test('storageInMemory', t => {
-  const { storage, getState } = buildStorageInMemory();
-  testStorage(t, storage, getState, null);
+  const { storage } = makeMemorySwingStore();
+  testStorage(t, storage, () => getAllState(storage), null);
   t.end();
 });
 
 function buildHostDBAndGetState() {
-  const { storage, getState } = buildStorageInMemory();
+  const { storage } = makeMemorySwingStore();
   const hostDB = buildHostDBInMemory(storage);
-  return { hostDB, getState };
+  return { hostDB, getState: () => getAllState(storage) };
 }
 
 test('hostDBInMemory', t => {
@@ -114,16 +119,16 @@ test('blockBuffer fulfills storage API', t => {
 });
 
 test('guardStorage fulfills storage API', t => {
-  const { storage, getState } = buildStorageInMemory();
+  const { storage } = makeMemorySwingStore();
   const guardedHostStorage = guardStorage(storage);
-  testStorage(t, guardedHostStorage, getState, null);
+  testStorage(t, guardedHostStorage, () => getAllState(storage), null);
   t.end();
 });
 
 test('crankBuffer fulfills storage API', t => {
-  const { storage, getState } = buildStorageInMemory();
+  const { storage } = makeMemorySwingStore();
   const { crankBuffer, commitCrank } = buildCrankBuffer(storage);
-  testStorage(t, crankBuffer, getState, commitCrank);
+  testStorage(t, crankBuffer, () => getAllState(storage), commitCrank);
   t.end();
 });
 
@@ -186,19 +191,19 @@ test('crankBuffer can abortCrank', t => {
 
 test('read cache fulfills storage API', t => {
   // cache everything
-  let { storage, getState } = buildStorageInMemory();
+  let { storage } = makeMemorySwingStore();
   let cachedStorage = addReadCache(storage, _key => true);
-  testStorage(t, cachedStorage, getState, null);
+  testStorage(t, cachedStorage, () => getAllState(storage), null);
 
   // test again, but don't cache anything
-  ({ storage, getState } = buildStorageInMemory());
+  storage = makeMemorySwingStore().storage;
   cachedStorage = addReadCache(storage, _key => false);
-  testStorage(t, cachedStorage, getState, null);
+  testStorage(t, cachedStorage, () => getAllState(storage), null);
   t.end();
 });
 
 function buildTracedStorage() {
-  const { storage: s, getState } = buildStorageInMemory();
+  const s = makeMemorySwingStore().storage;
 
   const ops = [];
   function has(key) {
@@ -234,11 +239,11 @@ function buildTracedStorage() {
     delete: del,
   };
 
-  return { storage, ops, getState };
+  return { storage, ops, getState: () => getAllState(s) };
 }
 
 test('read cache', t => {
-  const { storage, getState, ops } = buildTracedStorage();
+  const { storage, ops, getState } = buildTracedStorage();
 
   function useCache(key) {
     if (key === 'foo') {
@@ -328,7 +333,7 @@ test('read cache', t => {
 });
 
 test('storage helpers', t => {
-  const { storage, getState } = buildStorageInMemory();
+  const { storage } = makeMemorySwingStore();
   const s = addHelpers(storage);
 
   s.set('foo.0', 'f0');
@@ -337,7 +342,7 @@ test('storage helpers', t => {
   s.set('foo.3', 'f3');
   // omit foo.4
   s.set('foo.5', 'f5');
-  checkState(t, getState, [
+  checkState(t, () => getAllState(storage), [
     ['foo.0', 'f0'],
     ['foo.1', 'f1'],
     ['foo.2', 'f2'],
@@ -371,7 +376,7 @@ test('storage helpers', t => {
   t.notOk(s.has('foo.3'));
   t.notOk(s.has('foo.4'));
   t.ok(s.has('foo.5'));
-  checkState(t, getState, [
+  checkState(t, () => getAllState(storage), [
     ['foo.0', 'f0'],
     ['foo.5', 'f5'],
   ]);
@@ -380,13 +385,18 @@ test('storage helpers', t => {
 });
 
 function buildKeeperStorageInMemory() {
-  const { storage, getState } = buildStorageInMemory();
+  const { storage } = makeMemorySwingStore();
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(storage);
-  return { kstorage: enhancedCrankBuffer, getState, commitCrank };
+  return {
+    kstorage: enhancedCrankBuffer,
+    getState: () => getAllState(storage),
+    commitCrank,
+  };
 }
 
 function duplicateKeeper(getState) {
-  const { storage } = buildStorageInMemory(getState());
+  const { storage } = makeMemorySwingStore();
+  setAllState(storage, getState());
   const { enhancedCrankBuffer } = wrapStorage(storage);
   return makeKernelKeeper(enhancedCrankBuffer);
 }

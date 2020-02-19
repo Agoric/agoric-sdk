@@ -1,17 +1,21 @@
 import path from 'path';
 import { test } from 'tape-promise/tape';
 // import fs from 'fs';
+import {
+  makeMemorySwingStore,
+  getAllState,
+  setAllState,
+} from '@agoric/simple-swing-store';
 import { buildVatController, loadBasedir } from '../src/index';
-import { buildStorageInMemory } from '../src/hostStorage';
 
 async function buildTrace(c, storage) {
   const states = [];
   while (c.dump().runQueue.length) {
-    states.push(storage.getState());
+    states.push(getAllState(storage));
     // eslint-disable-next-line no-await-in-loop
     await c.step();
   }
-  states.push(storage.getState());
+  states.push(getAllState(storage));
   return states;
 }
 
@@ -19,8 +23,8 @@ async function testSaveState(t, withSES) {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
   );
-  const storage = buildStorageInMemory();
-  config.hostStorage = storage.storage;
+  const { storage } = makeMemorySwingStore();
+  config.hostStorage = storage;
   const c1 = await buildVatController(config, withSES, ['one']);
   const states1 = await buildTrace(c1, storage);
   /*
@@ -28,8 +32,8 @@ async function testSaveState(t, withSES) {
     fs.writeFileSync(`kdata-${i}.json`, JSON.stringify(s))
   ); */
 
-  const storage2 = buildStorageInMemory();
-  config.hostStorage = storage2.storage;
+  const storage2 = makeMemorySwingStore().storage;
+  config.hostStorage = storage2;
   const c2 = await buildVatController(config, withSES, ['one']);
   const states2 = await buildTrace(c2, storage2);
 
@@ -51,8 +55,8 @@ async function testLoadState(t, withSES) {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
   );
-  const s0 = buildStorageInMemory();
-  config.hostStorage = s0.storage;
+  const s0 = makeMemorySwingStore().storage;
+  config.hostStorage = s0;
   const c0 = await buildVatController(config, withSES, ['one']);
   const states = await buildTrace(c0, s0);
   // states.forEach((s,j) =>
@@ -64,8 +68,9 @@ async function testLoadState(t, withSES) {
     const cfg = await loadBasedir(
       path.resolve(__dirname, 'basedir-transcript'),
     );
-    const s = buildStorageInMemory(states[i]);
-    cfg.hostStorage = s.storage;
+    const s = makeMemorySwingStore().storage;
+    setAllState(s, states[i]);
+    cfg.hostStorage = s;
     // eslint-disable-next-line no-await-in-loop
     const c = await buildVatController(cfg, withSES, ['one']);
     // eslint-disable-next-line no-await-in-loop
