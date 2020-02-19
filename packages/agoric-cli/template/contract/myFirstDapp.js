@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
-import { makeHelpers, defaultAcceptanceMsg } from './helpers/userFlow';
+import { makeHelpers, defaultAcceptanceMsg } from '@agoric/zoe/src/contracts/helpers/userFlow';
 
 /**  EDIT THIS CONTRACT WITH YOUR OWN BUSINESS LOGIC */
 
