@@ -1,0 +1,49 @@
+{
+  "name": "simple-exchange-frontend",
+  "version": "0.0.1",
+  "description": "Simple Exchange Frontend",
+  "private": true,
+  "scripts": {
+    "clean": "rimraf ./build",
+    "lint": "eslint './src/**/*.{js,jsx}'",
+    "prettier": "prettier './src/**/*.{js,jsx,scss}' --write",
+    "start": "react-scripts start",
+    "test": "react-scripts test --env=jsdom",
+    "build": "react-scripts build",
+    "eject": "react-scripts eject"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "dependencies": {
+    "@material-ui/core": "^4.9.3",
+    "@material-ui/icons": "^4.9.1",
+    "clsx": "^1.0.4",
+    "http-proxy-middleware": "^1.0.0",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb": "^18.0.1",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-plugin-eslint-comments": "^3.1.2",
+    "eslint-plugin-import": "^2.20.1",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-prettier": "^3.1.2",
+    "eslint-plugin-react": "^7.18.3",
+    "eslint-plugin-react-hooks": "^2.4.0",
+    "prettier": "^1.19.1",
+    "react-scripts": "^3.4.0",
+    "rimraf": "^3.0.2"
+  }
+}
