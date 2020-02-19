@@ -1,8 +1,8 @@
 import { test } from 'tape-promise/tape';
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 import path from 'path';
-import bundleSource from "@agoric/bundle-source";
-import fs from "fs";
+import bundleSource from '@agoric/bundle-source';
+import fs from 'fs';
 
 const CONTRACT_FILES = ['escrow'];
 const generateBundlesP = Promise.all(

@@ -35,14 +35,8 @@ function makeFredMaker(E, host, log) {
           const verifiedSaleInvitePaymentP = E(allegedSaleInvitePaymentP)
             .getBalance()
             .then(allegedInviteUnits => {
-              const escrowCheckerP = E(host).redeem(
-                escrowCheckerInviteP,
-
-              );
-              const ccCheckerP = E(host).redeem(
-                coveredCallCheckerInviteP,
-
-              );
+              const escrowCheckerP = E(host).redeem(escrowCheckerInviteP);
+              const ccCheckerP = E(host).redeem(coveredCallCheckerInviteP);
               return Promise.all([
                 ccCheckerP,
                 escrowCheckerP,
@@ -98,7 +92,9 @@ function makeFredMaker(E, host, log) {
               );
               return Promise.resolve(gotOptionP).then(_ => {
                 // Fred bought the option. Now fred tries to exercise the option.
-                const optionInvitePaymentP = E(optionInvitePurseP).withdrawAll();
+                const optionInvitePaymentP = E(
+                  optionInvitePurseP,
+                ).withdrawAll();
                 return E(host)
                   .redeem(optionInvitePaymentP)
                   .then(optionSeatP =>
