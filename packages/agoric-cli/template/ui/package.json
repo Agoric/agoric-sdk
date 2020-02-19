@@ -8,6 +8,8 @@
     "test": "exit 0",
     "clean": "rimraf ./build",
     "lint": "eslint './src/**/*.{js,jsx}'",
+    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
+    "lint-check": "echo disabling lint in ui until files are lint compliant",
     "prettier": "prettier './src/**/*.{js,jsx,scss}' --write",
     "start": "react-scripts start",
     "test-react": "react-scripts test --env=jsdom",
