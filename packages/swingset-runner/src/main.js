@@ -3,9 +3,11 @@ import repl from 'repl';
 import util from 'util';
 
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
-
-import { makeSimpleStore, makeMemoryStore } from './simpleStore';
-import { makeLMDBStore } from './lmdbStore';
+import {
+  makeSimpleSwingStore,
+  makeMemorySwingStore,
+} from '@agoric/simple-swing-store';
+import { makeLMDBSwingStore } from '@agoric/lmdb-swing-store';
 
 function deepLog(item) {
   console.log(util.inspect(item, false, null, true));
@@ -39,7 +41,7 @@ export async function main() {
 
   let withSES = true;
   let forceReset = false;
-  let dbMaker = makeSimpleStore;
+  let dbMaker = makeSimpleSwingStore;
   while (argv[0].startsWith('--')) {
     const flag = argv.shift();
     switch (flag) {
@@ -50,13 +52,13 @@ export async function main() {
         forceReset = true;
         break;
       case '--filedb':
-        dbMaker = makeSimpleStore;
+        dbMaker = makeSimpleSwingStore;
         break;
       case '--memdb':
-        dbMaker = makeMemoryStore;
+        dbMaker = makeMemorySwingStore;
         break;
       case '--lmdb':
-        dbMaker = makeLMDBStore;
+        dbMaker = makeLMDBSwingStore;
         break;
       default:
         throw new Error(`invalid flag ${flag}`);

@@ -14,7 +14,7 @@ function safeUnlink(filePath) {
 }
 
 /**
- * Create a store instance backed by an LMDB database.
+ * Create a swingset store instance backed by an LMDB database.
  *
  * @param basedir  Directory in which database files will be kept
  * @param dbName   Name for the database
@@ -26,7 +26,7 @@ function safeUnlink(filePath) {
  *   close    // a function to shutdown the store, abandoning any uncommitted changes
  * }
  */
-export function makeLMDBStore(basedir, dbName, forceReset = false) {
+export function makeLMDBSwingStore(basedir, dbName, forceReset = false) {
   let txn = null;
 
   if (forceReset) {
@@ -78,8 +78,10 @@ export function makeLMDBStore(basedir, dbName, forceReset = false) {
    * given range.  Note that this can be slow as it's only intended for use in
    * debugging.
    *
-   * @param start  Start of the key range of interest (inclusive)
-   * @param end  End of the key range of interest (exclusive)
+   * @param start  Start of the key range of interest (inclusive).  An empty
+   *    string indicates a range from the beginning of the key set.
+   * @param end  End of the key range of interest (exclusive).  An empty string
+   *    indicates a range through the end of the key set.
    *
    * @return an iterator for the keys from start <= key < end
    *
@@ -95,8 +97,8 @@ export function makeLMDBStore(basedir, dbName, forceReset = false) {
 
     ensureTxn();
     const cursor = new lmdb.Cursor(txn, dbi);
-    let key = cursor.goToRange(start);
-    while (key && key < end) {
+    let key = start === '' ? cursor.goToFirst() : cursor.goToRange(start);
+    while (key && (end === '' || key < end)) {
       yield key;
       key = cursor.goToNext();
     }
