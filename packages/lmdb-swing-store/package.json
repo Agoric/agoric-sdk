@@ -19,6 +19,7 @@
     "esm": "^3.2.25",
     "tap-spec": "^5.0.0",
     "tape": "^4.10.2",
-    "tape-promise": "^4.0.0"
+    "tape-promise": "^4.0.0",
+    "@agoric/simple-swing-store": "^0.1.0"
   }
 }
