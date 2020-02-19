@@ -5,7 +5,9 @@
   "private": true,
   "scripts": {
     "build": "exit 0",
-    "test": "exit 0"
+    "test": "exit 0",
+    "lint-check": "exit 0",
+    "lint-fix": "exit 0"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
