@@ -275,6 +275,7 @@ const expectedSimpleExchangeOkLog = [
   'aliceMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":0}',
   'aliceSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
 ];
+
 test('zoe - simpleExchange - valid inputs - with SES', async t => {
   try {
     const startingExtents = [
