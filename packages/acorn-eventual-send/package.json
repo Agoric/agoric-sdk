@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "exit 0",
-    "test": "tape -r esm 'test/**/*.js'",
+    "test": "tap -r esm --reporter specy --no-coverage --save=failed.tst 'test/**/test*.js'",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'"
   },
@@ -15,7 +15,7 @@
     "rollup": "^1.16.7",
     "tap-spec": "^5.0.0",
     "tape": "^4.9.2",
-    "tape-promise": "^4.0.0"
+    "tap": "^14.10.5"
   },
   "keywords": [],
   "files": [

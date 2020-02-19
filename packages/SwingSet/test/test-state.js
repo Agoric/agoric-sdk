@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import { buildStorageInMemory, buildHostDBInMemory } from '../src/hostStorage';
 import { buildBlockBuffer } from '../src/blockBuffer';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper';

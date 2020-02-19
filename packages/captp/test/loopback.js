@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import { E, harden, makeCapTP } from '../lib/captp';
 
 test('try loopback captp', async t => {

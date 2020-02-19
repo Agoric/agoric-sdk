@@ -1,5 +1,5 @@
 import path from 'path';
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 // import fs from 'fs';
 import { buildVatController, loadBasedir } from '../src/index';
 import { buildStorageInMemory } from '../src/hostStorage';

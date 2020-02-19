@@ -6,7 +6,7 @@
   "module": "src/index.js",
   "browser": "dist/transform-eventual-send.umd.js",
   "scripts": {
-    "test": "tape -r esm 'test/**/*.js'",
+    "test": "tap -r esm --reporter specy --no-coverage --save=failed.tst 'test/**/test*.js'",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'",
     "build": "node -r esm ./scripts/build-esend.js && rollup -c rollup.config.js"
@@ -25,7 +25,7 @@
     "ses": "^0.6.5",
     "tap-spec": "^5.0.0",
     "tape": "^4.9.2",
-    "tape-promise": "^4.0.0"
+    "tap": "^14.10.5"
   },
   "dependencies": {},
   "keywords": [],

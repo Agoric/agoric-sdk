@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 
 import { areRightsConserved, transpose } from '../../src/areRightsConserved';
 import { setup } from './setupBasicMints';

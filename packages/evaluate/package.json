@@ -8,14 +8,14 @@
     "node": ">=10.15.1"
   },
   "scripts": {
-    "test": "tape -r esm test/**/test*.js",
+    "test": "tap -r esm --reporter specy --no-coverage --save=failed.tst 'test/**/test*.js'",
     "build": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'"
   },
   "devDependencies": {
     "tape": "^4.10.0",
-    "tape-promise": "^4.0.0"
+    "tap": "^14.10.5"
   },
   "dependencies": {
     "@agoric/default-evaluate-options": "^0.3.0",

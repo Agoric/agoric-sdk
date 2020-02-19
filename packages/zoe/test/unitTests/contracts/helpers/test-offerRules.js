@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 
 import { makeUnits } from '../../../../src/contracts/helpers/offerRules';
 import { setup } from '../../setupBasicMints';

@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import main from '../lib/main';
 
 test('sanity', async t => {

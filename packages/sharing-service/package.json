@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "exit 0",
-    "test": "tape -r esm 'test/**/test*.js' | tap-spec",
+    "test": "tap -r esm --reporter specy --no-coverage --save=failed.tst 'test/**/test*.js'",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
@@ -34,7 +34,7 @@
     "esm": "^3.2.25",
     "tap-spec": "^5.0.0",
     "tape": "^4.11.0",
-    "tape-promise": "^4.0.0"
+    "tap": "^14.10.5"
   },
   "files": [
     "src/",

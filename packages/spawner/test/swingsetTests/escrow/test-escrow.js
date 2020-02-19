@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 import path from 'path';
 

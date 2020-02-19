@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import { buildVatController } from '../src/index';
 
 async function requireNat(t, withSES) {

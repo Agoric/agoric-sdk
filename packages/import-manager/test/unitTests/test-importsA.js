@@ -1,6 +1,6 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import { makeGoodImportManager } from './goodImports';
 
 test('import num is not empty', t => {

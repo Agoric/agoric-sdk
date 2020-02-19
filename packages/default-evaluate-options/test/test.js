@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import makeDefaultEvaluateOptions from '../src';
 
 test('sanity', async t => {

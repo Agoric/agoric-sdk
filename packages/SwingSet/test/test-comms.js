@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import buildCommsDispatch from '../src/vats/comms';
 import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot';
 import { makeState } from '../src/vats/comms/state';

@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-redeclare
 /* global setImmediate setTimeout */
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 
 test('Promise queue should be higher priority than IO/timer queue', async t => {
   const log = [];

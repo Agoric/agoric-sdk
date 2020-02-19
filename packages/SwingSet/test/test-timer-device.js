@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import { makeTimerMap, curryPollFn } from '../src/devices/timer-src';
 
 test('multiMap multi store', t => {

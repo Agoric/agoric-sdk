@@ -3,7 +3,7 @@
 /* eslint object-shorthand: "off" */
 
 import path from 'path';
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import {
   buildVatController,
   getCommsSourcePath,

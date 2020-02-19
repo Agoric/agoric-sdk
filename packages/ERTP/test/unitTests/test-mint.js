@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import harden from '@agoric/harden';
 import makeStore from '@agoric/store';
 
@@ -15,7 +15,7 @@ test('split bad units', t => {
     const badUnitsArray = Array(2).fill(assay.makeUnits(10));
     t.throws(
       _ => assay.split(payment, badUnitsArray),
-      /Error: the units of the proposed new payments do not equal the units of the source payment/,
+      /the units of the proposed new payments do not equal the units of the source payment/,
     );
   } catch (e) {
     t.assert(false, e);

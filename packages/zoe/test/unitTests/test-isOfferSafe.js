@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 
 import { isOfferSafeForOffer, isOfferSafeForAll } from '../../src/isOfferSafe';
 import { setup } from './setupBasicMints';

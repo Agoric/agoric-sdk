@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import { makeSharingService } from '../../src/sharing';
 
 test('Sharing creation', t => {

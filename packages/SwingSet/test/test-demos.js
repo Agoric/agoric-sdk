@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import { loadBasedir, buildVatController } from '../src/index';
 
 async function main(withSES, basedir, argv) {

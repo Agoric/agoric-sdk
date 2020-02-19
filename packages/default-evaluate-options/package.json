@@ -7,7 +7,7 @@
   "browser": "dist/default-evaluate-options.umd.js",
   "scripts": {
     "build": "rollup -c",
-    "test": "tape -r esm 'test/**/*.js'",
+    "test": "tap -r esm --reporter specy --no-coverage --save=failed.tst 'test/**/test*.js'",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
@@ -20,7 +20,7 @@
     "rollup-plugin-node-resolve": "^5.2.0",
     "tap-spec": "^5.0.0",
     "tape": "^4.9.2",
-    "tape-promise": "^4.0.0"
+    "tap": "^14.10.5"
   },
   "dependencies": {
     "@agoric/babel-parser": "^7.6.4",

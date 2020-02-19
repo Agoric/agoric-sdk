@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-redeclare
 /* global setImmediate */
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import harden from '@agoric/harden';
 import buildKernel from '../src/kernel/index';
 import { buildStorageInMemory } from '../src/hostStorage';

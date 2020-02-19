@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import { rollup } from 'rollup/dist/rollup.es';
 import * as acorn from 'acorn';
 import eventualSend from '..';

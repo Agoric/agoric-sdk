@@ -4,7 +4,7 @@
   "description": "tame-metering",
   "main": "src/index.js",
   "scripts": {
-    "test": "tape -r esm 'test/**/*.js'",
+    "test": "tap -r esm --reporter specy --no-coverage --save=failed.tst 'test/**/test*.js'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
     "build": "exit 0"

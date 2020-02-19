@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import harden from '@agoric/harden';
 import bundleSource from '@agoric/bundle-source';
 
@@ -249,7 +249,7 @@ test('autoSwap with valid offers', async t => {
   }
 });
 
-test.skip('autoSwap - test fee', async t => {
+test('autoSwap - test fee', {skip:true},async t => {
   try {
     const {
       mints: defaultMints,

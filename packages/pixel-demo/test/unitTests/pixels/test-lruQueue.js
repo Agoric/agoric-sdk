@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import harden from '@agoric/harden';
 
 import { makeLruQueue } from '../../../src/lruQueue';

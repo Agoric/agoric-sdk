@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import { spawn } from 'child_process';
 
 test('make scenario3-setup', async t => {

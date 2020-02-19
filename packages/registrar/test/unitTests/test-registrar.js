@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import { makeRegistrar } from '../../src/registrar';
 
 test('Registrar operations', async t => {

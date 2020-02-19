@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import bundleSource from '..';
 
 test('sanity', async t => {

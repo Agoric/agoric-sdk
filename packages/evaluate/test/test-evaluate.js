@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop */
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import evaluate, {
   evaluateExpr,
   evaluateProgram,

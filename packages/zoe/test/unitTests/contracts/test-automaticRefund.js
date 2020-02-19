@@ -1,4 +1,4 @@
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import harden from '@agoric/harden';
 import bundleSource from '@agoric/bundle-source';
 
@@ -447,7 +447,7 @@ test('zoe - alice cancels after completion', async t => {
 
     await seat.makeOffer();
 
-    t.throws(() => cancelObj.cancel(), /Error: offer has already completed/);
+    t.throws(() => cancelObj.cancel(), /offer has already completed/);
 
     const payout = await payoutP;
     const [moolaPayout, simoleanPayout] = await Promise.all(payout);

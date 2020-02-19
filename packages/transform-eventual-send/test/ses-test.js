@@ -1,6 +1,6 @@
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable no-await-in-loop */
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 import SES from 'ses';
 
 import * as babelParser from '@agoric/babel-parser';

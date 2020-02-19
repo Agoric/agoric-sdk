@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-redeclare
 /* global process */
 import semver from 'semver';
-import { test } from 'tape-promise/tape';
+import { test } from 'tap';
 
 test('Node version', t => {
   t.true(
