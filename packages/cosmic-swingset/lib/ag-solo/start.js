@@ -9,13 +9,13 @@ import readlines from 'n-readlines';
 // import harden from '@agoric/harden';
 // import djson from 'deterministic-json';
 
+import { makeSimpleSwingStore } from '@agoric/simple-swing-store';
 import {
   loadBasedir,
   buildCommand,
   buildVatController,
   buildMailboxStateMap,
   buildMailbox,
-  buildStorageInMemory,
   buildTimer,
   getVatTPSourcePath,
   getCommsSourcePath,
@@ -72,8 +72,9 @@ async function atomicReplaceFile(filename, contents) {
 }
 
 async function buildSwingset(
+  basedir,
   mailboxStateFile,
-  kernelStateFile,
+  kernelStateDBName,
   withSES,
   vatsDir,
   argv,
@@ -100,33 +101,15 @@ async function buildSwingset(
   });
   config.vats.set('timer', { sourcepath: getTimerWrapperSourcePath() });
 
-  // 'storage' will be modified in-place as the kernel runs
-  const storage = buildStorageInMemory();
-  config.hostStorage = storage.storage;
-
-  // kernelStateFile is created in init-basedir.js, should never be missing
-  const lines = new readlines(kernelStateFile);
-  let line;
-  while ((line = lines.next())) {
-    const [key, value] = JSON.parse(line);
-    config.hostStorage.set(key, value);
-  }
+  const { storage, commit } = makeSimpleSwingStore(basedir, kernelStateDBName, false);
+  config.hostStorage = storage;
 
   const controller = await buildVatController(config, withSES, argv);
 
   async function saveState() {
     const ms = JSON.stringify(mbs.exportToData());
     await atomicReplaceFile(mailboxStateFile, ms);
-    const tmpfn = `${kernelStateFile}.tmp`;
-    const fd = fs.openSync(tmpfn, 'w');
-
-    for (let [key, value] of storage.map.entries()) {
-      const line = JSON.stringify([key, value]);
-      fs.writeSync(fd, line);
-      fs.writeSync(fd, '\n');
-    }
-    fs.closeSync(fd);
-    fs.renameSync(tmpfn, kernelStateFile);
+    commit();
   }
 
   async function processKernel() {
@@ -183,10 +166,6 @@ async function buildSwingset(
 
 export default async function start(basedir, withSES, argv) {
   const mailboxStateFile = path.resolve(basedir, 'swingset-kernel-mailbox.json');
-  const kernelStateFile = path.resolve(
-    basedir,
-    'swingset-kernel-state.jsonlines',
-  );
   const connections = JSON.parse(
     fs.readFileSync(path.join(basedir, 'connections.json')),
   );
@@ -261,8 +240,9 @@ export default async function start(basedir, withSES, argv) {
 
   const vatsDir = path.join(basedir, 'vats');
   const d = await buildSwingset(
+    basedir,
     mailboxStateFile,
-    kernelStateFile,
+    'swingset-kernel-state',
     withSES,
     vatsDir,
     argv,
