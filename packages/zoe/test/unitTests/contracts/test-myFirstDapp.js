@@ -326,3 +326,30 @@ test('myFirstDapp showPayoutRules', async t => {
     t.end();
   }
 });
+
+test.only('myFirstDapp showPayoutRules', async t => {
+  try {
+    const { assays: originalAssays } = setup();
+    const assays = originalAssays.slice(0, 2);
+    const zoe = makeZoe({ require });
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(myFirstDappRoot);
+
+    const installationHandle = zoe.install(source, moduleFormat);
+
+    const { invite: simonInvite } = await zoe.makeInstance(installationHandle, {
+      assays,
+    });
+    const { instanceHandle } = simonInvite.getBalance().extent;
+    const { publicAPI } = zoe.getInstance(instanceHandle);
+
+    const assayStructure = publicAPI.getAssays();
+
+    t.deepEquals(assayStructure, assays);
+  } catch (e) {
+    t.assert(false, e);
+    console.log(e);
+  } finally {
+    t.end();
+  }
+});

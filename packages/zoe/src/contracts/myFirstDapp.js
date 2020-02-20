@@ -58,6 +58,10 @@ export const makeContract = harden((zoe, terms) => {
       .map(offer => flattenOffer(offer));
   }
 
+  function getAssays() {
+    return harden(assays);
+  }
+
   function getBookOrders() {
     return {
       buys: flattenOrders(buyInviteHandles),
@@ -120,7 +124,7 @@ export const makeContract = harden((zoe, terms) => {
   };
   return harden({
     invite: makeInvite(),
-    publicAPI: { makeInvite, getBookOrders, getOffer },
+    publicAPI: { makeInvite, getBookOrders, getOffer, getAssays },
     terms,
   });
 });
