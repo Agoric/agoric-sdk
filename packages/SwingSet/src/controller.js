@@ -11,6 +11,10 @@ import { assert } from '@agoric/assert';
 import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 import bundleSource from '@agoric/bundle-source';
 import { makeMemorySwingStore } from '@agoric/swing-store-simple';
+import {
+  SES1ReplaceGlobalMeter,
+  SES1TameMeteringShim,
+} from '@agoric/tame-metering';
 
 // eslint-disable-next-line import/extensions
 import kernelSourceFunc from './bundles/kernel';
@@ -107,9 +111,6 @@ function makeEvaluate(e) {
       transforms,
     });
     transforms.forEach(t => t.closeOverSES && t.closeOverSES(c));
-    // Global shims need to take effect before realm shims.
-    const shims = (rootOptions.shims || []).concat(realmOptions.shims || []);
-    shims.forEach(shim => c.evaluate(shim));
     return {
       evaluateExpr(source, endowments = {}, options = {}) {
         return c.evaluate(`(${source}\n)`, endowments, options);
@@ -135,13 +136,16 @@ function makeEvaluate(e) {
 
 function makeSESEvaluator() {
   const evaluateOptions = makeDefaultEvaluateOptions();
-  const { transforms, ...otherOptions } = evaluateOptions;
+  const { transforms, shims = [], ...otherOptions } = evaluateOptions;
   const s = SES.makeSESRootRealm({
     ...otherOptions,
     transforms,
     consoleMode: 'allow',
     errorStackMode: 'allow',
+    shims: [SES1TameMeteringShim, ...shims],
+    configurableGlobals: true,
   });
+  const replaceGlobalMeter = SES1ReplaceGlobalMeter(s);
   transforms.forEach(t => {
     t.closeOverSES && t.closeOverSES(s);
   });
@@ -159,13 +163,28 @@ function makeSESEvaluator() {
       confine: s.global.SES.confine,
       confineExpr: s.global.SES.confineExpr,
       rootOptions: evaluateOptions,
-      makeCompartment: s.global.Realm.makeCompartment,
+      makeCompartment: (...args) => {
+        const c = s.global.Realm.makeCompartment(...args);
+        // FIXME: This call should be unnecessary.
+        // We currently need it because fresh Compartments
+        // do not inherit the configured stable globals.
+        Object.defineProperties(
+          c.global,
+          Object.getOwnPropertyDescriptors(s.global),
+        );
+        return c;
+      },
     },
     '@agoric/harden': true,
     '@agoric/nat': Nat,
   });
   return src => {
-    return s.evaluate(src, { require: r })().default;
+    // FIXME: Note that this replaceGlobalMeter endowment is not any
+    // worse than before metering existed.  However, it probably is
+    // only necessary to be added to the kernel, rather than all
+    // static vats once we add metering support to the dynamic vat
+    // implementation.
+    return s.evaluate(src, { require: r, replaceGlobalMeter })().default;
   };
 }
 
