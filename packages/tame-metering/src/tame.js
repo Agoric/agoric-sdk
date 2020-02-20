@@ -17,7 +17,6 @@ export function tameMetering() {
     defineProperty,
     entries,
     getOwnPropertyDescriptors,
-    getOwnPropertyDescriptor,
     getPrototypeOf,
     setPrototypeOf,
   } = Object;
@@ -25,6 +24,7 @@ export function tameMetering() {
   const { get: wmGet, set: wmSet } = WeakMap.prototype;
 
   const ObjectConstructor = Object;
+  const ProxyConstructor = Proxy;
 
   const FunctionPrototype = Function.prototype;
 
@@ -32,6 +32,22 @@ export function tameMetering() {
   const wrapped = new WeakMap();
   const setWrapped = (...args) => apply(wmSet, wrapped, args);
   const getWrapped = (...args) => apply(wmGet, wrapped, args);
+
+  // How to test for a constructor: https://stackoverflow.com/a/48036194
+  const isConstructorHandler = {
+    construct() {
+      // Hack to return an object without allocating a fresh one.
+      return isConstructorHandler;
+    },
+  };
+  const isConstructor = x => {
+    try {
+      const TestProxy = new ProxyConstructor(x, isConstructorHandler);
+      return !!new TestProxy();
+    } catch (e) {
+      return false;
+    }
+  };
 
   /*
   setWrapped(Error, Error); // FIGME: debugging
@@ -56,7 +72,7 @@ export function tameMetering() {
       return wrapper;
     }
 
-    let isConstructor = false;
+    let targetIsConstructor = false;
 
     // Without this hack, SES-1.0 fails with:
     // TypeError: prototype function Error() { [native code] } of unknown.global.EvalError is not already in the fringeSet
@@ -67,9 +83,9 @@ export function tameMetering() {
     ) {
       // Preserve identity and mutate in place.
       wrapper = target;
-    } else if (getOwnPropertyDescriptor(target, 'prototype')) {
+    } else if (isConstructor(target)) {
       // The wrapper needs construct behaviour.
-      isConstructor = true;
+      targetIsConstructor = true;
       wrapper = function meteredConstructor(...args) {
         if (!globalMeter) {
           // Fast path.
@@ -167,7 +183,7 @@ export function tameMetering() {
     setWrapped(target, wrapper);
     setWrapped(wrapper, wrapper);
 
-    if (isConstructor) {
+    if (targetIsConstructor) {
       const proto = get(target, 'prototype');
       if (proto) {
         // Replace the constructor.
