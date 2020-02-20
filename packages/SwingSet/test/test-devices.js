@@ -1,6 +1,6 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
-import { makeMemorySwingStore, getAllState } from '@agoric/simple-swing-store';
+import { makeMemorySwingStore, getAllState } from '@agoric/swing-store-simple';
 
 import { buildVatController } from '../src/index';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';

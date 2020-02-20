@@ -1,5 +1,5 @@
 {
-  "name": "@agoric/lmdb-swing-store",
+  "name": "@agoric/swing-store-lmdb",
   "version": "0.1.0",
   "description": "Persistent storage for SwingSet, based on an LMDB key-value database",
   "main": "lmdbSwingStore.js",
@@ -20,6 +20,6 @@
     "tap-spec": "^5.0.0",
     "tape": "^4.10.2",
     "tape-promise": "^4.0.0",
-    "@agoric/simple-swing-store": "^0.1.0"
+    "@agoric/swing-store-simple": "^0.1.0"
   }
 }

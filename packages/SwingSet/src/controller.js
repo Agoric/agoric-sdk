@@ -10,7 +10,7 @@ import { assert } from '@agoric/assert';
 
 import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 import bundleSource from '@agoric/bundle-source';
-import { makeMemorySwingStore } from '@agoric/simple-swing-store';
+import { makeMemorySwingStore } from '@agoric/swing-store-simple';
 
 // eslint-disable-next-line import/extensions
 import kernelSourceFunc from './bundles/kernel';

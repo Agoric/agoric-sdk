@@ -1,6 +1,6 @@
 import { test } from 'tape';
 import path from 'path';
-import { makeMemorySwingStore } from '@agoric/simple-swing-store';
+import { makeMemorySwingStore } from '@agoric/swing-store-simple';
 
 import { buildVatController, loadBasedir } from '../../src';
 

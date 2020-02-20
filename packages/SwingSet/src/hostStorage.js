@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { makeMemorySwingStore } from '@agoric/simple-swing-store';
+import { makeMemorySwingStore } from '@agoric/swing-store-simple';
 
 /*
 The "Storage API" is a set of functions { has, getKeys, get, set, delete } that

@@ -9,7 +9,7 @@ import readlines from 'n-readlines';
 // import harden from '@agoric/harden';
 // import djson from 'deterministic-json';
 
-import { makeSimpleSwingStore } from '@agoric/simple-swing-store';
+import { makeSimpleSwingStore } from '@agoric/swing-store-simple';
 import {
   loadBasedir,
   buildCommand,

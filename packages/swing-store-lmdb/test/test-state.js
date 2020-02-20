@@ -1,7 +1,7 @@
 import fs from 'fs';
 
 import { test } from 'tape-promise/tape';
-import { getAllState } from '@agoric/simple-swing-store';
+import { getAllState } from '@agoric/swing-store-simple';
 
 import { makeLMDBSwingStore } from '../lmdbSwingStore';
 

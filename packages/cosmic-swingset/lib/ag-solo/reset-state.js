@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 
-import { makeSimpleSwingStore } from '@agoric/simple-swing-store';
+import { makeSimpleSwingStore } from '@agoric/swing-store-simple';
 
 export default async function resetState(basedir) {
   const mailboxStateFile = path.resolve(basedir, 'swingset-kernel-mailbox.json');

@@ -11,7 +11,7 @@ import {
   getTimerWrapperSourcePath,
   getVatTPSourcePath,
 } from '@agoric/swingset-vat';
-import { makeSimpleSwingStore } from '@agoric/simple-swing-store';
+import { makeSimpleSwingStore } from '@agoric/swing-store-simple';
 
 async function buildSwingset(withSES, mailboxState, storage, vatsDir, argv) {
   const config = {};

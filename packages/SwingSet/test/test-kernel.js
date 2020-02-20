@@ -2,7 +2,7 @@
 /* global setImmediate */
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
-import { makeMemorySwingStore } from '@agoric/simple-swing-store';
+import { makeMemorySwingStore } from '@agoric/swing-store-simple';
 
 import buildKernel from '../src/kernel/index';
 import { makeVatSlot } from '../src/parseVatSlots';

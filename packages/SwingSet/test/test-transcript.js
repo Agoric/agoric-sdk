@@ -5,7 +5,7 @@ import {
   makeMemorySwingStore,
   getAllState,
   setAllState,
-} from '@agoric/simple-swing-store';
+} from '@agoric/swing-store-simple';
 import { buildVatController, loadBasedir } from '../src/index';
 
 async function buildTrace(c, storage) {

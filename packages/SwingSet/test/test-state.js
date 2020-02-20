@@ -4,7 +4,7 @@ import {
   makeMemorySwingStore,
   getAllState,
   setAllState,
-} from '@agoric/simple-swing-store';
+} from '@agoric/swing-store-simple';
 import { buildHostDBInMemory } from '../src/hostStorage';
 import { buildBlockBuffer } from '../src/blockBuffer';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper';
