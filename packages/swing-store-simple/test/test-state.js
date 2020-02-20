@@ -1,11 +1,7 @@
 import fs from 'fs';
 
 import { test } from 'tape-promise/tape';
-import {
-  makeMemorySwingStore,
-  makeSimpleSwingStore,
-  getAllState,
-} from '../simpleSwingStore';
+import { makeSwingStore, getAllState } from '../simpleSwingStore';
 
 function testStorage(t, storage) {
   t.notOk(storage.has('missing'));
@@ -39,21 +35,21 @@ function testStorage(t, storage) {
 }
 
 test('storageInMemory', t => {
-  const { storage } = makeMemorySwingStore();
+  const { storage } = makeSwingStore(null, true);
   testStorage(t, storage);
   t.end();
 });
 
 test('storageInFile', t => {
-  const { storage, commit, close } = makeSimpleSwingStore('.', 'stuff', true);
+  const { storage, commit, close } = makeSwingStore('testdb', true);
   testStorage(t, storage);
   commit();
   const before = getAllState(storage);
   close();
 
-  const { storage: after } = makeSimpleSwingStore('.', 'stuff', false);
+  const { storage: after } = makeSwingStore('testdb', false);
   t.deepEqual(getAllState(after), before, 'check state after reread');
   t.end();
 });
 
-test.onFinish(() => fs.unlinkSync('stuff.jsonlines'));
+test.onFinish(() => fs.rmdirSync('testdb', { recursive: true }));

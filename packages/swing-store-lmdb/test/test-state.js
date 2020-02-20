@@ -3,7 +3,7 @@ import fs from 'fs';
 import { test } from 'tape-promise/tape';
 import { getAllState } from '@agoric/swing-store-simple';
 
-import { makeLMDBSwingStore } from '../lmdbSwingStore';
+import { makeSwingStore } from '../lmdbSwingStore';
 
 function testStorage(t, storage) {
   t.notOk(storage.has('missing'));
@@ -37,18 +37,15 @@ function testStorage(t, storage) {
 }
 
 test('storageInLMDB', t => {
-  const { storage, commit, close } = makeLMDBSwingStore('.', 'stuff', true);
+  const { storage, commit, close } = makeSwingStore('testdb', true);
   testStorage(t, storage);
   commit();
   const before = getAllState(storage);
   close();
 
-  const { storage: after } = makeLMDBSwingStore('.', 'stuff', false);
+  const { storage: after } = makeSwingStore('testdb', false);
   t.deepEqual(getAllState(after), before, 'check state after reread');
   t.end();
 });
 
-test.onFinish(() => {
-  fs.unlinkSync('data.mdb');
-  fs.unlinkSync('lock.mdb');
-});
+test.onFinish(() => fs.rmdirSync('testdb', { recursive: true }));

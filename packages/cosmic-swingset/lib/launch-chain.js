@@ -11,7 +11,7 @@ import {
   getTimerWrapperSourcePath,
   getVatTPSourcePath,
 } from '@agoric/swingset-vat';
-import { makeSimpleSwingStore } from '@agoric/swing-store-simple';
+import { makeSwingStore } from '@agoric/swing-store-simple';
 
 async function buildSwingset(withSES, mailboxState, storage, vatsDir, argv) {
   const config = {};
@@ -47,7 +47,7 @@ async function buildSwingset(withSES, mailboxState, storage, vatsDir, argv) {
   return { controller, mb, mbs, timer };
 }
 
-export async function launch(basedir, mailboxStorage, stateDB, vatsDir, argv) {
+export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
   const withSES = true;
 
   console.log(
@@ -58,7 +58,7 @@ export async function launch(basedir, mailboxStorage, stateDB, vatsDir, argv) {
     ? JSON.parse(mailboxStorage.get('mailbox'))
     : {};
 
-  const { storage, commit } = makeSimpleSwingStore(basedir, stateDB, false);
+  const { storage, commit } = makeSwingStore(kernelStateDBDir, false);
 
   console.log(`buildSwingset`);
   const { controller, mb, mbs, timer } = await buildSwingset(

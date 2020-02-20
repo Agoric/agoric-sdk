@@ -9,7 +9,7 @@ import readlines from 'n-readlines';
 // import harden from '@agoric/harden';
 // import djson from 'deterministic-json';
 
-import { makeSimpleSwingStore } from '@agoric/swing-store-simple';
+import { makeSwingStore } from '@agoric/swing-store-simple';
 import {
   loadBasedir,
   buildCommand,
@@ -72,9 +72,8 @@ async function atomicReplaceFile(filename, contents) {
 }
 
 async function buildSwingset(
-  basedir,
+  kernelStateDBDir,
   mailboxStateFile,
-  kernelStateDBName,
   withSES,
   vatsDir,
   argv,
@@ -101,7 +100,7 @@ async function buildSwingset(
   });
   config.vats.set('timer', { sourcepath: getTimerWrapperSourcePath() });
 
-  const { storage, commit } = makeSimpleSwingStore(basedir, kernelStateDBName, false);
+  const { storage, commit } = makeSwingStore(kernelStateDBDir, false);
   config.hostStorage = storage;
 
   const controller = await buildVatController(config, withSES, argv);
@@ -239,10 +238,10 @@ export default async function start(basedir, withSES, argv) {
   );
 
   const vatsDir = path.join(basedir, 'vats');
+  const stateDBDir = path.join(basedir, 'swingset-kernel-state');
   const d = await buildSwingset(
-    basedir,
+    stateDBDir,
     mailboxStateFile,
-    'swingset-kernel-state',
     withSES,
     vatsDir,
     argv,

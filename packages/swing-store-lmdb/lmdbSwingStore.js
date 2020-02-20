@@ -1,23 +1,14 @@
 import fs from 'fs';
-import path from 'path';
 
 import lmdb from 'node-lmdb';
-
-function safeUnlink(filePath) {
-  try {
-    fs.unlinkSync(filePath);
-  } catch (e) {
-    if (e.code !== 'ENOENT') {
-      throw e;
-    }
-  }
-}
 
 /**
  * Create a swingset store instance backed by an LMDB database.
  *
- * @param basedir  Directory in which database files will be kept
- * @param dbName   Name for the database
+ * @param dirPath  Path to a directory in which database files may be kept.
+ *   This directory need not actually exist yet (if it doesn't it will be
+ *   created) but it is reserved (by the caller) for the exclusive use of this
+ *   swing store instance.
  * @param forceReset  If true, initialize the database to an empty state
  *
  * @return an object: {
@@ -26,22 +17,22 @@ function safeUnlink(filePath) {
  *   close    // a function to shutdown the store, abandoning any uncommitted changes
  * }
  */
-export function makeLMDBSwingStore(basedir, dbName, forceReset = false) {
+export function makeSwingStore(dirPath, forceReset = false) {
   let txn = null;
 
   if (forceReset) {
-    safeUnlink(path.resolve(basedir, 'data.mdb'));
-    safeUnlink(path.resolve(basedir, 'lock.mdb'));
+    fs.rmdirSync(dirPath, { recursive: true });
   }
+  fs.mkdirSync(dirPath, { recursive: true });
 
   let lmdbEnv = new lmdb.Env();
   lmdbEnv.open({
-    path: basedir,
+    path: dirPath,
     mapSize: 2 * 1024 * 1024 * 1024, // XXX need to tune this
   });
 
   let dbi = lmdbEnv.openDbi({
-    name: dbName,
+    name: 'swingset-kernel-state',
     create: true,
   });
 
@@ -174,8 +165,6 @@ export function makeLMDBSwingStore(basedir, dbName, forceReset = false) {
     if (txn) {
       txn.commit();
       txn = null;
-    } else {
-      throw new Error('commit called without open transaction');
     }
   }
 
@@ -186,6 +175,7 @@ export function makeLMDBSwingStore(basedir, dbName, forceReset = false) {
   function close() {
     if (txn) {
       txn.abort();
+      txn = null;
     }
     dbi.close();
     dbi = null;
