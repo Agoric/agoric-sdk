@@ -16,6 +16,7 @@ export function tameMetering() {
   const {
     defineProperty,
     entries,
+    getOwnPropertyDescriptor,
     getOwnPropertyDescriptors,
     getPrototypeOf,
     setPrototypeOf,
@@ -132,6 +133,10 @@ export function tameMetering() {
           globalMeter = savedMeter;
         }
       };
+      if (!getOwnPropertyDescriptor(target, 'prototype')) {
+        // Remove the .prototype by binding the function.
+        wrapper = wrapper.bind();
+      }
       defineProperty(wrapper, 'name', { value: target.name });
     } else {
       // The function wrapper must not have construct behaviour.
