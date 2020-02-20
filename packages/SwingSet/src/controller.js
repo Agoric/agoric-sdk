@@ -10,6 +10,7 @@ import { assert } from '@agoric/assert';
 
 import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 import bundleSource from '@agoric/bundle-source';
+import { makeMemorySwingStore } from '@agoric/swing-store-simple';
 
 // eslint-disable-next-line import/extensions
 import kernelSourceFunc from './bundles/kernel';
@@ -17,7 +18,6 @@ import buildKernelNonSES from './kernel/index';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
-import { buildStorageInMemory } from './hostStorage';
 
 const ADMIN_DEVICE_PATH = require.resolve('./kernel/vatAdmin/vatAdmin-src');
 const ADMIN_VAT_PATH = require.resolve('./kernel/vatAdmin/vatAdminWrapper');
@@ -220,7 +220,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
     return setup;
   }
 
-  const hostStorage = config.hostStorage || buildStorageInMemory().storage;
+  const hostStorage = config.hostStorage || makeMemorySwingStore().storage;
   insistStorageAPI(hostStorage);
   const kernelEndowments = {
     setImmediate,

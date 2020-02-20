@@ -27,7 +27,6 @@ async function writeMap(file, map) {
 }
 
 export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
-  const stateFile = path.join(basedir, `fake-chain-${GCI}-state.jsonlines`);
   const mailboxFile = path.join(basedir, `fake-chain-${GCI}-mailbox.json`);
   const bootAddress = `${GCI}-client`;
 
@@ -35,7 +34,7 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
 
   const vatsdir = path.join(basedir, 'vats');
   const argv = [`--role=${role}`, bootAddress];
-  const s = await launch(mailboxStorage, stateFile, vatsdir, argv);
+  const s = await launch(basedir, mailboxStorage, `fake-chain-${GCI}-state`, vatsdir, argv);
   const { deliverInbound, deliverStartBlock } = s;
 
   let pretendLast = Date.now();

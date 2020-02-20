@@ -1,8 +1,8 @@
 {
-  "name": "@agoric/simple-swing-store",
+  "name": "@agoric/swing-store-lmdb",
   "version": "0.1.0",
-  "description": "Persistent storage for SwingSet, based on a Map, optionally backed by a simple JSON file",
-  "main": "simpleSwingStore.js",
+  "description": "Persistent storage for SwingSet, based on an LMDB key-value database",
+  "main": "lmdbSwingStore.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
   "license": "Apache-2.0",
@@ -13,12 +13,13 @@
     "lint-check": "eslint '**/*.js'"
   },
   "dependencies": {
-    "n-readlines": "^1.0.0"
+    "node-lmdb": "^0.8.0"
   },
   "devDependencies": {
     "esm": "^3.2.25",
     "tap-spec": "^5.0.0",
     "tape": "^4.10.2",
-    "tape-promise": "^4.0.0"
+    "tape-promise": "^4.0.0",
+    "@agoric/swing-store-simple": "^0.1.0"
   }
 }

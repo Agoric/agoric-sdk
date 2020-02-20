@@ -30,6 +30,7 @@
     "@agoric/registrar": "^0.0.1",
     "@agoric/sharing-service": "^0.0.1",
     "@agoric/store": "^0.0.1",
+    "@agoric/swing-store-simple": "^0.1.0",
     "@agoric/swingset-vat": "^0.3.0",
     "@agoric/weak-store": "^0.0.1",
     "@agoric/zoe": "^0.2.1",

@@ -1,93 +1,100 @@
 import path from 'path';
 import { test } from 'tape-promise/tape';
+import {
+  makeMemorySwingStore,
+  getAllState,
+  setAllState,
+} from '@agoric/swing-store-simple';
 import { buildVatController, loadBasedir } from '../src/index';
-import { buildStorageInMemory } from '../src/hostStorage';
 
 async function testLoadState(t, withSES) {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
   );
-  const storage = buildStorageInMemory();
-  config.hostStorage = storage.storage;
+  const { storage } = makeMemorySwingStore();
+  config.hostStorage = storage;
   const c = await buildVatController(config, withSES, ['one']);
-  const state0 = storage.getState();
+  const state0 = getAllState(storage);
 
   await c.step();
-  const state1 = storage.getState();
+  const state1 = getAllState(storage);
 
   await c.step();
-  const state2 = storage.getState();
+  const state2 = getAllState(storage);
 
   await c.step();
-  const state3 = storage.getState();
+  const state3 = getAllState(storage);
 
   await c.step();
-  const state4 = storage.getState();
+  const state4 = getAllState(storage);
 
   await c.step();
-  const state5 = storage.getState();
+  const state5 = getAllState(storage);
 
   // build from loaded state
   // Step 0
 
   const cfg0 = await loadBasedir(path.resolve(__dirname, 'basedir-transcript'));
-  const storage0 = buildStorageInMemory(state0);
-  cfg0.hostStorage = storage0.storage;
+  const storage0 = makeMemorySwingStore().storage;
+  setAllState(storage0, state0);
+  cfg0.hostStorage = storage0;
   const c0 = await buildVatController(cfg0, withSES, ['one']);
 
   await c0.step();
-  t.deepEqual(state1, storage0.getState());
+  t.deepEqual(state1, getAllState(storage0), `p1 ${withSES}`);
 
   await c0.step();
-  t.deepEqual(state2, storage0.getState());
+  t.deepEqual(state2, getAllState(storage0), `p2 ${withSES}`);
 
   await c0.step();
-  t.deepEqual(state3, storage0.getState());
+  t.deepEqual(state3, getAllState(storage0), `p3 ${withSES}`);
 
   await c0.step();
-  t.deepEqual(state4, storage0.getState());
+  t.deepEqual(state4, getAllState(storage0), `p4 ${withSES}`);
 
   await c0.step();
-  t.deepEqual(state5, storage0.getState());
+  t.deepEqual(state5, getAllState(storage0), `p5 ${withSES}`);
 
   // Step 1
 
   const cfg1 = await loadBasedir(path.resolve(__dirname, 'basedir-transcript'));
-  const storage1 = buildStorageInMemory(state1);
-  cfg1.hostStorage = storage1.storage;
+  const storage1 = makeMemorySwingStore().storage;
+  setAllState(storage1, state1);
+  cfg1.hostStorage = storage1;
   const c1 = await buildVatController(cfg1, withSES, ['one']);
 
-  t.deepEqual(storage1.getState(), state1); // actual, expected
+  t.deepEqual(state1, getAllState(storage1), `p6 ${withSES}`); // actual, expected
 
   await c1.step();
-  t.deepEqual(state2, storage1.getState());
+  t.deepEqual(state2, getAllState(storage1), `p7 ${withSES}`);
 
   await c1.step();
-  t.deepEqual(state3, storage1.getState());
+  t.deepEqual(state3, getAllState(storage1), `p8 ${withSES}`);
 
   await c1.step();
-  t.deepEqual(state4, storage1.getState());
+  t.deepEqual(state4, getAllState(storage1), `p9 ${withSES}`);
 
   await c1.step();
-  t.deepEqual(state5, storage1.getState());
+  t.deepEqual(state5, getAllState(storage1), `p10 ${withSES}`);
 
   // Step 2
 
   const cfg2 = await loadBasedir(path.resolve(__dirname, 'basedir-transcript'));
-  const storage2 = buildStorageInMemory(state2);
-  cfg2.hostStorage = storage2.storage;
+  const storage2 = makeMemorySwingStore().storage;
+  setAllState(storage2, state2);
+  cfg2.hostStorage = storage2;
   const c2 = await buildVatController(cfg2, withSES, ['one']);
 
-  t.deepEqual(state2, storage2.getState());
+  t.deepEqual(state2, getAllState(storage2), `p11 ${withSES}`);
 
   await c2.step();
-  t.deepEqual(state3, storage2.getState());
+  t.deepEqual(state3, getAllState(storage2), `p12 ${withSES}`);
 
   await c2.step();
-  t.deepEqual(state4, storage2.getState());
+  t.deepEqual(state4, getAllState(storage2), `p13 ${withSES}`);
 
   await c2.step();
-  t.deepEqual(state5, storage2.getState());
+  t.deepEqual(state5, getAllState(storage2), `p14 ${withSES}`);
 
   t.end();
 }

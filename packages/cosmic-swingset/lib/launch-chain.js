@@ -11,7 +11,7 @@ import {
   getTimerWrapperSourcePath,
   getVatTPSourcePath,
 } from '@agoric/swingset-vat';
-import { buildStorageInMemory } from '@agoric/swingset-vat/src/hostStorage';
+import { makeSimpleSwingStore } from '@agoric/swing-store-simple';
 
 async function buildSwingset(withSES, mailboxState, storage, vatsDir, argv) {
   const config = {};
@@ -47,7 +47,7 @@ async function buildSwingset(withSES, mailboxState, storage, vatsDir, argv) {
   return { controller, mb, mbs, timer };
 }
 
-export async function launch(mailboxStorage, stateFile, vatsDir, argv) {
+export async function launch(basedir, mailboxStorage, stateDB, vatsDir, argv) {
   const withSES = true;
 
   console.log(
@@ -58,55 +58,24 @@ export async function launch(mailboxStorage, stateFile, vatsDir, argv) {
     ? JSON.parse(mailboxStorage.get('mailbox'))
     : {};
 
-  const storage = buildStorageInMemory();
-
-  let l;
-  try {
-    // stateFile will be missing the first time we launch
-    l = new readlines(stateFile);
-  } catch (e) {
-    console.log(`initializing empty swingset state`);
-  }
-  if (l) {
-    let line;
-    while ((line = l.next())) {
-      const [key, value] = JSON.parse(line);
-      storage.storage.set(key, value);
-    }
-  }
+  const { storage, commit } = makeSimpleSwingStore(basedir, stateDB, false);
 
   console.log(`buildSwingset`);
   const { controller, mb, mbs, timer } = await buildSwingset(
     withSES,
     mailboxState,
-    storage.storage,
+    storage,
     vatsDir,
     argv,
   );
 
-  function saveKernelState() {
-    const tmpfn = `${stateFile}.tmp`;
-    const fd = fs.openSync(tmpfn, 'w');
-    let size = 0;
-
-    for (let [key, value] of storage.map.entries()) {
-      const line = JSON.stringify([key, value]);
-      fs.writeSync(fd, line);
-      fs.writeSync(fd, '\n');
-      size += line.length + 1;
-    }
-    fs.closeSync(fd);
-    fs.renameSync(tmpfn, stateFile);
-    return size;
-  }
-
   function saveState() {
-    // save kernel state to the stateFile, and the mailbox state to a cosmos
+    // save kernel state to the swing store, and the mailbox state to a cosmos
     // kvstore where it can be queried externally
-    const kernelStateSize = saveKernelState();
+    commit();
     const mailboxStateData = djson.stringify(mbs.exportToData());
     mailboxStorage.set(`mailbox`, mailboxStateData);
-    return [kernelStateSize, mailboxStateData.length];
+    return mailboxStateData.length;
   }
 
   // save the initial state immediately
@@ -134,10 +103,10 @@ export async function launch(mailboxStorage, stateFile, vatsDir, argv) {
     }
     const mbTime = Date.now() - start;
     start = Date.now();
-    const [kernelSize, mailboxSize] = saveState();
+    const mailboxSize = saveState();
     const saveTime = Date.now() - start;
     console.log(
-      `wrote SwingSet checkpoint (kernel=${kernelSize}, mailbox=${mailboxSize}), [run=${runTime}ms, mb=${mbTime}ms, save=${saveTime}ms]`,
+      `wrote SwingSet checkpoint (mailbox=${mailboxSize}), [run=${runTime}ms, mb=${mbTime}ms, save=${saveTime}ms]`,
     );
   }
 

@@ -1,4 +1,5 @@
 import harden from '@agoric/harden';
+import { makeMemorySwingStore } from '@agoric/swing-store-simple';
 
 /*
 The "Storage API" is a set of functions { has, getKeys, get, set, delete } that
@@ -20,149 +21,6 @@ directly.
 */
 
 /**
- * Create a new instance of a RAM-based implementation of the Storage API.
- *
- * In addition to the regular storage API, it provides an extra getState()
- * function that returns all the currently stored state as an object.
- *
- * @param initialState  An optional initial state object whose properties are
- *    mapped to state key/value pairs.
- *
- * @return an object: {
- *   storage,  // the storage API object itself
- *   getState, // a function that returns the current state as an object
- *   map       // the underlying map that holds the state in memory
- * }
- *
- * XXX I presume providing the underlying map is just a debug thing?  Should
- * this still be here?
- */
-export function buildStorageInMemory(initialState = {}) {
-  const state = new Map();
-
-  for (const k of Object.getOwnPropertyNames(initialState)) {
-    state.set(k, initialState[k]);
-  }
-
-  /**
-   * Test if the state contains a value for a given key.
-   *
-   * @param key  The key that is of interest.
-   *
-   * @return true if a value is stored for the key, false if not.
-   *
-   * @throws if key is not a string.
-   */
-  function has(key) {
-    if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
-    }
-    return state.has(key);
-  }
-
-  /**
-   * Generator function that returns an iterator over all the keys within a
-   * given range.  Note that this can be slow as it's only intended for use in
-   * debugging.
-   *
-   * @param start  Start of the key range of interest (inclusive)
-   * @param end  End of the key range of interest (exclusive)
-   *
-   * @return an iterator for the keys from start <= key < end
-   *
-   * @throws if either parameter is not a string.
-   */
-  function* getKeys(start, end) {
-    if (`${start}` !== start) {
-      throw new Error(`non-string start ${start}`);
-    }
-    if (`${end}` !== end) {
-      throw new Error(`non-string end ${end}`);
-    }
-
-    const keys = Array.from(state.keys()).sort();
-    for (const k of keys) {
-      if (start <= k && k < end) {
-        yield k;
-      }
-    }
-  }
-
-  /**
-   * Obtain the value stored for a given key.
-   *
-   * @param key  The key whose value is sought.
-   *
-   * @return the (string) value for the given key, or undefined if there is no
-   *    such value.
-   *
-   * @throws if key is not a string.
-   */
-  function get(key) {
-    if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
-    }
-    return state.get(key);
-  }
-
-  /**
-   * Store a value for a given key.  The value will replace any prior value if
-   * there was one.
-   *
-   * @param key  The key whose value is being set.
-   * @param value  The value to set the key to.
-   *
-   * @throws if either parameter is not a string.
-   */
-  function set(key, value) {
-    if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
-    }
-    if (`${value}` !== value) {
-      throw new Error(`non-string value ${value}`);
-    }
-    state.set(key, value);
-  }
-
-  /**
-   * Remove any stored value for a given key.  It is permissible for there to
-   * be no existing stored value for the key.
-   *
-   * @param key  The key whose value is to be deleted
-   *
-   * @throws if key is not a string.
-   */
-  function del(key) {
-    if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
-    }
-    state.delete(key);
-  }
-
-  const storage = {
-    has,
-    getKeys,
-    get,
-    set,
-    delete: del,
-  };
-
-  /**
-   * Obtain an object representing all the current state, one property per
-   * key/value pair.
-   */
-  function getState() {
-    const data = {};
-    for (const k of Array.from(state.keys()).sort()) {
-      data[k] = state.get(k);
-    }
-    return data;
-  }
-
-  return { storage, getState, map: state };
-}
-
-/**
  * Create a new instance of a bare-bones implementation of the HostDB API.
  *
  * @param storage Storage object that the new HostDB object will be based on.
@@ -170,7 +28,7 @@ export function buildStorageInMemory(initialState = {}) {
  */
 export function buildHostDBInMemory(storage) {
   if (!storage) {
-    storage = buildStorageInMemory();
+    storage = makeMemorySwingStore().store;
   }
 
   /**

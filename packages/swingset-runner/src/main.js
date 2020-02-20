@@ -6,8 +6,8 @@ import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 import {
   makeSimpleSwingStore,
   makeMemorySwingStore,
-} from '@agoric/simple-swing-store';
-import { makeLMDBSwingStore } from '@agoric/lmdb-swing-store';
+} from '@agoric/swing-store-simple';
+import { makeLMDBSwingStore } from '@agoric/swing-store-lmdb';
 
 function deepLog(item) {
   console.log(util.inspect(item, false, null, true));

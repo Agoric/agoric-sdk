@@ -2,8 +2,8 @@
 /* global setImmediate */
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
-// eslint-disable-next-line no-unused-vars
-import { buildStorageInMemory } from '../src/hostStorage';
+import { makeMemorySwingStore } from '@agoric/swing-store-simple';
+
 import buildKernel from '../src/kernel/index';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
@@ -16,7 +16,7 @@ function capargs(args, slots = []) {
 }
 
 function makeEndowments() {
-  return { setImmediate, hostStorage: buildStorageInMemory().storage };
+  return { setImmediate, hostStorage: makeMemorySwingStore().storage };
 }
 
 test('calls', async t => {

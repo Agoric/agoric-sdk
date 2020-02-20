@@ -138,12 +138,15 @@ function makeStorageInMemory() {
 }
 
 /**
- * Create a swingset store instance that exists strictly as an in-memory map with no persistent backing.
+ * Create a swingset store instance that exists strictly as an in-memory map
+ * with no persistent backing.
  *
  * @return an object: {
  *   storage, // a storage API object to load and store data
- *   commit,  // a function to commit changes made since the last commit (a no-op in this case)
- *   close    // a function to shutdown the store, abandoning any uncommitted changes (also a no-op)
+ *   commit,  // a function to commit changes made since the last commit (a
+ *            // no-op in this case)
+ *   close    // a function to shutdown the store, abandoning any uncommitted
+ *            // changes (also a no-op)
  * }
  */
 export function makeMemorySwingStore(_basedir, _dbName, _forceReset) {
@@ -155,7 +158,8 @@ export function makeMemorySwingStore(_basedir, _dbName, _forceReset) {
 }
 
 /**
- * Create a swingset store instance that is an in-memory map backed by JSON serialized to a text file.
+ * Create a swingset store instance that is an in-memory map backed by JSON
+ * serialized to a text file.
  *
  * @param basedir  Directory in which database files will be kept
  * @param dbName   Name for the database
@@ -164,7 +168,8 @@ export function makeMemorySwingStore(_basedir, _dbName, _forceReset) {
  * @return an object: {
  *   storage, // a storage API object to load and store data
  *   commit,  // a function to commit changes made since the last commit
- *   close    // a function to shutdown the store, abandoning any uncommitted changes
+ *   close    // a function to shutdown the store, abandoning any uncommitted
+ *            // changes
  * }
  */
 export function makeSimpleSwingStore(basedir, dbName, forceReset = false) {
@@ -178,7 +183,8 @@ export function makeSimpleSwingStore(basedir, dbName, forceReset = false) {
     try {
       lines = new Readlines(storeFile);
     } catch (e) {
-      // storeFile will be missing the first time we try to use it.  That's OK; commit will create it.
+      // storeFile will be missing the first time we try to use it.  That's OK;
+      // commit will create it.
       if (e.code !== 'ENOENT') {
         throw e;
       }
@@ -210,12 +216,49 @@ export function makeSimpleSwingStore(basedir, dbName, forceReset = false) {
   }
 
   /**
-   * Close the "database", abandoning any changes made since the last commit (if you want to save them, call
-   * commit() first).
+   * Close the "database", abandoning any changes made since the last commit
+   * (if you want to save them, call commit() first).
    */
   function close() {
     // Nothing to do here.
   }
 
   return { storage, commit, close };
+}
+
+/**
+ * Produce a representation of all the state found in a swing store.
+ *
+ * WARNING: This is a helper function intended for use in testing and
+ * debugging.  It extracts *everything*, and does so in the simplest and
+ * stupidest possible way, hence it is likely to be a performance and memory
+ * hog if you attempt to use it on anything real.
+ *
+ * @param storage  The swing storage whose state is to be extracted.
+ *
+ * @return an array representing all the current state in `storage`, one
+ *    element of the form [key, value] per key/value pair.
+ */
+export function getAllState(storage) {
+  const stuff = {};
+  for (const key of Array.from(storage.getKeys('', ''))) {
+    stuff[key] = storage.get(key);
+  }
+  return stuff;
+}
+
+/**
+ * Stuff a bunch of state into a swing store.
+ *
+ * WARNING: This is intended to support testing and should not be used as a
+ * general store initialization mechanism.  In particular, note that it does
+ * not bother to remove any existing state in the store that it is given.
+ *
+ * @param storage  The swing storage whose state is to be set.
+ * @param stuff  An array of key/value pairs, each element of the form [key, value]
+ */
+export function setAllState(storage, stuff) {
+  for (const k of Object.getOwnPropertyNames(stuff)) {
+    storage.set(k, stuff[k]);
+  }
 }
