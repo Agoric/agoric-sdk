@@ -10,11 +10,11 @@ import { assert } from '@agoric/assert';
 
 import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 import bundleSource from '@agoric/bundle-source';
+import { makeSwingStore } from '@agoric/swing-store-simple';
 import {
   SES1ReplaceGlobalMeter,
   SES1TameMeteringShim,
 } from '@agoric/tame-metering';
-import { makeSwingStore } from '@agoric/swing-store-simple';
 
 // eslint-disable-next-line import/extensions
 import kernelSourceFunc from './bundles/kernel';
