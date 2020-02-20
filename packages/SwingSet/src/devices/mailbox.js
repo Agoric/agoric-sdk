@@ -160,7 +160,7 @@ export function buildMailbox(state) {
     try {
       return Boolean(inboundCallback(peer, messages, ack));
     } catch (e) {
-      throw new Error(`error in inboundCallback: ${e} ${e.message}`);
+      throw new Error(`error in inboundCallback: ${e}`);
     }
   }
 

@@ -62,7 +62,7 @@ export default function setup(syscall, state, helpers, endowments) {
       try {
         SO(inboundHandler).deliverInboundMessages(peer, newMessages);
       } catch (e) {
-        console.log(`error during deliverInboundMessages: ${e} ${e.message}`);
+        console.log(`error during deliverInboundMessages: ${e}`);
       }
     };
 
@@ -73,7 +73,7 @@ export default function setup(syscall, state, helpers, endowments) {
       try {
         SO(inboundHandler).deliverInboundAck(peer, ack);
       } catch (e) {
-        console.log(`error during deliverInboundAck: ${e} ${e.message}`);
+        console.log(`error during deliverInboundAck: ${e}`);
       }
     };
 
@@ -91,7 +91,7 @@ export default function setup(syscall, state, helpers, endowments) {
         try {
           endowments.add(`${peer}`, Nat(msgnum), `${body}`);
         } catch (e) {
-          throw new Error(`error in add: ${e} ${e.message}`);
+          throw new Error(`error in add: ${e}`);
         }
       },
 
@@ -99,7 +99,7 @@ export default function setup(syscall, state, helpers, endowments) {
         try {
           endowments.remove(`${peer}`, Nat(msgnum));
         } catch (e) {
-          throw new Error(`error in remove: ${e} ${e.message}`);
+          throw new Error(`error in remove: ${e}`);
         }
       },
 
@@ -107,7 +107,7 @@ export default function setup(syscall, state, helpers, endowments) {
         try {
           endowments.setAcknum(`${peer}`, Nat(msgnum));
         } catch (e) {
-          throw new Error(`error in ackInbound: ${e} ${e.message}`);
+          throw new Error(`error in ackInbound: ${e}`);
         }
       },
     });
