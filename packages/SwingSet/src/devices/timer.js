@@ -23,7 +23,7 @@ export function buildTimer() {
     try {
       return Boolean(devicePollFunction(Nat(time)));
     } catch (e) {
-      throw new Error(`error in devicePollFunction: ${e} ${e.message}`);
+      throw new Error(`error in devicePollFunction: ${e}`);
     }
   }
 

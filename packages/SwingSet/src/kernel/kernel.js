@@ -273,7 +273,7 @@ export default function buildKernel(kernelEndowments) {
       await vat.manager.deliverOneMessage(target, msg);
     } catch (e) {
       // log so we get a stack trace
-      console.log(`error in kernel.deliver: ${e} ${e.message}`, e);
+      console.log(`error in kernel.deliver:`, e);
       throw e;
     }
   }
@@ -351,7 +351,7 @@ export default function buildKernel(kernelEndowments) {
       await vat.manager.deliverOneNotification(kpid, p);
     } catch (e) {
       // log so we get a stack trace
-      console.log(`error in kernel.processNotify: ${e} ${e.message}`, e);
+      console.log(`error in kernel.processNotify:`, e);
       throw e;
     }
   }
