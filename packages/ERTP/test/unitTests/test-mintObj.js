@@ -110,7 +110,7 @@ test('mint.mintPayment setMathHelpers with invites', t => {
 // This test models ballet tickets
 test('non-fungible tokens example', t => {
   try {
-    const { mint: balletTicketMint, issuer: balletTicketIssuer, amountMath } = produceIssuer('Agoric Ballet Opera tickets', 'handle');
+    const { mint: balletTicketMint, issuer: balletTicketIssuer, amountMath } = produceIssuer('Agoric Ballet Opera tickets', 'set');
 
     const startDateString = (new Date(2020, 1, 17, 20, 30)).toISOString();
 
@@ -121,39 +121,42 @@ test('non-fungible tokens example', t => {
     }))
 
     const balletTicketPayments = ticketDescriptionObjects.map(ticketDescription => {
-      const handle = {};
-      const amount = amountMath.make(harden([handle]))
-      return balletTicketMint.mintPayment(amount, JSON.stringify(ticketDescription))
+      return balletTicketMint.mintPayment( amountMath.make(harden([ticketDescription])) )
     })
     
     // Alice will buy ticket 1
     const paymentForAlice = balletTicketPayments[0];
     // Bob will buy tickets 3 and 4
-    const paymentForBob = balletTicketIssuer.combine(
-      [balletTicketPayments[2], balletTicketPayments[3]], 
-      JSON.stringify([JSON.parse(balletTicketPayments[2].memo()), JSON.parse(balletTicketPayments[3].memo())])
-    )
+    const paymentForBob = balletTicketIssuer.combine([balletTicketPayments[2], balletTicketPayments[3]])
 
 
     // ALICE SIDE
     // Alice bought ticket 1 and has access to the balletTicketIssuer, because it's public
-    const myTicketPayment_Alice = balletTicketIssuer.claim(paymentForAlice, paymentForAlice.memo())
+    const myTicketPayment_Alice = balletTicketIssuer.claim(paymentForAlice)
     // the call to claim hasn't thrown, so Alice knows myTicketPayment_Alice 
     // is a genuine 'Agoric Ballet Opera tickets' payment and she has exclusive access 
     // to its handle
-    const paymentAmount_Alice = balletTicketIssuer.getBalance(myTicketPayment_Alice)
-    
-    t.equals(myTicketPayment_Alice.memo(), `{"seat":1,"show":"The Sofa","start":"2020-02-17T19:30:00.000Z"}`)
+    const paymentAmount_Alice = balletTicketIssuer.getBalance(myTicketPayment_Alice)    
+
     t.equals(paymentAmount_Alice.extent.length, 1);
+    t.equals(paymentAmount_Alice.extent[0].seat, 1)
+    t.equals(paymentAmount_Alice.extent[0].show, 'The Sofa')
+    t.equals(paymentAmount_Alice.extent[0].start, startDateString)
 
 
     // BOB SIDE
     // Bob bought ticket 3 and 4 and has access to the balletTicketIssuer, because it's public
-    const myTicketPayment_Bob = balletTicketIssuer.claim(paymentForBob, paymentForBob.memo())
+    const myTicketPayment_Bob = balletTicketIssuer.claim(paymentForBob)
     const paymentAmount_Bob = balletTicketIssuer.getBalance(myTicketPayment_Bob)
     
-    t.equals(myTicketPayment_Bob.memo(), `[{"seat":3,"show":"The Sofa","start":"2020-02-17T19:30:00.000Z"},{"seat":4,"show":"The Sofa","start":"2020-02-17T19:30:00.000Z"}]`)
     t.equals(paymentAmount_Bob.extent.length, 2);
+    t.equals(paymentAmount_Bob.extent[0].seat, 3);
+    t.equals(paymentAmount_Bob.extent[1].seat, 4);
+    t.equals(paymentAmount_Bob.extent[0].show, 'The Sofa')
+    t.equals(paymentAmount_Bob.extent[1].show, 'The Sofa')
+    t.equals(paymentAmount_Bob.extent[0].start, startDateString)
+    t.equals(paymentAmount_Bob.extent[1].start, startDateString)
+    
     
   } catch (e) {
     t.assert(false, e);
