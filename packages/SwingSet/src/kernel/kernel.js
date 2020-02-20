@@ -1,3 +1,4 @@
+/* global replaceGlobalMeter */
 import harden from '@agoric/harden';
 import { makeMarshal, QCLASS } from '@agoric/marshal';
 import Nat from '@agoric/nat';
@@ -114,6 +115,10 @@ export default function buildKernel(kernelEndowments) {
       .then(f)
       .then(undefined, logerr);
     await queueEmptyP;
+    if (typeof replaceGlobalMeter !== 'undefined') {
+      // Turn off the global meter now that we've run the user code.
+      replaceGlobalMeter(null);
+    }
     whenDone();
   }
 
