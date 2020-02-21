@@ -138,14 +138,10 @@ function makeStorageInMemory() {
 }
 
 /**
- * Create a swingset store instance that is an in-memory map, normally backed
- * by JSON serialized to a text file.
+ * Do the work of `initSwingStore` and `openSwingStore`.
  *
- * @param dirPath  Path to a directory in which database files may be kept.
- *   This directory need not actually exist yet (if it doesn't it will be
- *   created) but it is reserved (by the caller) for the exclusive use of this
- *   swing store instance.  If this is null, the swing store created will have
- *   no backing store and thus be non-persistent.
+ * @param dirPath  Path to a directory in which database files may be kept, or
+ *   null.
  * @param forceReset  If true, initialize the database to an empty state
  *
  * @return an object: {
@@ -155,7 +151,7 @@ function makeStorageInMemory() {
  *            // changes
  * }
  */
-export function makeSwingStore(dirPath, forceReset = false) {
+function makeSwingStore(dirPath, forceReset = false) {
   const { storage, state } = makeStorageInMemory();
 
   let storeFile;
@@ -213,6 +209,55 @@ export function makeSwingStore(dirPath, forceReset = false) {
   }
 
   return { storage, commit, close };
+}
+
+/**
+ * Create a swingset store that is an in-memory map, normally backed by JSON
+ * serialized to a text file.  If there is an existing store at the given
+ * `dirPath`, it will be reinitialized to an empty state.
+ *
+ * @param dirPath  Path to a directory in which database files may be kept.
+ *   This directory need not actually exist yet (if it doesn't it will be
+ *   created) but it is reserved (by the caller) for the exclusive use of this
+ *   swing store instance.  If this is nullish, the swing store created will
+ *   have no backing store and thus be non-persistent.
+ *
+ * @return an object: {
+ *   storage, // a storage API object to load and store data
+ *   commit,  // a function to commit changes made since the last commit
+ *   close    // a function to shutdown the store, abandoning any uncommitted
+ *            // changes
+ * }
+ */
+export function initSwingStore(dirPath) {
+  if (dirPath !== null && dirPath !== undefined && `${dirPath}` !== dirPath) {
+    throw new Error('dirPath must be a string or nullish');
+  }
+  return makeSwingStore(dirPath, true);
+}
+
+/**
+ * Open a swingset store that is an in-memory map, backed by JSON serialized to
+ * a text file.  If there is no existing store at the given `dirPath`, a new,
+ * empty store will be created.
+ *
+ * @param dirPath  Path to a directory in which database files may be kept.
+ *   This directory need not actually exist yet (if it doesn't it will be
+ *   created) but it is reserved (by the caller) for the exclusive use of this
+ *   swing store instance.
+ *
+ * @return an object: {
+ *   storage, // a storage API object to load and store data
+ *   commit,  // a function to commit changes made since the last commit
+ *   close    // a function to shutdown the store, abandoning any uncommitted
+ *            // changes
+ * }
+ */
+export function openSwingStore(dirPath) {
+  if (`${dirPath}` !== dirPath) {
+    throw new Error('dirPath must be a string');
+  }
+  return makeSwingStore(dirPath, false);
 }
 
 /**

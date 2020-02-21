@@ -10,7 +10,7 @@ import { assert } from '@agoric/assert';
 
 import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 import bundleSource from '@agoric/bundle-source';
-import { makeSwingStore } from '@agoric/swing-store-simple';
+import { initSwingStore } from '@agoric/swing-store-simple';
 import {
   SES1ReplaceGlobalMeter,
   SES1TameMeteringShim,
@@ -239,7 +239,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
     return setup;
   }
 
-  const hostStorage = config.hostStorage || makeSwingStore(null, true).storage;
+  const hostStorage = config.hostStorage || initSwingStore().storage;
   insistStorageAPI(hostStorage);
   const kernelEndowments = {
     setImmediate,

@@ -1,6 +1,6 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
-import { makeSwingStore, getAllState } from '@agoric/swing-store-simple';
+import { initSwingStore, getAllState } from '@agoric/swing-store-simple';
 
 import { buildVatController } from '../src/index';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
@@ -185,7 +185,7 @@ test('d2.5 without SES', async t => {
 });
 
 async function testState(t, withSES) {
-  const { storage } = makeSwingStore(null, true);
+  const { storage } = initSwingStore();
   const config = {
     vats: new Map(),
     devices: [['d3', require.resolve('./files-devices/device-3'), {}]],

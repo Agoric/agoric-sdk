@@ -4,8 +4,14 @@ import repl from 'repl';
 import util from 'util';
 
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
-import { makeSwingStore as makeSimpleSwingStore } from '@agoric/swing-store-simple';
-import { makeSwingStore as makeLMDBSwingStore } from '@agoric/swing-store-lmdb';
+import {
+  initSwingStore as initSimpleSwingStore,
+  openSwingStore as openSimpleSwingStore,
+} from '@agoric/swing-store-simple';
+import {
+  initSwingStore as initLMDBSwingStore,
+  openSwingStore as openLMDBSwingStore,
+} from '@agoric/swing-store-lmdb';
 
 function deepLog(item) {
   console.log(util.inspect(item, false, null, true));
@@ -76,13 +82,21 @@ export async function main() {
   const kernelStateDBDir = path.join(basedir, 'swingset-kernel-state');
   switch (dbMode) {
     case '--filedb':
-      store = makeSimpleSwingStore(kernelStateDBDir, forceReset);
+      if (forceReset) {
+        store = initSimpleSwingStore(kernelStateDBDir);
+      } else {
+        store = openSimpleSwingStore(kernelStateDBDir);
+      }
       break;
     case '--memdb':
-      store = makeSimpleSwingStore(null, forceReset);
+      store = initSimpleSwingStore();
       break;
     case '--lmdb':
-      store = makeLMDBSwingStore(kernelStateDBDir, forceReset);
+      if (forceReset) {
+        store = initLMDBSwingStore(kernelStateDBDir);
+      } else {
+        store = openLMDBSwingStore(kernelStateDBDir);
+      }
       break;
     default:
       throw new Error(`invalid database mode ${dbMode}`);

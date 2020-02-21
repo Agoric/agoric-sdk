@@ -3,7 +3,7 @@ import fs from 'fs';
 import { test } from 'tape-promise/tape';
 import { getAllState } from '@agoric/swing-store-simple';
 
-import { makeSwingStore } from '../lmdbSwingStore';
+import { initSwingStore, openSwingStore } from '../lmdbSwingStore';
 
 function testStorage(t, storage) {
   t.notOk(storage.has('missing'));
@@ -37,13 +37,13 @@ function testStorage(t, storage) {
 }
 
 test('storageInLMDB', t => {
-  const { storage, commit, close } = makeSwingStore('testdb', true);
+  const { storage, commit, close } = initSwingStore('testdb');
   testStorage(t, storage);
   commit();
   const before = getAllState(storage);
   close();
 
-  const { storage: after } = makeSwingStore('testdb', false);
+  const { storage: after } = openSwingStore('testdb');
   t.deepEqual(getAllState(after), before, 'check state after reread');
   t.end();
 });

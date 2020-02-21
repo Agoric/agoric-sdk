@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { test } from 'tape-promise/tape';
 import {
-  makeSwingStore,
+  initSwingStore,
   getAllState,
   setAllState,
 } from '@agoric/swing-store-simple';
@@ -65,13 +65,13 @@ function testStorage(t, s, getState, commit) {
 }
 
 test('storageInMemory', t => {
-  const { storage } = makeSwingStore(null, true);
+  const { storage } = initSwingStore();
   testStorage(t, storage, () => getAllState(storage), null);
   t.end();
 });
 
 function buildHostDBAndGetState() {
-  const { storage } = makeSwingStore(null, true);
+  const { storage } = initSwingStore();
   const hostDB = buildHostDBInMemory(storage);
   return { hostDB, getState: () => getAllState(storage) };
 }
@@ -119,14 +119,14 @@ test('blockBuffer fulfills storage API', t => {
 });
 
 test('guardStorage fulfills storage API', t => {
-  const { storage } = makeSwingStore(null, true);
+  const { storage } = initSwingStore();
   const guardedHostStorage = guardStorage(storage);
   testStorage(t, guardedHostStorage, () => getAllState(storage), null);
   t.end();
 });
 
 test('crankBuffer fulfills storage API', t => {
-  const { storage } = makeSwingStore(null, true);
+  const { storage } = initSwingStore();
   const { crankBuffer, commitCrank } = buildCrankBuffer(storage);
   testStorage(t, crankBuffer, () => getAllState(storage), commitCrank);
   t.end();
@@ -191,19 +191,19 @@ test('crankBuffer can abortCrank', t => {
 
 test('read cache fulfills storage API', t => {
   // cache everything
-  let { storage } = makeSwingStore(null, true);
+  let { storage } = initSwingStore();
   let cachedStorage = addReadCache(storage, _key => true);
   testStorage(t, cachedStorage, () => getAllState(storage), null);
 
   // test again, but don't cache anything
-  storage = makeSwingStore(null, true).storage;
+  storage = initSwingStore().storage;
   cachedStorage = addReadCache(storage, _key => false);
   testStorage(t, cachedStorage, () => getAllState(storage), null);
   t.end();
 });
 
 function buildTracedStorage() {
-  const s = makeSwingStore(null, true).storage;
+  const s = initSwingStore().storage;
 
   const ops = [];
   function has(key) {
@@ -333,7 +333,7 @@ test('read cache', t => {
 });
 
 test('storage helpers', t => {
-  const { storage } = makeSwingStore(null, true);
+  const { storage } = initSwingStore();
   const s = addHelpers(storage);
 
   s.set('foo.0', 'f0');
@@ -385,7 +385,7 @@ test('storage helpers', t => {
 });
 
 function buildKeeperStorageInMemory() {
-  const { storage } = makeSwingStore(null, true);
+  const { storage } = initSwingStore();
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(storage);
   return {
     kstorage: enhancedCrankBuffer,
@@ -395,7 +395,7 @@ function buildKeeperStorageInMemory() {
 }
 
 function duplicateKeeper(getState) {
-  const { storage } = makeSwingStore(null, true);
+  const { storage } = initSwingStore();
   setAllState(storage, getState());
   const { enhancedCrankBuffer } = wrapStorage(storage);
   return makeKernelKeeper(enhancedCrankBuffer);

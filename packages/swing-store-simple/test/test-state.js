@@ -1,7 +1,11 @@
 import fs from 'fs';
 
 import { test } from 'tape-promise/tape';
-import { makeSwingStore, getAllState } from '../simpleSwingStore';
+import {
+  initSwingStore,
+  openSwingStore,
+  getAllState,
+} from '../simpleSwingStore';
 
 function testStorage(t, storage) {
   t.notOk(storage.has('missing'));
@@ -35,19 +39,19 @@ function testStorage(t, storage) {
 }
 
 test('storageInMemory', t => {
-  const { storage } = makeSwingStore(null, true);
+  const { storage } = initSwingStore();
   testStorage(t, storage);
   t.end();
 });
 
 test('storageInFile', t => {
-  const { storage, commit, close } = makeSwingStore('testdb', true);
+  const { storage, commit, close } = initSwingStore('testdb');
   testStorage(t, storage);
   commit();
   const before = getAllState(storage);
   close();
 
-  const { storage: after } = makeSwingStore('testdb', false);
+  const { storage: after } = openSwingStore('testdb');
   t.deepEqual(getAllState(after), before, 'check state after reread');
   t.end();
 });

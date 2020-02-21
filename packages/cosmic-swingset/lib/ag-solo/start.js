@@ -9,7 +9,7 @@ import readlines from 'n-readlines';
 // import harden from '@agoric/harden';
 // import djson from 'deterministic-json';
 
-import { makeSwingStore } from '@agoric/swing-store-simple';
+import { openSwingStore } from '@agoric/swing-store-simple';
 import {
   loadBasedir,
   buildCommand,
@@ -100,7 +100,7 @@ async function buildSwingset(
   });
   config.vats.set('timer', { sourcepath: getTimerWrapperSourcePath() });
 
-  const { storage, commit } = makeSwingStore(kernelStateDBDir, false);
+  const { storage, commit } = openSwingStore(kernelStateDBDir);
   config.hostStorage = storage;
 
   const controller = await buildVatController(config, withSES, argv);

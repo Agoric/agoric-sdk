@@ -1,7 +1,7 @@
 import path from 'path';
 import { test } from 'tape-promise/tape';
 import {
-  makeSwingStore,
+  initSwingStore,
   getAllState,
   setAllState,
 } from '@agoric/swing-store-simple';
@@ -11,7 +11,7 @@ async function testLoadState(t, withSES) {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
   );
-  const { storage } = makeSwingStore(null, true);
+  const { storage } = initSwingStore();
   config.hostStorage = storage;
   const c = await buildVatController(config, withSES, ['one']);
   const state0 = getAllState(storage);
@@ -35,7 +35,7 @@ async function testLoadState(t, withSES) {
   // Step 0
 
   const cfg0 = await loadBasedir(path.resolve(__dirname, 'basedir-transcript'));
-  const storage0 = makeSwingStore(null, true).storage;
+  const storage0 = initSwingStore().storage;
   setAllState(storage0, state0);
   cfg0.hostStorage = storage0;
   const c0 = await buildVatController(cfg0, withSES, ['one']);
@@ -58,7 +58,7 @@ async function testLoadState(t, withSES) {
   // Step 1
 
   const cfg1 = await loadBasedir(path.resolve(__dirname, 'basedir-transcript'));
-  const storage1 = makeSwingStore(null, true).storage;
+  const storage1 = initSwingStore().storage;
   setAllState(storage1, state1);
   cfg1.hostStorage = storage1;
   const c1 = await buildVatController(cfg1, withSES, ['one']);
@@ -80,7 +80,7 @@ async function testLoadState(t, withSES) {
   // Step 2
 
   const cfg2 = await loadBasedir(path.resolve(__dirname, 'basedir-transcript'));
-  const storage2 = makeSwingStore(null, true).storage;
+  const storage2 = initSwingStore().storage;
   setAllState(storage2, state2);
   cfg2.hostStorage = storage2;
   const c2 = await buildVatController(cfg2, withSES, ['one']);

@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { makeSwingStore } from '@agoric/swing-store-simple';
+import { initSwingStore } from '@agoric/swing-store-simple';
 
 /*
 The "Storage API" is a set of functions { has, getKeys, get, set, delete } that
@@ -28,7 +28,7 @@ directly.
  */
 export function buildHostDBInMemory(storage) {
   if (!storage) {
-    storage = makeSwingStore(null, true).store;
+    storage = initSwingStore().store;
   }
 
   /**

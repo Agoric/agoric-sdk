@@ -2,7 +2,7 @@
 /* global setImmediate */
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
-import { makeSwingStore } from '@agoric/swing-store-simple';
+import { initSwingStore } from '@agoric/swing-store-simple';
 
 import buildKernel from '../src/kernel/index';
 import { makeVatSlot } from '../src/parseVatSlots';
@@ -32,7 +32,7 @@ function emptySetup(_syscall) {
 }
 
 function makeEndowments() {
-  return { setImmediate, hostStorage: makeSwingStore(null, true).storage };
+  return { setImmediate, hostStorage: initSwingStore().storage };
 }
 
 test('build kernel', async t => {
