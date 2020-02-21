@@ -1,13 +1,17 @@
+import path from 'path';
 import process from 'process';
 import repl from 'repl';
 import util from 'util';
 
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 import {
-  makeSimpleSwingStore,
-  makeMemorySwingStore,
+  initSwingStore as initSimpleSwingStore,
+  openSwingStore as openSimpleSwingStore,
 } from '@agoric/swing-store-simple';
-import { makeLMDBSwingStore } from '@agoric/swing-store-lmdb';
+import {
+  initSwingStore as initLMDBSwingStore,
+  openSwingStore as openLMDBSwingStore,
+} from '@agoric/swing-store-lmdb';
 
 function deepLog(item) {
   console.log(util.inspect(item, false, null, true));
@@ -41,7 +45,7 @@ export async function main() {
 
   let withSES = true;
   let forceReset = false;
-  let dbMaker = makeSimpleSwingStore;
+  let dbMode = '--filedb';
   while (argv[0].startsWith('--')) {
     const flag = argv.shift();
     switch (flag) {
@@ -52,13 +56,9 @@ export async function main() {
         forceReset = true;
         break;
       case '--filedb':
-        dbMaker = makeSimpleSwingStore;
-        break;
       case '--memdb':
-        dbMaker = makeMemorySwingStore;
-        break;
       case '--lmdb':
-        dbMaker = makeLMDBSwingStore;
+        dbMode = flag;
         break;
       default:
         throw new Error(`invalid flag ${flag}`);
@@ -76,11 +76,31 @@ export async function main() {
   // eslint-disable-next-line prettier/prettier
   const basedir = (argv[0] === '--' || argv[0] === undefined) ? '.' : argv.shift();
   const bootstrapArgv = argv[0] === '--' ? argv.slice(1) : argv;
-
   const config = await loadBasedir(basedir);
 
-  const store = dbMaker(basedir, 'swingset-kernel-state', forceReset);
-
+  let store;
+  const kernelStateDBDir = path.join(basedir, 'swingset-kernel-state');
+  switch (dbMode) {
+    case '--filedb':
+      if (forceReset) {
+        store = initSimpleSwingStore(kernelStateDBDir);
+      } else {
+        store = openSimpleSwingStore(kernelStateDBDir);
+      }
+      break;
+    case '--memdb':
+      store = initSimpleSwingStore();
+      break;
+    case '--lmdb':
+      if (forceReset) {
+        store = initLMDBSwingStore(kernelStateDBDir);
+      } else {
+        store = openLMDBSwingStore(kernelStateDBDir);
+      }
+      break;
+    default:
+      throw new Error(`invalid database mode ${dbMode}`);
+  }
   config.hostStorage = store.storage;
 
   const controller = await buildVatController(config, withSES, bootstrapArgv);

@@ -2,7 +2,7 @@ import path from 'path';
 import { test } from 'tape-promise/tape';
 // import fs from 'fs';
 import {
-  makeMemorySwingStore,
+  initSwingStore,
   getAllState,
   setAllState,
 } from '@agoric/swing-store-simple';
@@ -23,7 +23,7 @@ async function testSaveState(t, withSES) {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
   );
-  const { storage } = makeMemorySwingStore();
+  const { storage } = initSwingStore();
   config.hostStorage = storage;
   const c1 = await buildVatController(config, withSES, ['one']);
   const states1 = await buildTrace(c1, storage);
@@ -32,7 +32,7 @@ async function testSaveState(t, withSES) {
     fs.writeFileSync(`kdata-${i}.json`, JSON.stringify(s))
   ); */
 
-  const storage2 = makeMemorySwingStore().storage;
+  const storage2 = initSwingStore().storage;
   config.hostStorage = storage2;
   const c2 = await buildVatController(config, withSES, ['one']);
   const states2 = await buildTrace(c2, storage2);
@@ -55,7 +55,7 @@ async function testLoadState(t, withSES) {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
   );
-  const s0 = makeMemorySwingStore().storage;
+  const s0 = initSwingStore().storage;
   config.hostStorage = s0;
   const c0 = await buildVatController(config, withSES, ['one']);
   const states = await buildTrace(c0, s0);
@@ -68,7 +68,7 @@ async function testLoadState(t, withSES) {
     const cfg = await loadBasedir(
       path.resolve(__dirname, 'basedir-transcript'),
     );
-    const s = makeMemorySwingStore().storage;
+    const s = initSwingStore().storage;
     setAllState(s, states[i]);
     cfg.hostStorage = s;
     // eslint-disable-next-line no-await-in-loop

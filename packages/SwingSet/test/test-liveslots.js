@@ -2,7 +2,7 @@
 /* global setImmediate */
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
-import { makeMemorySwingStore } from '@agoric/swing-store-simple';
+import { initSwingStore } from '@agoric/swing-store-simple';
 
 import buildKernel from '../src/kernel/index';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
@@ -16,7 +16,7 @@ function capargs(args, slots = []) {
 }
 
 function makeEndowments() {
-  return { setImmediate, hostStorage: makeMemorySwingStore().storage };
+  return { setImmediate, hostStorage: initSwingStore().storage };
 }
 
 test('calls', async t => {

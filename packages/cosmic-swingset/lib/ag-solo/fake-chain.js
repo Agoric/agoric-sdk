@@ -34,7 +34,8 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
 
   const vatsdir = path.join(basedir, 'vats');
   const argv = [`--role=${role}`, bootAddress];
-  const s = await launch(basedir, mailboxStorage, `fake-chain-${GCI}-state`, vatsdir, argv);
+  const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
+  const s = await launch(stateDBdir, mailboxStorage, vatsdir, argv);
   const { deliverInbound, deliverStartBlock } = s;
 
   let pretendLast = Date.now();

@@ -138,31 +138,10 @@ function makeStorageInMemory() {
 }
 
 /**
- * Create a swingset store instance that exists strictly as an in-memory map
- * with no persistent backing.
+ * Do the work of `initSwingStore` and `openSwingStore`.
  *
- * @return an object: {
- *   storage, // a storage API object to load and store data
- *   commit,  // a function to commit changes made since the last commit (a
- *            // no-op in this case)
- *   close    // a function to shutdown the store, abandoning any uncommitted
- *            // changes (also a no-op)
- * }
- */
-export function makeMemorySwingStore(_basedir, _dbName, _forceReset) {
-  return {
-    storage: makeStorageInMemory().storage,
-    commit: () => {},
-    close: () => {},
-  };
-}
-
-/**
- * Create a swingset store instance that is an in-memory map backed by JSON
- * serialized to a text file.
- *
- * @param basedir  Directory in which database files will be kept
- * @param dbName   Name for the database
+ * @param dirPath  Path to a directory in which database files may be kept, or
+ *   null.
  * @param forceReset  If true, initialize the database to an empty state
  *
  * @return an object: {
@@ -172,29 +151,33 @@ export function makeMemorySwingStore(_basedir, _dbName, _forceReset) {
  *            // changes
  * }
  */
-export function makeSimpleSwingStore(basedir, dbName, forceReset = false) {
+function makeSwingStore(dirPath, forceReset = false) {
   const { storage, state } = makeStorageInMemory();
 
-  const storeFile = path.resolve(basedir, `${dbName}.jsonlines`);
-  if (forceReset) {
-    safeUnlink(storeFile);
-  } else {
-    let lines;
-    try {
-      lines = new Readlines(storeFile);
-    } catch (e) {
-      // storeFile will be missing the first time we try to use it.  That's OK;
-      // commit will create it.
-      if (e.code !== 'ENOENT') {
-        throw e;
+  let storeFile;
+  if (dirPath) {
+    fs.mkdirSync(dirPath, { recursive: true });
+    storeFile = path.resolve(dirPath, 'swingset-kernel-state.jsonlines');
+    if (forceReset) {
+      safeUnlink(storeFile);
+    } else {
+      let lines;
+      try {
+        lines = new Readlines(storeFile);
+      } catch (e) {
+        // storeFile will be missing the first time we try to use it.  That's OK;
+        // commit will create it.
+        if (e.code !== 'ENOENT') {
+          throw e;
+        }
       }
-    }
-    if (lines) {
-      let line = lines.next();
-      while (line) {
-        const [key, value] = JSON.parse(line);
-        storage.set(key, value);
-        line = lines.next();
+      if (lines) {
+        let line = lines.next();
+        while (line) {
+          const [key, value] = JSON.parse(line);
+          storage.set(key, value);
+          line = lines.next();
+        }
       }
     }
   }
@@ -203,16 +186,18 @@ export function makeSimpleSwingStore(basedir, dbName, forceReset = false) {
    * Commit unsaved changes.
    */
   function commit() {
-    const tempFile = `${storeFile}.tmp`;
-    const fd = fs.openSync(tempFile, 'w');
+    if (dirPath) {
+      const tempFile = `${storeFile}.tmp`;
+      const fd = fs.openSync(tempFile, 'w');
 
-    for (const [key, value] of state.entries()) {
-      const line = JSON.stringify([key, value]);
-      fs.writeSync(fd, line);
-      fs.writeSync(fd, '\n');
+      for (const [key, value] of state.entries()) {
+        const line = JSON.stringify([key, value]);
+        fs.writeSync(fd, line);
+        fs.writeSync(fd, '\n');
+      }
+      fs.closeSync(fd);
+      fs.renameSync(tempFile, storeFile);
     }
-    fs.closeSync(fd);
-    fs.renameSync(tempFile, storeFile);
   }
 
   /**
@@ -224,6 +209,55 @@ export function makeSimpleSwingStore(basedir, dbName, forceReset = false) {
   }
 
   return { storage, commit, close };
+}
+
+/**
+ * Create a swingset store that is an in-memory map, normally backed by JSON
+ * serialized to a text file.  If there is an existing store at the given
+ * `dirPath`, it will be reinitialized to an empty state.
+ *
+ * @param dirPath  Path to a directory in which database files may be kept.
+ *   This directory need not actually exist yet (if it doesn't it will be
+ *   created) but it is reserved (by the caller) for the exclusive use of this
+ *   swing store instance.  If this is nullish, the swing store created will
+ *   have no backing store and thus be non-persistent.
+ *
+ * @return an object: {
+ *   storage, // a storage API object to load and store data
+ *   commit,  // a function to commit changes made since the last commit
+ *   close    // a function to shutdown the store, abandoning any uncommitted
+ *            // changes
+ * }
+ */
+export function initSwingStore(dirPath) {
+  if (dirPath !== null && dirPath !== undefined && `${dirPath}` !== dirPath) {
+    throw new Error('dirPath must be a string or nullish');
+  }
+  return makeSwingStore(dirPath, true);
+}
+
+/**
+ * Open a swingset store that is an in-memory map, backed by JSON serialized to
+ * a text file.  If there is no existing store at the given `dirPath`, a new,
+ * empty store will be created.
+ *
+ * @param dirPath  Path to a directory in which database files may be kept.
+ *   This directory need not actually exist yet (if it doesn't it will be
+ *   created) but it is reserved (by the caller) for the exclusive use of this
+ *   swing store instance.
+ *
+ * @return an object: {
+ *   storage, // a storage API object to load and store data
+ *   commit,  // a function to commit changes made since the last commit
+ *   close    // a function to shutdown the store, abandoning any uncommitted
+ *            // changes
+ * }
+ */
+export function openSwingStore(dirPath) {
+  if (`${dirPath}` !== dirPath) {
+    throw new Error('dirPath must be a string');
+  }
+  return makeSwingStore(dirPath, false);
 }
 
 /**

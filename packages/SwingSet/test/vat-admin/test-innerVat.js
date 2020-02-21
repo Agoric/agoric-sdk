@@ -1,6 +1,6 @@
 import { test } from 'tape';
 import path from 'path';
-import { makeMemorySwingStore } from '@agoric/swing-store-simple';
+import { initSwingStore } from '@agoric/swing-store-simple';
 
 import { buildVatController, loadBasedir } from '../../src';
 
@@ -8,7 +8,7 @@ async function createConfig() {
   const dir = path.resolve('./test/vat-admin');
   const config = await loadBasedir(dir);
 
-  config.hostStorage = makeMemorySwingStore().storage;
+  config.hostStorage = initSwingStore().storage;
   return config;
 }
 
