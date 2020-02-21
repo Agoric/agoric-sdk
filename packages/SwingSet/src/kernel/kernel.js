@@ -1,6 +1,6 @@
 /* global replaceGlobalMeter */
 import harden from '@agoric/harden';
-import { makeMarshal, QCLASS } from '@agoric/marshal';
+import { makeMarshal } from '@agoric/marshal';
 import Nat from '@agoric/nat';
 import evaluateProgram from '@agoric/evaluate';
 import { assert, details } from '@agoric/assert';
@@ -474,24 +474,18 @@ export default function buildKernel(kernelEndowments) {
       throw new Error('pass-by-copy rules require at least one device');
     }
 
-    function serializeSlot(ref, slots, slotMap) {
-      if (!slotMap.has(ref)) {
-        const slotIndex = slots.length;
-        if (vrefs.has(ref)) {
-          slots.push(vrefs.get(ref));
-          slotMap.set(ref, slotIndex);
-        } else if (drefs.has(ref)) {
-          slots.push(drefs.get(ref));
-          slotMap.set(ref, slotIndex);
-        } else {
-          console.log(`oops ${ref}`, ref);
-          throw Error('bootstrap got unexpected pass-by-presence');
-        }
+    function convertValToSlot(val) {
+      if (vrefs.has(val)) {
+        return vrefs.get(val);
       }
-      const slotIndex = slotMap.get(ref);
-      return harden({ [QCLASS]: 'slot', index: slotIndex });
+      if (drefs.has(val)) {
+        return drefs.get(val);
+      }
+      console.log(`oops ${val}`, val);
+      throw Error('bootstrap got unexpected pass-by-presence');
     }
-    const m = makeMarshal(serializeSlot);
+
+    const m = makeMarshal(convertValToSlot);
     const args = harden([argv, vatObj0s, deviceObj0s]);
     // queueToExport() takes kernel-refs (ko+NN, kd+NN) in s.slots
     const rootSlot = makeVatRootObjectSlot();

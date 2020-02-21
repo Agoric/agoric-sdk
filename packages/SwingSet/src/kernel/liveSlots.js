@@ -1,5 +1,4 @@
 import harden from '@agoric/harden';
-import Nat from '@agoric/nat';
 import { E, HandledPromise } from '@agoric/eventual-send';
 import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
@@ -109,7 +108,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     return makeVatSlot('object', true, exportID);
   }
 
-  function serializeToSlot(val, slots, slotMap) {
+  function convertValToSlot(val) {
     // lsdebug(`serializeToSlot`, val, Object.isFrozen(val));
     // This is either a Presence (in presenceToImportID), a
     // previously-serialized local pass-by-presence object or
@@ -121,31 +120,21 @@ function build(syscall, _state, makeRoot, forVatID) {
     // it certainly will not be in slotMap. If we've already serialized it in
     // this particular act, it will definitely be in slotMap.
 
-    if (!slotMap.has(val)) {
+    if (!valToSlot.has(val)) {
       let slot;
-
-      if (!valToSlot.has(val)) {
-        // must be a new export
-        // lsdebug('must be a new export', JSON.stringify(val));
-        if (HandledPromise.resolve(val) === val) {
-          slot = exportPromise(val);
-        } else {
-          mustPassByPresence(val);
-          slot = exportPassByPresence();
-        }
-        parseVatSlot(slot); // assertion
-        valToSlot.set(val, slot);
-        slotToVal.set(slot, val);
+      // must be a new export
+      // lsdebug('must be a new export', JSON.stringify(val));
+      if (HandledPromise.resolve(val) === val) {
+        slot = exportPromise(val);
+      } else {
+        mustPassByPresence(val);
+        slot = exportPassByPresence();
       }
-      slot = valToSlot.get(val);
-
-      const slotIndex = slots.length;
-      slots.push(slot);
-      slotMap.set(val, slotIndex);
+      parseVatSlot(slot); // assertion
+      valToSlot.set(val, slot);
+      slotToVal.set(slot, val);
     }
-
-    const slotIndex = slotMap.get(val);
-    return harden({ [QCLASS]: 'slot', index: slotIndex });
+    return valToSlot.get(val);
   }
 
   function importedPromiseThen(vpid) {
@@ -168,11 +157,9 @@ function build(syscall, _state, makeRoot, forVatID) {
     return p;
   }
 
-  function unserializeSlot(data, slots) {
-    // lsdebug(`unserializeSlot ${data} ${slots}`);
-    const slot = slots[Nat(data.index)];
-    let val;
+  function convertSlotToVal(slot) {
     if (!slotToVal.has(slot)) {
+      let val;
       const { type, allocatedByVat } = parseVatSlot(slot);
       assert(!allocatedByVat, details`I don't remember allocating ${slot}`);
       if (type === 'object') {
@@ -199,7 +186,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     return slotToVal.get(slot);
   }
 
-  const m = makeMarshal(serializeToSlot, unserializeSlot);
+  const m = makeMarshal(convertValToSlot, convertSlotToVal);
 
   function queueMessage(targetSlot, prop, args) {
     const serArgs = m.serialize(harden(args));
@@ -355,7 +342,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     if (!importedPromisesByPromiseID.has(promiseID)) {
       throw new Error(`unknown promiseID '${promiseID}'`);
     }
-    const val = unserializeSlot({ index: 0 }, [slot]);
+    const val = convertSlotToVal(slot);
     importedPromisesByPromiseID.get(promiseID).res(val);
   }
 
