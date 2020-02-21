@@ -1,6 +1,5 @@
 import harden from '@agoric/harden';
-import Nat from '@agoric/nat';
-import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
+import { mustPassByPresence, makeMarshal } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
@@ -42,8 +41,8 @@ function build(syscall, state, makeRoot, forDeviceName) {
     return makeVatSlot('device', true, exportID);
   }
 
-  function serializeSlot(val, slots, slotMap) {
-    // lsdebug(`serializeSlot`, val, Object.isFrozen(val));
+  function convertValToSlot(val) {
+    // lsdebug(`convertValToSlot`, val, Object.isFrozen(val));
     // This is either a Presence (in presenceToImportID), a
     // previously-serialized local pass-by-presence object or
     // previously-serialized local Promise (in valToSlot), a new local
@@ -54,34 +53,21 @@ function build(syscall, state, makeRoot, forDeviceName) {
     // it certainly will not be in slotMap. If we've already serialized it in
     // this particular act, it will definitely be in slotMap.
 
-    if (!slotMap.has(val)) {
-      let slot;
-
-      if (!valToSlot.has(val)) {
-        // must be a new export
-        // lsdebug('must be a new export', JSON.stringify(val));
-        mustPassByPresence(val);
-        slot = exportPassByPresence();
-        parseVatSlot(slot); // assertion
-        valToSlot.set(val, slot);
-        slotToVal.set(slot, val);
-      }
-      slot = valToSlot.get(val);
-
-      const slotIndex = slots.length;
-      slots.push(slot);
-      slotMap.set(val, slotIndex);
+    if (!valToSlot.has(val)) {
+      // must be a new export
+      // lsdebug('must be a new export', JSON.stringify(val));
+      mustPassByPresence(val);
+      const slot = exportPassByPresence();
+      parseVatSlot(slot); // assertion
+      valToSlot.set(val, slot);
+      slotToVal.set(slot, val);
     }
-
-    const slotIndex = slotMap.get(val);
-    return harden({ [QCLASS]: 'slot', index: slotIndex });
+    return valToSlot.get(val);
   }
 
-  function unserializeSlot(data, slots) {
-    // lsdebug(`unserializeSlot ${data} ${slots}`);
-    const slot = slots[Nat(data.index)];
-    let val;
+  function convertSlotToVal(slot) {
     if (!slotToVal.has(slot)) {
+      let val;
       const { type, allocatedByVat } = parseVatSlot(slot);
       assert(!allocatedByVat, details`I don't remember allocating ${slot}`);
       if (type === 'object') {
@@ -100,7 +86,7 @@ function build(syscall, state, makeRoot, forDeviceName) {
     return slotToVal.get(slot);
   }
 
-  const m = makeMarshal(serializeSlot, unserializeSlot);
+  const m = makeMarshal(convertValToSlot, convertSlotToVal);
 
   function PresenceHandler(importSlot) {
     return {
