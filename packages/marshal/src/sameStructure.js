@@ -1,6 +1,7 @@
 import harden from '@agoric/harden';
-import { passStyleOf } from '@agoric/marshal';
 import { assert, details, openDetail } from '@agoric/assert';
+
+import { passStyleOf } from './marshal';
 
 // Shim of Object.fromEntries from
 // https://github.com/tc39/proposal-object-from-entries/blob/master/polyfill.js
