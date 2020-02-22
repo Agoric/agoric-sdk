@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
-import { sameStructure } from '@agoric/same-structure';
+import { sameStructure } from '@agoric/marshal';
 import { showPaymentBalance, setupAssays, getLocalUnitOps } from './helpers';
 
 const build = async (E, log, zoe, purses, installations, timer) => {

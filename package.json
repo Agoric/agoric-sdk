@@ -20,7 +20,6 @@
     "packages/evaluate",
     "packages/bundle-source",
     "packages/marshal",
-    "packages/same-structure",
     "packages/captp",
     "packages/swing-store-lmdb",
     "packages/swing-store-simple",

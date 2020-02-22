@@ -8,7 +8,7 @@ import {
   allComparable,
   mustBeSameStructure,
   sameStructure,
-} from '@agoric/same-structure';
+} from '@agoric/marshal';
 import { inviteConfig } from '@agoric/ertp/src/config/inviteConfig';
 import { makeMint } from '@agoric/ertp';
 import makePromise from '@agoric/make-promise';

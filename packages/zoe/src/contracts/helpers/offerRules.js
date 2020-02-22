@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { sameStructure } from '@agoric/same-structure';
+import { sameStructure } from '@agoric/marshal';
 
 export const isExactlyMatchingPayoutRules = (
   zoe,

@@ -2,9 +2,12 @@
   "name": "@agoric/marshal",
   "version": "0.1.2",
   "description": "marshal",
-  "main": "marshal.js",
+  "main": "src/main.js",
   "directories": {
     "test": "test"
+  },
+  "engines": {
+    "node": ">=11.0"
   },
   "scripts": {
     "build": "exit 0",
@@ -12,30 +15,35 @@
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "eslint '**/*.js'"
+    "lint-check": "eslint '**/*.js'",
+    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
+    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.js'"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Agoric/marshal.git"
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
   },
   "keywords": [
-    "marshal"
+    "marshal",
+    "deepEquals",
+    "equals"
   ],
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/Agoric/marshal/issues"
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
-  "homepage": "https://github.com/Agoric/marshal#readme",
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/harden": "0.0.4",
+    "@agoric/assert": "^0.0.1",
+    "@agoric/harden": "^0.0.4",
     "@agoric/nat": "^2.0.1",
     "@agoric/eventual-send": "^0.5.0"
   },
   "devDependencies": {
     "esm": "^3.2.25",
     "tap-spec": "^5.0.0",
-    "tape": "^4.10.2",
+    "tape": "^4.11.0",
     "tape-promise": "^4.0.0"
   }
 }

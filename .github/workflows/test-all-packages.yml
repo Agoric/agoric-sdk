@@ -79,8 +79,6 @@ jobs:
       run: cd packages/pixel-demo && yarn test
     - name: yarn test (registrar)
       run: cd packages/registrar && yarn test
-    - name: yarn test (same-structure)
-      run: cd packages/same-structure && yarn test
     - name: yarn test (sharing-service)
       run: cd packages/sharing-service && yarn test
     - name: yarn test (sparse-ints)

@@ -2,7 +2,7 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
-import { allComparable } from '@agoric/same-structure';
+import { allComparable } from '@agoric/marshal';
 
 import { makeCollect } from '../../../src/contractHost';
 

@@ -5,7 +5,7 @@ import harden from '@agoric/harden';
 import { makeMint } from '@agoric/ertp/src/mint';
 import { assert, details } from '@agoric/assert';
 import makePromise from '@agoric/make-promise';
-import { sameStructure } from '@agoric/same-structure';
+import { sameStructure } from '@agoric/marshal';
 
 const evaluateStringToFn = (functionSrcString, endowments) => {
   assert.typeof(functionSrcString, 'string');

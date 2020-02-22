@@ -1,7 +1,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import bundleSource from '@agoric/bundle-source';
-import { sameStructure } from '@agoric/same-structure';
+import { sameStructure } from '@agoric/marshal';
 
 import buildManualTimer from '../../../tools/manualTimer';
 import { makeZoe } from '../../../src/zoe';

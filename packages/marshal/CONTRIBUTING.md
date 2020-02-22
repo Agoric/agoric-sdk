@@ -5,26 +5,26 @@ Thank you!
 ## Contact
 
 We use github issues for all bug reports:
-https://github.com/Agoric/agoric-sdk/issues Please add a [same-structure]
-prefix to the title and `same-structure` tag to same-structure-related issues.
+https://github.com/Agoric/agoric-sdk/issues Please add a [marshal]
+prefix to the title and `marshal` tag to marshal-related issues.
 
 ## Installing, Testing
 
-You'll need Node.js version 11 or higher. 
+You'll need Node.js version 11 or higher.
 
 * `git clone https://github.com/Agoric/agoric-sdk/`
 * `cd agoric-sdk`
 * `yarn install`
 * `yarn build` (This *must* be done at the top level to build all of
   the packages)
-* `cd packages/same-structure`
+* `cd packages/marshal`
 * `yarn test`
 
 ## Pull Requests
 
 Before submitting a pull request, please:
 
-* run `yarn test` within `packages/same-structure` and make sure all the unit
+* run `yarn test` within `packages/marshal` and make sure all the unit
   tests pass (running `yarn test` at the top level will test all the
   monorepo packages, which can be a good integration test.)
 * run `yarn run lint-fix` to reformat the code according to our
@@ -43,7 +43,7 @@ Before submitting a pull request, please:
   * and does NOT do a `git commit` and `git tag`
 * `git add .`
 * `git commit -m "bump version"`
-* `git tag -a same-structure-v$VERSION -m "same-structure-v$VERSION"`
+* `git tag -a marshal-v$VERSION -m "marshal-v$VERSION"`
 * `yarn publish --access public`
 * `git push`
-* `git push origin same-structure-v$VERSION`
+* `git push origin marshal-v$VERSION`

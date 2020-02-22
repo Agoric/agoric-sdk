@@ -33,8 +33,8 @@
     "@agoric/harden": "^0.0.4",
     "@agoric/assert": "^0.0.1",
     "@agoric/make-promise": "^0.0.1",
+    "@agoric/marshal": "^0.1.1",
     "@agoric/nat": "^2.0.1",
-    "@agoric/same-structure": "^0.0.1",
     "@agoric/store": "^0.0.1"
   },
   "devDependencies": {

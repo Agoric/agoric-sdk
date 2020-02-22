@@ -2,7 +2,7 @@
 
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
-import { makeMarshal, mustPassByPresence } from '../marshal';
+import { makeMarshal, mustPassByPresence } from '../src/marshal';
 
 // this only includes the tests that do not use liveSlots
 
