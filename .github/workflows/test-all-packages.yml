@@ -105,8 +105,6 @@ jobs:
       run: cd packages/transform-metering && yarn test
     - name: yarn test (wallet-frontend)
       run: cd packages/wallet-frontend && yarn test
-    - name: yarn test (weak-store)
-      run: cd packages/weak-store && yarn test
     - name: yarn test (zoe)
       run: cd packages/zoe && yarn test
 

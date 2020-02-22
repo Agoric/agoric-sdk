@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import makeStore from '@agoric/store';
+import { makeStore } from '@agoric/store';
 import { getString } from './types/pixel';
 
 // This custom mintKeeper does the usual recordings of new

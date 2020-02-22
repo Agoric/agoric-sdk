@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
-import makeStore from '@agoric/weak-store';
+import { makeWeakStore } from '@agoric/store';
 import { makeMint } from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 import makePromise from '@agoric/make-promise';
@@ -18,7 +18,7 @@ import { inviteConfig } from './inviteConfig';
  */
 const makeZoe = (additionalEndowments = {}) => {
   // Zoe maps the inviteHandles to contract seats
-  const handleToSeat = makeStore();
+  const handleToSeat = makeWeakStore();
   const inviteMint = makeMint('zoeInvite', inviteConfig);
   const inviteAssay = inviteMint.getAssay();
 

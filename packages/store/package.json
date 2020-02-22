@@ -2,7 +2,7 @@
   "name": "@agoric/store",
   "version": "0.0.1",
   "description": "Wrapper for JavaScript map",
-  "main": "src/store.js",
+  "main": "src/main.js",
   "engines": {
     "node": ">=11.0"
   },

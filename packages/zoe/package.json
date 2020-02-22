@@ -41,7 +41,7 @@
     "@agoric/marshal": "^0.1.1",
     "@agoric/nat": "^2.0.1",
     "@agoric/same-structure": "^0.0.1",
-    "@agoric/weak-store": "^0.0.1",
+    "@agoric/store": "^0.0.1",
     "ses": "^0.6.5"
   },
   "devDependencies": {

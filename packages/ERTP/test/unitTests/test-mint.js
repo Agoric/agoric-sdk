@@ -1,6 +1,6 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
-import makeStore from '@agoric/store';
+import { makeStore } from '@agoric/store';
 
 import { makeMint } from '../../src/mint';
 import { makeCoreMintKeeper } from '../../src/config/coreMintKeeper';

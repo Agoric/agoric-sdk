@@ -3,7 +3,7 @@
 
 import harden from '@agoric/harden';
 
-import makeStore from '@agoric/store';
+import { makeStore } from '@agoric/store';
 import { assert, details } from '@agoric/assert';
 
 // Maps from EMaps to encapsulated Maps. All lookups from this table

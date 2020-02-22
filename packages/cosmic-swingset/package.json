@@ -32,7 +32,6 @@
     "@agoric/store": "^0.0.1",
     "@agoric/swing-store-simple": "^0.1.0",
     "@agoric/swingset-vat": "^0.3.0",
-    "@agoric/weak-store": "^0.0.1",
     "@agoric/zoe": "^0.2.1",
     "@iarna/toml": "^2.2.3",
     "bindings": "^1.2.1",
