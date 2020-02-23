@@ -117,7 +117,8 @@ export default function buildKernel(kernelEndowments) {
     await queueEmptyP;
     if (typeof replaceGlobalMeter !== 'undefined') {
       // Turn off the global meter now that we've run the user code.
-      replaceGlobalMeter(null);
+      // Also indicate that we should run the refillers.
+      replaceGlobalMeter(null, true);
     }
     whenDone();
   }
