@@ -11,6 +11,7 @@ const CONTRACT_FILES = [
   'infiniteInstallLoop',
   'infiniteInstanceLoop',
   'infiniteTestLoop',
+  'testBuiltins',
 ];
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
@@ -38,10 +39,11 @@ async function main(basedir, withSES, argv) {
   return controller.dump();
 }
 
+const infiniteInstallLoopLog = ['installing infiniteInstallLoop'];
 test('zoe - metering - infinite loop in installation', async t => {
   try {
     const dump = await main('zoe-metering', true, ['infiniteInstallLoop']);
-    t.deepEquals(dump.log, 'foo', 'log is correct');
+    t.deepEquals(dump.log, infiniteInstallLoopLog, 'log is correct');
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {
@@ -49,10 +51,14 @@ test('zoe - metering - infinite loop in installation', async t => {
   }
 });
 
+const infiniteInstanceLoopLog = [
+  'installing infiniteInstanceLoop',
+  'instantiating infiniteInstanceLoop',
+];
 test('zoe - metering - infinite loop in instantiation', async t => {
   try {
     const dump = await main('zoe-metering', true, ['infiniteInstanceLoop']);
-    t.deepEquals(dump.log, 'foo', 'log is correct');
+    t.deepEquals(dump.log, infiniteInstanceLoopLog, 'log is correct');
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {
@@ -60,10 +66,31 @@ test('zoe - metering - infinite loop in instantiation', async t => {
   }
 });
 
+const infiniteTestLoopLog = [
+  'installing infiniteTestLoop',
+  'instantiating infiniteTestLoop',
+  'invoking infiniteTestLoop.doTest()',
+];
 test('zoe - metering - infinite loop in contract method', async t => {
   try {
     const dump = await main('zoe-metering', true, ['infiniteTestLoop']);
-    t.deepEquals(dump.log, 'foo', 'log is correct');
+    t.deepEquals(dump.log, infiniteTestLoopLog, 'log is correct');
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  } finally {
+    t.end();
+  }
+});
+
+const testBuiltinsLog = [
+  'installing testBuiltins',
+  'instantiating testBuiltins',
+  'invoking testBuiltins.doTest()',
+];
+test('zoe - metering - expensive builtins in contract method', async t => {
+  try {
+    const dump = await main('zoe-metering', true, ['testBuiltins']);
+    t.deepEquals(dump.log, testBuiltinsLog, 'log is correct');
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {
