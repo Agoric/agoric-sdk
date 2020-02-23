@@ -63,7 +63,7 @@ const contractExhaustedGolden = [
   'starting exhaustedContractTest',
   'Does source match? true',
   'spawn rejected: Compute meter exceeded',
-  'got bar ret: 123',
+  'got return: 123',
 ];
 
 test('run contractHost Demo -- exhaust with SES', async t => {

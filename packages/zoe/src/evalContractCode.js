@@ -35,13 +35,11 @@ const evalContractCode = (code, additionalEndowments) => {
     ...Object.getOwnPropertyDescriptors(additionalEndowments),
   });
 
-  // Refill a meter each time.
-  // NOTE: We need 1e7 or the autoswap contract exhausts
-  // the compute meter.
-  const { meter, refillFacet } = makeMeter({ budgetCombined: 1e7 });
+  // Refill our meter each crank.
+  const { meter, refillFacet } = makeMeter();
   const doRefill = () => {
     // Refill the meter, since we're leaving a crank.
-    Object.values(refillFacet, r => r());
+    refillFacet.combined();
   };
 
   // Make an endowment to get our meter.
