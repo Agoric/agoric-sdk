@@ -14,4 +14,4 @@ export const makeContract = (zoe, terms) => {
     invite,
     terms,
   });
-}
+};
