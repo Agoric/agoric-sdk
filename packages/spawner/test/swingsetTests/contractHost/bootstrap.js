@@ -140,11 +140,10 @@ function build(E, log) {
           .spawn('loop forever')
           .catch(e => log('spawn rejected: ', e.message));
       })
-      .then(_ => E(host).install(contractSrcs))
-      .then(installation2P => E(installation2P).spawn('bar terms'))
+      .then(_ => E(installationP).spawn('just return'))
       .then(
-        ret => log('got bar ret: ', ret),
-        err => log('got bar err: ', err.message),
+        ret => log('got return: ', ret),
+        err => log('error! ', err.message),
       );
   }
 
