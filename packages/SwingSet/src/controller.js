@@ -16,6 +16,9 @@ import {
   SES1TameMeteringShim,
 } from '@agoric/tame-metering';
 
+import { makeMeteringTransformer } from '@agoric/transform-metering';
+import * as babelCore from '@babel/core';
+
 // eslint-disable-next-line import/extensions
 import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
@@ -134,12 +137,16 @@ function makeEvaluate(e) {
   });
 }
 
+
 function makeSESEvaluator() {
   const evaluateOptions = makeDefaultEvaluateOptions();
-  const { transforms, shims = [], ...otherOptions } = evaluateOptions;
+  const { transforms = [], shims = [], ...otherOptions } = evaluateOptions;
+  // The metering transform only activates when a getGlobalMeter endowment
+  // is provided.
+  const meteringTransformer = makeMeteringTransformer(babelCore);
   const s = SES.makeSESRootRealm({
     ...otherOptions,
-    transforms,
+    transforms: [...transforms, meteringTransformer],
     consoleMode: 'allow',
     errorStackMode: 'allow',
     shims: [SES1TameMeteringShim, ...shims],
@@ -178,13 +185,40 @@ function makeSESEvaluator() {
     '@agoric/harden': true,
     '@agoric/nat': Nat,
   });
+
+  // Augment the global meter with one that integrates refilling.
+  const refillers = new Set();
+  const refillingReplaceGlobalMeter = (meter, refillFn = undefined) => {
+    let ret;
+    if (meter === null) {
+      // Install the null meter right away.
+      ret = replaceGlobalMeter(meter);
+    }
+    if (refillFn === true) {
+      // Magic value to indicate the end of the turn.
+      refillers.forEach(refiller => refiller());
+      refillers.clear();
+    } else if (refillFn) {
+      // Just add us to the list for later refilling.
+      refillers.add(refillFn);
+    }
+    if (meter !== null) {
+      // Install the non-null meter as late as possible.
+      ret = replaceGlobalMeter(meter);
+    }
+    return ret;
+  };
+
   return src => {
     // FIXME: Note that this replaceGlobalMeter endowment is not any
     // worse than before metering existed.  However, it probably is
     // only necessary to be added to the kernel, rather than all
     // static vats once we add metering support to the dynamic vat
     // implementation.
-    return s.evaluate(src, { require: r, replaceGlobalMeter })().default;
+    return s.evaluate(src, {
+      require: r,
+      replaceGlobalMeter: refillingReplaceGlobalMeter,
+    })().default;
   };
 }
 
