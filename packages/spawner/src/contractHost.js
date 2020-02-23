@@ -1,3 +1,4 @@
+/* global replaceGlobalMeter */
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import Nat from '@agoric/nat';
@@ -12,6 +13,7 @@ import {
 import { inviteConfig } from '@agoric/ertp/src/config/inviteConfig';
 import { makeMint } from '@agoric/ertp';
 import makePromise from '@agoric/make-promise';
+import { makeMeter } from '@agoric/transform-metering/src/meter';
 
 import { allSettled } from './allSettled';
 
@@ -68,7 +70,29 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
       typeof functionSrcString === 'string',
       `"${functionSrcString}" must be a string, but was ${typeof functionSrcString}`,
     );
-    const fn = evaluate(functionSrcString, fullEndowments);
+
+    // Refill a meter each time.
+    // NOTE: We need 1e7 or the autoswap contract exhausts
+    // the compute meter.
+    const { meter, refillFacet } = makeMeter({ budgetCombined: 1e7 });
+    const doRefill = () => {
+      // Refill the meter, since we're leaving a crank.
+      Object.values(refillFacet, r => r());
+    };
+
+    // Make an endowment to get our meter.
+    const getGlobalMeter = m => {
+      if (m !== true && typeof replaceGlobalMeter !== 'undefined') {
+        // Replace the global meter and register our refiller.
+        replaceGlobalMeter(meter, doRefill);
+      }
+      return meter;
+    };
+
+    const fn = evaluate(functionSrcString, {
+      ...fullEndowments,
+      getGlobalMeter,
+    });
     assert(
       typeof fn === 'function',
       `"${functionSrcString}" must be a string for a function, but produced ${typeof fn}`,

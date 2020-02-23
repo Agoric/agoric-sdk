@@ -137,7 +137,6 @@ function makeEvaluate(e) {
   });
 }
 
-
 function makeSESEvaluator() {
   const evaluateOptions = makeDefaultEvaluateOptions();
   const { transforms = [], shims = [], ...otherOptions } = evaluateOptions;
