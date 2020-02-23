@@ -3,6 +3,7 @@ import harden from '@agoric/harden';
 import infiniteInstallLoopBundle from './bundle-infiniteInstallLoop';
 import infiniteInstanceLoopBundle from './bundle-infiniteInstanceLoop';
 import infiniteTestLoopBundle from './bundle-infiniteTestLoop';
+import testBuiltinsBundle from './bundle-testBuiltins';
 
 function build(E, log) {
   const obj0 = {
@@ -10,18 +11,26 @@ function build(E, log) {
       const zoe = await E(vats.zoe).getZoe();
 
       const installations = {
-        infiniteInstallLoop: () => E(zoe).install(
-          infiniteInstallLoopBundle.source,
-          infiniteInstallLoopBundle.moduleFormat,
-        ),
-        infiniteInstanceLoop: () => E(zoe).install(
-          infiniteInstanceLoopBundle.source,
-          infiniteInstanceLoopBundle.modelFormat,
-        ),
-        infiniteTestLoop: () => E(zoe).install(
-          infiniteTestLoopBundle.source,
-          infiniteTestLoopBundle.moduleFormat,
-        ),
+        infiniteInstallLoop: () =>
+          E(zoe).install(
+            infiniteInstallLoopBundle.source,
+            infiniteInstallLoopBundle.moduleFormat,
+          ),
+        infiniteInstanceLoop: () =>
+          E(zoe).install(
+            infiniteInstanceLoopBundle.source,
+            infiniteInstanceLoopBundle.modelFormat,
+          ),
+        infiniteTestLoop: () =>
+          E(zoe).install(
+            infiniteTestLoopBundle.source,
+            infiniteTestLoopBundle.moduleFormat,
+          ),
+        testBuiltins: () =>
+          E(zoe).install(
+            testBuiltinsBundle.source,
+            testBuiltinsBundle.moduleFormat,
+          ),
       };
 
       const [testName] = argv;
@@ -36,6 +45,7 @@ function build(E, log) {
       const { publicAPI } = await E(zoe).getInstance(instanceHandle);
       log(`invoking ${testName}.doTest()`);
       await E(publicAPI).doTest();
+      log(`complete`);
     },
   };
   return harden(obj0);
