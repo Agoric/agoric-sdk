@@ -113,6 +113,41 @@ function build(E, log) {
       });
   }
 
+  function exhaustedContractTest(host) {
+    log('starting exhaustedContractTest');
+
+    const exhContract = harden({
+      start: (terms, _inviteMaker) => {
+        if (terms === 'loop forever') {
+          for (;;) {
+            // Do nothing.
+          }
+        } else {
+          return 123;
+        }
+      },
+    });
+    const contractSrcs = harden({ start: `${exhContract.start} ` });
+
+    const installationP = E(host).install(contractSrcs);
+
+    return E(host)
+      .getInstallationSourceCode(installationP)
+      .then(src => {
+        log('Does source match? ', src.start === contractSrcs.start);
+
+        return E(installationP)
+          .spawn('loop forever')
+          .catch(e => log('spawn rejected: ', e.message));
+      })
+      .then(_ => E(host).install(contractSrcs))
+      .then(installation2P => E(installation2P).spawn('bar terms'))
+      .then(
+        ret => log('got bar ret: ', ret),
+        err => log('got bar err: ', err.message),
+      );
+  }
+
   function betterContractTestAliceFirst(host, mint, aliceMaker, bobMaker) {
     const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
     const coveredCallInstallationP = E(host).install(coveredCallSrcs);
@@ -320,6 +355,10 @@ function build(E, log) {
         case 'trivial': {
           const host = await E(vats.host).makeHost();
           return trivialContractTest(host);
+        }
+        case 'exhaust': {
+          const host = await E(vats.host).makeHost();
+          return exhaustedContractTest(host);
         }
         case 'alice-first': {
           const host = await E(vats.host).makeHost();

@@ -40,10 +40,6 @@ const evalContractCode = (code, additionalEndowments) => {
   // the compute meter.
   const { meter, refillFacet } = makeMeter({ budgetCombined: 1e7 });
   const doRefill = () => {
-    if (meter.isExhausted()) {
-      // Don't refill.
-      return;
-    }
     // Refill the meter, since we're leaving a crank.
     Object.values(refillFacet, r => r());
   };
