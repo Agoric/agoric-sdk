@@ -27,51 +27,45 @@ function build(E, D, _log) {
     return {
       async processInbound(obj) {
         const { type, data } = obj;
-        if (type === 'walletGetPurses') {
-          if (pursesState) {
+        switch (type) {
+          case 'walletGetPurses': {
+            if (!pursesState) return {};
             return {
               type: 'walletUpdatePurses',
               data: pursesState,
             };
           }
-          return {};
-        }
-
-        if (type === 'walletGetInbox') {
-          if (inboxState) {
+          case 'walletGetInbox': {
+            if (!inboxState) return {};
             return {
               type: 'walletUpdateInbox',
               data: inboxState,
             };
           }
-          return {};
-        }
+          case 'walletAddOffer': {
+            return {
+              type: 'walletOfferAdded',
+              data: wallet.addOffer(data),
+            };
+          }
+          case 'walletDeclineOffer': {
+            return {
+              type: 'walletOfferDeclineed',
+              data: wallet.declineOffer(data),
+            };
+          }
+          case 'walletAcceptOffer': {
+            const result = await wallet.acceptOffer(data);
+            return {
+              type: 'walletOfferAccepted',
+              data: result,
+            };
+          }
 
-        if (type === 'walletAddOffer') {
-          const result = wallet.addOffer(data);
-          return {
-            type: 'walletOfferAdded',
-            data: result,
-          };
+          default: {
+            return false;
+          }
         }
-
-        if (type === 'walletDeclineOffer') {
-          const result = wallet.declineOffer(data);
-          return {
-            type: 'walletOfferDeclineed',
-            data: result,
-          };
-        }
-
-        if (type === 'walletAcceptOffer') {
-          const result = await wallet.acceptOffer(data);
-          return {
-            type: 'walletOfferAccepted',
-            data: result,
-          };
-        }
-
-        return false;
       },
     };
   }
