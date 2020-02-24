@@ -34,7 +34,8 @@ const serviceHolder = {
 
 const brokenServiceHolder = {
   build: () => {
-    return harden({});
+    // eslint-disable-next-line no-undef
+    return missing({});
   },
 };
 

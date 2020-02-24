@@ -56,7 +56,7 @@ async function testBrokenVatCreation(t, withSES) {
   await c.run();
   t.deepEqual(c.dump().log, [
     'starting brokenVat test',
-    'yay, rejected: Error: Vat Creation Error: ReferenceError: harden is not defined',
+    'yay, rejected: Error: Vat Creation Error: ReferenceError: missing is not defined',
   ]);
   t.end();
 }
