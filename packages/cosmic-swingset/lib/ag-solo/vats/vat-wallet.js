@@ -28,32 +28,32 @@ function build(E, D, _log) {
       async processInbound(obj) {
         const { type, data } = obj;
         switch (type) {
-          case 'walletGetPurses':
+          case 'walletGetPurses': {
             if (!pursesState) return {};
             return {
               type: 'walletUpdatePurses',
               data: pursesState,
             };
-
-          case 'walletGetInbox':
+          }
+          case 'walletGetInbox': {
             if (!inboxState) return {};
             return {
               type: 'walletUpdateInbox',
               data: inboxState,
             };
-
-          case 'walletAddOffer':
+          }
+          case 'walletAddOffer': {
             return {
               type: 'walletOfferAdded',
               data: wallet.addOffer(data),
             };
-
-          case 'walletDeclineOffer':
+          }
+          case 'walletDeclineOffer': {
             return {
               type: 'walletOfferDeclineed',
               data: wallet.declineOffer(data),
             };
-
+          }
           case 'walletAcceptOffer': {
             const result = await wallet.acceptOffer(data);
             return {
@@ -62,8 +62,9 @@ function build(E, D, _log) {
             };
           }
 
-          default:
+          default: {
             return false;
+          }
         }
       },
     };

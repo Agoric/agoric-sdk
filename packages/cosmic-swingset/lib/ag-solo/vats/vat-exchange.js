@@ -39,8 +39,9 @@ function build(E, log) {
             );
             return { type: 'autoswapOfferRules', data: offerRules };
           }
-          default:
+          default: {
             return false;
+          }
         }
       },
     };
