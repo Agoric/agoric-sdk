@@ -282,6 +282,86 @@ const build = async (E, log, zoe, purses, installations, timer) => {
     await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
   };
 
+  function printOrders(orders) {
+    if (orders.length === 0) {
+      return '[]';
+    }
+    const descs = [];
+    for (const o of orders) {
+      descs.push(
+        `${o.offer.label.allegedName}:${o.offer.extent} for ${o.want.label.allegedName}:${o.want.extent}`,
+      );
+    }
+    return descs;
+  }
+
+  function pollForBookOrders(publicAPI) {
+    const orderResultP = E(publicAPI).getBookOrders();
+    orderResultP.then(orderResult => {
+      const { changed: p, buys, sells } = orderResult;
+      p.then(() => {
+        pollForBookOrders(publicAPI);
+        log(`Order update: b:${printOrders(buys)}, s:${printOrders(sells)}`);
+      });
+    });
+  }
+
+  const doSimpleExchangeUpdates = async bobP => {
+    const { invite } = await E(zoe).makeInstance(installations.simpleExchange, {
+      assays,
+    });
+    const {
+      extent: { instanceHandle },
+    } = await E(invite).getBalance();
+    const { publicAPI } = await E(zoe).getInstance(instanceHandle);
+
+    pollForBookOrders(publicAPI);
+    const aliceSellOrderOfferRules = harden({
+      payoutRules: [
+        {
+          kind: 'offerAtMost',
+          units: moola(3),
+        },
+        {
+          kind: 'wantAtLeast',
+          units: simoleans(4),
+        },
+      ],
+      exitRule: {
+        kind: 'onDemand',
+      },
+    });
+    const moolaPayment = await E(moolaPurseP).withdrawAll();
+    const offerPayments = [moolaPayment, undefined];
+    const { seat, payout: payoutP } = await E(zoe).redeem(
+      invite,
+      aliceSellOrderOfferRules,
+      offerPayments,
+    );
+
+    const offerResult = await E(seat).addOrder();
+
+    log(offerResult);
+
+    const { invite: bobInvite1P } = await E(publicAPI).makeInvite();
+    await E(bobP).doSimpleExchangeUpdates(bobInvite1P, 3, 7);
+    const { invite: bobInvite2P } = await E(publicAPI).makeInvite();
+    await E(bobP).doSimpleExchangeUpdates(bobInvite2P, 8, 2);
+
+    const payout = await payoutP;
+
+    await E(moolaPurseP).depositAll(payout[0]);
+    await E(simoleanPurseP).depositAll(payout[1]);
+
+    const { invite: bobInvite3P } = await E(publicAPI).makeInvite();
+    await E(bobP).doSimpleExchangeUpdates(bobInvite3P, 20, 13);
+    const { invite: bobInvite4P } = await E(publicAPI).makeInvite();
+    await E(bobP).doSimpleExchangeUpdates(bobInvite4P, 5, 2);
+
+    await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse', log);
+    await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
+  };
+
   const doAutoswap = async bobP => {
     const invite = await E(zoe).makeInstance(installations.autoswap, {
       assays,
@@ -410,6 +490,9 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         }
         case 'simpleExchangeOk': {
           return doSimpleExchange(bobP, carolP, daveP);
+        }
+        case 'simpleExchangeUpdates': {
+          return doSimpleExchangeUpdates(bobP, carolP, daveP);
         }
         case 'autoswapOk': {
           return doAutoswap(bobP, carolP, daveP);

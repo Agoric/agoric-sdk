@@ -242,6 +242,7 @@ test('simpleExchange with multiple sell offers', async t => {
     Promise.all(aliceOfferResult1, aliceOfferResult2, aliceOfferResult3).then(
       () => {
         const expectedBook = {
+          changed: {},
           buys: [
             {
               want: assays[0].makeUnits(29),

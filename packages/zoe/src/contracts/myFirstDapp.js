@@ -1,5 +1,6 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
+import makePromise from '@agoric/make-promise';
 import { makeHelpers, defaultAcceptanceMsg } from './helpers/userFlow';
 
 /**  EDIT THIS CONTRACT WITH YOUR OWN BUSINESS LOGIC */
@@ -19,6 +20,8 @@ export const makeContract = harden((zoe, terms) => {
   const ASSET_INDEX = 0;
   let sellInviteHandles = [];
   let buyInviteHandles = [];
+  let nextChangePromise = makePromise();
+
   const { assays } = terms;
   const {
     rejectOffer,
@@ -60,6 +63,7 @@ export const makeContract = harden((zoe, terms) => {
 
   function getBookOrders() {
     return {
+      changed: nextChangePromise.p,
       buys: flattenOrders(buyInviteHandles),
       sells: flattenOrders(sellInviteHandles),
     };
@@ -75,15 +79,26 @@ export const makeContract = harden((zoe, terms) => {
     return 'not an active offer';
   }
 
+  // This is a really simple update protocol, which merely provides a promise
+  // in getBookOrders() that will resolve when the state changes. Clients
+  // subscribe to the promise and are notified at some future point. A much
+  // nicer protocol is in https://github.com/Agoric/agoric-sdk/issues/253
+  function bookOrdersChanged() {
+    nextChangePromise.res(true);
+    nextChangePromise = makePromise();
+  }
+
   function swapOrAddToBook(inviteHandles, inviteHandle) {
     for (const iHandle of inviteHandles) {
       if (
         areAssetsEqualAtIndex(ASSET_INDEX, inviteHandle, iHandle) &&
         canTradeWith(inviteHandle, iHandle)
       ) {
+        bookOrdersChanged();
         return swap(inviteHandle, iHandle);
       }
     }
+    bookOrdersChanged();
     return defaultAcceptanceMsg;
   }
 
