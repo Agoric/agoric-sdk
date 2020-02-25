@@ -137,10 +137,10 @@ function makeEvaluate(e) {
   });
 }
 
-function makeSESEvaluator() {
+function makeSESEvaluator(registerEndOfCrank) {
   const evaluateOptions = makeDefaultEvaluateOptions();
   const { transforms = [], shims = [], ...otherOptions } = evaluateOptions;
-  // The metering transform only activates when a getGlobalMeter endowment
+  // The metering transform only activates when a getMeter endowment
   // is provided.
   const meteringTransformer = makeMeteringTransformer(babelCore);
   const s = SES.makeSESRootRealm({
@@ -185,38 +185,17 @@ function makeSESEvaluator() {
     '@agoric/nat': Nat,
   });
 
-  // Augment the global meter with one that integrates refilling.
-  const refillers = new Set();
-  const refillingReplaceGlobalMeter = (meter, refillFn = undefined) => {
-    let ret;
-    if (meter === null) {
-      // Install the null meter right away.
-      ret = replaceGlobalMeter(meter);
-    }
-    if (refillFn === true) {
-      // Magic value to indicate the end of the turn.
-      refillers.forEach(refiller => refiller());
-      refillers.clear();
-    } else if (refillFn) {
-      // Just add us to the list for later refilling.
-      refillers.add(refillFn);
-    }
-    if (meter !== null) {
-      // Install the non-null meter as late as possible.
-      ret = replaceGlobalMeter(meter);
-    }
-    return ret;
-  };
-
   return src => {
     // FIXME: Note that this replaceGlobalMeter endowment is not any
     // worse than before metering existed.  However, it probably is
     // only necessary to be added to the kernel, rather than all
     // static vats once we add metering support to the dynamic vat
     // implementation.
+    // Same for registerEndOfCrank.
     return s.evaluate(src, {
       require: r,
-      replaceGlobalMeter: refillingReplaceGlobalMeter,
+      registerEndOfCrank,
+      replaceGlobalMeter,
     })().default;
   };
 }
@@ -239,11 +218,29 @@ function buildNonSESKernel(endowments) {
 export async function buildVatController(config, withSES = true, argv = []) {
   // todo: move argv into the config
 
+  const endOfCrankHooks = new Set();
+  const registerEndOfCrank = hook => endOfCrankHooks.add(hook);
+
+  const runEndOfCrank = () => {
+    endOfCrankHooks.forEach(h => {
+      try {
+        h();
+      } catch (e) {
+        try {
+          console.log('cannot run hook:', e);
+        } catch (e2) {
+          // Nothing to do.
+        }
+      }
+    });
+    endOfCrankHooks.clear();
+  };
+
   // sesEvaluator is only valid when withSES === true. It might be nice to
   // untangle this so we don't have to check withSES in three different places.
   let sesEvaluator;
   if (withSES) {
-    sesEvaluator = makeSESEvaluator();
+    sesEvaluator = makeSESEvaluator(registerEndOfCrank);
   }
 
   // Evaluate source to produce a setup function. This binds withSES from the
@@ -277,6 +274,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
   const kernelEndowments = {
     setImmediate,
     hostStorage,
+    runEndOfCrank,
     vatAdminDevSetup: await evaluateToSetup(ADMIN_DEVICE_PATH),
     vatAdminVatSetup: await evaluateToSetup(ADMIN_VAT_PATH),
   };

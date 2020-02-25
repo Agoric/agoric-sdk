@@ -1,4 +1,4 @@
-/* global replaceGlobalMeter */
+/* global replaceGlobalMeter, registerEndOfCrank */
 import evaluate from '@agoric/evaluate';
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
@@ -38,15 +38,23 @@ const evalContractCode = (code, additionalEndowments) => {
   // Refill our meter each crank.
   const { meter, refillFacet } = makeMeter();
   const doRefill = () => {
-    // Refill the meter, since we're leaving a crank.
-    refillFacet.combined();
+    // Refill the meter if it wasn't exhausted.
+    // This implements fail-stop, since a contract that exhausts the meter
+    // will not run again.
+    if (!meter.isExhausted()) {
+      refillFacet.combined();
+    }
   };
 
   // Make an endowment to get our meter.
-  fullEndowments.getGlobalMeter = m => {
+  fullEndowments.getMeter = m => {
     if (m !== true && typeof replaceGlobalMeter !== 'undefined') {
-      // Replace the global meter and register our refiller.
-      replaceGlobalMeter(meter, doRefill);
+      // Replace the global meter.
+      replaceGlobalMeter(meter);
+    }
+    if (typeof registerEndOfCrank !== 'undefined') {
+      // Refill at the end of the crank.
+      registerEndOfCrank(doRefill);
     }
     return meter;
   };

@@ -1,4 +1,4 @@
-/* global replaceGlobalMeter */
+/* global replaceGlobalMeter, registerEndOfCrank */
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import Nat from '@agoric/nat';
@@ -79,17 +79,21 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
     };
 
     // Make an endowment to get our meter.
-    const getGlobalMeter = m => {
+    const getMeter = m => {
       if (m !== true && typeof replaceGlobalMeter !== 'undefined') {
         // Replace the global meter and register our refiller.
-        replaceGlobalMeter(meter, doRefill);
+        replaceGlobalMeter(meter);
+      }
+      if (typeof registerEndOfCrank !== 'undefined') {
+        // Register our refiller.
+        registerEndOfCrank(doRefill);
       }
       return meter;
     };
 
     const fn = evaluate(functionSrcString, {
       ...fullEndowments,
-      getGlobalMeter,
+      getMeter,
     });
     assert(
       typeof fn === 'function',

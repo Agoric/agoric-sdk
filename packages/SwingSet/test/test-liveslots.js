@@ -16,7 +16,11 @@ function capargs(args, slots = []) {
 }
 
 function makeEndowments() {
-  return { setImmediate, hostStorage: initSwingStore().storage };
+  return {
+    setImmediate,
+    hostStorage: initSwingStore().storage,
+    runEndOfCrank: () => {},
+  };
 }
 
 test('calls', async t => {

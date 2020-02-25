@@ -8,20 +8,20 @@ import * as c from '../src/constants';
 
 test('meter transform', async t => {
   try {
-    let getGlobalMeter;
+    let getMeter;
     const meteringTransform = makeMeteringTransformer(babelCore, {
       overrideMeterId: '$m',
       overrideRegExpIdPrefix: '$re_',
     });
     const rewrite = (source, testName) => {
       let cMeter;
-      getGlobalMeter = () => ({
+      getMeter = () => ({
         [c.METER_COMPUTE]: units => (cMeter = units),
       });
 
       const ss = meteringTransform.rewrite({
         src: source,
-        endowments: { getGlobalMeter },
+        endowments: { getMeter },
         sourceType: 'script',
       });
 
