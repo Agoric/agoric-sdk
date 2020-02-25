@@ -9,6 +9,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
+/* eslint-disable react/prop-types */
 export default function TransactionSummary({
   connected,
   inputPurse,
@@ -48,3 +49,4 @@ export default function TransactionSummary({
     </Stepper>
   );
 }
+/* eslint-enable react/prop-types */

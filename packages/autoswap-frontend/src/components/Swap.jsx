@@ -52,6 +52,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
+/* eslint-disable complexity */
 export default function Swap() {
   const classes = useStyles();
   const { state, dispatch } = useApplicationContext();
@@ -76,7 +77,9 @@ export default function Swap() {
   const outputAmountError = outputAmount < 0;
 
   const pursesError =
-    inputPurse && outputPurse && inputPurse.allegedName === outputPurse.allegedName;
+    inputPurse &&
+    outputPurse &&
+    inputPurse.allegedName === outputPurse.allegedName;
 
   const hasError = pursesError || inputAmountError || outputAmountError;
 
@@ -205,3 +208,4 @@ export default function Swap() {
     </Paper>
   );
 }
+/* eslint-enable complexity */

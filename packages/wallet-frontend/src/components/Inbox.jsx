@@ -146,8 +146,12 @@ export default function Inbox() {
                   </Grid>
                 </Grid>
                 <ListItemSecondaryAction className={classes.buttons}>
-                  {status === 'decline' && <RedChip  variant="outlined" label="Declined" />}
-                  {status === 'accept' && <GreenChip  variant="outlined" label="Accepted" />}
+                  {status === 'decline' && (
+                    <RedChip variant="outlined" label="Declined" />
+                  )}
+                  {status === 'accept' && (
+                    <GreenChip variant="outlined" label="Accepted" />
+                  )}
                   {!status && (
                     <>
                       <RedIconButton

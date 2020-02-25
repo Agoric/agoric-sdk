@@ -41,7 +41,7 @@ export default function AssetInput({
   const classes = useStyles();
 
   return (
-    <Grid container spacing={3}>
+    <Grid item container spacing={3}>
       <Grid
         item
         xs={12}

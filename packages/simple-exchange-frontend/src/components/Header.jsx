@@ -2,11 +2,12 @@ import React from 'react';
 
 import { makeStyles } from '@material-ui/core/styles';
 import { AppBar, Toolbar, Typography } from '@material-ui/core';
-import AutoswapIcon from '@material-ui/icons/SwapHorizontalCircle';
+import ExchangeIcon from '@material-ui/icons/SwapHorizontalCircle';
 
 const useStyles = makeStyles(theme => ({
   appBar: {
     position: 'relative',
+    backgroundColor: '#202123',
   },
   title: {
     flexGrow: 1,
@@ -21,16 +22,16 @@ export default function Header({ children }) {
   const classes = useStyles();
 
   return (
-    <AppBar position="absolute" className={classes.appBar}>
+    <AppBar position="absolute" elevation={0} className={classes.appBar}>
       <Toolbar>
-        <AutoswapIcon className={classes.icon} />
+        <ExchangeIcon className={classes.icon} />
         <Typography
           variant="h6"
           color="inherit"
           noWrap
           className={classes.title}
         >
-          AutoSwap Exchange
+          Simple Exchange
         </Typography>
         {children}
       </Toolbar>
