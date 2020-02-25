@@ -90,9 +90,6 @@ export async function makeWallet(
         {
           units: { extent: extent1, assayId: assayId1 },
         },
-        {
-          units: { extent: extent2 },
-        },
       ],
     } = offerRules;
 
@@ -128,7 +125,7 @@ export async function makeWallet(
 
     const {
       terms: {
-        assays: [contractAssay0, contractAssay1, contractAssay2],
+        assays: [contractAssay0, contractAssay1],
       },
       publicAPI,
     } = await E(zoe).getInstance(instanceHandle);
@@ -156,18 +153,11 @@ export async function makeWallet(
     const payment0P = E(purse0).withdraw(normal ? purseUnit0 : purseUnit1);
     const contractUnit0P = E(contractAssay0).makeUnits(extent0 || 0);
     const contractUnit1P = E(contractAssay1).makeUnits(extent1 || 0);
-    const contractUnit2P = E(contractAssay2).makeUnits(extent2 || 0);
 
-    const [
-      payment0,
-      contractUnit0,
-      contractUnit1,
-      contractUnit2,
-    ] = await Promise.all([
+    const [payment0, contractUnit0, contractUnit1] = await Promise.all([
       payment0P,
       contractUnit0P,
       contractUnit1P,
-      contractUnit2P,
     ]);
 
     // =====================
@@ -180,7 +170,6 @@ export async function makeWallet(
     // Hydrate with the resolved units.
     newOfferRules.payoutRules[0].units = contractUnit0;
     newOfferRules.payoutRules[1].units = contractUnit1;
-    newOfferRules.payoutRules[2].units = contractUnit2;
     harden(newOfferRules);
 
     const payment = normal
@@ -272,6 +261,19 @@ export async function makeWallet(
     return harden([...petnameToPurse.values()]);
   }
 
+  function getOfferDescriptions() {
+    return Array.from(dateToOfferRec)
+      .filter(rec => rec.status === 'accept')
+      .map(offerRec => {
+        const {
+          meta: { instanceId },
+          offerRules: { payoutRules },
+        } = offerRec;
+
+        return harden({ instanceId, payoutRules });
+      });
+  }
+
   async function addOffer(offerRec) {
     const {
       meta: { date },
@@ -313,6 +315,7 @@ export async function makeWallet(
     addOffer,
     declineOffer,
     acceptOffer,
+    getOfferDescriptions,
   });
 
   return wallet;

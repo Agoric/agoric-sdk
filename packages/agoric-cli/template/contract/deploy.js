@@ -6,7 +6,7 @@ import harden from '@agoric/harden';
 const DAPP_NAME = "@DIR@";
 
 export default async function deployContract(homeP, { bundleSource, pathResolve },
-  CONTRACT_NAME = 'autoswap') {
+  CONTRACT_NAME = 'myFirstDapp') {
 
   // Create a source bundle for the "myFirstDapp" smart contract.
   const { source, moduleFormat } = await bundleSource(`./${CONTRACT_NAME}.js`);
@@ -77,10 +77,9 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   // =====================
 
   // 5. Offer rules
-  const [unit0, unit1, unit2] = await Promise.all([
+  const [unit0, unit1] = await Promise.all([
     assays~.[0]~.makeUnits(900),
     assays~.[1]~.makeUnits(900),
-    assays~.[2]~.makeUnits(0),
   ]);
 
   // =====================
@@ -96,10 +95,6 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
       {
         kind: 'offerAtMost',
         units: unit1,
-      },
-      {
-        kind: 'wantAtLeast',
-        units: unit2,
       },
     ],
     exitRule: {

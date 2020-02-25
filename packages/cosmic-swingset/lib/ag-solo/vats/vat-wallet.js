@@ -61,6 +61,13 @@ function build(E, D, _log) {
               data: result,
             };
           }
+          case 'walletGetOfferDescriptions': {
+            const result = await wallet.getOfferDescriptions(data);
+            return {
+              type: 'walletOfferDescriptions',
+              data: result,
+            };
+          }
 
           default: {
             return false;
