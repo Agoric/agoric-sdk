@@ -8,6 +8,7 @@ export function useApplicationContext() {
   return useContext(ApplicationContext);
 }
 
+// eslint-disable-next-line react/prop-types
 export default function Provider({ children }) {
   const [state, dispatch] = useReducer(reducer, createDefaultState());
 

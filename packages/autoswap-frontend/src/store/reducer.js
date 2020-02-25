@@ -39,6 +39,7 @@ export function createDefaultState() {
   };
 }
 
+/* eslint-disable complexity */
 export const reducer = (state, { type, payload }) => {
   switch (type) {
     case ACTIVATE_CONNECTION:
@@ -73,3 +74,4 @@ export const reducer = (state, { type, payload }) => {
       throw new TypeError(`Action not supported ${type}`);
   }
 };
+/* eslint-enable complexity */

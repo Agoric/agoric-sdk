@@ -16,6 +16,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
+// eslint-disable-next-line react/prop-types
 export default function Header({ children }) {
   const classes = useStyles();
 

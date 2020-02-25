@@ -26,6 +26,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
+/* eslint-disable react/prop-types */
 export default function AssetInput({
   title,
   purses,
@@ -111,3 +112,4 @@ export default function AssetInput({
     </Grid>
   );
 }
+/* eslint-enable react/prop-types */

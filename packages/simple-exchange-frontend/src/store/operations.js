@@ -1,4 +1,4 @@
-import { doFetch } from '../utils/fetch-websocket';
+// import { doFetch } from '../utils/fetch-websocket';
 
 export function activateConnection(state) {
   return { ...state, active: true };

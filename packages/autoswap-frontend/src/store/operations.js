@@ -84,13 +84,16 @@ export function createOffer(
   }).then(response => {
     const { type, data } = response;
     if (type === 'autoswapOfferRules') {
-      return doFetch({
-        type: 'walletAddOffer',
-        data: {
-          meta,
-          offerRules: data,
+      return doFetch(
+        {
+          type: 'walletAddOffer',
+          data: {
+            meta,
+            offerRules: data,
+          },
         },
-      }, true);
+        true,
+      );
     }
     return null;
   });

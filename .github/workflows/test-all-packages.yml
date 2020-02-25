@@ -83,6 +83,8 @@ jobs:
       run: cd packages/same-structure && yarn test
     - name: yarn test (sharing-service)
       run: cd packages/sharing-service && yarn test
+    - name: yarn test (simple-exchange-frontend)
+      run: cd packages/simple-exchange-frontend && yarn test
     - name: yarn test (sparse-ints)
       run: cd packages/sparse-ints && yarn test
     - name: yarn test (spawner)

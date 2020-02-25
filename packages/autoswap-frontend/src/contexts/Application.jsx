@@ -23,6 +23,7 @@ export function useApplicationContext() {
   return useContext(ApplicationContext);
 }
 
+/* eslint-disable complexity, react/prop-types */
 export default function Provider({ children }) {
   const [state, dispatch] = useReducer(reducer, createDefaultState());
   const {
@@ -107,3 +108,4 @@ export default function Provider({ children }) {
     </ApplicationContext.Provider>
   );
 }
+/* eslint-enable complexity, react/prop-types */
