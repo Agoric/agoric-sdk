@@ -4,7 +4,7 @@
  * AmountMath executes the logic of how amounts are changed when digital 
  * assets are merged, separated, or otherwise manipulated. For
  * example, a deposit of 2 bucks into a purse that already has 3 bucks
- * gives a new balance of 5 bucks. An empty purse has 0 bucks. AmountMath 
+ * gives a new purse balance of 5 bucks. An empty purse has 0 bucks. AmountMath 
  * relies heavily on polymorphic MathHelpers, which manipulate the unbranded
  * portion.
  */
@@ -111,16 +111,5 @@ interface AmountMath (Amount (Brand, Extent)) {
  */
 interface Brand ( ) {
   isMyIssuer (issuer :Issuer) -> (Boolean);
-  allegedName ( ) -> (String);
-}
-
-/**
- * Human-readable name of a kind of digital asset. The alleged name should 
- * not be trusted as an accurate depiction, since it is provided by 
- * the maker of the issuer and could be deceptive.
- *
- * The AllegedName must be Comparable. (This IDL doesn't yet provide a way to
- * specify subtype relationships for structs.)
- */
-struct AllegedName {
+  getAllegedName ( ) -> (String);
 }
