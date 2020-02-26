@@ -1,14 +1,14 @@
 import harden from '@agoric/harden';
 
-import { makeMint } from '../../../src/mint';
+import produceIssuer from '../../../src/issuer';
 
 function build(E, log) {
   function testSplitPayments(aliceMaker) {
     log('start test splitPayments');
-    const moolaMint = makeMint('moola');
-    const moolaPurse = moolaMint.mint(1000, 'alice money');
+    const { mint: moolaMint, issuer, amountMath } = produceIssuer('moola');
+    const moolaPayment = moolaMint.mintPayment(1000, 'alice money');
 
-    const aliceP = E(aliceMaker).make(moolaPurse);
+    const aliceP = E(aliceMaker).make(issuer, amountMath, moolaPayment);
     return E(aliceP).testSplitPayments();
   }
 

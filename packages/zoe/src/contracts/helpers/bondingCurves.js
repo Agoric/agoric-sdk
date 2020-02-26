@@ -6,23 +6,24 @@ import { natSafeMath } from './safeMath';
 
 const { add, subtract, multiply, floorDivide } = natSafeMath;
 
-export const makeConstProductBC = (zoe, assays) => {
-  const unitOpsArray = zoe.getUnitOpsForAssays(assays);
+export const makeConstProductBC = (zoe, issuers) => {
+  const amountMathArray = zoe.getAmountMathForIssuers(issuers);
+  const brands = zoe.getBrandsForIssuers(issuers);
   return harden({
     /**
-     * Contains the logic for calculating how many units should be given
+     * Contains the logic for calculating how much should be given
      * back to the user in exchange for what they sent in. It also
-     * calculates the new units of the assets in the pool. Reused in
+     * calculates the new amount of the assets in the pool. Reused in
      * several different places, including to check whether an offer is
      * valid, getting the current price for an asset on user request, and
      * to do the actual reallocation after an offer has been made.
-     * @param  {units[]} poolUnitsArray - an array of the current units in the
+     * @param  {amount[]} poolAmountsArray - an array of the current amount in the
      * liquidity pool
-     * @param  {units} unitsIn - the units sent in by a user
+     * @param  {amount} amountIn - the amount sent in by a user
      * @param  {number} feeInTenthOfPercent=3 - the fee taken in tenths of
-     * a percent. The default is 0.3%. The fee is taken from unitsIn
+     * a percent. The default is 0.3%. The fee is taken from amountIn
      */
-    getPrice: (poolUnitsArray, unitsIn, feeInTenthOfPercent = 3) => {
+    getPrice: (poolAmountsArray, amountIn, feeInTenthOfPercent = 3) => {
       Nat(feeInTenthOfPercent);
       assert(
         feeInTenthOfPercent < 1000,
@@ -38,35 +39,39 @@ export const makeConstProductBC = (zoe, assays) => {
         return floorDivide(numerator, denominator);
       };
 
-      const assayIn = unitsIn.label.assay;
+      const brandIn = amountIn.brand;
       const X = 0;
       const Y = 1;
-      const [xUnitOps, yUnitOps] = zoe.getUnitOpsForAssays(assays);
-      const xReserve = poolUnitsArray[X].extent;
-      const yReserve = poolUnitsArray[Y].extent;
-      if (assayIn === assays[X]) {
-        const xExtentIn = unitsIn.extent;
+      const [xAmountMath, yAmountMath] = zoe.getAmountMathForIssuers(issuers);
+      const xReserve = poolAmountsArray[X].extent;
+      const yReserve = poolAmountsArray[Y].extent;
+      if (brandIn === brands[X]) {
+        const xExtentIn = amountIn.extent;
         const yExtentOut = getInputPrice(xExtentIn, xReserve, yReserve);
-        const newPoolUnitsArray = [...poolUnitsArray];
-        newPoolUnitsArray[X] = xUnitOps.make(add(xReserve, xExtentIn));
-        newPoolUnitsArray[Y] = yUnitOps.make(subtract(yReserve, yExtentOut));
+        const newPoolAmountsArray = [...poolAmountsArray];
+        newPoolAmountsArray[X] = xAmountMath.make(add(xReserve, xExtentIn));
+        newPoolAmountsArray[Y] = yAmountMath.make(
+          subtract(yReserve, yExtentOut),
+        );
         return {
-          unitsOut: yUnitOps.make(yExtentOut),
-          newPoolUnitsArray: harden(newPoolUnitsArray),
+          amountOut: yAmountMath.make(yExtentOut),
+          newPoolAmountsArray: harden(newPoolAmountsArray),
         };
       }
-      if (assayIn === assays[Y]) {
-        const yExtentIn = unitsIn.extent;
+      if (brandIn === brands[Y]) {
+        const yExtentIn = amountIn.extent;
         const xExtentOut = getInputPrice(yExtentIn, yReserve, xReserve);
-        const newPoolUnitsArray = [...poolUnitsArray];
-        newPoolUnitsArray[X] = xUnitOps.make(subtract(xReserve, xExtentOut));
-        newPoolUnitsArray[Y] = yUnitOps.make(add(yReserve, yExtentIn));
+        const newPoolAmountsArray = [...poolAmountsArray];
+        newPoolAmountsArray[X] = xAmountMath.make(
+          subtract(xReserve, xExtentOut),
+        );
+        newPoolAmountsArray[Y] = yAmountMath.make(add(yReserve, yExtentIn));
         return {
-          unitsOut: xUnitOps.make(xExtentOut),
-          newPoolUnitsArray: harden(newPoolUnitsArray),
+          amountOut: xAmountMath.make(xExtentOut),
+          newPoolAmountsArray: harden(newPoolAmountsArray),
         };
       }
-      throw new Error(`unitsIn ${unitsIn} were malformed`);
+      throw new Error(`amountIn ${amountIn} were malformed`);
     },
 
     // Calculate how many liquidity tokens we should be minting to
@@ -74,21 +79,21 @@ export const makeConstProductBC = (zoe, assays) => {
     // based on the extents represented by index 0. If the current
     // supply is zero, start off by just taking the extent at index 0
     // and using it as the extent for the liquidity token.
-    calcLiqExtentToMint: (liqTokenSupply, poolUnits, userUnits) =>
+    calcLiqExtentToMint: (liqTokenSupply, poolAmounts, userAmounts) =>
       liqTokenSupply > 0
         ? floorDivide(
-            multiply(userUnits[0].extent, liqTokenSupply),
-            poolUnits[0].extent,
+            multiply(userAmounts[0].extent, liqTokenSupply),
+            poolAmounts[0].extent,
           )
-        : userUnits[0].extent,
+        : userAmounts[0].extent,
 
-    // Calculate how many underlying tokens (in the form of units)
+    // Calculate how many underlying tokens (in the form of amount)
     // should be returned when removing liquidity.
-    calcUnitsToRemove: (liqTokenSupply, poolUnits, liquidityUnitsIn) =>
-      poolUnits.map((units, i) =>
-        unitOpsArray[i].make(
+    calcAmountsToRemove: (liqTokenSupply, poolAmounts, liquidityAmountsIn) =>
+      poolAmounts.map((amount, i) =>
+        amountMathArray[i].make(
           floorDivide(
-            multiply(liquidityUnitsIn.extent, units.extent),
+            multiply(liquidityAmountsIn.extent, amount.extent),
             liqTokenSupply,
           ),
         ),

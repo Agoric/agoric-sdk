@@ -7,8 +7,8 @@ import { makeHelpers, defaultAcceptanceMsg } from './helpers/userFlow';
  * The SimpleExchange only accepts limit orders. A limit order is an order with
  * payoutRules that specifies wantAtLeast on one side and offerAtMost on the
  * other:
- * [ { kind: 'wantAtLeast', units2 }, { kind: 'offerAtMost', units1 }]
- * [ { kind: 'wantAtLeast', units1 }, { kind: 'offerAtMost', units2 }]
+ * [ { kind: 'wantAtLeast', amount2 }, { kind: 'offerAtMost', amount1 }]
+ * [ { kind: 'wantAtLeast', amount1 }, { kind: 'offerAtMost', amount2 }]
  *
  * Note that the asset specified as wantAtLeast is treated as the exact amount
  * to be exchanged, while the amount specified as offerAtMost is a limit that
@@ -20,7 +20,7 @@ export const makeContract = harden((zoe, terms) => {
   let buyInviteHandles = [];
   let nextChangePromise = makePromise();
 
-  const { assays } = terms;
+  const { issuers } = terms;
   const {
     rejectOffer,
     hasValidPayoutRules,
@@ -28,10 +28,10 @@ export const makeContract = harden((zoe, terms) => {
     areAssetsEqualAtIndex,
     canTradeWith,
     getActiveOffers,
-  } = makeHelpers(zoe, assays);
+  } = makeHelpers(zoe, issuers);
 
   function flattenRule(r) {
-    const description = r.units;
+    const description = r.amount;
     let result;
     switch (r.kind) {
       case 'offerAtMost':

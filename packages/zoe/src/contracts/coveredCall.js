@@ -21,7 +21,7 @@ import { makeHelpers } from './helpers/userFlow';
 export const makeContract = harden((zoe, terms) => {
   const { rejectOffer, hasValidPayoutRules, swap } = makeHelpers(
     zoe,
-    terms.assays,
+    terms.issuers,
   );
   const ASSET_INDEX = 0;
   const PRICE_INDEX = 1;
@@ -36,8 +36,8 @@ export const makeContract = harden((zoe, terms) => {
       seatDesc: 'exerciseOption',
       expirationDate: exitRule.deadline,
       timerAuthority: exitRule.timer,
-      underlyingAsset: payoutRules[ASSET_INDEX].units,
-      strikePrice: payoutRules[PRICE_INDEX].units,
+      underlyingAsset: payoutRules[ASSET_INDEX].amount,
+      strikePrice: payoutRules[PRICE_INDEX].amount,
     });
     return callOption;
   };

@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
@@ -5,31 +6,34 @@ import { makeConstProductBC } from '../../../../src/contracts/helpers/bondingCur
 import { setup } from '../../setupBasicMints';
 
 const testGetPrice = (t, input, output) => {
-  const { assays, moola, simoleans } = setup();
+  const { issuers, moola, simoleans, amountMaths, brands } = setup();
   const zoe = harden({
-    getUnitOpsForAssays: assaysArray =>
-      assaysArray.map(assay => assay.getUnitOps()),
+    getAmountMathForIssuers: _ => amountMaths,
+    getBrandsForIssuers: _ => brands,
   });
 
-  const { getPrice } = makeConstProductBC(zoe, assays);
-  const poolUnitsArray = [moola(input.xReserve), simoleans(input.yReserve)];
-  let unitsIn;
-  let expectedUnitsOut;
+  const { getPrice } = makeConstProductBC(zoe, issuers);
+  const poolAmountsArray = [moola(input.xReserve), simoleans(input.yReserve)];
+  let amountIn;
+  let expectedAmountsOut;
   if (input.xIn > 0) {
-    unitsIn = moola(input.xIn);
-    expectedUnitsOut = simoleans(output.yOut);
+    amountIn = moola(input.xIn);
+    expectedAmountsOut = simoleans(output.yOut);
   } else {
-    unitsIn = simoleans(input.yIn);
-    expectedUnitsOut = moola(output.xOut);
+    amountIn = simoleans(input.yIn);
+    expectedAmountsOut = moola(output.xOut);
   }
 
-  const { unitsOut, newPoolUnitsArray } = getPrice(poolUnitsArray, unitsIn);
+  const { amountOut, newPoolAmountsArray } = getPrice(
+    poolAmountsArray,
+    amountIn,
+  );
 
-  t.deepEquals(unitsOut, expectedUnitsOut, 'unitsOut');
+  t.deepEquals(amountOut, expectedAmountsOut, 'amountOut');
   t.deepEquals(
-    newPoolUnitsArray,
+    newPoolAmountsArray,
     [moola(output.xReserve), simoleans(output.yReserve)],
-    'newPoolUnitsArray',
+    'newPoolAmountsArray',
   );
 };
 

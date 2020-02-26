@@ -6,10 +6,10 @@ import { defaultAcceptanceMsg, makeHelpers } from './helpers/userFlow';
 import { secondPriceLogic, closeAuction } from './helpers/auctions';
 
 export const makeContract = harden((zoe, terms) => {
-  const { assays } = terms;
+  const { issuers } = terms;
   const { rejectOffer, canTradeWith, hasValidPayoutRules } = makeHelpers(
     zoe,
-    assays,
+    issuers,
   );
   const numBidsAllowed =
     terms.numBidsAllowed !== undefined ? Nat(terms.numBidsAllowed) : Nat(3);
@@ -51,7 +51,7 @@ export const makeContract = harden((zoe, terms) => {
         // Save valid bid and try to close.
         allBidHandles.push(inviteHandle);
         if (allBidHandles.length >= numBidsAllowed) {
-          closeAuction(zoe, assays, {
+          closeAuction(zoe, issuers, {
             auctionLogicFn: secondPriceLogic,
             itemIndex: ITEM_INDEX,
             bidIndex: BID_INDEX,
@@ -83,8 +83,8 @@ export const makeContract = harden((zoe, terms) => {
         // Save the valid offer
         sellerInviteHandle = inviteHandle;
         const { payoutRules } = zoe.getOffer(inviteHandle);
-        auctionedAssets = payoutRules[0].units;
-        minimumBid = payoutRules[1].units;
+        auctionedAssets = payoutRules[0].amount;
+        minimumBid = payoutRules[1].amount;
         return defaultAcceptanceMsg;
       },
     });
@@ -107,7 +107,7 @@ export const makeContract = harden((zoe, terms) => {
         }
         return invites;
       },
-      getAuctionedAssetsUnits: () => auctionedAssets,
+      getAuctionedAssetsAmounts: () => auctionedAssets,
       getMinimumBid: () => minimumBid,
     },
     terms,

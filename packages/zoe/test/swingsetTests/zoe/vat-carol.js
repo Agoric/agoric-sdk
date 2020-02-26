@@ -1,53 +1,51 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { showPaymentBalance, setupAssays } from './helpers';
+import { showPurseBalance, setupIssuers } from './helpers';
 
-const build = async (E, log, zoe, purses, installations) => {
-  const {
-    inviteAssay,
-    moolaAssay,
-    simoleanAssay,
-    moola,
-    simoleans,
-  } = await setupAssays(zoe, purses);
+const build = async (E, log, zoe, issuers, payments, installations) => {
+  const { moola, simoleans, purses } = await setupIssuers(zoe, issuers);
   const [moolaPurseP, simoleanPurseP] = purses;
+  const [_moolaPayment, simoleanPayment] = payments;
+  const [moolaIssuer, simoleanIssuer] = issuers;
+  const inviteIssuer = await E(zoe).getInviteIssuer();
 
   return harden({
     doPublicAuction: async inviteP => {
-      const invite = await E(inviteAssay).claimAll(inviteP);
-      const { extent: inviteExtent } = await E(invite).getBalance();
+      const invite = await E(inviteIssuer).claim(inviteP);
+      const { extent: inviteExtent } = await E(inviteIssuer).getAmountOf(
+        invite,
+      );
 
       const { installationHandle, terms } = await E(zoe).getInstance(
-        inviteExtent.instanceHandle,
+        inviteExtent[0].instanceHandle,
       );
       assert(
         installationHandle === installations.publicAuction,
         details`wrong installation`,
       );
       assert(
-        sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
-        details`assays were not as expected`,
+        sameStructure(harden([moolaIssuer, simoleanIssuer]), terms.issuers),
+        details`issuers were not as expected`,
       );
-      assert(sameStructure(inviteExtent.minimumBid, simoleans(3)));
-      assert(sameStructure(inviteExtent.auctionedAssets, moola(1)));
+      assert(sameStructure(inviteExtent[0].minimumBid, simoleans(3)));
+      assert(sameStructure(inviteExtent[0].auctionedAssets, moola(1)));
 
       const offerRules = harden({
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: moola(1),
+            amount: moola(1),
           },
           {
             kind: 'offerAtMost',
-            units: simoleans(7),
+            amount: simoleans(7),
           },
         ],
         exitRule: {
           kind: 'onDemand',
         },
       });
-      const simoleanPayment = await E(simoleanPurseP).withdrawAll();
       const offerPayments = [undefined, simoleanPayment];
 
       const { seat, payout: payoutP } = await E(zoe).redeem(
@@ -61,12 +59,13 @@ const build = async (E, log, zoe, purses, installations) => {
       log(offerResult);
 
       const carolResult = await payoutP;
+      const [moolaPayout, simoleanPayout] = await Promise.all(carolResult);
 
-      await E(moolaPurseP).depositAll(carolResult[0]);
-      await E(simoleanPurseP).depositAll(carolResult[1]);
+      await E(moolaPurseP).deposit(moolaPayout);
+      await E(simoleanPurseP).deposit(simoleanPayout);
 
-      await showPaymentBalance(moolaPurseP, 'carolMoolaPurse', log);
-      await showPaymentBalance(simoleanPurseP, 'carolSimoleanPurse', log);
+      await showPurseBalance(moolaPurseP, 'carolMoolaPurse', log);
+      await showPurseBalance(simoleanPurseP, 'carolSimoleanPurse', log);
     },
   });
 };
