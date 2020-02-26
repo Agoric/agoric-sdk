@@ -74,8 +74,15 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
     // Refill a meter each crank.
     const { meter, refillFacet } = makeMeter();
     const doRefill = () => {
-      // Refill the meter, since we're leaving a crank.
-      refillFacet.combined();
+      if (!meter.isExhausted()) {
+        // We'd like to have fail-stop semantics, which means we associate
+        // a meter with a spawn and not with an installation, and failed
+        // spawns die forever.  Check functions, on the other hand, should
+        // be billed to the installation, which may die forever.
+
+        // Refill the meter, since we're leaving a crank.
+        refillFacet.combined();
+      }
     };
 
     // Make an endowment to get our meter.
@@ -131,21 +138,13 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
     // contract.
     install(contractSrcs, moduleFormat = 'object') {
       let installation;
-      let startFn;
       if (moduleFormat === 'object') {
         installation = extractCheckFunctions(contractSrcs);
-        startFn = evaluateStringToFn(contractSrcs.start);
       } else if (moduleFormat === 'getExport') {
-        const getExports = evaluateStringToFn(contractSrcs);
-        const ns = getExports();
+        // We don't support 'check' functions in getExport format,
+        // because we only do a single evaluate, and the whole
+        // contract must be metered per-spawn, not per-installation.
         installation = {};
-        for (const fname of Object.getOwnPropertyNames(ns)) {
-          if (typeof fname === 'string' && fname.startsWith('check')) {
-            const fn = ns[fname];
-            installation[fname] = (...args) => fn(installation, ...args);
-          }
-        }
-        startFn = ns.default;
       } else {
         assert.fail(details`Unrecognized moduleFormat ${moduleFormat}`);
       }
@@ -160,6 +159,17 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
       // source code itself. The check... methods must be evaluated on install,
       // since they become properties of the installation.
       function spawn(termsP) {
+        let startFn;
+        if (moduleFormat === 'object') {
+          startFn = evaluateStringToFn(contractSrcs.start);
+        } else if (moduleFormat === 'getExport') {
+          const getExports = evaluateStringToFn(contractSrcs);
+          const ns = getExports();
+          startFn = ns.default;
+        } else {
+          assert.fail(details`Unrecognized moduleFormat ${moduleFormat}`);
+        }
+  
         return Promise.resolve(allComparable(termsP)).then(terms => {
           const inviteMaker = harden({
             // Used by the contract to make invites for credibly
