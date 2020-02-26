@@ -44,16 +44,9 @@ test('natMathHelpers', t => {
       /RangeError: not a safe integer/,
       `'abc' is not a nat`,
     );
-    t.throws(() => make(-1), /RangeError: negative/, `-1 is not a valid Nat`);
+    t.throws(() => make(-1), /RangeError: negative/, `- 1 is not a valid Nat`);
 
-    // coerce -  extent
-    t.deepEquals(
-      coerce(4),
-      { brand: mockBrand, extent: 4 },
-      `coerce can take an extent`,
-    );
-
-    // coerce - amount
+    // coerce
     t.deepEquals(
       coerce(harden({ brand: mockBrand, extent: 4 })),
       {
@@ -75,30 +68,43 @@ test('natMathHelpers', t => {
     t.deepEquals(getEmpty(), make(0), `empty is 0`);
 
     // isEmpty
-    t.ok(isEmpty(0), `isEmpty(0) is true`);
-    t.notOk(isEmpty(6), `isEmpty(6) is false`);
+    t.ok(isEmpty({ brand: mockBrand, extent: 0 }), `isEmpty(0) is true`);
+    t.notOk(isEmpty({ brand: mockBrand, extent: 6 }), `isEmpty(6) is false`);
     t.ok(isEmpty(make(0)), `isEmpty(0) is true`);
     t.notOk(isEmpty(make(6)), `isEmpty(6) is false`);
     t.throws(
       () => isEmpty('abc'),
-      /not a safe integer/,
+      /Unrecognized brand/,
       `isEmpty('abc') throws because it cannot be coerced`,
+    );
+    t.throws(
+      () => isEmpty({ brand: mockBrand, extent: 'abc' }),
+      /RangeError: not a safe integer/,
+      `isEmpty('abc') throws because it cannot be coerced`,
+    );
+    t.throws(
+      () => isEmpty(0),
+      /Unrecognized brand/,
+      `isEmpty(0) throws because it cannot be coerced`,
     );
 
     // isGTE
-    t.ok(isGTE(5, 3), `5 >= 3`);
-    t.ok(isGTE(3, 3), `3 >= 3`);
-    t.notOk(isGTE(3, 4), `3 < 4`);
+    t.ok(isGTE(make(5), make(3)), `5 >= 3`);
+    t.ok(isGTE(make(3), make(3)), `3 >= 3`);
+    t.notOk(
+      isGTE({ brand: mockBrand, extent: 3 }, { brand: mockBrand, extent: 4 }),
+      `3 < 4`,
+    );
 
     // isEqual
-    t.ok(isEqual(4, 4), `4 equals 4`);
-    t.notOk(isEqual(4, 5), `4 does not equal 5`);
+    t.ok(isEqual(make(4), make(4)), `4 equals 4`);
+    t.notOk(isEqual(make(4), make(5)), `4 does not equal 5`);
 
     // add
-    t.deepEquals(add(5, 9), make(14), `5 + 9 = 14`);
+    t.deepEquals(add(make(5), make(9)), make(14), `5 + 9 = 14`);
 
     // subtract
-    t.deepEquals(subtract(6, 1), make(5), `6 - 1 = 5`);
+    t.deepEquals(subtract(make(6), make(1)), make(5), `6 - 1 = 5`);
   } catch (e) {
     t.assert(false, e);
   } finally {

@@ -58,7 +58,7 @@ test('issuer.makeEmptyPurse', t => {
   try {
     const { issuer, mint, amountMath, brand } = produceIssuer('fungible');
     const purse = issuer.makeEmptyPurse('my new purse');
-    const payment = mint.mintPayment(837);
+    const payment = mint.mintPayment(amountMath.make(837));
 
     t.ok(
       amountMath.isEqual(purse.getCurrentAmount(), amountMath.getEmpty()),
@@ -108,7 +108,7 @@ test('issuer.makeEmptyPurse', t => {
 test('issuer.burn', t => {
   try {
     const { issuer, mint, amountMath } = produceIssuer('fungible');
-    const payment1 = mint.mintPayment(837);
+    const payment1 = mint.mintPayment(amountMath.make(837));
 
     E(issuer)
       .burn(payment1, amountMath.make(837))
@@ -131,7 +131,7 @@ test('issuer.burn', t => {
 test('issuer.claim', t => {
   try {
     const { issuer, amountMath, mint } = produceIssuer('fungible');
-    const payment1 = mint.mintPayment(2);
+    const payment1 = mint.mintPayment(amountMath.make(2));
     E(issuer)
       .claim(payment1, amountMath.make(2))
       .then(newPayment1 => {
@@ -161,7 +161,7 @@ test('issuer.claim', t => {
 test('issuer.splitMany bad amount', t => {
   try {
     const { mint, issuer, amountMath } = produceIssuer('fungible');
-    const payment = mint.mintPayment(1000);
+    const payment = mint.mintPayment(amountMath.make(1000));
     const badAmounts = Array(2).fill(amountMath.make(10));
     t.rejects(
       _ => E(issuer).splitMany(payment, badAmounts),
@@ -178,7 +178,7 @@ test('issuer.splitMany bad amount', t => {
 test('issuer.splitMany good amount', t => {
   try {
     const { mint, issuer, amountMath } = produceIssuer('fungible');
-    const oldPayment = mint.mintPayment(100);
+    const oldPayment = mint.mintPayment(amountMath.make(100));
     const goodAmounts = Array(10).fill(amountMath.make(10));
 
     const checkPayments = splitPayments => {
@@ -210,9 +210,9 @@ test('issuer.splitMany good amount', t => {
 
 test('issuer.split bad amount', t => {
   try {
-    const { mint, issuer } = produceIssuer('fungible');
+    const { mint, issuer, amountMath } = produceIssuer('fungible');
     const { amountMath: otherUnitOps } = produceIssuer('other fungible');
-    const payment = mint.mintPayment(1000);
+    const payment = mint.mintPayment(amountMath.make(1000));
     t.rejects(
       _ => E(issuer).split(payment, otherUnitOps.make(10)),
       /Unrecognized brand/,
@@ -228,7 +228,7 @@ test('issuer.split bad amount', t => {
 test('issuer.split good amount', t => {
   try {
     const { mint, issuer, amountMath } = produceIssuer('fungible');
-    const oldPayment = mint.mintPayment(20);
+    const oldPayment = mint.mintPayment(amountMath.make(20));
 
     const checkPayments = splitPayments => {
       for (const payment of splitPayments) {
@@ -262,7 +262,7 @@ test('issuer.combine good payments', t => {
     const { mint, issuer, amountMath } = produceIssuer('fungible');
     const payments = [];
     for (let i = 0; i < 100; i += 1) {
-      payments.push(mint.mintPayment(1));
+      payments.push(mint.mintPayment(amountMath.make(1)));
     }
 
     const checkCombinedPayment = combinedPayment => {
@@ -293,13 +293,15 @@ test('issuer.combine good payments', t => {
 
 test('issuer.combine bad payments', t => {
   try {
-    const { mint, issuer } = produceIssuer('fungible');
-    const { mint: otherMint } = produceIssuer('other fungible');
+    const { mint, issuer, amountMath } = produceIssuer('fungible');
+    const { mint: otherMint, amountMath: otherAmountMath } = produceIssuer(
+      'other fungible',
+    );
     const payments = [];
     for (let i = 0; i < 100; i += 1) {
-      payments.push(mint.mintPayment(1));
+      payments.push(mint.mintPayment(amountMath.make(1)));
     }
-    const otherPayment = otherMint.mintPayment(10);
+    const otherPayment = otherMint.mintPayment(otherAmountMath.make(10));
     payments.push(otherPayment);
 
     t.rejects(

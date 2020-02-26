@@ -194,7 +194,7 @@ test('simpleExchange with multiple sell offers', async t => {
       exitRule: exitRule('onDemand'),
     });
 
-    const alicePayments = [aliceMoolaPurse.withdraw(3), undefined];
+    const alicePayments = [aliceMoolaPurse.withdraw(moola(3)), undefined];
     const { seat: aliceSeat1 } = await zoe.redeem(
       aliceInvite1,
       aliceSale1OrderOfferRules,
@@ -215,7 +215,7 @@ test('simpleExchange with multiple sell offers', async t => {
     const { seat: aliceSeat2 } = await zoe.redeem(
       aliceInvite2,
       aliceSale2OrderOfferRules,
-      [aliceMoolaPurse.withdraw(5), undefined],
+      [aliceMoolaPurse.withdraw(moola(5)), undefined],
     );
     const aliceOfferResult2 = aliceSeat2.addOrder();
 
@@ -230,7 +230,7 @@ test('simpleExchange with multiple sell offers', async t => {
     const { seat: aliceSeat3 } = await zoe.redeem(
       aliceInvite3,
       aliceBuyOrderOfferRules,
-      [undefined, aliceSimoleanPurse.withdraw(18)],
+      [undefined, aliceSimoleanPurse.withdraw(simoleans(18))],
     );
     const aliceOfferResult3 = aliceSeat3.addOrder();
 

@@ -75,19 +75,14 @@ function makeAmountMath(brand, mathHelpersName) {
       return amount;
     },
 
-    // Make sure this amount (or extent) is valid and return it if so.
-    coerce: allegedAmountOrExtent => {
-      // If the cache already has the allegedAmountOrExtent, that
+    // Make sure this amount is valid and return it if so.
+    coerce: allegedAmount => {
+      // If the cache already has the allegedAmount, that
       // means it is a valid amount.
-      if (cache.has(allegedAmountOrExtent)) {
-        return allegedAmountOrExtent;
+      if (cache.has(allegedAmount)) {
+        return allegedAmount;
       }
-      const { brand: allegedBrand, extent } = allegedAmountOrExtent;
-      // If brand is undefined, this isn't an amount, but it could be
-      // an extent.
-      if (allegedBrand === undefined) {
-        return amountMath.make(allegedAmountOrExtent);
-      }
+      const { brand: allegedBrand, extent } = allegedAmount;
       mustBeSameStructure(brand, allegedBrand, 'Unrecognized brand');
       // Will throw on inappropriate extent
       return amountMath.make(extent);

@@ -49,9 +49,9 @@ interface AmountMath (Amount (Brand, Extent)) {
   make(allegedExtent :Extent) -> (Amount);
 
   /**
-   * Make sure this amount (or extent) is valid and return it if so.
+   * Make sure this amount is valid and return it if so.
    */
-  coerce(allegedAmountOrExtent :Amount) -> (Amount);
+  coerce(allegedAmount :Amount) -> (Amount);
 
   /** Extract and return the extent. */
   extent(amount :Amount) -> (Extent);

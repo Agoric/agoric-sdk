@@ -6,7 +6,7 @@ function build(E, log) {
   function testSplitPayments(aliceMaker) {
     log('start test splitPayments');
     const { mint: moolaMint, issuer, amountMath } = produceIssuer('moola');
-    const moolaPayment = moolaMint.mintPayment(1000, 'alice money');
+    const moolaPayment = moolaMint.mintPayment(amountMath.make(1000));
 
     const aliceP = E(aliceMaker).make(issuer, amountMath, moolaPayment);
     return E(aliceP).testSplitPayments();
