@@ -77,7 +77,7 @@ export function createDefaultState() {
   return {
     active: false,
     connected: false,
-    orderbook: createFakeOrderBook(100),
+    orderbook: createFakeOrderHistory(50, 50),
     orderhistory: createFakeOrderHistory(50, 50),
     purses: createFakePurses(3),
   };

@@ -53,7 +53,7 @@ export default function OrderHistory() {
   };
 
   function getPrice(order, decimal) {
-    return (order.offer.extent / order.want.extent).toFixed(decimal);
+    return (order.want.extent / order.offer.extent).toFixed(decimal);
   }
 
   function getClass(order) {
@@ -70,8 +70,8 @@ export default function OrderHistory() {
             <TableHead>
               <TableRow>
                 <TableCell align="right">Side</TableCell>
-                <TableCell align="right">Want</TableCell>
                 <TableCell align="right">Offer</TableCell>
+                <TableCell align="right">Want</TableCell>
                 <TableCell align="right">Price</TableCell>
               </TableRow>
             </TableHead>
@@ -83,8 +83,8 @@ export default function OrderHistory() {
                     <TableCell align="right" className={getClass(order)}>
                       {order.side ? 'Buy' : ' Sell'}
                     </TableCell>
-                    <TableCell align="right">{order.want.extent}</TableCell>
                     <TableCell align="right">{order.offer.extent}</TableCell>
+                    <TableCell align="right">{order.want.extent}</TableCell>
                     <TableCell align="right">{getPrice(order, 4)}</TableCell>
                   </TableRow>
                 ))}
