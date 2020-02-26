@@ -169,7 +169,7 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
         } else {
           assert.fail(details`Unrecognized moduleFormat ${moduleFormat}`);
         }
-  
+
         return Promise.resolve(allComparable(termsP)).then(terms => {
           const inviteMaker = harden({
             // Used by the contract to make invites for credibly
