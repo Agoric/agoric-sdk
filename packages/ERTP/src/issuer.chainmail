@@ -217,8 +217,7 @@ interface mathHelpers () {
 
   /**
    * Return what remains after removing the right from the left. If
-   * the result is negative (i.e. something in the right was not in the
-   * left) we throw an error.
+   * something in the right was not in the left, we throw an error.
    */
   doSubtract(left :Extent, right :Extent) -> (Extent);
 }
