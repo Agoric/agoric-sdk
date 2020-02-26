@@ -185,16 +185,28 @@ function makeSESEvaluator(registerEndOfCrank) {
     '@agoric/nat': Nat,
   });
 
+  const realmRegisterEndOfCrank = s.evaluate(
+    `\
+function realmRegisterEndOfCrank(fn) {
+  try {
+    registerEndOfCrank(fn);
+  } catch (e) {
+    // do nothing.
+  }
+}`,
+    { registerEndOfCrank },
+  );
+
   return src => {
     // FIXME: Note that this replaceGlobalMeter endowment is not any
     // worse than before metering existed.  However, it probably is
     // only necessary to be added to the kernel, rather than all
     // static vats once we add metering support to the dynamic vat
     // implementation.
-    // Same for registerEndOfCrank.
+    // FIXME: Same for registerEndOfCrank.
     return s.evaluate(src, {
       require: r,
-      registerEndOfCrank,
+      registerEndOfCrank: realmRegisterEndOfCrank,
       replaceGlobalMeter,
     })().default;
   };
