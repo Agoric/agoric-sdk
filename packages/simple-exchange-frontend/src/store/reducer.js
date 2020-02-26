@@ -20,19 +20,19 @@ function randomName(max) {
   return result.join('');
 }
 
-function createFakeOrderBook(count) {
-  const result = [];
-  for (let i = 0; i < count; i += 1) {
-    result.push({
-      id: i,
-      side: randomArrayItem(['Buy', 'Sell']),
-      size: randomInteger(1000),
-      filled: randomInteger(1000),
-      my_size: randomBoolean() ? randomInteger(1000) : undefined,
-    });
-  }
-  return result;
-}
+// function createFakeOrderBook(count) {
+//   const result = [];
+//   for (let i = 0; i < count; i += 1) {
+//     result.push({
+//       id: i,
+//       side: randomArrayItem(['Buy', 'Sell']),
+//       size: randomInteger(1000),
+//       filled: randomInteger(1000),
+//       my_size: randomBoolean() ? randomInteger(1000) : undefined,
+//     });
+//   }
+//   return result;
+// }
 
 function createFakeSide(side) {
   const allegedName = side ? 'moola' : 'simoleans';
