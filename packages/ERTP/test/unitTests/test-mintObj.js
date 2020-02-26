@@ -23,7 +23,7 @@ test('mint.mintPayment default natMathHelper', t => {
     const paymentBalance1 = issuer.getAmountOf(payment1);
     t.ok(amountMath.isEqual(paymentBalance1, fungible1000));
 
-    const payment2 = mint.mintPayment(1000);
+    const payment2 = mint.mintPayment(amountMath.make(1000));
     const paymentBalance2 = issuer.getAmountOf(payment2);
     t.ok(amountMath.isEqual(paymentBalance2, fungible1000));
   } catch (e) {

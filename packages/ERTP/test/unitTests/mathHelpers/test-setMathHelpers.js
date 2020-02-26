@@ -79,38 +79,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     );
   }
 
-  // coerce - extent
-  t.deepEquals(coerce(harden([a])), make(harden([a])), `[a] is a valid set`);
-  t.deepEquals(
-    coerce(harden([a, b])),
-    make(harden([a, b])),
-    `[a, b] is a valid set`,
-  );
-  t.deepEquals(coerce(harden([])), make(harden([])), `[] is a valid set`);
-  t.throws(
-    () => coerce(harden([a, a])),
-    /extent has duplicates/,
-    `duplicates in coerce should throw`,
-  );
-  t.deepEquals(
-    coerce(harden(['a', 'b'])),
-    { brand: mockBrand, extent: ['a', 'b'] },
-    'anything comparable is a valid element',
-  );
-  t.throws(
-    () => coerce(harden('a')),
-    /list must be an array/,
-    'strings are not valid',
-  );
-  if (a2 !== undefined) {
-    t.throws(
-      () => coerce(harden([a, a2])),
-      /extent has duplicates/,
-      `data identity throws`,
-    );
-  }
-
-  // coerce - amount
+  // coerce
   t.deepEquals(
     coerce(harden({ brand: mockBrand, extent: [a] })),
     harden({ brand: mockBrand, extent: [a] }),
@@ -132,12 +101,12 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
     `duplicates in coerce should throw`,
   );
   t.deepEquals(
-    coerce(harden(['a', 'b'])),
+    coerce(make(harden(['a', 'b']))),
     { brand: mockBrand, extent: ['a', 'b'] },
     'anything comparable is a valid element',
   );
   t.throws(
-    () => coerce(harden('a')),
+    () => coerce(harden({ brand: mockBrand, extent: 'a' })),
     /list must be an array/,
     'strings are not valid',
   );
@@ -164,14 +133,14 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   );
 
   // isEmpty
-  t.ok(isEmpty(harden([])), `isEmpty([]) is true`);
+  t.ok(isEmpty(make(harden([]))), `isEmpty([]) is true`);
   t.throws(
-    () => isEmpty(harden({})),
+    () => isEmpty(harden({ brand: mockBrand, extent: {} })),
     /list must be an array/,
     `isEmpty({}) throws`,
   );
-  t.notOk(isEmpty(harden(['abc'])), `isEmpty(['abc']) is false`);
-  t.notOk(isEmpty(harden([a])), `isEmpty([a]) is false`);
+  t.notOk(isEmpty(make(harden(['abc']))), `isEmpty(['abc']) is false`);
+  t.notOk(isEmpty(make(harden([a]))), `isEmpty([a]) is false`);
   t.throws(
     () => isEmpty(harden({ brand: mockBrand, extent: [a, a] })),
     /extent has duplicates/,
