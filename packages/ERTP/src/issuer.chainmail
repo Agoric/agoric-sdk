@@ -142,7 +142,7 @@ interface Purse (Amount) {
   getIssuer() -> (Issuer);
 
   /** Get the amount contained in this purse, confirmed by the issuer. */
-  getBalance() -> (Amount);
+  getCurrentAmount() -> (Amount);
 
   /**
    * Deposit all the contents of payment into this purse, returning the
