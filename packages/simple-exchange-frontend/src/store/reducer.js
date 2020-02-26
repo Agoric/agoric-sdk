@@ -34,16 +34,28 @@ function createFakeOrderBook(count) {
   return result;
 }
 
-function createFakeOrderHistory(count) {
-  const result = [];
-  for (let i = 0; i < count; i += 1) {
-    result.push({
-      id: i,
-      side: randomArrayItem(['Buy', 'Sell']),
-      size: randomInteger(1000),
-      filled: randomInteger(1000),
-      status: randomArrayItem(['Open', 'Filled']),
-    });
+function createFakeSide(side) {
+  const allegedName = side ? 'moola' : 'simoleans';
+  const result = {
+    label: { assay: {}, allegedName },
+    extent: randomInteger(1000),
+  };
+  return result;
+}
+
+function createFakeOrder() {
+  const order = randomBoolean();
+  const result = { want: createFakeSide(order), offer: createFakeSide(order) };
+  return result;
+}
+
+function createFakeOrderHistory(buys, sells) {
+  const result = { buys: [], sells: [] };
+  for (let i = 0; i < buys; i += 1) {
+    result.buys.push(createFakeOrder());
+  }
+  for (let i = 0; i < sells; i += 1) {
+    result.sells.push(createFakeOrder());
   }
   return result;
 }
@@ -66,7 +78,7 @@ export function createDefaultState() {
     active: false,
     connected: false,
     orderbook: createFakeOrderBook(100),
-    orderhistory: createFakeOrderHistory(50),
+    orderhistory: createFakeOrderHistory(50, 50),
     purses: createFakePurses(3),
   };
 }
