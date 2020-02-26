@@ -1,18 +1,19 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 
 import { isOfferSafeForOffer, isOfferSafeForAll } from '../../src/isOfferSafe';
 import { setup } from './setupBasicMints';
 
-// The player must have payoutRules for each assay
+// The player must have payoutRules for each issuer
 test('isOfferSafeForOffer - empty payoutRules', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [];
-    const units = [moola(8), simoleans(6), bucks(7)];
+    const amounts = [moola(8), simoleans(6), bucks(7)];
 
     t.throws(
-      _ => isOfferSafeForOffer(unitOps, payoutRules, units),
-      /unitOpsArray, payoutRules, and units must be arrays of the same length/,
+      _ => isOfferSafeForOffer(amountMaths, payoutRules, amounts),
+      /amountMaths, payoutRules, and amounts must be arrays of the same length/,
     );
   } catch (e) {
     t.assert(false, e);
@@ -21,20 +22,20 @@ test('isOfferSafeForOffer - empty payoutRules', t => {
   }
 });
 
-// The units array must have an item for each assay/rule
-test('isOfferSafeForOffer - empty units', t => {
+// The amount array must have an item for each issuer/rule
+test('isOfferSafeForOffer - empty amount', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'wantAtLeast', units: moola(8) },
-      { kind: 'wantAtLeast', units: simoleans(6) },
-      { kind: 'wantAtLeast', units: bucks(7) },
+      { kind: 'wantAtLeast', amount: moola(8) },
+      { kind: 'wantAtLeast', amount: simoleans(6) },
+      { kind: 'wantAtLeast', amount: bucks(7) },
     ];
-    const units = [];
+    const amount = [];
 
     t.throws(
-      _ => isOfferSafeForOffer(unitOps, payoutRules, units),
-      'unitOpsArray, payoutRules, and units must be arrays of the same length',
+      _ => isOfferSafeForOffer(amountMaths, payoutRules, amount),
+      /amountMaths, payoutRules, and amounts must be arrays of the same length/,
     );
   } catch (e) {
     t.assert(false, e);
@@ -47,15 +48,15 @@ test('isOfferSafeForOffer - empty units', t => {
 // with no refund
 test('isOfferSafeForOffer - gets want exactly', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'offerAtMost', units: moola(8) },
-      { kind: 'wantAtLeast', units: simoleans(6) },
-      { kind: 'wantAtLeast', units: bucks(7) },
+      { kind: 'offerAtMost', amount: moola(8) },
+      { kind: 'wantAtLeast', amount: simoleans(6) },
+      { kind: 'wantAtLeast', amount: bucks(7) },
     ];
-    const units = [moola(0), simoleans(6), bucks(7)];
+    const amount = [moola(0), simoleans(6), bucks(7)];
 
-    t.ok(isOfferSafeForOffer(unitOps, payoutRules, units));
+    t.ok(isOfferSafeForOffer(amountMaths, payoutRules, amount));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -66,15 +67,15 @@ test('isOfferSafeForOffer - gets want exactly', t => {
 // The player gets exactly what they wanted, with no 'offer'
 test('isOfferSafeForOffer - gets wantAtLeast', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'wantAtLeast', units: moola(8) },
-      { kind: 'wantAtLeast', units: simoleans(6) },
-      { kind: 'wantAtLeast', units: bucks(7) },
+      { kind: 'wantAtLeast', amount: moola(8) },
+      { kind: 'wantAtLeast', amount: simoleans(6) },
+      { kind: 'wantAtLeast', amount: bucks(7) },
     ];
-    const units = [moola(8), simoleans(6), bucks(7)];
+    const amount = [moola(8), simoleans(6), bucks(7)];
 
-    t.ok(isOfferSafeForOffer(unitOps, payoutRules, units));
+    t.ok(isOfferSafeForOffer(amountMaths, payoutRules, amount));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -88,15 +89,15 @@ test('isOfferSafeForOffer - gets wantAtLeast', t => {
 // refund condition was fulfilled trivially.
 test('isOfferSafeForOffer - gets wantAtLeast', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'wantAtLeast', units: moola(8) },
-      { kind: 'wantAtLeast', units: simoleans(6) },
-      { kind: 'wantAtLeast', units: bucks(7) },
+      { kind: 'wantAtLeast', amount: moola(8) },
+      { kind: 'wantAtLeast', amount: simoleans(6) },
+      { kind: 'wantAtLeast', amount: bucks(7) },
     ];
-    const units = [moola(9), simoleans(6), bucks(7)];
+    const amount = [moola(9), simoleans(6), bucks(7)];
 
-    t.ok(isOfferSafeForOffer(unitOps, payoutRules, units));
+    t.ok(isOfferSafeForOffer(amountMaths, payoutRules, amount));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -107,15 +108,15 @@ test('isOfferSafeForOffer - gets wantAtLeast', t => {
 // The user gets refunded exactly what they put in, with a 'wantAtLeast'
 test(`isOfferSafeForOffer - gets offerAtMost, doesn't get wantAtLeast`, t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'offerAtMost', units: moola(1) },
-      { kind: 'wantAtLeast', units: simoleans(2) },
-      { kind: 'offerAtMost', units: bucks(3) },
+      { kind: 'offerAtMost', amount: moola(1) },
+      { kind: 'wantAtLeast', amount: simoleans(2) },
+      { kind: 'offerAtMost', amount: bucks(3) },
     ];
-    const units = [moola(1), simoleans(0), bucks(3)];
+    const amount = [moola(1), simoleans(0), bucks(3)];
 
-    t.ok(isOfferSafeForOffer(unitOps, payoutRules, units));
+    t.ok(isOfferSafeForOffer(amountMaths, payoutRules, amount));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -126,15 +127,15 @@ test(`isOfferSafeForOffer - gets offerAtMost, doesn't get wantAtLeast`, t => {
 // The user gets refunded exactly what they put in, with no 'wantAtLeast'
 test('isOfferSafeForOffer - gets offerAtMost, no wantAtLeast', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'offerAtMost', units: moola(1) },
-      { kind: 'offerAtMost', units: simoleans(2) },
-      { kind: 'offerAtMost', units: bucks(3) },
+      { kind: 'offerAtMost', amount: moola(1) },
+      { kind: 'offerAtMost', amount: simoleans(2) },
+      { kind: 'offerAtMost', amount: bucks(3) },
     ];
-    const units = [moola(1), simoleans(2), bucks(3)];
+    const amount = [moola(1), simoleans(2), bucks(3)];
 
-    t.ok(isOfferSafeForOffer(unitOps, payoutRules, units));
+    t.ok(isOfferSafeForOffer(amountMaths, payoutRules, amount));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -145,14 +146,14 @@ test('isOfferSafeForOffer - gets offerAtMost, no wantAtLeast', t => {
 // The user gets a refund *and* winnings. This is 'offer safe'.
 test('isOfferSafeForOffer - refund and winnings', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'offerAtMost', units: moola(2) },
-      { kind: 'wantAtLeast', units: simoleans(3) },
-      { kind: 'wantAtLeast', units: bucks(3) },
+      { kind: 'offerAtMost', amount: moola(2) },
+      { kind: 'wantAtLeast', amount: simoleans(3) },
+      { kind: 'wantAtLeast', amount: bucks(3) },
     ];
-    const units = [moola(2), simoleans(3), bucks(3)];
-    t.ok(isOfferSafeForOffer(unitOps, payoutRules, units));
+    const amount = [moola(2), simoleans(3), bucks(3)];
+    t.ok(isOfferSafeForOffer(amountMaths, payoutRules, amount));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -163,14 +164,14 @@ test('isOfferSafeForOffer - refund and winnings', t => {
 // The user gets more than they wanted
 test('isOfferSafeForOffer - more than wantAtLeast', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'offerAtMost', units: moola(2) },
-      { kind: 'wantAtLeast', units: simoleans(3) },
-      { kind: 'wantAtLeast', units: bucks(4) },
+      { kind: 'offerAtMost', amount: moola(2) },
+      { kind: 'wantAtLeast', amount: simoleans(3) },
+      { kind: 'wantAtLeast', amount: bucks(4) },
     ];
-    const units = [moola(0), simoleans(3), bucks(5)];
-    t.ok(isOfferSafeForOffer(unitOps, payoutRules, units));
+    const amount = [moola(0), simoleans(3), bucks(5)];
+    t.ok(isOfferSafeForOffer(amountMaths, payoutRules, amount));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -181,14 +182,14 @@ test('isOfferSafeForOffer - more than wantAtLeast', t => {
 // The user gets more than they wanted - wantAtLeast
 test('isOfferSafeForOffer - more than wantAtLeast (no offerAtMost)', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'wantAtLeast', units: moola(2) },
-      { kind: 'wantAtLeast', units: simoleans(3) },
-      { kind: 'wantAtLeast', units: bucks(4) },
+      { kind: 'wantAtLeast', amount: moola(2) },
+      { kind: 'wantAtLeast', amount: simoleans(3) },
+      { kind: 'wantAtLeast', amount: bucks(4) },
     ];
-    const units = [moola(2), simoleans(6), bucks(7)];
-    t.ok(isOfferSafeForOffer(unitOps, payoutRules, units));
+    const amount = [moola(2), simoleans(6), bucks(7)];
+    t.ok(isOfferSafeForOffer(amountMaths, payoutRules, amount));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -199,14 +200,14 @@ test('isOfferSafeForOffer - more than wantAtLeast (no offerAtMost)', t => {
 // The user gets refunded more than what they put in
 test('isOfferSafeForOffer - more than offerAtMost', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'offerAtMost', units: moola(2) },
-      { kind: 'offerAtMost', units: simoleans(3) },
-      { kind: 'wantAtLeast', units: bucks(4) },
+      { kind: 'offerAtMost', amount: moola(2) },
+      { kind: 'offerAtMost', amount: simoleans(3) },
+      { kind: 'wantAtLeast', amount: bucks(4) },
     ];
-    const units = [moola(5), simoleans(6), bucks(8)];
-    t.ok(isOfferSafeForOffer(unitOps, payoutRules, units));
+    const amount = [moola(5), simoleans(6), bucks(8)];
+    t.ok(isOfferSafeForOffer(amountMaths, payoutRules, amount));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -219,14 +220,14 @@ test('isOfferSafeForOffer - more than offerAtMost', t => {
 // because no winnings were specified and none were given back.
 test('isOfferSafeForOffer - more than offerAtMost, no wants', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'offerAtMost', units: moola(2) },
-      { kind: 'offerAtMost', units: simoleans(3) },
-      { kind: 'offerAtMost', units: bucks(4) },
+      { kind: 'offerAtMost', amount: moola(2) },
+      { kind: 'offerAtMost', amount: simoleans(3) },
+      { kind: 'offerAtMost', amount: bucks(4) },
     ];
-    const units = [moola(5), simoleans(6), bucks(8)];
-    t.ok(isOfferSafeForOffer(unitOps, payoutRules, units));
+    const amount = [moola(5), simoleans(6), bucks(8)];
+    t.ok(isOfferSafeForOffer(amountMaths, payoutRules, amount));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -237,14 +238,14 @@ test('isOfferSafeForOffer - more than offerAtMost, no wants', t => {
 // The user gets refunded more than what they put in, with 'offer'
 test('isOfferSafeForOffer - more than offer', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'offerAtMost', units: moola(2) },
-      { kind: 'offerAtMost', units: simoleans(3) },
-      { kind: 'wantAtLeast', units: bucks(4) },
+      { kind: 'offerAtMost', amount: moola(2) },
+      { kind: 'offerAtMost', amount: simoleans(3) },
+      { kind: 'wantAtLeast', amount: bucks(4) },
     ];
-    const units = [moola(5), simoleans(3), bucks(0)];
-    t.ok(isOfferSafeForOffer(unitOps, payoutRules, units));
+    const amount = [moola(5), simoleans(3), bucks(0)];
+    t.ok(isOfferSafeForOffer(amountMaths, payoutRules, amount));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -255,14 +256,14 @@ test('isOfferSafeForOffer - more than offer', t => {
 // The user gets less than what they wanted - wantAtLeast
 test('isOfferSafeForOffer - less than wantAtLeast', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'offerAtMost', units: moola(2) },
-      { kind: 'wantAtLeast', units: simoleans(3) },
-      { kind: 'wantAtLeast', units: bucks(5) },
+      { kind: 'offerAtMost', amount: moola(2) },
+      { kind: 'wantAtLeast', amount: simoleans(3) },
+      { kind: 'wantAtLeast', amount: bucks(5) },
     ];
-    const units = [moola(0), simoleans(2), bucks(1)];
-    t.notOk(isOfferSafeForOffer(unitOps, payoutRules, units));
+    const amount = [moola(0), simoleans(2), bucks(1)];
+    t.notOk(isOfferSafeForOffer(amountMaths, payoutRules, amount));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -273,14 +274,14 @@ test('isOfferSafeForOffer - less than wantAtLeast', t => {
 // The user gets less than what they wanted - wantAtLeast
 test('isOfferSafeForOffer - less than wantAtLeast', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'offerAtMost', units: moola(2) },
-      { kind: 'wantAtLeast', units: simoleans(3) },
-      { kind: 'wantAtLeast', units: bucks(9) },
+      { kind: 'offerAtMost', amount: moola(2) },
+      { kind: 'wantAtLeast', amount: simoleans(3) },
+      { kind: 'wantAtLeast', amount: bucks(9) },
     ];
-    const units = [moola(0), simoleans(2), bucks(1)];
-    t.notOk(isOfferSafeForOffer(unitOps, payoutRules, units));
+    const amount = [moola(0), simoleans(2), bucks(1)];
+    t.notOk(isOfferSafeForOffer(amountMaths, payoutRules, amount));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -291,14 +292,14 @@ test('isOfferSafeForOffer - less than wantAtLeast', t => {
 // The user gets refunded less than they put in
 test('isOfferSafeForOffer - less than wantAtLeast', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'offerAtMost', units: moola(2) },
-      { kind: 'wantAtLeast', units: simoleans(3) },
-      { kind: 'wantAtLeast', units: bucks(3) },
+      { kind: 'offerAtMost', amount: moola(2) },
+      { kind: 'wantAtLeast', amount: simoleans(3) },
+      { kind: 'wantAtLeast', amount: bucks(3) },
     ];
-    const units = [moola(1), simoleans(0), bucks(0)];
-    t.notOk(isOfferSafeForOffer(unitOps, payoutRules, units));
+    const amount = [moola(1), simoleans(0), bucks(0)];
+    t.notOk(isOfferSafeForOffer(amountMaths, payoutRules, amount));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -308,12 +309,12 @@ test('isOfferSafeForOffer - less than wantAtLeast', t => {
 
 test('isOfferSafeForOffer - empty arrays', t => {
   try {
-    const { unitOps } = setup();
+    const { amountMaths } = setup();
     const payoutRules = [];
-    const units = [];
+    const amount = [];
     t.throws(
-      () => isOfferSafeForOffer(unitOps, payoutRules, units),
-      /unitOpsArray, payoutRules, and units must be arrays of the same length/,
+      () => isOfferSafeForOffer(amountMaths, payoutRules, amount),
+      /amountMaths, payoutRules, and amounts must be arrays of the same length/,
     );
   } catch (e) {
     t.assert(false, e);
@@ -322,17 +323,17 @@ test('isOfferSafeForOffer - empty arrays', t => {
   }
 });
 
-test('isOfferSafeForOffer - null for some assays', t => {
+test('isOfferSafeForOffer - null for some issuers', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'offerAtMost', units: moola(2) },
+      { kind: 'offerAtMost', amount: moola(2) },
       null,
-      { kind: 'offerAtMost', units: bucks(4) },
+      { kind: 'offerAtMost', amount: bucks(4) },
     ];
-    const units = [moola(5), simoleans(6), bucks(8)];
+    const amount = [moola(5), simoleans(6), bucks(8)];
     t.throws(
-      () => isOfferSafeForOffer(unitOps, payoutRules, units),
+      () => isOfferSafeForOffer(amountMaths, payoutRules, amount),
       /payoutRule must be specified/,
     );
   } catch (e) {
@@ -345,17 +346,17 @@ test('isOfferSafeForOffer - null for some assays', t => {
 // All users get exactly what they wanted
 test('isOfferSafeForAll - All users get what they wanted', t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'offerAtMost', units: moola(2) },
-      { kind: 'wantAtLeast', units: simoleans(3) },
-      { kind: 'wantAtLeast', units: bucks(3) },
+      { kind: 'offerAtMost', amount: moola(2) },
+      { kind: 'wantAtLeast', amount: simoleans(3) },
+      { kind: 'wantAtLeast', amount: bucks(3) },
     ];
 
     const offerMatrix = [payoutRules, payoutRules, payoutRules];
-    const units = [moola(0), simoleans(3), bucks(3)];
-    const unitsMatrix = [units, units, units];
-    t.ok(isOfferSafeForAll(unitOps, offerMatrix, unitsMatrix));
+    const amount = [moola(0), simoleans(3), bucks(3)];
+    const amountMatrix = [amount, amount, amount];
+    t.ok(isOfferSafeForAll(amountMaths, offerMatrix, amountMatrix));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -365,18 +366,18 @@ test('isOfferSafeForAll - All users get what they wanted', t => {
 
 test(`isOfferSafeForAll - One user doesn't get what they wanted`, t => {
   try {
-    const { unitOps, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const payoutRules = [
-      { kind: 'offerAtMost', units: moola(2) },
-      { kind: 'wantAtLeast', units: simoleans(3) },
-      { kind: 'wantAtLeast', units: bucks(3) },
+      { kind: 'offerAtMost', amount: moola(2) },
+      { kind: 'wantAtLeast', amount: simoleans(3) },
+      { kind: 'wantAtLeast', amount: bucks(3) },
     ];
 
     const offerMatrix = [payoutRules, payoutRules, payoutRules];
-    const units = [moola(0), simoleans(3), bucks(3)];
-    const unsatisfiedUserUnits = [moola(0), simoleans(3), bucks(2)];
-    const unitsMatrix = [units, units, unsatisfiedUserUnits];
-    t.notOk(isOfferSafeForAll(unitOps, offerMatrix, unitsMatrix));
+    const amount = [moola(0), simoleans(3), bucks(3)];
+    const unsatisfiedUserAmounts = [moola(0), simoleans(3), bucks(2)];
+    const amountMatrix = [amount, amount, unsatisfiedUserAmounts];
+    t.notOk(isOfferSafeForAll(amountMaths, offerMatrix, amountMatrix));
   } catch (e) {
     t.assert(false, e);
   } finally {

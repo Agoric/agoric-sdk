@@ -1,10 +1,11 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 
 import { areRightsConserved, transpose } from '../../src/areRightsConserved';
 import { setup } from './setupBasicMints';
 
-const makeUnitMatrix = (unitOps, extentMatrix) =>
-  extentMatrix.map(row => row.map((extent, i) => unitOps[i].make(extent)));
+const makeAmountMatrix = (amountMaths, extentMatrix) =>
+  extentMatrix.map(row => row.map((extent, i) => amountMaths[i].make(extent)));
 
 test('transpose', t => {
   try {
@@ -26,10 +27,10 @@ test('transpose', t => {
   }
 });
 
-// rights are conserved for units with Nat extents
-test(`areRightsConserved - true for units with nat extents`, t => {
+// rights are conserved for amount with Nat extents
+test(`areRightsConserved - true for amount with nat extents`, t => {
   try {
-    const { unitOps } = setup();
+    const { amountMaths } = setup();
     const oldExtents = [
       [0, 1, 0],
       [4, 1, 0],
@@ -41,10 +42,10 @@ test(`areRightsConserved - true for units with nat extents`, t => {
       [6, 2, 0],
     ];
 
-    const oldUnits = makeUnitMatrix(unitOps, oldExtents);
-    const newUnits = makeUnitMatrix(unitOps, newExtents);
+    const oldAmounts = makeAmountMatrix(amountMaths, oldExtents);
+    const newAmounts = makeAmountMatrix(amountMaths, newExtents);
 
-    t.ok(areRightsConserved(unitOps, oldUnits, newUnits));
+    t.ok(areRightsConserved(amountMaths, oldAmounts, newAmounts));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -52,10 +53,10 @@ test(`areRightsConserved - true for units with nat extents`, t => {
   }
 });
 
-// rights are *not* conserved for units with Nat extents
-test(`areRightsConserved - false for units with Nat extents`, t => {
+// rights are *not* conserved for amount with Nat extents
+test(`areRightsConserved - false for amount with Nat extents`, t => {
   try {
-    const { unitOps } = setup();
+    const { amountMaths } = setup();
     const oldExtents = [
       [0, 1, 4],
       [4, 1, 0],
@@ -67,10 +68,10 @@ test(`areRightsConserved - false for units with Nat extents`, t => {
       [6, 2, 0],
     ];
 
-    const oldUnits = makeUnitMatrix(unitOps, oldExtents);
-    const newUnits = makeUnitMatrix(unitOps, newExtents);
+    const oldAmounts = makeAmountMatrix(amountMaths, oldExtents);
+    const newAmounts = makeAmountMatrix(amountMaths, newExtents);
 
-    t.notOk(areRightsConserved(unitOps, oldUnits, newUnits));
+    t.notOk(areRightsConserved(amountMaths, oldAmounts, newAmounts));
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -80,11 +81,11 @@ test(`areRightsConserved - false for units with Nat extents`, t => {
 
 test(`areRightsConserved - empty arrays`, t => {
   try {
-    const { extentOps } = setup();
-    const oldExtents = [[], [], []];
-    const newExtents = [[], [], []];
+    const { amountMaths } = setup();
+    const oldAmounts = [[], [], []];
+    const newAmounts = [[], [], []];
 
-    t.ok(areRightsConserved(extentOps, oldExtents, newExtents));
+    t.ok(areRightsConserved(amountMaths, oldAmounts, newAmounts));
   } catch (e) {
     t.assert(false, e);
   } finally {

@@ -40,7 +40,7 @@ async function main(basedir, withSES, argv) {
 }
 
 const infiniteInstallLoopLog = ['installing infiniteInstallLoop'];
-test('zoe - metering - infinite loop in installation', async t => {
+test.skip('zoe - metering - infinite loop in installation', async t => {
   try {
     const dump = await main('zoe-metering', true, ['infiniteInstallLoop']);
     t.deepEquals(dump.log, infiniteInstallLoopLog, 'log is correct');
@@ -55,7 +55,7 @@ const infiniteInstanceLoopLog = [
   'installing infiniteInstanceLoop',
   'instantiating infiniteInstanceLoop',
 ];
-test('zoe - metering - infinite loop in instantiation', async t => {
+test.skip('zoe - metering - infinite loop in instantiation', async t => {
   try {
     const dump = await main('zoe-metering', true, ['infiniteInstanceLoop']);
     t.deepEquals(dump.log, infiniteInstanceLoopLog, 'log is correct');
@@ -71,7 +71,7 @@ const infiniteTestLoopLog = [
   'instantiating infiniteTestLoop',
   'invoking infiniteTestLoop.doTest()',
 ];
-test('zoe - metering - infinite loop in contract method', async t => {
+test.skip('zoe - metering - infinite loop in contract method', async t => {
   try {
     const dump = await main('zoe-metering', true, ['infiniteTestLoop']);
     t.deepEquals(dump.log, infiniteTestLoopLog, 'log is correct');
@@ -87,7 +87,7 @@ const testBuiltinsLog = [
   'instantiating testBuiltins',
   'invoking testBuiltins.doTest()',
 ];
-test('zoe - metering - expensive builtins in contract method', async t => {
+test.skip('zoe - metering - expensive builtins in contract method', async t => {
   try {
     const dump = await main('zoe-metering', true, ['testBuiltins']);
     t.deepEquals(dump.log, testBuiltinsLog, 'log is correct');
