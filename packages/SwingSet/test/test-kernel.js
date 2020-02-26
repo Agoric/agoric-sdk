@@ -32,7 +32,11 @@ function emptySetup(_syscall) {
 }
 
 function makeEndowments() {
-  return { setImmediate, hostStorage: initSwingStore().storage };
+  return {
+    setImmediate,
+    hostStorage: initSwingStore().storage,
+    runEndOfCrank: () => {},
+  };
 }
 
 test('build kernel', async t => {

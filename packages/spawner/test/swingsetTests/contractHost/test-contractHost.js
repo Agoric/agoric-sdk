@@ -58,6 +58,20 @@ test('run contractHost Demo --trivial without SES', async t => {
   t.end();
 });
 
+const contractExhaustedGolden = [
+  '=> setup called',
+  'starting exhaustedContractTest',
+  'Does source match? true',
+  'spawn rejected: Compute meter exceeded',
+  'got return: 123',
+];
+
+test('run contractHost Demo -- exhaust with SES', async t => {
+  const dump = await main(true, 'contractHost', ['exhaust']);
+  t.deepEquals(dump.log, contractExhaustedGolden);
+  t.end();
+});
+
 const contractAliceFirstGolden = [
   '=> setup called',
   '++ alice.payBobWell starting',

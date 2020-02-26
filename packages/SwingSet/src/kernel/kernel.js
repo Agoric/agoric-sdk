@@ -31,6 +31,7 @@ export default function buildKernel(kernelEndowments) {
   const {
     setImmediate,
     hostStorage,
+    runEndOfCrank,
     vatAdminVatSetup,
     vatAdminDevSetup,
   } = kernelEndowments;
@@ -115,10 +116,15 @@ export default function buildKernel(kernelEndowments) {
       .then(f)
       .then(undefined, logerr);
     await queueEmptyP;
+
     if (typeof replaceGlobalMeter !== 'undefined') {
-      // Turn off the global meter now that we've run the user code.
+      // Turn off the global meter.
       replaceGlobalMeter(null);
     }
+
+    // Finish everything at the end of the crank.
+    runEndOfCrank();
+
     whenDone();
   }
 

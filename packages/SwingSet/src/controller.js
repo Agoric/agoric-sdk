@@ -16,6 +16,9 @@ import {
   SES1TameMeteringShim,
 } from '@agoric/tame-metering';
 
+import { makeMeteringTransformer } from '@agoric/transform-metering';
+import * as babelCore from '@babel/core';
+
 // eslint-disable-next-line import/extensions
 import kernelSourceFunc from './bundles/kernel';
 import buildKernelNonSES from './kernel/index';
@@ -134,12 +137,15 @@ function makeEvaluate(e) {
   });
 }
 
-function makeSESEvaluator() {
+function makeSESEvaluator(registerEndOfCrank) {
   const evaluateOptions = makeDefaultEvaluateOptions();
-  const { transforms, shims = [], ...otherOptions } = evaluateOptions;
+  const { transforms = [], shims = [], ...otherOptions } = evaluateOptions;
+  // The metering transform only activates when a getMeter endowment
+  // is provided.
+  const meteringTransformer = makeMeteringTransformer(babelCore);
   const s = SES.makeSESRootRealm({
     ...otherOptions,
-    transforms,
+    transforms: [...transforms, meteringTransformer],
     consoleMode: 'allow',
     errorStackMode: 'allow',
     shims: [SES1TameMeteringShim, ...shims],
@@ -178,13 +184,31 @@ function makeSESEvaluator() {
     '@agoric/harden': true,
     '@agoric/nat': Nat,
   });
+
+  const realmRegisterEndOfCrank = s.evaluate(
+    `\
+function realmRegisterEndOfCrank(fn) {
+  try {
+    registerEndOfCrank(fn);
+  } catch (e) {
+    // do nothing.
+  }
+}`,
+    { registerEndOfCrank },
+  );
+
   return src => {
     // FIXME: Note that this replaceGlobalMeter endowment is not any
     // worse than before metering existed.  However, it probably is
     // only necessary to be added to the kernel, rather than all
     // static vats once we add metering support to the dynamic vat
     // implementation.
-    return s.evaluate(src, { require: r, replaceGlobalMeter })().default;
+    // FIXME: Same for registerEndOfCrank.
+    return s.evaluate(src, {
+      require: r,
+      registerEndOfCrank: realmRegisterEndOfCrank,
+      replaceGlobalMeter,
+    })().default;
   };
 }
 
@@ -206,11 +230,29 @@ function buildNonSESKernel(endowments) {
 export async function buildVatController(config, withSES = true, argv = []) {
   // todo: move argv into the config
 
+  const endOfCrankHooks = new Set();
+  const registerEndOfCrank = hook => endOfCrankHooks.add(hook);
+
+  const runEndOfCrank = () => {
+    endOfCrankHooks.forEach(h => {
+      try {
+        h();
+      } catch (e) {
+        try {
+          console.log('cannot run hook:', e);
+        } catch (e2) {
+          // Nothing to do.
+        }
+      }
+    });
+    endOfCrankHooks.clear();
+  };
+
   // sesEvaluator is only valid when withSES === true. It might be nice to
   // untangle this so we don't have to check withSES in three different places.
   let sesEvaluator;
   if (withSES) {
-    sesEvaluator = makeSESEvaluator();
+    sesEvaluator = makeSESEvaluator(registerEndOfCrank);
   }
 
   // Evaluate source to produce a setup function. This binds withSES from the
@@ -244,6 +286,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
   const kernelEndowments = {
     setImmediate,
     hostStorage,
+    runEndOfCrank,
     vatAdminDevSetup: await evaluateToSetup(ADMIN_DEVICE_PATH),
     vatAdminVatSetup: await evaluateToSetup(ADMIN_VAT_PATH),
   };

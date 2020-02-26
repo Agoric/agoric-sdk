@@ -4,6 +4,7 @@ import * as c from './constants';
 const RE2 = require('re2');
 
 const METER_GENERATED = Symbol('meter-generated');
+const getMeterId = 'getMeter';
 
 export function makeMeteringTransformer(
   babelCore,
@@ -11,7 +12,6 @@ export function makeMeteringTransformer(
     overrideParser = undefined,
     overrideRegExp = RE2,
     overrideMeterId = c.DEFAULT_METER_ID,
-    overrideGetMeterId = c.DEFAULT_GET_METER_ID,
     overrideSetMeterId = c.DEFAULT_SET_METER_ID,
     overrideRegExpIdPrefix = c.DEFAULT_REGEXP_ID_PREFIX,
   } = {},
@@ -20,8 +20,7 @@ export function makeMeteringTransformer(
     ? overrideParser.parse || overrideParser
     : babelCore.parseSync;
   const meterId = overrideMeterId;
-  const getMeterId = overrideGetMeterId;
-  const setMeterId = overrideSetMeterId;
+  const replaceGlobalMeterId = overrideSetMeterId;
   const regexpIdPrefix = overrideRegExpIdPrefix;
   let regexpNumber = 0;
 
@@ -97,8 +96,7 @@ export function makeMeteringTransformer(
         if (
           (path.node.name === meterId ||
             path.node.name === getMeterId ||
-            path.node.name === 'getGlobalMeter' ||
-            path.node.name === setMeterId ||
+            path.node.name === replaceGlobalMeterId ||
             path.node.name.startsWith(regexpIdPrefix)) &&
           !path.node[METER_GENERATED]
         ) {
@@ -168,13 +166,13 @@ const ${reid}=RegExp(${JSON.stringify(pattern)},${JSON.stringify(flags)});`);
     rewrite(ss) {
       const { src: source, endowments } = ss;
 
-      if (!endowments.getGlobalMeter) {
+      if (!endowments[getMeterId]) {
         // This flag turns on the metering.
         return ss;
       }
 
       // Bill the sources to the meter we'll use later.
-      const meter = endowments.getGlobalMeter(true);
+      const meter = endowments[getMeterId](true);
       // console.log('got meter from endowments', meter);
       meter && meter[c.METER_COMPUTE](source.length);
 
@@ -192,7 +190,7 @@ const ${reid}=RegExp(${JSON.stringify(pattern)},${JSON.stringify(flags)});`);
 
       // Meter by the regular expressions in use.
       const regexpSource = regexpList.join('');
-      const preSource = `const ${getMeterId}=getGlobalMeter;const ${meterId}=${getMeterId}();\
+      const preSource = `const ${meterId}=${getMeterId}();\
 ${meterId}&&${meterId}.${c.METER_ENTER}();\
 try{${regexpSource}`;
       const postSource = `\n}finally{${meterId} && ${meterId}.${c.METER_LEAVE}();}`;

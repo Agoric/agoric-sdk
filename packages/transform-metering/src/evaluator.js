@@ -43,7 +43,7 @@ export function makeMeteredEvaluator({
 
       if (typeof srcOrThunk === 'string') {
         // Transform the source on our own budget, then evaluate against the meter.
-        endowments.getGlobalMeter = m => {
+        endowments.getMeter = m => {
           if (refillMeterInNewTurn && !metersSeenThisTurn.has(meter)) {
             metersSeenThisTurn.add(meter);
             refillMeterInNewTurn(meter);
