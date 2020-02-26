@@ -34,7 +34,7 @@ function getFlagValue(flagName, deflt) {
 // We try to find the actual cosmos state directory (default=~/.ag-chain-cosmos), which
 // is better than scribbling into the current directory.
 const cosmosHome = getFlagValue('home', `${process.env.HOME}/.ag-chain-cosmos`);
-const stateFile = `${cosmosHome}/data/ag-cosmos-chain-state.json`;
+const stateDBDir = `${cosmosHome}/data/ag-cosmos-chain-state`;
 
 const { launch } = require('./launch-chain');
 const path = require('path');
@@ -125,7 +125,7 @@ async function launchAndInitializeDeliverInbound() {
   if (bootAddress) {
     argv.push(...bootAddress.trim().split(/\s+/));
   }
-  const s = await launch(mailboxStorage, stateFile, vatsdir, argv);
+  const s = await launch(stateDBDir, mailboxStorage, vatsdir, argv);
   return s;
 }
 
