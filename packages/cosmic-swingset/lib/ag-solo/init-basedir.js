@@ -59,8 +59,14 @@ export default function initBasedir(
   try {
     fs.copyFileSync(path.join(`${here}/..`, gr), path.join(dest_htmldir, gr));
   } catch (e) {
-    const stdout = execFileSync('git', ['describe', '--always', '--dirty']);
-    fs.writeFileSync(path.join(dest_htmldir, gr), stdout);
+    let revision;
+    try {
+      // Don't allow git to fail.
+      revision = execFileSync('git', ['describe', '--always', '--dirty']);
+    } catch (_e) {
+      revision = 'unknown\n';
+    }
+    fs.writeFileSync(path.join(dest_htmldir, gr), revision);
   }
 
   const source_vatdir = subdir
