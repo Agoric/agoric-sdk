@@ -20,12 +20,14 @@ const coveredCall = harden({
       escrowExchangeInstallation: escrowExchangeInstallationP,
       money: moneyNeeded,
       stock: stockNeeded,
+      moneyIssuer: leftIssuer,
+      stockIssuer: rightIssuer,
       timer: timerP,
       deadline,
     } = terms;
 
     const pairP = E(escrowExchangeInstallationP).spawn(
-      harden({ left: moneyNeeded, right: stockNeeded }),
+      harden({ left: moneyNeeded, right: stockNeeded, leftIssuer, rightIssuer }),
     );
 
     const aliceEscrowSeatP = Promise.resolve(pairP).then(pair =>

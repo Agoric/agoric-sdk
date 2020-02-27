@@ -64,7 +64,7 @@ function makeBobMaker(E, host, log) {
 
         tradeWell(alice) {
           log('++ bob.tradeWell starting');
-          const terms = harden({ left: moneyNeeded, right: stockNeeded });
+          const terms = harden({ left: moneyNeeded, right: stockNeeded, leftIssuer: moneyIssuerP, rightIssuer: stockIssuerP });
           const invitesP = E(escrowExchangeInstallationP).spawn(terms);
           const aliceInvitePaymentP = invitesP.then(invites => invites.left);
           const bobInvitePaymentP = invitesP.then(invites => invites.right);
@@ -92,6 +92,8 @@ function makeBobMaker(E, host, log) {
             escrowExchangeInstallation: escrowExchangeInstallationP,
             money: moneyNeeded,
             stock: stockNeeded,
+            moneyIssuer: moneyIssuerP,
+            stockIssuer: stockIssuerP,
             timer: timerP,
             deadline: 'singularity',
           });

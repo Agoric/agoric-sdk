@@ -12,9 +12,9 @@ import { mustBeSameStructure } from '@agoric/same-structure';
 // transferred from right to left.
 const escrowExchange = harden({
   start: (terms, inviteMaker) => {
-    const { left: moneyNeeded, right: stockNeeded } = terms;
+    const { left: moneyNeeded, right: stockNeeded, leftIssuer, rightIssuer } = terms;
 
-    // TODO: How to get issuer?
+    // TODO: How to get issuer? => terms, i guess
     function makeTransfer(issuer, amount, srcPaymentP) {
       const escrowP = E(issuer).claim(srcPaymentP, amount);
       const winnings = makePromise();
@@ -43,10 +43,10 @@ const escrowExchange = harden({
     // Promise wiring
 
     const moneyPayment = makePromise();
-    const moneyTransfer = makeTransfer(moneyNeeded, moneyPayment.p);
+    const moneyTransfer = makeTransfer(leftIssuer, moneyNeeded, moneyPayment.p);
 
     const stockPayment = makePromise();
-    const stockTransfer = makeTransfer(stockNeeded, stockPayment.p);
+    const stockTransfer = makeTransfer(rightIssuer, stockNeeded, stockPayment.p);
 
     // TODO Use cancellation tokens instead.
     const aliceCancel = makePromise();

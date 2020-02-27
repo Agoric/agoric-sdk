@@ -251,22 +251,42 @@ function build(E, log) {
     });
   }
 
-  function coveredCallTest(host, mint, aliceMaker, bobMaker) {
+  async function coveredCallTest(host, mint, aliceMaker, bobMaker) {
     const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
     const coveredCallInstallationP = E(host).install(coveredCallSrcs);
 
-    const moneyMintP = E(mint).makeMint('smackers');
-    const aliceMoneyPurseP = E(moneyMintP).mint(1000, 'aliceMainMoney');
-    const bobMoneyPurseP = E(moneyMintP).mint(1001, 'bobMainMoney');
+    const { mint: moneyMint, issuer: moneyIssuer } = await E(
+      mint,
+    ).produceIssuer('smackers');
+    const moneyAmountMath = await getLocalAmountMath(moneyIssuer);
+    const money = moneyAmountMath.make;
+    const aliceMoneyPayment = E(moneyMint).mintPayment(money(1000));
+    const bobMoneyPayment = E(moneyMint).mintPayment(money(1001));
 
-    const stockMintP = E(mint).makeMint('yoyodyne');
-    const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
-    const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
+    const { mint: stockMint, issuer: stockIssuer } = await E(
+      mint,
+    ).produceIssuer('yoyodyne');
+    const stockAmountMath = await getLocalAmountMath(stockIssuer);
+    const stocks = stockAmountMath.make;
+    const aliceStockPayment = E(stockMint).mintPayment(stocks(2002));
+    const bobStockPayment = E(stockMint).mintPayment(stocks(2003));
+    
+    const aliceMoneyPurseP = E(moneyIssuer).makeEmptyPurse();
+    const bobMoneyPurseP = E(moneyIssuer).makeEmptyPurse();
+    const aliceStockPurseP = E(stockIssuer).makeEmptyPurse();
+    const bobStockPurseP = E(stockIssuer).makeEmptyPurse();
+
+    await aliceMoneyPayment.then(payment => E(aliceMoneyPurseP).deposit(payment));
+    await aliceStockPayment.then(payment => E(aliceStockPurseP).deposit(payment));
+    await bobMoneyPayment.then(payment => E(bobMoneyPurseP).deposit(payment));
+    await bobStockPayment.then(payment => E(bobStockPurseP).deposit(payment));
 
     const aliceP = E(aliceMaker).make(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
+      moneyIssuer,
+      stockIssuer,
       aliceMoneyPurseP,
       aliceStockPurseP,
     );
@@ -274,9 +294,12 @@ function build(E, log) {
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
+      moneyIssuer,
+      stockIssuer,
       bobMoneyPurseP,
       bobStockPurseP,
     );
+    
     return Promise.all([aliceP, bobP]).then(_ => {
       E(bobP)
         .offerAliceOption(aliceP, false)

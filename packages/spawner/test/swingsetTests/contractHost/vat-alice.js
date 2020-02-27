@@ -17,7 +17,7 @@ function makeAliceMaker(E, host, log) {
       return E(issuer)
         .getAmountOf(payment)
         .then(amount => log(name, ' balance ', amount))
-        .catch(err => console.log(err));
+        .catch(err => console.log('Failed to show balance', name, err));
     });
   }
 
@@ -53,9 +53,10 @@ function makeAliceMaker(E, host, log) {
           return E(bob).buy('shoe', paymentP);
         },
 
-        acceptInvite(allegedInvitePaymentP) {
+        async acceptInvite(allegedInvitePaymentP) {
           log('++ alice.acceptInvite starting');
-          showPaymentBalance('alice invite', allegedInvitePaymentP);
+          await showPaymentBalance('alice invite', inviteIssuerP, allegedInvitePaymentP);
+
           const clams10 = moneyMath.make(10);
           const fudco7 = stockMath.make(7);
           const verifiedInvitePaymentP = E(inviteIssuerP)
@@ -68,10 +69,12 @@ function makeAliceMaker(E, host, log) {
                   'left',
                 )
                 .then(() => {
-                  return E(inviteIssuerP).claim(
-                    allegedInvitePaymentP,
-                    inviteAmount,
-                  );
+                  return allegedInvitePaymentP.then(allegedInvitePayment => {
+                    return E(inviteIssuerP).claim(
+                      allegedInvitePayment,
+                      inviteAmount,
+                    )
+                  })
                 });
             });
 
@@ -96,7 +99,7 @@ function makeAliceMaker(E, host, log) {
           return alice.acceptOptionDirectly(allegedInvitePaymentP);
         },
 
-        acceptOptionDirectly(allegedInvitePaymentP) {
+        async acceptOptionDirectly(allegedInvitePaymentP) {
           log('++ alice.acceptOptionDirectly starting');
           showPaymentBalance(
             'alice invite',
@@ -104,9 +107,9 @@ function makeAliceMaker(E, host, log) {
             allegedInvitePaymentP,
           );
 
-          const inviteAmountP = E(inviteIssuerP).getAmountOf(
-            allegedInvitePaymentP,
-          );
+          const inviteAmountP = await allegedInvitePaymentP.then(allegedInvitePayment => E(inviteIssuerP).getAmountOf(
+            allegedInvitePayment
+          ));
 
           const verifiedInvitePaymentP = Promise.resolve(inviteAmountP).then(
             inviteAmount => {
@@ -123,10 +126,10 @@ function makeAliceMaker(E, host, log) {
                   return E(coveredCallInstallationP)
                     .checkUnits(inviteAmount, terms)
                     .then(_ => {
-                      return E(inviteIssuerP).claim(
+                      return allegedInvitePaymentP.then(allegedInvitePayment => E(inviteIssuerP).claim(
                         inviteAmount,
-                        allegedInvitePaymentP,
-                      );
+                        allegedInvitePayment
+                      ));
                     });
                 },
               );
