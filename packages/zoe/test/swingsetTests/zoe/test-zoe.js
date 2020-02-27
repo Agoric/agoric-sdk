@@ -309,6 +309,56 @@ test('zoe - simpleExchange - valid inputs - no SES', async t => {
   }
 });
 
+const expectedSimpleExchangeUpdateLog = [
+  '=> alice, bob, carol and dave are set up',
+  'Order update: b:[], s:[]',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  'Order update: b:[], s:moola:3 for simoleans:4',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":0}',
+  'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":17}',
+  'Order update: b:[], s:[]',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":3}',
+  'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":15}',
+  'Order update: b:simoleans:2 for moola:8, s:[]',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":3}',
+  'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":2}',
+  'Order update: b:simoleans:2 for moola:8,simoleans:13 for moola:20, s:[]',
+  'The offer has been accepted. Once the contract has been completed, please check your payout',
+  'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":3}',
+  'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":0}',
+  'aliceMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":0}',
+  'aliceSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
+];
+
+test('zoe - simpleExchange - state Update - with SES', async t => {
+  t.plan(1);
+  const startingExtents = [
+    [3, 0, 0],
+    [0, 24, 0],
+  ];
+  const dump = await main(true, 'zoe', [
+    'simpleExchangeUpdates',
+    startingExtents,
+  ]);
+  t.deepEquals(dump.log, expectedSimpleExchangeUpdateLog);
+});
+
+test('zoe - simpleExchange - state Update - no SES', async t => {
+  t.plan(1);
+  const startingExtents = [
+    [3, 0, 0],
+    [0, 24, 0],
+  ];
+  const dump = await main(true, 'zoe', [
+    'simpleExchangeUpdates',
+    startingExtents,
+  ]);
+  t.deepEquals(dump.log, expectedSimpleExchangeUpdateLog);
+});
+
 const expectedAutoswapOkLog = [
   '=> alice, bob, carol and dave are set up',
   'Added liquidity.',
