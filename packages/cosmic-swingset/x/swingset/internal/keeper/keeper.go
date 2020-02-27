@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"fmt"
-	"os"
 	"sort"
 	"strings"
 
@@ -111,9 +109,6 @@ func (k Keeper) SetStorage(ctx sdk.Context, path string, storage types.Storage) 
 		keyNode.Keys = keyList
 		keysStore.Set([]byte(oneUp), k.cdc.MustMarshalBinaryLengthPrefixed(keyNode))
 	}
-	if addr, ok := os.LookupEnv("SS_DEBUG_MAILBOX"); ok {
-		fmt.Println("mailbox has value", k.storeKey, store.Has([]byte("data:mailbox."+addr)))
-	}
 }
 
 // Gets the entire mailbox struct for a peer
@@ -121,10 +116,6 @@ func (k Keeper) GetMailbox(ctx sdk.Context, peer string) types.Storage {
 	store := ctx.KVStore(k.storeKey)
 	dataStore := prefix.NewStore(store, types.DataPrefix)
 	path := "mailbox." + peer
-	if addr, ok := os.LookupEnv("SS_DEBUG_MAILBOX"); ok {
-		fmt.Println("peer == addr", addr == peer)
-		fmt.Println("mailbox still has value", dataStore.Has([]byte("mailbox."+addr)))
-	}
 	if !dataStore.Has([]byte(path)) {
 		return types.NewMailbox()
 	}

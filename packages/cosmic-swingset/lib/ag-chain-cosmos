@@ -161,9 +161,14 @@ async function toSwingSet0(action, _replier) {
         action.ack,
         action.blockHeight,
         action.blockTime,
+        action.committed,
       );
     case BEGIN_BLOCK:
-      return deliverStartBlock(action.blockHeight, action.blockTime);
+      return deliverStartBlock(
+        action.blockHeight,
+        action.blockTime,
+        action.committed,
+      );
     default:
       throw new Error(`${action.type} not recognized. must be DELIVER_INBOUND or BEGIN_BLOCK`);
   }
