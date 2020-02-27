@@ -262,6 +262,7 @@ export async function makeWallet(
   }
 
   function getOfferDescriptions() {
+    let index = 0;
     return Array.from(dateToOfferRec)
       .filter(rec => rec.status === 'accept')
       .map(offerRec => {
@@ -270,7 +271,8 @@ export async function makeWallet(
           offerRules: { payoutRules },
         } = offerRec;
 
-        return harden({ instanceId, payoutRules });
+        index += 1;
+        return harden({ instanceId, payoutRules, index });
       });
   }
 
