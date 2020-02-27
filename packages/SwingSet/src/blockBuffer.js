@@ -76,6 +76,8 @@ export function buildBlockBuffer(hostDB) {
       ops.push({ op: 'delete', key });
     }
     hostDB.applyBatch(ops);
+    additions.clear();
+    deletions.clear();
   }
 
   return harden({ blockBuffer, commitBlock });
