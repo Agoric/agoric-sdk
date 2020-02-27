@@ -98,9 +98,9 @@ func ReplyToGo(replyPort C.int, isError C.int, str C.Body) C.int {
 func SendToGo(port C.int, str C.Body) C.Body {
 	goStr := C.GoString(str)
 	// fmt.Fprintln(os.Stderr, "Send to Go", goStr)
-	outstr, err := swingset.ReceiveFromNode(int(port), goStr)
+	outstr, err := swingset.ReceiveFromController(int(port), goStr)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Cannot receive from node", err)
+		fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
 		return C.CString("")
 	}
 	return C.CString(outstr)

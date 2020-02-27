@@ -87,7 +87,7 @@ scenario2-run-chain:
 		ba="$$ba "`cat $$acha`; \
 	done; \
 	ROLE=two_chain BOOT_ADDRESS="$$ba" $(NODE_DEBUG) \
-	  `$(BREAK_CHAIN) && echo --inspect-brk` $(AGC) start # --trace-store=trace.log
+	  `$(BREAK_CHAIN) && echo --inspect-brk` $(AGC) start --pruning=nothing
 scenario2-run-client:
 	cd t1/$(BASE_PORT) && ../../bin/ag-solo start --role=two_client
 
