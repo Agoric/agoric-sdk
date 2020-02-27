@@ -132,8 +132,15 @@ function build(E, log) {
     ).produceIssuer('moola');
     const moolaAmountMath = await getLocalAmountMath(moneyIssuer);
     const moola = moolaAmountMath.make;
-    const aliceMoneyPaymentP = E(moneyMint).mintPayment(moola(1000));
-    const bobMoneyPaymentP = E(moneyMint).mintPayment(moola(1001));
+    const aliceMoneyPurseP = E(moneyIssuer).makeEmptyPurse()
+    await E(moneyMint).mintPayment(moola(1000)).then(payment => {
+      return E(aliceMoneyPurseP).deposit( payment )
+    })
+
+    const bobMoneyPurseP = E(moneyIssuer).makeEmptyPurse()
+    await E(moneyMint).mintPayment(moola(1001)).then(payment => {
+      return E(bobMoneyPurseP).deposit( payment )
+    })
 
     const { mint: stockMint, issuer: stockIssuer } = await E(
       mint,
@@ -149,7 +156,7 @@ function build(E, log) {
       fakeNeverTimer,
       moneyIssuer,
       stockIssuer,
-      aliceMoneyPaymentP,
+      aliceMoneyPurseP,
       aliceStockPaymentP,
     );
     const bobP = E(bobMaker).make(
@@ -158,9 +165,12 @@ function build(E, log) {
       fakeNeverTimer,
       moneyIssuer,
       stockIssuer,
-      bobMoneyPaymentP,
+      bobMoneyPurseP,
       bobStockPaymentP,
     );
+
+    aliceP.catch(err => console.error('alice err', err))
+
     return Promise.all([aliceP, bobP]).then(_ => {
       const ifItFitsP = E(aliceP).payBobWell(bobP);
       ifItFitsP.then(

@@ -39,7 +39,7 @@ const contractTrivialGolden = [
   '++ eightP resolved to 8 (should be 8)',
   '++ DONE',
 ];
-test('run contractHost Demo --trivial with SES', async t => {
+test.skip('run contractHost Demo --trivial with SES', async t => {
   const dump = await main(true, 'contractHost', ['trivial']);
   t.deepEquals(dump.log, contractTrivialGolden);
   t.end();
@@ -53,7 +53,7 @@ const contractExhaustedGolden = [
   'got return: 123',
 ];
 
-test('run contractHost Demo -- exhaust with SES', async t => {
+test.skip('run contractHost Demo -- exhaust with SES', async t => {
   const dump = await main(true, 'contractHost', ['exhaust']);
   t.deepEquals(dump.log, contractExhaustedGolden);
   t.end();
@@ -66,7 +66,7 @@ const contractAliceFirstGolden = [
   '++ DONE',
 ];
 
-test.skip('run contractHost Demo --alice-first with SES', async t => {
+test('run contractHost Demo --alice-first with SES', async t => {
   const dump = await main(true, 'contractHost', ['alice-first']);
   t.deepEquals(dump.log, contractAliceFirstGolden);
   t.end();
