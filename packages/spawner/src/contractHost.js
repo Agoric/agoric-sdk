@@ -10,8 +10,7 @@ import {
   mustBeSameStructure,
   sameStructure,
 } from '@agoric/same-structure';
-import { inviteConfig } from '@agoric/ertp/src/config/inviteConfig';
-import { makeMint } from '@agoric/ertp';
+import produceIssuer from '@agoric/ertp';
 import makePromise from '@agoric/make-promise';
 import { makeMeter } from '@agoric/transform-metering/src/meter';
 
@@ -32,17 +31,18 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
   // from installation to source code string
   const installationSources = makeStore('installation');
 
-  const inviteMint = makeMint('contract host', inviteConfig);
-  const inviteAssay = inviteMint.getAssay();
-  const inviteUnitOps = inviteAssay.getUnitOps();
+  const {
+    mint: inviteMint,
+    issuer: inviteIssuer,
+    amountMath: inviteAmountMath,
+  } = produceIssuer('contract host', 'set');
 
   function redeem(allegedInvitePayment) {
-    const allegedInviteUnits = allegedInvitePayment.getBalance();
-    const inviteUnits = inviteUnitOps.coerce(allegedInviteUnits);
-    assert(!inviteUnitOps.isEmpty(inviteUnits), details`No invites left`);
-    const { seatIdentity } = inviteUnitOps.extent(inviteUnits);
+    const inviteAmount = inviteIssuer.getAmountOf(allegedInvitePayment);
+    assert(!inviteAmountMath.isEmpty(inviteAmount), details`No invites left`);
+    const [{ seatIdentity }] = inviteAmountMath.getExtent(inviteAmount);
     return Promise.resolve(
-      inviteAssay.burnExactly(inviteUnits, allegedInvitePayment),
+      inviteIssuer.burn(allegedInvitePayment, inviteAmount),
     ).then(_ => seats.get(seatIdentity));
   }
 
@@ -126,8 +126,8 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
 
   /** The contract host is designed to have a long-lived credible identity. */
   const contractHost = harden({
-    getInviteAssay() {
-      return inviteAssay;
+    getInviteIssuer() {
+      return inviteIssuer;
     },
     // contractSrcs is a record containing source code for the functions
     // comprising a contract. `spawn` evaluates the `start` function
@@ -180,24 +180,23 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
             // redeems an invite, then the contractSrc and terms are
             // accurate. The seatDesc is according to that
             // contractSrc code.
-            make(seatDesc, seat, name = 'an invite payment') {
+            make(seatDesc, seat) {
               const seatIdentity = harden({});
-              const seatDescription = harden({
-                installation,
-                terms,
-                seatIdentity,
-                seatDesc,
-              });
+              const seatDescription = harden([
+                {
+                  installation,
+                  terms,
+                  seatIdentity,
+                  seatDesc,
+                },
+              ]);
               seats.init(seatIdentity, seat);
               seatDescriptions.init(seatIdentity, seatDescription);
-              const inviteUnits = inviteUnitOps.make(seatDescription);
+              const inviteAmount = inviteAmountMath.make(seatDescription);
               // This should be the only use of the invite mint, to
-              // make an invite purse whose extent describes this
-              // seat. This invite purse makes the invite payment,
-              // and then the invite purse is dropped, in the sense
-              // that it becomes inaccessible.
-              const invitePurse = inviteMint.mint(inviteUnits, name);
-              return invitePurse.withdrawAll(name);
+              // make an invite payment whose extent describes this
+              // seat.
+              return inviteMint.mintPayment(inviteAmount);
             },
             redeem,
           });
@@ -240,7 +239,7 @@ function makeCollect(E, log) {
     const results = harden([
       E(seatP)
         .getWinnings()
-        .then(winnings => E(winPurseP).depositAll(winnings)),
+        .then(winnings => E(winPurseP).deposit(winnings)),
       // TODO Bug if we replace the comma above with the uncommented
       // out ".then(_ => undefined)," below, somehow we end up trying
       // to marshal an array with holes, rather than an array with
@@ -249,7 +248,7 @@ function makeCollect(E, log) {
       /* .then(_ => undefined), */
       E(seatP)
         .getRefund()
-        .then(refund => refund && E(refundPurseP).depositAll(refund)),
+        .then(refund => refund && E(refundPurseP).deposit(refund)),
     ]);
     const doneP = allSettled(results);
     Promise.resolve(doneP).then(([wins, refs]) => {

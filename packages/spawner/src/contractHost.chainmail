@@ -21,7 +21,7 @@ interface ContractHost {
   getInstallationSourceCode(installation :Installation) -> (String);
 
   /**
-   * Seat invitations are packaged as payments from the Invite Assay. Redeeming
+   * Seat invitations are packaged as payments from the Invite Issuer. Redeeming
    * an invite returns a seat object with an arbitrary interface (the interface
    * is at the discretion of the contract) which supports interaction according
    * to the terms.
@@ -29,10 +29,10 @@ interface ContractHost {
   redeem(invite :Payment) -> (Object);
 
   /**
-   * The assay allows holders of seat invitations to get exclusive access to a
+   * The issuer allows holders of seat invitations to get exclusive access to a
    * Seat.
    */
-  getInviteAssay() -> (Assay);
+  getInviteIssuer() -> (Issuer);
 }
 
 /**
