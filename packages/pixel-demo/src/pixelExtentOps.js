@@ -1,6 +1,4 @@
 import harden from '@agoric/harden';
-
-import { makeListExtentOps } from '@agoric/ertp/src/config/extentOps/listExtentOps';
 import { makeInsistPixel, isEqual, compare } from './types/pixel';
 
 // A pixelList is a naive collection of pixels in the form:
@@ -8,6 +6,8 @@ import { makeInsistPixel, isEqual, compare } from './types/pixel';
 // This is less than ideal for efficiency and expressiveness but will
 // do for now
 const makePixelExtentOps = (canvasSize = 10) => {
+  // TODO: fix
+  const makeListExtentOps = () => {};
   return makeListExtentOps(makeInsistPixel(canvasSize), isEqual, compare);
 };
 
