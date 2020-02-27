@@ -159,6 +159,8 @@ export function buildCrankBuffer(storage) {
     for (const key of deletions) {
       storage.delete(key);
     }
+    additions.clear();
+    deletions.clear();
   }
 
   /**
