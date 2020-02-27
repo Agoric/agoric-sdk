@@ -39,6 +39,7 @@ function makeAliceMaker(E, host, log) {
       myMoneyPurseP,
       myStockPurseP,
       myOptFinPurseP = undefined,
+      optFinIssuerP = undefined,
       optFredP = undefined,
     ) {
       const inviteIssuerP = E(host).getInviteIssuer();
@@ -157,7 +158,7 @@ function makeAliceMaker(E, host, log) {
             allegedInvitePaymentP,
           );
 
-          const terms = harden({ left: finNeeded, right: inviteNeededP });
+          const terms = harden({ left: finNeeded, right: inviteNeededP, leftIssuer: moneyIssuerP, rightIssuer: stockIssuerP });
           const invitePaymentsP = E(escrowExchangeInstallationP).spawn(terms);
           const fredInvitePaymentP = invitePaymentsP.then(
             invitePayments => invitePayments.left,

@@ -113,6 +113,7 @@ const contractCoveredCallGolden = [
   'bob stock balance {"label":{"issuer":{},"allegedName":"yoyodyne"},"extent":1996}',
 ];
 
+// stuck on https://github.com/Agoric/agoric-sdk/issues/615#issuecomment-592060759 for now
 test.skip('run contractHost Demo --covered-call with SES', async t => {
   const dump = await main(true, 'contractHost', ['covered-call']);
   t.deepEquals(dump.log, contractCoveredCallGolden);
@@ -144,6 +145,7 @@ const contractCoveredCallSaleGolden = [
   'fred fins balance {"label":{"issuer":{},"allegedName":"fins"},"extent":2946}',
 ];
 
+// stuck on https://github.com/Agoric/agoric-sdk/issues/615#issuecomment-592060759 for now
 test.skip('run contractHost Demo --covered-call-sale with SES', async t => {
   const dump = await main(true, 'contractHost', ['covered-call-sale']);
   t.deepEquals(dump.log, contractCoveredCallSaleGolden);

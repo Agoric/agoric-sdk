@@ -34,9 +34,10 @@ function makeFredMaker(E, host, log) {
       const myMoneyPurseP = E(moneyIssuerP).makeEmptyPurse();
       const myStockPurseP = E(stockIssuerP).makeEmptyPurse();
       const myFinPurseP = E(finIssuerP).makeEmptyPurse();
-      await E(myMoneyPurseP).deposit(myMoneyPaymentP);
-      await E(myStockPurseP).deposit(myStockPaymentP);
-      await E(myFinPaymentP).deposit(myFinPaymentP);
+
+      await myMoneyPaymentP.then(p => E(myMoneyPurseP).deposit(p));
+      await myStockPaymentP.then(p => E(myStockPurseP).deposit(p));
+      await myFinPaymentP.then(p => E(myFinPurseP).deposit(p));
 
       const moneyMath = await getLocalAmountMath(moneyIssuerP);
       const stockMath = await getLocalAmountMath(stockIssuerP);

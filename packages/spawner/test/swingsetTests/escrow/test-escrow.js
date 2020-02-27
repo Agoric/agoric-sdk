@@ -17,7 +17,7 @@ async function main(withSES, basedir, argv) {
 
 const escrowGolden = ['=> setup called', 'starting testEscrowServiceSuccess'];
 
-test('escrow checkUnits w/SES', async t => {
+test.skip('escrow checkUnits w/SES', async t => {
   const dump = await main(true, 'escrow', ['escrow matches']);
   t.deepEquals(dump.log, escrowGolden);
   t.end();

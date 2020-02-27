@@ -319,28 +319,54 @@ function build(E, log) {
     });
   }
 
-  function coveredCallSaleTest(host, mint, aliceMaker, bobMaker, fredMaker) {
+  async function coveredCallSaleTest(host, mint, aliceMaker, bobMaker, fredMaker) {
     const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
     const coveredCallInstallationP = E(host).install(coveredCallSrcs);
 
-    const doughMintP = E(mint).makeMint('dough');
-    const aliceDoughPurseP = E(doughMintP).mint(1000, 'aliceDough');
-    const bobDoughPurseP = E(doughMintP).mint(1001, 'bobDough');
-    const fredDoughPurseP = E(doughMintP).mint(1002, 'fredDough');
+    const { mint: doughMint, issuer: doughIssuer } = await E(
+      mint,
+    ).produceIssuer('dough');
+    const doughAmountMath = await getLocalAmountMath(doughIssuer);
+    const dough = doughAmountMath.make;
+    const aliceDoughPaymentP = E(doughMint).mintPayment(dough(1000));
+    const bobDoughPaymentP = E(doughMint).mintPayment(dough(1001));
+    const fredDoughPaymentP = E(doughMint).mintPayment(dough(1002));
 
-    const stockMintP = E(mint).makeMint('wonka');
-    const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
-    const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
-    const fredStockPurseP = E(stockMintP).mint(2004, 'fredMainStock');
+    const { mint: stockMint, issuer: stockIssuer } = await E(
+      mint,
+    ).produceIssuer('wonka');
+    const stockAmountMath = await getLocalAmountMath(stockIssuer);
+    const stock = stockAmountMath.make;
+    const aliceStockPaymentP = E(stockMint).mintPayment(stock(2002));
+    const bobStockPaymentP = E(stockMint).mintPayment(stock(2003));
+    const fredStockPaymentP = E(stockMint).mintPayment(stock(2004));
 
-    const finMintP = E(mint).makeMint('fins');
-    const aliceFinPurseP = E(finMintP).mint(3000, 'aliceFins');
-    const fredFinPurseP = E(finMintP).mint(3001, 'fredFins');
+    const { mint: finMint, issuer: finIssuer } = await E(
+      mint,
+    ).produceIssuer('fins');
+    const finAmountMath = await getLocalAmountMath(finIssuer);
+    const fin = finAmountMath.make;
+    const aliceFinPaymentP = E(finMint).mintPayment(fin(3000));
+    const fredFinPaymentP = E(finMint).mintPayment(fin(3001));
+    
+    const aliceDoughPurseP = E(doughIssuer).makeEmptyPurse();
+    const bobDoughPurseP = E(doughIssuer).makeEmptyPurse();
+    const aliceStockPurseP = E(stockIssuer).makeEmptyPurse();
+    const bobStockPurseP = E(stockIssuer).makeEmptyPurse();
+    const aliceFinPurseP = E(finIssuer).makeEmptyPurse();
+
+    await aliceDoughPaymentP.then(payment => E(aliceDoughPurseP).deposit(payment));
+    await bobDoughPaymentP.then(payment => E(bobDoughPurseP).deposit(payment));
+    await aliceStockPaymentP.then(payment => E(aliceStockPurseP).deposit(payment));
+    await bobStockPaymentP.then(payment => E(bobStockPurseP).deposit(payment));
+    await aliceFinPaymentP.then(payment => E(aliceFinPurseP).deposit(payment));
 
     const bobP = E(bobMaker).make(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
+      doughIssuer,
+      stockIssuer,
       bobDoughPurseP,
       bobStockPurseP,
     );
@@ -348,17 +374,23 @@ function build(E, log) {
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
-      fredDoughPurseP,
-      fredStockPurseP,
-      fredFinPurseP,
+      doughIssuer,
+      stockIssuer,
+      finIssuer,
+      fredDoughPaymentP,
+      fredStockPaymentP,
+      fredFinPaymentP,
     );
     const aliceP = E(aliceMaker).make(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
+      doughIssuer,
+      stockIssuer,
       aliceDoughPurseP,
       aliceStockPurseP,
       aliceFinPurseP,
+      finIssuer,
       fredP,
     );
     return Promise.all([aliceP, bobP, fredP]).then(_ => {
