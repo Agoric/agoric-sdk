@@ -1,4 +1,4 @@
-/* global WebSocket fetch document window */
+/* global WebSocket fetch document window walletFrame */
 const RECONNECT_BACKOFF_SECONDS = 3;
 // Functions to run to reset the HTML state to what it was.
 const resetFns = [];
@@ -207,7 +207,12 @@ run();
 // Display version information, if possible.
 const fetches = [];
 const fgr = fetch('/git-revision.txt')
-  .then(resp => resp.text())
+  .then(resp => {
+    if (resp.status < 200 || resp.status >= 300) {
+      throw Error(`status ${resp.status}`);
+    }
+    return resp.text();
+  })
   .then(text => {
     return text.trimRight();
   })
@@ -224,6 +229,19 @@ const fpj = fetch('/package.json')
     return {};
   });
 fetches.push(fpj);
+
+fetch('wallet/')
+  .then(resp => {
+    if (resp.status < 200 || resp.status >= 300) {
+      throw Error(`status ${resp.status}`);
+    }
+    walletFrame.style.display = 'block';
+    walletFrame.src = 'wallet/';
+  })
+  .catch(e => {
+    console.log('Cannot fetch wallet/', e);
+  });
+
 Promise.all(fetches)
   .then(([rev, pjson]) => {
     const gr = document.getElementById('package_git');
