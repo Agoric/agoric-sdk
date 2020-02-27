@@ -19,3 +19,6 @@ require (
 	github.com/tendermint/tm-db v0.4.1
 	github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8 // indirect
 )
+
+// Until: https://github.com/tendermint/tendermint/issues/4492
+replace github.com/tendermint/tendermint => github.com/agoric-labs/tendermint v0.33.1-dev2.0.20200227213630-8496d5b08165
