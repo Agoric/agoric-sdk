@@ -21,6 +21,7 @@ type deliverInboundAction struct {
 	StoragePort int             `json:"storagePort"`
 	BlockHeight int64           `json:"blockHeight"`
 	BlockTime   int64           `json:"blockTime"`
+	Committed   bool            `json:"committed"`
 }
 
 type beginBlockAction struct {
@@ -28,6 +29,7 @@ type beginBlockAction struct {
 	StoragePort int    `json:"storagePort"`
 	BlockHeight int64  `json:"blockHeight"`
 	BlockTime   int64  `json:"blockTime"`
+	Committed   bool   `json:"committed"`
 }
 
 // NewHandler returns a handler for "swingset" type messages.
@@ -64,7 +66,7 @@ func UnregisterPortHandler(portNum int) error {
 	return nil
 }
 
-func ReceiveFromNode(portNum int, msg string) (string, error) {
+func ReceiveFromController(portNum int, msg string) (string, error) {
 	handler := portToHandler[portNum]
 	if handler == nil {
 		return "", errors.New("Unregistered port " + fmt.Sprintf("%d", portNum))
@@ -101,7 +103,9 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 		StoragePort: newPort,
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
+		Committed:   !ctx.IsCheckTx(),
 	}
+	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
 	b, err := json.Marshal(action)
 	if err != nil {
 		return nil, err
@@ -129,6 +133,7 @@ func handleMsgBeginBlock(ctx sdk.Context, keeper Keeper) (*sdk.Result, error) {
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 		StoragePort: newPort,
+		Committed:   !ctx.IsCheckTx(),
 	}
 	b, err := json.Marshal(action)
 	if err != nil {
