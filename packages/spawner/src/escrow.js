@@ -12,13 +12,9 @@ import { mustBeSameStructure } from '@agoric/same-structure';
 // transferred from right to left.
 const escrowExchange = harden({
   start: (terms, inviteMaker) => {
-    const {
-      left: moneyNeeded,
-      right: stockNeeded,
-      leftIssuer: moneyIssuer,
-      rightIssuer: stockIssuer,
-    } = terms;
+    const { left: moneyNeeded, right: stockNeeded } = terms;
 
+    // TODO: How to get issuer?
     function makeTransfer(issuer, amount, srcPaymentP) {
       const escrowP = E(issuer).claim(srcPaymentP, amount);
       const winnings = makePromise();
