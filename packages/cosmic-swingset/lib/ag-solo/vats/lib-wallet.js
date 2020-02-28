@@ -262,17 +262,15 @@ export async function makeWallet(
   }
 
   function getOfferDescriptions() {
-    let index = 0;
+    // return the live orders sorted by date
     return Array.from(dateToOfferRec)
-      .filter(rec => rec.status === 'accept')
-      .map(offerRec => {
+      .filter(p => p[1].status === 'accept')
+      .sort((p1, p2) => p1[0] > p2[0])
+      .map(([date, offerRec]) => {
         const {
-          meta: { instanceId },
           offerRules: { payoutRules },
         } = offerRec;
-
-        index += 1;
-        return harden({ instanceId, payoutRules, index });
+        return harden({ date, payoutRules });
       });
   }
 
