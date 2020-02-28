@@ -20,37 +20,9 @@ function randomBoolean() {
   return Math.random < 0.5;
 }
 
-function randomArrayItem(items) {
-  return items[Math.floor(Math.random() * items.length)];
-}
-
 function randomInteger(max) {
   return Math.floor(Math.random() * max);
 }
-
-function randomName(max) {
-  const result = [];
-  const items = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const { length } = items;
-  for (let i = 0; i < max; i += 1) {
-    result.push(items.charAt(Math.floor(Math.random() * length)));
-  }
-  return result.join('');
-}
-
-// function createFakeOrderBook(count) {
-//   const result = [];
-//   for (let i = 0; i < count; i += 1) {
-//     result.push({
-//       id: i,
-//       side: randomArrayItem(['Buy', 'Sell']),
-//       size: randomInteger(1000),
-//       filled: randomInteger(1000),
-//       my_size: randomBoolean() ? randomInteger(1000) : undefined,
-//     });
-//   }
-//   return result;
-// }
 
 function createFakeSide(side) {
   const allegedName = side ? 'moola' : 'simoleans';
