@@ -2,7 +2,7 @@ import { test } from 'tape-promise/tape';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import path from 'path';
 import fs from 'fs';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '../../bundle-source';
 
 const CONTRACT_FILES = [
   'automaticRefund',

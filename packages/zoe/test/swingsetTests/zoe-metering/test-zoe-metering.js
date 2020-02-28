@@ -2,7 +2,7 @@ import { test } from 'tape-promise/tape';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import path from 'path';
 import fs from 'fs';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '../../bundle-source';
 
 // Don't let unhandled promises crash our process.
 process.on('unhandledRejection', e => console.log('unhandled rejection', e));

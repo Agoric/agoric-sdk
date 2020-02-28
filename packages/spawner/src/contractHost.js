@@ -98,10 +98,18 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
       return meter;
     };
 
-    const fn = evaluate(functionSrcString, {
-      ...fullEndowments,
-      getMeter,
-    });
+    // Inject the evaluator.
+    const nestedEvaluate = src => {
+      const allEndowments = {
+        ...fullEndowments,
+        getMeter,
+        nestedEvaluate,
+      };
+      // console.log(allEndowments, src);
+      return evaluate(src, allEndowments);
+    };
+
+    const fn = nestedEvaluate(functionSrcString);
     assert(
       typeof fn === 'function',
       `"${functionSrcString}" must be a string for a function, but produced ${typeof fn}`,
@@ -140,7 +148,10 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
       let installation;
       if (moduleFormat === 'object') {
         installation = extractCheckFunctions(contractSrcs);
-      } else if (moduleFormat === 'getExport') {
+      } else if (
+        moduleFormat === 'getExport' ||
+        moduleFormat === 'nestedEvaluate'
+      ) {
         // We don't support 'check' functions in getExport format,
         // because we only do a single evaluate, and the whole
         // contract must be metered per-spawn, not per-installation.
@@ -161,8 +172,12 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
       function spawn(termsP) {
         let startFn;
         if (moduleFormat === 'object') {
-          startFn = evaluateStringToFn(contractSrcs.start);
-        } else if (moduleFormat === 'getExport') {
+          startFn = evaluateStringToFn(contractSrcs.start, );
+        } else if (
+          moduleFormat === 'getExport' ||
+          moduleFormat === 'nestedEvaluate'
+        ) {
+          // We support getExport because it is forward-compatible with nestedEvaluate.
           const getExports = evaluateStringToFn(contractSrcs);
           const ns = getExports();
           startFn = ns.default;

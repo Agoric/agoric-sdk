@@ -204,11 +204,19 @@ function realmRegisterEndOfCrank(fn) {
     // static vats once we add metering support to the dynamic vat
     // implementation.
     // FIXME: Same for registerEndOfCrank.
-    return s.evaluate(src, {
-      require: r,
-      registerEndOfCrank: realmRegisterEndOfCrank,
-      replaceGlobalMeter,
-    })().default;
+
+    // Cope with ESM problems.
+    src = src.replace(/(_[a-zA-Z0-9]{3}\u200d\.e)/g, 'eval');
+
+    // Support both getExport and nestedEvaluate module format.
+    const nestedEvaluate = source =>
+      s.evaluate(source, {
+        require: r,
+        registerEndOfCrank: realmRegisterEndOfCrank,
+        replaceGlobalMeter,
+        nestedEvaluate,
+      });
+    return nestedEvaluate(src)().default;
   };
 }
 
@@ -271,7 +279,10 @@ export async function buildVatController(config, withSES = true, argv = []) {
     // (which is expected to initialize some state and export some facetIDs)
     let setup;
     if (withSES) {
-      const { source, sourceMap } = await bundleSource(`${sourceIndex}`);
+      const { source, sourceMap } = await bundleSource(
+        `${sourceIndex}`,
+        'nestedEvaluate',
+      );
       const actualSource = `(${source})\n${sourceMap}`;
       setup = sesEvaluator(actualSource);
     } else {
