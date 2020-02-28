@@ -112,6 +112,7 @@ export function createOffer(
 export function resetState(state) {
   return {
     ...state,
+    purses: null,
     inputPurse: null,
     outputPurse: null,
     inputAmount: null,

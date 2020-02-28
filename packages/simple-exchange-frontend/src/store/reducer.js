@@ -78,26 +78,18 @@ function createFakeOrderHistory(buys, sells) {
   return result;
 }
 
-function createFakePurses(count) {
-  const result = [];
-  for (let i = 0; i < count; i += 1) {
-    result.push({
-      id: i,
-      purseName: randomName(3),
-      assayId: randomArrayItem(['Moolah', 'Simoleon']),
-      extent: randomInteger(1000),
-    });
-  }
-  return result;
-}
-
 export function createDefaultState() {
   return {
     active: false,
     connected: false,
+    account: null,
+    purses: null,
+    inputPurse: null,
+    outputPurse: null,
+    inputAmount: null,
+    outputAmount: null,
     orderbook: createFakeOrderHistory(50, 50),
     orderhistory: createFakeOrderHistory(50, 50),
-    purses: createFakePurses(3),
   };
 }
 
