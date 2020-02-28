@@ -85,7 +85,7 @@ const customTheme = createMuiTheme({
 const useStyles = makeStyles(theme => ({
   layout: {
     width: 'auto',
-    margin: theme.spacing(2),
+    margin: theme.spacing(3),
   },
 }));
 
@@ -94,19 +94,21 @@ export default function App() {
 
   function Layout() {
     return (
-      <Grid container direction="row" spacing={2}>
-        <Grid item container direction="column" xs={3} spacing={2}>
-          <Grid item>
-            <Wallet />
-          </Grid>
-          <Grid item>
-            <BuyAndSell />
+      <Grid container direction="row" spacing={3}>
+        <Grid item xs={4}>
+          <Grid container direction="column" spacing={3}>
+            <Grid item>
+              <Wallet />
+            </Grid>
+            <Grid item>
+              <BuyAndSell />
+            </Grid>
           </Grid>
         </Grid>
         <Grid item xs={3}>
           <OrderBook />
         </Grid>
-        <Grid item xs={6}>
+        <Grid item xs={5}>
           <OrderHistory />
         </Grid>
       </Grid>

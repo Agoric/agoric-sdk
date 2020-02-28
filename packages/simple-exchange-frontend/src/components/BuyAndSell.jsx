@@ -2,7 +2,15 @@ import React from 'react';
 
 import { makeStyles } from '@material-ui/core/styles';
 
-import { Button, Grid, Card, Tabs, Tab, InputLabel } from '@material-ui/core';
+import {
+  Button,
+  Grid,
+  Card,
+  CardContent,
+  Tabs,
+  Tab,
+  InputLabel,
+} from '@material-ui/core';
 
 import AssetInput from './AssetInput';
 
@@ -19,7 +27,7 @@ const useStyles = makeStyles(theme => ({
     marginTop: theme.spacing(2),
     minHeight: theme.spacing(2),
   },
-  buttons: {
+  button: {
     margin: theme.spacing(2),
   },
   btnBuy: {
@@ -102,36 +110,40 @@ export default function BuyAndSell() {
         <Tab label="Sell" className={tab === 1 && classes.sell} />
       </Tabs>
 
-      <Grid container direction="column" alignItems="center" spacing={3}>
-        <AssetInput
-          title="Input"
-          purses={purses}
-          purse={inputPurse}
-          amount={inputAmount}
-          disabled={!connected}
-        />
+      <CardContent>
+        <Grid container direction="column" spacing={3}>
+          <Grid item>
+            <AssetInput
+              title="Input"
+              purses={purses}
+              purse={inputPurse}
+              amount={inputAmount}
+              disabled={!connected}
+            />
+          </Grid>
 
-        <AssetInput
-          title="Output"
-          purses={purses}
-          purse={outputPurse}
-          amount={outputAmount}
-          disabled={!connected}
-        />
+          <Grid item>
+            <AssetInput
+              title="Output"
+              purses={purses}
+              purse={outputPurse}
+              amount={outputAmount}
+              disabled={!connected}
+            />
+          </Grid>
 
-        <InputLabel className={classes.message}>
-          {connected && isValid && getExchangeRate(4)}
-        </InputLabel>
-      </Grid>
-      <div className={classes.buttons}>
-        <Button
-          variant="contained"
-          fullWidth="true"
-          className={getButtonClass()}
-        >
-          {getButtonLabel()}
-        </Button>
-      </div>
+          <Grid item>
+            <InputLabel className={classes.message}>
+              {connected && isValid && getExchangeRate(4)}
+            </InputLabel>
+          </Grid>
+          <Grid item>
+            <Button variant="contained" fullWidth className={getButtonClass()}>
+              {getButtonLabel()}
+            </Button>
+          </Grid>
+        </Grid>
+      </CardContent>
     </Card>
   );
 }

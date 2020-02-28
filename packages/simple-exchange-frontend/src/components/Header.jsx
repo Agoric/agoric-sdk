@@ -2,7 +2,7 @@ import React from 'react';
 
 import { makeStyles } from '@material-ui/core/styles';
 import { AppBar, Toolbar, Typography } from '@material-ui/core';
-import ExchangeIcon from '@material-ui/icons/SwapHorizontalCircle';
+import ExchangeIcon from '@material-ui/icons/ShuffleRounded';
 
 const useStyles = makeStyles(theme => ({
   appBar: {

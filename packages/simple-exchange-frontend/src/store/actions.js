@@ -3,6 +3,7 @@ import {
   DEACTIVATE_CONNECTION,
   SERVER_CONNECTED,
   SERVER_DISCONNECTED,
+  UPDATE_PURSES,
   RESET_STATE,
 } from './types';
 
@@ -20,6 +21,11 @@ export const serverConnected = () => ({
 
 export const serverDisconnected = () => ({
   type: SERVER_DISCONNECTED,
+});
+
+export const updatePurses = purses => ({
+  type: UPDATE_PURSES,
+  payload: purses,
 });
 
 export const resetState = () => ({

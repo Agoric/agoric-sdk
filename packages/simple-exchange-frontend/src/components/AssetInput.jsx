@@ -41,16 +41,8 @@ export default function AssetInput({
   const classes = useStyles();
 
   return (
-    <Grid item container spacing={3}>
-      <Grid
-        item
-        xs={12}
-        sm={8}
-        container
-        direction="column"
-        alignItems="flex-end"
-        justify="flex-end"
-      >
+    <Grid container spacing={3}>
+      <Grid item xs={6}>
         <TextField
           label={title}
           type="number"
@@ -76,7 +68,7 @@ export default function AssetInput({
           error={amountError}
         />
       </Grid>
-      <Grid item xs={12} sm={4}>
+      <Grid item xs={6}>
         <TextField
           select
           label="Currency"
