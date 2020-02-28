@@ -44,6 +44,6 @@ test('run encouragmentBot demo with lmdb', async t => {
   innerTest(t, '--lmdb');
 });
 
-test('run encouragmentBot demo without SES', async t => {
-  innerTest(t, '--no-ses');
+test('run encouragmentBot demo with default', async t => {
+  innerTest(t, '');
 });

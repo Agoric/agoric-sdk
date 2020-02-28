@@ -23,12 +23,6 @@ test('escrow checkUnits w/SES', async t => {
   t.end();
 });
 
-test('escrow checkUnits', async t => {
-  const dump = await main(false, 'escrow', ['escrow matches']);
-  t.deepEquals(dump.log, escrowGolden);
-  t.end();
-});
-
 const escrowMismatchGolden = [
   '=> setup called',
   'starting testEscrowServiceCheckMismatches',
@@ -37,12 +31,6 @@ const escrowMismatchGolden = [
 
 test('escrow check misMatches w/SES', async t => {
   const dump = await main(true, 'escrow', ['escrow misMatches']);
-  t.deepEquals(dump.log, escrowMismatchGolden);
-  t.end();
-});
-
-test('escrow check misMatches', async t => {
-  const dump = await main(false, 'escrow', ['escrow misMatches']);
   t.deepEquals(dump.log, escrowMismatchGolden);
   t.end();
 });
@@ -59,12 +47,6 @@ test('escrow check partial misMatches w/SES', async t => {
   t.end();
 });
 
-test('escrow check partial misMatches', async t => {
-  const dump = await main(false, 'escrow', ['escrow partial price']);
-  t.deepEquals(dump.log, escrowCheckPartialWrongPriceGolden);
-  t.end();
-});
-
 const escrowCheckPartialWrongStockGolden = [
   '=> setup called',
   'starting testEscrowServiceCheckPartial wrong stock',
@@ -77,12 +59,6 @@ test('escrow check partial misMatches w/SES', async t => {
   t.end();
 });
 
-test('escrow check partial misMatches', async t => {
-  const dump = await main(false, 'escrow', ['escrow partial stock']);
-  t.deepEquals(dump.log, escrowCheckPartialWrongStockGolden);
-  t.end();
-});
-
 const escrowCheckPartialWrongSeatGolden = [
   '=> setup called',
   'starting testEscrowServiceCheckPartial wrong seat',
@@ -91,12 +67,6 @@ const escrowCheckPartialWrongSeatGolden = [
 
 test('escrow check partial wrong seat w/SES', async t => {
   const dump = await main(true, 'escrow', ['escrow partial seat']);
-  t.deepEquals(dump.log, escrowCheckPartialWrongSeatGolden);
-  t.end();
-});
-
-test('escrow check partial wrong seat', async t => {
-  const dump = await main(false, 'escrow', ['escrow partial seat']);
   t.deepEquals(dump.log, escrowCheckPartialWrongSeatGolden);
   t.end();
 });

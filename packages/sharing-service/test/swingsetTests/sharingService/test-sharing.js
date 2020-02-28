@@ -21,12 +21,6 @@ const sharedMapContentsGolden = [
 ];
 
 test('run sharing Demo --sharedMap contents', async t => {
-  const dump = await main(false, 'sharingService', ['sharedMap']);
-  t.deepEquals(dump.log, sharedMapContentsGolden);
-  t.end();
-});
-
-test('run sharing Demo --sharedMap contents', async t => {
   const dump = await main(true, 'sharingService', ['sharedMap']);
   t.deepEquals(dump.log, sharedMapContentsGolden);
   t.end();
@@ -39,12 +33,6 @@ const sharingTestGolden = [
 ];
 
 test('run sharing Demo --sharing service', async t => {
-  const dump = await main(false, 'sharingService', ['sharing']);
-  t.deepEquals(dump.log, sharingTestGolden);
-  t.end();
-});
-
-test('run sharing Demo --sharing service', async t => {
   const dump = await main(true, 'sharingService', ['sharing']);
   t.deepEquals(dump.log, sharingTestGolden);
   t.end();
@@ -55,12 +43,6 @@ const twoPartySharingGolden = [
   'starting testSharingStorage',
   'expecting coordination on 42.',
 ];
-
-test('run sharing Demo --Two Party handoff', async t => {
-  const dump = await main(false, 'sharingService', ['twoVatSharing']);
-  t.deepEquals(dump.log, twoPartySharingGolden);
-  t.end();
-});
 
 test('run sharing Demo --Two Party handoff', async t => {
   const dump = await main(true, 'sharingService', ['twoVatSharing']);

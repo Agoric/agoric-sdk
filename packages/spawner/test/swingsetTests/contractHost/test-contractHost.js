@@ -31,12 +31,6 @@ test('run contractHost Demo --mint with SES', async t => {
   t.end();
 });
 
-test('run contractHost Demo --mint without SES', async t => {
-  const dump = await main(false, 'contractHost', ['mint']);
-  t.deepEquals(dump.log, contractMintGolden);
-  t.end();
-});
-
 const contractTrivialGolden = [
   '=> setup called',
   'starting trivialContractTest',
@@ -48,12 +42,6 @@ const contractTrivialGolden = [
 
 test('run contractHost Demo --trivial with SES', async t => {
   const dump = await main(true, 'contractHost', ['trivial']);
-  t.deepEquals(dump.log, contractTrivialGolden);
-  t.end();
-});
-
-test('run contractHost Demo --trivial without SES', async t => {
-  const dump = await main(false, 'contractHost', ['trivial']);
   t.deepEquals(dump.log, contractTrivialGolden);
   t.end();
 });
@@ -85,12 +73,6 @@ test('run contractHost Demo --alice-first with SES', async t => {
   t.end();
 });
 
-test('run contractHost Demo --alice-first without SES', async t => {
-  const dump = await main(false, 'contractHost', ['alice-first']);
-  t.deepEquals(dump.log, contractAliceFirstGolden);
-  t.end();
-});
-
 const contractBobFirstGolden = [
   '=> setup called',
   '++ bob.tradeWell starting',
@@ -110,12 +92,6 @@ const contractBobFirstGolden = [
 
 test('run contractHost Demo --bob-first with SES', async t => {
   const dump = await main(true, 'contractHost', ['bob-first']);
-  t.deepEquals(dump.log, contractBobFirstGolden);
-  t.end();
-});
-
-test('run contractHost Demo --bob-first without SES', async t => {
-  const dump = await main(false, 'contractHost', ['bob-first']);
   t.deepEquals(dump.log, contractBobFirstGolden);
   t.end();
 });
@@ -140,12 +116,6 @@ const contractCoveredCallGolden = [
 
 test('run contractHost Demo --covered-call with SES', async t => {
   const dump = await main(true, 'contractHost', ['covered-call']);
-  t.deepEquals(dump.log, contractCoveredCallGolden);
-  t.end();
-});
-
-test('run contractHost Demo --covered-call without SES', async t => {
-  const dump = await main(false, 'contractHost', ['covered-call']);
   t.deepEquals(dump.log, contractCoveredCallGolden);
   t.end();
 });
@@ -177,12 +147,6 @@ const contractCoveredCallSaleGolden = [
 
 test('run contractHost Demo --covered-call-sale with SES', async t => {
   const dump = await main(true, 'contractHost', ['covered-call-sale']);
-  t.deepEquals(dump.log, contractCoveredCallSaleGolden);
-  t.end();
-});
-
-test('run contractHost Demo --covered-call-sale without SES', async t => {
-  const dump = await main(false, 'contractHost', ['covered-call-sale']);
   t.deepEquals(dump.log, contractCoveredCallSaleGolden);
   t.end();
 });

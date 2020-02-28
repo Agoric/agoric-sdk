@@ -27,9 +27,3 @@ test('test splitPayments with SES', async t => {
   t.deepEquals(dump.log, expectedTapFaucetLog);
   t.end();
 });
-
-test('test splitPayments without SES', async t => {
-  const dump = await main(false, 'splitPayments', ['splitPayments']);
-  t.deepEquals(dump.log, expectedTapFaucetLog);
-  t.end();
-});
