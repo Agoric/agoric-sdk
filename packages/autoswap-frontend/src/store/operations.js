@@ -40,6 +40,7 @@ export function changePurse(
   }
   return { ...state, inputPurse, outputPurse, freeVariable };
 }
+
 export function changeAmount(
   state,
   { amount, fieldNumber, freeVariable = null },
@@ -53,6 +54,7 @@ export function changeAmount(
   }
   return { ...state, inputAmount, outputAmount, freeVariable };
 }
+
 export function swapInputs(state) {
   const { inputPurse, outputPurse, inputAmount, outputAmount } = state;
   return {
