@@ -164,7 +164,10 @@ async function buildSwingset(
 }
 
 export default async function start(basedir, withSES, argv) {
-  const mailboxStateFile = path.resolve(basedir, 'swingset-kernel-mailbox.json');
+  const mailboxStateFile = path.resolve(
+    basedir,
+    'swingset-kernel-mailbox.json',
+  );
   const connections = JSON.parse(
     fs.readFileSync(path.join(basedir, 'connections.json')),
   );
@@ -213,7 +216,9 @@ export default async function start(basedir, withSES, argv) {
           }
           break;
         case 'fake-chain': {
-          console.log(`adding follower/sender for fake chain ${c.role} ${c.GCI}`);
+          console.log(
+            `adding follower/sender for fake chain ${c.role} ${c.GCI}`,
+          );
           const deliverator = await connectToFakeChain(
             basedir,
             c.GCI,
