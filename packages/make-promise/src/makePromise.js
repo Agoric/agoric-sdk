@@ -1,9 +1,12 @@
 import harden from '@agoric/harden';
+import { HandledPromise } from '@agoric/eventual-send';
 
 export default function makePromise() {
   let res;
   let rej;
-  const p = new Promise((resolve, reject) => {
+  // We use a HandledPromise so that we can run HandledPromise.unwrap(p)
+  // even if p doesn't travel through a comms system (like SwingSet's).
+  const p = new HandledPromise((resolve, reject) => {
     res = resolve;
     rej = reject;
   });
