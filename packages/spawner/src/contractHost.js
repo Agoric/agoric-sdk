@@ -59,6 +59,7 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
     sameStructure,
     mustBeSameStructure,
   };
+
   const fullEndowments = Object.create(null, {
     ...Object.getOwnPropertyDescriptors(defaultEndowments),
     ...Object.getOwnPropertyDescriptors(additionalEndowments),
@@ -69,6 +70,12 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
     assert(
       typeof functionSrcString === 'string',
       `"${functionSrcString}" must be a string, but was ${typeof functionSrcString}`,
+    );
+
+    // FIXME: Defeat ESM!
+    functionSrcString = functionSrcString.replace(
+      /sameStructure\.((mustBeS|s)ameStructure)/g,
+      '$1',
     );
 
     // Refill a meter each crank.
@@ -172,7 +179,7 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
       function spawn(termsP) {
         let startFn;
         if (moduleFormat === 'object') {
-          startFn = evaluateStringToFn(contractSrcs.start, );
+          startFn = evaluateStringToFn(contractSrcs.start);
         } else if (
           moduleFormat === 'getExport' ||
           moduleFormat === 'nestedEvaluate'
