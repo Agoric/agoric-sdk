@@ -1,3 +1,21 @@
+import {
+  ACTIVATE_CONNECTION,
+  DEACTIVATE_CONNECTION,
+  SERVER_CONNECTED,
+  SERVER_DISCONNECTED,
+  UPDATE_PURSES,
+  RESET_STATE,
+} from './types';
+
+import {
+  activateConnection,
+  deactivateConnection,
+  serverConnected,
+  serverDisconnected,
+  updatePurses,
+  resetState,
+} from './operations';
+
 function randomBoolean() {
   return Math.random < 0.5;
 }
@@ -83,8 +101,24 @@ export function createDefaultState() {
   };
 }
 
-export const reducer = (state, { type, _payload }) => {
+export const reducer = (state, { type, payload }) => {
   switch (type) {
+    case ACTIVATE_CONNECTION:
+      return activateConnection(state);
+    case DEACTIVATE_CONNECTION:
+      return deactivateConnection(state);
+
+    case SERVER_CONNECTED:
+      return serverConnected(state);
+    case SERVER_DISCONNECTED:
+      return serverDisconnected(state);
+
+    case UPDATE_PURSES:
+      return updatePurses(state, payload);
+
+    case RESET_STATE:
+      return resetState(state);
+
     default:
       throw new TypeError(`Action not supported ${type}`);
   }
