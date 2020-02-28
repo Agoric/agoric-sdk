@@ -12,7 +12,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/cosmic-swingset": "^0.11.0",
+    "@agoric/cosmic-swingset": "^0.12.0",
     "@agoric/wallet-frontend": "^0.1.0"
   }
 }
