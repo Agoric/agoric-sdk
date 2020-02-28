@@ -33,52 +33,6 @@ const makeZoe = (additionalEndowments = {}) => {
     issuerTable,
   } = makeTables();
 
-  // Helper functions
-  const depositPayments = (
-    offerRules,
-    offerPayments,
-    instanceHandle,
-    offerHandle = undefined,
-  ) => {
-    const { issuers } = instanceTable.get(instanceHandle);
-
-    // Promise flow = issuer -> purse -> deposit payment -> escrow receipt
-    const paymentDepositedPs = issuers.map((issuer, i) => {
-      const issuerRecordP = issuerTable.getPromiseForIssuerRecord(issuer);
-      const payoutRule = offerRules.payoutRules[i];
-      const offerPayment = offerPayments[i];
-
-      return issuerRecordP.then(({ purse, amountMath }) => {
-        if (payoutRule.kind === 'offerAtMost') {
-          // We cannot trust these amounts since they come directly
-          // from the remote issuer and so we must coerce them.
-          return E(purse)
-            .deposit(offerPayment, payoutRule.amount)
-            .then(_ => amountMath.coerce(payoutRule.amount));
-        }
-        assert(
-          offerPayments[i] === undefined,
-          details`payment was included, but the rule kind was ${payoutRule.kind}`,
-        );
-        return Promise.resolve(amountMath.getEmpty());
-      });
-    });
-
-    return Promise.all(paymentDepositedPs).then(amounts => {
-      const offerImmutableRecord = {
-        instanceHandle,
-        payoutRules: offerRules.payoutRules,
-        exitRule: offerRules.exitRule,
-        issuers,
-        amounts,
-      };
-      // If we have redeemed an invite, the inviteHandle is the offerHandle
-      offerHandle = offerTable.create(offerImmutableRecord, offerHandle);
-      payoutMap.init(offerHandle, makePromise());
-      return { instanceHandle, offerHandle };
-    });
-  };
-
   const completeOffers = (instanceHandle, offerHandles) => {
     const { inactive } = offerTable.getOfferStatuses(offerHandles);
     if (inactive.length > 0) {
@@ -209,7 +163,7 @@ const makeZoe = (additionalEndowments = {}) => {
       // informs Zoe about an issuer and returns a promise for acknowledging
       // when the issuer is added and ready.
       addNewIssuer: issuer =>
-        issuerTable.getPromiseForIssuerRecords(harden([issuer])).then(_ => {
+        issuerTable.getPromiseForIssuerRecord(issuer).then(_ => {
           const { issuers, terms } = instanceTable.get(instanceHandle);
           const newIssuers = [...issuers, issuer];
           instanceTable.update(instanceHandle, {
@@ -370,16 +324,49 @@ const makeZoe = (additionalEndowments = {}) => {
       );
 
       const {
-        extent: [{ instanceHandle, handle }],
+        extent: [{ instanceHandle, handle: offerHandle }],
       } = inviteAmount;
 
-      // the invite handle is reused as the offer handle
-      return depositPayments(
-        offerRules,
-        offerPayments,
-        instanceHandle,
-        handle,
-      ).then(makeRedemptionResult);
+      const { issuers } = instanceTable.get(instanceHandle);
+
+      // Promise flow = issuer -> purse -> deposit payment -> escrow receipt
+      const paymentDepositedPs = issuers.map((issuer, i) => {
+        const issuerRecordP = issuerTable.getPromiseForIssuerRecord(issuer);
+        const payoutRule = offerRules.payoutRules[i];
+        const offerPayment = offerPayments[i];
+
+        return issuerRecordP.then(({ purse, amountMath }) => {
+          if (payoutRule.kind === 'offerAtMost') {
+            // We cannot trust these amounts since they come directly
+            // from the remote issuer and so we must coerce them.
+            return E(purse)
+              .deposit(offerPayment, payoutRule.amount)
+              .then(_ => amountMath.coerce(payoutRule.amount));
+          }
+          assert(
+            offerPayments[i] === undefined,
+            details`payment was included, but the rule kind was ${payoutRule.kind}`,
+          );
+          return Promise.resolve(amountMath.getEmpty());
+        });
+      });
+
+      return Promise.all(paymentDepositedPs)
+        .then(amounts => {
+          const offerImmutableRecord = {
+            instanceHandle,
+            payoutRules: offerRules.payoutRules,
+            exitRule: offerRules.exitRule,
+            issuers,
+            amounts,
+          };
+          // Since we have redeemed an invite, the inviteHandle is
+          // also the offerHandle.
+          offerTable.create(offerImmutableRecord, offerHandle);
+          payoutMap.init(offerHandle, makePromise());
+          return { instanceHandle, offerHandle };
+        })
+        .then(makeRedemptionResult);
     },
   });
   return zoeService;
