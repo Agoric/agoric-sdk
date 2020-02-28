@@ -66,7 +66,7 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
 
   const {
     extent: { instanceHandle },
-  } = await invite~.getBalance();
+  } = await invite~.getCurrentAmount();
 
   // =====================
   // === AWAITING TURN ===

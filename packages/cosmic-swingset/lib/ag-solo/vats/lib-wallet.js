@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';
-import { makeUnitOps } from '@agoric/ertp/src/unitOps';
+import makeAmountMath from '@agoric/ertp/src/amountMath';
 
 import makeObservablePurse from './observable';
 
@@ -17,12 +17,11 @@ export async function makeWallet(
   inboxStateChangeHandler = noActionStateChangeHandler,
 ) {
   const petnameToPurse = makeStore();
-  const assayPetnameToAssay = makeStore();
-  const assayToAssayPetname = makeWeakStore();
-
-  const petnameToUnitOps = makeStore();
-  const regKeyToAssayPetname = makeStore();
-  const assayPetnameToRegKey = makeStore();
+  const issuerPetnameToIssuer = makeStore();
+  const issuerToIssuerPetname = makeWeakStore();
+  const issuerPetnameToRegKey = makeStore();
+  const brandToIssuer = makeStore();
+  const brandToMath = makeStore();
 
   // Offers that the wallet knows about (the inbox).
   const dateToOfferRec = new Map();
@@ -40,16 +39,16 @@ export async function makeWallet(
   }
 
   async function updatePursesState(pursePetname, purse) {
-    const [{ extent }, assay] = await Promise.all([
-      E(purse).getBalance(),
-      E(purse).getAssay(),
+    const [{ extent }, brand] = await Promise.all([
+      E(purse).getCurrentAmount(),
+      E(purse).getAllegedBrand(),
     ]);
-    const assayPetname = assayToAssayPetname.get(assay);
-    const assayRegKey = assayPetnameToRegKey.get(assayPetname);
+    const issuerPetname = issuerToIssuerPetname.get(brandToIssuer.get(brand));
+    const issuerRegKey = issuerPetnameToRegKey.get(issuerPetname);
     pursesState.set(pursePetname, {
       purseName: pursePetname,
-      assayId: assayRegKey,
-      allegedName: assayPetname,
+      issuerId: issuerRegKey,
+      issuerPetname,
       extent,
     });
     pursesStateChangeHandler(getPursesState());
@@ -194,22 +193,18 @@ export async function makeWallet(
     return offerOk;
   }
 
-  const getLocalUnitOps = assay =>
-    Promise.all([
-      E(assay).getLabel(),
-      E(assay).getExtentOps(),
-    ]).then(([label, { name, extentOpsArgs = [] }]) =>
-      makeUnitOps(label, name, extentOpsArgs),
-    );
-
   // === API
 
-  async function addAssay(assayPetname, regKey, assay) {
-    assayPetnameToAssay.init(assayPetname, assay);
-    assayToAssayPetname.init(assay, assayPetname);
-    regKeyToAssayPetname.init(regKey, assayPetname);
-    assayPetnameToRegKey.init(assayPetname, regKey);
-    petnameToUnitOps.init(assayPetname, await getLocalUnitOps(assay));
+  async function addIssuer(issuerPetname, regKey, issuer) {
+    issuerPetnameToIssuer.init(issuerPetname, issuer);
+    issuerToIssuerPetname.init(issuer, issuerPetname);
+    issuerPetnameToRegKey.init(issuerPetname, regKey);
+    const brand = await E(issuer).getBrand();
+    brandToIssuer.init(brand, issuer);
+
+    const mathName = await E(issuer).getMathHelpersName();
+    const math = makeAmountMath(brand, mathName);
+    brandToMath.init(brand, math);
   }
 
   async function makeEmptyPurse(assayPetname, pursePetname, memo = 'purse') {
@@ -217,7 +212,7 @@ export async function makeWallet(
       !petnameToPurse.has(pursePetname),
       details`Purse name already used in wallet.`,
     );
-    const assay = assayPetnameToAssay.get(assayPetname);
+    const assay = issuerPetnameToIssuer.get(assayPetname);
 
     // IMPORTANT: once wrapped, the original purse should never
     // be used otherwise the UI state will be out of sync.
@@ -233,7 +228,7 @@ export async function makeWallet(
 
   function deposit(pursePetName, payment) {
     const purse = petnameToPurse.get(pursePetName);
-    purse.depositAll(payment);
+    purse.deposit(payment);
   }
 
   function getPurses() {
@@ -286,7 +281,7 @@ export async function makeWallet(
   }
 
   const wallet = harden({
-    addAssay,
+    addIssuer,
     makeEmptyPurse,
     deposit,
     getPurses,

@@ -68,25 +68,23 @@ export default function setup(syscall, state, helpers) {
         const contractHost = await E(vats.host).makeHost();
 
         // Make the other demo mints
-        const assetNames = ['moola', 'simolean'];
-        const assays = await Promise.all(
-          assetNames.map(assetName =>
-            E(vats.mints).makeMintAndAssay(assetName),
+        const issuerNames = ['moola', 'simolean'];
+        const issuers = await Promise.all(
+          issuerNames.map(issuerName =>
+            E(vats.mints).makeMintAndIssuer(issuerName),
           ),
         );
 
-        // Register all of the starting assays. The assetName will
-        // also serve as the assayName.
-        const assayInfo = await Promise.all(
-          assetNames.map(async (assetName, i) =>
+        // Register all of the starting issuers.
+        const issuerInfo = await Promise.all(
+          issuerNames.map(async (issuerName, i) =>
             harden({
-              assay: assays[i],
-              petname: assetName,
-              regKey: await E(registrar).register(assetName, assays[i]),
+              issuer: issuers[i],
+              petname: issuerName,
+              regKey: await E(registrar).register(issuerName, issuers[i]),
             }),
           ),
         );
-
         return harden({
           async createUserBundle(_nickname) {
             const bundle = harden({
@@ -98,14 +96,14 @@ export default function setup(syscall, state, helpers) {
             });
 
             const payments = await E(vats.mints).mintInitialPayments(
-              assetNames,
+              issuerNames,
               harden([1900, 1900]),
             );
 
-            // return payments and assayInfo separately from the
+            // return payments and issuerInfo separately from the
             // bundle so that they can be used to initialize a wallet
             // per user
-            return harden({ payments, assayInfo, bundle });
+            return harden({ payments, issuerInfo, bundle });
           },
         });
       }
@@ -113,7 +111,7 @@ export default function setup(syscall, state, helpers) {
       // objects that live in the client's solo vat. Some services should only
       // be in the DApp environment (or only in end-user), but we're not yet
       // making a distinction, so the user also gets them.
-      async function createLocalBundle(vats, userBundle, payments, assayInfo) {
+      async function createLocalBundle(vats, userBundle, payments, issuerInfo) {
         const { zoe, registrar } = userBundle;
         // This will eventually be a vat spawning service. Only needed by dev
         // environments.
@@ -126,14 +124,14 @@ export default function setup(syscall, state, helpers) {
         await E(vats.wallet).startup(zoe, registrar);
         const wallet = E(vats.wallet).getWallet();
         await Promise.all(
-          assayInfo.map(({ petname, regKey, assay }) =>
-            E(wallet).addAssay(petname, regKey, assay),
+          issuerInfo.map(({ petname, regKey, issuer }) =>
+            E(wallet).addIssuer(petname, regKey, issuer),
           ),
         );
 
-        // Make empty purses. Reuse assay petname for purse petname.
+        // Make empty purses. Reuse issuer petname for purse petname.
         await Promise.all(
-          assayInfo.map(({ petname }) =>
+          issuerInfo.map(({ petname }) =>
             E(wallet).makeEmptyPurse(petname, petname),
           ),
         );
@@ -260,12 +258,12 @@ export default function setup(syscall, state, helpers) {
                 GCI,
                 PROVISIONER_INDEX,
               );
-              const { payments, bundle, assayInfo } = await E(
+              const { payments, bundle, issuerInfo } = await E(
                 demoProvider,
               ).getDemoBundle();
               await E(vats.http).setPresences(
                 { ...bundle, localTimerService },
-                await createLocalBundle(vats, bundle, payments, assayInfo),
+                await createLocalBundle(vats, bundle, payments, issuerInfo),
               );
               await setupWalletVat(devices.command, vats.http, vats.wallet);
               break;
@@ -311,10 +309,10 @@ export default function setup(syscall, state, helpers) {
               );
               // Get the demo bundle from the chain-side provider
               const b = await E(demoProvider).getDemoBundle('client');
-              const { payments, bundle, assayInfo } = b;
+              const { payments, bundle, issuerInfo } = b;
               await E(vats.http).setPresences(
                 { ...bundle, localTimerService },
-                await createLocalBundle(vats, bundle, payments, assayInfo),
+                await createLocalBundle(vats, bundle, payments, issuerInfo),
               );
               await setupWalletVat(devices.command, vats.http, vats.wallet);
               break;
@@ -327,14 +325,14 @@ export default function setup(syscall, state, helpers) {
               await setupCommandDevice(vats.http, devices.command, {
                 client: true,
               });
-              const { payments, bundle, assayInfo } = await E(
+              const { payments, bundle, issuerInfo } = await E(
                 makeChainBundler(vats, devices.timer),
               ).createUserBundle('localuser');
 
               // Setup of the Local part /////////////////////////////////////
               await E(vats.http).setPresences(
                 { ...bundle, localTimerService: bundle.chainTimerService },
-                await createLocalBundle(vats, bundle, payments, assayInfo),
+                await createLocalBundle(vats, bundle, payments, issuerInfo),
               );
 
               setupWalletVat(devices.command, vats.http, vats.wallet);

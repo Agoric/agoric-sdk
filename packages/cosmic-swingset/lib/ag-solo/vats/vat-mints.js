@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { makeMint } from '@agoric/ertp';
+import produceIssuer from '@agoric/ertp';
 
 import makeStore from '@agoric/store';
 
@@ -7,35 +7,35 @@ import makeStore from '@agoric/store';
 // simoleanMint.
 
 function build(_E, _log) {
-  const mints = makeStore();
+  const mintsAndMath = makeStore();
 
   const api = harden({
-    getAllAssetNames: () => mints.keys(),
-    getAssay: assetName => {
-      const mint = mints.get(assetName);
-      mint.getAssay();
+    getAllissuerNames: () => mintsAndMath.keys(),
+    getIssuer: issuerName => {
+      const mint = mintsAndMath.get(issuerName);
+      mint.getIssuer();
     },
-    getAssays: assetNames => assetNames.map(api.getAssay),
+    getAssays: issuerNames => issuerNames.map(api.getIssuer),
 
     // NOTE: having a reference to a mint object gives the ability to mint
     // new digital assets, a very powerful authority. This authority
     // should be closely held.
-    getMint: mints.get,
-    getMints: assetNames => assetNames.map(api.getMint),
-    // For example, assetNameSingular might be 'moola', or 'simolean'
-    makeMintAndAssay: assetNameSingular => {
-      const mint = makeMint(assetNameSingular);
-      mints.init(assetNameSingular, mint);
-      return mint.getAssay();
+    getMint: name => mintsAndMath.get(name).mint,
+    getMints: issuerNames => issuerNames.map(api.getMint),
+    // For example, issuerNameSingular might be 'moola', or 'simolean'
+    makeMintAndIssuer: issuerNameSingular => {
+      const { mint, issuer, amountMath } = produceIssuer(issuerNameSingular);
+      mintsAndMath.init(issuerNameSingular, { mint, amountMath });
+      return issuer;
     },
-    mintInitialPayment: (assetName, extent) => {
-      const mint = mints.get(assetName);
-      const purse = mint.mint(extent);
-      return purse.withdrawAll();
+    mintInitialPayment: (issuerName, extent) => {
+      const { mint, amountMath } = mintsAndMath.get(issuerName);
+      const amount = amountMath.make(extent);
+      return mint.mintPayment(amount);
     },
-    mintInitialPayments: (assetNames, extents) =>
-      assetNames.map((assetName, i) =>
-        api.mintInitialPayment(assetName, extents[i]),
+    mintInitialPayments: (issuerNames, extents) =>
+      issuerNames.map((issuerName, i) =>
+        api.mintInitialPayment(issuerName, extents[i]),
       ),
   });
 
