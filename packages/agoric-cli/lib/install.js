@@ -21,10 +21,16 @@ export default async function installMain(progname, rawArgs, priv, opts) {
   }
 
   if (opts.sdk) {
-    console.log(chalk.bold.green('link SDK node_modules'));
-    await fs.symlink(
-      `${path.resolve(__dirname, '../../../node_modules')}`,
-      'node_modules',
+    const sdkNodeModules = path.resolve(__dirname, '../../../node_modules');
+    await Promise.all(
+      ['.agservers', 'contract', 'api'].sort().map(subdir => {
+        const nm = `${subdir}/node_modules`;
+        console.log(chalk.bold.green(`link SDK ${nm}`));
+        return fs
+          .unlink(nm)
+          .catch(_ => {})
+          .then(fs.symlink(sdkNodeModules, nm));
+      }),
     );
   } else if (await pspawn('yarn', ['install'], { stdio: 'inherit' })) {
     // Try to install via Yarn.

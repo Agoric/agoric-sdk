@@ -1,5 +1,5 @@
 {
-  "name": "agoric-dapp-contract",
+  "name": "@agoric/dapp-contract",
   "version": "0.1.0",
   "private": true,
   "description": "Contract for the @DIR@ Agoric Dapp",

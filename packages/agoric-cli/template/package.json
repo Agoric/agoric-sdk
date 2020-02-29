@@ -6,7 +6,6 @@
   "workspaces": [
     "api",
     "contract",
-    "ui",
     ".agservers"
   ],
   "devDependencies": {
