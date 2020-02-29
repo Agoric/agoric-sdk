@@ -20,7 +20,7 @@ endif
 BREAK_CHAIN = false
 NODE_DEBUG = node --inspect-port=$(INSPECT_ADDRESS):9229
 
-MOD_READONLY = -mod=readonly
+MOD_READONLY = # -mod=readonly
 
 NAME := $(shell sed -ne 's/.*"name": "\([^"]*\)".*/\1/p' package.json)
 VERSION := $(shell sed -ne 's/.*"version": "\([^"]*\)".*/\1/p' package.json)
