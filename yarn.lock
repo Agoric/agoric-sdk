@@ -37,10 +37,10 @@
   resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-2.0.1.tgz#28aba18367deba354bdd424bdf6daa48f5e7d37f"
   integrity sha512-puvWkoaJovQib/YaSRSGJ8Kn9rogi/yyaVa3d5znSZb5WiYfUiEKW35BfexHhAdi0VfPz2anFHoRBoBSUIijNA==
 
-"@agoric/tendermint@^4.1.1":
-  version "4.1.1"
-  resolved "https://registry.yarnpkg.com/@agoric/tendermint/-/tendermint-4.1.1.tgz#314bf5c2078b361a62f82681f59622a24c94fdfd"
-  integrity sha512-uKR93iFD6L3iOROYv6dnR7caPQzs+s7TrqJH9TJKqFGAvz1F6nLEPo29PbG3fmfaFjL59F6IIvH0ohfD9YRdJA==
+"@agoric/tendermint@^4.1.2":
+  version "4.1.2"
+  resolved "https://registry.yarnpkg.com/@agoric/tendermint/-/tendermint-4.1.2.tgz#b2f724351a73c4cac0d90272f970e7021e9666e8"
+  integrity sha512-//eYggjLpnoKcfuqfcyNreVnDbMUHqBNudaDhCy/91iQv5A+VdxUA1lq+cVjkmV2OGs+uIvNE60jpLPZsupcLg==
   dependencies:
     axios "^0.19.0"
     camelcase "^4.0.0"
