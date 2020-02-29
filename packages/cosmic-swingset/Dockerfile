@@ -14,4 +14,4 @@ COPY lib/*.go lib/
 COPY lib/daemon/ lib/daemon/
 COPY lib/helper/ lib/helper/
 COPY package.json ./
-RUN make MOD_READONLY= compile-go install
+RUN make compile-go install
