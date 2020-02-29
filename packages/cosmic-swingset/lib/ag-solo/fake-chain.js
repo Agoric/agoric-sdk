@@ -77,7 +77,8 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
     }
 
     // TODO: maybe add latency to the inbound messages.
-    const mailbox = JSON.parse(mailboxStorage.get(`mailbox.${bootAddress}`));
+    const mailboxJSON = mailboxStorage.get(`mailbox.${bootAddress}`);
+    const mailbox = mailboxJSON && JSON.parse(mailboxJSON);
     const { outbox, ack } = mailbox || {
       outbox: [],
       ack: 0,
