@@ -1,6 +1,6 @@
 {
   "name": "swingset-runner",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Application to launch SwingSet instances for development and testing",
   "main": "src/main.js",
@@ -14,10 +14,10 @@
     "lint-check": "eslint '**/*.js'"
   },
   "dependencies": {
-    "@agoric/swingset-vat": "^0.3.0",
-    "@agoric/swing-store-simple": "^0.1.0",
-    "@agoric/swing-store-lmdb": "^0.1.0",
-    "@agoric/harden": "^0.0.4"
+    "@agoric/harden": "^0.0.4",
+    "@agoric/swing-store-lmdb": "^0.1.1",
+    "@agoric/swing-store-simple": "^0.1.1",
+    "@agoric/swingset-vat": "^0.4.0"
   },
   "devDependencies": {
     "esm": "^3.2.25",

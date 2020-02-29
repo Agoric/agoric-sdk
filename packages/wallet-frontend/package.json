@@ -1,6 +1,6 @@
 {
   "name": "@agoric/wallet-frontend",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Agoric Wallet Frontend",
   "author": "Agoric",
   "license": "Apache-2.0",

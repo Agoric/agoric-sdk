@@ -1,6 +1,6 @@
 {
   "name": "@agoric/pixel-demo",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "An example non-fungible token and app using ERTP",
   "main": "src/gallery.js",
   "engines": {
@@ -33,17 +33,17 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/ertp": "^0.3.1",
+    "@agoric/assert": "^0.0.2",
+    "@agoric/ertp": "^0.3.2",
     "@agoric/harden": "^0.0.4",
-    "@agoric/assert": "^0.0.1",
     "@agoric/nat": "^2.0.1",
-    "@agoric/spawner": "^0.0.3",
-    "@agoric/store": "^0.0.1"
+    "@agoric/spawner": "^0.1.0",
+    "@agoric/store": "^0.0.2"
   },
   "devDependencies": {
-    "@agoric/evaluate": "^2.2.0",
-    "@agoric/sharing-service": "^0.0.1",
-    "@agoric/swingset-vat": "^0.3.0",
+    "@agoric/evaluate": "^2.2.1",
+    "@agoric/sharing-service": "^0.0.2",
+    "@agoric/swingset-vat": "^0.4.0",
     "esm": "^3.2.25",
     "tap-spec": "^5.0.0",
     "tape": "^4.11.0",
