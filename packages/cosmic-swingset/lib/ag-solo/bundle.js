@@ -7,7 +7,7 @@ import { makeCapTP } from '@agoric/captp/lib/captp';
 import fs from 'fs';
 import path from 'path';
 
-import buildSourceBundle from '@agoric/bundle-source';
+import bundleSource from '@agoric/bundle-source';
 
 const makePromise = () => {
   const pr = {};
@@ -27,27 +27,27 @@ const sendJSON = (ws, obj) => {
 };
 
 export default async function bundle(insistIsBasedir, args) {
-  const { _: a, evaluate, input, once, output, 'ag-solo': agSolo } = parseArgs(
-    args,
-    {
-      boolean: ['once', 'evaluate', 'input'],
-      alias: { o: 'output', e: 'evaluate', i: 'input' },
-      stopEarly: true,
-    },
-  );
+  const {
+    _: a,
+    evaluate: evflag,
+    input,
+    once,
+    output,
+    'ag-solo': agSolo,
+  } = parseArgs(args, {
+    boolean: ['once', 'evaluate', 'input'],
+    alias: { o: 'output', e: 'evaluate', i: 'input' },
+    stopEarly: true,
+  });
 
-  if (!output && !evaluate) {
-    console.error(
-      `You must specify at least one of '--output' or '--evaluate'`,
-    );
-    return 1;
-  }
+  // Default to evaluate.
+  const evaluate = evflag || !output;
 
   const bundles = [];
   if (input) {
     const fileNames = a;
     for (const fileName of fileNames) {
-      const contents = file.promises.readFile(fileName, 'utf-8');
+      const contents = fs.promises.readFile(fileName, 'utf-8');
       bundles.push(JSON.parse(contents));
     }
   } else {
@@ -70,7 +70,8 @@ export default async function bundle(insistIsBasedir, args) {
         }
         const name = match[1];
         const filepath = match[2];
-        bundled[name] = await buildSourceBundle(filepath);
+        bundled[name] = await bundleSource(filepath);
+        bundled[name].path = filepath;
       }),
     );
     bundles.push(bundled);
@@ -145,7 +146,9 @@ export default async function bundle(insistIsBasedir, args) {
           continue;
         }
 
-        await main({ bundle: bundled, home: boot });
+        const pathResolve = (...resArgs) =>
+          path.resolve(path.dirname(bundled.main.path), ...resArgs);
+        await main(boot, { bundleSource, pathResolve });
       }
       console.error('Done!');
       if (once) {
