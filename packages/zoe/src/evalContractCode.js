@@ -1,5 +1,5 @@
 /* global replaceGlobalMeter, registerEndOfCrank */
-import evaluate from '@agoric/evaluate';
+import { evaluateProgram } from '@agoric/evaluate';
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
@@ -12,7 +12,9 @@ import { sameStructure } from '@agoric/same-structure';
 
 const evaluateStringToFn = (functionSrcString, endowments) => {
   assert.typeof(functionSrcString, 'string');
-  const fn = evaluate(functionSrcString, endowments);
+  const nestedEvaluate = src =>
+    evaluateProgram(src, { ...endowments, nestedEvaluate });
+  const fn = nestedEvaluate(`(${functionSrcString})`);
   assert.typeof(
     fn,
     'function',

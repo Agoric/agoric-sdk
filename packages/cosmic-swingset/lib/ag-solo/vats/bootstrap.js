@@ -67,7 +67,6 @@ export default function setup(syscall, state, helpers) {
         const zoe = await E(vats.zoe).getZoe();
         const contractHost = await E(vats.host).makeHost();
 
-
         // Make the other demo mints
         const assetNames = ['moola', 'simolean'];
         const assays = await Promise.all(

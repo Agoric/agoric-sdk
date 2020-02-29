@@ -23,6 +23,7 @@ const shim = `\
   };
 })()`;
 
+// Adapt to ESM.
 export const SES1TameMeteringShim = shim.replace(
   /_[a-z0-9]{3}\u200d\.g\./gs,
   '',

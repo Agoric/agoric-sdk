@@ -249,9 +249,10 @@ const makeZoe = (additionalEndowments = {}) => {
      * registering it with Zoe. We have a moduleFormat to allow for
      * different future formats without silent failures.
      */
-    install: (code, moduleFormat = 'getExport') => {
+    install: (code, moduleFormat = 'nestedEvaluate') => {
       let installation;
       switch (moduleFormat) {
+        case 'nestedEvaluate':
         case 'getExport': {
           installation = evalContractCode(code, additionalEndowments);
           break;

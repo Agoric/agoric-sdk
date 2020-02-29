@@ -22,7 +22,7 @@ const sendJSON = (ws, obj) => {
   if (ws.readyState !== ws.OPEN) {
     return;
   }
-  //console.log('sending', obj);
+  // console.log('sending', obj);
   ws.send(JSON.stringify(obj));
 };
 

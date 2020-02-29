@@ -26,6 +26,9 @@ import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
 
+// FIXME: Put this somewhere better.
+process.on('unhandledRejection', e => console.log('unhandledRejection', e));
+
 const ADMIN_DEVICE_PATH = require.resolve('./kernel/vatAdmin/vatAdmin-src');
 const ADMIN_VAT_PATH = require.resolve('./kernel/vatAdmin/vatAdminWrapper');
 
@@ -197,24 +200,29 @@ function realmRegisterEndOfCrank(fn) {
     { registerEndOfCrank },
   );
 
-  return src => {
-    // FIXME: Note that this replaceGlobalMeter endowment is not any
-    // worse than before metering existed.  However, it probably is
-    // only necessary to be added to the kernel, rather than all
-    // static vats once we add metering support to the dynamic vat
-    // implementation.
-    // FIXME: Same for registerEndOfCrank.
-    return s.evaluate(src, {
-      require: r,
-      registerEndOfCrank: realmRegisterEndOfCrank,
-      replaceGlobalMeter,
-    })().default;
+  return (src, filePrefix = '/SwingSet-bundled-source') => {
+    const nestedEvaluate = source =>
+      s.evaluate(source, {
+        // Support both getExport and nestedEvaluate module format.
+        require: r,
+        nestedEvaluate,
+
+        // FIXME: Note that this replaceGlobalMeter endowment is not any
+        // worse than before metering existed.  However, it probably is
+        // only necessary to be added to the kernel, rather than all
+        // static vats once we add metering support to the dynamic vat
+        // implementation.
+        // FIXME: Same for registerEndOfCrank.
+        registerEndOfCrank: realmRegisterEndOfCrank,
+        replaceGlobalMeter,
+      });
+    return nestedEvaluate(src)(filePrefix).default;
   };
 }
 
 function buildSESKernel(sesEvaluator, endowments) {
   const kernelSource = getKernelSource();
-  const buildKernel = sesEvaluator(kernelSource);
+  const buildKernel = sesEvaluator(kernelSource, '/SwingSet-kernel');
   return buildKernel(endowments);
 }
 
@@ -258,7 +266,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
   // Evaluate source to produce a setup function. This binds withSES from the
   // enclosing context and evaluates it either in a SES context, or without SES
   // by directly calling require().
-  async function evaluateToSetup(sourceIndex) {
+  async function evaluateToSetup(sourceIndex, filePrefix = undefined) {
     if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
       throw Error(
         'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
@@ -271,9 +279,12 @@ export async function buildVatController(config, withSES = true, argv = []) {
     // (which is expected to initialize some state and export some facetIDs)
     let setup;
     if (withSES) {
-      const { source, sourceMap } = await bundleSource(`${sourceIndex}`);
+      const { source, sourceMap } = await bundleSource(
+        `${sourceIndex}`,
+        'nestedEvaluate',
+      );
       const actualSource = `(${source})\n${sourceMap}`;
-      setup = sesEvaluator(actualSource);
+      setup = sesEvaluator(actualSource, filePrefix);
     } else {
       // eslint-disable-next-line global-require,import/no-dynamic-require
       setup = require(`${sourceIndex}`).default;
@@ -287,8 +298,8 @@ export async function buildVatController(config, withSES = true, argv = []) {
     setImmediate,
     hostStorage,
     runEndOfCrank,
-    vatAdminDevSetup: await evaluateToSetup(ADMIN_DEVICE_PATH),
-    vatAdminVatSetup: await evaluateToSetup(ADMIN_VAT_PATH),
+    vatAdminDevSetup: await evaluateToSetup(ADMIN_DEVICE_PATH, '/SwingSet/src'),
+    vatAdminVatSetup: await evaluateToSetup(ADMIN_VAT_PATH, '/SwingSet/src'),
   };
 
   const kernel = withSES
@@ -297,12 +308,12 @@ export async function buildVatController(config, withSES = true, argv = []) {
 
   async function addGenesisVat(name, sourceIndex, options = {}) {
     console.log(`= adding vat '${name}' from ${sourceIndex}`);
-    const setup = await evaluateToSetup(sourceIndex);
+    const setup = await evaluateToSetup(sourceIndex, `/SwingSet-vat-${name}`);
     kernel.addGenesisVat(name, setup, options);
   }
 
   async function addGenesisDevice(name, sourceIndex, endowments) {
-    const setup = await evaluateToSetup(sourceIndex);
+    const setup = await evaluateToSetup(sourceIndex, `/SwingSet-dev-${name}`);
     kernel.addGenesisDevice(name, setup, endowments);
   }
 

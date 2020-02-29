@@ -1,6 +1,6 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '../../bundle-source';
 
 import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
