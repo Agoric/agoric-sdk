@@ -1,9 +1,9 @@
 /* eslint-disable no-await-in-loop */
 import parseArgs from 'minimist';
 import WebSocket from 'ws';
-import { E } from '@agoric/eventual-send';
+import { E, HandledPromise } from '@agoric/eventual-send';
 import { evaluateProgram } from '@agoric/evaluate';
-import { makeCapTP } from '@agoric/captp';
+import { makeCapTP } from '@agoric/captp/lib/captp';
 import fs from 'fs';
 import path from 'path';
 
@@ -135,7 +135,10 @@ export default async function bundle(insistIsBasedir, args) {
       for (const bundled of bundles) {
         const actualSources = `(${bundled.main.source}\n)\n${bundled.main.sourceMap}`;
         // console.log(actualSources);
-        const mainNS = evaluateProgram(actualSources, { require })();
+        const mainNS = evaluateProgram(actualSources, {
+          require,
+          HandledPromise,
+        })();
         const main = mainNS.default;
         if (typeof main !== 'function') {
           console.error(`Bundle main does not have an export default function`);
