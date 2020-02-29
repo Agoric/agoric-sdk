@@ -14,7 +14,7 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   CONTRACT_NAME = 'myFirstDapp') {
 
   // Create a source bundle for the "myFirstDapp" smart contract.
-  const { source, moduleFormat } = await bundleSource(`./${CONTRACT_NAME}.js`);
+  const { source, moduleFormat } = await bundleSource(pathResolve(`./${CONTRACT_NAME}.js`));
 
   // =====================
   // === AWAITING TURN ===
