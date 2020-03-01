@@ -451,7 +451,7 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
                     if coin['denom'] == INITIAL_TOKEN[1] and int(coin['amount']) >= INITIAL_TOKEN[0]:
                         missing = False
                         break
-            elif code == 9:
+            elif code == 1 or code == 9:
                 needIngress.append(pkobj)
                 missing = True
         except Exception as e:
@@ -461,7 +461,8 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
         if missing:
             print('generating transaction for', pubkey)
             # Estimate the gas, with a little bit of padding.
-            args = ['tx', 'send', config['bootstrapAddress'], pubkey, amountToken, '--gas=auto', '--gas-adjustment=1.05']
+            args = ['tx', 'send', '--keyring-backend=test', config['bootstrapAddress'], pubkey,
+                amountToken, '--gas=auto', '--gas-adjustment=1.05']
             code, output = yield agCosmosHelper(reactor, opts, config, args, 1)
             if code == 0:
                 txes.append(output)
