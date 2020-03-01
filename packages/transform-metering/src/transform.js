@@ -132,14 +132,15 @@ const ${reid}=RegExp(${JSON.stringify(pattern)},${JSON.stringify(flags)});`);
         path.node.body = wrapWithComputeMeter(blockify(path.node.body));
       },
       // To prevent interception after exhaustion, wrap catch and finally.
+      CatchClause(path) {
+        path.node.body = wrapWithComputeMeter(path.node.body);
+      },
       TryStatement(path) {
-        if (path.node.handler) {
-          path.node.handler.body = wrapWithComputeMeter(path.node.handler.body);
+        if (path.node.handler && !t.isCatchClause(path.node.handler)) {
+          path.node.handler = wrapWithComputeMeter(path.node.handler);
         }
         if (path.node.finalizer && !path.node.finalizer[METER_GENERATED]) {
-          path.node.finalizer.body = wrapWithComputeMeter(
-            path.node.finalizer.body,
-          );
+          path.node.finalizer = wrapWithComputeMeter(path.node.finalizer);
         }
       },
       // Function definitions need a stack meter, too.
