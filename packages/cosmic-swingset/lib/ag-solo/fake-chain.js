@@ -51,16 +51,10 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
     try {
       const commitStamp = pretendLast + PRETEND_BLOCK_DELAY * 1000;
       const blockTime = Math.floor(commitStamp / 1000);
-      await deliverStartBlock(blockHeight, blockTime);
+      await deliverStartBlock(blockHeight, blockTime, true);
       for (let i = 0; i < thisBlock.length; i += 1) {
         const [newMessages, acknum] = thisBlock[i];
-        await deliverInbound(
-          bootAddress,
-          newMessages,
-          acknum,
-          blockHeight,
-          blockTime,
-        );
+        await deliverInbound(bootAddress, newMessages, acknum, true);
       }
 
       // Done processing, "commit the block".

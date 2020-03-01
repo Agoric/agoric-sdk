@@ -27,7 +27,9 @@ import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
 
 // FIXME: Put this somewhere better.
-process.on('unhandledRejection', e => console.log('unhandledRejection', e));
+process.on('unhandledRejection', e =>
+  console.log('UnhandledPromiseRejectionWarning:', e),
+);
 
 const ADMIN_DEVICE_PATH = require.resolve('./kernel/vatAdmin/vatAdmin-src');
 const ADMIN_VAT_PATH = require.resolve('./kernel/vatAdmin/vatAdminWrapper');
