@@ -117,8 +117,8 @@ async function buildSwingset(
 
   async function processKernel() {
     await controller.run();
-    await saveState();
     if (swingSetRunning) {
+      await saveState();
       deliverOutbound();
     }
   }
@@ -128,7 +128,7 @@ async function buildSwingset(
       throw new Error(`inbound given non-Array: ${messages}`);
     }
     // console.log(`deliverInboundToMbx`, messages, ack);
-    if (mb.deliverInbound(sender, messages, ack)) {
+    if (mb.deliverInbound(sender, messages, ack, true)) {
       await processKernel();
     }
   }

@@ -3,8 +3,8 @@ CHAIN_ID = agoric
 INITIAL_TOKENS = 1000agmedallion
 
 # By default, make the fake chain in scenario3 produce
-# "blocks" at 5-second intervals.
-FAKE_CHAIN_DELAY = 5
+# "blocks" as soon as they come in.
+FAKE_CHAIN_DELAY = 0
 
 NUM_SOLOS?=1
 BASE_PORT?=8000
@@ -102,13 +102,14 @@ scenario2-run-client:
 scenario3-setup:
 	rm -rf t3
 	bin/ag-solo init t3 --egresses=fake
-	(cd t3 && \
-			../bin/ag-solo set-fake-chain --role=two_chain --delay=$(FAKE_CHAIN_DELAY) myFakeGCI)
 	@echo 'Execute `make scenario3-run` to run the client and simulated chain'
 
 # This runs both the client and the fake chain.
 scenario3-run-client: scenario3-run
+# Set the fake chain here in case the delay has changed.
 scenario3-run:
+	(cd t3 && \
+			../bin/ag-solo set-fake-chain --role=two_chain --delay=$(FAKE_CHAIN_DELAY) myFakeGCI)
 	cd t3 && ../bin/ag-solo start --role=two_client
 
 # These rules are the old scenario3.  No fake delay at all.
