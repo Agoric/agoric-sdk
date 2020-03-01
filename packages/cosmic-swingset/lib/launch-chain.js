@@ -108,41 +108,30 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
   saveState();
 
   // then arrange for inbound messages to be processed, after which we save
-  async function turnCrank(committed) {
+  async function turnCrank() {
     const start = Date.now();
     await controller.run();
     const runTime = Date.now() - start;
-    if (committed) {
-      saveState(runTime);
-    } else {
-      console.log(`proposed SwingSet transaction [run=${runTime}ms]`);
-    }
+    // Have to save state every time.
+    saveState(runTime);
   }
 
-  async function deliverInbound(sender, messages, ack, committed) {
+  async function deliverInbound(sender, messages, ack, _committed) {
     if (!(messages instanceof Array)) {
       throw new Error(`inbound given non-Array: ${messages}`);
     }
     if (mb.deliverInbound(sender, messages, ack)) {
       console.log(`mboxDeliver:   ADDED messages`);
-      await turnCrank(committed);
-    } else if (committed) {
-      // We need to save our state on every commitment.
-      saveState();
     }
+    await turnCrank();
   }
 
-  async function deliverStartBlock(blockHeight, blockTime, committed) {
+  async function deliverStartBlock(blockHeight, blockTime, _committed) {
     const addedToQueue = timer.poll(blockTime);
     console.log(
       `polled; blockTime:${blockTime}, h:${blockHeight} ADDED: ${addedToQueue}`,
     );
-    if (addedToQueue) {
-      await turnCrank(committed);
-    } else if (committed) {
-      // We need to save our state on every commitment.
-      saveState();
-    }
+    await turnCrank();
   }
 
   return { deliverInbound, deliverStartBlock };
