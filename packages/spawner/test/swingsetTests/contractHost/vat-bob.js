@@ -3,7 +3,7 @@
 
 import harden from '@agoric/harden';
 
-import { makeCollect } from '../../../src/contractHost';
+import { makeCollect } from '../../../src/makeCollect';
 
 function makeBobMaker(E, host, log) {
   const collect = makeCollect(E, log);
