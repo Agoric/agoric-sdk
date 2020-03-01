@@ -66,10 +66,11 @@ export const makeContract = harden((zoe, terms) => {
   }
 
   function getOffer(inviteHandle) {
-    for (const handle of [...sellInviteHandles, ...buyInviteHandles]) {
-      if (inviteHandle === handle) {
-        return flattenOffer(getActiveOffers([inviteHandle])[0]);
-      }
+    if (
+      sellInviteHandles.includes(inviteHandle) ||
+      buyInviteHandles.includes(inviteHandle)
+    ) {
+      return flattenOffer(getActiveOffers([inviteHandle])[0]);
     }
     return 'not an active offer';
   }

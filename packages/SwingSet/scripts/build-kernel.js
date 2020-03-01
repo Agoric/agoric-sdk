@@ -5,6 +5,7 @@ import bundleSource from '@agoric/bundle-source';
 async function main() {
   const { source, sourceMap } = await bundleSource(
     `${__dirname}/../src/kernel/index.js`,
+    'nestedEvaluate',
   );
   const actualSource = `export default ${source}\n${sourceMap}`;
   const f = await fs.promises.open('src/bundles/kernel', 'w', 0o644);

@@ -1,13 +1,13 @@
 /* eslint-disable no-await-in-loop */
 import parseArgs from 'minimist';
 import WebSocket from 'ws';
-import { E } from '@agoric/eventual-send';
+import { E, HandledPromise } from '@agoric/eventual-send';
 import { evaluateProgram } from '@agoric/evaluate';
-import { makeCapTP } from '@agoric/captp';
+import { makeCapTP } from '@agoric/captp/lib/captp';
 import fs from 'fs';
 import path from 'path';
 
-import buildSourceBundle from '@agoric/bundle-source';
+import bundleSource from '@agoric/bundle-source';
 
 const makePromise = () => {
   const pr = {};
@@ -22,32 +22,32 @@ const sendJSON = (ws, obj) => {
   if (ws.readyState !== ws.OPEN) {
     return;
   }
-  //console.log('sending', obj);
+  // console.log('sending', obj);
   ws.send(JSON.stringify(obj));
 };
 
 export default async function bundle(insistIsBasedir, args) {
-  const { _: a, evaluate, input, once, output, 'ag-solo': agSolo } = parseArgs(
-    args,
-    {
-      boolean: ['once', 'evaluate', 'input'],
-      alias: { o: 'output', e: 'evaluate', i: 'input' },
-      stopEarly: true,
-    },
-  );
+  const {
+    _: a,
+    evaluate: evflag,
+    input,
+    once,
+    output,
+    'ag-solo': agSolo,
+  } = parseArgs(args, {
+    boolean: ['once', 'evaluate', 'input'],
+    alias: { o: 'output', e: 'evaluate', i: 'input' },
+    stopEarly: true,
+  });
 
-  if (!output && !evaluate) {
-    console.error(
-      `You must specify at least one of '--output' or '--evaluate'`,
-    );
-    return 1;
-  }
+  // Default to evaluate.
+  const evaluate = evflag || !output;
 
   const bundles = [];
   if (input) {
     const fileNames = a;
     for (const fileName of fileNames) {
-      const contents = file.promises.readFile(fileName, 'utf-8');
+      const contents = fs.promises.readFile(fileName, 'utf-8');
       bundles.push(JSON.parse(contents));
     }
   } else {
@@ -70,7 +70,8 @@ export default async function bundle(insistIsBasedir, args) {
         }
         const name = match[1];
         const filepath = match[2];
-        bundled[name] = await buildSourceBundle(filepath);
+        bundled[name] = await bundleSource(filepath);
+        bundled[name].path = filepath;
       }),
     );
     bundles.push(bundled);
@@ -135,14 +136,19 @@ export default async function bundle(insistIsBasedir, args) {
       for (const bundled of bundles) {
         const actualSources = `(${bundled.main.source}\n)\n${bundled.main.sourceMap}`;
         // console.log(actualSources);
-        const mainNS = evaluateProgram(actualSources, { require })();
+        const mainNS = evaluateProgram(actualSources, {
+          require,
+          HandledPromise,
+        })();
         const main = mainNS.default;
         if (typeof main !== 'function') {
           console.error(`Bundle main does not have an export default function`);
           continue;
         }
 
-        await main({ bundle: bundled, home: boot });
+        const pathResolve = (...resArgs) =>
+          path.resolve(path.dirname(bundled.main.path), ...resArgs);
+        await main(boot, { bundleSource, pathResolve });
       }
       console.error('Done!');
       if (once) {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -33,7 +33,15 @@ export default function OrderHistory() {
   const { state } = useApplicationContext();
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(25);
+  const [history, setHistory] = React.useState([]);
   const { orderhistory } = state;
+
+  useEffect(() => {
+    const result = [];
+    orderhistory.buys.forEach(item => result.push({ side: true, ...item }));
+    orderhistory.sells.forEach(item => result.push({ side: false, ...item }));
+    setHistory(result);
+  }, [orderhistory]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -45,41 +53,39 @@ export default function OrderHistory() {
   };
 
   function getPrice(order, decimal) {
-    return (order.filled / order.size).toFixed(decimal);
+    return (order.want.extent / order.offer.extent).toFixed(decimal);
   }
 
   function getClass(order) {
-    return order.side === 'Buy' ? classes.buy : classes.sell;
+    return order.side === true ? classes.buy : classes.sell;
   }
 
   return (
     <Card elevation={0}>
       <CardHeader title="Orders" />
       <Divider />
-      {Array.isArray(orderhistory) && orderhistory.length > 0 ? (
+      {Array.isArray(history) && history.length > 0 ? (
         <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
                 <TableCell align="right">Side</TableCell>
-                <TableCell align="right">Size</TableCell>
-                <TableCell align="right">Filled</TableCell>
+                <TableCell align="right">Offer</TableCell>
+                <TableCell align="right">Want</TableCell>
                 <TableCell align="right">Price</TableCell>
-                <TableCell align="right">Status</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {orderhistory
+              {history
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map(order => (
                   <TableRow key={order.id}>
                     <TableCell align="right" className={getClass(order)}>
-                      {order.side}
+                      {order.side ? 'Buy' : ' Sell'}
                     </TableCell>
-                    <TableCell align="right">{order.size}</TableCell>
-                    <TableCell align="right">{order.filled}</TableCell>
+                    <TableCell align="right">{order.offer.extent}</TableCell>
+                    <TableCell align="right">{order.want.extent}</TableCell>
                     <TableCell align="right">{getPrice(order, 4)}</TableCell>
-                    <TableCell align="right">{order.status}</TableCell>
                   </TableRow>
                 ))}
             </TableBody>
@@ -92,7 +98,7 @@ export default function OrderHistory() {
                     100,
                     { label: 'All', value: -1 },
                   ]}
-                  count={orderhistory.length}
+                  count={history.length}
                   rowsPerPage={rowsPerPage}
                   page={page}
                   onChangePage={handleChangePage}

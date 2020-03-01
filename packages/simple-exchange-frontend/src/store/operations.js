@@ -14,9 +14,14 @@ export function serverDisconnected(state) {
   return { ...state, connected: false };
 }
 
+export function updatePurses(state, purses) {
+  return { ...state, purses };
+}
+
 export function resetState(state) {
   return {
     ...state,
+    purses: null,
     inputPurse: null,
     outputPurse: null,
     inputAmount: null,

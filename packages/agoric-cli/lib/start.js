@@ -4,7 +4,7 @@ import chalk from 'chalk';
 
 const FAKE_CHAIN_DELAY =
   process.env.FAKE_CHAIN_DELAY === undefined
-    ? 5
+    ? 0
     : Number(process.env.FAKE_CHAIN_DELAY);
 const PORT = process.env.PORT || 8000;
 const HOST_PORT = process.env.HOST_PORT || PORT;
@@ -51,7 +51,9 @@ export default async function startMain(progname, rawArgs, priv, opts) {
     agSolo = `${process.cwd()}/node_modules/@agoric/cosmic-swingset/bin/ag-solo`;
   }
 
-  async function startFakeChain(profileName) {
+  async function startFakeChain(profileName, _startArgs, popts) {
+    const fakeDelay =
+      popts.delay === undefined ? FAKE_CHAIN_DELAY : Number(popts.delay);
     if (!opts.sdk) {
       if (!(await exists('.agservers/node_modules'))) {
         return error(`you must first run '${progname} install'`);
@@ -68,16 +70,11 @@ export default async function startMain(progname, rawArgs, priv, opts) {
     }
 
     console.log(
-      chalk.yellow(`setting fake chain with ${FAKE_CHAIN_DELAY} second delay`),
+      chalk.yellow(`setting fake chain with ${fakeDelay} second delay`),
     );
     await pspawn(
       agSolo,
-      [
-        'set-fake-chain',
-        '--role=two_chain',
-        `--delay=${FAKE_CHAIN_DELAY}`,
-        fakeGCI,
-      ],
+      ['set-fake-chain', '--role=two_chain', `--delay=${fakeDelay}`, fakeGCI],
       {
         stdio: 'inherit',
         cwd: agServer,

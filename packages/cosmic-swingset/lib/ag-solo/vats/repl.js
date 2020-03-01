@@ -58,7 +58,7 @@ export function getReplHandler(E, homeObjects, sendBroadcast) {
   let highestHistory = -1;
 
   function updateHistorySlot(histnum, s) {
-    //console.log(`sendBroadcast ${histnum}`);
+    // console.log(`sendBroadcast ${histnum}`);
     sendBroadcast({
       type: 'updateHistory',
       histnum,
@@ -82,7 +82,7 @@ export function getReplHandler(E, homeObjects, sendBroadcast) {
     },
 
     rebroadcastHistory() {
-      //console.log(`rebroadcastHistory`, highestHistory);
+      // console.log(`rebroadcastHistory`, highestHistory);
       for (let histnum = 0; histnum <= highestHistory; histnum++) {
         updateHistorySlot(histnum);
       }

@@ -1,17 +1,17 @@
-// Agoric Dapp contract deployment script for myFirstDapp/simpleExchange
+// Agoric Dapp contract deployment script for autoswap
 import fs from 'fs';
+
+import harden from '@agoric/harden';
 
 // This javascript source file uses the "tildot" syntax (foo~.bar()) for
 // eventual sends. Tildot is standards track with TC39, the JavaScript standards
 // committee.
 // TODO: improve this comment. https://github.com/Agoric/agoric-sdk/issues/608
 
-import harden from '@agoric/harden';
-
 const DAPP_NAME = "@DIR@";
 
 export default async function deployContract(homeP, { bundleSource, pathResolve },
-  CONTRACT_NAME = 'myFirstDapp') {
+  CONTRACT_NAME = 'autoswap') {
 
   // Create a source bundle for the "myFirstDapp" smart contract.
   const { source, moduleFormat } = await bundleSource(pathResolve(`./${CONTRACT_NAME}.js`));
@@ -25,7 +25,7 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   // =====================
   // === AWAITING TURN ===
   // =====================
-  
+
   // 1. Assays and payments
   const purse0P = homeP~.wallet~.getPurse('moola');
   const purse1P = homeP~.wallet~.getPurse('simolean');
@@ -55,7 +55,7 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   // =====================
 
   // 2. Contract instance.
-  const { invite }
+  const invite
     = await homeP~.zoe~.makeInstance(installationHandle, { assays: [assay0, assay1] });
 
   // =====================
@@ -76,14 +76,16 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
 
   const { terms: { assays }} = await homeP~.zoe~.getInstance(instanceHandle);
 
+
   // =====================
   // === AWAITING TURN ===
   // =====================
 
   // 5. Offer rules
-  const [unit0, unit1] = await Promise.all([
+  const [unit0, unit1, unit2] = await Promise.all([
     assays~.[0]~.makeUnits(900),
     assays~.[1]~.makeUnits(900),
+    assays~.[2]~.makeUnits(0),
   ]);
 
   // =====================
@@ -100,13 +102,17 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
         kind: 'offerAtMost',
         units: unit1,
       },
+      {
+        kind: 'wantAtLeast',
+        units: unit2,
+      },
     ],
     exitRule: {
       kind: 'onDemand',
     },
   });
 
-  // 6. Registration.
+  // 6. Liquidities.
 
   const payments = [payment0, payment1];
 
@@ -116,7 +122,8 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   // === AWAITING TURN ===
   // =====================
 
-  const [contractId, instanceId] = await Promise.all([
+  const [liquidityOk, contractId, instanceId] = await Promise.all([
+    seat~.addLiquidity(),
     homeP~.registrar~.register(DAPP_NAME, installationHandle),
     homeP~.registrar~.register(CONTRACT_NAME, instanceHandle),
   ]);
@@ -127,9 +134,10 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
 
   console.log('- installation made', CONTRACT_NAME, '=>',  installationHandle);
   console.log('- instance made', CONTRACT_NAME, '=>', instanceId);
+  console.log(liquidityOk);
 
     // Save the instanceId somewhere where the UI can find it.
-  if (instanceId) {
+  if (liquidityOk) {
     const cjfile = pathResolve(`../ui/src/utils/contractID.js`);
     console.log('writing', cjfile);
     await fs.promises.writeFile(cjfile, `export default ${JSON.stringify(instanceId)};`);

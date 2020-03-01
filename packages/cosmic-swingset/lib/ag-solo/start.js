@@ -171,7 +171,10 @@ async function buildSwingset(
 }
 
 export default async function start(basedir, withSES, argv) {
-  const mailboxStateFile = path.resolve(basedir, 'swingset-kernel-mailbox.json');
+  const mailboxStateFile = path.resolve(
+    basedir,
+    'swingset-kernel-mailbox.json',
+  );
   const connections = JSON.parse(
     fs.readFileSync(path.join(basedir, 'connections.json')),
   );

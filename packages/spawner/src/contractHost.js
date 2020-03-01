@@ -59,6 +59,7 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
     sameStructure,
     mustBeSameStructure,
   };
+
   const fullEndowments = Object.create(null, {
     ...Object.getOwnPropertyDescriptors(defaultEndowments),
     ...Object.getOwnPropertyDescriptors(additionalEndowments),
@@ -69,6 +70,12 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
     assert(
       typeof functionSrcString === 'string',
       `"${functionSrcString}" must be a string, but was ${typeof functionSrcString}`,
+    );
+
+    // FIXME: Defeat ESM!
+    functionSrcString = functionSrcString.replace(
+      /sameStructure\.((mustBeS|s)ameStructure)/g,
+      '$1',
     );
 
     // Refill a meter each crank.
@@ -98,10 +105,18 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
       return meter;
     };
 
-    const fn = evaluate(functionSrcString, {
-      ...fullEndowments,
-      getMeter,
-    });
+    // Inject the evaluator.
+    const nestedEvaluate = src => {
+      const allEndowments = {
+        ...fullEndowments,
+        getMeter,
+        nestedEvaluate,
+      };
+      // console.log(allEndowments, src);
+      return evaluate(src, allEndowments);
+    };
+
+    const fn = nestedEvaluate(functionSrcString);
     assert(
       typeof fn === 'function',
       `"${functionSrcString}" must be a string for a function, but produced ${typeof fn}`,
@@ -140,7 +155,10 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
       let installation;
       if (moduleFormat === 'object') {
         installation = extractCheckFunctions(contractSrcs);
-      } else if (moduleFormat === 'getExport') {
+      } else if (
+        moduleFormat === 'getExport' ||
+        moduleFormat === 'nestedEvaluate'
+      ) {
         // We don't support 'check' functions in getExport format,
         // because we only do a single evaluate, and the whole
         // contract must be metered per-spawn, not per-installation.
@@ -162,7 +180,11 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
         let startFn;
         if (moduleFormat === 'object') {
           startFn = evaluateStringToFn(contractSrcs.start);
-        } else if (moduleFormat === 'getExport') {
+        } else if (
+          moduleFormat === 'getExport' ||
+          moduleFormat === 'nestedEvaluate'
+        ) {
+          // We support getExport because it is forward-compatible with nestedEvaluate.
           const getExports = evaluateStringToFn(contractSrcs);
           const ns = getExports();
           startFn = ns.default;

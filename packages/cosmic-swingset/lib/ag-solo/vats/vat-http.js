@@ -91,9 +91,12 @@ function build(E, D) {
                 o.connectionID = obj.connectionID;
                 D(commandDevice).sendBroadcast(o);
               };
-              const { dispatch, abort } = makeCapTP(obj.connectionID, sendObj, () =>
-                // Harden only our exported objects.
-                harden(exportedToCapTP),
+              const { dispatch, abort } = makeCapTP(
+                obj.connectionID,
+                sendObj,
+                () =>
+                  // Harden only our exported objects.
+                  harden(exportedToCapTP),
               );
               conns.set(obj.connectionID, [dispatch, abort]);
             },
