@@ -1,5 +1,5 @@
 {
-  "name": "dapp",
+  "name": "@agoric/dapp",
   "version": "independent",
   "private": true,
   "useWorkspaces": true,

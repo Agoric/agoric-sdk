@@ -1,5 +1,5 @@
 {
-  "name": "autoswap-frontend",
+  "name": "@agoric/dapp-autoswap-frontend",
   "version": "0.0.1",
   "description": "Autoswap Frontend",
   "author": "Agoric",
