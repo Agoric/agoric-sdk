@@ -28,8 +28,8 @@ const SwingSetPort = 123
 var replies = map[int]chan goReturn{}
 var lastReply = 0
 
-//export RunAG_COSMOS
-func RunAG_COSMOS(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int {
+//export RunAgCosmosDaemon
+func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int {
 	// FIXME: Decouple the sending logic from the Cosmos app.
 	sendToNode := func(needReply bool, str string) (string, error) {
 		var rPort int
@@ -98,9 +98,9 @@ func ReplyToGo(replyPort C.int, isError C.int, str C.Body) C.int {
 func SendToGo(port C.int, str C.Body) C.Body {
 	goStr := C.GoString(str)
 	// fmt.Fprintln(os.Stderr, "Send to Go", goStr)
-	outstr, err := swingset.ReceiveFromNode(int(port), goStr)
+	outstr, err := swingset.ReceiveFromController(int(port), goStr)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Cannot receive from node", err)
+		fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
 		return C.CString("")
 	}
 	return C.CString(outstr)

@@ -10,6 +10,7 @@ import (
 	// "github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 type deliverInboundAction struct {
@@ -20,6 +21,7 @@ type deliverInboundAction struct {
 	StoragePort int             `json:"storagePort"`
 	BlockHeight int64           `json:"blockHeight"`
 	BlockTime   int64           `json:"blockTime"`
+	Committed   bool            `json:"committed"`
 }
 
 type beginBlockAction struct {
@@ -27,31 +29,18 @@ type beginBlockAction struct {
 	StoragePort int    `json:"storagePort"`
 	BlockHeight int64  `json:"blockHeight"`
 	BlockTime   int64  `json:"blockTime"`
-}
-
-// FIXME: Get rid of this global in exchange for a field on some object.
-var NodeMessageSender func(needReply bool, str string) (string, error)
-
-// FIXME: Get rid of this global in exchange for a method on some object.
-func SendToNode(str string) error {
-	_, err := NodeMessageSender(false, str)
-	return err
-}
-
-// FIXME: Get rid of this global in exchange for a method on some object.
-func CallToNode(str string) (string, error) {
-	return NodeMessageSender(true, str)
+	Committed   bool   `json:"committed"`
 }
 
 // NewHandler returns a handler for "swingset" type messages.
 func NewHandler(keeper Keeper) sdk.Handler {
-	return func(ctx sdk.Context, msg sdk.Msg) sdk.Result {
+	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
 		switch msg := msg.(type) {
 		case MsgDeliverInbound:
 			return handleMsgDeliverInbound(ctx, keeper, msg)
 		default:
 			errMsg := fmt.Sprintf("Unrecognized swingset Msg type: %v", msg.Type())
-			return sdk.ErrUnknownRequest(errMsg).Result()
+			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
 		}
 	}
 }
@@ -77,7 +66,7 @@ func UnregisterPortHandler(portNum int) error {
 	return nil
 }
 
-func ReceiveFromNode(portNum int, msg string) (string, error) {
+func ReceiveFromController(portNum int, msg string) (string, error) {
 	handler := portToHandler[portNum]
 	if handler == nil {
 		return "", errors.New("Unregistered port " + fmt.Sprintf("%d", portNum))
@@ -93,7 +82,7 @@ func mailboxPeer(key string) (string, error) {
 	return path[1], nil
 }
 
-func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbound) sdk.Result {
+func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbound) (*sdk.Result, error) {
 	messages := make([][]interface{}, len(msg.Messages))
 	for i, message := range msg.Messages {
 		messages[i] = make([]interface{}, 2)
@@ -114,22 +103,24 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 		StoragePort: newPort,
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
+		Committed:   !ctx.IsCheckTx(),
 	}
+	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
 	b, err := json.Marshal(action)
 	if err != nil {
-		return sdk.ErrInternal(err.Error()).Result()
+		return nil, err
 	}
 
-	_, err = CallToNode(string(b))
+	_, err = keeper.CallToController(string(b))
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	UnregisterPortHandler(newPort)
 	if err != nil {
-		return sdk.ErrInternal(err.Error()).Result()
+		return nil, err
 	}
-	return sdk.Result{}
+	return &sdk.Result{}, nil
 }
 
-func handleMsgBeginBlock(ctx sdk.Context, keeper Keeper) sdk.Result {
+func handleMsgBeginBlock(ctx sdk.Context, keeper Keeper) (*sdk.Result, error) {
 	storageHandler := NewStorageHandler(ctx, keeper)
 
 	// Allow the storageHandler to consume unlimited gas.
@@ -142,19 +133,20 @@ func handleMsgBeginBlock(ctx sdk.Context, keeper Keeper) sdk.Result {
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 		StoragePort: newPort,
+		Committed:   !ctx.IsCheckTx(),
 	}
 	b, err := json.Marshal(action)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error marshalling", err)
-		return sdk.ErrInternal(err.Error()).Result()
+		return nil, err
 	}
 
-	_, err = CallToNode(string(b))
+	_, err = keeper.CallToController(string(b))
 
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	UnregisterPortHandler(newPort)
 	if err != nil {
-		return sdk.ErrInternal(err.Error()).Result()
+		return nil, err
 	}
-	return sdk.Result{}
+	return &sdk.Result{}, nil
 }

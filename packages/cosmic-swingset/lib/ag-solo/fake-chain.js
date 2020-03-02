@@ -51,16 +51,10 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
     try {
       const commitStamp = pretendLast + PRETEND_BLOCK_DELAY * 1000;
       const blockTime = Math.floor(commitStamp / 1000);
-      await deliverStartBlock(blockHeight, blockTime);
+      await deliverStartBlock(blockHeight, blockTime, true);
       for (let i = 0; i < thisBlock.length; i += 1) {
         const [newMessages, acknum] = thisBlock[i];
-        await deliverInbound(
-          bootAddress,
-          newMessages,
-          acknum,
-          blockHeight,
-          blockTime,
-        );
+        await deliverInbound(bootAddress, newMessages, acknum, true);
       }
 
       // Done processing, "commit the block".
@@ -77,7 +71,8 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
     }
 
     // TODO: maybe add latency to the inbound messages.
-    const mailbox = JSON.parse(mailboxStorage.get(`mailbox.${bootAddress}`));
+    const mailboxJSON = mailboxStorage.get(`mailbox.${bootAddress}`);
+    const mailbox = mailboxJSON && JSON.parse(mailboxJSON);
     const { outbox, ack } = mailbox || {
       outbox: [],
       ack: 0,

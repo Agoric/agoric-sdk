@@ -32,7 +32,7 @@ import bundle from './bundle';
 // import { makeChainFollower } from './follower';
 // import { makeDeliverator } from './deliver-with-ag-cosmos-helper';
 
-const CONTRACT_REGEXP = /^((zoe|contractHost)-([^.]+))/;
+let swingSetRunning = false;
 
 const fsWrite = promisify(fs.write);
 const fsClose = promisify(fs.close);
@@ -111,10 +111,16 @@ async function buildSwingset(
     commit();
   }
 
+  function deliverOutbound() {
+    deliver(mbs);
+  }
+
   async function processKernel() {
     await controller.run();
-    await saveState();
-    deliver(mbs);
+    if (swingSetRunning) {
+      await saveState();
+      deliverOutbound();
+    }
   }
 
   async function deliverInboundToMbx(sender, messages, ack) {
@@ -122,7 +128,7 @@ async function buildSwingset(
       throw new Error(`inbound given non-Array: ${messages}`);
     }
     // console.log(`deliverInboundToMbx`, messages, ack);
-    if (mb.deliverInbound(sender, messages, ack)) {
+    if (mb.deliverInbound(sender, messages, ack, true)) {
       await processKernel();
     }
   }
@@ -160,6 +166,7 @@ async function buildSwingset(
   return {
     deliverInboundToMbx,
     deliverInboundCommand,
+    deliverOutbound,
   };
 }
 
@@ -171,21 +178,6 @@ export default async function start(basedir, withSES, argv) {
   const connections = JSON.parse(
     fs.readFileSync(path.join(basedir, 'connections.json')),
   );
-  let deliverInboundToMbx;
-
-  function inbound(sender, messages, ack) {
-    if (deliverInboundToMbx) {
-      deliverInboundToMbx(sender, messages, ack);
-    }
-  }
-
-  let deliverInboundCommand;
-  function command(obj) {
-    if (!deliverInboundCommand) {
-      return Promise.reject('Not yet ready');
-    }
-    return deliverInboundCommand(obj);
-  }
 
   let broadcastJSON;
   function broadcast(obj) {
@@ -195,6 +187,19 @@ export default async function start(basedir, withSES, argv) {
       console.log(`Called broadcast before HTTP listener connected.`);
     }
   }
+
+  const vatsDir = path.join(basedir, 'vats');
+  const stateDBDir = path.join(basedir, 'swingset-kernel-state');
+  const d = await buildSwingset(
+    stateDBDir,
+    mailboxStateFile,
+    withSES,
+    vatsDir,
+    argv,
+    broadcast,
+  );
+
+  const { deliverInboundToMbx, deliverInboundCommand, deliverOutbound } = d;
 
   await Promise.all(
     connections.map(async c => {
@@ -209,7 +214,7 @@ export default async function start(basedir, withSES, argv) {
               c.GCI,
               c.rpcAddresses,
               c.myAddr,
-              inbound,
+              deliverInboundToMbx,
               c.chainID,
             );
             addDeliveryTarget(c.GCI, deliverator);
@@ -224,7 +229,7 @@ export default async function start(basedir, withSES, argv) {
             c.GCI,
             c.role,
             c.fakeDelay,
-            inbound,
+            deliverInboundToMbx,
           );
           addDeliveryTarget(c.GCI, deliverator);
           break;
@@ -234,7 +239,12 @@ export default async function start(basedir, withSES, argv) {
           if (broadcastJSON) {
             throw new Error(`duplicate type=http in connections.json`);
           }
-          broadcastJSON = makeHTTPListener(basedir, c.port, c.host, command);
+          broadcastJSON = makeHTTPListener(
+            basedir,
+            c.port,
+            c.host,
+            deliverInboundCommand,
+          );
           break;
         default:
           throw new Error(`unknown connection type in ${c}`);
@@ -242,19 +252,9 @@ export default async function start(basedir, withSES, argv) {
     }),
   );
 
-  const vatsDir = path.join(basedir, 'vats');
-  const stateDBDir = path.join(basedir, 'swingset-kernel-state');
-  const d = await buildSwingset(
-    stateDBDir,
-    mailboxStateFile,
-    withSES,
-    vatsDir,
-    argv,
-    broadcast,
-  );
-  ({ deliverInboundToMbx, deliverInboundCommand } = d);
-
   console.log(`swingset running`);
+  swingSetRunning = true;
+  deliverOutbound();
 
   // Install the bundles as specified.
   const initDir = path.join(basedir, 'init-bundles');

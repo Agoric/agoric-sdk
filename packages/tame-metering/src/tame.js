@@ -108,7 +108,7 @@ export function tameMetering() {
 
           // Track the consumption of a computron.
           globalMeter = null;
-          savedMeter && savedMeter[c.METER_COMPUTE](undefined, false);
+          savedMeter[c.METER_COMPUTE](undefined, false);
 
           // Reinstall the saved meter for the actual function invocation.
           globalMeter = savedMeter;
@@ -121,15 +121,15 @@ export function tameMetering() {
 
           // Track the allocation of the return value.
           globalMeter = null;
-          savedMeter && savedMeter[c.METER_ALLOCATE](ret, false);
+          savedMeter[c.METER_ALLOCATE](ret, false);
           return ret;
         } catch (e) {
           // Track the allocation of the exception value.
           globalMeter = null;
-          savedMeter && savedMeter[c.METER_ALLOCATE](e, false);
+          savedMeter[c.METER_ALLOCATE](e, false);
           throw e;
         } finally {
-          // In case a try block consumes stack.
+          // Restore the saved meter.
           globalMeter = savedMeter;
         }
       };
@@ -141,7 +141,7 @@ export function tameMetering() {
     } else {
       // The function wrapper must not have construct behaviour.
       // Defining it as a concise method ensures the correct
-      // properties (type function, sensitive to `this`, but no `.prototype`).
+      // behaviour (type function, sensitive to `this`, but no `.prototype`).
       const { name = '' } = target;
       ({ [name]: wrapper } = {
         [name](...args) {
@@ -161,7 +161,7 @@ export function tameMetering() {
 
             // Track the consumption of a computron.
             globalMeter = null;
-            savedMeter && savedMeter[c.METER_COMPUTE](undefined, false);
+            savedMeter[c.METER_COMPUTE](undefined, false);
 
             // Reinstall the saved meter for the actual function invocation.
             globalMeter = savedMeter;
@@ -169,15 +169,15 @@ export function tameMetering() {
 
             // Track the allocation of the return value.
             globalMeter = null;
-            savedMeter && savedMeter[c.METER_ALLOCATE](ret, false);
+            savedMeter[c.METER_ALLOCATE](ret, false);
             return ret;
           } catch (e) {
             // Track the allocation of the exception value.
             globalMeter = null;
-            savedMeter && savedMeter[c.METER_ALLOCATE](e, false);
+            savedMeter[c.METER_ALLOCATE](e, false);
             throw e;
           } finally {
-            // In case a try block consumes stack.
+            // Restore the saved meter.
             globalMeter = savedMeter;
           }
         },

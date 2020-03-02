@@ -115,13 +115,13 @@ static Napi::Value send(const Napi::CallbackInfo& info) {
     return Napi::String::New(env, ret);
 }
 
-static Napi::Value runAG_COSMOS(const Napi::CallbackInfo& info) {
+static Napi::Value runAgCosmosDaemon(const Napi::CallbackInfo& info) {
     static bool singleton = false;
     Napi::Env env = info.Env();
-    // std::cerr << "Starting Go AG_COSMOS from Node AG_COSMOS" << std::endl;
+    // std::cerr << "Starting Go agcosmosdaemon from ag-chain-cosmos Controller" << std::endl;
 
     if (singleton) {
-        Napi::TypeError::New(env, "Cannot start multiple AG_COSMOS instances").ThrowAsJavaScriptException();
+        Napi::TypeError::New(env, "Cannot start multiple agcosmosdaemon instances").ThrowAsJavaScriptException();
         return env.Null();
     }
     singleton = true;
@@ -141,21 +141,21 @@ static Napi::Value runAG_COSMOS(const Napi::CallbackInfo& info) {
     }
 
     GoSlice args = {argv, argc, argc};
-    RunAG_COSMOS(nodePort, SendToNode, args);
+    RunAgCosmosDaemon(nodePort, SendToNode, args);
 
     for (unsigned int i = 0; i < argc; i ++) {
         free(argv[i]);
     }
     delete[] argv;
-    // std::cerr << "End of starting AG_COSMOS from Node AG_COSMOS" << std::endl;
+    // std::cerr << "End of starting agcosmosdaemon from Node ag-chain-cosmos" << std::endl;
     return Napi::Number::New(env, daemonPort);
 }
 
 static Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
     exports = NodeReplier::Init(env, exports);
     exports.Set(
-        Napi::String::New(env, "runAG_COSMOS"),
-        Napi::Function::New(env, runAG_COSMOS, "runAG_COSMOS"));
+        Napi::String::New(env, "runAgCosmosDaemon"),
+        Napi::Function::New(env, runAgCosmosDaemon, "runAgCosmosDaemon"));
     exports.Set(
         Napi::String::New(env, "send"),
         Napi::Function::New(env, send, "send"));

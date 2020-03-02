@@ -42,15 +42,14 @@ test('meter transform', async t => {
         `${base}/${testDir}/source.js`,
         'utf8',
       );
-      const rewritten = await fs.promises.readFile(
-        `${base}/${testDir}/rewrite.js`,
-        'utf8',
-      );
-      t.equals(
-        rewrite(src.trimRight(), testDir),
-        rewritten.trimRight(),
-        `rewrite ${testDir}`,
-      );
+      const rewritten = await fs.promises
+        .readFile(`${base}/${testDir}/rewrite.js`, 'utf8')
+        .catch(_ => undefined);
+      const transformed = rewrite(src.trimRight(), testDir);
+      if (rewritten === undefined) {
+        console.log(transformed);
+      }
+      t.equals(transformed, rewritten.trimRight(), `rewrite ${testDir}`);
     }
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');

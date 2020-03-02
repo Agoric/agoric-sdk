@@ -17,7 +17,6 @@ log.startLogging(sys.stdout)
 
 # TODO: Don't hardcode these.
 INITIAL_TOKEN = [1, 'agmedallion']
-AG_BOOTSTRAP_PASSWORD = b'mmmmmmmm'
 
 MAILBOX_URL = u"ws://relay.magic-wormhole.io:4000/v1"
 #MAILBOX_URL = u"ws://10.0.2.24:4000/v1"
@@ -212,10 +211,10 @@ def enablePubkey(reactor, opts, config, nickname, pubkey, initialToken = INITIAL
     if initialToken is not None:
         amountToken = ''.join([str(o) for o in initialToken])
         args = [
-            'tx', 'send', config['bootstrapAddress'], pubkey, amountToken,
+            'tx', 'send', '--keyring-backend=test', config['bootstrapAddress'], pubkey, amountToken,
             '--yes', '--broadcast-mode', 'block', # Don't return until committed.
         ]
-        code, output = yield agCosmosHelper(reactor, opts, config, AG_BOOTSTRAP_PASSWORD + b'\n', args, 10)
+        code, output = yield agCosmosHelper(reactor, opts, config, args, 10)
         if code != 0:
             return ret({"ok": False, "error": 'transfer returned ' + str(code)})
 
@@ -382,7 +381,7 @@ def run_server(reactor, o):
     return defer.Deferred()
 
 @defer.inlineCallbacks
-def agCosmosHelper(reactor, opts, config, input, args, retries = 1):
+def agCosmosHelper(reactor, opts, config, args, retries = 1):
     code = None
     while code != 0 and retries > 0:
         if code is not None:
@@ -392,7 +391,7 @@ def agCosmosHelper(reactor, opts, config, input, args, retries = 1):
         rpcAddr = random.choice(config['rpcAddrs'])
         print('running', rpcAddr, args)
         d = defer.Deferred()
-        processProtocol = SendInputAndWaitProtocol(d, input)
+        processProtocol = SendInputAndWaitProtocol(d, b'')
         program = 'ag-cosmos-helper' 
         reactor.spawnProcess(processProtocol, '/usr/local/bin/' + program, args=[
             program, *args,
@@ -443,7 +442,7 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
         missing = False
         try:
             print('checking account', pubkey)
-            code, output = yield agCosmosHelper(reactor, opts, config, b'', ['query', 'account', pubkey])
+            code, output = yield agCosmosHelper(reactor, opts, config, ['query', 'account', pubkey])
             if code == 0 and output['type'] == 'cosmos-sdk/Account':
                 needIngress.append(pkobj)
                 missing = True
@@ -452,7 +451,7 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
                     if coin['denom'] == INITIAL_TOKEN[1] and int(coin['amount']) >= INITIAL_TOKEN[0]:
                         missing = False
                         break
-            elif code == 9:
+            elif code == 1 or code == 9:
                 needIngress.append(pkobj)
                 missing = True
         except Exception as e:
@@ -462,8 +461,9 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
         if missing:
             print('generating transaction for', pubkey)
             # Estimate the gas, with a little bit of padding.
-            args = ['tx', 'send', config['bootstrapAddress'], pubkey, amountToken, '--gas=auto', '--gas-adjustment=1.05']
-            code, output = yield agCosmosHelper(reactor, opts, config, b'', args, 1)
+            args = ['tx', 'send', '--keyring-backend=test', config['bootstrapAddress'], pubkey,
+                amountToken, '--gas=auto', '--gas-adjustment=1.05']
+            code, output = yield agCosmosHelper(reactor, opts, config, args, 1)
             if code == 0:
                 txes.append(output)
 
@@ -486,12 +486,12 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
 
             # Now the temp.name contents are available
             args = [
-                'tx', 'sign', temp.name, '--from', config['bootstrapAddress'],
+                'tx', 'sign', temp.name, '--keyring-backend=test', '--from', config['bootstrapAddress'],
                 '--yes', '--append=false',
             ]
 
             # Use the temp file in the sign request.
-            code, output = yield agCosmosHelper(reactor, opts, config, AG_BOOTSTRAP_PASSWORD + b'\n', args, 10)
+            code, output = yield agCosmosHelper(reactor, opts, config, args, 10)
         if code != 0:
             raise Exception('Cannot sign transaction')
         with NamedTemporaryFile() as temp:
@@ -505,7 +505,7 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
                 '--broadcast-mode', 'block',
             ]
 
-            code, output = yield agCosmosHelper(reactor, opts, config, b'', args, 10)
+            code, output = yield agCosmosHelper(reactor, opts, config, args, 10)
         if code != 0:
             raise Exception('Cannot broadcast transaction')
 

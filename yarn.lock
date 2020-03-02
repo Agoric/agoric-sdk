@@ -37,6 +37,23 @@
   resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-2.0.1.tgz#28aba18367deba354bdd424bdf6daa48f5e7d37f"
   integrity sha512-puvWkoaJovQib/YaSRSGJ8Kn9rogi/yyaVa3d5znSZb5WiYfUiEKW35BfexHhAdi0VfPz2anFHoRBoBSUIijNA==
 
+"@agoric/tendermint@^4.1.3":
+  version "4.1.3"
+  resolved "https://registry.yarnpkg.com/@agoric/tendermint/-/tendermint-4.1.3.tgz#076e1897fe60a9815e88f42cc4100c97afc0b586"
+  integrity sha512-/hOYDDk+C/WOZEHflnzPIduKOQOuO+Nbp2Jmoye6heqaIdH/EajH4coP08l0ddlIP66k7ds4Qu50K/DW51pYLg==
+  dependencies:
+    axios "^0.19.0"
+    camelcase "^4.0.0"
+    create-hash "^1.1.3"
+    debug "^3.1.0"
+    json-stable-stringify "^1.0.1"
+    ndjson "^1.5.0"
+    old "^0.1.3"
+    pumpify "^1.3.5"
+    supercop.js "^2.0.1"
+    varstruct "^6.1.1"
+    websocket-stream "^5.1.1"
+
 "@babel/code-frame@7.5.5", "@babel/code-frame@^7.0.0":
   version "7.5.5"
   resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.5.5.tgz#bc0782f6d69f7b7d49531219699b988f669a8f9d"
@@ -13902,23 +13919,6 @@ temp@^0.9.0, temp@^0.9.1:
   integrity sha512-WMuOgiua1xb5R56lE0eH6ivpVmg/lq2OHm4+LtT/xtEtPQ+sz6N3bBM6WZ5FvO1lO4IKIOb43qnhoc4qxP5OeA==
   dependencies:
     rimraf "~2.6.2"
-
-tendermint@^4.0.8:
-  version "4.0.8"
-  resolved "https://registry.yarnpkg.com/tendermint/-/tendermint-4.0.8.tgz#5acc1d7f7e971a60b5d70a8f1c9c42cd7be92992"
-  integrity sha512-K9lnePVrKxRj2ju47NVaDgbXMvkIOcfS+XXukVnyoUztEj8hcgu2Bfe6CB6O1R+FyjOu83tB+9nL8+jy+J05ZQ==
-  dependencies:
-    axios "^0.19.0"
-    camelcase "^4.0.0"
-    create-hash "^1.1.3"
-    debug "^3.1.0"
-    json-stable-stringify "^1.0.1"
-    ndjson "^1.5.0"
-    old "^0.1.3"
-    pumpify "^1.3.5"
-    supercop.js "^2.0.1"
-    varstruct "^6.1.1"
-    websocket-stream "^5.1.1"
 
 terser-webpack-plugin@2.2.1:
   version "2.2.1"

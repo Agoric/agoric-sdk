@@ -125,6 +125,14 @@ function run() {
         console.error(`error resetting`, e);
       }
     }
+    call({ type: 'getHighestHistory' })
+      .then(res => {
+        // eslint-disable-next-line no-use-before-define
+        setNextHistNum(res.highestHistory + 1);
+        // console.log(`nextHistNum is now ${nextHistNum}`, res);
+      })
+      .then(_ => call({ type: 'rebroadcastHistory' }))
+      .catch(_ => ws.close());
   });
 
   const inp = document.getElementById('input');

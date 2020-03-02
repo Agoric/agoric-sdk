@@ -11,7 +11,7 @@
   become_user: "{{ service }}"
   become: true
   shell: "\
-    echo 'mmmmmmmm' | ag-cosmos-helper tx send {{ STAKER }}-{{ STAKER_NODE }} \
+    ag-cosmos-helper tx send --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }} \
       {{ item }} --yes --chain-id={{ CHAIN_NAME }}"
   with_items:
     - "{{ stakers_data.stdout_lines }}"

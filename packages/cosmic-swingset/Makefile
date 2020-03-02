@@ -3,8 +3,8 @@ CHAIN_ID = agoric
 INITIAL_TOKENS = 1000agmedallion
 
 # By default, make the fake chain in scenario3 produce
-# "blocks" at 5-second intervals.
-FAKE_CHAIN_DELAY = 5
+# "blocks" as soon as they come in.
+FAKE_CHAIN_DELAY = 0
 
 NUM_SOLOS?=1
 BASE_PORT?=8000
@@ -59,7 +59,8 @@ scenario1-run-client:
 	AG_SOLO_BASEDIR=t7 ve3/bin/ag-setup-solo --webhost=127.0.0.1:$(BASE_PORT)
 
 AGC = ./lib/ag-chain-cosmos
-scenario2-setup: build-cosmos
+scenario2-setup: build-cosmos scenario2-setup-nobuild
+scenario2-setup-nobuild:
 	rm -rf ~/.ag-chain-cosmos
 	$(AGC) init scenario2-chain --chain-id=$(CHAIN_ID)
 	rm -rf t1
@@ -72,7 +73,8 @@ scenario2-setup: build-cosmos
 		esac; \
 		$(AGC) add-genesis-account `cat t1/$$port/ag-cosmos-helper-address` $$toks; \
 	done
-	echo 'mmmmmmmm' | $(AGC) gentx --home-client=t1/$(BASE_PORT)/ag-cosmos-helper-statedir --name=ag-solo --amount=1000000uagstake
+	$(AGC) gentx --keyring-backend=test --home-client=t1/$(BASE_PORT)/ag-cosmos-helper-statedir \
+		--name=ag-solo --amount=1000000uagstake
 	$(AGC) collect-gentxs
 	$(AGC) validate-genesis
 	../deployment/set-json.js ~/.ag-chain-cosmos/config/genesis.json --agoric-genesis-overrides
@@ -85,7 +87,7 @@ scenario2-run-chain:
 		ba="$$ba "`cat $$acha`; \
 	done; \
 	ROLE=two_chain BOOT_ADDRESS="$$ba" $(NODE_DEBUG) \
-	  `$(BREAK_CHAIN) && echo --inspect-brk` $(AGC) start
+	  `$(BREAK_CHAIN) && echo --inspect-brk` $(AGC) start --pruning=nothing
 scenario2-run-client:
 	cd t1/$(BASE_PORT) && ../../bin/ag-solo start --role=two_client
 
@@ -100,13 +102,14 @@ scenario2-run-client:
 scenario3-setup:
 	rm -rf t3
 	bin/ag-solo init t3 --egresses=fake
-	(cd t3 && \
-			../bin/ag-solo set-fake-chain --role=two_chain --delay=$(FAKE_CHAIN_DELAY) myFakeGCI)
 	@echo 'Execute `make scenario3-run` to run the client and simulated chain'
 
 # This runs both the client and the fake chain.
 scenario3-run-client: scenario3-run
+# Set the fake chain here in case the delay has changed.
 scenario3-run:
+	(cd t3 && \
+			../bin/ag-solo set-fake-chain --role=two_chain --delay=$(FAKE_CHAIN_DELAY) myFakeGCI)
 	cd t3 && ../bin/ag-solo start --role=two_client
 
 # These rules are the old scenario3.  No fake delay at all.
@@ -130,7 +133,10 @@ compile-go: go.sum
 	go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=c-shared -o lib/libagcosmosdaemon.so lib/agcosmosdaemon.go
 	test "`uname -s 2>/dev/null`" != Darwin || install_name_tool -id `pwd`/lib/libagcosmosdaemon.so lib/libagcosmosdaemon.so
 
-build-cosmos: compile-go node-compile-gyp
+build-cosmos: compile-go node-compile-gyp install
+
+compile-debug:
+	go install -v $(MOD_READONLY) $(BUILD_FLAGS) ./cmd/ag-chain-cosmos
 
 # We need this so that node-gyp can be found.
 node-compile-gyp:
@@ -191,3 +197,59 @@ install-setup-client:
 	ve3-client/bin/pip install --editable ./setup-solo
 run-setup-client:
 	ve3-client/bin/ag-setup-solo
+
+###############################################################################
+###                                Protobuf                                 ###
+###############################################################################
+
+proto-all: proto-gen proto-lint proto-check-breaking
+
+proto-gen:
+	@./scripts/protocgen.sh
+
+proto-lint:
+	@buf check lint --error-format=json
+
+proto-check-breaking:
+	@buf check breaking --against-input '.git#branch=master'
+
+GOGO_PROTO_URL   = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
+COSMOS_SDK_URL   = https://raw.githubusercontent.com/cosmos/cosmos-sdk/master
+COSMOS_PROTO_URL = https://raw.githubusercontent.com/regen-network/cosmos-proto/master
+
+GOGO_PROTO_TYPES    = third_party/proto/gogoproto
+COSMOS_PROTO_TYPES  = third_party/proto/cosmos-proto
+SDK_PROTO_TYPES     = third_party/proto/cosmos-sdk/types
+AUTH_PROTO_TYPES    = third_party/proto/cosmos-sdk/x/auth/types
+VESTING_PROTO_TYPES = third_party/proto/cosmos-sdk/x/auth/vesting/types
+SUPPLY_PROTO_TYPES  = third_party/proto/cosmos-sdk/x/supply/types
+
+proto-install:
+	@echo "Go to github.com/protocolbuffers/protobuf/releases"
+	go get -u github.com/golang/protobuf/protoc-gen-go
+
+proto-update-deps:
+	@mkdir -p $(GOGO_PROTO_TYPES)
+	@curl -sSL $(GOGO_PROTO_URL)/gogoproto/gogo.proto > $(GOGO_PROTO_TYPES)/gogo.proto
+
+	@mkdir -p $(COSMOS_PROTO_TYPES)
+	@curl -sSL $(COSMOS_PROTO_URL)/cosmos.proto > $(COSMOS_PROTO_TYPES)/cosmos.proto
+
+	@mkdir -p $(SDK_PROTO_TYPES)
+	@curl -sSL $(COSMOS_SDK_URL)/types/types.proto > $(SDK_PROTO_TYPES)/types.proto
+
+	@mkdir -p $(AUTH_PROTO_TYPES)
+	@curl -sSL $(COSMOS_SDK_URL)/x/auth/types/types.proto > $(AUTH_PROTO_TYPES)/types.proto
+	@sed -i '' '5 s|types/|third_party/proto/cosmos-sdk/types/|g' $(AUTH_PROTO_TYPES)/types.proto
+
+	@mkdir -p $(VESTING_PROTO_TYPES)
+	@curl -sSL $(COSMOS_SDK_URL)/x/auth/vesting/types/types.proto > $(VESTING_PROTO_TYPES)/types.proto
+	@sed -i '' '5 s|types/|third_party/proto/cosmos-sdk/types/|g' $(VESTING_PROTO_TYPES)/types.proto
+	@sed -i '' '6 s|x/auth/types/|third_party/proto/cosmos-sdk/x/auth/types/|g' $(VESTING_PROTO_TYPES)/types.proto
+
+	@mkdir -p $(SUPPLY_PROTO_TYPES)
+	@curl -sSL $(COSMOS_SDK_URL)/x/supply/types/types.proto > $(SUPPLY_PROTO_TYPES)/types.proto
+	@sed -i '' '5 s|types/|third_party/proto/cosmos-sdk/types/|g' $(SUPPLY_PROTO_TYPES)/types.proto
+	@sed -i '' '6 s|x/auth/types/|third_party/proto/cosmos-sdk/x/auth/types/|g' $(SUPPLY_PROTO_TYPES)/types.proto
+
+.PHONY: proto-all proto-gen proto-lint proto-check-breaking proto-update-deps
