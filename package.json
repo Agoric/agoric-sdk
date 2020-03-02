@@ -51,12 +51,14 @@
     "eslint-plugin-import": "^2.20.0",
     "eslint-plugin-jsx-a11y": "^6.2.3",
     "eslint-plugin-prettier": "^3.1.2",
+    "lerna": "^3.20.2",
     "prettier": "^1.18.2"
   },
   "scripts": {
     "OFF-clean": "yarn workspaces run clean",
     "check-dependencies": "node ./scripts/check-mismatched-dependencies.js",
     "prettier": "yarn workspaces run prettier",
+    "lerna": "lerna",
     "link-cli": "node ./scripts/link-cli.js",
     "lint-fix": "yarn workspaces run lint-fix",
     "lint-check": "yarn workspaces run lint-check",
