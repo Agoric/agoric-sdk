@@ -311,12 +311,17 @@ show-config      display the client connection parameters
           break;
 
         default:
-          throw Error(
-            `${versionKind} is not one of "major", "minor", or "revision"`,
-          );
+          if (!versionKind.match(/^[1-9]/)) {
+            throw Error(
+              `${versionKind} is not one of "major", "minor", "revision", or 1.2.3`,
+            );
+          }
       }
 
-      const vstr = `${major}.${minor}.${revision}${tag}`;
+      let vstr = `${major}.${minor}.${revision}${tag}`;
+      if (versionKind.match(/^[1-9]/)) {
+        vstr = versionKind;
+      }
       console.log(vstr);
       await createFile(versionFile, vstr);
       break;
