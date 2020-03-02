@@ -1,5 +1,5 @@
 {
-  "name": "swingset-runner",
+  "name": "@agoric/swingset-runner",
   "version": "0.1.0",
   "private": true,
   "description": "Application to launch SwingSet instances for development and testing",
