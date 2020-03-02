@@ -1,6 +1,11 @@
 {
   "packages": [
-    "packages/*"
+    "packages/*", 
+    "packages/agoric-cli/template/.agservers",
+    "packages/agoric-cli/template",
+    "packages/agoric-cli/template/api",
+    "packages/agoric-cli/template/contract",
+    "packages/agoric-cli/template/ui"
   ],
   "version": "independent"
 }
