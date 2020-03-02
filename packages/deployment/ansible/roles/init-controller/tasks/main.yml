@@ -11,15 +11,7 @@
   become_user: "{{ service }}"
   shell:
     cmd: "rm -rf controller && ag-solo init controller"
-    creates: controller/ag-cosmos-helper-address
     chdir: "/home/{{ service }}"
-
-- name: "Reset {{ service }}"
-  become: yes
-  become_user: "{{ service }}"
-  shell:
-    cmd: "ag-solo reset-state"
-    chdir: "/home/{{ service }}/controller"
 
 - name: "Ensure /home/{{ service }}/.ag-pserver/wwwroot/{{ CHAIN_NAME }} exists"
   become: yes
