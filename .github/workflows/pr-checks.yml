@@ -1,0 +1,17 @@
+name: PR Checks
+
+# run CI on all PRs (even the ones that target non-master
+# branches)
+
+on:
+ pull_request:
+
+jobs:
+  # Check that commits conform to https://www.conventionalcommits.org/en/v1.0.0/
+  conventional-commits:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: check Conventional Commits
+      uses: docker://outillage/commitsar
+  
