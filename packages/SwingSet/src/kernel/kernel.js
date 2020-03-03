@@ -1,7 +1,6 @@
 /* global replaceGlobalMeter */
 import harden from '@agoric/harden';
 import { makeMarshal } from '@agoric/marshal';
-import Nat from '@agoric/nat';
 import evaluateProgram from '@agoric/evaluate';
 import { assert, details } from '@agoric/assert';
 import makeVatManager from './vatManager';
@@ -535,8 +534,6 @@ export default function buildKernel(kernelEndowments) {
     switch (name) {
       case '@agoric/harden':
         return harden;
-      case '@agoric/nat':
-        return Nat;
       case '@agoric/evaluate':
         return evaluateProgram;
       default:
