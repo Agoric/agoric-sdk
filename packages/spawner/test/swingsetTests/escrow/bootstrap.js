@@ -11,16 +11,20 @@ function build(E, log) {
   function testEscrowServiceMismatches(host, randMintP, artMintP) {
     log('starting testEscrowServiceCheckMismatches');
     const installationP = E(host).install(escrowExchangeSrcs);
-    const randUnitsP = E(E(randMintP).getIssuer()).makeUnits(3);
-    const blueBoyUnits = E(E(artMintP).getIssuer()).makeUnits('Blue Boy');
-    const blueGirlUnits = E(E(artMintP).getIssuer()).makeUnits('Blue Girl');
+    const randAmountP = E(E(E(randMintP).getIssuer()).getAmountMath()).make(3);
+    const blueBoyAmount = E(E(E(artMintP).getIssuer()).getAmountMath()).make('Blue Boy');
+    const blueGirlAmount = E(E(E(artMintP).getIssuer()).getAmountMath()).make('Blue Girl');
     const actualTermsP = harden({
-      left: randUnitsP,
-      right: blueBoyUnits,
+      left: randAmountP,
+      right: blueBoyAmount,
+      leftIssuer: E(randMintP).getIssuer(),
+      rightIssuer: E(artMintP).getIssuer(),
     });
     const allegedTermsP = harden({
-      left: randUnitsP,
-      right: blueGirlUnits,
+      left: randAmountP,
+      right: blueGirlAmount,
+      leftIssuer: E(randMintP).getIssuer(),
+      rightIssuer: E(artMintP).getIssuer(),
     });
     const invitesP = E(installationP).spawn(actualTermsP);
     const result = invitesP.then(invites => {
@@ -174,8 +178,7 @@ function build(E, log) {
   const obj0 = {
     async bootstrap(argv, vats) {
       const host = await E(vats.host).makeHost();
-      const { mint: randMintP } = E(vats.mint).produceIssuer('rand');
-
+      const { mint: randMintP } = await E(vats.mint).produceIssuer('rand');
       const { mint: artMintP } = produceIssuer('art', 'set');
       switch (argv[0]) {
         case 'escrow misMatches': {
