@@ -194,8 +194,8 @@ const makeZoe = (additionalEndowments = {}) => {
   // contract code and registers it with Zoe associated with an
   // `installationHandle` for identification, `makeInstance` creates
   // an instance from an installation, `getInstance` credibly
-  // retrieves an instance from Zoe, and `escrow` allows users to
-  // securely escrow and get an escrow receipt and payouts in return.
+  // retrieves an instance from Zoe, and `redeem` allows users to
+  // securely escrow and get a seat and payouts in return.
 
   const zoeService = harden({
     getInviteIssuer: () => inviteIssuer,
@@ -253,10 +253,15 @@ const makeZoe = (additionalEndowments = {}) => {
           terms,
         });
 
+        // We create the instanceRecord before the contract is made
+        // that the contract can query Zoe for information about the
+        // instance (get issuers, amountMaths, etc.)
         instanceTable.create(instanceRecord, instanceHandle);
         return Promise.resolve(
           installation.makeContract(contractFacet, terms),
         ).then(value => {
+          // Once the contract is made, we add the publicAPI to the
+          // contractRecord
           const { invite, publicAPI } = value;
           instanceTable.update(instanceHandle, { publicAPI });
           return invite;
@@ -330,7 +335,7 @@ const makeZoe = (additionalEndowments = {}) => {
 
       const { issuers } = instanceTable.get(instanceHandle);
 
-      // Promise flow = issuer -> purse -> deposit payment -> escrow receipt
+      // Promise flow = issuer -> purse -> deposit payment -> seat + payout
       const paymentDepositedPs = issuers.map((issuer, i) => {
         const issuerRecordP = issuerTable.getPromiseForIssuerRecord(issuer);
         const payoutRule = offerRules.payoutRules[i];

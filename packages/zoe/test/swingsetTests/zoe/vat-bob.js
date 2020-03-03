@@ -69,7 +69,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         bobPayments,
       );
 
-      // 2. Bob makes an offer with his escrow receipt
+      // 2. Bob makes an offer
       const outcome = await E(seat).makeOffer();
 
       log(outcome);

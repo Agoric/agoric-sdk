@@ -107,7 +107,7 @@ test('zoe - atomicSwap', async t => {
       bobPayments,
     );
 
-    // 7: Bob makes an offer with his escrow receipt
+    // 7: Bob makes an offer
     const bobOfferResult = await bobSeat.matchOffer();
 
     t.equals(

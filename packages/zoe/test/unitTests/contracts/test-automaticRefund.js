@@ -174,10 +174,9 @@ test('zoe with automaticRefund', async t => {
     });
     const alicePayments = [aliceMoolaPayment, undefined];
 
-    // Alice gets two kinds of things back: an 'escrowReceipt' that
-    // represents what she escrowed and which she can use interact
-    // safely with untrusted contracts, and a payout promise that resolves to
-    // the array of payments
+    // Alice gets two kinds of things back: a seat which she can use
+    // interact with the contract, and a payout promise
+    // that resolves to the array of promises for payments
     const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
       aliceInvite,
       aliceOfferRules,
@@ -372,7 +371,7 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
       undefined,
     ]);
 
-    // 5: Alice makes an offer with each of her escrow receipts
+    // 5: Alice makes an offer
     aliceSeat1.makeOffer();
     aliceSeat2.makeOffer();
     aliceSeat3.makeOffer();
