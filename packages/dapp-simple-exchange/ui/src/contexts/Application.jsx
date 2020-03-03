@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useReducer } from 'react';
 
 import {
   activateWebSocket,
@@ -10,12 +10,9 @@ import {
   serverConnected,
   serverDisconnected,
   deactivateConnection,
-  changeAmount,
   resetState,
 } from '../store/actions';
 import { reducer, createDefaultState } from '../store/reducer';
-
-import { CONTRACT_ID } from '../utils/constants';
 
 export const ApplicationContext = createContext();
 
@@ -23,16 +20,11 @@ export function useApplicationContext() {
   return useContext(ApplicationContext);
 }
 
+// eslint-disable-next-line react/prop-types
 export default function Provider({ children }) {
   const [state, dispatch] = useReducer(reducer, createDefaultState());
-  const {
-    active,
-    inputPurse,
-    outputPurse,
-    inputAmount,
-    outputAmount,
-    freeVariable,
-  } = state;
+
+  const { active } = state;
 
   useEffect(() => {
     function messageHandler(message) {
@@ -66,40 +58,6 @@ export default function Provider({ children }) {
       deactivateWebSocket();
     }
   }, [active]);
-
-  useEffect(() => {
-    function messageHandler(message) {
-      if (!message) return;
-      const { type, data } = message;
-      if (type === 'autoswapPrice') {
-        dispatch(changeAmount(data, 1 - freeVariable));
-      }
-    }
-
-    if (inputPurse && outputPurse && freeVariable === 0 && inputAmount > 0) {
-      doFetch({
-        type: 'autoswapGetPrice',
-        data: {
-          instanceId: CONTRACT_ID,
-          extent0: inputAmount,
-          assayId0: inputPurse.assayId,
-          assayId1: outputPurse.assayId,
-        },
-      }).then(messageHandler);
-    }
-
-    if (inputPurse && outputPurse && freeVariable === 1 && outputAmount > 0) {
-      doFetch({
-        type: 'autoswapGetPrice',
-        data: {
-          instanceId: CONTRACT_ID,
-          extent0: outputAmount,
-          assayId0: outputPurse.assayId,
-          assayId1: inputPurse.assayId,
-        },
-      }).then(messageHandler);
-    }
-  }, [inputPurse, outputPurse, inputAmount, outputAmount, freeVariable]);
 
   return (
     <ApplicationContext.Provider value={{ state, dispatch }}>

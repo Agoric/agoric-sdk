@@ -4,10 +4,6 @@ import {
   SERVER_CONNECTED,
   SERVER_DISCONNECTED,
   UPDATE_PURSES,
-  CHANGE_PURSE,
-  SWAP_INPUTS,
-  CHANGE_AMOUNT,
-  CREATE_OFFER,
   RESET_STATE,
 } from './types';
 
@@ -30,31 +26,6 @@ export const serverDisconnected = () => ({
 export const updatePurses = purses => ({
   type: UPDATE_PURSES,
   payload: purses,
-});
-
-export const changePurse = (purse, fieldNumber, freeVariable) => ({
-  type: CHANGE_PURSE,
-  payload: { purse, fieldNumber, freeVariable },
-});
-
-export const swapInputs = () => ({
-  type: SWAP_INPUTS,
-});
-
-export const changeAmount = (amount, fieldNumber, freeVariable) => ({
-  type: CHANGE_AMOUNT,
-  payload: { amount, fieldNumber, freeVariable },
-});
-
-export const createOffer = (
-  instanceId,
-  inputAmount,
-  outputAmount,
-  inputPurse,
-  outputPurse,
-) => ({
-  type: CREATE_OFFER,
-  payload: { instanceId, inputAmount, outputAmount, inputPurse, outputPurse },
 });
 
 export const resetState = () => ({

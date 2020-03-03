@@ -4,26 +4,51 @@ import {
   SERVER_CONNECTED,
   SERVER_DISCONNECTED,
   UPDATE_PURSES,
-  UPDATE_EXCHANGE_AMOUNT,
-  CHANGE_PURSE,
-  SWAP_INPUTS,
-  CHANGE_AMOUNT,
-  CREATE_OFFER,
   RESET_STATE,
 } from './types';
+
 import {
   activateConnection,
   deactivateConnection,
   serverConnected,
   serverDisconnected,
   updatePurses,
-  updateExchangeAmount,
-  changePurse,
-  changeAmount,
-  swapInputs,
-  createOffer,
   resetState,
 } from './operations';
+
+function randomBoolean() {
+  return Math.random < 0.5;
+}
+
+function randomInteger(max) {
+  return Math.floor(Math.random() * max);
+}
+
+function createFakeSide(side) {
+  const allegedName = side ? 'moola' : 'simoleans';
+  const result = {
+    label: { assay: {}, allegedName },
+    extent: randomInteger(1000),
+  };
+  return result;
+}
+
+function createFakeOrder() {
+  const order = randomBoolean();
+  const result = { want: createFakeSide(order), offer: createFakeSide(order) };
+  return result;
+}
+
+function createFakeOrderHistory(buys, sells) {
+  const result = { buys: [], sells: [] };
+  for (let i = 0; i < buys; i += 1) {
+    result.buys.push(createFakeOrder());
+  }
+  for (let i = 0; i < sells; i += 1) {
+    result.sells.push(createFakeOrder());
+  }
+  return result;
+}
 
 export function createDefaultState() {
   return {
@@ -35,7 +60,8 @@ export function createDefaultState() {
     outputPurse: null,
     inputAmount: null,
     outputAmount: null,
-    freeVariable: null,
+    orderbook: createFakeOrderHistory(50, 50),
+    orderhistory: createFakeOrderHistory(50, 50),
   };
 }
 
@@ -53,18 +79,6 @@ export const reducer = (state, { type, payload }) => {
 
     case UPDATE_PURSES:
       return updatePurses(state, payload);
-    case UPDATE_EXCHANGE_AMOUNT:
-      return updateExchangeAmount(state, payload);
-
-    case CHANGE_PURSE:
-      return changePurse(state, payload);
-    case CHANGE_AMOUNT:
-      return changeAmount(state, payload);
-    case SWAP_INPUTS:
-      return swapInputs(state);
-
-    case CREATE_OFFER:
-      return createOffer(state, payload);
 
     case RESET_STATE:
       return resetState(state);

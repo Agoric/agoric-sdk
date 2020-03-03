@@ -26,6 +26,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
+/* eslint-disable react/prop-types */
 export default function AssetInput({
   title,
   purses,
@@ -41,15 +42,7 @@ export default function AssetInput({
 
   return (
     <Grid container spacing={3}>
-      <Grid
-        item
-        xs={12}
-        sm={8}
-        container
-        direction="column"
-        alignItems="flex-end"
-        justify="flex-end"
-      >
+      <Grid item xs={6}>
         <TextField
           label={title}
           type="number"
@@ -75,7 +68,7 @@ export default function AssetInput({
           error={amountError}
         />
       </Grid>
-      <Grid item xs={12} sm={4}>
+      <Grid item xs={6}>
         <TextField
           select
           label="Currency"
@@ -111,3 +104,4 @@ export default function AssetInput({
     </Grid>
   );
 }
+/* eslint-enable react/prop-types */
