@@ -15,7 +15,7 @@
     "build-kernel": "node -r esm scripts/build-kernel.js",
     "pack": "npm run-script build-kernel && npm pack",
     "publish": "npm run-script pack && npm publish --access public",
-    "test": "npm run-script build-kernel && tape -r esm test/test-node-version.js && tape -r esm 'test/**/test*.js' | tap-spec",
+    "test": "npm run-script build-kernel && tap --no-coverage test/test-node-version.js && tap --no-coverage --reporter specy --timeout 60 'test/**/test*.js'",
     "test-nosort": "npm run-script build-kernel && tape -r esm test/test-node-version.js && tape -r esm 'test/**/test*.js'",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "esm": "^3.2.5",
-    "tap-spec": "^5.0.0",
+    "tap": "^14.10.5",
     "tape": "^4.11.0",
     "tape-promise": "^4.0.0"
   },
