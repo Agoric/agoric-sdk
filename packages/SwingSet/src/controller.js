@@ -4,7 +4,6 @@ import fs from 'fs';
 import path from 'path';
 // import { rollup } from 'rollup';
 import harden from '@agoric/harden';
-import Nat from '@agoric/nat';
 import SES from 'ses';
 import { assert } from '@agoric/assert';
 
@@ -163,11 +162,11 @@ function makeSESEvaluator(registerEndOfCrank) {
 
   // TODO: if the 'require' we provide here supplies a non-pure module,
   // that could open a communication channel between otherwise isolated
-  // Vats. For now that's just harden and Nat, but others might get added
-  // in the future, so pay attention to what we allow in. We could build
-  // a new makeRequire for each Vat, but 1: performance and 2: the same
-  // comms problem exists between otherwise-isolated code within a single
-  // Vat so it doesn't really help anyways
+  // Vats. For now that's just harden, but others might get added in the
+  // future, so pay attention to what we allow in. We could build a new
+  // makeRequire for each Vat, but 1: performance and 2: the same comms
+  // problem exists between otherwise-isolated code within a single Vat
+  // so it doesn't really help anyways
   const r = s.makeRequire({
     '@agoric/evaluate': {
       attenuatorSource: `${makeEvaluate}`,
@@ -187,7 +186,6 @@ function makeSESEvaluator(registerEndOfCrank) {
       },
     },
     '@agoric/harden': true,
-    '@agoric/nat': Nat,
   });
 
   const realmRegisterEndOfCrank = s.evaluate(
