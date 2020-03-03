@@ -1,5 +1,5 @@
 {
-  "name": "@agoric/dapp-api",
+  "name": "@agoric/dapp-simple-exchange-api",
   "private": true,
   "version": "0.1.0",
   "description": "@DIR@ Agoric Dapp web server handler",

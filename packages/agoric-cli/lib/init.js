@@ -1,14 +1,23 @@
 import parseArgs from 'minimist';
 import chalk from 'chalk';
 
+const DEFAULT_DAPP_TEMPLATE = '@agoric/dapp-simple-exchange';
+
 export default async function initMain(progname, rawArgs, priv) {
   const { console, error, fs } = priv;
-  const { _: args, force } = parseArgs(rawArgs, { boolean: ['force'] });
+  const { _: args, force, 'dapp-template': dappTemplate } = parseArgs(rawArgs, {
+    boolean: ['force'],
+    default: { 'dapp-template': DEFAULT_DAPP_TEMPLATE },
+  });
 
   if (args.length !== 1) {
     return error(`you must specify exactly one DIR`);
   }
   const [DIR] = args;
+
+  const slashPJson = '/package.json';
+  const pjson = require.resolve(`${dappTemplate}${slashPJson}`);
+  const dappRoot = pjson.substr(0, pjson.length - slashPJson.length);
 
   const {
     mkdir,
@@ -34,15 +43,15 @@ export default async function initMain(progname, rawArgs, priv) {
     name === 'node_modules' ||
     (suffix === '/.agservers' && name !== 'package.json' && name[0] !== '.');
 
-  const writeTemplate = async (templateDir, stem) => {
+  const writeTemplate = async (templateDir, destDir = DIR, stem) => {
     const template = await readFile(`${templateDir}${stem}`, 'utf-8');
     const content = template
       .replace(/['"]@DIR@['"]/g, JSON.stringify(DIR))
       .replace(/@DIR@/g, DIR);
-    return writeFile(`${DIR}${stem}`, content);
+    return writeFile(`${destDir}${stem}`, content);
   };
 
-  const recursiveTemplate = async (templateDir, suffix = '') => {
+  const recursiveTemplate = async (templateDir, destDir = DIR, suffix = '') => {
     const cur = `${templateDir}${suffix}`;
     const list = await readdir(cur);
     await Promise.all(
@@ -54,7 +63,7 @@ export default async function initMain(progname, rawArgs, priv) {
         const st = await lstat(`${templateDir}${stem}`);
         let target;
         try {
-          target = await stat(`${DIR}${stem}`);
+          target = await stat(`${destDir}${stem}`);
         } catch (e) {
           if (e.code !== 'ENOENT') {
             throw e;
@@ -62,24 +71,45 @@ export default async function initMain(progname, rawArgs, priv) {
         }
         if (st.isDirectory()) {
           if (!target) {
-            console.log(`mkdir ${DIR}${stem}`);
-            await mkdir(`${DIR}${stem}`);
+            console.log(`mkdir ${destDir}${stem}`);
+            await mkdir(`${destDir}${stem}`);
           }
-          await recursiveTemplate(templateDir, `${stem}`);
+          await recursiveTemplate(templateDir, destDir, `${stem}`);
         } else if (st.isSymbolicLink()) {
-          console.log(`symlink ${DIR}${stem}`);
+          console.log(`symlink ${destDir}${stem}`);
           await symlink(
             await readlink(`${templateDir}${stem}`),
-            `${DIR}${stem}`,
+            `${destDir}${stem}`,
           );
         } else {
-          console.log(`write ${DIR}${stem}`);
-          await writeTemplate(templateDir, stem);
+          console.log(`write ${destDir}${stem}`);
+          await writeTemplate(templateDir, destDir, stem);
         }
       }),
     );
   };
-  await recursiveTemplate(`${__dirname}/../template`);
+  await recursiveTemplate(dappRoot);
+  await mkdir(`${DIR}/.agwallet`);
+  await recursiveTemplate(`${__dirname}/../agwallet`, `${DIR}/.agwallet`);
+
+  const ps = ['', 'api/', 'contract/', 'ui/'].map(dir => {
+    const path = `${DIR}/${dir}package.json`;
+    return readFile(path, 'utf-8')
+      .then(contents => JSON.parse(contents))
+      .then(pkg => {
+        if (!pkg.name || !pkg.name.startsWith(dappTemplate)) {
+          throw Error(
+            `${path}: "name" must start with ${JSON.stringify(dappTemplate)}`,
+          );
+        }
+        pkg.name = `${DIR}${pkg.name.substr(dappTemplate.length)}`;
+        const json = JSON.stringify(pkg, undefined, 2);
+        return writeFile(path, json);
+      })
+      .catch(e => console.error(chalk.bold.blue(`Cannot rewrite ${path}`), e));
+  });
+
+  await Promise.all(ps);
 
   console.log(chalk.bold.yellow(`Done initializing`));
   return 0;

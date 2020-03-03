@@ -33,11 +33,13 @@
     "packages/wallet-frontend",
     "packages/zoe",
     "packages/cosmic-swingset",
+    "packages/dapp-simple-exchange",
+    "packages/dapp-simple-exchange/.agservers",
+    "packages/dapp-simple-exchange/api",
+    "packages/dapp-simple-exchange/contract",
+    "packages/dapp-simple-exchange/ui",
+    "packages/generator-agoric-dapp",
     "packages/agoric-cli",
-    "packages/agoric-cli/template/.agservers",
-    "packages/agoric-cli/template/api",
-    "packages/agoric-cli/template/contract",
-    "packages/agoric-cli/template/ui",
     "packages/deployment"
   ],
   "devDependencies": {
