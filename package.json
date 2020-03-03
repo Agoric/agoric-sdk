@@ -29,7 +29,6 @@
     "packages/ERTP",
     "packages/spawner",
     "packages/sharing-service",
-    "packages/pixel-demo",
     "packages/autoswap-frontend",
     "packages/simple-exchange-frontend",
     "packages/wallet-frontend",
