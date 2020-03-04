@@ -123,7 +123,7 @@ export default function setup(syscall, state, helpers) {
         const uploads = E(vats.uploads).getUploads();
 
         // Wallet for both end-user client and dapp dev client
-        E(vats.wallet).startup(zoe, registrar);
+        await E(vats.wallet).startup(zoe, registrar);
         const wallet = E(vats.wallet).getWallet();
         await Promise.all(
           assayInfo.map(({ petname, regKey, assay }) =>

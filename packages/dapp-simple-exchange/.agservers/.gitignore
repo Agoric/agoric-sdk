@@ -76,8 +76,8 @@ integration-test/transform-tests/output
 # generated Sphinx/ReadTheDocs files 
 /docs/build/
 
-/solo
-/dev
-/testnet
-/chain
-/ve*
+solo
+dev
+testnet
+chain
+ve*

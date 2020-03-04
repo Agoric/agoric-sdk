@@ -32,11 +32,11 @@ export default async function startMain(progname, rawArgs, priv, opts) {
 
   const linkHtml = async name => {
     console.log(chalk.green('linking html directories'));
-    const dappHtml = `.agservers/${name}/dapp-html`;
+    // const dappHtml = `.agservers/${name}/dapp-html`;
     const htmlWallet = `.agservers/${name}/html/wallet`;
     // await Promise.all([fs.unlink(dappHtml).catch(() => {}), fs.unlink(htmlWallet).catch(() => {})]);
     await Promise.all([
-      fs.symlink('../../ui/build', dappHtml).catch(() => {}),
+      // fs.symlink('../../ui/build', dappHtml).catch(() => {}),
       fs.symlink('../../../.agwallet', htmlWallet).catch(() => {}),
     ]);
   };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import { makeStyles } from '@material-ui/core/styles';
 import { Button, Chip } from '@material-ui/core';
@@ -17,6 +17,9 @@ export default function Web3Status() {
   const classes = useStyles();
   const { state, dispatch } = useApplicationContext();
   const { active, connected, account } = state;
+
+  // By default, be connected.
+  useEffect(() => dispatch(activateConnection()), [dispatch]);
 
   function handleConnect() {
     dispatch(activateConnection());
