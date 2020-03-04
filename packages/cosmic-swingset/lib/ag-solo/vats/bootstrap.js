@@ -114,7 +114,7 @@ export default function setup(syscall, state, helpers) {
       // be in the DApp environment (or only in end-user), but we're not yet
       // making a distinction, so the user also gets them.
       async function createLocalBundle(vats, userBundle, payments, assayInfo) {
-        const { contractHost, zoe, registrar } = userBundle;
+        const { zoe, registrar } = userBundle;
         // This will eventually be a vat spawning service. Only needed by dev
         // environments.
         const spawner = E(vats.host).makeHost();

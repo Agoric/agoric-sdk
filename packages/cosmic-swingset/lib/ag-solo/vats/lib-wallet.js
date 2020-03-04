@@ -61,78 +61,65 @@ export async function makeWallet(
     inboxStateChangeHandler(getInboxState());
   }
 
-  function checkOrder(a0, a1, b0, b1) {
-    if (a0 === b0 && a1 === b1) {
-      return true;
-    }
-
-    if (a0 === b1 && a1 === b0) {
-      return false;
-    }
-
-    throw new TypeError('Cannot resolve assay ordering');
-  }
-
   async function makeOffer(date) {
     const {
-      meta: { purseName0, purseName1, instanceId },
+      meta: { instanceId, ...rest },
       offerRules,
     } = dateToOfferRec.get(date);
 
-    const purse0 = petnameToPurse.get(purseName0);
-    const purse1 = petnameToPurse.get(purseName1);
+    // Collapse purseName0, purseName1, ... into purseNames
+    const purseNames = [];
+    for (let i = 0; i < offerRules.payoutRules.length; i += 1) {
+      const purseName = rest[`purseName${i}`];
+      if (purseName === undefined) {
+        break;
+      }
+      purseNames.push(purseName);
+    }
+    const rawPurses = purseNames.map(purseName =>
+      petnameToPurse.get(purseName),
+    );
 
-    const {
-      payoutRules: [
-        {
-          units: { extent: extent0, assayId: assayId0 },
-        },
-        {
-          units: { extent: extent1, assayId: assayId1 },
-        },
-      ],
-    } = offerRules;
+    const { payoutRules } = offerRules;
 
-    const instanceHandleP = E(registrar).get(instanceId);
-    const regAssay0P = E(registrar).get(assayId0);
-    const regAssay1P = E(registrar).get(assayId1);
-    const purseAssay0P = E(purse0).getAssay();
-    const purseAssay1P = E(purse1).getAssay();
-    const purseUnit0P = E(purseAssay0P).makeUnits(extent0 || 0);
-    const purseUnit1P = E(purseAssay0P).makeUnits(extent1 || 0);
+    const instanceP = E(registrar)
+      .get(instanceId)
+      .then(instanceHandle => E(zoe).getInstance(instanceHandle));
+    const regAssaysAP = payoutRules.map(({ units: { assayId } }) =>
+      E(registrar).get(assayId),
+    );
+    const regAssaysP = Promise.all(regAssaysAP);
+    const regUnitsP = Promise.all(
+      payoutRules.map(({ units: { extent } }, i) =>
+        E(regAssaysAP[i]).makeUnits(extent || 0),
+      ),
+    );
+    const purseAssaysP = Promise.all(
+      rawPurses.map(purse => E(purse).getAssay()),
+    );
 
     const [
-      instanceHandle,
-      regAssay0,
-      regAssay1,
-      purseAssay0,
-      purseAssay1,
-      purseUnit0,
-      purseUnit1,
-    ] = await Promise.all([
-      instanceHandleP,
-      regAssay0P,
-      regAssay1P,
-      purseAssay0P,
-      purseAssay1P,
-      purseUnit0P,
-      purseUnit1P,
-    ]);
-
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    const {
-      terms: {
-        assays: [contractAssay0, contractAssay1],
+      {
+        terms: { assays: contractAssays },
+        publicAPI,
       },
-      publicAPI,
-    } = await E(zoe).getInstance(instanceHandle);
+      regAssays,
+      regUnits,
+      purseAssays,
+    ] = await Promise.all([instanceP, regAssaysP, regUnitsP, purseAssaysP]);
 
     // =====================
     // === AWAITING TURN ===
     // =====================
+
+    // Order the purses by registered assays.
+    const purses = regAssays.map(regAssay => {
+      const i = purseAssays.indexOf(regAssay);
+      if (i < 0) {
+        return undefined;
+      }
+      return rawPurses[i];
+    });
 
     const invite = await E(publicAPI).makeInvite();
 
@@ -140,41 +127,30 @@ export async function makeWallet(
     // === AWAITING TURN ===
     // =====================
 
-    assert(contractAssay0 === regAssay0 && regAssay1 === contractAssay1);
-
-    // Check whether we sell on contract assay 0 or 1.
-    const normal = checkOrder(
-      purseAssay0,
-      purseAssay1,
-      contractAssay0,
-      contractAssay1,
+    // Ensure that the offered and contract assays match.
+    contractAssays.forEach((contractAssay, i) =>
+      assert(contractAssay, regAssays[i]),
     );
-
-    const payment0P = E(purse0).withdraw(normal ? purseUnit0 : purseUnit1);
-    const contractUnit0P = E(contractAssay0).makeUnits(extent0 || 0);
-    const contractUnit1P = E(contractAssay1).makeUnits(extent1 || 0);
-
-    const [payment0, contractUnit0, contractUnit1] = await Promise.all([
-      payment0P,
-      contractUnit0P,
-      contractUnit1P,
-    ]);
-
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
 
     // Clone the offer rules to have a writable object.
     const newOfferRules = JSON.parse(JSON.stringify(offerRules));
 
     // Hydrate with the resolved units.
-    newOfferRules.payoutRules[0].units = contractUnit0;
-    newOfferRules.payoutRules[1].units = contractUnit1;
+    newOfferRules.payoutRules.forEach(
+      (payoutRule, i) => (payoutRule.units = regUnits[i]),
+    );
     harden(newOfferRules);
 
-    const payment = normal
-      ? [payment0, undefined, undefined]
-      : [undefined, payment0, undefined];
+    // Look up the payments in the array ordered by registered assays.
+    const payment = await Promise.all(
+      newOfferRules.payoutRules.map(({ kind, units }, i) => {
+        const purse = purses[i];
+        if (kind === 'offerAtMost' && purse) {
+          return E(purse).withdraw(units);
+        }
+        return undefined;
+      }),
+    );
 
     const { seat, payout: payoutP } = await E(zoe).redeem(
       invite,
@@ -200,17 +176,20 @@ export async function makeWallet(
     // === AWAITING TURN ===
     // =====================
 
-    const deposit0P = E(purse0).depositAll(payout[normal ? 0 : 1]);
-    const deposit1P = E(purse1).depositAll(payout[normal ? 1 : 0]);
-
-    await Promise.all([deposit0P, deposit1P]);
+    // Deposit all the spoils.
+    await Promise.all(
+      payout.map((pay, i) => {
+        const purse = purses[i];
+        if (purse && pay) {
+          return E(purse).depositAll(pay);
+        }
+        return undefined;
+      }),
+    );
 
     // =====================
     // === AWAITING TURN ===
     // =====================
-
-    // updatePursesState(purseName0, purse0);
-    // updatePursesState(purseName1, purse1);
 
     return offerOk;
   }
