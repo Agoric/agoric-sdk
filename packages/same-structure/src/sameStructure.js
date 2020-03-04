@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { passStyleOf } from '@agoric/marshal';
+import { sameValueZero, passStyleOf } from '@agoric/marshal';
 import { assert, details, openDetail } from '@agoric/assert';
 
 // Shim of Object.fromEntries from
@@ -114,7 +114,7 @@ function sameStructure(left, right) {
     case 'symbol':
     case 'bigint':
     case 'presence': {
-      return Object.is(left, right);
+      return sameValueZero(left, right);
     }
     case 'copyRecord':
     case 'copyArray': {
@@ -193,7 +193,7 @@ function mustBeSameStructureInternal(left, right, message, path) {
     case 'symbol':
     case 'bigint':
     case 'presence': {
-      if (!Object.is(left, right)) {
+      if (!sameValueZero(left, right)) {
         complain('different');
       }
       break;
