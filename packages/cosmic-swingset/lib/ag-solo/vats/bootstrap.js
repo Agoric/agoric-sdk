@@ -144,11 +144,6 @@ export default function setup(syscall, state, helpers) {
         await E(wallet).deposit('moola', moolaPayment);
         await E(wallet).deposit('simolean', simoleanPayment);
 
-        // exchange is used for autoswap. Only needed for the dapp's Swingset
-        await E(vats.exchange).startup(contractHost, zoe, registrar);
-        await E(vats.http).registerCommandHandler(vats.exchange);
-        const exchange = E(vats.exchange).getExchange();
-
         // This will allow Dapp developers to register in their dapp.js
         const httpRegCallback = {
           registerCommandHandler(handler) {
@@ -161,7 +156,6 @@ export default function setup(syscall, state, helpers) {
             uploads,
             spawner,
             wallet,
-            exchange,
             http: httpRegCallback,
           }),
         );
