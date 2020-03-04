@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import parseArgs from 'minimist';
 
 const VERSION = 'Agoric <some version>';
-const STAMP = '.agservers';
+const STAMP = '_agstate';
 
 const main = async (progname, rawArgs, privs) => {
   const { console, error, fs } = privs;
@@ -13,7 +13,7 @@ const main = async (progname, rawArgs, privs) => {
 
   const isNotBasedir = async () => {
     try {
-      await fs.stat('.agservers');
+      await fs.stat(STAMP);
       return false;
     } catch (e) {
       error(`current directory wasn't created by '${progname} init'`);

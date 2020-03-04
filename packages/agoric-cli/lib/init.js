@@ -3,7 +3,7 @@ import chalk from 'chalk';
 
 const DEFAULT_DAPP_TEMPLATE = '@agoric/dapp-simple-exchange';
 
-export default async function initMain(progname, rawArgs, priv) {
+export default async function initMain(progname, rawArgs, priv, opts) {
   const { console, error, fs } = priv;
   const { _: args, force, 'dapp-template': dappTemplate } = parseArgs(rawArgs, {
     boolean: ['force'],
@@ -40,8 +40,7 @@ export default async function initMain(progname, rawArgs, priv) {
   }
 
   const isIgnored = (suffix, name) =>
-    name === 'node_modules' ||
-    (suffix === '/.agservers' && name !== 'package.json' && name[0] !== '.');
+    name === 'node_modules' || suffix === '/_agstate';
 
   const writeTemplate = async (templateDir, destDir = DIR, stem) => {
     const template = await readFile(`${templateDir}${stem}`, 'utf-8');
@@ -89,8 +88,7 @@ export default async function initMain(progname, rawArgs, priv) {
     );
   };
   await recursiveTemplate(dappRoot);
-  await mkdir(`${DIR}/.agwallet`);
-  await recursiveTemplate(`${__dirname}/../agwallet`, `${DIR}/.agwallet`);
+  await mkdir(`${DIR}/_agstate`);
 
   const ps = ['', 'api/', 'contract/', 'ui/'].map(dir => {
     const path = `${DIR}/${dir}package.json`;
