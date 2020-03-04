@@ -17,9 +17,8 @@ export async function makeWallet(
   inboxStateChangeHandler = noActionStateChangeHandler,
 ) {
   const petnameToPurse = makeStore();
-  const issuerPetnameToIssuer = makeStore();
+  const issuerPetnameToIssuer = new Map();
   const issuerToIssuerPetname = makeWeakStore();
-  const issuerPetnameToRegKey = makeStore();
   const brandToIssuer = makeStore();
   const brandToMath = makeStore();
 
@@ -44,10 +43,8 @@ export async function makeWallet(
       E(purse).getAllegedBrand(),
     ]);
     const issuerPetname = issuerToIssuerPetname.get(brandToIssuer.get(brand));
-    const issuerRegKey = issuerPetnameToRegKey.get(issuerPetname);
     pursesState.set(pursePetname, {
       purseName: pursePetname,
-      issuerId: issuerRegKey,
       issuerPetname,
       extent,
     });
@@ -195,10 +192,9 @@ export async function makeWallet(
 
   // === API
 
-  async function addIssuer(issuerPetname, regKey, issuer) {
-    issuerPetnameToIssuer.init(issuerPetname, issuer);
+  async function addIssuer(issuerPetname, issuer) {
+    issuerPetnameToIssuer.set(issuerPetname, issuer);
     issuerToIssuerPetname.init(issuer, issuerPetname);
-    issuerPetnameToRegKey.init(issuerPetname, regKey);
     const brand = await E(issuer).getBrand();
     brandToIssuer.init(brand, issuer);
 
@@ -207,16 +203,16 @@ export async function makeWallet(
     brandToMath.init(brand, math);
   }
 
-  async function makeEmptyPurse(assayPetname, pursePetname, memo = 'purse') {
+  async function makeEmptyPurse(issuerPetname, pursePetname, memo = 'purse') {
     assert(
       !petnameToPurse.has(pursePetname),
       details`Purse name already used in wallet.`,
     );
-    const assay = issuerPetnameToIssuer.get(assayPetname);
+    const issuer = issuerPetnameToIssuer.get(issuerPetname);
 
     // IMPORTANT: once wrapped, the original purse should never
     // be used otherwise the UI state will be out of sync.
-    const doNotUse = await E(assay).makeEmptyPurse(memo);
+    const doNotUse = await E(issuer).makeEmptyPurse(memo);
 
     const purse = makeObservablePurse(E, doNotUse, () =>
       updatePursesState(pursePetname, doNotUse),
@@ -280,10 +276,15 @@ export async function makeWallet(
     updateInboxState(date, acceptOfferRec);
   }
 
+  function getIssuers() {
+    return Array.from(issuerPetnameToIssuer);
+  }
+
   const wallet = harden({
     addIssuer,
     makeEmptyPurse,
     deposit,
+    getIssuers,
     getPurses,
     getPurse: petnameToPurse.get,
     addOffer,

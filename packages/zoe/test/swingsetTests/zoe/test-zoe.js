@@ -48,9 +48,9 @@ const expectedAutomaticRefundOkLog = [
   'The offer was accepted',
   'The offer was accepted',
   'bobMoolaPurse: balance {"brand":{},"extent":0}',
-  'bobSimoleanPurse;: balance {"brand":{},"extent":17}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":17}',
   'aliceMoolaPurse: balance {"brand":{},"extent":3}',
-  'aliceSimoleanPurse;: balance {"brand":{},"extent":0}',
+  'aliceSimoleanPurse: balance {"brand":{},"extent":0}',
 ];
 
 test('zoe - automaticRefund - valid inputs - with SES', async t => {
@@ -77,9 +77,9 @@ const expectedCoveredCallOkLog = [
   '@@ schedule task for:1, currently: 0 @@',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":3}',
-  'bobSimoleanPurse;: balance {"brand":{},"extent":0}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":0}',
   'aliceMoolaPurse: balance {"brand":{},"extent":0}',
-  'aliceSimoleanPurse;: balance {"brand":{},"extent":7}',
+  'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
 ];
 
 test('zoe - coveredCall - valid inputs - with SES', async t => {
@@ -109,10 +109,10 @@ const expectedSwapForOptionOkLog = [
   'daveSimoleanPurse: balance {"brand":{},"extent":0}',
   'daveBucksPurse: balance {"brand":{},"extent":0}',
   'bobMoolaPurse: balance {"brand":{},"extent":0}',
-  'bobSimoleanPurse;: balance {"brand":{},"extent":0}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":0}',
   'bobBucksPurse;: balance {"brand":{},"extent":1}',
   'aliceMoolaPurse: balance {"brand":{},"extent":0}',
-  'aliceSimoleanPurse;: balance {"brand":{},"extent":7}',
+  'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
 ];
 
 test('zoe - swapForOption - valid inputs - with SES', async t => {
@@ -141,11 +141,11 @@ const expectedPublicAuctionOkLog = [
   'bobMoolaPurse: balance {"brand":{},"extent":1}',
   'carolMoolaPurse: balance {"brand":{},"extent":0}',
   'daveMoolaPurse: balance {"brand":{},"extent":0}',
-  'bobSimoleanPurse;: balance {"brand":{},"extent":4}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":4}',
   'carolSimoleanPurse: balance {"brand":{},"extent":7}',
   'daveSimoleanPurse: balance {"brand":{},"extent":5}',
   'aliceMoolaPurse: balance {"brand":{},"extent":0}',
-  'aliceSimoleanPurse;: balance {"brand":{},"extent":7}',
+  'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
 ];
 test('zoe - publicAuction - valid inputs - with SES', async t => {
   try {
@@ -169,8 +169,8 @@ const expectedAtomicSwapOkLog = [
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'aliceMoolaPurse: balance {"brand":{},"extent":0}',
   'bobMoolaPurse: balance {"brand":{},"extent":3}',
-  'aliceSimoleanPurse;: balance {"brand":{},"extent":7}',
-  'bobSimoleanPurse;: balance {"brand":{},"extent":0}',
+  'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":0}',
 ];
 test('zoe - atomicSwap - valid inputs - with SES', async t => {
   try {
@@ -192,9 +192,9 @@ const expectedSimpleExchangeOkLog = [
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":3}',
-  'bobSimoleanPurse;: balance {"brand":{},"extent":0}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":0}',
   'aliceMoolaPurse: balance {"brand":{},"extent":0}',
-  'aliceSimoleanPurse;: balance {"brand":{},"extent":7}',
+  'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
 ];
 
 test('zoe - simpleExchange - valid inputs - with SES', async t => {
@@ -218,22 +218,22 @@ const expectedSimpleExchangeUpdateLog = [
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'Order update: b:[], s:moola:3 for simoleans:4',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
-  'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":0}',
-  'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":17}',
+  'bobMoolaPurse: balance {"brand":{},"extent":0}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":17}',
   'Order update: b:[], s:[]',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
-  'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":3}',
-  'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":15}',
+  'bobMoolaPurse: balance {"brand":{},"extent":3}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":15}',
   'Order update: b:simoleans:2 for moola:8, s:[]',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
-  'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":3}',
-  'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":2}',
+  'bobMoolaPurse: balance {"brand":{},"extent":3}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":2}',
   'Order update: b:simoleans:2 for moola:8,simoleans:13 for moola:20, s:[]',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
-  'bobMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":3}',
-  'bobSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":0}',
-  'aliceMoolaPurse: balance {"label":{"assay":{},"allegedName":"moola"},"extent":0}',
-  'aliceSimoleanPurse;: balance {"label":{"assay":{},"allegedName":"simoleans"},"extent":7}',
+  'bobMoolaPurse: balance {"brand":{},"extent":3}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":0}',
+  'aliceMoolaPurse: balance {"brand":{},"extent":0}',
+  'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
 ];
 
 test('zoe - simpleExchange - state Update - with SES', async t => {
@@ -257,7 +257,7 @@ const expectedAutoswapOkLog = [
   'moolaAmounts {"brand":{},"extent":5}',
   'Swap successfully completed.',
   'bobMoolaPurse: balance {"brand":{},"extent":5}',
-  'bobSimoleanPurse;: balance {"brand":{},"extent":5}',
+  'bobSimoleanPurse: balance {"brand":{},"extent":5}',
   'Liquidity successfully removed.',
   'poolAmounts[{"brand":{},"extent":0},{"brand":{},"extent":0},{"brand":{},"extent":10}]',
   'aliceMoolaPurse: balance {"brand":{},"extent":8}',

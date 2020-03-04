@@ -241,21 +241,10 @@ test('myFirstDapp with multiple sell offers', async t => {
       () => {
         const expectedBook = {
           changed: {},
-          buys: [
-            {
-              want: moola(29),
-              offer: simoleans(18),
-            },
-          ],
+          buys: [[{ want: moola(29) }, { offer: simoleans(18) }]],
           sells: [
-            {
-              offer: moola(3),
-              want: simoleans(4),
-            },
-            {
-              offer: moola(5),
-              want: simoleans(8),
-            },
+            [{ offer: moola(3) }, { want: simoleans(4) }],
+            [{ offer: moola(5) }, { want: simoleans(8) }],
           ],
         };
         t.deepEquals(publicAPI.getBookOrders(), expectedBook);
@@ -311,10 +300,7 @@ test('myFirstDapp showPayoutRules', async t => {
     // 4: Alice adds her sell order to the exchange
     aliceSeat1.addOrder();
 
-    const expected = {
-      offer: moola(3),
-      want: simoleans(4),
-    };
+    const expected = [{ offer: moola(3) }, { want: simoleans(4) }];
 
     t.deepEquals(publicAPI.getOffer(inviteHandle), expected);
   } catch (e) {

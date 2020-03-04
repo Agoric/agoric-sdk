@@ -55,7 +55,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     await E(simoleanPurseP).deposit(simoleanPayout);
 
     await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
-    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
+    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
   const doCoveredCall = async bobP => {
@@ -99,7 +99,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     await E(simoleanPurseP).deposit(simoleanPayout);
 
     await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
-    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
+    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
   const doSwapForOption = async (bobP, _carolP, daveP) => {
@@ -143,7 +143,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     await E(simoleanPurseP).deposit(simoleanPayout);
 
     await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
-    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
+    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
   const doPublicAuction = async (bobP, carolP, daveP) => {
@@ -199,7 +199,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     await E(simoleanPurseP).deposit(simoleanPayout);
 
     await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
-    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
+    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
   const doAtomicSwap = async bobP => {
@@ -239,7 +239,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     await E(simoleanPurseP).deposit(simoleanPayout);
 
     await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
-    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
+    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
   const doSimpleExchange = async bobP => {
@@ -287,59 +287,75 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     await E(simoleanPurseP).deposit(simoleanPayout);
 
     await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
-    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
+    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
-  function printOrders(orders) {
+  function printOrders(orders, brandPetnames, brands, offerIndex = 0) {
     if (orders.length === 0) {
       return '[]';
     }
+    const wantIndex = 1 - offerIndex;
     const descs = [];
     for (const o of orders) {
+      const offerBrandPetname = brandPetnames[brands.indexOf(o[offerIndex].offer.brand)];
+      const wantBrandPetname = brandPetnames[brands.indexOf(o[wantIndex].want.brand)];
       descs.push(
-        `${o.offer.label.allegedName}:${o.offer.extent} for ${o.want.label.allegedName}:${o.want.extent}`,
+        `${offerBrandPetname}:${o[offerIndex].offer.extent} for ${wantBrandPetname}:${o[wantIndex].want.extent}`,
       );
     }
     return descs;
   }
 
-  function pollForBookOrders(publicAPI) {
+  function pollForBookOrders(publicAPI, petnames, brands) {
     const orderResultP = E(publicAPI).getBookOrders();
+
     orderResultP.then(orderResult => {
       const { changed: p, buys, sells } = orderResult;
       p.then(() => {
-        pollForBookOrders(publicAPI);
-        log(`Order update: b:${printOrders(buys)}, s:${printOrders(sells)}`);
+        pollForBookOrders(publicAPI, petnames, brands);
+        log(
+          `Order update: b:${printOrders(
+            buys,
+            petnames,
+            brands,
+            1,
+          )}, s:${printOrders(sells, petnames, brands, 0)}`,
+        );
       });
     });
   }
 
   const doSimpleExchangeUpdates = async bobP => {
     const { invite } = await E(zoe).makeInstance(installations.simpleExchange, {
-      assays,
+      issuers: [moolaIssuer, simoleanIssuer],
     });
     const {
-      extent: { instanceHandle },
-    } = await E(invite).getBalance();
+      extent: [{ instanceHandle }],
+    } = await E(inviteIssuer).getAmountOf(invite);
     const { publicAPI } = await E(zoe).getInstance(instanceHandle);
 
-    pollForBookOrders(publicAPI);
+    const petnames = ['moola', 'simoleans'];
+    const brands = await Promise.all([
+      E(moolaIssuer).getBrand(),
+      E(simoleanIssuer).getBrand(),
+    ]);
+
+    pollForBookOrders(publicAPI, petnames, brands);
     const aliceSellOrderOfferRules = harden({
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: moola(3),
+          amount: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: simoleans(4),
+          amount: simoleans(4),
         },
       ],
       exitRule: {
         kind: 'onDemand',
       },
     });
-    const moolaPayment = await E(moolaPurseP).withdrawAll();
     const offerPayments = [moolaPayment, undefined];
     const { seat, payout: payoutP } = await E(zoe).redeem(
       invite,
@@ -358,16 +374,16 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
     const payout = await payoutP;
 
-    await E(moolaPurseP).depositAll(payout[0]);
-    await E(simoleanPurseP).depositAll(payout[1]);
+    await E(moolaPurseP).deposit(await payout[0]);
+    await E(simoleanPurseP).deposit(await payout[1]);
 
     const { invite: bobInvite3P } = await E(publicAPI).makeInvite();
     await E(bobP).doSimpleExchangeUpdates(bobInvite3P, 20, 13);
     const { invite: bobInvite4P } = await E(publicAPI).makeInvite();
     await E(bobP).doSimpleExchangeUpdates(bobInvite4P, 5, 2);
 
-    await showPaymentBalance(moolaPurseP, 'aliceMoolaPurse', log);
-    await showPaymentBalance(simoleanPurseP, 'aliceSimoleanPurse;', log);
+    await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
+    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
   const doAutoswap = async bobP => {
