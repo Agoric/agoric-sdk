@@ -28,32 +28,28 @@ export const makeContract = harden((zoe, terms) => {
   } = makeHelpers(zoe, issuers);
 
   function flattenRule(r) {
-    const description = r.amount;
-    let result;
     switch (r.kind) {
       case 'offerAtMost':
-        result = { offer: description };
-        break;
+        return { offer: r.amount };
       case 'wantAtLeast':
-        result = { want: description };
-        break;
+        return { want: r.amount };
       default:
         throw new Error(`${r.kind} not supported.`);
     }
-    return harden(result);
   }
 
   function flattenOffer(o) {
-    return harden({
-      ...flattenRule(o.payoutRules[0]),
-      ...flattenRule(o.payoutRules[1]),
-    });
+    return harden([
+      flattenRule(o.payoutRules[0]),
+      flattenRule(o.payoutRules[1]),
+    ]);
   }
 
   function flattenOrders(offerHandles) {
-    return zoe
+    const result = zoe
       .getOffers(zoe.getOfferStatuses(offerHandles).active)
       .map(offer => flattenOffer(offer));
+    return result;
   }
 
   function getBookOrders() {
@@ -64,11 +60,10 @@ export const makeContract = harden((zoe, terms) => {
   }
 
   function getOffer(inviteHandle) {
-    if (
-      sellInviteHandles.includes(inviteHandle) ||
-      buyInviteHandles.includes(inviteHandle)
-    ) {
-      return flattenOffer(getActiveOffers([inviteHandle])[0]);
+    for (const handle of [...sellInviteHandles, ...buyInviteHandles]) {
+      if (inviteHandle === handle) {
+        return flattenOffer(getActiveOffers([inviteHandle])[0]);
+      }
     }
     return 'not an active offer';
   }
@@ -111,6 +106,7 @@ export const makeContract = harden((zoe, terms) => {
     const { invite, inviteHandle } = zoe.makeInvite(seat);
     return { invite, inviteHandle };
   };
+
   return harden({
     invite: makeInvite(),
     publicAPI: { makeInvite, getBookOrders, getOffer },

@@ -125,8 +125,8 @@ export default function setup(syscall, state, helpers) {
         E(vats.wallet).startup(zoe, registrar);
         const wallet = E(vats.wallet).getWallet();
         await Promise.all(
-          issuerInfo.map(({ petname, regKey, issuer }) =>
-            E(wallet).addIssuer(petname, regKey, issuer),
+          issuerInfo.map(({ petname, issuer }) =>
+            E(wallet).addIssuer(petname, issuer),
           ),
         );
 

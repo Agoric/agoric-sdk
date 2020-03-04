@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 import { makeHelpers, defaultAcceptanceMsg } from '@agoric/zoe/src/contracts/helpers/userFlow';
 
@@ -19,7 +18,7 @@ export const makeContract = harden((zoe, terms) => {
   const ASSET_INDEX = 0;
   let sellInviteHandles = [];
   let buyInviteHandles = [];
-  const { assays } = terms;
+  const { issuers } = terms;
   const {
     rejectOffer,
     hasValidPayoutRules,
@@ -27,35 +26,31 @@ export const makeContract = harden((zoe, terms) => {
     areAssetsEqualAtIndex,
     canTradeWith,
     getActiveOffers,
-  } = makeHelpers(zoe, assays);
+  } = makeHelpers(zoe, issuers);
 
   function flattenRule(r) {
-    const description = r.units;
-    let result;
     switch (r.kind) {
       case 'offerAtMost':
-        result = { offer: description };
-        break;
+        return { offer: r.amount };
       case 'wantAtLeast':
-        result = { want: description };
-        break;
+        return { want: r.amount };
       default:
         throw new Error(`${r.kind} not supported.`);
     }
-    return harden(result);
   }
 
   function flattenOffer(o) {
-    return harden({
-      ...flattenRule(o.payoutRules[0]),
-      ...flattenRule(o.payoutRules[1]),
-    });
+    return harden([
+      flattenRule(o.payoutRules[0]),
+      flattenRule(o.payoutRules[1]),
+    ]);
   }
 
   function flattenOrders(offerHandles) {
-    return zoe
+    const result = zoe
       .getOffers(zoe.getOfferStatuses(offerHandles).active)
       .map(offer => flattenOffer(offer));
+    return result;
   }
 
   function getBookOrders() {
@@ -117,6 +112,7 @@ export const makeContract = harden((zoe, terms) => {
     const { invite, inviteHandle } = zoe.makeInvite(seat);
     return { invite, inviteHandle };
   };
+
   return harden({
     invite: makeInvite(),
     publicAPI: { makeInvite, getBookOrders, getOffer },
