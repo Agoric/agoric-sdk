@@ -7,7 +7,7 @@
   "workspaces": [
     "api",
     "contract",
-    ".agservers"
+    "_agstate/agoric-servers"
   ],
   "devDependencies": {
     "eslint": "^6.8.0",

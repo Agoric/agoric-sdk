@@ -32,12 +32,17 @@ export default async function startMain(progname, rawArgs, priv, opts) {
 
   const linkHtml = async name => {
     console.log(chalk.green('linking html directories'));
-    // const dappHtml = `.agservers/${name}/dapp-html`;
-    const htmlWallet = `.agservers/${name}/html/wallet`;
+    // const dappHtml = `_agstate/agoric-servers/${name}/dapp-html`;
+    const htmlWallet = `_agstate/agoric-servers/${name}/html/wallet`;
     // await Promise.all([fs.unlink(dappHtml).catch(() => {}), fs.unlink(htmlWallet).catch(() => {})]);
     await Promise.all([
-      // fs.symlink('../../ui/build', dappHtml).catch(() => {}),
-      fs.symlink('../../../.agwallet', htmlWallet).catch(() => {}),
+      // fs.symlink('../../../ui/build', dappHtml).catch(() => {}),
+      fs
+        .unlink(htmlWallet)
+        .catch(_ => {})
+        .then(_ =>
+          fs.symlink('../../../../_agstate/agoric-wallet', htmlWallet),
+        ),
     ]);
   };
 
@@ -55,7 +60,7 @@ export default async function startMain(progname, rawArgs, priv, opts) {
     const fakeDelay =
       popts.delay === undefined ? FAKE_CHAIN_DELAY : Number(popts.delay);
     if (!opts.sdk) {
-      if (!(await exists('.agservers/node_modules'))) {
+      if (!(await exists('_agstate/agoric-servers/node_modules'))) {
         return error(`you must first run '${progname} install'`);
       }
     }
@@ -65,7 +70,7 @@ export default async function startMain(progname, rawArgs, priv, opts) {
       console.log(chalk.yellow(`initializing ${profileName}`));
       await pspawn(agSolo, ['init', profileName, '--egresses=fake'], {
         stdio: 'inherit',
-        cwd: '.agservers',
+        cwd: '_agstate/agoric-servers',
       });
     }
 
@@ -107,7 +112,7 @@ export default async function startMain(progname, rawArgs, priv, opts) {
           'run',
           `-p127.0.0.1:${HOST_PORT}:${PORT}`,
           `--volume=${process.cwd()}:/usr/src/dapp`,
-          `-eAG_SOLO_BASEDIR=/usr/src/dapp/.agservers/${profileName}`,
+          `-eAG_SOLO_BASEDIR=/usr/src/dapp/_agstate/agoric-servers/${profileName}`,
           `--rm`,
           `-it`,
           IMAGE,
@@ -134,7 +139,7 @@ export default async function startMain(progname, rawArgs, priv, opts) {
 
   async function startTestnetSdk(profileName, startArgs) {
     const virtEnv = path.resolve(
-      `.agservers/ve3-${os.platform()}-${os.arch()}`,
+      `_agstate/agoric-servers/ve3-${os.platform()}-${os.arch()}`,
     );
     if (!(await exists(`${virtEnv}/bin/pip`))) {
       const status = await pspawn('python3', ['-mvenv', virtEnv], {
@@ -208,7 +213,7 @@ export default async function startMain(progname, rawArgs, priv, opts) {
     );
   }
 
-  agServer = `.agservers/${profileName}`;
+  agServer = `_agstate/agoric-servers/${profileName}`;
 
   if (popts.reset) {
     console.log(chalk.green(`removing ${agServer}`));
