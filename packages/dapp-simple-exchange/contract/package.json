@@ -1,14 +1,14 @@
 {
-  "name": "@agoric/dapp-api",
-  "private": true,
+  "name": "@agoric/dapp-simple-exchange-contract",
   "version": "0.1.0",
-  "description": "@DIR@ Agoric Dapp web server handler",
+  "private": true,
+  "description": "Contract for the @DIR@ Agoric Dapp",
   "scripts": {
     "build": "exit 0",
     "test": "tape -r esm 'test/**/*.js'",
     "lint": "eslint '**/*.{js,jsx}'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
-    "lint-check": "echo disabling lint in api until files are lint compliant",
+    "lint-check": "echo disabling lint in contract until files are lint compliant",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx}'",
     "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx}'"
   },
@@ -25,6 +25,10 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
+    "@agoric/ertp": "^0.3.1",
+    "@agoric/zoe": "^0.2.1",
+    "@agoric/harden": "0.0.4",
+    "@agoric/nat": "^2.0.1",
     "esm": "^3.2.5"
   },
   "keywords": [],

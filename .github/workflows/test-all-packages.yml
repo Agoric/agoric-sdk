@@ -63,6 +63,8 @@ jobs:
       run: cd packages/captp && yarn test
     - name: yarn test (cosmic-swingset)
       run: cd packages/cosmic-swingset && yarn test
+    - name: yarn test (dapp-simple-exchange)
+      run: cd packages/dapp-simple-exchange && yarn test
     - name: yarn test (default-evaluate-options)
       run: cd packages/default-evaluate-options && yarn test
     - name: yarn test (deployment)
@@ -85,8 +87,6 @@ jobs:
       run: cd packages/same-structure && yarn test
     - name: yarn test (sharing-service)
       run: cd packages/sharing-service && yarn test
-    - name: yarn test (simple-exchange-frontend)
-      run: cd packages/simple-exchange-frontend && yarn test
     - name: yarn test (sparse-ints)
       run: cd packages/sparse-ints && yarn test
     - name: yarn test (spawner)

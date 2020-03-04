@@ -1,5 +1,5 @@
 {
-  "name": "@agoric/dapp-agoric-servers",
+  "name": "@agoric/dapp-simple-exchange-agservers",
   "version": "0.0.1",
   "description": "Agoric server instances for @DIR@",
   "private": true,

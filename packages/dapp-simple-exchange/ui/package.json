@@ -1,5 +1,5 @@
 {
-  "name": "@agoric/simple-exchange-frontend",
+  "name": "@agoric/dapp-simple-exchange-ui",
   "version": "0.0.1",
   "description": "Simple Exchange Frontend",
   "author": "Agoric",
@@ -10,8 +10,7 @@
     "lint-check": "eslint '**/*.{js,jsx}'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "start": "react-scripts start",
-    "test:interactive": "react-scripts test --env=jsdom",
-    "test": "exit 0",
+    "test": "react-scripts test --env=jsdom",
     "build": "react-scripts build",
     "eject": "react-scripts eject"
   },
