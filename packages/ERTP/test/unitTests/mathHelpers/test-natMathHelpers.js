@@ -60,6 +60,11 @@ test('natMathHelpers', t => {
       /Unrecognized brand/,
       `coerce can't take the wrong brand`,
     );
+    t.throws(
+      () => coerce(3),
+      /alleged brand is undefined/,
+      `coerce needs a brand`,
+    );
 
     // getExtent
     t.equals(getExtent(make(4)), 4);
@@ -74,7 +79,7 @@ test('natMathHelpers', t => {
     t.notOk(isEmpty(make(6)), `isEmpty(6) is false`);
     t.throws(
       () => isEmpty('abc'),
-      /Unrecognized brand/,
+      /alleged brand is undefined/,
       `isEmpty('abc') throws because it cannot be coerced`,
     );
     t.throws(
@@ -84,7 +89,7 @@ test('natMathHelpers', t => {
     );
     t.throws(
       () => isEmpty(0),
-      /Unrecognized brand/,
+      /alleged brand is undefined/,
       `isEmpty(0) throws because it cannot be coerced`,
     );
 
