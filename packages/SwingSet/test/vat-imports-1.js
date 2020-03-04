@@ -3,12 +3,7 @@ import harden from '@agoric/harden';
 function build(E, log) {
   const obj0 = {
     bootstrap(argv, _vats) {
-      if (argv[0] === 'nat') {
-        log('nat-1');
-        // eslint-disable-next-line global-require
-        const nat = require('@agoric/nat');
-        log(nat(2));
-      } else if (argv[0] === 'harden') {
+      if (argv[0] === 'harden') {
         log('harden-1');
         // eslint-disable-next-line global-require
         const harden2 = require('@agoric/harden');
