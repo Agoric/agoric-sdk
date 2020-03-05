@@ -68,17 +68,14 @@ export async function makeWallet(
     } = dateToOfferRec.get(date);
 
     // Collapse purseName0, purseName1, ... into purseNames
-    const purseNames = [];
+    const rawPurses = [];
     for (let i = 0; i < offerRules.payoutRules.length; i += 1) {
       const purseName = rest[`purseName${i}`];
       if (purseName === undefined) {
         break;
       }
-      purseNames.push(purseName);
+      rawPurses.push(petnameToPurse.get(purseName));
     }
-    const rawPurses = purseNames.map(purseName =>
-      petnameToPurse.get(purseName),
-    );
 
     const { payoutRules } = offerRules;
 
@@ -113,11 +110,14 @@ export async function makeWallet(
     // =====================
 
     // Order the purses by registered assays.
-    const purses = regAssays.map(regAssay => {
-      const i = purseAssays.indexOf(regAssay);
+    const purseAssaysRemaining = [...purseAssays];
+    const payoutOrderedPurses = regAssays.map(regAssay => {
+      const i = purseAssaysRemaining.indexOf(regAssay);
       if (i < 0) {
         return undefined;
       }
+      // Strike out this assay from the remaining ones.
+      purseAssaysRemaining[i] = undefined;
       return rawPurses[i];
     });
 
@@ -144,7 +144,7 @@ export async function makeWallet(
     // Look up the payments in the array ordered by registered assays.
     const payment = await Promise.all(
       newOfferRules.payoutRules.map(({ kind, units }, i) => {
-        const purse = purses[i];
+        const purse = payoutOrderedPurses[i];
         if (kind === 'offerAtMost' && purse) {
           return E(purse).withdraw(units);
         }
@@ -179,7 +179,7 @@ export async function makeWallet(
     // Deposit all the spoils.
     await Promise.all(
       payout.map((pay, i) => {
-        const purse = purses[i];
+        const purse = payoutOrderedPurses[i];
         if (purse && pay) {
           return E(purse).depositAll(pay);
         }
