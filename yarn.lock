@@ -14,13 +14,6 @@
   dependencies:
     "@agoric/make-hardener" "0.0.4"
 
-"@agoric/insist@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@agoric/insist/-/insist-0.0.1.tgz#fc81893d0f10c0cd42678f5ede46d34c2033a466"
-  integrity sha512-aO0LsDHxWwdHdsomLILt0QsX5O25D2Qms/Sw8b1KZpPolLTEHIxHoM992IN2FzjvEvDZYZjc4Wlyt2xFYAI9Ow==
-  dependencies:
-    "@agoric/harden" "^0.0.4"
-
 "@agoric/layer-cake@^0.0.1":
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/@agoric/layer-cake/-/layer-cake-0.0.1.tgz#fb131324b35d0b6e2f9e5ef7a72d8729993c3605"
