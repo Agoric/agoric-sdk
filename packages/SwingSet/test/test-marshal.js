@@ -1,5 +1,3 @@
-/* globals BigInt */
-
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
