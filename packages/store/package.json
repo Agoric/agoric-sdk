@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "exit 0",
-    "test": "exit 0",
+    "test": "tape -r esm test/**/test*.js",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'",
     "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
@@ -29,7 +29,8 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/harden": "^0.0.4",
-    "@agoric/assert": "^0.0.1"
+    "@agoric/assert": "^0.0.1",
+    "@agoric/weak-store": "^0.0.1"
   },
   "devDependencies": {
     "esm": "^3.2.25",

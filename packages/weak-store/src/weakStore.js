@@ -10,34 +10,53 @@ import { assert, details, openDetail } from '@agoric/assert';
  * `set` and `delete` are only allowed if the key does already exist.
  * @param  {string} keyName - the column name for the key
  */
-function makeStore(keyName = 'key') {
+function makeWeakStore(keyName = 'key') {
   const wm = new WeakMap();
-  const assertKeyDoesNotExist = key =>
+  const assertKeyNotBound = key =>
     assert(
       !wm.has(key),
       details`${openDetail(keyName)} already registered: ${key}`,
     );
-  const assertKeyExists = key =>
+  const assertKeyBound = key =>
     assert(wm.has(key), details`${openDetail(keyName)} not found: ${key}`);
+
+  // /////// Methods /////////
+
+  const has = key => wm.has(key);
+  const init = (key, value) => {
+    assertKeyNotBound(key);
+    wm.set(key, value);
+  };
+  const get = key => {
+    assertKeyBound(key);
+    return wm.get(key);
+  };
+  const set = (key, value) => {
+    assertKeyBound(key);
+    wm.set(key, value);
+  };
+  const deleteIt = key => {
+    assertKeyBound(key);
+    wm.delete(key);
+  };
+
+  // eslint-disable-next-line no-use-before-define
+  const readOnly = () => readOnlyWeakStore;
+
+  const readOnlyWeakStore = harden({
+    readOnly,
+    has,
+    get,
+  });
+
   return harden({
-    has: key => wm.has(key),
-    init: (key, value) => {
-      assertKeyDoesNotExist(key);
-      wm.set(key, value);
-    },
-    get: key => {
-      assertKeyExists(key);
-      return wm.get(key);
-    },
-    set: (key, value) => {
-      assertKeyExists(key);
-      wm.set(key, value);
-    },
-    delete: key => {
-      assertKeyExists(key);
-      wm.delete(key);
-    },
+    readOnly,
+    has,
+    init,
+    get,
+    set,
+    delete: deleteIt,
   });
 }
-harden(makeStore);
-export default makeStore;
+harden(makeWeakStore);
+export default makeWeakStore;

@@ -2,6 +2,13 @@
 
 import harden from '@agoric/harden';
 import { assert, details, openDetail } from '@agoric/assert';
+
+// This is the equality used by JavaScript maps to compare their
+// keys. NaN is equal to NaN and -0 is equal to 0.
+// The simple store exported by this module uses the same
+// equality.
+export const mapKeyEqual = (a, b) => a === b || Object.is(a, b);
+
 /**
  * Distinguishes between adding a new key (init) and updating or
  * referencing a key (get, set, delete).
@@ -11,34 +18,82 @@ import { assert, details, openDetail } from '@agoric/assert';
  * @param  {string} keyName - the column name for the key
  */
 function makeStore(keyName = 'key') {
-  const store = new Map();
-  const assertKeyDoesNotExist = key =>
+  const map = new Map();
+  const assertKeyNotBound = key =>
     assert(
-      !store.has(key),
+      !map.has(key),
       details`${openDetail(keyName)} already registered: ${key}`,
     );
-  const assertKeyExists = key =>
-    assert(store.has(key), details`${openDetail(keyName)} not found: ${key}`);
+  const assertKeyBound = key =>
+    assert(map.has(key), details`${openDetail(keyName)} not found: ${key}`);
+
+  // /////// Methods /////////
+
+  const has = key => map.has(key);
+  const init = (key, value) => {
+    assertKeyNotBound(key);
+    map.set(key, value);
+  };
+  const get = key => {
+    assertKeyBound(key);
+    return map.get(key);
+  };
+  const set = (key, value) => {
+    assertKeyBound(key);
+    map.set(key, value);
+  };
+  const deleteIt = key => {
+    assertKeyBound(key);
+    map.delete(key);
+  };
+  const keys = () => [...map.keys()];
+  const values = () => [...map.values()];
+  const entries = () => [...map.entries()];
+
+  const diverge = () => {
+    const result = makeStore(keyName);
+    for (const [k, v] of entries()) {
+      result.init(k, v);
+    }
+    return result;
+  };
+
+  // eslint-disable-next-line no-use-before-define
+  const readOnly = () => readOnlyStore;
+
+  const snapshot = () => {
+    const snapshotStore = harden({
+      ...diverge().readOnly(),
+      snapshot: () => snapshotStore,
+    });
+    return snapshotStore;
+  };
+
+  const readOnlyStore = harden({
+    diverge,
+    readOnly,
+    snapshot,
+    has,
+    get,
+    keys,
+    values,
+    entries,
+    [Symbol.iterator]: entries,
+  });
+
   return harden({
-    has: key => store.has(key),
-    init: (key, value) => {
-      assertKeyDoesNotExist(key);
-      store.set(key, value);
-    },
-    get: key => {
-      assertKeyExists(key);
-      return store.get(key);
-    },
-    set: (key, value) => {
-      assertKeyExists(key);
-      store.set(key, value);
-    },
-    delete: key => {
-      assertKeyExists(key);
-      store.delete(key);
-    },
-    keys: () => Array.from(store.keys()),
-    values: () => Array.from(store.values()),
+    diverge,
+    readOnly,
+    snapshot,
+    has,
+    init,
+    get,
+    set,
+    delete: deleteIt,
+    keys,
+    values,
+    entries,
+    [Symbol.iterator]: entries,
   });
 }
 harden(makeStore);
