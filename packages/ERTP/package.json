@@ -2,7 +2,7 @@
   "name": "@agoric/ertp",
   "version": "0.3.1",
   "description": "Electronic Rights Transfer Protocol (ERTP). A smart contract framework for exchanging electronic rights",
-  "main": "src/mint.js",
+  "main": "src/issuer.js",
   "engines": {
     "node": ">=11.0"
   },
@@ -44,7 +44,8 @@
     "@agoric/nat": "^2.0.1",
     "@agoric/same-structure": "^0.0.1",
     "@agoric/store": "^0.0.1",
-    "ses": "^0.6.5"
+    "ses": "^0.6.5",
+    "@agoric/weak-store": "^0.0.1"
   },
   "devDependencies": {
     "@agoric/bundle-source": "^1.0.4",

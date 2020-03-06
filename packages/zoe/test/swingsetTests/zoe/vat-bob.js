@@ -1,29 +1,29 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { showPaymentBalance, setupAssays, getLocalUnitOps } from './helpers';
+import { showPurseBalance, setupIssuers, getLocalAmountMath } from './helpers';
 
-const build = async (E, log, zoe, purses, installations, timer) => {
+const build = async (E, log, zoe, issuers, payments, installations, timer) => {
   const {
-    inviteAssay,
-    assays,
-    moolaAssay,
-    simoleanAssay,
-    bucksAssay,
-    moolaUnitOps,
-    simoleanUnitOps,
     moola,
     simoleans,
     bucks,
-  } = await setupAssays(zoe, purses);
+    purses,
+    moolaAmountMath,
+    simoleanAmountMath,
+  } = await setupIssuers(zoe, issuers);
   const [moolaPurseP, simoleanPurseP, bucksPurseP] = purses;
+  const [moolaPayment, simoleanPayment] = payments;
+  const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
+  const inviteIssuer = await E(zoe).getInviteIssuer();
 
   return harden({
     doAutomaticRefund: async inviteP => {
-      const invite = await E(inviteAssay).claimAll(inviteP);
+      const invite = await inviteP;
+      const exclInvite = await E(inviteIssuer).claim(invite);
       const {
-        extent: { instanceHandle },
-      } = await E(invite).getBalance();
+        extent: [{ instanceHandle }],
+      } = await E(inviteIssuer).getAmountOf(exclInvite);
 
       const { installationHandle, terms } = await E(zoe).getInstance(
         instanceHandle,
@@ -36,12 +36,12 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       );
 
       assert(
-        terms.assays[0] === moolaAssay,
-        details`The first assay should be the moola assay`,
+        terms.issuers[0] === moolaIssuer,
+        details`The first issuer should be the moola issuer`,
       );
       assert(
-        terms.assays[1] === simoleanAssay,
-        details`The second assay should be the simolean assay`,
+        terms.issuers[1] === simoleanIssuer,
+        details`The second issuer should be the simolean issuer`,
       );
 
       // 1. Bob escrows his offer
@@ -49,11 +49,11 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: moola(15),
+            amount: moola(15),
           },
           {
             kind: 'offerAtMost',
-            units: simoleans(17),
+            amount: simoleans(17),
           },
         ],
         exitRule: {
@@ -61,44 +61,44 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         },
       });
 
-      const bobSimoleanPayment = await E(simoleanPurseP).withdrawAll();
-
-      const bobPayments = [undefined, bobSimoleanPayment];
+      const bobPayments = [undefined, simoleanPayment];
 
       const { seat, payout: payoutP } = await E(zoe).redeem(
-        invite,
+        exclInvite,
         bobOfferRules,
         bobPayments,
       );
 
-      // 2. Bob makes an offer with his escrow receipt
+      // 2. Bob makes an offer
       const outcome = await E(seat).makeOffer();
 
       log(outcome);
 
       const bobResult = await payoutP;
+      const [moolaPayout, simoleanPayout] = await Promise.all(bobResult);
 
       // 5: Bob deposits his winnings
-      await E(moolaPurseP).depositAll(bobResult[0]);
-      await E(simoleanPurseP).depositAll(bobResult[1]);
+      await E(moolaPurseP).deposit(moolaPayout);
+      await E(simoleanPurseP).deposit(simoleanPayout);
 
-      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse', log);
-      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
+      await showPurseBalance(moolaPurseP, 'bobMoolaPurse', log);
+      await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
     },
 
     doCoveredCall: async inviteP => {
-      // Bob claims all with the Zoe inviteAssay
-      const invite = await E(inviteAssay).claimAll(inviteP);
+      // Bob claims all with the Zoe inviteIssuer
+      const invite = await inviteP;
+      const exclInvite = await E(inviteIssuer).claim(invite);
 
       const bobIntendedOfferRules = harden({
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: moola(3),
+            amount: moola(3),
           },
           {
             kind: 'offerAtMost',
-            units: simoleans(7),
+            amount: simoleans(7),
           },
         ],
         exitRule: {
@@ -107,113 +107,127 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       });
 
       // Bob checks that the invite is for the right covered call
-      const { extent: optionExtent } = await E(invite).getBalance();
+      const { extent: optionExtent } = await E(inviteIssuer).getAmountOf(
+        exclInvite,
+      );
 
       const instanceInfo = await E(zoe).getInstance(
-        optionExtent.instanceHandle,
+        optionExtent[0].instanceHandle,
       );
 
       assert(
         instanceInfo.installationHandle === installations.coveredCall,
         details`wrong installation`,
       );
-      assert(optionExtent.seatDesc === 'exerciseOption', details`wrong seat`);
-      assert(moolaUnitOps.equals(optionExtent.underlyingAsset, moola(3)));
-      assert(simoleanUnitOps.equals(optionExtent.strikePrice, simoleans(7)));
-      assert(optionExtent.expirationDate === 1, details`wrong expirationDate`);
-      assert(optionExtent.timerAuthority === timer, 'wrong timer');
-
       assert(
-        instanceInfo.terms.assays[0] === moolaAssay,
-        details`The first assay should be the moola assay`,
+        optionExtent[0].seatDesc === 'exerciseOption',
+        details`wrong seat`,
       );
       assert(
-        instanceInfo.terms.assays[1] === simoleanAssay,
-        details`The second assay should be the simolean assay`,
+        moolaAmountMath.isEqual(optionExtent[0].underlyingAsset, moola(3)),
+      );
+      assert(
+        simoleanAmountMath.isEqual(optionExtent[0].strikePrice, simoleans(7)),
+      );
+      assert(
+        optionExtent[0].expirationDate === 1,
+        details`wrong expirationDate`,
+      );
+      assert(optionExtent[0].timerAuthority === timer, 'wrong timer');
+
+      assert(
+        instanceInfo.terms.issuers[0] === moolaIssuer,
+        details`The first issuer should be the moola issuer`,
+      );
+      assert(
+        instanceInfo.terms.issuers[1] === simoleanIssuer,
+        details`The second issuer should be the simolean issuer`,
       );
 
-      const bobSimoleanPayment = await E(simoleanPurseP).withdrawAll();
-      const bobPayments = [undefined, bobSimoleanPayment];
+      const bobPayments = [undefined, simoleanPayment];
 
       // Bob escrows
       const { seat, payout: payoutP } = await E(zoe).redeem(
-        invite,
+        exclInvite,
         bobIntendedOfferRules,
         bobPayments,
       );
 
-      // 8: Bob makes an offer with his escrow receipt
       const bobOutcome = await E(seat).exercise();
 
       log(bobOutcome);
 
       const bobResult = await payoutP;
+      const [moolaPayout, simoleanPayout] = await Promise.all(bobResult);
 
-      // 5: Bob deposits his winnings
-      await E(moolaPurseP).depositAll(bobResult[0]);
-      await E(simoleanPurseP).depositAll(bobResult[1]);
+      await E(moolaPurseP).deposit(moolaPayout);
+      await E(simoleanPurseP).deposit(simoleanPayout);
 
-      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse', log);
-      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
+      await showPurseBalance(moolaPurseP, 'bobMoolaPurse', log);
+      await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
     },
     doSwapForOption: async (inviteP, daveP) => {
-      // Bob claims all with the Zoe inviteAssay
-      const invite = await E(inviteAssay).claimAll(inviteP);
+      // Bob claims all with the Zoe inviteIssuer
+      const invite = await inviteP;
+      const exclInvite = await E(inviteIssuer).claim(invite);
 
       // Bob checks that the invite is for the right covered call
-      const optionUnits = await E(invite).getBalance();
-      const optionExtent = optionUnits.extent;
+      const optionAmounts = await E(inviteIssuer).getAmountOf(exclInvite);
+      const optionExtent = optionAmounts.extent;
 
       const instanceInfo = await E(zoe).getInstance(
-        optionExtent.instanceHandle,
+        optionExtent[0].instanceHandle,
       );
       assert(
         instanceInfo.installationHandle === installations.coveredCall,
         details`wrong installation`,
       );
-      assert(optionExtent.seatDesc === 'exerciseOption', details`wrong seat`);
       assert(
-        moolaUnitOps.equals(optionExtent.underlyingAsset, moola(3)),
+        optionExtent[0].seatDesc === 'exerciseOption',
+        details`wrong seat`,
+      );
+      assert(
+        moolaAmountMath.isEqual(optionExtent[0].underlyingAsset, moola(3)),
         details`wrong underlying asset`,
       );
       assert(
-        simoleanUnitOps.equals(optionExtent.strikePrice, simoleans(7)),
+        simoleanAmountMath.isEqual(optionExtent[0].strikePrice, simoleans(7)),
         details`wrong strike price`,
       );
       assert(
-        optionExtent.expirationDate === 100,
+        optionExtent[0].expirationDate === 100,
         details`wrong expiration date`,
       );
-      assert(optionExtent.timerAuthority === timer, details`wrong timer`);
+      assert(optionExtent[0].timerAuthority === timer, details`wrong timer`);
       assert(
-        instanceInfo.terms.assays[0] === moolaAssay,
-        details`The first assay should be the moola assay`,
+        instanceInfo.terms.issuers[0] === moolaIssuer,
+        details`The first issuer should be the moola issuer`,
       );
       assert(
-        instanceInfo.terms.assays[1] === simoleanAssay,
-        details`The second assay should be the simolean assay`,
+        instanceInfo.terms.issuers[1] === simoleanIssuer,
+        details`The second issuer should be the simolean issuer`,
       );
 
       // Let's imagine that Bob wants to create a swap to trade this
       // invite for bucks. He wants to invite Dave as the
       // counter-party.
-      const swapAssays = harden([inviteAssay, bucksAssay]);
+      const swapIssuers = harden([inviteIssuer, bucksIssuer]);
       const bobSwapInvite = await E(zoe).makeInstance(
         installations.atomicSwap,
-        { assays: swapAssays },
+        { issuers: swapIssuers },
       );
 
-      // Bob wants to swap an invite with the same units as his
+      // Bob wants to swap an invite with the same amount as his
       // current invite from Alice. He wants 1 buck in return.
       const bobOfferRulesSwap = harden({
         payoutRules: [
           {
             kind: 'offerAtMost',
-            units: optionUnits,
+            amount: optionAmounts,
           },
           {
             kind: 'wantAtLeast',
-            units: bucks(1),
+            amount: bucks(1),
           },
         ],
         exitRule: {
@@ -221,7 +235,7 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         },
       });
 
-      const bobSwapPayments = [invite, undefined];
+      const bobSwapPayments = [exclInvite, undefined];
 
       // Bob escrows his option in the swap
       const { seat: bobSwapSeat, payout: payoutP } = await E(zoe).redeem(
@@ -233,55 +247,58 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       // Bob makes an offer to the swap with his "higher order"
       const daveSwapInviteP = E(bobSwapSeat).makeFirstOffer();
       log('swap invite made');
-      await E(daveP).doSwapForOption(daveSwapInviteP, optionUnits);
+      await E(daveP).doSwapForOption(daveSwapInviteP, optionAmounts);
 
       const bobResult = await payoutP;
+      const [_, bucksPayout] = await Promise.all(bobResult);
 
       // Bob deposits his winnings
-      await E(bucksPurseP).depositAll(bobResult[1]);
+      await E(bucksPurseP).deposit(bucksPayout);
 
-      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse', log);
-      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
-      await showPaymentBalance(bucksPurseP, 'bobBucksPurse;', log);
+      await showPurseBalance(moolaPurseP, 'bobMoolaPurse', log);
+      await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
+      await showPurseBalance(bucksPurseP, 'bobBucksPurse;', log);
     },
     doPublicAuction: async inviteP => {
-      const invite = await E(inviteAssay).claimAll(inviteP);
-      const { extent: inviteExtent } = await E(invite).getBalance();
+      const invite = await inviteP;
+      const exclInvite = await E(inviteIssuer).claim(invite);
+      const { extent: inviteExtent } = await E(inviteIssuer).getAmountOf(
+        exclInvite,
+      );
 
       const { installationHandle, terms } = await E(zoe).getInstance(
-        inviteExtent.instanceHandle,
+        inviteExtent[0].instanceHandle,
       );
       assert(
         installationHandle === installations.publicAuction,
         details`wrong installation`,
       );
       assert(
-        sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
-        details`assays were not as expected`,
+        sameStructure(harden([moolaIssuer, simoleanIssuer]), terms.issuers),
+        details`issuers were not as expected`,
       );
-      assert(sameStructure(inviteExtent.minimumBid, simoleans(3)));
-      assert(sameStructure(inviteExtent.auctionedAssets, moola(1)));
+      assert(sameStructure(inviteExtent[0].minimumBid, simoleans(3)));
+      assert(sameStructure(inviteExtent[0].auctionedAssets, moola(1)));
 
       const offerRules = harden({
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: moola(1),
+            amount: moola(1),
           },
           {
             kind: 'offerAtMost',
-            units: simoleans(11),
+            amount: simoleans(11),
           },
         ],
         exitRule: {
           kind: 'onDemand',
         },
       });
-      const simoleanPayment = await E(simoleanPurseP).withdrawAll();
       const offerPayments = [undefined, simoleanPayment];
 
       const { seat, payout: payoutP } = await E(zoe).redeem(
-        invite,
+        exclInvite,
         offerRules,
         offerPayments,
       );
@@ -291,42 +308,46 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       log(offerResult);
 
       const bobResult = await payoutP;
+      const [moolaPayout, simoleanPayout] = await Promise.all(bobResult);
 
-      await E(moolaPurseP).depositAll(bobResult[0]);
-      await E(simoleanPurseP).depositAll(bobResult[1]);
+      await E(moolaPurseP).deposit(moolaPayout);
+      await E(simoleanPurseP).deposit(simoleanPayout);
 
-      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse', log);
-      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
+      await showPurseBalance(moolaPurseP, 'bobMoolaPurse', log);
+      await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
     },
     doAtomicSwap: async inviteP => {
-      const invite = await E(inviteAssay).claimAll(inviteP);
-      const { extent: inviteExtent } = await E(invite).getBalance();
+      const invite = await inviteP;
+      const exclInvite = await E(inviteIssuer).claim(invite);
+      const { extent: inviteExtent } = await E(inviteIssuer).getAmountOf(
+        exclInvite,
+      );
 
       const { installationHandle, terms } = await E(zoe).getInstance(
-        inviteExtent.instanceHandle,
+        inviteExtent[0].instanceHandle,
       );
       assert(
         installationHandle === installations.atomicSwap,
         details`wrong installation`,
       );
       assert(
-        sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
-        details`assays were not as expected`,
+        sameStructure(harden([moolaIssuer, simoleanIssuer]), terms.issuers),
+        details`issuers were not as expected`,
       );
 
       const expectedFirstOfferPayoutRules = harden([
         {
           kind: 'offerAtMost',
-          units: moola(3),
+          amount: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: simoleans(7),
+          amount: simoleans(7),
         },
       ]);
       assert(
         sameStructure(
-          inviteExtent.offerMadeRules,
+          inviteExtent[0].offerMadeRules,
           expectedFirstOfferPayoutRules,
         ),
         details`Alice made a different offer than expected`,
@@ -336,22 +357,21 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: moola(3),
+            amount: moola(3),
           },
           {
             kind: 'offerAtMost',
-            units: simoleans(7),
+            amount: simoleans(7),
           },
         ],
         exitRule: {
           kind: 'onDemand',
         },
       });
-      const simoleanPayment = await E(simoleanPurseP).withdrawAll();
       const offerPayments = [undefined, simoleanPayment];
 
       const { seat, payout: payoutP } = await E(zoe).redeem(
-        invite,
+        exclInvite,
         offerRules,
         offerPayments,
       );
@@ -361,49 +381,52 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       log(offerResult);
 
       const bobResult = await payoutP;
+      const [moolaPayout, simoleanPayout] = await Promise.all(bobResult);
 
-      await E(moolaPurseP).depositAll(bobResult[0]);
-      await E(simoleanPurseP).depositAll(bobResult[1]);
+      await E(moolaPurseP).deposit(moolaPayout);
+      await E(simoleanPurseP).deposit(simoleanPayout);
 
-      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse', log);
-      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
+      await showPurseBalance(moolaPurseP, 'bobMoolaPurse', log);
+      await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
     },
     doSimpleExchange: async inviteP => {
-      const invite = await E(inviteAssay).claimAll(inviteP);
-      const { extent: inviteExtent } = await E(invite).getBalance();
+      const invite = await inviteP;
+      const exclInvite = await E(inviteIssuer).claim(invite);
+      const { extent: inviteExtent } = await E(inviteIssuer).getAmountOf(
+        exclInvite,
+      );
 
       const { installationHandle, terms } = await E(zoe).getInstance(
-        inviteExtent.instanceHandle,
+        inviteExtent[0].instanceHandle,
       );
       assert(
         installationHandle === installations.simpleExchange,
         details`wrong installation`,
       );
       assert(
-        sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
-        details`assays were not as expected`,
+        sameStructure(harden([moolaIssuer, simoleanIssuer]), terms.issuers),
+        details`issuers were not as expected`,
       );
 
       const bobBuyOrderOfferRules = harden({
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: moola(3),
+            amount: moola(3),
           },
           {
             kind: 'offerAtMost',
-            units: simoleans(7),
+            amount: simoleans(7),
           },
         ],
         exitRule: {
           kind: 'onDemand',
         },
       });
-      const simoleanPayment = await E(simoleanPurseP).withdrawAll();
       const offerPayments = [undefined, simoleanPayment];
 
       const { seat, payout: payoutP } = await E(zoe).redeem(
-        invite,
+        exclInvite,
         bobBuyOrderOfferRules,
         offerPayments,
       );
@@ -413,16 +436,19 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       log(offerResult);
 
       const bobResult = await payoutP;
+      const [moolaPayout, simoleanPayout] = await Promise.all(bobResult);
 
-      await E(moolaPurseP).depositAll(bobResult[0]);
-      await E(simoleanPurseP).depositAll(bobResult[1]);
+      await E(moolaPurseP).deposit(moolaPayout);
+      await E(simoleanPurseP).deposit(simoleanPayout);
 
-      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse', log);
-      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
+      await showPurseBalance(moolaPurseP, 'bobMoolaPurse', log);
+      await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
     },
     doSimpleExchangeUpdates: async (inviteP, m, s) => {
-      const invite = await E(inviteAssay).claimAll(inviteP);
-      const { extent: inviteExtent } = await E(invite).getBalance();
+      const invite = await E(inviteIssuer).claim(inviteP);
+      const {
+        extent: [inviteExtent],
+      } = await E(inviteIssuer).getAmountOf(invite);
 
       const { installationHandle, terms } = await E(zoe).getInstance(
         inviteExtent.instanceHandle,
@@ -432,27 +458,30 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         details`wrong installation`,
       );
       assert(
-        sameStructure(harden([moolaAssay, simoleanAssay]), terms.assays),
-        details`assays were not as expected`,
+        sameStructure(harden([moolaIssuer, simoleanIssuer]), terms.issuers),
+        details`issuers were not as expected`,
       );
 
       const bobBuyOrderOfferRules = harden({
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: moola(m),
+            amount: moola(m),
           },
           {
             kind: 'offerAtMost',
-            units: simoleans(s),
+            amount: simoleans(s),
           },
         ],
         exitRule: {
           kind: 'onDemand',
         },
       });
-      const simoleanPayment = await E(simoleanPurseP).withdraw(s, `pay ${s}`);
-      const offerPayments = [undefined, simoleanPayment];
+      if (m === 3 && s === 7) {
+        await E(simoleanPurseP).deposit(simoleanPayment);
+      }
+      const simoleanPayment2 = await E(simoleanPurseP).withdraw(simoleans(s));
+      const offerPayments = [undefined, simoleanPayment2];
 
       const { seat, payout: payoutP } = await E(zoe).redeem(
         invite,
@@ -464,55 +493,58 @@ const build = async (E, log, zoe, purses, installations, timer) => {
 
       log(offerResult);
 
-      payoutP.then(bobResult => {
-        E(moolaPurseP).depositAll(bobResult[0]);
-        E(simoleanPurseP).depositAll(bobResult[1]);
+      payoutP.then(async bobResult => {
+        E(moolaPurseP).deposit(await bobResult[0]);
+        E(simoleanPurseP).deposit(await bobResult[1]);
       });
 
-      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse', log);
-      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
+      await showPurseBalance(moolaPurseP, 'bobMoolaPurse', log);
+      await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
     },
     doAutoswap: async inviteP => {
-      const invite = await E(inviteAssay).claimAll(inviteP);
-      const { extent: inviteExtent } = await E(invite).getBalance();
+      const invite = await inviteP;
+      const exclInvite = await E(inviteIssuer).claim(invite);
+      const { extent: inviteExtent } = await E(inviteIssuer).getAmountOf(
+        exclInvite,
+      );
 
       const { installationHandle, terms } = await E(zoe).getInstance(
-        inviteExtent.instanceHandle,
+        inviteExtent[0].instanceHandle,
       );
       assert(
         installationHandle === installations.autoswap,
         details`wrong installation`,
       );
       const {
-        extent: { instanceHandle },
-      } = await E(invite).getBalance();
+        extent: [{ instanceHandle }],
+      } = await E(inviteIssuer).getAmountOf(exclInvite);
       const { publicAPI } = await E(zoe).getInstance(instanceHandle);
-      const liquidityAssay = await E(publicAPI).getLiquidityAssay();
-      const liquidityUnitOps = await getLocalUnitOps(liquidityAssay);
-      const liquidity = liquidityUnitOps.make;
-      const allAssays = harden([...assays, liquidityAssay]);
+      const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
+      const liquidityAmountMath = await getLocalAmountMath(liquidityIssuer);
+      const liquidity = liquidityAmountMath.make;
+      const allIssuers = harden([moolaIssuer, simoleanIssuer, liquidityIssuer]);
       assert(
-        sameStructure(allAssays, terms.assays),
-        details`assays were not as expected`,
+        sameStructure(allIssuers, terms.issuers),
+        details`issuers were not as expected`,
       );
 
       // bob checks the price of 3 moola. The price is 1 simolean
-      const simoleanUnits = await E(publicAPI).getPrice(moola(3));
-      log(simoleanUnits);
+      const simoleanAmounts = await E(publicAPI).getPrice(moola(3));
+      log(`simoleanAmounts `, simoleanAmounts);
 
       const moolaForSimOfferRules = harden({
         payoutRules: [
           {
             kind: 'offerAtMost',
-            units: moola(3),
+            amount: moola(3),
           },
           {
             kind: 'wantAtLeast',
-            units: simoleans(1),
+            amount: simoleans(1),
           },
           {
             kind: 'wantAtLeast',
-            units: liquidity(0),
+            amount: liquidity(0),
           },
         ],
         exitRule: {
@@ -520,10 +552,9 @@ const build = async (E, log, zoe, purses, installations, timer) => {
         },
       });
 
-      const moolaPayment = E(moolaPurseP).withdrawAll();
       const moolaForSimPayments = [moolaPayment, undefined, undefined];
       const { seat, payout: moolaForSimPayoutP } = await E(zoe).redeem(
-        invite,
+        exclInvite,
         moolaForSimOfferRules,
         moolaForSimPayments,
       );
@@ -533,34 +564,38 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       log(offerResult);
 
       const moolaForSimPayout = await moolaForSimPayoutP;
+      const [moolaPayout1, simoleanPayout1] = await Promise.all(
+        moolaForSimPayout,
+      );
 
-      await E(moolaPurseP).depositAll(moolaForSimPayout[0]);
-      await E(simoleanPurseP).depositAll(moolaForSimPayout[1]);
+      await E(moolaPurseP).deposit(moolaPayout1);
+      await E(simoleanPurseP).deposit(simoleanPayout1);
 
       // Bob looks up the price of 3 simoleans. It's 5 moola
-      const moolaUnits = await E(publicAPI).getPrice(simoleans(3));
-      log(moolaUnits);
+      const moolaAmounts = await E(publicAPI).getPrice(simoleans(3));
+      log(`moolaAmounts `, moolaAmounts);
 
       // Bob makes another offer and swaps
       const bobSimsForMoolaOfferRules = harden({
         payoutRules: [
           {
             kind: 'wantAtLeast',
-            units: moola(5),
+            amount: moola(5),
           },
           {
             kind: 'offerAtMost',
-            units: simoleans(3),
+            amount: simoleans(3),
           },
           {
             kind: 'wantAtLeast',
-            units: liquidity(0),
+            amount: liquidity(0),
           },
         ],
         exitRule: {
           kind: 'onDemand',
         },
       });
+      await E(simoleanPurseP).deposit(simoleanPayment);
       const bobSimoleanPayment = await E(simoleanPurseP).withdraw(simoleans(3));
       const simsForMoolaPayments = [undefined, bobSimoleanPayment, undefined];
       const invite2 = await E(publicAPI).makeInvite();
@@ -573,12 +608,15 @@ const build = async (E, log, zoe, purses, installations, timer) => {
       log(simsForMoolaOutcome);
 
       const simsForMoolaPayout = await bobSimsForMoolaPayoutP;
+      const [moolaPayout2, simoleanPayout2] = await Promise.all(
+        simsForMoolaPayout,
+      );
 
-      await E(moolaPurseP).depositAll(simsForMoolaPayout[0]);
-      await E(simoleanPurseP).depositAll(simsForMoolaPayout[1]);
+      await E(moolaPurseP).deposit(moolaPayout2);
+      await E(simoleanPurseP).deposit(simoleanPayout2);
 
-      await showPaymentBalance(moolaPurseP, 'bobMoolaPurse', log);
-      await showPaymentBalance(simoleanPurseP, 'bobSimoleanPurse;', log);
+      await showPurseBalance(moolaPurseP, 'bobMoolaPurse', log);
+      await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
     },
   });
 };

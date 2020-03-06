@@ -14,9 +14,9 @@ const escrowExchange = harden({
   start: (terms, inviteMaker) => {
     const { left: moneyNeeded, right: stockNeeded } = terms;
 
-    function makeTransfer(units, srcPaymentP) {
-      const { assay } = units.label;
-      const escrowP = E(assay).claimExactly(units, srcPaymentP, 'escrow');
+    // TODO: How to get issuer?
+    function makeTransfer(issuer, amount, srcPaymentP) {
+      const escrowP = E(issuer).claim(srcPaymentP, amount);
       const winnings = makePromise();
       const refund = makePromise();
       return harden({

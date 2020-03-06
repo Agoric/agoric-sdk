@@ -38,10 +38,11 @@ function build(E, log) {
       log(`installing ${testName}`);
       const installId = await installations[testName]();
       log(`instantiating ${testName}`);
-      const invite = await E(zoe).makeInstance(installId, { assays: [] });
+      const invite = await E(zoe).makeInstance(installId, { issuers: [] });
+      const inviteIssuer = E(zoe).getInviteIssuer();
       const {
-        extent: { instanceHandle },
-      } = await E(invite).getBalance();
+        extent: [{ instanceHandle }],
+      } = await E(inviteIssuer).getAmountOf(invite);
       const { publicAPI } = await E(zoe).getInstance(instanceHandle);
       log(`invoking ${testName}.doTest()`);
       await E(publicAPI).doTest();

@@ -1,6 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
+import makeAmountMath from '@agoric/ertp/src/amountMath';
 
 import { escrowExchangeSrcs } from '../../../src/escrow';
 import { coveredCallSrcs } from '../../../src/coveredCall';
@@ -9,11 +10,13 @@ function build(E, log) {
   // TODO BUG: All callers should wait until settled before doing
   // anything that would change the balance before show*Balance* reads
   // it.
-  function showPaymentBalance(name, paymentP) {
-    return E(paymentP)
-      .getBalance()
-      .then(units => log(name, ' balance ', units))
-      .catch(err => console.log(err));
+  function showPaymentBalance(name, issuer, paymentP) {
+    return paymentP.then(payment => {
+      return E(issuer)
+        .getAmountOf(payment)
+        .then(amount => log(name, ' balance ', amount))
+        .catch(err => console.log(err));
+    });
   }
   // TODO BUG: All callers should wait until settled before doing
   // anything that would change the balance before show*Balance* reads
@@ -21,11 +24,19 @@ function build(E, log) {
   function showPurseBalances(name, purseP) {
     return Promise.all([
       E(purseP)
-        .getBalance()
-        .then(units => log(name, ' balance ', units))
+        .getCurrentAmount()
+        .then(amount => log(name, ' balance ', amount))
         .catch(err => console.log(err)),
     ]);
   }
+
+  const getLocalAmountMath = issuer =>
+    Promise.all([
+      E(issuer).getBrand(),
+      E(issuer).getMathHelpersName(),
+    ]).then(([brand, mathHelpersName]) =>
+      makeAmountMath(brand, mathHelpersName),
+    );
 
   const fakeNeverTimer = harden({
     setWakeup(deadline, _resolution = undefined) {
@@ -33,48 +44,6 @@ function build(E, log) {
       return deadline;
     },
   });
-
-  // This is written in the full unitOps style, where bare number
-  // objects are never used in lieu of full units objects. This has
-  // the virtue of unit typing, where 3 dollars cannot be confused
-  // with 3 seconds.
-  function mintTestDescOps(mint) {
-    log('starting mintTestDescOps');
-    const mMintP = E(mint).makeMint('bucks');
-    const mAssayP = E(mMintP).getAssay();
-    Promise.resolve(mAssayP).then(assay => {
-      // By using an unforgeable assay presence and a pass-by-copy
-      // allegedName together as a unit label, we check that both
-      // agree. The veracity of the allegedName is, however, only as
-      // good as the assay doing the check.
-      const label = harden({ assay, allegedName: 'bucks' });
-      const bucks1000 = harden({ label, extent: 1000 });
-      const bucks50 = harden({ label, extent: 50 });
-
-      const alicePurseP = E(mMintP).mint(bucks1000, 'alice');
-      const paymentP = E(alicePurseP).withdraw(bucks50);
-      Promise.resolve(paymentP).then(_ => {
-        showPurseBalances('alice', alicePurseP);
-        showPaymentBalance('payment', paymentP);
-      });
-    });
-  }
-
-  // Uses raw numbers rather tha units. Until we have support for
-  // pass-by-presence, the full unitOps style shown in mintTestDescOps is
-  // too awkward.
-  function mintTestNumber(mint) {
-    log('starting mintTestNumber');
-    const mMintP = E(mint).makeMint('quatloos');
-    mMintP.then(newMint => console.log(newMint));
-
-    const alicePurseP = E(mMintP).mint(1000, 'alice');
-    const paymentP = E(alicePurseP).withdraw(50);
-    Promise.resolve(paymentP).then(_ => {
-      showPurseBalances('alice', alicePurseP);
-      showPaymentBalance('payment', paymentP);
-    });
-  }
 
   function trivialContractTest(host) {
     log('starting trivialContractTest');
@@ -95,21 +64,23 @@ function build(E, log) {
 
         const fooInviteP = E(installationP).spawn('foo terms');
 
-        return Promise.resolve(showPaymentBalance('foo', fooInviteP)).then(
-          _ => {
-            const eightP = E(host).redeem(fooInviteP);
+        const inviteIssuerP = E(host).getInviteIssuer();
 
-            eightP.then(res => {
-              showPaymentBalance('foo', fooInviteP);
-              log('++ eightP resolved to ', res, ' (should be 8)');
-              if (res !== 8) {
-                throw new Error(`eightP resolved to ${res}, not 8`);
-              }
-              log('++ DONE');
-            });
-            return eightP;
-          },
-        );
+        return Promise.resolve(
+          showPaymentBalance('foo', inviteIssuerP, fooInviteP),
+        ).then(_ => {
+          const eightP = E(host).redeem(fooInviteP);
+
+          eightP.then(res => {
+            showPaymentBalance('foo', inviteIssuerP, fooInviteP);
+            log('++ eightP resolved to ', res, ' (should be 8)');
+            if (res !== 8) {
+              throw new Error(`eightP resolved to ${res}, not 8`);
+            }
+            log('++ DONE');
+          });
+          return eightP;
+        });
       });
   }
 
@@ -147,31 +118,48 @@ function build(E, log) {
       );
   }
 
-  function betterContractTestAliceFirst(host, mint, aliceMaker, bobMaker) {
+  async function betterContractTestAliceFirst(
+    host,
+    mint,
+    aliceMaker,
+    bobMaker,
+  ) {
     const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
     const coveredCallInstallationP = E(host).install(coveredCallSrcs);
 
-    const moneyMintP = E(mint).makeMint('moola');
-    const aliceMoneyPurseP = E(moneyMintP).mint(1000);
-    const bobMoneyPurseP = E(moneyMintP).mint(1001);
+    const { mint: moneyMint, issuer: moneyIssuer } = await E(
+      mint,
+    ).produceIssuer('moola');
+    const moolaAmountMath = await getLocalAmountMath(moneyIssuer);
+    const moola = moolaAmountMath.make;
+    const aliceMoneyPaymentP = E(moneyMint).mintPayment(moola(1000));
+    const bobMoneyPaymentP = E(moneyMint).mintPayment(moola(1001));
 
-    const stockMintP = E(mint).makeMint('Tyrell');
-    const aliceStockPurseP = E(stockMintP).mint(2002);
-    const bobStockPurseP = E(stockMintP).mint(2003);
+    const { mint: stockMint, issuer: stockIssuer } = await E(
+      mint,
+    ).produceIssuer('Tyrell');
+    const stockAmountMath = await getLocalAmountMath(stockIssuer);
+    const stocks = stockAmountMath.make;
+    const aliceStockPaymentP = E(stockMint).mintPayment(stocks(2002));
+    const bobStockPaymentP = E(stockMint).mintPayment(stocks(2003));
 
     const aliceP = E(aliceMaker).make(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
-      aliceMoneyPurseP,
-      aliceStockPurseP,
+      moneyIssuer,
+      stockIssuer,
+      aliceMoneyPaymentP,
+      aliceStockPaymentP,
     );
     const bobP = E(bobMaker).make(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
-      bobMoneyPurseP,
-      bobStockPurseP,
+      moneyIssuer,
+      stockIssuer,
+      bobMoneyPaymentP,
+      bobStockPaymentP,
     );
     return Promise.all([aliceP, bobP]).then(_ => {
       const ifItFitsP = E(aliceP).payBobWell(bobP);
@@ -186,22 +174,42 @@ function build(E, log) {
     });
   }
 
-  function betterContractTestBobFirst(host, mint, aliceMaker, bobMaker) {
+  async function betterContractTestBobFirst(host, mint, aliceMaker, bobMaker) {
     const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
     const coveredCallInstallationP = E(host).install(coveredCallSrcs);
 
-    const moneyMintP = E(mint).makeMint('clams');
-    const aliceMoneyPurseP = E(moneyMintP).mint(1000, 'aliceMainMoney');
-    const bobMoneyPurseP = E(moneyMintP).mint(1001, 'bobMainMoney');
+    const { mint: moneyMint, issuer: moneyIssuer } = await E(
+      mint,
+    ).produceIssuer('clams');
+    const moneyAmountMath = await getLocalAmountMath(moneyIssuer);
+    const money = moneyAmountMath.make;
+    const aliceMoneyPayment = await E(moneyMint).mintPayment(money(1000));
+    const bobMoneyPayment = await E(moneyMint).mintPayment(money(1001));
 
-    const stockMintP = E(mint).makeMint('fudco');
-    const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
-    const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
+    const { mint: stockMint, issuer: stockIssuer } = await E(
+      mint,
+    ).produceIssuer('fudco');
+    const stockAmountMath = await getLocalAmountMath(stockIssuer);
+    const stocks = stockAmountMath.make;
+    const aliceStockPayment = await E(stockMint).mintPayment(stocks(2002));
+    const bobStockPayment = await E(stockMint).mintPayment(stocks(2003));
+
+    const aliceMoneyPurseP = E(moneyIssuer).makeEmptyPurse();
+    const bobMoneyPurseP = E(moneyIssuer).makeEmptyPurse();
+    const aliceStockPurseP = E(stockIssuer).makeEmptyPurse();
+    const bobStockPurseP = E(stockIssuer).makeEmptyPurse();
+
+    await E(aliceMoneyPurseP).deposit(aliceMoneyPayment);
+    await E(aliceStockPurseP).deposit(aliceStockPayment);
+    await E(bobMoneyPurseP).deposit(bobMoneyPayment);
+    await E(bobStockPurseP).deposit(bobStockPayment);
 
     const aliceP = E(aliceMaker).make(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
+      moneyIssuer,
+      stockIssuer,
       aliceMoneyPurseP,
       aliceStockPurseP,
     );
@@ -209,6 +217,8 @@ function build(E, log) {
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       fakeNeverTimer,
+      moneyIssuer,
+      stockIssuer,
       bobMoneyPurseP,
       bobStockPurseP,
     );
@@ -347,10 +357,6 @@ function build(E, log) {
   const obj0 = {
     async bootstrap(argv, vats) {
       switch (argv[0]) {
-        case 'mint': {
-          mintTestDescOps(vats.mint);
-          return mintTestNumber(vats.mint);
-        }
         case 'trivial': {
           const host = await E(vats.host).makeHost();
           return trivialContractTest(host);

@@ -2,25 +2,36 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
+import makeAmountMath from '@agoric/ertp/src/amountMath';
 
 import { makeCollect } from '../../../src/makeCollect';
 
 function makeBobMaker(E, host, log) {
   const collect = makeCollect(E, log);
 
+  const getLocalAmountMath = issuer =>
+    Promise.all([
+      E(issuer).getBrand(),
+      E(issuer).getMathHelpersName(),
+    ]).then(([brand, mathHelpersName]) =>
+      makeAmountMath(brand, mathHelpersName),
+    );
+
   return harden({
-    make(
+    async make(
       escrowExchangeInstallationP,
       coveredCallInstallationP,
       timerP,
+      moneyIssuerP,
+      stockIssuerP,
       myMoneyPurseP,
       myStockPurseP,
     ) {
-      const moneyAssayP = E(myMoneyPurseP).getAssay();
-      const moneyNeededP = E(E(moneyAssayP).getUnitOps()).make(10);
+      const moneyMath = await getLocalAmountMath(moneyIssuerP);
+      const stockMath = await getLocalAmountMath(stockIssuerP);
 
-      const stockAssayP = E(myStockPurseP).getAssay();
-      const stockNeededP = E(E(stockAssayP).getUnitOps()).make(7);
+      const moneyNeeded = moneyMath.make(10);
+      const stockNeeded = stockMath.make(7);
 
       const bob = harden({
         /**
@@ -30,13 +41,12 @@ function makeBobMaker(E, host, log) {
          * is a bit confusing here.
          */
         buy(desc, paymentP) {
-          /* eslint-disable-next-line no-unused-vars */
-          let units;
+          let amount;
           let good;
           desc = `${desc}`;
           switch (desc) {
             case 'shoe': {
-              units = 10;
+              amount = moneyMath.make(10);
               good = 'If it fits, ware it.';
               break;
             }
@@ -45,14 +55,16 @@ function makeBobMaker(E, host, log) {
             }
           }
 
-          return E(myMoneyPurseP)
-            .depositExactly(units, paymentP)
-            .then(_ => good);
+          return paymentP.then(payment =>
+            E(myMoneyPurseP)
+              .deposit(payment, amount)
+              .then(_ => good),
+          );
         },
 
         tradeWell(alice) {
           log('++ bob.tradeWell starting');
-          const terms = harden({ left: moneyNeededP, right: stockNeededP });
+          const terms = harden({ left: moneyNeeded, right: stockNeeded });
           const invitesP = E(escrowExchangeInstallationP).spawn(terms);
           const aliceInvitePaymentP = invitesP.then(invites => invites.left);
           const bobInvitePaymentP = invitesP.then(invites => invites.right);
@@ -69,7 +81,7 @@ function makeBobMaker(E, host, log) {
 
         acceptInvite(inviteP) {
           const seatP = E(host).redeem(inviteP);
-          const stockPaymentP = E(myStockPurseP).withdraw(7);
+          const stockPaymentP = E(myStockPurseP).withdraw(stockMath.make(7));
           E(seatP).offer(stockPaymentP);
           return collect(seatP, myMoneyPurseP, myStockPurseP, 'bob escrow');
         },
@@ -78,14 +90,14 @@ function makeBobMaker(E, host, log) {
           log('++ bob.offerAliceOption starting');
           const terms = harden({
             escrowExchangeInstallation: escrowExchangeInstallationP,
-            money: moneyNeededP,
-            stock: stockNeededP,
+            money: moneyNeeded,
+            stock: stockNeeded,
             timer: timerP,
             deadline: 'singularity',
           });
           const bobInviteP = E(coveredCallInstallationP).spawn(terms);
           const bobSeatP = E(host).redeem(bobInviteP);
-          const stockPaymentP = E(myStockPurseP).withdraw(7);
+          const stockPaymentP = E(myStockPurseP).withdraw(stockMath.make(7));
           const aliceInviteP = E(bobSeatP).offer(stockPaymentP);
           const doneP = Promise.all([
             E(alice).acceptOption(aliceInviteP),

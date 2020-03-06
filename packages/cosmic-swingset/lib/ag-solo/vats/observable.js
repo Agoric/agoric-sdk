@@ -1,25 +1,14 @@
 export default function makeObservablePurse(E, purse, onFulfilled) {
   return {
-    getName() {
-      return E(purse).getName();
+    getCurrentAmount() {
+      return E(purse).getCurrentAmount();
     },
-    getAssay() {
-      return E(purse).getAssay();
+    getAllegedBrand() {
+      return E(purse).getAllegedBrand();
     },
-    getBalance() {
-      return E(purse).getBalance();
-    },
-    depositExactly(...args) {
+    deposit(...args) {
       return E(purse)
-        .depositExactly(...args)
-        .then(result => {
-          onFulfilled();
-          return result;
-        });
-    },
-    depositAll(...args) {
-      return E(purse)
-        .depositAll(...args)
+        .deposit(...args)
         .then(result => {
           onFulfilled();
           return result;
@@ -28,14 +17,6 @@ export default function makeObservablePurse(E, purse, onFulfilled) {
     withdraw(...args) {
       return E(purse)
         .withdraw(...args)
-        .then(result => {
-          onFulfilled();
-          return result;
-        });
-    },
-    withdrawAll(...args) {
-      return E(purse)
-        .withdrawAll(...args)
         .then(result => {
           onFulfilled();
           return result;

@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';
-import { makeUnitOps } from '@agoric/ertp/src/unitOps';
+import makeAmountMath from '@agoric/ertp/src/amountMath';
 
 import makeObservablePurse from './observable';
 
@@ -17,12 +17,10 @@ export async function makeWallet(
   inboxStateChangeHandler = noActionStateChangeHandler,
 ) {
   const petnameToPurse = makeStore();
-  const assayPetnameToAssay = makeStore();
-  const assayToAssayPetname = makeWeakStore();
-
-  const petnameToUnitOps = makeStore();
-  const regKeyToAssayPetname = makeStore();
-  const assayPetnameToRegKey = makeStore();
+  const issuerPetnameToIssuer = new Map();
+  const issuerToIssuerPetname = makeWeakStore();
+  const brandToIssuer = makeStore();
+  const brandToMath = makeStore();
 
   // Offers that the wallet knows about (the inbox).
   const dateToOfferRec = new Map();
@@ -40,16 +38,14 @@ export async function makeWallet(
   }
 
   async function updatePursesState(pursePetname, purse) {
-    const [{ extent }, assay] = await Promise.all([
-      E(purse).getBalance(),
-      E(purse).getAssay(),
+    const [{ extent }, brand] = await Promise.all([
+      E(purse).getCurrentAmount(),
+      E(purse).getAllegedBrand(),
     ]);
-    const assayPetname = assayToAssayPetname.get(assay);
-    const assayRegKey = assayPetnameToRegKey.get(assayPetname);
+    const issuerPetname = issuerToIssuerPetname.get(brandToIssuer.get(brand));
     pursesState.set(pursePetname, {
       purseName: pursePetname,
-      assayId: assayRegKey,
-      allegedName: assayPetname,
+      issuerPetname,
       extent,
     });
     pursesStateChangeHandler(getPursesState());
@@ -194,34 +190,29 @@ export async function makeWallet(
     return offerOk;
   }
 
-  const getLocalUnitOps = assay =>
-    Promise.all([
-      E(assay).getLabel(),
-      E(assay).getExtentOps(),
-    ]).then(([label, { name, extentOpsArgs = [] }]) =>
-      makeUnitOps(label, name, extentOpsArgs),
-    );
-
   // === API
 
-  async function addAssay(assayPetname, regKey, assay) {
-    assayPetnameToAssay.init(assayPetname, assay);
-    assayToAssayPetname.init(assay, assayPetname);
-    regKeyToAssayPetname.init(regKey, assayPetname);
-    assayPetnameToRegKey.init(assayPetname, regKey);
-    petnameToUnitOps.init(assayPetname, await getLocalUnitOps(assay));
+  async function addIssuer(issuerPetname, issuer) {
+    issuerPetnameToIssuer.set(issuerPetname, issuer);
+    issuerToIssuerPetname.init(issuer, issuerPetname);
+    const brand = await E(issuer).getBrand();
+    brandToIssuer.init(brand, issuer);
+
+    const mathName = await E(issuer).getMathHelpersName();
+    const math = makeAmountMath(brand, mathName);
+    brandToMath.init(brand, math);
   }
 
-  async function makeEmptyPurse(assayPetname, pursePetname, memo = 'purse') {
+  async function makeEmptyPurse(issuerPetname, pursePetname, memo = 'purse') {
     assert(
       !petnameToPurse.has(pursePetname),
       details`Purse name already used in wallet.`,
     );
-    const assay = assayPetnameToAssay.get(assayPetname);
+    const issuer = issuerPetnameToIssuer.get(issuerPetname);
 
     // IMPORTANT: once wrapped, the original purse should never
     // be used otherwise the UI state will be out of sync.
-    const doNotUse = await E(assay).makeEmptyPurse(memo);
+    const doNotUse = await E(issuer).makeEmptyPurse(memo);
 
     const purse = makeObservablePurse(E, doNotUse, () =>
       updatePursesState(pursePetname, doNotUse),
@@ -233,7 +224,7 @@ export async function makeWallet(
 
   function deposit(pursePetName, payment) {
     const purse = petnameToPurse.get(pursePetName);
-    purse.depositAll(payment);
+    purse.deposit(payment);
   }
 
   function getPurses() {
@@ -285,10 +276,15 @@ export async function makeWallet(
     updateInboxState(date, acceptOfferRec);
   }
 
+  function getIssuers() {
+    return Array.from(issuerPetnameToIssuer);
+  }
+
   const wallet = harden({
-    addAssay,
+    addIssuer,
     makeEmptyPurse,
     deposit,
+    getIssuers,
     getPurses,
     getPurse: petnameToPurse.get,
     addOffer,

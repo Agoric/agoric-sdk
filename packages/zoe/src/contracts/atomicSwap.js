@@ -4,8 +4,8 @@ import harden from '@agoric/harden';
 import { makeHelpers } from './helpers/userFlow';
 
 export const makeContract = harden((zoe, terms) => {
-  const { assays } = terms;
-  const { rejectOffer, swap, hasValidPayoutRules } = makeHelpers(zoe, assays);
+  const { issuers } = terms;
+  const { rejectOffer, swap, hasValidPayoutRules } = makeHelpers(zoe, issuers);
 
   const makeMatchingInvite = firstInviteHandle => {
     const seat = harden({

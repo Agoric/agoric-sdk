@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 
 import { makeStateMachine } from '../../../../src/contracts/helpers/stateMachine';

@@ -1,35 +1,41 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import bundleSource from '@agoric/bundle-source';
+
 import harden from '@agoric/harden';
-import bundleSource from '../../bundle-source';
 
 import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
 
 const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
-test('zoe -atomicSwap', async t => {
+test('zoe - atomicSwap', async t => {
   try {
-    const { assays: defaultAssays, mints } = setup();
-    const assays = defaultAssays.slice(0, 2);
+    const { issuers: defaultIssuers, mints, moola, simoleans } = setup();
+    const issuers = defaultIssuers.slice(0, 2);
     const zoe = makeZoe({ require });
+    const inviteIssuer = zoe.getInviteIssuer();
+    const [moolaIssuer, simoleanIssuer] = issuers;
+
     // pack the contract
     const { source, moduleFormat } = await bundleSource(atomicSwapRoot);
     // install the contract
     const installationHandle = zoe.install(source, moduleFormat);
 
     // Setup Alice
-    const aliceMoolaPurse = mints[0].mint(assays[0].makeUnits(3));
-    const aliceMoolaPayment = aliceMoolaPurse.withdrawAll();
-    const aliceSimoleanPurse = mints[1].mint(assays[1].makeUnits(0));
+    const aliceMoolaPayment = mints[0].mintPayment(moola(3));
+    const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
+    const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
     // Setup Bob
-    const bobMoolaPurse = mints[0].mint(assays[0].makeUnits(0));
-    const bobSimoleanPurse = mints[1].mint(assays[1].makeUnits(7));
-    const bobSimoleanPayment = bobSimoleanPurse.withdrawAll();
+    const bobSimoleanPayment = mints[1].mintPayment(simoleans(7));
+    const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
+    const bobSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
     // 1: Alice creates an atomicSwap instance
     const aliceInvite = await zoe.makeInstance(installationHandle, {
-      assays,
+      issuers,
     });
 
     // 2: Alice escrows with zoe
@@ -37,11 +43,11 @@ test('zoe -atomicSwap', async t => {
       payoutRules: [
         {
           kind: 'offerAtMost',
-          units: assays[0].makeUnits(3),
+          amount: moola(3),
         },
         {
           kind: 'wantAtLeast',
-          units: assays[1].makeUnits(7),
+          amount: simoleans(7),
         },
       ],
       exitRule: {
@@ -64,9 +70,9 @@ test('zoe -atomicSwap', async t => {
     // on how to use it and Bob decides he wants to be the
     // counter-party.
 
-    const inviteAssay = zoe.getInviteAssay();
-    const bobExclusiveInvite = await inviteAssay.claimAll(bobInviteP);
-    const bobInviteExtent = bobExclusiveInvite.getBalance().extent;
+    const bobExclusiveInvite = await inviteIssuer.claim(bobInviteP);
+    const bobInviteExtent = inviteIssuer.getAmountOf(bobExclusiveInvite)
+      .extent[0];
 
     const {
       installationHandle: bobInstallationId,
@@ -74,18 +80,18 @@ test('zoe -atomicSwap', async t => {
     } = zoe.getInstance(bobInviteExtent.instanceHandle);
 
     t.equals(bobInstallationId, installationHandle);
-    t.deepEquals(bobTerms.assays, assays);
+    t.deepEquals(bobTerms.issuers, issuers);
     t.deepEquals(bobInviteExtent.offerMadeRules, aliceOfferRules.payoutRules);
 
     const bobOfferRules = harden({
       payoutRules: [
         {
           kind: 'wantAtLeast',
-          units: bobTerms.assays[0].makeUnits(3),
+          amount: moola(3),
         },
         {
           kind: 'offerAtMost',
-          units: bobTerms.assays[1].makeUnits(7),
+          amount: simoleans(7),
         },
       ],
       exitRule: {
@@ -101,7 +107,7 @@ test('zoe -atomicSwap', async t => {
       bobPayments,
     );
 
-    // 7: Bob makes an offer with his escrow receipt
+    // 7: Bob makes an offer
     const bobOfferResult = await bobSeat.matchOffer();
 
     t.equals(
@@ -118,28 +124,28 @@ test('zoe -atomicSwap', async t => {
 
     // Alice gets what Alice wanted
     t.deepEquals(
-      aliceSimoleanPayout.getBalance(),
-      aliceOfferRules.payoutRules[1].units,
+      simoleanIssuer.getAmountOf(aliceSimoleanPayout),
+      aliceOfferRules.payoutRules[1].amount,
     );
 
     // Alice didn't get any of what Alice put in
-    t.equals(aliceMoolaPayout.getBalance().extent, 0);
+    t.deepEquals(moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
 
     // Alice deposits her payout to ensure she can
-    await aliceMoolaPurse.depositAll(aliceMoolaPayout);
-    await aliceSimoleanPurse.depositAll(aliceSimoleanPayout);
+    await aliceMoolaPurse.deposit(aliceMoolaPayout);
+    await aliceSimoleanPurse.deposit(aliceSimoleanPayout);
 
     // Bob deposits his original payments to ensure he can
-    await bobMoolaPurse.depositAll(bobMoolaPayout);
-    await bobSimoleanPurse.depositAll(bobSimoleanPayout);
+    await bobMoolaPurse.deposit(bobMoolaPayout);
+    await bobSimoleanPurse.deposit(bobSimoleanPayout);
 
     // Assert that the correct payouts were received.
     // Alice had 3 moola and 0 simoleans.
     // Bob had 0 moola and 7 simoleans.
-    t.equals(aliceMoolaPurse.getBalance().extent, 0);
-    t.equals(aliceSimoleanPurse.getBalance().extent, 7);
-    t.equals(bobMoolaPurse.getBalance().extent, 3);
-    t.equals(bobSimoleanPurse.getBalance().extent, 0);
+    t.equals(aliceMoolaPurse.getCurrentAmount().extent, 0);
+    t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 7);
+    t.equals(bobMoolaPurse.getCurrentAmount().extent, 3);
+    t.equals(bobSimoleanPurse.getCurrentAmount().extent, 0);
   } catch (e) {
     t.assert(false, e);
     console.log(e);

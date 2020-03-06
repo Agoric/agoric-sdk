@@ -9,8 +9,8 @@ import { makeHelpers, defaultAcceptanceMsg } from './helpers/userFlow';
  * This contract is like the simpleExchange contract. The exchange only accepts
  * limit orders. A limit order is an order with payoutRules that specifies
  * wantAtLeast on one side and offerAtMost on the other:
- * [ { kind: 'wantAtLeast', units2 }, { kind: 'offerAtMost', units1 }]
- * [ { kind: 'wantAtLeast', units1 }, { kind: 'offerAtMost', units2 }]
+ * [ { kind: 'wantAtLeast', amount2 }, { kind: 'offerAtMost', amount1 }]
+ * [ { kind: 'wantAtLeast', amount1 }, { kind: 'offerAtMost', amount2 }]
  *
  * Note that the asset specified as wantAtLeast is treated as the exact amount
  * to be exchanged, while the amount specified as offerAtMost is a limit that
@@ -22,7 +22,7 @@ export const makeContract = harden((zoe, terms) => {
   let buyInviteHandles = [];
   let nextChangePromise = makePromise();
 
-  const { assays } = terms;
+  const { issuers } = terms;
   const {
     rejectOffer,
     hasValidPayoutRules,
@@ -30,35 +30,31 @@ export const makeContract = harden((zoe, terms) => {
     areAssetsEqualAtIndex,
     canTradeWith,
     getActiveOffers,
-  } = makeHelpers(zoe, assays);
+  } = makeHelpers(zoe, issuers);
 
   function flattenRule(r) {
-    const description = r.units;
-    let result;
     switch (r.kind) {
       case 'offerAtMost':
-        result = { offer: description };
-        break;
+        return { offer: r.amount };
       case 'wantAtLeast':
-        result = { want: description };
-        break;
+        return { want: r.amount };
       default:
         throw new Error(`${r.kind} not supported.`);
     }
-    return harden(result);
   }
 
   function flattenOffer(o) {
-    return harden({
-      ...flattenRule(o.payoutRules[0]),
-      ...flattenRule(o.payoutRules[1]),
-    });
+    return harden([
+      flattenRule(o.payoutRules[0]),
+      flattenRule(o.payoutRules[1]),
+    ]);
   }
 
   function flattenOrders(offerHandles) {
-    return zoe
+    const result = zoe
       .getOffers(zoe.getOfferStatuses(offerHandles).active)
       .map(offer => flattenOffer(offer));
+    return result;
   }
 
   function getBookOrders() {
@@ -70,11 +66,10 @@ export const makeContract = harden((zoe, terms) => {
   }
 
   function getOffer(inviteHandle) {
-    if (
-      sellInviteHandles.includes(inviteHandle) ||
-      buyInviteHandles.includes(inviteHandle)
-    ) {
-      return flattenOffer(getActiveOffers([inviteHandle])[0]);
+    for (const handle of [...sellInviteHandles, ...buyInviteHandles]) {
+      if (inviteHandle === handle) {
+        return flattenOffer(getActiveOffers([inviteHandle])[0]);
+      }
     }
     return 'not an active offer';
   }
@@ -133,6 +128,7 @@ export const makeContract = harden((zoe, terms) => {
     const { invite, inviteHandle } = zoe.makeInvite(seat);
     return { invite, inviteHandle };
   };
+
   return harden({
     invite: makeInvite(),
     publicAPI: { makeInvite, getBookOrders, getOffer },

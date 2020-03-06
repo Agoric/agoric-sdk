@@ -1,10 +1,9 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
-import { makeMint } from '@agoric/ertp';
+import produceIssuer from '@agoric/ertp';
 import { allComparable } from '@agoric/same-structure';
 import { assert, details } from '@agoric/assert';
-import { inviteConfig } from '@agoric/ertp/src/config/inviteConfig';
 
 import { escrowExchangeSrcs } from '../../../src/escrow';
 
@@ -12,9 +11,9 @@ function build(E, log) {
   function testEscrowServiceMismatches(host, randMintP, artMintP) {
     log('starting testEscrowServiceCheckMismatches');
     const installationP = E(host).install(escrowExchangeSrcs);
-    const randUnitsP = E(E(randMintP).getAssay()).makeUnits(3);
-    const blueBoyUnits = E(E(artMintP).getAssay()).makeUnits('Blue Boy');
-    const blueGirlUnits = E(E(artMintP).getAssay()).makeUnits('Blue Girl');
+    const randUnitsP = E(E(randMintP).getIssuer()).makeUnits(3);
+    const blueBoyUnits = E(E(artMintP).getIssuer()).makeUnits('Blue Boy');
+    const blueGirlUnits = E(E(artMintP).getIssuer()).makeUnits('Blue Girl');
     const actualTermsP = harden({
       left: randUnitsP,
       right: blueBoyUnits,
@@ -50,8 +49,8 @@ function build(E, log) {
   function testEscrowServiceSuccess(host, randMintP, artMintP) {
     log('starting testEscrowServiceSuccess');
     const installationP = E(host).install(escrowExchangeSrcs);
-    const randUnitsP = E(E(randMintP).getAssay()).makeUnits(3);
-    const screamUnitsP = E(E(artMintP).getAssay()).makeUnits('The Scream');
+    const randUnitsP = E(E(randMintP).getIssuer()).makeUnits(3);
+    const screamUnitsP = E(E(artMintP).getIssuer()).makeUnits('The Scream');
     const termsP = harden({ left: randUnitsP, right: screamUnitsP });
     const invitesP = E(installationP).spawn(termsP);
     const result = invitesP.then(invites => {
@@ -71,9 +70,9 @@ function build(E, log) {
   function testEscrowCheckPartialWrongPrice(host, randMintP, artMintP) {
     log('starting testEscrowServiceCheckPartial wrong price');
     const installationP = E(host).install(escrowExchangeSrcs);
-    const randUnitsP = E(E(randMintP).getAssay()).makeUnits(3);
-    const otherRandUnitsP = E(E(randMintP).getAssay()).makeUnits(5);
-    const blueBoyUnits = E(E(artMintP).getAssay()).makeUnits('Blue Boy');
+    const randUnitsP = E(E(randMintP).getIssuer()).makeUnits(3);
+    const otherRandUnitsP = E(E(randMintP).getIssuer()).makeUnits(5);
+    const blueBoyUnits = E(E(artMintP).getIssuer()).makeUnits('Blue Boy');
     const actualTermsP = harden({
       left: randUnitsP,
       right: blueBoyUnits,
@@ -106,9 +105,9 @@ function build(E, log) {
   function testEscrowCheckPartialWrongStock(host, randMintP, artMintP) {
     log('starting testEscrowServiceCheckPartial wrong stock');
     const installationP = E(host).install(escrowExchangeSrcs);
-    const randUnitsP = E(E(randMintP).getAssay()).makeUnits(3);
-    const blueBoyUnits = E(E(artMintP).getAssay()).makeUnits('Blue Boy');
-    const blueGirlUnits = E(E(artMintP).getAssay()).makeUnits('Blue Girl');
+    const randUnitsP = E(E(randMintP).getIssuer()).makeUnits(3);
+    const blueBoyUnits = E(E(artMintP).getIssuer()).makeUnits('Blue Boy');
+    const blueGirlUnits = E(E(artMintP).getIssuer()).makeUnits('Blue Girl');
     const actualTermsP = harden({
       left: randUnitsP,
       right: blueBoyUnits,
@@ -141,8 +140,8 @@ function build(E, log) {
   function testEscrowCheckPartialWrongSeat(host, randMintP, artMintP) {
     log('starting testEscrowServiceCheckPartial wrong seat');
     const installationP = E(host).install(escrowExchangeSrcs);
-    const randUnitsP = E(E(randMintP).getAssay()).makeUnits(3);
-    const blueBoyUnits = E(E(artMintP).getAssay()).makeUnits('Blue Boy');
+    const randUnitsP = E(E(randMintP).getIssuer()).makeUnits(3);
+    const blueBoyUnits = E(E(artMintP).getIssuer()).makeUnits('Blue Boy');
     const actualTermsP = harden({
       left: randUnitsP,
       right: blueBoyUnits,
@@ -175,9 +174,9 @@ function build(E, log) {
   const obj0 = {
     async bootstrap(argv, vats) {
       const host = await E(vats.host).makeHost();
-      const randMintP = E(vats.mint).makeMint('rand');
+      const { mint: randMintP } = E(vats.mint).produceIssuer('rand');
 
-      const artMintP = makeMint('art', inviteConfig);
+      const { mint: artMintP } = produceIssuer('art', 'set');
       switch (argv[0]) {
         case 'escrow misMatches': {
           return testEscrowServiceMismatches(host, randMintP, artMintP);

@@ -10,47 +10,54 @@ const transpose = matrix =>
   );
 
 /**
- * The columns in a `units` matrix are per assay, and the rows
+ * The columns in an `amount` matrix are per issuer, and the rows
  * are per offer. We want to transpose the matrix such that each
- * row is per assay so we can do 'with' on the array to get a total
- * per assay and make sure the rights are conserved.
- * @param  {unitOps[]} unitOpsArray - an array of unitOps per assay
- * @param  {units[][]} unitsMatrix - an array of arrays with a row per
- * offer indexed by assay
+ * row is per issuer so we can do 'with' on the array to get a total
+ * per issuer and make sure the rights are conserved.
+ * @param  {amountMath[]} amountMathArray - an array of amountMath per issuer
+ * @param  {amount[][]} amountMatrix - an array of arrays with a row per
+ * offer indexed by issuer
  */
-const sumByAssay = (unitOpsArray, unitsMatrix) =>
-  transpose(unitsMatrix).map((unitsPerAssay, i) =>
-    unitsPerAssay.reduce(unitOpsArray[i].with, unitOpsArray[i].empty()),
+const sumByIssuer = (amountMathArray, amountMatrix) =>
+  transpose(amountMatrix).map((amountPerIssuer, i) =>
+    amountPerIssuer.reduce(
+      amountMathArray[i].add,
+      amountMathArray[i].getEmpty(),
+    ),
   );
 
 /**
- * Does the left array of summed units equal the right array of
- * summed units?
- * @param  {unitOps[]} unitOpsArray - an array of unitOps per assay
- * @param  {units[]} leftUnitsArray - an array of total units per assay
- * @param  {units[]} rightUnitsArray - an array of total units per assay
- * indexed by assay
+ * Does the left array of summed amount equal the right array of
+ * summed amount?
+ * @param  {amountMath[]} amountMathArray - an array of amountMath per issuer
+ * @param  {amount[]} leftAmounts- an array of total amount per issuer
+ * @param  {amount[]} rightAmounts - an array of total amount per issuer
+ * indexed by issuer
  */
-const isEqualPerAssay = (unitOpsArray, leftUnitsArray, rightUnitsArray) =>
-  leftUnitsArray.every((leftUnits, i) =>
-    unitOpsArray[i].equals(leftUnits, rightUnitsArray[i]),
+const isEqualPerIssuer = (amountMaths, leftAmounts, rightAmounts) =>
+  leftAmounts.every((leftAmount, i) =>
+    amountMaths[i].isEqual(leftAmount, rightAmounts[i]),
   );
 
 /**
- * `areRightsConserved` checks that the total units per assay stays
+ * `areRightsConserved` checks that the total amount per issuer stays
  * the same regardless of the reallocation.
- * @param  {unitOps[]} unitOpsArray - an array of unitOps per assay
- * @param  {unit[][]} previousUnitsMatrix - array of arrays where a row
- * is the array of units for a particular offer, per
- * assay
- * @param  {unit[][]} newUnitsMatrix - array of arrays where a row
- * is the array of reallocated units for a particular offer, per
- * assay
+ * @param  {amountMath[]} amountMathArray - an array of amountMath per issuer
+ * @param  {amount[][]} previousAmountsMatrix - array of arrays where a row
+ * is the array of amount for a particular offer, per
+ * issuer
+ * @param  {amount[][]} newAmountsMatrix - array of arrays where a row
+ * is the array of reallocated amount for a particular offer, per
+ * issuer
  */
-function areRightsConserved(unitOpsArray, previousUnitsMatrix, newUnitsMatrix) {
-  const sumsPrevUnits = sumByAssay(unitOpsArray, previousUnitsMatrix);
-  const sumsNewUnits = sumByAssay(unitOpsArray, newUnitsMatrix);
-  return isEqualPerAssay(unitOpsArray, sumsPrevUnits, sumsNewUnits);
+function areRightsConserved(
+  amountMaths,
+  previousAmountsMatrix,
+  newAmountsMatrix,
+) {
+  const sumsPrevAmounts = sumByIssuer(amountMaths, previousAmountsMatrix);
+  const sumsNewAmounts = sumByIssuer(amountMaths, newAmountsMatrix);
+  return isEqualPerIssuer(amountMaths, sumsPrevAmounts, sumsNewAmounts);
 }
 
 export { areRightsConserved, transpose };
