@@ -156,9 +156,20 @@ export function mustPassByPresence(val) {
   // ok!
 }
 
+// This is the equality comparison used by JavaScript's Map and Set
+// abstractions, where NaN is the same as NaN and -0 is the same as
+// 0. Marshal serializes -0 as zero, so the semantics of our distributed
+// object system does not distinguish 0 from -0.
+//
+// `sameValueZero` is the EcmaScript spec name for this equality comparison,
+// but TODO we need a better name for the API.
+export function sameValueZero(x, y) {
+  return x === y || Object.is(x, y);
+}
+
 // How would val be passed?  For primitive values, the answer is
 //   * 'null' for null
-//   * throwing an error for an unregistered symbol
+//   * throwing an error for a symbol, whether registered or not.
 //   * that value's typeof string for all other primitive values
 // For frozen objects, the possible answers
 //   * 'copyRecord' for non-empty records with only data properties
@@ -182,7 +193,7 @@ export function passStyleOf(val) {
       }
       if (!Object.isFrozen(val)) {
         throw new Error(
-          `cannot pass non-frozen objects like ${val}. [Use harden()]`,
+          `Cannot pass non-frozen objects like ${val}. Use harden()`,
         );
       }
       if (HandledPromise.resolve(val) === val) {
@@ -204,7 +215,7 @@ export function passStyleOf(val) {
       return 'presence';
     }
     case 'function': {
-      throw new Error(`bare functions like ${val} are disabled for now`);
+      throw new Error(`Bare functions like ${val} are disabled for now`);
     }
     case 'undefined':
     case 'string':
@@ -214,13 +225,10 @@ export function passStyleOf(val) {
       return typestr;
     }
     case 'symbol': {
-      if (Symbol.keyFor(val) === undefined) {
-        throw new TypeError('Cannot pass unregistered symbols');
-      }
-      return typestr;
+      throw new TypeError('Cannot pass symbols');
     }
     default: {
-      throw new TypeError(`unrecognized typeof ${typestr}`);
+      throw new TypeError(`Unrecognized typeof ${typestr}`);
     }
   }
 }
@@ -343,7 +351,7 @@ export function makeMarshal(
             return harden({ [QCLASS]: 'NaN' });
           }
           if (Object.is(val, -0)) {
-            return harden({ [QCLASS]: '-0' });
+            return 0;
           }
           if (val === Infinity) {
             return harden({ [QCLASS]: 'Infinity' });
@@ -352,13 +360,6 @@ export function makeMarshal(
             return harden({ [QCLASS]: '-Infinity' });
           }
           return val;
-        }
-        case 'symbol': {
-          const key = Symbol.keyFor(val);
-          return harden({
-            [QCLASS]: 'symbol',
-            key,
-          });
         }
         case 'bigint': {
           return harden({
@@ -478,9 +479,6 @@ export function makeMarshal(
           case 'undefined': {
             return undefined;
           }
-          case '-0': {
-            return -0;
-          }
           case 'NaN': {
             return NaN;
           }
@@ -489,14 +487,6 @@ export function makeMarshal(
           }
           case '-Infinity': {
             return -Infinity;
-          }
-          case 'symbol': {
-            if (typeof rawTree.key !== 'string') {
-              throw new TypeError(
-                `invalid symbol key typeof ${typeof rawTree.key}`,
-              );
-            }
-            return Symbol.for(rawTree.key);
           }
           case 'bigint': {
             if (typeof rawTree.digits !== 'string') {
