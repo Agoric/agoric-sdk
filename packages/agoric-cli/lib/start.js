@@ -87,6 +87,11 @@ export default async function startMain(progname, rawArgs, priv, opts) {
     );
     await linkHtml(profileName);
 
+    if (!popts['restart']) {
+      // Don't actually run the chain.
+      return 0;
+    }
+
     return pspawn(agSolo, ['start', '--role=two_client'], {
       stdio: 'inherit',
       cwd: agServer,
@@ -198,7 +203,8 @@ export default async function startMain(progname, rawArgs, priv, opts) {
   };
 
   const { _: args, ...popts } = parseArgs(rawArgs, {
-    boolean: ['reset', 'pull'],
+    boolean: ['reset', 'restart', 'pull'],
+    default: { restart: true },
   });
 
   const profileName = args[0] || 'dev';
