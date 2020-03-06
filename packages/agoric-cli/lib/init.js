@@ -71,7 +71,7 @@ export default async function initMain(progname, rawArgs, priv, opts) {
         if (st.isDirectory()) {
           if (!target) {
             console.log(`mkdir ${destDir}${stem}`);
-            await mkdir(`${destDir}${stem}`);
+            await mkdir(`${destDir}${stem}`, { recursive: true });
           }
           await recursiveTemplate(templateDir, destDir, `${stem}`);
         } else if (st.isSymbolicLink()) {
@@ -88,7 +88,7 @@ export default async function initMain(progname, rawArgs, priv, opts) {
     );
   };
   await recursiveTemplate(dappRoot);
-  await mkdir(`${DIR}/_agstate`);
+  await mkdir(`${DIR}/_agstate/agoric-servers`, { recursive: true });
 
   const ps = ['', 'api/', 'contract/', 'ui/'].map(dir => {
     const path = `${DIR}/${dir}package.json`;
