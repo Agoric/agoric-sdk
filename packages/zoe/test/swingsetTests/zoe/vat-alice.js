@@ -297,8 +297,10 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     const wantIndex = 1 - offerIndex;
     const descs = [];
     for (const o of orders) {
-      const offerBrandPetname = brandPetnames[brands.indexOf(o[offerIndex].offer.brand)];
-      const wantBrandPetname = brandPetnames[brands.indexOf(o[wantIndex].want.brand)];
+      const offerBrandPetname =
+        brandPetnames[brands.indexOf(o[offerIndex].offer.brand)];
+      const wantBrandPetname =
+        brandPetnames[brands.indexOf(o[wantIndex].want.brand)];
       descs.push(
         `${offerBrandPetname}:${o[offerIndex].offer.extent} for ${wantBrandPetname}:${o[wantIndex].want.extent}`,
       );
