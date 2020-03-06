@@ -212,13 +212,15 @@ export default function makeVatManager(
     return harden({ ...ret, slots: retSlots });
   }
 
+  let replayAbandonShip;
   function replay(name, ...args) {
     const s = playbackSyscalls.shift();
     if (djson.stringify(s.d) !== djson.stringify([name, ...args])) {
       console.log(`anachrophobia strikes vat ${vatID}`);
       console.log(`expected:`, djson.stringify(s.d));
       console.log(`got     :`, djson.stringify([name, ...args]));
-      throw new Error(`historical inaccuracy in replay-${name}`);
+      replayAbandonShip = new Error(`historical inaccuracy in replay-${name}`);
+      throw replayAbandonShip;
     }
     return s.response;
   }
@@ -375,6 +377,10 @@ export default function makeVatManager(
 
     inReplay = true;
     for (const t of vatKeeper.getTranscript()) {
+      if (replayAbandonShip) {
+        // We really failed to start.
+        throw replayAbandonShip;
+      }
       playbackSyscalls = Array.from(t.syscalls);
       // eslint-disable-next-line no-await-in-loop
       await doProcess(
@@ -383,6 +389,11 @@ export default function makeVatManager(
           t.d[3],
         )}]`,
       );
+    }
+
+    if (replayAbandonShip) {
+      // We really failed to start.
+      throw replayAbandonShip;
     }
     inReplay = false;
   }
