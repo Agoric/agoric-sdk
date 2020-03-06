@@ -21,7 +21,7 @@ async function prep() {
 test('serialize static data', t => {
   const m = makeMarshal();
   const ser = val => m.serialize(val);
-  t.throws(() => ser([1, 2]), /cannot pass non-frozen objects like .*/);
+  t.throws(() => ser([1, 2]), /Cannot pass non-frozen objects like .*/);
   t.deepEqual(ser(harden([1, 2])), { body: '[1,2]', slots: [] });
   t.deepEqual(ser(harden({ foo: 1 })), {
     body: '{"foo":1}',
