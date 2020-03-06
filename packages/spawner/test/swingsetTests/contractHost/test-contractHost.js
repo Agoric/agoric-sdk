@@ -25,7 +25,7 @@ const contractMintGolden = [
   'payment balance {"label":{"assay":{},"allegedName":"bucks"},"extent":50}',
 ];
 
-test('run contractHost Demo --mint with SES', async t => {
+test.skip('run contractHost Demo --mint with SES', async t => {
   const dump = await main(true, 'contractHost', ['mint']);
   t.deepEquals(dump.log, contractMintGolden);
   t.end();
