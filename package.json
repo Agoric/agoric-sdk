@@ -56,7 +56,7 @@
     "check-dependencies": "node ./scripts/check-mismatched-dependencies.js",
     "prettier": "yarn workspaces run prettier",
     "lerna": "lerna",
-    "link-cli": "node ./scripts/link-cli.js",
+    "link-cli": "node ./scripts/link-cli.cjs",
     "lint-fix": "yarn workspaces run lint-fix",
     "lint-check": "yarn workspaces run lint-check",
     "test": "yarn workspaces run test",
