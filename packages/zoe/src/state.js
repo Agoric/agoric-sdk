@@ -75,12 +75,21 @@ const makeInstallationTable = () => {
 
 // Instance Table
 // Columns: handle | installationHandle | publicAPI | terms | issuers
+// | roles
 const makeInstanceTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateSomewhat = makeValidateProperties(
-    harden(['installationHandle', 'publicAPI', 'terms', 'issuers']),
+    harden([
+      'installationHandle',
+      'publicAPI',
+      'terms',
+      'issuers',
+      'roles',
+      'roleNames',
+    ]),
   );
+
   return makeTable(validateSomewhat);
 };
 
@@ -102,7 +111,7 @@ const makeOfferTable = () => {
       'waived',
       'onDemand',
       'afterDeadline',
-      // 'onDemandAfterDeadline', // not yet supported
+      // 'onDemandafterDeadline', // not yet supported
     ];
     assert(
       acceptedExitRuleKinds.includes(exitRule.kind),
@@ -113,12 +122,18 @@ const makeOfferTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateProperties = makeValidateProperties(
-    harden(['instanceHandle', 'issuers', 'payoutRules', 'exitRule', 'amounts']),
+    harden([
+      'instanceHandle',
+      'issuers',
+      'offerRules',
+      'userOfferRules',
+      'amounts',
+    ]),
   );
   const validateSomewhat = obj => {
     validateProperties(obj);
-    insistValidPayoutRuleKinds(obj.payoutRules);
-    insistValidExitRule(obj.exitRule);
+    insistValidPayoutRuleKinds(obj.offerRules.payoutRules);
+    insistValidExitRule(obj.offerRules.exitRule);
     // TODO: Should check the rest of the representation of the payout rule
     // TODO: Should check that the deadline representation is itself valid.
     return true;

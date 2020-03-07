@@ -12,8 +12,7 @@ const publicAuctionRoot = `${__dirname}/../../../src/contracts/publicAuction`;
 
 test('zoe - secondPriceAuction w/ 3 bids', async t => {
   try {
-    const { issuers: originalIssuers, mints, moola, simoleans } = setup();
-    const issuers = originalIssuers.slice(0, 2);
+    const { issuers, mints, moola, simoleans } = setup();
     const [moolaMint, simoleanMint] = mints;
     const [moolaIssuer, simoleanIssuer] = issuers;
     const zoe = makeZoe({ require });
@@ -46,31 +45,24 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     const installationHandle = zoe.install(source, moduleFormat);
     const numBidsAllowed = 3;
-    const aliceInvite = await zoe.makeInstance(installationHandle, {
-      issuers,
-      numBidsAllowed,
-    });
+    const roles = harden({ Asset: moolaIssuer, Bid: simoleanIssuer });
+    const terms = harden({ numBidsAllowed });
+    const aliceInvite = await zoe.makeInstance(
+      installationHandle,
+      roles,
+      terms,
+    );
 
     const [{ instanceHandle }] = inviteIssuer.getAmountOf(aliceInvite).extent;
     const { publicAPI } = zoe.getInstance(instanceHandle);
 
     // Alice escrows with zoe
     const aliceOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'offerAtMost',
-          amount: moola(1),
-        },
-        {
-          kind: 'wantAtLeast',
-          amount: simoleans(3),
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+      offer: { Asset: moola(1) },
+      want: { Bid: simoleans(3) },
+      exit: { onDemand: {} },
     });
-    const alicePayments = [aliceMoolaPayment, undefined];
+    const alicePayments = { Asset: aliceMoolaPayment };
     const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
       aliceInvite,
       aliceOfferRules,
@@ -84,6 +76,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.equals(
       aliceOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
+      'aliceOfferResult',
     );
 
     // Alice spreads the invites far and wide and Bob decides he
@@ -95,29 +88,25 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const {
       installationHandle: bobInstallationId,
       terms: bobTerms,
+      roles: bobRoles,
     } = zoe.getInstance(bobInviteExtent.instanceHandle);
 
-    t.equals(bobInstallationId, installationHandle);
-    t.deepEquals(bobTerms.issuers, issuers);
-    t.deepEquals(bobInviteExtent.minimumBid, simoleans(3));
-    t.deepEquals(bobInviteExtent.auctionedAssets, moola(1));
+    t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
+    t.deepEquals(
+      bobRoles,
+      { Asset: moolaIssuer, Bid: simoleanIssuer },
+      'bobRoles',
+    );
+    t.equals(bobTerms.numBidsAllowed, 3, 'bobTerms');
+    t.deepEquals(bobInviteExtent.minimumBid, simoleans(3), 'minimumBid');
+    t.deepEquals(bobInviteExtent.auctionedAssets, moola(1), 'assets');
 
     const bobOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'wantAtLeast',
-          amount: moola(1),
-        },
-        {
-          kind: 'offerAtMost',
-          amount: simoleans(11),
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+      offer: { Bid: simoleans(11) },
+      want: { Asset: moola(1) },
+      exit: { onDemand: {} },
     });
-    const bobPayments = [undefined, bobSimoleanPayment];
+    const bobPayments = { Bid: bobSimoleanPayment };
 
     // Bob escrows with zoe
     const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
@@ -132,6 +121,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.equals(
       bobOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
+      'bobOfferResult',
     );
 
     // Carol decides to bid for the one moola
@@ -143,29 +133,29 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const {
       installationHandle: carolInstallationId,
       terms: carolTerms,
+      roles: carolRoles,
     } = zoe.getInstance(carolInviteExtent.instanceHandle);
 
-    t.equals(carolInstallationId, installationHandle);
-    t.deepEquals(carolTerms.issuers, issuers);
-    t.deepEquals(carolInviteExtent.minimumBid, simoleans(3));
-    t.deepEquals(carolInviteExtent.auctionedAssets, moola(1));
+    t.equals(carolInstallationId, installationHandle, 'carolInstallationId');
+    t.deepEquals(
+      carolRoles,
+      { Asset: moolaIssuer, Bid: simoleanIssuer },
+      'carolRoles',
+    );
+    t.equals(carolTerms.numBidsAllowed, 3, 'carolTerms');
+    t.deepEquals(carolInviteExtent.minimumBid, simoleans(3), 'carolMinimumBid');
+    t.deepEquals(
+      carolInviteExtent.auctionedAssets,
+      moola(1),
+      'carolAuctionedAssets',
+    );
 
     const carolOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'wantAtLeast',
-          amount: moola(1),
-        },
-        {
-          kind: 'offerAtMost',
-          amount: simoleans(7),
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+      offer: { Bid: simoleans(7) },
+      want: { Asset: moola(1) },
+      exit: { onDemand: {} },
     });
-    const carolPayments = [undefined, carolSimoleanPayment];
+    const carolPayments = { Bid: carolSimoleanPayment };
 
     // Carol escrows with zoe
     const { seat: carolSeat, payout: carolPayoutP } = await zoe.redeem(
@@ -180,6 +170,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.equals(
       carolOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
+      'carolOfferResult',
     );
 
     // Dave decides to bid for the one moola
@@ -190,29 +181,25 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const {
       installationHandle: daveInstallationId,
       terms: daveTerms,
+      roles: daveRoles,
     } = zoe.getInstance(daveInviteExtent.instanceHandle);
 
-    t.equals(daveInstallationId, installationHandle);
-    t.deepEquals(daveTerms.issuers, issuers);
-    t.deepEquals(daveInviteExtent.minimumBid, simoleans(3));
-    t.deepEquals(daveInviteExtent.auctionedAssets, moola(1));
+    t.equals(daveInstallationId, installationHandle, 'daveInstallationHandle');
+    t.deepEquals(
+      daveRoles,
+      { Asset: moolaIssuer, Bid: simoleanIssuer },
+      'daveRoles',
+    );
+    t.equals(daveTerms.numBidsAllowed, 3, 'bobTerms');
+    t.deepEquals(daveInviteExtent.minimumBid, simoleans(3), 'daveMinimumBid');
+    t.deepEquals(daveInviteExtent.auctionedAssets, moola(1), 'daveAssets');
 
     const daveOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'wantAtLeast',
-          amount: moola(1),
-        },
-        {
-          kind: 'offerAtMost',
-          amount: simoleans(5),
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+      offer: { Bid: simoleans(5) },
+      want: { Asset: moola(1) },
+      exit: { onDemand: {} },
     });
-    const davePayments = [undefined, daveSimoleanPayment];
+    const davePayments = { Bid: daveSimoleanPayment };
 
     // Dave escrows with zoe
     const { seat: daveSeat, payout: davePayoutP } = await zoe.redeem(
@@ -227,6 +214,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.equals(
       daveOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
+      'daveOfferResult',
     );
 
     const aliceResult = await alicePayoutP;
@@ -234,23 +222,31 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const carolResult = await carolPayoutP;
     const daveResult = await davePayoutP;
 
-    const [aliceMoolaPayout, aliceSimoleanPayout] = await Promise.all(
-      aliceResult,
-    );
-    const [bobMoolaPayout, bobSimoleanPayout] = await Promise.all(bobResult);
-    const [carolMoolaPayout, carolSimoleanPayout] = await Promise.all(
-      carolResult,
-    );
-    const [daveMoolaPayout, daveSimoleanPayout] = await Promise.all(daveResult);
+    const aliceMoolaPayout = await aliceResult.Asset;
+    const aliceSimoleanPayout = await aliceResult.Bid;
+
+    const bobMoolaPayout = await bobResult.Asset;
+    const bobSimoleanPayout = await bobResult.Bid;
+
+    const carolMoolaPayout = await carolResult.Asset;
+    const carolSimoleanPayout = await carolResult.Bid;
+
+    const daveMoolaPayout = await daveResult.Asset;
+    const daveSimoleanPayout = await daveResult.Bid;
 
     // Alice (the creator of the auction) gets back the second highest bid
     t.deepEquals(
       simoleanIssuer.getAmountOf(aliceSimoleanPayout),
-      carolOfferRules.payoutRules[1].amount,
+      carolOfferRules.offer.Bid,
+      `alice gets carol's bid`,
     );
 
     // Alice didn't get any of what she put in
-    t.deepEquals(moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
+    t.deepEquals(
+      moolaIssuer.getAmountOf(aliceMoolaPayout),
+      moola(0),
+      `alice gets nothing of what she put in`,
+    );
 
     // Alice deposits her payout to ensure she can
     await aliceMoolaPurse.deposit(aliceMoolaPayout);
@@ -258,18 +254,31 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     // Bob (the winner of the auction) gets the one moola and the
     // difference between his bid and the price back
-    t.deepEquals(moolaIssuer.getAmountOf(bobMoolaPayout), moola(1));
-    t.deepEquals(simoleanIssuer.getAmountOf(bobSimoleanPayout), simoleans(4));
+    t.deepEquals(
+      moolaIssuer.getAmountOf(bobMoolaPayout),
+      moola(1),
+      `bob is the winner`,
+    );
+    t.deepEquals(
+      simoleanIssuer.getAmountOf(bobSimoleanPayout),
+      simoleans(4),
+      `bob gets difference back`,
+    );
 
     // Bob deposits his payout to ensure he can
     await bobMoolaPurse.deposit(bobMoolaPayout);
     await bobSimoleanPurse.deposit(bobSimoleanPayout);
 
     // Carol gets a full refund
-    t.deepEquals(moolaIssuer.getAmountOf(carolMoolaPayout), moola(0));
+    t.deepEquals(
+      moolaIssuer.getAmountOf(carolMoolaPayout),
+      moola(0),
+      `carol doesn't win`,
+    );
     t.deepEquals(
       simoleanIssuer.getAmountOf(carolSimoleanPayout),
-      carolOfferRules.payoutRules[1].amount,
+      carolOfferRules.offer.Bid,
+      `carol gets a refund`,
     );
 
     // Carol deposits her payout to ensure she can
@@ -279,7 +288,8 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     // Dave gets a full refund
     t.deepEquals(
       simoleanIssuer.getAmountOf(daveSimoleanPayout),
-      daveOfferRules.payoutRules[1].amount,
+      daveOfferRules.offer.Bid,
+      `dave gets a refund`,
     );
 
     // Dave deposits his payout to ensure he can

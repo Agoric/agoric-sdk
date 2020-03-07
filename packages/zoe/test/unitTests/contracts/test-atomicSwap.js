@@ -12,11 +12,11 @@ const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
 test('zoe - atomicSwap', async t => {
   try {
-    const { issuers: defaultIssuers, mints, moola, simoleans } = setup();
-    const issuers = defaultIssuers.slice(0, 2);
+    const { issuers, mints, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
     const inviteIssuer = zoe.getInviteIssuer();
     const [moolaIssuer, simoleanIssuer] = issuers;
+    const [moolaMint, simoleanMint] = mints;
 
     // pack the contract
     const { source, moduleFormat } = await bundleSource(atomicSwapRoot);
@@ -24,37 +24,26 @@ test('zoe - atomicSwap', async t => {
     const installationHandle = zoe.install(source, moduleFormat);
 
     // Setup Alice
-    const aliceMoolaPayment = mints[0].mintPayment(moola(3));
+    const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
     const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
     const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
     // Setup Bob
-    const bobSimoleanPayment = mints[1].mintPayment(simoleans(7));
+    const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(7));
     const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
     const bobSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
     // 1: Alice creates an atomicSwap instance
-    const aliceInvite = await zoe.makeInstance(installationHandle, {
-      issuers,
-    });
+    const roles = harden({ Asset: moolaIssuer, Price: simoleanIssuer });
+    const aliceInvite = await zoe.makeInstance(installationHandle, roles);
 
     // 2: Alice escrows with zoe
     const aliceOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'offerAtMost',
-          amount: moola(3),
-        },
-        {
-          kind: 'wantAtLeast',
-          amount: simoleans(7),
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+      offer: { Asset: moola(3) },
+      want: { Price: simoleans(7) },
+      exit: { onDemand: {} },
     });
-    const alicePayments = [aliceMoolaPayment, undefined];
+    const alicePayments = { Asset: aliceMoolaPayment };
 
     // 3: Alice redeems her invite and escrows with Zoe
     const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
@@ -76,29 +65,20 @@ test('zoe - atomicSwap', async t => {
 
     const {
       installationHandle: bobInstallationId,
-      terms: bobTerms,
+      roles: bobRoles,
     } = zoe.getInstance(bobInviteExtent.instanceHandle);
 
-    t.equals(bobInstallationId, installationHandle);
-    t.deepEquals(bobTerms.issuers, issuers);
-    t.deepEquals(bobInviteExtent.offerMadeRules, aliceOfferRules.payoutRules);
+    t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
+    t.deepEquals(bobRoles, { Asset: moolaIssuer, Price: simoleanIssuer });
+    t.deepEquals(bobInviteExtent.asset, moola(3));
+    t.deepEquals(bobInviteExtent.price, simoleans(7));
 
     const bobOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'wantAtLeast',
-          amount: moola(3),
-        },
-        {
-          kind: 'offerAtMost',
-          amount: simoleans(7),
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+      offer: { Price: simoleans(7) },
+      want: { Asset: moola(3) },
+      exit: { onDemand: {} },
     });
-    const bobPayments = [undefined, bobSimoleanPayment];
+    const bobPayments = { Price: bobSimoleanPayment };
 
     // 6: Bob escrows with zoe
     const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
@@ -117,15 +97,16 @@ test('zoe - atomicSwap', async t => {
     const bobPayout = await bobPayoutP;
     const alicePayout = await alicePayoutP;
 
-    const [bobMoolaPayout, bobSimoleanPayout] = await Promise.all(bobPayout);
-    const [aliceMoolaPayout, aliceSimoleanPayout] = await Promise.all(
-      alicePayout,
-    );
+    const bobMoolaPayout = await bobPayout.Asset;
+    const bobSimoleanPayout = await bobPayout.Price;
+
+    const aliceMoolaPayout = await alicePayout.Asset;
+    const aliceSimoleanPayout = await alicePayout.Price;
 
     // Alice gets what Alice wanted
     t.deepEquals(
       simoleanIssuer.getAmountOf(aliceSimoleanPayout),
-      aliceOfferRules.payoutRules[1].amount,
+      aliceOfferRules.want.Price,
     );
 
     // Alice didn't get any of what Alice put in

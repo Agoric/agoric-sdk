@@ -51,7 +51,7 @@ test('simpleExchange with valid offers', async t => {
     // 1: Simon creates a simpleExchange instance and spreads the invite far and
     // wide with instructions on how to use it.
     const { invite: simonInvite } = await zoe.makeInstance(installationHandle, {
-      issuers: [moolaIssuer, simoleanIssuer],
+      roles: { Asset: moolaIssuer, Price: simoleanIssuer },
     });
     const { instanceHandle } = inviteIssuer.getAmountOf(simonInvite).extent[0];
     const { publicAPI } = zoe.getInstance(instanceHandle);
@@ -62,10 +62,11 @@ test('simpleExchange with valid offers', async t => {
     // sell 3 moola and wants to receive at least 4 simoleans in
     // return.
     const aliceSellOrderOfferRules = harden({
-      payoutRules: [offerRule(moola(3)), wantRule(simoleans(4))],
-      exitRule: exitRule('onDemand'),
+      offer: { Asset: moola(3) },
+      want: { Price: simoleans(4) },
+      exitRule: { kind: 'onDemand' },
     });
-    const alicePayments = [aliceMoolaPayment, undefined];
+    const alicePayments = { Asset: aliceMoolaPayment };
     const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
       aliceInvite,
       aliceSellOrderOfferRules,
@@ -89,12 +90,12 @@ test('simpleExchange with valid offers', async t => {
 
     // Bob creates a buy order, saying that he wants exactly 3 moola,
     // and is willing to pay up to 7 simoleans.
-
     const bobBuyOrderOfferRules = harden({
-      payoutRules: [wantRule(moola(3)), offerRule(simoleans(7))],
-      exitRule: exitRule('onDemand'),
+      offer: { Price: simoleans(7) },
+      want: { Asset: moola(3) },
+      exitRule: { kind: 'onDemand' },
     });
-    const bobPayments = [undefined, bobSimoleanPayment];
+    const bobPayments = { Price: bobSimoleanPayment };
 
     // 6: Bob escrows with zoe
     const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
@@ -117,16 +118,16 @@ test('simpleExchange with valid offers', async t => {
     const bobPayout = await bobPayoutP;
     const alicePayout = await alicePayoutP;
 
-    const [bobMoolaPayout, bobSimoleanPayout] = await Promise.all(bobPayout);
-    const [aliceMoolaPayout, aliceSimoleanPayout] = await Promise.all(
-      alicePayout,
-    );
+    const bobMoolaPayout = await bobPayout.Asset;
+    const bobSimoleanPayout = await bobPayout.Price;
+    const aliceMoolaPayout = await alicePayout.Asset;
+    const aliceSimoleanPayout = await alicePayout.Price;
 
     // Alice gets paid at least what she wanted
     t.ok(
       amountMaths[1].isGTE(
         simoleanIssuer.getAmountOf(aliceSimoleanPayout),
-        aliceSellOrderOfferRules.payoutRules[1].amount,
+        aliceSellOrderOfferRules.want.Price,
       ),
     );
 

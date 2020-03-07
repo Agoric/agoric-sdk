@@ -15,16 +15,9 @@ const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
 test('zoe - coveredCall', async t => {
   try {
-    const {
-      mints: defaultMints,
-      issuers: defaultIssuers,
-      moola,
-      simoleans,
-      amountMaths,
-    } = setup();
-    const mints = defaultMints.slice(0, 2);
-    const issuers = defaultIssuers.slice(0, 2);
+    const { mints, issuers, moola, simoleans, amountMaths } = setup();
     const [moolaIssuer, simoleanIssuer] = issuers;
+    const [moolaMint, simoleanMint] = mints;
     const zoe = makeZoe({ require });
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(coveredCallRoot);
@@ -32,43 +25,33 @@ test('zoe - coveredCall', async t => {
     const timer = buildManualTimer(console.log);
 
     // Setup Alice
-    const aliceMoolaPayment = mints[0].mintPayment(moola(3));
-    const aliceMoolaPurse = issuers[0].makeEmptyPurse();
-    const aliceSimoleanPurse = issuers[1].makeEmptyPurse();
+    const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
+    const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
+    const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
     // Setup Bob
-    const bobSimoleanPayment = mints[1].mintPayment(simoleans(7));
-    const bobMoolaPurse = issuers[0].makeEmptyPurse();
-    const bobSimoleanPurse = issuers[1].makeEmptyPurse();
+    const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(7));
+    const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
+    const bobSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
     // Alice creates a coveredCall instance
-    const terms = {
-      issuers,
-    };
+    const roles = harden({
+      UnderlyingAsset: moolaIssuer,
+      StrikePrice: simoleanIssuer,
+    });
+    // separate roles from contract-specific terms
     const aliceInvite = await zoe.makeInstance(
       coveredCallInstallationHandle,
-      terms,
+      roles,
     );
 
     // Alice escrows with Zoe
     const aliceOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'offerAtMost',
-          amount: moola(3),
-        },
-        {
-          kind: 'wantAtLeast',
-          amount: simoleans(7),
-        },
-      ],
-      exitRule: {
-        kind: 'afterDeadline',
-        deadline: 1,
-        timer,
-      },
+      offer: { UnderlyingAsset: moola(3) },
+      want: { StrikePrice: simoleans(7) },
+      exit: { afterDeadline: { deadline: 1, timer } },
     });
-    const alicePayments = [aliceMoolaPayment, undefined];
+    const alicePayments = { UnderlyingAsset: aliceMoolaPayment };
     const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
       aliceInvite,
       aliceOfferRules,
@@ -97,22 +80,12 @@ test('zoe - coveredCall', async t => {
     t.equal(optionExtent.expirationDate, 1);
     t.deepEqual(optionExtent.timerAuthority, timer);
 
-    const bobPayments = [undefined, bobSimoleanPayment];
+    const bobPayments = { StrikePrice: bobSimoleanPayment };
 
     const bobOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'wantAtLeast',
-          amount: optionExtent.underlyingAsset,
-        },
-        {
-          kind: 'offerAtMost',
-          amount: optionExtent.strikePrice,
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+      want: { UnderlyingAsset: optionExtent.underlyingAsset },
+      offer: { StrikePrice: optionExtent.strikePrice },
+      exit: { onDemand: {} },
     });
 
     // Bob redeems his invite and escrows with Zoe
@@ -133,15 +106,15 @@ test('zoe - coveredCall', async t => {
     const bobPayout = await bobPayoutP;
     const alicePayout = await alicePayoutP;
 
-    const [bobMoolaPayout, bobSimoleanPayout] = await Promise.all(bobPayout);
-    const [aliceMoolaPayout, aliceSimoleanPayout] = await Promise.all(
-      alicePayout,
-    );
+    const bobMoolaPayout = await bobPayout.UnderlyingAsset;
+    const bobSimoleanPayout = await bobPayout.StrikePrice;
+    const aliceMoolaPayout = await alicePayout.UnderlyingAsset;
+    const aliceSimoleanPayout = await alicePayout.StrikePrice;
 
     // Alice gets what Alice wanted
     t.deepEquals(
       simoleanIssuer.getAmountOf(aliceSimoleanPayout),
-      aliceOfferRules.payoutRules[1].amount,
+      aliceOfferRules.want.StrikePrice,
     );
 
     // Alice didn't get any of what Alice put in
@@ -171,16 +144,9 @@ test('zoe - coveredCall', async t => {
 
 test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, async t => {
   try {
-    const {
-      mints: defaultMints,
-      issuers: defaultIssuers,
-      moola,
-      simoleans,
-      amountMaths,
-    } = setup();
-    const mints = defaultMints.slice(0, 2);
-    const issuers = defaultIssuers.slice(0, 2);
+    const { mints, issuers, moola, simoleans, amountMaths } = setup();
     const [moolaIssuer, simoleanIssuer] = issuers;
+    const [moolaMint, simoleanMint] = mints;
     const zoe = makeZoe({ require });
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(coveredCallRoot);
@@ -188,19 +154,19 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const timer = buildManualTimer(console.log);
 
     // Setup Alice
-    const aliceMoolaPayment = mints[0].mintPayment(moola(3));
-    const aliceMoolaPurse = issuers[0].makeEmptyPurse();
-    const aliceSimoleanPurse = issuers[1].makeEmptyPurse();
+    const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
+    const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
+    const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
     // Setup Bob
-    const bobSimoleanPayment = mints[1].mintPayment(simoleans(7));
-    const bobMoolaPurse = issuers[0].makeEmptyPurse();
-    const bobSimoleanPurse = issuers[1].makeEmptyPurse();
+    const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(7));
+    const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
+    const bobSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
     // Alice creates a coveredCall instance
-    const terms = {
-      issuers,
-    };
+    const terms = harden({
+      roles: { UnderlyingAsset: moolaIssuer, StrikePrice: simoleanIssuer },
+    });
     const aliceInvite = await zoe.makeInstance(
       coveredCallInstallationHandle,
       terms,
@@ -208,23 +174,15 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 
     // Alice escrows with Zoe
     const aliceOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'offerAtMost',
-          amount: moola(3),
-        },
-        {
-          kind: 'wantAtLeast',
-          amount: simoleans(7),
-        },
-      ],
+      offer: { UnderlyingAsset: moola(3) },
+      want: { StrikePrice: simoleans(7) },
       exitRule: {
         kind: 'afterDeadline',
         deadline: 1,
         timer,
       },
     });
-    const alicePayments = [aliceMoolaPayment, undefined];
+    const alicePayments = { UnderlyingAsset: aliceMoolaPayment };
     const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
       aliceInvite,
       aliceOfferRules,
@@ -253,22 +211,12 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     t.equal(optionExtent.expirationDate, 1);
     t.deepEqual(optionExtent.timerAuthority, timer);
 
-    const bobPayments = [undefined, bobSimoleanPayment];
+    const bobPayments = { StrikePrice: bobSimoleanPayment };
 
     const bobOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'wantAtLeast',
-          amount: optionExtent.underlyingAsset,
-        },
-        {
-          kind: 'offerAtMost',
-          amount: optionExtent.strikePrice,
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+      want: { UnderlyingAsset: optionExtent.underlyingAsset },
+      offer: { StrikePrice: optionExtent.strikePrice },
+      exitRule: { kind: 'onDemand' },
     });
 
     // Bob escrows
@@ -283,10 +231,10 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const bobPayout = await bobPayoutP;
     const alicePayout = await alicePayoutP;
 
-    const [bobMoolaPayout, bobSimoleanPayout] = await Promise.all(bobPayout);
-    const [aliceMoolaPayout, aliceSimoleanPayout] = await Promise.all(
-      alicePayout,
-    );
+    const bobMoolaPayout = await bobPayout.UnderlyingAsset;
+    const bobSimoleanPayout = await bobPayout.StrikePrice;
+    const aliceMoolaPayout = await alicePayout.UnderlyingAsset;
+    const aliceSimoleanPayout = await alicePayout.StrikePrice;
 
     // Alice gets back what she put in
     t.deepEquals(moolaIssuer.getAmountOf(aliceMoolaPayout), moola(3));

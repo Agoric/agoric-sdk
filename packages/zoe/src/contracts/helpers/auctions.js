@@ -61,27 +61,23 @@ export const isOverMinimumBid = (
 
 export const closeAuction = (
   zoe,
-  issuers,
-  { auctionLogicFn, itemIndex, bidIndex, sellerInviteHandle, allBidHandles },
+  { auctionLogicFn, sellerInviteHandle, allBidHandles },
 ) => {
-  const amountMathArray = zoe.getAmountMathForIssuers(issuers);
-  const bidAmountMath = amountMathArray[bidIndex];
-  const itemAmountMath = amountMathArray[itemIndex];
+  const bidAmountMath = zoe.getAmountMathForRole('Bid');
+  const assetAmountMath = zoe.getAmountMathForRole('Asset');
+  const { roleNames } = zoe.getInstanceRecord();
 
   // Filter out any inactive bids
   const { active: activeBidHandles } = zoe.getOfferStatuses(
     harden(allBidHandles),
   );
 
-  const getAmounts = offer => offer.amounts;
-  const getBids = amount => amount[bidIndex];
-  const bids = zoe
-    .getOffers(activeBidHandles)
-    .map(getAmounts)
-    .map(getBids);
-  const itemAmountsUpForAuction = zoe.getOffer(sellerInviteHandle).payoutRules[
-    itemIndex
-  ].amount;
+  const bidIndex = roleNames.indexOf('Bid');
+
+  const getBids = offer => offer.amounts[bidIndex];
+  const bids = zoe.getOffers(activeBidHandles).map(getBids);
+  const assetAmount = zoe.getOffer(sellerInviteHandle).userOfferRules.offer
+    .Asset;
 
   const {
     winnerOfferHandle: winnerInviteHandle,
@@ -93,15 +89,15 @@ export const closeAuction = (
   // price paid.
   const winnerRefund = bidAmountMath.subtract(winnerBid, price);
 
-  const newCreatorAmounts = [itemAmountMath.getEmpty(), price];
-  const newWinnerAmounts = [itemAmountsUpForAuction, winnerRefund];
+  const newSellerAmounts = [assetAmountMath.getEmpty(), price];
+  const newWinnerAmounts = [assetAmount, winnerRefund];
 
   // Everyone else gets a refund so their extents remain the
   // same.
   zoe.reallocate(
     harden([sellerInviteHandle, winnerInviteHandle]),
-    harden([newCreatorAmounts, newWinnerAmounts]),
+    harden([newSellerAmounts, newWinnerAmounts]),
   );
   const allOfferHandles = harden([sellerInviteHandle, ...activeBidHandles]);
-  zoe.complete(allOfferHandles, issuers);
+  zoe.complete(allOfferHandles);
 };

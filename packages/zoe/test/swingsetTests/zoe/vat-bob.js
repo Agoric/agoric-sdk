@@ -46,22 +46,12 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
       // 1. Bob escrows his offer
       const bobOfferRules = harden({
-        payoutRules: [
-          {
-            kind: 'wantAtLeast',
-            amount: moola(15),
-          },
-          {
-            kind: 'offerAtMost',
-            amount: simoleans(17),
-          },
-        ],
-        exitRule: {
-          kind: 'onDemand',
-        },
+        want: { Contribution1: moola(15) },
+        offer: { Contribution2: simoleans(17) },
+        exitRule: { kind: 'onDemand' },
       });
 
-      const bobPayments = [undefined, simoleanPayment];
+      const bobPayments = { Contribution2: simoleanPayment };
 
       const { seat, payout: payoutP } = await E(zoe).redeem(
         exclInvite,
@@ -75,7 +65,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       log(outcome);
 
       const bobResult = await payoutP;
-      const [moolaPayout, simoleanPayout] = await Promise.all(bobResult);
+      const moolaPayout = await bobResult.Contribution1;
+      const simoleanPayout = await bobResult.Contribution2;
 
       // 5: Bob deposits his winnings
       await E(moolaPurseP).deposit(moolaPayout);
@@ -91,19 +82,9 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const exclInvite = await E(inviteIssuer).claim(invite);
 
       const bobIntendedOfferRules = harden({
-        payoutRules: [
-          {
-            kind: 'wantAtLeast',
-            amount: moola(3),
-          },
-          {
-            kind: 'offerAtMost',
-            amount: simoleans(7),
-          },
-        ],
-        exitRule: {
-          kind: 'onDemand',
-        },
+        want: { Asset: moola(3) },
+        offer: { Price: simoleans(7) },
+        exitRule: { kind: 'onDemand' },
       });
 
       // Bob checks that the invite is for the right covered call
@@ -144,7 +125,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         details`The second issuer should be the simolean issuer`,
       );
 
-      const bobPayments = [undefined, simoleanPayment];
+      const bobPayments = { Price: simoleanPayment };
 
       // Bob escrows
       const { seat, payout: payoutP } = await E(zoe).redeem(
@@ -158,7 +139,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       log(bobOutcome);
 
       const bobResult = await payoutP;
-      const [moolaPayout, simoleanPayout] = await Promise.all(bobResult);
+      const moolaPayout = await bobResult.Asset;
+      const simoleanPayout = await bobResult.Price;
 
       await E(moolaPurseP).deposit(moolaPayout);
       await E(simoleanPurseP).deposit(simoleanPayout);
@@ -281,21 +263,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       assert(sameStructure(inviteExtent[0].auctionedAssets, moola(1)));
 
       const offerRules = harden({
-        payoutRules: [
-          {
-            kind: 'wantAtLeast',
-            amount: moola(1),
-          },
-          {
-            kind: 'offerAtMost',
-            amount: simoleans(11),
-          },
-        ],
-        exitRule: {
-          kind: 'onDemand',
-        },
+        want: { Asset: moola(1) },
+        offer: { Bid: simoleans(11) },
+        exitRule: { kind: 'onDemand' },
       });
-      const offerPayments = [undefined, simoleanPayment];
+      const offerPayments = { Bid: simoleanPayment };
 
       const { seat, payout: payoutP } = await E(zoe).redeem(
         exclInvite,
@@ -308,7 +280,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       log(offerResult);
 
       const bobResult = await payoutP;
-      const [moolaPayout, simoleanPayout] = await Promise.all(bobResult);
+      const moolaPayout = await bobResult.Asset;
+      const simoleanPayout = await bobResult.Bid;
 
       await E(moolaPurseP).deposit(moolaPayout);
       await E(simoleanPurseP).deposit(simoleanPayout);
@@ -339,36 +312,28 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         {
           kind: 'offerAtMost',
           amount: moola(3),
+          role: 'Asset',
         },
         {
           kind: 'wantAtLeast',
           amount: simoleans(7),
+          role: 'Price',
         },
       ]);
       assert(
         sameStructure(
-          inviteExtent[0].offerMadeRules,
+          inviteExtent[0].payoutRules,
           expectedFirstOfferPayoutRules,
         ),
         details`Alice made a different offer than expected`,
       );
 
       const offerRules = harden({
-        payoutRules: [
-          {
-            kind: 'wantAtLeast',
-            amount: moola(3),
-          },
-          {
-            kind: 'offerAtMost',
-            amount: simoleans(7),
-          },
-        ],
-        exitRule: {
-          kind: 'onDemand',
-        },
+        want: { Asset: moola(3) },
+        offer: { Price: simoleans(7) },
+        exitRule: { kind: 'onDemand' },
       });
-      const offerPayments = [undefined, simoleanPayment];
+      const offerPayments = { Price: simoleanPayment };
 
       const { seat, payout: payoutP } = await E(zoe).redeem(
         exclInvite,
@@ -381,7 +346,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       log(offerResult);
 
       const bobResult = await payoutP;
-      const [moolaPayout, simoleanPayout] = await Promise.all(bobResult);
+      const moolaPayout = await bobResult.Asset;
+      const simoleanPayout = await bobResult.Price;
 
       await E(moolaPurseP).deposit(moolaPayout);
       await E(simoleanPurseP).deposit(simoleanPayout);
@@ -409,21 +375,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       );
 
       const bobBuyOrderOfferRules = harden({
-        payoutRules: [
-          {
-            kind: 'wantAtLeast',
-            amount: moola(3),
-          },
-          {
-            kind: 'offerAtMost',
-            amount: simoleans(7),
-          },
-        ],
-        exitRule: {
-          kind: 'onDemand',
-        },
+        want: { Asset: moola(3) },
+        offer: { Price: simoleans(7) },
+        exitRule: { kind: 'onDemand' },
       });
-      const offerPayments = [undefined, simoleanPayment];
+      const offerPayments = { Price: simoleanPayment };
 
       const { seat, payout: payoutP } = await E(zoe).redeem(
         exclInvite,
@@ -436,7 +392,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       log(offerResult);
 
       const bobResult = await payoutP;
-      const [moolaPayout, simoleanPayout] = await Promise.all(bobResult);
+      const moolaPayout = await bobResult.Asset;
+      const simoleanPayout = await bobResult.Price;
 
       await E(moolaPurseP).deposit(moolaPayout);
       await E(simoleanPurseP).deposit(simoleanPayout);
@@ -451,7 +408,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       } = await E(inviteIssuer).getAmountOf(invite);
 
       const { installationHandle, terms } = await E(zoe).getInstance(
-        inviteExtent.instanceHandle,
+        inviteExtent[0].instanceHandle,
       );
       assert(
         installationHandle === installations.simpleExchange,

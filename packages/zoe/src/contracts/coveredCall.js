@@ -16,28 +16,35 @@ import harden from '@agoric/harden';
 // extent of the invite:
 // { expirationDate, timerAuthority, underlyingAsset, strikePrice }
 
-import { makeHelpers } from './helpers/userFlow';
+import { makeZoeHelpers } from './helpers/zoeHelpers';
 
-export const makeContract = harden((zoe, terms) => {
-  const { rejectOffer, hasValidPayoutRules, swap } = makeHelpers(
-    zoe,
-    terms.issuers,
-  );
-  const ASSET_INDEX = 0;
-  const PRICE_INDEX = 1;
+export const makeContract = harden(zoe => {
+  const { swap, assertRoleNames, rejectIfNotOfferRules } = makeZoeHelpers(zoe);
+  assertRoleNames(harden(['UnderlyingAsset', 'StrikePrice']));
 
   const makeCallOptionInvite = sellerHandle => {
     const seat = harden({
-      exercise: () =>
-        swap(sellerHandle, inviteHandle, `The covered call option is expired.`),
+      exercise: () => {
+        const expected = harden({
+          offer: ['StrikePrice'],
+          want: ['UnderlyingAsset'],
+        });
+        rejectIfNotOfferRules(inviteHandle, expected);
+        const rejectMsg = `The covered call option is expired.`;
+        return swap(sellerHandle, inviteHandle, rejectMsg);
+      },
     });
-    const { payoutRules, exitRule } = zoe.getOffer(sellerHandle);
+
+    const {
+      userOfferRules: { want, offer, exit },
+    } = zoe.getOffer(sellerHandle);
+
     const { invite: callOption, inviteHandle } = zoe.makeInvite(seat, {
       seatDesc: 'exerciseOption',
-      expirationDate: exitRule.deadline,
-      timerAuthority: exitRule.timer,
-      underlyingAsset: payoutRules[ASSET_INDEX].amount,
-      strikePrice: payoutRules[PRICE_INDEX].amount,
+      expirationDate: exit.afterDeadline.deadline,
+      timerAuthority: exit.afterDeadline.timer,
+      underlyingAsset: offer.UnderlyingAsset,
+      strikePrice: want.StrikePrice,
     });
     return callOption;
   };
@@ -45,13 +52,12 @@ export const makeContract = harden((zoe, terms) => {
   const makeCoveredCallInvite = () => {
     const seat = harden({
       makeCallOption: () => {
-        const { exitRule } = zoe.getOffer(inviteHandle);
-        if (
-          !hasValidPayoutRules(['offerAtMost', 'wantAtLeast'], inviteHandle) ||
-          exitRule.kind !== 'afterDeadline'
-        ) {
-          throw rejectOffer(inviteHandle);
-        }
+        const expected = harden({
+          offer: ['UnderlyingAsset'],
+          want: ['StrikePrice'],
+          exit: ['afterDeadline'],
+        });
+        rejectIfNotOfferRules(inviteHandle, expected);
         return makeCallOptionInvite(inviteHandle);
       },
     });
@@ -63,6 +69,5 @@ export const makeContract = harden((zoe, terms) => {
 
   return harden({
     invite: makeCoveredCallInvite(),
-    terms,
   });
 });

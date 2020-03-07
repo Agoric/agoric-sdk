@@ -5,7 +5,7 @@ import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 
 import { natSafeMath } from './helpers/safeMath';
-import { makeHelpers } from './helpers/userFlow';
+import { makeZoeHelpers } from './helpers/zoeHelpers';
 import { makeConstProductBC } from './helpers/bondingCurves';
 
 export const makeContract = harden((zoe, terms) => {
@@ -41,7 +41,7 @@ export const makeContract = harden((zoe, terms) => {
       vectorWith,
       vectorWithout,
       makeEmptyOffer,
-    } = makeHelpers(zoe, issuers);
+    } = makeZoeHelpers(zoe, issuers);
     const {
       getPrice,
       calcLiqExtentToMint,
@@ -125,8 +125,6 @@ export const makeContract = harden((zoe, terms) => {
             );
             const offerRules = harden({
               payoutRules: [
-                { kind: 'wantAtLeast', amount: amountMathArray[0].getEmpty() },
-                { kind: 'wantAtLeast', amount: amountMathArray[1].getEmpty() },
                 { kind: 'offerAtMost', amount: liquidityAmountsOut },
               ],
               exitRule: {
@@ -216,7 +214,6 @@ export const makeContract = harden((zoe, terms) => {
           getPoolAmounts,
           makeInvite,
         },
-        terms: { issuers },
       });
     });
   });

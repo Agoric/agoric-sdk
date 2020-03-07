@@ -5,6 +5,7 @@ import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 import makePromise from '@agoric/make-promise';
 
+import { cleanOfferRules } from './cleanOfferRules';
 import { isOfferSafeForAll } from './isOfferSafe';
 import { areRightsConserved } from './areRightsConserved';
 import { evalContractCode } from './evalContractCode';
@@ -40,7 +41,7 @@ const makeZoe = (additionalEndowments = {}) => {
     }
     const offers = offerTable.getOffers(offerHandles);
 
-    const { issuers } = instanceTable.get(instanceHandle);
+    const { issuers, roleNames } = instanceTable.get(instanceHandle);
 
     // Remove the offers from the offerTable so that they are no
     // longer active.
@@ -49,12 +50,51 @@ const makeZoe = (additionalEndowments = {}) => {
     // Resolve the payout promises with the payouts
     const pursePs = issuerTable.getPursesForIssuers(issuers);
     for (const offer of offers) {
-      const payout = offer.amounts.map((amount, j) =>
-        E(pursePs[j]).withdraw(amount, 'payout'),
-      );
+      const payout = {};
+      offer.amounts.forEach((amount, j) => {
+        payout[roleNames[j]] = E(pursePs[j]).withdraw(amount);
+      });
+      harden(payout);
       payoutMap.get(offer.handle).res(payout);
     }
   };
+
+  const assertRoleName = roleName => {
+    const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
+    assert(
+      firstCapASCII.test(roleName),
+      details`roleName must be ascii and must start with a capital letter.`,
+    );
+  };
+
+  const getRoleNames = roles => {
+    // `getOwnPropertyNames` returns all the non-symbol properties
+    // (both enumerable and non-enumerable).
+    const roleNames = Object.getOwnPropertyNames(roles);
+    // We sort to get a deterministic order that is not based on key
+    // insertion order or object creation order.
+    roleNames.sort();
+    harden(roleNames);
+
+    // Insist that there are no symbol properties.
+    assert(
+      Object.getOwnPropertySymbols(roles).length === 0,
+      details`no symbol properties allowed`,
+    );
+
+    // Assert all key characters are ascii and keys start with a
+    // capital letter.
+    roleNames.forEach(assertRoleName);
+
+    return roleNames;
+  };
+
+  // Make a safe(r) object from keys that have been validated
+  const makeCleanedObj = (rawObj, cleanedKeys) =>
+    cleanedKeys.reduce((obj, key) => {
+      obj[key] = rawObj[key];
+      return obj;
+    }, {});
 
   // Make a Zoe invite with an extent that is a mix of credible
   // information from Zoe (the `handle` and `instanceHandle`) and
@@ -108,7 +148,9 @@ const makeZoe = (additionalEndowments = {}) => {
 
         const offers = offerTable.getOffers(offerHandles);
 
-        const payoutRuleMatrix = offers.map(offer => offer.payoutRules);
+        const payoutRuleMatrix = offers.map(
+          offer => offer.offerRules.payoutRules,
+        );
         const currentAmountMatrix = offers.map(offer => offer.amounts);
         const amountMaths = issuerTable.getAmountMathForIssuers(issuers);
 
@@ -162,16 +204,19 @@ const makeZoe = (additionalEndowments = {}) => {
 
       // informs Zoe about an issuer and returns a promise for acknowledging
       // when the issuer is added and ready.
-      addNewIssuer: issuer =>
+      addNewIssuer: (issuer, roleName) =>
         issuerTable.getPromiseForIssuerRecord(issuer).then(_ => {
-          const { issuers, terms } = instanceTable.get(instanceHandle);
-          const newIssuers = [...issuers, issuer];
+          const { roles } = instanceTable.get(instanceHandle);
+          const newRoles = { ...roles };
+          newRoles[roleName] = issuer;
+          const newRoleNames = getRoleNames(newRoles);
+          const newIssuers = newRoleNames.map(name => roles[name]);
+          // Take the cleaned roleNames and produce a safe(r) roles obj
+          const cleanedRoles = makeCleanedObj(newRoles, newRoleNames);
           instanceTable.update(instanceHandle, {
             issuers: newIssuers,
-            terms: {
-              ...terms,
-              issuers: newIssuers,
-            },
+            roles: cleanedRoles,
+            roleNames: newRoleNames,
           });
         }),
 
@@ -181,11 +226,17 @@ const makeZoe = (additionalEndowments = {}) => {
       // The methods below are pure and have no side-effects //
       getInviteIssuer: () => inviteIssuer,
       getAmountMathForIssuers: issuerTable.getAmountMathForIssuers,
+      getAmountMathForRole: roleName => {
+        const { roles } = instanceTable.get(instanceHandle);
+        const issuer = roles[roleName];
+        return issuerTable.get(issuer).amountMath;
+      },
       getBrandsForIssuers: issuerTable.getBrandsForIssuers,
       getOfferStatuses: offerTable.getOfferStatuses,
       isOfferActive: offerTable.isOfferActive,
       getOffers: offerTable.getOffers,
       getOffer: offerTable.get,
+      getInstanceRecord: () => instanceTable.get(instanceHandle),
     });
     return contractFacet;
   };
@@ -231,48 +282,43 @@ const makeZoe = (additionalEndowments = {}) => {
      * other information, such as the terms used in the instance.
      * @param  {object} installationHandle - the unique handle for the
      * installation
+     * @param  {object} roles - an object mapping roleName keys to
+     * issuer values
      * @param  {object} terms - arguments to the contract. These
-     * arguments depend on the contract, apart from the `issuers`
-     * property, which is required.
+     * arguments depend on the contract.
      */
-    makeInstance: (installationHandle, userProvidedTerms) => {
+    makeInstance: (installationHandle, roles, terms = harden({})) => {
       const { installation } = installationTable.get(installationHandle);
       const instanceHandle = harden({});
       const contractFacet = makeContractFacet(instanceHandle);
 
-      const makeContractInstance = issuerRecords => {
-        const terms = {
-          ...userProvidedTerms,
-          issuers: issuerRecords.map(record => record.issuer),
-        };
-
-        const instanceRecord = harden({
-          installationHandle,
-          publicAPI: undefined,
-          issuers: terms.issuers,
-          terms,
-        });
-
-        // We create the instanceRecord before the contract is made
-        // that the contract can query Zoe for information about the
-        // instance (get issuers, amountMaths, etc.)
-        instanceTable.create(instanceRecord, instanceHandle);
-        return Promise.resolve(
-          installation.makeContract(contractFacet, terms),
-        ).then(value => {
-          // Once the contract is made, we add the publicAPI to the
-          // contractRecord
-          const { invite, publicAPI } = value;
-          instanceTable.update(instanceHandle, { publicAPI });
-          return invite;
-        });
-      };
+      const roleNames = getRoleNames(roles);
+      const issuers = roleNames.map(name => roles[name]);
+      // Take the cleaned roleNames and produce a safe(r) roles obj
+      const cleanedRoles = makeCleanedObj(roles, roleNames);
 
       // The issuers may not have been seen before, so we must wait for
       // the issuer records to be available synchronously
       return issuerTable
-        .getPromiseForIssuerRecords(userProvidedTerms.issuers)
-        .then(makeContractInstance);
+        .getPromiseForIssuerRecords(issuers)
+        .then(issuerRecords => {
+          const instanceRecord = harden({
+            installationHandle,
+            publicAPI: undefined,
+            terms,
+            issuers: issuerRecords.map(record => record.issuer),
+            roles: cleanedRoles,
+            roleNames,
+          });
+
+          instanceTable.create(instanceRecord, instanceHandle);
+          return Promise.resolve(installation.makeContract(contractFacet)).then(
+            ({ invite, publicAPI }) => {
+              instanceTable.update(instanceHandle, { publicAPI });
+              return invite;
+            },
+          );
+        });
     },
     /**
      * Credibly retrieves an instance record given an instanceHandle.
@@ -292,9 +338,29 @@ const makeZoe = (additionalEndowments = {}) => {
      * the offer rules. A payment may be `undefined` in the case of
      * specifying a `wantAtLeast`.
      */
-    redeem: (invite, offerRules, offerPayments) => {
+    redeem: (invite, userOfferRules, offerPayments) => {
+      const inviteAmount = inviteIssuer.burn(invite);
+      assert(
+        inviteAmount.extent.length === 1,
+        'only one invite should be redeemed',
+      );
+
+      const {
+        extent: [{ instanceHandle, handle: offerHandle }],
+      } = inviteAmount;
+
+      const { roleNames, issuers } = instanceTable.get(instanceHandle);
+
+      const amountMaths = issuerTable.getAmountMathForIssuers(issuers);
+
+      const offerRules = cleanOfferRules(
+        roleNames,
+        amountMaths,
+        userOfferRules,
+      );
+
       // Create result to be returned. Depends on exitRule
-      const makeRedemptionResult = ({ instanceHandle, offerHandle }) => {
+      const makeRedemptionResult = _ => {
         const redemptionResult = {
           seat: handleToSeat.get(offerHandle),
           payout: payoutMap.get(offerHandle).p,
@@ -308,14 +374,17 @@ const makeZoe = (additionalEndowments = {}) => {
               wake: () => completeOffers(instanceHandle, harden([offerHandle])),
             }),
           );
-        }
-
-        // Add an object with a cancel method to redemptionResult in
-        // order to cancel on demand.
-        if (exitRule.kind === 'onDemand') {
+          // Add an object with a cancel method to redemptionResult in
+          // order to cancel on demand.
+        } else if (exitRule.kind === 'onDemand') {
           redemptionResult.cancelObj = {
             cancel: () => completeOffers(instanceHandle, harden([offerHandle])),
           };
+        } else {
+          assert(
+            exitRule.kind === 'Waved',
+            `exitRule kind was not recognized: ${exitRule.kind}`,
+          );
         }
 
         // if the exitRule.kind is 'waived' the user has no
@@ -323,36 +392,20 @@ const makeZoe = (additionalEndowments = {}) => {
         return harden(redemptionResult);
       };
 
-      const inviteAmount = inviteIssuer.burn(invite);
-      assert(
-        inviteAmount.extent.length === 1,
-        'only one invite should be redeemed',
-      );
-
-      const {
-        extent: [{ instanceHandle, handle: offerHandle }],
-      } = inviteAmount;
-
-      const { issuers } = instanceTable.get(instanceHandle);
-
-      // Promise flow = issuer -> purse -> deposit payment -> seat + payout
+      // Promise flow = issuer -> purse -> deposit payment -> escrow receipt
       const paymentDepositedPs = issuers.map((issuer, i) => {
         const issuerRecordP = issuerTable.getPromiseForIssuerRecord(issuer);
         const payoutRule = offerRules.payoutRules[i];
-        const offerPayment = offerPayments[i];
 
         return issuerRecordP.then(({ purse, amountMath }) => {
           if (payoutRule.kind === 'offerAtMost') {
             // We cannot trust these amounts since they come directly
             // from the remote issuer and so we must coerce them.
             return E(purse)
-              .deposit(offerPayment, payoutRule.amount)
+              .deposit(offerPayments[roleNames[i]], payoutRule.amount)
               .then(_ => amountMath.coerce(payoutRule.amount));
           }
-          assert(
-            offerPayments[i] === undefined,
-            details`payment was included, but the rule kind was ${payoutRule.kind}`,
-          );
+          // If any other payments are included, they are ignored.
           return Promise.resolve(amountMath.getEmpty());
         });
       });
@@ -361,8 +414,8 @@ const makeZoe = (additionalEndowments = {}) => {
         .then(amounts => {
           const offerImmutableRecord = {
             instanceHandle,
-            payoutRules: offerRules.payoutRules,
-            exitRule: offerRules.exitRule,
+            userOfferRules,
+            offerRules,
             issuers,
             amounts,
           };
@@ -370,7 +423,6 @@ const makeZoe = (additionalEndowments = {}) => {
           // also the offerHandle.
           offerTable.create(offerImmutableRecord, offerHandle);
           payoutMap.init(offerHandle, makePromise());
-          return { instanceHandle, offerHandle };
         })
         .then(makeRedemptionResult);
     },

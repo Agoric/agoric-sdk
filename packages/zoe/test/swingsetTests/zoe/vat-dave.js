@@ -40,21 +40,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       assert(sameStructure(inviteExtent[0].auctionedAssets, moola(1)));
 
       const offerRules = harden({
-        payoutRules: [
-          {
-            kind: 'wantAtLeast',
-            amount: moola(1),
-          },
-          {
-            kind: 'offerAtMost',
-            amount: simoleans(5),
-          },
-        ],
-        exitRule: {
-          kind: 'onDemand',
-        },
+        want: { Asset: moola(1) },
+        offer: { Bid: simoleans(5) },
+        exitRule: { kind: 'onDemand' },
       });
-      const offerPayments = [undefined, simoleanPayment];
+      const offerPayments = { Bid: simoleanPayment };
 
       const { seat, payout: payoutP } = await E(zoe).redeem(
         exclInvite,
@@ -67,7 +57,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       log(offerResult);
 
       const daveResult = await payoutP;
-      const [moolaPayout, simoleanPayout] = await Promise.all(daveResult);
+      const moolaPayout = await daveResult.Asset;
+      const simoleanPayout = await daveResult.Bid;
 
       await E(moolaPurseP).deposit(moolaPayout);
       await E(simoleanPurseP).deposit(simoleanPayout);

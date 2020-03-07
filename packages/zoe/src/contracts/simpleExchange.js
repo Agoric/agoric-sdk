@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 import makePromise from '@agoric/make-promise';
-import { makeHelpers, defaultAcceptanceMsg } from './helpers/userFlow';
+import { makeZoeHelpers, defaultAcceptanceMsg } from './helpers/zoeHelpers';
 
 /**
  * The SimpleExchange only accepts limit orders. A limit order is an order with
@@ -28,7 +28,7 @@ export const makeContract = harden((zoe, terms) => {
     areAssetsEqualAtIndex,
     canTradeWith,
     getActiveOffers,
-  } = makeHelpers(zoe, issuers);
+  } = makeZoeHelpers(zoe, issuers);
 
   function flattenRule(r) {
     switch (r.kind) {
@@ -125,6 +125,5 @@ export const makeContract = harden((zoe, terms) => {
   return harden({
     invite: makeInvite(),
     publicAPI: { makeInvite, getBookOrders, getOffer },
-    terms,
   });
 });

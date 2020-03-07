@@ -48,16 +48,16 @@ test('autoSwap with valid offers', async t => {
     const aliceOfferRules = harden({
       payoutRules: [
         {
+          kind: 'wantAtLeast',
+          amount: liquidity(10),
+        },
+        {
           kind: 'offerAtMost',
           amount: moola(10),
         },
         {
           kind: 'offerAtMost',
           amount: simoleans(5),
-        },
-        {
-          kind: 'wantAtLeast',
-          amount: liquidity(10),
         },
       ],
       exitRule: {
@@ -105,16 +105,12 @@ test('autoSwap with valid offers', async t => {
     const bobMoolaForSimOfferRules = harden({
       payoutRules: [
         {
-          kind: 'offerAtMost',
-          amount: moola(3),
-        },
-        {
           kind: 'wantAtLeast',
           amount: simoleans(1),
         },
         {
-          kind: 'wantAtLeast',
-          amount: liquidity(0),
+          kind: 'offerAtMost',
+          amount: moola(3),
         },
       ],
       exitRule: {
@@ -161,10 +157,6 @@ test('autoSwap with valid offers', async t => {
           kind: 'offerAtMost',
           amount: simoleans(3),
         },
-        {
-          kind: 'wantAtLeast',
-          amount: liquidity(0),
-        },
       ],
       exitRule: {
         kind: 'onDemand',
@@ -202,14 +194,6 @@ test('autoSwap with valid offers', async t => {
     const aliceSecondInvite = publicAPI.makeInvite();
     const aliceRemoveLiquidityOfferRules = harden({
       payoutRules: [
-        {
-          kind: 'wantAtLeast',
-          amount: moola(0),
-        },
-        {
-          kind: 'wantAtLeast',
-          amount: simoleans(0),
-        },
         {
           kind: 'offerAtMost',
           amount: liquidity(10),
