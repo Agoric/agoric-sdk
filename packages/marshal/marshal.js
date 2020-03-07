@@ -156,17 +156,6 @@ export function mustPassByPresence(val) {
   // ok!
 }
 
-// This is the equality comparison used by JavaScript's Map and Set
-// abstractions, where NaN is the same as NaN and -0 is the same as
-// 0. Marshal serializes -0 as zero, so the semantics of our distributed
-// object system does not distinguish 0 from -0.
-//
-// `sameValueZero` is the EcmaScript spec name for this equality comparison,
-// but TODO we need a better name for the API.
-export function sameValueZero(x, y) {
-  return x === y || Object.is(x, y);
-}
-
 // How would val be passed?  For primitive values, the answer is
 //   * 'null' for null
 //   * throwing an error for a symbol, whether registered or not.

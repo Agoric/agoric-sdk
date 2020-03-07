@@ -3,7 +3,7 @@
 import harden from '@agoric/harden';
 import { assert, details, openDetail } from '@agoric/assert';
 import makeWeakStore from '@agoric/weak-store';
-import makeStrongStore, { mapKeyEqual } from './store';
+import makeStrongStore, { sameKey } from './store';
 
 // The key equality used by the stores exported by this module
 // is to compare to arrays element by element using normal
@@ -12,7 +12,7 @@ import makeStrongStore, { mapKeyEqual } from './store';
 // trieKeyEqual([NaN, 0], [NaN, -0]);
 // ```
 export const trieKeyEqual = (a, b) =>
-  a.length === b.length && a.every((v, i) => mapKeyEqual(v, b[i]));
+  a.length === b.length && a.every((v, i) => sameKey(v, b[i]));
 
 // The Pumpkin must not escape. It must be distinct from any value that
 // could be passed into this module.
