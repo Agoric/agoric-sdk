@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/ertp": "^0.3.1",
+    "@agoric/ertp": "^0.4.1",
     "@agoric/evaluate": "^2.2.0",
     "@agoric/harden": "^0.0.4",
     "@agoric/assert": "^0.0.1",
