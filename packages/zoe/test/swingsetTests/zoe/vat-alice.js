@@ -11,15 +11,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
   const doAutomaticRefund = async bobP => {
     log(`=> alice.doCreateAutomaticRefund called`);
     const installId = installations.automaticRefund;
-    const invite = await E(zoe).makeInstance(
-      installId,
-      harden({
-        roles: {
-          Contribution1: moolaIssuer,
-          Contribution2: simoleanIssuer,
-        },
-      }),
-    );
+    const roles = harden({
+      Contribution1: moolaIssuer,
+      Contribution2: simoleanIssuer,
+    });
+    const invite = await E(zoe).makeInstance(installId, roles);
     const {
       extent: [{ instanceHandle }],
     } = await E(inviteIssuer).getAmountOf(invite);
@@ -29,7 +25,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     const offerRules = harden({
       offer: { Contribution1: moola(3) },
       want: { Contribution2: simoleans(7) },
-      exitRule: { kind: 'onDemand' },
+      exit: { onDemand: {} },
     });
 
     const offerPayments = { Contribution1: moolaPayment };

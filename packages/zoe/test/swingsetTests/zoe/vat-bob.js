@@ -25,7 +25,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         extent: [{ instanceHandle }],
       } = await E(inviteIssuer).getAmountOf(exclInvite);
 
-      const { installationHandle, terms } = await E(zoe).getInstance(
+      const { installationHandle, roles } = await E(zoe).getInstance(
         instanceHandle,
       );
 
@@ -36,11 +36,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       );
 
       assert(
-        terms.issuers[0] === moolaIssuer,
+        roles.Contribution1 === moolaIssuer,
         details`The first issuer should be the moola issuer`,
       );
       assert(
-        terms.issuers[1] === simoleanIssuer,
+        roles.Contribution2 === simoleanIssuer,
         details`The second issuer should be the simolean issuer`,
       );
 
@@ -48,7 +48,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const bobOfferRules = harden({
         want: { Contribution1: moola(15) },
         offer: { Contribution2: simoleans(17) },
-        exitRule: { kind: 'onDemand' },
+        exit: { onDemand: {} },
       });
 
       const bobPayments = { Contribution2: simoleanPayment };

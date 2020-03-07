@@ -107,7 +107,7 @@ test('zoe - automaticRefund same issuer', async t => {
   }
 });
 
-test.only('zoe with automaticRefund', async t => {
+test('zoe with automaticRefund', async t => {
   try {
     // Setup zoe and mints
     const { issuers, mints, moola, simoleans } = setup();

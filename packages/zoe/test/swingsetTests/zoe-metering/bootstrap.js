@@ -39,9 +39,8 @@ function build(E, log) {
       const installId = await installations[testName]();
       log(`instantiating ${testName}`);
       const inviteIssuer = E(zoe).getInviteIssuer();
-      const invite = await E(zoe).makeInstance(installId, {
-        roles: { Role1: inviteIssuer },
-      });
+      const roles = harden({ Role1: inviteIssuer });
+      const invite = await E(zoe).makeInstance(installId, roles);
       const {
         extent: [{ instanceHandle }],
       } = await E(inviteIssuer).getAmountOf(invite);
