@@ -1,5 +1,43 @@
 User-visible changes in ERTP:
 
+## Release v0.4.0 (6-Mar-2020)
+
+* We added the concept of a brand, because the assay (renamed to
+  issuer) was serving two purposes: it was indicating the kind and was
+  a trusted authority for payment and purse validity. This was a
+  problem because where it was used to indicate the kind, like in
+  `payment.getBalance()`, a user could grab an assay from the units,
+  use it to claim their payment, and think they accomplished something
+  security-wise. 
+* Relatedly, most of the methods from payments have been removed. The
+  only method on payments that remains is `getAllegedBrand`. To get
+  the current amount of assets in a payment, use the issuer:
+  `issuer.getAmountOf(payment)`
+* makeMint was renamed to 'produceIssuer' to emphasize that the issuer
+  is most important and the mint is just the admin facet of the issuer.
+* ProduceIssuer returns an object with properties like issuer, mint,
+  amountMath (formerly unitOps), and brand rather than the old version
+  that just returned a mint. 
+* Most configuration has been removed from ERTP in favor of a few
+  built-in configurations: digital assets can be fungible (the
+  default), or non-fungible. If digital assets are non-fungible, there
+  is a choice between two settings: 'strSet' mathHelpers handle the
+  math for extents that are sets of string IDS, and 'set' mathHelpers
+  handle the math for extents that are sets of more complex objects
+  (which might be opaque ids called handles or data). Zoe invites use
+  'set' mathHelpers. 
+* CoreMintKeeper was rewritten to conserve currency and then inserted
+  into issuer.js (formerly mint.js)
+* We removed the issuer and purse methods with suffix 'All' and
+  'Exactly' and replaced them with one method per job that takes an
+  optional amount. If the optional amount is present, the code checks
+  whether the balance it is working with is equal to that balance.
+* The `coerce` method in AmountMath (formerly UnitOps) now only
+  accepts amounts. This means that minting (i.e.
+  `mint.mintPayment(moola(3))`) only accepts amounts and rejects raw
+  extents.
+
+
 ## Release v0.3.1 (4-Feb-2020)
 
 Update dependency on pixel-demo
