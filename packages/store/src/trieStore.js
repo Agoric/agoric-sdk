@@ -9,9 +9,9 @@ import makeStrongStore, { sameKey } from './store';
 // is to compare to arrays element by element using normal
 // JavaScript map equality.
 // ```js
-// trieKeyEqual([NaN, 0], [NaN, -0]);
+// sameTrieKey([NaN, 0], [NaN, -0]);
 // ```
-export const trieKeyEqual = (a, b) =>
+export const sameTrieKey = (a, b) =>
   a.length === b.length && a.every((v, i) => sameKey(v, b[i]));
 
 // The Pumpkin must not escape. It must be distinct from any value that

@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
-import makeStrongStore, { sameKey } from './store';
 import { passStyleOf } from '@agoric/marshal';
 import { assert, details, openDetail } from '@agoric/assert';
+import makeStrongStore, { sameKey } from './store';
 
 // Shim of Object.fromEntries from
 // https://github.com/tc39/proposal-object-from-entries/blob/master/polyfill.js
