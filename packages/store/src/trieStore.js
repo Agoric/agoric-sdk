@@ -214,7 +214,7 @@ export const makeStrongTrieStore = makeTrieStoreMaker(makeStrongStore, true);
 function makeMixedStore(keyName = 'key') {
   const strongStore = makeStrongStore(keyName);
   const weakStore = makeWeakStore(keyName);
-  const storeFor = key => (Object(key) === key ? strongStore : weakStore);
+  const storeFor = key => (Object(key) === key ? weakStore : strongStore);
 
   return harden({
     has: key => storeFor(key).has(key),
