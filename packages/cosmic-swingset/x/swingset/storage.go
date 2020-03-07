@@ -26,6 +26,15 @@ func NewStorageHandler(context sdk.Context, keeper Keeper) *storageHandler {
 	}
 }
 
+func NewUnlimitedStorageHandler(context sdk.Context, keeper Keeper) *storageHandler {
+	storageHandler := NewStorageHandler(context, keeper)
+
+	// Allow the storageHandler to consume unlimited gas.
+	storageHandler.Context = storageHandler.Context.WithGasMeter(sdk.NewInfiniteGasMeter())
+
+	return storageHandler
+}
+
 func (sh *storageHandler) Receive(str string) (ret string, err error) {
 	msg := new(storageMessage)
 	err = json.Unmarshal([]byte(str), &msg)
