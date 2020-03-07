@@ -33,7 +33,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.0.1",
-    "@agoric/ertp": "^0.3.1",
+    "@agoric/ertp": "^0.4.1",
     "@agoric/evaluate": "^2.2.0",
     "@agoric/eventual-send": "^0.5.0",
     "@agoric/harden": "^0.0.4",
