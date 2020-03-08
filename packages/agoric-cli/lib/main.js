@@ -4,8 +4,9 @@ import parseArgs from 'minimist';
 const VERSION = 'Agoric <some version>';
 const STAMP = '_agstate';
 
-const main = async (progname, rawArgs, privs) => {
-  const { console, error, fs } = privs;
+const main = async (progname, rawArgs, powers) => {
+  const { anylogger, stdout, fs } = powers;
+  const log = anylogger('agoric');
   const { _: args, ...opts } = parseArgs(rawArgs, {
     boolean: ['version', 'help', 'sdk'],
     stopEarly: true,
@@ -16,22 +17,21 @@ const main = async (progname, rawArgs, privs) => {
       await fs.stat(STAMP);
       return false;
     } catch (e) {
-      error(`current directory wasn't created by '${progname} init'`);
+      log.error(`current directory wasn't created by '${progname} init'`);
       return usage(1);
     }
   };
   
   const subMain = (fn, args) => {
-    const subError = (...rest) => error(`${args[0]}:`, ...rest);
-    return fn(progname, args.slice(1), { ...privs, error: subError }, opts);
+    return fn(progname, args.slice(1), powers, opts);
   };
 
   const usage = status => {
     if (status) {
-      console.error(chalk.bold.yellow(`Type '${progname} --help' for more information.`));
+      log.error(chalk.bold.yellow(`Type '${progname} --help' for more information.`));
       return status;
     }
-    console.log(`\
+    stdout(`\
 Usage: ${progname} [command] [...args]
 
 Manage the Agoric Javascript smart contract platform.
@@ -46,7 +46,7 @@ start     run Agoric servers
   };
 
   if (opts.version) {
-    console.log(VERSION);
+    stdout(`${VERSION}\n`);
     return 0;
   }
 
@@ -57,7 +57,7 @@ start     run Agoric servers
   const cmd = args[0];
   switch (cmd) {
     case undefined:
-      error(`you must specify a COMMAND`);
+      log.error(`you must specify a COMMAND`);
       return usage(1);
     case 'help':
       return usage(0);
@@ -70,7 +70,7 @@ start     run Agoric servers
     case 'init':
       return subMain((await import('./init')).default, args);
     default:
-      error(`unrecognized COMMAND`, cmd);
+      log.error(`unrecognized COMMAND`, cmd);
       return usage(1);
   }
 };

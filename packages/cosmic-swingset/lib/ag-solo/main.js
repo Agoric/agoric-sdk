@@ -34,7 +34,7 @@ function insistIsBasedir() {
 }
 
 export default async function solo(progname, rawArgv) {
-  console.error('solo', rawArgv);
+  // console.error('solo', rawArgv);
   const { _: argv, ...opts } = parseArgs(rawArgv, {
     stopEarly: true,
     boolean: ['help', 'version'],
