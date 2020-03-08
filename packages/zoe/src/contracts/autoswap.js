@@ -8,20 +8,16 @@ import { natSafeMath } from './helpers/safeMath';
 import { makeZoeHelpers } from './helpers/zoeHelpers';
 import { makeConstProductBC } from './helpers/bondingCurves';
 
-export const makeContract = harden((zoe, terms) => {
-  // The user passes in an array of two issuers for the two kinds of
-  // assets to be swapped.
-  const startingIssuers = terms.issuers;
+export const makeContract = harden(zoe => {
+  const { issuers: startingIssuers } = zoe.getInstanceRecord();
 
   // There is also a third issuer, the issuer for the liquidity token,
-  // which is created in this contract. We will return all three as
-  // the canonical array of issuers for this contract
+  // which is created in this contract.
   const { mint: liquidityMint, issuer: liquidityIssuer } = produceIssuer(
     'liquidity',
   );
   const issuers = [...startingIssuers, liquidityIssuer];
 
-  const LIQ_INDEX = 2;
   let poolHandle;
   let liqTokenSupply = 0;
 
@@ -37,11 +33,10 @@ export const makeContract = harden((zoe, terms) => {
     );
     const {
       rejectOffer,
-      hasValidPayoutRules,
       vectorWith,
       vectorWithout,
       makeEmptyOffer,
-    } = makeZoeHelpers(zoe, issuers);
+    } = makeZoeHelpers(zoe);
     const {
       getPrice,
       calcLiqExtentToMint,

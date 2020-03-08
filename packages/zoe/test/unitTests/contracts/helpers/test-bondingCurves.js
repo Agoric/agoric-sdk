@@ -3,55 +3,54 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
 import { makeConstProductBC } from '../../../../src/contracts/helpers/bondingCurves';
-import { setup } from '../../setupBasicMints';
+import { setup } from '../../setupBasicMints2';
 
-const testGetPrice = (t, input, output) => {
-  const { issuers, moola, simoleans, amountMaths, brands } = setup();
-  const zoe = harden({
-    getAmountMathForIssuers: _ => amountMaths,
-    getBrandsForIssuers: _ => brands,
+const testGetPrice = (t, setupMints, input, output) => {
+  const { moolaR, simoleanR } = setupMints;
+  const zoe = harden({});
+
+  const { getPrice } = makeConstProductBC(zoe);
+
+  const tokenRoleNames = ['TokenA', 'TokenB'];
+  const amountMathsObj = harden({
+    TokenA: moolaR.amountMath,
+    TokenB: simoleanR.amountMath,
   });
 
-  const { getPrice } = makeConstProductBC(zoe, issuers);
-  const poolAmountsArray = [moola(input.xReserve), simoleans(input.yReserve)];
-  let amountIn;
-  let expectedAmountsOut;
-  if (input.xIn > 0) {
-    amountIn = moola(input.xIn);
-    expectedAmountsOut = simoleans(output.yOut);
-  } else {
-    amountIn = simoleans(input.yIn);
-    expectedAmountsOut = moola(output.xOut);
-  }
-
-  const { amountOut, newPoolAmountsArray } = getPrice(
-    poolAmountsArray,
-    amountIn,
+  const { amountOut, newPoolAmounts } = getPrice(
+    tokenRoleNames,
+    amountMathsObj,
+    input.poolAmounts,
+    input.amountIn,
   );
 
-  t.deepEquals(amountOut, expectedAmountsOut, 'amountOut');
-  t.deepEquals(
-    newPoolAmountsArray,
-    [moola(output.xReserve), simoleans(output.yReserve)],
-    'newPoolAmountsArray',
-  );
+  t.deepEquals(amountOut, output.amountOut, 'amountOut');
+  t.deepEquals(newPoolAmounts, output.newPoolAmounts, 'newPoolAmounts');
 };
 
-test('getPrice ok 1', t => {
+test.only('getPrice ok 1', t => {
+  const setupMints = setup();
+  const { moola, simoleans } = setupMints;
   try {
     const input = {
-      xReserve: 0,
-      yReserve: 0,
-      xIn: 1,
-      yIn: 0,
+      poolAmounts: {
+        TokenA: moola(0),
+        TokenB: simoleans(0),
+      },
+      amountIn: {
+        TokenA: moola(1),
+      },
     };
-    const expectedOutput1 = {
-      xReserve: 1,
-      yReserve: 0,
-      xOut: 0,
-      yOut: 0,
+    const expectedOutput = {
+      newPoolAmounts: {
+        TokenA: moola(1),
+        TokenB: simoleans(0),
+      },
+      amountOut: {
+        TokenB: simoleans(0),
+      },
     };
-    testGetPrice(t, input, expectedOutput1);
+    testGetPrice(t, setupMints, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   } finally {

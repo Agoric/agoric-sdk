@@ -6,9 +6,7 @@ import { natSafeMath } from './safeMath';
 
 const { add, subtract, multiply, floorDivide } = natSafeMath;
 
-export const makeConstProductBC = (zoe, issuers) => {
-  const amountMathArray = zoe.getAmountMathForIssuers(issuers);
-  const brands = zoe.getBrandsForIssuers(issuers);
+export const makeConstProductBC = zoe => {
   return harden({
     /**
      * Contains the logic for calculating how much should be given
@@ -17,61 +15,82 @@ export const makeConstProductBC = (zoe, issuers) => {
      * several different places, including to check whether an offer is
      * valid, getting the current price for an asset on user request, and
      * to do the actual reallocation after an offer has been made.
-     * @param  {amount[]} poolAmountsArray - an array of the current amount in the
-     * liquidity pool
-     * @param  {amount} amountIn - the amount sent in by a user
+     * @param  {object} poolAmounts - an object of the current amounts in the
+     * liquidity pool keyed by role
+     * @param  {object} amountIn - the amount sent in by a user, keyed
+     * by role
      * @param  {number} feeInTenthOfPercent=3 - the fee taken in tenths of
      * a percent. The default is 0.3%. The fee is taken from amountIn
      */
-    getPrice: (poolAmountsArray, amountIn, feeInTenthOfPercent = 3) => {
+    getPrice: (
+      tokenRoleNames,
+      amountMaths,
+      poolAmounts,
+      amountIn,
+      feeInTenthOfPercent = 3,
+    ) => {
       Nat(feeInTenthOfPercent);
       assert(
         feeInTenthOfPercent < 1000,
         details`fee ${feeInTenthOfPercent} is not less than 1000`,
       );
-      const oneMinusFeeInThousandths = subtract(1000, feeInTenthOfPercent);
 
       // Calculates how much can be bought by selling input
       const getInputPrice = (input, inputReserve, outputReserve) => {
+        const oneMinusFeeInThousandths = subtract(1000, feeInTenthOfPercent);
         const inputWithFee = multiply(input, oneMinusFeeInThousandths);
         const numerator = multiply(inputWithFee, outputReserve);
         const denominator = add(multiply(inputReserve, 1000), inputWithFee);
         return floorDivide(numerator, denominator);
       };
 
-      const brandIn = amountIn.brand;
-      const X = 0;
-      const Y = 1;
-      const [xAmountMath, yAmountMath] = zoe.getAmountMathForIssuers(issuers);
-      const xReserve = poolAmountsArray[X].extent;
-      const yReserve = poolAmountsArray[Y].extent;
-      if (brandIn === brands[X]) {
-        const xExtentIn = amountIn.extent;
-        const yExtentOut = getInputPrice(xExtentIn, xReserve, yReserve);
-        const newPoolAmountsArray = [...poolAmountsArray];
-        newPoolAmountsArray[X] = xAmountMath.make(add(xReserve, xExtentIn));
-        newPoolAmountsArray[Y] = yAmountMath.make(
-          subtract(yReserve, yExtentOut),
-        );
-        return {
-          amountOut: yAmountMath.make(yExtentOut),
-          newPoolAmountsArray: harden(newPoolAmountsArray),
-        };
-      }
-      if (brandIn === brands[Y]) {
-        const yExtentIn = amountIn.extent;
-        const xExtentOut = getInputPrice(yExtentIn, yReserve, xReserve);
-        const newPoolAmountsArray = [...poolAmountsArray];
-        newPoolAmountsArray[X] = xAmountMath.make(
-          subtract(xReserve, xExtentOut),
-        );
-        newPoolAmountsArray[Y] = yAmountMath.make(add(yReserve, yExtentIn));
-        return {
-          amountOut: xAmountMath.make(xExtentOut),
-          newPoolAmountsArray: harden(newPoolAmountsArray),
-        };
-      }
-      throw new Error(`amountIn ${amountIn} were malformed`);
+      const allegedAmountInRole = Object.getOwnPropertyNames(amountIn)[0];
+      const poolRoles = Object.getOwnPropertyNames(poolAmounts);
+
+      assert(
+        tokenRoleNames.includes(allegedAmountInRole),
+        details`amountIn role ${allegedAmountInRole} was not valid`,
+      );
+      poolRoles.forEach(poolRole =>
+        assert(
+          tokenRoleNames.includes(poolRole),
+          details`pool role ${poolRole} was not valid`,
+        ),
+      );
+
+      // The input is which token brand?
+      const roleIn = allegedAmountInRole;
+      const inputIndex = tokenRoleNames.indexOf(roleIn);
+      // The output role is the other role.
+      const outputIndex = 1 - inputIndex;
+      const roleOut = poolRoles[outputIndex];
+
+      const inputExtent = amountMaths[roleIn].getExtent(amountIn[roleIn]);
+      const inputReserve = amountMaths[roleIn].getExtent(poolAmounts[roleIn]);
+      const outputReserve = amountMaths[roleOut].getExtent(
+        poolAmounts[roleOut],
+      );
+      const outputExtent = getInputPrice(
+        inputExtent,
+        inputReserve,
+        outputReserve,
+      );
+
+      const newPoolAmounts = { ...poolAmounts };
+      newPoolAmounts[roleIn] = amountMaths[roleIn].make(
+        add(inputReserve, inputExtent),
+      );
+      newPoolAmounts[roleOut] = amountMaths[roleOut].make(
+        subtract(outputReserve, outputExtent),
+      );
+
+      const amountOut = {};
+      amountOut[roleOut] = amountMaths[roleOut].make(outputExtent);
+
+      return {
+        amountOut,
+        newPoolAmounts,
+      };
     },
 
     // Calculate how many liquidity tokens we should be minting to
