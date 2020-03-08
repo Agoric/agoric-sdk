@@ -116,7 +116,7 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
     saveState(runTime);
   }
 
-  async function deliverInbound(sender, messages, ack, _committed) {
+  async function deliverInbound(sender, messages, ack) {
     if (!(messages instanceof Array)) {
       throw new Error(`inbound given non-Array: ${messages}`);
     }
@@ -126,7 +126,7 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
     await turnCrank();
   }
 
-  async function deliverStartBlock(blockHeight, blockTime, _committed) {
+  async function deliverStartBlock(blockHeight, blockTime) {
     const addedToQueue = timer.poll(blockTime);
     console.log(
       `polled; blockTime:${blockTime}, h:${blockHeight} ADDED: ${addedToQueue}`,
