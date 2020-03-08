@@ -1,7 +1,6 @@
 import fs from 'fs';
 
 import djson from 'deterministic-json';
-import readlines from 'n-readlines';
 import {
   buildMailbox,
   buildMailboxStateMap,
@@ -12,6 +11,8 @@ import {
   getVatTPSourcePath,
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store-simple';
+
+const SWING_STORE_META_KEY = 'cosmos/meta';
 
 async function buildSwingset(withSES, mailboxState, storage, vatsDir, argv) {
   const config = {};
@@ -69,17 +70,12 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
     argv,
   );
 
-  let mailboxLastData = djson.stringify(mbs.exportToData());
-  function saveState(runTime = undefined) {
-    let start = Date.now();
-
+  function saveChainState() {
     // now check mbs
     const newState = mbs.exportToData();
     const newData = djson.stringify(newState);
-    if (newData !== mailboxLastData) {
-      console.log(`outbox changed`);
-    }
 
+    // Save the mailbox state.
     for (const peer of Object.getOwnPropertyNames(newState)) {
       const data = {
         outbox: newState[peer].outbox,
@@ -88,51 +84,45 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
       mailboxStorage.set(`mailbox.${peer}`, djson.stringify(data));
     }
     mailboxStorage.set('mailbox', newData);
-    mailboxLastData = newData;
-
-    const mbTime = Date.now() - start;
-
-    // Save the rest of the kernel state.
-    start = Date.now();
-    commit();
-    const saveTime = Date.now() - start;
-
-    const mailboxSize = mailboxLastData.length;
-    const runTimeStr = runTime === undefined ? '' : `run=${runTime}ms, `;
-    console.log(
-      `wrote SwingSet checkpoint (mailbox=${mailboxSize}), [${runTimeStr}mb=${mbTime}ms, save=${saveTime}ms]`,
-    );
+    return { mailboxSize: newData.length };
   }
 
-  // save the initial state immediately
-  saveState();
-
-  // then arrange for inbound messages to be processed, after which we save
-  async function turnCrank() {
-    const start = Date.now();
-    await controller.run();
-    const runTime = Date.now() - start;
-    // Have to save state every time.
-    saveState(runTime);
+  function saveOutsideState(savedHeight, savedActions) {
+    storage.set(
+      SWING_STORE_META_KEY,
+      JSON.stringify([savedHeight, savedActions]),
+    );
+    commit();
   }
 
   async function deliverInbound(sender, messages, ack) {
     if (!(messages instanceof Array)) {
       throw new Error(`inbound given non-Array: ${messages}`);
     }
-    if (mb.deliverInbound(sender, messages, ack)) {
-      console.log(`mboxDeliver:   ADDED messages`);
+    if (!mb.deliverInbound(sender, messages, ack)) {
+      return;
     }
-    await turnCrank();
+    console.log(`mboxDeliver:   ADDED messages`);
+    await controller.run();
   }
 
-  async function deliverStartBlock(blockHeight, blockTime) {
+  async function beginBlock(blockHeight, blockTime) {
     const addedToQueue = timer.poll(blockTime);
     console.log(
       `polled; blockTime:${blockTime}, h:${blockHeight} ADDED: ${addedToQueue}`,
     );
-    await turnCrank();
+    await controller.run();
   }
 
-  return { deliverInbound, deliverStartBlock };
+  const [savedHeight, savedActions] = JSON.parse(
+    storage.get(SWING_STORE_META_KEY) || '[0, []]',
+  );
+  return {
+    deliverInbound,
+    beginBlock,
+    saveChainState,
+    saveOutsideState,
+    savedHeight,
+    savedActions,
+  };
 }
