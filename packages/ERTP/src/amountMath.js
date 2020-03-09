@@ -83,6 +83,10 @@ function makeAmountMath(brand, mathHelpersName) {
         return allegedAmount;
       }
       const { brand: allegedBrand, extent } = allegedAmount;
+      assert(
+        allegedBrand !== undefined,
+        details`alleged brand is undefined. Did you pass an extent rather than an amount?`,
+      );
       mustBeSameStructure(brand, allegedBrand, 'Unrecognized brand');
       // Will throw on inappropriate extent
       return amountMath.make(extent);
