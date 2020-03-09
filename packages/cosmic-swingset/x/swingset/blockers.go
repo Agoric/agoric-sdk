@@ -66,7 +66,9 @@ func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.
 
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
-		return nil, err
+		// NOTE: A failed END_BLOCK means that the SwingSet state is inconsistent.
+		// Panic here, in the hopes that a replay from scratch will fix the problem.
+		panic(err)
 	}
 	return []abci.ValidatorUpdate{}, nil
 }
