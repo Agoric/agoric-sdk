@@ -12,85 +12,35 @@ export const makeConstProductBC = zoe => {
      * Contains the logic for calculating how much should be given
      * back to the user in exchange for what they sent in. It also
      * calculates the new amount of the assets in the pool. Reused in
-     * several different places, including to check whether an offer is
-     * valid, getting the current price for an asset on user request, and
-     * to do the actual reallocation after an offer has been made.
-     * @param  {object} poolAmounts - an object of the current amounts in the
-     * liquidity pool keyed by role
-     * @param  {object} amountIn - the amount sent in by a user, keyed
-     * by role
-     * @param  {number} feeInTenthOfPercent=3 - the fee taken in tenths of
-     * a percent. The default is 0.3%. The fee is taken from amountIn
+     * several different places, including to check whether an offer
+     * is valid, getting the current price for an asset on user
+     * request, and to do the actual reallocation after an offer has
+     * been made.
+     * @param  {extent} inputExtent - the extent of the assets sent in
+     * to be swapped
+     * @param  {extent} inputReserve - the extent in the liquidity
+     * pool of the kind of asset sent in
+     * @param  {extent} outputReserve - the extent in the liquidity
+     * pool of the kind of asset to be sent out
+     * @param  {number} feeBasisPoints=30 - the fee taken in
+     * basis points. The default is 0.3% or 30 basis points. The fee is taken from
+     * inputExtent
      */
-    getPrice: (
-      tokenRoleNames,
-      amountMaths,
-      poolAmounts,
-      amountIn,
-      feeInTenthOfPercent = 3,
-    ) => {
-      Nat(feeInTenthOfPercent);
-      assert(
-        feeInTenthOfPercent < 1000,
-        details`fee ${feeInTenthOfPercent} is not less than 1000`,
-      );
+    getPrice: ({
+      inputExtent,
+      inputReserve,
+      outputReserve,
+      feeBasisPoints = 30,
+    }) => {
+      const oneMinusFeeInTenThousandths = subtract(10000, feeBasisPoints);
+      const inputWithFee = multiply(inputExtent, oneMinusFeeInTenThousandths);
+      const numerator = multiply(inputWithFee, outputReserve);
+      const denominator = add(multiply(inputReserve, 10000), inputWithFee);
 
-      // Calculates how much can be bought by selling input
-      const getInputPrice = (input, inputReserve, outputReserve) => {
-        const oneMinusFeeInThousandths = subtract(1000, feeInTenthOfPercent);
-        const inputWithFee = multiply(input, oneMinusFeeInThousandths);
-        const numerator = multiply(inputWithFee, outputReserve);
-        const denominator = add(multiply(inputReserve, 1000), inputWithFee);
-        return floorDivide(numerator, denominator);
-      };
-
-      const allegedAmountInRole = Object.getOwnPropertyNames(amountIn)[0];
-      const poolRoles = Object.getOwnPropertyNames(poolAmounts);
-
-      assert(
-        tokenRoleNames.includes(allegedAmountInRole),
-        details`amountIn role ${allegedAmountInRole} was not valid`,
-      );
-      poolRoles.forEach(poolRole =>
-        assert(
-          tokenRoleNames.includes(poolRole),
-          details`pool role ${poolRole} was not valid`,
-        ),
-      );
-
-      // The input is which token brand?
-      const roleIn = allegedAmountInRole;
-      const inputIndex = tokenRoleNames.indexOf(roleIn);
-      // The output role is the other role.
-      const outputIndex = 1 - inputIndex;
-      const roleOut = poolRoles[outputIndex];
-
-      const inputExtent = amountMaths[roleIn].getExtent(amountIn[roleIn]);
-      const inputReserve = amountMaths[roleIn].getExtent(poolAmounts[roleIn]);
-      const outputReserve = amountMaths[roleOut].getExtent(
-        poolAmounts[roleOut],
-      );
-      const outputExtent = getInputPrice(
-        inputExtent,
-        inputReserve,
-        outputReserve,
-      );
-
-      const newPoolAmounts = { ...poolAmounts };
-      newPoolAmounts[roleIn] = amountMaths[roleIn].make(
-        add(inputReserve, inputExtent),
-      );
-      newPoolAmounts[roleOut] = amountMaths[roleOut].make(
-        subtract(outputReserve, outputExtent),
-      );
-
-      const amountOut = {};
-      amountOut[roleOut] = amountMaths[roleOut].make(outputExtent);
-
-      return {
-        amountOut,
-        newPoolAmounts,
-      };
+      const outputExtent = floorDivide(numerator, denominator);
+      const newOutputReserve = subtract(outputReserve, outputExtent);
+      const newInputReserve = add(inputReserve, inputExtent);
+      return harden({ outputExtent, newInputReserve, newOutputReserve });
     },
 
     // Calculate how many liquidity tokens we should be minting to

@@ -5,52 +5,27 @@ import harden from '@agoric/harden';
 import { makeConstProductBC } from '../../../../src/contracts/helpers/bondingCurves';
 import { setup } from '../../setupBasicMints2';
 
-const testGetPrice = (t, setupMints, input, output) => {
-  const { moolaR, simoleanR } = setupMints;
+const testGetPrice = (t, input, expectedOutput) => {
   const zoe = harden({});
-
   const { getPrice } = makeConstProductBC(zoe);
 
-  const tokenRoleNames = ['TokenA', 'TokenB'];
-  const amountMathsObj = harden({
-    TokenA: moolaR.amountMath,
-    TokenB: simoleanR.amountMath,
-  });
-
-  const { amountOut, newPoolAmounts } = getPrice(
-    tokenRoleNames,
-    amountMathsObj,
-    input.poolAmounts,
-    input.amountIn,
-  );
-
-  t.deepEquals(amountOut, output.amountOut, 'amountOut');
-  t.deepEquals(newPoolAmounts, output.newPoolAmounts, 'newPoolAmounts');
+  const output = getPrice(input);
+  t.deepEquals(output, expectedOutput);
 };
 
 test('getPrice ok 1', t => {
-  const setupMints = setup();
-  const { moola, simoleans } = setupMints;
   try {
     const input = {
-      poolAmounts: {
-        TokenA: moola(0),
-        TokenB: simoleans(0),
-      },
-      amountIn: {
-        TokenA: moola(1),
-      },
+      inputReserve: 0,
+      outputReserve: 0,
+      inputExtent: 1,
     };
     const expectedOutput = {
-      newPoolAmounts: {
-        TokenA: moola(1),
-        TokenB: simoleans(0),
-      },
-      amountOut: {
-        TokenB: simoleans(0),
-      },
+      outputExtent: 0,
+      newInputReserve: 1,
+      newOutputReserve: 0,
     };
-    testGetPrice(t, setupMints, input, expectedOutput);
+    testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -59,28 +34,18 @@ test('getPrice ok 1', t => {
 });
 
 test('getPrice ok 2', t => {
-  const setupMints = setup();
-  const { moola, simoleans } = setupMints;
   try {
     const input = {
-      poolAmounts: {
-        TokenA: moola(5984),
-        TokenB: simoleans(3028),
-      },
-      amountIn: {
-        TokenA: moola(1398),
-      },
+      inputReserve: 5984,
+      outputReserve: 3028,
+      inputExtent: 1398,
     };
     const expectedOutput = {
-      newPoolAmounts: {
-        TokenA: moola(7382),
-        TokenB: simoleans(2456),
-      },
-      amountOut: {
-        TokenB: simoleans(572),
-      },
+      outputExtent: 572,
+      newInputReserve: 7382,
+      newOutputReserve: 2456,
     };
-    testGetPrice(t, setupMints, input, expectedOutput);
+    testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -90,17 +55,17 @@ test('getPrice ok 2', t => {
 
 test('getPrice ok 3', t => {
   try {
-    const setupMints = setup();
-    const { moola, simoleans } = setupMints;
     const input = {
-      poolAmounts: { TokenA: moola(8160), TokenB: simoleans(7743) },
-      amountIn: { TokenA: moola(6635) },
+      inputReserve: 8160,
+      outputReserve: 7743,
+      inputExtent: 6635,
     };
     const expectedOutput = {
-      newPoolAmounts: { TokenA: moola(14795), TokenB: simoleans(4277) },
-      amountOut: { TokenB: simoleans(3466) },
+      outputExtent: 3466,
+      newInputReserve: 14795,
+      newOutputReserve: 4277,
     };
-    testGetPrice(t, setupMints, input, expectedOutput);
+    testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -110,17 +75,19 @@ test('getPrice ok 3', t => {
 
 test('getPrice reverse x and y amounts', t => {
   try {
-    const setupMints = setup();
-    const { moola, simoleans } = setupMints;
+    // Note: this is now the same test as the one above because we are
+    // only using extents
     const input = {
-      poolAmounts: { TokenA: moola(7743), TokenB: simoleans(8160) },
-      amountIn: { TokenB: simoleans(6635) },
+      inputReserve: 8160,
+      outputReserve: 7743,
+      inputExtent: 6635,
     };
     const expectedOutput = {
-      newPoolAmounts: { TokenA: moola(4277), TokenB: simoleans(14795) },
-      amountOut: { TokenA: moola(3466) },
+      outputExtent: 3466,
+      newInputReserve: 14795,
+      newOutputReserve: 4277,
     };
-    testGetPrice(t, setupMints, input, expectedOutput);
+    testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -130,17 +97,17 @@ test('getPrice reverse x and y amounts', t => {
 
 test('getPrice ok 4', t => {
   try {
-    const setupMints = setup();
-    const { moola, simoleans } = setupMints;
     const input = {
-      poolAmounts: { TokenA: moola(10), TokenB: simoleans(10) },
-      amountIn: { TokenB: simoleans(1000) },
+      inputReserve: 10,
+      outputReserve: 10,
+      inputExtent: 1000,
     };
     const expectedOutput = {
-      newPoolAmounts: { TokenA: moola(1), TokenB: simoleans(1010) },
-      amountOut: { TokenA: moola(9) },
+      outputExtent: 9,
+      newInputReserve: 1010,
+      newOutputReserve: 1,
     };
-    testGetPrice(t, setupMints, input, expectedOutput);
+    testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   } finally {
