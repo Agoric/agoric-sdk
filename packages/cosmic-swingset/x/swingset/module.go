@@ -2,6 +2,7 @@ package swingset
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
@@ -101,10 +102,22 @@ func (am AppModule) NewQuerierHandler() sdk.Querier {
 }
 
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
-	BeginBlock(ctx, am.keeper)
+	err := BeginBlock(ctx, req, am.keeper)
+	if err != nil {
+		fmt.Println("BeginBlock error:", err)
+	}
 }
 
-func (am AppModule) EndBlock(sdk.Context, abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+	valUpdate, err := EndBlock(ctx, req, am.keeper)
+	if err != nil {
+		fmt.Println("EndBlock error:", err)
+	}
+	if valUpdate != nil {
+		return valUpdate
+	}
+
+	// Prevent Cosmos SDK internal errors.
 	return []abci.ValidatorUpdate{}
 }
 

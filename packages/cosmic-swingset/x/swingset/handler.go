@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	// "github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
@@ -21,15 +20,6 @@ type deliverInboundAction struct {
 	StoragePort int             `json:"storagePort"`
 	BlockHeight int64           `json:"blockHeight"`
 	BlockTime   int64           `json:"blockTime"`
-	Committed   bool            `json:"committed"`
-}
-
-type beginBlockAction struct {
-	Type        string `json:"type"`
-	StoragePort int    `json:"storagePort"`
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
-	Committed   bool   `json:"committed"`
 }
 
 // NewHandler returns a handler for "swingset" type messages.
@@ -43,35 +33,6 @@ func NewHandler(keeper Keeper) sdk.Handler {
 			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
 		}
 	}
-}
-
-func BeginBlock(ctx sdk.Context, keeper Keeper) {
-	handleMsgBeginBlock(ctx, keeper)
-}
-
-type PortHandler interface {
-	Receive(string) (string, error)
-}
-
-var portToHandler = map[int]PortHandler{}
-var lastPort = 0
-
-func RegisterPortHandler(portHandler PortHandler) int {
-	lastPort++
-	portToHandler[lastPort] = portHandler
-	return lastPort
-}
-func UnregisterPortHandler(portNum int) error {
-	delete(portToHandler, portNum)
-	return nil
-}
-
-func ReceiveFromController(portNum int, msg string) (string, error) {
-	handler := portToHandler[portNum]
-	if handler == nil {
-		return "", errors.New("Unregistered port " + fmt.Sprintf("%d", portNum))
-	}
-	return handler.Receive(msg)
 }
 
 func mailboxPeer(key string) (string, error) {
@@ -90,61 +51,28 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 		messages[i][1] = message
 	}
 
-	storageHandler := NewStorageHandler(ctx, keeper)
-	// Allow the storageHandler to consume unlimited gas.
-	storageHandler.Context = storageHandler.Context.WithGasMeter(sdk.NewInfiniteGasMeter())
+	// Create a "storagePort" that the controller can use to communicate with the
+	// storageHandler
+	storagePort := RegisterPortHandler(NewUnlimitedStorageHandler(ctx, keeper))
+	defer UnregisterPortHandler(storagePort)
 
-	newPort := RegisterPortHandler(storageHandler)
 	action := &deliverInboundAction{
 		Type:        "DELIVER_INBOUND",
 		Peer:        msg.Peer,
 		Messages:    messages,
 		Ack:         msg.Ack,
-		StoragePort: newPort,
+		StoragePort: storagePort,
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
-		Committed:   !ctx.IsCheckTx(),
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
 	b, err := json.Marshal(action)
 	if err != nil {
-		return nil, err
+		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
 	_, err = keeper.CallToController(string(b))
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
-	UnregisterPortHandler(newPort)
-	if err != nil {
-		return nil, err
-	}
-	return &sdk.Result{}, nil
-}
-
-func handleMsgBeginBlock(ctx sdk.Context, keeper Keeper) (*sdk.Result, error) {
-	storageHandler := NewStorageHandler(ctx, keeper)
-
-	// Allow the storageHandler to consume unlimited gas.
-	storageHandler.Context = storageHandler.Context.WithGasMeter(sdk.NewInfiniteGasMeter())
-
-	newPort := RegisterPortHandler(storageHandler)
-
-	action := &beginBlockAction{
-		Type:        "BEGIN_BLOCK",
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
-		StoragePort: newPort,
-		Committed:   !ctx.IsCheckTx(),
-	}
-	b, err := json.Marshal(action)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error marshalling", err)
-		return nil, err
-	}
-
-	_, err = keeper.CallToController(string(b))
-
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
-	UnregisterPortHandler(newPort)
 	if err != nil {
 		return nil, err
 	}

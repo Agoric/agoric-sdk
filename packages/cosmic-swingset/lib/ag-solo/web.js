@@ -3,8 +3,12 @@ import path from 'path';
 import http from 'http';
 import express from 'express';
 import WebSocket from 'ws';
-import morgan from 'morgan';
 import fs from 'fs';
+
+// We need to CommonJS require morgan or else it warns, until:
+// https://github.com/expressjs/morgan/issues/190
+// is fixed.
+const morgan = require('morgan');
 
 const points = new Map();
 const broadcasts = new Map();
