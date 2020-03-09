@@ -6,27 +6,24 @@ import bundleSource from '@agoric/bundle-source';
 import harden from '@agoric/harden';
 
 import { makeZoe } from '../../../src/zoe';
-import { setup } from '../setupBasicMints';
+import { setup } from '../setupBasicMints2';
 
 const autoswapRoot = `${__dirname}/../../../src/contracts/autoswap`;
 
-test('autoSwap with valid offers', async t => {
+test.only('autoSwap with valid offers', async t => {
   try {
-    const { mints, issuers: defaultIssuers, moola, simoleans } = setup();
-    const issuers = defaultIssuers.slice(0, 2);
+    const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
     const inviteIssuer = zoe.getInviteIssuer();
-    const [moolaIssuer, simoleanIssuer] = issuers;
-    const [moolaMint, simoleanMint] = mints;
 
     // Setup Alice
-    const aliceMoolaPayment = moolaMint.mintPayment(moola(10));
+    const aliceMoolaPayment = moolaR.mint.mintPayment(moola(10));
     // Let's assume that simoleans are worth 2x as much as moola
-    const aliceSimoleanPayment = simoleanMint.mintPayment(simoleans(5));
+    const aliceSimoleanPayment = simoleanR.mint.mintPayment(simoleans(5));
 
     // Setup Bob
-    const bobMoolaPayment = moolaMint.mintPayment(moola(3));
-    const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(3));
+    const bobMoolaPayment = moolaR.mint.mintPayment(moola(3));
+    const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(3));
 
     // Alice creates an autoswap instance
 
@@ -34,9 +31,8 @@ test('autoSwap with valid offers', async t => {
     const { source, moduleFormat } = await bundleSource(autoswapRoot);
 
     const installationHandle = zoe.install(source, moduleFormat);
-    const aliceInvite = await zoe.makeInstance(installationHandle, {
-      issuers,
-    });
+    const roles = harden({ TokenA: moolaR.issuer, TokenB: simoleanR.issuer });
+    const aliceInvite = await zoe.makeInstance(installationHandle, roles);
     const { instanceHandle } = inviteIssuer.getAmountOf(aliceInvite).extent[0];
     const { publicAPI } = zoe.getInstance(instanceHandle);
     const liquidityIssuer = publicAPI.getLiquidityIssuer();
@@ -46,25 +42,13 @@ test('autoSwap with valid offers', async t => {
     // 10 moola = 5 simoleans at the time of the liquidity adding
     // aka 2 moola = 1 simolean
     const aliceOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'wantAtLeast',
-          amount: liquidity(10),
-        },
-        {
-          kind: 'offerAtMost',
-          amount: moola(10),
-        },
-        {
-          kind: 'offerAtMost',
-          amount: simoleans(5),
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+      want: { Liquidity: liquidity(10) },
+      offer: { TokenA: moola(10), TokenB: simoleans(5) },
     });
-    const alicePayments = [aliceMoolaPayment, aliceSimoleanPayment, undefined];
+    const alicePayments = {
+      TokenA: aliceMoolaPayment,
+      TokenB: aliceSimoleanPayment,
+    };
 
     const {
       seat: aliceSeat,
@@ -103,19 +87,8 @@ test('autoSwap with valid offers', async t => {
     // Bob escrows
 
     const bobMoolaForSimOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'wantAtLeast',
-          amount: simoleans(1),
-        },
-        {
-          kind: 'offerAtMost',
-          amount: moola(3),
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+      want: { TokenB: simoleans(1) },
+      offer: { TokenA: moola(3) },
     });
     const bobMoolaForSimPayments = [bobMoolaPayment, undefined, undefined];
 

@@ -210,7 +210,7 @@ const makeZoe = (additionalEndowments = {}) => {
           const newRoles = { ...roles };
           newRoles[roleName] = issuer;
           const newRoleNames = getRoleNames(newRoles);
-          const newIssuers = newRoleNames.map(name => roles[name]);
+          const newIssuers = newRoleNames.map(name => newRoles[name]);
           // Take the cleaned roleNames and produce a safe(r) roles obj
           const cleanedRoles = makeCleanedObj(newRoles, newRoleNames);
           instanceTable.update(instanceHandle, {

@@ -3,7 +3,6 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
 import { makeConstProductBC } from '../../../../src/contracts/helpers/bondingCurves';
-import { setup } from '../../setupBasicMints2';
 
 const testGetPrice = (t, input, expectedOutput) => {
   const zoe = harden({});
