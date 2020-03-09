@@ -295,8 +295,16 @@ func (app *swingSetApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) 
 func (app *swingSetApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	return app.mm.BeginBlock(ctx, req)
 }
+
 func (app *swingSetApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
 	return app.mm.EndBlock(ctx, req)
+}
+
+func (app *swingSetApp) Commit() abci.ResponseCommit {
+	// Wrap the BaseApp's Commit method
+	res := app.BaseApp.Commit()
+	swingset.CommitBlock(app.ssKeeper)
+	return res
 }
 
 // GetKey returns the KVStoreKey for the provided store key
