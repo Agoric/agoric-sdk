@@ -29,14 +29,14 @@ export default function Purses() {
       <Typography variant="h6">Purses</Typography>
       {Array.isArray(purses) && purses.length > 0 ? (
         <List>
-          {purses.map(({ purseName, issuerId, issuerPetname, extent }) => (
+          {purses.map(({ purseName, issuerRegKey, issuerPetname, extent }) => (
             <ListItem key={purseName} value={purseName} divider>
               <ListItemIcon className={classes.icon}>
                 <PurseIcon />
               </ListItemIcon>
               <ListItemText
                 primary={purseName}
-                secondary={`${extent} ${issuerPetname}${issuerId ? ` (${issuerId})` : ''}`}
+                secondary={`${extent} ${issuerPetname}${issuerRegKey ? ` (${issuerRegKey})` : ''}`}
               />
             </ListItem>
           ))}
