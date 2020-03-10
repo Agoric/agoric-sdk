@@ -180,9 +180,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
   };
 
   const doAtomicSwap = async bobP => {
-    const invite = await E(zoe).makeInstance(installations.atomicSwap, {
-      roles: { Asset: moolaIssuer, Price: simoleanIssuer },
-    });
+    const roles = harden({ Asset: moolaIssuer, Price: simoleanIssuer });
+    const invite = await E(zoe).makeInstance(installations.atomicSwap, roles);
 
     const offerRules = harden({
       offer: { Asset: moola(3) },

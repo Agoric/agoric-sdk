@@ -295,7 +295,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         exclInvite,
       );
 
-      const { installationHandle, terms } = await E(zoe).getInstance(
+      const { installationHandle, roles } = await E(zoe).getInstance(
         inviteExtent[0].instanceHandle,
       );
       assert(
@@ -303,34 +303,25 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         details`wrong installation`,
       );
       assert(
-        sameStructure(harden([moolaIssuer, simoleanIssuer]), terms.issuers),
+        sameStructure(
+          harden({ Asset: moolaIssuer, Price: simoleanIssuer }),
+          roles,
+        ),
         details`issuers were not as expected`,
       );
 
-      const expectedFirstOfferPayoutRules = harden([
-        {
-          kind: 'offerAtMost',
-          amount: moola(3),
-          role: 'Asset',
-        },
-        {
-          kind: 'wantAtLeast',
-          amount: simoleans(7),
-          role: 'Price',
-        },
-      ]);
       assert(
-        sameStructure(
-          inviteExtent[0].payoutRules,
-          expectedFirstOfferPayoutRules,
-        ),
+        sameStructure(inviteExtent[0].asset, moola(3)),
+        details`Alice made a different offer than expected`,
+      );
+      assert(
+        sameStructure(inviteExtent[0].price, simoleans(7)),
         details`Alice made a different offer than expected`,
       );
 
       const offerRules = harden({
         want: { Asset: moola(3) },
         offer: { Price: simoleans(7) },
-        exitRule: { kind: 'onDemand' },
       });
       const offerPayments = { Price: simoleanPayment };
 

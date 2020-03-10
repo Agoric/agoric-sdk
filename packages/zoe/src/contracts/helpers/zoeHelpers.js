@@ -97,8 +97,6 @@ export const makeZoeHelpers = zoe => {
       zoe.complete(handles);
       return defaultAcceptanceMsg;
     },
-    makeEmptyAmounts: () =>
-      amountMathArray.map(amountMath => amountMath.getEmpty()),
     makeEmptyOffer: () => {
       const { inviteHandle, invite } = zoe.makeInvite();
       return zoeService
