@@ -52,8 +52,8 @@ const makeZoe = (additionalEndowments = {}) => {
     const pursePs = issuerTable.getPursesForIssuers(issuers);
     for (const offer of offers) {
       const payout = {};
-      offer.amounts.forEach((amount, j) => {
-        payout[roleNames[j]] = E(pursePs[j]).withdraw(amount);
+      roleNames.forEach((roleName, i) => {
+        payout[roleName] = E(pursePs[i]).withdraw(offer.amounts[roleName]);
       });
       harden(payout);
       payoutMap.get(offer.handle).res(payout);
@@ -175,7 +175,7 @@ const makeZoe = (additionalEndowments = {}) => {
         );
 
         // 3) save the reallocation
-        offerTable.updateAmountMatrix(offerHandles, harden(newAmountMatrix));
+        offerTable.updateAmounts(offerHandles, harden(amountObjs));
       },
 
       /**

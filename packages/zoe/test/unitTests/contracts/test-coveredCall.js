@@ -13,7 +13,7 @@ import { setup } from '../setupBasicMints2';
 const coveredCallRoot = `${__dirname}/../../../src/contracts/coveredCall`;
 const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
-test.only('zoe - coveredCall', async t => {
+test('zoe - coveredCall', async t => {
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
