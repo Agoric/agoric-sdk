@@ -137,8 +137,8 @@ interface ZoeContractFacet () {
   /** Get the Zoe inviteIssuer */
   getInviteIssuer ( ) -> (Issuer);
 
-  /** Get a list of local amountMath per issuer */
-  getAmountMathForIssuers (issuers :List(Issuer)) -> (List(AmountMath));
+  /** Get a list of local amountMath per role issuer */
+  getAmountMathsForRoles (roles :Roles) -> (List(AmountMath));
 
   /** Divide the offerHandles into 'active' and 'inactive' lists */
   getOfferStatuses ( offerHandles :List(OfferHandle)) ->

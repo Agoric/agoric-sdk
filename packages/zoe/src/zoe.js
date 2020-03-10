@@ -146,7 +146,7 @@ const makeZoe = (additionalEndowments = {}) => {
        * one amountObj per offerHandle.
        */
       reallocate: (offerHandles, amountObjs) => {
-        const { roleNames, issuers } = instanceTable.get(instanceHandle);
+        const { roleNames, roles } = instanceTable.get(instanceHandle);
 
         const newAmountMatrix = amountObjs.map(amountObj =>
           objToArray(amountObj, roleNames),
@@ -160,7 +160,10 @@ const makeZoe = (additionalEndowments = {}) => {
         const currentAmountMatrix = offers.map(offer =>
           objToArray(offer.amounts, roleNames),
         );
-        const amountMaths = issuerTable.getAmountMathForIssuers(issuers);
+        const amountMaths = objToArray(
+          issuerTable.getAmountMathsForRoles(roles),
+          roleNames,
+        );
 
         // 1) ensure that rights are conserved
         assert(
@@ -235,13 +238,7 @@ const makeZoe = (additionalEndowments = {}) => {
 
       // The methods below are pure and have no side-effects //
       getInviteIssuer: () => inviteIssuer,
-      getAmountMathForIssuers: issuerTable.getAmountMathForIssuers,
-      getAmountMathForRole: roleName => {
-        const { roles } = instanceTable.get(instanceHandle);
-        const issuer = roles[roleName];
-        return issuerTable.get(issuer).amountMath;
-      },
-      getBrandsForIssuers: issuerTable.getBrandsForIssuers,
+      getAmountMathsForRoles: issuerTable.getAmountMathsForRoles,
       getOfferStatuses: offerTable.getOfferStatuses,
       isOfferActive: offerTable.isOfferActive,
       getOffers: offerTable.getOffers,
@@ -359,14 +356,13 @@ const makeZoe = (additionalEndowments = {}) => {
         extent: [{ instanceHandle, handle: offerHandle }],
       } = inviteAmount;
 
-      const { roleNames, issuers } = instanceTable.get(instanceHandle);
+      const { roleNames, roles, issuers } = instanceTable.get(instanceHandle);
 
-      const amountMaths = issuerTable.getAmountMathForIssuers(issuers);
-      const amountMathsObj = arrayToObj(amountMaths, roleNames);
+      const amountMaths = issuerTable.getAmountMathsForRoles(roles);
 
       userOfferRules = fillInUserOfferRules(
         roleNames,
-        amountMathsObj,
+        amountMaths,
         userOfferRules,
       );
 

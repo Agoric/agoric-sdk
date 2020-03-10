@@ -5,7 +5,6 @@ import { assert, details } from '@agoric/assert';
 
 import { makeZoeHelpers } from './helpers/zoeHelpers';
 import { makeConstProductBC } from './helpers/bondingCurves';
-import { arrayToObj } from '../roleConversion';
 
 export const makeContract = harden(zoe => {
   // Create the liquidity mint and issuer.
@@ -17,9 +16,9 @@ export const makeContract = harden(zoe => {
   let liqTokenSupply = 0;
 
   return zoe.addNewIssuer(liquidityIssuer, 'Liquidity').then(() => {
-    const { issuers, roleNames } = zoe.getInstanceRecord();
-    const amountMathArray = zoe.getAmountMathForIssuers(issuers);
-    amountMathArray.forEach(amountMath =>
+    const { roles, roleNames } = zoe.getInstanceRecord();
+    const amountMaths = zoe.getAmountMathsForRoles(roles);
+    Object.values(amountMaths).forEach(amountMath =>
       assert(
         amountMath.getMathHelpersName() === 'nat',
         details`issuers must have natMathHelpers`,
@@ -34,10 +33,9 @@ export const makeContract = harden(zoe => {
       getPrice,
       calcLiqExtentToMint,
       calcAmountsToRemove,
-    } = makeConstProductBC(zoe, issuers);
+    } = makeConstProductBC(zoe);
 
     const getPoolAmounts = () => zoe.getOffer(poolHandle).amounts;
-    const amountMaths = arrayToObj(amountMathArray, roleNames);
 
     return makeEmptyOffer().then(handle => {
       poolHandle = handle;

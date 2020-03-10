@@ -29,8 +29,11 @@ export const closeAuction = (
   zoe,
   { auctionLogicFn, sellerInviteHandle, allBidHandles },
 ) => {
-  const bidAmountMath = zoe.getAmountMathForRole('Bid');
-  const assetAmountMath = zoe.getAmountMathForRole('Asset');
+  const { roles } = zoe.getInstanceRecord();
+  const {
+    Bid: bidAmountMath,
+    Asset: assetAmountMath,
+  } = zoe.getAmountMathsForRoles(roles);
 
   // Filter out any inactive bids
   const { active: activeBidHandles } = zoe.getOfferStatuses(

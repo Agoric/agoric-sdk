@@ -2,16 +2,14 @@ import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 
-import { arrayToObj } from '../../roleConversion';
-
 export const defaultRejectMsg = `The offer was invalid. Please check your refund.`;
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
 const getKeys = obj => harden(Object.getOwnPropertyNames(obj || {}));
 
 export const makeZoeHelpers = zoe => {
-  const { issuers } = zoe.getInstanceRecord();
-  const amountMathArray = zoe.getAmountMathForIssuers(issuers);
+  const { roles } = zoe.getInstanceRecord();
+  const amountMaths = zoe.getAmountMathsForRoles(roles);
   const zoeService = zoe.getZoeService();
 
   const rejectOffer = (inviteHandle, msg = defaultRejectMsg) => {
@@ -54,16 +52,10 @@ export const makeZoeHelpers = zoe => {
     getActiveOffers: handles =>
       zoe.getOffers(zoe.getOfferStatuses(handles).active),
     rejectOffer,
-    areAssetsEqualAtIndex: (index, leftHandle, rightHandle) =>
-      amountMathArray[index].isEqual(
-        zoe.getOffer(leftHandle).payoutRules[index].amount,
-        zoe.getOffer(rightHandle).payoutRules[index].amount,
-      ),
     canTradeWith: (leftInviteHandle, rightInviteHandle) => {
       const { userOfferRules: left } = zoe.getOffer(leftInviteHandle);
       const { userOfferRules: right } = zoe.getOffer(rightInviteHandle);
       const { roleNames } = zoe.getInstanceRecord();
-      const amountMaths = arrayToObj(amountMathArray, roleNames);
       const satisfied = (wants, offers) =>
         roleNames.every(roleName => {
           if (wants[roleName]) {

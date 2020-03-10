@@ -1,6 +1,5 @@
 import harden from '@agoric/harden';
 
-import { arrayToObj } from '../../roleConversion';
 import { natSafeMath } from './safeMath';
 
 const { add, subtract, multiply, floorDivide } = natSafeMath;
@@ -60,9 +59,8 @@ export const makeConstProductBC = zoe => {
       poolAmounts,
       liquidityExtentIn,
     }) => {
-      const { issuers, roleNames } = zoe.getInstanceRecord();
-      const amountMathArray = zoe.getAmountMathForIssuers(issuers);
-      const amountMaths = arrayToObj(amountMathArray, roleNames);
+      const { roles } = zoe.getInstanceRecord();
+      const amountMaths = zoe.getAmountMathsForRoles(roles);
       const newUserAmounts = harden({
         TokenA: amountMaths.TokenA.make(
           floorDivide(

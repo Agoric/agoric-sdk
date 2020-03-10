@@ -188,12 +188,14 @@ const makeIssuerTable = () => {
     const issuersInProgress = makeStore();
 
     const customMethods = harden({
-      getAmountMathForIssuers: issuers =>
-        issuers.map(issuer => table.get(issuer).amountMath),
-
-      getBrandsForIssuers: issuers =>
-        issuers.map(issuer => table.get(issuer).brand),
-
+      getAmountMathsForRoles: roles => {
+        const amountMaths = {};
+        Object.entries(roles).map(
+          ([roleName, issuer]) =>
+            (amountMaths[roleName] = table.get(issuer).amountMath),
+        );
+        return harden(amountMaths);
+      },
       getPursesForIssuers: issuers =>
         issuers.map(issuer => table.get(issuer).purse),
 
