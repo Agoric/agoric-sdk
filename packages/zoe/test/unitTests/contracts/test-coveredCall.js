@@ -8,16 +8,14 @@ import { sameStructure } from '@agoric/same-structure';
 
 import buildManualTimer from '../../../tools/manualTimer';
 import { makeZoe } from '../../../src/zoe';
-import { setup } from '../setupBasicMints';
+import { setup } from '../setupBasicMints2';
 
 const coveredCallRoot = `${__dirname}/../../../src/contracts/coveredCall`;
 const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
-test('zoe - coveredCall', async t => {
+test.only('zoe - coveredCall', async t => {
   try {
-    const { mints, issuers, moola, simoleans, amountMaths } = setup();
-    const [moolaIssuer, simoleanIssuer] = issuers;
-    const [moolaMint, simoleanMint] = mints;
+    const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(coveredCallRoot);
@@ -25,19 +23,19 @@ test('zoe - coveredCall', async t => {
     const timer = buildManualTimer(console.log);
 
     // Setup Alice
-    const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
-    const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
-    const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
+    const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3));
+    const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
+    const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
 
     // Setup Bob
-    const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(7));
-    const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
-    const bobSimoleanPurse = simoleanIssuer.makeEmptyPurse();
+    const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(7));
+    const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
+    const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
 
     // Alice creates a coveredCall instance
     const roles = harden({
-      UnderlyingAsset: moolaIssuer,
-      StrikePrice: simoleanIssuer,
+      UnderlyingAsset: moolaR.issuer,
+      StrikePrice: simoleanR.issuer,
     });
     // separate roles from contract-specific terms
     const aliceInvite = await zoe.makeInstance(
@@ -75,8 +73,8 @@ test('zoe - coveredCall', async t => {
     const { installationHandle } = zoe.getInstance(optionExtent.instanceHandle);
     t.equal(installationHandle, coveredCallInstallationHandle);
     t.equal(optionExtent.seatDesc, 'exerciseOption');
-    t.ok(amountMaths[0].isEqual(optionExtent.underlyingAsset, moola(3)));
-    t.ok(amountMaths[1].isEqual(optionExtent.strikePrice, simoleans(7)));
+    t.ok(moolaR.amountMath.isEqual(optionExtent.underlyingAsset, moola(3)));
+    t.ok(simoleanR.amountMath.isEqual(optionExtent.strikePrice, simoleans(7)));
     t.equal(optionExtent.expirationDate, 1);
     t.deepEqual(optionExtent.timerAuthority, timer);
 
@@ -113,12 +111,12 @@ test('zoe - coveredCall', async t => {
 
     // Alice gets what Alice wanted
     t.deepEquals(
-      simoleanIssuer.getAmountOf(aliceSimoleanPayout),
+      simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
       aliceOfferRules.want.StrikePrice,
     );
 
     // Alice didn't get any of what Alice put in
-    t.deepEquals(moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
+    t.deepEquals(moolaR.issuer.getAmountOf(aliceMoolaPayout), moola(0));
 
     // Alice deposits her payout to ensure she can
     await aliceMoolaPurse.deposit(aliceMoolaPayout);

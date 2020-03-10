@@ -2,6 +2,8 @@ import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 
+import { arrayToObj, objToArray } from '../../roleConversion';
+
 export const defaultRejectMsg = `The offer was invalid. Please check your refund.`;
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
@@ -90,11 +92,18 @@ export const makeZoeHelpers = zoe => {
       if (!helpers.canTradeWith(keepHandle, tryHandle)) {
         throw helpers.rejectOffer(tryHandle);
       }
+      const { roleNames } = zoe.getInstanceRecord();
       const keepAmounts = zoe.getOffer(keepHandle).amounts;
       const tryAmounts = zoe.getOffer(tryHandle).amounts;
       // reallocate by switching the amount
       const handles = harden([keepHandle, tryHandle]);
-      zoe.reallocate(handles, harden([tryAmounts, keepAmounts]));
+      zoe.reallocate(
+        handles,
+        harden([
+          arrayToObj(tryAmounts, roleNames),
+          arrayToObj(keepAmounts, roleNames),
+        ]),
+      );
       zoe.complete(handles);
       return defaultAcceptanceMsg;
     },

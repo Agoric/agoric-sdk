@@ -10,7 +10,7 @@ import { setup } from '../setupBasicMints2';
 
 const autoswapRoot = `${__dirname}/../../../src/contracts/autoswap`;
 
-test.only('autoSwap with valid offers', async t => {
+test('autoSwap with valid offers', async t => {
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });

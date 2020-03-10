@@ -6,6 +6,7 @@ import { assert, details } from '@agoric/assert';
 import makePromise from '@agoric/make-promise';
 
 import { cleanOfferRules } from './cleanOfferRules';
+import { arrayToObj, objToArray } from './roleConversion';
 import { isOfferSafeForAll } from './isOfferSafe';
 import { areRightsConserved } from './areRightsConserved';
 import { evalContractCode } from './evalContractCode';
@@ -140,11 +141,16 @@ const makeZoe = (additionalEndowments = {}) => {
        * partial, because once these invariants are true, they will
        * remain true until changes are made.
        * @param  {object[]} offerHandles - an array of offerHandles
-       * @param  {amount[][]} newAmountMatrix - a matrix of amount, with
-       * one array of amount per offerHandle.
+       * @param  {amountObj[]} amountObjs - an array of amountObjs -
+       * objects keyed by roles with amount values, with
+       * one amountObj per offerHandle.
        */
-      reallocate: (offerHandles, newAmountMatrix) => {
-        const { issuers } = instanceTable.get(instanceHandle);
+      reallocate: (offerHandles, amountObjs) => {
+        const { roleNames, issuers } = instanceTable.get(instanceHandle);
+
+        const newAmountMatrix = amountObjs.map(amountObj =>
+          objToArray(amountObj, roleNames),
+        );
 
         const offers = offerTable.getOffers(offerHandles);
 
@@ -202,20 +208,22 @@ const makeZoe = (additionalEndowments = {}) => {
       makeInvite: (seat, customProperties) =>
         makeInvite(instanceHandle, seat, customProperties),
 
-      // informs Zoe about an issuer and returns a promise for acknowledging
+      // Informs Zoe about an issuer and returns a promise for acknowledging
       // when the issuer is added and ready.
       addNewIssuer: (issuer, roleName) =>
         issuerTable.getPromiseForIssuerRecord(issuer).then(_ => {
-          const { roles } = instanceTable.get(instanceHandle);
-          const newRoles = { ...roles };
-          newRoles[roleName] = issuer;
-          const newRoleNames = getRoleNames(newRoles);
-          const newIssuers = newRoleNames.map(name => newRoles[name]);
-          // Take the cleaned roleNames and produce a safe(r) roles obj
-          const cleanedRoles = makeCleanedObj(newRoles, newRoleNames);
+          assertRoleName(roleName);
+          const { roles, roleNames, issuers } = instanceTable.get(
+            instanceHandle,
+          );
+          const newRoles = { ...roles, [roleName]: issuer };
+          // We append the new roleName and new issuer to the end of
+          // the arrays.
+          const newRoleNames = [...roleNames, roleName];
+          const newIssuers = [...issuers, issuer];
           instanceTable.update(instanceHandle, {
             issuers: newIssuers,
-            roles: cleanedRoles,
+            roles: newRoles,
             roleNames: newRoleNames,
           });
         }),
