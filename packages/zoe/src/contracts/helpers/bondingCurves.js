@@ -1,7 +1,6 @@
-import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
-import { assert, details } from '@agoric/assert';
 
+import { arrayToObj } from '../../roleConversion';
 import { natSafeMath } from './safeMath';
 
 const { add, subtract, multiply, floorDivide } = natSafeMath;
@@ -32,10 +31,11 @@ export const makeConstProductBC = zoe => {
       outputReserve,
       feeBasisPoints = 30,
     }) => {
-      const oneMinusFeeInTenThousandths = subtract(10000, feeBasisPoints);
+      const feeTenthOfPercent = feeBasisPoints / 10;
+      const oneMinusFeeInTenThousandths = subtract(1000, feeTenthOfPercent);
       const inputWithFee = multiply(inputExtent, oneMinusFeeInTenThousandths);
       const numerator = multiply(inputWithFee, outputReserve);
-      const denominator = add(multiply(inputReserve, 10000), inputWithFee);
+      const denominator = add(multiply(inputReserve, 1000), inputWithFee);
 
       const outputExtent = floorDivide(numerator, denominator);
       const newOutputReserve = subtract(outputReserve, outputExtent);
@@ -48,24 +48,37 @@ export const makeConstProductBC = zoe => {
     // based on the extents represented by index 0. If the current
     // supply is zero, start off by just taking the extent at index 0
     // and using it as the extent for the liquidity token.
-    calcLiqExtentToMint: (liqTokenSupply, poolAmounts, userAmounts) =>
+    calcLiqExtentToMint: ({ liqTokenSupply, inputExtent, inputReserve }) =>
       liqTokenSupply > 0
-        ? floorDivide(
-            multiply(userAmounts[0].extent, liqTokenSupply),
-            poolAmounts[0].extent,
-          )
-        : userAmounts[0].extent,
+        ? floorDivide(multiply(inputExtent, liqTokenSupply), inputReserve)
+        : inputExtent,
 
     // Calculate how many underlying tokens (in the form of amount)
     // should be returned when removing liquidity.
-    calcAmountsToRemove: (liqTokenSupply, poolAmounts, liquidityAmountsIn) =>
-      poolAmounts.map((amount, i) =>
-        amountMathArray[i].make(
+    calcAmountsToRemove: ({
+      liqTokenSupply,
+      poolAmounts,
+      liquidityExtentIn,
+    }) => {
+      const { issuers, roleNames } = zoe.getInstanceRecord();
+      const amountMathArray = zoe.getAmountMathForIssuers(issuers);
+      const amountMaths = arrayToObj(amountMathArray, roleNames);
+      const newUserAmounts = harden({
+        TokenA: amountMaths.TokenA.make(
           floorDivide(
-            multiply(liquidityAmountsIn.extent, amount.extent),
+            multiply(liquidityExtentIn, poolAmounts.TokenA.extent),
             liqTokenSupply,
           ),
         ),
-      ),
+        TokenB: amountMaths.TokenB.make(
+          floorDivide(
+            multiply(liquidityExtentIn, poolAmounts.TokenB.extent),
+            liqTokenSupply,
+          ),
+        ),
+        Liquidity: amountMaths.Liquidity.getEmpty(),
+      });
+      return newUserAmounts;
+    },
   });
 };

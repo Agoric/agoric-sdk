@@ -447,7 +447,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         exclInvite,
       );
 
-      const { installationHandle, terms } = await E(zoe).getInstance(
+      const { installationHandle, roles } = await E(zoe).getInstance(
         inviteExtent[0].instanceHandle,
       );
       assert(
@@ -459,39 +459,30 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       } = await E(inviteIssuer).getAmountOf(exclInvite);
       const { publicAPI } = await E(zoe).getInstance(instanceHandle);
       const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
-      const liquidityAmountMath = await getLocalAmountMath(liquidityIssuer);
-      const liquidity = liquidityAmountMath.make;
-      const allIssuers = harden([moolaIssuer, simoleanIssuer, liquidityIssuer]);
       assert(
-        sameStructure(allIssuers, terms.issuers),
+        sameStructure(
+          harden({
+            TokenA: moolaIssuer,
+            TokenB: simoleanIssuer,
+            Liquidity: liquidityIssuer,
+          }),
+          roles,
+        ),
         details`issuers were not as expected`,
       );
 
       // bob checks the price of 3 moola. The price is 1 simolean
-      const simoleanAmounts = await E(publicAPI).getPrice(moola(3));
+      const simoleanAmounts = await E(publicAPI).getPrice(
+        harden({ TokenA: moola(3) }),
+      );
       log(`simoleanAmounts `, simoleanAmounts);
 
       const moolaForSimOfferRules = harden({
-        payoutRules: [
-          {
-            kind: 'offerAtMost',
-            amount: moola(3),
-          },
-          {
-            kind: 'wantAtLeast',
-            amount: simoleans(1),
-          },
-          {
-            kind: 'wantAtLeast',
-            amount: liquidity(0),
-          },
-        ],
-        exitRule: {
-          kind: 'onDemand',
-        },
+        offer: { TokenA: moola(3) },
+        want: { TokenB: simoleans(1) },
       });
 
-      const moolaForSimPayments = [moolaPayment, undefined, undefined];
+      const moolaForSimPayments = harden({ TokenA: moolaPayment });
       const { seat, payout: moolaForSimPayoutP } = await E(zoe).redeem(
         exclInvite,
         moolaForSimOfferRules,
@@ -503,40 +494,26 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       log(offerResult);
 
       const moolaForSimPayout = await moolaForSimPayoutP;
-      const [moolaPayout1, simoleanPayout1] = await Promise.all(
-        moolaForSimPayout,
-      );
+      const moolaPayout1 = await moolaForSimPayout.TokenA;
+      const simoleanPayout1 = await moolaForSimPayout.TokenB;
 
       await E(moolaPurseP).deposit(moolaPayout1);
       await E(simoleanPurseP).deposit(simoleanPayout1);
 
       // Bob looks up the price of 3 simoleans. It's 5 moola
-      const moolaAmounts = await E(publicAPI).getPrice(simoleans(3));
+      const moolaAmounts = await E(publicAPI).getPrice(
+        harden({ TokenB: simoleans(3) }),
+      );
       log(`moolaAmounts `, moolaAmounts);
 
       // Bob makes another offer and swaps
       const bobSimsForMoolaOfferRules = harden({
-        payoutRules: [
-          {
-            kind: 'wantAtLeast',
-            amount: moola(5),
-          },
-          {
-            kind: 'offerAtMost',
-            amount: simoleans(3),
-          },
-          {
-            kind: 'wantAtLeast',
-            amount: liquidity(0),
-          },
-        ],
-        exitRule: {
-          kind: 'onDemand',
-        },
+        want: { TokenA: moola(5) },
+        offer: { TokenB: simoleans(3) },
       });
       await E(simoleanPurseP).deposit(simoleanPayment);
       const bobSimoleanPayment = await E(simoleanPurseP).withdraw(simoleans(3));
-      const simsForMoolaPayments = [undefined, bobSimoleanPayment, undefined];
+      const simsForMoolaPayments = harden({ TokenB: bobSimoleanPayment });
       const invite2 = await E(publicAPI).makeInvite();
 
       const { seat: seat2, payout: bobSimsForMoolaPayoutP } = await E(
@@ -547,9 +524,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       log(simsForMoolaOutcome);
 
       const simsForMoolaPayout = await bobSimsForMoolaPayoutP;
-      const [moolaPayout2, simoleanPayout2] = await Promise.all(
-        simsForMoolaPayout,
-      );
+      const moolaPayout2 = await simsForMoolaPayout.TokenA;
+      const simoleanPayout2 = await simsForMoolaPayout.TokenB;
 
       await E(moolaPurseP).deposit(moolaPayout2);
       await E(simoleanPurseP).deposit(simoleanPayout2);

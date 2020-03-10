@@ -3,7 +3,10 @@ import { test } from 'tape-promise/tape';
 
 import harden from '@agoric/harden';
 
-import { cleanOfferRules, fillInUserOfferRules } from '../../src/cleanOfferRules';
+import {
+  cleanOfferRules,
+  fillInUserOfferRules,
+} from '../../src/cleanOfferRules';
 import { setup } from './setupBasicMints';
 import buildManualTimer from '../../tools/manualTimer';
 

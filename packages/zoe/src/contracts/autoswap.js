@@ -1,12 +1,11 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
-import Nat from '@agoric/nat';
 import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 
-import { natSafeMath } from './helpers/safeMath';
 import { makeZoeHelpers } from './helpers/zoeHelpers';
 import { makeConstProductBC } from './helpers/bondingCurves';
+import { arrayToObj } from '../roleConversion';
 
 export const makeContract = harden(zoe => {
   // Create the liquidity mint and issuer.
@@ -28,8 +27,6 @@ export const makeContract = harden(zoe => {
     );
     const {
       rejectOffer,
-      vectorWith,
-      vectorWithout,
       makeEmptyOffer,
       rejectIfNotOfferRules,
     } = makeZoeHelpers(zoe);
@@ -39,17 +36,7 @@ export const makeContract = harden(zoe => {
       calcAmountsToRemove,
     } = makeConstProductBC(zoe, issuers);
 
-    const arrayToObj = (arr, roleNamesArray) => {
-      const obj = {};
-      roleNamesArray.forEach((roleName, i) => (obj[roleName] = arr[i]));
-      return obj;
-    };
-
-    const objToArray = (obj, roleNamesArray) =>
-      roleNamesArray.map(roleName => obj[roleName]);
-
-    const getPoolAmounts = () =>
-      arrayToObj(zoe.getOffer(poolHandle).amounts, roleNames);
+    const getPoolAmounts = () => zoe.getOffer(poolHandle).amounts;
     const amountMaths = arrayToObj(amountMathArray, roleNames);
 
     return makeEmptyOffer().then(handle => {
@@ -64,11 +51,17 @@ export const makeContract = harden(zoe => {
             );
             let wantRoleName;
             if (offerRoleName === 'TokenA') {
-              const expected = harden({ offer: ['TokenA'], want: ['TokenB'] });
+              const expected = harden({
+                offer: ['TokenA'],
+                want: ['TokenB', 'Liquidity'],
+              });
               rejectIfNotOfferRules(inviteHandle, expected);
               wantRoleName = 'TokenB';
             } else {
-              const expected = harden({ offer: ['TokenB'], want: ['TokenA'] });
+              const expected = harden({
+                offer: ['TokenB'],
+                want: ['TokenA', 'Liquidity'],
+              });
               rejectIfNotOfferRules(inviteHandle, expected);
               wantRoleName = 'TokenA';
             }
@@ -85,9 +78,9 @@ export const makeContract = harden(zoe => {
               }),
             );
             const amountOut = amountMaths[wantRoleName].make(outputExtent);
-            const wantedAmounts = userOfferRules.wanted[wantRoleName];
+            const wantedAmount = userOfferRules.want[wantRoleName];
             const satisfiesWantedAmounts = () =>
-              amountMaths[wantRoleName].isGTE(amountOut, wantedAmounts);
+              amountMaths[wantRoleName].isGTE(amountOut, wantedAmount);
             if (!satisfiesWantedAmounts()) {
               throw rejectOffer(inviteHandle);
             }
@@ -99,7 +92,6 @@ export const makeContract = harden(zoe => {
               offerRoleName
             ].getEmpty();
             newUserAmounts[wantRoleName] = amountOut;
-            const newUserAmountsArray = objToArray(newUserAmounts, roleNames);
 
             const newPoolAmounts = { Liquidity: poolAmounts.Liquidity };
             newPoolAmounts[offerRoleName] = amountMaths[offerRoleName].make(
@@ -108,11 +100,10 @@ export const makeContract = harden(zoe => {
             newPoolAmounts[wantRoleName] = amountMaths[wantRoleName].make(
               newOutputReserve,
             );
-            const newPoolAmountsArray = objToArray(newPoolAmounts, roleNames);
 
             zoe.reallocate(
               harden([inviteHandle, poolHandle]),
-              harden([newUserAmountsArray, newPoolAmountsArray]),
+              harden([newUserAmounts, newPoolAmounts]),
             );
             zoe.complete(harden([inviteHandle]));
             return `Swap successfully completed.`;
@@ -133,27 +124,22 @@ export const makeContract = harden(zoe => {
             // extent at index 0 and using it as the extent for the
             // liquidity token.
             const liquidityExtentOut = calcLiqExtentToMint(
-              liqTokenSupply,
-              poolAmounts,
-              userAmounts,
+              harden({
+                liqTokenSupply,
+                inputExtent: userAmounts.TokenA.extent,
+                inputReserve: poolAmounts.TokenA.extent,
+              }),
             );
 
-            const LIQ_INDEX = 0;
-
-            const liquidityAmountsOut = amountMathArray[LIQ_INDEX].make(
+            const liquidityAmountOut = amountMaths.Liquidity.make(
               liquidityExtentOut,
             );
 
             const liquidityPaymentP = liquidityMint.mintPayment(
-              liquidityAmountsOut,
+              liquidityAmountOut,
             );
             const offerRules = harden({
-              payoutRules: [
-                { kind: 'offerAtMost', amount: liquidityAmountsOut },
-              ],
-              exitRule: {
-                kind: 'waived',
-              },
+              offer: { Liquidity: liquidityAmountOut },
             });
             const { inviteHandle: tempLiqHandle, invite } = zoe.makeInvite();
             const zoeService = zoe.getZoeService();
@@ -161,18 +147,31 @@ export const makeContract = harden(zoe => {
               .redeem(
                 invite,
                 offerRules,
-                harden([undefined, undefined, liquidityPaymentP]),
+                harden({ Liquidity: liquidityPaymentP }),
               )
               .then(() => {
                 liqTokenSupply += liquidityExtentOut;
-                const newPoolAmounts = vectorWith(poolAmounts, userAmounts);
-                const newUserAmounts = amountMathArray.map(amountMath =>
-                  amountMath.getEmpty(),
-                );
-                const newTempLiqAmounts = amountMathArray.map(amountMath =>
-                  amountMath.getEmpty(),
-                );
-                newUserAmounts[LIQ_INDEX] = liquidityAmountsOut;
+
+                const add = (key, obj1, obj2) =>
+                  amountMaths[key].add(obj1[key], obj2[key]);
+
+                const newPoolAmounts = harden({
+                  TokenA: add('TokenA', userAmounts, poolAmounts),
+                  TokenB: add('TokenB', userAmounts, poolAmounts),
+                  Liquidity: poolAmounts.Liquidity,
+                });
+
+                const newUserAmounts = harden({
+                  TokenA: amountMaths.TokenA.getEmpty(),
+                  TokenB: amountMaths.TokenB.getEmpty(),
+                  Liquidity: liquidityAmountOut,
+                });
+
+                const newTempLiqAmounts = harden({
+                  TokenA: amountMaths.TokenA.getEmpty(),
+                  TokenB: amountMaths.TokenB.getEmpty(),
+                  Liquidity: amountMaths.Liquidity.getEmpty(),
+                });
 
                 zoe.reallocate(
                   harden([inviteHandle, poolHandle, tempLiqHandle]),
@@ -189,28 +188,35 @@ export const makeContract = harden(zoe => {
             });
             rejectIfNotOfferRules(inviteHandle, expected);
 
-            const LIQ_INDEX = 0;
-
             const userAmounts = zoe.getOffer(inviteHandle).amounts;
-            const liquidityAmountsIn = userAmounts[LIQ_INDEX];
+            const liquidityExtentIn = userAmounts.Liquidity.extent;
 
             const poolAmounts = getPoolAmounts();
 
             const newUserAmounts = calcAmountsToRemove(
-              liqTokenSupply,
-              poolAmounts,
-              liquidityAmountsIn,
+              harden({
+                liqTokenSupply,
+                poolAmounts,
+                liquidityExtentIn,
+              }),
             );
 
-            const newPoolAmounts = vectorWith(
-              vectorWithout(poolAmounts, newUserAmounts),
-              [
-                amountMathArray[0].getEmpty(),
-                amountMathArray[1].getEmpty(),
-                liquidityAmountsIn,
-              ],
-            );
-            liqTokenSupply -= liquidityAmountsIn.extent;
+            const newPoolAmounts = harden({
+              TokenA: amountMaths.TokenA.subtract(
+                poolAmounts.TokenA,
+                newUserAmounts.TokenA,
+              ),
+              TokenB: amountMaths.TokenB.subtract(
+                poolAmounts.TokenB,
+                newUserAmounts.TokenB,
+              ),
+              Liquidity: amountMaths.Liquidity.add(
+                poolAmounts.Liquidity,
+                amountMaths.Liquidity.make(liquidityExtentIn),
+              ),
+            });
+
+            liqTokenSupply -= liquidityExtentIn;
 
             zoe.reallocate(
               harden([inviteHandle, poolHandle]),
@@ -232,9 +238,31 @@ export const makeContract = harden(zoe => {
           /**
            * `getPrice` calculates the result of a trade, given a certain amount
            * of digital assets in.
-           * @param {amount} amountIn - the amount of digital assets to be sent in
+           * @param {object} amountInObj - the amount of digital
+           * assets to be sent in, keyed by roleName
            */
-          getPrice: amountIn => getPrice(getPoolAmounts(), amountIn).amountOut,
+          getPrice: amountInObj => {
+            const [inRoleName] = Object.getOwnPropertyNames(amountInObj);
+            assert(
+              roleNames.includes(inRoleName),
+              details`roleName ${inRoleName} was not valid`,
+            );
+            const inputExtent = amountMaths[inRoleName].getExtent(
+              amountInObj[inRoleName],
+            );
+            const poolAmounts = getPoolAmounts();
+            const inputReserve = poolAmounts[inRoleName].extent;
+            const outRoleName = inRoleName === 'TokenA' ? 'TokenB' : 'TokenA';
+            const outputReserve = poolAmounts[outRoleName].extent;
+            const { outputExtent } = getPrice(
+              harden({
+                inputExtent,
+                inputReserve,
+                outputReserve,
+              }),
+            );
+            return amountMaths[outRoleName].make(outputExtent);
+          },
           getLiquidityIssuer: () => liquidityIssuer,
           getPoolAmounts,
           makeInvite,
