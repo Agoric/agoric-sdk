@@ -5,7 +5,7 @@ import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 import makePromise from '@agoric/make-promise';
 
-import { cleanOfferRules } from './cleanOfferRules';
+import { cleanOfferRules, fillInUserOfferRules } from './cleanOfferRules';
 import { arrayToObj, objToArray } from './roleConversion';
 import { isOfferSafeForAll } from './isOfferSafe';
 import { areRightsConserved } from './areRightsConserved';
@@ -362,6 +362,13 @@ const makeZoe = (additionalEndowments = {}) => {
       const { roleNames, issuers } = instanceTable.get(instanceHandle);
 
       const amountMaths = issuerTable.getAmountMathForIssuers(issuers);
+      const amountMathsObj = arrayToObj(amountMaths, roleNames);
+
+      userOfferRules = fillInUserOfferRules(
+        roleNames,
+        amountMathsObj,
+        userOfferRules,
+      );
 
       const offerRules = cleanOfferRules(
         roleNames,

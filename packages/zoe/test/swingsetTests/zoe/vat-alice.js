@@ -53,24 +53,19 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
   const doCoveredCall = async bobP => {
     log(`=> alice.doCreateCoveredCall called`);
     const installId = installations.coveredCall;
-    const invite = await E(zoe).makeInstance(
-      installId,
-      harden({
-        roles: { Asset: moolaIssuer, Price: simoleanIssuer },
-      }),
-    );
+    const roles = harden({
+      UnderlyingAsset: moolaIssuer,
+      StrikePrice: simoleanIssuer,
+    });
+    const invite = await E(zoe).makeInstance(installId, roles);
 
     const offerRules = harden({
-      offer: { Asset: moola(3) },
-      want: { Price: simoleans(7) },
-      exitRule: {
-        kind: 'afterDeadline',
-        deadline: 1,
-        timer,
-      },
+      offer: { UnderlyingAsset: moola(3) },
+      want: { StrikePrice: simoleans(7) },
+      exit: { afterDeadline: { deadline: 1, timer } },
     });
 
-    const offerPayments = { Asset: moolaPayment };
+    const offerPayments = { UnderlyingAsset: moolaPayment };
     const { seat, payout: payoutP } = await E(zoe).redeem(
       invite,
       offerRules,
@@ -80,8 +75,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     const option = await E(seat).makeCallOption();
     await E(bobP).doCoveredCall(option);
     const payout = await payoutP;
-    const moolaPayout = await payout.Asset;
-    const simoleanPayout = await payout.Price;
+    const moolaPayout = await payout.UnderlyingAsset;
+    const simoleanPayout = await payout.StrikePrice;
 
     await E(moolaPurseP).deposit(moolaPayout);
     await E(simoleanPurseP).deposit(simoleanPayout);

@@ -2,6 +2,8 @@ import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 
+import { objToArray, arrayToObj } from '../../roleConversion';
+
 export const defaultRejectMsg = `The offer was invalid. Please check your refund.`;
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
@@ -58,25 +60,22 @@ export const makeZoeHelpers = zoe => {
         zoe.getOffer(rightHandle).payoutRules[index].amount,
       ),
     canTradeWith: (leftInviteHandle, rightInviteHandle) => {
-      const {
-        offerRules: { payoutRules: leftPayoutRules },
-      } = zoe.getOffer(leftInviteHandle);
-      const {
-        offerRules: { payoutRules: rightPayoutRules },
-      } = zoe.getOffer(rightInviteHandle);
+      const { userOfferRules: left } = zoe.getOffer(leftInviteHandle);
+      const { userOfferRules: right } = zoe.getOffer(rightInviteHandle);
+      const { roleNames } = zoe.getInstanceRecord();
+      const amountMaths = arrayToObj(amountMathArray, roleNames);
       const satisfied = (wants, offers) =>
-        wants.every((want, i) => {
-          if (want.kind === 'wantAtLeast') {
-            return (
-              offers[i].kind === 'offerAtMost' &&
-              amountMathArray[i].isGTE(offers[i].amount, want.amount)
+        roleNames.every(roleName => {
+          if (wants[roleName]) {
+            return amountMaths[roleName].isGTE(
+              offers[roleName],
+              wants[roleName],
             );
           }
           return true;
         });
       return (
-        satisfied(leftPayoutRules, rightPayoutRules) &&
-        satisfied(rightPayoutRules, leftPayoutRules)
+        satisfied(left.want, right.offer) && satisfied(right.want, left.offer)
       );
     },
     swap: (
@@ -97,20 +96,6 @@ export const makeZoeHelpers = zoe => {
       zoe.reallocate(handles, harden([tryAmounts, keepAmounts]));
       zoe.complete(handles);
       return defaultAcceptanceMsg;
-    },
-    // Vector addition of two amount arrays
-    vectorWith: (leftAmountsArray, rightAmountsArray) => {
-      const withAmounts = leftAmountsArray.map((leftAmounts, i) =>
-        amountMathArray[i].add(leftAmounts, rightAmountsArray[i]),
-      );
-      return withAmounts;
-    },
-    // Vector subtraction of two amount arrays
-    vectorWithout: (leftAmountsArray, rightAmountsArray) => {
-      const withoutAmounts = leftAmountsArray.map((leftAmounts, i) =>
-        amountMathArray[i].subtract(leftAmounts, rightAmountsArray[i]),
-      );
-      return withoutAmounts;
     },
     makeEmptyAmounts: () =>
       amountMathArray.map(amountMath => amountMath.getEmpty()),

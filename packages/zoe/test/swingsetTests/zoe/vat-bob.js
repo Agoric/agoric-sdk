@@ -82,9 +82,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const exclInvite = await E(inviteIssuer).claim(invite);
 
       const bobIntendedOfferRules = harden({
-        want: { Asset: moola(3) },
-        offer: { Price: simoleans(7) },
-        exitRule: { kind: 'onDemand' },
+        want: { UnderlyingAsset: moola(3) },
+        offer: { StrikePrice: simoleans(7) },
       });
 
       // Bob checks that the invite is for the right covered call
@@ -117,15 +116,15 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       assert(optionExtent[0].timerAuthority === timer, 'wrong timer');
 
       assert(
-        instanceInfo.terms.issuers[0] === moolaIssuer,
-        details`The first issuer should be the moola issuer`,
+        instanceInfo.roles.UnderlyingAsset === moolaIssuer,
+        details`The underlying asset issuer should be the moola issuer`,
       );
       assert(
-        instanceInfo.terms.issuers[1] === simoleanIssuer,
-        details`The second issuer should be the simolean issuer`,
+        instanceInfo.roles.StrikePrice === simoleanIssuer,
+        details`The strike price issuer should be the simolean issuer`,
       );
 
-      const bobPayments = { Price: simoleanPayment };
+      const bobPayments = { StrikePrice: simoleanPayment };
 
       // Bob escrows
       const { seat, payout: payoutP } = await E(zoe).redeem(
@@ -139,8 +138,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       log(bobOutcome);
 
       const bobResult = await payoutP;
-      const moolaPayout = await bobResult.Asset;
-      const simoleanPayout = await bobResult.Price;
+      const moolaPayout = await bobResult.UnderlyingAsset;
+      const simoleanPayout = await bobResult.StrikePrice;
 
       await E(moolaPurseP).deposit(moolaPayout);
       await E(simoleanPurseP).deposit(simoleanPayout);

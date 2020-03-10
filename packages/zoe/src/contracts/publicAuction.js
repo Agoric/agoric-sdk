@@ -13,9 +13,10 @@ export const makeContract = harden(zoe => {
     rejectIfNotOfferRules,
   } = makeZoeHelpers(zoe);
 
-  const { terms } = zoe.getInstanceRecord();
-  const numBidsAllowed =
-    terms.numBidsAllowed !== undefined ? Nat(terms.numBidsAllowed) : Nat(3);
+  let {
+    terms: { numBidsAllowed },
+  } = zoe.getInstanceRecord();
+  numBidsAllowed = Nat(numBidsAllowed !== undefined ? numBidsAllowed : 3);
 
   let sellerInviteHandle;
   let minimumBid;
