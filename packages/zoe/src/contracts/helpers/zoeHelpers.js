@@ -92,18 +92,11 @@ export const makeZoeHelpers = zoe => {
       if (!helpers.canTradeWith(keepHandle, tryHandle)) {
         throw helpers.rejectOffer(tryHandle);
       }
-      const { roleNames } = zoe.getInstanceRecord();
       const keepAmounts = zoe.getOffer(keepHandle).amounts;
       const tryAmounts = zoe.getOffer(tryHandle).amounts;
       // reallocate by switching the amount
       const handles = harden([keepHandle, tryHandle]);
-      zoe.reallocate(
-        handles,
-        harden([
-          arrayToObj(tryAmounts, roleNames),
-          arrayToObj(keepAmounts, roleNames),
-        ]),
-      );
+      zoe.reallocate(handles, harden([tryAmounts, keepAmounts]));
       zoe.complete(handles);
       return defaultAcceptanceMsg;
     },

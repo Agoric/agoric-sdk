@@ -157,7 +157,9 @@ const makeZoe = (additionalEndowments = {}) => {
         const payoutRuleMatrix = offers.map(
           offer => offer.offerRules.payoutRules,
         );
-        const currentAmountMatrix = offers.map(offer => offer.amounts);
+        const currentAmountMatrix = offers.map(offer =>
+          objToArray(offer.amounts, roleNames),
+        );
         const amountMaths = issuerTable.getAmountMathForIssuers(issuers);
 
         // 1) ensure that rights are conserved
@@ -419,13 +421,13 @@ const makeZoe = (additionalEndowments = {}) => {
       });
 
       return Promise.all(paymentDepositedPs)
-        .then(amounts => {
+        .then(amountsArray => {
           const offerImmutableRecord = {
             instanceHandle,
             userOfferRules,
             offerRules,
             issuers,
-            amounts,
+            amounts: arrayToObj(amountsArray, roleNames),
           };
           // Since we have redeemed an invite, the inviteHandle is
           // also the offerHandle.
