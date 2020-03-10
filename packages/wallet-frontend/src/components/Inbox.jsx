@@ -104,8 +104,10 @@ export default function Inbox() {
               date,
               purseName0,
               purseName1,
-              assayId0,
-              assayId1,
+              issuerPetname0,
+              issuerPetname1,
+              issuerId0,
+              issuerId1,
               extent0,
               extent1,
               status,
@@ -126,9 +128,10 @@ export default function Inbox() {
                       <Box component="span" fontWeight={800}>
                         {extent0}
                         &nbsp;
-                        {assayId0}
+                        {issuerPetname0 || '??'}
                         &nbsp;
                       </Box>
+                      {issuerId0 && <i>({issuerId0})&nbsp;</i>}
                       from&nbsp;
                       {purseName0}
                     </Typography>
@@ -137,9 +140,10 @@ export default function Inbox() {
                       <Box component="span" fontWeight={800}>
                         {extent1}
                         &nbsp;
-                        {assayId1}
+                        {issuerPetname1 || '??'}
                         &nbsp;
                       </Box>
+                      {issuerId1 && <i>({issuerId1})&nbsp;</i>}
                       into&nbsp;
                       {purseName1}
                     </Typography>
