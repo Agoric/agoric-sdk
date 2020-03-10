@@ -17,7 +17,7 @@ const build = async (E, log, zoe, issuers, payments, installations) => {
         invite,
       );
 
-      const { installationHandle, terms } = await E(zoe).getInstance(
+      const { installationHandle, terms, roles } = await E(zoe).getInstance(
         inviteExtent[0].instanceHandle,
       );
       assert(
@@ -25,9 +25,13 @@ const build = async (E, log, zoe, issuers, payments, installations) => {
         details`wrong installation`,
       );
       assert(
-        sameStructure(harden([moolaIssuer, simoleanIssuer]), terms.issuers),
-        details`issuers were not as expected`,
+        sameStructure(
+          harden({ Asset: moolaIssuer, Bid: simoleanIssuer }),
+          roles,
+        ),
+        details`roles were not as expected`,
       );
+      assert(terms.numBidsAllowed === 3, details`terms not as expected`);
       assert(sameStructure(inviteExtent[0].minimumBid, simoleans(3)));
       assert(sameStructure(inviteExtent[0].auctionedAssets, moola(1)));
 

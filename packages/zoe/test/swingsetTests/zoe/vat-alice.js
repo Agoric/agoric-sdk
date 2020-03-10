@@ -87,29 +87,24 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
   const doSwapForOption = async (bobP, _carolP, daveP) => {
     log(`=> alice.doSwapForOption called`);
-    const invite = await E(zoe).makeInstance(installations.coveredCall, {
-      issuers: [moolaIssuer, simoleanIssuer],
+    const roles = harden({
+      UnderlyingAsset: moolaIssuer,
+      StrikePrice: simoleanIssuer,
     });
+    const invite = await E(zoe).makeInstance(installations.coveredCall, roles);
 
     const offerRules = harden({
-      payoutRules: [
-        {
-          kind: 'offerAtMost',
-          amount: moola(3),
+      offer: { UnderlyingAsset: moola(3) },
+      want: { StrikePrice: simoleans(7) },
+      exit: {
+        afterDeadline: {
+          deadline: 100,
+          timer,
         },
-        {
-          kind: 'wantAtLeast',
-          amount: simoleans(7),
-        },
-      ],
-      exitRule: {
-        kind: 'afterDeadline',
-        deadline: 100,
-        timer,
       },
     });
 
-    const offerPayments = [moolaPayment, undefined];
+    const offerPayments = harden({ UnderlyingAsset: moolaPayment });
     const { seat, payout: payoutP } = await E(zoe).redeem(
       invite,
       offerRules,
@@ -120,7 +115,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     log('call option made');
     await E(bobP).doSwapForOption(option, daveP);
     const payout = await payoutP;
-    const [moolaPayout, simoleanPayout] = await Promise.all(payout);
+    const moolaPayout = await payout.UnderlyingAsset;
+    const simoleanPayout = await payout.StrikePrice;
 
     await E(moolaPurseP).deposit(moolaPayout);
     await E(simoleanPurseP).deposit(simoleanPayout);
@@ -131,12 +127,12 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
   const doPublicAuction = async (bobP, carolP, daveP) => {
     const numBidsAllowed = 3;
+    const roles = harden({ Asset: moolaIssuer, Bid: simoleanIssuer });
+    const terms = harden({ numBidsAllowed });
     const invite = await E(zoe).makeInstance(
       installations.publicAuction,
-      harden({
-        roles: { Asset: moolaIssuer, Bid: simoleanIssuer },
-        numBidsAllowed,
-      }),
+      roles,
+      terms,
     );
     const {
       extent: [{ instanceHandle }],
