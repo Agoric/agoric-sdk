@@ -304,28 +304,30 @@ const makeZoe = (additionalEndowments = {}) => {
       // Take the cleaned roleNames and produce a safe(r) roles obj
       const cleanedRoles = makeCleanedObj(roles, roleNames);
 
+      const makeInstanceRecord = issuerRecords => {
+        const instanceRecord = harden({
+          installationHandle,
+          publicAPI: undefined,
+          terms,
+          issuers: issuerRecords.map(record => record.issuer),
+          roles: cleanedRoles,
+          roleNames,
+        });
+
+        instanceTable.create(instanceRecord, instanceHandle);
+        return Promise.resolve(installation.makeContract(contractFacet)).then(
+          ({ invite, publicAPI }) => {
+            instanceTable.update(instanceHandle, { publicAPI });
+            return invite;
+          },
+        );
+      };
+
       // The issuers may not have been seen before, so we must wait for
       // the issuer records to be available synchronously
       return issuerTable
         .getPromiseForIssuerRecords(issuers)
-        .then(issuerRecords => {
-          const instanceRecord = harden({
-            installationHandle,
-            publicAPI: undefined,
-            terms,
-            issuers: issuerRecords.map(record => record.issuer),
-            roles: cleanedRoles,
-            roleNames,
-          });
-
-          instanceTable.create(instanceRecord, instanceHandle);
-          return Promise.resolve(installation.makeContract(contractFacet)).then(
-            ({ invite, publicAPI }) => {
-              instanceTable.update(instanceHandle, { publicAPI });
-              return invite;
-            },
-          );
-        });
+        .then(makeInstanceRecord);
     },
     /**
      * Credibly retrieves an instance record given an instanceHandle.
