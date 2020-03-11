@@ -132,18 +132,27 @@ export default function setup(syscall, state, helpers) {
           ),
         );
 
-        // Make empty purses. Reuse issuer petname for purse petname.
+        // Make empty purses. Have some petnames for them.
+        const pursePetnames = {
+          moola: 'Fun budget',
+          simolean: 'Nest egg',
+        };
         await Promise.all(
-          issuerInfo.map(({ petname: issuerPetname }) =>
-            E(wallet).makeEmptyPurse(issuerPetname, `${issuerPetname} purse`),
-          ),
+          issuerInfo.map(({ petname: issuerPetname }) => {
+            let pursePetname = pursePetnames[issuerPetname];
+            if (!pursePetname) {
+              pursePetname = `${issuerPetname} purse`;
+              pursePetnames[issuerPetname] = pursePetname;
+            }
+            return E(wallet).makeEmptyPurse(issuerPetname, pursePetname);
+          }),
         );
 
         // deposit payments
         const [moolaPayment, simoleanPayment] = payments;
 
-        await E(wallet).deposit('moola purse', moolaPayment);
-        await E(wallet).deposit('simolean purse', simoleanPayment);
+        await E(wallet).deposit(pursePetnames.moola, moolaPayment);
+        await E(wallet).deposit(pursePetnames.simolean, simoleanPayment);
 
         // This will allow Dapp developers to register in their dapp.js
         const httpRegCallback = {

@@ -10,7 +10,7 @@ function build(_E, _log) {
   const mintsAndMath = makeStore();
 
   const api = harden({
-    getAllissuerNames: () => mintsAndMath.keys(),
+    getAllIssuerNames: () => mintsAndMath.keys(),
     getIssuer: issuerName => {
       const mint = mintsAndMath.get(issuerName);
       mint.getIssuer();
