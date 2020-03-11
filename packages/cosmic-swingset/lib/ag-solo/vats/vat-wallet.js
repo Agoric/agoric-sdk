@@ -42,23 +42,29 @@ function build(E, D, _log) {
               data: inboxState,
             };
           }
-          case 'walletAddOffer': {
+          case 'walletPropose': {
             return {
               type: 'walletOfferAdded',
-              data: wallet.addOffer(data),
+              data: await wallet.propose(data),
             };
           }
           case 'walletDeclineOffer': {
             return {
-              type: 'walletOfferDeclineed',
+              type: 'walletOfferDeclined',
               data: wallet.declineOffer(data),
             };
           }
+          case 'walletCancelOffer': {
+            return {
+              type: 'walletOfferCancelled',
+              data: wallet.cancelOffer(data),
+            };
+          }
           case 'walletAcceptOffer': {
-            const result = await wallet.acceptOffer(data);
+            await wallet.acceptOffer(data);
             return {
               type: 'walletOfferAccepted',
-              data: result,
+              data: true,
             };
           }
           case 'walletGetOfferDescriptions': {

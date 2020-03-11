@@ -9,3 +9,4 @@ export const UPDATE_INBOX = 'UPDATE_INBOX';
 
 export const REJECT_OFFER = 'REJECT_OFFER';
 export const CONFIRM_OFFER = 'CONFIRM_OFFER';
+export const CANCEL_OFFER = 'CANCEL_OFFER';

@@ -17,13 +17,19 @@ export async function makeWallet(
   inboxStateChangeHandler = noActionStateChangeHandler,
 ) {
   const petnameToPurse = makeStore();
+  const purseToIssuer = makeWeakStore();
   const issuerPetnameToIssuer = new Map();
-  const issuerToIssuerPetname = makeWeakStore();
+  const issuerToIssuerNames = makeWeakStore();
+  const issuerToBrand = makeWeakStore();
   const brandToIssuer = makeStore();
   const brandToMath = makeStore();
 
-  // Offers that the wallet knows about (the inbox).
-  const dateToOfferRec = new Map();
+  // Proposals that the wallet knows about (the inbox).
+  const idToProposal = new Map();
+
+  // Compiled proposals (all ready to execute).
+  const idToCompiledProposalP = new Map();
+  const idToCancelObj = new Map();
 
   // Client-side representation of the purses inbox;
   const pursesState = new Map();
@@ -42,115 +48,51 @@ export async function makeWallet(
       E(purse).getCurrentAmount(),
       E(purse).getAllegedBrand(),
     ]);
-    const issuerPetname = issuerToIssuerPetname.get(brandToIssuer.get(brand));
+    const issuerNames = issuerToIssuerNames.get(brandToIssuer.get(brand));
     pursesState.set(pursePetname, {
-      purseName: pursePetname,
-      issuerPetname,
+      ...issuerNames,
+      pursePetname,
       extent,
     });
     pursesStateChangeHandler(getPursesState());
   }
 
-  async function updateInboxState(date, offerRec) {
-    // Only sent the metadata to the client.
-    inboxState.set(date, offerRec.meta);
+  async function updateInboxState(id, proposal) {
+    // Only sent the uncompiled proposal to the client.
+    inboxState.set(id, proposal);
     inboxStateChangeHandler(getInboxState());
   }
 
-  async function makeOffer(date) {
-    const {
-      meta: { instanceId, ...rest },
-      offerRules,
-    } = dateToOfferRec.get(date);
-
-    // Collapse purseName0, purseName1, ... into purseNames
-    const rawPurses = [];
-    for (let i = 0; i < offerRules.payoutRules.length; i += 1) {
-      const purseName = rest[`purseName${i}`];
-      if (purseName === undefined) {
-        break;
-      }
-      rawPurses.push(petnameToPurse.get(purseName));
-    }
-
-    const { payoutRules } = offerRules;
-
-    const instanceP = E(registrar)
-      .get(instanceId)
-      .then(instanceHandle => E(zoe).getInstance(instanceHandle));
-    const regAssaysAP = payoutRules.map(({ units: { assayId } }) =>
-      E(registrar).get(assayId),
-    );
-    const regAssaysP = Promise.all(regAssaysAP);
-    const regUnitsP = Promise.all(
-      payoutRules.map(({ units: { extent } }, i) =>
-        E(regAssaysAP[i]).makeUnits(extent || 0),
-      ),
-    );
-    const purseAssaysP = Promise.all(
-      rawPurses.map(purse => E(purse).getAssay()),
-    );
-
-    const [
-      {
-        terms: { assays: contractAssays },
-        publicAPI,
-      },
-      regAssays,
-      regUnits,
-      purseAssays,
-    ] = await Promise.all([instanceP, regAssaysP, regUnitsP, purseAssaysP]);
+  async function makeOffer(compiledProposalP, inviteP) {
+    const [invite, { zoeKind, purses, offerRules }] = await Promise.all([
+      inviteP,
+      compiledProposalP,
+    ]);
 
     // =====================
     // === AWAITING TURN ===
     // =====================
 
-    // Order the purses by registered assays.
-    const purseAssaysRemaining = [...purseAssays];
-    const payoutOrderedPurses = regAssays.map(regAssay => {
-      const i = purseAssaysRemaining.indexOf(regAssay);
-      if (i < 0) {
-        return undefined;
-      }
-      // Strike out this assay from the remaining ones.
-      purseAssaysRemaining[i] = undefined;
-      return rawPurses[i];
-    });
-
-    const invite = await E(publicAPI).makeInvite();
-
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    // Ensure that the offered and contract assays match.
-    contractAssays.forEach((contractAssay, i) =>
-      assert(contractAssay, regAssays[i]),
+    assert(
+      zoeKind === 'indexed',
+      details`Only indexed Zoe is implemented, not ${zoeKind}`,
     );
 
-    // Clone the offer rules to have a writable object.
-    const newOfferRules = JSON.parse(JSON.stringify(offerRules));
-
-    // Hydrate with the resolved units.
-    newOfferRules.payoutRules.forEach(
-      (payoutRule, i) => (payoutRule.units = regUnits[i]),
-    );
-    harden(newOfferRules);
-
-    // Look up the payments in the array ordered by registered assays.
+    // We now have everything we need to provide Zoe, so do the actual withdrawal.
+    // purses are an array ordered by issuer payoutRules.
     const payment = await Promise.all(
-      newOfferRules.payoutRules.map(({ kind, units }, i) => {
-        const purse = payoutOrderedPurses[i];
+      offerRules.payoutRules.map(({ kind, amount }, i) => {
+        const purse = purses[i];
         if (kind === 'offerAtMost' && purse) {
-          return E(purse).withdraw(units);
+          return E(purse).withdraw(amount);
         }
         return undefined;
       }),
     );
 
-    const { seat, payout: payoutP } = await E(zoe).redeem(
+    const { seat, payout: payoutPAP, cancelObj } = await E(zoe).redeem(
       invite,
-      newOfferRules,
+      offerRules,
       payment,
     );
 
@@ -158,47 +100,37 @@ export async function makeWallet(
     // === AWAITING TURN ===
     // =====================
 
-    // IMPORTANT: payout will resolve only once makeOffer()
-    // resolves, so we technically only need to await on
-    // payout. For readability of the code, and to ease any
-    // eventual debugging, we await on both: it is not
-    // obvious that both are joined internally, and stumbling
-    // over a naked non-awaited invocation of E() would appear
-    // as an error.
-
-    const [offerOk, payout] = await Promise.all([E(seat).swap(), payoutP]);
-
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    // Deposit all the spoils.
-    await Promise.all(
-      payout.map((pay, i) => {
-        const purse = payoutOrderedPurses[i];
-        if (purse && pay) {
-          return E(purse).depositAll(pay);
-        }
-        return undefined;
-      }),
+    // Let the caller do what they want with the seat.
+    // We'll resolve when deposited.
+    const depositedP = payoutPAP.then(payoutAP =>
+      Promise.all(payoutAP).then(payoutA =>
+        Promise.all(
+          payoutA.map((payout, i) => {
+            const purse = purses[i];
+            if (purse && payout) {
+              return E(purse).deposit(payout);
+            }
+            return undefined;
+          }),
+        ),
+      ),
     );
 
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    return offerOk;
+    return { depositedP, cancelObj, seat };
   }
 
   // === API
 
-  async function addIssuer(issuerPetname, issuer) {
+  async function addIssuer(issuerPetname, issuer, brandRegKey = undefined) {
     issuerPetnameToIssuer.set(issuerPetname, issuer);
-    issuerToIssuerPetname.init(issuer, issuerPetname);
-    const brand = await E(issuer).getBrand();
+    issuerToIssuerNames.init(issuer, { issuerPetname, brandRegKey });
+    const [brand, mathName] = await Promise.all([
+      E(issuer).getBrand(),
+      E(issuer).getMathHelpersName(),
+    ]);
     brandToIssuer.init(brand, issuer);
+    issuerToBrand.init(issuer, brand);
 
-    const mathName = await E(issuer).getMathHelpersName();
     const math = makeAmountMath(brand, mathName);
     brandToMath.init(brand, math);
   }
@@ -219,6 +151,7 @@ export async function makeWallet(
     );
 
     petnameToPurse.init(pursePetname, purse);
+    purseToIssuer.init(purse, issuer);
     updatePursesState(pursePetname, purse);
   }
 
@@ -232,48 +165,328 @@ export async function makeWallet(
   }
 
   function getOfferDescriptions() {
-    // return the live orders sorted by date
-    return Array.from(dateToOfferRec)
+    // return the offers sorted by id
+    return Array.from(idToProposal)
       .filter(p => p[1].status === 'accept')
       .sort((p1, p2) => p1[0] > p2[0])
-      .map(([date, offerRec]) => {
+      .map(([id, proposal]) => {
         const {
           offerRules: { payoutRules },
-        } = offerRec;
-        return harden({ date, payoutRules });
+        } = proposal;
+        return harden({ id, payoutRules });
       });
   }
 
-  async function addOffer(offerRec) {
+  async function compileProposal(id, proposal) {
     const {
-      meta: { date },
-    } = offerRec;
-    dateToOfferRec.set(date, offerRec);
-    updateInboxState(date, offerRec);
+      instanceRegKey,
+      contractIssuerIndexToRole = [], // FIXME: Only for compatibility with Zoe pre-Roles
+      offerRulesTemplate,
+    } = proposal;
+
+    const roleIssuerNames = {};
+    function createRoleOfferRulesAndPurses(tmpl) {
+      const roleOfferRules = { exit: tmpl.exit };
+      const rolePurses = {};
+
+      const setPurseAmount = (roles, role, purse, extent = undefined) => {
+        const issuer = purseToIssuer.get(purse);
+        roleIssuerNames[role] = issuerToIssuerNames.get(issuer);
+        const brand = issuerToBrand.get(issuer);
+        let amount;
+        if (extent === undefined) {
+          amount = brandToMath.get(brand).getEmpty();
+        } else {
+          amount = { brand, extent };
+        }
+        roles[role] = amount;
+      };
+
+      if (offerRulesTemplate.want) {
+        roleOfferRules.want = {};
+      }
+      Object.entries(offerRulesTemplate.want || {}).forEach(
+        ([role, amount]) => {
+          assert(
+            amount.pursePetname,
+            details`Want role ${role} has no pursePetname`,
+          );
+          const purse = petnameToPurse.get(amount.pursePetname);
+          assert(
+            purse,
+            details`Want role ${role} pursePetname ${amount.pursePetname} is not a purse`,
+          );
+          rolePurses[role] = purse;
+          setPurseAmount(roleOfferRules.want, role, purse, amount.extent);
+        },
+      );
+
+      if (offerRulesTemplate.offer) {
+        roleOfferRules.offer = {};
+      }
+      Object.entries(offerRulesTemplate.offer || {}).forEach(
+        ([role, amount]) => {
+          assert(
+            amount.pursePetname,
+            details`Offer role ${role} has no pursePetname`,
+          );
+          const purse = petnameToPurse.get(amount.pursePetname);
+          assert(
+            purse,
+            details`Offer role ${role} pursePetname ${amount.pursePetname} is not a purse`,
+          );
+          rolePurses[role] = purse;
+          setPurseAmount(roleOfferRules.offer, role, purse, amount.extent);
+        },
+      );
+
+      return { roleOfferRules, rolePurses };
+    }
+
+    const { roleOfferRules, rolePurses } = createRoleOfferRulesAndPurses(
+      offerRulesTemplate,
+    );
+
+    // Enrich the offerRulesTemplate.
+    const newOfferRulesTemplate = { ...offerRulesTemplate };
+    if (offerRulesTemplate.want) {
+      const newRules = {};
+      Object.entries(offerRulesTemplate.want || {}).forEach(
+        ([role, amount]) => {
+          newRules[role] = { ...amount, ...roleIssuerNames[role] };
+        },
+      );
+      newOfferRulesTemplate.want = newRules;
+    }
+
+    if (offerRulesTemplate.offer) {
+      const newRules = {};
+      Object.entries(offerRulesTemplate.offer || {}).forEach(
+        ([role, amount]) => {
+          newRules[role] = { ...amount, ...roleIssuerNames[role] };
+        },
+      );
+      newOfferRulesTemplate.offer = newRules;
+    }
+
+    // Resave the enriched proposal.
+    idToProposal.set(id, {
+      ...proposal,
+      offerRulesTemplate: newOfferRulesTemplate,
+    });
+
+    // Get the instance.
+    const instanceHandle = await E(registrar).get(instanceRegKey);
+    const {
+      publicAPI,
+      roles: contractRoleIssuers,
+      terms: { issuers: contractIssuers },
+    } = await E(zoe).getInstance(instanceHandle);
+
+    const roleIssuers = { ...contractRoleIssuers };
+    Object.values(contractIssuerIndexToRole).forEach((role, i) => {
+      roleIssuers[role] = contractIssuers[i];
+    });
+
+    async function finishCompile(offerRules, purses) {
+      const roleBrands = {};
+      let cachedRoleBrandsP;
+      const getRoleBrandsP = () => {
+        if (cachedRoleBrandsP) {
+          return cachedRoleBrandsP;
+        }
+        cachedRoleBrandsP = Promise.all(
+          Object.entries(roleIssuers).map(async ([role, issuer]) => {
+            roleBrands[role] = await E(issuer).getBrand();
+          }),
+        );
+        return cachedRoleBrandsP;
+      };
+
+      const replacePlaceholderRoles = async (roles, role) => {
+        if (role[0] !== '$') {
+          return;
+        }
+
+        // It's a placeholder role.  Find the first matching role with that brand.
+        await getRoleBrandsP();
+        const { brand } = roles[role];
+        const roleEnt = Object.entries(roleBrands).find(
+          ([_rname, rbrand]) => rbrand === brand,
+        );
+        assert(
+          roleEnt,
+          details`Placeholder role ${role} has no matching brand`,
+        );
+        roles[roleEnt[0]] = roles[role];
+        delete roles[role];
+        purses[roleEnt[0]] = purses[role];
+        delete purses[role];
+      };
+
+      // Swap the placeholder roles for actual roles.
+      await Promise.all([
+        Promise.all(
+          Object.keys(offerRules.want || {}).map(role =>
+            replacePlaceholderRoles(offerRules.want, role),
+          ),
+        ),
+        Promise.all(
+          Object.keys(offerRules.offer || {}).map(role =>
+            replacePlaceholderRoles(offerRules.offer, role),
+          ),
+        ),
+      ]);
+
+      if (contractIssuerIndexToRole.length === 0) {
+        // We rely on Zoe Roles support.
+        return { zoeKind: 'roles', offerRules, purses };
+      }
+
+      const indexedPurses = [];
+      const indexedPayoutRules = await Promise.all(
+        contractIssuerIndexToRole.map(async (role, i) => {
+          indexedPurses[i] = purses[role];
+          if (offerRules.want && offerRules.want[role]) {
+            return { kind: 'wantAtLeast', amount: offerRules.want[role] };
+          }
+          if (offerRules.offer && offerRules.offer[role]) {
+            return { kind: 'offerAtMost', amount: offerRules.offer[role] };
+          }
+          const amount = await E(
+            E(contractIssuers[i]).getAmountMath(),
+          ).getEmpty();
+          return { kind: 'wantAtLeast', amount };
+        }),
+      );
+
+      // Cheap translation of exitObj to exitRule.
+      const exitObj = offerRules.exit || { onDemand: {} };
+      const exitKind = Object.keys(exitObj)[0];
+      const exitRule = {};
+      Object.entries(exitObj[exitKind]).forEach(([key, val]) => {
+        // Prevent functions from slipping in.
+        if (typeof val !== 'function') {
+          exitRule[key] = val;
+        }
+      });
+      exitRule.kind = exitKind;
+
+      return {
+        zoeKind: 'indexed',
+        offerRules: { payoutRules: indexedPayoutRules, exitRule },
+        purses: indexedPurses,
+      };
+    }
+
+    // Get the invite and the (possibly indexed) rules and purses.
+    const { zoeKind, offerRules, purses } = await finishCompile(
+      roleOfferRules,
+      rolePurses,
+    );
+    return { zoeKind, publicAPI, offerRules, purses };
   }
 
-  function declineOffer(date) {
-    const { meta } = dateToOfferRec.get(date);
-    // Update status, drop the offerRules
-    const declinedOfferRec = { meta: { ...meta, status: 'decline' } };
-    dateToOfferRec.set(date, declinedOfferRec);
-    updateInboxState(date, declinedOfferRec);
+  async function propose(proposal) {
+    const { id } = proposal;
+    const newProposal = { ...proposal, status: undefined, wait: undefined };
+    idToProposal.set(id, newProposal);
+    updateInboxState(id, newProposal);
+
+    // Start compiling the template, saving a promise for it.
+    idToCompiledProposalP.set(id, compileProposal(id, newProposal));
+
+    // Our inbox state may have an enriched proposal.
+    updateInboxState(id, idToProposal.get(id));
   }
 
-  async function acceptOffer(date) {
-    const offerOk = await makeOffer(date);
-
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
-
-    if (!offerOk) return;
-
-    const { meta } = dateToOfferRec.get(date);
+  function declineOffer(id) {
+    const proposal = idToProposal.get(id);
     // Update status, drop the offerRules
-    const acceptOfferRec = { meta: { ...meta, status: 'accept' } };
-    dateToOfferRec.set(date, acceptOfferRec);
-    updateInboxState(date, acceptOfferRec);
+    const declinedProposal = {
+      ...proposal,
+      status: 'decline',
+      wait: undefined,
+    };
+    idToProposal.set(id, declinedProposal);
+    updateInboxState(id, declinedProposal);
+  }
+
+  async function cancelOffer(id) {
+    const cancelObj = idToCancelObj.get(id);
+    if (cancelObj) {
+      await E(cancelObj).cancel();
+    }
+  }
+
+  async function acceptOffer(id) {
+    let ret = {};
+    let alreadyAccepted = false;
+    const proposal = idToProposal.get(id);
+    const objectInvokeHookP = (obj, [hookMethod, ...hookArgs] = []) => {
+      if (hookMethod === undefined) {
+        return undefined;
+      }
+      return E(obj)[hookMethod](...hookArgs);
+    };
+    const rejected = e => {
+      if (alreadyAccepted) {
+        return;
+      }
+      const rejectProposal = {
+        ...proposal,
+        status: 'rejected',
+        error: `${e}`,
+        wait: undefined,
+      };
+      idToProposal.set(id, rejectProposal);
+      updateInboxState(id, rejectProposal);
+    };
+
+    try {
+      const pendingProposal = {
+        ...proposal,
+        status: 'accept',
+        wait: -1, // This should be an estimate as to number of ms until offer accepted.
+      };
+      idToProposal.set(id, pendingProposal);
+      const compiledProposal = await idToCompiledProposalP.get(id);
+
+      const { publicAPI } = compiledProposal;
+      const {
+        instanceInviteHook,
+        seatTriggerHook,
+        instanceAcceptedHook,
+      } = proposal;
+      const inviteP = objectInvokeHookP(publicAPI, instanceInviteHook);
+
+      const { seat, depositedP, cancelObj } = await makeOffer(
+        compiledProposal,
+        inviteP,
+      );
+
+      idToCancelObj.set(id, cancelObj);
+      ret = { seat, publicAPI };
+
+      // =====================
+      // === AWAITING TURN ===
+      // =====================
+
+      objectInvokeHookP(seat, seatTriggerHook).catch(rejected);
+
+      // Update status, drop the offerRules
+      depositedP.then(_ => {
+        // We got something back, so no longer pending or rejected.
+        alreadyAccepted = true;
+        const acceptProposal = { ...pendingProposal, wait: undefined };
+        idToProposal.set(id, acceptProposal);
+        updateInboxState(id, acceptProposal);
+        return objectInvokeHookP(publicAPI, instanceAcceptedHook);
+      }, rejected);
+    } catch (e) {
+      rejected(e);
+    }
+    return ret;
   }
 
   function getIssuers() {
@@ -287,8 +500,11 @@ export async function makeWallet(
     getIssuers,
     getPurses,
     getPurse: petnameToPurse.get,
-    addOffer,
+    getPurseIssuer: petname => purseToIssuer.get(petnameToPurse.get(petname)),
+    getIssuerNames: issuerToIssuerNames.get,
+    propose,
     declineOffer,
+    cancelOffer,
     acceptOffer,
     getOfferDescriptions,
   });

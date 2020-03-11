@@ -81,7 +81,10 @@ export default function setup(syscall, state, helpers) {
             harden({
               issuer: issuers[i],
               petname: issuerName,
-              regKey: await E(registrar).register(issuerName, issuers[i]),
+              brandRegKey: await E(registrar).register(
+                issuerName,
+                await E(issuers[i]).getBrand(),
+              ),
             }),
           ),
         );
@@ -124,23 +127,23 @@ export default function setup(syscall, state, helpers) {
         await E(vats.wallet).startup(zoe, registrar);
         const wallet = E(vats.wallet).getWallet();
         await Promise.all(
-          issuerInfo.map(({ petname, issuer }) =>
-            E(wallet).addIssuer(petname, issuer),
+          issuerInfo.map(({ petname, issuer, brandRegKey }) =>
+            E(wallet).addIssuer(petname, issuer, brandRegKey),
           ),
         );
 
         // Make empty purses. Reuse issuer petname for purse petname.
         await Promise.all(
-          issuerInfo.map(({ petname }) =>
-            E(wallet).makeEmptyPurse(petname, petname),
+          issuerInfo.map(({ petname: issuerPetname }) =>
+            E(wallet).makeEmptyPurse(issuerPetname, `${issuerPetname} purse`),
           ),
         );
 
         // deposit payments
         const [moolaPayment, simoleanPayment] = payments;
 
-        await E(wallet).deposit('moola', moolaPayment);
-        await E(wallet).deposit('simolean', simoleanPayment);
+        await E(wallet).deposit('moola purse', moolaPayment);
+        await E(wallet).deposit('simolean purse', simoleanPayment);
 
         // This will allow Dapp developers to register in their dapp.js
         const httpRegCallback = {
