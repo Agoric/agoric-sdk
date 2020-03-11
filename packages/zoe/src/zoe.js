@@ -5,7 +5,7 @@ import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 import makePromise from '@agoric/make-promise';
 
-import { cleanOfferRules, fillInUserOfferRules } from './cleanOfferRules';
+import { cleanOfferRules } from './cleanOfferRules';
 import { arrayToObj, objToArray } from './roleConversion';
 import { isOfferSafeForAll } from './isOfferSafe';
 import { areRightsConserved } from './areRightsConserved';
@@ -154,26 +154,26 @@ const makeZoe = (additionalEndowments = {}) => {
 
         const offers = offerTable.getOffers(offerHandles);
 
-        const payoutRuleMatrix = offers.map(
-          offer => offer.offerRules.payoutRules,
-        );
+        const offerRulesObjs = offers.map(offer => offer.offerRules);
         const currentAmountMatrix = offers.map(offer =>
           objToArray(offer.amounts, roleNames),
         );
-        const amountMaths = objToArray(
-          issuerTable.getAmountMathsForRoles(roles),
-          roleNames,
-        );
+        const amountMaths = issuerTable.getAmountMathsForRoles(roles);
+        const amountMathsArray = objToArray(amountMaths, roleNames);
 
         // 1) ensure that rights are conserved
         assert(
-          areRightsConserved(amountMaths, currentAmountMatrix, newAmountMatrix),
+          areRightsConserved(
+            amountMathsArray,
+            currentAmountMatrix,
+            newAmountMatrix,
+          ),
           details`Rights are not conserved in the proposed reallocation`,
         );
 
         // 2) ensure 'offer safety' for each player
         assert(
-          isOfferSafeForAll(amountMaths, payoutRuleMatrix, newAmountMatrix),
+          isOfferSafeForAll(amountMaths, offerRulesObjs, amountObjs),
           details`The proposed reallocation was not offer safe`,
         );
 
@@ -345,7 +345,7 @@ const makeZoe = (additionalEndowments = {}) => {
      * the offer rules. A payment may be `undefined` in the case of
      * specifying a `wantAtLeast`.
      */
-    redeem: (invite, userOfferRules, offerPayments) => {
+    redeem: (invite, offerRules, offerPayments) => {
       const inviteAmount = inviteIssuer.burn(invite);
       assert(
         inviteAmount.extent.length === 1,
@@ -360,17 +360,7 @@ const makeZoe = (additionalEndowments = {}) => {
 
       const amountMaths = issuerTable.getAmountMathsForRoles(roles);
 
-      userOfferRules = fillInUserOfferRules(
-        roleNames,
-        amountMaths,
-        userOfferRules,
-      );
-
-      const offerRules = cleanOfferRules(
-        roleNames,
-        amountMaths,
-        userOfferRules,
-      );
+      offerRules = cleanOfferRules(roleNames, amountMaths, offerRules);
 
       // Create result to be returned. Depends on exitRule
       const makeRedemptionResult = _ => {
@@ -378,25 +368,26 @@ const makeZoe = (additionalEndowments = {}) => {
           seat: handleToSeat.get(offerHandle),
           payout: payoutMap.get(offerHandle).p,
         };
-        const { exitRule } = offerRules;
+        const { exit } = offerRules;
+        const [exitKind] = Object.getOwnPropertyNames(exit);
         // Automatically cancel on deadline.
-        if (exitRule.kind === 'afterDeadline') {
-          E(exitRule.timer).setWakeup(
-            exitRule.deadline,
+        if (exitKind === 'afterDeadline') {
+          E(exit[exitKind].timer).setWakeup(
+            exit[exitKind].deadline,
             harden({
               wake: () => completeOffers(instanceHandle, harden([offerHandle])),
             }),
           );
           // Add an object with a cancel method to redemptionResult in
           // order to cancel on demand.
-        } else if (exitRule.kind === 'onDemand') {
+        } else if (exitKind === 'onDemand') {
           redemptionResult.cancelObj = {
             cancel: () => completeOffers(instanceHandle, harden([offerHandle])),
           };
         } else {
           assert(
-            exitRule.kind === 'Waved',
-            `exitRule kind was not recognized: ${exitRule.kind}`,
+            exitKind === 'Waved',
+            `exitRule kind was not recognized: ${exitKind}`,
           );
         }
 
@@ -405,29 +396,27 @@ const makeZoe = (additionalEndowments = {}) => {
         return harden(redemptionResult);
       };
 
-      // Promise flow = issuer -> purse -> deposit payment -> escrow receipt
-      const paymentDepositedPs = issuers.map((issuer, i) => {
+      // Promise flow = issuer -> purse -> deposit payment -> seat/payout
+      const offerRoleNames = Object.getOwnPropertyNames(offerRules.offer);
+      const paymentDepositedPs = roleNames.map(roleName => {
+        const issuer = roles[roleName];
         const issuerRecordP = issuerTable.getPromiseForIssuerRecord(issuer);
-        const payoutRule = offerRules.payoutRules[i];
-
         return issuerRecordP.then(({ purse, amountMath }) => {
-          if (payoutRule.kind === 'offerAtMost') {
+          if (offerRoleNames.includes(roleName)) {
             // We cannot trust these amounts since they come directly
             // from the remote issuer and so we must coerce them.
             return E(purse)
-              .deposit(offerPayments[roleNames[i]], payoutRule.amount)
-              .then(_ => amountMath.coerce(payoutRule.amount));
+              .deposit(offerPayments[roleName], offerRules.offer[roleName])
+              .then(_ => amountMath.coerce(offerRules.offer[roleName]));
           }
           // If any other payments are included, they are ignored.
-          return Promise.resolve(amountMath.getEmpty());
+          return Promise.resolve(amountMaths[roleName].getEmpty());
         });
       });
-
       return Promise.all(paymentDepositedPs)
         .then(amountsArray => {
           const offerImmutableRecord = {
             instanceHandle,
-            userOfferRules,
             offerRules,
             issuers,
             amounts: arrayToObj(amountsArray, roleNames),

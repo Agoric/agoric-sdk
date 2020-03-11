@@ -23,46 +23,18 @@ import { assert, details } from '@agoric/assert';
  * order as the issuers for the payoutRules. This array of amount is the
  * reallocation to be given to a player.
  */
-function isOfferSafeForOffer(amountMaths, payoutRules, amounts) {
-  assert(
-    amountMaths.length === payoutRules.length &&
-      amountMaths.length === amounts.length,
-    details`amountMaths, payoutRules, and amounts must be arrays of the same length`,
-  );
-
-  const allowedRules = ['offerAtMost', 'wantAtLeast'];
-
-  for (const payoutRule of payoutRules) {
-    if (payoutRule === null || payoutRule === undefined) {
-      throw new Error(`payoutRule must be specified`);
-    }
-    assert(
-      allowedRules.includes(payoutRule.kind),
-      details`The kind ${payoutRule.kind} was not recognized`,
-    );
-  }
-
+function isOfferSafeForOffer(amountMaths, offerRules, newAmounts) {
+  const isGTE = ([roleName, amount]) =>
+    amountMaths[roleName].isGTE(newAmounts[roleName], amount);
   // For this allocation to count as a full refund, the allocated
   // amount must be greater than or equal to what was originally
   // offered.
-  const refundOk = payoutRules.every((payoutRule, i) => {
-    if (payoutRule.kind === 'offerAtMost') {
-      return amountMaths[i].isGTE(amounts[i], payoutRule.amount);
-    }
-    // If the kind is 'want', anything we give back is fine for a refund.
-    return true;
-  });
+  const refundOk = Object.entries(offerRules.offer).every(isGTE);
 
   // For this allocation to count as a full payout of what the user
   // wanted, their allocated amount must be greater than or equal to
   // what the payoutRules said they wanted.
-  const winningsOk = payoutRules.every((payoutRule, i) => {
-    if (payoutRule.kind === 'wantAtLeast') {
-      return amountMaths[i].isGTE(amounts[i], payoutRule.amount);
-    }
-    // If the kind is 'offer anything we give back is fine for a payout.
-    return true;
-  });
+  const winningsOk = Object.entries(offerRules.want).every(isGTE);
   return refundOk || winningsOk;
 }
 
@@ -76,9 +48,9 @@ function isOfferSafeForOffer(amountMaths, payoutRules, amounts) {
  * element arrays is the array of amount that a single player will
  * get, in the same order as the issuers for the payoutRules
  */
-const isOfferSafeForAll = (amountMaths, payoutRuleMatrix, amountMatrix) =>
-  payoutRuleMatrix.every((payoutRules, i) =>
-    isOfferSafeForOffer(amountMaths, payoutRules, amountMatrix[i]),
+const isOfferSafeForAll = (amountMaths, offerRulesObjs, amountObjs) =>
+  offerRulesObjs.every((offerRules, i) =>
+    isOfferSafeForOffer(amountMaths, offerRules, amountObjs[i]),
   );
 
 // `isOfferSafeForOffer` is only exported for testing

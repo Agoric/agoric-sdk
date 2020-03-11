@@ -36,7 +36,7 @@ export const makeContract = harden(zoe => {
     });
 
     const {
-      userOfferRules: { want, offer, exit },
+      offerRules: { want, offer, exit },
     } = zoe.getOffer(sellerHandle);
 
     const { invite: callOption, inviteHandle } = zoe.makeInvite(seat, {

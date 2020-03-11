@@ -73,9 +73,9 @@ export const makeContract = harden(zoe => {
         rejectIfNotOfferRules(inviteHandle, expected);
         // Save the valid offer
         sellerInviteHandle = inviteHandle;
-        const { userOfferRules } = zoe.getOffer(inviteHandle);
-        auctionedAssets = userOfferRules.offer.Asset;
-        minimumBid = userOfferRules.want.Bid;
+        const { offerRules } = zoe.getOffer(inviteHandle);
+        auctionedAssets = offerRules.offer.Asset;
+        minimumBid = offerRules.want.Bid;
         return defaultAcceptanceMsg;
       },
     });

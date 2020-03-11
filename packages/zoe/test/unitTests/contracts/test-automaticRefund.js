@@ -152,7 +152,7 @@ test('zoe with automaticRefund', async t => {
     );
 
     // In the 'automaticRefund' trivial contract, you just get your
-    // payoutRules back when you make an offer. The effect of calling
+    // payments back when you make an offer. The effect of calling
     // makeOffer will vary widely depending on the smart  contract.
     const aliceOutcome = aliceSeat.makeOffer();
     const bobInvite = publicAPI.makeInvite();

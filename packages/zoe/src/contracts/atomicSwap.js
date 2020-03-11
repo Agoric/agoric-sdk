@@ -12,7 +12,7 @@ export const makeContract = harden(zoe => {
       matchOffer: () => swap(firstInviteHandle, inviteHandle),
     });
     const {
-      userOfferRules: { want, offer },
+      offerRules: { want, offer },
     } = zoe.getOffer(firstInviteHandle);
     const { invite, inviteHandle } = zoe.makeInvite(seat, {
       asset: offer.Asset,

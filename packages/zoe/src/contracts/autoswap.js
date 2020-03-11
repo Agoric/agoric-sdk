@@ -43,9 +43,9 @@ export const makeContract = harden(zoe => {
       const makeInvite = () => {
         const seat = harden({
           swap: () => {
-            const { userOfferRules } = zoe.getOffer(inviteHandle);
+            const { offerRules } = zoe.getOffer(inviteHandle);
             const [offerRoleName] = Object.getOwnPropertyNames(
-              userOfferRules.offer,
+              offerRules.offer,
             );
             let wantRoleName;
             if (offerRoleName === 'TokenA') {
@@ -70,13 +70,13 @@ export const makeContract = harden(zoe => {
               newOutputReserve,
             } = getPrice(
               harden({
-                inputExtent: userOfferRules.offer[offerRoleName].extent,
+                inputExtent: offerRules.offer[offerRoleName].extent,
                 inputReserve: poolAmounts[offerRoleName].extent,
                 outputReserve: poolAmounts[wantRoleName].extent,
               }),
             );
             const amountOut = amountMaths[wantRoleName].make(outputExtent);
-            const wantedAmount = userOfferRules.want[wantRoleName];
+            const wantedAmount = offerRules.want[wantRoleName];
             const satisfiesWantedAmounts = () =>
               amountMaths[wantRoleName].isGTE(amountOut, wantedAmount);
             if (!satisfiesWantedAmounts()) {

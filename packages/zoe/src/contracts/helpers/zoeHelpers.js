@@ -44,7 +44,7 @@ export const makeZoeHelpers = zoe => {
       );
     },
     rejectIfNotOfferRules: (inviteHandle, expected) => {
-      const { userOfferRules: actual } = zoe.getOffer(inviteHandle);
+      const { offerRules: actual } = zoe.getOffer(inviteHandle);
       rejectIf(inviteHandle, actual.offer, expected.offer);
       rejectIf(inviteHandle, actual.want, expected.want);
       rejectIf(inviteHandle, actual.exit, expected.exit);
@@ -53,8 +53,8 @@ export const makeZoeHelpers = zoe => {
       zoe.getOffers(zoe.getOfferStatuses(handles).active),
     rejectOffer,
     canTradeWith: (leftInviteHandle, rightInviteHandle) => {
-      const { userOfferRules: left } = zoe.getOffer(leftInviteHandle);
-      const { userOfferRules: right } = zoe.getOffer(rightInviteHandle);
+      const { offerRules: left } = zoe.getOffer(leftInviteHandle);
+      const { offerRules: right } = zoe.getOffer(rightInviteHandle);
       const { roleNames } = zoe.getInstanceRecord();
       const satisfied = (wants, offers) =>
         roleNames.every(roleName => {

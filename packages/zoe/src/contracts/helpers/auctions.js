@@ -42,8 +42,7 @@ export const closeAuction = (
 
   const getBids = offer => offer.amounts.Bid;
   const bids = zoe.getOffers(activeBidHandles).map(getBids);
-  const assetAmount = zoe.getOffer(sellerInviteHandle).userOfferRules.offer
-    .Asset;
+  const assetAmount = zoe.getOffer(sellerInviteHandle).offerRules.offer.Asset;
 
   const {
     winnerOfferHandle: winnerInviteHandle,

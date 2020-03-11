@@ -4,6 +4,7 @@ import { E } from '@agoric/eventual-send';
 import makeStore from '@agoric/weak-store';
 import { assert, details } from '@agoric/assert';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
+import { sameStructure } from '@agoric/same-structure';
 
 const makeTable = (validateFn, makeCustomMethodsFn = () => undefined) => {
   // The WeakMap that stores the records
@@ -94,19 +95,19 @@ const makeInstanceTable = () => {
 };
 
 // Offer Table
-// Columns: handle | instanceHandle | issuers | payoutRules | exitRule
+// Columns: handle | instanceHandle | issuers | offerRules
 // | amounts
 const makeOfferTable = () => {
-  const insistValidPayoutRuleKinds = payoutRules => {
-    const acceptedKinds = ['offerAtMost', 'wantAtLeast'];
-    for (const payoutRule of payoutRules) {
-      assert(
-        acceptedKinds.includes(payoutRule.kind),
-        details`${payoutRule.kind} must be one of the accepted kinds.`,
-      );
-    }
+  const insistValidKeys = offerRules => {
+    const validKeys = harden(['want', 'offer', 'exit']);
+    const keys = harden(Object.getOwnPropertyNames(offerRules));
+    assert(
+      sameStructure(keys, validKeys),
+      details`offerRules must have valid keys`,
+    );
   };
-  const insistValidExitRule = exitRule => {
+  const insistValidExitRule = exit => {
+    const [exitRuleKind] = Object.getOwnPropertyNames(exit);
     const acceptedExitRuleKinds = [
       'waived',
       'onDemand',
@@ -114,26 +115,20 @@ const makeOfferTable = () => {
       // 'onDemandafterDeadline', // not yet supported
     ];
     assert(
-      acceptedExitRuleKinds.includes(exitRule.kind),
-      details`exitRule.kind ${exitRule.kind} is not one of the accepted options`,
+      acceptedExitRuleKinds.includes(exitRuleKind),
+      details`exitRuleKind ${exitRuleKind} is not one of the accepted options`,
     );
   };
 
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateProperties = makeValidateProperties(
-    harden([
-      'instanceHandle',
-      'issuers',
-      'offerRules',
-      'userOfferRules',
-      'amounts',
-    ]),
+    harden(['instanceHandle', 'issuers', 'offerRules', 'amounts']),
   );
   const validateSomewhat = obj => {
     validateProperties(obj);
-    insistValidPayoutRuleKinds(obj.offerRules.payoutRules);
-    insistValidExitRule(obj.offerRules.exitRule);
+    insistValidKeys(obj.offerRules);
+    insistValidExitRule(obj.offerRules.exit);
     // TODO: Should check the rest of the representation of the payout rule
     // TODO: Should check that the deadline representation is itself valid.
     return true;
