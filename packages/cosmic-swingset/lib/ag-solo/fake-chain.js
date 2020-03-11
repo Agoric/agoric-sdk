@@ -36,7 +36,7 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
   const argv = [`--role=${role}`, bootAddress];
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
   const s = await launch(stateDBdir, mailboxStorage, vatsdir, argv);
-  const { deliverInbound, deliverStartBlock } = s;
+  const { deliverInbound, beginBlock, saveChainState, saveOutsideState } = s;
 
   let pretendLast = Date.now();
   let blockHeight = 0;
@@ -51,13 +51,15 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
     try {
       const commitStamp = pretendLast + PRETEND_BLOCK_DELAY * 1000;
       const blockTime = Math.floor(commitStamp / 1000);
-      await deliverStartBlock(blockHeight, blockTime, true);
+      await beginBlock(blockHeight, blockTime);
       for (let i = 0; i < thisBlock.length; i += 1) {
         const [newMessages, acknum] = thisBlock[i];
-        await deliverInbound(bootAddress, newMessages, acknum, true);
+        await deliverInbound(bootAddress, newMessages, acknum);
       }
 
       // Done processing, "commit the block".
+      saveChainState();
+      saveOutsideState();
       await writeMap(mailboxFile, mailboxStorage);
       thisBlock = [];
       pretendLast = commitStamp + Date.now() - actualStart;
