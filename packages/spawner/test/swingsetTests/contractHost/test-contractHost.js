@@ -15,22 +15,6 @@ async function main(withSES, basedir, argv) {
   return controller.dump();
 }
 
-const contractMintGolden = [
-  '=> setup called',
-  'starting mintTestDescOps',
-  'starting mintTestNumber',
-  'alice balance {"label":{"assay":{},"allegedName":"quatloos"},"extent":950}',
-  'payment balance {"label":{"assay":{},"allegedName":"quatloos"},"extent":50}',
-  'alice balance {"label":{"assay":{},"allegedName":"bucks"},"extent":950}',
-  'payment balance {"label":{"assay":{},"allegedName":"bucks"},"extent":50}',
-];
-
-test.skip('run contractHost Demo --mint with SES', async t => {
-  const dump = await main(true, 'contractHost', ['mint']);
-  t.deepEquals(dump.log, contractMintGolden);
-  t.end();
-});
-
 const contractTrivialGolden = [
   '=> setup called',
   'starting trivialContractTest',
@@ -39,6 +23,7 @@ const contractTrivialGolden = [
   '++ eightP resolved to 8 (should be 8)',
   '++ DONE',
 ];
+
 test.skip('run contractHost Demo --trivial with SES', async t => {
   const dump = await main(true, 'contractHost', ['trivial']);
   t.deepEquals(dump.log, contractTrivialGolden);
@@ -89,7 +74,7 @@ const contractBobFirstGolden = [
 ];
 
 // stuck on https://github.com/Agoric/agoric-sdk/issues/615#issuecomment-592060759 for now
-test.skip('run contractHost Demo --bob-first with SES', async t => {
+test('run contractHost Demo --bob-first with SES', async t => {
   const dump = await main(true, 'contractHost', ['bob-first']);
   t.deepEquals(dump.log, contractBobFirstGolden);
   t.end();

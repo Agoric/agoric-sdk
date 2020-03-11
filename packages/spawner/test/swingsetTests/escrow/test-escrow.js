@@ -30,6 +30,7 @@ const escrowMismatchGolden = [
 ];
 
 test.skip('escrow check misMatches w/SES', async t => {
+  throw 'infinite loop/memory?'
   const dump = await main(true, 'escrow', ['escrow misMatches']);
   t.deepEquals(dump.log, escrowMismatchGolden);
   t.end();
