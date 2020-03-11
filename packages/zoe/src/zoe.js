@@ -388,7 +388,7 @@ const makeZoe = (additionalEndowments = {}) => {
           };
         } else {
           assert(
-            exitKind === 'Waved',
+            exitKind === 'waived',
             `exitRule kind was not recognized: ${exitKind}`,
           );
         }
