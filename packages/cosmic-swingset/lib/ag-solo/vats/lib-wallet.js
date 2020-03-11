@@ -387,14 +387,19 @@ export async function makeWallet(
     return { zoeKind, publicAPI, offerRules, purses };
   }
 
-  async function propose(proposal) {
-    const { id } = proposal;
-    const newProposal = { ...proposal, status: undefined, wait: undefined };
-    idToProposal.set(id, newProposal);
-    updateInboxState(id, newProposal);
+  async function propose(rawProposal, requestContext) {
+    const { id } = rawProposal;
+    const proposal = {
+      ...rawProposal,
+      requestContext,
+      status: undefined,
+      wait: undefined,
+    };
+    idToProposal.set(id, proposal);
+    updateInboxState(id, proposal);
 
     // Start compiling the template, saving a promise for it.
-    idToCompiledProposalP.set(id, compileProposal(id, newProposal));
+    idToCompiledProposalP.set(id, compileProposal(id, proposal));
 
     // Our inbox state may have an enriched proposal.
     updateInboxState(id, idToProposal.get(id));

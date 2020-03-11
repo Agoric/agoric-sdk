@@ -26,7 +26,7 @@ function build(E, D, _log) {
   function getCommandHandler() {
     return {
       async processInbound(obj) {
-        const { type, data } = obj;
+        const { type, data, requestContext } = obj;
         switch (type) {
           case 'walletGetPurses': {
             if (!pursesState) return {};
@@ -45,7 +45,7 @@ function build(E, D, _log) {
           case 'walletPropose': {
             return {
               type: 'walletOfferAdded',
-              data: await wallet.propose(data),
+              data: await wallet.propose(data, requestContext),
             };
           }
           case 'walletDeclineOffer': {

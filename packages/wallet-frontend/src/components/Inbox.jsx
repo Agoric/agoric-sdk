@@ -79,21 +79,20 @@ const GreenChip = withStyles(theme => ({
   },
 }))(Chip);
 
+const pet = petname => petname || '???';
+
 export default function Inbox() {
   const classes = useStyles();
   const { state, dispatch } = useApplicationContext();
   const { inbox } = state;
 
-  function formatDate(date) {
-    const options = {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    };
-    return new Date(date).toLocaleDateString('en-US', options);
+  function formatDateNow(stamp) {
+    const date = new Date(stamp);
+    const isoStamp = date.getTime() - date.getTimezoneOffset() * 60 * 1000;
+    const isoDate = new Date(isoStamp);
+    const isoStr = isoDate.toISOString();
+    const match = isoStr.match(/^(.*)T(.*)\..*/);
+    return <>{match[1]}&nbsp;{match[2]}</>;
   }
 
   function handleCancel(id) {
@@ -141,10 +140,11 @@ export default function Inbox() {
         <List>
           {inbox.map(
             ({
+              requestContext: { date, origin = 'unknown origin'} = {},
               id,
-              id: date,
               instanceRegKey,
-              offerRulesTemplate,
+              instancePetname,
+              offerRulesTemplate: { offer = {}, want = {} },
               status,
               wait,
             }) => (
@@ -154,42 +154,53 @@ export default function Inbox() {
                 </ListItemIcon>
                 <Grid container direction="column">
                   <Grid item>
-                    <Typography variant="body2" display="block">
-                      <i>({instanceRegKey})</i> - {formatDate(date)}
+                    <Typography variant="body2" display="block" color="secondary">
+                    At&nbsp;
+                    {date ? formatDateNow(date) : <i>unknown time</i>} via&nbsp;
+                    {origin}
                     </Typography>
                   </Grid>
                   <Grid item>
-                    {Object.entries(offerRulesTemplate.offer || {}).map(
+                    <Typography variant="body2" display="block" color="secondary">
+                      <Box component="span" fontWeight={800}>
+                        {pet(instancePetname)}
+                        &nbsp;
+                      </Box>
+                      {!instancePetname && <i>({instanceRegKey})&nbsp;</i>}
+                      says:
+                    </Typography>
+                  </Grid>
+                  <Grid item>
+                    {Object.entries(offer).map(
                       ([role, { issuerPetname, pursePetname, brandRegKey, extent }], i) => (
                         <Typography key={`offer${role}`} variant="body1">
                           {i === 0 ? 'Pay' : <>and&nbsp;pay</>}&nbsp;
                           <Box component="span" fontWeight={800}>
                             {extent}
                             &nbsp;
-                            {issuerPetname || '??'}
-                            &nbsp;
+                            {pet(issuerPetname)}
                           </Box>
-                          {brandRegKey && <i>({brandRegKey})&nbsp;</i>}
-                          from&nbsp;
+                          {!issuerPetname && <>&nbsp;<i>({brandRegKey})</i></>} from&nbsp;
                           <Box component="span" fontWeight={800}>
-                            {pursePetname}
+                            {pet(pursePetname)}
                           </Box>
                         </Typography>
                       ))}
-                    {Object.entries(offerRulesTemplate.want || {}).map(
+                    {Object.entries(want).map(
                       ([role, { issuerPetname, pursePetname, brandRegKey, extent }], i) => (
                         <Typography key={`offer${role}`} variant="body1">
-                          {i === 0 ? 'Receive' : <>and&nbsp;receieve</>}&nbsp;
+                          {i === 0 ?
+                            (Object.keys(offer).length > 0 ? <>to&nbsp;receive</> : 'Receive') :
+                            <>and&nbsp;receieve</>
+                          }&nbsp;
                           <Box component="span" fontWeight={800}>
                             {extent}
                             &nbsp;
-                            {issuerPetname || '??'}
-                            &nbsp;
+                            {pet(issuerPetname)}
                           </Box>
-                          {brandRegKey && <i>({brandRegKey})&nbsp;</i>}
-                          into&nbsp;
+                          {!issuerPetname && <>&nbsp;<i>({brandRegKey})</i></>} into&nbsp;
                           <Box component="span" fontWeight={800}>
-                            {pursePetname}
+                            {pet(pursePetname)}
                           </Box>
                         </Typography>
                       ))}

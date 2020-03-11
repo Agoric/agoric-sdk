@@ -19,7 +19,13 @@ const send = (ws, msg) => {
   }
 };
 
-export function makeHTTPListener(basedir, port, host, inboundCommand) {
+export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
+  // Enrich the inbound command with some metadata.
+  const inboundCommand = (body, { headers: { origin } = {} } = {}) => {
+    const requestContext = { origin, date: Date.now() };
+    return rawInboundCommand({ ...body, requestContext });
+  };
+
   const app = express();
   // HTTP logging.
   app.use(
@@ -36,7 +42,9 @@ export function makeHTTPListener(basedir, port, host, inboundCommand) {
     fs.statSync(dapphtmldir);
     console.log(`Serving Dapp files from ${dapphtmldir}`);
     app.use(express.static(dapphtmldir));
-  } catch (e) {}
+  } catch (e) {
+    // Do nothing.
+  }
 
   // serve the static HTML for the UI
   const htmldir = path.join(basedir, 'html');
@@ -80,7 +88,7 @@ export function makeHTTPListener(basedir, port, host, inboundCommand) {
     }
 
     // console.log(`POST /vat got`, req.body); // should be jsonable
-    inboundCommand(req.body).then(
+    inboundCommand(req.body, req).then(
       r => res.json({ ok: true, res: r }),
       rej => res.json({ ok: false, rej }),
     );
@@ -124,7 +132,7 @@ export function makeHTTPListener(basedir, port, host, inboundCommand) {
       console.log(id, 'client closed');
       broadcasts.delete(ws);
       if (req.url === '/captp') {
-        inboundCommand({ type: 'CTP_CLOSE', connectionID }).catch(_ => {});
+        inboundCommand({ type: 'CTP_CLOSE', connectionID }, req).catch(_ => {});
         points.delete(connectionID);
       }
     });
@@ -132,7 +140,7 @@ export function makeHTTPListener(basedir, port, host, inboundCommand) {
     if (req.url === '/captp') {
       // This is a point-to-point connection, not broadcast.
       points.set(connectionID, ws);
-      inboundCommand({ type: 'CTP_OPEN', connectionID }).catch(err => {
+      inboundCommand({ type: 'CTP_OPEN', connectionID }, req).catch(err => {
         console.log(id, `error establishing connection`, err);
       });
       ws.on('message', async message => {
@@ -140,7 +148,7 @@ export function makeHTTPListener(basedir, port, host, inboundCommand) {
           // some things use inbound messages
           const obj = JSON.parse(message);
           obj.connectionID = connectionID;
-          await inboundCommand(obj);
+          await inboundCommand(obj, req);
         } catch (e) {
           console.log(id, 'client error', e);
           const error = e.message || JSON.stringify(e);
