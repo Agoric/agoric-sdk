@@ -172,7 +172,7 @@ export async function makeWallet(
       .map(p => harden(p[1]));
   }
 
-  async function compileOfferDesc(id, offerDesc) {
+  async function compileOfferDesc(id, offerDesc, hooks = {}) {
     const {
       instanceRegKey,
       contractIssuerIndexToRole = [], // FIXME: Only for compatibility with Zoe pre-Roles
@@ -379,10 +379,14 @@ export async function makeWallet(
       roleOfferRules,
       rolePurses,
     );
-    return { zoeKind, publicAPI, offerRules, purses };
+    return { zoeKind, publicAPI, offerRules, purses, hooks };
   }
 
-  async function addOffer(rawOfferDesc, requestContext) {
+  async function addOffer(
+    rawOfferDesc,
+    hooks = undefined,
+    requestContext = {},
+  ) {
     const { id } = rawOfferDesc;
     const offerDesc = {
       ...rawOfferDesc,
@@ -394,7 +398,7 @@ export async function makeWallet(
     updateInboxState(id, offerDesc);
 
     // Start compiling the template, saving a promise for it.
-    idToCompiledOfferDescP.set(id, compileOfferDesc(id, offerDesc));
+    idToCompiledOfferDescP.set(id, compileOfferDesc(id, offerDesc, hooks));
 
     // Our inbox state may have an enriched offerDesc.
     updateInboxState(id, idToOfferDesc.get(id));
@@ -423,12 +427,6 @@ export async function makeWallet(
     let ret = {};
     let alreadyAccepted = false;
     const offerDesc = idToOfferDesc.get(id);
-    const objectInvokeHookP = (obj, [hookMethod, ...hookArgs] = []) => {
-      if (hookMethod === undefined) {
-        return undefined;
-      }
-      return E(obj)[hookMethod](...hookArgs);
-    };
     const rejected = e => {
       if (alreadyAccepted) {
         return;
@@ -452,14 +450,12 @@ export async function makeWallet(
       idToOfferDesc.set(id, pendingOfferDesc);
       const compiledOfferDesc = await idToCompiledOfferDescP.get(id);
 
-      const { publicAPI } = compiledOfferDesc;
       const {
-        instanceInviteHook,
-        seatTriggerHook,
-        instanceAcceptedHook,
-      } = offerDesc;
-      const inviteP = objectInvokeHookP(publicAPI, instanceInviteHook);
+        publicAPI,
+        hooks: { publicAPI: publicAPIHooks = {}, seat: seatHooks = {} } = {},
+      } = compiledOfferDesc;
 
+      const inviteP = E(publicAPIHooks).getInvite(publicAPI);
       const { seat, depositedP, cancelObj } = await executeOffer(
         compiledOfferDesc,
         inviteP,
@@ -472,17 +468,25 @@ export async function makeWallet(
       // === AWAITING TURN ===
       // =====================
 
-      objectInvokeHookP(seat, seatTriggerHook).catch(rejected);
+      // Don't wait for the offer to finish performing...
+      // we need to return control to our caller.
+      E(seatHooks)
+        .performOffer(seat)
+        .catch(e =>
+          assert(false, details`seatHooks.performOffer failed with ${e}`),
+        );
 
       // Update status, drop the offerRules
-      depositedP.then(_ => {
-        // We got something back, so no longer pending or rejected.
-        alreadyAccepted = true;
-        const acceptOfferDesc = { ...pendingOfferDesc, wait: undefined };
-        idToOfferDesc.set(id, acceptOfferDesc);
-        updateInboxState(id, acceptOfferDesc);
-        return objectInvokeHookP(publicAPI, instanceAcceptedHook);
-      }, rejected);
+      depositedP
+        .then(_ => {
+          // We got something back, so no longer pending or rejected.
+          alreadyAccepted = true;
+          const acceptOfferDesc = { ...pendingOfferDesc, wait: undefined };
+          idToOfferDesc.set(id, acceptOfferDesc);
+          updateInboxState(id, acceptOfferDesc);
+          return E(publicAPIHooks).offerAccepted(publicAPI);
+        })
+        .catch(rejected);
     } catch (e) {
       rejected(e);
     }
@@ -491,6 +495,41 @@ export async function makeWallet(
 
   function getIssuers() {
     return Array.from(issuerPetnameToIssuer);
+  }
+
+  const hydrateHook = ([hookMethod, ...hookArgs] = []) => object => {
+    if (hookMethod === undefined) {
+      return undefined;
+    }
+    return E(object)[hookMethod](...hookArgs);
+  };
+
+  function hydrateHooks({
+    publicAPI: { getInvite, offerAccepted, ...publicAPIRest } = {},
+    seat: { performOffer, ...seatRest } = {},
+    ...targetsRest
+  } = {}) {
+    const assertSpecs = [
+      [targetsRest, 'targets'],
+      [publicAPIRest, 'publicAPI hooks'],
+      [seatRest, 'seat hooks'],
+    ];
+    for (const [rest, desc] of assertSpecs) {
+      assert(
+        Object.keys(rest).length === 0,
+        details`Unrecognized extra ${desc} ${rest}`,
+      );
+    }
+
+    return harden({
+      publicAPI: {
+        getInvite: hydrateHook(getInvite),
+        accepted: hydrateHook(offerAccepted),
+      },
+      seat: {
+        performOffer: hydrateHook(performOffer),
+      },
+    });
   }
 
   const wallet = harden({
@@ -502,6 +541,7 @@ export async function makeWallet(
     getPurse: petnameToPurse.get,
     getPurseIssuer: petname => purseToIssuer.get(petnameToPurse.get(petname)),
     getIssuerNames: issuerToIssuerNames.get,
+    hydrateHooks,
     addOffer,
     declineOffer,
     cancelOffer,

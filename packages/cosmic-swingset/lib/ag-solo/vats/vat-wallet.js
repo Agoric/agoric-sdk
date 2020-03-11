@@ -43,9 +43,11 @@ function build(E, D, _log) {
             };
           }
           case 'walletAddOffer': {
+            // We only need to do this because we can't reach addOffer.
+            const hooks = wallet.hydrateHooks(data.hooks);
             return {
               type: 'walletOfferAdded',
-              data: await wallet.addOffer(data, requestContext),
+              data: await wallet.addOffer(data, hooks, requestContext),
             };
           }
           case 'walletDeclineOffer': {
