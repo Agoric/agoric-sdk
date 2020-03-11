@@ -22,6 +22,7 @@
     "packages/marshal",
     "packages/same-structure",
     "packages/captp",
+    "packages/stat-logger",
     "packages/swing-store-lmdb",
     "packages/swing-store-simple",
     "packages/SwingSet",
