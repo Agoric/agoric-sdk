@@ -107,7 +107,7 @@ export default function Inbox() {
     dispatch(acceptOffer(id));
   }
 
-//  const proposalTemplate = {
+//  const offerDesc = {
 //    id: Date.now(),
 //    instanceRegKey: instanceId,
 //    contractIssuerIndexToRole: ['TokenA', 'TokenB', 'Liquidity'],

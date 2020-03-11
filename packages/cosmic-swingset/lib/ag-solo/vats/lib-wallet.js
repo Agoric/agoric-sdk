@@ -24,11 +24,11 @@ export async function makeWallet(
   const brandToIssuer = makeStore();
   const brandToMath = makeStore();
 
-  // Proposals that the wallet knows about (the inbox).
-  const idToProposal = new Map();
+  // OfferDescs that the wallet knows about (the inbox).
+  const idToOfferDesc = new Map();
 
-  // Compiled proposals (all ready to execute).
-  const idToCompiledProposalP = new Map();
+  // Compiled offerDescs (all ready to execute).
+  const idToCompiledOfferDescP = new Map();
   const idToCancelObj = new Map();
 
   // Client-side representation of the purses inbox;
@@ -57,16 +57,16 @@ export async function makeWallet(
     pursesStateChangeHandler(getPursesState());
   }
 
-  async function updateInboxState(id, proposal) {
-    // Only sent the uncompiled proposal to the client.
-    inboxState.set(id, proposal);
+  async function updateInboxState(id, offerDesc) {
+    // Only sent the uncompiled offerDesc to the client.
+    inboxState.set(id, offerDesc);
     inboxStateChangeHandler(getInboxState());
   }
 
-  async function makeOffer(compiledProposalP, inviteP) {
+  async function executeOffer(compiledOfferDescP, inviteP) {
     const [invite, { zoeKind, purses, offerRules }] = await Promise.all([
       inviteP,
-      compiledProposalP,
+      compiledOfferDescP,
     ]);
 
     // =====================
@@ -166,23 +166,18 @@ export async function makeWallet(
 
   function getOfferDescriptions() {
     // return the offers sorted by id
-    return Array.from(idToProposal)
+    return Array.from(idToOfferDesc)
       .filter(p => p[1].status === 'accept')
       .sort((p1, p2) => p1[0] > p2[0])
-      .map(([id, proposal]) => {
-        const {
-          offerRules: { payoutRules },
-        } = proposal;
-        return harden({ id, payoutRules });
-      });
+      .map(p => harden(p[1]));
   }
 
-  async function compileProposal(id, proposal) {
+  async function compileOfferDesc(id, offerDesc) {
     const {
       instanceRegKey,
       contractIssuerIndexToRole = [], // FIXME: Only for compatibility with Zoe pre-Roles
       offerRulesTemplate,
-    } = proposal;
+    } = offerDesc;
 
     const roleIssuerNames = {};
     function createRoleOfferRulesAndPurses(tmpl) {
@@ -269,9 +264,9 @@ export async function makeWallet(
       newOfferRulesTemplate.offer = newRules;
     }
 
-    // Resave the enriched proposal.
-    idToProposal.set(id, {
-      ...proposal,
+    // Resave the enriched offerDesc.
+    idToOfferDesc.set(id, {
+      ...offerDesc,
       offerRulesTemplate: newOfferRulesTemplate,
     });
 
@@ -387,34 +382,34 @@ export async function makeWallet(
     return { zoeKind, publicAPI, offerRules, purses };
   }
 
-  async function propose(rawProposal, requestContext) {
-    const { id } = rawProposal;
-    const proposal = {
-      ...rawProposal,
+  async function addOffer(rawOfferDesc, requestContext) {
+    const { id } = rawOfferDesc;
+    const offerDesc = {
+      ...rawOfferDesc,
       requestContext,
       status: undefined,
       wait: undefined,
     };
-    idToProposal.set(id, proposal);
-    updateInboxState(id, proposal);
+    idToOfferDesc.set(id, offerDesc);
+    updateInboxState(id, offerDesc);
 
     // Start compiling the template, saving a promise for it.
-    idToCompiledProposalP.set(id, compileProposal(id, proposal));
+    idToCompiledOfferDescP.set(id, compileOfferDesc(id, offerDesc));
 
-    // Our inbox state may have an enriched proposal.
-    updateInboxState(id, idToProposal.get(id));
+    // Our inbox state may have an enriched offerDesc.
+    updateInboxState(id, idToOfferDesc.get(id));
   }
 
   function declineOffer(id) {
-    const proposal = idToProposal.get(id);
+    const offerDesc = idToOfferDesc.get(id);
     // Update status, drop the offerRules
-    const declinedProposal = {
-      ...proposal,
+    const declinedOfferDesc = {
+      ...offerDesc,
       status: 'decline',
       wait: undefined,
     };
-    idToProposal.set(id, declinedProposal);
-    updateInboxState(id, declinedProposal);
+    idToOfferDesc.set(id, declinedOfferDesc);
+    updateInboxState(id, declinedOfferDesc);
   }
 
   async function cancelOffer(id) {
@@ -427,7 +422,7 @@ export async function makeWallet(
   async function acceptOffer(id) {
     let ret = {};
     let alreadyAccepted = false;
-    const proposal = idToProposal.get(id);
+    const offerDesc = idToOfferDesc.get(id);
     const objectInvokeHookP = (obj, [hookMethod, ...hookArgs] = []) => {
       if (hookMethod === undefined) {
         return undefined;
@@ -438,35 +433,35 @@ export async function makeWallet(
       if (alreadyAccepted) {
         return;
       }
-      const rejectProposal = {
-        ...proposal,
+      const rejectOfferDesc = {
+        ...offerDesc,
         status: 'rejected',
         error: `${e}`,
         wait: undefined,
       };
-      idToProposal.set(id, rejectProposal);
-      updateInboxState(id, rejectProposal);
+      idToOfferDesc.set(id, rejectOfferDesc);
+      updateInboxState(id, rejectOfferDesc);
     };
 
     try {
-      const pendingProposal = {
-        ...proposal,
+      const pendingOfferDesc = {
+        ...offerDesc,
         status: 'accept',
         wait: -1, // This should be an estimate as to number of ms until offer accepted.
       };
-      idToProposal.set(id, pendingProposal);
-      const compiledProposal = await idToCompiledProposalP.get(id);
+      idToOfferDesc.set(id, pendingOfferDesc);
+      const compiledOfferDesc = await idToCompiledOfferDescP.get(id);
 
-      const { publicAPI } = compiledProposal;
+      const { publicAPI } = compiledOfferDesc;
       const {
         instanceInviteHook,
         seatTriggerHook,
         instanceAcceptedHook,
-      } = proposal;
+      } = offerDesc;
       const inviteP = objectInvokeHookP(publicAPI, instanceInviteHook);
 
-      const { seat, depositedP, cancelObj } = await makeOffer(
-        compiledProposal,
+      const { seat, depositedP, cancelObj } = await executeOffer(
+        compiledOfferDesc,
         inviteP,
       );
 
@@ -483,9 +478,9 @@ export async function makeWallet(
       depositedP.then(_ => {
         // We got something back, so no longer pending or rejected.
         alreadyAccepted = true;
-        const acceptProposal = { ...pendingProposal, wait: undefined };
-        idToProposal.set(id, acceptProposal);
-        updateInboxState(id, acceptProposal);
+        const acceptOfferDesc = { ...pendingOfferDesc, wait: undefined };
+        idToOfferDesc.set(id, acceptOfferDesc);
+        updateInboxState(id, acceptOfferDesc);
         return objectInvokeHookP(publicAPI, instanceAcceptedHook);
       }, rejected);
     } catch (e) {
@@ -507,7 +502,7 @@ export async function makeWallet(
     getPurse: petnameToPurse.get,
     getPurseIssuer: petname => purseToIssuer.get(petnameToPurse.get(petname)),
     getIssuerNames: issuerToIssuerNames.get,
-    propose,
+    addOffer,
     declineOffer,
     cancelOffer,
     acceptOffer,

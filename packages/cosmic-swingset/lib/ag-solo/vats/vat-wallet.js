@@ -42,10 +42,10 @@ function build(E, D, _log) {
               data: inboxState,
             };
           }
-          case 'walletPropose': {
+          case 'walletAddOffer': {
             return {
               type: 'walletOfferAdded',
-              data: await wallet.propose(data, requestContext),
+              data: await wallet.addOffer(data, requestContext),
             };
           }
           case 'walletDeclineOffer': {
