@@ -174,90 +174,6 @@ export function buildCrankBuffer(storage) {
   return harden({ crankBuffer, commitCrank, abortCrank });
 }
 
-export function cacheHeuristic(key) {
-  // this encodes our heuristics about which keys are worth caching
-
-  // v$NN.t.$NN is a transcript entry, which is basically write-only at
-  // runtime, so don't bother caching it
-  if (key.indexOf('.t.') !== -1) {
-    // But v$NN.t.nextID is the index of the next transcript to be written,
-    // which gets a read/increment/write cycle on each crank, and perhaps
-    // worthy of a cache
-    if (key.indexOf('.t.nextID') !== -1) {
-      return true;
-    }
-    return false;
-  }
-
-  // runQueue is read/modify/write on each crank
-  if (key === 'runQueue') {
-    return false;
-  }
-  return true;
-}
-
-/**
- * Wrap a cache around a storage object.
- *
- * @param storage  The storage object to be given a cache.
- * @param useCache  Predicate function to decide if a key should be cached.
- *
- * @return a new storage object based on `storage` that caches values
- *
- * NOTE: the value of caching here is somewhat speculative, and thus warrants
- * some deeper examination when we have the time.
- */
-export function addReadCache(storage, useCache) {
-  // this embeds some assumptions:
-  //  * the speed of 'get' on existing keys is the most important
-  //  * 'has' is rare, especially on deleted keys
-  //  * 'getKeys' can be arbitrarily slow
-
-  insistStorageAPI(storage);
-
-  const cache = new Map();
-
-  const cachingStorage = {
-    has(key) {
-      if (cache.has(key)) {
-        return true;
-      }
-      return storage.has(key);
-    },
-
-    getKeys: storage.getKeys,
-
-    get(key) {
-      if (cache.has(key)) {
-        return cache.get(key);
-      }
-      const value = storage.get(key);
-      if (useCache(key)) {
-        cache.set(key, value);
-        // todo: prune the cache
-      }
-      return value;
-    },
-
-    set(key, value) {
-      storage.set(key, value);
-      if (useCache(key)) {
-        cache.set(key, value);
-        // todo: prune the cache
-      } else {
-        cache.delete(key);
-      }
-    },
-
-    delete(key) {
-      storage.delete(key);
-      cache.delete(key);
-    },
-  };
-
-  return harden(cachingStorage);
-}
-
 export function addHelpers(storage) {
   // these functions are built on top of the DB interface
   insistStorageAPI(storage);
@@ -316,7 +232,6 @@ export function wrapStorage(hostStorage) {
   const { crankBuffer, commitCrank, abortCrank } = buildCrankBuffer(
     guardedHostStorage,
   );
-  const cachingCrankBuffer = addReadCache(crankBuffer, cacheHeuristic);
-  const enhancedCrankBuffer = addHelpers(cachingCrankBuffer);
+  const enhancedCrankBuffer = addHelpers(crankBuffer);
   return { enhancedCrankBuffer, commitCrank, abortCrank };
 }
