@@ -7,8 +7,8 @@ import { makeHelpers, defaultAcceptanceMsg } from '@agoric/zoe/src/contracts/hel
  * This contract is like the simpleExchange contract. The exchange only accepts
  * limit orders. A limit order is an order with payoutRules that specifies
  * wantAtLeast on one side and offerAtMost on the other:
- * [ { kind: 'wantAtLeast', units2 }, { kind: 'offerAtMost', units1 }]
- * [ { kind: 'wantAtLeast', units1 }, { kind: 'offerAtMost', units2 }]
+ * [ { kind: 'wantAtLeast', amount: amount2 }, { kind: 'offerAtMost', amount: amount1 }]
+ * [ { kind: 'wantAtLeast', amount: amount1 }, { kind: 'offerAtMost', amount: amount2 }]
  *
  * Note that the asset specified as wantAtLeast is treated as the exact amount
  * to be exchanged, while the amount specified as offerAtMost is a limit that
@@ -58,6 +58,14 @@ export const makeContract = harden((zoe, terms) => {
       buys: flattenOrders(buyInviteHandles),
       sells: flattenOrders(sellInviteHandles),
     };
+  }
+
+  function getOrderStatus(inviteHandles) {
+    const requested = new Set(inviteHandles);
+    return {
+      buys: flattenOrders(buyInviteHandles.filter(requested.has)),
+      sells: flattenOrders(sellInviteHandles.filter(requested.has)),
+    }
   }
 
   function getOffer(inviteHandle) {
@@ -110,13 +118,13 @@ export const makeContract = harden((zoe, terms) => {
         throw rejectOffer(inviteHandle);
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat);
+    const { invite, inviteHandle } = zoe.makeInvite(seat, { seatDesc: 'addOrder' });
     return { invite, inviteHandle };
   };
 
   return harden({
-    invite: makeInvite(),
-    publicAPI: { makeInvite, getBookOrders, getOffer },
+    invite: makeInvite().invite,
+    publicAPI: { makeInvite, getBookOrders, getOrderStatus, getOffer },
     terms,
   });
 });

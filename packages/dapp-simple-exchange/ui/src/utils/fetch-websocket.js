@@ -1,6 +1,8 @@
 /* globals window, WebSocket, fetch */
 
-import { API_URL } from './constants';
+import dappConstants from './constants';
+
+const { API_URL } = dappConstants;
 
 // === FETCH
 
