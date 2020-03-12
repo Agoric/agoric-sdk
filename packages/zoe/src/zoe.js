@@ -430,6 +430,9 @@ const makeZoe = (additionalEndowments = {}) => {
         })
         .then(makeRedemptionResult);
     },
+    isOfferActive: offerTable.isOfferActive,
+    getOffers: offerTable.getOffers,
+    getOffer: offerTable.get,
   });
   return zoeService;
 };
