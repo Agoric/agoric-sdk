@@ -340,6 +340,11 @@ export async function makeWallet(
     });
   }
 
+  function ping(cb, data) {
+    console.log('FIGME: pinged with', cb, String(cb));
+    return E(cb).pong(data);
+  }
+
   const wallet = harden({
     addIssuer,
     makeEmptyPurse,
@@ -355,6 +360,7 @@ export async function makeWallet(
     cancelOffer,
     acceptOffer,
     getOfferDescriptions,
+    ping,
   });
 
   return wallet;
