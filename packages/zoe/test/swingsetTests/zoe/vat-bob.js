@@ -344,7 +344,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         exclInvite,
       );
 
-      const { installationHandle, terms } = await E(zoe).getInstance(
+      const { installationHandle, roles } = await E(zoe).getInstance(
         inviteExtent[0].instanceHandle,
       );
       assert(
@@ -352,8 +352,12 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         details`wrong installation`,
       );
       assert(
-        sameStructure(harden([moolaIssuer, simoleanIssuer]), terms.issuers),
-        details`issuers were not as expected`,
+        roles.Asset === moolaIssuer,
+        details`The first issuer should be the moola issuer`,
+      );
+      assert(
+        roles.Price === simoleanIssuer,
+        details`The second issuer should be the simolean issuer`,
       );
 
       const bobBuyOrderOfferRules = harden({
@@ -385,11 +389,10 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     },
     doSimpleExchangeUpdates: async (inviteP, m, s) => {
       const invite = await E(inviteIssuer).claim(inviteP);
-      const {
-        extent: [inviteExtent],
-      } = await E(inviteIssuer).getAmountOf(invite);
-
-      const { installationHandle, terms } = await E(zoe).getInstance(
+      const { extent: inviteExtent } = await E(inviteIssuer).getAmountOf(
+        invite,
+      );
+      const { installationHandle, roles } = await E(zoe).getInstance(
         inviteExtent[0].instanceHandle,
       );
       assert(
@@ -397,31 +400,23 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         details`wrong installation`,
       );
       assert(
-        sameStructure(harden([moolaIssuer, simoleanIssuer]), terms.issuers),
-        details`issuers were not as expected`,
+        roles.Asset === moolaIssuer,
+        details`The first issuer should be the moola issuer`,
       );
-
+      assert(
+        roles.Price === simoleanIssuer,
+        details`The second issuer should be the simolean issuer`,
+      );
       const bobBuyOrderOfferRules = harden({
-        payoutRules: [
-          {
-            kind: 'wantAtLeast',
-            amount: moola(m),
-          },
-          {
-            kind: 'offerAtMost',
-            amount: simoleans(s),
-          },
-        ],
-        exitRule: {
-          kind: 'onDemand',
-        },
+        want: { Asset: moola(m) },
+        offer: { Price: simoleans(s) },
+        exitRule: { kind: 'onDemand' },
       });
       if (m === 3 && s === 7) {
         await E(simoleanPurseP).deposit(simoleanPayment);
       }
       const simoleanPayment2 = await E(simoleanPurseP).withdraw(simoleans(s));
-      const offerPayments = [undefined, simoleanPayment2];
-
+      const offerPayments = { Price: simoleanPayment2 };
       const { seat, payout: payoutP } = await E(zoe).redeem(
         invite,
         bobBuyOrderOfferRules,
@@ -433,8 +428,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       log(offerResult);
 
       payoutP.then(async bobResult => {
-        E(moolaPurseP).deposit(await bobResult[0]);
-        E(simoleanPurseP).deposit(await bobResult[1]);
+        E(moolaPurseP).deposit(await bobResult.Asset);
+        E(simoleanPurseP).deposit(await bobResult.Price);
       });
 
       await showPurseBalance(moolaPurseP, 'bobMoolaPurse', log);

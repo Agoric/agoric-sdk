@@ -5,26 +5,11 @@ import bundleSource from '@agoric/bundle-source';
 
 import harden from '@agoric/harden';
 
+import { assert, details } from '@agoric/assert';
 import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
 
 const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
-
-function makeRule(kind, amount) {
-  return { kind, amount };
-}
-
-function offerRule(amount) {
-  return makeRule('offerAtMost', amount);
-}
-
-function wantRule(amount) {
-  return makeRule('wantAtLeast', amount);
-}
-
-function exitRule(kind) {
-  return { kind };
-}
 
 test('simpleExchange with valid offers', async t => {
   try {
@@ -51,7 +36,8 @@ test('simpleExchange with valid offers', async t => {
     // 1: Simon creates a simpleExchange instance and spreads the invite far and
     // wide with instructions on how to use it.
     const { invite: simonInvite } = await zoe.makeInstance(installationHandle, {
-      roles: { Asset: moolaIssuer, Price: simoleanIssuer },
+      Asset: moolaIssuer,
+      Price: simoleanIssuer,
     });
     const { instanceHandle } = inviteIssuer.getAmountOf(simonInvite).extent[0];
     const { publicAPI } = zoe.getInstance(instanceHandle);
@@ -82,11 +68,19 @@ test('simpleExchange with valid offers', async t => {
 
     const {
       installationHandle: bobInstallationId,
-      terms: bobTerms,
+      roles: bobRoles,
     } = zoe.getInstance(instanceHandle);
 
     t.equals(bobInstallationId, installationHandle);
-    t.deepEquals(bobTerms.issuers, [moolaIssuer, simoleanIssuer]);
+
+    assert(
+      bobRoles.Asset === moolaIssuer,
+      details`The Asset issuer should be the moola issuer`,
+    );
+    assert(
+      bobRoles.Price === simoleanIssuer,
+      details`The Price issuer should be the simolean issuer`,
+    );
 
     // Bob creates a buy order, saying that he wants exactly 3 moola,
     // and is willing to pay up to 7 simoleans.
@@ -180,7 +174,8 @@ test('simpleExchange with multiple sell offers', async t => {
     // 1: Simon creates a simpleExchange instance and spreads the invite far and
     // wide with instructions on how to use it.
     const { invite: simonInvite } = await zoe.makeInstance(installationHandle, {
-      issuers: [moolaIssuer, simoleanIssuer],
+      Asset: moolaIssuer,
+      Price: simoleanIssuer,
     });
     const { instanceHandle } = inviteIssuer.getAmountOf(simonInvite).extent[0];
     const { publicAPI } = zoe.getInstance(instanceHandle);
@@ -191,11 +186,12 @@ test('simpleExchange with multiple sell offers', async t => {
     // sell 3 moola and wants to receive at least 4 simoleans in
     // return.
     const aliceSale1OrderOfferRules = harden({
-      payoutRules: [offerRule(moola(3)), wantRule(simoleans(4))],
-      exitRule: exitRule('onDemand'),
+      offer: { Asset: moola(3) },
+      want: { Price: simoleans(4) },
+      exitRule: { kind: 'onDemand' },
     });
 
-    const alicePayments = [aliceMoolaPurse.withdraw(moola(3)), undefined];
+    const alicePayments = { Asset: aliceMoolaPurse.withdraw(moola(3)) };
     const { seat: aliceSeat1 } = await zoe.redeem(
       aliceInvite1,
       aliceSale1OrderOfferRules,
@@ -210,13 +206,14 @@ test('simpleExchange with multiple sell offers', async t => {
       publicAPI.makeInvite().invite,
     );
     const aliceSale2OrderOfferRules = harden({
-      payoutRules: [offerRule(moola(5)), wantRule(simoleans(8))],
-      exitRule: exitRule('onDemand'),
+      offer: { Asset: moola(5) },
+      want: { Price: simoleans(8) },
+      exitRule: { kind: 'onDemand' },
     });
     const { seat: aliceSeat2 } = await zoe.redeem(
       aliceInvite2,
       aliceSale2OrderOfferRules,
-      [aliceMoolaPurse.withdraw(moola(5)), undefined],
+      { Asset: aliceMoolaPurse.withdraw(moola(5)) },
     );
     const aliceOfferResult2 = aliceSeat2.addOrder();
 
@@ -225,13 +222,14 @@ test('simpleExchange with multiple sell offers', async t => {
       publicAPI.makeInvite().invite,
     );
     const aliceBuyOrderOfferRules = harden({
-      payoutRules: [wantRule(moola(29)), offerRule(simoleans(18))],
-      exitRule: exitRule('onDemand'),
+      offer: { Price: simoleans(18) },
+      want: { Asset: moola(29) },
+      exitRule: { kind: 'onDemand' },
     });
     const { seat: aliceSeat3 } = await zoe.redeem(
       aliceInvite3,
       aliceBuyOrderOfferRules,
-      [undefined, aliceSimoleanPurse.withdraw(simoleans(18))],
+      { Price: aliceSimoleanPurse.withdraw(simoleans(18)) },
     );
     const aliceOfferResult3 = aliceSeat3.addOrder();
 
@@ -239,10 +237,10 @@ test('simpleExchange with multiple sell offers', async t => {
       () => {
         const expectedBook = {
           changed: {},
-          buys: [[{ want: moola(29) }, { offer: simoleans(18) }]],
+          buys: [[{ Asset: 29 }, { Price: 18 }]],
           sells: [
-            [{ offer: moola(3) }, { want: simoleans(4) }],
-            [{ offer: moola(5) }, { want: simoleans(8) }],
+            [{ Price: 4 }, { Asset: 3 }],
+            [{ Price: 8 }, { Asset: 5 }],
           ],
         };
         t.deepEquals(publicAPI.getBookOrders(), expectedBook);
@@ -273,24 +271,26 @@ test('simpleExchange showPayoutRules', async t => {
     // 1: Simon creates a simpleExchange instance and spreads the invite far and
     // wide with instructions on how to use it.
     const { invite: simonInvite } = await zoe.makeInstance(installationHandle, {
-      issuers: [moolaIssuer, simoleanIssuer],
+      Asset: moolaIssuer,
+      Price: simoleanIssuer,
     });
     const { instanceHandle } = inviteIssuer.getAmountOf(simonInvite).extent[0];
     const { publicAPI } = zoe.getInstance(instanceHandle);
 
-    const { invite: aliceInvite1, inviteHandle } = publicAPI.makeInvite();
+    const { invite: aliceInvite, inviteHandle } = publicAPI.makeInvite();
 
     // 2: Alice escrows with zoe to create a sell order. She wants to
     // sell 3 moola and wants to receive at least 4 simoleans in
     // return.
     const aliceSale1OrderOfferRules = harden({
-      payoutRules: [offerRule(moola(3)), wantRule(simoleans(4))],
-      exitRule: exitRule('onDemand'),
+      offer: { Asset: moola(3) },
+      want: { Price: simoleans(4) },
+      exitRule: { kind: 'onDemand' },
     });
 
-    const alicePayments = [aliceMoolaPayment, undefined];
+    const alicePayments = { Asset: aliceMoolaPayment };
     const { seat: aliceSeat1 } = await zoe.redeem(
-      aliceInvite1,
+      aliceInvite,
       aliceSale1OrderOfferRules,
       alicePayments,
     );
@@ -298,7 +298,7 @@ test('simpleExchange showPayoutRules', async t => {
     // 4: Alice adds her sell order to the exchange
     aliceSeat1.addOrder();
 
-    const expected = [{ offer: moola(3) }, { want: simoleans(4) }];
+    const expected = [{ Price: 4 }, { Asset: 3 }];
 
     t.deepEquals(publicAPI.getOffer(inviteHandle), expected);
   } catch (e) {

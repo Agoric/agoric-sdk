@@ -216,7 +216,7 @@ const expectedSimpleExchangeUpdateLog = [
   '=> alice, bob, carol and dave are set up',
   'Order update: b:[], s:[]',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
-  'Order update: b:[], s:moola:3 for simoleans:4',
+  'Order update: b:[], s:simoleans:4 for moola:3',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":0}',
   'bobSimoleanPurse: balance {"brand":{},"extent":17}',

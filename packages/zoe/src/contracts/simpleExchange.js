@@ -4,47 +4,48 @@ import makePromise from '@agoric/make-promise';
 import { makeZoeHelpers, defaultAcceptanceMsg } from './helpers/zoeHelpers';
 
 /**
- * The SimpleExchange only accepts limit orders. A limit order is an order with
- * payoutRules that specifies wantAtLeast on one side and offerAtMost on the
- * other:
- * [ { kind: 'wantAtLeast', amount2 }, { kind: 'offerAtMost', amount1 }]
- * [ { kind: 'wantAtLeast', amount1 }, { kind: 'offerAtMost', amount2 }]
+ * The SimpleExchange uses Asset and Price as its Issuer roles. In usage,
+ * they're somewhat symmetrical. Participants will be buying or selling in both
+ * directions.
  *
- * Note that the asset specified as wantAtLeast is treated as the exact amount
- * to be exchanged, while the amount specified as offerAtMost is a limit that
- * may be improved on. This simple exchange does not partially fill orders.
+ * { offer: { 'Price', simoleans(5) }, want: { 'Asset', quatloos(3) } }
+ * { offer: { 'Asset', simoleans(5) }, want: { 'Price', quatloos(3) } }
+ *
+ * The asset specified under 'want' for a particular order is treated as an
+ * exact amount to be exchanged, while the amount specified as 'offer' is a
+ * limit that may be improved on. This simple exchange does not partially fill
+ * orders.
  */
-export const makeContract = harden((zoe, terms) => {
-  const ASSET_INDEX = 0;
+export const makeContract = harden(zoe => {
+  const PRICE = 'Price';
+  const ASSET = 'Asset';
+
   let sellInviteHandles = [];
   let buyInviteHandles = [];
   let nextChangePromise = makePromise();
 
-  const { issuers } = terms;
   const {
     rejectOffer,
-    hasValidPayoutRules,
+    rejectIfNotOfferRules,
     swap,
-    areAssetsEqualAtIndex,
     canTradeWith,
     getActiveOffers,
-  } = makeZoeHelpers(zoe, issuers);
+    assertRoleNames,
+  } = makeZoeHelpers(zoe);
+
+  assertRoleNames(harden([ASSET, PRICE]));
 
   function flattenRule(r) {
-    switch (r.kind) {
-      case 'offerAtMost':
-        return { offer: r.amount };
-      case 'wantAtLeast':
-        return { want: r.amount };
-      default:
-        throw new Error(`${r.kind} not supported.`);
-    }
+    const roleName = Object.getOwnPropertyNames(r)[0];
+    const struct = {};
+    struct[roleName] = r[roleName].extent;
+    return harden(struct);
   }
 
   function flattenOffer(o) {
     return harden([
-      flattenRule(o.payoutRules[0]),
-      flattenRule(o.payoutRules[1]),
+      flattenRule(o.offerRules.want),
+      flattenRule(o.offerRules.offer),
     ]);
   }
 
@@ -81,12 +82,9 @@ export const makeContract = harden((zoe, terms) => {
     nextChangePromise = makePromise();
   }
 
-  function swapOrAddToBook(inviteHandles, inviteHandle) {
+  function swapIfCanTrade(inviteHandles, inviteHandle) {
     for (const iHandle of inviteHandles) {
-      if (
-        areAssetsEqualAtIndex(ASSET_INDEX, inviteHandle, iHandle) &&
-        canTradeWith(inviteHandle, iHandle)
-      ) {
+      if (canTradeWith(inviteHandle, iHandle)) {
         bookOrdersChanged();
         return swap(inviteHandle, iHandle);
       }
@@ -98,24 +96,33 @@ export const makeContract = harden((zoe, terms) => {
   const makeInvite = () => {
     const seat = harden({
       addOrder: () => {
-        // Is it a valid sell offer?
-        if (hasValidPayoutRules(['offerAtMost', 'wantAtLeast'], inviteHandle)) {
+        const {
+          offerRules: { offer, want },
+        } = zoe.getOffer(inviteHandle);
+        const [offerRoleName] = Object.getOwnPropertyNames(offer);
+        const [wantRoleName] = Object.getOwnPropertyNames(want);
+        const expected = harden({
+          offer: [offerRoleName],
+          want: [wantRoleName],
+        });
+        rejectIfNotOfferRules(inviteHandle, expected);
+        if (offerRoleName === ASSET && wantRoleName === PRICE) {
           // Save the valid offer and try to match
           sellInviteHandles.push(inviteHandle);
           buyInviteHandles = [...zoe.getOfferStatuses(buyInviteHandles).active];
-          return swapOrAddToBook(buyInviteHandles, inviteHandle);
-        }
-        // Is it a valid buy offer?
-        if (hasValidPayoutRules(['wantAtLeast', 'offerAtMost'], inviteHandle)) {
+          return swapIfCanTrade(buyInviteHandles, inviteHandle);
+          /* eslint-disable no-else-return */
+        } else if (offerRoleName === PRICE && wantRoleName === ASSET) {
           // Save the valid offer and try to match
           buyInviteHandles.push(inviteHandle);
           sellInviteHandles = [
             ...zoe.getOfferStatuses(sellInviteHandles).active,
           ];
-          return swapOrAddToBook(sellInviteHandles, inviteHandle);
+          return swapIfCanTrade(sellInviteHandles, inviteHandle);
+        } else {
+          // Eject because the offer must be invalid
+          throw rejectOffer(inviteHandle);
         }
-        // Eject because the offer must be invalid
-        throw rejectOffer(inviteHandle);
       },
     });
     const { invite, inviteHandle } = zoe.makeInvite(seat);

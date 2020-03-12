@@ -206,9 +206,9 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
   };
 
   const doSimpleExchange = async bobP => {
-    const { invite } = await E(zoe).makeInstance(installations.simpleExchange, {
-      roles: { Asset: moolaIssuer, Price: simoleanIssuer },
-    });
+    const roles = harden({ Price: simoleanIssuer, Asset: moolaIssuer });
+    const { simpleExchange } = installations;
+    const { invite } = await E(zoe).makeInstance(simpleExchange, roles);
     const {
       extent: [{ instanceHandle }],
     } = await E(inviteIssuer).getAmountOf(invite);
@@ -249,14 +249,15 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       return '[]';
     }
     const wantIndex = 1 - offerIndex;
+    const rolesIndex = ['Price', 'Asset'];
     const descs = [];
     for (const o of orders) {
-      const offerBrandPetname =
-        brandPetnames[brands.indexOf(o[offerIndex].offer.brand)];
-      const wantBrandPetname =
-        brandPetnames[brands.indexOf(o[wantIndex].want.brand)];
+      const offerRole = Object.getOwnPropertyNames(o[offerIndex])[0];
+      const wantRole = Object.getOwnPropertyNames(o[wantIndex])[0];
+      const offerBrandPetname = brandPetnames[rolesIndex.indexOf(offerRole)];
+      const wantBrandPetname = brandPetnames[rolesIndex.indexOf(wantRole)];
       descs.push(
-        `${offerBrandPetname}:${o[offerIndex].offer.extent} for ${wantBrandPetname}:${o[wantIndex].want.extent}`,
+        `${offerBrandPetname}:${o[offerIndex][offerRole]} for ${wantBrandPetname}:${o[wantIndex][wantRole]}`,
       );
     }
     return descs;
@@ -269,50 +270,35 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const { changed: p, buys, sells } = orderResult;
       p.then(() => {
         pollForBookOrders(publicAPI, petnames, brands);
-        log(
-          `Order update: b:${printOrders(
-            buys,
-            petnames,
-            brands,
-            1,
-          )}, s:${printOrders(sells, petnames, brands, 0)}`,
-        );
+        const buyOrders = printOrders(buys, petnames, brands, 1);
+        const sellOrders = printOrders(sells, petnames, brands, 0);
+        log(`Order update: b:${buyOrders}, s:${sellOrders}`);
       });
     });
   }
 
   const doSimpleExchangeUpdates = async bobP => {
-    const { invite } = await E(zoe).makeInstance(installations.simpleExchange, {
-      issuers: [moolaIssuer, simoleanIssuer],
-    });
+    const roles = harden({ Price: simoleanIssuer, Asset: moolaIssuer });
+    const { simpleExchange } = installations;
+    const { invite } = await E(zoe).makeInstance(simpleExchange, roles);
     const {
       extent: [{ instanceHandle }],
     } = await E(inviteIssuer).getAmountOf(invite);
     const { publicAPI } = await E(zoe).getInstance(instanceHandle);
 
-    const petnames = ['moola', 'simoleans'];
+    const petnames = ['simoleans', 'moola'];
     const brands = await Promise.all([
-      E(moolaIssuer).getBrand(),
       E(simoleanIssuer).getBrand(),
+      E(moolaIssuer).getBrand(),
     ]);
 
     pollForBookOrders(publicAPI, petnames, brands);
     const aliceSellOrderOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'offerAtMost',
-          amount: moola(3),
-        },
-        {
-          kind: 'wantAtLeast',
-          amount: simoleans(4),
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+      offer: { Asset: moola(3) },
+      want: { Price: simoleans(4) },
+      exitRule: { kind: 'onDemand' },
     });
-    const offerPayments = [moolaPayment, undefined];
+    const offerPayments = { Asset: moolaPayment };
     const { seat, payout: payoutP } = await E(zoe).redeem(
       invite,
       aliceSellOrderOfferRules,
@@ -330,9 +316,10 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
     const payout = await payoutP;
 
-    await E(moolaPurseP).deposit(await payout[0]);
-    await E(simoleanPurseP).deposit(await payout[1]);
-
+    const moolaPayout = await payout.Asset;
+    const simoleanPayout = await payout.Price;
+    await E(moolaPurseP).deposit(moolaPayout);
+    await E(simoleanPurseP).deposit(simoleanPayout);
     const { invite: bobInvite3P } = await E(publicAPI).makeInvite();
     await E(bobP).doSimpleExchangeUpdates(bobInvite3P, 20, 13);
     const { invite: bobInvite4P } = await E(publicAPI).makeInvite();
