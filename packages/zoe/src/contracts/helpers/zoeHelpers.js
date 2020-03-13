@@ -35,10 +35,10 @@ export const makeZoeHelpers = zoe => {
   // compare actual checks to expected keys. If expectedKeys is
   // undefined, return true trivially.
   const check = (inviteHandle, actual, expectedKeys) => {
-    if (expectedKeys !== undefined) {
-      return sameStructure(getKeys(actual), expectedKeys);
+    if (expectedKeys === undefined) {
+      return true;
     }
-    return true;
+    return sameStructure(getKeys(actual), expectedKeys);
   };
   const helpers = harden({
     assertRoleNames: expected => {
@@ -60,8 +60,11 @@ export const makeZoeHelpers = zoe => {
     checkIfOfferRules: (inviteHandle, expected) => {
       const { offerRules: actual } = zoe.getOffer(inviteHandle);
       return (
+        // Check that the "offer" keys match expected keys.
         check(inviteHandle, actual.offer, expected.offer) &&
+        // Check that the "want" keys match expected keys.
         check(inviteHandle, actual.want, expected.want) &&
+        // Check that the "exit" key (i.e. "onDemand") matches the expected key.
         check(inviteHandle, actual.exit, expected.exit)
       );
     },
