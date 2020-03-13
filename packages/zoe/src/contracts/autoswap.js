@@ -28,6 +28,7 @@ export const makeContract = harden(zoe => {
       rejectOffer,
       makeEmptyOffer,
       rejectIfNotOfferRules,
+      checkIfOfferRules,
     } = makeZoeHelpers(zoe);
     const {
       getPrice,
@@ -44,25 +45,26 @@ export const makeContract = harden(zoe => {
         const seat = harden({
           swap: () => {
             const { offerRules } = zoe.getOffer(inviteHandle);
-            const [offerRoleName] = Object.getOwnPropertyNames(
-              offerRules.offer,
-            );
+            const offerTokenA = harden({
+              offer: ['TokenA'],
+              want: ['TokenB', 'Liquidity'],
+            });
+            const offerTokenB = harden({
+              offer: ['TokenB'],
+              want: ['TokenA', 'Liquidity'],
+            });
+            let offerRoleName;
             let wantRoleName;
-            if (offerRoleName === 'TokenA') {
-              const expected = harden({
-                offer: ['TokenA'],
-                want: ['TokenB', 'Liquidity'],
-              });
-              rejectIfNotOfferRules(inviteHandle, expected);
+            if (checkIfOfferRules(inviteHandle, offerTokenA)) {
+              offerRoleName = 'TokenA';
               wantRoleName = 'TokenB';
-            } else {
-              const expected = harden({
-                offer: ['TokenB'],
-                want: ['TokenA', 'Liquidity'],
-              });
-              rejectIfNotOfferRules(inviteHandle, expected);
+            } else if (checkIfOfferRules(inviteHandle, offerTokenB)) {
+              offerRoleName = 'TokenB';
               wantRoleName = 'TokenA';
+            } else {
+              return rejectOffer(inviteHandle);
             }
+
             const poolAmounts = getPoolAmounts();
             const {
               outputExtent,

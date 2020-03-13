@@ -32,6 +32,14 @@ export const makeZoeHelpers = zoe => {
       }
     }
   };
+  // compare actual checks to expected keys. If expectedKeys is
+  // undefined, return true trivially.
+  const check = (inviteHandle, actual, expectedKeys) => {
+    if (expectedKeys !== undefined) {
+      return sameStructure(getKeys(actual), expectedKeys);
+    }
+    return true;
+  };
   const helpers = harden({
     assertRoleNames: expected => {
       // 'actual' is sorted in alphabetical order by Zoe
@@ -48,6 +56,14 @@ export const makeZoeHelpers = zoe => {
       rejectIf(inviteHandle, actual.offer, expected.offer);
       rejectIf(inviteHandle, actual.want, expected.want);
       rejectIf(inviteHandle, actual.exit, expected.exit);
+    },
+    checkIfOfferRules: (inviteHandle, expected) => {
+      const { offerRules: actual } = zoe.getOffer(inviteHandle);
+      return (
+        check(inviteHandle, actual.offer, expected.offer) &&
+        check(inviteHandle, actual.want, expected.want) &&
+        check(inviteHandle, actual.exit, expected.exit)
+      );
     },
     getActiveOffers: handles =>
       zoe.getOffers(zoe.getOfferStatuses(handles).active),
