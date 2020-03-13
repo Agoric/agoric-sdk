@@ -30,7 +30,7 @@ export const makeConstProductBC = zoe => {
       outputReserve,
       feeBasisPoints = 30,
     }) => {
-      const feeTenthOfPercent = feeBasisPoints / 10;
+      const feeTenthOfPercent = floorDivide(feeBasisPoints, 10);
       const oneMinusFeeInTenThousandths = subtract(1000, feeTenthOfPercent);
       const inputWithFee = multiply(inputExtent, oneMinusFeeInTenThousandths);
       const numerator = multiply(inputWithFee, outputReserve);

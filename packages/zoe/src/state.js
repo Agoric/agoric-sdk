@@ -76,7 +76,7 @@ const makeInstallationTable = () => {
 
 // Instance Table
 // Columns: handle | installationHandle | publicAPI | terms | issuers
-// | roles
+// | roles | roleNames
 const makeInstanceTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
@@ -112,7 +112,7 @@ const makeOfferTable = () => {
       'waived',
       'onDemand',
       'afterDeadline',
-      // 'onDemandafterDeadline', // not yet supported
+      // 'onDemandAfterDeadline', // not yet supported
     ];
     assert(
       acceptedExitRuleKinds.includes(exitRuleKind),

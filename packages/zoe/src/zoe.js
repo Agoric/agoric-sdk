@@ -221,6 +221,10 @@ const makeZoe = (additionalEndowments = {}) => {
           const { roles, roleNames, issuers } = instanceTable.get(
             instanceHandle,
           );
+          assert(
+            !roleNames.includes(roleName),
+            details`roleName must be unique`,
+          );
           const newRoles = { ...roles, [roleName]: issuer };
           // We append the new roleName and new issuer to the end of
           // the arrays.
@@ -389,7 +393,7 @@ const makeZoe = (additionalEndowments = {}) => {
         } else {
           assert(
             exitKind === 'waived',
-            `exitRule kind was not recognized: ${exitKind}`,
+            details`exitRule kind was not recognized: ${exitKind}`,
           );
         }
 
