@@ -8,8 +8,8 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from './helpers/zoeHelpers';
  * they're somewhat symmetrical. Participants will be buying or selling in both
  * directions.
  *
- * { offer: { 'Price', simoleans(5) }, want: { 'Asset', quatloos(3) } }
  * { offer: { 'Asset', simoleans(5) }, want: { 'Price', quatloos(3) } }
+ * { offer: { 'Price', quatloos(8) }, want: { 'Asset', simoleans(3) } }
  *
  * The asset specified under 'want' for a particular order is treated as an
  * exact amount to be exchanged, while the amount specified as 'offer' is a
@@ -26,7 +26,7 @@ export const makeContract = harden(zoe => {
 
   const {
     rejectOffer,
-    rejectIfNotOfferRules,
+    checkIfOfferRules,
     swap,
     canTradeWith,
     getActiveOffers,
@@ -96,23 +96,21 @@ export const makeContract = harden(zoe => {
   const makeInvite = () => {
     const seat = harden({
       addOrder: () => {
-        const {
-          offerRules: { offer, want },
-        } = zoe.getOffer(inviteHandle);
-        const [offerRoleName] = Object.getOwnPropertyNames(offer);
-        const [wantRoleName] = Object.getOwnPropertyNames(want);
-        const expected = harden({
-          offer: [offerRoleName],
-          want: [wantRoleName],
+        const buyAssetForPrice = harden({
+          offer: [PRICE],
+          want: [ASSET],
         });
-        rejectIfNotOfferRules(inviteHandle, expected);
-        if (offerRoleName === ASSET && wantRoleName === PRICE) {
+        const sellAssetForPrice = harden({
+          offer: [ASSET],
+          want: [PRICE],
+        });
+        if (checkIfOfferRules(inviteHandle, sellAssetForPrice)) {
           // Save the valid offer and try to match
           sellInviteHandles.push(inviteHandle);
           buyInviteHandles = [...zoe.getOfferStatuses(buyInviteHandles).active];
           return swapIfCanTrade(buyInviteHandles, inviteHandle);
           /* eslint-disable no-else-return */
-        } else if (offerRoleName === PRICE && wantRoleName === ASSET) {
+        } else if (checkIfOfferRules(inviteHandle, buyAssetForPrice)) {
           // Save the valid offer and try to match
           buyInviteHandles.push(inviteHandle);
           sellInviteHandles = [
@@ -121,7 +119,7 @@ export const makeContract = harden(zoe => {
           return swapIfCanTrade(sellInviteHandles, inviteHandle);
         } else {
           // Eject because the offer must be invalid
-          throw rejectOffer(inviteHandle);
+          return rejectOffer(inviteHandle);
         }
       },
     });
