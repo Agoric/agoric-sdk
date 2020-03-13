@@ -60,8 +60,23 @@ harden(openDetail);
 // above, the thrown error may reveal only that `sky.color` is a string,
 // whereas the same diagnostic printed to the console reveals that the
 // sky was green.
+//
+// WARNING: this function currently returns an unhardened result, as hardening
+// proved to cause significant performance degradation.  Consequently, callers
+// should take care to use it only in contexts where this lack of hardening
+// does not present a hazard.  In current usage, a `details` template literal
+// may only appear either as an argument to `assert`, where we know hardening
+// won't matter, or inside another hardened object graph, where hardening is
+// already ensured.  However, there is currently no means to enfoce these
+// constraints, so users are required to employ this function with caution.
+// Our intent is to eventually have a lint rule that will check for
+// inappropriate uses or find an alternative means of implementing `details`
+// that does not encounter the performance issue.  The final disposition of
+// this is being discussed and tracked in issue #679 in the agoric-sdk
+// repository.
 function details(template, ...args) {
-  const complainer = harden({
+  // const complainer = harden({  // remove harden per above discussion
+  const complainer = {
     complain() {
       const interleaved = [template[0]];
       const parts = [template[0]];
@@ -83,7 +98,8 @@ function details(template, ...args) {
       console.error(...interleaved);
       return new Error(parts.join(''));
     },
-  });
+  };
+  // });
   return complainer;
 }
 harden(details);
