@@ -1,5 +1,3 @@
-import { assert, details } from '@agoric/assert';
-
 /**
  * `isOfferSafeForOffer` checks offer safety for a single offer.
  *
