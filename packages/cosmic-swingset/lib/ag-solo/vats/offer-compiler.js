@@ -1,4 +1,8 @@
-import { assert, details } from '@agoric/assert';
+/* eslint-disable no-continue */
+// We don't use details`` because all of the assertion
+// failures can be reflected to the caller without
+// security compromise.
+import { assert } from '@agoric/assert';
 
 export default ({
   E,
@@ -38,39 +42,23 @@ export default ({
       roles[role] = amount;
     };
 
-    if (offerRulesTemplate.want) {
-      roleOfferRules.want = {};
+    for (const dir of ['offer', 'want']) {
+      if (!offerRulesTemplate[dir]) {
+        continue;
+      }
+      roleOfferRules[dir] = {};
+      rolePurses[dir] = {};
+      Object.entries(offerRulesTemplate[dir]).forEach(([role, amount]) => {
+        assert(amount.pursePetname, `Role ${dir} ${role} has no pursePetname`);
+        const purse = petnameToPurse.get(amount.pursePetname);
+        assert(
+          purse,
+          `Role ${dir} ${role} pursePetname ${amount.pursePetname} is not a purse`,
+        );
+        rolePurses[dir][role] = purse;
+        setPurseAmount(roleOfferRules[dir], role, purse, amount.extent);
+      });
     }
-    Object.entries(offerRulesTemplate.want || {}).forEach(([role, amount]) => {
-      assert(
-        amount.pursePetname,
-        details`Want role ${role} has no pursePetname`,
-      );
-      const purse = petnameToPurse.get(amount.pursePetname);
-      assert(
-        purse,
-        details`Want role ${role} pursePetname ${amount.pursePetname} is not a purse`,
-      );
-      rolePurses[role] = purse;
-      setPurseAmount(roleOfferRules.want, role, purse, amount.extent);
-    });
-
-    if (offerRulesTemplate.offer) {
-      roleOfferRules.offer = {};
-    }
-    Object.entries(offerRulesTemplate.offer || {}).forEach(([role, amount]) => {
-      assert(
-        amount.pursePetname,
-        details`Offer role ${role} has no pursePetname`,
-      );
-      const purse = petnameToPurse.get(amount.pursePetname);
-      assert(
-        purse,
-        details`Offer role ${role} pursePetname ${amount.pursePetname} is not a purse`,
-      );
-      rolePurses[role] = purse;
-      setPurseAmount(roleOfferRules.offer, role, purse, amount.extent);
-    });
 
     return { roleOfferRules, rolePurses };
   }
@@ -81,20 +69,16 @@ export default ({
 
   // Enrich the offerRulesTemplate.
   const newOfferRulesTemplate = { ...offerRulesTemplate };
-  if (offerRulesTemplate.want) {
-    const newRules = {};
-    Object.entries(offerRulesTemplate.want || {}).forEach(([role, amount]) => {
-      newRules[role] = { ...amount, ...roleIssuerNames[role] };
-    });
-    newOfferRulesTemplate.want = newRules;
-  }
+  for (const dir of ['offer', 'want']) {
+    if (!offerRulesTemplate[dir]) {
+      continue;
+    }
 
-  if (offerRulesTemplate.offer) {
     const newRules = {};
-    Object.entries(offerRulesTemplate.offer || {}).forEach(([role, amount]) => {
+    Object.entries(offerRulesTemplate[dir] || {}).forEach(([role, amount]) => {
       newRules[role] = { ...amount, ...roleIssuerNames[role] };
     });
-    newOfferRulesTemplate.offer = newRules;
+    newOfferRulesTemplate[dir] = newRules;
   }
 
   // Resave the enriched offerDesc.
@@ -116,7 +100,7 @@ export default ({
     roleIssuers[role] = contractIssuers[i];
   });
 
-  async function finishCompile(offerRules, purses) {
+  async function finishCompile(offerRules, directedPurses) {
     const roleBrands = {};
     let cachedRoleBrandsP;
     const getRoleBrandsP = () => {
@@ -131,47 +115,97 @@ export default ({
       return cachedRoleBrandsP;
     };
 
-    const replacePlaceholderRoles = async (roles, role) => {
-      if (role[0] !== '$') {
-        return;
+    // This replaces instances of roles ending with a '*' with
+    // a rolename that matches the brand, if there is one.
+    //
+    // Not recursive, since the multiroleNames are only processed
+    // after an Object.keys call on the roles object.
+    const mergedPurses = {};
+    const mergedRoles = {};
+    const replaceMultiroles = async (roles, purses, roleName, dir) => {
+      let newName = roleName;
+      if (roleName.endsWith('*')) {
+        // It's a multirole.
+
+        // Find the only role with this prefix and brand.
+        const multiroleName = roleName;
+        const multirolePrefix = multiroleName.substr(
+          0,
+          multiroleName.length - 1,
+        );
+
+        // Now we actually need the brands (if we haven't already gotten them).
+        await getRoleBrandsP();
+        const { brand } = roles[multiroleName];
+        const roleMatches = Object.entries(roleBrands).filter(
+          ([rname, rbrand]) =>
+            rname.startsWith(multirolePrefix) && rbrand === brand,
+        );
+
+        // We don't use details`...` because these error messages should be available
+        // verbatim to the caller.
+        assert(
+          roleMatches.length > 0,
+          `${dir} multirole ${multiroleName} has no matching brand`,
+        );
+
+        assert(
+          roleMatches.length === 1,
+          `${dir} multirole ${multiroleName} is ambiguous (${roleMatches
+            .map(([rname, _rbrand]) => rname)
+            .join(',')})`,
+        );
+
+        [[newName]] = roleMatches;
       }
 
-      // It's a placeholder role.  Find the first matching role with that brand.
-      await getRoleBrandsP();
-      const { brand } = roles[role];
-      const roleEnt = Object.entries(roleBrands).find(
-        ([_rname, rbrand]) => rbrand === brand,
+      assert(
+        mergedRoles[newName] === undefined,
+        `${dir} role ${roleName} (now ${newName}) is already used`,
       );
-      assert(roleEnt, details`Placeholder role ${role} has no matching brand`);
-      roles[roleEnt[0]] = roles[role];
-      delete roles[role];
-      purses[roleEnt[0]] = purses[role];
-      delete purses[role];
+
+      assert(
+        mergedPurses[newName] === undefined,
+        `${dir} role ${roleName} purse (now ${newName}) is already used`,
+      );
+
+      if (roleName !== newName) {
+        // Update the offerRules we were passed in.
+        roles[newName] = roles[roleName];
+        delete roles[roleName];
+      }
+      mergedRoles[newName] = roles[roleName];
+      mergedPurses[newName] = purses[roleName];
     };
 
-    // Swap the placeholder roles for actual roles.
+    // Replace multiroles with actual single roles.
     await Promise.all([
       Promise.all(
         Object.keys(offerRules.want || {}).map(role =>
-          replacePlaceholderRoles(offerRules.want, role),
+          replaceMultiroles(offerRules.want, directedPurses.want, role, 'Want'),
         ),
       ),
       Promise.all(
         Object.keys(offerRules.offer || {}).map(role =>
-          replacePlaceholderRoles(offerRules.offer, role),
+          replaceMultiroles(
+            offerRules.offer,
+            directedPurses.offer,
+            role,
+            'Offer',
+          ),
         ),
       ),
     ]);
 
     if (contractIssuerIndexToRole.length === 0) {
       // We rely on Zoe Roles support.
-      return { zoeKind: 'roles', offerRules, purses };
+      return { zoeKind: 'roles', offerRules, purses: mergedPurses };
     }
 
     const indexedPurses = [];
     const indexedPayoutRules = await Promise.all(
       contractIssuerIndexToRole.map(async (role, i) => {
-        indexedPurses[i] = purses[role];
+        indexedPurses[i] = mergedPurses[role];
         if (offerRules.want && offerRules.want[role]) {
           return { kind: 'wantAtLeast', amount: offerRules.want[role] };
         }

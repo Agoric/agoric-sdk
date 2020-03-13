@@ -109,6 +109,7 @@ export async function makeWallet(
           payoutA.map((payout, i) => {
             const purse = purses[i];
             if (purse && payout) {
+              // console.log('FIGME: deposit', purse, payout);
               return E(purse).deposit(payout);
             }
             return undefined;
@@ -261,8 +262,6 @@ export async function makeWallet(
         hooks: { publicAPI: publicAPIHooks = {}, seat: seatHooks = {} } = {},
       } = compiledOfferDesc;
 
-      console.log('FIGME invite', invite);
-
       const inviteP = invite || E(publicAPIHooks).getInvite(publicAPI);
       const { seat, depositedP, cancelObj } = await executeOffer(
         compiledOfferDesc,
@@ -341,7 +340,7 @@ export async function makeWallet(
   }
 
   function ping(cb, data) {
-    console.log('FIGME: pinged with', cb, String(cb));
+    // console.log('FIGME: pinged with', cb, String(cb));
     return E(cb).pong(data);
   }
 
