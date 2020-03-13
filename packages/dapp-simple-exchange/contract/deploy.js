@@ -11,7 +11,7 @@ const DAPP_NAME = "simple-exchange";
 export default async function deployContract(homeP, { bundleSource, pathResolve },
   CONTRACT_NAME = DAPP_NAME) {
 
-  // Create a source bundle for the "myFirstDapp" smart contract.
+  // Create a source bundle for the CONTRACT_NAME smart contract.
   const { source, moduleFormat } = await bundleSource(pathResolve(`./${CONTRACT_NAME}.js`));
 
   // =====================
@@ -88,7 +88,7 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
     console.log('writing', dc);
     await fs.promises.writeFile(dc, `globalThis.__DAPP_CONSTANTS__ = ${JSON.stringify(dappConstants, undefined, 2)}`);
 
-    // Now add URLs so that development functions without internet access.
+    // Now add URLs so that local development works without internet access.
     dappConstants.BRIDGE_URL = "http://127.0.0.1:8000";
     dappConstants.API_URL = "http://127.0.0.1:8000";
     const envFile = pathResolve(`../ui/.env.local`);
