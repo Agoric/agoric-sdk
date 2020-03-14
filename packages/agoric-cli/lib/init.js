@@ -1,13 +1,31 @@
 import parseArgs from 'minimist';
 import chalk from 'chalk';
 
-const DEFAULT_DAPP_TEMPLATE = '@agoric/dapp-simple-exchange';
+const DEFAULT_DAPP_TEMPLATE = 'dapp-simple-exchange';
+const DEFAULT_DAPP_URL_BASE = 'git://github.com/Agoric/';
 
-export default async function initMain(progname, rawArgs, priv, opts) {
-  const { console, error, fs } = priv;
-  const { _: args, force, 'dapp-template': dappTemplate } = parseArgs(rawArgs, {
+// Use either an absolute template URL, or find it relative to DAPP_URL_BASE.
+const gitURL = (relativeOrAbsoluteURL, base) => {
+  const url = new URL(relativeOrAbsoluteURL, base);
+  if (url.protocol === 'git:') {
+    // Ensure it ends in `.git`.
+    return url.href.endsWith('.git') ? url.href : `${url.href}.git`;
+  }
+  return url.href;
+};
+
+export default async function initMain(_progname, rawArgs, priv, _opts) {
+  const { console, error, spawn } = priv;
+  const {
+    _: args,
+    'dapp-template': dappTemplate,
+    'dapp-base': dappBase,
+  } = parseArgs(rawArgs, {
     boolean: ['force'],
-    default: { 'dapp-template': DEFAULT_DAPP_TEMPLATE },
+    default: {
+      'dapp-template': DEFAULT_DAPP_TEMPLATE,
+      'dapp-base': DEFAULT_DAPP_URL_BASE,
+    },
   });
 
   if (args.length !== 1) {
@@ -15,100 +33,34 @@ export default async function initMain(progname, rawArgs, priv, opts) {
   }
   const [DIR] = args;
 
-  const slashPJson = '/package.json';
-  const pjson = require.resolve(`${dappTemplate}${slashPJson}`);
-  const dappRoot = pjson.substr(0, pjson.length - slashPJson.length);
+  const dappURL = gitURL(dappTemplate, dappBase);
 
-  const {
-    mkdir,
-    stat,
-    lstat,
-    symlink,
-    readdir,
-    readFile,
-    readlink,
-    writeFile,
-  } = fs;
+  // Run the Git commands.
+  console.log(`initializing ${DIR} from ${dappURL}`);
 
-  console.log(`initializing ${DIR}`);
-  try {
-    await mkdir(DIR);
-  } catch (e) {
-    if (!force) {
-      throw e;
-    }
+  const pspawn = (...psargs) =>
+    new Promise((resolve, _reject) => {
+      const cp = spawn(...psargs);
+      cp.on('exit', resolve);
+      cp.on('error', () => resolve(-1));
+    });
+
+  if (
+    await pspawn('git', ['clone', '--origin=upstream', dappURL, DIR], {
+      stdio: 'inherit',
+    })
+  ) {
+    throw Error('cannot clone');
   }
 
-  const isIgnored = (suffix, name) =>
-    name === 'node_modules' || suffix === '/_agstate';
+  if (
+    await pspawn('git', ['config', '--unset', 'branch.master.remote'], {
+      cwd: DIR,
+    })
+  ) {
+    throw Error('cannot detach from upstream');
+  }
 
-  const writeTemplate = async (templateDir, destDir = DIR, stem) => {
-    const template = await readFile(`${templateDir}${stem}`, 'utf-8');
-    const content = template
-      .replace(/['"]@DIR@['"]/g, JSON.stringify(DIR))
-      .replace(/@DIR@/g, DIR);
-    return writeFile(`${destDir}${stem}`, content);
-  };
-
-  const recursiveTemplate = async (templateDir, destDir = DIR, suffix = '') => {
-    const cur = `${templateDir}${suffix}`;
-    const list = await readdir(cur);
-    await Promise.all(
-      list.map(async name => {
-        const stem = `${suffix}/${name}`;
-        if (isIgnored(suffix, name)) {
-          return;
-        }
-        const st = await lstat(`${templateDir}${stem}`);
-        let target;
-        try {
-          target = await stat(`${destDir}${stem}`);
-        } catch (e) {
-          if (e.code !== 'ENOENT') {
-            throw e;
-          }
-        }
-        if (st.isDirectory()) {
-          if (!target) {
-            console.log(`mkdir ${destDir}${stem}`);
-            await mkdir(`${destDir}${stem}`, { recursive: true });
-          }
-          await recursiveTemplate(templateDir, destDir, `${stem}`);
-        } else if (st.isSymbolicLink()) {
-          console.log(`symlink ${destDir}${stem}`);
-          await symlink(
-            await readlink(`${templateDir}${stem}`),
-            `${destDir}${stem}`,
-          );
-        } else {
-          console.log(`write ${destDir}${stem}`);
-          await writeTemplate(templateDir, destDir, stem);
-        }
-      }),
-    );
-  };
-  await recursiveTemplate(dappRoot);
-  await mkdir(`${DIR}/_agstate/agoric-servers`, { recursive: true });
-
-  const ps = ['', 'api/', 'contract/', 'ui/'].map(dir => {
-    const path = `${DIR}/${dir}package.json`;
-    return readFile(path, 'utf-8')
-      .then(contents => JSON.parse(contents))
-      .then(pkg => {
-        if (!pkg.name || !pkg.name.startsWith(dappTemplate)) {
-          throw Error(
-            `${path}: "name" must start with ${JSON.stringify(dappTemplate)}`,
-          );
-        }
-        pkg.name = `${DIR}${pkg.name.substr(dappTemplate.length)}`;
-        const json = JSON.stringify(pkg, undefined, 2);
-        return writeFile(path, json);
-      })
-      .catch(e => console.error(chalk.bold.blue(`Cannot rewrite ${path}`), e));
-  });
-
-  await Promise.all(ps);
-
-  console.log(chalk.bold.yellow(`Done initializing`));
+  console.log(chalk.bold.yellow(`Done initializing ${DIR}`));
   return 0;
 }
