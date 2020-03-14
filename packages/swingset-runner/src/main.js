@@ -3,6 +3,7 @@ import process from 'process';
 import repl from 'repl';
 import util from 'util';
 
+import { makeStatLogger } from '@agoric/stat-logger';
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 import {
   initSwingStore as initSimpleSwingStore,
@@ -13,9 +14,17 @@ import {
   openSwingStore as openLMDBSwingStore,
 } from '@agoric/swing-store-lmdb';
 
-function deepLog(item) {
-  console.log(util.inspect(item, false, null, true));
+const log = console.log;
+
+function p(item) {
+  return util.inspect(item, false, null, true);
 }
+
+function readClock() {
+  return process.hrtime.bigint();
+}
+
+/* eslint-disable no-use-before-define */
 
 /**
  * Command line utility to run a swingset for development and testing purposes.
@@ -25,14 +34,20 @@ export async function main() {
   //   node runner [FLAGS...] CMD [{BASEDIR|--} [ARGS...]]
   //
   // FLAGS may be:
-  //   --no-ses  - directs vats not to be run in SES.
-  //   --init    - directs vats to be run from their initial condition, discarding any existing saved state.
-  //   --lmdb    - runs using LMDB as the data store
-  //   --filedb  - runs using the simple file-based data store (default)
-  //   --memdb   - runs using a non-persistent in-memory data store
+  //   --no-ses       - directs vats not to be run in SES.
+  //   --init         - discard any existing saved state at startup.
+  //   --lmdb         - runs using LMDB as the data store
+  //   --filedb       - runs using the simple file-based data store (default)
+  //   --memdb        - runs using the non-persistent in-memory data store
+  //   --blockmode    - run in block mode (checkpoint every BLOCKSIZE blocks)
+  //   --blocksize N  - set BLOCKSIZE to N (default 200)
+  //   --logtimes     - log block execution time stats while running
+  //   --logmem       - log memory usage stats after each block
+  //   --batchsize N  - set BATCHSIZE to N (default 200)
   //
   // CMD is one of:
   //   run    - launches or resumes the configured vats, which run to completion.
+  //   batch  - launch or resume, then run BATCHSIZE cranks or until completion
   //   step   - steps the configured swingset one crank.
   //   shell  - starts a simple CLI allowing the swingset to be run or stepped or interrogated interactively.
   //
@@ -46,7 +61,12 @@ export async function main() {
   let withSES = true;
   let forceReset = false;
   let dbMode = '--filedb';
-  while (argv[0].startsWith('--')) {
+  let blockSize = 200;
+  let batchSize = 200;
+  let blockMode = false;
+  let logTimes = false;
+  let logMem = false;
+  while (argv[0] && argv[0].startsWith('--')) {
     const flag = argv.shift();
     switch (flag) {
       case '--no-ses':
@@ -54,6 +74,21 @@ export async function main() {
         break;
       case '--init':
         forceReset = true;
+        break;
+      case '--logtimes':
+        logTimes = true;
+        break;
+      case '--logmem':
+        logMem = true;
+        break;
+      case '--blockmode':
+        blockMode = true;
+        break;
+      case '--blocksize':
+        blockSize = Number(argv.shift());
+        break;
+      case '--batchsize':
+        batchSize = Number(argv.shift());
         break;
       case '--filedb':
       case '--memdb':
@@ -66,9 +101,14 @@ export async function main() {
   }
 
   const command = argv.shift();
-  if (command !== 'run' && command !== 'shell' && command !== 'step') {
+  if (
+    command !== 'run' &&
+    command !== 'shell' &&
+    command !== 'step' &&
+    command !== 'batch'
+  ) {
     throw new Error(
-      `use 'runner run', 'runner step', or 'runner shell', not 'runner ${command}'`,
+      `'${command}' is not a valid runner command; use 'run', 'batch', 'step', or 'shell'`,
     );
   }
 
@@ -103,20 +143,34 @@ export async function main() {
   }
   config.hostStorage = store.storage;
 
+  let blockNumber = 0;
+  let statLogger = null;
+  if (logTimes || logMem) {
+    let headers = ['block', 'steps'];
+    if (logTimes) {
+      headers = headers.concat(['btime']);
+    }
+    if (logMem) {
+      headers = headers.concat(['rss', 'heapTotal', 'heapUsed', 'external']);
+    }
+    statLogger = makeStatLogger('runner', headers);
+  }
+
   const controller = await buildVatController(config, withSES, bootstrapArgv);
   switch (command) {
     case 'run': {
-      await controller.run();
-      store.commit();
-      store.close();
-      console.log('= runner finished');
+      await commandRun(0, blockMode);
+      break;
+    }
+    case 'batch': {
+      await commandRun(batchSize, blockMode);
       break;
     }
     case 'step': {
-      await controller.step();
+      const steps = await controller.step();
       store.commit();
       store.close();
-      console.log('= runner stepped');
+      log(`runner stepped ${steps} crank${steps === 1 ? '' : 's'}`);
       break;
     }
     case 'shell': {
@@ -132,7 +186,7 @@ export async function main() {
         help: 'Commit current kernel state to persistent storage',
         action: () => {
           store.commit();
-          console.log('committed');
+          log('committed');
           cli.displayPrompt();
         },
       });
@@ -140,28 +194,36 @@ export async function main() {
         help: 'Dump the kernel tables',
         action: () => {
           const d = controller.dump();
-          console.log('Kernel Table:');
-          deepLog(d.kernelTable);
-          console.log('Promises:');
-          deepLog(d.promises);
-          console.log('Run Queue:');
-          deepLog(d.runQueue);
+          log('Kernel Table:');
+          log(p(d.kernelTable));
+          log('Promises:');
+          log(p(d.promises));
+          log('Run Queue:');
+          log(p(d.runQueue));
+          cli.displayPrompt();
+        },
+      });
+      cli.defineCommand('block', {
+        help: 'Execute a block of <n> cranks, without commit',
+        action: async requestedSteps => {
+          const steps = await runBlock(requestedSteps, false);
+          log(`executed ${steps} cranks in block`);
           cli.displayPrompt();
         },
       });
       cli.defineCommand('run', {
-        help: 'Crank until the run queue is empty',
+        help: 'Crank until the run queue is empty, without commit',
         action: async () => {
-          console.log('run!');
-          await controller.run();
+          const [steps, deltaT] = await runBatch(0, false);
+          log(`ran ${steps} cranks in ${deltaT} ns`);
           cli.displayPrompt();
         },
       });
       cli.defineCommand('step', {
-        help: 'Step the swingset one crank',
+        help: 'Step the swingset one crank, without commit',
         action: async () => {
-          console.log('step!');
-          await controller.step();
+          const steps = await controller.step();
+          log(steps ? 'stepped one crank' : "didn't step, queue is empty");
           cli.displayPrompt();
         },
       });
@@ -169,5 +231,81 @@ export async function main() {
     }
     default:
       throw new Error(`invalid command ${command}`);
+  }
+  if (statLogger) {
+    statLogger.close();
+  }
+
+  async function runBlock(requestedSteps, doCommit) {
+    const blockStartTime = readClock();
+    let actualSteps = 0;
+    while (requestedSteps > 0) {
+      requestedSteps -= 1;
+      // eslint-disable-next-line no-await-in-loop
+      const stepped = await controller.step();
+      actualSteps += stepped;
+      if (stepped < 1) {
+        break;
+      }
+    }
+    if (doCommit) {
+      store.commit();
+    }
+    if (statLogger) {
+      blockNumber += 1;
+      let data = [blockNumber, actualSteps];
+      if (logTimes) {
+        data = data.concat([readClock() - blockStartTime]);
+      }
+      if (logMem) {
+        const mem = process.memoryUsage();
+        data = data.concat([
+          mem.rss,
+          mem.heapTotal,
+          mem.heapUsed,
+          mem.external,
+        ]);
+      }
+      statLogger.log(data);
+    }
+    return actualSteps;
+  }
+
+  async function runBatch(stepLimit, doCommit) {
+    const startTime = readClock();
+    let totalSteps = 0;
+    let steps;
+    const runAll = stepLimit === 0;
+    do {
+      // eslint-disable-next-line no-await-in-loop
+      steps = await runBlock(blockSize, doCommit);
+      totalSteps += steps;
+      stepLimit -= steps;
+    } while ((runAll || stepLimit > 0) && steps >= blockSize);
+    return [totalSteps, readClock() - startTime];
+  }
+
+  async function commandRun(stepLimit, runInBlockMode) {
+    const [totalSteps, deltaT] = await runBatch(stepLimit, runInBlockMode);
+    if (!runInBlockMode) {
+      store.commit();
+    }
+    store.close();
+    if (logTimes) {
+      if (totalSteps) {
+        const per = deltaT / BigInt(totalSteps);
+        log(
+          `runner finished ${totalSteps} cranks in ${deltaT} ns (${per}/crank)`,
+        );
+      } else {
+        log(`runner finished replay in ${deltaT} ns`);
+      }
+    } else {
+      if (totalSteps) {
+        log(`runner finished ${totalSteps} cranks`);
+      } else {
+        log(`runner finished replay`);
+      }
+    }
   }
 }

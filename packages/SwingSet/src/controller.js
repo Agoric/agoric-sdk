@@ -355,11 +355,11 @@ export async function buildVatController(config, withSES = true, argv = []) {
     },
 
     async run() {
-      await kernel.run();
+      return kernel.run();
     },
 
     async step() {
-      await kernel.step();
+      return kernel.step();
     },
 
     // these are for tests

@@ -10,9 +10,6 @@ module.exports = {
     'function-paren-newline': 'off',
     'arrow-parens': 'off',
     strict: 'off',
-    'no-else-return': 'off',
-    'no-lonely-if': 'off',
-    'prefer-destructuring': 'off',
     'no-console': 'off',
     'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     'no-return-assign': 'off',
@@ -21,8 +18,5 @@ module.exports = {
     'no-unused-expressions': 'off',
     'no-loop-func': 'off',
     'import/prefer-default-export': 'off', // contrary to Agoric standard
-  },
-  globals: {
-    'BigInt': 'readonly',
   },
 };
