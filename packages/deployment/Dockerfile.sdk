@@ -14,7 +14,9 @@ RUN cd packages/cosmic-swingset && yarn build:gyp
 
 RUN yarn build
 
+RUN ln -s /usr/src/app/lib/ag-chain-cosmos /usr/local/bin/
+
 # By default, run the daemon with specified arguments.
-WORKDIR /usr/src/app
+WORKDIR /root
 EXPOSE 26657
-ENTRYPOINT [ "./lib/ag-chain-cosmos" ]
+ENTRYPOINT [ "ag-chain-cosmos" ]
