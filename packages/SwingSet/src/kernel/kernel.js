@@ -52,8 +52,6 @@ export default function buildKernel(kernelEndowments) {
     log: [],
   };
 
-  let running = false;
-
   // runQueue entries are {type, vatID, more..}. 'more' depends on type:
   // * deliver: target, msg
   // * notifyFulfillToData/notifyFulfillToPresence/notifyReject:
@@ -710,6 +708,9 @@ export default function buildKernel(kernelEndowments) {
     // process a single message
     if (!kernelKeeper.isRunQueueEmpty()) {
       await processQueueMessage(kernelKeeper.getNextMsg());
+      return 1;
+    } else {
+      return 0;
     }
   }
 
@@ -717,12 +718,13 @@ export default function buildKernel(kernelEndowments) {
     if (!started) {
       throw new Error('must do kernel.start() before run()');
     }
-    // process all messages, until syscall.pause() is invoked
-    running = true;
-    while (running && !kernelKeeper.isRunQueueEmpty()) {
+    let count = 0;
+    while (!kernelKeeper.isRunQueueEmpty()) {
       // eslint-disable-next-line no-await-in-loop
       await processQueueMessage(kernelKeeper.getNextMsg());
+      count += 1;
     }
+    return count;
   }
 
   const kernel = harden({

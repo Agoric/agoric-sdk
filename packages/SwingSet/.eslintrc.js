@@ -10,6 +10,7 @@ module.exports = {
     'function-paren-newline': 'off',
     'arrow-parens': 'off',
     strict: 'off',
+    'no-else-return': 'off',
     'no-console': 'off',
     'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     'no-return-assign': 'off',
