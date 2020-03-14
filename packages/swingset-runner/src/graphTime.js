@@ -1,10 +1,20 @@
-import fs from 'fs';
-import path from 'path';
 import process from 'process';
 
-import { initGraphSpec, addDataToGraphSpec, addGraphToGraphSpec, renderGraph } from '@agoric/stat-logger';
+import {
+  initGraphSpec,
+  addDataToGraphSpec,
+  addGraphToGraphSpec,
+  renderGraph,
+} from '@agoric/stat-logger';
 
-const colors = [ '#61d836', '#00a2ff', '#fae232', '#ff644e', '#ef5fa7', '#16e7cf' ];
+const colors = [
+  '#61d836',
+  '#00a2ff',
+  '#fae232',
+  '#ff644e',
+  '#ef5fa7',
+  '#16e7cf',
+];
 
 export async function main() {
   const argv = process.argv.splice(2);
@@ -35,8 +45,14 @@ export async function main() {
     outfile = datafiles[0];
   }
 
-  const spec = initGraphSpec(datafiles[0], 'block', 'Block #', 'btime', 'Block time (ns)');
-  for (let i = 0; i < datafiles.length; ++i) {
+  const spec = initGraphSpec(
+    datafiles[0],
+    'block',
+    'Block #',
+    'btime',
+    'Block time (ns)',
+  );
+  for (let i = 0; i < datafiles.length; i += 1) {
     addDataToGraphSpec(spec, datafiles[i]);
     addGraphToGraphSpec(spec, datafiles[i], 'btime', colors[i % colors.length]);
   }

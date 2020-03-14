@@ -5,7 +5,7 @@ async function innerTest(t, extraFlags) {
   try {
     await new Promise(resolve => {
       const proc = spawn(
-        `bin/runner --init ${extraFlags} run demo/encouragementBot`,
+        `node -r esm bin/runner --init ${extraFlags} run demo/encouragementBot`,
         {
           cwd: `${__dirname}/..`,
           shell: true,
