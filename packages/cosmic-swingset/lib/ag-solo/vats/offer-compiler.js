@@ -91,14 +91,18 @@ export default ({
   const instanceHandle = await E(registrar).get(instanceRegKey);
   const {
     publicAPI,
-    roles: contractRoleIssuers,
+    roles: contractRoleIssuers, // Only present with Zoe Roles.
     terms: { issuers: contractIssuers },
   } = await E(zoe).getInstance(instanceHandle);
 
+  // If contractRoleIssuers exists, use it.
   const roleIssuers = { ...contractRoleIssuers };
-  Object.values(contractIssuerIndexToRole).forEach((role, i) => {
-    roleIssuers[role] = contractIssuers[i];
-  });
+  if (!contractRoleIssuers) {
+    // Otherwise (pre-Zoe Roles), use the index-to-role.
+    Object.values(contractIssuerIndexToRole).forEach((role, i) => {
+      roleIssuers[role] = contractIssuers[i];
+    });
+  }
 
   async function finishCompile(offerRules, directedPurses) {
     const roleBrands = {};
@@ -197,11 +201,12 @@ export default ({
       ),
     ]);
 
-    if (contractIssuerIndexToRole.length === 0) {
-      // We rely on Zoe Roles support.
+    if (contractRoleIssuers) {
+      // We need Zoe Roles support.
       return { zoeKind: 'roles', offerRules, purses: mergedPurses };
     }
 
+    // FIXME: The rest of this file converts to the old (indexed) Zoe.
     const indexedPurses = [];
     const indexedPayoutRules = await Promise.all(
       contractIssuerIndexToRole.map(async (role, i) => {

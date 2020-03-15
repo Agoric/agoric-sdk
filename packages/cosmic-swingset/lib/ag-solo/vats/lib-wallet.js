@@ -49,6 +49,7 @@ export async function makeWallet(
       E(purse).getCurrentAmount(),
       E(purse).getAllegedBrand(),
     ]);
+    // issuerNames contains properties like 'brandRegKey' and 'issuerPetname'.
     const issuerNames = issuerToIssuerNames.get(brandToIssuer.get(brand));
     pursesState.set(pursePetname, {
       ...issuerNames,
@@ -90,6 +91,10 @@ export async function makeWallet(
         return undefined;
       }),
     );
+
+    // =====================
+    // === AWAITING TURN ===
+    // =====================
 
     const { seat, payout: payoutPAP, cancelObj } = await E(zoe).redeem(
       invite,
