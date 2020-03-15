@@ -56,7 +56,7 @@ test('assert', t => {
       /Expected \(a number\) === \(a number\)/,
       [
         ['log', 'FAILED ASSERTION false'],
-        ['error', 'Expected ', 5, ' === ', 6, ''],
+        ['error', 'Expected', 5, '===', 6],
       ],
     );
     throwsAndLogs(t, () => assert.equal(5, 6, 'foo'), /foo/, [
@@ -69,7 +69,7 @@ test('assert', t => {
       /\(a number\) !== \(a number\)/,
       [
         ['log', 'FAILED ASSERTION false'],
-        ['error', '', 5, ' !== ', 6, ''],
+        ['error', 5, '!==', 6],
       ],
     );
     throwsAndLogs(
@@ -78,7 +78,7 @@ test('assert', t => {
       /\(a number\) !== 6/,
       [
         ['log', 'FAILED ASSERTION false'],
-        ['error', '', 5, ' !== ', 6, ''],
+        ['error', 5, '!==', 6],
       ],
     );
   } catch (e) {
