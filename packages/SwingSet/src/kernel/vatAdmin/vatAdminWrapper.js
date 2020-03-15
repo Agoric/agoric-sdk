@@ -6,7 +6,7 @@
  * device affordances into objects that can be used by code in other vats.
  */
 import harden from '@agoric/harden';
-import makePromise from '../../makePromise';
+import makePromise from '@agoric/make-promise';
 
 export default function setup(syscall, state, helpers) {
   function build(E, D) {

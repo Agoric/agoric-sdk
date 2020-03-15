@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import makePromise from '../../src/makePromise';
+import makePromise from '@agoric/make-promise';
 
 console.log(`loading bootstrap`);
 

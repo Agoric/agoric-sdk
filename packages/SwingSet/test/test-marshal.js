@@ -1,8 +1,8 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
+import makePromise from '@agoric/make-promise';
 
 import { makeMarshaller } from '../src/kernel/liveSlots';
-import makePromise from '../src/makePromise';
 
 import { buildVatController } from '../src/index';
 

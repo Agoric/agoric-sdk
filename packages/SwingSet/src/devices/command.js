@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import makePromise from '../makePromise';
+import makePromise from '@agoric/make-promise';
 
 export default function buildCommand(broadcastCallback) {
   if (!broadcastCallback) {
