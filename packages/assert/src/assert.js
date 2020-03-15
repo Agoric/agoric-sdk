@@ -89,7 +89,13 @@ function details(template, ...args) {
         } else {
           argStr = `(${an(typeof arg)})`;
         }
-        interleaved.push(arg, template[i + 1]);
+
+        // Remove the extra spaces (since console.error puts them
+        // between each interleaved).
+        const priorWithoutSpace = interleaved.pop().replace(/ $/, '');
+        const nextWithoutSpace = template[i + 1].replace(/^ /, '');
+        interleaved.push(priorWithoutSpace, arg, nextWithoutSpace);
+
         parts.push(argStr, template[i + 1]);
       }
       if (args.length >= 1) {
