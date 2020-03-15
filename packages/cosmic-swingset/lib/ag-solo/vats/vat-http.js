@@ -39,7 +39,6 @@ function build(E, D) {
 
   let handler = {};
   const registeredHandlers = [];
-  let canvasState;
 
   // TODO: Don't leak memory.
   async function registerCommandHandler(newHandler) {
@@ -50,17 +49,6 @@ function build(E, D) {
   return {
     setCommandDevice(d, ROLES) {
       commandDevice = d;
-      handler = {
-        getCanvasState() {
-          if (!canvasState) {
-            return {};
-          }
-          return {
-            type: 'updateCanvas',
-            state: canvasState,
-          };
-        },
-      };
       if (ROLES.client) {
         const conns = new Map();
         const forward = method => obj => {
@@ -161,34 +149,16 @@ function build(E, D) {
       Object.assign(homeObjects, ps, privateObjects);
       loaded.res('chain bundle loaded');
       delete homeObjects.LOADING;
-      if (ps.canvasStatePublisher) {
-        const subscriber = harden({
-          notify(m) {
-            // m will be a string, JSON.stringify([[],[],..])
-            // created by @agoric/pixel-demo/gallery.js setPixelState()
-            canvasState = m;
-            if (commandDevice) {
-              D(commandDevice).sendBroadcast({
-                type: 'updateCanvas',
-                state: canvasState,
-              });
-            }
-          },
-        });
-        console.log(`subscribing to canvasStatePublisher`);
-        // This provokes an immediate update
-        E(ps.canvasStatePublisher).subscribe(subscriber);
-      }
     },
 
     // devices.command invokes our inbound() because we passed to
     // registerInboundHandler()
     async inbound(count, obj) {
       try {
-        console.log(
-          `vat-http.inbound (from browser) ${count}`,
-          JSON.stringify(obj, undefined, 2),
-        );
+        // console.log(
+        //   `vat-http.inbound (from browser) ${count}`,
+        //   JSON.stringify(obj, undefined, 2),
+        // );
 
         const { type } = obj;
         // Try on local handlers first.
