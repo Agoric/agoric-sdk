@@ -32,10 +32,6 @@
     "packages/sharing-service",
     "packages/zoe",
     "packages/cosmic-swingset",
-    "packages/dapp-simple-exchange",
-    "packages/dapp-simple-exchange/.agservers",
-    "packages/dapp-simple-exchange/api",
-    "packages/dapp-simple-exchange/contract",
     "packages/generator-agoric-dapp",
     "packages/agoric-cli",
     "packages/deployment"
