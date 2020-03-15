@@ -6,14 +6,12 @@ import fs from 'fs';
 // committee.
 // TODO: improve this comment. https://github.com/Agoric/agoric-sdk/issues/608
 
-import harden from '@agoric/harden';
-
-const DAPP_NAME = "@DIR@";
+const DAPP_NAME = "simple-exchange";
 
 export default async function deployContract(homeP, { bundleSource, pathResolve },
-  CONTRACT_NAME = 'myFirstDapp') {
+  CONTRACT_NAME = DAPP_NAME) {
 
-  // Create a source bundle for the "myFirstDapp" smart contract.
+  // Create a source bundle for the CONTRACT_NAME smart contract.
   const { source, moduleFormat } = await bundleSource(pathResolve(`./${CONTRACT_NAME}.js`));
 
   // =====================
@@ -26,28 +24,18 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   // === AWAITING TURN ===
   // =====================
   
-  // 1. Assays and payments
-  const purse0P = homeP~.wallet~.getPurse('moola');
-  const purse1P = homeP~.wallet~.getPurse('simolean');
-  const assay0P = purse0P~.getAssay();
-  const assay1P = purse1P~.getAssay();
-  const payment0P = purse0P~.withdraw(900);
-  const payment1P = purse1P~.withdraw(900);
+  // 1. Issuers
+  const wallet = homeP~.wallet;
+  const [[pursePetname0], [pursePetname1]] = await wallet~.getPurses();
+  const issuer0P = wallet~.getPurseIssuer(pursePetname0);
+  const issuer1P = wallet~.getPurseIssuer(pursePetname1);
 
   const [
-    purse0,
-    purse1,
-    assay0,
-    assay1,
-    payment0,
-    payment1
+    issuer0,
+    issuer1,
   ] = await Promise.all([
-    purse0P,
-    purse1P,
-    assay0P,
-    assay1P,
-    payment0P,
-    payment1P
+    issuer0P,
+    issuer1P,
   ]);
 
   // =====================
@@ -55,8 +43,13 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   // =====================
 
   // 2. Contract instance.
-  const { invite }
-    = await homeP~.zoe~.makeInstance(installationHandle, { assays: [assay0, assay1] });
+  const [
+    invite,
+    inviteIssuer,
+  ] = await Promise.all([
+    homeP~.zoe~.makeInstance(installationHandle, { issuers: [issuer0, issuer1] }),
+    homeP~.zoe~.getInviteIssuer(),
+  ]);
 
   // =====================
   // === AWAITING TURN ===
@@ -65,52 +58,8 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   // 3. Get the instanceHandle
 
   const {
-    extent: { instanceHandle },
-  } = await invite~.getBalance();
-
-  // =====================
-  // === AWAITING TURN ===
-  // =====================
-
-  // 4. Get the contract terms and assays
-
-  const { terms: { assays }} = await homeP~.zoe~.getInstance(instanceHandle);
-
-  // =====================
-  // === AWAITING TURN ===
-  // =====================
-
-  // 5. Offer rules
-  const [unit0, unit1] = await Promise.all([
-    assays~.[0]~.makeUnits(900),
-    assays~.[1]~.makeUnits(900),
-  ]);
-
-  // =====================
-  // === AWAITING TURN ===
-  // =====================
-
-  const offerRules = harden({
-    payoutRules: [
-      {
-        kind: 'offerAtMost',
-        units: unit0,
-      },
-      {
-        kind: 'offerAtMost',
-        units: unit1,
-      },
-    ],
-    exitRule: {
-      kind: 'onDemand',
-    },
-  });
-
-  // 6. Registration.
-
-  const payments = [payment0, payment1];
-
-  const { seat, payout } = await homeP~.zoe~.redeem(invite, offerRules, payments);
+    extent: [{ instanceHandle }],
+  } = await inviteIssuer~.getAmountOf(invite);
 
   // =====================
   // === AWAITING TURN ===
@@ -125,17 +74,28 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   // === AWAITING TURN ===
   // =====================
 
-  console.log('- installation made', CONTRACT_NAME, '=>',  installationHandle);
+  console.log('- installation made', CONTRACT_NAME, '=>',  contractId);
   console.log('- instance made', CONTRACT_NAME, '=>', instanceId);
 
-    // Save the instanceId somewhere where the UI can find it.
+  // Save the instanceId somewhere where the UI can find it.
   if (instanceId) {
-    const cjfile = pathResolve(`../ui/src/utils/contractID.js`);
-    console.log('writing', cjfile);
-    await fs.promises.writeFile(cjfile, `export default ${JSON.stringify(instanceId)};`);
+    const dappConstants = {
+      BRIDGE_URL: 'agoric-lookup:https://local.agoric.com?append=/bridge',
+      API_URL: '/',
+      CONTRACT_ID: instanceId,
+    };
+    const dc = 'dappConstants.js';
+    console.log('writing', dc);
+    await fs.promises.writeFile(dc, `globalThis.__DAPP_CONSTANTS__ = ${JSON.stringify(dappConstants, undefined, 2)}`);
 
-    // =====================
-    // === AWAITING TURN ===
-    // =====================
+    // Now add URLs so that local development works without internet access.
+    dappConstants.BRIDGE_URL = "http://127.0.0.1:8000";
+    dappConstants.API_URL = "http://127.0.0.1:8000";
+    const envFile = pathResolve(`../ui/.env.local`);
+    console.log('writing', envFile);
+    const envContents = `\
+  REACT_APP_DAPP_CONSTANTS_JSON='${JSON.stringify(dappConstants)}'
+`;
+    await fs.promises.writeFile(envFile, envContents);
   }
 }
