@@ -17,9 +17,9 @@ export async function makeWallet(
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
 ) {
-  const petnameToPurse = new Map();
+  const petnameToPurse = makeStore();
   const purseToIssuer = makeWeakStore();
-  const issuerPetnameToIssuer = new Map();
+  const issuerPetnameToIssuer = makeStore();
   const issuerToIssuerNames = makeWeakStore();
   const issuerToBrand = makeWeakStore();
   const brandToIssuer = makeStore();
@@ -124,7 +124,7 @@ export async function makeWallet(
   // === API
 
   async function addIssuer(issuerPetname, issuer, brandRegKey = undefined) {
-    issuerPetnameToIssuer.set(issuerPetname, issuer);
+    issuerPetnameToIssuer.init(issuerPetname, issuer);
     issuerToIssuerNames.init(issuer, { issuerPetname, brandRegKey });
     const [brand, mathName] = await Promise.all([
       E(issuer).getBrand(),
@@ -152,7 +152,7 @@ export async function makeWallet(
       updatePursesState(pursePetname, doNotUse),
     );
 
-    petnameToPurse.set(pursePetname, purse);
+    petnameToPurse.init(pursePetname, purse);
     purseToIssuer.init(purse, issuer);
     updatePursesState(pursePetname, purse);
   }
@@ -163,7 +163,7 @@ export async function makeWallet(
   }
 
   function getPurses() {
-    return Array.from(petnameToPurse);
+    return petnameToPurse.entries();
   }
 
   function getOfferDescriptions() {
@@ -301,7 +301,7 @@ export async function makeWallet(
   }
 
   function getIssuers() {
-    return Array.from(issuerPetnameToIssuer);
+    return issuerPetnameToIssuer.entries();
   }
 
   const hydrateHook = ([hookMethod, ...hookArgs] = []) => object => {
