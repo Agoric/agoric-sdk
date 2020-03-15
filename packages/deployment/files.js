@@ -32,22 +32,23 @@ export { resolve, dirname, basename };
 
 export const needNotExists = async filename => {
   if (await exists(filename)) {
-    throw `${filename} already exists`;
+    throw Error(`${filename} already exists`);
   }
 };
 
 export const createFile = async (path, contents) => {
   console.error(chalk.yellow(`Creating ${chalk.underline(path)}`));
-  const info = await new Promise((resolve, reject) => {
-    tempOpen({ dir: dirname(path), prefix: `${basename(path)}.` }, function(
-      err,
-      info,
-    ) {
-      if (err) {
-        return reject(err);
-      }
-      resolve(info);
-    });
+  const info = await new Promise((res, rej) => {
+    tempOpen(
+      { dir: dirname(path), prefix: `${basename(path)}.` },
+      (err, tmpInfo) => {
+        if (err) {
+          rej(err);
+          return;
+        }
+        res(tmpInfo);
+      },
+    );
   });
   try {
     // Write the contents, close, and rename.
@@ -58,7 +59,9 @@ export const createFile = async (path, contents) => {
     // Unlink on error.
     try {
       await unlink(info.path);
-    } catch (e2) {}
+    } catch (e2) {
+      // do nothing
+    }
     throw e;
   }
 };

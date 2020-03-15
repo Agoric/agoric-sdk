@@ -8,7 +8,7 @@
     "test": "exit 0",
     "build": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "echo disabling lint in deployment until files are lint compliant"
+    "lint-check": "eslint '**/*.js'"
   },
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",

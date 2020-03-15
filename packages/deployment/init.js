@@ -1,3 +1,5 @@
+/* eslint-disable no-continue */
+/* eslint-disable no-await-in-loop */
 import fetch from 'node-fetch';
 import inquirer from 'inquirer';
 import { SETUP_HOME, PLAYBOOK_WRAPPER, SETUP_DIR, SSH_TYPE } from './setup';
@@ -10,6 +12,22 @@ import {
   resolve,
 } from './files';
 import { chdir, needDoRun, shellEscape } from './run';
+
+const calculateTotal = placement =>
+  (placement ? Object.values(placement) : []).reduce(
+    (prior, cur) => prior + cur,
+    0,
+  );
+
+const nodeCount = (count, force) => {
+  if (count === 1) {
+    return ` (${count} node)`;
+  }
+  if (count || force) {
+    return ` (${count} nodes)`;
+  }
+  return '';
+};
 
 const tfStringify = obj => {
   let ret = '';
@@ -153,14 +171,12 @@ module "${PLACEMENT}" {
       const json = await res.json();
       if (!json.regions) {
         console.error(`Cannot retrieve digitalocean regions:`, json);
-        return;
+        return [];
       }
-      return json.regions.map(r => {
-        return {
-          name: `${r.slug} - ${r.name}`,
-          value: r.slug,
-        };
-      });
+      return json.regions.map(r => ({
+        name: `${r.slug} - ${r.name}`,
+        value: r.slug,
+      }));
     },
     createPlacementFiles: (provider, PLACEMENT, PREFIX) =>
       createFile(
@@ -178,21 +194,6 @@ module "${PLACEMENT}" {
 `,
       ),
   },
-};
-
-const calculateTotal = placement =>
-  (placement ? Object.values(placement) : []).reduce(
-    (prior, cur) => prior + cur,
-    0,
-  );
-const nodeCount = (count, force) => {
-  if (count === 1) {
-    return ` (${count} node)`;
-  }
-  if (count || force) {
-    return ` (${count} nodes)`;
-  }
-  return '';
 };
 
 const askPlacement = PLACEMENTS => {
@@ -233,9 +234,15 @@ const askProvider = () => {
       message: `For what provider would you like to create a new placement?`,
       choices: [
         DONE,
-        ...Object.values(PROVIDERS).sort((nva, nvb) =>
-          nva.name < nvb.name ? -1 : nva.name === nvb.name ? 0 : 1,
-        ),
+        ...Object.values(PROVIDERS).sort((nva, nvb) => {
+          if (nva.name < nvb.name) {
+            return -1;
+          }
+          if (nva.name === nvb.name) {
+            return 0;
+          }
+          return 1;
+        }),
       ],
     },
   ];
@@ -248,7 +255,7 @@ const doInit = async (progname, args) => {
     dir = SETUP_HOME;
   }
   if (!dir) {
-    throw `Need: [dir] [[network name]]`;
+    throw Error(`Need: [dir] [[network name]]`);
   }
   await needNotExists(`${dir}/network.txt`);
 
@@ -269,9 +276,12 @@ const doInit = async (progname, args) => {
   const DETAILS = {};
   try {
     await mkdir(dir);
-  } catch (e) {}
+  } catch (e) {
+    // ignore
+  }
   await chdir(dir);
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     let { PLACEMENT } = await askPlacement(PLACEMENTS);
     if (!PLACEMENT) {
@@ -293,7 +303,7 @@ const doInit = async (progname, args) => {
         if (!lastPlacement[PROVIDER]) {
           lastPlacement[PROVIDER] = 0;
         }
-        lastPlacement[PROVIDER]++;
+        lastPlacement[PROVIDER] += 1;
         PLACEMENT = `${PROVIDER}${lastPlacement[PROVIDER]}`;
         PLACEMENT_PROVIDER[PLACEMENT] = PROVIDER;
       };
@@ -331,18 +341,22 @@ const doInit = async (progname, args) => {
       // Add our choices to the list.
       const already = { ...placement };
       dcs.forEach(nv => delete already[nv.value]);
-      Object.entries(already).forEach(([dc, count]) => {
-        if (!dcs) {
-          dcs = [];
-        }
+      Object.entries(already).forEach(([dc]) => {
         dcs.push({ name: dc, value: dc });
       });
-      dcs.sort((nva, nvb) =>
-        nva.name < nvb.name ? -1 : nva.name === nvb.name ? 0 : 1,
-      );
+      dcs.sort((nva, nvb) => {
+        if (nva.name < nvb.name) {
+          return -1;
+        }
+        if (nva.name === nvb.name) {
+          return 0;
+        }
+        return 1;
+      });
     }
 
     // Allocate the datacenters.
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       const dcsWithNodeCount =
         dcs &&
@@ -401,7 +415,7 @@ const doInit = async (progname, args) => {
   }
 
   if (instance === 0) {
-    throw `Aborting due to no nodes configured!`;
+    throw Error(`Aborting due to no nodes configured!`);
   }
 
   await createFile(
@@ -482,7 +496,7 @@ output "offsets" {
 exec ansible-playbook -f10 \\
   -eSETUP_HOME=${shellEscape(process.cwd())} \\
   -eNETWORK_NAME=\`cat ${shellEscape(resolve('network.txt'))}\` \\
-  \${1+"\$@"}
+  \${1+"$@"}
 `,
   );
   await chmod(PLAYBOOK_WRAPPER, '0755');
