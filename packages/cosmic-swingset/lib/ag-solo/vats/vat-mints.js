@@ -10,12 +10,12 @@ function build(_E, _log) {
   const mintsAndMath = makeStore();
 
   const api = harden({
-    getAllissuerNames: () => mintsAndMath.keys(),
+    getAllIssuerNames: () => mintsAndMath.keys(),
     getIssuer: issuerName => {
       const mint = mintsAndMath.get(issuerName);
       mint.getIssuer();
     },
-    getAssays: issuerNames => issuerNames.map(api.getIssuer),
+    getIssuers: issuerNames => issuerNames.map(api.getIssuer),
 
     // NOTE: having a reference to a mint object gives the ability to mint
     // new digital assets, a very powerful authority. This authority

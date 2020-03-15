@@ -39,6 +39,7 @@ function makeStore(keyName = 'key') {
     },
     keys: () => Array.from(store.keys()),
     values: () => Array.from(store.values()),
+    entries: () => Array.from(store.entries()),
   });
 }
 harden(makeStore);

@@ -21,19 +21,26 @@ export function updateInbox(state, inbox) {
   return { ...state, inbox };
 }
 
-export function declineOffer(state, date) {
+export function declineOffer(state, id) {
   doFetch({
     type: 'walletDeclineOffer',
-    data: date,
+    data: id,
   }); // todo toast
 
   return state;
 }
-export function acceptOffer(state, date) {
+export function acceptOffer(state, id) {
   doFetch({
     type: 'walletAcceptOffer',
-    data: date,
+    data: id,
   }); // todo toast
 
+  return state;
+}
+export function cancelOffer(state, id) {
+  doFetch({
+    type: 'walletCancelOffer',
+    data: id,
+  });
   return state;
 }

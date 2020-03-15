@@ -17,6 +17,7 @@ function build(E, D) {
   harden(loaded);
   const homeObjects = { LOADING: loaded.p };
   let isReady = false;
+  const readyForClient = {};
   let exportedToCapTP = {
     LOADING: loaded.p,
     READY: {
@@ -30,7 +31,6 @@ function build(E, D) {
     },
   };
 
-  const readyForClient = {};
   readyForClient.p = new Promise((resolve, reject) => {
     readyForClient.res = resolve;
     readyForClient.rej = reject;
@@ -185,7 +185,10 @@ function build(E, D) {
     // registerInboundHandler()
     async inbound(count, obj) {
       try {
-        console.log(`vat-http.inbound (from browser) ${count}`, obj);
+        console.log(
+          `vat-http.inbound (from browser) ${count}`,
+          JSON.stringify(obj, undefined, 2),
+        );
 
         const { type } = obj;
         // Try on local handlers first.
@@ -198,7 +201,8 @@ function build(E, D) {
           // For now, go from the end to beginning so that handlers
           // override.
           const hardObjects = harden({ ...homeObjects });
-          for (let i = registeredHandlers.length - 1; i >= 0; i--) {
+          for (let i = registeredHandlers.length - 1; i >= 0; i -= 1) {
+            // eslint-disable-next-line no-await-in-loop
             res = await E(registeredHandlers[i]).processInbound(
               obj,
               hardObjects,

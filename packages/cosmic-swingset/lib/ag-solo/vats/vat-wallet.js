@@ -26,7 +26,7 @@ function build(E, D, _log) {
   function getCommandHandler() {
     return {
       async processInbound(obj) {
-        const { type, data } = obj;
+        const { type, data, requestContext } = obj;
         switch (type) {
           case 'walletGetPurses': {
             if (!pursesState) return {};
@@ -43,22 +43,30 @@ function build(E, D, _log) {
             };
           }
           case 'walletAddOffer': {
+            // We only need to do this because we can't reach addOffer.
+            const hooks = wallet.hydrateHooks(data.hooks);
             return {
               type: 'walletOfferAdded',
-              data: wallet.addOffer(data),
+              data: await wallet.addOffer(data, hooks, requestContext),
             };
           }
           case 'walletDeclineOffer': {
             return {
-              type: 'walletOfferDeclineed',
+              type: 'walletOfferDeclined',
               data: wallet.declineOffer(data),
             };
           }
+          case 'walletCancelOffer': {
+            return {
+              type: 'walletOfferCancelled',
+              data: wallet.cancelOffer(data),
+            };
+          }
           case 'walletAcceptOffer': {
-            const result = await wallet.acceptOffer(data);
+            await wallet.acceptOffer(data);
             return {
               type: 'walletOfferAccepted',
-              data: result,
+              data: true,
             };
           }
           case 'walletGetOfferDescriptions': {

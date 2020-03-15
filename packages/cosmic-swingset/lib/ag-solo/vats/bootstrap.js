@@ -81,7 +81,10 @@ export default function setup(syscall, state, helpers) {
             harden({
               issuer: issuers[i],
               petname: issuerName,
-              regKey: await E(registrar).register(issuerName, issuers[i]),
+              brandRegKey: await E(registrar).register(
+                issuerName,
+                await E(issuers[i]).getBrand(),
+              ),
             }),
           ),
         );
@@ -124,23 +127,32 @@ export default function setup(syscall, state, helpers) {
         await E(vats.wallet).startup(zoe, registrar);
         const wallet = E(vats.wallet).getWallet();
         await Promise.all(
-          issuerInfo.map(({ petname, issuer }) =>
-            E(wallet).addIssuer(petname, issuer),
+          issuerInfo.map(({ petname, issuer, brandRegKey }) =>
+            E(wallet).addIssuer(petname, issuer, brandRegKey),
           ),
         );
 
-        // Make empty purses. Reuse issuer petname for purse petname.
+        // Make empty purses. Have some petnames for them.
+        const pursePetnames = {
+          moola: 'Fun budget',
+          simolean: 'Nest egg',
+        };
         await Promise.all(
-          issuerInfo.map(({ petname }) =>
-            E(wallet).makeEmptyPurse(petname, petname),
-          ),
+          issuerInfo.map(({ petname: issuerPetname }) => {
+            let pursePetname = pursePetnames[issuerPetname];
+            if (!pursePetname) {
+              pursePetname = `${issuerPetname} purse`;
+              pursePetnames[issuerPetname] = pursePetname;
+            }
+            return E(wallet).makeEmptyPurse(issuerPetname, pursePetname);
+          }),
         );
 
         // deposit payments
         const [moolaPayment, simoleanPayment] = payments;
 
-        await E(wallet).deposit('moola', moolaPayment);
-        await E(wallet).deposit('simolean', simoleanPayment);
+        await E(wallet).deposit(pursePetnames.moola, moolaPayment);
+        await E(wallet).deposit(pursePetnames.simolean, simoleanPayment);
 
         // This will allow Dapp developers to register in their dapp.js
         const httpRegCallback = {

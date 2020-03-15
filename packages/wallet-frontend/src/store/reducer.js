@@ -6,6 +6,7 @@ import {
   UPDATE_PURSES,
   UPDATE_INBOX,
   REJECT_OFFER,
+  CANCEL_OFFER,
   CONFIRM_OFFER,
 } from './types';
 import {
@@ -16,6 +17,7 @@ import {
   updatePurses,
   updateInbox,
   declineOffer,
+  cancelOffer,
   acceptOffer,
 } from './operations';
 
@@ -49,6 +51,8 @@ export const reducer = (state, { type, payload }) => {
 
     case REJECT_OFFER:
       return declineOffer(state, payload);
+    case CANCEL_OFFER:
+      return cancelOffer(state, payload);
     case CONFIRM_OFFER:
       return acceptOffer(state, payload);
 
