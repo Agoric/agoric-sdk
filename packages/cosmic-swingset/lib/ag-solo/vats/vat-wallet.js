@@ -86,7 +86,7 @@ function build(E, D, _log) {
   }
 
   function setPresences() {
-    console.log(`subscribing to walletPurseState`);
+    // console.log(`subscribing to walletPurseState`);
     // This provokes an immediate update
     purseSubscribe(
       harden({
@@ -102,7 +102,7 @@ function build(E, D, _log) {
       }),
     );
 
-    console.log(`subscribing to walletInboxState`);
+    // console.log(`subscribing to walletInboxState`);
     // This provokes an immediate update
     inboxSubscribe(
       harden({
