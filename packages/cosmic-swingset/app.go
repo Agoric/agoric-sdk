@@ -210,7 +210,7 @@ func NewSwingSetApp(
 
 	app.mm = module.NewManager(
 		genutil.NewAppModule(app.accountKeeper, app.stakingKeeper, app.BaseApp.DeliverTx),
-		auth.NewAppModule(app.accountKeeper),
+		auth.NewAppModule(app.accountKeeper, app.supplyKeeper),
 		bank.NewAppModule(app.bankKeeper, app.accountKeeper),
 		swingset.NewAppModule(app.ssKeeper, app.bankKeeper),
 		supply.NewAppModule(app.supplyKeeper, app.bankKeeper, app.accountKeeper),
@@ -241,7 +241,7 @@ func NewSwingSetApp(
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter())
 
 	app.sm = module.NewSimulationManager(
-		auth.NewAppModule(app.accountKeeper),
+		auth.NewAppModule(app.accountKeeper, app.supplyKeeper),
 		bank.NewAppModule(app.bankKeeper, app.accountKeeper),
 		supply.NewAppModule(app.supplyKeeper, app.bankKeeper, app.accountKeeper),
 		distr.NewAppModule(app.distrKeeper, app.accountKeeper, app.bankKeeper, app.supplyKeeper, app.stakingKeeper),
