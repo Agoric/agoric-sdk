@@ -18,14 +18,14 @@ import harden from '@agoric/harden';
 import { makeZoeHelpers } from './helpers/zoeHelpers';
 
 export const makeContract = harden(zoe => {
-  const { swap, assertRoleNames, makeInvite } = makeZoeHelpers(zoe);
+  const { swap, assertRoleNames, makeInvitePair } = makeZoeHelpers(zoe);
   assertRoleNames(harden(['UnderlyingAsset', 'StrikePrice']));
 
   const makeCallOptionInvite = (
     sellerHandle,
     { offerRules: { want, offer, exit } },
   ) =>
-    makeInvite(
+    makeInvitePair(
       harden(inviteHandle => {
         const rejectMsg = `The covered call option is expired.`;
         return swap(sellerHandle, inviteHandle, rejectMsg);
@@ -41,10 +41,10 @@ export const makeContract = harden(zoe => {
         offer: ['StrikePrice'],
         want: ['UnderlyingAsset'],
       }),
-    );
+    ).invite;
 
   const makeCoveredCallInvite = () =>
-    makeInvite(
+    makeInvitePair(
       makeCallOptionInvite,
       {
         seatDesc: 'makeCallOption',
@@ -54,7 +54,7 @@ export const makeContract = harden(zoe => {
         want: ['StrikePrice'],
         exit: ['afterDeadline'],
       },
-    );
+    ).invite;
 
   return harden({
     invite: makeCoveredCallInvite(),

@@ -41,7 +41,7 @@ export const makeZoeHelpers = zoe => {
     return sameStructure(getKeys(actual), expectedKeys);
   };
   const helpers = harden({
-    makeInvite(seatFn, customProperties = undefined, expected = undefined) {
+    makeInvitePair(seatFn, customProperties = undefined, expected = undefined) {
       const seat = harden({
         makeOffer: () => {
           // eslint-disable-next-line no-use-before-define
@@ -51,7 +51,7 @@ export const makeZoeHelpers = zoe => {
         },
       });
       const { invite, inviteHandle } = zoe.makeInvite(seat, customProperties);
-      return invite;
+      return { invite, inviteHandle };
     },
     assertRoleNames: expected => {
       // 'actual' is sorted in alphabetical order by Zoe

@@ -9,7 +9,7 @@ export const makeContract = harden(zoe => {
     rejectOffer,
     canTradeWith,
     assertRoleNames,
-    makeInvite,
+    makeInvitePair,
   } = makeZoeHelpers(zoe);
 
   let {
@@ -25,7 +25,7 @@ export const makeContract = harden(zoe => {
   assertRoleNames(harden(['Asset', 'Bid']));
 
   const makeBidderInvite = () =>
-    makeInvite(
+    makeInvitePair(
       inviteHandle => {
         // Check that the item is still up for auction
         if (!zoe.isOfferActive(sellerInviteHandle)) {
@@ -60,10 +60,10 @@ export const makeContract = harden(zoe => {
         offer: ['Bid'],
         want: ['Asset'],
       },
-    );
+    ).invite;
 
   const makeSellerInvite = () =>
-    makeInvite(
+    makeInvitePair(
       (inviteHandle, { offerRules: { want, offer } }) => {
         if (auctionedAssets) {
           throw rejectOffer(inviteHandle, `assets already present`);
@@ -81,7 +81,7 @@ export const makeContract = harden(zoe => {
         offer: ['Asset'],
         want: ['Bid'],
       },
-    );
+    ).invite;
 
   return harden({
     invite: makeSellerInvite(),

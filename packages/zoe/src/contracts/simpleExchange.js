@@ -30,7 +30,7 @@ export const makeContract = harden(zoe => {
     canTradeWith,
     getActiveOffers,
     assertRoleNames,
-    makeInvite,
+    makeInvitePair,
   } = makeZoeHelpers(zoe);
 
   assertRoleNames(harden([ASSET, PRICE]));
@@ -93,8 +93,8 @@ export const makeContract = harden(zoe => {
     return defaultAcceptanceMsg;
   }
 
-  const makeExchangeInvite = () => {
-    const invite = makeInvite(inviteHandle => {
+  const makeInvite = () =>
+    makeInvitePair(inviteHandle => {
       const buyAssetForPrice = harden({
         offer: [PRICE],
         want: [ASSET],
@@ -119,14 +119,9 @@ export const makeContract = harden(zoe => {
         return rejectOffer(inviteHandle);
       }
     });
-    // Only because makeFooInvite methods have different conventions
-    const inviteIssuer = zoe.getInviteIssuer();
-    const inviteAmount = inviteIssuer.getAmountOf(invite);
-    return harden({ invite, inviteHandle: inviteAmount.extent[0].handle });
-  };
 
   return harden({
-    invite: makeExchangeInvite(),
-    publicAPI: { makeInvite: makeExchangeInvite, getBookOrders, getOffer },
+    invite: makeInvite(),
+    publicAPI: { makeInvite, getBookOrders, getOffer },
   });
 });

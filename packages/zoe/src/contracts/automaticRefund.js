@@ -12,18 +12,18 @@ import { makeZoeHelpers } from './helpers/zoeHelpers';
  * @param {contractFacet} zoe - the contract facet of zoe
  */
 export const makeContract = harden(zoe => {
-  const { makeInvite } = makeZoeHelpers(zoe);
+  const { makeInvitePair } = makeZoeHelpers(zoe);
 
   let offersCount = 0;
   const makeSeatInvite = () =>
-    makeInvite(
+    makeInvitePair(
       inviteHandle => {
         offersCount += 1;
         zoe.complete(harden([inviteHandle]));
         return `The offer was accepted`;
       },
       { seatDesc: 'getRefund' },
-    );
+    ).invite;
 
   return harden({
     invite: makeSeatInvite(),
