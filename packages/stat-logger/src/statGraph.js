@@ -100,25 +100,43 @@ export function addGraphToGraphSpec(spec, statsPath, yField, color) {
   spec.marks.push(lineElement);
 }
 
-export async function renderGraph(spec, outputPath) {
+export async function renderGraph(spec, outputPath, type = 'png') {
   if (spec.data.length === 0) {
     throw new Error('graph spec contains no data');
   } else if (spec.marks.length === 0) {
     throw new Error('graph spec has no graphs defined');
   }
-  if (!outputPath.endsWith('.png')) {
-    outputPath += '.png';
+  if (type !== 'png' && type !== 'pdf') {
+    throw new Error(`invalid output type ${type}, valid types are png or pdf`);
+  }
+
+  let loadDir = '.';
+  let out = process.stdout;
+  if (outputPath) {
+    loadDir = path.dirname(outputPath);
+    if (!outputPath.endsWith(`.${type}`)) {
+      outputPath += `.${type}`;
+    }
+    out = fs.createWriteStream(outputPath);
   }
 
   const view = new vega.View(vega.parse(spec, null), {
-    loader: vega.loader({ baseURL: path.dirname(outputPath) }),
+    loader: vega.loader({ baseURL: loadDir }),
     logger: vega.logger(vega.Warn, 'error'),
     renderer: 'none',
   }).finalize();
 
-  const canvas = await view.toCanvas();
-  const out = fs.createWriteStream(outputPath);
-  const stream = canvas.createPNGStream();
+  let stream;
+  if (type === 'png') {
+    const canvas = await view.toCanvas();
+    stream = canvas.createPNGStream();
+  } else {
+    const canvas = await view.toCanvas(1, {
+      type: 'pdf',
+      context: { textDrawingMode: 'glyph' },
+    });
+    stream = canvas.createPDFStream();
+  }
   stream.on('data', chunk => {
     out.write(chunk);
   });
