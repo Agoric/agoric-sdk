@@ -33,13 +33,12 @@ export default ({
       const issuer = purseToIssuer.get(purse);
       roleIssuerNames[role] = issuerToIssuerNames.get(issuer);
       const brand = issuerToBrand.get(issuer);
-      let amount;
+      const amountMath = brandToMath.get(brand);
       if (extent === undefined) {
-        amount = brandToMath.get(brand).getEmpty();
+        roles[role] = amountMath.getEmpty();
       } else {
-        amount = { brand, extent };
+        roles[role] = amountMath.make(extent);
       }
-      roles[role] = amount;
     };
 
     for (const dir of ['offer', 'want']) {
