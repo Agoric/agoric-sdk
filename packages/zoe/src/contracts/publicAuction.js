@@ -11,6 +11,7 @@ export const makeContract = harden(zoe => {
     canTradeWith,
     assertRoleNames,
     rejectIfNotOfferRules,
+    makeInvite,
   } = makeZoeHelpers(zoe);
 
   let {
@@ -64,25 +65,25 @@ export const makeContract = harden(zoe => {
   };
 
   const makeSellerInvite = () => {
-    const seat = harden({
-      sellAssets: () => {
+    return makeInvite(
+      harden((inviteHandle, { offerRules }) => {
         if (auctionedAssets) {
           throw rejectOffer(inviteHandle, `assets already present`);
         }
-        const expected = harden({ offer: ['Asset'], want: ['Bid'] });
-        rejectIfNotOfferRules(inviteHandle, expected);
         // Save the valid offer
         sellerInviteHandle = inviteHandle;
-        const { offerRules } = zoe.getOffer(inviteHandle);
         auctionedAssets = offerRules.offer.Asset;
         minimumBid = offerRules.want.Bid;
         return defaultAcceptanceMsg;
-      },
-    });
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
-      seatDesc: 'sellAssets',
-    });
-    return invite;
+      }),
+      harden({
+        seatDesc: 'sellAssets',
+      }),
+      harden({
+        offer: ['Asset'],
+        want: ['Bid'],
+      }),
+    );
   };
 
   return harden({

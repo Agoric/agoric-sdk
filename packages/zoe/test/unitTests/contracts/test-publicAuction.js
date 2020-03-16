@@ -67,7 +67,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     );
 
     // Alice initializes the auction
-    const aliceOfferResult = await aliceSeat.sellAssets();
+    const aliceOfferResult = await aliceSeat.makeOffer();
     const [bobInvite, carolInvite, daveInvite] = await publicAPI.makeInvites(3);
 
     t.equals(
@@ -363,7 +363,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     } = await zoe.redeem(aliceInvite, aliceOfferRules, alicePayments);
 
     // Alice initializes the auction
-    const aliceOfferResult = await aliceSeat.sellAssets();
+    const aliceOfferResult = await aliceSeat.makeOffer();
     const [bobInvite] = publicAPI.makeInvites(1);
 
     t.equals(

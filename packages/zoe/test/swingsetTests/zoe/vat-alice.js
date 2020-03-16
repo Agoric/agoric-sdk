@@ -151,7 +151,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       offerPayments,
     );
 
-    const offerResult = await E(seat).sellAssets();
+    const offerResult = await E(seat).makeOffer();
     const [bobInvite, carolInvite, daveInvite] = await E(publicAPI).makeInvites(
       3,
     );
