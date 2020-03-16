@@ -24,9 +24,9 @@ export const makeContract = harden(zoe => {
 
   assertRoleNames(harden(['Asset', 'Bid']));
 
-  const makeBidderInvite = () => {
-    return makeInvite(
-      harden(inviteHandle => {
+  const makeBidderInvite = () =>
+    makeInvite(
+      inviteHandle => {
         // Check that the item is still up for auction
         if (!zoe.isOfferActive(sellerInviteHandle)) {
           const rejectMsg = `The item up for auction has been withdrawn or the auction has completed`;
@@ -50,40 +50,38 @@ export const makeContract = harden(zoe => {
           });
         }
         return defaultAcceptanceMsg;
-      }),
-      harden({
+      },
+      {
         seatDesc: 'bid',
         auctionedAssets,
         minimumBid,
-      }),
-      harden({
+      },
+      {
         offer: ['Bid'],
         want: ['Asset'],
-      }),
+      },
     );
-  };
 
-  const makeSellerInvite = () => {
-    return makeInvite(
-      harden((inviteHandle, { offerRules }) => {
+  const makeSellerInvite = () =>
+    makeInvite(
+      (inviteHandle, { offerRules: { want, offer } }) => {
         if (auctionedAssets) {
           throw rejectOffer(inviteHandle, `assets already present`);
         }
         // Save the valid offer
         sellerInviteHandle = inviteHandle;
-        auctionedAssets = offerRules.offer.Asset;
-        minimumBid = offerRules.want.Bid;
+        auctionedAssets = offer.Asset;
+        minimumBid = want.Bid;
         return defaultAcceptanceMsg;
-      }),
-      harden({
+      },
+      {
         seatDesc: 'sellAssets',
-      }),
-      harden({
+      },
+      {
         offer: ['Asset'],
         want: ['Bid'],
-      }),
+      },
     );
-  };
 
   return harden({
     invite: makeSellerInvite(),

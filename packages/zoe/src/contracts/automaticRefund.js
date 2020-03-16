@@ -15,16 +15,15 @@ export const makeContract = harden(zoe => {
   const { makeInvite } = makeZoeHelpers(zoe);
 
   let offersCount = 0;
-  const makeSeatInvite = () => {
-    return makeInvite(
-      harden(inviteHandle => {
+  const makeSeatInvite = () =>
+    makeInvite(
+      inviteHandle => {
         offersCount += 1;
         zoe.complete(harden([inviteHandle]));
         return `The offer was accepted`;
-      }),
-      harden({ seatDesc: 'getRefund' }),
+      },
+      { seatDesc: 'getRefund' },
     );
-  };
 
   return harden({
     invite: makeSeatInvite(),

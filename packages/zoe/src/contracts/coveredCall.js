@@ -21,12 +21,11 @@ export const makeContract = harden(zoe => {
   const { swap, assertRoleNames, makeInvite } = makeZoeHelpers(zoe);
   assertRoleNames(harden(['UnderlyingAsset', 'StrikePrice']));
 
-  const makeCallOptionInvite = sellerHandle => {
-    const {
-      offerRules: { want, offer, exit },
-    } = zoe.getOffer(sellerHandle);
-
-    return makeInvite(
+  const makeCallOptionInvite = (
+    sellerHandle,
+    { offerRules: { want, offer, exit } },
+  ) =>
+    makeInvite(
       harden(inviteHandle => {
         const rejectMsg = `The covered call option is expired.`;
         return swap(sellerHandle, inviteHandle, rejectMsg);
@@ -43,21 +42,19 @@ export const makeContract = harden(zoe => {
         want: ['UnderlyingAsset'],
       }),
     );
-  };
 
-  const makeCoveredCallInvite = () => {
-    return makeInvite(
-      harden(inviteHandle => makeCallOptionInvite(inviteHandle)),
-      harden({
+  const makeCoveredCallInvite = () =>
+    makeInvite(
+      makeCallOptionInvite,
+      {
         seatDesc: 'makeCallOption',
-      }),
-      harden({
+      },
+      {
         offer: ['UnderlyingAsset'],
         want: ['StrikePrice'],
         exit: ['afterDeadline'],
-      }),
+      },
     );
-  };
 
   return harden({
     invite: makeCoveredCallInvite(),

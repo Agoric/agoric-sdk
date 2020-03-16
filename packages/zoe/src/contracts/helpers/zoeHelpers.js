@@ -45,7 +45,7 @@ export const makeZoeHelpers = zoe => {
       const seat = harden({
         makeOffer: () => {
           // eslint-disable-next-line no-use-before-define
-          helpers.rejectIfNotOfferRules(inviteHandle, expected);
+          helpers.rejectIfNotOfferRules(inviteHandle, harden(expected));
           // eslint-disable-next-line no-use-before-define
           return seatFn(inviteHandle, zoe.getOffer(inviteHandle));
         },
