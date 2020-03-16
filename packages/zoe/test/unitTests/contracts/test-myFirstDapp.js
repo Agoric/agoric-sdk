@@ -61,7 +61,7 @@ test('myFirstDapp with valid offers', async t => {
     );
 
     // 4: Alice adds her sell order to the exchange
-    const aliceOfferResult = await aliceSeat.makeOffer();
+    const aliceOfferResult = await aliceSeat.addOrder();
     const { invite: bobInvite } = publicAPI.makeInvite();
 
     // 5: Bob decides to join.
@@ -100,7 +100,7 @@ test('myFirstDapp with valid offers', async t => {
     );
 
     // 8: Bob submits the buy order to the exchange
-    const bobOfferResult = await bobSeat.makeOffer();
+    const bobOfferResult = await bobSeat.addOrder();
 
     t.equals(
       bobOfferResult,
@@ -200,7 +200,7 @@ test('myFirstDapp with multiple sell offers', async t => {
     );
 
     // 4: Alice adds her sell order to the exchange
-    const aliceOfferResult1 = aliceSeat1.makeOffer();
+    const aliceOfferResult1 = aliceSeat1.addOrder();
 
     // 5: Alice adds another sell order to the exchange
     const aliceInvite2 = await inviteIssuer.claim(
@@ -216,7 +216,7 @@ test('myFirstDapp with multiple sell offers', async t => {
       aliceSale2OrderOfferRules,
       { Asset: aliceMoolaPurse.withdraw(moola(5)) },
     );
-    const aliceOfferResult2 = aliceSeat2.makeOffer();
+    const aliceOfferResult2 = aliceSeat2.addOrder();
 
     // 5: Alice adds a buy order to the exchange
     const aliceInvite3 = await inviteIssuer.claim(
@@ -232,7 +232,7 @@ test('myFirstDapp with multiple sell offers', async t => {
       aliceBuyOrderOfferRules,
       { Price: aliceSimoleanPurse.withdraw(simoleans(18)) },
     );
-    const aliceOfferResult3 = aliceSeat3.makeOffer();
+    const aliceOfferResult3 = aliceSeat3.addOrder();
 
     Promise.all(aliceOfferResult1, aliceOfferResult2, aliceOfferResult3).then(
       () => {
@@ -297,7 +297,7 @@ test('myFirstDapp showPayoutRules', async t => {
     );
 
     // 4: Alice adds her sell order to the exchange
-    aliceSeat1.makeOffer();
+    aliceSeat1.addOrder();
 
     const expected = [{ Price: 4 }, { Asset: 3 }];
 

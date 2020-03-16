@@ -5,6 +5,9 @@ import { sameStructure } from '@agoric/same-structure';
 export const defaultRejectMsg = `The offer was invalid. Please check your refund.`;
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
+// Must not escape
+const OfferResultPumpkin = harden({});
+
 const getKeys = obj => harden(Object.getOwnPropertyNames(obj || {}));
 
 export const makeZoeHelpers = zoe => {
@@ -42,12 +45,28 @@ export const makeZoeHelpers = zoe => {
   };
   const helpers = harden({
     makeInvitePair(seatFn, customProperties = undefined, expected = undefined) {
+      let offerResult = OfferResultPumpkin;
+      let offerError = OfferResultPumpkin;
       const seat = harden({
         makeOffer: () => {
-          // eslint-disable-next-line no-use-before-define
-          helpers.rejectIfNotOfferRules(inviteHandle, harden(expected));
-          // eslint-disable-next-line no-use-before-define
-          return seatFn(inviteHandle, zoe.getOffer(inviteHandle));
+          if (
+            offerResult === OfferResultPumpkin &&
+            offerError === OfferResultPumpkin
+          ) {
+            // eslint-disable-next-line no-use-before-define
+            helpers.rejectIfNotOfferRules(inviteHandle, harden(expected));
+            try {
+              // eslint-disable-next-line no-use-before-define
+              offerResult = seatFn(inviteHandle, zoe.getOffer(inviteHandle));
+            } catch (err) {
+              offerError = err;
+            }
+          }
+          if (offerError !== OfferResultPumpkin) {
+            throw offerError;
+          }
+          assert(offerResult !== OfferResultPumpkin);
+          return offerResult;
         },
       });
       const { invite, inviteHandle } = zoe.makeInvite(seat, customProperties);

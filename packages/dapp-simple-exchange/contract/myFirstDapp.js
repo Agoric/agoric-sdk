@@ -86,7 +86,7 @@ export const makeContract = harden((zoe, terms) => {
     const seat = harden({
       // This code might be modified to support immediate_or_cancel. Current
       // implementation is effectively fill_or_kill.
-      makeOffer: () => {
+      addOrder: () => {
         // Is it a valid sell offer?
         if (hasValidPayoutRules(['offerAtMost', 'wantAtLeast'], inviteHandle)) {
           // Save the valid offer and try to match

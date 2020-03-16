@@ -99,7 +99,7 @@ export const makeContract = harden(zoe => {
     const seat = harden({
       // This code might be modified to support immediate_or_cancel. Current
       // implementation is effectively fill_or_kill.
-      makeOffer: () => {
+      addOrder: () => {
         const buyAssetForPrice = harden({
           offer: [PRICE],
           want: [ASSET],

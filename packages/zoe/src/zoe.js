@@ -370,8 +370,9 @@ const makeZoe = (additionalEndowments = {}) => {
 
       // Create result to be returned. Depends on exitRule
       const makeRedemptionResult = _ => {
+        const seat = handleToSeat.get(offerHandle);
         const redemptionResult = {
-          seat: handleToSeat.get(offerHandle),
+          seat,
           payout: payoutMap.get(offerHandle).p,
         };
         const { exit } = offerRules;
@@ -395,6 +396,14 @@ const makeZoe = (additionalEndowments = {}) => {
             exitKind === 'waived',
             details`exitRule kind was not recognized: ${exitKind}`,
           );
+        }
+
+        if (seat && 'makeOffer' in seat) {
+          try {
+            redemptionResult.offerResult = seat.makeOffer();
+          } catch (err) {
+            redemptionResult.offerResult = Promise.reject(err);
+          }
         }
 
         // if the exitRule.kind is 'waived' the user has no
