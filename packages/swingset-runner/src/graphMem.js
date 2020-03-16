@@ -22,6 +22,7 @@ export async function main() {
 
   let outfile = null;
   const datafiles = [];
+  let type = 'png';
 
   while (argv[0]) {
     const arg = argv.shift();
@@ -30,6 +31,9 @@ export async function main() {
         case '--output':
         case '-o':
           outfile = argv.shift();
+          break;
+        case '--pdf':
+          type = 'pdf';
           break;
         default:
           throw new Error(`invalid flag ${arg}`);
@@ -40,13 +44,6 @@ export async function main() {
   }
   if (datafiles.length < 1) {
     throw new Error('you must specify some input');
-  }
-
-  if (!outfile) {
-    outfile = datafiles[0];
-  }
-  if (!outfile.endsWith('.png')) {
-    outfile += '.png';
   }
 
   const spec = initGraphSpec(
@@ -67,5 +64,5 @@ export async function main() {
     colorIdx += 4;
   }
 
-  await renderGraph(spec, outfile);
+  await renderGraph(spec, outfile, type);
 }
