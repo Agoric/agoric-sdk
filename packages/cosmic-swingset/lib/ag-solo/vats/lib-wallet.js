@@ -20,6 +20,8 @@ export async function makeWallet(
   const petnameToPurse = makeStore();
   const purseToIssuer = makeWeakStore();
   const issuerPetnameToIssuer = makeStore();
+
+  // issuerNames have properties like 'brandRegKey' and 'issuerPetname'.
   const issuerToIssuerNames = makeWeakStore();
   const issuerToBrand = makeWeakStore();
   const brandToIssuer = makeStore();
@@ -49,7 +51,6 @@ export async function makeWallet(
       E(purse).getCurrentAmount(),
       E(purse).getAllegedBrand(),
     ]);
-    // issuerNames contains properties like 'brandRegKey' and 'issuerPetname'.
     const issuerNames = issuerToIssuerNames.get(brandToIssuer.get(brand));
     pursesState.set(pursePetname, {
       ...issuerNames,
@@ -75,28 +76,40 @@ export async function makeWallet(
     // === AWAITING TURN ===
     // =====================
 
-    assert(
-      zoeKind === 'indexed',
-      details`Only indexed Zoe is implemented, not ${zoeKind}`,
-    );
-
     // We now have everything we need to provide Zoe, so do the actual withdrawal.
-    // purses are an array ordered by issuer payoutRules.
-    const payment = await Promise.all(
-      offerRules.payoutRules.map(({ kind, amount }, i) => {
-        const purse = purses[i];
-        if (kind === 'offerAtMost' && purse) {
-          return E(purse).withdraw(amount);
-        }
-        return undefined;
-      }),
-    );
+    let payment;
+    if (zoeKind === 'roles') {
+      // Payments are made for the roles in offerRules.offer.
+      payment = {};
+      await Promise.all(
+        Object.entries(offerRules.offer || {}).map(([role, amount]) => {
+          const purse = purses[role];
+          if (purse) {
+            payment[role] = E(purse).withdraw(amount);
+          }
+          return payment[role];
+        }),
+      );
+    } else if (zoeKind === 'indexed') {
+      // purses/payment are an array indexed by issuer payoutRules.
+      payment = await Promise.all(
+        offerRules.payoutRules.map(({ kind, amount }, i) => {
+          const purse = purses[i];
+          if (kind === 'offerAtMost' && purse) {
+            return E(purse).withdraw(amount);
+          }
+          return undefined;
+        }),
+      );
+    } else {
+      throw Error(`Unsupported zoeKind ${zoeKind}`);
+    }
 
     // =====================
     // === AWAITING TURN ===
     // =====================
 
-    const { seat, payout: payoutPAP, cancelObj } = await E(zoe).redeem(
+    const { seat, payout: payoutObjP, cancelObj } = await E(zoe).redeem(
       invite,
       offerRules,
       payment,
@@ -108,20 +121,29 @@ export async function makeWallet(
 
     // Let the caller do what they want with the seat.
     // We'll resolve when deposited.
-    const depositedP = payoutPAP.then(payoutAP =>
-      Promise.all(payoutAP).then(payoutA =>
+    const depositedP = payoutObjP.then(payoutObj => {
+      const payoutIndexToRole = [];
+      return Promise.all(
+        Object.entries(payoutObj).map(([role, payoutP], i) => {
+          // role may be an index for zoeKind === 'indexed', but we can still treat it
+          // as the role name for looking up purses and payouts (just happens to
+          // be an integer).
+          payoutIndexToRole[i] = role;
+          return payoutP;
+        }),
+      ).then(payoutArray =>
         Promise.all(
-          payoutA.map((payout, i) => {
-            const purse = purses[i];
+          payoutArray.map((payout, payoutIndex) => {
+            const role = payoutIndexToRole[payoutIndex];
+            const purse = purses[role];
             if (purse && payout) {
-              // console.log('FIGME: deposit', purse, payout);
               return E(purse).deposit(payout);
             }
             return undefined;
           }),
         ),
-      ),
-    );
+      );
+    });
 
     return { depositedP, cancelObj, seat };
   }
@@ -259,7 +281,10 @@ export async function makeWallet(
       const pendingOfferDesc = {
         ...offerDesc,
         status: 'accept',
-        wait: -1, // This should be an estimate as to number of ms until offer accepted.
+        // wait is used for the wallet to display an estimate of how long the
+        // offer will take to be accepted.
+        // It is a value in milliseconds, or -1 for "unknown".
+        wait: -1,
       };
       idToOfferDesc.set(id, pendingOfferDesc);
       const compiledOfferDesc = await idToCompiledOfferDescP.get(id);
@@ -299,7 +324,8 @@ export async function makeWallet(
           const acceptOfferDesc = { ...pendingOfferDesc, wait: undefined };
           idToOfferDesc.set(id, acceptOfferDesc);
           updateInboxState(id, acceptOfferDesc);
-          return E(publicAPIHooks).offerAccepted(publicAPI);
+          // Allow the offer to hook what the return value should be.
+          return E(publicAPIHooks).deposited(publicAPI);
         })
         .catch(rejected);
     } catch (e) {
@@ -320,7 +346,7 @@ export async function makeWallet(
   };
 
   function hydrateHooks({
-    publicAPI: { getInvite, offerAccepted, ...publicAPIRest } = {},
+    publicAPI: { getInvite, deposited, ...publicAPIRest } = {},
     seat: { performOffer, ...seatRest } = {},
     ...targetsRest
   } = {}) {
@@ -336,20 +362,25 @@ export async function makeWallet(
       );
     }
 
+    // Individual hook functions aren't general-purpose.
+    // They're special-purpose for the extension points
+    // of the specific wallet we use.  We hydrate them
+    // individually to provide some error checking in case
+    // the hook specification is wrong or was accidentally
+    // supplied in the wrong target.
     return harden({
       publicAPI: {
+        // This hook is to get the invite on the publicAPI.
         getInvite: hydrateHook(getInvite),
-        accepted: hydrateHook(offerAccepted),
+        // This hook is to return a value for the deposited promise.
+        // It is run after all the spoils are deposited to their purses.
+        deposited: hydrateHook(deposited),
       },
       seat: {
+        // This hook is to run the offer on the seat.
         performOffer: hydrateHook(performOffer),
       },
     });
-  }
-
-  function ping(cb, data) {
-    // console.log('FIGME: pinged with', cb, String(cb));
-    return E(cb).pong(data);
   }
 
   const wallet = harden({
