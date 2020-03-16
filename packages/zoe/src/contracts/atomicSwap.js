@@ -8,18 +8,18 @@ export const makeContract = harden(zoe => {
   assertRoleNames(harden(['Asset', 'Price']));
 
   const makeMatchingInvite = firstInviteHandle => {
-    const seat = harden({
-      matchOffer: () => swap(firstInviteHandle, inviteHandle),
-    });
     const {
       offerRules: { want, offer },
     } = zoe.getOffer(firstInviteHandle);
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
-      asset: offer.Asset,
-      price: want.Price,
-      seatDesc: 'matchOffer',
-    });
-    return invite;
+    return makeInvite(
+      harden(inviteHandle => swap(firstInviteHandle, inviteHandle)),
+      harden({ offer: ['Price'], want: ['Asset'] }),
+      harden({
+        asset: offer.Asset,
+        price: want.Price,
+        seatDesc: 'matchOffer',
+      }),
+    );
   };
 
   const makeFirstOfferInvite = () => {

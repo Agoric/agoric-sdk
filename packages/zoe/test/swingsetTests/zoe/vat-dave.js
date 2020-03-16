@@ -132,7 +132,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         zoe,
       ).redeem(exclInvite, daveSwapOfferRules, daveSwapPayments);
 
-      const daveSwapOutcome = await E(daveSwapSeat).matchOffer();
+      const daveSwapOutcome = await E(daveSwapSeat).accept();
       log(daveSwapOutcome);
 
       const daveSwapPayout = await daveSwapPayoutP;

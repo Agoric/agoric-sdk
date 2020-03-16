@@ -88,7 +88,7 @@ test('zoe - atomicSwap', async t => {
     );
 
     // 7: Bob makes an offer
-    const bobOfferResult = await bobSeat.matchOffer();
+    const bobOfferResult = await bobSeat.accept();
 
     t.equals(
       bobOfferResult,

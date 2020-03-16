@@ -323,7 +323,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         offerPayments,
       );
 
-      const offerResult = await E(seat).matchOffer();
+      const offerResult = await E(seat).accept();
 
       log(offerResult);
 

@@ -436,7 +436,7 @@ test('zoe - coveredCall with swap for invite', async t => {
       daveSwapPayments,
     );
 
-    const daveSwapOutcome = await daveSwapSeat.matchOffer();
+    const daveSwapOutcome = await daveSwapSeat.accept();
     t.equals(
       daveSwapOutcome,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
