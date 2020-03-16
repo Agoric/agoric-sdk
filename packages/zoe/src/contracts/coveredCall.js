@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 
 // In a covered call, the owner of a digital asset sells a call
@@ -19,39 +18,31 @@ import harden from '@agoric/harden';
 import { makeZoeHelpers } from './helpers/zoeHelpers';
 
 export const makeContract = harden(zoe => {
-  const {
-    swap,
-    assertRoleNames,
-    rejectIfNotOfferRules,
-    makeInvite,
-  } = makeZoeHelpers(zoe);
+  const { swap, assertRoleNames, makeInvite } = makeZoeHelpers(zoe);
   assertRoleNames(harden(['UnderlyingAsset', 'StrikePrice']));
 
   const makeCallOptionInvite = sellerHandle => {
-    const seat = harden({
-      exercise: () => {
-        const expected = harden({
-          offer: ['StrikePrice'],
-          want: ['UnderlyingAsset'],
-        });
-        rejectIfNotOfferRules(inviteHandle, expected);
-        const rejectMsg = `The covered call option is expired.`;
-        return swap(sellerHandle, inviteHandle, rejectMsg);
-      },
-    });
-
     const {
       offerRules: { want, offer, exit },
     } = zoe.getOffer(sellerHandle);
 
-    const { invite: callOption, inviteHandle } = zoe.makeInvite(seat, {
-      seatDesc: 'exerciseOption',
-      expirationDate: exit.afterDeadline.deadline,
-      timerAuthority: exit.afterDeadline.timer,
-      underlyingAsset: offer.UnderlyingAsset,
-      strikePrice: want.StrikePrice,
-    });
-    return callOption;
+    return makeInvite(
+      harden(inviteHandle => {
+        const rejectMsg = `The covered call option is expired.`;
+        return swap(sellerHandle, inviteHandle, rejectMsg);
+      }),
+      harden({
+        seatDesc: 'exerciseOption',
+        expirationDate: exit.afterDeadline.deadline,
+        timerAuthority: exit.afterDeadline.timer,
+        underlyingAsset: offer.UnderlyingAsset,
+        strikePrice: want.StrikePrice,
+      }),
+      harden({
+        offer: ['StrikePrice'],
+        want: ['UnderlyingAsset'],
+      }),
+    );
   };
 
   const makeCoveredCallInvite = () => {

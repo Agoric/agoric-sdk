@@ -94,7 +94,7 @@ test('zoe - coveredCall', async t => {
     );
 
     // Bob exercises the option
-    const bobOutcome = await bobSeat.exercise();
+    const bobOutcome = await bobSeat.makeOffer();
 
     t.equals(
       bobOutcome,
@@ -223,7 +223,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
       bobPayments,
     );
 
-    t.throws(() => bobSeat.exercise(), /The covered call option is expired/);
+    t.throws(() => bobSeat.makeOffer(), /The covered call option is expired/);
 
     const bobPayout = await bobPayoutP;
     const alicePayout = await alicePayoutP;
@@ -465,7 +465,7 @@ test('zoe - coveredCall with swap for invite', async t => {
       daveCoveredCallPayments,
     );
 
-    const daveCoveredCallOutcome = await daveCoveredCallSeat.exercise();
+    const daveCoveredCallOutcome = await daveCoveredCallSeat.makeOffer();
     t.equals(
       daveCoveredCallOutcome,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
@@ -714,7 +714,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       daveOfferRulesCoveredCall,
       daveSecondCoveredCallPayments,
     );
-    const daveSecondCoveredCallOutcome = daveSecondCoveredCallSeat.exercise();
+    const daveSecondCoveredCallOutcome = daveSecondCoveredCallSeat.makeOffer();
     t.equals(
       daveSecondCoveredCallOutcome,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
@@ -745,7 +745,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       daveFirstCoveredCallPayments,
     );
 
-    const daveFirstCoveredCallOutcome = daveFirstCoveredCallSeat.exercise();
+    const daveFirstCoveredCallOutcome = daveFirstCoveredCallSeat.makeOffer();
     t.equals(
       daveFirstCoveredCallOutcome,
       'The offer has been accepted. Once the contract has been completed, please check your payout',

@@ -133,7 +133,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         bobPayments,
       );
 
-      const bobOutcome = await E(seat).exercise();
+      const bobOutcome = await E(seat).makeOffer();
 
       log(bobOutcome);
 

@@ -156,7 +156,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         daveCoveredCallPayments,
       );
 
-      const daveCoveredCallOutcome = await E(daveCoveredCallSeat).exercise();
+      const daveCoveredCallOutcome = await E(daveCoveredCallSeat).makeOffer();
       log(daveCoveredCallOutcome);
 
       const daveCoveredCallResult = await daveCoveredCallPayoutP;
