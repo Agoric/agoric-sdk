@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Agoric Wallet Bridge</title>
+  </head>
+  <body>
+    <p>This bridge is only for dApps to reach your wallet.  It contains no user-servicable parts.</p>
+
+    <script type="text/javascript">
+      const walletPublicURL = new URL('/wallet-bridge', window.origin.replace(/^http/, 'ws')).href;
+      const ws = new WebSocket(walletPublicURL);
+      const wsQueue = [];
+      const dappQueue = [];
+      let origin;
+      ws.addEventListener('message', ev => {
+        const obj = JSON.parse(ev.data)
+        // console.log('to dapp', origin, obj);
+        if (origin === undefined) {
+          dappQueue.push(obj);
+          return;
+        }
+        if (window.parent !== window) {
+          window.parent.postMessage(obj, origin);
+        }
+      });
+
+      ws.addEventListener('open', () => {
+        if (wsQueue.length) {
+          console.log('sending', wsQueue.length, 'queued messages from', origin);
+        }
+        while (wsQueue.length) {
+          ws.send(wsQueue.shift());
+        }
+      });
+
+
+      window.addEventListener('message', ev => {
+        if (origin === undefined) {
+          // First-come, first-serve.
+          origin = ev.origin;
+          while (dappQueue.length) {
+            const dappObj = dappQueue.shift();
+            if (window.parent !== window) {
+              window.parent.postMessage(dappObj);
+            }
+          }
+        }
+        // console.log('from dapp', origin, ev.data);
+        const obj = { ...ev.data, dappOrigin: origin };
+        if (ws.readyState !== ws.OPEN) {
+          wsQueue.push(obj);
+        } else {
+          ws.send(JSON.stringify(obj));
+        }
+      });
+    </script>
+  </body>
+</html>

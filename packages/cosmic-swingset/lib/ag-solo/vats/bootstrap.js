@@ -52,6 +52,8 @@ export default function setup(syscall, state, helpers) {
 
       async function setupWalletVat(commandDevice, httpVat, walletVat) {
         await E(httpVat).registerURLHandler(walletVat, '/vat');
+        const bridgeURLHandler = await E(walletVat).getBridgeURLHandler();
+        await E(httpVat).registerURLHandler(bridgeURLHandler, '/wallet-bridge');
         await E(walletVat).setCommandDevice(commandDevice);
         await E(walletVat).setPresences();
       }

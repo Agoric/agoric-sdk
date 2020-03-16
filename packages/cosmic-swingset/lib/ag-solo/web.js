@@ -93,16 +93,16 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     return true;
   };
 
-  // accept messages on /vat and /api
+  // accept messages on some well-known endpoints
   // todo: later allow arbitrary endpoints?
-  for (const ep of ['/vat', '/api']) {
+  for (const ep of ['/vat', '/wallet-public', '/api']) {
     app.post(ep, (req, res) => {
       if (ep !== '/api' && !validateOrigin(req)) {
         res.json({ ok: false, rej: 'Invalid Origin' });
         return;
       }
 
-      // console.log(`POST /vat got`, req.body); // should be jsonable
+      // console.log(`POST ${ep} got`, req.body); // should be jsonable
       inboundCommand(req.body, req)
         .then(
           r => res.json({ ok: true, res: r }),
