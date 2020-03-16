@@ -196,11 +196,13 @@ export async function makeWallet(
   async function addOffer(
     rawOfferDesc,
     hooks = undefined,
-    requestContext = {},
+    requestContext = { origin: 'unknown' },
   ) {
-    const { id } = rawOfferDesc;
+    const { id: rawId } = rawOfferDesc;
+    const id = `${requestContext.origin}#${rawId}`;
     const offerDesc = {
       ...rawOfferDesc,
+      id,
       requestContext,
       status: undefined,
       wait: undefined,
@@ -213,6 +215,7 @@ export async function makeWallet(
 
     // Our inbox state may have an enriched offerDesc.
     updateInboxState(id, idToOfferDesc.get(id));
+    return id;
   }
 
   function declineOffer(id) {

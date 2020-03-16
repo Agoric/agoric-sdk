@@ -144,7 +144,7 @@ export default function Inbox() {
               id,
               instanceRegKey,
               instancePetname,
-              offerRulesTemplate: { offer = {}, want = {} },
+              offerRulesTemplate: { offer = {}, want = {} } = {},
               status,
               wait,
             }) => (
