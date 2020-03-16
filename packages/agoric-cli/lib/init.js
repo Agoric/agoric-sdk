@@ -15,7 +15,7 @@ const gitURL = (relativeOrAbsoluteURL, base) => {
 };
 
 export default async function initMain(_progname, rawArgs, priv, _opts) {
-  const { anylogger, spawn } = priv;
+  const { anylogger, spawn, fs } = priv;
   const log = anylogger('agoric:init');
   const {
     _: args,
@@ -60,6 +60,29 @@ export default async function initMain(_progname, rawArgs, priv, _opts) {
     })
   ) {
     throw Error('cannot detach from upstream');
+  }
+
+  let topLevelName;
+  for (const dir of ['', 'api/', 'contract/', 'ui/']) {
+    const path = `${DIR}/${dir}package.json`;
+    log('rewriting ', path);
+
+    // eslint-disable-next-line no-await-in-loop
+    const contents = await fs.readFile(path, 'utf-8');
+    const pkg = JSON.parse(contents);
+    if (dir === '') {
+      topLevelName = pkg.name;
+    }
+    if (!pkg.name || !pkg.name.startsWith(topLevelName)) {
+      throw Error(
+        `${path}: "name" must start with ${JSON.stringify(topLevelName)}`,
+      );
+    }
+    pkg.name = `${DIR}${pkg.name.substr(topLevelName.length)}`;
+    const json = JSON.stringify(pkg, undefined, 2);
+
+    // eslint-disable-next-line no-await-in-loop
+    await fs.writeFile(path, json);
   }
 
   log.info(chalk.bold.yellow(`Done initializing ${DIR}`));
