@@ -68,7 +68,7 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
 
   function notifyFulfillToData(promiseID, data) {
     insistCapData(data);
-    console.log(`comms.notifyFulfillToData(${promiseID})`);
+    // console.log(`comms.notifyFulfillToData(${promiseID})`);
     // dumpState(state);
 
     // I *think* we should never get here for local promises, since the
@@ -91,14 +91,14 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
   }
 
   function notifyFulfillToPresence(promiseID, slot) {
-    console.log(`comms.notifyFulfillToPresence(${promiseID}) = ${slot}`);
+    // console.log(`comms.notifyFulfillToPresence(${promiseID}) = ${slot}`);
     const resolution = harden({ type: 'object', slot });
     resolvePromiseToRemote(syscall, state, promiseID, resolution, transmit);
   }
 
   function notifyReject(promiseID, data) {
     insistCapData(data);
-    console.log(`comms.notifyReject(${promiseID})`);
+    // console.log(`comms.notifyReject(${promiseID})`);
     const resolution = harden({ type: 'reject', data });
     resolvePromiseToRemote(syscall, state, promiseID, resolution, transmit);
   }

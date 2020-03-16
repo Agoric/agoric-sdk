@@ -287,7 +287,7 @@ export default function makeVatManager(
     return process(
       () => dispatch[dispatchOp](...dispatchArgs),
       () => transcriptFinishDispatch(),
-      err => console.log(`doProcess: ${errmsg}: ${err}`, err),
+      err => console.log(`doProcess: ${errmsg}:`, err),
     );
   }
 

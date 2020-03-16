@@ -102,15 +102,18 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
     if (!mb.deliverInbound(sender, messages, ack)) {
       return;
     }
-    console.log(`mboxDeliver:   ADDED messages`);
+    // console.log(`mboxDeliver:   ADDED messages`);
     await controller.run();
   }
 
-  async function beginBlock(blockHeight, blockTime) {
-    const addedToQueue = timer.poll(blockTime);
-    console.log(
-      `polled; blockTime:${blockTime}, h:${blockHeight} ADDED: ${addedToQueue}`,
-    );
+  async function beginBlock(_blockHeight, blockTime) {
+    // const addedToQueue = timer.poll(blockTime);
+    // console.log(
+    //   `polled; blockTime:${blockTime}, h:${blockHeight} ADDED: ${addedToQueue}`,
+    // );
+    if (!timer.poll(blockTime)) {
+      return;
+    }
     await controller.run();
   }
 
