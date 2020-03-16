@@ -11,7 +11,12 @@ export function initGraphSpec(statsPath, xField, xLabel, yField, yLabel) {
     padding: 5,
     background: 'white',
 
-    data: [],
+    data: [
+      {
+        name: 'legend',
+        values: [],
+      },
+    ],
 
     scales: [
       {
@@ -29,6 +34,12 @@ export function initGraphSpec(statsPath, xField, xLabel, yField, yLabel) {
         zero: true,
         domain: { data: tag, field: yField },
       },
+      {
+        name: 'legend',
+        type: 'ordinal',
+        domain: { data: 'legend', field: 'text' },
+        range: { data: 'legend', field: 'color' },
+      },
     ],
 
     axes: [
@@ -37,6 +48,22 @@ export function initGraphSpec(statsPath, xField, xLabel, yField, yLabel) {
     ],
 
     marks: [],
+
+    legends: [
+      {
+        type: 'symbol',
+        symbolType: 'stroke',
+        fill: 'legend',
+        direction: 'vertical',
+        orient: 'top-left',
+        rowPadding: 0,
+        clipHeight: 0,
+        titleOrient: 'top',
+        symbolStrokeWidth: 2,
+        symbolSize: 1000,
+        stroke: 'legend',
+      },
+    ],
   };
   return spec;
 }
@@ -53,6 +80,11 @@ export function addDataToGraphSpec(spec, statsPath) {
 
 export function addGraphToGraphSpec(spec, statsPath, yField, color) {
   const tag = path.basename(statsPath);
+  const legendElement = {
+    text: `${tag} - ${yField}`,
+    color,
+  };
+  spec.data[0].values.push(legendElement);
   const lineElement = {
     type: 'line',
     from: { data: tag },
