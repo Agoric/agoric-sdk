@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 import inquirer from 'inquirer';
 import djson from 'deterministic-json';
 import crypto from 'crypto';
@@ -109,16 +110,16 @@ const main = async (progname, rawArgs) => {
     stopEarly: true,
   });
 
-  const reMain = async args => {
+  const reMain = async reArgs => {
     const displayArgs = [progname, ...args];
     console.error('$', ...displayArgs.map(shellEscape));
-    return main(progname, args);
+    return main(progname, reArgs);
   };
 
-  const needReMain = async args => {
-    const code = await reMain(args);
+  const needReMain = async reArgs => {
+    const code = await reMain(reArgs);
     if (code !== 0) {
-      throw `Unexpected exit: ${code}`;
+      throw Error(`Unexpected exit: ${code}`);
     }
   };
 
@@ -154,7 +155,9 @@ show-config      display the client connection parameters
       const ps = files.map(path => stat(path));
       await Promise.all(ps);
     } catch (e) {
-      throw `${process.cwd()} does not appear to be a directory created by \`${cmd}'`;
+      throw Error(
+        `${process.cwd()} does not appear to be a directory created by \`${cmd}'`,
+      );
     }
   };
 
@@ -188,16 +191,15 @@ show-config      display the client connection parameters
       break;
     }
     case 'bootstrap': {
-      const {
-        _: subArgs,
-        'boot-tokens': bootTokens,
-        ...subOpts
-      } = parseArgs(args.slice(1), {
-        default: {
-          'boot-tokens': DEFAULT_BOOT_TOKENS,
+      const { _: subArgs, 'boot-tokens': bootTokens, ...subOpts } = parseArgs(
+        args.slice(1),
+        {
+          default: {
+            'boot-tokens': DEFAULT_BOOT_TOKENS,
+          },
+          stopEarly: true,
         },
-        stopEarly: true,
-      });
+      );
 
       const dir = SETUP_HOME;
       if (await exists(`${dir}/network.txt`)) {
@@ -221,6 +223,7 @@ show-config      display the client connection parameters
       });
 
       await guardFile(`${PROVISION_DIR}/ssh_known_hosts.stamp`, async () => {
+        // eslint-disable-next-line no-constant-condition
         while (true) {
           const code = await reMain(['play', 'update_known_hosts']);
           if (code === 0) {
@@ -230,6 +233,7 @@ show-config      display the client connection parameters
           }
           await sleep(10, 'for hosts to boot SSH');
         }
+        return 0;
       });
 
       // Prepare all the machines.
@@ -329,6 +333,7 @@ show-config      display the client connection parameters
 
     case 'bootstrap-cosmos': {
       await inited();
+      // eslint-disable-next-line no-unused-vars
       const { _: subArgs, ...subOpts } = parseArgs(args.slice(1), {
         string: ['bump'],
         stopEarly: true,
@@ -351,7 +356,7 @@ show-config      display the client connection parameters
         : '';
       const currentChainName = await trimReadFile(
         `${COSMOS_DIR}/chain-name.txt`,
-      ).catch(e => undefined);
+      ).catch(_ => undefined);
 
       if (subOpts.bump || currentChainName !== chainName) {
         // We don't have matching parameters, so restart the chain.
@@ -409,7 +414,9 @@ show-config      display the client connection parameters
         needReMain([
           'play',
           'install',
-          `-eexecline=${shellEscape('/usr/src/cosmic-swingset/lib/ag-chain-cosmos start --pruning=nothing')}`,
+          `-eexecline=${shellEscape(
+            '/usr/src/cosmic-swingset/lib/ag-chain-cosmos start --pruning=nothing',
+          )}`,
           `-eserviceLines="Environment=BOOT_ADDRESS=${bootAddress}"`,
         ]),
       );
@@ -580,7 +587,7 @@ or "${chalk.yellow.bold(
     case 'ssh': {
       const [host, ...sshArgs] = args.slice(1);
       if (!host) {
-        throw `Need: [host]`;
+        throw Error(`Need: [host]`);
       }
 
       setSilent(true);
@@ -608,14 +615,22 @@ or "${chalk.yellow.bold(
       setSilent(true);
       await chdir(SETUP_HOME);
       await inited();
-      const [chainName, gci, peers, rpcAddrs, bootstrapAddress] = await Promise.all(
+      const [
+        chainName,
+        gci,
+        peers,
+        rpcAddrs,
+        bootstrapAddress,
+      ] = await Promise.all(
         [
           'show-chain-name',
           'show-gci',
           'show-peers',
           'show-rpcaddrs',
           'show-bootstrap-address',
-        ].map(cmd => needBacktick([progname, cmd].map(shellEscape).join(' '))),
+        ].map(subcmd =>
+          needBacktick([progname, subcmd].map(shellEscape).join(' ')),
+        ),
       );
       const obj = {
         chainName,
@@ -652,12 +667,12 @@ or "${chalk.yellow.bold(
 
       const nodes = Object.keys(nodeMap).sort();
       if (nodes.length === 0) {
-        throw `Need at least one node`;
+        throw Error(`Need at least one node`);
       }
 
       for (const node of nodes) {
-        const nodePlaybook = (book, ...args) =>
-          playbook(book, '-l', node, ...args);
+        const nodePlaybook = (book, ...pbargs) =>
+          playbook(book, '-l', node, ...pbargs);
         await needDoRun(nodePlaybook('restart'));
         await needDoRun([progname, 'wait-for-any', node]);
       }
@@ -735,13 +750,13 @@ or "${chalk.yellow.bold(
     case 'show-peers': {
       await inited();
       const prov = await provisionOutput();
-      const public_ips = [];
-      const public_ports = [];
+      const publicIps = [];
+      const publicPorts = [];
       for (const CLUSTER of Object.keys(prov.public_ips.value)) {
         const ips = prov.public_ips.value[CLUSTER];
         const offset = Number(prov.offsets.value[CLUSTER]);
-        for (let i = 0; i < ips.length; i++) {
-          public_ips[offset + i] = ips[i];
+        for (let i = 0; i < ips.length; i += 1) {
+          publicIps[offset + i] = ips[i];
         }
       }
 
@@ -751,6 +766,7 @@ or "${chalk.yellow.bold(
       let sep = '';
       let idPath;
       let i = 0;
+      // eslint-disable-next-line no-constant-condition
       while (true) {
         // Read the node-id file for this node.
         idPath = `${COSMOS_DIR}/data/node${i}/node-id`;
@@ -762,22 +778,22 @@ or "${chalk.yellow.bold(
         const ID = String(raw);
 
         if (!ID) {
-          throw `${idPath} does not contain a node ID`;
+          throw Error(`${idPath} does not contain a node ID`);
         }
         if (!ID.match(/^[a-f0-9]+/)) {
-          throw `${idPath} contains an invalid ID ${ID}`;
+          throw Error(`${idPath} contains an invalid ID ${ID}`);
         }
-        const IP = public_ips[i];
+        const IP = publicIps[i];
         if (!IP) {
-          throw `${idPath} does not correspond to a Terraform public IP`;
+          throw Error(`${idPath} does not correspond to a Terraform public IP`);
         }
-        const PORT = public_ports[i] || DEFAULT_PORT;
+        const PORT = publicPorts[i] || DEFAULT_PORT;
         peers += `${sep}${ID}@${IP}:${PORT}`;
         sep = ',';
-        i++;
+        i += 1;
       }
       if (i === 0) {
-        throw `No ${idPath} file found`;
+        throw Error(`No ${idPath} file found`);
       }
       process.stdout.write(peers);
       break;
@@ -825,7 +841,8 @@ or "${chalk.yellow.bold(
         } else {
           const [name, pkBody] = namePkbody[index];
           if (pkBody) {
-            const { priv_key, ...pubkey } = JSON.parse(String(pkBody));
+            // eslint-disable-next-line no-unused-vars
+            const { priv_key: privKey, ...pubkey } = JSON.parse(String(pkBody));
             validators.push({
               name,
               ...pubkey,
@@ -854,7 +871,7 @@ or "${chalk.yellow.bold(
         dir = SETUP_HOME;
       }
       if (!dir) {
-        throw `Need: [dir]`;
+        throw Error(`Need: [dir]`);
       }
 
       // Unprovision terraform.
@@ -873,7 +890,7 @@ or "${chalk.yellow.bold(
           },
         ]);
         if (CONFIRM !== 'yes') {
-          throw `Aborting due to user request`;
+          throw Error(`Aborting due to user request`);
         }
       }
 
@@ -930,7 +947,7 @@ ${name}:
         const addProvider = makeGroup(provider, 4);
         const ips = prov.public_ips.value[provider];
         const offset = Number(prov.offsets.value[provider]);
-        for (let instance = 0; instance < ips.length; instance++) {
+        for (let instance = 0; instance < ips.length; instance += 1) {
           const ip = ips[instance];
           const node = `node${offset + instance}`;
           const units =
@@ -951,6 +968,8 @@ ${node}:
 ${units}`;
           addProvider(host);
 
+          addAll(host);
+
           // TODO: Don't make these hardcoded assumptions.
           // For now, we add all the nodes to ag-chain-cosmos, and the first node to ag-pserver.
           addChainCosmos(host);
@@ -962,10 +981,9 @@ ${units}`;
       out.write(byGroup.all);
       out.write('  children:\n');
       for (const group of Object.keys(byGroup).sort()) {
-        if (group === 'all') {
-          continue;
+        if (group !== 'all') {
+          out.write(indent(byGroup[group], 4));
         }
-        out.write(indent(byGroup[group], 4));
       }
       break;
     }
@@ -973,28 +991,28 @@ ${units}`;
     case 'play': {
       const [pb, ...pbargs] = args.slice(1);
       if (!pb) {
-        throw `Need: [playbook name]`;
+        throw Error(`Need: [playbook name]`);
       }
       if (!pb.match(/^\w[-\w]*$/)) {
-        throw `[playbook] ${JSON.stringify(pb)} must be a word`;
+        throw Error(`[playbook] ${JSON.stringify(pb)} must be a word`);
       }
       await inited();
-      return await doRun(playbook(pb, ...pbargs));
+      return doRun(playbook(pb, ...pbargs));
     }
 
     case 'run': {
-      const [host, ...cmd] = args.slice(1);
-      if (!host || cmd.length === 0) {
-        throw `Need: [host] [cmd...]`;
+      const [host, ...subcmd] = args.slice(1);
+      if (!host || subcmd.length === 0) {
+        throw Error(`Need: [host] [cmd...]`);
       }
       await inited();
       let runArg;
-      if (cmd.length === 1) {
-        if (cmd[0].match(shellMetaRegexp)) {
+      if (subcmd.length === 1) {
+        if (subcmd[0].match(shellMetaRegexp)) {
           // Already contains metacharacters.
-          runArg = `sh -c ${shellEscape(cmd[0])}`;
+          runArg = `sh -c ${shellEscape(subcmd[0])}`;
         } else {
-          runArg = cmd[0];
+          [runArg] = subcmd;
         }
       } else {
         // Need to escape each argument individually.
@@ -1007,7 +1025,7 @@ ${units}`;
     }
 
     default:
-      throw `Unknown command ${cmd}; try \`${progname} help'`;
+      throw Error(`Unknown command ${cmd}; try \`${progname} help'`);
   }
   return 0;
 };
