@@ -1,5 +1,3 @@
-/* eslint-disable no-continue */
-/* eslint-disable no-await-in-loop */
 import fetch from 'node-fetch';
 import inquirer from 'inquirer';
 import { SETUP_HOME, PLAYBOOK_WRAPPER, SETUP_DIR, SSH_TYPE } from './setup';
@@ -283,6 +281,7 @@ const doInit = async (progname, args) => {
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
+    // eslint-disable-next-line no-await-in-loop
     let { PLACEMENT } = await askPlacement(PLACEMENTS);
     if (!PLACEMENT) {
       break;
@@ -293,8 +292,10 @@ const doInit = async (progname, args) => {
       const PROVIDER = PLACEMENT_PROVIDER[PLACEMENT];
       provider = PROVIDERS[PROVIDER];
     } else {
+      // eslint-disable-next-line no-await-in-loop
       const { PROVIDER } = await askProvider();
       if (!PROVIDER) {
+        // eslint-disable-next-line no-continue
         continue;
       }
       provider = PROVIDERS[PROVIDER];
@@ -309,11 +310,13 @@ const doInit = async (progname, args) => {
       };
 
       if (provider.askDetails) {
+        // eslint-disable-next-line no-await-in-loop
         const { CANCEL, ...PLACEMENT_DETAILS } = await provider.askDetails(
           provider,
           myDetails,
         );
         if (CANCEL) {
+          // eslint-disable-next-line no-continue
           continue;
         }
         // Out with the old, in with the new.
@@ -335,6 +338,7 @@ const doInit = async (progname, args) => {
 
     const dcs =
       provider.datacenters &&
+      // eslint-disable-next-line no-await-in-loop
       (await provider.datacenters(provider, PLACEMENT, myDetails));
     const placement = PLACEMENTS[PLACEMENT] || {};
     if (dcs) {
@@ -370,6 +374,7 @@ const doInit = async (progname, args) => {
           }
           return ret;
         });
+      // eslint-disable-next-line no-await-in-loop
       const { DATACENTER, NUM_NODES, MORE } = await provider.askDatacenter(
         provider,
         PLACEMENT,
@@ -407,6 +412,7 @@ const doInit = async (progname, args) => {
 
     if (instance === offset) {
       // No nodes added.
+      // eslint-disable-next-line no-continue
       continue;
     }
 
@@ -457,6 +463,7 @@ variable ${JSON.stringify(vname)} {
   for (const PLACEMENT of Object.keys(PLACEMENT_PROVIDER).sort()) {
     const PROVIDER = PLACEMENT_PROVIDER[PLACEMENT];
     const provider = PROVIDERS[PROVIDER];
+    // eslint-disable-next-line no-await-in-loop
     await provider.createPlacementFiles(provider, PLACEMENT, clusterPrefix);
   }
 
