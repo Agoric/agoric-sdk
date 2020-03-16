@@ -7,13 +7,6 @@ import main from '../lib/main';
 
 test('workflow', async t => {
   try {
-    const myConsole = {
-      error(...args) {
-        t.deepEquals(args, [], 'no error output');
-      },
-      log(..._args) {},
-    };
-
     const pspawn = (...args) =>
       new Promise((resolve, _reject) => {
         const cp = spawn(...args);

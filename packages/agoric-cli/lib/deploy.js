@@ -16,16 +16,9 @@ const makePromise = () => {
   return pr;
 };
 
-const sendJSON = (ws, obj) => {
-  if (ws.readyState !== ws.OPEN) {
-    return;
-  }
-  // console.log('sending', obj);
-  ws.send(JSON.stringify(obj));
-};
-
-export default async function deployMain(progname, rawArgs, priv) {
-  const { console, error, makeWebSocket } = priv;
+export default async function deployMain(progname, rawArgs, powers) {
+  const { anylogger, makeWebSocket } = powers;
+  const log = anylogger('agoric:deploy');
   const { _: args, hostport } = parseArgs(rawArgs, {
     default: {
       hostport: '127.0.0.1:8000',
@@ -33,9 +26,17 @@ export default async function deployMain(progname, rawArgs, priv) {
   });
 
   if (args.length === 0) {
-    error('you must specify at least one deploy.js to run');
+    log.error('you must specify at least one deploy.js to run');
     return 1;
   }
+
+  const sendJSON = (ws, obj) => {
+    if (ws.readyState !== ws.OPEN) {
+      return;
+    }
+    log.debug('sending', obj);
+    ws.send(JSON.stringify(obj));
+  };
 
   const wsurl = `ws://${hostport}/captp`;
   const ws = makeWebSocket(wsurl, { origin: 'http://127.0.0.1' });
@@ -49,20 +50,20 @@ export default async function deployMain(progname, rawArgs, priv) {
       ws.on('message', data => {
         try {
           const obj = JSON.parse(data);
-          // console.log('receiving', obj);
+          log.debug('receiving', obj);
           if (obj.type === 'CTP_ERROR') {
             throw obj.error;
           }
           dispatch(obj);
         } catch (e) {
-          console.error('server error processing message', data, e);
+          log.error('server error processing message', data, e);
           exit.rej(e);
         }
       });
 
       // Wait for the chain to become ready.
       let bootP = getBootstrap();
-      console.error('Chain loaded:', await E.G(bootP).LOADING);
+      log.error('Chain loaded:', await E.G(bootP).LOADING);
       // Take a new copy, since the chain objects have been added to bootstrap.
       bootP = getBootstrap();
 
@@ -70,7 +71,7 @@ export default async function deployMain(progname, rawArgs, priv) {
         const moduleFile = path.resolve(process.cwd(), arg);
         const pathResolve = (...resArgs) =>
           path.resolve(path.dirname(moduleFile), ...resArgs);
-        console.log('running', moduleFile);
+        log('running', moduleFile);
         const { source, sourceMap } = await bundleSource(moduleFile);
 
         const actualSource = `(${source}\n)\n${sourceMap}`;
@@ -80,7 +81,7 @@ export default async function deployMain(progname, rawArgs, priv) {
         })();
         const main = mainNS.default;
         if (typeof main !== 'function') {
-          console.error(
+          log.error(
             `${moduleFile} does not have an export default function main`,
           );
         } else {
@@ -91,7 +92,7 @@ export default async function deployMain(progname, rawArgs, priv) {
         }
       }
 
-      console.error('Done!');
+      log('Done!');
       ws.close();
       exit.res(0);
     } catch (e) {
@@ -99,7 +100,7 @@ export default async function deployMain(progname, rawArgs, priv) {
     }
   });
   ws.on('close', (_code, _reason) => {
-    // console.log('connection closed');
+    log.debug('connection closed');
     exit.res(1);
   });
   return exit.p;

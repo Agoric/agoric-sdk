@@ -15,7 +15,8 @@ const gitURL = (relativeOrAbsoluteURL, base) => {
 };
 
 export default async function initMain(_progname, rawArgs, priv, _opts) {
-  const { console, error, spawn } = priv;
+  const { anylogger, spawn } = priv;
+  const log = anylogger('agoric:init');
   const {
     _: args,
     'dapp-template': dappTemplate,
@@ -29,14 +30,14 @@ export default async function initMain(_progname, rawArgs, priv, _opts) {
   });
 
   if (args.length !== 1) {
-    return error(`you must specify exactly one DIR`);
+    return log.error(`you must specify exactly one DIR`);
   }
   const [DIR] = args;
 
   const dappURL = gitURL(dappTemplate, dappBase);
 
   // Run the Git commands.
-  console.log(`initializing ${DIR} from ${dappURL}`);
+  log.info(`initializing ${DIR} from ${dappURL}`);
 
   const pspawn = (...psargs) =>
     new Promise((resolve, _reject) => {
@@ -61,6 +62,6 @@ export default async function initMain(_progname, rawArgs, priv, _opts) {
     throw Error('cannot detach from upstream');
   }
 
-  console.log(chalk.bold.yellow(`Done initializing ${DIR}`));
+  log.info(chalk.bold.yellow(`Done initializing ${DIR}`));
   return 0;
 }
