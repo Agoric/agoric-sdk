@@ -400,6 +400,10 @@ const makeZoe = (additionalEndowments = {}) => {
 
         if (seat && 'makeOffer' in seat) {
           try {
+            // Must not allow error to propagate, because the caller must
+            // receive their payout promise, so they don't lose those
+            // assets. So we store any error on redemptionResult.offerResult
+            // as a rejected promise, and then return normally.
             redemptionResult.offerResult = seat.makeOffer();
           } catch (err) {
             redemptionResult.offerResult = Promise.reject(err);
