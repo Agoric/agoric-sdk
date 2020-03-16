@@ -48,7 +48,7 @@ const build = async (E, log, zoe, issuers, payments, installations) => {
         offerPayments,
       );
 
-      const offerResult = await E(seat).bid();
+      const offerResult = await E(seat).makeOffer();
 
       log(offerResult);
 

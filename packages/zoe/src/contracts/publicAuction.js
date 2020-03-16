@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
@@ -10,7 +9,6 @@ export const makeContract = harden(zoe => {
     rejectOffer,
     canTradeWith,
     assertRoleNames,
-    rejectIfNotOfferRules,
     makeInvite,
   } = makeZoeHelpers(zoe);
 
@@ -27,8 +25,8 @@ export const makeContract = harden(zoe => {
   assertRoleNames(harden(['Asset', 'Bid']));
 
   const makeBidderInvite = () => {
-    const seat = harden({
-      bid: () => {
+    return makeInvite(
+      harden(inviteHandle => {
         // Check that the item is still up for auction
         if (!zoe.isOfferActive(sellerInviteHandle)) {
           const rejectMsg = `The item up for auction has been withdrawn or the auction has completed`;
@@ -37,8 +35,6 @@ export const makeContract = harden(zoe => {
         if (allBidHandles.length >= numBidsAllowed) {
           throw rejectOffer(inviteHandle, `No further bids allowed.`);
         }
-        const expected = harden({ offer: ['Bid'], want: ['Asset'] });
-        rejectIfNotOfferRules(inviteHandle, expected);
         if (!canTradeWith(sellerInviteHandle, inviteHandle)) {
           const rejectMsg = `Bid was under minimum bid or for the wrong assets`;
           throw rejectOffer(inviteHandle, rejectMsg);
@@ -54,14 +50,17 @@ export const makeContract = harden(zoe => {
           });
         }
         return defaultAcceptanceMsg;
-      },
-    });
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
-      seatDesc: 'bid',
-      auctionedAssets,
-      minimumBid,
-    });
-    return invite;
+      }),
+      harden({
+        seatDesc: 'bid',
+        auctionedAssets,
+        minimumBid,
+      }),
+      harden({
+        offer: ['Bid'],
+        want: ['Asset'],
+      }),
+    );
   };
 
   const makeSellerInvite = () => {

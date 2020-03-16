@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 
 import { makeZoeHelpers } from './helpers/zoeHelpers';

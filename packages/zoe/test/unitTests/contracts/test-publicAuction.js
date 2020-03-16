@@ -112,7 +112,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     );
 
     // Bob bids
-    const bobOfferResult = await bobSeat.bid();
+    const bobOfferResult = await bobSeat.makeOffer();
 
     t.equals(
       bobOfferResult,
@@ -160,7 +160,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     );
 
     // Carol bids
-    const carolOfferResult = await carolSeat.bid();
+    const carolOfferResult = await carolSeat.makeOffer();
 
     t.equals(
       carolOfferResult,
@@ -203,7 +203,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     );
 
     // Dave bids
-    const daveOfferResult = await daveSeat.bid();
+    const daveOfferResult = await daveSeat.makeOffer();
 
     t.equals(
       daveOfferResult,
@@ -392,7 +392,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     // Bob bids
     t.throws(
-      () => bobSeat.bid(),
+      () => bobSeat.makeOffer(),
       `The item up for auction has been withdrawn or the auction has completed`,
     );
 
