@@ -50,15 +50,13 @@ test('zoe - coveredCall', async t => {
       exit: { afterDeadline: { deadline: 1, timer } },
     });
     const alicePayments = { UnderlyingAsset: aliceMoolaPayment };
-    const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
+
+    // Alice creates a call option
+    const { payout: alicePayoutP, offerResult: option } = await zoe.redeem(
       aliceInvite,
       aliceOfferRules,
       alicePayments,
     );
-
-    // Alice creates a call option
-
-    const option = aliceSeat.makeOffer();
 
     // Imagine that Alice sends the option to Bob for free (not done here
     // since this test doesn't actually have separate vats/parties)
@@ -87,14 +85,12 @@ test('zoe - coveredCall', async t => {
     });
 
     // Bob redeems his invite and escrows with Zoe
-    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+    // Bob exercises the option
+    const { payout: bobPayoutP, offerResult: bobOutcome } = await zoe.redeem(
       bobExclOption,
       bobOfferRules,
       bobPayments,
     );
-
-    // Bob exercises the option
-    const bobOutcome = await bobSeat.makeOffer();
 
     t.equals(
       bobOutcome,
@@ -181,14 +177,13 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
       },
     });
     const alicePayments = { UnderlyingAsset: aliceMoolaPayment };
-    const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
+    // Alice makes an option
+    const { payout: alicePayoutP, offerResult: option } = await zoe.redeem(
       aliceInvite,
       aliceOfferRules,
       alicePayments,
     );
 
-    // Alice makes an option
-    const option = aliceSeat.makeOffer();
     timer.tick();
 
     // Imagine that Alice sends the option to Bob for free (not done here

@@ -46,14 +46,12 @@ test('zoe - atomicSwap', async t => {
     const alicePayments = { Asset: aliceMoolaPayment };
 
     // 3: Alice redeems her invite and escrows with Zoe
-    const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
+    // 4: Alice makes the first offer in the swap.
+    const { payout: alicePayoutP, offerResult: bobInviteP } = await zoe.redeem(
       aliceInvite,
       aliceOfferRules,
       alicePayments,
     );
-
-    // 4: Alice makes the first offer in the swap.
-    const bobInviteP = aliceSeat.makeOffer();
 
     // 5: Alice spreads the invite far and wide with instructions
     // on how to use it and Bob decides he wants to be the
@@ -81,14 +79,11 @@ test('zoe - atomicSwap', async t => {
     const bobPayments = { Price: bobSimoleanPayment };
 
     // 6: Bob escrows with zoe
-    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
-      bobExclusiveInvite,
-      bobOfferRules,
-      bobPayments,
-    );
-
     // 7: Bob makes an offer
-    const bobOfferResult = await bobSeat.makeOffer();
+    const {
+      payout: bobPayoutP,
+      offerResult: bobOfferResult,
+    } = await zoe.redeem(bobExclusiveInvite, bobOfferRules, bobPayments);
 
     t.equals(
       bobOfferResult,

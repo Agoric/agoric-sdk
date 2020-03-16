@@ -53,14 +53,12 @@ test('simpleExchange with valid offers', async t => {
       exitRule: { kind: 'onDemand' },
     });
     const alicePayments = { Asset: aliceMoolaPayment };
-    const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
-      aliceInvite,
-      aliceSellOrderOfferRules,
-      alicePayments,
-    );
-
     // 4: Alice adds her sell order to the exchange
-    const aliceOfferResult = await aliceSeat.makeOffer();
+    const {
+      payout: alicePayoutP,
+      offerResult: aliceOfferResult,
+    } = await zoe.redeem(aliceInvite, aliceSellOrderOfferRules, alicePayments);
+
     const { invite: bobInvite } = publicAPI.makeInvite();
 
     // 5: Bob decides to join.

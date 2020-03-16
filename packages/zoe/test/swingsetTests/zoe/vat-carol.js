@@ -42,13 +42,11 @@ const build = async (E, log, zoe, issuers, payments, installations) => {
       });
       const offerPayments = { Bid: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, offerResult } = await E(zoe).redeem(
         invite,
         offerRules,
         offerPayments,
       );
-
-      const offerResult = await E(seat).makeOffer();
 
       log(offerResult);
 

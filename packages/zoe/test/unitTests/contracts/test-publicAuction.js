@@ -60,14 +60,12 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       want: { Bid: simoleans(3) },
     });
     const alicePayments = { Asset: aliceMoolaPayment };
-    const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
-      aliceInvite,
-      aliceOfferRules,
-      alicePayments,
-    );
-
     // Alice initializes the auction
-    const aliceOfferResult = await aliceSeat.makeOffer();
+    const {
+      payout: alicePayoutP,
+      offerResult: aliceOfferResult,
+    } = await zoe.redeem(aliceInvite, aliceOfferRules, alicePayments);
+
     const [bobInvite, carolInvite, daveInvite] = await publicAPI.makeInvites(3);
 
     t.equals(

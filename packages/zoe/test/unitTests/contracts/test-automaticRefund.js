@@ -32,13 +32,12 @@ test('zoe - simplest automaticRefund', async t => {
     });
     const alicePayments = { Contribution: aliceMoolaPayment };
 
-    const { seat, payout: payoutP } = await zoe.redeem(
+    const { payout: payoutP } = await zoe.redeem(
       invite,
       aliceOfferRules,
       alicePayments,
     );
 
-    seat.makeOffer();
     const alicePayout = await payoutP;
     const aliceMoolaPayout = await alicePayout.Contribution;
 
@@ -80,13 +79,12 @@ test('zoe - automaticRefund same issuer', async t => {
     });
     const alicePayments = harden({ Contribution2: aliceMoolaPayment });
 
-    const { seat, payout: payoutP } = await zoe.redeem(
+    const { payout: payoutP } = await zoe.redeem(
       invite,
       aliceOfferRules,
       alicePayments,
     );
 
-    seat.makeOffer();
     const alicePayout = await payoutP;
     const aliceMoolaPayout = await alicePayout.Contribution2;
 
@@ -145,16 +143,15 @@ test('zoe with automaticRefund', async t => {
     // Alice gets two kinds of things back: a seat which she can use
     // interact with the contract, and a payout promise
     // that resolves to the array of promises for payments
-    const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
-      aliceInvite,
-      aliceOfferRules,
-      alicePayments,
-    );
-
+    //
     // In the 'automaticRefund' trivial contract, you just get your
     // payments back when you make an offer. The effect of calling
     // makeOffer will vary widely depending on the smart  contract.
-    const aliceOutcome = aliceSeat.makeOffer();
+    const {
+      payout: alicePayoutP,
+      offerResult: aliceOutcome,
+    } = await zoe.redeem(aliceInvite, aliceOfferRules, alicePayments);
+
     const bobInvite = publicAPI.makeInvite();
     const count = publicAPI.getOffersCount();
     t.equals(count, 1);

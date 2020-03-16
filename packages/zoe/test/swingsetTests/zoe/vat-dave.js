@@ -50,13 +50,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const offerPayments = { Bid: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, offerResult } = await E(zoe).redeem(
         exclInvite,
         offerRules,
         offerPayments,
       );
-
-      const offerResult = await E(seat).makeOffer();
 
       log(offerResult);
 
@@ -128,11 +126,10 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         offer: { Price: bucks(1) },
       });
       const daveSwapPayments = harden({ Price: bucksPayment });
-      const { seat: daveSwapSeat, payout: daveSwapPayoutP } = await E(
+      const { payout: daveSwapPayoutP, offerResult: daveSwapOutcome } = await E(
         zoe,
       ).redeem(exclInvite, daveSwapOfferRules, daveSwapPayments);
 
-      const daveSwapOutcome = await E(daveSwapSeat).makeOffer();
       log(daveSwapOutcome);
 
       const daveSwapPayout = await daveSwapPayoutP;
@@ -148,15 +145,14 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const daveCoveredCallPayments = harden({ StrikePrice: simoleanPayment });
       const {
-        seat: daveCoveredCallSeat,
         payout: daveCoveredCallPayoutP,
+        offerResult: daveCoveredCallOutcome,
       } = await E(zoe).redeem(
         daveOption,
         daveCoveredCallOfferRules,
         daveCoveredCallPayments,
       );
 
-      const daveCoveredCallOutcome = await E(daveCoveredCallSeat).makeOffer();
       log(daveCoveredCallOutcome);
 
       const daveCoveredCallResult = await daveCoveredCallPayoutP;

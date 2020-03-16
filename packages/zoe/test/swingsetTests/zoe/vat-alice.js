@@ -29,12 +29,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     });
 
     const offerPayments = { Contribution1: moolaPayment };
-    const { seat, payout: payoutP } = await E(zoe).redeem(
+    const { payout: payoutP, offerResult: outcome } = await E(zoe).redeem(
       invite,
       offerRules,
       offerPayments,
     );
-    const outcome = await E(seat).makeOffer();
     log(outcome);
 
     const bobInvite = E(publicAPI).makeInvite();
@@ -66,13 +65,12 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     });
 
     const offerPayments = { UnderlyingAsset: moolaPayment };
-    const { seat, payout: payoutP } = await E(zoe).redeem(
+    const { payout: payoutP, offerResult: option } = await E(zoe).redeem(
       invite,
       offerRules,
       offerPayments,
     );
 
-    const option = await E(seat).makeOffer();
     await E(bobP).doCoveredCall(option);
     const payout = await payoutP;
     const moolaPayout = await payout.UnderlyingAsset;
@@ -105,13 +103,12 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     });
 
     const offerPayments = harden({ UnderlyingAsset: moolaPayment });
-    const { seat, payout: payoutP } = await E(zoe).redeem(
+    const { payout: payoutP, offerResult: option } = await E(zoe).redeem(
       invite,
       offerRules,
       offerPayments,
     );
 
-    const option = await E(seat).makeOffer();
     log('call option made');
     await E(bobP).doSwapForOption(option, daveP);
     const payout = await payoutP;
@@ -145,13 +142,12 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       exitRule: { kind: 'onDemand' },
     });
     const offerPayments = { Asset: moolaPayment };
-    const { seat, payout: payoutP } = await E(zoe).redeem(
+    const { payout: payoutP, offerResult } = await E(zoe).redeem(
       invite,
       offerRules,
       offerPayments,
     );
 
-    const offerResult = await E(seat).makeOffer();
     const [bobInvite, carolInvite, daveInvite] = await E(publicAPI).makeInvites(
       3,
     );
@@ -185,13 +181,12 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       exitRule: { kind: 'onDemand' },
     });
     const offerPayments = { Asset: moolaPayment };
-    const { seat, payout: payoutP } = await E(zoe).redeem(
+    const { payout: payoutP, offerResult: bobInviteP } = await E(zoe).redeem(
       invite,
       offerRules,
       offerPayments,
     );
 
-    const bobInviteP = await E(seat).makeOffer();
     E(bobP).doAtomicSwap(bobInviteP);
 
     const payout = await payoutP;
@@ -220,13 +215,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       exitRule: { kind: 'onDemand' },
     });
     const offerPayments = { Asset: moolaPayment };
-    const { seat, payout: payoutP } = await E(zoe).redeem(
+    const { payout: payoutP, offerResult } = await E(zoe).redeem(
       invite,
       aliceSellOrderOfferRules,
       offerPayments,
     );
-
-    const offerResult = await E(seat).makeOffer();
 
     log(offerResult);
 
@@ -299,13 +292,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       exitRule: { kind: 'onDemand' },
     });
     const offerPayments = { Asset: moolaPayment };
-    const { seat, payout: payoutP } = await E(zoe).redeem(
+    const { payout: payoutP, offerResult } = await E(zoe).redeem(
       invite,
       aliceSellOrderOfferRules,
       offerPayments,
     );
-
-    const offerResult = await E(seat).makeOffer();
 
     log(offerResult);
 
