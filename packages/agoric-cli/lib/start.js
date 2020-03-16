@@ -13,7 +13,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn, os, process } = powers;
   const log = anylogger('agoric:start');
 
-  const pspawn = (cmd, cargs, { stdio = 'inherit', ...rest }) => {
+  const pspawn = (cmd, cargs, { stdio = 'inherit', ...rest } = {}) => {
     log.info(chalk.blueBright(cmd, ...cargs));
     return new Promise((resolve, _reject) => {
       const cp = spawn(cmd, cargs, { stdio, ...rest });

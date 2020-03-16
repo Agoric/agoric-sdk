@@ -3,16 +3,18 @@ import fs from 'fs';
 import tmp from 'tmp';
 
 import { spawn } from 'child_process';
-import main from '../lib/main';
 
 test('workflow', async t => {
   try {
-    const pspawn = (...args) =>
-      new Promise((resolve, _reject) => {
-        const cp = spawn(...args);
+    const pspawn = (...args) => {
+      const cp = spawn(...args);
+      const pr = new Promise((resolve, _reject) => {
         cp.on('exit', resolve);
         cp.on('error', () => resolve(-1));
       });
+      pr.cp = cp;
+      return pr;
+    };
 
     // Run all main programs with the '--sdk' flag if we are in agoric-sdk.
     const extraArgs = fs.existsSync(`${__dirname}/../../cosmic-swingset`)
@@ -21,9 +23,7 @@ test('workflow', async t => {
     const myMain = args => {
       console.error('running agoric-cli', ...extraArgs, ...args);
       return pspawn(`${__dirname}/../bin/agoric`, [...extraArgs, ...args], {
-        // TODO: make stdio more sane.
-        // stdio: ['ignore', 'pipe', 'pipe'],
-        stdio: 'inherit',
+        stdio: ['ignore', 'pipe', 'inherit'],
       });
     };
 
@@ -37,11 +37,25 @@ test('workflow', async t => {
 
       t.equals(await myMain(['init', 'dapp-foo']), 0, 'init dapp-foo works');
       process.chdir('dapp-foo');
-      //
       t.equals(await myMain(['install']), 0, 'install works');
-      // It would be nice to test the 'dev' environment with a
-      // "terminate for upgrade" flag instead of just --no-restart.
-      t.equals(await myMain(['start', '--no-restart']), 0, 'start works');
+
+      const startP = myMain(['start', '--reset']);
+      const to = setTimeout(() => startP.cp.kill('SIGHUP'), 10000);
+      let stdoutStr = '';
+      let successfulStart = false;
+      startP.cp.stdout.on('data', chunk => {
+        // console.log('stdout:', chunk.toString());
+        stdoutStr += chunk.toString();
+        if (stdoutStr.includes('HTTP/WebSocket will listen on')) {
+          successfulStart = true;
+          startP.cp.kill('SIGHUP');
+          clearTimeout(to);
+        }
+      });
+
+      await startP;
+      clearTimeout(to);
+      t.assert(successfulStart, 'start works');
     } finally {
       process.chdir(olddir);
       removeCallback();
