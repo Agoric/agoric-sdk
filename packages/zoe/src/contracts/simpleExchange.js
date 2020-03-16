@@ -70,7 +70,7 @@ export const makeContract = harden(zoe => {
         return flattenOffer(getActiveOffers([inviteHandle])[0]);
       }
     }
-    return `not an active offer ${inviteHandle}`;
+    return 'not an active offer';
   }
 
   // This is a really simple update protocol, which merely provides a promise
