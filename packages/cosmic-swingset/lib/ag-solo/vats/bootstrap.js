@@ -51,7 +51,7 @@ export default function setup(syscall, state, helpers) {
       }
 
       async function setupWalletVat(commandDevice, httpVat, walletVat) {
-        await E(httpVat).registerCommandHandler(walletVat);
+        await E(httpVat).registerURLHandler(walletVat, '/vat');
         await E(walletVat).setCommandDevice(commandDevice);
         await E(walletVat).setPresences();
       }
@@ -154,10 +154,10 @@ export default function setup(syscall, state, helpers) {
         await E(wallet).deposit(pursePetnames.moola, moolaPayment);
         await E(wallet).deposit(pursePetnames.simolean, simoleanPayment);
 
-        // This will allow Dapp developers to register in their dapp.js
+        // This will allow dApp developers to register in their api/deploy.js
         const httpRegCallback = {
-          registerCommandHandler(handler) {
-            return E(vats.http).registerCommandHandler(handler);
+          registerAPIHandler(handler) {
+            return E(vats.http).registerURLHandler(handler, '/api');
           },
         };
 

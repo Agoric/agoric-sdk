@@ -37,13 +37,18 @@ function build(E, D) {
   });
   harden(readyForClient);
 
-  let handler = {};
-  const registeredHandlers = [];
+  const handler = {};
+  const registeredURLHandlers = new Map();
 
   // TODO: Don't leak memory.
-  async function registerCommandHandler(newHandler) {
+  async function registerURLHandler(newHandler, url) {
     const commandHandler = await E(newHandler).getCommandHandler();
-    registeredHandlers.push(commandHandler);
+    let reg = registeredURLHandlers.get(url);
+    if (!reg) {
+      reg = [];
+      registeredURLHandlers.set(url, reg);
+    }
+    reg.push(commandHandler);
   }
 
   return {
@@ -133,7 +138,8 @@ function build(E, D) {
       }
     },
 
-    registerCommandHandler,
+    registerURLHandler,
+    registerAPIHandler: h => registerURLHandler(h, '/api'),
 
     setProvisioner(p) {
       provisioner = p;
@@ -160,30 +166,36 @@ function build(E, D) {
         //   JSON.stringify(obj, undefined, 2),
         // );
 
-        const { type } = obj;
-        // Try on local handlers first.
-        let res;
-        // Try on registered handlers.
-        if (type in handler) {
-          res = await handler[type](obj);
-        } else {
+        const { type, requestContext: { url } = { url: '/vat' } } = obj;
+        if (url === '/vat' || url === '/captp') {
+          // Use our local handler object (compatibility with repl.js).
+          // TODO: standardise
+          if (handler[type]) {
+            D(commandDevice).sendResponse(count, false, handler[type](obj));
+            return;
+          }
+        }
+
+        const urlHandlers = registeredURLHandlers.get(url);
+        if (urlHandlers) {
           // todo fixme avoid the loop
           // For now, go from the end to beginning so that handlers
           // override.
           const hardObjects = harden({ ...homeObjects });
-          for (let i = registeredHandlers.length - 1; i >= 0; i -= 1) {
+          for (let i = urlHandlers.length - 1; i >= 0; i -= 1) {
             // eslint-disable-next-line no-await-in-loop
-            res = await E(registeredHandlers[i]).processInbound(
+            const res = await E(urlHandlers[i]).processInbound(
               obj,
               hardObjects,
             );
             if (res) {
-              break;
+              D(commandDevice).sendResponse(count, false, harden(res));
+              return;
             }
           }
         }
 
-        D(commandDevice).sendResponse(count, false, harden(res));
+        throw Error(`No handler for ${url} ${type}`);
       } catch (rej) {
         D(commandDevice).sendResponse(count, true, harden(rej));
       }

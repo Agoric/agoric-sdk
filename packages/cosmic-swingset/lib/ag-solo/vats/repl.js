@@ -26,7 +26,7 @@ export function stringify(value, spaces, already = new WeakSet()) {
   if (Array.isArray(value)) {
     let ret = '[';
     let sep = '';
-    for (let i = 0; i < value.length; i++) {
+    for (let i = 0; i < value.length; i += 1) {
       ret += sep + stringify(value[i], spaces, already);
       sep = ',';
     }
@@ -57,7 +57,7 @@ export function getReplHandler(E, homeObjects, sendBroadcast) {
   const display = {};
   let highestHistory = -1;
 
-  function updateHistorySlot(histnum, s) {
+  function updateHistorySlot(histnum) {
     // console.log(`sendBroadcast ${histnum}`);
     sendBroadcast({
       type: 'updateHistory',
@@ -65,13 +65,6 @@ export function getReplHandler(E, homeObjects, sendBroadcast) {
       command: commands[histnum],
       display: display[histnum],
     });
-  }
-
-  function addException(histnum, e) {
-    // We stringify so that exceptions do not leak.
-    const s = `${e}`;
-    display[histnum] = `Promise.reject(${stringify(s)})`;
-    updateHistorySlot(histnum);
   }
 
   const { evaluateProgram } = makeEvaluators({ sloppyGlobals: true });
@@ -83,7 +76,7 @@ export function getReplHandler(E, homeObjects, sendBroadcast) {
 
     rebroadcastHistory() {
       // console.log(`rebroadcastHistory`, highestHistory);
-      for (let histnum = 0; histnum <= highestHistory; histnum++) {
+      for (let histnum = 0; histnum <= highestHistory; histnum += 1) {
         updateHistorySlot(histnum);
       }
     },

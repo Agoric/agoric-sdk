@@ -21,9 +21,22 @@ const send = (ws, msg) => {
 
 export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   // Enrich the inbound command with some metadata.
-  const inboundCommand = (body, { headers: { origin } = {} } = {}) => {
-    const requestContext = { origin, date: Date.now() };
-    return rawInboundCommand({ ...body, requestContext });
+  const inboundCommand = (
+    body,
+    { url, headers: { origin } = {} } = {},
+    id = undefined,
+  ) => {
+    const obj = { ...body, requestContext: { origin, url, date: Date.now() } };
+    return rawInboundCommand(obj).catch(err => {
+      const idpfx = id ? `${id} ` : '';
+      console.error(
+        `${idpfx}inbound error:`,
+        err,
+        'from',
+        JSON.stringify(obj, undefined, 2),
+      );
+      throw (err && err.message) || JSON.stringify(err);
+    });
   };
 
   const app = express();
@@ -80,19 +93,24 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     return true;
   };
 
-  // accept vat messages on /vat
-  app.post('/vat', (req, res) => {
-    if (!validateOrigin(req)) {
-      res.json({ ok: false, rej: 'Invalid Origin' });
-      return;
-    }
+  // accept messages on /vat and /api
+  // todo: later allow arbitrary endpoints?
+  for (const ep of ['/vat', '/api']) {
+    app.post(ep, (req, res) => {
+      if (ep !== '/api' && !validateOrigin(req)) {
+        res.json({ ok: false, rej: 'Invalid Origin' });
+        return;
+      }
 
-    // console.log(`POST /vat got`, req.body); // should be jsonable
-    inboundCommand(req.body, req).then(
-      r => res.json({ ok: true, res: r }),
-      rej => res.json({ ok: false, rej }),
-    );
-  });
+      // console.log(`POST /vat got`, req.body); // should be jsonable
+      inboundCommand(req.body, req)
+        .then(
+          r => res.json({ ok: true, res: r }),
+          rej => res.json({ ok: false, rej }),
+        )
+        .catch(_ => {});
+    });
+  }
 
   // accept WebSocket connections at the root path.
   // This senses the Connection-Upgrade header to distinguish between plain
@@ -132,7 +150,11 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       console.log(id, 'client closed');
       broadcasts.delete(ws);
       if (req.url === '/captp') {
-        inboundCommand({ type: 'CTP_CLOSE', connectionID }, req).catch(_ => {});
+        inboundCommand(
+          { type: 'CTP_CLOSE', connectionID },
+          req,
+          id,
+        ).catch(_ => {});
         points.delete(connectionID);
       }
     });
@@ -140,18 +162,18 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     if (req.url === '/captp') {
       // This is a point-to-point connection, not broadcast.
       points.set(connectionID, ws);
-      inboundCommand({ type: 'CTP_OPEN', connectionID }, req).catch(err => {
-        console.log(id, `error establishing connection`, err);
-      });
+      inboundCommand(
+        { type: 'CTP_OPEN', connectionID },
+        req,
+        id,
+      ).catch(_ => {});
       ws.on('message', async message => {
         try {
           // some things use inbound messages
           const obj = JSON.parse(message);
           obj.connectionID = connectionID;
-          await inboundCommand(obj, req);
-        } catch (e) {
-          console.log(id, 'client error', e);
-          const error = e.message || JSON.stringify(e);
+          await inboundCommand(obj, req, id);
+        } catch (error) {
           // eslint-disable-next-line no-use-before-define
           sendJSON({ type: 'CTP_ERROR', connectionID, error });
         }
@@ -159,9 +181,13 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     } else {
       broadcasts.set(connectionID, ws);
       ws.on('message', async message => {
-        // we ignore messages arriving on the default websocket port, it is only for
-        // outbound broadcasts
-        console.log(id, `ignoring message on WS port`, String(message));
+        try {
+          const obj = JSON.parse(message);
+          // eslint-disable-next-line no-use-before-define
+          sendJSON(await inboundCommand(obj, req, id));
+        } catch (error) {
+          // ignore
+        }
       });
     }
   }
