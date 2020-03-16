@@ -60,7 +60,7 @@ test('simpleExchange with valid offers', async t => {
     );
 
     // 4: Alice adds her sell order to the exchange
-    const aliceOfferResult = await aliceSeat.addOrder();
+    const aliceOfferResult = await aliceSeat.makeOffer();
     const { invite: bobInvite } = publicAPI.makeInvite();
 
     // 5: Bob decides to join.
@@ -99,7 +99,7 @@ test('simpleExchange with valid offers', async t => {
     );
 
     // 8: Bob submits the buy order to the exchange
-    const bobOfferResult = await bobSeat.addOrder();
+    const bobOfferResult = await bobSeat.makeOffer();
 
     t.equals(
       bobOfferResult,
@@ -199,7 +199,7 @@ test('simpleExchange with multiple sell offers', async t => {
     );
 
     // 4: Alice adds her sell order to the exchange
-    const aliceOfferResult1 = aliceSeat1.addOrder();
+    const aliceOfferResult1 = aliceSeat1.makeOffer();
 
     // 5: Alice adds another sell order to the exchange
     const aliceInvite2 = await inviteIssuer.claim(
@@ -215,7 +215,7 @@ test('simpleExchange with multiple sell offers', async t => {
       aliceSale2OrderOfferRules,
       { Asset: aliceMoolaPurse.withdraw(moola(5)) },
     );
-    const aliceOfferResult2 = aliceSeat2.addOrder();
+    const aliceOfferResult2 = aliceSeat2.makeOffer();
 
     // 5: Alice adds a buy order to the exchange
     const aliceInvite3 = await inviteIssuer.claim(
@@ -231,7 +231,7 @@ test('simpleExchange with multiple sell offers', async t => {
       aliceBuyOrderOfferRules,
       { Price: aliceSimoleanPurse.withdraw(simoleans(18)) },
     );
-    const aliceOfferResult3 = aliceSeat3.addOrder();
+    const aliceOfferResult3 = aliceSeat3.makeOffer();
 
     Promise.all(aliceOfferResult1, aliceOfferResult2, aliceOfferResult3).then(
       () => {
@@ -296,7 +296,7 @@ test('simpleExchange showPayoutRules', async t => {
     );
 
     // 4: Alice adds her sell order to the exchange
-    aliceSeat1.addOrder();
+    aliceSeat1.makeOffer();
 
     const expected = [{ Price: 4 }, { Asset: 3 }];
 

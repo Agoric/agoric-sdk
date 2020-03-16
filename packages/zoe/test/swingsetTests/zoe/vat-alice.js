@@ -226,7 +226,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       offerPayments,
     );
 
-    const offerResult = await E(seat).addOrder();
+    const offerResult = await E(seat).makeOffer();
 
     log(offerResult);
 
@@ -305,7 +305,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       offerPayments,
     );
 
-    const offerResult = await E(seat).addOrder();
+    const offerResult = await E(seat).makeOffer();
 
     log(offerResult);
 

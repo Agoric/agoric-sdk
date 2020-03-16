@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 import makePromise from '@agoric/make-promise';
 import { makeZoeHelpers, defaultAcceptanceMsg } from './helpers/zoeHelpers';
@@ -31,6 +30,7 @@ export const makeContract = harden(zoe => {
     canTradeWith,
     getActiveOffers,
     assertRoleNames,
+    makeInvite,
   } = makeZoeHelpers(zoe);
 
   assertRoleNames(harden([ASSET, PRICE]));
@@ -70,7 +70,7 @@ export const makeContract = harden(zoe => {
         return flattenOffer(getActiveOffers([inviteHandle])[0]);
       }
     }
-    return 'not an active offer';
+    return `not an active offer ${inviteHandle}`;
   }
 
   // This is a really simple update protocol, which merely provides a promise
@@ -93,42 +93,40 @@ export const makeContract = harden(zoe => {
     return defaultAcceptanceMsg;
   }
 
-  const makeInvite = () => {
-    const seat = harden({
-      addOrder: () => {
-        const buyAssetForPrice = harden({
-          offer: [PRICE],
-          want: [ASSET],
-        });
-        const sellAssetForPrice = harden({
-          offer: [ASSET],
-          want: [PRICE],
-        });
-        if (checkIfOfferRules(inviteHandle, sellAssetForPrice)) {
-          // Save the valid offer and try to match
-          sellInviteHandles.push(inviteHandle);
-          buyInviteHandles = [...zoe.getOfferStatuses(buyInviteHandles).active];
-          return swapIfCanTrade(buyInviteHandles, inviteHandle);
-          /* eslint-disable no-else-return */
-        } else if (checkIfOfferRules(inviteHandle, buyAssetForPrice)) {
-          // Save the valid offer and try to match
-          buyInviteHandles.push(inviteHandle);
-          sellInviteHandles = [
-            ...zoe.getOfferStatuses(sellInviteHandles).active,
-          ];
-          return swapIfCanTrade(sellInviteHandles, inviteHandle);
-        } else {
-          // Eject because the offer must be invalid
-          return rejectOffer(inviteHandle);
-        }
-      },
+  const makeExchangeInvite = () => {
+    const invite = makeInvite(inviteHandle => {
+      const buyAssetForPrice = harden({
+        offer: [PRICE],
+        want: [ASSET],
+      });
+      const sellAssetForPrice = harden({
+        offer: [ASSET],
+        want: [PRICE],
+      });
+      if (checkIfOfferRules(inviteHandle, sellAssetForPrice)) {
+        // Save the valid offer and try to match
+        sellInviteHandles.push(inviteHandle);
+        buyInviteHandles = [...zoe.getOfferStatuses(buyInviteHandles).active];
+        return swapIfCanTrade(buyInviteHandles, inviteHandle);
+        /* eslint-disable no-else-return */
+      } else if (checkIfOfferRules(inviteHandle, buyAssetForPrice)) {
+        // Save the valid offer and try to match
+        buyInviteHandles.push(inviteHandle);
+        sellInviteHandles = [...zoe.getOfferStatuses(sellInviteHandles).active];
+        return swapIfCanTrade(sellInviteHandles, inviteHandle);
+      } else {
+        // Eject because the offer must be invalid
+        return rejectOffer(inviteHandle);
+      }
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat);
-    return { invite, inviteHandle };
+    // Only because makeFooInvite methods have different conventions
+    const inviteIssuer = zoe.getInviteIssuer();
+    const inviteAmount = inviteIssuer.getAmountOf(invite);
+    return harden({ invite, inviteHandle: inviteAmount.extent[0].handle });
   };
 
   return harden({
-    invite: makeInvite(),
-    publicAPI: { makeInvite, getBookOrders, getOffer },
+    invite: makeExchangeInvite(),
+    publicAPI: { makeInvite: makeExchangeInvite, getBookOrders, getOffer },
   });
 });

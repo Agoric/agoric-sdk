@@ -54,7 +54,7 @@ export default async function deployContract(
   // =====================
   // === AWAITING TURN ===
   // =====================
-  
+
   // 1. Purses, Issuers stage 1, and Brands
   const installationHandleP = homeP~.zoe~.install(source, moduleFormat);
   const issuersP = homeP~.wallet~.getIssuers();
@@ -133,14 +133,14 @@ export default async function deployContract(
     const offerRules = makeRulesOfferXForY(offerAmount, wantAmount);
     const { invite: anInvite } = await publicAPI~.makeInvite();
     const { seat } = await homeP~.zoe~.redeem(anInvite, offerRules, payments);
-    return seat~.addOrder();
+    return seat~.makeOffer();
   }
 
   async function addExchangeOffer2(wantAmount, offerAmount, payments) {
     const offerRules = makeRulesWantXForY(wantAmount, offerAmount);
     const { invite: anInvite } = await publicAPI~.makeInvite();
     const { seat } = await homeP~.zoe~.redeem(anInvite, offerRules, payments);
-    return seat~.addOrder();
+    return seat~.makeOffer();
   }
 
   const moolaPayments = moolaIssuer~.splitMany(
