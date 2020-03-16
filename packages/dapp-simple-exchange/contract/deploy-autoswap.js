@@ -132,15 +132,15 @@ export default async function deployContract(
   async function addExchangeOffer(offerAmount, payments, wantAmount) {
     const offerRules = makeRulesOfferXForY(offerAmount, wantAmount);
     const { invite: anInvite } = await publicAPI~.makeInvite();
-    const { seat } = await homeP~.zoe~.redeem(anInvite, offerRules, payments);
-    return seat~.makeOffer();
+    const { offerResult } = await homeP~.zoe~.redeem(anInvite, offerRules, payments);
+    return offerResult;
   }
 
   async function addExchangeOffer2(wantAmount, offerAmount, payments) {
     const offerRules = makeRulesWantXForY(wantAmount, offerAmount);
     const { invite: anInvite } = await publicAPI~.makeInvite();
-    const { seat } = await homeP~.zoe~.redeem(anInvite, offerRules, payments);
-    return seat~.makeOffer();
+    const { offerResult } = await homeP~.zoe~.redeem(anInvite, offerRules, payments);
+    return offerResult;
   }
 
   const moolaPayments = moolaIssuer~.splitMany(
