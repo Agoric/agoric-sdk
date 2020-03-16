@@ -1,4 +1,7 @@
 import harden from '@agoric/harden';
+
+import { makeZoeHelpers } from './helpers/zoeHelpers';
+
 /**
  * This is a very trivial contract to explain and test Zoe.
  * AutomaticRefund just gives you back what you put in. It has one
@@ -9,21 +12,20 @@ import harden from '@agoric/harden';
  * @param {contractFacet} zoe - the contract facet of zoe
  */
 export const makeContract = harden(zoe => {
+  const { makeInvite } = makeZoeHelpers(zoe);
+
   let offersCount = 0;
   const makeSeatInvite = () => {
-    const seat = harden({
-      makeOffer: () => {
+    return makeInvite(
+      harden(inviteHandle => {
         offersCount += 1;
-        // eslint-disable-next-line no-use-before-define
         zoe.complete(harden([inviteHandle]));
         return `The offer was accepted`;
-      },
-    });
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
-      seatDesc: 'getRefund',
-    });
-    return invite;
+      }),
+      harden({ seatDesc: 'getRefund' }),
+    );
   };
+
   return harden({
     invite: makeSeatInvite(),
     publicAPI: {

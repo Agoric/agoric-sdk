@@ -215,7 +215,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       );
 
       // Bob makes an offer to the swap with his "higher order"
-      const daveSwapInviteP = E(bobSwapSeat).accept();
+      const daveSwapInviteP = E(bobSwapSeat).makeOffer();
       log('swap invite made');
       await E(daveP).doSwapForOption(daveSwapInviteP, optionAmounts);
 
@@ -323,7 +323,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         offerPayments,
       );
 
-      const offerResult = await E(seat).accept();
+      const offerResult = await E(seat).makeOffer();
 
       log(offerResult);
 

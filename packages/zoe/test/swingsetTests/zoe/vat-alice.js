@@ -72,7 +72,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       offerPayments,
     );
 
-    const option = await E(seat).makeCallOption();
+    const option = await E(seat).makeOffer();
     await E(bobP).doCoveredCall(option);
     const payout = await payoutP;
     const moolaPayout = await payout.UnderlyingAsset;
@@ -111,7 +111,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       offerPayments,
     );
 
-    const option = await E(seat).makeCallOption();
+    const option = await E(seat).makeOffer();
     log('call option made');
     await E(bobP).doSwapForOption(option, daveP);
     const payout = await payoutP;
@@ -191,7 +191,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       offerPayments,
     );
 
-    const bobInviteP = await E(seat).accept();
+    const bobInviteP = await E(seat).makeOffer();
     E(bobP).doAtomicSwap(bobInviteP);
 
     const payout = await payoutP;

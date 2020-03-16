@@ -58,7 +58,7 @@ test('zoe - coveredCall', async t => {
 
     // Alice creates a call option
 
-    const option = aliceSeat.makeCallOption();
+    const option = aliceSeat.makeOffer();
 
     // Imagine that Alice sends the option to Bob for free (not done here
     // since this test doesn't actually have separate vats/parties)
@@ -188,7 +188,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     );
 
     // Alice makes an option
-    const option = aliceSeat.makeCallOption();
+    const option = aliceSeat.makeOffer();
     timer.tick();
 
     // Imagine that Alice sends the option to Bob for free (not done here
@@ -340,7 +340,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     );
 
     // Alice makes an option.
-    const option = aliceSeat.makeCallOption();
+    const option = aliceSeat.makeOffer();
 
     // Imagine that Alice sends the invite to Bob (not done here since
     // this test doesn't actually have separate vats/parties)
@@ -385,7 +385,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     );
 
     // Bob makes an offer to the swap with his "higher order" invite
-    const daveSwapInvite = await bobSwapSeat.accept();
+    const daveSwapInvite = await bobSwapSeat.makeOffer();
 
     // Bob passes the swap invite to Dave and tells him the
     // optionAmounts (basically, the description of the option)
@@ -436,7 +436,7 @@ test('zoe - coveredCall with swap for invite', async t => {
       daveSwapPayments,
     );
 
-    const daveSwapOutcome = await daveSwapSeat.accept();
+    const daveSwapOutcome = await daveSwapSeat.makeOffer();
     t.equals(
       daveSwapOutcome,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
@@ -601,7 +601,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
 
     // Alice makes a call option, which is an invite to join the
     // covered call contract
-    const option = await aliceSeat.makeCallOption();
+    const option = await aliceSeat.makeOffer();
 
     // Imagine that Alice sends the invite to Bob as well as the
     // instanceHandle (not done here since this test doesn't actually have
@@ -661,7 +661,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     );
 
     // Bob makes an offer to the swap with his "higher order" option
-    const inviteForDave = await bobSecondCoveredCallSeat.makeCallOption();
+    const inviteForDave = await bobSecondCoveredCallSeat.makeOffer();
 
     // Bob passes the higher order invite and
     // optionAmounts to Dave

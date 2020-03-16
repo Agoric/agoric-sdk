@@ -43,7 +43,7 @@ export const makeZoeHelpers = zoe => {
   const helpers = harden({
     makeInvite(seatFn, customProperties = undefined, expected = undefined) {
       const seat = harden({
-        accept: () => {
+        makeOffer: () => {
           // eslint-disable-next-line no-use-before-define
           helpers.rejectIfNotOfferRules(inviteHandle, expected);
           // eslint-disable-next-line no-use-before-define

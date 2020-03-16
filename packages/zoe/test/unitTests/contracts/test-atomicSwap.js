@@ -53,7 +53,7 @@ test('zoe - atomicSwap', async t => {
     );
 
     // 4: Alice makes the first offer in the swap.
-    const bobInviteP = aliceSeat.accept();
+    const bobInviteP = aliceSeat.makeOffer();
 
     // 5: Alice spreads the invite far and wide with instructions
     // on how to use it and Bob decides he wants to be the
@@ -88,7 +88,7 @@ test('zoe - atomicSwap', async t => {
     );
 
     // 7: Bob makes an offer
-    const bobOfferResult = await bobSeat.accept();
+    const bobOfferResult = await bobSeat.makeOffer();
 
     t.equals(
       bobOfferResult,
