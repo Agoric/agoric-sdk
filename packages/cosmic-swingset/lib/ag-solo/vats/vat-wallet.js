@@ -23,66 +23,62 @@ function build(E, D, _log) {
     commandDevice = d;
   }
 
-  function getCommandHandler() {
-    return {
-      async processInbound(obj) {
-        const { type, data, requestContext } = obj;
-        switch (type) {
-          case 'walletGetPurses': {
-            if (!pursesState) return {};
-            return {
-              type: 'walletUpdatePurses',
-              data: pursesState,
-            };
-          }
-          case 'walletGetInbox': {
-            if (!inboxState) return {};
-            return {
-              type: 'walletUpdateInbox',
-              data: inboxState,
-            };
-          }
-          case 'walletAddOffer': {
-            // We only need to do this because we can't reach addOffer.
-            const hooks = wallet.hydrateHooks(data.hooks);
-            return {
-              type: 'walletOfferAdded',
-              data: await wallet.addOffer(data, hooks, requestContext),
-            };
-          }
-          case 'walletDeclineOffer': {
-            return {
-              type: 'walletOfferDeclined',
-              data: wallet.declineOffer(data),
-            };
-          }
-          case 'walletCancelOffer': {
-            return {
-              type: 'walletOfferCancelled',
-              data: wallet.cancelOffer(data),
-            };
-          }
-          case 'walletAcceptOffer': {
-            await wallet.acceptOffer(data);
-            return {
-              type: 'walletOfferAccepted',
-              data: true,
-            };
-          }
-          case 'walletGetOfferDescriptions': {
-            const result = await wallet.getOfferDescriptions(data);
-            return {
-              type: 'walletOfferDescriptions',
-              data: result,
-            };
-          }
+  async function adminProcessInbound(obj) {
+    const { type, data, requestContext } = obj;
+    switch (type) {
+      case 'walletGetPurses': {
+        if (!pursesState) return {};
+        return {
+          type: 'walletUpdatePurses',
+          data: pursesState,
+        };
+      }
+      case 'walletGetInbox': {
+        if (!inboxState) return {};
+        return {
+          type: 'walletUpdateInbox',
+          data: inboxState,
+        };
+      }
+      case 'walletAddOffer': {
+        // We only need to do this because we can't reach addOffer.
+        const hooks = wallet.hydrateHooks(data.hooks);
+        return {
+          type: 'walletOfferAdded',
+          data: await wallet.addOffer(data, hooks, requestContext),
+        };
+      }
+      case 'walletDeclineOffer': {
+        return {
+          type: 'walletOfferDeclined',
+          data: wallet.declineOffer(data),
+        };
+      }
+      case 'walletCancelOffer': {
+        return {
+          type: 'walletOfferCancelled',
+          data: wallet.cancelOffer(data),
+        };
+      }
+      case 'walletAcceptOffer': {
+        await wallet.acceptOffer(data);
+        return {
+          type: 'walletOfferAccepted',
+          data: true,
+        };
+      }
+      case 'walletGetOfferDescriptions': {
+        const result = await wallet.getOfferDescriptions(data);
+        return {
+          type: 'walletOfferDescriptions',
+          data: result,
+        };
+      }
 
-          default: {
-            return false;
-          }
-        }
-      },
-    };
+      default: {
+        return false;
+      }
+    }
   }
 
   function setPresences() {
@@ -119,11 +115,38 @@ function build(E, D, _log) {
     );
   }
 
+  function getCommandHandler() {
+    return harden({
+      processInbound: adminProcessInbound,
+    });
+  }
+
+  function getBridgeURLHandler() {
+    return harden({
+      getCommandHandler() {
+        return harden({
+          processInbound(obj) {
+            const { type, requestContext } = obj;
+            if (['walletGetPurses', 'walletAddOffer'].includes(type)) {
+              // Override the origin since we got it from the bridge.
+              return adminProcessInbound({
+                ...obj,
+                requestContext: { ...requestContext, origin: obj.dappOrigin },
+              });
+            }
+            return Promise.resolve(false);
+          },
+        });
+      },
+    });
+  }
+
   return harden({
     startup,
     getWallet,
     setCommandDevice,
     getCommandHandler,
+    getBridgeURLHandler,
     setPresences,
   });
 }
