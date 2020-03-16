@@ -215,7 +215,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       );
 
       // Bob makes an offer to the swap with his "higher order"
-      const daveSwapInviteP = E(bobSwapSeat).makeFirstOffer();
+      const daveSwapInviteP = E(bobSwapSeat).accept();
       log('swap invite made');
       await E(daveP).doSwapForOption(daveSwapInviteP, optionAmounts);
 

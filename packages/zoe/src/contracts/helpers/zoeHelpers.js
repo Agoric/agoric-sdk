@@ -41,6 +41,18 @@ export const makeZoeHelpers = zoe => {
     return sameStructure(getKeys(actual), expectedKeys);
   };
   const helpers = harden({
+    makeInvite(seatFn, expected, customProperties = undefined) {
+      const seat = harden({
+        accept: () => {
+          // eslint-disable-next-line no-use-before-define
+          helpers.rejectIfNotOfferRules(inviteHandle, expected);
+          // eslint-disable-next-line no-use-before-define
+          return seatFn(inviteHandle, zoe.getOffer(inviteHandle));
+        },
+      });
+      const { invite, inviteHandle } = zoe.makeInvite(seat, customProperties);
+      return invite;
+    },
     assertRoleNames: expected => {
       // 'actual' is sorted in alphabetical order by Zoe
       const { roleNames: actual } = zoe.getInstanceRecord();

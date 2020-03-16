@@ -8,7 +8,7 @@ import harden from '@agoric/harden';
  * sophisticated logic and interfaces.
  * @param {contractFacet} zoe - the contract facet of zoe
  */
-export const makeContract = harden((zoe, _terms) => {
+export const makeContract = harden(zoe => {
   let offersCount = 0;
   const makeSeatInvite = () => {
     const seat = harden({

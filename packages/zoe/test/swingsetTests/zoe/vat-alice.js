@@ -191,7 +191,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       offerPayments,
     );
 
-    const bobInviteP = await E(seat).makeFirstOffer();
+    const bobInviteP = await E(seat).accept();
     E(bobP).doAtomicSwap(bobInviteP);
 
     const payout = await payoutP;

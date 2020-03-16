@@ -385,7 +385,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     );
 
     // Bob makes an offer to the swap with his "higher order" invite
-    const daveSwapInvite = await bobSwapSeat.makeFirstOffer();
+    const daveSwapInvite = await bobSwapSeat.accept();
 
     // Bob passes the swap invite to Dave and tells him the
     // optionAmounts (basically, the description of the option)
