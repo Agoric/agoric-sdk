@@ -41,7 +41,7 @@ export const makeZoeHelpers = zoe => {
     return sameStructure(getKeys(actual), expectedKeys);
   };
   const helpers = harden({
-    makeInvite(seatFn, expected, customProperties = undefined) {
+    makeInvite(seatFn, customProperties = undefined, expected = undefined) {
       const seat = harden({
         accept: () => {
           // eslint-disable-next-line no-use-before-define
@@ -65,9 +65,9 @@ export const makeZoeHelpers = zoe => {
     },
     rejectIfNotOfferRules: (inviteHandle, expected) => {
       const { offerRules: actual } = zoe.getOffer(inviteHandle);
-      rejectIf(inviteHandle, actual.offer, expected.offer);
-      rejectIf(inviteHandle, actual.want, expected.want);
-      rejectIf(inviteHandle, actual.exit, expected.exit);
+      rejectIf(inviteHandle, actual.offer, expected && expected.offer);
+      rejectIf(inviteHandle, actual.want, expected && expected.want);
+      rejectIf(inviteHandle, actual.exit, expected && expected.exit);
     },
     checkIfOfferRules: (inviteHandle, expected) => {
       const { offerRules: actual } = zoe.getOffer(inviteHandle);
