@@ -21,7 +21,7 @@ test('workflow', async t => {
       ? ['--sdk']
       : [];
     const myMain = args => {
-      console.error('running agoric-cli', ...extraArgs, ...args);
+      // console.error('running agoric-cli', ...extraArgs, ...args);
       return pspawn(`${__dirname}/../bin/agoric`, [...extraArgs, ...args], {
         stdio: ['ignore', 'pipe', 'inherit'],
       });
@@ -39,22 +39,30 @@ test('workflow', async t => {
       process.chdir('dapp-foo');
       t.equals(await myMain(['install']), 0, 'install works');
 
-      const startP = myMain(['start', '--reset']);
-      const to = setTimeout(() => startP.cp.kill('SIGHUP'), 10000);
+      t.equals(
+        await myMain(['start', '--no-restart']),
+        0,
+        'initial start works',
+      );
+
+      // Prevent the connections from interfering with the test.
+      fs.writeFileSync('_agstate/agoric-servers/dev/connections.json', '[]\n');
+      const startP = myMain(['start', '--delay=-1']);
+
       let stdoutStr = '';
       let successfulStart = false;
-      startP.cp.stdout.on('data', chunk => {
-        // console.log('stdout:', chunk.toString());
-        stdoutStr += chunk.toString();
-        if (stdoutStr.includes('HTTP/WebSocket will listen on')) {
-          successfulStart = true;
-          startP.cp.kill('SIGHUP');
-          clearTimeout(to);
-        }
-      });
+      if (startP.cp.stdout) {
+        startP.cp.stdout.on('data', chunk => {
+          // console.log('stdout:', chunk.toString());
+          stdoutStr += chunk.toString();
+          if (stdoutStr.match(/^swingset running$/m)) {
+            successfulStart = true;
+            startP.cp.kill('SIGINT');
+          }
+        });
+      }
 
       await startP;
-      clearTimeout(to);
       t.assert(successfulStart, 'start works');
     } finally {
       process.chdir(olddir);
