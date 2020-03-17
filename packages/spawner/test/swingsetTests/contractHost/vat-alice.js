@@ -71,6 +71,8 @@ function makeAliceMaker(E, host, log) {
                 )
                 .then(() => {
                   return allegedInvitePaymentP.then(allegedInvitePayment => {
+                    console.log('alice accept invite claim', allegedInvitePayment)
+
                     return E(inviteIssuerP).claim(
                       allegedInvitePayment,
                       inviteAmount,

@@ -16,7 +16,13 @@ const escrowExchange = harden({
 
     // TODO: How to get issuer? => terms, i guess
     function makeTransfer(issuer, amount, srcPaymentP) {
-      const escrowP = E(issuer).claim(srcPaymentP, amount);
+      console.log('escrow makeTransfer, claim before')
+      const escrowP = srcPaymentP.then(srcPayment => E(issuer).claim(srcPayment, amount));
+      
+      escrowP.catch(err => console.log('escrow makeTransfer claim after error', err))
+      escrowP.then(val => console.log('escrow makeTransfer claim after payment', val))
+
+
       const winnings = makePromise();
       const refund = makePromise();
       return harden({

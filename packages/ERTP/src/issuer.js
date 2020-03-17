@@ -165,7 +165,9 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
       return paymentBalance;
     },
     claim: (paymentP, optAmount = undefined) => {
+      console.log('claim before')
       const srcPayment = E.unwrap(paymentP);
+      console.log('claim after')
       const srcPaymentBalance = paymentLedger.get(srcPayment);
       assertAmountEqual(srcPaymentBalance, optAmount);
       // Commit point.
