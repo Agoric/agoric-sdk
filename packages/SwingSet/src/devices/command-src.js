@@ -35,7 +35,7 @@ export default function setup(syscall, state, helpers, endowments) {
       sendResponse(count, isReject, obj) {
         if (isReject && obj instanceof Error) {
           console.log('inboundHandler rejected with:', obj);
-          obj = { message: obj.message };
+          obj = { error: `${obj}` };
         }
         try {
           deliverResponse(count, isReject, JSON.stringify(obj));
