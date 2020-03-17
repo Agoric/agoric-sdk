@@ -21,7 +21,7 @@ export default function setup(syscall, state, helpers, endowments) {
         const body = JSON.parse(`${bodyString}`);
         SO(inboundHandler).inbound(Nat(count), body);
       } catch (e) {
-        console.log(`error during inboundCallback: ${e}`);
+        console.log(`error during inboundCallback`, e);
         throw new Error(`error during inboundCallback: ${e}`);
       }
     });
@@ -33,6 +33,10 @@ export default function setup(syscall, state, helpers, endowments) {
       },
 
       sendResponse(count, isReject, obj) {
+        if (isReject && obj instanceof Error) {
+          console.log('inboundHandler rejected with:', obj);
+          obj = { message: obj.message };
+        }
         try {
           deliverResponse(count, isReject, JSON.stringify(obj));
         } catch (e) {

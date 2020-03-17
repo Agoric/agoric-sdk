@@ -137,10 +137,19 @@ async function buildSwingset(
     // this promise could take an arbitrarily long time to resolve, so don't
     // wait on it
     const p = cm.inboundCommand(obj);
+
+    // Register a handler so that we don't get complaints about
+    // asynchronously-handled callbacks.
+    p.catch(_ => {});
+
     // TODO: synchronize this somehow, make sure it doesn't overlap with the
-    // processKernel() call in deliverInbound()
+    // processKernel() call in deliverInboundToMbx()
     await processKernel();
-    return p;
+
+    // Rethrow any exception so that our caller must handle it.
+    return p.catch(e => {
+      throw e;
+    });
   }
 
   const intervalMillis = 1200;
