@@ -97,7 +97,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const ps = pspawn(agSolo, ['start', '--role=two_client'], {
       cwd: agServer,
     });
-    process.on('SIGHUP', () => ps.cp.kill('SIGHUP'));
+    process.on('SIGINT', () => ps.cp.kill('SIGINT'));
     return ps;
   }
 

@@ -57,7 +57,7 @@ test('workflow', async t => {
           stdoutStr += chunk.toString();
           if (stdoutStr.match(/^swingset running$/m)) {
             successfulStart = true;
-            startP.cp.kill('SIGHUP');
+            startP.cp.kill('SIGINT');
           }
         });
       }
