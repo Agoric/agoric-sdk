@@ -19,8 +19,6 @@ const progname = path.basename(process.argv[1]);
 const stdout = str => process.stdout.write(str);
 const makeWebSocket = (...args) => new WebSocket(...args);
 
-process.on('SIGINT', () => process.exit(-1));
-
 const rawArgs = process.argv.splice(2);
 main(progname, rawArgs, {
   anylogger,

@@ -15,11 +15,13 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
   const pspawn = (cmd, cargs, { stdio = 'inherit', ...rest } = {}) => {
     log.info(chalk.blueBright(cmd, ...cargs));
-    return new Promise((resolve, _reject) => {
-      const cp = spawn(cmd, cargs, { stdio, ...rest });
+    const cp = spawn(cmd, cargs, { stdio, ...rest });
+    const pr = new Promise((resolve, _reject) => {
       cp.on('exit', resolve);
       cp.on('error', () => resolve(-1));
     });
+    pr.cp = cp;
+    return pr;
   };
 
   const exists = async file => {
@@ -75,14 +77,16 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       });
     }
 
-    log(chalk.yellow(`setting fake chain with ${fakeDelay} second delay`));
-    await pspawn(
-      agSolo,
-      ['set-fake-chain', '--role=two_chain', `--delay=${fakeDelay}`, fakeGCI],
-      {
-        cwd: agServer,
-      },
-    );
+    if (fakeDelay >= 0) {
+      log(chalk.yellow(`setting fake chain with ${fakeDelay} second delay`));
+      await pspawn(
+        agSolo,
+        ['set-fake-chain', '--role=two_chain', `--delay=${fakeDelay}`, fakeGCI],
+        {
+          cwd: agServer,
+        },
+      );
+    }
     await linkHtml(profileName);
 
     if (!popts.restart) {
@@ -90,9 +94,11 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       return 0;
     }
 
-    return pspawn(agSolo, ['start', '--role=two_client'], {
+    const ps = pspawn(agSolo, ['start', '--role=two_client'], {
       cwd: agServer,
     });
+    process.on('SIGHUP', () => ps.cp.kill('SIGHUP'));
+    return ps;
   }
 
   async function startTestnetDocker(profileName, startArgs, popts) {

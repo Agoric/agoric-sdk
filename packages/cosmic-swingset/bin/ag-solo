@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 const process = require('process');
-require = require('esm')(module);
-const solo = require('../lib/ag-solo/main.js').default;
+const esmRequire = require('esm')(module);
+
+const solo = esmRequire('../lib/ag-solo/main.js').default;
 
 solo(process.argv[1], process.argv.splice(2)).then(
   _res => 0,
