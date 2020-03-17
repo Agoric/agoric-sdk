@@ -24,38 +24,53 @@ function readClock() {
   return process.hrtime.bigint();
 }
 
+function usage() {
+  console.log(`
+Command line:
+  runner [FLAGS...] CMD [{BASEDIR|--} [ARGS...]]
+
+FLAGS may be:
+  --no-ses       - directs vats not to be run in SES.
+  --init         - discard any existing saved state at startup.
+  --lmdb         - runs using LMDB as the data store
+  --filedb       - runs using the simple file-based data store (default)
+  --memdb        - runs using the non-persistent in-memory data store
+  --blockmode    - run in block mode (checkpoint every BLOCKSIZE blocks)
+  --blocksize N  - set BLOCKSIZE to N (default 200)
+  --logtimes     - log block execution time stats while running
+  --logmem       - log memory usage stats after each block
+  --forcegc      - run garbage collector after each block
+  --batchsize N  - set BATCHSIZE to N (default 200)
+
+CMD is one of:
+  help   - print this helpful usage information
+  run    - launches or resumes the configured vats, which run to completion.
+  batch  - launch or resume, then run BATCHSIZE cranks or until completion
+  step   - steps the configured swingset one crank.
+  shell  - starts a simple CLI allowing the swingset to be run or stepped or
+           interrogated interactively.
+
+BASEDIR is the base directory for locating the swingset's vat definitions.
+  If BASEDIR is omitted or '--' it defaults to the current working directory.
+
+Any remaining args are passed to the swingset's bootstrap vat.
+`);
+}
+
+function fail(message, printUsage) {
+  console.log(message);
+  if (printUsage) {
+    usage();
+  }
+  process.exit(1);
+}
+
 /* eslint-disable no-use-before-define */
 
 /**
  * Command line utility to run a swingset for development and testing purposes.
  */
 export async function main() {
-  // Command line:
-  //   node runner [FLAGS...] CMD [{BASEDIR|--} [ARGS...]]
-  //
-  // FLAGS may be:
-  //   --no-ses       - directs vats not to be run in SES.
-  //   --init         - discard any existing saved state at startup.
-  //   --lmdb         - runs using LMDB as the data store
-  //   --filedb       - runs using the simple file-based data store (default)
-  //   --memdb        - runs using the non-persistent in-memory data store
-  //   --blockmode    - run in block mode (checkpoint every BLOCKSIZE blocks)
-  //   --blocksize N  - set BLOCKSIZE to N (default 200)
-  //   --logtimes     - log block execution time stats while running
-  //   --logmem       - log memory usage stats after each block
-  //   --batchsize N  - set BATCHSIZE to N (default 200)
-  //
-  // CMD is one of:
-  //   run    - launches or resumes the configured vats, which run to completion.
-  //   batch  - launch or resume, then run BATCHSIZE cranks or until completion
-  //   step   - steps the configured swingset one crank.
-  //   shell  - starts a simple CLI allowing the swingset to be run or stepped or interrogated interactively.
-  //
-  // BASEDIR is the base directory for locating the swingset's vat definitions.
-  //   If BASEDIR is omitted or '--' it defaults to the current working directory.
-  //
-  // Any remaining args are passed to the swingset's bootstrap vat.
-
   const argv = process.argv.splice(2);
 
   let withSES = true;
@@ -66,6 +81,7 @@ export async function main() {
   let blockMode = false;
   let logTimes = false;
   let logMem = false;
+  let forceGC = false;
   while (argv[0] && argv[0].startsWith('--')) {
     const flag = argv.shift();
     switch (flag) {
@@ -80,6 +96,9 @@ export async function main() {
         break;
       case '--logmem':
         logMem = true;
+        break;
+      case '--forcegc':
+        forceGC = true;
         break;
       case '--blockmode':
         blockMode = true;
@@ -96,7 +115,7 @@ export async function main() {
         dbMode = flag;
         break;
       default:
-        throw new Error(`invalid flag ${flag}`);
+        fail(`invalid flag ${flag}`, true);
     }
   }
 
@@ -105,11 +124,25 @@ export async function main() {
     command !== 'run' &&
     command !== 'shell' &&
     command !== 'step' &&
-    command !== 'batch'
+    command !== 'batch' &&
+    command !== 'help'
   ) {
-    throw new Error(
-      `'${command}' is not a valid runner command; use 'run', 'batch', 'step', or 'shell'`,
-    );
+    fail(`'${command}' is not a valid runner command`, true);
+  }
+  if (command === 'help') {
+    usage();
+    process.exit(0);
+  }
+
+  if (forceGC) {
+    if (!global.gc) {
+      fail(
+        'To use --forcegc you must start node with the --expose-gc command line option',
+      );
+    }
+    if (!logMem) {
+      console.log('Warning: --forcegc without --logmem may be a mistake');
+    }
   }
 
   // Prettier demands that the conditional not be parenthesized.  Prettier is wrong.
@@ -139,7 +172,7 @@ export async function main() {
       }
       break;
     default:
-      throw new Error(`invalid database mode ${dbMode}`);
+      fail(`invalid database mode ${dbMode}`, true);
   }
   config.hostStorage = store.storage;
 
@@ -230,7 +263,7 @@ export async function main() {
       break;
     }
     default:
-      throw new Error(`invalid command ${command}`);
+      fail(`invalid command ${command}`);
   }
   if (statLogger) {
     statLogger.close();
@@ -251,11 +284,15 @@ export async function main() {
     if (doCommit) {
       store.commit();
     }
+    const blockEndTime = readClock();
+    if (forceGC) {
+      global.gc();
+    }
     if (statLogger) {
       blockNumber += 1;
       let data = [blockNumber, actualSteps];
       if (logTimes) {
-        data = data.concat([readClock() - blockStartTime]);
+        data = data.concat([blockEndTime - blockStartTime]);
       }
       if (logMem) {
         const mem = process.memoryUsage();
