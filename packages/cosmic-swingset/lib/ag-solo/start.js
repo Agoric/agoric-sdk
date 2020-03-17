@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import temp from 'temp';
 import { promisify } from 'util';
-import readlines from 'n-readlines';
 // import { createHash } from 'crypto';
 
 // import connect from 'lotion-connect';
@@ -27,7 +26,6 @@ import { makeHTTPListener } from './web';
 
 import { connectToChain } from './chain-cosmos-sdk';
 import { connectToFakeChain } from './fake-chain';
-import bundle from './bundle';
 
 // import { makeChainFollower } from './follower';
 // import { makeDeliverator } from './deliver-with-ag-cosmos-helper';
@@ -123,34 +121,59 @@ async function buildSwingset(
     }
   }
 
-  async function deliverInboundToMbx(sender, messages, ack) {
-    if (!(messages instanceof Array)) {
-      throw new Error(`inbound given non-Array: ${messages}`);
-    }
-    // console.log(`deliverInboundToMbx`, messages, ack);
-    if (mb.deliverInbound(sender, messages, ack, true)) {
-      await processKernel();
-    }
-  }
+  // Return a function that can wrap an async or sync thunk, but
+  // ensures only one of them (in order) is running at a time.
+  const makeWithCriticalSection = () => {
+    let runQueueP = Promise.resolve();
+    return function withCriticalSection(thunk) {
+      // Ignore arguments (leftover results of other thunks) and
+      // resolve/reject with whatever the thunk does.
+      const wrapThunk = _ => thunk();
 
-  async function deliverInboundCommand(obj) {
+      // Atomically replace the runQueue by appending us to it.
+      runQueueP = runQueueP.then(wrapThunk, wrapThunk);
+
+      // Return the promisified version of the thunk.
+      return runQueueP;
+    };
+  };
+
+  const withInboundCriticalSection = makeWithCriticalSection();
+
+  // Use the critical section to make sure it doesn't overlap with
+  // deliverInboundCommand.
+  const deliverInboundToMbx = withInboundCriticalSection(
+    async (sender, messages, ack) => {
+      if (!(messages instanceof Array)) {
+        throw new Error(`inbound given non-Array: ${messages}`);
+      }
+      // console.log(`deliverInboundToMbx`, messages, ack);
+      if (mb.deliverInbound(sender, messages, ack, true)) {
+        await processKernel();
+      }
+    },
+  );
+
+  // Use the critical section to make sure it doesn't overlap with
+  // deliverInboundToMbx.
+  const deliverInboundCommand = withInboundCriticalSection(async obj => {
     // this promise could take an arbitrarily long time to resolve, so don't
     // wait on it
     const p = cm.inboundCommand(obj);
 
-    // Register a handler so that we don't get complaints about
+    // Register a handler in this turn so that we don't get complaints about
     // asynchronously-handled callbacks.
     p.catch(_ => {});
 
-    // TODO: synchronize this somehow, make sure it doesn't overlap with the
-    // processKernel() call in deliverInboundToMbx()
+    // The turn passes...
     await processKernel();
 
-    // Rethrow any exception so that our caller must handle it.
+    // Rethrow any inboundCommand rejection in the new turn so that our
+    // caller must handle it (or be an unhandledRejection).
     return p.catch(e => {
       throw e;
     });
-  }
+  });
 
   const intervalMillis = 1200;
   // TODO(hibbert) protect against kernel turns that take too long
@@ -264,20 +287,4 @@ export default async function start(basedir, withSES, argv) {
   console.log(`swingset running`);
   swingSetRunning = true;
   deliverOutbound();
-
-  // Install the bundles as specified.
-  const initDir = path.join(basedir, 'init-bundles');
-  let list = [];
-  try {
-    list = await fs.promises.readdir(initDir);
-  } catch (e) {}
-  for (const initName of list.sort()) {
-    console.log('loading init bundle', initName);
-    const initFile = path.join(initDir, initName);
-    if (
-      await bundle(() => '.', ['--evaluate', '--once', '--input', initFile])
-    ) {
-      return 0;
-    }
-  }
 }
