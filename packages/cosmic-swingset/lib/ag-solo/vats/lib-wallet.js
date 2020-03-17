@@ -398,7 +398,6 @@ export async function makeWallet(
     cancelOffer,
     acceptOffer,
     getOfferDescriptions,
-    ping,
   });
 
   return wallet;
