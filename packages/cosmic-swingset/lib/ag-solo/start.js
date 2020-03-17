@@ -125,23 +125,25 @@ async function buildSwingset(
   // ensures only one of them (in order) is running at a time.
   const makeWithCriticalSection = () => {
     let runQueueP = Promise.resolve();
-    return function withCriticalSection(thunk) {
-      // Ignore arguments (leftover results of other thunks) and
-      // resolve/reject with whatever the thunk does.
-      const wrapThunk = _ => thunk();
+    return function withCriticalSection(inner) {
+      return function wrappedCall(...args) {
+        // Curry the arguments into the inner function, and
+        // resolve/reject with whatever the inner function does.
+        const thunk = _ => inner(...args);
 
-      // Atomically replace the runQueue by appending us to it.
-      runQueueP = runQueueP.then(wrapThunk, wrapThunk);
+        // Atomically replace the runQueue by appending us to it.
+        runQueueP = runQueueP.then(thunk, thunk);
 
-      // Return the promisified version of the thunk.
-      return runQueueP;
+        // Return the promisified version of the thunk.
+        return runQueueP;
+      };
     };
   };
 
   const withInboundCriticalSection = makeWithCriticalSection();
 
   // Use the critical section to make sure it doesn't overlap with
-  // deliverInboundCommand.
+  // other inbound messages.
   const deliverInboundToMbx = withInboundCriticalSection(
     async (sender, messages, ack) => {
       if (!(messages instanceof Array)) {
@@ -155,7 +157,7 @@ async function buildSwingset(
   );
 
   // Use the critical section to make sure it doesn't overlap with
-  // deliverInboundToMbx.
+  // other inbound messages.
   const deliverInboundCommand = withInboundCriticalSection(async obj => {
     // this promise could take an arbitrarily long time to resolve, so don't
     // wait on it
@@ -176,24 +178,30 @@ async function buildSwingset(
   });
 
   const intervalMillis = 1200;
-  // TODO(hibbert) protect against kernel turns that take too long
-  // drop calls to moveTimeForward if it's fallen behind, to make sure we don't
-  // have two copies of controller.run() executing at the same time.
-  function moveTimeForward() {
+
+  // Use the critical section to make sure it doesn't overlap with
+  // other inbound messages.
+  const moveTimeForward = withInboundCriticalSection(async () => {
     const now = Math.floor(Date.now() / intervalMillis);
-    if (timer.poll(now)) {
-      const p = processKernel();
-      p.then(
-        _ => console.log(`timer-provoked kernel crank complete ${now}`),
-        err =>
-          console.log(`timer-provoked kernel crank failed at ${now}:`, err),
-      );
+    try {
+      if (timer.poll(now)) {
+        await processKernel();
+        console.log(`timer-provoked kernel crank complete ${now}`);
+      }
+    } catch (err) {
+      console.log(`timer-provoked kernel crank failed at ${now}:`, err);
+    } finally {
+      // We only rearm the timeout if moveTimeForward has completed, to
+      // make sure we don't have two copies of controller.run() executing
+      // at the same time.
+      setTimeout(moveTimeForward, intervalMillis);
     }
-  }
-  setInterval(moveTimeForward, intervalMillis);
+  });
 
   // now let the bootstrap functions run
   await processKernel();
+
+  setTimeout(moveTimeForward, intervalMillis);
 
   return {
     deliverInboundToMbx,
