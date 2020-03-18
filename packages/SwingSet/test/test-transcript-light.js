@@ -102,7 +102,3 @@ async function testLoadState(t, withSES) {
 test('transcript-light load with SES', async t => {
   await testLoadState(t, true);
 });
-
-test('transcript-light load without SES', async t => {
-  await testLoadState(t, false);
-});

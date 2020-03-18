@@ -15,10 +15,6 @@ test('flush with SES', async t => {
   await testFlush(t, true);
 });
 
-test('flush without SES', async t => {
-  await testFlush(t, false);
-});
-
 async function testEThen(t, withSES) {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
   const c = await buildVatController(config, withSES, ['e-then']);
@@ -36,10 +32,6 @@ async function testEThen(t, withSES) {
 
 test('E() resolve with SES', async t => {
   await testEThen(t, true);
-});
-
-test('E() resolve without SES', async t => {
-  await testEThen(t, false);
 });
 
 async function testChain1(t, withSES) {
@@ -70,10 +62,6 @@ test('E(E(x).foo()).bar() with SES', async t => {
   await testChain1(t, true);
 });
 
-test('E(E(x).foo()).bar() without SES', async t => {
-  await testChain1(t, false);
-});
-
 async function testChain2(t, withSES) {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
   const c = await buildVatController(config, withSES, ['chain2']);
@@ -93,10 +81,6 @@ test('E(Promise.resolve(presence)).foo() with SES', async t => {
   await testChain2(t, true);
 });
 
-test('E(Promise.resolve(presence)).foo() without SES', async t => {
-  await testChain2(t, false);
-});
-
 async function testLocal1(t, withSES) {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
   const c = await buildVatController(config, withSES, ['local1']);
@@ -113,10 +97,6 @@ async function testLocal1(t, withSES) {
 
 test('E(local).foo() with SES', async t => {
   await testLocal1(t, true);
-});
-
-test('E(local).foo() without SES', async t => {
-  await testLocal1(t, false);
 });
 
 async function testLocal2(t, withSES) {
@@ -138,10 +118,6 @@ test('resolve-to-local with SES', async t => {
   await testLocal2(t, true);
 });
 
-test('resolve-to-local without SES', async t => {
-  await testLocal2(t, false);
-});
-
 async function testSendPromise1(t, withSES) {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
   const c = await buildVatController(config, withSES, ['send-promise1']);
@@ -160,10 +136,6 @@ async function testSendPromise1(t, withSES) {
 
 test('send-promise-resolve-to-local with SES', async t => {
   await testSendPromise1(t, true);
-});
-
-test('send-promise-resolve-to-local without SES', async t => {
-  await testSendPromise1(t, false);
 });
 
 async function testHardenPromise1(t, withSES) {
@@ -191,10 +163,4 @@ async function testHardenPromise1(t, withSES) {
 
 test('send-harden-promise-1 with SES', async t => {
   await testHardenPromise1(t, true);
-});
-
-// TODO: if/when we re-enable the infix-bang x!foo(), this test will only run
-// under SES, so disable the non-SES version
-test('send-harden-promise-1 without SES', async t => {
-  await testHardenPromise1(t, false);
 });

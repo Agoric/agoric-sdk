@@ -13,7 +13,7 @@ test('load empty', async t => {
     vats: new Map(),
     bootstrapIndexJS: undefined,
   };
-  const controller = await buildVatController(config);
+  const controller = await buildVatController(config, true);
   await controller.run();
   t.ok(true);
   t.end();
@@ -64,10 +64,6 @@ test('simple call with SES', async t => {
   await simpleCall(t, true);
 });
 
-test('simple call non-SES', async t => {
-  await simpleCall(t, false);
-});
-
 test('reject module-like sourceIndex', async t => {
   const vats = new Map();
   // the keys of 'vats' have a 'sourcepath' property which are vat source
@@ -79,7 +75,7 @@ test('reject module-like sourceIndex', async t => {
   // that.
   vats.set('vat1', { sourcepath: 'vatsource' });
   t.rejects(
-    async () => buildVatController({ vats }, false),
+    async () => buildVatController({ vats }, true),
     /sourceIndex must be relative/,
   );
   t.end();
@@ -99,10 +95,6 @@ async function bootstrap(t, withSES) {
 
 test('bootstrap with SES', async t => {
   await bootstrap(t, true);
-});
-
-test('bootstrap without SES', async t => {
-  await bootstrap(t, false);
 });
 
 async function bootstrapExport(t, withSES) {
@@ -267,8 +259,4 @@ async function bootstrapExport(t, withSES) {
 
 test('bootstrap export with SES', async t => {
   await bootstrapExport(t, true);
-});
-
-test('bootstrap export without SES', async t => {
-  await bootstrapExport(t, false);
 });

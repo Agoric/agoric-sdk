@@ -29,10 +29,6 @@ test('VatAdmin inner vat creation', async t => {
   await testVatCreationFromBuild(t, true);
 });
 
-test('VatAdmin inner vat creation non-SES', async t => {
-  await testVatCreationFromBuild(t, false);
-});
-
 async function testVatCreationAndObjectHosting(t, withSES) {
   const config = await createConfig();
   const c = await buildVatController(config, withSES, ['counters']);
@@ -44,10 +40,6 @@ async function testVatCreationAndObjectHosting(t, withSES) {
 
 test('VatAdmin inner vat creation', async t => {
   await testVatCreationAndObjectHosting(t, true);
-});
-
-test('VatAdmin inner vat creation non-SES', async t => {
-  await testVatCreationAndObjectHosting(t, false);
 });
 
 async function testBrokenVatCreation(t, withSES) {
@@ -63,10 +55,6 @@ async function testBrokenVatCreation(t, withSES) {
 
 test('VatAdmin broken vat creation', async t => {
   await testBrokenVatCreation(t, true);
-});
-
-test('VatAdmin broken vat creation non-SES', async t => {
-  await testBrokenVatCreation(t, false);
 });
 
 async function testGetVatStats(t, withSES) {
@@ -85,8 +73,4 @@ async function testGetVatStats(t, withSES) {
 
 test('VatAdmin get vat stats', async t => {
   await testGetVatStats(t, true);
-});
-
-test('VatAdmin get vat stats non-SES', async t => {
-  await testGetVatStats(t, false);
 });

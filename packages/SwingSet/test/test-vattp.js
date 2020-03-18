@@ -52,10 +52,6 @@ async function testVatTP(t, withSES) {
   t.end();
 }
 
-test('vattp without SES', async t => {
-  await testVatTP(t, false);
-});
-
 test('vattp with SES', async t => {
   await testVatTP(t, true);
 });
@@ -105,10 +101,6 @@ async function testVatTP2(t, withSES) {
 
   t.end();
 }
-
-test('vattp 2 without SES', async t => {
-  await testVatTP2(t, false);
-});
 
 test('vattp 2 with SES', async t => {
   await testVatTP2(t, true);

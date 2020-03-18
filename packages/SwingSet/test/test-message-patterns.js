@@ -47,24 +47,23 @@ async function runWithTrace(c) {
   }
 }
 
-export async function runVatsLocally(t, withSES, name) {
+export async function runVatsLocally(t, name) {
   console.log(`------ testing pattern (local) -- ${name}`);
   const bdir = path.resolve(__dirname, 'basedir-message-patterns');
   const config = await loadBasedir(bdir);
   config.bootstrapIndexJS = path.join(bdir, 'bootstrap-local.js');
-  const c = await buildVatController(config, withSES, [name]);
+  const c = await buildVatController(config, true, [name]);
   // await runWithTrace(c);
   await c.run();
   return c.dump().log;
 }
 
 function testLocalPatterns() {
-  const withSES = false;
   const bp = buildPatterns();
   for (const name of Array.from(bp.patterns.keys()).sort()) {
     const mode = bp.patterns.get(name).local;
     modes[mode](`test pattern ${name} locally`, async t => {
-      const logs = await runVatsLocally(t, withSES, name);
+      const logs = await runVatsLocally(t, name);
       t.deepEqual(logs, bp.expected[name]);
       t.end();
     });
@@ -72,7 +71,7 @@ function testLocalPatterns() {
 }
 testLocalPatterns();
 
-export async function runVatsInComms(t, withSES, enablePipelining, name) {
+export async function runVatsInComms(t, enablePipelining, name) {
   console.log(`------ testing pattern (comms) -- ${name}`);
   const bdir = path.resolve(__dirname, 'basedir-message-patterns');
   const config = await loadBasedir(bdir);
@@ -85,20 +84,19 @@ export async function runVatsInComms(t, withSES, enablePipelining, name) {
   config.vats.set('rightvattp', { sourcepath: getVatTPSourcePath() });
   const ldSrcPath = require.resolve('../src/devices/loopbox-src');
   config.devices = [['loopbox', ldSrcPath, {}]];
-  const c = await buildVatController(config, withSES, [name]);
+  const c = await buildVatController(config, true, [name]);
   // await runWithTrace(c);
   await c.run();
   return c.dump().log;
 }
 
 function testCommsPatterns() {
-  const withSES = false;
   const enablePipelining = true;
   const bp = buildPatterns();
   for (const name of Array.from(bp.patterns.keys()).sort()) {
     const mode = bp.patterns.get(name).comms;
     modes[mode](`test pattern ${name} locally`, async t => {
-      const logs = await runVatsInComms(t, withSES, enablePipelining, name);
+      const logs = await runVatsInComms(t, enablePipelining, name);
       let expected = bp.expected[name];
       if (enablePipelining && name in bp.expected_pipelined) {
         expected = bp.expected_pipelined[name];

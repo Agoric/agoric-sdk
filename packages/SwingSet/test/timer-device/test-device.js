@@ -24,10 +24,6 @@ test('wake with SES', async t => {
   await testSimpleWake(t, true);
 });
 
-test('wake without SES', async t => {
-  await testSimpleWake(t, false);
-});
-
 async function testRepeater(t, withSES) {
   const timer = buildTimer();
   const config = {
@@ -49,10 +45,6 @@ async function testRepeater(t, withSES) {
 
 test('repeater with SES', async t => {
   await testRepeater(t, true);
-});
-
-test('repeater without SES', async t => {
-  await testRepeater(t, false);
 });
 
 async function testRepeater2(t, withSES) {
@@ -79,10 +71,6 @@ async function testRepeater2(t, withSES) {
 
 test('repeater2 with SES', async t => {
   await testRepeater2(t, true);
-});
-
-test('repeater2 without SES', async t => {
-  await testRepeater2(t, false);
 });
 
 async function testRepeaterZero(t, withSES) {
@@ -124,8 +112,4 @@ async function testRepeaterZero(t, withSES) {
 
 test('repeaterZero with SES', async t => {
   await testRepeaterZero(t, true);
-});
-
-test('repeaterZero without SES', async t => {
-  await testRepeaterZero(t, false);
 });
