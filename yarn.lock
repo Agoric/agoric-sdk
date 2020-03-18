@@ -27,6 +27,11 @@
   resolved "https://registry.yarnpkg.com/@agoric/make-hardener/-/make-hardener-0.0.4.tgz#9b5d6692bc2fbbac2fff0a6682959ac5e69c582d"
   integrity sha512-0k/wGkIVQO3IY7p/H/5OS3BIXsRK9Qb7nHnqyvj6hzvSyumwgPp8e4rz5QaVWSen43TGJl+zQn4mW9ZZShT1aw==
 
+"@agoric/make-hardener@0.0.8":
+  version "0.0.8"
+  resolved "https://registry.yarnpkg.com/@agoric/make-hardener/-/make-hardener-0.0.8.tgz#7f9e9d6874600b2e1b0543ce9456fbf62463be2d"
+  integrity sha512-bd83IYEMQbzpprwyA10RjHIGWmWeUMdsd5EzaHwke+zLH0HyqP6UKxFLv5mqkmrMeQyOMhNgKN1hCagjRyjlxQ==
+
 "@agoric/make-hardener@^0.0.6":
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/@agoric/make-hardener/-/make-hardener-0.0.6.tgz#5903748a71381bc37e23d571390aaff9973c37b2"
@@ -6818,6 +6823,13 @@ ses@^0.6.5:
     "@agoric/make-hardener" "^0.0.6"
     esm "^3.2.25"
     realms-shim "^1.2.2"
+
+ses@^0.7.4:
+  version "0.7.4"
+  resolved "https://registry.yarnpkg.com/ses/-/ses-0.7.4.tgz#cb43a0406736d7cbd6975d67bd3866502feba4d6"
+  integrity sha512-wn1hEuMcDG4lCsqfgAlAS2w1gVVUlkV3i3uZnacvtrVJMtvMgUCTbECaK685vSUQz+J4B92m2OT6QQeC0ogoSw==
+  dependencies:
+    "@agoric/make-hardener" "0.0.8"
 
 set-blocking@^2.0.0, set-blocking@~2.0.0:
   version "2.0.0"
