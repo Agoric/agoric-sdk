@@ -9,6 +9,10 @@ import { open as tempOpen } from 'temp';
 // is resolved.
 import Tendermint from '@agoric/tendermint';
 
+import anylogger from 'anylogger';
+
+const log = anylogger('chain-cosmos-sdk');
+
 const HELPER = 'ag-cosmos-helper';
 
 const MAX_BUFFER_SIZE = 10 * 1024 * 1024;
@@ -102,7 +106,7 @@ export async function connectToChain(
         `--node=tcp://${rpcAddr}`,
         `--home=${helperDir}`,
       ];
-      console.log(HELPER, ...fullArgs);
+      log(HELPER, ...fullArgs);
       let ret;
       try {
         ret = await new Promise((resolve, reject) => {
@@ -123,7 +127,7 @@ export async function connectToChain(
           }
         });
       } catch (e) {
-        console.log(` failed exec:`, e);
+        log.error(`failed exec:`, e);
       }
 
       await throwIfCancelled();
@@ -132,7 +136,7 @@ export async function connectToChain(
         try {
           return await parseReturn(ret);
         } catch (e) {
-          console.log(`Failed to parse return:`, e);
+          log.error(`Failed to parse return:`, e);
         }
       }
     }).catch(e => {
@@ -162,7 +166,7 @@ export async function connectToChain(
       while (queue.length > 0 && queue.length >= maxQueued) {
         // Cancel the excesses from most recent down to the currently-running.
         const [proceed, cancel] = queue.pop();
-        // console.log(`cancelling ${queue.length}`);
+        log.debug(`cancelling ${queue.length}`);
         cancel();
       }
     }
@@ -225,13 +229,13 @@ export async function connectToChain(
       ['query', 'swingset', 'mailbox', myAddr],
       ret => {
         const { stdout, stderr } = ret;
-        console.error(stderr);
-        console.log(` helper said: ${stdout}`);
+        log.error(stderr);
+        log(`helper said: ${stdout}`);
         try {
           // Try to parse the stdout.
           return JSON.parse(JSON.parse(JSON.parse(stdout).value));
         } catch (e) {
-          console.log(` failed to parse output:`, e);
+          log(`failed to parse output:`, e);
         }
       },
       undefined,
@@ -274,7 +278,7 @@ export async function connectToChain(
         header: { height: LAST_KNOWN_BLOCKHEIGHT, chain_id: chainID },
       };
       const client = Tendermint(nodeAddr, clientState);
-      client.on('error', e => console.error(e));
+      client.on('error', e => log.error(e));
       return new Promise((resolve, reject) => {
         client.once('error', reject);
         client.once('synced', () => {
@@ -298,7 +302,7 @@ export async function connectToChain(
   // hitting the rest-server on every single block.
 
   c.lightClient.on('update', ({ height }) => {
-    console.log(`new block on ${GCI}, fetching mailbox`);
+    log(`new block on ${GCI}, fetching mailbox`);
     return getMailbox(height)
       .then(({ outbox, ack }) => {
         // console.log('have outbox', outbox, ack);
@@ -306,13 +310,13 @@ export async function connectToChain(
           inbound(GCI, outbox, ack);
         }
       })
-      .catch(e => console.log(`Failed to fetch ${GCI} mailbox:`, e));
+      .catch(e => log.error(`Failed to fetch ${GCI} mailbox:`, e));
   });
-  c.lightClient.on('close', e => console.log('closed', e));
+  c.lightClient.on('close', e => log.error('closed', e));
   async function deliver(newMessages, acknum) {
     let tmpInfo;
     try {
-      console.log(`delivering to chain`, GCI, newMessages, acknum);
+      log(`delivering to chain`, GCI, newMessages, acknum);
 
       // TODO: combine peer and submitter in the message format (i.e. remove
       // the extra 'myAddr' after 'tx swingset deliver'). All messages from
@@ -378,8 +382,8 @@ export async function connectToChain(
         args,
         ret => {
           const { stderr, stdout } = ret;
-          console.error(stderr);
-          console.log(` helper said: ${stdout}`);
+          log.error(stderr);
+          log(`helper said: ${stdout}`);
           // TODO: parse the helper output (JSON), we want 'code' to be 0. If
           // not, look at .raw_log (also JSON) at .message.
           return {};

@@ -1,3 +1,7 @@
+import anylogger from 'anylogger';
+
+const log = anylogger('block-manager');
+
 const BEGIN_BLOCK = 'BEGIN_BLOCK';
 const DELIVER_INBOUND = 'DELIVER_INBOUND';
 const END_BLOCK = 'END_BLOCK';
@@ -126,7 +130,7 @@ export default function makeBlockManager({
     savedActions = currentActions;
     computedHeight = action.blockHeight;
 
-    console.log(
+    log(
       `wrote SwingSet checkpoint (mailbox=${mailboxSize}), [run=${runTime}ms, mb=${mbTime}ms, save=${saveTime}ms]`,
     );
   }

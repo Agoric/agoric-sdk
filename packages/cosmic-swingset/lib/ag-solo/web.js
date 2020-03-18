@@ -5,10 +5,14 @@ import express from 'express';
 import WebSocket from 'ws';
 import fs from 'fs';
 
+import anylogger from 'anylogger';
+
 // We need to CommonJS require morgan or else it warns, until:
 // https://github.com/expressjs/morgan/issues/190
 // is fixed.
 const morgan = require('morgan');
+
+const log = anylogger('web');
 
 const points = new Map();
 const broadcasts = new Map();
@@ -29,7 +33,7 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     const obj = { ...body, requestContext: { origin, url, date: Date.now() } };
     return rawInboundCommand(obj).catch(err => {
       const idpfx = id ? `${id} ` : '';
-      console.error(
+      log.error(
         `${idpfx}inbound error:`,
         err,
         'from',
@@ -42,9 +46,13 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   const app = express();
   // HTTP logging.
   app.use(
-    morgan(
-      `HTTP: :method :url :status :res[content-length] - :response-time ms`,
-    ),
+    morgan(`:method :url :status :res[content-length] - :response-time ms`, {
+      stream: {
+        write(msg) {
+          log.info(msg.trimRight());
+        },
+      },
+    }),
   );
   app.use(express.json()); // parse application/json
   const server = http.createServer(app);
@@ -53,7 +61,7 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   const dapphtmldir = path.join(basedir, 'dapp-html');
   try {
     fs.statSync(dapphtmldir);
-    console.log(`Serving Dapp files from ${dapphtmldir}`);
+    log(`Serving Dapp files from ${dapphtmldir}`);
     app.use(express.static(dapphtmldir));
   } catch (e) {
     // Do nothing.
@@ -61,7 +69,7 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
 
   // serve the static HTML for the UI
   const htmldir = path.join(basedir, 'html');
-  console.log(`Serving static files from ${htmldir}`);
+  log(`Serving static files from ${htmldir}`);
   app.use(express.static(htmldir));
 
   const validateOrigin = req => {
@@ -69,7 +77,7 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     const id = `${req.socket.remoteAddress}:${req.socket.remotePort}:`;
 
     if (!origin) {
-      console.log(id, `Missing origin header`);
+      log.error(id, `Missing origin header`);
       return false;
     }
     const url = new URL(origin);
@@ -82,12 +90,12 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     }
 
     if (!isLocalhost(url.hostname)) {
-      console.log(id, `Invalid origin host ${origin} is not localhost`);
+      log.error(id, `Invalid origin host ${origin} is not localhost`);
       return false;
     }
 
     if (!['http:', 'https:'].includes(url.protocol)) {
-      console.log(id, `Invalid origin protocol ${origin}`, url.protocol);
+      log.error(id, `Invalid origin protocol ${origin}`, url.protocol);
       return false;
     }
     return true;
@@ -129,9 +137,7 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     });
   });
 
-  server.listen(port, host, () =>
-    console.log('Listening on', `${host}:${port}`),
-  );
+  server.listen(port, host, () => log.info('Listening on', `${host}:${port}`));
 
   let lastConnectionID = 0;
 
@@ -140,22 +146,19 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     const connectionID = lastConnectionID;
     const id = `${req.socket.remoteAddress}:${req.socket.remotePort}[${connectionID}]:`;
 
-    console.log(id, `new ws connection ${req.url}`);
+    log.info(id, `new WebSocket connection ${req.url}`);
 
     ws.on('error', err => {
-      console.log(id, 'client error', err);
+      log.error(id, 'client error', err);
     });
 
     ws.on('close', (_code, _reason) => {
-      console.log(id, 'client closed');
+      log.info(id, 'client closed');
       broadcasts.delete(ws);
       if (req.url === '/captp') {
-        inboundCommand(
-          { type: 'CTP_CLOSE', connectionID },
-          req,
-          id,
-        ).catch(_ => {});
-        points.delete(connectionID);
+        inboundCommand({ type: 'CTP_CLOSE', connectionID }, req, id)
+          .catch(_ => {})
+          .finally(() => points.delete(connectionID));
       }
     });
 
@@ -201,7 +204,7 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       if (c) {
         send(c, JSON.stringify(rest));
       } else {
-        console.log(`[${connectionID}]: connection not found`);
+        log.error(`[${connectionID}]: connection not found`);
       }
     } else {
       // Broadcast message.

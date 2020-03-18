@@ -37,6 +37,7 @@
     "@agoric/weak-store": "^0.0.1",
     "@agoric/zoe": "^0.2.1",
     "@iarna/toml": "^2.2.3",
+    "anylogger": "^0.21.0",
     "bindings": "^1.2.1",
     "chalk": "^2.4.2",
     "deterministic-json": "^1.0.5",

@@ -2,6 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
 
+import anylogger from 'anylogger';
+
+const log = anylogger('ag-solo:init');
+
 export default function initBasedir(
   basedir,
   webport,
@@ -14,7 +18,7 @@ export default function initBasedir(
     fs.mkdirSync(basedir);
   } catch (e) {
     if (!fs.existsSync(path.join(basedir, 'ag-cosmos-helper-address'))) {
-      console.log(
+      log.error(
         `unable to create basedir ${basedir}, it must not already exist`,
       );
       throw e;
@@ -119,7 +123,7 @@ export default function initBasedir(
           stdio: ['pipe', 'ignore', 'ignore'],
         },
       );
-      console.log('key generated, now extracting address');
+      log('key generated, now extracting address');
       const kout = execFileSync(
         'ag-cosmos-helper',
         [
@@ -149,6 +153,6 @@ export default function initBasedir(
     path.join(basedir, 'solo-README.md'),
   );
 
-  console.log(`ag-solo initialized in ${basedir}`);
-  console.log(`HTTP/WebSocket will listen on ${webhost}:${webport}`);
+  log(`ag-solo initialized in ${basedir}`);
+  log(`HTTP/WebSocket will listen on ${webhost}:${webport}`);
 }
