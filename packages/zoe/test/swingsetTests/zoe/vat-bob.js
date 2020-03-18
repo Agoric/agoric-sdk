@@ -53,16 +53,14 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
       const bobPayments = { Contribution2: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      // 2. Bob makes an offer
+      const { payout: payoutP, offerResult: outcome } = await E(zoe).redeem(
         exclInvite,
         bobOfferRules,
         bobPayments,
       );
 
-      // 2. Bob makes an offer
-      const outcome = await E(seat).makeOffer();
-
-      log(outcome);
+      log(await outcome);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.Contribution1;
@@ -127,15 +125,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const bobPayments = { StrikePrice: simoleanPayment };
 
       // Bob escrows
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, offerResult: bobOutcome } = await E(zoe).redeem(
         exclInvite,
         bobIntendedOfferRules,
         bobPayments,
       );
 
-      const bobOutcome = await E(seat).makeOffer();
-
-      log(bobOutcome);
+      log(await bobOutcome);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.UnderlyingAsset;
@@ -208,14 +204,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const bobSwapPayments = harden({ Asset: exclInvite });
 
       // Bob escrows his option in the swap
-      const { seat: bobSwapSeat, payout: payoutP } = await E(zoe).redeem(
-        bobSwapInvite,
-        bobOfferRulesSwap,
-        bobSwapPayments,
-      );
-
       // Bob makes an offer to the swap with his "higher order"
-      const daveSwapInviteP = E(bobSwapSeat).makeOffer();
+      const { payout: payoutP, offerResult: daveSwapInviteP } = await E(
+        zoe,
+      ).redeem(bobSwapInvite, bobOfferRulesSwap, bobSwapPayments);
+
       log('swap invite made');
       await E(daveP).doSwapForOption(daveSwapInviteP, optionAmounts);
 
@@ -260,13 +253,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const offerPayments = { Bid: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, offerResult } = await E(zoe).redeem(
         exclInvite,
         offerRules,
         offerPayments,
       );
-
-      const offerResult = await E(seat).makeOffer();
 
       log(await offerResult);
 
@@ -317,15 +308,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const offerPayments = { Price: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, offerResult } = await E(zoe).redeem(
         exclInvite,
         offerRules,
         offerPayments,
       );
 
-      const offerResult = await E(seat).makeOffer();
-
-      log(offerResult);
+      log(await offerResult);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.Asset;
@@ -367,15 +356,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const offerPayments = { Price: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, offerResult } = await E(zoe).redeem(
         exclInvite,
         bobBuyOrderOfferRules,
         offerPayments,
       );
 
-      const offerResult = await E(seat).makeOffer();
-
-      log(offerResult);
+      log(await offerResult);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.Asset;
@@ -417,15 +404,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       }
       const simoleanPayment2 = await E(simoleanPurseP).withdraw(simoleans(s));
       const offerPayments = { Price: simoleanPayment2 };
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, offerResult } = await E(zoe).redeem(
         invite,
         bobBuyOrderOfferRules,
         offerPayments,
       );
 
-      const offerResult = await E(seat).makeOffer();
-
-      log(offerResult);
+      log(await offerResult);
 
       payoutP.then(async bobResult => {
         E(moolaPurseP).deposit(await bobResult.Asset);
