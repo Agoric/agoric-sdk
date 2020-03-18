@@ -294,30 +294,25 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
       want: { ContributionB: simoleans(7) },
     });
 
-    const { seat: aliceSeat1, payout: payoutP1 } = await zoe.redeem(
+    const { payout: payoutP1 } = await zoe.redeem(
       aliceInvite1,
       aliceOfferRules,
       harden({ ContributionA: aliceMoolaPayments[0] }),
     );
 
     // 3: Alice escrows with zoe
-    const { seat: aliceSeat2, payout: payoutP2 } = await zoe.redeem(
+    const { payout: payoutP2 } = await zoe.redeem(
       aliceInvite2,
       aliceOfferRules,
       harden({ ContributionA: aliceMoolaPayments[1] }),
     );
 
     // 4: Alice escrows with zoe
-    const { seat: aliceSeat3, payout: payoutP3 } = await zoe.redeem(
+    const { payout: payoutP3 } = await zoe.redeem(
       aliceInvite3,
       aliceOfferRules,
       harden({ ContributionA: aliceMoolaPayments[2] }),
     );
-
-    // 5: Alice makes an offer
-    aliceSeat1.makeOffer();
-    aliceSeat2.makeOffer();
-    aliceSeat3.makeOffer();
 
     const payout1 = await payoutP1;
     const payout2 = await payoutP2;
