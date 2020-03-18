@@ -39,6 +39,12 @@ function makeSwingStore(dirPath, forceReset = false) {
     }
   }
 
+  function diskUsage() {
+    const dataFilePath = `${dirPath}/data.mdb`;
+    const stat = fs.statSync(dataFilePath);
+    return stat.size;
+  }
+
   /**
    * Obtain the value stored for a given key.
    *
@@ -180,7 +186,7 @@ function makeSwingStore(dirPath, forceReset = false) {
     lmdbEnv = null;
   }
 
-  return { storage, commit, close };
+  return { storage, commit, close, diskUsage };
 }
 
 /**
