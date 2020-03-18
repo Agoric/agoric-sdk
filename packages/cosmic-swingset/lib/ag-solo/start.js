@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import temp from 'temp';
 import { promisify } from 'util';
-import readlines from 'n-readlines';
 // import { createHash } from 'crypto';
 
 // import connect from 'lotion-connect';
@@ -24,10 +23,10 @@ import {
 
 import { deliver, addDeliveryTarget } from './outbound';
 import { makeHTTPListener } from './web';
+import { makeWithQueue } from './queue';
 
 import { connectToChain } from './chain-cosmos-sdk';
 import { connectToFakeChain } from './fake-chain';
-import bundle from './bundle';
 
 // import { makeChainFollower } from './follower';
 // import { makeDeliverator } from './deliver-with-ag-cosmos-helper';
@@ -123,7 +122,11 @@ async function buildSwingset(
     }
   }
 
-  async function deliverInboundToMbx(sender, messages, ack) {
+  const withInputQueue = makeWithQueue();
+
+  // Use the input queue to make sure it doesn't overlap with
+  // other inbound messages.
+  const deliverInboundToMbx = withInputQueue(async (sender, messages, ack) => {
     if (!(messages instanceof Array)) {
       throw new Error(`inbound given non-Array: ${messages}`);
     }
@@ -131,34 +134,49 @@ async function buildSwingset(
     if (mb.deliverInbound(sender, messages, ack, true)) {
       await processKernel();
     }
-  }
+  });
 
-  async function deliverInboundCommand(obj) {
+  // Use the input queue to make sure it doesn't overlap with
+  // other inbound messages.
+  const deliverInboundCommand = withInputQueue(async obj => {
     // this promise could take an arbitrarily long time to resolve, so don't
     // wait on it
     const p = cm.inboundCommand(obj);
-    // TODO: synchronize this somehow, make sure it doesn't overlap with the
-    // processKernel() call in deliverInbound()
-    await processKernel();
-    return p;
-  }
 
-  const intervalMillis = 1200;
-  // TODO(hibbert) protect against kernel turns that take too long
-  // drop calls to moveTimeForward if it's fallen behind, to make sure we don't
-  // have two copies of controller.run() executing at the same time.
-  function moveTimeForward() {
+    // Register a handler in this turn so that we don't get complaints about
+    // asynchronously-handled callbacks.
+    p.catch(_ => {});
+
+    // The turn passes...
+    await processKernel();
+
+    // Rethrow any inboundCommand rejection in the new turn so that our
+    // caller must handle it (or be an unhandledRejection).
+    return p.catch(e => {
+      throw e;
+    });
+  });
+
+  let intervalMillis;
+
+  // Use the input queue to make sure it doesn't overlap with
+  // other inbound messages.
+  const moveTimeForward = withInputQueue(async () => {
     const now = Math.floor(Date.now() / intervalMillis);
-    if (timer.poll(now)) {
-      const p = processKernel();
-      p.then(
-        _ => console.log(`timer-provoked kernel crank complete ${now}`),
-        err =>
-          console.log(`timer-provoked kernel crank failed at ${now}:`, err),
-      );
+    try {
+      if (timer.poll(now)) {
+        await processKernel();
+        console.log(`timer-provoked kernel crank complete ${now}`);
+      }
+    } catch (err) {
+      console.log(`timer-provoked kernel crank failed at ${now}:`, err);
+    } finally {
+      // We only rearm the timeout if moveTimeForward has completed, to
+      // make sure we don't have two copies of controller.run() executing
+      // at the same time.
+      setTimeout(moveTimeForward, intervalMillis);
     }
-  }
-  setInterval(moveTimeForward, intervalMillis);
+  });
 
   // now let the bootstrap functions run
   await processKernel();
@@ -167,6 +185,10 @@ async function buildSwingset(
     deliverInboundToMbx,
     deliverInboundCommand,
     deliverOutbound,
+    startTimer: interval => {
+      intervalMillis = interval;
+      setTimeout(moveTimeForward, intervalMillis);
+    },
   };
 }
 
@@ -199,7 +221,12 @@ export default async function start(basedir, withSES, argv) {
     broadcast,
   );
 
-  const { deliverInboundToMbx, deliverInboundCommand, deliverOutbound } = d;
+  const {
+    deliverInboundToMbx,
+    deliverInboundCommand,
+    deliverOutbound,
+    startTimer,
+  } = d;
 
   await Promise.all(
     connections.map(async c => {
@@ -252,23 +279,10 @@ export default async function start(basedir, withSES, argv) {
     }),
   );
 
+  // Start timer here!
+  startTimer(1200);
+
   console.log(`swingset running`);
   swingSetRunning = true;
   deliverOutbound();
-
-  // Install the bundles as specified.
-  const initDir = path.join(basedir, 'init-bundles');
-  let list = [];
-  try {
-    list = await fs.promises.readdir(initDir);
-  } catch (e) {}
-  for (const initName of list.sort()) {
-    console.log('loading init bundle', initName);
-    const initFile = path.join(initDir, initName);
-    if (
-      await bundle(() => '.', ['--evaluate', '--once', '--input', initFile])
-    ) {
-      return 0;
-    }
-  }
 }

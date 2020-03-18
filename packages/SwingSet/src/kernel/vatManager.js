@@ -287,7 +287,11 @@ export default function makeVatManager(
     return process(
       () => dispatch[dispatchOp](...dispatchArgs),
       () => transcriptFinishDispatch(),
-      err => console.log(`doProcess: ${errmsg}:`, err),
+      err => {
+        if (errmsg !== null) {
+          console.log(`doProcess: ${errmsg}:`, err);
+        }
+      },
     );
   }
 
@@ -382,13 +386,12 @@ export default function makeVatManager(
         throw replayAbandonShip;
       }
       playbackSyscalls = Array.from(t.syscalls);
+      // We really don't care about "failed replays" because they're just
+      // exceptions that have been raised in a normal event.
+      //
+      // If we really fail, replayAbandonShip is set.
       // eslint-disable-next-line no-await-in-loop
-      await doProcess(
-        t.d,
-        `Replay failed: [${t.d[0]}, ${t.d[1]}, ${t.d[2]}, ${JSON.stringify(
-          t.d[3],
-        )}]`,
-      );
+      await doProcess(t.d, null);
     }
 
     if (replayAbandonShip) {
