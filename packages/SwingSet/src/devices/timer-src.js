@@ -193,10 +193,7 @@ export default function setup(syscall, state, helpers, endowments) {
     // The latest time poll() was called. This might be a block height or it
     // might be a time from Date.now(). The current time is not reflected back
     // to the user.
-    //
-    // Note that during a replay, we may be replaying an older time,
-    // so we always need to start at 0.
-    let lastPolled = 0;
+    let lastPolled = restart ? restart.lastPolled : 0;
     let nextRepeater = restart ? restart.nextRepeater : 0;
 
     function getLastPolled() {

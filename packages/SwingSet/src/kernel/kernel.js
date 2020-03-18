@@ -364,16 +364,26 @@ export default function buildKernel(kernelEndowments) {
     }
   }
 
+  let processQueueRunning;
   async function processQueueMessage(message) {
     kdebug(`processQ ${JSON.stringify(message)}`);
-    if (message.type === 'send') {
-      await deliverToTarget(message.target, message.msg);
-    } else if (message.type === 'notify') {
-      await processNotify(message);
-    } else {
-      throw Error(`unable to process message.type ${message.type}`);
+    if (processQueueRunning) {
+      console.log(`We're currently already running at`, processQueueRunning);
+      throw Error(`Kernel reentrancy is forbidden`);
     }
-    commitCrank();
+    try {
+      processQueueRunning = Error('here');
+      if (message.type === 'send') {
+        await deliverToTarget(message.target, message.msg);
+      } else if (message.type === 'notify') {
+        await processNotify(message);
+      } else {
+        throw Error(`unable to process message.type ${message.type}`);
+      }
+      commitCrank();
+    } finally {
+      processQueueRunning = undefined;
+    }
   }
 
   function validateVatSetupFn(setup) {

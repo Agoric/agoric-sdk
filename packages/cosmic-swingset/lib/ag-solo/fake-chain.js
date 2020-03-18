@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import stringify from '@agoric/swingset-vat/src/kernel/json-stable-stringify';
 import { launch } from '../launch-chain';
+import makeBlockManager from '../block-manager';
 
 const PRETEND_BLOCK_DELAY = 5;
 
@@ -36,12 +37,18 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
   const argv = [`--role=${role}`, bootAddress];
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
   const s = await launch(stateDBdir, mailboxStorage, vatsdir, argv);
-  const { deliverInbound, beginBlock, saveChainState, saveOutsideState } = s;
 
-  let pretendLast = Date.now();
-  let blockHeight = 0;
+  const blockManager = makeBlockManager(s);
+  const { savedHeight, savedActions } = s;
+
+  let blockHeight = savedHeight;
+  let blockTime =
+    savedActions.length > 0
+      ? savedActions[0].blockTime
+      : Math.floor(Date.now() / 1000);
   let intoChain = [];
   let thisBlock = [];
+
   async function simulateBlock() {
     const actualStart = Date.now();
     // Gather up the new messages into the latest block.
@@ -49,20 +56,28 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
     intoChain = [];
 
     try {
-      const commitStamp = pretendLast + PRETEND_BLOCK_DELAY * 1000;
-      const blockTime = Math.floor(commitStamp / 1000);
-      await beginBlock(blockHeight, blockTime);
+      blockTime += PRETEND_BLOCK_DELAY;
+      blockHeight += 1;
+
+      await blockManager({ type: 'BEGIN_BLOCK', blockHeight, blockTime });
       for (let i = 0; i < thisBlock.length; i += 1) {
         const [newMessages, acknum] = thisBlock[i];
-        await deliverInbound(bootAddress, newMessages, acknum);
+        await blockManager({
+          type: 'DELIVER_INBOUND',
+          peer: bootAddress,
+          messages: newMessages,
+          ack: acknum,
+          blockHeight,
+          blockTime,
+        });
       }
+      await blockManager({ type: 'END_BLOCK', blockHeight, blockTime });
 
       // Done processing, "commit the block".
-      saveChainState();
-      saveOutsideState();
+      await blockManager({ type: 'COMMIT_BLOCK', blockHeight, blockTime });
       await writeMap(mailboxFile, mailboxStorage);
       thisBlock = [];
-      pretendLast = commitStamp + Date.now() - actualStart;
+      blockTime = blockTime + Date.now() - actualStart;
       blockHeight += 1;
     } catch (e) {
       console.log(`error fake processing`, e);

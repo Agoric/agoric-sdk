@@ -23,6 +23,7 @@ import {
 
 import { deliver, addDeliveryTarget } from './outbound';
 import { makeHTTPListener } from './web';
+import { makeWithQueue } from './queue';
 
 import { connectToChain } from './chain-cosmos-sdk';
 import { connectToFakeChain } from './fake-chain';
@@ -121,44 +122,23 @@ async function buildSwingset(
     }
   }
 
-  // Return a function that can wrap an async or sync thunk, but
-  // ensures only one of them (in order) is running at a time.
-  const makeWithCriticalSection = () => {
-    let runQueueP = Promise.resolve();
-    return function withCriticalSection(inner) {
-      return function wrappedCall(...args) {
-        // Curry the arguments into the inner function, and
-        // resolve/reject with whatever the inner function does.
-        const thunk = _ => inner(...args);
+  const withInputQueue = makeWithQueue();
 
-        // Atomically replace the runQueue by appending us to it.
-        runQueueP = runQueueP.then(thunk, thunk);
-
-        // Return the promisified version of the thunk.
-        return runQueueP;
-      };
-    };
-  };
-
-  const withInboundCriticalSection = makeWithCriticalSection();
-
-  // Use the critical section to make sure it doesn't overlap with
+  // Use the input queue to make sure it doesn't overlap with
   // other inbound messages.
-  const deliverInboundToMbx = withInboundCriticalSection(
-    async (sender, messages, ack) => {
-      if (!(messages instanceof Array)) {
-        throw new Error(`inbound given non-Array: ${messages}`);
-      }
-      // console.log(`deliverInboundToMbx`, messages, ack);
-      if (mb.deliverInbound(sender, messages, ack, true)) {
-        await processKernel();
-      }
-    },
-  );
+  const deliverInboundToMbx = withInputQueue(async (sender, messages, ack) => {
+    if (!(messages instanceof Array)) {
+      throw new Error(`inbound given non-Array: ${messages}`);
+    }
+    // console.log(`deliverInboundToMbx`, messages, ack);
+    if (mb.deliverInbound(sender, messages, ack, true)) {
+      await processKernel();
+    }
+  });
 
-  // Use the critical section to make sure it doesn't overlap with
+  // Use the input queue to make sure it doesn't overlap with
   // other inbound messages.
-  const deliverInboundCommand = withInboundCriticalSection(async obj => {
+  const deliverInboundCommand = withInputQueue(async obj => {
     // this promise could take an arbitrarily long time to resolve, so don't
     // wait on it
     const p = cm.inboundCommand(obj);
@@ -177,11 +157,11 @@ async function buildSwingset(
     });
   });
 
-  const intervalMillis = 1200;
+  let intervalMillis;
 
-  // Use the critical section to make sure it doesn't overlap with
+  // Use the input queue to make sure it doesn't overlap with
   // other inbound messages.
-  const moveTimeForward = withInboundCriticalSection(async () => {
+  const moveTimeForward = withInputQueue(async () => {
     const now = Math.floor(Date.now() / intervalMillis);
     try {
       if (timer.poll(now)) {
@@ -201,12 +181,14 @@ async function buildSwingset(
   // now let the bootstrap functions run
   await processKernel();
 
-  setTimeout(moveTimeForward, intervalMillis);
-
   return {
     deliverInboundToMbx,
     deliverInboundCommand,
     deliverOutbound,
+    startTimer: interval => {
+      intervalMillis = interval;
+      setTimeout(moveTimeForward, intervalMillis);
+    },
   };
 }
 
@@ -239,7 +221,12 @@ export default async function start(basedir, withSES, argv) {
     broadcast,
   );
 
-  const { deliverInboundToMbx, deliverInboundCommand, deliverOutbound } = d;
+  const {
+    deliverInboundToMbx,
+    deliverInboundCommand,
+    deliverOutbound,
+    startTimer,
+  } = d;
 
   await Promise.all(
     connections.map(async c => {
@@ -291,6 +278,9 @@ export default async function start(basedir, withSES, argv) {
       }
     }),
   );
+
+  // Start timer here!
+  startTimer(1200);
 
   console.log(`swingset running`);
   swingSetRunning = true;
