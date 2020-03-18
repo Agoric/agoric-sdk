@@ -189,15 +189,14 @@ test('zoe with automaticRefund', async t => {
 
     // Bob also gets two things back: a seat and a
     // payout
-    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+    const { payout: bobPayoutP, offerResult: bobOutcome } = await zoe.redeem(
       exclusBobInvite,
       bobOfferRules,
       bobPayments,
     );
-    const bobOutcome = bobSeat.makeOffer();
 
     t.equals(await aliceOutcome, 'The offer was accepted');
-    t.equals(bobOutcome, 'The offer was accepted');
+    t.equals(await bobOutcome, 'The offer was accepted');
 
     // These promise resolve when the offer completes, but it may
     // still take longer for a remote issuer to actually make the
@@ -374,13 +373,13 @@ test('zoe - alice cancels after completion', async t => {
     });
     const alicePayments = { ContributionA: aliceMoolaPayment };
 
-    const { seat, cancelObj, payout: payoutP } = await zoe.redeem(
+    const { cancelObj, payout: payoutP, offerResult } = await zoe.redeem(
       invite,
       aliceOfferRules,
       alicePayments,
     );
 
-    await seat.makeOffer();
+    await offerResult;
 
     t.throws(() => cancelObj.cancel(), /Error: offer has already completed/);
 
