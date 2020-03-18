@@ -57,7 +57,7 @@ test('zoe - atomicSwap', async t => {
     // on how to use it and Bob decides he wants to be the
     // counter-party.
 
-    const bobExclusiveInvite = await inviteIssuer.claim(bobInviteP);
+    const bobExclusiveInvite = await inviteIssuer.claim(await bobInviteP);
     const bobInviteExtent = inviteIssuer.getAmountOf(bobExclusiveInvite)
       .extent[0];
 
@@ -86,7 +86,7 @@ test('zoe - atomicSwap', async t => {
     } = await zoe.redeem(bobExclusiveInvite, bobOfferRules, bobPayments);
 
     t.equals(
-      bobOfferResult,
+      await bobOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
     const bobPayout = await bobPayoutP;

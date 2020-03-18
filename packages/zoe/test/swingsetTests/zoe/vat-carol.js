@@ -48,7 +48,7 @@ const build = async (E, log, zoe, issuers, payments, installations) => {
         offerPayments,
       );
 
-      log(offerResult);
+      log(await offerResult);
 
       const carolResult = await payoutP;
       const moolaPayout = await carolResult.Asset;

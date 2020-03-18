@@ -69,7 +69,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const [bobInvite, carolInvite, daveInvite] = await publicAPI.makeInvites(3);
 
     t.equals(
-      aliceOfferResult,
+      await aliceOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
       'aliceOfferResult',
     );

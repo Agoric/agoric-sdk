@@ -66,7 +66,7 @@ test('zoe - coveredCall', async t => {
     // already escrowed.
 
     const inviteIssuer = zoe.getInviteIssuer();
-    const bobExclOption = await inviteIssuer.claim(option);
+    const bobExclOption = await inviteIssuer.claim(await option);
     const optionExtent = inviteIssuer.getAmountOf(bobExclOption).extent[0];
     const { installationHandle } = zoe.getInstance(optionExtent.instanceHandle);
     t.equal(installationHandle, coveredCallInstallationHandle);
@@ -93,7 +93,7 @@ test('zoe - coveredCall', async t => {
     );
 
     t.equals(
-      bobOutcome,
+      await bobOutcome,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
@@ -194,7 +194,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     // already escrowed.
 
     const inviteIssuer = zoe.getInviteIssuer();
-    const bobExclOption = await inviteIssuer.claim(option);
+    const bobExclOption = await inviteIssuer.claim(await option);
     const optionExtent = inviteIssuer.getAmountOf(bobExclOption).extent[0];
     const { installationHandle } = zoe.getInstance(optionExtent.instanceHandle);
     t.equal(installationHandle, coveredCallInstallationHandle);

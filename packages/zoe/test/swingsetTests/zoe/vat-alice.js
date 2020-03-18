@@ -34,7 +34,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       offerRules,
       offerPayments,
     );
-    log(outcome);
+    log(await outcome);
 
     const bobInvite = E(publicAPI).makeInvite();
     await E(bobP).doAutomaticRefund(bobInvite);
@@ -71,7 +71,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       offerPayments,
     );
 
-    await E(bobP).doCoveredCall(option);
+    await E(bobP).doCoveredCall(await option);
     const payout = await payoutP;
     const moolaPayout = await payout.UnderlyingAsset;
     const simoleanPayout = await payout.StrikePrice;
@@ -110,7 +110,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     );
 
     log('call option made');
-    await E(bobP).doSwapForOption(option, daveP);
+    await E(bobP).doSwapForOption(await option, daveP);
     const payout = await payoutP;
     const moolaPayout = await payout.UnderlyingAsset;
     const simoleanPayout = await payout.StrikePrice;
@@ -152,7 +152,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       3,
     );
 
-    log(offerResult);
+    log(await offerResult);
 
     const bobDoneP = E(bobP).doPublicAuction(bobInvite);
     const carolDoneP = E(carolP).doPublicAuction(carolInvite);
@@ -187,7 +187,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       offerPayments,
     );
 
-    E(bobP).doAtomicSwap(bobInviteP);
+    E(bobP).doAtomicSwap(await bobInviteP);
 
     const payout = await payoutP;
     const moolaPayout = await payout.Asset;
@@ -221,7 +221,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       offerPayments,
     );
 
-    log(offerResult);
+    log(await offerResult);
 
     const { invite: bobInviteP } = await E(publicAPI).makeInvite();
     await E(bobP).doSimpleExchange(bobInviteP);
@@ -298,7 +298,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       offerPayments,
     );
 
-    log(offerResult);
+    log(await offerResult);
 
     const { invite: bobInvite1P } = await E(publicAPI).makeInvite();
     await E(bobP).doSimpleExchangeUpdates(bobInvite1P, 3, 7);

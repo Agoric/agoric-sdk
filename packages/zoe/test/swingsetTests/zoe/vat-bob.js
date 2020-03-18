@@ -268,7 +268,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
       const offerResult = await E(seat).makeOffer();
 
-      log(offerResult);
+      log(await offerResult);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.Asset;

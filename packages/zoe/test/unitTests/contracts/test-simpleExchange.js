@@ -104,7 +104,7 @@ test('simpleExchange with valid offers', async t => {
       'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
     t.equals(
-      aliceOfferResult,
+      await aliceOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
     const bobPayout = await bobPayoutP;

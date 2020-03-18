@@ -56,7 +56,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         offerPayments,
       );
 
-      log(offerResult);
+      log(await offerResult);
 
       const daveResult = await payoutP;
       const moolaPayout = await daveResult.Asset;
@@ -130,7 +130,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         zoe,
       ).redeem(exclInvite, daveSwapOfferRules, daveSwapPayments);
 
-      log(daveSwapOutcome);
+      log(await daveSwapOutcome);
 
       const daveSwapPayout = await daveSwapPayoutP;
       const daveOption = await daveSwapPayout.Asset;
@@ -153,7 +153,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         daveCoveredCallPayments,
       );
 
-      log(daveCoveredCallOutcome);
+      log(await daveCoveredCallOutcome);
 
       const daveCoveredCallResult = await daveCoveredCallPayoutP;
       const moolaPayout = await daveCoveredCallResult.UnderlyingAsset;
