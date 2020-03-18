@@ -55,7 +55,7 @@ test('workflow', async t => {
         startP.cp.stdout.on('data', chunk => {
           // console.log('stdout:', chunk.toString());
           stdoutStr += chunk.toString();
-          if (stdoutStr.match(/^swingset running$/m)) {
+          if (stdoutStr.match(/(^|:\s+)swingset running$/m)) {
             successfulStart = true;
             startP.cp.kill('SIGINT');
           }
