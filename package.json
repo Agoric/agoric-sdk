@@ -13,6 +13,7 @@
     "packages/weak-store",
     "packages/acorn-eventual-send",
     "packages/bundle-source",
+    "packages/import-bundle",
     "packages/eventual-send",
     "packages/make-promise",
     "packages/transform-eventual-send",
