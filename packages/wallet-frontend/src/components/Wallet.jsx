@@ -19,6 +19,9 @@ const useStyles = makeStyles(theme => ({
   },
   title: {
     padding: theme.spacing(0, 0, 4),
+    [theme.breakpoints.down('xs')]: {
+      display: 'none',      
+    },
   },
   aside: {
     borderRightColor: theme.palette.divider,
@@ -38,14 +41,14 @@ export default function Wallet() {
         align="center"
         className={classes.title}
       >
-        Wallet
+        Agoric Simple Wallet
       </Typography>
 
       <Grid container spacing={2}>
-        <Grid item xs={4} className={classes.aside}>
+        <Grid item xs={12} md={4} className={classes.aside}>
           <Purses />
         </Grid>
-        <Grid item xs={8}>
+        <Grid item xs={12} md={8}>
           <Inbox />
         </Grid>
       </Grid>

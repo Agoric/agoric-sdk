@@ -51,13 +51,13 @@ function build(E, D, _log) {
       case 'walletDeclineOffer': {
         return {
           type: 'walletOfferDeclined',
-          data: wallet.declineOffer(data),
+          data: await wallet.declineOffer(data),
         };
       }
       case 'walletCancelOffer': {
         return {
           type: 'walletOfferCancelled',
-          data: wallet.cancelOffer(data),
+          data: await wallet.cancelOffer(data),
         };
       }
       case 'walletAcceptOffer': {

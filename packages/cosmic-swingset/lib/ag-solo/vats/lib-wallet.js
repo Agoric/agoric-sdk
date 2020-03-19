@@ -32,7 +32,7 @@ export async function makeWallet(
 
   // Compiled offerDescs (all ready to execute).
   const idToCompiledOfferDescP = new Map();
-  const idToCancelObj = new Map();
+  const idToCancel = new Map();
 
   // Client-side representation of the purses inbox;
   const pursesState = new Map();
@@ -227,7 +227,6 @@ export async function makeWallet(
       id,
       requestContext,
       status: undefined,
-      wait: undefined,
     };
     idToOfferDesc.set(id, offerDesc);
     updateInboxState(id, offerDesc);
@@ -246,32 +245,44 @@ export async function makeWallet(
     const declinedOfferDesc = {
       ...offerDesc,
       status: 'decline',
-      wait: undefined,
     };
     idToOfferDesc.set(id, declinedOfferDesc);
     updateInboxState(id, declinedOfferDesc);
   }
 
   async function cancelOffer(id) {
-    const cancelObj = idToCancelObj.get(id);
-    if (cancelObj) {
-      await E(cancelObj).cancel();
+    const cancel = idToCancel.get(id);
+    if (!cancel) {
+      return false;
     }
+
+    cancel()
+      .then(_ => {
+        const offerDesc = idToOfferDesc.get(id);
+        const cancelledOfferDesc = {
+          ...offerDesc,
+          status: 'cancel',
+        };
+        idToOfferDesc.set(id, cancelledOfferDesc);
+        updateInboxState(id, cancelledOfferDesc);
+      })
+      .catch(e => console.error(`Cannot cancel offer ${id}:`, e));
+
+    return true;
   }
 
   async function acceptOffer(id) {
     let ret = {};
-    let alreadyAccepted = false;
+    let alreadyResolved = false;
     const offerDesc = idToOfferDesc.get(id);
     const rejected = e => {
-      if (alreadyAccepted) {
+      if (alreadyResolved) {
         return;
       }
       const rejectOfferDesc = {
         ...offerDesc,
         status: 'rejected',
         error: `${e}`,
-        wait: undefined,
       };
       idToOfferDesc.set(id, rejectOfferDesc);
       updateInboxState(id, rejectOfferDesc);
@@ -280,13 +291,10 @@ export async function makeWallet(
     try {
       const pendingOfferDesc = {
         ...offerDesc,
-        status: 'accept',
-        // wait is used for the wallet to display an estimate of how long the
-        // offer will take to be accepted.
-        // It is a value in milliseconds, or -1 for "unknown".
-        wait: -1,
+        status: 'pending',
       };
       idToOfferDesc.set(id, pendingOfferDesc);
+      updateInboxState(id, pendingOfferDesc);
       const compiledOfferDesc = await idToCompiledOfferDescP.get(id);
 
       const {
@@ -301,7 +309,10 @@ export async function makeWallet(
         inviteP,
       );
 
-      idToCancelObj.set(id, cancelObj);
+      idToCancel.set(id, () => {
+        alreadyResolved = true;
+        return E(cancelObj).cancel();
+      });
       ret = { seat, publicAPI };
 
       // =====================
@@ -320,10 +331,15 @@ export async function makeWallet(
       depositedP
         .then(_ => {
           // We got something back, so no longer pending or rejected.
-          alreadyAccepted = true;
-          const acceptOfferDesc = { ...pendingOfferDesc, wait: undefined };
-          idToOfferDesc.set(id, acceptOfferDesc);
-          updateInboxState(id, acceptOfferDesc);
+          if (!alreadyResolved) {
+            alreadyResolved = true;
+            const acceptOfferDesc = {
+              ...pendingOfferDesc,
+              status: 'accept',
+            };
+            idToOfferDesc.set(id, acceptOfferDesc);
+            updateInboxState(id, acceptOfferDesc);
+          }
           // Allow the offer to hook what the return value should be.
           return E(publicAPIHooks).deposited(publicAPI);
         })

@@ -24,14 +24,20 @@ export default ({
     offerRulesTemplate,
   } = offerDesc;
 
-  const roleIssuerNames = {};
   function createRoleOfferRulesAndPurses(tmpl) {
     const roleOfferRules = { exit: tmpl.exit };
     const rolePurses = {};
+    const roleIssuerNames = {};
 
-    const setPurseAmount = (roles, role, purse, extent = undefined) => {
+    const setPurseAmount = (
+      roles,
+      issuerNames,
+      role,
+      purse,
+      extent = undefined,
+    ) => {
       const issuer = purseToIssuer.get(purse);
-      roleIssuerNames[role] = issuerToIssuerNames.get(issuer);
+      issuerNames[role] = issuerToIssuerNames.get(issuer);
       const brand = issuerToBrand.get(issuer);
       const amountMath = brandToMath.get(brand);
       if (extent === undefined) {
@@ -47,6 +53,7 @@ export default ({
       }
       roleOfferRules[dir] = {};
       rolePurses[dir] = {};
+      roleIssuerNames[dir] = {};
       Object.entries(offerRulesTemplate[dir]).forEach(([role, amount]) => {
         assert(amount.pursePetname, `Role ${dir} ${role} has no pursePetname`);
         const purse = petnameToPurse.get(amount.pursePetname);
@@ -55,16 +62,24 @@ export default ({
           `Role ${dir} ${role} pursePetname ${amount.pursePetname} is not a purse`,
         );
         rolePurses[dir][role] = purse;
-        setPurseAmount(roleOfferRules[dir], role, purse, amount.extent);
+        setPurseAmount(
+          roleOfferRules[dir],
+          roleIssuerNames[dir],
+          role,
+          purse,
+          amount.extent,
+        );
       });
     }
 
-    return { roleOfferRules, rolePurses };
+    return { roleOfferRules, rolePurses, roleIssuerNames };
   }
 
-  const { roleOfferRules, rolePurses } = createRoleOfferRulesAndPurses(
-    offerRulesTemplate,
-  );
+  const {
+    roleOfferRules,
+    rolePurses,
+    roleIssuerNames,
+  } = createRoleOfferRulesAndPurses(offerRulesTemplate);
 
   // Enrich the offerRulesTemplate.
   const newOfferRulesTemplate = { ...offerRulesTemplate };
@@ -75,7 +90,7 @@ export default ({
 
     const newRules = {};
     Object.entries(offerRulesTemplate[dir] || {}).forEach(([role, amount]) => {
-      newRules[role] = { ...amount, ...roleIssuerNames[role] };
+      newRules[role] = { ...amount, ...roleIssuerNames[dir][role] };
     });
     newOfferRulesTemplate[dir] = newRules;
   }
