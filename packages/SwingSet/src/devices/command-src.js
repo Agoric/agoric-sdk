@@ -21,7 +21,7 @@ export default function setup(syscall, state, helpers, endowments) {
         const body = JSON.parse(`${bodyString}`);
         SO(inboundHandler).inbound(Nat(count), body);
       } catch (e) {
-        console.log(`error during inboundCallback: ${e}`);
+        console.error(`error during inboundCallback:`, e);
         throw new Error(`error during inboundCallback: ${e}`);
       }
     });
@@ -36,7 +36,7 @@ export default function setup(syscall, state, helpers, endowments) {
         try {
           deliverResponse(count, isReject, JSON.stringify(obj));
         } catch (e) {
-          console.log(`error during sendResponse: ${e}`);
+          console.error(`error during sendResponse:`, e);
         }
       },
 
@@ -44,7 +44,7 @@ export default function setup(syscall, state, helpers, endowments) {
         try {
           sendBroadcast(JSON.stringify(obj));
         } catch (e) {
-          console.log(`error during sendBroadcast: ${e}`);
+          console.error(`error during sendBroadcast:`, e);
         }
       },
     });

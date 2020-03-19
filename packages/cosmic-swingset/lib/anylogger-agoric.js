@@ -3,7 +3,7 @@ import anylogger from 'anylogger';
 // Turn on debugging output with DEBUG=agoric
 
 const debugging = process.env.DEBUG && process.env.DEBUG.includes('agoric');
-const defaultLevel = debugging ? anylogger.levels.debug : anylogger.levels.info;
+const defaultLevel = debugging ? anylogger.levels.debug : anylogger.levels.log;
 
 const oldExt = anylogger.ext;
 anylogger.ext = (l, o) => {

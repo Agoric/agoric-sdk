@@ -4,8 +4,9 @@ const path = require('path');
 const agcc = require('bindings')('agcosmosdaemon.node');
 const esmRequire = require('esm')(module);
 
-esmRequire('./agoric-anylogger');
+esmRequire('./anylogger-agoric');
 const anylogger = require('anylogger');
+
 const log = anylogger('ag-chain-cosmos');
 
 const main = esmRequire('./chain-main.js').default;

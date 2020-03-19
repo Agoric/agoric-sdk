@@ -18,7 +18,7 @@ export default function setup(syscall, state, helpers, endowments) {
         try {
           SO(inboundHandler).inbound(`${sender}`, `${message}`);
         } catch (e) {
-          console.log(`error during inboundCallback: ${e}`);
+          console.error(`error during inboundCallback:`, e);
         }
       };
       return harden({

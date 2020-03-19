@@ -53,6 +53,7 @@ async function buildSwingset(withSES, mailboxState, storage, vatsDir, argv) {
 
 export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
   const withSES = true;
+  log.info('Launching SwingSet kernel');
 
   log(`checking for saved mailbox state`, mailboxStorage.has('mailbox'));
   const mailboxState = mailboxStorage.has('mailbox')
