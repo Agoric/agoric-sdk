@@ -30,15 +30,16 @@ Command line:
   runner [FLAGS...] CMD [{BASEDIR|--} [ARGS...]]
 
 FLAGS may be:
-  --no-ses       - directs vats not to be run in SES.
   --init         - discard any existing saved state at startup.
-  --lmdb         - runs using LMDB as the data store
-  --filedb       - runs using the simple file-based data store (default)
+  --lmdb         - runs using LMDB as the data store (default)
+  --filedb       - runs using the simple file-based data store
   --memdb        - runs using the non-persistent in-memory data store
   --blockmode    - run in block mode (checkpoint every BLOCKSIZE blocks)
   --blocksize N  - set BLOCKSIZE to N (default 200)
   --logtimes     - log block execution time stats while running
   --logmem       - log memory usage stats after each block
+  --logdisk      - log disk space usage stats after each block
+  --logall       - log block times, memory use, and disk space
   --forcegc      - run garbage collector after each block
   --batchsize N  - set BATCHSIZE to N (default 200)
 
@@ -73,21 +74,18 @@ function fail(message, printUsage) {
 export async function main() {
   const argv = process.argv.splice(2);
 
-  let withSES = true;
   let forceReset = false;
-  let dbMode = '--filedb';
+  let dbMode = '--lmdb';
   let blockSize = 200;
   let batchSize = 200;
   let blockMode = false;
   let logTimes = false;
   let logMem = false;
+  let logDisk = false;
   let forceGC = false;
-  while (argv[0] && argv[0].startsWith('--')) {
+  while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
     switch (flag) {
-      case '--no-ses':
-        withSES = false;
-        break;
       case '--init':
         forceReset = true;
         break;
@@ -96,6 +94,14 @@ export async function main() {
         break;
       case '--logmem':
         logMem = true;
+        break;
+      case '--logdisk':
+        logDisk = true;
+        break;
+      case '--logall':
+        logTimes = true;
+        logMem = true;
+        logDisk = true;
         break;
       case '--forcegc':
         forceGC = true;
@@ -178,18 +184,21 @@ export async function main() {
 
   let blockNumber = 0;
   let statLogger = null;
-  if (logTimes || logMem) {
+  if (logTimes || logMem || logDisk) {
     let headers = ['block', 'steps'];
     if (logTimes) {
-      headers = headers.concat(['btime']);
+      headers.push('btime');
     }
     if (logMem) {
       headers = headers.concat(['rss', 'heapTotal', 'heapUsed', 'external']);
     }
+    if (logDisk) {
+      headers.push('disk');
+    }
     statLogger = makeStatLogger('runner', headers);
   }
 
-  const controller = await buildVatController(config, withSES, bootstrapArgv);
+  const controller = await buildVatController(config, true, bootstrapArgv);
   switch (command) {
     case 'run': {
       await commandRun(0, blockMode);
@@ -292,7 +301,7 @@ export async function main() {
       blockNumber += 1;
       let data = [blockNumber, actualSteps];
       if (logTimes) {
-        data = data.concat([blockEndTime - blockStartTime]);
+        data.push(blockEndTime - blockStartTime);
       }
       if (logMem) {
         const mem = process.memoryUsage();
@@ -302,6 +311,10 @@ export async function main() {
           mem.heapUsed,
           mem.external,
         ]);
+      }
+      if (logDisk) {
+        const diskUsage = dbMode === '--lmdb' ? store.diskUsage() : 0;
+        data.push(diskUsage);
       }
       statLogger.log(data);
     }

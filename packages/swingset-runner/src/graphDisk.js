@@ -7,9 +7,9 @@ export async function main() {
   await dataGraphApp(
     'block',
     'Block #',
-    'rss',
-    'Memory usage',
-    ['rss', 'heapTotal', 'heapUsed', 'external'],
+    'disk',
+    'Database size (bytes)',
+    ['disk'],
   );
 }
 
