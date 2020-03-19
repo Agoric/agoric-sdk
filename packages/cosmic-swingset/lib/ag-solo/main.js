@@ -70,6 +70,9 @@ start
     assert(basedir !== undefined, 'you must provide a BASEDIR');
     initBasedir(basedir, webport, webhost, subdir, egresses.split(','));
     await resetState(basedir);
+
+    // TODO: We may want to give some instructions.  This is probably not the
+    // right place to determine our context.
     // log.error(
     //   `Run '(cd ${basedir} && ${progname} start)' to start the vat machine`,
     // );
