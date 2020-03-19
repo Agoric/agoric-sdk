@@ -276,8 +276,16 @@ function build(syscall, _state, makeRoot, forVatID) {
     if (result) {
       lsdebug(` ls.deliver attaching then ->${result}`);
       insistVatType('promise', result);
+
+      // We return the results of the resolve/reject, rather
+      // than rejecting the dispatch with whatever the method
+      // did.
+      // It is up to the caller to handle or fail to handle the
+      // rejection.  Failing to handle should trigger a platform
+      // log, rather than via our parent doProcess call.
+
       // eslint-disable-next-line no-use-before-define
-      p.then(thenResolve(result), thenReject(result));
+      return p.then(thenResolve(result), thenReject(result));
     }
     return p;
   }
