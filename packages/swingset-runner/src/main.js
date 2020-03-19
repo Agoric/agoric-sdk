@@ -15,6 +15,7 @@ import {
 } from '@agoric/swing-store-lmdb';
 
 import { dumpStore } from './dumpstore';
+import { auditRefCounts } from './auditstore';
 
 const log = console.log;
 
@@ -45,6 +46,7 @@ FLAGS may be:
   --forcegc      - run garbage collector after each block
   --batchsize N  - set BATCHSIZE to N (default 200)
   --verbose      - output verbose debugging messages as it runs
+  --audit        - audit kernel promise reference counts after each crank
   --dump         - dump a kernel state store snapshot after each crank
   --dumpdir DIR  - place kernel state dumps in directory DIR (default ".")
   --dumptag STR  - prefix kernel state dump filenames with STR (default "t")
@@ -92,6 +94,7 @@ export async function main() {
   let forceGC = false;
   let verbose = false;
   let doDumps = false;
+  let doAudits = false;
   let dumpDir = '.';
   let dumpTag = 't';
   let rawMode = false;
@@ -142,6 +145,9 @@ export async function main() {
       case '--raw':
         rawMode = true;
         doDumps = true;
+        break;
+      case '--audit':
+        doAudits = true;
         break;
       case '--filedb':
       case '--memdb':
@@ -337,6 +343,9 @@ export async function main() {
       if (doDumps) {
         kernelStateDump();
       }
+      if (doAudits) {
+        auditRefCounts(store.storage);
+      }
       if (verbose) {
         log(`===> end of crank ${crankNumber}`);
       }
@@ -389,6 +398,9 @@ export async function main() {
   async function commandRun(stepLimit, runInBlockMode) {
     if (doDumps) {
       kernelStateDump();
+    }
+    if (doAudits) {
+      auditRefCounts(store.storage);
     }
 
     const [totalSteps, deltaT] = await runBatch(stepLimit, runInBlockMode);

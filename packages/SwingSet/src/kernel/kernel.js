@@ -64,11 +64,19 @@ export default function buildKernel(kernelEndowments) {
     parseKernelSlot(target);
     insistMessage(msg);
     const m = harden({ type: 'send', target, msg });
+    kernelKeeper.incrementKernelPromiseRefCount(target, `enq|msg|t`);
+    kernelKeeper.incrementKernelPromiseRefCount(msg.result, `enq|msg|r`);
+    let idx = 0;
+    for (const argSlot of msg.args.slots) {
+      kernelKeeper.incrementKernelPromiseRefCount(argSlot, `enq|msg|s${idx}`);
+      idx += 1;
+    }
     kernelKeeper.addToRunQueue(m);
   }
 
   function notify(vatID, kpid) {
     const m = harden({ type: 'notify', vatID, kpid });
+    kernelKeeper.incrementKernelPromiseRefCount(kpid, `enq|notify`);
     kernelKeeper.addToRunQueue(m);
   }
 
@@ -180,6 +188,11 @@ export default function buildKernel(kernelEndowments) {
     insistCapData(data);
     const p = getResolveablePromise(kpid, vatID);
     const { subscribers, queue } = p;
+    let idx = 0;
+    for (const dataSlot of data.slots) {
+      kernelKeeper.incrementKernelPromiseRefCount(dataSlot, `fulfill|s${idx}`);
+      idx += 1;
+    }
     kernelKeeper.fulfillKernelPromiseToData(kpid, data);
     notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
   }
@@ -190,6 +203,11 @@ export default function buildKernel(kernelEndowments) {
     insistCapData(data);
     const p = getResolveablePromise(kpid, vatID);
     const { subscribers, queue } = p;
+    let idx = 0;
+    for (const dataSlot of data.slots) {
+      kernelKeeper.incrementKernelPromiseRefCount(dataSlot, `reject|s${idx}`);
+      idx += 1;
+    }
     kernelKeeper.rejectKernelPromise(kpid, data);
     notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
   }
@@ -387,12 +405,21 @@ export default function buildKernel(kernelEndowments) {
     try {
       processQueueRunning = Error('here');
       if (message.type === 'send') {
+        kernelKeeper.decrementKernelPromiseRefCount(message.target, `deq|msg|t`);
+        kernelKeeper.decrementKernelPromiseRefCount(message.msg.result, `deq|msg|r`);
+        let idx = 0;
+        for (const argSlot of message.msg.args.slots) {
+          kernelKeeper.decrementKernelPromiseRefCount(argSlot, `deq|msg|s${idx}`);
+          idx += 1;
+        }
         await deliverToTarget(message.target, message.msg);
       } else if (message.type === 'notify') {
+        kernelKeeper.decrementKernelPromiseRefCount(message.kpid, `deq|notify`);
         await processNotify(message);
       } else {
         throw Error(`unable to process message.type ${message.type}`);
       }
+      kernelKeeper.purgeDeadKernelPromises();
       commitCrank();
       kernelKeeper.incrementCrankNumber();
     } finally {

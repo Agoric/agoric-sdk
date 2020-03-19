@@ -13,6 +13,8 @@ import { insistCapData } from '../../capdata';
 import { insistDeviceID, insistVatID, makeDeviceID, makeVatID } from '../id';
 import { kdebug } from '../kdebug';
 
+const enableKernelPromiseGC = true;
+
 // This holds all the kernel state, including that of each Vat and Device, in
 // a single JSON-serializable object. At any moment (well, really only
 // between turns) we might be asked for it as a string. This same string may
@@ -177,6 +179,7 @@ export default function makeKernelKeeper(storage) {
     storage.set(`${s}.decider`, deciderVatID);
     storage.set(`${s}.subscribers`, '');
     storage.set(`${s}.queue.nextID`, `0`);
+    storage.set(`${s}.refCount`, `0`);
     // queue is empty, so no state[kp$NN.queue.$NN] keys yet
     return s;
   }
@@ -188,6 +191,7 @@ export default function makeKernelKeeper(storage) {
       case undefined:
         throw new Error(`unknown kernelPromise '${kernelSlot}'`);
       case 'unresolved':
+        p.refCount = storage.get(`${kernelSlot}.refCount`);
         p.decider = storage.get(`${kernelSlot}.decider`);
         if (p.decider === '') {
           p.decider = undefined;
@@ -198,10 +202,12 @@ export default function makeKernelKeeper(storage) {
         ).map(JSON.parse);
         break;
       case 'fulfilledToPresence':
+        p.refCount = storage.get(`${kernelSlot}.refCount`);
         p.slot = storage.get(`${kernelSlot}.slot`);
         parseKernelSlot(p.slot);
         break;
       case 'fulfilledToData':
+        p.refCount = storage.get(`${kernelSlot}.refCount`);
         p.data = {
           body: storage.get(`${kernelSlot}.data.body`),
           slots: commaSplit(storage.get(`${kernelSlot}.data.slots`)),
@@ -209,6 +215,7 @@ export default function makeKernelKeeper(storage) {
         p.data.slots.map(parseKernelSlot);
         break;
       case 'rejected':
+        p.refCount = storage.get(`${kernelSlot}.refCount`);
         p.data = {
           body: storage.get(`${kernelSlot}.data.body`),
           slots: commaSplit(storage.get(`${kernelSlot}.data.slots`)),
@@ -226,8 +233,7 @@ export default function makeKernelKeeper(storage) {
     return storage.has(`${kernelSlot}.state`);
   }
 
-  function deleteKernelPromise(kpid) {
-    // storage.deleteRange(`${kpid}.`, `${kpid}/`);
+  function deleteKernelPromiseState(kpid) {
     storage.delete(`${kpid}.state`);
     storage.delete(`${kpid}.decider`);
     storage.delete(`${kpid}.subscribers`);
@@ -238,9 +244,14 @@ export default function makeKernelKeeper(storage) {
     storage.delete(`${kpid}.data.slots`);
   }
 
+  function deleteKernelPromise(kpid) {
+    deleteKernelPromiseState(kpid);
+    storage.delete(`${kpid}.refCount`);
+  }
+
   function fulfillKernelPromiseToPresence(kernelSlot, targetSlot) {
     insistKernelType('promise', kernelSlot);
-    deleteKernelPromise(kernelSlot);
+    deleteKernelPromiseState(kernelSlot);
     storage.set(`${kernelSlot}.state`, 'fulfilledToPresence');
     storage.set(`${kernelSlot}.slot`, targetSlot);
   }
@@ -248,7 +259,7 @@ export default function makeKernelKeeper(storage) {
   function fulfillKernelPromiseToData(kernelSlot, capdata) {
     insistKernelType('promise', kernelSlot);
     insistCapData(capdata);
-    deleteKernelPromise(kernelSlot);
+    deleteKernelPromiseState(kernelSlot);
     storage.set(`${kernelSlot}.state`, 'fulfilledToData');
     storage.set(`${kernelSlot}.data.body`, capdata.body);
     storage.set(`${kernelSlot}.data.slots`, capdata.slots.join(','));
@@ -257,7 +268,7 @@ export default function makeKernelKeeper(storage) {
   function rejectKernelPromise(kernelSlot, capdata) {
     insistKernelType('promise', kernelSlot);
     insistCapData(capdata);
-    deleteKernelPromise(kernelSlot);
+    deleteKernelPromiseState(kernelSlot);
     storage.set(`${kernelSlot}.state`, 'rejected');
     storage.set(`${kernelSlot}.data.body`, capdata.body);
     storage.set(`${kernelSlot}.data.slots`, capdata.slots.join(','));
@@ -355,6 +366,67 @@ export default function makeKernelKeeper(storage) {
     return storage.get(k);
   }
 
+  const deadKernelPromises = new Set();
+
+  /**
+   * Increment the reference count associated with some kernel promise.
+   *
+   * @param kernelSlot  The kernel slot whose refcount is to be incremented.
+   *
+   * @throws if `kernelSlot` does not refer to a promise.
+   */
+  function incrementKernelPromiseRefCount(kernelSlot, tag) {
+    if (kernelSlot && parseKernelSlot(kernelSlot).type === 'promise') {
+      const refCount = Nat(Number(storage.get(`${kernelSlot}.refCount`))) + 1;
+      kdebug(`++ ${kernelSlot}  ${tag} ${refCount}`);
+      storage.set(`${kernelSlot}.refCount`, `${refCount}`);
+    }
+  }
+
+  /**
+   * Decrement the reference count associated with some kernel promise.
+   *
+   * @param kernelSlot  The kernel slot whose refcount is to be decremented.
+   *
+   * @return true if the reference count has been decremented to zero, false if it is still non-zero
+   *
+   * @throws if `kernelSlot` does not refer to a promise.
+   * @throws if this tries to decrement the reference count below zero.
+   */
+  function decrementKernelPromiseRefCount(kernelSlot, tag) {
+    if (kernelSlot && parseKernelSlot(kernelSlot).type === 'promise') {
+      let refCount = Nat(Number(storage.get(`${kernelSlot}.refCount`)));
+      assert(refCount > 0, details`refCount underflow {kernelSlot} ${tag}`);
+      refCount -= 1;
+      kdebug(`-- ${kernelSlot}  ${tag} ${refCount}`);
+      storage.set(`${kernelSlot}.refCount`, `${refCount}`);
+      if (refCount === 0) {
+        deadKernelPromises.add(kernelSlot);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function purgeDeadKernelPromises() {
+    if (enableKernelPromiseGC) {
+      for (const kpid of deadKernelPromises.values()) {
+        const kp = getKernelPromise(kpid);
+        if (kp.refCount === '0') {
+          if (kp.state === 'fulfilledToData' || kp.state === 'rejected') {
+            let idx = 0;
+            for (const slot of kp.data.slots) {
+              decrementKernelPromiseRefCount(slot, `gc|${kpid}|s${idx}`);
+              idx += 1;
+            }
+          }
+          deleteKernelPromise(kpid);
+        }
+      }
+    }
+    deadKernelPromises.clear();
+  }
+
   function allocateVatKeeperIfNeeded(vatID) {
     insistVatID(vatID);
     if (!storage.has(`${vatID}.o.nextID`)) {
@@ -366,6 +438,8 @@ export default function makeKernelKeeper(storage) {
         vatID,
         addKernelObject,
         addKernelPromise,
+        incrementKernelPromiseRefCount,
+        decrementKernelPromiseRefCount,
       );
       ephemeral.vatKeepers.set(vatID, vk);
     }
@@ -520,6 +594,7 @@ export default function makeKernelKeeper(storage) {
 
     getCrankNumber,
     incrementCrankNumber,
+    purgeDeadKernelPromises,
 
     ownerOfKernelObject,
     ownerOfKernelDevice,
@@ -534,6 +609,8 @@ export default function makeKernelKeeper(storage) {
     addSubscriberToPromise,
     setDecider,
     clearDecider,
+    incrementKernelPromiseRefCount,
+    decrementKernelPromiseRefCount,
 
     addToRunQueue,
     isRunQueueEmpty,
