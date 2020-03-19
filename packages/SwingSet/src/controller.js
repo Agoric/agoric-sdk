@@ -25,6 +25,8 @@ import kernelSourceFunc from './bundles/kernel';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
+import { SES1MakeConsole } from './makeConsole';
+import { SES1MakeNestedEvaluate } from './makeNestedEvaluate';
 
 const log = anylogger('SwingSet:controller');
 
@@ -153,7 +155,6 @@ function makeSESEvaluator(registerEndOfCrank) {
   const s = SES.makeSESRootRealm({
     ...otherOptions,
     transforms: [...transforms, meteringTransformer],
-    consoleMode: 'allow',
     errorStackMode: 'allow',
     shims: [SES1TameMeteringShim, ...shims],
     configurableGlobals: true,
@@ -205,25 +206,27 @@ function realmRegisterEndOfCrank(fn) {
 
   return (src, tag = 'anonymous') => {
     const filePrefix = `/SwingSet/${tag}`;
-    const localLog = anylogger(`SwingSet:${tag}`);
+    const localConsole = SES1MakeConsole(s, anylogger(`SwingSet:${tag}`));
 
-    const nestedEvaluate = source =>
-      s.evaluate(source, {
-        // Support both getExport and nestedEvaluate module format.
-        require: r,
-        nestedEvaluate,
+    const nestedEvaluate = SES1MakeNestedEvaluate(s, {
+      // Support both getExport and nestedEvaluate module format.
+      require: r,
 
-        console: harden(localLog),
+      // This isn't installed on the global, but at least it's secure.
+      console: localConsole,
 
-        // FIXME: Note that this replaceGlobalMeter endowment is not any
-        // worse than before metering existed.  However, it probably is
-        // only necessary to be added to the kernel, rather than all
-        // static vats once we add metering support to the dynamic vat
-        // implementation.
-        // FIXME: Same for registerEndOfCrank.
-        registerEndOfCrank: realmRegisterEndOfCrank,
-        replaceGlobalMeter,
-      });
+      // Note that replaceGlobalMeter is evaluated within the SES realm.
+      // FIXME: Also note that this replaceGlobalMeter endowment is not any
+      // worse than before metering existed.  However, it probably is
+      // only necessary to be added to the kernel, rather than all
+      // static vats once we add metering support to the dynamic vat
+      // implementation.
+      replaceGlobalMeter,
+
+      // FIXME: Same for registerEndOfCrank.
+      registerEndOfCrank: realmRegisterEndOfCrank,
+    });
+
     return nestedEvaluate(src)(filePrefix).default;
   };
 }
