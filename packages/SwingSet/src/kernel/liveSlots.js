@@ -342,6 +342,11 @@ function build(syscall, _state, makeRoot, forVatID) {
     }
     const val = m.unserialize(data);
     importedPromisesByPromiseID.get(promiseID).res(val);
+
+    importedPromisesByPromiseID.delete(promiseID);
+    const p = slotToVal.get(promiseID);
+    valToSlot.delete(p);
+    slotToVal.delete(promiseID);
   }
 
   function notifyFulfillToPresence(promiseID, slot) {
