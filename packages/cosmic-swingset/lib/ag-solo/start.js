@@ -4,6 +4,8 @@ import temp from 'temp';
 import { promisify } from 'util';
 // import { createHash } from 'crypto';
 
+import anylogger from 'anylogger';
+
 // import connect from 'lotion-connect';
 // import harden from '@agoric/harden';
 // import djson from 'deterministic-json';
@@ -30,6 +32,8 @@ import { connectToFakeChain } from './fake-chain';
 
 // import { makeChainFollower } from './follower';
 // import { makeDeliverator } from './deliver-with-ag-cosmos-helper';
+
+const log = anylogger('start');
 
 let swingSetRunning = false;
 
@@ -166,10 +170,10 @@ async function buildSwingset(
     try {
       if (timer.poll(now)) {
         await processKernel();
-        console.log(`timer-provoked kernel crank complete ${now}`);
+        log.debug(`timer-provoked kernel crank complete ${now}`);
       }
     } catch (err) {
-      console.log(`timer-provoked kernel crank failed at ${now}:`, err);
+      log.error(`timer-provoked kernel crank failed at ${now}:`, err);
     } finally {
       // We only rearm the timeout if moveTimeForward has completed, to
       // make sure we don't have two copies of controller.run() executing
@@ -206,7 +210,7 @@ export default async function start(basedir, withSES, argv) {
     if (broadcastJSON) {
       broadcastJSON(obj);
     } else {
-      console.log(`Called broadcast before HTTP listener connected.`);
+      log.error(`Called broadcast before HTTP listener connected.`);
     }
   }
 
@@ -233,7 +237,7 @@ export default async function start(basedir, withSES, argv) {
       switch (c.type) {
         case 'chain-cosmos-sdk':
           {
-            console.log(`adding follower/sender for GCI ${c.GCI}`);
+            log(`adding follower/sender for GCI ${c.GCI}`);
             // c.rpcAddresses are strings of host:port for the RPC ports of several
             // chain nodes
             const deliverator = await connectToChain(
@@ -248,7 +252,7 @@ export default async function start(basedir, withSES, argv) {
           }
           break;
         case 'fake-chain': {
-          console.log(
+          log(
             `adding follower/sender for fake chain ${c.role} ${c.GCI}`,
           );
           const deliverator = await connectToFakeChain(
@@ -262,7 +266,7 @@ export default async function start(basedir, withSES, argv) {
           break;
         }
         case 'http':
-          console.log(`adding HTTP/WS listener on ${c.host}:${c.port}`);
+          log(`adding HTTP/WS listener on ${c.host}:${c.port}`);
           if (broadcastJSON) {
             throw new Error(`duplicate type=http in connections.json`);
           }
@@ -282,7 +286,7 @@ export default async function start(basedir, withSES, argv) {
   // Start timer here!
   startTimer(1200);
 
-  console.log(`swingset running`);
+  log.info(`swingset running`);
   swingSetRunning = true;
   deliverOutbound();
 }

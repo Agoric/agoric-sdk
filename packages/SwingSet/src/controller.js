@@ -18,15 +18,19 @@ import {
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import * as babelCore from '@babel/core';
 
+import anylogger from 'anylogger';
+
 // eslint-disable-next-line import/extensions
 import kernelSourceFunc from './bundles/kernel';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
 
+const log = anylogger('SwingSet:controller');
+
 // FIXME: Put this somewhere better.
 process.on('unhandledRejection', e =>
-  console.log('UnhandledPromiseRejectionWarning:', e),
+  log('UnhandledPromiseRejectionWarning:', e),
 );
 
 const ADMIN_DEVICE_PATH = require.resolve('./kernel/vatAdmin/vatAdmin-src');
@@ -59,7 +63,7 @@ function byName(a, b) {
  * lots of places).
  */
 export function loadBasedir(basedir) {
-  console.log(`= loading config from basedir ${basedir}`);
+  log(`= loading config from basedir ${basedir}`);
   const vats = new Map(); // name -> { sourcepath, options }
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.sort(byName);
@@ -79,7 +83,7 @@ export function loadBasedir(basedir) {
       const vatSourcePath = path.resolve(basedir, dirent.name);
       vats.set(name, { sourcepath: vatSourcePath, options: {} });
     } else {
-      console.log('ignoring ', dirent.name);
+      log.debug('ignoring ', dirent.name);
     }
   });
   let bootstrapIndexJS = path.resolve(basedir, 'bootstrap.js');
@@ -199,12 +203,17 @@ function realmRegisterEndOfCrank(fn) {
     { registerEndOfCrank },
   );
 
-  return (src, filePrefix = '/SwingSet-bundled-source') => {
+  return (src, tag = 'anonymous') => {
+    const filePrefix = `/SwingSet/${tag}`;
+    const localLog = anylogger(`SwingSet:${tag}`);
+
     const nestedEvaluate = source =>
       s.evaluate(source, {
         // Support both getExport and nestedEvaluate module format.
         require: r,
         nestedEvaluate,
+
+        console: harden(localLog),
 
         // FIXME: Note that this replaceGlobalMeter endowment is not any
         // worse than before metering existed.  However, it probably is
@@ -221,7 +230,7 @@ function realmRegisterEndOfCrank(fn) {
 
 function buildSESKernel(sesEvaluator, endowments) {
   const kernelSource = getKernelSource();
-  const buildKernel = sesEvaluator(kernelSource, '/SwingSet-kernel');
+  const buildKernel = sesEvaluator(kernelSource, 'kernel');
   return buildKernel(endowments);
 }
 
@@ -240,7 +249,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
         h();
       } catch (e) {
         try {
-          console.log('cannot run hook:', e);
+          log.error('cannot run hook:', e);
         } catch (e2) {
           // Nothing to do.
         }
@@ -254,7 +263,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
   // Evaluate source to produce a setup function. This binds withSES from the
   // enclosing context and evaluates it either in a SES context, or without SES
   // by directly calling require().
-  async function evaluateToSetup(sourceIndex, filePrefix = undefined) {
+  async function evaluateToSetup(sourceIndex, tag = undefined) {
     if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
       throw Error(
         'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
@@ -270,7 +279,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
       'nestedEvaluate',
     );
     const actualSource = `(${source})\n${sourceMap}`;
-    const setup = sesEvaluator(actualSource, filePrefix);
+    const setup = sesEvaluator(actualSource, tag);
     return setup;
   }
 
@@ -280,20 +289,20 @@ export async function buildVatController(config, withSES = true, argv = []) {
     setImmediate,
     hostStorage,
     runEndOfCrank,
-    vatAdminDevSetup: await evaluateToSetup(ADMIN_DEVICE_PATH, '/SwingSet/src'),
-    vatAdminVatSetup: await evaluateToSetup(ADMIN_VAT_PATH, '/SwingSet/src'),
+    vatAdminDevSetup: await evaluateToSetup(ADMIN_DEVICE_PATH, 'dev-vatAdmin'),
+    vatAdminVatSetup: await evaluateToSetup(ADMIN_VAT_PATH, 'vat-vatAdmin'),
   };
 
   const kernel = buildSESKernel(sesEvaluator, kernelEndowments);
 
   async function addGenesisVat(name, sourceIndex, options = {}) {
-    console.log(`= adding vat '${name}' from ${sourceIndex}`);
-    const setup = await evaluateToSetup(sourceIndex, `/SwingSet-vat-${name}`);
+    log(`= adding vat '${name}' from ${sourceIndex}`);
+    const setup = await evaluateToSetup(sourceIndex, `vat-${name}`);
     kernel.addGenesisVat(name, setup, options);
   }
 
   async function addGenesisDevice(name, sourceIndex, endowments) {
-    const setup = await evaluateToSetup(sourceIndex, `/SwingSet-dev-${name}`);
+    const setup = await evaluateToSetup(sourceIndex, `dev-${name}`);
     kernel.addGenesisDevice(name, setup, endowments);
   }
 

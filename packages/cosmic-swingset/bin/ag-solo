@@ -3,6 +3,8 @@
 const process = require('process');
 const esmRequire = require('esm')(module);
 
+// Configure logs.
+esmRequire('../lib/anylogger-agoric.js');
 const solo = esmRequire('../lib/ag-solo/main.js').default;
 
 solo(process.argv[1], process.argv.splice(2)).then(

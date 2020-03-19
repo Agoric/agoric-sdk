@@ -2,8 +2,12 @@
 import path from 'path';
 import fs from 'fs';
 import stringify from '@agoric/swingset-vat/src/kernel/json-stable-stringify';
+import anylogger from 'anylogger';
+
 import { launch } from '../launch-chain';
 import makeBlockManager from '../block-manager';
+
+const log = anylogger('fake-chain');
 
 const PRETEND_BLOCK_DELAY = 5;
 
@@ -80,7 +84,7 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
       blockTime = blockTime + Date.now() - actualStart;
       blockHeight += 1;
     } catch (e) {
-      console.log(`error fake processing`, e);
+      log.error(`error fake processing`, e);
     }
 
     if (delay) {

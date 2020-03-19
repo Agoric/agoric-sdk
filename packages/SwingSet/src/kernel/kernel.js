@@ -281,7 +281,7 @@ export default function buildKernel(kernelEndowments) {
       await vat.manager.deliverOneMessage(target, msg);
     } catch (e) {
       // log so we get a stack trace
-      console.log(`error in kernel.deliver:`, e);
+      console.error(`error in kernel.deliver:`, e);
       throw e;
     }
   }
@@ -359,7 +359,7 @@ export default function buildKernel(kernelEndowments) {
       await vat.manager.deliverOneNotification(kpid, p);
     } catch (e) {
       // log so we get a stack trace
-      console.log(`error in kernel.processNotify:`, e);
+      console.error(`error in kernel.processNotify:`, e);
       throw e;
     }
   }
@@ -368,7 +368,7 @@ export default function buildKernel(kernelEndowments) {
   async function processQueueMessage(message) {
     kdebug(`processQ ${JSON.stringify(message)}`);
     if (processQueueRunning) {
-      console.log(`We're currently already running at`, processQueueRunning);
+      console.error(`We're currently already running at`, processQueueRunning);
       throw Error(`Kernel reentrancy is forbidden`);
     }
     try {
@@ -494,7 +494,7 @@ export default function buildKernel(kernelEndowments) {
       if (drefs.has(val)) {
         return drefs.get(val);
       }
-      console.log(`oops ${val}`, val);
+      console.error(`oops ${val}`, val);
       throw Error('bootstrap got unexpected pass-by-presence');
     }
 
@@ -692,6 +692,7 @@ export default function buildKernel(kernelEndowments) {
 
     // if it *was* initialized, replay the transcripts
     if (wasInitialized) {
+      console.info('Replaying SwingSet transcripts');
       const oldLength = kernelKeeper.getRunQueueLength();
       for (const vatID of ephemeral.vats.keys()) {
         console.log(`Replaying transcript of vatID ${vatID}`);

@@ -4,6 +4,11 @@ const path = require('path');
 const agcc = require('bindings')('agcosmosdaemon.node');
 const esmRequire = require('esm')(module);
 
+esmRequire('./anylogger-agoric');
+const anylogger = require('anylogger');
+
+const log = anylogger('ag-chain-cosmos');
+
 const main = esmRequire('./chain-main.js').default;
 
 main(process.argv[1], process.argv.splice(2), {
@@ -13,7 +18,7 @@ main(process.argv[1], process.argv.splice(2), {
 }).then(
   _res => 0,
   rej => {
-    console.log(`error running ag-chain-cosmos:`, rej);
+    log.error(`error running ag-chain-cosmos:`, rej);
     process.exit(1);
   },
 );

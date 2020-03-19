@@ -39,7 +39,7 @@ export function guardStorage(hostStorage) {
     try {
       return hostStorage[method](...args);
     } catch (err) {
-      console.log(`error invoking hostStorage.${method}(${args})`, err);
+      console.error(`error invoking hostStorage.${method}(${args})`, err);
       throw new Error(`error invoking hostStorage.${method}(${args}): ${err}`);
     }
   }
@@ -57,7 +57,10 @@ export function guardStorage(hostStorage) {
         yield `${key}`;
       }
     } catch (err) {
-      console.log(`error invoking hostStorage.getKeys(${start}, ${end})`, err);
+      console.error(
+        `error invoking hostStorage.getKeys(${start}, ${end})`,
+        err,
+      );
       throw new Error(
         `error invoking hostStorage.getKeys(${start}, ${end}): ${err}`,
       );

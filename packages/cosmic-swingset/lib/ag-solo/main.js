@@ -4,6 +4,8 @@ import parseArgs from 'minimist';
 import process from 'process';
 import { assert } from '@agoric/assert';
 
+import anylogger from 'anylogger';
+
 // Start a network service
 import bundle from './bundle';
 import initBasedir from './init-basedir';
@@ -11,6 +13,8 @@ import resetState from './reset-state';
 import setGCIIngress from './set-gci-ingress';
 import setFakeChain from './set-fake-chain';
 import start from './start';
+
+const log = anylogger('ag-solo');
 
 // As we add more egress types, put the default types in a comma-separated
 // string below.
@@ -34,7 +38,7 @@ function insistIsBasedir() {
 }
 
 export default async function solo(progname, rawArgv) {
-  // console.error('solo', rawArgv);
+  log.debug('solo', rawArgv);
   const { _: argv, ...opts } = parseArgs(rawArgv, {
     stopEarly: true,
     boolean: ['help', 'version'],
@@ -66,7 +70,10 @@ start
     assert(basedir !== undefined, 'you must provide a BASEDIR');
     initBasedir(basedir, webport, webhost, subdir, egresses.split(','));
     await resetState(basedir);
-    // console.error(
+
+    // TODO: We may want to give some instructions.  This is probably not the
+    // right place to determine our context.
+    // log.error(
     //   `Run '(cd ${basedir} && ${progname} start)' to start the vat machine`,
     // );
   } else if (argv[0] === 'set-gci-ingress') {
@@ -95,7 +102,7 @@ start
   } else if (argv[0] === 'register-http') {
     await bundle(insistIsBasedir, [`--evaluate`, ...argv]);
   } else {
-    console.error(`unrecognized command ${argv[0]}`);
-    console.error(`try one of: init, set-gci-ingress, start`);
+    log.error(`unrecognized command ${argv[0]}`);
+    log.error(`try one of: init, set-gci-ingress, start`);
   }
 }

@@ -62,7 +62,7 @@ export default function setup(syscall, state, helpers, endowments) {
       try {
         SO(inboundHandler).deliverInboundMessages(peer, newMessages);
       } catch (e) {
-        console.log(`error during deliverInboundMessages: ${e}`);
+        console.error(`error during deliverInboundMessages: ${e}`, e);
       }
     };
 
@@ -73,7 +73,7 @@ export default function setup(syscall, state, helpers, endowments) {
       try {
         SO(inboundHandler).deliverInboundAck(peer, ack);
       } catch (e) {
-        console.log(`error during deliverInboundAck: ${e}`);
+        console.error(`error during deliverInboundAck:`, e);
       }
     };
 
