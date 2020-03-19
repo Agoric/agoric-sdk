@@ -13,9 +13,8 @@ import {
   IconButton,
   Typography,
 } from '@material-ui/core';
-import AutoswapIcon from '@material-ui/icons/SwapHorizontalCircle';
+import SwapIcon from '@material-ui/icons/SwapHorizontalCircle';
 import ClearIcon from '@material-ui/icons/Clear';
-import WatchIcon from '@material-ui/icons/Watch';
 import CheckIcon from '@material-ui/icons/Check';
 
 import { useApplicationContext } from '../contexts/Application';
@@ -45,7 +44,7 @@ const RedIconButton = withStyles(theme => ({
 
 const YellowIconButton = withStyles(theme => ({
   root: {
-    color: theme.pallete.getContrastText(yellow[500]),
+    color: theme.palette.getContrastText(yellow[500]),
     backgroundColor: yellow[500],
     '&:hover': {
       backgroundColor: yellow[700],
@@ -138,7 +137,7 @@ export default function Inbox() {
       <Typography variant="h6">Transactions</Typography>
       {Array.isArray(inbox) && inbox.length > 0 ? (
         <List>
-          {inbox.map(
+          {inbox.reverse().map(
             ({
               requestContext: { date, origin = 'unknown origin'} = {},
               id,
@@ -146,11 +145,10 @@ export default function Inbox() {
               instancePetname,
               offerRulesTemplate: { offer = {}, want = {} } = {},
               status,
-              wait,
             }) => (
               <ListItem key={id} value={date} divider>
                 <ListItemIcon>
-                  <AutoswapIcon edge="start" className={classes.icon} />
+                  <SwapIcon edge="start" className={classes.icon} />
                 </ListItemIcon>
                 <Grid container direction="column">
                   <Grid item>
@@ -214,17 +212,19 @@ export default function Inbox() {
                     <RedChip variant="outlined" label="Rejected" />
                   )}
                   {status === 'accept' && (
-                    wait === undefined ? (
-                      <GreenChip variant="outlined" label="Accepted" />
-                    ) : (
-                      <YellowIconButton
-                        size="small"
-                        aria-label="Cancel"
-                        onClick={() => handleCancel(id)}
-                      >
-                        <WatchIcon />
-                      </YellowIconButton>
-                    )
+                    <GreenChip variant="outlined" label="Accepted" />
+                  )}
+                  {status === 'pending' && (
+                    <YellowIconButton
+                      size="small"
+                      aria-label="Cancel"
+                      onClick={() => handleCancel(id)}
+                    >
+                      <ClearIcon />
+                    </YellowIconButton>
+                  )}
+                  {status === 'cancel' && (
+                    <RedChip variant="outlined" label="Cancelled" />
                   )}
                   {!status && (
                     <>

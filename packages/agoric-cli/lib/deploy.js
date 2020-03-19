@@ -2,19 +2,11 @@
 import parseArgs from 'minimist';
 import { evaluateProgram } from '@agoric/evaluate';
 import { E, HandledPromise, makeCapTP } from '@agoric/captp';
+import makePromise from '@agoric/make-promise';
 
 import bundleSource from '@agoric/bundle-source';
 
 import path from 'path';
-
-const makePromise = () => {
-  const pr = {};
-  pr.p = new Promise((resolve, reject) => {
-    pr.res = resolve;
-    pr.rej = reject;
-  });
-  return pr;
-};
 
 export default async function deployMain(progname, rawArgs, powers) {
   const { anylogger, makeWebSocket } = powers;

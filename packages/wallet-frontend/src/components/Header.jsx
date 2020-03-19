@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { makeStyles } from '@material-ui/core/styles';
-import { AppBar, Toolbar, Typography } from '@material-ui/core';
+import { AppBar, Link, Toolbar, Typography } from '@material-ui/core';
 import WalletIcon from '@material-ui/icons/AccountBalanceWallet';
 
 const useStyles = makeStyles(theme => ({
@@ -30,7 +30,7 @@ export default function Header({ children }) {
           noWrap
           className={classes.title}
         >
-          Simple Wallet
+          <Link color="inherit" target="_blank" href="https://agoric.com">Agoric Wallet</Link>
         </Typography>
         {children}
       </Toolbar>

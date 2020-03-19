@@ -31,6 +31,7 @@
     "@agoric/captp": "^1.2.0",
     "@agoric/evaluate": "^2.2.0",
     "@agoric/eventual-send": "^0.5.0",
+    "@agoric/make-promise": "^0.0.1",
     "anylogger": "^0.21.0",
     "chalk": "^2.4.2",
     "esm": "^3.2.5",
