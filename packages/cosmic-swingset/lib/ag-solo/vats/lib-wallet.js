@@ -186,7 +186,7 @@ export async function makeWallet(
 
   function deposit(pursePetName, payment) {
     const purse = petnameToPurse.get(pursePetName);
-    purse.deposit(payment);
+    return purse.deposit(payment);
   }
 
   function getPurses() {
@@ -330,6 +330,7 @@ export async function makeWallet(
         .catch(rejected);
     } catch (e) {
       rejected(e);
+      throw e;
     }
     return ret;
   }

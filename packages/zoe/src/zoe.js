@@ -257,15 +257,15 @@ const makeZoe = (additionalEndowments = {}) => {
         // that the contract can query Zoe for information about the
         // instance (get issuers, amountMaths, etc.)
         instanceTable.create(instanceRecord, instanceHandle);
-        return Promise.resolve(
-          installation.makeContract(contractFacet, terms),
-        ).then(value => {
-          // Once the contract is made, we add the publicAPI to the
-          // contractRecord
-          const { invite, publicAPI } = value;
-          instanceTable.update(instanceHandle, { publicAPI });
-          return invite;
-        });
+        return Promise.resolve()
+          .then(_ => installation.makeContract(contractFacet, terms))
+          .then(value => {
+            // Once the contract is made, we add the publicAPI to the
+            // contractRecord
+            const { invite, publicAPI } = value;
+            instanceTable.update(instanceHandle, { publicAPI });
+            return invite;
+          });
       };
 
       // The issuers may not have been seen before, so we must wait for

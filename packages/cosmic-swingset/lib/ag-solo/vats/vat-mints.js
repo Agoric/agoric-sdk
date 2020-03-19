@@ -13,7 +13,7 @@ function build(_E, _log) {
     getAllIssuerNames: () => mintsAndMath.keys(),
     getIssuer: issuerName => {
       const mint = mintsAndMath.get(issuerName);
-      mint.getIssuer();
+      return mint.getIssuer();
     },
     getIssuers: issuerNames => issuerNames.map(api.getIssuer),
 
