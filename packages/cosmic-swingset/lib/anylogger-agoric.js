@@ -2,8 +2,18 @@ import anylogger from 'anylogger';
 
 // Turn on debugging output with DEBUG=agoric
 
-const debugging = process.env.DEBUG && process.env.DEBUG.includes('agoric');
-const defaultLevel = debugging ? anylogger.levels.debug : anylogger.levels.log;
+let debugging;
+if (process.env.DEBUG === undefined) {
+  // DEBUG not set, default to log level.
+  debugging = 'log';
+} else if (process.env.DEBUG.includes('agoric')) {
+  // DEBUG set and we're enabled; verbose.
+  debugging = 'debug';
+} else {
+  // DEBUG set but we're not enabled; quieter than normal.
+  debugging = 'info';
+}
+const defaultLevel = anylogger.levels[debugging];
 
 const oldExt = anylogger.ext;
 anylogger.ext = (l, o) => {

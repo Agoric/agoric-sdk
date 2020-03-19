@@ -13,9 +13,14 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn, os, process } = powers;
   const log = anylogger('agoric:start');
 
-  const pspawn = (cmd, cargs, { stdio = 'inherit', ...rest } = {}) => {
+  const pspawnEnv = { ...process.env };
+  const pspawn = (
+    cmd,
+    cargs,
+    { stdio = 'inherit', env = pspawnEnv, ...rest } = {},
+  ) => {
     log.info(chalk.blueBright(cmd, ...cargs));
-    const cp = spawn(cmd, cargs, { stdio, ...rest });
+    const cp = spawn(cmd, cargs, { stdio, env, ...rest });
     const pr = new Promise((resolve, _reject) => {
       cp.on('exit', resolve);
       cp.on('error', () => resolve(-1));
@@ -62,6 +67,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   async function startFakeChain(profileName, _startArgs, popts) {
     const fakeDelay =
       popts.delay === undefined ? FAKE_CHAIN_DELAY : Number(popts.delay);
+
     if (!opts.sdk) {
       if (!(await exists('_agstate/agoric-servers/node_modules'))) {
         log.error(`you must first run '${progname} install'`);
@@ -195,9 +201,16 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   };
 
   const { _: args, ...popts } = parseArgs(rawArgs, {
-    boolean: ['reset', 'restart', 'pull'],
+    boolean: ['reset', 'restart', 'pull', 'debug'],
     default: { restart: true },
   });
+
+  if (popts.debug) {
+    // Crank out the debugging.
+    pspawnEnv.DEBUG = 'agoric';
+  } else {
+    pspawnEnv.DEBUG = '';
+  }
 
   const profileName = args[0] || 'dev';
   const startFn = profiles[profileName];
