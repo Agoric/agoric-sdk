@@ -331,6 +331,13 @@ function build(syscall, _state, makeRoot, forVatID) {
     };
   }
 
+  function retirePromiseID(promiseID) {
+    importedPromisesByPromiseID.delete(promiseID);
+    const p = slotToVal.get(promiseID);
+    valToSlot.delete(p);
+    slotToVal.delete(promiseID);
+  }
+
   function notifyFulfillToData(promiseID, data) {
     insistCapData(data);
     lsdebug(
@@ -342,6 +349,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     }
     const val = m.unserialize(data);
     importedPromisesByPromiseID.get(promiseID).res(val);
+    retirePromiseID(promiseID);
   }
 
   function notifyFulfillToPresence(promiseID, slot) {
@@ -352,6 +360,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     }
     const val = convertSlotToVal(slot);
     importedPromisesByPromiseID.get(promiseID).res(val);
+    retirePromiseID(promiseID);
   }
 
   function notifyReject(promiseID, data) {
@@ -365,6 +374,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     }
     const val = m.unserialize(data);
     importedPromisesByPromiseID.get(promiseID).rej(val);
+    retirePromiseID(promiseID);
   }
 
   // here we finally invoke the vat code, and get back the root object
