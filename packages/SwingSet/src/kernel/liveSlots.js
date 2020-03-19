@@ -450,6 +450,14 @@ function build(syscall, _state, makeRoot, forVatID) {
     };
   }
 
+  function retirePromiseID(promiseID) {
+    lsdebug(`Retiring ${forVatID}:${promiseID}`);
+    importedPromisesByPromiseID.delete(promiseID);
+    const p = slotToVal.get(promiseID);
+    valToSlot.delete(p);
+    slotToVal.delete(promiseID);
+  }
+
   function notifyFulfillToData(promiseID, data) {
     insistCapData(data);
     lsdebug(
@@ -463,6 +471,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     const pRec = importedPromisesByPromiseID.get(promiseID);
     const val = m.unserialize(data);
     pRec.resolve(val);
+    retirePromiseID(promiseID);
   }
 
   function notifyFulfillToPresence(promiseID, slot) {
@@ -478,6 +487,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     // val is either a local pass-by-presence object, or a Presence (which
     // points at some remote pass-by-presence object).
     pRec.resolve(val);
+    retirePromiseID(promiseID);
   }
 
   // TODO: when we add notifyForward, guard against cycles
@@ -495,6 +505,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     const pRec = importedPromisesByPromiseID.get(promiseID);
     const val = m.unserialize(data);
     pRec.reject(val);
+    retirePromiseID(promiseID);
   }
 
   // here we finally invoke the vat code, and get back the root object
