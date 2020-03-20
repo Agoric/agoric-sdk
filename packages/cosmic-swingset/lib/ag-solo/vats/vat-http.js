@@ -1,14 +1,14 @@
 import harden from '@agoric/harden';
-// Avoid importing the full captp bundle, which would carry
-// in its own makeHardener, etc.
-import { makeCapTP } from '@agoric/captp/lib/captp';
 
 import { getReplHandler } from './repl';
+import { getCapTPHandler } from './captp';
 
 // This vat contains the HTTP request handler.
 function build(E, D) {
   let commandDevice;
   let provisioner;
+  const connectionIdToHandle = new Map();
+  const connectionHandleToId = new WeakMap();
   const loaded = {};
   loaded.p = new Promise((resolve, reject) => {
     loaded.res = resolve;
@@ -29,6 +29,17 @@ function build(E, D) {
         return isReady;
       },
     },
+  };
+
+  const sendMulticast = (obj, connectionHandles) => {
+    // TODO: Make this sane by adding support for multicast to the commandDevice.
+    for (const connectionHandle of connectionHandles) {
+      const connectionID = connectionHandleToId.get(connectionHandle);
+      if (connectionID) {
+        const o = { ...obj, meta: { connectionID } };
+        D(commandDevice).sendBroadcast(o);
+      }
+    }
   };
 
   readyForClient.p = new Promise((resolve, reject) => {
@@ -55,62 +66,20 @@ function build(E, D) {
     setCommandDevice(d, ROLES) {
       commandDevice = d;
       if (ROLES.client) {
-        const conns = new Map();
-        const forward = method => obj => {
-          const dispatchAbort = conns.get(obj.connectionID);
-          if (!dispatchAbort || !(1, dispatchAbort[0])(obj)) {
-            console.log(
-              `Could not find CapTP handler ${method}`,
-              obj.connectionID,
-            );
-            return undefined;
-          }
-          return true;
-        };
-        Object.assign(
-          handler,
-          getReplHandler(E, homeObjects, msg =>
-            D(commandDevice).sendBroadcast(msg),
-          ),
-          {
-            readyForClient() {
-              return readyForClient.p;
-            },
-          },
-          {
-            CTP_OPEN(obj) {
-              console.log(`Starting CapTP`, obj.connectionID);
-              const sendObj = o => {
-                o.connectionID = obj.connectionID;
-                D(commandDevice).sendBroadcast(o);
-              };
-              const { dispatch, abort } = makeCapTP(
-                obj.connectionID,
-                sendObj,
-                () =>
-                  // Harden only our exported objects.
-                  harden(exportedToCapTP),
-              );
-              conns.set(obj.connectionID, [dispatch, abort]);
-            },
-            CTP_CLOSE(obj) {
-              console.log(`Finishing CapTP`, obj.connectionID);
-              const dispatchAbort = conns.get(obj.connectionID);
-              if (dispatchAbort) {
-                (1, dispatchAbort[1])();
-              }
-              conns.delete(obj.connectionID);
-            },
-            CTP_ERROR(obj) {
-              console.log(`Error in CapTP`, obj.connectionID, obj.error);
-            },
-            CTP_BOOTSTRAP: forward('CTP_BOOTSTRAP'),
-            CTP_CALL: forward('CTP_CALL'),
-            CTP_RETURN: forward('CTP_RETURN'),
-            CTP_RESOLVE: forward('CTP_RESOLVE'),
-          },
+        handler.readyForClient = () => readyForClient.p;
+
+        const replHandler = getReplHandler(E, homeObjects, sendMulticast);
+        registerURLHandler(replHandler, '/private/repl');
+
+        // Assign the captp handler.
+        // TODO: Break this out into a separate vat.
+        const captpHandler = getCapTPHandler(E, sendMulticast, () =>
+          // Harden only our exported objects.
+          harden(exportedToCapTP),
         );
+        registerURLHandler(captpHandler, '/private/captp');
       }
+
       if (ROLES.controller) {
         handler.pleaseProvision = obj => {
           const { nickname, pubkey } = obj;
@@ -140,6 +109,7 @@ function build(E, D) {
 
     registerURLHandler,
     registerAPIHandler: h => registerURLHandler(h, '/api'),
+    sendMulticast,
 
     setProvisioner(p) {
       provisioner = p;
@@ -159,19 +129,50 @@ function build(E, D) {
 
     // devices.command invokes our inbound() because we passed to
     // registerInboundHandler()
-    async inbound(count, obj) {
-      try {
-        // console.log(
-        //   `vat-http.inbound (from browser) ${count}`,
-        //   JSON.stringify(obj, undefined, 2),
-        // );
+    async inbound(count, rawObj) {
+      console.debug(
+        `vat-http.inbound (from browser) ${count}`,
+        JSON.stringify(rawObj, undefined, 2),
+      );
 
-        const { type, requestContext: { url } = { url: '/vat' } } = obj;
-        if (url === '/vat' || url === '/captp') {
-          // Use our local handler object (compatibility with repl.js).
+      const { type, meta: rawMeta = {} } = rawObj || {};
+      const {
+        url = '/private/repl',
+        connectionID: rawConnectionID,
+        dispatcher = 'onMessage',
+      } = rawMeta;
+
+      try {
+        let connectionHandle = connectionIdToHandle.get(rawConnectionID);
+        if (dispatcher === 'onConnect') {
+          connectionHandle = harden({});
+          connectionIdToHandle.set(rawConnectionID, connectionHandle);
+          connectionHandleToId.set(connectionHandle, rawConnectionID);
+        } else if (dispatcher === 'onDisconnect') {
+          connectionIdToHandle.delete(rawConnectionID);
+          connectionHandleToId.delete(connectionHandle);
+        }
+
+        const obj = {
+          ...rawObj,
+        };
+        delete obj.meta;
+
+        const meta = {
+          ...rawMeta,
+          connectionHandle,
+        };
+        delete meta.connectionID;
+
+        if (url === '/private/repl') {
+          // Use our local handler object (compatibility).
           // TODO: standardise
           if (handler[type]) {
-            D(commandDevice).sendResponse(count, false, handler[type](obj));
+            D(commandDevice).sendResponse(
+              count,
+              false,
+              handler[type](obj, meta),
+            );
             return;
           }
         }
@@ -181,13 +182,10 @@ function build(E, D) {
           // todo fixme avoid the loop
           // For now, go from the end to beginning so that handlers
           // override.
-          const hardObjects = harden({ ...homeObjects });
           for (let i = urlHandlers.length - 1; i >= 0; i -= 1) {
             // eslint-disable-next-line no-await-in-loop
-            const res = await E(urlHandlers[i]).processInbound(
-              obj,
-              hardObjects,
-            );
+            const res = await E(urlHandlers[i])[dispatcher](obj, meta);
+
             if (res) {
               D(commandDevice).sendResponse(count, false, harden(res));
               return;
@@ -195,8 +193,12 @@ function build(E, D) {
           }
         }
 
-        throw Error(`No handler for ${url} ${type}`);
+        if (dispatcher === 'onMessage') {
+          throw Error(`No handler for ${url} ${type}`);
+        }
+        D(commandDevice).sendResponse(count, false, harden(true));
       } catch (rej) {
+        console.debug(`Error ${dispatcher}:`, rej);
         D(commandDevice).sendResponse(count, true, harden(rej));
       }
     },

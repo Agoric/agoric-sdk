@@ -51,25 +51,29 @@ export function stringify(value, spaces, already = new WeakSet()) {
   return ret;
 }
 
-export function getReplHandler(E, homeObjects, sendBroadcast) {
+export function getReplHandler(E, homeObjects, sendMulticast) {
   const commands = {};
   const history = {};
   const display = {};
   let highestHistory = -1;
+  const replHandles = new Set();
 
   function updateHistorySlot(histnum) {
     // console.log(`sendBroadcast ${histnum}`);
-    sendBroadcast({
-      type: 'updateHistory',
-      histnum,
-      command: commands[histnum],
-      display: display[histnum],
-    });
+    sendMulticast(
+      {
+        type: 'updateHistory',
+        histnum,
+        command: commands[histnum],
+        display: display[histnum],
+      },
+      [...replHandles.keys()],
+    );
   }
 
   const { evaluateProgram } = makeEvaluators({ sloppyGlobals: true });
 
-  return {
+  const handler = {
     getHighestHistory() {
       return { highestHistory };
     },
@@ -79,9 +83,10 @@ export function getReplHandler(E, homeObjects, sendBroadcast) {
       for (let histnum = 0; histnum <= highestHistory; histnum += 1) {
         updateHistorySlot(histnum);
       }
+      return true;
     },
 
-    doEval(obj) {
+    doEval(obj, _meta) {
       const { number: histnum, body } = obj;
       console.log(`doEval`, histnum, body);
       if (histnum <= highestHistory) {
@@ -134,4 +139,26 @@ export function getReplHandler(E, homeObjects, sendBroadcast) {
       return {};
     },
   };
+
+  const commandHandler = harden({
+    onConnect(_obj, meta) {
+      replHandles.add(meta.connectionHandle);
+    },
+    onDisconnect(_obj, meta) {
+      replHandles.delete(meta.connectionHandle);
+    },
+
+    onMessage(obj, meta) {
+      if (handler[obj.type]) {
+        return handler[obj.type](obj, meta);
+      }
+      return false;
+    },
+  });
+
+  return harden({
+    getCommandHandler() {
+      return commandHandler;
+    },
+  });
 }

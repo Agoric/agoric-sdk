@@ -30,7 +30,7 @@ export default async function deployMain(progname, rawArgs, powers) {
     ws.send(JSON.stringify(obj));
   };
 
-  const wsurl = `ws://${hostport}/captp`;
+  const wsurl = `ws://${hostport}/private/captp`;
   const ws = makeWebSocket(wsurl, { origin: 'http://127.0.0.1' });
 
   const exit = makePromise();
