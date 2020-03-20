@@ -3,7 +3,6 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/weak-store';
-import { E } from '@agoric/eventual-send';
 
 import makeAmountMath from './amountMath';
 
@@ -41,8 +40,12 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
   const makePurse = () => {
     const purse = harden({
       deposit: (paymentP, optAmount = undefined) => {
-        const srcPayment = E.unwrap(paymentP);
-        const srcPaymentBalance = paymentLedger.get(srcPayment);
+        // TODO(hibbert) use `if (isPromise(paymentP)) {` from makePromise.
+        if (Promise.resolve(paymentP) === paymentP) {
+          throw new TypeError(`deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first:
+        paymentPromise.then(actualPayment => deposit(actualPayment))`);
+        }
+        const srcPaymentBalance = paymentLedger.get(paymentP);
         // Note: this does not guarantee that optAmount itself is a valid stable amount
         assertAmountEqual(srcPaymentBalance, optAmount);
         const purseBalance = purse.getCurrentAmount();
@@ -51,13 +54,35 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
         // eslint-disable-next-line no-use-before-define
         const payments = reallocate(
           harden({
-            payments: [srcPayment],
+            payments: [paymentP],
             purses: [purse],
             newPurseBalances: [newPurseBalance],
           }),
         );
         assert(payments.length === 0, 'no payments should be returned');
         return newPurseBalance;
+      },
+      depositInOrder: (paymentP, optAmount = undefined) => {
+        return Promise.resolve(paymentP).then(srcPaymentBalance => {
+          // Note: this does not guarantee that optAmount itself is a valid stable amount
+          assertAmountEqual(srcPaymentBalance, optAmount);
+          const purseBalance = purse.getCurrentAmount();
+          const newPurseBalance = amountMath.add(
+            srcPaymentBalance,
+            purseBalance,
+          );
+          // Commit point
+          // eslint-disable-next-line no-use-before-define
+          const payments = reallocate(
+            harden({
+              payments: [paymentP],
+              purses: [purse],
+              newPurseBalances: [newPurseBalance],
+            }),
+          );
+          assert(payments.length === 0, 'no payments should be returned');
+          return newPurseBalance;
+        });
       },
       withdraw: amount => {
         amount = amountMath.coerce(amount);
@@ -154,75 +179,95 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
       purseLedger.init(purse, amountMath.getEmpty());
       return purse;
     },
-    isLive: paymentLedger.has,
-    getAmountOf: paymentLedger.get,
+
+    isLive: paymentP => {
+      return Promise.resolve(paymentP).then(payment => {
+        return paymentLedger.has(payment);
+      });
+    },
+    getAmountOf: paymentP => {
+      return Promise.resolve(paymentP).then(payment => {
+        let result;
+        try {
+          result = paymentLedger.get(payment);
+        } catch (e) {
+          throw new Error(`payment not found: ${allegedName}`, e);
+        }
+        return result;
+      });
+    },
     burn: (paymentP, optAmount = undefined) => {
-      const payment = E.unwrap(paymentP);
-      const paymentBalance = paymentLedger.get(payment);
-      assertAmountEqual(paymentBalance, optAmount);
-      // Commit point.
-      paymentLedger.delete(payment);
-      return paymentBalance;
+      return Promise.resolve(paymentP).then(payment => {
+        const paymentBalance = paymentLedger.get(payment);
+        assertAmountEqual(paymentBalance, optAmount);
+        // Commit point.
+        paymentLedger.delete(payment);
+        return paymentBalance;
+      });
     },
     claim: (paymentP, optAmount = undefined) => {
-      const srcPayment = E.unwrap(paymentP);
-      const srcPaymentBalance = paymentLedger.get(srcPayment);
-      assertAmountEqual(srcPaymentBalance, optAmount);
-      // Commit point.
-      const [payment] = reallocate(
-        harden({
-          payments: [srcPayment],
-          newPaymentBalances: [srcPaymentBalance],
-        }),
-      );
-      return payment;
+      return Promise.resolve(paymentP).then(srcPayment => {
+        const srcPaymentBalance = paymentLedger.get(srcPayment);
+        assertAmountEqual(srcPaymentBalance, optAmount);
+        // Commit point.
+        const [payment] = reallocate(
+          harden({
+            payments: [srcPayment],
+            newPaymentBalances: [srcPaymentBalance],
+          }),
+        );
+        return payment;
+      });
     },
     // Payments in `fromPaymentsPArray` must be distinct. Alias
     // checking is delegated to the `reallocate` function.
     combine: (fromPaymentsPArray, optTotalAmount = undefined) => {
-      const fromPaymentsArray = fromPaymentsPArray.map(E.unwrap);
-      const totalPaymentsBalance = fromPaymentsArray
-        .map(paymentLedger.get)
-        .reduce(add, empty);
-      assertAmountEqual(totalPaymentsBalance, optTotalAmount);
-      // Commit point.
-      const [payment] = reallocate(
-        harden({
-          payments: fromPaymentsArray,
-          newPaymentBalances: [totalPaymentsBalance],
-        }),
-      );
-      return payment;
+      return Promise.resolve(fromPaymentsPArray).then(fromPaymentsArray => {
+        const totalPaymentsBalance = fromPaymentsArray
+          .map(paymentLedger.get)
+          .reduce(add, empty);
+        assertAmountEqual(totalPaymentsBalance, optTotalAmount);
+        // Commit point.
+        const [payment] = reallocate(
+          harden({
+            payments: fromPaymentsArray,
+            newPaymentBalances: [totalPaymentsBalance],
+          }),
+        );
+        return payment;
+      });
     },
     // payment to two payments, A and B
     split: (paymentP, paymentAmountA) => {
-      const srcPayment = E.unwrap(paymentP);
-      paymentAmountA = amountMath.coerce(paymentAmountA);
-      const srcPaymentBalance = paymentLedger.get(srcPayment);
-      const paymentAmountB = amountMath.subtract(
-        srcPaymentBalance,
-        paymentAmountA,
-      );
-      // Commit point
-      const newPayments = reallocate(
-        harden({
-          payments: [srcPayment],
-          newPaymentBalances: [paymentAmountA, paymentAmountB],
-        }),
-      );
-      return newPayments;
+      return Promise.resolve(paymentP).then(srcPayment => {
+        paymentAmountA = amountMath.coerce(paymentAmountA);
+        const srcPaymentBalance = paymentLedger.get(srcPayment);
+        const paymentAmountB = amountMath.subtract(
+          srcPaymentBalance,
+          paymentAmountA,
+        );
+        // Commit point
+        const newPayments = reallocate(
+          harden({
+            payments: [srcPayment],
+            newPaymentBalances: [paymentAmountA, paymentAmountB],
+          }),
+        );
+        return newPayments;
+      });
     },
     splitMany: (paymentP, amounts) => {
-      const srcPayment = E.unwrap(paymentP);
-      amounts = amounts.map(amountMath.coerce);
-      // Commit point
-      const newPayments = reallocate(
-        harden({
-          payments: [srcPayment],
-          newPaymentBalances: amounts,
-        }),
-      );
-      return newPayments;
+      return Promise.resolve(paymentP).then(srcPayment => {
+        amounts = amounts.map(amountMath.coerce);
+        // Commit point
+        const newPayments = reallocate(
+          harden({
+            payments: [srcPayment],
+            newPaymentBalances: amounts,
+          }),
+        );
+        return newPayments;
+      });
     },
   });
 

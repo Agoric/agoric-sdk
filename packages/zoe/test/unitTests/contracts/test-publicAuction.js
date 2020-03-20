@@ -51,7 +51,8 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       numBidsAllowed,
     });
 
-    const [{ instanceHandle }] = inviteIssuer.getAmountOf(aliceInvite).extent;
+    const aliceInviteAmount = await inviteIssuer.getAmountOf(aliceInvite);
+    const [{ instanceHandle }] = aliceInviteAmount.extent;
     const { publicAPI } = zoe.getInstance(instanceHandle);
 
     // Alice escrows with zoe
@@ -89,8 +90,8 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     // Alice spreads the invites far and wide and Bob decides he
     // wants to participate in the auction.
     const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
-    const bobInviteExtent = inviteIssuer.getAmountOf(bobExclusiveInvite)
-      .extent[0];
+    const bobExclInvAmount = await inviteIssuer.getAmountOf(bobExclusiveInvite);
+    const bobInviteExtent = bobExclInvAmount.extent[0];
 
     const {
       installationHandle: bobInstallationId,
@@ -137,8 +138,8 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     // Carol decides to bid for the one moola
 
     const carolExclusiveInvite = await inviteIssuer.claim(carolInvite);
-    const carolInviteExtent = inviteIssuer.getAmountOf(carolExclusiveInvite)
-      .extent[0];
+    const carolExclAmt = await inviteIssuer.getAmountOf(carolExclusiveInvite);
+    const carolInviteExtent = carolExclAmt.extent[0];
 
     const {
       installationHandle: carolInstallationId,
@@ -184,8 +185,8 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     // Dave decides to bid for the one moola
     const daveExclusiveInvite = await inviteIssuer.claim(daveInvite);
-    const daveInviteExtent = inviteIssuer.getAmountOf(daveExclusiveInvite)
-      .extent[0];
+    const daveExclAmount = await inviteIssuer.getAmountOf(daveExclusiveInvite);
+    const daveInviteExtent = daveExclAmount.extent[0];
 
     const {
       installationHandle: daveInstallationId,
@@ -244,13 +245,12 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const [daveMoolaPayout, daveSimoleanPayout] = await Promise.all(daveResult);
 
     // Alice (the creator of the auction) gets back the second highest bid
-    t.deepEquals(
-      simoleanIssuer.getAmountOf(aliceSimoleanPayout),
-      carolOfferRules.payoutRules[1].amount,
-    );
+    const aliceSimAmt = await simoleanIssuer.getAmountOf(aliceSimoleanPayout);
+    t.deepEquals(aliceSimAmt, carolOfferRules.payoutRules[1].amount);
 
     // Alice didn't get any of what she put in
-    t.deepEquals(moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
+    const aliceMoolaAmount = await moolaIssuer.getAmountOf(aliceMoolaPayout);
+    t.deepEquals(aliceMoolaAmount, moola(0));
 
     // Alice deposits her payout to ensure she can
     await aliceMoolaPurse.deposit(aliceMoolaPayout);
@@ -258,29 +258,28 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     // Bob (the winner of the auction) gets the one moola and the
     // difference between his bid and the price back
-    t.deepEquals(moolaIssuer.getAmountOf(bobMoolaPayout), moola(1));
-    t.deepEquals(simoleanIssuer.getAmountOf(bobSimoleanPayout), simoleans(4));
+    const bobMoolaAmount = await moolaIssuer.getAmountOf(bobMoolaPayout);
+    t.deepEquals(bobMoolaAmount, moola(1));
+    const bobSimAmount = await simoleanIssuer.getAmountOf(bobSimoleanPayout);
+    t.deepEquals(bobSimAmount, simoleans(4));
 
     // Bob deposits his payout to ensure he can
     await bobMoolaPurse.deposit(bobMoolaPayout);
     await bobSimoleanPurse.deposit(bobSimoleanPayout);
 
     // Carol gets a full refund
-    t.deepEquals(moolaIssuer.getAmountOf(carolMoolaPayout), moola(0));
-    t.deepEquals(
-      simoleanIssuer.getAmountOf(carolSimoleanPayout),
-      carolOfferRules.payoutRules[1].amount,
-    );
+    const carolMoolaAmount = await moolaIssuer.getAmountOf(carolMoolaPayout);
+    t.deepEquals(carolMoolaAmount, moola(0));
+    const carolSimAmt = await simoleanIssuer.getAmountOf(carolSimoleanPayout);
+    t.deepEquals(carolSimAmt, carolOfferRules.payoutRules[1].amount);
 
     // Carol deposits her payout to ensure she can
     await carolMoolaPurse.deposit(carolMoolaPayout);
     await carolSimoleanPurse.deposit(carolSimoleanPayout);
 
     // Dave gets a full refund
-    t.deepEquals(
-      simoleanIssuer.getAmountOf(daveSimoleanPayout),
-      daveOfferRules.payoutRules[1].amount,
-    );
+    const daveSimAmount = await simoleanIssuer.getAmountOf(daveSimoleanPayout);
+    t.deepEquals(daveSimAmount, daveOfferRules.payoutRules[1].amount);
 
     // Dave deposits his payout to ensure he can
     await daveMoolaPurse.deposit(daveMoolaPayout);
@@ -343,7 +342,8 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       issuers,
       numBidsAllowed,
     });
-    const { instanceHandle } = inviteIssuer.getAmountOf(aliceInvite).extent[0];
+    const aliceInviteAmount = await inviteIssuer.getAmountOf(aliceInvite);
+    const { instanceHandle } = aliceInviteAmount.extent[0];
     const { publicAPI } = zoe.getInstance(instanceHandle);
 
     // Alice escrows with zoe
@@ -423,24 +423,22 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const [bobMoolaPayout, bobSimoleanPayout] = await Promise.all(bobResult);
 
     // Alice (the creator of the auction) gets back what she put in
-    t.deepEquals(
-      moolaIssuer.getAmountOf(aliceMoolaPayout),
-      aliceOfferRules.payoutRules[0].amount,
-    );
+    const aliceMoolaAmount = await moolaIssuer.getAmountOf(aliceMoolaPayout);
+    t.deepEquals(aliceMoolaAmount, aliceOfferRules.payoutRules[0].amount);
 
     // Alice didn't get any of what she wanted
-    t.deepEquals(simoleanIssuer.getAmountOf(aliceSimoleanPayout), simoleans(0));
+    const aliceSimAmt = await simoleanIssuer.getAmountOf(aliceSimoleanPayout);
+    t.deepEquals(aliceSimAmt, simoleans(0));
 
     // Alice deposits her payout to ensure she can
     await aliceMoolaPurse.deposit(aliceMoolaPayout);
     await aliceSimoleanPurse.deposit(aliceSimoleanPayout);
 
     // Bob gets a refund
-    t.deepEquals(moolaIssuer.getAmountOf(bobMoolaPayout), moola(0));
-    t.deepEquals(
-      simoleanIssuer.getAmountOf(bobSimoleanPayout),
-      bobOfferRules.payoutRules[1].amount,
-    );
+    const bobMoolaAmount = await moolaIssuer.getAmountOf(bobMoolaPayout);
+    t.deepEquals(bobMoolaAmount, moola(0));
+    const bobSimAmount = await simoleanIssuer.getAmountOf(bobSimoleanPayout);
+    t.deepEquals(bobSimAmount, bobOfferRules.payoutRules[1].amount);
 
     // Bob deposits his payout to ensure he can
     await bobMoolaPurse.deposit(bobMoolaPayout);

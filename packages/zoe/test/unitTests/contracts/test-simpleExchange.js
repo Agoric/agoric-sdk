@@ -27,33 +27,35 @@ function exitRule(kind) {
 }
 
 test('simpleExchange with valid offers', async t => {
-  try {
-    const { issuers, mints, amountMaths, moola, simoleans } = setup();
-    const [moolaIssuer, simoleanIssuer] = issuers;
-    const [moolaMint, simoleanMint] = mints;
-    const zoe = makeZoe({ require });
-    const inviteIssuer = zoe.getInviteIssuer();
-    // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(simpleExchange);
+  t.plan(10);
 
-    const installationHandle = zoe.install(source, moduleFormat);
+  const { issuers, mints, amountMaths, moola, simoleans } = setup();
+  const [moolaIssuer, simoleanIssuer] = issuers;
+  const [moolaMint, simoleanMint] = mints;
+  const zoe = makeZoe({ require });
+  const inviteIssuer = zoe.getInviteIssuer();
+  // Pack the contract.
+  const { source, moduleFormat } = await bundleSource(simpleExchange);
 
-    // Setup Alice
-    const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
-    const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
-    const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
+  const installationHandle = zoe.install(source, moduleFormat);
 
-    // Setup Bob
-    const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(7));
-    const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
-    const bobSimoleanPurse = simoleanIssuer.makeEmptyPurse();
+  // Setup Alice
+  const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
+  const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
+  const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
-    // 1: Simon creates a simpleExchange instance and spreads the invite far and
-    // wide with instructions on how to use it.
-    const { invite: simonInvite } = await zoe.makeInstance(installationHandle, {
-      issuers: [moolaIssuer, simoleanIssuer],
-    });
-    const { instanceHandle } = inviteIssuer.getAmountOf(simonInvite).extent[0];
+  // Setup Bob
+  const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(7));
+  const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
+  const bobSimoleanPurse = simoleanIssuer.makeEmptyPurse();
+
+  // 1: Simon creates a simpleExchange instance and spreads the invite far and
+  // wide with instructions on how to use it.
+  const { invite: simonInvite } = await zoe.makeInstance(installationHandle, {
+    issuers: [moolaIssuer, simoleanIssuer],
+  });
+  inviteIssuer.getAmountOf(simonInvite).then(async simonInviteAmount => {
+    const { instanceHandle } = simonInviteAmount.extent[0];
     const { publicAPI } = zoe.getInstance(instanceHandle);
 
     const { invite: aliceInvite } = publicAPI.makeInvite();
@@ -123,15 +125,19 @@ test('simpleExchange with valid offers', async t => {
     );
 
     // Alice gets paid at least what she wanted
+    const aliceSimoleanAmount = await simoleanIssuer.getAmountOf(
+      aliceSimoleanPayout,
+    );
     t.ok(
       amountMaths[1].isGTE(
-        simoleanIssuer.getAmountOf(aliceSimoleanPayout),
+        aliceSimoleanAmount,
         aliceSellOrderOfferRules.payoutRules[1].amount,
       ),
     );
 
     // Alice sold all of her moola
-    t.deepEquals(moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
+    const aliceMoolaAmount = await moolaIssuer.getAmountOf(aliceMoolaPayout);
+    t.deepEquals(aliceMoolaAmount, moola(0));
 
     // 13: Alice deposits her payout to ensure she can
     await aliceMoolaPurse.deposit(aliceMoolaPayout);
@@ -148,12 +154,7 @@ test('simpleExchange with valid offers', async t => {
     t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 7);
     t.equals(bobMoolaPurse.getCurrentAmount().extent, 3);
     t.equals(bobSimoleanPurse.getCurrentAmount().extent, 0);
-  } catch (e) {
-    t.assert(false, e);
-    console.log(e);
-  } finally {
-    t.end();
-  }
+  });
 });
 
 test('simpleExchange with multiple sell offers', async t => {
@@ -181,7 +182,8 @@ test('simpleExchange with multiple sell offers', async t => {
     const { invite: simonInvite } = await zoe.makeInstance(installationHandle, {
       issuers: [moolaIssuer, simoleanIssuer],
     });
-    const { instanceHandle } = inviteIssuer.getAmountOf(simonInvite).extent[0];
+    const simonInviteAmount = await inviteIssuer.getAmountOf(simonInvite);
+    const { instanceHandle } = simonInviteAmount.extent[0];
     const { publicAPI } = zoe.getInstance(instanceHandle);
 
     const { invite: aliceInvite1 } = publicAPI.makeInvite();
@@ -256,25 +258,27 @@ test('simpleExchange with multiple sell offers', async t => {
 });
 
 test('simpleExchange showPayoutRules', async t => {
-  try {
-    const { issuers, mints, moola, simoleans } = setup();
-    const [moolaIssuer, simoleanIssuer] = issuers;
-    const [moolaMint] = mints;
-    const zoe = makeZoe({ require });
-    const inviteIssuer = zoe.getInviteIssuer();
-    // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(simpleExchange);
+  t.plan(1);
 
-    const installationHandle = zoe.install(source, moduleFormat);
+  const { issuers, mints, moola, simoleans } = setup();
+  const [moolaIssuer, simoleanIssuer] = issuers;
+  const [moolaMint] = mints;
+  const zoe = makeZoe({ require });
+  const inviteIssuer = zoe.getInviteIssuer();
+  // Pack the contract.
+  const { source, moduleFormat } = await bundleSource(simpleExchange);
 
-    // Setup Alice
-    const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
-    // 1: Simon creates a simpleExchange instance and spreads the invite far and
-    // wide with instructions on how to use it.
-    const { invite: simonInvite } = await zoe.makeInstance(installationHandle, {
-      issuers: [moolaIssuer, simoleanIssuer],
-    });
-    const { instanceHandle } = inviteIssuer.getAmountOf(simonInvite).extent[0];
+  const installationHandle = zoe.install(source, moduleFormat);
+
+  // Setup Alice
+  const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
+  // 1: Simon creates a simpleExchange instance and spreads the invite far and
+  // wide with instructions on how to use it.
+  const { invite: simonInvite } = await zoe.makeInstance(installationHandle, {
+    issuers: [moolaIssuer, simoleanIssuer],
+  });
+  inviteIssuer.getAmountOf(simonInvite).then(simonInviteAmout => {
+    const { instanceHandle } = simonInviteAmout.extent[0];
     const { publicAPI } = zoe.getInstance(instanceHandle);
 
     const { invite: aliceInvite1, inviteHandle } = publicAPI.makeInvite();
@@ -288,22 +292,17 @@ test('simpleExchange showPayoutRules', async t => {
     });
 
     const alicePayments = [aliceMoolaPayment, undefined];
-    const { seat: aliceSeat1 } = await zoe.redeem(
-      aliceInvite1,
-      aliceSale1OrderOfferRules,
-      alicePayments,
-    );
+    zoe
+      .redeem(aliceInvite1, aliceSale1OrderOfferRules, alicePayments)
+      .then(aliceSeat1P => {
+        const { seat: aliceSeat1 } = aliceSeat1P;
 
-    // 4: Alice adds her sell order to the exchange
-    aliceSeat1.addOrder();
+        // 4: Alice adds her sell order to the exchange
+        aliceSeat1.addOrder();
 
-    const expected = [{ offer: moola(3) }, { want: simoleans(4) }];
+        const expected = [{ offer: moola(3) }, { want: simoleans(4) }];
 
-    t.deepEquals(publicAPI.getOffer(inviteHandle), expected);
-  } catch (e) {
-    t.assert(false, e);
-    console.log(e);
-  } finally {
-    t.end();
-  }
+        t.deepEquals(publicAPI.getOffer(inviteHandle), expected);
+      });
+  });
 });

@@ -323,56 +323,56 @@ const makeZoe = (additionalEndowments = {}) => {
         return harden(redemptionResult);
       };
 
-      const inviteAmount = inviteIssuer.burn(invite);
-      assert(
-        inviteAmount.extent.length === 1,
-        'only one invite should be redeemed',
-      );
+      return inviteIssuer.burn(invite).then(inviteAmount => {
+        assert(
+          inviteAmount.extent.length === 1,
+          'only one invite should be redeemed',
+        );
 
-      const {
-        extent: [{ instanceHandle, handle: offerHandle }],
-      } = inviteAmount;
+        const {
+          extent: [{ instanceHandle, handle: offerHandle }],
+        } = inviteAmount;
 
-      const { issuers } = instanceTable.get(instanceHandle);
+        const { issuers } = instanceTable.get(instanceHandle);
+        // Promise flow = issuer -> purse -> deposit payment -> seat + payout
+        const paymentDepositedPs = issuers.map((issuer, i) => {
+          const issuerRecordP = issuerTable.getPromiseForIssuerRecord(issuer);
+          const payoutRule = offerRules.payoutRules[i];
+          const offerPayment = offerPayments[i];
 
-      // Promise flow = issuer -> purse -> deposit payment -> seat + payout
-      const paymentDepositedPs = issuers.map((issuer, i) => {
-        const issuerRecordP = issuerTable.getPromiseForIssuerRecord(issuer);
-        const payoutRule = offerRules.payoutRules[i];
-        const offerPayment = offerPayments[i];
-
-        return issuerRecordP.then(({ purse, amountMath }) => {
-          if (payoutRule.kind === 'offerAtMost') {
-            // We cannot trust these amounts since they come directly
-            // from the remote issuer and so we must coerce them.
-            return E(purse)
-              .deposit(offerPayment, payoutRule.amount)
-              .then(_ => amountMath.coerce(payoutRule.amount));
-          }
-          assert(
-            offerPayments[i] === undefined,
-            details`payment was included, but the rule kind was ${payoutRule.kind}`,
-          );
-          return Promise.resolve(amountMath.getEmpty());
+          return issuerRecordP.then(({ purse, amountMath }) => {
+            if (payoutRule.kind === 'offerAtMost') {
+              // We cannot trust these amounts since they come directly
+              // from the remote issuer and so we must coerce them.
+              return E(purse)
+                .deposit(offerPayment, payoutRule.amount)
+                .then(_ => amountMath.coerce(payoutRule.amount));
+            }
+            assert(
+              offerPayments[i] === undefined,
+              details`payment was included, but the rule kind was ${payoutRule.kind}`,
+            );
+            return Promise.resolve(amountMath.getEmpty());
+          });
         });
-      });
 
-      return Promise.all(paymentDepositedPs)
-        .then(amounts => {
-          const offerImmutableRecord = {
-            instanceHandle,
-            payoutRules: offerRules.payoutRules,
-            exitRule: offerRules.exitRule,
-            issuers,
-            amounts,
-          };
-          // Since we have redeemed an invite, the inviteHandle is
-          // also the offerHandle.
-          offerTable.create(offerImmutableRecord, offerHandle);
-          payoutMap.init(offerHandle, makePromise());
-          return { instanceHandle, offerHandle };
-        })
-        .then(makeRedemptionResult);
+        return Promise.all(paymentDepositedPs)
+          .then(amounts => {
+            const offerImmutableRecord = {
+              instanceHandle,
+              payoutRules: offerRules.payoutRules,
+              exitRule: offerRules.exitRule,
+              issuers,
+              amounts,
+            };
+            // Since we have redeemed an invite, the inviteHandle is
+            // also the offerHandle.
+            offerTable.create(offerImmutableRecord, offerHandle);
+            payoutMap.init(offerHandle, makePromise());
+            return { instanceHandle, offerHandle };
+          })
+          .then(makeRedemptionResult);
+      });
     },
   });
   return zoeService;

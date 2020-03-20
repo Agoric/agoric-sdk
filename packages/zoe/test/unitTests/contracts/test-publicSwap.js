@@ -71,8 +71,8 @@ test('zoe - atomicSwap', async t => {
     // counter-party.
 
     const bobExclusiveInvite = await inviteIssuer.claim(bobInviteP);
-    const bobInviteExtent = inviteIssuer.getAmountOf(bobExclusiveInvite)
-      .extent[0];
+    const bobExclAmount = await inviteIssuer.getAmountOf(bobExclusiveInvite);
+    const bobInviteExtent = bobExclAmount.extent[0];
 
     const {
       installationHandle: bobInstallationId,
@@ -123,13 +123,12 @@ test('zoe - atomicSwap', async t => {
     );
 
     // Alice gets what Alice wanted
-    t.deepEquals(
-      simoleanIssuer.getAmountOf(aliceSimoleanPayout),
-      aliceOfferRules.payoutRules[1].amount,
-    );
+    const aliceSimAmt = await simoleanIssuer.getAmountOf(aliceSimoleanPayout);
+    t.deepEquals(aliceSimAmt, aliceOfferRules.payoutRules[1].amount);
 
     // Alice didn't get any of what Alice put in
-    t.deepEquals(moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
+    const aliceMoolaAmount = await moolaIssuer.getAmountOf(aliceMoolaPayout);
+    t.deepEquals(aliceMoolaAmount, moola(0));
 
     // Alice deposits her payout to ensure she can
     await aliceMoolaPurse.deposit(aliceMoolaPayout);
