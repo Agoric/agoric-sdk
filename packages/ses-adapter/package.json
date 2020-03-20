@@ -23,6 +23,12 @@
     "@agoric/harden": "^0.0.4",
     "@agoric/eventual-send": "^0.5.0"
   },
+  "files": [
+    "README.md",
+    "LICENSE",
+    "NEWS.md",
+    "src/**/*.js"
+  ],
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
