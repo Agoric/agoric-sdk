@@ -15,9 +15,7 @@
     "lint-check": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "tap": "^14.10.5",
-    "tape": "^4.10.0",
-    "tape-promise": "^4.0.0"
+    "tap": "^14.10.5"
   },
   "dependencies": {
     "@agoric/eventual-send": "^0.6.0",
