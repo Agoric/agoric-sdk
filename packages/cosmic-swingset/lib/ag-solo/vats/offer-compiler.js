@@ -10,226 +10,229 @@ export default ({
   registrar,
 
   collections: {
-    idToOfferDesc,
+    idToOffer,
     brandToMath,
     issuerToIssuerNames,
     issuerToBrand,
     purseToIssuer,
     petnameToPurse,
   },
-}) => async (id, offerDesc, hooks = {}) => {
+}) => async (id, offer, hooks = {}) => {
   const {
     instanceRegKey,
-    contractIssuerIndexToRole = [], // FIXME: Only for compatibility with Zoe pre-Roles
-    offerRulesTemplate,
-  } = offerDesc;
+    contractIssuerIndexToKeyword = [], // FIXME: Only for compatibility with Zoe pre-Keywords
+    proposalTemplate,
+  } = offer;
 
-  function createRoleOfferRulesAndPurses(tmpl) {
-    const roleOfferRules = { exit: tmpl.exit };
-    const rolePurses = {};
-    const roleIssuerNames = {};
+  function createKeywordProposalAndPurses(tmpl) {
+    const keywordProposal = {};
+    if (tmpl.exit) {
+      keywordProposal.exit = tmpl.exit;
+    }
+    const keywordPurses = {};
+    const keywordIssuerNames = {};
 
     const setPurseAmount = (
-      roles,
+      keywords,
       issuerNames,
-      role,
+      keyword,
       purse,
       extent = undefined,
     ) => {
       const issuer = purseToIssuer.get(purse);
-      issuerNames[role] = issuerToIssuerNames.get(issuer);
+      issuerNames[keyword] = issuerToIssuerNames.get(issuer);
       const brand = issuerToBrand.get(issuer);
       const amountMath = brandToMath.get(brand);
       if (extent === undefined) {
-        roles[role] = amountMath.getEmpty();
+        keywords[keyword] = amountMath.getEmpty();
       } else {
-        roles[role] = amountMath.make(extent);
+        keywords[keyword] = amountMath.make(extent);
       }
     };
 
-    for (const dir of ['offer', 'want']) {
-      if (!offerRulesTemplate[dir]) {
+    for (const dir of ['give', 'want']) {
+      if (!proposalTemplate[dir]) {
         continue;
       }
-      roleOfferRules[dir] = {};
-      rolePurses[dir] = {};
-      roleIssuerNames[dir] = {};
-      Object.entries(offerRulesTemplate[dir]).forEach(([role, amount]) => {
-        assert(amount.pursePetname, `Role ${dir} ${role} has no pursePetname`);
+      keywordProposal[dir] = {};
+      keywordPurses[dir] = {};
+      keywordIssuerNames[dir] = {};
+      Object.entries(proposalTemplate[dir]).forEach(([keyword, amount]) => {
+        assert(amount.pursePetname, `Keyword ${dir} ${keyword} has no pursePetname`);
         const purse = petnameToPurse.get(amount.pursePetname);
         assert(
           purse,
-          `Role ${dir} ${role} pursePetname ${amount.pursePetname} is not a purse`,
+          `Keyword ${dir} ${keyword} pursePetname ${amount.pursePetname} is not a purse`,
         );
-        rolePurses[dir][role] = purse;
+        keywordPurses[dir][keyword] = purse;
         setPurseAmount(
-          roleOfferRules[dir],
-          roleIssuerNames[dir],
-          role,
+          keywordProposal[dir],
+          keywordIssuerNames[dir],
+          keyword,
           purse,
           amount.extent,
         );
       });
     }
 
-    return { roleOfferRules, rolePurses, roleIssuerNames };
+    return { keywordProposal, keywordPurses, keywordIssuerNames };
   }
 
   const {
-    roleOfferRules,
-    rolePurses,
-    roleIssuerNames,
-  } = createRoleOfferRulesAndPurses(offerRulesTemplate);
+    keywordProposal,
+    keywordPurses,
+    keywordIssuerNames,
+  } = createKeywordProposalAndPurses(proposalTemplate);
 
-  // Enrich the offerRulesTemplate.
-  const newOfferRulesTemplate = { ...offerRulesTemplate };
-  for (const dir of ['offer', 'want']) {
-    if (!offerRulesTemplate[dir]) {
+  // Enrich the proposalTemplate.
+  const newProposalTemplate = { ...proposalTemplate };
+  for (const dir of ['give', 'want']) {
+    if (!proposalTemplate[dir]) {
       continue;
     }
 
     const newRules = {};
-    Object.entries(offerRulesTemplate[dir] || {}).forEach(([role, amount]) => {
-      newRules[role] = { ...amount, ...roleIssuerNames[dir][role] };
+    Object.entries(proposalTemplate[dir] || {}).forEach(([keyword, amount]) => {
+      newRules[keyword] = { ...amount, ...keywordIssuerNames[dir][keyword] };
     });
-    newOfferRulesTemplate[dir] = newRules;
+    newProposalTemplate[dir] = newRules;
   }
 
-  // Resave the enriched offerDesc.
-  idToOfferDesc.set(id, {
-    ...offerDesc,
-    offerRulesTemplate: newOfferRulesTemplate,
+  // Resave the enriched offer.
+  idToOffer.set(id, {
+    ...offer,
+    proposalTemplate: newProposalTemplate,
   });
 
   // Get the instance.
   const instanceHandle = await E(registrar).get(instanceRegKey);
   const {
     publicAPI,
-    roles: contractRoleIssuers, // Only present with Zoe Roles.
+    issuerKeywordRecord, // Only present with Zoe 0.3.0.
     terms: { issuers: contractIssuers },
   } = await E(zoe).getInstance(instanceHandle);
 
-  // If contractRoleIssuers exists, use it.
-  const roleIssuers = { ...contractRoleIssuers };
-  if (!contractRoleIssuers) {
-    // Otherwise (pre-Zoe Roles), use the index-to-role.
-    Object.values(contractIssuerIndexToRole).forEach((role, i) => {
-      roleIssuers[role] = contractIssuers[i];
+  // If issuerKeywordRecord exists, use it.
+  const keywordIssuers = { ...issuerKeywordRecord };
+  if (!issuerKeywordRecord) {
+    // Otherwise (pre-Zoe Keywords), use the index-to-keyword.
+    Object.values(contractIssuerIndexToKeyword).forEach((keyword, i) => {
+      keywordIssuers[keyword] = contractIssuers[i];
     });
   }
 
-  async function finishCompile(offerRules, directedPurses) {
-    const roleBrands = {};
-    let cachedRoleBrandsP;
-    const getRoleBrandsP = () => {
-      if (cachedRoleBrandsP) {
-        return cachedRoleBrandsP;
+  async function finishCompile(proposal, directedPurses) {
+    const keywordBrands = {};
+    let cachedKeywordBrandsP;
+    const getKeywordBrandsP = () => {
+      if (cachedKeywordBrandsP) {
+        return cachedKeywordBrandsP;
       }
-      cachedRoleBrandsP = Promise.all(
-        Object.entries(roleIssuers).map(async ([role, issuer]) => {
-          roleBrands[role] = await E(issuer).getBrand();
+      cachedKeywordBrandsP = Promise.all(
+        Object.entries(keywordIssuers).map(async ([keyword, issuer]) => {
+          keywordBrands[keyword] = await E(issuer).getBrand();
         }),
       );
-      return cachedRoleBrandsP;
+      return cachedKeywordBrandsP;
     };
 
-    // This replaces instances of roles ending with a '*' with
-    // a rolename that matches the brand, if there is one.
+    // This replaces instances of keywords ending with a '*' with
+    // a keywordname that matches the brand, if there is one.
     //
-    // Not recursive, since the multiroleNames are only processed
-    // after an Object.keys call on the roles object.
+    // Not recursive, since the multiwords are only processed
+    // after an Object.keys call on the keywords object.
     const mergedPurses = {};
-    const mergedRoles = {};
-    const replaceMultiroles = async (roles, purses, roleName, dir) => {
-      let newName = roleName;
-      if (roleName.endsWith('*')) {
-        // It's a multirole.
+    const mergedKeywords = {};
+    const replaceMultiwords = async (keywords, purses, keyword, dir) => {
+      let newName = keyword;
+      if (keyword.endsWith('*')) {
+        // It's a multiword.
 
-        // Find the only role with this prefix and brand.
-        const multiroleName = roleName;
-        const multirolePrefix = multiroleName.substr(
+        // Find the only keyword with this prefix and brand.
+        const multiword = keyword;
+        const multiwordPrefix = multiword.substr(
           0,
-          multiroleName.length - 1,
+          multiword.length - 1,
         );
 
         // Now we actually need the brands (if we haven't already gotten them).
-        await getRoleBrandsP();
-        const { brand } = roles[multiroleName];
-        const roleMatches = Object.entries(roleBrands).filter(
+        await getKeywordBrandsP();
+        const { brand } = keywords[multiword];
+        const keywordMatches = Object.entries(keywordBrands).filter(
           ([rname, rbrand]) =>
-            rname.startsWith(multirolePrefix) && rbrand === brand,
+            rname.startsWith(multiwordPrefix) && rbrand === brand,
         );
 
         // We don't use details`...` because these error messages should be available
         // verbatim to the caller.
         assert(
-          roleMatches.length > 0,
-          `${dir} multirole ${multiroleName} has no matching brand`,
+          keywordMatches.length > 0,
+          `${dir} multiword ${multiword} has no matching brand`,
         );
 
         assert(
-          roleMatches.length === 1,
-          `${dir} multirole ${multiroleName} is ambiguous (${roleMatches
+          keywordMatches.length === 1,
+          `${dir} multiword ${multiword} is ambiguous (${keywordMatches
             .map(([rname, _rbrand]) => rname)
             .join(',')})`,
         );
 
-        [[newName]] = roleMatches;
+        [[newName]] = keywordMatches;
       }
 
       assert(
-        mergedRoles[newName] === undefined,
-        `${dir} role ${roleName} (now ${newName}) is already used`,
+        mergedKeywords[newName] === undefined,
+        `${dir} keyword ${keyword} (now ${newName}) is already used`,
       );
 
       assert(
         mergedPurses[newName] === undefined,
-        `${dir} role ${roleName} purse (now ${newName}) is already used`,
+        `${dir} keyword ${keyword} purse (now ${newName}) is already used`,
       );
 
-      if (roleName !== newName) {
-        // Update the offerRules we were passed in.
-        roles[newName] = roles[roleName];
-        delete roles[roleName];
+      if (keyword !== newName) {
+        // Update the proposal we were passed in.
+        keywords[newName] = keywords[keyword];
+        delete keywords[keyword];
       }
-      mergedRoles[newName] = roles[roleName];
-      mergedPurses[newName] = purses[roleName];
+      mergedKeywords[newName] = keywords[keyword];
+      mergedPurses[newName] = purses[keyword];
     };
 
-    // Replace multiroles with actual single roles.
+    // Replace multiwords with actual single keywords.
     await Promise.all([
       Promise.all(
-        Object.keys(offerRules.want || {}).map(role =>
-          replaceMultiroles(offerRules.want, directedPurses.want, role, 'Want'),
+        Object.keys(proposal.want || {}).map(keyword =>
+          replaceMultiwords(proposal.want, directedPurses.want, keyword, 'Want'),
         ),
       ),
       Promise.all(
-        Object.keys(offerRules.offer || {}).map(role =>
-          replaceMultiroles(
-            offerRules.offer,
-            directedPurses.offer,
-            role,
+        Object.keys(proposal.give || {}).map(keyword =>
+          replaceMultiwords(
+            proposal.give,
+            directedPurses.give,
+            keyword,
             'Offer',
           ),
         ),
       ),
     ]);
 
-    if (contractRoleIssuers) {
-      // We need Zoe Roles support.
-      return { zoeKind: 'roles', offerRules, purses: mergedPurses };
+    if (issuerKeywordRecord) {
+      // We need Zoe Keywords support.
+      return { zoeKind: 'keywords', proposal, purses: mergedPurses };
     }
 
     // FIXME: The rest of this file converts to the old (indexed) Zoe.
     const indexedPurses = [];
     const indexedPayoutRules = await Promise.all(
-      contractIssuerIndexToRole.map(async (role, i) => {
-        indexedPurses[i] = mergedPurses[role];
-        if (offerRules.want && offerRules.want[role]) {
-          return { kind: 'wantAtLeast', amount: offerRules.want[role] };
+      contractIssuerIndexToKeyword.map(async (keyword, i) => {
+        indexedPurses[i] = mergedPurses[keyword];
+        if (proposal.want && proposal.want[keyword]) {
+          return { kind: 'wantAtLeast', amount: proposal.want[keyword] };
         }
-        if (offerRules.offer && offerRules.offer[role]) {
-          return { kind: 'offerAtMost', amount: offerRules.offer[role] };
+        if (proposal.give && proposal.give[keyword]) {
+          return { kind: 'offerAtMost', amount: proposal.give[keyword] };
         }
         const amount = await E(
           E(contractIssuers[i]).getAmountMath(),
@@ -239,28 +242,25 @@ export default ({
     );
 
     // Cheap translation of exitObj to exitRule.
-    const exitObj = offerRules.exit || { onDemand: {} };
+    const { exit: exitObj = { onDemand: null } } = proposal;
     const exitKind = Object.keys(exitObj)[0];
     const exitRule = {};
-    Object.entries(exitObj[exitKind]).forEach(([key, val]) => {
-      // Prevent functions from slipping in.
-      if (typeof val !== 'function') {
-        exitRule[key] = val;
-      }
+    Object.entries(exitObj[exitKind] || {}).forEach(([key, val]) => {
+      exitRule[key] = val;
     });
     exitRule.kind = exitKind;
 
     return {
       zoeKind: 'indexed',
-      offerRules: { payoutRules: indexedPayoutRules, exitRule },
+      proposal: { payoutRules: indexedPayoutRules, exitRule },
       purses: indexedPurses,
     };
   }
 
   // Get the invite and the (possibly indexed) rules and purses.
-  const { zoeKind, offerRules, purses } = await finishCompile(
-    roleOfferRules,
-    rolePurses,
+  const { zoeKind, proposal, purses } = await finishCompile(
+    keywordProposal,
+    keywordPurses,
   );
-  return { zoeKind, publicAPI, offerRules, purses, hooks };
+  return { zoeKind, publicAPI, proposal, purses, hooks };
 };

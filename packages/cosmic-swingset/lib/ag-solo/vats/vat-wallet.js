@@ -67,8 +67,9 @@ function build(E, D, _log) {
           data: true,
         };
       }
+      // TODO: Maybe rename to walletGetOffers
       case 'walletGetOfferDescriptions': {
-        const result = await wallet.getOfferDescriptions(data);
+        const result = await wallet.getOffers(data);
         return {
           type: 'walletOfferDescriptions',
           data: result,
