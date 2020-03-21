@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 import { makeWallet } from './lib-wallet';
 import pubsub from './pubsub';
 
-function build(E, D, _log) {
+function build(E, _D, _log) {
   let wallet;
   let pursesState;
   let inboxState;
@@ -25,7 +25,7 @@ function build(E, D, _log) {
     http = o;
   }
 
-  async function adminOnMessage(obj, meta) {
+  async function adminOnMessage(obj, meta = { origin: 'unknown' }) {
     const { type, data } = obj;
     switch (type) {
       case 'walletGetPurses': {
@@ -72,6 +72,14 @@ function build(E, D, _log) {
         const result = await wallet.getOffers(data);
         return {
           type: 'walletOfferDescriptions',
+          data: result,
+        };
+      }
+
+      case 'walletGetOfferPublicIDs': {
+        const result = await wallet.getPendingPublicIDsByOrigin(meta.origin);
+        return {
+          type: 'walletOfferPublicIDs',
           data: result,
         };
       }
@@ -151,6 +159,7 @@ function build(E, D, _log) {
             switch (type) {
               case 'walletGetPurses':
               case 'walletAddOffer':
+              case 'walletGetOfferDescriptions':
                 // Override the origin since we got it from the bridge.
                 return adminOnMessage(obj, {
                   ...meta,

@@ -28,7 +28,7 @@ export async function makeWallet(
   const brandToMath = makeStore();
 
   // Offers that the wallet knows about (the inbox).
-  const idToOffer = new Map();
+  const idToOffer = makeStore();
 
   // Compiled offers (all ready to execute).
   const idToCompiledOfferP = new Map();
@@ -193,12 +193,25 @@ export async function makeWallet(
     return petnameToPurse.entries();
   }
 
+  function getPendingPublicIDsByOrigin(origin) {
+    return idToOffer
+      .values()
+      .filter(
+        offer =>
+          offer.status === 'pending' &&
+          offer.publicID &&
+          offer.requestContext.origin === origin,
+      )
+      .map(offer => offer.publicID);
+  }
+
   function getOffers() {
     // return the offers sorted by id
-    return Array.from(idToOffer)
-      .filter(p => p[1].status === 'accept')
-      .sort((p1, p2) => p1[0] > p2[0])
-      .map(p => harden(p[1]));
+    return idToOffer
+      .entries()
+      .filter(([_id, offer]) => offer.status === 'accept')
+      .sort(([id1], [id2]) => id1 > id2)
+      .map(([_id, offer]) => harden(offer));
   }
 
   const compileOffer = makeOfferCompiler({
@@ -228,7 +241,7 @@ export async function makeWallet(
       requestContext,
       status: undefined,
     };
-    idToOffer.set(id, offer);
+    idToOffer.init(id, offer);
     updateInboxState(id, offer);
 
     // Start compiling the template, saving a promise for it.
@@ -415,6 +428,7 @@ export async function makeWallet(
     cancelOffer,
     acceptOffer,
     getOffers,
+    getPendingPublicIDsByOrigin,
   });
 
   return wallet;
