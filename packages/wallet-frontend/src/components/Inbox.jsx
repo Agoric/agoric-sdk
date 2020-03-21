@@ -106,7 +106,7 @@ export default function Inbox() {
     dispatch(acceptOffer(id));
   }
 
-//  const offerDesc = {
+//  const offer = {
 //    id: Date.now(),
 //    instanceRegKey: instanceId,
 //    contractIssuerIndexToRole: ['TokenA', 'TokenB', 'Liquidity'],
@@ -114,20 +114,20 @@ export default function Inbox() {
 //    instanceAcceptedHook: undefined, // Could be E(publicAPI)...
 //    seatTriggerHook: ['swap'], // E(seat).swap()
 //
-//    offerRulesTemplate: {
-//     offer: {
-//       $InputToken: {
+//    proposalTemplate: {
+//     give: {
+//       'Token*': {
 //          pursePetname: inputPurse.pursePetname,
 //          extent: inputAmount,
 //        },
 //      },
 //      want: {
-//        $OutputToken: {
+//        'Token*': {
 //          pursePetname: outputPurse.pursePetname,
 //          extent: outputAmount,
 //        },
 //      },
-//      exit: { onDemand: {} },
+//      exit: { onDemand: null },
 //    },
 //  };
 
@@ -143,7 +143,7 @@ export default function Inbox() {
               id,
               instanceRegKey,
               instancePetname,
-              offerRulesTemplate: { offer = {}, want = {} } = {},
+              proposalTemplate: { give = {}, want = {} } = {},
               status,
             }) => (
               <ListItem key={id} value={date} divider>
@@ -169,10 +169,10 @@ export default function Inbox() {
                     </Typography>
                   </Grid>
                   <Grid item>
-                    {Object.entries(offer).map(
+                    {Object.entries(give).map(
                       ([role, { issuerPetname, pursePetname, brandRegKey, extent }], i) => (
-                        <Typography key={`offer${role}`} variant="body1">
-                          {i === 0 ? 'Pay' : <>and&nbsp;pay</>}&nbsp;
+                        <Typography key={`give${role}`} variant="body1">
+                          {i === 0 ? 'Give' : <>and&nbsp;give</>}&nbsp;
                           <Box component="span" fontWeight={800}>
                             {extent}
                             &nbsp;
@@ -186,9 +186,9 @@ export default function Inbox() {
                       ))}
                     {Object.entries(want).map(
                       ([role, { issuerPetname, pursePetname, brandRegKey, extent }], i) => (
-                        <Typography key={`offer${role}`} variant="body1">
+                        <Typography key={`want${role}`} variant="body1">
                           {i === 0 ?
-                            (Object.keys(offer).length > 0 ? <>to&nbsp;receive</> : 'Receive') :
+                            (Object.keys(give).length > 0 ? <>to&nbsp;receive</> : 'Receive') :
                             <>and&nbsp;receieve</>
                           }&nbsp;
                           <Box component="span" fontWeight={800}>
