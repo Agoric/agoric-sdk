@@ -702,6 +702,7 @@ export default function buildKernel(kernelEndowments) {
       const bootstrapVatID = vatNameToID(bootstrapVatName);
       console.debug(`=> queueing bootstrap()`);
       callBootstrap(bootstrapVatID, argvString);
+      commitCrank();
     }
 
     // if it *was* initialized, replay the transcripts
