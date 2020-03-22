@@ -67,19 +67,12 @@ function build(E, _D, _log) {
           data: true,
         };
       }
-      // TODO: Maybe rename to walletGetOffers
+
+      case 'walletGetOffers':
       case 'walletGetOfferDescriptions': {
         const result = await wallet.getOffers(data);
         return {
           type: 'walletOfferDescriptions',
-          data: result,
-        };
-      }
-
-      case 'walletGetOfferPublicIDs': {
-        const result = await wallet.getPendingPublicIDsByOrigin(meta.origin);
-        return {
-          type: 'walletOfferPublicIDs',
           data: result,
         };
       }
@@ -154,17 +147,31 @@ function build(E, _D, _log) {
           onClose(_obj, meta) {
             bridgeHandles.delete(meta.channelHandle);
           },
-          onMessage(obj, meta) {
+
+          async onMessage(obj, meta) {
             const { type } = obj;
             switch (type) {
               case 'walletGetPurses':
               case 'walletAddOffer':
-              case 'walletGetOfferDescriptions':
                 // Override the origin since we got it from the bridge.
                 return adminOnMessage(obj, {
                   ...meta,
                   origin: obj.dappOrigin,
                 });
+
+              case 'walletGetOffers': {
+                const { status = null } = obj;
+                // Override the origin since we got it from the bridge.
+                const result = await wallet.getOffers({
+                  origin: obj.dappOrigin,
+                  status,
+                });
+                return {
+                  type: 'walletOfferDescriptions',
+                  data: result,
+                };
+              }
+
               default:
                 return Promise.resolve(false);
             }

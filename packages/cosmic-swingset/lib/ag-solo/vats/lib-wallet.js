@@ -39,11 +39,21 @@ export async function makeWallet(
   const inboxState = new Map();
 
   function getPursesState() {
-    return JSON.stringify([...pursesState.values()]);
+    const entries = [...pursesState.entries()];
+    const values = entries
+      .sort(([id1], [id2]) => id1 > id2)
+      .map(([_id, value]) => value);
+
+    return JSON.stringify(values);
   }
 
   function getInboxState() {
-    return JSON.stringify([...inboxState.values()]);
+    const entries = [...inboxState.entries()];
+    const values = entries
+      .sort(([id1], [id2]) => id1 > id2)
+      .map(([_id, value]) => value);
+
+    return JSON.stringify(values);
   }
 
   async function updatePursesState(pursePetname, purse) {
@@ -193,23 +203,16 @@ export async function makeWallet(
     return petnameToPurse.entries();
   }
 
-  function getPendingPublicIDsByOrigin(origin) {
-    return idToOffer
-      .values()
-      .filter(
-        offer =>
-          offer.status === 'pending' &&
-          offer.publicID &&
-          offer.requestContext.origin === origin,
-      )
-      .map(offer => offer.publicID);
-  }
-
-  function getOffers() {
+  function getOffers({ status = 'accept', origin = null } = {}) {
     // return the offers sorted by id
     return idToOffer
       .entries()
-      .filter(([_id, offer]) => offer.status === 'accept')
+      .filter(
+        ([_id, offer]) =>
+          (status === null || offer.status === status) &&
+          (origin === null ||
+            (offer.requestContext && offer.requestContext.origin === origin)),
+      )
       .sort(([id1], [id2]) => id1 > id2)
       .map(([_id, offer]) => harden(offer));
   }
@@ -428,7 +431,6 @@ export async function makeWallet(
     cancelOffer,
     acceptOffer,
     getOffers,
-    getPendingPublicIDsByOrigin,
   });
 
   return wallet;
