@@ -14,7 +14,7 @@ const morgan = require('morgan');
 
 const log = anylogger('web');
 
-const points = new Map();
+const channels = new Map();
 
 const send = (ws, msg) => {
   if (ws.readyState === ws.OPEN) {
@@ -26,12 +26,12 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   // Enrich the inbound command with some metadata.
   const inboundCommand = (
     body,
-    { connectionID, dispatcher, url, headers: { origin } = {} } = {},
+    { channelID, dispatcher, url, headers: { origin } = {} } = {},
     id = undefined,
   ) => {
     const obj = {
       ...body,
-      meta: { connectionID, dispatcher, origin, url, date: Date.now() },
+      meta: { channelID, dispatcher, origin, url, date: Date.now() },
     };
     return rawInboundCommand(obj).catch(err => {
       const idpfx = id ? `${id} ` : '';
@@ -124,11 +124,9 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       .catch(_ => {});
   });
 
-  // accept WebSocket connections at the root path.
-  // This senses the Connection-Upgrade header to distinguish between plain
-  // GETs (which should return index.html) and WebSocket requests.. it might
-  // be better to move the WebSocket listener off to e.g. /ws with a 'path:
-  // "ws"' option.
+  // accept WebSocket channels at the root path.
+  // This senses the Upgrade header to distinguish between plain
+  // GETs (which should return index.html) and WebSocket requests.
   const wss = new WebSocket.Server({ noServer: true });
   server.on('upgrade', (req, socket, head) => {
     if (!validateOrigin(req)) {
@@ -143,18 +141,18 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
 
   server.listen(port, host, () => log.info('Listening on', `${host}:${port}`));
 
-  let lastConnectionID = 0;
+  let lastChannelID = 0;
 
-  function newConnection(ws, req) {
-    lastConnectionID += 1;
-    const connectionID = lastConnectionID;
-    const meta = { ...req, connectionID };
-    const id = `${req.socket.remoteAddress}:${req.socket.remotePort}[${connectionID}]:`;
+  function newChannel(ws, req) {
+    lastChannelID += 1;
+    const channelID = lastChannelID;
+    const meta = { ...req, channelID };
+    const id = `${req.socket.remoteAddress}:${req.socket.remotePort}[${channelID}]:`;
 
     log.info(id, `new WebSocket connection ${req.url}`);
 
-    // Register the point-to-point connection.
-    points.set(connectionID, ws);
+    // Register the point-to-point channel.
+    channels.set(channelID, ws);
 
     ws.on('error', err => {
       log.error(id, 'client error', err);
@@ -164,14 +162,14 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       log.info(id, 'client closed');
       inboundCommand(
         { type: 'ws/meta' },
-        { ...meta, dispatcher: 'onDisconnect' },
+        { ...meta, dispatcher: 'onClose' },
         id,
-      ).finally(() => points.delete(connectionID));
+      ).finally(() => channels.delete(channelID));
     });
 
     inboundCommand(
       { type: 'ws/meta' },
-      { ...meta, dispatcher: 'onConnect' },
+      { ...meta, dispatcher: 'onOpen' },
       id,
     );
 
@@ -192,19 +190,19 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       }
     });
   }
-  wss.on('connection', newConnection);
+  wss.on('connection', newChannel);
 
   function sendJSON(rawObj) {
-    const { meta: { connectionID } = {} } = rawObj;
+    const { meta: { channelID } = {} } = rawObj;
     const obj = { ...rawObj };
     delete obj.meta;
 
     // Point-to-point.
-    const c = points.get(connectionID);
+    const c = channels.get(channelID);
     if (c) {
       send(c, JSON.stringify(obj));
     } else {
-      log.error(`[${connectionID}]: connection not found`);
+      log.error(`[${channelID}]: channel not found`);
     }
   }
 

@@ -161,8 +161,8 @@ export default function setup(syscall, state, helpers) {
 
         // This will allow dApp developers to register in their api/deploy.js
         const httpRegCallback = {
-          sendMulticast(obj, connectionHandles) {
-            return E(vats.http).sendMulticast(obj, connectionHandles);
+          send(obj, channelHandles) {
+            return E(vats.http).send(obj, channelHandles);
           },
           registerAPIHandler(handler) {
             return E(vats.http).registerURLHandler(handler, '/api');

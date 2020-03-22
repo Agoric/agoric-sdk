@@ -89,7 +89,7 @@ function build(E, D, _log) {
         notify(m) {
           pursesState = m;
           if (http) {
-            E(http).sendMulticast(
+            E(http).send(
               {
                 type: 'walletUpdatePurses',
                 data: pursesState,
@@ -108,7 +108,7 @@ function build(E, D, _log) {
         notify(m) {
           inboxState = m;
           if (http) {
-            E(http).sendMulticast(
+            E(http).send(
               {
                 type: 'walletUpdateInbox',
                 data: inboxState,
@@ -123,13 +123,13 @@ function build(E, D, _log) {
 
   function getCommandHandler() {
     return harden({
-      onConnect(_obj, meta) {
+      onOpen(_obj, meta) {
         console.error('Adding adminHandle', meta);
-        adminHandles.add(meta.connectionHandle);
+        adminHandles.add(meta.channelHandle);
       },
-      onDisconnect(_obj, meta) {
+      onClose(_obj, meta) {
         console.error('Removing adminHandle', meta);
-        adminHandles.delete(meta.connectionHandle);
+        adminHandles.delete(meta.channelHandle);
       },
       onMessage: adminOnMessage,
     });
@@ -139,11 +139,11 @@ function build(E, D, _log) {
     return harden({
       getCommandHandler() {
         return harden({
-          onConnect(_obj, meta) {
-            bridgeHandles.add(meta.connectionHandle);
+          onOpen(_obj, meta) {
+            bridgeHandles.add(meta.channelHandle);
           },
-          onDisconnect(_obj, meta) {
-            bridgeHandles.delete(meta.connectionHandle);
+          onClose(_obj, meta) {
+            bridgeHandles.delete(meta.channelHandle);
           },
           onMessage(obj, meta) {
             const { type } = obj;

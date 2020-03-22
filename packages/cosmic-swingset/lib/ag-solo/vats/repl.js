@@ -51,7 +51,7 @@ export function stringify(value, spaces, already = new WeakSet()) {
   return ret;
 }
 
-export function getReplHandler(E, homeObjects, sendMulticast) {
+export function getReplHandler(E, homeObjects, send) {
   const commands = {};
   const history = {};
   const display = {};
@@ -60,7 +60,7 @@ export function getReplHandler(E, homeObjects, sendMulticast) {
 
   function updateHistorySlot(histnum) {
     // console.log(`sendBroadcast ${histnum}`);
-    sendMulticast(
+    send(
       {
         type: 'updateHistory',
         histnum,
@@ -141,11 +141,11 @@ export function getReplHandler(E, homeObjects, sendMulticast) {
   };
 
   const commandHandler = harden({
-    onConnect(_obj, meta) {
-      replHandles.add(meta.connectionHandle);
+    onOpen(_obj, meta) {
+      replHandles.add(meta.channelHandle);
     },
-    onDisconnect(_obj, meta) {
-      replHandles.delete(meta.connectionHandle);
+    onClose(_obj, meta) {
+      replHandles.delete(meta.channelHandle);
     },
 
     onMessage(obj, meta) {

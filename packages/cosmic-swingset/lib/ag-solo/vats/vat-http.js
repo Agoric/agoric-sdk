@@ -7,8 +7,8 @@ import { getCapTPHandler } from './captp';
 function build(E, D) {
   let commandDevice;
   let provisioner;
-  const connectionIdToHandle = new Map();
-  const connectionHandleToId = new WeakMap();
+  const channelIdToHandle = new Map();
+  const channelHandleToId = new WeakMap();
   const loaded = {};
   loaded.p = new Promise((resolve, reject) => {
     loaded.res = resolve;
@@ -31,12 +31,12 @@ function build(E, D) {
     },
   };
 
-  const sendMulticast = (obj, connectionHandles) => {
+  const send = (obj, channelHandles) => {
     // TODO: Make this sane by adding support for multicast to the commandDevice.
-    for (const connectionHandle of connectionHandles) {
-      const connectionID = connectionHandleToId.get(connectionHandle);
-      if (connectionID) {
-        const o = { ...obj, meta: { connectionID } };
+    for (const channelHandle of channelHandles) {
+      const channelID = channelHandleToId.get(channelHandle);
+      if (channelID) {
+        const o = { ...obj, meta: { channelID } };
         D(commandDevice).sendBroadcast(o);
       }
     }
@@ -68,12 +68,12 @@ function build(E, D) {
       if (ROLES.client) {
         handler.readyForClient = () => readyForClient.p;
 
-        const replHandler = getReplHandler(E, homeObjects, sendMulticast);
+        const replHandler = getReplHandler(E, homeObjects, send);
         registerURLHandler(replHandler, '/private/repl');
 
         // Assign the captp handler.
         // TODO: Break this out into a separate vat.
-        const captpHandler = getCapTPHandler(E, sendMulticast, () =>
+        const captpHandler = getCapTPHandler(E, send, () =>
           // Harden only our exported objects.
           harden(exportedToCapTP),
         );
@@ -109,7 +109,7 @@ function build(E, D) {
 
     registerURLHandler,
     registerAPIHandler: h => registerURLHandler(h, '/api'),
-    sendMulticast,
+    send,
 
     setProvisioner(p) {
       provisioner = p;
@@ -138,19 +138,19 @@ function build(E, D) {
       const { type, meta: rawMeta = {} } = rawObj || {};
       const {
         url = '/private/repl',
-        connectionID: rawConnectionID,
+        channelID: rawChannelID,
         dispatcher = 'onMessage',
       } = rawMeta;
 
       try {
-        let connectionHandle = connectionIdToHandle.get(rawConnectionID);
-        if (dispatcher === 'onConnect') {
-          connectionHandle = harden({});
-          connectionIdToHandle.set(rawConnectionID, connectionHandle);
-          connectionHandleToId.set(connectionHandle, rawConnectionID);
-        } else if (dispatcher === 'onDisconnect') {
-          connectionIdToHandle.delete(rawConnectionID);
-          connectionHandleToId.delete(connectionHandle);
+        let channelHandle = channelIdToHandle.get(rawChannelID);
+        if (dispatcher === 'onOpen') {
+          channelHandle = harden({});
+          channelIdToHandle.set(rawChannelID, channelHandle);
+          channelHandleToId.set(channelHandle, rawChannelID);
+        } else if (dispatcher === 'onClose') {
+          channelIdToHandle.delete(rawChannelID);
+          channelHandleToId.delete(channelHandle);
         }
 
         const obj = {
@@ -160,9 +160,9 @@ function build(E, D) {
 
         const meta = {
           ...rawMeta,
-          connectionHandle,
+          channelHandle,
         };
-        delete meta.connectionID;
+        delete meta.channelID;
 
         if (url === '/private/repl') {
           // Use our local handler object (compatibility).
