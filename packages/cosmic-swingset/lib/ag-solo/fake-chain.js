@@ -10,6 +10,7 @@ import makeBlockManager from '../block-manager';
 const log = anylogger('fake-chain');
 
 const PRETEND_BLOCK_DELAY = 5;
+const scaleBlockTime = ms => Math.floor(ms / 1000);
 
 async function readMap(file) {
   let content;
@@ -49,11 +50,15 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
   let blockTime =
     savedActions.length > 0
       ? savedActions[0].blockTime
-      : Math.floor(Date.now() / 1000);
+      : scaleBlockTime(Date.now());
   let intoChain = [];
   let thisBlock = [];
+  let nextBlockTimeout = 0;
+
+  const maximumDelay = (delay || PRETEND_BLOCK_DELAY) * 1000;
 
   async function simulateBlock() {
+    clearTimeout(nextBlockTimeout);
     const actualStart = Date.now();
     // Gather up the new messages into the latest block.
     thisBlock.push(...intoChain);
@@ -81,15 +86,12 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
       await blockManager({ type: 'COMMIT_BLOCK', blockHeight, blockTime });
       await writeMap(mailboxFile, mailboxStorage);
       thisBlock = [];
-      blockTime = blockTime + Date.now() - actualStart;
-      blockHeight += 1;
+      blockTime += scaleBlockTime(Date.now() - actualStart);
     } catch (e) {
       log.error(`error fake processing`, e);
     }
 
-    if (delay) {
-      setTimeout(simulateBlock, delay * 1000);
-    }
+    nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
 
     // TODO: maybe add latency to the inbound messages.
     const mailboxJSON = mailboxStorage.get(`mailbox.${bootAddress}`);
@@ -107,8 +109,8 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
       await simulateBlock();
     }
   }
-  if (delay) {
-    setTimeout(simulateBlock, delay * 1000);
-  }
+
+  // Start the first pretend block.
+  nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
   return deliver;
 }
