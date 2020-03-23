@@ -16,8 +16,8 @@ test('getting stated instructions', async t => {
     t.end()
   }
   const deployUiProcessExitListener = code => {
-    console.error(`agoric init + start process stopped while it shouldn't have`)
-    t.fail(code);
+    console.log(`agoric deploy + ui stopped`)
+    process.exit()
     t.end()
   }
 

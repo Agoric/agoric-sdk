@@ -1,10 +1,10 @@
-const {execSync} = require('child_process')
+const {exec, execSync} = require('child_process')
 
 // To keep in sync with https://agoric.com/documentation/getting-started/
 
-function runCommand(cmd){
+function runCommand(cmd, options={}){
     try{
-        execSync(cmd, {stdio: 'inherit'})
+        return execSync(cmd, {stdio: 'inherit', ...options})
     }
     catch(err){
         console.error(`${cmd} error`, err)
@@ -17,13 +17,38 @@ console.log('cwd', process.cwd())
 process.chdir('/tmp/demo')
 console.log('cwd', process.cwd())
 
+
+
+/*
+With runCommand ({stdio: 'inherit'}), i can see the error in deploy
+> cannot create initial offers TypeError: Cannot read property 'exit' of undefined
+
+
+With exec below (stdout should be buffered and passed to the callback), but the string is empty. Same for stderr
+
+No idea why there is a difference
+
+*/
+
 runCommand('agoric deploy ./contract/deploy.js ./api/deploy.js')
 
-process.chdir('ui')
-console.log('cwd', process.cwd())
+/*
+exec('agoric deploy ./contract/deploy.js ./api/deploy.js', (err, stdout, stderr) => {
+    console.log('DEPLOY err', err)
+    console.log('DEPLOY stdout', typeof stdout)
+    console.log('DEPLOY stderr', typeof stderr)
 
-runCommand('yarn install')
-runCommand('yarn start')
+    process.exit()
+
+    process.chdir('ui')
+    console.log('cwd', process.cwd())
+
+    runCommand('yarn install')
+    runCommand('yarn start')
+})*/
+
+
+
 
 /*
 cd demo
