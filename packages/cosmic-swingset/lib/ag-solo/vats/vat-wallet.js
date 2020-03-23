@@ -117,6 +117,8 @@ function build(E, _D, _log) {
               },
               [...adminHandles.keys()],
             );
+
+            // TODO: Get subscribed offers, too.
           }
         },
       }),

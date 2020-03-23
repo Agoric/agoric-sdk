@@ -40,6 +40,7 @@ export async function makeWallet(
 
   function getPursesState() {
     const entries = [...pursesState.entries()];
+    // Sort for determinism.
     const values = entries
       .sort(([id1], [id2]) => id1 > id2)
       .map(([_id, value]) => value);
@@ -49,6 +50,7 @@ export async function makeWallet(
 
   function getInboxState() {
     const entries = [...inboxState.entries()];
+    // Sort for determinism.
     const values = entries
       .sort(([id1], [id2]) => id1 > id2)
       .map(([_id, value]) => value);
