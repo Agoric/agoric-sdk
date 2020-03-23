@@ -175,18 +175,6 @@ interface Purse (Amount) {
    */
   deposit(payment :Payment, optAmount :Amount) -> (Amount);
 
-  /**
-   * Deposit all the contents of payment into this purse, returning the
-   * amount. If the optional argument `optAmount` does not equal the
-   * amount of digital assets in the payment, throw an error.
-   *
-   * Payment may be a promise, but the operation will only succeed if the
-   * promise came from the issuer's vat. When the operation succeeds, the
-   * deposit operation will be correctly ordered with respect to calls made in
-   * the same turn.
-   */
-  depositInOrder(payment :Payment, optAmount :Amount) -> (Amount);
-
   /** Withdraw amount from this purse into a new Payment. */
   withdraw(amount :Amount) -> (Payment);
 }

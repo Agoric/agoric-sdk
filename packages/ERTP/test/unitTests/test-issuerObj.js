@@ -107,6 +107,46 @@ test('issuer.makeEmptyPurse', t => {
   }
 });
 
+test('issuer.deposit', t => {
+  t.plan(2);
+  const { issuer, mint, amountMath } = produceIssuer('fungible');
+  const fungible25 = amountMath.make(25);
+
+  const purse = issuer.makeEmptyPurse('my new purse');
+  const payment = mint.mintPayment(fungible25);
+
+  const checkDeposit = newPurseBalance => {
+    t.ok(
+      amountMath.isEqual(newPurseBalance, fungible25),
+      `the balance returned is the purse balance`,
+    );
+    t.ok(
+      amountMath.isEqual(purse.getCurrentAmount(), fungible25),
+      `the new purse balance is the payment's old balance`,
+    );
+  };
+
+  E(purse)
+    .deposit(payment, fungible25)
+    .then(checkDeposit);
+});
+
+test('issuer.deposit promise', t => {
+  t.plan(1);
+  const { issuer, mint, amountMath } = produceIssuer('fungible');
+  const fungible25 = amountMath.make(25);
+
+  const purse = issuer.makeEmptyPurse('my new purse');
+  const payment = mint.mintPayment(fungible25);
+  const exclusivePaymentP = E(issuer).claim(payment);
+
+  t.rejects(
+    () => E(purse).deposit(exclusivePaymentP, fungible25),
+    /deposit does not accept promises/,
+    'failed to reject a promise for a payment',
+  );
+});
+
 test('issuer.burn', t => {
   try {
     const { issuer, mint, amountMath } = produceIssuer('fungible');

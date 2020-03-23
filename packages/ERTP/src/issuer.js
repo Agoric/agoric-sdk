@@ -42,8 +42,9 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
       deposit: (paymentP, optAmount = undefined) => {
         // TODO(hibbert) use `if (isPromise(paymentP)) {` from makePromise.
         if (Promise.resolve(paymentP) === paymentP) {
-          throw new TypeError(`deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first:
-        paymentPromise.then(actualPayment => deposit(actualPayment))`);
+          throw new TypeError(
+            `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
+          );
         }
         const srcPaymentBalance = paymentLedger.get(paymentP);
         // Note: this does not guarantee that optAmount itself is a valid stable amount
@@ -61,28 +62,6 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
         );
         assert(payments.length === 0, 'no payments should be returned');
         return newPurseBalance;
-      },
-      depositInOrder: (paymentP, optAmount = undefined) => {
-        return Promise.resolve(paymentP).then(srcPaymentBalance => {
-          // Note: this does not guarantee that optAmount itself is a valid stable amount
-          assertAmountEqual(srcPaymentBalance, optAmount);
-          const purseBalance = purse.getCurrentAmount();
-          const newPurseBalance = amountMath.add(
-            srcPaymentBalance,
-            purseBalance,
-          );
-          // Commit point
-          // eslint-disable-next-line no-use-before-define
-          const payments = reallocate(
-            harden({
-              payments: [paymentP],
-              purses: [purse],
-              newPurseBalances: [newPurseBalance],
-            }),
-          );
-          assert(payments.length === 0, 'no payments should be returned');
-          return newPurseBalance;
-        });
       },
       withdraw: amount => {
         amount = amountMath.coerce(amount);
