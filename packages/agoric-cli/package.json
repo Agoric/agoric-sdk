@@ -33,6 +33,7 @@
     "@agoric/eventual-send": "^0.5.0",
     "@agoric/make-promise": "^0.0.1",
     "anylogger": "^0.21.0",
+    "builtin-modules": "^3.1.0",
     "chalk": "^2.4.2",
     "esm": "^3.2.25",
     "minimist": "^1.2.0",

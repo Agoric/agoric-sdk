@@ -12,23 +12,24 @@ const SUPPORTED_FORMATS = ['getExport', 'nestedEvaluate'];
 export default async function bundleSource(
   startFilename,
   moduleFormat = DEFAULT_MODULE_FORMAT,
-  access = undefined,
+  powers = undefined,
 ) {
   if (!SUPPORTED_FORMATS.includes(moduleFormat)) {
     throw Error(`moduleFormat ${moduleFormat} is not implemented`);
   }
-  const { commonjsPlugin, rollup, resolvePlugin, pathResolve } = access || {
-    rollup: rollup0,
-    resolvePlugin: resolve0,
-    commonjsPlugin: commonjs0,
-    pathResolve: path.resolve,
-  };
+  const {
+    commonjsPlugin = commonjs0,
+    rollup = rollup0,
+    resolvePlugin = resolve0,
+    pathResolve = path.resolve,
+    externals = [],
+  } = powers || {};
   const resolvedPath = pathResolve(startFilename);
   const bundle = await rollup({
     input: resolvedPath,
     treeshake: false,
     preserveModules: moduleFormat === 'nestedEvaluate',
-    external: ['@agoric/evaluate', '@agoric/harden'],
+    external: ['@agoric/evaluate', '@agoric/harden', ...externals],
     plugins: [resolvePlugin({ preferBuiltins: true }), commonjsPlugin()],
     acornInjectPlugins: [eventualSend(acorn)],
   });
@@ -118,8 +119,8 @@ return module.exports;
     const nestedEvaluate = _src => {
       throw Error('need to override nestedEvaluate');
     };
-    function computeExports(filename, powers) {
-      const { require: systemRequire, _log } = powers;
+    function computeExports(filename, exportPowers) {
+      const { require: systemRequire, _log } = exportPowers;
       // This captures the endowed require.
       const match = filename.match(/^(.*)\/[^/]+$/);
       const thisdir = match ? match[1] : '.';
@@ -161,7 +162,7 @@ return module.exports;
         // log('requiring', modPath);
         if (!(modPath in nsBundle)) {
           // log('evaluating', modPath);
-          nsBundle[modPath] = computeExports(modPath, powers);
+          nsBundle[modPath] = computeExports(modPath, exportPowers);
         }
 
         // log('returning', nsBundle[modPath]);
