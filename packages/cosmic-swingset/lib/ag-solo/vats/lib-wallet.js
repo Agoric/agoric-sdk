@@ -5,7 +5,7 @@ import makeWeakStore from '@agoric/weak-store';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 
 import makeObservablePurse from './observable';
-import makeOfferDescCompiler from './offer-compiler';
+import makeOfferCompiler from './offer-compiler';
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};
@@ -27,11 +27,11 @@ export async function makeWallet(
   const brandToIssuer = makeStore();
   const brandToMath = makeStore();
 
-  // OfferDescs that the wallet knows about (the inbox).
-  const idToOfferDesc = new Map();
+  // Offers that the wallet knows about (the inbox).
+  const idToOffer = makeStore();
 
-  // Compiled offerDescs (all ready to execute).
-  const idToCompiledOfferDescP = new Map();
+  // Compiled offers (all ready to execute).
+  const idToCompiledOfferP = new Map();
   const idToCancel = new Map();
 
   // Client-side representation of the purses inbox;
@@ -39,11 +39,23 @@ export async function makeWallet(
   const inboxState = new Map();
 
   function getPursesState() {
-    return JSON.stringify([...pursesState.values()]);
+    const entries = [...pursesState.entries()];
+    // Sort for determinism.
+    const values = entries
+      .sort(([id1], [id2]) => id1 > id2)
+      .map(([_id, value]) => value);
+
+    return JSON.stringify(values);
   }
 
   function getInboxState() {
-    return JSON.stringify([...inboxState.values()]);
+    const entries = [...inboxState.entries()];
+    // Sort for determinism.
+    const values = entries
+      .sort(([id1], [id2]) => id1 > id2)
+      .map(([_id, value]) => value);
+
+    return JSON.stringify(values);
   }
 
   async function updatePursesState(pursePetname, purse) {
@@ -60,16 +72,16 @@ export async function makeWallet(
     pursesStateChangeHandler(getPursesState());
   }
 
-  async function updateInboxState(id, offerDesc) {
-    // Only sent the uncompiled offerDesc to the client.
-    inboxState.set(id, offerDesc);
+  async function updateInboxState(id, offer) {
+    // Only sent the uncompiled offer to the client.
+    inboxState.set(id, offer);
     inboxStateChangeHandler(getInboxState());
   }
 
-  async function executeOffer(compiledOfferDescP, inviteP) {
-    const [invite, { zoeKind, purses, offerRules }] = await Promise.all([
+  async function executeOffer(compiledOfferP, inviteP) {
+    const [invite, { zoeKind, purses, proposal }] = await Promise.all([
       inviteP,
-      compiledOfferDescP,
+      compiledOfferP,
     ]);
 
     // =====================
@@ -78,22 +90,22 @@ export async function makeWallet(
 
     // We now have everything we need to provide Zoe, so do the actual withdrawal.
     let payment;
-    if (zoeKind === 'roles') {
-      // Payments are made for the roles in offerRules.offer.
+    if (zoeKind === 'keywords') {
+      // Payments are made for the keywords in proposal.give.
       payment = {};
       await Promise.all(
-        Object.entries(offerRules.offer || {}).map(([role, amount]) => {
-          const purse = purses[role];
+        Object.entries(proposal.give || {}).map(([keyword, amount]) => {
+          const purse = purses[keyword];
           if (purse) {
-            payment[role] = E(purse).withdraw(amount);
+            payment[keyword] = E(purse).withdraw(amount);
           }
-          return payment[role];
+          return payment[keyword];
         }),
       );
     } else if (zoeKind === 'indexed') {
       // purses/payment are an array indexed by issuer payoutRules.
       payment = await Promise.all(
-        offerRules.payoutRules.map(({ kind, amount }, i) => {
+        proposal.payoutRules.map(({ kind, amount }, i) => {
           const purse = purses[i];
           if (kind === 'offerAtMost' && purse) {
             return E(purse).withdraw(amount);
@@ -111,7 +123,7 @@ export async function makeWallet(
 
     const { seat, payout: payoutObjP, cancelObj } = await E(zoe).redeem(
       invite,
-      offerRules,
+      proposal,
       payment,
     );
 
@@ -122,20 +134,20 @@ export async function makeWallet(
     // Let the caller do what they want with the seat.
     // We'll resolve when deposited.
     const depositedP = payoutObjP.then(payoutObj => {
-      const payoutIndexToRole = [];
+      const payoutIndexToKeyword = [];
       return Promise.all(
-        Object.entries(payoutObj).map(([role, payoutP], i) => {
-          // role may be an index for zoeKind === 'indexed', but we can still treat it
-          // as the role name for looking up purses and payouts (just happens to
+        Object.entries(payoutObj).map(([keyword, payoutP], i) => {
+          // keyword may be an index for zoeKind === 'indexed', but we can still treat it
+          // as the keyword name for looking up purses and payouts (just happens to
           // be an integer).
-          payoutIndexToRole[i] = role;
+          payoutIndexToKeyword[i] = keyword;
           return payoutP;
         }),
       ).then(payoutArray =>
         Promise.all(
           payoutArray.map((payout, payoutIndex) => {
-            const role = payoutIndexToRole[payoutIndex];
-            const purse = purses[role];
+            const keyword = payoutIndexToKeyword[payoutIndex];
+            const purse = purses[keyword];
             if (purse && payout) {
               return E(purse).deposit(payout);
             }
@@ -193,21 +205,27 @@ export async function makeWallet(
     return petnameToPurse.entries();
   }
 
-  function getOfferDescriptions() {
+  function getOffers({ status = 'accept', origin = null } = {}) {
     // return the offers sorted by id
-    return Array.from(idToOfferDesc)
-      .filter(p => p[1].status === 'accept')
-      .sort((p1, p2) => p1[0] > p2[0])
-      .map(p => harden(p[1]));
+    return idToOffer
+      .entries()
+      .filter(
+        ([_id, offer]) =>
+          (status === null || offer.status === status) &&
+          (origin === null ||
+            (offer.requestContext && offer.requestContext.origin === origin)),
+      )
+      .sort(([id1], [id2]) => id1 > id2)
+      .map(([_id, offer]) => harden(offer));
   }
 
-  const compileOfferDesc = makeOfferDescCompiler({
+  const compileOffer = makeOfferCompiler({
     E,
     zoe,
     registrar,
 
     collections: {
-      idToOfferDesc,
+      idToOffer,
       brandToMath,
       issuerToIssuerNames,
       issuerToBrand,
@@ -216,38 +234,38 @@ export async function makeWallet(
     },
   });
   async function addOffer(
-    rawOfferDesc,
+    rawOffer,
     hooks = undefined,
     requestContext = { origin: 'unknown' },
   ) {
-    const { id: rawId } = rawOfferDesc;
+    const { id: rawId } = rawOffer;
     const id = `${requestContext.origin}#${rawId}`;
-    const offerDesc = {
-      ...rawOfferDesc,
+    const offer = {
+      ...rawOffer,
       id,
       requestContext,
       status: undefined,
     };
-    idToOfferDesc.set(id, offerDesc);
-    updateInboxState(id, offerDesc);
+    idToOffer.init(id, offer);
+    updateInboxState(id, offer);
 
     // Start compiling the template, saving a promise for it.
-    idToCompiledOfferDescP.set(id, compileOfferDesc(id, offerDesc, hooks));
+    idToCompiledOfferP.set(id, compileOffer(id, offer, hooks));
 
-    // Our inbox state may have an enriched offerDesc.
-    updateInboxState(id, idToOfferDesc.get(id));
+    // Our inbox state may have an enriched offer.
+    updateInboxState(id, idToOffer.get(id));
     return id;
   }
 
   function declineOffer(id) {
-    const offerDesc = idToOfferDesc.get(id);
-    // Update status, drop the offerRules
-    const declinedOfferDesc = {
-      ...offerDesc,
+    const offer = idToOffer.get(id);
+    // Update status, drop the proposal
+    const declinedOffer = {
+      ...offer,
       status: 'decline',
     };
-    idToOfferDesc.set(id, declinedOfferDesc);
-    updateInboxState(id, declinedOfferDesc);
+    idToOffer.set(id, declinedOffer);
+    updateInboxState(id, declinedOffer);
   }
 
   async function cancelOffer(id) {
@@ -258,13 +276,13 @@ export async function makeWallet(
 
     cancel()
       .then(_ => {
-        const offerDesc = idToOfferDesc.get(id);
-        const cancelledOfferDesc = {
-          ...offerDesc,
+        const offer = idToOffer.get(id);
+        const cancelledOffer = {
+          ...offer,
           status: 'cancel',
         };
-        idToOfferDesc.set(id, cancelledOfferDesc);
-        updateInboxState(id, cancelledOfferDesc);
+        idToOffer.set(id, cancelledOffer);
+        updateInboxState(id, cancelledOffer);
       })
       .catch(e => console.error(`Cannot cancel offer ${id}:`, e));
 
@@ -274,38 +292,38 @@ export async function makeWallet(
   async function acceptOffer(id) {
     let ret = {};
     let alreadyResolved = false;
-    const offerDesc = idToOfferDesc.get(id);
+    const offer = idToOffer.get(id);
     const rejected = e => {
       if (alreadyResolved) {
         return;
       }
-      const rejectOfferDesc = {
-        ...offerDesc,
+      const rejectOffer = {
+        ...offer,
         status: 'rejected',
         error: `${e}`,
       };
-      idToOfferDesc.set(id, rejectOfferDesc);
-      updateInboxState(id, rejectOfferDesc);
+      idToOffer.set(id, rejectOffer);
+      updateInboxState(id, rejectOffer);
     };
 
     try {
-      const pendingOfferDesc = {
-        ...offerDesc,
+      const pendingOffer = {
+        ...offer,
         status: 'pending',
       };
-      idToOfferDesc.set(id, pendingOfferDesc);
-      updateInboxState(id, pendingOfferDesc);
-      const compiledOfferDesc = await idToCompiledOfferDescP.get(id);
+      idToOffer.set(id, pendingOffer);
+      updateInboxState(id, pendingOffer);
+      const compiledOffer = await idToCompiledOfferP.get(id);
 
       const {
         publicAPI,
         invite,
         hooks: { publicAPI: publicAPIHooks = {}, seat: seatHooks = {} } = {},
-      } = compiledOfferDesc;
+      } = compiledOffer;
 
       const inviteP = invite || E(publicAPIHooks).getInvite(publicAPI);
       const { seat, depositedP, cancelObj } = await executeOffer(
-        compiledOfferDesc,
+        compiledOffer,
         inviteP,
       );
 
@@ -327,18 +345,18 @@ export async function makeWallet(
           assert(false, details`seatHooks.performOffer failed with ${e}`),
         );
 
-      // Update status, drop the offerRules
+      // Update status, drop the proposal
       depositedP
         .then(_ => {
           // We got something back, so no longer pending or rejected.
           if (!alreadyResolved) {
             alreadyResolved = true;
-            const acceptOfferDesc = {
-              ...pendingOfferDesc,
+            const acceptedOffer = {
+              ...pendingOffer,
               status: 'accept',
             };
-            idToOfferDesc.set(id, acceptOfferDesc);
-            updateInboxState(id, acceptOfferDesc);
+            idToOffer.set(id, acceptedOffer);
+            updateInboxState(id, acceptedOffer);
           }
           // Allow the offer to hook what the return value should be.
           return E(publicAPIHooks).deposited(publicAPI);
@@ -414,7 +432,7 @@ export async function makeWallet(
     declineOffer,
     cancelOffer,
     acceptOffer,
-    getOfferDescriptions,
+    getOffers,
   });
 
   return wallet;

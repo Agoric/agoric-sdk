@@ -41,7 +41,7 @@ export default function Wallet() {
         align="center"
         className={classes.title}
       >
-        Agoric Simple Wallet
+        Simple Agoric Wallet
       </Typography>
 
       <Grid container spacing={2}>

@@ -24,6 +24,7 @@ const evaluateStringToFn = (functionSrcString, endowments) => {
 
 const evalContractCode = (code, additionalEndowments) => {
   const defaultEndowments = {
+    console, // TODO: add prefix to console output
     harden,
     makePromise,
     assert,

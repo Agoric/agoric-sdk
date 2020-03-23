@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 import { makeWallet } from './lib-wallet';
 import pubsub from './pubsub';
 
-function build(E, D, _log) {
+function build(E, _D, _log) {
   let wallet;
   let pursesState;
   let inboxState;
@@ -25,7 +25,7 @@ function build(E, D, _log) {
     http = o;
   }
 
-  async function adminOnMessage(obj, meta) {
+  async function adminOnMessage(obj, meta = { origin: 'unknown' }) {
     const { type, data } = obj;
     switch (type) {
       case 'walletGetPurses': {
@@ -67,8 +67,10 @@ function build(E, D, _log) {
           data: true,
         };
       }
+
+      case 'walletGetOffers':
       case 'walletGetOfferDescriptions': {
-        const result = await wallet.getOfferDescriptions(data);
+        const result = await wallet.getOffers(data);
         return {
           type: 'walletOfferDescriptions',
           data: result,
@@ -115,6 +117,8 @@ function build(E, D, _log) {
               },
               [...adminHandles.keys()],
             );
+
+            // TODO: Get subscribed offers, too.
           }
         },
       }),
@@ -145,7 +149,8 @@ function build(E, D, _log) {
           onClose(_obj, meta) {
             bridgeHandles.delete(meta.channelHandle);
           },
-          onMessage(obj, meta) {
+
+          async onMessage(obj, meta) {
             const { type } = obj;
             switch (type) {
               case 'walletGetPurses':
@@ -155,6 +160,20 @@ function build(E, D, _log) {
                   ...meta,
                   origin: obj.dappOrigin,
                 });
+
+              case 'walletGetOffers': {
+                const { status = null } = obj;
+                // Override the origin since we got it from the bridge.
+                const result = await wallet.getOffers({
+                  origin: obj.dappOrigin,
+                  status,
+                });
+                return {
+                  type: 'walletOfferDescriptions',
+                  data: result,
+                };
+              }
+
               default:
                 return Promise.resolve(false);
             }
