@@ -1,4 +1,4 @@
-/* globals window, WebSocket, fetch */
+/* globals window, WebSocket */
 
 // todo: refactor this to a class
 
@@ -7,16 +7,28 @@ import { API_URL } from './constants';
 // === FETCH
 
 export async function doFetch(req) {
-  return fetch('/vat', {
-    method: 'POST',
-    body: JSON.stringify(req),
-    headers: { 'Content-Type': 'application/json' },
-  })
-    .then(response => response.json())
-    .then(({ ok, res }) => (ok ? res : {}))
-    .catch(err => {
-      console.log('Fetch Error', err);
-    });
+  if (!isWebSocketActive()) {
+    throw Error('Must activate web socket before calling doFetch');
+  }
+
+  const socket = websocket;
+  
+  let resolve;
+  const p = new Promise(res => {
+    resolve = res;
+  });
+  socket.send(JSON.stringify(req));
+  const expectedResponse = `${req.type}Response`;
+  function getResponse({ data: msg }) {
+    // console.log('got', msg);
+    const obj = JSON.parse(msg);
+    if (obj.type === expectedResponse) {
+      resolve(obj);
+      socket.removeEventListener('message', getResponse);
+    }
+  }
+  socket.addEventListener('message', getResponse);
+  return p;
 }
 
 // === WEB SOCKET
@@ -25,7 +37,7 @@ let websocket = null;
 
 function getWebsocketEndpoint() {
   // TODO proxy websocket.
-  const url = new URL(API_URL || window.origin);
+  const url = new URL('/private/wallet', API_URL || window.origin);
   url.protocol = 'ws';
   return url;
 }

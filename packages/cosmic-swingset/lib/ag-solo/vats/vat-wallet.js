@@ -6,7 +6,9 @@ function build(E, D, _log) {
   let wallet;
   let pursesState;
   let inboxState;
-  let commandDevice;
+  let http;
+  const adminHandles = new Set();
+  const bridgeHandles = new Set();
 
   const { publish: pursesPublish, subscribe: purseSubscribe } = pubsub(E);
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
@@ -19,25 +21,23 @@ function build(E, D, _log) {
     return harden(wallet);
   }
 
-  function setCommandDevice(d, _ROLES) {
-    commandDevice = d;
+  function setHTTPObject(o, _ROLES) {
+    http = o;
   }
 
-  async function adminProcessInbound(obj) {
-    const { type, data, requestContext } = obj;
+  async function adminOnMessage(obj, meta) {
+    const { type, data } = obj;
     switch (type) {
       case 'walletGetPurses': {
-        if (!pursesState) return {};
         return {
           type: 'walletUpdatePurses',
-          data: pursesState,
+          data: pursesState || {},
         };
       }
       case 'walletGetInbox': {
-        if (!inboxState) return {};
         return {
           type: 'walletUpdateInbox',
-          data: inboxState,
+          data: inboxState || {},
         };
       }
       case 'walletAddOffer': {
@@ -45,7 +45,7 @@ function build(E, D, _log) {
         const hooks = wallet.hydrateHooks(data.hooks);
         return {
           type: 'walletOfferAdded',
-          data: await wallet.addOffer(data, hooks, requestContext),
+          data: await wallet.addOffer(data, hooks, meta),
         };
       }
       case 'walletDeclineOffer': {
@@ -88,11 +88,14 @@ function build(E, D, _log) {
       harden({
         notify(m) {
           pursesState = m;
-          if (commandDevice) {
-            D(commandDevice).sendBroadcast({
-              type: 'walletUpdatePurses',
-              data: pursesState,
-            });
+          if (http) {
+            E(http).send(
+              {
+                type: 'walletUpdatePurses',
+                data: pursesState,
+              },
+              [...adminHandles.keys(), ...bridgeHandles.keys()],
+            );
           }
         },
       }),
@@ -104,11 +107,14 @@ function build(E, D, _log) {
       harden({
         notify(m) {
           inboxState = m;
-          if (commandDevice) {
-            D(commandDevice).sendBroadcast({
-              type: 'walletUpdateInbox',
-              data: inboxState,
-            });
+          if (http) {
+            E(http).send(
+              {
+                type: 'walletUpdateInbox',
+                data: inboxState,
+              },
+              [...adminHandles.keys()],
+            );
           }
         },
       }),
@@ -117,7 +123,15 @@ function build(E, D, _log) {
 
   function getCommandHandler() {
     return harden({
-      processInbound: adminProcessInbound,
+      onOpen(_obj, meta) {
+        console.error('Adding adminHandle', meta);
+        adminHandles.add(meta.channelHandle);
+      },
+      onClose(_obj, meta) {
+        console.error('Removing adminHandle', meta);
+        adminHandles.delete(meta.channelHandle);
+      },
+      onMessage: adminOnMessage,
     });
   }
 
@@ -125,16 +139,25 @@ function build(E, D, _log) {
     return harden({
       getCommandHandler() {
         return harden({
-          processInbound(obj) {
-            const { type, requestContext } = obj;
-            if (['walletGetPurses', 'walletAddOffer'].includes(type)) {
-              // Override the origin since we got it from the bridge.
-              return adminProcessInbound({
-                ...obj,
-                requestContext: { ...requestContext, origin: obj.dappOrigin },
-              });
+          onOpen(_obj, meta) {
+            bridgeHandles.add(meta.channelHandle);
+          },
+          onClose(_obj, meta) {
+            bridgeHandles.delete(meta.channelHandle);
+          },
+          onMessage(obj, meta) {
+            const { type } = obj;
+            switch (type) {
+              case 'walletGetPurses':
+              case 'walletAddOffer':
+                // Override the origin since we got it from the bridge.
+                return adminOnMessage(obj, {
+                  ...meta,
+                  origin: obj.dappOrigin,
+                });
+              default:
+                return Promise.resolve(false);
             }
-            return Promise.resolve(false);
           },
         });
       },
@@ -144,7 +167,7 @@ function build(E, D, _log) {
   return harden({
     startup,
     getWallet,
-    setCommandDevice,
+    setHTTPObject,
     getCommandHandler,
     getBridgeURLHandler,
     setPresences,

@@ -14,8 +14,7 @@ const morgan = require('morgan');
 
 const log = anylogger('web');
 
-const points = new Map();
-const broadcasts = new Map();
+const channels = new Map();
 
 const send = (ws, msg) => {
   if (ws.readyState === ws.OPEN) {
@@ -27,10 +26,13 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   // Enrich the inbound command with some metadata.
   const inboundCommand = (
     body,
-    { url, headers: { origin } = {} } = {},
+    { channelID, dispatcher, url, headers: { origin } = {} } = {},
     id = undefined,
   ) => {
-    const obj = { ...body, requestContext: { origin, url, date: Date.now() } };
+    const obj = {
+      ...body,
+      meta: { channelID, dispatcher, origin, url, date: Date.now() },
+    };
     return rawInboundCommand(obj).catch(err => {
       const idpfx = id ? `${id} ` : '';
       log.error(
@@ -76,6 +78,11 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     const { origin } = req.headers;
     const id = `${req.socket.remoteAddress}:${req.socket.remotePort}:`;
 
+    if (!req.url.startsWith('/private/')) {
+      // Allow any origin that's not marked private.
+      return true;
+    }
+
     if (!origin) {
       log.error(id, `Missing origin header`);
       return false;
@@ -85,7 +92,7 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       hostname.match(/^(localhost|127\.0\.0\.1)$/);
 
     if (['chrome-extension:', 'moz-extension:'].includes(url.protocol)) {
-      // Extensions such as metamask.
+      // Extensions such as metamask can access the wallet.
       return true;
     }
 
@@ -101,30 +108,25 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     return true;
   };
 
-  // accept messages on some well-known endpoints
-  // todo: later allow arbitrary endpoints?
-  for (const ep of ['/vat', '/wallet-public', '/api']) {
-    app.post(ep, (req, res) => {
-      if (ep !== '/api' && !validateOrigin(req)) {
-        res.json({ ok: false, rej: 'Invalid Origin' });
-        return;
-      }
+  // accept POST messages to arbitrary endpoints
+  app.post('*', (req, res) => {
+    if (!validateOrigin(req)) {
+      res.json({ ok: false, rej: 'Unauthorized Origin' });
+      return;
+    }
 
-      // console.log(`POST ${ep} got`, req.body); // should be jsonable
-      inboundCommand(req.body, req)
-        .then(
-          r => res.json({ ok: true, res: r }),
-          rej => res.json({ ok: false, rej }),
-        )
-        .catch(_ => {});
-    });
-  }
+    // console.log(`POST ${ep} got`, req.body); // should be jsonable
+    inboundCommand(req.body, req, `POST`)
+      .then(
+        r => res.json({ ok: true, res: r }),
+        rej => res.json({ ok: false, rej }),
+      )
+      .catch(_ => {});
+  });
 
-  // accept WebSocket connections at the root path.
-  // This senses the Connection-Upgrade header to distinguish between plain
-  // GETs (which should return index.html) and WebSocket requests.. it might
-  // be better to move the WebSocket listener off to e.g. /ws with a 'path:
-  // "ws"' option.
+  // accept WebSocket channels at the root path.
+  // This senses the Upgrade header to distinguish between plain
+  // GETs (which should return index.html) and WebSocket requests.
   const wss = new WebSocket.Server({ noServer: true });
   server.on('upgrade', (req, socket, head) => {
     if (!validateOrigin(req)) {
@@ -139,14 +141,18 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
 
   server.listen(port, host, () => log.info('Listening on', `${host}:${port}`));
 
-  let lastConnectionID = 0;
+  let lastChannelID = 0;
 
-  function newConnection(ws, req) {
-    lastConnectionID += 1;
-    const connectionID = lastConnectionID;
-    const id = `${req.socket.remoteAddress}:${req.socket.remotePort}[${connectionID}]:`;
+  function newChannel(ws, req) {
+    lastChannelID += 1;
+    const channelID = lastChannelID;
+    const meta = { ...req, channelID };
+    const id = `${req.socket.remoteAddress}:${req.socket.remotePort}[${channelID}]:`;
 
     log.info(id, `new WebSocket connection ${req.url}`);
+
+    // Register the point-to-point channel.
+    channels.set(channelID, ws);
 
     ws.on('error', err => {
       log.error(id, 'client error', err);
@@ -154,64 +160,49 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
 
     ws.on('close', (_code, _reason) => {
       log.info(id, 'client closed');
-      broadcasts.delete(ws);
-      if (req.url === '/captp') {
-        inboundCommand({ type: 'CTP_CLOSE', connectionID }, req, id)
-          .catch(_ => {})
-          .finally(() => points.delete(connectionID));
-      }
+      inboundCommand(
+        { type: 'ws/meta' },
+        { ...meta, dispatcher: 'onClose' },
+        id,
+      ).finally(() => channels.delete(channelID));
     });
 
-    if (req.url === '/captp') {
-      // This is a point-to-point connection, not broadcast.
-      points.set(connectionID, ws);
-      inboundCommand(
-        { type: 'CTP_OPEN', connectionID },
-        req,
-        id,
-      ).catch(_ => {});
-      ws.on('message', async message => {
-        try {
-          // some things use inbound messages
-          const obj = JSON.parse(message);
-          obj.connectionID = connectionID;
-          await inboundCommand(obj, req, id);
-        } catch (error) {
-          // eslint-disable-next-line no-use-before-define
-          sendJSON({ type: 'CTP_ERROR', connectionID, error });
-        }
-      });
-    } else {
-      broadcasts.set(connectionID, ws);
-      ws.on('message', async message => {
-        try {
-          const obj = JSON.parse(message);
-          // eslint-disable-next-line no-use-before-define
-          sendJSON(await inboundCommand(obj, req, id));
-        } catch (error) {
-          // ignore
-        }
-      });
-    }
-  }
-  wss.on('connection', newConnection);
+    inboundCommand(
+      { type: 'ws/meta' },
+      { ...meta, dispatcher: 'onOpen' },
+      id,
+    );
 
-  function sendJSON(obj) {
-    const { connectionID, ...rest } = obj;
-    if (connectionID) {
-      // Point-to-point.
-      const c = points.get(connectionID);
-      if (c) {
-        send(c, JSON.stringify(rest));
-      } else {
-        log.error(`[${connectionID}]: connection not found`);
+    ws.on('message', async message => {
+      let obj = {};
+      try {
+        obj = JSON.parse(message);
+        const res = await inboundCommand(obj, meta, id);
+
+        // eslint-disable-next-line no-use-before-define
+        sendJSON({ ...res, meta });
+      } catch (error) {
+        inboundCommand(
+          { ...obj, error },
+          { ...meta, dispatcher: 'onError' },
+          id,
+        ).catch(_ => {});
       }
+    });
+  }
+  wss.on('connection', newChannel);
+
+  function sendJSON(rawObj) {
+    const { meta: { channelID } = {} } = rawObj;
+    const obj = { ...rawObj };
+    delete obj.meta;
+
+    // Point-to-point.
+    const c = channels.get(channelID);
+    if (c) {
+      send(c, JSON.stringify(obj));
     } else {
-      // Broadcast message.
-      const json = JSON.stringify(rest);
-      for (const c of broadcasts.values()) {
-        send(c, json);
-      }
+      log.error(`[${channelID}]: channel not found`);
     }
   }
 

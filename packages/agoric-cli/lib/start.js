@@ -75,7 +75,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       }
     }
 
-    const fakeGCI = 'myFakeGCI';
+    const fakeGCI = 'fake-chain';
     if (!(await exists(agServer))) {
       log(chalk.yellow(`initializing ${profileName}`));
       await pspawn(agSolo, ['init', profileName, '--egresses=fake'], {

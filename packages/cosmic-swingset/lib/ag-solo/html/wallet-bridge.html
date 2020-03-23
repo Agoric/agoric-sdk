@@ -7,7 +7,7 @@
     <p>This bridge is only for dApps to reach your wallet.  It contains no user-servicable parts.</p>
 
     <script type="text/javascript">
-      const walletPublicURL = new URL('/wallet-bridge', window.origin.replace(/^http/, 'ws')).href;
+      const walletPublicURL = new URL('/private/wallet-bridge', window.origin.replace(/^http/, 'ws')).href;
       const ws = new WebSocket(walletPublicURL);
       const wsQueue = [];
       const dappQueue = [];

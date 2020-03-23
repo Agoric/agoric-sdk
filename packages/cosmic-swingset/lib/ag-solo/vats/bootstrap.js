@@ -50,11 +50,14 @@ export default function setup(syscall, state, helpers) {
         D(cmdDevice).registerInboundHandler(httpVat);
       }
 
-      async function setupWalletVat(commandDevice, httpVat, walletVat) {
-        await E(httpVat).registerURLHandler(walletVat, '/vat');
+      async function setupWalletVat(httpObj, httpVat, walletVat) {
+        await E(httpVat).registerURLHandler(walletVat, '/private/wallet');
         const bridgeURLHandler = await E(walletVat).getBridgeURLHandler();
-        await E(httpVat).registerURLHandler(bridgeURLHandler, '/wallet-bridge');
-        await E(walletVat).setCommandDevice(commandDevice);
+        await E(httpVat).registerURLHandler(
+          bridgeURLHandler,
+          '/private/wallet-bridge',
+        );
+        await E(walletVat).setHTTPObject(httpObj);
         await E(walletVat).setPresences();
       }
 
@@ -158,6 +161,9 @@ export default function setup(syscall, state, helpers) {
 
         // This will allow dApp developers to register in their api/deploy.js
         const httpRegCallback = {
+          send(obj, channelHandles) {
+            return E(vats.http).send(obj, channelHandles);
+          },
           registerAPIHandler(handler) {
             return E(vats.http).registerURLHandler(handler, '/api');
           },
@@ -275,11 +281,17 @@ export default function setup(syscall, state, helpers) {
               const { payments, bundle, issuerInfo } = await E(
                 demoProvider,
               ).getDemoBundle();
+              const localBundle = await createLocalBundle(
+                vats,
+                bundle,
+                payments,
+                issuerInfo,
+              );
               await E(vats.http).setPresences(
                 { ...bundle, localTimerService },
-                await createLocalBundle(vats, bundle, payments, issuerInfo),
+                localBundle,
               );
-              await setupWalletVat(devices.command, vats.http, vats.wallet);
+              await setupWalletVat(localBundle.http, vats.http, vats.wallet);
               break;
             }
             case 'two_chain': {
@@ -324,11 +336,17 @@ export default function setup(syscall, state, helpers) {
               // Get the demo bundle from the chain-side provider
               const b = await E(demoProvider).getDemoBundle('client');
               const { payments, bundle, issuerInfo } = b;
+              const localBundle = await createLocalBundle(
+                vats,
+                bundle,
+                payments,
+                issuerInfo,
+              );
               await E(vats.http).setPresences(
                 { ...bundle, localTimerService },
-                await createLocalBundle(vats, bundle, payments, issuerInfo),
+                localBundle,
               );
-              await setupWalletVat(devices.command, vats.http, vats.wallet);
+              await setupWalletVat(localBundle.http, vats.http, vats.wallet);
               break;
             }
             case 'three_client': {
@@ -344,12 +362,18 @@ export default function setup(syscall, state, helpers) {
               ).createUserBundle('localuser');
 
               // Setup of the Local part /////////////////////////////////////
+              const localBundle = await createLocalBundle(
+                vats,
+                bundle,
+                payments,
+                issuerInfo,
+              );
               await E(vats.http).setPresences(
                 { ...bundle, localTimerService: bundle.chainTimerService },
-                await createLocalBundle(vats, bundle, payments, issuerInfo),
+                localBundle,
               );
 
-              setupWalletVat(devices.command, vats.http, vats.wallet);
+              setupWalletVat(localBundle.http, vats.http, vats.wallet);
               break;
             }
             default:

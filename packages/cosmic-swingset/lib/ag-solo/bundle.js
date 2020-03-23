@@ -93,7 +93,7 @@ export default async function bundle(insistIsBasedir, args) {
     );
     for (const conn of JSON.parse(cjson)) {
       if (conn.type === 'http') {
-        wsurl = `ws://${conn.host}:${conn.port}/captp`;
+        wsurl = `ws://${conn.host}:${conn.port}/private/captp`;
       }
     }
   }

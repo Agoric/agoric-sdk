@@ -12,7 +12,7 @@ function run() {
   let inputHistoryNum = 0;
 
   async function call(req) {
-    const res = await fetch('/vat', {
+    const res = await fetch('/private/repl', {
       method: 'POST',
       body: JSON.stringify(req),
       headers: { 'Content-Type': 'application/json' },
@@ -26,7 +26,7 @@ function run() {
 
   const loc = window.location;
   const protocol = loc.protocol.replace(/^http/, 'ws');
-  const socketEndpoint = `${protocol}//${loc.host}/`;
+  const socketEndpoint = `${protocol}//${loc.host}/private/repl`;
   const ws = new WebSocket(socketEndpoint);
 
   ws.addEventListener('error', ev => {
