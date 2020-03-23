@@ -1,4 +1,5 @@
 /* eslint-disable no-await-in-loop */
+import builtinModules from 'builtin-modules';
 import parseArgs from 'minimist';
 import { evaluateProgram } from '@agoric/evaluate';
 import { E, HandledPromise, makeCapTP } from '@agoric/captp';
@@ -55,7 +56,7 @@ export default async function deployMain(progname, rawArgs, powers) {
 
       // Wait for the chain to become ready.
       let bootP = getBootstrap();
-      log.error('Chain loaded:', await E.G(bootP).LOADING);
+      log.info('Chain loaded:', await E.G(bootP).LOADING);
       // Take a new copy, since the chain objects have been added to bootstrap.
       bootP = getBootstrap();
 
@@ -64,7 +65,11 @@ export default async function deployMain(progname, rawArgs, powers) {
         const pathResolve = (...resArgs) =>
           path.resolve(path.dirname(moduleFile), ...resArgs);
         log('running', moduleFile);
-        const { source, sourceMap } = await bundleSource(moduleFile);
+        const { source, sourceMap } = await bundleSource(
+          moduleFile,
+          undefined,
+          { externals: builtinModules },
+        );
 
         const actualSource = `(${source}\n)\n${sourceMap}`;
         const mainNS = evaluateProgram(actualSource, {
@@ -84,7 +89,7 @@ export default async function deployMain(progname, rawArgs, powers) {
         }
       }
 
-      log('Done!');
+      log.info('Done!');
       ws.close();
       exit.res(0);
     } catch (e) {
