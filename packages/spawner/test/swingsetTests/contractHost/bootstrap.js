@@ -65,14 +65,12 @@ function build(E, log) {
         const fooInviteP = E(installationP).spawn('foo terms');
 
         const inviteIssuerP = E(host).getInviteIssuer();
-
         return Promise.resolve(
           showPaymentBalance('foo', inviteIssuerP, fooInviteP),
         ).then(_ => {
           const eightP = E(host).redeem(fooInviteP);
 
           eightP.then(res => {
-            showPaymentBalance('foo', inviteIssuerP, fooInviteP);
             log('++ eightP resolved to ', res, ' (should be 8)');
             if (res !== 8) {
               throw new Error(`eightP resolved to ${res}, not 8`);

@@ -38,12 +38,13 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
   } = produceIssuer('contract host', 'set');
 
   function redeem(allegedInvitePayment) {
-    const inviteAmount = inviteIssuer.getAmountOf(allegedInvitePayment);
-    assert(!inviteAmountMath.isEmpty(inviteAmount), details`No invites left`);
-    const [{ seatIdentity }] = inviteAmountMath.getExtent(inviteAmount);
-    return Promise.resolve(
-      inviteIssuer.burn(allegedInvitePayment, inviteAmount),
-    ).then(_ => seats.get(seatIdentity));
+    return inviteIssuer.getAmountOf(allegedInvitePayment).then(inviteAmount => {
+      assert(!inviteAmountMath.isEmpty(inviteAmount), details`No invites left`);
+      const [{ seatIdentity }] = inviteAmountMath.getExtent(inviteAmount);
+      return Promise.resolve(
+        inviteIssuer.burn(allegedInvitePayment, inviteAmount),
+      ).then(_ => seats.get(seatIdentity));
+    });
   }
 
   const defaultEndowments = {

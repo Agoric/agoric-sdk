@@ -57,7 +57,7 @@ test('issuer.getMathHelpersName', t => {
 test('issuer.makeEmptyPurse', t => {
   try {
     const { issuer, mint, amountMath, brand } = produceIssuer('fungible');
-    const purse = issuer.makeEmptyPurse('my new purse');
+    const purse = issuer.makeEmptyPurse();
     const payment = mint.mintPayment(amountMath.make(837));
 
     t.ok(
@@ -81,10 +81,12 @@ test('issuer.makeEmptyPurse', t => {
     const performWithdrawal = () => purse.withdraw(fungible837);
 
     const checkWithdrawal = newPayment => {
-      t.ok(
-        amountMath.isEqual(issuer.getAmountOf(newPayment), fungible837),
-        `the withdrawn payment has the right balance`,
-      );
+      issuer.getAmountOf(newPayment).then(amount => {
+        t.ok(
+          amountMath.isEqual(amount, fungible837),
+          `the withdrawn payment has the right balance`,
+        );
+      });
       t.ok(
         amountMath.isEqual(purse.getCurrentAmount(), amountMath.getEmpty()),
         `the purse is empty again`,
@@ -105,6 +107,46 @@ test('issuer.makeEmptyPurse', t => {
   }
 });
 
+test('issuer.deposit', t => {
+  t.plan(2);
+  const { issuer, mint, amountMath } = produceIssuer('fungible');
+  const fungible25 = amountMath.make(25);
+
+  const purse = issuer.makeEmptyPurse();
+  const payment = mint.mintPayment(fungible25);
+
+  const checkDeposit = newPurseBalance => {
+    t.ok(
+      amountMath.isEqual(newPurseBalance, fungible25),
+      `the balance returned is the purse balance`,
+    );
+    t.ok(
+      amountMath.isEqual(purse.getCurrentAmount(), fungible25),
+      `the new purse balance is the payment's old balance`,
+    );
+  };
+
+  E(purse)
+    .deposit(payment, fungible25)
+    .then(checkDeposit);
+});
+
+test('issuer.deposit promise', t => {
+  t.plan(1);
+  const { issuer, mint, amountMath } = produceIssuer('fungible');
+  const fungible25 = amountMath.make(25);
+
+  const purse = issuer.makeEmptyPurse();
+  const payment = mint.mintPayment(fungible25);
+  const exclusivePaymentP = E(issuer).claim(payment);
+
+  t.rejects(
+    () => E(purse).deposit(exclusivePaymentP, fungible25),
+    /deposit does not accept promises/,
+    'failed to reject a promise for a payment',
+  );
+});
+
 test('issuer.burn', t => {
   try {
     const { issuer, mint, amountMath } = produceIssuer('fungible');
@@ -117,7 +159,7 @@ test('issuer.burn', t => {
           amountMath.isEqual(burntBalance, amountMath.make(837)),
           `entire minted payment was burnt`,
         );
-        t.throws(() => issuer.getAmountOf(payment1), /payment not found/);
+        t.rejects(() => issuer.getAmountOf(payment1), /payment not found/);
       })
       .catch(e => t.assert(false, e))
       .finally(_ => t.end());
@@ -129,17 +171,15 @@ test('issuer.burn', t => {
 });
 
 test('issuer.claim', t => {
-  try {
-    const { issuer, amountMath, mint } = produceIssuer('fungible');
-    const payment1 = mint.mintPayment(amountMath.make(2));
-    E(issuer)
-      .claim(payment1, amountMath.make(2))
-      .then(newPayment1 => {
+  t.plan(3);
+  const { issuer, amountMath, mint } = produceIssuer('fungible');
+  const payment1 = mint.mintPayment(amountMath.make(2));
+  E(issuer)
+    .claim(payment1, amountMath.make(2))
+    .then(newPayment1 => {
+      issuer.getAmountOf(newPayment1).then(amount => {
         t.ok(
-          amountMath.isEqual(
-            issuer.getAmountOf(newPayment1),
-            amountMath.make(2),
-          ),
+          amountMath.isEqual(amount, amountMath.make(2)),
           `new payment has equal balance to old payment`,
         );
         t.notEqual(
@@ -147,15 +187,10 @@ test('issuer.claim', t => {
           payment1,
           `old payment is different than new payment`,
         );
-        t.throws(() => issuer.getAmountOf(payment1), /payment not found/);
-      })
-      .catch(e => t.assert(false, e))
-      .finally(_ => t.end());
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
-  }
+      });
+
+      t.rejects(() => issuer.getAmountOf(payment1), /payment not found/);
+    });
 });
 
 test('issuer.splitMany bad amount', t => {
@@ -176,36 +211,31 @@ test('issuer.splitMany bad amount', t => {
 });
 
 test('issuer.splitMany good amount', t => {
-  try {
-    const { mint, issuer, amountMath } = produceIssuer('fungible');
-    const oldPayment = mint.mintPayment(amountMath.make(100));
-    const goodAmounts = Array(10).fill(amountMath.make(10));
+  t.plan(11);
+  const { mint, issuer, amountMath } = produceIssuer('fungible');
+  const oldPayment = mint.mintPayment(amountMath.make(100));
+  const goodAmounts = Array(10).fill(amountMath.make(10));
 
-    const checkPayments = splitPayments => {
-      for (const payment of splitPayments) {
+  const checkPayments = splitPayments => {
+    for (const payment of splitPayments) {
+      issuer.getAmountOf(payment).then(amount => {
         t.deepEqual(
-          issuer.getAmountOf(payment),
+          amount,
           amountMath.make(10),
           `split payment has right balance`,
         );
-      }
-      t.throws(
-        () => issuer.getAmountOf(oldPayment),
-        /payment not found/,
-        `oldPayment no longer exists`,
-      );
-    };
+      });
+    }
+    t.rejects(
+      () => issuer.getAmountOf(oldPayment),
+      /payment not found/,
+      `oldPayment no longer exists`,
+    );
+  };
 
-    E(issuer)
-      .splitMany(oldPayment, goodAmounts)
-      .then(checkPayments)
-      .catch(e => t.assert(false, e))
-      .finally(_ => t.end());
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
-  }
+  E(issuer)
+    .splitMany(oldPayment, goodAmounts)
+    .then(checkPayments);
 });
 
 test('issuer.split bad amount', t => {
@@ -226,35 +256,30 @@ test('issuer.split bad amount', t => {
 });
 
 test('issuer.split good amount', t => {
-  try {
-    const { mint, issuer, amountMath } = produceIssuer('fungible');
-    const oldPayment = mint.mintPayment(amountMath.make(20));
+  t.plan(3);
+  const { mint, issuer, amountMath } = produceIssuer('fungible');
+  const oldPayment = mint.mintPayment(amountMath.make(20));
 
-    const checkPayments = splitPayments => {
-      for (const payment of splitPayments) {
+  const checkPayments = splitPayments => {
+    for (const payment of splitPayments) {
+      issuer.getAmountOf(payment).then(amount => {
         t.deepEqual(
-          issuer.getAmountOf(payment),
+          amount,
           amountMath.make(10),
           `split payment has right balance`,
         );
-      }
-      t.rejects(
-        () => E(issuer).getAmountOf(oldPayment),
-        /payment not found/,
-        `oldPayment no longer exists`,
-      );
-    };
+      });
+    }
+    t.rejects(
+      () => E(issuer).getAmountOf(oldPayment),
+      /payment not found/,
+      `oldPayment no longer exists`,
+    );
+  };
 
-    E(issuer)
-      .split(oldPayment, amountMath.make(10))
-      .then(checkPayments)
-      .catch(e => t.assert(false, e))
-      .finally(_ => t.end());
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
-  }
+  E(issuer)
+    .split(oldPayment, amountMath.make(10))
+    .then(checkPayments);
 });
 
 test('issuer.combine good payments', t => {
@@ -266,22 +291,45 @@ test('issuer.combine good payments', t => {
     }
 
     const checkCombinedPayment = combinedPayment => {
-      t.deepEqual(
-        issuer.getAmountOf(combinedPayment),
-        amountMath.make(100),
-        `combined payment equal to the original payments total`,
-      );
-      for (const payment of payments) {
-        t.throws(
-          () => issuer.getAmountOf(payment),
-          /payment not found/,
-          `original payments no longer exist`,
+      issuer.getAmountOf(combinedPayment).then(amount => {
+        t.deepEqual(
+          amount,
+          amountMath.make(100),
+          `combined payment equal to the original payments total`,
         );
-      }
+        for (const payment of payments) {
+          t.rejects(
+            () => issuer.getAmountOf(payment),
+            /payment not found/,
+            `original payments no longer exist`,
+          );
+        }
+      });
     };
     E(issuer)
       .combine(payments)
       .then(checkCombinedPayment)
+      .catch(e => t.assert(false, e))
+      .finally(_ => t.end());
+  } catch (e) {
+    t.assert(false, e);
+  } finally {
+    t.end();
+  }
+});
+
+test('issuer.combine array of promises', t => {
+  try {
+    const { mint, issuer, amountMath } = produceIssuer('fungible');
+    const paymentsP = [];
+    for (let i = 0; i < 100; i += 1) {
+      const freshPayment = mint.mintPayment(amountMath.make(1));
+      const paymentP = issuer.claim(freshPayment);
+      paymentsP.push(paymentP);
+    }
+
+    E(issuer)
+      .combine(paymentsP)
       .catch(e => t.assert(false, e))
       .finally(_ => t.end());
   } catch (e) {

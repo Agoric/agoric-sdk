@@ -28,17 +28,28 @@ interface Issuer (Amount (Extent)) {
   makeEmptyPurse() -> (Purse);
 
   /**
+   * Return true if the payment continues to exist.
+   *
+   * If the payment is a promise, the operation will proceed upon resolution.
+   */
+  isLive(payment :Payment) -> (boolean);
+
+  /**
    * Get the amount of digital assets in the payment. Because the
-   * payment is not trusted, we cannot call a method on it directly, 
+   * payment is not trusted, we cannot call a method on it directly,
    * and must use the issuer instead.
-   */ 
+   *
+   * If the payment is a promise, the operation will proceed upon resolution.
+   */
   getAmountOf(payment :Payment) -> (Amount);
 
-  /** 
+  /**
    * Burn all of the digital assets in the payment. `optAmount` is optional.
    * If `optAmount` is present, the code will insist that the amount of
    * the digital assets in the payment is equal to `optAmount`, to 
    * prevent sending the wrong payment and other confusion.
+   *
+   * If the payment is a promise, the operation will proceed upon resolution.
    */
   burn(payment :Payment, optAmount :Amount) -> (Amount);
 
@@ -48,17 +59,26 @@ interface Issuer (Amount (Extent)) {
    * If `optAmount` is present, the code will insist that the amount of
    * digital assets in the payment is equal to `optAmount`, to prevent
    * sending the wrong  payment and other confusion.
+   *
+   * If the payment is a promise, the operation will proceed upon resolution.
    */
   claim(payment :Payment, optAmount :Amount)
     -> (Payment);
 
-  /** Combine multiple payments into one payment. */
+  /**
+   * Combine multiple payments into one payment.
+   *
+   * If any of the payments is a promise, the operation will proceed upon
+   * resolution.
+   */
   combine(paymentsArray :List(Payment))
     -> (Payment);
 
   /** 
    * Split a single payment into two payments, A and B, according to the
    * paymentAmountA passed in. 
+   *
+   * If the payment is a promise, the operation will proceed upon resolution.
    */
   split(payment :Payment, paymentAmountA :Amount)
     -> (List(Payment));
@@ -66,6 +86,8 @@ interface Issuer (Amount (Extent)) {
   /** 
    * Split a single payment into many payments, according to the
    * amounts passed in. 
+   *
+   * If the payment is a promise, the operation will proceed upon resolution.
    */
   splitMany(payment :Payment, amounts :List(Amount))
     -> (List(Payment));
@@ -147,14 +169,14 @@ interface Purse (Amount) {
   /**
    * Deposit all the contents of payment into this purse, returning the
    * amount. If the optional argument `optAmount` does not equal the
-   * amount of digital assets in the payment,
-   * throw an error.
+   * amount of digital assets in the payment, throw an error.
+   *
+   * If payment is an unresolved promise, throw an error.
    */
   deposit(payment :Payment, optAmount :Amount) -> (Amount);
 
   /** Withdraw amount from this purse into a new Payment. */
   withdraw(amount :Amount) -> (Payment);
-
 }
 
 /**

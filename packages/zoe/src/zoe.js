@@ -282,8 +282,7 @@ const makeZoe = (additionalEndowments = {}) => {
     getInstance: instanceTable.get,
 
     /**
-     * Redeem the invite to receive a seat and a payout
-     * promise.
+     * Redeem the invite to receive a seat and a payout promise.
      * @param {payment} invite - an invite (ERTP payment) to join a
      * Zoe smart contract instance
      * @param  {offerRule[]} offerRules - the offer rules, an object
@@ -323,20 +322,8 @@ const makeZoe = (additionalEndowments = {}) => {
         return harden(redemptionResult);
       };
 
-      const inviteAmount = inviteIssuer.burn(invite);
-      assert(
-        inviteAmount.extent.length === 1,
-        'only one invite should be redeemed',
-      );
-
-      const {
-        extent: [{ instanceHandle, handle: offerHandle }],
-      } = inviteAmount;
-
-      const { issuers } = instanceTable.get(instanceHandle);
-
-      // Promise flow = issuer -> purse -> deposit payment -> seat + payout
-      const paymentDepositedPs = issuers.map((issuer, i) => {
+      // if 'offerAtMost', deposit payout and return coerced amounts; else empty
+      function depositPayout(issuer, i) {
         const issuerRecordP = issuerTable.getPromiseForIssuerRecord(issuer);
         const payoutRule = offerRules.payoutRules[i];
         const offerPayment = offerPayments[i];
@@ -355,10 +342,23 @@ const makeZoe = (additionalEndowments = {}) => {
           );
           return Promise.resolve(amountMath.getEmpty());
         });
-      });
+      }
 
-      return Promise.all(paymentDepositedPs)
-        .then(amounts => {
+      return inviteIssuer.burn(invite).then(inviteAmount => {
+        assert(
+          inviteAmount.extent.length === 1,
+          'only one invite should be redeemed',
+        );
+
+        const {
+          extent: [{ instanceHandle, handle: offerHandle }],
+        } = inviteAmount;
+
+        const { issuers } = instanceTable.get(instanceHandle);
+        // Promise flow = issuer -> purse -> deposit payment -> seat + payout
+        const paymentDepositedPs = issuers.map(depositPayout);
+
+        function recordOfferAndPayout(amounts) {
           const offerImmutableRecord = {
             instanceHandle,
             payoutRules: offerRules.payoutRules,
@@ -371,8 +371,12 @@ const makeZoe = (additionalEndowments = {}) => {
           offerTable.create(offerImmutableRecord, offerHandle);
           payoutMap.init(offerHandle, makePromise());
           return { instanceHandle, offerHandle };
-        })
-        .then(makeRedemptionResult);
+        }
+
+        return Promise.all(paymentDepositedPs)
+          .then(recordOfferAndPayout)
+          .then(makeRedemptionResult);
+      });
     },
   });
   return zoeService;
