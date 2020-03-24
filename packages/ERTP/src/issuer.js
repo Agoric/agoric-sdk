@@ -39,14 +39,14 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
 
   const makePurse = () => {
     const purse = harden({
-      deposit: (payment, optAmount = undefined) => {
-        // TODO(hibbert) use `if (isPromise(payment)) {` from makePromise.
-        if (Promise.resolve(payment) === payment) {
+      deposit: (srcPayment, optAmount = undefined) => {
+        // TODO(hibbert) use `if (isPromise(srcPayment)) {` from makePromise.
+        if (Promise.resolve(srcPayment) === srcPayment) {
           throw new TypeError(
             `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
           );
         }
-        const srcPaymentBalance = paymentLedger.get(payment);
+        const srcPaymentBalance = paymentLedger.get(srcPayment);
         // Note: this does not guarantee that optAmount itself is a valid stable amount
         assertAmountEqual(srcPaymentBalance, optAmount);
         const purseBalance = purse.getCurrentAmount();
@@ -55,7 +55,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
         // eslint-disable-next-line no-use-before-define
         const payments = reallocate(
           harden({
-            payments: [payment],
+            payments: [srcPayment],
             purses: [purse],
             newPurseBalances: [newPurseBalance],
           }),

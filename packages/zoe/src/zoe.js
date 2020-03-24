@@ -282,8 +282,7 @@ const makeZoe = (additionalEndowments = {}) => {
     getInstance: instanceTable.get,
 
     /**
-     * Redeem the invite to receive a seat and a payout
-     * promise.
+     * Redeem the invite to receive a seat and a payout promise.
      * @param {payment} invite - an invite (ERTP payment) to join a
      * Zoe smart contract instance
      * @param  {offerRule[]} offerRules - the offer rules, an object
@@ -323,6 +322,28 @@ const makeZoe = (additionalEndowments = {}) => {
         return harden(redemptionResult);
       };
 
+      // if 'offerAtMost', deposit payout and return coerced amounts; else empty
+      function depositPayout(issuer, i) {
+        const issuerRecordP = issuerTable.getPromiseForIssuerRecord(issuer);
+        const payoutRule = offerRules.payoutRules[i];
+        const offerPayment = offerPayments[i];
+
+        return issuerRecordP.then(({ purse, amountMath }) => {
+          if (payoutRule.kind === 'offerAtMost') {
+            // We cannot trust these amounts since they come directly
+            // from the remote issuer and so we must coerce them.
+            return E(purse)
+              .deposit(offerPayment, payoutRule.amount)
+              .then(_ => amountMath.coerce(payoutRule.amount));
+          }
+          assert(
+            offerPayments[i] === undefined,
+            details`payment was included, but the rule kind was ${payoutRule.kind}`,
+          );
+          return Promise.resolve(amountMath.getEmpty());
+        });
+      }
+
       return inviteIssuer.burn(invite).then(inviteAmount => {
         assert(
           inviteAmount.extent.length === 1,
@@ -335,42 +356,25 @@ const makeZoe = (additionalEndowments = {}) => {
 
         const { issuers } = instanceTable.get(instanceHandle);
         // Promise flow = issuer -> purse -> deposit payment -> seat + payout
-        const paymentDepositedPs = issuers.map((issuer, i) => {
-          const issuerRecordP = issuerTable.getPromiseForIssuerRecord(issuer);
-          const payoutRule = offerRules.payoutRules[i];
-          const offerPayment = offerPayments[i];
+        const paymentDepositedPs = issuers.map(depositPayout);
 
-          return issuerRecordP.then(({ purse, amountMath }) => {
-            if (payoutRule.kind === 'offerAtMost') {
-              // We cannot trust these amounts since they come directly
-              // from the remote issuer and so we must coerce them.
-              return E(purse)
-                .deposit(offerPayment, payoutRule.amount)
-                .then(_ => amountMath.coerce(payoutRule.amount));
-            }
-            assert(
-              offerPayments[i] === undefined,
-              details`payment was included, but the rule kind was ${payoutRule.kind}`,
-            );
-            return Promise.resolve(amountMath.getEmpty());
-          });
-        });
+        function recordOfferAndPayout(amounts) {
+          const offerImmutableRecord = {
+            instanceHandle,
+            payoutRules: offerRules.payoutRules,
+            exitRule: offerRules.exitRule,
+            issuers,
+            amounts,
+          };
+          // Since we have redeemed an invite, the inviteHandle is
+          // also the offerHandle.
+          offerTable.create(offerImmutableRecord, offerHandle);
+          payoutMap.init(offerHandle, makePromise());
+          return { instanceHandle, offerHandle };
+        }
 
         return Promise.all(paymentDepositedPs)
-          .then(amounts => {
-            const offerImmutableRecord = {
-              instanceHandle,
-              payoutRules: offerRules.payoutRules,
-              exitRule: offerRules.exitRule,
-              issuers,
-              amounts,
-            };
-            // Since we have redeemed an invite, the inviteHandle is
-            // also the offerHandle.
-            offerTable.create(offerImmutableRecord, offerHandle);
-            payoutMap.init(offerHandle, makePromise());
-            return { instanceHandle, offerHandle };
-          })
+          .then(recordOfferAndPayout)
           .then(makeRedemptionResult);
       });
     },

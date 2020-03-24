@@ -57,7 +57,7 @@ test('issuer.getMathHelpersName', t => {
 test('issuer.makeEmptyPurse', t => {
   try {
     const { issuer, mint, amountMath, brand } = produceIssuer('fungible');
-    const purse = issuer.makeEmptyPurse('my new purse');
+    const purse = issuer.makeEmptyPurse();
     const payment = mint.mintPayment(amountMath.make(837));
 
     t.ok(
@@ -112,7 +112,7 @@ test('issuer.deposit', t => {
   const { issuer, mint, amountMath } = produceIssuer('fungible');
   const fungible25 = amountMath.make(25);
 
-  const purse = issuer.makeEmptyPurse('my new purse');
+  const purse = issuer.makeEmptyPurse();
   const payment = mint.mintPayment(fungible25);
 
   const checkDeposit = newPurseBalance => {
@@ -136,7 +136,7 @@ test('issuer.deposit promise', t => {
   const { issuer, mint, amountMath } = produceIssuer('fungible');
   const fungible25 = amountMath.make(25);
 
-  const purse = issuer.makeEmptyPurse('my new purse');
+  const purse = issuer.makeEmptyPurse();
   const payment = mint.mintPayment(fungible25);
   const exclusivePaymentP = E(issuer).claim(payment);
 
