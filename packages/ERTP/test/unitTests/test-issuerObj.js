@@ -318,6 +318,27 @@ test('issuer.combine good payments', t => {
   }
 });
 
+test('issuer.combine array of promises', t => {
+  try {
+    const { mint, issuer, amountMath } = produceIssuer('fungible');
+    const paymentsP = [];
+    for (let i = 0; i < 100; i += 1) {
+      const freshPayment = mint.mintPayment(amountMath.make(1));
+      const paymentP = issuer.claim(freshPayment);
+      paymentsP.push(paymentP);
+    }
+
+    E(issuer)
+      .combine(paymentsP)
+      .catch(e => t.assert(false, e))
+      .finally(_ => t.end());
+  } catch (e) {
+    t.assert(false, e);
+  } finally {
+    t.end();
+  }
+});
+
 test('issuer.combine bad payments', t => {
   try {
     const { mint, issuer, amountMath } = produceIssuer('fungible');

@@ -39,14 +39,14 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
 
   const makePurse = () => {
     const purse = harden({
-      deposit: (paymentP, optAmount = undefined) => {
-        // TODO(hibbert) use `if (isPromise(paymentP)) {` from makePromise.
-        if (Promise.resolve(paymentP) === paymentP) {
+      deposit: (payment, optAmount = undefined) => {
+        // TODO(hibbert) use `if (isPromise(payment)) {` from makePromise.
+        if (Promise.resolve(payment) === payment) {
           throw new TypeError(
             `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
           );
         }
-        const srcPaymentBalance = paymentLedger.get(paymentP);
+        const srcPaymentBalance = paymentLedger.get(payment);
         // Note: this does not guarantee that optAmount itself is a valid stable amount
         assertAmountEqual(srcPaymentBalance, optAmount);
         const purseBalance = purse.getCurrentAmount();
@@ -55,7 +55,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
         // eslint-disable-next-line no-use-before-define
         const payments = reallocate(
           harden({
-            payments: [paymentP],
+            payments: [payment],
             purses: [purse],
             newPurseBalances: [newPurseBalance],
           }),
@@ -166,13 +166,11 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     },
     getAmountOf: paymentP => {
       return Promise.resolve(paymentP).then(payment => {
-        let result;
-        try {
-          result = paymentLedger.get(payment);
-        } catch (e) {
-          throw new Error(`payment not found: ${allegedName}`, e);
-        }
-        return result;
+        assert(
+          paymentLedger.has(payment),
+          details`payment not found: ${allegedName}`,
+        );
+        return paymentLedger.get(payment);
       });
     },
     burn: (paymentP, optAmount = undefined) => {
@@ -201,7 +199,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     // Payments in `fromPaymentsPArray` must be distinct. Alias
     // checking is delegated to the `reallocate` function.
     combine: (fromPaymentsPArray, optTotalAmount = undefined) => {
-      return Promise.resolve(fromPaymentsPArray).then(fromPaymentsArray => {
+      return Promise.all(fromPaymentsPArray).then(fromPaymentsArray => {
         const totalPaymentsBalance = fromPaymentsArray
           .map(paymentLedger.get)
           .reduce(add, empty);
