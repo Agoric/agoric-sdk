@@ -252,9 +252,7 @@ export default async function start(basedir, withSES, argv) {
           }
           break;
         case 'fake-chain': {
-          log(
-            `adding follower/sender for fake chain ${c.role} ${c.GCI}`,
-          );
+          log(`adding follower/sender for fake chain ${c.role} ${c.GCI}`);
           const deliverator = await connectToFakeChain(
             basedir,
             c.GCI,
