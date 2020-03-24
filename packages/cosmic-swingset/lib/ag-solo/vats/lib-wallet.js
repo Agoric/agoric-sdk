@@ -205,15 +205,14 @@ export async function makeWallet(
     return petnameToPurse.entries();
   }
 
-  function getOffers({ status = 'accept', origin = null } = {}) {
+  function getOffers({ origin = null } = {}) {
     // return the offers sorted by id
     return idToOffer
       .entries()
       .filter(
         ([_id, offer]) =>
-          (status === null || offer.status === status) &&
-          (origin === null ||
-            (offer.requestContext && offer.requestContext.origin === origin)),
+          origin === null ||
+          (offer.requestContext && offer.requestContext.origin === origin),
       )
       .sort(([id1], [id2]) => id1 > id2)
       .map(([_id, offer]) => harden(offer));

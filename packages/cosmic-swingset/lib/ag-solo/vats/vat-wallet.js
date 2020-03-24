@@ -9,6 +9,40 @@ function build(E, _D, _log) {
   let http;
   const adminHandles = new Set();
   const bridgeHandles = new Set();
+  const offerSubscriptions = new Map();
+
+  const pushOfferSubscriptions = (channelHandle, offersStr) => {
+    const offers = JSON.parse(offersStr);
+    const subs = offerSubscriptions.get(channelHandle);
+    (subs || []).forEach(({ origin, status }) => {
+      // Filter by optional status and origin.
+      const result = harden(
+        offers.filter(
+          offer =>
+            (status === null || offer.status === status) &&
+            offer.requestContext &&
+            offer.requestContext.origin === origin,
+        ),
+      );
+      E(http).send(
+        {
+          type: 'walletOfferDescriptions',
+          data: result,
+        },
+        [channelHandle],
+      );
+    });
+  };
+
+  const subscribeToOffers = (channelHandle, { origin, status = null }) => {
+    let subs = offerSubscriptions.get(channelHandle);
+    if (!subs) {
+      subs = [];
+      offerSubscriptions.set(channelHandle, subs);
+    }
+    subs.push({ origin, status });
+    pushOfferSubscriptions(channelHandle, inboxState);
+  };
 
   const { publish: pursesPublish, subscribe: purseSubscribe } = pubsub(E);
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
@@ -70,7 +104,7 @@ function build(E, _D, _log) {
 
       case 'walletGetOffers':
       case 'walletGetOfferDescriptions': {
-        const result = await wallet.getOffers(data);
+        const result = await wallet.getOffers({ origin: meta.origin });
         return {
           type: 'walletOfferDescriptions',
           data: result,
@@ -118,7 +152,10 @@ function build(E, _D, _log) {
               [...adminHandles.keys()],
             );
 
-            // TODO: Get subscribed offers, too.
+            // Get subscribed offers, too.
+            for (const channelHandle of offerSubscriptions.keys()) {
+              pushOfferSubscriptions(channelHandle, inboxState);
+            }
           }
         },
       }),
@@ -148,6 +185,7 @@ function build(E, _D, _log) {
           },
           onClose(_obj, meta) {
             bridgeHandles.delete(meta.channelHandle);
+            offerSubscriptions.delete(meta.channelHandle);
           },
 
           async onMessage(obj, meta) {
@@ -155,19 +193,42 @@ function build(E, _D, _log) {
             switch (type) {
               case 'walletGetPurses':
               case 'walletAddOffer':
-                // Override the origin since we got it from the bridge.
-                return adminOnMessage(obj, {
-                  ...meta,
-                  origin: obj.dappOrigin,
-                });
+                return adminOnMessage(obj, meta);
 
-              case 'walletGetOffers': {
-                const { status = null } = obj;
-                // Override the origin since we got it from the bridge.
-                const result = await wallet.getOffers({
-                  origin: obj.dappOrigin,
+              case 'walletSubscribeOffers': {
+                const { status = null, dappOrigin } = obj;
+                const { channelHandle } = meta;
+
+                if (!channelHandle) {
+                  return {
+                    type: 'walletSubscribedOffers',
+                    data: false,
+                  };
+                }
+
+                // TODO: Maybe use the contract instanceId instead.
+                subscribeToOffers(channelHandle, {
+                  origin: dappOrigin,
                   status,
                 });
+                return {
+                  type: 'walletSubscribedOffers',
+                  data: true,
+                };
+              }
+
+              case 'walletGetOffers': {
+                const { dappOrigin, status = null } = obj;
+
+                // Override the origin since we got it from the bridge.
+                let result = await wallet.getOffers({ origin: dappOrigin });
+                if (status !== null) {
+                  // Filter by status.
+                  result = harden(
+                    result.filter(offer => offer.status === status),
+                  );
+                }
+
                 return {
                   type: 'walletOfferDescriptions',
                   data: result,
