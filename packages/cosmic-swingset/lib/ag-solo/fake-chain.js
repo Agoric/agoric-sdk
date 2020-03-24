@@ -6,6 +6,7 @@ import anylogger from 'anylogger';
 
 import { launch } from '../launch-chain';
 import makeBlockManager from '../block-manager';
+import { makeWithQueue } from './queue';
 
 const log = anylogger('fake-chain');
 
@@ -57,8 +58,8 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
 
   const maximumDelay = (delay || PRETEND_BLOCK_DELAY) * 1000;
 
-  async function simulateBlock() {
-    clearTimeout(nextBlockTimeout);
+  const withBlockQueue = makeWithQueue();
+  const simulateBlock = withBlockQueue(async () => {
     const actualStart = Date.now();
     // Gather up the new messages into the latest block.
     thisBlock.push(...intoChain);
@@ -101,11 +102,12 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
       ack: 0,
     };
     inbound(GCI, outbox, ack);
-  }
+  });
 
   async function deliver(newMessages, acknum) {
     intoChain.push([newMessages, acknum]);
     if (!delay) {
+      clearTimeout(nextBlockTimeout);
       await simulateBlock();
     }
   }
