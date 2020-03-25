@@ -1,6 +1,6 @@
 User-visible changes in @agoric/zoe:
 
-## Release 0.3.0 (24-Mar-2020)
+## Release 0.3.0 (25-Mar-2020)
 
 "OfferRules", or the declarative statement portion of an offer, have
 been renamed to "proposal". The structure of a proposal has changed to:
