@@ -1,13 +1,16 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 
-import { areRightsConserved, transpose } from '../../src/areRightsConserved';
+import { areRightsConserved, transpose } from '../../src/rightsConservation';
 import { setup } from './setupBasicMints';
 
-const makeAmountMatrix = (amountMaths, extentMatrix) =>
-  extentMatrix.map(row => row.map((extent, i) => amountMaths[i].make(extent)));
+const makeAmountMatrix = (amountMathArray, extentMatrix) =>
+  extentMatrix.map(row =>
+    row.map((extent, i) => amountMathArray[i].make(extent)),
+  );
 
 test('transpose', t => {
+  t.plan(1);
   try {
     t.deepEquals(
       transpose([
@@ -22,13 +25,12 @@ test('transpose', t => {
     );
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 // rights are conserved for amount with Nat extents
 test(`areRightsConserved - true for amount with nat extents`, t => {
+  t.plan(1);
   try {
     const { amountMaths } = setup();
     const oldExtents = [
@@ -48,13 +50,12 @@ test(`areRightsConserved - true for amount with nat extents`, t => {
     t.ok(areRightsConserved(amountMaths, oldAmounts, newAmounts));
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 // rights are *not* conserved for amount with Nat extents
 test(`areRightsConserved - false for amount with Nat extents`, t => {
+  t.plan(1);
   try {
     const { amountMaths } = setup();
     const oldExtents = [
@@ -74,12 +75,11 @@ test(`areRightsConserved - false for amount with Nat extents`, t => {
     t.notOk(areRightsConserved(amountMaths, oldAmounts, newAmounts));
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test(`areRightsConserved - empty arrays`, t => {
+  t.plan(1);
   try {
     const { amountMaths } = setup();
     const oldAmounts = [[], [], []];
@@ -88,8 +88,6 @@ test(`areRightsConserved - empty arrays`, t => {
     t.ok(areRightsConserved(amountMaths, oldAmounts, newAmounts));
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 

@@ -6,454 +6,440 @@ import bundleSource from '@agoric/bundle-source';
 import harden from '@agoric/harden';
 
 import { makeZoe } from '../../../src/zoe';
-import { setup } from '../setupBasicMints';
+// TODO: Remove setupBasicMints and rename setupBasicMints2
+import { setup } from '../setupBasicMints2';
 
 const automaticRefundRoot = `${__dirname}/../../../src/contracts/automaticRefund`;
 
 test('zoe - simplest automaticRefund', async t => {
   t.plan(1);
+  try {
+    // Setup zoe and mints
+    const { moolaR, moola } = setup();
+    const zoe = makeZoe({ require });
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
+    const installationHandle = zoe.install(source, moduleFormat);
 
-  // Setup zoe and mints
-  const { issuers, mints, moola } = setup();
-  const [moolaIssuer] = issuers;
-  const [moolaMint] = mints;
-  const zoe = makeZoe({ require });
-  // Pack the contract.
-  const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
-  const installationHandle = zoe.install(source, moduleFormat);
+    // Setup Alice
+    const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3));
 
-  // Setup Alice
-  const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
+    // 1: Alice creates an automatic refund instance
+    const issuerKeywordRecord = harden({ Contribution: moolaR.issuer });
+    const invite = await zoe.makeInstance(
+      installationHandle,
+      issuerKeywordRecord,
+    );
 
-  // 1: Alice creates an automatic refund instance
-  const invite = await zoe.makeInstance(installationHandle, {
-    issuers: harden([moolaIssuer]),
-  });
+    const aliceProposal = harden({
+      give: { Contribution: moola(3) },
+      exit: { onDemand: null },
+    });
+    const alicePayments = { Contribution: aliceMoolaPayment };
 
-  const aliceOfferRules = harden({
-    payoutRules: [
-      {
-        kind: 'offerAtMost',
-        amount: moola(3),
-      },
-    ],
-    exitRule: {
-      kind: 'onDemand',
-    },
-  });
-  const alicePayments = [aliceMoolaPayment];
+    const { seat, payout: payoutP } = await zoe.redeem(
+      invite,
+      aliceProposal,
+      alicePayments,
+    );
 
-  const { seat, payout: payoutP } = await zoe.redeem(
-    invite,
-    aliceOfferRules,
-    alicePayments,
-  );
+    seat.makeOffer();
+    const alicePayout = await payoutP;
+    const aliceMoolaPayout = await alicePayout.Contribution;
 
-  seat.makeOffer();
-  const alicePayout = await payoutP;
-  const aliceMoolaPayout = await alicePayout[0];
-
-  // Alice got back what she put in
-  moolaIssuer.getAmountOf(aliceMoolaPayout).then(moolaAmount => {
-    t.deepEquals(moolaAmount, aliceOfferRules.payoutRules[0].amount);
-  });
+    // Alice got back what she put in
+    t.deepEquals(
+      await moolaR.issuer.getAmountOf(aliceMoolaPayout),
+      aliceProposal.give.Contribution,
+    );
+  } catch (e) {
+    t.assert(false, e);
+    console.log(e);
+  }
 });
 
 test('zoe - automaticRefund same issuer', async t => {
   t.plan(1);
+  try {
+    // Setup zoe and mints
+    const { moolaR, moola } = setup();
+    const zoe = makeZoe({ require });
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
+    const installationHandle = zoe.install(source, moduleFormat);
 
-  // Setup zoe and mints
-  const { issuers, moola } = setup();
-  const [moolaIssuer] = issuers;
-  const zoe = makeZoe({ require });
-  // Pack the contract.
-  const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
-  const installationHandle = zoe.install(source, moduleFormat);
+    // Setup Alice
+    const aliceMoolaPayment = moolaR.mint.mintPayment(moola(9));
 
-  // 1: Alice creates an automatic refund instance
-  const invite = await zoe.makeInstance(installationHandle, {
-    issuers: harden([moolaIssuer, moolaIssuer]),
-  });
-  const aliceOfferRules = harden({
-    payoutRules: [
-      {
-        kind: 'wantAtLeast',
-        amount: moola(0),
-      },
-      {
-        kind: 'wantAtLeast',
-        amount: moola(0),
-      },
-    ],
-    exitRule: {
-      kind: 'onDemand',
-    },
-  });
-  const alicePayments = [undefined, undefined];
+    // 1: Alice creates an automatic refund instance
+    const issuerKeywordRecord = harden({
+      Contribution1: moolaR.issuer,
+      Contribution2: moolaR.issuer,
+    });
+    const invite = await zoe.makeInstance(
+      installationHandle,
+      issuerKeywordRecord,
+    );
 
-  const { seat, payout: payoutP } = await zoe.redeem(
-    invite,
-    aliceOfferRules,
-    alicePayments,
-  );
+    const aliceProposal = harden({
+      give: { Contribution2: moola(9) },
+      exit: { onDemand: null },
+    });
+    const alicePayments = harden({ Contribution2: aliceMoolaPayment });
 
-  seat.makeOffer();
-  const alicePayout = await payoutP;
-  const aliceMoolaPayout = await alicePayout[0];
+    const { seat, payout: payoutP } = await zoe.redeem(
+      invite,
+      aliceProposal,
+      alicePayments,
+    );
 
-  // Alice got back what she put in
-  moolaIssuer.getAmountOf(aliceMoolaPayout).then(moolaAmount => {
-    t.deepEquals(moolaAmount, aliceOfferRules.payoutRules[0].amount);
-  });
+    seat.makeOffer();
+    const alicePayout = await payoutP;
+    const aliceMoolaPayout = await alicePayout.Contribution2;
+
+    // Alice got back what she put in
+    t.deepEquals(
+      await moolaR.issuer.getAmountOf(aliceMoolaPayout),
+      aliceProposal.give.Contribution2,
+    );
+  } catch (e) {
+    t.assert(false, e);
+    console.log(e);
+  }
 });
 
 test('zoe with automaticRefund', async t => {
-  t.plan(10);
+  t.plan(11);
+  try {
+    // Setup zoe and mints
+    const { moolaR, simoleanR, moola, simoleans } = setup();
+    const zoe = makeZoe({ require });
+    const inviteIssuer = zoe.getInviteIssuer();
 
-  // Setup zoe and mints
-  const {
-    issuers: defaultIssuers,
-    mints,
-    amountMaths,
-    moola,
-    simoleans,
-  } = setup();
-  const issuers = defaultIssuers.slice(0, 2);
-  const zoe = makeZoe({ require });
-  const inviteIssuer = zoe.getInviteIssuer();
+    // Setup Alice
+    const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3));
+    const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
+    const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
 
-  // Setup Alice
-  const aliceMoolaPayment = mints[0].mintPayment(amountMaths[0].make(3));
-  const aliceMoolaPurse = issuers[0].makeEmptyPurse();
-  const aliceSimoleanPurse = issuers[1].makeEmptyPurse();
+    // Setup Bob
+    const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
+    const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+    const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(17));
 
-  // Setup Bob
-  const bobMoolaPurse = issuers[0].makeEmptyPurse();
-  const bobSimoleanPurse = issuers[1].makeEmptyPurse();
-  const bobSimoleanPayment = mints[1].mintPayment(amountMaths[1].make(17));
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
 
-  // Pack the contract.
-  const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
+    // 1: Alice creates an automatic refund instance
+    const installationHandle = zoe.install(source, moduleFormat);
+    const issuerKeywordRecord = harden({
+      Contribution1: moolaR.issuer,
+      Contribution2: simoleanR.issuer,
+    });
+    const aliceInvite = await zoe.makeInstance(
+      installationHandle,
+      issuerKeywordRecord,
+    );
+    const {
+      extent: [{ instanceHandle }],
+    } = await inviteIssuer.getAmountOf(aliceInvite);
+    const { publicAPI } = zoe.getInstance(instanceHandle);
 
-  // 1: Alice creates an automatic refund instance
-  const installationHandle = zoe.install(source, moduleFormat);
-  const terms = harden({
-    issuers,
-  });
-  const aliceInvite = await zoe.makeInstance(installationHandle, terms);
-  const aliceInviteAmount = await inviteIssuer.getAmountOf(aliceInvite);
-  const { publicAPI } = zoe.getInstance(
-    aliceInviteAmount.extent[0].instanceHandle,
-  );
+    // 2: Alice escrows with zoe
+    const aliceProposal = harden({
+      give: { Contribution1: moola(3) },
+      want: { Contribution2: simoleans(7) },
+      exit: { onDemand: null },
+    });
+    const alicePayments = { Contribution1: aliceMoolaPayment };
 
-  // 2: Alice escrows with zoe
-  const aliceOfferRules = harden({
-    payoutRules: [
-      {
-        kind: 'offerAtMost',
-        amount: moola(3),
-      },
-      {
-        kind: 'wantAtLeast',
-        amount: simoleans(7),
-      },
-    ],
-    exitRule: {
-      kind: 'onDemand',
-    },
-  });
-  const alicePayments = [aliceMoolaPayment, undefined];
+    // Alice gets two kinds of things back: a seat which she can use
+    // interact with the contract, and a payout promise
+    // that resolves to the array of promises for payments
+    const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
+      aliceInvite,
+      aliceProposal,
+      alicePayments,
+    );
 
-  // Alice gets two kinds of things back: a seat which she can use
-  // interact with the contract, and a payout promise
-  // that resolves to the array of promises for payments
-  const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
-    aliceInvite,
-    aliceOfferRules,
-    alicePayments,
-  );
+    // In the 'automaticRefund' trivial contract, you just get your
+    // payments back when you make an offer. The effect of calling
+    // makeOffer will vary widely depending on the smart  contract.
+    const aliceOutcome = aliceSeat.makeOffer();
+    const bobInvite = publicAPI.makeInvite();
+    const count = publicAPI.getOffersCount();
+    t.equals(count, 1);
 
-  // In the 'automaticRefund' trivial contract, you just get your
-  // payoutRules back when you make an offer. The effect of calling
-  // makeOffer will vary widely depending on the smart  contract.
-  const aliceOutcome = aliceSeat.makeOffer();
-  const bobInvite = publicAPI.makeInvite();
-  const count = publicAPI.getOffersCount();
-  t.equals(count, 1);
+    // Imagine that Alice has shared the bobInvite with Bob. He
+    // will do a claim on the invite with the Zoe invite issuer and
+    // will check that the installationId and terms match what he
+    // expects
+    const exclusBobInvite = await inviteIssuer.claim(bobInvite);
+    const {
+      extent: [{ instanceHandle: bobInstanceHandle }],
+    } = await inviteIssuer.getAmountOf(exclusBobInvite);
 
-  // Imagine that Alice has shared the bobInvite with Bob. He
-  // will do a claim on the invite with the Zoe invite issuer and
-  // will check that the installationId and terms match what he
-  // expects
-  const exclusBobInvite = await inviteIssuer.claim(bobInvite);
-  const bobInviteAmount = await inviteIssuer.getAmountOf(exclusBobInvite);
-  const { instanceHandle } = bobInviteAmount.extent[0];
+    const {
+      installationHandle: bobInstallationId,
+      issuerKeywordRecord: bobIssuers,
+    } = zoe.getInstance(bobInstanceHandle);
+    t.equals(bobInstallationId, installationHandle);
 
-  const {
-    installationHandle: bobInstallationId,
-    terms: bobTerms,
-  } = zoe.getInstance(instanceHandle);
-  t.equals(bobInstallationId, installationHandle);
-  const bobIssuers = bobTerms.issuers;
+    // bob wants to know what issuers this contract is about and in
+    // what order. Is it what he expects?
+    t.deepEquals(bobIssuers, {
+      Contribution1: moolaR.issuer,
+      Contribution2: simoleanR.issuer,
+    });
 
-  // bob wants to know what issuers this contract is about and in
-  // what order. Is it what he expects?
-  t.deepEquals(bobIssuers, issuers);
+    // 6: Bob also wants to get an automaticRefund (why? we don't
+    // know) so he escrows his offer payments and makes a proposal.
+    const bobProposal = harden({
+      give: { Contribution2: simoleans(17) },
+      want: { Contribution1: moola(15) },
+      exit: { onDemand: null },
+    });
+    const bobPayments = { Contribution2: bobSimoleanPayment };
 
-  // 6: Bob also wants to get an automaticRefund (why? we don't
-  // know) so he escrows his offer and his offer payments.
+    // Bob also gets two things back: a seat and a
+    // payout
+    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+      exclusBobInvite,
+      bobProposal,
+      bobPayments,
+    );
+    const bobOutcome = bobSeat.makeOffer();
 
-  const bobOfferRules = harden({
-    payoutRules: [
-      {
-        kind: 'wantAtLeast',
-        amount: moola(15),
-      },
-      {
-        kind: 'offerAtMost',
-        amount: simoleans(17),
-      },
-    ],
-    exitRule: {
-      kind: 'onDemand',
-    },
-  });
-  const bobPayments = [undefined, bobSimoleanPayment];
+    t.equals(aliceOutcome, 'The offer was accepted');
+    t.equals(bobOutcome, 'The offer was accepted');
 
-  // Bob also gets two things back: a seat and a
-  // payout
-  const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
-    exclusBobInvite,
-    bobOfferRules,
-    bobPayments,
-  );
-  const bobOutcome = bobSeat.makeOffer();
+    // These promise resolve when the offer completes, but it may
+    // still take longer for a remote issuer to actually make the
+    // payments, so we need to wait for those promises to resolve
+    // separately.
 
-  t.equals(aliceOutcome, 'The offer was accepted');
-  t.equals(bobOutcome, 'The offer was accepted');
+    // offer completes
+    const alicePayout = await alicePayoutP;
+    const bobPayout = await bobPayoutP;
+    const aliceMoolaPayout = await alicePayout.Contribution1;
+    const aliceSimoleanPayout = await alicePayout.Contribution2;
 
-  // These promise resolve when the offer completes, but it may
-  // still take longer for a remote issuer to actually make the
-  // payments, so we need to wait for those promises to resolve
-  // separately.
+    const bobMoolaPayout = await bobPayout.Contribution1;
+    const bobSimoleanPayout = await bobPayout.Contribution2;
 
-  // offer completes
-  const alicePayout = await alicePayoutP;
-  const bobPayout = await bobPayoutP;
-  const [aliceMoolaPayout, aliceSimoleanPayout] = await Promise.all(
-    alicePayout,
-  );
-  const [bobMoolaPayout, bobSimoleanPayout] = await Promise.all(bobPayout);
+    // Alice got back what she put in
+    t.deepEquals(
+      await moolaR.issuer.getAmountOf(aliceMoolaPayout),
+      aliceProposal.give.Contribution1,
+    );
 
-  // Alice got back what she put in
-  issuers[0].getAmountOf(aliceMoolaPayout).then(aliceMoolaAmount => {
-    t.deepEquals(aliceMoolaAmount, aliceOfferRules.payoutRules[0].amount);
-  });
+    // Alice didn't get any of what she wanted
+    t.deepEquals(
+      await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
+      simoleans(0),
+    );
 
-  // Alice didn't get any of what she wanted
-  issuers[1].getAmountOf(aliceSimoleanPayout).then(aliceSimoleanAmount => {
-    t.deepEquals(aliceSimoleanAmount, simoleans(0));
-  });
+    // 9: Alice deposits her refund to ensure she can
+    await aliceMoolaPurse.deposit(aliceMoolaPayout);
+    await aliceSimoleanPurse.deposit(aliceSimoleanPayout);
 
-  // 9: Alice deposits her refund to ensure she can
-  await aliceMoolaPurse.deposit(aliceMoolaPayout);
-  await aliceSimoleanPurse.deposit(aliceSimoleanPayout);
+    // 10: Bob deposits his refund to ensure he can
+    await bobMoolaPurse.deposit(bobMoolaPayout);
+    await bobSimoleanPurse.deposit(bobSimoleanPayout);
 
-  // 10: Bob deposits his refund to ensure he can
-  await bobMoolaPurse.deposit(bobMoolaPayout);
-  await bobSimoleanPurse.deposit(bobSimoleanPayout);
-
-  // Assert that the correct refund was achieved.
-  // Alice had 3 moola and 0 simoleans.
-  // Bob had 0 moola and 7 simoleans.
-  t.equals(aliceMoolaPurse.getCurrentAmount().extent, 3);
-  t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 0);
-  t.equals(bobMoolaPurse.getCurrentAmount().extent, 0);
-  t.equals(bobSimoleanPurse.getCurrentAmount().extent, 17);
+    // Assert that the correct refund was achieved.
+    // Alice had 3 moola and 0 simoleans.
+    // Bob had 0 moola and 7 simoleans.
+    t.equals(aliceMoolaPurse.getCurrentAmount().extent, 3);
+    t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 0);
+    t.equals(bobMoolaPurse.getCurrentAmount().extent, 0);
+    t.equals(bobSimoleanPurse.getCurrentAmount().extent, 17);
+  } catch (e) {
+    t.assert(false, e);
+    console.log(e);
+  }
 });
 
 test('multiple instances of automaticRefund for the same Zoe', async t => {
   t.plan(6);
+  try {
+    // Setup zoe and mints
+    const { moolaR, simoleanR, moola, simoleans } = setup();
+    const zoe = makeZoe({ require });
 
-  // Setup zoe and mints
-  const { issuers: originalIssuers, mints, moola, simoleans } = setup();
-  const issuers = originalIssuers.slice(0, 2);
-  const zoe = makeZoe({ require });
-
-  // Setup Alice
-  const aliceMoolaPayment = mints[0].mintPayment(moola(30));
-  const moola10 = moola(10);
-  const aliceMoolaPayments = await issuers[0].splitMany(aliceMoolaPayment, [
-    moola10,
-    moola10,
-    moola10,
-  ]);
-
-  // 1: Alice creates 3 automatic refund instances
-  // Pack the contract.
-  const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
-
-  const installationHandle = zoe.install(source, moduleFormat);
-  const terms = harden({
-    issuers,
-  });
-  const inviteIssuer = zoe.getInviteIssuer();
-  const aliceInvite1 = await zoe.makeInstance(installationHandle, terms);
-  const { publicAPI: publicAPI1 } = await inviteIssuer
-    .getAmountOf(aliceInvite1)
-    .then(invite1Amount =>
-      zoe.getInstance(invite1Amount.extent[0].instanceHandle),
+    // Setup Alice
+    const aliceMoolaPayment = moolaR.mint.mintPayment(moola(30));
+    const moola10 = moola(10);
+    const aliceMoolaPayments = await moolaR.issuer.splitMany(
+      aliceMoolaPayment,
+      [moola10, moola10, moola10],
     );
 
-  const aliceInvite2 = await zoe.makeInstance(installationHandle, terms);
-  const { publicAPI: publicAPI2 } = await inviteIssuer
-    .getAmountOf(aliceInvite2)
-    .then(invite2Amount =>
-      zoe.getInstance(invite2Amount.extent[0].instanceHandle),
+    // 1: Alice creates 3 automatic refund instances
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
+
+    const installationHandle = zoe.install(source, moduleFormat);
+    const issuerKeywordRecord = harden({
+      ContributionA: moolaR.issuer,
+      ContributionB: simoleanR.issuer,
+    });
+    const inviteIssuer = zoe.getInviteIssuer();
+    const aliceInvite1 = await zoe.makeInstance(
+      installationHandle,
+      issuerKeywordRecord,
+    );
+    const {
+      extent: [{ instanceHandle: instanceHandle1 }],
+    } = await inviteIssuer.getAmountOf(aliceInvite1);
+    const { publicAPI: publicAPI1 } = zoe.getInstance(instanceHandle1);
+
+    const aliceInvite2 = await zoe.makeInstance(
+      installationHandle,
+      issuerKeywordRecord,
+    );
+    const {
+      extent: [{ instanceHandle: instanceHandle2 }],
+    } = await inviteIssuer.getAmountOf(aliceInvite2);
+    const { publicAPI: publicAPI2 } = zoe.getInstance(instanceHandle2);
+
+    const aliceInvite3 = await zoe.makeInstance(
+      installationHandle,
+      issuerKeywordRecord,
+    );
+    const {
+      extent: [{ instanceHandle: instanceHandle3 }],
+    } = await inviteIssuer.getAmountOf(aliceInvite3);
+    const { publicAPI: publicAPI3 } = zoe.getInstance(instanceHandle3);
+
+    // 2: Alice escrows with zoe
+    const aliceProposal = harden({
+      give: { ContributionA: moola(10) },
+      want: { ContributionB: simoleans(7) },
+    });
+
+    const { seat: aliceSeat1, payout: payoutP1 } = await zoe.redeem(
+      aliceInvite1,
+      aliceProposal,
+      harden({ ContributionA: aliceMoolaPayments[0] }),
     );
 
-  const aliceInvite3 = await zoe.makeInstance(installationHandle, terms);
-  const { publicAPI: publicAPI3 } = await inviteIssuer
-    .getAmountOf(aliceInvite3)
-    .then(invite3Amount =>
-      zoe.getInstance(invite3Amount.extent[0].instanceHandle),
+    // 3: Alice escrows with zoe
+    const { seat: aliceSeat2, payout: payoutP2 } = await zoe.redeem(
+      aliceInvite2,
+      aliceProposal,
+      harden({ ContributionA: aliceMoolaPayments[1] }),
     );
 
-  // 2: Alice escrows with zoe
-  const aliceOfferRules = harden({
-    payoutRules: [
-      {
-        kind: 'offerAtMost',
-        amount: moola(10),
-      },
-      {
-        kind: 'wantAtLeast',
-        amount: simoleans(7),
-      },
-    ],
-    exitRule: {
-      kind: 'onDemand',
-    },
-  });
+    // 4: Alice escrows with zoe
+    const { seat: aliceSeat3, payout: payoutP3 } = await zoe.redeem(
+      aliceInvite3,
+      aliceProposal,
+      harden({ ContributionA: aliceMoolaPayments[2] }),
+    );
 
-  const { seat: aliceSeat1, payout: payoutP1 } = await zoe.redeem(
-    aliceInvite1,
-    aliceOfferRules,
-    [aliceMoolaPayments[0], undefined],
-  );
+    // 5: Alice makes an offer
+    aliceSeat1.makeOffer();
+    aliceSeat2.makeOffer();
+    aliceSeat3.makeOffer();
 
-  // 3: Alice escrows with zoe
-  const { seat: aliceSeat2, payout: payoutP2 } = await zoe.redeem(
-    aliceInvite2,
-    aliceOfferRules,
-    [aliceMoolaPayments[1], undefined],
-  );
+    const payout1 = await payoutP1;
+    const payout2 = await payoutP2;
+    const payout3 = await payoutP3;
 
-  // 4: Alice escrows with zoe
-  const { seat: aliceSeat3, payout: payoutP3 } = await zoe.redeem(
-    aliceInvite3,
-    aliceOfferRules,
-    [aliceMoolaPayments[2], undefined],
-  );
+    const moolaPayout1 = await payout1.ContributionA;
+    const moolaPayout2 = await payout2.ContributionA;
+    const moolaPayout3 = await payout3.ContributionA;
 
-  // 5: Alice makes an offer
-  aliceSeat1.makeOffer();
-  aliceSeat2.makeOffer();
-  aliceSeat3.makeOffer();
+    // Ensure that she got what she put in for each
+    t.deepEquals(
+      await moolaR.issuer.getAmountOf(moolaPayout1),
+      aliceProposal.give.ContributionA,
+    );
+    t.deepEquals(
+      await moolaR.issuer.getAmountOf(moolaPayout2),
+      aliceProposal.give.ContributionA,
+    );
+    t.deepEquals(
+      await moolaR.issuer.getAmountOf(moolaPayout3),
+      aliceProposal.give.ContributionA,
+    );
 
-  const [moolaPayout1P] = await payoutP1;
-  const [moolaPayout2P] = await payoutP2;
-  const [moolaPayout3P] = await payoutP3;
-
-  const moolaPayout1 = await moolaPayout1P;
-  const moolaPayout2 = await moolaPayout2P;
-  const moolaPayout3 = await moolaPayout3P;
-
-  // Ensure that she got what she put in for each
-  issuers[0].getAmountOf(moolaPayout1).then(payout1Amount => {
-    t.deepEquals(payout1Amount, aliceOfferRules.payoutRules[0].amount);
-  });
-  issuers[0].getAmountOf(moolaPayout2).then(payout2Amount => {
-    t.deepEquals(payout2Amount, aliceOfferRules.payoutRules[0].amount);
-  });
-  issuers[0].getAmountOf(moolaPayout3).then(payout3Amount => {
-    t.deepEquals(payout3Amount, aliceOfferRules.payoutRules[0].amount);
-  });
-
-  // Ensure that the number of offers received by each instance is one
-  t.equals(publicAPI1.getOffersCount(), 1);
-  t.equals(publicAPI2.getOffersCount(), 1);
-  t.equals(publicAPI3.getOffersCount(), 1);
+    // Ensure that the number of offers received by each instance is one
+    t.equals(publicAPI1.getOffersCount(), 1);
+    t.equals(publicAPI2.getOffersCount(), 1);
+    t.equals(publicAPI3.getOffersCount(), 1);
+  } catch (e) {
+    t.assert(false, e);
+    console.log(e);
+  }
 });
 
 test('zoe - alice cancels after completion', async t => {
-  t.plan(4);
+  t.plan(5);
+  try {
+    // Setup zoe and mints
+    const { moolaR, simoleanR, moola, simoleans } = setup();
+    const zoe = makeZoe({ require });
 
-  // Setup zoe and mints
-  const { issuers: defaultIssuers, mints, moola, simoleans } = setup();
-  const issuers = defaultIssuers.slice(0, 2);
-  const zoe = makeZoe({ require });
+    // Setup Alice
+    const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3));
+    const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
+    const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
 
-  // Setup Alice
-  const aliceMoolaPayment = mints[0].mintPayment(moola(3));
-  const aliceMoolaPurse = issuers[0].makeEmptyPurse();
-  const aliceSimoleanPurse = issuers[1].makeEmptyPurse();
+    // Pack the contract.
+    const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
+    const installationHandle = zoe.install(source, moduleFormat);
+    const issuerKeywordRecord = harden({
+      ContributionA: moolaR.issuer,
+      ContributionB: simoleanR.issuer,
+    });
+    const invite = await zoe.makeInstance(
+      installationHandle,
+      issuerKeywordRecord,
+    );
 
-  // 2: Alice escrows with zoe
-  const aliceOfferRules = harden({
-    payoutRules: [
-      {
-        kind: 'offerAtMost',
-        amount: moola(3),
-      },
-      {
-        kind: 'wantAtLeast',
-        amount: simoleans(7),
-      },
-    ],
-    exitRule: {
-      kind: 'onDemand',
-    },
-  });
-  const alicePayments = [aliceMoolaPayment, undefined];
+    const aliceProposal = harden({
+      give: { ContributionA: moola(3) },
+      want: { ContributionB: simoleans(7) },
+    });
+    const alicePayments = { ContributionA: aliceMoolaPayment };
 
-  // Pack the contract.
-  const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
-  const installationHandle = zoe.install(source, moduleFormat);
-  const terms = harden({
-    issuers,
-  });
-  const invite = await zoe.makeInstance(installationHandle, terms);
+    const { seat, cancelObj, payout: payoutP } = await zoe.redeem(
+      invite,
+      aliceProposal,
+      alicePayments,
+    );
 
-  const { seat, cancelObj, payout: payoutP } = await zoe.redeem(
-    invite,
-    aliceOfferRules,
-    alicePayments,
-  );
+    await seat.makeOffer();
 
-  await seat.makeOffer();
+    t.throws(() => cancelObj.cancel(), /Error: offer has already completed/);
 
-  t.throws(() => cancelObj.cancel(), /Error: offer has already completed/);
+    const payout = await payoutP;
+    const moolaPayout = await payout.ContributionA;
+    const simoleanPayout = await payout.ContributionB;
 
-  const payout = await payoutP;
-  const [moolaPayout, simoleanPayout] = await Promise.all(payout);
+    // Alice got back what she put in
+    t.deepEquals(
+      await moolaR.issuer.getAmountOf(moolaPayout),
+      aliceProposal.give.ContributionA,
+    );
 
-  // Alice got back what she put in
-  issuers[0].getAmountOf(moolaPayout).then(aliceMoolaAmount => {
-    t.deepEquals(aliceMoolaAmount, aliceOfferRules.payoutRules[0].amount);
-  });
+    // Alice didn't get any of what she wanted
+    t.deepEquals(
+      await simoleanR.issuer.getAmountOf(simoleanPayout),
+      simoleans(0),
+    );
 
-  // Alice didn't get any of what she wanted
-  issuers[1].getAmountOf(simoleanPayout).then(aliceSimoleanAmount => {
-    t.deepEquals(aliceSimoleanAmount, simoleans(0));
-  });
+    // 9: Alice deposits her refund to ensure she can
+    await aliceMoolaPurse.deposit(moolaPayout);
+    await aliceSimoleanPurse.deposit(simoleanPayout);
 
-  // 9: Alice deposits her refund to ensure she can
-  await aliceMoolaPurse.deposit(moolaPayout);
-  await aliceSimoleanPurse.deposit(simoleanPayout);
-
-  // Assert that the correct refund was achieved.
-  // Alice had 3 moola and 0 simoleans.
-  t.equals(aliceMoolaPurse.getCurrentAmount().extent, 3);
-  t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 0);
+    // Assert that the correct refund was achieved.
+    // Alice had 3 moola and 0 simoleans.
+    t.equals(aliceMoolaPurse.getCurrentAmount().extent, 3);
+    t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 0);
+  } catch (e) {
+    t.assert(false, e);
+    console.log(e);
+  }
 });

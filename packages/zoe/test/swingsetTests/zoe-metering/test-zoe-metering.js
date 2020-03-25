@@ -41,13 +41,12 @@ async function main(basedir, withSES, argv) {
 
 const infiniteInstallLoopLog = ['installing infiniteInstallLoop'];
 test('zoe - metering - infinite loop in installation', async t => {
+  t.plan(1);
   try {
     const dump = await main('zoe-metering', true, ['infiniteInstallLoop']);
     t.deepEquals(dump.log, infiniteInstallLoopLog, 'log is correct');
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
 
@@ -56,13 +55,12 @@ const infiniteInstanceLoopLog = [
   'instantiating infiniteInstanceLoop',
 ];
 test('zoe - metering - infinite loop in instantiation', async t => {
+  t.plan(1);
   try {
     const dump = await main('zoe-metering', true, ['infiniteInstanceLoop']);
     t.deepEquals(dump.log, infiniteInstanceLoopLog, 'log is correct');
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
 
@@ -72,13 +70,12 @@ const infiniteTestLoopLog = [
   'invoking infiniteTestLoop.doTest()',
 ];
 test('zoe - metering - infinite loop in contract method', async t => {
+  t.plan(1);
   try {
     const dump = await main('zoe-metering', true, ['infiniteTestLoop']);
     t.deepEquals(dump.log, infiniteTestLoopLog, 'log is correct');
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
 
@@ -88,12 +85,11 @@ const testBuiltinsLog = [
   'invoking testBuiltins.doTest()',
 ];
 test('zoe - metering - expensive builtins in contract method', async t => {
+  t.plan(1);
   try {
     const dump = await main('zoe-metering', true, ['testBuiltins']);
     t.deepEquals(dump.log, testBuiltinsLog, 'log is correct');
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
