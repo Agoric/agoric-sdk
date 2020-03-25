@@ -167,11 +167,7 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       ).finally(() => channels.delete(channelID));
     });
 
-    inboundCommand(
-      { type: 'ws/meta' },
-      { ...meta, dispatcher: 'onOpen' },
-      id,
-    );
+    inboundCommand({ type: 'ws/meta' }, { ...meta, dispatcher: 'onOpen' }, id);
 
     ws.on('message', async message => {
       let obj = {};

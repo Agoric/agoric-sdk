@@ -59,7 +59,7 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
   const maximumDelay = (delay || PRETEND_BLOCK_DELAY) * 1000;
 
   const withBlockQueue = makeWithQueue();
-  const simulateBlock = withBlockQueue(async () => {
+  const simulateBlock = withBlockQueue(async function simulateBlock() {
     const actualStart = Date.now();
     // Gather up the new messages into the latest block.
     thisBlock.push(...intoChain);
@@ -97,10 +97,7 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
     // TODO: maybe add latency to the inbound messages.
     const mailboxJSON = mailboxStorage.get(`mailbox.${bootAddress}`);
     const mailbox = mailboxJSON && JSON.parse(mailboxJSON);
-    const { outbox, ack } = mailbox || {
-      outbox: [],
-      ack: 0,
-    };
+    const { outbox = [], ack = 0 } = mailbox || {};
     inbound(GCI, outbox, ack);
   });
 

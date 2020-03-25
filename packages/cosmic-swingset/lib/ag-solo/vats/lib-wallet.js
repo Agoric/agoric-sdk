@@ -362,6 +362,7 @@ export async function makeWallet(
         })
         .catch(rejected);
     } catch (e) {
+      console.error('Have error', e);
       rejected(e);
       throw e;
     }
