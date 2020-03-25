@@ -157,17 +157,31 @@ async function buildSwingset(
       // The turn passes...
       await processKernel();
 
-      // Rethrow any inboundCommand rejection in the new turn so that our
-      // caller must handle it (or be an unhandledRejection).
-
       // We box the promise, so that this queue isn't stalled.
+      // The queue protects the above cm.inboundCommand and
+      // processKernel calls.
+      //
+      // The promise to the box is resolved as the return value of
+      // this function (which releases the input queue shortly after
+      // the processKernel call has completed).
+      //
+      // The caller can determine if they want to wait for the
+      // unboxed promise (which represents the results of the inbound
+      // command), which may not ever resolve.
       return [
         p.catch(e => {
+          // Rethrow any inboundCommand rejection in the new turn so that our
+          // caller must handle it (or be an unhandledRejection).
           throw e;
         }),
       ];
     },
   );
+
+  // Our typical user will always want to wait for the results of
+  // the boxed promise, so by default, extract it and await it.
+  const queuedDeliverInboundCommand = obj =>
+    queuedBoxedDeliverInboundCommand(obj).then(([p]) => p);
 
   let intervalMillis;
 
@@ -194,9 +208,6 @@ async function buildSwingset(
 
   // now let the bootstrap functions run
   await processKernel();
-
-  const queuedDeliverInboundCommand = obj =>
-    queuedBoxedDeliverInboundCommand(obj).then(([p]) => p);
 
   return {
     deliverInboundToMbx: queuedDeliverInboundToMbx,
