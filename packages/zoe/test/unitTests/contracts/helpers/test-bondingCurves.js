@@ -13,6 +13,7 @@ const testGetPrice = (t, input, expectedOutput) => {
 };
 
 test('getPrice ok 1', t => {
+  t.plan(1);
   try {
     const input = {
       inputReserve: 0,
@@ -27,12 +28,11 @@ test('getPrice ok 1', t => {
     testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('getPrice ok 2', t => {
+  t.plan(1);
   try {
     const input = {
       inputReserve: 5984,
@@ -47,12 +47,11 @@ test('getPrice ok 2', t => {
     testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('getPrice ok 3', t => {
+  t.plan(1);
   try {
     const input = {
       inputReserve: 8160,
@@ -67,12 +66,11 @@ test('getPrice ok 3', t => {
     testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('getPrice reverse x and y amounts', t => {
+  t.plan(1);
   try {
     // Note: this is now the same test as the one above because we are
     // only using extents
@@ -89,12 +87,11 @@ test('getPrice reverse x and y amounts', t => {
     testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('getPrice ok 4', t => {
+  t.plan(1);
   try {
     const input = {
       inputReserve: 10,
@@ -109,7 +106,5 @@ test('getPrice ok 4', t => {
     testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });

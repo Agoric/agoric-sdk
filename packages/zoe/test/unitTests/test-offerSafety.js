@@ -24,6 +24,7 @@ import { setup } from './setupBasicMints2';
 
 // more than want, more than give -> isOfferSafe() = true
 test('isOfferSafeForOffer - more than want, more than give', t => {
+  t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
     const amountMathKeywordRecord = harden({
@@ -40,13 +41,12 @@ test('isOfferSafeForOffer - more than want, more than give', t => {
     t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 // more than want, less than give -> true
 test('isOfferSafeForOffer - more than want, less than give', t => {
+  t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
     const amountMathKeywordRecord = harden({
@@ -63,13 +63,12 @@ test('isOfferSafeForOffer - more than want, less than give', t => {
     t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 // more than want, equal to give -> true
 test('isOfferSafeForOffer - more than want, equal to give', t => {
+  t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
     const amountMathKeywordRecord = harden({
@@ -86,13 +85,12 @@ test('isOfferSafeForOffer - more than want, equal to give', t => {
     t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 // less than want, more than give -> true
 test('isOfferSafeForOffer - less than want, more than give', t => {
+  t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
     const amountMathKeywordRecord = harden({
@@ -109,13 +107,12 @@ test('isOfferSafeForOffer - less than want, more than give', t => {
     t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 // less than want, less than give -> false
 test('isOfferSafeForOffer - less than want, less than give', t => {
+  t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
     const amountMathKeywordRecord = harden({
@@ -132,13 +129,12 @@ test('isOfferSafeForOffer - less than want, less than give', t => {
     t.notOk(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 // less than want, equal to give -> true
 test('isOfferSafeForOffer - less than want, equal to give', t => {
+  t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
     const amountMathKeywordRecord = harden({
@@ -155,13 +151,12 @@ test('isOfferSafeForOffer - less than want, equal to give', t => {
     t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 // equal to want, more than give -> true
 test('isOfferSafeForOffer - equal to want, more than give', t => {
+  t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
     const amountMathKeywordRecord = harden({
@@ -178,13 +173,12 @@ test('isOfferSafeForOffer - equal to want, more than give', t => {
     t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 // equal to want, less than give -> true
 test('isOfferSafeForOffer - equal to want, less than give', t => {
+  t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
     const amountMathKeywordRecord = harden({
@@ -201,13 +195,12 @@ test('isOfferSafeForOffer - equal to want, less than give', t => {
     t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 // equal to want, equal to give -> true
 test('isOfferSafeForOffer - equal to want, equal to give', t => {
+  t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
     const amountMathKeywordRecord = harden({
@@ -224,13 +217,12 @@ test('isOfferSafeForOffer - equal to want, equal to give', t => {
     t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 // All users get exactly what they wanted
 test('isOfferSafeForAll - All users get what they wanted', t => {
+  t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
     const amountMathKeywordRecord = harden({
@@ -254,12 +246,11 @@ test('isOfferSafeForAll - All users get what they wanted', t => {
     );
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test(`isOfferSafeForAll - One user doesn't get what they wanted`, t => {
+  t.plan(1);
   try {
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
     const amountMathKeywordRecord = harden({
@@ -288,7 +279,5 @@ test(`isOfferSafeForAll - One user doesn't get what they wanted`, t => {
     );
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });

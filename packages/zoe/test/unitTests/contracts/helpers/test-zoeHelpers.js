@@ -10,6 +10,7 @@ import {
 } from '../../../../src/contracts/helpers/zoeHelpers';
 
 test('ZoeHelpers messages', t => {
+  t.plan(2);
   try {
     t.equals(
       defaultAcceptanceMsg,
@@ -21,12 +22,11 @@ test('ZoeHelpers messages', t => {
     );
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('ZoeHelpers assertKeywords', t => {
+  t.plan(5);
   try {
     const mockZoe = harden({
       getInstanceRecord: () =>
@@ -62,12 +62,11 @@ test('ZoeHelpers assertKeywords', t => {
     );
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('ZoeHelpers rejectIfNotProposal', t => {
+  t.plan(8);
   const { moolaR, simoleanR, moola, simoleans } = setup();
   const completedOfferHandles = [];
   const offerHandles = harden([{}, {}, {}, {}, {}, {}, {}]);
@@ -184,12 +183,11 @@ test('ZoeHelpers rejectIfNotProposal', t => {
     );
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('ZoeHelpers checkIfProposal', t => {
+  t.plan(3);
   const { moolaR, simoleanR, moola, simoleans } = setup();
   try {
     const mockZoe = harden({
@@ -233,12 +231,11 @@ test('ZoeHelpers checkIfProposal', t => {
     );
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('ZoeHelpers getActiveOffers', t => {
+  t.plan(1);
   const { moolaR, simoleanR } = setup();
   try {
     const mockZoe = harden({
@@ -270,12 +267,11 @@ test('ZoeHelpers getActiveOffers', t => {
     );
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('ZoeHelpers rejectOffer', t => {
+  t.plan(4);
   const { moolaR, simoleanR } = setup();
   const completedOfferHandles = [];
   try {
@@ -307,12 +303,11 @@ test('ZoeHelpers rejectOffer', t => {
     t.deepEquals(completedOfferHandles, harden(offerHandles));
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('ZoeHelpers canTradeWith', t => {
+  t.plan(2);
   const { moolaR, simoleanR, moola, simoleans } = setup();
   const leftInviteHandle = harden({});
   const rightInviteHandle = harden({});
@@ -366,12 +361,11 @@ test('ZoeHelpers canTradeWith', t => {
     t.notOk(canTradeWith(leftInviteHandle, cantTradeRightInviteHandle));
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('ZoeHelpers swap ok', t => {
+  t.plan(4);
   const { moolaR, simoleanR, moola, simoleans } = setup();
   const leftInviteHandle = harden({});
   const rightInviteHandle = harden({});
@@ -457,12 +451,11 @@ test('ZoeHelpers swap ok', t => {
     );
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('ZoeHelpers swap keep inactive', t => {
+  t.plan(4);
   const { moolaR, simoleanR, moola, simoleans } = setup();
   const leftInviteHandle = harden({});
   const rightInviteHandle = harden({});
@@ -543,12 +536,11 @@ test('ZoeHelpers swap keep inactive', t => {
     );
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test(`ZoeHelpers swap - can't trade with`, t => {
+  t.plan(4);
   const { moolaR, simoleanR, moola, simoleans } = setup();
   const leftInviteHandle = harden({});
   const rightInviteHandle = harden({});
@@ -629,12 +621,11 @@ test(`ZoeHelpers swap - can't trade with`, t => {
     );
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('ZoeHelpers makeEmptyOffer', async t => {
+  t.plan(2);
   const { moolaR, simoleanR } = setup();
   const redeemedInvites = [];
   try {
@@ -667,7 +658,5 @@ test('ZoeHelpers makeEmptyOffer', async t => {
     t.deepEquals(redeemedInvites, harden(['anInvite']), `invite was redeemed`);
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });

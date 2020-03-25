@@ -4,6 +4,7 @@ import { test } from 'tape-promise/tape';
 import { arrayToObj, objToArray } from '../../src/objArrayConversion';
 
 test('arrayToObj', t => {
+  t.plan(3);
   try {
     const keywords = ['X', 'Y'];
     const array = [1, 2];
@@ -24,12 +25,11 @@ test('arrayToObj', t => {
     );
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('objToArray', t => {
+  t.plan(3);
   try {
     const keywords = ['X', 'Y'];
     const obj = { X: 1, Y: 2 };
@@ -50,7 +50,5 @@ test('objToArray', t => {
     );
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });

@@ -8,6 +8,7 @@ import { setup } from './setupBasicMints';
 import buildManualTimer from '../../tools/manualTimer';
 
 test('cleanProposal', t => {
+  t.plan(1);
   try {
     const { amountMaths, moola, simoleans, bucks } = setup();
 
@@ -35,12 +36,11 @@ test('cleanProposal', t => {
     t.deepEquals(actual, expected);
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('cleanProposal - all empty', t => {
+  t.plan(1);
   try {
     const { amountMaths, moola, simoleans, bucks } = setup();
 
@@ -73,12 +73,11 @@ test('cleanProposal - all empty', t => {
     );
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });
 
 test('cleanProposal - repeated brands', t => {
+  t.plan(3);
   try {
     const { amountMaths, moola, simoleans, bucks } = setup();
     const timer = buildManualTimer(console.log);
@@ -124,7 +123,5 @@ test('cleanProposal - repeated brands', t => {
     t.deepEquals(actual.exit, expected.exit);
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });

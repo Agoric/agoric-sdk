@@ -54,6 +54,7 @@ const expectedAutomaticRefundOkLog = [
 ];
 
 test('zoe - automaticRefund - valid inputs - with SES', async t => {
+  t.plan(1);
   try {
     const startingExtents = [
       [3, 0, 0],
@@ -66,8 +67,6 @@ test('zoe - automaticRefund - valid inputs - with SES', async t => {
     t.deepEquals(dump.log, expectedAutomaticRefundOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
 
@@ -83,6 +82,7 @@ const expectedCoveredCallOkLog = [
 ];
 
 test('zoe - coveredCall - valid inputs - with SES', async t => {
+  t.plan(1);
   try {
     const startingExtents = [
       [3, 0, 0],
@@ -92,8 +92,6 @@ test('zoe - coveredCall - valid inputs - with SES', async t => {
     t.deepEquals(dump.log, expectedCoveredCallOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
 
@@ -116,6 +114,7 @@ const expectedSwapForOptionOkLog = [
 ];
 
 test('zoe - swapForOption - valid inputs - with SES', async t => {
+  t.plan(1);
   try {
     const startingExtents = [
       [3, 0, 0], // Alice starts with 3 moola
@@ -127,8 +126,6 @@ test('zoe - swapForOption - valid inputs - with SES', async t => {
     t.deepEquals(dump.log, expectedSwapForOptionOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
 
@@ -148,6 +145,7 @@ const expectedPublicAuctionOkLog = [
   'aliceSimoleanPurse: balance {"brand":{},"extent":7}',
 ];
 test('zoe - publicAuction - valid inputs - with SES', async t => {
+  t.plan(1);
   try {
     const startingExtents = [
       [1, 0, 0],
@@ -159,8 +157,6 @@ test('zoe - publicAuction - valid inputs - with SES', async t => {
     t.deepEquals(dump.log, expectedPublicAuctionOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
 
@@ -173,6 +169,7 @@ const expectedAtomicSwapOkLog = [
   'bobSimoleanPurse: balance {"brand":{},"extent":0}',
 ];
 test('zoe - atomicSwap - valid inputs - with SES', async t => {
+  t.plan(1);
   try {
     const startingExtents = [
       [3, 0, 0],
@@ -182,8 +179,6 @@ test('zoe - atomicSwap - valid inputs - with SES', async t => {
     t.deepEquals(dump.log, expectedAtomicSwapOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
 
@@ -198,6 +193,7 @@ const expectedSimpleExchangeOkLog = [
 ];
 
 test('zoe - simpleExchange - valid inputs - with SES', async t => {
+  t.plan(1);
   try {
     const startingExtents = [
       [3, 0, 0],
@@ -207,8 +203,6 @@ test('zoe - simpleExchange - valid inputs - with SES', async t => {
     t.deepEquals(dump.log, expectedSimpleExchangeOkLog);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
 

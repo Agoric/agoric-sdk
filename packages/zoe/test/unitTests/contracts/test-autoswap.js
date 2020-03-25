@@ -11,6 +11,7 @@ import { setup } from '../setupBasicMints2';
 const autoswapRoot = `${__dirname}/../../../src/contracts/autoswap`;
 
 test('autoSwap with valid offers', async t => {
+  t.plan(19);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
@@ -211,12 +212,11 @@ test('autoSwap with valid offers', async t => {
   } catch (e) {
     t.assert(false, e);
     console.log(e);
-  } finally {
-    t.end();
   }
 });
 
 test('autoSwap - test fee', async t => {
+  t.plan(9);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
@@ -338,7 +338,5 @@ test('autoSwap - test fee', async t => {
   } catch (e) {
     t.assert(false, e);
     console.log(e);
-  } finally {
-    t.end();
   }
 });

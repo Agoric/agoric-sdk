@@ -11,6 +11,7 @@ import { setup } from '../setupBasicMints';
 const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
 test('zoe - atomicSwap', async t => {
+  t.plan(11);
   try {
     const { issuers, mints, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
@@ -137,7 +138,5 @@ test('zoe - atomicSwap', async t => {
   } catch (e) {
     t.assert(false, e);
     console.log(e);
-  } finally {
-    t.end();
   }
 });

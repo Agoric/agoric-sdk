@@ -12,6 +12,7 @@ import { setup } from '../setupBasicMints';
 const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
 
 test('simpleExchange with valid offers', async t => {
+  t.plan(9);
   try {
     const { issuers, mints, amountMaths, moola, simoleans } = setup();
     const [moolaIssuer, simoleanIssuer] = issuers;
@@ -148,12 +149,11 @@ test('simpleExchange with valid offers', async t => {
   } catch (e) {
     t.assert(false, e);
     console.log(e);
-  } finally {
-    t.end();
   }
 });
 
 test('simpleExchange with multiple sell offers', async t => {
+  t.plan(1);
   try {
     const { issuers, mints, moola, simoleans } = setup();
     const [moolaIssuer, simoleanIssuer] = issuers;
@@ -253,12 +253,11 @@ test('simpleExchange with multiple sell offers', async t => {
   } catch (e) {
     t.assert(false, e);
     console.log(e);
-  } finally {
-    t.end();
   }
 });
 
 test('simpleExchange showPayoutRules', async t => {
+  t.plan(1);
   try {
     const { issuers, mints, moola, simoleans } = setup();
     const [moolaIssuer, simoleanIssuer] = issuers;
@@ -310,7 +309,5 @@ test('simpleExchange showPayoutRules', async t => {
   } catch (e) {
     t.assert(false, e);
     console.log(e);
-  } finally {
-    t.end();
   }
 });

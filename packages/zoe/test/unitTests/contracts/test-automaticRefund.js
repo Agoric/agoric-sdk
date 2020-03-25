@@ -12,6 +12,7 @@ import { setup } from '../setupBasicMints2';
 const automaticRefundRoot = `${__dirname}/../../../src/contracts/automaticRefund`;
 
 test('zoe - simplest automaticRefund', async t => {
+  t.plan(1);
   try {
     // Setup zoe and mints
     const { moolaR, moola } = setup();
@@ -54,12 +55,11 @@ test('zoe - simplest automaticRefund', async t => {
   } catch (e) {
     t.assert(false, e);
     console.log(e);
-  } finally {
-    t.end();
   }
 });
 
 test('zoe - automaticRefund same issuer', async t => {
+  t.plan(1);
   try {
     // Setup zoe and mints
     const { moolaR, moola } = setup();
@@ -105,12 +105,11 @@ test('zoe - automaticRefund same issuer', async t => {
   } catch (e) {
     t.assert(false, e);
     console.log(e);
-  } finally {
-    t.end();
   }
 });
 
 test('zoe with automaticRefund', async t => {
+  t.plan(11);
   try {
     // Setup zoe and mints
     const { moolaR, simoleanR, moola, simoleans } = setup();
@@ -257,12 +256,11 @@ test('zoe with automaticRefund', async t => {
   } catch (e) {
     t.assert(false, e);
     console.log(e);
-  } finally {
-    t.end();
   }
 });
 
 test('multiple instances of automaticRefund for the same Zoe', async t => {
+  t.plan(6);
   try {
     // Setup zoe and mints
     const { moolaR, simoleanR, moola, simoleans } = setup();
@@ -373,12 +371,11 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
   } catch (e) {
     t.assert(false, e);
     console.log(e);
-  } finally {
-    t.end();
   }
 });
 
 test('zoe - alice cancels after completion', async t => {
+  t.plan(5);
   try {
     // Setup zoe and mints
     const { moolaR, simoleanR, moola, simoleans } = setup();
@@ -444,7 +441,5 @@ test('zoe - alice cancels after completion', async t => {
   } catch (e) {
     t.assert(false, e);
     console.log(e);
-  } finally {
-    t.end();
   }
 });

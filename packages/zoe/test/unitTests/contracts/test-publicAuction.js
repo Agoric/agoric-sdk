@@ -11,6 +11,7 @@ import { setup } from '../setupBasicMints2';
 const publicAuctionRoot = `${__dirname}/../../../src/contracts/publicAuction`;
 
 test('zoe - secondPriceAuction w/ 3 bids', async t => {
+  t.plan(34);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
@@ -320,12 +321,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   } catch (e) {
     t.assert(false, e);
     console.log(e);
-  } finally {
-    t.end();
   }
 });
 
 test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
+  t.plan(10);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
@@ -456,7 +456,5 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
   } catch (e) {
     t.assert(false, e);
     console.log(e);
-  } finally {
-    t.end();
   }
 });

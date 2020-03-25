@@ -4,6 +4,7 @@ import { test } from 'tape-promise/tape';
 import { makeStateMachine } from '../../../../src/contracts/helpers/stateMachine';
 
 test('stateMachine', t => {
+  t.plan(4);
   try {
     const startState = 'empty';
     const allowedTransitions = [
@@ -22,7 +23,5 @@ test('stateMachine', t => {
     t.equal(stateMachine.getStatus(), 'open');
   } catch (e) {
     t.assert(false, e);
-  } finally {
-    t.end();
   }
 });

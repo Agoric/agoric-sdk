@@ -14,6 +14,7 @@ const coveredCallRoot = `${__dirname}/../../../src/contracts/coveredCall`;
 const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
 test('zoe - coveredCall', async t => {
+  t.plan(13);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
@@ -137,12 +138,11 @@ test('zoe - coveredCall', async t => {
     t.equals(bobSimoleanPurse.getCurrentAmount().extent, 0);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
 
 test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, async t => {
+  t.plan(13);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
@@ -263,8 +263,6 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     t.deepEquals(bobSimoleanPurse.getCurrentAmount(), simoleans(7));
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
 
@@ -273,6 +271,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 // trick Dave? Can Dave describe what it is that he wants in the swap
 // offer description?
 test('zoe - coveredCall with swap for invite', async t => {
+  t.plan(24);
   try {
     // Setup the environment
     const timer = buildManualTimer(console.log);
@@ -535,8 +534,6 @@ test('zoe - coveredCall with swap for invite', async t => {
     t.equals(daveBucksPurse.getCurrentAmount().extent, 0);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
 
@@ -545,6 +542,7 @@ test('zoe - coveredCall with swap for invite', async t => {
 // call. Can Bob trick Dave? Can Dave describe what it is that he
 // wants in his offer description in the second covered call?
 test('zoe - coveredCall with coveredCall for invite', async t => {
+  t.plan(31);
   try {
     // Setup the environment
     const timer = buildManualTimer(console.log);
@@ -823,7 +821,5 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     t.equals(daveBucksPurse.getCurrentAmount().extent, 0);
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
-  } finally {
-    t.end();
   }
 });
