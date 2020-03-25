@@ -1,11 +1,13 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 
-import { areRightsConserved, transpose } from '../../src/areRightsConserved';
+import { areRightsConserved, transpose } from '../../src/rightsConservation';
 import { setup } from './setupBasicMints';
 
-const makeAmountMatrix = (amountMaths, extentMatrix) =>
-  extentMatrix.map(row => row.map((extent, i) => amountMaths[i].make(extent)));
+const makeAmountMatrix = (amountMathArray, extentMatrix) =>
+  extentMatrix.map(row =>
+    row.map((extent, i) => amountMathArray[i].make(extent)),
+  );
 
 test('transpose', t => {
   try {

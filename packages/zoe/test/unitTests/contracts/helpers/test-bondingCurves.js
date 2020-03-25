@@ -3,55 +3,28 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
 import { makeConstProductBC } from '../../../../src/contracts/helpers/bondingCurves';
-import { setup } from '../../setupBasicMints';
 
-const testGetPrice = (t, input, output) => {
-  const { issuers, moola, simoleans, amountMaths, brands } = setup();
-  const zoe = harden({
-    getAmountMathForIssuers: _ => amountMaths,
-    getBrandsForIssuers: _ => brands,
-  });
+const testGetPrice = (t, input, expectedOutput) => {
+  const zoe = harden({});
+  const { getPrice } = makeConstProductBC(zoe);
 
-  const { getPrice } = makeConstProductBC(zoe, issuers);
-  const poolAmountsArray = [moola(input.xReserve), simoleans(input.yReserve)];
-  let amountIn;
-  let expectedAmountsOut;
-  if (input.xIn > 0) {
-    amountIn = moola(input.xIn);
-    expectedAmountsOut = simoleans(output.yOut);
-  } else {
-    amountIn = simoleans(input.yIn);
-    expectedAmountsOut = moola(output.xOut);
-  }
-
-  const { amountOut, newPoolAmountsArray } = getPrice(
-    poolAmountsArray,
-    amountIn,
-  );
-
-  t.deepEquals(amountOut, expectedAmountsOut, 'amountOut');
-  t.deepEquals(
-    newPoolAmountsArray,
-    [moola(output.xReserve), simoleans(output.yReserve)],
-    'newPoolAmountsArray',
-  );
+  const output = getPrice(input);
+  t.deepEquals(output, expectedOutput);
 };
 
 test('getPrice ok 1', t => {
   try {
     const input = {
-      xReserve: 0,
-      yReserve: 0,
-      xIn: 1,
-      yIn: 0,
+      inputReserve: 0,
+      outputReserve: 0,
+      inputExtent: 1,
     };
-    const expectedOutput1 = {
-      xReserve: 1,
-      yReserve: 0,
-      xOut: 0,
-      yOut: 0,
+    const expectedOutput = {
+      outputExtent: 0,
+      newInputReserve: 1,
+      newOutputReserve: 0,
     };
-    testGetPrice(t, input, expectedOutput1);
+    testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -62,18 +35,16 @@ test('getPrice ok 1', t => {
 test('getPrice ok 2', t => {
   try {
     const input = {
-      xReserve: 5984,
-      yReserve: 3028,
-      xIn: 1398,
-      yIn: 0,
+      inputReserve: 5984,
+      outputReserve: 3028,
+      inputExtent: 1398,
     };
-    const expectedOutput1 = {
-      xReserve: 7382,
-      yReserve: 2456,
-      xOut: 0,
-      yOut: 572,
+    const expectedOutput = {
+      outputExtent: 572,
+      newInputReserve: 7382,
+      newOutputReserve: 2456,
     };
-    testGetPrice(t, input, expectedOutput1);
+    testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -83,14 +54,17 @@ test('getPrice ok 2', t => {
 
 test('getPrice ok 3', t => {
   try {
-    const input = { xReserve: 8160, yReserve: 7743, xIn: 6635, yIn: 0 };
-    const expectedOutput1 = {
-      xReserve: 14795,
-      yReserve: 4277,
-      xOut: 0,
-      yOut: 3466,
+    const input = {
+      inputReserve: 8160,
+      outputReserve: 7743,
+      inputExtent: 6635,
     };
-    testGetPrice(t, input, expectedOutput1);
+    const expectedOutput = {
+      outputExtent: 3466,
+      newInputReserve: 14795,
+      newOutputReserve: 4277,
+    };
+    testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -100,14 +74,19 @@ test('getPrice ok 3', t => {
 
 test('getPrice reverse x and y amounts', t => {
   try {
-    const input = { xReserve: 7743, yReserve: 8160, xIn: 0, yIn: 6635 };
-    const expectedOutput1 = {
-      xReserve: 4277,
-      yReserve: 14795,
-      xOut: 3466,
-      yOut: 0,
+    // Note: this is now the same test as the one above because we are
+    // only using extents
+    const input = {
+      inputReserve: 8160,
+      outputReserve: 7743,
+      inputExtent: 6635,
     };
-    testGetPrice(t, input, expectedOutput1);
+    const expectedOutput = {
+      outputExtent: 3466,
+      newInputReserve: 14795,
+      newOutputReserve: 4277,
+    };
+    testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   } finally {
@@ -117,14 +96,17 @@ test('getPrice reverse x and y amounts', t => {
 
 test('getPrice ok 4', t => {
   try {
-    const input = { xReserve: 10, yReserve: 10, xIn: 0, yIn: 1000 };
-    const expectedOutput1 = {
-      xReserve: 1,
-      yReserve: 1010,
-      xOut: 9,
-      yOut: 0,
+    const input = {
+      inputReserve: 10,
+      outputReserve: 10,
+      inputExtent: 1000,
     };
-    testGetPrice(t, input, expectedOutput1);
+    const expectedOutput = {
+      outputExtent: 9,
+      newInputReserve: 1010,
+      newOutputReserve: 1,
+    };
+    testGetPrice(t, input, expectedOutput);
   } catch (e) {
     t.assert(false, e);
   } finally {

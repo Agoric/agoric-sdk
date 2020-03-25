@@ -6,38 +6,35 @@ import bundleSource from '@agoric/bundle-source';
 import harden from '@agoric/harden';
 
 import { makeZoe } from '../../../src/zoe';
-import { setup } from '../setupBasicMints';
+import { setup } from '../setupBasicMints2';
 
 const publicAuctionRoot = `${__dirname}/../../../src/contracts/publicAuction`;
 
 test('zoe - secondPriceAuction w/ 3 bids', async t => {
   try {
-    const { issuers: originalIssuers, mints, moola, simoleans } = setup();
-    const issuers = originalIssuers.slice(0, 2);
-    const [moolaMint, simoleanMint] = mints;
-    const [moolaIssuer, simoleanIssuer] = issuers;
+    const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
     const inviteIssuer = zoe.getInviteIssuer();
 
     // Setup Alice
-    const aliceMoolaPayment = moolaMint.mintPayment(moola(1));
-    const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
-    const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
+    const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1));
+    const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
+    const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
 
     // Setup Bob
-    const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(11));
-    const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
-    const bobSimoleanPurse = simoleanIssuer.makeEmptyPurse();
+    const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(11));
+    const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
+    const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
 
     // Setup Carol
-    const carolSimoleanPayment = simoleanMint.mintPayment(simoleans(7));
-    const carolMoolaPurse = moolaIssuer.makeEmptyPurse();
-    const carolSimoleanPurse = simoleanIssuer.makeEmptyPurse();
+    const carolSimoleanPayment = simoleanR.mint.mintPayment(simoleans(7));
+    const carolMoolaPurse = moolaR.issuer.makeEmptyPurse();
+    const carolSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
 
     // Setup Dave
-    const daveSimoleanPayment = simoleanMint.mintPayment(simoleans(5));
-    const daveMoolaPurse = moolaIssuer.makeEmptyPurse();
-    const daveSimoleanPurse = simoleanIssuer.makeEmptyPurse();
+    const daveSimoleanPayment = simoleanR.mint.mintPayment(simoleans(5));
+    const daveMoolaPurse = moolaR.issuer.makeEmptyPurse();
+    const daveSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
 
     // Alice creates a secondPriceAuction instance
 
@@ -46,35 +43,31 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     const installationHandle = zoe.install(source, moduleFormat);
     const numBidsAllowed = 3;
-    const aliceInvite = await zoe.makeInstance(installationHandle, {
-      issuers,
-      numBidsAllowed,
+    const issuerKeywordRecord = harden({
+      Asset: moolaR.issuer,
+      Bid: simoleanR.issuer,
     });
+    const terms = harden({ numBidsAllowed });
+    const aliceInvite = await zoe.makeInstance(
+      installationHandle,
+      issuerKeywordRecord,
+      terms,
+    );
 
-    const aliceInviteAmount = await inviteIssuer.getAmountOf(aliceInvite);
-    const [{ instanceHandle }] = aliceInviteAmount.extent;
+    const {
+      extent: [{ instanceHandle }],
+    } = await inviteIssuer.getAmountOf(aliceInvite);
     const { publicAPI } = zoe.getInstance(instanceHandle);
 
     // Alice escrows with zoe
-    const aliceOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'offerAtMost',
-          amount: moola(1),
-        },
-        {
-          kind: 'wantAtLeast',
-          amount: simoleans(3),
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+    const aliceProposal = harden({
+      give: { Asset: moola(1) },
+      want: { Bid: simoleans(3) },
     });
-    const alicePayments = [aliceMoolaPayment, undefined];
+    const alicePayments = { Asset: aliceMoolaPayment };
     const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
       aliceInvite,
-      aliceOfferRules,
+      aliceProposal,
       alicePayments,
     );
 
@@ -85,45 +78,42 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.equals(
       aliceOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
+      'aliceOfferResult',
     );
 
     // Alice spreads the invites far and wide and Bob decides he
     // wants to participate in the auction.
     const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
-    const bobExclInvAmount = await inviteIssuer.getAmountOf(bobExclusiveInvite);
-    const bobInviteExtent = bobExclInvAmount.extent[0];
+    const {
+      extent: [bobInviteExtent],
+    } = await inviteIssuer.getAmountOf(bobExclusiveInvite);
 
     const {
       installationHandle: bobInstallationId,
       terms: bobTerms,
+      issuerKeywordRecord: bobIssuers,
     } = zoe.getInstance(bobInviteExtent.instanceHandle);
 
-    t.equals(bobInstallationId, installationHandle);
-    t.deepEquals(bobTerms.issuers, issuers);
-    t.deepEquals(bobInviteExtent.minimumBid, simoleans(3));
-    t.deepEquals(bobInviteExtent.auctionedAssets, moola(1));
+    t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
+    t.deepEquals(
+      bobIssuers,
+      { Asset: moolaR.issuer, Bid: simoleanR.issuer },
+      'bobIssuers',
+    );
+    t.equals(bobTerms.numBidsAllowed, 3, 'bobTerms');
+    t.deepEquals(bobInviteExtent.minimumBid, simoleans(3), 'minimumBid');
+    t.deepEquals(bobInviteExtent.auctionedAssets, moola(1), 'assets');
 
-    const bobOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'wantAtLeast',
-          amount: moola(1),
-        },
-        {
-          kind: 'offerAtMost',
-          amount: simoleans(11),
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+    const bobProposal = harden({
+      give: { Bid: simoleans(11) },
+      want: { Asset: moola(1) },
     });
-    const bobPayments = [undefined, bobSimoleanPayment];
+    const bobPayments = { Bid: bobSimoleanPayment };
 
     // Bob escrows with zoe
     const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
       bobExclusiveInvite,
-      bobOfferRules,
+      bobProposal,
       bobPayments,
     );
 
@@ -133,45 +123,46 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.equals(
       bobOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
+      'bobOfferResult',
     );
 
     // Carol decides to bid for the one moola
 
     const carolExclusiveInvite = await inviteIssuer.claim(carolInvite);
-    const carolExclAmt = await inviteIssuer.getAmountOf(carolExclusiveInvite);
-    const carolInviteExtent = carolExclAmt.extent[0];
+    const {
+      extent: [carolInviteExtent],
+    } = await inviteIssuer.getAmountOf(carolExclusiveInvite);
 
     const {
       installationHandle: carolInstallationId,
       terms: carolTerms,
+      issuerKeywordRecord: carolIssuers,
     } = zoe.getInstance(carolInviteExtent.instanceHandle);
 
-    t.equals(carolInstallationId, installationHandle);
-    t.deepEquals(carolTerms.issuers, issuers);
-    t.deepEquals(carolInviteExtent.minimumBid, simoleans(3));
-    t.deepEquals(carolInviteExtent.auctionedAssets, moola(1));
+    t.equals(carolInstallationId, installationHandle, 'carolInstallationId');
+    t.deepEquals(
+      carolIssuers,
+      { Asset: moolaR.issuer, Bid: simoleanR.issuer },
+      'carolIssuers',
+    );
+    t.equals(carolTerms.numBidsAllowed, 3, 'carolTerms');
+    t.deepEquals(carolInviteExtent.minimumBid, simoleans(3), 'carolMinimumBid');
+    t.deepEquals(
+      carolInviteExtent.auctionedAssets,
+      moola(1),
+      'carolAuctionedAssets',
+    );
 
-    const carolOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'wantAtLeast',
-          amount: moola(1),
-        },
-        {
-          kind: 'offerAtMost',
-          amount: simoleans(7),
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+    const carolProposal = harden({
+      give: { Bid: simoleans(7) },
+      want: { Asset: moola(1) },
     });
-    const carolPayments = [undefined, carolSimoleanPayment];
+    const carolPayments = { Bid: carolSimoleanPayment };
 
     // Carol escrows with zoe
     const { seat: carolSeat, payout: carolPayoutP } = await zoe.redeem(
       carolExclusiveInvite,
-      carolOfferRules,
+      carolProposal,
       carolPayments,
     );
 
@@ -181,44 +172,41 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.equals(
       carolOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
+      'carolOfferResult',
     );
 
     // Dave decides to bid for the one moola
     const daveExclusiveInvite = await inviteIssuer.claim(daveInvite);
-    const daveExclAmount = await inviteIssuer.getAmountOf(daveExclusiveInvite);
-    const daveInviteExtent = daveExclAmount.extent[0];
+    const {
+      extent: [daveInviteExtent],
+    } = await inviteIssuer.getAmountOf(daveExclusiveInvite);
 
     const {
       installationHandle: daveInstallationId,
       terms: daveTerms,
+      issuerKeywordRecord: daveIssuers,
     } = zoe.getInstance(daveInviteExtent.instanceHandle);
 
-    t.equals(daveInstallationId, installationHandle);
-    t.deepEquals(daveTerms.issuers, issuers);
-    t.deepEquals(daveInviteExtent.minimumBid, simoleans(3));
-    t.deepEquals(daveInviteExtent.auctionedAssets, moola(1));
+    t.equals(daveInstallationId, installationHandle, 'daveInstallationHandle');
+    t.deepEquals(
+      daveIssuers,
+      { Asset: moolaR.issuer, Bid: simoleanR.issuer },
+      'daveIssuers',
+    );
+    t.equals(daveTerms.numBidsAllowed, 3, 'bobTerms');
+    t.deepEquals(daveInviteExtent.minimumBid, simoleans(3), 'daveMinimumBid');
+    t.deepEquals(daveInviteExtent.auctionedAssets, moola(1), 'daveAssets');
 
-    const daveOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'wantAtLeast',
-          amount: moola(1),
-        },
-        {
-          kind: 'offerAtMost',
-          amount: simoleans(5),
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+    const daveProposal = harden({
+      give: { Bid: simoleans(5) },
+      want: { Asset: moola(1) },
     });
-    const davePayments = [undefined, daveSimoleanPayment];
+    const davePayments = { Bid: daveSimoleanPayment };
 
     // Dave escrows with zoe
     const { seat: daveSeat, payout: davePayoutP } = await zoe.redeem(
       daveExclusiveInvite,
-      daveOfferRules,
+      daveProposal,
       davePayments,
     );
 
@@ -228,6 +216,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     t.equals(
       daveOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
+      'daveOfferResult',
     );
 
     const aliceResult = await alicePayoutP;
@@ -235,22 +224,31 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const carolResult = await carolPayoutP;
     const daveResult = await davePayoutP;
 
-    const [aliceMoolaPayout, aliceSimoleanPayout] = await Promise.all(
-      aliceResult,
-    );
-    const [bobMoolaPayout, bobSimoleanPayout] = await Promise.all(bobResult);
-    const [carolMoolaPayout, carolSimoleanPayout] = await Promise.all(
-      carolResult,
-    );
-    const [daveMoolaPayout, daveSimoleanPayout] = await Promise.all(daveResult);
+    const aliceMoolaPayout = await aliceResult.Asset;
+    const aliceSimoleanPayout = await aliceResult.Bid;
+
+    const bobMoolaPayout = await bobResult.Asset;
+    const bobSimoleanPayout = await bobResult.Bid;
+
+    const carolMoolaPayout = await carolResult.Asset;
+    const carolSimoleanPayout = await carolResult.Bid;
+
+    const daveMoolaPayout = await daveResult.Asset;
+    const daveSimoleanPayout = await daveResult.Bid;
 
     // Alice (the creator of the auction) gets back the second highest bid
-    const aliceSimAmt = await simoleanIssuer.getAmountOf(aliceSimoleanPayout);
-    t.deepEquals(aliceSimAmt, carolOfferRules.payoutRules[1].amount);
+    t.deepEquals(
+      await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
+      carolProposal.give.Bid,
+      `alice gets carol's bid`,
+    );
 
     // Alice didn't get any of what she put in
-    const aliceMoolaAmount = await moolaIssuer.getAmountOf(aliceMoolaPayout);
-    t.deepEquals(aliceMoolaAmount, moola(0));
+    t.deepEquals(
+      await moolaR.issuer.getAmountOf(aliceMoolaPayout),
+      moola(0),
+      `alice gets nothing of what she put in`,
+    );
 
     // Alice deposits her payout to ensure she can
     await aliceMoolaPurse.deposit(aliceMoolaPayout);
@@ -258,28 +256,43 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
     // Bob (the winner of the auction) gets the one moola and the
     // difference between his bid and the price back
-    const bobMoolaAmount = await moolaIssuer.getAmountOf(bobMoolaPayout);
-    t.deepEquals(bobMoolaAmount, moola(1));
-    const bobSimAmount = await simoleanIssuer.getAmountOf(bobSimoleanPayout);
-    t.deepEquals(bobSimAmount, simoleans(4));
+    t.deepEquals(
+      await moolaR.issuer.getAmountOf(bobMoolaPayout),
+      moola(1),
+      `bob is the winner`,
+    );
+    t.deepEquals(
+      await simoleanR.issuer.getAmountOf(bobSimoleanPayout),
+      simoleans(4),
+      `bob gets difference back`,
+    );
 
     // Bob deposits his payout to ensure he can
     await bobMoolaPurse.deposit(bobMoolaPayout);
     await bobSimoleanPurse.deposit(bobSimoleanPayout);
 
     // Carol gets a full refund
-    const carolMoolaAmount = await moolaIssuer.getAmountOf(carolMoolaPayout);
-    t.deepEquals(carolMoolaAmount, moola(0));
-    const carolSimAmt = await simoleanIssuer.getAmountOf(carolSimoleanPayout);
-    t.deepEquals(carolSimAmt, carolOfferRules.payoutRules[1].amount);
+    t.deepEquals(
+      await moolaR.issuer.getAmountOf(carolMoolaPayout),
+      moola(0),
+      `carol doesn't win`,
+    );
+    t.deepEquals(
+      await simoleanR.issuer.getAmountOf(carolSimoleanPayout),
+      carolProposal.give.Bid,
+      `carol gets a refund`,
+    );
 
     // Carol deposits her payout to ensure she can
     await carolMoolaPurse.deposit(carolMoolaPayout);
     await carolSimoleanPurse.deposit(carolSimoleanPayout);
 
     // Dave gets a full refund
-    const daveSimAmount = await simoleanIssuer.getAmountOf(daveSimoleanPayout);
-    t.deepEquals(daveSimAmount, daveOfferRules.payoutRules[1].amount);
+    t.deepEquals(
+      await simoleanR.issuer.getAmountOf(daveSimoleanPayout),
+      daveProposal.give.Bid,
+      `dave gets a refund`,
+    );
 
     // Dave deposits his payout to ensure he can
     await daveMoolaPurse.deposit(daveMoolaPayout);
@@ -314,22 +327,19 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
 test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
   try {
-    const { issuers: originalIssuers, mints, moola, simoleans } = setup();
-    const issuers = originalIssuers.slice(0, 2);
+    const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
     const inviteIssuer = zoe.getInviteIssuer();
-    const [moolaMint, simoleanMint] = mints;
-    const [moolaIssuer, simoleanIssuer] = issuers;
 
     // Setup Alice
-    const aliceMoolaPayment = moolaMint.mintPayment(moola(1));
-    const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
-    const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
+    const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1));
+    const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
+    const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
 
     // Setup Bob
-    const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(11));
-    const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
-    const bobSimoleanPurse = simoleanIssuer.makeEmptyPurse();
+    const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(11));
+    const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
+    const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
 
     // Alice creates a secondPriceAuction instance
 
@@ -338,36 +348,32 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     const installationHandle = zoe.install(source, moduleFormat);
     const numBidsAllowed = 3;
-    const aliceInvite = await zoe.makeInstance(installationHandle, {
-      issuers,
-      numBidsAllowed,
+    const issuerKeywordRecord = harden({
+      Asset: moolaR.issuer,
+      Bid: simoleanR.issuer,
     });
-    const aliceInviteAmount = await inviteIssuer.getAmountOf(aliceInvite);
-    const { instanceHandle } = aliceInviteAmount.extent[0];
+    const terms = harden({ numBidsAllowed });
+    const aliceInvite = await zoe.makeInstance(
+      installationHandle,
+      issuerKeywordRecord,
+      terms,
+    );
+    const {
+      extent: [{ instanceHandle }],
+    } = await inviteIssuer.getAmountOf(aliceInvite);
     const { publicAPI } = zoe.getInstance(instanceHandle);
 
     // Alice escrows with zoe
-    const aliceOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'offerAtMost',
-          amount: moola(1),
-        },
-        {
-          kind: 'wantAtLeast',
-          amount: simoleans(3),
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+    const aliceProposal = harden({
+      give: { Asset: moola(1) },
+      want: { Bid: simoleans(3) },
     });
-    const alicePayments = [aliceMoolaPayment, undefined];
+    const alicePayments = harden({ Asset: aliceMoolaPayment });
     const {
       seat: aliceSeat,
       payout: alicePayoutP,
       cancelObj,
-    } = await zoe.redeem(aliceInvite, aliceOfferRules, alicePayments);
+    } = await zoe.redeem(aliceInvite, aliceProposal, alicePayments);
 
     // Alice initializes the auction
     const aliceOfferResult = await aliceSeat.sellAssets();
@@ -384,27 +390,16 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     // Alice gives Bob the invite
 
-    const bobOfferRules = harden({
-      payoutRules: [
-        {
-          kind: 'wantAtLeast',
-          amount: moola(1),
-        },
-        {
-          kind: 'offerAtMost',
-          amount: simoleans(11),
-        },
-      ],
-      exitRule: {
-        kind: 'onDemand',
-      },
+    const bobProposal = harden({
+      want: { Asset: moola(1) },
+      give: { Bid: simoleans(11) },
     });
-    const bobPayments = [undefined, bobSimoleanPayment];
+    const bobPayments = harden({ Bid: bobSimoleanPayment });
 
     // Bob escrows with zoe
     const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
       bobInvite,
-      bobOfferRules,
+      bobProposal,
       bobPayments,
     );
 
@@ -417,28 +412,33 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const aliceResult = await alicePayoutP;
     const bobResult = await bobPayoutP;
 
-    const [aliceMoolaPayout, aliceSimoleanPayout] = await Promise.all(
-      aliceResult,
-    );
-    const [bobMoolaPayout, bobSimoleanPayout] = await Promise.all(bobResult);
+    const aliceMoolaPayout = await aliceResult.Asset;
+    const aliceSimoleanPayout = await aliceResult.Bid;
+    const bobMoolaPayout = await bobResult.Asset;
+    const bobSimoleanPayout = await bobResult.Bid;
 
     // Alice (the creator of the auction) gets back what she put in
-    const aliceMoolaAmount = await moolaIssuer.getAmountOf(aliceMoolaPayout);
-    t.deepEquals(aliceMoolaAmount, aliceOfferRules.payoutRules[0].amount);
+    t.deepEquals(
+      await moolaR.issuer.getAmountOf(aliceMoolaPayout),
+      aliceProposal.give.Asset,
+    );
 
     // Alice didn't get any of what she wanted
-    const aliceSimAmt = await simoleanIssuer.getAmountOf(aliceSimoleanPayout);
-    t.deepEquals(aliceSimAmt, simoleans(0));
+    t.deepEquals(
+      await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
+      simoleans(0),
+    );
 
     // Alice deposits her payout to ensure she can
     await aliceMoolaPurse.deposit(aliceMoolaPayout);
     await aliceSimoleanPurse.deposit(aliceSimoleanPayout);
 
     // Bob gets a refund
-    const bobMoolaAmount = await moolaIssuer.getAmountOf(bobMoolaPayout);
-    t.deepEquals(bobMoolaAmount, moola(0));
-    const bobSimAmount = await simoleanIssuer.getAmountOf(bobSimoleanPayout);
-    t.deepEquals(bobSimAmount, bobOfferRules.payoutRules[1].amount);
+    t.deepEquals(await moolaR.issuer.getAmountOf(bobMoolaPayout), moola(0));
+    t.deepEquals(
+      await simoleanR.issuer.getAmountOf(bobSimoleanPayout),
+      bobProposal.give.Bid,
+    );
 
     // Bob deposits his payout to ensure he can
     await bobMoolaPurse.deposit(bobMoolaPayout);

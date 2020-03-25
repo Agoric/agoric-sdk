@@ -34,9 +34,9 @@ const sumByIssuer = (amountMathArray, amountMatrix) =>
  * @param  {amount[]} rightAmounts - an array of total amount per issuer
  * indexed by issuer
  */
-const isEqualPerIssuer = (amountMaths, leftAmounts, rightAmounts) =>
+const isEqualPerIssuer = (amountMathArray, leftAmounts, rightAmounts) =>
   leftAmounts.every((leftAmount, i) =>
-    amountMaths[i].isEqual(leftAmount, rightAmounts[i]),
+    amountMathArray[i].isEqual(leftAmount, rightAmounts[i]),
   );
 
 /**
@@ -51,13 +51,13 @@ const isEqualPerIssuer = (amountMaths, leftAmounts, rightAmounts) =>
  * issuer
  */
 function areRightsConserved(
-  amountMaths,
+  amountMathArray,
   previousAmountsMatrix,
   newAmountsMatrix,
 ) {
-  const sumsPrevAmounts = sumByIssuer(amountMaths, previousAmountsMatrix);
-  const sumsNewAmounts = sumByIssuer(amountMaths, newAmountsMatrix);
-  return isEqualPerIssuer(amountMaths, sumsPrevAmounts, sumsNewAmounts);
+  const sumsPrevAmounts = sumByIssuer(amountMathArray, previousAmountsMatrix);
+  const sumsNewAmounts = sumByIssuer(amountMathArray, newAmountsMatrix);
+  return isEqualPerIssuer(amountMathArray, sumsPrevAmounts, sumsNewAmounts);
 }
 
 export { areRightsConserved, transpose };

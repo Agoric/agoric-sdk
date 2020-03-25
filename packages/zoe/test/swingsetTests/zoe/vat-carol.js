@@ -17,41 +17,35 @@ const build = async (E, log, zoe, issuers, payments, installations) => {
         invite,
       );
 
-      const { installationHandle, terms } = await E(zoe).getInstance(
-        inviteExtent[0].instanceHandle,
-      );
+      const { installationHandle, terms, issuerKeywordRecord } = await E(
+        zoe,
+      ).getInstance(inviteExtent[0].instanceHandle);
       assert(
         installationHandle === installations.publicAuction,
         details`wrong installation`,
       );
       assert(
-        sameStructure(harden([moolaIssuer, simoleanIssuer]), terms.issuers),
-        details`issuers were not as expected`,
+        sameStructure(
+          harden({ Asset: moolaIssuer, Bid: simoleanIssuer }),
+          issuerKeywordRecord,
+        ),
+        details`issuerKeywordRecord were not as expected`,
       );
+      assert(terms.numBidsAllowed === 3, details`terms not as expected`);
       assert(sameStructure(inviteExtent[0].minimumBid, simoleans(3)));
       assert(sameStructure(inviteExtent[0].auctionedAssets, moola(1)));
 
-      const offerRules = harden({
-        payoutRules: [
-          {
-            kind: 'wantAtLeast',
-            amount: moola(1),
-          },
-          {
-            kind: 'offerAtMost',
-            amount: simoleans(7),
-          },
-        ],
-        exitRule: {
-          kind: 'onDemand',
-        },
+      const proposal = harden({
+        want: { Asset: moola(1) },
+        give: { Bid: simoleans(7) },
+        exit: { onDemand: null },
       });
-      const offerPayments = [undefined, simoleanPayment];
+      const paymentKeywordRecord = { Bid: simoleanPayment };
 
       const { seat, payout: payoutP } = await E(zoe).redeem(
         invite,
-        offerRules,
-        offerPayments,
+        proposal,
+        paymentKeywordRecord,
       );
 
       const offerResult = await E(seat).bid();
@@ -59,7 +53,8 @@ const build = async (E, log, zoe, issuers, payments, installations) => {
       log(offerResult);
 
       const carolResult = await payoutP;
-      const [moolaPayout, simoleanPayout] = await Promise.all(carolResult);
+      const moolaPayout = await carolResult.Asset;
+      const simoleanPayout = await carolResult.Bid;
 
       await E(moolaPurseP).deposit(moolaPayout);
       await E(simoleanPurseP).deposit(simoleanPayout);

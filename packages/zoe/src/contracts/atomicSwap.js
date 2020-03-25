@@ -1,18 +1,22 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 
-import { makeHelpers } from './helpers/userFlow';
+import { makeZoeHelpers } from './helpers/zoeHelpers';
 
-export const makeContract = harden((zoe, terms) => {
-  const { issuers } = terms;
-  const { rejectOffer, swap, hasValidPayoutRules } = makeHelpers(zoe, issuers);
+export const makeContract = harden(zoe => {
+  const { swap, assertKeywords, rejectIfNotProposal } = makeZoeHelpers(zoe);
+  assertKeywords(harden(['Asset', 'Price']));
 
   const makeMatchingInvite = firstInviteHandle => {
     const seat = harden({
       matchOffer: () => swap(firstInviteHandle, inviteHandle),
     });
+    const {
+      proposal: { want, give },
+    } = zoe.getOffer(firstInviteHandle);
     const { invite, inviteHandle } = zoe.makeInvite(seat, {
-      offerMadeRules: zoe.getOffer(firstInviteHandle).payoutRules,
+      asset: give.Asset,
+      price: want.Price,
       seatDesc: 'matchOffer',
     });
     return invite;
@@ -21,11 +25,8 @@ export const makeContract = harden((zoe, terms) => {
   const makeFirstOfferInvite = () => {
     const seat = harden({
       makeFirstOffer: () => {
-        if (
-          !hasValidPayoutRules(['offerAtMost', 'wantAtLeast'], inviteHandle)
-        ) {
-          throw rejectOffer(inviteHandle);
-        }
+        const expected = harden({ give: ['Asset'], want: ['Price'] });
+        rejectIfNotProposal(inviteHandle, expected);
         return makeMatchingInvite(inviteHandle);
       },
     });
@@ -37,6 +38,5 @@ export const makeContract = harden((zoe, terms) => {
 
   return harden({
     invite: makeFirstOfferInvite(),
-    terms,
   });
 });

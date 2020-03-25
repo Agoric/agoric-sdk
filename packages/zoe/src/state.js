@@ -74,52 +74,35 @@ const makeInstallationTable = () => {
 };
 
 // Instance Table
-// Columns: handle | installationHandle | publicAPI | terms | issuers
+// Columns: handle | installationHandle | publicAPI |
+// terms | issuerKeywordRecord | keywords
 const makeInstanceTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateSomewhat = makeValidateProperties(
-    harden(['installationHandle', 'publicAPI', 'terms', 'issuers']),
+    harden([
+      'installationHandle',
+      'publicAPI',
+      'terms',
+      'issuerKeywordRecord',
+      'keywords',
+    ]),
   );
+
   return makeTable(validateSomewhat);
 };
 
 // Offer Table
-// Columns: handle | instanceHandle | issuers | payoutRules | exitRule
-// | amounts
+// Columns: handle | instanceHandle | proposal | amounts
 const makeOfferTable = () => {
-  const insistValidPayoutRuleKinds = payoutRules => {
-    const acceptedKinds = ['offerAtMost', 'wantAtLeast'];
-    for (const payoutRule of payoutRules) {
-      assert(
-        acceptedKinds.includes(payoutRule.kind),
-        details`${payoutRule.kind} must be one of the accepted kinds.`,
-      );
-    }
-  };
-  const insistValidExitRule = exitRule => {
-    const acceptedExitRuleKinds = [
-      'waived',
-      'onDemand',
-      'afterDeadline',
-      // 'onDemandAfterDeadline', // not yet supported
-    ];
-    assert(
-      acceptedExitRuleKinds.includes(exitRule.kind),
-      details`exitRule.kind ${exitRule.kind} is not one of the accepted options`,
-    );
-  };
-
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateProperties = makeValidateProperties(
-    harden(['instanceHandle', 'issuers', 'payoutRules', 'exitRule', 'amounts']),
+    harden(['instanceHandle', 'proposal', 'amounts']),
   );
   const validateSomewhat = obj => {
     validateProperties(obj);
-    insistValidPayoutRuleKinds(obj.payoutRules);
-    insistValidExitRule(obj.exitRule);
-    // TODO: Should check the rest of the representation of the payout rule
+    // TODO: Should check the rest of the representation of the proposal
     // TODO: Should check that the deadline representation is itself valid.
     return true;
   };
@@ -145,9 +128,9 @@ const makeOfferTable = () => {
       isOfferActive: offerHandle => table.has(offerHandle),
       deleteOffers: offerHandles =>
         offerHandles.map(offerHandle => table.delete(offerHandle)),
-      updateAmountMatrix: (offerHandles, newAmountMatrix) =>
+      updateAmounts: (offerHandles, newAmountKeywordRecords) =>
         offerHandles.map((offerHandle, i) =>
-          table.update(offerHandle, { amounts: newAmountMatrix[i] }),
+          table.update(offerHandle, { amounts: newAmountKeywordRecords[i] }),
         ),
     });
     return customMethods;
@@ -161,7 +144,7 @@ const makeOfferTable = () => {
 const makePayoutMap = makeStore;
 
 // Issuer Table
-// Columns: issuer | brand| purse | amountMath
+// Columns: issuer | brand | purse | amountMath
 const makeIssuerTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
@@ -173,12 +156,14 @@ const makeIssuerTable = () => {
     const issuersInProgress = makeStore();
 
     const customMethods = harden({
-      getAmountMathForIssuers: issuers =>
-        issuers.map(issuer => table.get(issuer).amountMath),
-
-      getBrandsForIssuers: issuers =>
-        issuers.map(issuer => table.get(issuer).brand),
-
+      getAmountMaths: issuerKeywordRecord => {
+        const amountMathKeywordRecord = {};
+        Object.entries(issuerKeywordRecord).map(
+          ([keyword, issuer]) =>
+            (amountMathKeywordRecord[keyword] = table.get(issuer).amountMath),
+        );
+        return harden(amountMathKeywordRecord);
+      },
       getPursesForIssuers: issuers =>
         issuers.map(issuer => table.get(issuer).purse),
 
