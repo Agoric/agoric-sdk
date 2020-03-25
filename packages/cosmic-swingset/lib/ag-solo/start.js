@@ -130,68 +130,81 @@ async function buildSwingset(
 
   // Use the input queue to make sure it doesn't overlap with
   // other inbound messages.
-  const deliverInboundToMbx = withInputQueue(async (sender, messages, ack) => {
-    if (!(messages instanceof Array)) {
-      throw new Error(`inbound given non-Array: ${messages}`);
-    }
-    // console.log(`deliverInboundToMbx`, messages, ack);
-    if (mb.deliverInbound(sender, messages, ack, true)) {
-      await processKernel();
-    }
-  });
+  const queuedDeliverInboundToMbx = withInputQueue(
+    async function deliverInboundToMbx(sender, messages, ack) {
+      if (!(messages instanceof Array)) {
+        throw new Error(`inbound given non-Array: ${messages}`);
+      }
+      // console.log(`deliverInboundToMbx`, messages, ack);
+      if (mb.deliverInbound(sender, messages, ack, true)) {
+        await processKernel();
+      }
+    },
+  );
 
   // Use the input queue to make sure it doesn't overlap with
   // other inbound messages.
-  const deliverInboundCommand = withInputQueue(async obj => {
-    // this promise could take an arbitrarily long time to resolve, so don't
-    // wait on it
-    const p = cm.inboundCommand(obj);
+  const queuedBoxedDeliverInboundCommand = withInputQueue(
+    async function deliverInboundCommand(obj) {
+      // this promise could take an arbitrarily long time to resolve, so don't
+      // wait on it
+      const p = cm.inboundCommand(obj);
 
-    // Register a handler in this turn so that we don't get complaints about
-    // asynchronously-handled callbacks.
-    p.catch(_ => {});
+      // Register a handler in this turn so that we don't get complaints about
+      // asynchronously-handled callbacks.
+      p.catch(_ => {});
 
-    // The turn passes...
-    await processKernel();
+      // The turn passes...
+      await processKernel();
 
-    // Rethrow any inboundCommand rejection in the new turn so that our
-    // caller must handle it (or be an unhandledRejection).
-    return p.catch(e => {
-      throw e;
-    });
-  });
+      // Rethrow any inboundCommand rejection in the new turn so that our
+      // caller must handle it (or be an unhandledRejection).
+
+      // We box the promise, so that this queue isn't stalled.
+      return [
+        p.catch(e => {
+          throw e;
+        }),
+      ];
+    },
+  );
 
   let intervalMillis;
 
   // Use the input queue to make sure it doesn't overlap with
   // other inbound messages.
-  const moveTimeForward = withInputQueue(async () => {
-    const now = Math.floor(Date.now() / intervalMillis);
-    try {
-      if (timer.poll(now)) {
-        await processKernel();
-        log.debug(`timer-provoked kernel crank complete ${now}`);
+  const queuedMoveTimeForward = withInputQueue(
+    async function moveTimeForward() {
+      const now = Math.floor(Date.now() / intervalMillis);
+      try {
+        if (timer.poll(now)) {
+          await processKernel();
+          log.debug(`timer-provoked kernel crank complete ${now}`);
+        }
+      } catch (err) {
+        log.error(`timer-provoked kernel crank failed at ${now}:`, err);
+      } finally {
+        // We only rearm the timeout if moveTimeForward has completed, to
+        // make sure we don't have two copies of controller.run() executing
+        // at the same time.
+        setTimeout(queuedMoveTimeForward, intervalMillis);
       }
-    } catch (err) {
-      log.error(`timer-provoked kernel crank failed at ${now}:`, err);
-    } finally {
-      // We only rearm the timeout if moveTimeForward has completed, to
-      // make sure we don't have two copies of controller.run() executing
-      // at the same time.
-      setTimeout(moveTimeForward, intervalMillis);
-    }
-  });
+    },
+  );
 
   // now let the bootstrap functions run
   await processKernel();
 
+  const queuedDeliverInboundCommand = obj =>
+    queuedBoxedDeliverInboundCommand(obj).then(([p]) => p);
+
   return {
-    deliverInboundToMbx,
-    deliverInboundCommand,
+    deliverInboundToMbx: queuedDeliverInboundToMbx,
+    deliverInboundCommand: queuedDeliverInboundCommand,
     deliverOutbound,
     startTimer: interval => {
       intervalMillis = interval;
-      setTimeout(moveTimeForward, intervalMillis);
+      setTimeout(queuedMoveTimeForward, intervalMillis);
     },
   };
 }

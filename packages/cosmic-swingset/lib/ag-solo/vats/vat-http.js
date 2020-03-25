@@ -199,7 +199,8 @@ function build(E, D) {
         D(commandDevice).sendResponse(count, false, harden(true));
       } catch (rej) {
         console.debug(`Error ${dispatcher}:`, rej);
-        D(commandDevice).sendResponse(count, true, harden(rej));
+        const jsonable = (rej && rej.message) || rej;
+        D(commandDevice).sendResponse(count, true, harden(jsonable));
       }
     },
   };

@@ -19,7 +19,9 @@ export const makeWithQueue = () => {
       // Rerun dequeue() after settling.
       .finally(() => {
         queue.shift();
-        dequeue();
+        if (queue.length) {
+          dequeue();
+        }
       });
   };
 
