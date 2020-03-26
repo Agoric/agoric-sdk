@@ -16,7 +16,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     });
 
   const rimraf = file => pspawn('rm', ['-rf', file]);
-  const subdirs = ['_agstate/agoric-servers', 'contract', 'api'].sort()
+  const subdirs = ['.', '_agstate/agoric-servers', 'contract', 'api'].sort();
 
   if (opts.sdk) {
     const sdkNodeModules = path.resolve(__dirname, '../../../node_modules');

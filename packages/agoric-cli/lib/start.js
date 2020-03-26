@@ -69,7 +69,12 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       popts.delay === undefined ? FAKE_CHAIN_DELAY : Number(popts.delay);
 
     if (!opts.sdk) {
-      if (!(await exists('_agstate/agoric-servers/node_modules'))) {
+      if (
+        !(await exists('node_modules/@agoric/cosmic-swingset')) &&
+        !(await exists(
+          '_agstate/agoric-servers/node_modules/@agoric/cosmic-swingset',
+        ))
+      ) {
         log.error(`you must first run '${progname} install'`);
         return 1;
       }
