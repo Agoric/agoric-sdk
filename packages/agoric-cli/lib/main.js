@@ -90,7 +90,7 @@ const main = async (progname, rawArgs, powers) => {
   program.exitOverride();
 
   try {
-    await program.parseAsync(process.argv);
+    await program.parseAsync(rawArgs, { from: 'user' });
   } catch (e) {
     if (e && e.name === 'CommanderError') {
       return e.exitCode;
