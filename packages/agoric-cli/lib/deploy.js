@@ -1,6 +1,5 @@
 /* eslint-disable no-await-in-loop */
 import builtinModules from 'builtin-modules';
-import parseArgs from 'minimist';
 import { evaluateProgram } from '@agoric/evaluate';
 import { E, HandledPromise, makeCapTP } from '@agoric/captp';
 import makePromise from '@agoric/make-promise';
@@ -9,14 +8,11 @@ import bundleSource from '@agoric/bundle-source';
 
 import path from 'path';
 
-export default async function deployMain(progname, rawArgs, powers) {
+export default async function deployMain(progname, rawArgs, powers, opts) {
   const { anylogger, makeWebSocket } = powers;
   const log = anylogger('agoric:deploy');
-  const { _: args, hostport } = parseArgs(rawArgs, {
-    default: {
-      hostport: '127.0.0.1:8000',
-    },
-  });
+
+  const args = rawArgs.slice(1);
 
   if (args.length === 0) {
     log.error('you must specify at least one deploy.js to run');
@@ -31,7 +27,7 @@ export default async function deployMain(progname, rawArgs, powers) {
     ws.send(JSON.stringify(obj));
   };
 
-  const wsurl = `ws://${hostport}/private/captp`;
+  const wsurl = `ws://${opts.hostport}/private/captp`;
   const ws = makeWebSocket(wsurl, { origin: 'http://127.0.0.1' });
 
   const exit = makePromise();

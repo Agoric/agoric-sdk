@@ -1,8 +1,4 @@
-import parseArgs from 'minimist';
 import chalk from 'chalk';
-
-const DEFAULT_DAPP_TEMPLATE = 'dapp-simple-exchange';
-const DEFAULT_DAPP_URL_BASE = 'git://github.com/Agoric/';
 
 // Use either an absolute template URL, or find it relative to DAPP_URL_BASE.
 const gitURL = (relativeOrAbsoluteURL, base) => {
@@ -14,27 +10,18 @@ const gitURL = (relativeOrAbsoluteURL, base) => {
   return url.href;
 };
 
-export default async function initMain(_progname, rawArgs, priv, _opts) {
+export default async function initMain(_progname, rawArgs, priv, opts) {
   const { anylogger, spawn, fs } = priv;
   const log = anylogger('agoric:init');
-  const {
-    _: args,
-    'dapp-template': dappTemplate,
-    'dapp-base': dappBase,
-  } = parseArgs(rawArgs, {
-    boolean: ['force'],
-    default: {
-      'dapp-template': DEFAULT_DAPP_TEMPLATE,
-      'dapp-base': DEFAULT_DAPP_URL_BASE,
-    },
-  });
+
+  const args = rawArgs.slice(1);
 
   if (args.length !== 1) {
     return log.error(`you must specify exactly one DIR`);
   }
   const [DIR] = args;
 
-  const dappURL = gitURL(dappTemplate, dappBase);
+  const dappURL = gitURL(opts.dappTemplate, opts.dappBase);
 
   // Run the Git commands.
   log.info(`initializing ${DIR} from ${dappURL}`);
