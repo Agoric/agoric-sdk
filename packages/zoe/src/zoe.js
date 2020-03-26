@@ -394,10 +394,8 @@ const makeZoe = (additionalEndowments = {}) => {
             if (giveKeywords.includes(keyword)) {
               // We cannot trust these amounts since they come directly
               // from the remote issuer and so we must coerce them.
-              return Promise.resolve(paymentKeywordRecord[keyword])
-                .then(payment =>
-                  E(purse).deposit(payment, proposal.give[keyword]),
-                )
+              return E(purse)
+                .deposit(paymentKeywordRecord[keyword], proposal.give[keyword])
                 .then(_ => amountMath.coerce(proposal.give[keyword]));
             }
             // If any other payments are included, they are ignored.
