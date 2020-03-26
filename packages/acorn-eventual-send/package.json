@@ -23,12 +23,15 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Agoric/acorn-eventual-send"
+    "url": "https://github.com/Agoric/agoric-sdk"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/Agoric/acorn-eventual-send/issues"
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
-  "homepage": "https://github.com/acorn-eventual-send#readme"
+  "homepage": "https://github.com/acorn-eventual-send#readme",
+  "publishConfig": {
+    "access": "public"
+  }
 }

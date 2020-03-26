@@ -56,15 +56,18 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Agoric/SwingSet.git"
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/Agoric/SwingSet/issues"
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
-  "homepage": "https://github.com/Agoric/SwingSet#readme",
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "directories": {
     "example": "examples"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

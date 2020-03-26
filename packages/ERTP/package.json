@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Agoric/ertp.git"
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
   },
   "keywords": [
     "smart",
@@ -30,9 +30,9 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/Agoric/ertp/issues"
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
-  "homepage": "https://github.com/Agoric/ertp#readme",
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.0.2",
     "@agoric/evaluate": "^2.2.1",
@@ -94,5 +94,8 @@
   "prettier": {
     "trailingComma": "all",
     "singleQuote": true
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

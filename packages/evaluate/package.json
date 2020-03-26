@@ -24,7 +24,10 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/Agoric/evaluate/issues"
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
-  "homepage": "https://github.com/Agoric/evaluate#readme"
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "publishConfig": {
+    "access": "public"
+  }
 }

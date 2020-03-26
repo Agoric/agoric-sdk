@@ -34,12 +34,15 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Agoric/transform-eventual-send"
+    "url": "git+https://github.com/Agoric/agoric-sdk"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/Agoric/transform-eventual-send/issues"
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
-  "homepage": "https://github.com/Agoric/transform-eventual-send#readme"
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "publishConfig": {
+    "access": "public"
+  }
 }
