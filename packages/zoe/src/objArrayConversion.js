@@ -14,7 +14,7 @@ export const objToArray = (obj, keywords) => {
   const keys = Object.getOwnPropertyNames(obj);
   assert(
     keys.length === keywords.length,
-    `object keys and keywords must be of equal length`,
+    `object keys (${keys}) and keywords (${keywords}) must be of equal length`,
   );
   return keywords.map(keyword => obj[keyword]);
 };
