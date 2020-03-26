@@ -1,7 +1,6 @@
 {
   "name": "ses-adapter",
   "version": "0.0.2",
-  "private": true,
   "description": "access harden/Compartment/HandledPromise inside or outside of SES",
   "main": "src/index.js",
   "module": "src/index.js",
