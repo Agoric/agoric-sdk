@@ -94,13 +94,15 @@ export async function makeWallet(
     if (zoeKind === 'keywords') {
       // Payments are made for the keywords in proposal.give.
       payment = {};
-      await allComparable(
+      await Promise.all(
         Object.entries(proposal.give || {}).map(([keyword, amount]) => {
           const purse = purses[keyword];
           if (purse) {
-            payment[keyword] = E(purse).withdraw(amount);
+            return E(purse)
+              .withdraw(amount)
+              .then(pmt => (payment[keyword] = pmt));
           }
-          return payment[keyword];
+          return undefined;
         }),
       );
     } else if (zoeKind === 'indexed') {
