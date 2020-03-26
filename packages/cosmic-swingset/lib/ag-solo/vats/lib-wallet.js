@@ -3,6 +3,7 @@ import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
+import { allComparable } from '@agoric/same-structure';
 
 import makeObservablePurse from './observable';
 import makeOfferCompiler from './offer-compiler';
@@ -93,7 +94,7 @@ export async function makeWallet(
     if (zoeKind === 'keywords') {
       // Payments are made for the keywords in proposal.give.
       payment = {};
-      await Promise.all(
+      await allComparable(
         Object.entries(proposal.give || {}).map(([keyword, amount]) => {
           const purse = purses[keyword];
           if (purse) {
