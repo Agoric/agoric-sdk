@@ -97,9 +97,11 @@ export async function makeWallet(
         Object.entries(proposal.give || {}).map(([keyword, amount]) => {
           const purse = purses[keyword];
           if (purse) {
-            payment[keyword] = E(purse).withdraw(amount);
+            return E(purse)
+              .withdraw(amount)
+              .then(pmt => (payment[keyword] = pmt));
           }
-          return payment[keyword];
+          return undefined;
         }),
       );
     } else if (zoeKind === 'indexed') {
