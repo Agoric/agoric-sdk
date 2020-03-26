@@ -145,10 +145,11 @@ export async function makeWallet(
         }),
       ).then(payoutArray =>
         Promise.all(
-          payoutArray.map((payout, payoutIndex) => {
+          payoutArray.map(async (payoutP, payoutIndex) => {
             const keyword = payoutIndexToKeyword[payoutIndex];
             const purse = purses[keyword];
-            if (purse && payout) {
+            if (purse && payoutP) {
+              const payout = await payoutP;
               return E(purse).deposit(payout);
             }
             return undefined;

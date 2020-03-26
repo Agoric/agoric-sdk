@@ -154,7 +154,7 @@ export default function setup(syscall, state, helpers) {
         );
 
         // deposit payments
-        const [moolaPayment, simoleanPayment] = payments;
+        const [moolaPayment, simoleanPayment] = await Promise.all(payments);
 
         await E(wallet).deposit(pursePetnames.moola, moolaPayment);
         await E(wallet).deposit(pursePetnames.simolean, simoleanPayment);
