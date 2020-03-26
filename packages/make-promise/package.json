@@ -1,6 +1,6 @@
 {
   "name": "@agoric/make-promise",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Helper for making promises",
   "main": "src/makePromise.js",
   "engines": {
@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/eventual-send": "^0.5.0",
+    "@agoric/eventual-send": "^0.6.0",
     "@agoric/harden": "^0.0.4"
   },
   "devDependencies": {
