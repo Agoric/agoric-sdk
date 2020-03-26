@@ -1,6 +1,6 @@
 {
   "name": "agoric",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Manage the Agoric Javascript smart contract platform",
   "main": "lib/main.js",
   "bin": "bin/agoric",
@@ -35,10 +35,9 @@
     "anylogger": "^0.21.0",
     "builtin-modules": "^3.1.0",
     "chalk": "^2.4.2",
+    "commander": "^5.0.0",
     "esm": "^3.2.25",
-    "minimist": "^1.2.0",
-    "ws": "^7.2.0",
-    "yarn": "^1.22.0"
+    "ws": "^7.2.0"
   },
   "keywords": [],
   "repository": {

@@ -19,7 +19,7 @@ const progname = path.basename(process.argv[1]);
 const stdout = str => process.stdout.write(str);
 const makeWebSocket = (...args) => new WebSocket(...args);
 
-const rawArgs = process.argv.splice(2);
+const rawArgs = process.argv.slice(2);
 main(progname, rawArgs, {
   anylogger,
   stdout,

@@ -1,16 +1,14 @@
 import chalk from 'chalk';
-import parseArgs from 'minimist';
+import { Command } from 'commander';
 
-const VERSION = 'Agoric <some version>';
+const DEFAULT_DAPP_TEMPLATE = 'dapp-simple-exchange';
+const DEFAULT_DAPP_URL_BASE = 'git://github.com/Agoric/';
+
 const STAMP = '_agstate';
 
 const main = async (progname, rawArgs, powers) => {
   const { anylogger, stdout, fs } = powers;
   const log = anylogger('agoric');
-  const { _: args, ...opts } = parseArgs(rawArgs, {
-    boolean: ['version', 'help', 'sdk'],
-    stopEarly: true,
-  });
 
   const isNotBasedir = async () => {
     try {
@@ -22,57 +20,84 @@ const main = async (progname, rawArgs, powers) => {
     }
   };
   
-  const subMain = (fn, args) => {
-    return fn(progname, args.slice(1), powers, opts);
+  const subMain = (fn, args, options) => {
+    return fn(progname, args, powers, options);
   };
 
-  const usage = status => {
-    if (status) {
-      log.error(chalk.bold.yellow(`Type '${progname} --help' for more information.`));
-      return status;
+  const program = new Command();
+  const pj = await fs.readFile(`${__dirname}/../package.json`);
+  const pkg = JSON.parse(pj);
+
+  program
+    .storeOptionsAsProperties(false);
+
+  program
+    .name(pkg.name)
+    .version(pkg.version);
+
+  program
+    .option('--sdk', 'use the Agoric SDK containing this program')
+    .option('--debug', 'enable debug messages')
+
+  // Add each of the commands.
+  program
+    .command('init <project>')
+    .description('create a new Dapp directory named <project>')
+    .option('--dapp-template <name>', 'use the template specified by <name>', DEFAULT_DAPP_TEMPLATE)
+    .option('--dapp-base <base-url>', 'find the template relative to <base-url>', DEFAULT_DAPP_URL_BASE)
+    .action(async (project, cmd) => {
+      const opts = {...program.opts(), ...cmd.opts()};
+      const mod = await import('./init');
+      return subMain(mod.default, ['init', project], opts);
+    });
+
+  program
+    .command('install')
+    .description('install Dapp dependencies')
+    .action(async (cmd) => {
+      await isNotBasedir();
+      const opts =  {...program.opts(), ...cmd.opts()};
+      const mod = await import('./install');
+      return subMain(mod.default, ['install'], opts);
+    });
+
+
+  program
+    .command('deploy <script...>')
+    .description('run a deployment script against the local Agoric VM')
+    .option('--hostport <HOST:PORT>', 'host and port to connect to VM', '127.0.0.1:8000')
+    .action(async (scripts, cmd) => {
+      const opts =  {...program.opts(), ...cmd.opts()};
+      const mod = await import('./deploy');
+      return subMain(mod.default, ['deploy', ...scripts], opts);
+    });
+  
+  program
+    .command('start [profile] [args...]')
+    .description('run an Agoric VM')
+    .option('--reset', 'clear all VM state before starting')
+    .option('--no-restart', 'do not actually start the VM')
+    .option('--pull', 'for Docker-based VM, pull the image before running')
+    .option('--delay [seconds]', 'delay for simulated chain to process messages')
+    .action(async (profile, args, cmd) => {
+      await isNotBasedir();
+      const opts =  {...program.opts(), ...cmd.opts()};
+      const mod = await import('./start');
+      return subMain(mod.default, ['start', profile, ...args], opts);
+    });
+
+  // Throw an error instead of exiting directly.
+  program.exitOverride();
+
+  try {
+    await program.parseAsync(rawArgs, { from: 'user' });
+  } catch (e) {
+    if (e && e.name === 'CommanderError') {
+      return e.exitCode;
     }
-    stdout(`\
-Usage: ${progname} [command] [...args]
-
-Manage the Agoric Javascript smart contract platform.
-
-deploy    upload dapp to started Agoric servers
-help      display this help and exit
-init      initialize a dApp project
-install   load dApp dependencies
-start     run Agoric servers
-`);
-    return 0;
-  };
-
-  if (opts.version) {
-    stdout(`${VERSION}\n`);
-    return 0;
+    throw e;
   }
-
-  if (opts.help) {
-    return usage(0);
-  }
-
-  const cmd = args[0];
-  switch (cmd) {
-    case undefined:
-      log.error(`you must specify a COMMAND`);
-      return usage(1);
-    case 'help':
-      return usage(0);
-    case 'deploy':
-      return subMain((await import('./deploy')).default, args);
-    case 'install':
-      return await isNotBasedir() || subMain((await import('./install')).default, args);
-    case 'start':
-      return await isNotBasedir() || subMain((await import('./start')).default, args);
-    case 'init':
-      return subMain((await import('./init')).default, args);
-    default:
-      log.error(`unrecognized COMMAND`, cmd);
-      return usage(1);
-  }
+  return 0;
 };
 
 export default main;

@@ -1,4 +1,3 @@
-import parseArgs from 'minimist';
 import path from 'path';
 import chalk from 'chalk';
 
@@ -205,10 +204,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     testnet: opts.sdk ? startTestnetSdk : startTestnetDocker,
   };
 
-  const { _: args, ...popts } = parseArgs(rawArgs, {
-    boolean: ['reset', 'restart', 'pull', 'debug'],
-    default: { restart: true },
-  });
+  const popts = opts;
 
   if (popts.debug) {
     // Crank out the debugging.
@@ -217,6 +213,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     pspawnEnv.DEBUG = '';
   }
 
+  const args = rawArgs.slice(1);
   const profileName = args[0] || 'dev';
   const startFn = profiles[profileName];
   if (!startFn) {

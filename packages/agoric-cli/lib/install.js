@@ -1,12 +1,9 @@
-import parseArgs from 'minimist';
 import path from 'path';
 import chalk from 'chalk';
 
 export default async function installMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn } = powers;
   const log = anylogger('agoric:install');
-
-  const { _: _args } = parseArgs(rawArgs);
 
   const pspawn = (...args) =>
     new Promise((resolve, _reject) => {
