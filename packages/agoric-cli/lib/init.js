@@ -54,22 +54,18 @@ export default async function initMain(_progname, rawArgs, priv, _opts) {
     throw Error('cannot clone');
   }
 
-  if (
-    await pspawn('git', ['config', '--unset', 'branch.master.remote'], {
-      cwd: DIR,
-    })
-  ) {
-    throw Error('cannot detach from upstream');
-  }
+  await pspawn('rm', ['-rf', '.git'], { cwd: DIR });
+  await pspawn('git', ['init'], { cwd: DIR });
 
   let topLevelName;
-  for (const dir of ['', 'api/', 'contract/', 'ui/']) {
+  const subdirs = ['', 'api/', 'contract/', 'ui/', '_agstate/agoric-servers/'];
+  for (const dir of subdirs) {
     const path = `${DIR}/${dir}package.json`;
     log('rewriting ', path);
 
     // eslint-disable-next-line no-await-in-loop
     const contents = await fs.readFile(path, 'utf-8');
-    const pkg = JSON.parse(contents);
+    const pkg = JSON.parse(contents.replace(/@DIR@/g, DIR));
     if (dir === '') {
       topLevelName = pkg.name;
     }
@@ -84,6 +80,15 @@ export default async function initMain(_progname, rawArgs, priv, _opts) {
     // eslint-disable-next-line no-await-in-loop
     await fs.writeFile(path, json);
   }
+
+  await pspawn('git', ['add', '.'], { cwd: DIR });
+  await pspawn(
+    'git',
+    ['commit', '-m', `chore: agoric init ${DIR}\n\nImported from ${dappURL}`],
+    {
+      cwd: DIR,
+    },
+  );
 
   log.info(chalk.bold.yellow(`Done initializing ${DIR}`));
   return 0;
