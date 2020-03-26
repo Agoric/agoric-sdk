@@ -3,7 +3,6 @@ import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
-import { allComparable } from '@agoric/same-structure';
 
 import makeObservablePurse from './observable';
 import makeOfferCompiler from './offer-compiler';
