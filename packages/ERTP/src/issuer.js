@@ -20,6 +20,13 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
   const paymentLedger = makeStore('payment');
   const purseLedger = makeStore('purse');
 
+  function assertKnownPayment(payment) {
+    assert(
+      paymentLedger.has(payment),
+      details`payment not found for ${allegedName}`,
+    );
+  }
+
   const makePayment = () =>
     harden({
       getAllegedBrand: () => brand,
@@ -46,6 +53,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
             `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
           );
         }
+        assertKnownPayment(srcPayment);
         const srcPaymentBalance = paymentLedger.get(srcPayment);
         // Note: this does not guarantee that optAmount itself is a valid stable amount
         assertAmountEqual(srcPaymentBalance, optAmount);
@@ -166,15 +174,13 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     },
     getAmountOf: paymentP => {
       return Promise.resolve(paymentP).then(payment => {
-        assert(
-          paymentLedger.has(payment),
-          details`payment not found: ${allegedName}`,
-        );
+        assertKnownPayment(payment);
         return paymentLedger.get(payment);
       });
     },
     burn: (paymentP, optAmount = undefined) => {
       return Promise.resolve(paymentP).then(payment => {
+        assertKnownPayment(payment);
         const paymentBalance = paymentLedger.get(payment);
         assertAmountEqual(paymentBalance, optAmount);
         // Commit point.
@@ -184,6 +190,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     },
     claim: (paymentP, optAmount = undefined) => {
       return Promise.resolve(paymentP).then(srcPayment => {
+        assertKnownPayment(srcPayment);
         const srcPaymentBalance = paymentLedger.get(srcPayment);
         assertAmountEqual(srcPaymentBalance, optAmount);
         // Commit point.
@@ -200,6 +207,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     // checking is delegated to the `reallocate` function.
     combine: (fromPaymentsPArray, optTotalAmount = undefined) => {
       return Promise.all(fromPaymentsPArray).then(fromPaymentsArray => {
+        fromPaymentsArray.every(assertKnownPayment);
         const totalPaymentsBalance = fromPaymentsArray
           .map(paymentLedger.get)
           .reduce(add, empty);
@@ -218,6 +226,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     split: (paymentP, paymentAmountA) => {
       return Promise.resolve(paymentP).then(srcPayment => {
         paymentAmountA = amountMath.coerce(paymentAmountA);
+        assertKnownPayment(srcPayment);
         const srcPaymentBalance = paymentLedger.get(srcPayment);
         const paymentAmountB = amountMath.subtract(
           srcPaymentBalance,
@@ -235,6 +244,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
     },
     splitMany: (paymentP, amounts) => {
       return Promise.resolve(paymentP).then(srcPayment => {
+        assertKnownPayment(srcPayment);
         amounts = amounts.map(amountMath.coerce);
         // Commit point
         const newPayments = reallocate(
