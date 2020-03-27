@@ -15,14 +15,12 @@
     "lint-check": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "tap": "^14.10.5",
-    "tape": "^4.10.0",
-    "tape-promise": "^4.0.0"
+    "ses": "^0.7.5",
+    "tap": "^14.10.5"
   },
   "dependencies": {
     "@agoric/eventual-send": "^0.6.0",
-    "@agoric/harden": "^0.0.4",
-    "ses": "^0.7.4"
+    "@agoric/harden": "^0.0.4"
   },
   "files": [
     "README.md",
