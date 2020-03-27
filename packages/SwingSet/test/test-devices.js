@@ -120,6 +120,7 @@ async function test2(t, mode, withSES) {
       'calling v2.method5',
       'called',
       'left5',
+      'left5 device d2 has 0 properties',
       'method5 hello',
       'left5 did d2.method5, got ok',
     ]);
@@ -128,6 +129,7 @@ async function test2(t, mode, withSES) {
       'calling v2.method5',
       'called',
       'left5',
+      'left5 device d2 has 0 properties',
       'method5 hello',
       'left5 did d2.method5, got ok',
       'ret done',

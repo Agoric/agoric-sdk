@@ -10,6 +10,22 @@ import { insistCapData } from '../capdata';
 // beyond the runtime of the javascript environment, so this mechanism is not
 // going to work for our in-chain hosts.
 
+const swingSetSymbol = Symbol.for('SwingSet');
+function setSwingSetIdentity(presence, description) {
+  // Don't add an iterable property, but allow identification.
+  const presencePrototype = harden({
+    toString() {
+      return `[${this[Symbol.toStringTag]}]`;
+    },
+    [swingSetSymbol]: true,
+    [Symbol.toStringTag]: description,
+  });
+  harden(presencePrototype);
+
+  Object.setPrototypeOf(presence, presencePrototype);
+  return presence;
+}
+
 /**
  * Instantiate the liveslots layer for a new vat and then populate the vat with
  * a new root object and its initial associated object graph, if any.
@@ -54,9 +70,8 @@ function build(syscall, _state, makeRoot, forVatID) {
   }
 
   function makeDeviceNode(id) {
-    return harden({
-      [`_deviceID_${id}`]() {},
-    });
+    // Allow identification without own property names.
+    return harden(setSwingSetIdentity({}, `Device ${id}`));
   }
 
   const outstandingProxies = new WeakSet();
@@ -168,9 +183,9 @@ function build(syscall, _state, makeRoot, forVatID) {
         // prepare a Promise for this Presence, so E(val) can work
         const pr = makeQueued(slot); // TODO find a less confusing name than "pr"
         const presence = pr.resPres();
-        presence.toString = () => `[Presence ${slot}]`;
-        harden(presence);
-        val = presence;
+
+        // Don't add an iterable property, but allow identification.
+        val = harden(setSwingSetIdentity(presence, `Presence ${slot}`));
         // lsdebug(` for presence`, val);
       } else if (type === 'promise') {
         val = importPromise(slot);

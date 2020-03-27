@@ -10,6 +10,7 @@ function build(E, D, log) {
   return harden({
     async bootstrap(argv, vats, devices) {
       D(devices.mailbox).registerInboundHandler(vats.vattp);
+      log(`vats.vattp has ${Object.keys(vats.vattp).length} properties`);
       await E(vats.vattp).registerMailboxDevice(devices.mailbox);
       const name = 'remote1';
       const { transmitter, setReceiver } = await E(vats.vattp).addRemote(name);

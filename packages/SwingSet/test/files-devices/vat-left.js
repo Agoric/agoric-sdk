@@ -9,6 +9,7 @@ export default function setup(syscall, state, helpers) {
       harden({
         left5(d2) {
           log(`left5`);
+          log(`left5 device d2 has ${Object.keys(d2).length} properties`);
           const ret = D(d2).method5('hello');
           log(`left5 did d2.method5, got ${ret}`);
           return 'done';

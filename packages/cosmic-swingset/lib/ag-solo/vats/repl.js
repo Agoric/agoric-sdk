@@ -1,6 +1,8 @@
 import { makeEvaluators } from '@agoric/evaluate';
 import harden from '@agoric/harden';
 
+const swingSetSymbol = Symbol.for('SwingSet');
+
 // A REPL-specific JSON stringify.
 export function stringify(value, spaces, already = new WeakSet()) {
   if (Object(value) !== value) {
@@ -37,9 +39,6 @@ export function stringify(value, spaces, already = new WeakSet()) {
   let ret = '{';
   let sep = '';
   for (const key of Object.keys(value)) {
-    if (key === 'toString' && typeof value[key] === 'function') {
-      return value[key]();
-    }
     ret += `${sep}${JSON.stringify(key, undefined, spaces)}:${stringify(
       value[key],
       spaces,
@@ -47,6 +46,15 @@ export function stringify(value, spaces, already = new WeakSet()) {
     )}`;
     sep = ',';
   }
+
+  // Empty object?
+  if (sep === '') {
+    // Distinguish SwingSet-created Presences and Devices if we get one.
+    if (value[swingSetSymbol] === true) {
+      return String(value);
+    };
+  }
+
   ret += '}';
   return ret;
 }

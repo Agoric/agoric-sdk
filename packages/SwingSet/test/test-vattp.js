@@ -29,6 +29,7 @@ async function testVatTP(t, withSES) {
   );
   await c.run();
   t.deepEqual(c.dump().log, [
+    'vats.vattp has 0 properties',
     'not sending anything',
     'ch.receive msg1',
     'ch.receive msg2',
@@ -74,12 +75,12 @@ async function testVatTP2(t, withSES) {
 
   t.equal(mb.deliverInbound('remote1', [], 1), true);
   await c.run();
-  t.deepEqual(c.dump().log, []);
+  t.deepEqual(c.dump().log, ['vats.vattp has 0 properties']);
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 0 } });
 
   t.equal(mb.deliverInbound('remote1', [[1, 'msg1']], 1), true);
   await c.run();
-  t.deepEqual(c.dump().log, ['ch.receive msg1']);
+  t.deepEqual(c.dump().log, ['vats.vattp has 0 properties', 'ch.receive msg1']);
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 1 } });
 
   t.equal(mb.deliverInbound('remote1', [[1, 'msg1']], 1), false);
@@ -96,7 +97,11 @@ async function testVatTP2(t, withSES) {
     true,
   );
   await c.run();
-  t.deepEqual(c.dump().log, ['ch.receive msg1', 'ch.receive msg2']);
+  t.deepEqual(c.dump().log, [
+    'vats.vattp has 0 properties',
+    'ch.receive msg1',
+    'ch.receive msg2',
+  ]);
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
 
   t.end();

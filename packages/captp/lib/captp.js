@@ -7,6 +7,22 @@ import { HandledPromise, E } from '@agoric/eventual-send';
 
 export { E, HandledPromise, Nat, harden };
 
+const swingSetSymbol = Symbol.for('SwingSet');
+function setSwingSetIdentity(presence, description) {
+  // Don't add an iterable property, but allow identification.
+  const presencePrototype = harden({
+    toString() {
+      return `[${this[Symbol.toStringTag]}]`;
+    },
+    [swingSetSymbol]: true,
+    [Symbol.toStringTag]: description,
+  });
+  harden(presencePrototype);
+
+  Object.setPrototypeOf(presence, presencePrototype);
+  return presence;
+}
+
 export function makeCapTP(ourId, send, bootstrapObj = undefined) {
   let unplug = false;
   const { serialize, unserialize } = makeMarshal(
@@ -112,9 +128,11 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
       if (slot[0] === 'o') {
         // A new presence
         const presence = pr.resPres();
-        presence.toString = () => `[Presence ${ourId} ${slot}]`;
-        harden(presence);
-        val = presence;
+
+        // Don't add an iterable property, but allow identification.
+        val = harden(
+          setSwingSetIdentity(presence, `CapTP Presence ${ourId} ${slot}`),
+        );
       } else {
         // A new promise
         imports.set(Number(slot.slice(2)), pr);
