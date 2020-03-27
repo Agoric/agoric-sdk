@@ -11,7 +11,7 @@ import {
 } from '../parseKernelSlots';
 import { insistCapData } from '../../capdata';
 import { insistDeviceID, insistVatID, makeDeviceID, makeVatID } from '../id';
-import kdebug from '../kdebug';
+import { kdebug } from '../kdebug';
 
 // This holds all the kernel state, including that of each Vat and Device, in
 // a single JSON-serializable object. At any moment (well, really only
@@ -126,7 +126,7 @@ export default function makeKernelKeeper(storage) {
   function addKernelObject(ownerID) {
     insistVatID(ownerID);
     const id = Nat(Number(getRequired('ko.nextID')));
-    kdebug(`Adding kernel object ${id} for ${ownerID}`);
+    kdebug(`Adding kernel object ko${id} for ${ownerID}`);
     storage.set('ko.nextID', `${id + 1}`);
     const s = makeKernelSlot('object', id);
     storage.set(`${s}.owner`, ownerID);
@@ -143,6 +143,7 @@ export default function makeKernelKeeper(storage) {
   function addKernelDeviceNode(deviceID) {
     insistDeviceID(deviceID);
     const id = Nat(Number(getRequired('kd.nextID')));
+    kdebug(`Adding kernel device kd${id} for ${deviceID}`);
     storage.set('kd.nextID', `${id + 1}`);
     const s = makeKernelSlot('device', id);
     storage.set(`${s}.owner`, deviceID);
@@ -159,6 +160,7 @@ export default function makeKernelKeeper(storage) {
   function addKernelPromise(deciderVatID) {
     insistVatID(deciderVatID);
     const kpid = Nat(Number(getRequired('kp.nextID')));
+    kdebug(`Adding kernel promise kp${kpid} for ${deciderVatID}`);
     storage.set('kp.nextID', `${kpid + 1}`);
     const s = makeKernelSlot('promise', kpid);
     storage.set(`${s}.state`, 'unresolved');

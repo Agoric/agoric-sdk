@@ -42,6 +42,7 @@ FLAGS may be:
   --logall       - log block times, memory use, and disk space
   --forcegc      - run garbage collector after each block
   --batchsize N  - set BATCHSIZE to N (default 200)
+  --verbose      - output verbose debugging messages as it runs
 
 CMD is one of:
   help   - print this helpful usage information
@@ -83,6 +84,7 @@ export async function main() {
   let logMem = false;
   let logDisk = false;
   let forceGC = false;
+  let verbose = false;
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
     switch (flag) {
@@ -119,6 +121,10 @@ export async function main() {
       case '--memdb':
       case '--lmdb':
         dbMode = flag;
+        break;
+      case '-v':
+      case '--verbose':
+        verbose = true;
         break;
       default:
         fail(`invalid flag ${flag}`, true);
@@ -181,6 +187,9 @@ export async function main() {
       fail(`invalid database mode ${dbMode}`, true);
   }
   config.hostStorage = store.storage;
+  if (verbose) {
+    config.verbose = true;
+  }
 
   let blockNumber = 0;
   let statLogger = null;
@@ -281,14 +290,16 @@ export async function main() {
   async function runBlock(requestedSteps, doCommit) {
     const blockStartTime = readClock();
     let actualSteps = 0;
+    log('==> running block');
     while (requestedSteps > 0) {
       requestedSteps -= 1;
       // eslint-disable-next-line no-await-in-loop
       const stepped = await controller.step();
-      actualSteps += stepped;
       if (stepped < 1) {
         break;
       }
+      actualSteps += stepped;
+      log(`===> end of crank ${actualSteps}`);
     }
     if (doCommit) {
       store.commit();

@@ -74,9 +74,11 @@ function build(syscall, _state, makeRoot, forVatID) {
 
   function makeQueued(slot) {
     /* eslint-disable no-use-before-define */
+    lsdebug(`makeQueued(${slot})`)
     const handler = {
       applyMethod(_o, prop, args, returnedP) {
         // Support: o~.[prop](...args) remote method invocation
+        lsdebug(`makeQueued handler.applyMethod (${slot})`)
         return queueMessage(slot, prop, args, returnedP);
       },
     };
@@ -139,7 +141,7 @@ function build(syscall, _state, makeRoot, forVatID) {
 
   function exportPromise(p) {
     const pid = allocatePromiseID();
-    lsdebug(`ls exporting promise ${pid}`);
+    lsdebug(`Promise allocation ${forVatID}:${pid} in exportPromise`);
     // eslint-disable-next-line no-use-before-define
     p.then(thenResolve(pid), thenReject(pid));
     return pid;
@@ -236,6 +238,7 @@ function build(syscall, _state, makeRoot, forVatID) {
   function queueMessage(targetSlot, prop, args, returnedP) {
     const serArgs = m.serialize(harden(args));
     const result = allocatePromiseID();
+    lsdebug(`Promise allocation ${forVatID}:${result} in queueMessage`);
     const done = makeQueued(result);
     lsdebug(`ls.qm send(${JSON.stringify(targetSlot)}, ${prop}) -> ${result}`);
     syscall.send(targetSlot, prop, serArgs, result);

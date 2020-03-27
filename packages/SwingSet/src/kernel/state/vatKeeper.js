@@ -8,7 +8,7 @@ import { assert, details } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
 import { insistVatID } from '../id';
-import kdebug from '../kdebug';
+import { kdebug } from '../kdebug';
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
@@ -84,7 +84,7 @@ export function makeVatKeeper(
         const kernelKey = `${vatID}.c.${kernelSlot}`;
         storage.set(kernelKey, vatSlot);
         storage.set(vatKey, kernelSlot);
-        kdebug(`Mapping ${kernelKey}<=>${vatKey}`);
+        kdebug(`Add mapping v->k ${kernelKey}<=>${vatKey}`);
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
         // (else it would have been in the c-list), so it must be bogus
@@ -130,6 +130,7 @@ export function makeVatKeeper(
       const vatKey = `${vatID}.c.${vatSlot}`;
       storage.set(vatKey, kernelSlot);
       storage.set(kernelKey, vatSlot);
+      kdebug(`Add mapping k->v ${kernelKey}<=>${vatKey}`);
     }
 
     return storage.get(kernelKey);

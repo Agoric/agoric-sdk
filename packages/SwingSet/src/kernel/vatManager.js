@@ -5,7 +5,7 @@ import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
 import { insistMessage } from '../message';
-import kdebug from './kdebug';
+import { kdebug, legibilizeMessageArgs } from './kdebug';
 
 export default function makeVatManager(
   vatID,
@@ -82,11 +82,6 @@ export default function makeVatManager(
   function mapKernelSlotToVatSlot(kernelSlot) {
     assert(`${kernelSlot}` === kernelSlot, 'non-string kernelSlot');
     const vatSlot = vatKeeper.mapKernelSlotToVatSlot(kernelSlot);
-    kdebug(
-      `mapKernelSlotToVatSlot for ${vatID} of ${JSON.stringify(
-        kernelSlot,
-      )} to ${vatSlot}`,
-    );
     return vatSlot;
   }
 
@@ -116,7 +111,9 @@ export default function makeVatManager(
     insistCapData(args);
     // TODO: disable send-to-self for now, qv issue #43
     const target = mapVatSlotToKernelSlot(targetSlot);
-    kdebug(`syscall[${vatID}].send(vat:${targetSlot}=ker:${target}).${method}`);
+    const argList = legibilizeMessageArgs(args).join(', ');
+    // prettier-ignore
+    kdebug(`syscall[${vatID}].send(vat:${targetSlot}=ker:${target}).${method}(${argList})`);
     const kernelSlots = args.slots.map(slot => mapVatSlotToKernelSlot(slot));
     const kernelArgs = harden({ ...args, slots: kernelSlots });
     let result = null;
@@ -206,7 +203,8 @@ export default function makeVatManager(
     }
     const kernelSlots = args.slots.map(slot => mapVatSlotToKernelSlot(slot));
     const kernelData = harden({ ...args, slots: kernelSlots });
-    kdebug(`syscall[${vatID}].callNow(${target}/${dev}).${method}`);
+    // prettier-ignore
+    kdebug(`syscall[${vatID}].callNow(${target}/${dev}).${method}(${JSON.stringify(args)})`);
     const ret = syscallManager.invoke(dev, method, kernelData);
     const retSlots = ret.slots.map(slot => mapKernelSlotToVatSlot(slot));
     return harden({ ...ret, slots: retSlots });

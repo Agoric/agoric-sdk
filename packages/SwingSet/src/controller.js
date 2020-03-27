@@ -297,6 +297,9 @@ export async function buildVatController(config, withSES = true, argv = []) {
   };
 
   const kernel = buildSESKernel(sesEvaluator, kernelEndowments);
+  if (config.verbose) {
+    kernel.kdebugEnable(true);
+  }
 
   async function addGenesisVat(name, sourceIndex, options = {}) {
     log.debug(`= adding vat '${name}' from ${sourceIndex}`);
@@ -344,6 +347,10 @@ export async function buildVatController(config, withSES = true, argv = []) {
 
     dump() {
       return JSON.parse(JSON.stringify(kernel.dump()));
+    },
+
+    verboseDebugMode(flag) {
+      kernel.kdebugEnable(flag);
     },
 
     async run() {

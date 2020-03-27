@@ -10,7 +10,7 @@ import { makeDeviceSlots } from './deviceSlots';
 import makeDeviceManager from './deviceManager';
 import { wrapStorage } from './state/storageWrapper';
 import makeKernelKeeper from './state/kernelKeeper';
-import kdebug from './kdebug';
+import { kdebug, kdebugEnable, legibilizeMessageArgs } from './kdebug';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../parseVatSlots';
 import { insistStorageAPI } from '../storageAPI';
@@ -364,9 +364,23 @@ export default function buildKernel(kernelEndowments) {
     }
   }
 
+  function legibilizeMessage(message) {
+    if (message.type === 'send') {
+      const msg = message.msg;
+      const argList = legibilizeMessageArgs(msg.args).join(', ');
+      const result = msg.result ? msg.result : 'null';
+      return `@${message.target} <- ${msg.method}(${argList}) : @${result}`;
+    } else if (message.type === 'notify') {
+      return `notify(vatID: ${message.vatID}, kpid: @${message.kpid})`;
+    } else {
+      return `unknown message type ${message.type}`;
+    }
+  }
+
   let processQueueRunning;
   async function processQueueMessage(message) {
     kdebug(`processQ ${JSON.stringify(message)}`);
+    kdebug(legibilizeMessage(message));
     if (processQueueRunning) {
       console.error(`We're currently already running at`, processQueueRunning);
       throw Error(`Kernel reentrancy is forbidden`);
@@ -761,6 +775,7 @@ export default function buildKernel(kernelEndowments) {
       // not kept in the persistent state, only in ephemeral state.
       return { log: ephemeral.log, ...kernelKeeper.dump() };
     },
+    kdebugEnable,
 
     addImport,
     addExport,
