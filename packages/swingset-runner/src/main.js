@@ -281,14 +281,16 @@ export async function main() {
   async function runBlock(requestedSteps, doCommit) {
     const blockStartTime = readClock();
     let actualSteps = 0;
+    log('==> running block');
     while (requestedSteps > 0) {
       requestedSteps -= 1;
       // eslint-disable-next-line no-await-in-loop
       const stepped = await controller.step();
-      actualSteps += stepped;
       if (stepped < 1) {
         break;
       }
+      actualSteps += stepped;
+      log(`===> end of crank ${actualSteps}`);
     }
     if (doCommit) {
       store.commit();
