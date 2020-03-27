@@ -360,13 +360,20 @@ const makeZoe = (additionalEndowments = {}) => {
      * promise.
      * @param {payment} invite - an invite (ERTP payment) to join a
      * Zoe smart contract instance
-     * @param  {object} proposal - the proposal, a record
+     * @param  {object?} proposal - the proposal, a record
      * with properties `want`, `give`, and `exit`. The keys of
      * `want` and `give` are keywords and the values are amounts.
-     * @param  {object} paymentKeywordRecord - a record with keyword
+     * @param  {object?} paymentKeywordRecord - a record with keyword
      * keys and values which are payments that will be escrowed by Zoe.
+     *
+     * The default arguments are so that remote invocations don't
+     * have to specify empty objects (which get marshaled as presences).
      */
-    redeem: (invite, proposal, paymentKeywordRecord) => {
+    redeem: (
+      invite,
+      proposal = harden({}),
+      paymentKeywordRecord = harden({}),
+    ) => {
       return inviteIssuer.burn(invite).then(inviteAmount => {
         assert(
           inviteAmount.extent.length === 1,

@@ -47,8 +47,9 @@ interface ZoeService {
   getInstance(instanceHandle :InstanceHandle) -> (InstanceRecord);
 
   /** 
-   * To redeem an invite, the user must provide a proposal (their rules for the
-   * offer) as well as payments to be escrowed by Zoe.
+   * To redeem an invite, the user normally provides a proposal (their rules for the
+   * offer) as well as payments to be escrowed by Zoe.  If the proposal or payments are
+   * undefined, the default is not to propose or pay (just to obtain the invite's seat).
    * 
    * The proposal has three parts: `want` and `give` are used 
    * by Zoe to enforce offer safety, and `exit` is used to specify

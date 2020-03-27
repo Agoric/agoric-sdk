@@ -107,9 +107,7 @@ export const makeZoeHelpers = zoe => {
     },
     makeEmptyOffer: () => {
       const { inviteHandle, invite } = zoe.makeInvite();
-      return zoeService
-        .redeem(invite, harden({}), harden({}))
-        .then(() => inviteHandle);
+      return zoeService.redeem(invite).then(() => inviteHandle);
     },
   });
   return helpers;
