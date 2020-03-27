@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { showPurseBalance, setupIssuers } from './helpers';
+import { showPurseBalance, setupIssuers } from '../helpers';
 
 const build = async (E, log, zoe, issuers, payments, installations) => {
   const { moola, simoleans, purses } = await setupIssuers(zoe, issuers);

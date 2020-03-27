@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { showPurseBalance, setupIssuers, getLocalAmountMath } from './helpers';
+import { showPurseBalance, setupIssuers, getLocalAmountMath } from '../helpers';
 
 const build = async (E, log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, purses } = await setupIssuers(zoe, issuers);
