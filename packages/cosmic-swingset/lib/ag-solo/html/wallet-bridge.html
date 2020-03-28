@@ -29,7 +29,8 @@
           console.log('sending', wsQueue.length, 'queued messages from', origin);
         }
         while (wsQueue.length) {
-          ws.send(wsQueue.shift());
+          // The queued messages are raw objects, so JSONify.
+          ws.send(JSON.stringify(wsQueue.shift()));
         }
       });
 
