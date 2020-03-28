@@ -43,8 +43,6 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     expectedAmountPerTicket: moola(22)
   });
 
-  console.log('auditoriumInvite', auditoriumInvite)
-
   const {
     extent: [{ instanceHandle: auditoriumInstanceHandle }],
   } = await inviteIssuer.getAmountOf(auditoriumInvite);
@@ -101,10 +99,10 @@ The Opera is told about the show being sold out. It gets all the moolas from the
   const alicePaymentForTicket = await alicePurse.withdraw(moola(22));
 
   const {seat: {performExchange}, payout: payoutP} = await zoe.redeem(aliceInvite, aliceProposal, {Buyer: alicePaymentForTicket})
-/*
+
   try{
     performExchange(); // this function call may be useless? See https://github.com/Agoric/agoric-sdk/issues/783
-
+/*
     const payout = await payoutP
     console.log('payout', payout);
 
@@ -126,13 +124,13 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     const {
       extent: [{ instanceHandle, terms }],
     } = await inviteIssuer.getAmountOf(bobInvite);
-
+*/
   
   }
   catch(e){
     console.error('caught err', e)
     t.fail('should not throw')
-  }*/
+  }
 
   
 });

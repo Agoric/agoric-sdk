@@ -46,15 +46,23 @@ export const makeContract = harden(async zoe => {
   )
 
   // Create the offers in Zoe for the tickets
-  const ticketPaymentInviteHandles = await Promise.all([...availableTicketAmountsByTicketNumber.values()].map(amount => {
-    const {invite, inviteHandle} = zoe.makeInvite()
-    zoeService.redeem(
-      invite,
-      harden({want: {Buyer: expectedAmountPerTicket}, give: {Auditorium: amount}}),
-      harden({Auditorium: mint.mintPayment(amount)}) // mint and pass to Zoe right away
-    )
-    return inviteHandle
-  }))
+  const ticketPaymentInviteHandles = new Map(await Promise.all(
+    [...availableTicketAmountsByTicketNumber.entries()].map(([ticketNumber, amount]) => {
+      // create an Zoe invite internally...
+      const {invite, inviteHandle} = zoe.makeInvite()
+      // ...and redeem it right away
+      return zoeService.redeem(
+        invite,
+        harden({want: {Buyer: expectedAmountPerTicket}, give: {Auditorium: amount}}),
+        harden({Auditorium: mint.mintPayment(amount)}) // mint and pass to Zoe right away
+      ).then(({payout}) => {
+        return [ticketNumber, {payout, inviteHandle}]
+      })
+    })
+  ))
+
+  console.log('ticketPaymentInviteHandles', ticketPaymentInviteHandles)
+
   
   const auditoriumSeat = harden({
     getSalesMoney(){
@@ -65,39 +73,25 @@ export const makeContract = harden(async zoe => {
 
   const makeBuyerInvite = () => {
     const seat = harden({
-      performExchange: async () => {
-        const offer = zoe.getOffer(await inviteHandle)
+      performExchange: () => {
+        const buyerInviteHandle = inviteHandle;
+        const buyerOffer = zoe.getOffer(buyerInviteHandle)
+        console.log('performExchange offer', buyerOffer)
 
-        console.log('performExchange offer', offer)
+        const buyerWant = buyerOffer.proposal.want.Auditorium;
+        console.log('want', buyerWant)
 
-        /*
-        // simple exchange code
-        const buyAssetForPrice = harden({
-          give: [PRICE],
-          want: [ASSET],
-        });
-        const sellAssetForPrice = harden({
-          give: [ASSET],
-          want: [PRICE],
-        });
-        if (checkIfProposal(inviteHandle, sellAssetForPrice)) {
-          // Save the valid offer and try to match
-          sellInviteHandles.push(inviteHandle);
-          buyInviteHandles = [...zoe.getOfferStatuses(buyInviteHandles).active];
-          return swapIfCanTrade(buyInviteHandles, inviteHandle);
-          
-        } else if (checkIfProposal(inviteHandle, buyAssetForPrice)) {
-          // Save the valid offer and try to match
-          buyInviteHandles.push(inviteHandle);
-          sellInviteHandles = [
-            ...zoe.getOfferStatuses(sellInviteHandles).active,
-          ];
-          return swapIfCanTrade(sellInviteHandles, inviteHandle);
-        } else {
-          // Eject because the offer must be invalid
-          return rejectOffer(inviteHandle);
+        const ticketNumber = buyerWant.extent[0].number
+        console.log('ticketNumber', ticketNumber)
+
+        if(!availableTicketAmountsByTicketNumber.has(ticketNumber)){
+          rejectOffer(`Ticket #${ticketNumber} is not available anymore`);
         }
-        */
+
+        const ticketInviteHandle = ticketPaymentInviteHandles.get(ticketNumber)
+
+        // total bluff
+        return swap(ticketInviteHandle, buyerInviteHandle)
       },
     });
     const { invite, inviteHandle } = zoe.makeInvite(seat);
