@@ -23,9 +23,6 @@
     "tape-promise": "^4.0.0",
     "tmp": "^0.1.0"
   },
-  "peerDependencies": {
-    "anylogger": ">=0.21.0"
-  },
   "dependencies": {
     "@agoric/bundle-source": "^1.1.0",
     "@agoric/captp": "^1.2.1",
