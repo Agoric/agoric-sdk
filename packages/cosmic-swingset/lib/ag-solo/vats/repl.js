@@ -52,7 +52,7 @@ export function stringify(value, spaces, already = new WeakSet()) {
     // Distinguish SwingSet-created Presences and Devices if we get one.
     if (value[swingSetSymbol] === true) {
       return String(value);
-    };
+    }
   }
 
   ret += '}';

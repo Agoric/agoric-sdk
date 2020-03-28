@@ -12,7 +12,7 @@ function setSwingSetIdentity(presence, description) {
   // Don't add an iterable property, but allow identification.
   const presencePrototype = harden({
     toString() {
-      return `[${this[Symbol.toStringTag]}]`;
+      return `[${description}]`;
     },
     [swingSetSymbol]: true,
     [Symbol.toStringTag]: description,
