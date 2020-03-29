@@ -99,20 +99,20 @@ The Opera is told about the show being sold out. It gets all the moolas from the
   const alicePaymentForTicket = await alicePurse.withdraw(moola(22));
 
   const {seat: {performExchange}, payout: payoutP} = await zoe.redeem(aliceInvite, aliceProposal, {Buyer: alicePaymentForTicket})
+  
+  performExchange(); // this function call may be useless? See https://github.com/Agoric/agoric-sdk/issues/783
+
+  const payout = await payoutP
+
+  const aliceTicketPayment = await publicAPI.getTicketIssuer().claim(payout.Auditorium);
+  const aliceBoughtTicketAmount = await publicAPI.getTicketIssuer().getAmountOf(aliceTicketPayment)
+
+  t.equal(aliceBoughtTicketAmount.extent[0].show, "Steven Universe, the Opera", 'Alice should have receieved the ticket for the correct show')
+  t.equal(aliceBoughtTicketAmount.extent[0].number, 1, 'Alice should have receieved the ticket for the correct number')
 
   try{
-    performExchange(); // this function call may be useless? See https://github.com/Agoric/agoric-sdk/issues/783
+    throw `TODO Bob part`
 /*
-    const payout = await payoutP
-    console.log('payout', payout);
-
-    const [ticketPaymentFromZoe] = await Promise.all(await payoutP);
-    const ticketPayment = await publicAPI.getTicketIssuer().claim(await ticketPaymentFromZoe)
-
-    t.equal(ticketPayment.extent.show, "Steven Universe, the Opera", 'Alice should have receieved the ticket for the correct show')
-    t.equal(ticketPayment.extent.number, 1, 'Alice should have receieved the ticket for the correct number')
-
-
 
     // === Bob part ===
     // Bob starts with 100 moolas
@@ -124,6 +124,9 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     const {
       extent: [{ instanceHandle, terms }],
     } = await inviteIssuer.getAmountOf(bobInvite);
+
+    // === Final Auditorium part ===
+    // getting the money back
 */
   
   }
@@ -132,5 +135,6 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     t.fail('should not throw')
   }
 
-  
+
+  t.end()
 });

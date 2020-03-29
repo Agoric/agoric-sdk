@@ -22,6 +22,11 @@ export const makeContract = harden(async zoe => {
 
   const zoeService = zoe.getZoeService();
 
+  // Create the internal ticket mint
+  const { issuer, mint, amountMath } = produceIssuer('Opera tickets', 'set');
+  await zoe.addNewIssuer(issuer, 'Auditorium');
+
+  // create Zoe helpers after zoe.addNewIssuer because of https://github.com/Agoric/agoric-sdk/issues/802
   const {
     rejectOffer,
     checkIfProposal,
@@ -30,10 +35,6 @@ export const makeContract = harden(async zoe => {
     getActiveOffers,
     assertKeywords,
   } = makeZoeHelpers(zoe);
-
-  // Create the internal ticket mint
-  const { issuer, mint, amountMath } = produceIssuer('Opera tickets', 'set');
-  await zoe.addNewIssuer(issuer, 'Auditorium');
   
   const { terms: { show, start, count, expectedAmountPerTicket } } = zoe.getInstanceRecord();
   
@@ -46,7 +47,7 @@ export const makeContract = harden(async zoe => {
   )
 
   // Create the offers in Zoe for the tickets
-  const ticketPaymentInviteHandles = new Map(await Promise.all(
+  const ticketPaymentPayoutInviteHandles = new Map(await Promise.all(
     [...availableTicketAmountsByTicketNumber.entries()].map(([ticketNumber, amount]) => {
       // create an Zoe invite internally...
       const {invite, inviteHandle} = zoe.makeInvite()
@@ -60,9 +61,6 @@ export const makeContract = harden(async zoe => {
       })
     })
   ))
-
-  console.log('ticketPaymentInviteHandles', ticketPaymentInviteHandles)
-
   
   const auditoriumSeat = harden({
     getSalesMoney(){
@@ -76,21 +74,16 @@ export const makeContract = harden(async zoe => {
       performExchange: () => {
         const buyerInviteHandle = inviteHandle;
         const buyerOffer = zoe.getOffer(buyerInviteHandle)
-        console.log('performExchange offer', buyerOffer)
-
         const buyerWant = buyerOffer.proposal.want.Auditorium;
-        console.log('want', buyerWant)
 
         const ticketNumber = buyerWant.extent[0].number
-        console.log('ticketNumber', ticketNumber)
 
         if(!availableTicketAmountsByTicketNumber.has(ticketNumber)){
-          rejectOffer(`Ticket #${ticketNumber} is not available anymore`);
+          return rejectOffer(`Ticket #${ticketNumber} is not available anymore`);
         }
 
-        const ticketInviteHandle = ticketPaymentInviteHandles.get(ticketNumber)
+        const {inviteHandle: ticketInviteHandle} = ticketPaymentPayoutInviteHandles.get(ticketNumber)
 
-        // total bluff
         return swap(ticketInviteHandle, buyerInviteHandle)
       },
     });
@@ -103,7 +96,7 @@ export const makeContract = harden(async zoe => {
     publicAPI: { 
       makeBuyerInvite,
       getTicketIssuer(){
-        throw `TODO`
+        return issuer;
       },
       getAvailableTickets(){
         return new Map(availableTicketAmountsByTicketNumber);
