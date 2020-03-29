@@ -42,6 +42,8 @@ export const makeContract = harden(async zoe => {
     .fill()
     .map((_, i) => harden({ show, start, number: i + 1 }));
 
+  // Zoe probably does this book-keeping already with (in)active offers
+  // TODO figure out if yes and change getAvailableTickets implementation accordingly
   const availableTicketAmountsByTicketNumber = new Map(
     ticketDescriptionObjects.map(description => [description.number, amountMath.make(harden([description]))])
   )
@@ -79,12 +81,19 @@ export const makeContract = harden(async zoe => {
         const ticketNumber = buyerWant.extent[0].number
 
         if(!availableTicketAmountsByTicketNumber.has(ticketNumber)){
-          return rejectOffer(`Ticket #${ticketNumber} is not available anymore`);
+          return rejectOffer(inviteHandle, `Ticket #${ticketNumber} is not available anymore`)
         }
 
         const {inviteHandle: ticketInviteHandle} = ticketPaymentPayoutInviteHandles.get(ticketNumber)
 
-        return swap(ticketInviteHandle, buyerInviteHandle)
+        try{
+          swap(ticketInviteHandle, buyerInviteHandle)
+        }
+        catch(e){
+          throw e;
+        }
+        // swap was succesful
+        availableTicketAmountsByTicketNumber.delete(ticketNumber)
       },
     });
     const { invite, inviteHandle } = zoe.makeInvite(seat);
