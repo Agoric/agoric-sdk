@@ -4,6 +4,8 @@ import tmp from 'tmp';
 
 import { spawn } from 'child_process';
 
+const SIMPLEST_TEMPLATE = 'dapp-encouragement';
+
 test('workflow', async t => {
   try {
     const pspawn = (...args) => {
@@ -35,7 +37,15 @@ test('workflow', async t => {
     try {
       process.chdir(name);
 
-      t.equals(await myMain(['init', 'dapp-foo']), 0, 'init dapp-foo works');
+      t.equals(
+        await myMain([
+          'init',
+          'dapp-foo',
+          `--dapp-template=${SIMPLEST_TEMPLATE}`,
+        ]),
+        0,
+        'init dapp-foo works',
+      );
       process.chdir('dapp-foo');
       t.equals(await myMain(['install']), 0, 'install works');
 
