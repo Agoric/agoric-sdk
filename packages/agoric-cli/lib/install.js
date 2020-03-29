@@ -61,6 +61,13 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       log.error('Cannot copy _agstate/agoric-wallet');
     }
   }
+
+  if (await pspawn('yarn', ['install'], { stdio: 'inherit', cwd: 'ui' })) {
+    // Try to install via Yarn.
+    log.warn('Cannot yarn install in ui directory');
+    return 1;
+  }
+
   log.info(chalk.bold.green('Done installing'));
   return 0;
 }
