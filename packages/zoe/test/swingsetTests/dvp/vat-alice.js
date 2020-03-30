@@ -12,17 +12,12 @@ const build = async (E, log, zoe, issuers, payments, installations, carolP) => {
     doDelivery: async inviteP => {
       const invite = await inviteP;
       const exclInvite = await E(inviteIssuer).claim(invite);
-debugger
       const { extent: inviteExtent } = await E(inviteIssuer).getAmountOf(
         exclInvite,
       );
-debugger
-      const {
-        handle: iHandle,
-        installationHandle,
-        terms,
-        issuerKeywordRecord,
-      } = await E(zoe).getInstance(inviteExtent[0].instanceHandle);
+      const { handle: iHandle, terms } = await E(zoe).getInstance(
+        inviteExtent[0].instanceHandle,
+      );
 
       // Alice delivers the physical product to Carol out-of-band
       E(carolP).makePhysicalDelivery(terms.Product, iHandle);

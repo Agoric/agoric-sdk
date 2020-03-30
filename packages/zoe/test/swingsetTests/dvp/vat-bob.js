@@ -6,7 +6,7 @@ const build = async (E, log, zoe, issuers, payments, installations) => {
   const purses = issuers.map(issuer => E(issuer).makeEmptyPurse());
   const [assurancePurseP] = purses;
   const [simoleanPayment] = payments;
-  const [simoleanIssuer, assuranceIssuer] = issuers;
+  const [assuranceIssuer, simoleanIssuer] = issuers;
   const inviteIssuer = await E(zoe).getInviteIssuer();
   const simoleanMath = await getLocalAmountMath(simoleanIssuer);
 
@@ -14,15 +14,12 @@ const build = async (E, log, zoe, issuers, payments, installations) => {
     doPayment: async inviteP => {
       const invite = await inviteP;
       const exclInvite = await E(inviteIssuer).claim(invite);
-  debugger
       const { extent: inviteExtent } = await E(inviteIssuer).getAmountOf(
         exclInvite,
       );
-debugger
       const { installationHandle, issuerKeywordRecord, terms } = await E(
         zoe,
       ).getInstance(inviteExtent[0].instanceHandle);
-debugger
       assert(
         installationHandle === installations.dvp,
         details`wrong installation`,
@@ -35,7 +32,8 @@ debugger
         issuerKeywordRecord.Assurance === assuranceIssuer,
         details`The Assurance issuer should be the assuranceIssuer`,
       );
-      const checkedAmount = simoleanIssuer
+  debugger
+      E(simoleanIssuer)
         .getAmountOf(simoleanPayment)
         .then(amount =>
           assert(
@@ -59,7 +57,7 @@ debugger
       );
 
       // 2. Bob tells zoe the offer has been made
-      const outcome = await E(seat).makeOffer();
+      const outcome = await E(seat).payment();
 
       log(outcome);
 

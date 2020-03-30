@@ -8,6 +8,7 @@ const build = async (E, log, zoe, issuers, payments, installations) => {
     E(simoleanIssuer).getMathHelpersName(),
   ]).then(([brand, mathHelpersName]) => makeAmountMath(brand, mathHelpersName));
   const inviteIssuer = await E(zoe).getInviteIssuer();
+
   const doDvp = async (aliceP, bobP, carolP) => {
     const issuerKeywordRecord = harden({
       Assurance: assuranceIssuer,
@@ -26,12 +27,12 @@ const build = async (E, log, zoe, issuers, payments, installations) => {
       terms,
     );
     const { seat } = await E(zoe).redeem(invite);
-debugger
     const invitePs = await E(seat).makeInvites();
-debugger
+
     E(aliceP).doDelivery(invitePs.deliveryInvite);
     E(carolP).doVerify(invitePs.assuranceInvite);
     E(bobP).doPayment(invitePs.paymentInvite);
+    E(carolP).receiveGoods();
   };
 
   return harden({

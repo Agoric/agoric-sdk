@@ -1,6 +1,8 @@
 import harden from '@agoric/harden';
+import makeStore from '@agoric/store';
 import makePromise from '@agoric/make-promise';
 import { makeZoeHelpers } from './helpers/zoeHelpers';
+import makeStateMachine from './helpers/stateMachine';
 
 /**
  * Delivery vs. Payment contract for physical goods is accomplished by having a
@@ -15,12 +17,29 @@ import { makeZoeHelpers } from './helpers/zoeHelpers';
 const CURRENCY = 'Currency';
 const ASSURANCE = 'Assurance';
 
+const allowedTransitions = [
+  ['Start', ['SellerAccepted']],
+  ['SellerAccepted', ['AllAccepted']],
+  ['AllAccepted', ['Funded']],
+  ['Funded', ['Sent']],
+  ['Sent', ['AssuranceSent']],
+  ['AssuranceSent', []],
+];
+
+let nextId = 1001;
+
 export const makeContract = harden(zoe => {
   const { assertKeywords, rejectIfNotProposal } = makeZoeHelpers(zoe);
-  const { issuerKeywordRecord } = zoe.getInstanceRecord();
+  const {
+    issuerKeywordRecord,
+    terms, // handle, keywords,
+  } = zoe.getInstanceRecord();
   const amountMaths = zoe.getAmountMaths(issuerKeywordRecord);
   const emptyAssurance = amountMaths.Assurance.getEmpty();
   const emptyCurrency = amountMaths.Currency.getEmpty();
+  const currencyIssuer = issuerKeywordRecord.Currency;
+  const assuranceIssuer = issuerKeywordRecord.Assurance;
+  const { amount, Product: product } = terms;
 
   assertKeywords(harden([ASSURANCE, CURRENCY]));
 
@@ -30,6 +49,37 @@ export const makeContract = harden(zoe => {
   let deliverInviteHandle;
   let assurerInviteHandle;
 
+  nextId += 1;
+  const id = nextId;
+
+  // Alice is seller; Bob is buyer; Carol is escrow agent
+
+  // ESCROW AGENTS
+  // set of available esrow agents
+  // brand => agentFacet
+  const escrowAgents = makeStore();
+  function registerAgent(agent, issuer) {
+    escrowAgents.init(issuer.getBrand(), agent);
+  }
+
+  const sm = makeStateMachine('Start', allowedTransitions);
+
+  const shared = {
+    id,
+    currencyIssuer,
+    assuranceIssuer,
+    product,
+
+    getStatus() {
+      return sm.getStatus();
+    },
+    getAmount() {
+      return amount;
+    },
+  };
+
+  // An earlier concept. Replaced with the state machine moving in lockstep
+  //
   // When the payment and assurance are received, we'll order them to be
   // reallocated to the opposing parties.
   Promise.all([receivedPayment.p, receivedAssurance.p]).then(receivables => {
@@ -58,7 +108,9 @@ debugger
         rejectIfNotProposal(inviteHandle, expected);
         const { proposal } = zoe.getOffer(paymentHandle);
         receivedPayment.resolve(proposal.give.CURRENCY);
+        sm.transitionTo(sm.Funded, sm.AllAccepted);
       },
+      ...shared,
     });
 
     const { invite, inviteHandle } = zoe.makeInvite(seat, {
@@ -77,7 +129,12 @@ debugger
         rejectIfNotProposal(inviteHandle, expected);
         const { proposal } = zoe.getOffer(assuranceHandle);
         receivedAssurance.resolve(proposal.give.ASSURANCE);
+        sm.transitionTo(sm.AssuranceSent, sm.Sent);
       },
+      accept: () => {
+        sm.transitionTo(sm.AllAccepted, sm.SellerAccepted);
+      },
+      ...shared,
     });
     // eslint-disable-next-line no-use-before-define
     const { invite, inviteHandle } = zoe.makeInvite(seat, {
@@ -88,10 +145,16 @@ debugger
 
   const makeDeliveryInvite = () => {
     const seat = harden({
+      /// This shouldn't be an action the seller can provoke. The escrow agent
+      /// does this transition when the good arrive out-of-band.
       deliver: () => {
         const expected = harden({ want: [CURRENCY] });
         // eslint-disable-next-line no-use-before-define
         rejectIfNotProposal(inviteHandle, expected);
+        sm.transitionTo('Sent', 'Funded');
+      },
+      accept: () => {
+        sm.transitionTo(sm.SellerAccepted, sm.Start);
       },
     });
     const { invite, inviteHandle } = zoe.makeInvite(seat, {
@@ -128,6 +191,6 @@ debugger
 
   return harden({
     invite: makeContractCreationInvite(),
-    publicAPI: {},
+    publicAPI: { registerAgent },
   });
 });
