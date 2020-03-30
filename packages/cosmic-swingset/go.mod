@@ -20,3 +20,6 @@ require (
 	github.com/tendermint/tm-db v0.5.0
 	github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8 // indirect
 )
+
+// go get github.com/agoric-labs/cosmos-sdk@dibc
+replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.34.4-0.20200331010310-b5070a48908e
