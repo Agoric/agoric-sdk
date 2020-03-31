@@ -57,7 +57,7 @@ export const makeContract = harden(async zoe => {
   })
   const auditoriumInvite = zoe.makeInvite(auditoriumSeat);
 
-  const makeMoneyInvite = () => {
+  const makeBuyerInvite = () => {
     const seat = harden({
       performExchange: async () => {
         const moneyInviteHandle = inviteHandle;
@@ -102,13 +102,13 @@ export const makeContract = harden(async zoe => {
       },
     });
     const { invite, inviteHandle } = zoe.makeInvite(seat);
-    return { invite, inviteHandle };
+    return invite;
   };
 
   return harden({
     invite: auditoriumInvite,
     publicAPI: { 
-      makeMoneyInvite,
+      makeBuyerInvite,
       getTicketIssuer(){
         return issuer;
       },

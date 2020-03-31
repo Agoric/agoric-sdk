@@ -60,7 +60,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     publicAPI = pub;
     _getSalesPayment = getSalesPayment;
   }
-  t.equal(typeof publicAPI.makeMoneyInvite, 'function', 'makeMoneyInvite should be a function')
+  t.equal(typeof publicAPI.makeBuyerInvite, 'function', 'makeMoneyInvite should be a function')
   t.equal(typeof publicAPI.getTicketIssuer, 'function', 'getTicketIssuer should be a function')
   t.equal(typeof publicAPI.getAvailableTickets, 'function', 'getAvailableTickets should be a function')
 
@@ -72,7 +72,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     alicePurse.deposit(moolaMint.mintPayment(moola(100)));
 
     // Alice makes an invite
-    const aliceInvite = inviteIssuer.claim(publicAPI.makeMoneyInvite().invite)
+    const aliceInvite = inviteIssuer.claim(publicAPI.makeBuyerInvite())
     const {
       extent: [{ instanceHandle: instanceHandleOfAlice }],
     } = await inviteIssuer.getAmountOf(aliceInvite);
@@ -120,7 +120,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     bobPurse.deposit(moolaMint.mintPayment(moola(100)));
 
     // Bob makes an invite
-    const bobInvite = inviteIssuer.claim(publicAPI.makeMoneyInvite().invite)
+    const bobInvite = inviteIssuer.claim(publicAPI.makeBuyerInvite())
     const {
       extent: [{ instanceHandle: instanceHandleOfBob }],
     } = await inviteIssuer.getAmountOf(bobInvite);
@@ -170,7 +170,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
 
     
     // Second attempt: Bob buys tickets 2 and 3
-    const bobInvite2 = inviteIssuer.claim(publicAPI.makeMoneyInvite().invite)
+    const bobInvite2 = inviteIssuer.claim(publicAPI.makeBuyerInvite())
 
     const ticket2and3Amount = publicAPI.getTicketIssuer().getAmountMath().make(harden([{
         show: termsOfBob.show,
