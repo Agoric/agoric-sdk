@@ -1,3 +1,9 @@
+// This javascript source file uses the "tildot" syntax (foo~.bar()) for
+// eventual sends.
+// https://agoric.com/documentation/ertp/guide/other-concepts.html
+//  Tildot is standards track with TC39, the JavaScript standards committee.
+// https://github.com/tc39/proposal-wavy-dot
+
 export default async function uploadContracts({ home, bundle }) {
   console.error(`Installing targeted contracts...`);
   await upload(home, bundle, Object.keys(bundle).filter(k => k !== 'main').sort(), true);
