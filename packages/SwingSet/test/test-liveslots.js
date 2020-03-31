@@ -216,7 +216,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   }
   const dispatch = makeLiveSlots(syscall, {}, build, 'vatA');
 
-  t.equal(log.length, 0);
+  t.deepEqual(log, []);
 
   const rootA = 'o+0';
   const p1 = 'p-1';
@@ -238,7 +238,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   });
   // then it subscribes to the result promise too
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+5' });
-  t.equal(log.length, 0);
+  t.deepEqual(log, []);
 
   // now we tell it the promise has resolved, to object 'o2'
   // function notifyFulfillToPresence(promiseID, slot) {
@@ -254,7 +254,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   });
   // and nonpipe2() wants a result
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+6' });
-  t.equal(log.length, 0);
+  t.deepEqual(log, []);
 
   // now call two(), which should send nonpipe3 to o2, not p1, since p1 has
   // been resolved
@@ -269,7 +269,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   });
   // and nonpipe3() wants a result
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+7' });
-  t.equal(log.length, 0);
+  t.deepEqual(log, []);
 
   t.end();
 });
@@ -281,7 +281,6 @@ async function doOutboundPromise(t, mode) {
     return harden({
       run(target, resolution) {
         let p;
-        console.log(`resolution:`, resolution);
         if (resolution === 'reject') {
           // eslint-disable-next-line prefer-promise-reject-errors
           p = Promise.reject('reject');
@@ -300,7 +299,7 @@ async function doOutboundPromise(t, mode) {
   }
   const dispatch = makeLiveSlots(syscall, {}, build, 'vatA');
 
-  t.equal(log.length, 0);
+  t.deepEqual(log, []);
 
   const rootA = 'o+0';
   const target = 'o-1';
@@ -369,7 +368,7 @@ async function doOutboundPromise(t, mode) {
   });
   // and again it subscribes to the result promise
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResultP2 });
-  t.equal(log.length, 0);
+  t.deepEqual(log, []);
 
   t.end();
 }
@@ -384,4 +383,125 @@ test('liveslots does not retire outbound promise IDs after fulfillToData', async
 
 test('liveslots does not retire outbound promise IDs after reject', async t => {
   await doOutboundPromise(t, 'reject');
+});
+
+function hush(p) {
+  p.then(
+    () => undefined,
+    () => undefined,
+  );
+}
+
+async function doResultPromise(t, mode) {
+  const { log, syscall } = buildSyscall();
+
+  function build(E, _D) {
+    return harden({
+      async run(target1) {
+        const p1 = E(target1).getTarget2();
+        const p2 = E(p1).one();
+        try {
+          // p1 resolves first, then p2 resolves on a subsequent crank
+          await p2;
+        } catch (e) {
+          return;
+        }
+        // the second call to p1 should be sent to the object, not the
+        // promise, since the resolution of p1 is now known
+        const p3 = E(p1).two();
+        hush(p3);
+      },
+    });
+  }
+  const dispatch = makeLiveSlots(syscall, {}, build, 'vatA');
+  t.deepEqual(log, []);
+
+  const slot0arg = { '@qclass': 'slot', index: 0 };
+  const rootA = 'o+0';
+  const target1 = 'o-1';
+  const expectedP1 = 'p+5';
+  const expectedP2 = 'p+6';
+  const expectedP3 = 'p+7';
+  // if getTarget2 returns an object, two() is sent to it
+  const target2 = 'o-2';
+  // if it returns data or a rejection, two() results in an error
+
+  dispatch.deliver(rootA, 'run', capargs([slot0arg], [target1]));
+  await endOfCrank();
+
+  // The vat should send 'getTarget2' and subscribe to the result promise
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: target1,
+    method: 'getTarget2',
+    args: capargs([], []),
+    resultSlot: expectedP1,
+  });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP1 });
+
+  // then it should pipeline the one(), and subscribe to the result
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: expectedP1,
+    method: 'one',
+    args: capargs([], []),
+    resultSlot: expectedP2,
+  });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP2 });
+
+  // now it should be waiting for p2 to resolve, before it can send two()
+  t.deepEqual(log, []);
+
+  // resolve p1 first. The one() call was already pipelined, so this
+  // should not trigger any new syscalls.
+  if (mode === 'to presence') {
+    dispatch.notifyFulfillToPresence(expectedP1, target1);
+  } else if (mode === 'to data') {
+    dispatch.notifyFulfillToData(expectedP1, capargs(4, []));
+  } else if (mode === 'reject') {
+    dispatch.notifyReject(expectedP1, capargs('error', []));
+  } else {
+    throw Error(`unknown mode ${mode}`);
+  }
+  await endOfCrank();
+  t.deepEqual(log, []);
+
+  // Now we resolve p2 in a mode-dependent manner
+  if (mode === 'to presence') {
+    // If we resolve it to a target, we should see two() sent through to the
+    // new target, not the original promise.
+    dispatch.notifyFulfillToPresence(expectedP2, target2);
+    await endOfCrank();
+    t.deepEqual(log.shift(), {
+      type: 'send',
+      targetSlot: target2,
+      method: 'two',
+      args: capargs([], []),
+      resultSlot: expectedP3,
+    });
+    t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP3 });
+  } else if (mode === 'to data' || mode === 'reject') {
+    // Resolving to a non-target means a locally-generated error, and no
+    // send() call
+    dispatch.notifyReject(expectedP2, capargs('error', []));
+    await endOfCrank();
+  } else {
+    throw Error(`unknown mode ${mode}`);
+  }
+  t.deepEqual(log, []);
+
+  t.end();
+}
+
+// TODO: still broken, tracked in #823
+test.skip('liveslots does not retire result promise IDs after fulfillToPresence', async t => {
+  await doResultPromise(t, 'to presence');
+});
+
+test('liveslots does not retire result promise IDs after fulfillToData', async t => {
+  await doResultPromise(t, 'to data');
+});
+
+test('liveslots does not retire result promise IDs after reject', async t => {
+  await doResultPromise(t, 'reject');
 });
