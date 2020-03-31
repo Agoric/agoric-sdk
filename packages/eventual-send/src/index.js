@@ -54,13 +54,40 @@ export function makeHandledPromise(Promise) {
   let presenceToPromise;
   let promiseToHandler;
   let promiseToPresence; // only for HandledPromise.unwrap
+  let promiseToPromise; // forwarding, union-find-ish
   function ensureMaps() {
     if (!presenceToHandler) {
       presenceToHandler = new WeakMap();
       presenceToPromise = new WeakMap();
       promiseToHandler = new WeakMap();
       promiseToPresence = new WeakMap();
+      promiseToPromise = new WeakMap();
     }
+  }
+
+  function shorten(target) {
+    let p = target;
+    while (promiseToPromise.has(p)) {
+      p = promiseToPromise.get(p);
+    }
+    const presence = promiseToPresence.get(p);
+    if (presence) {
+      // presences are final, so it is ok to propagate this
+      // upstream.
+      while (target !== p) {
+        promiseToPresence.set(target, presence);
+        target = p;
+      }
+    } else {
+      // even if p has an unfulfilledHandler, we don't care.
+      // we still propagate only p upstream since
+      // unfulfulled handlers are transient.
+      while (target !== p) {
+        promiseToPromise.set(target, p);
+        target = p;
+      }
+    }
+    return target;
   }
 
   // This special handler accepts Promises, and forwards
@@ -75,20 +102,35 @@ export function makeHandledPromise(Promise) {
     }
     let handledResolve;
     let handledReject;
-    let fulfilled = false;
+    let resolved = false;
+    let handledP;
     const superExecutor = (resolve, reject) => {
       handledResolve = value => {
-        fulfilled = true;
+        if (promiseToPromise.has(handledP)) {
+          throw new TypeError('internal: already forwarded');
+        }
+        value = shorten(value);
+        resolved = true;
+        let targetP;
+        if (promiseToHandler.has(value) || promiseToPresence.has(value)) {
+          targetP = value;
+        } else {
+          targetP = presenceToPromise.get(value);
+        }
+        if (targetP && targetP !== handledP) {
+          promiseToPromise.set(handledP, targetP);
+        }
         resolve(value);
       };
       handledReject = err => {
-        fulfilled = true;
+        if (promiseToPromise.has(handledP)) {
+          throw new TypeError('internal: already forwarded');
+        }
+        resolved = true;
         reject(err);
       };
     };
-    const handledP = harden(
-      Reflect.construct(Promise, [superExecutor], new.target),
-    );
+    handledP = harden(Reflect.construct(Promise, [superExecutor], new.target));
 
     ensureMaps();
     let continueForwarding = () => {};
@@ -146,12 +188,18 @@ export function makeHandledPromise(Promise) {
     };
     validateHandler(unfulfilledHandler);
 
+    if (promiseToPromise.has(handledP)) {
+      throw new TypeError('internal: already forwarded');
+    }
     // Until the handled promise is resolved, we use the unfulfilledHandler.
     promiseToHandler.set(handledP, unfulfilledHandler);
 
     const rejectHandled = reason => {
-      if (fulfilled) {
+      if (resolved) {
         return;
+      }
+      if (promiseToPromise.has(handledP)) {
+        throw new TypeError('internal: already forwarded');
       }
       handledReject(reason);
       continueForwarding(reason);
@@ -159,8 +207,11 @@ export function makeHandledPromise(Promise) {
 
     let resolvedPresence = null;
     const resolveWithPresence = presenceHandler => {
-      if (fulfilled) {
+      if (resolved) {
         return resolvedPresence;
+      }
+      if (promiseToPromise.has(handledP)) {
+        throw new TypeError('internal: already forwarded');
       }
       try {
         // Sanity checks.
@@ -191,8 +242,11 @@ export function makeHandledPromise(Promise) {
     };
 
     const resolveHandled = async (target, deprecatedPresenceHandler) => {
-      if (fulfilled) {
+      if (resolved) {
         return undefined;
+      }
+      if (promiseToPromise.has(handledP)) {
+        throw new TypeError('internal: already forwarded');
       }
       try {
         if (deprecatedPresenceHandler) {
@@ -201,14 +255,17 @@ export function makeHandledPromise(Promise) {
           );
         }
 
+        target = shorten(target);
+
         // Resolve with the target when it's ready.
         handledResolve(target);
 
+        //        /*
         const existingUnfulfilledHandler = promiseToHandler.get(target);
         if (existingUnfulfilledHandler) {
           // Reuse the unfulfilled handler.
           promiseToHandler.set(handledP, existingUnfulfilledHandler);
-          return continueForwarding(null, target);
+          continueForwarding(null, target);
         }
 
         // See if the target is a presence we already know of.
@@ -228,6 +285,7 @@ export function makeHandledPromise(Promise) {
         // Remove the mapping, as we don't need a handler.
         promiseToHandler.delete(handledP);
         return continueForwarding();
+        //        */
       } catch (e) {
         handledReject(e);
       }
@@ -371,6 +429,7 @@ export function makeHandledPromise(Promise) {
 
   handle = (p, operation, ...args) => {
     ensureMaps();
+    p = shorten(p);
     const unfulfilledHandler = promiseToHandler.get(p);
     let executor;
     if (
