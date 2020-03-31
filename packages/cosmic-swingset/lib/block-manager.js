@@ -6,15 +6,20 @@ const BEGIN_BLOCK = 'BEGIN_BLOCK';
 const DELIVER_INBOUND = 'DELIVER_INBOUND';
 const END_BLOCK = 'END_BLOCK';
 const COMMIT_BLOCK = 'COMMIT_BLOCK';
+const IBC_PACKET = 'IBC_PACKET';
+const IBC_TIMEOUT = 'IBC_TIMEOUT';
 
-export default function makeBlockManager({
-  deliverInbound,
-  beginBlock,
-  saveChainState,
-  saveOutsideState,
-  savedActions,
-  savedHeight,
-}) {
+export default function makeBlockManager(
+  {
+    deliverInbound,
+    beginBlock,
+    saveChainState,
+    saveOutsideState,
+    savedActions,
+    savedHeight,
+  },
+  sendToCosmosPort,
+) {
   let computedHeight = savedHeight;
   let runTime = 0;
   async function kernelPerformAction(action) {
@@ -37,6 +42,22 @@ export default function makeBlockManager({
         );
         break;
 
+      case IBC_PACKET: {
+        // FIXME: We just ack and disconnect.
+        sendToCosmosPort(action.channelPort, {
+          method: 'ack',
+          data64: Buffer.from(JSON.stringify(action)).toString('base64'),
+        });
+        sendToCosmosPort(action.channelPort, {
+          method: 'close',
+        });
+        break;
+      }
+
+      case IBC_TIMEOUT:
+        console.error(`FIXME: Got IBC timeout; not implemented`, action);
+        break;
+
       case END_BLOCK:
         return true;
 
@@ -53,7 +74,7 @@ export default function makeBlockManager({
   let decohered;
   let saveTime = 0;
 
-  async function blockManager(action) {
+  async function blockManager(action, sendToCosmosPort) {
     if (decohered) {
       throw decohered;
     }
