@@ -75,6 +75,7 @@ export function makeHandledPromise(Promise) {
       // presences are final, so it is ok to propagate this
       // upstream.
       while (target !== p) {
+        promiseToPromise.delete(target);
         promiseToPresence.set(target, presence);
         target = p;
       }
@@ -119,6 +120,8 @@ export function makeHandledPromise(Promise) {
         }
         if (targetP && targetP !== handledP) {
           promiseToPromise.set(handledP, targetP);
+        } else {
+          promiseToPromise.delete(handledP);
         }
         resolve(value);
       };
@@ -260,7 +263,7 @@ export function makeHandledPromise(Promise) {
         // Resolve with the target when it's ready.
         handledResolve(target);
 
-        //        /*
+                /*
         const existingUnfulfilledHandler = promiseToHandler.get(target);
         if (existingUnfulfilledHandler) {
           // Reuse the unfulfilled handler.
@@ -285,7 +288,7 @@ export function makeHandledPromise(Promise) {
         // Remove the mapping, as we don't need a handler.
         promiseToHandler.delete(handledP);
         return continueForwarding();
-        //        */
+        // */
       } catch (e) {
         handledReject(e);
       }
