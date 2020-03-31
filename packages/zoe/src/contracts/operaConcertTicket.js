@@ -24,7 +24,7 @@ export const makeContract = harden(async zoe => {
 
   // Create the internal ticket mint
   const { issuer, mint, amountMath } = produceIssuer('Opera tickets', 'set');
-  await zoe.addNewIssuer(issuer, 'Auditorium');
+  await zoe.addNewIssuer(issuer, 'Ticket');
 
   // create Zoe helpers after zoe.addNewIssuer because of https://github.com/Agoric/agoric-sdk/issues/802
   const {
@@ -38,7 +38,7 @@ export const makeContract = harden(async zoe => {
   
   const { 
     terms: { show, start, count, expectedAmountPerTicket }, 
-    issuerKeywordRecord: {Buyer: buyerIssuer}
+    issuerKeywordRecord: {Money: moneyIssuer}
   } = zoe.getInstanceRecord();
   
   const availableTicketDescriptionByNumber = new Map(Array(count)
@@ -50,21 +50,21 @@ export const makeContract = harden(async zoe => {
   const auditoriumSeat = harden({
     async getSalesPayment(){
       const salesPaymentsP = Promise.all([...salesPayouts])
-        .then(payouts => Promise.all(payouts.map(payout => payout.Buyer)))
+        .then(payouts => Promise.all(payouts.map(payout => payout.Money)))
       
-      return salesPaymentsP.then(salesPayments => buyerIssuer.combine(salesPayments));
+      return salesPaymentsP.then(salesPayments => moneyIssuer.combine(salesPayments));
     }
   })
   const auditoriumInvite = zoe.makeInvite(auditoriumSeat);
 
-  const makeBuyerInvite = () => {
+  const makeMoneyInvite = () => {
     const seat = harden({
       performExchange: async () => {
-        const buyerInviteHandle = inviteHandle;
-        const buyerOffer = zoe.getOffer(buyerInviteHandle)
-        const buyerWant = buyerOffer.proposal.want.Auditorium;
+        const moneyInviteHandle = inviteHandle;
+        const moneyOffer = zoe.getOffer(moneyInviteHandle)
+        const moneyWant = moneyOffer.proposal.want.Ticket;
 
-        const ticketNumbers = buyerWant.extent.map(e => e.number)
+        const ticketNumbers = moneyWant.extent.map(e => e.number)
 
         const unavailableTicketNumbers = ticketNumbers.filter(number => (!availableTicketDescriptionByNumber.has(number)))
 
@@ -82,16 +82,16 @@ export const makeContract = harden(async zoe => {
         const {payout} = await zoeService.redeem(
           invite,
           harden({
-            want: {Buyer: buyerIssuer.getAmountMath().make(expectedAmountPerTicket.extent*ticketNumbers.length)}, 
-            give: {Auditorium: ticketsAmount}
+            want: {Money: moneyIssuer.getAmountMath().make(expectedAmountPerTicket.extent*ticketNumbers.length)}, 
+            give: {Ticket: ticketsAmount}
           }),
-          harden({Auditorium: mint.mintPayment(ticketsAmount)}) // mint and pass to Zoe right away
+          harden({Ticket: mint.mintPayment(ticketsAmount)}) // mint and pass to Zoe right away
         )
 
         salesPayouts.add(payout)
 
         try{
-          swap(ticketInviteHandle, buyerInviteHandle)
+          swap(ticketInviteHandle, moneyInviteHandle)
         }
         catch(e){
           throw e;
@@ -108,7 +108,7 @@ export const makeContract = harden(async zoe => {
   return harden({
     invite: auditoriumInvite,
     publicAPI: { 
-      makeBuyerInvite,
+      makeMoneyInvite,
       getTicketIssuer(){
         return issuer;
       },

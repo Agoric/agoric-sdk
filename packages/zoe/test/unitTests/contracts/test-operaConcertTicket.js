@@ -34,7 +34,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     const { source, moduleFormat } = await bundleSource(operaConcertTicketRoot);
 
     const installationHandle = zoe.install(source, moduleFormat);
-    const { invite: auditoriumInvite } = await zoe.makeInstance(installationHandle, harden({Buyer: moolaIssuer}), {
+    const { invite: auditoriumInvite } = await zoe.makeInstance(installationHandle, harden({Money: moolaIssuer}), {
       show: "Steven Universe, the Opera",
       start: "Web, March 25th 2020 at 8pm",
       count: 3,
@@ -60,7 +60,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     publicAPI = pub;
     _getSalesPayment = getSalesPayment;
   }
-  t.equal(typeof publicAPI.makeBuyerInvite, 'function', 'makeBuyerInvite should be a function')
+  t.equal(typeof publicAPI.makeMoneyInvite, 'function', 'makeMoneyInvite should be a function')
   t.equal(typeof publicAPI.getTicketIssuer, 'function', 'getTicketIssuer should be a function')
   t.equal(typeof publicAPI.getAvailableTickets, 'function', 'getAvailableTickets should be a function')
 
@@ -72,7 +72,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     alicePurse.deposit(moolaMint.mintPayment(moola(100)));
 
     // Alice makes an invite
-    const aliceInvite = inviteIssuer.claim(publicAPI.makeBuyerInvite().invite)
+    const aliceInvite = inviteIssuer.claim(publicAPI.makeMoneyInvite().invite)
     const {
       extent: [{ instanceHandle: instanceHandleOfAlice }],
     } = await inviteIssuer.getAmountOf(aliceInvite);
@@ -94,20 +94,20 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     t.ok([...availableTickets.keys()].includes(3), `availableTickets contains ticket number 3`)
 
     const aliceProposal = harden({
-      give: {Buyer: termsOfAlice.expectedAmountPerTicket},
-      want: {Auditorium: publicAPI.getTicketIssuer().getAmountMath().make(
+      give: {Money: termsOfAlice.expectedAmountPerTicket},
+      want: {Ticket: publicAPI.getTicketIssuer().getAmountMath().make(
         harden([ [...availableTickets.values()].find(t => t.number === 1) ])
       )},
     });
     const alicePaymentForTicket = await alicePurse.withdraw(termsOfAlice.expectedAmountPerTicket);
 
-    const {seat: {performExchange}, payout: payoutP} = await zoe.redeem(aliceInvite, aliceProposal, {Buyer: alicePaymentForTicket})
+    const {seat: {performExchange}, payout: payoutP} = await zoe.redeem(aliceInvite, aliceProposal, {Money: alicePaymentForTicket})
     
     await performExchange(); // this function call may be useless? See https://github.com/Agoric/agoric-sdk/issues/783
 
     const alicePayout = await payoutP
 
-    const aliceTicketPayment = await publicAPI.getTicketIssuer().claim(alicePayout.Auditorium);
+    const aliceTicketPayment = await publicAPI.getTicketIssuer().claim(alicePayout.Ticket);
     const aliceBoughtTicketAmount = await publicAPI.getTicketIssuer().getAmountOf(aliceTicketPayment)
 
     t.equal(aliceBoughtTicketAmount.extent[0].show, "Steven Universe, the Opera", 'Alice should have receieved the ticket for the correct show')
@@ -120,7 +120,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     bobPurse.deposit(moolaMint.mintPayment(moola(100)));
 
     // Bob makes an invite
-    const bobInvite = inviteIssuer.claim(publicAPI.makeBuyerInvite().invite)
+    const bobInvite = inviteIssuer.claim(publicAPI.makeMoneyInvite().invite)
     const {
       extent: [{ instanceHandle: instanceHandleOfBob }],
     } = await inviteIssuer.getAmountOf(bobInvite);
@@ -137,12 +137,12 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     }]))
 
     const bobProposal = harden({
-      give: {Buyer: expectedAmountPerTicketOfBob},
-      want: {Auditorium: ticket1Amount},
+      give: {Money: expectedAmountPerTicketOfBob},
+      want: {Ticket: ticket1Amount},
     });
     const bobFirstPaymentForTicket = await bobPurse.withdraw(expectedAmountPerTicketOfBob);
   
-    const {seat: {performExchange}, payout: payoutP} = await zoe.redeem(bobInvite, bobProposal, {Buyer: bobFirstPaymentForTicket})
+    const {seat: {performExchange}, payout: payoutP} = await zoe.redeem(bobInvite, bobProposal, {Money: bobFirstPaymentForTicket})
 
     await performExchange()
     .then(() => t.fail('performExchange from Bob should throw'))
@@ -150,14 +150,14 @@ The Opera is told about the show being sold out. It gets all the moolas from the
 
     const firstBobPayout = await payoutP;
 
-    const bobFirstTicketAmount = await publicAPI.getTicketIssuer().getAmountOf(firstBobPayout.Auditorium);
-    const bobFirstRefundAmount = await moolaIssuer.getAmountOf(firstBobPayout.Buyer)
+    const bobFirstTicketAmount = await publicAPI.getTicketIssuer().getAmountOf(firstBobPayout.Ticket);
+    const bobFirstRefundAmount = await moolaIssuer.getAmountOf(firstBobPayout.Money)
 
     t.equal(bobFirstTicketAmount.extent.length, 0, 'Bob should not receive ticket #1')
     t.equal(bobFirstRefundAmount.extent, 22, 'Bob should get a refund after trying to get ticket #1')
   
     // deposit the refund back to the purse
-    bobPurse.deposit(await firstBobPayout.Buyer)
+    bobPurse.deposit(await firstBobPayout.Money)
 
     
     const availableTickets = await publicAPI.getAvailableTickets()
@@ -170,7 +170,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
 
     
     // Second attempt: Bob buys tickets 2 and 3
-    const bobInvite2 = inviteIssuer.claim(publicAPI.makeBuyerInvite().invite)
+    const bobInvite2 = inviteIssuer.claim(publicAPI.makeMoneyInvite().invite)
 
     const ticket2and3Amount = publicAPI.getTicketIssuer().getAmountMath().make(harden([{
         show: termsOfBob.show,
@@ -185,18 +185,18 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     ]))
 
     const bobSecondProposal = harden({
-      give: {Buyer: moola(2*22)},
-      want: {Auditorium: ticket2and3Amount},
+      give: {Money: moola(2*22)},
+      want: {Ticket: ticket2and3Amount},
     });
     const bobSecondPaymentForTicket = await bobPurse.withdraw(moola(2*22));
   
-    const {seat: {performExchange: performExchange2}, payout: payout2P} = await zoe.redeem(bobInvite2, bobSecondProposal, {Buyer: bobSecondPaymentForTicket})
+    const {seat: {performExchange: performExchange2}, payout: payout2P} = await zoe.redeem(bobInvite2, bobSecondProposal, {Money: bobSecondPaymentForTicket})
 
     performExchange2()
 
     const secondBobPayout = await payout2P;
 
-    const bobSecondTicketAmount = await publicAPI.getTicketIssuer().getAmountOf(secondBobPayout.Auditorium);
+    const bobSecondTicketAmount = await publicAPI.getTicketIssuer().getAmountOf(secondBobPayout.Ticket);
 
     t.equal(bobSecondTicketAmount.extent.length, 2, 'Bob should have received 2 tickets')
     t.ok(bobSecondTicketAmount.extent.find(t => t.number === 2), 'Bob should have received tickets #2')
