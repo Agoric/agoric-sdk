@@ -169,3 +169,91 @@ test('liveslots pipelines to syscall.send', async t => {
 
   t.end();
 });
+
+function endOfCrank() {
+  return new Promise(resolve => setImmediate(() => resolve()));
+}
+
+test('liveslots pipeline/non-pipeline calls', async t => {
+  const log = [];
+
+  const syscall = {
+    send(targetSlot, method, args, resultSlot) {
+      log.push({ type: 'send', targetSlot, method, args, resultSlot });
+    },
+    subscribe(target) {
+      log.push({ type: 'subscribe', target });
+    },
+  };
+  function build(E, _D) {
+    let p1;
+    return harden({
+      one(p) {
+        p1 = p;
+        E(p1).pipe1();
+        p1.then(o2 => E(o2).nonpipe2());
+      },
+      two() {
+        E(p1).nonpipe3();
+      },
+    });
+  }
+  const dispatch = makeLiveSlots(syscall, {}, build, 'vatA');
+
+  t.equal(log.length, 0);
+
+  const rootA = 'o+0';
+  const p1 = 'p-1';
+  const o2 = 'o-2';
+  const slot0arg = { '@qclass': 'slot', index: 0 };
+
+  // function deliver(target, method, argsdata, result) {
+  dispatch.deliver(rootA, 'one', capargs([slot0arg], [p1]));
+  await endOfCrank();
+  // the vat should subscribe to the inbound p1 during deserialization
+  t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
+  // then it pipeline-sends `pipe1` to p1, with a new result promise
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: p1,
+    method: 'pipe1',
+    args: capargs([], []),
+    resultSlot: 'p+5',
+  });
+  // then it subscribes to the result promise too
+  t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+5' });
+  t.equal(log.length, 0);
+
+  // now we tell it the promise has resolved, to object 'o2'
+  // function notifyFulfillToPresence(promiseID, slot) {
+  dispatch.notifyFulfillToPresence(p1, o2);
+  await endOfCrank();
+  // this allows E(o2).nonpipe2() to go out, which was not pipelined
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: o2,
+    method: 'nonpipe2',
+    args: capargs([], []),
+    resultSlot: 'p+6',
+  });
+  // and nonpipe2() wants a result
+  t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+6' });
+  t.equal(log.length, 0);
+
+  // now call two(), which should send nonpipe3 to o2, not p1, since p1 has
+  // been resolved
+  dispatch.deliver(rootA, 'two', capargs([], []));
+  await endOfCrank();
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: o2,
+    method: 'nonpipe3',
+    args: capargs([], []),
+    resultSlot: 'p+7',
+  });
+  // and nonpipe3() wants a result
+  t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+7' });
+  t.equal(log.length, 0);
+
+  t.end();
+});
