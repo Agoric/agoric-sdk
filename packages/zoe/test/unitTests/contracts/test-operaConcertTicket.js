@@ -4,9 +4,8 @@ import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 import harden from '@agoric/harden';
 import produceIssuer from '@agoric/ertp';
-
-
 import { makeZoe } from '../../../src/zoe';
+
 const operaConcertTicketRoot = `${__dirname}/../../../src/contracts/operaConcertTicket`;
 
 test(`__Test Scenario__
@@ -64,6 +63,8 @@ The Opera is told about the show being sold out. It gets all the moolas from the
   t.equal(typeof publicAPI.getTicketIssuer, 'function', 'getTicketIssuer should be a function')
   t.equal(typeof publicAPI.getAvailableTickets, 'function', 'getAvailableTickets should be a function')
 
+  const ticketIssuer = publicAPI.getTicketIssuer()
+  const ticketAmountMath = ticketIssuer.getAmountMath()
 
   
   { // === Alice part ===
@@ -93,11 +94,14 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     t.ok([...availableTickets.keys()].includes(2), `availableTickets contains ticket number 2`)
     t.ok([...availableTickets.keys()].includes(3), `availableTickets contains ticket number 3`)
 
+    // find the extent corresponding to ticket #1
+    const ticket1Extent = [...availableTickets.values()].find(t => t.number === 1);
+    // make the corresponding amount
+    const ticket1Amount = ticketAmountMath.make( harden([ ticket1Extent ]) )
+
     const aliceProposal = harden({
       give: {Money: termsOfAlice.expectedAmountPerTicket},
-      want: {Ticket: publicAPI.getTicketIssuer().getAmountMath().make(
-        harden([ [...availableTickets.values()].find(t => t.number === 1) ])
-      )},
+      want: {Ticket: ticket1Amount }
     });
     const alicePaymentForTicket = await alicePurse.withdraw(termsOfAlice.expectedAmountPerTicket);
 
@@ -107,8 +111,8 @@ The Opera is told about the show being sold out. It gets all the moolas from the
 
     const alicePayout = await payoutP
 
-    const aliceTicketPayment = await publicAPI.getTicketIssuer().claim(alicePayout.Ticket);
-    const aliceBoughtTicketAmount = await publicAPI.getTicketIssuer().getAmountOf(aliceTicketPayment)
+    const aliceTicketPayment = await ticketIssuer.claim(alicePayout.Ticket);
+    const aliceBoughtTicketAmount = await ticketIssuer.getAmountOf(aliceTicketPayment)
 
     t.equal(aliceBoughtTicketAmount.extent[0].show, "Steven Universe, the Opera", 'Alice should have receieved the ticket for the correct show')
     t.equal(aliceBoughtTicketAmount.extent[0].number, 1, 'Alice should have receieved the ticket for the correct number')
@@ -130,7 +134,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     const {expectedAmountPerTicket: expectedAmountPerTicketOfBob} = termsOfBob;
 
     // Bob does NOT check available tickets and tries to buy the ticket number 1 (already bought by Alice, but he doesn't know)
-    const ticket1Amount = publicAPI.getTicketIssuer().getAmountMath().make(harden([{
+    const ticket1Amount = ticketAmountMath.make(harden([{
       show: termsOfBob.show,
       start: termsOfBob.start,
       number: 1
@@ -150,7 +154,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
 
     const firstBobPayout = await payoutP;
 
-    const bobFirstTicketAmount = await publicAPI.getTicketIssuer().getAmountOf(firstBobPayout.Ticket);
+    const bobFirstTicketAmount = await ticketIssuer.getAmountOf(firstBobPayout.Ticket);
     const bobFirstRefundAmount = await moolaIssuer.getAmountOf(firstBobPayout.Money)
 
     t.equal(bobFirstTicketAmount.extent.length, 0, 'Bob should not receive ticket #1')
@@ -172,7 +176,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     // Second attempt: Bob buys tickets 2 and 3
     const bobInvite2 = inviteIssuer.claim(publicAPI.makeBuyerInvite())
 
-    const ticket2and3Amount = publicAPI.getTicketIssuer().getAmountMath().make(harden([{
+    const ticket2and3Amount = ticketAmountMath.make(harden([{
         show: termsOfBob.show,
         start: termsOfBob.start,
         number: 2
@@ -196,7 +200,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
 
     const secondBobPayout = await payout2P;
 
-    const bobSecondTicketAmount = await publicAPI.getTicketIssuer().getAmountOf(secondBobPayout.Ticket);
+    const bobSecondTicketAmount = await ticketIssuer.getAmountOf(secondBobPayout.Ticket);
 
     t.equal(bobSecondTicketAmount.extent.length, 2, 'Bob should have received 2 tickets')
     t.ok(bobSecondTicketAmount.extent.find(t => t.number === 2), 'Bob should have received tickets #2')

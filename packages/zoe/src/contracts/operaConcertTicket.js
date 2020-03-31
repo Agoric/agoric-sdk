@@ -112,6 +112,7 @@ export const makeContract = harden(async zoe => {
       getTicketIssuer(){
         return issuer;
       },
+      // This function returns a Map<TicketNumber, TicketExtent>
       getAvailableTickets(){
         return new Map(availableTicketDescriptionByNumber);
       }
