@@ -170,11 +170,7 @@ test('liveslots pipelines to syscall.send', async t => {
   t.end();
 });
 
-function endOfCrank() {
-  return new Promise(resolve => setImmediate(() => resolve()));
-}
-
-test('liveslots pipeline/non-pipeline calls', async t => {
+function buildSyscall() {
   const log = [];
 
   const syscall = {
@@ -184,7 +180,27 @@ test('liveslots pipeline/non-pipeline calls', async t => {
     subscribe(target) {
       log.push({ type: 'subscribe', target });
     },
+    fulfillToPresence(promiseID, slot) {
+      log.push({ type: 'fulfillToPresence', promiseID, slot });
+    },
+    fulfillToData(promiseID, data) {
+      log.push({ type: 'fulfillToData', promiseID, data });
+    },
+    reject(promiseID, data) {
+      log.push({ type: 'reject', promiseID, data });
+    },
   };
+
+  return { log, syscall };
+}
+
+function endOfCrank() {
+  return new Promise(resolve => setImmediate(() => resolve()));
+}
+
+test('liveslots pipeline/non-pipeline calls', async t => {
+  const { log, syscall } = buildSyscall();
+
   function build(E, _D) {
     let p1;
     return harden({
@@ -256,4 +272,116 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   t.equal(log.length, 0);
 
   t.end();
+});
+
+async function doOutboundPromise(t, mode) {
+  const { log, syscall } = buildSyscall();
+
+  function build(E, _D) {
+    return harden({
+      run(target, resolution) {
+        let p;
+        console.log(`resolution:`, resolution);
+        if (resolution === 'reject') {
+          // eslint-disable-next-line prefer-promise-reject-errors
+          p = Promise.reject('reject');
+        } else {
+          p = Promise.resolve(resolution); // resolves in future turn
+        }
+        E(target).one(p); // sends promise
+        // then sends resolution/rejection
+
+        // Queue up a call that includes the promise again. This will run
+        // *after* the promise has been resolved. Our current implementation
+        // will use the same promise identifier.
+        Promise.resolve().then(() => E(target).two(p));
+      },
+    });
+  }
+  const dispatch = makeLiveSlots(syscall, {}, build, 'vatA');
+
+  t.equal(log.length, 0);
+
+  const rootA = 'o+0';
+  const target = 'o-1';
+  const expectedP1 = 'p+5';
+  const expectedResultP1 = 'p+6';
+  const expectedResultP2 = 'p+7';
+  const slot0arg = { '@qclass': 'slot', index: 0 };
+
+  let resolution;
+  let fulfillmentSyscall;
+  if (mode === 'to presence') {
+    resolution = slot0arg;
+    fulfillmentSyscall = {
+      type: 'fulfillToPresence',
+      promiseID: expectedP1,
+      slot: target,
+    };
+  } else if (mode === 'to data') {
+    resolution = 4;
+    fulfillmentSyscall = {
+      type: 'fulfillToData',
+      promiseID: expectedP1,
+      data: capargs(4, []),
+    };
+  } else if (mode === 'reject') {
+    resolution = 'reject';
+    fulfillmentSyscall = {
+      type: 'reject',
+      promiseID: expectedP1,
+      data: capargs('reject', []),
+    };
+  } else {
+    throw Error(`unknown mode ${mode}`);
+  }
+
+  // function deliver(target, method, argsdata, result) {
+  dispatch.deliver(rootA, 'run', capargs([slot0arg, resolution], [target]));
+  await endOfCrank();
+
+  // The vat should send 'one' and mention the promise for the first time. It
+  // does not subscribe to its own promise.
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: target,
+    method: 'one',
+    args: capargs([slot0arg], [expectedP1]),
+    resultSlot: expectedResultP1,
+  });
+  // then it subscribes to the result promise
+  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResultP1 });
+
+  // on the next turn, the promise is resolved/rejected, and the vat notifies the
+  // kernel
+  t.deepEqual(log.shift(), fulfillmentSyscall);
+
+  // On the next turn, 'two' is sent, with the previously-resolved promise.
+  // In our current implementation, this re-uses the same Promise ID. Once we
+  // switch to retiring promises after they've been resolved, this will use a
+  // fresh ID.
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: target,
+    method: 'two',
+    args: capargs([slot0arg], [expectedP1]), // this will change
+    resultSlot: expectedResultP2,
+  });
+  // and again it subscribes to the result promise
+  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResultP2 });
+  t.equal(log.length, 0);
+
+  t.end();
+}
+
+test('liveslots does not retire outbound promise IDs after fulfillToPresence', async t => {
+  await doOutboundPromise(t, 'to presence');
+});
+
+test('liveslots does not retire outbound promise IDs after fulfillToData', async t => {
+  await doOutboundPromise(t, 'to data');
+});
+
+test('liveslots does not retire outbound promise IDs after reject', async t => {
+  await doOutboundPromise(t, 'reject');
 });
