@@ -16,12 +16,13 @@ import (
 )
 
 type ibcPacketAction struct {
-	Type        string              `json:"type"`
-	Packet      channeltypes.Packet `json:"packet"`
-	ChannelPort int                 `json:"channelPort"`
-	StoragePort int                 `json:"storagePort"`
-	BlockHeight int64               `json:"blockHeight"`
-	BlockTime   int64               `json:"blockTime"`
+	Type           string              `json:"type"`
+	Packet         channeltypes.Packet `json:"packet"`
+	Tuple          ChannelTuple        `json:"tuple"`
+	IBCHandlerPort int                 `json:"ibcHandlerPort"`
+	StoragePort    int                 `json:"storagePort"`
+	BlockHeight    int64               `json:"blockHeight"`
+	BlockTime      int64               `json:"blockTime"`
 }
 
 type deliverInboundAction struct {
@@ -73,15 +74,29 @@ func handleIBCPacket(ctx sdk.Context, keeper Keeper, actionType string, packet c
 
 	// The channel lifetime is longer than just one message.
 	pkt := packet.(channeltypes.Packet)
-	channelPort := GetIBCChannelPortHandler(ctx, keeper, pkt)
+
+	ibcHandlerPort := RegisterPortHandler(NewIBCChannelHandler(ctx, keeper, &pkt))
+	defer UnregisterPortHandler(ibcHandlerPort)
+
+	tuple := ChannelTuple{
+		Source: ChannelEndpoint{
+			Channel: pkt.SourceChannel,
+			Port:    pkt.SourcePort,
+		},
+		Destination: ChannelEndpoint{
+			Channel: pkt.DestinationChannel,
+			Port:    pkt.DestinationPort,
+		},
+	}
 
 	action := &ibcPacketAction{
-		Type:        actionType,
-		Packet:      pkt,
-		StoragePort: storagePort,
-		ChannelPort: channelPort,
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
+		Type:           actionType,
+		Packet:         pkt,
+		Tuple:          tuple,
+		StoragePort:    storagePort,
+		IBCHandlerPort: ibcHandlerPort,
+		BlockHeight:    ctx.BlockHeight(),
+		BlockTime:      ctx.BlockTime().Unix(),
 	}
 
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)

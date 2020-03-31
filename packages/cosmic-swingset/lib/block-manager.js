@@ -1,4 +1,5 @@
 import anylogger from 'anylogger';
+import stableStringify from '@agoric/swingset-vat/src/kernel/json-stable-stringify';
 
 const log = anylogger('block-manager');
 
@@ -8,6 +9,13 @@ const END_BLOCK = 'END_BLOCK';
 const COMMIT_BLOCK = 'COMMIT_BLOCK';
 const IBC_PACKET = 'IBC_PACKET';
 const IBC_TIMEOUT = 'IBC_TIMEOUT';
+
+// This works for both *intArray, string, and Buffer.
+const getBytesToBase64 = data => Buffer.from(data).toString('base64');
+
+// FIXME: use an immutable Uint8Array.
+const getBase64ToBytes = data64 =>
+  Uint8Array.from(Buffer.from(data64, 'base64'));
 
 export default function makeBlockManager(
   {
@@ -22,6 +30,64 @@ export default function makeBlockManager(
 ) {
   let computedHeight = savedHeight;
   let runTime = 0;
+  let ibcHandlerPort = 0;
+
+  const ibcTupleToChannel = new Map();
+  const ibcChannelToPort = new Map();
+
+  const getIBCChannel = ({
+    ibcHandlerPort: actionIbcHandlerPort,
+    tuple: rawTuple,
+    channelPort,
+  }) => {
+    // Update our handler port.
+    ibcHandlerPort = actionIbcHandlerPort;
+
+    // Cache according to tuple (never changes during a connection)!
+    const tuple = stableStringify(rawTuple);
+    let ibcChannel = ibcTupleToChannel.get(tuple);
+    if (ibcChannel) {
+      ibcChannelToPort.set(ibcChannel, channelPort);
+      return ibcChannel;
+    }
+
+    const sendToChannelHandler = msg =>
+      sendToCosmosPort(
+        ibcHandlerPort,
+        JSON.stringify({ ...msg, tuple: rawTuple }),
+      );
+
+    ibcChannel = {
+      // Send a raw packet to this channel.
+      send(rawPacket) {
+        return sendToChannelHandler({
+          method: 'send',
+          data64: getBytesToBase64(rawPacket),
+        });
+      },
+      // Ack the current packet.
+      ack(reply) {
+        return sendToChannelHandler({
+          method: 'ack',
+          data64: getBytesToBase64(reply),
+        });
+      },
+      // Close the channel.
+      close() {
+        const ret = sendToChannelHandler({
+          method: 'close',
+        });
+        ibcChannelToPort.delete(ibcChannel);
+        ibcTupleToChannel.delete(tuple);
+        return ret;
+      },
+    };
+
+    // Keep this channel associated with a tuple (which stays the same, even after restart).
+    ibcTupleToChannel.set(tuple, ibcChannel);
+    return ibcChannel;
+  };
+
   async function kernelPerformAction(action) {
     const start = Date.now();
     const finish = _ => (runTime += Date.now() - start);
@@ -43,14 +109,13 @@ export default function makeBlockManager(
         break;
 
       case IBC_PACKET: {
-        // FIXME: We just ack and disconnect.
-        sendToCosmosPort(action.channelPort, {
-          method: 'ack',
-          data64: Buffer.from(JSON.stringify(action)).toString('base64'),
-        });
-        sendToCosmosPort(action.channelPort, {
-          method: 'close',
-        });
+        console.error(`FIXME: Got IBC packet; just pingpong`, action);
+        const ibcChannel = getIBCChannel(action);
+
+        // FIXME: We just ack, send, and disconnect.
+        ibcChannel.ack(JSON.stringify(action));
+        ibcChannel.send(`pong:${JSON.stringify(action)}`);
+        ibcChannel.close();
         break;
       }
 

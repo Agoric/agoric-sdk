@@ -12,27 +12,25 @@ import (
 
 // FIXME: How to tell the caller when this is a new channel?
 
-type channelEndpoint struct {
+type ChannelEndpoint struct {
 	Port    string `json:"port"`
 	Channel string `json:"channel"`
 }
 
-type channelTuple struct {
-	Destination channelEndpoint
-	Source channelEndpoint
+type ChannelTuple struct {
+	Destination ChannelEndpoint `json:"dst"`
+	Source ChannelEndpoint	`json:"src"`
 }
 
 type channelHandler struct {
 	Keeper      Keeper
 	Context     sdk.Context
-	Destination channelEndpoint
 	CurrentPacket *channeltypes.Packet
-	ChannelPort  int
-	Tuple        channelTuple
 }
 
 type channelMessage struct {
 	Method string `json:"method"`
+	Tuple  ChannelTuple `json:"tuple"`
 	Data64   string `json:"data64"`
 }
 
@@ -45,42 +43,11 @@ func (cm channelMessage) GetData() []byte {
 	return data
 }
 
-var channelHandlers map[channelTuple]*channelHandler
-
-func init() {
-	channelHandlers = make(map[channelTuple]*channelHandler)
-}
-
-func GetIBCChannelPortHandler(ctx sdk.Context, keeper Keeper, packet channeltypes.Packet) int {
-	tuple := channelTuple {
-		Destination: channelEndpoint{
-			Port:    packet.DestinationPort,
-			Channel: packet.DestinationChannel,
-		},
-		Source: channelEndpoint{
-			Port:    packet.SourcePort,
-			Channel: packet.SourceChannel,
-		},
-	};
-
-	// lookup existing channel based on the connection tuple
-	if ch, ok := channelHandlers[tuple]; ok {
-		ch.CurrentPacket = &packet
-		return ch.ChannelPort
-	}
-
-	ch := NewChannelHandler(ctx, keeper, tuple)
-	ch.CurrentPacket = &packet
-	ch.ChannelPort = RegisterPortHandler(ch)
-	channelHandlers[tuple] = ch
-	return ch.ChannelPort
-}
-
-func NewChannelHandler(ctx sdk.Context, keeper Keeper, tuple channelTuple) *channelHandler {
+func NewIBCChannelHandler(ctx sdk.Context, keeper Keeper, packet *channeltypes.Packet) *channelHandler {
 	return &channelHandler{
 		Context: ctx,
 		Keeper: keeper,
-		Tuple: tuple,
+		CurrentPacket: packet,
 	}
 }
 
@@ -107,11 +74,7 @@ func (ch *channelHandler) Receive(str string) (ret string, err error) {
 	
 	case "close":
 		// Make sure our port goes away.
-		defer func() {
-			UnregisterPortHandler(ch.ChannelPort)
-			delete(channelHandlers, ch.Tuple)
-		}()
-		if err = ch.Keeper.ChanCloseInit(ch.Context, ch.Tuple.Destination.Port, ch.Tuple.Destination.Channel); err != nil {
+		if err = ch.Keeper.ChanCloseInit(ch.Context, msg.Tuple.Destination.Port, msg.Tuple.Destination.Channel); err != nil {
 			return "", err
 		}
 		return "true", nil		
@@ -119,8 +82,8 @@ func (ch *channelHandler) Receive(str string) (ret string, err error) {
 	case "send":
 		seq, ok := ch.Keeper.GetNextSequenceSend(
 			ch.Context,
-			ch.Tuple.Destination.Channel,
-			ch.Tuple.Destination.Port,
+			msg.Tuple.Destination.Channel,
+			msg.Tuple.Destination.Port,
 		)
 		if !ok {
 			return "", fmt.Errorf("unknown sequence number")
@@ -131,8 +94,8 @@ func (ch *channelHandler) Receive(str string) (ret string, err error) {
 
 		packet := channeltypes.NewPacket(
 			msg.GetData(), seq,
-			ch.Tuple.Source.Port, ch.Tuple.Source.Channel,
-			ch.Tuple.Destination.Port, ch.Tuple.Destination.Channel,
+			msg.Tuple.Source.Port, msg.Tuple.Source.Channel,
+			msg.Tuple.Destination.Port, msg.Tuple.Destination.Channel,
 			uint64(ch.Context.BlockHeight() + blockTimeout),
 		)
 		if err := ch.Keeper.SendPacket(ch.Context, packet); err != nil{
