@@ -30,6 +30,47 @@ function build(syscall, _state, makeRoot, forVatID) {
   }
 
   // Make a handled Promise that enqueues kernel messages.
+  //
+  // at present, for every promise we receive (a `p-NN` reference for which
+  // we build a Promise object for application-level code) that eventually
+  // resolves to a Presence (i.e. an `o-NN` that represents an object which
+  // we might send messages to, for which we create a Presence to hand up to
+  // our application-level code), we wind up calling makeQueued() twice.
+  //
+  // The first time is during importPromise(), where we call
+  // makeQueued('p-NN') as we build the HandledPromise that uses the
+  // unfulfilledHandler (the second argument to `new HandledPromise()` to
+  // close over 'p-NN'. The unfulfilledHandler is used when applications do
+  // E(p).foo() or p~.foo(), aimed at the Promise they receive. This
+  // HandledPromise does not ever call the fulfilledHandler, because we never
+  // call `pr.resPres` or the resolveWithPresence function.
+  //
+  // The second time is during notifyFulfillToPresence, when it does
+  // convertSlotToVal(o-NN) and that function must handle the `type ==
+  // 'object'` case. Here, we call makeQueued('o-NN') to create a
+  // HandledPromise, then immediately call `pr.resPres` to obtain the
+  // generated Presence object, and then throw away the HandledPromise. (*we*
+  // throw it away, however the HandledPromise implementation remembers it,
+  // and it can be retrieved by `HandledPromise.resolve(presence)`, or in the
+  // internals of an E(presence).foo() call). In this case, we care about the
+  // *fulfilledHandler*, not the unfulfilledHandler: the HandledPromise is
+  // never revealed to anyone before it is resolved-to-presence, which means
+  // its unfulfilledHandler will never be used.
+  //
+  // When notifyFulfillToPresence() resolves the first (importPromise)
+  // HandledPromise with a Presence that's associated with the second
+  // promise, all the handlers from the first are replaced with those from
+  // the second. The first promise becomes behaviorally indistinguishable
+  // from the second (they still have distinct identities, but all method
+  // invocations will act as if they are the same).
+  //
+  //  We might consider de-factoring this in the future, into two separate
+  //  functions for these two cases. The original makeQueued('p-NN') could be
+  //  changed to only set the unfulfilledHandler, and omit `pr.resPres`. The
+  //  second would be named makePresence('o-NN'): it would call
+  //  resolveWithPresence() immediately, wouldn't set unfulfilledHandler, and
+  //  would only return the Presence. This might be clearer.
+
   function makeQueued(slot) {
     /* eslint-disable no-use-before-define */
     const handler = {
@@ -43,9 +84,9 @@ function build(syscall, _state, makeRoot, forVatID) {
     const pr = {};
     pr.p = new HandledPromise((res, rej, resolveWithPresence) => {
       pr.rej = rej;
-      pr.resPres = () => resolveWithPresence(handler);
+      pr.resPres = () => resolveWithPresence(handler); // fulfilledHandler
       pr.res = res;
-    }, handler);
+    }, handler); // unfulfilledHandler
     // We harden this Promise because it feeds importPromise(), which is
     // where remote promises inside inbound arguments and resolutions are
     // created. Both places are additionally hardened by m.unserialize, but
