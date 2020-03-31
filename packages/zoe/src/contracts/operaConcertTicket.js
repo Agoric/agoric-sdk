@@ -90,13 +90,9 @@ export const makeContract = harden(async zoe => {
 
         salesPayouts.add(payout)
 
-        try{
-          swap(ticketInviteHandle, moneyInviteHandle)
-        }
-        catch(e){
-          throw e;
-        }
-        // swap was successful
+        swap(ticketInviteHandle, moneyInviteHandle)
+        
+        // swap may throw. It we're here, swap was successful
         for(const number of ticketNumbers)
           availableTicketDescriptionByNumber.delete(number)
       },
