@@ -19,6 +19,7 @@ Alice buys ticket #1
 Bob tries to buy ticket 1 and fails. He buys ticket #2 and #3
 
 The Opera is told about the show being sold out. It gets all the moolas from the sale`, async t => {
+
   // Setup initial conditions
   const {
     mint: moolaMint,
@@ -28,68 +29,83 @@ The Opera is told about the show being sold out. It gets all the moolas from the
 
   const zoe = makeZoe({ require });
   const inviteIssuer = zoe.getInviteIssuer();
+  
+  // === Initial Opera de Bordeaux part ===
+  const contractReadyP = bundleSource(operaConcertTicketRoot).then(({ source, moduleFormat }) => {
+    console.log('Opera part')
 
-  let publicAPI;
-  let _getSalesPayment; // eslint-disable-line no-underscore-dangle
-
-  {
-    // === Initial Opera de Bordeaux part ===
-    const { source, moduleFormat } = await bundleSource(operaConcertTicketRoot);
-
+    const expectedAmountPerTicket = moola(22);
+    
     const installationHandle = zoe.install(source, moduleFormat);
-    const { invite: auditoriumInvite } = await zoe.makeInstance(
+
+    return zoe.makeInstance(
       installationHandle,
       harden({ Money: moolaIssuer }),
       {
         show: 'Steven Universe, the Opera',
         start: 'Web, March 25th 2020 at 8pm',
         count: 3,
-        expectedAmountPerTicket: moola(22),
+        expectedAmountPerTicket,
       },
-    );
+    ).then(({ invite: auditoriumInvite }) => {
+      return inviteIssuer.getAmountOf(auditoriumInvite).then(({
+        extent: [{ instanceHandle: auditoriumInstanceHandle }],
+      }) => {
+        const { publicAPI } = zoe.getInstance(auditoriumInstanceHandle);
 
-    const {
-      extent: [{ instanceHandle: auditoriumInstanceHandle }],
-    } = await inviteIssuer.getAmountOf(auditoriumInvite);
+        t.equal(
+          typeof publicAPI.makeBuyerInvite,
+          'function',
+          'makeMoneyInvite should be a function',
+        );
+        t.equal(
+          typeof publicAPI.getTicketIssuer,
+          'function',
+          'getTicketIssuer should be a function',
+        );
+        t.equal(
+          typeof publicAPI.getAvailableTickets,
+          'function',
+          'getAvailableTickets should be a function',
+        );
 
-    const { publicAPI: pub } = zoe.getInstance(auditoriumInstanceHandle);
+        // The auditorium redeems its invite.
+        return zoe.redeem(auditoriumInvite, harden({})).then(({
+          seat: { makePaymentsAndInvites },
+        }) => {
+          t.equal(
+            typeof makePaymentsAndInvites,
+            'function',
+            'makePaymentsAndInvites should be a function',
+          );
+    
+          const ticketsPaymentsAndInvites = makePaymentsAndInvites();
+    
+          return Promise.all(ticketsPaymentsAndInvites.map(({ticketAmount, payment, invite}) => {
+            return zoe.redeem(invite, harden({
+                want: { Money: expectedAmountPerTicket },
+                give: { Ticket: ticketAmount },
+              }),
+              harden({ Ticket: payment })
+            )
+          })).then(seatsAndPayouts => {
+            const _operaPayouts = seatsAndPayouts.map(({payout}) => payout)
 
-    // The auditorium redeems its invite. It contains a function to get all the moolas accumulated by the contract
-    // as part of the ticket sales
-    const {
-      seat: { getSalesPayment },
-    } = await zoe.redeem(auditoriumInvite, harden({}), undefined);
+            // The Opera makes the publicAPI function publicly available
+            return {publicAPI, _operaPayouts};
+          })
+          .catch((err) => console.error('yo all', err))
+          
+        })
+      })
+    })
+  })
 
-    t.equal(
-      typeof getSalesPayment,
-      'function',
-      'getSalesMoney should be a function',
-    );
+  const alicePartFinished = contractReadyP.then(({publicAPI}) => {
+    console.log('Alice part')
+    const ticketIssuer = publicAPI.getTicketIssuer();
+    const ticketAmountMath = ticketIssuer.getAmountMath();
 
-    // The Opera makes the publicAPI function publicly available
-    publicAPI = pub;
-    _getSalesPayment = getSalesPayment;
-  }
-  t.equal(
-    typeof publicAPI.makeBuyerInvite,
-    'function',
-    'makeMoneyInvite should be a function',
-  );
-  t.equal(
-    typeof publicAPI.getTicketIssuer,
-    'function',
-    'getTicketIssuer should be a function',
-  );
-  t.equal(
-    typeof publicAPI.getAvailableTickets,
-    'function',
-    'getAvailableTickets should be a function',
-  );
-
-  const ticketIssuer = publicAPI.getTicketIssuer();
-  const ticketAmountMath = ticketIssuer.getAmountMath();
-
-  {
     // === Alice part ===
     // Alice starts with 100 moolas
     const alicePurse = moolaIssuer.makeEmptyPurse();
@@ -97,80 +113,85 @@ The Opera is told about the show being sold out. It gets all the moolas from the
 
     // Alice makes an invite
     const aliceInvite = inviteIssuer.claim(publicAPI.makeBuyerInvite());
-    const {
+    return inviteIssuer.getAmountOf(aliceInvite).then(({
       extent: [{ instanceHandle: instanceHandleOfAlice }],
-    } = await inviteIssuer.getAmountOf(aliceInvite);
+    }) => {
+      const { terms: termsOfAlice } = zoe.getInstance(instanceHandleOfAlice)
+      // Alice checks terms
+      t.equal(termsOfAlice.show, 'Steven Universe, the Opera');
+      t.equal(termsOfAlice.start, 'Web, March 25th 2020 at 8pm');
+      t.equal(termsOfAlice.expectedAmountPerTicket.brand, moola(22).brand);
+      t.equal(termsOfAlice.expectedAmountPerTicket.extent, moola(22).extent);
+  
+      const availableTickets = publicAPI.getAvailableTickets()
+      // and sees the currently available tickets
+      t.equal(availableTickets.size, 3, 'Alice should see 3 available tickets');
+      t.ok(
+        [...availableTickets.keys()].includes(1),
+        `availableTickets contains ticket number 1`,
+      );
+      t.ok(
+        [...availableTickets.keys()].includes(2),
+        `availableTickets contains ticket number 2`,
+      );
+      t.ok(
+        [...availableTickets.keys()].includes(3),
+        `availableTickets contains ticket number 3`,
+      );
+  
+      // find the extent corresponding to ticket #1
+      const ticket1Extent = [...availableTickets.values()].find(
+        ticket => ticket.number === 1,
+      );
+      // make the corresponding amount
+      const ticket1Amount = ticketAmountMath.make(harden([ticket1Extent]));
+  
+      const aliceProposal = harden({
+        give: { Money: termsOfAlice.expectedAmountPerTicket },
+        want: { Ticket: ticket1Amount },
+      });
+      
+      const alicePaymentForTicket = alicePurse.withdraw(
+        termsOfAlice.expectedAmountPerTicket,
+      )
+      
+      return zoe.redeem(aliceInvite, aliceProposal, {
+        Money: alicePaymentForTicket,
+      }).then(({
+        seat: { performExchange },
+        payout: payoutP,
+      }) => {
+        return performExchange().then(() => {
+          return payoutP.then(alicePayout => {
+            return ticketIssuer.claim(alicePayout.Ticket).then(aliceTicketPayment => {
+              return ticketIssuer.getAmountOf(
+                aliceTicketPayment,
+              ).then(aliceBoughtTicketAmount => {
+                t.equal(
+                  aliceBoughtTicketAmount.extent[0].show,
+                  'Steven Universe, the Opera',
+                  'Alice should have receieved the ticket for the correct show',
+                );
+                t.equal(
+                  aliceBoughtTicketAmount.extent[0].number,
+                  1,
+                  'Alice should have receieved the ticket for the correct number',
+                );
+              })
+            })
+          })
+        })
+      })
+    })
+  })
 
-    const { terms: termsOfAlice } = await zoe.getInstance(
-      instanceHandleOfAlice,
-    );
+  return alicePartFinished.catch(err => {
+    console.error('Error in Alice part', err)
+    t.fail('error in alice')
+  })
+  .then(() => t.end())
 
-    // Alice checks terms
-    t.equal(termsOfAlice.show, 'Steven Universe, the Opera');
-    t.equal(termsOfAlice.start, 'Web, March 25th 2020 at 8pm');
-    t.equal(termsOfAlice.expectedAmountPerTicket.brand, moola(22).brand);
-    t.equal(termsOfAlice.expectedAmountPerTicket.extent, moola(22).extent);
-
-    const availableTickets = await publicAPI.getAvailableTickets();
-
-    // and sees the currently available tickets
-    t.equal(availableTickets.size, 3, 'Alice should see 3 available tickets');
-    t.ok(
-      [...availableTickets.keys()].includes(1),
-      `availableTickets contains ticket number 1`,
-    );
-    t.ok(
-      [...availableTickets.keys()].includes(2),
-      `availableTickets contains ticket number 2`,
-    );
-    t.ok(
-      [...availableTickets.keys()].includes(3),
-      `availableTickets contains ticket number 3`,
-    );
-
-    // find the extent corresponding to ticket #1
-    const ticket1Extent = [...availableTickets.values()].find(
-      ticket => ticket.number === 1,
-    );
-    // make the corresponding amount
-    const ticket1Amount = ticketAmountMath.make(harden([ticket1Extent]));
-
-    const aliceProposal = harden({
-      give: { Money: termsOfAlice.expectedAmountPerTicket },
-      want: { Ticket: ticket1Amount },
-    });
-    const alicePaymentForTicket = await alicePurse.withdraw(
-      termsOfAlice.expectedAmountPerTicket,
-    );
-
-    const {
-      seat: { performExchange },
-      payout: payoutP,
-    } = await zoe.redeem(aliceInvite, aliceProposal, {
-      Money: alicePaymentForTicket,
-    });
-
-    await performExchange(); // this function call may be useless? See https://github.com/Agoric/agoric-sdk/issues/783
-
-    const alicePayout = await payoutP;
-
-    const aliceTicketPayment = await ticketIssuer.claim(alicePayout.Ticket);
-    const aliceBoughtTicketAmount = await ticketIssuer.getAmountOf(
-      aliceTicketPayment,
-    );
-
-    t.equal(
-      aliceBoughtTicketAmount.extent[0].show,
-      'Steven Universe, the Opera',
-      'Alice should have receieved the ticket for the correct show',
-    );
-    t.equal(
-      aliceBoughtTicketAmount.extent[0].number,
-      1,
-      'Alice should have receieved the ticket for the correct number',
-    );
-  }
-
+/*
   {
     // === Bob part ===
     // Bob starts with 100 moolas
@@ -328,7 +349,5 @@ The Opera is told about the show being sold out. It gets all the moolas from the
       3 * 22,
       `The Opera should get ${3 * 22} moolas from ticket sales`,
     );
-  }
-
-  t.end();
+  }*/
 });

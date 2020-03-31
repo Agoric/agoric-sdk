@@ -20,8 +20,6 @@ import { makeZoeHelpers } from './helpers/zoeHelpers';
 */
 
 export const makeContract = harden(async zoe => {
-  const zoeService = zoe.getZoeService();
-
   // Create the internal ticket mint
   const { issuer, mint, amountMath } = produceIssuer('Opera tickets', 'set');
   await zoe.addNewIssuer(issuer, 'Ticket');
@@ -30,86 +28,47 @@ export const makeContract = harden(async zoe => {
   const { rejectOffer, swap } = makeZoeHelpers(zoe);
 
   const {
-    terms: { show, start, count, expectedAmountPerTicket },
-    issuerKeywordRecord: { Money: moneyIssuer },
+    terms: { show, start, count },
   } = zoe.getInstanceRecord();
 
-  const availableTicketDescriptionByNumber = new Map(
-    Array(count)
-      .fill()
-      .map((_, i) => [i + 1, harden({ show, start, number: i + 1 })]),
-  );
-
-  const salesPayouts = new Set();
+  const inviteHandleByTicketNumber = new Map();
 
   const auditoriumSeat = harden({
-    async getSalesPayment() {
-      const salesPaymentsP = Promise.all([...salesPayouts]).then(payouts =>
-        Promise.all(payouts.map(payout => payout.Money)),
-      );
+    makePaymentsAndInvites() {
+      if(inviteHandleByTicketNumber.size >= 1){
+        throw new Error('makePaymentsAndInvites cannot be called twice')
+      }
 
-      return salesPaymentsP.then(salesPayments =>
-        moneyIssuer.combine(salesPayments),
-      );
+      return Array(count)
+      .fill()
+      .map((_, i) => {
+        const ticketNumber = i + 1;
+        const ticketDescription = harden({ show, start, number: ticketNumber });
+        const ticketAmount = amountMath.make(harden([ticketDescription]));
+        const payment = mint.mintPayment(ticketAmount);
+
+        const { invite, inviteHandle } = zoe.makeInvite();
+        inviteHandleByTicketNumber.set(ticketNumber, inviteHandle)
+
+        return {invite, ticketAmount, payment}
+      });
     },
   });
+
   const auditoriumInvite = zoe.makeInvite(auditoriumSeat);
 
   const makeBuyerInvite = () => {
     const seat = harden({
+      getTerms: () => terms,
       performExchange: async () => {
         const moneyInviteHandle = inviteHandle;
         const moneyOffer = zoe.getOffer(moneyInviteHandle);
         const moneyWant = moneyOffer.proposal.want.Ticket;
 
-        const ticketNumbers = moneyWant.extent.map(e => e.number);
+        const ticketNumber = moneyWant.extent[0].number;
+        const ticketInviteHandle = inviteHandleByTicketNumber.get(ticketNumber)
 
-        const unavailableTicketNumbers = ticketNumbers.filter(
-          number => !availableTicketDescriptionByNumber.has(number),
-        );
-
-        if (unavailableTicketNumbers.length >= 1) {
-          return rejectOffer(
-            inviteHandle,
-            `Some tickets (${unavailableTicketNumbers.join(
-              ', ',
-            )}) are not available anymore`,
-          );
-        }
-
-        const ticketsAmount = amountMath.make(
-          harden(
-            ticketNumbers.map(number =>
-              availableTicketDescriptionByNumber.get(number),
-            ),
-          ),
-        );
-
-        // create an zoe invite...
-        const { invite, inviteHandle: ticketInviteHandle } = zoe.makeInvite();
-        // ...and redeem it right away
-        return zoeService
-          .redeem(
-            invite,
-            harden({
-              want: {
-                Money: moneyIssuer
-                  .getAmountMath()
-                  .make(expectedAmountPerTicket.extent * ticketNumbers.length),
-              },
-              give: { Ticket: ticketsAmount },
-            }),
-            harden({ Ticket: mint.mintPayment(ticketsAmount) }), // mint and pass to Zoe right away
-          )
-          .then(({ payout }) => {
-            salesPayouts.add(payout);
-
-            swap(ticketInviteHandle, moneyInviteHandle);
-
-            // swap may throw. It we're here, swap was successful
-            for (const number of ticketNumbers)
-              availableTicketDescriptionByNumber.delete(number);
-          });
+        swap(ticketInviteHandle, moneyInviteHandle);
       },
     });
     const { invite, inviteHandle } = zoe.makeInvite(seat);
@@ -125,7 +84,13 @@ export const makeContract = harden(async zoe => {
       },
       // This function returns a Map<TicketNumber, TicketExtent>
       getAvailableTickets() {
-        return new Map(availableTicketDescriptionByNumber);
+        return new Map([...inviteHandleByTicketNumber]
+          .filter(([number, offerHandle]) =>  zoe.isOfferActive(offerHandle) )
+          .map(([number, offerHandle]) => {
+            const {proposal: {give: {Ticket}}} = zoe.getOffer(offerHandle)            
+            return [number, Ticket.extent[0]]
+          })
+        )
       },
     },
   });
