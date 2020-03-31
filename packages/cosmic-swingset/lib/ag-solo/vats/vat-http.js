@@ -4,7 +4,7 @@ import { getReplHandler } from './repl';
 import { getCapTPHandler } from './captp';
 
 // This vat contains the HTTP request handler.
-function build(E, D) {
+function build(E, D, vatPowers) {
   let commandDevice;
   let provisioner;
   const channelIdToHandle = new Map();
@@ -68,7 +68,7 @@ function build(E, D) {
       if (ROLES.client) {
         handler.readyForClient = () => readyForClient.p;
 
-        const replHandler = getReplHandler(E, homeObjects, send);
+        const replHandler = getReplHandler(E, homeObjects, send, vatPowers);
         registerURLHandler(replHandler, '/private/repl');
 
         // Assign the captp handler.
@@ -210,7 +210,9 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    (E, D) => harden(build(E, D)),
+    (E, D, powers) => {
+      return harden(build(E, D, powers));
+    },
     helpers.vatID,
   );
 }

@@ -1,6 +1,12 @@
 import harden from '@agoric/harden';
 import { E, HandledPromise } from '@agoric/eventual-send';
-import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
+import {
+  QCLASS,
+  Remotable,
+  getInterfaceOf,
+  mustPassByPresence,
+  makeMarshal,
+} from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
 import { isPromise } from '@agoric/produce-promise';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
@@ -70,7 +76,7 @@ function build(syscall, _state, makeRoot, forVatID) {
   //  changed to only set the unfulfilledHandler, and omit `pr.resPres`. The
   //  second would be named makePresence('o-NN'): it would call
   //  resolveWithPresence() immediately, wouldn't set unfulfilledHandler, and
-  //  would only return the Presence. This might be clearer.
+  //  would only return the Presence converted to a Remotable. This might be clearer.
 
   function makeQueued(slot) {
     /* eslint-disable no-use-before-define */
@@ -98,9 +104,7 @@ function build(syscall, _state, makeRoot, forVatID) {
   }
 
   function makeDeviceNode(id) {
-    return harden({
-      [`_deviceID_${id}`]() {},
-    });
+    return Remotable(`Device ${id}`);
   }
 
   const outstandingProxies = new WeakSet();
@@ -214,10 +218,8 @@ function build(syscall, _state, makeRoot, forVatID) {
         // lsdebug(`assigning new import ${slot}`);
         // prepare a Promise for this Presence, so E(val) can work
         const pr = makeQueued(slot); // TODO find a less confusing name than "pr"
-        const presence = pr.resPres();
-        presence.toString = () => `[Presence ${slot}]`;
-        harden(presence);
-        val = presence;
+        const remote = pr.resPres();
+        val = Remotable(`Presence ${slot}`, undefined, remote);
         // lsdebug(` for presence`, val);
       } else if (type === 'promise') {
         val = importPromise(slot);
@@ -416,7 +418,10 @@ function build(syscall, _state, makeRoot, forVatID) {
   }
 
   // here we finally invoke the vat code, and get back the root object
-  const rootObject = makeRoot(E, D);
+  // We need to pass in Remotable and getInterfaceOf so that they can
+  // access our own @agoric/marshal, not a separate instance in a bundle.
+  const vatPowers = { Remotable, getInterfaceOf };
+  const rootObject = makeRoot(E, D, vatPowers);
   mustPassByPresence(rootObject);
 
   const rootSlot = makeVatSlot('object', true, 0);

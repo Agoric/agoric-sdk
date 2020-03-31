@@ -3,7 +3,7 @@ import harden from '@agoric/harden';
 import { isPromise } from '@agoric/produce-promise';
 
 // A REPL-specific JSON stringify.
-export function stringify(value, spaces, already = new WeakSet()) {
+export function stringify(value, spaces, getInterfaceOf, already = new WeakSet()) {
   if (Object(value) !== value) {
     return JSON.stringify(value, spaces);
   }
@@ -24,26 +24,28 @@ export function stringify(value, spaces, already = new WeakSet()) {
   }
   already.add(value);
 
-  if (Array.isArray(value)) {
-    let ret = '[';
+  let ret = '';
+  if (getInterfaceOf && getInterfaceOf(value) !== undefined) {
+    ret += `${value}`;
+  } else if (Array.isArray(value)) {
+    ret += `[`;
+
     let sep = '';
     for (let i = 0; i < value.length; i += 1) {
-      ret += sep + stringify(value[i], spaces, already);
+      ret += sep + stringify(value[i], spaces, getInterfaceOf, already);
       sep = ',';
     }
     ret += ']';
     return ret;
   }
 
-  let ret = '{';
+  ret += '{';
   let sep = '';
   for (const key of Object.keys(value)) {
-    if (key === 'toString' && typeof value[key] === 'function') {
-      return value[key]();
-    }
     ret += `${sep}${JSON.stringify(key, undefined, spaces)}:${stringify(
       value[key],
       spaces,
+      getInterfaceOf,
       already,
     )}`;
     sep = ',';
@@ -52,7 +54,7 @@ export function stringify(value, spaces, already = new WeakSet()) {
   return ret;
 }
 
-export function getReplHandler(E, homeObjects, send) {
+export function getReplHandler(E, homeObjects, send, vatPowers) {
   const commands = {};
   const history = {};
   const display = {};
@@ -105,6 +107,7 @@ export function getReplHandler(E, homeObjects, send) {
       updateHistorySlot(histnum);
 
       const endowments = {
+        ...vatPowers,
         console,
         E,
         commands,
@@ -116,7 +119,7 @@ export function getReplHandler(E, homeObjects, send) {
       try {
         r = evaluateProgram(body, endowments);
         history[histnum] = r;
-        display[histnum] = stringify(r);
+        display[histnum] = stringify(r, undefined, vatPowers.getInterfaceOf);
       } catch (e) {
         console.log(`error in eval`, e);
         history[histnum] = e;
