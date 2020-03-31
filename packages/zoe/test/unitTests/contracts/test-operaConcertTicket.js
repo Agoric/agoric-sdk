@@ -2,12 +2,11 @@
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
-
 import harden from '@agoric/harden';
+import produceIssuer from '@agoric/ertp';
+
 
 import { makeZoe } from '../../../src/zoe';
-import { setup } from '../setupBasicMints';
-
 const operaConcertTicketRoot = `${__dirname}/../../../src/contracts/operaConcertTicket`;
 
 test(`__Test Scenario__
@@ -23,9 +22,7 @@ Bob tries to buy ticket 1 and fails. He buys ticket #2 and #3
 The Opera is told about the show being sold out. It gets all the moolas from the sale`, async t => {  
 
   // Setup initial conditions
-  const { mints, issuers: defaultIssuers, moola } = setup();
-  const [moolaIssuer] = defaultIssuers;
-  const [moolaMint] = mints;
+  const { mint: moolaMint, issuer: moolaIssuer, amountMath: {make: moola} } = produceIssuer('moola');
 
   const zoe = makeZoe({ require });
   const inviteIssuer = zoe.getInviteIssuer();
