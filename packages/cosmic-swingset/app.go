@@ -197,16 +197,19 @@ func NewSwingSetApp(
 			app.slashingKeeper.Hooks()),
 	)
 
+	app.ibcKeeper = ibc.NewKeeper(app.cdc, keys[ibc.StoreKey], stakingKeeper)
+
 	// The SwingSetKeeper is the Keeper from the Agoric module
-	// It handles interactions with the kvstore
+	// It handles interactions with the kvstore and IBC.
+	swingsetCapKey := app.ibcKeeper.PortKeeper.BindPort(swingset.ModuleName)
 	app.ssKeeper = swingset.NewKeeper(
 		app.cdc,
 		keys[swingset.StoreKey],
+		swingsetCapKey,
+		app.ibcKeeper.ChannelKeeper,
 		app.bankKeeper,
 		sendToController,
 	)
-
-	app.ibcKeeper = ibc.NewKeeper(app.cdc, keys[ibc.StoreKey], stakingKeeper)
 
 	app.mm = module.NewManager(
 		genutil.NewAppModule(app.accountKeeper, app.stakingKeeper, app.BaseApp.DeliverTx),

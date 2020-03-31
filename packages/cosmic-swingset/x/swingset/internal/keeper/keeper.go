@@ -8,13 +8,18 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	channel "github.com/cosmos/cosmos-sdk/x/ibc/04-channel"
+	channelexported "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/exported"
 )
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	CoinKeeper types.BankKeeper
+	ChannelKeeper types.ChannelKeeper
+	CoinKeeper    types.BankKeeper
 
 	storeKey sdk.StoreKey // Unexposed key to access store from sdk.Context
+	capKey   sdk.CapabilityKey
 
 	cdc *codec.Codec // The wire codec for binary encoding/decoding.
 
@@ -22,12 +27,16 @@ type Keeper struct {
 }
 
 // NewKeeper creates new instances of the swingset Keeper
-func NewKeeper(cdc *codec.Codec, storeKey sdk.StoreKey, coinKeeper types.BankKeeper,
+func NewKeeper(cdc *codec.Codec, storeKey sdk.StoreKey,
+	capKey sdk.CapabilityKey, channelKeeper types.ChannelKeeper,
+	coinKeeper types.BankKeeper,
 	sendToController func(needReply bool, str string) (string, error)) Keeper {
 	return Keeper{
+		ChannelKeeper:    channelKeeper,
 		CoinKeeper:       coinKeeper,
 		storeKey:         storeKey,
 		cdc:              cdc,
+		capKey:           capKey,
 		sendToController: sendToController,
 	}
 }
@@ -137,4 +146,41 @@ func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox types.Storage) 
 func (k Keeper) GetPeersIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
 	return sdk.KVStorePrefixIterator(store, nil)
+}
+
+// PacketExecuted defines a wrapper function for the channel Keeper's function
+// in order to expose it to the SwingSet IBC handler.
+func (k Keeper) PacketExecuted(ctx sdk.Context, packet channelexported.PacketI, acknowledgement []byte) error {
+	return k.ChannelKeeper.PacketExecuted(ctx, packet, acknowledgement)
+}
+
+// ChanCloseInit defines a wrapper function for the channel Keeper's function
+// in order to expose it to the SwingSet IBC handler.
+func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
+	return k.ChannelKeeper.ChanCloseInit(ctx, portID, channelID)
+}
+
+// TimeoutExecuted defines a wrapper function for the channel Keeper's function
+// in order to expose it to the SwingSet IBC handler.
+func (k Keeper) TimeoutExecuted(ctx sdk.Context, packet channelexported.PacketI) error {
+	return k.ChannelKeeper.TimeoutExecuted(ctx, packet)
+}
+
+// GetChannel defines a wrapper function for the channel Keeper's function
+// in order to expose it to the SwingSet IBC handler.
+func (k Keeper) GetChannel(ctx sdk.Context, srcPort, srcChan string) (channel channel.Channel, found bool) {
+	return k.ChannelKeeper.GetChannel(ctx, srcPort, srcChan)
+}
+
+// GetNextSequenceSend defines a wrapper function for the channel Keeper's function
+// in order to expose it to the SwingSet IBC handler.
+func (k Keeper) GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool) {
+	seq, ok := k.ChannelKeeper.GetNextSequenceSend(ctx, portID, channelID)
+	return seq, ok
+}
+
+// SendPacket defines a wrapper function for the channel Keeper's function
+// in order to expose it to the SwingSet IBC handler.
+func (k Keeper) SendPacket(ctx sdk.Context, packet channelexported.PacketI) error {
+	return k.ChannelKeeper.SendPacket(ctx, packet)
 }
