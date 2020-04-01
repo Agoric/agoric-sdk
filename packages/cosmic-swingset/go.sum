@@ -18,10 +18,6 @@ github.com/Workiva/go-datastructures v1.0.51/go.mod h1:Z+F2Rca0qCsVYDS8z7bAGm8f3
 github.com/Workiva/go-datastructures v1.0.52/go.mod h1:Z+F2Rca0qCsVYDS8z7bAGm8f3UkzuWYS/oBZz5a7VVA=
 github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
 github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5/go.mod h1:SkGFH1ia65gfNATL8TAiHDNxPzPdmEL5uirI2Uyuz6c=
-github.com/agoric-labs/cosmos-sdk v0.34.4-0.20200330041002-9ef298b16e90 h1:95v2qy6i6ejws5by2HdMQDcJEdSaoNNuhUJqxDxf9FE=
-github.com/agoric-labs/cosmos-sdk v0.34.4-0.20200330041002-9ef298b16e90/go.mod h1:Huc1EY2yjOfK/Wz+Oyz4ssIyhzypf16oStT++NaMeoI=
-github.com/agoric-labs/cosmos-sdk v0.34.4-0.20200331010310-b5070a48908e h1:bCF2OZL3tALwMdsn82Cc4DnADWz63BghGa5oMDNm/ws=
-github.com/agoric-labs/cosmos-sdk v0.34.4-0.20200331010310-b5070a48908e/go.mod h1:Huc1EY2yjOfK/Wz+Oyz4ssIyhzypf16oStT++NaMeoI=
 github.com/agoric-labs/tendermint v0.33.1-dev2.0.20200227213630-8496d5b08165 h1:a6SytTL5bteiBAhLQNMHpOFaj6dZ7jmyLpqJOwPzee4=
 github.com/agoric-labs/tendermint v0.33.1-dev2.0.20200227213630-8496d5b08165/go.mod h1:LpL603CWAFCD0zHwy5Ib1owM83dwuSbvRVNMW9oL4Mo=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
@@ -96,6 +92,8 @@ github.com/cosmos/cosmos-sdk v0.34.4-0.20200312161516-5795324847ce h1:msdFTqY2xf
 github.com/cosmos/cosmos-sdk v0.34.4-0.20200312161516-5795324847ce/go.mod h1:y87Xq6aGGW6bGtRi1oIBmT42t0a+x2wMe9EnirnCY6s=
 github.com/cosmos/cosmos-sdk v0.34.4-0.20200327170214-3b48464bb4dc h1:LIpMIHtCKTSU7p227XJfm87u+HtTkDCLgNzJhrkSg9A=
 github.com/cosmos/cosmos-sdk v0.34.4-0.20200327170214-3b48464bb4dc/go.mod h1:Huc1EY2yjOfK/Wz+Oyz4ssIyhzypf16oStT++NaMeoI=
+github.com/cosmos/cosmos-sdk v0.34.4-0.20200401192610-d45627171e53 h1:Wz+TFWVhc0NLWCsqCer8ILSIvcRO2YDBGmiz7XD8b2U=
+github.com/cosmos/cosmos-sdk v0.34.4-0.20200401192610-d45627171e53/go.mod h1:Huc1EY2yjOfK/Wz+Oyz4ssIyhzypf16oStT++NaMeoI=
 github.com/cosmos/cosmos-sdk v0.37.3 h1:v4IQIPq3zFB95ibAS7zqsnkZ/8SE3er16Og45EGHggo=
 github.com/cosmos/cosmos-sdk v0.37.3/go.mod h1:dAwYeOJ5ybRZg/OdRfiDy8q/cZq/GXQp9ZHAtz0E74I=
 github.com/cosmos/cosmos-sdk v0.37.4 h1:1ioXxkpiS+wOgaUbROeDIyuF7hciU5nti0TSyBmV2Ok=
