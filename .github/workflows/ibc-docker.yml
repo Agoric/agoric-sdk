@@ -24,14 +24,13 @@ jobs:
     - name: Build SDK image
       uses: elgohr/Publish-Docker-Github-Action@master
       env:
-        # Needed to select the previous container.
-        TAG: ibc-alpha
+        # Needed to select the container built above.
+        SWINGSET_TAG: ibc-alpha
       with:
         name: agoric/agoric-sdk
         dockerfile: packages/deployment/Dockerfile.sdk
-        context: packages/deployment
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        buildargs: TAG
+        buildargs: SWINGSET_TAG
         snapshot: true
         tags: ibc-alpha

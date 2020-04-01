@@ -1,11 +1,14 @@
+ARG SWINGSET_TAG=latest
+ARG REPO=agoric/cosmic-swingset
+FROM $REPO:$SWINGSET_TAG as cosmic-swingset-go
+
 # The install container
-ARG TAG=latest
 FROM node:stretch AS install
 
 WORKDIR /usr/src/agoric-sdk
 COPY . .
-COPY --from=agoric/cosmic-swingset:${TAG} /usr/src/app/lib/ packages/cosmic-swingset/lib/
-COPY --from=agoric/cosmic-swingset:${TAG} /go/bin/ag-cosmos-helper /usr/local/bin/
+COPY --from=cosmic-swingset-go /usr/src/app/lib/ packages/cosmic-swingset/lib/
+COPY --from=cosmic-swingset-go /go/bin/ag-cosmos-helper /usr/local/bin/
 RUN ln -s agoric-sdk/packages/cosmic-swingset ../app
 
 RUN yarn install
