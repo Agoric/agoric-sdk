@@ -25,47 +25,53 @@ export const makeContract = harden(async zoe => {
   await zoe.addNewIssuer(issuer, 'Ticket');
 
   // create Zoe helpers after zoe.addNewIssuer because of https://github.com/Agoric/agoric-sdk/issues/802
-  const { rejectOffer, swap } = makeZoeHelpers(zoe);
+  const { rejectOffer } = makeZoeHelpers(zoe);
 
   const {
-    terms: { show, start, count, expectedAmountPerTicket },
+    terms: { show, start, count },
   } = zoe.getInstanceRecord();
 
   const inviteHandleByTicketNumber = new Map();
 
-  function completeAmountKeywordRecord(amountKeywordRecord){
-    const {issuerKeywordRecord} = zoe.getInstanceRecord();
+  function completeAmountKeywordRecord(amountKeywordRecord) {
+    const { issuerKeywordRecord } = zoe.getInstanceRecord();
 
-    const completed = {...amountKeywordRecord}
+    const completed = { ...amountKeywordRecord };
 
-    for(const [keyword, issuer] of Object.entries(issuerKeywordRecord)){
-      if(!(keyword in completed)){
-        completed[keyword] = issuer.getAmountMath().getEmpty()
+    for (const [keyword, keywordIssuer] of Object.entries(
+      issuerKeywordRecord,
+    )) {
+      if (!(keyword in completed)) {
+        completed[keyword] = keywordIssuer.getAmountMath().getEmpty();
       }
     }
 
-    return harden(completed)
+    return harden(completed);
   }
 
   const auditoriumSeat = harden({
     makePaymentsAndInvites() {
-      if(inviteHandleByTicketNumber.size >= 1){
-        throw new Error('makePaymentsAndInvites cannot be called twice')
+      if (inviteHandleByTicketNumber.size >= 1) {
+        throw new Error('makePaymentsAndInvites cannot be called twice');
       }
 
       return Array(count)
-      .fill()
-      .map((_, i) => {
-        const ticketNumber = i + 1;
-        const ticketDescription = harden({ show, start, number: ticketNumber });
-        const ticketAmount = amountMath.make(harden([ticketDescription]));
-        const payment = mint.mintPayment(ticketAmount);
+        .fill()
+        .map((_, i) => {
+          const ticketNumber = i + 1;
+          const ticketDescription = harden({
+            show,
+            start,
+            number: ticketNumber,
+          });
+          const ticketAmount = amountMath.make(harden([ticketDescription]));
+          const payment = mint.mintPayment(ticketAmount);
 
-        const { invite, inviteHandle } = zoe.makeInvite();
-        inviteHandleByTicketNumber.set(ticketNumber, inviteHandle)
+          const { invite, inviteHandle } = zoe.makeInvite();
+          inviteHandleByTicketNumber.set(ticketNumber, inviteHandle);
 
-        return {invite, ticketAmount, payment}
-      });
+          return { invite, ticketAmount, payment };
+        });
     },
   });
 
@@ -73,34 +79,31 @@ export const makeContract = harden(async zoe => {
 
   const makeBuyerInvite = () => {
     const seat = harden({
-      getTerms: () => terms,
       performExchange: () => {
         const moneyOfferHandle = inviteHandle;
         const moneyOffer = zoe.getOffer(moneyOfferHandle);
 
         const moneyWant = moneyOffer.proposal.want.Ticket;
 
-
         const ticketNumbers = moneyWant.extent.map(t => t.number);
-        const ticketOfferHandles = ticketNumbers.map(n => inviteHandleByTicketNumber.get(n))
+        const ticketOfferHandles = ticketNumbers.map(n =>
+          inviteHandleByTicketNumber.get(n),
+        );
 
+        const offerHandles = [...ticketOfferHandles, moneyOfferHandle];
 
-        const offerHandles = [...ticketOfferHandles, moneyOfferHandle]
-
-
-        try{
+        try {
           const amountKeywordRecords = offerHandles
             .map(offerHandle => {
-              return zoe.getOffer(offerHandle).proposal.want
+              return zoe.getOffer(offerHandle).proposal.want;
             })
-            .map(completeAmountKeywordRecord)
-        
-          zoe.reallocate(offerHandles, amountKeywordRecords)
+            .map(completeAmountKeywordRecord);
+
+          zoe.reallocate(offerHandles, amountKeywordRecords);
           zoe.complete(offerHandles);
-        }
-        catch(err){
+        } catch (err) {
           // reallocate certainly failed
-          rejectOffer(moneyOfferHandle)
+          rejectOffer(moneyOfferHandle);
         }
       },
     });
@@ -117,13 +120,18 @@ export const makeContract = harden(async zoe => {
       },
       // This function returns a Map<TicketNumber, TicketExtent>
       getAvailableTickets() {
-        return new Map([...inviteHandleByTicketNumber]
-          .filter(([number, offerHandle]) =>  zoe.isOfferActive(offerHandle) )
-          .map(([number, offerHandle]) => {
-            const {proposal: {give: {Ticket}}} = zoe.getOffer(offerHandle)            
-            return [number, Ticket.extent[0]]
-          })
-        )
+        return new Map(
+          [...inviteHandleByTicketNumber]
+            .filter(([_, offerHandle]) => zoe.isOfferActive(offerHandle))
+            .map(([number, offerHandle]) => {
+              const {
+                proposal: {
+                  give: { Ticket },
+                },
+              } = zoe.getOffer(offerHandle);
+              return [number, Ticket.extent[0]];
+            }),
+        );
       },
     },
   });
