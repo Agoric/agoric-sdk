@@ -28,10 +28,24 @@ export const makeContract = harden(async zoe => {
   const { rejectOffer, swap } = makeZoeHelpers(zoe);
 
   const {
-    terms: { show, start, count },
+    terms: { show, start, count, expectedAmountPerTicket },
   } = zoe.getInstanceRecord();
 
   const inviteHandleByTicketNumber = new Map();
+
+  function completeAmountKeywordRecord(amountKeywordRecord){
+    const {issuerKeywordRecord} = zoe.getInstanceRecord();
+
+    const completed = {...amountKeywordRecord}
+
+    for(const [keyword, issuer] of Object.entries(issuerKeywordRecord)){
+      if(!(keyword in completed)){
+        completed[keyword] = issuer.getAmountMath().getEmpty()
+      }
+    }
+
+    return harden(completed)
+  }
 
   const auditoriumSeat = harden({
     makePaymentsAndInvites() {
@@ -60,15 +74,34 @@ export const makeContract = harden(async zoe => {
   const makeBuyerInvite = () => {
     const seat = harden({
       getTerms: () => terms,
-      performExchange: async () => {
-        const moneyInviteHandle = inviteHandle;
-        const moneyOffer = zoe.getOffer(moneyInviteHandle);
+      performExchange: () => {
+        const moneyOfferHandle = inviteHandle;
+        const moneyOffer = zoe.getOffer(moneyOfferHandle);
+
         const moneyWant = moneyOffer.proposal.want.Ticket;
 
-        const ticketNumber = moneyWant.extent[0].number;
-        const ticketInviteHandle = inviteHandleByTicketNumber.get(ticketNumber)
 
-        swap(ticketInviteHandle, moneyInviteHandle);
+        const ticketNumbers = moneyWant.extent.map(t => t.number);
+        const ticketOfferHandles = ticketNumbers.map(n => inviteHandleByTicketNumber.get(n))
+
+
+        const offerHandles = [...ticketOfferHandles, moneyOfferHandle]
+
+
+        try{
+          const amountKeywordRecords = offerHandles
+            .map(offerHandle => {
+              return zoe.getOffer(offerHandle).proposal.want
+            })
+            .map(completeAmountKeywordRecord)
+        
+          zoe.reallocate(offerHandles, amountKeywordRecords)
+          zoe.complete(offerHandles);
+        }
+        catch(err){
+          // reallocate certainly failed
+          rejectOffer(moneyOfferHandle)
+        }
       },
     });
     const { invite, inviteHandle } = zoe.makeInvite(seat);
