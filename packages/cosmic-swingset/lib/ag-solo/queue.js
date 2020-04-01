@@ -1,4 +1,4 @@
-import makePromise from '@agoric/make-promise';
+import { makePromise } from '@agoric/make-promise';
 
 // Return a function that can wrap an async or sync method, but
 // ensures only one of them (in order) is running at a time.
@@ -31,7 +31,7 @@ export const makeWithQueue = () => {
       // resolve/reject with whatever the inner function does.
       const thunk = _ => inner(...args);
       const pr = makePromise();
-      queue.push([thunk, pr.res, pr.rej]);
+      queue.push([thunk, pr.resolve, pr.reject]);
 
       if (queue.length === 1) {
         // Start running immediately.
@@ -39,7 +39,7 @@ export const makeWithQueue = () => {
       }
 
       // Allow the caller to retrieve our thunk's results.
-      return pr.p;
+      return pr.promise;
     };
   };
 };

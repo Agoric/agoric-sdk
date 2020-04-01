@@ -43,10 +43,10 @@ const escrowExchange = harden({
     // Promise wiring
 
     const moneyPayment = makePromise();
-    const moneyTransfer = makeTransfer(moneyNeeded, moneyPayment.p);
+    const moneyTransfer = makeTransfer(moneyNeeded, moneyPayment.promise);
 
     const stockPayment = makePromise();
-    const stockTransfer = makeTransfer(stockNeeded, stockPayment.p);
+    const stockTransfer = makeTransfer(stockNeeded, stockPayment.promise);
 
     // TODO Use cancellation tokens instead.
     const aliceCancel = makePromise();
@@ -56,8 +56,8 @@ const escrowExchange = harden({
 
     const decisionP = Promise.race([
       Promise.all([moneyTransfer.phase1(), stockTransfer.phase1()]),
-      aliceCancel.p,
-      bobCancel.p,
+      aliceCancel.promise,
+      bobCancel.promise,
     ]);
     decisionP.then(
       _ => {
@@ -73,14 +73,14 @@ const escrowExchange = harden({
     // Seats
 
     const aliceSeat = harden({
-      offer: moneyPayment.res,
+      offer: moneyPayment.resolve,
       cancel: aliceCancel.reject,
       getWinnings: stockTransfer.getWinnings,
       getRefund: moneyTransfer.getRefund,
     });
 
     const bobSeat = harden({
-      offer: stockPayment.res,
+      offer: stockPayment.resolve,
       cancel: bobCancel.reject,
       getWinnings: moneyTransfer.getWinnings,
       getRefund: stockTransfer.getRefund,

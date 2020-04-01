@@ -1,5 +1,5 @@
 import Nat from '@agoric/nat';
-import makePromise from '@agoric/make-promise';
+import { makePromise } from '@agoric/make-promise';
 
 export default function buildCommand(broadcastCallback) {
   if (!broadcastCallback) {
@@ -14,10 +14,10 @@ export default function buildCommand(broadcastCallback) {
     // deliver the JSON-serializable object to the registered handler, and
     // return a promise that fires with a JSON-serializable object in
     // response
-    const { p, res, reject } = makePromise();
+    const { promise, resolve, reject } = makePromise();
     const count = nextCount;
     nextCount += 1;
-    responses.set(count, { res, reject });
+    responses.set(count, { resolve, reject });
     if (!inboundCallback) {
       throw new Error(`inboundCommand before registerInboundCallback`);
     }
@@ -26,7 +26,7 @@ export default function buildCommand(broadcastCallback) {
     } catch (e) {
       console.error(`error running inboundCallback:`, e);
     }
-    return p;
+    return promise;
   }
 
   function sendBroadcast(kBodyString) {
@@ -54,11 +54,11 @@ export default function buildCommand(broadcastCallback) {
       // maybe just ignore it
       throw new Error(`unknown response index ${count}`);
     }
-    const { res, reject } = responses.get(count);
+    const { resolve, reject } = responses.get(count);
     if (isReject) {
       reject(obj);
     } else {
-      res(obj);
+      resolve(obj);
     }
   }
 

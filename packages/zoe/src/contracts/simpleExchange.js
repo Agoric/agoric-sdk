@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
-import makePromise from '@agoric/make-promise';
+import { makePromise } from '@agoric/make-promise';
 import { makeZoeHelpers, defaultAcceptanceMsg } from './helpers/zoeHelpers';
 
 /**
@@ -54,7 +54,7 @@ export const makeContract = harden(zoe => {
 
   function getBookOrders() {
     return {
-      changed: nextChangePromise.p,
+      changed: nextChangePromise.promise,
       buys: flattenOrders(buyInviteHandles),
       sells: flattenOrders(sellInviteHandles),
     };
@@ -74,7 +74,7 @@ export const makeContract = harden(zoe => {
   // subscribe to the promise and are notified at some future point. A much
   // nicer protocol is in https://github.com/Agoric/agoric-sdk/issues/253
   function bookOrdersChanged() {
-    nextChangePromise.res();
+    nextChangePromise.resolve();
     nextChangePromise = makePromise();
   }
 

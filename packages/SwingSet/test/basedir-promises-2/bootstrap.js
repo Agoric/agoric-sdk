@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import makePromise from '@agoric/make-promise';
+import { makePromise } from '@agoric/make-promise';
 
 console.log(`loading bootstrap`);
 
@@ -8,7 +8,7 @@ function build(E, log) {
     bootstrap(argv, vats) {
       const mode = argv[0];
       if (mode === 'harden-promise-1') {
-        const { p: p1 } = makePromise();
+        const { promise: p1 } = makePromise();
         harden(p1);
         const allP = [];
         // in bug #95, this first call returns a (correctly) frozen Promise,

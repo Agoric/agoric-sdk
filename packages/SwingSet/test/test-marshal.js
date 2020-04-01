@@ -1,6 +1,6 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
-import makePromise from '@agoric/make-promise';
+import { makePromise } from '@agoric/make-promise';
 
 import { makeMarshaller } from '../src/kernel/liveSlots';
 
@@ -106,13 +106,13 @@ test('serialize promise', async t => {
   };
 
   const { m } = makeMarshaller(syscall);
-  const { p, res } = makePromise();
-  t.deepEqual(m.serialize(p), {
+  const { promise, resolve } = makePromise();
+  t.deepEqual(m.serialize(promise), {
     body: '{"@qclass":"slot","index":0}',
     slots: ['p+5'],
   });
   // serializer should remember the promise
-  t.deepEqual(m.serialize(harden(['other stuff', p])), {
+  t.deepEqual(m.serialize(harden(['other stuff', promise])), {
     body: '["other stuff",{"@qclass":"slot","index":0}]',
     slots: ['p+5'],
   });
@@ -120,13 +120,13 @@ test('serialize promise', async t => {
   // inbound should recognize it and return the promise
   t.deepEqual(
     m.unserialize({ body: '{"@qclass":"slot","index":0}', slots: ['p+5'] }),
-    p,
+    promise,
   );
 
-  res(5);
+  resolve(5);
   t.deepEqual(log, []);
 
-  const { p: pauseP, res: pauseRes } = makePromise();
+  const { promise: pauseP, resolve: pauseRes } = makePromise();
   setImmediate(() => pauseRes());
   await pauseP;
   t.deepEqual(log, [{ result: 'p+5', data: { body: '5', slots: [] } }]);

@@ -2,7 +2,7 @@
 import builtinModules from 'builtin-modules';
 import { evaluateProgram } from '@agoric/evaluate';
 import { E, HandledPromise, makeCapTP } from '@agoric/captp';
-import makePromise from '@agoric/make-promise';
+import { makePromise } from '@agoric/make-promise';
 
 import bundleSource from '@agoric/bundle-source';
 
@@ -46,7 +46,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
           dispatch(obj);
         } catch (e) {
           log.error('server error processing message', data, e);
-          exit.rej(e);
+          exit.reject(e);
         }
       });
 
@@ -87,14 +87,14 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
 
       log.info('Done!');
       ws.close();
-      exit.res(0);
+      exit.resolve(0);
     } catch (e) {
-      exit.rej(e);
+      exit.reject(e);
     }
   });
   ws.on('close', (_code, _reason) => {
     log.debug('connection closed');
-    exit.res(1);
+    exit.resolve(1);
   });
-  return exit.p;
+  return exit.promise;
 }

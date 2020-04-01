@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { HandledPromise } from '@agoric/eventual-send';
 
-export default function makePromise() {
+export function makePromise() {
   let res;
   let rej;
   // We use a HandledPromise so that we can run HandledPromise.unwrap(p)
@@ -28,7 +28,11 @@ export default function makePromise() {
       delete p.domain;
     }
   }
-  // TODO: Retire name 'rej' as it looks too much like 'res'.
-  return harden({ p, res, rej, reject: rej });
+  return harden({ promise: p, resolve: res, reject: rej });
 }
 harden(makePromise);
+
+export function isPromise(maybePromise) {
+  return HandledPromise.resolve(maybePromise) === maybePromise;
+}
+harden(isPromise);

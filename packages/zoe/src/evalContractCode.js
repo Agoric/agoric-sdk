@@ -6,7 +6,7 @@ import harden from '@agoric/harden';
 import { makeMeter } from '@agoric/transform-metering/src/meter';
 import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
-import makePromise from '@agoric/make-promise';
+import { makePromise } from '@agoric/make-promise';
 import { sameStructure } from '@agoric/same-structure';
 
 const evaluateStringToFn = (functionSrcString, endowments) => {
