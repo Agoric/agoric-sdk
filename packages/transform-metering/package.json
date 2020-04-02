@@ -1,6 +1,6 @@
 {
   "name": "@agoric/transform-metering",
-  "version": "1.2.1-alpha.0",
+  "version": "1.2.1",
   "description": "transform-metering",
   "main": "dist/transform-metering.cjs.js",
   "module": "src/index.js",
@@ -24,7 +24,7 @@
   "dependencies": {
     "@agoric/harden": "^0.0.4",
     "@agoric/nat": "^2.0.1",
-    "@agoric/tame-metering": "^1.1.1-alpha.0",
+    "@agoric/tame-metering": "^1.1.1",
     "re2": "^1.10.5"
   },
   "keywords": [],

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/spawner",
-  "version": "0.1.1-alpha.0",
+  "version": "0.1.1",
   "description": "Wrapper for JavaScript map",
   "main": "src/contractHost.js",
   "engines": {
@@ -28,18 +28,18 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.0.3-alpha.0",
-    "@agoric/ertp": "^0.5.1-alpha.0",
-    "@agoric/evaluate": "^2.2.2-alpha.0",
+    "@agoric/assert": "^0.0.3",
+    "@agoric/ertp": "^0.5.1",
+    "@agoric/evaluate": "^2.2.2",
     "@agoric/harden": "^0.0.4",
-    "@agoric/make-promise": "^0.0.3-alpha.0",
+    "@agoric/make-promise": "^0.0.3",
     "@agoric/nat": "^2.0.1",
-    "@agoric/same-structure": "^0.0.3-alpha.0",
-    "@agoric/store": "^0.0.3-alpha.0",
-    "@agoric/transform-metering": "^1.2.1-alpha.0"
+    "@agoric/same-structure": "^0.0.3",
+    "@agoric/store": "^0.0.3",
+    "@agoric/transform-metering": "^1.2.1"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.4.1-alpha.0",
+    "@agoric/swingset-vat": "^0.4.1",
     "esm": "^3.2.25",
     "tap-spec": "^5.0.0",
     "tape": "^4.11.0",

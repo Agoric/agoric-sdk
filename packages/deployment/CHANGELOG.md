@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.18.1-alpha.0...@agoric/deployment@1.18.1) (2020-04-02)
+
+**Note:** Version bump only for package @agoric/deployment
+
+
+
+
+
 ## [1.18.1-alpha.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.18.0...@agoric/deployment@1.18.1-alpha.0) (2020-04-02)
 
 
