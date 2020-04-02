@@ -37,6 +37,9 @@ yarn lerna publish from-package
 Then you can run:
 
 ```sh
+# Build all package generated files.
+yarn build
+# Pulblish to NPM.
 yarn lerna publish from-package
 ```
 
