@@ -89,7 +89,7 @@ func handleIBCPacket(ctx sdk.Context, keeper Keeper, actionType string, packet c
 	}
 
 	data := packet.GetData()
-	data64 := make(byte[base64.StdEncoding.EncodedLen(data)])
+	data64 := make([]byte, base64.StdEncoding.EncodedLen(len(data)))
 	base64.StdEncoding.Encode(data64, data)
 
 	action := &ibcPacketAction{
