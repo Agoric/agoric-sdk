@@ -1,6 +1,6 @@
 {
   "name": "@agoric/evaluate",
-  "version": "2.2.1",
+  "version": "2.2.2-alpha.0",
   "description": "(unsafe) three-argument evaluator function",
   "main": "src/main.js",
   "module": "src/index.js",
@@ -18,7 +18,7 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
-    "@agoric/default-evaluate-options": "^0.3.1",
+    "@agoric/default-evaluate-options": "^0.3.2-alpha.0",
     "esm": "^3.2.5"
   },
   "author": "Agoric",

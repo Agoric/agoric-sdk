@@ -1,6 +1,6 @@
 {
   "name": "@agoric/import-manager",
-  "version": "0.0.1",
+  "version": "0.0.2-alpha.0",
   "description": "Share code across vat boundaries",
   "main": "src/importManager.js",
   "engines": {
