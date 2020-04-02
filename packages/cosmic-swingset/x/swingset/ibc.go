@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	channelexported "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/exported"
 	channeltypes "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -19,19 +20,19 @@ type ChannelEndpoint struct {
 
 type ChannelTuple struct {
 	Destination ChannelEndpoint `json:"dst"`
-	Source ChannelEndpoint	`json:"src"`
+	Source      ChannelEndpoint `json:"src"`
 }
 
 type channelHandler struct {
-	Keeper      Keeper
-	Context     sdk.Context
-	CurrentPacket *channeltypes.Packet
+	Keeper        Keeper
+	Context       sdk.Context
+	CurrentPacket channelexported.PacketI
 }
 
 type channelMessage struct {
-	Method string `json:"method"`
+	Method string       `json:"method"`
 	Tuple  ChannelTuple `json:"tuple"`
-	Data64   string `json:"data64"`
+	Data64 string       `json:"data64"`
 }
 
 func (cm channelMessage) GetData() []byte {
@@ -43,10 +44,10 @@ func (cm channelMessage) GetData() []byte {
 	return data
 }
 
-func NewIBCChannelHandler(ctx sdk.Context, keeper Keeper, packet *channeltypes.Packet) *channelHandler {
+func NewIBCChannelHandler(ctx sdk.Context, keeper Keeper, packet channelexported.PacketI) *channelHandler {
 	return &channelHandler{
-		Context: ctx,
-		Keeper: keeper,
+		Context:       ctx,
+		Keeper:        keeper,
 		CurrentPacket: packet,
 	}
 }
@@ -71,14 +72,14 @@ func (ch *channelHandler) Receive(str string) (ret string, err error) {
 			return "", err
 		}
 		return "true", nil
-	
+
 	case "close":
 		// Make sure our port goes away.
 		if err = ch.Keeper.ChanCloseInit(ch.Context, msg.Tuple.Destination.Port, msg.Tuple.Destination.Channel); err != nil {
 			return "", err
 		}
-		return "true", nil		
-	
+		return "true", nil
+
 	case "send":
 		seq, ok := ch.Keeper.GetNextSequenceSend(
 			ch.Context,
@@ -96,9 +97,9 @@ func (ch *channelHandler) Receive(str string) (ret string, err error) {
 			msg.GetData(), seq,
 			msg.Tuple.Source.Port, msg.Tuple.Source.Channel,
 			msg.Tuple.Destination.Port, msg.Tuple.Destination.Channel,
-			uint64(ch.Context.BlockHeight() + blockTimeout),
+			uint64(ch.Context.BlockHeight()+blockTimeout),
 		)
-		if err := ch.Keeper.SendPacket(ch.Context, packet); err != nil{
+		if err := ch.Keeper.SendPacket(ch.Context, packet); err != nil {
 			return "", err
 		}
 		return "true", nil

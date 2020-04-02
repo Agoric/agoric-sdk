@@ -1,6 +1,7 @@
 package swingset
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,13 +17,13 @@ import (
 )
 
 type ibcPacketAction struct {
-	Type           string              `json:"type"`
-	Packet         channeltypes.Packet `json:"packet"`
-	Tuple          ChannelTuple        `json:"tuple"`
-	IBCHandlerPort int                 `json:"ibcHandlerPort"`
-	StoragePort    int                 `json:"storagePort"`
-	BlockHeight    int64               `json:"blockHeight"`
-	BlockTime      int64               `json:"blockTime"`
+	Type           string       `json:"type"`
+	Data64         string       `json:"data64"`
+	Tuple          ChannelTuple `json:"tuple"`
+	IBCHandlerPort int          `json:"ibcHandlerPort"`
+	StoragePort    int          `json:"storagePort"`
+	BlockHeight    int64        `json:"blockHeight"`
+	BlockTime      int64        `json:"blockTime"`
 }
 
 type deliverInboundAction struct {
@@ -73,25 +74,27 @@ func handleIBCPacket(ctx sdk.Context, keeper Keeper, actionType string, packet c
 	defer UnregisterPortHandler(storagePort)
 
 	// The channel lifetime is longer than just one message.
-	pkt := packet.(channeltypes.Packet)
-
-	ibcHandlerPort := RegisterPortHandler(NewIBCChannelHandler(ctx, keeper, &pkt))
+	ibcHandlerPort := RegisterPortHandler(NewIBCChannelHandler(ctx, keeper, packet))
 	defer UnregisterPortHandler(ibcHandlerPort)
 
 	tuple := ChannelTuple{
 		Source: ChannelEndpoint{
-			Channel: pkt.SourceChannel,
-			Port:    pkt.SourcePort,
+			Channel: packet.GetSourceChannel(),
+			Port:    packet.GetSourcePort(),
 		},
 		Destination: ChannelEndpoint{
-			Channel: pkt.DestinationChannel,
-			Port:    pkt.DestinationPort,
+			Channel: packet.GetDestChannel(),
+			Port:    packet.GetDestPort(),
 		},
 	}
 
+	data := packet.GetData()
+	data64 := make(byte[base64.StdEncoding.EncodedLen(data)])
+	base64.StdEncoding.Encode(data64, data)
+
 	action := &ibcPacketAction{
 		Type:           actionType,
-		Packet:         pkt,
+		Data64:         string(data64),
 		Tuple:          tuple,
 		StoragePort:    storagePort,
 		IBCHandlerPort: ibcHandlerPort,
