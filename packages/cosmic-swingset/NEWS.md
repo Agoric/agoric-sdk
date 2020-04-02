@@ -1,5 +1,9 @@
 User-visible changes in Cosmic SwingSet:
 
+## Release v0.14.0 (2020-04-02)
+
+* Beginnings of IBC support, currently just stubbed out.
+
 ## Release v0.10.7 (2019-10-23)
 
 * Upgrade to ERTP v0.1.8

@@ -1,7 +1,7 @@
 REPOSITORY = agoric/cosmic-swingset
 REPOSITORY_SDK = agoric/agoric-sdk
 SS := ../cosmic-swingset/
-TAG := $(shell test ! -f package.json || sed -ne 's/.*"version": "\(.*\)".*/\1/p' package.json)
+TAG := $(shell test ! -f ../../package.json || sed -ne 's/.*"version": "\(.*\)".*/\1/p' ../../package.json)
 DO_PUSH_LATEST :=
 
 docker-build: docker-build-base docker-build-sdk docker-build-solo \
