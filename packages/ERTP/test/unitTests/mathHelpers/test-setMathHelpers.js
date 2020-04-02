@@ -412,7 +412,7 @@ test('setMathHelpers with basic objects', t => {
   }
 });
 
-test('setMathHelpers with basic objects', t => {
+test('setMathHelpers with complex objects', t => {
   try {
     const a = { handle: {}, instanceHandle: {}, name: 'a' };
     const b = { handle: {}, instanceHandle: a.instanceHandle, name: 'b' };

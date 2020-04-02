@@ -55,56 +55,50 @@ test('issuer.getMathHelpersName', t => {
 });
 
 test('issuer.makeEmptyPurse', t => {
-  try {
-    const { issuer, mint, amountMath, brand } = produceIssuer('fungible');
-    const purse = issuer.makeEmptyPurse();
-    const payment = mint.mintPayment(amountMath.make(837));
+  t.plan(6);
+  const { issuer, mint, amountMath, brand } = produceIssuer('fungible');
+  const purse = issuer.makeEmptyPurse();
+  const payment = mint.mintPayment(amountMath.make(837));
 
+  t.ok(
+    amountMath.isEqual(purse.getCurrentAmount(), amountMath.getEmpty()),
+    `empty purse is empty`,
+  );
+  t.equals(purse.getAllegedBrand(), brand, `purse's brand is correct`);
+  const fungible837 = amountMath.make(837);
+
+  const checkDeposit = newPurseBalance => {
+    t.ok(
+      amountMath.isEqual(newPurseBalance, fungible837),
+      `the balance returned is the purse balance`,
+    );
+    t.ok(
+      amountMath.isEqual(purse.getCurrentAmount(), fungible837),
+      `the new purse balance is the payment's old balance`,
+    );
+  };
+
+  const performWithdrawal = () => purse.withdraw(fungible837);
+
+  const checkWithdrawal = newPayment => {
+    issuer.getAmountOf(newPayment).then(amount => {
+      t.ok(
+        amountMath.isEqual(amount, fungible837),
+        `the withdrawn payment has the right balance`,
+      );
+    });
     t.ok(
       amountMath.isEqual(purse.getCurrentAmount(), amountMath.getEmpty()),
-      `empty purse is empty`,
+      `the purse is empty again`,
     );
-    t.equals(purse.getAllegedBrand(), brand, `purse's brand is correct`);
-    const fungible837 = amountMath.make(837);
+  };
 
-    const checkDeposit = newPurseBalance => {
-      t.ok(
-        amountMath.isEqual(newPurseBalance, fungible837),
-        `the balance returned is the purse balance`,
-      );
-      t.ok(
-        amountMath.isEqual(purse.getCurrentAmount(), fungible837),
-        `the new purse balance is the payment's old balance`,
-      );
-    };
-
-    const performWithdrawal = () => purse.withdraw(fungible837);
-
-    const checkWithdrawal = newPayment => {
-      issuer.getAmountOf(newPayment).then(amount => {
-        t.ok(
-          amountMath.isEqual(amount, fungible837),
-          `the withdrawn payment has the right balance`,
-        );
-      });
-      t.ok(
-        amountMath.isEqual(purse.getCurrentAmount(), amountMath.getEmpty()),
-        `the purse is empty again`,
-      );
-    };
-
-    E(purse)
-      .deposit(payment, fungible837)
-      .then(checkDeposit)
-      .then(performWithdrawal)
-      .then(checkWithdrawal)
-      .catch(e => t.assert(false, e))
-      .finally(_ => t.end());
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
-  }
+  E(purse)
+    .deposit(payment, fungible837)
+    .then(checkDeposit)
+    .then(performWithdrawal)
+    .then(checkWithdrawal)
+    .catch(e => t.assert(false, e));
 });
 
 test('issuer.deposit', t => {
@@ -148,26 +142,20 @@ test('issuer.deposit promise', t => {
 });
 
 test('issuer.burn', t => {
-  try {
-    const { issuer, mint, amountMath } = produceIssuer('fungible');
-    const payment1 = mint.mintPayment(amountMath.make(837));
+  t.plan(2);
+  const { issuer, mint, amountMath } = produceIssuer('fungible');
+  const payment1 = mint.mintPayment(amountMath.make(837));
 
-    E(issuer)
-      .burn(payment1, amountMath.make(837))
-      .then(burntBalance => {
-        t.ok(
-          amountMath.isEqual(burntBalance, amountMath.make(837)),
-          `entire minted payment was burnt`,
-        );
-        t.rejects(() => issuer.getAmountOf(payment1), /payment not found/);
-      })
-      .catch(e => t.assert(false, e))
-      .finally(_ => t.end());
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
-  }
+  E(issuer)
+    .burn(payment1, amountMath.make(837))
+    .then(burntBalance => {
+      t.ok(
+        amountMath.isEqual(burntBalance, amountMath.make(837)),
+        `entire minted payment was burnt`,
+      );
+      t.rejects(() => issuer.getAmountOf(payment1), /payment not found/);
+    })
+    .catch(e => t.assert(false, e));
 });
 
 test('issuer.claim', t => {
@@ -283,60 +271,55 @@ test('issuer.split good amount', t => {
 });
 
 test('issuer.combine good payments', t => {
-  try {
-    const { mint, issuer, amountMath } = produceIssuer('fungible');
-    const payments = [];
-    for (let i = 0; i < 100; i += 1) {
-      payments.push(mint.mintPayment(amountMath.make(1)));
-    }
-
-    const checkCombinedPayment = combinedPayment => {
-      issuer.getAmountOf(combinedPayment).then(amount => {
-        t.deepEqual(
-          amount,
-          amountMath.make(100),
-          `combined payment equal to the original payments total`,
-        );
-        for (const payment of payments) {
-          t.rejects(
-            () => issuer.getAmountOf(payment),
-            /payment not found/,
-            `original payments no longer exist`,
-          );
-        }
-      });
-    };
-    E(issuer)
-      .combine(payments)
-      .then(checkCombinedPayment)
-      .catch(e => t.assert(false, e))
-      .finally(_ => t.end());
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
+  t.plan(101);
+  const { mint, issuer, amountMath } = produceIssuer('fungible');
+  const payments = [];
+  for (let i = 0; i < 100; i += 1) {
+    payments.push(mint.mintPayment(amountMath.make(1)));
   }
+
+  const checkCombinedPayment = combinedPayment => {
+    issuer.getAmountOf(combinedPayment).then(amount => {
+      t.deepEqual(
+        amount,
+        amountMath.make(100),
+        `combined payment equal to the original payments total`,
+      );
+      for (const payment of payments) {
+        t.rejects(
+          () => issuer.getAmountOf(payment),
+          /payment not found/,
+          `original payments no longer exist`,
+        );
+      }
+    });
+  };
+  E(issuer)
+    .combine(payments)
+    .then(checkCombinedPayment)
+    .catch(e => t.assert(false, e));
 });
 
 test('issuer.combine array of promises', t => {
-  try {
-    const { mint, issuer, amountMath } = produceIssuer('fungible');
-    const paymentsP = [];
-    for (let i = 0; i < 100; i += 1) {
-      const freshPayment = mint.mintPayment(amountMath.make(1));
-      const paymentP = issuer.claim(freshPayment);
-      paymentsP.push(paymentP);
-    }
-
-    E(issuer)
-      .combine(paymentsP)
-      .catch(e => t.assert(false, e))
-      .finally(_ => t.end());
-  } catch (e) {
-    t.assert(false, e);
-  } finally {
-    t.end();
+  t.plan(1);
+  const { mint, issuer, amountMath } = produceIssuer('fungible');
+  const paymentsP = [];
+  for (let i = 0; i < 100; i += 1) {
+    const freshPayment = mint.mintPayment(amountMath.make(1));
+    const paymentP = issuer.claim(freshPayment);
+    paymentsP.push(paymentP);
   }
+
+  const checkCombinedResult = paymentP => {
+    issuer.getAmountOf(paymentP).then(pAmount => {
+      t.equals(pAmount.extent, 100);
+    });
+  };
+
+  E(issuer)
+    .combine(paymentsP)
+    .then(checkCombinedResult)
+    .catch(e => t.assert(false, e));
 });
 
 test('issuer.combine bad payments', t => {
