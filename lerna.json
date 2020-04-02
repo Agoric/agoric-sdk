@@ -6,6 +6,7 @@
     }
   },
   "packages": [
+    ".",
     "packages/*", 
     "packages/agoric-cli/template/.agservers",
     "packages/agoric-cli/template/api",

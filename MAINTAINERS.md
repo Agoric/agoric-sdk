@@ -38,6 +38,7 @@ Then you can run:
 # Make and push docker containers (in a separate terminal).
 make -C packages/deployment docker-build docker-push
 # Build all package generated files.
+yarn install
 yarn build
 # Pulblish to NPM.
 yarn lerna publish from-package
