@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/bartekn/go-bip39 v0.0.0-20171116152956-a05967ea095d // indirect
 	github.com/coreos/go-etcd v2.0.0+incompatible // indirect
-	github.com/cosmos/cosmos-sdk v0.34.4-0.20200327170214-3b48464bb4dc
+	github.com/cosmos/cosmos-sdk v0.34.4-0.20200401192610-d45627171e53
 	github.com/cpuguy83/go-md2man v1.0.10 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.0-rc.4

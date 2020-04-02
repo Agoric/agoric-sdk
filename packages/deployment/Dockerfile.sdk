@@ -1,10 +1,14 @@
+ARG SWINGSET_TAG=latest
+ARG REPO=agoric/cosmic-swingset
+FROM $REPO:$SWINGSET_TAG as cosmic-swingset-go
+
 # The install container
 FROM node:stretch AS install
 
 WORKDIR /usr/src/agoric-sdk
 COPY . .
-COPY --from=agoric/cosmic-swingset:latest /usr/src/app/lib/ packages/cosmic-swingset/lib/
-COPY --from=agoric/cosmic-swingset:latest /go/bin/ag-cosmos-helper /usr/local/bin/
+COPY --from=cosmic-swingset-go /usr/src/app/lib/ packages/cosmic-swingset/lib/
+COPY --from=cosmic-swingset-go /go/bin/ag-cosmos-helper /usr/local/bin/
 RUN ln -s agoric-sdk/packages/cosmic-swingset ../app
 
 RUN yarn install
@@ -19,4 +23,4 @@ RUN ln -s /usr/src/app/lib/ag-chain-cosmos /usr/local/bin/
 # By default, run the daemon with specified arguments.
 WORKDIR /root
 EXPOSE 26657
-ENTRYPOINT [ "ag-chain-cosmos" ]
+ENTRYPOINT [ "/usr/src/agoric-sdk/packages/cosmic-swingset/scripts/chain-entry.sh" ]

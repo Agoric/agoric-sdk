@@ -135,7 +135,8 @@ export default async function main(progname, args, { path, env, agcc }) {
 
       if (!blockManager) {
         const fns = await launchAndInitializeSwingSet();
-        blockManager = makeBlockManager(fns);
+        const sendToCosmosPort = (port, obj) => agcc.send(port, stringify(obj));
+        blockManager = makeBlockManager(fns, sendToCosmosPort);
       }
     }
 

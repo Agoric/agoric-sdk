@@ -1,6 +1,7 @@
 package swingset
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,7 +11,20 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
+	channelexported "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/exported"
+	channeltypes "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/types"
 )
+
+type ibcPacketAction struct {
+	Type           string       `json:"type"`
+	Data64         string       `json:"data64"`
+	Tuple          ChannelTuple `json:"tuple"`
+	IBCHandlerPort int          `json:"ibcHandlerPort"`
+	StoragePort    int          `json:"storagePort"`
+	BlockHeight    int64        `json:"blockHeight"`
+	BlockTime      int64        `json:"blockTime"`
+}
 
 type deliverInboundAction struct {
 	Type        string          `json:"type"`
@@ -26,8 +40,18 @@ type deliverInboundAction struct {
 func NewHandler(keeper Keeper) sdk.Handler {
 	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
 		switch msg := msg.(type) {
+		// IBC channel support.
+		case channeltypes.MsgPacket:
+			return handleIBCPacket(ctx, keeper, "IBC_PACKET", msg.Packet)
+
+		case channeltypes.MsgTimeout:
+			return handleIBCPacket(ctx, keeper, "IBC_TIMEOUT", msg.Packet)
+
+		// Legacy deliver inbound.
+		// TODO: Sometime merge with IBC?
 		case MsgDeliverInbound:
 			return handleMsgDeliverInbound(ctx, keeper, msg)
+
 		default:
 			errMsg := fmt.Sprintf("Unrecognized swingset Msg type: %v", msg.Type())
 			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
@@ -41,6 +65,55 @@ func mailboxPeer(key string) (string, error) {
 		return "", errors.New("Can only access 'mailbox.PEER'")
 	}
 	return path[1], nil
+}
+
+func handleIBCPacket(ctx sdk.Context, keeper Keeper, actionType string, packet channelexported.PacketI) (*sdk.Result, error) {
+	// Create a "storagePort" that the controller can use to communicate with the
+	// storageHandler
+	storagePort := RegisterPortHandler(NewUnlimitedStorageHandler(ctx, keeper))
+	defer UnregisterPortHandler(storagePort)
+
+	// The channel lifetime is longer than just one message.
+	ibcHandlerPort := RegisterPortHandler(NewIBCChannelHandler(ctx, keeper, packet))
+	defer UnregisterPortHandler(ibcHandlerPort)
+
+	tuple := ChannelTuple{
+		Source: ChannelEndpoint{
+			Channel: packet.GetSourceChannel(),
+			Port:    packet.GetSourcePort(),
+		},
+		Destination: ChannelEndpoint{
+			Channel: packet.GetDestChannel(),
+			Port:    packet.GetDestPort(),
+		},
+	}
+
+	data := packet.GetData()
+	data64 := make([]byte, base64.StdEncoding.EncodedLen(len(data)))
+	base64.StdEncoding.Encode(data64, data)
+
+	action := &ibcPacketAction{
+		Type:           actionType,
+		Data64:         string(data64),
+		Tuple:          tuple,
+		StoragePort:    storagePort,
+		IBCHandlerPort: ibcHandlerPort,
+		BlockHeight:    ctx.BlockHeight(),
+		BlockTime:      ctx.BlockTime().Unix(),
+	}
+
+	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
+	b, err := json.Marshal(action)
+	if err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
+	}
+
+	_, err = keeper.CallToController(string(b))
+	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	if err != nil {
+		return nil, err
+	}
+	return &sdk.Result{}, nil
 }
 
 func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbound) (*sdk.Result, error) {

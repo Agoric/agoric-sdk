@@ -1,0 +1,36 @@
+# Only build ibc-alpha images for now.
+name: Build ibc-alpha Docker Images
+
+on:
+  push:
+    branches:
+    - mfig/dibc-experiment
+
+jobs:
+  docker-ibc-alpha:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Build Go dependencies image
+      uses: elgohr/Publish-Docker-Github-Action@master
+      with:
+        name: agoric/cosmic-swingset
+        dockerfile: packages/cosmic-swingset/Dockerfile
+        context: packages/cosmic-swingset
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        snapshot: true
+        tags: ibc-alpha
+    - name: Build SDK image
+      uses: elgohr/Publish-Docker-Github-Action@master
+      env:
+        # Needed to select the container built above.
+        SWINGSET_TAG: ibc-alpha
+      with:
+        name: agoric/agoric-sdk
+        dockerfile: packages/deployment/Dockerfile.sdk
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        buildargs: SWINGSET_TAG
+        snapshot: true
+        tags: ibc-alpha
