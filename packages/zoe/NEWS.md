@@ -1,5 +1,9 @@
 User-visible changes in @agoric/zoe:
 
+## Release v0.4.0 (2-Apr-2020)
+
+* The `proposal` and `paymentKeywordRecord` arguments to `zoe.redeem` now default to an empty record. Previously, a user had to pass in an empty record for these arguments, which would be interpreted as a presence in @agoric/marshal. 
+
 ## Release 0.3.0 (25-Mar-2020)
 
 "OfferRules", or the declarative statement portion of an offer, have

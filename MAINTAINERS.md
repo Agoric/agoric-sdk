@@ -30,13 +30,13 @@ To perform the release (and push all the git tags), do on the branch:
 git pull
 # Create the final release CHANGELOGs and tags, and push.
 yarn lerna version --conventional-graduate
-# Publish the NPM packages.
-yarn lerna publish from-package
 ```
 
 Then you can run:
 
 ```sh
+# Make and push docker containers (in a separate terminal).
+make -C packages/deployment docker-build docker-push
 # Build all package generated files.
 yarn build
 # Pulblish to NPM.
