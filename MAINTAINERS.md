@@ -2,7 +2,7 @@
 
 ```sh
 # Create a release branch.
-git checkout -b testnet-1.18.0
+git checkout -b release-1.19.0
 ```
 
 To generate a new alpha release, and CHANGELOG.md files:
@@ -13,7 +13,7 @@ yarn lerna version --no-push --conventional-prerelease
 # Tell which packages need news.
 scripts/need-news HEAD^ > needs-news.md
 # Push the branch.
-git push -u origin testnet-1.18.0
+git push -u origin release-1.19.0
 ```
 
 Then, create a release PR, pasting `needs-news.md` into the body.  If there are errors, repeat the above section.
