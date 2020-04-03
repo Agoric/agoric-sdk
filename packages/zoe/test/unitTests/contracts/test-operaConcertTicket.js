@@ -43,7 +43,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
           count: 3,
           expectedAmountPerTicket,
         })
-        .then((auditoriumInvite) => {
+        .then(auditoriumInvite => {
           return inviteIssuer
             .getAmountOf(auditoriumInvite)
             .then(
@@ -67,40 +67,51 @@ The Opera is told about the show being sold out. It gets all the moolas from the
                 );
 
                 // The auditorium redeems its invite.
-                return zoe
-                  .redeem(auditoriumInvite, harden({}))
-                  // cancel will be renamed complete: https://github.com/Agoric/agoric-sdk/issues/835
-                  // cancelObj exists because of a current limitation in @agoric/marshal : https://github.com/Agoric/agoric-sdk/issues/818
-                  .then(({ seat: { afterRedeem, getCurrentAllocation }, payout, cancelObj: {cancel: complete} }) => {
-                    t.equal(
-                      typeof afterRedeem,
-                      'function',
-                      'seat.afterRedeem should be a function',
-                    );
-                    t.equal(
-                      typeof getCurrentAllocation,
-                      'function',
-                      'seat.getCurrentAllocation should be a function',
-                    );
-                    t.equal(
-                      typeof complete,
-                      'function',
-                      'complete should be a function',
-                    );
+                return (
+                  zoe
+                    .redeem(auditoriumInvite, harden({}))
+                    // cancel will be renamed complete: https://github.com/Agoric/agoric-sdk/issues/835
+                    // cancelObj exists because of a current limitation in @agoric/marshal : https://github.com/Agoric/agoric-sdk/issues/818
+                    .then(
+                      ({
+                        seat: { afterRedeem, getCurrentAllocation },
+                        payout,
+                        cancelObj: { cancel: complete },
+                      }) => {
+                        t.equal(
+                          typeof afterRedeem,
+                          'function',
+                          'seat.afterRedeem should be a function',
+                        );
+                        t.equal(
+                          typeof getCurrentAllocation,
+                          'function',
+                          'seat.getCurrentAllocation should be a function',
+                        );
+                        t.equal(
+                          typeof complete,
+                          'function',
+                          'complete should be a function',
+                        );
 
+                        afterRedeem();
 
-                    afterRedeem();
+                        const currentAllocation = getCurrentAllocation();
 
-                    const currentAllocation = getCurrentAllocation()
+                        t.equal(
+                          currentAllocation.Ticket.extent.length,
+                          3,
+                          `the auditorium offerHandle should be associated with the 3 tickets`,
+                        );
 
-                    t.equal(
-                      currentAllocation.Ticket.extent.length, 
-                      3, 
-                      `the auditorium offerHandle should be associated with the 3 tickets`
+                        return {
+                          publicAPI,
+                          _operaPayout: payout,
+                          _complete: complete,
+                        };
+                      },
                     )
-
-                    return { publicAPI, _operaPayout: payout, _complete: complete }
-                  });
+                );
               },
             );
         });
@@ -136,15 +147,15 @@ The Opera is told about the show being sold out. It gets all the moolas from the
           'Alice should see 3 available tickets',
         );
         t.ok(
-          availableTickets.find(t => t.number === 1),
+          availableTickets.find(ticket => ticket.number === 1),
           `availableTickets contains ticket number 1`,
         );
         t.ok(
-          availableTickets.find(t => t.number === 2),
+          availableTickets.find(ticket => ticket.number === 2),
           `availableTickets contains ticket number 2`,
         );
         t.ok(
-          availableTickets.find(t => t.number === 3),
+          availableTickets.find(ticket => ticket.number === 3),
           `availableTickets contains ticket number 3`,
         );
 
@@ -280,15 +291,15 @@ The Opera is told about the show being sold out. It gets all the moolas from the
                       'Bob should see 2 available tickets',
                     );
                     t.ok(
-                      !availableTickets.find(t => t.number === 1),
+                      !availableTickets.find(ticket => ticket.number === 1),
                       `availableTickets should NOT contain ticket number 1`,
                     );
                     t.ok(
-                      availableTickets.find(t => t.number === 2),
+                      availableTickets.find(ticket => ticket.number === 2),
                       `availableTickets should still contain ticket number 2`,
                     );
                     t.ok(
-                      availableTickets.find(t => t.number === 3),
+                      availableTickets.find(ticket => ticket.number === 3),
                       `availableTickets should still contain ticket number 3`,
                     );
 
@@ -361,7 +372,8 @@ The Opera is told about the show being sold out. It gets all the moolas from the
               });
             });
         });
-    });
+    },
+  );
 
   return Promise.all([contractReadyP, bobPartFinished])
     .then(([{ publicAPI, _operaPayout, _complete }]) => {
@@ -376,18 +388,16 @@ The Opera is told about the show being sold out. It gets all the moolas from the
       const done = _operaPayout.then(payout => {
         return payout.Money.then(moneyPayment => {
           return operaPurse.deposit(moneyPayment);
-        })
-        .then(() => {
+        }).then(() => {
           t.equal(
             operaPurse.getCurrentAmount().extent,
             3 * 22,
             `The Opera should get ${3 * 22} moolas from ticket sales`,
           );
-        })
+        });
+      });
 
-      })
-
-      _complete()
+      _complete();
 
       return done;
     })
