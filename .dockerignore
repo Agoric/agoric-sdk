@@ -13,3 +13,11 @@ packages/cosmic-swingset/ve[0-9]
 packages/cosmic-swingset/t[0-9]
 packages/cosmic-swingset/lib/lib*.h
 packages/cosmic-swingset/lib/lib*.so
+*.log
+packages/*/dist
+packages/*/build
+packages/*/*/*/__pycache__
+packages/*/*/*/*/__pycache__
+packages/*/*/*/*.egg-info
+swingset-kernel-state
+.vagrant

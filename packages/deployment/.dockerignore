@@ -1,1 +1,7 @@
 node_modules
+*.log
+dist
+build/
+__pycache__
+*.egg-info
+swingset-kernel-state
