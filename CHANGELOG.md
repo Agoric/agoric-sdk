@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.0.0...@agoric/sdk@2.0.1) (2020-04-03)
+
+
+### Bug Fixes
+
+* make provisioning server work again ([c7cf3b3](https://github.com/Agoric/agoric-sdk/commit/c7cf3b3e0d5e0966ce87639ca1aa36546f365e38))
+
+
+
+
+
 # 2.0.0 (2020-04-02)
 
 
