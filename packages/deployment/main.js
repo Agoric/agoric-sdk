@@ -508,7 +508,7 @@ show-config      display the client connection parameters
           '/usr/src/app/ve3/bin/ag-pserver',
           'add-pubkeys',
           '-c',
-          'http://localhost:8000/vat',
+          'http://localhost:8000/private/repl',
         ]),
       );
 
@@ -529,7 +529,7 @@ show-config      display the client connection parameters
         pserverPassword === ''
           ? ''
           : ` -m ${shellEscape(`/provision-${pserverPassword}`)}`;
-      const execline = `/usr/src/app/ve3/bin/ag-pserver start${pserverFlags}${mountpoint} -c http://localhost:8000/vat`;
+      const execline = `/usr/src/app/ve3/bin/ag-pserver start${pserverFlags}${mountpoint} -c http://localhost:8000/private/repl`;
       await guardFile(`${CONTROLLER_DIR}/service.stamp`, () =>
         needReMain([
           'play',

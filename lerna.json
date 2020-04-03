@@ -2,11 +2,11 @@
   "command": {
     "version": {
       "message": "chore(release): publish",
-      "conventionalCommits": true,
-      "preid": "dev"
+      "conventionalCommits": true
     }
   },
   "packages": [
+    ".",
     "packages/*", 
     "packages/agoric-cli/template/.agservers",
     "packages/agoric-cli/template/api",

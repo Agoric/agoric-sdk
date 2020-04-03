@@ -32,7 +32,7 @@ const log = anylogger('SwingSet:controller');
 
 // FIXME: Put this somewhere better.
 process.on('unhandledRejection', e =>
-  log('UnhandledPromiseRejectionWarning:', e),
+  log.error('UnhandledPromiseRejectionWarning:', e),
 );
 
 const ADMIN_DEVICE_PATH = require.resolve('./kernel/vatAdmin/vatAdmin-src');

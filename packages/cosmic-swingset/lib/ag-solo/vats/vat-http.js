@@ -171,7 +171,7 @@ function build(E, D) {
             D(commandDevice).sendResponse(
               count,
               false,
-              handler[type](obj, meta),
+              await handler[type](obj, meta),
             );
             return;
           }

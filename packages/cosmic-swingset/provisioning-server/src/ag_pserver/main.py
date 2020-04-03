@@ -29,14 +29,14 @@ class SetConfigOptions(usage.Options):
 
 class AddPubkeysOptions(usage.Options):
     optParameters = [
-        ["controller", "c", "http://localhost:8002/vat", "controller's listening port for us to send control messages"],
+        ["controller", "c", "http://localhost:8002/private/repl", "controller's listening port for us to send control messages"],
     ]
 
 class StartOptions(usage.Options):
     optParameters = [
         ["mountpoint", "m", "/", "controller's top level web page"],
         ["listen", "l", "tcp:8001", "client-visible HTTP listening port"],
-        ["controller", "c", "http://localhost:8002/vat", "controller's listening port for us to send control messages"],
+        ["controller", "c", "http://localhost:8002/private/repl", "controller's listening port for us to send control messages"],
     ]
 
 class Options(usage.Options):
