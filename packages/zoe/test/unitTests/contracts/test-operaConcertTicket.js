@@ -131,25 +131,25 @@ The Opera is told about the show being sold out. It gets all the moolas from the
         const availableTickets = publicAPI.getAvailableTickets();
         // and sees the currently available tickets
         t.equal(
-          availableTickets.size,
+          availableTickets.length,
           3,
           'Alice should see 3 available tickets',
         );
         t.ok(
-          [...availableTickets.keys()].includes(1),
+          availableTickets.find(t => t.number === 1),
           `availableTickets contains ticket number 1`,
         );
         t.ok(
-          [...availableTickets.keys()].includes(2),
+          availableTickets.find(t => t.number === 2),
           `availableTickets contains ticket number 2`,
         );
         t.ok(
-          [...availableTickets.keys()].includes(3),
+          availableTickets.find(t => t.number === 3),
           `availableTickets contains ticket number 3`,
         );
 
         // find the extent corresponding to ticket #1
-        const ticket1Extent = [...availableTickets.values()].find(
+        const ticket1Extent = availableTickets.find(
           ticket => ticket.number === 1,
         );
         // make the corresponding amount
@@ -275,20 +275,20 @@ The Opera is told about the show being sold out. It gets all the moolas from the
 
                     // and sees the currently available tickets
                     t.equal(
-                      availableTickets.size,
+                      availableTickets.length,
                       2,
                       'Bob should see 2 available tickets',
                     );
                     t.ok(
-                      ![...availableTickets.keys()].includes(1),
+                      !availableTickets.find(t => t.number === 1),
                       `availableTickets should NOT contain ticket number 1`,
                     );
                     t.ok(
-                      [...availableTickets.keys()].includes(2),
+                      availableTickets.find(t => t.number === 2),
                       `availableTickets should still contain ticket number 2`,
                     );
                     t.ok(
-                      [...availableTickets.keys()].includes(3),
+                      availableTickets.find(t => t.number === 3),
                       `availableTickets should still contain ticket number 3`,
                     );
 
@@ -370,7 +370,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
       // getting the money back
       const availableTickets = publicAPI.getAvailableTickets();
 
-      t.equal(availableTickets.size, 0, 'All the tickets have been sold');
+      t.equal(availableTickets.length, 0, 'All the tickets have been sold');
 
       const operaPurse = moolaIssuer.makeEmptyPurse();
 

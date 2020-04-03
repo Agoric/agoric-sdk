@@ -124,20 +124,19 @@ export const makeContract = harden(zoe => {
         getTicketIssuer() {
           return issuer;
         },
-        // This function returns a Map<TicketNumber, TicketExtent>
         getAvailableTickets() {
-          return new Map(
-            [...offerHandleByTicketNumber]
-              .filter(([_, offerHandle]) => zoe.isOfferActive(offerHandle))
-              .map(([number, offerHandle]) => {
-                const {
-                  proposal: {
-                    give: { Ticket },
-                  },
-                } = zoe.getOffer(offerHandle);
-                return [number, Ticket.extent[0]];
-              }),
-          );
+          // Because of a technical limitation in @agoric/marshal, an array of extents
+          // is better than a Map https://github.com/Agoric/agoric-sdk/issues/838
+          return [...offerHandleByTicketNumber]
+            .filter(([_, offerHandle]) => zoe.isOfferActive(offerHandle))
+            .map(([number, offerHandle]) => {
+              const {
+                proposal: {
+                  give: { Ticket },
+                },
+              } = zoe.getOffer(offerHandle);
+              return Ticket.extent[0]
+            })
         },
       },
     });
