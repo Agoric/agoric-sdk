@@ -43,7 +43,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
           count: 3,
           expectedAmountPerTicket,
         })
-        .then(({ invite: auditoriumInvite }) => {
+        .then((auditoriumInvite) => {
           return inviteIssuer
             .getAmountOf(auditoriumInvite)
             .then(
@@ -53,53 +53,45 @@ The Opera is told about the show being sold out. It gets all the moolas from the
                 t.equal(
                   typeof publicAPI.makeBuyerInvite,
                   'function',
-                  'makeMoneyInvite should be a function',
+                  'publicAPI.makeBuyerInvite should be a function',
                 );
                 t.equal(
                   typeof publicAPI.getTicketIssuer,
                   'function',
-                  'getTicketIssuer should be a function',
+                  'publicAPI.getTicketIssuer should be a function',
                 );
                 t.equal(
                   typeof publicAPI.getAvailableTickets,
                   'function',
-                  'getAvailableTickets should be a function',
+                  'publicAPI.getAvailableTickets should be a function',
                 );
 
                 // The auditorium redeems its invite.
                 return zoe
                   .redeem(auditoriumInvite, harden({}))
-                  .then(({ seat: { makePaymentsAndInvites } }) => {
+                  .then(({ seat: { afterRedeem, getCurrentAllocation }, payout }) => {
                     t.equal(
-                      typeof makePaymentsAndInvites,
+                      typeof afterRedeem,
                       'function',
-                      'makePaymentsAndInvites should be a function',
+                      'seat.afterRedeem should be a function',
+                    );
+                    t.equal(
+                      typeof getCurrentAllocation,
+                      'function',
+                      'seat.getCurrentAllocation should be a function',
                     );
 
-                    const ticketsPaymentsAndInvites = makePaymentsAndInvites();
+                    afterRedeem();
 
-                    return Promise.all(
-                      ticketsPaymentsAndInvites.map(
-                        ({ ticketAmount, payment, invite }) => {
-                          return zoe.redeem(
-                            invite,
-                            harden({
-                              want: { Money: expectedAmountPerTicket },
-                              give: { Ticket: ticketAmount },
-                            }),
-                            harden({ Ticket: payment }),
-                          );
-                        },
-                      ),
-                    ).then(seatsAndPayouts => {
-                      // eslint-disable-next-line no-underscore-dangle
-                      const _operaPayouts = seatsAndPayouts.map(
-                        ({ payout }) => payout,
-                      );
+                    const currentAllocation = getCurrentAllocation()
 
-                      // The Opera makes the publicAPI function publicly available
-                      return { publicAPI, _operaPayouts };
-                    });
+                    t.equal(
+                      currentAllocation.Ticket.extent.length, 
+                      3, 
+                      `the auditorium offerHandle should be associated with the 3 tickets`
+                    )
+
+                    return { publicAPI, _operaPayout: payout }
                   });
               },
             );
@@ -108,7 +100,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
   );
 
   const alicePartFinished = contractReadyP.then(({ publicAPI }) => {
-    const ticketIssuer = publicAPI.getTicketIssuer();
+    /*const ticketIssuer = publicAPI.getTicketIssuer();
     const ticketAmountMath = ticketIssuer.getAmountMath();
 
     // === Alice part ===
@@ -196,13 +188,13 @@ The Opera is told about the show being sold out. It gets all the moolas from the
                 });
             });
           });
-      });
+      });*/
   });
 
   const bobPartFinished = Promise.all([contractReadyP, alicePartFinished]).then(
     ([{ publicAPI }]) => {
       // === Bob part ===
-      const ticketIssuer = publicAPI.getTicketIssuer();
+      /*const ticketIssuer = publicAPI.getTicketIssuer();
       const ticketAmountMath = ticketIssuer.getAmountMath();
 
       // Bob starts with 100 moolas
@@ -360,15 +352,14 @@ The Opera is told about the show being sold out. It gets all the moolas from the
                 });
               });
             });
-        });
-    },
-  );
+        });*/
+    });
 
   return Promise.all([contractReadyP, bobPartFinished])
     .then(([{ publicAPI, _operaPayouts }]) => {
       // === Final Opera part ===
       // getting the money back
-      const availableTickets = publicAPI.getAvailableTickets();
+      /*const availableTickets = publicAPI.getAvailableTickets();
 
       t.equal(availableTickets.length, 0, 'All the tickets have been sold');
 
@@ -388,7 +379,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
             3 * 22,
             `The Opera should get ${3 * 22} moolas from ticket sales`,
           );
-        });
+        });*/
     })
     .catch(err => {
       console.error('Error in last Opera part', err);

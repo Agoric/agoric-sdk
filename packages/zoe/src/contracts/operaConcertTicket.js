@@ -33,7 +33,7 @@ export const makeContract = harden(zoe => {
     terms: { show, start, count },
   } = zoe.getInstanceRecord();
 
-  const offerHandleByTicketNumber = new Map();
+
 
   function completeAmountKeywordRecord(amountKeywordRecord) {
     const { issuerKeywordRecord } = zoe.getInstanceRecord();
@@ -53,94 +53,112 @@ export const makeContract = harden(zoe => {
 
   return zoe.addNewIssuer(issuer, 'Ticket').then(() => {
     // create Zoe helpers after zoe.addNewIssuer because of https://github.com/Agoric/agoric-sdk/issues/802
-    const { rejectOffer } = makeZoeHelpers(zoe);
+    const { swap, rejectOffer } = makeZoeHelpers(zoe);
 
-    const auditoriumSeat = harden({
-      makePaymentsAndInvites() {
-        if (offerHandleByTicketNumber.size >= 1) {
-          throw new Error('makePaymentsAndInvites cannot be called twice');
-        }
+    // Mint tickets inside the contract
+    // In a more realistic contract, the Auditorium would certainly mint the tickets themselves
+    // but because of a current technical limitation when running the Agoric stack on a blockchain, 
+    // minting has to happen inside a Zoe contract https://github.com/Agoric/agoric-sdk/issues/821
 
-        return Array(count)
-          .fill()
-          .map((_, i) => {
-            const ticketNumber = i + 1;
-            const ticketDescription = harden({
-              show,
-              start,
-              number: ticketNumber,
-            });
-            const ticketAmount = amountMath.make(harden([ticketDescription]));
-            const payment = mint.mintPayment(ticketAmount);
-
-            const { invite, inviteHandle } = zoe.makeInvite();
-            offerHandleByTicketNumber.set(ticketNumber, inviteHandle);
-
-            return { invite, ticketAmount, payment };
+    // Mint the contract ahead-of-time (instead of on-demand)
+    // This way, they can be passed to Zoe + ERTP who will be doing the bookkeeping 
+    // of which tickets have been sold and which tickets are still for sale
+    const ticketsAmount = amountMath.make(harden(
+      Array(count)
+        .fill()
+        .map((_, i) => {
+          const ticketNumber = i + 1;
+          return harden({
+            show,
+            start,
+            number: ticketNumber,
           });
-      },
-    });
+        })
+      ));
+    const ticketsPayment = mint.mintPayment(ticketsAmount);
 
-    const auditoriumInvite = zoe.makeInvite(auditoriumSeat);
+    const { invite: contractSelfInvite, inviteHandle: contractOfferHandle } = zoe.makeInvite();
+    // the contract creates an offer {give: tickets, want: nothing} with the tickets
+    return zoe.getZoeService().redeem(contractSelfInvite, harden({give: {Ticket: ticketsAmount}}), harden({Ticket: ticketsPayment}))
+      .then(() => {
 
-    const makeBuyerInvite = () => {
-      const seat = harden({
-        performExchange: () => {
-          const moneyOfferHandle = inviteHandle;
-          const moneyOffer = zoe.getOffer(moneyOfferHandle);
-
-          const moneyWant = moneyOffer.proposal.want.Ticket;
-
-          const ticketNumbers = moneyWant.extent.map(t => t.number);
-          const ticketOfferHandles = ticketNumbers.map(n =>
-            offerHandleByTicketNumber.get(n),
-          );
-
-          const offerHandles = [...ticketOfferHandles, moneyOfferHandle];
-
-          try {
-            const amountKeywordRecords = offerHandles
-              .map(offerHandle => {
-                return zoe.getOffer(offerHandle).proposal.want;
-              })
-              .map(completeAmountKeywordRecord);
-
-            zoe.reallocate(offerHandles, amountKeywordRecords);
-            zoe.complete(offerHandles);
-          } catch (err) {
-            // reallocate certainly failed
-            rejectOffer(moneyOfferHandle);
+        const auditoriumSeat = harden({
+          // this is meant to be called right after redeem
+          // eventually, it might be done automatically: https://github.com/Agoric/agoric-sdk/issues/717
+          afterRedeem() {
+            // the contract transfers tickets to the auditorium leveraging Zoe offer safety
+            zoe.reallocate(
+              [contractOfferHandle, auditoriumOfferHandle],
+              [zoe.getOffer(auditoriumOfferHandle).amounts, zoe.getOffer(contractOfferHandle).amounts]
+            )
+            zoe.complete([contractOfferHandle])
+            // if both calls succeeded (did not throw), the auditorium offer is now 
+            // associated with the tickets and the contract offer is gone from the contract
+          },
+          getCurrentAllocation(){
+            // This call may change to zoe.getCurrentAllocation: https://github.com/Agoric/agoric-sdk/issues/800#issuecomment-608022618
+            return zoe.getOffer(auditoriumOfferHandle).amounts
           }
-        },
-      });
-      const { invite, inviteHandle } = zoe.makeInvite(seat);
-      return invite;
-    };
-
-    return harden({
-      invite: auditoriumInvite,
-      publicAPI: {
-        makeBuyerInvite,
-        getTicketIssuer() {
-          return issuer;
-        },
-        getAvailableTickets() {
-          // Because of a technical limitation in @agoric/marshal, an array of extents
-          // is better than a Map https://github.com/Agoric/agoric-sdk/issues/838
-          return [...offerHandleByTicketNumber]
-            .filter(([_, offerHandle]) => zoe.isOfferActive(offerHandle))
-            .map(([number, offerHandle]) => {
-              const {
-                proposal: {
-                  give: { Ticket },
-                },
-              } = zoe.getOffer(offerHandle);
-              return Ticket.extent[0]
-            })
-        },
-      },
-    });
+        });
+        const {invite: auditoriumInvite, inviteHandle: auditoriumOfferHandle} = zoe.makeInvite(auditoriumSeat);
+    
+        const makeBuyerInvite = () => {
+          const seat = harden({
+            performExchange: () => {
+              const moneyOfferHandle = buyerOfferHandle;
+              const moneyOffer = zoe.getOffer(moneyOfferHandle);
+    
+              const moneyWant = moneyOffer.proposal.want.Ticket;
+    
+              const ticketNumbers = moneyWant.extent.map(t => t.number);
+              /*const ticketOfferHandles = ticketNumbers.map(n =>
+                offerHandleByTicketNumber.get(n),
+              );*/
+    
+              const offerHandles = [...ticketOfferHandles, moneyOfferHandle];
+    
+              try {
+                const amountKeywordRecords = offerHandles
+                  .map(offerHandle => {
+                    return zoe.getOffer(offerHandle).proposal.want;
+                  })
+                  .map(completeAmountKeywordRecord);
+    
+                zoe.reallocate(offerHandles, amountKeywordRecords);
+                zoe.complete(offerHandles);
+              } catch (err) {
+                // reallocate certainly failed
+                rejectOffer(moneyOfferHandle);
+              }
+            },
+          });
+          const { invite, inviteHandle: buyerOfferHandle } = zoe.makeInvite(seat);
+          return invite;
+        };
+    
+        return harden({
+          invite: auditoriumInvite,
+          publicAPI: {
+            makeBuyerInvite,
+            getTicketIssuer() {
+              return issuer;
+            },
+            getAvailableTickets() {
+              // Because of a technical limitation in @agoric/marshal, an array of extents
+              // is better than a Map https://github.com/Agoric/agoric-sdk/issues/838
+              return [...offerHandleByTicketNumber]
+                .filter(([_, offerHandle]) => zoe.isOfferActive(offerHandle))
+                .map(([number, offerHandle]) => {
+                  const {
+                    proposal: {
+                      give: { Ticket },
+                    },
+                  } = zoe.getOffer(offerHandle);
+                  return Ticket.extent[0]
+                })
+            },
+          },
+        });
+      })
   })
-
-  
 });
