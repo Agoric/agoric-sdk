@@ -27,29 +27,15 @@ import { makeZoeHelpers } from './helpers/zoeHelpers';
 
 export const makeContract = harden(zoe => {
   // Create the internal ticket mint
-  const { issuer, mint, amountMath } = produceIssuer('Opera tickets', 'set');
+  const { issuer, mint, amountMath: ticketAmountMath } = produceIssuer('Opera tickets', 'set');
 
   const {
     terms: { show, start, count },
+    issuerKeywordRecord: {Money: moneyIssuer}
   } = zoe.getInstanceRecord();
 
+  const moneyAmountMath = moneyIssuer.getAmountMath();
 
-
-  function completeAmountKeywordRecord(amountKeywordRecord) {
-    const { issuerKeywordRecord } = zoe.getInstanceRecord();
-
-    const completed = { ...amountKeywordRecord };
-
-    for (const [keyword, keywordIssuer] of Object.entries(
-      issuerKeywordRecord,
-    )) {
-      if (!(keyword in completed)) {
-        completed[keyword] = keywordIssuer.getAmountMath().getEmpty();
-      }
-    }
-
-    return harden(completed);
-  }
 
   return zoe.addNewIssuer(issuer, 'Ticket').then(() => {
     // create Zoe helpers after zoe.addNewIssuer because of https://github.com/Agoric/agoric-sdk/issues/802
@@ -63,7 +49,7 @@ export const makeContract = harden(zoe => {
     // Mint the contract ahead-of-time (instead of on-demand)
     // This way, they can be passed to Zoe + ERTP who will be doing the bookkeeping 
     // of which tickets have been sold and which tickets are still for sale
-    const ticketsAmount = amountMath.make(harden(
+    const ticketsAmount = ticketAmountMath.make(harden(
       Array(count)
         .fill()
         .map((_, i) => {
@@ -92,7 +78,7 @@ export const makeContract = harden(zoe => {
               [zoe.getOffer(auditoriumOfferHandle).amounts, zoe.getOffer(contractOfferHandle).amounts]
             )
             zoe.complete([contractOfferHandle])
-            // if both calls succeeded (did not throw), the auditorium offer is now 
+            // if both calls succeeded (did not throw), the auditoriumOfferHandle is now 
             // associated with the tickets and the contract offer is gone from the contract
           },
           getCurrentAllocation(){
@@ -105,30 +91,40 @@ export const makeContract = harden(zoe => {
         const makeBuyerInvite = () => {
           const seat = harden({
             performExchange: () => {
-              const moneyOfferHandle = buyerOfferHandle;
-              const moneyOffer = zoe.getOffer(moneyOfferHandle);
+              const buyerOffer = zoe.getOffer(buyerOfferHandle);
     
-              const moneyWant = moneyOffer.proposal.want.Ticket;
-    
-              const ticketNumbers = moneyWant.extent.map(t => t.number);
-              /*const ticketOfferHandles = ticketNumbers.map(n =>
-                offerHandleByTicketNumber.get(n),
-              );*/
-    
-              const offerHandles = [...ticketOfferHandles, moneyOfferHandle];
-    
+              const currentAuditoriumAllocation = zoe.getOffer(auditoriumOfferHandle).amounts;
+              const currentBuyerAllocation = zoe.getOffer(buyerOfferHandle).amounts;
+
               try {
-                const amountKeywordRecords = offerHandles
-                  .map(offerHandle => {
-                    return zoe.getOffer(offerHandle).proposal.want;
-                  })
-                  .map(completeAmountKeywordRecord);
+                const wantedAuditoriumAllocation = {
+                  Money: moneyAmountMath.add(
+                    currentAuditoriumAllocation.Money,
+                    currentBuyerAllocation.Money
+                  ),
+                  Ticket: ticketAmountMath.subtract(
+                    currentAuditoriumAllocation.Ticket,
+                    buyerOffer.proposal.want.Ticket
+                  )
+                }
+
+                const wantedBuyerAllocation = {
+                  Money: moneyAmountMath.getEmpty(),
+                  Ticket: ticketAmountMath.add(
+                    currentBuyerAllocation.Ticket,
+                    buyerOffer.proposal.want.Ticket
+                  )
+                }
     
-                zoe.reallocate(offerHandles, amountKeywordRecords);
-                zoe.complete(offerHandles);
+                zoe.reallocate(
+                  [auditoriumOfferHandle, buyerOfferHandle],
+                  [wantedAuditoriumAllocation, wantedBuyerAllocation]
+                );
+                zoe.complete([buyerOfferHandle]);
               } catch (err) {
-                // reallocate certainly failed
-                rejectOffer(moneyOfferHandle);
+                console.error('error while performing exchange', err)
+                // amounts don't match or reallocate certainly failed
+                rejectOffer(buyerOfferHandle);
               }
             },
           });
@@ -146,16 +142,7 @@ export const makeContract = harden(zoe => {
             getAvailableTickets() {
               // Because of a technical limitation in @agoric/marshal, an array of extents
               // is better than a Map https://github.com/Agoric/agoric-sdk/issues/838
-              return [...offerHandleByTicketNumber]
-                .filter(([_, offerHandle]) => zoe.isOfferActive(offerHandle))
-                .map(([number, offerHandle]) => {
-                  const {
-                    proposal: {
-                      give: { Ticket },
-                    },
-                  } = zoe.getOffer(offerHandle);
-                  return Ticket.extent[0]
-                })
+              return zoe.getOffer(auditoriumOfferHandle).amounts.Ticket.extent
             },
           },
         });
