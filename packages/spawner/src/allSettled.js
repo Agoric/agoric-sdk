@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import makePromise from '@agoric/make-promise';
+import { makePromise } from '@agoric/make-promise';
 
 // TODO Reconcile with spec of Promise.allSettled
 function allSettled(promises) {
@@ -18,19 +18,19 @@ function allSettled(promises) {
         list[i] = v;
         count -= 1;
         if (count === 0) {
-          result.res(list);
+          result.resolve(list);
         }
       },
       _ => {
         list[i] = promises[i];
         count -= 1;
         if (count === 0) {
-          result.res(list);
+          result.resolve(list);
         }
       },
     );
   }
-  return result.p;
+  return result.promise;
 }
 harden(allSettled);
 

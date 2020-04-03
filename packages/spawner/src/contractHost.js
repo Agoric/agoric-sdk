@@ -11,7 +11,7 @@ import {
   sameStructure,
 } from '@agoric/same-structure';
 import produceIssuer from '@agoric/ertp';
-import makePromise from '@agoric/make-promise';
+import { makePromise } from '@agoric/make-promise';
 import { makeMeter } from '@agoric/transform-metering/src/meter';
 
 export { makeCollect } from './makeCollect';

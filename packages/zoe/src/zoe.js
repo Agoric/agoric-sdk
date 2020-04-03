@@ -3,7 +3,7 @@ import { E } from '@agoric/eventual-send';
 import makeStore from '@agoric/weak-store';
 import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
-import makePromise from '@agoric/make-promise';
+import { makePromise } from '@agoric/make-promise';
 
 import { cleanProposal } from './cleanProposal';
 import { arrayToObj, objToArray } from './objArrayConversion';
@@ -57,7 +57,7 @@ const makeZoe = (additionalEndowments = {}) => {
         payout[keyword] = E(pursePs[i]).withdraw(offerRecord.amounts[keyword]);
       });
       harden(payout);
-      payoutMap.get(offerRecord.handle).res(payout);
+      payoutMap.get(offerRecord.handle).resolve(payout);
     }
   };
 
@@ -426,7 +426,7 @@ const makeZoe = (additionalEndowments = {}) => {
         const makeRedemptionResult = _ => {
           const redemptionResult = {
             seat: handleToSeat.get(offerHandle),
-            payout: payoutMap.get(offerHandle).p,
+            payout: payoutMap.get(offerHandle).promise,
           };
           const { exit } = proposal;
           const [exitKind] = Object.getOwnPropertyNames(exit);

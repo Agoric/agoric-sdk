@@ -4,7 +4,7 @@
 // test.stuff patterns.
 
 import harden from '@agoric/harden';
-import makePromise from '@agoric/make-promise';
+import { makePromise } from '@agoric/make-promise';
 
 // Exercise a set of increasingly complex object-capability message patterns,
 // for testing.
@@ -233,13 +233,13 @@ export function buildPatterns(E, log) {
     // so the resolution is delivered as a separate event.
     objA.a50 = async () => {
       const ret = await E(b.bob).b50();
-      const data = await ret.p;
+      const data = await ret.promise;
       log(`a50 done, got ${data}`);
     };
     const p1 = makePromise();
     objB.b50 = async () => {
-      p1.res('data');
-      return harden({ p: p1.p });
+      p1.resolve('data');
+      return harden({ promise: p1.promise });
     };
   }
   out.a50 = ['a50 done, got data'];
@@ -250,14 +250,14 @@ export function buildPatterns(E, log) {
     // bob returns a (wrapped) promise, then resolves it to a presence
     objA.a51 = async () => {
       const ret = await E(b.bob).b51();
-      const bert = await ret.p;
+      const bert = await ret.promise;
       const bert2 = await E(b.bob).b51_2();
       log(`a51 done, got ${bert}, match ${bert === bert2} ${bert === b.bert}`);
     };
     const p1 = makePromise();
     objB.b51 = async () => {
-      p1.res(b.bert);
-      return harden({ p: p1.p });
+      p1.resolve(b.bert);
+      return harden({ promise: p1.promise });
     };
     objB.b51_2 = async () => {
       return b.bert;
@@ -271,14 +271,14 @@ export function buildPatterns(E, log) {
     // bob returns a (wrapped) promise, then resolves it to a new presence
     objA.a52 = async () => {
       const ret = await E(b.bob).b52();
-      const bill = await ret.p;
+      const bill = await ret.promise;
       const bill2 = await E(b.bob).b52_2();
       log(`a52 done, got ${bill}, match ${bill === bill2}`);
     };
     const p1 = makePromise();
     objB.b52 = async () => {
-      p1.res(b.bill);
-      return harden({ p: p1.p });
+      p1.resolve(b.bill);
+      return harden({ promise: p1.promise });
     };
     objB.b52_2 = async () => {
       return b.bill;
@@ -291,13 +291,13 @@ export function buildPatterns(E, log) {
   {
     objA.a53 = async () => {
       const ret = await E(b.bob).b53(a.amy);
-      const amy2 = await ret.p;
+      const amy2 = await ret.promise;
       log(`a53 done, match ${amy2 === a.amy}`);
     };
     const p1 = makePromise();
     objB.b53 = async amy => {
-      p1.res(amy);
-      return harden({ p: p1.p });
+      p1.resolve(amy);
+      return harden({ promise: p1.promise });
     };
   }
   out.a53 = ['a53 done, match true'];
@@ -307,13 +307,13 @@ export function buildPatterns(E, log) {
   {
     objA.a60 = async () => {
       const p1 = makePromise();
-      const p2 = E(b.bob).b60({ p: p1.p });
-      p1.res(a.amy);
+      const p2 = E(b.bob).b60({ promise: p1.promise });
+      p1.resolve(a.amy);
       const amy2 = await p2;
       log(`a60 done, match ${amy2 === a.amy}`);
     };
     objB.b60 = async Pamy => {
-      const amy = await Pamy.p;
+      const amy = await Pamy.promise;
       return amy;
     };
   }
@@ -324,12 +324,12 @@ export function buildPatterns(E, log) {
   {
     objA.a61 = async () => {
       const p1 = Promise.resolve(a.amy);
-      const p2 = E(b.bob).b61({ p: p1 });
+      const p2 = E(b.bob).b61({ promise: p1 });
       const amy2 = await p2;
       log(`a61 done, match ${amy2 === a.amy}`);
     };
     objB.b61 = async Pamy => {
-      const amy = await Pamy.p;
+      const amy = await Pamy.promise;
       return amy;
     };
   }
@@ -341,15 +341,15 @@ export function buildPatterns(E, log) {
     objA.a62 = async () => {
       const p2 = await E(b.bob).b62_1();
       E(b.bob).b62_2();
-      const bill = await p2.p;
+      const bill = await p2.promise;
       log(`a62 done, got ${bill}`);
     };
     const p1 = makePromise();
     objB.b62_1 = async () => {
-      return { p: p1.p };
+      return { promise: p1.promise };
     };
     objB.b62_2 = async () => {
-      p1.res(b.bill);
+      p1.resolve(b.bill);
     };
   }
   out.a62 = ['a62 done, got [Presence o-52]'];
@@ -360,17 +360,17 @@ export function buildPatterns(E, log) {
     objA.a63 = async () => {
       const p2 = await E(b.bob).b63_1(a.amy);
       E(b.bob).b63_2();
-      const amy2 = await p2.p;
+      const amy2 = await p2.promise;
       log(`a63 done, match ${amy2 === a.amy}`);
     };
     const p1 = makePromise();
     let amyOnBob;
     objB.b63_1 = async amy2 => {
       amyOnBob = amy2;
-      return { p: p1.p };
+      return { promise: p1.promise };
     };
     objB.b63_2 = async () => {
-      p1.res(amyOnBob);
+      p1.resolve(amyOnBob);
     };
   }
   out.a63 = ['a63 done, match true'];
@@ -429,7 +429,7 @@ export function buildPatterns(E, log) {
       E(b.bob).b71_resolvex();
     };
     const p1 = makePromise();
-    objB.b71_getpx = async () => p1.p;
+    objB.b71_getpx = async () => p1.promise;
     objB.b71_resolvex = async () => {
       const x = harden({
         pipe1() {
@@ -448,7 +448,7 @@ export function buildPatterns(E, log) {
           return pipe2;
         },
       });
-      p1.res(x);
+      p1.resolve(x);
     };
   }
   out.a71 = ['pipe1', 'pipe2', 'pipe3', 'p1.then', 'p2.then', 'p3.then'];
@@ -472,7 +472,7 @@ export function buildPatterns(E, log) {
     };
     const p1 = makePromise();
     objB.b72_wait = async () => 0;
-    objB.b72_getpx = async () => p1.p;
+    objB.b72_getpx = async () => p1.promise;
     objB.b72_resolvex = async () => {
       const x = harden({
         pipe1() {
@@ -491,7 +491,7 @@ export function buildPatterns(E, log) {
           return pipe2;
         },
       });
-      p1.res(x);
+      p1.resolve(x);
     };
   }
   out.a72 = ['pipe1', 'p1.then', 'pipe2', 'p2.then', 'pipe3', 'p3.then'];
