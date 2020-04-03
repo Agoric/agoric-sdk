@@ -14,7 +14,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ## [0.5.1-alpha.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.5.0...@agoric/ertp@0.5.1-alpha.0) (2020-04-02)
 
 
-### Bug Fixes
+### Tests
 
 * convert some tests from try/catch/finally to t.plan() ([df8e686](https://github.com/Agoric/agoric-sdk/commit/df8e686bb2ea3a95e67cff930b9bfe46850f017d))
 
