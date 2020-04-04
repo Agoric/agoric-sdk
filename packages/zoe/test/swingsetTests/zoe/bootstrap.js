@@ -3,18 +3,14 @@ import harden from '@agoric/harden';
 import produceIssuer from '@agoric/ertp';
 import buildManualTimer from '../../../tools/manualTimer';
 
-// eslint-disable-next-line import/no-unresolved, import/extensions
+/* eslint-disable import/no-unresolved, import/extensions */
 import automaticRefundBundle from './bundle-automaticRefund';
-// eslint-disable-next-line import/no-unresolved, import/extensions
 import coveredCallBundle from './bundle-coveredCall';
-// eslint-disable-next-line import/no-unresolved, import/extensions
 import publicAuctionBundle from './bundle-publicAuction';
-// eslint-disable-next-line import/no-unresolved, import/extensions
 import atomicSwapBundle from './bundle-atomicSwap';
-// eslint-disable-next-line import/no-unresolved, import/extensions
 import simpleExchangeBundle from './bundle-simpleExchange';
-// eslint-disable-next-line import/no-unresolved, import/extensions
 import autoswapBundle from './bundle-autoswap';
+/* eslint-enable import/no-unresolved, import/extensions */
 
 const setupBasicMints = () => {
   const all = [
