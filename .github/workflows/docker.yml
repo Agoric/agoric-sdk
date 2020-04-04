@@ -41,7 +41,7 @@ jobs:
         tags: latest
   
   docker-solo:
-    needs: docker-solo
+    needs: docker-sdk
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
