@@ -4,9 +4,6 @@ on:
   push:
     tags:
       - "@agoric/sdk@*"
-    # TODO: remove after testing
-    branches:
-      - mfig/deployment-tweaks
 
 jobs:
   docker-godeps:
