@@ -74,7 +74,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
                     // cancelObj exists because of a current limitation in @agoric/marshal : https://github.com/Agoric/agoric-sdk/issues/818
                     .then(
                       ({
-                        seat: { afterRedeem, getCurrentAllocation },
+                        seat: { getCurrentAllocation, afterRedeem },
                         payout,
                         cancelObj: { cancel: complete },
                       }) => {
@@ -94,7 +94,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
                           'complete should be a function',
                         );
 
-                        afterRedeem();
+                        afterRedeem()
 
                         const currentAllocation = getCurrentAllocation();
 
@@ -106,8 +106,8 @@ The Opera is told about the show being sold out. It gets all the moolas from the
 
                         return {
                           publicAPI,
-                          _operaPayout: payout,
-                          _complete: complete,
+                          operaPayout: payout,
+                          complete
                         };
                       },
                     )
@@ -180,11 +180,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
             Money: alicePaymentForTicket,
           })
           .then(({ seat: { performExchange }, payout: payoutP }) => {
-            try {
-              performExchange();
-            } catch (err) {
-              console.error('performaExchange', err);
-            }
+            performExchange();
 
             return payoutP.then(alicePayout => {
               return ticketIssuer
@@ -376,7 +372,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
   );
 
   return Promise.all([contractReadyP, bobPartFinished])
-    .then(([{ publicAPI, _operaPayout, _complete }]) => {
+    .then(([{ publicAPI, operaPayout, complete }]) => {
       // === Final Opera part ===
       // getting the money back
       const availableTickets = publicAPI.getAvailableTickets();
@@ -385,7 +381,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
 
       const operaPurse = moolaIssuer.makeEmptyPurse();
 
-      const done = _operaPayout.then(payout => {
+      const done = operaPayout.then(payout => {
         return payout.Money.then(moneyPayment => {
           return operaPurse.deposit(moneyPayment);
         }).then(() => {
@@ -397,7 +393,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
         });
       });
 
-      _complete();
+      complete();
 
       return done;
     })

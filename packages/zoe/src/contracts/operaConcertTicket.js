@@ -37,7 +37,7 @@ export const makeContract = harden(zoe => {
     issuerKeywordRecord: { Money: moneyIssuer },
   } = zoe.getInstanceRecord();
 
-  const { amountMath: moneyAmountMath } = zoe.getIssuerRecord(moneyIssuer);
+  const moneyAmountMath = moneyIssuer.getAmountMath();
 
   return zoe.addNewIssuer(issuer, 'Ticket').then(() => {
     // create Zoe helpers after zoe.addNewIssuer because of https://github.com/Agoric/agoric-sdk/issues/802
