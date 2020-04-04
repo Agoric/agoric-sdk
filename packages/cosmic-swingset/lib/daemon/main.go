@@ -45,16 +45,14 @@ func RunWithController(sendToController Sender) {
 	appCodec := appcodec.NewAppCodec(cdc)
 
 	config := sdk.GetConfig()
-	config.SetBech32PrefixForAccount(sdk.Bech32PrefixAccAddr, sdk.Bech32PrefixAccPub)
-	config.SetBech32PrefixForValidator(sdk.Bech32PrefixValAddr, sdk.Bech32PrefixValPub)
-	config.SetBech32PrefixForConsensusNode(sdk.Bech32PrefixConsAddr, sdk.Bech32PrefixConsPub)
+	app.SetConfigDefaults(config)
 	config.Seal()
 
 	ctx := server.NewDefaultContext()
 
 	rootCmd := &cobra.Command{
 		Use:               "ag-chain-cosmos",
-		Short:             "swingset App Daemon (server)",
+		Short:             "Agoric Cosmos Daemon (server)",
 		PersistentPreRunE: server.PersistentPreRunEFn(ctx),
 	}
 	// CLI commands to initialize the chain
@@ -97,7 +95,7 @@ func makeNewApp(sendToController Sender) func(logger log.Logger, db dbm.DB, trac
 		}
 
 		// fmt.Println("Starting daemon!")
-		abci := app.NewSwingSetApp(
+		abci := app.NewAgoricApp(
 			sendToController, logger, db, traceStore, true,
 			baseapp.SetPruning(store.NewPruningOptionsFromString(viper.GetString("pruning"))),
 			baseapp.SetMinGasPrices(viper.GetString(server.FlagMinGasPrices)),
@@ -127,7 +125,7 @@ func makeExportAppStateAndTMValidators(sendToController Sender) func(
 		jailWhiteList []string,
 	) (json.RawMessage, []tmtypes.GenesisValidator, error) {
 		if height != -1 {
-			ssApp := app.NewSwingSetApp(sendToController, logger, db, traceStore, false)
+			ssApp := app.NewAgoricApp(sendToController, logger, db, traceStore, false)
 			err := ssApp.LoadHeight(height)
 			if err != nil {
 				return nil, nil, err
@@ -135,7 +133,7 @@ func makeExportAppStateAndTMValidators(sendToController Sender) func(
 			return ssApp.ExportAppStateAndValidators(forZeroHeight, jailWhiteList)
 		}
 
-		ssApp := app.NewSwingSetApp(sendToController, logger, db, traceStore, true)
+		ssApp := app.NewAgoricApp(sendToController, logger, db, traceStore, true)
 
 		return ssApp.ExportAppStateAndValidators(forZeroHeight, jailWhiteList)
 	}
