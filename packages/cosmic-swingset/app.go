@@ -32,7 +32,25 @@ import (
 	"github.com/Agoric/cosmic-swingset/x/swingset"
 )
 
-const appName = "swingset"
+const appName = "agoric"
+
+const (
+	// Bech32MainPrefix defines the Bech32 prefix used by all types
+	Bech32MainPrefix = "agoric"
+
+	// Bech32PrefixAccAddr defines the Bech32 prefix of an account's address
+	Bech32PrefixAccAddr = Bech32MainPrefix
+	// Bech32PrefixAccPub defines the Bech32 prefix of an account's public key
+	Bech32PrefixAccPub = Bech32MainPrefix + sdk.PrefixPublic
+	// Bech32PrefixValAddr defines the Bech32 prefix of a validator's operator address
+	Bech32PrefixValAddr = Bech32MainPrefix + sdk.PrefixValidator + sdk.PrefixOperator
+	// Bech32PrefixValPub defines the Bech32 prefix of a validator's operator public key
+	Bech32PrefixValPub = Bech32MainPrefix + sdk.PrefixValidator + sdk.PrefixOperator + sdk.PrefixPublic
+	// Bech32PrefixConsAddr defines the Bech32 prefix of a consensus node address
+	Bech32PrefixConsAddr = Bech32MainPrefix + sdk.PrefixValidator + sdk.PrefixConsensus
+	// Bech32PrefixConsPub defines the Bech32 prefix of a consensus node public key
+	Bech32PrefixConsPub = Bech32MainPrefix + sdk.PrefixValidator + sdk.PrefixConsensus + sdk.PrefixPublic
+)
 
 var (
 	// default home directories for the application CLI
@@ -63,7 +81,7 @@ var (
 	}
 )
 
-type swingSetApp struct {
+type agoricApp struct {
 	*bam.BaseApp
 	cdc *codec.Codec
 
@@ -93,14 +111,21 @@ type swingSetApp struct {
 }
 
 // verify app interface at compile time
-var _ simapp.App = (*swingSetApp)(nil)
+var _ simapp.App = (*agoricApp)(nil)
 
-// NewSwingSetApp is a constructor function for swingSetApp
-func NewSwingSetApp(
+// SetConfigDefaults sets the appropriate parameters for the Agoric chain.
+func SetConfigDefaults(config *sdk.Config) {
+	config.SetBech32PrefixForAccount(Bech32PrefixAccAddr, Bech32PrefixAccPub)
+	config.SetBech32PrefixForValidator(Bech32PrefixValAddr, Bech32PrefixValPub)
+	config.SetBech32PrefixForConsensusNode(Bech32PrefixConsAddr, Bech32PrefixConsPub)
+}
+
+// NewAgoricApp is a constructor function for agoricApp
+func NewAgoricApp(
 	sendToController func(bool, string) (string, error),
 	logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool,
 	baseAppOptions ...func(*bam.BaseApp),
-) *swingSetApp {
+) *agoricApp {
 
 	// First define the top level codec that will be shared by the different modules
 	// TODO: remove cdc in favor of appCodec once all modules are migrated.
@@ -119,7 +144,7 @@ func NewSwingSetApp(
 	tkeys := sdk.NewTransientStoreKeys(staking.TStoreKey, params.TStoreKey)
 
 	// Here you initialize your application with the store keys it requires
-	var app = &swingSetApp{
+	var app = &agoricApp{
 		BaseApp:   bApp,
 		cdc:       cdc,
 		keys:      keys,
@@ -199,7 +224,7 @@ func NewSwingSetApp(
 
 	app.ibcKeeper = ibc.NewKeeper(app.cdc, keys[ibc.StoreKey], stakingKeeper)
 
-	// The SwingSetKeeper is the Keeper from the Agoric module
+	// The SwingSetKeeper is the Keeper from the SwingSet module
 	// It handles interactions with the kvstore and IBC.
 	swingsetCapKey := app.ibcKeeper.PortKeeper.BindPort(swingset.ModuleName)
 	app.ssKeeper = swingset.NewKeeper(
@@ -284,7 +309,7 @@ func NewSwingSetApp(
 	return app
 }
 
-func (app *swingSetApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
+func (app *agoricApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
 	var genesisState simapp.GenesisState
 
 	err := app.cdc.UnmarshalJSON(req.AppStateBytes, &genesisState)
@@ -295,15 +320,15 @@ func (app *swingSetApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) 
 	return app.mm.InitGenesis(ctx, app.cdc, genesisState)
 }
 
-func (app *swingSetApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+func (app *agoricApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	return app.mm.BeginBlock(ctx, req)
 }
 
-func (app *swingSetApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
+func (app *agoricApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
 	return app.mm.EndBlock(ctx, req)
 }
 
-func (app *swingSetApp) Commit() abci.ResponseCommit {
+func (app *agoricApp) Commit() abci.ResponseCommit {
 	// Wrap the BaseApp's Commit method
 	res := app.BaseApp.Commit()
 	swingset.CommitBlock(app.ssKeeper)
@@ -311,31 +336,31 @@ func (app *swingSetApp) Commit() abci.ResponseCommit {
 }
 
 // GetKey returns the KVStoreKey for the provided store key
-func (app *swingSetApp) GetKey(storeKey string) *sdk.KVStoreKey {
+func (app *agoricApp) GetKey(storeKey string) *sdk.KVStoreKey {
 	return app.keys[storeKey]
 }
 
 // GetTKey returns the TransientStoreKey for the provided store key
-func (app *swingSetApp) GetTKey(storeKey string) *sdk.TransientStoreKey {
+func (app *agoricApp) GetTKey(storeKey string) *sdk.TransientStoreKey {
 	return app.tkeys[storeKey]
 }
 
-func (app *swingSetApp) LoadHeight(height int64) error {
+func (app *agoricApp) LoadHeight(height int64) error {
 	return app.LoadVersion(height, app.keys[bam.MainStoreKey])
 }
 
 // Codec returns simapp's codec
-func (app *swingSetApp) Codec() *codec.Codec {
+func (app *agoricApp) Codec() *codec.Codec {
 	return app.cdc
 }
 
 // SimulationManager implements the SimulationApp interface
-func (app *swingSetApp) SimulationManager() *module.SimulationManager {
+func (app *agoricApp) SimulationManager() *module.SimulationManager {
 	return app.sm
 }
 
 // ModuleAccountAddrs returns all the app's module account addresses.
-func (app *swingSetApp) ModuleAccountAddrs() map[string]bool {
+func (app *agoricApp) ModuleAccountAddrs() map[string]bool {
 	modAccAddrs := make(map[string]bool)
 	for acc := range maccPerms {
 		modAccAddrs[supply.NewModuleAddress(acc).String()] = true
@@ -355,7 +380,7 @@ func GetMaccPerms() map[string][]string {
 
 //_________________________________________________________
 
-func (app *swingSetApp) ExportAppStateAndValidators(forZeroHeight bool, jailWhiteList []string,
+func (app *agoricApp) ExportAppStateAndValidators(forZeroHeight bool, jailWhiteList []string,
 ) (appState json.RawMessage, validators []tmtypes.GenesisValidator, err error) {
 
 	// as if they could withdraw from the start of the next block
