@@ -201,7 +201,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
                       t.equal(
                         aliceBoughtTicketAmount.extent[0].number,
                         1,
-                        'Alice should have receieved the ticket for the correct number',
+                        'Alice should have received the ticket for the correct number',
                       );
                     });
                 });
