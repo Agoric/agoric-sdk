@@ -4,9 +4,9 @@ name: Test all Packages
 # branches)
 
 on:
- push:
-   branches: [master]
- pull_request:
+  push:
+    branches: [master]
+  pull_request:
 
 jobs:
   build:
@@ -14,28 +14,13 @@ jobs:
     steps:
     - uses: actions/checkout@v1
 
-    # FIXME: Reenable after 2020-04-01 when Github cache doesn't take forever.
-    #- name: cache node modules
-    #  uses: actions/cache@v1
-    #  with:
-    #    path: ~/.cache/yarn
-    #    key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
-    #    restore-keys: |
-    #      ${{ runner.os }}-yarn-
-
-    - name: Set up Go 1.13
-      uses: actions/setup-go@v1
+    - name: cache node modules
+      uses: actions/cache@v1
       with:
-        go-version: 1.13
-
-    # FIXME: Reenable after 2020-04-01 when Github cache doesn't take forever.
-    #- name: cache Go modules
-    #  uses: actions/cache@v1
-    #  with:
-    #    path: ~/go/pkg/mod
-    #    key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
-    #    restore-keys: |
-    #      ${{ runner.os }}-go-
+        path: ~/.cache/yarn
+        key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-
 
     # 'yarn install' must be done at the top level, to build all the
     # cross-package symlinks
@@ -46,23 +31,133 @@ jobs:
     # 'yarn build' loops over all workspaces
     - name: yarn build
       run: yarn build
+
+    - name: cache build outputs
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-built-${{ github.sha }}
+
+  lint:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-built-${{ github.sha }}
+    - name: ensure build cache was restored
+      run: exit 1
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: lint check
+      run: yarn lint-check
+
+  test-cosmic-swingset:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-built-${{ github.sha }}
+    - name: ensure build cache was restored
+      run: exit 1
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: Set up Go 1.13
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13
+
+    - name: cache Go modules
+      uses: actions/cache@v1
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: yarn test (cosmic-swingset)
+      run: cd packages/cosmic-swingset && yarn test
+
+  test-swingset:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-built-${{ github.sha }}
+    - name: ensure build cache was restored
+      run: exit 1
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn test (SwingSet)
+      run: cd packages/SwingSet && yarn test
+
+  test-zoe:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-built-${{ github.sha }}
+    - name: ensure build cache was restored
+      run: exit 1
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn test (zoe)
+      run: cd packages/zoe && yarn test
+
+  test-agoric-cli:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-built-${{ github.sha }}
+    - name: ensure build cache was restored
+      run: exit 1
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn test (agoric-cli)
+      run: cd packages/agoric-cli && yarn test
+
+  test-rest:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-built-${{ github.sha }}
+    - name: ensure build cache was restored
+      run: exit 1
+      if: steps.built.outputs.cache-hit != 'true'
     # We run separate steps for each package, to make it easier to drill down
     # into errors. If we wanted to just run everything, run 'yarn test' from
     # the top level.
     #- name: yarn test (everything)
     #  run: yarn test
+    # Always run the tests, regardless of lint failuer.
     - name: yarn test (acorn-eventual-send)
       run: cd packages/acorn-eventual-send && yarn test
-    - name: yarn test (agoric-cli)
-      run: cd packages/agoric-cli && yarn test
     - name: yarn test (assert)
       run: cd packages/assert && yarn test
     - name: yarn test (bundle-source)
       run: cd packages/bundle-source && yarn test
     - name: yarn test (captp)
       run: cd packages/captp && yarn test
-    - name: yarn test (cosmic-swingset)
-      run: cd packages/cosmic-swingset && yarn test
     - name: yarn test (default-evaluate-options)
       run: cd packages/default-evaluate-options && yarn test
     - name: yarn test (deployment)
@@ -99,8 +194,6 @@ jobs:
       run: cd packages/swing-store-lmdb && yarn test
     - name: yarn test (swing-store-simple)
       run: cd packages/swing-store-simple && yarn test
-    - name: yarn test (SwingSet)
-      run: cd packages/SwingSet && yarn test
     - name: yarn test (swingset-runner)
       run: cd packages/swingset-runner && yarn test
     - name: yarn test (tame-metering)
@@ -113,8 +206,3 @@ jobs:
       run: cd packages/wallet-frontend && yarn test
     - name: yarn test (weak-store)
       run: cd packages/weak-store && yarn test
-    - name: yarn test (zoe)
-      run: cd packages/zoe && yarn test
-
-    - name: lint check
-      run: yarn lint-check

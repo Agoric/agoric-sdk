@@ -1,9 +1,11 @@
 import harden from '@agoric/harden';
 
+/* eslint-disable import/extensions, import/no-unresolved */
 import infiniteInstallLoopBundle from './bundle-infiniteInstallLoop';
 import infiniteInstanceLoopBundle from './bundle-infiniteInstanceLoop';
 import infiniteTestLoopBundle from './bundle-infiniteTestLoop';
 import testBuiltinsBundle from './bundle-testBuiltins';
+/* eslint-enable import/extensions, import/no-unresolved */
 
 function build(E, log) {
   const obj0 = {
