@@ -44,11 +44,77 @@ jobs:
     # 'yarn build' loops over all workspaces
     - name: yarn build
       run: yarn build
+
+    - name: cache build outputs
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-built-${{ github.sha }}
+
+  lint:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-built-${{ github.sha }}
+    - name: ensure build cache was restored
+      run: ${{ steps.cache.outputs.cache-hit }}
+    - name: lint check
+      run: yarn lint-check
+
+  test-cosmic-swingset:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-built-${{ github.sha }}
+    - name: ensure build cache was restored
+      run: ${{ steps.cache.outputs.cache-hit }}
+    - name: yarn test (cosmic-swingset)
+      run: cd packages/cosmic-swingset && yarn test
+
+
+  test-swingset:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-built-${{ github.sha }}
+    - name: ensure build cache was restored
+      run: ${{ steps.cache.outputs.cache-hit }}
+    - name: yarn test (SwingSet)
+      run: cd packages/SwingSet && yarn test
+
+  test-rest:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-built-${{ github.sha }}
+    - name: ensure build cache was restored
+      run: ${{ steps.built.outputs.cache-hit }}
     # We run separate steps for each package, to make it easier to drill down
     # into errors. If we wanted to just run everything, run 'yarn test' from
     # the top level.
     #- name: yarn test (everything)
     #  run: yarn test
+    # Always run the tests, regardless of lint failuer.
     - name: yarn test (acorn-eventual-send)
       run: cd packages/acorn-eventual-send && yarn test
     - name: yarn test (agoric-cli)
@@ -59,8 +125,6 @@ jobs:
       run: cd packages/bundle-source && yarn test
     - name: yarn test (captp)
       run: cd packages/captp && yarn test
-    - name: yarn test (cosmic-swingset)
-      run: cd packages/cosmic-swingset && yarn test
     - name: yarn test (default-evaluate-options)
       run: cd packages/default-evaluate-options && yarn test
     - name: yarn test (deployment)
@@ -97,8 +161,6 @@ jobs:
       run: cd packages/swing-store-lmdb && yarn test
     - name: yarn test (swing-store-simple)
       run: cd packages/swing-store-simple && yarn test
-    - name: yarn test (SwingSet)
-      run: cd packages/SwingSet && yarn test
     - name: yarn test (swingset-runner)
       run: cd packages/swingset-runner && yarn test
     - name: yarn test (tame-metering)
@@ -113,6 +175,3 @@ jobs:
       run: cd packages/weak-store && yarn test
     - name: yarn test (zoe)
       run: cd packages/zoe && yarn test
-
-    - name: lint check
-      run: yarn lint-check
