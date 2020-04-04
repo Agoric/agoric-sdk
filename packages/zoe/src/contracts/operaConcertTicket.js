@@ -48,7 +48,7 @@ export const makeContract = harden(zoe => {
     // but because of a current technical limitation when running the Agoric stack on a blockchain,
     // minting has to happen inside a Zoe contract https://github.com/Agoric/agoric-sdk/issues/821
 
-    // Mint the contract ahead-of-time (instead of on-demand)
+    // Mint the tickets ahead-of-time (instead of on-demand)
     // This way, they can be passed to Zoe + ERTP who will be doing the bookkeeping
     // of which tickets have been sold and which tickets are still for sale
     const ticketsAmount = ticketAmountMath.make(
