@@ -94,7 +94,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
                           'complete should be a function',
                         );
 
-                        afterRedeem()
+                        afterRedeem();
 
                         const currentAllocation = getCurrentAllocation();
 
@@ -107,7 +107,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
                         return {
                           publicAPI,
                           operaPayout: payout,
-                          complete
+                          complete,
                         };
                       },
                     )
