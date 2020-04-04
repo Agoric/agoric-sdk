@@ -14,28 +14,26 @@ jobs:
     steps:
     - uses: actions/checkout@v1
 
-    # FIXME: Reenable after 2020-04-01 when Github cache doesn't take forever.
-    #- name: cache node modules
-    #  uses: actions/cache@v1
-    #  with:
-    #    path: ~/.cache/yarn
-    #    key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
-    #    restore-keys: |
-    #      ${{ runner.os }}-yarn-
+    - name: cache node modules
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/yarn
+        key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-
 
     - name: Set up Go 1.13
       uses: actions/setup-go@v1
       with:
         go-version: 1.13
 
-    # FIXME: Reenable after 2020-04-01 when Github cache doesn't take forever.
-    #- name: cache Go modules
-    #  uses: actions/cache@v1
-    #  with:
-    #    path: ~/go/pkg/mod
-    #    key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
-    #    restore-keys: |
-    #      ${{ runner.os }}-go-
+    - name: cache Go modules
+      uses: actions/cache@v1
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
 
     # 'yarn install' must be done at the top level, to build all the
     # cross-package symlinks
