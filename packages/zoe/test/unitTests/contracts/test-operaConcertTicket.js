@@ -16,7 +16,11 @@ The Opera wants 22 moolas per ticket
 
 Alice buys ticket #1
 
-Bob tries to buy ticket 1 and fails. He buys ticket #2 and #3
+Then, the Joker tries malicious things:
+- they try to buy again ticket #1 (and will fail)
+- they try to buy to buy ticket #2 for 1 moola (and will fail)
+
+Then, Bob tries to buy ticket 1 and fails. He buys ticket #2 and #3
 
 The Opera is told about the show being sold out. It gets all the moolas from the sale`, async t => {
   // Setup initial conditions
@@ -118,6 +122,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     },
   );
 
+
   const alicePartFinished = contractReadyP.then(({ publicAPI }) => {
     const ticketIssuer = publicAPI.getTicketIssuer();
     const ticketAmountMath = ticketIssuer.getAmountMath();
@@ -206,7 +211,81 @@ The Opera is told about the show being sold out. It gets all the moolas from the
       });
   });
 
-  const bobPartFinished = Promise.all([contractReadyP, alicePartFinished]).then(
+
+  const jokerPartFinished = Promise.all([contractReadyP, alicePartFinished]).then(([{ publicAPI }]) => {
+    // === Joker part ===
+    const ticketIssuer = publicAPI.getTicketIssuer();
+    const ticketAmountMath = ticketIssuer.getAmountMath();
+
+    // Joker starts with 100 moolas
+    const jokerPurse = moolaIssuer.makeEmptyPurse();
+    jokerPurse.deposit(moolaMint.mintPayment(moola(100)));
+
+    // Joker makes an invite
+    const jokerInvite = inviteIssuer.claim(publicAPI.makeBuyerInvite());
+
+    return inviteIssuer
+    .getAmountOf(jokerInvite)
+    .then(({ extent: [{ instanceHandle: instanceHandleOfJoker }] }) => {
+      const { terms: termsOfJoker } = zoe.getInstance(instanceHandleOfJoker);
+
+      const {
+        expectedAmountPerTicket: expectedAmountPerTicketOfJoker,
+      } = termsOfJoker;
+
+      // Joker does NOT check available tickets and tries to buy the ticket number 1 (already bought by Alice, but he doesn't know)
+      const ticket1Amount = ticketAmountMath.make(
+        harden([
+          {
+            show: termsOfJoker.show,
+            start: termsOfJoker.start,
+            number: 1,
+          },
+        ]),
+      );
+
+      const jokerProposal = harden({
+        give: { Money: expectedAmountPerTicketOfJoker },
+        want: { Ticket: ticket1Amount },
+      });
+
+      const bobFirstPaymentForTicket = jokerPurse.withdraw(
+        expectedAmountPerTicketOfJoker,
+      );
+      
+      return zoe
+        .redeem(jokerInvite, jokerProposal, {
+          Money: bobFirstPaymentForTicket,
+        })
+        .then(({ seat: { performExchange }, payout: payoutP }) => {
+          t.throws(
+            performExchange,
+            'performExchange from Joker should throw',
+          );
+
+          return payoutP.then(({Ticket, Money}) => {
+            return Promise.all([
+              ticketIssuer.getAmountOf(Ticket),
+              moolaIssuer.getAmountOf(Money),
+            ]).then(([jokerRefundTicketAmount, jokerRefundMoneyAmount]) => {
+              t.ok(
+                ticketAmountMath.isEmpty(jokerRefundTicketAmount),
+                'Joker should not receive ticket #1',
+              );
+              t.equal(
+                jokerRefundMoneyAmount.extent,
+                22,
+                'Joker should get a refund after trying to get ticket #1',
+              );
+            })
+          })
+        })
+    })
+
+    
+  })
+
+  const bobPartFinished = Promise.all([contractReadyP, jokerPartFinished]).then(
     ([{ publicAPI }]) => {
       // === Bob part ===
       const ticketIssuer = publicAPI.getTicketIssuer();
@@ -216,160 +295,83 @@ The Opera is told about the show being sold out. It gets all the moolas from the
       const bobPurse = moolaIssuer.makeEmptyPurse();
       bobPurse.deposit(moolaMint.mintPayment(moola(100)));
 
-      // Bob makes an invite
-      const bobInvite = inviteIssuer.claim(publicAPI.makeBuyerInvite());
+      const availableTickets = publicAPI.getAvailableTickets();
 
-      return inviteIssuer
-        .getAmountOf(bobInvite)
-        .then(({ extent: [{ instanceHandle: instanceHandleOfBob }] }) => {
-          const { terms: termsOfBob } = zoe.getInstance(instanceHandleOfBob);
+      // and sees the currently available tickets
+      t.equal(
+        availableTickets.length,
+        2,
+        'Bob should see 2 available tickets',
+      );
+      t.ok(
+        !availableTickets.find(ticket => ticket.number === 1),
+        `availableTickets should NOT contain ticket number 1`,
+      );
+      t.ok(
+        availableTickets.find(ticket => ticket.number === 2),
+        `availableTickets should still contain ticket number 2`,
+      );
+      t.ok(
+        availableTickets.find(ticket => ticket.number === 3),
+        `availableTickets should still contain ticket number 3`,
+      );
 
-          const {
-            expectedAmountPerTicket: expectedAmountPerTicketOfBob,
-          } = termsOfBob;
+      // Bob buys tickets 2 and 3
+      const bobInvite = inviteIssuer.claim(
+        publicAPI.makeBuyerInvite(),
+      );
 
-          // Bob does NOT check available tickets and tries to buy the ticket number 1 (already bought by Alice, but he doesn't know)
-          const ticket1Amount = ticketAmountMath.make(
-            harden([
-              {
-                show: termsOfBob.show,
-                start: termsOfBob.start,
-                number: 1,
-              },
-            ]),
-          );
+      const ticket2and3Amount = ticketAmountMath.make(
+        harden([
+          availableTickets.find(ticket => ticket.number === 2),
+          availableTickets.find(ticket => ticket.number === 3),
+        ]),
+      );
 
-          const bobProposal = harden({
-            give: { Money: expectedAmountPerTicketOfBob },
-            want: { Ticket: ticket1Amount },
-          });
+      const bobProposal = harden({
+        give: { Money: moola(2 * 22) },
+        want: { Ticket: ticket2and3Amount },
+      });
+      const bobPaymentForTicket = bobPurse.withdraw(
+        moola(2 * 22),
+      );
 
-          const bobFirstPaymentForTicket = bobPurse.withdraw(
-            expectedAmountPerTicketOfBob,
-          );
+      return zoe
+        .redeem(bobInvite, bobProposal, {
+          Money: bobPaymentForTicket,
+        })
+        .then(
+          ({
+            seat: { performExchange },
+            payout: payoutP,
+          }) => {
+            performExchange();
 
-          return zoe
-            .redeem(bobInvite, bobProposal, {
-              Money: bobFirstPaymentForTicket,
-            })
-            .then(({ seat: { performExchange }, payout: payoutP }) => {
-              t.throws(
-                performExchange,
-                'performExchange from Bob should throw',
-              );
-
-              return payoutP.then(firstBobPayout => {
-                return Promise.all([
-                  ticketIssuer.getAmountOf(firstBobPayout.Ticket),
-                  moolaIssuer.getAmountOf(firstBobPayout.Money),
-                ]).then(([bobFirstTicketAmount, bobFirstRefundAmount]) => {
+            return payoutP.then(bobPayout => {
+              return ticketIssuer
+                .getAmountOf(bobPayout.Ticket)
+                .then(bobTicketAmount => {
                   t.equal(
-                    bobFirstTicketAmount.extent.length,
-                    0,
-                    'Bob should not receive ticket #1',
+                    bobTicketAmount.extent.length,
+                    2,
+                    'Bob should have received 2 tickets',
                   );
-                  t.equal(
-                    bobFirstRefundAmount.extent,
-                    22,
-                    'Bob should get a refund after trying to get ticket #1',
+                  t.ok(
+                    bobTicketAmount.extent.find(
+                      ticket => ticket.number === 2,
+                    ),
+                    'Bob should have received tickets #2',
                   );
-
-                  return firstBobPayout.Money.then(money => {
-                    // deposit the refund back to the purse
-                    return bobPurse.deposit(money);
-                  }).then(() => {
-                    const availableTickets = publicAPI.getAvailableTickets();
-
-                    // and sees the currently available tickets
-                    t.equal(
-                      availableTickets.length,
-                      2,
-                      'Bob should see 2 available tickets',
-                    );
-                    t.ok(
-                      !availableTickets.find(ticket => ticket.number === 1),
-                      `availableTickets should NOT contain ticket number 1`,
-                    );
-                    t.ok(
-                      availableTickets.find(ticket => ticket.number === 2),
-                      `availableTickets should still contain ticket number 2`,
-                    );
-                    t.ok(
-                      availableTickets.find(ticket => ticket.number === 3),
-                      `availableTickets should still contain ticket number 3`,
-                    );
-
-                    // Second attempt: Bob buys tickets 2 and 3
-                    const bobInvite2 = inviteIssuer.claim(
-                      publicAPI.makeBuyerInvite(),
-                    );
-
-                    const ticket2and3Amount = ticketAmountMath.make(
-                      harden([
-                        {
-                          show: termsOfBob.show,
-                          start: termsOfBob.start,
-                          number: 2,
-                        },
-                        {
-                          show: termsOfBob.show,
-                          start: termsOfBob.start,
-                          number: 3,
-                        },
-                      ]),
-                    );
-
-                    const bobSecondProposal = harden({
-                      give: { Money: moola(2 * 22) },
-                      want: { Ticket: ticket2and3Amount },
-                    });
-                    const bobSecondPaymentForTicket = bobPurse.withdraw(
-                      moola(2 * 22),
-                    );
-
-                    return zoe
-                      .redeem(bobInvite2, bobSecondProposal, {
-                        Money: bobSecondPaymentForTicket,
-                      })
-                      .then(
-                        ({
-                          seat: { performExchange: performExchange2 },
-                          payout: payout2P,
-                        }) => {
-                          performExchange2();
-
-                          return payout2P.then(secondBobPayout => {
-                            return ticketIssuer
-                              .getAmountOf(secondBobPayout.Ticket)
-                              .then(bobSecondTicketAmount => {
-                                t.equal(
-                                  bobSecondTicketAmount.extent.length,
-                                  2,
-                                  'Bob should have received 2 tickets',
-                                );
-                                t.ok(
-                                  bobSecondTicketAmount.extent.find(
-                                    ticket => ticket.number === 2,
-                                  ),
-                                  'Bob should have received tickets #2',
-                                );
-                                t.ok(
-                                  bobSecondTicketAmount.extent.find(
-                                    ticket => ticket.number === 3,
-                                  ),
-                                  'Bob should have received tickets #3',
-                                );
-                              });
-                          });
-                        },
-                      );
-                  });
+                  t.ok(
+                    bobTicketAmount.extent.find(
+                      ticket => ticket.number === 3,
+                    ),
+                    'Bob should have received tickets #3',
+                  );
                 });
-              });
             });
-        });
-    },
-  );
+          });
+  });
 
   return Promise.all([contractReadyP, bobPartFinished])
     .then(([{ publicAPI, operaPayout, complete }]) => {
