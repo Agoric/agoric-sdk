@@ -29,9 +29,8 @@ export const closeAuction = (
   zoe,
   { auctionLogicFn, sellerInviteHandle, allBidHandles },
 ) => {
-  const { issuerKeywordRecord } = zoe.getInstanceRecord();
   const { Bid: bidAmountMath, Asset: assetAmountMath } = zoe.getAmountMaths(
-    issuerKeywordRecord,
+    harden(['Bid', 'Asset']),
   );
 
   // Filter out any inactive bids
@@ -39,8 +38,8 @@ export const closeAuction = (
     harden(allBidHandles),
   );
 
-  const getBids = offerRecord => offerRecord.amounts.Bid;
-  const bids = zoe.getOffers(activeBidHandles).map(getBids);
+  const getBids = amountsKeywordRecord => amountsKeywordRecord.Bid;
+  const bids = zoe.getCurrentAllocations(activeBidHandles).map(getBids);
   const assetAmount = zoe.getOffer(sellerInviteHandle).proposal.give.Asset;
 
   const {

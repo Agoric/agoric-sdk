@@ -2,7 +2,73 @@ import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 
-import { arrayToObj } from './objArrayConversion';
+import { arrayToObj, assertSubset } from './objArrayConversion';
+
+export const assertCapASCII = keyword => {
+  assert.typeof(keyword, 'string');
+  const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
+  assert(
+    firstCapASCII.test(keyword),
+    details`keyword ${keyword} must be ascii and must start with a capital letter.`,
+  );
+};
+
+// Assert that the keys of `record` are all in `allowedKeys`. If a key
+// of `record` is not in `allowedKeys`, throw an error. If a key in
+// `allowedKeys` is not a key of record, we do not throw an error.
+const assertKeysAllowed = (allowedKeys, record) => {
+  const keys = Object.getOwnPropertyNames(record);
+  assertSubset(allowedKeys, keys);
+  // assert that there are no symbol properties.
+  assert(
+    Object.getOwnPropertySymbols(record).length === 0,
+    details`no symbol properties allowed`,
+  );
+};
+
+const cleanKeys = (allowedKeys, record) => {
+  assertKeysAllowed(allowedKeys, record);
+  return Object.getOwnPropertyNames(record);
+};
+
+export const getKeywords = keywordRecord =>
+  harden(Object.getOwnPropertyNames(keywordRecord));
+
+export const coerceAmountKeywordRecord = (
+  amountMathKeywordRecord,
+  allKeywords,
+  allegedAmountKeywordRecord,
+) => {
+  const sparseKeywords = cleanKeys(allKeywords, allegedAmountKeywordRecord);
+  // Check that each value can be coerced using the amountMath indexed
+  // by keyword. `AmountMath.coerce` throws if coercion fails.
+  const coercedAmounts = sparseKeywords.map(keyword =>
+    amountMathKeywordRecord[keyword].coerce(
+      allegedAmountKeywordRecord[keyword],
+    ),
+  );
+
+  // Recreate the amountKeywordRecord with coercedAmounts.
+  return arrayToObj(coercedAmounts, sparseKeywords);
+};
+
+export const cleanKeywords = keywordRecord => {
+  // `getOwnPropertyNames` returns all the non-symbol properties
+  // (both enumerable and non-enumerable).
+  const keywords = Object.getOwnPropertyNames(keywordRecord);
+
+  // Insist that there are no symbol properties.
+  assert(
+    Object.getOwnPropertySymbols(keywordRecord).length === 0,
+    details`no symbol properties allowed`,
+  );
+
+  // Assert all key characters are ascii and keys start with a
+  // capital letter.
+  keywords.forEach(assertCapASCII);
+
+  return keywords;
+};
 
 // cleanProposal checks the keys and values of the proposal, including
 // the keys and values of the internal objects. The proposal may have
@@ -14,68 +80,22 @@ import { arrayToObj } from './objArrayConversion';
 // `exit`, if present, must be a record of one of the following forms:
 // `{ waived: null }` `{ onDemand: null }` `{ afterDeadline: { timer
 // :Timer, deadline :Number } }
-
-// Assert that the keys of record, if present, are in expectedKeys.
-// Return the keys after asserting this.
-const checkKeys = (expectedKeys, record) => {
-  // Assert that keys, if present, match expectedKeys.
-  const keys = Object.getOwnPropertyNames(record);
-  keys.forEach(key => {
-    assert.typeof(key, 'string');
-    assert(
-      expectedKeys.includes(key),
-      details`key ${key} was not an expected key`,
-    );
-  });
-  // assert that there are no symbol properties.
-  assert(
-    Object.getOwnPropertySymbols(record).length === 0,
-    details`no symbol properties allowed`,
-  );
-  return keys;
-};
-
-const coerceAmountKeywordRecordValues = (
+export const cleanProposal = (
+  issuerKeywordRecord,
   amountMathKeywordRecord,
-  validatedKeywords,
-  allegedAmountKeywordRecord,
+  proposal,
 ) => {
-  // Check that each value can be coerced using the amountMath indexed
-  // by keyword. `AmountMath.coerce` throws if coercion fails.
-  const coercedAmounts = validatedKeywords.map(keyword =>
-    amountMathKeywordRecord[keyword].coerce(
-      allegedAmountKeywordRecord[keyword],
-    ),
-  );
-
-  // Recreate the amountKeywordRecord with coercedAmounts.
-  return arrayToObj(coercedAmounts, validatedKeywords);
-};
-
-export const coerceAmountKeywordRecord = (
-  amountMathKeywordRecord,
-  keywords,
-  allegedAmountKeywordRecord,
-) => {
-  const validatedKeywords = checkKeys(keywords, allegedAmountKeywordRecord);
-  return coerceAmountKeywordRecordValues(
-    amountMathKeywordRecord,
-    validatedKeywords,
-    allegedAmountKeywordRecord,
-  );
-};
-
-export const cleanProposal = (keywords, amountMathKeywordRecord, proposal) => {
-  const expectedRootKeys = ['want', 'give', 'exit'];
+  const rootKeysAllowed = ['want', 'give', 'exit'];
   mustBeComparable(proposal);
-  checkKeys(expectedRootKeys, proposal);
+  assertKeysAllowed(rootKeysAllowed, proposal);
 
   // We fill in the default values if the keys are undefined.
   let { want = harden({}), give = harden({}) } = proposal;
   const { exit = harden({ onDemand: null }) } = proposal;
 
-  want = coerceAmountKeywordRecord(amountMathKeywordRecord, keywords, want);
-  give = coerceAmountKeywordRecord(amountMathKeywordRecord, keywords, give);
+  const allKeywords = getKeywords(issuerKeywordRecord);
+  want = coerceAmountKeywordRecord(amountMathKeywordRecord, allKeywords, want);
+  give = coerceAmountKeywordRecord(amountMathKeywordRecord, allKeywords, give);
 
   // Check exit
   assert(
@@ -83,8 +103,8 @@ export const cleanProposal = (keywords, amountMathKeywordRecord, proposal) => {
     details`exit ${proposal.exit} should only have one key`,
   );
   // We expect the single exit key to be one of the following:
-  const expectedExitKeys = ['onDemand', 'afterDeadline', 'waived'];
-  const [exitKey] = checkKeys(expectedExitKeys, exit);
+  const allowedExitKeys = ['onDemand', 'afterDeadline', 'waived'];
+  const [exitKey] = cleanKeys(allowedExitKeys, exit);
   if (exitKey === 'onDemand' || exitKey === 'waived') {
     assert(
       exit[exitKey] === null,
@@ -93,7 +113,15 @@ export const cleanProposal = (keywords, amountMathKeywordRecord, proposal) => {
   }
   if (exitKey === 'afterDeadline') {
     const expectedAfterDeadlineKeys = ['timer', 'deadline'];
-    checkKeys(expectedAfterDeadlineKeys, exit.afterDeadline);
+    assertKeysAllowed(expectedAfterDeadlineKeys, exit.afterDeadline);
+    assert(
+      exit.afterDeadline.timer !== undefined,
+      details`timer must be defined`,
+    );
+    assert(
+      exit.afterDeadline.deadline !== undefined,
+      details`deadline must be defined`,
+    );
     // timers must have a 'setWakeup' function which takes a deadline
     // and an object as arguments.
     // TODO: document timer interface
@@ -101,29 +129,16 @@ export const cleanProposal = (keywords, amountMathKeywordRecord, proposal) => {
     // TODO: how to check methods on presences?
   }
 
-  const hasPropDefined = (obj, prop) => obj[prop] !== undefined;
+  // check that keyword is not in both 'want' and 'give'.
+  const wantKeywordSet = new Set(Object.getOwnPropertyNames(want));
+  const giveKeywords = Object.getOwnPropertyNames(give);
 
-  // Create an unfrozen version of 'want' in case we need to add
-  // properties.
-  const wantObj = { ...want };
-
-  keywords.forEach(keyword => {
-    // check that keyword is not in both 'want' and 'give'.
-    const wantHas = hasPropDefined(wantObj, keyword);
-    const giveHas = hasPropDefined(give, keyword);
+  giveKeywords.forEach(keyword => {
     assert(
-      !(wantHas && giveHas),
+      !wantKeywordSet.has(keyword),
       details`a keyword cannot be in both 'want' and 'give'`,
     );
-    // If keyword is in neither, fill in with a 'want' of empty.
-    if (!(wantHas || giveHas)) {
-      wantObj[keyword] = amountMathKeywordRecord[keyword].getEmpty();
-    }
   });
 
-  return harden({
-    want: wantObj,
-    give,
-    exit,
-  });
+  return harden({ want, give, exit });
 };

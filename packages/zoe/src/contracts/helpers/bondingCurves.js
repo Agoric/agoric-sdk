@@ -55,21 +55,22 @@ export const makeConstProductBC = zoe => {
     // should be returned when removing liquidity.
     calcAmountsToRemove: ({
       liqTokenSupply,
-      poolAmounts,
+      poolAllocation,
       liquidityExtentIn,
     }) => {
-      const { issuerKeywordRecord } = zoe.getInstanceRecord();
-      const amountMaths = zoe.getAmountMaths(issuerKeywordRecord);
+      const amountMaths = zoe.getAmountMaths(
+        harden(['TokenA', 'TokenB', 'Liquidity']),
+      );
       const newUserAmounts = harden({
         TokenA: amountMaths.TokenA.make(
           floorDivide(
-            multiply(liquidityExtentIn, poolAmounts.TokenA.extent),
+            multiply(liquidityExtentIn, poolAllocation.TokenA.extent),
             liqTokenSupply,
           ),
         ),
         TokenB: amountMaths.TokenB.make(
           floorDivide(
-            multiply(liquidityExtentIn, poolAmounts.TokenB.extent),
+            multiply(liquidityExtentIn, poolAllocation.TokenB.extent),
             liqTokenSupply,
           ),
         ),

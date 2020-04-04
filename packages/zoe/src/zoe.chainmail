@@ -141,9 +141,9 @@ interface ZoeContractFacet () {
   /** Get the Zoe inviteIssuer */
   getInviteIssuer ( ) -> (Issuer);
 
-  /** Get a list of local amountMath for each keyword in the issuerKeywordRecord
-  object */
-  getAmountMaths (issuerKeywordRecord :IssuerKeywordRecord) -> (AmountMathKeywordRecord));
+  /** Get a list of local amountMath for each keyword in the
+  sparseKeywords array */
+  getAmountMaths (sparseKeywords :List(String)) -> (AmountMathKeywordRecord));
 
   /** Divide the offerHandles into 'active' and 'inactive' lists */
   getOfferStatuses ( offerHandles :List(OfferHandle)) ->
