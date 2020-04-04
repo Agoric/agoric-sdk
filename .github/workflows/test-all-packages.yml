@@ -4,9 +4,9 @@ name: Test all Packages
 # branches)
 
 on:
- push:
-   branches: [master]
- pull_request:
+  push:
+    branches: [master]
+  pull_request:
 
 jobs:
   build:
@@ -21,19 +21,6 @@ jobs:
         key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
         restore-keys: |
           ${{ runner.os }}-yarn-
-
-    - name: Set up Go 1.13
-      uses: actions/setup-go@v1
-      with:
-        go-version: 1.13
-
-    - name: cache Go modules
-      uses: actions/cache@v1
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
 
     # 'yarn install' must be done at the top level, to build all the
     # cross-package symlinks
@@ -62,7 +49,8 @@ jobs:
         path: .
         key: ${{ runner.os }}-built-${{ github.sha }}
     - name: ensure build cache was restored
-      run: ${{ steps.cache.outputs.cache-hit }}
+      run: exit 1
+      if: steps.built.outputs.cache-hit != 'true'
     - name: lint check
       run: yarn lint-check
 
@@ -77,10 +65,23 @@ jobs:
         path: .
         key: ${{ runner.os }}-built-${{ github.sha }}
     - name: ensure build cache was restored
-      run: ${{ steps.cache.outputs.cache-hit }}
+      run: exit 1
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: Set up Go 1.13
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13
+
+    - name: cache Go modules
+      uses: actions/cache@v1
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
     - name: yarn test (cosmic-swingset)
       run: cd packages/cosmic-swingset && yarn test
-
 
   test-swingset:
     needs: build
@@ -93,9 +94,42 @@ jobs:
         path: .
         key: ${{ runner.os }}-built-${{ github.sha }}
     - name: ensure build cache was restored
-      run: ${{ steps.cache.outputs.cache-hit }}
+      run: exit 1
+      if: steps.built.outputs.cache-hit != 'true'
     - name: yarn test (SwingSet)
       run: cd packages/SwingSet && yarn test
+
+  test-zoe:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-built-${{ github.sha }}
+    - name: ensure build cache was restored
+      run: exit 1
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn test (zoe)
+      run: cd packages/zoe && yarn test
+
+  test-agoric-cli:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-built-${{ github.sha }}
+    - name: ensure build cache was restored
+      run: exit 1
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn test (agoric-cli)
+      run: cd packages/agoric-cli && yarn test
 
   test-rest:
     needs: build
@@ -108,7 +142,8 @@ jobs:
         path: .
         key: ${{ runner.os }}-built-${{ github.sha }}
     - name: ensure build cache was restored
-      run: ${{ steps.built.outputs.cache-hit }}
+      run: exit 1
+      if: steps.built.outputs.cache-hit != 'true'
     # We run separate steps for each package, to make it easier to drill down
     # into errors. If we wanted to just run everything, run 'yarn test' from
     # the top level.
@@ -117,8 +152,6 @@ jobs:
     # Always run the tests, regardless of lint failuer.
     - name: yarn test (acorn-eventual-send)
       run: cd packages/acorn-eventual-send && yarn test
-    - name: yarn test (agoric-cli)
-      run: cd packages/agoric-cli && yarn test
     - name: yarn test (assert)
       run: cd packages/assert && yarn test
     - name: yarn test (bundle-source)
@@ -173,5 +206,3 @@ jobs:
       run: cd packages/wallet-frontend && yarn test
     - name: yarn test (weak-store)
       run: cd packages/weak-store && yarn test
-    - name: yarn test (zoe)
-      run: cd packages/zoe && yarn test
