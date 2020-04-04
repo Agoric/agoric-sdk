@@ -74,7 +74,7 @@ test('autoSwap with valid offers', async t => {
       await liquidityIssuer.getAmountOf(liquidityPayout),
       liquidity(10),
     );
-    t.deepEquals(publicAPI.getPoolAmounts(), {
+    t.deepEquals(publicAPI.getPoolAllocation(), {
       TokenA: moola(10),
       TokenB: simoleans(5),
       Liquidity: liquidity(0),
@@ -126,7 +126,7 @@ test('autoSwap with valid offers', async t => {
       await simoleanR.issuer.getAmountOf(bobSimoleanPayout1),
       simoleans(1),
     );
-    t.deepEquals(bobAutoswap.getPoolAmounts(), {
+    t.deepEquals(bobAutoswap.getPoolAllocation(), {
       TokenA: moola(13),
       TokenB: simoleans(4),
       Liquidity: liquidity(0),
@@ -165,7 +165,7 @@ test('autoSwap with valid offers', async t => {
       await simoleanR.issuer.getAmountOf(bobSimoleanPayout2),
       simoleans(0),
     );
-    t.deepEqual(bobAutoswap.getPoolAmounts(), {
+    t.deepEqual(bobAutoswap.getPoolAllocation(), {
       TokenA: moola(8),
       TokenB: simoleans(7),
       Liquidity: liquidity(0),
@@ -176,6 +176,7 @@ test('autoSwap with valid offers', async t => {
     const aliceSecondInvite = publicAPI.makeInvite();
     const aliceRemoveLiquidityProposal = harden({
       give: { Liquidity: liquidity(10) },
+      want: { TokenA: moola(0), TokenB: simoleans(0) },
     });
 
     const {
@@ -204,7 +205,7 @@ test('autoSwap with valid offers', async t => {
       await liquidityIssuer.getAmountOf(aliceLiquidityPayout),
       liquidity(0),
     );
-    t.deepEquals(publicAPI.getPoolAmounts(), {
+    t.deepEquals(publicAPI.getPoolAllocation(), {
       TokenA: moola(0),
       TokenB: simoleans(0),
       Liquidity: liquidity(10),
@@ -278,7 +279,7 @@ test('autoSwap - test fee', async t => {
       await liquidityIssuer.getAmountOf(liquidityPayout),
       liquidity(10000),
     );
-    t.deepEquals(publicAPI.getPoolAmounts(), {
+    t.deepEquals(publicAPI.getPoolAllocation(), {
       TokenA: moola(10000),
       TokenB: simoleans(10000),
       Liquidity: liquidity(0),
@@ -330,7 +331,7 @@ test('autoSwap - test fee', async t => {
       await simoleanR.issuer.getAmountOf(bobSimoleanPayout),
       simoleans(906),
     );
-    t.deepEquals(bobAutoswap.getPoolAmounts(), {
+    t.deepEquals(bobAutoswap.getPoolAllocation(), {
       TokenA: moola(11000),
       TokenB: simoleans(9094),
       Liquidity: liquidity(0),

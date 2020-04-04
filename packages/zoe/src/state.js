@@ -2,69 +2,8 @@ import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
 import makeStore from '@agoric/weak-store';
-import { assert, details } from '@agoric/assert';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
-
-const makeTable = (validateFn, makeCustomMethodsFn = () => undefined) => {
-  // The WeakMap that stores the records
-  const handleToRecord = makeStore();
-
-  const table = harden({
-    validate: validateFn,
-    create: (record, handle = harden({})) => {
-      record = harden({
-        ...record,
-        handle, // reliably add the handle to the record
-      });
-      table.validate(record);
-      handleToRecord.init(handle, record);
-      return handle;
-    },
-    get: handleToRecord.get,
-    has: handleToRecord.has,
-    delete: handleToRecord.delete,
-    update: (handle, partialRecord) => {
-      const record = handleToRecord.get(handle);
-      const updatedRecord = harden({
-        ...record,
-        ...partialRecord,
-      });
-      table.validate(updatedRecord);
-      handleToRecord.set(handle, updatedRecord);
-      return handle;
-    },
-  });
-
-  const customMethodsTable = harden({
-    ...makeCustomMethodsFn(table),
-    ...table,
-  });
-  return customMethodsTable;
-};
-
-const makeValidateProperties = ([...expectedProperties]) => {
-  // add handle to expected properties
-  expectedProperties.push('handle');
-  // Sorts in-place
-  expectedProperties.sort();
-  harden(expectedProperties);
-  return obj => {
-    const actualProperties = Object.getOwnPropertyNames(obj);
-    actualProperties.sort();
-    assert(
-      actualProperties.length === expectedProperties.length,
-      details`the actual properties (${actualProperties}) did not match the \
-      expected properties (${expectedProperties})`,
-    );
-    for (let i = 0; i < actualProperties.length; i += 1) {
-      assert(
-        expectedProperties[i] === actualProperties[i],
-        details`property ${expectedProperties[i]} did not equal actual property ${actualProperties[i]}`,
-      );
-    }
-    return true;
-  };
-};
+import { makeTable, makeValidateProperties } from './table';
 
 // Installation Table
 // Columns: handle | installation
@@ -74,19 +13,12 @@ const makeInstallationTable = () => {
 };
 
 // Instance Table
-// Columns: handle | installationHandle | publicAPI |
-// terms | issuerKeywordRecord | keywords
+// Columns: handle | installationHandle | publicAPI | terms | issuerKeywordRecord
 const makeInstanceTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateSomewhat = makeValidateProperties(
-    harden([
-      'installationHandle',
-      'publicAPI',
-      'terms',
-      'issuerKeywordRecord',
-      'keywords',
-    ]),
+    harden(['installationHandle', 'publicAPI', 'terms', 'issuerKeywordRecord']),
   );
 
   return makeTable(validateSomewhat);
@@ -156,16 +88,15 @@ const makeIssuerTable = () => {
     const issuersInProgress = makeStore();
 
     const customMethods = harden({
-      getAmountMaths: issuerKeywordRecord => {
-        const amountMathKeywordRecord = {};
-        Object.entries(issuerKeywordRecord).map(
-          ([keyword, issuer]) =>
-            (amountMathKeywordRecord[keyword] = table.get(issuer).amountMath),
-        );
-        return harden(amountMathKeywordRecord);
+      getPurseKeywordRecord: issuerKeywordRecord => {
+        const purseKeywordRecord = {};
+        Object.keys(issuerKeywordRecord).forEach(keyword => {
+          purseKeywordRecord[keyword] = table.get(
+            issuerKeywordRecord[keyword],
+          ).purse;
+        });
+        return harden(purseKeywordRecord);
       },
-      getPursesForIssuers: issuers =>
-        issuers.map(issuer => table.get(issuer).purse),
 
       // `issuerP` may be a promise, presence, or local object
       getPromiseForIssuerRecord: issuerP => {

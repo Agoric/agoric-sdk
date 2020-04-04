@@ -6,10 +6,10 @@ export const defaultRejectMsg = `The offer was invalid. Please check your refund
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
 export const getKeys = obj => harden(Object.getOwnPropertyNames(obj || {}));
+const getKeysSorted = obj =>
+  harden(Object.getOwnPropertyNames(obj || {}).sort());
 
 export const makeZoeHelpers = zoe => {
-  const { issuerKeywordRecord } = zoe.getInstanceRecord();
-  const amountMaths = zoe.getAmountMaths(issuerKeywordRecord);
   const zoeService = zoe.getZoeService();
 
   const rejectOffer = (inviteHandle, msg = defaultRejectMsg) => {
@@ -27,7 +27,9 @@ export const makeZoeHelpers = zoe => {
     // eslint-disable-next-line consistent-return
   ) => {
     if (expectedKeys !== undefined) {
-      if (!sameStructure(getKeys(actual), expectedKeys)) {
+      const expected = [...expectedKeys]; // in case hardened
+      expected.sort();
+      if (!sameStructure(getKeysSorted(actual), harden(expected))) {
         return rejectOffer(inviteHandle, msg);
       }
     }
@@ -40,10 +42,11 @@ export const makeZoeHelpers = zoe => {
     }
     return sameStructure(getKeys(actual), expectedKeys);
   };
+
   const helpers = harden({
     assertKeywords: expected => {
-      // 'actual' is sorted in alphabetical order by Zoe
-      const { keywords: actual } = zoe.getInstanceRecord();
+      const { issuerKeywordRecord } = zoe.getInstanceRecord();
+      const actual = getKeysSorted(issuerKeywordRecord);
       expected = [...expected]; // in case hardened
       expected.sort();
       assert(
@@ -72,9 +75,11 @@ export const makeZoeHelpers = zoe => {
       zoe.getOffers(zoe.getOfferStatuses(handles).active),
     rejectOffer,
     canTradeWith: (leftInviteHandle, rightInviteHandle) => {
+      const { issuerKeywordRecord } = zoe.getInstanceRecord();
+      const keywords = getKeys(issuerKeywordRecord);
+      const amountMaths = zoe.getAmountMaths(keywords);
       const { proposal: left } = zoe.getOffer(leftInviteHandle);
       const { proposal: right } = zoe.getOffer(rightInviteHandle);
-      const { keywords } = zoe.getInstanceRecord();
       const satisfied = (want, give) =>
         keywords.every(keyword => {
           if (want[keyword]) {
@@ -97,8 +102,8 @@ export const makeZoeHelpers = zoe => {
       if (!helpers.canTradeWith(keepHandle, tryHandle)) {
         throw helpers.rejectOffer(tryHandle);
       }
-      const keepAmounts = zoe.getOffer(keepHandle).amounts;
-      const tryAmounts = zoe.getOffer(tryHandle).amounts;
+      const keepAmounts = zoe.getCurrentAllocation(keepHandle);
+      const tryAmounts = zoe.getCurrentAllocation(tryHandle);
       // reallocate by switching the amount
       const handles = harden([keepHandle, tryHandle]);
       zoe.reallocate(handles, harden([tryAmounts, keepAmounts]));

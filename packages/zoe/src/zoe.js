@@ -5,8 +5,20 @@ import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 import { makePromise } from '@agoric/make-promise';
 
-import { cleanProposal } from './cleanProposal';
-import { arrayToObj, objToArray } from './objArrayConversion';
+import {
+  cleanProposal,
+  assertCapASCII,
+  getKeywords,
+  cleanKeywords,
+} from './cleanProposal';
+import {
+  arrayToObj,
+  objToArray,
+  objToArrayAssertFilled,
+  filterObj,
+  filterFillAmounts,
+  assertSubset,
+} from './objArrayConversion';
 import { isOfferSafeForAll } from './offerSafety';
 import { areRightsConserved } from './rightsConservation';
 import { evalContractCode } from './evalContractCode';
@@ -42,62 +54,43 @@ const makeZoe = (additionalEndowments = {}) => {
     }
     const offerRecords = offerTable.getOffers(offerHandles);
 
-    const { issuerKeywordRecord, keywords } = instanceTable.get(instanceHandle);
+    const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
 
     // Remove the offers from the offerTable so that they are no
     // longer active.
     offerTable.deleteOffers(offerHandles);
 
     // Resolve the payout promises with promises for the payouts
-    const issuers = objToArray(issuerKeywordRecord, keywords);
-    const pursePs = issuerTable.getPursesForIssuers(issuers);
+    const pursePKeywordRecord = issuerTable.getPurseKeywordRecord(
+      issuerKeywordRecord,
+    );
     for (const offerRecord of offerRecords) {
       const payout = {};
-      keywords.forEach((keyword, i) => {
-        payout[keyword] = E(pursePs[i]).withdraw(offerRecord.amounts[keyword]);
+      Object.keys(offerRecord.amounts).forEach(keyword => {
+        payout[keyword] = E(pursePKeywordRecord[keyword]).withdraw(
+          offerRecord.amounts[keyword],
+        );
       });
       harden(payout);
       payoutMap.get(offerRecord.handle).resolve(payout);
     }
   };
 
-  const assertKeyword = keyword => {
-    assert.typeof(keyword, 'string');
-    const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
-    assert(
-      firstCapASCII.test(keyword),
-      details`keyword must be ascii and must start with a capital letter.`,
-    );
+  const getAmountMaths = (instanceHandle, sparseKeywords) => {
+    const amountMathKeywordRecord = {};
+    const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
+    sparseKeywords.forEach(keyword => {
+      const issuer = issuerKeywordRecord[keyword];
+      amountMathKeywordRecord[keyword] = issuerTable.get(issuer).amountMath;
+    });
+    return harden(amountMathKeywordRecord);
   };
 
-  const getKeywords = issuerKeywordRecord => {
-    // `getOwnPropertyNames` returns all the non-symbol properties
-    // (both enumerable and non-enumerable).
-    const keywords = Object.getOwnPropertyNames(issuerKeywordRecord);
-    // We sort to get a deterministic order that is not based on key
-    // insertion order or object creation order.
-    keywords.sort();
-    harden(keywords);
+  const removePurse = issuerRecord =>
+    filterObj(issuerRecord, ['issuer', 'brand', 'amountMath']);
 
-    // Insist that there are no symbol properties.
-    assert(
-      Object.getOwnPropertySymbols(issuerKeywordRecord).length === 0,
-      details`no symbol properties allowed`,
-    );
-
-    // Assert all key characters are ascii and keys start with a
-    // capital letter.
-    keywords.forEach(assertKeyword);
-
-    return keywords;
-  };
-
-  // Make a safe(r) object from keys that have been validated
-  const makeCleanedObj = (rawObj, cleanedKeys) => {
-    const cleanedObj = {};
-    cleanedKeys.forEach(key => (cleanedObj[key] = rawObj[key]));
-    return harden(cleanedObj);
-  };
+  const removeAmounts = offerRecord =>
+    filterObj(offerRecord, ['handle', 'instanceHandle', 'proposal']);
 
   // Make a Zoe invite with an extent that is a mix of credible
   // information from Zoe (the `handle` and `instanceHandle`) and
@@ -142,30 +135,46 @@ const makeZoe = (additionalEndowments = {}) => {
        * though the reallocation is partial, because once these
        * invariants are true, they will remain true until changes are
        * made.
+       * zcf.reallocate will throw an error if any of the
+       * newAmountKeywordRecords do not have a value for all the
+       * keywords in sparseKeywords. An error will also be thrown if
+       * any newAmountKeywordRecords have keywords that are not in
+       * sparseKeywords.
        * @param  {object[]} offerHandles - an array of offerHandles
-       * @param  {amountKeywordRecord[]} amountKeywordRecords - an
+       * @param  {amountKeywordRecord[]} newAmountKeywordRecords - an
        * array of amountKeywordRecords  - objects with keyword keys
        * and amount values, with one keywordRecord per offerHandle.
+       * @param  {string[]} sparseKeywords - an array of string
+       * keywords, which may be a subset of allKeywords
        */
-      reallocate: (offerHandles, amountKeywordRecords) => {
-        const { keywords, issuerKeywordRecord } = instanceTable.get(
-          instanceHandle,
-        );
+      reallocate: (offerHandles, newAmountKeywordRecords, sparseKeywords) => {
+        const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
+        const allKeywords = getKeywords(issuerKeywordRecord);
+        if (sparseKeywords === undefined) {
+          sparseKeywords = allKeywords;
+        }
 
-        const newAmountMatrix = amountKeywordRecords.map(amountObj =>
-          objToArray(amountObj, keywords),
+        const newAmountMatrix = newAmountKeywordRecords.map(amountObj =>
+          objToArrayAssertFilled(amountObj, sparseKeywords),
         );
 
         const offerRecords = offerTable.getOffers(offerHandles);
 
         const proposals = offerRecords.map(offerRecord => offerRecord.proposal);
-        const currentAmountMatrix = offerRecords.map(offerRecord =>
-          objToArray(offerRecord.amounts, keywords),
+        const currentAmountMatrix = offerRecords.map(({ handle }) => {
+          const filteredAmounts = contractFacet.getCurrentAllocation(
+            handle,
+            sparseKeywords,
+          );
+          return objToArray(filteredAmounts, sparseKeywords);
+        });
+        const amountMathKeywordRecord = contractFacet.getAmountMaths(
+          sparseKeywords,
         );
-        const amountMathKeywordRecord = issuerTable.getAmountMaths(
-          issuerKeywordRecord,
+        const amountMathsArray = objToArray(
+          amountMathKeywordRecord,
+          sparseKeywords,
         );
-        const amountMathsArray = objToArray(amountMathKeywordRecord, keywords);
 
         // 1) ensure that rights are conserved
         assert(
@@ -182,13 +191,13 @@ const makeZoe = (additionalEndowments = {}) => {
           isOfferSafeForAll(
             amountMathKeywordRecord,
             proposals,
-            amountKeywordRecords,
+            newAmountKeywordRecords,
           ),
           details`The proposed reallocation was not offer safe`,
         );
 
         // 3) save the reallocation
-        offerTable.updateAmounts(offerHandles, harden(amountKeywordRecords));
+        offerTable.updateAmounts(offerHandles, harden(newAmountKeywordRecords));
       },
 
       /**
@@ -227,22 +236,20 @@ const makeZoe = (additionalEndowments = {}) => {
       // when the issuer is added and ready.
       addNewIssuer: (issuerP, keyword) =>
         issuerTable.getPromiseForIssuerRecord(issuerP).then(issuerRecord => {
-          assertKeyword(keyword);
-          const { issuerKeywordRecord, keywords } = instanceTable.get(
-            instanceHandle,
+          assertCapASCII(keyword);
+          const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
+          assert(
+            !getKeywords(issuerKeywordRecord).includes(keyword),
+            details`keyword ${keyword} must be unique`,
           );
-          assert(!keywords.includes(keyword), details`keyword must be unique`);
           const newIssuerKeywordRecord = {
             ...issuerKeywordRecord,
             [keyword]: issuerRecord.issuer,
           };
-          // We append the new keyword and new issuer to the end of
-          // the arrays.
-          const newKeywords = [...keywords, keyword];
           instanceTable.update(instanceHandle, {
             issuerKeywordRecord: newIssuerKeywordRecord,
-            keywords: newKeywords,
           });
+          return removePurse(issuerRecord);
         }),
 
       // eslint-disable-next-line no-use-before-define
@@ -250,12 +257,36 @@ const makeZoe = (additionalEndowments = {}) => {
 
       // The methods below are pure and have no side-effects //
       getInviteIssuer: () => inviteIssuer,
-      getAmountMaths: issuerTable.getAmountMaths,
+      getAmountMaths: sparseKeywords =>
+        getAmountMaths(instanceHandle, sparseKeywords),
       getOfferStatuses: offerTable.getOfferStatuses,
       isOfferActive: offerTable.isOfferActive,
-      getOffers: offerTable.getOffers,
-      getOffer: offerTable.get,
+      getOffers: offerHandles =>
+        offerTable.getOffers(offerHandles).map(removeAmounts),
+      getOffer: offerHandle => removeAmounts(offerTable.get(offerHandle)),
+      getCurrentAllocation: (offerHandle, sparseKeywords) => {
+        const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
+        const allKeywords = getKeywords(issuerKeywordRecord);
+        if (sparseKeywords === undefined) {
+          sparseKeywords = allKeywords;
+        }
+        const amountMathKeywordRecord = contractFacet.getAmountMaths(
+          sparseKeywords,
+        );
+        assertSubset(allKeywords, sparseKeywords);
+        const { amounts } = offerTable.get(offerHandle);
+        return filterFillAmounts(
+          amounts,
+          sparseKeywords,
+          amountMathKeywordRecord,
+        );
+      },
+      getCurrentAllocations: (offerHandles, sparseKeywords) =>
+        offerHandles.map(offerHandle =>
+          contractFacet.getCurrentAllocation(offerHandle, sparseKeywords),
+        ),
       getInstanceRecord: () => instanceTable.get(instanceHandle),
+      getIssuerRecord: issuer => removePurse(issuerTable.get(issuer)),
     });
     return contractFacet;
   };
@@ -301,34 +332,33 @@ const makeZoe = (additionalEndowments = {}) => {
      * other information, such as the terms used in the instance.
      * @param  {object} installationHandle - the unique handle for the
      * installation
-     * @param  {object} issuerKeywordRecord - a record mapping keyword keys to
+     * @param  {object} issuerKeywordRecord - optional, a record mapping keyword keys to
      * issuer values
-     * @param  {object} terms - arguments to the contract. These
+     * @param  {object} terms - optional, arguments to the contract. These
      * arguments depend on the contract.
      */
     makeInstance: (
       installationHandle,
-      issuerKeywordRecord,
+      issuerKeywordRecord = harden({}),
       terms = harden({}),
     ) => {
       const { installation } = installationTable.get(installationHandle);
       const instanceHandle = harden({});
       const contractFacet = makeContractFacet(instanceHandle);
 
-      const keywords = getKeywords(issuerKeywordRecord);
-      // Take the cleaned keywords and produce a safe(r) issuerKeywordRecord
-      const cleanedRecord = makeCleanedObj(issuerKeywordRecord, keywords);
-      const issuersP = keywords.map(keyword => cleanedRecord[keyword]);
+      const cleanedKeywords = cleanKeywords(issuerKeywordRecord);
+      const issuersP = cleanedKeywords.map(
+        keyword => issuerKeywordRecord[keyword],
+      );
 
       const makeInstanceRecord = issuerRecords => {
         const issuers = issuerRecords.map(record => record.issuer);
-        const cleanedIssuerKeywordRecord = arrayToObj(issuers, keywords);
+        const cleanedIssuerKeywordRecord = arrayToObj(issuers, cleanedKeywords);
         const instanceRecord = harden({
           installationHandle,
           publicAPI: undefined,
           terms,
           issuerKeywordRecord: cleanedIssuerKeywordRecord,
-          keywords,
         });
 
         instanceTable.create(instanceRecord, instanceHandle);
@@ -383,18 +413,23 @@ const makeZoe = (additionalEndowments = {}) => {
         const {
           extent: [{ instanceHandle, handle: offerHandle }],
         } = inviteAmount;
-        const { keywords, issuerKeywordRecord } = instanceTable.get(
+        const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
+
+        const amountMathKeywordRecord = getAmountMaths(
           instanceHandle,
+          getKeywords(issuerKeywordRecord),
         );
 
-        const amountMathKeywordRecord = issuerTable.getAmountMaths(
+        proposal = cleanProposal(
           issuerKeywordRecord,
+          amountMathKeywordRecord,
+          proposal,
         );
-
-        proposal = cleanProposal(keywords, amountMathKeywordRecord, proposal);
         // Promise flow = issuer -> purse -> deposit payment -> seat/payout
         const giveKeywords = Object.getOwnPropertyNames(proposal.give);
-        const paymentDepositedPs = keywords.map(keyword => {
+        const wantKeywords = Object.getOwnPropertyNames(proposal.want);
+        const userKeywords = harden([...giveKeywords, ...wantKeywords]);
+        const paymentDepositedPs = userKeywords.map(keyword => {
           const issuer = issuerKeywordRecord[keyword];
           const issuerRecordP = issuerTable.getPromiseForIssuerRecord(issuer);
           return issuerRecordP.then(({ purse, amountMath }) => {
@@ -414,7 +449,7 @@ const makeZoe = (additionalEndowments = {}) => {
           const offerImmutableRecord = {
             instanceHandle,
             proposal,
-            amounts: arrayToObj(amountsArray, keywords),
+            amounts: arrayToObj(amountsArray, userKeywords),
           };
           // Since we have redeemed an invite, the inviteHandle is
           // also the offerHandle.

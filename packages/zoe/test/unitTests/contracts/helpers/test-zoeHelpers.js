@@ -27,11 +27,15 @@ test('ZoeHelpers messages', t => {
 
 test('ZoeHelpers assertKeywords', t => {
   t.plan(5);
+  const { moolaR, simoleanR } = setup();
   try {
     const mockZoe = harden({
       getInstanceRecord: () =>
         harden({
-          keywords: ['Asset', 'Price'],
+          issuerKeywordRecord: {
+            Asset: moolaR.issuer,
+            Price: simoleanR.issuer,
+          },
         }),
       getAmountMaths: () => {},
       getZoeService: () => {},
@@ -387,6 +391,18 @@ test('ZoeHelpers swap ok', t => {
         harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
       getZoeService: () => {},
       isOfferActive: () => true,
+      getCurrentAllocation: handle => {
+        if (handle === leftInviteHandle) {
+          return 'leftInviteAmounts';
+        }
+        if (handle === rightInviteHandle) {
+          return 'rightInviteAmounts';
+        }
+        if (handle === cantTradeRightInviteHandle) {
+          return 'cantTradeRightInviteAmounts';
+        }
+        throw new Error('unexpected handle');
+      },
       getOffer: handle => {
         if (handle === leftInviteHandle) {
           return harden({
@@ -395,7 +411,6 @@ test('ZoeHelpers swap ok', t => {
               want: { Price: simoleans(4) },
               exit: { onDemand: null },
             },
-            amounts: 'leftInviteAmounts',
           });
         }
         if (handle === rightInviteHandle) {
@@ -405,7 +420,6 @@ test('ZoeHelpers swap ok', t => {
               want: { Asset: moola(7) },
               exit: { onDemand: null },
             },
-            amounts: 'rightInviteAmounts',
           });
         }
         if (handle === cantTradeRightInviteHandle) {
@@ -415,7 +429,6 @@ test('ZoeHelpers swap ok', t => {
               want: { Asset: moola(100) },
               exit: { onDemand: null },
             },
-            amounts: 'cantTradeRightInviteAmounts',
           });
         }
         throw new Error('unexpected handle');

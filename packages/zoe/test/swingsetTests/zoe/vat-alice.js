@@ -403,6 +403,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     // remove the liquidity
     const aliceRemoveLiquidityProposal = harden({
       give: { Liquidity: liquidity(10) },
+      want: { TokenA: moola(0), TokenB: simoleans(0) },
     });
 
     const liquidityTokenPayment = await E(liquidityTokenPurseP).withdraw(
@@ -431,7 +432,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     await E(moolaPurseP).deposit(moolaPayout);
     await E(simoleanPurseP).deposit(simoleanPayout);
 
-    const poolAmounts = await E(publicAPI).getPoolAmounts();
+    const poolAmounts = await E(publicAPI).getPoolAllocation();
 
     log(`poolAmounts`, poolAmounts);
 
