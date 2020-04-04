@@ -15,3 +15,9 @@ lib/lib*.so
 ve[0-9]
 t[0-9]
 binding.gyp
+*.log
+dist
+build
+__pycache__
+*.egg-info
+swingset-kernel-state

@@ -6,6 +6,10 @@ TAG := $(shell test ! -f ../../package.json || sed -ne 's/.*"version": "\(.*\)".
 # Don't push alpha tags as ":latest".
 DONT_PUSH_LATEST := $(if $(findstring -,$(TAG)),:,)
 
+docker-show-fat:
+	date > show-fat-bust-cache.stamp
+	docker build --file=Dockerfile.show-fat ../..
+
 docker-build: docker-build-base docker-build-sdk docker-build-solo \
 	docker-build-pserver docker-build-setup docker-build-setup-solo
 
