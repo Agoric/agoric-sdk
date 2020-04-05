@@ -146,7 +146,10 @@ export const makeContract = harden(zoe => {
             const proposal = harden({
               give: { Liquidity: liquidityAmountOut },
             });
-            const { inviteHandle: tempLiqHandle, invite } = zoe.makeInvitePair();
+            const {
+              inviteHandle: tempLiqHandle,
+              invite,
+            } = zoe.makeInvitePair();
             const zoeService = zoe.getZoeService();
             return zoeService
               .redeem(

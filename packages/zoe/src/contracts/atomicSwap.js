@@ -30,7 +30,7 @@ export const makeContract = harden(zoe => {
         return makeMatchingInvite(inviteHandle);
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvitePair  (seat, {
+    const { invite, inviteHandle } = zoe.makeInvitePair(seat, {
       seatDesc: 'firstOffer',
     });
     return invite;
