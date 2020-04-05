@@ -1,11 +1,11 @@
 import harden from '@agoric/harden';
 
-export const makeContract = (zoe, _terms) => {
-  const seat = harden({});
-  const { invite } = zoe.makeInvite(seat, {
-    seatDesc: 'tester',
+export const makeContract = zoe => {
+  const invite = zoe.makeInvitation(() => {}, {
+    inviteDesc: 'tester',
   });
   return harden({
+    invite,
     publicAPI: {
       doTest: () => {
         for (;;) {
@@ -13,6 +13,5 @@ export const makeContract = (zoe, _terms) => {
         }
       },
     },
-    invite,
   });
 };

@@ -123,11 +123,9 @@ export async function makeWallet(
     // === AWAITING TURN ===
     // =====================
 
-    const { seat, payout: payoutObjP, cancelObj } = await E(zoe).redeem(
-      invite,
-      proposal,
-      payment,
-    );
+    const { payout: payoutObjP, cancelObj, outcome: outcomeP } = await E(
+      zoe,
+    ).offer(invite, proposal, payment);
 
     // =====================
     // === AWAITING TURN ===
@@ -160,7 +158,7 @@ export async function makeWallet(
       );
     });
 
-    return { depositedP, cancelObj, seat };
+    return { depositedP, cancelObj, outcome: outcomeP };
   }
 
   // === API
@@ -324,7 +322,7 @@ export async function makeWallet(
       } = compiledOffer;
 
       const inviteP = invite || E(publicAPIHooks).getInvite(publicAPI);
-      const { seat, depositedP, cancelObj } = await executeOffer(
+      const { depositedP, cancelObj, outcome: outcomeP } = await executeOffer(
         compiledOffer,
         inviteP,
       );
@@ -333,18 +331,21 @@ export async function makeWallet(
         alreadyResolved = true;
         return E(cancelObj).cancel();
       });
-      ret = { seat, publicAPI };
+      ret = { outcome: outcomeP, publicAPI };
 
       // =====================
       // === AWAITING TURN ===
       // =====================
+
+      // TODO(msm): Why isn't "yarn test" failing here?
+      // TODO(msm): What is performOffer and why does it need a seat?
 
       // Don't wait for the offer to finish performing...
       // we need to return control to our caller.
       E(seatHooks)
         .performOffer(seat)
         .catch(e =>
-          assert(false, details`seatHooks.performOffer failed with ${e}`),
+          assert.fail(details`seatHooks.performOffer failed with ${e}`),
         );
 
       // Update status, drop the proposal

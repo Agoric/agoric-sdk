@@ -53,16 +53,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
       const bobPayments = { Contribution2: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      // 2. Bob makes an offer
+      const { payout: payoutP, outcome: outcomeP } = await E(zoe).offer(
         exclInvite,
         bobProposal,
         bobPayments,
       );
-
-      // 2. Bob makes an offer
-      const outcome = await E(seat).makeOffer();
-
-      log(outcome);
+      log(await outcomeP);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.Contribution1;
@@ -99,8 +96,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         details`wrong installation`,
       );
       assert(
-        optionExtent[0].seatDesc === 'exerciseOption',
-        details`wrong seat`,
+        optionExtent[0].inviteDesc === 'exerciseOption',
+        details`wrong invite`,
       );
       assert(
         moolaAmountMath.isEqual(optionExtent[0].underlyingAsset, moola(3)),
@@ -128,15 +125,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const bobPayments = { StrikePrice: simoleanPayment };
 
       // Bob escrows
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, outcome: bobOutcomeP } = await E(zoe).offer(
         exclInvite,
         bobIntendedProposal,
         bobPayments,
       );
 
-      const bobOutcome = await E(seat).exercise();
-
-      log(bobOutcome);
+      log(await bobOutcomeP);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.UnderlyingAsset;
@@ -165,8 +160,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         details`wrong installation`,
       );
       assert(
-        optionExtent[0].seatDesc === 'exerciseOption',
-        details`wrong seat`,
+        optionExtent[0].inviteDesc === 'exerciseOption',
+        details`wrong invite`,
       );
       assert(
         moolaAmountMath.isEqual(optionExtent[0].underlyingAsset, moola(3)),
@@ -213,14 +208,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const bobSwapPayments = harden({ Asset: exclInvite });
 
       // Bob escrows his option in the swap
-      const { seat: bobSwapSeat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, outcome: daveSwapInviteP } = await E(zoe).offer(
         bobSwapInvite,
         bobProposalSwap,
         bobSwapPayments,
       );
 
       // Bob makes an offer to the swap with his "higher order"
-      const daveSwapInviteP = E(bobSwapSeat).makeFirstOffer();
       log('swap invite made');
       await E(daveP).doSwapForOption(daveSwapInviteP, optionAmounts);
 
@@ -265,15 +259,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, outcome: outcomeP } = await E(zoe).offer(
         exclInvite,
         proposal,
         paymentKeywordRecord,
       );
 
-      const offerResult = await E(seat).bid();
-
-      log(offerResult);
+      log(await outcomeP);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.Asset;
@@ -322,15 +314,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const paymentKeywordRecord = { Price: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, outcome: outcomeP } = await E(zoe).offer(
         exclInvite,
         proposal,
         paymentKeywordRecord,
       );
 
-      const offerResult = await E(seat).matchOffer();
-
-      log(offerResult);
+      log(await outcomeP);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.Asset;
@@ -372,15 +362,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const paymentKeywordRecord = { Price: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, outcome: outcomeP } = await E(zoe).offer(
         exclInvite,
         bobBuyOrderProposal,
         paymentKeywordRecord,
       );
 
-      const offerResult = await E(seat).addOrder();
-
-      log(offerResult);
+      log(await outcomeP);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.Asset;
@@ -422,15 +410,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       }
       const simoleanPayment2 = await E(simoleanPurseP).withdraw(simoleans(s));
       const paymentKeywordRecord = { Price: simoleanPayment2 };
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, outcome: outcomeP } = await E(zoe).offer(
         invite,
         bobBuyOrderProposal,
         paymentKeywordRecord,
       );
 
-      const offerResult = await E(seat).addOrder();
-
-      log(offerResult);
+      log(await outcomeP);
 
       payoutP.then(async bobResult => {
         E(moolaPurseP).deposit(await bobResult.Asset);
@@ -440,24 +426,14 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       await showPurseBalance(moolaPurseP, 'bobMoolaPurse', log);
       await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
     },
-    doAutoswap: async inviteP => {
-      const invite = await inviteP;
-      const exclInvite = await E(inviteIssuer).claim(invite);
-      const { extent: inviteExtent } = await E(inviteIssuer).getAmountOf(
-        exclInvite,
-      );
-
-      const { installationHandle, issuerKeywordRecord } = await E(
+    doAutoswap: async instanceHandle => {
+      const { installationHandle, issuerKeywordRecord, publicAPI } = await E(
         zoe,
-      ).getInstance(inviteExtent[0].instanceHandle);
+      ).getInstance(instanceHandle);
       assert(
         installationHandle === installations.autoswap,
         details`wrong installation`,
       );
-      const {
-        extent: [{ instanceHandle }],
-      } = await E(inviteIssuer).getAmountOf(exclInvite);
-      const { publicAPI } = await E(zoe).getInstance(instanceHandle);
       const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
       assert(
         sameStructure(
@@ -477,22 +453,19 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       );
       log(`simoleanAmounts `, simoleanAmounts);
 
+      const buyBInvite = E(publicAPI).makeSwapInvite();
+
       const moolaForSimProposal = harden({
         give: { TokenA: moola(3) },
         want: { TokenB: simoleans(1) },
       });
 
       const moolaForSimPayments = harden({ TokenA: moolaPayment });
-      const { seat, payout: moolaForSimPayoutP } = await E(zoe).redeem(
-        exclInvite,
-        moolaForSimProposal,
-        moolaForSimPayments,
-      );
+      const { payout: moolaForSimPayoutP, outcome: outcomeP } = await E(
+        zoe,
+      ).offer(buyBInvite, moolaForSimProposal, moolaForSimPayments);
 
-      const offerResult = await E(seat).swap();
-
-      log(offerResult);
-
+      log(await outcomeP);
       const moolaForSimPayout = await moolaForSimPayoutP;
       const moolaPayout1 = await moolaForSimPayout.TokenA;
       const simoleanPayout1 = await moolaForSimPayout.TokenB;
@@ -514,14 +487,18 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       await E(simoleanPurseP).deposit(simoleanPayment);
       const bobSimoleanPayment = await E(simoleanPurseP).withdraw(simoleans(3));
       const simsForMoolaPayments = harden({ TokenB: bobSimoleanPayment });
-      const invite2 = await E(publicAPI).makeInvite();
+      const invite2 = E(publicAPI).makeSwapInvite();
 
-      const { seat: seat2, payout: bobSimsForMoolaPayoutP } = await E(
-        zoe,
-      ).redeem(invite2, bobSimsForMoolaProposal, simsForMoolaPayments);
+      const {
+        payout: bobSimsForMoolaPayoutP,
+        outcome: simsForMoolaOutcomeP,
+      } = await E(zoe).offer(
+        invite2,
+        bobSimsForMoolaProposal,
+        simsForMoolaPayments,
+      );
 
-      const simsForMoolaOutcome = await E(seat2).swap();
-      log(simsForMoolaOutcome);
+      log(await simsForMoolaOutcomeP);
 
       const simsForMoolaPayout = await bobSimsForMoolaPayoutP;
       const moolaPayout2 = await simsForMoolaPayout.TokenA;

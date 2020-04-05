@@ -52,15 +52,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, outcome: outcomeP } = await E(zoe).offer(
         exclInvite,
         proposal,
         paymentKeywordRecord,
       );
 
-      const offerResult = await E(seat).bid();
-
-      log(offerResult);
+      log(await outcomeP);
 
       const daveResult = await payoutP;
       const moolaPayout = await daveResult.Asset;
@@ -87,8 +85,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const installationCode = await E(zoe).getInstallation(installationHandle);
       // pick some arbitrary code points as a signature.
       assert(
-        installationCode.includes("['Asset', 'Price']"),
-        details`source code didn't match at "['Asset', 'Price']"`,
+        installationCode.includes('asset: give.Asset,'),
+        details`source code didn't match at "asset: give.Asset,"`,
       );
       assert(
         installationCode.includes('makeFirstOfferInvite'),
@@ -122,8 +120,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       );
       const optionExtent = optionAmounts.extent;
       assert(
-        optionExtent[0].seatDesc === 'exerciseOption',
-        details`wrong seat`,
+        optionExtent[0].inviteDesc === 'exerciseOption',
+        details`wrong invite`,
       );
       assert(
         moolaAmountMath.isEqual(optionExtent[0].underlyingAsset, moola(3)),
@@ -145,12 +143,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         give: { Price: bucks(1) },
       });
       const daveSwapPayments = harden({ Price: bucksPayment });
-      const { seat: daveSwapSeat, payout: daveSwapPayoutP } = await E(
+      const { payout: daveSwapPayoutP, outcome: daveSwapOutcomeP } = await E(
         zoe,
-      ).redeem(exclInvite, daveSwapProposal, daveSwapPayments);
+      ).offer(exclInvite, daveSwapProposal, daveSwapPayments);
 
-      const daveSwapOutcome = await E(daveSwapSeat).matchOffer();
-      log(daveSwapOutcome);
+      log(await daveSwapOutcomeP);
 
       const daveSwapPayout = await daveSwapPayoutP;
       const daveOption = await daveSwapPayout.Asset;
@@ -165,16 +162,15 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const daveCoveredCallPayments = harden({ StrikePrice: simoleanPayment });
       const {
-        seat: daveCoveredCallSeat,
         payout: daveCoveredCallPayoutP,
-      } = await E(zoe).redeem(
+        outcome: daveCoveredCallOutcomeP,
+      } = await E(zoe).offer(
         daveOption,
         daveCoveredCallProposal,
         daveCoveredCallPayments,
       );
 
-      const daveCoveredCallOutcome = await E(daveCoveredCallSeat).exercise();
-      log(daveCoveredCallOutcome);
+      log(await daveCoveredCallOutcomeP);
 
       const daveCoveredCallResult = await daveCoveredCallPayoutP;
       const moolaPayout = await daveCoveredCallResult.UnderlyingAsset;

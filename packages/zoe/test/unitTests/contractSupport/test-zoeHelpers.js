@@ -30,7 +30,7 @@ test('ZoeHelpers assertKeywords', t => {
   t.plan(5);
   const { moolaR, simoleanR } = setup();
   try {
-    const mockZoe = harden({
+    const mockZCF = harden({
       getInstanceRecord: () =>
         harden({
           issuerKeywordRecord: {
@@ -41,7 +41,7 @@ test('ZoeHelpers assertKeywords', t => {
       getAmountMaths: () => {},
       getZoeService: () => {},
     });
-    const { assertKeywords } = makeZoeHelpers(mockZoe);
+    const { assertKeywords } = makeZoeHelpers(mockZCF);
     t.doesNotThrow(
       () => assertKeywords(['Asset', 'Price']),
       `Asset and Price are the correct keywords`,
@@ -76,7 +76,7 @@ test('ZoeHelpers rejectIfNotProposal', t => {
   const completedOfferHandles = [];
   const offerHandles = harden([{}, {}, {}, {}, {}, {}, {}]);
   try {
-    const mockZoe = harden({
+    const mockZCF = harden({
       getInstanceRecord: () =>
         harden({
           issuerKeywordRecord: {
@@ -115,7 +115,7 @@ test('ZoeHelpers rejectIfNotProposal', t => {
       },
       complete: handles => completedOfferHandles.push(...handles),
     });
-    const { rejectIfNotProposal } = makeZoeHelpers(mockZoe);
+    const { rejectIfNotProposal } = makeZoeHelpers(mockZCF);
     // Vary expected.
     t.doesNotThrow(() =>
       rejectIfNotProposal(
@@ -216,7 +216,7 @@ test('ZoeHelpers checkIfProposal', t => {
   t.plan(3);
   const { moolaR, simoleanR, moola, simoleans } = setup();
   try {
-    const mockZoe = harden({
+    const mockZCF = harden({
       getInstanceRecord: () =>
         harden({
           issuerKeywordRecord: {
@@ -236,7 +236,7 @@ test('ZoeHelpers checkIfProposal', t => {
         });
       },
     });
-    const { checkIfProposal } = makeZoeHelpers(mockZoe);
+    const { checkIfProposal } = makeZoeHelpers(mockZCF);
     t.ok(
       checkIfProposal(
         harden({}),
@@ -270,7 +270,7 @@ test('ZoeHelpers checkIfProposal', t => {
 test('ZoeHelpers checkIfProposal multiple keys', t => {
   t.plan(2);
   const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-  const mockZoe = harden({
+  const mockZCF = harden({
     getInstanceRecord: () =>
       harden({
         issuerKeywordRecord: {
@@ -291,7 +291,7 @@ test('ZoeHelpers checkIfProposal multiple keys', t => {
       });
     },
   });
-  const { checkIfProposal } = makeZoeHelpers(mockZoe);
+  const { checkIfProposal } = makeZoeHelpers(mockZCF);
   t.ok(
     checkIfProposal(
       harden({}),
@@ -320,7 +320,7 @@ test('ZoeHelpers getActiveOffers', t => {
   t.plan(1);
   const { moolaR, simoleanR } = setup();
   try {
-    const mockZoe = harden({
+    const mockZCF = harden({
       getInstanceRecord: () =>
         harden({
           issuerKeywordRecord: {
@@ -340,7 +340,7 @@ test('ZoeHelpers getActiveOffers', t => {
       getOffers: handles =>
         handles.map((handle, i) => harden({ handle, id: i })),
     });
-    const { getActiveOffers } = makeZoeHelpers(mockZoe);
+    const { getActiveOffers } = makeZoeHelpers(mockZCF);
     const offerHandles = harden([{}, {}]);
     t.deepEquals(
       getActiveOffers(offerHandles),
@@ -357,7 +357,7 @@ test('ZoeHelpers rejectOffer', t => {
   const { moolaR, simoleanR } = setup();
   const completedOfferHandles = [];
   try {
-    const mockZoe = harden({
+    const mockZCF = harden({
       getInstanceRecord: () =>
         harden({
           issuerKeywordRecord: {
@@ -369,7 +369,7 @@ test('ZoeHelpers rejectOffer', t => {
       getZoeService: () => {},
       complete: handles => completedOfferHandles.push(...handles),
     });
-    const { rejectOffer } = makeZoeHelpers(mockZoe);
+    const { rejectOffer } = makeZoeHelpers(mockZCF);
     const offerHandles = harden([{}, {}]);
     t.throws(
       () => rejectOffer(offerHandles[0]),
@@ -391,11 +391,11 @@ test('ZoeHelpers rejectOffer', t => {
 test('ZoeHelpers canTradeWith', t => {
   t.plan(2);
   const { moolaR, simoleanR, moola, simoleans } = setup();
-  const leftInviteHandle = harden({});
-  const rightInviteHandle = harden({});
-  const cantTradeRightInviteHandle = harden({});
+  const leftOfferHandle = harden({});
+  const rightOfferHandle = harden({});
+  const cantTradeRightOfferHandle = harden({});
   try {
-    const mockZoe = harden({
+    const mockZCF = harden({
       getInstanceRecord: () =>
         harden({
           issuerKeywordRecord: {
@@ -408,7 +408,7 @@ test('ZoeHelpers canTradeWith', t => {
         harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
       getZoeService: () => {},
       getOffer: handle => {
-        if (handle === leftInviteHandle) {
+        if (handle === leftOfferHandle) {
           return harden({
             proposal: {
               give: { Asset: moola(10) },
@@ -417,7 +417,7 @@ test('ZoeHelpers canTradeWith', t => {
             },
           });
         }
-        if (handle === rightInviteHandle) {
+        if (handle === rightOfferHandle) {
           return harden({
             proposal: {
               give: { Price: simoleans(6) },
@@ -426,7 +426,7 @@ test('ZoeHelpers canTradeWith', t => {
             },
           });
         }
-        if (handle === cantTradeRightInviteHandle) {
+        if (handle === cantTradeRightOfferHandle) {
           return harden({
             proposal: {
               give: { Price: simoleans(6) },
@@ -438,9 +438,9 @@ test('ZoeHelpers canTradeWith', t => {
         throw new Error('unexpected handle');
       },
     });
-    const { canTradeWith } = makeZoeHelpers(mockZoe);
-    t.ok(canTradeWith(leftInviteHandle, rightInviteHandle));
-    t.notOk(canTradeWith(leftInviteHandle, cantTradeRightInviteHandle));
+    const { canTradeWith } = makeZoeHelpers(mockZCF);
+    t.ok(canTradeWith(leftOfferHandle, rightOfferHandle));
+    t.notOk(canTradeWith(leftOfferHandle, cantTradeRightOfferHandle));
   } catch (e) {
     t.assert(false, e);
   }
@@ -449,14 +449,14 @@ test('ZoeHelpers canTradeWith', t => {
 test('ZoeHelpers swap ok', t => {
   t.plan(4);
   const { moolaR, simoleanR, moola, simoleans } = setup();
-  const leftInviteHandle = harden({});
-  const rightInviteHandle = harden({});
-  const cantTradeRightInviteHandle = harden({});
+  const leftOfferHandle = harden({});
+  const rightOfferHandle = harden({});
+  const cantTradeRightOfferHandle = harden({});
   const reallocatedHandles = [];
   const reallocatedAmountObjs = [];
   const completedHandles = [];
   try {
-    const mockZoe = harden({
+    const mockZCF = harden({
       getInstanceRecord: () =>
         harden({
           issuerKeywordRecord: {
@@ -470,19 +470,19 @@ test('ZoeHelpers swap ok', t => {
       getZoeService: () => {},
       isOfferActive: () => true,
       getCurrentAllocation: handle => {
-        if (handle === leftInviteHandle) {
+        if (handle === leftOfferHandle) {
           return 'leftInviteAmounts';
         }
-        if (handle === rightInviteHandle) {
+        if (handle === rightOfferHandle) {
           return 'rightInviteAmounts';
         }
-        if (handle === cantTradeRightInviteHandle) {
+        if (handle === cantTradeRightOfferHandle) {
           return 'cantTradeRightInviteAmounts';
         }
         throw new Error('unexpected handle');
       },
       getOffer: handle => {
-        if (handle === leftInviteHandle) {
+        if (handle === leftOfferHandle) {
           return harden({
             proposal: {
               give: { Asset: moola(10) },
@@ -491,7 +491,7 @@ test('ZoeHelpers swap ok', t => {
             },
           });
         }
-        if (handle === rightInviteHandle) {
+        if (handle === rightOfferHandle) {
           return harden({
             proposal: {
               give: { Price: simoleans(6) },
@@ -500,7 +500,7 @@ test('ZoeHelpers swap ok', t => {
             },
           });
         }
-        if (handle === cantTradeRightInviteHandle) {
+        if (handle === cantTradeRightOfferHandle) {
           return harden({
             proposal: {
               give: { Price: simoleans(6) },
@@ -517,17 +517,17 @@ test('ZoeHelpers swap ok', t => {
       },
       complete: handles => completedHandles.push(...handles),
     });
-    const { swap } = makeZoeHelpers(mockZoe);
+    const { swap } = makeZoeHelpers(mockZCF);
     t.ok(
       swap(
-        leftInviteHandle,
-        rightInviteHandle,
+        leftOfferHandle,
+        rightOfferHandle,
         'prior offer no longer available',
       ),
     );
     t.deepEquals(
       reallocatedHandles,
-      harden([leftInviteHandle, rightInviteHandle]),
+      harden([leftOfferHandle, rightOfferHandle]),
       `both handles reallocated`,
     );
     t.deepEquals(
@@ -537,7 +537,7 @@ test('ZoeHelpers swap ok', t => {
     );
     t.deepEquals(
       completedHandles,
-      harden([leftInviteHandle, rightInviteHandle]),
+      harden([leftOfferHandle, rightOfferHandle]),
       `both handles were completed`,
     );
   } catch (e) {
@@ -548,14 +548,14 @@ test('ZoeHelpers swap ok', t => {
 test('ZoeHelpers swap keep inactive', t => {
   t.plan(4);
   const { moolaR, simoleanR, moola, simoleans } = setup();
-  const leftInviteHandle = harden({});
-  const rightInviteHandle = harden({});
-  const cantTradeRightInviteHandle = harden({});
+  const leftOfferHandle = harden({});
+  const rightOfferHandle = harden({});
+  const cantTradeRightOfferHandle = harden({});
   const reallocatedHandles = [];
   const reallocatedAmountObjs = [];
   const completedHandles = [];
   try {
-    const mockZoe = harden({
+    const mockZCF = harden({
       getInstanceRecord: () =>
         harden({
           issuerKeywordRecord: {
@@ -569,7 +569,7 @@ test('ZoeHelpers swap keep inactive', t => {
       getZoeService: () => {},
       isOfferActive: () => false,
       getOffer: handle => {
-        if (handle === leftInviteHandle) {
+        if (handle === leftOfferHandle) {
           return harden({
             proposal: {
               give: { Asset: moola(10) },
@@ -579,7 +579,7 @@ test('ZoeHelpers swap keep inactive', t => {
             amounts: 'leftInviteAmounts',
           });
         }
-        if (handle === rightInviteHandle) {
+        if (handle === rightOfferHandle) {
           return harden({
             proposal: {
               give: { Price: simoleans(6) },
@@ -589,7 +589,7 @@ test('ZoeHelpers swap keep inactive', t => {
             amounts: 'rightInviteAmounts',
           });
         }
-        if (handle === cantTradeRightInviteHandle) {
+        if (handle === cantTradeRightOfferHandle) {
           return harden({
             proposal: {
               give: { Price: simoleans(6) },
@@ -607,12 +607,12 @@ test('ZoeHelpers swap keep inactive', t => {
       },
       complete: handles => handles.map(handle => completedHandles.push(handle)),
     });
-    const { swap } = makeZoeHelpers(mockZoe);
+    const { swap } = makeZoeHelpers(mockZCF);
     t.throws(
       () =>
         swap(
-          leftInviteHandle,
-          rightInviteHandle,
+          leftOfferHandle,
+          rightOfferHandle,
           'prior offer no longer available',
         ),
       /Error: prior offer no longer available/,
@@ -622,7 +622,7 @@ test('ZoeHelpers swap keep inactive', t => {
     t.deepEquals(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
     t.deepEquals(
       completedHandles,
-      harden([rightInviteHandle]),
+      harden([rightOfferHandle]),
       `only tryHandle (right) was completed`,
     );
   } catch (e) {
@@ -633,14 +633,14 @@ test('ZoeHelpers swap keep inactive', t => {
 test(`ZoeHelpers swap - can't trade with`, t => {
   t.plan(4);
   const { moolaR, simoleanR, moola, simoleans } = setup();
-  const leftInviteHandle = harden({});
-  const rightInviteHandle = harden({});
-  const cantTradeRightInviteHandle = harden({});
+  const leftOfferHandle = harden({});
+  const rightOfferHandle = harden({});
+  const cantTradeRightOfferHandle = harden({});
   const reallocatedHandles = [];
   const reallocatedAmountObjs = [];
   const completedHandles = [];
   try {
-    const mockZoe = harden({
+    const mockZCF = harden({
       getInstanceRecord: () =>
         harden({
           issuerKeywordRecord: {
@@ -654,7 +654,7 @@ test(`ZoeHelpers swap - can't trade with`, t => {
       getZoeService: () => {},
       isOfferActive: () => true,
       getOffer: handle => {
-        if (handle === leftInviteHandle) {
+        if (handle === leftOfferHandle) {
           return harden({
             proposal: {
               give: { Asset: moola(10) },
@@ -664,7 +664,7 @@ test(`ZoeHelpers swap - can't trade with`, t => {
             amounts: 'leftInviteAmounts',
           });
         }
-        if (handle === rightInviteHandle) {
+        if (handle === rightOfferHandle) {
           return harden({
             proposal: {
               give: { Price: simoleans(6) },
@@ -674,7 +674,7 @@ test(`ZoeHelpers swap - can't trade with`, t => {
             amounts: 'rightInviteAmounts',
           });
         }
-        if (handle === cantTradeRightInviteHandle) {
+        if (handle === cantTradeRightOfferHandle) {
           return harden({
             proposal: {
               give: { Price: simoleans(6) },
@@ -692,12 +692,12 @@ test(`ZoeHelpers swap - can't trade with`, t => {
       },
       complete: handles => handles.map(handle => completedHandles.push(handle)),
     });
-    const { swap } = makeZoeHelpers(mockZoe);
+    const { swap } = makeZoeHelpers(mockZCF);
     t.throws(
       () =>
         swap(
-          leftInviteHandle,
-          cantTradeRightInviteHandle,
+          leftOfferHandle,
+          cantTradeRightOfferHandle,
           'prior offer no longer available',
         ),
       /Error: The offer was invalid. Please check your refund./,
@@ -707,7 +707,7 @@ test(`ZoeHelpers swap - can't trade with`, t => {
     t.deepEquals(reallocatedAmountObjs, harden([]), `no amounts reallocated`);
     t.deepEquals(
       completedHandles,
-      harden([rightInviteHandle]),
+      harden([rightOfferHandle]),
       `only tryHandle (right) was completed`,
     );
   } catch (e) {
@@ -720,8 +720,8 @@ test('ZoeHelpers makeEmptyOffer', async t => {
   const { moolaR, simoleanR } = setup();
   const redeemedInvites = [];
   try {
-    const inviteHandle = harden({});
-    const mockZoe = harden({
+    const offerHandle = harden({});
+    const mockZCF = harden({
       getInstanceRecord: () =>
         harden({
           issuerKeywordRecord: {
@@ -732,20 +732,19 @@ test('ZoeHelpers makeEmptyOffer', async t => {
       getAmountMaths: () => {},
       getZoeService: () =>
         harden({
-          redeem: invite => {
+          offer: invite => {
             redeemedInvites.push(invite);
             return Promise.resolve();
           },
         }),
-      makeInvite: () =>
-        harden({
-          inviteHandle,
-          invite: 'anInvite',
-        }),
+      makeInvitation: (offerHook, _) => {
+        offerHook(offerHandle);
+        return 'anInvite';
+      },
     });
-    const { makeEmptyOffer } = makeZoeHelpers(mockZoe);
+    const { makeEmptyOffer } = makeZoeHelpers(mockZCF);
     const result = await makeEmptyOffer();
-    t.deepEquals(result, inviteHandle, `inviteHandle was returned`);
+    t.deepEquals(result, offerHandle, `offerHandle was returned`);
     t.deepEquals(redeemedInvites, harden(['anInvite']), `invite was redeemed`);
   } catch (e) {
     t.assert(false, e);

@@ -27,7 +27,7 @@ export const secondPriceLogic = (bidAmountMath, bidOfferHandles, bids) => {
 
 export const closeAuction = (
   zoe,
-  { auctionLogicFn, sellerInviteHandle, allBidHandles },
+  { auctionLogicFn, sellerOfferHandle, allBidHandles },
 ) => {
   const { Bid: bidAmountMath, Asset: assetAmountMath } = zoe.getAmountMaths(
     harden(['Bid', 'Asset']),
@@ -40,13 +40,13 @@ export const closeAuction = (
 
   const getBids = amountsKeywordRecord => amountsKeywordRecord.Bid;
   const bids = zoe.getCurrentAllocations(activeBidHandles).map(getBids);
-  const assetAmount = zoe.getOffer(sellerInviteHandle).proposal.give.Asset;
+  const assetAmount = zoe.getOffer(sellerOfferHandle).proposal.give.Asset;
 
-  const {
-    winnerOfferHandle: winnerInviteHandle,
-    winnerBid,
-    price,
-  } = auctionLogicFn(bidAmountMath, activeBidHandles, bids);
+  const { winnerOfferHandle, winnerBid, price } = auctionLogicFn(
+    bidAmountMath,
+    activeBidHandles,
+    bids,
+  );
 
   // The winner gets to keep the difference between their bid and the
   // price paid.
@@ -58,9 +58,9 @@ export const closeAuction = (
   // Everyone else gets a refund so their extents remain the
   // same.
   zoe.reallocate(
-    harden([sellerInviteHandle, winnerInviteHandle]),
+    harden([sellerOfferHandle, winnerOfferHandle]),
     harden([newSellerAmounts, newWinnerAmounts]),
   );
-  const allOfferHandles = harden([sellerInviteHandle, ...activeBidHandles]);
+  const allOfferHandles = harden([sellerOfferHandle, ...activeBidHandles]);
   zoe.complete(allOfferHandles);
 };

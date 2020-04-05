@@ -1,6 +1,7 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
+import { HandledPromise } from '@agoric/eventual-send';
 
 export const defaultRejectMsg = `The offer was invalid. Please check your refund.`;
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
@@ -9,18 +10,18 @@ export const getKeys = obj => harden(Object.getOwnPropertyNames(obj || {}));
 const getKeysSorted = obj =>
   harden(Object.getOwnPropertyNames(obj || {}).sort());
 
-export const makeZoeHelpers = zoe => {
-  const zoeService = zoe.getZoeService();
+export const makeZoeHelpers = zcf => {
+  const zoeService = zcf.getZoeService();
 
-  const rejectOffer = (inviteHandle, msg = defaultRejectMsg) => {
-    zoe.complete(harden([inviteHandle]));
-    throw new Error(msg);
+  const rejectOffer = (offerHandle, msg = defaultRejectMsg) => {
+    zcf.complete(harden([offerHandle]));
+    assert.fail(msg);
   };
 
   // Compare the keys of actual with expected keys and reject offer if
   // not sameStructure. If expectedKeys is undefined, no comparison occurs.
   const rejectKeysIf = (
-    inviteHandle,
+    offerHandle,
     actual,
     expected,
     msg = defaultRejectMsg,
@@ -28,7 +29,7 @@ export const makeZoeHelpers = zoe => {
   ) => {
     if (expected !== undefined) {
       if (!sameStructure(getKeysSorted(actual), getKeysSorted(expected))) {
-        return rejectOffer(inviteHandle, msg);
+        return rejectOffer(offerHandle, msg);
       }
     }
   };
@@ -43,7 +44,7 @@ export const makeZoeHelpers = zoe => {
 
   const helpers = harden({
     assertKeywords: expected => {
-      const { issuerKeywordRecord } = zoe.getInstanceRecord();
+      const { issuerKeywordRecord } = zcf.getInstanceRecord();
       const actual = getKeysSorted(issuerKeywordRecord);
       expected = [...expected]; // in case hardened
       expected.sort();
@@ -52,14 +53,14 @@ export const makeZoeHelpers = zoe => {
         details`keywords: ${actual} were not as expected: ${expected}`,
       );
     },
-    rejectIfNotProposal: (inviteHandle, expected) => {
-      const { proposal: actual } = zoe.getOffer(inviteHandle);
-      rejectKeysIf(inviteHandle, actual.give, expected.give);
-      rejectKeysIf(inviteHandle, actual.want, expected.want);
-      rejectKeysIf(inviteHandle, actual.exit, expected.exit);
+    rejectIfNotProposal: (offerHandle, expected) => {
+      const { proposal: actual } = zcf.getOffer(offerHandle);
+      rejectKeysIf(offerHandle, actual.give, expected.give);
+      rejectKeysIf(offerHandle, actual.want, expected.want);
+      rejectKeysIf(offerHandle, actual.exit, expected.exit);
     },
-    checkIfProposal: (inviteHandle, expected) => {
-      const { proposal: actual } = zoe.getOffer(inviteHandle);
+    checkIfProposal: (offerHandle, expected) => {
+      const { proposal: actual } = zcf.getOffer(offerHandle);
       return (
         // Check that the "give" keys match expected keys.
         checkKeys(actual.give, expected.give) &&
@@ -70,14 +71,14 @@ export const makeZoeHelpers = zoe => {
       );
     },
     getActiveOffers: handles =>
-      zoe.getOffers(zoe.getOfferStatuses(handles).active),
+      zcf.getOffers(zcf.getOfferStatuses(handles).active),
     rejectOffer,
-    canTradeWith: (leftInviteHandle, rightInviteHandle) => {
-      const { issuerKeywordRecord } = zoe.getInstanceRecord();
+    canTradeWith: (leftOfferHandle, rightOfferHandle) => {
+      const { issuerKeywordRecord } = zcf.getInstanceRecord();
       const keywords = getKeys(issuerKeywordRecord);
-      const amountMaths = zoe.getAmountMaths(keywords);
-      const { proposal: left } = zoe.getOffer(leftInviteHandle);
-      const { proposal: right } = zoe.getOffer(rightInviteHandle);
+      const amountMaths = zcf.getAmountMaths(keywords);
+      const { proposal: left } = zcf.getOffer(leftOfferHandle);
+      const { proposal: right } = zcf.getOffer(rightOfferHandle);
       const satisfied = (want, give) =>
         keywords.every(keyword => {
           if (want[keyword]) {
@@ -94,24 +95,42 @@ export const makeZoeHelpers = zoe => {
       tryHandle,
       keepHandleInactiveMsg = 'prior offer is unavailable',
     ) => {
-      if (!zoe.isOfferActive(keepHandle)) {
+      if (!zcf.isOfferActive(keepHandle)) {
         throw helpers.rejectOffer(tryHandle, keepHandleInactiveMsg);
       }
       if (!helpers.canTradeWith(keepHandle, tryHandle)) {
         throw helpers.rejectOffer(tryHandle);
       }
-      const keepAmounts = zoe.getCurrentAllocation(keepHandle);
-      const tryAmounts = zoe.getCurrentAllocation(tryHandle);
+      const keepAmounts = zcf.getCurrentAllocation(keepHandle);
+      const tryAmounts = zcf.getCurrentAllocation(tryHandle);
       // reallocate by switching the amount
       const handles = harden([keepHandle, tryHandle]);
-      zoe.reallocate(handles, harden([tryAmounts, keepAmounts]));
-      zoe.complete(handles);
+      zcf.reallocate(handles, harden([tryAmounts, keepAmounts]));
+      zcf.complete(handles);
       return defaultAcceptanceMsg;
     },
-    makeEmptyOffer: () => {
-      const { inviteHandle, invite } = zoe.makeInvite();
-      return zoeService.redeem(invite).then(() => inviteHandle);
+    // TODO update documentation to new API
+    inviteAnOffer: (options = {}) => {
+      const {
+        offerHook = () => {},
+        customProperties = undefined,
+        expected = undefined,
+      } = options;
+      const wrappedOfferHook = offerHandle => {
+        if (expected) {
+          helpers.rejectIfNotProposal(offerHandle, expected);
+        }
+        return offerHook(offerHandle);
+      };
+      return zcf.makeInvitation(wrappedOfferHook, customProperties);
     },
+    makeEmptyOffer: () =>
+      new HandledPromise(resolve => {
+        const invite = helpers.inviteAnOffer({
+          offerHook: offerHandle => resolve(offerHandle),
+        });
+        zoeService.offer(invite);
+      }),
   });
   return helpers;
 };

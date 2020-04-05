@@ -39,13 +39,12 @@ test('zoe - simplest automaticRefund', async t => {
     });
     const alicePayments = { Contribution: aliceMoolaPayment };
 
-    const { seat, payout: payoutP } = await zoe.redeem(
+    const { payout: payoutP } = await zoe.offer(
       invite,
       aliceProposal,
       alicePayments,
     );
 
-    seat.makeOffer();
     const alicePayout = await payoutP;
     const aliceMoolaPayout = await alicePayout.Contribution;
 
@@ -89,13 +88,12 @@ test('zoe - automaticRefund same issuer', async t => {
     });
     const alicePayments = harden({ Contribution2: aliceMoolaPayment });
 
-    const { seat, payout: payoutP } = await zoe.redeem(
+    const { payout: payoutP } = await zoe.offer(
       invite,
       aliceProposal,
       alicePayments,
     );
 
-    seat.makeOffer();
     const alicePayout = await payoutP;
     const aliceMoolaPayout = await alicePayout.Contribution2;
 
@@ -153,19 +151,20 @@ test('zoe with automaticRefund', async t => {
     });
     const alicePayments = { Contribution1: aliceMoolaPayment };
 
-    // Alice gets two kinds of things back: a seat which she can use
-    // interact with the contract, and a payout promise
-    // that resolves to the array of promises for payments
-    const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
+    // Alice gets two kinds of things back: a payout promise
+    // that resolves to the array of promises for payments,
+    // and an outcome promise, which is whatever the offerHook
+    // returns.
+    //
+    // In the 'automaticRefund' trivial contract, you just get your
+    // payments back when you make an offer. The outcome is simply
+    // the string 'The offer was accepted'
+    const { payout: alicePayoutP, outcome: aliceOutcomeP } = await zoe.offer(
       aliceInvite,
       aliceProposal,
       alicePayments,
     );
 
-    // In the 'automaticRefund' trivial contract, you just get your
-    // payments back when you make an offer. The effect of calling
-    // makeOffer will vary widely depending on the smart  contract.
-    const aliceOutcome = aliceSeat.makeOffer();
     const bobInvite = publicAPI.makeInvite();
     const count = publicAPI.getOffersCount();
     t.equals(count, 1);
@@ -199,17 +198,16 @@ test('zoe with automaticRefund', async t => {
     });
     const bobPayments = { Contribution2: bobSimoleanPayment };
 
-    // Bob also gets two things back: a seat and a
-    // payout
-    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+    // Bob also gets two things back: a payout promise and an
+    // outcome promise.
+    const { payout: bobPayoutP, outcome: bobOutcomeP } = await zoe.offer(
       exclusBobInvite,
       bobProposal,
       bobPayments,
     );
-    const bobOutcome = bobSeat.makeOffer();
 
-    t.equals(aliceOutcome, 'The offer was accepted');
-    t.equals(bobOutcome, 'The offer was accepted');
+    t.equals(await aliceOutcomeP, 'The offer was accepted');
+    t.equals(await bobOutcomeP, 'The offer was accepted');
 
     // These promise resolve when the offer completes, but it may
     // still take longer for a remote issuer to actually make the
@@ -313,30 +311,28 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
       want: { ContributionB: simoleans(7) },
     });
 
-    const { seat: aliceSeat1, payout: payoutP1 } = await zoe.redeem(
+    // 5: Alice makes an offer
+    const { payout: payoutP1 } = await zoe.offer(
       aliceInvite1,
       aliceProposal,
       harden({ ContributionA: aliceMoolaPayments[0] }),
     );
 
     // 3: Alice escrows with zoe
-    const { seat: aliceSeat2, payout: payoutP2 } = await zoe.redeem(
+    // 5: Alice makes an offer
+    const { payout: payoutP2 } = await zoe.offer(
       aliceInvite2,
       aliceProposal,
       harden({ ContributionA: aliceMoolaPayments[1] }),
     );
 
     // 4: Alice escrows with zoe
-    const { seat: aliceSeat3, payout: payoutP3 } = await zoe.redeem(
+    // 5: Alice makes an offer
+    const { payout: payoutP3 } = await zoe.offer(
       aliceInvite3,
       aliceProposal,
       harden({ ContributionA: aliceMoolaPayments[2] }),
     );
-
-    // 5: Alice makes an offer
-    aliceSeat1.makeOffer();
-    aliceSeat2.makeOffer();
-    aliceSeat3.makeOffer();
 
     const payout1 = await payoutP1;
     const payout2 = await payoutP2;
@@ -400,13 +396,13 @@ test('zoe - alice cancels after completion', async t => {
     });
     const alicePayments = { ContributionA: aliceMoolaPayment };
 
-    const { seat, cancelObj, payout: payoutP } = await zoe.redeem(
+    const { cancelObj, payout: payoutP, outcome: outcomeP } = await zoe.offer(
       invite,
       aliceProposal,
       alicePayments,
     );
 
-    await seat.makeOffer();
+    await outcomeP;
 
     t.throws(() => cancelObj.cancel(), /Error: offer has already completed/);
 
@@ -466,13 +462,12 @@ test('zoe - automaticRefund non-fungible', async t => {
   });
   const alicePayments = { Contribution: aliceCcPayment };
 
-  const { seat, payout: payoutP } = await zoe.redeem(
+  const { payout: payoutP } = await zoe.offer(
     invite,
     aliceProposal,
     alicePayments,
   );
 
-  seat.makeOffer();
   const alicePayout = await payoutP;
   const aliceCcPayout = await alicePayout.Contribution;
 

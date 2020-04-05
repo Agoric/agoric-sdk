@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
@@ -16,7 +15,7 @@ export const makeContract = harden(zcf => {
     rejectOffer,
     canTradeWith,
     assertKeywords,
-    rejectIfNotProposal,
+    inviteAnOffer,
   } = makeZoeHelpers(zcf);
 
   let {
@@ -24,77 +23,77 @@ export const makeContract = harden(zcf => {
   } = zcf.getInstanceRecord();
   numBidsAllowed = Nat(numBidsAllowed !== undefined ? numBidsAllowed : 3);
 
-  let sellerInviteHandle;
+  let sellerOfferHandle;
   let minimumBid;
   let auctionedAssets;
   const allBidHandles = [];
 
   assertKeywords(harden(['Asset', 'Bid']));
 
-  const makeBidderInvite = () => {
-    const seat = harden({
-      bid: () => {
-        // Check that the item is still up for auction
-        if (!zcf.isOfferActive(sellerInviteHandle)) {
-          const rejectMsg = `The item up for auction is not available or the auction has completed`;
-          throw rejectOffer(inviteHandle, rejectMsg);
-        }
-        if (allBidHandles.length >= numBidsAllowed) {
-          throw rejectOffer(inviteHandle, `No further bids allowed.`);
-        }
-        const expected = harden({
-          give: { Bid: null },
-          want: { Asset: null },
-        });
-        rejectIfNotProposal(inviteHandle, expected);
-        if (!canTradeWith(sellerInviteHandle, inviteHandle)) {
-          const rejectMsg = `Bid was under minimum bid or for the wrong assets`;
-          throw rejectOffer(inviteHandle, rejectMsg);
-        }
+  const bidderOfferHook = offerHandle => {
+    // Check that the item is still up for auction
+    if (!zcf.isOfferActive(sellerOfferHandle)) {
+      const rejectMsg = `The item up for auction is not available or the auction has completed`;
+      throw rejectOffer(offerHandle, rejectMsg);
+    }
+    if (allBidHandles.length >= numBidsAllowed) {
+      throw rejectOffer(offerHandle, `No further bids allowed.`);
+    }
+    if (!canTradeWith(sellerOfferHandle, offerHandle)) {
+      const rejectMsg = `Bid was under minimum bid or for the wrong assets`;
+      throw rejectOffer(offerHandle, rejectMsg);
+    }
 
-        // Save valid bid and try to close.
-        allBidHandles.push(inviteHandle);
-        if (allBidHandles.length >= numBidsAllowed) {
-          closeAuction(zcf, {
-            auctionLogicFn: secondPriceLogic,
-            sellerInviteHandle,
-            allBidHandles,
-          });
-        }
-        return defaultAcceptanceMsg;
+    // Save valid bid and try to close.
+    allBidHandles.push(offerHandle);
+    if (allBidHandles.length >= numBidsAllowed) {
+      closeAuction(zcf, {
+        auctionLogicFn: secondPriceLogic,
+        sellerOfferHandle,
+        allBidHandles,
+      });
+    }
+    return defaultAcceptanceMsg;
+  };
+
+  const makeBidderInvite = () => {
+    return inviteAnOffer({
+      offerHook: bidderOfferHook,
+      customProperties: {
+        inviteDesc: 'bid',
+        auctionedAssets,
+        minimumBid,
+      },
+      expected: {
+        give: { Bid: null },
+        want: { Asset: null },
       },
     });
-    const { invite, inviteHandle } = zcf.makeInvite(seat, {
-      seatDesc: 'bid',
-      auctionedAssets,
-      minimumBid,
-    });
-    return invite;
+  };
+
+  const sellerOfferHook = offerHandle => {
+    if (auctionedAssets) {
+      throw rejectOffer(offerHandle, `assets already present`);
+    }
+    // Save the valid offer
+    sellerOfferHandle = offerHandle;
+    const { proposal } = zcf.getOffer(offerHandle);
+    auctionedAssets = proposal.give.Asset;
+    minimumBid = proposal.want.Bid;
+    return defaultAcceptanceMsg;
   };
 
   const makeSellerInvite = () => {
-    const seat = harden({
-      sellAssets: () => {
-        if (auctionedAssets) {
-          throw rejectOffer(inviteHandle, `assets already present`);
-        }
-        const expected = harden({
-          give: { Asset: null },
-          want: { Bid: null },
-        });
-        rejectIfNotProposal(inviteHandle, expected);
-        // Save the valid offer
-        sellerInviteHandle = inviteHandle;
-        const { proposal } = zcf.getOffer(inviteHandle);
-        auctionedAssets = proposal.give.Asset;
-        minimumBid = proposal.want.Bid;
-        return defaultAcceptanceMsg;
+    return inviteAnOffer({
+      offerHook: sellerOfferHook,
+      customProperties: {
+        inviteDesc: 'sellAssets',
+      },
+      expected: {
+        give: { Asset: null },
+        want: { Bid: null },
       },
     });
-    const { invite, inviteHandle } = zcf.makeInvite(seat, {
-      seatDesc: 'sellAssets',
-    });
-    return invite;
   };
 
   return harden({

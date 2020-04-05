@@ -58,7 +58,10 @@ export default ({
       keywordPurses[dir] = {};
       keywordIssuerNames[dir] = {};
       Object.entries(proposalTemplate[dir]).forEach(([keyword, amount]) => {
-        assert(amount.pursePetname, `Keyword ${dir} ${keyword} has no pursePetname`);
+        assert(
+          amount.pursePetname,
+          `Keyword ${dir} ${keyword} has no pursePetname`,
+        );
         const purse = petnameToPurse.get(amount.pursePetname);
         assert(
           purse,
@@ -150,10 +153,7 @@ export default ({
 
         // Find the only keyword with this prefix and brand.
         const multiword = keyword;
-        const multiwordPrefix = multiword.substr(
-          0,
-          multiword.length - 1,
-        );
+        const multiwordPrefix = multiword.substr(0, multiword.length - 1);
 
         // Now we actually need the brands (if we haven't already gotten them).
         await getKeywordBrandsP();
@@ -203,7 +203,12 @@ export default ({
     await Promise.all([
       Promise.all(
         Object.keys(proposal.want || {}).map(keyword =>
-          replaceMultiwords(proposal.want, directedPurses.want, keyword, 'Want'),
+          replaceMultiwords(
+            proposal.want,
+            directedPurses.want,
+            keyword,
+            'Want',
+          ),
         ),
       ),
       Promise.all(

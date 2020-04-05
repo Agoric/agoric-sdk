@@ -1,9 +1,9 @@
 // @ts-check
 import rawHarden from '@agoric/harden';
-import { E } from '@agoric/eventual-send';
+import { E, HandledPromise } from '@agoric/eventual-send';
 import makeStore from '@agoric/weak-store';
 import produceIssuer from '@agoric/ertp';
-import { assert, details } from '@agoric/assert';
+import { assert, details, openDetail } from '@agoric/assert';
 import { producePromise } from '@agoric/produce-promise';
 
 import {
@@ -27,6 +27,7 @@ import { makeTables } from './state';
 
 const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
+// TODO Update types and documentatuon to describe the new API
 /**
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
  *
@@ -236,8 +237,8 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  * @returns {ZoeService} The created Zoe service.
  */
 const makeZoe = (additionalEndowments = {}) => {
-  // Zoe maps the inviteHandles to contract seats
-  const handleToSeat = makeStore();
+  // Zoe maps the inviteHandles to contract offerHook upcalls
+  const handleToOfferHook = makeStore();
   const {
     mint: inviteMint,
     issuer: inviteIssuer,
@@ -302,27 +303,6 @@ const makeZoe = (additionalEndowments = {}) => {
   const removeAmounts = offerRecord =>
     filterObj(offerRecord, ['handle', 'instanceHandle', 'proposal']);
 
-  // Make a Zoe invite with an extent that is a mix of credible
-  // information from Zoe (the `handle` and `instanceHandle`) and
-  // other information defined by the smart contract. Note that the
-  // smart contract cannot override or change the values of `handle`
-  // and `instanceHandle`.
-  const makeInvite = (instanceHandle, seat, customProperties = harden({})) => {
-    const inviteHandle = harden({});
-    const inviteAmount = inviteAmountMath.make(
-      harden([
-        {
-          ...customProperties,
-          handle: inviteHandle,
-          instanceHandle,
-        },
-      ]),
-    );
-    handleToSeat.init(inviteHandle, seat);
-    const invitePayment = inviteMint.mintPayment(inviteAmount);
-    return harden({ invite: invitePayment, inviteHandle });
-  };
-
   const assertOffersHaveInstanceHandle = (
     offerHandles,
     expectedInstanceHandle,
@@ -351,6 +331,35 @@ const makeZoe = (additionalEndowments = {}) => {
    * @returns {ContractFacet} The returned facet
    */
   const makeContractFacet = instanceHandle => {
+    // Make a Zoe invite payment with an extent that is a mix of credible
+    // information from Zoe (the `handle` and `instanceHandle`) and
+    // other information defined by the smart contract. Note that the
+    // smart contract cannot override or change the values of `handle`
+    // and `instanceHandle`.
+    const makeInvitation = (offerHook, customProperties = harden({})) => {
+      const inviteHandle = harden({});
+      const inviteAmount = inviteAmountMath.make(
+        harden([
+          {
+            ...customProperties,
+            handle: inviteHandle,
+            instanceHandle,
+          },
+        ]),
+      );
+      handleToOfferHook.init(inviteHandle, offerHook);
+      return inviteMint.mintPayment(inviteAmount);
+    };
+
+    // TODO(msm): remove once we no longer need to support old API
+    const makeInvite = (seat, customProperties = harden({})) => {
+      const offerHook = _ => seat;
+      const invitePayment = makeInvitation(offerHook, customProperties);
+      const amount = inviteIssuer.getAmountOfNow(invitePayment);
+      const inviteHandle = amount.extent[0].handle;
+      return harden({ invite: invitePayment, inviteHandle });
+    };
+
     /**
      * @type {ContractFacet}
      */
@@ -414,8 +423,10 @@ const makeZoe = (additionalEndowments = {}) => {
         return completeOffers(instanceHandle, offerHandles);
       },
 
-      makeInvite: (seat, customProperties) =>
-        makeInvite(instanceHandle, seat, customProperties),
+      makeInvitation,
+
+      // TODO(msm): remove once we no longer need to support old API
+      makeInvite,
 
       addNewIssuer: (issuerP, keyword) =>
         issuerTable.getPromiseForIssuerRecord(issuerP).then(issuerRecord => {
@@ -497,8 +508,11 @@ const makeZoe = (additionalEndowments = {}) => {
   // contract code and registers it with Zoe associated with an
   // `installationHandle` for identification, `makeInstance` creates
   // an instance from an installation, `getInstance` credibly
-  // retrieves an instance from Zoe, and `redeem` allows users to
-  // securely escrow and get a seat and payouts in return.
+  // retrieves an instance from Zoe, and `offer` allows users to
+  // securely escrow and get in return a record containing a promise for
+  // payouts, a promise for the outcome of joining the contract,
+  // and, depending on the exit conditions, perhaps a cancelObj,
+  // an object with a cancel method for leaving the contract on demand.
 
   /** @type {ZoeService} */
   const zoeService = harden(
@@ -602,8 +616,8 @@ const makeZoe = (additionalEndowments = {}) => {
       getInstance: instanceTable.get,
 
       /**
-       * Redeem the invite to receive a seat and a payout
-       * promise.
+       * Redeem the invite to receive a payout promise and an
+       * outcome promise.
        * @param {Payment} invite - an invite (ERTP payment) to join a
        * Zoe smart contract instance
        * @param  {object?} proposal - the proposal, a record
@@ -615,7 +629,7 @@ const makeZoe = (additionalEndowments = {}) => {
        * The default arguments are so that remote invocations don't
        * have to specify empty objects (which get marshaled as presences).
        */
-      redeem: (
+      offer: (
         invite,
         proposal = harden({}),
         paymentKeywordRecord = harden({}),
@@ -642,23 +656,25 @@ const makeZoe = (additionalEndowments = {}) => {
             proposal,
           );
 
-          // Promise flow = issuer -> purse -> deposit payment -> seat/payout
+          // Promise flow:
+          // issuer -> purse -> deposit payment -> offerHook -> payout
           const giveKeywords = Object.getOwnPropertyNames(proposal.give);
           const wantKeywords = Object.getOwnPropertyNames(proposal.want);
           const userKeywords = harden([...giveKeywords, ...wantKeywords]);
           const paymentDepositedPs = userKeywords.map(keyword => {
             const issuer = issuerKeywordRecord[keyword];
             const issuerRecordP = issuerTable.getPromiseForIssuerRecord(issuer);
-            return issuerRecordP.then(({ purse, amountMath }) => {
+            return issuerRecordP.then(({ purse }) => {
               if (giveKeywords.includes(keyword)) {
-                // We cannot trust these amounts since they come directly
-                // from the remote issuer and so we must coerce them.
+                // We cannot trust the returned amount since it comes directly
+                // from the remote issuer. So we use our cleaned proposal's
+                // amount that should be the same.
                 return E(purse)
                   .deposit(
                     paymentKeywordRecord[keyword],
                     proposal.give[keyword],
                   )
-                  .then(_ => amountMath.coerce(proposal.give[keyword]));
+                  .then(_ => proposal.give[keyword]);
               }
               // If any other payments are included, they are ignored.
               return Promise.resolve(
@@ -673,6 +689,7 @@ const makeZoe = (additionalEndowments = {}) => {
               proposal,
               currentAllocation: arrayToObj(amountsArray, userKeywords),
             };
+            // TODO split inviteHandle and offerHandle.
             // Since we have redeemed an invite, the inviteHandle is
             // also the offerHandle.
             offerTable.create(offerImmutableRecord, offerHandle);
@@ -680,10 +697,16 @@ const makeZoe = (additionalEndowments = {}) => {
           };
 
           // Create result to be returned. Depends on `exit`
-          const makeRedemptionResult = _ => {
-            const redemptionResult = {
-              seat: handleToSeat.get(offerHandle),
+          const makeOfferResult = _ => {
+            const offerHook = handleToOfferHook.get(offerHandle);
+            // For now, the "remote" function call only works because
+            // the function is local. It cannot yet be remote
+            // in our system because functions are not yet passable.
+            const outcomeP = E(offerHook)(offerHandle);
+            const offerResult = {
+              offerHandle: HandledPromise.resolve(offerHandle),
               payout: payoutMap.get(offerHandle).promise,
+              outcome: outcomeP,
             };
             const { exit } = proposal;
             const [exitKind] = Object.getOwnPropertyNames(exit);
@@ -696,29 +719,46 @@ const makeZoe = (additionalEndowments = {}) => {
                     completeOffers(instanceHandle, harden([offerHandle])),
                 }),
               );
-              // Add an object with a cancel method to redemptionResult in
+              // Add an object with a cancel method to offerResult in
               // order to cancel on demand.
             } else if (exitKind === 'onDemand') {
-              redemptionResult.cancelObj = {
+              offerResult.cancelObj = {
                 cancel: () =>
                   completeOffers(instanceHandle, harden([offerHandle])),
               };
             } else {
               assert(
                 exitKind === 'waived',
-                details`exit kind was not recognized: ${exitKind}`,
+                details`exit kind was not recognized: ${openDetail(exitKind)}`,
               );
             }
 
             // if the exitRule.kind is 'waived' the user has no
             // possibility of cancelling
-            return harden(redemptionResult);
+            return harden(offerResult);
           };
           return Promise.all(paymentDepositedPs)
             .then(recordOffer)
-            .then(makeRedemptionResult);
+            .then(makeOfferResult);
         });
       },
+
+      // TODO(msm): remove once we no longer need to support old API
+      redeem: (
+        invite,
+        proposal = harden({}),
+        paymentKeywordRecord = harden({}),
+      ) => {
+        return zoeService
+          .offer(invite, proposal, paymentKeywordRecord)
+          .then(offerResult => {
+            const { outcome: outcomeP, ...rest } = offerResult;
+            // The extra wait on outcomeP would enable a denial of
+            // service, but it's only in the code about to disappear
+            return outcomeP.then(seat => harden({ seat, ...rest }));
+          });
+      },
+
       isOfferActive: offerTable.isOfferActive,
       getOffers: offerTable.getOffers,
       getOffer: offerTable.get,

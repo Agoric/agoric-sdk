@@ -1,8 +1,9 @@
-/* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { makeZoeHelpers } from '../contractSupport';
+
+const rejectMsg = `The covered call option is expired.`;
 
 // In a covered call, the owner of a digital asset sells a call
 // option. A call option is the right to buy the digital asset at a
@@ -21,53 +22,41 @@ import { makeZoeHelpers } from '../contractSupport';
 
 // zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe
 export const makeContract = harden(zcf => {
-  const { swap, assertKeywords, rejectIfNotProposal } = makeZoeHelpers(zcf);
+  const { swap, assertKeywords, inviteAnOffer } = makeZoeHelpers(zcf);
   assertKeywords(harden(['UnderlyingAsset', 'StrikePrice']));
 
   const makeCallOptionInvite = sellerHandle => {
-    const seat = harden({
-      exercise: () => {
-        const expected = harden({
-          give: { StrikePrice: null },
-          want: { UnderlyingAsset: null },
-        });
-        rejectIfNotProposal(inviteHandle, expected);
-        const rejectMsg = `The covered call option is expired.`;
-        return swap(sellerHandle, inviteHandle, rejectMsg);
-      },
-    });
-
     const {
       proposal: { want, give, exit },
     } = zcf.getOffer(sellerHandle);
-
-    const { invite: callOption, inviteHandle } = zcf.makeInvite(seat, {
-      seatDesc: 'exerciseOption',
-      expirationDate: exit.afterDeadline.deadline,
-      timerAuthority: exit.afterDeadline.timer,
-      underlyingAsset: give.UnderlyingAsset,
-      strikePrice: want.StrikePrice,
-    });
-    return callOption;
-  };
-
-  const makeCoveredCallInvite = () => {
-    const seat = harden({
-      makeCallOption: () => {
-        const expected = harden({
-          give: { UnderlyingAsset: null },
-          want: { StrikePrice: null },
-          exit: { afterDeadline: null },
-        });
-        rejectIfNotProposal(inviteHandle, expected);
-        return makeCallOptionInvite(inviteHandle);
+    return inviteAnOffer({
+      offerHook: offerHandle => swap(sellerHandle, offerHandle, rejectMsg),
+      customProperties: {
+        inviteDesc: 'exerciseOption',
+        expirationDate: exit.afterDeadline.deadline,
+        timerAuthority: exit.afterDeadline.timer,
+        underlyingAsset: give.UnderlyingAsset,
+        strikePrice: want.StrikePrice,
+      },
+      expected: {
+        give: { StrikePrice: null },
+        want: { UnderlyingAsset: null },
       },
     });
-    const { invite, inviteHandle } = zcf.makeInvite(seat, {
-      seatDesc: 'makeCallOption',
-    });
-    return invite;
   };
+
+  const makeCoveredCallInvite = () =>
+    inviteAnOffer({
+      offerHook: makeCallOptionInvite,
+      customProperties: {
+        inviteDesc: 'makeCallOption',
+      },
+      expected: {
+        give: { UnderlyingAsset: null },
+        want: { StrikePrice: null },
+        exit: { afterDeadline: null },
+      },
+    });
 
   return harden({
     invite: makeCoveredCallInvite(),
