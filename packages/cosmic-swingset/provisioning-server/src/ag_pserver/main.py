@@ -15,9 +15,6 @@ from twisted.python import log
 import sys
 log.startLogging(sys.stdout)
 
-# TODO: Don't hardcode these.
-INITIAL_TOKEN = [1, 'agmedallion']
-
 MAILBOX_URL = u"ws://relay.magic-wormhole.io:4000/v1"
 #MAILBOX_URL = u"ws://10.0.2.24:4000/v1"
 APPID = u"agoric.com/ag-testnet1/provisioning-tool"
@@ -48,6 +45,7 @@ class Options(usage.Options):
         ]
     optParameters = [
         ["home", None, os.path.join(os.environ["HOME"], '.ag-pserver'), "provisioning-server's state directory"],
+        ['initial-token', 'T', '1000uag', "initial tokens sent to the provisioned pubkey"],
         ]
 
 class SendInputAndWaitProtocol(protocol.ProcessProtocol):
@@ -196,7 +194,7 @@ class Provisioner(resource.Resource):
 
 
 @defer.inlineCallbacks
-def enablePubkey(reactor, opts, config, nickname, pubkey, initialToken = INITIAL_TOKEN):
+def enablePubkey(reactor, opts, config, nickname, pubkey):
     mobj = {
         "type": "pleaseProvision",
         "nickname": nickname,
@@ -207,16 +205,14 @@ def enablePubkey(reactor, opts, config, nickname, pubkey, initialToken = INITIAL
         return [mobj, server_message, config]
 
     # FIXME: Make more resilient to DOS attacks, or attempts
-    # to drain all our agmedallions.
-    if initialToken is not None:
-        amountToken = ''.join([str(o) for o in initialToken])
-        args = [
-            'tx', 'send', '--keyring-backend=test', config['bootstrapAddress'], pubkey, amountToken,
-            '--yes', '--broadcast-mode', 'block', # Don't return until committed.
-        ]
-        code, output = yield agCosmosHelper(reactor, opts, config, args, 10)
-        if code != 0:
-            return ret({"ok": False, "error": 'transfer returned ' + str(code)})
+    # to drain all our uags.
+    args = [
+        'tx', 'send', '--keyring-backend=test', config['bootstrapAddress'], pubkey, opts['initial-token'],
+        '--yes', '--broadcast-mode', 'block', # Don't return until committed.
+    ]
+    code, output = yield agCosmosHelper(reactor, opts, config, args, 10)
+    if code != 0:
+        return ret({"ok": False, "error": 'transfer returned ' + str(code)})
 
     controller_url = opts["controller"]
     print('contacting ' + controller_url)
@@ -433,10 +429,17 @@ def agCosmosHelper(reactor, opts, config, args, retries = 1):
 
 @defer.inlineCallbacks
 def doEnablePubkeys(reactor, opts, config, pkobjs):
-    amountToken = ''.join([str(o) for o in INITIAL_TOKEN])
-
     txes = []
     needIngress = []
+
+    # Find the token and amount.
+    token = opts['initial-token']
+    splitToken = len(token) - 1
+    while splitToken > 0 and token[splitToken] in string.digits:
+        splitToken -= 1
+    amount = int(token[0:splitToken])
+    denom = token[splitToken:]
+
     for pkobj in pkobjs:
         pubkey = pkobj['pubkey']
         missing = False
@@ -448,7 +451,7 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
                 missing = True
                 for coin in output['value']['coins']:
                     # Check if they have some of our coins.
-                    if coin['denom'] == INITIAL_TOKEN[1] and int(coin['amount']) >= INITIAL_TOKEN[0]:
+                    if coin['denom'] == denom and int(coin['amount']) >= amount:
                         missing = False
                         break
             elif code == 1 or code == 9:
@@ -462,7 +465,7 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
             print('generating transaction for', pubkey)
             # Estimate the gas, with a little bit of padding.
             args = ['tx', 'send', '--keyring-backend=test', config['bootstrapAddress'], pubkey,
-                amountToken, '--gas=auto', '--gas-adjustment=1.05']
+                opts['initial-token'], '--gas=auto', '--gas-adjustment=1.05']
             code, output = yield agCosmosHelper(reactor, opts, config, args, 1)
             if code == 0:
                 txes.append(output)

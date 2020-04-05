@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import { resolve } from './files';
 
 export const ACCOUNT_JSON = `account.json`;
-export const DEFAULT_BOOT_TOKENS = `1000000agmedallion`;
+export const DEFAULT_BOOT_TOKENS = `10000000000000000000000000uag`;
 export const PLAYBOOK_WRAPPER = `./ansible-playbook.sh`;
 export const SETUP_DIR = resolve(__dirname, '../setup');
 export const SSH_TYPE = 'ecdsa';

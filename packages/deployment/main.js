@@ -248,7 +248,7 @@ show-config      display the client connection parameters
         }
 
         case undefined: {
-          guardFile('boot-tokens.txt', makeFile => makeFile(bootTokens));
+          await createFile('boot-tokens.txt', bootTokens);
           const bootOpts = [];
           if (subOpts.bump) {
             bootOpts.push(`--bump=${subOpts.bump}`);
@@ -497,21 +497,6 @@ show-config      display the client connection parameters
         );
       });
 
-      // Install any pubkeys from a former instantiation.
-      await guardFile(`${CONTROLLER_DIR}/pubkeys.stamp`, () =>
-        needReMain([
-          'ssh',
-          'ag-pserver',
-          'sudo',
-          '-u',
-          'ag-pserver',
-          '/usr/src/app/ve3/bin/ag-pserver',
-          'add-pubkeys',
-          '-c',
-          'http://localhost:8000/private/repl',
-        ]),
-      );
-
       let pserverFlags = '';
       const installFlags = [];
       const pub = `${networkName}.crt`;
@@ -556,10 +541,13 @@ show-config      display the client connection parameters
       initHint();
 
       console.error(
-        `Go to the provisioning server at: ${chalk.yellow.bold(pserverUrl)}
-or "${chalk.yellow.bold(
-          `curl '${pserverUrl}/request-code?nickname=MY-NICK'`,
-        )}"`,
+        `Use the following to provision:
+${chalk.yellow.bold(
+  `ag-setup-solo --netconfig='${pserverHost}/network-config'`,
+)}
+and get your codes from:
+${chalk.yellow.bold(`curl ${pserverUrl}/request-code?nickname=MY-NICK`)}
+`,
       );
       if (await exists('/vagrant')) {
         console.log(`to publish a chain-connected server to your host, do something like:
@@ -911,6 +899,7 @@ or "${chalk.yellow.bold(
         await needDoRun(['terraform', 'init']);
       }
       await needDoRun(['terraform', 'apply', ...args.slice(1)]);
+      await needDoRun(['rm', '-rf', PROVISION_DIR]);
       break;
     }
 

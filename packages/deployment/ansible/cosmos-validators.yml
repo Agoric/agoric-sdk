@@ -1,17 +1,5 @@
 ---
 
-- hosts: "{{ STAKER_NODE }}"
-  user: root
-  gather_facts: no
-  vars:
-    - service: ag-chain-cosmos
-    - CHAIN_NAME: "{{ lookup('file', SETUP_HOME + '/' + service + '/chain-name.txt') }}"
-    - STAKER: ag-staker
-    - STAKER_NODE: node0
-    - STAKER_AMOUNT: 50000000uagstake
-  roles:
-    - cosmos-delegates
-
 - hosts: "{{ service }}"
   user: root
   #any_errors_fatal: true

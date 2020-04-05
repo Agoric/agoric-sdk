@@ -5,7 +5,7 @@ set -e
 DAEMON=${DAEMON-gaiad}
 CLI=${CLI-gaiacli}
 STAKE=${STAKE-10000000000stake}
-coins="${STAKE},100000000000samoleans,100000agmedallion"
+coins="${STAKE},100000000000samoleans,10000000000000000000000000uag"
 
 CHAINID=$1
 GENACCT=$2

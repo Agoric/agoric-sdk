@@ -20,14 +20,16 @@
   become: true
   delegate_to: "{{ STAKER_NODE }}"
   shell: "\
-    ag-cosmos-helper tx send --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }} \
+    ag-cosmos-helper tx send --keyring-backend=test \
+      faucet \
       $(ag-cosmos-helper keys show --keyring-backend=test {{ staker }} -a) \
-      {{ STAKER_AMOUNT }} --yes --broadcast-mode=block --chain-id={{ CHAIN_NAME }}"
+      {{ STAKER_AMOUNT }} \
+      --chain-id={{ CHAIN_NAME }} --broadcast-mode=block --yes"
   vars:
     staker: "{{ STAKER }}-{{ inventory_hostname }}"
   when: inventory_hostname != STAKER_NODE
 
-- name: "Create validator for {{ STAKER }}-*"
+- name: "Create validators for {{ STAKER }}-*"
   become_user: "{{ service }}"
   become: true
   delegate_to: "{{ STAKER_NODE }}"
