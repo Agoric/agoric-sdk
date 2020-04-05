@@ -214,14 +214,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const bobSwapPayments = harden({ Asset: exclInvite });
 
       // Bob escrows his option in the swap
-      const { seat: bobSwapSeat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, outcome: daveSwapInviteP } = await E(zoe).offer(
         bobSwapInvite,
         bobProposalSwap,
         bobSwapPayments,
       );
 
       // Bob makes an offer to the swap with his "higher order"
-      const daveSwapInviteP = E(bobSwapSeat).makeFirstOffer();
       log('swap invite made');
       await E(daveP).doSwapForOption(daveSwapInviteP, optionAmounts);
 
@@ -323,15 +322,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const paymentKeywordRecord = { Price: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, outcome } = await E(zoe).offer(
         exclInvite,
         proposal,
         paymentKeywordRecord,
       );
 
-      const offerResult = await E(seat).matchOffer();
-
-      log(offerResult);
+      log(outcome);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.Asset;

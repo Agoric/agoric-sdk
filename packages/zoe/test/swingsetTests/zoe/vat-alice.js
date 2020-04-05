@@ -197,13 +197,12 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       exit: { onDemand: null },
     });
     const paymentKeywordRecord = { Asset: moolaPayment };
-    const { seat, payout: payoutP } = await E(zoe).redeem(
+    const { payout: payoutP, outcome: bobInviteP } = await E(zoe).offer(
       invite,
       proposal,
       paymentKeywordRecord,
     );
 
-    const bobInviteP = await E(seat).makeFirstOffer();
     E(bobP).doAtomicSwap(bobInviteP);
 
     const payout = await payoutP;

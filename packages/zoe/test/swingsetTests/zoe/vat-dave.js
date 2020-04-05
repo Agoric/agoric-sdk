@@ -128,11 +128,10 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         give: { Price: bucks(1) },
       });
       const daveSwapPayments = harden({ Price: bucksPayment });
-      const { seat: daveSwapSeat, payout: daveSwapPayoutP } = await E(
+      const { payout: daveSwapPayoutP, outcome: daveSwapOutcome } = await E(
         zoe,
-      ).redeem(exclInvite, daveSwapProposal, daveSwapPayments);
+      ).offer(exclInvite, daveSwapProposal, daveSwapPayments);
 
-      const daveSwapOutcome = await E(daveSwapSeat).matchOffer();
       log(daveSwapOutcome);
 
       const daveSwapPayout = await daveSwapPayoutP;

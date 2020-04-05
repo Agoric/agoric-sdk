@@ -244,7 +244,7 @@ const makeZoe = (additionalEndowments = {}) => {
        * @param  {InviteHandle => Response} seatFn - an upcall
        * function defined by the smart contract that zoe calls to notify
        * the contract that the invite has been used to make an offer.
-       * Whatever the seatFn returns, it is the `response` in the
+       * Whatever the seatFn returns, it is the `outcome` in the
        * returned `offerResult`.
        * @param  {object} customProperties - an object of
        * information to include in the extent, as defined by the smart
@@ -415,7 +415,7 @@ const makeZoe = (additionalEndowments = {}) => {
     // TODO msm
     /**
      * Redeem the invite to receive a payout promise and an
-     * response promise.
+     * outcome promise.
      * @param {payment} invite - an invite (ERTP payment) to join a
      * Zoe smart contract instance
      * @param  {object?} proposal - the proposal, a record
@@ -491,10 +491,10 @@ const makeZoe = (additionalEndowments = {}) => {
           const seatFn = handleToSeatFn.get(offerHandle);
           // For now, applyFunction only works because the function is local.
           // It cannot be remote because functions are not yet passable.
-          const responseP = HandledPromise.applyFunction(seatFn, [offerHandle]);
+          const outcomeP = HandledPromise.applyFunction(seatFn, [offerHandle]);
           const offerResult = {
             payout: payoutMap.get(offerHandle).promise,
-            response: responseP,
+            outcome: outcomeP,
           };
           const { exit } = proposal;
           const [exitKind] = Object.getOwnPropertyNames(exit);
@@ -541,8 +541,10 @@ const makeZoe = (additionalEndowments = {}) => {
       return zoeService
         .offer(invite, proposal, paymentKeywordRecord)
         .then(offerResult => {
-          const { response: responseP, ...rest } = offerResult;
-          return responseP.then(seat => harden({ seat, ...rest }));
+          const { outcome: outcomeP, ...rest } = offerResult;
+          // The extra wait on outcomeP would enable a denial of
+          // service, but it's only in the code about to disappear
+          return outcomeP.then(seat => harden({ seat, ...rest }));
         });
     },
     isOfferActive: offerTable.isOfferActive,

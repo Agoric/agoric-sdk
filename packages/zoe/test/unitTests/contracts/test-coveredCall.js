@@ -387,14 +387,12 @@ test('zoe - coveredCall with swap for invite', async t => {
     const bobPayments = harden({ Asset: bobExclOption });
 
     // Bob escrows his option in the swap
-    const { seat: bobSwapSeat, payout: bobPayoutP } = await zoe.redeem(
+    // Bob makes an offer to the swap with his "higher order" invite
+    const { payout: bobPayoutP, outcome: daveSwapInvite } = await zoe.offer(
       bobSwapInvite,
       bobProposalSwap,
       bobPayments,
     );
-
-    // Bob makes an offer to the swap with his "higher order" invite
-    const daveSwapInvite = await bobSwapSeat.makeFirstOffer();
 
     // Bob passes the swap invite to Dave and tells him the
     // optionAmounts (basically, the description of the option)
@@ -439,17 +437,12 @@ test('zoe - coveredCall with swap for invite', async t => {
     });
 
     const daveSwapPayments = harden({ Price: daveBucksPayment });
-    const { seat: daveSwapSeat, payout: daveSwapPayoutP } = await zoe.redeem(
-      daveSwapInvite,
-      daveSwapProposal,
-      daveSwapPayments,
-    );
+    const {
+      payout: daveSwapPayoutP,
+      outcome: daveSwapOutcome,
+    } = await zoe.offer(daveSwapInvite, daveSwapProposal, daveSwapPayments);
 
-    const daveSwapOutcome = await daveSwapSeat.matchOffer();
-    t.equals(
-      daveSwapOutcome,
-      'The offer has been accepted. Once the contract has been completed, please check your payout',
-    );
+    t.equals(daveSwapOutcome, {});
 
     const daveSwapPayout = await daveSwapPayoutP;
     const daveOption = await daveSwapPayout.Asset;
