@@ -1,8 +1,8 @@
 import harden from '@agoric/harden';
-import { E } from '@agoric/eventual-send';
+import { E, HandledPromise } from '@agoric/eventual-send';
 import makeStore from '@agoric/weak-store';
 import produceIssuer from '@agoric/ertp';
-import { assert, details } from '@agoric/assert';
+import { assert, details, openDetail } from '@agoric/assert';
 import { makePromise } from '@agoric/make-promise';
 
 import {
@@ -30,8 +30,11 @@ import { makeTables } from './state';
  * @param additionalEndowments pure or pure-ish endowments to add to evaluator
  */
 const makeZoe = (additionalEndowments = {}) => {
+  // TODO remove before submitting this PR
   // Zoe maps the inviteHandles to contract seats
   const handleToSeat = makeStore();
+  // Zoe maps the inviteHandles to contract seatFns
+  const handleToSeatFn = makeStore();
   const {
     mint: inviteMint,
     issuer: inviteIssuer,
@@ -94,12 +97,6 @@ const makeZoe = (additionalEndowments = {}) => {
 
   // TODO remove this deprecated one in this PR
   // TODO don't merge until this one is gone or mind changes
-  //
-  // Make a Zoe invite with an extent that is a mix of credible
-  // information from Zoe (the `handle` and `instanceHandle`) and
-  // other information defined by the smart contract. Note that the
-  // smart contract cannot override or change the values of `handle`
-  // and `instanceHandle`.
   const makeInvitePair = (
     instanceHandle,
     seat,
@@ -118,6 +115,32 @@ const makeZoe = (additionalEndowments = {}) => {
     handleToSeat.init(inviteHandle, seat);
     const invitePayment = inviteMint.mintPayment(inviteAmount);
     return harden({ invite: invitePayment, inviteHandle });
+  };
+
+  // TODO msm
+  //
+  // Make a Zoe invite payment with an extent that is a mix of credible
+  // information from Zoe (the `handle` and `instanceHandle`) and
+  // other information defined by the smart contract. Note that the
+  // smart contract cannot override or change the values of `handle`
+  // and `instanceHandle`.
+  const makeInvite = (
+    instanceHandle,
+    seatFn,
+    customProperties = harden({}),
+  ) => {
+    const inviteHandle = harden({});
+    const inviteAmount = inviteAmountMath.make(
+      harden([
+        {
+          ...customProperties,
+          handle: inviteHandle,
+          instanceHandle,
+        },
+      ]),
+    );
+    handleToSeatFn.init(inviteHandle, seatFn);
+    return inviteMint.mintPayment(inviteAmount);
   };
 
   // Zoe has two different facets: the public Zoe service and the
@@ -218,6 +241,13 @@ const makeZoe = (additionalEndowments = {}) => {
        */
       complete: offerHandles => completeOffers(instanceHandle, offerHandles),
 
+      // TODO remove this deprecated one in this PR
+      // TODO don't merge until this one is gone or mind changes
+      //
+      makeInvitePair: (seat, customProperties) =>
+        makeInvitePair(instanceHandle, seat, customProperties),
+
+      // TODO msm
       /**
        * Make a credible Zoe invite for a particular smart contract
        * indicated by the unique `instanceHandle`. The other
@@ -228,16 +258,17 @@ const makeZoe = (additionalEndowments = {}) => {
        * queries based on other information, we choose to omit it. For
        * instance, `installationHandle` can be derived from
        * `instanceHandle` and is omitted even though it is useful.
-       * @param  {object} seat - an object defined by the smart
-       * contract that is the use right associated with the invite. In
-       * other words, buying the invite is buying the right to call
-       * methods on this object.
+       * @param  {InviteHandle => Response} seatFn - an upcall
+       * function defined by the smart contract that zoe calls to notify
+       * the contract that the invite has been used to make an offer.
+       * Whatever the seatFn returns, it is the `response` in the
+       * returned `offerResult`.
        * @param  {object} customProperties - an object of
        * information to include in the extent, as defined by the smart
        * contract
        */
-      makeInvitePair: (seat, customProperties) =>
-        makeInvitePair(instanceHandle, seat, customProperties),
+      makeInvite: (seatFn, customProperties) =>
+        makeInvite(instanceHandle, seatFn, customProperties),
 
       // Informs Zoe about an issuer and returns a promise for acknowledging
       // when the issuer is added and ready.
@@ -392,6 +423,8 @@ const makeZoe = (additionalEndowments = {}) => {
      */
     getInstance: instanceTable.get,
 
+    // TODO remove this deprecated one in this PR
+    // TODO don't merge until this one is gone or mind changes
     /**
      * Redeem the invite to receive a seat and a payout
      * promise.
@@ -502,6 +535,125 @@ const makeZoe = (additionalEndowments = {}) => {
         return Promise.all(paymentDepositedPs)
           .then(recordOffer)
           .then(makeRedemptionResult);
+      });
+    },
+
+    // TODO msm
+    /**
+     * Redeem the invite to receive a payout promise and an
+     * OfferResult promise.
+     * @param {payment} invite - an invite (ERTP payment) to join a
+     * Zoe smart contract instance
+     * @param  {object?} proposal - the proposal, a record
+     * with properties `want`, `give`, and `exit`. The keys of
+     * `want` and `give` are keywords and the values are amounts.
+     * @param  {object?} paymentKeywordRecord - a record with keyword
+     * keys and values which are payments that will be escrowed by Zoe.
+     *
+     * The default arguments are so that remote invocations don't
+     * have to specify empty objects (which get marshaled as presences).
+     */
+    offer: (
+      invite,
+      proposal = harden({}),
+      paymentKeywordRecord = harden({}),
+    ) => {
+      return inviteIssuer.burn(invite).then(inviteAmount => {
+        assert(
+          inviteAmount.extent.length === 1,
+          'only one invite should be redeemed',
+        );
+
+        const {
+          extent: [{ instanceHandle, handle: offerHandle }],
+        } = inviteAmount;
+        const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
+
+        const amountMathKeywordRecord = getAmountMaths(
+          instanceHandle,
+          getKeywords(issuerKeywordRecord),
+        );
+
+        proposal = cleanProposal(
+          issuerKeywordRecord,
+          amountMathKeywordRecord,
+          proposal,
+        );
+        // Promise flow = issuer -> purse -> deposit payment -> seat/payout
+        const giveKeywords = Object.getOwnPropertyNames(proposal.give);
+        const wantKeywords = Object.getOwnPropertyNames(proposal.want);
+        const userKeywords = harden([...giveKeywords, ...wantKeywords]);
+        const paymentDepositedPs = userKeywords.map(keyword => {
+          const issuer = issuerKeywordRecord[keyword];
+          const issuerRecordP = issuerTable.getPromiseForIssuerRecord(issuer);
+          return issuerRecordP.then(({ purse }) => {
+            if (giveKeywords.includes(keyword)) {
+              // We cannot trust the returned amount since it comes directly
+              // from the remote issuer. So we use our cleaned proposal's
+              // amount that should be the same.
+              return E(purse)
+                .deposit(paymentKeywordRecord[keyword], proposal.give[keyword])
+                .then(_ => proposal.give[keyword]);
+            }
+            // If any other payments are included, they are ignored.
+            return Promise.resolve(amountMathKeywordRecord[keyword].getEmpty());
+          });
+        });
+
+        const recordOffer = amountsArray => {
+          const offerImmutableRecord = {
+            instanceHandle,
+            proposal,
+            amounts: arrayToObj(amountsArray, userKeywords),
+          };
+          // Since we have redeemed an invite, the inviteHandle is
+          // also the offerHandle.
+          offerTable.create(offerImmutableRecord, offerHandle);
+          payoutMap.init(offerHandle, makePromise());
+        };
+
+        // Create result to be returned. Depends on `exit`
+        const makeOfferResult = _ => {
+          const seatFn = handleToSeatFn.get(offerHandle);
+          // For now, applyFunction only works because the function is local.
+          // It cannot be remote because functions are not yet passable.
+          const responseP = HandledPromise.applyFunction(seatFn, [offerHandle]);
+          const offerResult = {
+            payout: payoutMap.get(offerHandle).promise,
+            response: responseP,
+          };
+          const { exit } = proposal;
+          const [exitKind] = Object.getOwnPropertyNames(exit);
+          // Automatically cancel on deadline.
+          if (exitKind === 'afterDeadline') {
+            E(exit.afterDeadline.timer).setWakeup(
+              exit.afterDeadline.deadline,
+              harden({
+                wake: () =>
+                  completeOffers(instanceHandle, harden([offerHandle])),
+              }),
+            );
+            // Add an object with a cancel method to offerResult in
+            // order to cancel on demand.
+          } else if (exitKind === 'onDemand') {
+            offerResult.cancelObj = {
+              cancel: () =>
+                completeOffers(instanceHandle, harden([offerHandle])),
+            };
+          } else {
+            assert(
+              exitKind === 'waived',
+              details`exit kind was not recognized: ${openDetail(exitKind)}`,
+            );
+          }
+
+          // if the exitRule.kind is 'waived' the user has no
+          // possibility of cancelling
+          return harden(offerResult);
+        };
+        return Promise.all(paymentDepositedPs)
+          .then(recordOffer)
+          .then(makeOfferResult);
       });
     },
     isOfferActive: offerTable.isOfferActive,
