@@ -53,15 +53,12 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
       const bobPayments = { Contribution2: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      // 2. Bob makes an offer
+      const { payout: payoutP, outcome } = await E(zoe).offer(
         exclInvite,
         bobProposal,
         bobPayments,
       );
-
-      // 2. Bob makes an offer
-      const outcome = await E(seat).makeOffer();
-
       log(outcome);
 
       const bobResult = await payoutP;

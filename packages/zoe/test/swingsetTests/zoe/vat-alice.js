@@ -29,12 +29,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     });
 
     const paymentKeywordRecord = { Contribution1: moolaPayment };
-    const { seat, payout: payoutP } = await E(zoe).redeem(
+    const { payout: payoutP, outcome } = await E(zoe).offer(
       invite,
       proposal,
       paymentKeywordRecord,
     );
-    const outcome = await E(seat).makeOffer();
     log(outcome);
 
     const bobInvite = E(publicAPI).makeInvite();

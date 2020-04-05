@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 
 // In a covered call, the owner of a digital asset sells a call
