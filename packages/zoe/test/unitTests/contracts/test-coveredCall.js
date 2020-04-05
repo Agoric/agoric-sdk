@@ -442,7 +442,10 @@ test('zoe - coveredCall with swap for invite', async t => {
       outcome: daveSwapOutcome,
     } = await zoe.offer(daveSwapInvite, daveSwapProposal, daveSwapPayments);
 
-    t.equals(daveSwapOutcome, {});
+    t.equals(
+      daveSwapOutcome,
+      'The offer has been accepted. Once the contract has been completed, please check your payout',
+    );
 
     const daveSwapPayout = await daveSwapPayoutP;
     const daveOption = await daveSwapPayout.Asset;
