@@ -56,14 +56,13 @@ test('simpleExchange with valid offers', async t => {
       exit: { onDemand: null },
     });
     const alicePayments = { Asset: aliceMoolaPayment };
-    const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
+    // 4: Alice adds her sell order to the exchange
+    const { payout: alicePayoutP, outcome: aliceOfferResult } = await zoe.offer(
       aliceInvite,
       aliceSellOrderProposal,
       alicePayments,
     );
 
-    // 4: Alice adds her sell order to the exchange
-    const aliceOfferResult = await aliceSeat.addOrder();
     const { invite: bobInvite } = publicAPI.makeInvite();
 
     // 5: Bob decides to join.
@@ -95,14 +94,12 @@ test('simpleExchange with valid offers', async t => {
     const bobPayments = { Price: bobSimoleanPayment };
 
     // 6: Bob escrows with zoe
-    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+    // 8: Bob submits the buy order to the exchange
+    const { payout: bobPayoutP, outcome: bobOfferResult } = await zoe.offer(
       bobExclusiveInvite,
       bobBuyOrderProposal,
       bobPayments,
     );
-
-    // 8: Bob submits the buy order to the exchange
-    const bobOfferResult = await bobSeat.addOrder();
 
     t.equals(
       bobOfferResult,
@@ -196,14 +193,12 @@ test('simpleExchange with multiple sell offers', async t => {
     });
 
     const alicePayments = { Asset: aliceMoolaPurse.withdraw(moola(3)) };
-    const { seat: aliceSeat1 } = await zoe.redeem(
+    // 4: Alice adds her sell order to the exchange
+    const { outcome: aliceOfferResult1 } = await zoe.offer(
       aliceInvite1,
       aliceSale1OrderProposal,
       alicePayments,
     );
-
-    // 4: Alice adds her sell order to the exchange
-    const aliceOfferResult1 = aliceSeat1.addOrder();
 
     // 5: Alice adds another sell order to the exchange
     const aliceInvite2 = await inviteIssuer.claim(
@@ -214,12 +209,11 @@ test('simpleExchange with multiple sell offers', async t => {
       want: { Price: simoleans(8) },
       exit: { onDemand: null },
     });
-    const { seat: aliceSeat2 } = await zoe.redeem(
+    const { coutcome: aliceOfferResult2 } = await zoe.offer(
       aliceInvite2,
       aliceSale2OrderProposal,
       { Asset: aliceMoolaPurse.withdraw(moola(5)) },
     );
-    const aliceOfferResult2 = aliceSeat2.addOrder();
 
     // 5: Alice adds a buy order to the exchange
     const aliceInvite3 = await inviteIssuer.claim(
@@ -230,12 +224,11 @@ test('simpleExchange with multiple sell offers', async t => {
       want: { Asset: moola(29) },
       exit: { onDemand: null },
     });
-    const { seat: aliceSeat3 } = await zoe.redeem(
+    const { outcome: aliceOfferResult3 } = await zoe.offer(
       aliceInvite3,
       aliceBuyOrderProposal,
       { Price: aliceSimoleanPurse.withdraw(simoleans(18)) },
     );
-    const aliceOfferResult3 = aliceSeat3.addOrder();
 
     Promise.all(aliceOfferResult1, aliceOfferResult2, aliceOfferResult3).then(
       () => {
@@ -294,14 +287,8 @@ test('simpleExchange showPayoutRules', async t => {
     });
 
     const alicePayments = { Asset: aliceMoolaPayment };
-    const { seat: aliceSeat1 } = await zoe.redeem(
-      aliceInvite,
-      aliceSale1OrderProposal,
-      alicePayments,
-    );
-
     // 4: Alice adds her sell order to the exchange
-    aliceSeat1.addOrder();
+    await zoe.offer(aliceInvite, aliceSale1OrderProposal, alicePayments);
 
     const expected = [{ Price: 4 }, { Asset: 3 }];
 

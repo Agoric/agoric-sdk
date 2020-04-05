@@ -368,15 +368,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const paymentKeywordRecord = { Price: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, outcome } = await E(zoe).redeem(
         exclInvite,
         bobBuyOrderProposal,
         paymentKeywordRecord,
       );
 
-      const offerResult = await E(seat).addOrder();
-
-      log(offerResult);
+      log(outcome);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.Asset;
@@ -418,15 +416,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       }
       const simoleanPayment2 = await E(simoleanPurseP).withdraw(simoleans(s));
       const paymentKeywordRecord = { Price: simoleanPayment2 };
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, outcome } = await E(zoe).redeem(
         invite,
         bobBuyOrderProposal,
         paymentKeywordRecord,
       );
 
-      const offerResult = await E(seat).addOrder();
-
-      log(offerResult);
+      log(outcome);
 
       payoutP.then(async bobResult => {
         E(moolaPurseP).deposit(await bobResult.Asset);

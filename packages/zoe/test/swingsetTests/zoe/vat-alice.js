@@ -235,15 +235,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       exit: { onDemand: null },
     });
     const paymentKeywordRecord = { Asset: moolaPayment };
-    const { seat, payout: payoutP } = await E(zoe).redeem(
+    const { payout: payoutP, outcome } = await E(zoe).offer(
       invite,
       aliceSellOrderProposal,
       paymentKeywordRecord,
     );
 
-    const offerResult = await E(seat).addOrder();
-
-    log(offerResult);
+    log(outcome);
 
     const { invite: bobInviteP } = await E(publicAPI).makeInvite();
     await E(bobP).doSimpleExchange(bobInviteP);
@@ -320,15 +318,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       exit: { onDemand: null },
     });
     const paymentKeywordRecord = { Asset: moolaPayment };
-    const { seat, payout: payoutP } = await E(zoe).redeem(
+    const { payout: payoutP, outcome } = await E(zoe).redeem(
       invite,
       aliceSellOrderProposal,
       paymentKeywordRecord,
     );
 
-    const offerResult = await E(seat).addOrder();
-
-    log(offerResult);
+    log(outcome);
 
     const { invite: bobInvite1P } = await E(publicAPI).makeInvite();
     await E(bobP).doSimpleExchangeUpdates(bobInvite1P, 3, 7);
