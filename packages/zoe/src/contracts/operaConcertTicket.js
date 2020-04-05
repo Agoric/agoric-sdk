@@ -88,8 +88,8 @@ export const makeContract = harden(zoe => {
             zoe.reallocate(
               [contractOfferHandle, auditoriumOfferHandle],
               [
-                zoe.getOffer(auditoriumOfferHandle).amounts,
-                zoe.getOffer(contractOfferHandle).amounts,
+                zoe.getCurrentAllocation(auditoriumOfferHandle),
+                zoe.getCurrentAllocation(contractOfferHandle),
               ],
             );
             zoe.complete([contractOfferHandle]);
@@ -97,8 +97,7 @@ export const makeContract = harden(zoe => {
             // associated with the tickets and the contract offer is gone from the contract
           },
           getCurrentAllocation() {
-            // This call may change to zoe.getCurrentAllocation: https://github.com/Agoric/agoric-sdk/issues/800#issuecomment-608022618
-            return zoe.getOffer(auditoriumOfferHandle).amounts;
+            return zoe.getCurrentAllocation(auditoriumOfferHandle);
           },
         });
         const {
@@ -111,11 +110,10 @@ export const makeContract = harden(zoe => {
             performExchange: () => {
               const buyerOffer = zoe.getOffer(buyerOfferHandle);
 
-              const currentAuditoriumAllocation = zoe.getOffer(
+              const currentAuditoriumAllocation = zoe.getCurrentAllocation(
                 auditoriumOfferHandle,
-              ).amounts;
-              const currentBuyerAllocation = zoe.getOffer(buyerOfferHandle)
-                .amounts;
+              );
+              const currentBuyerAllocation = zoe.getCurrentAllocation(buyerOfferHandle);
 
               try {
                 const wantedAuditoriumAllocation = {
@@ -165,7 +163,7 @@ export const makeContract = harden(zoe => {
             getAvailableTickets() {
               // Because of a technical limitation in @agoric/marshal, an array of extents
               // is better than a Map https://github.com/Agoric/agoric-sdk/issues/838
-              return zoe.getOffer(auditoriumOfferHandle).amounts.Ticket.extent;
+              return zoe.getCurrentAllocation(auditoriumOfferHandle).Ticket.extent;
             },
           },
         });
