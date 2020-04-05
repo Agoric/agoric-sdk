@@ -55,7 +55,7 @@ export const makeContract = harden(zoe => {
         return defaultAcceptanceMsg;
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+    const { invite, inviteHandle } = zoe.makeInvitePair(seat, {
       seatDesc: 'bid',
       auctionedAssets,
       minimumBid,
@@ -79,7 +79,7 @@ export const makeContract = harden(zoe => {
         return defaultAcceptanceMsg;
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+    const { invite, inviteHandle } = zoe.makeInvitePair(seat, {
       seatDesc: 'sellAssets',
     });
     return invite;

@@ -39,7 +39,7 @@ export const makeContract = harden(zoe => {
       proposal: { want, give, exit },
     } = zoe.getOffer(sellerHandle);
 
-    const { invite: callOption, inviteHandle } = zoe.makeInvite(seat, {
+    const { invite: callOption, inviteHandle } = zoe.makeInvitePair(seat, {
       seatDesc: 'exerciseOption',
       expirationDate: exit.afterDeadline.deadline,
       timerAuthority: exit.afterDeadline.timer,
@@ -61,7 +61,7 @@ export const makeContract = harden(zoe => {
         return makeCallOptionInvite(inviteHandle);
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+    const { invite, inviteHandle } = zoe.makeInvitePair(seat, {
       seatDesc: 'makeCallOption',
     });
     return invite;

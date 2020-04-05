@@ -14,7 +14,7 @@ export const makeContract = harden(zoe => {
     const {
       proposal: { want, give },
     } = zoe.getOffer(firstInviteHandle);
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+    const { invite, inviteHandle } = zoe.makeInvitePair(seat, {
       asset: give.Asset,
       price: want.Price,
       seatDesc: 'matchOffer',
@@ -30,7 +30,7 @@ export const makeContract = harden(zoe => {
         return makeMatchingInvite(inviteHandle);
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+    const { invite, inviteHandle } = zoe.makeInvitePair  (seat, {
       seatDesc: 'firstOffer',
     });
     return invite;

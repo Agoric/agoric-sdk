@@ -19,7 +19,7 @@ export const makeContract = harden(zoe => {
         return `The offer was accepted`;
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+    const { invite, inviteHandle } = zoe.makeInvitePair(seat, {
       seatDesc: 'getRefund',
     });
     return invite;

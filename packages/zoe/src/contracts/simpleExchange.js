@@ -119,7 +119,7 @@ export const makeContract = harden(zoe => {
         }
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat);
+    const { invite, inviteHandle } = zoe.makeInvitePair(seat);
     return { invite, inviteHandle };
   };
 

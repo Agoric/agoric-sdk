@@ -111,7 +111,7 @@ export const makeZoeHelpers = zoe => {
       return defaultAcceptanceMsg;
     },
     makeEmptyOffer: () => {
-      const { inviteHandle, invite } = zoe.makeInvite();
+      const { inviteHandle, invite } = zoe.makeInvitePair();
       return zoeService.redeem(invite).then(() => inviteHandle);
     },
   });

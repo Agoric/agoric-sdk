@@ -92,12 +92,15 @@ const makeZoe = (additionalEndowments = {}) => {
   const removeAmounts = offerRecord =>
     filterObj(offerRecord, ['handle', 'instanceHandle', 'proposal']);
 
+  // TODO remove this deprecated one in this PR
+  // TODO don't merge until this one is gone or mind changes
+  //
   // Make a Zoe invite with an extent that is a mix of credible
   // information from Zoe (the `handle` and `instanceHandle`) and
   // other information defined by the smart contract. Note that the
   // smart contract cannot override or change the values of `handle`
   // and `instanceHandle`.
-  const makeInvite = (instanceHandle, seat, customProperties = harden({})) => {
+  const makeInvitePair = (instanceHandle, seat, customProperties = harden({})) => {
     const inviteHandle = harden({});
     const inviteAmount = inviteAmountMath.make(
       harden([
@@ -229,8 +232,8 @@ const makeZoe = (additionalEndowments = {}) => {
        * information to include in the extent, as defined by the smart
        * contract
        */
-      makeInvite: (seat, customProperties) =>
-        makeInvite(instanceHandle, seat, customProperties),
+      makeInvitePair: (seat, customProperties) =>
+        makeInvitePair(instanceHandle, seat, customProperties),
 
       // Informs Zoe about an issuer and returns a promise for acknowledging
       // when the issuer is added and ready.
