@@ -72,6 +72,12 @@ The Opera is told about the show being sold out. It gets all the moolas from the
 
                 // The auditorium redeems its invite.
                 return (
+                  // Note that the proposal here is empty
+                  // This is due to a current limitation in proposal expressivness: https://github.com/Agoric/agoric-sdk/issues/855
+                  // It's impossible to know in advance how many tickets will be sold, so it's not possible
+                  // to say `want: moola(3*22)`
+                  // in a future version of Zoe, it will be possible to express:
+                  // "i want n times moolas where n is the number of sold tickets"
                   zoe
                     .redeem(auditoriumInvite, harden({}))
                     // cancel will be renamed complete: https://github.com/Agoric/agoric-sdk/issues/835

@@ -33,7 +33,7 @@ export const makeContract = harden(zoe => {
   );
 
   const {
-    terms: { show, start, count },
+    terms: { show, start, count, expectedAmountPerTicket },
     issuerKeywordRecord: { Money: moneyIssuer },
   } = zoe.getInstanceRecord();
 
@@ -113,9 +113,22 @@ export const makeContract = harden(zoe => {
               const currentAuditoriumAllocation = zoe.getCurrentAllocation(
                 auditoriumOfferHandle,
               );
-              const currentBuyerAllocation = zoe.getCurrentAllocation(buyerOfferHandle);
+              const currentBuyerAllocation = zoe.getCurrentAllocation(
+                buyerOfferHandle,
+              );
+
+              const wantedTicketsCount =
+                buyerOffer.proposal.want.Ticket.extent.length;
+              const wantedMoney =
+                expectedAmountPerTicket.extent * wantedTicketsCount;
 
               try {
+                if (currentBuyerAllocation.Money.extent < wantedMoney) {
+                  throw new Error(
+                    'The offer associated with this seat does not contain enough moolas',
+                  );
+                }
+
                 const wantedAuditoriumAllocation = {
                   Money: moneyAmountMath.add(
                     currentAuditoriumAllocation.Money,
@@ -141,7 +154,6 @@ export const makeContract = harden(zoe => {
                 );
                 zoe.complete([buyerOfferHandle]);
               } catch (err) {
-                console.error('error while performing exchange', err);
                 // amounts don't match or reallocate certainly failed
                 rejectOffer(buyerOfferHandle);
               }
@@ -163,7 +175,8 @@ export const makeContract = harden(zoe => {
             getAvailableTickets() {
               // Because of a technical limitation in @agoric/marshal, an array of extents
               // is better than a Map https://github.com/Agoric/agoric-sdk/issues/838
-              return zoe.getCurrentAllocation(auditoriumOfferHandle).Ticket.extent;
+              return zoe.getCurrentAllocation(auditoriumOfferHandle).Ticket
+                .extent;
             },
           },
         });
