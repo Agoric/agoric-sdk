@@ -1,4 +1,10 @@
 // @ts-check
+import rawHarden from '@agoric/harden';
+
+/**
+ * @typedef {<T>(data: T) => T} Harden
+ */
+const harden = /** @type {Harden} */ (rawHarden);
 
 /**
  * @typedef {string|Buffer|ArrayBuffer} PacketData
@@ -47,25 +53,25 @@
  * @returns {Channel}
  */
 export function makeEchoChannel() {
-  let ch;
+  let hnd;
   /**
    * @type {Channel}
    */
-  const channel = {
+  const channel = harden({
     open(channelHandler) {
-      ch = channelHandler;
-      ch.onOpen(channel);
+      hnd = channelHandler;
+      hnd.onOpen(channel);
       return channel;
     },
     async send(packetBytes) {
       // Just have the channelHandler receive the packet.
-      return ch.onReceive(packetBytes);
+      return hnd.onReceive(packetBytes);
     },
     async close() {
       // Close with the channelHandler.
-      ch.onClose(undefined);
+      hnd.onClose(undefined);
     },
-  };
+  });
   return channel;
 }
 
@@ -75,7 +81,7 @@ export function makeEchoChannel() {
  * @returns {Port}
  */
 export function makeEchoPort() {
-  return {
+  return harden({
     async listen(acceptHandler) {
       const echoChannel = makeEchoChannel();
       Promise.resolve()
@@ -85,11 +91,16 @@ export function makeEchoPort() {
           rej => acceptHandler.onError(rej),
         );
     },
-  };
+  });
 }
 
+/**
+ * Create a connector.
+ *
+ * @returns {Connection}
+ */
 export function makeEchoConnection() {
-  return {
+  return harden({
     async connect(
       _remoteConnection,
       _remotePortName,
@@ -98,7 +109,7 @@ export function makeEchoConnection() {
     ) {
       return makeEchoChannel().open(channelHandler);
     },
-  };
+  });
 }
 
 /**
@@ -107,7 +118,7 @@ export function makeEchoConnection() {
  * @returns {Host}
  */
 export function makeEchoHost() {
-  return {
+  return harden({
     async allocatePort() {
       return makeEchoPort();
     },
@@ -117,5 +128,5 @@ export function makeEchoHost() {
     getConnection() {
       return makeEchoConnection();
     },
-  };
+  });
 }
