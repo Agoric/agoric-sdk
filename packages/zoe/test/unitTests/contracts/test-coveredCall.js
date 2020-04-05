@@ -51,15 +51,12 @@ test('zoe - coveredCall', async t => {
       exit: { afterDeadline: { deadline: 1, timer } },
     });
     const alicePayments = { UnderlyingAsset: aliceMoolaPayment };
-    const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
+    // Alice creates a call option
+    const { payout: alicePayoutP, outcome: option } = await zoe.offer(
       aliceInvite,
       aliceProposal,
       alicePayments,
     );
-
-    // Alice creates a call option
-
-    const option = aliceSeat.makeCallOption();
 
     // Imagine that Alice sends the option to Bob for free (not done here
     // since this test doesn't actually have separate vats/parties)
@@ -90,14 +87,12 @@ test('zoe - coveredCall', async t => {
     });
 
     // Bob redeems his invite and escrows with Zoe
-    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+    // Bob exercises the option
+    const { payout: bobPayoutP, outcome: bobOutcome } = await zoe.offer(
       bobExclOption,
       bobProposal,
       bobPayments,
     );
-
-    // Bob exercises the option
-    const bobOutcome = await bobSeat.exercise();
 
     t.equals(
       bobOutcome,
@@ -183,14 +178,12 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
       },
     });
     const alicePayments = { UnderlyingAsset: aliceMoolaPayment };
-    const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
+    // Alice makes an option
+    const { payout: alicePayoutP, outcome: option } = await zoe.offer(
       aliceInvite,
       aliceProposal,
       alicePayments,
     );
-
-    // Alice makes an option
-    const option = aliceSeat.makeCallOption();
     timer.tick();
 
     // Imagine that Alice sends the option to Bob for free (not done here
@@ -221,13 +214,20 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     });
 
     // Bob escrows
-    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+    const { payout: bobPayoutP, outcome: bobOutcome } = await zoe.offer(
       bobExclOption,
       bobProposal,
       bobPayments,
     );
 
-    t.throws(() => bobSeat.exercise(), /The covered call option is expired/);
+    // What's the right idiom for this?
+    Promise.resolve(bobOutcome).then(
+      outcome => t.fail(`should have been broken ${outcome}`),
+      reason =>
+        t.throws(_ => {
+          throw reason;
+        }, /The covered call option is expired/),
+    );
 
     const bobPayout = await bobPayoutP;
     const alicePayout = await alicePayoutP;
@@ -336,14 +336,12 @@ test('zoe - coveredCall with swap for invite', async t => {
       },
     });
     const alicePayments = { UnderlyingAsset: aliceMoolaPayment };
-    const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
+    // Alice makes an option.
+    const { payout: alicePayoutP, outcome: option } = await zoe.offer(
       aliceInvite,
       aliceProposal,
       alicePayments,
     );
-
-    // Alice makes an option.
-    const option = aliceSeat.makeCallOption();
 
     // Imagine that Alice sends the invite to Bob (not done here since
     // this test doesn't actually have separate vats/parties)
@@ -462,15 +460,14 @@ test('zoe - coveredCall with swap for invite', async t => {
       StrikePrice: daveSimoleanPayment,
     });
     const {
-      seat: daveCoveredCallSeat,
       payout: daveCoveredCallPayoutP,
-    } = await zoe.redeem(
+      outcome: daveCoveredCallOutcome,
+    } = await zoe.offer(
       daveOption,
       daveCoveredCallProposal,
       daveCoveredCallPayments,
     );
 
-    const daveCoveredCallOutcome = await daveCoveredCallSeat.exercise();
     t.equals(
       daveCoveredCallOutcome,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
@@ -597,15 +594,13 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       },
     });
     const alicePayments = { UnderlyingAsset: aliceMoolaPayment };
-    const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
+    // Alice makes a call option, which is an invite to join the
+    // covered call contract
+    const { payout: alicePayoutP, outcome: option } = await zoe.offer(
       aliceCoveredCallInvite,
       aliceProposal,
       alicePayments,
     );
-
-    // Alice makes a call option, which is an invite to join the
-    // covered call contract
-    const option = await aliceSeat.makeCallOption();
 
     // Imagine that Alice sends the invite to Bob as well as the
     // instanceHandle (not done here since this test doesn't actually have
@@ -657,17 +652,12 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const bobPayments = { UnderlyingAsset: bobExclOption };
 
     // Bob escrows his invite
-    const {
-      seat: bobSecondCoveredCallSeat,
-      payout: bobPayoutP,
-    } = await zoe.redeem(
+    // Bob makes an offer to the swap with his "higher order" option
+    const { payout: bobPayoutP, outcome: inviteForDave } = await zoe.offer(
       bobInviteForSecondCoveredCall,
       bobProposalSecondCoveredCall,
       bobPayments,
     );
-
-    // Bob makes an offer to the swap with his "higher order" option
-    const inviteForDave = await bobSecondCoveredCallSeat.makeCallOption();
 
     // Bob passes the higher order invite and
     // optionAmounts to Dave
@@ -715,14 +705,13 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
 
     const daveSecondCoveredCallPayments = { StrikePrice: daveBucksPayment };
     const {
-      seat: daveSecondCoveredCallSeat,
       payout: daveSecondCoveredCallPayoutP,
-    } = await zoe.redeem(
+      outcome: daveSecondCoveredCallOutcome,
+    } = await zoe.offer(
       daveExclOption,
       daveProposalCoveredCall,
       daveSecondCoveredCallPayments,
     );
-    const daveSecondCoveredCallOutcome = daveSecondCoveredCallSeat.exercise();
     t.equals(
       daveSecondCoveredCallOutcome,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
@@ -745,15 +734,14 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       StrikePrice: daveSimoleanPayment,
     });
     const {
-      seat: daveFirstCoveredCallSeat,
       payout: daveFirstCoveredCallPayoutP,
-    } = await zoe.redeem(
+      outcome: daveFirstCoveredCallOutcome,
+    } = await zoe.offer(
       firstCoveredCallInvite,
       daveFirstCoveredCallProposal,
       daveFirstCoveredCallPayments,
     );
 
-    const daveFirstCoveredCallOutcome = daveFirstCoveredCallSeat.exercise();
     t.equals(
       daveFirstCoveredCallOutcome,
       'The offer has been accepted. Once the contract has been completed, please check your payout',

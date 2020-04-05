@@ -67,7 +67,8 @@ export const makeZoeHelpers = zoe => {
         check(actual.give, expected.give) &&
         // Check that the "want" keys match expected keys.
         check(actual.want, expected.want) &&
-        // Check that the "exit" key (i.e. "onDemand") matches the expected key.
+        // Check that the "exit" key (i.e. "onDemand") matches the
+        // expected key.
         check(actual.exit, expected.exit)
       );
     },
@@ -113,6 +114,19 @@ export const makeZoeHelpers = zoe => {
     makeEmptyOffer: () => {
       const { inviteHandle, invite } = zoe.makeInvitePair();
       return zoeService.redeem(invite).then(() => inviteHandle);
+    },
+    makeInvite: (
+      seatFn,
+      customProperties = undefined,
+      expected = undefined,
+    ) => {
+      const realSeatFn = inviteHandle => {
+        if (expected) {
+          helpers.rejectIfNotProposal(inviteHandle, expected);
+        }
+        return seatFn(inviteHandle);
+      };
+      return zoe.makeInvite(realSeatFn, customProperties);
     },
   });
   return helpers;

@@ -18,54 +18,43 @@ import harden from '@agoric/harden';
 
 import { makeZoeHelpers } from './helpers/zoeHelpers';
 
+const rejectMsg = `The covered call option is expired.`;
+
 export const makeContract = harden(zoe => {
-  const { swap, assertKeywords, rejectIfNotProposal } = makeZoeHelpers(zoe);
-  assertKeywords(harden(['UnderlyingAsset', 'StrikePrice']));
+  const { swap, makeInvite } = makeZoeHelpers(zoe);
 
   const makeCallOptionInvite = sellerHandle => {
-    const seat = harden({
-      exercise: () => {
-        const expected = harden({
-          give: ['StrikePrice'],
-          want: ['UnderlyingAsset'],
-        });
-        rejectIfNotProposal(inviteHandle, expected);
-        const rejectMsg = `The covered call option is expired.`;
-        return swap(sellerHandle, inviteHandle, rejectMsg);
-      },
-    });
-
     const {
       proposal: { want, give, exit },
     } = zoe.getOffer(sellerHandle);
-
-    const { invite: callOption, inviteHandle } = zoe.makeInvitePair(seat, {
-      seatDesc: 'exerciseOption',
-      expirationDate: exit.afterDeadline.deadline,
-      timerAuthority: exit.afterDeadline.timer,
-      underlyingAsset: give.UnderlyingAsset,
-      strikePrice: want.StrikePrice,
-    });
-    return callOption;
-  };
-
-  const makeCoveredCallInvite = () => {
-    const seat = harden({
-      makeCallOption: () => {
-        const expected = harden({
-          give: ['UnderlyingAsset'],
-          want: ['StrikePrice'],
-          exit: ['afterDeadline'],
-        });
-        rejectIfNotProposal(inviteHandle, expected);
-        return makeCallOptionInvite(inviteHandle);
+    return makeInvite(
+      inviteHandle => swap(sellerHandle, inviteHandle, rejectMsg),
+      {
+        seatDesc: 'exerciseOption',
+        expirationDate: exit.afterDeadline.deadline,
+        timerAuthority: exit.afterDeadline.timer,
+        underlyingAsset: give.UnderlyingAsset,
+        strikePrice: want.StrikePrice,
       },
-    });
-    const { invite, inviteHandle } = zoe.makeInvitePair(seat, {
-      seatDesc: 'makeCallOption',
-    });
-    return invite;
+      {
+        give: ['StrikePrice'],
+        want: ['UnderlyingAsset'],
+      },
+    );
   };
+
+  const makeCoveredCallInvite = () =>
+    makeInvite(
+      makeCallOptionInvite,
+      {
+        seatDesc: 'makeCallOption',
+      },
+      {
+        give: ['UnderlyingAsset'],
+        want: ['StrikePrice'],
+        exit: ['afterDeadline'],
+      },
+    );
 
   return harden({
     invite: makeCoveredCallInvite(),

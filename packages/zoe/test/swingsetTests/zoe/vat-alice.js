@@ -66,13 +66,12 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     });
 
     const paymentKeywordRecord = { UnderlyingAsset: moolaPayment };
-    const { seat, payout: payoutP } = await E(zoe).redeem(
+    const { payout: payoutP, outcome: option } = await E(zoe).offer(
       invite,
       proposal,
       paymentKeywordRecord,
     );
 
-    const option = await E(seat).makeCallOption();
     await E(bobP).doCoveredCall(option);
     const payout = await payoutP;
     const moolaPayout = await payout.UnderlyingAsset;
@@ -108,13 +107,12 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     });
 
     const paymentKeywordRecord = harden({ UnderlyingAsset: moolaPayment });
-    const { seat, payout: payoutP } = await E(zoe).redeem(
+    const { payout: payoutP, outcome: option } = await E(zoe).offer(
       invite,
       proposal,
       paymentKeywordRecord,
     );
 
-    const option = await E(seat).makeCallOption();
     log('call option made');
     await E(bobP).doSwapForOption(option, daveP);
     const payout = await payoutP;

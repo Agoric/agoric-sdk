@@ -147,15 +147,14 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const daveCoveredCallPayments = harden({ StrikePrice: simoleanPayment });
       const {
-        seat: daveCoveredCallSeat,
         payout: daveCoveredCallPayoutP,
+        outcome: daveCoveredCallOutcome,
       } = await E(zoe).redeem(
         daveOption,
         daveCoveredCallProposal,
         daveCoveredCallPayments,
       );
 
-      const daveCoveredCallOutcome = await E(daveCoveredCallSeat).exercise();
       log(daveCoveredCallOutcome);
 
       const daveCoveredCallResult = await daveCoveredCallPayoutP;
