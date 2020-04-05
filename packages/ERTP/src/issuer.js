@@ -178,6 +178,11 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
         return paymentLedger.get(payment);
       });
     },
+    // TODO kludge remove
+    getAmountOfNow: payment => {
+      assertKnownPayment(payment);
+      return paymentLedger.get(payment);
+    },
     burn: (paymentP, optAmount = undefined) => {
       return Promise.resolve(paymentP).then(payment => {
         assertKnownPayment(payment);
