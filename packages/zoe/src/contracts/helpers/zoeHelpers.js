@@ -1,6 +1,7 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
+import { HandledPromise } from '@agoric/eventual-send';
 
 export const defaultRejectMsg = `The offer was invalid. Please check your refund.`;
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
@@ -111,10 +112,6 @@ export const makeZoeHelpers = zoe => {
       zoe.complete(handles);
       return defaultAcceptanceMsg;
     },
-    makeEmptyOffer: () => {
-      const { inviteHandle, invite } = zoe.makeInvitePair();
-      return zoeService.redeem(invite).then(() => inviteHandle);
-    },
     makeInvite: (
       seatFn,
       customProperties = undefined,
@@ -128,6 +125,13 @@ export const makeZoeHelpers = zoe => {
       };
       return zoe.makeInvite(realSeatFn, customProperties);
     },
+    makeEmptyOffer: () =>
+      new HandledPromise(resolve => {
+        const invite = helpers.makeInvite(inviteHandle =>
+          resolve(inviteHandle),
+        );
+        zoeService.offer(invite);
+      }),
   });
   return helpers;
 };

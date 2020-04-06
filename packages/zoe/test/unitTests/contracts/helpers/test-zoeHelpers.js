@@ -658,7 +658,12 @@ test('ZoeHelpers makeEmptyOffer', async t => {
             redeemedInvites.push(invite);
             return Promise.resolve();
           },
+          offer: invite => {
+            redeemedInvites.push(invite);
+            return Promise.resolve();
+          },
         }),
+      makeInvite: () => 'anInvite',
       makeInvitePair: () =>
         harden({
           inviteHandle,
