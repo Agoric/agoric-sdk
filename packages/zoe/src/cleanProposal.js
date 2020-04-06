@@ -24,7 +24,9 @@ const checkKeys = (expectedKeys, record) => {
     assert.typeof(key, 'string');
     assert(
       expectedKeys.includes(key),
-      details`key ${key} was not one of the expected keys (${expectedKeys.join(', ')})`,
+      details`key ${key} was not one of the expected keys (${expectedKeys.join(
+        ', ',
+      )})`,
     );
   });
   // assert that there are no symbol properties.
