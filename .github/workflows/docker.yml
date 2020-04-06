@@ -36,7 +36,24 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
         snapshot: true
         tags: latest
-  
+
+  # This is currently needed for the relayer integration test framework.
+  # It just runs agoric/agoric-sdk with a "single-node" argument.
+  docker-ibc-alpha:
+    needs: docker-sdk
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Build ibc-alpha image
+      uses: elgohr/Publish-Docker-Github-Action@master
+      with:
+        name: agoric/agoric-sdk
+        dockerfile: packages/deployment/Dockerfile.ibc-alpha
+        context: packages/deployment/docker
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        tags: ibc-alpha
+
   docker-solo:
     needs: docker-sdk
     runs-on: ubuntu-latest
