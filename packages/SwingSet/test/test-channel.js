@@ -1,61 +1,122 @@
 // @ts-check
 import { test } from 'tape-promise/tape';
 import { makePromise } from '@agoric/make-promise';
+import rawHarden from '@agoric/harden';
 
-import { makeEchoHost } from '../src/echo-channel';
+import {
+  makeEchoChannelHandler,
+  makeHost,
+  bytesToString,
+} from '../src/channel';
 
-test('echo channel connect', async t => {
-  const host = makeEchoHost();
-  const connection = host.getConnection();
+const harden = /** @type {<T>(data: T) => T} */ (rawHarden);
 
-  const closed = makePromise();
-  await connection.connect(connection, 'echo', 'ordered', {
-    async onOpen(channel) {
-      const ack = await channel.send('ping');
-      t.equals(ack, 'pong', 'received pong');
-      channel.close();
+/**
+ * @param {*} _t
+ * @returns {import('../src/channel.js').HostHandler} A testing handler
+ */
+const makeHostHandler = _t => {
+  /**
+   * @type {import('../src/channel.js').ListenHandler}
+   */
+  let l;
+  return harden({
+    onCreate(_localhost, _impl) {
+      // console.log('created', localhost, impl);
     },
-    onClose(reason) {
-      t.equals(reason, undefined, 'no close reason');
-      closed.resolve();
+    async onConnect(src, dst) {
+      // console.log('connected', src, dst);
+      return l ? l.onAccept(src, dst) : makeEchoChannelHandler();
     },
-    async onReceive(packet) {
-      t.equals(packet, 'ping');
-      return 'pong';
+    async onListen(localPortName, listenHandler) {
+      l = listenHandler;
+      // console.log('listening', localPortName, listenHandler);
     },
   });
-  await closed.promise;
-  t.end();
-});
+};
 
-test('echo channel listen', async t => {
-  const host = makeEchoHost();
+test('handled channel host', async t => {
+  try {
+    const host = makeHost(makeHostHandler(t));
 
-  const closed = makePromise();
+    const hostHandle = host.getHandle();
 
-  const port = await host.claimPort('some-portname');
-  port.listen({
-    onError(rej) {
-      t.isNot(rej, rej, 'unexpected error');
-    },
-    async onAccept() {
-      return {
+    const closed = makePromise();
+    const port = await host.allocatePort();
+    await port.connect(
+      hostHandle,
+      'echo',
+      'ordered',
+      harden({
         async onOpen(channel) {
           const ack = await channel.send('ping');
-          t.equals(ack, 'pong', 'received pong');
+          // console.log(ack);
+          t.equals(bytesToString(ack), 'ping', 'received pong');
           channel.close();
         },
-        onClose(reason) {
+        async onClose(reason) {
           t.equals(reason, undefined, 'no close reason');
           closed.resolve();
         },
-        async onReceive(packet) {
-          t.equals(packet, 'ping', 'expected ping');
+        async onReceive(bytes) {
+          t.equals(bytesToString(bytes), 'ping');
           return 'pong';
         },
-      };
-    },
-  });
-  await closed.promise;
-  t.end();
+      }),
+    );
+    await closed.promise;
+  } catch (e) {
+    t.isNot(e, e, 'unexpceted exception');
+  } finally {
+    t.end();
+  }
+});
+
+test('host channel listen', async t => {
+  try {
+    const host = makeHost(makeHostHandler(t));
+
+    const closed = makePromise();
+
+    const port = await host.claimPort('some-portname');
+    port.listen(
+      harden({
+        onError(rej) {
+          t.isNot(rej, rej, 'unexpected error');
+        },
+        async onAccept(_src, _dst) {
+          return harden({
+            async onOpen(channel) {
+              const ack = await channel.send('ping');
+              t.equals(bytesToString(ack), 'ping', 'received pong');
+              channel.close();
+            },
+            async onClose(reason) {
+              t.equals(reason, undefined, 'no close reason');
+              closed.resolve();
+            },
+            async onReceive(packet) {
+              t.equals(packet, 'ping', 'expected ping');
+              return 'pong';
+            },
+          });
+        },
+      }),
+    );
+
+    const port2 = await host.allocatePort();
+    const hostHandle = host.getHandle();
+    await port2.connect(
+      hostHandle,
+      'some-portname',
+      'ordered',
+      makeEchoChannelHandler(),
+    );
+
+    await closed.promise;
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  } finally {
+    t.end();
+  }
 });
