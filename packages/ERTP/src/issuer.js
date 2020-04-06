@@ -3,7 +3,7 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/weak-store';
-import { isPromise } from '@agoric/make-promise';
+import { isPromise } from '@agoric/produce-promise';
 
 import makeAmountMath from './amountMath';
 

@@ -3,7 +3,7 @@ import { E } from '@agoric/eventual-send';
 import makeStore from '@agoric/weak-store';
 import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 
 import {
   cleanProposal,
@@ -454,7 +454,7 @@ const makeZoe = (additionalEndowments = {}) => {
           // Since we have redeemed an invite, the inviteHandle is
           // also the offerHandle.
           offerTable.create(offerImmutableRecord, offerHandle);
-          payoutMap.init(offerHandle, makePromise());
+          payoutMap.init(offerHandle, producePromise());
         };
 
         // Create result to be returned. Depends on `exit`

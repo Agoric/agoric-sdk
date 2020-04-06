@@ -6,7 +6,7 @@
  * device affordances into objects that can be used by code in other vats.
  */
 import harden from '@agoric/harden';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 
 export default function setup(syscall, state, helpers) {
   function build(E, D) {
@@ -19,7 +19,7 @@ export default function setup(syscall, state, helpers) {
           if (error) {
             throw Error(`Vat Creation Error: ${error}`);
           } else {
-            const vatPromise = makePromise();
+            const vatPromise = producePromise();
             vatIdsToResolvers.set(vatID, vatPromise.resolve);
             const adminNode = harden({
               terminate() {

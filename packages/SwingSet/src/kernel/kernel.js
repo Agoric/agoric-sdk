@@ -3,7 +3,7 @@ import harden from '@agoric/harden';
 import { makeMarshal } from '@agoric/marshal';
 import evaluateProgram from '@agoric/evaluate';
 import { assert, details } from '@agoric/assert';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 import makeVatManager from './vatManager';
 import { makeLiveSlots } from './liveSlots';
 import { makeDeviceSlots } from './deviceSlots';
@@ -105,7 +105,7 @@ export default function buildKernel(kernelEndowments) {
     // Node 10 it is higher. So this trick requires Node 11.
     // https://jsblog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
 
-    const { promise: queueEmptyP, resolve } = makePromise();
+    const { promise: queueEmptyP, resolve } = producePromise();
     setImmediate(() => resolve());
 
     // protect f() with promise/then

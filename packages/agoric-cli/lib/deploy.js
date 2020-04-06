@@ -2,7 +2,7 @@
 import builtinModules from 'builtin-modules';
 import { evaluateProgram } from '@agoric/evaluate';
 import { E, HandledPromise, makeCapTP } from '@agoric/captp';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 
 import bundleSource from '@agoric/bundle-source';
 
@@ -30,7 +30,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
   const wsurl = `ws://${opts.hostport}/private/captp`;
   const ws = makeWebSocket(wsurl, { origin: 'http://127.0.0.1' });
 
-  const exit = makePromise();
+  const exit = producePromise();
   ws.on('open', async () => {
     try {
       const { dispatch, getBootstrap } = makeCapTP('bundle', obj =>

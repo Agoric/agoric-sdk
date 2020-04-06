@@ -5,8 +5,8 @@ Thank you!
 ## Contact
 
 We use github issues for all bug reports:
-https://github.com/Agoric/agoric-sdk/issues Please add a [make-promise]
-prefix to the title and `make-promise` tag to make-promise-related issues.
+https://github.com/Agoric/agoric-sdk/issues Please add a [produce-promise]
+prefix to the title and `produce-promise` tag to produce-promise-related issues.
 
 ## Installing, Testing
 
@@ -17,14 +17,14 @@ You'll need Node.js version 11 or higher.
 * `yarn install`
 * `yarn build` (This *must* be done at the top level to build all of
   the packages)
-* `cd packages/make-promise`
+* `cd packages/produce-promise`
 * `yarn test`
 
 ## Pull Requests
 
 Before submitting a pull request, please:
 
-* run `yarn test` within `packages/make-promise` and make sure all the unit
+* run `yarn test` within `packages/produce-promise` and make sure all the unit
   tests pass (running `yarn test` at the top level will test all the
   monorepo packages, which can be a good integration test.)
 * run `yarn run lint-fix` to reformat the code according to our
@@ -43,8 +43,8 @@ Before submitting a pull request, please:
   * and does NOT do a `git commit` and `git tag`
 * `git add .`
 * `git commit -m "bump version"`
-* `git tag -a make-promise-v$VERSION -m "make-promise-v$VERSION"`
+* `git tag -a produce-promise-v$VERSION -m "produce-promise-v$VERSION"`
 * `yarn publish --access public`
 * `git push`
-* `git push origin make-promise-v$VERSION`
+* `git push origin produce-promise-v$VERSION`
 

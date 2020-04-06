@@ -1,7 +1,14 @@
 import harden from '@agoric/harden';
 import { HandledPromise } from '@agoric/eventual-send';
 
-export function makePromise() {
+/**
+ * producePromise() builds a HandledPromise object, and returns a record
+ * containing the promise itself, as well as separate facets for resolving
+ * and rejecting it.
+ *
+ * @return { promise, resolve, reject }
+ */
+export function producePromise() {
   let res;
   let rej;
   // We use a HandledPromise so that we can run HandledPromise.unwrap(p)
@@ -30,7 +37,7 @@ export function makePromise() {
   }
   return harden({ promise: p, resolve: res, reject: rej });
 }
-harden(makePromise);
+harden(producePromise);
 
 export function isPromise(maybePromise) {
   return HandledPromise.resolve(maybePromise) === maybePromise;
