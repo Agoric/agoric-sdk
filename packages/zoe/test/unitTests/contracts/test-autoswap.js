@@ -312,14 +312,13 @@ test('autoSwap - test fee', async t => {
     });
     const bobMoolaForSimPayments = harden({ TokenA: bobMoolaPayment });
 
-    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+    // Bob swaps
+    const { payout: bobPayoutP, outcome: offerOk } = await zoe.redeem(
       bobExclInvite,
       bobMoolaForSimProposal,
       bobMoolaForSimPayments,
     );
 
-    // Bob swaps
-    const offerOk = bobSeat.swap();
     t.equal(offerOk, 'Swap successfully completed.');
 
     const bobPayout = await bobPayoutP;

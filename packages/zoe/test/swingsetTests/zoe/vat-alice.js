@@ -148,18 +148,17 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       exit: { onDemand: null },
     });
     const paymentKeywordRecord = { Asset: moolaPayment };
-    const { seat, payout: payoutP } = await E(zoe).redeem(
+    const { payout: payoutP, outcome } = await E(zoe).redeem(
       invite,
       proposal,
       paymentKeywordRecord,
     );
 
-    const offerResult = await E(seat).sellAssets();
     const [bobInvite, carolInvite, daveInvite] = await E(publicAPI).makeInvites(
       3,
     );
 
-    log(offerResult);
+    log(outcome);
 
     const bobDoneP = E(bobP).doPublicAuction(bobInvite);
     const carolDoneP = E(carolP).doPublicAuction(carolInvite);

@@ -66,14 +66,13 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       want: { Bid: simoleans(3) },
     });
     const alicePayments = { Asset: aliceMoolaPayment };
-    const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
+    // Alice initializes the auction
+    const { payout: alicePayoutP, outcome: aliceOfferResult } = await zoe.offer(
       aliceInvite,
       aliceProposal,
       alicePayments,
     );
 
-    // Alice initializes the auction
-    const aliceOfferResult = await aliceSeat.sellAssets();
     const [bobInvite, carolInvite, daveInvite] = await publicAPI.makeInvites(3);
 
     t.equals(
@@ -112,14 +111,12 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const bobPayments = { Bid: bobSimoleanPayment };
 
     // Bob escrows with zoe
-    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+    // Bob bids
+    const { payout: bobPayoutP, outcome: bobOfferResult } = await zoe.offer(
       bobExclusiveInvite,
       bobProposal,
       bobPayments,
     );
-
-    // Bob bids
-    const bobOfferResult = await bobSeat.bid();
 
     t.equals(
       bobOfferResult,
@@ -161,14 +158,12 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const carolPayments = { Bid: carolSimoleanPayment };
 
     // Carol escrows with zoe
-    const { seat: carolSeat, payout: carolPayoutP } = await zoe.redeem(
+    // Carol bids
+    const { payout: carolPayoutP, outcome: carolOfferResult } = await zoe.offer(
       carolExclusiveInvite,
       carolProposal,
       carolPayments,
     );
-
-    // Carol bids
-    const carolOfferResult = await carolSeat.bid();
 
     t.equals(
       carolOfferResult,
@@ -205,14 +200,12 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const davePayments = { Bid: daveSimoleanPayment };
 
     // Dave escrows with zoe
-    const { seat: daveSeat, payout: davePayoutP } = await zoe.redeem(
+    // Dave bids
+    const { payout: davePayoutP, outcome: daveOfferResult } = await zoe.offer(
       daveExclusiveInvite,
       daveProposal,
       davePayments,
     );
-
-    // Dave bids
-    const daveOfferResult = await daveSeat.bid();
 
     t.equals(
       daveOfferResult,
@@ -369,14 +362,13 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       want: { Bid: simoleans(3) },
     });
     const alicePayments = harden({ Asset: aliceMoolaPayment });
+    // Alice initializes the auction
     const {
-      seat: aliceSeat,
       payout: alicePayoutP,
       cancelObj,
-    } = await zoe.redeem(aliceInvite, aliceProposal, alicePayments);
+      outcome: aliceOfferResult,
+    } = await zoe.offer(aliceInvite, aliceProposal, alicePayments);
 
-    // Alice initializes the auction
-    const aliceOfferResult = await aliceSeat.sellAssets();
     const [bobInvite] = publicAPI.makeInvites(1);
 
     t.equals(
@@ -397,7 +389,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const bobPayments = harden({ Bid: bobSimoleanPayment });
 
     // Bob escrows with zoe
-    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+    const { payout: bobPayoutP, outcome: brokenOutcome } = await zoe.offer(
       bobInvite,
       bobProposal,
       bobPayments,
@@ -405,7 +397,8 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     // Bob bids
     t.throws(
-      () => bobSeat.bid(),
+      // TODO what's the rejected promise equiv of t.throws?
+      brokenOutcome,
       `The item up for auction has been withdrawn or the auction has completed`,
     );
 

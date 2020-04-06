@@ -5,12 +5,7 @@ import { defaultAcceptanceMsg, makeZoeHelpers } from './helpers/zoeHelpers';
 import { secondPriceLogic, closeAuction } from './helpers/auctions';
 
 export const makeContract = harden(zoe => {
-  const {
-    rejectOffer,
-    canTradeWith,
-    assertKeywords,
-    rejectIfNotProposal,
-  } = makeZoeHelpers(zoe);
+  const { rejectOffer, canTradeWith, makeInvite } = makeZoeHelpers(zoe);
 
   let {
     terms: { numBidsAllowed },
@@ -22,11 +17,9 @@ export const makeContract = harden(zoe => {
   let auctionedAssets;
   const allBidHandles = [];
 
-  assertKeywords(harden(['Asset', 'Bid']));
-
   const makeBidderInvite = () => {
-    const seat = harden({
-      bid: () => {
+    return makeInvite(
+      inviteHandle => {
         // Check that the item is still up for auction
         if (!zoe.isOfferActive(sellerInviteHandle)) {
           const rejectMsg = `The item up for auction is not available or the auction has completed`;
@@ -35,8 +28,6 @@ export const makeContract = harden(zoe => {
         if (allBidHandles.length >= numBidsAllowed) {
           throw rejectOffer(inviteHandle, `No further bids allowed.`);
         }
-        const expected = harden({ give: ['Bid'], want: ['Asset'] });
-        rejectIfNotProposal(inviteHandle, expected);
         if (!canTradeWith(sellerInviteHandle, inviteHandle)) {
           const rejectMsg = `Bid was under minimum bid or for the wrong assets`;
           throw rejectOffer(inviteHandle, rejectMsg);
@@ -53,23 +44,24 @@ export const makeContract = harden(zoe => {
         }
         return defaultAcceptanceMsg;
       },
-    });
-    const { invite, inviteHandle } = zoe.makeInvitePair(seat, {
-      seatDesc: 'bid',
-      auctionedAssets,
-      minimumBid,
-    });
-    return invite;
+      {
+        seatDesc: 'bid',
+        auctionedAssets,
+        minimumBid,
+      },
+      {
+        give: ['Bid'],
+        want: ['Asset'],
+      },
+    );
   };
 
   const makeSellerInvite = () => {
-    const seat = harden({
-      sellAssets: () => {
+    return makeInvite(
+      inviteHandle => {
         if (auctionedAssets) {
           throw rejectOffer(inviteHandle, `assets already present`);
         }
-        const expected = harden({ give: ['Asset'], want: ['Bid'] });
-        rejectIfNotProposal(inviteHandle, expected);
         // Save the valid offer
         sellerInviteHandle = inviteHandle;
         const { proposal } = zoe.getOffer(inviteHandle);
@@ -77,11 +69,14 @@ export const makeContract = harden(zoe => {
         minimumBid = proposal.want.Bid;
         return defaultAcceptanceMsg;
       },
-    });
-    const { invite, inviteHandle } = zoe.makeInvitePair(seat, {
-      seatDesc: 'sellAssets',
-    });
-    return invite;
+      {
+        seatDesc: 'sellAssets',
+      },
+      {
+        give: ['Asset'],
+        want: ['Bid'],
+      },
+    );
   };
 
   return harden({
