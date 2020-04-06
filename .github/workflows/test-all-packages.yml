@@ -48,6 +48,8 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-built-${{ github.sha }}
+    - uses: actions/checkout@v1
+      if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
       if: steps.built.outputs.cache-hit != 'true'
@@ -67,6 +69,8 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-built-${{ github.sha }}
+    - uses: actions/checkout@v1
+      if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
       if: steps.built.outputs.cache-hit != 'true'
@@ -99,6 +103,8 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-built-${{ github.sha }}
+    - uses: actions/checkout@v1
+      if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
       if: steps.built.outputs.cache-hit != 'true'
@@ -134,6 +140,8 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-built-${{ github.sha }}
+    - uses: actions/checkout@v1
+      if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
       if: steps.built.outputs.cache-hit != 'true'
@@ -153,6 +161,8 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-built-${{ github.sha }}
+    - uses: actions/checkout@v1
+      if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
       if: steps.built.outputs.cache-hit != 'true'
