@@ -2,6 +2,7 @@ import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { showPurseBalance, setupIssuers } from '../helpers';
+import { makeGetInstanceHandle } from '../../../src/clientSupport';
 
 const build = async (E, log, zoe, issuers, payments, installations, timer) => {
   const {
@@ -16,14 +17,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
   const [moolaPayment, simoleanPayment] = payments;
   const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
   const inviteIssuer = await E(zoe).getInviteIssuer();
+  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   return harden({
     doAutomaticRefund: async inviteP => {
       const invite = await inviteP;
       const exclInvite = await E(inviteIssuer).claim(invite);
-      const {
-        extent: [{ instanceHandle }],
-      } = await E(inviteIssuer).getAmountOf(exclInvite);
+      const instanceHandle = await getInstanceHandle(exclInvite);
 
       const { installationHandle, issuerKeywordRecord } = await E(
         zoe,
@@ -91,9 +91,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         exclInvite,
       );
 
-      const instanceInfo = await E(zoe).getInstance(
-        optionExtent[0].instanceHandle,
-      );
+      const instanceHandle = await getInstanceHandle(exclInvite);
+      const instanceInfo = await E(zoe).getInstance(instanceHandle);
 
       assert(
         instanceInfo.installationHandle === installations.coveredCall,

@@ -2,6 +2,7 @@ import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { showPurseBalance, setupIssuers } from '../helpers';
+import { makeGetInstanceHandle } from '../../../src/clientSupport';
 
 const build = async (E, log, zoe, issuers, payments, installations, timer) => {
   const {
@@ -16,6 +17,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
   const [_moolaPayment, simoleanPayment, bucksPayment] = payments;
   const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
   const inviteIssuer = await E(zoe).getInviteIssuer();
+  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   return harden({
     doPublicAuction: async inviteP => {
@@ -78,9 +80,10 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const { extent: inviteExtent } = await E(inviteIssuer).getAmountOf(
         exclInvite,
       );
+      const instanceHandle = await getInstanceHandle(exclInvite);
       const { installationHandle, issuerKeywordRecord } = await E(
         zoe,
-      ).getInstance(inviteExtent[0].instanceHandle);
+      ).getInstance(instanceHandle);
       assert(
         installationHandle === installations.atomicSwap,
         details`wrong installation`,

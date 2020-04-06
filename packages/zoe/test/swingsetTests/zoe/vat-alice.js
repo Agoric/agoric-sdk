@@ -1,5 +1,6 @@
 import harden from '@agoric/harden';
 import { showPurseBalance, setupIssuers, getLocalAmountMath } from '../helpers';
+import { makeGetInstanceHandle } from '../../../src/clientSupport';
 
 const build = async (E, log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, purses } = await setupIssuers(zoe, issuers);
@@ -7,6 +8,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
   const [moolaPayment, simoleanPayment] = payments;
   const [moolaIssuer, simoleanIssuer] = issuers;
   const inviteIssuer = await E(zoe).getInviteIssuer();
+  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   const doAutomaticRefund = async bobP => {
     log(`=> alice.doCreateAutomaticRefund called`);
@@ -16,10 +18,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       Contribution2: simoleanIssuer,
     });
     const invite = await E(zoe).makeInstance(installId, issuerKeywordRecord);
-    const {
-      extent: [{ instanceHandle }],
-    } = await E(inviteIssuer).getAmountOf(invite);
 
+    const instanceHandle = await getInstanceHandle(invite);
     const instanceRecord = await E(zoe).getInstance(instanceHandle);
     const { publicAPI } = instanceRecord;
     const proposal = harden({
@@ -140,9 +140,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       issuerKeywordRecord,
       terms,
     );
-    const {
-      extent: [{ instanceHandle }],
-    } = await E(inviteIssuer).getAmountOf(invite);
+    const instanceHandle = await getInstanceHandle(invite);
     const { publicAPI } = await E(zoe).getInstance(instanceHandle);
 
     const proposal = harden({
@@ -227,9 +225,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       simpleExchange,
       issuerKeywordRecord,
     );
-    const {
-      extent: [{ instanceHandle }],
-    } = await E(inviteIssuer).getAmountOf(invite);
+    const instanceHandle = await getInstanceHandle(invite);
     const { publicAPI } = await E(zoe).getInstance(instanceHandle);
 
     const aliceSellOrderProposal = harden({
@@ -305,9 +301,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       simpleExchange,
       issuerKeywordRecord,
     );
-    const {
-      extent: [{ instanceHandle }],
-    } = await E(inviteIssuer).getAmountOf(invite);
+    const instanceHandle = await getInstanceHandle(invite);
     const { publicAPI } = await E(zoe).getInstance(instanceHandle);
 
     const petnames = ['simoleans', 'moola'];
@@ -362,9 +356,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       installations.autoswap,
       issuerKeywordRecord,
     );
-    const {
-      extent: [{ instanceHandle }],
-    } = await E(inviteIssuer).getAmountOf(invite);
+    const instanceHandle = await getInstanceHandle(invite);
     const { publicAPI } = await E(zoe).getInstance(instanceHandle);
     const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
     const liquidityAmountMath = await getLocalAmountMath(liquidityIssuer);

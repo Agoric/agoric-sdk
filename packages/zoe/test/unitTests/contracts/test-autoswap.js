@@ -7,6 +7,7 @@ import harden from '@agoric/harden';
 
 import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints2';
+import { makeGetInstanceHandle } from '../../../src/clientSupport';
 
 const autoswapRoot = `${__dirname}/../../../src/contracts/autoswap`;
 
@@ -16,6 +17,7 @@ test('autoSwap with valid offers', async t => {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
     const inviteIssuer = zoe.getInviteIssuer();
+    const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
     // Setup Alice
     const aliceMoolaPayment = moolaR.mint.mintPayment(moola(10));
@@ -40,9 +42,7 @@ test('autoSwap with valid offers', async t => {
       installationHandle,
       issuerKeywordRecord,
     );
-    const {
-      extent: [{ instanceHandle }],
-    } = await inviteIssuer.getAmountOf(aliceInvite);
+    const instanceHandle = await getInstanceHandle(aliceInvite);
     const { publicAPI } = zoe.getInstance(instanceHandle);
     const liquidityIssuer = publicAPI.getLiquidityIssuer();
     const liquidity = liquidityIssuer.getAmountMath().make;
@@ -85,13 +85,11 @@ test('autoSwap with valid offers', async t => {
 
     // Bob claims it
     const bobExclInvite = await inviteIssuer.claim(bobInvite);
-    const {
-      extent: [bobInviteExtent],
-    } = await inviteIssuer.getAmountOf(bobExclInvite);
+    const bobInstanceHandle = await getInstanceHandle(bobExclInvite);
     const {
       publicAPI: bobAutoswap,
       installationHandle: bobInstallationId,
-    } = zoe.getInstance(bobInviteExtent.instanceHandle);
+    } = zoe.getInstance(bobInstanceHandle);
     t.equals(bobInstallationId, installationHandle);
 
     // Bob looks up the price of 3 moola in simoleans
@@ -222,6 +220,7 @@ test('autoSwap - test fee', async t => {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
     const inviteIssuer = zoe.getInviteIssuer();
+    const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
     // Setup Alice
     const aliceMoolaPayment = moolaR.mint.mintPayment(moola(10000));
@@ -244,9 +243,7 @@ test('autoSwap - test fee', async t => {
       installationHandle,
       issuerKeywordRecord,
     );
-    const {
-      extent: [{ instanceHandle }],
-    } = await inviteIssuer.getAmountOf(aliceInvite);
+    const instanceHandle = await getInstanceHandle(aliceInvite);
     const { publicAPI } = zoe.getInstance(instanceHandle);
     const liquidityIssuer = publicAPI.getLiquidityIssuer();
     const liquidity = liquidityIssuer.getAmountMath().make;
@@ -290,13 +287,11 @@ test('autoSwap - test fee', async t => {
 
     // Bob claims it
     const bobExclInvite = await inviteIssuer.claim(bobInvite);
-    const {
-      extent: [bobInviteExtent],
-    } = await inviteIssuer.getAmountOf(bobExclInvite);
+    const bobInstanceHandle = await getInstanceHandle(bobExclInvite);
     const {
       publicAPI: bobAutoswap,
       installationHandle: bobInstallationId,
-    } = zoe.getInstance(bobInviteExtent.instanceHandle);
+    } = zoe.getInstance(bobInstanceHandle);
     t.equals(bobInstallationId, installationHandle);
 
     // Bob looks up the price of 1000 moola in simoleans
