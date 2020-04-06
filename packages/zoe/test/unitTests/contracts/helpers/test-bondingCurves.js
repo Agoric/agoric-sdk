@@ -2,7 +2,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
-import { makeConstProductBC } from '../../../../src/contracts/helpers/bondingCurves';
+import { makeConstProductBC } from '../../../../src/contractSupport';
 
 const testGetPrice = (t, input, expectedOutput) => {
   const zoe = harden({});

@@ -1,7 +1,8 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 
-import { makeZoeHelpers } from './helpers/zoeHelpers';
+// Eventually will be importable from '@agoric/zoe-contract-support'
+import { makeZoeHelpers } from '../contractSupport';
 
 export const makeContract = harden(zoe => {
   const { swap, assertKeywords, rejectIfNotProposal } = makeZoeHelpers(zoe);
