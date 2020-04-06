@@ -40,6 +40,7 @@
     "@agoric/harden": "^0.0.4",
     "@agoric/import-manager": "^0.0.2",
     "@agoric/layer-cake": "^0.0.1",
+    "@agoric/make-promise": "0.0.3",
     "@agoric/marshal": "^0.1.4",
     "@agoric/nat": "^2.0.1",
     "@agoric/same-structure": "^0.0.3",

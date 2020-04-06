@@ -3,6 +3,7 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/weak-store';
+import { isPromise } from '@agoric/make-promise';
 
 import makeAmountMath from './amountMath';
 
@@ -47,8 +48,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
   const makePurse = () => {
     const purse = harden({
       deposit: (srcPayment, optAmount = undefined) => {
-        // TODO(hibbert) use `if (isPromise(srcPayment)) {` from makePromise.
-        if (Promise.resolve(srcPayment) === srcPayment) {
+        if (isPromise(srcPayment)) {
           throw new TypeError(
             `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
           );
