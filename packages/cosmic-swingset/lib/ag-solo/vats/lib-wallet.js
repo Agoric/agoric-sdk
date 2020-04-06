@@ -123,6 +123,7 @@ export async function makeWallet(
     // === AWAITING TURN ===
     // =====================
 
+    // TODO upgrade from redeem to offer
     const { seat, payout: payoutObjP, cancelObj } = await E(zoe).redeem(
       invite,
       proposal,

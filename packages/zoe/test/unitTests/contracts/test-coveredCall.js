@@ -95,7 +95,7 @@ test('zoe - coveredCall', async t => {
     );
 
     t.equals(
-      bobOutcome,
+      await bobOutcome,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
@@ -441,7 +441,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     } = await zoe.offer(daveSwapInvite, daveSwapProposal, daveSwapPayments);
 
     t.equals(
-      daveSwapOutcome,
+      await daveSwapOutcome,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
@@ -469,7 +469,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     );
 
     t.equals(
-      daveCoveredCallOutcome,
+      await daveCoveredCallOutcome,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 
@@ -713,7 +713,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       daveSecondCoveredCallPayments,
     );
     t.equals(
-      daveSecondCoveredCallOutcome,
+      await daveSecondCoveredCallOutcome,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
       `dave second offer accepted`,
     );
@@ -743,7 +743,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     );
 
     t.equals(
-      daveFirstCoveredCallOutcome,
+      await daveFirstCoveredCallOutcome,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
       `dave first offer accepted`,
     );

@@ -206,8 +206,8 @@ test('zoe with automaticRefund', async t => {
       bobPayments,
     );
 
-    t.equals(aliceOutcome, 'The offer was accepted');
-    t.equals(bobOutcome, 'The offer was accepted');
+    t.equals(await aliceOutcome, 'The offer was accepted');
+    t.equals(await bobOutcome, 'The offer was accepted');
 
     // These promise resolve when the offer completes, but it may
     // still take longer for a remote issuer to actually make the

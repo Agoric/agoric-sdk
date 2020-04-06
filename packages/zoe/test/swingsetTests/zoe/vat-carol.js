@@ -42,15 +42,13 @@ const build = async (E, log, zoe, issuers, payments, installations) => {
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, outcome } = await E(zoe).offer(
         invite,
         proposal,
         paymentKeywordRecord,
       );
 
-      const offerResult = await E(seat).bid();
-
-      log(offerResult);
+      log(await outcome);
 
       const carolResult = await payoutP;
       const moolaPayout = await carolResult.Asset;

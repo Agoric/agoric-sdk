@@ -59,7 +59,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         bobProposal,
         bobPayments,
       );
-      log(outcome);
+      log(await outcome);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.Contribution1;
@@ -132,7 +132,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         bobPayments,
       );
 
-      log(bobOutcome);
+      log(await bobOutcome);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.UnderlyingAsset;
@@ -260,15 +260,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, outcome } = await E(zoe).offer(
         exclInvite,
         proposal,
         paymentKeywordRecord,
       );
 
-      const offerResult = await E(seat).bid();
-
-      log(offerResult);
+      log(await outcome);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.Asset;
@@ -323,7 +321,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         paymentKeywordRecord,
       );
 
-      log(outcome);
+      log(await outcome);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.Asset;
@@ -365,13 +363,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const paymentKeywordRecord = { Price: simoleanPayment };
 
-      const { payout: payoutP, outcome } = await E(zoe).redeem(
+      const { payout: payoutP, outcome } = await E(zoe).offer(
         exclInvite,
         bobBuyOrderProposal,
         paymentKeywordRecord,
       );
 
-      log(outcome);
+      log(await outcome);
 
       const bobResult = await payoutP;
       const moolaPayout = await bobResult.Asset;
@@ -413,13 +411,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       }
       const simoleanPayment2 = await E(simoleanPurseP).withdraw(simoleans(s));
       const paymentKeywordRecord = { Price: simoleanPayment2 };
-      const { payout: payoutP, outcome } = await E(zoe).redeem(
+      const { payout: payoutP, outcome } = await E(zoe).offer(
         invite,
         bobBuyOrderProposal,
         paymentKeywordRecord,
       );
 
-      log(outcome);
+      log(await outcome);
 
       payoutP.then(async bobResult => {
         E(moolaPurseP).deposit(await bobResult.Asset);
@@ -472,15 +470,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
 
       const moolaForSimPayments = harden({ TokenA: moolaPayment });
-      const { seat, payout: moolaForSimPayoutP } = await E(zoe).redeem(
+      const { payout: moolaForSimPayoutP, outcome } = await E(zoe).offer(
         exclInvite,
         moolaForSimProposal,
         moolaForSimPayments,
       );
 
-      const offerResult = await E(seat).swap();
-
-      log(offerResult);
+      log(await outcome);
 
       const moolaForSimPayout = await moolaForSimPayoutP;
       const moolaPayout1 = await moolaForSimPayout.TokenA;
@@ -505,12 +501,16 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const simsForMoolaPayments = harden({ TokenB: bobSimoleanPayment });
       const invite2 = await E(publicAPI).makeInvite();
 
-      const { seat: seat2, payout: bobSimsForMoolaPayoutP } = await E(
-        zoe,
-      ).redeem(invite2, bobSimsForMoolaProposal, simsForMoolaPayments);
+      const {
+        payout: bobSimsForMoolaPayoutP,
+        outcome: simsForMoolaOutcome,
+      } = await E(zoe).offer(
+        invite2,
+        bobSimsForMoolaProposal,
+        simsForMoolaPayments,
+      );
 
-      const simsForMoolaOutcome = await E(seat2).swap();
-      log(simsForMoolaOutcome);
+      log(await simsForMoolaOutcome);
 
       const simsForMoolaPayout = await bobSimsForMoolaPayoutP;
       const moolaPayout2 = await simsForMoolaPayout.TokenA;

@@ -76,7 +76,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const [bobInvite, carolInvite, daveInvite] = await publicAPI.makeInvites(3);
 
     t.equals(
-      aliceOfferResult,
+      await aliceOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
       'aliceOfferResult',
     );
@@ -119,7 +119,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     );
 
     t.equals(
-      bobOfferResult,
+      await bobOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
       'bobOfferResult',
     );
@@ -166,7 +166,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     );
 
     t.equals(
-      carolOfferResult,
+      await carolOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
       'carolOfferResult',
     );
@@ -208,7 +208,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     );
 
     t.equals(
-      daveOfferResult,
+      await daveOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
       'daveOfferResult',
     );
@@ -372,7 +372,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const [bobInvite] = publicAPI.makeInvites(1);
 
     t.equals(
-      aliceOfferResult,
+      await aliceOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
 

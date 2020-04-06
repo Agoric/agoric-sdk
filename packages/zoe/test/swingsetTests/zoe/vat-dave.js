@@ -50,15 +50,13 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };
 
-      const { seat, payout: payoutP } = await E(zoe).redeem(
+      const { payout: payoutP, outcome } = await E(zoe).offer(
         exclInvite,
         proposal,
         paymentKeywordRecord,
       );
 
-      const offerResult = await E(seat).bid();
-
-      log(offerResult);
+      log(await outcome);
 
       const daveResult = await payoutP;
       const moolaPayout = await daveResult.Asset;
@@ -149,7 +147,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const {
         payout: daveCoveredCallPayoutP,
         outcome: daveCoveredCallOutcome,
-      } = await E(zoe).redeem(
+      } = await E(zoe).offer(
         daveOption,
         daveCoveredCallProposal,
         daveCoveredCallPayments,

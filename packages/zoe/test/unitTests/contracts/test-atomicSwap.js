@@ -95,7 +95,7 @@ test('zoe - atomicSwap', async t => {
     );
 
     t.equals(
-      bobOfferResult,
+      await bobOfferResult,
       'The offer has been accepted. Once the contract has been completed, please check your payout',
     );
     const bobPayout = await bobPayoutP;
