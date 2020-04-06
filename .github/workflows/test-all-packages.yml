@@ -1,4 +1,4 @@
-name: Test all Packages
+name: Test all Packages (with cache)
 
 # run CI on pushes to master, and on all PRs (even the ones that target other
 # branches)
@@ -48,8 +48,11 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-built-${{ github.sha }}
-    - name: ensure build cache was restored
-      run: exit 1
+    - name: yarn install
+      run: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
       if: steps.built.outputs.cache-hit != 'true'
     - name: lint check
       run: yarn lint-check
@@ -64,8 +67,11 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-built-${{ github.sha }}
-    - name: ensure build cache was restored
-      run: exit 1
+    - name: yarn install
+      run: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
       if: steps.built.outputs.cache-hit != 'true'
     - name: Set up Go 1.13
       uses: actions/setup-go@v1
@@ -93,8 +99,11 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-built-${{ github.sha }}
-    - name: ensure build cache was restored
-      run: exit 1
+    - name: yarn install
+      run: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn test (SwingSet)
       run: cd packages/SwingSet && yarn test
@@ -125,8 +134,11 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-built-${{ github.sha }}
-    - name: ensure build cache was restored
-      run: exit 1
+    - name: yarn install
+      run: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn test (agoric-cli)
       run: cd packages/agoric-cli && yarn test
@@ -141,8 +153,11 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-built-${{ github.sha }}
-    - name: ensure build cache was restored
-      run: exit 1
+    - name: yarn install
+      run: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
       if: steps.built.outputs.cache-hit != 'true'
     # We run separate steps for each package, to make it easier to drill down
     # into errors. If we wanted to just run everything, run 'yarn test' from
