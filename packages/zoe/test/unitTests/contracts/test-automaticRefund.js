@@ -8,6 +8,7 @@ import harden from '@agoric/harden';
 import { makeZoe } from '../../../src/zoe';
 // TODO: Remove setupBasicMints and rename setupBasicMints2
 import { setup } from '../setupBasicMints2';
+import { makeGetInstanceHandle } from '../../../src/clientSupport';
 
 const automaticRefundRoot = `${__dirname}/../../../src/contracts/automaticRefund`;
 
@@ -115,6 +116,7 @@ test('zoe with automaticRefund', async t => {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
     const inviteIssuer = zoe.getInviteIssuer();
+    const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
     // Setup Alice
     const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3));
@@ -139,9 +141,7 @@ test('zoe with automaticRefund', async t => {
       installationHandle,
       issuerKeywordRecord,
     );
-    const {
-      extent: [{ instanceHandle }],
-    } = await inviteIssuer.getAmountOf(aliceInvite);
+    const instanceHandle = await getInstanceHandle(aliceInvite);
     const { publicAPI } = zoe.getInstance(instanceHandle);
 
     // 2: Alice escrows with zoe
@@ -174,9 +174,7 @@ test('zoe with automaticRefund', async t => {
     // will check that the installationId and terms match what he
     // expects
     const exclusBobInvite = await inviteIssuer.claim(bobInvite);
-    const {
-      extent: [{ instanceHandle: bobInstanceHandle }],
-    } = await inviteIssuer.getAmountOf(exclusBobInvite);
+    const bobInstanceHandle = await getInstanceHandle(exclusBobInvite);
 
     const {
       installationHandle: bobInstallationId,
@@ -284,13 +282,12 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
       ContributionB: simoleanR.issuer,
     });
     const inviteIssuer = zoe.getInviteIssuer();
+    const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
     const aliceInvite1 = await zoe.makeInstance(
       installationHandle,
       issuerKeywordRecord,
     );
-    const {
-      extent: [{ instanceHandle: instanceHandle1 }],
-    } = await inviteIssuer.getAmountOf(aliceInvite1);
+    const instanceHandle1 = await getInstanceHandle(aliceInvite1);
     const { publicAPI: publicAPI1 } = zoe.getInstance(instanceHandle1);
 
     const aliceInvite2 = await zoe.makeInstance(
@@ -306,9 +303,7 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
       installationHandle,
       issuerKeywordRecord,
     );
-    const {
-      extent: [{ instanceHandle: instanceHandle3 }],
-    } = await inviteIssuer.getAmountOf(aliceInvite3);
+    const instanceHandle3 = await getInstanceHandle(aliceInvite3);
     const { publicAPI: publicAPI3 } = zoe.getInstance(instanceHandle3);
 
     // 2: Alice escrows with zoe
