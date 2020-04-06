@@ -654,21 +654,12 @@ test('ZoeHelpers makeEmptyOffer', async t => {
       getAmountMaths: () => {},
       getZoeService: () =>
         harden({
-          redeem: invite => {
-            redeemedInvites.push(invite);
-            return Promise.resolve();
-          },
           offer: invite => {
             redeemedInvites.push(invite);
             return Promise.resolve();
           },
         }),
       makeInvite: () => 'anInvite',
-      makeInvitePair: () =>
-        harden({
-          inviteHandle,
-          invite: 'anInvite',
-        }),
     });
     const { makeEmptyOffer } = makeZoeHelpers(mockZoe);
     const result = await makeEmptyOffer();
