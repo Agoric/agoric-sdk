@@ -3,11 +3,12 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
 import { setup } from '../../setupBasicMints2';
+
 import {
   makeZoeHelpers,
   defaultAcceptanceMsg,
   defaultRejectMsg,
-} from '../../../../src/contracts/helpers/zoeHelpers';
+} from '../../../../src/contractSupport';
 
 test('ZoeHelpers messages', t => {
   t.plan(2);

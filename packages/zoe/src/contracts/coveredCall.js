@@ -1,6 +1,9 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 
+// Eventually will be importable from '@agoric/zoe-contract-support'
+import { makeZoeHelpers } from '../contractSupport';
+
 // In a covered call, the owner of a digital asset sells a call
 // option. A call option is the right to buy the digital asset at a
 // certain price, called the strike price. The call option has an expiry
@@ -15,8 +18,6 @@ import harden from '@agoric/harden';
 // call option and has the following additional information in the
 // extent of the invite:
 // { expirationDate, timerAuthority, underlyingAsset, strikePrice }
-
-import { makeZoeHelpers } from './helpers/zoeHelpers';
 
 export const makeContract = harden(zoe => {
   const { swap, assertKeywords, rejectIfNotProposal } = makeZoeHelpers(zoe);

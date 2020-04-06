@@ -2,8 +2,13 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
-import { defaultAcceptanceMsg, makeZoeHelpers } from './helpers/zoeHelpers';
-import { secondPriceLogic, closeAuction } from './helpers/auctions';
+// Eventually will be importable from '@agoric/zoe-contract-support'
+import {
+  defaultAcceptanceMsg,
+  makeZoeHelpers,
+  secondPriceLogic,
+  closeAuction,
+} from '../contractSupport';
 
 export const makeContract = harden(zoe => {
   const {

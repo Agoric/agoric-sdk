@@ -1,7 +1,9 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 import { makePromise } from '@agoric/make-promise';
-import { makeZoeHelpers, defaultAcceptanceMsg } from './helpers/zoeHelpers';
+
+// Eventually will be importable from '@agoric/zoe-contract-support'
+import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 
 /**
  * The SimpleExchange uses Asset and Price as its keywords. In usage,

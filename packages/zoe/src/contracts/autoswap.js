@@ -3,8 +3,8 @@ import harden from '@agoric/harden';
 import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 
-import { makeZoeHelpers } from './helpers/zoeHelpers';
-import { makeConstProductBC } from './helpers/bondingCurves';
+// Eventually will be importable from '@agoric/zoe-contract-support'
+import { makeConstProductBC, makeZoeHelpers } from '../contractSupport';
 
 // Autoswap is a rewrite of Uniswap. Please see the documentation for
 // more https://agoric.com/documentation/zoe/guide/contracts/autoswap.html
