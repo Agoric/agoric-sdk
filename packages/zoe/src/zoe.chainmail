@@ -19,9 +19,9 @@ interface Handle(T){
   /* a handle has no property */
 }
 
-interface Invite: Payment(InviteRecord)
+interface Invite: Payment(InviteRecord);
 
-interface InviteRecord{
+struct InviteRecord ( ) {
   handle: Handle(Offer); // pending a decision on https://github.com/Agoric/agoric-sdk/issues/805
   instanceHandle: Handle(Instance);
 }
@@ -29,7 +29,7 @@ interface InviteRecord{
 /**
  * Keywords are strings that respect the following JavaScript Regexp: 
  * /^[A-Z][a-zA-Z0-9_$]*$/
- * In English, it means a keyword starts with an uppercase ASCII letter
+ * In plain English, it means a Keyword starts with an uppercase ASCII letter
  * and is followed by any number of letters (uppercase and lowercase), numbers, 
  * or the "_" and "$" signs
  */
@@ -110,6 +110,12 @@ interface ZoeService {
 struct SeatAndPayout ( ) {
   seat :Object;
   payout :List(Payment);
+  cancelObj? :CancelObj; /* exists only when exit is 'onDemand' */
+  /* this may be renamed to complete: https://github.com/Agoric/agoric-sdk/issues/835  */
+}
+
+interface CancelObj () {
+  cancel();
 }
 
 struct Proposal ( ) {
@@ -124,6 +130,10 @@ struct Proposal ( ) {
  */
 struct AmountKeywordRecord ( ) {
   [Keyword]: AmountMath;
+}
+
+struct PaymentKeywordRecord ( ){
+  [Keyword]: Payment;
 }
 
 /**
