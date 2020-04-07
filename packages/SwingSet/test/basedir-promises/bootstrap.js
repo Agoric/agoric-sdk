@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 
 console.log(`loading bootstrap`);
 
@@ -55,7 +55,7 @@ function build(E, log) {
             return 3;
           },
         });
-        const { promise: p1, resolve: r1 } = makePromise();
+        const { promise: p1, resolve: r1 } = producePromise();
         console.log(`here1`, Object.isFrozen(p1));
         const p2 = E(vats.left).takePromise(p1);
         console.log(`here2`);

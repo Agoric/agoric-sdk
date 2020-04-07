@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 
 // TODO Reconcile with spec of Promise.allSettled
 function allSettled(promises) {
@@ -9,7 +9,7 @@ function allSettled(promises) {
   if (len === 0) {
     return [];
   }
-  const result = makePromise();
+  const result = producePromise();
   const list = [];
   let count = len;
   for (let i = 0; i < len; i += 1) {

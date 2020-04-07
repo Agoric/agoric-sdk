@@ -1,8 +1,8 @@
 import harden from '@agoric/harden';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 
 export default harden((_terms, inviteMaker) => {
-  const result = makePromise();
+  const result = producePromise();
   const seat = harden({
     provide(n) {
       result.resolve(2 * n);

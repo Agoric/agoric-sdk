@@ -1,6 +1,6 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 
 import { makeMarshaller } from '../src/kernel/liveSlots';
 
@@ -106,7 +106,7 @@ test('serialize promise', async t => {
   };
 
   const { m } = makeMarshaller(syscall);
-  const { promise, resolve } = makePromise();
+  const { promise, resolve } = producePromise();
   t.deepEqual(m.serialize(promise), {
     body: '{"@qclass":"slot","index":0}',
     slots: ['p+5'],
@@ -126,7 +126,7 @@ test('serialize promise', async t => {
   resolve(5);
   t.deepEqual(log, []);
 
-  const { promise: pauseP, resolve: pauseRes } = makePromise();
+  const { promise: pauseP, resolve: pauseRes } = producePromise();
   setImmediate(() => pauseRes());
   await pauseP;
   t.deepEqual(log, [{ result: 'p+5', data: { body: '5', slots: [] } }]);

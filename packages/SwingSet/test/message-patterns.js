@@ -4,7 +4,7 @@
 // test.stuff patterns.
 
 import harden from '@agoric/harden';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 
 // Exercise a set of increasingly complex object-capability message patterns,
 // for testing.
@@ -236,7 +236,7 @@ export function buildPatterns(E, log) {
       const data = await ret.promise;
       log(`a50 done, got ${data}`);
     };
-    const p1 = makePromise();
+    const p1 = producePromise();
     objB.b50 = async () => {
       p1.resolve('data');
       return harden({ promise: p1.promise });
@@ -254,7 +254,7 @@ export function buildPatterns(E, log) {
       const bert2 = await E(b.bob).b51_2();
       log(`a51 done, got ${bert}, match ${bert === bert2} ${bert === b.bert}`);
     };
-    const p1 = makePromise();
+    const p1 = producePromise();
     objB.b51 = async () => {
       p1.resolve(b.bert);
       return harden({ promise: p1.promise });
@@ -275,7 +275,7 @@ export function buildPatterns(E, log) {
       const bill2 = await E(b.bob).b52_2();
       log(`a52 done, got ${bill}, match ${bill === bill2}`);
     };
-    const p1 = makePromise();
+    const p1 = producePromise();
     objB.b52 = async () => {
       p1.resolve(b.bill);
       return harden({ promise: p1.promise });
@@ -294,7 +294,7 @@ export function buildPatterns(E, log) {
       const amy2 = await ret.promise;
       log(`a53 done, match ${amy2 === a.amy}`);
     };
-    const p1 = makePromise();
+    const p1 = producePromise();
     objB.b53 = async amy => {
       p1.resolve(amy);
       return harden({ promise: p1.promise });
@@ -306,7 +306,7 @@ export function buildPatterns(E, log) {
   // bob!x(P(amy)) -> amy // resolve after sending
   {
     objA.a60 = async () => {
-      const p1 = makePromise();
+      const p1 = producePromise();
       const p2 = E(b.bob).b60({ promise: p1.promise });
       p1.resolve(a.amy);
       const amy2 = await p2;
@@ -344,7 +344,7 @@ export function buildPatterns(E, log) {
       const bill = await p2.promise;
       log(`a62 done, got ${bill}`);
     };
-    const p1 = makePromise();
+    const p1 = producePromise();
     objB.b62_1 = async () => {
       return { promise: p1.promise };
     };
@@ -363,7 +363,7 @@ export function buildPatterns(E, log) {
       const amy2 = await p2.promise;
       log(`a63 done, match ${amy2 === a.amy}`);
     };
-    const p1 = makePromise();
+    const p1 = producePromise();
     let amyOnBob;
     objB.b63_1 = async amy2 => {
       amyOnBob = amy2;
@@ -428,7 +428,7 @@ export function buildPatterns(E, log) {
       p3.then(_ => log('p3.then'));
       E(b.bob).b71_resolvex();
     };
-    const p1 = makePromise();
+    const p1 = producePromise();
     objB.b71_getpx = async () => p1.promise;
     objB.b71_resolvex = async () => {
       const x = harden({
@@ -470,7 +470,7 @@ export function buildPatterns(E, log) {
         .b72_wait()
         .then(() => E(b.bob).b72_resolvex());
     };
-    const p1 = makePromise();
+    const p1 = producePromise();
     objB.b72_wait = async () => 0;
     objB.b72_getpx = async () => p1.promise;
     objB.b72_resolvex = async () => {

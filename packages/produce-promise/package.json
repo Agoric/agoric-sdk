@@ -1,8 +1,8 @@
 {
-  "name": "@agoric/make-promise",
-  "version": "0.0.3",
+  "name": "@agoric/produce-promise",
+  "version": "0.0.4",
   "description": "Helper for making promises",
-  "main": "src/makePromise.js",
+  "main": "src/producePromise.js",
   "engines": {
     "node": ">=11.0"
   },

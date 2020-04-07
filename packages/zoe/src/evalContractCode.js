@@ -6,7 +6,7 @@ import harden from '@agoric/harden';
 import { makeMeter } from '@agoric/transform-metering/src/meter';
 import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 import { sameStructure } from '@agoric/same-structure';
 
 const evaluateStringToFn = (functionSrcString, endowments) => {
@@ -26,7 +26,7 @@ const evalContractCode = (code, additionalEndowments) => {
   const defaultEndowments = {
     console, // TODO: add prefix to console output
     harden,
-    makePromise,
+    producePromise,
     assert,
     sameStructure,
     produceIssuer,

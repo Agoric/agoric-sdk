@@ -11,7 +11,7 @@ import {
   sameStructure,
 } from '@agoric/same-structure';
 import produceIssuer from '@agoric/ertp';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 import { makeMeter } from '@agoric/transform-metering/src/meter';
 
 export { makeCollect } from './makeCollect';
@@ -52,7 +52,7 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
     harden,
     console,
     E,
-    makePromise,
+    producePromise,
     // TODO: sameStructure is used in one check...() function. Figure out a
     // more general approach to providing useful helpers.
     // The best approach is to use the `getExport` moduleFormat, and

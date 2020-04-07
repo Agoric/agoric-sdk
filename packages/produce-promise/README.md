@@ -1,3 +1,3 @@
-# Make Promise
+# Produce Promise
 
 A helper for making promises
