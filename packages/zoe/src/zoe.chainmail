@@ -26,6 +26,19 @@ interface InviteRecord{
   instanceHandle: Handle(Instance)
 }
 
+/**
+ * Keywords are strings that respect the following JavaScript Regexp: 
+ * /^[A-Z][a-zA-Z0-9_$]*$/
+ * In English, it means a keyword starts with an uppercase ASCII letter
+ * and is followed by any number of letters (uppercase and lowercase), numbers, 
+ * or the "_" and "$" signs
+ */
+interface Keyword: String;
+
+interface IssuerKeywordRecord{
+  [Keyword]: Issuer
+}
+
 
 interface ZoeService {
 
@@ -151,7 +164,7 @@ interface ZoeContractFacet () {
    * Inform Zoe about new issuers. Returns a promise for acknowledging
    * when the issuer is added and ready.
    */
-  addNewIssuer (issuer :Issuer, keyword :String) -> (Promise(Undefined));
+  addNewIssuer (issuer :Issuer, keyword :Keyword) -> (Promise(Undefined));
 
   /**
    * Expose the user-facing Zoe Service API to the contracts as well.
@@ -165,7 +178,7 @@ interface ZoeContractFacet () {
 
   /** Get a list of local amountMath for each keyword in the
   sparseKeywords array */
-  getAmountMaths (sparseKeywords :List(String)) -> (AmountMathKeywordRecord));
+  getAmountMaths (sparseKeywords :List(Keyword)) -> (AmountMathKeywordRecord));
 
   /** Divide the offerHandles into 'active' and 'inactive' lists */
   getOfferStatuses ( offerHandles :List(Handle(Offer))) ->
