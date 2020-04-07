@@ -22,7 +22,12 @@ export const objToArray = (obj, keywords) => {
 export const assertSubset = (whole, part) => {
   part.forEach(key => {
     assert.typeof(key, 'string');
-    assert(whole.includes(key), details`key ${key} was not an expected key`);
+    assert(
+      whole.includes(key),
+      details`key ${key} was not one of the expected keys (${whole.join(
+        ', ',
+      )})`,
+    );
   });
 };
 
