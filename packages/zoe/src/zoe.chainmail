@@ -23,7 +23,7 @@ interface Invite: Payment(InviteRecord)
 
 interface InviteRecord{
   handle: Handle(Offer); // pending a decision on https://github.com/Agoric/agoric-sdk/issues/805
-  instanceHandle: Handle(Instance)
+  instanceHandle: Handle(Instance);
 }
 
 /**
@@ -36,7 +36,7 @@ interface InviteRecord{
 interface Keyword: String;
 
 interface IssuerKeywordRecord{
-  [Keyword]: Issuer
+  [Keyword]: Issuer;
 }
 
 
@@ -123,6 +123,7 @@ struct Proposal ( ) {
  * { Asset: amountMath.make(5), Price: amountMath.make(9) }
  */
 struct AmountKeywordRecord ( ) {
+  [Keyword]: AmountMath;
 }
 
 /**
@@ -137,6 +138,14 @@ struct ExitRule ( ) {
   timer :Timer;
   deadline :Deadline;
 }
+
+interface InstanceRecord{
+  installationHandle: Handle(Installation),
+  publicAPI: any,
+  terms: any,
+  issuerKeywordRecord: IssuerKeywordRecord
+}
+
 
 interface ZoeContractFacet () {
 
