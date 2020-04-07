@@ -219,9 +219,18 @@ interface ZoeContractFacet () {
   /** Get the offer record */
   getOffer ( offerHandle :Handle(Offer)) -> (List(OfferRecord));
 
+  /** Get the current allocation associated with the offerHandle */
+  getCurrentAllocation ( offerHandle :Handle(Offer) ) -> (AmountKeywordRecord);
+
   /** Get instance record */
   getInstanceRecord ( ) -> InstanceRecord;
 
+}
+
+struct OfferRecord ( ) {
+  handle: Handle(Offer)
+  instanceHandle: Handle(Instance);
+  proposal :Proposal;
 }
 
 /**
