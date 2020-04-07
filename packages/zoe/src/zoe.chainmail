@@ -19,6 +19,12 @@ interface Handle(T){
   /* a handle has no property */
 }
 
+interface Invite: Payment(InviteRecord)
+
+interface InviteRecord{
+  handle: Handle(Offer); // pending a decision on https://github.com/Agoric/agoric-sdk/issues/805
+}
+
 
 interface ZoeService {
 
