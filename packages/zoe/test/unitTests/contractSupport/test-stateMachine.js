@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 
-import { makeStateMachine } from '../../../../src/contractSupport';
+import { makeStateMachine } from '../../../src/contractSupport';
 
 test('stateMachine', t => {
   t.plan(4);
