@@ -109,7 +109,7 @@ interface ZoeService {
  */
 struct SeatAndPayout ( ) {
   seat :Object;
-  payout :List(Payment);
+  payout :Promise(PaymentPromiseKeywordRecord); 
   cancelObj? :CancelObj; /* exists only when exit is 'onDemand' */
   /* this may be renamed to complete: https://github.com/Agoric/agoric-sdk/issues/835  */
 }
@@ -135,6 +135,10 @@ struct AmountKeywordRecord ( ) {
 struct PaymentKeywordRecord ( ){
   [Keyword]: Payment;
 }
+
+struct PaymentPromiseKeywordRecord ( ) {
+  [Keyword]: Promise(Payment);
+} 
 
 /**
  * The possible keys are 'waived', 'onDemand', and 'afterDeadline'.
