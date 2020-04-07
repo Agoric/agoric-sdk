@@ -27,8 +27,8 @@ export const makeContract = harden(zoe => {
     const seat = harden({
       exercise: () => {
         const expected = harden({
-          give: ['StrikePrice'],
-          want: ['UnderlyingAsset'],
+          give: { StrikePrice: null },
+          want: { UnderlyingAsset: null },
         });
         rejectIfNotProposal(inviteHandle, expected);
         const rejectMsg = `The covered call option is expired.`;
@@ -54,9 +54,9 @@ export const makeContract = harden(zoe => {
     const seat = harden({
       makeCallOption: () => {
         const expected = harden({
-          give: ['UnderlyingAsset'],
-          want: ['StrikePrice'],
-          exit: ['afterDeadline'],
+          give: { UnderlyingAsset: null },
+          want: { StrikePrice: null },
+          exit: { afterDeadline: null },
         });
         rejectIfNotProposal(inviteHandle, expected);
         return makeCallOptionInvite(inviteHandle);

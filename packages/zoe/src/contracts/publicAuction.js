@@ -41,7 +41,10 @@ export const makeContract = harden(zoe => {
         if (allBidHandles.length >= numBidsAllowed) {
           throw rejectOffer(inviteHandle, `No further bids allowed.`);
         }
-        const expected = harden({ give: ['Bid'], want: ['Asset'] });
+        const expected = harden({
+          give: { Bid: null },
+          want: { Asset: null },
+        });
         rejectIfNotProposal(inviteHandle, expected);
         if (!canTradeWith(sellerInviteHandle, inviteHandle)) {
           const rejectMsg = `Bid was under minimum bid or for the wrong assets`;
@@ -74,7 +77,10 @@ export const makeContract = harden(zoe => {
         if (auctionedAssets) {
           throw rejectOffer(inviteHandle, `assets already present`);
         }
-        const expected = harden({ give: ['Asset'], want: ['Bid'] });
+        const expected = harden({
+          give: { Asset: null },
+          want: { Bid: null },
+        });
         rejectIfNotProposal(inviteHandle, expected);
         // Save the valid offer
         sellerInviteHandle = inviteHandle;

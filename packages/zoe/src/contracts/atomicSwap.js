@@ -26,7 +26,10 @@ export const makeContract = harden(zoe => {
   const makeFirstOfferInvite = () => {
     const seat = harden({
       makeFirstOffer: () => {
-        const expected = harden({ give: ['Asset'], want: ['Price'] });
+        const expected = harden({
+          give: { Asset: null },
+          want: { Price: null },
+        });
         rejectIfNotProposal(inviteHandle, expected);
         return makeMatchingInvite(inviteHandle);
       },
