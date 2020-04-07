@@ -120,14 +120,20 @@ test('ZoeHelpers rejectIfNotProposal', t => {
     t.doesNotThrow(() =>
       rejectIfNotProposal(
         offerHandles[0],
-        harden({ want: ['Asset'], give: ['Price'] }),
+        harden({
+          want: { Asset: null },
+          give: { Price: null },
+        }),
       ),
     );
     t.throws(
       () =>
         rejectIfNotProposal(
           offerHandles[1],
-          harden({ want: ['Assets'], give: ['Price'] }),
+          harden({
+            want: { Assets: null },
+            give: { Price: null },
+          }),
         ),
       /The offer was invalid. Please check your refund./,
       `had the wrong wants`,
@@ -136,7 +142,10 @@ test('ZoeHelpers rejectIfNotProposal', t => {
       () =>
         rejectIfNotProposal(
           offerHandles[2],
-          harden({ want: ['Asset'], give: ['Price2'] }),
+          harden({
+            want: { Asset: null },
+            give: { Price2: null },
+          }),
         ),
       /The offer was invalid. Please check your refund./,
       `had the wrong offer`,
@@ -145,7 +154,11 @@ test('ZoeHelpers rejectIfNotProposal', t => {
       () =>
         rejectIfNotProposal(
           offerHandles[3],
-          harden({ want: ['Asset'], give: ['Price'], exit: ['Waived'] }),
+          harden({
+            want: { Asset: null },
+            give: { Price: null },
+            exit: { Waived: null },
+          }),
         ),
       /The offer was invalid. Please check your refund./,
       `had the wrong exit rule`,
@@ -161,7 +174,11 @@ test('ZoeHelpers rejectIfNotProposal', t => {
       () =>
         rejectIfNotProposal(
           offerHandles[4],
-          harden({ want: ['Asset'], give: ['Price'], exit: ['waived'] }),
+          harden({
+            want: { Asset: null },
+            give: { Price: null },
+            exit: { waived: null },
+          }),
         ),
       /The offer was invalid. Please check your refund./,
       `had the wrong exit rule`,
@@ -170,7 +187,11 @@ test('ZoeHelpers rejectIfNotProposal', t => {
       () =>
         rejectIfNotProposal(
           offerHandles[5],
-          harden({ want: ['Asset'], give: ['Price'], exit: ['waived'] }),
+          harden({
+            want: { Asset: null },
+            give: { Price: null },
+            exit: { waived: null },
+          }),
         ),
       /The offer was invalid. Please check your refund./,
       `had the wrong want`,
@@ -219,14 +240,21 @@ test('ZoeHelpers checkIfProposal', t => {
     t.ok(
       checkIfProposal(
         harden({}),
-        harden({ want: ['Asset'], give: ['Price'], exit: ['onDemand'] }),
+        harden({
+          want: { Asset: null },
+          give: { Price: null },
+          exit: { onDemand: null },
+        }),
       ),
       `want, give, and exit match expected`,
     );
     t.notOk(
       checkIfProposal(
         harden({}),
-        harden({ want: ['Asset2'], give: ['Price'] }),
+        harden({
+          want: { Asset2: null },
+          give: { Price: null },
+        }),
       ),
       `want was not as expected`,
     );
@@ -237,6 +265,55 @@ test('ZoeHelpers checkIfProposal', t => {
   } catch (e) {
     t.assert(false, e);
   }
+});
+
+test('ZoeHelpers checkIfProposal multiple keys', t => {
+  t.plan(2);
+  const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
+  const mockZoe = harden({
+    getInstanceRecord: () =>
+      harden({
+        issuerKeywordRecord: {
+          Asset: moolaR.issuer,
+          Fee: bucksR.issuer,
+          Price: simoleanR.issuer,
+        },
+      }),
+    getAmountMaths: () => {},
+    getZoeService: () => {},
+    getOffer: _handle => {
+      return harden({
+        proposal: {
+          want: { Asset: moola(4), Fee: bucks(1) },
+          give: { Price: simoleans(16) },
+          exit: { onDemand: null },
+        },
+      });
+    },
+  });
+  const { checkIfProposal } = makeZoeHelpers(mockZoe);
+  t.ok(
+    checkIfProposal(
+      harden({}),
+      harden({
+        want: { Asset: null, Fee: null },
+        give: { Price: null },
+        exit: { onDemand: null },
+      }),
+    ),
+    `want, give, and exit match expected`,
+  );
+  t.ok(
+    checkIfProposal(
+      harden({}),
+      harden({
+        want: { Fee: null, Asset: null },
+        give: { Price: null },
+        exit: { onDemand: null },
+      }),
+    ),
+    `want (reversed), give, and exit match expected`,
+  );
 });
 
 test('ZoeHelpers getActiveOffers', t => {

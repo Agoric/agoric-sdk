@@ -47,12 +47,12 @@ export const makeContract = harden(zoe => {
           swap: () => {
             const { proposal } = zoe.getOffer(inviteHandle);
             const giveTokenA = harden({
-              give: ['TokenA'],
-              want: ['TokenB'],
+              give: { TokenA: null },
+              want: { TokenB: null },
             });
             const giveTokenB = harden({
-              give: ['TokenB'],
-              want: ['TokenA'],
+              give: { TokenB: null },
+              want: { TokenA: null },
             });
             let giveKeyword;
             let wantKeyword;
@@ -115,8 +115,8 @@ export const makeContract = harden(zoe => {
           },
           addLiquidity: () => {
             const expected = harden({
-              give: ['TokenA', 'TokenB'],
-              want: ['Liquidity'],
+              give: { TokenA: null, TokenB: null },
+              want: { Liquidity: null },
             });
             rejectIfNotProposal(inviteHandle, expected);
 
@@ -188,8 +188,8 @@ export const makeContract = harden(zoe => {
           },
           removeLiquidity: () => {
             const expected = harden({
-              want: ['TokenA', 'TokenB'],
-              give: ['Liquidity'],
+              give: { Liquidity: null },
+              want: { TokenA: null, TokenB: null },
             });
             rejectIfNotProposal(inviteHandle, expected);
 

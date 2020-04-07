@@ -19,28 +19,26 @@ export const makeZoeHelpers = zoe => {
 
   // Compare the keys of actual with expected keys and reject offer if
   // not sameStructure. If expectedKeys is undefined, no comparison occurs.
-  const rejectIf = (
+  const rejectKeysIf = (
     inviteHandle,
     actual,
-    expectedKeys,
+    expected,
     msg = defaultRejectMsg,
     // eslint-disable-next-line consistent-return
   ) => {
-    if (expectedKeys !== undefined) {
-      const expected = [...expectedKeys]; // in case hardened
-      expected.sort();
-      if (!sameStructure(getKeysSorted(actual), harden(expected))) {
+    if (expected !== undefined) {
+      if (!sameStructure(getKeysSorted(actual), getKeysSorted(expected))) {
         return rejectOffer(inviteHandle, msg);
       }
     }
   };
-  // Compare actual to expected keys. If expectedKeys is
+  // Compare actual keys to expected keys. If expectedKeys is
   // undefined, return true trivially.
-  const check = (actual, expectedKeys) => {
-    if (expectedKeys === undefined) {
+  const checkKeys = (actual, expected) => {
+    if (expected === undefined) {
       return true;
     }
-    return sameStructure(getKeys(actual), expectedKeys);
+    return sameStructure(getKeysSorted(actual), getKeysSorted(expected));
   };
 
   const helpers = harden({
@@ -56,19 +54,19 @@ export const makeZoeHelpers = zoe => {
     },
     rejectIfNotProposal: (inviteHandle, expected) => {
       const { proposal: actual } = zoe.getOffer(inviteHandle);
-      rejectIf(inviteHandle, actual.give, expected.give);
-      rejectIf(inviteHandle, actual.want, expected.want);
-      rejectIf(inviteHandle, actual.exit, expected.exit);
+      rejectKeysIf(inviteHandle, actual.give, expected.give);
+      rejectKeysIf(inviteHandle, actual.want, expected.want);
+      rejectKeysIf(inviteHandle, actual.exit, expected.exit);
     },
     checkIfProposal: (inviteHandle, expected) => {
       const { proposal: actual } = zoe.getOffer(inviteHandle);
       return (
         // Check that the "give" keys match expected keys.
-        check(actual.give, expected.give) &&
+        checkKeys(actual.give, expected.give) &&
         // Check that the "want" keys match expected keys.
-        check(actual.want, expected.want) &&
+        checkKeys(actual.want, expected.want) &&
         // Check that the "exit" key (i.e. "onDemand") matches the expected key.
-        check(actual.exit, expected.exit)
+        checkKeys(actual.exit, expected.exit)
       );
     },
     getActiveOffers: handles =>
