@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 import produceIssuer from '@agoric/ertp';
-import { makeZoeHelpers } from './helpers/zoeHelpers';
+import { makeZoeHelpers } from '../contractSupport';
 
 /*
   Roles in the arrangement:
