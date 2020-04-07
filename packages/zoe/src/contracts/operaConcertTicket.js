@@ -123,7 +123,12 @@ export const makeContract = harden(zoe => {
                 expectedAmountPerTicket.extent * wantedTicketsCount;
 
               try {
-                if (currentBuyerAllocation.Money.extent < wantedMoney) {
+                if (
+                  !moneyAmountMath.isGTE(
+                    currentBuyerAllocation.Money,
+                    moneyAmountMath.make(wantedMoney),
+                  )
+                ) {
                   throw new Error(
                     'The offer associated with this seat does not contain enough moolas',
                   );
