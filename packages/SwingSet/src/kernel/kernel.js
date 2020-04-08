@@ -79,10 +79,12 @@ export default function buildKernel(kernelEndowments) {
     return harden({ body: JSON.stringify(s), slots: [] });
   }
 
-  function notifySubscribersAndQueue(kpid, subscribers, queue) {
+  function notifySubscribersAndQueue(kpid, resolvingVatID, subscribers, queue) {
     insistKernelType('promise', kpid);
     for (const vatID of subscribers) {
-      notify(vatID, kpid);
+      if (vatID !== resolvingVatID) {
+        notify(vatID, kpid);
+      }
     }
     // re-deliver msg to the now-settled promise, which will forward or
     // reject depending on the new state of the promise
@@ -163,7 +165,7 @@ export default function buildKernel(kernelEndowments) {
     const p = getResolveablePromise(kpid, vatID);
     const { subscribers, queue } = p;
     kernelKeeper.fulfillKernelPromiseToPresence(kpid, targetSlot);
-    notifySubscribersAndQueue(kpid, subscribers, queue);
+    notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
     // todo: some day it'd be nice to delete the promise table entry now. To
     // do that correctly, we must make sure no vats still hold pointers to
     // it, which means vats must drop their refs when they get notified about
@@ -179,7 +181,7 @@ export default function buildKernel(kernelEndowments) {
     const p = getResolveablePromise(kpid, vatID);
     const { subscribers, queue } = p;
     kernelKeeper.fulfillKernelPromiseToData(kpid, data);
-    notifySubscribersAndQueue(kpid, subscribers, queue);
+    notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
   }
 
   function reject(vatID, kpid, data) {
@@ -189,7 +191,7 @@ export default function buildKernel(kernelEndowments) {
     const p = getResolveablePromise(kpid, vatID);
     const { subscribers, queue } = p;
     kernelKeeper.rejectKernelPromise(kpid, data);
-    notifySubscribersAndQueue(kpid, subscribers, queue);
+    notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
   }
 
   const syscallManager = {
@@ -297,7 +299,7 @@ export default function buildKernel(kernelEndowments) {
     const p = getKernelResolveablePromise(kpid);
     const { subscribers, queue } = p;
     kernelKeeper.rejectKernelPromise(kpid, errorData);
-    notifySubscribersAndQueue(kpid, subscribers, queue);
+    notifySubscribersAndQueue(kpid, undefined, subscribers, queue);
   }
 
   async function deliverToTarget(target, msg) {
