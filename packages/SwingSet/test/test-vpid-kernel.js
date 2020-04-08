@@ -86,6 +86,10 @@ function buildRawVat(name, kernel) {
 // 6: CT G  NOT
 // 7: CS T  NOT
 
+// (Note, there is overlap between these cases: e.g. the user-level code we
+// run to set up test 1 is also what sets up the other side of test 4. But we
+// test each separately for clarity)
+
 function doResolveSyscall(syscallA, vpid, mode, target2) {
   switch (mode) {
     case 'presence':
@@ -278,6 +282,9 @@ async function doTest123(t, which, mode) {
     t.deepEqual(logA, []);
   }
 
+  // before resolution, A's c-list should have the promise
+  t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
+
   doResolveSyscall(syscallA, p1VatA, mode, rootBvatA);
   await kernel.run();
 
@@ -286,14 +293,16 @@ async function doTest123(t, which, mode) {
 
   // TODO: once kernel->vat resolution notification retires clist entries,
   // switch to the other set of assertions
-  t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
-  t.equal(inCList(kernel, vatB, p1kernel, p1VatB), true);
 
+  // after resolution, (before we implement retirement), A's c-list should
+  // still have the promise
+  t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
+
+  // after resolution, (now that we've implemented retirement), A's c-list
+  // should *not* have the promise
   // t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
   // t.equal(clistKernelToVat(kernel, vatA, p1kernel), undefined);
   // t.equal(clistVatToKernel(kernel, vatA, p1VatA), undefined);
-  // t.equal(clistKernelToVat(kernel, vatB, p1kernel), undefined);
-  // t.equal(clistVatToKernel(kernel, vatB, p1VatB), undefined);
 
   t.end();
 }
@@ -332,4 +341,210 @@ test('kernel vpid handling case3 data', async t => {
 
 test('kernel vpid handling case3 reject', async t => {
   await doTest123(t, 3, 'reject');
+});
+
+async function doTest4567(t, which, mode) {
+  const kernel = buildKernel(makeEndowments());
+  // vatA is our primary actor
+  const { log: logA, getSyscall: getSyscallA } = buildRawVat('vatA', kernel);
+  // we use vatB when necessary to send messages to vatA
+  const { log: logB, getSyscall: getSyscallB } = buildRawVat('vatB', kernel);
+  await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
+  const syscallA = getSyscallA();
+  const syscallB = getSyscallB();
+
+  const vatA = kernel.vatNameToID('vatA');
+  const vatB = kernel.vatNameToID('vatB');
+
+  // A will need a reference to B, to send anything, and vice versa
+  const rootBvatB = 'o+0';
+  const rootBkernel = kernel.addExport(vatB, rootBvatB);
+  const rootBvatA = kernel.addImport(vatA, rootBkernel);
+  const rootAvatA = 'o+0';
+  const rootAkernel = kernel.addExport(vatA, rootAvatA);
+  const rootAvatB = kernel.addImport(vatB, rootAkernel);
+  const exportedP1VatA = 'p+1';
+  const exportedP1VatB = 'p+2';
+  const expectedP1kernel = 'kp40';
+  const importedP1VatB = 'p-60';
+  const importedP1VatA = 'p-60';
+  const slot0arg = { '@qclass': 'slot', index: 0 };
+  let p1kernel;
+  let p1VatA;
+  let p1VatB;
+
+  if (which === 4) {
+    // 4: Alice receives a promise from Bob, which is then resolved
+    // B: alice~.one(p1); resolve_p1(mode) // to alice, 4, or reject
+    p1VatB = exportedP1VatB;
+    p1VatA = importedP1VatA;
+    syscallB.send(rootAvatB, 'one', capargs([slot0arg], [exportedP1VatB]));
+    p1kernel = clistVatToKernel(kernel, vatB, exportedP1VatB);
+    t.equal(p1kernel, expectedP1kernel);
+    await kernel.run();
+
+    t.deepEqual(logA.shift(), {
+      type: 'deliver',
+      targetSlot: rootAvatA,
+      method: 'one',
+      args: capargs([slot0arg], [importedP1VatA]),
+      resultSlot: null,
+    });
+    t.deepEqual(logB, []);
+
+    syscallA.subscribe(importedP1VatA);
+    await kernel.run();
+    t.deepEqual(logA, []);
+  } else if (which === 5) {
+    // 5: Alice sends message to Bob, Bob resolves the result promise
+    // A: bob~.one()
+    // B: function one() { return resolution; }
+    p1VatA = exportedP1VatA;
+    p1VatB = importedP1VatB;
+    syscallA.send(rootBvatA, 'one', capargs([], []), exportedP1VatA);
+    syscallA.subscribe(exportedP1VatA);
+    p1kernel = clistVatToKernel(kernel, vatA, p1VatA);
+    await kernel.run();
+    // expect logB to have deliver(one)
+    t.deepEqual(logB.shift(), {
+      type: 'deliver',
+      targetSlot: rootBvatB,
+      method: 'one',
+      args: capargs([], []),
+      resultSlot: importedP1VatB,
+    });
+    t.deepEqual(logA, []);
+    t.deepEqual(logB, []);
+  } else if (which === 6) {
+    // 6: Alice sends message to Bob, Alice sends the result promise to Bob
+    // as an argument, then Bob resolves the result promise
+    // A: p1=bob~.one(); bob~.two(p1)
+    // B: function one() { return resolution; }
+    p1VatA = exportedP1VatA;
+    p1VatB = importedP1VatB;
+    syscallA.send(rootBvatA, 'one', capargs([], []), exportedP1VatA);
+    syscallA.subscribe(exportedP1VatA);
+    syscallA.send(rootBvatA, 'two', capargs([slot0arg], [exportedP1VatA]));
+    p1kernel = clistVatToKernel(kernel, vatA, p1VatA);
+    await kernel.run();
+    // expect logB to have deliver(one) and deliver(two)
+    t.deepEqual(logB.shift(), {
+      type: 'deliver',
+      targetSlot: rootBvatB,
+      method: 'one',
+      args: capargs([], []),
+      resultSlot: importedP1VatB,
+    });
+    t.deepEqual(logB.shift(), {
+      type: 'deliver',
+      targetSlot: rootBvatB,
+      method: 'two',
+      args: capargs([slot0arg], [importedP1VatB]),
+      resultSlot: null,
+    });
+    t.deepEqual(logA, []);
+    t.deepEqual(logB, []);
+  } else if (which === 7) {
+    // 7: Alice sends a promise to Bob as an argument, then uses the same
+    // promise as a result in a message to Bob, then Bob resolves it
+    // A: bob~.one(p1), bob~.two(result=p1) // not liveslots
+    // B: function two() { return resolution; }
+    p1VatA = exportedP1VatA;
+    p1VatB = importedP1VatB;
+    syscallA.send(rootBvatA, 'one', capargs([slot0arg], [exportedP1VatA]));
+    syscallA.send(rootBvatA, 'two', capargs([], []), exportedP1VatA);
+    syscallA.subscribe(exportedP1VatA);
+    p1kernel = clistVatToKernel(kernel, vatA, p1VatA);
+    await kernel.run();
+    // expect logB to have deliver(one) and deliver(two)
+    t.deepEqual(logB.shift(), {
+      type: 'deliver',
+      targetSlot: rootBvatB,
+      method: 'one',
+      args: capargs([slot0arg], [importedP1VatB]),
+      resultSlot: null,
+    });
+    t.deepEqual(logB.shift(), {
+      type: 'deliver',
+      targetSlot: rootBvatB,
+      method: 'two',
+      args: capargs([], []),
+      resultSlot: importedP1VatB,
+    });
+    t.deepEqual(logA, []);
+    t.deepEqual(logB, []);
+  }
+
+  // before resolution, A's c-list should have the promise
+  t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
+
+  // now bob resolves it
+  doResolveSyscall(syscallB, p1VatB, mode, rootAvatB);
+  await kernel.run();
+
+  t.deepEqual(logA.shift(), resolutionOf(p1VatA, mode, rootAvatA));
+  t.deepEqual(logA, []);
+
+  // TODO: once kernel->vat resolution notification retires clist entries,
+  // switch to the other set of assertions
+
+  // after resolution, (before we implement retirement), A's c-list should
+  // still have the promise
+  t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
+
+  // after resolution, (now that we've implemented retirement), A's c-list
+  // should *not* have the promise
+  // t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
+  // t.equal(clistKernelToVat(kernel, vatA, p1kernel), undefined);
+  // t.equal(clistVatToKernel(kernel, vatA, p1VatA), undefined);
+
+  t.end();
+}
+
+test('kernel vpid handling case4 presence', async t => {
+  await doTest4567(t, 4, 'presence');
+});
+
+test('kernel vpid handling case4 data', async t => {
+  await doTest4567(t, 4, 'data');
+});
+
+test('kernel vpid handling case4 reject', async t => {
+  await doTest4567(t, 4, 'reject');
+});
+
+test('kernel vpid handling case5 presence', async t => {
+  await doTest4567(t, 5, 'presence');
+});
+
+test('kernel vpid handling case5 data', async t => {
+  await doTest4567(t, 5, 'data');
+});
+
+test('kernel vpid handling case5 reject', async t => {
+  await doTest4567(t, 5, 'reject');
+});
+
+test('kernel vpid handling case6 presence', async t => {
+  await doTest4567(t, 6, 'presence');
+});
+
+test('kernel vpid handling case6 data', async t => {
+  await doTest4567(t, 6, 'data');
+});
+
+test('kernel vpid handling case6 reject', async t => {
+  await doTest4567(t, 6, 'reject');
+});
+
+test('kernel vpid handling case7 presence', async t => {
+  await doTest4567(t, 7, 'presence');
+});
+
+test('kernel vpid handling case7 data', async t => {
+  await doTest4567(t, 7, 'data');
+});
+
+test('kernel vpid handling case7 reject', async t => {
+  await doTest4567(t, 7, 'reject');
 });
