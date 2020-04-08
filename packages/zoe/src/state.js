@@ -25,12 +25,12 @@ const makeInstanceTable = () => {
 };
 
 // Offer Table
-// Columns: handle | instanceHandle | proposal | amounts
+// Columns: handle | instanceHandle | proposal | currentAllocation
 const makeOfferTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateProperties = makeValidateProperties(
-    harden(['instanceHandle', 'proposal', 'amounts']),
+    harden(['instanceHandle', 'proposal', 'currentAllocation']),
   );
   const validateSomewhat = obj => {
     validateProperties(obj);
@@ -62,7 +62,9 @@ const makeOfferTable = () => {
         offerHandles.map(offerHandle => table.delete(offerHandle)),
       updateAmounts: (offerHandles, newAmountKeywordRecords) =>
         offerHandles.map((offerHandle, i) =>
-          table.update(offerHandle, { amounts: newAmountKeywordRecords[i] }),
+          table.update(offerHandle, {
+            currentAllocation: newAmountKeywordRecords[i],
+          }),
         ),
     });
     return customMethods;
