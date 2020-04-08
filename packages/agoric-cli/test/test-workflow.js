@@ -6,6 +6,7 @@ import { request } from 'http';
 
 import { spawn } from 'child_process';
 
+// To keep in sync with https://agoric.com/documentation/getting-started/
 test('workflow', async t => {
   try {
     // FIXME: Do a search for an unused port.
@@ -22,6 +23,7 @@ test('workflow', async t => {
       return pr;
     };
 
+    // Kill an entire process group.
     const pkill = (cp, signal = 'SIGINT') => process.kill(-cp.pid, signal);
 
     // Run all main programs with the '--sdk' flag if we are in agoric-sdk.
@@ -41,6 +43,7 @@ test('workflow', async t => {
       unsafeCleanup: true,
       prefix: 'agoric-cli-test-',
     });
+
     const finalizers = [];
     const runFinalizers = sig => {
       while (finalizers.length) {
@@ -52,39 +55,32 @@ test('workflow', async t => {
         }
       }
       if (sig) {
+        // We're dying due to signal.
         process.exit(1);
       }
     };
+
     try {
       process.on('SIGINT', runFinalizers);
       process.chdir(name);
 
       // ==============
       // agoric init dapp-foo
-      t.equals(
-        await myMain([
-          'init',
-          'dapp-foo',
-//          `--dapp-template=${SIMPLEST_TEMPLATE}`,
-        ]),
-        0,
-        'init dapp-foo works',
-      );
+      t.equals(await myMain(['init', 'dapp-foo']), 0, 'init dapp-foo works');
       process.chdir('dapp-foo');
+
+      // ==============
+      // agoric install
       t.equals(await myMain(['install']), 0, 'install works');
 
-      t.equals(
-        await myMain(['start', '--no-restart']),
-        0,
-        'initial start works',
-      );
-
+      // ==============
+      // agoric start --reset
       const startResult = producePromise();
 
       // TODO: Allow this to work even if the port is already used.
       // Prevent the connections from interfering with the test.
       // fs.writeFileSync('_agstate/agoric-servers/dev/connections.json', '[]\n');
-      const startP = myMain(['start']);
+      const startP = myMain(['start', '--reset']);
       finalizers.push(() => pkill(startP.cp, 'SIGINT'));
 
       let stdoutStr = '';
