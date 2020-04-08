@@ -1,0 +1,33 @@
+name: Integration tests
+
+on:
+ push:
+   branches: [master]
+ pull_request:
+
+jobs:
+  # This job is meant to emulate what developers working with the Agoric platform will experience
+  # It should be kept in sync with https://agoric.com/documentation/getting-started/
+  getting-started:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+# Prerequisites
+
+    # FIXME: Reenable after 2020-04-01 when Github cache doesn't take forever.
+    #- name: cache Go modules
+    #  uses: actions/cache@v1
+    #  with:
+    #    path: ~/go/pkg/mod
+    #    key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
+    #    restore-keys: |
+    #      ${{ runner.os }}-go-
+
+    # 'yarn install' must be done at the top level, to build all the
+    # cross-package symlinks
+    - run: yarn install
+    - run: yarn build
+    - run: yarn link-cli ~/bin/agoric
+
+    - run: PATH="$PATH:$HOME/bin" node -r esm packages/agoric-cli/integration-tests/test-workflow.js

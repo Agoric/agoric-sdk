@@ -32,7 +32,7 @@ test('workflow', async t => {
       : [];
     const myMain = args => {
       // console.error('running agoric-cli', ...extraArgs, ...args);
-      return pspawn(`${__dirname}/../bin/agoric`, [...extraArgs, ...args], {
+      return pspawn(`agoric`, [...extraArgs, ...args], {
         stdio: ['ignore', 'pipe', 'inherit'],
         detached: true,
       });
@@ -78,8 +78,6 @@ test('workflow', async t => {
       const startResult = producePromise();
 
       // TODO: Allow this to work even if the port is already used.
-      // Prevent the connections from interfering with the test.
-      // fs.writeFileSync('_agstate/agoric-servers/dev/connections.json', '[]\n');
       const startP = myMain(['start', '--reset']);
       finalizers.push(() => pkill(startP.cp, 'SIGINT'));
 
