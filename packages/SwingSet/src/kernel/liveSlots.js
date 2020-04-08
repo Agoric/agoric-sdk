@@ -185,8 +185,11 @@ function build(syscall, _state, makeRoot, forVatID) {
 
   function importPromise(vpid) {
     insistVatType('promise', vpid);
+    assert(
+      !parseVatSlot(vpid).allocatedByVat,
+      details`kernel is being presumptuous: vat got unrecognized vatSlot ${vpid}`,
+    );
     const pr = makeQueued(vpid);
-
     importedPromisesByPromiseID.set(vpid, pr);
     const { p } = pr;
     // ideally we'd wait until .then is called on p before subscribing, but
