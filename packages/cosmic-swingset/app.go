@@ -317,6 +317,11 @@ func (app *agoricApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) ab
 		panic(err)
 	}
 
+	// Set Historical infos in InitChain to ignore genesis params
+	stakingParams := staking.DefaultParams()
+	stakingParams.HistoricalEntries = 1000
+	app.stakingKeeper.SetParams(ctx, stakingParams)
+
 	return app.mm.InitGenesis(ctx, app.cdc, genesisState)
 }
 
