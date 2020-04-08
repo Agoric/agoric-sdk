@@ -1,12 +1,10 @@
 import { test } from 'tape-promise/tape';
 import fs from 'fs';
 import tmp from 'tmp';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 import { request } from 'http';
 
 import { spawn } from 'child_process';
-
-// const SIMPLEST_TEMPLATE = 'dapp-encouragement';
 
 test('workflow', async t => {
   try {
@@ -81,7 +79,7 @@ test('workflow', async t => {
         'initial start works',
       );
 
-      const startResult = makePromise();
+      const startResult = producePromise();
 
       // TODO: Allow this to work even if the port is already used.
       // Prevent the connections from interfering with the test.
@@ -110,7 +108,7 @@ test('workflow', async t => {
 
       // ==============
       // agoric deploy ./contract/deploy.js ./api/deploy.js
-      const deployResult = makePromise();
+      const deployResult = producePromise();
       const deployP = myMain([
         'deploy',
         `--hostport=127.0.0.1:${PORT}`,
@@ -136,12 +134,13 @@ test('workflow', async t => {
       // ==============
       // cd ui && yarn start
       const uiStartP = pspawn(`yarn`, ['start'], {
-        stdio: ['ignore', 'pipe', 'inherit'],
+        stdio: ['ignore', 'inherit', 'inherit'],
         cwd: 'ui',
+        env: { ...process.env, PORT: '3000' },
         detached: true,
       });
       finalizers.push(() => pkill(uiStartP.cp, 'SIGINT'));
-      const uiListening = makePromise();
+      const uiListening = producePromise();
       let retries = 0;
       const ival = setInterval(() => {
         try {
@@ -173,7 +172,7 @@ test('workflow', async t => {
       t.equals(
         await Promise.race([uiStartP, uiListening.promise]),
         'listening',
-        `cd ui && yarn start`,
+        `cd ui && yarn start succeeded`,
       );
       clearInterval(ival);
     } finally {
