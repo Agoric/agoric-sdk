@@ -467,14 +467,6 @@ function build(syscall, _state, makeRoot, forVatID) {
     };
   }
 
-  function retirePromiseID(promiseID) {
-    lsdebug(`Retiring ${forVatID}:${promiseID}`);
-    importedPromisesByPromiseID.delete(promiseID);
-    const p = slotToVal.get(promiseID);
-    valToSlot.delete(p);
-    slotToVal.delete(promiseID);
-  }
-
   function notifyFulfillToData(promiseID, data) {
     insistCapData(data);
     lsdebug(
