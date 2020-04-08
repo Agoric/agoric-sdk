@@ -73,8 +73,9 @@ function hush(p) {
 // either create the promise or receive it as an argument. We use the
 // following sequences to try and cover lots of cases:
 //
-// 1: C      S RES S
-// 2: R G  S M RES S M
+// 0: C        RES S S // TODO
+// 1: C    S   RES S
+// 2: R G  S M RES S M: p1=bob~.one(); bob~.two(p1)
 // 3: G R  S M RES S M (liveslots can respond to this, but could not produce it)
 
 // Then we look at cases where the kernel resolves the promise (NOT), after
@@ -85,9 +86,12 @@ function hush(p) {
 // created the promise and sent it as an argument. We use the following
 // sequences:
 //
-// 4: G      M S NOT M S: p1~.foo(p1)
-// 5: C T    M S NOT M S: p1=remote~.get(); p1~.foo(p1)
-// 6: C T G  M S NOT M S: (liveslots can respond to theis but not produce it)
+// 4: G     S M NOT S M: bar~.foo(p1); p1~.foo()
+// 5: CT    S M NOT S M: p1=remote~.get(); bar~.foo(p1); p1~.foo()
+// 6: CT G  S M NOT S M: (liveslots can respond to this but not produce it)
+// HOWEVER: we cannot actually do 5 or 6 because of the way HandledPromises
+// protect against reentrant handlers. For details see
+// https://github.com/Agoric/agoric-sdk/issues/886
 
 // In addition, we want to exercise the promises being resolved in three
 // different ways:
@@ -372,3 +376,130 @@ test('liveslots vpid handling case3 data', async t => {
 test('liveslots vpid handling case3 reject', async t => {
   await doVatResolveCase23(t, 3, 'reject');
 });
+
+async function doVatResolveCase4(t, mode) {
+  const { log, syscall } = buildSyscall();
+
+  function build(E) {
+    let p1;
+    return harden({
+      async get(p) {
+        p1 = p;
+      },
+      async first(target1) {
+        const p2 = E(target1).one(p1);
+        hush(p2);
+        const p3 = E(p1).two();
+        hush(p3);
+      },
+      async second(target1) {
+        const p4 = E(target1).three(p1);
+        hush(p4);
+        const p5 = E(p1).four();
+        hush(p5);
+      },
+    });
+  }
+  const dispatch = makeLiveSlots(syscall, {}, build, 'vatA');
+  t.deepEqual(log, []);
+
+  const slot0arg = { '@qclass': 'slot', index: 0 };
+  const rootA = 'o+0';
+  const target1 = 'o-1';
+  const p1 = 'p-8';
+  let nextPnum = 5;
+  function nextP() {
+    const p = `p+${nextPnum}`;
+    nextPnum += 1;
+    return p;
+  }
+  const target2 = 'o-2';
+
+  dispatch.deliver(rootA, 'get', capargs([slot0arg], [p1]));
+  await endOfCrank();
+  t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
+  t.deepEqual(log, []);
+
+  dispatch.deliver(rootA, 'first', capargs([slot0arg], [target1]));
+  await endOfCrank();
+
+  const expectedP2 = nextP();
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: target1,
+    method: 'one',
+    args: capargs([slot0arg], [p1]),
+    resultSlot: expectedP2,
+  });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP2 });
+
+  const expectedP3 = nextP();
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: p1,
+    method: 'two',
+    args: capargs([], []),
+    resultSlot: expectedP3,
+  });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP3 });
+  t.deepEqual(log, []);
+
+  if (mode === 'presence') {
+    dispatch.notifyFulfillToPresence(p1, target2);
+  } else if (mode === 'data') {
+    dispatch.notifyFulfillToData(p1, capargs(4, []));
+  } else if (mode === 'reject') {
+    dispatch.notifyReject(p1, capargs('error', []));
+  } else {
+    throw Error(`unknown mode ${mode}`);
+  }
+  await endOfCrank();
+  t.deepEqual(log, []);
+
+  dispatch.deliver(rootA, 'second', capargs([slot0arg], [target1]));
+  await endOfCrank();
+
+  const expectedP4 = nextP();
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: target1,
+    method: 'three',
+    args: capargs([slot0arg], [p1]),
+    resultSlot: expectedP4,
+  });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP4 });
+
+  if (mode === 'presence') {
+    // this message seems to get sent to target2 even though #823 isn't fixed
+    // yet, I don't know why
+    const expectedP5 = nextP();
+    t.deepEqual(log.shift(), {
+      type: 'send',
+      targetSlot: target2, // this depends on #823 being fixed
+      method: 'four',
+      args: capargs([], []),
+      resultSlot: expectedP5,
+    });
+    t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP5 });
+  }
+  // if p1 rejects or resolves to data, the kernel never hears about four()
+  t.deepEqual(log, []);
+
+  t.end();
+}
+
+test('liveslots vpid handling case4 presence', async t => {
+  await doVatResolveCase4(t, 'presence');
+});
+
+test('liveslots vpid handling case4 data', async t => {
+  await doVatResolveCase4(t, 'data');
+});
+
+// broken due to #823, the four() method is pipelined to p1, when it should
+// be delivered and rejected within the vat
+test.skip('liveslots vpid handling case4 reject', async t => {
+  await doVatResolveCase4(t, 'reject');
+});
+
+// cases 5 and 6 are not implemented due to #886
