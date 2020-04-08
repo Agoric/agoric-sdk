@@ -9,6 +9,7 @@ import { sameStructure } from '@agoric/same-structure';
 import buildManualTimer from '../../../tools/manualTimer';
 import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints2';
+import { setupNonFungible } from '../setupNonFungibleMints';
 
 const coveredCallRoot = `${__dirname}/../../../src/contracts/coveredCall`;
 const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
@@ -822,4 +823,153 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   }
+});
+
+// Alice uses a covered call to sell a cryptoCat to Bob for the
+// 'Glorious shield' she has wanted for a long time.
+test('zoe - coveredCall', async t => {
+  t.plan(13);
+  const {
+    ccIssuer,
+    rpgIssuer,
+    ccMint,
+    rpgMint,
+    cryptoCats,
+    rpgItems,
+    amountMaths,
+  } = setupNonFungible();
+
+  const zoe = makeZoe({ require });
+  // install the contract.
+  const { source, moduleFormat } = await bundleSource(coveredCallRoot);
+  const coveredCallInstallationHandle = zoe.install(source, moduleFormat);
+  const timer = buildManualTimer(console.log);
+
+  // Setup Alice
+  const growlTiger = harden(['GrowlTiger']);
+  const growlTigerAmount = cryptoCats(growlTiger);
+  const aliceCcPayment = ccMint.mintPayment(growlTigerAmount);
+  const aliceCcPurse = ccIssuer.makeEmptyPurse();
+  const aliceRpgPurse = rpgIssuer.makeEmptyPurse();
+
+  // Setup Bob
+  const aGloriousShield = harden(['Glorious Shield']);
+  const aGloriousShieldAmount = rpgItems(aGloriousShield);
+  const bobRpgPayment = rpgMint.mintPayment(aGloriousShieldAmount);
+  const bobCcPurse = ccIssuer.makeEmptyPurse();
+  const bobRpgPurse = rpgIssuer.makeEmptyPurse();
+
+  // Alice creates a coveredCall instance
+  const issuerKeywordRecord = harden({
+    UnderlyingAsset: ccIssuer,
+    StrikePrice: rpgIssuer,
+  });
+  // separate issuerKeywordRecord from contract-specific terms
+  const aliceInvite = await zoe.makeInstance(
+    coveredCallInstallationHandle,
+    issuerKeywordRecord,
+  );
+
+  // Alice escrows with Zoe
+  const aliceProposal = harden({
+    give: { UnderlyingAsset: growlTigerAmount },
+    want: { StrikePrice: aGloriousShieldAmount },
+    exit: { afterDeadline: { deadline: 1, timer } },
+  });
+  const alicePayments = { UnderlyingAsset: aliceCcPayment };
+  const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
+    aliceInvite,
+    aliceProposal,
+    alicePayments,
+  );
+
+  // Alice creates a call option
+  const option = aliceSeat.makeCallOption();
+
+  // Imagine that Alice sends the option to Bob for free (not done here
+  // since this test doesn't actually have separate vats/parties)
+
+  // Bob inspects the option (an invite payment) and checks that it is the
+  // contract instance that he expects as well as that Alice has
+  // already escrowed.
+
+  const inviteIssuer = zoe.getInviteIssuer();
+  const bobExclOption = await inviteIssuer.claim(option);
+  const {
+    extent: [optionExtent],
+  } = await inviteIssuer.getAmountOf(bobExclOption);
+  const { installationHandle } = zoe.getInstance(optionExtent.instanceHandle);
+  t.equal(installationHandle, coveredCallInstallationHandle);
+  t.equal(optionExtent.seatDesc, 'exerciseOption');
+  t.ok(
+    amountMaths
+      .get('cc')
+      .isEqual(optionExtent.underlyingAsset, growlTigerAmount),
+  );
+  t.ok(
+    amountMaths
+      .get('rpg')
+      .isEqual(optionExtent.strikePrice, aGloriousShieldAmount),
+  );
+  t.equal(optionExtent.expirationDate, 1);
+  t.deepEqual(optionExtent.timerAuthority, timer);
+
+  const bobPayments = { StrikePrice: bobRpgPayment };
+
+  const bobProposal = harden({
+    want: { UnderlyingAsset: optionExtent.underlyingAsset },
+    give: { StrikePrice: optionExtent.strikePrice },
+    exit: { onDemand: null },
+  });
+
+  // Bob redeems his invite and escrows with Zoe
+  const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+    bobExclOption,
+    bobProposal,
+    bobPayments,
+  );
+
+  // Bob exercises the option
+  const bobOutcome = await bobSeat.exercise();
+
+  t.equals(
+    bobOutcome,
+    'The offer has been accepted. Once the contract has been completed, please check your payout',
+  );
+
+  const bobPayout = await bobPayoutP;
+  const alicePayout = await alicePayoutP;
+
+  const bobCcPayout = await bobPayout.UnderlyingAsset;
+  const bobRpgPayout = await bobPayout.StrikePrice;
+  const aliceCcPayout = await alicePayout.UnderlyingAsset;
+  const aliceRpgPayout = await alicePayout.StrikePrice;
+
+  // Alice gets what Alice wanted
+  t.deepEquals(
+    await rpgIssuer.getAmountOf(aliceRpgPayout),
+    aliceProposal.want.StrikePrice,
+  );
+
+  // Alice didn't get any of what Alice put in
+  t.deepEquals(
+    await ccIssuer.getAmountOf(aliceCcPayout),
+    cryptoCats(harden([])),
+  );
+
+  // Alice deposits her payout to ensure she can
+  await aliceCcPurse.deposit(aliceCcPayout);
+  await aliceRpgPurse.deposit(aliceRpgPayout);
+
+  // Bob deposits his original payments to ensure he can
+  await bobCcPurse.deposit(bobCcPayout);
+  await bobRpgPurse.deposit(bobRpgPayout);
+
+  // Assert that the correct payouts were received.
+  // Alice had growlTiger and no RPG tokens.
+  // Bob had an empty CryptoCat purse and the Glorious Shield.
+  t.deepEquals(aliceCcPurse.getCurrentAmount().extent, []);
+  t.deepEquals(aliceRpgPurse.getCurrentAmount().extent, ['Glorious Shield']);
+  t.deepEquals(bobCcPurse.getCurrentAmount().extent, ['GrowlTiger']);
+  t.deepEquals(bobRpgPurse.getCurrentAmount().extent, []);
 });

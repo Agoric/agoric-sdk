@@ -8,6 +8,7 @@ import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
+import { setupNonFungible } from '../setupNonFungibleMints';
 
 const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
 
@@ -310,4 +311,154 @@ test('simpleExchange showPayoutRules', async t => {
     t.assert(false, e);
     console.log(e);
   }
+});
+
+test('simpleExchange with non-fungible assets', async t => {
+  t.plan(9);
+  const {
+    ccIssuer,
+    rpgIssuer,
+    ccMint,
+    rpgMint,
+    cryptoCats,
+    rpgItems,
+    amountMaths,
+  } = setupNonFungible();
+
+  const zoe = makeZoe({ require });
+  const inviteIssuer = zoe.getInviteIssuer();
+  // Pack the contract.
+  const { source, moduleFormat } = await bundleSource(simpleExchange);
+
+  const installationHandle = zoe.install(source, moduleFormat);
+
+  // Setup Alice
+  const aliceRpgPayment = rpgMint.mintPayment(
+    rpgItems(harden(['Spell of Binding'])),
+  );
+  const aliceRpgPurse = rpgIssuer.makeEmptyPurse();
+  const aliceCcPurse = ccIssuer.makeEmptyPurse();
+
+  // Setup Bob
+  const bobCcPayment = ccMint.mintPayment(cryptoCats(harden(['Cheshire Cat'])));
+  const bobRpgPurse = rpgIssuer.makeEmptyPurse();
+  const bobCcPurse = ccIssuer.makeEmptyPurse();
+
+  // 1: Simon creates a simpleExchange instance and spreads the invite far and
+  // wide with instructions on how to use it.
+  const { invite: simonInvite } = await zoe.makeInstance(installationHandle, {
+    Asset: rpgIssuer,
+    Price: ccIssuer,
+  });
+  const {
+    extent: [{ instanceHandle }],
+  } = await inviteIssuer.getAmountOf(simonInvite);
+  const { publicAPI } = zoe.getInstance(instanceHandle);
+
+  const { invite: aliceInvite } = publicAPI.makeInvite();
+
+  // 2: Alice escrows with zoe to create a sell order. She wants to
+  // sell a Spell of Binding and wants to receive payment in CryptoCats in
+  // return.
+  const aliceSellOrderProposal = harden({
+    give: { Asset: rpgItems(harden(['Spell of Binding'])) },
+    want: { Price: cryptoCats(harden([])) },
+    exit: { onDemand: null },
+  });
+  const alicePayments = { Asset: aliceRpgPayment };
+  const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
+    aliceInvite,
+    aliceSellOrderProposal,
+    alicePayments,
+  );
+
+  // 4: Alice adds her sell order to the exchange
+  const aliceOfferResult = await aliceSeat.addOrder();
+  const { invite: bobInvite } = publicAPI.makeInvite();
+
+  // 5: Bob decides to join.
+  const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
+
+  const {
+    installationHandle: bobInstallationId,
+    issuerKeywordRecord: bobIssuers,
+  } = zoe.getInstance(instanceHandle);
+
+  t.equals(bobInstallationId, installationHandle);
+
+  assert(
+    bobIssuers.Asset === rpgIssuer,
+    details`The Asset issuer should be the RPG issuer`,
+  );
+  assert(
+    bobIssuers.Price === ccIssuer,
+    details`The Price issuer should be the CryptoCat issuer`,
+  );
+
+  // Bob creates a buy order, saying that he wants the Spell of Binding,
+  // and is willing to pay a Cheshire Cat.
+  const bobBuyOrderProposal = harden({
+    give: { Price: cryptoCats(harden(['Cheshire Cat'])) },
+    want: { Asset: rpgItems(harden(['Spell of Binding'])) },
+    exit: { onDemand: null },
+  });
+  const bobPayments = { Price: bobCcPayment };
+
+  // 6: Bob escrows with zoe
+  const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+    bobExclusiveInvite,
+    bobBuyOrderProposal,
+    bobPayments,
+  );
+
+  // 8: Bob submits the buy order to the exchange
+  const bobOfferResult = await bobSeat.addOrder();
+
+  t.equals(
+    bobOfferResult,
+    'The offer has been accepted. Once the contract has been completed, please check your payout',
+  );
+  t.equals(
+    aliceOfferResult,
+    'The offer has been accepted. Once the contract has been completed, please check your payout',
+  );
+  const bobPayout = await bobPayoutP;
+  const alicePayout = await alicePayoutP;
+
+  const bobRpgPayout = await bobPayout.Asset;
+  const bobCcPayout = await bobPayout.Price;
+  const aliceRpgPayout = await alicePayout.Asset;
+  const aliceCcPayout = await alicePayout.Price;
+
+  // Alice gets paid at least what she wanted
+  t.ok(
+    amountMaths
+      .get('cc')
+      .isGTE(
+        await ccIssuer.getAmountOf(aliceCcPayout),
+        aliceSellOrderProposal.want.Price,
+      ),
+  );
+
+  // Alice sold the Spell
+  t.deepEquals(
+    await rpgIssuer.getAmountOf(aliceRpgPayout),
+    rpgItems(harden([])),
+  );
+
+  // 13: Alice deposits her payout to ensure she can
+  await aliceRpgPurse.deposit(aliceRpgPayout);
+  await aliceCcPurse.deposit(aliceCcPayout);
+
+  // 14: Bob deposits his original payments to ensure he can
+  await bobRpgPurse.deposit(bobRpgPayout);
+  await bobCcPurse.deposit(bobCcPayout);
+
+  // Assert that the correct payout were received.
+  // Alice had 3 moola and 0 simoleans.
+  // Bob had 0 moola and 7 simoleans.
+  t.deepEquals(aliceRpgPurse.getCurrentAmount().extent, []);
+  t.deepEquals(aliceCcPurse.getCurrentAmount().extent, ['Cheshire Cat']);
+  t.deepEquals(bobRpgPurse.getCurrentAmount().extent, ['Spell of Binding']);
+  t.deepEquals(bobCcPurse.getCurrentAmount().extent, []);
 });

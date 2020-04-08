@@ -9,6 +9,7 @@ import { makeZoe } from '../../../src/zoe';
 // TODO: Remove setupBasicMints and rename setupBasicMints2
 import { setup } from '../setupBasicMints2';
 import { makeGetInstanceHandle } from '../../../src/clientSupport';
+import { setupNonFungible } from '../setupNonFungibleMints';
 
 const automaticRefundRoot = `${__dirname}/../../../src/contracts/automaticRefund`;
 
@@ -437,4 +438,47 @@ test('zoe - alice cancels after completion', async t => {
     t.assert(false, e);
     console.log(e);
   }
+});
+
+test('zoe - automaticRefund non-fungible', async t => {
+  t.plan(1);
+  // Setup zoe and mints
+  const { ccIssuer, ccMint, cryptoCats } = setupNonFungible();
+
+  const zoe = makeZoe({ require });
+  // Pack the contract.
+  const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
+  const installationHandle = zoe.install(source, moduleFormat);
+
+  // Setup Alice
+  const aliceCcPayment = ccMint.mintPayment(cryptoCats(harden(['tigger'])));
+
+  // 1: Alice creates an automatic refund instance
+  const issuerKeywordRecord = harden({ Contribution: ccIssuer });
+  const invite = await zoe.makeInstance(
+    installationHandle,
+    issuerKeywordRecord,
+  );
+
+  const aliceProposal = harden({
+    give: { Contribution: cryptoCats(harden(['tigger'])) },
+    exit: { onDemand: null },
+  });
+  const alicePayments = { Contribution: aliceCcPayment };
+
+  const { seat, payout: payoutP } = await zoe.redeem(
+    invite,
+    aliceProposal,
+    alicePayments,
+  );
+
+  seat.makeOffer();
+  const alicePayout = await payoutP;
+  const aliceCcPayout = await alicePayout.Contribution;
+
+  // Alice got back what she put in
+  t.deepEquals(
+    await ccIssuer.getAmountOf(aliceCcPayout),
+    aliceProposal.give.Contribution,
+  );
 });
