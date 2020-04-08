@@ -9,7 +9,7 @@ import { spawn } from 'child_process';
 // To keep in sync with https://agoric.com/documentation/getting-started/
 test('workflow', async t => {
   try {
-    // FIXME: Do a search for an unused port.
+    // FIXME: Do a search for an unused port or allow specification.
     const PORT = '7999';
     process.env.PORT = PORT;
 
