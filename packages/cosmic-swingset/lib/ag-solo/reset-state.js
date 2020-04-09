@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 
-import { initSwingStore } from '@agoric/swing-store-simple';
+import { initSwingStore } from '@agoric/swing-store-lmdb';
 
 export default async function resetState(basedir) {
   const mailboxStateFile = path.resolve(

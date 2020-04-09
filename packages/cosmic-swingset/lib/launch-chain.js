@@ -11,7 +11,7 @@ import {
   getTimerWrapperSourcePath,
   getVatTPSourcePath,
 } from '@agoric/swingset-vat';
-import { openSwingStore } from '@agoric/swing-store-simple';
+import { openSwingStore } from '@agoric/swing-store-lmdb';
 
 const log = anylogger('launch-chain');
 

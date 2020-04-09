@@ -10,7 +10,7 @@ import anylogger from 'anylogger';
 // import harden from '@agoric/harden';
 // import djson from 'deterministic-json';
 
-import { openSwingStore } from '@agoric/swing-store-simple';
+import { openSwingStore } from '@agoric/swing-store-lmdb';
 import {
   loadBasedir,
   buildCommand,
