@@ -1,5 +1,6 @@
 import { makeEvaluators } from '@agoric/evaluate';
 import harden from '@agoric/harden';
+import { isPromise } from '@agoric/produce-promise';
 
 // A REPL-specific JSON stringify.
 export function stringify(value, spaces, already = new WeakSet()) {
@@ -13,7 +14,7 @@ export function stringify(value, spaces, already = new WeakSet()) {
   }
 
   // This stringify attempts to show a little bit more of the structure.
-  if (Promise.resolve(value) === value) {
+  if (isPromise(value)) {
     return '[Promise]';
   }
 
@@ -122,7 +123,7 @@ export function getReplHandler(E, homeObjects, send) {
         display[histnum] = `exception: ${e}`;
       }
 
-      if (Promise.resolve(r) === r) {
+      if (isPromise(r)) {
         display[histnum] = `unresolved Promise`;
         r.then(
           res => {

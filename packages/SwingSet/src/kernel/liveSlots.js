@@ -2,6 +2,7 @@ import harden from '@agoric/harden';
 import { E, HandledPromise } from '@agoric/eventual-send';
 import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
 import { assert, details } from '@agoric/assert';
+import { isPromise } from '@agoric/produce-promise';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
 
@@ -165,7 +166,7 @@ function build(syscall, _state, makeRoot, forVatID) {
       let slot;
       // must be a new export
       // lsdebug('must be a new export', JSON.stringify(val));
-      if (HandledPromise.resolve(val) === val) {
+      if (isPromise(val)) {
         slot = exportPromise(val);
       } else {
         mustPassByPresence(val);
