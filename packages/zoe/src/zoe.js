@@ -66,9 +66,9 @@ const makeZoe = (additionalEndowments = {}) => {
     );
     for (const offerRecord of offerRecords) {
       const payout = {};
-      Object.keys(offerRecord.amounts).forEach(keyword => {
+      Object.keys(offerRecord.currentAllocation).forEach(keyword => {
         payout[keyword] = E(pursePKeywordRecord[keyword]).withdraw(
-          offerRecord.amounts[keyword],
+          offerRecord.currentAllocation[keyword],
         );
       });
       harden(payout);
@@ -274,9 +274,9 @@ const makeZoe = (additionalEndowments = {}) => {
           sparseKeywords,
         );
         assertSubset(allKeywords, sparseKeywords);
-        const { amounts } = offerTable.get(offerHandle);
+        const { currentAllocation } = offerTable.get(offerHandle);
         return filterFillAmounts(
-          amounts,
+          currentAllocation,
           sparseKeywords,
           amountMathKeywordRecord,
         );
@@ -449,7 +449,7 @@ const makeZoe = (additionalEndowments = {}) => {
           const offerImmutableRecord = {
             instanceHandle,
             proposal,
-            amounts: arrayToObj(amountsArray, userKeywords),
+            currentAllocation: arrayToObj(amountsArray, userKeywords),
           };
           // Since we have redeemed an invite, the inviteHandle is
           // also the offerHandle.
