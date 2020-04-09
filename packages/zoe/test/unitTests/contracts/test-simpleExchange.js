@@ -323,6 +323,7 @@ test('simpleExchange with non-fungible assets', async t => {
     cryptoCats,
     rpgItems,
     amountMaths,
+    createRpgItem,
   } = setupNonFungible();
 
   const zoe = makeZoe({ require });
@@ -333,9 +334,8 @@ test('simpleExchange with non-fungible assets', async t => {
   const installationHandle = zoe.install(source, moduleFormat);
 
   // Setup Alice
-  const aliceRpgPayment = rpgMint.mintPayment(
-    rpgItems(harden(['Spell of Binding'])),
-  );
+  const spell = createRpgItem('Spell of Binding', 'binding');
+  const aliceRpgPayment = rpgMint.mintPayment(rpgItems(spell));
   const aliceRpgPurse = rpgIssuer.makeEmptyPurse();
   const aliceCcPurse = ccIssuer.makeEmptyPurse();
 
@@ -358,10 +358,9 @@ test('simpleExchange with non-fungible assets', async t => {
   const { invite: aliceInvite } = publicAPI.makeInvite();
 
   // 2: Alice escrows with zoe to create a sell order. She wants to
-  // sell a Spell of Binding and wants to receive payment in CryptoCats in
-  // return.
+  // sell a Spell of Binding and wants to receive CryptoCats in return.
   const aliceSellOrderProposal = harden({
-    give: { Asset: rpgItems(harden(['Spell of Binding'])) },
+    give: { Asset: rpgItems(spell) },
     want: { Price: cryptoCats(harden([])) },
     exit: { onDemand: null },
   });
@@ -399,7 +398,7 @@ test('simpleExchange with non-fungible assets', async t => {
   // and is willing to pay a Cheshire Cat.
   const bobBuyOrderProposal = harden({
     give: { Price: cryptoCats(harden(['Cheshire Cat'])) },
-    want: { Asset: rpgItems(harden(['Spell of Binding'])) },
+    want: { Asset: rpgItems(spell) },
     exit: { onDemand: null },
   });
   const bobPayments = { Price: bobCcPayment };
@@ -455,10 +454,10 @@ test('simpleExchange with non-fungible assets', async t => {
   await bobCcPurse.deposit(bobCcPayout);
 
   // Assert that the correct payout were received.
-  // Alice had 3 moola and 0 simoleans.
-  // Bob had 0 moola and 7 simoleans.
+  // Alice has an empty RPG purse, and the Cheshire Cat.
+  // Bob has an empty CryptoCat purse, and the Spell of Binding he wanted.
   t.deepEquals(aliceRpgPurse.getCurrentAmount().extent, []);
   t.deepEquals(aliceCcPurse.getCurrentAmount().extent, ['Cheshire Cat']);
-  t.deepEquals(bobRpgPurse.getCurrentAmount().extent, ['Spell of Binding']);
+  t.deepEquals(bobRpgPurse.getCurrentAmount().extent, spell);
   t.deepEquals(bobCcPurse.getCurrentAmount().extent, []);
 });

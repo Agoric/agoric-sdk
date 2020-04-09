@@ -837,6 +837,7 @@ test('zoe - coveredCall', async t => {
     cryptoCats,
     rpgItems,
     amountMaths,
+    createRpgItem,
   } = setupNonFungible();
 
   const zoe = makeZoe({ require });
@@ -853,7 +854,11 @@ test('zoe - coveredCall', async t => {
   const aliceRpgPurse = rpgIssuer.makeEmptyPurse();
 
   // Setup Bob
-  const aGloriousShield = harden(['Glorious Shield']);
+  const aGloriousShield = createRpgItem(
+    'Glorious Shield',
+    25,
+    'a Glorious Shield, burnished to a blinding brightness',
+  );
   const aGloriousShieldAmount = rpgItems(aGloriousShield);
   const bobRpgPayment = rpgMint.mintPayment(aGloriousShieldAmount);
   const bobCcPurse = ccIssuer.makeEmptyPurse();
@@ -969,7 +974,7 @@ test('zoe - coveredCall', async t => {
   // Alice had growlTiger and no RPG tokens.
   // Bob had an empty CryptoCat purse and the Glorious Shield.
   t.deepEquals(aliceCcPurse.getCurrentAmount().extent, []);
-  t.deepEquals(aliceRpgPurse.getCurrentAmount().extent, ['Glorious Shield']);
+  t.deepEquals(aliceRpgPurse.getCurrentAmount().extent, aGloriousShield);
   t.deepEquals(bobCcPurse.getCurrentAmount().extent, ['GrowlTiger']);
   t.deepEquals(bobRpgPurse.getCurrentAmount().extent, []);
 });

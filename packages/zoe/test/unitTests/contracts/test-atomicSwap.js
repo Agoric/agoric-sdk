@@ -146,6 +146,7 @@ test('zoe - non-fungible atomicSwap', async t => {
     rpgMint,
     cryptoCats,
     rpgItems,
+    createRpgItem,
   } = setupNonFungible();
 
   const zoe = makeZoe({ require });
@@ -163,7 +164,8 @@ test('zoe - non-fungible atomicSwap', async t => {
   const aliceRpgPurse = rpgIssuer.makeEmptyPurse();
 
   // Setup Bob
-  const vorpalAmount = rpgItems(harden(['Vorpal Sword']));
+  const vorpalSword = createRpgItem('Vorpal Sword', 38);
+  const vorpalAmount = rpgItems(vorpalSword);
   const bobRpgPayment = rpgMint.mintPayment(vorpalAmount);
   const bobCcPurse = ccIssuer.makeEmptyPurse();
   const bobRpgPurse = rpgIssuer.makeEmptyPurse();
@@ -269,7 +271,7 @@ test('zoe - non-fungible atomicSwap', async t => {
   // Alice had a CryptoCat and no RPG tokens.
   // Bob had an empty CryptoCat purse and a Vorpal Sword.
   t.deepEquals(aliceCcPurse.getCurrentAmount().extent, []);
-  t.deepEquals(aliceRpgPurse.getCurrentAmount().extent, ['Vorpal Sword']);
+  t.deepEquals(aliceRpgPurse.getCurrentAmount().extent, vorpalSword);
   t.deepEquals(bobCcPurse.getCurrentAmount().extent, ['calico #37']);
   t.deepEquals(bobRpgPurse.getCurrentAmount().extent, []);
 });
