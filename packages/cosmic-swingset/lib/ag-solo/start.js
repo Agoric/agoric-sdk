@@ -292,7 +292,7 @@ export default async function start(basedir, withSES, argv) {
           if (broadcastJSON) {
             throw new Error(`duplicate type=http in connections.json`);
           }
-          broadcastJSON = makeHTTPListener(
+          broadcastJSON = await makeHTTPListener(
             basedir,
             c.port,
             c.host,
