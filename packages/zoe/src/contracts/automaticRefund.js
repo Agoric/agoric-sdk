@@ -11,20 +11,20 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  * offer, which gives the user their payout through Zoe. Other
  * contracts will use these same steps, but they will have more
  * sophisticated logic and interfaces.
- * @type {import('@agoric/zoe').MakeContract} zoe - the contract facet of zoe
+ * @type {import('@agoric/zoe').MakeContract} zcf - the contract facet of zoe
  */
-export const makeContract = harden(zoe => {
+export const makeContract = harden(zcf => {
   let offersCount = 0;
   const makeSeatInvite = () => {
     const seat = harden({
       makeOffer: () => {
         offersCount += 1;
         // eslint-disable-next-line no-use-before-define
-        zoe.complete(harden([inviteHandle]));
+        zcf.complete(harden([inviteHandle]));
         return `The offer was accepted`;
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+    const { invite, inviteHandle } = zcf.makeInvite(seat, {
       seatDesc: 'getRefund',
     });
     return invite;

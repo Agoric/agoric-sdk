@@ -19,8 +19,9 @@ import { makeZoeHelpers } from '../contractSupport';
 // extent of the invite:
 // { expirationDate, timerAuthority, underlyingAsset, strikePrice }
 
-export const makeContract = harden(zoe => {
-  const { swap, assertKeywords, rejectIfNotProposal } = makeZoeHelpers(zoe);
+// zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe
+export const makeContract = harden(zcf => {
+  const { swap, assertKeywords, rejectIfNotProposal } = makeZoeHelpers(zcf);
   assertKeywords(harden(['UnderlyingAsset', 'StrikePrice']));
 
   const makeCallOptionInvite = sellerHandle => {
@@ -38,9 +39,9 @@ export const makeContract = harden(zoe => {
 
     const {
       proposal: { want, give, exit },
-    } = zoe.getOffer(sellerHandle);
+    } = zcf.getOffer(sellerHandle);
 
-    const { invite: callOption, inviteHandle } = zoe.makeInvite(seat, {
+    const { invite: callOption, inviteHandle } = zcf.makeInvite(seat, {
       seatDesc: 'exerciseOption',
       expirationDate: exit.afterDeadline.deadline,
       timerAuthority: exit.afterDeadline.timer,
@@ -62,7 +63,7 @@ export const makeContract = harden(zoe => {
         return makeCallOptionInvite(inviteHandle);
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+    const { invite, inviteHandle } = zcf.makeInvite(seat, {
       seatDesc: 'makeCallOption',
     });
     return invite;

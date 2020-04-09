@@ -10,17 +10,18 @@ import {
   closeAuction,
 } from '../contractSupport';
 
-export const makeContract = harden(zoe => {
+// zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe
+export const makeContract = harden(zcf => {
   const {
     rejectOffer,
     canTradeWith,
     assertKeywords,
     rejectIfNotProposal,
-  } = makeZoeHelpers(zoe);
+  } = makeZoeHelpers(zcf);
 
   let {
     terms: { numBidsAllowed },
-  } = zoe.getInstanceRecord();
+  } = zcf.getInstanceRecord();
   numBidsAllowed = Nat(numBidsAllowed !== undefined ? numBidsAllowed : 3);
 
   let sellerInviteHandle;
@@ -34,7 +35,7 @@ export const makeContract = harden(zoe => {
     const seat = harden({
       bid: () => {
         // Check that the item is still up for auction
-        if (!zoe.isOfferActive(sellerInviteHandle)) {
+        if (!zcf.isOfferActive(sellerInviteHandle)) {
           const rejectMsg = `The item up for auction is not available or the auction has completed`;
           throw rejectOffer(inviteHandle, rejectMsg);
         }
@@ -54,7 +55,7 @@ export const makeContract = harden(zoe => {
         // Save valid bid and try to close.
         allBidHandles.push(inviteHandle);
         if (allBidHandles.length >= numBidsAllowed) {
-          closeAuction(zoe, {
+          closeAuction(zcf, {
             auctionLogicFn: secondPriceLogic,
             sellerInviteHandle,
             allBidHandles,
@@ -63,7 +64,7 @@ export const makeContract = harden(zoe => {
         return defaultAcceptanceMsg;
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+    const { invite, inviteHandle } = zcf.makeInvite(seat, {
       seatDesc: 'bid',
       auctionedAssets,
       minimumBid,
@@ -84,13 +85,13 @@ export const makeContract = harden(zoe => {
         rejectIfNotProposal(inviteHandle, expected);
         // Save the valid offer
         sellerInviteHandle = inviteHandle;
-        const { proposal } = zoe.getOffer(inviteHandle);
+        const { proposal } = zcf.getOffer(inviteHandle);
         auctionedAssets = proposal.give.Asset;
         minimumBid = proposal.want.Bid;
         return defaultAcceptanceMsg;
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+    const { invite, inviteHandle } = zcf.makeInvite(seat, {
       seatDesc: 'sellAssets',
     });
     return invite;
