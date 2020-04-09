@@ -7,6 +7,7 @@ import harden from '@agoric/harden';
 
 import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints2';
+import { setupMixed } from '../setupMixedMints';
 import { makeGetInstanceHandle } from '../../../src/clientSupport';
 
 const publicAuctionRoot = `${__dirname}/../../../src/contracts/publicAuction`;
@@ -457,4 +458,324 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     t.assert(false, e);
     console.log(e);
   }
+});
+
+// Three bidders with (fungible) moola bid for a CryptoCat
+test('zoe - secondPriceAuction non-fungible asset', async t => {
+  t.plan(34);
+  const {
+    ccIssuer,
+    moolaIssuer,
+    ccMint,
+    moolaMint,
+    cryptoCats,
+    moola,
+  } = setupMixed();
+  const zoe = makeZoe({ require });
+  const inviteIssuer = zoe.getInviteIssuer();
+  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
+
+  // Setup Alice
+  const aliceCcPayment = ccMint.mintPayment(cryptoCats(harden(['Felix'])));
+  const aliceCcPurse = ccIssuer.makeEmptyPurse();
+  const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
+
+  // Setup Bob
+  const bobMoolaPayment = moolaMint.mintPayment(moola(11));
+  const bobCcPurse = ccIssuer.makeEmptyPurse();
+  const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
+
+  // Setup Carol
+  const carolMoolaPayment = moolaMint.mintPayment(moola(7));
+  const carolCcPurse = ccIssuer.makeEmptyPurse();
+  const carolMoolaPurse = moolaIssuer.makeEmptyPurse();
+
+  // Setup Dave
+  const daveMoolaPayment = moolaMint.mintPayment(moola(5));
+  const daveCcPurse = ccIssuer.makeEmptyPurse();
+  const daveMoolaPurse = moolaIssuer.makeEmptyPurse();
+
+  // Alice creates a secondPriceAuction instance
+
+  // Pack the contract.
+  const { source, moduleFormat } = await bundleSource(publicAuctionRoot);
+
+  const installationHandle = zoe.install(source, moduleFormat);
+  const numBidsAllowed = 3;
+  const issuerKeywordRecord = harden({
+    Asset: ccIssuer,
+    Bid: moolaIssuer,
+  });
+  const terms = harden({ numBidsAllowed });
+  const aliceInvite = await zoe.makeInstance(
+    installationHandle,
+    issuerKeywordRecord,
+    terms,
+  );
+
+  const instanceHandle = await getInstanceHandle(aliceInvite);
+  const { publicAPI } = zoe.getInstance(instanceHandle);
+
+  // Alice escrows with zoe
+  const aliceProposal = harden({
+    give: { Asset: cryptoCats(harden(['Felix'])) },
+    want: { Bid: moola(3) },
+  });
+  const alicePayments = { Asset: aliceCcPayment };
+  const { seat: aliceSeat, payout: alicePayoutP } = await zoe.redeem(
+    aliceInvite,
+    aliceProposal,
+    alicePayments,
+  );
+
+  // Alice initializes the auction
+  const aliceOfferResult = await aliceSeat.sellAssets();
+  const [bobInvite, carolInvite, daveInvite] = await publicAPI.makeInvites(3);
+
+  t.equals(
+    aliceOfferResult,
+    'The offer has been accepted. Once the contract has been completed, please check your payout',
+    'aliceOfferResult',
+  );
+
+  // Alice spreads the invites far and wide and Bob decides he
+  // wants to participate in the auction.
+  const bobExclusiveInvite = await inviteIssuer.claim(bobInvite);
+  const {
+    extent: [bobInviteExtent],
+  } = await inviteIssuer.getAmountOf(bobExclusiveInvite);
+
+  const {
+    installationHandle: bobInstallationId,
+    terms: bobTerms,
+    issuerKeywordRecord: bobIssuers,
+  } = zoe.getInstance(bobInviteExtent.instanceHandle);
+
+  t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
+  t.deepEquals(bobIssuers, { Asset: ccIssuer, Bid: moolaIssuer }, 'bobIssuers');
+  t.equals(bobTerms.numBidsAllowed, 3, 'bobTerms');
+  t.deepEquals(bobInviteExtent.minimumBid, moola(3), 'minimumBid');
+  t.deepEquals(
+    bobInviteExtent.auctionedAssets,
+    cryptoCats(harden(['Felix'])),
+    'assets',
+  );
+
+  const bobProposal = harden({
+    give: { Bid: moola(11) },
+    want: { Asset: cryptoCats(harden(['Felix'])) },
+  });
+  const bobPayments = { Bid: bobMoolaPayment };
+
+  // Bob escrows with zoe
+  const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+    bobExclusiveInvite,
+    bobProposal,
+    bobPayments,
+  );
+
+  // Bob bids
+  const bobOfferResult = await bobSeat.bid();
+
+  t.equals(
+    bobOfferResult,
+    'The offer has been accepted. Once the contract has been completed, please check your payout',
+    'bobOfferResult',
+  );
+
+  // Carol decides to bid for the one cc
+
+  const carolExclusiveInvite = await inviteIssuer.claim(carolInvite);
+  const {
+    extent: [carolInviteExtent],
+  } = await inviteIssuer.getAmountOf(carolExclusiveInvite);
+
+  const {
+    installationHandle: carolInstallationId,
+    terms: carolTerms,
+    issuerKeywordRecord: carolIssuers,
+  } = zoe.getInstance(carolInviteExtent.instanceHandle);
+
+  t.equals(carolInstallationId, installationHandle, 'carolInstallationId');
+  t.deepEquals(
+    carolIssuers,
+    { Asset: ccIssuer, Bid: moolaIssuer },
+    'carolIssuers',
+  );
+  t.equals(carolTerms.numBidsAllowed, 3, 'carolTerms');
+  t.deepEquals(carolInviteExtent.minimumBid, moola(3), 'carolMinimumBid');
+  t.deepEquals(
+    carolInviteExtent.auctionedAssets,
+    cryptoCats(harden(['Felix'])),
+    'carolAuctionedAssets',
+  );
+
+  const carolProposal = harden({
+    give: { Bid: moola(7) },
+    want: { Asset: cryptoCats(harden(['Felix'])) },
+  });
+  const carolPayments = { Bid: carolMoolaPayment };
+
+  // Carol escrows with zoe
+  const { seat: carolSeat, payout: carolPayoutP } = await zoe.redeem(
+    carolExclusiveInvite,
+    carolProposal,
+    carolPayments,
+  );
+
+  // Carol bids
+  const carolOfferResult = await carolSeat.bid();
+
+  t.equals(
+    carolOfferResult,
+    'The offer has been accepted. Once the contract has been completed, please check your payout',
+    'carolOfferResult',
+  );
+
+  // Dave decides to bid for the one moola
+  const daveExclusiveInvite = await inviteIssuer.claim(daveInvite);
+  const {
+    extent: [daveInviteExtent],
+  } = await inviteIssuer.getAmountOf(daveExclusiveInvite);
+
+  const {
+    installationHandle: daveInstallationId,
+    terms: daveTerms,
+    issuerKeywordRecord: daveIssuers,
+  } = zoe.getInstance(daveInviteExtent.instanceHandle);
+
+  t.equals(daveInstallationId, installationHandle, 'daveInstallationHandle');
+  t.deepEquals(
+    daveIssuers,
+    { Asset: ccIssuer, Bid: moolaIssuer },
+    'daveIssuers',
+  );
+  t.equals(daveTerms.numBidsAllowed, 3, 'bobTerms');
+  t.deepEquals(daveInviteExtent.minimumBid, moola(3), 'daveMinimumBid');
+  t.deepEquals(
+    daveInviteExtent.auctionedAssets,
+    cryptoCats(harden(['Felix'])),
+    'daveAssets',
+  );
+
+  const daveProposal = harden({
+    give: { Bid: moola(5) },
+    want: { Asset: cryptoCats(harden(['Felix'])) },
+  });
+  const davePayments = { Bid: daveMoolaPayment };
+
+  // Dave escrows with zoe
+  const { seat: daveSeat, payout: davePayoutP } = await zoe.redeem(
+    daveExclusiveInvite,
+    daveProposal,
+    davePayments,
+  );
+
+  // Dave bids
+  const daveOfferResult = await daveSeat.bid();
+
+  t.equals(
+    daveOfferResult,
+    'The offer has been accepted. Once the contract has been completed, please check your payout',
+    'daveOfferResult',
+  );
+
+  const aliceResult = await alicePayoutP;
+  const bobResult = await bobPayoutP;
+  const carolResult = await carolPayoutP;
+  const daveResult = await davePayoutP;
+
+  const aliceCcPayout = await aliceResult.Asset;
+  const aliceMoolaPayout = await aliceResult.Bid;
+
+  const bobCcPayout = await bobResult.Asset;
+  const bobMoolaPayout = await bobResult.Bid;
+
+  const carolCcPayout = await carolResult.Asset;
+  const carolMoolaPayout = await carolResult.Bid;
+
+  const daveCcPayout = await daveResult.Asset;
+  const daveMoolaPayout = await daveResult.Bid;
+
+  // Alice (the creator of the auction) gets back the second highest bid
+  t.deepEquals(
+    await moolaIssuer.getAmountOf(aliceMoolaPayout),
+    carolProposal.give.Bid,
+    `alice gets carol's bid`,
+  );
+
+  // Alice didn't get any of what she put in
+  t.deepEquals(
+    await ccIssuer.getAmountOf(aliceCcPayout),
+    cryptoCats(harden([])),
+    `alice gets nothing of what she put in`,
+  );
+
+  // Alice deposits her payout to ensure she can
+  await aliceCcPurse.deposit(aliceCcPayout);
+  await aliceMoolaPurse.deposit(aliceMoolaPayout);
+
+  // Bob (the winner of the auction) gets the one moola and the
+  // difference between his bid and the price back
+  t.deepEquals(
+    await ccIssuer.getAmountOf(bobCcPayout),
+    cryptoCats(harden(['Felix'])),
+    `bob is the winner`,
+  );
+  t.deepEquals(
+    await moolaIssuer.getAmountOf(bobMoolaPayout),
+    moola(4),
+    `bob gets difference back`,
+  );
+
+  // Bob deposits his payout to ensure he can
+  await bobCcPurse.deposit(bobCcPayout);
+  await bobMoolaPurse.deposit(bobMoolaPayout);
+
+  // Carol gets a full refund
+  t.deepEquals(
+    await ccIssuer.getAmountOf(carolCcPayout),
+    cryptoCats(harden([])),
+    `carol doesn't win`,
+  );
+  t.deepEquals(
+    await moolaIssuer.getAmountOf(carolMoolaPayout),
+    carolProposal.give.Bid,
+    `carol gets a refund`,
+  );
+
+  // Carol deposits her payout to ensure she can
+  await carolCcPurse.deposit(carolCcPayout);
+  await carolMoolaPurse.deposit(carolMoolaPayout);
+
+  // Dave gets a full refund
+  t.deepEquals(
+    await moolaIssuer.getAmountOf(daveMoolaPayout),
+    daveProposal.give.Bid,
+    `dave gets a refund`,
+  );
+
+  // Dave deposits his payout to ensure he can
+  await daveCcPurse.deposit(daveCcPayout);
+  await daveMoolaPurse.deposit(daveMoolaPayout);
+
+  // Assert that the correct payout were received.
+  // Alice had 1 CryptoCat and an empty CryptoCat purse.
+  // Bob had an empty CryptoCat purse and 11 moola.
+  // Carol had an empty CryptoCat purse and 7 moola.
+  // Dave had an empty CryptoCat purse and 5 moola.
+
+  // Now, they should have:
+  // Alice: an empty CryptoCat purse and 7 moola
+  // Bob: the CryptoCat and 4 moola
+  // Carol: an empty CryptoCat purse and 7 moola
+  // Dave: an empty CryptoCat purse and 5 moola
+  t.deepEquals(aliceCcPurse.getCurrentAmount().extent, []);
+  t.equals(aliceMoolaPurse.getCurrentAmount().extent, 7);
+  t.deepEquals(bobCcPurse.getCurrentAmount().extent, ['Felix']);
+  t.equals(bobMoolaPurse.getCurrentAmount().extent, 4);
+  t.deepEquals(carolCcPurse.getCurrentAmount().extent, []);
+  t.equals(carolMoolaPurse.getCurrentAmount().extent, 7);
+  t.deepEquals(daveCcPurse.getCurrentAmount().extent, []);
+  t.equals(daveMoolaPurse.getCurrentAmount().extent, 5);
 });
