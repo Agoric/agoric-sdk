@@ -151,10 +151,10 @@ async function doVatResolveCase1(t, mode) {
       async run(target1) {
         const p1 = pr.promise;
         E(target1).one(p1);
+        resolvePR(pr, mode);
         // TODO: this stall shouldn't be necessary, but if I omit it, the
         // fulfillToPresence happens *after* two() is sent
         await Promise.resolve();
-        resolvePR(pr, mode);
         E(target1).two(p1);
       },
     });
