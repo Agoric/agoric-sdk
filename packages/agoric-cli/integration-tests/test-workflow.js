@@ -7,6 +7,15 @@ import { request } from 'http';
 import { spawn } from 'child_process';
 
 // To keep in sync with https://agoric.com/documentation/getting-started/
+
+// Note that we currently only test:
+// agoric init dapp-foo
+// agoric install
+// agoric start --reset
+// agoric deploy ./contract/deploy.js ./api/deploy.js
+// (For simple-exchange and autoswap, the above also makes and accepts offers)
+// cd ui && yarn install
+// cd ui && yarn start
 test('workflow', async t => {
   try {
     // FIXME: Do a search for an unused port or allow specification.
