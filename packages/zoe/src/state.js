@@ -6,9 +6,11 @@ import makeAmountMath from '@agoric/ertp/src/amountMath';
 import { makeTable, makeValidateProperties } from './table';
 
 // Installation Table
-// Columns: handle | installation
+// Columns: handle | installation | code
 const makeInstallationTable = () => {
-  const validateSomewhat = makeValidateProperties(harden(['installation']));
+  const validateSomewhat = makeValidateProperties(
+    harden(['installation', 'code']),
+  );
   return makeTable(validateSomewhat);
 };
 

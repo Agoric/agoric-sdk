@@ -321,7 +321,7 @@ const makeZoe = (additionalEndowments = {}) => {
         }
       }
       const installationHandle = installationTable.create(
-        harden({ installation }),
+        harden({ installation, code }),
       );
       return installationHandle;
     },
@@ -500,6 +500,8 @@ const makeZoe = (additionalEndowments = {}) => {
     isOfferActive: offerTable.isOfferActive,
     getOffers: offerTable.getOffers,
     getOffer: offerTable.get,
+    getInstallation: installationHandle =>
+      installationTable.get(installationHandle).code,
   });
   return zoeService;
 };
