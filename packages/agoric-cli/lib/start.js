@@ -82,9 +82,13 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const fakeGCI = 'fake-chain';
     if (!(await exists(agServer))) {
       log(chalk.yellow(`initializing ${profileName}`));
-      await pspawn(agSolo, ['init', profileName, '--egresses=fake'], {
-        cwd: '_agstate/agoric-servers',
-      });
+      await pspawn(
+        agSolo,
+        ['init', profileName, '--egresses=fake', `--webport=${HOST_PORT}`],
+        {
+          cwd: '_agstate/agoric-servers',
+        },
+      );
     }
 
     if (fakeDelay >= 0) {
