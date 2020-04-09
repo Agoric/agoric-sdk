@@ -34,6 +34,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  * @typedef {import('@agoric/ertp/src/amountMath').AmountMath} AmountMath
  * @typedef {import('@agoric/ertp/src/issuer').Payment} Payment
  * @typedef {import('@agoric/ertp/src/issuer').Issuer} Issuer
+ * @typedef {import('@agoric/ertp/src/issuer').Purse} Purse
  *
  * @typedef {any} TODO Needs to be typed
  * @typedef {Object} InstallationHandle
@@ -75,7 +76,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  * Credibly get information about the instance (such as the installation
  * and terms used).
  *
- * @property {(invite: Invite, proposal: Proposal, payments: PaymentKeywordRecord) => SeatAndPayout} redeem
+ * @property {(invite: Invite, proposal: Proposal, payments: PaymentKeywordRecord) => Promise<SeatAndPayout>} redeem
  * To redeem an invite, the user normally provides a proposal (their rules for the
  * offer) as well as payments to be escrowed by Zoe.  If either the proposal or payments
  * would be empty, indicate this by omitting that argument or passing undefined, rather
@@ -88,6 +89,8 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  * as values. `payments` is a record with keywords as keys,
  * and the values are the actual payments to be escrowed. A payment
  * is expected for every rule under `give`.
+ *
+ * @property {(installationHandle: InstallationHandle) => InstallationRecord} getInstallation
  *
  * @typedef {Object} SeatAndPayout This is returned by a call to `redeem` on Zoe.
  *
@@ -142,6 +145,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  * @typedef {TODO} Offer
  * @typedef {TODO} InstanceRecord
  * @typedef {TODO} IssuerRecord
+ * @typedef {TODO} InstallationRecord
  *
  * @typedef {string[]} SparseKeywords
  * @typedef {Object.<string,TODO>} Allocation
@@ -461,6 +465,7 @@ const makeZoe = (additionalEndowments = {}) => {
   // retrieves an instance from Zoe, and `redeem` allows users to
   // securely escrow and get a seat and payouts in return.
 
+  /** @type {ZoeService} */
   const zoeService = harden(
     /**
      * @param {any} code

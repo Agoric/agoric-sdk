@@ -51,7 +51,7 @@ import mathHelpersLib from './mathHelpersLib';
  * @property {(allegedAmount: Amount) => Amount} coerce
  * Make sure this amount is valid and return it if so.
  *
- * @property {(amount: Amount) => Extent} extent
+ * @property {(amount: Amount) => Extent} getExtent
  * Extract and return the extent.
  *
  * @property {() => Amount} getEmpty

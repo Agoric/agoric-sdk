@@ -12,6 +12,7 @@ import makeAmountMath from './amountMath';
  * @typedef {import('./amountMath').Amount} Amount
  * @typedef {import('./amountMath').Extent} Extent
  * @typedef {import('./amountMath').AmountMath} AmountMath
+ * @typedef {Payment|Promise<Payment>} PaymentP
  */
 
 /**
@@ -32,19 +33,19 @@ import makeAmountMath from './amountMath';
  * @property {() => AmountMath} getAmountMath Get the AmountMath for this Issuer.
  * @property {() => string} getMathHelpersName Get the name of the MathHelpers for this Issuer.
  * @property {() => Purse} makeEmptyPurse Make an empty purse of this brand.
- * @property {(payment: Payment) => boolean} isLive
+ * @property {(payment: PaymentP) => Promise<boolean>} isLive
  * Return true if the payment continues to exist.
  *
  * If the payment is a promise, the operation will proceed upon resolution.
  *
- * @property {(payment: Payment) => Amount} getAmountOf
+ * @property {(payment: PaymentP) => Promise<Amount>} getAmountOf
  * Get the amount of digital assets in the payment. Because the
  * payment is not trusted, we cannot call a method on it directly,
  * and must use the issuer instead.
  *
  * If the payment is a promise, the operation will proceed upon resolution.
  *
- * @property {(payment: Payment, optAmount?: Amount) => Amount} burn
+ * @property {(payment: PaymentP, optAmount?: Amount) => Promise<Amount>} burn
  * Burn all of the digital assets in the payment. `optAmount` is optional.
  * If `optAmount` is present, the code will insist that the amount of
  * the digital assets in the payment is equal to `optAmount`, to
@@ -52,7 +53,7 @@ import makeAmountMath from './amountMath';
  *
  * If the payment is a promise, the operation will proceed upon resolution.
  *
- * @property {(payment: Payment, optAmount?: Amount) => Payment} claim
+ * @property {(payment: PaymentP, optAmount?: Amount) => Promise<Payment>} claim
  * Transfer all digital assets from the payment to a new payment and
  * delete the original. `optAmount` is optional.
  * If `optAmount` is present, the code will insist that the amount of
@@ -61,19 +62,19 @@ import makeAmountMath from './amountMath';
  *
  * If the payment is a promise, the operation will proceed upon resolution.
  *
- * @property {(paymentsArray: Payment[]) => Payment} combine
+ * @property {(paymentsArray: PaymentP[]) => Promise<Payment>} combine
  * Combine multiple payments into one payment.
  *
  * If any of the payments is a promise, the operation will proceed upon
  * resolution.
  *
- * @property {(payment: Payment, paymentAmountA: Amount) => Payment[]} split
+ * @property {(payment: PaymentP, paymentAmountA: Amount) => Promise<Payment[]>} split
  * Split a single payment into two payments, A and B, according to the
  * paymentAmountA passed in.
  *
  * If the payment is a promise, the operation will proceed upon resolution.
  *
- * @property {(payment: Payment, amounts: Amount[]) => Payment[]} splitMany
+ * @property {(payment: PaymentP, amounts: Amount[]) => Promise<Payment[]>} splitMany
  * Split a single payment into many payments, according to the
  * amounts passed in.
  *
@@ -136,12 +137,12 @@ import makeAmountMath from './amountMath';
  * digital assets, but they can also be used to represent other kinds of rights, such
  * as the right to participate in a particular contract.
  *
- * @property {() => Issuer} getIssuer Get the Issuer for this Purse
+ * @property {() => Brand} getAllegedBrand Get the alleged Brand for this Purse
  *
  * @property {() => Amount} getCurrentAmount
  * Get the amount contained in this purse, confirmed by the issuer.
  *
- * @property {(payment: Payment, optAmount?: Amount) => Amount}
+ * @property {(payment: PaymentP, optAmount?: Amount) => Amount} deposit
  * Deposit all the contents of payment into this purse, returning the
  * amount. If the optional argument `optAmount` does not equal the
  * amount of digital assets in the payment, throw an error.
