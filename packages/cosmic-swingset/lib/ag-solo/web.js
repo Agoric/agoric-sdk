@@ -1,6 +1,7 @@
 // Start a network service
 import path from 'path';
 import http from 'http';
+import { createConnection } from 'net';
 import express from 'express';
 import WebSocket from 'ws';
 import fs from 'fs';
@@ -22,7 +23,7 @@ const send = (ws, msg) => {
   }
 };
 
-export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
+export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   // Enrich the inbound command with some metadata.
   const inboundCommand = (
     body,
@@ -136,6 +137,30 @@ export function makeHTTPListener(basedir, port, host, rawInboundCommand) {
 
     wss.handleUpgrade(req, socket, head, ws => {
       wss.emit('connection', ws, req);
+    });
+  });
+
+  // Test to see if the listener already exists.
+  await new Promise((resolve, reject) => {
+    const to = setTimeout(
+      () =>
+        reject(
+          Error(`Something is listening (but suspended) on ${host}:${port}`),
+        ),
+      3000,
+    );
+    const existing = createConnection(port, host, _c => {
+      clearTimeout(to);
+      reject(Error(`Something is aready listening on ${host}:${port}`));
+    });
+    existing.on('error', err => {
+      clearTimeout(to);
+      if (err.code === 'ECONNREFUSED') {
+        // Success! host:port is not currently listening.
+        resolve();
+      } else {
+        reject(err);
+      }
     });
   });
 
