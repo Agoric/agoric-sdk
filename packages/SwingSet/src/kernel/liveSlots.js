@@ -75,9 +75,9 @@ function build(syscall, _state, makeRoot, forVatID) {
   function makeQueued(slot) {
     /* eslint-disable no-use-before-define */
     const handler = {
-      applyMethod(_o, prop, args) {
+      applyMethod(_o, prop, args, returnedP) {
         // Support: o~.[prop](...args) remote method invocation
-        return queueMessage(slot, prop, args);
+        return queueMessage(slot, prop, args, returnedP);
       },
     };
     /* eslint-enable no-use-before-define */
@@ -233,7 +233,7 @@ function build(syscall, _state, makeRoot, forVatID) {
 
   const m = makeMarshal(convertValToSlot, convertSlotToVal);
 
-  function queueMessage(targetSlot, prop, args) {
+  function queueMessage(targetSlot, prop, args, returnedP) {
     const serArgs = m.serialize(harden(args));
     const result = allocatePromiseID();
     const done = makeQueued(result);
@@ -248,10 +248,10 @@ function build(syscall, _state, makeRoot, forVatID) {
     lsdebug(`ls[${forVatID}].queueMessage.importedPromiseThen ${result}`);
     importedPromiseThen(result);
 
-    // prepare the serializer to recognize it, if it's used as an argument or
-    // return value
-    valToSlot.set(done.p, result);
-    slotToVal.set(result, done.p);
+    // prepare the serializer to recognize the promise we will return,
+    // if it's used as an argument or return value
+    valToSlot.set(returnedP, result);
+    slotToVal.set(result, returnedP);
 
     return done.p;
   }
