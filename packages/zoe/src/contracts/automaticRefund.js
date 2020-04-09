@@ -1,4 +1,9 @@
-import harden from '@agoric/harden';
+// @ts-check
+import rawHarden from '@agoric/harden';
+
+// TODO: Until we have a version of harden that exports its type.
+const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
+
 /**
  * This is a very trivial contract to explain and test Zoe.
  * AutomaticRefund just gives you back what you put in. It has one
@@ -6,7 +11,7 @@ import harden from '@agoric/harden';
  * offer, which gives the user their payout through Zoe. Other
  * contracts will use these same steps, but they will have more
  * sophisticated logic and interfaces.
- * @param {contractFacet} zoe - the contract facet of zoe
+ * @type {import('@agoric/zoe').MakeContract} zoe - the contract facet of zoe
  */
 export const makeContract = harden(zoe => {
   let offersCount = 0;
