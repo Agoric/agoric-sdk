@@ -87,13 +87,16 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const installationCode = await E(zoe).getInstallation(installationHandle);
       // pick some arbitrary code points as a signature.
       assert(
-        installationCode.indexOf("['Asset', 'Price']") === 58060,
-        details`source code didn't match`,
+        installationCode.includes("['Asset', 'Price']"),
+        details`source code didn't match at "['Asset', 'Price']"`,
       );
       assert(
-        installationCode.indexOf('makeMatchingInvite') === 58091,
-        installationCode.indexOf('makeFirstOfferInvite') === 58498,
-        details`source code didn't match`,
+        installationCode.includes('makeFirstOfferInvite'),
+        details`source code didn't match at "makeFirstOfferInvite"`,
+      );
+      assert(
+        installationCode.includes('makeMatchingInvite'),
+        details`source code didn't match at "makeMatchingInvite"`,
       );
       assert(
         installationHandle === installations.atomicSwap,
