@@ -37,6 +37,7 @@ function gap() {
   p('');
 }
 
+/* eslint-disable no-use-before-define */
 export function main() {
   const argv = process.argv.splice(2);
   let rawMode = false;
@@ -167,7 +168,7 @@ export function main() {
     const end = `${baseKey}~`;
     for (const key of subkeys) {
       if (baseKey <= key && key < end) {
-        yield(key);
+        yield key;
       }
     }
   }
