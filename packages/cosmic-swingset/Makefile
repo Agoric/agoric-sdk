@@ -1,6 +1,6 @@
 REPOSITORY = agoric/cosmic-swingset
 CHAIN_ID = agoric
-INITIAL_TOKENS = 1000agmedallion
+INITIAL_TOKENS = 10000000000000000000000000uag
 
 # By default, make the fake chain in scenario3 produce
 # "blocks" as soon as they come in.
@@ -69,7 +69,7 @@ scenario2-setup-nobuild:
 		bin/ag-solo init t1/$$port --webport=$$port; \
 		case $$port in \
 			$(BASE_PORT)) toks=$(INITIAL_TOKENS),100000000uagstake ;; \
-			*) toks=1agmedallion ;; \
+			*) toks=1000000uag ;; \
 		esac; \
 		$(AGC) add-genesis-account `cat t1/$$port/ag-cosmos-helper-address` $$toks; \
 	done

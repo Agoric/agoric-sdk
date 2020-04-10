@@ -15,11 +15,10 @@ setup(
     packages=["ag_setup_solo"],
     install_requires=[
         "magic-wormhole",
-        "treq",
+        "twisted[tls]",
         ],
     entry_points={
         "console_scripts": [ "ag-setup-solo = ag_setup_solo.main:main" ],
         },
-    version="0.0.1",
+    version="0.1.0",
     )
-

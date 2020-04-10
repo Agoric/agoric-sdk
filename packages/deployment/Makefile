@@ -35,7 +35,14 @@ docker-build-setup-solo:
 	docker build -t $(REPOSITORY)-setup-solo:latest $(SS)setup-solo
 
 docker-push: docker-push-base docker-push-solo docker-push-setup \
-	docker-push-pserver docker-push-setup-solo
+	docker-push-pserver docker-push-setup-solo docker-push-ibc-alpha
+
+# ./docker is an emptyish directory.
+docker-build-ibc-alpha:
+	docker build -t $(REPOSITORY_SDK):ibc-alpha --file=Dockerfile.ibc-alpha ./docker
+
+docker-push-ibc-alpha: docker-build-ibc-alpha
+	docker push $(REPOSITORY_SDK):ibc-alpha
 
 docker-push-setup:
 	docker tag $(REPOSITORY)-setup:latest $(REPOSITORY)-setup:$(TAG)

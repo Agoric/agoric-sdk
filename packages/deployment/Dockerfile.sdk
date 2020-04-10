@@ -11,6 +11,8 @@ COPY --from=cosmic-swingset-go /usr/src/app/lib/ packages/cosmic-swingset/lib/
 COPY --from=cosmic-swingset-go /go/bin/ag-cosmos-helper /usr/local/bin/
 RUN ln -s agoric-sdk/packages/cosmic-swingset ../app
 
+# Install some conveniences.
+RUN apt-get update && apt-get install -y vim jq less && apt-get clean -y
 RUN yarn install
 
 # Need to build the Node.js node extension that uses our above Golang shared library.

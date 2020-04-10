@@ -2,7 +2,6 @@ from twisted.internet.task import react
 from twisted.internet import endpoints, defer
 from twisted.python import usage
 import wormhole
-import treq
 import json
 import os.path
 import shutil

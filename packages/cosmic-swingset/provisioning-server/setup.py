@@ -26,6 +26,6 @@ setup(
         "console_scripts": [ "ag-pserver = ag_pserver.main:main" ],
         },
     include_package_data=True,
-    version="0.0.1",
+    version="0.1.0",
     )
 

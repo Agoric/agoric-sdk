@@ -10,6 +10,7 @@
     - BOOTSTRAP_ADDRESS: "{{ lookup('file', SETUP_HOME + '/ag-pserver/data/node0/boot-address.txt') }}"
     - STAKER: ag-staker
     - STAKER_TOKENS: 10000000000000000000000000uagstake
+    - STAKER_IDENTITY_FLAGS: "--website=https://testnet.agoric.com --identity=https://keybase.io/team/agoric.testnet.validators"
     - STAKER_AMOUNT: 50000000uagstake
     - STAKER_NODE: node0
   roles:
