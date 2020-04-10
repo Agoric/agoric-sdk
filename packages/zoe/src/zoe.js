@@ -323,6 +323,18 @@ const makeZoe = (additionalEndowments = {}) => {
     return harden({ invite: invitePayment, inviteHandle });
   };
 
+  const assertOffersHaveInstanceHandle = (
+    offerHandles,
+    expectedInstanceHandle,
+  ) => {
+    offerHandles.forEach(offerHandle => {
+      assert(
+        offerTable.get(offerHandle).instanceHandle === expectedInstanceHandle,
+        details`contract instances can only access their own associated offers`,
+      );
+    });
+  };
+
   // Zoe has two different facets: the public Zoe service and the
   // contract facet. The contract facet is what is accessible to the
   // smart contract instance and is remade for each instance. The
@@ -344,6 +356,7 @@ const makeZoe = (additionalEndowments = {}) => {
      */
     const contractFacet = harden({
       reallocate: (offerHandles, newAmountKeywordRecords, sparseKeywords) => {
+        assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
         const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
         const allKeywords = getKeywords(issuerKeywordRecord);
         if (sparseKeywords === undefined) {
@@ -396,7 +409,10 @@ const makeZoe = (additionalEndowments = {}) => {
         offerTable.updateAmounts(offerHandles, harden(newAmountKeywordRecords));
       },
 
-      complete: offerHandles => completeOffers(instanceHandle, offerHandles),
+      complete: offerHandles => {
+        assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
+        return completeOffers(instanceHandle, offerHandles);
+      },
 
       makeInvite: (seat, customProperties) =>
         makeInvite(instanceHandle, seat, customProperties),
@@ -426,12 +442,29 @@ const makeZoe = (additionalEndowments = {}) => {
       getInviteIssuer: () => inviteIssuer,
       getAmountMaths: sparseKeywords =>
         getAmountMaths(instanceHandle, sparseKeywords),
-      getOfferStatuses: offerTable.getOfferStatuses,
-      isOfferActive: offerTable.isOfferActive,
-      getOffers: offerHandles =>
-        offerTable.getOffers(offerHandles).map(removeAmounts),
-      getOffer: offerHandle => removeAmounts(offerTable.get(offerHandle)),
+      getOfferStatuses: offerHandles => {
+        const { active, inactive } = offerTable.getOfferStatuses(offerHandles);
+        assertOffersHaveInstanceHandle(active, instanceHandle);
+        return harden({ active, inactive });
+      },
+      isOfferActive: offerHandle => {
+        const isActive = offerTable.isOfferActive(offerHandle);
+        // if offer isn't present, we do not want to throw.
+        if (isActive) {
+          assertOffersHaveInstanceHandle(harden([offerHandle]), instanceHandle);
+        }
+        return isActive;
+      },
+      getOffers: offerHandles => {
+        assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
+        return offerTable.getOffers(offerHandles).map(removeAmounts);
+      },
+      getOffer: offerHandle => {
+        assertOffersHaveInstanceHandle(harden([offerHandle]), instanceHandle);
+        return removeAmounts(offerTable.get(offerHandle));
+      },
       getCurrentAllocation: (offerHandle, sparseKeywords) => {
+        assertOffersHaveInstanceHandle(harden([offerHandle]), instanceHandle);
         const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
         const allKeywords = getKeywords(issuerKeywordRecord);
         if (sparseKeywords === undefined) {
@@ -448,10 +481,12 @@ const makeZoe = (additionalEndowments = {}) => {
           amountMathKeywordRecord,
         );
       },
-      getCurrentAllocations: (offerHandles, sparseKeywords) =>
-        offerHandles.map(offerHandle =>
+      getCurrentAllocations: (offerHandles, sparseKeywords) => {
+        assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
+        return offerHandles.map(offerHandle =>
           contractFacet.getCurrentAllocation(offerHandle, sparseKeywords),
-        ),
+        );
+      },
       getInstanceRecord: () => instanceTable.get(instanceHandle),
       getIssuerRecord: issuer => removePurse(issuerTable.get(issuer)),
     });
