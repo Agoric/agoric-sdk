@@ -1,17 +1,21 @@
 package helper
 
 import (
+	"fmt"
 	"os"
 	"path"
 
-	app "github.com/Agoric/cosmic-swingset"
-	appcodec "github.com/Agoric/cosmic-swingset/app/codec"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/tendermint/go-amino"
+	"github.com/tendermint/tendermint/libs/cli"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/client/lcd"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
+	codecstd "github.com/cosmos/cosmos-sdk/codec/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
@@ -20,15 +24,14 @@ import (
 	authrest "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankcmd "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	amino "github.com/tendermint/go-amino"
-	"github.com/tendermint/tendermint/libs/cli"
+
+	"github.com/Agoric/cosmic-swingset/app"
+	"github.com/cosmos/gaia/app"
 )
 
 var (
-	cdc      = appcodec.MakeCodec(app.ModuleBasics)
-	appCodec = appcodec.NewAppCodec(cdc)
+	cdc      = codecstd.MakeCodec(app.ModuleBasics)
+	appCodec = codecstd.NewAppCodec(cdc)
 )
 
 func init() {
@@ -37,12 +40,17 @@ func init() {
 
 // Run is the main program for the Agoric client
 func Run() {
+	// Configure cobra to sort commands
 	cobra.EnableCommandSorting = false
 
 	// Read in the configuration file for the sdk
 	config := sdk.GetConfig()
 	app.SetConfigDefaults(config)
 	config.Seal()
+
+	// TODO: setup keybase, viper object, etc. to be passed into
+	// the below functions and eliminate global vars, like we do
+	// with the cdc
 
 	rootCmd := &cobra.Command{
 		Use:   "ag-cosmos-helper",
@@ -71,24 +79,22 @@ func Run() {
 	)
 
 	executor := cli.PrepareMainCmd(rootCmd, "AG_COSMOS_HELPER", app.DefaultCLIHome)
+
 	err := executor.Execute()
-
 	if err != nil {
-		panic(err)
+		fmt.Printf("Failed executing CLI command: %s, exiting...\n", err)
+		os.Exit(1)
 	}
-}
-
-func registerRoutes(rs *lcd.RestServer) {
-	client.RegisterRoutes(rs.CliCtx, rs.Mux)
-	authrest.RegisterTxRoutes(rs.CliCtx, rs.Mux)
-	app.ModuleBasics.RegisterRESTRoutes(rs.CliCtx, rs.Mux)
 }
 
 func queryCmd(cdc *amino.Codec) *cobra.Command {
 	queryCmd := &cobra.Command{
-		Use:     "query",
-		Aliases: []string{"q"},
-		Short:   "Querying subcommands",
+		Use:                        "query",
+		Aliases:                    []string{"q"},
+		Short:                      "Querying subcommands",
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       client.ValidateCmd,
 	}
 
 	queryCmd.AddCommand(
@@ -109,8 +115,11 @@ func queryCmd(cdc *amino.Codec) *cobra.Command {
 
 func txCmd(cdc *amino.Codec) *cobra.Command {
 	txCmd := &cobra.Command{
-		Use:   "tx",
-		Short: "Transactions subcommands",
+		Use:                        "tx",
+		Short:                      "Transactions subcommands",
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       client.ValidateCmd,
 	}
 
 	txCmd.AddCommand(
@@ -121,7 +130,6 @@ func txCmd(cdc *amino.Codec) *cobra.Command {
 		flags.LineBreak,
 		authcmd.GetBroadcastCommand(cdc),
 		authcmd.GetEncodeCommand(cdc),
-		flags.LineBreak,
 		authcmd.GetDecodeCommand(cdc),
 		flags.LineBreak,
 	)
@@ -141,6 +149,15 @@ func txCmd(cdc *amino.Codec) *cobra.Command {
 	txCmd.RemoveCommand(cmdsToRemove...)
 
 	return txCmd
+}
+
+// registerRoutes registers the routes from the different modules for the LCD.
+// NOTE: details on the routes added for each module are in the module documentation
+// NOTE: If making updates here you also need to update the test helper in client/lcd/test_helper.go
+func registerRoutes(rs *lcd.RestServer) {
+	client.RegisterRoutes(rs.CliCtx, rs.Mux)
+	authrest.RegisterTxRoutes(rs.CliCtx, rs.Mux)
+	app.ModuleBasics.RegisterRESTRoutes(rs.CliCtx, rs.Mux)
 }
 
 func initConfig(cmd *cobra.Command) error {

@@ -1,15 +1,16 @@
-package appcodec
+package app
 
 import (
 	"encoding/json"
 
-	appcodec "github.com/Agoric/cosmic-swingset/app/codec"
+	codecstd "github.com/cosmos/cosmos-sdk/codec/std"
 )
 
-// GenesisState represents chain state at the start of the chain. Any initial state (account balances) are stored here.
+// GenesisState defines a type alias for the Agoric genesis application state.
 type GenesisState map[string]json.RawMessage
 
+// NewDefaultGenesisState generates the default state for the application.
 func NewDefaultGenesisState() GenesisState {
-	cdc := appcodec.MakeCodec(ModuleBasics)
-	return ModuleBasics.DefaultGenesis()
+	cdc := codecstd.MakeCodec(ModuleBasics)
+	return ModuleBasics.DefaultGenesis(cdc)
 }
