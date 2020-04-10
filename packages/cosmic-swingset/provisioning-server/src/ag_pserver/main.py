@@ -9,6 +9,7 @@ import os.path
 import os
 import json
 import random
+import re
 from tempfile import NamedTemporaryFile
 
 from twisted.python import log
@@ -427,18 +428,18 @@ def agCosmosHelper(reactor, opts, config, args, retries = 1):
 
     return code, output
 
+def splitToken(token):
+    mo = re.search(r'^(\d+)(.*)$', token)
+    (amount_s, denom) = mo.groups()
+    return (int(amount_s), denom)
+
 @defer.inlineCallbacks
 def doEnablePubkeys(reactor, opts, config, pkobjs):
     txes = []
     needIngress = []
 
     # Find the token and amount.
-    token = opts['initial-token']
-    splitToken = len(token) - 1
-    while splitToken > 0 and token[splitToken] in string.digits:
-        splitToken -= 1
-    amount = int(token[0:splitToken])
-    denom = token[splitToken:]
+    (amount, denom) = splitToken(opts['initial-token'])
 
     for pkobj in pkobjs:
         pubkey = pkobj['pubkey']
@@ -451,6 +452,7 @@ def doEnablePubkeys(reactor, opts, config, pkobjs):
                 missing = True
                 for coin in output['value']['coins']:
                     # Check if they have some of our coins.
+                    # TODO: This is just a rudimentary check, we really need a better policy.
                     if coin['denom'] == denom and int(coin['amount']) >= amount:
                         missing = False
                         break
