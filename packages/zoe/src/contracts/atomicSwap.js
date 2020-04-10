@@ -4,8 +4,9 @@ import harden from '@agoric/harden';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { makeZoeHelpers } from '../contractSupport';
 
-export const makeContract = harden(zoe => {
-  const { swap, assertKeywords, rejectIfNotProposal } = makeZoeHelpers(zoe);
+// zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe
+export const makeContract = harden(zcf => {
+  const { swap, assertKeywords, rejectIfNotProposal } = makeZoeHelpers(zcf);
   assertKeywords(harden(['Asset', 'Price']));
 
   const makeMatchingInvite = firstInviteHandle => {
@@ -14,8 +15,8 @@ export const makeContract = harden(zoe => {
     });
     const {
       proposal: { want, give },
-    } = zoe.getOffer(firstInviteHandle);
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+    } = zcf.getOffer(firstInviteHandle);
+    const { invite, inviteHandle } = zcf.makeInvite(seat, {
       asset: give.Asset,
       price: want.Price,
       seatDesc: 'matchOffer',
@@ -34,7 +35,7 @@ export const makeContract = harden(zoe => {
         return makeMatchingInvite(inviteHandle);
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
+    const { invite, inviteHandle } = zcf.makeInvite(seat, {
       seatDesc: 'firstOffer',
     });
     return invite;

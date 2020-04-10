@@ -16,7 +16,8 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
  * Price is a limit that may be improved on. This simple exchange does
  * not partially fill orders.
  */
-export const makeContract = harden(zoe => {
+// zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe
+export const makeContract = harden(zcf => {
   const PRICE = 'Price';
   const ASSET = 'Asset';
 
@@ -31,7 +32,7 @@ export const makeContract = harden(zoe => {
     canTradeWith,
     getActiveOffers,
     assertKeywords,
-  } = makeZoeHelpers(zoe);
+  } = makeZoeHelpers(zcf);
 
   assertKeywords(harden([ASSET, PRICE]));
 
@@ -47,8 +48,8 @@ export const makeContract = harden(zoe => {
   }
 
   function flattenOrders(offerHandles) {
-    const result = zoe
-      .getOffers(zoe.getOfferStatuses(offerHandles).active)
+    const result = zcf
+      .getOffers(zcf.getOfferStatuses(offerHandles).active)
       .map(offerRecord => flattenOffer(offerRecord));
     return result;
   }
@@ -104,14 +105,14 @@ export const makeContract = harden(zoe => {
         if (checkIfProposal(inviteHandle, sellAssetForPrice)) {
           // Save the valid offer and try to match
           sellInviteHandles.push(inviteHandle);
-          buyInviteHandles = [...zoe.getOfferStatuses(buyInviteHandles).active];
+          buyInviteHandles = [...zcf.getOfferStatuses(buyInviteHandles).active];
           return swapIfCanTrade(buyInviteHandles, inviteHandle);
           /* eslint-disable no-else-return */
         } else if (checkIfProposal(inviteHandle, buyAssetForPrice)) {
           // Save the valid offer and try to match
           buyInviteHandles.push(inviteHandle);
           sellInviteHandles = [
-            ...zoe.getOfferStatuses(sellInviteHandles).active,
+            ...zcf.getOfferStatuses(sellInviteHandles).active,
           ];
           return swapIfCanTrade(sellInviteHandles, inviteHandle);
         } else {
@@ -120,7 +121,7 @@ export const makeContract = harden(zoe => {
         }
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat);
+    const { invite, inviteHandle } = zcf.makeInvite(seat);
     return { invite, inviteHandle };
   };
 

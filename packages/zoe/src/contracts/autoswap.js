@@ -9,7 +9,8 @@ import { makeConstProductBC, makeZoeHelpers } from '../contractSupport';
 // Autoswap is a rewrite of Uniswap. Please see the documentation for
 // more https://agoric.com/documentation/zoe/guide/contracts/autoswap.html
 
-export const makeContract = harden(zoe => {
+// zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe
+export const makeContract = harden(zcf => {
   // Create the liquidity mint and issuer.
   const { mint: liquidityMint, issuer: liquidityIssuer } = produceIssuer(
     'liquidity',
@@ -17,8 +18,8 @@ export const makeContract = harden(zoe => {
 
   let liqTokenSupply = 0;
 
-  return zoe.addNewIssuer(liquidityIssuer, 'Liquidity').then(() => {
-    const amountMaths = zoe.getAmountMaths(
+  return zcf.addNewIssuer(liquidityIssuer, 'Liquidity').then(() => {
+    const amountMaths = zcf.getAmountMaths(
       harden(['TokenA', 'TokenB', 'Liquidity']),
     );
     Object.values(amountMaths).forEach(amountMath =>
@@ -32,20 +33,20 @@ export const makeContract = harden(zoe => {
       makeEmptyOffer,
       rejectIfNotProposal,
       checkIfProposal,
-    } = makeZoeHelpers(zoe);
+    } = makeZoeHelpers(zcf);
     const {
       getPrice,
       calcLiqExtentToMint,
       calcAmountsToRemove,
-    } = makeConstProductBC(zoe);
+    } = makeConstProductBC(zcf);
 
     return makeEmptyOffer().then(poolHandle => {
-      const getPoolAllocation = () => zoe.getCurrentAllocation(poolHandle);
+      const getPoolAllocation = () => zcf.getCurrentAllocation(poolHandle);
 
       const makeInvite = () => {
         const seat = harden({
           swap: () => {
-            const { proposal } = zoe.getOffer(inviteHandle);
+            const { proposal } = zcf.getOffer(inviteHandle);
             const giveTokenA = harden({
               give: { TokenA: null },
               want: { TokenB: null },
@@ -106,11 +107,11 @@ export const makeContract = harden(zoe => {
               newOutputReserve,
             );
 
-            zoe.reallocate(
+            zcf.reallocate(
               harden([inviteHandle, poolHandle]),
               harden([newUserAmounts, newPoolAmounts]),
             );
-            zoe.complete(harden([inviteHandle]));
+            zcf.complete(harden([inviteHandle]));
             return `Swap successfully completed.`;
           },
           addLiquidity: () => {
@@ -120,7 +121,7 @@ export const makeContract = harden(zoe => {
             });
             rejectIfNotProposal(inviteHandle, expected);
 
-            const userAllocation = zoe.getCurrentAllocation(inviteHandle);
+            const userAllocation = zcf.getCurrentAllocation(inviteHandle);
             const poolAllocation = getPoolAllocation();
 
             // Calculate how many liquidity tokens we should be minting.
@@ -146,8 +147,8 @@ export const makeContract = harden(zoe => {
             const proposal = harden({
               give: { Liquidity: liquidityAmountOut },
             });
-            const { inviteHandle: tempLiqHandle, invite } = zoe.makeInvite();
-            const zoeService = zoe.getZoeService();
+            const { inviteHandle: tempLiqHandle, invite } = zcf.makeInvite();
+            const zoeService = zcf.getZoeService();
             return zoeService
               .redeem(
                 invite,
@@ -178,11 +179,11 @@ export const makeContract = harden(zoe => {
                   Liquidity: amountMaths.Liquidity.getEmpty(),
                 });
 
-                zoe.reallocate(
+                zcf.reallocate(
                   harden([inviteHandle, poolHandle, tempLiqHandle]),
                   harden([newUserAmounts, newPoolAmounts, newTempLiqAmounts]),
                 );
-                zoe.complete(harden([inviteHandle, tempLiqHandle]));
+                zcf.complete(harden([inviteHandle, tempLiqHandle]));
                 return 'Added liquidity.';
               });
           },
@@ -193,7 +194,7 @@ export const makeContract = harden(zoe => {
             });
             rejectIfNotProposal(inviteHandle, expected);
 
-            const userAllocation = zoe.getCurrentAllocation(inviteHandle);
+            const userAllocation = zcf.getCurrentAllocation(inviteHandle);
             const liquidityExtentIn = userAllocation.Liquidity.extent;
 
             const poolAllocation = getPoolAllocation();
@@ -223,15 +224,15 @@ export const makeContract = harden(zoe => {
 
             liqTokenSupply -= liquidityExtentIn;
 
-            zoe.reallocate(
+            zcf.reallocate(
               harden([inviteHandle, poolHandle]),
               harden([newUserAmounts, newPoolAmounts]),
             );
-            zoe.complete(harden([inviteHandle]));
+            zcf.complete(harden([inviteHandle]));
             return 'Liquidity successfully removed.';
           },
         });
-        const { invite, inviteHandle } = zoe.makeInvite(seat, {
+        const { invite, inviteHandle } = zcf.makeInvite(seat, {
           seatDesc: 'autoswapSeat',
         });
         return invite;

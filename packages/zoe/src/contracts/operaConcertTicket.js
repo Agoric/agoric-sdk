@@ -25,7 +25,8 @@ import { makeZoeHelpers } from '../contractSupport';
   
 */
 
-export const makeContract = harden(zoe => {
+// zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe
+export const makeContract = harden(zcf => {
   // Create the internal ticket mint
   const { issuer, mint, amountMath: ticketAmountMath } = produceIssuer(
     'Opera tickets',
@@ -35,13 +36,13 @@ export const makeContract = harden(zoe => {
   const {
     terms: { show, start, count, expectedAmountPerTicket },
     issuerKeywordRecord: { Money: moneyIssuer },
-  } = zoe.getInstanceRecord();
+  } = zcf.getInstanceRecord();
 
-  const { amountMath: moneyAmountMath } = zoe.getIssuerRecord(moneyIssuer);
+  const { amountMath: moneyAmountMath } = zcf.getIssuerRecord(moneyIssuer);
 
-  return zoe.addNewIssuer(issuer, 'Ticket').then(() => {
-    // create Zoe helpers after zoe.addNewIssuer because of https://github.com/Agoric/agoric-sdk/issues/802
-    const { rejectOffer } = makeZoeHelpers(zoe);
+  return zcf.addNewIssuer(issuer, 'Ticket').then(() => {
+    // create Zoe helpers after zcf.addNewIssuer because of https://github.com/Agoric/agoric-sdk/issues/802
+    const { rejectOffer } = makeZoeHelpers(zcf);
 
     // Mint tickets inside the contract
     // In a more realistic contract, the Auditorium would certainly mint the tickets themselves
@@ -70,9 +71,9 @@ export const makeContract = harden(zoe => {
     const {
       invite: contractSelfInvite,
       inviteHandle: contractOfferHandle,
-    } = zoe.makeInvite();
+    } = zcf.makeInvite();
     // the contract creates an offer {give: tickets, want: nothing} with the tickets
-    return zoe
+    return zcf
       .getZoeService()
       .redeem(
         contractSelfInvite,
@@ -85,35 +86,35 @@ export const makeContract = harden(zoe => {
           // eventually, it might be done automatically: https://github.com/Agoric/agoric-sdk/issues/717
           afterRedeem() {
             // the contract transfers tickets to the auditorium leveraging Zoe offer safety
-            zoe.reallocate(
+            zcf.reallocate(
               [contractOfferHandle, auditoriumOfferHandle],
               [
-                zoe.getCurrentAllocation(auditoriumOfferHandle),
-                zoe.getCurrentAllocation(contractOfferHandle),
+                zcf.getCurrentAllocation(auditoriumOfferHandle),
+                zcf.getCurrentAllocation(contractOfferHandle),
               ],
             );
-            zoe.complete([contractOfferHandle]);
+            zcf.complete([contractOfferHandle]);
             // if both calls succeeded (did not throw), the auditoriumOfferHandle is now
             // associated with the tickets and the contract offer is gone from the contract
           },
           getCurrentAllocation() {
-            return zoe.getCurrentAllocation(auditoriumOfferHandle);
+            return zcf.getCurrentAllocation(auditoriumOfferHandle);
           },
         });
         const {
           invite: auditoriumInvite,
           inviteHandle: auditoriumOfferHandle,
-        } = zoe.makeInvite(auditoriumSeat);
+        } = zcf.makeInvite(auditoriumSeat);
 
         const makeBuyerInvite = () => {
           const seat = harden({
             performExchange: () => {
-              const buyerOffer = zoe.getOffer(buyerOfferHandle);
+              const buyerOffer = zcf.getOffer(buyerOfferHandle);
 
-              const currentAuditoriumAllocation = zoe.getCurrentAllocation(
+              const currentAuditoriumAllocation = zcf.getCurrentAllocation(
                 auditoriumOfferHandle,
               );
-              const currentBuyerAllocation = zoe.getCurrentAllocation(
+              const currentBuyerAllocation = zcf.getCurrentAllocation(
                 buyerOfferHandle,
               );
 
@@ -153,18 +154,18 @@ export const makeContract = harden(zoe => {
                   ),
                 };
 
-                zoe.reallocate(
+                zcf.reallocate(
                   [auditoriumOfferHandle, buyerOfferHandle],
                   [wantedAuditoriumAllocation, wantedBuyerAllocation],
                 );
-                zoe.complete([buyerOfferHandle]);
+                zcf.complete([buyerOfferHandle]);
               } catch (err) {
                 // amounts don't match or reallocate certainly failed
                 rejectOffer(buyerOfferHandle);
               }
             },
           });
-          const { invite, inviteHandle: buyerOfferHandle } = zoe.makeInvite(
+          const { invite, inviteHandle: buyerOfferHandle } = zcf.makeInvite(
             seat,
           );
           return invite;
@@ -180,7 +181,7 @@ export const makeContract = harden(zoe => {
             getAvailableTickets() {
               // Because of a technical limitation in @agoric/marshal, an array of extents
               // is better than a Map https://github.com/Agoric/agoric-sdk/issues/838
-              return zoe.getCurrentAllocation(auditoriumOfferHandle).Ticket
+              return zcf.getCurrentAllocation(auditoriumOfferHandle).Ticket
                 .extent;
             },
           },
