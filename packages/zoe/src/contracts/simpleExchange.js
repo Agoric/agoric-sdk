@@ -122,7 +122,7 @@ export const makeContract = harden(zcf => {
       },
     });
     const { invite, inviteHandle } = zcf.makeInvite(seat);
-    return { invite, inviteHandle };
+    return invite;
   };
 
   return harden({
