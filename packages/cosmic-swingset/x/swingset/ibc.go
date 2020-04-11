@@ -10,10 +10,11 @@ import (
 	channel "github.com/cosmos/cosmos-sdk/x/ibc/04-channel"
 	channelexported "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/exported"
 	channeltypes "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/types"
-	"github.com/cosmos/cosmos-sdk/x/ibc/20-transfer/keeper"
 	ibctypes "github.com/cosmos/cosmos-sdk/x/ibc/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/Agoric/cosmic-swingset/x/swingset/internal/keeper"
 )
 
 // FIXME: How to tell the caller when this is a new channel?
