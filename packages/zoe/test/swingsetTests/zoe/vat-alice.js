@@ -221,7 +221,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       Asset: moolaIssuer,
     });
     const { simpleExchange } = installations;
-    const { invite } = await E(zoe).makeInstance(
+    const invite = await E(zoe).makeInstance(
       simpleExchange,
       issuerKeywordRecord,
     );
@@ -244,7 +244,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
     log(offerResult);
 
-    const { invite: bobInviteP } = await E(publicAPI).makeInvite();
+    const bobInviteP = await E(publicAPI).makeInvite();
     await E(bobP).doSimpleExchange(bobInviteP);
 
     const payout = await payoutP;
@@ -297,7 +297,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       Asset: moolaIssuer,
     });
     const { simpleExchange } = installations;
-    const { invite } = await E(zoe).makeInstance(
+    const invite = await E(zoe).makeInstance(
       simpleExchange,
       issuerKeywordRecord,
     );
@@ -327,9 +327,9 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
     log(offerResult);
 
-    const { invite: bobInvite1P } = await E(publicAPI).makeInvite();
+    const bobInvite1P = await E(publicAPI).makeInvite();
     await E(bobP).doSimpleExchangeUpdates(bobInvite1P, 3, 7);
-    const { invite: bobInvite2P } = await E(publicAPI).makeInvite();
+    const bobInvite2P = await E(publicAPI).makeInvite();
     await E(bobP).doSimpleExchangeUpdates(bobInvite2P, 8, 2);
 
     const payout = await payoutP;
@@ -338,9 +338,9 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     const simoleanPayout = await payout.Price;
     await E(moolaPurseP).deposit(moolaPayout);
     await E(simoleanPurseP).deposit(simoleanPayout);
-    const { invite: bobInvite3P } = await E(publicAPI).makeInvite();
+    const bobInvite3P = await E(publicAPI).makeInvite();
     await E(bobP).doSimpleExchangeUpdates(bobInvite3P, 20, 13);
-    const { invite: bobInvite4P } = await E(publicAPI).makeInvite();
+    const bobInvite4P = await E(publicAPI).makeInvite();
     await E(bobP).doSimpleExchangeUpdates(bobInvite4P, 5, 2);
 
     await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);

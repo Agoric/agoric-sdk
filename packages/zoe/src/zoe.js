@@ -578,7 +578,13 @@ const makeZoe = (additionalEndowments = {}) => {
               // Once the contract is made, we add the publicAPI to the
               // contractRecord
               instanceTable.update(instanceHandle, { publicAPI });
-              return invite;
+              return inviteIssuer.isLive(invite).then(success => {
+                assert(
+                  success,
+                  details`invites must be issued by the inviteIssuer.`,
+                );
+                return invite;
+              });
             });
         };
 
