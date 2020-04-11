@@ -490,15 +490,14 @@ async function doResultPromise(t, mode) {
   t.end();
 }
 
-// TODO: these three are still broken, tracked in #823
-test.skip('liveslots does not retire result promise IDs after fulfillToPresence', async t => {
+test('liveslots does not retire result promise IDs after fulfillToPresence', async t => {
   await doResultPromise(t, 'to presence');
 });
 
-test.skip('liveslots does not retire result promise IDs after fulfillToData', async t => {
+test('liveslots does not retire result promise IDs after fulfillToData', async t => {
   await doResultPromise(t, 'to data');
 });
 
-test.skip('liveslots does not retire result promise IDs after reject', async t => {
+test('liveslots does not retire result promise IDs after reject', async t => {
   await doResultPromise(t, 'reject');
 });
