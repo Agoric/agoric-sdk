@@ -17,6 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client/debug"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	codecstd "github.com/cosmos/cosmos-sdk/codec/std"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -34,20 +35,23 @@ var invCheckPeriod uint
 // Sender is a function that sends a request to the controller.
 type Sender func(needReply bool, str string) (string, error)
 
+// DefaultController is a stub controller.
+var DefaultController = func(needReply bool, str string) (string, error) {
+	fmt.Fprintln(os.Stderr, "FIXME: Would upcall to controller with", str)
+	return "", nil
+}
+
 // Run starts the app with a stub controller.
 func Run() {
-	RunWithController(func(needReply bool, str string) (string, error) {
-		fmt.Fprintln(os.Stderr, "FIXME: Would upcall to controller with", str)
-		return "", nil
-	})
+	RunWithController(DefaultController)
 }
 
 // RunWithController starts the app with a custom upcall handler.
 func RunWithController(sendToController Sender) {
 	cobra.EnableCommandSorting = false
 
-	cdc := appcodec.MakeCodec(app.ModuleBasics)
-	appCodec := appcodec.NewAppCodec(cdc)
+	cdc := codecstd.MakeCodec(app.ModuleBasics)
+	appCodec := codecstd.NewAppCodec(cdc)
 
 	config := sdk.GetConfig()
 	app.SetConfigDefaults(config)
@@ -132,7 +136,7 @@ func makeExportAppStateAndTMValidators(sendToController Sender) func(
 		jailWhiteList []string,
 	) (json.RawMessage, []tmtypes.GenesisValidator, error) {
 		if height != -1 {
-			agApp := app.NewAgoricApp(sendToController, logger, db, traceStore, false)
+			agApp := app.NewAgoricApp(sendToController, logger, db, traceStore, true, uint(1), map[int64]bool{}, "")
 			err := agApp.LoadHeight(height)
 			if err != nil {
 				return nil, nil, err

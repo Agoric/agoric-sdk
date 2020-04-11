@@ -5,8 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/cosmos/cosmos-sdk/x/capability"
+	channel "github.com/cosmos/cosmos-sdk/x/ibc/04-channel"
 	channelexported "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/exported"
 	channeltypes "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/types"
+	"github.com/cosmos/cosmos-sdk/x/ibc/20-transfer/keeper"
+	ibctypes "github.com/cosmos/cosmos-sdk/x/ibc/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -74,7 +79,7 @@ func (ch *channelHandler) Receive(str string) (ret string, err error) {
 		return "true", nil
 
 	case "close":
-		// Make sure our port goes away.
+		// Make sure our channel goes away.
 		if err = ch.Keeper.ChanCloseInit(ch.Context, msg.Tuple.Destination.Port, msg.Tuple.Destination.Channel); err != nil {
 			return "", err
 		}
@@ -83,15 +88,15 @@ func (ch *channelHandler) Receive(str string) (ret string, err error) {
 	case "send":
 		seq, ok := ch.Keeper.GetNextSequenceSend(
 			ch.Context,
-			msg.Tuple.Destination.Channel,
 			msg.Tuple.Destination.Port,
+			msg.Tuple.Destination.Channel,
 		)
 		if !ok {
 			return "", fmt.Errorf("unknown sequence number")
 		}
 
-		// FIXME
-		blockTimeout := int64(100)
+		// TODO: Maybe allow specification?
+		blockTimeout := int64(keeper.DefaultPacketTimeout)
 
 		packet := channeltypes.NewPacket(
 			msg.GetData(), seq,
@@ -107,4 +112,101 @@ func (ch *channelHandler) Receive(str string) (ret string, err error) {
 	default:
 		return "", fmt.Errorf("unrecognized method %s", msg.Method)
 	}
+}
+
+// Implement IBCModule callbacks
+func (am AppModule) OnChanOpenInit(
+	ctx sdk.Context,
+	order channelexported.Order,
+	connectionHops []string,
+	portID string,
+	channelID string,
+	chanCap *capability.Capability,
+	counterparty channeltypes.Counterparty,
+	version string,
+) error {
+	// Claim channel capability passed back by IBC module
+	if err := am.keeper.ClaimCapability(ctx, chanCap, ibctypes.ChannelCapabilityPath(portID, channelID)); err != nil {
+		return sdkerrors.Wrap(channel.ErrChannelCapabilityNotFound, err.Error())
+	}
+
+	_, err := am.keeper.CallToController(`{"type":"FIXME_IBC_CHAN_OPEN_INIT"}`)
+	return err
+}
+
+func (am AppModule) OnChanOpenTry(
+	ctx sdk.Context,
+	order channelexported.Order,
+	connectionHops []string,
+	portID,
+	channelID string,
+	chanCap *capability.Capability,
+	counterparty channeltypes.Counterparty,
+	version,
+	counterpartyVersion string,
+) error {
+	_, err := am.keeper.CallToController(`{"type":"FIXME_IBC_CHAN_OPEN_TRY"}`)
+	return err
+}
+
+func (am AppModule) OnChanOpenAck(
+	ctx sdk.Context,
+	portID,
+	channelID string,
+	counterpartyVersion string,
+) error {
+	_, err := am.keeper.CallToController(`{"type":"FIXME_IBC_CHAN_OPEN_ACK"}`)
+	return err
+}
+
+func (am AppModule) OnChanOpenConfirm(
+	ctx sdk.Context,
+	portID,
+	channelID string,
+) error {
+	_, err := am.keeper.CallToController(`{"type":"FIXME_IBC_CHAN_OPEN_CONFIRM"}`)
+	return err
+}
+
+func (am AppModule) OnChanCloseInit(
+	ctx sdk.Context,
+	portID,
+	channelID string,
+) error {
+	_, err := am.keeper.CallToController(`{"type":"FIXME_IBC_CHAN_CLOSE_INIT"}`)
+	return err
+}
+
+func (am AppModule) OnChanCloseConfirm(
+	ctx sdk.Context,
+	portID,
+	channelID string,
+) error {
+	_, err := am.keeper.CallToController(`{"type":"FIXME_IBC_CHAN_CLOSE_CONFIRM"}`)
+	return err
+}
+
+func (am AppModule) OnRecvPacket(
+	ctx sdk.Context,
+	packet channeltypes.Packet,
+) (*sdk.Result, error) {
+	_, err := am.keeper.CallToController(`{"type":"FIXME_IBC_RECV_PACKET"}`)
+	return nil, err
+}
+
+func (am AppModule) OnAcknowledgementPacket(
+	ctx sdk.Context,
+	packet channeltypes.Packet,
+	acknowledment []byte,
+) (*sdk.Result, error) {
+	_, err := am.keeper.CallToController(`{"type":"FIXME_IBC_ACK_PACKET"}`)
+	return nil, err
+}
+
+func (am AppModule) OnTimeoutPacket(
+	ctx sdk.Context,
+	packet channeltypes.Packet,
+) (*sdk.Result, error) {
+	_, err := am.keeper.CallToController(`{"type":"FIXME_IBC_TIMEOUT_PACKET"}`)
+	return nil, err
 }

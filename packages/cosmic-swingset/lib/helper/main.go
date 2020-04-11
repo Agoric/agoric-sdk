@@ -26,7 +26,6 @@ import (
 	bankcmd "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
 
 	"github.com/Agoric/cosmic-swingset/app"
-	"github.com/cosmos/gaia/app"
 )
 
 var (

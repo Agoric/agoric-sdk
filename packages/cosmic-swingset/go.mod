@@ -1,24 +1,25 @@
 module github.com/Agoric/cosmic-swingset
 
-go 1.13
+go 1.14
 
 require (
-	github.com/bartekn/go-bip39 v0.0.0-20171116152956-a05967ea095d // indirect
-	github.com/coreos/go-etcd v2.0.0+incompatible // indirect
-	github.com/cosmos/cosmos-sdk v0.34.4-0.20200409184808-709d96a6f4c4
-	github.com/cpuguy83/go-md2man v1.0.10 // indirect
-	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.4.0-rc.4
+	github.com/btcsuite/btcd v0.0.0-20190807005414-4063feeff79a // indirect
+	github.com/cosmos/cosmos-sdk v0.34.4-0.20200410083150-b7397d6df548
 	github.com/gorilla/mux v1.7.4
-	github.com/regen-network/cosmos-proto v0.1.1-0.20200213154359-02baa11ea7c2
+	github.com/onsi/ginkgo v1.8.0 // indirect
+	github.com/onsi/gomega v1.5.0 // indirect
+	github.com/otiai10/copy v1.1.1
+	github.com/pkg/errors v0.9.1
+	github.com/rcrowley/go-metrics v0.0.0-20190706150252-9beb055b7962 // indirect
+	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cobra v0.0.7
-	github.com/spf13/viper v1.6.2
-	github.com/stumble/gorocksdb v0.0.3 // indirect
+	github.com/spf13/viper v1.6.3
+	github.com/stretchr/testify v1.5.1
 	github.com/tendermint/go-amino v0.15.1
 	github.com/tendermint/tendermint v0.33.3
 	github.com/tendermint/tm-db v0.5.1
-	github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8 // indirect
+	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297 // indirect
 )
 
-replace github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.34.4-0.20200409184808-709d96a6f4c4
+replace github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4

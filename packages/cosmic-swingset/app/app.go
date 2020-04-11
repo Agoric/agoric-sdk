@@ -62,7 +62,7 @@ const (
 )
 
 var (
-	// default home directories for the application CLI
+	// DefaultCLIHome is the default home directory for the application CLI
 	DefaultCLIHome = os.ExpandEnv("$HOME/.ag-cosmos-helper")
 
 	// DefaultNodeHome sets the folder where the applcation data and configuration will be stored
@@ -138,7 +138,9 @@ type AgoricApp struct {
 	transferKeeper       transfer.Keeper
 	scopedIBCKeeper      capability.ScopedKeeper
 	scopedTransferKeeper capability.ScopedKeeper
-	ssKeeper             swingset.Keeper
+
+	swingSetKeeper       swingset.Keeper
+	scopedSwingSetKeeper capability.ScopedKeeper
 
 	// the module manager
 	mm *module.Manager
@@ -202,6 +204,7 @@ func NewAgoricApp(
 	app.capabilityKeeper = capability.NewKeeper(appCodec, keys[capability.StoreKey])
 	scopedIBCKeeper := app.capabilityKeeper.ScopeToModule(ibc.ModuleName)
 	scopedTransferKeeper := app.capabilityKeeper.ScopeToModule(transfer.ModuleName)
+	scopedSwingSetKeeper := app.capabilityKeeper.ScopeToModule(swingset.ModuleName)
 
 	// add keepers
 	app.accountKeeper = auth.NewAccountKeeper(
@@ -276,22 +279,22 @@ func NewAgoricApp(
 	// instantiate the module to use it in the router
 	transferModule := transfer.NewAppModule(app.transferKeeper)
 
-	// create the IBC router and add the transfer route to it
-	ibcRouter := port.NewRouter()
-	ibcRouter.AddRoute(transfer.ModuleName, transferModule)
-	app.ibcKeeper.SetRouter(ibcRouter)
-
 	// The SwingSetKeeper is the Keeper from the SwingSet module
 	// It handles interactions with the kvstore and IBC.
-	swingsetCapKey := app.ibcKeeper.PortKeeper.BindPort(swingset.ModuleName)
-	app.ssKeeper = swingset.NewKeeper(
-		app.cdc,
-		keys[swingset.StoreKey],
-		swingsetCapKey,
-		app.ibcKeeper.ChannelKeeper,
-		app.bankKeeper,
-		sendToController,
+	app.swingSetKeeper = swingset.NewKeeper(
+		app.cdc, keys[swingset.StoreKey],
+		app.ibcKeeper.ChannelKeeper, &app.ibcKeeper.PortKeeper,
+		scopedSwingSetKeeper, sendToController,
 	)
+
+	swingsetModule := swingset.NewAppModule(app.swingSetKeeper)
+
+	// create the IBC router and add the routes to it
+	// TODO: This will be replaced by dIBC
+	ibcRouter := port.NewRouter()
+	ibcRouter.AddRoute(transfer.ModuleName, transferModule)
+	ibcRouter.AddRoute(swingset.ModuleName, swingsetModule)
+	app.ibcKeeper.SetRouter(ibcRouter)
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
@@ -299,7 +302,6 @@ func NewAgoricApp(
 		genutil.NewAppModule(app.accountKeeper, app.stakingKeeper, app.BaseApp.DeliverTx),
 		auth.NewAppModule(app.accountKeeper, app.supplyKeeper),
 		bank.NewAppModule(app.bankKeeper, app.accountKeeper),
-		swingset.NewAppModule(app.ssKeeper, app.bankKeeper),
 		crisis.NewAppModule(&app.crisisKeeper),
 		supply.NewAppModule(app.supplyKeeper, app.bankKeeper, app.accountKeeper),
 		gov.NewAppModule(app.govKeeper, app.accountKeeper, app.bankKeeper, app.supplyKeeper),
@@ -311,6 +313,7 @@ func NewAgoricApp(
 		evidence.NewAppModule(app.evidenceKeeper),
 		ibc.NewAppModule(app.ibcKeeper),
 		transferModule,
+		swingsetModule,
 	)
 	// During begin block slashing happens after distr.BeginBlocker so that
 	// there is nothing left over in the validator fee pool, so as to keep the
@@ -366,6 +369,7 @@ func NewAgoricApp(
 	}
 
 	app.scopedIBCKeeper = scopedIBCKeeper
+	app.scopedSwingSetKeeper = scopedSwingSetKeeper
 	app.scopedTransferKeeper = scopedTransferKeeper
 
 	return app
@@ -399,10 +403,11 @@ func (app *AgoricApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) ab
 	return res
 }
 
+// Commit tells the controller that the block is commited
 func (app *AgoricApp) Commit() abci.ResponseCommit {
 	// Wrap the BaseApp's Commit method
 	res := app.BaseApp.Commit()
-	swingset.CommitBlock(app.ssKeeper)
+	swingset.CommitBlock(app.swingSetKeeper)
 	return res
 }
 
@@ -418,7 +423,7 @@ func (app *AgoricApp) LoadHeight(height int64) error {
 
 // GetTKey returns the TransientStoreKey for the provided store key
 func (app *AgoricApp) GetTKey(storeKey string) *sdk.TransientStoreKey {
-	return app.tkeys[storeKey]
+	return app.tKeys[storeKey]
 }
 
 // ModuleAccountAddrs returns all the app's module account addresses.
