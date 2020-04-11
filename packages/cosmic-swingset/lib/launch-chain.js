@@ -103,7 +103,7 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
     if (!mb.deliverInbound(sender, messages, ack)) {
       return;
     }
-    log(`mboxDeliver:   ADDED messages`);
+    log.debug(`mboxDeliver:   ADDED messages`);
     await controller.run();
   }
 

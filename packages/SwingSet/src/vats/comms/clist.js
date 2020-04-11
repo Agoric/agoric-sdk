@@ -192,7 +192,7 @@ export function mapInbound(state, remoteID, s) {
         const promiseID = allocateUnresolvedPromise(state, remoteID);
         remote.fromRemote.set(s, promiseID);
         remote.toRemote.set(promiseID, s);
-        // console.log(`inbound promise ${s} mapped to ${promiseID}`);
+        // console.debug(`inbound promise ${s} mapped to ${promiseID}`);
       }
     } else {
       throw new Error(`unknown type ${type}`);

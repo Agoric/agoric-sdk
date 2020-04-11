@@ -52,7 +52,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     morgan(`:method :url :status :res[content-length] - :response-time ms`, {
       stream: {
         write(msg) {
-          log.info(msg.trimRight());
+          log(msg.trimRight());
         },
       },
     }),
@@ -116,7 +116,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       return;
     }
 
-    // console.log(`POST ${ep} got`, req.body); // should be jsonable
+    // console.debug(`POST ${ep} got`, req.body); // should be jsonable
     inboundCommand(req.body, req, `POST`)
       .then(
         r => res.json({ ok: true, res: r }),
@@ -174,7 +174,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     const meta = { ...req, channelID };
     const id = `${req.socket.remoteAddress}:${req.socket.remotePort}[${channelID}]:`;
 
-    log.info(id, `new WebSocket connection ${req.url}`);
+    log(id, `new WebSocket ${req.url}`);
 
     // Register the point-to-point channel.
     channels.set(channelID, ws);
@@ -184,7 +184,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     });
 
     ws.on('close', (_code, _reason) => {
-      log.info(id, 'client closed');
+      log(id, 'client closed');
       inboundCommand(
         { type: 'ws/meta' },
         { ...meta, dispatcher: 'onClose' },

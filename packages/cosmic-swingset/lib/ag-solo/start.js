@@ -135,7 +135,7 @@ async function buildSwingset(
       if (!(messages instanceof Array)) {
         throw new Error(`inbound given non-Array: ${messages}`);
       }
-      // console.log(`deliverInboundToMbx`, messages, ack);
+      // console.debug(`deliverInboundToMbx`, messages, ack);
       if (mb.deliverInbound(sender, messages, ack, true)) {
         await processKernel();
       }

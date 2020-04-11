@@ -22,7 +22,7 @@ const sendJSON = (ws, obj) => {
   if (ws.readyState !== ws.OPEN) {
     return;
   }
-  // console.log('sending', obj);
+  // console.debug('sending', obj);
   ws.send(JSON.stringify(obj));
 };
 
@@ -108,7 +108,7 @@ export default async function bundle(insistIsBasedir, args) {
       ws.on('message', data => {
         try {
           const obj = JSON.parse(data);
-          // console.log('receiving', obj);
+          // console.debug('receiving', obj);
           if (obj.type === 'CTP_ERROR') {
             throw obj.error;
           }
@@ -135,7 +135,7 @@ export default async function bundle(insistIsBasedir, args) {
 
       for (const bundled of bundles) {
         const actualSources = `(${bundled.main.source}\n)\n${bundled.main.sourceMap}`;
-        // console.log(actualSources);
+        // console.debug(actualSources);
         const mainNS = evaluateProgram(actualSources, {
           require,
           HandledPromise,
@@ -161,7 +161,7 @@ export default async function bundle(insistIsBasedir, args) {
     }
   });
   ws.on('close', (_code, _reason) => {
-    // console.log('connection closed');
+    // console.debug('connection closed');
     exit.res(1);
   });
   return exit.p;
