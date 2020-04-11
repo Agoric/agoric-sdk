@@ -37,7 +37,8 @@ const main = async (progname, rawArgs, powers) => {
 
   program
     .option('--sdk', 'use the Agoric SDK containing this program')
-    .option('--debug', 'enable debug messages')
+    .option('-v, --verbose', 'verbosity that can be increased',
+      (_value, previous) => previous + 1, 0);
 
   // Add each of the commands.
   program
