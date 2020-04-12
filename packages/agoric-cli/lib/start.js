@@ -108,7 +108,20 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       return 0;
     }
 
-    const ps = pspawn(agSolo, ['start', '--role=two_client'], {
+    // Translate {inspectBrk: brkOpt} into [`--inspect-brk=${brkOpt}`]
+    const debugOpts = [];
+    for (const [prop, value] of Object.entries(opts)) {
+      if (prop.startsWith('inspect')) {
+        const name = prop.replace(/([A-Z])/g, '-$1').toLowerCase();
+        if (value === true) {
+          debugOpts.push(`--${name}`);
+        } else {
+          debugOpts.push(`--${name}=${value}`);
+        }
+      }
+    }
+
+    const ps = pspawn(agSolo, [...debugOpts, 'start', '--role=two_client'], {
       cwd: agServer,
     });
     process.on('SIGINT', () => ps.cp.kill('SIGINT'));

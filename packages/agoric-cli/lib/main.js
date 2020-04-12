@@ -80,6 +80,8 @@ const main = async (progname, rawArgs, powers) => {
     .option('--no-restart', 'do not actually start the VM')
     .option('--pull', 'for Docker-based VM, pull the image before running')
     .option('--delay [seconds]', 'delay for simulated chain to process messages')
+    .option('--inspect [host[:port]]', 'activate inspector on host:port (default: "127.0.0.1:9229")')
+    .option('--inspect-brk [host[:port]]', 'activate inspector on host:port and break at start of script (default: "127.0.0.1:9229")')
     .action(async (profile, args, cmd) => {
       await isNotBasedir();
       const opts =  {...program.opts(), ...cmd.opts()};
