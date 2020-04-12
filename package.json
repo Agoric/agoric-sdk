@@ -27,6 +27,8 @@
     "packages/stat-logger",
     "packages/swing-store-lmdb",
     "packages/swing-store-simple",
+    "packages/swing-blocker",
+    "packages/swing-blocker-fifo",
     "packages/SwingSet",
     "packages/swingset-runner",
     "packages/ERTP",

@@ -99,6 +99,10 @@ jobs:
       run: cd packages/swing-store-lmdb && yarn test
     - name: yarn test (swing-store-simple)
       run: cd packages/swing-store-simple && yarn test
+    - name: yarn test (swing-blocker-fifo)
+      run: cd packages/swing-blocker-fifo && yarn test
+    - name: yarn test (swing-blocker)
+      run: cd packages/swing-blocker && yarn test
     - name: yarn test (SwingSet)
       run: cd packages/SwingSet && yarn test
     - name: yarn test (swingset-runner)

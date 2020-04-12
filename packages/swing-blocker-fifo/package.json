@@ -1,0 +1,28 @@
+{
+  "name": "@agoric/swing-blocker-fifo",
+  "version": "0.0.1",
+  "description": "A blocker for SwingSet, based on Unix FIFOs",
+  "main": "fifoSwingBlocker.js",
+  "repository": "https://github.com/Agoric/agoric-sdk",
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "exit 0",
+    "test": "tape -r esm 'test/**/test*.js' | tap-spec",
+    "lint-fix": "eslint --fix '**/*.js'",
+    "lint-check": "eslint '**/*.js'"
+  },
+  "dependencies": {
+    "@agoric/swing-blocker": "^0.0.1",
+    "tmp": "^0.1.0"
+  },
+  "devDependencies": {
+    "esm": "^3.2.25",
+    "tap-spec": "^5.0.0",
+    "tape": "^4.10.2",
+    "tape-promise": "^4.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
