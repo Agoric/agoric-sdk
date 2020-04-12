@@ -33,13 +33,16 @@ export function dumpStore(store, outfile, rawMode) {
 
   p('// device info');
   popt('device.nextID');
-  const devNames = JSON.parse(popt('device.names'));
   const devs = new Map();
-  for (const dn of devNames) {
-    const d = popt(`device.name.${dn}`);
-    devs.set(dn, d);
+  const devNamesRaw = popt('device.names');
+  if (devNamesRaw) {
+    const devNames = JSON.parse(devNamesRaw);
+    for (const dn of devNames) {
+      const d = popt(`device.name.${dn}`);
+      devs.set(dn, d);
+    }
+    gap();
   }
-  gap();
 
   p('// kernel devices');
   popt('kd.nextID');
@@ -58,13 +61,16 @@ export function dumpStore(store, outfile, rawMode) {
 
   p('// vat info');
   popt('vat.nextID');
-  const vatNames = JSON.parse(popt('vat.names'));
   const vats = new Map();
-  for (const vn of vatNames) {
-    const v = popt(`vat.name.${vn}`);
-    vats.set(vn, v);
+  const vatNamesRaw = popt('vat.names');
+  if (vatNamesRaw) {
+    const vatNames = JSON.parse(vatNamesRaw);
+    for (const vn of vatNames) {
+      const v = popt(`vat.name.${vn}`);
+      vats.set(vn, v);
+    }
+    gap();
   }
-  gap();
 
   p('// kernel objects');
   popt('ko.nextID');
