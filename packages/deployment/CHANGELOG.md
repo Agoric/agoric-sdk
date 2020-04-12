@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.19.0-alpha.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.18.2...@agoric/deployment@1.19.0-alpha.0) (2020-04-12)
+
+
+### Bug Fixes
+
+* reinstate carrying forward public keys ([504a8ce](https://github.com/Agoric/agoric-sdk/commit/504a8ce6a004d08c9436ed88a39e3c63ecb5202b))
+
+
+### Features
+
+* use SETUP_HOME/cosmos-delegates.txt and increase defaults ([5e87ae1](https://github.com/Agoric/agoric-sdk/commit/5e87ae1c501adf5b35371c30dc999bfcea8c75e6))
+
+
+
+
+
 ## [1.18.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.18.1...@agoric/deployment@1.18.2) (2020-04-03)
 
 

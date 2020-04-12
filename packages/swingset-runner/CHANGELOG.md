@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.3.0-alpha.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.2.1...@agoric/swingset-runner@0.3.0-alpha.0) (2020-04-12)
+
+
+### Bug Fixes
+
+* shut up eslint ([fcc1ff3](https://github.com/Agoric/agoric-sdk/commit/fcc1ff33ffc26dde787c36413e094365e1d09c03))
+
+
+### Features
+
+* Be smarter about where database files are located. ([2eb1469](https://github.com/Agoric/agoric-sdk/commit/2eb14694a108899f1bafb725e3e0b4a34150a07f))
+* new tool -- kernel state dump utility ([f55110e](https://github.com/Agoric/agoric-sdk/commit/f55110e0e4f5963faf1ff86895cd3d0120bb7eca))
+
+
+
+
+
 ## [0.2.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.2.1-alpha.0...@agoric/swingset-runner@0.2.1) (2020-04-02)
 
 **Note:** Version bump only for package @agoric/swingset-runner
