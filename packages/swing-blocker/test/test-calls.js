@@ -21,15 +21,29 @@ test('sync with immediate result', t => {
 
 test('sync after some polling', async t => {
   try {
-    const foo = { type: 'foo' };
+    /**
+     * @type {import('../swingBlocker.js').BlockerSpec}
+     */
+    const fooSpec = { type: 'foo', scope: 'Stack' };
     const blockerFactory = (spec, poll) => {
-      t.deepEquals(spec, { type: 'foo' }, `expected spec`);
+      t.deepEquals(spec, fooSpec, `expected spec`);
       return makeBlocker(poll);
     };
-    registerBlocker(foo.type, blockerFactory);
+    registerBlocker(fooSpec, blockerFactory);
+
+    // Ensure we can only be used with Stack scope.
+    t.throws(
+      () => getBlockerWithPoll(fooSpec, n => n, 'Kernel'),
+      RangeError,
+      'Kernel min scope is denied',
+    );
+    t.assert(
+      getBlockerWithPoll(fooSpec, n => n, 'Inline'),
+      'Inline min scope is allowed',
+    );
 
     let pollCount = 0;
-    const blocker = getBlockerWithPoll(foo, n => {
+    const blocker = getBlockerWithPoll(fooSpec, n => {
       pollCount += 1;
       if (pollCount < 5) {
         // Keep polling.

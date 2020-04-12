@@ -9,13 +9,48 @@ const retryProto = Object.freeze({
 export const RETRY_POLL = Object.freeze(Object.create(retryProto));
 
 /**
- * @typedef {Object.<string, any>} BlockerSpec
+ * How far apart can the blocker be from the unblocker?
+ * @enum {number}
+ */
+const blockerScope = {
+  Inline: 0, // Communicates via local registers
+  Stack: 1, // Communicates via function call
+  Thread: 2, // Communicates via thread-specific data
+  Process: 3, // Communicates via heap
+  Kernel: 4, // Communicates via operating system
+};
+
+/**
+ * @typedef {keyof typeof blockerScope} BlockerScope
+ */
+
+/**
+ * The mapping of scope names to constants.
+ * @type {BlockerScope[]}
+ */
+export const blockerScopeName = [];
+Object.entries(blockerScope).forEach(
+  /**
+   * @type {function ([BlockerScope, number]): void}
+   */
+  ([name, scope]) => {
+    blockerScopeName[scope] = name;
+  },
+);
+
+/**
+ * @typedef {Object} BlockerSpec
  * @property {string} type the registered type
+ * @property {BlockerScope} scope
  */
 
 /**
  * @typedef {() => void} Thunk A function that takes no arguments and returns nothing
- * @typedef {[BlockerSpec, Thunk]} BlockerReturn
+ */
+
+/**
+ * @template {BlockerSpec} BS The specific kind of Blocker specification
+ * @typedef {[BS, Thunk]} BlockerReturn
  */
 
 /**
@@ -49,26 +84,26 @@ export function makeBlocker(poll) {
 }
 
 /**
- * @type {Map<string, [(spec: BlockerSpec, poll: Poller<any>) => () => any, (spec: BlockerSpec) => Thunk]>}
+ * @type {Map<string, [blockerScope, (spec: BlockerSpec, poll: Poller<any>) => () => any, (spec: BlockerSpec) => Thunk]>}
  */
 const registry = new Map();
 
 /**
  * Register blocker/unblocker makers.
  * @template T
- * @param {string} type the spec.type property
+ * @param {BlockerSpec} spec the base blocker specification
  * @param {(spec: BlockerSpec, poll: Poller<T>) => Blocker<T>} makeBlockerWithPoll the blocker maker
  * @param {(spec: BlockerSpec) => Thunk} [makeUnblocker=_spec => () => {}] the unblocker maker
  */
 export function registerBlocker(
-  type,
+  { type, scope },
   makeBlockerWithPoll,
   makeUnblocker = _spec => () => {},
 ) {
   if (registry.has(type)) {
     throw TypeError(`Registry already has an entry for ${type}`);
   }
-  registry.set(type, [makeBlockerWithPoll, makeUnblocker]);
+  registry.set(type, [blockerScope[scope], makeBlockerWithPoll, makeUnblocker]);
 }
 
 /**
@@ -76,29 +111,42 @@ export function registerBlocker(
  * @template T
  * @param {BlockerSpec} spec the created specdata
  * @param {Poller<T>} poll the poll function
+ * @param {BlockerScope} [minScope='Stack'] minimum scope over which the unblocker must communicate
  * @returns {Blocker<T>} the blocker
  */
-export function getBlockerWithPoll(spec, poll) {
+export function getBlockerWithPoll(spec, poll, minScope = 'Stack') {
   const { type } = spec;
   const entry = registry.get(type);
   if (!entry) {
     throw TypeError(`Cannot find registered type ${type}`);
   }
-  const mkBlocker = entry[0];
+  const [maxScope, mkBlocker] = entry;
+  if (maxScope < blockerScope[minScope]) {
+    throw RangeError(
+      `You requested at least ${minScope} scope, but the ${type} blocker only has ${blockerScopeName[maxScope]}`,
+    );
+  }
   return mkBlocker(spec, poll);
 }
 
 /**
  * Construct an unblocker from its specdata.
  * @param {BlockerSpec} spec the created specdata
+ * @param {BlockerScope} minScope the minimum communication distance we can use
  * @returns {Thunk} the unblocker
  */
-export function getUnblocker(spec) {
+export function getUnblocker(spec, minScope = 'Stack') {
   const { type } = spec;
   const entry = registry.get(type);
   if (!entry) {
     throw TypeError(`Cannot find registered type ${type}`);
   }
-  const mkUnblocker = entry[1];
+  // eslint-disable-next-line no-unused-vars
+  const [maxScope, _mkBlocker, mkUnblocker] = entry;
+  if (maxScope < blockerScope[minScope]) {
+    throw RangeError(
+      `You requested at least ${minScope} scope, but the ${type} blocker only has ${blockerScopeName[maxScope]}`,
+    );
+  }
   return mkUnblocker(spec);
 }

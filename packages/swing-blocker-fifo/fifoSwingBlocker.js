@@ -7,7 +7,9 @@ import { RETRY_POLL, makeBlocker } from '@agoric/swing-blocker';
 const FIFO_TYPE = 'fifo';
 
 /**
- * @typedef {import('@agoric/swing-blocker').BlockerReturn} BlockerReturn
+ * @typedef {import('@agoric/swing-blocker').BlockerReturn<FifoBlockerSpec>} BlockerReturn
+ * @typedef {import('@agoric/swing-blocker').BlockerSpec} BlockerSpec
+ * @typedef {BlockerSpec & { fifoPath: string }} FifoBlockerSpec
  * @typedef {typeof import('@agoric/swing-blocker').registerBlocker} RegisterBlocker
  */
 /**
@@ -18,6 +20,15 @@ const FIFO_TYPE = 'fifo';
  * @template T
  * @typedef {import('@agoric/swing-blocker').Blocker<T>} Blocker
  */
+
+/**
+ * The main type information for this blocker.
+ * @type {BlockerSpec}
+ */
+const baseFifoBlockerSpec = {
+  type: FIFO_TYPE,
+  scope: 'Kernel',
+};
 
 /**
  * Create a FIFO for use in makeSwingSync and makeWakeFifo.
@@ -48,7 +59,7 @@ export function makeFifo() {
         // We have an initialized FIFO.
         resolve([
           {
-            type: FIFO_TYPE,
+            ...baseFifoBlockerSpec,
             fifoPath: path,
           },
           cleanup,
@@ -60,10 +71,10 @@ export function makeFifo() {
 
 /**
  * Create a function that unblocks a given FIFO to allow the poll to retry.
- * @param {{ fifoPath: string }} meta the metadata describing the FIFO
+ * @param {FifoBlockerSpec} meta the metadata describing the FIFO
  * @returns {() => void} the unblocker
  */
-export function fifoUnblockerFromMeta({ fifoPath }) {
+export function makeFifoUnblocker({ fifoPath }) {
   return () => {
     fs.writeFileSync(fifoPath, '');
   };
@@ -73,11 +84,11 @@ export function fifoUnblockerFromMeta({ fifoPath }) {
  * Return a Blocker function for this type.
  *
  * @template T
- * @param {{ fifoPath: string }} meta the metadata describing the FIFO
+ * @param {FifoBlockerSpec} meta the metadata describing the FIFO
  * @param {Poller<T>} poll the poller
  * @returns {Blocker<T>} the blocker
  */
-export function fifoBlockerFromMeta({ fifoPath }, poll) {
+export function makeFifoBlockerWithPoll({ fifoPath }, poll) {
   return makeBlocker((...args) => {
     const result = poll(...args);
     if (result !== RETRY_POLL) {
@@ -89,9 +100,13 @@ export function fifoBlockerFromMeta({ fifoPath }, poll) {
 }
 
 /**
- *
+ * Register our FIFO implementation with the `get*` functions.
  * @param {RegisterBlocker} registerBlocker
  */
 export function register(registerBlocker) {
-  registerBlocker(FIFO_TYPE, fifoBlockerFromMeta, fifoUnblockerFromMeta);
+  registerBlocker(
+    baseFifoBlockerSpec,
+    makeFifoBlockerWithPoll,
+    makeFifoUnblocker,
+  );
 }
