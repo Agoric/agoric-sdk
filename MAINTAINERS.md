@@ -2,7 +2,8 @@
 
 ```sh
 # Create a release branch.
-git checkout -b release-1.19.0
+now=`date -u +%Y%m%dT%H%M%S`
+git checkout -b release-$now
 ```
 
 To generate a new alpha release, and CHANGELOG.md files:
@@ -13,7 +14,7 @@ yarn lerna version --no-push --conventional-prerelease
 # Tell which packages need news.
 scripts/need-news HEAD^ > needs-news.md
 # Push the branch.
-git push -u origin release-1.19.0
+git push -u origin release-$now
 # Make docker containers.
 make -C packages/deployment docker-build docker-push
 ```
