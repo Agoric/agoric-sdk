@@ -1,4 +1,3 @@
-import fs from 'fs';
 import { Worker } from 'worker_threads';
 import { test } from 'tape-promise/tape';
 import { registerBlocker, getBlockerFromMeta } from '@agoric/swing-blocker';
@@ -13,7 +12,11 @@ test('wake fifo and return', async t => {
     let pollCount = 0;
     const fifo = await makeFifo();
     process.on('exit', fifo.cleanup);
-    t.deepEquals(JSON.parse(JSON.stringify(fifo.meta)), fifo.meta, `fifo meta is serialisable`);
+    t.deepEquals(
+      JSON.parse(JSON.stringify(fifo.meta)),
+      fifo.meta,
+      `fifo meta is serialisable`,
+    );
     const blocker = getBlockerFromMeta(fifo.meta, () => {
       pollCount += 1;
       if (pollCount > 1) {

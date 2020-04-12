@@ -27,13 +27,15 @@ export function makeFifo() {
   return new Promise((resolve, reject) => {
     tmp.tmpName((err, path) => {
       if (err) {
-        return reject(err);
+        reject(err);
+        return;
       }
 
-      const cp = spawn('mkfifo', [path], { stdio: 'inherit' })
+      const cp = spawn('mkfifo', [path], { stdio: 'inherit' });
       cp.addListener('close', code => {
         if (code !== 0) {
-          return reject(Error(`Cannot create FIFO: ${code}`));
+          reject(Error(`Cannot create FIFO: ${code}`));
+          return;
         }
         // We have an initialized FIFO.
         resolve({
@@ -48,7 +50,7 @@ export function makeFifo() {
             fs.unlinkSync(path);
           },
         });
-      })
+      });
     });
   });
 }
@@ -66,7 +68,7 @@ export function fifoUnblockerFromMeta({ fifoPath }) {
 
 /**
  * Return a Blocker function for this type.
- *  
+ *
  * @template T
  * @param {{ fifoPath: string }} meta the metadata describing the FIFO
  * @param {Poller<T>} poll the poller
@@ -79,11 +81,12 @@ export function fifoBlockerFromMeta({ fifoPath }, poll) {
       return result;
     }
     fs.readFileSync(fifoPath);
+    return undefined;
   });
 }
 
 /**
- * 
+ *
  * @param {RegisterBlocker} registerBlocker
  */
 export function register(registerBlocker) {

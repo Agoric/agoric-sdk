@@ -1,7 +1,7 @@
 // @ts-check
 import { parentPort } from 'worker_threads';
-import { register as registerFifo } from '../fifoSwingBlocker.js';
 import { registerBlocker, getUnblockerFromMeta } from '@agoric/swing-blocker';
+import { register as registerFifo } from '../fifoSwingBlocker.js';
 
 registerFifo(registerBlocker);
 

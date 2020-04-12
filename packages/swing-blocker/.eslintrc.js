@@ -18,6 +18,6 @@ module.exports = {
     'no-unused-expressions': 'off',
     'no-loop-func': 'off',
     'import/prefer-default-export': 'off', // contrary to Agoric standard
-    'import/extensions': 'always'
+    'import/extensions': 'off'
   },
 };

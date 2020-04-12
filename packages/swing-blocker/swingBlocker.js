@@ -53,9 +53,13 @@ const registry = new Map();
  * @template T
  * @param {string} type the meta.type property
  * @param {(meta: BlockerMeta, poll: Poller<T>) => () => T} blockerFromMeta the blocker maker
- * @param {(meta: BlockerMeta) => () => void} [unblockerFromMeta=_meta => () => {}] the unblocker maker 
+ * @param {(meta: BlockerMeta) => () => void} [unblockerFromMeta=_meta => () => {}] the unblocker maker
  */
-export function registerBlocker(type, blockerFromMeta, unblockerFromMeta = _meta => () => {}) {
+export function registerBlocker(
+  type,
+  blockerFromMeta,
+  unblockerFromMeta = _meta => () => {},
+) {
   if (registry.has(type)) {
     throw TypeError(`Registry already has an entry for ${type}`);
   }

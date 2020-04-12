@@ -9,6 +9,18 @@ on:
  pull_request:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: yarn install
+      run: yarn install
+    # 'yarn build' loops over all workspaces
+    - name: yarn build
+      run: yarn build
+    - name: lint check
+      run: yarn lint-check
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -119,6 +131,3 @@ jobs:
       run: cd packages/weak-store && yarn test
     - name: yarn test (zoe)
       run: cd packages/zoe && yarn test
-
-    - name: lint check
-      run: yarn lint-check
