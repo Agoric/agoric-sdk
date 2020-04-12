@@ -37,19 +37,22 @@ export function makeFifo() {
           reject(Error(`Cannot create FIFO: ${code}`));
           return;
         }
+
+        const cleanup = () => {
+          // Wake up callers so they notice we're gone.
+          fs.writeFileSync(path, '');
+          // Delete the FIFO.
+          fs.unlinkSync(path);
+        };
+
         // We have an initialized FIFO.
-        resolve({
-          meta: {
+        resolve([
+          {
             type: FIFO_TYPE,
             fifoPath: path,
           },
-          cleanup() {
-            // Wake up callers so they notice we're gone.
-            fs.writeFileSync(path, '');
-            // Delete the FIFO.
-            fs.unlinkSync(path);
-          },
-        });
+          cleanup,
+        ]);
       });
     });
   });

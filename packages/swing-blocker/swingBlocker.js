@@ -7,14 +7,13 @@
  */
 
 /**
- * @typedef {Object.<string, any>} BlockerMeta
+ * @typedef {Object.<string, any>} BlockerSpec
  * @property {string} type the registered type
  */
 
 /**
- * @typedef {Object} BlockerReturn
- * @property {BlockerMeta} meta the blocker's metadata
- * @property {() => void} cleanup free the blocker's resources
+ * @typedef {() => void} Thunk A function that takes no arguments and returns nothing
+ * @typedef {[BlockerSpec, Thunk]} BlockerReturn
  */
 
 /**
@@ -44,56 +43,56 @@ export function makeBlocker(poll) {
 }
 
 /**
- * @type {Map<string, [(meta: BlockerMeta, poll: Poller<any>) => () => any, (meta: BlockerMeta) => () => void]>}
+ * @type {Map<string, [(spec: BlockerSpec, poll: Poller<any>) => () => any, (spec: BlockerSpec) => Thunk]>}
  */
 const registry = new Map();
 
 /**
  * Register blocker/unblocker makers.
  * @template T
- * @param {string} type the meta.type property
- * @param {(meta: BlockerMeta, poll: Poller<T>) => () => T} blockerFromMeta the blocker maker
- * @param {(meta: BlockerMeta) => () => void} [unblockerFromMeta=_meta => () => {}] the unblocker maker
+ * @param {string} type the spec.type property
+ * @param {(spec: BlockerSpec, poll: Poller<T>) => () => T} makeBlockerWithPoll the blocker maker
+ * @param {(spec: BlockerSpec) => Thunk} [makeUnblocker=_spec => () => {}] the unblocker maker
  */
 export function registerBlocker(
   type,
-  blockerFromMeta,
-  unblockerFromMeta = _meta => () => {},
+  makeBlockerWithPoll,
+  makeUnblocker = _spec => () => {},
 ) {
   if (registry.has(type)) {
     throw TypeError(`Registry already has an entry for ${type}`);
   }
-  registry.set(type, [blockerFromMeta, unblockerFromMeta]);
+  registry.set(type, [makeBlockerWithPoll, makeUnblocker]);
 }
 
 /**
- * Construct a blocker from its metadata.
+ * Construct a blocker from its specdata.
  * @template T
- * @param {BlockerMeta} meta the created metadata
+ * @param {BlockerSpec} spec the created specdata
  * @param {Poller<T>} poll the poll function
  * @returns {() => T} the blocker
  */
-export function getBlockerFromMeta(meta, poll) {
-  const { type } = meta;
+export function getBlockerWithPoll(spec, poll) {
+  const { type } = spec;
   const entry = registry.get(type);
   if (!entry) {
     throw TypeError(`Cannot find registered type ${type}`);
   }
   const mkBlocker = entry[0];
-  return mkBlocker(meta, poll);
+  return mkBlocker(spec, poll);
 }
 
 /**
- * Construct an unblocker from its metadata.
- * @param {BlockerMeta} meta the created metadata
- * @returns {() => void} the unblocker
+ * Construct an unblocker from its specdata.
+ * @param {BlockerSpec} spec the created specdata
+ * @returns {Thunk} the unblocker
  */
-export function getUnblockerFromMeta(meta) {
-  const { type } = meta;
+export function getUnblocker(spec) {
+  const { type } = spec;
   const entry = registry.get(type);
   if (!entry) {
     throw TypeError(`Cannot find registered type ${type}`);
   }
   const mkUnblocker = entry[1];
-  return mkUnblocker(meta);
+  return mkUnblocker(spec);
 }

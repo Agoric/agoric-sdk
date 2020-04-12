@@ -1,6 +1,6 @@
 import { Worker } from 'worker_threads';
 import { test } from 'tape-promise/tape';
-import { registerBlocker, getBlockerFromMeta } from '@agoric/swing-blocker';
+import { registerBlocker, getBlockerWithPoll } from '@agoric/swing-blocker';
 import { makeFifo, register as registerFifo } from '../fifoSwingBlocker.js';
 
 registerFifo(registerBlocker);
@@ -10,14 +10,14 @@ test('wake fifo and return', async t => {
   const worker = new Worker(`${__dirname}/wake-worker-cjs.js`);
   try {
     let pollCount = 0;
-    const fifo = await makeFifo();
-    process.on('exit', fifo.cleanup);
+    const [fifoSpec, cleanup] = await makeFifo();
+    process.on('exit', cleanup);
     t.deepEquals(
-      JSON.parse(JSON.stringify(fifo.meta)),
-      fifo.meta,
-      `fifo meta is serialisable`,
+      JSON.parse(JSON.stringify(fifoSpec)),
+      fifoSpec,
+      `fifoSpec is serialisable`,
     );
-    const blocker = getBlockerFromMeta(fifo.meta, () => {
+    const blocker = getBlockerWithPoll(fifoSpec, () => {
       pollCount += 1;
       if (pollCount > 1) {
         return 123;
@@ -33,12 +33,20 @@ test('wake fifo and return', async t => {
       worker.addListener('error', value => {
         reject(value);
       });
-      worker.postMessage([2000, fifo.meta]);
+      worker.postMessage([2000, fifoSpec]);
     });
 
     // Wait until the worker returns.
     t.assert(true, 'continuing execution');
+    let doneBlocking = false;
+    const pr = Promise.resolve().then(_ =>
+      t.equals(doneBlocking, true, `Promise only resolved after blocking`),
+    );
+
     t.equals(blocker(), 123, 'got blocker results');
+    doneBlocking = true;
+    await pr;
+
     t.equals(pollCount, 2, 'pollCount is 2');
     t.equals(blocker(), 123, 'next blocker immediate');
     t.equals(pollCount, 3, 'pollCount is 3');
