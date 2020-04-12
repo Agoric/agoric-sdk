@@ -1,5 +1,13 @@
 // @ts-check
 
+// TODO: Replace with Presence('RETRY_POLL');
+const toString = () => '[RETRY_POLL]';
+const retryProto = Object.freeze({
+  toString: Object.freeze(toString),
+  [Symbol.toStringTag]: 'RETRY_POLL',
+});
+export const RETRY_POLL = Object.freeze(Object.create(retryProto));
+
 /**
  * @typedef {Object.<string, any>} BlockerSpec
  * @property {string} type the registered type
@@ -12,7 +20,7 @@
 
 /**
  * @template T
- * @typedef {(...args: any[]) => (T|undefined)} Poller Return the results of the poll
+ * @typedef {(...args: any[]) => (T|typeof RETRY_POLL)} Poller Return the results of the poll
  */
 
 /**
@@ -32,7 +40,7 @@ export function makeBlocker(poll) {
     for (;;) {
       // Do the poll for the result.
       const result = poll(...args);
-      if (result !== undefined) {
+      if (result !== RETRY_POLL) {
         // We got something, so return.
         return result;
       }

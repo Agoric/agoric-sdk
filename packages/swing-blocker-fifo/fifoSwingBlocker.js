@@ -2,7 +2,7 @@
 import fs from 'fs';
 import tmp from 'tmp';
 import { spawn } from 'child_process';
-import { makeBlocker } from '@agoric/swing-blocker';
+import { RETRY_POLL, makeBlocker } from '@agoric/swing-blocker';
 
 const FIFO_TYPE = 'fifo';
 
@@ -80,11 +80,11 @@ export function fifoUnblockerFromMeta({ fifoPath }) {
 export function fifoBlockerFromMeta({ fifoPath }, poll) {
   return makeBlocker((...args) => {
     const result = poll(...args);
-    if (result !== undefined) {
+    if (result !== RETRY_POLL) {
       return result;
     }
     fs.readFileSync(fifoPath);
-    return undefined;
+    return RETRY_POLL;
   });
 }
 

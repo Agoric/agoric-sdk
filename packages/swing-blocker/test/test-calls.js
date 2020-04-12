@@ -1,6 +1,7 @@
 // @ts-check
 import { test } from 'tape-promise/tape';
 import {
+  RETRY_POLL,
   makeBlocker,
   registerBlocker,
   getBlockerWithPoll,
@@ -32,7 +33,7 @@ test('sync after some polling', async t => {
       pollCount += 1;
       if (pollCount < 5) {
         // Keep polling.
-        return undefined;
+        return RETRY_POLL;
       }
       return 123 + n;
     });

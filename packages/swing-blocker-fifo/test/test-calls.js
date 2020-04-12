@@ -1,6 +1,10 @@
 import { Worker } from 'worker_threads';
 import { test } from 'tape-promise/tape';
-import { registerBlocker, getBlockerWithPoll } from '@agoric/swing-blocker';
+import {
+  RETRY_POLL,
+  registerBlocker,
+  getBlockerWithPoll,
+} from '@agoric/swing-blocker';
 import { makeFifo, register as registerFifo } from '../fifoSwingBlocker.js';
 
 registerFifo(registerBlocker);
@@ -17,12 +21,12 @@ test('wake fifo and return', async t => {
       fifoSpec,
       `fifoSpec is serialisable`,
     );
-    const blocker = getBlockerWithPoll(fifoSpec, () => {
+    const blocker = getBlockerWithPoll(fifoSpec, (n, mult = 1) => {
       pollCount += 1;
       if (pollCount > 1) {
-        return 123;
+        return 123 + n * mult;
       }
-      return undefined;
+      return RETRY_POLL;
     });
 
     await new Promise((resolve, reject) => {
@@ -43,12 +47,12 @@ test('wake fifo and return', async t => {
       t.equals(doneBlocking, true, `Promise only resolved after blocking`),
     );
 
-    t.equals(blocker(), 123, 'got blocker results');
+    t.equals(blocker(2), 125, 'got blocker results');
     doneBlocking = true;
     await pr;
 
     t.equals(pollCount, 2, 'pollCount is 2');
-    t.equals(blocker(), 123, 'next blocker immediate');
+    t.equals(blocker(3, 4), 135, 'next blocker immediate');
     t.equals(pollCount, 3, 'pollCount is 3');
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
