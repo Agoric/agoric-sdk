@@ -216,7 +216,7 @@ export default function makeBlockManager(
     savedActions = currentActions;
     computedHeight = action.blockHeight;
 
-    log(
+    log.debug(
       `wrote SwingSet checkpoint (mailbox=${mailboxSize}), [run=${runTime}ms, mb=${mbTime}ms, save=${saveTime}ms]`,
     );
   }

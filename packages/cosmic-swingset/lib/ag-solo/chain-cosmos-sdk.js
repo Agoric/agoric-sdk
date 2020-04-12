@@ -174,11 +174,11 @@ export async function connectToChain(
     let resolveWait;
     const qentry = [
       () => {
-        // console.log('proceeding');
+        // console.debug('proceeding');
         resolveWait();
       },
       () => {
-        // console.log('cancelling');
+        // console.debug('cancelling');
         cancelled = true;
         resolveWait();
       },
@@ -199,9 +199,9 @@ export async function connectToChain(
         parseReturn,
         stdin,
         async () => {
-          // console.log(`Waiting for`, wait);
+          // console.debug(`Waiting for`, wait);
           await wait;
-          // console.log(`Wait done, cancelled`, cancelled);
+          // console.debug(`Wait done, cancelled`, cancelled);
           if (cancelled) {
             throw CANCEL_USE_DEFAULT;
           }
@@ -305,7 +305,7 @@ export async function connectToChain(
     log(`new block on ${GCI}, fetching mailbox`);
     return getMailbox(height)
       .then(({ outbox, ack }) => {
-        // console.log('have outbox', outbox, ack);
+        // console.debug('have outbox', outbox, ack);
         if (outbox) {
           inbound(GCI, outbox, ack);
         }

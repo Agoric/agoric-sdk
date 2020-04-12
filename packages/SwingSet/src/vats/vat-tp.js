@@ -45,7 +45,7 @@ function build(E, D) {
         transmit(msg) {
           const o = r.outbound;
           const num = o.highestAdded + 1;
-          // console.log(`transmit to ${name}[${num}]: ${msg}`);
+          // console.debug(`transmit to ${name}[${num}]: ${msg}`);
           D(mailbox).add(name, num, msg);
           o.highestAdded = num;
         },
@@ -67,7 +67,7 @@ function build(E, D) {
         const [num, body] = m;
         if (num > i.highestDelivered) {
           // TODO: SO() / sendOnly()
-          // console.log(`receive from ${name}[${num}]: ${body}`);
+          // console.debug(`receive from ${name}[${num}]: ${body}`);
           E(i.receiver).receive(body);
           i.highestDelivered = num;
           D(mailbox).ackInbound(name, num);

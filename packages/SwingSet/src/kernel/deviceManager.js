@@ -150,7 +150,7 @@ export default function makeDeviceManager(
         slots: results.slots.map(slot => mapDeviceSlotToKernelSlot(slot)),
       });
     } catch (e) {
-      console.log(
+      console.debug(
         `device[${deviceName}][${t}].${method} invoke failed: ${e}`,
         e,
       );

@@ -107,7 +107,7 @@ function run() {
   // broadcasts
   ws.addEventListener('message', ev => {
     try {
-      // console.log('ws.message:', ev.data);
+      // console.debug('ws.message:', ev.data);
       const obj = JSON.parse(ev.data);
       handleMessage(obj);
     } catch (e) {
@@ -116,7 +116,7 @@ function run() {
   });
 
   ws.addEventListener('open', _ev => {
-    console.log(`ws.open!`);
+    console.debug(`ws.open!`);
     while (resetFns.length > 0) {
       const fn = resetFns.shift();
       try {
@@ -129,7 +129,7 @@ function run() {
       .then(res => {
         // eslint-disable-next-line no-use-before-define
         setNextHistNum(res.highestHistory + 1);
-        // console.log(`nextHistNum is now ${nextHistNum}`, res);
+        // console.debug(`nextHistNum is now ${nextHistNum}`, res);
       })
       .then(_ => call({ type: 'rebroadcastHistory' }))
       .catch(_ => ws.close());
@@ -149,7 +149,7 @@ function run() {
 
   function submitEval() {
     const command = inp.value;
-    console.log('submitEval', command);
+    console.debug('submitEval', command);
     const number = setNextHistNum(nextHistNum + 1);
     updateHistory(number, command, `sending for eval`);
     commands[commands.length - 1] = inp.value;

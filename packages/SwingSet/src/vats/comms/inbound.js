@@ -41,7 +41,7 @@ export function deliverFromRemote(syscall, state, remoteID, message) {
   }
 
   if (command === 'resolve') {
-    // console.log(`-- deliverFromRemote.resolve, ${message}, pre-state is:`);
+    // console.debug(`-- deliverFromRemote.resolve, ${message}, pre-state is:`);
     // dumpState(state);
     const sci = message.indexOf(';');
     assert(sci !== -1, details`missing semicolon in resolve ${message}`);

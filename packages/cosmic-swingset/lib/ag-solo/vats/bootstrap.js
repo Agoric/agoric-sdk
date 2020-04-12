@@ -4,7 +4,7 @@ import { allComparable } from '@agoric/same-structure';
 // has been run to update gci.js
 import { GCI } from './gci';
 
-console.log(`loading bootstrap.js`);
+console.debug(`loading bootstrap.js`);
 
 function parseArgs(argv) {
   let ROLE;
@@ -200,7 +200,7 @@ export default function setup(syscall, state, helpers) {
             );
           }
 
-          console.log(`${ROLE} bootstrap starting`);
+          console.debug(`${ROLE} bootstrap starting`);
           // scenario #1: Cloud has: multi-node chain, controller solo node,
           // provisioning server (python). New clients run provisioning
           // client (python) on localhost, which creates client solo node on
@@ -219,7 +219,7 @@ export default function setup(syscall, state, helpers) {
               // accept provisioning requests from the controller
               const provisioner = harden({
                 pleaseProvision(nickname, pubkey) {
-                  console.log('Provisioning', nickname, pubkey);
+                  console.debug('Provisioning', nickname, pubkey);
                   return E(vats.provisioning).pleaseProvision(
                     nickname,
                     pubkey,
@@ -380,7 +380,7 @@ export default function setup(syscall, state, helpers) {
               throw new Error(`ROLE was not recognized: ${ROLE}`);
           }
 
-          console.log(`all vats initialized for ${ROLE}`);
+          console.debug(`all vats initialized for ${ROLE}`);
         },
       });
     },

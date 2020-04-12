@@ -37,7 +37,8 @@ const main = async (progname, rawArgs, powers) => {
 
   program
     .option('--sdk', 'use the Agoric SDK containing this program')
-    .option('--debug', 'enable debug messages')
+    .option('-v, --verbose', 'verbosity that can be increased',
+      (_value, previous) => previous + 1, 0);
 
   // Add each of the commands.
   program
@@ -79,6 +80,8 @@ const main = async (progname, rawArgs, powers) => {
     .option('--no-restart', 'do not actually start the VM')
     .option('--pull', 'for Docker-based VM, pull the image before running')
     .option('--delay [seconds]', 'delay for simulated chain to process messages')
+    .option('--inspect [host[:port]]', 'activate inspector on host:port (default: "127.0.0.1:9229")')
+    .option('--inspect-brk [host[:port]]', 'activate inspector on host:port and break at start of script (default: "127.0.0.1:9229")')
     .action(async (profile, args, cmd) => {
       await isNotBasedir();
       const opts =  {...program.opts(), ...cmd.opts()};

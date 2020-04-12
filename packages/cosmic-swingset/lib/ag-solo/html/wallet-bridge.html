@@ -14,7 +14,7 @@
       let origin;
       ws.addEventListener('message', ev => {
         const obj = JSON.parse(ev.data)
-        // console.log('to dapp', origin, obj);
+        // console.debug('to dapp', origin, obj);
         if (origin === undefined) {
           dappQueue.push(obj);
           return;
@@ -26,7 +26,7 @@
 
       ws.addEventListener('open', () => {
         if (wsQueue.length) {
-          console.log('sending', wsQueue.length, 'queued messages from', origin);
+          console.debug('sending', wsQueue.length, 'queued messages from', origin);
         }
         while (wsQueue.length) {
           // The queued messages are raw objects, so JSONify.
@@ -46,7 +46,7 @@
             }
           }
         }
-        // console.log('from dapp', origin, ev.data);
+        // console.debug('from dapp', origin, ev.data);
         const obj = { ...ev.data, dappOrigin: origin };
         if (ws.readyState !== ws.OPEN) {
           wsQueue.push(obj);

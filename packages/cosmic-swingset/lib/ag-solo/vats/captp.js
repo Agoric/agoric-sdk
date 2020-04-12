@@ -8,7 +8,7 @@ export const getCapTPHandler = (E, send, getBootstrapObject) => {
   const handler = harden({
     onOpen(_obj, meta) {
       const { channelHandle, origin = 'unknown' } = meta || {};
-      console.info(`Starting CapTP`, meta);
+      console.debug(`Starting CapTP`, meta);
       const sendObj = o => {
         send(o, [channelHandle]);
       };
@@ -20,7 +20,7 @@ export const getCapTPHandler = (E, send, getBootstrapObject) => {
       chans.set(channelHandle, [dispatch, abort]);
     },
     onClose(_obj, meta) {
-      console.log(`Finishing CapTP`, meta);
+      console.debug(`Finishing CapTP`, meta);
       const dispatchAbort = chans.get(meta.channelHandle);
       if (dispatchAbort) {
         (1, dispatchAbort[1])();
@@ -28,10 +28,10 @@ export const getCapTPHandler = (E, send, getBootstrapObject) => {
       chans.delete(meta.channelHandle);
     },
     onError(obj, meta) {
-      console.log(`Error in CapTP`, meta, obj.error);
+      console.debug(`Error in CapTP`, meta, obj.error);
     },
     onMessage(obj, meta) {
-      console.error('processing inbound', obj);
+      console.debug('processing inbound', obj);
       const dispatchAbort = chans.get(meta.channelHandle);
       if (!dispatchAbort || !(1, dispatchAbort[0])(obj)) {
         console.error(`Could not find CapTP handler ${obj.type}`, meta);

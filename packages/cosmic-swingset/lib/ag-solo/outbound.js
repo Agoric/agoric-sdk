@@ -23,10 +23,10 @@ export function deliver(mbs) {
       }
     });
     newMessages.sort((a, b) => a[0] - b[0]);
-    // console.log(` ${newMessages.length} new messages`);
+    // console.debug(` ${newMessages.length} new messages`);
     const acknum = data[target].inboundAck;
     if (newMessages.length || acknum !== t.highestAck) {
-      log.info(
+      log(
         `invoking deliverator; ${newMessages.length} new messages for ${target}`,
       );
       t.deliverator(newMessages, acknum);

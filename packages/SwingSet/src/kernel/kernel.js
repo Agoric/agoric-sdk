@@ -419,7 +419,7 @@ export default function buildKernel(kernelEndowments) {
   }
 
   function addGenesisDevice(name, setup, endowments) {
-    console.log(`kernel.addDevice(${name})`);
+    console.debug(`kernel.addDevice(${name})`);
     name = `${name}`;
     harden(setup);
     if (!(setup instanceof Function)) {
@@ -463,7 +463,7 @@ export default function buildKernel(kernelEndowments) {
       vatObj0s[name] = vref;
       const kernelSlot = manager.mapVatSlotToKernelSlot(vatSlot);
       vrefs.set(vref, kernelSlot);
-      console.log(`adding vref ${name} [${vatID}]`);
+      console.debug(`adding vref ${name} [${vatID}]`);
     });
 
     const drefs = new Map();
@@ -481,7 +481,7 @@ export default function buildKernel(kernelEndowments) {
       const devSlot = makeVatSlot('device', true, 0);
       const kernelSlot = manager.mapDeviceSlotToKernelSlot(devSlot);
       drefs.set(dref, kernelSlot);
-      console.log(`adding dref ${name} [${deviceID}]`);
+      console.debug(`adding dref ${name} [${deviceID}]`);
     });
     if (Object.getOwnPropertyNames(deviceObj0s) === 0) {
       throw new Error('pass-by-copy rules require at least one device');
@@ -630,7 +630,7 @@ export default function buildKernel(kernelEndowments) {
     }
     started = true;
     const wasInitialized = kernelKeeper.getInitialized();
-    console.log(`wasInitialized = ${wasInitialized}`);
+    console.debug(`wasInitialized = ${wasInitialized}`);
 
     // if the state is not yet initialized, populate the starting state
     if (!wasInitialized) {
@@ -648,7 +648,7 @@ export default function buildKernel(kernelEndowments) {
     for (const name of genesisVats.keys()) {
       const { setup, options } = genesisVats.get(name);
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
-      console.log(`Assigned VatID ${vatID} for genesis vat ${name}`);
+      console.debug(`Assigned VatID ${vatID} for genesis vat ${name}`);
       const manager = buildVatManager(vatID, name, setup);
       ephemeral.vats.set(
         vatID,
@@ -675,7 +675,7 @@ export default function buildKernel(kernelEndowments) {
     for (const name of genesisDevices.keys()) {
       const { setup, endowments: devEndowments } = genesisDevices.get(name);
       const deviceID = kernelKeeper.allocateDeviceIDForNameIfNeeded(name);
-      console.log(`Assigned DeviceID ${deviceID} for genesis device ${name}`);
+      console.debug(`Assigned DeviceID ${deviceID} for genesis device ${name}`);
       ephemeral.devices.set(deviceID, {
         manager: buildDeviceManager(deviceID, name, setup, devEndowments),
       });
@@ -686,7 +686,7 @@ export default function buildKernel(kernelEndowments) {
     // vat's transcript, so we don't re-queue it.
     if (!wasInitialized && bootstrapVatName) {
       const bootstrapVatID = vatNameToID(bootstrapVatName);
-      console.log(`=> queueing bootstrap()`);
+      console.debug(`=> queueing bootstrap()`);
       callBootstrap(bootstrapVatID, argvString);
     }
 
@@ -695,11 +695,11 @@ export default function buildKernel(kernelEndowments) {
       console.info('Replaying SwingSet transcripts');
       const oldLength = kernelKeeper.getRunQueueLength();
       for (const vatID of ephemeral.vats.keys()) {
-        console.log(`Replaying transcript of vatID ${vatID}`);
+        console.debug(`Replaying transcript of vatID ${vatID}`);
         const vat = ephemeral.vats.get(vatID);
         // eslint-disable-next-line no-await-in-loop
         await vat.manager.replayTranscript();
-        console.log(`finished replaying vatID ${vatID} transcript `);
+        console.debug(`finished replaying vatID ${vatID} transcript `);
       }
       const newLength = kernelKeeper.getRunQueueLength();
       if (newLength !== oldLength) {

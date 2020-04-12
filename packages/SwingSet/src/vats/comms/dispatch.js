@@ -31,7 +31,7 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
     if (target === controller) {
       return deliverToController(state, method, args, result, syscall);
     }
-    // console.log(`comms.deliver ${target} r=${result}`);
+    // console.debug(`comms.deliver ${target} r=${result}`);
     // dumpState(state);
     if (state.objectTable.has(target) || state.promiseTable.has(target)) {
       assert(
@@ -68,7 +68,7 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
 
   function notifyFulfillToData(promiseID, data) {
     insistCapData(data);
-    // console.log(`comms.notifyFulfillToData(${promiseID})`);
+    // console.debug(`comms.notifyFulfillToData(${promiseID})`);
     // dumpState(state);
 
     // I *think* we should never get here for local promises, since the
@@ -91,14 +91,14 @@ export function buildCommsDispatch(syscall, _state, _helpers) {
   }
 
   function notifyFulfillToPresence(promiseID, slot) {
-    // console.log(`comms.notifyFulfillToPresence(${promiseID}) = ${slot}`);
+    // console.debug(`comms.notifyFulfillToPresence(${promiseID}) = ${slot}`);
     const resolution = harden({ type: 'object', slot });
     resolvePromiseToRemote(syscall, state, promiseID, resolution, transmit);
   }
 
   function notifyReject(promiseID, data) {
     insistCapData(data);
-    // console.log(`comms.notifyReject(${promiseID})`);
+    // console.debug(`comms.notifyReject(${promiseID})`);
     const resolution = harden({ type: 'reject', data });
     resolvePromiseToRemote(syscall, state, promiseID, resolution, transmit);
   }

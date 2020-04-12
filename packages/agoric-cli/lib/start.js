@@ -18,7 +18,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     cargs,
     { stdio = 'inherit', env = pspawnEnv, ...rest } = {},
   ) => {
-    log.info(chalk.blueBright(cmd, ...cargs));
+    log.debug(chalk.blueBright(cmd, ...cargs));
     const cp = spawn(cmd, cargs, { stdio, env, ...rest });
     const pr = new Promise((resolve, _reject) => {
       cp.on('exit', resolve);
@@ -79,7 +79,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       }
     }
 
-    const fakeGCI = 'fake-chain';
+    const fakeGCI = 'sim-chain';
     if (!(await exists(agServer))) {
       log(chalk.yellow(`initializing ${profileName}`));
       await pspawn(
@@ -92,7 +92,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     if (fakeDelay >= 0) {
-      log(chalk.yellow(`setting fake chain with ${fakeDelay} second delay`));
+      log(chalk.yellow(`setting sim chain with ${fakeDelay} second delay`));
       await pspawn(
         agSolo,
         ['set-fake-chain', '--role=two_chain', `--delay=${fakeDelay}`, fakeGCI],
@@ -108,7 +108,20 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       return 0;
     }
 
-    const ps = pspawn(agSolo, ['start', '--role=two_client'], {
+    // Translate {inspectBrk: brkOpt} into [`--inspect-brk=${brkOpt}`]
+    const debugOpts = [];
+    for (const [prop, value] of Object.entries(opts)) {
+      if (prop.startsWith('inspect')) {
+        const name = prop.replace(/([A-Z])/g, '-$1').toLowerCase();
+        if (value === true) {
+          debugOpts.push(`--${name}`);
+        } else {
+          debugOpts.push(`--${name}=${value}`);
+        }
+      }
+    }
+
+    const ps = pspawn(agSolo, [...debugOpts, 'start', '--role=two_client'], {
       cwd: agServer,
     });
     process.on('SIGINT', () => ps.cp.kill('SIGINT'));
@@ -210,10 +223,11 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
   const popts = opts;
 
-  if (popts.debug) {
-    // Crank out the debugging.
+  if (popts.verbose > 1) {
+    // Enable verbose logs.
     pspawnEnv.DEBUG = 'agoric';
-  } else {
+  } else if (!popts.verbose) {
+    // Disable more logs.
     pspawnEnv.DEBUG = '';
   }
 

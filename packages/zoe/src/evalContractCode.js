@@ -23,8 +23,13 @@ const evaluateStringToFn = (functionSrcString, endowments) => {
 };
 
 const evalContractCode = (code, additionalEndowments) => {
+  // Make the console more verbose.
+  const louderConsole = {
+    ...console,
+    log: console.info,
+  };
   const defaultEndowments = {
-    console, // TODO: add prefix to console output
+    console: louderConsole,
     harden,
     producePromise,
     assert,

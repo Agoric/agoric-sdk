@@ -14,7 +14,7 @@ harden(build);
 function setup(syscall, state, helpers) {
   function log(...args) {
     helpers.log(...args);
-    console.log(...args);
+    console.debug(...args);
   }
   return helpers.makeLiveSlots(
     syscall,

@@ -30,7 +30,7 @@ export async function upload(homeP, bundle, keys, verbose = false) {
     } else {
       // Install the contract, then save it in home.uploads.
       if (verbose) {
-        console.log(name);
+        console.debug(name);
       }
       contractsAP.push(targetObj~.install(source, moduleFormat));
       names.push(name);

@@ -60,7 +60,7 @@ export function getReplHandler(E, homeObjects, send) {
   const replHandles = new Set();
 
   function updateHistorySlot(histnum) {
-    // console.log(`sendBroadcast ${histnum}`);
+    // console.debug(`sendBroadcast ${histnum}`);
     send(
       {
         type: 'updateHistory',
@@ -80,7 +80,7 @@ export function getReplHandler(E, homeObjects, send) {
     },
 
     rebroadcastHistory() {
-      // console.log(`rebroadcastHistory`, highestHistory);
+      // console.debug(`rebroadcastHistory`, highestHistory);
       for (let histnum = 0; histnum <= highestHistory; histnum += 1) {
         updateHistorySlot(histnum);
       }
@@ -89,7 +89,7 @@ export function getReplHandler(E, homeObjects, send) {
 
     doEval(obj, _meta) {
       const { number: histnum, body } = obj;
-      console.log(`doEval`, histnum, body);
+      console.debug(`doEval`, histnum, body);
       if (histnum <= highestHistory) {
         throw new Error(
           `histnum ${histnum} is not larger than highestHistory ${highestHistory}`,

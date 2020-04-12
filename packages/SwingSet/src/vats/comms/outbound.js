@@ -74,7 +74,7 @@ export function deliverToRemote(
   // now render the transmission. todo: 'method' lives in the transmission
   // for now, but will be moved to 'data'
   const msg = `deliver:${remoteTargetSlot}:${method}:${remoteResultSlot}${rmss};${args.body}`;
-  // console.log(`deliverToRemote(target=${target}/${remoteTargetSlot}, result=${result}/${remoteResultSlot}) leaving state as:`);
+  // console.debug(`deliverToRemote(target=${target}/${remoteTargetSlot}, result=${result}/${remoteResultSlot}) leaving state as:`);
   // dumpState(state);
   transmit(syscall, state, remoteID, msg);
 }
@@ -86,7 +86,7 @@ export function resolvePromiseToRemote(
   resolution,
   transmit,
 ) {
-  // console.log(`resolvePromiseToRemote ${promiseID}`, resolution);
+  // console.debug(`resolvePromiseToRemote ${promiseID}`, resolution);
   insistVatType('promise', promiseID);
   insistPromiseIsUnresolved(state, promiseID);
   insistPromiseDeciderIsMe(state, promiseID);

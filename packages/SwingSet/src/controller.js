@@ -65,7 +65,7 @@ function byName(a, b) {
  * lots of places).
  */
 export function loadBasedir(basedir) {
-  log(`= loading config from basedir ${basedir}`);
+  log.debug(`= loading config from basedir ${basedir}`);
   const vats = new Map(); // name -> { sourcepath, options }
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.sort(byName);
@@ -299,7 +299,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
   const kernel = buildSESKernel(sesEvaluator, kernelEndowments);
 
   async function addGenesisVat(name, sourceIndex, options = {}) {
-    log(`= adding vat '${name}' from ${sourceIndex}`);
+    log.debug(`= adding vat '${name}' from ${sourceIndex}`);
     const setup = await evaluateToSetup(sourceIndex, `vat-${name}`);
     kernel.addGenesisVat(name, setup, options);
   }
