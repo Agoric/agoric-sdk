@@ -8,12 +8,12 @@ import {
 
 test('sync with immediate result', t => {
   let pollCount = 0;
-  const blocker = makeBlocker(() => {
+  const blocker = makeBlocker(n => {
     pollCount += 1;
-    return 123;
+    return 123 + n;
   });
 
-  t.equals(blocker(), 123, 'blocker returns correctly');
+  t.equals(blocker(1), 124, 'blocker returns correctly');
   t.equals(pollCount, 1, 'only one poll was done');
   t.end();
 });
@@ -28,22 +28,22 @@ test('sync after some polling', async t => {
     registerBlocker(foo.type, blockerFactory);
 
     let pollCount = 0;
-    const blocker = getBlockerWithPoll(foo, () => {
+    const blocker = getBlockerWithPoll(foo, n => {
       pollCount += 1;
       if (pollCount < 5) {
         // Keep polling.
         return undefined;
       }
-      return 123;
+      return 123 + n;
     });
 
     let doneBlocking = false;
     const pr = Promise.resolve().then(_ => {
       t.assert(doneBlocking, 'Promise only resolves after blocking');
     });
-    t.equals(blocker(), 123, 'blocker returns correctly');
+    t.equals(blocker(3), 126, 'blocker returns correctly');
     t.equals(pollCount, 5, 'exactly five polls were done');
-    t.equals(blocker(), 123, 'second blocker returns');
+    t.equals(blocker(2), 125, 'second blocker returns');
     t.equals(pollCount, 6, 'just one more poll was done');
     doneBlocking = true;
     await pr;

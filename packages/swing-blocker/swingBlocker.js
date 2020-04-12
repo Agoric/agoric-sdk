@@ -1,12 +1,6 @@
 // @ts-check
 
 /**
- * @template T
- * @callback Blocker A blocker that waits for a new result
- * @returns {T} The result of this sync
- */
-
-/**
  * @typedef {Object.<string, any>} BlockerSpec
  * @property {string} type the registered type
  */
@@ -18,8 +12,12 @@
 
 /**
  * @template T
- * @callback Poller Return the results of the poll
- * @returns {T|undefined}
+ * @typedef {(...args: any[]) => (T|undefined)} Poller Return the results of the poll
+ */
+
+/**
+ * @template T
+ * @typedef {(...args: any[]) => T} Blocker Synchronously wait for a new result
  */
 
 /**
@@ -30,10 +28,10 @@
  * @returns {Blocker<T>} the polling blocker
  */
 export function makeBlocker(poll) {
-  return () => {
+  return (...args) => {
     for (;;) {
       // Do the poll for the result.
-      const result = poll();
+      const result = poll(...args);
       if (result !== undefined) {
         // We got something, so return.
         return result;
@@ -51,7 +49,7 @@ const registry = new Map();
  * Register blocker/unblocker makers.
  * @template T
  * @param {string} type the spec.type property
- * @param {(spec: BlockerSpec, poll: Poller<T>) => () => T} makeBlockerWithPoll the blocker maker
+ * @param {(spec: BlockerSpec, poll: Poller<T>) => Blocker<T>} makeBlockerWithPoll the blocker maker
  * @param {(spec: BlockerSpec) => Thunk} [makeUnblocker=_spec => () => {}] the unblocker maker
  */
 export function registerBlocker(
@@ -70,7 +68,7 @@ export function registerBlocker(
  * @template T
  * @param {BlockerSpec} spec the created specdata
  * @param {Poller<T>} poll the poll function
- * @returns {() => T} the blocker
+ * @returns {Blocker<T>} the blocker
  */
 export function getBlockerWithPoll(spec, poll) {
   const { type } = spec;

@@ -78,8 +78,8 @@ export function fifoUnblockerFromMeta({ fifoPath }) {
  * @returns {Blocker<T>} the blocker
  */
 export function fifoBlockerFromMeta({ fifoPath }, poll) {
-  return makeBlocker(() => {
-    const result = poll();
+  return makeBlocker((...args) => {
+    const result = poll(...args);
     if (result !== undefined) {
       return result;
     }
