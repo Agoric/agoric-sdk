@@ -1,9 +1,11 @@
 // @ts-check
 import makeStore from '@agoric/store';
 import rawHarden from '@agoric/harden';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 
 const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
+
+const LOOPBACK_MULTIADDR = '/if/loopback';
 
 /**
  * @typedef {string|Buffer|ArrayBuffer} Data
@@ -34,20 +36,34 @@ export function bytesToString(bytes) {
 }
 
 /**
- * @typedef {Object} Host The local host
- * @property {() => Promise<Port>} allocatePort Allocate an anonymous port
- * @property {(portName: string) => Promise<Port>} claimPort Claim a named port
- * @property {() => HostHandle} getHandle Get the host handle that represents this host
+ * @typedef {[string, string][]} Endpoint An expanded address
+ * @typedef {string|Endpoint} Multiaddr An address formatted as in https://github.com/multiformats/multiaddr
+ *
+ * @typedef {Object} Peer The local peer
+ * @property {(localAddr: Multiaddr) => Promise<Port>} bind Claim a port
+ *
+ * Here is the difference between string and Endpoint:
+ *
+ * unspecified port on local ibc interface: /if/ibc0 [['if', 'ibc0']]
+ * specific local port: /if/ibc0/ordered/transfer [['if', 'ibc0'], ['ordered', 'transfer']]
+ *
+ * remote pointer to chain: /dnsaddr/ibc.testnet.agoric.com/ordered/transfer
+ *   [['dnsaddr', 'ibc.testnet.agoric.com'], ['ordered', 'transfer']]
+ * resolve step to another pointer: /dnsaddr/rpc.testnet.agoric.com/ibc/testnet-1.19.0/gci/4bc8d.../ordered/transfer
+ *   [['dnsaddr', 'rpc.testnet.agoric.com'], ['ibc', 'testnet-1.19.0'], ['gci', '4bc8d...'], ['ordered', 'transfer']]
+ * resolve to the individual peers: /ip4/172.17.0.4/tcp/26657/tendermint/0.33/ibc/testnet-1.19.0/gci/4bc8d.../ordered/transfer
+ *   [['ip4', '172.17.0.4'], ['tcp', '26657'], ['tendermint', '0.33'],
+ *    ['ibc', 'testnet-1.19.0'], ['gci', '4bc8d...'], ['ordered', 'transfer']]
  */
 
 /**
- * @typedef {Object} Port A port that has been bound to a host
- * @property {() => string} getBoundName Get the locally bound name of this port
+ * @typedef {Object} Port A port that has been bound to a Peer
+ * @property {() => Multiaddr} getLocalAddress Get the locally bound name of this port
  * @property {(acceptHandler: ListenHandler) => void} listen Begin accepting incoming channels
- * @property {(host: HostHandle, portName: string, protocol: string, channelHandler: ChannelHandler) => Promise<Channel>} connect Make an outbound channel
+ * @property {(remote: Multiaddr, channelHandler: ChannelHandler) => Promise<Channel>} connect Make an outbound channel
  *
  * @typedef {Object} ListenHandler A handler for incoming channels
- * @property {(src: Endpoint, dst: Endpoint) => Promise<ChannelHandler>} onAccept A new channel is incoming
+ * @property {(local: Endpoint, remote: Endpoint) => Promise<ChannelHandler>} onAccept A new channel is incoming
  * @property {(rej: any) => void} onError There was an error while listening
  */
 
@@ -55,7 +71,6 @@ export function bytesToString(bytes) {
  * @typedef {Object} Channel
  * @property {(packetBytes: Data) => Promise<Bytes>} send Send a packet on the channel
  * @property {() => void} close Close both ends of the channel
- *
  *
  * @typedef {Object} ChannelHandler A handler for a given Channel
  * @property {(channel: Channel) => void} [onOpen] The channel has been opened
@@ -66,72 +81,79 @@ export function bytesToString(bytes) {
  */
 
 /**
- * @typedef {Object} Endpoint
- * @property {string} protocol The name of the protocol in use
- * @property {HostHandle} host The remote host
- * @property {string} portName The remote port (per host)
- *
  * @typedef {Object} Packet
  * @property {Endpoint} src Source of the packet
  * @property {Endpoint} dst Destination of the packet
  * @property {Bytes} bytes Bytes in the packet
- * @property {import('@agoric/make-promise').Deferred<Bytes,any>} deferredAck The deferred to resolve the result
+ * @property {import('@agoric/produce-promise').PromiseRecord<Bytes>} deferredAck The deferred to resolve the result
  *
- * @typedef {{ handle: 'Host' }} HostHandle An active host
  * @typedef {number} TTL A time-to-live for a packet
  */
 
 /**
- * @typedef {Object} HostHandler A handler for things the host implementation will invoke
- * @property {(newHost: HostHandle, host: HostImpl) => void} onCreate This host is created
- * @property {(portName: string, listenHandler: ListenHandler) => Promise<void>} onListen A port was listening
- * @property {(src: Endpoint, dst: Endpoint) => Promise<ChannelHandler>} onConnect A port was connected
+ * @typedef {Object} PeerHandler A handler for things the peer implementation will invoke
+ * @property {(localAddr: Endpoint, peer: PeerImpl) => void} onCreate This peer is created
+ * @property {(localAddr: Endpoint, listenHandler: ListenHandler) => Promise<void>} onListen A port was listening
+ * @property {(remote: Endpoint, local: Endpoint) => Promise<ChannelHandler>} onConnect A port was connected
  *
- * @typedef {Object} HostImpl Things the host can do for us
- * @property {(port: Port, dst: Endpoint, channelHandler: ChannelHandler) => Promise<Channel>} connect Establish a channel from this host to an endpoint
+ * @typedef {Object} PeerImpl Things the peer can do for us
+ * @property {(port: Port, remote: Multiaddr, channelHandler: ChannelHandler) => Promise<Channel>} connect Establish a channel from this peer to an endpoint
  */
 
 /**
- * @type {Map.<HostHandle, HostHandler>} Translate from handles to handlers
+ * @param {Multiaddr} ma
+ * @returns {Endpoint}
  */
-const hostHandleMap = new Map();
-
-let lastID = 0;
-
-/**
- * @template {string} T
- * @param {T} type The type of handle to create.
- * @returns {{handle: T, id: number}}
- */
-function makeHandle(type) {
-  lastID += 1;
-  return harden({ handle: type, id: lastID });
+export function parseMultiaddr(ma) {
+  if (typeof ma !== 'string') {
+    return ma;
+  }
+  let s = ma;
+  let m;
+  /**
+   * @type {[string, string][]}
+   */
+  const acc = [];
+  // eslint-disable-next-line no-cond-assign
+  while ((m = s.match(/^\/([^/]+)\/([^/]*)/))) {
+    s = s.substr(m[0].length);
+    acc.push([m[1], m[2]]);
+  }
+  if (s !== '') {
+    throw TypeError(`Error parsing Multiaddr ${ma} at ${s}`);
+  }
+  return acc;
 }
 
 /**
- * Create a Host that has a handler.
  *
- * @param {HostHandler} hostHandler
- * @returns {Host} the local capability for connecting and listening
+ * @param {Multiaddr} ma
+ * @returns {string}
  */
-export function makeHost(hostHandler) {
-  const newHost = makeHandle('Host');
-  hostHandleMap.set(newHost, hostHandler);
+export function unparseMultiaddr(ma) {
+  if (typeof ma === 'string') {
+    return ma;
+  }
+  return ma.reduce((prior, arg) => prior + arg.join('/'), '/');
+}
 
+/**
+ * Create a Peer that has a handler.
+ *
+ * @param {PeerHandler} peerHandler
+ * @returns {Peer} the local capability for connecting and listening
+ */
+export function makeNetworkPeer(peerHandler) {
   /**
-   * @type {HostImpl}
+   * @type {PeerImpl}
    */
-  const hostImpl = harden({
+  const peerImpl = harden({
     async connect(port, dst, srcHandler) {
       /**
        * @type {Endpoint}
        */
-      const src = harden({
-        host: newHost,
-        portName: port.getBoundName(),
-        protocol: dst.protocol,
-      });
-      const dstHandler = await hostHandler.onConnect(src, dst);
+      const src = harden(parseMultiaddr(port.getLocalAddress()));
+      const dstHandler = await peerHandler.onConnect(src, parseMultiaddr(dst));
 
       /**
        * Create half of a channel pair.
@@ -169,7 +191,7 @@ export function makeHost(hostHandler) {
             if (closed) {
               throw closed;
             }
-            const deferred = makePromise();
+            const deferred = producePromise();
             if (queue) {
               queue.push([data, deferred]);
               pending.push(deferred);
@@ -224,61 +246,50 @@ export function makeHost(hostHandler) {
    */
   const boundPorts = makeStore();
 
-  // Wire up the local host to the handler.
-  hostHandler.onCreate(newHost, hostImpl);
+  // Wire up the local peer to the handler.
+  peerHandler.onCreate(parseMultiaddr(LOOPBACK_MULTIADDR), peerImpl);
 
   /**
-   * @param {string} localPortName
+   * @param {Multiaddr} localPort
    */
-  const bind = localPortName => {
+  const bind = async localPort => {
     let active;
     /**
      * @type {Port}
      */
     const port = harden({
-      getBoundName() {
-        return localPortName;
+      getLocalAddress() {
+        return parseMultiaddr(localPort);
       },
       async listen(listenHandler) {
         if (active) {
-          throw Error(`Port is already ${active}`);
+          throw Error(
+            `Port ${unparseMultiaddr(localPort)} is already ${active}`,
+          );
         }
-        await hostHandler.onListen(localPortName, listenHandler);
+        active = 'listening';
+        await peerHandler.onListen(parseMultiaddr(localPort), listenHandler);
       },
-      async connect(host, portName, protocol, channelHandler) {
+      async connect(remotePort, channelHandler) {
         if (active) {
-          throw Error(`Port is already ${active}`);
+          throw Error(
+            `Port ${unparseMultiaddr(localPort)} is already ${active}`,
+          );
         }
-
+        active = 'connected';
         /**
          * @type {Endpoint}
          */
-        const dst = harden({ host, portName, protocol });
-        return hostImpl.connect(port, dst, channelHandler);
+        const dst = harden(parseMultiaddr(remotePort));
+        return peerImpl.connect(port, dst, channelHandler);
       },
     });
 
-    boundPorts.init(localPortName, port);
+    boundPorts.init(unparseMultiaddr(localPort), port);
     return port;
   };
 
-  let lastAnonymousPort = 0;
-  return harden({
-    async allocatePort() {
-      let portName;
-      do {
-        lastAnonymousPort += 1;
-        portName = `anonymous${lastAnonymousPort}`;
-      } while (boundPorts.has(portName));
-      return bind(portName);
-    },
-    async claimPort(portName) {
-      return bind(portName);
-    },
-    getHandle() {
-      return newHost;
-    },
-  });
+  return harden({ bind });
 }
 
 /**

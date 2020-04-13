@@ -1,52 +1,48 @@
 // @ts-check
 import { test } from 'tape-promise/tape';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 import rawHarden from '@agoric/harden';
 
 import {
   makeEchoChannelHandler,
-  makeHost,
+  makeNetworkPeer,
   bytesToString,
-} from '../src/channel';
+} from '../src/network';
 
 const harden = /** @type {<T>(data: T) => T} */ (rawHarden);
 
 /**
  * @param {*} _t
- * @returns {import('../src/channel.js').HostHandler} A testing handler
+ * @returns {import('../src/network.js').PeerHandler} A testing handler
  */
-const makeHostHandler = _t => {
+const makeNetworkHandler = _t => {
   /**
-   * @type {import('../src/channel.js').ListenHandler}
+   * @type {import('../src/network.js').ListenHandler}
    */
   let l;
   return harden({
-    onCreate(_localhost, _impl) {
-      // console.log('created', localhost, impl);
+    onCreate(_peer, _impl) {
+      console.log('created', _peer, _impl);
     },
-    async onConnect(src, dst) {
-      // console.log('connected', src, dst);
-      return l ? l.onAccept(src, dst) : makeEchoChannelHandler();
+    async onConnect(localAddr, remoteAddr) {
+      console.log('connected', localAddr, remoteAddr);
+      return l ? l.onAccept(localAddr, remoteAddr) : makeEchoChannelHandler();
     },
-    async onListen(localPortName, listenHandler) {
+    async onListen(localAddr, listenHandler) {
       l = listenHandler;
-      // console.log('listening', localPortName, listenHandler);
+      console.log('listening', localAddr, listenHandler);
     },
   });
 };
 
-test('handled channel host', async t => {
+test('handled peer', async t => {
   try {
-    const host = makeHost(makeHostHandler(t));
+    const peer = makeNetworkPeer(makeNetworkHandler(t));
 
-    const hostHandle = host.getHandle();
-
-    const closed = makePromise();
-    const port = await host.allocatePort();
+    const closed = producePromise();
+    const port = await peer.bind('/ibc/self');
     await port.connect(
-      hostHandle,
-      'echo',
-      'ordered',
+      '/ibc/self/ordered/echo',
       harden({
         async onOpen(channel) {
           const ack = await channel.send('ping');
@@ -72,19 +68,19 @@ test('handled channel host', async t => {
   }
 });
 
-test('host channel listen', async t => {
+test('peer channel listen', async t => {
   try {
-    const host = makeHost(makeHostHandler(t));
+    const peer = makeNetworkPeer(makeNetworkHandler(t));
 
-    const closed = makePromise();
+    const closed = producePromise();
 
-    const port = await host.claimPort('some-portname');
+    const port = await peer.bind('/ibc/self/ordered/some-portname');
     port.listen(
       harden({
         onError(rej) {
           t.isNot(rej, rej, 'unexpected error');
         },
-        async onAccept(_src, _dst) {
+        async onAccept(_localAddr, _remoteAddr) {
           return harden({
             async onOpen(channel) {
               const ack = await channel.send('ping');
@@ -104,12 +100,9 @@ test('host channel listen', async t => {
       }),
     );
 
-    const port2 = await host.allocatePort();
-    const hostHandle = host.getHandle();
+    const port2 = await peer.bind('/ibc/self');
     await port2.connect(
-      hostHandle,
-      'some-portname',
-      'ordered',
+      '/ibc/self/ordered/some-portname',
       makeEchoChannelHandler(),
     );
 
