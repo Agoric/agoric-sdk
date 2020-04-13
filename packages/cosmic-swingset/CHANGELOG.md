@@ -3,6 +3,34 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.15.0-alpha.0...@agoric/cosmic-swingset@0.15.0) (2020-04-13)
+
+**Note:** Version bump only for package @agoric/cosmic-swingset
+
+
+
+
+
+# [0.15.0-alpha.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.14.1...@agoric/cosmic-swingset@0.15.0-alpha.0) (2020-04-12)
+
+
+### Bug Fixes
+
+* better detection of already-listening ports ([6194c31](https://github.com/Agoric/agoric-sdk/commit/6194c31a9c7405f017666ac6de29b054b3e87c9d))
+* change the account prefix to "agoric" and app name to Agoric ([0c14de9](https://github.com/Agoric/agoric-sdk/commit/0c14de900c008afb8a09eeeddaff6547be7096d2))
+* cosmic-swingset should use disk-backed storage ([da0613a](https://github.com/Agoric/agoric-sdk/commit/da0613a58fa9711d64584ee1cd7886309cff52fd)), closes [#899](https://github.com/Agoric/agoric-sdk/issues/899)
+* tweak log levels ([b0b1649](https://github.com/Agoric/agoric-sdk/commit/b0b1649423f7b950904604ba997ddb25e413fe08))
+
+
+### Features
+
+* introduce a wrapper around ag-solo to start in inspect mode ([93e4887](https://github.com/Agoric/agoric-sdk/commit/93e488790da490d997c7d707b1340fc7be5b33b7))
+* use SETUP_HOME/cosmos-delegates.txt and increase defaults ([5e87ae1](https://github.com/Agoric/agoric-sdk/commit/5e87ae1c501adf5b35371c30dc999bfcea8c75e6))
+
+
+
+
+
 ## [0.14.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.14.0...@agoric/cosmic-swingset@0.14.1) (2020-04-03)
 
 
