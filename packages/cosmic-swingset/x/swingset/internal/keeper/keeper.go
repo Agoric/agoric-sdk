@@ -18,7 +18,7 @@ import (
 	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/05-port/types"
 	ibctypes "github.com/cosmos/cosmos-sdk/x/ibc/types"
 
-	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
+	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/types"
 )
 
 // DefaultPacketTimeout is the default packet timeout relative to the current block height

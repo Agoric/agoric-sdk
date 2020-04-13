@@ -14,7 +14,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/Agoric/cosmic-swingset/x/swingset/internal/keeper"
+	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/keeper"
 )
 
 // FIXME: How to tell the caller when this is a new channel?

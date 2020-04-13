@@ -1,8 +1,9 @@
-module github.com/Agoric/cosmic-swingset
+module github.com/Agoric/agoric-sdk/packages/cosmic-swingset
 
 go 1.14
 
 require (
+	github.com/Agoric/agoric-sdk v0.0.0-00010101000000-000000000000 // indirect
 	github.com/btcsuite/btcd v0.0.0-20190807005414-4063feeff79a // indirect
 	github.com/cosmos/cosmos-sdk v0.34.4-0.20200410083150-b7397d6df548
 	github.com/gorilla/mux v1.7.4
@@ -23,3 +24,5 @@ require (
 )
 
 replace github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4
+
+replace github.com/Agoric/agoric-sdk => ../..
