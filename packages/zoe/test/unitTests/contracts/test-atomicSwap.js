@@ -13,11 +13,16 @@ const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
 test('zoe - atomicSwap', async t => {
   t.plan(11);
-  const { issuers, mints, moola, simoleans } = setup();
+  const {
+    moolaIssuer,
+    simoleanIssuer,
+    moolaMint,
+    simoleanMint,
+    moola,
+    simoleans,
+  } = setup();
   const zoe = makeZoe({ require });
   const inviteIssuer = zoe.getInviteIssuer();
-  const [moolaIssuer, simoleanIssuer] = issuers;
-  const [moolaMint, simoleanMint] = mints;
 
   // pack the contract
   const { source, moduleFormat } = await bundleSource(atomicSwapRoot);

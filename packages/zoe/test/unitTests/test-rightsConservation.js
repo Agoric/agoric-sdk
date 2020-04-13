@@ -1,8 +1,17 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 
+import produceIssuer from '@agoric/ertp';
 import { areRightsConserved, transpose } from '../../src/rightsConservation';
-import { setup } from './setupBasicMints';
+
+const setupAmountMaths = () => {
+  const moolaIssuerResults = produceIssuer('moola');
+  const simoleanIssuerResults = produceIssuer('simoleans');
+  const bucksIssuerResults = produceIssuer('bucks');
+
+  const all = [moolaIssuerResults, simoleanIssuerResults, bucksIssuerResults];
+  return all.map(objs => objs.amountMath);
+};
 
 const makeAmountMatrix = (amountMathArray, extentMatrix) =>
   extentMatrix.map(row =>
@@ -32,7 +41,7 @@ test('transpose', t => {
 test(`areRightsConserved - true for amount with nat extents`, t => {
   t.plan(1);
   try {
-    const { amountMaths } = setup();
+    const amountMaths = setupAmountMaths();
     const oldExtents = [
       [0, 1, 0],
       [4, 1, 0],
@@ -57,7 +66,7 @@ test(`areRightsConserved - true for amount with nat extents`, t => {
 test(`areRightsConserved - false for amount with Nat extents`, t => {
   t.plan(1);
   try {
-    const { amountMaths } = setup();
+    const amountMaths = setupAmountMaths();
     const oldExtents = [
       [0, 1, 4],
       [4, 1, 0],
@@ -81,7 +90,7 @@ test(`areRightsConserved - false for amount with Nat extents`, t => {
 test(`areRightsConserved - empty arrays`, t => {
   t.plan(1);
   try {
-    const { amountMaths } = setup();
+    const amountMaths = setupAmountMaths();
     const oldAmounts = [[], [], []];
     const newAmounts = [[], [], []];
 

@@ -2,7 +2,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
-import { setup } from '../setupBasicMints2';
+import { setup } from '../setupBasicMints';
 
 import {
   makeZoeHelpers,

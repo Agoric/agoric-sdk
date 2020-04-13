@@ -4,18 +4,25 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
 import { cleanProposal } from '../../src/cleanProposal';
-import { setup } from './setupBasicMints2';
+import { setup } from './setupBasicMints';
 import buildManualTimer from '../../tools/manualTimer';
 
 test('cleanProposal test', t => {
   t.plan(1);
   try {
-    const { simoleanR, moolaR, bucksR, moola, simoleans } = setup();
+    const {
+      simoleanIssuer,
+      moolaIssuer,
+      bucksIssuer,
+      moola,
+      simoleans,
+      amountMaths,
+    } = setup();
 
     const issuerKeywordRecord = harden({
-      Asset: simoleanR.issuer,
-      Price: moolaR.issuer,
-      AlternativePrice: bucksR.issuer,
+      Asset: simoleanIssuer,
+      Price: moolaIssuer,
+      AlternativePrice: bucksIssuer,
     });
 
     const proposal = harden({
@@ -24,9 +31,9 @@ test('cleanProposal test', t => {
     });
 
     const amountMathKeywordRecord = harden({
-      Asset: simoleanR.amountMath,
-      Price: moolaR.amountMath,
-      AlternativePrice: bucksR.amountMath,
+      Asset: amountMaths.get('simoleans'),
+      Price: amountMaths.get('moola'),
+      AlternativePrice: amountMaths.get('bucks'),
     });
 
     // CleanProposal no longer fills in missing keywords
@@ -51,17 +58,17 @@ test('cleanProposal test', t => {
 test('cleanProposal - all empty', t => {
   t.plan(1);
   try {
-    const { simoleanR, moolaR, bucksR } = setup();
+    const { simoleanIssuer, moolaIssuer, bucksIssuer, amountMaths } = setup();
 
     const issuerKeywordRecord = {
-      Asset: simoleanR.issuer,
-      Price: moolaR.issuer,
-      AlternativePrice: bucksR.issuer,
+      Asset: simoleanIssuer,
+      Price: moolaIssuer,
+      AlternativePrice: bucksIssuer,
     };
     const amountMathKeywordRecord = harden({
-      Asset: simoleanR.amountMath,
-      Price: moolaR.amountMath,
-      AlternativePrice: bucksR.amountMath,
+      Asset: amountMaths.get('simoleans'),
+      Price: amountMaths.get('moola'),
+      AlternativePrice: amountMaths.get('bucks'),
     });
 
     const proposal = harden({
@@ -89,24 +96,31 @@ test('cleanProposal - all empty', t => {
 test('cleanProposal - repeated brands', t => {
   t.plan(3);
   try {
-    const { moolaR, simoleanR, bucksR, moola, simoleans } = setup();
+    const {
+      moolaIssuer,
+      simoleanIssuer,
+      bucksIssuer,
+      moola,
+      simoleans,
+      amountMaths,
+    } = setup();
     const timer = buildManualTimer(console.log);
 
     const issuerKeywordRecord = {
-      Asset1: simoleanR.issuer,
-      Price1: moolaR.issuer,
-      AlternativePrice1: bucksR.issuer,
-      Asset2: simoleanR.issuer,
-      Price2: moolaR.issuer,
-      AlternativePrice2: bucksR.issuer,
+      Asset1: simoleanIssuer,
+      Price1: moolaIssuer,
+      AlternativePrice1: bucksIssuer,
+      Asset2: simoleanIssuer,
+      Price2: moolaIssuer,
+      AlternativePrice2: bucksIssuer,
     };
     const amountMathsObj = harden({
-      Asset1: simoleanR.amountMath,
-      Price1: moolaR.amountMath,
-      AlternativePrice1: bucksR.amountMath,
-      Asset2: simoleanR.amountMath,
-      Price2: moolaR.amountMath,
-      AlternativePrice2: bucksR.amountMath,
+      Asset1: amountMaths.get('simoleans'),
+      Price1: amountMaths.get('moola'),
+      AlternativePrice1: amountMaths.get('bucks'),
+      Asset2: amountMaths.get('simoleans'),
+      Price2: amountMaths.get('moola'),
+      AlternativePrice2: amountMaths.get('bucks'),
     });
 
     const proposal = harden({

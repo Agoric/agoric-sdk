@@ -3,7 +3,7 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
 import { isOfferSafeForOffer, isOfferSafeForAll } from '../../src/offerSafety';
-import { setup } from './setupBasicMints2';
+import { setup } from './setupBasicMints';
 
 // Potential outcomes:
 // 1. Users can get what they wanted, get back what they gave, both, or
@@ -48,11 +48,11 @@ test('isOfferSafeForOffer - more than want, more than give', t => {
 test('isOfferSafeForOffer - more than want, less than give', t => {
   t.plan(1);
   try {
-    const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const amountMathKeywordRecord = harden({
-      A: moolaR.amountMath,
-      B: simoleanR.amountMath,
-      C: bucksR.amountMath,
+      A: amountMaths.get('moola'),
+      B: amountMaths.get('simoleans'),
+      C: amountMaths.get('bucks'),
     });
     const proposal = harden({
       give: { A: moola(8) },
@@ -70,11 +70,11 @@ test('isOfferSafeForOffer - more than want, less than give', t => {
 test('isOfferSafeForOffer - more than want, equal to give', t => {
   t.plan(1);
   try {
-    const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
+    const { amountMaths, moola, simoleans, bucks } = setup();
     const amountMathKeywordRecord = harden({
-      A: moolaR.amountMath,
-      B: simoleanR.amountMath,
-      C: bucksR.amountMath,
+      A: amountMaths.get('moola'),
+      B: amountMaths.get('simoleans'),
+      C: amountMaths.get('bucks'),
     });
     const proposal = harden({
       want: { A: moola(8) },

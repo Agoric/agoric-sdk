@@ -7,7 +7,7 @@ import harden from '@agoric/harden';
 
 import { makeZoe } from '../../../src/zoe';
 // TODO: Remove setupBasicMints and rename setupBasicMints2
-import { setup } from '../setupBasicMints2';
+import { setup } from '../setupBasicMints';
 import { makeGetInstanceHandle } from '../../../src/clientSupport';
 import { setupNonFungible } from '../setupNonFungibleMints';
 

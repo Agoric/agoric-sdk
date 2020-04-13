@@ -3,27 +3,37 @@ import harden from '@agoric/harden';
 import produceIssuer from '@agoric/ertp';
 
 const setup = () => {
-  const moolaIssuerResults = produceIssuer('moola');
-  const simoleanIssuerResults = produceIssuer('simoleans');
-  const bucksIssuerResults = produceIssuer('bucks');
+  const moolaBundle = produceIssuer('moola');
+  const simoleanBundle = produceIssuer('simoleans');
+  const bucksBundle = produceIssuer('bucks');
+  const allBundles = {
+    moola: moolaBundle,
+    simoleans: simoleanBundle,
+    bucks: bucksBundle,
+  };
+  const amountMaths = new Map();
+  const brands = new Map();
 
-  const all = [moolaIssuerResults, simoleanIssuerResults, bucksIssuerResults];
-  const mints = all.map(objs => objs.mint);
-  const issuers = all.map(objs => objs.issuer);
-  const amountMaths = all.map(objs => objs.amountMath);
-  const brands = all.map(objs => objs.brand);
+  for (const k of Object.getOwnPropertyNames(allBundles)) {
+    amountMaths.set(k, allBundles[k].amountMath);
+    brands.set(k, allBundles[k].brand);
+  }
 
   return harden({
-    mints,
-    issuers,
+    moolaIssuer: moolaBundle.issuer,
+    moolaMint: moolaBundle.mint,
+    moolaR: moolaBundle,
+    simoleanIssuer: simoleanBundle.issuer,
+    simoleanMint: simoleanBundle.mint,
+    simoleanR: simoleanBundle,
+    bucksIssuer: bucksBundle.issuer,
+    bucksMint: bucksBundle.mint,
+    bucksR: bucksBundle,
     amountMaths,
     brands,
-    moolaIssuerResults,
-    simoleanIssuerResults,
-    bucksIssuerResults,
-    moola: moolaIssuerResults.amountMath.make,
-    simoleans: simoleanIssuerResults.amountMath.make,
-    bucks: bucksIssuerResults.amountMath.make,
+    moola: moolaBundle.amountMath.make,
+    simoleans: simoleanBundle.amountMath.make,
+    bucks: bucksBundle.amountMath.make,
   });
 };
 harden(setup);

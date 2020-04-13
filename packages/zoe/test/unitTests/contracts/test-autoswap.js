@@ -6,7 +6,7 @@ import bundleSource from '@agoric/bundle-source';
 import harden from '@agoric/harden';
 
 import { makeZoe } from '../../../src/zoe';
-import { setup } from '../setupBasicMints2';
+import { setup } from '../setupBasicMints';
 import { makeGetInstanceHandle } from '../../../src/clientSupport';
 
 const autoswapRoot = `${__dirname}/../../../src/contracts/autoswap`;
@@ -14,19 +14,26 @@ const autoswapRoot = `${__dirname}/../../../src/contracts/autoswap`;
 test('autoSwap with valid offers', async t => {
   t.plan(19);
   try {
-    const { moolaR, simoleanR, moola, simoleans } = setup();
+    const {
+      moolaIssuer,
+      simoleanIssuer,
+      moolaMint,
+      simoleanMint,
+      moola,
+      simoleans,
+    } = setup();
     const zoe = makeZoe({ require });
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
     // Setup Alice
-    const aliceMoolaPayment = moolaR.mint.mintPayment(moola(10));
+    const aliceMoolaPayment = moolaMint.mintPayment(moola(10));
     // Let's assume that simoleans are worth 2x as much as moola
-    const aliceSimoleanPayment = simoleanR.mint.mintPayment(simoleans(5));
+    const aliceSimoleanPayment = simoleanMint.mintPayment(simoleans(5));
 
     // Setup Bob
-    const bobMoolaPayment = moolaR.mint.mintPayment(moola(3));
-    const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(3));
+    const bobMoolaPayment = moolaMint.mintPayment(moola(3));
+    const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(3));
 
     // Alice creates an autoswap instance
 
@@ -35,8 +42,8 @@ test('autoSwap with valid offers', async t => {
 
     const installationHandle = zoe.install(source, moduleFormat);
     const issuerKeywordRecord = harden({
-      TokenA: moolaR.issuer,
-      TokenB: simoleanR.issuer,
+      TokenA: moolaIssuer,
+      TokenB: simoleanIssuer,
     });
     const aliceInvite = await zoe.makeInstance(
       installationHandle,
@@ -117,9 +124,9 @@ test('autoSwap with valid offers', async t => {
     const bobMoolaPayout1 = await bobPayout.TokenA;
     const bobSimoleanPayout1 = await bobPayout.TokenB;
 
-    t.deepEqual(await moolaR.issuer.getAmountOf(bobMoolaPayout1), moola(0));
+    t.deepEqual(await moolaIssuer.getAmountOf(bobMoolaPayout1), moola(0));
     t.deepEqual(
-      await simoleanR.issuer.getAmountOf(bobSimoleanPayout1),
+      await simoleanIssuer.getAmountOf(bobSimoleanPayout1),
       simoleans(1),
     );
     t.deepEquals(bobAutoswap.getPoolAllocation(), {
@@ -155,9 +162,9 @@ test('autoSwap with valid offers', async t => {
     const bobMoolaPayout2 = await bobSimsForMoolaPayout.TokenA;
     const bobSimoleanPayout2 = await bobSimsForMoolaPayout.TokenB;
 
-    t.deepEqual(await moolaR.issuer.getAmountOf(bobMoolaPayout2), moola(5));
+    t.deepEqual(await moolaIssuer.getAmountOf(bobMoolaPayout2), moola(5));
     t.deepEqual(
-      await simoleanR.issuer.getAmountOf(bobSimoleanPayout2),
+      await simoleanIssuer.getAmountOf(bobSimoleanPayout2),
       simoleans(0),
     );
     t.deepEqual(bobAutoswap.getPoolAllocation(), {
@@ -190,9 +197,9 @@ test('autoSwap with valid offers', async t => {
     const aliceSimoleanPayout = await aliceRemoveLiquidityPayout.TokenB;
     const aliceLiquidityPayout = await aliceRemoveLiquidityPayout.Liquidity;
 
-    t.deepEquals(await moolaR.issuer.getAmountOf(aliceMoolaPayout), moola(8));
+    t.deepEquals(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(8));
     t.deepEquals(
-      await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
+      await simoleanIssuer.getAmountOf(aliceSimoleanPayout),
       simoleans(7),
     );
     t.deepEquals(
@@ -213,17 +220,24 @@ test('autoSwap with valid offers', async t => {
 test('autoSwap - test fee', async t => {
   t.plan(9);
   try {
-    const { moolaR, simoleanR, moola, simoleans } = setup();
+    const {
+      moolaIssuer,
+      simoleanIssuer,
+      moolaMint,
+      simoleanMint,
+      moola,
+      simoleans,
+    } = setup();
     const zoe = makeZoe({ require });
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
     // Setup Alice
-    const aliceMoolaPayment = moolaR.mint.mintPayment(moola(10000));
-    const aliceSimoleanPayment = simoleanR.mint.mintPayment(simoleans(10000));
+    const aliceMoolaPayment = moolaMint.mintPayment(moola(10000));
+    const aliceSimoleanPayment = simoleanMint.mintPayment(simoleans(10000));
 
     // Setup Bob
-    const bobMoolaPayment = moolaR.mint.mintPayment(moola(1000));
+    const bobMoolaPayment = moolaMint.mintPayment(moola(1000));
 
     // Alice creates an autoswap instance
 
@@ -232,8 +246,8 @@ test('autoSwap - test fee', async t => {
 
     const installationHandle = zoe.install(source, moduleFormat);
     const issuerKeywordRecord = harden({
-      TokenA: moolaR.issuer,
-      TokenB: simoleanR.issuer,
+      TokenA: moolaIssuer,
+      TokenB: simoleanIssuer,
     });
     const aliceAddLiquidityInvite = await zoe.makeInstance(
       installationHandle,
@@ -315,9 +329,9 @@ test('autoSwap - test fee', async t => {
     const bobMoolaPayout = await bobPayout.TokenA;
     const bobSimoleanPayout = await bobPayout.TokenB;
 
-    t.deepEqual(await moolaR.issuer.getAmountOf(bobMoolaPayout), moola(0));
+    t.deepEqual(await moolaIssuer.getAmountOf(bobMoolaPayout), moola(0));
     t.deepEqual(
-      await simoleanR.issuer.getAmountOf(bobSimoleanPayout),
+      await simoleanIssuer.getAmountOf(bobSimoleanPayout),
       simoleans(906),
     );
     t.deepEquals(bobAutoswap.getPoolAllocation(), {

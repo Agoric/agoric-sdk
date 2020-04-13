@@ -6,7 +6,7 @@ import bundleSource from '@agoric/bundle-source';
 import harden from '@agoric/harden';
 
 import { makeZoe } from '../../../src/zoe';
-import { setup } from '../setupBasicMints2';
+import { setup } from '../setupBasicMints';
 import { setupMixed } from '../setupMixedMints';
 import { makeGetInstanceHandle } from '../../../src/clientSupport';
 
