@@ -15,8 +15,8 @@ yarn lerna version --no-push --conventional-prerelease
 scripts/need-news HEAD^ > needs-news.md
 # Push the branch.
 git push -u origin release-$now
-# Make docker containers.
-make -C packages/deployment docker-build docker-push
+# Make docker containers to test the build.
+make -C packages/deployment docker-build
 ```
 
 Then, create a release PR, pasting `needs-news.md` into the body.  If you need to do more work on the branch before the final release, fix, commit, and repeat the above section.
@@ -36,8 +36,6 @@ yarn lerna version --conventional-graduate
 Then you can run:
 
 ```sh
-# Make and push docker containers (in a separate terminal).
-make -C packages/deployment docker-build docker-push
 # Build all package generated files.
 yarn install
 yarn build
