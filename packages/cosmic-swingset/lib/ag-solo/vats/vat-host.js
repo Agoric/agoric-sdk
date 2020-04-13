@@ -12,7 +12,7 @@ function setup(syscall, state, helpers) {
     E =>
       harden({
         makeHost() {
-          return harden(makeContractHost(E, evaluate, { require }));
+          return harden(makeContractHost(E, evaluate, { systemRequire }));
         },
       }),
     helpers.vatID,

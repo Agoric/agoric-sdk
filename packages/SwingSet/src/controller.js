@@ -205,7 +205,7 @@ function realmRegisterEndOfCrank(fn) {
 
     const nestedEvaluate = SES1MakeNestedEvaluate(s, {
       // Support both getExport and nestedEvaluate module format.
-      require: r,
+      systemRequire: r,
 
       // This isn't installed on the global, but at least it's secure.
       console: localConsole,

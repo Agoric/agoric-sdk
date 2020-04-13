@@ -1,4 +1,4 @@
-/* global replaceGlobalMeter, registerEndOfCrank */
+/* global replaceGlobalMeter, registerEndOfCrank, systemRequire */
 import { evaluateProgram } from '@agoric/evaluate';
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
@@ -37,6 +37,11 @@ const evalContractCode = (code, additionalEndowments) => {
     produceIssuer,
     Nat,
   };
+  if (typeof systemRequire !== 'undefined') {
+    defaultEndowments.systemRequire = systemRequire;
+  } else if (typeof require !== 'undefined') {
+    defaultEndowments.systemRequire = require;
+  }
   const fullEndowments = Object.create(null, {
     ...Object.getOwnPropertyDescriptors(defaultEndowments),
     ...Object.getOwnPropertyDescriptors(additionalEndowments),

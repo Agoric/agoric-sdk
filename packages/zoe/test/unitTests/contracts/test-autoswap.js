@@ -15,7 +15,7 @@ test('autoSwap with valid offers', async t => {
   t.plan(19);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
@@ -218,7 +218,7 @@ test('autoSwap - test fee', async t => {
   t.plan(9);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 

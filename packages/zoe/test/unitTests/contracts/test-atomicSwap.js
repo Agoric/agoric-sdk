@@ -14,7 +14,7 @@ const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 test('zoe - atomicSwap', async t => {
   t.plan(11);
   const { issuers, mints, moola, simoleans } = setup();
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
   const [moolaIssuer, simoleanIssuer] = issuers;
   const [moolaMint, simoleanMint] = mints;
@@ -149,7 +149,7 @@ test('zoe - non-fungible atomicSwap', async t => {
     createRpgItem,
   } = setupNonFungible();
 
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
 
   // pack the contract

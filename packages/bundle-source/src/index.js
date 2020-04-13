@@ -140,7 +140,7 @@ return module.exports;
       throw Error('need to override nestedEvaluate');
     };
     function computeExports(filename, exportPowers) {
-      const { require: systemRequire, _log } = exportPowers;
+      const { systemRequire, _log } = exportPowers;
       // This captures the endowed require.
       const match = filename.match(/^(.*)\/[^/]+$/);
       const thisdir = match ? match[1] : '.';
@@ -198,7 +198,7 @@ return module.exports;
         throw Error(
           `require(${JSON.stringify(
             filename,
-          )}) failed; no toplevel require endowment`,
+          )}) failed; no toplevel systemRequire endowment`,
         );
       }
 
@@ -223,7 +223,13 @@ function getExportWithNestedEvaluate(filePrefix) {
   ${computeExports}
 
   // Evaluate the entrypoint recursively.
-  return computeExports(entrypoint, { require, log(...args) { return console.log(...args); } });
+  const endowments = {
+    log(...args) { return console.log(...args); },
+  };
+  if (typeof systemRequire !== 'undefined') {
+    endowments.systemRequire = systemRequire;
+  }
+  return computeExports(entrypoint, endowments);
 }`;
   }
 

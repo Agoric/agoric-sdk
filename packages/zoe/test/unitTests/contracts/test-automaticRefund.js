@@ -18,7 +18,7 @@ test('zoe - simplest automaticRefund', async t => {
   try {
     // Setup zoe and mints
     const { moolaR, moola } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
     const installationHandle = zoe.install(source, moduleFormat);
@@ -65,7 +65,7 @@ test('zoe - automaticRefund same issuer', async t => {
   try {
     // Setup zoe and mints
     const { moolaR, moola } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
     const installationHandle = zoe.install(source, moduleFormat);
@@ -115,7 +115,7 @@ test('zoe with automaticRefund', async t => {
   try {
     // Setup zoe and mints
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
@@ -263,7 +263,7 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
   try {
     // Setup zoe and mints
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
 
     // Setup Alice
     const aliceMoolaPayment = moolaR.mint.mintPayment(moola(30));
@@ -375,7 +375,7 @@ test('zoe - alice cancels after completion', async t => {
   try {
     // Setup zoe and mints
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
 
     // Setup Alice
     const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3));
@@ -445,7 +445,7 @@ test('zoe - automaticRefund non-fungible', async t => {
   // Setup zoe and mints
   const { ccIssuer, ccMint, cryptoCats } = setupNonFungible();
 
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   // Pack the contract.
   const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
   const installationHandle = zoe.install(source, moduleFormat);

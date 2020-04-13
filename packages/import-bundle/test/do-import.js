@@ -28,11 +28,12 @@ async function testBundle1(b1, mode, ew) {
 }
 
 tap.test('test import', async function testImport(t) {
-  // nestedEvaluate requires a 'require' endowment, but doesn't call it
+  // nestedEvaluate requires a 'systemRequire' endowment, and uses it for
+  // externals and CommonJS-transformed chunks.
   function req(what) {
     console.log(`require(${what})`);
   }
-  const endowments = { require: req };
+  const endowments = { systemRequire: req };
 
   const b1getExport = await bundleSource(
     require.resolve('./bundle1.js'),

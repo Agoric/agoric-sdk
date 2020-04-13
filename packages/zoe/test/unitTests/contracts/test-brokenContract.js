@@ -15,7 +15,7 @@ test('zoe - brokenAutomaticRefund', async t => {
   t.plan(1);
   // Setup zoe and mints
   const { moolaR } = setup();
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   // Pack the contract.
   const { source, moduleFormat } = await bundleSource(automaticRefundRoot);
   const installationHandle = zoe.install(source, moduleFormat);

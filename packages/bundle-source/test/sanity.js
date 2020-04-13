@@ -18,10 +18,10 @@ test('nestedEvaluate', async t => {
     t.assert(src1.match(/require\('@agoric\/harden'\)/), 'harden is required');
 
     // Fake out `require('@agoric/harden')`.
-    const require = _ => o => o;
+    const systemRequire = _ => o => o;
     const nestedEvaluate = src => {
       // console.log('========== evaluating', src);
-      return evaluate(src, { require, nestedEvaluate });
+      return evaluate(src, { systemRequire, nestedEvaluate });
     };
     const ex1 = nestedEvaluate(srcMap1)();
 
@@ -75,7 +75,7 @@ test('getExport', async t => {
 
     // Fake out `require('@agoric/harden')`.
     // eslint-disable-next-line no-eval
-    const ex1 = eval(`const require = _ => o => o;${srcMap1}`)();
+    const ex1 = eval(`${srcMap1}`)(_ => o => o);
 
     const bundle = ex1.default();
     const err = bundle.makeError('foo');

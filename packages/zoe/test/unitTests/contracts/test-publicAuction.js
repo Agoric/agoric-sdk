@@ -16,7 +16,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   t.plan(34);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
@@ -329,7 +329,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
   t.plan(10);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     const inviteIssuer = zoe.getInviteIssuer();
 
     // Setup Alice
@@ -471,7 +471,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     cryptoCats,
     moola,
   } = setupMixed();
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
   const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 

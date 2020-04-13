@@ -5,7 +5,6 @@ import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
-import path from 'path';
 import fs from 'fs';
 
 const CONTRACT_FILES = [
@@ -30,7 +29,7 @@ const generateBundlesP = Promise.all(
 );
 
 async function main(withSES, basedir, argv) {
-  const dir = path.resolve('test/swingsetTests', basedir);
+  const dir = `${__dirname}/../${basedir}`;
   const config = await loadBasedir(dir);
   const ldSrcPath = require.resolve(
     '@agoric/swingset-vat/src/devices/loopbox-src',

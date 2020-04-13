@@ -30,7 +30,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     amountMath: { make: moola },
   } = produceIssuer('moola');
 
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
 
   // === Initial Opera de Bordeaux part ===

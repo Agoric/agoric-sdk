@@ -18,7 +18,7 @@ test('zoe - coveredCall', async t => {
   t.plan(13);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(coveredCallRoot);
     const coveredCallInstallationHandle = zoe.install(source, moduleFormat);
@@ -146,7 +146,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   t.plan(13);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(coveredCallRoot);
     const coveredCallInstallationHandle = zoe.install(source, moduleFormat);
@@ -277,7 +277,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     // Setup the environment
     const timer = buildManualTimer(console.log);
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(coveredCallRoot);
 
@@ -548,7 +548,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     // Setup the environment
     const timer = buildManualTimer(console.log);
     const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     // Pack the contract.
     const { source, moduleFormat } = await bundleSource(coveredCallRoot);
 
@@ -840,7 +840,7 @@ test('zoe - coveredCall', async t => {
     createRpgItem,
   } = setupNonFungible();
 
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   // install the contract.
   const { source, moduleFormat } = await bundleSource(coveredCallRoot);
   const coveredCallInstallationHandle = zoe.install(source, moduleFormat);

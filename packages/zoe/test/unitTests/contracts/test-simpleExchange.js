@@ -21,7 +21,7 @@ test('simpleExchange with valid offers', async t => {
   const { issuers, mints, amountMaths, moola, simoleans } = setup();
   const [moolaIssuer, simoleanIssuer] = issuers;
   const [moolaMint, simoleanMint] = mints;
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
   const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
@@ -158,7 +158,7 @@ test('simpleExchange with multiple sell offers', async t => {
     const { issuers, mints, moola, simoleans } = setup();
     const [moolaIssuer, simoleanIssuer] = issuers;
     const [moolaMint, simoleanMint] = mints;
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
@@ -257,7 +257,7 @@ test('simpleExchange showPayoutRules', async t => {
   const { issuers, mints, moola, simoleans } = setup();
   const [moolaIssuer, simoleanIssuer] = issuers;
   const [moolaMint] = mints;
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
   const getOfferHandle = makeGetOfferHandle(inviteIssuer);
   const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
@@ -318,7 +318,7 @@ test('simpleExchange with non-fungible assets', async t => {
     createRpgItem,
   } = setupNonFungible();
 
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
   const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 

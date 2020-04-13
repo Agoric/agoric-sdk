@@ -587,7 +587,7 @@ export default function buildKernel(kernelEndowments) {
    * error message for the problem.
    */
   function createVatDynamically(buildFnSrc) {
-    const endowments = { require: kernelRequire };
+    const endowments = { systemRequire: kernelRequire };
     const buildFn = evaluateProgram(buildFnSrc, endowments);
     try {
       const vatID = createVat(buildFn);

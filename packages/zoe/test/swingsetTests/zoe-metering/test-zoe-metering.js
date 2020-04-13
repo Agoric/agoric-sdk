@@ -1,6 +1,5 @@
 import { test } from 'tape-promise/tape';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
-import path from 'path';
 import fs from 'fs';
 import bundleSource from '../../bundle-source';
 
@@ -27,7 +26,7 @@ const generateBundlesP = Promise.all(
 );
 
 async function main(basedir, withSES, argv) {
-  const dir = path.resolve('test/swingsetTests', basedir);
+  const dir = `${__dirname}/../${basedir}`;
   const config = await loadBasedir(dir);
   const ldSrcPath = require.resolve(
     '@agoric/swingset-vat/src/devices/loopbox-src',

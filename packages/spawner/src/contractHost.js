@@ -1,4 +1,4 @@
-/* global replaceGlobalMeter, registerEndOfCrank */
+/* global replaceGlobalMeter, registerEndOfCrank, systemRequire */
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import Nat from '@agoric/nat';
@@ -60,6 +60,12 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
     sameStructure,
     mustBeSameStructure,
   };
+
+  if (typeof systemRequire !== 'undefined') {
+    defaultEndowments.systemRequire = systemRequire;
+  } else if (typeof require !== 'undefined') {
+    defaultEndowments.systemRequire = require;
+  }
 
   const fullEndowments = Object.create(null, {
     ...Object.getOwnPropertyDescriptors(defaultEndowments),
