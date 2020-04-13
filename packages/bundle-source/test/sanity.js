@@ -85,7 +85,10 @@ test('getExport', async t => {
       moduleFormat: mf2,
       source: src2,
       sourceMap: map2,
-    } = await bundleSource(`${__dirname}/../demo/dir1/encourage.js`, 'getExport');
+    } = await bundleSource(
+      `${__dirname}/../demo/dir1/encourage.js`,
+      'getExport',
+    );
     t.equal(mf2, 'getExport', 'module format 2 is getExport');
 
     const srcMap2 = `(${src2})\n${map2}`;

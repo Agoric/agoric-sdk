@@ -1,5 +1,7 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 import fs from 'fs';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
 import { producePromise } from '@agoric/produce-promise';
 import { request } from 'http';

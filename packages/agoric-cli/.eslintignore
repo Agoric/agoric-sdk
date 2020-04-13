@@ -1,3 +1,5 @@
 /dist/
 /scripts/
-node_modules
+node_modules/
+agoric-wallet-build/
+lib/main.js
