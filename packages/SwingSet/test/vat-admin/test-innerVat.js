@@ -5,7 +5,7 @@ import { initSwingStore } from '@agoric/swing-store-simple';
 import { buildVatController, loadBasedir } from '../../src';
 
 async function createConfig() {
-  const dir = path.resolve('./test/vat-admin');
+  const dir = `${__dirname}`;
   const config = await loadBasedir(dir);
 
   config.hostStorage = initSwingStore().storage;
@@ -25,7 +25,7 @@ async function testVatCreationFromBuild(t, withSES) {
   t.end();
 }
 
-test('VatAdmin inner vat creation', async t => {
+test.skip('VatAdmin inner vat creation', async t => {
   await testVatCreationFromBuild(t, true);
 });
 
@@ -38,7 +38,7 @@ async function testVatCreationAndObjectHosting(t, withSES) {
   t.end();
 }
 
-test('VatAdmin inner vat creation', async t => {
+test.skip('VatAdmin inner vat creation', async t => {
   await testVatCreationAndObjectHosting(t, true);
 });
 
@@ -53,7 +53,7 @@ async function testBrokenVatCreation(t, withSES) {
   t.end();
 }
 
-test('VatAdmin broken vat creation', async t => {
+test.skip('VatAdmin broken vat creation', async t => {
   await testBrokenVatCreation(t, true);
 });
 
@@ -71,6 +71,6 @@ async function testGetVatStats(t, withSES) {
   t.end();
 }
 
-test('VatAdmin get vat stats', async t => {
+test.skip('VatAdmin get vat stats', async t => {
   await testGetVatStats(t, true);
 });

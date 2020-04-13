@@ -9,8 +9,13 @@ async function requireHarden(t, withSES) {
 }
 
 test('vat can require harden with SES', async t => {
-  await requireHarden(t, true);
-  t.end();
+  try {
+    await requireHarden(t, true);
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  } finally {
+    t.end();
+  }
 });
 
 async function requireEvaluate(t, withSES) {
@@ -21,6 +26,11 @@ async function requireEvaluate(t, withSES) {
 }
 
 test('vat can require evaluate with SES', async t => {
-  await requireEvaluate(t, true);
-  t.end();
+  try {
+    await requireEvaluate(t, true);
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  } finally {
+    t.end();
+  }
 });

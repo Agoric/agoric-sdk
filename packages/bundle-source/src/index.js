@@ -2,6 +2,7 @@ import { rollup as rollup0 } from 'rollup';
 import path from 'path';
 import resolve0 from '@rollup/plugin-node-resolve';
 import commonjs0 from '@rollup/plugin-commonjs';
+import replace0 from '@rollup/plugin-replace';
 import eventualSend from '@agoric/acorn-eventual-send';
 import * as acorn from 'acorn';
 
@@ -25,6 +26,7 @@ export default async function bundleSource(
     commonjsPlugin = commonjs0,
     rollup = rollup0,
     resolvePlugin = resolve0,
+    replacePlugin = replace0,
     pathResolve = path.resolve,
     externals = [],
   } = powers || {};
@@ -34,7 +36,16 @@ export default async function bundleSource(
     treeshake: false,
     preserveModules: moduleFormat === 'nestedEvaluate',
     external: ['@agoric/evaluate', '@agoric/harden', ...externals],
-    plugins: [resolvePlugin({ preferBuiltins: true }), commonjsPlugin()],
+    plugins: [
+      resolvePlugin({ preferBuiltins: true }),
+      commonjsPlugin(),
+      // FIXME: This is until the following issue is fixed:
+      // https://github.com/rollup/plugins/issues/305
+      replacePlugin({
+        'harden_commonjsExternal.default': `require('@agoric/harden')`,
+        'evaluate_commonjsExternal.default': `require('@agoric/evaluate')`,
+      }),
+    ],
     acornInjectPlugins: [eventualSend(acorn)],
   });
   const { output } = await bundle.generate({

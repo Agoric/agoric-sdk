@@ -2,20 +2,16 @@
   "name": "@agoric/transform-metering",
   "version": "1.2.2",
   "description": "transform-metering",
-  "main": "dist/transform-metering.cjs.js",
-  "module": "src/index.js",
-  "browser": "dist/transform-metering.umd.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "tape -r esm 'test/**/*.js'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
-    "build": "rollup -c rollup.config.js"
+    "build": "exit 0"
   },
   "devDependencies": {
     "@babel/core": "^7.5.0",
     "esm": "^3.2.5",
-    "rollup": "^1.16.6",
-    "rollup-plugin-node-resolve": "^5.2.0",
     "ses": "^0.6.5",
     "tap-spec": "^5.0.0",
     "tape": "^4.9.2",
@@ -29,7 +25,6 @@
   },
   "keywords": [],
   "files": [
-    "dist",
     "src"
   ],
   "repository": {

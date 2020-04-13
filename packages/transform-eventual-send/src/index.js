@@ -1,10 +1,6 @@
-import eventualSendBundle from './bundles/eventual-send';
-
 function makeEventualSendTransformer(parser, generate) {
-  let HandledPromise;
   let evaluateProgram;
   let myRequire;
-  let recursive = false;
   const transform = {
     closeOverSES(s) {
       // FIXME: This will go away when we can bundle an @agoric/harden that understands SES.
@@ -20,32 +16,6 @@ function makeEventualSendTransformer(parser, generate) {
     rewrite(ss) {
       const source = ss.src;
       const endowments = ss.endowments || {};
-      if (!recursive && !('HandledPromise' in endowments)) {
-        // Use a getter to postpone initialization.
-        Object.defineProperty(endowments, 'HandledPromise', {
-          get() {
-            if (!HandledPromise) {
-              // Get a HandledPromise endowment for the evaluator.
-              // It will be hardened in the evaluator's context.
-              const { source: evSendSrc, moduleFormat } = eventualSendBundle;
-              if (moduleFormat === 'getExport') {
-                recursive = true;
-                try {
-                  const ns = (
-                    evaluateProgram || ss.evaluateProgram
-                  )(`(${evSendSrc})()`, { require: myRequire || require });
-                  HandledPromise = ns.HandledPromise;
-                } finally {
-                  recursive = false;
-                }
-              } else {
-                throw Error(`Unrecognized moduleFormat ${moduleFormat}`);
-              }
-            }
-            return HandledPromise;
-          },
-        });
-      }
 
       // Parse with eventualSend enabled, rewriting to
       // HandledPromise.get/applyFunction/applyMethod(...)

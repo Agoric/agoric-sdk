@@ -11,12 +11,9 @@
     "vat": "bin/vat"
   },
   "scripts": {
-    "build": "npm run-script build-kernel",
-    "build-kernel": "node -r esm scripts/build-kernel.js",
-    "pack": "npm run-script build-kernel && npm pack",
-    "publish": "npm run-script pack && npm publish --access public",
-    "test": "npm run-script build-kernel && tap --no-coverage test/test-node-version.js && tap --no-coverage --reporter specy --timeout 120 'test/**/test*.js'",
-    "test-nosort": "npm run-script build-kernel && tape -r esm test/test-node-version.js && tape -r esm 'test/**/test*.js'",
+    "build": "exit 0",
+    "test": "tap --no-coverage test/test-node-version.js && tap --no-coverage --reporter specy --timeout 120 'test/**/test*.js'",
+    "test-nosort": "tape -r esm test/test-node-version.js && tape -r esm 'test/**/test*.js'",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
     "lint-fix": "eslint --fix '**/*.js'",
@@ -43,8 +40,6 @@
     "@agoric/transform-metering": "^1.2.2",
     "@babel/core": "^7.5.0",
     "anylogger": "^0.21.0",
-    "rollup": "^1.23.1",
-    "rollup-plugin-node-resolve": "^5.2.0",
     "semver": "^6.3.0",
     "ses": "^0.6.5",
     "yargs": "^14.2.0"

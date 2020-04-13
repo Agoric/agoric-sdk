@@ -48,8 +48,6 @@
     "morgan": "^1.9.1",
     "n-readlines": "^1.0.0",
     "node-fetch": "^2.6.0",
-    "rollup": "^1.26.2",
-    "rollup-plugin-node-resolve": "^5.2.0",
     "temp": "^0.9.1",
     "ws": "^7.2.0"
   },

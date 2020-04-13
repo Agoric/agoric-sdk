@@ -3,6 +3,8 @@
 import { test } from 'tape-promise/tape';
 import SES from 'ses';
 
+import SES1HandledPromiseShim from '@agoric/eventual-send/src/ses1';
+
 import * as babelParser from '@agoric/babel-parser';
 import babelGenerate from '@babel/generator';
 
@@ -11,6 +13,8 @@ import * as acorn from 'acorn';
 import * as astring from 'astring';
 
 import makeEventualSendTransformer from '../src';
+
+const shims = [SES1HandledPromiseShim];
 
 // FIXME: This should be unnecessary when SES has support
 // for passing `evaluateProgram` through to the rewriter state.
@@ -57,6 +61,7 @@ test('eventual send is disabled by default', t => {
 test('expression source is parsable', async t => {
   try {
     const s = SES.makeSESRootRealm({
+      shims,
       transforms: makeEventualSendTransformer(babelParser, babelGenerate),
     });
     t.equal(
@@ -94,7 +99,7 @@ test('eventual send can be enabled twice', async t => {
       ...makeEventualSendTransformer(babelParser, babelGenerate),
       ...makeEventualSendTransformer(babelParser, babelGenerate),
     ];
-    const s = SES.makeSESRootRealm({ transforms });
+    const s = SES.makeSESRootRealm({ transforms, shims });
     closeOverSES(transforms, s);
     t.equal(
       await s.evaluate('"abc"~.[2]'),
@@ -105,7 +110,7 @@ test('eventual send can be enabled twice', async t => {
       ...makeEventualSendTransformer(acornParser, acornGenerate),
       ...makeEventualSendTransformer(acornParser, acornGenerate),
     ];
-    const s2 = SES.makeSESRootRealm({ transforms: transforms2 });
+    const s2 = SES.makeSESRootRealm({ transforms: transforms2, shims });
     closeOverSES(transforms2, s2);
     t.equal(
       await s2.evaluate('"abc"~.[2]'),
@@ -126,7 +131,7 @@ test('eventual send can be enabled', async t => {
       ['acorn', acornParser, acornGenerate],
     ]) {
       const transforms = [...makeEventualSendTransformer(parser, generate)];
-      const s = SES.makeSESRootRealm({ transforms });
+      const s = SES.makeSESRootRealm({ transforms, shims });
       closeOverSES(transforms, s);
 
       // console.log(parser('"abc"~.length', { plugins: ['eventualSend'] }));

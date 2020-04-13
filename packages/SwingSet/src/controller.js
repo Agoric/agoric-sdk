@@ -2,7 +2,6 @@
 /* global setImmediate */
 import fs from 'fs';
 import path from 'path';
-// import { rollup } from 'rollup';
 import harden from '@agoric/harden';
 import SES from 'ses';
 import { assert } from '@agoric/assert';
@@ -21,7 +20,6 @@ import * as babelCore from '@babel/core';
 import anylogger from 'anylogger';
 
 // eslint-disable-next-line import/extensions
-import kernelSourceFunc from './bundles/kernel';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
@@ -37,6 +35,7 @@ process.on('unhandledRejection', e =>
 
 const ADMIN_DEVICE_PATH = require.resolve('./kernel/vatAdmin/vatAdmin-src');
 const ADMIN_VAT_PATH = require.resolve('./kernel/vatAdmin/vatAdminWrapper');
+const KERNEL_PATH = require.resolve('./kernel/index.js');
 
 function byName(a, b) {
   if (a.name < b.name) {
@@ -99,10 +98,6 @@ export function loadBasedir(basedir) {
     bootstrapIndexJS = undefined;
   }
   return { vats, bootstrapIndexJS };
-}
-
-function getKernelSource() {
-  return `(${kernelSourceFunc})`;
 }
 
 // this feeds the SES realm's (real/safe) confine*() back into the Realm
@@ -231,12 +226,6 @@ function realmRegisterEndOfCrank(fn) {
   };
 }
 
-function buildSESKernel(sesEvaluator, endowments) {
-  const kernelSource = getKernelSource();
-  const buildKernel = sesEvaluator(kernelSource, 'kernel');
-  return buildKernel(endowments);
-}
-
 export async function buildVatController(config, withSES = true, argv = []) {
   if (!withSES) {
     throw Error('SES is now mandatory');
@@ -296,7 +285,8 @@ export async function buildVatController(config, withSES = true, argv = []) {
     vatAdminVatSetup: await evaluateToSetup(ADMIN_VAT_PATH, 'vat-vatAdmin'),
   };
 
-  const kernel = buildSESKernel(sesEvaluator, kernelEndowments);
+  const kernelSetup = await evaluateToSetup(KERNEL_PATH, 'kernel');
+  const kernel = kernelSetup(kernelEndowments);
 
   async function addGenesisVat(name, sourceIndex, options = {}) {
     log.debug(`= adding vat '${name}' from ${sourceIndex}`);

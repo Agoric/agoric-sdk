@@ -10,6 +10,7 @@ const {
   getOwnPropertyDescriptor: gopd,
   getPrototypeOf,
   isFrozen,
+  setPrototypeOf,
 } = Object;
 
 const { prototype: promiseProto } = Promise;
@@ -305,7 +306,7 @@ export function makeHandledPromise(Promise) {
   }
 
   HandledPromise.prototype = promiseProto;
-  Object.setPrototypeOf(HandledPromise, Promise);
+  setPrototypeOf(HandledPromise, Promise);
 
   function isFrozenPromiseThen(p) {
     return (
