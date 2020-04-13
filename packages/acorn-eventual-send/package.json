@@ -12,7 +12,7 @@
   "devDependencies": {
     "acorn": "^7.1.0",
     "esm": "^3.2.25",
-    "rollup": "^1.32.0",
+    "rollup": "^2",
     "tap-spec": "^5.0.0",
     "tape": "^4.9.2",
     "tape-promise": "^4.0.0"
@@ -33,8 +33,5 @@
   "homepage": "https://github.com/acorn-eventual-send#readme",
   "publishConfig": {
     "access": "public"
-  },
-  "dependencies": {
-    "rollup": "^2"
   }
 }
