@@ -1,4 +1,4 @@
-import { assert, details } from '@agoric/assert';
+import { assert, details, openDetail } from '@agoric/assert';
 
 export const arrayToObj = (array, keywords) => {
   assert(
@@ -14,7 +14,9 @@ export const objToArray = (obj, keywords) => {
   const keys = Object.getOwnPropertyNames(obj);
   assert(
     keys.length === keywords.length,
-    `object keys (${keys}) and keywords (${keywords}) must be of equal length`,
+    details`object keys (${openDetail(keys)}) and keywords (${openDetail(
+      keywords,
+    )}) must be of equal length`,
   );
   return keywords.map(keyword => obj[keyword]);
 };
@@ -24,9 +26,9 @@ export const assertSubset = (whole, part) => {
     assert.typeof(key, 'string');
     assert(
       whole.includes(key),
-      details`key ${key} was not one of the expected keys (${whole.join(
-        ', ',
-      )})`,
+      details`key ${openDetail(
+        key,
+      )} was not one of the expected keys (${openDetail(whole.join(', '))})`,
     );
   });
 };
@@ -36,14 +38,16 @@ export const objToArrayAssertFilled = (obj, keywords) => {
   const keys = Object.getOwnPropertyNames(obj);
   assert(
     keys.length === keywords.length,
-    `object keys (${keys}) and keywords (${keywords}) must be of equal length`,
+    details`object keys (${openDetail(keys)}) and keywords (${openDetail(
+      keywords,
+    )}) must be of equal length`,
   );
   assertSubset(keywords, keys);
   // ensure all keywords are defined on obj
   return keywords.map(keyword => {
     assert(
       obj[keyword] !== undefined,
-      details`obj[keyword] must be defined for keyword ${keyword}`,
+      details`obj[keyword] must be defined for keyword ${openDetail(keyword)}`,
     );
     return obj[keyword];
   });
@@ -56,7 +60,7 @@ export const filterObj = (obj, subsetKeywords) => {
   subsetKeywords.forEach(keyword => {
     assert(
       obj[keyword] !== undefined,
-      details`obj[keyword] must be defined for keyword ${keyword}`,
+      details`obj[keyword] must be defined for keyword ${openDetail(keyword)}`,
     );
     newObj[keyword] = obj[keyword];
   });

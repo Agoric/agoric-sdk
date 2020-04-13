@@ -22,6 +22,9 @@ function makeFakeConsole(logArray) {
     'timeEnd',
   ];
 
+  // TODO(msm): Too heavy a hammer
+  const noErrorFilter = specimen => !(specimen instanceof Error);
+
   const fakeConsole = {};
 
   consoleWhitelist.forEach(name => {
@@ -31,7 +34,7 @@ function makeFakeConsole(logArray) {
     const f = (...args) => {
       // Note the curlies and lack of a `return`. All these should return
       // only undefined, i.e., not return anything.
-      logArray.push([name, ...args]);
+      logArray.push([name, ...args.filter(noErrorFilter)]);
     };
     defineProperty(f, 'name', { value: name });
     fakeConsole[name] = f;

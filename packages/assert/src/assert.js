@@ -136,8 +136,11 @@ function details(template, ...args) {
       if (args.length >= 1) {
         parts.push('\nSee console for error data.');
       }
-      console.error(...interleaved);
-      return new Error(parts.join(''));
+      const err = new Error(parts.join(''));
+      console.error('LOGGED ERROR:', ...interleaved, err);
+      // eslint-disable-next-line no-debugger
+      debugger;
+      return err;
     },
   };
   // });
@@ -155,9 +158,7 @@ harden(details);
  */
 function fail(optDetails = details`Assert failed`) {
   if (typeof optDetails === 'string') {
-    const detailString = `Assertion failed: ${optDetails}`;
-    console.error(detailString);
-    throw new Error(detailString);
+    optDetails = details`${openDetail(optDetails)}`;
   }
   throw optDetails.complain();
 }
@@ -186,7 +187,6 @@ function fail(optDetails = details`Assert failed`) {
  */
 function assert(flag, optDetails = details`check failed`) {
   if (!flag) {
-    console.log(`FAILED ASSERTION ${flag}`);
     fail(optDetails);
   }
 }
