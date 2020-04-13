@@ -76,10 +76,13 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
           );
 
           const actualSource = `(${source}\n)\n${sourceMap}`;
-          const mainNS = evaluateProgram(actualSource, {
-            require,
-            HandledPromise,
-          })();
+          const nestedEvaluate = src =>
+            evaluateProgram(src, {
+              systemRequire: require,
+              HandledPromise,
+              nestedEvaluate,
+            });
+          const mainNS = nestedEvaluate(actualSource)();
           const main = mainNS.default;
           if (typeof main !== 'function') {
             log.error(

@@ -6,7 +6,7 @@ import replace0 from '@rollup/plugin-replace';
 import eventualSend from '@agoric/acorn-eventual-send';
 import * as acorn from 'acorn';
 
-const DEFAULT_MODULE_FORMAT = 'getExport';
+const DEFAULT_MODULE_FORMAT = 'nestedEvaluate';
 const DEFAULT_FILE_PREFIX = '/bundled-source';
 const SUPPORTED_FORMATS = ['getExport', 'nestedEvaluate'];
 

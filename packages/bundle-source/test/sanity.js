@@ -36,10 +36,7 @@ test('nestedEvaluate', async t => {
       moduleFormat: mf2,
       source: src2,
       sourceMap: map2,
-    } = await bundleSource(
-      `${__dirname}/../demo/dir1/encourage.js`,
-      'nestedEvaluate',
-    );
+    } = await bundleSource(`${__dirname}/../demo/dir1/encourage.js`);
     t.equal(mf2, 'nestedEvaluate', 'module format 2 is nestedEvaluate');
 
     const srcMap2 = `(${src2})\n${map2}`;
@@ -88,7 +85,7 @@ test('getExport', async t => {
       moduleFormat: mf2,
       source: src2,
       sourceMap: map2,
-    } = await bundleSource(`${__dirname}/../demo/dir1/encourage.js`);
+    } = await bundleSource(`${__dirname}/../demo/dir1/encourage.js`, 'getExport');
     t.equal(mf2, 'getExport', 'module format 2 is getExport');
 
     const srcMap2 = `(${src2})\n${map2}`;
