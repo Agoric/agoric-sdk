@@ -32,7 +32,7 @@ type ChannelTuple struct {
 type channelHandler struct {
 }
 
-type channelMessage struct {
+type channelMessage struct { // comes from swingset's IBC handler
 	Method string       `json:"method"`
 	Tuple  ChannelTuple `json:"tuple"`
 	Data64 string       `json:"data64"`
@@ -163,6 +163,7 @@ func (am AppModule) OnChanOpenConfirm(
 	channelID string,
 ) error {
 	_, err := am.keeper.CallToController(`{"type":"FIXME_IBC_CHAN_OPEN_CONFIRM"}`)
+	// update these to all use the same type, but embed some data describing which case we're in, and include portID and channelID. type= IBC
 	return err
 }
 
