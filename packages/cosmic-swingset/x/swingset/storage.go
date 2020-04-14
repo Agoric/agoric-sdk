@@ -8,10 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-type storageHandler struct {
-	Keeper  Keeper
-	Context sdk.Context
-}
+type storageHandler struct{}
 
 type storageMessage struct {
 	Method string `json:"method"`
@@ -19,23 +16,15 @@ type storageMessage struct {
 	Value  string `json:"value"`
 }
 
-func NewStorageHandler(context sdk.Context, keeper Keeper) *storageHandler {
-	return &storageHandler{
-		Keeper:  keeper,
-		Context: context,
-	}
+func init() {
+	RegisterPortHandler("storage", NewStorageHandler())
 }
 
-func NewUnlimitedStorageHandler(context sdk.Context, keeper Keeper) *storageHandler {
-	storageHandler := NewStorageHandler(context, keeper)
-
-	// Allow the storageHandler to consume unlimited gas.
-	storageHandler.Context = storageHandler.Context.WithGasMeter(sdk.NewInfiniteGasMeter())
-
-	return storageHandler
+func NewStorageHandler() storageHandler {
+	return storageHandler{}
 }
 
-func (sh *storageHandler) Receive(str string) (ret string, err error) {
+func (sh storageHandler) Receive(ctx *ControllerContext, str string) (ret string, err error) {
 	msg := new(storageMessage)
 	err = json.Unmarshal([]byte(str), &msg)
 	if err != nil {
@@ -49,7 +38,7 @@ func (sh *storageHandler) Receive(str string) (ret string, err error) {
 			case sdk.ErrorOutOfGas:
 				err = fmt.Errorf(
 					"out of gas in location: %v; gasUsed: %d",
-					rType.Descriptor, sh.Context.GasMeter().GasConsumed(),
+					rType.Descriptor, ctx.Context.GasMeter().GasConsumed(),
 				)
 			default:
 				// Not ErrorOutOfGas, so panic again.
@@ -64,11 +53,11 @@ func (sh *storageHandler) Receive(str string) (ret string, err error) {
 		storage := NewStorage()
 		storage.Value = msg.Value
 		//fmt.Printf("giving Keeper.SetStorage(%s) %s\n", msg.Key, storage.Value)
-		sh.Keeper.SetStorage(sh.Context, msg.Key, storage)
+		ctx.Keeper.SetStorage(ctx.Context, msg.Key, storage)
 		return "true", nil
 
 	case "get":
-		storage := sh.Keeper.GetStorage(sh.Context, msg.Key)
+		storage := ctx.Keeper.GetStorage(ctx.Context, msg.Key)
 		if storage.Value == "" {
 			return "null", nil
 		}
@@ -80,14 +69,14 @@ func (sh *storageHandler) Receive(str string) (ret string, err error) {
 		return string(s), nil
 
 	case "has":
-		storage := sh.Keeper.GetStorage(sh.Context, msg.Key)
+		storage := ctx.Keeper.GetStorage(ctx.Context, msg.Key)
 		if storage.Value == "" {
 			return "false", nil
 		}
 		return "true", nil
 
 	case "keys":
-		keys := sh.Keeper.GetKeys(sh.Context, msg.Key)
+		keys := ctx.Keeper.GetKeys(ctx.Context, msg.Key)
 		if keys.Keys == nil {
 			return "[]", nil
 		}
@@ -98,12 +87,12 @@ func (sh *storageHandler) Receive(str string) (ret string, err error) {
 		return string(bytes), nil
 
 	case "entries":
-		keys := sh.Keeper.GetKeys(sh.Context, msg.Key)
+		keys := ctx.Keeper.GetKeys(ctx.Context, msg.Key)
 		ents := make([][]string, len(keys.Keys))
 		for i, key := range keys.Keys {
 			ents[i] = make([]string, 2)
 			ents[i][0] = key
-			storage := sh.Keeper.GetStorage(sh.Context, fmt.Sprintf("%s.%s", msg.Key, key))
+			storage := ctx.Keeper.GetStorage(ctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
 			ents[i][1] = storage.Value
 		}
 		bytes, err := json.Marshal(ents)
@@ -113,10 +102,10 @@ func (sh *storageHandler) Receive(str string) (ret string, err error) {
 		return string(bytes), nil
 
 	case "values":
-		keys := sh.Keeper.GetKeys(sh.Context, msg.Key)
+		keys := ctx.Keeper.GetKeys(ctx.Context, msg.Key)
 		vals := make([]string, len(keys.Keys))
 		for i, key := range keys.Keys {
-			storage := sh.Keeper.GetStorage(sh.Context, fmt.Sprintf("%s.%s", msg.Key, key))
+			storage := ctx.Keeper.GetStorage(ctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
 			vals[i] = storage.Value
 		}
 		bytes, err := json.Marshal(vals)
@@ -126,7 +115,7 @@ func (sh *storageHandler) Receive(str string) (ret string, err error) {
 		return string(bytes), nil
 
 	case "size":
-		keys := sh.Keeper.GetKeys(sh.Context, msg.Key)
+		keys := ctx.Keeper.GetKeys(ctx.Context, msg.Key)
 		if keys.Keys == nil {
 			return "0", nil
 		}

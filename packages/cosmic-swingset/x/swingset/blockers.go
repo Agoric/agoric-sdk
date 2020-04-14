@@ -29,14 +29,13 @@ type commitBlockAction struct {
 }
 
 func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) error {
-	// Create a "storagePort" that the controller can use to communicate with the
-	// storageHandler
-	storagePort := RegisterPortHandler(NewUnlimitedStorageHandler(ctx, keeper))
-	defer UnregisterPortHandler(storagePort)
+	// Update our current context for this function.
+	defer SetControllerContext(ctx)()
+	defer SetControllerKeeper(keeper)()
 
 	action := &beginBlockAction{
 		Type:        "BEGIN_BLOCK",
-		StoragePort: storagePort,
+		StoragePort: GetPort("storage"),
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
@@ -55,16 +54,15 @@ var endBlockHeight int64
 var endBlockTime int64
 
 func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.ValidatorUpdate, error) {
-	// Create a "storagePort" that the controller can use to communicate with the
-	// storageHandler
-	storagePort := RegisterPortHandler(NewUnlimitedStorageHandler(ctx, keeper))
-	defer UnregisterPortHandler(storagePort)
+	// Update our current context for this function.
+	defer SetControllerContext(ctx)()
+	defer SetControllerKeeper(keeper)()
 
 	action := &endBlockAction{
 		Type:        "END_BLOCK",
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
-		StoragePort: storagePort,
+		StoragePort: GetPort("storage"),
 	}
 	b, err := json.Marshal(action)
 	if err != nil {
@@ -88,6 +86,9 @@ func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.
 }
 
 func CommitBlock(keeper Keeper) error {
+	// Update our current context for this function.
+	defer SetControllerKeeper(keeper)()
+
 	action := &commitBlockAction{
 		Type:        "COMMIT_BLOCK",
 		BlockHeight: endBlockHeight,

@@ -30,9 +30,6 @@ type ChannelTuple struct {
 }
 
 type channelHandler struct {
-	Keeper        Keeper
-	Context       sdk.Context
-	CurrentPacket channelexported.PacketI
 }
 
 type channelMessage struct {
@@ -50,15 +47,15 @@ func (cm channelMessage) GetData() []byte {
 	return data
 }
 
-func NewIBCChannelHandler(ctx sdk.Context, keeper Keeper, packet channelexported.PacketI) *channelHandler {
-	return &channelHandler{
-		Context:       ctx,
-		Keeper:        keeper,
-		CurrentPacket: packet,
-	}
+func init() {
+	RegisterPortHandler("dibc", NewIBCChannelHandler())
 }
 
-func (ch *channelHandler) Receive(str string) (ret string, err error) {
+func NewIBCChannelHandler() channelHandler {
+	return channelHandler{}
+}
+
+func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string, err error) {
 	fmt.Println("channel handler received", str)
 
 	msg := new(channelMessage)
@@ -69,11 +66,11 @@ func (ch *channelHandler) Receive(str string) (ret string, err error) {
 
 	switch msg.Method {
 	case "ack":
-		if ch.CurrentPacket == nil {
+		if ctx.CurrentPacket == nil {
 			return "", fmt.Errorf("current packet is already acknowledged")
 		}
-		err = ch.Keeper.PacketExecuted(ch.Context, ch.CurrentPacket, msg.GetData())
-		ch.CurrentPacket = nil
+		err = ctx.Keeper.PacketExecuted(ctx.Context, ctx.CurrentPacket, msg.GetData())
+		ctx.CurrentPacket = nil
 		if err != nil {
 			return "", err
 		}
@@ -81,14 +78,14 @@ func (ch *channelHandler) Receive(str string) (ret string, err error) {
 
 	case "close":
 		// Make sure our channel goes away.
-		if err = ch.Keeper.ChanCloseInit(ch.Context, msg.Tuple.Destination.Port, msg.Tuple.Destination.Channel); err != nil {
+		if err = ctx.Keeper.ChanCloseInit(ctx.Context, msg.Tuple.Destination.Port, msg.Tuple.Destination.Channel); err != nil {
 			return "", err
 		}
 		return "true", nil
 
 	case "send":
-		seq, ok := ch.Keeper.GetNextSequenceSend(
-			ch.Context,
+		seq, ok := ctx.Keeper.GetNextSequenceSend(
+			ctx.Context,
 			msg.Tuple.Destination.Port,
 			msg.Tuple.Destination.Channel,
 		)
@@ -103,9 +100,9 @@ func (ch *channelHandler) Receive(str string) (ret string, err error) {
 			msg.GetData(), seq,
 			msg.Tuple.Source.Port, msg.Tuple.Source.Channel,
 			msg.Tuple.Destination.Port, msg.Tuple.Destination.Channel,
-			uint64(ch.Context.BlockHeight()+blockTimeout),
+			uint64(ctx.Context.BlockHeight()+blockTimeout),
 		)
-		if err := ch.Keeper.SendPacket(ch.Context, packet); err != nil {
+		if err := ctx.Keeper.SendPacket(ctx.Context, packet); err != nil {
 			return "", err
 		}
 		return "true", nil
