@@ -1,11 +1,8 @@
 // @ts-check
-import rawHarden from '@agoric/harden';
+import harden from '@agoric/harden';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { makeZoeHelpers } from '../contractSupport';
-
-// TODO: Until we have a version of harden that exports its type.
-const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
  * This is a very trivial contract to explain and test Zoe.
@@ -14,7 +11,8 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  * offer, which gives the user their payout through Zoe. Other
  * contracts will use these same steps, but they will have more
  * sophisticated logic and interfaces.
- * @type {import('@agoric/zoe').MakeContract} zcf - the contract facet of zoe
+ *
+ * @type {import('@agoric/zoe').MakeContract}
  */
 export const makeContract = harden(zcf => {
   const { inviteAnOffer } = makeZoeHelpers(zcf);

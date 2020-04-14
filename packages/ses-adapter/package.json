@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@agoric/eventual-send": "^0.8.0",
-    "@agoric/harden": "^0.0.4"
+    "@agoric/harden": "^0.0.7"
   },
   "files": [
     "README.md",
