@@ -1,13 +1,12 @@
 import harden from '@agoric/harden';
 
 function build(_E, log) {
-  let resolver;
   const thing = {
     second() {
       log('=> Bob: in thing.second(), reply with string');
       return `Bob's second answer`;
     },
-  }
+  };
   return harden({
     first() {
       log('=> Bob: in first(), reply with thing');

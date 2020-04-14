@@ -74,11 +74,11 @@ function build(syscall, _state, makeRoot, forVatID) {
 
   function makeQueued(slot) {
     /* eslint-disable no-use-before-define */
-    lsdebug(`makeQueued(${slot})`)
+    lsdebug(`makeQueued(${slot})`);
     const handler = {
       applyMethod(_o, prop, args, returnedP) {
         // Support: o~.[prop](...args) remote method invocation
-        lsdebug(`makeQueued handler.applyMethod (${slot})`)
+        lsdebug(`makeQueued handler.applyMethod (${slot})`);
         return queueMessage(slot, prop, args, returnedP);
       },
     };

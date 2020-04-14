@@ -25,7 +25,7 @@ export default function setup(syscall, state, helpers) {
                 E(thingP)
                   .answer()
                   .then(
-                    r => log(`=> Alice: thing.answer #2 resolved to '${r}'`),
+                    r2 => log(`=> Alice: thing.answer #2 resolved to '${r2}'`),
                     e => log(`=> Alice: thing.answer #2 rejected as '${e}'`),
                   );
               },

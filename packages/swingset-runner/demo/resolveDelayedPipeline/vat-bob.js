@@ -1,7 +1,6 @@
 import harden from '@agoric/harden';
 
 function build(_E, log) {
-  let resolver;
   const thing = {
     answer() {
       log('=> Bob: in thing.answer1(), reply with string');
