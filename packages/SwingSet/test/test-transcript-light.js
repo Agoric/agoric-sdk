@@ -15,6 +15,8 @@ async function testLoadState(t, withSES) {
   config.hostStorage = storage;
   const c = await buildVatController(config, withSES, ['one']);
   const state0 = getAllState(storage);
+  t.equal(state0.initialized, 'true');
+  t.notEqual(state0.runQueue, '[]');
 
   await c.step();
   const state1 = getAllState(storage);
