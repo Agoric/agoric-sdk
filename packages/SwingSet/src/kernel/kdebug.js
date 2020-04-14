@@ -58,5 +58,9 @@ function legibilizeValue(val, slots) {
 }
 
 export function legibilizeMessageArgs(args) {
-  return JSON.parse(args.body).map(arg => legibilizeValue(arg, args.slots));
+  try {
+    return JSON.parse(args.body).map(arg => legibilizeValue(arg, args.slots));
+  } catch (e) {
+    return [args];
+  }
 }
