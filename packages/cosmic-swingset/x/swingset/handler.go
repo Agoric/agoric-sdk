@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	// "github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
+	// "github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -39,6 +39,9 @@ type deliverInboundAction struct {
 // NewHandler returns a handler for "swingset" type messages.
 func NewHandler(keeper Keeper) sdk.Handler {
 	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
+		defer SetControllerContext(ctx)()
+		defer SetControllerKeeper(keeper)()
+
 		switch msg := msg.(type) {
 		// IBC channel support.
 		case channeltypes.MsgPacket:
@@ -68,15 +71,6 @@ func mailboxPeer(key string) (string, error) {
 }
 
 func handleIBCPacket(ctx sdk.Context, keeper Keeper, actionType string, packet channelexported.PacketI) (*sdk.Result, error) {
-	// Create a "storagePort" that the controller can use to communicate with the
-	// storageHandler
-	storagePort := RegisterPortHandler(NewUnlimitedStorageHandler(ctx, keeper))
-	defer UnregisterPortHandler(storagePort)
-
-	// The channel lifetime is longer than just one message.
-	ibcHandlerPort := RegisterPortHandler(NewIBCChannelHandler(ctx, keeper, packet))
-	defer UnregisterPortHandler(ibcHandlerPort)
-
 	tuple := ChannelTuple{
 		Source: ChannelEndpoint{
 			Channel: packet.GetSourceChannel(),
@@ -96,8 +90,8 @@ func handleIBCPacket(ctx sdk.Context, keeper Keeper, actionType string, packet c
 		Type:           actionType,
 		Data64:         string(data64),
 		Tuple:          tuple,
-		StoragePort:    storagePort,
-		IBCHandlerPort: ibcHandlerPort,
+		StoragePort:    GetPort("controller"),
+		IBCHandlerPort: GetPort("dibc"),
 		BlockHeight:    ctx.BlockHeight(),
 		BlockTime:      ctx.BlockTime().Unix(),
 	}
@@ -124,17 +118,12 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 		messages[i][1] = message
 	}
 
-	// Create a "storagePort" that the controller can use to communicate with the
-	// storageHandler
-	storagePort := RegisterPortHandler(NewUnlimitedStorageHandler(ctx, keeper))
-	defer UnregisterPortHandler(storagePort)
-
 	action := &deliverInboundAction{
 		Type:        "DELIVER_INBOUND",
 		Peer:        msg.Peer,
 		Messages:    messages,
 		Ack:         msg.Ack,
-		StoragePort: storagePort,
+		StoragePort: GetPort("controller"),
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 	}

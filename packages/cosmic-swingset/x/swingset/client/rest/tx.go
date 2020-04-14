@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
-	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
+	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/rest"

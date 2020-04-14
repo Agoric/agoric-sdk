@@ -7,11 +7,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 
-	"github.com/Agoric/cosmic-swingset/x/swingset/client/cli"
-	"github.com/Agoric/cosmic-swingset/x/swingset/client/rest"
+	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/client/cli"
+	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/client/rest"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/bank"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -67,16 +66,14 @@ func (AppModuleBasic) GetTxCmd(cdc *codec.Codec) *cobra.Command {
 
 type AppModule struct {
 	AppModuleBasic
-	keeper     Keeper
-	bankKeeper bank.Keeper
+	keeper Keeper
 }
 
 // NewAppModule creates a new AppModule Object
-func NewAppModule(k Keeper, bankKeeper bank.Keeper) AppModule {
+func NewAppModule(k Keeper) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{},
 		keeper:         k,
-		bankKeeper:     bankKeeper,
 	}
 }
 

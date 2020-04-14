@@ -9,7 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
   sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
+	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/types"
 )
 
 // query endpoints supported by the swingset Querier

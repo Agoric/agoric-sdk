@@ -7,11 +7,12 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
+	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/libs/cli"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	cryptokeys "github.com/cosmos/cosmos-sdk/crypto/keys"
+	codecstd "github.com/cosmos/cosmos-sdk/codec/std"
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth"
@@ -19,8 +20,6 @@ import (
 	authvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
-
-	appcodec "github.com/Agoric/cosmic-swingset/app/codec"
 )
 
 const (
@@ -32,7 +31,7 @@ const (
 
 // AddGenesisAccountCmd returns add-genesis-account cobra Command.
 func AddGenesisAccountCmd(
-	ctx *server.Context, cdc *appcodec.Codec, defaultNodeHome, defaultClientHome string,
+	ctx *server.Context, depCdc *amino.Codec, cdc *codecstd.Codec, defaultNodeHome, defaultClientHome string,
 ) *cobra.Command {
 
 	cmd := &cobra.Command{
@@ -52,12 +51,17 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			inBuf := bufio.NewReader(cmd.InOrStdin())
 			if err != nil {
 				// attempt to lookup address from Keybase if no address was provided
-				kb, err := cryptokeys.NewKeyring(sdk.KeyringServiceName(), viper.GetString(flags.FlagKeyringBackend), viper.GetString(flagClientHome), inBuf)
+				kb, err := keyring.New(
+					sdk.KeyringServiceName(),
+					viper.GetString(flags.FlagKeyringBackend),
+					viper.GetString(flagClientHome),
+					inBuf,
+				)
 				if err != nil {
 					return err
 				}
 
-				info, err := kb.Get(args[0])
+				info, err := kb.Key(args[0])
 				if err != nil {
 					return fmt.Errorf("failed to get address from Keybase: %w", err)
 				}
@@ -80,11 +84,14 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			// create concrete account type based on input parameters
 			var genAccount authexported.GenesisAccount
 
+			balances := bank.Balance{Address: addr, Coins: coins.Sort()}
 			baseAccount := auth.NewBaseAccount(addr, nil, 0, 0)
 			if !vestingAmt.IsZero() {
 				baseVestingAccount := authvesting.NewBaseVestingAccount(baseAccount, vestingAmt.Sort(), vestingEnd)
-				if err != nil {
-					return fmt.Errorf("failed to create base vesting account: %w", err)
+
+				if (balances.Coins.IsZero() && !baseVestingAccount.OriginalVesting.IsZero()) ||
+					baseVestingAccount.OriginalVesting.IsAnyGT(balances.Coins) {
+					return errors.New("vesting amount cannot be greater than total amount")
 				}
 
 				switch {
@@ -106,13 +113,13 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			}
 
 			genFile := config.GenesisFile()
-			appState, genDoc, err := genutil.GenesisStateFromGenFile(cdc.Amino, genFile)
+			appState, genDoc, err := genutil.GenesisStateFromGenFile(depCdc, genFile)
 			if err != nil {
 				return fmt.Errorf("failed to unmarshal genesis state: %w", err)
 			}
 
 			authGenState := auth.GetGenesisStateFromAppState(cdc, appState)
-			bankGenState := bank.GetGenesisStateFromAppState(cdc.Amino, appState)
+			bankGenState := bank.GetGenesisStateFromAppState(depCdc, appState)
 
 			if authGenState.Accounts.Contains(addr) {
 				return fmt.Errorf("cannot add account at existing address %s", addr)
@@ -143,6 +150,17 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			}
 
 			appState[auth.ModuleName] = authGenStateBz
+			appState[bank.ModuleName] = bankGenStateBz
+
+			bankGenState = bank.GetGenesisStateFromAppState(depCdc, appState)
+			bankGenState.Balances = append(bankGenState.Balances, balances)
+			bankGenState.Balances = bank.SanitizeGenesisBalances(bankGenState.Balances)
+
+			bankGenStateBz, err = cdc.MarshalJSON(bankGenState)
+			if err != nil {
+				return fmt.Errorf("failed to marshal bank genesis state: %w", err)
+			}
+
 			appState[bank.ModuleName] = bankGenStateBz
 
 			appStateJSON, err := cdc.MarshalJSON(appState)

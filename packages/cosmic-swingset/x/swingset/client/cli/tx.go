@@ -12,7 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
 
-	"github.com/Agoric/cosmic-swingset/x/swingset/internal/types"
+	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
