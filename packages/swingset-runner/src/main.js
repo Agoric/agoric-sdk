@@ -14,6 +14,8 @@ import {
   openSwingStore as openLMDBSwingStore,
 } from '@agoric/swing-store-lmdb';
 
+import { dumpStore } from './dumpstore';
+
 const log = console.log;
 
 function p(item) {
@@ -42,6 +44,11 @@ FLAGS may be:
   --logall       - log block times, memory use, and disk space
   --forcegc      - run garbage collector after each block
   --batchsize N  - set BATCHSIZE to N (default 200)
+  --verbose      - output verbose debugging messages as it runs
+  --dump         - dump a kernel state store snapshot after each crank
+  --dumpdir DIR  - place kernel state dumps in directory DIR (default ".")
+  --dumptag STR  - prefix kernel state dump filenames with STR (default "t")
+  --raw          - perform kernel state dumps in raw mode
 
 CMD is one of:
   help   - print this helpful usage information
@@ -83,6 +90,12 @@ export async function main() {
   let logMem = false;
   let logDisk = false;
   let forceGC = false;
+  let verbose = false;
+  let doDumps = false;
+  let dumpDir = '.';
+  let dumpTag = 't';
+  let rawMode = false;
+
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
     switch (flag) {
@@ -115,10 +128,29 @@ export async function main() {
       case '--batchsize':
         batchSize = Number(argv.shift());
         break;
+      case '--dump':
+        doDumps = true;
+        break;
+      case '--dumpdir':
+        dumpDir = argv.shift();
+        doDumps = true;
+        break;
+      case '--dumptag':
+        dumpTag = argv.shift();
+        doDumps = true;
+        break;
+      case '--raw':
+        rawMode = true;
+        doDumps = true;
+        break;
       case '--filedb':
       case '--memdb':
       case '--lmdb':
         dbMode = flag;
+        break;
+      case '-v':
+      case '--verbose':
+        verbose = true;
         break;
       default:
         fail(`invalid flag ${flag}`, true);
@@ -181,6 +213,9 @@ export async function main() {
       fail(`invalid database mode ${dbMode}`, true);
   }
   config.hostStorage = store.storage;
+  if (verbose) {
+    config.verbose = true;
+  }
 
   let blockNumber = 0;
   let statLogger = null;
@@ -198,6 +233,7 @@ export async function main() {
     statLogger = makeStatLogger('runner', headers);
   }
 
+  let crankNumber = 0;
   const controller = await buildVatController(config, true, bootstrapArgv);
   switch (command) {
     case 'run': {
@@ -278,16 +314,31 @@ export async function main() {
     statLogger.close();
   }
 
+  function kernelStateDump() {
+    const dumpPath = `${dumpDir}/${dumpTag}${crankNumber}`;
+    dumpStore(store.storage, dumpPath, rawMode);
+  }
+
   async function runBlock(requestedSteps, doCommit) {
     const blockStartTime = readClock();
     let actualSteps = 0;
+    if (verbose) {
+      log('==> running block');
+    }
     while (requestedSteps > 0) {
       requestedSteps -= 1;
       // eslint-disable-next-line no-await-in-loop
       const stepped = await controller.step();
-      actualSteps += stepped;
       if (stepped < 1) {
         break;
+      }
+      crankNumber += stepped;
+      actualSteps += stepped;
+      if (doDumps) {
+        kernelStateDump();
+      }
+      if (verbose) {
+        log(`===> end of crank ${crankNumber}`);
       }
     }
     if (doCommit) {
@@ -336,6 +387,10 @@ export async function main() {
   }
 
   async function commandRun(stepLimit, runInBlockMode) {
+    if (doDumps) {
+      kernelStateDump();
+    }
+
     const [totalSteps, deltaT] = await runBatch(stepLimit, runInBlockMode);
     if (!runInBlockMode) {
       store.commit();

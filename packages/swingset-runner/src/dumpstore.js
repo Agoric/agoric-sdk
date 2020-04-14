@@ -20,7 +20,7 @@ export function dumpStore(store, outfile, rawMode) {
     }
   }
   if (rawMode) {
-    process.exit(0);
+    return;
   }
 
   const initialized = popt('initialized');

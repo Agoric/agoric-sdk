@@ -4,7 +4,7 @@ import { insistKernelType } from './parseKernelSlots';
 import { insistVatType, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
 import { insistMessage } from '../message';
-import kdebug from './kdebug';
+import { kdebug } from './kdebug';
 
 /**
  * Produce an object that will serve as the kernel's handle onto a device.
