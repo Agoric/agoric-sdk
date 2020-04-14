@@ -5,7 +5,7 @@ import { producePromise } from '@agoric/produce-promise';
 
 const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
-const LOOPBACK_MULTIADDR = '/if/loopback';
+const LOOPBACK_ADDR = '/if/loopback';
 
 /**
  * @typedef {string|Buffer|ArrayBuffer} Data
@@ -36,31 +36,18 @@ export function bytesToString(bytes) {
 }
 
 /**
- * @typedef {[string, string][]} Endpoint An expanded address
- * @typedef {string|Endpoint} Multiaddr An address formatted as in https://github.com/multiformats/multiaddr
+ * @typedef {string} Endpoint A local or remote address
+ * See multiaddr.js for an opinionated router implementation
  *
  * @typedef {Object} Peer The local peer
- * @property {(localAddr: Multiaddr) => Promise<Port>} bind Claim a port
- *
- * Here is the difference between string and Endpoint:
- *
- * unspecified port on local ibc interface: /if/ibc0 [['if', 'ibc0']]
- * specific local port: /if/ibc0/ordered/transfer [['if', 'ibc0'], ['ordered', 'transfer']]
- *
- * remote pointer to chain: /dnsaddr/ibc.testnet.agoric.com/ordered/transfer
- *   [['dnsaddr', 'ibc.testnet.agoric.com'], ['ordered', 'transfer']]
- * resolve step to another pointer: /dnsaddr/rpc.testnet.agoric.com/ibc/testnet-1.19.0/gci/4bc8d.../ordered/transfer
- *   [['dnsaddr', 'rpc.testnet.agoric.com'], ['ibc', 'testnet-1.19.0'], ['gci', '4bc8d...'], ['ordered', 'transfer']]
- * resolve to the individual peers: /ip4/172.17.0.4/tcp/26657/tendermint/0.33/ibc/testnet-1.19.0/gci/4bc8d.../ordered/transfer
- *   [['ip4', '172.17.0.4'], ['tcp', '26657'], ['tendermint', '0.33'],
- *    ['ibc', 'testnet-1.19.0'], ['gci', '4bc8d...'], ['ordered', 'transfer']]
+ * @property {(localAddr: Endpoint) => Promise<Port>} bind Claim a port
  */
 
 /**
  * @typedef {Object} Port A port that has been bound to a Peer
  * @property {() => Endpoint} getLocalAddress Get the locally bound name of this port
  * @property {(acceptHandler: ListenHandler) => void} addListener Begin accepting incoming channels
- * @property {(remote: Multiaddr, channelHandler: ChannelHandler) => Promise<Channel>} connect Make an outbound channel
+ * @property {(remote: Endpoint, channelHandler: ChannelHandler) => Promise<Channel>} connect Make an outbound channel
  * @property {(acceptHandler: ListenHandler) => void} removeListener Remove the currently-bound listener
  *
  * @typedef {Object} ListenHandler A handler for incoming channels
@@ -101,45 +88,8 @@ export function bytesToString(bytes) {
  * @property {(port: Port, remote: Endpoint) => Promise<ChannelHandler>} onConnect A port initiates an outbound connection
  *
  * @typedef {Object} PeerImpl Things the peer can do for us
- * @property {(port: Port, remote: Multiaddr, channelHandler: ChannelHandler) => Promise<Channel>} connect Establish a channel from this peer to an endpoint
+ * @property {(port: Port, remote: Endpoint, channelHandler: ChannelHandler) => Promise<Channel>} connect Establish a channel from this peer to an endpoint
  */
-
-/**
- * @param {Multiaddr} ma
- * @returns {Endpoint}
- */
-export function parseMultiaddr(ma) {
-  if (typeof ma !== 'string') {
-    return ma;
-  }
-  let s = ma;
-  let m;
-  /**
-   * @type {[string, string][]}
-   */
-  const acc = [];
-  // eslint-disable-next-line no-cond-assign
-  while ((m = s.match(/^\/([^/]+)\/([^/]*)/))) {
-    s = s.substr(m[0].length);
-    acc.push([m[1], m[2]]);
-  }
-  if (s !== '') {
-    throw TypeError(`Error parsing Multiaddr ${ma} at ${s}`);
-  }
-  return acc;
-}
-
-/**
- *
- * @param {Multiaddr} ma
- * @returns {string}
- */
-export function unparseMultiaddr(ma) {
-  if (typeof ma === 'string') {
-    return ma;
-  }
-  return ma.reduce((prior, arg) => prior + arg.join('/'), '/');
-}
 
 /**
  * Create a Peer that has a handler.
@@ -153,7 +103,7 @@ export function makeNetworkPeer(peerHandler) {
    */
   const peerImpl = harden({
     async connect(port, dst, srcHandler) {
-      const dstHandler = await peerHandler.onConnect(port, parseMultiaddr(dst));
+      const dstHandler = await peerHandler.onConnect(port, dst);
 
       /**
        * Create half of a channel pair.
@@ -247,10 +197,10 @@ export function makeNetworkPeer(peerHandler) {
   const boundPorts = makeStore();
 
   // Wire up the local peer to the handler.
-  peerHandler.onCreate(parseMultiaddr(LOOPBACK_MULTIADDR), peerImpl);
+  peerHandler.onCreate(LOOPBACK_ADDR, peerImpl);
 
   /**
-   * @param {Multiaddr} localPort
+   * @param {Endpoint} localPort
    */
   const bind = async localPort => {
     /**
@@ -263,16 +213,14 @@ export function makeNetworkPeer(peerHandler) {
      */
     const port = harden({
       getLocalAddress() {
-        return parseMultiaddr(localPort);
+        return localPort;
       },
       async addListener(listenHandler) {
         if (!listenHandler) {
           throw TypeError(`listenHandler is not defined`);
         }
         if (listening) {
-          throw Error(
-            `Port ${unparseMultiaddr(localPort)} is already listening`,
-          );
+          throw Error(`Port ${localPort} is already listening`);
         }
         await peerHandler.onListen(port, listenHandler);
         listening = listenHandler;
@@ -280,14 +228,10 @@ export function makeNetworkPeer(peerHandler) {
       },
       async removeListener(listenHandler) {
         if (!listening) {
-          throw Error(`Port ${unparseMultiaddr(localPort)} is not listening`);
+          throw Error(`Port ${localPort} is not listening`);
         }
         if (listening !== listenHandler) {
-          throw Error(
-            `Port ${unparseMultiaddr(
-              localPort,
-            )} handler to remove is not listening`,
-          );
+          throw Error(`Port ${localPort} handler to remove is not listening`);
         }
         await peerHandler.onListenRemove(port, listenHandler);
         listening = undefined;
@@ -299,12 +243,12 @@ export function makeNetworkPeer(peerHandler) {
         /**
          * @type {Endpoint}
          */
-        const dst = harden(parseMultiaddr(remotePort));
+        const dst = harden(remotePort);
         return peerImpl.connect(port, dst, channelHandler);
       },
     });
 
-    boundPorts.init(unparseMultiaddr(localPort), port);
+    boundPorts.init(localPort, port);
     return port;
   };
 
