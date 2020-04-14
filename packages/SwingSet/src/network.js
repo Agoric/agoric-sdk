@@ -58,13 +58,16 @@ export function bytesToString(bytes) {
 
 /**
  * @typedef {Object} Port A port that has been bound to a Peer
- * @property {() => Multiaddr} getLocalAddress Get the locally bound name of this port
- * @property {(acceptHandler: ListenHandler) => void} listen Begin accepting incoming channels
+ * @property {() => Endpoint} getLocalAddress Get the locally bound name of this port
+ * @property {(acceptHandler: ListenHandler) => void} addListener Begin accepting incoming channels
  * @property {(remote: Multiaddr, channelHandler: ChannelHandler) => Promise<Channel>} connect Make an outbound channel
+ * @property {(acceptHandler: ListenHandler) => void} removeListener Remove the currently-bound listener
  *
  * @typedef {Object} ListenHandler A handler for incoming channels
- * @property {(local: Endpoint, remote: Endpoint) => Promise<ChannelHandler>} onAccept A new channel is incoming
- * @property {(rej: any) => void} onError There was an error while listening
+ * @property {(port: Port, l: ListenHandler) => Promise<void>} [onListen] The listener has been registered
+ * @property {(port: Port, remote: Endpoint, l: ListenHandler) => Promise<ChannelHandler>} onAccept A new channel is incoming
+ * @property {(port: Port, rej: any, l: ListenHandler) => Promise<void>} [onError] There was an error while listening
+ * @property {(port: Port, l: ListenHandler) => Promise<void>} [onRemove] The listener has been removed
  */
 
 /**
@@ -73,9 +76,9 @@ export function bytesToString(bytes) {
  * @property {() => void} close Close both ends of the channel
  *
  * @typedef {Object} ChannelHandler A handler for a given Channel
- * @property {(channel: Channel) => void} [onOpen] The channel has been opened
- * @property {(packetBytes: Bytes) => Promise<Data>} [onReceive] The channel received a packet
- * @property {(reason?: CloseReason) => Promise<void>} [onClose] The channel has been closed
+ * @property {(channel: Channel, c: ChannelHandler) => void} [onOpen] The channel has been opened
+ * @property {(channel: Channel, packetBytes: Bytes, c: ChannelHandler) => Promise<Data>} [onReceive] The channel received a packet
+ * @property {(channel: Channel, reason?: CloseReason, c: ChannelHandler) => Promise<void>} [onClose] The channel has been closed
  *
  * @typedef {any?} CloseReason The reason a channel was closed
  */
@@ -92,9 +95,10 @@ export function bytesToString(bytes) {
 
 /**
  * @typedef {Object} PeerHandler A handler for things the peer implementation will invoke
- * @property {(localAddr: Endpoint, peer: PeerImpl) => void} onCreate This peer is created
- * @property {(localAddr: Endpoint, listenHandler: ListenHandler) => Promise<void>} onListen A port was listening
- * @property {(remote: Endpoint, local: Endpoint) => Promise<ChannelHandler>} onConnect A port was connected
+ * @property {(localAddr: Endpoint, peer: PeerImpl) => Promise<void>} onCreate This peer is created
+ * @property {(port: Port, listenHandler: ListenHandler) => Promise<void>} onListen A port was listening
+ * @property {(port: Port, listenHandler: ListenHandler) => Promise<void>} onListenRemove A port listener has been reset
+ * @property {(port: Port, remote: Endpoint) => Promise<ChannelHandler>} onConnect A port initiates an outbound connection
  *
  * @typedef {Object} PeerImpl Things the peer can do for us
  * @property {(port: Port, remote: Multiaddr, channelHandler: ChannelHandler) => Promise<Channel>} connect Establish a channel from this peer to an endpoint
@@ -149,11 +153,7 @@ export function makeNetworkPeer(peerHandler) {
    */
   const peerImpl = harden({
     async connect(port, dst, srcHandler) {
-      /**
-       * @type {Endpoint}
-       */
-      const src = harden(parseMultiaddr(port.getLocalAddress()));
-      const dstHandler = await peerHandler.onConnect(src, parseMultiaddr(dst));
+      const dstHandler = await peerHandler.onConnect(port, parseMultiaddr(dst));
 
       /**
        * Create half of a channel pair.
@@ -176,10 +176,10 @@ export function makeNetworkPeer(peerHandler) {
             }
             closed = Error('Channel closed');
             if (local.onClose) {
-              await local.onClose();
+              await local.onClose(channel, undefined, local);
             }
             if (remote.onClose) {
-              await remote.onClose();
+              await remote.onClose(channel, undefined, remote);
             }
             while (pending.length) {
               const deferred = pending.shift();
@@ -201,7 +201,7 @@ export function makeNetworkPeer(peerHandler) {
               return toBytes('');
             }
             const bytes = toBytes(data);
-            const ack = await remote.onReceive(bytes);
+            const ack = await remote.onReceive(channel, bytes, remote);
             return toBytes(ack);
           },
         });
@@ -228,10 +228,10 @@ export function makeNetworkPeer(peerHandler) {
       const [dstChannel, dstFlush] = makeChannel(dstHandler, srcHandler);
 
       if (srcHandler.onOpen) {
-        srcHandler.onOpen(srcChannel);
+        srcHandler.onOpen(srcChannel, srcHandler);
       }
       if (dstHandler.onOpen) {
-        dstHandler.onOpen(dstChannel);
+        dstHandler.onOpen(dstChannel, dstHandler);
       }
 
       srcFlush();
@@ -242,7 +242,7 @@ export function makeNetworkPeer(peerHandler) {
   });
 
   /**
-   * @type {import('@agoric/store').Store.<string, Port>}
+   * @type {import('@agoric/store').Store<string, Port>}
    */
   const boundPorts = makeStore();
 
@@ -253,7 +253,11 @@ export function makeNetworkPeer(peerHandler) {
    * @param {Multiaddr} localPort
    */
   const bind = async localPort => {
-    let active;
+    /**
+     * @type {ListenHandler}
+     */
+    let listening;
+
     /**
      * @type {Port}
      */
@@ -261,22 +265,37 @@ export function makeNetworkPeer(peerHandler) {
       getLocalAddress() {
         return parseMultiaddr(localPort);
       },
-      async listen(listenHandler) {
-        if (active) {
+      async addListener(listenHandler) {
+        if (!listenHandler) {
+          throw TypeError(`listenHandler is not defined`);
+        }
+        if (listening) {
           throw Error(
-            `Port ${unparseMultiaddr(localPort)} is already ${active}`,
+            `Port ${unparseMultiaddr(localPort)} is already listening`,
           );
         }
-        active = 'listening';
-        await peerHandler.onListen(parseMultiaddr(localPort), listenHandler);
+        await peerHandler.onListen(port, listenHandler);
+        listening = listenHandler;
+        await listenHandler.onListen(port, listenHandler);
+      },
+      async removeListener(listenHandler) {
+        if (!listening) {
+          throw Error(`Port ${unparseMultiaddr(localPort)} is not listening`);
+        }
+        if (listening !== listenHandler) {
+          throw Error(
+            `Port ${unparseMultiaddr(
+              localPort,
+            )} handler to remove is not listening`,
+          );
+        }
+        await peerHandler.onListenRemove(port, listenHandler);
+        listening = undefined;
+        if (listenHandler.onRemove) {
+          await listenHandler.onRemove(port, listenHandler);
+        }
       },
       async connect(remotePort, channelHandler) {
-        if (active) {
-          throw Error(
-            `Port ${unparseMultiaddr(localPort)} is already ${active}`,
-          );
-        }
-        active = 'connected';
         /**
          * @type {Endpoint}
          */
@@ -302,7 +321,7 @@ export function makeEchoChannelHandler() {
    * @type {Channel}
    */
   return harden({
-    async onReceive(bytes) {
+    async onReceive(_channel, bytes, _channelHandler) {
       return bytes;
     },
   });
