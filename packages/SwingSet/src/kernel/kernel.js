@@ -702,7 +702,6 @@ export default function buildKernel(kernelEndowments) {
       const bootstrapVatID = vatNameToID(bootstrapVatName);
       console.debug(`=> queueing bootstrap()`);
       callBootstrap(bootstrapVatID, argvString);
-      commitCrank();
     }
 
     // if it *was* initialized, replay the transcripts
@@ -725,6 +724,7 @@ export default function buildKernel(kernelEndowments) {
     }
 
     kernelKeeper.setInitialized();
+    commitCrank(); // commit "crank 0"
   }
 
   async function step() {
