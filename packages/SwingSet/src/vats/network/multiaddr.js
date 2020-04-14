@@ -1,5 +1,3 @@
-import harden from '@agoric/harden';
-
 /**
  * @typedef {[string, string][]} Multiaddr
  * @typedef {string} Textaddr An address string formatted as in https://github.com/multiformats/multiaddr
@@ -35,12 +33,18 @@ export function parse(ma) {
    */
   const acc = [];
   // eslint-disable-next-line no-cond-assign
-  while ((m = s.match(/^\/([^/]+)\/([^/]*)/))) {
+  while ((m = s.match(/^\/([^/]*)(\/([^/]*))?/))) {
     s = s.substr(m[0].length);
-    acc.push([m[1], m[2]]);
+    if (m[2]) {
+      acc.push([m[1], m[3]]);
+    } else {
+      acc.push([m[1]]);
+    }
   }
-  if (s !== '') {
-    throw TypeError(`Error parsing Multiaddr ${ma} at ${s}`);
+  if (s !== '' || s === ma) {
+    throw TypeError(
+      `Error parsing Multiaddr ${JSON.stringify(ma)} at ${JSON.stringify(s)}`,
+    );
   }
   return acc;
 }
@@ -51,17 +55,10 @@ export function parse(ma) {
  * @param {Multiaddr|Textaddr} ma
  * @returns {Textaddr}
  */
-export function unparseMultiaddr(ma) {
+export function unparse(ma) {
   if (typeof ma === 'string') {
     return ma;
   }
-  return ma.reduce((prior, arg) => prior + arg.join('/'), '/');
+  const joined = ma.map(kv => kv.join('/')).join('/');
+  return `/${joined}`;
 }
-
-/*
-export function makeRouter() {
-  return harden({
-    roet
-  });
-}
-*/

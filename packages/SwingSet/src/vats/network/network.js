@@ -5,7 +5,10 @@ import { producePromise } from '@agoric/produce-promise';
 
 const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
-const LOOPBACK_ADDR = '/if/loopback';
+/**
+ * @template T,U
+ * @typedef {import('@agoric/store').Store<T,U>} Store
+ */
 
 /**
  * @typedef {string|Buffer|ArrayBuffer} Data
@@ -82,10 +85,10 @@ export function bytesToString(bytes) {
 
 /**
  * @typedef {Object} PeerHandler A handler for things the peer implementation will invoke
- * @property {(localAddr: Endpoint, peer: PeerImpl) => Promise<void>} onCreate This peer is created
- * @property {(port: Port, listenHandler: ListenHandler) => Promise<void>} onListen A port was listening
- * @property {(port: Port, listenHandler: ListenHandler) => Promise<void>} onListenRemove A port listener has been reset
- * @property {(port: Port, remote: Endpoint) => Promise<ChannelHandler>} onConnect A port initiates an outbound connection
+ * @property {(peer: PeerImpl, p: PeerHandler) => Promise<void>} onCreate This peer is created
+ * @property {(port: Port, listenHandler: ListenHandler, p: PeerHandler) => Promise<void>} onListen A port was listening
+ * @property {(port: Port, listenHandler: ListenHandler, p: PeerHandler) => Promise<void>} onListenRemove A port listener has been reset
+ * @property {(port: Port, remote: Endpoint, p: PeerHandler) => Promise<ChannelHandler>} onConnect A port initiates an outbound connection
  *
  * @typedef {Object} PeerImpl Things the peer can do for us
  * @property {(port: Port, remote: Endpoint, channelHandler: ChannelHandler) => Promise<Channel>} connect Establish a channel from this peer to an endpoint
@@ -103,7 +106,7 @@ export function makeNetworkPeer(peerHandler) {
    */
   const peerImpl = harden({
     async connect(port, dst, srcHandler) {
-      const dstHandler = await peerHandler.onConnect(port, dst);
+      const dstHandler = await peerHandler.onConnect(port, dst, peerHandler);
 
       /**
        * Create half of a channel pair.
@@ -192,12 +195,12 @@ export function makeNetworkPeer(peerHandler) {
   });
 
   /**
-   * @type {import('@agoric/store').Store<string, Port>}
+   * @type {Store<string, Port>}
    */
   const boundPorts = makeStore();
 
   // Wire up the local peer to the handler.
-  peerHandler.onCreate(LOOPBACK_ADDR, peerImpl);
+  peerHandler.onCreate(peerImpl, peerHandler);
 
   /**
    * @param {Endpoint} localPort
@@ -222,7 +225,7 @@ export function makeNetworkPeer(peerHandler) {
         if (listening) {
           throw Error(`Port ${localPort} is already listening`);
         }
-        await peerHandler.onListen(port, listenHandler);
+        await peerHandler.onListen(port, listenHandler, peerHandler);
         listening = listenHandler;
         await listenHandler.onListen(port, listenHandler);
       },
@@ -233,7 +236,7 @@ export function makeNetworkPeer(peerHandler) {
         if (listening !== listenHandler) {
           throw Error(`Port ${localPort} handler to remove is not listening`);
         }
-        await peerHandler.onListenRemove(port, listenHandler);
+        await peerHandler.onListenRemove(port, listenHandler, peerHandler);
         listening = undefined;
         if (listenHandler.onRemove) {
           await listenHandler.onRemove(port, listenHandler);

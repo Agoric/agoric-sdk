@@ -4,10 +4,13 @@ import { producePromise } from '@agoric/produce-promise';
 import rawHarden from '@agoric/harden';
 
 import {
+  parse,
+  unparse,
   makeEchoChannelHandler,
   makeNetworkPeer,
   bytesToString,
-} from '../src/network';
+  makeRouter,
+} from '../src/vats/network';
 
 const harden = /** @type {<T>(data: T) => T} */ (rawHarden);
 
@@ -167,9 +170,9 @@ test('peer channel listen', async t => {
       '/ibc/self/ordered/some-portname',
       harden({
         ...channelHandler,
-        async onOpen(channel) {
+        async onOpen(channel, c) {
           if (channelHandler.onOpen) {
-            await channelHandler.onOpen(channel);
+            await channelHandler.onOpen(channel, c);
           }
           channel.send('ping');
         },
@@ -179,6 +182,100 @@ test('peer channel listen', async t => {
     await closed.promise;
 
     await port.removeListener(listener);
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  } finally {
+    t.end();
+  }
+});
+
+test('routing', async t => {
+  try {
+    const router = makeRouter();
+    t.deepEquals(router.getRoutes('/if/local'), [], 'get routes matches none');
+    router.register('/if/', 'a');
+    t.deepEquals(
+      router.getRoutes('/if/foo'),
+      [['/if/', 'a']],
+      'get routes matches prefix',
+    );
+    router.register('/if/foo', 'b');
+    t.deepEquals(
+      router.getRoutes('/if/foo'),
+      [
+        ['/if/foo', 'b'],
+        ['/if/', 'a'],
+      ],
+      'get routes matches all',
+    );
+    router.register('/ibc/self', 'c');
+    t.deepEquals(
+      router.getRoutes('/if/foo'),
+      [
+        ['/if/foo', 'b'],
+        ['/if/', 'a'],
+      ],
+      'get routes avoids nonmatching paths',
+    );
+    t.deepEquals(
+      router.getRoutes('/ibc/self'),
+      [['/ibc/self', 'c']],
+      'direct match',
+    );
+    t.deepEquals(
+      router.getRoutes('/ibc/self/zot'),
+      [['/ibc/self', 'c']],
+      'prefix matches',
+    );
+    t.deepEquals(router.getRoutes('/ibc/barfo'), [], 'no match');
+
+    t.throws(
+      () => router.unregister('/ibc/self', 'a'),
+      /Router is not registered/,
+      'unregister fails for no match',
+    );
+    router.unregister('/ibc/self', 'c');
+    t.deepEquals(
+      router.getRoutes('/ibc/self'),
+      [],
+      'no match after unregistration',
+    );
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  } finally {
+    t.end();
+  }
+});
+
+test('multiaddr', async t => {
+  try {
+    t.deepEquals(parse('/if/local'), [['if', 'local']]);
+    t.deepEquals(parse('/zot'), [['zot']]);
+    t.deepEquals(parse('/zot/foo/bar/baz/bot'), [
+      ['zot', 'foo'],
+      ['bar', 'baz'],
+      ['bot'],
+    ]);
+    for (const str of ['', 'foobar']) {
+      t.throws(
+        () => parse(str),
+        /Error parsing Multiaddr/,
+        `expected failure of ${str}`,
+      );
+    }
+    for (const str of [
+      '/',
+      '//',
+      '/foo',
+      '/foobib/bar',
+      '/k1/v1/k2/v2/k3/v3',
+    ]) {
+      t.equals(
+        unparse(parse(str)),
+        str,
+        `round-trip of ${JSON.stringify(str)} matches`,
+      );
+    }
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {
