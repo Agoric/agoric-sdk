@@ -116,7 +116,7 @@ export default function makeBlockManager(
       case IBC_PACKET: {
         console.error(`FIXME: Got IBC packet; just pingpong`, action);
         // action.type, action.subtype
-        bridgeInbound(action stuff XXX);
+        bridgeInbound('ibc', action stuff XXX); // action: type 'ibc', subtype
 
         const ibcChannel = getIBCChannel(action);
 

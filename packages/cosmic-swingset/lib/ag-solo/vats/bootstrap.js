@@ -179,6 +179,11 @@ export default function setup(syscall, state, helpers) {
         );
       }
 
+      async function connectIBC(IBCVat, bridgeDevice) {
+        const outbound = await E(IBCVat).connectToDevice(bridgeDevice);
+        return outbound; // useful for E(outbound).callOutbound
+      }
+
       return harden({
         async bootstrap(argv, vats, devices) {
           const [ROLE, bootAddress, additionalAddresses] = parseArgs(argv);
@@ -208,6 +213,8 @@ export default function setup(syscall, state, helpers) {
           switch (ROLE) {
             case 'chain':
             case 'one_chain': {
+              const IBCOutbound = await connectIBC(vats.ibc, devices.bridge);
+
               // provisioning vat can ask the demo server for bundles, and can
               // register client pubkeys with comms
               await E(vats.provisioning).register(
@@ -297,6 +304,8 @@ export default function setup(syscall, state, helpers) {
             case 'two_chain': {
               // scenario #2: one-node chain running on localhost, solo node on
               // localhost, HTML frontend on localhost. Single-player mode.
+
+              const IBCOutbound = await connectIBC(vats.ibc, devices.bridge);
 
               // bootAddress holds the pubkey of localclient
               const chainBundler = await makeChainBundler(vats, devices.timer);
