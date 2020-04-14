@@ -46,6 +46,7 @@ func NewHandler(keeper Keeper) sdk.Handler {
 		// IBC channel support.
 		case channeltypes.MsgPacket:
 			return handleIBCPacket(ctx, keeper, "IBC_PACKET", msg.Packet)
+			// these too
 
 		case channeltypes.MsgTimeout:
 			return handleIBCPacket(ctx, keeper, "IBC_TIMEOUT", msg.Packet)
