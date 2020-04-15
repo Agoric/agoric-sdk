@@ -24,6 +24,9 @@ jobs:
     #    restore-keys: |
     #      ${{ runner.os }}-go-
 
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '12.16.1'
     # 'yarn install' must be done at the top level, to build all the
     # cross-package symlinks
     - run: yarn install
