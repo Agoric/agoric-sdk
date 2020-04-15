@@ -243,10 +243,11 @@ async function doVatResolveCase1(t, mode) {
     type: 'send',
     targetSlot: target1,
     method: 'two',
-    args: capargs([slot0arg], [expectedP1]),
-    resultSlot: expectedP3,
+    args: capargs([slot0arg], [expectedP3]),
+    resultSlot: expectedP4,
   });
-  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP3 });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP4 });
+  t.deepEqual(log.shift(), resolutionOf(expectedP3, mode, target2));
   t.deepEqual(log, []);
 
   t.end();
@@ -652,27 +653,28 @@ async function doVatResolveCase4(t, mode) {
   await endOfCrank();
 
   const expectedP4 = nextP();
+  const expectedP5 = nextP();
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
     method: 'three',
-    args: capargs([slot0arg], [p1]),
-    resultSlot: expectedP4,
+    args: capargs([slot0arg], [expectedP4]),
+    resultSlot: expectedP5,
   });
-  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP4 });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP5 });
 
   if (mode === 'presence') {
     const expectedP5 = nextP();
     t.deepEqual(log.shift(), {
       type: 'send',
-      targetSlot: target2, // this depends on #823 being fixed
+      targetSlot: target2,
       method: 'four',
       args: capargs([], []),
-      resultSlot: expectedP5,
+      resultSlot: expectedP6,
     });
-    t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP5 });
+    t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP6 });
   }
-  // if p1 rejects or resolves to data, the kernel never hears about four()
+  t.deepEqual(log.shift(), resolutionOf(expectedP4, mode, target2));
   t.deepEqual(log, []);
 
   t.end();

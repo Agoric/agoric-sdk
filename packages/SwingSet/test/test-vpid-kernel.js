@@ -307,18 +307,11 @@ async function doTest123(t, which, mode) {
   t.deepEqual(logB.shift(), resolutionOf(p1VatB, mode, rootBvatB));
   t.deepEqual(logB, []);
 
-  // TODO: once kernel->vat resolution notification retires clist entries,
-  // switch to the other set of assertions
-
-  // after resolution, (before we implement retirement), A's c-list should
-  // still have the promise
-  t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
-
   // after resolution, (now that we've implemented retirement), A's c-list
   // should *not* have the promise
-  // t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
-  // t.equal(clistKernelToVat(kernel, vatA, p1kernel), undefined);
-  // t.equal(clistVatToKernel(kernel, vatA, p1VatA), undefined);
+  t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
+  t.equal(clistKernelToVat(kernel, vatA, p1kernel), undefined);
+  t.equal(clistVatToKernel(kernel, vatA, p1VatA), undefined);
 
   t.end();
 }
@@ -524,18 +517,11 @@ async function doTest4567(t, which, mode) {
   t.deepEqual(logA.shift(), resolutionOf(p1VatA, mode, rootAvatA));
   t.deepEqual(logA, []);
 
-  // TODO: once kernel->vat resolution notification retires clist entries,
-  // switch to the other set of assertions
-
-  // after resolution, (before we implement retirement), A's c-list should
-  // still have the promise
-  t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
-
   // after resolution, (now that we've implemented retirement), A's c-list
   // should *not* have the promise
-  // t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
-  // t.equal(clistKernelToVat(kernel, vatA, p1kernel), undefined);
-  // t.equal(clistVatToKernel(kernel, vatA, p1VatA), undefined);
+  t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
+  t.equal(clistKernelToVat(kernel, vatA, p1kernel), undefined);
+  t.equal(clistVatToKernel(kernel, vatA, p1VatA), undefined);
 
   t.end();
 }

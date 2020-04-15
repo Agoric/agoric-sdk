@@ -8,6 +8,16 @@ function capdata(body, slots = []) {
   return harden({ body, slots });
 }
 
+function removeTriple(arr, a, b, c) {
+  for (let i = 0; i < arr.length; i += 1) {
+    const elem = arr[i];
+    if (elem[0] === a && elem[1] === b && elem[2] === c) {
+      arr.splice(i, 1);
+      return;
+    }
+  }
+}
+
 test('load empty', async t => {
   const config = {
     vats: new Map(),
@@ -185,7 +195,6 @@ async function bootstrapExport(t, withSES) {
     'left.foo 1',
   ]);
   kt.push([right0, leftVatID, 'o-50']);
-  kt.push([fooP, leftVatID, 'p-60']);
   kt.push([barP, leftVatID, 'p+5']);
   checkKT(t, c, kt);
 
@@ -216,7 +225,6 @@ async function bootstrapExport(t, withSES) {
     'right.obj0.bar 2 true',
   ]);
 
-  kt.push([barP, rightVatID, 'p-60']);
   checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [
@@ -234,6 +242,7 @@ async function bootstrapExport(t, withSES) {
     'left.foo 1',
     'right.obj0.bar 2 true',
   ]);
+  removeTriple(kt, fooP, bootstrapVatID, 'p+5'); // pruned promise
   checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [
@@ -251,6 +260,7 @@ async function bootstrapExport(t, withSES) {
     'right.obj0.bar 2 true',
   ]);
 
+  removeTriple(kt, barP, leftVatID, 'p+5'); // pruned promise
   checkKT(t, c, kt);
   t.deepEqual(c.dump().runQueue, []);
 
