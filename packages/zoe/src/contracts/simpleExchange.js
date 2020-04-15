@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
-// Eventually will be importable from '@agoric/zoe-contract-support'
-import { producePromise } from '@agoric/produce-promise';
 import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
+// TODO update to '@agoric/notifier' ASAP
+import { makeNotifier } from '../../../notifier';
 
 /**
  * The SimpleExchange uses Asset and Price as its keywords. In usage,
@@ -19,7 +19,7 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 export const makeContract = harden(zcf => {
   let sellOfferHandles = [];
   let buyOfferHandles = [];
-  let nextChangePromise = producePromise();
+  const notifier = makeNotifier();
 
   const {
     rejectOffer,
@@ -53,7 +53,6 @@ export const makeContract = harden(zcf => {
 
   function getBookOrders() {
     return {
-      changed: nextChangePromise.promise,
       buys: flattenOrders(buyOfferHandles),
       sells: flattenOrders(sellOfferHandles),
     };
@@ -68,20 +67,17 @@ export const makeContract = harden(zcf => {
     return 'not an active offer';
   }
 
-  // This is a really simple update protocol, which merely provides a promise
-  // in getBookOrders() that will resolve when the state changes. Clients
-  // subscribe to the promise and are notified at some future point. A much
-  // nicer protocol is in https://github.com/Agoric/agoric-sdk/issues/253
+  // Tell the notifier that there has been a change to the book orders
   function bookOrdersChanged() {
-    nextChangePromise.resolve();
-    nextChangePromise = producePromise();
+    notifier.updateState(getBookOrders());
   }
 
   function swapIfCanTrade(offerHandles, offerHandle) {
     for (const iHandle of offerHandles) {
       if (canTradeWith(offerHandle, iHandle)) {
+        const swapResult = swap(offerHandle, iHandle);
         bookOrdersChanged();
-        return swap(offerHandle, iHandle);
+        return swapResult;
       }
     }
     bookOrdersChanged();
@@ -124,6 +120,10 @@ export const makeContract = harden(zcf => {
 
   return harden({
     invite: makeExchangeInvite(),
-    publicAPI: { makeInvite: makeExchangeInvite, getBookOrders, getOffer },
+    publicAPI: {
+      makeInvite: makeExchangeInvite,
+      getUpdateSince: notifier.getUpdateSince,
+      getOffer,
+    },
   });
 });

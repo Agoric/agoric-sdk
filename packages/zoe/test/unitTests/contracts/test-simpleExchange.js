@@ -251,14 +251,13 @@ test('simpleExchange with multiple sell offers', async t => {
 
     Promise.all([aliceOutcome1P, aliceOutcome2P, aliceOutcome3P]).then(() => {
       const expectedBook = {
-        changed: {},
         buys: [[{ Asset: 29 }, { Price: 18 }]],
         sells: [
           [{ Price: 4 }, { Asset: 3 }],
           [{ Price: 8 }, { Asset: 5 }],
         ],
       };
-      t.deepEquals(publicAPI.getBookOrders(), expectedBook);
+      t.deepEquals(publicAPI.getUpdateSince().currentState, expectedBook);
     });
   } catch (e) {
     t.assert(false, e);

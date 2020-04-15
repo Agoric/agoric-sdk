@@ -206,23 +206,24 @@ test('zoe - simpleExchange - valid inputs - with SES', async t => {
   }
 });
 
-const expectedSimpleExchangeUpdateLog = [
+const expectedSimpleExchangeNotificationLog = [
   '=> alice, bob, carol and dave are set up',
-  'Order update: b:[], s:[]',
+  '',
+  '{"buys":[],"sells":[[{"Price":4},{"Asset":3}]]}',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
-  'Order update: b:[], s:simoleans:4 for moola:3',
+  '{"buys":[],"sells":[]}',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":0}',
   'bobSimoleanPurse: balance {"brand":{},"extent":17}',
-  'Order update: b:[], s:[]',
+  '{"buys":[[{"Asset":8},{"Price":2}]],"sells":[]}',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":3}',
   'bobSimoleanPurse: balance {"brand":{},"extent":15}',
-  'Order update: b:simoleans:2 for moola:8, s:[]',
+  '{"buys":[[{"Asset":8},{"Price":2}],[{"Asset":20},{"Price":13}]],"sells":[]}',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":3}',
   'bobSimoleanPurse: balance {"brand":{},"extent":2}',
-  'Order update: b:simoleans:2 for moola:8,simoleans:13 for moola:20, s:[]',
+  '{"buys":[[{"Asset":8},{"Price":2}],[{"Asset":20},{"Price":13}],[{"Asset":5},{"Price":2}]],"sells":[]}',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'bobMoolaPurse: balance {"brand":{},"extent":3}',
   'bobSimoleanPurse: balance {"brand":{},"extent":0}',
@@ -237,10 +238,10 @@ test('zoe - simpleExchange - state Update - with SES', async t => {
     [0, 24, 0],
   ];
   const dump = await main(true, 'zoe', [
-    'simpleExchangeUpdates',
+    'simpleExchangeNotifier',
     startingExtents,
   ]);
-  t.deepEquals(dump.log, expectedSimpleExchangeUpdateLog);
+  t.deepEquals(dump.log, expectedSimpleExchangeNotificationLog);
 });
 
 const expectedAutoswapOkLog = [
