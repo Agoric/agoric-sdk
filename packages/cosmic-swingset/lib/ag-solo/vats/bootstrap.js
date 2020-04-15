@@ -77,17 +77,16 @@ export default function setup(syscall, state, helpers) {
           timerDevice,
         );
 
+        const zoe = await E(vats.zoe).getZoe();
+        const contractHost = await E(vats.host).makeHost();
+
         // Make the other demo mints
         const issuerNames = ['moola', 'simolean'];
-        const [zoe, contractHost, issuers] = await Promise.all([
-          E(vats.zoe).getZoe(),
-          E(vats.host).makeHost(),
-          Promise.all(
-            issuerNames.map(issuerName =>
-              E(vats.mints).makeMintAndIssuer(issuerName),
-            ),
+        const issuers = await Promise.all(
+          issuerNames.map(issuerName =>
+            E(vats.mints).makeMintAndIssuer(issuerName),
           ),
-        ]);
+        );
 
         // Register all of the starting issuers.
         const issuerInfo = await Promise.all(
@@ -138,22 +137,24 @@ export default function setup(syscall, state, helpers) {
             makeLoopbackInterfaceHandler(),
           ),
         );
-        if (false && bridgeMgr) {
-          // TODO: Implement when off-chain, too!
+        if (bridgeMgr) {
           // We have access to the bridge, and therefore IBC.
-          ps.push(
-            E(networkVat).registerInterfaceHandler(
-              '/ibc',
-              makeIBCInterfaceHandler(bridgeMgr),
-            ),
-          );
-        } else if (bridgeMgr) {
+          // FIXME: Current hack.
           ps.push(
             E(networkVat).registerInterfaceHandler(
               '/ibc',
               makeLoopbackInterfaceHandler(),
             ),
           );
+          /*
+          // TODO: Add our IBC implementation!
+          ps.push(
+            E(networkVat).registerInterfaceHandler(
+              '/ibc',
+              makeIBCInterfaceHandler(bridgeMgr),
+            ),
+          );
+          */
         }
         await Promise.all(ps);
 
