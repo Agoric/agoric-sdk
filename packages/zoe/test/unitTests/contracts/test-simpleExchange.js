@@ -50,7 +50,7 @@ test('simpleExchange with valid offers', async t => {
     Price: simoleanIssuer,
   });
   const instanceHandle = await getInstanceHandle(simonInvite);
-  const { publicAPI } = zoe.getInstance(instanceHandle);
+  const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
 
   const aliceInvite = publicAPI.makeInvite();
 
@@ -78,7 +78,7 @@ test('simpleExchange with valid offers', async t => {
   const {
     installationHandle: bobInstallationId,
     issuerKeywordRecord: bobIssuers,
-  } = zoe.getInstance(instanceHandle);
+  } = zoe.getInstanceRecord(instanceHandle);
 
   t.equals(bobInstallationId, installationHandle);
 
@@ -189,7 +189,7 @@ test('simpleExchange with multiple sell offers', async t => {
       Price: simoleanIssuer,
     });
     const instanceHandle = await getInstanceHandle(simonInvite);
-    const { publicAPI } = zoe.getInstance(instanceHandle);
+    const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
 
     const aliceInvite1 = publicAPI.makeInvite();
 
@@ -274,7 +274,7 @@ test('simpleExchange showPayoutRules', async t => {
     Price: simoleanIssuer,
   });
   const instanceHandle = await getInstanceHandle(simonInvite);
-  const { publicAPI } = zoe.getInstance(instanceHandle);
+  const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
 
   const aliceInvite = publicAPI.makeInvite();
 
@@ -341,7 +341,7 @@ test('simpleExchange with non-fungible assets', async t => {
     Price: ccIssuer,
   });
   const instanceHandle = await getInstanceHandle(simonInvite);
-  const { publicAPI } = zoe.getInstance(instanceHandle);
+  const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
 
   const aliceInvite = publicAPI.makeInvite();
 
@@ -368,7 +368,7 @@ test('simpleExchange with non-fungible assets', async t => {
   const {
     installationHandle: bobInstallationId,
     issuerKeywordRecord: bobIssuers,
-  } = zoe.getInstance(instanceHandle);
+  } = zoe.getInstanceRecord(instanceHandle);
 
   t.equals(bobInstallationId, installationHandle);
 

@@ -19,7 +19,7 @@ const build = async (E, log, zoe, issuers, payments, installations) => {
 
       const { installationHandle, terms, issuerKeywordRecord } = await E(
         zoe,
-      ).getInstance(inviteExtent[0].instanceHandle);
+      ).getInstanceRecord(inviteExtent[0].instanceHandle);
       assert(
         installationHandle === installations.publicAuction,
         details`wrong installation`,

@@ -141,7 +141,7 @@ test('zoe with automaticRefund', async t => {
       issuerKeywordRecord,
     );
     const instanceHandle = await getInstanceHandle(aliceInvite);
-    const { publicAPI } = zoe.getInstance(instanceHandle);
+    const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
 
     // 2: Alice escrows with zoe
     const aliceProposal = harden({
@@ -179,7 +179,7 @@ test('zoe with automaticRefund', async t => {
     const {
       installationHandle: bobInstallationId,
       issuerKeywordRecord: bobIssuers,
-    } = zoe.getInstance(bobInstanceHandle);
+    } = zoe.getInstanceRecord(bobInstanceHandle);
     t.equals(bobInstallationId, installationHandle);
 
     // bob wants to know what issuers this contract is about and in
@@ -287,7 +287,7 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
       issuerKeywordRecord,
     );
     const instanceHandle1 = await getInstanceHandle(aliceInvite1);
-    const { publicAPI: publicAPI1 } = zoe.getInstance(instanceHandle1);
+    const { publicAPI: publicAPI1 } = zoe.getInstanceRecord(instanceHandle1);
 
     const aliceInvite2 = await zoe.makeInstance(
       installationHandle,
@@ -296,14 +296,14 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
     const {
       extent: [{ instanceHandle: instanceHandle2 }],
     } = await inviteIssuer.getAmountOf(aliceInvite2);
-    const { publicAPI: publicAPI2 } = zoe.getInstance(instanceHandle2);
+    const { publicAPI: publicAPI2 } = zoe.getInstanceRecord(instanceHandle2);
 
     const aliceInvite3 = await zoe.makeInstance(
       installationHandle,
       issuerKeywordRecord,
     );
     const instanceHandle3 = await getInstanceHandle(aliceInvite3);
-    const { publicAPI: publicAPI3 } = zoe.getInstance(instanceHandle3);
+    const { publicAPI: publicAPI3 } = zoe.getInstanceRecord(instanceHandle3);
 
     // 2: Alice escrows with zoe
     const aliceProposal = harden({

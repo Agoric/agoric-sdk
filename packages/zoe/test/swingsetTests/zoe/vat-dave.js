@@ -29,7 +29,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
       const { installationHandle, terms, issuerKeywordRecord } = await E(
         zoe,
-      ).getInstance(inviteExtent[0].instanceHandle);
+      ).getInstanceRecord(inviteExtent[0].instanceHandle);
       assert(
         installationHandle === installations.publicAuction,
         details`wrong installation`,
@@ -81,7 +81,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const instanceHandle = await getInstanceHandle(exclInvite);
       const { installationHandle, issuerKeywordRecord } = await E(
         zoe,
-      ).getInstance(instanceHandle);
+      ).getInstanceRecord(instanceHandle);
       const installationCode = await E(zoe).getInstallation(installationHandle);
       // pick some arbitrary code points as a signature.
       assert(

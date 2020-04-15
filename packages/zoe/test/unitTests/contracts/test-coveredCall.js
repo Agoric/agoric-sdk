@@ -71,7 +71,7 @@ test('zoe - coveredCall', async t => {
     const {
       extent: [optionExtent],
     } = await inviteIssuer.getAmountOf(bobExclOption);
-    const { installationHandle } = zoe.getInstance(optionExtent.instanceHandle);
+    const { installationHandle } = zoe.getInstanceRecord(optionExtent.instanceHandle);
     t.equal(installationHandle, coveredCallInstallationHandle);
     t.equal(optionExtent.inviteDesc, 'exerciseOption');
     t.ok(moolaR.amountMath.isEqual(optionExtent.underlyingAsset, moola(3)));
@@ -199,7 +199,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     const {
       extent: [optionExtent],
     } = await inviteIssuer.getAmountOf(bobExclOption);
-    const { installationHandle } = zoe.getInstance(optionExtent.instanceHandle);
+    const { installationHandle } = zoe.getInstanceRecord(optionExtent.instanceHandle);
     t.equal(installationHandle, coveredCallInstallationHandle);
     t.equal(optionExtent.inviteDesc, 'exerciseOption');
     t.ok(moolaR.amountMath.isEqual(optionExtent.underlyingAsset, moola(3)));
@@ -354,7 +354,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     const bobExclOption = await inviteIssuer.claim(optionP);
     const optionAmount = await inviteIssuer.getAmountOf(bobExclOption);
     const optionDesc = optionAmount.extent[0];
-    const { installationHandle } = zoe.getInstance(optionDesc.instanceHandle);
+    const { installationHandle } = zoe.getInstanceRecord(optionDesc.instanceHandle);
     t.equal(installationHandle, coveredCallInstallationHandle);
     t.equal(optionDesc.inviteDesc, 'exerciseOption');
     t.ok(moolaR.amountMath.isEqual(optionDesc.underlyingAsset, moola(3)));
@@ -400,7 +400,7 @@ test('zoe - coveredCall with swap for invite', async t => {
     const {
       installationHandle: daveSwapInstallId,
       issuerKeywordRecord: daveSwapIssuers,
-    } = zoe.getInstance(swapInstanceHandle);
+    } = zoe.getInstanceRecord(swapInstanceHandle);
 
     // Dave is looking to buy the option to trade his 7 simoleans for
     // 3 moola, and is willing to pay 1 buck for the option. He
@@ -615,7 +615,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     const {
       extent: [optionExtent],
     } = await inviteIssuer.getAmountOf(bobExclOption);
-    const { installationHandle } = zoe.getInstance(optionExtent.instanceHandle);
+    const { installationHandle } = zoe.getInstanceRecord(optionExtent.instanceHandle);
     t.equal(installationHandle, coveredCallInstallationHandle);
     t.equal(optionExtent.inviteDesc, 'exerciseOption');
     t.ok(moolaR.amountMath.isEqual(optionExtent.underlyingAsset, moola(3)));
@@ -669,7 +669,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
     } = await inviteIssuer.getAmountOf(daveExclOption);
     const {
       installationHandle: daveOptionInstallationHandle,
-    } = zoe.getInstance(daveOptionExtent.instanceHandle);
+    } = zoe.getInstanceRecord(daveOptionExtent.instanceHandle);
     t.equal(daveOptionInstallationHandle, coveredCallInstallationHandle);
     t.equal(daveOptionExtent.inviteDesc, 'exerciseOption');
     t.ok(bucksR.amountMath.isEqual(daveOptionExtent.strikePrice, bucks(1)));
@@ -882,7 +882,7 @@ test('zoe - coveredCall non-fungible', async t => {
   const {
     extent: [optionExtent],
   } = await inviteIssuer.getAmountOf(bobExclOption);
-  const { installationHandle } = zoe.getInstance(optionExtent.instanceHandle);
+  const { installationHandle } = zoe.getInstanceRecord(optionExtent.instanceHandle);
   t.equal(installationHandle, coveredCallInstallationHandle);
   t.equal(optionExtent.inviteDesc, 'exerciseOption');
   t.ok(

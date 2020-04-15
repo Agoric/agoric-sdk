@@ -50,7 +50,7 @@ test('autoSwap with valid offers', async t => {
       issuerKeywordRecord,
     );
     const instanceHandle = await getInstanceHandle(aliceInvite);
-    const { publicAPI } = zoe.getInstance(instanceHandle);
+    const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
     const liquidityIssuer = publicAPI.getLiquidityIssuer();
     const liquidity = liquidityIssuer.getAmountMath().make;
 
@@ -95,7 +95,7 @@ test('autoSwap with valid offers', async t => {
     const {
       publicAPI: bobAutoswap,
       installationHandle: bobInstallationId,
-    } = zoe.getInstance(bobInstanceHandle);
+    } = zoe.getInstanceRecord(bobInstanceHandle);
     t.equals(bobInstallationId, installationHandle);
 
     // Bob looks up the price of 3 moola in simoleans
@@ -254,7 +254,7 @@ test('autoSwap - test fee', async t => {
       issuerKeywordRecord,
     );
     const instanceHandle = await getInstanceHandle(aliceAddLiquidityInvite);
-    const { publicAPI } = zoe.getInstance(instanceHandle);
+    const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
     const liquidityIssuer = publicAPI.getLiquidityIssuer();
     const liquidity = liquidityIssuer.getAmountMath().make;
 
@@ -300,7 +300,7 @@ test('autoSwap - test fee', async t => {
     const {
       publicAPI: bobAutoswap,
       installationHandle: bobInstallationId,
-    } = zoe.getInstance(bobInstanceHandle);
+    } = zoe.getInstanceRecord(bobInstanceHandle);
     t.equals(bobInstallationId, installationHandle);
 
     // Bob looks up the price of 1000 moola in simoleans

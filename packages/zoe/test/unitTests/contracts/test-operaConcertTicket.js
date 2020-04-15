@@ -52,7 +52,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
             .getAmountOf(auditoriumInvite)
             .then(
               ({ extent: [{ instanceHandle: auditoriumInstanceHandle }] }) => {
-                const { publicAPI } = zoe.getInstance(auditoriumInstanceHandle);
+                const { publicAPI } = zoe.getInstanceRecord(auditoriumInstanceHandle);
 
                 t.equal(
                   typeof publicAPI.makeBuyerInvite,
@@ -142,7 +142,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     return inviteIssuer
       .getAmountOf(aliceInvite)
       .then(({ extent: [{ instanceHandle: instanceHandleOfAlice }] }) => {
-        const { terms: termsOfAlice } = zoe.getInstance(instanceHandleOfAlice);
+        const { terms: termsOfAlice } = zoe.getInstanceRecord(instanceHandleOfAlice);
         // Alice checks terms
         t.equal(termsOfAlice.show, 'Steven Universe, the Opera');
         t.equal(termsOfAlice.start, 'Web, March 25th 2020 at 8pm');
@@ -235,7 +235,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
       return inviteIssuer
         .getAmountOf(jokerInvite)
         .then(({ extent: [{ instanceHandle: instanceHandleOfJoker }] }) => {
-          const { terms } = zoe.getInstance(instanceHandleOfJoker);
+          const { terms } = zoe.getInstanceRecord(instanceHandleOfJoker);
 
           const {
             expectedAmountPerTicket: expectedAmountPerTicketOfJoker,
@@ -298,7 +298,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
       return inviteIssuer
         .getAmountOf(jokerInvite)
         .then(({ extent: [{ instanceHandle: instanceHandleOfJoker }] }) => {
-          const { terms } = zoe.getInstance(instanceHandleOfJoker);
+          const { terms } = zoe.getInstanceRecord(instanceHandleOfJoker);
 
           const ticket2Amount = ticketAmountMath.make(
             harden([

@@ -113,7 +113,7 @@ export default ({
     publicAPI,
     issuerKeywordRecord, // Only present with Zoe 0.3.0.
     terms: { issuers: contractIssuers },
-  } = await E(zoe).getInstance(instanceHandle);
+  } = await E(zoe).getInstanceRecord(instanceHandle);
 
   // If issuerKeywordRecord exists, use it.
   const keywordIssuers = { ...issuerKeywordRecord };

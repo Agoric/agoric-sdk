@@ -23,7 +23,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     );
 
     const instanceHandle = await getInstanceHandle(refundInvite);
-    const instanceRecord = await E(zoe).getInstance(instanceHandle);
+    const instanceRecord = await E(zoe).getInstanceRecord(instanceHandle);
     const { publicAPI } = instanceRecord;
     const proposal = harden({
       give: { Contribution1: moola(3) },
@@ -144,7 +144,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       terms,
     );
     const instanceHandle = await getInstanceHandle(sellAssetsInvite);
-    const { publicAPI } = await E(zoe).getInstance(instanceHandle);
+    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
 
     const proposal = harden({
       give: { Asset: moola(1) },
@@ -227,7 +227,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       issuerKeywordRecord,
     );
     const instanceHandle = await getInstanceHandle(addOrderInvite);
-    const { publicAPI } = await E(zoe).getInstance(instanceHandle);
+    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
 
     const aliceSellOrderProposal = harden({
       give: { Asset: moola(3) },
@@ -301,7 +301,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       issuerKeywordRecord,
     );
     const instanceHandle = await getInstanceHandle(addOrderInvite);
-    const { publicAPI } = await E(zoe).getInstance(instanceHandle);
+    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
 
     const petnames = ['simoleans', 'moola'];
     const brands = await Promise.all([
@@ -354,7 +354,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       issuerKeywordRecord,
     );
     const instanceHandle = await getInstanceHandle(addLiquidityInvite);
-    const { publicAPI } = await E(zoe).getInstance(instanceHandle);
+    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
     const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
     const liquidityAmountMath = await getLocalAmountMath(liquidityIssuer);
     const liquidity = liquidityAmountMath.make;
