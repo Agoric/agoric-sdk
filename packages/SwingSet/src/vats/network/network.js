@@ -70,9 +70,9 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 /**
  * @typedef {Object} PeerHandler A handler for things the peer implementation will invoke
  * @property {(peer: PeerImpl, p: PeerHandler) => Promise<void>} onCreate This peer is created
- * @property {(port: Port, listenHandler: ListenHandler, p: PeerHandler) => Promise<void>} onListen A port was listening
- * @property {(port: Port, listenHandler: ListenHandler, p: PeerHandler) => Promise<void>} onListenRemove A port listener has been reset
- * @property {(port: Port, remote: Endpoint, p: PeerHandler) => Promise<ChannelHandler>} onConnect A port initiates an outbound connection
+ * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: PeerHandler) => Promise<void>} onListen A port was listening
+ * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: PeerHandler) => Promise<void>} onListenRemove A port listener has been reset
+ * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, p: PeerHandler) => Promise<ChannelHandler>} onConnect A port initiates an outbound connection
  *
  * @typedef {Object} PeerImpl Things the peer can do for us
  * @property {(port: Port, remote: Endpoint, channelHandler: ChannelHandler) => Promise<Channel>} connect Establish a channel from this peer to an endpoint
@@ -120,7 +120,7 @@ const rethrowIfUnset = err => {
  * Create a Peer that has a handler.
  *
  * @param {PeerHandler} peerHandler
- * @param {<T>(x) => Object.<string, (...args: any[]) => Promise<any>>} [E=defaultE] Eventual send function
+ * @param {typeof defaultE} [E=defaultE] Eventual send function
  * @returns {Peer} the local capability for connecting and listening
  */
 export function makeNetworkPeer(peerHandler, E = defaultE) {
@@ -129,7 +129,13 @@ export function makeNetworkPeer(peerHandler, E = defaultE) {
    */
   const peerImpl = harden({
     async connect(port, dst, srcHandler) {
-      const dstHandler = await E(peerHandler).onConnect(port, dst, peerHandler);
+      const localAddr = await E(port).getLocalAddress();
+      const dstHandler = await E(peerHandler).onConnect(
+        port,
+        localAddr,
+        dst,
+        peerHandler,
+      );
 
       /**
        * Create half of a channel pair.
@@ -227,9 +233,9 @@ export function makeNetworkPeer(peerHandler, E = defaultE) {
   E(peerHandler).onCreate(peerImpl, peerHandler);
 
   /**
-   * @param {Endpoint} localPort
+   * @param {Endpoint} localAddr
    */
-  const bind = async localPort => {
+  const bind = async localAddr => {
     /**
      * @type {ListenHandler}
      */
@@ -240,16 +246,21 @@ export function makeNetworkPeer(peerHandler, E = defaultE) {
      */
     const port = harden({
       getLocalAddress() {
-        return localPort;
+        return localAddr;
       },
       async addListener(listenHandler) {
         if (!listenHandler) {
           throw TypeError(`listenHandler is not defined`);
         }
         if (listening) {
-          throw Error(`Port ${localPort} is already listening`);
+          throw Error(`Port ${localAddr} is already listening`);
         }
-        await E(peerHandler).onListen(port, listenHandler, peerHandler);
+        await E(peerHandler).onListen(
+          port,
+          localAddr,
+          listenHandler,
+          peerHandler,
+        );
         listening = listenHandler;
         await E(listenHandler)
           .onListen(port, listenHandler)
@@ -257,12 +268,17 @@ export function makeNetworkPeer(peerHandler, E = defaultE) {
       },
       async removeListener(listenHandler) {
         if (!listening) {
-          throw Error(`Port ${localPort} is not listening`);
+          throw Error(`Port ${localAddr} is not listening`);
         }
         if (listening !== listenHandler) {
-          throw Error(`Port ${localPort} handler to remove is not listening`);
+          throw Error(`Port ${localAddr} handler to remove is not listening`);
         }
-        await E(peerHandler).onListenRemove(port, listenHandler, peerHandler);
+        await E(peerHandler).onListenRemove(
+          port,
+          localAddr,
+          listenHandler,
+          peerHandler,
+        );
         listening = undefined;
         await E(listenHandler)
           .onRemove(port, listenHandler)
@@ -277,7 +293,7 @@ export function makeNetworkPeer(peerHandler, E = defaultE) {
       },
     });
 
-    boundPorts.init(localPort, port);
+    boundPorts.init(localAddr, port);
     return port;
   };
 
@@ -296,6 +312,41 @@ export function makeEchoChannelHandler() {
   return harden({
     async onReceive(_channel, bytes, _channelHandler) {
       return bytes;
+    },
+  });
+}
+
+/**
+ * Create a peer handler that just connects to itself.
+ *
+ * @param {defaultE} E Eventual sender
+ * @returns {PeerHandler} The localhost handler
+ */
+export function makeLoopbackPeerHandler(E = defaultE) {
+  /**
+   * @type {Store<string, [Port, ListenHandler]>}
+   */
+  const listeners = makeStore('localAddr');
+
+  return harden({
+    // eslint-disable-next-line no-empty-function
+    async onCreate(_peer, _impl) {},
+    async onConnect(_port, localAddr, remoteAddr) {
+      const [lport, lhandler] = listeners.get(localAddr);
+      return E(lhandler).onAccept(lport, remoteAddr, lhandler);
+    },
+    async onListen(port, localAddr, listenHandler) {
+      listeners.init(localAddr, [port, listenHandler]);
+    },
+    async onListenRemove(port, localAddr, listenHandler) {
+      const [lport, lhandler] = listeners.get(localAddr);
+      if (lport !== port) {
+        throw Error(`Port does not match listener on ${localAddr}`);
+      }
+      if (lhandler !== listenHandler) {
+        throw Error(`Listen handler does not match listener on ${localAddr}`);
+      }
+      listeners.delete(localAddr);
     },
   });
 }

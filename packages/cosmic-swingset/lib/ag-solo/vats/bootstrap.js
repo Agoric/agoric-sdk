@@ -5,7 +5,7 @@ import { makeLoopbackPeerHandler } from '@agoric/swingset-vat/src/vats/network';
 // this will return { undefined } until `ag-solo set-gci-ingress`
 // has been run to update gci.js
 import { GCI } from './gci';
-import { makeIBCPeerHandler } from './ibc';
+// import { makeIBCPeerHandler } from './ibc';
 import { makeBridgeManager } from './bridge';
 
 console.debug(`loading bootstrap.js`);
@@ -76,7 +76,7 @@ export default function setup(syscall, state, helpers) {
 
         // Make the other demo mints
         const issuerNames = ['moola', 'simolean'];
-        const [zoe, contractHost, issuers] = Promise.all([
+        const [zoe, contractHost, issuers] = await Promise.all([
           E(vats.zoe).getZoe(),
           E(vats.host).makeHost(),
           Promise.all(
@@ -125,7 +125,7 @@ export default function setup(syscall, state, helpers) {
         });
       }
 
-      function registerNetworkPeers(networkVat, bridgeMgr, isOnChain = false) {
+      function registerNetworkPeers(networkVat, bridgeMgr) {
         const ps = [];
         // Every vat has a loopback device.
         ps.push(
@@ -134,9 +134,9 @@ export default function setup(syscall, state, helpers) {
             makeLoopbackPeerHandler(),
           ),
         );
-        if (isOnChain) {
-          // We have access to IBC.
+        if (bridgeMgr) {
           // TODO: Implement when off-chain, too!
+          // We have access to the bridge, and therefore IBC.
           ps.push(
             E(networkVat).registerPeerHandler(
               '/ibc',
@@ -213,7 +213,7 @@ export default function setup(syscall, state, helpers) {
 
       return harden({
         async bootstrap(argv, vats, devices) {
-          const bridgeManager = makeBridgeManager(E, D, devices.bridge);
+          const bridgeManager = devices.bridge && makeBridgeManager(E, D, devices.bridge);
           const [ROLE, bootAddress, additionalAddresses] = parseArgs(argv);
 
           async function addRemote(addr) {
@@ -241,7 +241,7 @@ export default function setup(syscall, state, helpers) {
           switch (ROLE) {
             case 'chain':
             case 'one_chain': {
-              await registerNetworkPeers(vats.network, bridgeManager, true);
+              await registerNetworkPeers(vats.network, bridgeManager);
 
               // provisioning vat can ask the demo server for bundles, and can
               // register client pubkeys with comms
@@ -394,7 +394,7 @@ export default function setup(syscall, state, helpers) {
               // frontend. Limited subset of demo runs inside the solo node.
 
               // We pretend we're on-chain.
-              await registerNetworkPeers(vats.network, bridgeManager, true);
+              await registerNetworkPeers(vats.network, bridgeManager);
 
               // Shared Setup (virtual chain side) ///////////////////////////
               await setupCommandDevice(vats.http, devices.command, {

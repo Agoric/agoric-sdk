@@ -67,7 +67,7 @@ export default function makeRouter(sep = '/') {
   });
 }
 /**
- * @typedef {Peer} RoutePeer
+ * @typedef {Peer} RouterPeer
  * @property {(prefix: string, peerHandler: PeerHandler) => void} registerPeerHandler
  * @property {(prefix: string, peerHandler: PeerHandler) => void} unregisterPeerHandler
  */
@@ -77,6 +77,7 @@ export default function makeRouter(sep = '/') {
  *
  * @param {string} [sep='/'] the route separator
  * @param {typeof defaultE} [E=defaultE] Eventual sender
+ * @returns {RouterPeer} The new delegated peer
  */
 export function makeRouterPeer(sep = '/', E = defaultE) {
   const router = makeRouter(sep);
