@@ -6,7 +6,7 @@ import rawHarden from '@agoric/harden';
 import {
   parse,
   unparse,
-  makeEchoChannelHandler,
+  makeEchoConnectionHandler,
   makeLoopbackPeerHandler,
   makeNetworkPeer,
   makeRouter,
@@ -38,7 +38,7 @@ const makePeerHandler = t => {
       if (lp) {
         return l.onAccept(lp, localAddr, remoteAddr, l);
       }
-      return makeEchoChannelHandler();
+      return makeEchoConnectionHandler();
     },
     async onListen(port, localAddr, listenHandler) {
       t.assert(port, `port is tracked in onListen`);
@@ -56,6 +56,11 @@ const makePeerHandler = t => {
       lp = undefined;
       log('port done listening', port.getLocalAddress());
     },
+    async onRevoke(port, localAddr) {
+      t.assert(port, `port is tracked in onRevoke`);
+      t.assert(localAddr, `local address is supplied to onRevoke`);
+      console.log('port done revoking', port.getLocalAddress());
+    },
   });
 };
 
@@ -68,23 +73,24 @@ test('handled peer', async t => {
     await port.connect(
       '/ibc/*/ordered/echo',
       harden({
-        async onOpen(channel) {
-          const ack = await channel.send('ping');
+        async onOpen(connection) {
+          const ack = await connection.send('ping');
           // log(ack);
           t.equals(`${ack}`, 'ping', 'received pong');
-          channel.close();
+          connection.close();
         },
-        async onClose(_channel, reason) {
+        async onClose(_connection, reason) {
           t.equals(reason, undefined, 'no close reason');
           closed.resolve();
         },
-        async onReceive(_channel, bytes) {
+        async onReceive(_connection, bytes) {
           t.equals(`${bytes}`, 'ping');
           return 'pong';
         },
       }),
     );
     await closed.promise;
+    await port.revoke();
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {
@@ -92,7 +98,7 @@ test('handled peer', async t => {
   }
 });
 
-test('peer channel listen', async t => {
+test('peer connection listen', async t => {
   try {
     const peer = makeNetworkPeer(makePeerHandler(t));
 
@@ -119,31 +125,34 @@ test('peer channel listen', async t => {
         );
         let handler;
         return harden({
-          async onOpen(channel, channelHandler) {
-            t.assert(channelHandler, `channelHandler is tracked in onOpen`);
-            handler = channelHandler;
-            const ack = await channel.send('ping');
+          async onOpen(connection, connectionHandler) {
+            t.assert(
+              connectionHandler,
+              `connectionHandler is tracked in onOpen`,
+            );
+            handler = connectionHandler;
+            const ack = await connection.send('ping');
             t.equals(`${ack}`, 'ping', 'received pong');
-            channel.close();
+            connection.close();
           },
-          async onClose(c, reason, channelHandler) {
+          async onClose(c, reason, connectionHandler) {
             t.equals(
-              channelHandler,
+              connectionHandler,
               handler,
-              `channelHandler is tracked in onClose`,
+              `connectionHandler is tracked in onClose`,
             );
             handler = undefined;
-            t.assert(c, 'channel is passed to onClose');
+            t.assert(c, 'connection is passed to onClose');
             t.equals(reason, undefined, 'no close reason');
             closed.resolve();
           },
-          async onReceive(c, packet, channelHandler) {
+          async onReceive(c, packet, connectionHandler) {
             t.equals(
-              channelHandler,
+              connectionHandler,
               handler,
-              `channelHandler is tracked in onReceive`,
+              `connectionHandler is tracked in onReceive`,
             );
-            t.assert(c, 'channel is passed to onReceive');
+            t.assert(c, 'connection is passed to onReceive');
             t.equals(`${packet}`, 'ping', 'expected ping');
             return 'pong';
           },
@@ -171,16 +180,16 @@ test('peer channel listen', async t => {
     await port.addListener(listener);
 
     const port2 = await peer.bind('/net/ordered');
-    const channelHandler = makeEchoChannelHandler();
+    const connectionHandler = makeEchoConnectionHandler();
     await port2.connect(
       '/net/ordered/ordered/some-portname',
       harden({
-        ...channelHandler,
-        async onOpen(channel, c) {
-          if (channelHandler.onOpen) {
-            await channelHandler.onOpen(channel, c);
+        ...connectionHandler,
+        async onOpen(connection, c) {
+          if (connectionHandler.onOpen) {
+            await connectionHandler.onOpen(connection, c);
           }
-          channel.send('ping');
+          connection.send('ping');
         },
       }),
     );
@@ -188,6 +197,7 @@ test('peer channel listen', async t => {
     await closed.promise;
 
     await port.removeListener(listener);
+    await port.revoke();
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {
@@ -206,32 +216,27 @@ test.skip('loopback peer', async t => {
     /**
      * @type {import('../src/vats/network').ListenHandler}
      */
-    await port.addListener(
-      harden({
-        async onAccept(_p, _localAddr, _remoteAddr, _listenHandler) {
-          return harden({
-            async onReceive(c, packet, _channelHandler) {
-              t.equals(`${packet}`, 'ping', 'expected ping');
-              t.equals(
-                `${await c.send('pong')}`,
-                'pongack',
-                'expected pongack',
-              );
-              return 'pingack';
-            },
-          });
-        },
-      }),
-    );
+    const listener = harden({
+      async onAccept(_p, _localAddr, _remoteAddr, _listenHandler) {
+        return harden({
+          async onReceive(c, packet, _connectionHandler) {
+            t.equals(`${packet}`, 'ping', 'expected ping');
+            t.equals(`${await c.send('pong')}`, 'pongack', 'expected pongack');
+            return 'pingack';
+          },
+        });
+      },
+    });
+    await port.addListener(listener);
 
     const port2 = await peer.bind('/loopback/bar');
     await port2.connect(
       port.getLocalAddress(),
       harden({
-        async onOpen(c, _channelHandler) {
+        async onOpen(c, _connectionHandler) {
           t.equals(`${await c.send('ping')}`, 'pingack', 'expected pingack');
         },
-        async onReceive(c, packet, _channelHandler) {
+        async onReceive(c, packet, _connectionHandler) {
           t.equals(`${packet}`, 'pong', 'expected pong');
           Promise.resolve().then(() => c.close());
           return 'pongack';

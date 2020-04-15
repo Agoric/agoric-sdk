@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 import { allComparable } from '@agoric/same-structure';
 import {
   makeLoopbackPeerHandler,
-  makeEchoChannelHandler,
+  makeEchoConnectionHandler,
 } from '@agoric/swingset-vat/src/vats/network';
 
 // this will return { undefined } until `ag-solo set-gci-ingress`
@@ -163,7 +163,7 @@ export default function setup(syscall, state, helpers) {
           E(port).addListener(
             harden({
               async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
-                return harden(makeEchoChannelHandler());
+                return harden(makeEchoConnectionHandler());
               },
             }),
           );
@@ -215,8 +215,8 @@ export default function setup(syscall, state, helpers) {
 
         // This will allow dApp developers to register in their api/deploy.js
         const httpRegCallback = {
-          send(obj, channelHandles) {
-            return E(vats.http).send(obj, channelHandles);
+          send(obj, connectionHandles) {
+            return E(vats.http).send(obj, connectionHandles);
           },
           registerAPIHandler(handler) {
             return E(vats.http).registerURLHandler(handler, '/api');
