@@ -238,7 +238,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  */
 const makeZoe = (additionalEndowments = {}) => {
   // Zoe maps the inviteHandles to contract offerHook upcalls
-  const handleToOfferHook = makeStore();
+  const inviteHandleToOfferHook = makeStore();
   const {
     mint: inviteMint,
     issuer: inviteIssuer,
@@ -347,7 +347,7 @@ const makeZoe = (additionalEndowments = {}) => {
           },
         ]),
       );
-      handleToOfferHook.init(inviteHandle, offerHook);
+      inviteHandleToOfferHook.init(inviteHandle, offerHook);
       return inviteMint.mintPayment(inviteAmount);
     };
 
@@ -637,9 +637,10 @@ const makeZoe = (additionalEndowments = {}) => {
           );
 
           const {
-            extent: [{ instanceHandle, handle: offerHandle }],
+            extent: [{ instanceHandle, handle: inviteHandle }],
           } = inviteAmount;
           const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
+          const offerHandle = harden({});
 
           const amountMathKeywordRecord = getAmountMaths(
             instanceHandle,
@@ -685,16 +686,13 @@ const makeZoe = (additionalEndowments = {}) => {
               proposal,
               currentAllocation: arrayToObj(amountsArray, userKeywords),
             };
-            // TODO split inviteHandle and offerHandle.
-            // Since we have redeemed an invite, the inviteHandle is
-            // also the offerHandle.
             offerTable.create(offerImmutableRecord, offerHandle);
             payoutMap.init(offerHandle, producePromise());
           };
 
           // Create result to be returned. Depends on `exit`
           const makeOfferResult = _ => {
-            const offerHook = handleToOfferHook.get(offerHandle);
+            const offerHook = inviteHandleToOfferHook.get(inviteHandle);
             // For now, the "remote" function call only works because
             // the function is local. It cannot yet be remote
             // in our system because functions are not yet passable.
