@@ -9,7 +9,7 @@ But if you are improving the platform itself, this is the repository to use.
 ## Prerequisites
 
 * Git
-* Node.js (version 11 or higher)
+* Node.js (version 12.16.1 or higher)
 * Yarn (`npm install -g yarn`)
 
 You don't need Golang if you just want to test contracts and run the
