@@ -15,9 +15,15 @@ const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
 
 test('simpleExchange with valid offers', async t => {
   t.plan(9);
-  const { issuers, mints, amountMaths, moola, simoleans } = setup();
-  const [moolaIssuer, simoleanIssuer] = issuers;
-  const [moolaMint, simoleanMint] = mints;
+  const {
+    moolaIssuer,
+    simoleanIssuer,
+    moolaMint,
+    simoleanMint,
+    amountMaths,
+    moola,
+    simoleans,
+  } = setup();
   const zoe = makeZoe({ require });
   const inviteIssuer = zoe.getInviteIssuer();
   const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
@@ -120,10 +126,12 @@ test('simpleExchange with valid offers', async t => {
 
   // Alice gets paid at least what she wanted
   t.ok(
-    amountMaths[1].isGTE(
-      await simoleanIssuer.getAmountOf(aliceSimoleanPayout),
-      aliceSellOrderProposal.want.Price,
-    ),
+    amountMaths
+      .get('simoleans')
+      .isGTE(
+        await simoleanIssuer.getAmountOf(aliceSimoleanPayout),
+        aliceSellOrderProposal.want.Price,
+      ),
   );
 
   // Alice sold all of her moola
@@ -149,9 +157,14 @@ test('simpleExchange with valid offers', async t => {
 test('simpleExchange with multiple sell offers', async t => {
   t.plan(1);
   try {
-    const { issuers, mints, moola, simoleans } = setup();
-    const [moolaIssuer, simoleanIssuer] = issuers;
-    const [moolaMint, simoleanMint] = mints;
+    const {
+      moolaIssuer,
+      simoleanIssuer,
+      moolaMint,
+      simoleanMint,
+      moola,
+      simoleans,
+    } = setup();
     const zoe = makeZoe({ require });
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
@@ -242,9 +255,7 @@ test('simpleExchange with multiple sell offers', async t => {
 
 test('simpleExchange showPayoutRules', async t => {
   t.plan(1);
-  const { issuers, mints, moola, simoleans } = setup();
-  const [moolaIssuer, simoleanIssuer] = issuers;
-  const [moolaMint] = mints;
+  const { moolaIssuer, simoleanIssuer, moolaMint, moola, simoleans } = setup();
   const zoe = makeZoe({ require });
   const inviteIssuer = zoe.getInviteIssuer();
   const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
