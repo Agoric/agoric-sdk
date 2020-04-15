@@ -1,9 +1,9 @@
 // @ts-check
 import harden from '@agoric/harden';
-import { makeRouterPeer } from '@agoric/swingset-vat/src/vats/network/router';
+import { makeRouterInterface } from '@agoric/swingset-vat/src/vats/network/router';
 
 function build(E) {
-  return harden(makeRouterPeer('/', E));
+  return harden(makeRouterInterface('/', E));
 }
 
 export default function setup(syscall, state, helpers) {

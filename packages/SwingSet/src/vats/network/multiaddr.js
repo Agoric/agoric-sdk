@@ -11,7 +11,7 @@
  *   [['dnsaddr', 'ibc.testnet.agoric.com'], ['ordered', 'transfer']]
  * resolve step to another pointer: /dnsaddr/rpc.testnet.agoric.com/ibc/testnet-1.19.0/gci/4bc8d.../ordered/transfer
  *   [['dnsaddr', 'rpc.testnet.agoric.com'], ['ibc', 'testnet-1.19.0'], ['gci', '4bc8d...'], ['ordered', 'transfer']]
- * resolve to the individual peers: /ip4/172.17.0.4/tcp/26657/tendermint/0.33/ibc/testnet-1.19.0/gci/4bc8d.../ordered/transfer
+ * resolve to the individual interfaces: /ip4/172.17.0.4/tcp/26657/tendermint/0.33/ibc/testnet-1.19.0/gci/4bc8d.../ordered/transfer
  *   [['ip4', '172.17.0.4'], ['tcp', '26657'], ['tendermint', '0.33'],
  *    ['ibc', 'testnet-1.19.0'], ['gci', '4bc8d...'], ['ordered', 'transfer']]
  */

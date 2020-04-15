@@ -22,12 +22,12 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  */
 
 /**
- * @typedef {Object} Peer The local peer
+ * @typedef {Object} Interface The network Interface
  * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if ending in '/', a fresh name
  */
 
 /**
- * @typedef {Object} Port A port that has been bound to a Peer
+ * @typedef {Object} Port A port that has been bound to an Interface
  * @property {() => Endpoint} getLocalAddress Get the locally bound name of this port
  * @property {(acceptHandler: ListenHandler) => Promise<void>} addListener Begin accepting incoming connections
  * @property {(remote: Endpoint, connectionHandler: ConnectionHandler = {}) => Promise<Connection>} connect Make an outbound connection
@@ -69,15 +69,15 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  */
 
 /**
- * @typedef {Object} PeerHandler A handler for things the peer implementation will invoke
- * @property {(peer: PeerImpl, p: PeerHandler) => Promise<void>} onCreate This peer is created
- * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: PeerHandler) => Promise<void>} onListen A port was listening
- * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: PeerHandler) => Promise<void>} onListenRemove A port listener has been reset
- * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, p: PeerHandler) => Promise<ConnectionHandler>} onConnect A port initiates an outbound connection
- * @property {(port: Port, localAddr: Endpoint, p: PeerHandler) => Promise<void>} onRevoke The port is being completely destroyed
+ * @typedef {Object} InterfaceHandler A handler for things the interface implementation will invoke
+ * @property {(interface: InterfaceImpl, p: InterfaceHandler) => Promise<void>} onCreate This interface is created
+ * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: InterfaceHandler) => Promise<void>} onListen A port was listening
+ * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: InterfaceHandler) => Promise<void>} onListenRemove A port listener has been reset
+ * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, p: InterfaceHandler) => Promise<ConnectionHandler>} onConnect A port initiates an outbound connection
+ * @property {(port: Port, localAddr: Endpoint, p: InterfaceHandler) => Promise<void>} onRevoke The port is being completely destroyed
  *
- * @typedef {Object} PeerImpl Things the peer can do for us
- * @property {(port: Port, remote: Endpoint, connectionHandler: ConnectionHandler) => Promise<Connection>} connect Establish a connection from this peer to an endpoint
+ * @typedef {Object} InterfaceImpl Things the interface can do for us
+ * @property {(port: Port, remote: Endpoint, connectionHandler: ConnectionHandler) => Promise<Connection>} connect Establish a connection from this interface to an endpoint
  */
 
 /*
@@ -122,27 +122,27 @@ const rethrowIfUnset = err => {
 };
 
 /**
- * Create a Peer that has a handler.
+ * Create an Interface that has a handler.
  *
- * @param {PeerHandler} peerHandler
+ * @param {InterfaceHandler} interfaceHandler
  * @param {typeof defaultE} [E=defaultE] Eventual send function
- * @returns {Peer} the local capability for connecting and listening
+ * @returns {Interface} the local capability for connecting and listening
  */
-export function makeNetworkPeer(peerHandler, E = defaultE) {
+export function makeNetworkInterface(interfaceHandler, E = defaultE) {
   /** @type {Store<Port, Set<Connection>>} */
   const currentConnections = makeStore('port');
 
   /**
-   * @type {PeerImpl}
+   * @type {InterfaceImpl}
    */
-  const peerImpl = harden({
+  const interfaceImpl = harden({
     async connect(port, dst, srcHandler) {
       const localAddr = await E(port).getLocalAddress();
-      const dstHandler = await E(peerHandler).onConnect(
+      const dstHandler = await E(interfaceHandler).onConnect(
         port,
         localAddr,
         dst,
-        peerHandler,
+        interfaceHandler,
       );
 
       const current = currentConnections.get(port);
@@ -242,8 +242,8 @@ export function makeNetworkPeer(peerHandler, E = defaultE) {
   const boundPorts = makeStore('localAddr');
   let nonce = 0;
 
-  // Wire up the local peer to the handler.
-  E(peerHandler).onCreate(peerImpl, peerHandler);
+  // Wire up the local interface to the handler.
+  E(interfaceHandler).onCreate(interfaceImpl, interfaceHandler);
 
   /**
    * @param {Endpoint} localAddr
@@ -301,11 +301,11 @@ export function makeNetworkPeer(peerHandler, E = defaultE) {
         if (listening) {
           throw Error(`Port ${localAddr} is already listening`);
         }
-        await E(peerHandler).onListen(
+        await E(interfaceHandler).onListen(
           port,
           localAddr,
           listenHandler,
-          peerHandler,
+          interfaceHandler,
         );
         // TODO: Handle the race between revoke() and open connections.
         listening = listenHandler;
@@ -320,11 +320,11 @@ export function makeNetworkPeer(peerHandler, E = defaultE) {
         if (listening !== listenHandler) {
           throw Error(`Port ${localAddr} handler to remove is not listening`);
         }
-        await E(peerHandler).onListenRemove(
+        await E(interfaceHandler).onListenRemove(
           port,
           localAddr,
           listenHandler,
-          peerHandler,
+          interfaceHandler,
         );
         listening = undefined;
         await E(listenHandler)
@@ -339,7 +339,7 @@ export function makeNetworkPeer(peerHandler, E = defaultE) {
          * @type {Endpoint}
          */
         const dst = harden(remotePort);
-        const conn = await peerImpl.connect(port, dst, connectionHandler);
+        const conn = await interfaceImpl.connect(port, dst, connectionHandler);
         if (revoked) {
           E(conn).close();
         } else {
@@ -352,7 +352,7 @@ export function makeNetworkPeer(peerHandler, E = defaultE) {
           throw Error(`Port ${localAddr} is already revoked`);
         }
         revoked = RevokeState.REVOKING;
-        await E(peerHandler).onRevoke(port, localAddr, peerHandler);
+        await E(interfaceHandler).onRevoke(port, localAddr, interfaceHandler);
         revoked = RevokeState.REVOKED;
 
         // Clean up everything we did.
@@ -396,12 +396,12 @@ export function makeEchoConnectionHandler() {
 }
 
 /**
- * Create a peer handler that just connects to itself.
+ * Create a interface handler that just connects to itself.
  *
  * @param {defaultE} E Eventual sender
- * @returns {PeerHandler} The localhost handler
+ * @returns {InterfaceHandler} The localhost handler
  */
-export function makeLoopbackPeerHandler(E = defaultE) {
+export function makeLoopbackInterfaceHandler(E = defaultE) {
   /**
    * @type {Store<string, [Port, ListenHandler]>}
    */
@@ -409,17 +409,17 @@ export function makeLoopbackPeerHandler(E = defaultE) {
 
   return harden({
     // eslint-disable-next-line no-empty-function
-    async onCreate(_peer, _peerHandler) {},
-    async onConnect(_port, localAddr, remoteAddr, _peerHandler) {
+    async onCreate(_interface, _interfaceHandler) {},
+    async onConnect(_port, localAddr, remoteAddr, _interfaceHandler) {
       const [lport, lhandler] = listeners.get(remoteAddr);
       return E(lhandler)
         .onAccept(lport, remoteAddr, localAddr, lhandler)
         .catch(rethrowIfUnset);
     },
-    async onListen(port, localAddr, listenHandler, _peerHandler) {
+    async onListen(port, localAddr, listenHandler, _interfaceHandler) {
       listeners.init(localAddr, [port, listenHandler]);
     },
-    async onListenRemove(port, localAddr, listenHandler, _peerHandler) {
+    async onListenRemove(port, localAddr, listenHandler, _interfaceHandler) {
       const [lport, lhandler] = listeners.get(localAddr);
       if (lport !== port) {
         throw Error(`Port does not match listener on ${localAddr}`);
@@ -429,7 +429,7 @@ export function makeLoopbackPeerHandler(E = defaultE) {
       }
       listeners.delete(localAddr);
     },
-    async onRevoke(_port, _localAddr, _peerHandler) {
+    async onRevoke(_port, _localAddr, _interfaceHandler) {
       // TODO: maybe clean up!
     },
   });

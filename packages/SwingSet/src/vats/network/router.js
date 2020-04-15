@@ -2,13 +2,13 @@
 import { E as defaultE } from '@agoric/eventual-send';
 import rawHarden from '@agoric/harden';
 import makeStore from '@agoric/store';
-import { makeNetworkPeer } from './network';
+import { makeNetworkInterface } from './network';
 
 const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
- * @typedef {import('./network').Peer} Peer
- * @typedef {import('./network').PeerHandler} PeerHandler
+ * @typedef {import('./network').Interface} Interface
+ * @typedef {import('./network').InterfaceHandler} InterfaceHandler
  */
 
 /**
@@ -67,41 +67,41 @@ export default function makeRouter(sep = '/') {
   });
 }
 /**
- * @typedef {Peer} RouterPeer
- * @property {(prefix: string, peerHandler: PeerHandler) => void} registerPeerHandler
- * @property {(prefix: string, peerHandler: PeerHandler) => void} unregisterPeerHandler
+ * @typedef {Interface} RouterInterface
+ * @property {(prefix: string, interfaceHandler: InterfaceHandler) => void} registerInterfaceHandler
+ * @property {(prefix: string, interfaceHandler: InterfaceHandler) => void} unregisterInterfaceHandler
  */
 
 /**
- * Create a router that behaves like a Peer.
+ * Create a router that behaves like a Interface.
  *
  * @param {string} [sep='/'] the route separator
  * @param {typeof defaultE} [E=defaultE] Eventual sender
- * @returns {RouterPeer} The new delegated peer
+ * @returns {RouterInterface} The new delegated iface
  */
-export function makeRouterPeer(sep = '/', E = defaultE) {
+export function makeRouterInterface(sep = '/', E = defaultE) {
   const router = makeRouter(sep);
-  const peers = makeStore('prefix');
-  const peerHandlers = makeStore('prefix');
+  const interfaces = makeStore('prefix');
+  const interfaceHandlers = makeStore('prefix');
 
-  function registerPeerHandler(prefix, peerHandler) {
-    const peer = makeNetworkPeer(peerHandler);
-    router.register(prefix, peer);
-    peers.init(prefix, peer);
-    peerHandlers.init(prefix, peerHandler);
+  function registerInterfaceHandler(prefix, interfaceHandler) {
+    const iface = makeNetworkInterface(interfaceHandler);
+    router.register(prefix, iface);
+    interfaces.init(prefix, iface);
+    interfaceHandlers.init(prefix, interfaceHandler);
   }
 
-  function unregisterPeerHandler(prefix, peerHandler) {
-    const ph = peerHandlers.get(prefix);
-    if (ph !== peerHandler) {
-      throw TypeError(`Peer handler is not registered at prefix ${prefix}`);
+  function unregisterInterfaceHandler(prefix, interfaceHandler) {
+    const ph = interfaceHandlers.get(prefix);
+    if (ph !== interfaceHandler) {
+      throw TypeError(`Interface handler is not registered at prefix ${prefix}`);
     }
     router.unregister(prefix, ph);
-    peers.delete(prefix);
-    peerHandlers.delete(prefix);
+    interfaces.delete(prefix);
+    interfaceHandlers.delete(prefix);
   }
 
-  /** @type {Peer['bind']} */
+  /** @type {Interface['bind']} */
   async function bind(localAddr) {
     const [route] = router.getRoutes(localAddr);
     if (route === undefined) {
@@ -112,7 +112,7 @@ export function makeRouterPeer(sep = '/', E = defaultE) {
 
   return harden({
     bind,
-    registerPeerHandler,
-    unregisterPeerHandler,
+    registerInterfaceHandler,
+    unregisterInterfaceHandler,
   });
 }

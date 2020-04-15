@@ -38,19 +38,19 @@ home.ibcport~.connect(endpoint, connectionHandler)
 
 The other side of `connect()` is a "listening port". These ports are waiting for inbound connections to be established.
 
-To get a listening port, you need a `Peer` object (such as the one on your `ag-solo` under `home.network`) and ask it to `bind()` to an endpoint. You can either provide a specific port name, or allow the API to allocate a random one for you. The endpoint specifies the type of connection that this port will be able to accept (IBC, TCP, etc), and some properties of that connection. `bind()` uses a "multiaddress" to encode this information.
+To get a listening port, you need a `NetworkInterface` object (such as the one on your `ag-solo` under `home.network`) and ask it to `bind()` to an endpoint. You can either provide a specific port name, or allow the API to allocate a random one for you. The endpoint specifies the type of connection that this port will be able to accept (IBC, TCP, etc), and some properties of that connection. `bind()` uses a "multiaddress" to encode this information.
 
 ```js
 // ask for a random allocation - ends with a slash
-peer~.bind('/ibc/*/ordered/`)
+home.network~.bind('/ibc/*/ordered/`)
   .then(port => usePort(port));
 //
 // or ask for a specific port name
-peer~.bind('/ibc/*/ordered/my-cool-port-name`)
+home.network~.bind('/ibc/*/ordered/my-cool-port-name`)
   .then(port => usePort(port));
 ```
 
-IBC has named "Relay Connections" which relay between two specific chains.  These "Relay Connections" are different from the connections described in this document.  When you bind a port to `/ibc/*`, any "Relay-connected" chain can initiate a connection to this port. If you know a "Relay Connection" name and want to limit the port to only using that one, you can bind to `/ibc/my-relayer/ordered/` instead.
+IBC has named "Relay Connections" which relay between two specific chains.  These "Relay Connections" are different from the connections described in this document.  When you bind a port to `/ibc/*`, any "Relay-connected" chain can initiate a connection to this port. If you know a "Relay Connection" name and want to limit the port to only using that one, you can bind to `/ibc/ibctwo/ordered/` instead.
 
 You can ask the `Port` object this returns for its local address, which is especially useful if you had asked for a random allocation (since otherwise you have no way to know what address you got):
 

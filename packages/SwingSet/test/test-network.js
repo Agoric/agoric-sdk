@@ -7,8 +7,8 @@ import {
   parse,
   unparse,
   makeEchoConnectionHandler,
-  makeLoopbackPeerHandler,
-  makeNetworkPeer,
+  makeLoopbackInterfaceHandler,
+  makeNetworkInterface,
   makeRouter,
 } from '../src/vats/network';
 
@@ -18,17 +18,17 @@ const log = false ? console.log : () => {};
 
 /**
  * @param {*} t
- * @returns {import('../src/vats/network').PeerHandler} A testing handler
+ * @returns {import('../src/vats/network').InterfaceHandler} A testing handler
  */
-const makePeerHandler = t => {
+const makeInterfaceHandler = t => {
   /**
    * @type {import('../src/vats/network').ListenHandler}
    */
   let l;
   let lp;
   return harden({
-    async onCreate(_peer, _impl) {
-      log('created', _peer, _impl);
+    async onCreate(_interface, _impl) {
+      log('created', _interface, _impl);
     },
     async onConnect(port, localAddr, remoteAddr) {
       t.assert(port, `port is tracked in onConnect`);
@@ -64,12 +64,12 @@ const makePeerHandler = t => {
   });
 };
 
-test('handled peer', async t => {
+test('handled iface', async t => {
   try {
-    const peer = makeNetworkPeer(makePeerHandler(t));
+    const iface = makeNetworkInterface(makeInterfaceHandler(t));
 
     const closed = producePromise();
-    const port = await peer.bind('/ibc/*/ordered');
+    const port = await iface.bind('/ibc/*/ordered');
     await port.connect(
       '/ibc/*/ordered/echo',
       harden({
@@ -98,13 +98,13 @@ test('handled peer', async t => {
   }
 });
 
-test('peer connection listen', async t => {
+test('iface connection listen', async t => {
   try {
-    const peer = makeNetworkPeer(makePeerHandler(t));
+    const iface = makeNetworkInterface(makeInterfaceHandler(t));
 
     const closed = producePromise();
 
-    const port = await peer.bind('/net/ordered/ordered/some-portname');
+    const port = await iface.bind('/net/ordered/ordered/some-portname');
 
     /**
      * @type {import('../src/vats/network').ListenHandler}
@@ -179,7 +179,7 @@ test('peer connection listen', async t => {
 
     await port.addListener(listener);
 
-    const port2 = await peer.bind('/net/ordered');
+    const port2 = await iface.bind('/net/ordered');
     const connectionHandler = makeEchoConnectionHandler();
     await port2.connect(
       '/net/ordered/ordered/some-portname',
@@ -205,13 +205,13 @@ test('peer connection listen', async t => {
   }
 });
 
-test.skip('loopback peer', async t => {
+test.skip('loopback iface', async t => {
   try {
-    const peer = makeNetworkPeer(makeLoopbackPeerHandler());
+    const iface = makeNetworkInterface(makeLoopbackInterfaceHandler());
 
     const closed = producePromise();
 
-    const port = await peer.bind('/loopback/foo');
+    const port = await iface.bind('/loopback/foo');
 
     /**
      * @type {import('../src/vats/network').ListenHandler}
@@ -229,7 +229,7 @@ test.skip('loopback peer', async t => {
     });
     await port.addListener(listener);
 
-    const port2 = await peer.bind('/loopback/bar');
+    const port2 = await iface.bind('/loopback/bar');
     await port2.connect(
       port.getLocalAddress(),
       harden({
