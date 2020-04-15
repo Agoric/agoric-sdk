@@ -38,6 +38,7 @@
     "@agoric/marshal": "^0.1.5",
     "@agoric/nat": "^2.0.1",
     "@agoric/produce-promise": "^0.0.5",
+    "@agoric/store": "^0.0.4",
     "@agoric/swing-store-simple": "^0.1.2",
     "@agoric/tame-metering": "^1.1.2",
     "@agoric/transform-metering": "^1.2.2",

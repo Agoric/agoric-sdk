@@ -6,6 +6,7 @@ import {
   buildMailbox,
   buildMailboxStateMap,
   buildTimer,
+  buildBridge,
   buildVatController,
   getCommsSourcePath,
   getTimerWrapperSourcePath,
@@ -17,13 +18,15 @@ const log = anylogger('launch-chain');
 
 const SWING_STORE_META_KEY = 'cosmos/meta';
 
-async function buildSwingset(withSES, mailboxState, storage, vatsDir, argv) {
+async function buildSwingset(withSES, mailboxState, bridgeOutbound, storage, vatsDir, argv) {
   const config = {};
   const mbs = buildMailboxStateMap();
   mbs.populateFromData(mailboxState);
   const timer = buildTimer();
   const mb = buildMailbox(mbs);
+  const bd = buildBridge(bridgeOutbound);
   config.devices = [
+    ['bridge', bd.srcPath, bd.endowments],
     ['mailbox', mb.srcPath, mb.endowments],
     ['timer', timer.srcPath, timer.endowments],
   ];
@@ -48,7 +51,8 @@ async function buildSwingset(withSES, mailboxState, storage, vatsDir, argv) {
   const controller = await buildVatController(config, withSES, argv);
   await controller.run();
 
-  return { controller, mb, mbs, timer };
+  const bridgeInbound = bd.deliverInbound;
+  return { controller, mb, mbs, bridgeInbound, timer };
 }
 
 export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
@@ -62,10 +66,14 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
 
   const { storage, commit } = openSwingStore(kernelStateDBDir);
 
+  function bridgeOutbound(argx) {
+    // XX
+  }
   log.debug(`buildSwingset`);
-  const { controller, mb, mbs, timer } = await buildSwingset(
+  const { controller, mb, mbs, bridgeInbound, timer } = await buildSwingset(
     withSES,
     mailboxState,
+    bridgeOutbound,
     storage,
     vatsDir,
     argv,
@@ -107,6 +115,14 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
     await controller.run();
   }
 
+  async function doBridgeInbound(source, body) {
+    console.log(`doBridgeInbound`);
+    // the inbound bridge will push messages onto the kernel run-queue for
+    // delivery+dispatch to some handler vat
+    bridgeInbound(source, body);
+    await controller.run();
+  }
+
   async function beginBlock(blockHeight, blockTime) {
     const addedToQueue = timer.poll(blockTime);
     log.debug(
@@ -124,6 +140,8 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
   );
   return {
     deliverInbound,
+    doBridgeInbound,
+    // bridgeOutbound,
     beginBlock,
     saveChainState,
     saveOutsideState,

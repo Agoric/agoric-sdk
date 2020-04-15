@@ -20,6 +20,8 @@ const getBase64ToBytes = data64 =>
 export default function makeBlockManager(
   {
     deliverInbound,
+    doBridgeInbound,
+    // bridgeOutbound
     beginBlock,
     saveChainState,
     saveOutsideState,
@@ -89,6 +91,7 @@ export default function makeBlockManager(
   };
 
   async function kernelPerformAction(action) {
+    // TODO warner we could change this to run the kernel only during END_BLOCK
     const start = Date.now();
     const finish = _ => (runTime += Date.now() - start);
 
@@ -108,12 +111,18 @@ export default function makeBlockManager(
         );
         break;
 
+      // have just one case for all of IBC here
+
       case IBC_PACKET: {
         console.error(`FIXME: Got IBC packet; just pingpong`, action);
+        // action.type, action.subtype ??
+        // maybe p = doBridgeInbound..
+        await doBridgeInbound('ibc', action);
+
         const ibcChannel = getIBCChannel(action);
 
         // FIXME: We just ack, send, and disconnect.
-        ibcChannel.ack(JSON.stringify(action));
+        ibcChannel.ack(JSON.stringify(action)); // warner: these create channelMessage structs which are delivered to e.g. ibc.go line 68 in channelHandler.Receive
         ibcChannel.send(`pong:${JSON.stringify(action)}`);
         ibcChannel.close();
         break;
@@ -198,12 +207,16 @@ export default function makeBlockManager(
       for (const a of currentActions) {
         // eslint-disable-next-line no-await-in-loop
         await kernelPerformAction(a);
+        // TODO warner maybe change kernelPerformAction to enqueue but not run the kernel
       }
     }
 
     if (action.type !== END_BLOCK) {
       return;
     }
+
+    // TODO warner and then actually run the kernel down here, during
+    // END_BLOCK, but still reentrancy-protected
 
     // Commit all the keeper state, even on replay.
     // This is necessary since the block proposer will be asked to validate

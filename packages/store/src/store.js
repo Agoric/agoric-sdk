@@ -1,14 +1,33 @@
 // Copyright (C) 2019 Agoric, under Apache license 2.0
+// @ts-check
 
-import harden from '@agoric/harden';
+import rawHarden from '@agoric/harden';
 import { assert, details, openDetail } from '@agoric/assert';
+
+const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
+
+/**
+ * @template K,V
+ * @typedef {Object} Store A wrapper around a Map
+ * @property {(key: K) => boolean} has Check if a key exists
+ * @property {(key: K, value: V) => void} init Initialize the key only if it doesn't already exist
+ * @property {(key: K) => V?} get Return a value fo the key, or undefined
+ * @property {(key: K, value: V) => void} set Unconditionally set the key
+ * @property {(key: K) => void} delete Remove the key
+ * @property {() => K[]} keys Return an array of keys
+ * @property {() => V[]} values Return an array of values
+ * @property {() => [K, V][]} entries Return an array of entries
+ */
+
 /**
  * Distinguishes between adding a new key (init) and updating or
  * referencing a key (get, set, delete).
  *
  * `init` is only allowed if the key does not already exist. `Get`,
  * `set` and `delete` are only allowed if the key does already exist.
+ * @template K,V
  * @param  {string} keyName - the column name for the key
+ * @returns {Store.<K,V>}
  */
 function makeStore(keyName = 'key') {
   const store = new Map();
