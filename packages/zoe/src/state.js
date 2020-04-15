@@ -27,12 +27,12 @@ const makeInstanceTable = () => {
 };
 
 // Offer Table
-// Columns: handle | instanceHandle | proposal | currentAllocation
+// Columns: handle | instanceHandle | proposal | currentAllocation, notifier
 const makeOfferTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateProperties = makeValidateProperties(
-    harden(['instanceHandle', 'proposal', 'currentAllocation']),
+    harden(['instanceHandle', 'proposal', 'currentAllocation', 'notifier']),
   );
   const validateSomewhat = obj => {
     validateProperties(obj);
@@ -60,14 +60,23 @@ const makeOfferTable = () => {
         });
       },
       isOfferActive: offerHandle => table.has(offerHandle),
-      deleteOffers: offerHandles =>
-        offerHandles.map(offerHandle => table.delete(offerHandle)),
+      getNotifier: offerHandle => table.get(offerHandle).notifier,
+      deleteOffers: offerHandles => {
+        return offerHandles.map(offerHandle => {
+          const { notifier } = table.get(offerHandle);
+          notifier.updateState(undefined, true);
+          return table.delete(offerHandle);
+        });
+      },
       updateAmounts: (offerHandles, newAmountKeywordRecords) =>
-        offerHandles.map((offerHandle, i) =>
-          table.update(offerHandle, {
-            currentAllocation: newAmountKeywordRecords[i],
-          }),
-        ),
+        offerHandles.map((offerHandle, i) => {
+          const newAmountKeywordRecord = newAmountKeywordRecords[i];
+          const { notifier } = table.get(offerHandle);
+          notifier.updateState(newAmountKeywordRecord.amount);
+          return table.update(offerHandle, {
+            currentAllocation: newAmountKeywordRecord,
+          });
+        }),
     });
     return customMethods;
   };
