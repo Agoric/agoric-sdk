@@ -24,26 +24,29 @@ Then, create a release PR, pasting `needs-news.md` into the body.  If you need t
 Have the relevant maintainers fill out the `NEWS.md` for their package and
 commit it to the release branch.
 
-To perform the release (and push all the git tags), do on the branch:
+To prepare the release version, do on the branch:
 
 ```sh
 # Merge the NEWS.md changes.
 git pull
 # Create the final release CHANGELOGs and tags, and push.
-yarn lerna version --conventional-graduate
+yarn lerna version --no-push --conventional-graduate
+git push
 ```
 
-Then you can run:
+Then you can run the following :
 
 ```sh
 # Build all package generated files.
 yarn install
 yarn build
-# Pulblish to NPM.
+# Publish to NPM. NOTE: You may have to repeat this several times if there are failures.
 yarn lerna publish from-package
+# Push the released non-alpha tags:
+./scripts/get-released-tags | xargs git push origin
 ```
 
-Merge the release PR into master.  DO NOT REBASE OR SQUASH OR YOU WILL LOSE YOUR TAGS.
+Merge the release PR into master.  DO NOT REBASE OR SQUASH OR YOU WILL LOSE REFERENCES TO YOUR TAGS.
 
 ## More subtlety
 
