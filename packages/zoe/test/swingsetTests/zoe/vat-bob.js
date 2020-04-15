@@ -448,7 +448,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       );
 
       // bob checks the price of 3 moola. The price is 1 simolean
-      const simoleanAmounts = await E(publicAPI).getPrice(
+      const simoleanAmounts = await E(publicAPI).getCurrentPrice(
         harden({ TokenA: moola(3) }),
       );
       log(`simoleanAmounts `, simoleanAmounts);
@@ -474,7 +474,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       await E(simoleanPurseP).deposit(simoleanPayout1);
 
       // Bob looks up the price of 3 simoleans. It's 5 moola
-      const moolaAmounts = await E(publicAPI).getPrice(
+      const moolaAmounts = await E(publicAPI).getCurrentPrice(
         harden({ TokenB: simoleans(3) }),
       );
       log(`moolaAmounts `, moolaAmounts);

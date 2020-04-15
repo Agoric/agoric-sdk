@@ -6,7 +6,7 @@ import { HandledPromise } from '@agoric/eventual-send';
 export const defaultRejectMsg = `The offer was invalid. Please check your refund.`;
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
-export const getKeys = obj => harden(Object.getOwnPropertyNames(obj || {}));
+const getKeys = obj => harden(Object.getOwnPropertyNames(obj || {}));
 const getKeysSorted = obj =>
   harden(Object.getOwnPropertyNames(obj || {}).sort());
 
@@ -43,6 +43,7 @@ export const makeZoeHelpers = zcf => {
   };
 
   const helpers = harden({
+    getKeys,
     assertKeywords: expected => {
       const { issuerKeywordRecord } = zcf.getInstanceRecord();
       const actual = getKeysSorted(issuerKeywordRecord);
