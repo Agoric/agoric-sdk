@@ -99,7 +99,9 @@ test('autoSwap with valid offers', async t => {
     t.equals(bobInstallationId, installationHandle);
 
     // Bob looks up the price of 3 moola in simoleans
-    const simoleanAmounts = bobAutoswap.getPrice(harden({ TokenA: moola(3) }));
+    const simoleanAmounts = bobAutoswap.getCurrentPrice(
+      harden({ TokenA: moola(3) }),
+    );
     t.deepEquals(simoleanAmounts, simoleans(1));
 
     // Bob escrows
@@ -136,7 +138,9 @@ test('autoSwap with valid offers', async t => {
     });
 
     // Bob looks up the price of 3 simoleans
-    const moolaAmounts = bobAutoswap.getPrice(harden({ TokenB: simoleans(3) }));
+    const moolaAmounts = bobAutoswap.getCurrentPrice(
+      harden({ TokenB: simoleans(3) }),
+    );
     t.deepEquals(moolaAmounts, moola(5));
 
     // Bob makes another offer and swaps
@@ -304,7 +308,7 @@ test('autoSwap - test fee', async t => {
     t.equals(bobInstallationId, installationHandle);
 
     // Bob looks up the price of 1000 moola in simoleans
-    const simoleanAmounts = bobAutoswap.getPrice(
+    const simoleanAmounts = bobAutoswap.getCurrentPrice(
       harden({ TokenA: moola(1000) }),
     );
     t.deepEquals(simoleanAmounts, simoleans(906));

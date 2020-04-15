@@ -3,7 +3,12 @@ import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
-import { makeConstProductBC, makeZoeHelpers } from '../contractSupport';
+import {
+  getCurrentPrice,
+  calcLiqExtentToMint,
+  calcExtentToRemove,
+  makeZoeHelpers,
+} from '../contractSupport';
 
 // Autoswap is a rewrite of Uniswap. Please see the documentation for
 // more https://agoric.com/documentation/zoe/guide/contracts/autoswap.html
@@ -33,11 +38,6 @@ export const makeContract = harden(zcf => {
       makeEmptyOffer,
       inviteAnOffer,
     } = makeZoeHelpers(zcf);
-    const {
-      getPrice,
-      calcLiqExtentToMint,
-      calcAmountsToRemove,
-    } = makeConstProductBC(zcf);
 
     return makeEmptyOffer().then(poolHandle => {
       const getPoolAllocation = () => zcf.getCurrentAllocation(poolHandle);
@@ -52,7 +52,11 @@ export const makeContract = harden(zcf => {
         }
 
         const poolAllocation = getPoolAllocation();
-        const { outputExtent, newInputReserve, newOutputReserve } = getPrice(
+        const {
+          outputExtent,
+          newInputReserve,
+          newOutputReserve,
+        } = getCurrentPrice(
           harden({
             inputExtent: proposal.give[giveKeyword].extent,
             inputReserve: poolAllocation[giveKeyword].extent,
@@ -203,13 +207,30 @@ export const makeContract = harden(zcf => {
 
         const poolAllocation = getPoolAllocation();
 
-        const newUserAmounts = calcAmountsToRemove(
-          harden({
-            liqTokenSupply,
-            poolAllocation,
-            liquidityExtentIn,
-          }),
+        const newUserTokenAAmount = amountMaths.TokenA.make(
+          calcExtentToRemove(
+            harden({
+              liqTokenSupply,
+              poolExtent: poolAllocation.TokenA.extent,
+              liquidityExtentIn,
+            }),
+          ),
         );
+        const newUserTokenBAmount = amountMaths.TokenB.make(
+          calcExtentToRemove(
+            harden({
+              liqTokenSupply,
+              poolExtent: poolAllocation.TokenB.extent,
+              liquidityExtentIn,
+            }),
+          ),
+        );
+
+        const newUserAmounts = harden({
+          TokenA: newUserTokenAAmount,
+          TokenB: newUserTokenBAmount,
+          Liquidity: amountMaths.Liquidity.getEmpty(),
+        });
 
         const newPoolAmounts = harden({
           TokenA: amountMaths.TokenA.subtract(
@@ -252,16 +273,16 @@ export const makeContract = harden(zcf => {
         invite: makeAddLiquidityInvite(),
         publicAPI: {
           /**
-           * `getPrice` calculates the result of a trade, given a certain amount
+           * `getCurrentPrice` calculates the result of a trade, given a certain amount
            * of digital assets in.
            * @param {object} amountInObj - the amount of digital
            * assets to be sent in, keyed by keyword
            */
-          getPrice: amountInObj => {
+          getCurrentPrice: amountInObj => {
             const inKeywords = Object.getOwnPropertyNames(amountInObj);
             assert(
               inKeywords.length === 1,
-              details`argument to 'getPrice' must have one keyword`,
+              details`argument to 'getCurrentPrice' must have one keyword`,
             );
             const [inKeyword] = inKeywords;
             assert(
@@ -275,7 +296,7 @@ export const makeContract = harden(zcf => {
             const inputReserve = poolAllocation[inKeyword].extent;
             const outKeyword = inKeyword === 'TokenA' ? 'TokenB' : 'TokenA';
             const outputReserve = poolAllocation[outKeyword].extent;
-            const { outputExtent } = getPrice(
+            const { outputExtent } = getCurrentPrice(
               harden({
                 inputExtent,
                 inputReserve,

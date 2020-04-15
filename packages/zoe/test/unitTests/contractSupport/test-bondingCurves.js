@@ -1,18 +1,16 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
-import harden from '@agoric/harden';
 
-import { makeConstProductBC } from '../../../src/contractSupport';
+import { getCurrentPrice } from '../../../src/contractSupport';
 
 const testGetPrice = (t, input, expectedOutput) => {
-  const zoe = harden({});
-  const { getPrice } = makeConstProductBC(zoe);
-
-  const output = getPrice(input);
+  const output = getCurrentPrice(input);
   t.deepEquals(output, expectedOutput);
 };
 
-test('getPrice ok 1', t => {
+// If these tests of `getCurrentPrice` fail, it would indicate that we have
+// diverged from the calculation in the Uniswap paper.
+test('getCurrentPrice ok 1', t => {
   t.plan(1);
   try {
     const input = {
@@ -31,7 +29,7 @@ test('getPrice ok 1', t => {
   }
 });
 
-test('getPrice ok 2', t => {
+test('getCurrentPrice ok 2', t => {
   t.plan(1);
   try {
     const input = {
@@ -50,7 +48,7 @@ test('getPrice ok 2', t => {
   }
 });
 
-test('getPrice ok 3', t => {
+test('getCurrentPrice ok 3', t => {
   t.plan(1);
   try {
     const input = {
@@ -69,7 +67,7 @@ test('getPrice ok 3', t => {
   }
 });
 
-test('getPrice reverse x and y amounts', t => {
+test('getCurrentPrice reverse x and y amounts', t => {
   t.plan(1);
   try {
     // Note: this is now the same test as the one above because we are
@@ -90,7 +88,7 @@ test('getPrice reverse x and y amounts', t => {
   }
 });
 
-test('getPrice ok 4', t => {
+test('getCurrentPrice ok 4', t => {
   t.plan(1);
   try {
     const input = {
@@ -102,6 +100,44 @@ test('getPrice ok 4', t => {
       outputExtent: 9,
       newInputReserve: 1010,
       newOutputReserve: 1,
+    };
+    testGetPrice(t, input, expectedOutput);
+  } catch (e) {
+    t.assert(false, e);
+  }
+});
+
+test('getCurrentPrice ok 5', t => {
+  t.plan(1);
+  try {
+    const input = {
+      inputReserve: 100,
+      outputReserve: 50,
+      inputExtent: 17,
+    };
+    const expectedOutput = {
+      outputExtent: 7,
+      newInputReserve: 117,
+      newOutputReserve: 43,
+    };
+    testGetPrice(t, input, expectedOutput);
+  } catch (e) {
+    t.assert(false, e);
+  }
+});
+
+test('getCurrentPrice ok 6', t => {
+  t.plan(1);
+  try {
+    const input = {
+      outputReserve: 117,
+      inputReserve: 43,
+      inputExtent: 7,
+    };
+    const expectedOutput = {
+      outputExtent: 16,
+      newInputReserve: 50,
+      newOutputReserve: 101,
     };
     testGetPrice(t, input, expectedOutput);
   } catch (e) {

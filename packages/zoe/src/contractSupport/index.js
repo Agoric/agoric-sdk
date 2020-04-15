@@ -1,6 +1,10 @@
 export { secondPriceLogic, closeAuction } from './auctions';
 
-export { makeConstProductBC } from './bondingCurves';
+export {
+  getCurrentPrice,
+  calcLiqExtentToMint,
+  calcExtentToRemove,
+} from './bondingCurves';
 
 export { natSafeMath } from './safeMath';
 
