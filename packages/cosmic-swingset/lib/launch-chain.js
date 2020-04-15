@@ -115,11 +115,11 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
     await controller.run();
   }
 
-  async function doBridgeInbound(arg1, arg2 XXX) {
+  async function doBridgeInbound(source, body) {
     console.log(`doBridgeInbound`);
     // the inbound bridge will push messages onto the kernel run-queue for
     // delivery+dispatch to some handler vat
-    bridgeInbound(arg1, arg2);
+    bridgeInbound(source, body);
     await controller.run();
   }
 
@@ -140,7 +140,7 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
   );
   return {
     deliverInbound,
-    bridgeInbound,
+    doBridgeInbound,
     // bridgeOutbound,
     beginBlock,
     saveChainState,

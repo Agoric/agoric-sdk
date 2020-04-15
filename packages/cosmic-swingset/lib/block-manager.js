@@ -20,7 +20,7 @@ const getBase64ToBytes = data64 =>
 export default function makeBlockManager(
   {
     deliverInbound,
-    bridgeInbound,
+    doBridgeInbound,
     // bridgeOutbound
     beginBlock,
     saveChainState,
@@ -115,8 +115,9 @@ export default function makeBlockManager(
 
       case IBC_PACKET: {
         console.error(`FIXME: Got IBC packet; just pingpong`, action);
-        // action.type, action.subtype
-        bridgeInbound('ibc', action stuff XXX); // action: type 'ibc', subtype
+        // action.type, action.subtype ??
+        // maybe p = doBridgeInbound..
+        await doBridgeInbound('ibc', action);
 
         const ibcChannel = getIBCChannel(action);
 
