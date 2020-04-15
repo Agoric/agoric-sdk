@@ -8,7 +8,6 @@ import {
   unparse,
   makeEchoChannelHandler,
   makeNetworkPeer,
-  bytesToString,
   makeRouter,
 } from '../src/vats/network';
 
@@ -18,11 +17,11 @@ const log = false ? console.log : () => {};
 
 /**
  * @param {*} t
- * @returns {import('../src/network.js').PeerHandler} A testing handler
+ * @returns {import('../src/vats/network').PeerHandler} A testing handler
  */
 const makePeerHandler = t => {
   /**
-   * @type {import('../src/network.js').ListenHandler}
+   * @type {import('../src/vats/network').ListenHandler}
    */
   let l;
   let lp;
@@ -33,7 +32,7 @@ const makePeerHandler = t => {
     async onConnect(port, remoteAddr) {
       t.assert(port, `port is tracked in onConnect`);
       t.assert(remoteAddr, `remote address is supplied to onConnect`);
-      log('connected', port.getLocalAddress(), remoteAddr);
+      console.log('connected', port.getLocalAddress(), remoteAddr, l);
       return lp ? l.onAccept(lp, remoteAddr, l) : makeEchoChannelHandler();
     },
     async onListen(port, listenHandler) {
@@ -64,7 +63,7 @@ test('handled peer', async t => {
         async onOpen(channel) {
           const ack = await channel.send('ping');
           // log(ack);
-          t.equals(bytesToString(ack), 'ping', 'received pong');
+          t.equals(`${ack}`, 'ping', 'received pong');
           channel.close();
         },
         async onClose(_channel, reason) {
@@ -72,7 +71,7 @@ test('handled peer', async t => {
           closed.resolve();
         },
         async onReceive(_channel, bytes) {
-          t.equals(bytesToString(bytes), 'ping');
+          t.equals(`${bytes}`, 'ping');
           return 'pong';
         },
       }),
@@ -94,75 +93,73 @@ test('peer channel listen', async t => {
     const port = await peer.bind('/ibc/self/ordered/some-portname');
 
     /**
-     * @type {import('../src/network').ListenHandler}
+     * @type {import('../src/vats/network').ListenHandler}
      */
-    let listener;
-    port.addListener(
-      harden({
-        async onListen(p, listenHandler) {
-          t.equals(p, port, `port is tracked in onListen`);
-          t.assert(listenHandler, `listenHandler is tracked in onListen`);
-          listener = listenHandler;
-        },
-        async onAccept(p, remoteAddr, listenHandler) {
-          t.assert(remoteAddr, `remote address is passed to onAccept`);
-          t.equals(p, port, `port is tracked in onAccept`);
-          t.equals(
-            listenHandler,
-            listener,
-            `listenHandler is tracked in onAccept`,
-          );
-          let handler;
-          return harden({
-            async onOpen(channel, channelHandler) {
-              t.assert(channelHandler, `channelHandler is tracked in onOpen`);
-              handler = channelHandler;
-              const ack = await channel.send('ping');
-              t.equals(bytesToString(ack), 'ping', 'received pong');
-              channel.close();
-            },
-            async onClose(c, reason, channelHandler) {
-              t.equals(
-                channelHandler,
-                handler,
-                `channelHandler is tracked in onClose`,
-              );
-              handler = undefined;
-              t.assert(c, 'channel is passed to onClose');
-              t.equals(reason, undefined, 'no close reason');
-              closed.resolve();
-            },
-            async onReceive(c, packet, channelHandler) {
-              t.equals(
-                channelHandler,
-                handler,
-                `channelHandler is tracked in onReceive`,
-              );
-              t.assert(c, 'channel is passed to onReceive');
-              t.equals(bytesToString(packet), 'ping', 'expected ping');
-              return 'pong';
-            },
-          });
-        },
-        async onError(p, rej, listenHandler) {
-          t.equals(p, port, `port is tracked in onError`);
-          t.equals(
-            listenHandler,
-            listener,
-            `listenHandler is tracked in onError`,
-          );
-          t.isNot(rej, rej, 'unexpected error');
-        },
-        async onRemove(p, listenHandler) {
-          t.equals(
-            listenHandler,
-            listener,
-            `listenHandler is tracked in onRemove`,
-          );
-          t.equals(p, port, `port is passed to onReset`);
-        },
-      }),
-    );
+    const listener = harden({
+      async onListen(p, listenHandler) {
+        t.equals(p, port, `port is tracked in onListen`);
+        t.assert(listenHandler, `listenHandler is tracked in onListen`);
+      },
+      async onAccept(p, remoteAddr, listenHandler) {
+        t.assert(remoteAddr, `remote address is passed to onAccept`);
+        t.equals(p, port, `port is tracked in onAccept`);
+        t.equals(
+          listenHandler,
+          listener,
+          `listenHandler is tracked in onAccept`,
+        );
+        let handler;
+        return harden({
+          async onOpen(channel, channelHandler) {
+            t.assert(channelHandler, `channelHandler is tracked in onOpen`);
+            handler = channelHandler;
+            const ack = await channel.send('ping');
+            t.equals(`${ack}`, 'ping', 'received pong');
+            channel.close();
+          },
+          async onClose(c, reason, channelHandler) {
+            t.equals(
+              channelHandler,
+              handler,
+              `channelHandler is tracked in onClose`,
+            );
+            handler = undefined;
+            t.assert(c, 'channel is passed to onClose');
+            t.equals(reason, undefined, 'no close reason');
+            closed.resolve();
+          },
+          async onReceive(c, packet, channelHandler) {
+            t.equals(
+              channelHandler,
+              handler,
+              `channelHandler is tracked in onReceive`,
+            );
+            t.assert(c, 'channel is passed to onReceive');
+            t.equals(`${packet}`, 'ping', 'expected ping');
+            return 'pong';
+          },
+        });
+      },
+      async onError(p, rej, listenHandler) {
+        t.equals(p, port, `port is tracked in onError`);
+        t.equals(
+          listenHandler,
+          listener,
+          `listenHandler is tracked in onError`,
+        );
+        t.isNot(rej, rej, 'unexpected error');
+      },
+      async onRemove(p, listenHandler) {
+        t.equals(
+          listenHandler,
+          listener,
+          `listenHandler is tracked in onRemove`,
+        );
+        t.equals(p, port, `port is passed to onReset`);
+      },
+    });
+
+    await port.addListener(listener);
 
     const port2 = await peer.bind('/ibc/self');
     const channelHandler = makeEchoChannelHandler();
@@ -207,6 +204,11 @@ test('routing', async t => {
         ['/if/', 'a'],
       ],
       'get routes matches all',
+    );
+    t.deepEquals(
+      router.getRoutes('/if/foob'),
+      [['/if/', 'a']],
+      'get routes needs separator',
     );
     router.register('/ibc/self', 'c');
     t.deepEquals(

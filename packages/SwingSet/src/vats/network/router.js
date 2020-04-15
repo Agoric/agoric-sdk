@@ -1,8 +1,15 @@
 // @ts-check
-import makeStore from '@agoric/store';
+import { E as defaultE } from '@agoric/eventual-send';
 import rawHarden from '@agoric/harden';
+import makeStore from '@agoric/store';
+import { makeNetworkPeer } from './network';
 
 const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
+
+/**
+ * @typedef {import('./network').Peer} Peer
+ * @typedef {import('./network').PeerHandler} PeerHandler
+ */
 
 /**
  * @template T,U
@@ -57,5 +64,54 @@ export default function makeRouter(sep = '/') {
       }
       prefixToRoute.delete(prefix);
     },
+  });
+}
+/**
+ * @typedef {Peer} RoutePeer
+ * @property {(prefix: string, peerHandler: PeerHandler) => void} registerPeerHandler
+ * @property {(prefix: string, peerHandler: PeerHandler) => void} unregisterPeerHandler
+ */
+
+/**
+ * Create a router that behaves like a Peer.
+ *
+ * @param {string} [sep='/'] the route separator
+ * @param {typeof defaultE} [E=defaultE] Eventual sender
+ */
+export function makeRouterPeer(sep = '/', E = defaultE) {
+  const router = makeRouter(sep);
+  const peers = makeStore('prefix');
+  const peerHandlers = makeStore('prefix');
+
+  function registerPeerHandler(prefix, peerHandler) {
+    const peer = makeNetworkPeer(peerHandler);
+    router.register(prefix, peer);
+    peers.init(prefix, peer);
+    peerHandlers.init(prefix, peerHandler);
+  }
+
+  function unregisterPeerHandler(prefix, peerHandler) {
+    const ph = peerHandlers.get(prefix);
+    if (ph !== peerHandler) {
+      throw TypeError(`Peer handler is not registered at prefix ${prefix}`);
+    }
+    router.unregister(prefix, ph);
+    peers.delete(prefix);
+    peerHandlers.delete(prefix);
+  }
+
+  /** @type {Peer['bind']} */
+  async function bind(localAddr) {
+    const [route] = router.getRoutes(localAddr);
+    if (route === undefined) {
+      throw TypeError(`No registered router for ${localAddr}`);
+    }
+    return E(route[1]).bind(localAddr);
+  }
+
+  return harden({
+    bind,
+    registerPeerHandler,
+    unregisterPeerHandler,
   });
 }

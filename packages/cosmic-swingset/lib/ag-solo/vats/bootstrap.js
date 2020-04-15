@@ -1,8 +1,12 @@
 import harden from '@agoric/harden';
 import { allComparable } from '@agoric/same-structure';
+import { makeLoopbackPeerHandler } from '@agoric/swingset-vat/src/vats/network';
+
 // this will return { undefined } until `ag-solo set-gci-ingress`
 // has been run to update gci.js
 import { GCI } from './gci';
+import { makeIBCPeerHandler } from './ibc';
+import { makeBridgeManager } from './bridge';
 
 console.debug(`loading bootstrap.js`);
 
@@ -69,16 +73,18 @@ export default function setup(syscall, state, helpers) {
         const chainTimerService = await E(vats.timer).createTimerService(
           timerDevice,
         );
-        const zoe = await E(vats.zoe).getZoe();
-        const contractHost = await E(vats.host).makeHost();
 
         // Make the other demo mints
         const issuerNames = ['moola', 'simolean'];
-        const issuers = await Promise.all(
-          issuerNames.map(issuerName =>
-            E(vats.mints).makeMintAndIssuer(issuerName),
+        const [zoe, contractHost, issuers] = Promise.all([
+          E(vats.zoe).getZoe(),
+          E(vats.host).makeHost(),
+          Promise.all(
+            issuerNames.map(issuerName =>
+              E(vats.mints).makeMintAndIssuer(issuerName),
+            ),
           ),
-        );
+        ]);
 
         // Register all of the starting issuers.
         const issuerInfo = await Promise.all(
@@ -95,10 +101,13 @@ export default function setup(syscall, state, helpers) {
         );
         return harden({
           async createUserBundle(_nickname) {
+            // Bind to a random port and provide it for the user to have.
+            const ibcport = await E(vats.network).bind('/ibc/self');
             const bundle = harden({
               chainTimerService,
               sharingService,
               contractHost,
+              ibcport,
               registrar,
               zoe,
             });
@@ -114,6 +123,28 @@ export default function setup(syscall, state, helpers) {
             return harden({ payments, issuerInfo, bundle });
           },
         });
+      }
+
+      function registerNetworkPeers(networkVat, bridgeMgr, isOnChain = false) {
+        const ps = [];
+        // Every vat has a loopback device.
+        ps.push(
+          E(networkVat).registerPeerHandler(
+            '/loopback',
+            makeLoopbackPeerHandler(),
+          ),
+        );
+        if (isOnChain) {
+          // We have access to IBC.
+          // TODO: Implement when off-chain, too!
+          ps.push(
+            E(networkVat).registerPeerHandler(
+              '/ibc',
+              makeIBCPeerHandler(bridgeMgr),
+            ),
+          );
+        }
+        return Promise.all(ps);
       }
 
       // objects that live in the client's solo vat. Some services should only
@@ -174,18 +205,15 @@ export default function setup(syscall, state, helpers) {
             uploads,
             spawner,
             wallet,
+            network: vats.network,
             http: httpRegCallback,
           }),
         );
       }
 
-      async function connectIBC(IBCVat, bridgeDevice) {
-        const outbound = await E(IBCVat).connectToDevice(bridgeDevice);
-        return outbound; // useful for E(outbound).callOutbound
-      }
-
       return harden({
         async bootstrap(argv, vats, devices) {
+          const bridgeManager = makeBridgeManager(E, D, devices.bridge);
           const [ROLE, bootAddress, additionalAddresses] = parseArgs(argv);
 
           async function addRemote(addr) {
@@ -213,7 +241,7 @@ export default function setup(syscall, state, helpers) {
           switch (ROLE) {
             case 'chain':
             case 'one_chain': {
-              const IBCOutbound = await connectIBC(vats.ibc, devices.bridge);
+              await registerNetworkPeers(vats.network, bridgeManager, true);
 
               // provisioning vat can ask the demo server for bundles, and can
               // register client pubkeys with comms
@@ -247,8 +275,10 @@ export default function setup(syscall, state, helpers) {
               if (!GCI) {
                 throw new Error(`controller must be given GCI`);
               }
-              // Wire up the http server.
 
+              await registerNetworkPeers(vats.network, bridgeManager);
+
+              // Wire up the http server.
               await setupCommandDevice(vats.http, devices.command, {
                 controller: true,
               });
@@ -273,6 +303,7 @@ export default function setup(syscall, state, helpers) {
               if (!GCI) {
                 throw new Error(`client must be given GCI`);
               }
+              await registerNetworkPeers(vats.network, bridgeManager);
               await setupCommandDevice(vats.http, devices.command, {
                 client: true,
               });
@@ -304,8 +335,7 @@ export default function setup(syscall, state, helpers) {
             case 'two_chain': {
               // scenario #2: one-node chain running on localhost, solo node on
               // localhost, HTML frontend on localhost. Single-player mode.
-
-              const IBCOutbound = await connectIBC(vats.ibc, devices.bridge);
+              await registerNetworkPeers(vats.network, bridgeManager);
 
               // bootAddress holds the pubkey of localclient
               const chainBundler = await makeChainBundler(vats, devices.timer);
@@ -330,6 +360,7 @@ export default function setup(syscall, state, helpers) {
               if (!GCI) {
                 throw new Error(`client must be given GCI`);
               }
+              await registerNetworkPeers(vats.network, bridgeManager);
               await setupCommandDevice(vats.http, devices.command, {
                 client: true,
               });
@@ -361,6 +392,9 @@ export default function setup(syscall, state, helpers) {
             case 'three_client': {
               // scenario #3: no chain. solo node on localhost with HTML
               // frontend. Limited subset of demo runs inside the solo node.
+
+              // We pretend we're on-chain.
+              await registerNetworkPeers(vats.network, bridgeManager, true);
 
               // Shared Setup (virtual chain side) ///////////////////////////
               await setupCommandDevice(vats.http, devices.command, {
