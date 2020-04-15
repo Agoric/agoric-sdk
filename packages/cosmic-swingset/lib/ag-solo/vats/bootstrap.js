@@ -101,8 +101,9 @@ export default function setup(syscall, state, helpers) {
         );
         return harden({
           async createUserBundle(_nickname) {
-            // Bind to a random port and provide it for the user to have.
-            const ibcport = await E(vats.network).bind('/ibc/self');
+            // Bind to a random port on the IBC implementation and provide
+            // it for the user to have.
+            const ibcport = await E(vats.network).bind('/loopback');
             const bundle = harden({
               chainTimerService,
               sharingService,
@@ -140,7 +141,9 @@ export default function setup(syscall, state, helpers) {
           ps.push(
             E(networkVat).registerPeerHandler(
               '/ibc',
-              makeIBCPeerHandler(bridgeMgr),
+              typeof makeIBCPeerHandler === 'undefined'
+                ? makeLoopbackPeerHandler()
+                : makeIBCPeerHandler(bridgeMgr),
             ),
           );
         }
@@ -213,7 +216,8 @@ export default function setup(syscall, state, helpers) {
 
       return harden({
         async bootstrap(argv, vats, devices) {
-          const bridgeManager = devices.bridge && makeBridgeManager(E, D, devices.bridge);
+          const bridgeManager =
+            devices.bridge && makeBridgeManager(E, D, devices.bridge);
           const [ROLE, bootAddress, additionalAddresses] = parseArgs(argv);
 
           async function addRemote(addr) {

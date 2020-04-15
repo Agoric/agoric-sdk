@@ -102,12 +102,12 @@ export function makeRouterPeer(sep = '/', E = defaultE) {
   }
 
   /** @type {Peer['bind']} */
-  async function bind(localAddr) {
-    const [route] = router.getRoutes(localAddr);
+  async function bind(prefix, fresh = true) {
+    const [route] = router.getRoutes(prefix);
     if (route === undefined) {
-      throw TypeError(`No registered router for ${localAddr}`);
+      throw TypeError(`No registered router for ${prefix}`);
     }
-    return E(route[1]).bind(localAddr);
+    return E(route[1]).bind(prefix, fresh);
   }
 
   return harden({

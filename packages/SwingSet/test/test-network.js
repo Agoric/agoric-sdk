@@ -7,6 +7,7 @@ import {
   parse,
   unparse,
   makeEchoChannelHandler,
+  makeLoopbackPeerHandler,
   makeNetworkPeer,
   makeRouter,
 } from '../src/vats/network';
@@ -172,6 +173,60 @@ test('peer channel listen', async t => {
             await channelHandler.onOpen(channel, c);
           }
           channel.send('ping');
+        },
+      }),
+    );
+
+    await closed.promise;
+
+    await port.removeListener(listener);
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  } finally {
+    t.end();
+  }
+});
+
+test.skip('loopback peer', async t => {
+  try {
+    const peer = makeNetworkPeer(makeLoopbackPeerHandler());
+
+    const closed = producePromise();
+
+    const port = await peer.bind('/loopback/foo');
+
+    /**
+     * @type {import('../src/vats/network').ListenHandler}
+     */
+    await port.addListener(
+      harden({
+        async onAccept(_p, _remoteAddr, _listenHandler) {
+          return harden({
+            async onReceive(c, packet, _channelHandler) {
+              t.equals(`${packet}`, 'ping', 'expected ping');
+              t.equals(
+                `${await c.send('pong')}`,
+                'pongack',
+                'expected pongack',
+              );
+              return 'pingack';
+            },
+          });
+        },
+      }),
+    );
+
+    const port2 = await peer.bind('/loopback/bar');
+    await port2.connect(
+      port.getLocalAddress(),
+      harden({
+        async onOpen(c, _channelHandler) {
+          t.equals(`${await c.send('ping')}`, 'pingack', 'expected pingack');
+        },
+        async onReceive(c, packet, _channelHandler) {
+          t.equals(`${packet}`, 'pong', 'expected pong');
+          Promise.resolve().then(() => c.close());
+          return 'pongack';
         },
       }),
     );

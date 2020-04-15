@@ -23,7 +23,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
  * @typedef {Object} Peer The local peer
- * @property {(localAddr: Endpoint) => Promise<Port>} bind Claim a port
+ * @property {(prefix: Endpoint, fresh = true) => Promise<Port>} bind Claim a specific port, or a fresh name
  */
 
 /**
@@ -227,19 +227,31 @@ export function makeNetworkPeer(peerHandler, E = defaultE) {
   /**
    * @type {Store<string, Port>}
    */
-  const boundPorts = makeStore();
+  const boundPorts = makeStore('localAddr');
+  let nonce = 0;
 
   // Wire up the local peer to the handler.
   E(peerHandler).onCreate(peerImpl, peerHandler);
 
   /**
-   * @param {Endpoint} localAddr
+   * @param {Endpoint} prefix
+   * @param {boolean} [fresh=true]
    */
-  const bind = async localAddr => {
+  const bind = async (prefix, fresh = true) => {
     /**
      * @type {ListenHandler}
      */
     let listening;
+
+    let localAddr = prefix;
+    // TODO: Generate fresh names the same way as the registrar!
+    while (fresh) {
+      nonce += 1;
+      localAddr = `${prefix}/fresh/${nonce}`;
+      if (!boundPorts.has(localAddr)) {
+        break;
+      }
+    }
 
     /**
      * @type {Port}
@@ -293,6 +305,7 @@ export function makeNetworkPeer(peerHandler, E = defaultE) {
       },
     });
 
+    console.log(`binding ${localAddr}`)
     boundPorts.init(localAddr, port);
     return port;
   };
@@ -330,15 +343,15 @@ export function makeLoopbackPeerHandler(E = defaultE) {
 
   return harden({
     // eslint-disable-next-line no-empty-function
-    async onCreate(_peer, _impl) {},
-    async onConnect(_port, localAddr, remoteAddr) {
+    async onCreate(_peer, _peerHandler) {},
+    async onConnect(_port, localAddr, remoteAddr, _peerHandler) {
       const [lport, lhandler] = listeners.get(localAddr);
       return E(lhandler).onAccept(lport, remoteAddr, lhandler);
     },
-    async onListen(port, localAddr, listenHandler) {
+    async onListen(port, localAddr, listenHandler, _peerHandler) {
       listeners.init(localAddr, [port, listenHandler]);
     },
-    async onListenRemove(port, localAddr, listenHandler) {
+    async onListenRemove(port, localAddr, listenHandler, _peerHandler) {
       const [lport, lhandler] = listeners.get(localAddr);
       if (lport !== port) {
         throw Error(`Port does not match listener on ${localAddr}`);
