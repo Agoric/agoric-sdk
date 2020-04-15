@@ -1,6 +1,9 @@
 import harden from '@agoric/harden';
 import { allComparable } from '@agoric/same-structure';
-import { makeLoopbackPeerHandler } from '@agoric/swingset-vat/src/vats/network';
+import {
+  makeLoopbackPeerHandler,
+  makeEchoChannelHandler,
+} from '@agoric/swingset-vat/src/vats/network';
 
 // this will return { undefined } until `ag-solo set-gci-ingress`
 // has been run to update gci.js
@@ -101,9 +104,9 @@ export default function setup(syscall, state, helpers) {
         );
         return harden({
           async createUserBundle(_nickname) {
-            // Bind to a random port on the IBC implementation and provide
-            // it for the user to have.
-            const ibcport = await E(vats.network).bind('/loopback');
+            // Bind to a fresh port (unspecified name) on the IBC implementation
+            // and provide it for the user to have.
+            const ibcport = await E(vats.network).bind('/ibc/*/ordered/');
             const bundle = harden({
               chainTimerService,
               sharingService,
@@ -126,28 +129,45 @@ export default function setup(syscall, state, helpers) {
         });
       }
 
-      function registerNetworkPeers(networkVat, bridgeMgr) {
+      async function registerNetworkPeers(networkVat, bridgeMgr) {
         const ps = [];
         // Every vat has a loopback device.
         ps.push(
           E(networkVat).registerPeerHandler(
-            '/loopback',
+            '/local',
             makeLoopbackPeerHandler(),
           ),
         );
-        if (bridgeMgr) {
+        if (false && bridgeMgr) {
           // TODO: Implement when off-chain, too!
           // We have access to the bridge, and therefore IBC.
           ps.push(
             E(networkVat).registerPeerHandler(
               '/ibc',
-              typeof makeIBCPeerHandler === 'undefined'
-                ? makeLoopbackPeerHandler()
-                : makeIBCPeerHandler(bridgeMgr),
+              makeIBCPeerHandler(bridgeMgr),
+            ),
+          );
+        } else if (bridgeMgr) {
+          ps.push(
+            E(networkVat).registerPeerHandler(
+              '/ibc',
+              makeLoopbackPeerHandler(),
             ),
           );
         }
-        return Promise.all(ps);
+        await Promise.all(ps);
+
+        if (bridgeMgr) {
+          // Add an echo listener to our /ibc network.
+          const port = await E(networkVat).bind('/ibc/*/ordered/echo');
+          E(port).addListener(
+            harden({
+              async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
+                return harden(makeEchoChannelHandler());
+              },
+            }),
+          );
+        }
       }
 
       // objects that live in the client's solo vat. Some services should only

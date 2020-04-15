@@ -73,7 +73,6 @@ export function makeBridgeManager(E, D, bridgeDevice) {
   }
 
   // We now manage the device.
-  console.log('trying', bridgeDevice);
   D(bridgeDevice).registerInboundHandler(bridgeHandler);
 
   return harden({

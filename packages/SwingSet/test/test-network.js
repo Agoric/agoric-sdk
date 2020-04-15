@@ -30,20 +30,27 @@ const makePeerHandler = t => {
     async onCreate(_peer, _impl) {
       log('created', _peer, _impl);
     },
-    async onConnect(port, remoteAddr) {
+    async onConnect(port, localAddr, remoteAddr) {
       t.assert(port, `port is tracked in onConnect`);
+      t.assert(localAddr, `local address is supplied to onConnect`);
       t.assert(remoteAddr, `remote address is supplied to onConnect`);
-      console.log('connected', port.getLocalAddress(), remoteAddr, l);
-      return lp ? l.onAccept(lp, remoteAddr, l) : makeEchoChannelHandler();
+      // console.log('connected', localAddr, remoteAddr, l);
+      if (lp) {
+        return l.onAccept(lp, localAddr, remoteAddr, l);
+      }
+      return makeEchoChannelHandler();
     },
-    async onListen(port, listenHandler) {
+    async onListen(port, localAddr, listenHandler) {
       t.assert(port, `port is tracked in onListen`);
+      t.assert(localAddr, `local address is supplied to onListen`);
       t.assert(listenHandler, `listen handler is tracked in onListen`);
       lp = port;
       l = listenHandler;
       log('listening', port.getLocalAddress(), listenHandler);
     },
-    async onListenRemove(port, listenHandler) {
+    async onListenRemove(port, localAddr, listenHandler) {
+      t.assert(port, `port is tracked in onListen`);
+      t.assert(localAddr, `local address is supplied to onListen`);
       t.equals(listenHandler, l, `listenHandler is tracked in onListenRemove`);
       l = undefined;
       lp = undefined;
@@ -57,9 +64,9 @@ test('handled peer', async t => {
     const peer = makeNetworkPeer(makePeerHandler(t));
 
     const closed = producePromise();
-    const port = await peer.bind('/ibc/self');
+    const port = await peer.bind('/ibc/*/ordered');
     await port.connect(
-      '/ibc/self/ordered/echo',
+      '/ibc/*/ordered/echo',
       harden({
         async onOpen(channel) {
           const ack = await channel.send('ping');
@@ -91,7 +98,7 @@ test('peer channel listen', async t => {
 
     const closed = producePromise();
 
-    const port = await peer.bind('/ibc/self/ordered/some-portname');
+    const port = await peer.bind('/net/ordered/ordered/some-portname');
 
     /**
      * @type {import('../src/vats/network').ListenHandler}
@@ -101,7 +108,8 @@ test('peer channel listen', async t => {
         t.equals(p, port, `port is tracked in onListen`);
         t.assert(listenHandler, `listenHandler is tracked in onListen`);
       },
-      async onAccept(p, remoteAddr, listenHandler) {
+      async onAccept(p, localAddr, remoteAddr, listenHandler) {
+        t.assert(localAddr, `local address is passed to onAccept`);
         t.assert(remoteAddr, `remote address is passed to onAccept`);
         t.equals(p, port, `port is tracked in onAccept`);
         t.equals(
@@ -162,10 +170,10 @@ test('peer channel listen', async t => {
 
     await port.addListener(listener);
 
-    const port2 = await peer.bind('/ibc/self');
+    const port2 = await peer.bind('/net/ordered');
     const channelHandler = makeEchoChannelHandler();
     await port2.connect(
-      '/ibc/self/ordered/some-portname',
+      '/net/ordered/ordered/some-portname',
       harden({
         ...channelHandler,
         async onOpen(channel, c) {
@@ -200,7 +208,7 @@ test.skip('loopback peer', async t => {
      */
     await port.addListener(
       harden({
-        async onAccept(_p, _remoteAddr, _listenHandler) {
+        async onAccept(_p, _localAddr, _remoteAddr, _listenHandler) {
           return harden({
             async onReceive(c, packet, _channelHandler) {
               t.equals(`${packet}`, 'ping', 'expected ping');
@@ -265,7 +273,7 @@ test('routing', async t => {
       [['/if/', 'a']],
       'get routes needs separator',
     );
-    router.register('/ibc/self', 'c');
+    router.register('/ibc/*/ordered', 'c');
     t.deepEquals(
       router.getRoutes('/if/foo'),
       [
@@ -275,25 +283,25 @@ test('routing', async t => {
       'get routes avoids nonmatching paths',
     );
     t.deepEquals(
-      router.getRoutes('/ibc/self'),
-      [['/ibc/self', 'c']],
+      router.getRoutes('/ibc/*/ordered'),
+      [['/ibc/*/ordered', 'c']],
       'direct match',
     );
     t.deepEquals(
-      router.getRoutes('/ibc/self/zot'),
-      [['/ibc/self', 'c']],
+      router.getRoutes('/ibc/*/ordered/zot'),
+      [['/ibc/*/ordered', 'c']],
       'prefix matches',
     );
-    t.deepEquals(router.getRoutes('/ibc/barfo'), [], 'no match');
+    t.deepEquals(router.getRoutes('/ibc/*/barfo'), [], 'no match');
 
     t.throws(
-      () => router.unregister('/ibc/self', 'a'),
+      () => router.unregister('/ibc/*/ordered', 'a'),
       /Router is not registered/,
       'unregister fails for no match',
     );
-    router.unregister('/ibc/self', 'c');
+    router.unregister('/ibc/*/ordered', 'c');
     t.deepEquals(
-      router.getRoutes('/ibc/self'),
+      router.getRoutes('/ibc/*/ordered'),
       [],
       'no match after unregistration',
     );

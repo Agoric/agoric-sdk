@@ -13,7 +13,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
  * @typedef {string|Buffer|ArrayBuffer} Data
- * @typedef {ArrayBuffer} Bytes
+ * @typedef {string} Bytes
  */
 
 /**
@@ -23,21 +23,21 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
  * @typedef {Object} Peer The local peer
- * @property {(prefix: Endpoint, fresh = true) => Promise<Port>} bind Claim a specific port, or a fresh name
+ * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if ending in '/', a fresh name
  */
 
 /**
  * @typedef {Object} Port A port that has been bound to a Peer
  * @property {() => Endpoint} getLocalAddress Get the locally bound name of this port
  * @property {(acceptHandler: ListenHandler) => void} addListener Begin accepting incoming channels
- * @property {(remote: Endpoint, channelHandler: ChannelHandler) => Promise<Channel>} connect Make an outbound channel
+ * @property {(remote: Endpoint, channelHandler: ChannelHandler = {}) => Promise<Channel>} connect Make an outbound channel
  * @property {(acceptHandler: ListenHandler) => void} removeListener Remove the currently-bound listener
  */
 
 /**
  * @typedef {Object} ListenHandler A handler for incoming channels
  * @property {(port: Port, l: ListenHandler) => Promise<void>} [onListen] The listener has been registered
- * @property {(port: Port, remote: Endpoint, l: ListenHandler) => Promise<ChannelHandler>} onAccept A new channel is incoming
+ * @property {(port: Port, local: Endpoint, remote: Endpoint, l: ListenHandler) => Promise<ChannelHandler>} onAccept A new channel is incoming
  * @property {(port: Port, rej: any, l: ListenHandler) => Promise<void>} [onError] There was an error while listening
  * @property {(port: Port, l: ListenHandler) => Promise<void>} [onRemove] The listener has been removed
  */
@@ -85,18 +85,16 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  * @returns {Bytes}
  */
 export function toBytes(data) {
+  // We really need marshallable TypedArrays.
   if (typeof data === 'string') {
-    data = Buffer.from(data, 'utf-8');
+    // eslint-disable-next-line no-bitwise
+    data = data.split('').map(c => c.charCodeAt(0));
   }
+
+  // We return the raw characters in the lower half of
+  // the String's representation.
   const buf = new Uint8Array(data);
-  const toString = () => String.fromCharCode.apply(null, buf);
-  Object.defineProperties(buf, {
-    toString: {
-      writable: false,
-      value: toString,
-    },
-  });
-  return buf;
+  return String.fromCharCode.apply(null, buf);
 }
 
 /**
@@ -106,11 +104,16 @@ export function toBytes(data) {
  * @return {string}
  */
 export function bytesToString(bytes) {
-  return Buffer.from(bytes).toString('utf-8');
+  return bytes;
 }
 
 const rethrowIfUnset = err => {
-  if (!(err instanceof TypeError) || !err.message.match(/is not a function$/)) {
+  // Ugly hack rather than being able to determine if the function
+  // exists.
+  if (
+    !(err instanceof TypeError) ||
+    !err.message.match(/target\[.*\] does not exist|is not a function$/)
+  ) {
     throw err;
   }
   return true;
@@ -234,24 +237,27 @@ export function makeNetworkPeer(peerHandler, E = defaultE) {
   E(peerHandler).onCreate(peerImpl, peerHandler);
 
   /**
-   * @param {Endpoint} prefix
-   * @param {boolean} [fresh=true]
+   * @param {Endpoint} localAddr
    */
-  const bind = async (prefix, fresh = true) => {
+  const bind = async localAddr => {
+    // Check if we are underspecified (ends in slash)
+    if (localAddr.endsWith('/')) {
+      for (;;) {
+        nonce += 1;
+        const newAddr = `${localAddr}${nonce}`;
+        if (!boundPorts.has(newAddr)) {
+          localAddr = newAddr;
+          break;
+        }
+      }
+    }
+
     /**
+     * Currently must be a single listenHandler.
+     * TODO: Do something sensible with multiple handlers?
      * @type {ListenHandler}
      */
     let listening;
-
-    let localAddr = prefix;
-    // TODO: Generate fresh names the same way as the registrar!
-    while (fresh) {
-      nonce += 1;
-      localAddr = `${prefix}/fresh/${nonce}`;
-      if (!boundPorts.has(localAddr)) {
-        break;
-      }
-    }
 
     /**
      * @type {Port}
@@ -296,7 +302,7 @@ export function makeNetworkPeer(peerHandler, E = defaultE) {
           .onRemove(port, listenHandler)
           .catch(rethrowIfUnset);
       },
-      async connect(remotePort, channelHandler) {
+      async connect(remotePort, channelHandler = {}) {
         /**
          * @type {Endpoint}
          */
@@ -305,7 +311,6 @@ export function makeNetworkPeer(peerHandler, E = defaultE) {
       },
     });
 
-    console.log(`binding ${localAddr}`)
     boundPorts.init(localAddr, port);
     return port;
   };
@@ -345,8 +350,8 @@ export function makeLoopbackPeerHandler(E = defaultE) {
     // eslint-disable-next-line no-empty-function
     async onCreate(_peer, _peerHandler) {},
     async onConnect(_port, localAddr, remoteAddr, _peerHandler) {
-      const [lport, lhandler] = listeners.get(localAddr);
-      return E(lhandler).onAccept(lport, remoteAddr, lhandler);
+      const [lport, lhandler] = listeners.get(remoteAddr);
+      return E(lhandler).onAccept(lport, remoteAddr, localAddr, lhandler);
     },
     async onListen(port, localAddr, listenHandler, _peerHandler) {
       listeners.init(localAddr, [port, listenHandler]);
