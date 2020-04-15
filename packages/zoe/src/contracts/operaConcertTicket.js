@@ -8,12 +8,12 @@ import { makeZoeHelpers } from '../contractSupport';
   - Contract creator: describes the contract with:
     - number of seats, show, date/time of start
     - expected (ERTP) amount per ticket (we assume all tickets cost the same)
-  - Smart Contract: 
+  - Smart Contract:
     - mints the tickets
     - provides the seats
-  - Auditorium (unique contract seat, usually taken by the contract creator): the person hosting 
+  - Auditorium (unique contract seat, usually taken by the contract creator): the person hosting
   the Opera show, selling the tickets and getting the payment back
-  - Ticket buyers (contract seat created on demand): 
+  - Ticket buyers (contract seat created on demand):
     - can see the available opera show seats
     - can consult the terms
     - can redeem the zoe invite with the proper payment to get the ticket back
@@ -22,7 +22,7 @@ import { makeZoeHelpers } from '../contractSupport';
   They are more trusted than the code of this contract
   As a consequence, they are going to be leveraged as much as possible by this contract
   to increase its trustworthiness and by the contract users
-  
+
 */
 
 // zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe

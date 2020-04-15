@@ -60,12 +60,11 @@ test('autoSwap with valid offers', async t => {
     };
 
     const {
-      seat: aliceSeat,
       payout: aliceAddLiquidityPayoutP,
-    } = await zoe.redeem(aliceInvite, aliceProposal, alicePayments);
+      outcome: liquidityOkP,
+    } = await zoe.offer(aliceInvite, aliceProposal, alicePayments);
 
-    const liquidityOk = await aliceSeat.addLiquidity();
-    t.equals(liquidityOk, 'Added liquidity.');
+    t.equals(await liquidityOkP, 'Added liquidity.');
 
     const liquidityPayments = await aliceAddLiquidityPayoutP;
     const liquidityPayout = await liquidityPayments.Liquidity;
@@ -81,7 +80,7 @@ test('autoSwap with valid offers', async t => {
     });
 
     // Alice creates an invite for autoswap and sends it to Bob
-    const bobInvite = publicAPI.makeInvite();
+    const bobInvite = publicAPI.makeSwapInvite();
 
     // Bob claims it
     const bobExclInvite = await inviteIssuer.claim(bobInvite);
@@ -104,15 +103,14 @@ test('autoSwap with valid offers', async t => {
     });
     const bobMoolaForSimPayments = harden({ TokenA: bobMoolaPayment });
 
-    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+    const { payout: bobPayoutP, outcome: offerOkP } = await zoe.offer(
       bobExclInvite,
       bobMoolaForSimProposal,
       bobMoolaForSimPayments,
     );
 
     // Bob swaps
-    const offerOk = bobSeat.swap();
-    t.equal(offerOk, 'Swap successfully completed.');
+    t.equal(await offerOkP, 'Swap successfully completed.');
 
     const bobPayout = await bobPayoutP;
 
@@ -135,7 +133,7 @@ test('autoSwap with valid offers', async t => {
     t.deepEquals(moolaAmounts, moola(5));
 
     // Bob makes another offer and swaps
-    const bobSecondInvite = bobAutoswap.makeInvite();
+    const bobSecondInvite = bobAutoswap.makeSwapInvite();
     const bobSimsForMoolaProposal = harden({
       want: { TokenA: moola(5) },
       give: { TokenB: simoleans(3) },
@@ -143,16 +141,15 @@ test('autoSwap with valid offers', async t => {
     const simsForMoolaPayments = harden({ TokenB: bobSimoleanPayment });
 
     const {
-      seat: bobSeatSimsForMoola,
       payout: bobSimsForMoolaPayoutP,
-    } = await zoe.redeem(
+      outcome: simsForMoolaOkP,
+    } = await zoe.offer(
       bobSecondInvite,
       bobSimsForMoolaProposal,
       simsForMoolaPayments,
     );
 
-    const simsForMoolaOk = bobSeatSimsForMoola.swap();
-    t.equal(simsForMoolaOk, 'Swap successfully completed.');
+    t.equal(await simsForMoolaOkP, 'Swap successfully completed.');
 
     const bobSimsForMoolaPayout = await bobSimsForMoolaPayoutP;
     const bobMoolaPayout2 = await bobSimsForMoolaPayout.TokenA;
@@ -171,23 +168,22 @@ test('autoSwap with valid offers', async t => {
 
     // Alice removes her liquidity
     // She's not picky...
-    const aliceSecondInvite = publicAPI.makeInvite();
+    const aliceSecondInvite = publicAPI.makeRemoveLiquidityInvite();
     const aliceRemoveLiquidityProposal = harden({
       give: { Liquidity: liquidity(10) },
       want: { TokenA: moola(0), TokenB: simoleans(0) },
     });
 
     const {
-      seat: aliceRemoveLiquiditySeat,
       payout: aliceRemoveLiquidityPayoutP,
-    } = await zoe.redeem(
+      outcome: removeLiquidityResultP,
+    } = await zoe.offer(
       aliceSecondInvite,
       aliceRemoveLiquidityProposal,
       harden({ Liquidity: liquidityPayout }),
     );
 
-    const removeLiquidityResult = aliceRemoveLiquiditySeat.removeLiquidity();
-    t.equals(removeLiquidityResult, 'Liquidity successfully removed.');
+    t.equals(await removeLiquidityResultP, 'Liquidity successfully removed.');
 
     const aliceRemoveLiquidityPayout = await aliceRemoveLiquidityPayoutP;
     const aliceMoolaPayout = await aliceRemoveLiquidityPayout.TokenA;
@@ -239,11 +235,11 @@ test('autoSwap - test fee', async t => {
       TokenA: moolaR.issuer,
       TokenB: simoleanR.issuer,
     });
-    const aliceInvite = await zoe.makeInstance(
+    const aliceAddLiquidityInvite = await zoe.makeInstance(
       installationHandle,
       issuerKeywordRecord,
     );
-    const instanceHandle = await getInstanceHandle(aliceInvite);
+    const instanceHandle = await getInstanceHandle(aliceAddLiquidityInvite);
     const { publicAPI } = zoe.getInstance(instanceHandle);
     const liquidityIssuer = publicAPI.getLiquidityIssuer();
     const liquidity = liquidityIssuer.getAmountMath().make;
@@ -262,12 +258,11 @@ test('autoSwap - test fee', async t => {
     });
 
     const {
-      seat: aliceSeat,
       payout: aliceAddLiquidityPayoutP,
-    } = await zoe.redeem(aliceInvite, aliceProposal, alicePayments);
+      outcome: liquidityOkP,
+    } = await zoe.offer(aliceAddLiquidityInvite, aliceProposal, alicePayments);
 
-    const liquidityOk = await aliceSeat.addLiquidity();
-    t.equals(liquidityOk, 'Added liquidity.');
+    t.equals(await liquidityOkP, 'Added liquidity.');
 
     const liquidityPayments = await aliceAddLiquidityPayoutP;
     const liquidityPayout = await liquidityPayments.Liquidity;
@@ -283,7 +278,7 @@ test('autoSwap - test fee', async t => {
     });
 
     // Alice creates an invite for autoswap and sends it to Bob
-    const bobInvite = publicAPI.makeInvite();
+    const bobInvite = publicAPI.makeSwapInvite();
 
     // Bob claims it
     const bobExclInvite = await inviteIssuer.claim(bobInvite);
@@ -307,15 +302,14 @@ test('autoSwap - test fee', async t => {
     });
     const bobMoolaForSimPayments = harden({ TokenA: bobMoolaPayment });
 
-    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
+    // Bob swaps
+    const { payout: bobPayoutP, outcome: offerOkP } = await zoe.offer(
       bobExclInvite,
       bobMoolaForSimProposal,
       bobMoolaForSimPayments,
     );
 
-    // Bob swaps
-    const offerOk = bobSeat.swap();
-    t.equal(offerOk, 'Swap successfully completed.');
+    t.equal(await offerOkP, 'Swap successfully completed.');
 
     const bobPayout = await bobPayoutP;
     const bobMoolaPayout = await bobPayout.TokenA;

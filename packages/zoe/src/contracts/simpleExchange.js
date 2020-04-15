@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { producePromise } from '@agoric/produce-promise';
@@ -18,11 +17,8 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
  */
 // zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe
 export const makeContract = harden(zcf => {
-  const PRICE = 'Price';
-  const ASSET = 'Asset';
-
-  let sellInviteHandles = [];
-  let buyInviteHandles = [];
+  let sellOfferHandles = [];
+  let buyOfferHandles = [];
   let nextChangePromise = producePromise();
 
   const {
@@ -32,9 +28,10 @@ export const makeContract = harden(zcf => {
     canTradeWith,
     getActiveOffers,
     assertKeywords,
+    inviteAnOffer,
   } = makeZoeHelpers(zcf);
 
-  assertKeywords(harden([ASSET, PRICE]));
+  assertKeywords(harden(['Asset', 'Price']));
 
   function flattenRule(r) {
     const keyword = Object.getOwnPropertyNames(r)[0];
@@ -57,15 +54,15 @@ export const makeContract = harden(zcf => {
   function getBookOrders() {
     return {
       changed: nextChangePromise.promise,
-      buys: flattenOrders(buyInviteHandles),
-      sells: flattenOrders(sellInviteHandles),
+      buys: flattenOrders(buyOfferHandles),
+      sells: flattenOrders(sellOfferHandles),
     };
   }
 
-  function getOffer(inviteHandle) {
-    for (const handle of [...sellInviteHandles, ...buyInviteHandles]) {
-      if (inviteHandle === handle) {
-        return flattenOffer(getActiveOffers([inviteHandle])[0]);
+  function getOffer(offerHandle) {
+    for (const handle of [...sellOfferHandles, ...buyOfferHandles]) {
+      if (offerHandle === handle) {
+        return flattenOffer(getActiveOffers([offerHandle])[0]);
       }
     }
     return 'not an active offer';
@@ -80,53 +77,53 @@ export const makeContract = harden(zcf => {
     nextChangePromise = producePromise();
   }
 
-  function swapIfCanTrade(inviteHandles, inviteHandle) {
-    for (const iHandle of inviteHandles) {
-      if (canTradeWith(inviteHandle, iHandle)) {
+  function swapIfCanTrade(offerHandles, offerHandle) {
+    for (const iHandle of offerHandles) {
+      if (canTradeWith(offerHandle, iHandle)) {
         bookOrdersChanged();
-        return swap(inviteHandle, iHandle);
+        return swap(offerHandle, iHandle);
       }
     }
     bookOrdersChanged();
     return defaultAcceptanceMsg;
   }
 
-  const makeInvite = () => {
-    const seat = harden({
-      addOrder: () => {
-        const buyAssetForPrice = harden({
-          give: { Price: null },
-          want: { Asset: null },
-        });
-        const sellAssetForPrice = harden({
-          give: { Asset: null },
-          want: { Price: null },
-        });
-        if (checkIfProposal(inviteHandle, sellAssetForPrice)) {
-          // Save the valid offer and try to match
-          sellInviteHandles.push(inviteHandle);
-          buyInviteHandles = [...zcf.getOfferStatuses(buyInviteHandles).active];
-          return swapIfCanTrade(buyInviteHandles, inviteHandle);
-          /* eslint-disable no-else-return */
-        } else if (checkIfProposal(inviteHandle, buyAssetForPrice)) {
-          // Save the valid offer and try to match
-          buyInviteHandles.push(inviteHandle);
-          sellInviteHandles = [
-            ...zcf.getOfferStatuses(sellInviteHandles).active,
-          ];
-          return swapIfCanTrade(sellInviteHandles, inviteHandle);
-        } else {
-          // Eject because the offer must be invalid
-          return rejectOffer(inviteHandle);
-        }
-      },
+  const exchangeOfferHook = offerHandle => {
+    const buyAssetForPrice = harden({
+      give: { Price: null },
+      want: { Asset: null },
     });
-    const { invite, inviteHandle } = zcf.makeInvite(seat);
-    return invite;
+    const sellAssetForPrice = harden({
+      give: { Asset: null },
+      want: { Price: null },
+    });
+    if (checkIfProposal(offerHandle, sellAssetForPrice)) {
+      // Save the valid offer and try to match
+      sellOfferHandles.push(offerHandle);
+      buyOfferHandles = [...zcf.getOfferStatuses(buyOfferHandles).active];
+      return swapIfCanTrade(buyOfferHandles, offerHandle);
+      /* eslint-disable no-else-return */
+    } else if (checkIfProposal(offerHandle, buyAssetForPrice)) {
+      // Save the valid offer and try to match
+      buyOfferHandles.push(offerHandle);
+      sellOfferHandles = [...zcf.getOfferStatuses(sellOfferHandles).active];
+      return swapIfCanTrade(sellOfferHandles, offerHandle);
+    } else {
+      // Eject because the offer must be invalid
+      return rejectOffer(offerHandle);
+    }
   };
 
+  const makeExchangeInvite = () =>
+    inviteAnOffer({
+      offerHook: exchangeOfferHook,
+      customProperties: {
+        inviteDesc: 'exchange',
+      },
+    });
+
   return harden({
-    invite: makeInvite(),
-    publicAPI: { makeInvite, getBookOrders, getOffer },
+    invite: makeExchangeInvite(),
+    publicAPI: { makeInvite: makeExchangeInvite, getBookOrders, getOffer },
   });
 });

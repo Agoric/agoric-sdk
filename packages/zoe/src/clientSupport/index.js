@@ -1,1 +1,1 @@
-export { makeGetOfferHandle, makeGetInstanceHandle } from './offerHandle';
+export { makeGetInstanceHandle } from './instanceHandle';
