@@ -9,7 +9,7 @@ import produceIssuer from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 import { makeZoe } from '../../../src/zoe';
-import { setup } from '../setupBasicMints2';
+import { setup } from '../setupBasicMints';
 
 const multipoolAutoswapRoot = `${__dirname}/../../../src/contracts/multipoolAutoswap`;
 
@@ -62,13 +62,13 @@ test('multipoolAutoSwap with valid offers', async t => {
       inviteAmountMath.make(
         harden([
           {
-            seatDesc: 'autoswapSeat',
+            inviteDesc: 'multipool autoswap add liquidity',
             instanceHandle: aliceInviteAmount.extent[0].instanceHandle,
             handle: aliceInviteAmount.extent[0].handle,
           },
         ]),
       ),
-      `seat extent is as expected`,
+      `invite extent is as expected`,
     );
 
     const { publicAPI, handle: instanceHandle } = zoe.getInstance(
@@ -153,13 +153,12 @@ test('multipoolAutoSwap with valid offers', async t => {
     };
 
     const {
-      seat: aliceSeat,
+      outcome: liquidityOkP,
       payout: aliceAddLiquidityPayoutP,
-    } = await zoe.redeem(aliceInvite, aliceProposal, alicePayments);
+    } = await zoe.offer(aliceInvite, aliceProposal, alicePayments);
 
-    const liquidityOk = await aliceSeat.addLiquidity();
     t.equals(
-      liquidityOk,
+      await liquidityOkP,
       'Added liquidity.',
       `Alice added moola and central liquidity`,
     );
@@ -181,14 +180,12 @@ test('multipoolAutoSwap with valid offers', async t => {
       `The poolAmounts record should contain the new liquidity`,
     );
 
-    // Alice creates an invite for autoswap and sends it to Bob
-    const bobInvite = await E(publicAPI).makeInvite();
+    // Bob creates a swap invite for himself
+    const bobSwapInvite1 = await E(publicAPI).makeSwapInvite();
 
-    // Bob claims it
-    const bobExclInvite = await inviteIssuer.claim(bobInvite);
     const {
       extent: [bobInviteExtent],
-    } = await inviteIssuer.getAmountOf(bobExclInvite);
+    } = await inviteIssuer.getAmountOf(bobSwapInvite1);
     const {
       publicAPI: bobPublicAPI,
       installationHandle: bobInstallationId,
@@ -237,15 +234,14 @@ test('multipoolAutoSwap with valid offers', async t => {
     });
     const bobMoolaForCentralPayments = harden({ Moola: bobMoolaPayment });
 
-    const { seat: bobSeat, payout: bobPayoutP } = await zoe.redeem(
-      bobExclInvite,
+    // Bob swaps
+    const { outcome: offerOkP, payout: bobPayoutP } = await zoe.offer(
+      bobSwapInvite1,
       bobMoolaForCentralProposal,
       bobMoolaForCentralPayments,
     );
 
-    // Bob swaps
-    const offerOk = bobSeat.swap();
-    t.equal(offerOk, 'Swap successfully completed.');
+    t.equal(await offerOkP, 'Swap successfully completed.');
 
     const bobPayout = await bobPayoutP;
 
@@ -287,7 +283,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     );
 
     // Bob makes another offer and swaps
-    const bobSecondInvite = bobPublicAPI.makeInvite();
+    const bobSwapInvite2 = bobPublicAPI.makeSwapInvite();
     const bobCentralForMoolaProposal = harden({
       want: { Moola: moola(16) },
       give: { CentralToken: centralTokens(7) },
@@ -297,17 +293,16 @@ test('multipoolAutoSwap with valid offers', async t => {
     });
 
     const {
-      seat: bobSeatCentralForMoola,
+      outcome: centralForMoolaOkP,
       payout: bobCentralForMoolaPayoutP,
-    } = await zoe.redeem(
-      bobSecondInvite,
+    } = await zoe.offer(
+      bobSwapInvite2,
       bobCentralForMoolaProposal,
       centralForMoolaPayments,
     );
 
-    const centralForMoolaOk = bobSeatCentralForMoola.swap();
     t.equal(
-      centralForMoolaOk,
+      await centralForMoolaOkP,
       'Swap successfully completed.',
       `second swap successful`,
     );
@@ -340,7 +335,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     // liquidity pool. 398 simoleans = 43 central tokens at the time of
     // the liquidity adding
     //
-    const aliceSimCentralLiquidityInvite = publicAPI.makeInvite();
+    const aliceSimCentralLiquidityInvite = publicAPI.makeAddLiquidityInvite();
     const aliceSimCentralProposal = harden({
       want: { SimoleansLiquidity: simoleanLiquidity(43) },
       give: { Simoleans: simoleans(398), CentralToken: centralTokens(43) },
@@ -354,17 +349,16 @@ test('multipoolAutoSwap with valid offers', async t => {
     };
 
     const {
-      seat: aliceSimCentralSeat,
+      outcome: simCentralLiquidityOkP,
       payout: aliceSimCentralPayoutP,
-    } = await zoe.redeem(
+    } = await zoe.offer(
       aliceSimCentralLiquidityInvite,
       aliceSimCentralProposal,
       aliceSimCentralPayments,
     );
 
-    const simCentralLiquidityOk = await aliceSimCentralSeat.addLiquidity();
     t.equals(
-      simCentralLiquidityOk,
+      await simCentralLiquidityOkP,
       'Added liquidity.',
       `Alice added simoleans and central liquidity`,
     );
@@ -425,7 +419,7 @@ test('multipoolAutoSwap with valid offers', async t => {
       `price is as expected for secondary token to secondary token`,
     );
 
-    const bobThirdInvite = await E(bobPublicAPI).makeInvite();
+    const bobThirdInvite = await E(bobPublicAPI).makeSwapInvite();
     const bobSimsForMoolaProposal = harden({
       want: { Moola: moola(10) },
       give: { Simoleans: simoleans(74) },
@@ -434,16 +428,11 @@ test('multipoolAutoSwap with valid offers', async t => {
       Simoleans: bobSimoleanPayment,
     });
 
-    const {
-      seat: bobSeatSimsForMoola,
-      payout: bobSimsForMoolaPayoutP,
-    } = await zoe.redeem(
+    const { payout: bobSimsForMoolaPayoutP } = await zoe.offer(
       bobThirdInvite,
       bobSimsForMoolaProposal,
       simsForMoolaPayments,
     );
-
-    bobSeatSimsForMoola.swap();
 
     const bobSimsForMoolaPayout = await bobSimsForMoolaPayoutP;
     const bobSimsPayout3 = await bobSimsForMoolaPayout.Simoleans;
@@ -485,23 +474,22 @@ test('multipoolAutoSwap with valid offers', async t => {
 
     // Alice removes her liquidity
     // She's not picky...
-    const aliceSecondInvite = publicAPI.makeInvite();
+    const aliceRemoveLiquidityInvite = publicAPI.makeRemoveLiquidityInvite();
     const aliceRemoveLiquidityProposal = harden({
       give: { MoolaLiquidity: moolaLiquidity(50) },
       want: { Moola: moola(91), CentralToken: centralTokens(56) },
     });
 
     const {
-      seat: aliceRemoveLiquiditySeat,
+      outcome: removeLiquidityResultP,
       payout: aliceRemoveLiquidityPayoutP,
-    } = await zoe.redeem(
-      aliceSecondInvite,
+    } = await zoe.offer(
+      aliceRemoveLiquidityInvite,
       aliceRemoveLiquidityProposal,
       harden({ MoolaLiquidity: liquidityPayout }),
     );
 
-    const removeLiquidityResult = aliceRemoveLiquiditySeat.removeLiquidity();
-    t.equals(removeLiquidityResult, 'Liquidity successfully removed.');
+    t.equals(await removeLiquidityResultP, 'Liquidity successfully removed.');
 
     const aliceRemoveLiquidityPayout = await aliceRemoveLiquidityPayoutP;
     const aliceMoolaPayout = await aliceRemoveLiquidityPayout.Moola;

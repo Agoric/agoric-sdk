@@ -23,15 +23,15 @@ import {
 // would first use the pool (X, C) then the pool (Y, C). There are no
 // liquidity pools between two secondary tokens.
 
-export const makeContract = harden(zoe => {
+export const makeContract = harden(zcf => {
   // This contract must have a "central token" issuer in the terms.
   const CENTRAL_TOKEN = 'CentralToken';
 
   const getCentralTokenBrand = () => {
     const {
       terms: { CentralToken: centralTokenIssuer },
-    } = zoe.getInstanceRecord();
-    const { brand: centralTokenBrand } = zoe.getIssuerRecord(
+    } = zcf.getInstanceRecord();
+    const { brand: centralTokenBrand } = zcf.getIssuerRecord(
       centralTokenIssuer,
     );
     assert(
@@ -48,7 +48,7 @@ export const makeContract = harden(zoe => {
     rejectIfNotProposal,
     assertKeywords,
     getKeys,
-  } = makeZoeHelpers(zoe);
+  } = makeZoeHelpers(zcf);
 
   // There must be one keyword at the start, which is equal to the
   // value of CENTRAL_TOKEN
@@ -76,7 +76,7 @@ export const makeContract = harden(zoe => {
   // `newTokenKeyword` must not have been already used
   const addPool = (newTokenIssuer, newTokenKeyword) => {
     assertCapASCII(newTokenKeyword);
-    const { issuerKeywordRecord } = zoe.getInstanceRecord();
+    const { issuerKeywordRecord } = zcf.getInstanceRecord();
     const keywords = Object.keys(issuerKeywordRecord);
     const issuers = Object.values(issuerKeywordRecord);
     assert(
@@ -97,13 +97,13 @@ export const makeContract = harden(zoe => {
       newLiquidityKeyword,
     );
     return Promise.all([
-      zoe.addNewIssuer(newTokenIssuer, newTokenKeyword),
+      zcf.addNewIssuer(newTokenIssuer, newTokenKeyword),
       makeEmptyOffer(),
-      zoe.addNewIssuer(liquidityIssuer, newLiquidityKeyword),
+      zcf.addNewIssuer(liquidityIssuer, newLiquidityKeyword),
     ]).then(([newTokenIssuerRecord, poolHandle]) => {
       // The third element of the above array is intentionally
       // ignored, since we already have the liquidityIssuer and mint.
-      const amountMaths = zoe.getAmountMaths(harden([newTokenKeyword]));
+      const amountMaths = zcf.getAmountMaths(harden([newTokenKeyword]));
       assert(
         amountMaths[newTokenKeyword].getMathHelpersName() === 'nat',
         details`tokenIssuer must have natMathHelpers`,
@@ -132,7 +132,7 @@ export const makeContract = harden(zoe => {
     const { poolHandle, tokenKeyword, liquidityKeyword } = liquidityTable.get(
       tokenBrand,
     );
-    return zoe.getCurrentAllocation(
+    return zcf.getCurrentAllocation(
       poolHandle,
       harden([tokenKeyword, CENTRAL_TOKEN, liquidityKeyword]),
     );
@@ -152,7 +152,7 @@ export const makeContract = harden(zoe => {
         outputReserve: poolAmounts[keywordOut].extent,
       }),
     );
-    const amountMaths = zoe.getAmountMaths(harden([keywordOut]));
+    const amountMaths = zcf.getAmountMaths(harden([keywordOut]));
     return amountMaths[keywordOut].make(outputExtent);
   };
 
@@ -171,7 +171,7 @@ export const makeContract = harden(zoe => {
         outputReserve: poolAllocation[keywordOut].extent,
       }),
     );
-    const amountMaths = zoe.getAmountMaths([keywordIn, keywordOut]);
+    const amountMaths = zcf.getAmountMaths([keywordIn, keywordOut]);
     const amountOut = amountMaths[keywordOut].make(outputExtent);
 
     const newUserAmounts = harden({
@@ -188,7 +188,7 @@ export const makeContract = harden(zoe => {
   };
 
   const getSecondaryBrand = ({ offerHandle, isAddLiquidity }) => {
-    const { proposal } = zoe.getOffer(offerHandle);
+    const { proposal } = zcf.getOffer(offerHandle);
     const key = isAddLiquidity ? 'give' : 'want';
     const {
       // eslint-disable-next-line no-unused-vars
@@ -222,7 +222,7 @@ export const makeContract = harden(zoe => {
     }
   };
 
-  const addLiquidity = offerHandle => {
+  const addLiquidityHook = offerHandle => {
     // Get the brand of the secondary token so we can identify the liquidity pool.
     const secondaryTokenBrand = getSecondaryBrand(
       harden({
@@ -255,7 +255,7 @@ export const makeContract = harden(zoe => {
     });
     rejectIfNotProposal(offerHandle, expected);
 
-    const userAmounts = zoe.getCurrentAllocation(offerHandle, liquidityKeys);
+    const userAmounts = zcf.getCurrentAllocation(offerHandle, liquidityKeys);
     const poolAmounts = getPoolAllocation(secondaryTokenBrand);
 
     // Calculate how many liquidity tokens we should be minting.
@@ -266,7 +266,7 @@ export const makeContract = harden(zoe => {
         inputReserve: poolAmounts[CENTRAL_TOKEN].extent,
       }),
     );
-    const amountMaths = zoe.getAmountMaths(liquidityKeys);
+    const amountMaths = zcf.getAmountMaths(liquidityKeys);
 
     const liquidityAmountOut = amountMaths[liquidityKeyword].make(
       liquidityExtentOut,
@@ -280,14 +280,14 @@ export const makeContract = harden(zoe => {
       give: { [liquidityKeyword]: liquidityAmountOut },
     });
 
-    const { inviteHandle: tempLiqHandle, invite } = zoe.makeInvite();
-    const zoeService = zoe.getZoeService();
+    const { inviteHandle: tempLiqHandle, invite } = zcf.makeInvite();
+    const zoeService = zcf.getZoeService();
     // We update the liquidityTokenSupply before the next turn
     liquidityTable.update(secondaryTokenBrand, {
       liquidityTokenSupply: liquidityTokenSupply + liquidityExtentOut,
     });
     return zoeService
-      .redeem(
+      .offer(
         invite,
         tempProposal,
         harden({ [liquidityKeyword]: liquidityPaymentP }),
@@ -306,17 +306,17 @@ export const makeContract = harden(zoe => {
 
         const newTempLiqAmounts = getAllEmpty(liquidityKeys);
 
-        zoe.reallocate(
+        zcf.reallocate(
           harden([offerHandle, poolHandle, tempLiqHandle]),
           harden([newUserAmounts, newPoolAmounts, newTempLiqAmounts]),
           liquidityKeys,
         );
-        zoe.complete(harden([offerHandle, tempLiqHandle]));
+        zcf.complete(harden([offerHandle, tempLiqHandle]));
         return 'Added liquidity.';
       });
   };
 
-  const removeLiquidity = offerHandle => {
+  const removeLiquidityHook = offerHandle => {
     const secondaryTokenBrand = getSecondaryBrand(
       harden({ offerHandle, isAddLiquidity: false }),
     );
@@ -340,11 +340,11 @@ export const makeContract = harden(zoe => {
       liquidityKeyword,
     ]);
 
-    const userAllocation = zoe.getCurrentAllocation(offerHandle, liquidityKeys);
+    const userAllocation = zcf.getCurrentAllocation(offerHandle, liquidityKeys);
     const poolAllocation = getPoolAllocation(secondaryTokenBrand);
     const liquidityExtentIn = userAllocation[liquidityKeyword].extent;
 
-    const amountMaths = zoe.getAmountMaths(liquidityKeys);
+    const amountMaths = zcf.getAmountMaths(liquidityKeys);
 
     const subtract = makeSubtract(amountMaths);
 
@@ -383,17 +383,17 @@ export const makeContract = harden(zoe => {
       liquidityTokenSupply: liquidityTokenSupply - liquidityExtentIn,
     });
 
-    zoe.reallocate(
+    zcf.reallocate(
       harden([offerHandle, poolHandle]),
       harden([newUserAmounts, newPoolAmounts]),
       liquidityKeys,
     );
-    zoe.complete(harden([offerHandle]));
+    zcf.complete(harden([offerHandle]));
     return 'Liquidity successfully removed.';
   };
 
-  const swap = offerHandle => {
-    const { proposal } = zoe.getOffer(offerHandle);
+  const swapHook = offerHandle => {
+    const { proposal } = zcf.getOffer(offerHandle);
     const getKeywordAndBrand = amountKeywordRecord => {
       const keywords = getKeys(amountKeywordRecord);
       if (keywords.length !== 1) {
@@ -430,18 +430,18 @@ export const makeContract = harden(zoe => {
       const keywords = harden([keywordIn, keywordOut]);
       const { poolHandle, newUserAmounts, newPoolAmounts } = doSwap(
         harden({
-          userAllocation: zoe.getCurrentAllocation(offerHandle, keywords),
+          userAllocation: zcf.getCurrentAllocation(offerHandle, keywords),
           keywordIn,
           keywordOut,
           secondaryBrand: brandOut,
         }),
       );
-      zoe.reallocate(
+      zcf.reallocate(
         harden([offerHandle, poolHandle]),
         harden([newUserAmounts, newPoolAmounts]),
         keywords,
       );
-      zoe.complete(harden([offerHandle]));
+      zcf.complete(harden([offerHandle]));
       return `Swap successfully completed.`;
 
       // eslint-disable-next-line no-else-return
@@ -451,18 +451,18 @@ export const makeContract = harden(zoe => {
       const keywords = harden([keywordIn, keywordOut]);
       const { poolHandle, newUserAmounts, newPoolAmounts } = doSwap(
         harden({
-          userAllocation: zoe.getCurrentAllocation(offerHandle, keywords),
+          userAllocation: zcf.getCurrentAllocation(offerHandle, keywords),
           keywordIn,
           keywordOut,
           secondaryBrand: brandIn,
         }),
       );
-      zoe.reallocate(
+      zcf.reallocate(
         harden([offerHandle, poolHandle]),
         harden([newUserAmounts, newPoolAmounts]),
         keywords,
       );
-      zoe.complete(harden([offerHandle]));
+      zcf.complete(harden([offerHandle]));
       return `Swap successfully completed.`;
     } else {
       // 3) secondary to secondary
@@ -475,7 +475,7 @@ export const makeContract = harden(zoe => {
         newPoolAmounts: newPoolAmountsA,
       } = doSwap(
         harden({
-          userAllocation: zoe.getCurrentAllocation(
+          userAllocation: zcf.getCurrentAllocation(
             offerHandle,
             harden([keywordIn, CENTRAL_TOKEN]),
           ),
@@ -497,7 +497,7 @@ export const makeContract = harden(zoe => {
         }),
       );
       const keywords = harden([keywordIn, keywordOut, CENTRAL_TOKEN]);
-      const amountMaths = zoe.getAmountMaths(keywords);
+      const amountMaths = zcf.getAmountMaths(keywords);
       const finalPoolAmountsA = {
         ...newPoolAmountsA,
         [keywordOut]: amountMaths[keywordOut].getEmpty(),
@@ -510,36 +510,29 @@ export const makeContract = harden(zoe => {
         ...newUserAmounts,
         [keywordIn]: newUserAmountsA[keywordIn],
       };
-      zoe.reallocate(
+      zcf.reallocate(
         harden([poolHandleA, poolHandleB, offerHandle]),
         harden([finalPoolAmountsA, finalPoolAmountsB, finalUserAmounts]),
         keywords,
       );
-      zoe.complete(harden([offerHandle]));
+      zcf.complete(harden([offerHandle]));
       return `Swap successfully completed.`;
     }
   };
 
-  const makeInvite = () => {
-    const seat = harden({
-      addLiquidity: () => addLiquidity(inviteHandle),
-      removeLiquidity: () => removeLiquidity(inviteHandle),
-      swap: () => swap(inviteHandle),
+  const makeAddLiquidityInvite = () =>
+    zcf.makeInvitation(addLiquidityHook, {
+      inviteDesc: 'multipool autoswap add liquidity',
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat, {
-      seatDesc: 'autoswapSeat',
-    });
-    return invite;
-  };
 
   return harden({
-    invite: makeInvite(),
+    invite: makeAddLiquidityInvite(),
     publicAPI: {
       getBrandKeywordRecord: () => {
-        const { issuerKeywordRecord } = zoe.getInstanceRecord();
+        const { issuerKeywordRecord } = zcf.getInstanceRecord();
         const brandKeywordRecord = {};
         Object.entries(issuerKeywordRecord).forEach(([keyword, issuer]) => {
-          const { brand } = zoe.getIssuerRecord(issuer);
+          const { brand } = zcf.getIssuerRecord(issuer);
           brandKeywordRecord[keyword] = brand;
         });
         return harden(brandKeywordRecord);
@@ -555,7 +548,6 @@ export const makeContract = harden(zoe => {
       getPoolAllocation,
       getLiquidityIssuer: tokenBrand =>
         liquidityTable.get(tokenBrand).liquidityIssuer,
-      makeInvite,
       /**
        * `getCurrentPrice` calculates the result of a trade, given a certain
        * amount of digital assets in.
@@ -624,6 +616,15 @@ export const makeContract = harden(zoe => {
           );
         }
       },
+      makeSwapInvite: () =>
+        zcf.makeInvitation(swapHook, {
+          inviteDesc: 'autoswap swap',
+        }),
+      makeAddLiquidityInvite,
+      makeRemoveLiquidityInvite: () =>
+        zcf.makeInvitation(removeLiquidityHook, {
+          inviteDesc: 'autoswap remove liquidity',
+        }),
     },
   });
 });

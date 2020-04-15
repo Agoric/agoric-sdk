@@ -52,7 +52,11 @@ export const makeContract = harden(zcf => {
         }
 
         const poolAllocation = getPoolAllocation();
-        const { outputExtent, newInputReserve, newOutputReserve } = getPrice(
+        const {
+          outputExtent,
+          newInputReserve,
+          newOutputReserve,
+        } = getCurrentPrice(
           harden({
             inputExtent: proposal.give[giveKeyword].extent,
             inputReserve: poolAllocation[giveKeyword].extent,
