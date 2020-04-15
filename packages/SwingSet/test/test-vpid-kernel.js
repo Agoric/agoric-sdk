@@ -22,29 +22,45 @@ function makeEndowments() {
   };
 }
 
-function buildDispatch() {
+function buildDispatch(onDispatchCallback = undefined) {
   const log = [];
 
   const dispatch = {
     deliver(targetSlot, method, args, resultSlot) {
-      log.push({ type: 'deliver', targetSlot, method, args, resultSlot });
+      const d = { type: 'deliver', targetSlot, method, args, resultSlot };
+      log.push(d);
+      if (onDispatchCallback) {
+        onDispatchCallback(d);
+      }
     },
     notifyFulfillToPresence(promiseID, slot) {
-      log.push({ type: 'notifyFulfillToPresence', promiseID, slot });
+      const d = { type: 'notifyFulfillToPresence', promiseID, slot };
+      log.push(d);
+      if (onDispatchCallback) {
+        onDispatchCallback(d);
+      }
     },
     notifyFulfillToData(promiseID, data) {
-      log.push({ type: 'notifyFulfillToData', promiseID, data });
+      const d = { type: 'notifyFulfillToData', promiseID, data };
+      log.push(d);
+      if (onDispatchCallback) {
+        onDispatchCallback(d);
+      }
     },
     notifyReject(promiseID, data) {
-      log.push({ type: 'notifyReject', promiseID, data });
+      const d = { type: 'notifyReject', promiseID, data };
+      log.push(d);
+      if (onDispatchCallback) {
+        onDispatchCallback(d);
+      }
     },
   };
 
   return { log, dispatch };
 }
 
-function buildRawVat(name, kernel) {
-  const { log, dispatch } = buildDispatch();
+function buildRawVat(name, kernel, onDispatchCallback = undefined) {
+  const { log, dispatch } = buildDispatch(onDispatchCallback);
   let syscall;
   function setup(s) {
     syscall = s;
@@ -346,7 +362,17 @@ test('kernel vpid handling case3 reject', async t => {
 async function doTest4567(t, which, mode) {
   const kernel = buildKernel(makeEndowments());
   // vatA is our primary actor
-  const { log: logA, getSyscall: getSyscallA } = buildRawVat('vatA', kernel);
+  let onDispatchCallback;
+  function odc(targetSlot, method, args, resultSlot) {
+    if (onDispatchCallback) {
+      onDispatchCallback(targetSlot, method, args, resultSlot);
+    }
+  }
+  const { log: logA, getSyscall: getSyscallA } = buildRawVat(
+    'vatA',
+    kernel,
+    odc,
+  );
   // we use vatB when necessary to send messages to vatA
   const { log: logB, getSyscall: getSyscallB } = buildRawVat('vatB', kernel);
   await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
@@ -478,9 +504,22 @@ async function doTest4567(t, which, mode) {
   // before resolution, A's c-list should have the promise
   t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
 
-  // now bob resolves it
+  // Now bob resolves it. We want to examine the kernel's c-lists at the
+  // moment the notification is delivered to Alice. We only expect one
+  // dispatch: Alice.notifyFulfillToPresence()
+  onDispatchCallback = function odc1(d) {
+    t.deepEqual(d, resolutionOf(p1VatA, mode, rootAvatA));
+    // before retirement is implemented, the c-list entry should still be present
+    t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
+
+    // after retirement is implemented,
+    // the kernel c-list entries should be removed before we are given a
+    // chance to make any syscalls that might reference them
+    // t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
+  };
   doResolveSyscall(syscallB, p1VatB, mode, rootAvatB);
   await kernel.run();
+  onDispatchCallback = undefined;
 
   t.deepEqual(logA.shift(), resolutionOf(p1VatA, mode, rootAvatA));
   t.deepEqual(logA, []);
