@@ -14,6 +14,7 @@ import {
 
 const harden = /** @type {<T>(data: T) => T} */ (rawHarden);
 
+// eslint-disable-next-line no-constant-condition
 const log = false ? console.log : () => {};
 
 /**
@@ -59,7 +60,7 @@ const makeInterfaceHandler = t => {
     async onRevoke(port, localAddr) {
       t.assert(port, `port is tracked in onRevoke`);
       t.assert(localAddr, `local address is supplied to onRevoke`);
-      console.log('port done revoking', port.getLocalAddress());
+      log('port done revoking', port.getLocalAddress());
     },
   });
 };

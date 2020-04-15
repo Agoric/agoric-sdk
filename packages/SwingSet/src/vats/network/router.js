@@ -94,7 +94,9 @@ export function makeRouterInterface(sep = '/', E = defaultE) {
   function unregisterInterfaceHandler(prefix, interfaceHandler) {
     const ph = interfaceHandlers.get(prefix);
     if (ph !== interfaceHandler) {
-      throw TypeError(`Interface handler is not registered at prefix ${prefix}`);
+      throw TypeError(
+        `Interface handler is not registered at prefix ${prefix}`,
+      );
     }
     router.unregister(prefix, ph);
     interfaces.delete(prefix);
