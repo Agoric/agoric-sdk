@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 
-const DEFAULT_DAPP_TEMPLATE = 'dapp-simple-exchange';
+const DEFAULT_DAPP_TEMPLATE = 'dapp-encouragement';
 const DEFAULT_DAPP_URL_BASE = 'git://github.com/Agoric/';
 
 const STAMP = '_agstate';
