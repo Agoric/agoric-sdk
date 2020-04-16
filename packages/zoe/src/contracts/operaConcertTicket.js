@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 import produceIssuer from '@agoric/ertp';
-import { makeZoeHelpers } from '../contractSupport';
+import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 
 /*
   Roles in the arrangement:
@@ -40,6 +40,8 @@ export const makeContract = harden(zcf => {
 
   const { amountMath: moneyAmountMath } = zcf.getIssuerRecord(moneyIssuer);
 
+  let auditoriumOfferHandle;
+
   return zcf.addNewIssuer(issuer, 'Ticket').then(() => {
     // create Zoe helpers after zcf.addNewIssuer because of https://github.com/Agoric/agoric-sdk/issues/802
     const { rejectOffer } = makeZoeHelpers(zcf);
@@ -68,116 +70,100 @@ export const makeContract = harden(zcf => {
     );
     const ticketsPayment = mint.mintPayment(ticketsAmount);
 
-    const {
-      invite: contractSelfInvite,
-      inviteHandle: contractOfferHandle,
-    } = zcf.makeInvite();
+    let internalTicketSupplyHandle;
+    const internalTicketSupplyOfferHook = offerHandle =>
+      (internalTicketSupplyHandle = offerHandle);
+
+    const contractSelfInvite = zcf.makeInvitation(
+      internalTicketSupplyOfferHook,
+    );
     // the contract creates an offer {give: tickets, want: nothing} with the tickets
     return zcf
       .getZoeService()
-      .redeem(
+      .offer(
         contractSelfInvite,
         harden({ give: { Ticket: ticketsAmount } }),
         harden({ Ticket: ticketsPayment }),
       )
       .then(() => {
-        const auditoriumSeat = harden({
-          // this is meant to be called right after redeem
-          // eventually, it might be done automatically: https://github.com/Agoric/agoric-sdk/issues/717
-          afterRedeem() {
-            // the contract transfers tickets to the auditorium leveraging Zoe offer safety
-            zcf.reallocate(
-              [contractOfferHandle, auditoriumOfferHandle],
-              [
-                zcf.getCurrentAllocation(auditoriumOfferHandle),
-                zcf.getCurrentAllocation(contractOfferHandle),
-              ],
-            );
-            zcf.complete([contractOfferHandle]);
-            // if both calls succeeded (did not throw), the auditoriumOfferHandle is now
-            // associated with the tickets and the contract offer is gone from the contract
-          },
-          getCurrentAllocation() {
-            return zcf.getCurrentAllocation(auditoriumOfferHandle);
-          },
-        });
-        const {
-          invite: auditoriumInvite,
-          inviteHandle: auditoriumOfferHandle,
-        } = zcf.makeInvite(auditoriumSeat);
-
-        const makeBuyerInvite = () => {
-          const seat = harden({
-            performExchange: () => {
-              const buyerOffer = zcf.getOffer(buyerOfferHandle);
-
-              const currentAuditoriumAllocation = zcf.getCurrentAllocation(
-                auditoriumOfferHandle,
-              );
-              const currentBuyerAllocation = zcf.getCurrentAllocation(
-                buyerOfferHandle,
-              );
-
-              const wantedTicketsCount =
-                buyerOffer.proposal.want.Ticket.extent.length;
-              const wantedMoney =
-                expectedAmountPerTicket.extent * wantedTicketsCount;
-
-              try {
-                if (
-                  !moneyAmountMath.isGTE(
-                    currentBuyerAllocation.Money,
-                    moneyAmountMath.make(wantedMoney),
-                  )
-                ) {
-                  throw new Error(
-                    'The offer associated with this seat does not contain enough moolas',
-                  );
-                }
-
-                const wantedAuditoriumAllocation = {
-                  Money: moneyAmountMath.add(
-                    currentAuditoriumAllocation.Money,
-                    currentBuyerAllocation.Money,
-                  ),
-                  Ticket: ticketAmountMath.subtract(
-                    currentAuditoriumAllocation.Ticket,
-                    buyerOffer.proposal.want.Ticket,
-                  ),
-                };
-
-                const wantedBuyerAllocation = {
-                  Money: moneyAmountMath.getEmpty(),
-                  Ticket: ticketAmountMath.add(
-                    currentBuyerAllocation.Ticket,
-                    buyerOffer.proposal.want.Ticket,
-                  ),
-                };
-
-                zcf.reallocate(
-                  [auditoriumOfferHandle, buyerOfferHandle],
-                  [wantedAuditoriumAllocation, wantedBuyerAllocation],
-                );
-                zcf.complete([buyerOfferHandle]);
-              } catch (err) {
-                // amounts don't match or reallocate certainly failed
-                rejectOffer(buyerOfferHandle);
-              }
-            },
-          });
-          const { invite, inviteHandle: buyerOfferHandle } = zcf.makeInvite(
-            seat,
+        const auditoriumOfferHook = offerHandle => {
+          auditoriumOfferHandle = offerHandle;
+          // the contract transfers tickets to the auditorium leveraging Zoe offer safety
+          zcf.reallocate(
+            [internalTicketSupplyHandle, auditoriumOfferHandle],
+            [
+              zcf.getCurrentAllocation(auditoriumOfferHandle),
+              zcf.getCurrentAllocation(internalTicketSupplyHandle),
+            ],
           );
-          return invite;
+          zcf.complete([internalTicketSupplyHandle]);
+          // the auditoriumOfferHandle is now associated with the
+          // tickets and the contract offer is gone from the contract
+          return defaultAcceptanceMsg;
+        };
+
+        const buyTicketOfferHook = buyerOfferHandle => {
+          const buyerOffer = zcf.getOffer(buyerOfferHandle);
+
+          const currentAuditoriumAllocation = zcf.getCurrentAllocation(
+            auditoriumOfferHandle,
+          );
+          const currentBuyerAllocation = zcf.getCurrentAllocation(
+            buyerOfferHandle,
+          );
+
+          const wantedTicketsCount =
+            buyerOffer.proposal.want.Ticket.extent.length;
+          const wantedMoney =
+            expectedAmountPerTicket.extent * wantedTicketsCount;
+
+          try {
+            if (
+              !moneyAmountMath.isGTE(
+                currentBuyerAllocation.Money,
+                moneyAmountMath.make(wantedMoney),
+              )
+            ) {
+              throw new Error(
+                'The offer associated with this seat does not contain enough moolas',
+              );
+            }
+
+            const wantedAuditoriumAllocation = {
+              Money: moneyAmountMath.add(
+                currentAuditoriumAllocation.Money,
+                currentBuyerAllocation.Money,
+              ),
+              Ticket: ticketAmountMath.subtract(
+                currentAuditoriumAllocation.Ticket,
+                buyerOffer.proposal.want.Ticket,
+              ),
+            };
+
+            const wantedBuyerAllocation = {
+              Money: moneyAmountMath.getEmpty(),
+              Ticket: ticketAmountMath.add(
+                currentBuyerAllocation.Ticket,
+                buyerOffer.proposal.want.Ticket,
+              ),
+            };
+
+            zcf.reallocate(
+              [auditoriumOfferHandle, buyerOfferHandle],
+              [wantedAuditoriumAllocation, wantedBuyerAllocation],
+            );
+            zcf.complete([buyerOfferHandle]);
+          } catch (err) {
+            // amounts don't match or reallocate certainly failed
+            rejectOffer(buyerOfferHandle);
+          }
         };
 
         return harden({
-          invite: auditoriumInvite,
+          invite: zcf.makeInvitation(auditoriumOfferHook),
           publicAPI: {
-            makeBuyerInvite,
-            getTicketIssuer() {
-              return issuer;
-            },
+            makeBuyerInvite: () => zcf.makeInvitation(buyTicketOfferHook),
+            getTicketIssuer: () => issuer,
             getAvailableTickets() {
               // Because of a technical limitation in @agoric/marshal, an array of extents
               // is better than a Map https://github.com/Agoric/agoric-sdk/issues/838

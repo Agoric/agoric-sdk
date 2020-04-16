@@ -351,15 +351,6 @@ const makeZoe = (additionalEndowments = {}) => {
       return inviteMint.mintPayment(inviteAmount);
     };
 
-    // TODO(msm): remove once we no longer need to support old API
-    const makeInvite = (seat, customProperties = harden({})) => {
-      const offerHook = _ => seat;
-      const invitePayment = makeInvitation(offerHook, customProperties);
-      const amount = inviteIssuer.getAmountOfNow(invitePayment);
-      const inviteHandle = amount.extent[0].handle;
-      return harden({ invite: invitePayment, inviteHandle });
-    };
-
     /**
      * @type {ContractFacet}
      */
@@ -424,9 +415,6 @@ const makeZoe = (additionalEndowments = {}) => {
       },
 
       makeInvitation,
-
-      // TODO(msm): remove once we no longer need to support old API
-      makeInvite,
 
       addNewIssuer: (issuerP, keyword) =>
         issuerTable.getPromiseForIssuerRecord(issuerP).then(issuerRecord => {
@@ -749,22 +737,6 @@ const makeZoe = (additionalEndowments = {}) => {
             .then(recordOffer)
             .then(makeOfferResult);
         });
-      },
-
-      // TODO(msm): remove once we no longer need to support old API
-      redeem: (
-        invite,
-        proposal = harden({}),
-        paymentKeywordRecord = harden({}),
-      ) => {
-        return zoeService
-          .offer(invite, proposal, paymentKeywordRecord)
-          .then(offerResult => {
-            const { outcome: outcomeP, ...rest } = offerResult;
-            // The extra wait on outcomeP would enable a denial of
-            // service, but it's only in the code about to disappear
-            return outcomeP.then(seat => harden({ seat, ...rest }));
-          });
       },
 
       isOfferActive: offerTable.isOfferActive,
