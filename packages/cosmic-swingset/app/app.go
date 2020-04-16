@@ -42,6 +42,7 @@ import (
 )
 
 const appName = "agoric"
+const relayerTestPort = "transfer" // FIGME: "relayertesttransfer"
 
 const (
 	// Bech32MainPrefix defines the Bech32 prefix used by all types
@@ -292,7 +293,7 @@ func NewAgoricApp(
 	// create the IBC router and add the routes to it
 	// TODO: This will be replaced by dIBC
 	ibcRouter := port.NewRouter()
-	ibcRouter.AddRoute(transfer.ModuleName, transferModule)
+	ibcRouter.AddRoute(relayerTestPort, transferModule)
 	ibcRouter.AddRoute(swingset.ModuleName, swingsetModule)
 	app.ibcKeeper.SetRouter(ibcRouter)
 
