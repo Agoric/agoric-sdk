@@ -50,80 +50,78 @@ The Opera is told about the show being sold out. It gets all the moolas from the
         .then(auditoriumInvite => {
           return inviteIssuer
             .getAmountOf(auditoriumInvite)
-            .then(
-              ({ extent: [{ instanceHandle: auditoriumInstanceHandle }] }) => {
-                const { publicAPI } = zoe.getInstanceRecord(auditoriumInstanceHandle);
+            .then(({ extent: [{ instanceHandle: auditoriumHandle }] }) => {
+              const { publicAPI } = zoe.getInstanceRecord(auditoriumHandle);
 
-                t.equal(
-                  typeof publicAPI.makeBuyerInvite,
-                  'function',
-                  'publicAPI.makeBuyerInvite should be a function',
-                );
-                t.equal(
-                  typeof publicAPI.getTicketIssuer,
-                  'function',
-                  'publicAPI.getTicketIssuer should be a function',
-                );
-                t.equal(
-                  typeof publicAPI.getAvailableTickets,
-                  'function',
-                  'publicAPI.getAvailableTickets should be a function',
-                );
+              t.equal(
+                typeof publicAPI.makeBuyerInvite,
+                'function',
+                'publicAPI.makeBuyerInvite should be a function',
+              );
+              t.equal(
+                typeof publicAPI.getTicketIssuer,
+                'function',
+                'publicAPI.getTicketIssuer should be a function',
+              );
+              t.equal(
+                typeof publicAPI.getAvailableTickets,
+                'function',
+                'publicAPI.getAvailableTickets should be a function',
+              );
 
-                // The auditorium redeems its invite.
-                return (
-                  // Note that the proposal here is empty
-                  // This is due to a current limitation in proposal expressivness: https://github.com/Agoric/agoric-sdk/issues/855
-                  // It's impossible to know in advance how many tickets will be sold, so it's not possible
-                  // to say `want: moola(3*22)`
-                  // in a future version of Zoe, it will be possible to express:
-                  // "i want n times moolas where n is the number of sold tickets"
-                  zoe
-                    .redeem(auditoriumInvite, harden({}))
-                    // cancel will be renamed complete: https://github.com/Agoric/agoric-sdk/issues/835
-                    // cancelObj exists because of a current limitation in @agoric/marshal : https://github.com/Agoric/agoric-sdk/issues/818
-                    .then(
-                      ({
-                        seat: { getCurrentAllocation, afterRedeem },
-                        payout,
-                        cancelObj: { cancel: complete },
-                      }) => {
-                        t.equal(
-                          typeof afterRedeem,
-                          'function',
-                          'seat.afterRedeem should be a function',
-                        );
-                        t.equal(
-                          typeof getCurrentAllocation,
-                          'function',
-                          'seat.getCurrentAllocation should be a function',
-                        );
-                        t.equal(
-                          typeof complete,
-                          'function',
-                          'complete should be a function',
-                        );
+              // The auditorium redeems its invite.
+              return (
+                // Note that the proposal here is empty
+                // This is due to a current limitation in proposal expressivness: https://github.com/Agoric/agoric-sdk/issues/855
+                // It's impossible to know in advance how many tickets will be sold, so it's not possible
+                // to say `want: moola(3*22)`
+                // in a future version of Zoe, it will be possible to express:
+                // "i want n times moolas where n is the number of sold tickets"
+                zoe
+                  .redeem(auditoriumInvite, harden({}))
+                  // cancel will be renamed complete: https://github.com/Agoric/agoric-sdk/issues/835
+                  // cancelObj exists because of a current limitation in @agoric/marshal : https://github.com/Agoric/agoric-sdk/issues/818
+                  .then(
+                    ({
+                      seat: { getCurrentAllocation, afterRedeem },
+                      payout,
+                      cancelObj: { cancel: complete },
+                    }) => {
+                      t.equal(
+                        typeof afterRedeem,
+                        'function',
+                        'seat.afterRedeem should be a function',
+                      );
+                      t.equal(
+                        typeof getCurrentAllocation,
+                        'function',
+                        'seat.getCurrentAllocation should be a function',
+                      );
+                      t.equal(
+                        typeof complete,
+                        'function',
+                        'complete should be a function',
+                      );
 
-                        afterRedeem();
+                      afterRedeem();
 
-                        const currentAllocation = getCurrentAllocation();
+                      const currentAllocation = getCurrentAllocation();
 
-                        t.equal(
-                          currentAllocation.Ticket.extent.length,
-                          3,
-                          `the auditorium offerHandle should be associated with the 3 tickets`,
-                        );
+                      t.equal(
+                        currentAllocation.Ticket.extent.length,
+                        3,
+                        `the auditorium offerHandle should be associated with the 3 tickets`,
+                      );
 
-                        return {
-                          publicAPI,
-                          operaPayout: payout,
-                          complete,
-                        };
-                      },
-                    )
-                );
-              },
-            );
+                      return {
+                        publicAPI,
+                        operaPayout: payout,
+                        complete,
+                      };
+                    },
+                  )
+              );
+            });
         });
     },
   );
@@ -141,8 +139,8 @@ The Opera is told about the show being sold out. It gets all the moolas from the
     const aliceInvite = inviteIssuer.claim(publicAPI.makeBuyerInvite());
     return inviteIssuer
       .getAmountOf(aliceInvite)
-      .then(({ extent: [{ instanceHandle: instanceHandleOfAlice }] }) => {
-        const { terms: termsOfAlice } = zoe.getInstanceRecord(instanceHandleOfAlice);
+      .then(({ extent: [{ instanceHandle: aliceHandle }] }) => {
+        const { terms: termsOfAlice } = zoe.getInstanceRecord(aliceHandle);
         // Alice checks terms
         t.equal(termsOfAlice.show, 'Steven Universe, the Opera');
         t.equal(termsOfAlice.start, 'Web, March 25th 2020 at 8pm');
