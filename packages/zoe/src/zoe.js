@@ -1,5 +1,5 @@
 // @ts-check
-import rawHarden from '@agoric/harden';
+import harden from '@agoric/harden';
 import { E, HandledPromise } from '@agoric/eventual-send';
 import makeStore from '@agoric/weak-store';
 import produceIssuer from '@agoric/ertp';
@@ -24,8 +24,6 @@ import { isOfferSafeForAll } from './offerSafety';
 import { areRightsConserved } from './rightsConservation';
 import { evalContractCode } from './evalContractCode';
 import { makeTables } from './state';
-
-const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 // TODO Update types and documentatuon to describe the new API
 /**
@@ -130,7 +128,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
  * @callback MakeContract The type exported from a Zoe contract
- * @param {ContractFacet} zoe The Zoe Contract Facet (zcf)
+ * @param {ContractFacet} zcf The Zoe Contract Facet
  * @returns {ContractInstance} The instantiated contract
  *
  * @typedef {Object} ContractInstance

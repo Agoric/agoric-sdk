@@ -37,7 +37,7 @@
     "@agoric/assert": "^0.0.4",
     "@agoric/evaluate": "^2.2.3",
     "@agoric/eventual-send": "^0.8.0",
-    "@agoric/harden": "^0.0.4",
+    "@agoric/harden": "^0.0.7",
     "@agoric/import-manager": "^0.0.3",
     "@agoric/layer-cake": "^0.0.1",
     "@agoric/marshal": "^0.1.5",

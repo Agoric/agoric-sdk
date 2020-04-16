@@ -31,7 +31,7 @@
     "@agoric/assert": "^0.0.4",
     "@agoric/ertp": "^0.5.2",
     "@agoric/evaluate": "^2.2.3",
-    "@agoric/harden": "^0.0.4",
+    "@agoric/harden": "^0.0.7",
     "@agoric/nat": "^2.0.1",
     "@agoric/produce-promise": "^0.0.5",
     "@agoric/same-structure": "^0.0.4",

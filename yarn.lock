@@ -7,12 +7,19 @@
   resolved "https://registry.yarnpkg.com/@agoric/babel-parser/-/babel-parser-7.6.4.tgz#8dd5d36554cc758c29042713b5aa57dc58ee5273"
   integrity sha512-3FQC3eP2hekhz1zn+2LcSL7tAG2dGgSqbmCeRfIFqhVS8bbE1hR7EvrC6jYlvqdU6yzlly43VykyRy9MHBvUAw==
 
-"@agoric/harden@0.0.4", "@agoric/harden@^0.0.4":
+"@agoric/harden@^0.0.4":
   version "0.0.4"
   resolved "https://registry.yarnpkg.com/@agoric/harden/-/harden-0.0.4.tgz#b0d0b2fdfc1a8c7e60454374824442f5b37ea8bd"
   integrity sha512-WvTw2otvchy3mScAvqQcX0l6049xp6cF17/Pw0PNNqUTJtOo/84tE9OyBSjEp8wn/XBNArPaJuRjMhQpIQ775Q==
   dependencies:
     "@agoric/make-hardener" "0.0.4"
+
+"@agoric/harden@^0.0.7":
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/@agoric/harden/-/harden-0.0.7.tgz#1e6ff3b76e0dd73264cd0df58bb3090a84b3733a"
+  integrity sha512-vVdJhwg0weup94ez9TLjPTTEx6TVzjWmrt+Mbq0VMPBcRdEg1RDsBcpgNoT+4h8ooZNvaTbCWwA77MyFAzDjIw==
+  dependencies:
+    "@agoric/make-hardener" "0.0.8"
 
 "@agoric/layer-cake@^0.0.1":
   version "0.0.1"
