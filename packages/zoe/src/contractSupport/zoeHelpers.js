@@ -3,6 +3,14 @@ import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { HandledPromise } from '@agoric/eventual-send';
 
+/**
+ * @typedef {import('../zoe').OfferHandle} OfferHandle
+ * @typedef {import('../zoe').Invite} Invite
+ * @typedef {import('../zoe').OfferHook} OfferHook
+ * @typedef {import('../zoe').CustomProperties} CustomProperties
+ * @typedef {any} TODO Needs to be typed
+ */
+
 export const defaultRejectMsg = `The offer was invalid. Please check your refund.`;
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
@@ -74,6 +82,16 @@ export const makeZoeHelpers = zcf => {
     getActiveOffers: handles =>
       zcf.getOffers(zcf.getOfferStatuses(handles).active),
     rejectOffer,
+    /**
+     * Compare two proposals for compatibility. This returns true
+     * if the left offer would accept whatever the right offer is offering,
+     * and vice versa.
+     *
+     * @param {OfferHandle} leftOfferHandle
+     * @param {OfferHandle} rightOfferHandle
+     * @returns boolean
+     *
+     */
     canTradeWith: (leftOfferHandle, rightOfferHandle) => {
       const { issuerKeywordRecord } = zcf.getInstanceRecord();
       const keywords = getKeys(issuerKeywordRecord);
@@ -91,6 +109,24 @@ export const makeZoeHelpers = zcf => {
         satisfied(left.want, right.give) && satisfied(right.want, left.give)
       );
     },
+    /**
+     * If the two handles can trade, then swap their compatible assets,
+     * marking both offers as complete.
+     *
+     * TODO: The surplus is dispatched according to some policy TBD.
+     *
+     * If the keep offer is no longer active (it was already completed), the try
+     * offer will be rejected with a message (provided by 'keepHandleInactiveMsg').
+     *
+     * TODO: If the try offer is no longer active, swap() should terminate with
+     * a useful error message, like defaultRejectMsg.
+     *
+     * If the swap fails, no assets are transferred, and the 'try' offer is rejected.
+     *
+     * @param {OfferHandle} keepHandle
+     * @param {OfferHandle} tryHandle
+     * @param {String} [keepHandleInactiveMsg]
+     */
     swap: (
       keepHandle,
       tryHandle,
@@ -110,7 +146,34 @@ export const makeZoeHelpers = zcf => {
       zcf.complete(handles);
       return defaultAcceptanceMsg;
     },
-    // TODO update documentation to new API
+    /**
+     * Make an invitation to submit an Offer to this contract. This
+     * invitation can be given to a client, granting them the ability to
+     * participate in the contract.
+     *
+     * If the "expected" option is provided, it should be an ExpectedRecord.
+     * This is like a Proposal, but the amounts in 'want' and 'give' should be null,
+     * and the 'exit' should have a choice but the contents should be null.
+     * If the client submits an Offer which does not match these expectations,
+     * that offer will be rejected (and refunded).
+     *
+     * If "offerHook" is provided, it will be called when the invitation is exercised
+     * and an offer is submitted. The callback will get a reference to the offer.
+     *
+     * @param {InviteAnOfferOptions} [options={}]
+     * @returns {Invite}
+     *
+     * @typedef InviteAnOfferOptions
+     * @param {OfferHook} [offerHook]
+     * @param {CustomProperties} [customProperties]
+     * @param {ExpectedRecord} [expected]
+     *
+     * @typedef ExpectedRecord
+     * @property {TODO} [want]
+     * @property {TODO} [give]
+     * @property {TODO} [exit]
+     *
+     */
     inviteAnOffer: (options = {}) => {
       const {
         offerHook = () => {},
@@ -125,6 +188,17 @@ export const makeZoeHelpers = zcf => {
       };
       return zcf.makeInvitation(wrappedOfferHook, customProperties);
     },
+    /**
+     * Return a Promise for an OfferHandle.
+     *
+     * This offer will have an empty 'give' and 'want', making it useful
+     * for contracts to use for unrestricted internal asset reallocation.
+     * One example is the Autoswap contract, which uses an empty offer
+     * to manage internal escrowed assets.
+     *
+     * @returns {Promise<OfferHandle>}
+     *
+     */
     makeEmptyOffer: () =>
       new HandledPromise(resolve => {
         const invite = helpers.inviteAnOffer({
