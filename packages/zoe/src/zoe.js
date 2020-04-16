@@ -4,6 +4,7 @@ import { E, HandledPromise } from '@agoric/eventual-send';
 import makeStore from '@agoric/weak-store';
 import produceIssuer from '@agoric/ertp';
 import { assert, details, openDetail } from '@agoric/assert';
+import { produceNotifier } from '@agoric/notifier';
 import { producePromise } from '@agoric/produce-promise';
 
 import {
@@ -24,8 +25,6 @@ import { isOfferSafeForAll } from './offerSafety';
 import { areRightsConserved } from './rightsConservation';
 import { evalContractCode } from './evalContractCode';
 import { makeTables } from './state';
-// TODO update to @agoric/notifier ASAP
-import { produceNotifier } from '../../notifier/src/notifier';
 
 // TODO Update types and documentatuon to describe the new API
 /**
