@@ -44,6 +44,7 @@ test('meter transform', async t => {
       );
       const rewritten = await fs.promises
         .readFile(`${base}/${testDir}/rewrite.js`, 'utf8')
+        // Fix golden files in case they have DOS or MacOS line endings.
         .then(s => s.replace(/(\r\n|\r)/g, '\n'))
         .catch(_ => undefined);
       const transformed = rewrite(src.trimRight(), testDir);
