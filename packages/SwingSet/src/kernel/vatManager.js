@@ -373,11 +373,11 @@ export default function makeVatManager(
     if (kp.state === 'fulfilledToPresence') {
       const vpid = mapKernelSlotToVatSlot(kpid);
       const slot = mapKernelSlotToVatSlot(kp.slot);
+      vatKeeper.deleteCListEntry(kpid, vpid);
       await doProcess(
         ['notifyFulfillToPresence', vpid, slot],
         `vat[${vatID}].promise[${vpid}] fulfillToPresence failed`,
       );
-      vatKeeper.deleteCListEntry(kpid, vpid);
     } else if (kp.state === 'redirected') {
       throw new Error('not implemented yet');
     } else if (kp.state === 'fulfilledToData') {
@@ -386,22 +386,22 @@ export default function makeVatManager(
         ...kp.data,
         slots: kp.data.slots.map(slot => mapKernelSlotToVatSlot(slot)),
       });
+      vatKeeper.deleteCListEntry(kpid, vpid);
       await doProcess(
         ['notifyFulfillToData', vpid, vatData],
         `vat[${vatID}].promise[${vpid}] fulfillToData failed`,
       );
-      vatKeeper.deleteCListEntry(kpid, vpid);
     } else if (kp.state === 'rejected') {
       const vpid = mapKernelSlotToVatSlot(kpid);
       const vatData = harden({
         ...kp.data,
         slots: kp.data.slots.map(slot => mapKernelSlotToVatSlot(slot)),
       });
+      vatKeeper.deleteCListEntry(kpid, vpid);
       await doProcess(
         ['notifyReject', vpid, vatData],
         `vat[${vatID}].promise[${vpid}] reject failed`,
       );
-      vatKeeper.deleteCListEntry(kpid, vpid);
     } else {
       throw new Error(`unknown kernelPromise state '${kp.state}'`);
     }
