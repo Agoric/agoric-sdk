@@ -4,25 +4,29 @@ import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 import harden from '@agoric/harden';
 import produceIssuer from '@agoric/ertp';
+import { E } from '@agoric/eventual-send';
+
 import { makeZoe } from '../../../src/zoe';
 
 const operaConcertTicketRoot = `${__dirname}/../../../src/contracts/operaConcertTicket`;
 
-test(`__Test Scenario__
+// __Test Scenario__
 
-The Opera de Bordeaux plays the contract creator and the auditorium
-It creates the contract for a show ("Steven Universe, the Opera", Web, March 25th 2020 at 8pm, 3 tickets)
-The Opera wants 22 moolas per ticket
+// The Opera de Bordeaux plays the contract creator and the auditorium
+// It creates the contract for a show ("Steven Universe, the Opera", Web, March 25th 2020 at 8pm, 3 tickets)
+// The Opera wants 22 moolas per ticket
 
-Alice buys ticket #1
+// Alice buys ticket #1
 
-Then, the Joker tries malicious things:
-- they try to buy again ticket #1 (and will fail)
-- they try to buy to buy ticket #2 for 1 moola (and will fail)
+// Then, the Joker tries malicious things:
+// - they try to buy again ticket #1 (and will fail)
+// - they try to buy to buy ticket #2 for 1 moola (and will fail)
 
-Then, Bob tries to buy ticket 1 and fails. He buys ticket #2 and #3
+// Then, Bob tries to buy ticket 1 and fails. He buys ticket #2 and #3
 
-The Opera is told about the show being sold out. It gets all the moolas from the sale`, async t => {
+// The Opera is told about the show being sold out. It gets all the moolas from the sale
+
+test(`Zoe opera ticket contract`, async t => {
   // Setup initial conditions
   const {
     mint: moolaMint,
@@ -69,7 +73,7 @@ The Opera is told about the show being sold out. It gets all the moolas from the
                 'publicAPI.getAvailableTickets should be a function',
               );
 
-              // The auditorium redeems its invite.
+              // The auditorium makes an offer.
               return (
                 // Note that the proposal here is empty
                 // This is due to a current limitation in proposal expressivness: https://github.com/Agoric/agoric-sdk/issues/855
@@ -78,24 +82,20 @@ The Opera is told about the show being sold out. It gets all the moolas from the
                 // in a future version of Zoe, it will be possible to express:
                 // "i want n times moolas where n is the number of sold tickets"
                 zoe
-                  .redeem(auditoriumInvite, harden({}))
+                  .offer(auditoriumInvite, harden({}))
                   // cancel will be renamed complete: https://github.com/Agoric/agoric-sdk/issues/835
                   // cancelObj exists because of a current limitation in @agoric/marshal : https://github.com/Agoric/agoric-sdk/issues/818
                   .then(
-                    ({
-                      seat: { getCurrentAllocation, afterRedeem },
+                    async ({
+                      outcome: auditoriumOutcomeP,
                       payout,
                       cancelObj: { cancel: complete },
+                      offerHandle,
                     }) => {
                       t.equal(
-                        typeof afterRedeem,
-                        'function',
-                        'seat.afterRedeem should be a function',
-                      );
-                      t.equal(
-                        typeof getCurrentAllocation,
-                        'function',
-                        'seat.getCurrentAllocation should be a function',
+                        await auditoriumOutcomeP,
+                        `The offer has been accepted. Once the contract has been completed, please check your payout`,
+                        `default acceptance message`,
                       );
                       t.equal(
                         typeof complete,
@@ -103,9 +103,9 @@ The Opera is told about the show being sold out. It gets all the moolas from the
                         'complete should be a function',
                       );
 
-                      afterRedeem();
-
-                      const currentAllocation = getCurrentAllocation();
+                      const { currentAllocation } = await E(zoe).getOffer(
+                        await offerHandle,
+                      );
 
                       t.equal(
                         currentAllocation.Ticket.extent.length,
@@ -184,12 +184,10 @@ The Opera is told about the show being sold out. It gets all the moolas from the
         );
 
         return zoe
-          .redeem(aliceInvite, aliceProposal, {
+          .offer(aliceInvite, aliceProposal, {
             Money: alicePaymentForTicket,
           })
-          .then(({ seat: { performExchange }, payout: payoutP }) => {
-            performExchange();
-
+          .then(({ payout: payoutP }) => {
             return payoutP.then(alicePayout => {
               return ticketIssuer
                 .claim(alicePayout.Ticket)
@@ -260,12 +258,12 @@ The Opera is told about the show being sold out. It gets all the moolas from the
           );
 
           return zoe
-            .redeem(jokerInvite, jokerProposal, {
+            .offer(jokerInvite, jokerProposal, {
               Money: jokerPaymentForTicket,
             })
-            .then(({ seat: { performExchange }, payout: payoutP }) => {
-              t.throws(
-                performExchange,
+            .then(({ outcome, payout: payoutP }) => {
+              t.rejects(
+                outcome,
                 'performExchange from Joker should throw when trying to buy ticket 1',
               );
 
@@ -320,13 +318,13 @@ The Opera is told about the show being sold out. It gets all the moolas from the
           );
 
           return zoe
-            .redeem(jokerInvite, jokerProposal, {
+            .offer(jokerInvite, jokerProposal, {
               Money: jokerInsufficientPaymentForTicket,
             })
-            .then(({ seat: { performExchange }, payout }) => {
-              t.throws(
-                performExchange,
-                'performExchange from Joker should throw when trying to buy a ticket for 1 moola',
+            .then(({ outcome, payout }) => {
+              t.rejects(
+                outcome,
+                'outcome from Joker should throw when trying to buy a ticket for 1 moola',
               );
 
               return payout.then(({ Ticket, Money }) => {
@@ -394,12 +392,10 @@ The Opera is told about the show being sold out. It gets all the moolas from the
       const bobPaymentForTicket = bobPurse.withdraw(moola(2 * 22));
 
       return zoe
-        .redeem(bobInvite, bobProposal, {
+        .offer(bobInvite, bobProposal, {
           Money: bobPaymentForTicket,
         })
-        .then(({ seat: { performExchange }, payout: payoutP }) => {
-          performExchange();
-
+        .then(({ payout: payoutP }) => {
           return payoutP.then(bobPayout => {
             return ticketIssuer
               .getAmountOf(bobPayout.Ticket)

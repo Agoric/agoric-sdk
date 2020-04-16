@@ -280,7 +280,10 @@ export const makeContract = harden(zcf => {
       give: { [liquidityKeyword]: liquidityAmountOut },
     });
 
-    const { inviteHandle: tempLiqHandle, invite } = zcf.makeInvite();
+    let tempLiqHandle;
+
+    const tempLiqOfferHook = tmpHandle => (tempLiqHandle = tmpHandle);
+    const tempLiqInvite = zcf.makeInvitation(tempLiqOfferHook);
     const zoeService = zcf.getZoeService();
     // We update the liquidityTokenSupply before the next turn
     liquidityTable.update(secondaryTokenBrand, {
@@ -288,7 +291,7 @@ export const makeContract = harden(zcf => {
     });
     return zoeService
       .offer(
-        invite,
+        tempLiqInvite,
         tempProposal,
         harden({ [liquidityKeyword]: liquidityPaymentP }),
       )
