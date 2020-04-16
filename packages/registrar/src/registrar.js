@@ -4,9 +4,11 @@ import harden from '@agoric/harden';
 import { generateSparseInts } from '@agoric/sparse-ints';
 import { assert, details } from '@agoric/assert';
 
+// TODO(https://github.com/Agoric/agoric-sdk/issues/827), rename internally to
+//  match teh way it's now published.
 // Example REPL invocations
-// home.registrar~.register('sharing', home.sharingService)
-// for (let i = 0; i < 3000; i++) { home.registrar~.register('sharing', home.sharingService); }
+// home.registry~.register('sharing', home.sharingService)
+// for (let i = 0; i < 3000; i++) { home.registry~.register('sharing', home.sharingService); }
 
 const minimumDigits = 4;
 

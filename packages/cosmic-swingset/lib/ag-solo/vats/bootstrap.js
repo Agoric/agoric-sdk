@@ -72,7 +72,7 @@ export default function setup(syscall, state, helpers) {
       async function makeChainBundler(vats, timerDevice) {
         // Create singleton instances.
         const sharingService = await E(vats.sharing).getSharingService();
-        const registrar = await E(vats.registrar).getSharedRegistrar();
+        const registry = await E(vats.registrar).getSharedRegistrar();
         const chainTimerService = await E(vats.timer).createTimerService(
           timerDevice,
         );
@@ -111,7 +111,7 @@ export default function setup(syscall, state, helpers) {
               sharingService,
               contractHost,
               ibcport,
-              registrar,
+              registry,
               zoe,
             });
 
@@ -175,7 +175,7 @@ export default function setup(syscall, state, helpers) {
       // be in the DApp environment (or only in end-user), but we're not yet
       // making a distinction, so the user also gets them.
       async function createLocalBundle(vats, userBundle, payments, issuerInfo) {
-        const { zoe, registrar } = userBundle;
+        const { zoe, registry } = userBundle;
         // This will eventually be a vat spawning service. Only needed by dev
         // environments.
         const spawner = E(vats.host).makeHost();
@@ -184,7 +184,7 @@ export default function setup(syscall, state, helpers) {
         const uploads = E(vats.uploads).getUploads();
 
         // Wallet for both end-user client and dapp dev client
-        await E(vats.wallet).startup(zoe, registrar);
+        await E(vats.wallet).startup(zoe, registry);
         const wallet = E(vats.wallet).getWallet();
         await Promise.all(
           issuerInfo.map(({ petname, issuer, brandRegKey }) =>

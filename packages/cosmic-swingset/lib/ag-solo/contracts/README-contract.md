@@ -53,5 +53,5 @@ To access the contract installation object just from your ag-solo, use `home.upl
 
 To list all contracts in your private uploads scratch pad: `home.uploads~.list()`.
 
-If you want to permanently publish an object to everybody with access to the chain: `home.registrar~.register(NAME, obj)` which will return an ID.
-Then others can get a reference to the object on their own connected ag-solo with `home.registrar~.get(ID)`
+If you want to permanently publish an object to everybody with access to the chain: `home.registry~.register(NAME, obj)` which will return an ID.
+Then others can get a reference to the object on their own connected ag-solo with `home.registry~.get(ID)`

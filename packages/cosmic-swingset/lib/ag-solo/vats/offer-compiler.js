@@ -7,7 +7,7 @@ import { assert } from '@agoric/assert';
 export default ({
   E,
   zoe,
-  registrar,
+  registry,
 
   collections: {
     idToOffer,
@@ -108,7 +108,7 @@ export default ({
   });
 
   // Get the instance.
-  const instanceHandle = await E(registrar).get(instanceRegKey);
+  const instanceHandle = await E(registry).get(instanceRegKey);
   const {
     publicAPI,
     issuerKeywordRecord, // Only present with Zoe 0.3.0.

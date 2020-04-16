@@ -62,8 +62,8 @@ To test that that the Zoe update works (in the most basic sense) with cosmic-swi
 4. `make scenario3-setup`
 5. `make scenario3-run-client`
 6. Open `http://127.0.0.1:8000/`
-8. `moolaAssayP = E(home.registrar).get("moola_3467");`
-9. `simoleanAssayP = E(home.registrar).get("simolean_2059");`
+8. `moolaAssayP = E(home.registry).get("moola_3467");`
+9. `simoleanAssayP = E(home.registry).get("simolean_2059");`
 10. `automaticRefundHandleP = E(home.zoe).install("function getExport() { 'use strict'; let exports = {}; const module = { exports }; 'use strict';\n\nObject.defineProperty(exports, '__esModule', { value: true });\n\nfunction _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }\n\nvar harden = _interopDefault(require('@agoric/harden'));\n\n/**\n * This is a very trivial contract to explain and test Zoe.\n * AutomaticRefund just gives you back what you put in. It has one\n * method: `makeOffer`. AutomaticRefund then tells Zoe to complete the\n * offer, which gives the user their payout through Zoe. Other\n * contracts will use these same steps, but they will have more\n * sophisticated logic and interfaces.\n * @param {contractFacet} zoe - the contract facet of zoe\n */\nconst makeContract = harden((zoe, terms) => {\n  let offersCount = 0;\n  const makeSeatInvite = () => {\n    const seat = harden({\n      makeOffer: () => {\n        offersCount += 1;\n        // eslint-disable-next-line no-use-before-define\n        zoe.complete(harden([inviteHandle]));\n        return `The offer was accepted`;\n      },\n    });\n    const { invite, inviteHandle } = zoe.makeInvite(seat, {\n      seatDesc: 'getRefund',\n    });\n    return invite;\n  };\n  return harden({\n    invite: makeSeatInvite(),\n    publicAPI: {\n      getOffersCount: () => offersCount,\n      makeInvite: makeSeatInvite,\n    },\n    terms,\n  });\n});\n\nexports.makeContract = makeContract;\n\n\nreturn module.exports;\n}\n", "getExport");`
 11. `inviteP = automaticRefundHandleP.then( automaticRefundHandle =>
     E(home.zoe).makeInstance(automaticRefundHandle, harden({ assays:
