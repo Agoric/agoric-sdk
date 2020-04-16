@@ -13,7 +13,7 @@ const noActionStateChangeHandler = _newState => {};
 export async function makeWallet(
   E,
   zoe,
-  registrar,
+  registry,
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
 ) {
@@ -222,7 +222,7 @@ export async function makeWallet(
   const compileOffer = makeOfferCompiler({
     E,
     zoe,
-    registrar,
+    registry,
 
     collections: {
       idToOffer,

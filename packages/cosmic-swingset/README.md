@@ -175,7 +175,7 @@ When a client is started up, it has a few items in a record named home.
 * canvasStatePublisher: a service with the message subscribe(callback)
 * [uploads](./lib/ag-solo/contracts/README-contract.md): a private directory
  of contracts you've uploaded
-* registrar: a public directory for published objects
+* registry: a public directory for published objects
 * localTimerService and chainTimerService: tools for scheduling
 * [zoe](https://agoric.com/documentation/zoe/guide/): support for contracts with Offer-Safety Enforcement
 * [contractHost](https://github.com/Agoric/Documentation): secure smart contracts
