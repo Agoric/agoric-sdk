@@ -1,7 +1,6 @@
 import harden from '@agoric/harden';
+import { produceNotifier } from '@agoric/notifier';
 import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
-// TODO update to '@agoric/notifier' ASAP
-import { makeNotifier } from '../../../notifier';
 
 /**
  * The SimpleExchange uses Asset and Price as its keywords. In usage,
@@ -19,7 +18,7 @@ import { makeNotifier } from '../../../notifier';
 export const makeContract = harden(zcf => {
   let sellOfferHandles = [];
   let buyOfferHandles = [];
-  const notifier = makeNotifier();
+  const { notifier, updater } = produceNotifier();
 
   const {
     rejectOffer,
@@ -69,7 +68,7 @@ export const makeContract = harden(zcf => {
 
   // Tell the notifier that there has been a change to the book orders
   function bookOrdersChanged() {
-    notifier.updateState(getBookOrders());
+    updater.updateState(getBookOrders());
   }
 
   function swapIfCanTrade(offerHandles, offerHandle) {
@@ -122,8 +121,8 @@ export const makeContract = harden(zcf => {
     invite: makeExchangeInvite(),
     publicAPI: {
       makeInvite: makeExchangeInvite,
-      getUpdateSince: notifier.getUpdateSince,
       getOffer,
+      getNotifier: () => notifier,
     },
   });
 });

@@ -257,16 +257,12 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
-  function logStateOnChanges(updateRecordP) {
+  function logStateOnChanges(notifier, lastHandle = undefined) {
+    const updateRecordP = E(notifier).getUpdateSince(lastHandle);
     updateRecordP.then(updateRec => {
-      log(updateRec.currentState);
-      logStateOnChanges(updateRec.nextStatePromise);
+      log(updateRec.value);
+      logStateOnChanges(notifier, updateRec.updateHandle);
     });
-  }
-
-  function waitForUpdatesFromNotifier(publicAPI) {
-    const updateRecordP = E(publicAPI).getUpdateSince();
-    logStateOnChanges(updateRecordP);
   }
 
   const doSimpleExchangeWithNotification = async bobP => {
@@ -282,13 +278,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     const instanceHandle = await getInstanceHandle(addOrderInvite);
     const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
 
-    const petnames = ['simoleans', 'moola'];
-    const brands = await Promise.all([
-      E(simoleanIssuer).getBrand(),
-      E(moolaIssuer).getBrand(),
-    ]);
+    logStateOnChanges(await E(publicAPI).getNotifier());
 
-    waitForUpdatesFromNotifier(publicAPI, petnames, brands);
     const aliceSellOrderProposal = harden({
       give: { Asset: moola(3) },
       want: { Price: simoleans(4) },

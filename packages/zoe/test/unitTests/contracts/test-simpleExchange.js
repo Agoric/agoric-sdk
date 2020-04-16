@@ -257,7 +257,10 @@ test('simpleExchange with multiple sell offers', async t => {
           [{ Price: 8 }, { Asset: 5 }],
         ],
       };
-      t.deepEquals(publicAPI.getUpdateSince().currentState, expectedBook);
+      t.deepEquals(
+        publicAPI.getNotifier().getUpdateSince().value,
+        expectedBook,
+      );
     });
   } catch (e) {
     t.assert(false, e);
