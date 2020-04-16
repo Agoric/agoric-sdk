@@ -70,11 +70,13 @@ export const makeContract = harden(zcf => {
     );
     const ticketsPayment = mint.mintPayment(ticketsAmount);
 
-    let tempContractOfferHandle;
-    const tempContractOfferHook = offerHandle =>
-      (tempContractOfferHandle = offerHandle);
+    let internalTicketSupplyHandle;
+    const internalTicketSupplyOfferHook = offerHandle =>
+      (internalTicketSupplyHandle = offerHandle);
 
-    const contractSelfInvite = zcf.makeInvitation(tempContractOfferHook);
+    const contractSelfInvite = zcf.makeInvitation(
+      internalTicketSupplyOfferHook,
+    );
     // the contract creates an offer {give: tickets, want: nothing} with the tickets
     return zcf
       .getZoeService()
@@ -88,13 +90,13 @@ export const makeContract = harden(zcf => {
           auditoriumOfferHandle = offerHandle;
           // the contract transfers tickets to the auditorium leveraging Zoe offer safety
           zcf.reallocate(
-            [tempContractOfferHandle, auditoriumOfferHandle],
+            [internalTicketSupplyHandle, auditoriumOfferHandle],
             [
               zcf.getCurrentAllocation(auditoriumOfferHandle),
-              zcf.getCurrentAllocation(tempContractOfferHandle),
+              zcf.getCurrentAllocation(internalTicketSupplyHandle),
             ],
           );
-          zcf.complete([tempContractOfferHandle]);
+          zcf.complete([internalTicketSupplyHandle]);
           // the auditoriumOfferHandle is now associated with the
           // tickets and the contract offer is gone from the contract
           return defaultAcceptanceMsg;
