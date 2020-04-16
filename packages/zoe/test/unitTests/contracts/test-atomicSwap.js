@@ -76,7 +76,7 @@ test('zoe - atomicSwap', async t => {
   const {
     installationHandle: bobInstallationId,
     issuerKeywordRecord: bobIssuers,
-  } = zoe.getInstance(bobInviteExtent.instanceHandle);
+  } = zoe.getInstanceRecord(bobInviteExtent.instanceHandle);
 
   t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
   t.deepEquals(bobIssuers, { Asset: moolaIssuer, Price: simoleanIssuer });
@@ -206,7 +206,7 @@ test('zoe - non-fungible atomicSwap', async t => {
   const {
     installationHandle: bobInstallationId,
     issuerKeywordRecord: bobIssuers,
-  } = zoe.getInstance(bobInviteExtent.instanceHandle);
+  } = zoe.getInstanceRecord(bobInviteExtent.instanceHandle);
 
   t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
   t.deepEquals(bobIssuers, { Asset: ccIssuer, Price: rpgIssuer });

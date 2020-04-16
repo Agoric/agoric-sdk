@@ -27,7 +27,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
       const { installationHandle, issuerKeywordRecord } = await E(
         zoe,
-      ).getInstance(instanceHandle);
+      ).getInstanceRecord(instanceHandle);
 
       // Bob ensures it's the contract he expects
       assert(
@@ -89,7 +89,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       );
 
       const instanceHandle = await getInstanceHandle(exclInvite);
-      const instanceInfo = await E(zoe).getInstance(instanceHandle);
+      const instanceInfo = await E(zoe).getInstanceRecord(instanceHandle);
 
       assert(
         instanceInfo.installationHandle === installations.coveredCall,
@@ -152,7 +152,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const optionAmounts = await E(inviteIssuer).getAmountOf(exclInvite);
       const optionExtent = optionAmounts.extent;
 
-      const instanceInfo = await E(zoe).getInstance(
+      const instanceInfo = await E(zoe).getInstanceRecord(
         optionExtent[0].instanceHandle,
       );
       assert(
@@ -237,7 +237,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
       const { installationHandle, issuerKeywordRecord, terms } = await E(
         zoe,
-      ).getInstance(inviteExtent[0].instanceHandle);
+      ).getInstanceRecord(inviteExtent[0].instanceHandle);
       assert(
         installationHandle === installations.publicAuction,
         details`wrong installation`,
@@ -286,7 +286,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
       const { installationHandle, issuerKeywordRecord } = await E(
         zoe,
-      ).getInstance(inviteExtent[0].instanceHandle);
+      ).getInstanceRecord(inviteExtent[0].instanceHandle);
       assert(
         installationHandle === installations.atomicSwap,
         details`wrong installation`,
@@ -341,7 +341,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
       const { installationHandle, issuerKeywordRecord } = await E(
         zoe,
-      ).getInstance(inviteExtent[0].instanceHandle);
+      ).getInstanceRecord(inviteExtent[0].instanceHandle);
       assert(
         installationHandle === installations.simpleExchange,
         details`wrong installation`,
@@ -387,7 +387,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       );
       const { installationHandle, issuerKeywordRecord } = await E(
         zoe,
-      ).getInstance(inviteExtent[0].instanceHandle);
+      ).getInstanceRecord(inviteExtent[0].instanceHandle);
       assert(
         installationHandle === installations.simpleExchange,
         details`wrong installation`,
@@ -429,7 +429,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     doAutoswap: async instanceHandle => {
       const { installationHandle, issuerKeywordRecord, publicAPI } = await E(
         zoe,
-      ).getInstance(instanceHandle);
+      ).getInstanceRecord(instanceHandle);
       assert(
         installationHandle === installations.autoswap,
         details`wrong installation`,

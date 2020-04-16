@@ -79,7 +79,7 @@ interface ZoeService {
    * Credibly get information about the instance (such as the installation
    * and terms used).
    */
-  getInstance(instanceHandle :Handle(Instance)) -> (InstanceRecord);
+  getInstanceRecord(instanceHandle :Handle(Instance)) -> (InstanceRecord);
 
   /** 
    * To redeem an invite, the user normally provides a proposal (their rules for the

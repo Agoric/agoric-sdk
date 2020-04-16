@@ -46,7 +46,7 @@ function build(E, log) {
       const {
         extent: [{ instanceHandle }],
       } = await E(inviteIssuer).getAmountOf(invite);
-      const { publicAPI } = await E(zoe).getInstance(instanceHandle);
+      const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
       log(`invoking ${testName}.doTest()`);
       await E(publicAPI).doTest();
       log(`complete`);

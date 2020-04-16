@@ -59,7 +59,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     );
 
     const instanceHandle = await getInstanceHandle(aliceInvite);
-    const { publicAPI } = zoe.getInstance(instanceHandle);
+    const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
 
     // Alice escrows with zoe
     const aliceProposal = harden({
@@ -93,7 +93,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       installationHandle: bobInstallationId,
       terms: bobTerms,
       issuerKeywordRecord: bobIssuers,
-    } = zoe.getInstance(bobInviteExtent.instanceHandle);
+    } = zoe.getInstanceRecord(bobInviteExtent.instanceHandle);
 
     t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
     t.deepEquals(
@@ -136,7 +136,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       installationHandle: carolInstallationId,
       terms: carolTerms,
       issuerKeywordRecord: carolIssuers,
-    } = zoe.getInstance(carolInviteExtent.instanceHandle);
+    } = zoe.getInstanceRecord(carolInviteExtent.instanceHandle);
 
     t.equals(carolInstallationId, installationHandle, 'carolInstallationId');
     t.deepEquals(
@@ -182,7 +182,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       installationHandle: daveInstallationId,
       terms: daveTerms,
       issuerKeywordRecord: daveIssuers,
-    } = zoe.getInstance(daveInviteExtent.instanceHandle);
+    } = zoe.getInstanceRecord(daveInviteExtent.instanceHandle);
 
     t.equals(daveInstallationId, installationHandle, 'daveInstallationHandle');
     t.deepEquals(
@@ -355,7 +355,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const {
       extent: [{ instanceHandle }],
     } = await inviteIssuer.getAmountOf(aliceInvite);
-    const { publicAPI } = zoe.getInstance(instanceHandle);
+    const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
 
     // Alice escrows with zoe
     const aliceProposal = harden({
@@ -509,7 +509,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   );
 
   const instanceHandle = await getInstanceHandle(aliceInvite);
-  const { publicAPI } = zoe.getInstance(instanceHandle);
+  const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
 
   // Alice escrows with zoe
   const aliceProposal = harden({
@@ -543,7 +543,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     installationHandle: bobInstallationId,
     terms: bobTerms,
     issuerKeywordRecord: bobIssuers,
-  } = zoe.getInstance(bobInviteExtent.instanceHandle);
+  } = zoe.getInstanceRecord(bobInviteExtent.instanceHandle);
 
   t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
   t.deepEquals(bobIssuers, { Asset: ccIssuer, Bid: moolaIssuer }, 'bobIssuers');
@@ -586,7 +586,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     installationHandle: carolInstallationId,
     terms: carolTerms,
     issuerKeywordRecord: carolIssuers,
-  } = zoe.getInstance(carolInviteExtent.instanceHandle);
+  } = zoe.getInstanceRecord(carolInviteExtent.instanceHandle);
 
   t.equals(carolInstallationId, installationHandle, 'carolInstallationId');
   t.deepEquals(
@@ -632,7 +632,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     installationHandle: daveInstallationId,
     terms: daveTerms,
     issuerKeywordRecord: daveIssuers,
-  } = zoe.getInstance(daveInviteExtent.instanceHandle);
+  } = zoe.getInstanceRecord(daveInviteExtent.instanceHandle);
 
   t.equals(daveInstallationId, installationHandle, 'daveInstallationHandle');
   t.deepEquals(

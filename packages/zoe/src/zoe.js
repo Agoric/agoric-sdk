@@ -507,7 +507,7 @@ const makeZoe = (additionalEndowments = {}) => {
   // The public Zoe service has four main methods: `install` takes
   // contract code and registers it with Zoe associated with an
   // `installationHandle` for identification, `makeInstance` creates
-  // an instance from an installation, `getInstance` credibly
+  // an instance from an installation, `getInstanceRecord` credibly
   // retrieves an instance from Zoe, and `offer` allows users to
   // securely escrow and get in return a record containing a promise for
   // payouts, a promise for the outcome of joining the contract,
@@ -609,6 +609,14 @@ const makeZoe = (additionalEndowments = {}) => {
           .then(makeInstanceRecord);
       },
       /**
+       * Credibly retrieves an instance record given an instanceHandle.
+       * @param {object} instanceHandle - the unique, unforgeable
+       * identifier (empty object) for the instance
+       */
+      getInstanceRecord: instanceTable.get,
+
+      /**
+       * @deprecated renamed to getInstanceRecord
        * Credibly retrieves an instance record given an instanceHandle.
        * @param {object} instanceHandle - the unique, unforgeable
        * identifier (empty object) for the instance
