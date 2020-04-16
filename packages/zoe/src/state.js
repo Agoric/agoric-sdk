@@ -63,7 +63,7 @@ const makeOfferTable = () => {
       deleteOffers: offerHandles => {
         return offerHandles.map(offerHandle => {
           const { notifier } = table.get(offerHandle);
-          notifier.updateState(undefined, true);
+          notifier.updater.resolve(undefined);
           return table.delete(offerHandle);
         });
       },
@@ -71,7 +71,7 @@ const makeOfferTable = () => {
         offerHandles.map((offerHandle, i) => {
           const newAmountKeywordRecord = newAmountKeywordRecords[i];
           const { notifier } = table.get(offerHandle);
-          notifier.updateState(newAmountKeywordRecord.amount);
+          notifier.updater.updateState(newAmountKeywordRecord);
           return table.update(offerHandle, {
             currentAllocation: newAmountKeywordRecord,
           });

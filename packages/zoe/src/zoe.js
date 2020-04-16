@@ -25,7 +25,7 @@ import { areRightsConserved } from './rightsConservation';
 import { evalContractCode } from './evalContractCode';
 import { makeTables } from './state';
 // TODO update to @agoric/notifier ASAP
-import { makeNotifier } from '../../notifier/src/notifier';
+import { produceNotifier } from '../../notifier/src/notifier';
 
 // TODO Update types and documentatuon to describe the new API
 /**
@@ -449,8 +449,7 @@ const makeZoe = (additionalEndowments = {}) => {
       getInviteIssuer: () => inviteIssuer,
       getAmountMaths: sparseKeywords =>
         getAmountMaths(instanceHandle, sparseKeywords),
-      getOfferNotifications: offerHandle =>
-        offerTable.get(offerHandle).notifier.getUpdateSince(),
+      getOfferNotifier: offerHandle => offerTable.get(offerHandle).notifier,
       getOfferStatuses: offerHandles => {
         const { active, inactive } = offerTable.getOfferStatuses(offerHandles);
         assertOffersHaveInstanceHandle(active, instanceHandle);
@@ -621,9 +620,8 @@ const makeZoe = (additionalEndowments = {}) => {
        */
       getInstance: instanceTable.get,
 
-      /** Get a notificationRecord (see @agoric/notify) for the offer. */
-      getOfferNotifications: offerHandle =>
-        offerTable.get(offerHandle).notifier.getUpdateSince(),
+      /** Get a notifier (see @agoric/notify) for the offer. */
+      getOfferNotifier: offerHandle => offerTable.get(offerHandle).notifier,
 
       /**
        * Redeem the invite to receive a payout promise and an
@@ -699,7 +697,7 @@ const makeZoe = (additionalEndowments = {}) => {
               instanceHandle,
               proposal,
               currentAllocation: arrayToObj(amountsArray, userKeywords),
-              notifier: makeNotifier(),
+              notifier: produceNotifier(),
             };
             offerTable.create(offerImmutableRecord, offerHandle);
             payoutMap.init(offerHandle, producePromise());

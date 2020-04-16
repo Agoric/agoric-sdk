@@ -14,7 +14,7 @@ import { makeGetInstanceHandle } from '../../../src/clientSupport';
 const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
 
 test('simpleExchange with valid offers', async t => {
-  t.plan(11);
+  t.plan(14);
   const {
     moolaIssuer,
     simoleanIssuer,
@@ -71,14 +71,16 @@ test('simpleExchange with valid offers', async t => {
   } = await zoe.offer(aliceInvite, aliceSellOrderProposal, alicePayments);
 
   aliceOfferHandle.then(handle => {
-    const aliceNotification = zoe.getOfferNotifications(handle);
-    t.notOk(aliceNotification.currentState, undefined, 'start state is empty');
-    Promise.all([aliceNotification.nextStatePromise]).then(([nextRecord]) =>
-      t.assert(
-        Object.getOwnPropertyNames(nextRecord)[0].includes('currentState'),
-        'following promise has currentState',
-      ),
-    );
+    const { notifier: aliceNotifier } = zoe.getOfferNotifier(handle);
+    const firstUpdate = aliceNotifier.getUpdateSince();
+    t.notOk(firstUpdate.value, 'notifier start state is empty');
+    t.notOk(firstUpdate.done, 'notifier start state is not done');
+    t.ok(firstUpdate.updateHandle, 'notifier start state has handle');
+    const nextUpdateP = aliceNotifier.getUpdateSince(firstUpdate.updateHandle);
+    Promise.all([nextUpdateP]).then(([nextRecord]) => {
+      t.ok(nextRecord.value.Asset, 'following state has update');
+      t.ok(nextRecord.value.Price, 'following state has Price');
+    });
   });
 
   const bobInvite = publicAPI.makeInvite();
