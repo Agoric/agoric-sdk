@@ -386,12 +386,6 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
       });
     },
 
-    // TODO(msm): remove once we no longer need to support old API
-    getAmountOfNow: payment => {
-      assertKnownPayment(payment);
-      return paymentLedger.get(payment);
-    },
-
     burn: (paymentP, optAmount = undefined) => {
       return Promise.resolve(paymentP).then(payment => {
         assertKnownPayment(payment);
