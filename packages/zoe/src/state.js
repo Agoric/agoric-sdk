@@ -60,7 +60,6 @@ const makeOfferTable = () => {
         });
       },
       isOfferActive: offerHandle => table.has(offerHandle),
-      getNotifier: offerHandle => table.get(offerHandle).notifier,
       deleteOffers: offerHandles => {
         return offerHandles.map(offerHandle => {
           const { notifier } = table.get(offerHandle);

@@ -300,8 +300,16 @@ const makeZoe = (additionalEndowments = {}) => {
   const removePurse = issuerRecord =>
     filterObj(issuerRecord, ['issuer', 'brand', 'amountMath']);
 
-  const removeAmounts = offerRecord =>
+  const removeAmountsAndNotifier = offerRecord =>
     filterObj(offerRecord, ['handle', 'instanceHandle', 'proposal']);
+
+  const removeNotifier = offerRecord =>
+    filterObj(offerRecord, [
+      'handle',
+      'instanceHandle',
+      'proposal',
+      'currentAllocation',
+    ]);
 
   const assertOffersHaveInstanceHandle = (
     offerHandles,
@@ -458,11 +466,11 @@ const makeZoe = (additionalEndowments = {}) => {
       },
       getOffers: offerHandles => {
         assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
-        return offerTable.getOffers(offerHandles).map(removeAmounts);
+        return offerTable.getOffers(offerHandles).map(removeAmountsAndNotifier);
       },
       getOffer: offerHandle => {
         assertOffersHaveInstanceHandle(harden([offerHandle]), instanceHandle);
-        return removeAmounts(offerTable.get(offerHandle));
+        return removeAmountsAndNotifier(offerTable.get(offerHandle));
       },
       getCurrentAllocation: (offerHandle, sparseKeywords) => {
         assertOffersHaveInstanceHandle(harden([offerHandle]), instanceHandle);
@@ -745,8 +753,9 @@ const makeZoe = (additionalEndowments = {}) => {
       },
 
       isOfferActive: offerTable.isOfferActive,
-      getOffers: offerTable.getOffers,
-      getOffer: offerTable.get,
+      getOffers: offerHandles =>
+        offerTable.getOffers(offerHandles).map(removeNotifier),
+      getOffer: offerHandle => removeNotifier(offerTable.get(offerHandle)),
       getInstallation: installationHandle =>
         installationTable.get(installationHandle).code,
     },
