@@ -94,7 +94,7 @@ export default function setup(syscall, state, helpers) {
             harden({
               issuer: issuers[i],
               petname: issuerName,
-              brandRegKey: await E(registrar).register(
+              brandRegKey: await E(registry).register(
                 issuerName,
                 await E(issuers[i]).getBrand(),
               ),
@@ -111,6 +111,7 @@ export default function setup(syscall, state, helpers) {
               sharingService,
               contractHost,
               ibcport,
+              registrar: registry,
               registry,
               zoe,
             });
