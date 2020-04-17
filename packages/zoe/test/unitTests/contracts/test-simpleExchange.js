@@ -71,7 +71,7 @@ test('simpleExchange with valid offers', async t => {
   } = await zoe.offer(aliceInvite, aliceSellOrderProposal, alicePayments);
 
   aliceOfferHandle.then(handle => {
-    const { notifier: aliceNotifier } = zoe.getOfferNotifier(handle);
+    const aliceNotifier = zoe.getOfferNotifier(handle);
     const firstUpdate = aliceNotifier.getUpdateSince();
     t.notOk(firstUpdate.value, 'notifier start state is empty');
     t.notOk(firstUpdate.done, 'notifier start state is not done');

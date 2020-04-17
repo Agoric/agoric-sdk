@@ -692,11 +692,13 @@ const makeZoe = (additionalEndowments = {}) => {
           });
 
           const recordOffer = amountsArray => {
+            const notifierRec = produceNotifier();
             const offerImmutableRecord = {
               instanceHandle,
               proposal,
               currentAllocation: arrayToObj(amountsArray, userKeywords),
-              notifier: produceNotifier(),
+              notifier: notifierRec.notifier,
+              updater: notifierRec.updater,
             };
             offerTable.create(offerImmutableRecord, offerHandle);
             payoutMap.init(offerHandle, producePromise());
