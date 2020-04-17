@@ -257,40 +257,15 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
-  function printOrders(orders, brandPetnames, brands, giveIndex = 0) {
-    if (orders.length === 0) {
-      return '[]';
-    }
-    const wantIndex = 1 - giveIndex;
-    const keywords = ['Price', 'Asset'];
-    const descs = [];
-    for (const o of orders) {
-      const giveKeyword = Object.getOwnPropertyNames(o[giveIndex])[0];
-      const wantKeyword = Object.getOwnPropertyNames(o[wantIndex])[0];
-      const giveBrandPetname = brandPetnames[keywords.indexOf(giveKeyword)];
-      const wantBrandPetname = brandPetnames[keywords.indexOf(wantKeyword)];
-      descs.push(
-        `${giveBrandPetname}:${o[giveIndex][giveKeyword]} for ${wantBrandPetname}:${o[wantIndex][wantKeyword]}`,
-      );
-    }
-    return descs;
-  }
-
-  function pollForBookOrders(publicAPI, petnames, brands) {
-    const orderResultP = E(publicAPI).getBookOrders();
-
-    orderResultP.then(orderResult => {
-      const { changed: p, buys, sells } = orderResult;
-      p.then(() => {
-        pollForBookOrders(publicAPI, petnames, brands);
-        const buyOrders = printOrders(buys, petnames, brands, 1);
-        const sellOrders = printOrders(sells, petnames, brands, 0);
-        log(`Order update: b:${buyOrders}, s:${sellOrders}`);
-      });
+  function logStateOnChanges(notifier, lastHandle = undefined) {
+    const updateRecordP = E(notifier).getUpdateSince(lastHandle);
+    updateRecordP.then(updateRec => {
+      log(updateRec.value);
+      logStateOnChanges(notifier, updateRec.updateHandle);
     });
   }
 
-  const doSimpleExchangeUpdates = async bobP => {
+  const doSimpleExchangeWithNotification = async bobP => {
     const issuerKeywordRecord = harden({
       Price: simoleanIssuer,
       Asset: moolaIssuer,
@@ -303,13 +278,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     const instanceHandle = await getInstanceHandle(addOrderInvite);
     const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
 
-    const petnames = ['simoleans', 'moola'];
-    const brands = await Promise.all([
-      E(simoleanIssuer).getBrand(),
-      E(moolaIssuer).getBrand(),
-    ]);
+    logStateOnChanges(await E(publicAPI).getNotifier());
 
-    pollForBookOrders(publicAPI, petnames, brands);
     const aliceSellOrderProposal = harden({
       give: { Asset: moola(3) },
       want: { Price: simoleans(4) },
@@ -447,8 +417,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         case 'simpleExchangeOk': {
           return doSimpleExchange(bobP, carolP, daveP);
         }
-        case 'simpleExchangeUpdates': {
-          return doSimpleExchangeUpdates(bobP, carolP, daveP);
+        case 'simpleExchangeNotifier': {
+          return doSimpleExchangeWithNotification(bobP, carolP, daveP);
         }
         case 'autoswapOk': {
           return doAutoswap(bobP, carolP, daveP);
