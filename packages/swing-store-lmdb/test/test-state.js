@@ -1,9 +1,14 @@
 import fs from 'fs';
+import path from 'path';
 
 import { test } from 'tape-promise/tape';
 import { getAllState } from '@agoric/swing-store-simple';
 
-import { initSwingStore, openSwingStore } from '../lmdbSwingStore';
+import {
+  initSwingStore,
+  openSwingStore,
+  isSwingStore,
+} from '../lmdbSwingStore';
 
 function testStorage(t, storage) {
   t.notOk(storage.has('missing'));
@@ -37,15 +42,31 @@ function testStorage(t, storage) {
 }
 
 test('storageInLMDB', t => {
+  fs.rmdirSync('testdb', { recursive: true });
+  t.equal(isSwingStore('testdb'), false);
   const { storage, commit, close } = initSwingStore('testdb');
   testStorage(t, storage);
   commit();
   const before = getAllState(storage);
   close();
+  t.equal(isSwingStore('testdb'), true);
 
   const { storage: after } = openSwingStore('testdb');
   t.deepEqual(getAllState(after), before, 'check state after reread');
+  t.equal(isSwingStore('testdb'), true);
+  t.end();
+});
+
+test('rejectSimple', t => {
+  const simpleDir = 'testdb-simple';
+  fs.mkdirSync(simpleDir, { recursive: true });
+  fs.writeFileSync(
+    path.resolve(simpleDir, 'swingset-kernel-state.jsonlines'),
+    'some data\n',
+  );
+  t.equal(isSwingStore(simpleDir), false);
   t.end();
 });
 
 test.onFinish(() => fs.rmdirSync('testdb', { recursive: true }));
+test.onFinish(() => fs.rmdirSync('testdb-simple', { recursive: true }));
