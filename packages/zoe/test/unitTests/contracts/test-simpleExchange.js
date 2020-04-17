@@ -14,7 +14,7 @@ import { makeGetInstanceHandle } from '../../../src/clientSupport';
 const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
 
 test('simpleExchange with valid offers', async t => {
-  t.plan(9);
+  t.plan(14);
   const {
     moolaIssuer,
     simoleanIssuer,
@@ -64,11 +64,24 @@ test('simpleExchange with valid offers', async t => {
   });
   const alicePayments = { Asset: aliceMoolaPayment };
   // 4: Alice adds her sell order to the exchange
-  const { payout: alicePayoutP, outcome: aliceOutcomeP } = await zoe.offer(
-    aliceInvite,
-    aliceSellOrderProposal,
-    alicePayments,
-  );
+  const {
+    payout: alicePayoutP,
+    outcome: aliceOutcomeP,
+    offerHandle: aliceOfferHandle,
+  } = await zoe.offer(aliceInvite, aliceSellOrderProposal, alicePayments);
+
+  aliceOfferHandle.then(handle => {
+    const aliceNotifier = zoe.getOfferNotifier(handle);
+    const firstUpdate = aliceNotifier.getUpdateSince();
+    t.notOk(firstUpdate.value, 'notifier start state is empty');
+    t.notOk(firstUpdate.done, 'notifier start state is not done');
+    t.ok(firstUpdate.updateHandle, 'notifier start state has handle');
+    const nextUpdateP = aliceNotifier.getUpdateSince(firstUpdate.updateHandle);
+    Promise.all([nextUpdateP]).then(([nextRecord]) => {
+      t.ok(nextRecord.value.Asset, 'following state has update');
+      t.ok(nextRecord.value.Price, 'following state has Price');
+    });
+  });
 
   const bobInvite = publicAPI.makeInvite();
 

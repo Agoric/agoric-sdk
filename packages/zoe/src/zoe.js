@@ -4,6 +4,7 @@ import { E, HandledPromise } from '@agoric/eventual-send';
 import makeStore from '@agoric/weak-store';
 import produceIssuer from '@agoric/ertp';
 import { assert, details, openDetail } from '@agoric/assert';
+import { produceNotifier } from '@agoric/notifier';
 import { producePromise } from '@agoric/produce-promise';
 
 import {
@@ -298,8 +299,16 @@ const makeZoe = (additionalEndowments = {}) => {
   const removePurse = issuerRecord =>
     filterObj(issuerRecord, ['issuer', 'brand', 'amountMath']);
 
-  const removeAmounts = offerRecord =>
+  const removeAmountsAndNotifier = offerRecord =>
     filterObj(offerRecord, ['handle', 'instanceHandle', 'proposal']);
+
+  const removeNotifier = offerRecord =>
+    filterObj(offerRecord, [
+      'handle',
+      'instanceHandle',
+      'proposal',
+      'currentAllocation',
+    ]);
 
   const assertOffersHaveInstanceHandle = (
     offerHandles,
@@ -439,6 +448,7 @@ const makeZoe = (additionalEndowments = {}) => {
       getInviteIssuer: () => inviteIssuer,
       getAmountMaths: sparseKeywords =>
         getAmountMaths(instanceHandle, sparseKeywords),
+      getOfferNotifier: offerHandle => offerTable.get(offerHandle).notifier,
       getOfferStatuses: offerHandles => {
         const { active, inactive } = offerTable.getOfferStatuses(offerHandles);
         assertOffersHaveInstanceHandle(active, instanceHandle);
@@ -454,11 +464,11 @@ const makeZoe = (additionalEndowments = {}) => {
       },
       getOffers: offerHandles => {
         assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
-        return offerTable.getOffers(offerHandles).map(removeAmounts);
+        return offerTable.getOffers(offerHandles).map(removeAmountsAndNotifier);
       },
       getOffer: offerHandle => {
         assertOffersHaveInstanceHandle(harden([offerHandle]), instanceHandle);
-        return removeAmounts(offerTable.get(offerHandle));
+        return removeAmountsAndNotifier(offerTable.get(offerHandle));
       },
       getCurrentAllocation: (offerHandle, sparseKeywords) => {
         assertOffersHaveInstanceHandle(harden([offerHandle]), instanceHandle);
@@ -609,6 +619,9 @@ const makeZoe = (additionalEndowments = {}) => {
        */
       getInstance: instanceTable.get,
 
+      /** Get a notifier (see @agoric/notify) for the offer. */
+      getOfferNotifier: offerHandle => offerTable.get(offerHandle).notifier,
+
       /**
        * Redeem the invite to receive a payout promise and an
        * outcome promise.
@@ -679,10 +692,13 @@ const makeZoe = (additionalEndowments = {}) => {
           });
 
           const recordOffer = amountsArray => {
+            const notifierRec = produceNotifier();
             const offerImmutableRecord = {
               instanceHandle,
               proposal,
               currentAllocation: arrayToObj(amountsArray, userKeywords),
+              notifier: notifierRec.notifier,
+              updater: notifierRec.updater,
             };
             offerTable.create(offerImmutableRecord, offerHandle);
             payoutMap.init(offerHandle, producePromise());
@@ -736,8 +752,9 @@ const makeZoe = (additionalEndowments = {}) => {
       },
 
       isOfferActive: offerTable.isOfferActive,
-      getOffers: offerTable.getOffers,
-      getOffer: offerTable.get,
+      getOffers: offerHandles =>
+        offerTable.getOffers(offerHandles).map(removeNotifier),
+      getOffer: offerHandle => removeNotifier(offerTable.get(offerHandle)),
       getInstallation: installationHandle =>
         installationTable.get(installationHandle).code,
     },

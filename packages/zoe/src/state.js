@@ -27,12 +27,19 @@ const makeInstanceTable = () => {
 };
 
 // Offer Table
-// Columns: handle | instanceHandle | proposal | currentAllocation
+// Columns:
+//   handle | instanceHandle | proposal | currentAllocation, notifier, updater
 const makeOfferTable = () => {
   // TODO: make sure this validate function protects against malicious
   // misshapen objects rather than just a general check.
   const validateProperties = makeValidateProperties(
-    harden(['instanceHandle', 'proposal', 'currentAllocation']),
+    harden([
+      'instanceHandle',
+      'proposal',
+      'currentAllocation',
+      'notifier',
+      'updater',
+    ]),
   );
   const validateSomewhat = obj => {
     validateProperties(obj);
@@ -60,14 +67,22 @@ const makeOfferTable = () => {
         });
       },
       isOfferActive: offerHandle => table.has(offerHandle),
-      deleteOffers: offerHandles =>
-        offerHandles.map(offerHandle => table.delete(offerHandle)),
+      deleteOffers: offerHandles => {
+        return offerHandles.map(offerHandle => {
+          const { updater } = table.get(offerHandle);
+          updater.resolve(undefined);
+          return table.delete(offerHandle);
+        });
+      },
       updateAmounts: (offerHandles, newAmountKeywordRecords) =>
-        offerHandles.map((offerHandle, i) =>
-          table.update(offerHandle, {
-            currentAllocation: newAmountKeywordRecords[i],
-          }),
-        ),
+        offerHandles.map((offerHandle, i) => {
+          const newAmountKeywordRecord = newAmountKeywordRecords[i];
+          const { updater } = table.get(offerHandle);
+          updater.updateState(newAmountKeywordRecord);
+          return table.update(offerHandle, {
+            currentAllocation: newAmountKeywordRecord,
+          });
+        }),
     });
     return customMethods;
   };
