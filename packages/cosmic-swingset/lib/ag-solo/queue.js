@@ -1,7 +1,9 @@
 import { producePromise } from '@agoric/produce-promise';
 
-// Return a function that can wrap an async or sync method, but
-// ensures only one of them (in order) is running at a time.
+/**
+ * Return a function that can wrap an async or sync method, but
+ * ensures only one of them (in order) is running at a time.
+ */
 export const makeWithQueue = () => {
   const queue = [];
 

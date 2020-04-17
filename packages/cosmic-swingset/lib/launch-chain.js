@@ -19,7 +19,14 @@ const log = anylogger('launch-chain');
 
 const SWING_STORE_META_KEY = 'cosmos/meta';
 
-async function buildSwingset(withSES, mailboxState, bridgeOutbound, storage, vatsDir, argv) {
+async function buildSwingset(
+  withSES,
+  mailboxState,
+  bridgeOutbound,
+  storage,
+  vatsDir,
+  argv,
+) {
   const config = {};
   const mbs = buildMailboxStateMap();
   mbs.populateFromData(mailboxState);
@@ -56,7 +63,13 @@ async function buildSwingset(withSES, mailboxState, bridgeOutbound, storage, vat
   return { controller, mb, mbs, bridgeInbound, timer };
 }
 
-export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
+export async function launch(
+  kernelStateDBDir,
+  mailboxStorage,
+  doOutboundBridge,
+  vatsDir,
+  argv,
+) {
   const withSES = true;
   log.info('Launching SwingSet kernel');
 
@@ -69,8 +82,9 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
   const { openSwingStore } = getBestSwingStore(tempdir);
   const { storage, commit } = openSwingStore(kernelStateDBDir);
 
-  function bridgeOutbound(argx) {
-    // XX
+  function bridgeOutbound(dstID, obj) {
+    // console.error('would outbound bridge', dstID, obj);
+    return doOutboundBridge(dstID, obj);
   }
   log.debug(`buildSwingset`);
   const { controller, mb, mbs, bridgeInbound, timer } = await buildSwingset(
@@ -119,7 +133,7 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
   }
 
   async function doBridgeInbound(source, body) {
-    console.log(`doBridgeInbound`);
+    // console.log(`doBridgeInbound`);
     // the inbound bridge will push messages onto the kernel run-queue for
     // delivery+dispatch to some handler vat
     bridgeInbound(source, body);

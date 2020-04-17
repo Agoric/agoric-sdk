@@ -42,9 +42,9 @@ export function makeBridgeManager(E, D, bridgeDevice) {
   const srcHandlers = makeStore('srcID');
 
   function bridgeInbound(srcID, obj) {
-    console.log(
-      `bridge inbound received ${srcID} ${JSON.stringify(obj, undefined, 2)}`,
-    );
+    // console.log(
+    //  `bridge inbound received ${srcID} ${JSON.stringify(obj, undefined, 2)}`,
+    // );
 
     // Notify the specific handler, if there was one.
     E(srcHandlers.get(srcID)).fromBridge(srcID, obj);
@@ -62,13 +62,6 @@ export function makeBridgeManager(E, D, bridgeDevice) {
     // note: *we* get this return value synchronously, but any callers (in
     // separate vats) only get a Promise, and will receive the value in some
     // future turn
-    if (retval !== true) {
-      throw Error(
-        `Non-true value from outbound call to ${dstID}: ${JSON.stringify(
-          retval,
-        )}`,
-      );
-    }
     return retval;
   }
 
@@ -77,7 +70,7 @@ export function makeBridgeManager(E, D, bridgeDevice) {
 
   return harden({
     toBridge(dstID, obj) {
-      callOutbound(dstID, obj);
+      return callOutbound(dstID, obj);
     },
     register(srcID, handler) {
       srcHandlers.init(srcID, handler);
