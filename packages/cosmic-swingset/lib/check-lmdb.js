@@ -26,12 +26,12 @@ export function getBestSwingStore(tempdir) {
     );
   }
 
-  const tdb1 = openSwingStoreLMDB(tempdir);
-  tdb1.storage.set('test key', 'test value');
-  tdb1.commit();
-  tdb1.close();
-
   try {
+    const tdb1 = openSwingStoreLMDB(tempdir);
+    tdb1.storage.set('test key', 'test value');
+    tdb1.commit();
+    tdb1.close();
+
     const tdb2 = openSwingStoreLMDB(tempdir);
     if (!tdb2.storage.has('test key')) {
       throw Error(`LMDB test disavows test key`);
