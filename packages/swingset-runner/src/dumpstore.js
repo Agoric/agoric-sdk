@@ -29,6 +29,7 @@ export function dumpStore(store, outfile, rawMode) {
   }
 
   popt('runQueue');
+  popt('crankNumber');
   gap();
 
   p('// device info');
@@ -81,6 +82,7 @@ export function dumpStore(store, outfile, rawMode) {
   pgroup('kp');
   gap();
 
+  const transcript = [];
   let starting = true;
   for (const [vn, v] of vats.entries()) {
     if (starting) {
@@ -105,7 +107,23 @@ export function dumpStore(store, outfile, rawMode) {
       const val = popt(key);
       popt(`${v}.c.${val}`);
     }
-    pgroup(`${v}.t.`);
+    for (const key of groupKeys(`${v}.t.`)) {
+      transcript.push([key, state.get(key)]);
+      state.delete(key);
+    }
+  }
+
+  if (transcript.length > 0) {
+    gap();
+    p('// transcript');
+    transcript.sort((a, b) => {
+      const aEntry = JSON.parse(a[1]);
+      const bEntry = JSON.parse(b[1]);
+      return aEntry.crankNumber - bEntry.crankNumber;
+    });
+    for (let i = 0; i < transcript.length; i += 1) {
+      pkv(transcript[i][0], transcript[i][1]);
+    }
   }
 
   starting = true;

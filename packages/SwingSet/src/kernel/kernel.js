@@ -395,6 +395,7 @@ export default function buildKernel(kernelEndowments) {
         throw Error(`unable to process message.type ${message.type}`);
       }
       commitCrank();
+      kernelKeeper.incrementCrankNumber();
     } finally {
       processQueueRunning = undefined;
     }
@@ -725,6 +726,7 @@ export default function buildKernel(kernelEndowments) {
 
     kernelKeeper.setInitialized();
     commitCrank(); // commit "crank 0"
+    kernelKeeper.incrementCrankNumber();
   }
 
   async function step() {
