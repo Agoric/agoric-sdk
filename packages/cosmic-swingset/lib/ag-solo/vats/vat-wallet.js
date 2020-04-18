@@ -95,10 +95,10 @@ function build(E, _D, _log) {
         };
       }
       case 'walletAcceptOffer': {
-        await wallet.acceptOffer(data);
+        const ret = await wallet.acceptOffer(data);
         return {
-          type: 'walletOfferAccepted',
-          data: true,
+          type: 'walletAcceptOfferResponse',
+          data: ret,
         };
       }
 

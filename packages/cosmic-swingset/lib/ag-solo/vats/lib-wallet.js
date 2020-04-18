@@ -318,7 +318,7 @@ export async function makeWallet(
       const {
         publicAPI,
         invite,
-        hooks: { publicAPI: publicAPIHooks = {}, seat: seatHooks = {} } = {},
+        hooks: { publicAPI: publicAPIHooks = {} } = {},
       } = compiledOffer;
 
       const inviteP = invite || E(publicAPIHooks).getInvite(publicAPI);
@@ -331,22 +331,7 @@ export async function makeWallet(
         alreadyResolved = true;
         return E(cancelObj).cancel();
       });
-      ret = { outcome: outcomeP, publicAPI };
-
-      // =====================
-      // === AWAITING TURN ===
-      // =====================
-
-      // TODO(msm): Why isn't "yarn test" failing here?
-      // TODO(msm): What is performOffer and why does it need a seat?
-
-      // Don't wait for the offer to finish performing...
-      // we need to return control to our caller.
-      E(seatHooks)
-        .performOffer(seat)
-        .catch(e =>
-          assert.fail(details`seatHooks.performOffer failed with ${e}`),
-        );
+      ret = { outcome: await outcomeP };
 
       // Update status, drop the proposal
       depositedP
