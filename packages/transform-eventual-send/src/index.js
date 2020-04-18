@@ -27,13 +27,23 @@ function makeEventualSendTransformer(parser, generate) {
             if (!HandledPromise) {
               // Get a HandledPromise endowment for the evaluator.
               // It will be hardened in the evaluator's context.
-              const { source: evSendSrc, moduleFormat } = eventualSendBundle;
-              if (moduleFormat === 'getExport') {
+              const nestedEvaluate = src =>
+                (evaluateProgram || ss.evaluateProgram)(src, {
+                  require: myRequire || require,
+                  nestedEvaluate,
+                });
+              const {
+                source: evSendSrc,
+                moduleFormat,
+                sourceMap,
+              } = eventualSendBundle;
+              if (
+                moduleFormat === 'getExport' ||
+                moduleFormat === 'nestedEvaluate'
+              ) {
                 recursive = true;
                 try {
-                  const ns = (
-                    evaluateProgram || ss.evaluateProgram
-                  )(`(${evSendSrc})()`, { require: myRequire || require });
+                  const ns = nestedEvaluate(`(${evSendSrc}\n${sourceMap})`)();
                   HandledPromise = ns.HandledPromise;
                 } finally {
                   recursive = false;
