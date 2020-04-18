@@ -10,7 +10,6 @@ import anylogger from 'anylogger';
 // import harden from '@agoric/harden';
 // import djson from 'deterministic-json';
 
-import { openSwingStore } from '@agoric/swing-store-lmdb';
 import {
   loadBasedir,
   buildCommand,
@@ -22,6 +21,7 @@ import {
   getCommsSourcePath,
   getTimerWrapperSourcePath,
 } from '@agoric/swingset-vat';
+import { getBestSwingStore } from '../check-lmdb';
 
 import { deliver, addDeliveryTarget } from './outbound';
 import { makeHTTPListener } from './web';
@@ -103,6 +103,8 @@ async function buildSwingset(
   });
   config.vats.set('timer', { sourcepath: getTimerWrapperSourcePath() });
 
+  const tempdir = path.resolve(kernelStateDBDir, 'check-lmdb-tempdir');
+  const { openSwingStore } = getBestSwingStore(tempdir);
   const { storage, commit } = openSwingStore(kernelStateDBDir);
   config.hostStorage = storage;
 

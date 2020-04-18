@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import anylogger from 'anylogger';
 
 import djson from 'deterministic-json';
@@ -12,7 +13,7 @@ import {
   getTimerWrapperSourcePath,
   getVatTPSourcePath,
 } from '@agoric/swingset-vat';
-import { openSwingStore } from '@agoric/swing-store-lmdb';
+import { getBestSwingStore } from './check-lmdb';
 
 const log = anylogger('launch-chain');
 
@@ -64,6 +65,8 @@ export async function launch(kernelStateDBDir, mailboxStorage, vatsDir, argv) {
     ? JSON.parse(mailboxStorage.get('mailbox'))
     : {};
 
+  const tempdir = path.resolve(kernelStateDBDir, 'check-lmdb-tempdir');
+  const { openSwingStore } = getBestSwingStore(tempdir);
   const { storage, commit } = openSwingStore(kernelStateDBDir);
 
   function bridgeOutbound(argx) {
