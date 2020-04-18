@@ -296,3 +296,27 @@ export function setAllState(storage, stuff) {
     storage.set(k, stuff[k]);
   }
 }
+
+/**
+ * Is this directory a compatible swing store?
+ *
+ * @param dirPath  Path to a directory in which database files might be present.
+ *   This directory need not actually exist
+ *
+ * @return boolean
+ *   If the directory is present and contains the files created by initSwingStore
+ *   or openSwingStore, returns true. Else returns false.
+ *
+ */
+export function isSwingStore(dirPath) {
+  if (`${dirPath}` !== dirPath) {
+    throw new Error('dirPath must be a string');
+  }
+  if (fs.existsSync(dirPath)) {
+    const storeFile = path.resolve(dirPath, 'swingset-kernel-state.jsonlines');
+    if (fs.existsSync(storeFile)) {
+      return true;
+    }
+  }
+  return false;
+}
