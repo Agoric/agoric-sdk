@@ -1,5 +1,29 @@
 import { producePromise } from '@agoric/produce-promise';
+import { E } from '@agoric/eventual-send';
 import harden from '@agoric/harden';
+
+export function makeAsyncIterable(notifierP) {
+  return harden({
+    [Symbol.asyncIterator]: () => {
+      let myHandle;
+      let myIterationResultP;
+      return harden({
+        next: () => {
+          if (!myIterationResultP) {
+            myIterationResultP = E(notifierP)
+              .getUpdateSince(myHandle)
+              .then(({ value, updateHandle, done }) => {
+                myHandle = updateHandle;
+                myIterationResultP = undefined;
+                return harden({ value, done });
+              });
+          }
+          return myIterationResultP;
+        },
+      });
+    },
+  });
+}
 
 /**
  * Produces a pair of objects, which allow a service to produce a stream of
@@ -34,22 +58,20 @@ export const produceNotifier = () => {
     if (updateHandle === currentResponse.updateHandle) {
       return currentPromiseRec.promise;
     }
-
     return currentResponse;
   }
 
   function updateState(state) {
-    if (!currentResponse.updateHandle) {
+    if (currentResponse.done) {
       throw new Error('Cannot update state after resolve.');
     }
-
     currentResponse = harden({ value: state, updateHandle: {}, done: false });
     currentPromiseRec.resolve(currentResponse);
     currentPromiseRec = producePromise();
   }
 
   function resolve(finalState) {
-    if (!currentResponse.updateHandle) {
+    if (currentResponse.done) {
       throw new Error('Cannot resolve again.');
     }
 
@@ -61,9 +83,12 @@ export const produceNotifier = () => {
     currentPromiseRec.resolve(currentResponse);
   }
 
-  // notifier facet is separate so it can be handed out loosely while updater is
-  // tightly held
-  const notifier = harden({ getUpdateSince });
+  // notifier facet is separate so it can be handed out loosely while updater
+  // is tightly held
+  const notifier = harden({
+    getUpdateSince,
+    ...makeAsyncIterable({ getUpdateSince }),
+  });
   const updater = harden({ updateState, resolve });
   return harden({ notifier, updater });
 };
