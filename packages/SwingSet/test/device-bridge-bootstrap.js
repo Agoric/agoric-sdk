@@ -19,6 +19,7 @@ export default function setup(syscall, state, helpers) {
           const retval = D(devices.bridge).callOutbound(argv[0], argv[1]);
           log('outbound retval');
           log(JSON.stringify(retval));
+          log(retval === undefined);
         },
       }),
     helpers.vatID,

@@ -15,7 +15,7 @@ Solo machines may be able to talk to chains and vice versa using specialized pro
 
 == The agoric-sdk User Local Port ==
 
-Each user of the Agoric testnet gets their own personal IBC listening port. You can access this `Port` object in `home.ibcport`, and you can learn its local address by calling `home.ibcport~.getLocalAddress()`, which will give you something like `/ibc/*/ordered/port8312`.
+Each user of the Agoric testnet gets their own personal IBC listening port. You can access this `Port` object in `home.ibcport`, and you can learn its local address by calling `home.ibcport~.getLocalAddress()`, which will give you something like `/ibc/*/port/port8312`.
 
 This is currently the only way for user code to get an IBC `Port`, though non-IBC ports can be allocated using the local `home.network` object.  This is an advanced use case, to be documented later.
 
@@ -23,7 +23,7 @@ This is currently the only way for user code to get an IBC `Port`, though non-IB
 
 == Connecting to a Remote Port ==
 
-To establish a connection, you must start with a local `Port` object, and you must know the name of the remote endpoint. The remote endpoint will have a name like `/ibc/$CONNECTIONNAME/ordered/$PORTNAME` (where `ibc` and `ordered` are literal strings, spelled just like that, but `$CONNECTIONNAME` and `$PORTNAME` are placeholders for arbitrary values that will vary from one endpoint to another).
+To establish a connection, you must start with a local `Port` object, and you must know the name of the remote endpoint. The remote endpoint will have a name like `/ibc/$LINKNAME/port/$PORTNAME` (where `ibc` and `portID` are literal strings, spelled just like that, but `$LINKNAME` and `$PORTNAME` are placeholders for arbitrary values that will vary from one endpoint to another).
 
 You must also prepare a `ConnectionHandler` object to manage the connection you're about to create. This has a number of methods which will be called when the things happen to the connection, including packets arriving. This is described below.
 
@@ -42,15 +42,15 @@ To get a listening port, you need a `NetworkInterface` object (such as the one o
 
 ```js
 // ask for a random allocation - ends with a slash
-home.network~.bind('/ibc/*/ordered/`)
+home.network~.bind('/ibc/*/port/`)
   .then(port => usePort(port));
 //
 // or ask for a specific port name
-home.network~.bind('/ibc/*/ordered/my-cool-port-name`)
+home.network~.bind('/ibc/*/port/my-cool-port-name`)
   .then(port => usePort(port));
 ```
 
-IBC has named "Relay Connections" which relay between two specific chains.  These "Relay Connections" are different from the connections described in this document.  When you bind a port to `/ibc/*`, any "Relay-connected" chain can initiate a connection to this port. If you know a "Relay Connection" name and want to limit the port to only using that one, you can bind to `/ibc/ibctwo/ordered/` instead.
+IBC has named "Relay Connections" which relay between two specific chains.  These "Relay Connections" are different from the connections described in this document.  When you bind a port to `/ibc/*`, any "Relay-connected" chain can initiate a connection to this port.
 
 You can ask the `Port` object this returns for its local address, which is especially useful if you had asked for a random allocation (since otherwise you have no way to know what address you got):
 

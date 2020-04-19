@@ -30,6 +30,7 @@ test('bridge device', async t => {
   t.deepEqual(c.dump().log, [
     'outbound retval',
     JSON.stringify(['the', { retval: 'is' }, 4]),
+    'false',
   ]);
 
   const inboundArg0 = ['hello'];
@@ -40,6 +41,7 @@ test('bridge device', async t => {
   t.deepEqual(c.dump().log, [
     'outbound retval',
     JSON.stringify(['the', { retval: 'is' }, 4]),
+    'false',
     'inbound',
     JSON.stringify([inboundArg0, inboundArg1]),
   ]);
@@ -72,6 +74,7 @@ test('bridge device', async t => {
   t.deepEqual(c2.dump().log, [
     'outbound retval',
     JSON.stringify(['the', { retval: 'is' }, 4]),
+    'false',
     'inbound',
     JSON.stringify([inboundArg0, inboundArg1]),
   ]);
@@ -85,11 +88,41 @@ test('bridge device', async t => {
   t.deepEqual(c2.dump().log, [
     'outbound retval',
     JSON.stringify(['the', { retval: 'is' }, 4]),
+    'false',
     'inbound',
     JSON.stringify([inboundArg0, inboundArg1]),
     'inbound',
     JSON.stringify([inboundArg2, inboundArg3]),
   ]);
+
+  t.end();
+});
+
+test('bridge device can return undefined', async t => {
+  const outboundLog = [];
+  function outboundCallback(argv0, argv1) {
+    outboundLog.push(argv0);
+    outboundLog.push(argv1);
+    return undefined;
+  }
+  const bd = buildBridge(outboundCallback);
+
+  const storage = initSwingStore();
+  const config = {
+    vats: new Map(),
+    devices: [['bridge', bd.srcPath, bd.endowments]],
+    bootstrapIndexJS: require.resolve('./device-bridge-bootstrap.js'),
+    hostStorage: storage.storage,
+  };
+
+  const argv = [];
+  argv[0] = { hello: 'from' };
+  argv[1] = ['swingset'];
+  const c = await buildVatController(config, true, argv);
+  await c.run();
+
+  t.deepEqual(outboundLog, argv);
+  t.deepEqual(c.dump().log, ['outbound retval', '', 'true']);
 
   t.end();
 });
