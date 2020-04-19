@@ -80,6 +80,13 @@
 */
 
 function sanitize(data) {
+  // TODO: use @agoric/marshal:pureCopy when it exists.
+  if (data === undefined) {
+    return undefined;
+  }
+  if (data instanceof Error) {
+    data = data.stack;
+  }
   return JSON.parse(JSON.stringify(data));
 }
 

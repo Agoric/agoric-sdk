@@ -1,5 +1,16 @@
 import harden from '@agoric/harden';
 
+function sanitize(data) {
+  // TODO: Use @agoric/marshal:pureCopy when it exists.
+  if (data === undefined) {
+    return undefined;
+  }
+  if (data instanceof Error) {
+    data = data.stack;
+  }
+  return JSON.parse(JSON.stringify(data));
+}
+
 // security note: this device gets access to primal-realm object types (the
 // return value or Error thrown by callOutbound(), and the arguments provided
 // to inboundCallback()), but we immediately serialize them, so they will not
@@ -39,7 +50,8 @@ export default function setup(syscall, state, helpers, endowments) {
         callOutbound(...args) {
           // invoke our endowment of the same name, with a sync return value
           const retval = callOutbound(...args);
-          return harden(JSON.parse(JSON.stringify(retval)));
+          // we can return anything JSON-serializable, plus 'undefined'
+          return harden(sanitize(retval));
         },
       });
     },

@@ -10,6 +10,8 @@ import {
   makeLoopbackInterfaceHandler,
   makeNetworkInterface,
   makeRouter,
+  dataToBase64,
+  base64ToBytes,
 } from '../src/vats/network';
 
 const harden = /** @type {<T>(data: T) => T} */ (rawHarden);
@@ -30,6 +32,10 @@ const makeInterfaceHandler = t => {
   return harden({
     async onCreate(_interface, _impl) {
       log('created', _interface, _impl);
+    },
+    async onBind(port, localAddr) {
+      t.assert(port, `port is supplied to onBind`);
+      t.assert(localAddr, `local address is supplied to onBind`);
     },
     async onConnect(port, localAddr, remoteAddr) {
       t.assert(port, `port is tracked in onConnect`);
@@ -206,7 +212,7 @@ test('iface connection listen', async t => {
   }
 });
 
-test.skip('loopback iface', async t => {
+test('loopback iface', async t => {
   try {
     const iface = makeNetworkInterface(makeLoopbackInterfaceHandler());
 
@@ -222,7 +228,6 @@ test.skip('loopback iface', async t => {
         return harden({
           async onReceive(c, packet, _connectionHandler) {
             t.equals(`${packet}`, 'ping', 'expected ping');
-            t.equals(`${await c.send('pong')}`, 'pongack', 'expected pongack');
             return 'pingack';
           },
         });
@@ -236,11 +241,7 @@ test.skip('loopback iface', async t => {
       harden({
         async onOpen(c, _connectionHandler) {
           t.equals(`${await c.send('ping')}`, 'pingack', 'expected pingack');
-        },
-        async onReceive(c, packet, _connectionHandler) {
-          t.equals(`${packet}`, 'pong', 'expected pong');
-          Promise.resolve().then(() => c.close());
-          return 'pongack';
+          closed.resolve();
         },
       }),
     );
@@ -346,6 +347,39 @@ test('multiaddr', async t => {
         str,
         `round-trip of ${JSON.stringify(str)} matches`,
       );
+    }
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+  } finally {
+    t.end();
+  }
+});
+
+test('bytes conversions', t => {
+  try {
+    const insouts = [
+      ['', ''],
+      ['f', 'Zg=='],
+      ['fo', 'Zm8='],
+      ['foo', 'Zm9v'],
+      ['foob', 'Zm9vYg=='],
+      ['fooba', 'Zm9vYmE='],
+      ['foobar', 'Zm9vYmFy'],
+    ];
+    for (const [inp, outp] of insouts) {
+      t.equals(dataToBase64(inp), outp, `${inp} encodes`);
+      t.equals(base64ToBytes(outp), inp, `${outp} decodes`);
+    }
+    const inputs = [
+      'a',
+      'ab',
+      'abc',
+      'Hello, world!',
+      '\x0d\x02\x09\xff\xfe',
+      'other--+iadtedata',
+    ];
+    for (const str of inputs) {
+      t.equals(base64ToBytes(dataToBase64(str)), str, `${str} round trips`);
     }
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
