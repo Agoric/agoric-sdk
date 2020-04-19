@@ -9,11 +9,11 @@ import (
 	channel "github.com/cosmos/cosmos-sdk/x/ibc/04-channel"
 	channelexported "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/exported"
 	channeltypes "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/types"
+	port "github.com/cosmos/cosmos-sdk/x/ibc/05-port"
+	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/05-port/types"
 	ibctypes "github.com/cosmos/cosmos-sdk/x/ibc/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/keeper"
 )
 
 // FIXME: How to tell the caller when this is a new channel?
@@ -23,32 +23,39 @@ type ChannelEndpoint struct {
 	Channel string `json:"channel"`
 }
 
-type channelHandler struct{}
+type channelHandler struct {
+	ibcModule porttypes.IBCModule
+}
 
 type channelMessage struct { // comes from swingset's IBC handler
-	Type      string              `json:"type"` // IBC_METHOD
-	Method    string              `json:"method"`
-	PortID    string              `json:"portID"`
-	ChannelID string              `json:"channelID"`
-	Packet    channeltypes.Packet `json:"packet"`
-	Ack       []byte              `json:"ack"`
+	Type            string              `json:"type"` // IBC_METHOD
+	Method          string              `json:"method"`
+	PortID          string              `json:"portID"`
+	ChannelID       string              `json:"channelID"`
+	Packet          channeltypes.Packet `json:"packet"`
+	RelativeTimeout uint64              `json:"relativeTimeout"`
+	Ack             []byte              `json:"ack"`
 }
 
-func init() {
-	RegisterPortHandler("dibc", NewIBCChannelHandler())
+// DefaultRouter is a temporary hack until cosmos-sdk implements its features FIXME.
+type DefaultRouter struct {
+	*port.Router
+	defaultRoute porttypes.IBCModule
 }
 
-func NewIBCChannelHandler() channelHandler {
-	return channelHandler{}
+func NewIBCChannelHandler(ibcModule porttypes.IBCModule) channelHandler {
+	return channelHandler{
+		ibcModule: ibcModule,
+	}
 }
 
 func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string, err error) {
-	fmt.Println("channel handler received", str)
+	fmt.Println("ibc.go downcall", str)
 
 	msg := new(channelMessage)
 	err = json.Unmarshal([]byte(str), &msg)
 	if err != nil {
-		return "", err
+		return ret, err
 	}
 
 	if msg.Type != "IBC_METHOD" {
@@ -59,58 +66,72 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 	case "sendPacket":
 		seq, ok := ctx.Keeper.GetNextSequenceSend(
 			ctx.Context,
-			msg.Packet.DestinationPort,
-			msg.Packet.DestinationChannel,
+			msg.Packet.SourcePort,
+			msg.Packet.SourceChannel,
 		)
 		if !ok {
 			return "", fmt.Errorf("unknown sequence number")
 		}
 
-		// TODO: Maybe allow specification?
-		blockTimeout := int64(keeper.DefaultPacketTimeout)
+		var absoluteTimeout uint64
+		if msg.RelativeTimeout == 0 {
+			absoluteTimeout = msg.Packet.TimeoutHeight
+		} else {
+			absoluteTimeout = uint64(ctx.Context.BlockHeight()) + msg.RelativeTimeout
+		}
 
 		packet := channeltypes.NewPacket(
 			msg.Packet.Data, seq,
 			msg.Packet.SourcePort, msg.Packet.SourceChannel,
 			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
-			uint64(ctx.Context.BlockHeight()+blockTimeout),
+			absoluteTimeout,
 		)
-		if err := ctx.Keeper.SendPacket(ctx.Context, packet); err != nil {
-			return "", err
+		err = ctx.Keeper.SendPacket(ctx.Context, packet)
+		if err == nil {
+			bytes, err := json.Marshal(&packet)
+			if err != nil {
+				return "", err
+			}
+			ret = string(bytes)
 		}
-		return "null", nil
 
 	case "packetExecuted":
-		err := ctx.Keeper.PacketExecuted(ctx.Context, msg.Packet, msg.Ack)
-		if err != nil {
-			return "", err
+		err = ctx.Keeper.PacketExecuted(ctx.Context, msg.Packet, msg.Ack)
+		if err == nil {
+			ret = "true"
 		}
-		return "null", nil
 
 	case "channelCloseInit":
-		err := ctx.Keeper.ChanCloseInit(ctx.Context, msg.PortID, msg.ChannelID)
-		if err != nil {
-			return "", err
+		err = ctx.Keeper.ChanCloseInit(ctx.Context, msg.PortID, msg.ChannelID)
+		if err == nil {
+			ret = "true"
 		}
-		return "null", nil
 
 	case "bindPort":
-		err := ctx.Keeper.BindPort(ctx.Context, msg.PortID)
-		if err != nil {
-			return "", err
+		err = ctx.Keeper.BindPort(ctx.Context, msg.PortID, ch.ibcModule)
+		if err == nil {
+			ret = "true"
 		}
-		return "null", nil
 
 	case "timeoutExecuted":
-		err := ctx.Keeper.TimeoutExecuted(ctx.Context, msg.Packet)
-		if err != nil {
-			return "", err
+		err = ctx.Keeper.TimeoutExecuted(ctx.Context, msg.Packet)
+		if err == nil {
+			ret = "true"
 		}
-		return "null", nil
 
 	default:
-		return "", fmt.Errorf("unrecognized method %s", msg.Method)
+		err = fmt.Errorf("unrecognized method %s", msg.Method)
 	}
+
+	fmt.Println("ibc.go downcall reply", ret, err)
+	return
+}
+
+func (am AppModule) CallToController(ctx sdk.Context, send string) (string, error) {
+	// fmt.Println("ibc.go upcall", send)
+	reply, err := am.keeper.CallToController(ctx, send)
+	// fmt.Println("ibc.go upcall reply", reply, err)
+	return reply, err
 }
 
 type channelOpenInitEvent struct {
@@ -151,7 +172,7 @@ func (am AppModule) OnChanOpenInit(
 		return err
 	}
 
-	_, err = am.keeper.CallToController(string(bytes))
+	_, err = am.CallToController(ctx, string(bytes))
 
 	if err == nil {
 		// Claim channel capability passed back by IBC module
@@ -204,7 +225,7 @@ func (am AppModule) OnChanOpenTry(
 		return err
 	}
 
-	_, err = am.keeper.CallToController(string(bytes))
+	_, err = am.CallToController(ctx, string(bytes))
 
 	if err == nil {
 		// Claim channel capability passed back by IBC module
@@ -218,7 +239,7 @@ func (am AppModule) OnChanOpenTry(
 
 type channelOpenAckEvent struct {
 	Type                string `json:"type"`  // IBC
-	Event               string `json:"event"` // openAck
+	Event               string `json:"event"` // channelOpenAck
 	PortID              string `json:"portID"`
 	ChannelID           string `json:"channelID"`
 	CounterpartyVersion string `json:"counterpartyVersion"`
@@ -233,7 +254,7 @@ func (am AppModule) OnChanOpenAck(
 
 	event := channelOpenAckEvent{
 		Type:                "IBC_EVENT",
-		Event:               "openAck",
+		Event:               "channelOpenAck",
 		PortID:              portID,
 		ChannelID:           channelID,
 		CounterpartyVersion: counterpartyVersion,
@@ -244,13 +265,13 @@ func (am AppModule) OnChanOpenAck(
 		return err
 	}
 
-	_, err = am.keeper.CallToController(string(bytes))
+	_, err = am.CallToController(ctx, string(bytes))
 	return err
 }
 
 type channelOpenConfirmEvent struct {
 	Type      string `json:"type"`  // IBC
-	Event     string `json:"event"` // openConfirm
+	Event     string `json:"event"` // channelOpenConfirm
 	PortID    string `json:"portID"`
 	ChannelID string `json:"channelID"`
 }
@@ -260,9 +281,9 @@ func (am AppModule) OnChanOpenConfirm(
 	portID,
 	channelID string,
 ) error {
-	event := channelOpenAckEvent{
+	event := channelOpenConfirmEvent{
 		Type:      "IBC_EVENT",
-		Event:     "openConfirm",
+		Event:     "channelOpenConfirm",
 		PortID:    portID,
 		ChannelID: channelID,
 	}
@@ -272,7 +293,7 @@ func (am AppModule) OnChanOpenConfirm(
 		return err
 	}
 
-	_, err = am.keeper.CallToController(string(bytes))
+	_, err = am.CallToController(ctx, string(bytes))
 
 	return err
 }
@@ -301,7 +322,7 @@ func (am AppModule) OnChanCloseInit(
 		return err
 	}
 
-	_, err = am.keeper.CallToController(string(bytes))
+	_, err = am.CallToController(ctx, string(bytes))
 	return err
 }
 
@@ -329,7 +350,7 @@ func (am AppModule) OnChanCloseConfirm(
 		return err
 	}
 
-	_, err = am.keeper.CallToController(string(bytes))
+	_, err = am.CallToController(ctx, string(bytes))
 	return err
 }
 
@@ -355,7 +376,7 @@ func (am AppModule) OnRecvPacket(
 		return nil, err
 	}
 
-	_, err = am.keeper.CallToController(string(bytes))
+	_, err = am.CallToController(ctx, string(bytes))
 	if err != nil {
 		return nil, err
 	}
@@ -388,7 +409,7 @@ func (am AppModule) OnAcknowledgementPacket(
 		return nil, err
 	}
 
-	_, err = am.keeper.CallToController(string(bytes))
+	_, err = am.CallToController(ctx, string(bytes))
 	if err != nil {
 		return nil, err
 	}
@@ -398,7 +419,7 @@ func (am AppModule) OnAcknowledgementPacket(
 
 type timeoutPacketEvent struct {
 	Type   string              `json:"type"`  // IBC
-	Event  string              `json:"event"` // acknowledgementPacket
+	Event  string              `json:"event"` // timeoutPacket
 	Packet channeltypes.Packet `json:"packet"`
 }
 
@@ -418,7 +439,7 @@ func (am AppModule) OnTimeoutPacket(
 		return nil, err
 	}
 
-	_, err = am.keeper.CallToController(string(bytes))
+	_, err = am.CallToController(ctx, string(bytes))
 	if err != nil {
 		return nil, err
 	}

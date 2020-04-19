@@ -10,6 +10,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	chanTypes "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/types"
 )
 
 type deliverInboundAction struct {
@@ -25,14 +26,14 @@ type deliverInboundAction struct {
 // NewHandler returns a handler for "swingset" type messages.
 func NewHandler(keeper Keeper) sdk.Handler {
 	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
-		defer SetControllerContext(ctx)()
-		defer SetControllerKeeper(keeper)()
-
 		switch msg := msg.(type) {
 		// Legacy deliver inbound.
 		// TODO: Sometime merge with IBC?
 		case MsgDeliverInbound:
 			return handleMsgDeliverInbound(ctx, keeper, msg)
+
+		case MsgSendPacket:
+			return handleMsgSendPacket(ctx, keeper, msg)
 
 		default:
 			errMsg := fmt.Sprintf("Unrecognized swingset Msg type: %v", msg.Type())
@@ -72,7 +73,37 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
-	_, err = keeper.CallToController(string(b))
+	_, err = keeper.CallToController(ctx, string(b))
+	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	if err != nil {
+		return nil, err
+	}
+	return &sdk.Result{}, nil
+}
+
+type sendPacketAction struct {
+	Type        string           `json:"type"`
+	Packet      chanTypes.Packet `json:"packet"`
+	Signer      sdk.AccAddress   `json:"signer"`
+	BlockHeight int64            `json:"blockHeight"`
+	BlockTime   int64            `json:"blockTime"`
+}
+
+func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg MsgSendPacket) (*sdk.Result, error) {
+	action := &sendPacketAction{
+		Type:        "SEND_PACKET",
+		Packet:      msg.Packet,
+		Signer:      msg.Signer,
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
+	}
+	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
+	b, err := json.Marshal(action)
+	if err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
+	}
+
+	_, err = keeper.CallToController(ctx, string(b))
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err

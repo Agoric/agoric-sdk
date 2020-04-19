@@ -15,6 +15,7 @@ var (
 	NewKeeper            = keeper.NewKeeper
 	NewQuerier           = keeper.NewQuerier
 	NewMsgDeliverInbound = types.NewMsgDeliverInbound
+	NewMsgSendPacket     = types.NewMsgSendPacket
 	NewStorage           = types.NewStorage
 	NewMailbox           = types.NewMailbox
 	NewKeys              = types.NewKeys
@@ -25,6 +26,7 @@ var (
 type (
 	Keeper            = keeper.Keeper
 	MsgDeliverInbound = types.MsgDeliverInbound
+	MsgSendPacket     = types.MsgSendPacket
 	QueryResStorage   = types.QueryResStorage
 	QueryResKeys      = types.QueryResKeys
 	Storage           = types.Storage

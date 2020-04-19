@@ -71,10 +71,12 @@ type AppModule struct {
 
 // NewAppModule creates a new AppModule Object
 func NewAppModule(k Keeper) AppModule {
-	return AppModule{
+	am := AppModule{
 		AppModuleBasic: AppModuleBasic{},
 		keeper:         k,
 	}
+	RegisterPortHandler("dibc", NewIBCChannelHandler(am))
+	return am
 }
 
 func (AppModule) Name() string {

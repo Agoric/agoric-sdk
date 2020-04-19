@@ -29,10 +29,6 @@ type commitBlockAction struct {
 }
 
 func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) error {
-	// Update our current context for this function.
-	defer SetControllerContext(ctx)()
-	defer SetControllerKeeper(keeper)()
-
 	action := &beginBlockAction{
 		Type:        "BEGIN_BLOCK",
 		StoragePort: GetPort("storage"),
@@ -44,7 +40,7 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 		return sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
-	_, err = keeper.CallToController(string(b))
+	_, err = keeper.CallToController(ctx, string(b))
 
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	return err
@@ -54,10 +50,6 @@ var endBlockHeight int64
 var endBlockTime int64
 
 func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.ValidatorUpdate, error) {
-	// Update our current context for this function.
-	defer SetControllerContext(ctx)()
-	defer SetControllerKeeper(keeper)()
-
 	action := &endBlockAction{
 		Type:        "END_BLOCK",
 		BlockHeight: ctx.BlockHeight(),
@@ -69,7 +61,7 @@ func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
-	_, err = keeper.CallToController(string(b))
+	_, err = keeper.CallToController(ctx, string(b))
 
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
@@ -86,9 +78,6 @@ func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.
 }
 
 func CommitBlock(keeper Keeper) error {
-	// Update our current context for this function.
-	defer SetControllerKeeper(keeper)()
-
 	action := &commitBlockAction{
 		Type:        "COMMIT_BLOCK",
 		BlockHeight: endBlockHeight,
@@ -100,7 +89,7 @@ func CommitBlock(keeper Keeper) error {
 		return sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
-	_, err = keeper.CallToController(string(b))
+	_, err = keeper.CallToController(sdk.Context{}, string(b))
 
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {

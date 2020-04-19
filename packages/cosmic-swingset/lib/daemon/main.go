@@ -116,7 +116,8 @@ func makeNewApp(sendToController Sender) func(logger log.Logger, db dbm.DB, trac
 			baseapp.SetHaltTime(viper.GetUint64(server.FlagHaltTime)),
 			baseapp.SetInterBlockCache(cache),
 		)
-		msg := `{"type":"AG_COSMOS_INIT"}`
+		msg := fmt.Sprintf(`{"type":"AG_COSMOS_INIT","ibcPort":%d}`, abci.IBCPort)
+
 		// fmt.Println("Sending to Node", msg)
 		_, err := sendToController(true, msg)
 		// fmt.Println("Received AG_COSMOS_INIT response", ret, err)
@@ -130,16 +131,16 @@ func makeNewApp(sendToController Sender) func(logger log.Logger, db dbm.DB, trac
 
 func makeExportAppStateAndTMValidators(sendToController Sender) func(
 	logger log.Logger, db dbm.DB, traceStore io.Writer, height int64, forZeroHeight bool, jailWhiteList []string,
-) (json.RawMessage, []tmtypes.GenesisValidator, error) {
+) (json.RawMessage, []tmtypes.GenesisValidator, *abci.ConsensusParams, error) {
 	return func(
 		logger log.Logger, db dbm.DB, traceStore io.Writer, height int64, forZeroHeight bool,
 		jailWhiteList []string,
-	) (json.RawMessage, []tmtypes.GenesisValidator, error) {
+	) (json.RawMessage, []tmtypes.GenesisValidator, *abci.ConsensusParams, error) {
 		if height != -1 {
 			agApp := app.NewAgoricApp(sendToController, logger, db, traceStore, true, uint(1), map[int64]bool{}, "")
 			err := agApp.LoadHeight(height)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			return agApp.ExportAppStateAndValidators(forZeroHeight, jailWhiteList)
 		}

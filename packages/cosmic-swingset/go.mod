@@ -6,7 +6,7 @@ require (
 	github.com/Agoric/agoric-sdk v0.0.0-00010101000000-000000000000 // indirect
 	github.com/bartekn/go-bip39 v0.0.0-20171116152956-a05967ea095d // indirect
 	github.com/btcsuite/btcd v0.0.0-20190807005414-4063feeff79a // indirect
-	github.com/cosmos/cosmos-sdk v0.34.4-0.20200410083150-b7397d6df548
+	github.com/cosmos/cosmos-sdk v0.34.4-0.20200417201027-11528d39594c
 	github.com/gibson042/canonicaljson-go v1.0.3 // indirect
 	github.com/golang/mock v1.4.3 // indirect
 	github.com/gorilla/handlers v1.4.2 // indirect
@@ -18,7 +18,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20190706150252-9beb055b7962 // indirect
 	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa
 	github.com/spf13/afero v1.2.2 // indirect
-	github.com/spf13/cobra v0.0.7
+	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.6.3
 	github.com/stretchr/testify v1.5.1
 	github.com/tendermint/go-amino v0.15.1
