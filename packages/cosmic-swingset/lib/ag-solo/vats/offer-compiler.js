@@ -18,11 +18,7 @@ export default ({
     petnameToPurse,
   },
 }) => async (id, offer, hooks = {}) => {
-  const {
-    instanceRegKey,
-    contractIssuerIndexToKeyword = [], // FIXME: Only for compatibility with Zoe pre-Keywords
-    proposalTemplate,
-  } = offer;
+  const { instanceRegKey, proposalTemplate } = offer;
 
   function createKeywordProposalAndPurses(tmpl) {
     const keywordProposal = {};
@@ -109,20 +105,12 @@ export default ({
 
   // Get the instance.
   const instanceHandle = await E(registry).get(instanceRegKey);
-  const {
-    publicAPI,
-    issuerKeywordRecord, // Only present with Zoe 0.3.0.
-    terms: { issuers: contractIssuers },
-  } = await E(zoe).getInstanceRecord(instanceHandle);
+  const { publicAPI, issuerKeywordRecord } = await E(zoe).getInstanceRecord(
+    instanceHandle,
+  );
 
   // If issuerKeywordRecord exists, use it.
   const keywordIssuers = { ...issuerKeywordRecord };
-  if (!issuerKeywordRecord) {
-    // Otherwise (pre-Zoe Keywords), use the index-to-keyword.
-    Object.values(contractIssuerIndexToKeyword).forEach((keyword, i) => {
-      keywordIssuers[keyword] = contractIssuers[i];
-    });
-  }
 
   async function finishCompile(proposal, directedPurses) {
     const keywordBrands = {};
@@ -223,49 +211,13 @@ export default ({
       ),
     ]);
 
-    if (issuerKeywordRecord) {
-      // We need Zoe Keywords support.
-      return { zoeKind: 'keywords', proposal, purses: mergedPurses };
-    }
-
-    // FIXME: The rest of this file converts to the old (indexed) Zoe.
-    const indexedPurses = [];
-    const indexedPayoutRules = await Promise.all(
-      contractIssuerIndexToKeyword.map(async (keyword, i) => {
-        indexedPurses[i] = mergedPurses[keyword];
-        if (proposal.want && proposal.want[keyword]) {
-          return { kind: 'wantAtLeast', amount: proposal.want[keyword] };
-        }
-        if (proposal.give && proposal.give[keyword]) {
-          return { kind: 'offerAtMost', amount: proposal.give[keyword] };
-        }
-        const amount = await E(
-          E(contractIssuers[i]).getAmountMath(),
-        ).getEmpty();
-        return { kind: 'wantAtLeast', amount };
-      }),
-    );
-
-    // Cheap translation of exitObj to exitRule.
-    const { exit: exitObj = { onDemand: null } } = proposal;
-    const exitKind = Object.keys(exitObj)[0];
-    const exitRule = {};
-    Object.entries(exitObj[exitKind] || {}).forEach(([key, val]) => {
-      exitRule[key] = val;
-    });
-    exitRule.kind = exitKind;
-
-    return {
-      zoeKind: 'indexed',
-      proposal: { payoutRules: indexedPayoutRules, exitRule },
-      purses: indexedPurses,
-    };
+    return { proposal, purses: mergedPurses };
   }
 
   // Get the invite and the (possibly indexed) rules and purses.
-  const { zoeKind, proposal, purses } = await finishCompile(
+  const { proposal, purses } = await finishCompile(
     keywordProposal,
     keywordPurses,
   );
-  return { zoeKind, publicAPI, proposal, purses, hooks };
+  return { publicAPI, proposal, purses, hooks };
 };

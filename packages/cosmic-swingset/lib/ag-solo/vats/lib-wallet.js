@@ -79,7 +79,7 @@ export async function makeWallet(
   }
 
   async function executeOffer(compiledOfferP, inviteP) {
-    const [invite, { zoeKind, purses, proposal }] = await Promise.all([
+    const [invite, { purses, proposal }] = await Promise.all([
       inviteP,
       compiledOfferP,
     ]);
@@ -89,35 +89,19 @@ export async function makeWallet(
     // =====================
 
     // We now have everything we need to provide Zoe, so do the actual withdrawal.
-    let payment;
-    if (zoeKind === 'keywords') {
-      // Payments are made for the keywords in proposal.give.
-      payment = {};
-      await Promise.all(
-        Object.entries(proposal.give || {}).map(([keyword, amount]) => {
-          const purse = purses[keyword];
-          if (purse) {
-            return E(purse)
-              .withdraw(amount)
-              .then(pmt => (payment[keyword] = pmt));
-          }
-          return undefined;
-        }),
-      );
-    } else if (zoeKind === 'indexed') {
-      // purses/payment are an array indexed by issuer payoutRules.
-      payment = await Promise.all(
-        proposal.payoutRules.map(({ kind, amount }, i) => {
-          const purse = purses[i];
-          if (kind === 'offerAtMost' && purse) {
-            return E(purse).withdraw(amount);
-          }
-          return undefined;
-        }),
-      );
-    } else {
-      throw Error(`Unsupported zoeKind ${zoeKind}`);
-    }
+    // Payments are made for the keywords in proposal.give.
+    const payment = {};
+    await Promise.all(
+      Object.entries(proposal.give || {}).map(([keyword, amount]) => {
+        const purse = purses[keyword];
+        if (purse) {
+          return E(purse)
+            .withdraw(amount)
+            .then(pmt => (payment[keyword] = pmt));
+        }
+        return undefined;
+      }),
+    );
 
     // =====================
     // === AWAITING TURN ===
@@ -131,7 +115,6 @@ export async function makeWallet(
     // === AWAITING TURN ===
     // =====================
 
-    // Let the caller do what they want with the seat.
     // We'll resolve when deposited.
     const depositedP = payoutObjP.then(payoutObj => {
       const payoutIndexToKeyword = [];
@@ -371,13 +354,11 @@ export async function makeWallet(
 
   function hydrateHooks({
     publicAPI: { getInvite, deposited, ...publicAPIRest } = {},
-    seat: { performOffer, ...seatRest } = {},
     ...targetsRest
   } = {}) {
     const assertSpecs = [
       [targetsRest, 'targets'],
       [publicAPIRest, 'publicAPI hooks'],
-      [seatRest, 'seat hooks'],
     ];
     for (const [rest, desc] of assertSpecs) {
       assert(
@@ -399,10 +380,6 @@ export async function makeWallet(
         // This hook is to return a value for the deposited promise.
         // It is run after all the spoils are deposited to their purses.
         deposited: hydrateHook(deposited),
-      },
-      seat: {
-        // This hook is to run the offer on the seat.
-        performOffer: hydrateHook(performOffer),
       },
     });
   }
