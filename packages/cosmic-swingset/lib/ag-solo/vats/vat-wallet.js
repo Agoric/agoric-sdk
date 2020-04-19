@@ -84,13 +84,13 @@ function build(E, _D, _log) {
       }
       case 'walletDeclineOffer': {
         return {
-          type: 'walletOfferDeclined',
+          type: 'walletDeclineOfferResponse',
           data: await wallet.declineOffer(data),
         };
       }
       case 'walletCancelOffer': {
         return {
-          type: 'walletOfferCancelled',
+          type: 'walletCancelOfferResponse',
           data: await wallet.cancelOffer(data),
         };
       }
