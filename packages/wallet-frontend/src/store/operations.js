@@ -30,12 +30,11 @@ export function declineOffer(state, id) {
   return state;
 }
 export function acceptOffer(state, id) {
-  const resultP = doFetch({
+  doFetch({
     type: 'walletAcceptOffer',
     data: id,
   }); // todo toast
 
-  resultP.then(result => alert(result.data.outcome));
   return state;
 }
 export function cancelOffer(state, id) {
