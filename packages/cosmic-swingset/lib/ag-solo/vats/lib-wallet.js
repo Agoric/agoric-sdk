@@ -33,6 +33,7 @@ export async function makeWallet(
   // Compiled offers (all ready to execute).
   const idToCompiledOfferP = new Map();
   const idToCancel = new Map();
+  const idToOfferHandle = new Map();
 
   // Client-side representation of the purses inbox;
   const pursesState = new Map();
@@ -107,13 +108,24 @@ export async function makeWallet(
     // === AWAITING TURN ===
     // =====================
 
-    const { payout: payoutObjP, cancelObj, outcome: outcomeP } = await E(
-      zoe,
-    ).offer(invite, proposal, payment);
+    const {
+      payout: payoutObjP,
+      cancelObj,
+      outcome: outcomeP,
+      offerHandle: offerHandleP,
+    } = await E(zoe).offer(invite, proposal, payment);
 
     // =====================
     // === AWAITING TURN ===
     // =====================
+    // This settles when the payments are escrowed in Zoe
+    const offerHandle = await offerHandleP;
+
+    // =====================
+    // === AWAITING TURN ===
+    // =====================
+    // This settles when the offer hook completes.
+    const outcome = await outcomeP;
 
     // We'll resolve when deposited.
     const depositedP = payoutObjP.then(payoutObj => {
@@ -141,7 +153,7 @@ export async function makeWallet(
       );
     });
 
-    return { depositedP, cancelObj, outcome: outcomeP };
+    return { depositedP, cancelObj, outcome, offerHandle };
   }
 
   // === API
@@ -305,16 +317,20 @@ export async function makeWallet(
       } = compiledOffer;
 
       const inviteP = invite || E(publicAPIHooks).getInvite(publicAPI);
-      const { depositedP, cancelObj, outcome: outcomeP } = await executeOffer(
-        compiledOffer,
-        inviteP,
-      );
+      const {
+        depositedP,
+        cancelObj,
+        outcome,
+        offerHandle,
+      } = await executeOffer(compiledOffer, inviteP);
 
       idToCancel.set(id, () => {
         alreadyResolved = true;
         return E(cancelObj).cancel();
       });
-      ret = { outcome: await outcomeP };
+      idToOfferHandle.set(id, offerHandle);
+
+      ret = { outcome };
 
       // Update status, drop the proposal
       depositedP
@@ -399,6 +415,8 @@ export async function makeWallet(
     cancelOffer,
     acceptOffer,
     getOffers,
+    getOfferHandle: id => idToOfferHandle.get(id),
+    getOfferHandles: ids => ids.map(wallet.getOfferHandle),
   });
 
   return wallet;
