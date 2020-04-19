@@ -5,13 +5,11 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	channelexported "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/exported"
 )
 
 type ControllerContext struct {
 	Keeper                Keeper
 	Context               sdk.Context
-	CurrentPacket         channelexported.PacketI
 	StoragePort           int
 	IBCChannelHandlerPort int
 }

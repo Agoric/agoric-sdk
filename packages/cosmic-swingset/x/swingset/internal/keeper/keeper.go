@@ -21,11 +21,6 @@ import (
 	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/types"
 )
 
-// DefaultPacketTimeout is the default packet timeout relative to the current block height
-const (
-	DefaultPacketTimeout = 1000 // NOTE: in blocks
-)
-
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
 	storeKey sdk.StoreKey
@@ -35,7 +30,8 @@ type Keeper struct {
 	portKeeper    types.PortKeeper
 	scopedKeeper  capability.ScopedKeeper
 
-	sendToController func(needReply bool, str string) (string, error)
+	// CallToController dispatches a message to the controlling process
+	CallToController func(ctx sdk.Context, str string) (string, error)
 }
 
 // NewKeeper creates a new IBC transfer Keeper instance
@@ -43,22 +39,15 @@ func NewKeeper(
 	cdc *codec.Codec, key sdk.StoreKey,
 	channelKeeper types.ChannelKeeper, portKeeper types.PortKeeper,
 	scopedKeeper capability.ScopedKeeper,
-	sendToController func(needReply bool, str string) (string, error),
 ) Keeper {
 
 	return Keeper{
-		storeKey:         key,
-		cdc:              cdc,
-		channelKeeper:    channelKeeper,
-		portKeeper:       portKeeper,
-		scopedKeeper:     scopedKeeper,
-		sendToController: sendToController,
+		storeKey:      key,
+		cdc:           cdc,
+		channelKeeper: channelKeeper,
+		portKeeper:    portKeeper,
+		scopedKeeper:  scopedKeeper,
 	}
-}
-
-// CallToController dispatches a message to the controlling process
-func (k Keeper) CallToController(str string) (string, error) {
-	return k.sendToController(true, str)
 }
 
 // GetStorage gets generic storage
@@ -191,7 +180,14 @@ func (k Keeper) SendPacket(ctx sdk.Context, packet channelexported.PacketI) erro
 // PacketExecuted defines a wrapper function for the channel Keeper's function
 // in order to expose it to the SwingSet IBC handler.
 func (k Keeper) PacketExecuted(ctx sdk.Context, packet channelexported.PacketI, acknowledgement []byte) error {
-	return k.channelKeeper.PacketExecuted(ctx, packet, acknowledgement)
+	portID := packet.GetSourcePort()
+	channelID := packet.GetSourceChannel()
+	capName := ibctypes.ChannelCapabilityPath(portID, channelID)
+	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
+	if !ok {
+		return sdkerrors.Wrapf(channel.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+	}
+	return k.channelKeeper.PacketExecuted(ctx, chanCap, packet, acknowledgement)
 }
 
 // ChanCloseInit defines a wrapper function for the channel Keeper's function
@@ -207,7 +203,8 @@ func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 
 // BindPort defines a wrapper function for the port Keeper's function in
 // order to expose it to the SwingSet IBC handler.
-func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
+// It also registers a route to the port.
+func (k Keeper) BindPort(ctx sdk.Context, portID string, mod porttypes.IBCModule) error {
 	cap := k.portKeeper.BindPort(ctx, portID)
 	return k.ClaimCapability(ctx, cap, porttypes.PortPath(portID))
 }
@@ -215,7 +212,14 @@ func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
 // TimeoutExecuted defines a wrapper function for the channel Keeper's function
 // in order to expose it to the SwingSet IBC handler.
 func (k Keeper) TimeoutExecuted(ctx sdk.Context, packet channelexported.PacketI) error {
-	return k.channelKeeper.TimeoutExecuted(ctx, packet)
+	portID := packet.GetSourcePort()
+	channelID := packet.GetSourceChannel()
+	capName := ibctypes.ChannelCapabilityPath(portID, channelID)
+	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
+	if !ok {
+		return sdkerrors.Wrapf(channel.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+	}
+	return k.channelKeeper.TimeoutExecuted(ctx, chanCap, packet)
 }
 
 // ClaimCapability allows the SwingSet module to claim a capability that IBC module
