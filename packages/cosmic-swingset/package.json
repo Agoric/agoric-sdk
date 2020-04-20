@@ -24,7 +24,7 @@
     "@agoric/ertp": "^0.5.2",
     "@agoric/evaluate": "^2.2.3",
     "@agoric/eventual-send": "^0.8.0",
-    "@agoric/harden": "^0.0.7",
+    "@agoric/harden": "^0.0.8",
     "@agoric/nat": "2.0.1",
     "@agoric/produce-promise": "^0.0.5",
     "@agoric/registrar": "^0.0.4",
