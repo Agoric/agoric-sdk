@@ -2,7 +2,7 @@
 import harden from '@agoric/harden';
 import {
   extendLoopbackProtocolHandler,
-  rethrowIfUnset,
+  rethrowUnlessMissing,
   dataToBase64,
   base64ToBytes,
   toBytes,
@@ -10,7 +10,7 @@ import {
 import makeStore from '@agoric/store';
 import { producePromise } from '@agoric/produce-promise';
 
-import { makeWithQueue } from '../queue';
+import { makeWithQueue } from './queue';
 
 const DEFAULT_PACKET_TIMEOUT = 1000;
 
@@ -122,7 +122,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
           /** @type {Promise<Bytes>} */
           (E(handler)
             .onReceive(conn, toBytes(data), handler)
-            .catch(rethrowIfUnset));
+            .catch(rethrowUnlessMissing));
         if (ordered) {
           // Set up a queue on the sender.
           const withChannelSendQueue = makeWithQueue();
@@ -162,7 +162,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
   let protocolImpl;
 
   // We delegate to a loopback protocol, too, to connect locally.
-  const iface = extendLoopbackProtocolHandler({
+  const protocol = extendLoopbackProtocolHandler({
     async onCreate(impl, _protocolHandler) {
       console.info('IBC onCreate');
       protocolImpl = impl;
@@ -173,8 +173,8 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
     },
     async onConnect(_port, localAddr, remoteAddr, _protocolHandler) {
       console.warn('IBC onConnect', localAddr, remoteAddr);
-      throw Error('Unimplemented');
       // return makeIBCConnectionHandler('FIXME', localAddr, remoteAddr, true);
+      return undefined;
     },
     async onListen(_port, localAddr, _listenHandler) {
       console.warn('IBC onListen', localAddr);
@@ -189,7 +189,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
 
   // FIXME: Actually implement!
   return harden({
-    ...iface,
+    ...protocol,
     async fromBridge(srcID, obj) {
       console.warn('IBC fromBridge', srcID, obj);
       switch (obj.event) {
@@ -219,12 +219,14 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
           const channelKey = `${channelID}:${portID}`;
 
           // Accept or reject the inbound connection.
-          const ctlP = E(protocolImpl).inbound(
-            listenSearch,
-            localAddr,
-            remoteAddr,
-            rchandler,
-          );
+          const ctlP =
+            /** @type {Promise<ControlledConnection>} */
+            (E(protocolImpl).inbound(
+              listenSearch,
+              localAddr,
+              remoteAddr,
+              rchandler,
+            ));
 
           /* Stash it to enable later. */
           channelKeyToControlP.init(channelKey, ctlP);
@@ -237,7 +239,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
           const ctlP = channelKeyToControlP.get(channelKey);
           await E(ctlP)
             .open()
-            .catch(rethrowIfUnset);
+            .catch(rethrowUnlessMissing);
           break;
         }
 
@@ -256,7 +258,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
           E(ctlP)
             .send(data)
             .then(ack => {
-              const ack64 = dataToBase64(ack);
+              const ack64 = dataToBase64(/** @type {Bytes} */ (ack));
               callIBCDevice('packetExecuted', { packet, ack64 });
             })
             .catch(e => console.error(e));

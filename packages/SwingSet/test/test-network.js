@@ -70,7 +70,7 @@ const makeProtocolHandler = t => {
   });
 };
 
-test.only('handled protocol', async t => {
+test('handled protocol', async t => {
   try {
     const protocol = makeNetworkProtocol(makeProtocolHandler(t));
 

@@ -71,7 +71,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onBind A port will be bound
  * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: ProtocolHandler) => Promise<void>} onListen A port was listening
  * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: ProtocolHandler) => Promise<void>} onListenRemove A port listener has been reset
- * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, p: ProtocolHandler) => Promise<ConnectionHandler>} onConnect A port initiates an outbound connection
+ * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, p: ProtocolHandler) => Promise<ConnectionHandler|undefined>} onConnect A port initiates an outbound connection
  * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onRevoke The port is being completely destroyed
  *
  * @typedef {Object} ProtocolImpl Things the protocol can do for us
@@ -79,7 +79,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  * @property {(port: Port, remoteAddr: Endpoint, connectionHandler: ConnectionHandler) => Promise<Connection>} outbound Create an outbound connection
  */
 
-export const rethrowIfUnset = err => {
+export const rethrowUnlessMissing = err => {
   // Ugly hack rather than being able to determine if the function
   // exists.
   if (
@@ -127,7 +127,7 @@ export const makeConnection = (
       closed = Error('Connection closed');
       await E(handler)
         .onClose(connection, undefined, handler)
-        .catch(rethrowIfUnset);
+        .catch(rethrowUnlessMissing);
     },
     async send(data) {
       // console.log('send', data, local === srcHandler);
@@ -137,7 +137,7 @@ export const makeConnection = (
       const bytes = toBytes(data);
       const ack = await E(handler)
         .onReceive(connection, bytes, handler)
-        .catch(err => rethrowIfUnset(err) || '');
+        .catch(err => rethrowUnlessMissing(err) || '');
       return toBytes(ack);
     },
   });
@@ -145,7 +145,7 @@ export const makeConnection = (
   current.add(connection);
   E(handler)
     .onOpen(connection, handler)
-    .catch(rethrowIfUnset);
+    .catch(rethrowUnlessMissing);
   return connection;
 };
 
@@ -172,14 +172,14 @@ function makeControlledConnection(
     async send(packetBytes) {
       const ack = await E(handler)
         .onReceive(conn, packetBytes, handler)
-        .catch(rethrowIfUnset);
+        .catch(rethrowUnlessMissing);
       return toBytes(ack);
     },
     async close() {
       current.delete(conn);
       await E(handler)
         .onClose(conn, undefined, handler)
-        .catch(rethrowIfUnset);
+        .catch(rethrowUnlessMissing);
     },
     getLocalAddress() {
       return localAddr;
@@ -190,6 +190,78 @@ function makeControlledConnection(
   });
   current.add(conn);
   return conn;
+}
+
+/**
+ *
+ * @param {ConnectionHandler} handler0
+ * @param {Endpoint} addr0
+ * @param {ConnectionHandler} handler1
+ * @param {Endpoint} addr1
+ * @param {WeakSet<Connection>} [current=new WeakSet()]
+ * @param {typeof defaultE} [E=defaultE]
+ * @returns {[Connection, Connection]}
+ */
+export function crossoverConnection(
+  handler0,
+  addr0,
+  handler1,
+  addr1,
+  current = new WeakSet(),
+  E = defaultE,
+) {
+  /**
+   * @type {Connection[]}
+   */
+  const conns = [];
+  /**
+   * @type {ConnectionHandler[]}
+   */
+  const handlers = [handler0, handler1];
+  /**
+   * @type {Endpoint[]}
+   */
+  const addrs = [addr0, addr1];
+
+  function makeHalfConnection(l, r) {
+    conns[l] = harden({
+      getLocalAddress() {
+        return addrs[l];
+      },
+      getRemoteAddress() {
+        return addrs[r];
+      },
+      async send(packetBytes) {
+        const ack =
+          /** @type {Bytes} */
+          (await E(handlers[r])
+            .onReceive(conns[r], toBytes(packetBytes), handlers[r])
+            .catch(rethrowUnlessMissing));
+        return toBytes(ack);
+      },
+      async close() {
+        await E(handlers[l])
+          .onClose(conns[l], undefined, handlers[l])
+          .catch(rethrowUnlessMissing);
+      },
+    });
+  }
+
+  makeHalfConnection(0, 1);
+  makeHalfConnection(1, 0);
+
+  function openHalfConnection(l) {
+    current.add(conns[l]);
+    E(handlers[l])
+      .onOpen(conns[l], handlers[l])
+      .catch(rethrowUnlessMissing);
+  }
+
+  openHalfConnection(0);
+  openHalfConnection(1);
+
+  const [conn0, conn1] = conns;
+  return [conn0, conn1];
 }
 
 /**
@@ -220,7 +292,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
         throw Error(
           `Connection refused to ${localAddr} (search=${listenSearch.join(
             ', ',
-          )}) ${[...listening.keys()].join(' ')}`,
+          )})`,
         );
       }
       const [port, listener] = listening.get(listenAddr);
@@ -230,7 +302,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
         /** @type {ConnectionHandler} */
         (await E(listener)
           .onAccept(port, localAddr, remoteAddr, listener)
-          .catch(rethrowIfUnset));
+          .catch(rethrowUnlessMissing));
 
       return makeControlledConnection(
         lchandler,
@@ -240,18 +312,32 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
         E,
       );
     },
-    async outbound(port, remoteAddr) {
+    async outbound(port, remoteAddr, lchandler) {
       const localAddr =
         /** @type {string} */
         (await E(port).getLocalAddress());
-      const rchandler = await E(protocolHandler).onConnect(
-        port,
-        localAddr,
-        remoteAddr,
-        protocolHandler,
-      );
+      const rchandler =
+        /** @type {ConnectionHandler} */
+        (await E(protocolHandler).onConnect(
+          port,
+          localAddr,
+          remoteAddr,
+          protocolHandler,
+        ));
+
+      if (!rchandler) {
+        throw Error(`Cannot connect to ${remoteAddr}`);
+      }
+
       const current = currentConnections.get(port);
-      return makeConnection(rchandler, remoteAddr, localAddr, current, E);
+      return crossoverConnection(
+        lchandler,
+        localAddr,
+        rchandler,
+        remoteAddr,
+        current,
+        E,
+      )[0];
     },
   });
 
@@ -323,7 +409,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
         listening.init(localAddr, [port, listenHandler]);
         await E(listenHandler)
           .onListen(port, listenHandler)
-          .catch(rethrowIfUnset);
+          .catch(rethrowUnlessMissing);
       },
       async removeListener(listenHandler) {
         if (!listening.has(localAddr)) {
@@ -341,7 +427,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
         listening.delete(localAddr);
         await E(listenHandler)
           .onRemove(port, listenHandler)
-          .catch(rethrowIfUnset);
+          .catch(rethrowUnlessMissing);
       },
       async connect(remotePort, connectionHandler = {}) {
         if (revoked) {
@@ -430,12 +516,15 @@ export function makeLoopbackProtocolHandler(E = defaultE) {
       // TODO: Maybe handle a bind?
     },
     async onConnect(_port, localAddr, remoteAddr, _protocolHandler) {
+      if (!listeners.has(remoteAddr)) {
+        return undefined;
+      }
       const [lport, lhandler] = listeners.get(remoteAddr);
-      console.log(`looking up onAccept in`, lhandler);
+      // console.log(`looking up onAccept in`, lhandler);
       const rport = await E(lhandler)
         .onAccept(lport, remoteAddr, localAddr, lhandler)
-        .catch(rethrowIfUnset);
-      console.log(`rport is`, rport);
+        .catch(rethrowUnlessMissing);
+      // console.log(`rport is`, rport);
       return rport;
     },
     async onListen(port, localAddr, listenHandler, _protocolHandler) {
@@ -477,16 +566,9 @@ export function extendLoopbackProtocolHandler(subi) {
     },
     async onConnect(port, localAddr, remoteAddr, _protocolHandler) {
       // Try loopback connection first.
-      try {
-        const c = await loopback.onConnect(
-          port,
-          localAddr,
-          remoteAddr,
-          loopback,
-        );
+      const c = await loopback.onConnect(port, localAddr, remoteAddr, loopback);
+      if (c) {
         return c;
-      } catch (e) {
-        // A loopback error, so keep going.
       }
       return subi.onConnect(port, localAddr, remoteAddr, subi);
     },

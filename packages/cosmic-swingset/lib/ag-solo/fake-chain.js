@@ -6,7 +6,7 @@ import anylogger from 'anylogger';
 
 import { launch } from '../launch-chain';
 import makeBlockManager from '../block-manager';
-import { makeWithQueue } from './queue';
+import { makeWithQueue } from './vats/queue';
 
 const log = anylogger('fake-chain');
 
