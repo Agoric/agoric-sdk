@@ -32,15 +32,11 @@ export const makeContract = harden(zcf => {
 
   assertKeywords(harden(['Asset', 'Price']));
 
-  function flattenRule(r) {
-    const keyword = Object.getOwnPropertyNames(r)[0];
-    const struct = {};
-    struct[keyword] = r[keyword].extent;
-    return harden(struct);
-  }
-
   function flattenOffer(o) {
-    return harden([flattenRule(o.proposal.want), flattenRule(o.proposal.give)]);
+    return {
+      want: o.proposal.want,
+      give: o.proposal.give,
+    };
   }
 
   function flattenOrders(offerHandles) {

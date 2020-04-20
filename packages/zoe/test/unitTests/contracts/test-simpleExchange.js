@@ -251,10 +251,10 @@ test('simpleExchange with multiple sell offers', async t => {
 
     Promise.all([aliceOutcome1P, aliceOutcome2P, aliceOutcome3P]).then(() => {
       const expectedBook = {
-        buys: [[{ Asset: 29 }, { Price: 18 }]],
+        buys: [{ want: { Asset: moola(29) }, give: { Price: simoleans(18) } }],
         sells: [
-          [{ Price: 4 }, { Asset: 3 }],
-          [{ Price: 8 }, { Asset: 5 }],
+          { want: { Price: simoleans(4) }, give: { Asset: moola(3) } },
+          { want: { Price: simoleans(8) }, give: { Asset: moola(5) } },
         ],
       };
       t.deepEquals(
@@ -311,7 +311,7 @@ test('simpleExchange showPayoutRules', async t => {
     alicePayments,
   );
 
-  const expected = [{ Price: 4 }, { Asset: 3 }];
+  const expected = { want: { Price: simoleans(4) }, give: { Asset: moola(3) } };
 
   t.deepEquals(publicAPI.getOffer(await aliceOfferHandleP), expected);
 });
