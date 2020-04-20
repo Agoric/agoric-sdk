@@ -35,6 +35,9 @@ export default function Provider({ children }) {
       if (type === 'walletUpdateInbox') {
         dispatch(updateInbox(JSON.parse(data)));
       }
+      if (type === 'walletAcceptOfferResponse') {
+        alert(data.outcome);
+      }
     }
 
     function walletGetPurses() {

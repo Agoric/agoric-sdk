@@ -34,6 +34,7 @@ export async function makeWallet(
   const idToCompiledOfferP = new Map();
   const idToCancel = new Map();
   const idToOfferHandle = new Map();
+  const idToOutcome = new Map();
 
   // Client-side representation of the purses inbox;
   const pursesState = new Map();
@@ -329,6 +330,11 @@ export async function makeWallet(
         return E(cancelObj).cancel();
       });
       idToOfferHandle.set(id, offerHandle);
+
+      // The outcome is most often a string that can be returned, but
+      // it could be an object. We don't do anything currently if it
+      // is an object, but we will store it here for future use.
+      idToOutcome.set(id, outcome);
 
       ret = { outcome };
 

@@ -95,10 +95,16 @@ function build(E, _D, _log) {
         };
       }
       case 'walletAcceptOffer': {
-        const ret = await wallet.acceptOffer(data);
+        const { outcome } = await wallet.acceptOffer(data);
+        // We return the outcome only if it is a string. Otherwise we
+        // return a default message.
+        const result =
+          typeof outcome === 'string'
+            ? { outcome }
+            : { outcome: 'Offer was made.' };
         return {
           type: 'walletAcceptOfferResponse',
-          data: ret,
+          data: result,
         };
       }
 
