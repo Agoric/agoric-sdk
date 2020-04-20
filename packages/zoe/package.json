@@ -36,7 +36,7 @@
     "@agoric/ertp": "^0.5.2",
     "@agoric/evaluate": "^2.2.3",
     "@agoric/eventual-send": "^0.8.0",
-    "@agoric/harden": "^0.0.7",
+    "@agoric/harden": "^0.0.8",
     "@agoric/marshal": "^0.1.5",
     "@agoric/nat": "^2.0.1",
     "@agoric/notifier": "^0.0.1",

@@ -10,7 +10,7 @@
     "build": "exit 0"
   },
   "dependencies": {
-    "@agoric/harden": "^0.0.7",
+    "@agoric/harden": "^0.0.8",
     "@agoric/nat": "^2.0.1",
     "re2": "^1.10.5"
   },

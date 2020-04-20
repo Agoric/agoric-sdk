@@ -14,7 +14,7 @@
     "lint-check": "eslint '**/*.js'"
   },
   "dependencies": {
-    "@agoric/harden": "^0.0.7",
+    "@agoric/harden": "^0.0.8",
     "@agoric/stat-logger": "^0.2.2",
     "@agoric/swing-store-lmdb": "^0.2.2",
     "@agoric/swing-store-simple": "^0.1.2",
