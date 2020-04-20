@@ -63,6 +63,21 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 	}
 
 	switch msg.Method {
+	/*
+			// TODO: Implement
+		case "channelOpenInit":
+			msg := new(channelMessage)
+			err = json.Unmarshal([]byte(str), &msg)
+
+			order := channeltypes.Order.ORDERED
+			chanCap, err := ctx.Keeper.ChanOpenInit(ctx.Context, order, msg.Packet.ConnectionHops,
+				msg.Packet.SourcePort, msg.Packet.SourceChannel,
+				portCap *capability.Capability, msg.Packet.Counterparty, msg.Packet.Version,
+			) (*capability.Capability, error) {
+				return k.channelKeeper.ChanOpenInit(ctx, order, connectionHops, portID, channelID, portCap counterparty, version)
+			}
+	*/
+
 	case "sendPacket":
 		seq, ok := ctx.Keeper.GetNextSequenceSend(
 			ctx.Context,

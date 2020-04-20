@@ -1,7 +1,6 @@
 // @ts-check
 import makeStore from '@agoric/store';
 import rawHarden from '@agoric/harden';
-import { producePromise } from '@agoric/produce-promise';
 import { E as defaultE } from '@agoric/eventual-send';
 import { toBytes } from './bytes';
 
@@ -23,12 +22,12 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  */
 
 /**
- * @typedef {Object} Interface The network Interface
+ * @typedef {Object} Protocol The network Protocol
  * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if ending in '/', a fresh name
  */
 
 /**
- * @typedef {Object} Port A port that has been bound to an Interface
+ * @typedef {Object} Port A port that has been bound to a protocol
  * @property {() => Endpoint} getLocalAddress Get the locally bound name of this port
  * @property {(acceptHandler: ListenHandler) => Promise<void>} addListener Begin accepting incoming connections
  * @property {(remote: Endpoint, connectionHandler: ConnectionHandler = {}) => Promise<Connection>} connect Make an outbound connection
@@ -48,6 +47,13 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  * @typedef {Object} Connection
  * @property {(packetBytes: Data) => Promise<Bytes>} send Send a packet on the connection
  * @property {() => void} close Close both ends of the connection
+ * @property {() => Endpoint} getLocalAddress Get the locally bound name of this connection
+ * @property {() => Endpoint} getRemoteAddress Get the name of the counterparty
+ */
+
+/**
+ * @typedef {Connection} ControlledConnection
+ * @property {() => void} open Inject an open event
  */
 
 /**
@@ -60,27 +66,17 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  */
 
 /**
- * @typedef {Object} Packet
- * @property {Endpoint} src Source of the packet
- * @property {Endpoint} dst Destination of the packet
- * @property {Bytes} bytes Bytes in the packet
- * @property {import('@agoric/produce-promise').PromiseRecord<Bytes>} deferredAck The deferred to resolve the result
+ * @typedef {Object} ProtocolHandler A handler for things the protocol implementation will invoke
+ * @property {(protocol: ProtocolImpl, p: ProtocolHandler) => Promise<void>} onCreate This protocol is created
+ * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onBind A port will be bound
+ * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: ProtocolHandler) => Promise<void>} onListen A port was listening
+ * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: ProtocolHandler) => Promise<void>} onListenRemove A port listener has been reset
+ * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, p: ProtocolHandler) => Promise<ConnectionHandler>} onConnect A port initiates an outbound connection
+ * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onRevoke The port is being completely destroyed
  *
- * @typedef {number} TTL A time-to-live for a packet
- */
-
-/**
- * @typedef {Object} InterfaceHandler A handler for things the interface implementation will invoke
- * @property {(interface: InterfaceImpl, p: InterfaceHandler) => Promise<void>} onCreate This interface is created
- * @property {(port: Port, localAddr: Endpoint, p: InterfaceHandler) => Promise<void>} onBind A port will be bound
- * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: InterfaceHandler) => Promise<void>} onListen A port was listening
- * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: InterfaceHandler) => Promise<void>} onListenRemove A port listener has been reset
- * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, p: InterfaceHandler) => Promise<ConnectionHandler>} onConnect A port initiates an outbound connection
- * @property {(port: Port, localAddr: Endpoint, p: InterfaceHandler) => Promise<void>} onRevoke The port is being completely destroyed
- *
- * @typedef {Object} InterfaceImpl Things the interface can do for us
- * @property {(port: Port, remoteAddr: Endpoint, connectionHandler: ConnectionHandler) => Promise<Connection>} outbound Establish a connection out of this interface
- * @property {(listenSearch: Endpoint[], localAddr: Endpoint, remoteAddr: Endpoint, connectionHandler: ConnectionHandler) => Promise<Connection>} inbound Establish a connection into this interface
+ * @typedef {Object} ProtocolImpl Things the protocol can do for us
+ * @property {(listenSearch: Endpoint[], localAddr: Endpoint, remoteAddr: Endpoint) => Promise<ControlledConnection>} inbound Establish a connection into this protocol
+ * @property {(port: Port, remoteAddr: Endpoint, connectionHandler: ConnectionHandler) => Promise<Connection>} outbound Create an outbound connection
  */
 
 export const rethrowIfUnset = err => {
@@ -96,121 +92,114 @@ export const rethrowIfUnset = err => {
 };
 
 /**
- * Create half of a connection pair.
+ * Create a handled Connection.
  *
- * @param {ConnectionHandler} local
- * @param {ConnectionHandler} remote
+ * @param {ConnectionHandler} handler
+ * @param {Endpoint} localAddr
+ * @param {Endpoint} remoteAddr
  * @param {WeakSet<Connection>} [current=new WeakSet()]
  * @param {typeof defaultE} [E=defaultE] Eventual send function
- * @returns {[Connection, () => void]}
+ * @returns {Connection}
  */
 export const makeConnection = (
-  local,
-  remote,
+  handler,
+  localAddr,
+  remoteAddr,
   current = new WeakSet(),
   E = defaultE,
 ) => {
-  const pending = [];
-  let queue = [];
   let closed;
   /**
    * @type {Connection}
    */
   const connection = harden({
+    getLocalAddress() {
+      return localAddr;
+    },
+    getRemoteAddress() {
+      return remoteAddr;
+    },
     async close() {
       if (closed) {
         throw closed;
       }
       current.delete(connection);
       closed = Error('Connection closed');
-      await Promise.all([
-        E(local)
-          .onClose(connection, undefined, local)
-          .catch(rethrowIfUnset),
-        E(remote)
-          .onClose(connection, undefined, remote)
-          .catch(rethrowIfUnset),
-      ]);
-      while (pending.length) {
-        const deferred = pending.shift();
-        deferred.reject(closed);
-      }
+      await E(handler)
+        .onClose(connection, undefined, handler)
+        .catch(rethrowIfUnset);
     },
     async send(data) {
       // console.log('send', data, local === srcHandler);
       if (closed) {
         throw closed;
       }
-      const deferred = producePromise();
-      if (queue) {
-        queue.push([data, deferred]);
-        pending.push(deferred);
-        return deferred.promise;
-      }
       const bytes = toBytes(data);
-      const ack = await E(remote)
-        .onReceive(connection, bytes, remote)
+      const ack = await E(handler)
+        .onReceive(connection, bytes, handler)
         .catch(err => rethrowIfUnset(err) || '');
       return toBytes(ack);
     },
   });
-  const flush = () => {
-    const q = queue;
-    queue = undefined;
-    while (q && q.length) {
-      const [data, deferred] = q.shift();
-      connection
-        .send(data)
-        .then(deferred.resolve, deferred.reject)
-        .finally(() => {
-          const i = pending.indexOf(deferred);
-          if (i >= 0) {
-            pending.splice(i, 1);
-          }
-        });
-    }
-  };
 
   current.add(connection);
-  return [connection, flush];
+  E(handler)
+    .onOpen(connection, handler)
+    .catch(rethrowIfUnset);
+  return connection;
 };
 
 /**
- * Connect a pair of handlers.
  *
- * @param {ConnectionHandler} handler0 one connection handler
- * @param {ConnectionHandler} handler1 the other connection handler
+ * @param {ConnectionHandler} handler
+ * @param {Endpoint} localAddr
+ * @param {Endpoint} remoteAddr
  * @param {WeakSet<Connection>} [current=new WeakSet()]
- * @param {typeof defaultE} [E=defaultE] Eventual send function
- * @returns {Connection & { confirm: () => Promise<void> }} a connection for handler0 and confirmation function
+ * @param {typeof defaultE} [E=defaultE]
+ * @returns {ControlledConnection}
  */
-export function makeConnectionPair(handler0, handler1, current, E) {
-  const [connection0, lflush] = makeConnection(handler0, handler1, current, E);
-  const [connection1, rflush] = makeConnection(handler1, handler0, current, E);
-
-  const confirm = async () => {
-    E(handler0)
-      .onOpen(connection0, handler0)
-      .catch(rethrowIfUnset);
-    E(handler1)
-      .onOpen(connection1, handler1)
-      .catch(rethrowIfUnset);
-
-    lflush();
-    rflush();
-  };
-
-  return { ...connection0, confirm };
+function makeControlledConnection(
+  handler,
+  localAddr,
+  remoteAddr,
+  current = new WeakSet(),
+  E = defaultE,
+) {
+  const conn = harden({
+    async open() {
+      await E(handler).onOpen(conn, handler);
+    },
+    async send(packetBytes) {
+      const ack = await E(handler)
+        .onReceive(conn, packetBytes, handler)
+        .catch(rethrowIfUnset);
+      return toBytes(ack);
+    },
+    async close() {
+      current.delete(conn);
+      await E(handler)
+        .onClose(conn, undefined, handler)
+        .catch(rethrowIfUnset);
+    },
+    getLocalAddress() {
+      return localAddr;
+    },
+    getRemoteAddress() {
+      return remoteAddr;
+    },
+  });
+  current.add(conn);
+  return conn;
 }
 
 /**
- * Create an Interface that has a handler.
+ * Create a protocol that has a handler.
  *
- * @param {InterfaceHandler} interfaceHandler
+ * @param {ProtocolHandler} protocolHandler
  * @param {typeof defaultE} [E=defaultE] Eventual send function
- * @returns {Interface} the local capability for connecting and listening
+ * @returns {Protocol} the local capability for connecting and listening
  */
-export function makeNetworkInterface(interfaceHandler, E = defaultE) {
+export function makeNetworkProtocol(protocolHandler, E = defaultE) {
   /** @type {Store<Port, Set<Connection>>} */
   const currentConnections = makeStore('port');
 
@@ -222,32 +211,47 @@ export function makeNetworkInterface(interfaceHandler, E = defaultE) {
   const listening = makeStore('localAddr');
 
   /**
-   * @type {InterfaceImpl}
+   * @type {ProtocolImpl}
    */
-  const interfaceImpl = harden({
-    async outbound(port, remoteAddr, lchandler) {
-      const localAddr = await E(port).getLocalAddress();
-      const rchandler = await E(interfaceHandler).onConnect(
+  const protocolImpl = harden({
+    async inbound(listenSearch, localAddr, remoteAddr) {
+      const listenAddr = listenSearch.find(addr => listening.has(addr));
+      if (!listenAddr) {
+        throw Error(
+          `Connection refused to ${localAddr} (search=${listenSearch.join(
+            ', ',
+          )}) ${[...listening.keys()].join(' ')}`,
+        );
+      }
+      const [port, listener] = listening.get(listenAddr);
+      const current = currentConnections.get(port);
+
+      const lchandler =
+        /** @type {ConnectionHandler} */
+        (await E(listener)
+          .onAccept(port, localAddr, remoteAddr, listener)
+          .catch(rethrowIfUnset));
+
+      return makeControlledConnection(
+        lchandler,
+        localAddr,
+        remoteAddr,
+        current,
+        E,
+      );
+    },
+    async outbound(port, remoteAddr) {
+      const localAddr =
+        /** @type {string} */
+        (await E(port).getLocalAddress());
+      const rchandler = await E(protocolHandler).onConnect(
         port,
         localAddr,
         remoteAddr,
-        interfaceHandler,
+        protocolHandler,
       );
       const current = currentConnections.get(port);
-      return makeConnectionPair(lchandler, rchandler, current, E);
-    },
-
-    async inbound(listenSearch, localAddr, remoteAddr, rchandler) {
-      const listenAddr = listenSearch.find(addr => listening.has(addr));
-      if (!listenAddr) {
-        throw Error(`Connection refused`);
-      }
-      const [port, listener] = listening.get(listenAddr);
-      const lchandler = await E(listener)
-        .onAccept(port, localAddr, remoteAddr, listener)
-        .catch(rethrowIfUnset);
-      const current = currentConnections.get(port);
-      return makeConnectionPair(rchandler, lchandler, current, E);
+      return makeConnection(rchandler, remoteAddr, localAddr, current, E);
     },
   });
 
@@ -257,8 +261,8 @@ export function makeNetworkInterface(interfaceHandler, E = defaultE) {
   const boundPorts = makeStore('localAddr');
   let nonce = 0;
 
-  // Wire up the local interface to the handler.
-  E(interfaceHandler).onCreate(interfaceImpl, interfaceHandler);
+  // Wire up the local protocol to the handler.
+  E(protocolHandler).onCreate(protocolImpl, protocolHandler);
 
   /**
    * @param {Endpoint} localAddr
@@ -309,11 +313,11 @@ export function makeNetworkInterface(interfaceHandler, E = defaultE) {
         if (listening.has(localAddr)) {
           throw Error(`Port ${localAddr} is already listening`);
         }
-        await E(interfaceHandler).onListen(
+        await E(protocolHandler).onListen(
           port,
           localAddr,
           listenHandler,
-          interfaceHandler,
+          protocolHandler,
         );
         // TODO: Handle the race between revoke() and open connections.
         listening.init(localAddr, [port, listenHandler]);
@@ -328,11 +332,11 @@ export function makeNetworkInterface(interfaceHandler, E = defaultE) {
         if (listening.get(localAddr)[1] !== listenHandler) {
           throw Error(`Port ${localAddr} handler to remove is not listening`);
         }
-        await E(interfaceHandler).onListenRemove(
+        await E(protocolHandler).onListenRemove(
           port,
           localAddr,
           listenHandler,
-          interfaceHandler,
+          protocolHandler,
         );
         listening.delete(localAddr);
         await E(listenHandler)
@@ -347,12 +351,11 @@ export function makeNetworkInterface(interfaceHandler, E = defaultE) {
          * @type {Endpoint}
          */
         const dst = harden(remotePort);
-        const conn = await interfaceImpl.outbound(port, dst, connectionHandler);
+        const conn = await protocolImpl.outbound(port, dst, connectionHandler);
         if (revoked) {
           E(conn).close();
         } else {
           openConnections.add(conn);
-          E(conn).confirm();
         }
         return conn;
       },
@@ -361,7 +364,7 @@ export function makeNetworkInterface(interfaceHandler, E = defaultE) {
           throw Error(`Port ${localAddr} is already revoked`);
         }
         revoked = RevokeState.REVOKING;
-        await E(interfaceHandler).onRevoke(port, localAddr, interfaceHandler);
+        await E(protocolHandler).onRevoke(port, localAddr, protocolHandler);
         revoked = RevokeState.REVOKED;
 
         // Clean up everything we did.
@@ -381,7 +384,7 @@ export function makeNetworkInterface(interfaceHandler, E = defaultE) {
       },
     });
 
-    await E(interfaceHandler).onBind(port, localAddr, interfaceHandler);
+    await E(protocolHandler).onBind(port, localAddr, protocolHandler);
     boundPorts.init(localAddr, port);
     currentConnections.init(port, new Set());
     return port;
@@ -407,12 +410,12 @@ export function makeEchoConnectionHandler() {
 }
 
 /**
- * Create a interface handler that just connects to itself.
+ * Create a protocol handler that just connects to itself.
  *
  * @param {defaultE} E Eventual sender
- * @returns {InterfaceHandler} The localhost handler
+ * @returns {ProtocolHandler} The localhost handler
  */
-export function makeLoopbackInterfaceHandler(E = defaultE) {
+export function makeLoopbackProtocolHandler(E = defaultE) {
   /**
    * @type {Store<string, [Port, ListenHandler]>}
    */
@@ -420,22 +423,25 @@ export function makeLoopbackInterfaceHandler(E = defaultE) {
 
   return harden({
     // eslint-disable-next-line no-empty-function
-    async onCreate(_interface, _interfaceHandler) {
+    async onCreate(_protocol, _protocolHandler) {
       // TODO: Maybe do something on creation?
     },
-    async onBind(_port, _localAddr, _interfaceHandler) {
+    async onBind(_port, _localAddr, _protocolHandler) {
       // TODO: Maybe handle a bind?
     },
-    async onConnect(_port, localAddr, remoteAddr, _interfaceHandler) {
+    async onConnect(_port, localAddr, remoteAddr, _protocolHandler) {
       const [lport, lhandler] = listeners.get(remoteAddr);
-      return E(lhandler)
+      console.log(`looking up onAccept in`, lhandler);
+      const rport = await E(lhandler)
         .onAccept(lport, remoteAddr, localAddr, lhandler)
         .catch(rethrowIfUnset);
+      console.log(`rport is`, rport);
+      return rport;
     },
-    async onListen(port, localAddr, listenHandler, _interfaceHandler) {
+    async onListen(port, localAddr, listenHandler, _protocolHandler) {
       listeners.init(localAddr, [port, listenHandler]);
     },
-    async onListenRemove(port, localAddr, listenHandler, _interfaceHandler) {
+    async onListenRemove(port, localAddr, listenHandler, _protocolHandler) {
       const [lport, lhandler] = listeners.get(localAddr);
       if (lport !== port) {
         throw Error(`Port does not match listener on ${localAddr}`);
@@ -445,31 +451,31 @@ export function makeLoopbackInterfaceHandler(E = defaultE) {
       }
       listeners.delete(localAddr);
     },
-    async onRevoke(_port, _localAddr, _interfaceHandler) {
+    async onRevoke(_port, _localAddr, _protocolHandler) {
       // TODO: maybe clean up?
     },
   });
 }
 
 /**
- * Create an interface that combines the subinterface
- * with a loopback interface.
+ * Create a protocol that combines the subprotocol
+ * with a loopback protocol.
  *
- * @param {InterfaceHandler} subi the handler to delegate non-loopback connections
- * @returns {InterfaceHandler} the extended interface
+ * @param {ProtocolHandler} subi the handler to delegate non-loopback connections
+ * @returns {ProtocolHandler} the extended protocol
  */
-export function extendLoopbackInterfaceHandler(subi) {
-  const loopback = makeLoopbackInterfaceHandler();
+export function extendLoopbackProtocolHandler(subi) {
+  const loopback = makeLoopbackProtocolHandler();
   return harden({
-    async onCreate(impl, _interfaceHandler) {
+    async onCreate(impl, _protocolHandler) {
       await subi.onCreate(impl, subi);
       await loopback.onCreate(impl, loopback);
     },
-    async onBind(port, localAddr, _interfaceHandler) {
+    async onBind(port, localAddr, _protocolHandler) {
       await subi.onBind(port, localAddr, subi);
       await loopback.onBind(port, localAddr, loopback);
     },
-    async onConnect(port, localAddr, remoteAddr, _interfaceHandler) {
+    async onConnect(port, localAddr, remoteAddr, _protocolHandler) {
       // Try loopback connection first.
       try {
         const c = await loopback.onConnect(

@@ -7,8 +7,8 @@ import {
   parse,
   unparse,
   makeEchoConnectionHandler,
-  makeLoopbackInterfaceHandler,
-  makeNetworkInterface,
+  makeLoopbackProtocolHandler,
+  makeNetworkProtocol,
   makeRouter,
   dataToBase64,
   base64ToBytes,
@@ -21,17 +21,17 @@ const log = false ? console.log : () => {};
 
 /**
  * @param {*} t
- * @returns {import('../src/vats/network').InterfaceHandler} A testing handler
+ * @returns {import('../src/vats/network').ProtocolHandler} A testing handler
  */
-const makeInterfaceHandler = t => {
+const makeProtocolHandler = t => {
   /**
    * @type {import('../src/vats/network').ListenHandler}
    */
   let l;
   let lp;
   return harden({
-    async onCreate(_interface, _impl) {
-      log('created', _interface, _impl);
+    async onCreate(_protocol, _impl) {
+      log('created', _protocol, _impl);
     },
     async onBind(port, localAddr) {
       t.assert(port, `port is supplied to onBind`);
@@ -41,7 +41,6 @@ const makeInterfaceHandler = t => {
       t.assert(port, `port is tracked in onConnect`);
       t.assert(localAddr, `local address is supplied to onConnect`);
       t.assert(remoteAddr, `remote address is supplied to onConnect`);
-      // console.log('connected', localAddr, remoteAddr, l);
       if (lp) {
         return l.onAccept(lp, localAddr, remoteAddr, l);
       }
@@ -71,12 +70,12 @@ const makeInterfaceHandler = t => {
   });
 };
 
-test('handled iface', async t => {
+test.only('handled protocol', async t => {
   try {
-    const iface = makeNetworkInterface(makeInterfaceHandler(t));
+    const protocol = makeNetworkProtocol(makeProtocolHandler(t));
 
     const closed = producePromise();
-    const port = await iface.bind('/ibc/*/ordered');
+    const port = await protocol.bind('/ibc/*/ordered');
     await port.connect(
       '/ibc/*/ordered/echo',
       harden({
@@ -105,13 +104,13 @@ test('handled iface', async t => {
   }
 });
 
-test('iface connection listen', async t => {
+test('protocol connection listen', async t => {
   try {
-    const iface = makeNetworkInterface(makeInterfaceHandler(t));
+    const protocol = makeNetworkProtocol(makeProtocolHandler(t));
 
     const closed = producePromise();
 
-    const port = await iface.bind('/net/ordered/ordered/some-portname');
+    const port = await protocol.bind('/net/ordered/ordered/some-portname');
 
     /**
      * @type {import('../src/vats/network').ListenHandler}
@@ -186,7 +185,7 @@ test('iface connection listen', async t => {
 
     await port.addListener(listener);
 
-    const port2 = await iface.bind('/net/ordered');
+    const port2 = await protocol.bind('/net/ordered');
     const connectionHandler = makeEchoConnectionHandler();
     await port2.connect(
       '/net/ordered/ordered/some-portname',
@@ -212,13 +211,13 @@ test('iface connection listen', async t => {
   }
 });
 
-test('loopback iface', async t => {
+test('loopback protocol', async t => {
   try {
-    const iface = makeNetworkInterface(makeLoopbackInterfaceHandler());
+    const protocol = makeNetworkProtocol(makeLoopbackProtocolHandler());
 
     const closed = producePromise();
 
-    const port = await iface.bind('/loopback/foo');
+    const port = await protocol.bind('/loopback/foo');
 
     /**
      * @type {import('../src/vats/network').ListenHandler}
@@ -235,7 +234,7 @@ test('loopback iface', async t => {
     });
     await port.addListener(listener);
 
-    const port2 = await iface.bind('/loopback/bar');
+    const port2 = await protocol.bind('/loopback/bar');
     await port2.connect(
       port.getLocalAddress(),
       harden({

@@ -2,13 +2,13 @@
 import { E as defaultE } from '@agoric/eventual-send';
 import rawHarden from '@agoric/harden';
 import makeStore from '@agoric/store';
-import { makeNetworkInterface } from './network';
+import { makeNetworkProtocol } from './network';
 
 const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
- * @typedef {import('./network').Interface} Interface
- * @typedef {import('./network').InterfaceHandler} InterfaceHandler
+ * @typedef {import('./network').Protocol} Protocol
+ * @typedef {import('./network').ProtocolHandler} ProtocolHandler
  */
 
 /**
@@ -67,43 +67,41 @@ export default function makeRouter(sep = '/') {
   });
 }
 /**
- * @typedef {Interface} RouterInterface
- * @property {(prefix: string, interfaceHandler: InterfaceHandler) => void} registerInterfaceHandler
- * @property {(prefix: string, interfaceHandler: InterfaceHandler) => void} unregisterInterfaceHandler
+ * @typedef {Protocol} RouterProtocol
+ * @property {(prefix: string, protocolHandler: ProtocolHandler) => void} registerProtocolHandler
+ * @property {(prefix: string, protocolHandler: ProtocolHandler) => void} unregisterProtocolHandler
  */
 
 /**
- * Create a router that behaves like a Interface.
+ * Create a router that behaves like a Protocol.
  *
  * @param {string} [sep='/'] the route separator
  * @param {typeof defaultE} [E=defaultE] Eventual sender
- * @returns {RouterInterface} The new delegated iface
+ * @returns {RouterProtocol} The new delegated protocol
  */
-export function makeRouterInterface(sep = '/', E = defaultE) {
+export function makeRouterProtocol(sep = '/', E = defaultE) {
   const router = makeRouter(sep);
-  const interfaces = makeStore('prefix');
-  const interfaceHandlers = makeStore('prefix');
+  const protocols = makeStore('prefix');
+  const protocolHandlers = makeStore('prefix');
 
-  function registerInterfaceHandler(prefix, interfaceHandler) {
-    const iface = makeNetworkInterface(interfaceHandler);
-    router.register(prefix, iface);
-    interfaces.init(prefix, iface);
-    interfaceHandlers.init(prefix, interfaceHandler);
+  function registerProtocolHandler(prefix, protocolHandler) {
+    const protocol = makeNetworkProtocol(protocolHandler);
+    router.register(prefix, protocol);
+    protocols.init(prefix, protocol);
+    protocolHandlers.init(prefix, protocolHandler);
   }
 
-  function unregisterInterfaceHandler(prefix, interfaceHandler) {
-    const ph = interfaceHandlers.get(prefix);
-    if (ph !== interfaceHandler) {
-      throw TypeError(
-        `Interface handler is not registered at prefix ${prefix}`,
-      );
+  function unregisterProtocolHandler(prefix, protocolHandler) {
+    const ph = protocolHandlers.get(prefix);
+    if (ph !== protocolHandler) {
+      throw TypeError(`Protocol handler is not registered at prefix ${prefix}`);
     }
     router.unregister(prefix, ph);
-    interfaces.delete(prefix);
-    interfaceHandlers.delete(prefix);
+    protocols.delete(prefix);
+    protocolHandlers.delete(prefix);
   }
 
-  /** @type {Interface['bind']} */
+  /** @type {Protocol['bind']} */
   async function bind(localAddr) {
     const [route] = router.getRoutes(localAddr);
     if (route === undefined) {
@@ -114,7 +112,7 @@ export function makeRouterInterface(sep = '/', E = defaultE) {
 
   return harden({
     bind,
-    registerInterfaceHandler,
-    unregisterInterfaceHandler,
+    registerProtocolHandler,
+    unregisterProtocolHandler,
   });
 }

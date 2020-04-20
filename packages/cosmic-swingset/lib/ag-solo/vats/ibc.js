@@ -1,7 +1,7 @@
 // @ts-check
 import harden from '@agoric/harden';
 import {
-  extendLoopbackInterfaceHandler,
+  extendLoopbackProtocolHandler,
   rethrowIfUnset,
   dataToBase64,
   base64ToBytes,
@@ -15,10 +15,11 @@ import { makeWithQueue } from '../queue';
 const DEFAULT_PACKET_TIMEOUT = 1000;
 
 /**
- * @typedef {import('@agoric/swingset-vat/src/vats/network').InterfaceHandler} InterfaceHandler
- * @typedef {import('@agoric/swingset-vat/src/vats/network').InterfaceImpl} InterfaceImpl
+ * @typedef {import('@agoric/swingset-vat/src/vats/network').ProtocolHandler} ProtocolHandler
+ * @typedef {import('@agoric/swingset-vat/src/vats/network').ProtocolImpl} ProtocolImpl
  * @typedef {import('@agoric/swingset-vat/src/vats/network').ConnectionHandler} ConnectionHandler
  * @typedef {import('@agoric/swingset-vat/src/vats/network').Connection} Connection
+ * @typedef {import('@agoric/swingset-vat/src/vats/network').ControlledConnection} ControlledConnection
  * @typedef {import('@agoric/swingset-vat/src/vats/network').Endpoint} Endpoint
  * @typedef {import('@agoric/swingset-vat/src/vats/network').Bytes} Bytes
  * @typedef {import('@agoric/swingset-vat/src/vats/network').Bytes} Data
@@ -36,21 +37,21 @@ const DEFAULT_PACKET_TIMEOUT = 1000;
  */
 
 /**
- * Create a handler for the IBC interface, both from the network
+ * Create a handler for the IBC protocol, both from the network
  * and from the bridge.
  *
  * @param {import('@agoric/eventual-send').EProxy} E
  * @param {(method: string, params: any) => Promise<any>} callIBCDevice
- * @returns {InterfaceHandler & BridgeHandler} Interface/Bridge handler
+ * @returns {ProtocolHandler & BridgeHandler} Protocol/Bridge handler
  */
-export function makeIBCInterfaceHandler(E, callIBCDevice) {
+export function makeIBCProtocolHandler(E, callIBCDevice) {
   /**
-   * @type {Store<string, Connection>}
+   * @type {Store<string, Promise<ControlledConnection>>}
    */
-  const channelKeyToConnection = makeStore('CHANNEL:PORT');
+  const channelKeyToControlP = makeStore('CHANNEL:PORT');
 
   /**
-   * @type {Store<string, (data: Bytes) => Promise<Bytes>>}
+   * @type {Store<string, (data: Bytes) => Promise<Data>>}
    */
   const channelKeyToSender = makeStore('CHANNEL:PORT');
 
@@ -119,12 +120,19 @@ export function makeIBCInterfaceHandler(E, callIBCDevice) {
          */
         let sender = data =>
           /** @type {Promise<Bytes>} */
-          (E(handler).onReceive(conn, toBytes(data), handler));
+          (E(handler)
+            .onReceive(conn, toBytes(data), handler)
+            .catch(rethrowIfUnset));
         if (ordered) {
           // Set up a queue on the sender.
           const withChannelSendQueue = makeWithQueue();
           sender = withChannelSendQueue(sender);
         }
+        const boundSender = sender;
+        sender = data => {
+          console.error(`Would send data`, data);
+          return boundSender(data);
+        };
         channelKeyToSender.init(ckey, sender);
       },
       onReceive,
@@ -139,29 +147,31 @@ export function makeIBCInterfaceHandler(E, callIBCDevice) {
    * @param {string} localAddr
    */
   const localAddrToPortID = localAddr => {
-    const m = localAddr.match(/^\/ibc\/\*\/port\/(\w+)$/);
+    const m = localAddr.match(/^\/ibc-port\/(\w+)$/);
     if (!m) {
-      throw TypeError(`Invalid port specification ${localAddr}`);
+      throw TypeError(
+        `Invalid port specification ${localAddr}; expected "/ibc-port/PORT"`,
+      );
     }
     return m[1];
   };
 
   /**
-   * @type {InterfaceImpl}
+   * @type {ProtocolImpl}
    */
-  let interfaceImpl;
+  let protocolImpl;
 
-  // We delegate to a loopback interface, too, to connect locally.
-  const iface = extendLoopbackInterfaceHandler({
-    async onCreate(impl, _interfaceHandler) {
+  // We delegate to a loopback protocol, too, to connect locally.
+  const iface = extendLoopbackProtocolHandler({
+    async onCreate(impl, _protocolHandler) {
       console.info('IBC onCreate');
-      interfaceImpl = impl;
+      protocolImpl = impl;
     },
-    async onBind(_port, localAddr, _interfaceHandler) {
+    async onBind(_port, localAddr, _protocolHandler) {
       const portID = localAddrToPortID(localAddr);
       return callIBCDevice('bindPort', { portID });
     },
-    async onConnect(_port, localAddr, remoteAddr, _interfaceHandler) {
+    async onConnect(_port, localAddr, remoteAddr, _protocolHandler) {
       console.warn('IBC onConnect', localAddr, remoteAddr);
       throw Error('Unimplemented');
       // return makeIBCConnectionHandler('FIXME', localAddr, remoteAddr, true);
@@ -172,7 +182,7 @@ export function makeIBCInterfaceHandler(E, callIBCDevice) {
     async onListenRemove(_port, localAddr, _listenHandler) {
       console.warn('IBC onListenRemove', localAddr);
     },
-    async onRevoke(_port, localAddr, _interfaceHandler) {
+    async onRevoke(_port, localAddr, _protocolHandler) {
       console.warn('IBC onRevoke', localAddr);
     },
   });
@@ -189,14 +199,14 @@ export function makeIBCInterfaceHandler(E, callIBCDevice) {
             portID,
             order,
             version,
-            // TODO: stuff this somewhere.
-            // connectionHops: hops,
+            connectionHops: hops,
             counterparty: { port_id: rPortID, channel_id: rChannelID },
             counterpartyVersion: rVersion,
           } = obj;
-          const localAddr = `/ibc/${channelID}/port/${portID}/${order.toLowerCase()}/${version}`;
-          const remoteAddr = `/ibc/${rChannelID}/port/${rPortID}/${order.toLowerCase()}/${rVersion}`;
-          const listenSearch = [`/ibc/*/port/${portID}`];
+          const localAddr = `/ibc-port/${portID}/${order.toLowerCase()}/${version}`;
+          const ibcHops = hops.map(hop => `/ibc-hop/${hop}`).join('/');
+          const remoteAddr = `${ibcHops}/ibc-port/${rPortID}/${order.toLowerCase()}/${rVersion}`;
+          const listenSearch = [`/ibc-port/${portID}`];
 
           const rchandler = makeIBCConnectionHandler(
             channelID,
@@ -206,28 +216,27 @@ export function makeIBCInterfaceHandler(E, callIBCDevice) {
             order === 'ORDERED',
           );
 
+          const channelKey = `${channelID}:${portID}`;
+
           // Accept or reject the inbound connection.
-          const lconn =
-            /** @type {Connection} */
-            (await E(interfaceImpl).inbound(
-              listenSearch,
-              localAddr,
-              remoteAddr,
-              rchandler,
-            ));
+          const ctlP = E(protocolImpl).inbound(
+            listenSearch,
+            localAddr,
+            remoteAddr,
+            rchandler,
+          );
 
           /* Stash it to enable later. */
-          const channelKey = `${channelID}:${portID}`;
-          channelKeyToConnection.init(channelKey, lconn);
+          channelKeyToControlP.init(channelKey, ctlP);
           break;
         }
 
         case 'channelOpenConfirm': {
           const { portID, channelID } = obj;
           const channelKey = `${channelID}:${portID}`;
-          const lconn = channelKeyToConnection.get(channelKey);
-          await E(lconn)
-            .confirm()
+          const ctlP = channelKeyToControlP.get(channelKey);
+          await E(ctlP)
+            .open()
             .catch(rethrowIfUnset);
           break;
         }
@@ -241,16 +250,16 @@ export function makeIBCInterfaceHandler(E, callIBCDevice) {
           } = packet;
           const channelKey = `${channelID}:${portID}`;
 
-          const qSend = channelKeyToSender.get(channelKey);
+          const ctlP = channelKeyToControlP.get(channelKey);
           const data = base64ToBytes(data64);
 
-          /**
-           * @param {Data} ack
-           */
-          qSend(data).then(ack => {
-            const ack64 = dataToBase64(ack);
-            callIBCDevice('packetExecuted', { packet, ack64 });
-          });
+          E(ctlP)
+            .send(data)
+            .then(ack => {
+              const ack64 = dataToBase64(ack);
+              callIBCDevice('packetExecuted', { packet, ack64 });
+            })
+            .catch(e => console.error(e));
           break;
         }
 

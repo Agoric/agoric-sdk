@@ -1,9 +1,9 @@
 import harden from '@agoric/harden';
-import { makeIBCInterfaceHandler } from './ibc';
+import { makeIBCProtocolHandler } from './ibc';
 
 function build(E, _log) {
   function createInstance(callbacks) {
-    const ibcHandler = makeIBCInterfaceHandler(E, (method, params) =>
+    const ibcHandler = makeIBCProtocolHandler(E, (method, params) =>
       E(callbacks).downcall(method, params),
     );
     return harden(ibcHandler);
