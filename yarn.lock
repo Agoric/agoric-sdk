@@ -14,10 +14,10 @@
   dependencies:
     "@agoric/make-hardener" "0.0.4"
 
-"@agoric/harden@^0.0.7":
-  version "0.0.7"
-  resolved "https://registry.yarnpkg.com/@agoric/harden/-/harden-0.0.7.tgz#1e6ff3b76e0dd73264cd0df58bb3090a84b3733a"
-  integrity sha512-vVdJhwg0weup94ez9TLjPTTEx6TVzjWmrt+Mbq0VMPBcRdEg1RDsBcpgNoT+4h8ooZNvaTbCWwA77MyFAzDjIw==
+"@agoric/harden@^0.0.8":
+  version "0.0.8"
+  resolved "https://registry.yarnpkg.com/@agoric/harden/-/harden-0.0.8.tgz#1bb7d4b4b9bc884578cb0d87f140bdbe70f563ba"
+  integrity sha512-psxe8nC9wphyeaIhdSFs45CcZnncb4JdoeqBldPNcmcStao8Keuzda9n6t3lqW3WuGm/DNikUyMJ5pE/LeLutQ==
   dependencies:
     "@agoric/make-hardener" "0.0.8"
 
