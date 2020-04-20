@@ -6,7 +6,7 @@ import anylogger from 'anylogger';
 
 import { launch } from '../launch-chain';
 import makeBlockManager from '../block-manager';
-import { makeWithQueue } from './queue';
+import { makeWithQueue } from './vats/queue';
 
 const log = anylogger('fake-chain');
 
@@ -42,7 +42,11 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
   const vatsdir = path.join(basedir, 'vats');
   const argv = [`--role=${role}`, bootAddress];
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
-  const s = await launch(stateDBdir, mailboxStorage, vatsdir, argv);
+  function doOutboundBridge(dstID, obj) {
+    console.error('received', dstID, obj);
+    return 'IBC and bridge device not used on fake-chain';
+  }
+  const s = await launch(stateDBdir, mailboxStorage, doOutboundBridge, vatsdir, argv);
 
   const blockManager = makeBlockManager(s);
   const { savedHeight, savedActions } = s;

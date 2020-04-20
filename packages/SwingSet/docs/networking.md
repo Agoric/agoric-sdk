@@ -4,10 +4,10 @@ Suitably-empowered code inside a vat can access a "network API" that works vague
 
 The type of connection is limited by the host in which the vat is running. Chain-based machines must operate in a platonic realm of replicated consensus, so their network options are limited to protocols like IBC, which allow one gestalt chain to talk to other chain-like entities. Each such entity is defined by an evolving set of consensus rules, which typically include a current set of validator public keys and a particular history of hashed block identifiers.
 
-[**CAVEAT:** IBC uses "Connection" to mean a chain-to-chain pathway, and "Channel" to mean a Port-to-Port pathway within a specific Connection. https://github.com/cosmos/ics/blob/master/ibc/1_IBC_TERMINOLOGY.md#connection . This is unfortunate, because IBC "Channels" correspond most precisely to TCP "connections", and most discussions of network APIs (including this one, below) will talk about "connections" extensively. 
-For now, our IBC implementation can only use pre-established IBC Connections, and provides no means for user-level code to create new IBC Connections at runtime. But user-level code can create new IBC Channels at any time. The terminology confusion will be most obvious in the section on "Accepting an Inbound Connection", where the user code is really accepting an inbound *IBC Channel*.]
+[**CAVEAT:** IBC uses "Connection" to mean a chain-to-chain "hop", and "Channel" to mean a Port-to-Port pathway through a series of hops.  https://github.com/cosmos/ics/blob/master/ibc/1_IBC_TERMINOLOGY.md#connection . This is unfortunate, because IBC "Channels" correspond most precisely to TCP "connections", and most discussions of network APIs (including this one, below) will talk about "connections" extensively. 
+For now, our IBC implementation can only use pre-established hops, and provides no means for user-level code to create new hops (IBC Connections) at runtime. But user-level code can create new IBC Channels at any time. The terminology confusion will be most obvious in the section on "Accepting an Inbound Connection", where the user code is really accepting an inbound *IBC Channel*.]
 
-These IBC connections will terminate in IBC-aware code on either end. These endpoints might be traditional (static) IBC handlers (such as an ICS-20 token transfer module), or dynamic IBC handlers (e.g. running in a SwingSet vat). SwingSet vat code that wants to speak to vat code in a different SwingSet machine would not use the IBC connection directly: instead it would simply perform normal eventual-send operations (`target~.foo(args)`) and let the "CapTP" promise-pipelining layer handle the details. But vat code which wants to speak to an ICS-20 handler in some other chain would need to use this layer.
+A channel via these IBC hops will terminate in IBC-aware code on either end. These endpoints might be traditional (static) IBC handlers (such as an ICS-20 token transfer module), or dynamic IBC handlers (e.g. running in a SwingSet vat). SwingSet vat code that wants to speak to vat code in a different SwingSet machine would not use the IBC connection directly: instead it would simply perform normal eventual-send operations (`target~.foo(args)`) and let the "CapTP" promise-pipelining layer handle the details. But vat code which wants to speak to an ICS-20 handler in some other chain would need to use this layer.
 
 Vats which live inside a solo machine are able to use traditional networking layers, like TCP, HTTP, and WebSockets. This enables them to communicate with e.g. browser-side UI frontends that use WebSockets to query the vat for order status. These connections do not have to follow normal ocap rules, so vat code which accept them must provide their own authentication and access control protections.
 
@@ -23,7 +23,7 @@ This is currently the only way for user code to get an IBC `Port`, though non-IB
 
 == Connecting to a Remote Port ==
 
-To establish a connection, you must start with a local `Port` object, and you must know the name of the remote endpoint. The remote endpoint will have its own name which will vary from one endpoint to another.
+To establish a connection, you must start with a local `Port` object, and you must know the name of the remote endpoint. The remote endpoint will have a name like `/ibc-hop/$HOPNAME/ibc-port/$PORTNAME/ordered/$VERSION` (where `ibc-hop`, `ibc-port` and `ordered` are literal strings, spelled just like that, but `$HOPNAME`, `$PORTNAME`, and `$VERSION` are placeholders for arbitrary values that will vary from one endpoint to another).
 
 You must also prepare a `ConnectionHandler` object to manage the connection you're about to create. This has a number of methods which will be called when the things happen to the connection, including packets arriving. This is described below.
 
@@ -50,7 +50,7 @@ home.network~.bind('/ibc-port/my-cool-port-name`)
   .then(port => usePort(port));
 ```
 
-IBC has named "Relay Connections" which relay between two specific chains.  These "Relay Connections" are different from the connections described in this document.  When you bind a port like `/ibc-port/$PORT` without specifying the "Relay Connection" (TODO: describe how), any "Relay-connected" chain can initiate a connection to this port.
+IBC has named "hops" (what they call "Connections" in the IBC spec) which each carry data between two specific chains.  These hops are different from the connections described in this document.  When you bind a port like `/ibc-port/$PORT` without specifying the "hop", any IBC chain can initiate a connection to this port.
 
 You can ask the `Port` object this returns for its local address, which is especially useful if you had asked for a random allocation (since otherwise you have no way to know what address you got):
 

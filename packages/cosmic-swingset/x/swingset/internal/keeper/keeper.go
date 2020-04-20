@@ -15,6 +15,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/capability"
 	channel "github.com/cosmos/cosmos-sdk/x/ibc/04-channel"
 	channelexported "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/exported"
+	channeltypes "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/types"
 	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/05-port/types"
 	ibctypes "github.com/cosmos/cosmos-sdk/x/ibc/types"
 
@@ -164,6 +165,14 @@ func (k Keeper) GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (
 	return k.channelKeeper.GetNextSequenceSend(ctx, portID, channelID)
 }
 
+// ChanOpenInit defines a wrapper function for the channel Keeper's function
+// in order to expose it to the SwingSet IBC handler.
+func (k Keeper) ChanOpenInit(ctx sdk.Context, order channelexported.Order, connectionHops []string, portID, channelID string,
+	portCap *capability.Capability, counterparty channeltypes.Counterparty, version string,
+) (*capability.Capability, error) {
+	return k.channelKeeper.ChanOpenInit(ctx, order, connectionHops, portID, channelID, portCap, counterparty, version)
+}
+
 // SendPacket defines a wrapper function for the channel Keeper's function
 // in order to expose it to the SwingSet IBC handler.
 func (k Keeper) SendPacket(ctx sdk.Context, packet channelexported.PacketI) error {
@@ -180,8 +189,8 @@ func (k Keeper) SendPacket(ctx sdk.Context, packet channelexported.PacketI) erro
 // PacketExecuted defines a wrapper function for the channel Keeper's function
 // in order to expose it to the SwingSet IBC handler.
 func (k Keeper) PacketExecuted(ctx sdk.Context, packet channelexported.PacketI, acknowledgement []byte) error {
-	portID := packet.GetSourcePort()
-	channelID := packet.GetSourceChannel()
+	portID := packet.GetDestPort()
+	channelID := packet.GetDestChannel()
 	capName := ibctypes.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
 	if !ok {

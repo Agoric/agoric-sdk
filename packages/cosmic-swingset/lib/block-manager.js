@@ -7,8 +7,7 @@ const BEGIN_BLOCK = 'BEGIN_BLOCK';
 const DELIVER_INBOUND = 'DELIVER_INBOUND';
 const END_BLOCK = 'END_BLOCK';
 const COMMIT_BLOCK = 'COMMIT_BLOCK';
-const IBC_PACKET = 'IBC_PACKET';
-const IBC_TIMEOUT = 'IBC_TIMEOUT';
+const IBC_EVENT = 'IBC_EVENT';
 
 // This works for both *intArray, string, and Buffer.
 const getBytesToBase64 = data => Buffer.from(data).toString('base64');
@@ -21,7 +20,7 @@ export default function makeBlockManager(
   {
     deliverInbound,
     doBridgeInbound,
-    // bridgeOutbound
+    bridgeOutbound,
     beginBlock,
     saveChainState,
     saveOutsideState,
@@ -33,62 +32,6 @@ export default function makeBlockManager(
   let computedHeight = savedHeight;
   let runTime = 0;
   let ibcHandlerPort = 0;
-
-  const ibcTupleToChannel = new Map();
-  const ibcChannelToPort = new Map();
-
-  const getIBCChannel = ({
-    ibcHandlerPort: actionIbcHandlerPort,
-    tuple: rawTuple,
-    channelPort,
-  }) => {
-    // Update our handler port.
-    ibcHandlerPort = actionIbcHandlerPort;
-
-    // Cache according to tuple (never changes during a connection)!
-    const tuple = stableStringify(rawTuple);
-    let ibcChannel = ibcTupleToChannel.get(tuple);
-    if (ibcChannel) {
-      ibcChannelToPort.set(ibcChannel, channelPort);
-      return ibcChannel;
-    }
-
-    const sendToChannelHandler = msg =>
-      sendToCosmosPort(
-        ibcHandlerPort,
-        JSON.stringify({ ...msg, tuple: rawTuple }),
-      );
-
-    ibcChannel = {
-      // Send a raw packet to this channel.
-      send(rawPacket) {
-        return sendToChannelHandler({
-          method: 'send',
-          data64: getBytesToBase64(rawPacket),
-        });
-      },
-      // Ack the current packet.
-      ack(reply) {
-        return sendToChannelHandler({
-          method: 'ack',
-          data64: getBytesToBase64(reply),
-        });
-      },
-      // Close the channel.
-      close() {
-        const ret = sendToChannelHandler({
-          method: 'close',
-        });
-        ibcChannelToPort.delete(ibcChannel);
-        ibcTupleToChannel.delete(tuple);
-        return ret;
-      },
-    };
-
-    // Keep this channel associated with a tuple (which stays the same, even after restart).
-    ibcTupleToChannel.set(tuple, ibcChannel);
-    return ibcChannel;
-  };
 
   async function kernelPerformAction(action) {
     // TODO warner we could change this to run the kernel only during END_BLOCK
@@ -111,26 +54,10 @@ export default function makeBlockManager(
         );
         break;
 
-      // have just one case for all of IBC here
-
-      case IBC_PACKET: {
-        console.error(`FIXME: Got IBC packet; just pingpong`, action);
-        // action.type, action.subtype ??
-        // maybe p = doBridgeInbound..
-        await doBridgeInbound('ibc', action);
-
-        const ibcChannel = getIBCChannel(action);
-
-        // FIXME: We just ack, send, and disconnect.
-        ibcChannel.ack(JSON.stringify(action)); // warner: these create channelMessage structs which are delivered to e.g. ibc.go line 68 in channelHandler.Receive
-        ibcChannel.send(`pong:${JSON.stringify(action)}`);
-        ibcChannel.close();
+      case IBC_EVENT: {
+        p = doBridgeInbound('dibc', action);
         break;
       }
-
-      case IBC_TIMEOUT:
-        console.error(`FIXME: Got IBC timeout; not implemented`, action);
-        break;
 
       case END_BLOCK:
         return true;

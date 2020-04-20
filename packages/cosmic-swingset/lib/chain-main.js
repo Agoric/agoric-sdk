@@ -9,6 +9,8 @@ export default async function main(progname, args, { path, env, agcc }) {
   const bootAddress = env.BOOT_ADDRESS;
   const role = env.ROLE || 'chain';
 
+  const portNums = {};
+
   // TODO: use the 'basedir' pattern
 
   // Try to determine the cosmos chain home.
@@ -66,21 +68,24 @@ export default async function main(progname, args, { path, env, agcc }) {
   // there will be a call to nodePort/AG_COSMOS_INIT, otherwise exit.
   // eslint-disable-next-line no-use-before-define
   const nodePort = registerPortHandler(toSwingSet);
+
   // Need to keep the process alive until Go exits.
   setInterval(() => undefined, 30000);
   agcc.runAgCosmosDaemon(nodePort, fromGo, [progname, ...args]);
 
   // this storagePort changes for every single message. We define it out here
   // so the 'externalStorage' object can close over the single mutable
-  // instance, and we update the 'sPort' value each time toSwingSet is called
-  let sPort;
+  // instance, and we update the 'portNums.storage' value each time toSwingSet is called
   async function launchAndInitializeSwingSet() {
     // this object is used to store the mailbox state. we only ever use
     // key='mailbox'
     const mailboxStorage = {
       has(key) {
         // x/swingset/storage.go returns "true" or "false"
-        const retStr = agcc.send(sPort, stringify({ method: 'has', key }));
+        const retStr = agcc.send(
+          portNums.storage,
+          stringify({ method: 'has', key }),
+        );
         const ret = JSON.parse(retStr);
         if (Boolean(ret) !== ret) {
           throw new Error(`agcc.send(has) returned ${ret} not Boolean`);
@@ -97,12 +102,15 @@ export default async function main(progname, args, { path, env, agcc }) {
         }
         const encodedValue = stringify(value);
         agcc.send(
-          sPort,
+          portNums.storage,
           stringify({ method: 'set', key, value: encodedValue }),
         );
       },
       get(key) {
-        const retStr = agcc.send(sPort, stringify({ method: 'get', key }));
+        const retStr = agcc.send(
+          portNums.storage,
+          stringify({ method: 'get', key }),
+        );
         // console.log(`s.get(${key}) retstr=${retstr}`);
         const encodedValue = JSON.parse(retStr);
         // console.log(` encodedValue=${encodedValue}`);
@@ -112,12 +120,33 @@ export default async function main(progname, args, { path, env, agcc }) {
       },
     };
 
+    function doOutboundBridge(dstID, obj) {
+      const portNum = portNums[dstID];
+      if (portNum === undefined) {
+        console.error(
+          `warning: doOutboundBridge called before AG_COSMOS_INIT gave us ${dstID}`,
+        );
+        // it is dark, and your exception is likely to be eaten by a vat
+        throw Error(
+          `warning: doOutboundBridge called before AG_COSMOS_INIT gave us ${dstID}`,
+        );
+      }
+      const retStr = agcc.send(portNum, stringify(obj));
+      return JSON.parse(retStr);
+    }
+
     const vatsdir = path.resolve(__dirname, '../lib/ag-solo/vats');
     const argv = [`--role=${role}`];
     if (bootAddress) {
       argv.push(...bootAddress.trim().split(/\s+/));
     }
-    const s = await launch(stateDBDir, mailboxStorage, vatsdir, argv);
+    const s = await launch(
+      stateDBDir,
+      mailboxStorage,
+      doOutboundBridge,
+      vatsdir,
+      argv,
+    );
     return s;
   }
 
@@ -125,13 +154,15 @@ export default async function main(progname, args, { path, env, agcc }) {
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action, replier);
     if (action.type === AG_COSMOS_INIT) {
+      // console.error('FIGME: got AG_COSMOS_INIT', action);
+      portNums.dibc = action.ibcPort;
       return true;
     }
 
     if (action.storagePort) {
       // Initialize the storage for this particular transaction.
-      // console.log(` setting sPort to`, action.storagePort);
-      sPort = action.storagePort;
+      // console.log(` setting portNums.storage to`, action.storagePort);
+      portNums.storage = action.storagePort;
 
       if (!blockManager) {
         const fns = await launchAndInitializeSwingSet();

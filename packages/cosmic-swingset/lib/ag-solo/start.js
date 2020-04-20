@@ -25,7 +25,7 @@ import { getBestSwingStore } from '../check-lmdb';
 
 import { deliver, addDeliveryTarget } from './outbound';
 import { makeHTTPListener } from './web';
-import { makeWithQueue } from './queue';
+import { makeWithQueue } from './vats/queue';
 
 import { connectToChain } from './chain-cosmos-sdk';
 import { connectToFakeChain } from './fake-chain';
