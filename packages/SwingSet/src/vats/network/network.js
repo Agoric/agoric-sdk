@@ -52,11 +52,6 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  */
 
 /**
- * @typedef {Connection} ControlledConnection
- * @property {() => void} open Inject an open event
- */
-
-/**
  * @typedef {Object} ConnectionHandler A handler for a given Connection
  * @property {(connection: Connection, c: ConnectionHandler) => void} [onOpen] The connection has been opened
  * @property {(connection: Connection, packetBytes: Bytes, c: ConnectionHandler) => Promise<Data>} [onReceive] The connection received a packet
@@ -75,7 +70,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onRevoke The port is being completely destroyed
  *
  * @typedef {Object} ProtocolImpl Things the protocol can do for us
- * @property {(listenSearch: Endpoint[], localAddr: Endpoint, remoteAddr: Endpoint) => Promise<ControlledConnection>} inbound Establish a connection into this protocol
+ * @property {(listenSearch: Endpoint[], localAddr: Endpoint, remoteAddr: Endpoint, connectionHandler: ConnectionHandler) => Promise<Connection>} inbound Establish a connection into this protocol
  * @property {(port: Port, remoteAddr: Endpoint, connectionHandler: ConnectionHandler) => Promise<Connection>} outbound Create an outbound connection
  */
 
@@ -151,49 +146,6 @@ export const makeConnection = (
 
 /**
  *
- * @param {ConnectionHandler} handler
- * @param {Endpoint} localAddr
- * @param {Endpoint} remoteAddr
- * @param {WeakSet<Connection>} [current=new WeakSet()]
- * @param {typeof defaultE} [E=defaultE]
- * @returns {ControlledConnection}
- */
-function makeControlledConnection(
-  handler,
-  localAddr,
-  remoteAddr,
-  current = new WeakSet(),
-  E = defaultE,
-) {
-  const conn = harden({
-    async open() {
-      await E(handler).onOpen(conn, handler);
-    },
-    async send(packetBytes) {
-      const ack = await E(handler)
-        .onReceive(conn, packetBytes, handler)
-        .catch(rethrowUnlessMissing);
-      return toBytes(ack);
-    },
-    async close() {
-      current.delete(conn);
-      await E(handler)
-        .onClose(conn, undefined, handler)
-        .catch(rethrowUnlessMissing);
-    },
-    getLocalAddress() {
-      return localAddr;
-    },
-    getRemoteAddress() {
-      return remoteAddr;
-    },
-  });
-  current.add(conn);
-  return conn;
-}
-
-/**
- *
  * @param {ConnectionHandler} handler0
  * @param {Endpoint} addr0
  * @param {ConnectionHandler} handler1
@@ -224,6 +176,7 @@ export function crossoverConnection(
   const addrs = [addr0, addr1];
 
   function makeHalfConnection(l, r) {
+    let closed;
     conns[l] = harden({
       getLocalAddress() {
         return addrs[l];
@@ -232,6 +185,9 @@ export function crossoverConnection(
         return addrs[r];
       },
       async send(packetBytes) {
+        if (closed) {
+          throw closed;
+        }
         const ack =
           /** @type {Bytes} */
           (await E(handlers[r])
@@ -240,6 +196,11 @@ export function crossoverConnection(
         return toBytes(ack);
       },
       async close() {
+        if (closed) {
+          throw closed;
+        }
+        closed = Error('Connection closed');
+        current.delete(conns[l]);
         await E(handlers[l])
           .onClose(conns[l], undefined, handlers[l])
           .catch(rethrowUnlessMissing);
@@ -286,7 +247,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
    * @type {ProtocolImpl}
    */
   const protocolImpl = harden({
-    async inbound(listenSearch, localAddr, remoteAddr) {
+    async inbound(listenSearch, localAddr, remoteAddr, rchandler) {
       const listenAddr = listenSearch.find(addr => listening.has(addr));
       if (!listenAddr) {
         throw Error(
@@ -304,13 +265,14 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
           .onAccept(port, localAddr, remoteAddr, listener)
           .catch(rethrowUnlessMissing));
 
-      return makeControlledConnection(
+      return crossoverConnection(
         lchandler,
         localAddr,
+        rchandler,
         remoteAddr,
         current,
         E,
-      );
+      )[0];
     },
     async outbound(port, remoteAddr, lchandler) {
       const localAddr =
@@ -485,12 +447,22 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
  * @returns {ConnectionHandler}
  */
 export function makeEchoConnectionHandler() {
+  let closed;
   /**
    * @type {Connection}
    */
   return harden({
     async onReceive(_connection, bytes, _connectionHandler) {
+      if (closed) {
+        throw closed;
+      }
       return bytes;
+    },
+    async onClose(_connection, _connectionHandler) {
+      if (closed) {
+        throw closed;
+      }
+      closed = Error('Connection closed');
     },
   });
 }

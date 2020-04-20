@@ -89,11 +89,11 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
         destination_channel: rChannelID,
         data: dataToBase64(packetBytes),
       };
+      console.log('would send', packet);
       const fullPacket = await callIBCDevice('sendPacket', {
         packet,
         relativeTimeout: DEFAULT_PACKET_TIMEOUT,
       });
-      console.info('Full packet sent', fullPacket);
       const { sequence } = fullPacket;
       /**
        * @type {PromiseRecord<Bytes, any>}
