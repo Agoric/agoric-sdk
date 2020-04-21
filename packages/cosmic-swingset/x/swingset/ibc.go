@@ -84,10 +84,9 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 		err = ctx.Keeper.SendPacket(ctx.Context, packet)
 		if err == nil {
 			bytes, err := json.Marshal(&packet)
-			if err != nil {
-				return "", err
+			if err == nil {
+				ret = string(bytes)
 			}
-			ret = string(bytes)
 		}
 
 	case "packetExecuted":
@@ -376,7 +375,9 @@ func (am AppModule) OnRecvPacket(
 		return nil, err
 	}
 
-	return &sdk.Result{}, nil
+	return &sdk.Result{
+		Events: ctx.EventManager().Events().ToABCIEvents(),
+	}, nil
 }
 
 type acknowledgementPacketEvent struct {
@@ -409,7 +410,9 @@ func (am AppModule) OnAcknowledgementPacket(
 		return nil, err
 	}
 
-	return &sdk.Result{}, nil
+	return &sdk.Result{
+		Events: ctx.EventManager().Events().ToABCIEvents(),
+	}, nil
 }
 
 type timeoutPacketEvent struct {
@@ -439,5 +442,7 @@ func (am AppModule) OnTimeoutPacket(
 		return nil, err
 	}
 
-	return &sdk.Result{}, nil
+	return &sdk.Result{
+		Events: ctx.EventManager().Events().ToABCIEvents(),
+	}, nil
 }

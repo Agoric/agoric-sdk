@@ -78,7 +78,9 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 	if err != nil {
 		return nil, err
 	}
-	return &sdk.Result{}, nil
+	return &sdk.Result{
+		Events: ctx.EventManager().Events().ToABCIEvents(),
+	}, nil
 }
 
 type sendPacketAction struct {
@@ -110,5 +112,7 @@ func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg MsgSendPacket) (*sd
 	if err != nil {
 		return nil, err
 	}
-	return &sdk.Result{}, nil
+	return &sdk.Result{
+		Events: ctx.EventManager().Events().ToABCIEvents(),
+	}, nil
 }
