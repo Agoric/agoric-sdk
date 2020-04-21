@@ -16,13 +16,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// FIXME: How to tell the caller when this is a new channel?
-
-type ChannelEndpoint struct {
-	Port    string `json:"port"`
-	Channel string `json:"channel"`
-}
-
 type channelHandler struct {
 	ibcModule porttypes.IBCModule
 }
@@ -63,21 +56,6 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 	}
 
 	switch msg.Method {
-	/*
-			// TODO: Implement
-		case "channelOpenInit":
-			msg := new(channelMessage)
-			err = json.Unmarshal([]byte(str), &msg)
-
-			order := channeltypes.Order.ORDERED
-			chanCap, err := ctx.Keeper.ChanOpenInit(ctx.Context, order, msg.Packet.ConnectionHops,
-				msg.Packet.SourcePort, msg.Packet.SourceChannel,
-				portCap *capability.Capability, msg.Packet.Counterparty, msg.Packet.Version,
-			) (*capability.Capability, error) {
-				return k.channelKeeper.ChanOpenInit(ctx, order, connectionHops, portID, channelID, portCap counterparty, version)
-			}
-	*/
-
 	case "sendPacket":
 		seq, ok := ctx.Keeper.GetNextSequenceSend(
 			ctx.Context,
@@ -92,6 +70,8 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 		if msg.RelativeTimeout == 0 {
 			absoluteTimeout = msg.Packet.TimeoutHeight
 		} else {
+			// FIXME: Is the current context's blockheight really something we
+			// should use?  Does this need to be the destination's blockheight?
 			absoluteTimeout = uint64(ctx.Context.BlockHeight()) + msg.RelativeTimeout
 		}
 
@@ -154,9 +134,9 @@ type channelOpenInitEvent struct {
 	Event          string                    `json:"event"` // channelOpenInit
 	Order          channelexported.Order     `json:"order"`
 	ConnectionHops []string                  `json:"connectionHops"`
-	PortID         string                    `json:"port"`
-	ChannelID      string                    `json:"channel"`
-	Counterparty   channeltypes.Counterparty `json:"counterParty"`
+	PortID         string                    `json:"portID"`
+	ChannelID      string                    `json:"channelID"`
+	Counterparty   channeltypes.Counterparty `json:"counterparty"`
 	Version        string                    `json:"version"`
 }
 

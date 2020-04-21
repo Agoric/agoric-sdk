@@ -1,5 +1,4 @@
 import anylogger from 'anylogger';
-import stableStringify from '@agoric/swingset-vat/src/kernel/json-stable-stringify';
 
 const log = anylogger('block-manager');
 

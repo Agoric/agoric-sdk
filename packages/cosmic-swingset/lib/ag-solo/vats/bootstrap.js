@@ -128,7 +128,7 @@ export default function setup(syscall, state, helpers) {
         });
       }
 
-      async function registerNetworkProtocols(vats, bridgeMgr) {
+      async function registerNetworkProtocols(vats, bridgeMgr, packetSendersWhitelist = []) {
         const ps = [];
         // Every vat has a loopback device.
         ps.push(
@@ -148,7 +148,7 @@ export default function setup(syscall, state, helpers) {
               });
             },
           });
-          const ibcHandler = await E(vats.ibc).createInstance(callbacks);
+          const ibcHandler = await E(vats.ibc).createInstance(callbacks, packetSendersWhitelist);
           bridgeMgr.register('dibc', ibcHandler);
           ps.push(
             E(vats.network).registerProtocolHandler('/ibc-port', ibcHandler),
@@ -239,6 +239,8 @@ export default function setup(syscall, state, helpers) {
             devices.bridge && makeBridgeManager(E, D, devices.bridge);
           const [ROLE, bootAddress, additionalAddresses] = parseArgs(argv);
 
+          const pswl = [bootAddress];
+
           async function addRemote(addr) {
             const { transmitter, setReceiver } = await E(vats.vattp).addRemote(
               addr,
@@ -264,7 +266,7 @@ export default function setup(syscall, state, helpers) {
           switch (ROLE) {
             case 'chain':
             case 'one_chain': {
-              await registerNetworkProtocols(vats, bridgeManager);
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
 
               // provisioning vat can ask the demo server for bundles, and can
               // register client pubkeys with comms
@@ -299,7 +301,7 @@ export default function setup(syscall, state, helpers) {
                 throw new Error(`controller must be given GCI`);
               }
 
-              await registerNetworkProtocols(vats, bridgeManager);
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
 
               // Wire up the http server.
               await setupCommandDevice(vats.http, devices.command, {
@@ -326,7 +328,7 @@ export default function setup(syscall, state, helpers) {
               if (!GCI) {
                 throw new Error(`client must be given GCI`);
               }
-              await registerNetworkProtocols(vats, bridgeManager);
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
               await setupCommandDevice(vats.http, devices.command, {
                 client: true,
               });
@@ -358,7 +360,7 @@ export default function setup(syscall, state, helpers) {
             case 'two_chain': {
               // scenario #2: one-node chain running on localhost, solo node on
               // localhost, HTML frontend on localhost. Single-player mode.
-              await registerNetworkProtocols(vats, bridgeManager);
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
 
               // bootAddress holds the pubkey of localclient
               const chainBundler = await makeChainBundler(vats, devices.timer);
@@ -383,7 +385,7 @@ export default function setup(syscall, state, helpers) {
               if (!GCI) {
                 throw new Error(`client must be given GCI`);
               }
-              await registerNetworkProtocols(vats, bridgeManager);
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
               await setupCommandDevice(vats.http, devices.command, {
                 client: true,
               });
@@ -417,7 +419,7 @@ export default function setup(syscall, state, helpers) {
               // frontend. Limited subset of demo runs inside the solo node.
 
               // We pretend we're on-chain.
-              await registerNetworkProtocols(vats, bridgeManager);
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
 
               // Shared Setup (virtual chain side) ///////////////////////////
               await setupCommandDevice(vats.http, devices.command, {

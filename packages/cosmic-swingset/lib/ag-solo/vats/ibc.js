@@ -9,6 +9,7 @@ import {
 } from '@agoric/swingset-vat/src/vats/network';
 import makeStore from '@agoric/store';
 import { producePromise } from '@agoric/produce-promise';
+import { generateSparseInts } from '@agoric/sparse-ints';
 
 import { makeWithQueue } from './queue';
 
@@ -19,7 +20,6 @@ const DEFAULT_PACKET_TIMEOUT = 1000;
  * @typedef {import('@agoric/swingset-vat/src/vats/network').ProtocolImpl} ProtocolImpl
  * @typedef {import('@agoric/swingset-vat/src/vats/network').ConnectionHandler} ConnectionHandler
  * @typedef {import('@agoric/swingset-vat/src/vats/network').Connection} Connection
- * @typedef {import('@agoric/swingset-vat/src/vats/network').ControlledConnection} ControlledConnection
  * @typedef {import('@agoric/swingset-vat/src/vats/network').Endpoint} Endpoint
  * @typedef {import('@agoric/swingset-vat/src/vats/network').Bytes} Bytes
  * @typedef {import('@agoric/swingset-vat/src/vats/network').Bytes} Data
@@ -36,19 +36,49 @@ const DEFAULT_PACKET_TIMEOUT = 1000;
  * @typedef {import('@agoric/store').Store<K, V>} Store
  */
 
+let seed = 0;
+
 /**
  * Create a handler for the IBC protocol, both from the network
  * and from the bridge.
  *
  * @param {import('@agoric/eventual-send').EProxy} E
  * @param {(method: string, params: any) => Promise<any>} callIBCDevice
+ * @param {string[]} [packetSendersWhitelist=[]]
  * @returns {ProtocolHandler & BridgeHandler} Protocol/Bridge handler
  */
-export function makeIBCProtocolHandler(E, callIBCDevice) {
+export function makeIBCProtocolHandler(
+  E,
+  callIBCDevice,
+  packetSendersWhitelist = [],
+) {
   /**
-   * @type {Store<string, Promise<ControlledConnection>>}
+   * @type {Store<string, Promise<Connection>>}
    */
-  const channelKeyToControlP = makeStore('CHANNEL:PORT');
+  const channelKeyToConnP = makeStore('CHANNEL:PORT');
+
+  /**
+   * @typedef {Object} Counterparty
+   * @property {string} port_id
+   * @property {string} channel_id
+   *
+   * @typedef {Object} ConnectingInfo
+   * @property {'ORDERED'|'UNORDERED'} order
+   * @property {string[]} connectionHops
+   * @property {string} portID
+   * @property {string} channelID
+   * @property {Counterparty} counterparty
+   * @property {string} version
+   * @property {string|undefined} counterpartyVersion
+   */
+
+  /**
+   * @type {Store<string, ConnectingInfo>}
+   */
+  const channelKeyToConnectingInfo = makeStore('CHANNEL:PORT');
+
+  seed += 1;
+  const sparseInts = generateSparseInts(seed);
 
   /**
    * @type {Store<string, (data: Bytes) => Promise<Data>>}
@@ -89,7 +119,6 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
         destination_channel: rChannelID,
         data: dataToBase64(packetBytes),
       };
-      console.log('would send', packet);
       const fullPacket = await callIBCDevice('sendPacket', {
         packet,
         relativeTimeout: DEFAULT_PACKET_TIMEOUT,
@@ -161,11 +190,22 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
    */
   let protocolImpl;
 
+  const goodLetters = 'abcdefghijklmnopqrstuvwxyz';
+
   // We delegate to a loopback protocol, too, to connect locally.
   const protocol = extendLoopbackProtocolHandler({
     async onCreate(impl, _protocolHandler) {
       console.info('IBC onCreate');
       protocolImpl = impl;
+    },
+    async generatePortID(_localAddr, _protocolHandler) {
+      let n = /** @type {number} */ (sparseInts.next().value);
+      let nonceLetters = '';
+      do {
+        nonceLetters += goodLetters[n % goodLetters.length];
+        n = Math.floor(n / goodLetters.length);
+      } while (n > 0);
+      return `port${nonceLetters}`;
     },
     async onBind(_port, localAddr, _protocolHandler) {
       const portID = localAddrToPortID(localAddr);
@@ -193,16 +233,34 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
     async fromBridge(srcID, obj) {
       console.warn('IBC fromBridge', srcID, obj);
       switch (obj.event) {
-        case 'channelOpenTry': {
+        case 'channelOpenTry':
+        case 'channelOpenInit': {
+          const { channelID, portID } = obj;
+
+          await E(protocolImpl).isListening([`/ibc-port/${portID}`]);
+          const channelKey = `${channelID}:${portID}`;
+          channelKeyToConnectingInfo.init(channelKey, obj);
+          break;
+        }
+
+        case 'channelOpenAck':
+        case 'channelOpenConfirm': {
           const {
-            channelID,
             portID,
+            channelID,
+            counterpartyVersion: updatedVersion,
+          } = obj;
+          const channelKey = `${channelID}:${portID}`;
+          const {
             order,
             version,
             connectionHops: hops,
             counterparty: { port_id: rPortID, channel_id: rChannelID },
-            counterpartyVersion: rVersion,
-          } = obj;
+            counterpartyVersion: storedVersion,
+          } = channelKeyToConnectingInfo.get(channelKey);
+          channelKeyToConnectingInfo.delete(channelKey);
+
+          const rVersion = updatedVersion || storedVersion;
           const localAddr = `/ibc-port/${portID}/${order.toLowerCase()}/${version}`;
           const ibcHops = hops.map(hop => `/ibc-hop/${hop}`).join('/');
           const remoteAddr = `${ibcHops}/ibc-port/${rPortID}/${order.toLowerCase()}/${rVersion}`;
@@ -216,11 +274,9 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
             order === 'ORDERED',
           );
 
-          const channelKey = `${channelID}:${portID}`;
-
-          // Accept or reject the inbound connection.
-          const ctlP =
-            /** @type {Promise<ControlledConnection>} */
+          // Actually connect.
+          const connP =
+            /** @type {Promise<Connection>} */
             (E(protocolImpl).inbound(
               listenSearch,
               localAddr,
@@ -228,18 +284,8 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
               rchandler,
             ));
 
-          /* Stash it to enable later. */
-          channelKeyToControlP.init(channelKey, ctlP);
-          break;
-        }
-
-        case 'channelOpenConfirm': {
-          const { portID, channelID } = obj;
-          const channelKey = `${channelID}:${portID}`;
-          const ctlP = channelKeyToControlP.get(channelKey);
-          await E(ctlP)
-            .open()
-            .catch(rethrowUnlessMissing);
+          /* Stash it for later use. */
+          channelKeyToConnP.init(channelKey, connP);
           break;
         }
 
@@ -252,10 +298,10 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
           } = packet;
           const channelKey = `${channelID}:${portID}`;
 
-          const ctlP = channelKeyToControlP.get(channelKey);
+          const connP = channelKeyToConnP.get(channelKey);
           const data = base64ToBytes(data64);
 
-          E(ctlP)
+          E(connP)
             .send(data)
             .then(ack => {
               const ack64 = dataToBase64(/** @type {Bytes} */ (ack));
@@ -275,6 +321,7 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
           const sck = `${sequence}:${channelID}:${portID}`;
           const ackDeferred = seqChannelKeyToAck.get(sck);
           ackDeferred.resolve(base64ToBytes(acknowledgement));
+          seqChannelKeyToAck.delete(sck);
           break;
         }
 
@@ -288,14 +335,50 @@ export function makeIBCProtocolHandler(E, callIBCDevice) {
           const sck = `${sequence}:${channelID}:${portID}`;
           const ackDeferred = seqChannelKeyToAck.get(sck);
           ackDeferred.reject(Error(`Packet timed out`));
+          seqChannelKeyToAck.delete(sck);
           break;
         }
 
-        case 'channelOpenInit':
-        case 'channelOpenAck':
         case 'channelCloseInit':
         case 'channelCloseConfirm': {
-          console.warn('FIGME: missing implementation of', obj.event);
+          const { portID, channelID } = obj;
+          const channelKey = `${channelID}:${portID}`;
+          if (channelKeyToConnP.has(channelKey)) {
+            const connP = channelKeyToConnP.get(channelKey);
+            channelKeyToConnP.delete(channelKey);
+            E(connP).close();
+          }
+          break;
+        }
+
+        case 'sendPacket': {
+          const { packet, sender } = obj;
+          if (!packetSendersWhitelist.includes(sender)) {
+            console.error(
+              sender,
+              'does not appear in the sendPacket whitelist',
+              packetSendersWhitelist,
+            );
+            throw Error(
+              `${sender} does not appear in the sendPacket whitelist`,
+            );
+          }
+
+          const { source_port: portID, source_channel: channelID } = packet;
+
+          const fullPacket = await callIBCDevice('sendPacket', { packet });
+
+          const { sequence } = fullPacket;
+          /**
+           * @type {PromiseRecord<Bytes, any>}
+           */
+          const ackDeferred = producePromise();
+          const sck = `${sequence}:${channelID}:${portID}`;
+          seqChannelKeyToAck.init(sck, ackDeferred);
+          ackDeferred.promise.then(
+            ack => console.info('Manual packet', fullPacket, 'acked:', ack),
+            e => console.warn('Manual packet', fullPacket, 'timed out:', e),
+          );
           break;
         }
 

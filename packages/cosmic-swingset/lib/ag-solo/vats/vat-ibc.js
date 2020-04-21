@@ -2,9 +2,11 @@ import harden from '@agoric/harden';
 import { makeIBCProtocolHandler } from './ibc';
 
 function build(E, _log) {
-  function createInstance(callbacks) {
-    const ibcHandler = makeIBCProtocolHandler(E, (method, params) =>
-      E(callbacks).downcall(method, params),
+  function createInstance(callbacks, packetSendersWhitelist = []) {
+    const ibcHandler = makeIBCProtocolHandler(
+      E,
+      (method, params) => E(callbacks).downcall(method, params),
+      packetSendersWhitelist,
     );
     return harden(ibcHandler);
   }
