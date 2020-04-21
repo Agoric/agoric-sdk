@@ -13,8 +13,15 @@
       const dappQueue = [];
       let origin;
       ws.addEventListener('message', ev => {
-        const obj = JSON.parse(ev.data)
-        // console.debug('to dapp', origin, obj);
+        let obj;
+        try {
+          obj = JSON.parse(ev.data)
+        } catch (e) {
+          return;
+        }
+        if (!obj || typeof obj.type !== 'string') {
+          return;
+        }
         if (origin === undefined) {
           dappQueue.push(obj);
           return;
@@ -36,6 +43,10 @@
 
 
       window.addEventListener('message', ev => {
+        // console.log('inbound', ev.data);
+        if (!ev.data || typeof ev.data.type !== 'string') {
+          return;
+        }
         if (origin === undefined) {
           // First-come, first-serve.
           origin = ev.origin;
@@ -49,8 +60,10 @@
         // console.debug('from dapp', origin, ev.data);
         const obj = { ...ev.data, dappOrigin: origin };
         if (ws.readyState !== ws.OPEN) {
+          // console.log('queuing', obj);
           wsQueue.push(obj);
         } else {
+          // console.log('sending', obj);
           ws.send(JSON.stringify(obj));
         }
       });
