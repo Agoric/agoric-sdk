@@ -81,11 +81,6 @@ export function makeIBCProtocolHandler(
   const sparseInts = generateSparseInts(seed);
 
   /**
-   * @type {Store<string, (data: Bytes) => Promise<Data>>}
-   */
-  const channelKeyToSender = makeStore('CHANNEL:PORT');
-
-  /**
    * @type {Store<string, PromiseRecord<Bytes, any>>}
    */
   const seqChannelKeyToAck = makeStore('SEQ:CHANNEL:PORT');
@@ -162,11 +157,9 @@ export function makeIBCProtocolHandler(
           console.error(`Would send data`, data);
           return boundSender(data);
         };
-        channelKeyToSender.init(ckey, sender);
       },
       onReceive,
       async onClose(_conn, _reason, _handler) {
-        channelKeyToSender.delete(ckey);
         await callIBCDevice('channelCloseInit', { channelID, portID });
       },
     });
@@ -305,7 +298,7 @@ export function makeIBCProtocolHandler(
             .send(data)
             .then(ack => {
               const ack64 = dataToBase64(/** @type {Bytes} */ (ack));
-              callIBCDevice('packetExecuted', { packet, ack64 });
+              callIBCDevice('packetExecuted', { packet, ack: ack64 });
             })
             .catch(e => console.error(e));
           break;

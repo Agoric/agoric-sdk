@@ -278,7 +278,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
         remoteAddr,
         current,
         E,
-      )[0];
+      )[1];
     },
     async outbound(port, remoteAddr, lchandler) {
       const localAddr =
