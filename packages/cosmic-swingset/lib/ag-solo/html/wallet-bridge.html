@@ -20,7 +20,7 @@
           return;
         }
         if (window.parent !== window) {
-          window.parent.postMessage(obj, origin);
+          window.parent.postMessage(obj, '*');
         }
       });
 
@@ -42,7 +42,7 @@
           while (dappQueue.length) {
             const dappObj = dappQueue.shift();
             if (window.parent !== window) {
-              window.parent.postMessage(dappObj);
+              window.parent.postMessage(dappObj, '*');
             }
           }
         }
