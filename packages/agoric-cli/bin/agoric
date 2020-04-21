@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 
+/* global globalThis */
+
+// Suppress the "'@agoric/harden' is ineffective without SES" warning. This
+// only affects uses inside the 'agoric' tool, not child processes. See #971
+// for details.
+globalThis.harden = null;
+
 const esmRequire = require('esm')(module);
 const path = require('path');
 const WebSocket = require('ws');
