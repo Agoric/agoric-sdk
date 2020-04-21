@@ -81,16 +81,16 @@ func (msg MsgDeliverInbound) GetSigners() []sdk.AccAddress {
 // MsgSendPacket sends an outgoing IBC packet
 type MsgSendPacket struct {
 	Packet chanTypes.Packet `json:"packet" yaml:"packet"`
-	Signer sdk.AccAddress   `json:"signer" yaml:"signer"`
+	Sender sdk.AccAddress   `json:"sender" yaml:"sender"`
 }
 
 var _ sdk.Msg = MsgSendPacket{}
 
 // NewMsgSendPacket returns a new send request
-func NewMsgSendPacket(packet chanTypes.Packet, signer sdk.AccAddress) MsgSendPacket {
+func NewMsgSendPacket(packet chanTypes.Packet, sender sdk.AccAddress) MsgSendPacket {
 	return MsgSendPacket{
 		Packet: packet,
-		Signer: signer,
+		Sender: sender,
 	}
 }
 
@@ -99,7 +99,7 @@ func (msg MsgSendPacket) Route() string { return RouterKey }
 
 // ValidateBasic implements sdk.Msg
 func (msg MsgSendPacket) ValidateBasic() error {
-	if msg.Signer.Empty() {
+	if msg.Sender.Empty() {
 		return sdkerrors.ErrInvalidAddress
 	}
 
@@ -113,7 +113,7 @@ func (msg MsgSendPacket) GetSignBytes() []byte {
 
 // GetSigners implements sdk.Msg
 func (msg MsgSendPacket) GetSigners() []sdk.AccAddress {
-	return []sdk.AccAddress{msg.Signer}
+	return []sdk.AccAddress{msg.Sender}
 }
 
 // Type implements sdk.Msg

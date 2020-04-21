@@ -63,6 +63,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 /**
  * @typedef {Object} ProtocolHandler A handler for things the protocol implementation will invoke
  * @property {(protocol: ProtocolImpl, p: ProtocolHandler) => Promise<void>} onCreate This protocol is created
+ * @property {(localAddr: Endpoint, p: ProtocolHandler) => Promise<string>} generatePortID Create a fresh port identifier for this protocol
  * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onBind A port will be bound
  * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: ProtocolHandler) => Promise<void>} onListen A port was listening
  * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: ProtocolHandler) => Promise<void>} onListenRemove A port listener has been reset
@@ -70,6 +71,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onRevoke The port is being completely destroyed
  *
  * @typedef {Object} ProtocolImpl Things the protocol can do for us
+ * @property {(listenSearch: Endpoint[]) => Promise<boolean>} isListening Tell whether anything in listenSearch is listening
  * @property {(listenSearch: Endpoint[], localAddr: Endpoint, remoteAddr: Endpoint, connectionHandler: ConnectionHandler) => Promise<Connection>} inbound Establish a connection into this protocol
  * @property {(port: Port, remoteAddr: Endpoint, connectionHandler: ConnectionHandler) => Promise<Connection>} outbound Create an outbound connection
  */
@@ -247,6 +249,10 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
    * @type {ProtocolImpl}
    */
   const protocolImpl = harden({
+    async isListening(listenSearch) {
+      const listener = listenSearch.find(addr => listening.has(addr));
+      return !!listener;
+    },
     async inbound(listenSearch, localAddr, remoteAddr, rchandler) {
       const listenAddr = listenSearch.find(addr => listening.has(addr));
       if (!listenAddr) {
@@ -272,7 +278,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
         remoteAddr,
         current,
         E,
-      )[0];
+      )[1];
     },
     async outbound(port, remoteAddr, lchandler) {
       const localAddr =
@@ -307,7 +313,6 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
    * @type {Store<string, Port>}
    */
   const boundPorts = makeStore('localAddr');
-  let nonce = 0;
 
   // Wire up the local protocol to the handler.
   E(protocolHandler).onCreate(protocolImpl, protocolHandler);
@@ -319,8 +324,9 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
     // Check if we are underspecified (ends in slash)
     if (localAddr.endsWith('/')) {
       for (;;) {
-        nonce += 1;
-        const newAddr = `${localAddr}port${nonce}`;
+        // eslint-disable-next-line no-await-in-loop
+        const portID = await E(protocolHandler).generatePortID(localAddr);
+        const newAddr = `${localAddr}${portID}`;
         if (!boundPorts.has(newAddr)) {
           localAddr = newAddr;
           break;
@@ -470,7 +476,7 @@ export function makeEchoConnectionHandler() {
 /**
  * Create a protocol handler that just connects to itself.
  *
- * @param {defaultE} E Eventual sender
+ * @param {typeof defaultE} [E=defaultE] Eventual sender
  * @returns {ProtocolHandler} The localhost handler
  */
 export function makeLoopbackProtocolHandler(E = defaultE) {
@@ -479,10 +485,16 @@ export function makeLoopbackProtocolHandler(E = defaultE) {
    */
   const listeners = makeStore('localAddr');
 
+  let nonce = 0;
+
   return harden({
     // eslint-disable-next-line no-empty-function
     async onCreate(_protocol, _protocolHandler) {
       // TODO: Maybe do something on creation?
+    },
+    async generatePortID(_protocolHandler) {
+      nonce += 1;
+      return `port${nonce}`;
     },
     async onBind(_port, _localAddr, _protocolHandler) {
       // TODO: Maybe handle a bind?
@@ -531,6 +543,9 @@ export function extendLoopbackProtocolHandler(subi) {
     async onCreate(impl, _protocolHandler) {
       await subi.onCreate(impl, subi);
       await loopback.onCreate(impl, loopback);
+    },
+    async generatePortID(localAddr, _protocolHandler) {
+      return subi.generatePortID(localAddr, subi);
     },
     async onBind(port, localAddr, _protocolHandler) {
       await subi.onBind(port, localAddr, subi);

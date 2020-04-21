@@ -78,22 +78,26 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 	if err != nil {
 		return nil, err
 	}
-	return &sdk.Result{}, nil
+	return &sdk.Result{
+		Events: ctx.EventManager().Events().ToABCIEvents(),
+	}, nil
 }
 
 type sendPacketAction struct {
-	Type        string           `json:"type"`
+	Type        string           `json:"type"`  // IBC_EVENT
+	Event       string           `json:"event"` // sendPacket
 	Packet      chanTypes.Packet `json:"packet"`
-	Signer      sdk.AccAddress   `json:"signer"`
+	Sender      sdk.AccAddress   `json:"sender"`
 	BlockHeight int64            `json:"blockHeight"`
 	BlockTime   int64            `json:"blockTime"`
 }
 
 func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg MsgSendPacket) (*sdk.Result, error) {
 	action := &sendPacketAction{
-		Type:        "SEND_PACKET",
+		Type:        "IBC_EVENT",
+		Event:       "sendPacket",
 		Packet:      msg.Packet,
-		Signer:      msg.Signer,
+		Sender:      msg.Sender,
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
@@ -108,5 +112,7 @@ func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg MsgSendPacket) (*sd
 	if err != nil {
 		return nil, err
 	}
-	return &sdk.Result{}, nil
+	return &sdk.Result{
+		Events: ctx.EventManager().Events().ToABCIEvents(),
+	}, nil
 }
