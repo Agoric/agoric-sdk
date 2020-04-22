@@ -29,6 +29,7 @@ export async function makeWallet(
 
   // Offers that the wallet knows about (the inbox).
   const idToOffer = makeStore();
+  const idToNotifierP = makeStore();
 
   // Compiled offers (all ready to execute).
   const idToCompiledOfferP = new Map();
@@ -40,8 +41,8 @@ export async function makeWallet(
   const pursesState = new Map();
   const inboxState = new Map();
 
-  function getPursesState() {
-    const entries = [...pursesState.entries()];
+  function getSortedValues(map) {
+    const entries = [...map.entries()];
     // Sort for determinism.
     const values = entries
       .sort(([id1], [id2]) => id1 > id2)
@@ -50,14 +51,12 @@ export async function makeWallet(
     return JSON.stringify(values);
   }
 
-  function getInboxState() {
-    const entries = [...inboxState.entries()];
-    // Sort for determinism.
-    const values = entries
-      .sort(([id1], [id2]) => id1 > id2)
-      .map(([_id, value]) => value);
+  function getPursesState() {
+    return getSortedValues(pursesState);
+  }
 
-    return JSON.stringify(values);
+  function getInboxState() {
+    return getSortedValues(inboxState);
   }
 
   async function updatePursesState(pursePetname, purse) {
@@ -78,6 +77,43 @@ export async function makeWallet(
     // Only sent the uncompiled offer to the client.
     inboxState.set(id, offer);
     inboxStateChangeHandler(getInboxState());
+  }
+
+  // handle the update, which has already resolved to a record. If the offer is
+  // 'done', mark the offer 'complete', otherwise resubscribe to the notifier.
+  function updateOrResubscribe(id, offerHandle, update) {
+    const { updateHandle, done } = update;
+    if (done) {
+      // TODO do we still need these?
+      idToOfferHandle.delete(id);
+
+      const offer = idToOffer.get(id);
+      const completedOffer = {
+        ...offer,
+        status: 'complete',
+      };
+      idToOffer.set(id, completedOffer);
+      updateInboxState(id, completedOffer);
+      idToNotifierP.delete(id);
+    } else {
+      E(idToNotifierP.get(id))
+        .getUpdateSince(updateHandle)
+        .then(nextUpdate => updateOrResubscribe(id, offerHandle, nextUpdate));
+    }
+  }
+
+  // There's a new offer. Ask Zoe to notify us when the offer is complete.
+  async function subscribeToNotifier(id, offerHandle) {
+    E(zoe)
+      .getOfferNotifier(offerHandle)
+      .then(offerNotifierP => {
+        if (!idToNotifierP.has(id)) {
+          idToNotifierP.init(id, offerNotifierP);
+        }
+        E(offerNotifierP)
+          .getUpdateSince()
+          .then(update => updateOrResubscribe(id, offerHandle, update));
+      });
   }
 
   async function executeOffer(compiledOfferP, inviteP) {
@@ -330,6 +366,7 @@ export async function makeWallet(
         return E(cancelObj).cancel();
       });
       idToOfferHandle.set(id, offerHandle);
+      subscribeToNotifier(id, offerHandle);
 
       // The outcome is most often a string that can be returned, but
       // it could be an object. We don't do anything currently if it

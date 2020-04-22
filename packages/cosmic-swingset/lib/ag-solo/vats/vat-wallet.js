@@ -5,7 +5,7 @@ import pubsub from './pubsub';
 function build(E, _D, _log) {
   let wallet;
   let pursesState;
-  let inboxState;
+  let inboxState = JSON.stringify([]);
   let http;
   const adminHandles = new Set();
   const bridgeHandles = new Set();
