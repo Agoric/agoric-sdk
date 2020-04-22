@@ -110,9 +110,9 @@ export async function makeWallet(
         if (!idToNotifierP.has(id)) {
           idToNotifierP.init(id, offerNotifierP);
         }
-        E.when(E(offerNotifierP).getUpdateSince()).then(update =>
-          updateOrResubscribe(id, offerHandle, update),
-        );
+        E(offerNotifierP)
+          .getUpdateSince()
+          .then(update => updateOrResubscribe(id, offerHandle, update));
       });
   }
 
