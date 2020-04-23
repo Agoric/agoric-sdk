@@ -9,6 +9,7 @@
     "clean": "rimraf ./build",
     "lint-check": "eslint '**/*.{js,jsx}'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
+    "prepublish": "yarn build",
     "start": "react-scripts start",
     "test:interactive": "react-scripts test --env=jsdom",
     "test": "exit 0",
@@ -27,6 +28,9 @@
       "last 1 safari version"
     ]
   },
+  "files": [
+    "build"
+  ],
   "dependencies": {
     "@material-ui/core": "^4.9.3",
     "@material-ui/icons": "^4.9.1",
