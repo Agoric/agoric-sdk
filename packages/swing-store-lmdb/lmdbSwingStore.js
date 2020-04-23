@@ -27,6 +27,7 @@ function makeSwingStore(dirPath, forceReset = false) {
   lmdbEnv.open({
     path: dirPath,
     mapSize: 2 * 1024 * 1024 * 1024, // XXX need to tune this
+    useWritemap: true,
   });
 
   let dbi = lmdbEnv.openDbi({
