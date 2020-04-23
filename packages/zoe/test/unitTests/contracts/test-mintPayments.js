@@ -10,7 +10,7 @@ import { makeZoe } from '../../../src/zoe';
 
 const mintPaymentsRoot = `${__dirname}/../../../src/contracts/mintPayments`;
 
-test.only('zoe - mint payments', async t => {
+test('zoe - mint payments', async t => {
   t.plan(2);
   try {
     const zoe = makeZoe({ require });
