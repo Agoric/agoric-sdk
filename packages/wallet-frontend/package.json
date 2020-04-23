@@ -31,15 +31,13 @@
   "files": [
     "build"
   ],
-  "dependencies": {
+  "devDependencies": {
     "@material-ui/core": "^4.9.3",
     "@material-ui/icons": "^4.9.1",
     "clsx": "^1.0.4",
     "http-proxy-middleware": "^1.0.0",
     "react": "^16.12.0",
-    "react-dom": "^16.12.0"
-  },
-  "devDependencies": {
+    "react-dom": "^16.12.0",
     "eslint": "^6.8.0",
     "eslint-config-airbnb": "^18.0.1",
     "eslint-config-prettier": "^6.10.0",
