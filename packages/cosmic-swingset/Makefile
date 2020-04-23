@@ -109,7 +109,7 @@ scenario3-run-client: scenario3-run
 # Set the fake chain here in case the delay has changed.
 scenario3-run:
 	(cd t3 && \
-			../bin/ag-solo set-fake-chain --role=two_chain --delay=$(FAKE_CHAIN_DELAY) myFakeGCI)
+			../bin/ag-solo set-fake-chain --role=two_chain --delay=$(FAKE_CHAIN_DELAY) mySimGCI)
 	cd t3 && ../bin/ag-solo start --role=two_client
 
 # These rules are the old scenario3.  No fake delay at all.
@@ -154,7 +154,8 @@ compile-gyp:
 
 install: go.sum
 	go install -v $(MOD_READONLY) $(BUILD_FLAGS) ./cmd/ag-cosmos-helper
-	bindir="$${GOBIN-$${GOPATH-$$HOME/go}/bin}"; ln -sf "$$PWD/lib/ag-chain-cosmos" "$$bindir/ag-chain-cosmos"
+	bindir="$${GOBIN-$${GOPATH-$$HOME/go}/bin}"; \
+	  ln -sf "$$PWD/lib/ag-chain-cosmos" "$$PWD/bin/ag-nchainz" "$$bindir/"
 
 go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"

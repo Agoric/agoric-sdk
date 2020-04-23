@@ -16,7 +16,7 @@ const main = async (progname, rawArgs, powers) => {
       return false;
     } catch (e) {
       log.error(`current directory wasn't created by '${progname} init'`);
-      return usage(1);
+      program.help();
     }
   };
   

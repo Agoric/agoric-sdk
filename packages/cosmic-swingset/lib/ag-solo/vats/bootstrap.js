@@ -128,7 +128,11 @@ export default function setup(syscall, state, helpers) {
         });
       }
 
-      async function registerNetworkProtocols(vats, bridgeMgr, packetSendersWhitelist = []) {
+      async function registerNetworkProtocols(
+        vats,
+        bridgeMgr,
+        packetSendersWhitelist = [],
+      ) {
         const ps = [];
         // Every vat has a loopback device.
         ps.push(
@@ -148,10 +152,18 @@ export default function setup(syscall, state, helpers) {
               });
             },
           });
-          const ibcHandler = await E(vats.ibc).createInstance(callbacks, packetSendersWhitelist);
+          const ibcHandler = await E(vats.ibc).createInstance(
+            callbacks,
+            packetSendersWhitelist,
+          );
           bridgeMgr.register('dibc', ibcHandler);
           ps.push(
             E(vats.network).registerProtocolHandler('/ibc-port', ibcHandler),
+          );
+        } else {
+          const loHandler = makeLoopbackProtocolHandler(E);
+          ps.push(
+            E(vats.network).registerProtocolHandler('/ibc-port', loHandler),
           );
         }
         await Promise.all(ps);

@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import parseArgs from 'minimist';
 import process from 'process';
+import { spawnSync } from 'child_process';
 import { assert } from '@agoric/assert';
 
 import anylogger from 'anylogger';
@@ -32,6 +33,7 @@ function insistIsBasedir() {
   try {
     fs.statSync(path.join(basedir, 'solo-README.md'));
   } catch (e) {
+    // eslint-disable-next-line no-throw-literal
     throw `${basedir} doesn't appear to be an ag-solo base directory`;
   }
   return basedir;
@@ -54,55 +56,81 @@ start
 `);
   }
 
-  if (argv[0] === 'init') {
-    const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {
-      default: {
-        webport: '8000',
-        // If we're in Vagrant, default to listen on the VM's routable address.
-        webhost: fs.existsSync('/vagrant') ? '0.0.0.0' : '127.0.0.1',
-        egresses: DEFAULT_EGRESSES,
-      },
-    });
-    const webport = Number(subOpts.webport);
-    const { webhost, egresses } = subOpts;
-    const basedir = subArgs[0] || AG_SOLO_BASEDIR;
-    const subdir = subArgs[1];
-    assert(basedir !== undefined, 'you must provide a BASEDIR');
-    initBasedir(basedir, webport, webhost, subdir, egresses.split(','));
-    await resetState(basedir);
+  switch (argv[0]) {
+    case 'init': {
+      const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {
+        default: {
+          webport: '8000',
+          // If we're in Vagrant, default to listen on the VM's routable address.
+          webhost: fs.existsSync('/vagrant') ? '0.0.0.0' : '127.0.0.1',
+          egresses: DEFAULT_EGRESSES,
+        },
+      });
+      const webport = Number(subOpts.webport);
+      const { webhost, egresses } = subOpts;
+      const basedir = subArgs[0] || AG_SOLO_BASEDIR;
+      const subdir = subArgs[1];
+      assert(basedir !== undefined, 'you must provide a BASEDIR');
+      initBasedir(basedir, webport, webhost, subdir, egresses.split(','));
+      await resetState(basedir);
 
-    // TODO: We may want to give some instructions.  This is probably not the
-    // right place to determine our context.
-    // log.error(
-    //   `Run '(cd ${basedir} && ${progname} start)' to start the vat machine`,
-    // );
-  } else if (argv[0] === 'set-gci-ingress') {
-    const basedir = insistIsBasedir();
-    const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {});
-    const GCI = subArgs[0];
-    const chainID = subOpts.chainID || 'agoric';
-    const rpcAddresses = subArgs.slice(1);
-    setGCIIngress(basedir, GCI, rpcAddresses, chainID);
-  } else if (argv[0] === 'set-fake-chain') {
-    const basedir = insistIsBasedir();
-    const { _: subArgs, role, delay } = parseArgs(argv.slice(1), {});
-    const GCI = subArgs[0];
-    setFakeChain(basedir, GCI, role, delay);
-  } else if (argv[0] === 'start') {
-    const basedir = insistIsBasedir();
-    const withSES = true;
-    await start(basedir, withSES, argv.slice(1));
-  } else if (argv[0] === 'reset-state') {
-    const basedir = insistIsBasedir();
-    await resetState(basedir);
-  } else if (argv[0] === 'bundle') {
-    await bundle(insistIsBasedir, argv.slice(1));
-  } else if (argv[0] === 'upload-contract') {
-    await bundle(insistIsBasedir, [`--evaluate`, ...argv]);
-  } else if (argv[0] === 'register-http') {
-    await bundle(insistIsBasedir, [`--evaluate`, ...argv]);
-  } else {
-    log.error(`unrecognized command ${argv[0]}`);
-    log.error(`try one of: init, set-gci-ingress, start`);
+      // TODO: We may want to give some instructions.  This is probably not the
+      // right place to determine our context.
+      // log.error(
+      //   `Run '(cd ${basedir} && ${progname} start)' to start the vat machine`,
+      // );
+      break;
+    }
+    case 'set-gci-ingress': {
+      const basedir = insistIsBasedir();
+      const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {});
+      const GCI = subArgs[0];
+      const chainID = subOpts.chainID || 'agoric';
+      const rpcAddresses = subArgs.slice(1);
+      setGCIIngress(basedir, GCI, rpcAddresses, chainID);
+      break;
+    }
+    case 'set-fake-chain': {
+      const basedir = insistIsBasedir();
+      const { _: subArgs, role, delay } = parseArgs(argv.slice(1), {});
+      const GCI = subArgs[0];
+      setFakeChain(basedir, GCI, role, delay);
+      break;
+    }
+    case 'start': {
+      const basedir = insistIsBasedir();
+      const withSES = true;
+      await start(basedir, withSES, argv.slice(1));
+      break;
+    }
+    case 'reset-state': {
+      const basedir = insistIsBasedir();
+      await resetState(basedir);
+      break;
+    }
+    case 'bundle': {
+      await bundle(insistIsBasedir, argv.slice(1));
+      break;
+    }
+    case 'upload-contract': {
+      await bundle(insistIsBasedir, [`--evaluate`, ...argv]);
+      break;
+    }
+    case 'register-http': {
+      await bundle(insistIsBasedir, [`--evaluate`, ...argv]);
+      break;
+    }
+    case 'calc-gci':
+    case 'calc-rpcport': {
+      const cp = spawnSync(`${__dirname}/../../${argv[0]}.js`, argv.slice(1), {
+        stdio: 'inherit',
+      });
+      process.exit(cp.status);
+      break;
+    }
+    default: {
+      log.error(`unrecognized command ${argv[0]}`);
+      log.error(`try one of: init, set-gci-ingress, start`);
+    }
   }
 }

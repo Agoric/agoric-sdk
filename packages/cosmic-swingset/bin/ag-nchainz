@@ -1,0 +1,110 @@
+#! /bin/bash
+# ag-nchainz - Agoric-specific nchainz scripts
+#
+# First run at least two Agoric chains:
+# (https://github.com/iqlusioninc/relayer/tree/master/scripts/nchainz)
+#
+#   nchainz init agoric agoric
+#   ag-nchainz start-solos
+#
+# or something.  See nchainz --help for more details.
+set -e
+progname=$(basename -- "$0")
+
+BASE_PORT=8000
+NUM_SOLOS=1
+
+real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
+thisdir=$(cd "$(dirname -- "$real0")" && pwd -P)
+
+CLI=ag-cosmos-helper
+DAEMON=ag-chain-cosmos
+SOLO=$thisdir/ag-solo
+SKIP=no
+COMMAND=
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+  -*)
+    echo "unrecognized option \`$1'"
+    exit 1
+    ;;
+  *)
+    if [[ $SKIP == no && $1 == skip ]]; then
+      SKIP=yes
+      shift
+    elif [[ -z $COMMAND ]]; then
+      COMMAND=$1
+      shift
+      break;
+    fi
+    ;;
+  esac
+done
+
+case $COMMAND in
+testnet)
+  chainid="$1"
+  shift
+  echo | $DAEMON testnet ${1+"$@"}
+  n0d=$chainid/n0/$DAEMON
+  i=$(echo $chainid | sed -e 's/^[^0-9]*//')
+  portstart=$(( $BASE_PORT + $i * $NUM_SOLOS ))
+  portend=$(( $portstart + $NUM_SOLOS - 1 ))
+  for port in `seq $portstart $portend`; do
+    echo "Initializing ag-solo in $chainid/ag-solo-$port"
+		$SOLO init $chainid/ag-solo-$port --webport=$port
+		$DAEMON add-genesis-account --home=$n0d \
+      --home-client=$chainid/ag-solo-$port/$CLI-statedir --keyring-backend=test \
+      ag-solo 1000uag
+	done
+	# $thisdir/../../deployment/set-json.js $n0d/config/genesis.json --agoric-genesis-overrides
+  for node in `ls -d $chainid/n[1-9]* 2>/dev/null`; do
+    cp $n0d/config/genesis.json $node/$DAEMON/config/genesis.json
+  done
+  ;;
+start-daemon)
+  BASEDIR=$1
+  shift
+  ba=$($CLI --home "$BASEDIR/n0/$CLI" keys show n0 --keyring-backend=test | jq -r .address)
+  for solo in `ls -d $BASEDIR/ag-solo-* 2>&1`; do
+    cp -r "$BASEDIR/n0/$CLI/config" "$solo/$CLI-statedir/"
+    ba="$ba $(cat $solo/ag-cosmos-helper-address)"
+  done
+  echo "Starting BOOT_ADDRESS=$ba $DAEMON ${1+"$@"}"
+  DEBUG=agoric ROLE=two_chain BOOT_ADDRESS=$ba $DAEMON ${1+"$@"}
+  ;;
+
+start-solos)
+  for solo in `ls -d nchainz/data/*/ag-solo-* 2>/dev/null`; do
+    chainid=$(basename -- "$(dirname -- "$solo")")
+    log="$(basename -- "$solo")-$chainid.log"
+    if [[ -n $1 ]]; then
+      case " $@ " in
+      " $chainid ") ;;
+      *) continue ;;
+      esac
+    fi
+    echo "Logging to nchainz/logs/$log"
+    (
+      cd "$solo"
+      n0d=../n0/$DAEMON
+
+      # Now wire into the chain.
+      gci=`$thisdir/../calc-gci.js $n0d/config/genesis.json`
+      rpcport=`$thisdir/../calc-rpcport.js $n0d/config/config.toml`
+
+      $SOLO set-gci-ingress --chainID="$chainid" "$gci" "$rpcport"
+
+      DEBUG=agoric $SOLO start --role=two_client
+    ) >>nchainz/logs/$log 2>&1 &
+  done
+  sleep 2
+  echo "Waiting for all solos (Hit Control-C to exit)..."
+  wait
+  ;;
+*)
+  echo 1>&2 "$progname: unrecognized command \`$COMMAND'"
+  exit 1
+  ;;
+esac

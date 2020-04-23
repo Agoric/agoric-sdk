@@ -79,7 +79,7 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 			msg.Packet.Data, seq,
 			msg.Packet.SourcePort, msg.Packet.SourceChannel,
 			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
-			absoluteTimeout,
+			absoluteTimeout, 0,
 		)
 		err = ctx.Keeper.SendPacket(ctx.Context, packet)
 		if err == nil {
