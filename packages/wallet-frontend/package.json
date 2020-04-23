@@ -1,6 +1,6 @@
 {
   "name": "@agoric/wallet-frontend",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Agoric Wallet Frontend",
   "author": "Agoric",
   "license": "Apache-2.0",
@@ -9,6 +9,7 @@
     "clean": "rimraf ./build",
     "lint-check": "eslint '**/*.{js,jsx}'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
+    "prepublish": "yarn build",
     "start": "react-scripts start",
     "test:interactive": "react-scripts test --env=jsdom",
     "test": "exit 0",
@@ -27,15 +28,13 @@
       "last 1 safari version"
     ]
   },
-  "dependencies": {
+  "files": [
+    "build"
+  ],
+  "devDependencies": {
     "@material-ui/core": "^4.9.3",
     "@material-ui/icons": "^4.9.1",
     "clsx": "^1.0.4",
-    "http-proxy-middleware": "^1.0.0",
-    "react": "^16.12.0",
-    "react-dom": "^16.12.0"
-  },
-  "devDependencies": {
     "eslint": "^6.8.0",
     "eslint-config-airbnb": "^18.0.1",
     "eslint-config-prettier": "^6.10.0",
@@ -45,7 +44,10 @@
     "eslint-plugin-prettier": "^3.1.2",
     "eslint-plugin-react": "^7.18.3",
     "eslint-plugin-react-hooks": "^2.4.0",
+    "http-proxy-middleware": "^1.0.0",
     "prettier": "^1.19.1",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
     "react-scripts": "^3.4.0",
     "rimraf": "^3.0.2"
   },

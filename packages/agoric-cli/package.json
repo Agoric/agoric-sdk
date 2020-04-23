@@ -5,8 +5,7 @@
   "main": "lib/main.js",
   "bin": "bin/agoric",
   "files": [
-    "lib",
-    "template"
+    "lib"
   ],
   "scripts": {
     "build": "exit 0",

@@ -27,16 +27,6 @@ export default async function installMain(progname, rawArgs, powers, opts) {
         });
       }),
     );
-
-    log(chalk.bold.green(`link SDK _agstate/agoric-wallet`));
-    await rimraf('_agstate/agoric-wallet');
-    const agWallet = path.resolve(__dirname, '../agoric-wallet-build');
-    try {
-      await fs.stat(`${agWallet}/index.html`);
-      await fs.symlink(agWallet, `_agstate/agoric-wallet`);
-    } catch (e) {
-      await fs.symlink(agWallet, `_agstate/agoric-wallet`);
-    }
   } else {
     // Delete any symlinks.
     await Promise.all(
@@ -51,14 +41,6 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       // Try to install via Yarn.
       log.error('Cannot yarn install');
       return 1;
-    }
-
-    // FIXME: Copy the agoric-wallet-build more portably
-    log(chalk.bold.green(`copy bundled _agstate/agoric-wallet`));
-    await rimraf('_agstate/agoric-wallet');
-    const agWallet = path.resolve(__dirname, '../agoric-wallet-build');
-    if (await pspawn('cp', ['-a', agWallet, '_agstate/agoric-wallet'])) {
-      log.error('Cannot copy _agstate/agoric-wallet');
     }
   }
 

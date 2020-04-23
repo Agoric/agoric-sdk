@@ -30,38 +30,37 @@ export default function initBasedir(
     path.join(basedir, 'connections.json'),
     `${JSON.stringify(connections)}\n`,
   );
-  const source_htmldir = path.join(here, 'html');
-  const dest_htmldir = path.join(basedir, 'html');
-  fs.mkdirSync(dest_htmldir);
-  fs.readdirSync(source_htmldir)
+  const srcHtmldir = path.join(here, 'html');
+  const dstHtmldir = path.join(basedir, 'html');
+  fs.mkdirSync(dstHtmldir);
+  fs.readdirSync(srcHtmldir)
     .filter(name => name.match(/^[^.]/))
     .forEach(name => {
-      fs.copyFileSync(
-        path.join(source_htmldir, name),
-        path.join(dest_htmldir, name),
-      );
+      fs.copyFileSync(path.join(srcHtmldir, name), path.join(dstHtmldir, name));
     });
 
-  const source_contractsdir = path.join(here, 'contracts');
-  const dest_contractsdir = path.join(basedir, 'contracts');
-  fs.mkdirSync(dest_contractsdir);
-  if (fs.existsSync(source_contractsdir)) {
-    fs.readdirSync(source_contractsdir)
-      .filter(name => name.match(/^[^.]/))
-      .forEach(name => {
-        fs.copyFileSync(
-          path.join(source_contractsdir, name),
-          path.join(dest_contractsdir, name),
-        );
-      });
+  // Symlink the wallet.
+  let agWallet;
+  try {
+    agWallet = path.resolve(__dirname, '../../../wallet-frontend/build');
+    if (!fs.existsSync(agWallet)) {
+      const pjs = require.resolve('@agoric/wallet-frontend/package.json');
+      agWallet = path.join(path.dirname(pjs), 'build');
+      fs.statSync(agWallet);
+    }
+    fs.symlinkSync(agWallet, `${dstHtmldir}/wallet`);
+  } catch (e) {
+    console.warn(
+      `${agWallet} does not exist; you may want to run 'yarn build' in 'wallet-frontend'`,
+    );
   }
 
   // Save our version codes.
   const pj = 'package.json';
-  fs.copyFileSync(path.join(`${here}/../..`, pj), path.join(dest_htmldir, pj));
+  fs.copyFileSync(path.join(`${here}/../..`, pj), path.join(dstHtmldir, pj));
   const gr = 'git-revision.txt';
   try {
-    fs.copyFileSync(path.join(`${here}/..`, gr), path.join(dest_htmldir, gr));
+    fs.copyFileSync(path.join(`${here}/..`, gr), path.join(dstHtmldir, gr));
   } catch (e) {
     let revision;
     try {
@@ -70,21 +69,18 @@ export default function initBasedir(
     } catch (_e) {
       revision = 'unknown\n';
     }
-    fs.writeFileSync(path.join(dest_htmldir, gr), revision);
+    fs.writeFileSync(path.join(dstHtmldir, gr), revision);
   }
 
-  const source_vatdir = subdir
+  const srcVatdir = subdir
     ? path.join(here, 'vats', subdir)
     : path.join(here, 'vats');
-  const dest_vatdir = path.join(basedir, 'vats');
-  fs.mkdirSync(dest_vatdir);
-  fs.readdirSync(source_vatdir)
+  const dstVatdir = path.join(basedir, 'vats');
+  fs.mkdirSync(dstVatdir);
+  fs.readdirSync(srcVatdir)
     .filter(name => name.match(/\.js$/))
     .forEach(name => {
-      fs.copyFileSync(
-        path.join(source_vatdir, name),
-        path.join(dest_vatdir, name),
-      );
+      fs.copyFileSync(path.join(srcVatdir, name), path.join(dstVatdir, name));
     });
 
   // Enable our node_modules to be found.
