@@ -44,7 +44,8 @@ export default function initBasedir(
   try {
     agWallet = path.resolve(__dirname, '../../../wallet-frontend/build');
     if (!fs.existsSync(agWallet)) {
-      agWallet = require.resolve('@agoric/wallet-frontend/build');
+      const pjs = require.resolve('@agoric/wallet-frontend/package.json');
+      agWallet = path.join(path.dirname(pjs), 'build');
       fs.statSync(agWallet);
     }
     fs.symlinkSync(agWallet, `${dstHtmldir}/wallet`);
