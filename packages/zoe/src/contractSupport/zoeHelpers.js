@@ -212,6 +212,70 @@ export const makeZoeHelpers = (zcf) => {
         });
         zoeService.offer(invite);
       }),
+
+    escrowAndAllocateTo: ({
+      amountMath,
+      mint,
+      extent,
+      keyword,
+      recipientHandle,
+    }) => {
+      // We will create a temporary offer to be able to escrow our payment
+      // with Zoe.
+      let tempHandle;
+
+      // Make the amount and payment from the extent provided
+      const amount = amountMath.make(extent);
+      const payment = mint.mintPayment(amount);
+
+      // We need to make an invite and store the offerHandle of that
+      // invite for future use.
+      const contractSelfInvite = zcf.makeInvitation(
+        offerHandle => (tempHandle = offerHandle),
+      );
+      // To escrow the payment, we must get the Zoe Service facet and
+      // make an offer
+      return zcf
+        .getZoeService()
+        .offer(
+          contractSelfInvite,
+          harden({ give: { [keyword]: amount } }),
+          // escrow the payment we just made
+          harden({ [keyword]: payment }),
+        )
+        .then(() => {
+          // At this point, the temporary offer has the amount from the
+          // payment but nothing else. The recipient offer may have any
+          // allocation, so we can't assume the allocation is currently empty for this
+          // keyword.
+          const [recipientAlloc, tempAlloc] = zcf.getCurrentAllocations(
+            harden([recipientHandle, tempHandle]),
+            harden([keyword]),
+          );
+
+          // Add the tempAlloc for the keyword to the recipientAlloc.
+          recipientAlloc[keyword] = amountMath.add(
+            recipientAlloc[keyword],
+            tempAlloc[keyword],
+          );
+
+          // Set the temporary offer allocation to empty.
+          tempAlloc[keyword] = amountMath.getEmpty();
+
+          // Actually reallocate the amounts. Note that only the amounts
+          // for `keyword` are reallocated.
+          zcf.reallocate(
+            harden([tempHandle, recipientHandle]),
+            harden([tempAlloc, recipientAlloc]),
+            harden([keyword]),
+          );
+          // Complete the temporary offerHandle
+          zcf.complete([tempHandle]);
+
+          // Now, the temporary offer no longer exists, but the recipient
+          // offer is allocated the value of the payment.
+        });
+    },
   });
   return helpers;
 };

@@ -1,6 +1,7 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
 import produceIssuer from '@agoric/ertp';
+import { makeZoeHelpers } from '../contractSupport';
 
 /*
 This is the simplest contract to mint payments and send them to users
@@ -12,54 +13,30 @@ export const makeContract = harden(zcf => {
   // Create the internal token mint for a fungible digital asset
   const { issuer, mint, amountMath } = produceIssuer('tokens');
 
+  const zoeHelpers = makeZoeHelpers(zcf);
+
   // We need to tell Zoe about this issuer and add a keyword for the
   // issuer. Let's call this the 'Token' issuer.
   return zcf.addNewIssuer(issuer, 'Token').then(() => {
     // We need to wait for the promise to resolve (meaning that Zoe
     // has done the work of adding a new issuer).
-    const offerHook = userOfferHandle => {
+    const offerHook = offerHandle => {
       // We will send everyone who makes an offer 1000 tokens
 
-      // make the description of 1000 tokens
-      const tokenAmount = amountMath.make(1000);
-
-      // actually mint the new value of 1000 tokens
-      const tokenPayment = mint.mintPayment(tokenAmount);
-
-      // Now we must escrow the tokens with Zoe.
-      let tempContractHandle;
-
-      // We need to make an invite and store the offerHandle of that
-      // invite for future use.
-      const contractSelfInvite = zcf.makeInvitation(
-        offerHandle => (tempContractHandle = offerHandle),
-      );
-      // To escrow the tokens, we must get the Zoe Service facet and
-      // make an offer
-      zcf
-        .getZoeService()
-        .offer(
-          contractSelfInvite,
-          harden({ give: { Token: tokenAmount } }),
-          // escrow the actual tokens
-          harden({ Token: tokenPayment }),
-        )
+      // Let's use a helper function which will mint a payment, escrow
+      // it with Zoe, and reallocate to the recipientHandle.
+      return zoeHelpers
+        .escrowAndAllocateTo({
+          zcf,
+          amountMath,
+          mint,
+          extent: 1000,
+          keyword: 'Token',
+          recipientHandle: offerHandle,
+        })
         .then(() => {
-          // Now that the tokens have been escrowed, the temporary
-          // contract offer is currently allocated the tokens. We
-          // should swap the allocations for the temporary contract
-          // offer and the user's offer, so that the user eventually gets a
-          // payout of the tokens
-          zcf.reallocate(
-            [tempContractHandle, userOfferHandle],
-            [
-              zcf.getCurrentAllocation(userOfferHandle),
-              zcf.getCurrentAllocation(tempContractHandle),
-            ],
-          );
-          // Let's complete both offers so the user gets a payout of
-          // the tokens through Zoe.
-          zcf.complete([tempContractHandle, userOfferHandle]);
+          // Complete the user's offer so that the user gets a payout
+          zcf.complete(harden([offerHandle]));
 
           // Since the user is getting the payout through Zoe, we can
           // return anything here. Let's return some helpful instructions.
