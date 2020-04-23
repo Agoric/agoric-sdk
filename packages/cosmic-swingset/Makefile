@@ -154,7 +154,8 @@ compile-gyp:
 
 install: go.sum
 	go install -v $(MOD_READONLY) $(BUILD_FLAGS) ./cmd/ag-cosmos-helper
-	bindir="$${GOBIN-$${GOPATH-$$HOME/go}/bin}"; ln -sf "$$PWD/lib/ag-chain-cosmos" "$$PWD/bin/ag-solo" "$$bindir/"
+	bindir="$${GOBIN-$${GOPATH-$$HOME/go}/bin}"; \
+	  ln -sf "$$PWD/lib/ag-chain-cosmos" "$$PWD/bin/ag-nchainz" "$$bindir/"
 
 go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"
