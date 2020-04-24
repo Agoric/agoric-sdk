@@ -134,7 +134,6 @@ export function makeIBCProtocolHandler(
       onReceive = withChannelReceiveQueue(onReceive);
     }
 
-    const ckey = `${channelID}:${portID}`;
     return harden({
       async onOpen(conn, handler) {
         console.info('onOpen Remote IBC Connection', channelID, portID);
@@ -183,6 +182,11 @@ export function makeIBCProtocolHandler(
    */
   let protocolImpl;
 
+  /**
+   * @type {Store<string, Store<string, (typeof makeIBCConnectionHandler)[]>>}
+   */
+  const outboundWaiters = makeStore('destination');
+
   const goodLetters = 'abcdefghijklmnopqrstuvwxyz';
 
   // We delegate to a loopback protocol, too, to connect locally.
@@ -206,8 +210,43 @@ export function makeIBCProtocolHandler(
     },
     async onConnect(_port, localAddr, remoteAddr, _protocolHandler) {
       console.warn('IBC onConnect', localAddr, remoteAddr);
-      // return makeIBCConnectionHandler('FIXME', localAddr, remoteAddr, true);
-      return undefined;
+      const portID = localAddrToPortID(localAddr);
+      if (!remoteAddr.match(/^(\/ibc-hop\/[^/]+)+\/ibc-port\/[^/]+$/)) {
+        throw TypeError(
+          `Remote address ${remoteAddr} must be /ibc-hop/HOP.../ibc-port/PORT`,
+        );
+      }
+
+      // We need to wait around for a relayer to continue the connection.
+      // TODO: We should also send a ChanOpenInit to get a passive relayer flowing.
+
+      /** @type {PromiseRecord<ConnectionHandler,any>} */
+      const chandler = producePromise();
+
+      /**
+       * @type {typeof makeIBCConnectionHandler}
+       */
+      const connected = (...args) => {
+        const ch = makeIBCConnectionHandler(...args);
+        chandler.resolve(ch);
+        return ch;
+      };
+      let waiters;
+      if (outboundWaiters.has(remoteAddr)) {
+        waiters = outboundWaiters.get(remoteAddr);
+      } else {
+        waiters = makeStore('source');
+        outboundWaiters.init(remoteAddr, waiters);
+      }
+      let waiterList;
+      if (waiters.has(portID)) {
+        waiterList = waiters.get(portID);
+      } else {
+        waiterList = [];
+        waiters.init(remoteAddr, waiterList);
+      }
+      waiterList.push(connected);
+      return chandler.promise;
     },
     async onListen(_port, localAddr, _listenHandler) {
       console.warn('IBC onListen', localAddr);
@@ -220,7 +259,38 @@ export function makeIBCProtocolHandler(
     },
   });
 
-  // FIXME: Actually implement!
+  function getWaiter(hops, portID, rPort, claim = false) {
+    const us = `/ibc-port/${portID}`;
+    for (let i = 0; i <= hops.length; i += 1) {
+      // Try most specific to least specific outbound connections.
+      const ibcHops = hops
+        .slice(0, hops.length - i)
+        .map(hop => `/ibc-hop/${hop}`)
+        .join('/');
+      const them = `${ibcHops}/ibc-port/${rPort}`;
+      if (outboundWaiters.has(them)) {
+        const waiters = outboundWaiters.get(them);
+        if (waiters.has(us)) {
+          // Return the list of waiters.
+          if (!claim) {
+            return true;
+          }
+          const waiterList = waiters.get(us);
+          // Clean up the maps.
+          const waiter = waiterList.shift();
+          if (waiterList.length === 0) {
+            waiters.delete(us);
+          }
+          if (waiters.keys().length === 0) {
+            outboundWaiters.delete(them);
+          }
+          return waiter;
+        }
+      }
+    }
+    return false;
+  }
+
   return harden({
     ...protocol,
     async fromBridge(srcID, obj) {
@@ -228,10 +298,17 @@ export function makeIBCProtocolHandler(
       switch (obj.event) {
         case 'channelOpenTry':
         case 'channelOpenInit': {
-          const { channelID, portID } = obj;
+          const {
+            channelID,
+            portID,
+            counterparty: { port_id: rPortID },
+            connectionHops: hops,
+          } = obj;
 
-          await E(protocolImpl).isListening([`/ibc-port/${portID}`]);
           const channelKey = `${channelID}:${portID}`;
+          if (!getWaiter(hops, portID, rPortID)) {
+            await E(protocolImpl).isListening([`/ibc-port/${portID}`]);
+          }
           channelKeyToConnectingInfo.init(channelKey, obj);
           break;
         }
@@ -257,8 +334,15 @@ export function makeIBCProtocolHandler(
           const localAddr = `/ibc-port/${portID}/${order.toLowerCase()}/${version}`;
           const ibcHops = hops.map(hop => `/ibc-hop/${hop}`).join('/');
           const remoteAddr = `${ibcHops}/ibc-port/${rPortID}/${order.toLowerCase()}/${rVersion}`;
-          const listenSearch = [`/ibc-port/${portID}`];
+          const waiter = getWaiter(hops, portID, rPortID, true);
+          if (typeof waiter === 'function') {
+            // An outbound connection wants to use this channel.
+            waiter(channelID, portID, rChannelID, rPortID, order === 'ORDERED');
+            break;
+          }
 
+          // Check for a listener for this channel.
+          const listenSearch = [`/ibc-port/${portID}`];
           const rchandler = makeIBCConnectionHandler(
             channelID,
             portID,
