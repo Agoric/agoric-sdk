@@ -266,6 +266,7 @@ test('kernel state', async t => {
 
   commitCrank();
   checkState(t, getState, [
+    ['crankNumber', '0'],
     ['initialized', 'true'],
     ['runQueue', '[]'],
     ['vat.nextID', '1'],
@@ -291,6 +292,7 @@ test('kernelKeeper vat names', async t => {
 
   commitCrank();
   checkState(t, getState, [
+    ['crankNumber', '0'],
     ['runQueue', '[]'],
     ['vat.nextID', '3'],
     ['vat.names', JSON.stringify(['vatname5', 'Frank'])],
@@ -325,6 +327,7 @@ test('kernelKeeper device names', async t => {
 
   commitCrank();
   checkState(t, getState, [
+    ['crankNumber', '0'],
     ['runQueue', '[]'],
     ['vat.nextID', '1'],
     ['vat.names', '[]'],
@@ -467,6 +470,7 @@ test('kernelKeeper promises', async t => {
   // all the subscriber/queue stuff should be gone
   commitCrank();
   checkState(t, getState, [
+    ['crankNumber', '0'],
     ['device.nextID', '7'],
     ['vat.nextID', '1'],
     ['vat.names', '[]'],

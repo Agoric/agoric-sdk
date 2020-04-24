@@ -866,6 +866,7 @@ test('transcript', async t => {
         response: null,
       },
     ],
+    crankNumber: 1,
   });
 
   t.end();

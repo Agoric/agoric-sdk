@@ -90,7 +90,11 @@ export default function makeVatManager(
 
   let currentEntry;
   function transcriptStartDispatch(d) {
-    currentEntry = { d, syscalls: [] };
+    currentEntry = {
+      d,
+      syscalls: [],
+      crankNumber: kernelKeeper.getCrankNumber(),
+    };
   }
   function transcriptAddSyscall(d, response) {
     if (currentEntry) {

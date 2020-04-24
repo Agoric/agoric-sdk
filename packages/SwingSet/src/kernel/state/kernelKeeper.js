@@ -112,6 +112,15 @@ export default function makeKernelKeeper(storage) {
     storage.set('initialized', true);
   }
 
+  function getCrankNumber() {
+    return Nat(Number(getRequired('crankNumber')));
+  }
+
+  function incrementCrankNumber() {
+    const crankNumber = Nat(Number(getRequired('crankNumber')));
+    storage.set('crankNumber', `${crankNumber + 1}`);
+  }
+
   function createStartingKernelState() {
     storage.set('vat.names', '[]');
     storage.set('vat.nextID', JSON.stringify(FIRST_VAT_ID));
@@ -121,6 +130,7 @@ export default function makeKernelKeeper(storage) {
     storage.set('kd.nextID', JSON.stringify(FIRST_DEVNODE_ID));
     storage.set('kp.nextID', JSON.stringify(FIRST_PROMISE_ID));
     storage.set('runQueue', JSON.stringify([]));
+    storage.set('crankNumber', '0');
   }
 
   function addKernelObject(ownerID) {
@@ -507,6 +517,9 @@ export default function makeKernelKeeper(storage) {
     getInitialized,
     setInitialized,
     createStartingKernelState,
+
+    getCrankNumber,
+    incrementCrankNumber,
 
     ownerOfKernelObject,
     ownerOfKernelDevice,
