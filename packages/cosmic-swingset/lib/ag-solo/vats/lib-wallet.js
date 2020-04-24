@@ -366,7 +366,15 @@ export async function makeWallet(
         return E(cancelObj).cancel();
       });
       idToOfferHandle.set(id, offerHandle);
-      subscribeToNotifier(id, offerHandle);
+      // The offer might have been postponed, or it might have been immediately
+      // consummated. Only subscribe if it was postponed.
+      E(zoe)
+        .isOfferActive(offerHandle)
+        .then(active => {
+          if (active) {
+            subscribeToNotifier(id, offerHandle);
+          }
+        });
 
       // The outcome is most often a string that can be returned, but
       // it could be an object. We don't do anything currently if it
