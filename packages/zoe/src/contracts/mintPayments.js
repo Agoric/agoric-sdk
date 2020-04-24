@@ -26,10 +26,11 @@ export const makeContract = harden(zcf => {
       const tokens1000 = amountMath.make(1000);
       const payment = mint.mintPayment(tokens1000);
 
-      // Let's use a helper function which escrow the payment with
-      // Zoe, and reallocate to the recipientHandle.
+      // Let's use a helper function which escrows the payment with
+      // Zoe, and reallocates to the recipientHandle.
       return zoeHelpers
         .escrowAndAllocateTo({
+          amount: tokens1000,
           payment,
           keyword: 'Token',
           recipientHandle: offerHandle,

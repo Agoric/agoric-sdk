@@ -217,20 +217,19 @@ export const makeZoeHelpers = (zcf) => {
      * payment to a recipient.
      *
      * @param {Object} obj
+     * @param {Amount} obj.amount
      * @param {Payment} obj.payment
      * @param {String} obj.keyword
      * @param {Handle} obj.recipientHandle
      * @returns {Promise<undefined>}
      *
      */
-    escrowAndAllocateTo: ({ payment, keyword, recipientHandle }) => {
+    escrowAndAllocateTo: ({ amount, payment, keyword, recipientHandle }) => {
       // We will create a temporary offer to be able to escrow our payment
       // with Zoe.
       let tempHandle;
 
       const amountMath = zcf.getAmountMaths(harden([keyword]))[keyword];
-      const { issuerKeywordRecord } = zcf.getInstanceRecord();
-      const issuer = issuerKeywordRecord[keyword];
 
       // We need to make an invite and store the offerHandle of that
       // invite for future use.
@@ -239,47 +238,43 @@ export const makeZoeHelpers = (zcf) => {
       );
       // To escrow the payment, we must get the Zoe Service facet and
       // make an offer
-      return E(issuer)
-        .getAmountOf(payment)
-        .then(amount => {
-          const proposal = harden({ give: { [keyword]: amount } });
-          const payments = harden({ [keyword]: payment });
-          return zcf
-            .getZoeService()
-            .offer(contractSelfInvite, proposal, payments)
-            .then(() => {
-              // At this point, the temporary offer has the amount from the
-              // payment but nothing else. The recipient offer may have any
-              // allocation, so we can't assume the allocation is currently empty for this
-              // keyword.
-              const [recipientAlloc, tempAlloc] = zcf.getCurrentAllocations(
-                harden([recipientHandle, tempHandle]),
-                harden([keyword]),
-              );
+      const proposal = harden({ give: { [keyword]: amount } });
+      const payments = harden({ [keyword]: payment });
+      return zcf
+        .getZoeService()
+        .offer(contractSelfInvite, proposal, payments)
+        .then(() => {
+          // At this point, the temporary offer has the amount from the
+          // payment but nothing else. The recipient offer may have any
+          // allocation, so we can't assume the allocation is currently empty for this
+          // keyword.
+          const [recipientAlloc, tempAlloc] = zcf.getCurrentAllocations(
+            harden([recipientHandle, tempHandle]),
+            harden([keyword]),
+          );
 
-              // Add the tempAlloc for the keyword to the recipientAlloc.
-              recipientAlloc[keyword] = amountMath.add(
-                recipientAlloc[keyword],
-                tempAlloc[keyword],
-              );
+          // Add the tempAlloc for the keyword to the recipientAlloc.
+          recipientAlloc[keyword] = amountMath.add(
+            recipientAlloc[keyword],
+            tempAlloc[keyword],
+          );
 
-              // Set the temporary offer allocation to empty.
-              tempAlloc[keyword] = amountMath.getEmpty();
+          // Set the temporary offer allocation to empty.
+          tempAlloc[keyword] = amountMath.getEmpty();
 
-              // Actually reallocate the amounts. Note that only the amounts
-              // for `keyword` are reallocated.
-              zcf.reallocate(
-                harden([tempHandle, recipientHandle]),
-                harden([tempAlloc, recipientAlloc]),
-                harden([keyword]),
-              );
+          // Actually reallocate the amounts. Note that only the amounts
+          // for `keyword` are reallocated.
+          zcf.reallocate(
+            harden([tempHandle, recipientHandle]),
+            harden([tempAlloc, recipientAlloc]),
+            harden([keyword]),
+          );
 
-              // Complete the temporary offerHandle
-              zcf.complete([tempHandle]);
+          // Complete the temporary offerHandle
+          zcf.complete([tempHandle]);
 
-              // Now, the temporary offer no longer exists, but the recipient
-              // offer is allocated the value of the payment.
-            });
+          // Now, the temporary offer no longer exists, but the recipient
+          // offer is allocated the value of the payment.
         });
     },
   });
