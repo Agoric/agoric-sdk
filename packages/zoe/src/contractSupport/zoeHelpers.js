@@ -212,7 +212,17 @@ export const makeZoeHelpers = (zcf) => {
         });
         zoeService.offer(invite);
       }),
-
+    /**
+     * Escrow a payment with Zoe and reallocate the amount of the
+     * payment to a recipient.
+     *
+     * @param {Object} obj
+     * @param {Payment} obj.payment
+     * @param {String} obj.keyword
+     * @param {Handle} obj.recipientHandle
+     * @returns {Promise<undefined>}
+     *
+     */
     escrowAndAllocateTo: ({ payment, keyword, recipientHandle }) => {
       // We will create a temporary offer to be able to escrow our payment
       // with Zoe.
