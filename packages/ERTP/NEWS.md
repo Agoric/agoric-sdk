@@ -1,5 +1,11 @@
 User-visible changes in ERTP:
 
+## Release v0.5.0 (26-Mar-2020)
+
+Changed most ERTP methods to now accept promises for payments. The
+only method that does not accept a promise for a payment is `deposit`,
+which only accepts payments.
+
 ## Release v0.4.0 (6-Mar-2020)
 
 * We added the concept of a brand, because the assay (renamed to
