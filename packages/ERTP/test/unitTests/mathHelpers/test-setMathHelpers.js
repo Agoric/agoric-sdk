@@ -10,7 +10,7 @@ import makeAmountMath from '../../../src/amountMath';
 
 const mockBrand = harden({
   isMyIssuer: () => false,
-  allegedName: () => 'mock',
+  getAllegedName: () => 'mock',
 });
 
 const amountMath = makeAmountMath(mockBrand, 'set');

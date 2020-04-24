@@ -2,7 +2,7 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 
-import { mustBeSameStructure, mustBeComparable } from '@agoric/same-structure';
+import { mustBeComparable } from '@agoric/same-structure';
 import mathHelpersLib from './mathHelpersLib';
 
 /**
@@ -186,7 +186,10 @@ function makeAmountMath(brand, mathHelpersName) {
         allegedBrand !== undefined,
         details`alleged brand is undefined. Did you pass an extent rather than an amount?`,
       );
-      mustBeSameStructure(brand, allegedBrand, 'Unrecognized brand');
+      assert(
+        brand === allegedBrand,
+        details`the brand in the allegedAmount in 'coerce' didn't match the amountMath brand`,
+      );
       // Will throw on inappropriate extent
       return amountMath.make(extent);
     },

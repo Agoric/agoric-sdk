@@ -10,7 +10,7 @@ import makeAmountMath from '../../../src/amountMath';
 
 const mockBrand = harden({
   isMyIssuer: () => false,
-  allegedName: () => 'mock',
+  getAllegedName: () => 'mock',
 });
 
 const amountMath = makeAmountMath(mockBrand, 'nat');
@@ -56,8 +56,11 @@ test('natMathHelpers', t => {
       `coerce can take an amount`,
     );
     t.throws(
-      () => coerce(harden({ brand: {}, extent: 4 })),
-      /Unrecognized brand/,
+      () =>
+        coerce(
+          harden({ brand: { getAllegedName: () => 'somename' }, extent: 4 }),
+        ),
+      /the brand in the allegedAmount in 'coerce' didn't match the amountMath brand/,
       `coerce can't take the wrong brand`,
     );
     t.throws(
