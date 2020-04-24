@@ -67,16 +67,35 @@ export const makeContract = harden(zcf => {
     updater.updateState(getBookOrders());
   }
 
+  // If there's an existing offer that this offer is a match for, make the trade
+  // and return the handle for the matched offer. If not, return undefined, so
+  // the caller can know to add the new offer to the book.
   function swapIfCanTrade(offerHandles, offerHandle) {
     for (const iHandle of offerHandles) {
       if (canTradeWith(offerHandle, iHandle)) {
-        const swapResult = swap(offerHandle, iHandle);
-        bookOrdersChanged();
-        return swapResult;
+        swap(offerHandle, iHandle);
+        // return handle to remove
+        return iHandle;
       }
     }
-    bookOrdersChanged();
-    return defaultAcceptanceMsg;
+    return undefined;
+  }
+
+  // try to swap offerHandle with one of the counterOffers. If it works, remove
+  // the matching offer and return the remaining counterOffers. If there's no
+  // matching offer, add the offerHandle to the coOffers, and return the
+  // unmodified counterOfffers
+  function swapIfCanTradeAndUpdateBook(counterOffers, coOffers, offerHandle) {
+    const handle = swapIfCanTrade(counterOffers, offerHandle);
+    if (handle) {
+      // remove the matched offer.
+      counterOffers = counterOffers.filter(value => value !== handle);
+    } else {
+      // Save the order in the book
+      coOffers.push(offerHandle);
+    }
+
+    return counterOffers;
   }
 
   const exchangeOfferHook = offerHandle => {
@@ -89,20 +108,24 @@ export const makeContract = harden(zcf => {
       want: { Price: null },
     });
     if (checkIfProposal(offerHandle, sellAssetForPrice)) {
-      // Save the valid offer and try to match
-      sellOfferHandles.push(offerHandle);
-      buyOfferHandles = [...zcf.getOfferStatuses(buyOfferHandles).active];
-      return swapIfCanTrade(buyOfferHandles, offerHandle);
+      buyOfferHandles = swapIfCanTradeAndUpdateBook(
+        buyOfferHandles,
+        sellOfferHandles,
+        offerHandle,
+      );
       /* eslint-disable no-else-return */
     } else if (checkIfProposal(offerHandle, buyAssetForPrice)) {
-      // Save the valid offer and try to match
-      buyOfferHandles.push(offerHandle);
-      sellOfferHandles = [...zcf.getOfferStatuses(sellOfferHandles).active];
-      return swapIfCanTrade(sellOfferHandles, offerHandle);
+      sellOfferHandles = swapIfCanTradeAndUpdateBook(
+        sellOfferHandles,
+        buyOfferHandles,
+        offerHandle,
+      );
     } else {
       // Eject because the offer must be invalid
       return rejectOffer(offerHandle);
     }
+    bookOrdersChanged();
+    return defaultAcceptanceMsg;
   };
 
   const makeExchangeInvite = () =>
