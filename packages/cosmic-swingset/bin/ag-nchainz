@@ -11,6 +11,8 @@
 set -e
 progname=$(basename -- "$0")
 
+trap 'kill $(jobs -p) 2>/dev/null' EXIT 
+
 BASE_PORT=8000
 NUM_SOLOS=1
 
@@ -59,9 +61,10 @@ testnet)
       ag-solo 1000uag
 	done
 	# $thisdir/../../deployment/set-json.js $n0d/config/genesis.json --agoric-genesis-overrides
-  for node in `ls -d $chainid/n[1-9]* 2>/dev/null`; do
+  for node in `ls -d $chainid/n[1-9]* 2>/dev/null || :`; do
     cp $n0d/config/genesis.json $node/$DAEMON/config/genesis.json
   done
+  exit 0
   ;;
 start-daemon)
   BASEDIR=$1
@@ -73,6 +76,7 @@ start-daemon)
   done
   echo "Starting BOOT_ADDRESS=$ba $DAEMON ${1+"$@"}"
   DEBUG=agoric ROLE=two_chain BOOT_ADDRESS=$ba $DAEMON ${1+"$@"}
+  exit 0
   ;;
 
 start-solos)
@@ -100,8 +104,9 @@ start-solos)
     ) >>nchainz/logs/$log 2>&1 &
   done
   sleep 2
-  echo "Waiting for all solos (Hit Control-C to exit)..."
+  echo "Waiting for all ${1+"$@ "}solos (Hit Control-C to exit)..."
   wait
+  exit 0
   ;;
 *)
   echo 1>&2 "$progname: unrecognized command \`$COMMAND'"

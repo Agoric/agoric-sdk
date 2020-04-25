@@ -6,8 +6,8 @@ require (
 	github.com/99designs/keyring v1.1.4 // indirect
 	github.com/Agoric/agoric-sdk v0.0.0-00010101000000-000000000000 // indirect
 	github.com/bartekn/go-bip39 v0.0.0-20171116152956-a05967ea095d // indirect
-  github.com/cosmos/cosmos-sdk v0.34.4-0.20200422222342-f6e9ee762358
-  github.com/gibson042/canonicaljson-go v1.0.3 // indirect
+	github.com/cosmos/cosmos-sdk v0.34.4-0.20200423194215-1cd1d088df05
+	github.com/gibson042/canonicaljson-go v1.0.3 // indirect
 	github.com/golang/mock v1.4.3 // indirect
 	github.com/gorilla/handlers v1.4.2 // indirect
 	github.com/gorilla/mux v1.7.4

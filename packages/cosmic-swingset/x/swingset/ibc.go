@@ -102,7 +102,7 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 		}
 
 	case "bindPort":
-		err = ctx.Keeper.BindPort(ctx.Context, msg.PortID, ch.ibcModule)
+		err = ctx.Keeper.BindPort(ctx.Context, msg.PortID)
 		if err == nil {
 			ret = "true"
 		}
