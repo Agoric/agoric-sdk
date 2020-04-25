@@ -37,22 +37,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
   };
 
-  const linkHtml = async name => {
-    log(chalk.green('linking html directories'));
-    // const dappHtml = `_agstate/agoric-servers/${name}/dapp-html`;
-    const htmlWallet = `_agstate/agoric-servers/${name}/html/wallet`;
-    // await Promise.all([fs.unlink(dappHtml).catch(() => {}), fs.unlink(htmlWallet).catch(() => {})]);
-    await Promise.all([
-      // fs.symlink('../../../ui/build', dappHtml).catch(() => {}),
-      fs
-        .unlink(htmlWallet)
-        .catch(_ => {})
-        .then(_ =>
-          fs.symlink('../../../../_agstate/agoric-wallet', htmlWallet),
-        ),
-    ]);
-  };
-
   let agSolo;
   let agSetupSolo;
   let agServer;
@@ -101,7 +85,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         },
       );
     }
-    await linkHtml(profileName);
 
     if (!popts.restart) {
       // Don't actually run the chain.
@@ -154,8 +137,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       ]);
 
     if (!(await exists(agServer))) {
-      const status =
-        (await setupRun('--no-restart')) || (await linkHtml(profileName));
+      const status = await setupRun('--no-restart');
       if (status) {
         return status;
       }
@@ -206,8 +188,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       );
 
     if (!(await exists(agServer))) {
-      const status =
-        (await setupRun('--no-restart')) || (await linkHtml(profileName));
+      const status = await setupRun('--no-restart');
       if (status) {
         return status;
       }
