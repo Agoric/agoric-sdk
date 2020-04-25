@@ -74,9 +74,9 @@ const makeOfferTable = () => {
           return table.delete(offerHandle);
         });
       },
-      updateAmounts: (offerHandles, newAmountKeywordRecords) =>
+      updateAmounts: (offerHandles, newAllocations) =>
         offerHandles.map((offerHandle, i) => {
-          const newAmountKeywordRecord = newAmountKeywordRecords[i];
+          const newAmountKeywordRecord = newAllocations[i];
           const { updater } = table.get(offerHandle);
           updater.updateState(newAmountKeywordRecord);
           return table.update(offerHandle, {
