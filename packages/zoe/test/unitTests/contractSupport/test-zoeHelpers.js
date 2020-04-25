@@ -737,7 +737,7 @@ test('ZoeHelpers makeEmptyOffer', async t => {
             return Promise.resolve();
           },
         }),
-      makeInvitation: (offerHook, _) => {
+      makeInvitation: offerHook => {
         offerHook(offerHandle);
         return 'anInvite';
       },

@@ -89,8 +89,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         details`source code didn't match at "asset: give.Asset,"`,
       );
       assert(
-        installationCode.includes('makeFirstOfferInvite'),
-        details`source code didn't match at "makeFirstOfferInvite"`,
+        installationCode.includes('firstOfferExpected'),
+        details`source code didn't match at "firstOfferExpected"`,
       );
       assert(
         installationCode.includes('makeMatchingInvite'),

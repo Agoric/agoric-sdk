@@ -1,9 +1,6 @@
 // @ts-check
 import rawHarden from '@agoric/harden';
 
-// Eventually will be importable from '@agoric/zoe-contract-support'
-import { makeZoeHelpers } from '../../../src/contractSupport';
-
 // TODO: Until we have a version of harden that exports its type.
 const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
@@ -12,19 +9,12 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  * @type {import('@agoric/zoe').MakeContract} zoe - the contract facet of zoe
  */
 export const makeContract = harden(zcf => {
-  const { inviteAnOffer } = makeZoeHelpers(zcf);
-
   const refundOfferHook = offerHandle => {
     zcf.complete(harden([offerHandle]));
     return `The offer was accepted`;
   };
   const makeRefundInvite = () =>
-    inviteAnOffer({
-      offerHook: refundOfferHook,
-      customProperties: {
-        inviteDesc: 'getRefund',
-      },
-    });
+    zcf.makeInvitation(refundOfferHook, 'getRefund');
 
   return harden({
     // should be makeRefundInvite(). Intentionally wrong to provoke an error.

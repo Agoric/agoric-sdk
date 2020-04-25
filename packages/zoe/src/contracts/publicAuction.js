@@ -15,7 +15,7 @@ export const makeContract = harden(zcf => {
     rejectOffer,
     canTradeWith,
     assertKeywords,
-    inviteAnOffer,
+    checkHook,
   } = makeZoeHelpers(zcf);
 
   let {
@@ -56,20 +56,22 @@ export const makeContract = harden(zcf => {
     return defaultAcceptanceMsg;
   };
 
-  const makeBidderInvite = () => {
-    return inviteAnOffer({
-      offerHook: bidderOfferHook,
-      customProperties: {
-        inviteDesc: 'bid',
-        auctionedAssets,
-        minimumBid,
-      },
-      expected: {
-        give: { Bid: null },
-        want: { Asset: null },
-      },
-    });
-  };
+  const bidderOfferExpected = harden({
+    give: { Bid: null },
+    want: { Asset: null },
+  });
+
+  const makeBidderInvite = () =>
+    zcf.makeInvitation(
+      checkHook(bidderOfferHook, bidderOfferExpected),
+      'bid',
+      harden({
+        customProperties: {
+          auctionedAssets,
+          minimumBid,
+        },
+      }),
+    );
 
   const sellerOfferHook = offerHandle => {
     if (auctionedAssets) {
@@ -83,18 +85,16 @@ export const makeContract = harden(zcf => {
     return defaultAcceptanceMsg;
   };
 
-  const makeSellerInvite = () => {
-    return inviteAnOffer({
-      offerHook: sellerOfferHook,
-      customProperties: {
-        inviteDesc: 'sellAssets',
-      },
-      expected: {
-        give: { Asset: null },
-        want: { Bid: null },
-      },
-    });
-  };
+  const sellerOfferExpected = harden({
+    give: { Asset: null },
+    want: { Bid: null },
+  });
+
+  const makeSellerInvite = () =>
+    zcf.makeInvitation(
+      checkHook(sellerOfferHook, sellerOfferExpected),
+      'sellAssets',
+    );
 
   return harden({
     invite: makeSellerInvite(),

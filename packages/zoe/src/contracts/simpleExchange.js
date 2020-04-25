@@ -27,7 +27,6 @@ export const makeContract = harden(zcf => {
     canTradeWith,
     getActiveOffers,
     assertKeywords,
-    inviteAnOffer,
   } = makeZoeHelpers(zcf);
 
   assertKeywords(harden(['Asset', 'Price']));
@@ -129,12 +128,7 @@ export const makeContract = harden(zcf => {
   };
 
   const makeExchangeInvite = () =>
-    inviteAnOffer({
-      offerHook: exchangeOfferHook,
-      customProperties: {
-        inviteDesc: 'exchange',
-      },
-    });
+    zcf.makeInvitation(exchangeOfferHook, 'exchange');
 
   return harden({
     invite: makeExchangeInvite(),

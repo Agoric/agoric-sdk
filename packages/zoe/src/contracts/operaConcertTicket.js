@@ -11,16 +11,19 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
   - Smart Contract:
     - mints the tickets
     - provides the seats
-  - Auditorium (unique contract seat, usually taken by the contract creator): the person hosting
+  - Auditorium (unique contract seat, usually taken by the contract creator):
+    the person hosting
   the Opera show, selling the tickets and getting the payment back
   - Ticket buyers (contract seat created on demand):
     - can see the available opera show seats
     - can consult the terms
     - can redeem the zoe invite with the proper payment to get the ticket back
 
-  ERTP and Zoe are considered to be the most highly trusted pieces of code by everyone
+  ERTP and Zoe are considered to be the most highly trusted pieces of code by
+  everyone
   They are more trusted than the code of this contract
-  As a consequence, they are going to be leveraged as much as possible by this contract
+  As a consequence, they are going to be leveraged as much as possible by this
+  contract
   to increase its trustworthiness and by the contract users
 
 */
@@ -43,16 +46,21 @@ export const makeContract = harden(zcf => {
   let auditoriumOfferHandle;
 
   return zcf.addNewIssuer(issuer, 'Ticket').then(() => {
-    // create Zoe helpers after zcf.addNewIssuer because of https://github.com/Agoric/agoric-sdk/issues/802
-    const { rejectOffer } = makeZoeHelpers(zcf);
+    // create Zoe helpers after zcf.addNewIssuer because of
+    // https://github.com/Agoric/agoric-sdk/issues/802
+    const { rejectOffer, checkHook } = makeZoeHelpers(zcf);
 
     // Mint tickets inside the contract
-    // In a more realistic contract, the Auditorium would certainly mint the tickets themselves
-    // but because of a current technical limitation when running the Agoric stack on a blockchain,
-    // minting has to happen inside a Zoe contract https://github.com/Agoric/agoric-sdk/issues/821
+    // In a more realistic contract, the Auditorium would certainly mint the
+    // tickets themselves
+    // but because of a current technical limitation when running the Agoric
+    // stack on a blockchain,
+    // minting has to happen inside a Zoe contract
+    // https://github.com/Agoric/agoric-sdk/issues/821
 
     // Mint the tickets ahead-of-time (instead of on-demand)
-    // This way, they can be passed to Zoe + ERTP who will be doing the bookkeeping
+    // This way, they can be passed to Zoe + ERTP who will be doing the
+    // bookkeeping
     // of which tickets have been sold and which tickets are still for sale
     const ticketsAmount = ticketAmountMath.make(
       harden(
@@ -74,10 +82,14 @@ export const makeContract = harden(zcf => {
     const internalTicketSupplyOfferHook = offerHandle =>
       (internalTicketSupplyHandle = offerHandle);
 
+    const supplyExpected = harden({ give: { Ticket: null } });
+
     const contractSelfInvite = zcf.makeInvitation(
-      internalTicketSupplyOfferHook,
+      checkHook(internalTicketSupplyOfferHook, supplyExpected),
+      'contract self invite',
     );
-    // the contract creates an offer {give: tickets, want: nothing} with the tickets
+    // the contract creates an offer {give: tickets, want: nothing} with the
+    // tickets
     return zcf
       .getZoeService()
       .offer(
@@ -88,7 +100,8 @@ export const makeContract = harden(zcf => {
       .then(() => {
         const auditoriumOfferHook = offerHandle => {
           auditoriumOfferHandle = offerHandle;
-          // the contract transfers tickets to the auditorium leveraging Zoe offer safety
+          // the contract transfers tickets to the auditorium leveraging Zoe
+          // offer safety
           zcf.reallocate(
             [internalTicketSupplyHandle, auditoriumOfferHandle],
             [
@@ -159,14 +172,24 @@ export const makeContract = harden(zcf => {
           }
         };
 
+        const buyTicketExpected = harden({
+          want: { Ticket: null },
+          give: { Money: null },
+        });
+
         return harden({
-          invite: zcf.makeInvitation(auditoriumOfferHook),
+          invite: zcf.makeInvitation(auditoriumOfferHook, 'auditorium'),
           publicAPI: {
-            makeBuyerInvite: () => zcf.makeInvitation(buyTicketOfferHook),
+            makeBuyerInvite: () =>
+              zcf.makeInvitation(
+                checkHook(buyTicketOfferHook, buyTicketExpected),
+                'buy ticket',
+              ),
             getTicketIssuer: () => issuer,
             getAvailableTickets() {
-              // Because of a technical limitation in @agoric/marshal, an array of extents
-              // is better than a Map https://github.com/Agoric/agoric-sdk/issues/838
+              // Because of a technical limitation in @agoric/marshal, an array
+              // of extents is better than a Map
+              // https://github.com/Agoric/agoric-sdk/issues/838
               return zcf.getCurrentAllocation(auditoriumOfferHandle).Ticket
                 .extent;
             },

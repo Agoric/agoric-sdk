@@ -223,7 +223,8 @@ export const makeContract = harden(zcf => {
   };
 
   const addLiquidityHook = offerHandle => {
-    // Get the brand of the secondary token so we can identify the liquidity pool.
+    // Get the brand of the secondary token so we can identify the liquidity
+    // pool.
     const secondaryTokenBrand = getSecondaryBrand(
       harden({
         offerHandle,
@@ -283,7 +284,10 @@ export const makeContract = harden(zcf => {
     let tempLiqHandle;
 
     const tempLiqOfferHook = tmpHandle => (tempLiqHandle = tmpHandle);
-    const tempLiqInvite = zcf.makeInvitation(tempLiqOfferHook);
+    const tempLiqInvite = zcf.makeInvitation(
+      tempLiqOfferHook,
+      'temporary liquidity offer',
+    );
     const zoeService = zcf.getZoeService();
     // We update the liquidityTokenSupply before the next turn
     liquidityTable.update(secondaryTokenBrand, {
@@ -424,7 +428,8 @@ export const makeContract = harden(zcf => {
     });
     rejectIfNotProposal(offerHandle, expected);
 
-    // we could be swapping (1) central to secondary, (2) secondary to central, or (3) secondary to secondary.
+    // we could be swapping (1) central to secondary, (2) secondary to central,
+    // or (3) secondary to secondary.
 
     // 1) central to secondary
     if (brandIn === centralTokenBrand) {
@@ -524,9 +529,7 @@ export const makeContract = harden(zcf => {
   };
 
   const makeAddLiquidityInvite = () =>
-    zcf.makeInvitation(addLiquidityHook, {
-      inviteDesc: 'multipool autoswap add liquidity',
-    });
+    zcf.makeInvitation(addLiquidityHook, 'multipool autoswap add liquidity');
 
   return harden({
     invite: makeAddLiquidityInvite(),
@@ -619,15 +622,10 @@ export const makeContract = harden(zcf => {
           );
         }
       },
-      makeSwapInvite: () =>
-        zcf.makeInvitation(swapHook, {
-          inviteDesc: 'autoswap swap',
-        }),
+      makeSwapInvite: () => zcf.makeInvitation(swapHook, 'autoswap swap'),
       makeAddLiquidityInvite,
       makeRemoveLiquidityInvite: () =>
-        zcf.makeInvitation(removeLiquidityHook, {
-          inviteDesc: 'autoswap remove liquidity',
-        }),
+        zcf.makeInvitation(removeLiquidityHook, 'autoswap remove liquidity'),
     },
   });
 });
