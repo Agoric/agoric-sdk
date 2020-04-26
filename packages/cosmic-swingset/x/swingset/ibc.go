@@ -21,13 +21,16 @@ type channelHandler struct {
 }
 
 type channelMessage struct { // comes from swingset's IBC handler
-	Type            string              `json:"type"` // IBC_METHOD
-	Method          string              `json:"method"`
-	PortID          string              `json:"portID"`
-	ChannelID       string              `json:"channelID"`
-	Packet          channeltypes.Packet `json:"packet"`
-	RelativeTimeout uint64              `json:"relativeTimeout"`
-	Ack             []byte              `json:"ack"`
+	Type            string                `json:"type"` // IBC_METHOD
+	Method          string                `json:"method"`
+	PortID          string                `json:"portID"`
+	ChannelID       string                `json:"channelID"`
+	Packet          channeltypes.Packet   `json:"packet"`
+	RelativeTimeout uint64                `json:"relativeTimeout"`
+	Order           channelexported.Order `json:"order"`
+	Hops            []string              `json:"hops"`
+	Version         string                `json:"version"`
+	Ack             []byte                `json:"ack"`
 }
 
 // DefaultRouter is a temporary hack until cosmos-sdk implements its features FIXME.
@@ -91,6 +94,17 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 
 	case "packetExecuted":
 		err = ctx.Keeper.PacketExecuted(ctx.Context, msg.Packet, msg.Ack)
+		if err == nil {
+			ret = "true"
+		}
+
+	case "channelOpenInit":
+		err = ctx.Keeper.ChanOpenInit(
+			ctx.Context, msg.Order, msg.Hops,
+			msg.Packet.SourcePort, msg.Packet.SourceChannel,
+			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
+			msg.Version,
+		)
 		if err == nil {
 			ret = "true"
 		}

@@ -8,13 +8,6 @@ const END_BLOCK = 'END_BLOCK';
 const COMMIT_BLOCK = 'COMMIT_BLOCK';
 const IBC_EVENT = 'IBC_EVENT';
 
-// This works for both *intArray, string, and Buffer.
-const getBytesToBase64 = data => Buffer.from(data).toString('base64');
-
-// FIXME: use an immutable Uint8Array.
-const getBase64ToBytes = data64 =>
-  Uint8Array.from(Buffer.from(data64, 'base64'));
-
 export default function makeBlockManager(
   {
     deliverInbound,

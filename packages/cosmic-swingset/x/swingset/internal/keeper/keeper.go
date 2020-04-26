@@ -167,10 +167,24 @@ func (k Keeper) GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (
 
 // ChanOpenInit defines a wrapper function for the channel Keeper's function
 // in order to expose it to the SwingSet IBC handler.
-func (k Keeper) ChanOpenInit(ctx sdk.Context, order channelexported.Order, connectionHops []string, portID, channelID string,
-	portCap *capability.Capability, counterparty channeltypes.Counterparty, version string,
-) (*capability.Capability, error) {
-	return k.channelKeeper.ChanOpenInit(ctx, order, connectionHops, portID, channelID, portCap, counterparty, version)
+func (k Keeper) ChanOpenInit(ctx sdk.Context, order channelexported.Order, connectionHops []string,
+	portID, channelID, rPortID, rChannelID, version string,
+) error {
+	capName := porttypes.PortPath(portID)
+	portCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
+	if !ok {
+		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "could not retrieve port capability at: %s", capName)
+	}
+	counterparty := channeltypes.Counterparty{
+		ChannelID: rChannelID,
+		PortID:    rPortID,
+	}
+	chanCap, err := k.channelKeeper.ChanOpenInit(ctx, order, connectionHops, portID, channelID, portCap, counterparty, version)
+	if err != nil {
+		return err
+	}
+	chanCapName := ibctypes.ChannelCapabilityPath(portID, channelID)
+	return k.ClaimCapability(ctx, chanCap, chanCapName)
 }
 
 // SendPacket defines a wrapper function for the channel Keeper's function

@@ -58,11 +58,14 @@ export function makeBridgeManager(E, D, bridgeDevice) {
     if (!bridgeDevice) {
       throw Error(`bridge device not yet connected`);
     }
-    const retval = D(bridgeDevice).callOutbound(dstID, obj);
+    const retobj = D(bridgeDevice).callOutbound(dstID, obj);
     // note: *we* get this return value synchronously, but any callers (in
     // separate vats) only get a Promise, and will receive the value in some
     // future turn
-    return retval;
+    if (retobj && retobj.error) {
+      throw Error(retobj.error);
+    }
+    return retobj;
   }
 
   // We now manage the device.

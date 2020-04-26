@@ -10,8 +10,8 @@ package main
 import "C"
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/lib/daemon"
@@ -94,14 +94,26 @@ func ReplyToGo(replyPort C.int, isError C.int, str C.Body) C.int {
 	return C.int(0)
 }
 
+type errorWrapper struct {
+	Error string `json:"error"`
+}
+
 //export SendToGo
 func SendToGo(port C.int, str C.Body) C.Body {
 	goStr := C.GoString(str)
 	// fmt.Fprintln(os.Stderr, "Send to Go", goStr)
 	outstr, err := swingset.ReceiveFromController(int(port), goStr)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
-		return C.CString("")
+		// fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
+		ret := errorWrapper{
+			Error: err.Error(),
+		}
+		bytes, err := json.Marshal(&ret)
+		if err != nil {
+			panic(err)
+		}
+		// fmt.Fprintln(os.Stderr, "Marshaled", ret, bytes)
+		outstr = string(bytes)
 	}
 	return C.CString(outstr)
 }
