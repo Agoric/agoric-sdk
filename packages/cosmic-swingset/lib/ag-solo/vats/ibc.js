@@ -199,7 +199,11 @@ export function makeIBCProtocolHandler(
       },
       onReceive,
       async onClose(_conn, _reason, _handler) {
-        await callIBCDevice('channelCloseInit', { channelID, portID });
+        const packet = {
+          source_port: portID,
+          source_channel: channelID,
+        };
+        await callIBCDevice('channelCloseInit', { packet });
         usedChannels.delete(channelID);
         usedChannels.delete(rChannelID);
       },
@@ -251,7 +255,10 @@ export function makeIBCProtocolHandler(
     },
     async onBind(_port, localAddr, _protocolHandler) {
       const portID = localAddrToPortID(localAddr);
-      return callIBCDevice('bindPort', { portID });
+      const packet = {
+        source_port: portID,
+      };
+      return callIBCDevice('bindPort', { packet });
     },
     async onConnect(_port, localAddr, remoteAddr, _protocolHandler) {
       console.warn('IBC onConnect', localAddr, remoteAddr);

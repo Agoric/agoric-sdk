@@ -23,8 +23,6 @@ type channelHandler struct {
 type channelMessage struct { // comes from swingset's IBC handler
 	Type            string                `json:"type"` // IBC_METHOD
 	Method          string                `json:"method"`
-	PortID          string                `json:"portID"`
-	ChannelID       string                `json:"channelID"`
 	Packet          channeltypes.Packet   `json:"packet"`
 	RelativeTimeout uint64                `json:"relativeTimeout"`
 	Order           channelexported.Order `json:"order"`
@@ -110,13 +108,13 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 		}
 
 	case "channelCloseInit":
-		err = ctx.Keeper.ChanCloseInit(ctx.Context, msg.PortID, msg.ChannelID)
+		err = ctx.Keeper.ChanCloseInit(ctx.Context, msg.Packet.SourcePort, msg.Packet.SourceChannel)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "bindPort":
-		err = ctx.Keeper.BindPort(ctx.Context, msg.PortID)
+		err = ctx.Keeper.BindPort(ctx.Context, msg.Packet.SourcePort)
 		if err == nil {
 			ret = "true"
 		}
