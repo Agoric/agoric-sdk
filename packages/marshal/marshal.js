@@ -1,6 +1,110 @@
+// @ts-check
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { isPromise } from '@agoric/produce-promise';
+
+// TODO: Use just 'remote' when we're willing to make a breaking change.
+const REMOTE_STYLE = 'presence';
+
+// TODO, remove the mustPassByPresence alias when we make a breaking change.
+// eslint-disable-next-line no-use-before-define
+export { mustPassByRemote as mustPassByPresence };
+
+/**
+ * This is an interface specification.
+ * For now, it is just a string, but will eventually become something
+ * much richer (anything that pureCopy accepts).
+ * @typedef {string} InterfaceSpec
+ */
+
+/**
+ * @type {WeakMap<Object, InterfaceSpec>}
+ */
+const remotableToInterface = new WeakMap();
+
+/**
+ * Simple semantics, just tell what interface (or undefined) a remotable has.
+ *
+ * @param {*} maybeRemotable the value to check
+ * @returns {InterfaceSpec} the interface specification, or undefined if not a Remotable
+ */
+export function getInterfaceOf(maybeRemotable) {
+  return remotableToInterface.get(maybeRemotable);
+}
+
+/**
+ * Do a deep copy of the object, handling Proxies and recursion.
+ * The resulting copy is guaranteed to be pure data, as well as hardened.
+ * Such a hardened, pure copy cannot be used as a communications path.
+ *
+ * @template T
+ * @param {T} val input value.  NOTE: Must be hardened!
+ * @returns {T} pure, hardened copy
+ */
+function pureCopy(val, already = new WeakMap()) {
+  // eslint-disable-next-line no-use-before-define
+  const passStyle = passStyleOf(val);
+  switch (passStyle) {
+    case 'bigint':
+    case 'boolean':
+    case 'null':
+    case 'number':
+    case 'string':
+    case 'undefined':
+      return val;
+
+    case 'copyArray':
+    case 'copyRecord': {
+      const obj = /** @type {Object} */ (val);
+      if (already.has(obj)) {
+        return already.get(obj);
+      }
+
+      // Create a new identity.
+      const copy = /** @type {T} */ (passStyle === 'copyArray' ? [] : {});
+
+      // Prevent recursion.
+      already.set(obj, copy);
+
+      // Make a deep copy on the new identity.
+      // Object.entries(obj) takes a snapshot (even if a Proxy).
+      Object.entries(obj).forEach(([prop, value]) => {
+        copy[prop] = pureCopy(value, already);
+      });
+      return harden(copy);
+    }
+
+    case 'copyError': {
+      const unk = /** @type {unknown} */ (val);
+      const err = /** @type {Error} */ (unk);
+
+      if (already.has(err)) {
+        return already.get(err);
+      }
+
+      const { name, message } = err;
+
+      // eslint-disable-next-line no-use-before-define
+      const EC = getErrorConstructor(`${name}`) || Error;
+      const copy = harden(new EC(`${message}`));
+      already.set(err, copy);
+
+      const unk2 = /** @type {unknown} */ (harden(copy));
+      return /** @type {T} */ (unk2);
+    }
+
+    case REMOTE_STYLE: {
+      throw TypeError(
+        `Input value ${passStyle} cannot be copied as must be passed by reference`,
+      );
+    }
+
+    default:
+      throw TypeError(`Input value ${passStyle} is not recognized as data`);
+  }
+}
+harden(pureCopy);
+export { pureCopy };
 
 // Special property name that indicates an encoding that needs special
 // decoding.
@@ -8,21 +112,18 @@ const QCLASS = '@qclass';
 export { QCLASS };
 
 // objects can only be passed in one of two/three forms:
-// 1: pass-by-presence: all properties (own and inherited) are methods,
+// 1: pass-by-remote: all properties (own and inherited) are methods,
 //    the object itself is of type object, not function
 // 2: pass-by-copy: all string-named own properties are data, not methods
 //    the object must inherit from Object.prototype or null
-// 3: the empty object is pass-by-presence, for identity comparison
-
-// todo: maybe rename pass-by-presence to pass-as-presence, or pass-by-proxy
-// or remote reference
+// 3: the empty object is pass-by-remote, for identity comparison
 
 // all objects must be frozen
 
 // anything else will throw an error if you try to serialize it
 
 // with these restrictions, our remote call/copy protocols expose all useful
-// behavior of these objects: pass-by-presence objects have no other data (so
+// behavior of these objects: pass-by-remote objects have no other data (so
 // there's nothing else to copy), and pass-by-copy objects have no other
 // behavior (so there's nothing else to invoke)
 
@@ -36,7 +137,7 @@ const errorConstructors = new Map([
   ['URIError', URIError],
 ]);
 
-export function getErrorContructor(name) {
+export function getErrorConstructor(name) {
   return errorConstructors.get(name);
 }
 
@@ -47,7 +148,7 @@ function isPassByCopyError(val) {
   }
   const proto = Object.getPrototypeOf(val);
   const { name } = val;
-  const EC = getErrorContructor(name);
+  const EC = getErrorConstructor(name);
   if (!EC || EC.prototype !== proto) {
     throw TypeError(`Must inherit from an error class .prototype ${val}`);
   }
@@ -104,7 +205,7 @@ function isPassByCopyRecord(val) {
   }
   const descList = Object.values(Object.getOwnPropertyDescriptors(val));
   if (descList.length === 0) {
-    // empty non-array objects are pass-by-presence, not pass-by-copy
+    // empty non-array objects are pass-by-remote, not pass-by-copy
     return false;
   }
   for (const desc of descList) {
@@ -119,28 +220,26 @@ function isPassByCopyRecord(val) {
   return true;
 }
 
-export function mustPassByPresence(val) {
+/**
+ * Ensure that val could become a legitimate remotable.  This is used internally both
+ * in the construction of a new remotable and mustPassByRemote.
+ *
+ * @param {*} val The remotable candidate to check
+ */
+function assertCanBeRemotable(val) {
   // throws exception if cannot
-  if (!Object.isFrozen(val)) {
-    throw new Error(`cannot serialize non-frozen objects like ${val}`);
-  }
   if (typeof val !== 'object') {
     throw new Error(`cannot serialize non-objects like ${val}`);
   }
   if (Array.isArray(val)) {
-    throw new Error(`Arrays cannot be pass-by-presence`);
+    throw new Error(`Arrays cannot be pass-by-remote`);
   }
   if (val === null) {
-    throw new Error(`null cannot be pass-by-presence`);
+    throw new Error(`null cannot be pass-by-remote`);
   }
 
   const names = Object.getOwnPropertyNames(val);
   names.forEach(name => {
-    if (name === 'e') {
-      // hack to allow Vows to pass-by-presence
-      // TODO: Make sure .e. is gone. Then get rid of this hack.
-      return;
-    }
     if (typeof val[name] !== 'function') {
       throw new Error(
         `cannot serialize objects with non-methods like the .${name} in ${val}`,
@@ -149,11 +248,24 @@ export function mustPassByPresence(val) {
     }
   });
 
+  // ok!
+}
+
+export function mustPassByRemote(val) {
+  if (!Object.isFrozen(val)) {
+    throw new Error(`cannot serialize non-frozen objects like ${val}`);
+  }
+
+  if (getInterfaceOf(val) === undefined) {
+    // Not a registered Remotable, so check its contents.
+    assertCanBeRemotable(val);
+  }
+
+  // It's not a registered Remotable, so enforce the prototype check.
   const p = Object.getPrototypeOf(val);
   if (p !== null && p !== Object.prototype) {
-    mustPassByPresence(p);
+    mustPassByRemote(p);
   }
-  // ok!
 }
 
 // This is the equality comparison used by JavaScript's Map and Set
@@ -175,7 +287,7 @@ export function sameValueZero(x, y) {
 //   * 'copyRecord' for non-empty records with only data properties
 //   * 'copyArray' for arrays with only data properties
 //   * 'copyError' for instances of Error with only data properties
-//   * 'presence' for non-array objects with only method properties
+//   * REMOTE_STYLE for non-array objects with only method properties
 //   * 'promise' for genuine promises only
 //   * throwing an error on anything else, including thenables.
 // We export passStyleOf so other algorithms can use this module's
@@ -184,6 +296,9 @@ export function passStyleOf(val) {
   const typestr = typeof val;
   switch (typestr) {
     case 'object': {
+      if (getInterfaceOf(val)) {
+        return REMOTE_STYLE;
+      }
       if (val === null) {
         return 'null';
       }
@@ -211,8 +326,8 @@ export function passStyleOf(val) {
       if (isPassByCopyRecord(val)) {
         return 'copyRecord';
       }
-      mustPassByPresence(val);
-      return 'presence';
+      mustPassByRemote(val);
+      return REMOTE_STYLE;
     }
     case 'function': {
       throw new Error(`Bare functions like ${val} are disabled for now`);
@@ -400,7 +515,7 @@ export function makeMarshal(
                 message: `${val.message}`,
               });
             }
-            case 'presence':
+            case REMOTE_STYLE:
             case 'promise': {
               // console.log(`serializeSlot: ${val}`);
               return serializeSlot(val, slots, slotMap);
@@ -419,7 +534,7 @@ export function makeMarshal(
   // to be exported as a local webkey.
   function serialize(val) {
     const slots = [];
-    const slotMap = new Map(); // maps val (proxy or presence) to
+    const slotMap = new Map(); // maps val (promise or remotable) to
     // index of slots[]
     return harden({
       body: JSON.stringify(val, makeReplacer(slots, slotMap)),
@@ -513,7 +628,7 @@ export function makeMarshal(
                 `invalid error message typeof ${typeof rawTree.message}`,
               );
             }
-            const EC = getErrorContructor(`${rawTree.name}`) || Error;
+            const EC = getErrorConstructor(`${rawTree.name}`) || Error;
             return ibidTable.register(harden(new EC(`${rawTree.message}`)));
           }
 
@@ -564,3 +679,89 @@ export function makeMarshal(
     unserialize,
   });
 }
+
+/**
+ * Create and register a Remotable.  After this, getInterfaceOf(remotable)
+ * returns iface.
+ *
+ * // https://github.com/Agoric/agoric-sdk/issues/804
+ *
+ * @param {InterfaceSpec} [iface='Remotable'] The interface specification for the remotable
+ * @param {object} [props={}] Own-properties are copied to the remotable
+ * @param {object} [remotable={}] The object used as the remotable
+ * @returns {object} remotable, modified for debuggability
+ */
+function Remotable(iface = 'Remotable', props = {}, remotable = {}) {
+  iface = pureCopy(harden(iface));
+  const ifaceType = typeof iface;
+
+  // Find the alleged name.
+  if (ifaceType !== 'string') {
+    throw Error(`Interface must be a string, not ${ifaceType}; unimplemented`);
+  }
+
+  // TODO: When iface is richer than just string, we need to get the allegedName
+  // in a different way.
+  const allegedName = iface;
+
+  // Fail fast: check that the unmodified object is able to become a Remotable.
+  assertCanBeRemotable(remotable);
+
+  // Ensure that the remotable isn't already registered.
+  if (remotableToInterface.has(remotable)) {
+    throw Error(`Remotable ${remotable} is already mapped to an interface`);
+  }
+
+  // A prototype for debuggability.
+  const oldRemotableProto = harden(Object.getPrototypeOf(remotable));
+
+  // Fail fast: create a fresh empty object with the old
+  // prototype in order to check it against our rules.
+  mustPassByRemote(harden(Object.create(oldRemotableProto)));
+
+  // Assign the arrow function to a variable to set its .name.
+  const toString = () => `[${allegedName}]`;
+  const remotableProto = harden(
+    Object.create(oldRemotableProto, {
+      toString: {
+        value: toString,
+      },
+      [Symbol.toStringTag]: {
+        value: allegedName,
+      },
+    }),
+  );
+
+  // Take a static copy of the properties.
+  const propEntries = Object.entries(props);
+  const mutateHardenAndCheck = target => {
+    // Add the snapshotted properties.
+    /** @type {PropertyDescriptorMap} */
+    const newProps = {};
+    propEntries.forEach(([prop, value]) => (newProps[prop] = { value }));
+    Object.defineProperties(target, newProps);
+
+    // Set the prototype for debuggability.
+    Object.setPrototypeOf(target, remotableProto);
+    harden(remotableProto);
+
+    harden(target);
+    assertCanBeRemotable(target);
+    return target;
+  };
+
+  // Fail fast: check a fresh remotable to see if our rules fit.
+  const throwawayRemotable = Object.create(oldRemotableProto);
+  mutateHardenAndCheck(throwawayRemotable);
+
+  // Actually finish the new remotable.
+  mutateHardenAndCheck(remotable);
+
+  // COMMITTED!
+  // We're committed, so keep the interface for future reference.
+  remotableToInterface.set(remotable, iface);
+  return remotable;
+}
+
+harden(Remotable);
+export { Remotable };
