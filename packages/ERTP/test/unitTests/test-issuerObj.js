@@ -233,7 +233,7 @@ test('issuer.split bad amount', t => {
     const payment = mint.mintPayment(amountMath.make(1000));
     t.rejects(
       _ => E(issuer).split(payment, otherUnitOps.make(10)),
-      /Unrecognized brand/,
+      /the brand in the allegedAmount in 'coerce' didn't match the amountMath brand/,
       'throws for bad amount',
     );
   } catch (e) {
