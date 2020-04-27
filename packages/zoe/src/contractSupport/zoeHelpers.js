@@ -8,7 +8,7 @@ import { HandledPromise } from '@agoric/eventual-send';
  * @typedef {import('../zoe').Invite} Invite
  * @typedef {import('../zoe').OfferHook} OfferHook
  * @typedef {import('../zoe').CustomProperties} CustomProperties
- * @typedef {any} TODO Needs to be typed
+ * @typedef {import('../zoe').ContractFacet} ContractFacet
  */
 
 export const defaultRejectMsg = `The offer was invalid. Please check your refund.`;
@@ -17,8 +17,14 @@ export const defaultAcceptanceMsg = `The offer has been accepted. Once the contr
 const getKeys = obj => harden(Object.getOwnPropertyNames(obj || {}));
 const getKeysSorted = obj =>
   harden(Object.getOwnPropertyNames(obj || {}).sort());
-
-export const makeZoeHelpers = zcf => {
+/**
+ * @function makeZoeHelpers - makes an object with helper functions useful to zoe contracts.
+ *
+ * @param {ContractFacet} zcf
+ */
+// zcf only picks up the type if the param is in parens, which eslint dislikes
+// eslint-disable-next-line
+export const makeZoeHelpers = (zcf) => {
   const zoeService = zcf.getZoeService();
 
   const rejectOffer = (offerHandle, msg = defaultRejectMsg) => {
