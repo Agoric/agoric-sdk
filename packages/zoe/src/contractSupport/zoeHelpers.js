@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { HandledPromise, E } from '@agoric/eventual-send';
+import { HandledPromise } from '@agoric/eventual-send';
 
 /**
  * @typedef {import('../zoe').OfferHandle} OfferHandle
