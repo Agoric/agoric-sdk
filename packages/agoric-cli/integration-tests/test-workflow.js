@@ -125,6 +125,28 @@ test('workflow', async t => {
       t.equals(done, 0, `deploy successful before timeout`);
       clearTimeout(timeout);
 
+      for (const [suffix, code] of [
+        ['/notthere', 404],
+        ['', 200],
+        ['/wallet', 301],
+        ['/wallet/', 200],
+      ]) {
+        let urlResolve;
+        const url = `http://127.0.0.1:${PORT}${suffix}`;
+        const urlP = new Promise(resolve => (urlResolve = resolve));
+        const urlReq = request(url, res => urlResolve(res.statusCode));
+        urlReq.setTimeout(2000);
+        urlReq.on('error', err =>
+          urlResolve(`Cannot connect to ${url}: ${err}`),
+        );
+        urlReq.end();
+        const urlTimeout = setTimeout(urlResolve, 3000, 'timeout');
+        // eslint-disable-next-line no-await-in-loop
+        const urlDone = await urlP;
+        clearTimeout(urlTimeout);
+        t.equals(urlDone, code, `${url} gave status ${code}`);
+      }
+
       // ==============
       // cd ui && yarn install
       const instRet = await pspawn(`yarn`, ['install'], {
