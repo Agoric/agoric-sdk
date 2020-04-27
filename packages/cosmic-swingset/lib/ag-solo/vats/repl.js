@@ -3,7 +3,12 @@ import harden from '@agoric/harden';
 import { isPromise } from '@agoric/produce-promise';
 
 // A REPL-specific JSON stringify.
-export function stringify(value, spaces, getInterfaceOf, already = new WeakSet()) {
+export function stringify(
+  value,
+  spaces,
+  getInterfaceOf,
+  already = new WeakSet(),
+) {
   if (Object(value) !== value) {
     return JSON.stringify(value, spaces);
   }
@@ -131,7 +136,11 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
         r.then(
           res => {
             history[histnum] = res;
-            display[histnum] = stringify(res);
+            display[histnum] = stringify(
+              res,
+              undefined,
+              vatPowers.getInterfaceOf,
+            );
           },
           rej => {
             // leave history[] alone: leave the rejected promise in place
