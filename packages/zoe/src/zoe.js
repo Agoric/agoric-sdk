@@ -131,8 +131,8 @@ import { makeTables } from './state';
  * @property {Promise<OfferOutcome>} outcome Note that if the offerHook throws,
  * this outcome Promise will reject, but the rest of the OfferResultRecord is
  * still meaningful.
- * @property {(() => undefined)} [cancelObj]
- * cancelObj will only be present if exitKind was 'onDemand'
+ * @property {(() => undefined)} [completeObj]
+ * completeObj will only be present if exitKind was 'onDemand'
  *
  * @typedef {{give?:AmountKeywordRecord,want?:AmountKeywordRecord,exit?:ExitRule}} Proposal
  *
@@ -566,8 +566,8 @@ const makeZoe = (additionalEndowments = {}) => {
   // retrieves an instance from Zoe, and `offer` allows users to
   // securely escrow and get in return a record containing a promise for
   // payouts, a promise for the outcome of joining the contract,
-  // and, depending on the exit conditions, perhaps a cancelObj,
-  // an object with a cancel method for leaving the contract on demand.
+  // and, depending on the exit conditions, perhaps a completeObj,
+  // an object with a complete method for leaving the contract on demand.
 
   /** @type {ZoeService} */
   const zoeService = harden(
@@ -789,10 +789,19 @@ const makeZoe = (additionalEndowments = {}) => {
               // Add an object with a cancel method to offerResult in
               // order to cancel on demand.
             } else if (exitKind === 'onDemand') {
-              offerResult.cancelObj = {
+              const completeObj = {
+                complete: () =>
+                  completeOffers(instanceHandle, harden([offerHandle])),
+              };
+              offerResult.completeObj = completeObj;
+              // The property "cancelObj" and method "cancel" are
+              // deprecated and will be removed in a later version.
+              // https://github.com/Agoric/agoric-sdk/issues/835
+              const cancelObj = {
                 cancel: () =>
                   completeOffers(instanceHandle, harden([offerHandle])),
               };
+              offerResult.cancelObj = cancelObj;
             } else {
               assert(
                 exitKind === 'waived',

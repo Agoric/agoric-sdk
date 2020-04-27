@@ -396,7 +396,7 @@ test('zoe - alice cancels after completion', async t => {
     });
     const alicePayments = { ContributionA: aliceMoolaPayment };
 
-    const { cancelObj, payout: payoutP, outcome: outcomeP } = await zoe.offer(
+    const { completeObj, payout: payoutP, outcome: outcomeP } = await zoe.offer(
       invite,
       aliceProposal,
       alicePayments,
@@ -404,7 +404,10 @@ test('zoe - alice cancels after completion', async t => {
 
     await outcomeP;
 
-    t.throws(() => cancelObj.cancel(), /Error: offer has already completed/);
+    t.throws(
+      () => completeObj.complete(),
+      /Error: offer has already completed/,
+    );
 
     const payout = await payoutP;
     const moolaPayout = await payout.ContributionA;

@@ -83,13 +83,12 @@ test(`Zoe opera ticket contract`, async t => {
                 // "i want n times moolas where n is the number of sold tickets"
                 zoe
                   .offer(auditoriumInvite, harden({}))
-                  // cancel will be renamed complete: https://github.com/Agoric/agoric-sdk/issues/835
-                  // cancelObj exists because of a current limitation in @agoric/marshal : https://github.com/Agoric/agoric-sdk/issues/818
+                  // completeObj exists because of a current limitation in @agoric/marshal : https://github.com/Agoric/agoric-sdk/issues/818
                   .then(
                     async ({
                       outcome: auditoriumOutcomeP,
                       payout,
-                      cancelObj: { cancel: complete },
+                      completeObj: { complete },
                       offerHandle,
                     }) => {
                       t.equal(
