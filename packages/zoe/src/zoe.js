@@ -194,13 +194,13 @@ import { makeTables } from './state';
  * invariants are true, they will remain true until changes are
  * made.
  * zcf.reallocate will throw an error if any of the
- * newAmountKeywordRecords do not have a value for all the
+ * newAllocations do not have a value for all the
  * keywords in sparseKeywords. An error will also be thrown if
- * any newAmountKeywordRecords have keywords that are not in
+ * any newAllocations have keywords that are not in
  * sparseKeywords.
  *
  * @param  {object[]} offerHandles An array of offerHandles
- * @param  {AmountKeywordRecord[]} newAmountKeywordRecords An
+ * @param  {AmountKeywordRecord[]} newAllocations An
  * array of amountKeywordRecords  - objects with keyword keys
  * and amount values, with one keywordRecord per offerHandle.
  * @param  {Keyword[]} sparseKeywords An array of string
@@ -384,7 +384,7 @@ const makeZoe = (additionalEndowments = {}) => {
      * @type {ContractFacet}
      */
     const contractFacet = harden({
-      reallocate: (offerHandles, newAmountKeywordRecords, sparseKeywords) => {
+      reallocate: (offerHandles, newAllocations, sparseKeywords) => {
         assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
         const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
         const allKeywords = getKeywords(issuerKeywordRecord);
@@ -392,7 +392,7 @@ const makeZoe = (additionalEndowments = {}) => {
           sparseKeywords = allKeywords;
         }
 
-        const newAmountMatrix = newAmountKeywordRecords.map(amountObj =>
+        const newAmountMatrix = newAllocations.map(amountObj =>
           objToArrayAssertFilled(amountObj, sparseKeywords),
         );
 
@@ -426,16 +426,12 @@ const makeZoe = (additionalEndowments = {}) => {
 
         // 2) ensure 'offer safety' for each player
         assert(
-          isOfferSafeForAll(
-            amountMathKeywordRecord,
-            proposals,
-            newAmountKeywordRecords,
-          ),
+          isOfferSafeForAll(amountMathKeywordRecord, proposals, newAllocations),
           details`The proposed reallocation was not offer safe`,
         );
 
         // 3) save the reallocation
-        offerTable.updateAmounts(offerHandles, harden(newAmountKeywordRecords));
+        offerTable.updateAmounts(offerHandles, harden(newAllocations));
       },
 
       complete: offerHandles => {
