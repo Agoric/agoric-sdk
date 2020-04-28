@@ -22,6 +22,14 @@ export const makeContract = harden(zcf => {
 
   let liqTokenSupply = 0;
 
+  const {
+    checkIfProposal,
+    rejectOffer,
+    makeEmptyOffer,
+    inviteAnOffer,
+    escrowAndAllocateTo,
+  } = makeZoeHelpers(zcf);
+
   return zcf.addNewIssuer(liquidityIssuer, 'Liquidity').then(() => {
     const amountMaths = zcf.getAmountMaths(
       harden(['TokenA', 'TokenB', 'Liquidity']),
@@ -32,12 +40,6 @@ export const makeContract = harden(zcf => {
         details`issuers must have natMathHelpers`,
       ),
     );
-    const {
-      checkIfProposal,
-      rejectOffer,
-      makeEmptyOffer,
-      inviteAnOffer,
-    } = makeZoeHelpers(zcf);
 
     return makeEmptyOffer().then(poolHandle => {
       const getPoolAllocation = () => zcf.getCurrentAllocation(poolHandle);
@@ -145,11 +147,13 @@ export const makeContract = harden(zcf => {
         );
 
         const liquidityPaymentP = liquidityMint.mintPayment(liquidityAmountOut);
-        const proposal = harden({
-          give: { Liquidity: liquidityAmountOut },
-        });
 
-        const injectLiquidityHook = tempLiqHandle => {
+        return escrowAndAllocateTo({
+          amount: liquidityAmountOut,
+          payment: liquidityPaymentP,
+          keyword: 'Liquidity',
+          recipientHandle: offerHandle,
+        }).then(() => {
           liqTokenSupply += liquidityExtentOut;
 
           const add = (key, obj1, obj2) =>
@@ -167,38 +171,14 @@ export const makeContract = harden(zcf => {
             Liquidity: liquidityAmountOut,
           });
 
-          const newTempLiqAmounts = harden({
-            TokenA: amountMaths.TokenA.getEmpty(),
-            TokenB: amountMaths.TokenB.getEmpty(),
-            Liquidity: amountMaths.Liquidity.getEmpty(),
-          });
-
           zcf.reallocate(
-            harden([offerHandle, poolHandle, tempLiqHandle]),
-            harden([newUserAmounts, newPoolAmounts, newTempLiqAmounts]),
+            harden([offerHandle, poolHandle]),
+            harden([newUserAmounts, newPoolAmounts]),
+            harden(['TokenA', 'TokenB', 'Liquidity']),
           );
-          zcf.complete(harden([offerHandle, tempLiqHandle]));
+          zcf.complete(harden([offerHandle]));
           return 'Added liquidity.';
-        };
-
-        const tempLiqInvite = inviteAnOffer({
-          offerHook: injectLiquidityHook,
-          customProperties: {
-            inviteDesc: 'autoSwap internal',
-          },
-          expected: {
-            give: { Liquidity: null },
-          },
         });
-
-        const zoeService = zcf.getZoeService();
-        return zoeService
-          .offer(
-            tempLiqInvite,
-            proposal,
-            harden({ Liquidity: liquidityPaymentP }),
-          )
-          .then(({ outcome: outcomeP }) => outcomeP);
       };
 
       const removeLiquidityHook = offerHandle => {
