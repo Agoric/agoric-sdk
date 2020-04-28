@@ -99,8 +99,7 @@ function hush(p) {
 //   Y: resolveToData, messages are rejected as DataIsNotCallable
 //   Z: reject, messages are rejected
 
-function resolvePR(pr, mode) {
-  const target2 = harden({});
+function resolvePR(pr, mode, target2) {
   switch (mode) {
     case 'presence':
       pr.resolve(target2);
@@ -148,10 +147,10 @@ async function doVatResolveCase1(t, mode) {
   function build(E) {
     const pr = producePromise();
     return harden({
-      async run(target1) {
+      async run(target1, target2) {
         const p1 = pr.promise;
         E(target1).one(p1);
-        resolvePR(pr, mode);
+        resolvePR(pr, mode, target2);
         // TODO: this stall shouldn't be necessary, but if I omit it, the
         // fulfillToPresence happens *after* two() is sent
         await Promise.resolve();
@@ -163,14 +162,20 @@ async function doVatResolveCase1(t, mode) {
   t.deepEqual(log, []);
 
   const slot0arg = { '@qclass': 'slot', index: 0 };
+  const slot1arg = { '@qclass': 'slot', index: 1 };
   const rootA = 'o+0';
   const target1 = 'o-1';
+  const target2 = 'o-2';
   const expectedP1 = 'p+5';
   const expectedP2 = 'p+6';
   const expectedP3 = 'p+7';
-  const target2 = 'o+1';
+  // const expectedP4 = 'p+8';
 
-  dispatch.deliver(rootA, 'run', capargs([slot0arg], [target1]));
+  dispatch.deliver(
+    rootA,
+    'run',
+    capargs([slot0arg, slot1arg], [target1, target2]),
+  );
   await endOfCrank();
 
   // The vat should send 'one' and subscribe to the result promise
@@ -214,7 +219,7 @@ test('liveslots vpid handling case1 reject', async t => {
   await doVatResolveCase1(t, 'reject');
 });
 
-async function doVatResolveCase23(t, which, mode) {
+async function doVatResolveCase23(t, which, mode, stalls) {
   // case 2 and 3
   const { log, syscall } = buildSyscall();
 
@@ -228,20 +233,48 @@ async function doVatResolveCase23(t, which, mode) {
       async result() {
         return pr.promise;
       },
-      async run(target1) {
+      async run(target1, target2) {
         const p2 = E(target1).one(p1);
         hush(p2);
         const p3 = E(p1).two();
-        hush(p3);
-        resolvePR(pr, mode);
-        // TODO: even worse, we need two stalls here to get the resolution
-        // into the kernel before the subsequent message sends. why??
-        await Promise.resolve();
-        await Promise.resolve();
+        if (mode === 'data' || mode === 'reject') {
+          hush(p3);
+        }
+        // The call to our result() method gave our vat access to p1 (along
+        // with resolution authority), but it didn't give this user-level
+        // code access to p1. When we resolve the `pr.promise` we returned
+        // from `result`, liveslots will resolve p1 for us. But remember that
+        // pr.promise !== p1
+        resolvePR(pr, mode, target2);
+
+        // We've started the resolution process, but it cannot complete for
+        // another few turns. We wait some number of turns before using p1
+        // again.
+        for (let i = 0; i < stalls; i += 1) {
+          // eslint-disable-next-line no-await-in-loop
+          await Promise.resolve();
+        }
+
+        // If we don't stall here, or only stall one turn, then all four
+        // messages get pipelined out before we tell the kernel about the
+        // resolution (syscall.fulfillToPresence).
+
+        // If we stall two turns, then the fulfillToPresence goes to the
+        // kernel before three() and four(), but our 'p1' is not yet marked
+        // as resolved, so four() is sent to a Promise, rather than to
+        // target2. This Promise ought to get a new vpid, because we retired
+        // the old one when we resolved it, however it looks like it still
+        // goes to the old 'p1' vpid, which is a bug.
+
+        // If we stall a full three turns, then four() is sent directly to
+        // target2.
+
         const p4 = E(target1).three(p1);
         hush(p4);
         const p5 = E(p1).four();
-        hush(p5);
+        if (mode === 'data' || mode === 'reject') {
+          hush(p5);
+        }
       },
     });
   }
@@ -249,6 +282,7 @@ async function doVatResolveCase23(t, which, mode) {
   t.deepEqual(log, []);
 
   const slot0arg = { '@qclass': 'slot', index: 0 };
+  const slot1arg = { '@qclass': 'slot', index: 1 };
   const rootA = 'o+0';
   const target1 = 'o-1';
   const p1 = 'p-8';
@@ -256,7 +290,8 @@ async function doVatResolveCase23(t, which, mode) {
   const expectedP3 = 'p+6';
   const expectedP4 = 'p+7';
   const expectedP5 = 'p+8';
-  const target2 = 'o+1';
+  const expectedP6 = 'p+9';
+  const target2 = 'o-2';
 
   if (which === 2) {
     dispatch.deliver(rootA, 'result', capargs([], []), p1);
@@ -271,7 +306,11 @@ async function doVatResolveCase23(t, which, mode) {
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
   t.deepEqual(log, []);
 
-  dispatch.deliver(rootA, 'run', capargs([slot0arg], [target1]));
+  dispatch.deliver(
+    rootA,
+    'run',
+    capargs([slot0arg, slot1arg], [target1, target2]),
+  );
   await endOfCrank();
 
   // first the vat sends one() with the promise
@@ -294,88 +333,107 @@ async function doVatResolveCase23(t, which, mode) {
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP3 });
 
+  // console.log(`p1 is ${p1}`);
+  // for(let l of log) {
+  //   console.log(l);
+  // }
+
   // then it resolves p1, which was used as the result of rootA~.result()
-  t.deepEqual(log.shift(), resolutionOf(p1, mode, target2));
 
-  // now it sends three() with the promise. For now, we expect the same vpid
-  // as before.
+  // At this point, Liveslots and HandledPromise have not yet seen the
+  // resolution of p1: that will occur over the next few turns. The vat now
+  // stalls 0 to 3 turns to exercise the various possible states of Liveslots
+  // and HandledPromise. After those stalls, the vat sends three() with the
+  // promise (as an argument). Then it sends four() *to* the promise (as a
+  // target).
 
-  // TODO: when we start to retire vpids, we expect to see vat-allocated
-  // 'p+7' (i.e. expectedP4) to be provided in args[], which will increment
-  // all the subsequent vat-allocated vpids:
-  //  * the resultSlot of three() will change to expectedP5
-  //  * the resultSlot of four() will change to expectedP6
-  //  * both subscriptions will change to match
+  // Here we build up the syscalls we expect to see.
 
-  t.deepEqual(log.shift(), {
+  const RETIRE_VPIDS = false;
+
+  const expectedFulfill = [resolutionOf(p1, mode, target2)];
+  const expectedThree = [];
+  const expectedFour = [];
+  let expectedVPIDInThree = p1;
+  let expectedResultOfThree = expectedP4;
+  let expectedResultOfFour = expectedP5;
+
+  if (RETIRE_VPIDS) {
+    expectedVPIDInThree = expectedP4;
+    expectedResultOfThree = expectedP5;
+    expectedResultOfFour = expectedP6;
+  }
+
+  // At present, three() always references the promise. This should change
+  // once we retire the vpid during resolution: it will need to allocate a
+  // new vpid. As a consequence, all the resultSlot vpids will increment too.
+  expectedThree.push({
     type: 'send',
     targetSlot: target1,
     method: 'three',
-    args: capargs([slot0arg], [p1]), // this vpid will change
-    resultSlot: expectedP4,
+    args: capargs([slot0arg], [expectedVPIDInThree]),
+    resultSlot: expectedResultOfThree,
   });
-  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP4 });
+  expectedThree.push({ type: 'subscribe', target: expectedResultOfThree });
 
-  // TODO: when #823 lands, set this to false, and remove the dead code
-  const bug823broken = true;
-
-  if (bug823broken) {
-    // if #823 is still broken, we'll see a pipelined call to p1,
-    // unaware of how p1 was resolved
-    t.deepEqual(log.shift(), {
-      type: 'send',
-      targetSlot: p1,
-      method: 'four',
-      args: capargs([], []),
-      resultSlot: expectedP5,
-    });
-    t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP5 });
-  } else {
-    // now, if we resolved p1 to a presence, the vat can send four() to it
-    // eslint-disable-next-line no-lonely-if
+  // At present, four() is always pipelined to the promise. This should
+  // change: once the vat knows what the promise has resolved to, it should
+  // send the message there directly. If mode === 'presence', the kernel
+  // should see a send() of four() directly to target2. If mode === 'data' or
+  // 'reject', it should reject locally, and the kernel should never see a
+  // syscall that sends four(). We explored some of this in #823, and code
+  // was landed to address it, but the behavior is still kind of wrong.
+  if (RETIRE_VPIDS) {
     if (mode === 'presence') {
-      t.deepEqual(log.shift(), {
+      expectedFour.push({
         type: 'send',
         targetSlot: target2,
         method: 'four',
         args: capargs([], []),
-        resultSlot: expectedP5,
+        resultSlot: expectedResultOfFour,
       });
-      t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP5 });
+      expectedFour.push({ type: 'subscribe', target: expectedResultOfFour });
     }
-    // but if we resolved p1 to data or rejected it, four() is not sent
-    // (the vat creates an error for it locally)
+    // but if we resolved p1 to data or rejected it, four() is not sent (the
+    // vat creates an error for it locally), and the kernel shouldn't see
+    // anything
+  } else {
+    expectedFour.push({
+      type: 'send',
+      targetSlot: p1,
+      method: 'four',
+      args: capargs([], []),
+      resultSlot: expectedResultOfFour,
+    });
+    expectedFour.push({ type: 'subscribe', target: expectedResultOfFour });
   }
 
-  // that should be the last of the syscalls
-  t.deepEqual(log, []);
+  // TODO: the behavior ideally shouldn't depend upon how long we stall after
+  // resolution
+
+  let expected;
+  if (stalls === 0 || stalls === 1) {
+    // for some reason, if we don't stall long enough, the kernel sees
+    // three() and four() before it sees the resolution
+    expected = expectedThree.concat(expectedFour).concat(expectedFulfill);
+  } else {
+    expected = expectedFulfill.concat(expectedThree).concat(expectedFour);
+  }
+
+  t.deepEqual(log, expected);
 
   t.end();
 }
 
-test('liveslots vpid handling case2 presence', async t => {
-  await doVatResolveCase23(t, 2, 'presence');
-});
-
-test('liveslots vpid handling case2 data', async t => {
-  await doVatResolveCase23(t, 2, 'data');
-});
-
-test('liveslots vpid handling case2 reject', async t => {
-  await doVatResolveCase23(t, 2, 'reject');
-});
-
-test('liveslots vpid handling case3 presence', async t => {
-  await doVatResolveCase23(t, 3, 'presence');
-});
-
-test('liveslots vpid handling case3 data', async t => {
-  await doVatResolveCase23(t, 3, 'data');
-});
-
-test('liveslots vpid handling case3 reject', async t => {
-  await doVatResolveCase23(t, 3, 'reject');
-});
+for (const caseNum of [2, 3]) {
+  for (const mode of ['presence', 'data', 'reject']) {
+    for (let stalls = 0; stalls < 4; stalls += 1) {
+      test(`liveslots vpid handling case${caseNum} ${mode} stalls=${stalls}`, async t => {
+        await doVatResolveCase23(t, caseNum, mode, stalls);
+      });
+    }
+  }
+}
 
 async function doVatResolveCase4(t, mode) {
   const { log, syscall } = buildSyscall();
@@ -385,6 +443,9 @@ async function doVatResolveCase4(t, mode) {
     return harden({
       async get(p) {
         p1 = p;
+        // if we don't add this, node will complain when the kernel notifies
+        // us of the rejection
+        p1.catch(_e => undefined);
       },
       async first(target1) {
         const p2 = E(target1).one(p1);
@@ -498,7 +559,7 @@ test('liveslots vpid handling case4 data', async t => {
 
 // broken due to #823, the four() method is pipelined to p1, when it should
 // be delivered and rejected within the vat
-test.skip('liveslots vpid handling case4 reject', async t => {
+test('liveslots vpid handling case4 reject', async t => {
   await doVatResolveCase4(t, 'reject');
 });
 
