@@ -3,7 +3,7 @@ ARG REPO=agoric/cosmic-swingset
 FROM $REPO:$SWINGSET_TAG as cosmic-swingset-go
 
 # The install container
-FROM node:stretch AS install
+FROM node:lts-stretch AS install
 
 WORKDIR /usr/src/agoric-sdk
 COPY . .
