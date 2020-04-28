@@ -22,43 +22,45 @@ const rejectMsg = `The covered call option is expired.`;
 
 // zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe
 export const makeContract = harden(zcf => {
-  const { swap, assertKeywords, inviteAnOffer } = makeZoeHelpers(zcf);
+  const { swap, assertKeywords, checkHook } = makeZoeHelpers(zcf);
   assertKeywords(harden(['UnderlyingAsset', 'StrikePrice']));
 
   const makeCallOptionInvite = sellerHandle => {
     const {
       proposal: { want, give, exit },
     } = zcf.getOffer(sellerHandle);
-    return inviteAnOffer({
-      offerHook: offerHandle => swap(sellerHandle, offerHandle, rejectMsg),
-      customProperties: {
-        inviteDesc: 'exerciseOption',
-        expirationDate: exit.afterDeadline.deadline,
-        timerAuthority: exit.afterDeadline.timer,
-        underlyingAsset: give.UnderlyingAsset,
-        strikePrice: want.StrikePrice,
-      },
-      expected: {
-        give: { StrikePrice: null },
-        want: { UnderlyingAsset: null },
-      },
+
+    const exerciseOptionHook = offerHandle =>
+      swap(sellerHandle, offerHandle, rejectMsg);
+    const exerciseOptionExpected = harden({
+      give: { StrikePrice: null },
+      want: { UnderlyingAsset: null },
     });
+
+    return zcf.makeInvitation(
+      checkHook(exerciseOptionHook, exerciseOptionExpected),
+      'exerciseOption',
+      harden({
+        customProperties: {
+          expirationDate: exit.afterDeadline.deadline,
+          timerAuthority: exit.afterDeadline.timer,
+          underlyingAsset: give.UnderlyingAsset,
+          strikePrice: want.StrikePrice,
+        },
+      }),
+    );
   };
 
-  const makeCoveredCallInvite = () =>
-    inviteAnOffer({
-      offerHook: makeCallOptionInvite,
-      customProperties: {
-        inviteDesc: 'makeCallOption',
-      },
-      expected: {
-        give: { UnderlyingAsset: null },
-        want: { StrikePrice: null },
-        exit: { afterDeadline: null },
-      },
-    });
+  const writeOptionExpected = harden({
+    give: { UnderlyingAsset: null },
+    want: { StrikePrice: null },
+    exit: { afterDeadline: null },
+  });
 
   return harden({
-    invite: makeCoveredCallInvite(),
+    invite: zcf.makeInvitation(
+      checkHook(makeCallOptionInvite, writeOptionExpected),
+      'makeCallOption',
+    ),
   });
 });

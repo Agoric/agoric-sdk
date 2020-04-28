@@ -152,48 +152,44 @@ export const makeZoeHelpers = (zcf) => {
       zcf.complete(handles);
       return defaultAcceptanceMsg;
     },
+
     /**
-     * Make an invitation to submit an Offer to this contract. This
-     * invitation can be given to a client, granting them the ability to
-     * participate in the contract.
+     * Make an offerHook that wraps the provided `offerHook`, to first
+     * check the submitted offer against an `expected` record that says
+     * what shape of proposal is acceptable.
      *
-     * If the "expected" option is provided, it should be an ExpectedRecord.
-     * This is like a Proposal, but the amounts in 'want' and 'give' should be null,
-     * and the 'exit' should have a choice but the contents should be null.
-     * If the client submits an Offer which does not match these expectations,
-     * that offer will be rejected (and refunded).
+     * This ExpectedRecord is like a Proposal, but the amounts in 'want'
+     * and 'give' should be null; the exit clause should specify a rule with
+     * null contents. If the client submits an Offer which does not match
+     * these expectations, that offer will be rejected (and refunded).
      *
-     * If "offerHook" is provided, it will be called when the invitation is exercised
-     * and an offer is submitted. The callback will get a reference to the offer.
-     *
-     * @param {InviteAnOfferOptions} [options={}]
-     * @returns {Invite}
-     *
-     * @typedef InviteAnOfferOptions
-     * @param {OfferHook} [offerHook]
-     * @param {CustomProperties} [customProperties]
-     * @param {ExpectedRecord} [expected]
+     * @param {OfferHook} offerHook
+     * @param {ExpectedRecord} expected
      *
      * @typedef ExpectedRecord
      * @property {TODO} [want]
      * @property {TODO} [give]
      * @property {TODO} [exit]
-     *
      */
-    inviteAnOffer: (options = {}) => {
-      const {
-        offerHook = () => {},
-        customProperties = undefined,
-        expected = undefined,
-      } = options;
-      const wrappedOfferHook = offerHandle => {
-        if (expected) {
-          helpers.rejectIfNotProposal(offerHandle, expected);
-        }
-        return offerHook(offerHandle);
-      };
-      return zcf.makeInvitation(wrappedOfferHook, customProperties);
+    checkHook: (offerHook, expected) => offerHandle => {
+      helpers.rejectIfNotProposal(offerHandle, expected);
+      return offerHook(offerHandle);
     },
+
+    // TODO DEPRECATED `inviteAnOffer` is deprecated legacy. Remove when we can.
+    inviteAnOffer: ({
+      offerHook = () => {},
+      inviteDesc,
+      customProperties = undefined,
+      expected = undefined,
+    }) => {
+      return zcf.makeInvitation(
+        expected ? helpers.checkHook(offerHook, expected) : offerHook,
+        inviteDesc || customProperties.inviteDesc,
+        customProperties && harden({ customProperties }),
+      );
+    },
+
     /**
      * Return a Promise for an OfferHandle.
      *
@@ -207,9 +203,10 @@ export const makeZoeHelpers = (zcf) => {
      */
     makeEmptyOffer: () =>
       new HandledPromise(resolve => {
-        const invite = helpers.inviteAnOffer({
-          offerHook: offerHandle => resolve(offerHandle),
-        });
+        const invite = zcf.makeInvitation(
+          offerHandle => resolve(offerHandle),
+          'empty offer',
+        );
         zoeService.offer(invite);
       }),
   });
