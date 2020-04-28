@@ -11,16 +11,19 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
   - Smart Contract:
     - mints the tickets
     - provides the seats
-  - Auditorium (unique contract seat, usually taken by the contract creator): the person hosting
+  - Auditorium (unique contract seat, usually taken by the contract creator):
+    the person hosting
   the Opera show, selling the tickets and getting the payment back
   - Ticket buyers (contract seat created on demand):
     - can see the available opera show seats
     - can consult the terms
     - can redeem the zoe invite with the proper payment to get the ticket back
 
-  ERTP and Zoe are considered to be the most highly trusted pieces of code by everyone
+  ERTP and Zoe are considered to be the most highly trusted pieces of code by
+  everyone
   They are more trusted than the code of this contract
-  As a consequence, they are going to be leveraged as much as possible by this contract
+  As a consequence, they are going to be leveraged as much as possible by this
+  contract
   to increase its trustworthiness and by the contract users
 
 */
@@ -40,18 +43,22 @@ export const makeContract = harden(zcf => {
 
   const { amountMath: moneyAmountMath } = zcf.getIssuerRecord(moneyIssuer);
 
-  const { rejectOffer, escrowAndAllocateTo } = makeZoeHelpers(zcf);
+  const { rejectOffer, checkHook, escrowAndAllocateTo } = makeZoeHelpers(zcf);
 
   let auditoriumOfferHandle;
 
   return zcf.addNewIssuer(issuer, 'Ticket').then(() => {
     // Mint tickets inside the contract
-    // In a more realistic contract, the Auditorium would certainly mint the tickets themselves
-    // but because of a current technical limitation when running the Agoric stack on a blockchain,
-    // minting has to happen inside a Zoe contract https://github.com/Agoric/agoric-sdk/issues/821
+    // In a more realistic contract, the Auditorium would certainly mint the
+    // tickets themselves
+    // but because of a current technical limitation when running the Agoric
+    // stack on a blockchain,
+    // minting has to happen inside a Zoe contract
+    // https://github.com/Agoric/agoric-sdk/issues/821
 
     // Mint the tickets ahead-of-time (instead of on-demand)
-    // This way, they can be passed to Zoe + ERTP who will be doing the bookkeeping
+    // This way, they can be passed to Zoe + ERTP who will be doing the
+    // bookkeeping
     // of which tickets have been sold and which tickets are still for sale
     const ticketsAmount = ticketAmountMath.make(
       harden(
@@ -132,10 +139,19 @@ export const makeContract = harden(zcf => {
       }
     };
 
+    const buyTicketExpected = harden({
+      want: { Ticket: null },
+      give: { Money: null },
+    });
+
     return harden({
-      invite: zcf.makeInvitation(auditoriumOfferHook),
+      invite: zcf.makeInvitation(auditoriumOfferHook, 'auditorium'),
       publicAPI: {
-        makeBuyerInvite: () => zcf.makeInvitation(buyTicketOfferHook),
+        makeBuyerInvite: () =>
+          zcf.makeInvitation(
+            checkHook(buyTicketOfferHook, buyTicketExpected),
+            'buy ticket',
+          ),
         getTicketIssuer: () => issuer,
         getAvailableTickets() {
           // Because of a technical limitation in @agoric/marshal, an array of extents

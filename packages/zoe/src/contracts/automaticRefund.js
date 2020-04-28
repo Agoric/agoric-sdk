@@ -1,9 +1,6 @@
 // @ts-check
 import harden from '@agoric/harden';
 
-// Eventually will be importable from '@agoric/zoe-contract-support'
-import { makeZoeHelpers } from '../contractSupport';
-
 /**
  * This is a very trivial contract to explain and test Zoe.
  * AutomaticRefund just gives you back what you put in.
@@ -15,21 +12,15 @@ import { makeZoeHelpers } from '../contractSupport';
  * @type {import('@agoric/zoe').MakeContract}
  */
 export const makeContract = harden(zcf => {
-  const { inviteAnOffer } = makeZoeHelpers(zcf);
-
   let offersCount = 0;
+
   const refundOfferHook = offerHandle => {
     offersCount += 1;
     zcf.complete(harden([offerHandle]));
     return `The offer was accepted`;
   };
   const makeRefundInvite = () =>
-    inviteAnOffer({
-      offerHook: refundOfferHook,
-      customProperties: {
-        inviteDesc: 'getRefund',
-      },
-    });
+    zcf.makeInvitation(refundOfferHook, 'getRefund');
 
   return harden({
     invite: makeRefundInvite(),

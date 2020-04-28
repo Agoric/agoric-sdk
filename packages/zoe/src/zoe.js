@@ -273,13 +273,17 @@ import { makeTables } from './state';
  * queries based on other information, we choose to omit it. For
  * instance, `installationHandle` can be derived from
  * `instanceHandle` and is omitted even though it is useful.
- * @param  {OfferHook} offerHook - a function that will be handed the
+ * @param {OfferHook} offerHook - a function that will be handed the
  * offerHandle at the right time, and returns a contract-specific
  * OfferOutcome which will be put in the OfferResultRecord.
- * @param  {CustomProperties} [customProperties] - an object of
+ * @param {string} inviteDesc
+ * @param {MakeInvitationOptions} [options]
+ * @returns {Invite}
+ *
+ * @typedef MakeInvitationOptions
+ * @property {CustomProperties} [customProperties] - an object of
  * information to include in the extent, as defined by the smart
  * contract
- * @returns {Invite}
  *
  * @callback OfferHook
  * This function will be called with the OfferHandle when the offer
@@ -294,13 +298,14 @@ import { makeTables } from './state';
  * when the issuer is added and ready.
  * @param {Promise<Issuer>|Issuer} issuerP Promise for issuer
  * @param {Keyword} keyword Keyword for added issuer
- * @returns {Promise<void>} Issuer is added and ready
+ * @returns {Promise<IssuerRecord>} Issuer is added and ready
  */
 
 /**
  * Create an instance of Zoe.
  *
- * @param {Object.<string,any>} [additionalEndowments] pure or pure-ish endowments to add to evaluator
+ * @param {Object.<string,any>} [additionalEndowments] pure or pure-ish
+ * endowments to add to evaluator
  * @returns {ZoeService} The created Zoe service.
  */
 const makeZoe = (additionalEndowments = {}) => {
@@ -406,26 +411,9 @@ const makeZoe = (additionalEndowments = {}) => {
    * @returns {ContractFacet} The returned facet
    */
   const makeContractFacet = instanceHandle => {
-    // Make a Zoe invite payment with an extent that is a mix of credible
-    // information from Zoe (the `handle` and `instanceHandle`) and
-    // other information defined by the smart contract. Note that the
-    // smart contract cannot override or change the values of `handle`
-    // and `instanceHandle`.
-    const makeInvitation = (offerHook, customProperties = harden({})) => {
-      const inviteHandle = harden({});
-      const inviteAmount = inviteAmountMath.make(
-        harden([
-          {
-            ...customProperties,
-            handle: inviteHandle,
-            instanceHandle,
-          },
-        ]),
-      );
-      inviteHandleToOfferHook.init(inviteHandle, offerHook);
-      return inviteMint.mintPayment(inviteAmount);
-    };
-
+    /**
+     * @type {ContractFacet}
+     */
     const contractFacet = harden({
       reallocate: (offerHandles, newAllocations, sparseKeywords) => {
         assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
@@ -482,7 +470,33 @@ const makeZoe = (additionalEndowments = {}) => {
         return completeOffers(instanceHandle, offerHandles);
       },
 
-      makeInvitation,
+      // Make a Zoe invite payment with an extent that is a mix of credible
+      // information from Zoe (the `handle` and `instanceHandle`) and
+      // other information defined by the smart contract (the mandatory
+      // `inviteDesc` and the optional`options.customProperties`).
+      // Note that the smart contract cannot override or change the values
+      // of `handle` and `instanceHandle`.
+      makeInvitation: (offerHook, inviteDesc, options = harden({})) => {
+        assert.typeof(
+          inviteDesc,
+          'string',
+          details`expected an inviteDesc string: ${inviteDesc}`,
+        );
+        const { customProperties = harden({}) } = options;
+        const inviteHandle = harden({});
+        const inviteAmount = inviteAmountMath.make(
+          harden([
+            {
+              ...customProperties,
+              inviteDesc,
+              handle: inviteHandle,
+              instanceHandle,
+            },
+          ]),
+        );
+        inviteHandleToOfferHook.init(inviteHandle, offerHook);
+        return inviteMint.mintPayment(inviteAmount);
+      },
 
       addNewIssuer: (issuerP, keyword) =>
         issuerTable.getPromiseForIssuerRecord(issuerP).then(issuerRecord => {
