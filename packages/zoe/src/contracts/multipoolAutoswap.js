@@ -261,7 +261,7 @@ export const makeContract = harden(zcf => {
     // Calculate how many liquidity tokens we should be minting.
     const liquidityExtentOut = calcLiqExtentToMint(
       harden({
-        liquidityTokenSupply,
+        liqTokenSupply: liquidityTokenSupply,
         inputExtent: userAmounts[CENTRAL_TOKEN].extent,
         inputReserve: poolAmounts[CENTRAL_TOKEN].extent,
       }),

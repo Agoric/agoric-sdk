@@ -1,7 +1,10 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 
-import { getCurrentPrice } from '../../../src/contractSupport';
+import {
+  getCurrentPrice,
+  calcLiqExtentToMint,
+} from '../../../src/contractSupport';
 
 const testGetPrice = (t, input, expectedOutput) => {
   const output = getCurrentPrice(input);
@@ -143,4 +146,44 @@ test('getCurrentPrice ok 6', t => {
   } catch (e) {
     t.assert(false, e);
   }
+});
+
+test('calculate extent to mint - positive supply', t => {
+  const res = calcLiqExtentToMint({
+    liqTokenSupply: 20,
+    inputExtent: 30,
+    inputReserve: 5,
+  });
+  t.equals(res, (20 * 30) / 5, 'When supply is present, floor(x*y/z)');
+  t.end();
+});
+
+test('calculate extent to mint - mispelled key', t => {
+  const res = calcLiqExtentToMint({
+    liquidityTokenSupply: 20,
+    inputExtent: 30,
+    inputReserve: 5,
+  });
+  t.equals(res, 30, 'When keyword is misspelled, inputExtent');
+  t.end();
+});
+
+test('calculate extent to mint - positive supply', t => {
+  const res = calcLiqExtentToMint({
+    liqTokenSupply: 5,
+    inputExtent: 8,
+    inputReserve: 7,
+  });
+  t.equals(res, 5, 'When supply is present, floor(x*y/z)');
+  t.end();
+});
+
+test('calculate extent to mint - no supply', t => {
+  const res = calcLiqExtentToMint({
+    liqTokenSupply: 0,
+    inputExtent: 30,
+    inputReserve: 5,
+  });
+  t.equals(res, 30, 'When the supply is empty, return inputExtent');
+  t.end();
 });
