@@ -1,5 +1,6 @@
 import harden from '@agoric/harden';
 
+import { assert, details } from '@agoric/assert';
 import { natSafeMath } from './safeMath';
 
 const { add, subtract, multiply, floorDivide } = natSafeMath;
@@ -39,6 +40,10 @@ export const getCurrentPrice = ({
   return harden({ outputExtent, newInputReserve, newOutputReserve });
 };
 
+function assertDefined(label, value) {
+  assert(value !== undefined, details`${label} value required`);
+}
+
 // Calculate how many liquidity tokens we should be minting to send back to the
 // user when adding liquidity. Calculations are based on the comparing the
 // inputExtent to the inputReserve. If the current supply is zero, just return
@@ -47,10 +52,14 @@ export const calcLiqExtentToMint = ({
   liqTokenSupply,
   inputExtent,
   inputReserve,
-}) =>
-  liqTokenSupply > 0
+}) => {
+  assertDefined('liqTokenSupply', liqTokenSupply);
+  assertDefined('inputExtent', inputExtent);
+  assertDefined('inputReserve', inputReserve);
+  return liqTokenSupply > 0
     ? floorDivide(multiply(inputExtent, liqTokenSupply), inputReserve)
     : inputExtent;
+};
 
 // Calculate how many underlying tokens (in the form of an extent) should be
 // returned when removing liquidity.
@@ -58,4 +67,10 @@ export const calcExtentToRemove = ({
   liqTokenSupply,
   poolExtent,
   liquidityExtentIn,
-}) => floorDivide(multiply(liquidityExtentIn, poolExtent), liqTokenSupply);
+}) => {
+  assertDefined('liqTokenSupply', liqTokenSupply);
+  assertDefined('liquidityExtentIn', liquidityExtentIn);
+  assertDefined('poolExtent', poolExtent);
+
+  return floorDivide(multiply(liquidityExtentIn, poolExtent), liqTokenSupply);
+};

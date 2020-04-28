@@ -159,12 +159,15 @@ test('calculate extent to mint - positive supply', t => {
 });
 
 test('calculate extent to mint - mispelled key', t => {
-  const res = calcLiqExtentToMint({
-    liquidityTokenSupply: 20,
-    inputExtent: 30,
-    inputReserve: 5,
-  });
-  t.equals(res, 30, 'When keyword is misspelled, inputExtent');
+  t.throws(
+    () =>
+      calcLiqExtentToMint({
+        liquidityTokenSupply: 20,
+        inputExtent: 30,
+        inputReserve: 5,
+      }),
+    `calcLiqExtentToMint should throw if a key is misspelled`,
+  );
   t.end();
 });
 
