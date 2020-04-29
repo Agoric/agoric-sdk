@@ -3,6 +3,97 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.2.0-alpha.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.1.0...@agoric/sdk@2.2.0-alpha.0) (2020-04-29)
+
+
+### Bug Fixes
+
+* add registrar to homeP and fix hanging issue. ([#952](https://github.com/Agoric/agoric-sdk/issues/952)) ([7ca77f3](https://github.com/Agoric/agoric-sdk/commit/7ca77f3d53070d049950348735159e25294e1da9))
+* address PR comments ([358952a](https://github.com/Agoric/agoric-sdk/commit/358952ab0f85ec9969a206a716fa91aa8b56c1e2))
+* allow wallet bridge from non-localhost origins ([ff545ba](https://github.com/Agoric/agoric-sdk/commit/ff545ba33693f0ba7eb21b136f51d9a00e24b02a))
+* change default dapp to dapp-encouragement ([#939](https://github.com/Agoric/agoric-sdk/issues/939)) ([0a2c97a](https://github.com/Agoric/agoric-sdk/commit/0a2c97ae71059a0af5da55a6a2bacbaad10cddc5))
+* check-lmdb: guard against the set() failing too ([4bc045a](https://github.com/Agoric/agoric-sdk/commit/4bc045a4d39daaa4e7094029fa0acd7bf0b41db6))
+* correct building Go under docker ([b01614b](https://github.com/Agoric/agoric-sdk/commit/b01614b9aefc8eb66709397ae5f15ae1965454d1))
+* cosmic-swingset CI works again ([168ad2c](https://github.com/Agoric/agoric-sdk/commit/168ad2cd8d4945ca76f1979634958ab5924ec108))
+* cosmic-swingset: fall back to SimpleStore if LMDB doesn't work ([2e1415a](https://github.com/Agoric/agoric-sdk/commit/2e1415af20c199284e2b6c66c3534869900eb5d9)), closes [#950](https://github.com/Agoric/agoric-sdk/issues/950)
+* default to nestedEvaluate format for better debugging ([4502f39](https://github.com/Agoric/agoric-sdk/commit/4502f39a46096b6f02a3a251989060b3bce4c3b2))
+* demonstrate and fix a bug with mis-spelled liquidityTokenSupply ([2161b42](https://github.com/Agoric/agoric-sdk/commit/2161b422ccb23f338d500fb60bba71a51bf3b670))
+* disable IBC access from vats, as it can crash the chain ([85c0b86](https://github.com/Agoric/agoric-sdk/commit/85c0b86d64c20bcf96687b4d7360bfdc9c198791))
+* don't use the (nonexistent) _agstate/agoric-wallet anymore ([0b739a6](https://github.com/Agoric/agoric-sdk/commit/0b739a64991e1319ac96d12bd76c9a36d408625b))
+* get the cosmos-sdk events flowing for sending packets ([4867af4](https://github.com/Agoric/agoric-sdk/commit/4867af4de0d42a1691168d330da7c9d73681f9bc))
+* get the encouragement dIBC working ([6bb1337](https://github.com/Agoric/agoric-sdk/commit/6bb13377c94e25df79481a42c3f280b7f4da43ed))
+* get working with latest relayer ([3d39496](https://github.com/Agoric/agoric-sdk/commit/3d394963ce16556a639bf6f4118c5e91377b6bcc))
+* harmonise the docs with the implementation ([88d2a0a](https://github.com/Agoric/agoric-sdk/commit/88d2a0aeb5cb6ebbece7bebc090b1b6697fdb8e1))
+* implement nestedEvaluate where it was missing ([8f7d17f](https://github.com/Agoric/agoric-sdk/commit/8f7d17fe6a0c452df8c701c708d73cc79144071c))
+* import the x/swingset keeper, not the ibc/tranfer keeper ([319e15e](https://github.com/Agoric/agoric-sdk/commit/319e15e1935e7f6b286cc3e0ba3026139d2aabdf))
+* improve bridge and network implementation ([1fca476](https://github.com/Agoric/agoric-sdk/commit/1fca4762e7cb458d14499b6b533bc0e4889e3842))
+* improve handling of orders that are consummated immediately ([61e4b67](https://github.com/Agoric/agoric-sdk/commit/61e4b673014b81d8336d64059eb9a1ea46629eae)), closes [#13](https://github.com/Agoric/agoric-sdk/issues/13)
+* insert agoric-sdk/packages in the package names ([df9d663](https://github.com/Agoric/agoric-sdk/commit/df9d66310a5e9d14b6823ccb6e616490ab2700fc))
+* lint... ([1db8eac](https://github.com/Agoric/agoric-sdk/commit/1db8eacd5fdb0e6d6ec6d2f93bd29e7c9291da30))
+* message legibilization shouldn't choke on non-JSON-parseable messages ([4267c52](https://github.com/Agoric/agoric-sdk/commit/4267c523c578ab0cc99ab091a27b4ec75ac90015))
+* more little wallet bridge tweaks ([7fa8c79](https://github.com/Agoric/agoric-sdk/commit/7fa8c7969bb2e8fffd661e28e227c37de031b32f))
+* move "crank 0" commit to after initialized flag is set ([f57c755](https://github.com/Agoric/agoric-sdk/commit/f57c755f9a30fd2200da0a9de8992e0cc0f4b000))
+* reimplement crossover connections ([bf3bd2a](https://github.com/Agoric/agoric-sdk/commit/bf3bd2ad78440dad42935e4a30b50de56a77ceba))
+* remove unnecessary files ([a13e937](https://github.com/Agoric/agoric-sdk/commit/a13e9375bccd6ff03e814745ca489fead21956f8))
+* rename host->peer, and implement basic Multiaddr ([ef89315](https://github.com/Agoric/agoric-sdk/commit/ef893151189ab99016910582a8d5ca3aa96c4fda))
+* repl didn't display resolutions to presences ([79a0aa3](https://github.com/Agoric/agoric-sdk/commit/79a0aa314c281f26bf9368c06fbd0cec63167ed3))
+* return packet acknowledgements ([4cf6f2f](https://github.com/Agoric/agoric-sdk/commit/4cf6f2f210466fa049361f9d7c115a706ec6ff49))
+* return the correct crossover side for inbound ([dc285d7](https://github.com/Agoric/agoric-sdk/commit/dc285d7f80197bf88fcc5961fe758d9cb891d7b4))
+* separate multiaddr from network ([f3d7dcb](https://github.com/Agoric/agoric-sdk/commit/f3d7dcb289b376c4083dd63b1b7f8502640a5dc6))
+* stop LMDB from crashing in the WLS environment ([89fb788](https://github.com/Agoric/agoric-sdk/commit/89fb788b12466cfa4da887c3aa8fc159a13f62dc))
+* swingset: remove unused 'inbound' device ([f096e3b](https://github.com/Agoric/agoric-sdk/commit/f096e3b5afa78175f897736c2cf7f68d86dceb12))
+* throw if values are undefined ([7be77e5](https://github.com/Agoric/agoric-sdk/commit/7be77e5b39d70ae5d2da704ce8b5f575ec66059e))
+* update Agoric-specific code to latest cosmos-sdk ([ddd51cd](https://github.com/Agoric/agoric-sdk/commit/ddd51cd09ae45874620abd1315002b6666b14757))
+* update tests to account for kernel tracking crank number ([700802d](https://github.com/Agoric/agoric-sdk/commit/700802d39a14c020a3514f3a3a22840f9d97a0bf))
+* update to docker image node:lts-stretch ([ba1ad59](https://github.com/Agoric/agoric-sdk/commit/ba1ad59eac598879ebbac27f50856e24f7621a35))
+* use getErrorConstructor to deep-copy an Error ([8ae1994](https://github.com/Agoric/agoric-sdk/commit/8ae1994f8ad9ee6dda34643b6323ed8422751115))
+* **zoe:** separate inviteHandle vs offerHandle ([#942](https://github.com/Agoric/agoric-sdk/issues/942)) ([1d85f97](https://github.com/Agoric/agoric-sdk/commit/1d85f97850ead03ac8e62c6e76405467914a2e84))
+* update docs and metadata to require Node.js v12.16.1 or higher ([#938](https://github.com/Agoric/agoric-sdk/issues/938)) ([d4e5f74](https://github.com/Agoric/agoric-sdk/commit/d4e5f7447d7172f519b97ff83b53f29c281710e7)), closes [#837](https://github.com/Agoric/agoric-sdk/issues/837) [#937](https://github.com/Agoric/agoric-sdk/issues/937) [#837](https://github.com/Agoric/agoric-sdk/issues/837) [#35](https://github.com/Agoric/agoric-sdk/issues/35)
+* update yarn.lock ([efc1d11](https://github.com/Agoric/agoric-sdk/commit/efc1d11c0b495571be144bbb56eccb9bfc48d45b))
+* use harden ([453552b](https://github.com/Agoric/agoric-sdk/commit/453552b85839b125e516207750a8df87c34e4d41))
+* use the new (typed) harden package ([2eb1af0](https://github.com/Agoric/agoric-sdk/commit/2eb1af08fe3967629a3ce165752fd501a5c85a96))
+* **assert:** slightly better assert logging ([#919](https://github.com/Agoric/agoric-sdk/issues/919)) ([47b3729](https://github.com/Agoric/agoric-sdk/commit/47b3729aa6b4ebde0d23cf791c5295fcf8f58a00))
+* **zoe:** Invitation to offer refactored to use upcall ([#853](https://github.com/Agoric/agoric-sdk/issues/853)) ([c142b7a](https://github.com/Agoric/agoric-sdk/commit/c142b7a64e77262927da22bde3af5793a9d39c2a))
+
+
+### Features
+
+* Add a notifier facility for Zoe and contracts ([335e009](https://github.com/Agoric/agoric-sdk/commit/335e00915bf37b2232cbcce8d15fb188bc70b0d6))
+* Add a notifier facility for Zoe and contracts ([7d6e2a6](https://github.com/Agoric/agoric-sdk/commit/7d6e2a6eae5793c2a4b451405a0f4337bfcaa448))
+* add crank number to kernel state ([75e5d53](https://github.com/Agoric/agoric-sdk/commit/75e5d53d36862e630b3ee8e9628d2237493eb8ae))
+* add Presence, getInterfaceOf, deepCopyData to marshal ([aac1899](https://github.com/Agoric/agoric-sdk/commit/aac1899b6cefc4241af04911a92ffc50fbac3429))
+* Add support for dumping crank-by-crank snapshots of the kernel state as a swingset runs ([b49929e](https://github.com/Agoric/agoric-sdk/commit/b49929ed7139544e218601135bdfd3408ea770de))
+* add the network vat to ag-solo ([d88062c](https://github.com/Agoric/agoric-sdk/commit/d88062c9d35a10afaab82728123ca3d71b7d5189))
+* add vat-ibc, wire in bootstrap ([7c7011d](https://github.com/Agoric/agoric-sdk/commit/7c7011d372618b4008a250e2c9b36cabbbc2543c))
+* ag-nchainz helper script ([aab056c](https://github.com/Agoric/agoric-sdk/commit/aab056c7b4d54c8f828139c6e2adc9fe9eb86c55))
+* allow pure handlers by passing the handler back in ([acf4bcc](https://github.com/Agoric/agoric-sdk/commit/acf4bcc585bbd03986080331830f34413ea7486d))
+* begin getting working with loopback peer ([7729e86](https://github.com/Agoric/agoric-sdk/commit/7729e869793196cbc2f937260c0a320665056784))
+* begin working out merging Gaia with Agoric/SwingSet ([7895304](https://github.com/Agoric/agoric-sdk/commit/789530450cb0d913a1ffcf6f836773c840870f26))
+* connect notifier to wallet for SimpleExchange ([6d270f8](https://github.com/Agoric/agoric-sdk/commit/6d270f87a1788ad08526f929fc8165eaf7a61e3b))
+* finish network router and multiaddr implementation ([dc74469](https://github.com/Agoric/agoric-sdk/commit/dc74469462b8fdc0f1fdc47dc4a9922a891902bd))
+* first pass at channel API ([f45f04e](https://github.com/Agoric/agoric-sdk/commit/f45f04e88f8dc236ca509529dd7d45265449715e))
+* get 'ibc/*/ordered/echo' handler working ([2795c21](https://github.com/Agoric/agoric-sdk/commit/2795c214cae8ac44eb5d19eb1b1aa0c066a22ecd))
+* implement channel host handler ([4e68f44](https://github.com/Agoric/agoric-sdk/commit/4e68f441b46d70dee481387ab96e88f1e0b69bfa))
+* implement the "sendPacket" transaction ([063c5b5](https://github.com/Agoric/agoric-sdk/commit/063c5b5c266187bc327dde568090dabf2bbfde8d))
+* implement the network vat ([0fcd783](https://github.com/Agoric/agoric-sdk/commit/0fcd783576ecfab5430d3d905a53f22b3e01e95f))
+* Improved console log diagnostics ([465329d](https://github.com/Agoric/agoric-sdk/commit/465329d1d7f740e82fa46da24be370e2081fcb33))
+* introduce vats/ibc.js handler ([cb511e7](https://github.com/Agoric/agoric-sdk/commit/cb511e74e797bedbcce1aac4193780ae7abc8cfc))
+* rename the registrar to be registry in "home" ([7603edb](https://github.com/Agoric/agoric-sdk/commit/7603edb8abed8573282337a66f6af506e8715f8c))
+* SimpleExchange use notifier to announce changes to book orders ([efdd214](https://github.com/Agoric/agoric-sdk/commit/efdd214c705b099d499e039673d58f5e7584ab17))
+* store offerhandle and id, get offerHandle with id ([#966](https://github.com/Agoric/agoric-sdk/issues/966)) ([ebd3426](https://github.com/Agoric/agoric-sdk/commit/ebd3426cdbbf17ffd00c02c5a9d38036c97fd4b9))
+* swing-store-lmdb: add isSwingStore() query ([fce7168](https://github.com/Agoric/agoric-sdk/commit/fce7168d3830e528f6a3464ebaa708cf129a114a)), closes [#953](https://github.com/Agoric/agoric-sdk/issues/953)
+* swing-store-simple: add isSwingStore() query ([c450459](https://github.com/Agoric/agoric-sdk/commit/c450459a92d3ecba4a106820d980683babdf8c29)), closes [#953](https://github.com/Agoric/agoric-sdk/issues/953)
+* swingset: add 'bridge' device ([4b07cdd](https://github.com/Agoric/agoric-sdk/commit/4b07cddf5db86b3ee886b0aeb1a4932e664bdc39)), closes [#860](https://github.com/Agoric/agoric-sdk/issues/860)
+* swingset: add networking.md ([74b53d4](https://github.com/Agoric/agoric-sdk/commit/74b53d420e9bc84d3b5e11555283e659556ea4b0))
+* symlink wallet from agoric-sdk or NPM for all ag-solos ([fdade37](https://github.com/Agoric/agoric-sdk/commit/fdade3773ae270d1ecbcf79f05d8b58c580e2350))
+* use wallet from NPM if the SDK one is not built ([182643b](https://github.com/Agoric/agoric-sdk/commit/182643b15c0ca4ff5ace0fc260fb955b4d2d9d17))
+* **swingset:** Draft protocol for Go to JS bridge ([#943](https://github.com/Agoric/agoric-sdk/issues/943)) ([c7035c1](https://github.com/Agoric/agoric-sdk/commit/c7035c1238ce0fb92337826550c26f2c0eea8c6e))
+* Treat state resulting from kernel initialization as if it resulted from a crank ([4763c02](https://github.com/Agoric/agoric-sdk/commit/4763c024c0fcae4471f525b385eb71548344d9df))
+
+
+
+
+
 # [2.1.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.1.0-alpha.0...@agoric/sdk@2.1.0) (2020-04-13)
 
 **Note:** Version bump only for package @agoric/sdk

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.1.3-alpha.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/tame-metering@1.1.2...@agoric/tame-metering@1.1.3-alpha.0) (2020-04-29)
+
+
+### Bug Fixes
+
+* use the new (typed) harden package ([2eb1af0](https://github.com/Agoric/agoric-sdk/commit/2eb1af08fe3967629a3ce165752fd501a5c85a96))
+
+
+
+
+
 ## [1.1.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/tame-metering@1.1.2-alpha.0...@agoric/tame-metering@1.1.2) (2020-04-13)
 
 **Note:** Version bump only for package @agoric/tame-metering
