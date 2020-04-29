@@ -33,6 +33,7 @@
     "packages/spawner",
     "packages/sharing-service",
     "packages/zoe",
+    "packages/wallet-frontend",
     "packages/cosmic-swingset",
     "packages/generator-agoric-dapp",
     "packages/agoric-cli",
