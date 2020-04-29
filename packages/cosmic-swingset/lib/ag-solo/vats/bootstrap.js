@@ -141,7 +141,8 @@ export default function setup(syscall, state, helpers) {
             makeLoopbackProtocolHandler(),
           ),
         );
-        if (bridgeMgr) {
+        // FIXME: Temporarily disable IBC access until we have stability.
+        if (false && bridgeMgr) {
           // We have access to the bridge, and therefore IBC.
           const callbacks = harden({
             downcall(method, obj) {
