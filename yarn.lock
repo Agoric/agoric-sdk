@@ -66,10 +66,10 @@
     varstruct "^6.1.1"
     websocket-stream "^5.1.1"
 
-"@agoric/wallet-frontend@^0.2.3":
-  version "0.2.3"
-  resolved "https://registry.yarnpkg.com/@agoric/wallet-frontend/-/wallet-frontend-0.2.3.tgz#598a2f0909d8166a0eb7478f2ced14c68d4ae313"
-  integrity sha512-8KAbxtxWRfYG8mQ3xd4CZFnP+yaDUjbNfioM/JIXSpBCnChE1vsBwmQlJP2DfipezIPcIxhiphpNTAtscJ9tfg==
+"@agoric/wallet-frontend@^0.2.4-alpha.0":
+  version "0.2.4-alpha.0"
+  resolved "https://registry.yarnpkg.com/@agoric/wallet-frontend/-/wallet-frontend-0.2.4-alpha.0.tgz#bdde4d299f6394de08ab6cd1573e212ef77a955f"
+  integrity sha512-oWJ8/B7ey66Lbm2LGQSvJevQmW4hVbaYYwAEXR4WAxrXJfThOU9O9Z+mGkXzN5V9SmTg4/2ZKPXT6SJ4AjWYbw==
 
 "@babel/code-frame@^7.0.0":
   version "7.5.5"
