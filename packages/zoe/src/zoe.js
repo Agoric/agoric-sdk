@@ -113,6 +113,8 @@ import { makeTables } from './state';
  * @property {(offerHandle: OfferHandle) => boolean} isOfferActive
  * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
  * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
+ * @property {(offerHandle: OfferHandle, sparseKeywords: SparseKeywords) => Allocation} getCurrentAllocation
+ * @property {(offerHandles: OfferHandle[], sparseKeywords: SparseKeywords) => Allocation[]} getCurrentAllocations
  * @property {(installationHandle: InstallationHandle) => string} getInstallation
  * Get the source code for the installed contract. Throws an error if the
  * installationHandle is not found.
@@ -373,14 +375,6 @@ const makeZoe = (additionalEndowments = {}) => {
   const removeAmountsAndNotifier = offerRecord =>
     filterObj(offerRecord, ['handle', 'instanceHandle', 'proposal']);
 
-  const removeNotifier = offerRecord =>
-    filterObj(offerRecord, [
-      'handle',
-      'instanceHandle',
-      'proposal',
-      'currentAllocation',
-    ]);
-
   const assertOffersHaveInstanceHandle = (
     offerHandles,
     expectedInstanceHandle,
@@ -391,6 +385,29 @@ const makeZoe = (additionalEndowments = {}) => {
         details`contract instances can only access their own associated offers`,
       );
     });
+  };
+
+  const doGetCurrentAllocation = (
+    instanceHandle,
+    offerHandle,
+    sparseKeywords,
+  ) => {
+    const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
+    const allKeywords = getKeywords(issuerKeywordRecord);
+    if (sparseKeywords === undefined) {
+      sparseKeywords = allKeywords;
+    }
+    const amountMathKeywordRecord = getAmountMaths(
+      instanceHandle,
+      sparseKeywords,
+    );
+    assertSubset(allKeywords, sparseKeywords);
+    const { currentAllocation } = offerTable.get(offerHandle);
+    return filterFillAmounts(
+      currentAllocation,
+      sparseKeywords,
+      amountMathKeywordRecord,
+    );
   };
 
   // Zoe has two different facets: the public Zoe service and the
@@ -545,20 +562,10 @@ const makeZoe = (additionalEndowments = {}) => {
       },
       getCurrentAllocation: (offerHandle, sparseKeywords) => {
         assertOffersHaveInstanceHandle(harden([offerHandle]), instanceHandle);
-        const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
-        const allKeywords = getKeywords(issuerKeywordRecord);
-        if (sparseKeywords === undefined) {
-          sparseKeywords = allKeywords;
-        }
-        const amountMathKeywordRecord = contractFacet.getAmountMaths(
+        return doGetCurrentAllocation(
+          instanceHandle,
+          offerHandle,
           sparseKeywords,
-        );
-        assertSubset(allKeywords, sparseKeywords);
-        const { currentAllocation } = offerTable.get(offerHandle);
-        return filterFillAmounts(
-          currentAllocation,
-          sparseKeywords,
-          amountMathKeywordRecord,
         );
       },
       getCurrentAllocations: (offerHandles, sparseKeywords) => {
@@ -835,8 +842,22 @@ const makeZoe = (additionalEndowments = {}) => {
 
       isOfferActive: offerTable.isOfferActive,
       getOffers: offerHandles =>
-        offerTable.getOffers(offerHandles).map(removeNotifier),
-      getOffer: offerHandle => removeNotifier(offerTable.get(offerHandle)),
+        offerTable.getOffers(offerHandles).map(removeAmountsAndNotifier),
+      getOffer: offerHandle =>
+        removeAmountsAndNotifier(offerTable.get(offerHandle)),
+      getCurrentAllocation: (offerHandle, sparseKeywords) => {
+        const { instanceHandle } = offerTable.get(offerHandle);
+        return doGetCurrentAllocation(
+          instanceHandle,
+          offerHandle,
+          sparseKeywords,
+        );
+      },
+      getCurrentAllocations: (offerHandles, sparseKeywords) => {
+        return offerHandles.map(offerHandle =>
+          zoeService.getCurrentAllocation(offerHandle, sparseKeywords),
+        );
+      },
       getInstallation: installationHandle =>
         installationTable.get(installationHandle).code,
     },

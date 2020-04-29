@@ -107,9 +107,9 @@ test(`Zoe opera ticket contract`, async t => {
                         'complete should be a function',
                       );
 
-                      const { currentAllocation } = await E(zoe).getOffer(
-                        await offerHandle,
-                      );
+                      const currentAllocation = await E(
+                        zoe,
+                      ).getCurrentAllocation(await offerHandle);
 
                       t.equal(
                         currentAllocation.Ticket.extent.length,
