@@ -29,8 +29,11 @@ import { makeTables } from './state';
 // TODO Update types and documentatuon to describe the new API
 /**
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
- *
+ */
+
+/**
  * @typedef {import('@agoric/ertp/src/issuer').Amount} Amount
+ * @typedef {import('@agoric/ertp/src/issuer').Brand} Brand
  * @typedef {import('@agoric/ertp/src/amountMath').AmountMath} AmountMath
  * @typedef {import('@agoric/ertp/src/issuer').Payment} Payment
  * @typedef {import('@agoric/ertp/src/issuer').Issuer} Issuer
@@ -38,13 +41,24 @@ import { makeTables } from './state';
  *
  * @typedef {any} TODO Needs to be typed
  * @typedef {string} Keyword
- * @typedef {Object} InstallationHandle
- * @typedef {Object.<Keyword,Issuer>} IssuerKeywordRecord
- * @typedef {Object.<Keyword,Payment>} PaymentKeywordRecord
+ * @typedef {{}} InstallationHandle
+ * @typedef {Object.<string,Issuer>} IssuerKeywordRecord
+ */
+
+/**
+ * There doesn't seem to be any way in JSDoc to specify a record consisting of
+ * an arbitrary number of key-value pairs of specified type.
+ * @typedef {Object.<string,Payment>} PaymentKeywordRecord
  */
 
 /**
  * @typedef {Object} ZoeService
+ * Zoe provides a framework for deploying and working with smart contracts. It
+ * is accessed as a long-lived and well-trusted service that enforces offer
+ * safety for the contracts that use it. Zoe has a single `inviteIssuer` for
+ * the entirety of its lifetime. By having a reference to Zoe, a user can get
+ * the `inviteIssuer` and thus validate any `invite` they receive from someone
+ * else.
  * @property {() => Issuer} getInviteIssuer
  * Zoe has a single `inviteIssuer` for the entirety of its lifetime.
  * By having a reference to Zoe, a user can get the `inviteIssuer`
@@ -97,13 +111,14 @@ import { makeTables } from './state';
  * is expected for every rule under `give`.
  *
  * @property {(offerHandle: OfferHandle) => boolean} isOfferActive
- * @property {(offerHandles: OfferHandle[]) => Offer[]} getOffers
- * @property {(offerHandle: OfferHandle) => Offer} getOffer
- * @property {(installationHandle: InstallationHandle) => InstallationRecord} getInstallation
+ * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
+ * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
+ * @property {(installationHandle: InstallationHandle) => string} getInstallation
+ * Get the source code for the installed contract. Throws an error if the
+ * installationHandle is not found.
  *
  * @typedef {any} OfferOutcome
  * A contract-specific value that is returned by the OfferHook.
- *
  *
  * @typedef {Object} OfferResultRecord This is returned by a call to `offer` on Zoe.
  * @property {OfferHandle} offerHandle
@@ -119,12 +134,10 @@ import { makeTables } from './state';
  * @property {(() => undefined)} [cancelObj]
  * cancelObj will only be present if exitKind was 'onDemand'
  *
- * @typedef {Object} Proposal
- * @property {AmountKeywordRecord} want
- * @property {AmountKeywordRecord} give
- * @property {ExitRule} exit
+ * @typedef {{give?:AmountKeywordRecord,want?:AmountKeywordRecord,exit?:ExitRule}} Proposal
  *
- * @typedef {Object.<Keyword,Amount>} AmountKeywordRecord
+ * @typedef {Object.<string,Amount>} AmountKeywordRecord
+ *
  * The keys are keywords, and the values are amounts. For example:
  * { Asset: amountMath.make(5), Price: amountMath.make(9) }
  *
@@ -140,6 +153,14 @@ import { makeTables } from './state';
  */
 
 /**
+ * @typedef {Object} Invite
+ * An invitation to participate in a Zoe contract.
+ * Invites are Payments, so they can be transferred, stored in Purses, and
+ * verified. Only Zoe can create new Invites.
+ * @property {() => Brand} getAllegedBrand
+ */
+
+/**
  * @callback MakeContract The type exported from a Zoe contract
  * @param {ContractFacet} zcf The Zoe Contract Facet
  * @returns {ContractInstance} The instantiated contract
@@ -147,36 +168,59 @@ import { makeTables } from './state';
  * @typedef {Object} ContractInstance
  * @property {Invite} invite The closely-held administrative invite
  * @property {Object.<string,function>} publicAPI Public functions that can be called on the instance
- *
- * @typedef {Object} InstanceHandle
- * @typedef {Object} OfferHandle
- * @typedef {Object} InviteHandle
- *
- * @typedef {TODO} Invite
+ */
+
+/**
+ * @typedef {{}} InstanceHandle - an opaque handle for a contract instance
+ * @typedef {{}} OfferHandle - an opaque handle for an offer
+ * @typedef {{}} InviteHandle - an opaque handle for an invite
  * @typedef {Object} CustomProperties
- * @typedef {TODO} Offer
- * @typedef {TODO} InstanceRecord
+ *
+ * @typedef {object} OfferRecord
+ * @property {OfferHandle} handle - opaque identifier for the offer, used as the key
+ * @property {InstanceHandle} instanceHandle - opaque identifier for the instance
+ * @property {Proposal} proposal - the offer proposal (including want, give, exit)
+ * @property {AmountKeywordRecord} amounts - the amountKeywordRecord that will be turned into payouts
+ *
+ * @typedef {object} InstanceRecord
+ * @property {InstanceHandle} handle - opaque identifier for the instance, used as the table key
+ * @property {InstallationHandle} installationHandle - opaque identifier for the installation
+ * @property {Object.<string,function>} publicAPI - the invite-free publicly accessible API for the contract
+ * @property {Object} terms - contract parameters
+ * @property {IssuerKeywordRecord} issuerKeywordRecord - record with keywords keys, issuer values
+ *
  * @typedef {TODO} IssuerRecord
- * @typedef {TODO} InstallationRecord
+ *
+ * @typedef {Object} InstallationRecord
+ * @property {{}} handle - opaque identifier, used as the table key
+ * @property {string} installation - contract code
+ *
  * @typedef {Object} OfferStatus
  * @property {OfferHandle[]} active
  * @property {OfferHandle[]} inactive
  *
  * @typedef {Keyword[]} SparseKeywords
- * @typedef {Object.<Keyword,Amount>} Allocation
- *
- * @typedef {Object} ContractFacet The Zoe interface specific to a contract instance
+ * @typedef {{[Keyword:string]:Amount}} Allocation
+ */
+
+/**
+ * @typedef {Object} ContractFacet
+ * The Zoe interface specific to a contract instance.
+ * The Zoe Contract Facet is an API object used by running contract instances to
+ * access the Zoe state for that instance. The Zoe Contract Facet is accessed
+ * synchronously from within the contract, and usually is referred to in code as
+ * zcf.
  * @property {Reallocate} reallocate Propose a reallocation of extents per offer
  * @property {Complete} complete Complete an offer
  * @property {MakeInvitation} makeInvitation
  * @property {AddNewIssuer} addNewIssuer
  * @property {() => ZoeService} getZoeService
  * @property {() => Issuer} getInviteIssuer
- * @property {(sparseKeywords: SparseKeywords) => Object.<Keyword,AmountMath>} getAmountMaths
+ * @property {(sparseKeywords: SparseKeywords) => {[Keyword:string]:AmountMath}} getAmountMaths
  * @property {(offerHandles: OfferHandle[]) => { active: OfferStatus[], inactive: OfferStatus[] }} getOfferStatuses
  * @property {(offerHandle: OfferHandle) => boolean} isOfferActive
- * @property {(offerHandles: OfferHandle[]) => Offer[]} getOffers
- * @property {(offerHandle: OfferHandle) => Offer} getOffer
+ * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
+ * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
  * @property {(offerHandle: OfferHandle, sparseKeywords: SparseKeywords) => Allocation} getCurrentAllocation
  * @property {(offerHandles: OfferHandle[], sparseKeywords: SparseKeywords) => Allocation[]} getCurrentAllocations
  * @property {() => InstanceRecord} getInstanceRecord
@@ -199,8 +243,8 @@ import { makeTables } from './state';
  * any newAmountKeywordRecords have keywords that are not in
  * sparseKeywords.
  *
- * @param  {object[]} offerHandles An array of offerHandles
- * @param  {AmountKeywordRecord[]} newAmountKeywordRecords An
+ * @param  {OfferHandle[]} offerHandles An array of offerHandles
+ * @param  {AmountKeywordRecord} newAmountKeywordRecords An
  * array of amountKeywordRecords  - objects with keyword keys
  * and amount values, with one keywordRecord per offerHandle.
  * @param  {Keyword[]} sparseKeywords An array of string
@@ -214,8 +258,8 @@ import { makeTables } from './state';
  * reallocations that conserve rights and are 'offer-safe', we
  * don't need to do those checks at this step and can assume
  * that the invariants hold.
- * @param  {object[]} offerHandles - an array of offerHandles
- * @returns {TODO}
+ * @param  {OfferHandle[]} offerHandles - an array of offerHandles
+ * @returns {undefined}
  *
  * @callback MakeInvitation
  * Make a credible Zoe invite for a particular smart contract
@@ -230,7 +274,7 @@ import { makeTables } from './state';
  * @param  {OfferHook} offerHook - a function that will be handed the
  * offerHandle at the right time, and returns a contract-specific
  * OfferOutcome which will be put in the OfferResultRecord.
- * @param  {CustomProperties} customProperties - an object of
+ * @param  {CustomProperties} [customProperties] - an object of
  * information to include in the extent, as defined by the smart
  * contract
  * @returns {Invite}
@@ -309,7 +353,7 @@ const makeZoe = (additionalEndowments = {}) => {
   };
 
   const getAmountMaths = (instanceHandle, sparseKeywords) => {
-    const amountMathKeywordRecord = /** @type {Object.<Keyword,AmountMath>} */ ({});
+    const amountMathKeywordRecord = /** @type {Object.<string,AmountMath>} */ ({});
     const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
     sparseKeywords.forEach(keyword => {
       const issuer = issuerKeywordRecord[keyword];
@@ -380,9 +424,6 @@ const makeZoe = (additionalEndowments = {}) => {
       return inviteMint.mintPayment(inviteAmount);
     };
 
-    /**
-     * @type {ContractFacet}
-     */
     const contractFacet = harden({
       reallocate: (offerHandles, newAmountKeywordRecords, sparseKeywords) => {
         assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
@@ -647,7 +688,7 @@ const makeZoe = (additionalEndowments = {}) => {
       /**
        * Redeem the invite to receive a payout promise and an
        * outcome promise.
-       * @param {Payment} invite - an invite (ERTP payment) to join a
+       * @param {Invite} invite - an invite (ERTP payment) to join a
        * Zoe smart contract instance
        * @param  {object?} proposal - the proposal, a record
        * with properties `want`, `give`, and `exit`. The keys of
