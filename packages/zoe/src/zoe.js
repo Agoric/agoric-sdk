@@ -42,13 +42,13 @@ import { makeTables } from './state';
  * @typedef {any} TODO Needs to be typed
  * @typedef {string} Keyword
  * @typedef {{}} InstallationHandle
- * @typedef {Object.<Keyword,Issuer>} IssuerKeywordRecord
+ * @typedef {Object.<string,Issuer>} IssuerKeywordRecord
  */
 
 /**
  * There doesn't seem to be any way in JSDoc to specify a record consisting of
  * an arbitrary number of key-value pairs of specified type.
- * @typedef {Object.<Keyword,Payment>} PaymentKeywordRecord
+ * @typedef {Object.<string,Payment>} PaymentKeywordRecord
  */
 
 /**
@@ -136,7 +136,7 @@ import { makeTables } from './state';
  *
  * @typedef {{give?:AmountKeywordRecord,want?:AmountKeywordRecord,exit?:ExitRule}} Proposal
  *
- * @typedef {Object.<Keyword,Amount>} AmountKeywordRecord
+ * @typedef {Object.<string,Amount>} AmountKeywordRecord
  *
  * The keys are keywords, and the values are amounts. For example:
  * { Asset: amountMath.make(5), Price: amountMath.make(9) }
@@ -353,7 +353,7 @@ const makeZoe = (additionalEndowments = {}) => {
   };
 
   const getAmountMaths = (instanceHandle, sparseKeywords) => {
-    const amountMathKeywordRecord = /** @type {Object.<Keyword,AmountMath>} */ ({});
+    const amountMathKeywordRecord = /** @type {Object.<string,AmountMath>} */ ({});
     const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
     sparseKeywords.forEach(keyword => {
       const issuer = issuerKeywordRecord[keyword];
