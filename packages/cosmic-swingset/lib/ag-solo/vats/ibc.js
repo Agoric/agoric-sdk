@@ -221,6 +221,12 @@ export function makeIBCProtocolHandler(
           source_channel: channelID,
         };
         await callIBCDevice('channelCloseInit', { packet });
+        // TODO: Let's look carefully at this
+        // There's a danger of the two sides disagreeing about whether
+        // the channel is closed or not, and reusing channelIDs could
+        // be a security hole.
+        //
+        // FIXME: Maybe check whether channelCloseConfirm is done.
         usedChannels.delete(channelID);
         usedChannels.delete(rChannelID);
       },

@@ -61,7 +61,7 @@ testnet)
       ag-solo 1000uag
 	done
 	# $thisdir/../../deployment/set-json.js $n0d/config/genesis.json --agoric-genesis-overrides
-  for node in `ls -d $chainid/n[1-9]* 2>/dev/null || :`; do
+  for node in `ls -d $chainid/n[1-9]* 2>/dev/null || true`; do
     cp $n0d/config/genesis.json $node/$DAEMON/config/genesis.json
   done
   exit 0

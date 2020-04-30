@@ -46,7 +46,19 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
     console.error('received', dstID, obj);
     return 'IBC and bridge device not used on fake-chain';
   }
-  const s = await launch(stateDBdir, mailboxStorage, doOutboundBridge, vatsdir, argv);
+  function flushChainSends(replay) {
+    if (replay) {
+      throw Error(`Replay not implemented`);
+    }
+  }
+  const s = await launch(
+    stateDBdir,
+    mailboxStorage,
+    doOutboundBridge,
+    flushChainSends,
+    vatsdir,
+    argv,
+  );
 
   const blockManager = makeBlockManager(s);
   const { savedHeight, savedActions } = s;
