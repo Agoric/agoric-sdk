@@ -150,7 +150,9 @@ import { makeTables } from './state';
  * `{ waived: null }`
  * `{ onDemand: null }`
  * `{ afterDeadline: { timer :Timer<Deadline>, deadline :Deadline } }
+ * @type {Object} Timer
  * @property {Timer} [timer]
+ * @type {number} Deadline
  * @property {Deadline} [deadline]
  */
 
