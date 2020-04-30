@@ -1,6 +1,7 @@
 import { makeEvaluators } from '@agoric/evaluate';
 import harden from '@agoric/harden';
 import { isPromise } from '@agoric/produce-promise';
+import { makeConsole } from '@agoric/swingset-vat/src/makeConsole';
 
 // A REPL-specific JSON stringify.
 export function stringify(
@@ -30,6 +31,8 @@ export function stringify(
   already.add(value);
 
   let ret = '';
+  const spcs = spaces === undefined ? '' : `\n${' '.repeat(spaces)}`;
+  const nextSpaces = spaces === undefined ? undefined : spaces + 2;
   if (getInterfaceOf && getInterfaceOf(value) !== undefined) {
     ret += `${value}`;
   } else if (Array.isArray(value)) {
@@ -37,8 +40,16 @@ export function stringify(
 
     let sep = '';
     for (let i = 0; i < value.length; i += 1) {
-      ret += sep + stringify(value[i], spaces, getInterfaceOf, already);
+      ret += `${sep}${spcs}${stringify(
+        value[i],
+        nextSpaces,
+        getInterfaceOf,
+        already,
+      )}`;
       sep = ',';
+    }
+    if (sep !== '') {
+      ret += spcs;
     }
     ret += ']';
     return ret;
@@ -47,38 +58,86 @@ export function stringify(
   ret += '{';
   let sep = '';
   for (const key of Object.keys(value)) {
-    ret += `${sep}${JSON.stringify(key, undefined, spaces)}:${stringify(
-      value[key],
-      spaces,
-      getInterfaceOf,
-      already,
-    )}`;
+    ret += `${sep}${spcs}${JSON.stringify(
+      key,
+      undefined,
+      nextSpaces,
+    )}:${stringify(value[key], nextSpaces, getInterfaceOf, already)}`;
     sep = ',';
+  }
+  if (sep !== '') {
+    ret += spcs;
   }
   ret += '}';
   return ret;
 }
 
 export function getReplHandler(E, homeObjects, send, vatPowers) {
-  const commands = {};
-  const history = {};
-  const display = {};
   let highestHistory = -1;
+  const commands = {
+    [highestHistory]: '',
+  };
+  const history = {
+    [highestHistory]: '',
+  };
+  const display = {
+    [highestHistory]: '',
+  };
   const replHandles = new Set();
+  let consoleOffset = highestHistory * 2 + 1;
+  const consoleRegions = {
+    [consoleOffset - 1]: [],
+    [consoleOffset]: [],
+  };
+
+  // Create a message much like a console.log would.
+  function joinMsg(args) {
+    let ret = '';
+    let sep = '';
+    for (const a of args) {
+      let s;
+      if (typeof a === 'string') {
+        s = a;
+      } else {
+        s = stringify(a, 2, vatPowers.getInterfaceOf);
+      }
+      ret += `${sep}${s}`;
+      sep = ' ';
+    }
+    return ret;
+  }
 
   function updateHistorySlot(histnum) {
-    // console.debug(`sendBroadcast ${histnum}`);
+    console.warn(`sendBroadcast ${histnum}`, histnum, consoleOffset);
     send(
       {
         type: 'updateHistory',
         histnum,
         command: commands[histnum],
         display: display[histnum],
+        consoles: {
+          command: consoleRegions[histnum * 2].join('\n'),
+          display: consoleRegions[histnum * 2 + 1].join('\n'),
+        },
       },
       [...replHandles.keys()],
     );
   }
 
+  function writeToConsole(...args) {
+    consoleRegions[consoleOffset].push(joinMsg(args));
+    updateHistorySlot(Math.floor(consoleOffset / 2));
+  }
+
+  const replConsole = makeConsole({
+    debug: writeToConsole,
+    log: writeToConsole,
+    info: writeToConsole,
+    warn: writeToConsole,
+    error: writeToConsole,
+  });
+
+  replConsole.log(`Welcome to Agoric!`);
   const { evaluateProgram } = makeEvaluators({ sloppyGlobals: true });
 
   const handler = {
@@ -88,7 +147,7 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
 
     rebroadcastHistory() {
       // console.debug(`rebroadcastHistory`, highestHistory);
-      for (let histnum = 0; histnum <= highestHistory; histnum += 1) {
+      for (let histnum = -1; histnum <= highestHistory; histnum += 1) {
         updateHistorySlot(histnum);
       }
       return true;
@@ -102,18 +161,23 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
           `histnum ${histnum} is not larger than highestHistory ${highestHistory}`,
         );
       }
+
       highestHistory = histnum;
 
       commands[histnum] = body;
 
       // Need this concatenation to bypass direct eval test in realms-shim.
       // eslint-disable-next-line no-useless-concat
+      consoleOffset = histnum * 2;
+      consoleRegions[consoleOffset] = [];
+      consoleRegions[consoleOffset + 1] = [];
+      // eslint-disable-next-line no-useless-concat
       display[histnum] = `working on eval` + `(${body})`;
       updateHistorySlot(histnum);
 
       const endowments = {
         ...vatPowers,
-        console,
+        console: replConsole,
         E,
         commands,
         history,
@@ -128,7 +192,10 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
       } catch (e) {
         console.log(`error in eval`, e);
         history[histnum] = e;
-        display[histnum] = `exception: ${e}`;
+        display[histnum] = joinMsg('exception:', e);
+      } finally {
+        // Advance to the region after the display.
+        consoleOffset += 1;
       }
 
       if (isPromise(r)) {
