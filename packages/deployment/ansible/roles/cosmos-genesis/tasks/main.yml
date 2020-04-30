@@ -68,7 +68,7 @@
     {{ item | regex_replace('^([^:]*):([^:]*).*$', '\\1 \\2') }}"
   with_items:
     - "{{ delegates.splitlines() }}"
-  when: delegates
+  when: delegates != ""
 
 - name: "Create transaction directory"
   become: yes
