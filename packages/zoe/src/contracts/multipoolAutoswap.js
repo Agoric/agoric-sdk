@@ -17,6 +17,7 @@ import {
 /**
  * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @typedef {import('@agoric/ertp/src/issuer').Amount} Amount
+ * @typedef {import('../zoe').AmountKeywordRecords} AmountKeywordRecords
  */
 
 // Autoswap is a rewrite of Uniswap. Please see the documentation for more
@@ -321,9 +322,12 @@ export const makeContract = harden(
 
           const newTempLiqAmounts = getAllEmpty(liquidityKeys);
 
+          const keywordAmountRecords = /** @type {AmountKeywordRecords} */ (harden(
+            [newUserAmounts, newPoolAmounts, newTempLiqAmounts],
+          ));
           zcf.reallocate(
             harden([offerHandle, poolHandle, tempLiqHandle]),
-            harden([newUserAmounts, newPoolAmounts, newTempLiqAmounts]),
+            keywordAmountRecords,
             liquidityKeys,
           );
           zcf.complete(harden([offerHandle, tempLiqHandle]));

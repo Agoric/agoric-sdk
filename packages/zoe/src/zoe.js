@@ -141,6 +141,8 @@ import { makeTables } from './state';
  * The keys are keywords, and the values are amounts. For example:
  * { Asset: amountMath.make(5), Price: amountMath.make(9) }
  *
+ * @typedef {AmountKeywordRecord[]} AmountKeywordRecords
+ *
  * @typedef {Object} ExitRule
  * The possible keys are 'waived', 'onDemand', and 'afterDeadline'.
  * `timer` and `deadline` only are used for the `afterDeadline` key.
@@ -244,7 +246,7 @@ import { makeTables } from './state';
  * sparseKeywords.
  *
  * @param  {OfferHandle[]} offerHandles An array of offerHandles
- * @param  {AmountKeywordRecord} newAmountKeywordRecords An
+ * @param  {AmountKeywordRecords} newAmountKeywordRecords An
  * array of amountKeywordRecords  - objects with keyword keys
  * and amount values, with one keywordRecord per offerHandle.
  * @param  {Keyword[]} sparseKeywords An array of string
