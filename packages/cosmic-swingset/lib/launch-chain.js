@@ -67,6 +67,7 @@ export async function launch(
   kernelStateDBDir,
   mailboxStorage,
   doOutboundBridge,
+  flushChainSends,
   vatsDir,
   argv,
 ) {
@@ -159,6 +160,7 @@ export async function launch(
     deliverInbound,
     doBridgeInbound,
     // bridgeOutbound,
+    flushChainSends,
     beginBlock,
     saveChainState,
     saveOutsideState,

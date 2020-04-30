@@ -8,7 +8,7 @@ import (
 )
 
 type ControllerContext struct {
-	Keeper                Keeper
+	Keeper                *Keeper
 	Context               sdk.Context
 	StoragePort           int
 	IBCChannelHandlerPort int
@@ -32,10 +32,10 @@ func SetControllerContext(ctx sdk.Context) func() {
 	}
 }
 
-func SetControllerKeeper(keeper Keeper) func() {
+func SetControllerKeeper(keeper *Keeper) func() {
 	controllerContext.Keeper = keeper
 	return func() {
-		controllerContext.Keeper = Keeper{}
+		controllerContext.Keeper = nil
 	}
 }
 

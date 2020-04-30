@@ -26,14 +26,21 @@ NAME := $(shell sed -ne 's/.*"name": "\([^"]*\)".*/\1/p' package.json)
 VERSION := $(shell sed -ne 's/.*"version": "\([^"]*\)".*/\1/p' package.json)
 COMMIT := $(shell git log -1 --format='%H' || cat lib/git-revision.txt)
 
-ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(NAME) \
+ldflags = \
+	-X github.com/cosmos/cosmos-sdk/version.Name=$(NAME) \
 	-X github.com/cosmos/cosmos-sdk/version.ServerName=ag-chain-cosmos \
 	-X github.com/cosmos/cosmos-sdk/version.ClientName=ag-cosmos-helper \
 	-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
 	-X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags)"
+gcflags =
 
-BUILD_FLAGS := -tags "$(build_tags)" -ldflags '$(ldflags)'
+ifneq ($(GO_DEBUG),)
+ldflags += -compressdwarf=false
+gcflags += -N -l
+endif
+
+BUILD_FLAGS := -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags)'
 
 include Makefile.ledger
 all: build-cosmos install
@@ -149,7 +156,7 @@ node-compile-gyp:
 # Only run from the package.json build:gyp script.
 compile-gyp:
 	cp binding.gyp.in binding.gyp
-	node-gyp configure build || { status=$$?; rm -f binding.gyp; exit $$status; }
+	node-gyp configure build $(GYP_DEBUG) || { status=$$?; rm -f binding.gyp; exit $$status; }
 	rm -f binding.gyp
 
 install: go.sum

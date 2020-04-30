@@ -51,6 +51,7 @@ export default async function main(progname, args, { path, env, agcc }) {
   }
 
   function fromGo(port, str, replier) {
+    // console.error(`inbound ${port} ${str}`);
     const handler = portHandlers[port];
     if (!handler) {
       replier.reject(`invalid requested port ${port}`);
@@ -59,8 +60,14 @@ export default async function main(progname, args, { path, env, agcc }) {
     const action = JSON.parse(str);
     const p = Promise.resolve(handler(action));
     p.then(
-      res => replier.resolve(`${res}`),
-      rej => replier.reject(`rejection ignored: ${rej.stack || rej}`),
+      res => {
+        // console.error(`Replying in Node to ${str} with`, res);
+        replier.resolve(`${res}`);
+      },
+      rej => {
+        // console.error(`Rejecting in Node to ${str} with`, rej);
+        replier.reject(`rejection ignored: ${rej.stack || rej}`);
+      },
     );
   }
 
@@ -73,6 +80,43 @@ export default async function main(progname, args, { path, env, agcc }) {
   setInterval(() => undefined, 30000);
   agcc.runAgCosmosDaemon(nodePort, fromGo, [progname, ...args]);
 
+  let savedChainSends = [];
+
+  // Send a chain downcall, recording what we sent and received.
+  function chainSend(...sendArgs) {
+    const ret = agcc.send(...sendArgs);
+    savedChainSends.push([sendArgs, ret]);
+    return ret;
+  }
+
+  // Flush the chain send queue.
+  // If doReplay is truthy, replay each send and insist
+  // it hase the same return result.
+  function flushChainSends(doReplay) {
+    // Remove our queue.
+    const chainSends = savedChainSends;
+    savedChainSends = [];
+
+    if (!doReplay) {
+      return;
+    }
+
+    // Just send all the things we saved.
+    while (chainSends.length > 0) {
+      const [sendArgs, expectedRet] = chainSends.shift();
+      const actualRet = agcc.send(...sendArgs);
+
+      // Enforce that we got back what we expected.
+      if (actualRet !== expectedRet) {
+        throw Error(
+          `fatal: replaying chain send ${JSON.stringify(
+            sendArgs,
+          )} resulted in ${JSON.stringify(actualRet)}; expected ${expectedRet}`,
+        );
+      }
+    }
+  }
+
   // this storagePort changes for every single message. We define it out here
   // so the 'externalStorage' object can close over the single mutable
   // instance, and we update the 'portNums.storage' value each time toSwingSet is called
@@ -82,13 +126,13 @@ export default async function main(progname, args, { path, env, agcc }) {
     const mailboxStorage = {
       has(key) {
         // x/swingset/storage.go returns "true" or "false"
-        const retStr = agcc.send(
+        const retStr = chainSend(
           portNums.storage,
           stringify({ method: 'has', key }),
         );
         const ret = JSON.parse(retStr);
         if (Boolean(ret) !== ret) {
-          throw new Error(`agcc.send(has) returned ${ret} not Boolean`);
+          throw new Error(`chainSend(has) returned ${ret} not Boolean`);
         }
         return ret;
       },
@@ -101,13 +145,13 @@ export default async function main(progname, args, { path, env, agcc }) {
           );
         }
         const encodedValue = stringify(value);
-        agcc.send(
+        chainSend(
           portNums.storage,
           stringify({ method: 'set', key, value: encodedValue }),
         );
       },
       get(key) {
-        const retStr = agcc.send(
+        const retStr = chainSend(
           portNums.storage,
           stringify({ method: 'get', key }),
         );
@@ -131,7 +175,7 @@ export default async function main(progname, args, { path, env, agcc }) {
           `warning: doOutboundBridge called before AG_COSMOS_INIT gave us ${dstID}`,
         );
       }
-      const retStr = agcc.send(portNum, stringify(obj));
+      const retStr = chainSend(portNum, stringify(obj));
       return JSON.parse(retStr);
     }
 
@@ -144,6 +188,7 @@ export default async function main(progname, args, { path, env, agcc }) {
       stateDBDir,
       mailboxStorage,
       doOutboundBridge,
+      flushChainSends,
       vatsdir,
       argv,
     );
@@ -166,8 +211,7 @@ export default async function main(progname, args, { path, env, agcc }) {
 
       if (!blockManager) {
         const fns = await launchAndInitializeSwingSet();
-        const sendToCosmosPort = (port, obj) => agcc.send(port, stringify(obj));
-        blockManager = makeBlockManager(fns, sendToCosmosPort);
+        blockManager = makeBlockManager(fns);
       }
     }
 

@@ -11,6 +11,8 @@
 set -e
 progname=$(basename -- "$0")
 
+trap 'kill $(jobs -p) 2>/dev/null' EXIT 
+
 BASE_PORT=8000
 NUM_SOLOS=1
 
@@ -59,11 +61,16 @@ testnet)
       ag-solo 1000uag
 	done
 	# $thisdir/../../deployment/set-json.js $n0d/config/genesis.json --agoric-genesis-overrides
-  for node in `ls -d $chainid/n[1-9]* 2>/dev/null`; do
+  for node in `ls -d $chainid/n[1-9]* 2>/dev/null || true`; do
     cp $n0d/config/genesis.json $node/$DAEMON/config/genesis.json
   done
+  exit 0
   ;;
 start-daemon)
+  if [[ $1 == '--debug' ]]; then
+    debug=yes
+    shift
+  fi
   BASEDIR=$1
   shift
   ba=$($CLI --home "$BASEDIR/n0/$CLI" keys show n0 --keyring-backend=test | jq -r .address)
@@ -72,7 +79,12 @@ start-daemon)
     ba="$ba $(cat $solo/ag-cosmos-helper-address)"
   done
   echo "Starting BOOT_ADDRESS=$ba $DAEMON ${1+"$@"}"
-  DEBUG=agoric ROLE=two_chain BOOT_ADDRESS=$ba $DAEMON ${1+"$@"}
+  if [[ $debug == yes ]]; then
+    DEBUG=agoric ROLE=two_chain BOOT_ADDRESS=$ba node --inspect-brk $(which $DAEMON) ${1+"$@"}
+  else
+    DEBUG=agoric ROLE=two_chain BOOT_ADDRESS=$ba $DAEMON ${1+"$@"}
+  fi
+  exit 0
   ;;
 
 start-solos)
@@ -100,8 +112,9 @@ start-solos)
     ) >>nchainz/logs/$log 2>&1 &
   done
   sleep 2
-  echo "Waiting for all solos (Hit Control-C to exit)..."
+  echo "Waiting for all ${1+"$@ "}solos (Hit Control-C to exit)..."
   wait
+  exit 0
   ;;
 *)
   echo 1>&2 "$progname: unrecognized command \`$COMMAND'"
