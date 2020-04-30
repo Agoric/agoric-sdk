@@ -144,16 +144,24 @@ import { makeTables } from './state';
  * { Asset: amountMath.make(5), Price: amountMath.make(9) }
  *
  * @typedef {AmountKeywordRecord[]} AmountKeywordRecords
+ */
+
+/**
+ * @typedef {Object} Timer
+ * @typedef {number} Deadline
  *
- * @typedef {Object} ExitRule
+ * @typedef {{waived:null}} Waived
+ * @typedef {{onDemand:null}} OnDemand
+ *
+ * @typedef {{afterDeadline:{timer:Timer, deadline:Deadline}}} AfterDeadline
+ *
+ * @typedef {(Waived|OnDemand|AfterDeadline)} ExitRule
  * The possible keys are 'waived', 'onDemand', and 'afterDeadline'.
  * `timer` and `deadline` only are used for the `afterDeadline` key.
  * The possible records are:
  * `{ waived: null }`
  * `{ onDemand: null }`
  * `{ afterDeadline: { timer :Timer<Deadline>, deadline :Deadline } }
- * @property {Timer} [timer]
- * @property {Deadline} [deadline]
  */
 
 /**
@@ -225,8 +233,8 @@ import { makeTables } from './state';
  * @property {(offerHandle: OfferHandle) => boolean} isOfferActive
  * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
  * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
- * @property {(offerHandle: OfferHandle, sparseKeywords: SparseKeywords) => Allocation} getCurrentAllocation
- * @property {(offerHandles: OfferHandle[], sparseKeywords: SparseKeywords) => Allocation[]} getCurrentAllocations
+ * @property {(offerHandle: OfferHandle, sparseKeywords?: SparseKeywords) => Allocation} getCurrentAllocation
+ * @property {(offerHandles: OfferHandle[], sparseKeywords?: SparseKeywords) => Allocation[]} getCurrentAllocations
  * @property {() => InstanceRecord} getInstanceRecord
  * @property {(issuer: Issuer) => IssuerRecord} getIssuerRecord
  *
@@ -251,7 +259,7 @@ import { makeTables } from './state';
  * @param  {AmountKeywordRecord[]} newAllocations An
  * array of amountKeywordRecords  - objects with keyword keys
  * and amount values, with one keywordRecord per offerHandle.
- * @param  {Keyword[]} sparseKeywords An array of string
+ * @param  {Keyword[]=} sparseKeywords An array of string
  * keywords, which may be a subset of allKeywords
  * @returns {TODO}
  *
