@@ -186,7 +186,7 @@ func NewAgoricApp(
 		auth.StoreKey, bank.StoreKey, staking.StoreKey,
 		mint.StoreKey, distr.StoreKey, slashing.StoreKey,
 		gov.StoreKey, params.StoreKey, ibc.StoreKey, upgrade.StoreKey,
-		evidence.StoreKey, transfer.StoreKey, capability.StoreKey, swingset.StoreKey,
+		evidence.StoreKey, transfer.StoreKey, swingset.StoreKey, capability.StoreKey,
 	)
 	tKeys := sdk.NewTransientStoreKeys(params.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capability.MemStoreKey)
@@ -291,7 +291,7 @@ func NewAgoricApp(
 	// This function is tricky to get right, so we inject it ourselves.
 	app.swingSetKeeper.CallToController = func(ctx sdk.Context, str string) (string, error) {
 		defer swingset.SetControllerContext(ctx)()
-		defer swingset.SetControllerKeeper(app.swingSetKeeper)()
+		defer swingset.SetControllerKeeper(&app.swingSetKeeper)()
 		return sendToController(true, str)
 	}
 
@@ -332,8 +332,8 @@ func NewAgoricApp(
 		evidence.NewAppModule(appCodec, app.evidenceKeeper),
 		ibc.NewAppModule(app.ibcKeeper),
 		params.NewAppModule(app.paramsKeeper),
-		transferModule,
 		swingsetModule,
+		transferModule,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -353,8 +353,7 @@ func NewAgoricApp(
 	app.mm.SetOrderInitGenesis(
 		capability.ModuleName, auth.ModuleName, distr.ModuleName, staking.ModuleName, bank.ModuleName,
 		slashing.ModuleName, gov.ModuleName, mint.ModuleName, crisis.ModuleName,
-		ibc.ModuleName, genutil.ModuleName, evidence.ModuleName, transfer.ModuleName,
-		swingset.ModuleName,
+		ibc.ModuleName, genutil.ModuleName, evidence.ModuleName, swingset.ModuleName, transfer.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.crisisKeeper)

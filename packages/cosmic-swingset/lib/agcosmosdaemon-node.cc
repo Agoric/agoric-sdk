@@ -89,15 +89,17 @@ int SendToNode(int port, int replyPort, Body str) {
                     NodeReplier::New(env, promise),
                 };
             });
-        if (replyPort) {
-            // std::cerr << "Waiting on future" << std::endl;
-            try {
-                NodeReply ret = promise->get_future().get();
-                // std::cerr << "Replying to Go with " << ret.value() << " " << ret.isRejection() << std::endl;
-                ReplyToGo(replyPort, ret.isRejection(), ret.value().c_str());
-            } catch (std::exception& e) {
-                // std::cerr << "Exceptioning " << e.what() << std::endl;
-                ReplyToGo(replyPort, true, e.what());
+        // std::cerr << "Waiting on future" << std::endl;
+        try {
+            NodeReply ret = promise->get_future().get();
+            // std::cerr << "Replying to Go with " << ret.value() << " " << ret.isRejection() << std::endl;
+            if (replyPort) {
+              ReplyToGo(replyPort, ret.isRejection(), ret.value().c_str());
+            }
+        } catch (std::exception& e) {
+            // std::cerr << "Exceptioning " << e.what() << std::endl;
+            if (replyPort) {
+              ReplyToGo(replyPort, true, e.what());
             }
         }
         // std::cerr << "Thread is finished" << std::endl;

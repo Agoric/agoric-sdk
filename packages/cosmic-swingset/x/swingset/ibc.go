@@ -179,12 +179,13 @@ func (am AppModule) OnChanOpenInit(
 	}
 
 	_, err = am.CallToController(ctx, string(bytes))
+	if err != nil {
+		return err
+	}
 
-	if err == nil {
-		// Claim channel capability passed back by IBC module
-		if err := am.keeper.ClaimCapability(ctx, channelCap, ibctypes.ChannelCapabilityPath(portID, channelID)); err != nil {
-			return sdkerrors.Wrap(channel.ErrChannelCapabilityNotFound, err.Error())
-		}
+	// Claim channel capability passed back by IBC module
+	if err = am.keeper.ClaimCapability(ctx, channelCap, ibctypes.ChannelCapabilityPath(portID, channelID)); err != nil {
+		return sdkerrors.Wrap(channel.ErrChannelCapabilityNotFound, err.Error())
 	}
 
 	return err
@@ -232,12 +233,13 @@ func (am AppModule) OnChanOpenTry(
 	}
 
 	_, err = am.CallToController(ctx, string(bytes))
+	if err != nil {
+		return err
+	}
 
-	if err == nil {
-		// Claim channel capability passed back by IBC module
-		if err := am.keeper.ClaimCapability(ctx, channelCap, ibctypes.ChannelCapabilityPath(portID, channelID)); err != nil {
-			return sdkerrors.Wrap(channel.ErrChannelCapabilityNotFound, err.Error())
-		}
+	// Claim channel capability passed back by IBC module
+	if err = am.keeper.ClaimCapability(ctx, channelCap, ibctypes.ChannelCapabilityPath(portID, channelID)); err != nil {
+		return sdkerrors.Wrap(channel.ErrChannelCapabilityNotFound, err.Error())
 	}
 
 	return err

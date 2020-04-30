@@ -67,6 +67,10 @@ testnet)
   exit 0
   ;;
 start-daemon)
+  if [[ $1 == '--debug' ]]; then
+    debug=yes
+    shift
+  fi
   BASEDIR=$1
   shift
   ba=$($CLI --home "$BASEDIR/n0/$CLI" keys show n0 --keyring-backend=test | jq -r .address)
@@ -75,7 +79,11 @@ start-daemon)
     ba="$ba $(cat $solo/ag-cosmos-helper-address)"
   done
   echo "Starting BOOT_ADDRESS=$ba $DAEMON ${1+"$@"}"
-  DEBUG=agoric ROLE=two_chain BOOT_ADDRESS=$ba $DAEMON ${1+"$@"}
+  if [[ $debug == yes ]]; then
+    DEBUG=agoric ROLE=two_chain BOOT_ADDRESS=$ba node --inspect-brk $(which $DAEMON) ${1+"$@"}
+  else
+    DEBUG=agoric ROLE=two_chain BOOT_ADDRESS=$ba $DAEMON ${1+"$@"}
+  fi
   exit 0
   ;;
 

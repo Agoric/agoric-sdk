@@ -7,6 +7,7 @@
   "scripts": {
     "build": "exit 0",
     "build:gyp": "make compile-gyp",
+    "build:gyp-debug": "make compile-gyp GYP_DEBUG=--debug",
     "test": "tape -r esm 'test/**/test*.js' | tap-spec",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",

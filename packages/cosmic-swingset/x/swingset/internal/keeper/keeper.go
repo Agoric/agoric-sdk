@@ -171,7 +171,8 @@ func (k Keeper) ChanOpenInit(ctx sdk.Context, order channelexported.Order, conne
 	portID, channelID, rPortID, rChannelID, version string,
 ) error {
 	capName := porttypes.PortPath(portID)
-	portCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
+	fmt.Printf("FIGME: k.ChanOpenInit scopedKeeper %+v\n", k.scopedKeeper)
+	portCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
 		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "could not retrieve port capability at: %s", capName)
 	}
@@ -193,7 +194,8 @@ func (k Keeper) SendPacket(ctx sdk.Context, packet channelexported.PacketI) erro
 	portID := packet.GetSourcePort()
 	channelID := packet.GetSourceChannel()
 	capName := ibctypes.ChannelCapabilityPath(portID, channelID)
-	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
+	fmt.Printf("FIGME: k.SendPacket scopedKeeper %+v\n", k.scopedKeeper)
+	chanCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
 		return sdkerrors.Wrapf(channel.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
@@ -206,7 +208,8 @@ func (k Keeper) PacketExecuted(ctx sdk.Context, packet channelexported.PacketI, 
 	portID := packet.GetDestPort()
 	channelID := packet.GetDestChannel()
 	capName := ibctypes.ChannelCapabilityPath(portID, channelID)
-	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
+	fmt.Printf("FIGME: k.PacketExecuted scopedKeeper %+v\n", k.scopedKeeper)
+	chanCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
 		return sdkerrors.Wrapf(channel.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
@@ -217,7 +220,8 @@ func (k Keeper) PacketExecuted(ctx sdk.Context, packet channelexported.PacketI, 
 // in order to expose it to the SwingSet IBC handler.
 func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 	capName := ibctypes.ChannelCapabilityPath(portID, channelID)
-	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
+	fmt.Printf("FIGME: k.ChanCloseInit scopedKeeper %+v\n", k.scopedKeeper)
+	chanCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
 		return sdkerrors.Wrapf(channel.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
@@ -237,7 +241,7 @@ func (k Keeper) TimeoutExecuted(ctx sdk.Context, packet channelexported.PacketI)
 	portID := packet.GetSourcePort()
 	channelID := packet.GetSourceChannel()
 	capName := ibctypes.ChannelCapabilityPath(portID, channelID)
-	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
+	chanCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
 		return sdkerrors.Wrapf(channel.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
@@ -247,5 +251,13 @@ func (k Keeper) TimeoutExecuted(ctx sdk.Context, packet channelexported.PacketI)
 // ClaimCapability allows the SwingSet module to claim a capability that IBC module
 // passes to it
 func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capability.Capability, name string) error {
-	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
+	fmt.Printf("FIGME: k.ClaimCapability %s scopedKeeper %+v\n", name, k.scopedKeeper)
+	err := k.scopedKeeper.ClaimCapability(ctx, cap, name)
+	fmt.Printf("FIGME: stored under %s\n", k.scopedKeeper.GetCapabilityName(ctx, cap))
+	return err
+}
+
+func (k Keeper) GetCapability(ctx sdk.Context, name string) (*capability.Capability, bool) {
+	fmt.Printf("FIGME: k.GetCapability %s scopedKeeper %+v\n", name, k.scopedKeeper)
+	return k.scopedKeeper.GetCapability(ctx, name)
 }
