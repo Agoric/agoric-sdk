@@ -137,12 +137,11 @@ export default function setup(syscall, state, helpers) {
         // Every vat has a loopback device.
         ps.push(
           E(vats.network).registerProtocolHandler(
-            '/local',
+            ['/local'],
             makeLoopbackProtocolHandler(),
           ),
         );
-        // FIXME: Temporarily disable IBC access until we have stability.
-        if (false && bridgeMgr) {
+        if (bridgeMgr) {
           // We have access to the bridge, and therefore IBC.
           const callbacks = harden({
             downcall(method, obj) {
@@ -159,12 +158,15 @@ export default function setup(syscall, state, helpers) {
           );
           bridgeMgr.register('dibc', ibcHandler);
           ps.push(
-            E(vats.network).registerProtocolHandler('/ibc-port', ibcHandler),
+            E(vats.network).registerProtocolHandler(
+              ['/ibc-port', '/ibc-hop'],
+              ibcHandler,
+            ),
           );
         } else {
           const loHandler = makeLoopbackProtocolHandler(E);
           ps.push(
-            E(vats.network).registerProtocolHandler('/ibc-port', loHandler),
+            E(vats.network).registerProtocolHandler(['/ibc-port'], loHandler),
           );
         }
         await Promise.all(ps);

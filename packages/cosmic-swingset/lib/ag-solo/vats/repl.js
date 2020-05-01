@@ -3,12 +3,15 @@ import harden from '@agoric/harden';
 import { isPromise } from '@agoric/produce-promise';
 import { makeConsole } from '@agoric/swingset-vat/src/makeConsole';
 
+import makeUIAgentMakers from './ui-agent';
+
 // A REPL-specific JSON stringify.
 export function stringify(
   value,
   spaces,
   getInterfaceOf,
   already = new WeakSet(),
+  depth = 0,
 ) {
   if (Object(value) !== value) {
     return JSON.stringify(value, spaces);
@@ -24,6 +27,10 @@ export function stringify(
     return '[Promise]';
   }
 
+  if (value instanceof Error) {
+    return JSON.stringify(`${value.name}: ${value.message}`);
+  }
+
   // Detect cycles.
   if (already.has(value)) {
     return '[Circular]';
@@ -31,8 +38,7 @@ export function stringify(
   already.add(value);
 
   let ret = '';
-  const spcs = spaces === undefined ? '' : `\n${' '.repeat(spaces)}`;
-  const nextSpaces = spaces === undefined ? undefined : spaces + 2;
+  const spcs = spaces === undefined ? '' : ' '.repeat(spaces);
   if (getInterfaceOf && getInterfaceOf(value) !== undefined) {
     ret += `${value}`;
   } else if (Array.isArray(value)) {
@@ -40,16 +46,15 @@ export function stringify(
 
     let sep = '';
     for (let i = 0; i < value.length; i += 1) {
-      ret += `${sep}${spcs}${stringify(
-        value[i],
-        nextSpaces,
-        getInterfaceOf,
-        already,
-      )}`;
+      ret += sep;
+      if (spcs !== '') {
+        ret += `\n${spcs.repeat(depth + 1)}`;
+      }
+      ret += stringify(value[i], spaces, getInterfaceOf, already, depth + 1);
       sep = ',';
     }
-    if (sep !== '') {
-      ret += spcs;
+    if (sep !== '' && spcs !== '') {
+      ret += `\n${spcs.repeat(depth)}`;
     }
     ret += ']';
     return ret;
@@ -58,15 +63,16 @@ export function stringify(
   ret += '{';
   let sep = '';
   for (const key of Object.keys(value)) {
-    ret += `${sep}${spcs}${JSON.stringify(
-      key,
-      undefined,
-      nextSpaces,
-    )}:${stringify(value[key], nextSpaces, getInterfaceOf, already)}`;
+    ret += sep;
+    if (spcs !== '') {
+      ret += `\n${spcs.repeat(depth + 1)}`;
+    }
+    ret += `${JSON.stringify(key)}:${spaces > 0 ? ' ' : ''}`;
+    ret += stringify(value[key], spaces, getInterfaceOf, already, depth + 1);
     sep = ',';
   }
-  if (sep !== '') {
-    ret += spcs;
+  if (sep !== '' && spcs !== '') {
+    ret += `\n${spcs.repeat(depth)}`;
   }
   ret += '}';
   return ret;
@@ -91,7 +97,7 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
   };
 
   // Create a message much like a console.log would.
-  function joinMsg(args) {
+  function joinMsg(...args) {
     let ret = '';
     let sep = '';
     for (const a of args) {
@@ -108,7 +114,7 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
   }
 
   function updateHistorySlot(histnum) {
-    console.warn(`sendBroadcast ${histnum}`, histnum, consoleOffset);
+    // console.warn(`updateHistory ${histnum}`, histnum, consoleOffset);
     send(
       {
         type: 'updateHistory',
@@ -125,7 +131,7 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
   }
 
   function writeToConsole(...args) {
-    consoleRegions[consoleOffset].push(joinMsg(args));
+    consoleRegions[consoleOffset].push(joinMsg(...args));
     updateHistorySlot(Math.floor(consoleOffset / 2));
   }
 
@@ -139,6 +145,9 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
 
   replConsole.log(`Welcome to Agoric!`);
   const { evaluateProgram } = makeEvaluators({ sloppyGlobals: true });
+
+  const agentMakers = makeUIAgentMakers({ harden, console: replConsole });
+  homeObjects.agent = agentMakers;
 
   const handler = {
     getHighestHistory() {

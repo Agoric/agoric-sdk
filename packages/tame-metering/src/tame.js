@@ -50,10 +50,6 @@ export function tameMetering() {
     }
   };
 
-  /*
-  setWrapped(Error, Error); // FIGME: debugging
-  setWrapped(console, console); // FIGME
-  */
   const wrapDescriptor = (desc, pname = undefined) => {
     const newDesc = {};
     for (const [k, v] of entries(desc)) {
@@ -244,7 +240,6 @@ export function tameMetering() {
   replaceGlobalMeter = m => {
     const oldMeter = globalMeter;
     if (m !== undefined) {
-      // console.log('replacing', oldMeter, 'with', m, Error('here')); // FIGME
       globalMeter = m;
     }
     /* if (oldMeter === null) {

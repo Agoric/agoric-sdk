@@ -47,12 +47,14 @@ function run() {
   function linesToHTML(lines) {
     return lines
       .split('\n')
-      .map(l =>
-        l
-          .replace('&', '&amp;')
-          .replace('<', '&lt;')
-          .replace(/\t/g, '  ')
-          .replace(/\s/g, '&nbsp;'),
+      .map(
+        l =>
+          l
+            .replace('&', '&amp;') // quote ampersands
+            .replace('<', '&lt;') // quote html
+            .replace(/\t/g, '  ') // expand tabs
+            .replace(/ /g, '&nbsp;') // convert spaces
+            .replace(/&nbsp;&nbsp;/g, '&nbsp; '), // allow multispace to break
       )
       .join('<br />');
   }
@@ -65,7 +67,7 @@ function run() {
       label.textContent = `${kind}[${histnum}]`;
       const content = document.createElement('div');
       content.id = `${kind}-${histnum}`;
-      content.textContent = `${value}`;
+      content.innerHTML = linesToHTML(`${value}`);
       row.appendChild(label);
       row.appendChild(content);
       h.append(row);
@@ -102,9 +104,9 @@ function run() {
       const h1 = document.getElementById(`history-${histnum}`);
       const m1 = document.getElementById(`msg-command-${histnum}`);
       const m2 = document.getElementById(`msg-history-${histnum}`);
-      c.textContent = `${command}`;
+      c.innerHTML = linesToHTML(`${command}`);
       m1.innerHTML = linesToHTML(`${consoles.command}`);
-      h1.textContent = `${result}`;
+      h1.innerHTML = linesToHTML(`${result}`);
       m2.innerHTML = linesToHTML(`${consoles.display}`);
     } else {
       addHistoryEntry(histnum, command, result, consoles);
