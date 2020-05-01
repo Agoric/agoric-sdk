@@ -114,12 +114,17 @@
       padding-bottom: 12px;
     }
 
-    .history>div> :first-child {
+    .history>.msg-line {
+      background: antiquewhite;
+      font-style: oblique;
+    }
+
+    .history>div>.command-line :first-child, .history>div>.history-line :first-child {
       text-align: right;
       color: #424248;
     }
 
-    .history>div> :nth-child(2) {
+    .history>div>.command-line :nth-child(2), .history>div>.history-line :nth-child(2) {
       text-align: left;
       padding-left: 8px;
       /* Overflow must be set (to auto or hidden) to force the word break to apply.

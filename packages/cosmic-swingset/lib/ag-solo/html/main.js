@@ -44,27 +44,53 @@ function run() {
 
   const commands = [];
 
-  function addHistoryRow(h, histnum, kind, value) {
+  function linesToHTML(lines) {
+    return lines
+      .split('\n')
+      .map(l =>
+        l
+          .replace('&', '&amp;')
+          .replace('<', '&lt;')
+          .replace(/\t/g, '  ')
+          .replace(/\s/g, '&nbsp;'),
+      )
+      .join('<br />');
+  }
+
+  function addHistoryRow(h, histnum, kind, value, msgs) {
+    if (histnum >= 0) {
+      const row = document.createElement('div');
+      row.className = `${kind}-line`;
+      const label = document.createElement('div');
+      label.textContent = `${kind}[${histnum}]`;
+      const content = document.createElement('div');
+      content.id = `${kind}-${histnum}`;
+      content.textContent = `${value}`;
+      row.appendChild(label);
+      row.appendChild(content);
+      h.append(row);
+    }
+    // Write out any messages attached to this line.
     const row = document.createElement('div');
-    row.className = `${kind}-line`;
-    const label = document.createElement('div');
-    label.textContent = `${kind}[${histnum}]`;
-    const content = document.createElement('div');
-    content.id = `${kind}-${histnum}`;
-    content.textContent = `${value}`;
-    row.appendChild(label);
-    row.appendChild(content);
+    row.className = 'msg-line';
+    const m = document.createElement('div');
+    m.id = `msg-${kind}-${histnum}`;
+    if (msgs) {
+      m.innerHTML = linesToHTML(`${msgs}`);
+    }
+    row.appendChild(document.createElement('div'));
+    row.appendChild(m);
     h.append(row);
   }
 
-  function addHistoryEntry(histnum, command, result) {
+  function addHistoryEntry(histnum, command, result, consoles) {
     const h = document.getElementById('history');
-    addHistoryRow(h, histnum, 'command', command);
-    addHistoryRow(h, histnum, 'history', result);
+    addHistoryRow(h, histnum, 'command', command, consoles.command || '');
+    addHistoryRow(h, histnum, 'history', result, consoles.display || '');
     commands[histnum] = command;
   }
 
-  function updateHistory(histnum, command, result) {
+  function updateHistory(histnum, command, result, consoles = {}) {
     const h = document.getElementById('history');
     const isScrolledToBottom =
       h.scrollHeight - h.clientHeight <= h.scrollTop + 1;
@@ -74,10 +100,14 @@ function run() {
     const c = document.getElementById(`command-${histnum}`);
     if (c) {
       const h1 = document.getElementById(`history-${histnum}`);
+      const m1 = document.getElementById(`msg-command-${histnum}`);
+      const m2 = document.getElementById(`msg-history-${histnum}`);
       c.textContent = `${command}`;
+      m1.innerHTML = linesToHTML(`${consoles.command}`);
       h1.textContent = `${result}`;
+      m2.innerHTML = linesToHTML(`${consoles.display}`);
     } else {
-      addHistoryEntry(histnum, command, result);
+      addHistoryEntry(histnum, command, result, consoles);
     }
     if (isScrolledToBottom) {
       setTimeout(() => (h.scrollTop = h.scrollHeight), 0);
@@ -97,7 +127,7 @@ function run() {
     // we receive commands to update result boxes
     if (obj.type === 'updateHistory') {
       // these args come from calls to vat-http.js updateHistorySlot()
-      updateHistory(obj.histnum, obj.command, obj.display);
+      updateHistory(obj.histnum, obj.command, obj.display, obj.consoles);
     } else {
       console.log(`unknown WS type in:`, obj);
     }
