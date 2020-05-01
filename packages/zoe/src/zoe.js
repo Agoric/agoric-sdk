@@ -261,7 +261,7 @@ import { makeTables } from './state';
  * don't need to do those checks at this step and can assume
  * that the invariants hold.
  * @param  {OfferHandle[]} offerHandles - an array of offerHandles
- * @returns {undefined}
+ * @returns {void}
  *
  * @callback MakeInvitation
  * Make a credible Zoe invite for a particular smart contract

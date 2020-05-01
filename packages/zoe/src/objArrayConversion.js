@@ -55,7 +55,10 @@ export const objToArrayAssertFilled = (obj, keywords) => {
 
 // return a new object with only the keys in subsetKeywords. `obj`
 // must have values for all the `subsetKeywords`.
-export const filterObj = (obj, subsetKeywords) => {
+export const filterObj = /** @type {function<T>(T, string[]): T} */ (
+  obj,
+  subsetKeywords,
+) => {
   const newObj = {};
   subsetKeywords.forEach(keyword => {
     assert(
@@ -67,9 +70,15 @@ export const filterObj = (obj, subsetKeywords) => {
   return newObj;
 };
 
+/**
+ * @typedef {import('./zoe').Allocation} Allocation
+ * @typedef {import('@agoric/ertp/src/amountMath').AmountMath} AmountMath
+ * @typedef {{[Keyword:string]:AmountMath}} KeywordAmountMathRecord
+ */
+
 // return a new object with only the keys in subsetKeywords, but fill
 // in empty amounts for any key that is undefined in the original obj
-export const filterFillAmounts = (
+export const filterFillAmounts = /** @type {function(Allocation, string[], KeywordAmountMathRecord):Allocation} */ (
   obj,
   subsetKeywords,
   amountMathKeywordRecord,
