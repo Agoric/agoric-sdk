@@ -222,15 +222,20 @@ test('liveslots vpid handling case1 reject', async t => {
 async function doVatResolveCase23(t, which, mode, stalls) {
   // case 2 and 3
   const { log, syscall } = buildSyscall();
+  let resolutionOfP1;
 
   function build(E) {
     let p1;
     const pr = producePromise();
     return harden({
-      async promise(p) {
+      promise(p) {
         p1 = p;
+        p1.then(
+          x => (resolutionOfP1 = x),
+          _ => (resolutionOfP1 = 'rejected'),
+        );
       },
-      async result() {
+      result() {
         return pr.promise;
       },
       async run(target1, target2) {
@@ -255,9 +260,9 @@ async function doVatResolveCase23(t, which, mode, stalls) {
           await Promise.resolve();
         }
 
-        // If we don't stall here, or only stall one turn, then all four
-        // messages get pipelined out before we tell the kernel about the
-        // resolution (syscall.fulfillToPresence).
+        // If we don't stall here, then all four messages get pipelined out
+        // before we tell the kernel about the resolution
+        // (syscall.fulfillToPresence).
 
         // If we stall two turns, then the fulfillToPresence goes to the
         // kernel before three() and four(), but our 'p1' is not yet marked
@@ -376,28 +381,38 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   });
   expectedThree.push({ type: 'subscribe', target: expectedResultOfThree });
 
-  // At present, four() is always pipelined to the promise. This should
-  // change: once the vat knows what the promise has resolved to, it should
-  // send the message there directly. If mode === 'presence', the kernel
-  // should see a send() of four() directly to target2. If mode === 'data' or
-  // 'reject', it should reject locally, and the kernel should never see a
-  // syscall that sends four(). We explored some of this in #823, and code
-  // was landed to address it, but the behavior is still kind of wrong.
-  if (RETIRE_VPIDS) {
+  let fourIsPipelined = false;
+  let fourIsTargeted = false;
+
+  if (stalls === 0) {
+    // If don't wait at all, four() will be pipelined to the promise, because
+    // nothing in liveslots has had a chance to update. The kernel will see
+    // the same syscall.send regardless of how the Promise is eventually
+    // fulfilled.
+    fourIsPipelined = true;
+  } else if (stalls === 1) {
+    // If we wait one turn and resolve to a presence, four() will be sent to
+    // the target.
     if (mode === 'presence') {
-      expectedFour.push({
-        type: 'send',
-        targetSlot: target2,
-        method: 'four',
-        args: capargs([], []),
-        resultSlot: expectedResultOfFour,
-      });
-      expectedFour.push({ type: 'subscribe', target: expectedResultOfFour });
+      fourIsTargeted = true;
+    } else {
+      // Waiting one turn and resolving to data, or rejecting, doesn't catch
+      // the message in time, and it gets pipelined to the promise.
+      fourIsPipelined = true;
     }
-    // but if we resolved p1 to data or rejected it, four() is not sent (the
-    // vat creates an error for it locally), and the kernel shouldn't see
-    // anything
   } else {
+    // Waiting two or more turns allows the Promise to be fully resolved for
+    // all cases, and four() is sent to the target, not pipelined. We'll only
+    // see a syscall if the target is a presence, otherwise the vat creates
+    // an error for it locally.
+
+    // eslint-disable-next-line no-lonely-if
+    if (mode === 'presence') {
+      fourIsTargeted = true;
+    }
+  }
+
+  if (fourIsPipelined) {
     expectedFour.push({
       type: 'send',
       targetSlot: p1,
@@ -406,15 +421,33 @@ async function doVatResolveCase23(t, which, mode, stalls) {
       resultSlot: expectedResultOfFour,
     });
     expectedFour.push({ type: 'subscribe', target: expectedResultOfFour });
+  } else if (fourIsTargeted) {
+    expectedFour.push({
+      type: 'send',
+      targetSlot: target2,
+      method: 'four',
+      args: capargs([], []),
+      resultSlot: expectedResultOfFour,
+    });
+    expectedFour.push({ type: 'subscribe', target: expectedResultOfFour });
   }
 
-  // TODO: the behavior ideally shouldn't depend upon how long we stall after
-  // resolution
+  // TODO: The behavior ideally shouldn't depend upon how long we stall after
+  // resolution. However, MarkM says that until HandledPromise is implemented
+  // natively in our JS engine, it is not possible for resolve() syscall to
+  // appear before the subsequent send() syscalls, and that our ordering
+  // rules don't require that particular sequencing anyways. The
+  // delivery/syscall order of *sends* must match the order in which they
+  // were made, but *resolves* are not similarly constrained. This test
+  // enforces a particular order so that we'll know when we change it, but be
+  // aware that the relative ordering of resolves and sends is not a property
+  // vats should rely upon.
 
   let expected;
-  if (stalls === 0 || stalls === 1) {
-    // for some reason, if we don't stall long enough, the kernel sees
-    // three() and four() before it sees the resolution
+  if (stalls === 0) {
+    // If we don't stall long enough, the kernel sees three() and four()
+    // before it sees the resolution. This is acceptable behavior, we just
+    // need to tolerate both cases.
     expected = expectedThree.concat(expectedFour).concat(expectedFulfill);
   } else {
     expected = expectedFulfill.concat(expectedThree).concat(expectedFour);
@@ -422,8 +455,21 @@ async function doVatResolveCase23(t, which, mode, stalls) {
 
   t.deepEqual(log, expected);
 
+  // assert that the vat saw the local promise being resolved too
+  if (mode === 'presence') {
+    t.equal(resolutionOfP1.toString(), `[Presence ${target2}]`);
+  } else if (mode === 'data') {
+    t.equal(resolutionOfP1, 4);
+  } else if (mode === 'reject') {
+    t.equal(resolutionOfP1, 'rejected');
+  }
+
   t.end();
 }
+
+// test.only(`XX`, async t => {
+//   await doVatResolveCase23(t, 2, 'presence', 0);
+// });
 
 for (const caseNum of [2, 3]) {
   for (const mode of ['presence', 'data', 'reject']) {
