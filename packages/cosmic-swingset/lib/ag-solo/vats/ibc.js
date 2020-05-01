@@ -17,7 +17,18 @@ const DEFAULT_PACKET_TIMEOUT = 1000;
 
 // FIXME: this constitutes a security flaw, but is currently the
 // only way to create channels.
-const ALLOW_NAIVE_RELAYS = true;
+const FIXME_ALLOW_NAIVE_RELAYS = true;
+
+// FIXME: We need to delay to a later block to work around
+// a relayer race condition (no sendPacket too soon after
+// a channelOpenAck).
+//
+// I[2020-05-01|15:32:43.721] - listening to tx events from ibc0...
+// I[2020-05-01|15:32:43.721] - listening to block events from ibc0...
+// Error: no transactions returned with query
+// no transactions returned with query
+// [exits]
+const FIXME_SENDPACKET_DELAY_S = 10; // fail <=3, work >=4
 
 /**
  * @typedef {import('@agoric/swingset-vat/src/vats/network').ProtocolHandler} ProtocolHandler
@@ -79,12 +90,14 @@ let seed = 0;
  * @param {import('@agoric/eventual-send').EProxy} E
  * @param {(method: string, params: any) => Promise<any>} callIBCDevice
  * @param {string[]} [packetSendersWhitelist=[]]
+ * @param {*} timerService
  * @returns {ProtocolHandler & BridgeHandler} Protocol/Bridge handler
  */
 export function makeIBCProtocolHandler(
   E,
   callIBCDevice,
   packetSendersWhitelist = [],
+  { timerService },
 ) {
   /**
    * @type {Store<string, Promise<Connection>>}
@@ -337,11 +350,11 @@ export function makeIBCProtocolHandler(
       /**
        * @type {typeof makeIBCConnectionHandler}
        */
-      const connected = (cID, pID, rCID, rPID, ord) => {
+      function connected(cID, pID, rCID, rPID, ord) {
         const ch = makeIBCConnectionHandler(cID, pID, rCID, rPID, ord);
         rchandler.resolve(ch);
         return ch;
-      };
+      }
 
       for (let i = 0; i <= hops.length; i += 1) {
         // Add most specific to least specific outbound connections.
@@ -398,7 +411,7 @@ export function makeIBCProtocolHandler(
       const channelKey = `${channelID}:${portID}`;
       channelKeyToConnectingInfo.init(channelKey, obj);
 
-      if (!ALLOW_NAIVE_RELAYS || !chandler) {
+      if (!FIXME_ALLOW_NAIVE_RELAYS || !chandler) {
         // Just wait until the connection handler resolves.
         return rchandler.promise;
       }
@@ -573,13 +586,26 @@ paths:
           );
           if (waiter) {
             // An outbound connection wants to use this channel.
-            waiter.connected(
-              channelID,
-              portID,
-              rChannelID,
-              rPortID,
-              order === 'ORDERED',
-            );
+            const finishConnection = () => {
+              waiter.connected(
+                channelID,
+                portID,
+                rChannelID,
+                rPortID,
+                order === 'ORDERED',
+              );
+            };
+
+            if (FIXME_SENDPACKET_DELAY_S) {
+              E(timerService).setWakeup(
+                FIXME_SENDPACKET_DELAY_S,
+                harden({
+                  wake: finishConnection,
+                }),
+              );
+            } else {
+              finishConnection();
+            }
             break;
           }
 

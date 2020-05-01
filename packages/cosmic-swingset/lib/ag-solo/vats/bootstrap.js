@@ -67,14 +67,13 @@ export default function setup(syscall, state, helpers) {
         await E(walletVat).setPresences();
       }
 
+      let chainTimerService;
       // Make services that are provided on the real or virtual chain side
       async function makeChainBundler(vats, timerDevice) {
         // Create singleton instances.
         const sharingService = await E(vats.sharing).getSharingService();
         const registry = await E(vats.registrar).getSharedRegistrar();
-        const chainTimerService = await E(vats.timer).createTimerService(
-          timerDevice,
-        );
+        chainTimerService = await E(vats.timer).createTimerService(timerDevice);
 
         const zoe = await E(vats.zoe).getZoe();
         const contractHost = await E(vats.host).makeHost();
@@ -132,6 +131,7 @@ export default function setup(syscall, state, helpers) {
         vats,
         bridgeMgr,
         packetSendersWhitelist = [],
+        { timerService },
       ) {
         const ps = [];
         // Every vat has a loopback device.
@@ -155,6 +155,7 @@ export default function setup(syscall, state, helpers) {
           const ibcHandler = await E(vats.ibc).createInstance(
             callbacks,
             packetSendersWhitelist,
+            { timerService },
           );
           bridgeMgr.register('dibc', ibcHandler);
           ps.push(
@@ -281,8 +282,6 @@ export default function setup(syscall, state, helpers) {
           switch (ROLE) {
             case 'chain':
             case 'one_chain': {
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
-
               // provisioning vat can ask the demo server for bundles, and can
               // register client pubkeys with comms
               await E(vats.provisioning).register(
@@ -290,6 +289,11 @@ export default function setup(syscall, state, helpers) {
                 vats.comms,
                 vats.vattp,
               );
+
+              // Must occur after makeChainBundler.
+              await registerNetworkProtocols(vats, bridgeManager, pswl, {
+                timerService: chainTimerService,
+              });
 
               // accept provisioning requests from the controller
               const provisioner = harden({
@@ -316,7 +320,12 @@ export default function setup(syscall, state, helpers) {
                 throw new Error(`controller must be given GCI`);
               }
 
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
+              const localTimerService = await E(vats.timer).createTimerService(
+                devices.timer,
+              );
+              await registerNetworkProtocols(vats, bridgeManager, pswl, {
+                timerService: localTimerService,
+              });
 
               // Wire up the http server.
               await setupCommandDevice(vats.http, devices.command, {
@@ -343,13 +352,17 @@ export default function setup(syscall, state, helpers) {
               if (!GCI) {
                 throw new Error(`client must be given GCI`);
               }
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
-              await setupCommandDevice(vats.http, devices.command, {
-                client: true,
-              });
+
               const localTimerService = await E(vats.timer).createTimerService(
                 devices.timer,
               );
+              await registerNetworkProtocols(vats, bridgeManager, pswl, {
+                timerService: localTimerService,
+              });
+
+              await setupCommandDevice(vats.http, devices.command, {
+                client: true,
+              });
               await addRemote(GCI);
               // addEgress(..., index, ...) is called in vat-provisioning.
               const demoProvider = await E(vats.comms).addIngress(
@@ -375,10 +388,14 @@ export default function setup(syscall, state, helpers) {
             case 'two_chain': {
               // scenario #2: one-node chain running on localhost, solo node on
               // localhost, HTML frontend on localhost. Single-player mode.
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
 
               // bootAddress holds the pubkey of localclient
               const chainBundler = await makeChainBundler(vats, devices.timer);
+
+              await registerNetworkProtocols(vats, bridgeManager, pswl, {
+                timerService: chainTimerService,
+              });
+
               const demoProvider = harden({
                 // build a chain-side bundle for a client.
                 async getDemoBundle(nickname) {
@@ -400,13 +417,15 @@ export default function setup(syscall, state, helpers) {
               if (!GCI) {
                 throw new Error(`client must be given GCI`);
               }
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
               await setupCommandDevice(vats.http, devices.command, {
                 client: true,
               });
               const localTimerService = await E(vats.timer).createTimerService(
                 devices.timer,
               );
+              await registerNetworkProtocols(vats, bridgeManager, pswl, {
+                timerService: localTimerService,
+              });
               await addRemote(GCI);
               // addEgress(..., PROVISIONER_INDEX) is called in case two_chain
               const demoProvider = E(vats.comms).addIngress(
@@ -434,14 +453,17 @@ export default function setup(syscall, state, helpers) {
               // frontend. Limited subset of demo runs inside the solo node.
 
               // We pretend we're on-chain.
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
+              const chainBundler = makeChainBundler(vats, devices.timer);
+              await registerNetworkProtocols(vats, bridgeManager, pswl, {
+                timerService: chainTimerService,
+              });
 
               // Shared Setup (virtual chain side) ///////////////////////////
               await setupCommandDevice(vats.http, devices.command, {
                 client: true,
               });
               const { payments, bundle, issuerInfo } = await E(
-                makeChainBundler(vats, devices.timer),
+                chainBundler,
               ).createUserBundle('localuser');
 
               // Setup of the Local part /////////////////////////////////////

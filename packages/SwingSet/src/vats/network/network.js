@@ -276,11 +276,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
     async inbound(listenSearch, localAddr, remoteAddr, rchandler) {
       const listenAddr = listenSearch.find(addr => listening.has(addr));
       if (!listenAddr) {
-        throw Error(
-          `Connection refused to ${localAddr} (search=${listenSearch.join(
-            ', ',
-          )})`,
-        );
+        throw Error(`Connection refused to ${localAddr}`);
       }
       const [port, listener] = listening.get(listenAddr);
       const current = currentConnections.get(port);

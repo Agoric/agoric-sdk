@@ -71,6 +71,7 @@ export default function makeBlockManager({
       throw decohered;
     }
 
+    // console.warn('FIGME: blockHeight', action.blockHeight, 'received', action.type)
     switch (action.type) {
       case COMMIT_BLOCK: {
         if (action.blockHeight !== computedHeight) {
@@ -151,7 +152,6 @@ export default function makeBlockManager({
           for (const a of currentActions) {
             // eslint-disable-next-line no-await-in-loop
             await kernelPerformAction(a);
-            // TODO warner maybe change kernelPerformAction to enqueue but not run the kernel
           }
         }
 
