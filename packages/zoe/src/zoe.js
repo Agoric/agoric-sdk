@@ -415,6 +415,8 @@ const makeZoe = (additionalEndowments = {}) => {
     const contractFacet = harden({
       reallocate: (offerHandles, newAllocations, sparseKeywords) => {
         assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
+        // We may want to handle this with static checking instead.
+        // Discussion at: https://github.com/Agoric/agoric-sdk/issues/1017
         assert(
           offerHandles.length >= 2,
           details`reallocating must be done over two or more offers`,
