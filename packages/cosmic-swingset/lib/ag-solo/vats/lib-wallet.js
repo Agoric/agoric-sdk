@@ -33,7 +33,7 @@ export async function makeWallet(
 
   // Compiled offers (all ready to execute).
   const idToCompiledOfferP = new Map();
-  const idToCancel = new Map();
+  const idToComplete = new Map();
   const idToOfferHandle = new Map();
   const idToOutcome = new Map();
 
@@ -301,12 +301,12 @@ export async function makeWallet(
   }
 
   async function cancelOffer(id) {
-    const cancel = idToCancel.get(id);
-    if (!cancel) {
+    const completeFn = idToComplete.get(id);
+    if (!completeFn) {
       return false;
     }
 
-    cancel()
+    completeFn()
       .then(_ => {
         const offer = idToOffer.get(id);
         const cancelledOffer = {
@@ -361,9 +361,9 @@ export async function makeWallet(
         offerHandle,
       } = await executeOffer(compiledOffer, inviteP);
 
-      idToCancel.set(id, () => {
+      idToComplete.set(id, () => {
         alreadyResolved = true;
-        return E(completeObj).cancel();
+        return E(completeObj).complete();
       });
       idToOfferHandle.set(id, offerHandle);
       // The offer might have been postponed, or it might have been immediately

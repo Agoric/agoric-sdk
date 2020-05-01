@@ -793,10 +793,19 @@ const makeZoe = (additionalEndowments = {}) => {
               // Add an object with a cancel method to offerResult in
               // order to cancel on demand.
             } else if (exitKind === 'onDemand') {
-              offerResult.completeObj = {
-                cancel: () =>
+              const completeObj = {
+                complete: () =>
                   completeOffers(instanceHandle, harden([offerHandle])),
               };
+              offerResult.completeObj = completeObj;
+              // The property "cancelObj" and method "cancel" are
+              // deprecated and will be removed in a later version.
+              // https://github.com/Agoric/agoric-sdk/issues/835
+              const cancelObj = {
+                cancel: () =>
+                    completeOffers(instanceHandle, harden([offerHandle])),
+                };
+              offerResult.cancelObj = cancelObj;
             } else {
               assert(
                 exitKind === 'waived',
