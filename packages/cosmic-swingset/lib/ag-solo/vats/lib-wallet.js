@@ -147,7 +147,7 @@ export async function makeWallet(
 
     const {
       payout: payoutObjP,
-      cancelObj,
+      completeObj,
       outcome: outcomeP,
       offerHandle: offerHandleP,
     } = await E(zoe).offer(invite, proposal, payment);
@@ -190,7 +190,7 @@ export async function makeWallet(
       );
     });
 
-    return { depositedP, cancelObj, outcome, offerHandle };
+    return { depositedP, completeObj, outcome, offerHandle };
   }
 
   // === API
@@ -356,14 +356,14 @@ export async function makeWallet(
       const inviteP = invite || E(publicAPIHooks).getInvite(publicAPI);
       const {
         depositedP,
-        cancelObj,
+        completeObj,
         outcome,
         offerHandle,
       } = await executeOffer(compiledOffer, inviteP);
 
       idToCancel.set(id, () => {
         alreadyResolved = true;
-        return E(cancelObj).cancel();
+        return E(completeObj).cancel();
       });
       idToOfferHandle.set(id, offerHandle);
       // The offer might have been postponed, or it might have been immediately

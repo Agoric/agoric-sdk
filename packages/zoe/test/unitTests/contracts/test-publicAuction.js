@@ -366,7 +366,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // Alice initializes the auction
     const {
       payout: alicePayoutP,
-      cancelObj,
+      completeObj,
       outcome: aliceOutcomeP,
     } = await zoe.offer(aliceInvite, aliceProposal, alicePayments);
 
@@ -379,7 +379,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
 
     // Alice cancels her offer, making the auction stop accepting
     // offers
-    cancelObj.cancel();
+    completeObj.cancel();
 
     // Alice gives Bob the invite
 
