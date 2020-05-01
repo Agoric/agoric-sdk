@@ -24,11 +24,16 @@ function isOfferSafeForOffer(
   proposal,
   newAmountKeywordRecord,
 ) {
-  const isGTEByKeyword = ([keyword, amount]) =>
-    amountMathKeywordRecord[keyword].isGTE(
+  const isGTEByKeyword = ([keyword, amount]) => {
+    if (!Object.keys(amountMathKeywordRecord).includes(keyword)) {
+      return false;
+    }
+    return amountMathKeywordRecord[keyword].isGTE(
       newAmountKeywordRecord[keyword],
       amount,
     );
+  };
+
   // For this allocation to count as a full refund, the allocated
   // amount must be greater than or equal to what was originally
   // offered.
