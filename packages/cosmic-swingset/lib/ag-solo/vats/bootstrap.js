@@ -10,6 +10,8 @@ import {
 import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
 
+const NUM_IBC_PORTS = 3;
+
 console.debug(`loading bootstrap.js`);
 
 function parseArgs(argv) {
@@ -101,14 +103,18 @@ export default function setup(syscall, state, helpers) {
         );
         return harden({
           async createUserBundle(_nickname) {
-            // Bind to a fresh port (unspecified name) on the IBC implementation
-            // and provide it for the user to have.
-            const ibcport = await E(vats.network).bind('/ibc-port/');
+            // Bind to some fresh ports (unspecified name) on the IBC implementation
+            // and provide them for the user to have.
+            const ibcports = [];
+            for (let i = 0; i < NUM_IBC_PORTS; i += 1) {
+              // eslint-disable-next-line no-await-in-loop
+              ibcports.push(await E(vats.network).bind('/ibc-port/'));
+            }
             const bundle = harden({
               chainTimerService,
               sharingService,
               contractHost,
-              ibcport,
+              ibcports,
               registrar: registry,
               registry,
               zoe,
