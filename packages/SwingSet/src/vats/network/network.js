@@ -6,6 +6,8 @@ import { toBytes } from './bytes';
 
 const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
+export const ENDPOINT_SEPARATOR = '/';
+
 /**
  * @template T,U
  * @typedef {import('@agoric/store').Store<T,U>} Store
@@ -23,7 +25,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
  * @typedef {Object} Protocol The network Protocol
- * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if ending in '/', a fresh name
+ * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if ending in ENDPOINT_SEPARATOR, a fresh name
  */
 
 /**
@@ -38,7 +40,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 /**
  * @typedef {Object} ListenHandler A handler for incoming connections
  * @property {(port: Port, l: ListenHandler) => Promise<void>} [onListen] The listener has been registered
- * @property {(port: Port, localAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<ConnectionHandler>} [onAccept] A new connection is incoming
+ * @property {(port: Port, localAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<ConnectionHandler>} onAccept A new connection is incoming
  * @property {(port: Port, rej: any, l: ListenHandler) => Promise<void>} [onError] There was an error while listening
  * @property {(port: Port, l: ListenHandler) => Promise<void>} [onRemove] The listener has been removed
  */
@@ -230,10 +232,9 @@ export function crossoverConnection(
 /**
  * Get the list of prefixes from longest to shortest.
  * @param {string} addr
- * @param {string} [sep='/']
  */
-export function getPrefixes(addr, sep = '/') {
-  const parts = addr.split(sep);
+export function getPrefixes(addr) {
+  const parts = addr.split(ENDPOINT_SEPARATOR);
 
   /**
    * @type {string[]}
@@ -241,7 +242,7 @@ export function getPrefixes(addr, sep = '/') {
   const ret = [];
   for (let i = parts.length; i > 0; i -= 1) {
     // Try most specific match.
-    const prefix = parts.slice(0, i).join(sep);
+    const prefix = parts.slice(0, i).join(ENDPOINT_SEPARATOR);
     ret.push(prefix);
   }
   return ret;
@@ -283,9 +284,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
 
       const lchandler =
         /** @type {ConnectionHandler} */
-        (await E(listener)
-          .onAccept(port, localAddr, remoteAddr, listener)
-          .catch(rethrowUnlessMissing));
+        (await E(listener).onAccept(port, localAddr, remoteAddr, listener));
 
       return crossoverConnection(
         lchandler,
@@ -301,7 +300,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
         /** @type {string} */
         (await E(port).getLocalAddress());
 
-      const ret = getPrefixes(remoteAddr, '/');
+      const ret = getPrefixes(remoteAddr);
       if (await protocolImpl.isListening(ret)) {
         return protocolImpl.inbound(ret, remoteAddr, localAddr, lchandler);
       }
@@ -345,7 +344,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
    */
   const bind = async localAddr => {
     // Check if we are underspecified (ends in slash)
-    if (localAddr.endsWith('/')) {
+    if (localAddr.endsWith(ENDPOINT_SEPARATOR)) {
       for (;;) {
         // eslint-disable-next-line no-await-in-loop
         const portID = await E(protocolHandler).generatePortID(localAddr);
@@ -536,9 +535,12 @@ export function makeLoopbackProtocolHandler(E = defaultE) {
       }
       const [lport, lhandler] = listeners.get(remoteAddr);
       // console.log(`looking up onAccept in`, lhandler);
-      const rport = await E(lhandler)
-        .onAccept(lport, remoteAddr, localAddr, lhandler)
-        .catch(rethrowUnlessMissing);
+      const rport = await E(lhandler).onAccept(
+        lport,
+        remoteAddr,
+        localAddr,
+        lhandler,
+      );
       // console.log(`rport is`, rport);
       return rport;
     },

@@ -100,9 +100,9 @@ export function makeIBCProtocolHandler(
   { timerService },
 ) {
   /**
-   * @type {Store<string, Promise<Connection>>}
+   * @type {Store<string, [ConnectionHandler, Promise<Connection>]>}
    */
-  const channelKeyToConnP = makeStore('CHANNEL:PORT');
+  const channelKeyToHandler = makeStore('CHANNEL:PORT');
 
   /**
    * @typedef {Object} Counterparty
@@ -122,7 +122,7 @@ export function makeIBCProtocolHandler(
   /**
    * @type {Store<string, ConnectingInfo>}
    */
-  const channelKeyToConnectingInfo = makeStore('CHANNEL:PORT');
+  const channelKeyToInfo = makeStore('CHANNEL:PORT');
 
   /**
    * @type {Set<string>}
@@ -409,7 +409,7 @@ export function makeIBCProtocolHandler(
         version,
       };
       const channelKey = `${channelID}:${portID}`;
-      channelKeyToConnectingInfo.init(channelKey, obj);
+      channelKeyToInfo.init(channelKey, obj);
 
       if (!FIXME_ALLOW_NAIVE_RELAYS || !chandler) {
         // Just wait until the connection handler resolves.
@@ -547,10 +547,10 @@ paths:
           );
           if (!waiter) {
             await E(protocolImpl).isListening([`/ibc-port/${portID}`]);
-            channelKeyToConnectingInfo.init(channelKey, obj);
+            channelKeyToInfo.init(channelKey, obj);
           } else {
             // We have more specific information.
-            channelKeyToConnectingInfo.set(channelKey, obj);
+            channelKeyToInfo.set(channelKey, obj);
           }
           break;
         }
@@ -569,8 +569,8 @@ paths:
             connectionHops: hops,
             counterparty: { port_id: rPortID, channel_id: rChannelID },
             counterpartyVersion: storedVersion,
-          } = channelKeyToConnectingInfo.get(channelKey);
-          channelKeyToConnectingInfo.delete(channelKey);
+          } = channelKeyToInfo.get(channelKey);
+          channelKeyToInfo.delete(channelKey);
 
           const rVersion = updatedVersion || storedVersion;
           const localAddr = `/ibc-port/${portID}/${order.toLowerCase()}/${version}`;
@@ -610,7 +610,7 @@ paths:
           }
 
           // Check for a listener for this subprotocol.
-          const listenSearch = getPrefixes(localAddr, '/');
+          const listenSearch = getPrefixes(localAddr);
           const rchandler = makeIBCConnectionHandler(
             channelID,
             portID,
@@ -620,17 +620,17 @@ paths:
           );
 
           // Actually connect.
-          const connP =
-            /** @type {Promise<Connection>} */
-            (E(protocolImpl).inbound(
-              listenSearch,
-              localAddr,
-              remoteAddr,
-              rchandler,
-            ));
+          // eslint-disable-next-line prettier/prettier
+          const connP = /** @type {Promise<Connection>} */
+            (E(protocolImpl).inbound(listenSearch, localAddr, remoteAddr, rchandler))
+            .then(conn => {
+              console.info(`FIGME: got connection`, conn);
+              return conn;
+            });
 
           /* Stash it for later use. */
-          channelKeyToConnP.init(channelKey, connP);
+          console.info(`FIGME: Stashing ${channelKey}`, rchandler);
+          channelKeyToHandler.init(channelKey, [rchandler, connP]);
           break;
         }
 
@@ -643,11 +643,11 @@ paths:
           } = packet;
           const channelKey = `${channelID}:${portID}`;
 
-          const connP = channelKeyToConnP.get(channelKey);
+          const [chandler, connP] = channelKeyToHandler.get(channelKey);
           const data = base64ToBytes(data64);
 
-          E(connP)
-            .send(data)
+          connP
+            .then(conn => E(chandler).onReceive(conn, data, chandler))
             .then(ack => {
               const ack64 = dataToBase64(/** @type {Bytes} */ (ack));
               return callIBCDevice('packetExecuted', { packet, ack: ack64 });
@@ -688,10 +688,10 @@ paths:
         case 'channelCloseConfirm': {
           const { portID, channelID } = obj;
           const channelKey = `${channelID}:${portID}`;
-          if (channelKeyToConnP.has(channelKey)) {
-            const connP = channelKeyToConnP.get(channelKey);
-            channelKeyToConnP.delete(channelKey);
-            E(connP).close();
+          if (channelKeyToHandler.has(channelKey)) {
+            const [chandler, connP] = channelKeyToHandler.get(channelKey);
+            channelKeyToHandler.delete(channelKey);
+            connP.then(conn => E(chandler).onClose(conn, undefined, chandler));
           }
           break;
         }
