@@ -19,16 +19,6 @@ const DEFAULT_PACKET_TIMEOUT = 1000;
 // only way to create channels.
 const FIXME_ALLOW_NAIVE_RELAYS = true;
 
-// We need to delay to a later block because packets
-// cannot be sent before the channel ack is complete
-// (no sendPacket within a channelOpenAck).
-//
-// FIXME: We might be able to fix this within the relayer, which
-// currently fails with:
-//   cannot update client with ID ibczeroclient: header blocktime
-//   ≤ latest client state block time (X ≤ X): invalid block header
-const FIXME_SENDPACKET_DELAY_S = 1;
-
 /**
  * @typedef {import('@agoric/swingset-vat/src/vats/network').ProtocolHandler} ProtocolHandler
  * @typedef {import('@agoric/swingset-vat/src/vats/network').ProtocolImpl} ProtocolImpl
@@ -89,14 +79,12 @@ let seed = 0;
  * @param {import('@agoric/eventual-send').EProxy} E
  * @param {(method: string, params: any) => Promise<any>} callIBCDevice
  * @param {string[]} [packetSendersWhitelist=[]]
- * @param {*} timerService
  * @returns {ProtocolHandler & BridgeHandler} Protocol/Bridge handler
  */
 export function makeIBCProtocolHandler(
   E,
   callIBCDevice,
   packetSendersWhitelist = [],
-  { timerService },
 ) {
   /**
    * @type {Store<string, Promise<Connection>>}
@@ -607,26 +595,13 @@ paths:
           );
           if (waiter) {
             // An outbound connection wants to use this channel.
-            const finishConnection = () => {
-              waiter.connected(
-                channelID,
-                portID,
-                rChannelID,
-                rPortID,
-                order === 'ORDERED',
-              );
-            };
-
-            if (FIXME_SENDPACKET_DELAY_S) {
-              E(timerService).setWakeup(
-                FIXME_SENDPACKET_DELAY_S,
-                harden({
-                  wake: finishConnection,
-                }),
-              );
-            } else {
-              finishConnection();
-            }
+            waiter.connected(
+              channelID,
+              portID,
+              rChannelID,
+              rPortID,
+              order === 'ORDERED',
+            );
             break;
           }
 
