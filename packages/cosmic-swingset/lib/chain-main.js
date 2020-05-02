@@ -199,7 +199,7 @@ export default async function main(progname, args, { path, env, agcc }) {
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action, replier);
     if (action.type === AG_COSMOS_INIT) {
-      // console.error('FIGME: got AG_COSMOS_INIT', action);
+      // console.error('got AG_COSMOS_INIT', action);
       portNums.dibc = action.ibcPort;
       return true;
     }

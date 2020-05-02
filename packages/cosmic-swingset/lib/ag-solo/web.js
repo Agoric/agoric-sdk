@@ -223,7 +223,11 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
     if (c) {
       send(c, JSON.stringify(obj));
     } else {
-      log.error(`[${channelID}]: channel not found`);
+      // They probably just hung up.  On replay, we don't
+      // want to be noisy.
+      // TODO: Somehow coordinate with the inbound vat that
+      // we no longer have active connections.
+      log.debug(`[${channelID}]: channel not found`);
     }
   }
 

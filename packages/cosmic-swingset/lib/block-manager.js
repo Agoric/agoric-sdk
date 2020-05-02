@@ -25,11 +25,11 @@ export default function makeBlockManager({
     // TODO warner we could change this to run the kernel only during END_BLOCK
     const start = Date.now();
     function finish() {
-      // console.error('Action', action.type, action.blockHeight, 'is done!');
+      // log.error('Action', action.type, action.blockHeight, 'is done!');
       runTime += Date.now() - start;
     }
 
-    // console.error('Performing action', action);
+    // log.error('Performing action', action);
     let p;
     switch (action.type) {
       case BEGIN_BLOCK:
@@ -71,6 +71,7 @@ export default function makeBlockManager({
       throw decohered;
     }
 
+    // console.warn('FIGME: blockHeight', action.blockHeight, 'received', action.type)
     switch (action.type) {
       case COMMIT_BLOCK: {
         if (action.blockHeight !== computedHeight) {
@@ -95,12 +96,14 @@ export default function makeBlockManager({
       case BEGIN_BLOCK: {
         // Start a new block, or possibly replay the prior one.
         for (const a of currentActions) {
+          // FIXME: This is a problem, apparently with Cosmos SDK.
+          // Need to diagnose.
           if (a.blockHeight !== action.blockHeight) {
-            console.warn(
-              'Warning: Block',
+            log.debug(
+              'Block',
               action.blockHeight,
               'begun with a leftover uncommitted action:',
-              a,
+              a.type,
             );
           }
         }
@@ -149,7 +152,6 @@ export default function makeBlockManager({
           for (const a of currentActions) {
             // eslint-disable-next-line no-await-in-loop
             await kernelPerformAction(a);
-            // TODO warner maybe change kernelPerformAction to enqueue but not run the kernel
           }
         }
 

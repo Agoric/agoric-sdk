@@ -36,7 +36,7 @@ export default function makeRouter(sep = '/') {
   const prefixToRoute = makeStore('prefix');
   return harden({
     getRoutes(addr) {
-      const parts = addr.split('/');
+      const parts = addr.split(sep);
       /**
        * @type {[string, any][]}
        */
@@ -84,13 +84,17 @@ export function makeRouterProtocol(sep = '/', E = defaultE) {
   const protocols = makeStore('prefix');
   const protocolHandlers = makeStore('prefix');
 
-  function registerProtocolHandler(prefix, protocolHandler) {
+  function registerProtocolHandler(paths, protocolHandler) {
     const protocol = makeNetworkProtocol(protocolHandler);
-    router.register(prefix, protocol);
-    protocols.init(prefix, protocol);
-    protocolHandlers.init(prefix, protocolHandler);
+    for (const prefix of paths) {
+      router.register(prefix, protocol);
+      protocols.init(prefix, protocol);
+      protocolHandlers.init(prefix, protocolHandler);
+    }
   }
 
+  // FIXME: Buggy.
+  // Needs to account for multiple paths.
   function unregisterProtocolHandler(prefix, protocolHandler) {
     const ph = protocolHandlers.get(prefix);
     if (ph !== protocolHandler) {
