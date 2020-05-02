@@ -534,9 +534,7 @@ export const makeContract = harden(
     };
 
     const makeAddLiquidityInvite = () =>
-      zcf.makeInvitation(addLiquidityHook, {
-        inviteDesc: 'multipool autoswap add liquidity',
-      });
+      zcf.makeInvitation(addLiquidityHook, 'multipool autoswap add liquidity');
 
     return harden({
       invite: makeAddLiquidityInvite(),
@@ -629,15 +627,10 @@ export const makeContract = harden(
             );
           }
         },
-        makeSwapInvite: () =>
-          zcf.makeInvitation(swapHook, {
-            inviteDesc: 'autoswap swap',
-          }),
+        makeSwapInvite: () => zcf.makeInvitation(swapHook, 'autoswap swap'),
         makeAddLiquidityInvite,
         makeRemoveLiquidityInvite: () =>
-          zcf.makeInvitation(removeLiquidityHook, {
-            inviteDesc: 'autoswap remove liquidity',
-          }),
+          zcf.makeInvitation(removeLiquidityHook, 'autoswap remove liquidity'),
       },
     });
   },

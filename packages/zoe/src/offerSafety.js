@@ -52,21 +52,17 @@ function isOfferSafeForOffer(
  * @param  {proposal[]} proposals - an array of records which are the
  * proposal for a single player. Each proposal has keys `give`,
  * `want`, and `exit`.
- * @param  {newAmountKeywordRecord[]} newAmountKeywordRecords- an array of
+ * @param  {newAmountKeywordRecord[]} newAllocations - an array of
  * records. Each of the records (amountKeywordRecord) has keywords for
  * keys and the values are the amount that a single user will get.
  */
 const isOfferSafeForAll = (
   amountMathKeywordRecord,
   proposals,
-  newAmountKeywordRecords,
+  newAllocations,
 ) =>
   proposals.every((proposal, i) =>
-    isOfferSafeForOffer(
-      amountMathKeywordRecord,
-      proposal,
-      newAmountKeywordRecords[i],
-    ),
+    isOfferSafeForOffer(amountMathKeywordRecord, proposal, newAllocations[i]),
   );
 
 // `isOfferSafeForOffer` is only exported for testing

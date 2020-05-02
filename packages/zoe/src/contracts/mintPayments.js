@@ -46,7 +46,7 @@ export const makeContract = harden(zcf => {
     };
 
     // A function for making invites to this contract
-    const makeInvite = () => zcf.makeInvitation(offerHook);
+    const makeInvite = () => zcf.makeInvitation(offerHook, 'mint a payment');
 
     return harden({
       // return an invite to the creator of the contract instance

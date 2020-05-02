@@ -33,7 +33,7 @@ export async function makeWallet(
 
   // Compiled offers (all ready to execute).
   const idToCompiledOfferP = new Map();
-  const idToCancel = new Map();
+  const idToComplete = new Map();
   const idToOfferHandle = new Map();
   const idToOutcome = new Map();
 
@@ -147,7 +147,7 @@ export async function makeWallet(
 
     const {
       payout: payoutObjP,
-      cancelObj,
+      completeObj,
       outcome: outcomeP,
       offerHandle: offerHandleP,
     } = await E(zoe).offer(invite, proposal, payment);
@@ -190,7 +190,7 @@ export async function makeWallet(
       );
     });
 
-    return { depositedP, cancelObj, outcome, offerHandle };
+    return { depositedP, completeObj, outcome, offerHandle };
   }
 
   // === API
@@ -301,12 +301,12 @@ export async function makeWallet(
   }
 
   async function cancelOffer(id) {
-    const cancel = idToCancel.get(id);
-    if (!cancel) {
+    const completeFn = idToComplete.get(id);
+    if (!completeFn) {
       return false;
     }
 
-    cancel()
+    completeFn()
       .then(_ => {
         const offer = idToOffer.get(id);
         const cancelledOffer = {
@@ -356,14 +356,14 @@ export async function makeWallet(
       const inviteP = invite || E(publicAPIHooks).getInvite(publicAPI);
       const {
         depositedP,
-        cancelObj,
+        completeObj,
         outcome,
         offerHandle,
       } = await executeOffer(compiledOffer, inviteP);
 
       idToCancel.set(id, () => {
         alreadyResolved = true;
-        return E(cancelObj).cancel();
+        return E(completeObj).complete();
       });
       idToOfferHandle.set(id, offerHandle);
       // The offer might have been postponed, or it might have been immediately

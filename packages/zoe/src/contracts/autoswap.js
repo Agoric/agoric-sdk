@@ -26,7 +26,7 @@ export const makeContract = harden(zcf => {
     checkIfProposal,
     rejectOffer,
     makeEmptyOffer,
-    inviteAnOffer,
+    checkHook,
     escrowAndAllocateTo,
   } = makeZoeHelpers(zcf);
 
@@ -181,6 +181,11 @@ export const makeContract = harden(zcf => {
         });
       };
 
+      const addLiquidityExpected = harden({
+        give: { TokenA: null, TokenB: null },
+        want: { Liquidity: null },
+      });
+
       const removeLiquidityHook = offerHandle => {
         const userAllocation = zcf.getCurrentAllocation(offerHandle);
         const liquidityExtentIn = userAllocation.Liquidity.extent;
@@ -237,17 +242,16 @@ export const makeContract = harden(zcf => {
         return 'Liquidity successfully removed.';
       };
 
+      const removeLiquidityExpected = harden({
+        want: { TokenA: null, TokenB: null },
+        give: { Liquidity: null },
+      });
+
       const makeAddLiquidityInvite = () =>
-        inviteAnOffer({
-          offerHook: addLiquidityHook,
-          customProperties: {
-            inviteDesc: 'autoswap add liquidity',
-          },
-          expected: {
-            give: { TokenA: null, TokenB: null },
-            want: { Liquidity: null },
-          },
-        });
+        zcf.makeInvitation(
+          checkHook(addLiquidityHook, addLiquidityExpected),
+          'autoswap add liquidity',
+        );
 
       return harden({
         invite: makeAddLiquidityInvite(),
@@ -285,28 +289,20 @@ export const makeContract = harden(zcf => {
             );
             return amountMaths[outKeyword].make(outputExtent);
           },
+
           getLiquidityIssuer: () => liquidityIssuer,
+
           getPoolAllocation,
 
-          makeSwapInvite: () =>
-            inviteAnOffer({
-              offerHook: swapHook,
-              customProperties: {
-                inviteDesc: 'autoswap swap',
-              },
-            }),
+          makeSwapInvite: () => zcf.makeInvitation(swapHook, 'autoswap swap'),
+
           makeAddLiquidityInvite,
+
           makeRemoveLiquidityInvite: () =>
-            inviteAnOffer({
-              offerHook: removeLiquidityHook,
-              customProperties: {
-                inviteDesc: 'autoswap remove liquidity',
-              },
-              expected: {
-                want: { TokenA: null, TokenB: null },
-                give: { Liquidity: null },
-              },
-            }),
+            zcf.makeInvitation(
+              checkHook(removeLiquidityHook, removeLiquidityExpected),
+              'autoswap remove liquidity',
+            ),
         },
       });
     });

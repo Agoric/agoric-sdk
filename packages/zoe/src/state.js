@@ -74,17 +74,17 @@ const makeOfferTable = () => {
           return table.delete(offerHandle);
         });
       },
-      updateAmounts: (offerHandles, newAmountKeywordRecords) =>
+      updateAmounts: (offerHandles, newAllocations) =>
         offerHandles.map((offerHandle, i) => {
           // newAmountKeywordRecords may be based on sparse keywords,
           // so we don't want to replace the allocation entirely
-          const newAmountKeywordRecord = newAmountKeywordRecords[i];
+          const newAllocation = newAllocations[i];
           const { updater, currentAllocation: pastAllocation } = table.get(
             offerHandle,
           );
           const currentAllocation = {
             ...pastAllocation,
-            ...newAmountKeywordRecord,
+            ...newAllocation,
           };
           updater.updateState(currentAllocation);
           return table.update(offerHandle, {
