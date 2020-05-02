@@ -2,6 +2,7 @@
 import makeStore from '@agoric/store';
 import rawHarden from '@agoric/harden';
 import { E as defaultE } from '@agoric/eventual-send';
+import { producePromise } from '@agoric/produce-promise';
 import { toBytes } from './bytes';
 
 const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
@@ -11,6 +12,11 @@ export const ENDPOINT_SEPARATOR = '/';
 /**
  * @template T,U
  * @typedef {import('@agoric/store').Store<T,U>} Store
+ */
+
+/**
+ * @template T,U
+ * @typedef {import('@agoric/produce-promise').PromiseRecord<T, U>} PromiseRecord
  */
 
 /**
@@ -109,6 +115,10 @@ export const makeConnection = (
 ) => {
   let closed;
   /**
+   * @type {Set<PromiseRecord<Bytes,any>>}
+   */
+  const pendingAcks = new Set();
+  /**
    * @type {Connection}
    */
   const connection = harden({
@@ -124,6 +134,10 @@ export const makeConnection = (
       }
       current.delete(connection);
       closed = Error('Connection closed');
+      for (const ackDeferred of [...pendingAcks.values()]) {
+        pendingAcks.delete(ackDeferred);
+        ackDeferred.reject(closed);
+      }
       await E(handler)
         .onClose(connection, undefined, handler)
         .catch(rethrowUnlessMissing);
@@ -134,10 +148,22 @@ export const makeConnection = (
         throw closed;
       }
       const bytes = toBytes(data);
-      const ack = await E(handler)
+      const ackDeferred = producePromise();
+      pendingAcks.add(ackDeferred);
+      E(handler)
         .onReceive(connection, bytes, handler)
-        .catch(err => rethrowUnlessMissing(err) || '');
-      return toBytes(ack);
+        .catch(err => rethrowUnlessMissing(err) || '')
+        .then(
+          ack => {
+            pendingAcks.delete(ackDeferred);
+            ackDeferred.resolve(toBytes(ack));
+          },
+          err => {
+            pendingAcks.delete(ackDeferred);
+            ackDeferred.reject(err);
+          },
+        );
+      return ackDeferred.promise;
     },
   });
 
