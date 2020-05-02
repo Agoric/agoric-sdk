@@ -19,17 +19,6 @@ const DEFAULT_PACKET_TIMEOUT = 1000;
 // only way to create channels.
 const FIXME_ALLOW_NAIVE_RELAYS = true;
 
-// FIXME: We need to delay to a later block to work around
-// a relayer race condition (no sendPacket too soon after
-// a channelOpenAck).
-//
-// I[2020-05-01|15:32:43.721] - listening to tx events from ibc0...
-// I[2020-05-01|15:32:43.721] - listening to block events from ibc0...
-// Error: no transactions returned with query
-// no transactions returned with query
-// [exits]
-const FIXME_SENDPACKET_DELAY_S = 10; // fail <=3, work >=4
-
 /**
  * @typedef {import('@agoric/swingset-vat/src/vats/network').ProtocolHandler} ProtocolHandler
  * @typedef {import('@agoric/swingset-vat/src/vats/network').ProtocolImpl} ProtocolImpl
@@ -90,14 +79,12 @@ let seed = 0;
  * @param {import('@agoric/eventual-send').EProxy} E
  * @param {(method: string, params: any) => Promise<any>} callIBCDevice
  * @param {string[]} [packetSendersWhitelist=[]]
- * @param {*} timerService
  * @returns {ProtocolHandler & BridgeHandler} Protocol/Bridge handler
  */
 export function makeIBCProtocolHandler(
   E,
   callIBCDevice,
   packetSendersWhitelist = [],
-  { timerService },
 ) {
   /**
    * @type {Store<string, Promise<Connection>>}
@@ -122,7 +109,7 @@ export function makeIBCProtocolHandler(
   /**
    * @type {Store<string, ConnectingInfo>}
    */
-  const channelKeyToConnectingInfo = makeStore('CHANNEL:PORT');
+  const channelKeyToInfo = makeStore('CHANNEL:PORT');
 
   /**
    * @type {Set<string>}
@@ -152,9 +139,9 @@ export function makeIBCProtocolHandler(
   }
 
   /**
-   * @type {Store<string, PromiseRecord<Bytes, any>>}
+   * @type {Store<string, Store<number, PromiseRecord<Bytes, any>>>}
    */
-  const seqChannelKeyToAck = makeStore('SEQ:CHANNEL:PORT');
+  const channelKeyToSeqAck = makeStore('CHANNEL:PORT');
 
   /**
    * @param {string} channelID
@@ -171,6 +158,9 @@ export function makeIBCProtocolHandler(
     rPortID,
     ordered,
   ) {
+    const channelKey = `${channelID}:${portID}`;
+    const seqToAck = makeStore('SEQUENCE');
+    channelKeyToSeqAck.init(channelKey, seqToAck);
     /**
      * @param {Connection} _conn
      * @param {Bytes} packetBytes
@@ -194,8 +184,7 @@ export function makeIBCProtocolHandler(
        * @type {PromiseRecord<Bytes, any>}
        */
       const ackDeferred = producePromise();
-      const sck = `${sequence}:${channelID}:${portID}`;
-      seqChannelKeyToAck.init(sck, ackDeferred);
+      seqToAck.init(sequence, ackDeferred);
       return ackDeferred.promise;
     };
 
@@ -224,7 +213,6 @@ export function makeIBCProtocolHandler(
         }
         const boundSender = sender;
         sender = data => {
-          console.error(`Would send data`, data);
           return boundSender(data);
         };
       },
@@ -235,6 +223,12 @@ export function makeIBCProtocolHandler(
           source_channel: channelID,
         };
         await callIBCDevice('channelCloseInit', { packet });
+        const rejectReason = Error('Connection closed');
+        for (const ackDeferred of seqToAck.values()) {
+          ackDeferred.reject(rejectReason);
+        }
+        channelKeyToSeqAck.delete(channelKey);
+
         // TODO: Let's look carefully at this
         // There's a danger of the two sides disagreeing about whether
         // the channel is closed or not, and reusing channelIDs could
@@ -292,6 +286,11 @@ export function makeIBCProtocolHandler(
   const outboundWaiters = makeStore('destination');
 
   /**
+   * @type {Store<Port, Set<PromiseRecord<ConnectionHandler,any>>>}
+   */
+  const portToPendingConns = makeStore('Port');
+
+  /**
    * @type {ProtocolHandler}
    */
   const protocol = harden({
@@ -309,14 +308,16 @@ export function makeIBCProtocolHandler(
     async onBind(port, localAddr, _protocolHandler) {
       const portID = localAddrToPortID(localAddr);
       portToCircuits.init(port, []);
+      portToPendingConns.init(port, new Set());
       const packet = {
         source_port: portID,
       };
       return callIBCDevice('bindPort', { packet });
     },
-    async onConnect(_port, localAddr, remoteAddr, chandler, _protocolHandler) {
+    async onConnect(port, localAddr, remoteAddr, chandler, _protocolHandler) {
       console.warn('IBC onConnect', localAddr, remoteAddr);
       const portID = localAddrToPortID(localAddr);
+      const pendingConns = portToPendingConns.get(port);
 
       const match = remoteAddr.match(
         /^(\/ibc-hop\/[^/]+)*\/ibc-port\/([^/]+)\/(ordered|unordered)\/([^/]+)$/s,
@@ -346,6 +347,7 @@ export function makeIBCProtocolHandler(
       const rChannelID = generateChannelID();
 
       const rchandler = producePromise();
+      pendingConns.add(rchandler);
 
       /**
        * @type {typeof makeIBCConnectionHandler}
@@ -353,6 +355,7 @@ export function makeIBCProtocolHandler(
       function connected(cID, pID, rCID, rPID, ord) {
         const ch = makeIBCConnectionHandler(cID, pID, rCID, rPID, ord);
         rchandler.resolve(ch);
+        pendingConns.delete(rchandler);
         return ch;
       }
 
@@ -409,7 +412,7 @@ export function makeIBCProtocolHandler(
         version,
       };
       const channelKey = `${channelID}:${portID}`;
-      channelKeyToConnectingInfo.init(channelKey, obj);
+      channelKeyToInfo.init(channelKey, obj);
 
       if (!FIXME_ALLOW_NAIVE_RELAYS || !chandler) {
         // Just wait until the connection handler resolves.
@@ -453,7 +456,13 @@ paths:
     },
     async onRevoke(port, localAddr, _protocolHandler) {
       console.warn('IBC onRevoke', localAddr);
+      const pendingConns = portToPendingConns.get(port);
+      portToPendingConns.delete(port);
       portToCircuits.delete(port);
+      const revoked = Error(`Port ${localAddr} revoked`);
+      for (const rchandler of pendingConns.values()) {
+        rchandler.reject(revoked);
+      }
     },
   });
 
@@ -547,10 +556,10 @@ paths:
           );
           if (!waiter) {
             await E(protocolImpl).isListening([`/ibc-port/${portID}`]);
-            channelKeyToConnectingInfo.init(channelKey, obj);
+            channelKeyToInfo.init(channelKey, obj);
           } else {
             // We have more specific information.
-            channelKeyToConnectingInfo.set(channelKey, obj);
+            channelKeyToInfo.set(channelKey, obj);
           }
           break;
         }
@@ -569,8 +578,8 @@ paths:
             connectionHops: hops,
             counterparty: { port_id: rPortID, channel_id: rChannelID },
             counterpartyVersion: storedVersion,
-          } = channelKeyToConnectingInfo.get(channelKey);
-          channelKeyToConnectingInfo.delete(channelKey);
+          } = channelKeyToInfo.get(channelKey);
+          channelKeyToInfo.delete(channelKey);
 
           const rVersion = updatedVersion || storedVersion;
           const localAddr = `/ibc-port/${portID}/${order.toLowerCase()}/${version}`;
@@ -586,31 +595,18 @@ paths:
           );
           if (waiter) {
             // An outbound connection wants to use this channel.
-            const finishConnection = () => {
-              waiter.connected(
-                channelID,
-                portID,
-                rChannelID,
-                rPortID,
-                order === 'ORDERED',
-              );
-            };
-
-            if (FIXME_SENDPACKET_DELAY_S) {
-              E(timerService).setWakeup(
-                FIXME_SENDPACKET_DELAY_S,
-                harden({
-                  wake: finishConnection,
-                }),
-              );
-            } else {
-              finishConnection();
-            }
+            waiter.connected(
+              channelID,
+              portID,
+              rChannelID,
+              rPortID,
+              order === 'ORDERED',
+            );
             break;
           }
 
           // Check for a listener for this subprotocol.
-          const listenSearch = getPrefixes(localAddr, '/');
+          const listenSearch = getPrefixes(localAddr);
           const rchandler = makeIBCConnectionHandler(
             channelID,
             portID,
@@ -620,14 +616,9 @@ paths:
           );
 
           // Actually connect.
-          const connP =
-            /** @type {Promise<Connection>} */
-            (E(protocolImpl).inbound(
-              listenSearch,
-              localAddr,
-              remoteAddr,
-              rchandler,
-            ));
+          // eslint-disable-next-line prettier/prettier
+          const pr = E(protocolImpl).inbound(listenSearch, localAddr, remoteAddr, rchandler);
+          const connP = /** @type {Promise<Connection>} */ (pr);
 
           /* Stash it for later use. */
           channelKeyToConnP.init(channelKey, connP);
@@ -663,10 +654,11 @@ paths:
             source_channel: channelID,
             source_port: portID,
           } = packet;
-          const sck = `${sequence}:${channelID}:${portID}`;
-          const ackDeferred = seqChannelKeyToAck.get(sck);
+          const channelKey = `${channelID}:${portID}`;
+          const seqToAck = channelKeyToSeqAck.get(channelKey);
+          const ackDeferred = seqToAck.get(sequence);
           ackDeferred.resolve(base64ToBytes(acknowledgement));
-          seqChannelKeyToAck.delete(sck);
+          seqToAck.delete(sequence);
           break;
         }
 
@@ -677,10 +669,11 @@ paths:
             source_channel: channelID,
             source_port: portID,
           } = packet;
-          const sck = `${sequence}:${channelID}:${portID}`;
-          const ackDeferred = seqChannelKeyToAck.get(sck);
+          const channelKey = `${channelID}:${portID}`;
+          const seqToAck = channelKeyToSeqAck.get(channelKey);
+          const ackDeferred = seqToAck.get(sequence);
           ackDeferred.reject(Error(`Packet timed out`));
-          seqChannelKeyToAck.delete(sck);
+          seqToAck.delete(sequence);
           break;
         }
 
@@ -718,8 +711,9 @@ paths:
            * @type {PromiseRecord<Bytes, any>}
            */
           const ackDeferred = producePromise();
-          const sck = `${sequence}:${channelID}:${portID}`;
-          seqChannelKeyToAck.init(sck, ackDeferred);
+          const channelKey = `${channelID}:${portID}`;
+          const seqToAck = channelKeyToSeqAck.get(channelKey);
+          seqToAck.init(sequence, ackDeferred);
           ackDeferred.promise.then(
             ack => console.info('Manual packet', fullPacket, 'acked:', ack),
             e => console.warn('Manual packet', fullPacket, 'timed out:', e),

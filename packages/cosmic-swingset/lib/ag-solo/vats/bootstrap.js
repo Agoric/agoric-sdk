@@ -10,6 +10,8 @@ import {
 import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
 
+const NUM_IBC_PORTS = 3;
+
 console.debug(`loading bootstrap.js`);
 
 function parseArgs(argv) {
@@ -67,13 +69,14 @@ export default function setup(syscall, state, helpers) {
         await E(walletVat).setPresences();
       }
 
-      let chainTimerService;
       // Make services that are provided on the real or virtual chain side
       async function makeChainBundler(vats, timerDevice) {
         // Create singleton instances.
         const sharingService = await E(vats.sharing).getSharingService();
         const registry = await E(vats.registrar).getSharedRegistrar();
-        chainTimerService = await E(vats.timer).createTimerService(timerDevice);
+        const chainTimerService = await E(vats.timer).createTimerService(
+          timerDevice,
+        );
 
         const zoe = await E(vats.zoe).getZoe();
         const contractHost = await E(vats.host).makeHost();
@@ -101,9 +104,13 @@ export default function setup(syscall, state, helpers) {
         );
         return harden({
           async createUserBundle(_nickname) {
-            // Bind to a fresh port (unspecified name) on the IBC implementation
-            // and provide it for the user to have.
-            const ibcport = await E(vats.network).bind('/ibc-port/');
+            // Bind to some fresh ports (unspecified name) on the IBC implementation
+            // and provide them for the user to have.
+            const ibcport = [];
+            for (let i = 0; i < NUM_IBC_PORTS; i += 1) {
+              // eslint-disable-next-line no-await-in-loop
+              ibcport.push(await E(vats.network).bind('/ibc-port/'));
+            }
             const bundle = harden({
               chainTimerService,
               sharingService,
@@ -131,7 +138,6 @@ export default function setup(syscall, state, helpers) {
         vats,
         bridgeMgr,
         packetSendersWhitelist = [],
-        { timerService },
       ) {
         const ps = [];
         // Every vat has a loopback device.
@@ -155,7 +161,6 @@ export default function setup(syscall, state, helpers) {
           const ibcHandler = await E(vats.ibc).createInstance(
             callbacks,
             packetSendersWhitelist,
-            { timerService },
           );
           bridgeMgr.register('dibc', ibcHandler);
           ps.push(
@@ -291,9 +296,7 @@ export default function setup(syscall, state, helpers) {
               );
 
               // Must occur after makeChainBundler.
-              await registerNetworkProtocols(vats, bridgeManager, pswl, {
-                timerService: chainTimerService,
-              });
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
 
               // accept provisioning requests from the controller
               const provisioner = harden({
@@ -320,12 +323,7 @@ export default function setup(syscall, state, helpers) {
                 throw new Error(`controller must be given GCI`);
               }
 
-              const localTimerService = await E(vats.timer).createTimerService(
-                devices.timer,
-              );
-              await registerNetworkProtocols(vats, bridgeManager, pswl, {
-                timerService: localTimerService,
-              });
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
 
               // Wire up the http server.
               await setupCommandDevice(vats.http, devices.command, {
@@ -356,9 +354,7 @@ export default function setup(syscall, state, helpers) {
               const localTimerService = await E(vats.timer).createTimerService(
                 devices.timer,
               );
-              await registerNetworkProtocols(vats, bridgeManager, pswl, {
-                timerService: localTimerService,
-              });
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
 
               await setupCommandDevice(vats.http, devices.command, {
                 client: true,
@@ -392,9 +388,7 @@ export default function setup(syscall, state, helpers) {
               // bootAddress holds the pubkey of localclient
               const chainBundler = await makeChainBundler(vats, devices.timer);
 
-              await registerNetworkProtocols(vats, bridgeManager, pswl, {
-                timerService: chainTimerService,
-              });
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
 
               const demoProvider = harden({
                 // build a chain-side bundle for a client.
@@ -423,9 +417,7 @@ export default function setup(syscall, state, helpers) {
               const localTimerService = await E(vats.timer).createTimerService(
                 devices.timer,
               );
-              await registerNetworkProtocols(vats, bridgeManager, pswl, {
-                timerService: localTimerService,
-              });
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
               await addRemote(GCI);
               // addEgress(..., PROVISIONER_INDEX) is called in case two_chain
               const demoProvider = E(vats.comms).addIngress(
@@ -454,9 +446,7 @@ export default function setup(syscall, state, helpers) {
 
               // We pretend we're on-chain.
               const chainBundler = makeChainBundler(vats, devices.timer);
-              await registerNetworkProtocols(vats, bridgeManager, pswl, {
-                timerService: chainTimerService,
-              });
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
 
               // Shared Setup (virtual chain side) ///////////////////////////
               await setupCommandDevice(vats.http, devices.command, {

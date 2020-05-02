@@ -2,13 +2,25 @@
 import makeStore from '@agoric/store';
 import rawHarden from '@agoric/harden';
 import { E as defaultE } from '@agoric/eventual-send';
+import { producePromise } from '@agoric/produce-promise';
 import { toBytes } from './bytes';
 
 const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
+ * Compatibility note: this must match what our peers use,
+ * so don't change it casually.
+ */
+export const ENDPOINT_SEPARATOR = '/';
+
+/**
  * @template T,U
  * @typedef {import('@agoric/store').Store<T,U>} Store
+ */
+
+/**
+ * @template T,U
+ * @typedef {import('@agoric/produce-promise').PromiseRecord<T, U>} PromiseRecord
  */
 
 /**
@@ -23,7 +35,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
  * @typedef {Object} Protocol The network Protocol
- * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if ending in '/', a fresh name
+ * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if ending in ENDPOINT_SEPARATOR, a fresh name
  */
 
 /**
@@ -38,7 +50,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 /**
  * @typedef {Object} ListenHandler A handler for incoming connections
  * @property {(port: Port, l: ListenHandler) => Promise<void>} [onListen] The listener has been registered
- * @property {(port: Port, localAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<ConnectionHandler>} [onAccept] A new connection is incoming
+ * @property {(port: Port, localAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<ConnectionHandler>} onAccept A new connection is incoming
  * @property {(port: Port, rej: any, l: ListenHandler) => Promise<void>} [onError] There was an error while listening
  * @property {(port: Port, l: ListenHandler) => Promise<void>} [onRemove] The listener has been removed
  */
@@ -107,6 +119,10 @@ export const makeConnection = (
 ) => {
   let closed;
   /**
+   * @type {Set<PromiseRecord<Bytes,any>>}
+   */
+  const pendingAcks = new Set();
+  /**
    * @type {Connection}
    */
   const connection = harden({
@@ -122,6 +138,10 @@ export const makeConnection = (
       }
       current.delete(connection);
       closed = Error('Connection closed');
+      for (const ackDeferred of [...pendingAcks.values()]) {
+        pendingAcks.delete(ackDeferred);
+        ackDeferred.reject(closed);
+      }
       await E(handler)
         .onClose(connection, undefined, handler)
         .catch(rethrowUnlessMissing);
@@ -132,10 +152,22 @@ export const makeConnection = (
         throw closed;
       }
       const bytes = toBytes(data);
-      const ack = await E(handler)
+      const ackDeferred = producePromise();
+      pendingAcks.add(ackDeferred);
+      E(handler)
         .onReceive(connection, bytes, handler)
-        .catch(err => rethrowUnlessMissing(err) || '');
-      return toBytes(ack);
+        .catch(err => rethrowUnlessMissing(err) || '')
+        .then(
+          ack => {
+            pendingAcks.delete(ackDeferred);
+            ackDeferred.resolve(toBytes(ack));
+          },
+          err => {
+            pendingAcks.delete(ackDeferred);
+            ackDeferred.reject(err);
+          },
+        );
+      return ackDeferred.promise;
     },
   });
 
@@ -230,10 +262,9 @@ export function crossoverConnection(
 /**
  * Get the list of prefixes from longest to shortest.
  * @param {string} addr
- * @param {string} [sep='/']
  */
-export function getPrefixes(addr, sep = '/') {
-  const parts = addr.split(sep);
+export function getPrefixes(addr) {
+  const parts = addr.split(ENDPOINT_SEPARATOR);
 
   /**
    * @type {string[]}
@@ -241,7 +272,7 @@ export function getPrefixes(addr, sep = '/') {
   const ret = [];
   for (let i = parts.length; i > 0; i -= 1) {
     // Try most specific match.
-    const prefix = parts.slice(0, i).join(sep);
+    const prefix = parts.slice(0, i).join(ENDPOINT_SEPARATOR);
     ret.push(prefix);
   }
   return ret;
@@ -283,9 +314,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
 
       const lchandler =
         /** @type {ConnectionHandler} */
-        (await E(listener)
-          .onAccept(port, localAddr, remoteAddr, listener)
-          .catch(rethrowUnlessMissing));
+        (await E(listener).onAccept(port, localAddr, remoteAddr, listener));
 
       return crossoverConnection(
         lchandler,
@@ -301,7 +330,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
         /** @type {string} */
         (await E(port).getLocalAddress());
 
-      const ret = getPrefixes(remoteAddr, '/');
+      const ret = getPrefixes(remoteAddr);
       if (await protocolImpl.isListening(ret)) {
         return protocolImpl.inbound(ret, remoteAddr, localAddr, lchandler);
       }
@@ -345,7 +374,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
    */
   const bind = async localAddr => {
     // Check if we are underspecified (ends in slash)
-    if (localAddr.endsWith('/')) {
+    if (localAddr.endsWith(ENDPOINT_SEPARATOR)) {
       for (;;) {
         // eslint-disable-next-line no-await-in-loop
         const portID = await E(protocolHandler).generatePortID(localAddr);
@@ -388,6 +417,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
           throw TypeError(`listenHandler is not defined`);
         }
         if (listening.has(localAddr)) {
+          // Last one wins.
           const [lport, lhandler] = listening.get(localAddr);
           if (lhandler === listenHandler) {
             return;
@@ -399,6 +429,8 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
         } else {
           listening.init(localAddr, [port, listenHandler]);
         }
+
+        // TODO: Check that the listener defines onAccept.
 
         await E(protocolHandler).onListen(
           port,
@@ -536,9 +568,12 @@ export function makeLoopbackProtocolHandler(E = defaultE) {
       }
       const [lport, lhandler] = listeners.get(remoteAddr);
       // console.log(`looking up onAccept in`, lhandler);
-      const rport = await E(lhandler)
-        .onAccept(lport, remoteAddr, localAddr, lhandler)
-        .catch(rethrowUnlessMissing);
+      const rport = await E(lhandler).onAccept(
+        lport,
+        remoteAddr,
+        localAddr,
+        lhandler,
+      );
       // console.log(`rport is`, rport);
       return rport;
     },

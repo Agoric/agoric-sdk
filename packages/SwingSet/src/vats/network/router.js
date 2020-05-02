@@ -2,7 +2,7 @@
 import { E as defaultE } from '@agoric/eventual-send';
 import rawHarden from '@agoric/harden';
 import makeStore from '@agoric/store';
-import { makeNetworkProtocol } from './network';
+import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network';
 
 const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
@@ -26,29 +26,31 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 /**
  * Create a slash-delimited router.
  *
- * @param {string} [sep='/'] the delimiter of the routing strings
  * @returns {Router} a new Router
  */
-export default function makeRouter(sep = '/') {
+export default function makeRouter() {
   /**
    * @type {Store<string, any>}
    */
   const prefixToRoute = makeStore('prefix');
   return harden({
     getRoutes(addr) {
-      const parts = addr.split(sep);
+      const parts = addr.split(ENDPOINT_SEPARATOR);
       /**
        * @type {[string, any][]}
        */
       const ret = [];
       for (let i = parts.length; i > 0; i -= 1) {
         // Try most specific match.
-        const prefix = parts.slice(0, i).join(sep);
+        const prefix = parts.slice(0, i).join(ENDPOINT_SEPARATOR);
         if (prefixToRoute.has(prefix)) {
           ret.push([prefix, prefixToRoute.get(prefix)]);
         }
         // Trim off the last value (after the slash).
-        const defaultPrefix = prefix.substr(0, prefix.lastIndexOf('/') + 1);
+        const defaultPrefix = prefix.substr(
+          0,
+          prefix.lastIndexOf(ENDPOINT_SEPARATOR) + 1,
+        );
         if (prefixToRoute.has(defaultPrefix)) {
           ret.push([defaultPrefix, prefixToRoute.get(defaultPrefix)]);
         }
@@ -75,12 +77,11 @@ export default function makeRouter(sep = '/') {
 /**
  * Create a router that behaves like a Protocol.
  *
- * @param {string} [sep='/'] the route separator
  * @param {typeof defaultE} [E=defaultE] Eventual sender
  * @returns {RouterProtocol} The new delegated protocol
  */
-export function makeRouterProtocol(sep = '/', E = defaultE) {
-  const router = makeRouter(sep);
+export function makeRouterProtocol(E = defaultE) {
+  const router = makeRouter();
   const protocols = makeStore('prefix');
   const protocolHandlers = makeStore('prefix');
 
