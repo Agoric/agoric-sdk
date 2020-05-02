@@ -15,11 +15,9 @@ Solo machines may be able to talk to chains and vice versa using specialized pro
 
 == The agoric-sdk User Local Port ==
 
-Each user of the Agoric testnet gets their own personal IBC listening port. You can access this `Port` object in `home.ibcport`, and you can learn its local address by calling `home.ibcport~.getLocalAddress()`, which will give you something like `/ibc-port/port8312`.
+Each user of the Agoric testnet gets a few personal IBC listening ports. You can access these `Port` objects in the `home.ibcport` array, and you can learn their local address by calling something like `home.ibcport[0]~.getLocalAddress()`, which will give you a local address like `/ibc-port/portbvmnfb`.
 
 This is currently the only way for user code to get an IBC `Port`, though non-IBC ports can be allocated using the local `home.network` object.  This is an advanced use case, to be documented later.
-
-`home.ibcport~.connect()`
 
 == Connecting to a Remote Port ==
 
@@ -30,7 +28,7 @@ You must also prepare a `ConnectionHandler` object to manage the connection you'
 Then you will call the `connect()` method on your local `Port`. This will return a `Promise` that will fire with a new `Connection` object, on which you can send data. Your `ConnectionHandler` will be notified about the new channel, and will receive inbound data from the other side.
 
 ```js
-home.ibcport~.connect(endpoint, connectionHandler)
+home.ibcport[0]~.connect(endpoint, connectionHandler)
   .then(conn => doSomethingWithConnection(conn));
 ```
 
@@ -58,7 +56,7 @@ You can ask the `Port` object this returns for its local address, which is espec
 port~.getLocalAddress().then(localAddress => useIt(localAddress))
 ```
 
-`home.ibcport~.addListener()`
+`home.ibcport[0]~.addListener()`
 
 Once the port is bound, you must call `addListener` to mark it as ready for inbound connections. You must provide this with a `ListenHandler` object, which has methods to react to listening events. As with `ConnectionHandler`, these methods are all optional.
 
@@ -140,4 +138,4 @@ port.revoke();
 
 to completely deallocate the port, remove all listeners, close all pending connections, and release its address.
 
-**CAUTION:** Be aware that if you call `home.ibcport~.revoke()`, it will be useless for new `.connect` or `.addListener` attempts.  You will need to provision a new Agoric client via https://testnet.agoric.com/ to obtain a new setup with a functioning `home.ibcport`.
+**CAUTION:** Be aware that if you call `home.ibcport[0]~.revoke()`, it will be useless for new `.connect` or `.addListener` attempts.  You will need to provision a new Agoric client via https://testnet.agoric.com/ to obtain a new setup with a functioning `home.ibcport`.
