@@ -298,6 +298,11 @@ export function makeIBCProtocolHandler(
   const outboundWaiters = makeStore('destination');
 
   /**
+   * @type {Store<Port, Set<PromiseRecord<ConnectionHandler,any>>>}
+   */
+  const portToPendingConns = makeStore('Port');
+
+  /**
    * @type {ProtocolHandler}
    */
   const protocol = harden({
@@ -315,14 +320,16 @@ export function makeIBCProtocolHandler(
     async onBind(port, localAddr, _protocolHandler) {
       const portID = localAddrToPortID(localAddr);
       portToCircuits.init(port, []);
+      portToPendingConns.init(port, new Set());
       const packet = {
         source_port: portID,
       };
       return callIBCDevice('bindPort', { packet });
     },
-    async onConnect(_port, localAddr, remoteAddr, chandler, _protocolHandler) {
+    async onConnect(port, localAddr, remoteAddr, chandler, _protocolHandler) {
       console.warn('IBC onConnect', localAddr, remoteAddr);
       const portID = localAddrToPortID(localAddr);
+      const pendingConns = portToPendingConns.get(port);
 
       const match = remoteAddr.match(
         /^(\/ibc-hop\/[^/]+)*\/ibc-port\/([^/]+)\/(ordered|unordered)\/([^/]+)$/s,
@@ -352,6 +359,7 @@ export function makeIBCProtocolHandler(
       const rChannelID = generateChannelID();
 
       const rchandler = producePromise();
+      pendingConns.add(rchandler);
 
       /**
        * @type {typeof makeIBCConnectionHandler}
@@ -359,6 +367,7 @@ export function makeIBCProtocolHandler(
       function connected(cID, pID, rCID, rPID, ord) {
         const ch = makeIBCConnectionHandler(cID, pID, rCID, rPID, ord);
         rchandler.resolve(ch);
+        pendingConns.delete(rchandler);
         return ch;
       }
 
@@ -459,7 +468,13 @@ paths:
     },
     async onRevoke(port, localAddr, _protocolHandler) {
       console.warn('IBC onRevoke', localAddr);
+      const pendingConns = portToPendingConns.get(port);
+      portToPendingConns.delete(port);
       portToCircuits.delete(port);
+      const revoked = Error(`Port ${localAddr} revoked`);
+      for (const rchandler of pendingConns.values()) {
+        rchandler.reject(revoked);
+      }
     },
   });
 
