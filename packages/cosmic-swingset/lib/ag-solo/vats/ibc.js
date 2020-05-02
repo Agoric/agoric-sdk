@@ -23,10 +23,10 @@ const FIXME_ALLOW_NAIVE_RELAYS = true;
 // cannot be sent before the channel ack is complete
 // (no sendPacket within a channelOpenAck).
 //
-// FIXME: We might be fix within the relayer, which currently
-// fails with:
-// cannot update client with ID ibczeroclient: header blocktime
-// ≤ latest client state block time (X ≤ X): invalid block header
+// FIXME: We might be able to fix this within the relayer, which
+// currently fails with:
+//   cannot update client with ID ibczeroclient: header blocktime
+//   ≤ latest client state block time (X ≤ X): invalid block header
 const FIXME_SENDPACKET_DELAY_S = 1;
 
 /**

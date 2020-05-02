@@ -7,6 +7,10 @@ import { toBytes } from './bytes';
 
 const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
+/**
+ * Compatibility note: this must match what our peers use,
+ * so don't change it casually.
+ */
 export const ENDPOINT_SEPARATOR = '/';
 
 /**
