@@ -19,16 +19,15 @@ const DEFAULT_PACKET_TIMEOUT = 1000;
 // only way to create channels.
 const FIXME_ALLOW_NAIVE_RELAYS = true;
 
-// FIXME: We need to delay to a later block to work around
-// a relayer race condition (no sendPacket too soon after
-// a channelOpenAck).
+// We need to delay to a later block because packets
+// cannot be sent before the channel ack is complete
+// (no sendPacket within a channelOpenAck).
 //
-// I[2020-05-01|15:32:43.721] - listening to tx events from ibc0...
-// I[2020-05-01|15:32:43.721] - listening to block events from ibc0...
-// Error: no transactions returned with query
-// no transactions returned with query
-// [exits]
-const FIXME_SENDPACKET_DELAY_S = 10; // fail <=3, work >=4
+// FIXME: We might be fix within the relayer, which currently
+// fails with:
+// cannot update client with ID ibczeroclient: header blocktime
+// ≤ latest client state block time (X ≤ X): invalid block header
+const FIXME_SENDPACKET_DELAY_S = 1;
 
 /**
  * @typedef {import('@agoric/swingset-vat/src/vats/network').ProtocolHandler} ProtocolHandler
