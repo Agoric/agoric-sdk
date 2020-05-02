@@ -387,6 +387,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
           throw TypeError(`listenHandler is not defined`);
         }
         if (listening.has(localAddr)) {
+          // Last one wins.
           const [lport, lhandler] = listening.get(localAddr);
           if (lhandler === listenHandler) {
             return;
@@ -398,6 +399,8 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
         } else {
           listening.init(localAddr, [port, listenHandler]);
         }
+
+        // TODO: Check that the listener defines onAccept.
 
         await E(protocolHandler).onListen(
           port,

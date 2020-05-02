@@ -100,9 +100,9 @@ export function makeIBCProtocolHandler(
   { timerService },
 ) {
   /**
-   * @type {Store<string, [ConnectionHandler, Promise<Connection>]>}
+   * @type {Store<string, Promise<Connection>>}
    */
-  const channelKeyToHandler = makeStore('CHANNEL:PORT');
+  const channelKeyToConnP = makeStore('CHANNEL:PORT');
 
   /**
    * @typedef {Object} Counterparty
@@ -152,9 +152,9 @@ export function makeIBCProtocolHandler(
   }
 
   /**
-   * @type {Store<string, PromiseRecord<Bytes, any>>}
+   * @type {Store<string, Store<number, PromiseRecord<Bytes, any>>>}
    */
-  const seqChannelKeyToAck = makeStore('SEQ:CHANNEL:PORT');
+  const channelKeyToSeqAck = makeStore('CHANNEL:PORT');
 
   /**
    * @param {string} channelID
@@ -171,6 +171,9 @@ export function makeIBCProtocolHandler(
     rPortID,
     ordered,
   ) {
+    const channelKey = `${channelID}:${portID}`;
+    const seqToAck = makeStore('SEQUENCE');
+    channelKeyToSeqAck.init(channelKey, seqToAck);
     /**
      * @param {Connection} _conn
      * @param {Bytes} packetBytes
@@ -194,8 +197,7 @@ export function makeIBCProtocolHandler(
        * @type {PromiseRecord<Bytes, any>}
        */
       const ackDeferred = producePromise();
-      const sck = `${sequence}:${channelID}:${portID}`;
-      seqChannelKeyToAck.init(sck, ackDeferred);
+      seqToAck.init(sequence, ackDeferred);
       return ackDeferred.promise;
     };
 
@@ -224,7 +226,6 @@ export function makeIBCProtocolHandler(
         }
         const boundSender = sender;
         sender = data => {
-          console.error(`Would send data`, data);
           return boundSender(data);
         };
       },
@@ -235,6 +236,12 @@ export function makeIBCProtocolHandler(
           source_channel: channelID,
         };
         await callIBCDevice('channelCloseInit', { packet });
+        const rejectReason = Error('Connection closed');
+        for (const ackDeferred of seqToAck.values()) {
+          ackDeferred.reject(rejectReason);
+        }
+        channelKeyToSeqAck.delete(channelKey);
+
         // TODO: Let's look carefully at this
         // There's a danger of the two sides disagreeing about whether
         // the channel is closed or not, and reusing channelIDs could
@@ -621,16 +628,11 @@ paths:
 
           // Actually connect.
           // eslint-disable-next-line prettier/prettier
-          const connP = /** @type {Promise<Connection>} */
-            (E(protocolImpl).inbound(listenSearch, localAddr, remoteAddr, rchandler))
-            .then(conn => {
-              console.info(`FIGME: got connection`, conn);
-              return conn;
-            });
+          const pr = E(protocolImpl).inbound(listenSearch, localAddr, remoteAddr, rchandler);
+          const connP = /** @type {Promise<Connection>} */ (pr);
 
           /* Stash it for later use. */
-          console.info(`FIGME: Stashing ${channelKey}`, rchandler);
-          channelKeyToHandler.init(channelKey, [rchandler, connP]);
+          channelKeyToConnP.init(channelKey, connP);
           break;
         }
 
@@ -643,11 +645,11 @@ paths:
           } = packet;
           const channelKey = `${channelID}:${portID}`;
 
-          const [chandler, connP] = channelKeyToHandler.get(channelKey);
+          const connP = channelKeyToConnP.get(channelKey);
           const data = base64ToBytes(data64);
 
-          connP
-            .then(conn => E(chandler).onReceive(conn, data, chandler))
+          E(connP)
+            .send(data)
             .then(ack => {
               const ack64 = dataToBase64(/** @type {Bytes} */ (ack));
               return callIBCDevice('packetExecuted', { packet, ack: ack64 });
@@ -663,10 +665,11 @@ paths:
             source_channel: channelID,
             source_port: portID,
           } = packet;
-          const sck = `${sequence}:${channelID}:${portID}`;
-          const ackDeferred = seqChannelKeyToAck.get(sck);
+          const channelKey = `${channelID}:${portID}`;
+          const seqToAck = channelKeyToSeqAck.get(channelKey);
+          const ackDeferred = seqToAck.get(sequence);
           ackDeferred.resolve(base64ToBytes(acknowledgement));
-          seqChannelKeyToAck.delete(sck);
+          seqToAck.delete(sequence);
           break;
         }
 
@@ -677,10 +680,11 @@ paths:
             source_channel: channelID,
             source_port: portID,
           } = packet;
-          const sck = `${sequence}:${channelID}:${portID}`;
-          const ackDeferred = seqChannelKeyToAck.get(sck);
+          const channelKey = `${channelID}:${portID}`;
+          const seqToAck = channelKeyToSeqAck.get(channelKey);
+          const ackDeferred = seqToAck.get(sequence);
           ackDeferred.reject(Error(`Packet timed out`));
-          seqChannelKeyToAck.delete(sck);
+          seqToAck.delete(sequence);
           break;
         }
 
@@ -688,10 +692,10 @@ paths:
         case 'channelCloseConfirm': {
           const { portID, channelID } = obj;
           const channelKey = `${channelID}:${portID}`;
-          if (channelKeyToHandler.has(channelKey)) {
-            const [chandler, connP] = channelKeyToHandler.get(channelKey);
-            channelKeyToHandler.delete(channelKey);
-            connP.then(conn => E(chandler).onClose(conn, undefined, chandler));
+          if (channelKeyToConnP.has(channelKey)) {
+            const connP = channelKeyToConnP.get(channelKey);
+            channelKeyToConnP.delete(channelKey);
+            E(connP).close();
           }
           break;
         }
@@ -718,8 +722,9 @@ paths:
            * @type {PromiseRecord<Bytes, any>}
            */
           const ackDeferred = producePromise();
-          const sck = `${sequence}:${channelID}:${portID}`;
-          seqChannelKeyToAck.init(sck, ackDeferred);
+          const channelKey = `${channelID}:${portID}`;
+          const seqToAck = channelKeyToSeqAck.get(channelKey);
+          seqToAck.init(sequence, ackDeferred);
           ackDeferred.promise.then(
             ack => console.info('Manual packet', fullPacket, 'acked:', ack),
             e => console.warn('Manual packet', fullPacket, 'timed out:', e),
