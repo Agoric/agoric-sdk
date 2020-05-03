@@ -332,6 +332,11 @@ export function makeIBCProtocolHandler(
       let h = match[1];
       while (h) {
         const m = h.match(/^\/ibc-hop\/([^/]+)/);
+        if (!m) {
+          throw Error(
+            `internal: ${JSON.stringify(h)} did not begin with "/ibc-hop/XXX"`,
+          );
+        }
         h = h.substr(m[0].length);
         hops.push(m[1]);
       }
@@ -383,8 +388,9 @@ export function makeIBCProtocolHandler(
         waiterList.push({ channelID, rChannelID, connected });
       }
 
+      // TODO: Will need to change to dispatch (without sending)
+      // a ChanOpenInit to get a passive relayer flowing.
       if (false) {
-        // TODO: Try sending a ChanOpenInit to get a passive relayer flowing.
         const packet = {
           source_channel: channelID,
           source_port: portID,
@@ -419,7 +425,7 @@ export function makeIBCProtocolHandler(
         return rchandler.promise;
       }
 
-      // We explain to the user how to configure an naive relayer.
+      // We explain to the user how to configure a naive relayer.
       E(chandler)
         .infoMessage(
           `\
@@ -427,16 +433,16 @@ export function makeIBCProtocolHandler(
 paths:
   XXX-PATH-ID:
     src:
-      chain-id: XXX-THIS-CHAIN
-      client-id: XXX-THIS-CLIENT
-      connection-id: XXX-THIS-CONNECTION
+      chain-id: XXX-SRC-CHAIN
+      client-id: YYY-DST-CLIENT
+      connection-id: ${hops[0]}
       channel-id: ${channelID}
       port-id: ${portID}
       order: ${order}
     dst:
-      chain-id: YYY-OTHER-CHAIN
-      client-id: YYY-OTHER-CLIENT
-      connection-id: ${hops[0]}
+      chain-id: YYY-DST-CHAIN
+      client-id: XXX-SRC-CLIENT
+      connection-id: XXX-SRC-CONNECTION
       channel-id: ${rChannelID}
       port-id: ${rPortID}
       order: ${order}
@@ -544,7 +550,6 @@ paths:
             connectionHops: hops,
           } = obj;
 
-          // Try to see hops from my perspective.
           const channelKey = `${channelID}:${portID}`;
           const waiter = getWaiter(
             hops,
