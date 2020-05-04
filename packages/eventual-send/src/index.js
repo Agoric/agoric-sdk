@@ -80,9 +80,12 @@ export function makeHandledPromise(Promise) {
    */
   function shorten(target) {
     let p = target;
+    let lastUnsettledHandler;
     // Find the most-resolved value for p.
     while (forwardedPromiseToPromise.has(p)) {
       p = forwardedPromiseToPromise.get(p);
+      lastUnsettledHandler =
+        promiseToUnsettledHandler.get(p) || lastUnsettledHandler;
     }
     const presence = promiseToPresence.get(p);
     if (presence) {
@@ -91,18 +94,26 @@ export function makeHandledPromise(Promise) {
       while (target !== p) {
         const parent = forwardedPromiseToPromise.get(target);
         forwardedPromiseToPromise.delete(target);
-        promiseToUnsettledHandler.delete(target);
+        if (lastUnsettledHandler) {
+          promiseToUnsettledHandler.set(target, lastUnsettledHandler);
+        } else {
+          promiseToUnsettledHandler.delete(target);
+        }
         promiseToPresence.set(target, presence);
         target = parent;
       }
     } else {
-      // We propagate p and remove all other unsettled handlers
+      // We propagate p and all other unsettled handlers
       // upstream.
       // Note that everything except presences is covered here.
       while (target !== p) {
         const parent = forwardedPromiseToPromise.get(target);
         forwardedPromiseToPromise.set(target, p);
-        promiseToUnsettledHandler.delete(target);
+        if (lastUnsettledHandler) {
+          promiseToUnsettledHandler.set(target, lastUnsettledHandler);
+        } else {
+          promiseToUnsettledHandler.delete(target);
+        }
         target = parent;
       }
     }
