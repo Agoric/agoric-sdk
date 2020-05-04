@@ -1,7 +1,7 @@
 name: Build release Docker Images
 
 on:
-  push:
+  create:
     tags:
       - "@agoric/sdk@*"
 
