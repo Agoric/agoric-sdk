@@ -361,7 +361,7 @@ export async function makeWallet(
         offerHandle,
       } = await executeOffer(compiledOffer, inviteP);
 
-      isToComplete.set(id, () => {
+      idToComplete.set(id, () => {
         alreadyResolved = true;
         return E(completeObj).complete();
       });
