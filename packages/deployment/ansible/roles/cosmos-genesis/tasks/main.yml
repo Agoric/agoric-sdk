@@ -94,7 +94,8 @@
   become_user: "{{ service }}"
   shell: "\
     {{ service }} gentx --keyring-backend=test --amount={{ STAKER_AMOUNT }} \
-      {{ STAKER_IDENTITY_FLAGS }}
+      {{ (website | default(None)) and '--website=' ~ website }} \
+      {{ (identity | default(None)) and '--identity=' ~ identity }} \
       --name={{ STAKER }}-{{ STAKER_NODE }} --output-document={{ json }}"
   vars:
     json: "/home/{{ service }}/.{{ service }}/config/gentx/{{ STAKER_NODE }}.json"

@@ -35,8 +35,9 @@
   shell: "\
     ag-cosmos-helper tx staking create-validator --keyring-backend=test \
       --chain-id={{ CHAIN_NAME }} --amount={{ STAKER_AMOUNT }} \
-      --moniker={{ inventory_hostname }} --pubkey={{ valconspub }} \
-      {{ STAKER_IDENTITY_FLAGS }}
+      --moniker={{ moniker | default(inventory_hostname) }} --pubkey={{ valconspub }} \
+      {{ (website | default(None)) and '--website=' ~ website }} \
+      {{ (identity | default(None)) and '--identity=' ~ identity }} \
       --commission-rate=0.1 --commission-max-rate=0.2 --commission-max-change-rate=0.01 \
       --min-self-delegation=1 --broadcast-mode=block --from={{ staker }} --yes"
   vars:

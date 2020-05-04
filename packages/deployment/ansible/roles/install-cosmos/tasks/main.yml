@@ -25,6 +25,13 @@
     regexp: '^addr_book_strict *='
     line: 'addr_book_strict = false'
 
+- name: Set index_all_keys=true
+  lineinfile:
+    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    state: present
+    regexp: '^index_all_keys *='
+    line: 'index_all_keys = true'
+
 - name: "check if prometheus-tendermint.txt exists"
   delegate_to: localhost
   stat:
