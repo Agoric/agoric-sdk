@@ -390,6 +390,7 @@ export function makeIBCProtocolHandler(
 
       // TODO: Will need to change to dispatch (without sending)
       // a ChanOpenInit to get a passive relayer flowing.
+      // eslint-disable-next-line no-constant-condition
       if (false) {
         const packet = {
           source_channel: channelID,

@@ -143,6 +143,7 @@ export default async function bundle(insistIsBasedir, args) {
         const main = mainNS.default;
         if (typeof main !== 'function') {
           console.error(`Bundle main does not have an export default function`);
+          // eslint-disable-next-line no-continue
           continue;
         }
 

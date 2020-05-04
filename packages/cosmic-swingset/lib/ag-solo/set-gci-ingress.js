@@ -71,6 +71,7 @@ export default function setGCIIngress(basedir, GCI, rpcAddresses, chainID) {
   };
   add(newconn);
   const connections = [];
+  // eslint-disable-next-line no-unused-vars
   Object.entries(connsByType).forEach(([type, conns]) =>
     connections.push(...conns),
   );
