@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.2.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/evaluate@2.2.3...@agoric/evaluate@2.2.4) (2020-05-04)
+
+**Note:** Version bump only for package @agoric/evaluate
+
+
+
+
+
 ## [2.2.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/evaluate@2.2.3-alpha.0...@agoric/evaluate@2.2.3) (2020-04-13)
 
 **Note:** Version bump only for package @agoric/evaluate

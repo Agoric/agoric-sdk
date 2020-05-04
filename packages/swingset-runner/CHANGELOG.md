@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.3.0...@agoric/swingset-runner@0.4.0) (2020-05-04)
+
+
+### Bug Fixes
+
+* lint... ([1db8eac](https://github.com/Agoric/agoric-sdk/commit/1db8eacd5fdb0e6d6ec6d2f93bd29e7c9291da30))
+* use the new (typed) harden package ([2eb1af0](https://github.com/Agoric/agoric-sdk/commit/2eb1af08fe3967629a3ce165752fd501a5c85a96))
+
+
+### Features
+
+* add crank number to kernel state ([75e5d53](https://github.com/Agoric/agoric-sdk/commit/75e5d53d36862e630b3ee8e9628d2237493eb8ae))
+* Add support for dumping crank-by-crank snapshots of the kernel state as a swingset runs ([b49929e](https://github.com/Agoric/agoric-sdk/commit/b49929ed7139544e218601135bdfd3408ea770de))
+* Improved console log diagnostics ([465329d](https://github.com/Agoric/agoric-sdk/commit/465329d1d7f740e82fa46da24be370e2081fcb33))
+
+
+
+
+
 # [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.3.0-alpha.0...@agoric/swingset-runner@0.3.0) (2020-04-13)
 
 **Note:** Version bump only for package @agoric/swingset-runner

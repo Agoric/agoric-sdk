@@ -6,35 +6,21 @@ now=`date -u +%Y%m%dT%H%M%S`
 git checkout -b release-$now
 ```
 
-To generate a new alpha release, and CHANGELOG.md files:
+To generate a new final release, and CHANGELOG.md files
+(use `--conventional-prerelease` if you just want to generate an alpha release):
 
 ```sh
-# Generate CHANGELOG.md files and update packages to .alpha
-yarn lerna version --no-push --conventional-prerelease
-# Tell which packages need news.
-scripts/need-news HEAD^ > needs-news.md
+# Create the final release CHANGELOGs and tags, and push.
+yarn lerna version --no-push
 # Push the branch.
 git push -u origin release-$now
-# Make docker containers to test the build.
-make -C packages/deployment docker-build
+# Tell which packages have actual news.
+scripts/have-news HEAD^ > have-news.md
 ```
 
-Then, create a release PR, pasting `needs-news.md` into the body.  If you need to do more work on the branch before the final release, fix, commit, and repeat the above section.
+Then, create a release PR, pasting `have-news.md` into the body.
 
-Have the relevant maintainers fill out the `NEWS.md` for their package and
-commit it to the release branch.
-
-To prepare the release version, do on the branch:
-
-```sh
-# Merge the NEWS.md changes.
-git pull
-# Create the final release CHANGELOGs and tags, and push.
-yarn lerna version --no-push --conventional-graduate
-git push
-```
-
-Then you can run the following :
+Then you can run the following:
 
 ```sh
 # Build all package generated files.

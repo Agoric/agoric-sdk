@@ -3,6 +3,75 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.15.0...@agoric/cosmic-swingset@0.16.0) (2020-05-04)
+
+
+### Bug Fixes
+
+* add registrar to homeP and fix hanging issue. ([#952](https://github.com/Agoric/agoric-sdk/issues/952)) ([7ca77f3](https://github.com/Agoric/agoric-sdk/commit/7ca77f3d53070d049950348735159e25294e1da9))
+* allow wallet bridge from non-localhost origins ([ff545ba](https://github.com/Agoric/agoric-sdk/commit/ff545ba33693f0ba7eb21b136f51d9a00e24b02a))
+* check-lmdb: guard against the set() failing too ([4bc045a](https://github.com/Agoric/agoric-sdk/commit/4bc045a4d39daaa4e7094029fa0acd7bf0b41db6))
+* correct building Go under docker ([b01614b](https://github.com/Agoric/agoric-sdk/commit/b01614b9aefc8eb66709397ae5f15ae1965454d1))
+* cosmic-swingset CI works again ([168ad2c](https://github.com/Agoric/agoric-sdk/commit/168ad2cd8d4945ca76f1979634958ab5924ec108))
+* cosmic-swingset: fall back to SimpleStore if LMDB doesn't work ([2e1415a](https://github.com/Agoric/agoric-sdk/commit/2e1415af20c199284e2b6c66c3534869900eb5d9)), closes [#950](https://github.com/Agoric/agoric-sdk/issues/950)
+* crisper rejection of closed and revoked ports/connections ([589702b](https://github.com/Agoric/agoric-sdk/commit/589702bb049eed808029546fd0f0eb0b1a19864b))
+* decrease the need for sendPacket delay (almost fixed) ([9f65899](https://github.com/Agoric/agoric-sdk/commit/9f658991eb38009ada8d1a6127ad1d6f323d326e))
+* disable IBC access from vats, as it can crash the chain ([85c0b86](https://github.com/Agoric/agoric-sdk/commit/85c0b86d64c20bcf96687b4d7360bfdc9c198791))
+* get the cosmos-sdk events flowing for sending packets ([4867af4](https://github.com/Agoric/agoric-sdk/commit/4867af4de0d42a1691168d330da7c9d73681f9bc))
+* get the encouragement dIBC working ([6bb1337](https://github.com/Agoric/agoric-sdk/commit/6bb13377c94e25df79481a42c3f280b7f4da43ed))
+* get working with latest relayer ([3d39496](https://github.com/Agoric/agoric-sdk/commit/3d394963ce16556a639bf6f4118c5e91377b6bcc))
+* harmonise the docs with the implementation ([88d2a0a](https://github.com/Agoric/agoric-sdk/commit/88d2a0aeb5cb6ebbece7bebc090b1b6697fdb8e1))
+* ibcports->ibcport ([efb9d95](https://github.com/Agoric/agoric-sdk/commit/efb9d95c8fc5b69e76e9dc52236ebea2f98ee50c))
+* import the x/swingset keeper, not the ibc/tranfer keeper ([319e15e](https://github.com/Agoric/agoric-sdk/commit/319e15e1935e7f6b286cc3e0ba3026139d2aabdf))
+* improve handling of orders that are consummated immediately ([61e4b67](https://github.com/Agoric/agoric-sdk/commit/61e4b673014b81d8336d64059eb9a1ea46629eae)), closes [#13](https://github.com/Agoric/agoric-sdk/issues/13)
+* insert agoric-sdk/packages in the package names ([df9d663](https://github.com/Agoric/agoric-sdk/commit/df9d66310a5e9d14b6823ccb6e616490ab2700fc))
+* introduce sleep to help mitigate a relayer race condition ([c0014d3](https://github.com/Agoric/agoric-sdk/commit/c0014d3108f28c01d507da1c7553295a3fde6b06))
+* lots and lots of improvements ([8f1c312](https://github.com/Agoric/agoric-sdk/commit/8f1c3128bbb4c3baf7f15b9ca632fc902acd238f))
+* minor cleanups ([8b63024](https://github.com/Agoric/agoric-sdk/commit/8b63024a0c749c3c61c3daee3695f4546d8079ff))
+* missed a change in refactoring ([567f713](https://github.com/Agoric/agoric-sdk/commit/567f71318d5c3bdbf7a6ed620610790dd7cd3c22))
+* more dIBC inbound work ([6653937](https://github.com/Agoric/agoric-sdk/commit/665393779540c580d57f798aa01c62855e7b5278))
+* more little wallet bridge tweaks ([7fa8c79](https://github.com/Agoric/agoric-sdk/commit/7fa8c7969bb2e8fffd661e28e227c37de031b32f))
+* propagate flushChainSend argument from fake-chain to launch ([69ee801](https://github.com/Agoric/agoric-sdk/commit/69ee8019eeda3f6ede4737d90e2abbbff8d5203a))
+* propagate Go errors all the way to the caller ([ea5ba38](https://github.com/Agoric/agoric-sdk/commit/ea5ba381e4e510bb9c9053bfb681e778f782a801))
+* proper inbound IBC listening ([3988235](https://github.com/Agoric/agoric-sdk/commit/3988235312806711c1837f80788ddc42ae7713dd))
+* reimplement crossover connections ([bf3bd2a](https://github.com/Agoric/agoric-sdk/commit/bf3bd2ad78440dad42935e4a30b50de56a77ceba))
+* remove hack to delay packets with a timer; the relayer wins! ([a16a444](https://github.com/Agoric/agoric-sdk/commit/a16a444fd1f801b578cc0251da882898b1071355))
+* remove unnecessary files ([a13e937](https://github.com/Agoric/agoric-sdk/commit/a13e9375bccd6ff03e814745ca489fead21956f8))
+* repl didn't display resolutions to presences ([79a0aa3](https://github.com/Agoric/agoric-sdk/commit/79a0aa314c281f26bf9368c06fbd0cec63167ed3))
+* return packet acknowledgements ([4cf6f2f](https://github.com/Agoric/agoric-sdk/commit/4cf6f2f210466fa049361f9d7c115a706ec6ff49))
+* return the correct crossover side for inbound ([dc285d7](https://github.com/Agoric/agoric-sdk/commit/dc285d7f80197bf88fcc5961fe758d9cb891d7b4))
+* update Agoric-specific code to latest cosmos-sdk ([ddd51cd](https://github.com/Agoric/agoric-sdk/commit/ddd51cd09ae45874620abd1315002b6666b14757))
+* upgrade Cosmos SDK to fix x/capability nondeterminism ([1870d5e](https://github.com/Agoric/agoric-sdk/commit/1870d5e95966aaa63c6a0078848a8af255373d5f))
+* use the downcall's partial Packet as arguments where possible ([3befb25](https://github.com/Agoric/agoric-sdk/commit/3befb25363fb7f7867e67d6d5ce2c1f807a3c9a7))
+* **zoe:** Invitation to offer refactored to use upcall ([#853](https://github.com/Agoric/agoric-sdk/issues/853)) ([c142b7a](https://github.com/Agoric/agoric-sdk/commit/c142b7a64e77262927da22bde3af5793a9d39c2a))
+
+
+### Features
+
+* add Presence, getInterfaceOf, deepCopyData to marshal ([aac1899](https://github.com/Agoric/agoric-sdk/commit/aac1899b6cefc4241af04911a92ffc50fbac3429))
+* add the network vat to ag-solo ([d88062c](https://github.com/Agoric/agoric-sdk/commit/d88062c9d35a10afaab82728123ca3d71b7d5189))
+* add vat-ibc, wire in bootstrap ([7c7011d](https://github.com/Agoric/agoric-sdk/commit/7c7011d372618b4008a250e2c9b36cabbbc2543c))
+* ag-nchainz helper script ([aab056c](https://github.com/Agoric/agoric-sdk/commit/aab056c7b4d54c8f828139c6e2adc9fe9eb86c55))
+* begin getting working with loopback peer ([7729e86](https://github.com/Agoric/agoric-sdk/commit/7729e869793196cbc2f937260c0a320665056784))
+* begin working out merging Gaia with Agoric/SwingSet ([7895304](https://github.com/Agoric/agoric-sdk/commit/789530450cb0d913a1ffcf6f836773c840870f26))
+* connect notifier to wallet for SimpleExchange ([6d270f8](https://github.com/Agoric/agoric-sdk/commit/6d270f87a1788ad08526f929fc8165eaf7a61e3b))
+* end-to-end dIBC across chains ([151ff3f](https://github.com/Agoric/agoric-sdk/commit/151ff3f9e0c92972aa7a21a6f55c1898db85b820))
+* get 'ibc/*/ordered/echo' handler working ([2795c21](https://github.com/Agoric/agoric-sdk/commit/2795c214cae8ac44eb5d19eb1b1aa0c066a22ecd))
+* implement `console` endowment for the REPL ([4aaf56d](https://github.com/Agoric/agoric-sdk/commit/4aaf56d883faf661d54862bd46357a8b89ad668f))
+* implement the "sendPacket" transaction ([063c5b5](https://github.com/Agoric/agoric-sdk/commit/063c5b5c266187bc327dde568090dabf2bbfde8d))
+* implement the network vat ([0fcd783](https://github.com/Agoric/agoric-sdk/commit/0fcd783576ecfab5430d3d905a53f22b3e01e95f))
+* introduce vats/ibc.js handler ([cb511e7](https://github.com/Agoric/agoric-sdk/commit/cb511e74e797bedbcce1aac4193780ae7abc8cfc))
+* rename the registrar to be registry in "home" ([7603edb](https://github.com/Agoric/agoric-sdk/commit/7603edb8abed8573282337a66f6af506e8715f8c))
+* store offerhandle and id, get offerHandle with id ([#966](https://github.com/Agoric/agoric-sdk/issues/966)) ([ebd3426](https://github.com/Agoric/agoric-sdk/commit/ebd3426cdbbf17ffd00c02c5a9d38036c97fd4b9))
+* suspend an outbound connection until the relayer picks it up ([ee22926](https://github.com/Agoric/agoric-sdk/commit/ee22926e52c3b4d17df7fa760e017d02f03f1a8f))
+* symlink wallet from agoric-sdk or NPM for all ag-solos ([fdade37](https://github.com/Agoric/agoric-sdk/commit/fdade3773ae270d1ecbcf79f05d8b58c580e2350))
+* use wallet from NPM if the SDK one is not built ([182643b](https://github.com/Agoric/agoric-sdk/commit/182643b15c0ca4ff5ace0fc260fb955b4d2d9d17))
+* **swingset:** Draft protocol for Go to JS bridge ([#943](https://github.com/Agoric/agoric-sdk/issues/943)) ([c7035c1](https://github.com/Agoric/agoric-sdk/commit/c7035c1238ce0fb92337826550c26f2c0eea8c6e))
+
+
+
+
+
 # [0.15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.15.0-alpha.0...@agoric/cosmic-swingset@0.15.0) (2020-04-13)
 
 **Note:** Version bump only for package @agoric/cosmic-swingset
