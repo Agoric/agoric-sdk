@@ -66,7 +66,7 @@ export default async function main(progname, args, { path, env, agcc }) {
       },
       rej => {
         // console.error(`Rejecting in Node to ${str} with`, rej);
-        replier.reject(`rejection ignored: ${rej.stack || rej}`);
+        replier.reject(`${(rej && rej.stack) || rej}`);
       },
     );
   }
@@ -200,6 +200,9 @@ export default async function main(progname, args, { path, env, agcc }) {
     // console.log(`toSwingSet`, action, replier);
     if (action.type === AG_COSMOS_INIT) {
       // console.error('got AG_COSMOS_INIT', action);
+      if (!process.env.BOOT_ADDRESS) {
+        throw Error(`You must set $BOOT_ADDRESS to run a chain node`);
+      }
       portNums.dibc = action.ibcPort;
       return true;
     }
