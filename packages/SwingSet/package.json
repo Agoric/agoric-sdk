@@ -13,8 +13,7 @@
   "scripts": {
     "build": "npm run-script build-kernel",
     "build-kernel": "node -r esm scripts/build-kernel.js",
-    "pack": "npm run-script build-kernel && npm pack",
-    "publish": "npm run-script pack && npm publish --access public",
+    "prepublish": "npm run-script build-kernel",
     "test": "npm run-script build-kernel && tap --no-coverage test/test-node-version.js && tap --no-coverage --reporter specy --timeout 600 'test/**/test*.js'",
     "test-nosort": "npm run-script build-kernel && tape -r esm test/test-node-version.js && tape -r esm 'test/**/test*.js'",
     "pretty-fix": "prettier --write '**/*.js'",
