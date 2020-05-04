@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.19.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.19.0...@agoric/deployment@1.19.1) (2020-05-04)
+
+
+### Bug Fixes
+
+* fix "delegates" conditional syntax ([0a774a5](https://github.com/Agoric/agoric-sdk/commit/0a774a57be0697a8351f1a8523710f04e5368e82))
+* update to docker image node:lts-stretch ([ba1ad59](https://github.com/Agoric/agoric-sdk/commit/ba1ad59eac598879ebbac27f50856e24f7621a35))
+
+
+
+
+
 # [1.19.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.19.0-alpha.0...@agoric/deployment@1.19.0) (2020-04-13)
 
 **Note:** Version bump only for package @agoric/deployment
