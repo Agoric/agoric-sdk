@@ -104,6 +104,12 @@ function resolvePR(pr, mode, target2) {
     case 'presence':
       pr.resolve(target2);
       break;
+    case 'local-object':
+      pr.resolve(harden({
+        two() {},
+        four() {},
+      }));
+      break;
     case 'data':
       pr.resolve(4);
       break;
@@ -115,13 +121,19 @@ function resolvePR(pr, mode, target2) {
   }
 }
 
-function resolutionOf(vpid, mode, target2) {
+function resolutionOf(vpid, mode, target2, localTarget) {
   switch (mode) {
     case 'presence':
       return {
         type: 'fulfillToPresence',
         promiseID: vpid,
         slot: target2,
+      };
+    case 'local-object':
+      return {
+        type: 'fulfillToPresence',
+        promiseID: vpid,
+        slot: localTarget,
       };
     case 'data':
       return {
@@ -166,6 +178,7 @@ async function doVatResolveCase1(t, mode) {
   const rootA = 'o+0';
   const target1 = 'o-1';
   const target2 = 'o-2';
+  const localTarget = 'o+1';
   const expectedP1 = 'p+5';
   const expectedP2 = 'p+6';
   const expectedP3 = 'p+7';
@@ -189,7 +202,7 @@ async function doVatResolveCase1(t, mode) {
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP2 });
 
   // next the vat should resolve the promise it created
-  t.deepEqual(log.shift(), resolutionOf(expectedP1, mode, target2));
+  t.deepEqual(log.shift(), resolutionOf(expectedP1, mode, target2, localTarget));
 
   // then it should send 'two'. For now it should cite the same promise ID,
   // but in the future that vpid will have been retired, and we should see a
@@ -231,16 +244,18 @@ async function doVatResolveCase23(t, which, mode, stalls) {
       promise(p) {
         p1 = p;
         p1.then(
-          x => (resolutionOfP1 = x),
-          _ => (resolutionOfP1 = 'rejected'),
+          x => { console.log(`p1 resolved`); resolutionOfP1 = x; },
+          _ => { console.log(`p1 rejected`); resolutionOfP1 = 'rejected'; },
         );
       },
       result() {
         return pr.promise;
       },
       async run(target1, target2) {
+        console.log(`calling one()`);
         const p2 = E(target1).one(p1);
         hush(p2);
+        console.log(`calling two()`);
         const p3 = E(p1).two();
         if (mode === 'data' || mode === 'reject') {
           hush(p3);
@@ -250,6 +265,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
         // code access to p1. When we resolve the `pr.promise` we returned
         // from `result`, liveslots will resolve p1 for us. But remember that
         // pr.promise !== p1
+        console.log(`resolvePR ${mode}`);
         resolvePR(pr, mode, target2);
 
         // We've started the resolution process, but it cannot complete for
@@ -274,12 +290,15 @@ async function doVatResolveCase23(t, which, mode, stalls) {
         // If we stall a full three turns, then four() is sent directly to
         // target2.
 
+        console.log(`calling three()`);
         const p4 = E(target1).three(p1);
         hush(p4);
+        console.log(`calling four()`);
         const p5 = E(p1).four();
         if (mode === 'data' || mode === 'reject') {
           hush(p5);
         }
+        console.log(`did all calls`);
       },
     });
   }
@@ -290,6 +309,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   const slot1arg = { '@qclass': 'slot', index: 1 };
   const rootA = 'o+0';
   const target1 = 'o-1';
+  const localTarget = 'o+1';
   const p1 = 'p-8';
   const expectedP2 = 'p+5';
   const expectedP3 = 'p+6';
@@ -342,6 +362,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   // for(let l of log) {
   //   console.log(l);
   // }
+  //return t.end();
 
   // then it resolves p1, which was used as the result of rootA~.result()
 
@@ -356,7 +377,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
 
   const RETIRE_VPIDS = false;
 
-  const expectedFulfill = [resolutionOf(p1, mode, target2)];
+  const expectedFulfill = [resolutionOf(p1, mode, target2, localTarget)];
   const expectedThree = [];
   const expectedFour = [];
   let expectedVPIDInThree = p1;
@@ -467,12 +488,13 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   t.end();
 }
 
-// test.only(`XX`, async t => {
-//   await doVatResolveCase23(t, 2, 'presence', 0);
-// });
+// XXX 'presence' and 'local-object' with 1 stall both fail, the others succeed
+test.only(`XX`, async t => {
+  await doVatResolveCase23(t, 2, 'presence', 1);
+});
 
 for (const caseNum of [2, 3]) {
-  for (const mode of ['presence', 'data', 'reject']) {
+  for (const mode of ['presence', 'local-object', 'data', 'reject']) {
     for (let stalls = 0; stalls < 4; stalls += 1) {
       test(`liveslots vpid handling case${caseNum} ${mode} stalls=${stalls}`, async t => {
         await doVatResolveCase23(t, caseNum, mode, stalls);

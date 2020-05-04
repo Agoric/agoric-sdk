@@ -74,6 +74,7 @@ function build(syscall, _state, makeRoot, forVatID) {
       const remote = resolveWithPresence(fulfilledHandler);
       presence = Remotable(`Presence ${slot}`, undefined, remote);
       // remote === presence, actually
+      // todo: swap remote and presence
     }); // no unfulfilledHandler
 
     // The call to resolveWithPresence performs the forwarding logic
@@ -116,9 +117,13 @@ function build(syscall, _state, makeRoot, forVatID) {
           `makeQueued handler.applyMethod (orig ${vpid} now ${currentSlotID})`,
         );
         // console.log(`mIP uFhandler[${prop}] vpid=${vpid} currentSlotID=${currentSlotID}`);
-        if (currentSlotID === undefined) {
+        if (currentSlotID === 'local') {
           console.error(`mIP handler called after fulfillToLocalObject`);
           throw Error(`mIP handler called after fulfillToLocalObject`);
+        }
+        if (currentSlotID === 'remote') {
+          console.error(`mIP handler called after fulfillToRemoteObject`);
+          throw Error(`mIP handler called after fulfillToRemoteObject`);
         }
         // eslint-disable-next-line no-use-before-define
         return queueMessage(currentSlotID, prop, args, returnedP);
@@ -135,13 +140,19 @@ function build(syscall, _state, makeRoot, forVatID) {
     // prepare for the kernel to tell us about resolution
 
     function fulfillToLocalObject(newObject) {
+      console.log(`fulfillToLocalObject`);
       // the old handler should never be called again
-      currentSlotID = undefined;
+      currentSlotID = 'local';
       resolve(newObject);
     }
 
     function fulfillToRemoteObject(newSlot, newPresence) {
+      console.log(`fulfillToRemoteObject ${newSlot} ${newPresence}`);
       insistVatType('object', newSlot);
+      // Now, to ensure any p~.foo() calls during the remainder of the
+      // *current* turn also go to 'newSlot', we modify our old handler, by
+      // changing its target.
+      currentSlotID = 'remote';
       // Resolve the original Promise. Local users will get a .then callback.
       // In addition, the handler attached to newPresence (which got there
       // because newPresence came out of a resolveWithPresence call on a new
@@ -153,10 +164,10 @@ function build(syscall, _state, makeRoot, forVatID) {
       // method invocations will act as if they are the same.
       resolve(newPresence);
 
-      // Now, to ensure any p~.foo() calls during the remainder of the
-      // *current* turn also go to 'newSlot', we modify our old handler, by
-      // changing its target.
-      currentSlotID = newSlot;
+      // markm says the intended behavior is that resolve(newPresence) should
+      // cause an immediate behavioral change, and therefore
+      // 'currentSlotID=newSlot' should not be necessary
+
     }
 
     function fulfillToData(data) {
