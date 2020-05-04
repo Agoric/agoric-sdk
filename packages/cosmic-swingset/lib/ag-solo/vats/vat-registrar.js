@@ -3,7 +3,7 @@ import { makeRegistrar } from '@agoric/registrar';
 
 // This vat contains the registrar for the demo.
 
-function build(E, log) {
+function build(_E, _log) {
   const sharedRegistrar = makeRegistrar();
 
   function getSharedRegistrar() {

@@ -3,7 +3,7 @@ import makeScratchPad from './scratch';
 
 // This vat contains the private upload scratch pad.
 
-function build(E, log) {
+function build(_E, _log) {
   const uploads = makeScratchPad();
 
   function getUploads() {

@@ -3,7 +3,7 @@ import { makeSharingService } from '@agoric/sharing-service';
 
 // This vat contains the sharing service for the demo.
 
-function build(E, log) {
+function build(_E, _log) {
   const sharingService = makeSharingService();
 
   function getSharingService() {

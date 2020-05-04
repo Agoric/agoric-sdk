@@ -9,6 +9,7 @@ const toml = require('@iarna/toml');
 const configString = fs.readFileSync(process.argv[2]).toString();
 const config = toml.parse(configString);
 const { laddr } = config.rpc; // like tcp://0.0.0.0:26657
+// eslint-disable-next-line no-useless-escape
 const m = laddr.match(/^tcp:\/\/([\d\.]+):(\d+)$/);
 if (!m) {
   throw new Error(`error, unexpected laddr format ${laddr}`);
