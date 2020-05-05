@@ -140,14 +140,14 @@ function build(syscall, _state, makeRoot, forVatID) {
     // prepare for the kernel to tell us about resolution
 
     function fulfillToLocalObject(newObject) {
-      console.log(`fulfillToLocalObject`);
+      // console.log(`fulfillToLocalObject`);
       // the old handler should never be called again
       currentSlotID = 'local';
       resolve(newObject);
     }
 
     function fulfillToRemoteObject(newSlot, newPresence) {
-      console.log(`fulfillToRemoteObject ${newSlot} ${newPresence}`);
+      // console.log(`fulfillToRemoteObject ${newSlot} ${newPresence}`);
       insistVatType('object', newSlot);
       // Now, to ensure any p~.foo() calls during the remainder of the
       // *current* turn also go to 'newSlot', we modify our old handler, by
