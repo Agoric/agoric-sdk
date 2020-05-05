@@ -106,8 +106,8 @@ function resolvePR(pr, mode, target2) {
       break;
     case 'local-object':
       pr.resolve(harden({
-        two() {},
-        four() {},
+        two() { /* console.log(`local two() called`); */ },
+        four() { /* console.log(`local four() called`); */ },
       }));
       break;
     case 'data':
@@ -244,18 +244,20 @@ async function doVatResolveCase23(t, which, mode, stalls) {
       promise(p) {
         p1 = p;
         p1.then(
-          x => { console.log(`p1 resolved`); resolutionOfP1 = x; },
-          _ => { console.log(`p1 rejected`); resolutionOfP1 = 'rejected'; },
+          x => { // console.log(`p1 resolved`);
+                 resolutionOfP1 = x; },
+          _ => { // console.log(`p1 rejected`);
+                 resolutionOfP1 = 'rejected'; },
         );
       },
       result() {
         return pr.promise;
       },
       async run(target1, target2) {
-        console.log(`calling one()`);
+        // console.log(`calling one()`);
         const p2 = E(target1).one(p1);
         hush(p2);
-        console.log(`calling two()`);
+        // console.log(`calling two()`);
         const p3 = E(p1).two();
         if (mode === 'data' || mode === 'reject') {
           hush(p3);
@@ -265,7 +267,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
         // code access to p1. When we resolve the `pr.promise` we returned
         // from `result`, liveslots will resolve p1 for us. But remember that
         // pr.promise !== p1
-        console.log(`resolvePR ${mode}`);
+        // console.log(`resolvePR ${mode}`);
         resolvePR(pr, mode, target2);
 
         // We've started the resolution process, but it cannot complete for
@@ -290,15 +292,15 @@ async function doVatResolveCase23(t, which, mode, stalls) {
         // If we stall a full three turns, then four() is sent directly to
         // target2.
 
-        console.log(`calling three()`);
+        // console.log(`calling three()`);
         const p4 = E(target1).three(p1);
         hush(p4);
-        console.log(`calling four()`);
+        // console.log(`calling four()`);
         const p5 = E(p1).four();
         if (mode === 'data' || mode === 'reject') {
           hush(p5);
         }
-        console.log(`did all calls`);
+        // console.log(`did all calls`);
       },
     });
   }
@@ -362,7 +364,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   // for(let l of log) {
   //   console.log(l);
   // }
-  //return t.end();
+  // return t.end();
 
   // then it resolves p1, which was used as the result of rootA~.result()
 
@@ -417,9 +419,9 @@ async function doVatResolveCase23(t, which, mode, stalls) {
     if (mode === 'presence') {
       fourIsTargeted = true;
     } else {
-      // Waiting one turn and resolving to data, or rejecting, doesn't catch
-      // the message in time, and it gets pipelined to the promise.
-      fourIsPipelined = true;
+      // Waiting one turn and resolving to data, or rejecting, causes four()
+      // to be sent to a local object which cannot accept it, causing a local
+      // rejection, so we should see no syscalls
     }
   } else {
     // Waiting two or more turns allows the Promise to be fully resolved for
@@ -488,10 +490,10 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   t.end();
 }
 
-// XXX 'presence' and 'local-object' with 1 stall both fail, the others succeed
-test.only(`XX`, async t => {
-  await doVatResolveCase23(t, 2, 'presence', 1);
-});
+// uncomment this when debugging specific problems
+// test(`XX`, async t => {
+//   await doVatResolveCase23(t, 2, 'data', 1);
+// });
 
 for (const caseNum of [2, 3]) {
   for (const mode of ['presence', 'local-object', 'data', 'reject']) {
