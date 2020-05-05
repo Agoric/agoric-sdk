@@ -155,9 +155,6 @@ test('lib-wallet offer methods', async t => {
       'Fun budget',
       moolaBundle.mint.mintPayment(moolaBundle.amountMath.make(100)),
     );
-    // declineOffer,
-    // cancelOffer,
-
     const formulateBasicOffer = id =>
       harden({
         // JSONable ID for this offer.  This is scoped to the origin.
@@ -261,6 +258,7 @@ test('lib-wallet offer methods', async t => {
       ],
       `inbox state change log`,
     );
+    // TODO: test cancelOffer with a contract that holds offers, like simpleExchange
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {
