@@ -12,7 +12,9 @@ import { makeGetInstanceHandle } from '@agoric/zoe/src/clientSupport';
 import { makeWallet } from '../../lib/ag-solo/vats/lib-wallet';
 
 const setupTest = async () => {
-  const contractRoot = `${__dirname}/automaticRefund`;
+  const contractRoot = require.resolve(
+    '@agoric/zoe/src/contracts/automaticRefund',
+  );
   const { source, moduleFormat } = await bundleSource(contractRoot);
   const pursesStateChangeLog = [];
   const inboxStateChangeLog = [];
