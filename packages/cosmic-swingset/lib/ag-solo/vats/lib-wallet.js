@@ -381,7 +381,7 @@ export async function makeWallet(
       // is an object, but we will store it here for future use.
       idToOutcome.set(id, outcome);
 
-      ret = { outcome };
+      ret = { outcome, depositedP };
 
       // Update status, drop the proposal
       depositedP
