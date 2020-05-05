@@ -150,7 +150,7 @@ export async function makeWallet(
       completeObj,
       outcome: outcomeP,
       offerHandle: offerHandleP,
-    } = await E(zoe).offer(invite, proposal, payment);
+    } = await E(zoe).offer(invite, harden(proposal), harden(payment));
 
     // =====================
     // === AWAITING TURN ===
