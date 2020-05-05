@@ -53,8 +53,7 @@ function run() {
             .replace('&', '&amp;') // quote ampersands
             .replace('<', '&lt;') // quote html
             .replace(/\t/g, '  ') // expand tabs
-            .replace(/ /g, '&nbsp;') // convert spaces
-            .replace(/&nbsp;&nbsp;/g, '&nbsp; '), // allow multispace to break
+            .replace(/ {2}/g, ' &nbsp;'), // try preserving whitespace
       )
       .join('<br />');
   }
