@@ -4,7 +4,6 @@ import {
   rethrowUnlessMissing,
   dataToBase64,
   base64ToBytes,
-  toBytes,
   getPrefixes,
 } from '@agoric/swingset-vat/src/vats/network';
 import makeStore from '@agoric/store';
@@ -144,6 +143,31 @@ export function makeIBCProtocolHandler(
   const channelKeyToSeqAck = makeStore('CHANNEL:PORT');
 
   /**
+   * Send a packet out via the IBC device.
+   * @param {IBCPacket} packet
+   * @param {Store<number, PromiseRecord<Bytes, any>>} seqToAck
+   */
+  async function ibcSendPacket(packet, seqToAck) {
+    // Make a kernel call to do the send.
+    const fullPacket = await callIBCDevice('sendPacket', {
+      packet,
+      relativeTimeout: DEFAULT_PACKET_TIMEOUT,
+    });
+
+    // Extract the actual sequence number from the return.
+    const { sequence } = fullPacket;
+
+    /**
+     * @type {PromiseRecord<Bytes, any>}
+     */
+    const ackDeferred = producePromise();
+
+    // Register the ack resolver/rejector with this sequence number.
+    seqToAck.init(sequence, ackDeferred);
+    return ackDeferred.promise;
+  }
+
+  /**
    * @param {string} channelID
    * @param {string} portID
    * @param {string} rChannelID
@@ -161,6 +185,7 @@ export function makeIBCProtocolHandler(
     const channelKey = `${channelID}:${portID}`;
     const seqToAck = makeStore('SEQUENCE');
     channelKeyToSeqAck.init(channelKey, seqToAck);
+
     /**
      * @param {Connection} _conn
      * @param {Bytes} packetBytes
@@ -168,6 +193,7 @@ export function makeIBCProtocolHandler(
      * @returns {Promise<Bytes>} Acknowledgement data
      */
     let onReceive = async (_conn, packetBytes, _handler) => {
+      // console.error(`Remote IBC Handler ${portID} ${channelID}`);
       const packet = {
         source_port: portID,
         source_channel: channelID,
@@ -175,46 +201,23 @@ export function makeIBCProtocolHandler(
         destination_channel: rChannelID,
         data: dataToBase64(packetBytes),
       };
-      const fullPacket = await callIBCDevice('sendPacket', {
-        packet,
-        relativeTimeout: DEFAULT_PACKET_TIMEOUT,
-      });
-      const { sequence } = fullPacket;
-      /**
-       * @type {PromiseRecord<Bytes, any>}
-       */
-      const ackDeferred = producePromise();
-      seqToAck.init(sequence, ackDeferred);
-      return ackDeferred.promise;
+      return ibcSendPacket(packet, seqToAck);
     };
 
-    if (ordered) {
+    // FIXME: We may want a queue sometime to sequence
+    // our packets, but it doesn't currently work (received
+    // packets don't arrive).
+    if (false && ordered) {
       // Set up a queue on the receiver.
       const withChannelReceiveQueue = makeWithQueue();
       onReceive = withChannelReceiveQueue(onReceive);
     }
 
     return harden({
-      async onOpen(conn, handler) {
+      async onOpen(conn, _handler) {
         console.info('onOpen Remote IBC Connection', channelID, portID);
-        /**
-         * @param {Data} data
-         * @returns {Promise<Bytes>} acknowledgement
-         */
-        let sender = data =>
-          /** @type {Promise<Bytes>} */
-          (E(handler)
-            .onReceive(conn, toBytes(data), handler)
-            .catch(rethrowUnlessMissing));
-        if (ordered) {
-          // Set up a queue on the sender.
-          const withChannelSendQueue = makeWithQueue();
-          sender = withChannelSendQueue(sender);
-        }
-        const boundSender = sender;
-        sender = data => {
-          return boundSender(data);
-        };
+        const connP = /** @type {Promise<Connection, any>} */ (E.when(conn));
+        channelKeyToConnP.init(channelKey, connP);
       },
       onReceive,
       async onClose(_conn, _reason, _handler) {
@@ -623,11 +626,7 @@ paths:
 
           // Actually connect.
           // eslint-disable-next-line prettier/prettier
-          const pr = E(protocolImpl).inbound(listenSearch, localAddr, remoteAddr, rchandler);
-          const connP = /** @type {Promise<Connection>} */ (pr);
-
-          /* Stash it for later use. */
-          channelKeyToConnP.init(channelKey, connP);
+          E(protocolImpl).inbound(listenSearch, localAddr, remoteAddr, rchandler);
           break;
         }
 
@@ -640,6 +639,7 @@ paths:
           } = packet;
           const channelKey = `${channelID}:${portID}`;
 
+          console.log(`Received with:`, channelKey, channelKeyToConnP.keys());
           const connP = channelKeyToConnP.get(channelKey);
           const data = base64ToBytes(data64);
 
@@ -709,20 +709,11 @@ paths:
           }
 
           const { source_port: portID, source_channel: channelID } = packet;
-
-          const fullPacket = await callIBCDevice('sendPacket', { packet });
-
-          const { sequence } = fullPacket;
-          /**
-           * @type {PromiseRecord<Bytes, any>}
-           */
-          const ackDeferred = producePromise();
           const channelKey = `${channelID}:${portID}`;
           const seqToAck = channelKeyToSeqAck.get(channelKey);
-          seqToAck.init(sequence, ackDeferred);
-          ackDeferred.promise.then(
-            ack => console.info('Manual packet', fullPacket, 'acked:', ack),
-            e => console.warn('Manual packet', fullPacket, 'timed out:', e),
+          ibcSendPacket(packet, seqToAck).then(
+            ack => console.info('Manual packet', packet, 'acked:', ack),
+            e => console.warn('Manual packet', packet, 'failed:', e),
           );
           break;
         }

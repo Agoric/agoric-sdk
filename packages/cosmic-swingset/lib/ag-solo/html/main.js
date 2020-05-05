@@ -99,15 +99,19 @@ function run() {
     if (histnum >= nextHistNum) {
       nextHistNum = histnum + 1;
     }
-    const c = document.getElementById(`command-${histnum}`);
-    if (c) {
+    const m1 = document.getElementById(`msg-command-${histnum}`);
+    const m2 = document.getElementById(`msg-history-${histnum}`);
+    if (m1 || m2) {
+      const c = document.getElementById(`command-${histnum}`);
       const h1 = document.getElementById(`history-${histnum}`);
-      const m1 = document.getElementById(`msg-command-${histnum}`);
-      const m2 = document.getElementById(`msg-history-${histnum}`);
       c.innerHTML = linesToHTML(`${command}`);
-      m1.innerHTML = linesToHTML(`${consoles.command}`);
+      if (m1) {
+        m1.innerHTML = linesToHTML(`${consoles.command}`);
+      }
       h1.innerHTML = linesToHTML(`${result}`);
-      m2.innerHTML = linesToHTML(`${consoles.display}`);
+      if (m2) {
+        m2.innerHTML = linesToHTML(`${consoles.display}`);
+      }
     } else {
       addHistoryEntry(histnum, command, result, consoles);
     }
