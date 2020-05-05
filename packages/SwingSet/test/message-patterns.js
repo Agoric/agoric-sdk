@@ -451,7 +451,8 @@ export function buildPatterns(E, log) {
       p1.resolve(x);
     };
   }
-  out.a71 = ['pipe1', 'pipe2', 'pipe3', 'p1.then', 'p2.then', 'p3.then'];
+  out.a71 = ['pipe1', 'p1.then', 'pipe2', 'p2.then', 'pipe3', 'p3.then'];
+  outPipelined.a71 = ['pipe1', 'pipe2', 'pipe3', 'p1.then', 'p2.then', 'p3.then'];
   test('a71');
 
   // px!pipe1()!pipe2()!pipe3(); px.resolve() but better
