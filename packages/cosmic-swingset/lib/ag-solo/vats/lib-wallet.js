@@ -150,7 +150,7 @@ export async function makeWallet(
       completeObj,
       outcome: outcomeP,
       offerHandle: offerHandleP,
-    } = await E(zoe).offer(invite, proposal, payment);
+    } = await E(zoe).offer(invite, harden(proposal), harden(payment));
 
     // =====================
     // === AWAITING TURN ===
@@ -381,7 +381,7 @@ export async function makeWallet(
       // is an object, but we will store it here for future use.
       idToOutcome.set(id, outcome);
 
-      ret = { outcome };
+      ret = { outcome, depositedP };
 
       // Update status, drop the proposal
       depositedP

@@ -3,7 +3,7 @@ import harden from '@agoric/harden';
 import { makeRouterProtocol } from '@agoric/swingset-vat/src/vats/network/router';
 
 function build(E) {
-  return harden(makeRouterProtocol('/', E));
+  return harden(makeRouterProtocol(E));
 }
 
 export default function setup(syscall, state, helpers) {

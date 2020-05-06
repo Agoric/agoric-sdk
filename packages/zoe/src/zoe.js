@@ -113,6 +113,8 @@ import { makeTables } from './state';
  * @property {(offerHandle: OfferHandle) => boolean} isOfferActive
  * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
  * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
+ * @property {(offerHandle: OfferHandle, sparseKeywords: SparseKeywords) => Allocation} getCurrentAllocation
+ * @property {(offerHandles: OfferHandle[], sparseKeywords: SparseKeywords) => Allocation[]} getCurrentAllocations
  * @property {(installationHandle: InstallationHandle) => string} getInstallation
  * Get the source code for the installed contract. Throws an error if the
  * installationHandle is not found.
@@ -140,6 +142,8 @@ import { makeTables } from './state';
  *
  * The keys are keywords, and the values are amounts. For example:
  * { Asset: amountMath.make(5), Price: amountMath.make(9) }
+ *
+ * @typedef {AmountKeywordRecord[]} AmountKeywordRecords
  *
  * @typedef {Object} ExitRule
  * The possible keys are 'waived', 'onDemand', and 'afterDeadline'.
@@ -238,13 +242,13 @@ import { makeTables } from './state';
  * invariants are true, they will remain true until changes are
  * made.
  * zcf.reallocate will throw an error if any of the
- * newAmountKeywordRecords do not have a value for all the
+ * newAllocations do not have a value for all the
  * keywords in sparseKeywords. An error will also be thrown if
- * any newAmountKeywordRecords have keywords that are not in
+ * any newAllocations have keywords that are not in
  * sparseKeywords.
  *
  * @param  {OfferHandle[]} offerHandles An array of offerHandles
- * @param  {AmountKeywordRecord} newAmountKeywordRecords An
+ * @param  {AmountKeywordRecord[]} newAllocations An
  * array of amountKeywordRecords  - objects with keyword keys
  * and amount values, with one keywordRecord per offerHandle.
  * @param  {Keyword[]} sparseKeywords An array of string
@@ -259,7 +263,7 @@ import { makeTables } from './state';
  * don't need to do those checks at this step and can assume
  * that the invariants hold.
  * @param  {OfferHandle[]} offerHandles - an array of offerHandles
- * @returns {undefined}
+ * @returns {void}
  *
  * @callback MakeInvitation
  * Make a credible Zoe invite for a particular smart contract
@@ -271,13 +275,17 @@ import { makeTables } from './state';
  * queries based on other information, we choose to omit it. For
  * instance, `installationHandle` can be derived from
  * `instanceHandle` and is omitted even though it is useful.
- * @param  {OfferHook} offerHook - a function that will be handed the
+ * @param {OfferHook} offerHook - a function that will be handed the
  * offerHandle at the right time, and returns a contract-specific
  * OfferOutcome which will be put in the OfferResultRecord.
- * @param  {CustomProperties} [customProperties] - an object of
+ * @param {string} inviteDesc
+ * @param {MakeInvitationOptions} [options]
+ * @returns {Invite}
+ *
+ * @typedef MakeInvitationOptions
+ * @property {CustomProperties} [customProperties] - an object of
  * information to include in the extent, as defined by the smart
  * contract
- * @returns {Invite}
  *
  * @callback OfferHook
  * This function will be called with the OfferHandle when the offer
@@ -292,13 +300,14 @@ import { makeTables } from './state';
  * when the issuer is added and ready.
  * @param {Promise<Issuer>|Issuer} issuerP Promise for issuer
  * @param {Keyword} keyword Keyword for added issuer
- * @returns {Promise<void>} Issuer is added and ready
+ * @returns {Promise<IssuerRecord>} Issuer is added and ready
  */
 
 /**
  * Create an instance of Zoe.
  *
- * @param {Object.<string,any>} [additionalEndowments] pure or pure-ish endowments to add to evaluator
+ * @param {Object.<string,any>} [additionalEndowments] pure or pure-ish
+ * endowments to add to evaluator
  * @returns {ZoeService} The created Zoe service.
  */
 const makeZoe = (additionalEndowments = {}) => {
@@ -368,14 +377,6 @@ const makeZoe = (additionalEndowments = {}) => {
   const removeAmountsAndNotifier = offerRecord =>
     filterObj(offerRecord, ['handle', 'instanceHandle', 'proposal']);
 
-  const removeNotifier = offerRecord =>
-    filterObj(offerRecord, [
-      'handle',
-      'instanceHandle',
-      'proposal',
-      'currentAllocation',
-    ]);
-
   const assertOffersHaveInstanceHandle = (
     offerHandles,
     expectedInstanceHandle,
@@ -386,6 +387,29 @@ const makeZoe = (additionalEndowments = {}) => {
         details`contract instances can only access their own associated offers`,
       );
     });
+  };
+
+  const doGetCurrentAllocation = (
+    instanceHandle,
+    offerHandle,
+    sparseKeywords,
+  ) => {
+    const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
+    const allKeywords = getKeywords(issuerKeywordRecord);
+    if (sparseKeywords === undefined) {
+      sparseKeywords = allKeywords;
+    }
+    const amountMathKeywordRecord = getAmountMaths(
+      instanceHandle,
+      sparseKeywords,
+    );
+    assertSubset(allKeywords, sparseKeywords);
+    const { currentAllocation } = offerTable.get(offerHandle);
+    return filterFillAmounts(
+      currentAllocation,
+      sparseKeywords,
+      amountMathKeywordRecord,
+    );
   };
 
   // Zoe has two different facets: the public Zoe service and the
@@ -404,36 +428,25 @@ const makeZoe = (additionalEndowments = {}) => {
    * @returns {ContractFacet} The returned facet
    */
   const makeContractFacet = instanceHandle => {
-    // Make a Zoe invite payment with an extent that is a mix of credible
-    // information from Zoe (the `handle` and `instanceHandle`) and
-    // other information defined by the smart contract. Note that the
-    // smart contract cannot override or change the values of `handle`
-    // and `instanceHandle`.
-    const makeInvitation = (offerHook, customProperties = harden({})) => {
-      const inviteHandle = harden({});
-      const inviteAmount = inviteAmountMath.make(
-        harden([
-          {
-            ...customProperties,
-            handle: inviteHandle,
-            instanceHandle,
-          },
-        ]),
-      );
-      inviteHandleToOfferHook.init(inviteHandle, offerHook);
-      return inviteMint.mintPayment(inviteAmount);
-    };
-
+    /**
+     * @type {ContractFacet}
+     */
     const contractFacet = harden({
-      reallocate: (offerHandles, newAmountKeywordRecords, sparseKeywords) => {
+      reallocate: (offerHandles, newAllocations, sparseKeywords) => {
         assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
+        // We may want to handle this with static checking instead.
+        // Discussion at: https://github.com/Agoric/agoric-sdk/issues/1017
+        assert(
+          offerHandles.length >= 2,
+          details`reallocating must be done over two or more offers`,
+        );
         const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
         const allKeywords = getKeywords(issuerKeywordRecord);
         if (sparseKeywords === undefined) {
           sparseKeywords = allKeywords;
         }
 
-        const newAmountMatrix = newAmountKeywordRecords.map(amountObj =>
+        const newAmountMatrix = newAllocations.map(amountObj =>
           objToArrayAssertFilled(amountObj, sparseKeywords),
         );
 
@@ -467,16 +480,12 @@ const makeZoe = (additionalEndowments = {}) => {
 
         // 2) ensure 'offer safety' for each player
         assert(
-          isOfferSafeForAll(
-            amountMathKeywordRecord,
-            proposals,
-            newAmountKeywordRecords,
-          ),
+          isOfferSafeForAll(amountMathKeywordRecord, proposals, newAllocations),
           details`The proposed reallocation was not offer safe`,
         );
 
         // 3) save the reallocation
-        offerTable.updateAmounts(offerHandles, harden(newAmountKeywordRecords));
+        offerTable.updateAmounts(offerHandles, harden(newAllocations));
       },
 
       complete: offerHandles => {
@@ -484,7 +493,33 @@ const makeZoe = (additionalEndowments = {}) => {
         return completeOffers(instanceHandle, offerHandles);
       },
 
-      makeInvitation,
+      // Make a Zoe invite payment with an extent that is a mix of credible
+      // information from Zoe (the `handle` and `instanceHandle`) and
+      // other information defined by the smart contract (the mandatory
+      // `inviteDesc` and the optional`options.customProperties`).
+      // Note that the smart contract cannot override or change the values
+      // of `handle` and `instanceHandle`.
+      makeInvitation: (offerHook, inviteDesc, options = harden({})) => {
+        assert.typeof(
+          inviteDesc,
+          'string',
+          details`expected an inviteDesc string: ${inviteDesc}`,
+        );
+        const { customProperties = harden({}) } = options;
+        const inviteHandle = harden({});
+        const inviteAmount = inviteAmountMath.make(
+          harden([
+            {
+              ...customProperties,
+              inviteDesc,
+              handle: inviteHandle,
+              instanceHandle,
+            },
+          ]),
+        );
+        inviteHandleToOfferHook.init(inviteHandle, offerHook);
+        return inviteMint.mintPayment(inviteAmount);
+      },
 
       addNewIssuer: (issuerP, keyword) =>
         issuerTable.getPromiseForIssuerRecord(issuerP).then(issuerRecord => {
@@ -535,20 +570,10 @@ const makeZoe = (additionalEndowments = {}) => {
       },
       getCurrentAllocation: (offerHandle, sparseKeywords) => {
         assertOffersHaveInstanceHandle(harden([offerHandle]), instanceHandle);
-        const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
-        const allKeywords = getKeywords(issuerKeywordRecord);
-        if (sparseKeywords === undefined) {
-          sparseKeywords = allKeywords;
-        }
-        const amountMathKeywordRecord = contractFacet.getAmountMaths(
+        return doGetCurrentAllocation(
+          instanceHandle,
+          offerHandle,
           sparseKeywords,
-        );
-        assertSubset(allKeywords, sparseKeywords);
-        const { currentAllocation } = offerTable.get(offerHandle);
-        return filterFillAmounts(
-          currentAllocation,
-          sparseKeywords,
-          amountMathKeywordRecord,
         );
       },
       getCurrentAllocations: (offerHandles, sparseKeywords) => {
@@ -571,7 +596,7 @@ const makeZoe = (additionalEndowments = {}) => {
   // securely escrow and get in return a record containing a promise for
   // payouts, a promise for the outcome of joining the contract,
   // and, depending on the exit conditions, perhaps a completeObj,
-  // an object with a cancel method for leaving the contract on demand.
+  // an object with a complete method for leaving the contract on demand.
 
   /** @type {ZoeService} */
   const zoeService = harden(
@@ -825,8 +850,22 @@ const makeZoe = (additionalEndowments = {}) => {
 
       isOfferActive: offerTable.isOfferActive,
       getOffers: offerHandles =>
-        offerTable.getOffers(offerHandles).map(removeNotifier),
-      getOffer: offerHandle => removeNotifier(offerTable.get(offerHandle)),
+        offerTable.getOffers(offerHandles).map(removeAmountsAndNotifier),
+      getOffer: offerHandle =>
+        removeAmountsAndNotifier(offerTable.get(offerHandle)),
+      getCurrentAllocation: (offerHandle, sparseKeywords) => {
+        const { instanceHandle } = offerTable.get(offerHandle);
+        return doGetCurrentAllocation(
+          instanceHandle,
+          offerHandle,
+          sparseKeywords,
+        );
+      },
+      getCurrentAllocations: (offerHandles, sparseKeywords) => {
+        return offerHandles.map(offerHandle =>
+          zoeService.getCurrentAllocation(offerHandle, sparseKeywords),
+        );
+      },
       getInstallation: installationHandle =>
         installationTable.get(installationHandle).code,
     },

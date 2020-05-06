@@ -13,7 +13,8 @@ const operaConcertTicketRoot = `${__dirname}/../../../src/contracts/operaConcert
 // __Test Scenario__
 
 // The Opera de Bordeaux plays the contract creator and the auditorium
-// It creates the contract for a show ("Steven Universe, the Opera", Web, March 25th 2020 at 8pm, 3 tickets)
+// It creates the contract for a show ("Steven Universe, the Opera", Web, March
+// 25th 2020 at 8pm, 3 tickets)
 // The Opera wants 22 moolas per ticket
 
 // Alice buys ticket #1
@@ -24,7 +25,8 @@ const operaConcertTicketRoot = `${__dirname}/../../../src/contracts/operaConcert
 
 // Then, Bob tries to buy ticket 1 and fails. He buys ticket #2 and #3
 
-// The Opera is told about the show being sold out. It gets all the moolas from the sale
+// The Opera is told about the show being sold out. It gets all the moolas from
+// the sale
 
 test(`Zoe opera ticket contract`, async t => {
   // Setup initial conditions
@@ -76,8 +78,11 @@ test(`Zoe opera ticket contract`, async t => {
               // The auditorium makes an offer.
               return (
                 // Note that the proposal here is empty
-                // This is due to a current limitation in proposal expressivness: https://github.com/Agoric/agoric-sdk/issues/855
-                // It's impossible to know in advance how many tickets will be sold, so it's not possible
+                // This is due to a current limitation in proposal
+                // expressiveness:
+                // https://github.com/Agoric/agoric-sdk/issues/855
+                // It's impossible to know in advance how many tickets will be
+                // sold, so it's not possible
                 // to say `want: moola(3*22)`
                 // in a future version of Zoe, it will be possible to express:
                 // "i want n times moolas where n is the number of sold tickets"
@@ -103,9 +108,9 @@ test(`Zoe opera ticket contract`, async t => {
                         'complete should be a function',
                       );
 
-                      const { currentAllocation } = await E(zoe).getOffer(
-                        await offerHandle,
-                      );
+                      const currentAllocation = await E(
+                        zoe,
+                      ).getCurrentAllocation(await offerHandle);
 
                       t.equal(
                         currentAllocation.Ticket.extent.length,
@@ -237,7 +242,8 @@ test(`Zoe opera ticket contract`, async t => {
             expectedAmountPerTicket: expectedAmountPerTicketOfJoker,
           } = terms;
 
-          // Joker does NOT check available tickets and tries to buy the ticket number 1 (already bought by Alice, but he doesn't know)
+          // Joker does NOT check available tickets and tries to buy the ticket
+          // number 1(already bought by Alice, but he doesn't know)
           const ticket1Amount = ticketAmountMath.make(
             harden([
               {

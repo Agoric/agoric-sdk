@@ -15,7 +15,7 @@ export default function makeVatManager(
   kernelKeeper,
   vatKeeper,
 ) {
-  const { process } = syscallManager;
+  const { waitUntilQuiescent, doEndOfCrank } = syscallManager;
 
   // We use vat-centric terminology here, so "inbound" means "into a vat",
   // generally from the kernel. We also have "comms vats" which use special
@@ -282,19 +282,44 @@ export default function makeVatManager(
 
   // dispatch handlers: these are used by the kernel core
 
-  function doProcess(d, errmsg) {
-    const dispatchOp = d[0];
-    const dispatchArgs = d.slice(1);
-    transcriptStartDispatch(d);
-    return process(
-      () => dispatch[dispatchOp](...dispatchArgs),
-      () => transcriptFinishDispatch(),
-      err => {
-        if (errmsg !== null) {
-          console.log(`doProcess: ${errmsg}:`, err);
-        }
-      },
-    );
+  /**
+   * Run a function, returning a promise that waits for the promise queue to be
+   * empty before resolving.
+   *
+   * @param f  The function to run
+   * @param errmsg  Tag string to be associated with the error message that gets
+   *     logged if `f` rejects.
+   *
+   * The kernel uses `runAndWait` to wait for the vat to become quiescent (that
+   * is, with nothing remaining on the promise queue) after a dispatch call.
+   * Since the vat is never given direct access to the timer or IO queues (i.e.,
+   * it can't call setImmediate, setInterval, or setTimeout), once the promise
+   * queue is empty, the vat has lost "agency" (the ability to initiate further
+   * execution).  The kernel *does not* wait for the dispatch handler's return
+   * promise to resolve, since a malicious or erroneous vat might fail to do
+   * so, and the kernel must be defensive against this.
+   */
+  function runAndWait(f, errmsg) {
+    Promise.resolve()
+      .then(f)
+      .then(undefined, err => console.log(`doProcess: ${errmsg}:`, err));
+    return waitUntilQuiescent();
+  }
+
+  async function doProcess(dispatchRecord, errmsg) {
+    const dispatchOp = dispatchRecord[0];
+    const dispatchArgs = dispatchRecord.slice(1);
+    transcriptStartDispatch(dispatchRecord);
+    await runAndWait(() => dispatch[dispatchOp](...dispatchArgs), errmsg);
+    // if (dispatch.notifyEndOfCrank) {
+    //   await runAndWait(dispatch.notifyEndOfCrank, errmsg);
+    // }
+
+    // TODO: if the dispatch failed, and we choose to destroy the vat, change
+    // what we do with the transcript here. We might also choose to not call
+    // notifyEndOfCrank().
+    transcriptFinishDispatch();
+    doEndOfCrank();
   }
 
   function vatStats() {

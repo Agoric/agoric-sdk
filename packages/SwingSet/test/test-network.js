@@ -29,9 +29,14 @@ const makeProtocolHandler = t => {
    */
   let l;
   let lp;
+  let nonce = 0;
   return harden({
     async onCreate(_protocol, _impl) {
       log('created', _protocol, _impl);
+    },
+    async generatePortID() {
+      nonce += 1;
+      return `${nonce}`;
     },
     async onBind(port, localAddr) {
       t.assert(port, `port is supplied to onBind`);

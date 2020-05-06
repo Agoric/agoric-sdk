@@ -10,7 +10,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	chanTypes "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/types"
 )
 
 type deliverInboundAction struct {
@@ -84,22 +83,20 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 }
 
 type sendPacketAction struct {
-	Type        string           `json:"type"`  // IBC_EVENT
-	Event       string           `json:"event"` // sendPacket
-	Packet      chanTypes.Packet `json:"packet"`
-	Sender      sdk.AccAddress   `json:"sender"`
-	BlockHeight int64            `json:"blockHeight"`
-	BlockTime   int64            `json:"blockTime"`
+	MsgSendPacket
+	Type        string `json:"type"`  // IBC_EVENT
+	Event       string `json:"event"` // sendPacket
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
 }
 
 func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg MsgSendPacket) (*sdk.Result, error) {
 	action := &sendPacketAction{
-		Type:        "IBC_EVENT",
-		Event:       "sendPacket",
-		Packet:      msg.Packet,
-		Sender:      msg.Sender,
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
+		MsgSendPacket: msg,
+		Type:          "IBC_EVENT",
+		Event:         "sendPacket",
+		BlockHeight:   ctx.BlockHeight(),
+		BlockTime:     ctx.BlockTime().Unix(),
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
 	b, err := json.Marshal(action)

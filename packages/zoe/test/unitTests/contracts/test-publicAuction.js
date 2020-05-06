@@ -380,7 +380,6 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     // Alice cancels her offer, making the auction stop accepting
     // offers
     completeObj.cancel();
-
     // Alice gives Bob the invite
 
     const bobProposal = harden({

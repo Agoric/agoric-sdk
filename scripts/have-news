@@ -10,7 +10,7 @@ my $lookingForCurrentVersion = 0;
 my $bumpOnly = 0;
 my $line;
 
-print "## Packages that need NEWS.md updates\n\n\`\`\`diff\n";
+print "## Packages that have NEWS.md updates\n\n\`\`\`diff\n";
 
 while ($line = <$fh>) {
   if ($line =~ /^--- a\/(.*)\/CHANGELOG.md/) {

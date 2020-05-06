@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.2.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-eventual-send@1.2.2...@agoric/transform-eventual-send@1.2.3) (2020-05-04)
+
+
+### Bug Fixes
+
+* implement nestedEvaluate where it was missing ([8f7d17f](https://github.com/Agoric/agoric-sdk/commit/8f7d17fe6a0c452df8c701c708d73cc79144071c))
+* use the new (typed) harden package ([2eb1af0](https://github.com/Agoric/agoric-sdk/commit/2eb1af08fe3967629a3ce165752fd501a5c85a96))
+
+
+
+
+
 ## [1.2.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-eventual-send@1.2.2-alpha.0...@agoric/transform-eventual-send@1.2.2) (2020-04-13)
 
 **Note:** Version bump only for package @agoric/transform-eventual-send

@@ -10,6 +10,8 @@ import {
 import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
 
+const NUM_IBC_PORTS = 3;
+
 console.debug(`loading bootstrap.js`);
 
 function parseArgs(argv) {
@@ -78,6 +80,7 @@ export default function setup(syscall, state, helpers) {
 
         const zoe = await E(vats.zoe).getZoe();
         const contractHost = await E(vats.host).makeHost();
+        const mailboxAdmin = await E(vats.mailbox).getMailboxAdmin();
 
         // Make the other demo mints
         const issuerNames = ['moola', 'simolean'];
@@ -102,9 +105,13 @@ export default function setup(syscall, state, helpers) {
         );
         return harden({
           async createUserBundle(_nickname) {
-            // Bind to a fresh port (unspecified name) on the IBC implementation
-            // and provide it for the user to have.
-            const ibcport = await E(vats.network).bind('/ibc-port/');
+            // Bind to some fresh ports (unspecified name) on the IBC implementation
+            // and provide them for the user to have.
+            const ibcport = [];
+            for (let i = 0; i < NUM_IBC_PORTS; i += 1) {
+              // eslint-disable-next-line no-await-in-loop
+              ibcport.push(await E(vats.network).bind('/ibc-port/'));
+            }
             const bundle = harden({
               chainTimerService,
               sharingService,
@@ -113,6 +120,7 @@ export default function setup(syscall, state, helpers) {
               registrar: registry,
               registry,
               zoe,
+              mailboxAdmin,
             });
 
             const payments = await E(vats.mints).mintInitialPayments(
@@ -137,12 +145,11 @@ export default function setup(syscall, state, helpers) {
         // Every vat has a loopback device.
         ps.push(
           E(vats.network).registerProtocolHandler(
-            '/local',
+            ['/local'],
             makeLoopbackProtocolHandler(),
           ),
         );
-        // FIXME: Temporarily disable IBC access until we have stability.
-        if (false && bridgeMgr) {
+        if (bridgeMgr) {
           // We have access to the bridge, and therefore IBC.
           const callbacks = harden({
             downcall(method, obj) {
@@ -159,12 +166,15 @@ export default function setup(syscall, state, helpers) {
           );
           bridgeMgr.register('dibc', ibcHandler);
           ps.push(
-            E(vats.network).registerProtocolHandler('/ibc-port', ibcHandler),
+            E(vats.network).registerProtocolHandler(
+              ['/ibc-port', '/ibc-hop'],
+              ibcHandler,
+            ),
           );
         } else {
           const loHandler = makeLoopbackProtocolHandler(E);
           ps.push(
-            E(vats.network).registerProtocolHandler('/ibc-port', loHandler),
+            E(vats.network).registerProtocolHandler(['/ibc-port'], loHandler),
           );
         }
         await Promise.all(ps);
@@ -279,8 +289,6 @@ export default function setup(syscall, state, helpers) {
           switch (ROLE) {
             case 'chain':
             case 'one_chain': {
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
-
               // provisioning vat can ask the demo server for bundles, and can
               // register client pubkeys with comms
               await E(vats.provisioning).register(
@@ -288,6 +296,9 @@ export default function setup(syscall, state, helpers) {
                 vats.comms,
                 vats.vattp,
               );
+
+              // Must occur after makeChainBundler.
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
 
               // accept provisioning requests from the controller
               const provisioner = harden({
@@ -341,13 +352,15 @@ export default function setup(syscall, state, helpers) {
               if (!GCI) {
                 throw new Error(`client must be given GCI`);
               }
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
-              await setupCommandDevice(vats.http, devices.command, {
-                client: true,
-              });
+
               const localTimerService = await E(vats.timer).createTimerService(
                 devices.timer,
               );
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
+
+              await setupCommandDevice(vats.http, devices.command, {
+                client: true,
+              });
               await addRemote(GCI);
               // addEgress(..., index, ...) is called in vat-provisioning.
               const demoProvider = await E(vats.comms).addIngress(
@@ -373,10 +386,12 @@ export default function setup(syscall, state, helpers) {
             case 'two_chain': {
               // scenario #2: one-node chain running on localhost, solo node on
               // localhost, HTML frontend on localhost. Single-player mode.
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
 
               // bootAddress holds the pubkey of localclient
               const chainBundler = await makeChainBundler(vats, devices.timer);
+
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
+
               const demoProvider = harden({
                 // build a chain-side bundle for a client.
                 async getDemoBundle(nickname) {
@@ -398,13 +413,13 @@ export default function setup(syscall, state, helpers) {
               if (!GCI) {
                 throw new Error(`client must be given GCI`);
               }
-              await registerNetworkProtocols(vats, bridgeManager, pswl);
               await setupCommandDevice(vats.http, devices.command, {
                 client: true,
               });
               const localTimerService = await E(vats.timer).createTimerService(
                 devices.timer,
               );
+              await registerNetworkProtocols(vats, bridgeManager, pswl);
               await addRemote(GCI);
               // addEgress(..., PROVISIONER_INDEX) is called in case two_chain
               const demoProvider = E(vats.comms).addIngress(
@@ -432,6 +447,7 @@ export default function setup(syscall, state, helpers) {
               // frontend. Limited subset of demo runs inside the solo node.
 
               // We pretend we're on-chain.
+              const chainBundler = makeChainBundler(vats, devices.timer);
               await registerNetworkProtocols(vats, bridgeManager, pswl);
 
               // Shared Setup (virtual chain side) ///////////////////////////
@@ -439,7 +455,7 @@ export default function setup(syscall, state, helpers) {
                 client: true,
               });
               const { payments, bundle, issuerInfo } = await E(
-                makeChainBundler(vats, devices.timer),
+                chainBundler,
               ).createUserBundle('localuser');
 
               // Setup of the Local part /////////////////////////////////////

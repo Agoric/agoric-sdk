@@ -2,13 +2,25 @@
 import makeStore from '@agoric/store';
 import rawHarden from '@agoric/harden';
 import { E as defaultE } from '@agoric/eventual-send';
+import { producePromise } from '@agoric/produce-promise';
 import { toBytes } from './bytes';
 
 const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
+ * Compatibility note: this must match what our peers use,
+ * so don't change it casually.
+ */
+export const ENDPOINT_SEPARATOR = '/';
+
+/**
  * @template T,U
  * @typedef {import('@agoric/store').Store<T,U>} Store
+ */
+
+/**
+ * @template T,U
+ * @typedef {import('@agoric/produce-promise').PromiseRecord<T, U>} PromiseRecord
  */
 
 /**
@@ -23,7 +35,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
  * @typedef {Object} Protocol The network Protocol
- * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if ending in '/', a fresh name
+ * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if ending in ENDPOINT_SEPARATOR, a fresh name
  */
 
 /**
@@ -38,7 +50,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 /**
  * @typedef {Object} ListenHandler A handler for incoming connections
  * @property {(port: Port, l: ListenHandler) => Promise<void>} [onListen] The listener has been registered
- * @property {(port: Port, localAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<ConnectionHandler>} [onAccept] A new connection is incoming
+ * @property {(port: Port, localAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<ConnectionHandler>} onAccept A new connection is incoming
  * @property {(port: Port, rej: any, l: ListenHandler) => Promise<void>} [onError] There was an error while listening
  * @property {(port: Port, l: ListenHandler) => Promise<void>} [onRemove] The listener has been removed
  */
@@ -67,7 +79,7 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
  * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onBind A port will be bound
  * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: ProtocolHandler) => Promise<void>} onListen A port was listening
  * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: ProtocolHandler) => Promise<void>} onListenRemove A port listener has been reset
- * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, p: ProtocolHandler) => Promise<ConnectionHandler|undefined>} onConnect A port initiates an outbound connection
+ * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, c: ConnectionHandler, p: ProtocolHandler) => Promise<ConnectionHandler|undefined>} onConnect A port initiates an outbound connection
  * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onRevoke The port is being completely destroyed
  *
  * @typedef {Object} ProtocolImpl Things the protocol can do for us
@@ -107,6 +119,10 @@ export const makeConnection = (
 ) => {
   let closed;
   /**
+   * @type {Set<PromiseRecord<Bytes,any>>}
+   */
+  const pendingAcks = new Set();
+  /**
    * @type {Connection}
    */
   const connection = harden({
@@ -122,6 +138,10 @@ export const makeConnection = (
       }
       current.delete(connection);
       closed = Error('Connection closed');
+      for (const ackDeferred of [...pendingAcks.values()]) {
+        pendingAcks.delete(ackDeferred);
+        ackDeferred.reject(closed);
+      }
       await E(handler)
         .onClose(connection, undefined, handler)
         .catch(rethrowUnlessMissing);
@@ -132,10 +152,22 @@ export const makeConnection = (
         throw closed;
       }
       const bytes = toBytes(data);
-      const ack = await E(handler)
+      const ackDeferred = producePromise();
+      pendingAcks.add(ackDeferred);
+      E(handler)
         .onReceive(connection, bytes, handler)
-        .catch(err => rethrowUnlessMissing(err) || '');
-      return toBytes(ack);
+        .catch(err => rethrowUnlessMissing(err) || '')
+        .then(
+          ack => {
+            pendingAcks.delete(ackDeferred);
+            ackDeferred.resolve(toBytes(ack));
+          },
+          err => {
+            pendingAcks.delete(ackDeferred);
+            ackDeferred.reject(err);
+          },
+        );
+      return ackDeferred.promise;
     },
   });
 
@@ -228,6 +260,25 @@ export function crossoverConnection(
 }
 
 /**
+ * Get the list of prefixes from longest to shortest.
+ * @param {string} addr
+ */
+export function getPrefixes(addr) {
+  const parts = addr.split(ENDPOINT_SEPARATOR);
+
+  /**
+   * @type {string[]}
+   */
+  const ret = [];
+  for (let i = parts.length; i > 0; i -= 1) {
+    // Try most specific match.
+    const prefix = parts.slice(0, i).join(ENDPOINT_SEPARATOR);
+    ret.push(prefix);
+  }
+  return ret;
+}
+
+/**
  * Create a protocol that has a handler.
  *
  * @param {ProtocolHandler} protocolHandler
@@ -256,20 +307,14 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
     async inbound(listenSearch, localAddr, remoteAddr, rchandler) {
       const listenAddr = listenSearch.find(addr => listening.has(addr));
       if (!listenAddr) {
-        throw Error(
-          `Connection refused to ${localAddr} (search=${listenSearch.join(
-            ', ',
-          )})`,
-        );
+        throw Error(`Connection refused to ${localAddr}`);
       }
       const [port, listener] = listening.get(listenAddr);
       const current = currentConnections.get(port);
 
       const lchandler =
         /** @type {ConnectionHandler} */
-        (await E(listener)
-          .onAccept(port, localAddr, remoteAddr, listener)
-          .catch(rethrowUnlessMissing));
+        (await E(listener).onAccept(port, localAddr, remoteAddr, listener));
 
       return crossoverConnection(
         lchandler,
@@ -284,12 +329,19 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
       const localAddr =
         /** @type {string} */
         (await E(port).getLocalAddress());
+
+      const ret = getPrefixes(remoteAddr);
+      if (await protocolImpl.isListening(ret)) {
+        return protocolImpl.inbound(ret, remoteAddr, localAddr, lchandler);
+      }
+
       const rchandler =
         /** @type {ConnectionHandler} */
         (await E(protocolHandler).onConnect(
           port,
           localAddr,
           remoteAddr,
+          lchandler,
           protocolHandler,
         ));
 
@@ -322,7 +374,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
    */
   const bind = async localAddr => {
     // Check if we are underspecified (ends in slash)
-    if (localAddr.endsWith('/')) {
+    if (localAddr.endsWith(ENDPOINT_SEPARATOR)) {
       for (;;) {
         // eslint-disable-next-line no-await-in-loop
         const portID = await E(protocolHandler).generatePortID(localAddr);
@@ -365,16 +417,27 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
           throw TypeError(`listenHandler is not defined`);
         }
         if (listening.has(localAddr)) {
-          throw Error(`Port ${localAddr} is already listening`);
+          // Last one wins.
+          const [lport, lhandler] = listening.get(localAddr);
+          if (lhandler === listenHandler) {
+            return;
+          }
+          listening.set(localAddr, [port, listenHandler]);
+          E(lhandler)
+            .onRemove(lport, lhandler)
+            .catch(rethrowUnlessMissing);
+        } else {
+          listening.init(localAddr, [port, listenHandler]);
         }
+
+        // TODO: Check that the listener defines onAccept.
+
         await E(protocolHandler).onListen(
           port,
           localAddr,
           listenHandler,
           protocolHandler,
         );
-        // TODO: Handle the race between revoke() and open connections.
-        listening.init(localAddr, [port, listenHandler]);
         await E(listenHandler)
           .onListen(port, listenHandler)
           .catch(rethrowUnlessMissing);
@@ -386,13 +449,13 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
         if (listening.get(localAddr)[1] !== listenHandler) {
           throw Error(`Port ${localAddr} handler to remove is not listening`);
         }
+        listening.delete(localAddr);
         await E(protocolHandler).onListenRemove(
           port,
           localAddr,
           listenHandler,
           protocolHandler,
         );
-        listening.delete(localAddr);
         await E(listenHandler)
           .onRemove(port, listenHandler)
           .catch(rethrowUnlessMissing);
@@ -489,8 +552,8 @@ export function makeLoopbackProtocolHandler(E = defaultE) {
 
   return harden({
     // eslint-disable-next-line no-empty-function
-    async onCreate(_protocol, _protocolHandler) {
-      // TODO: Maybe do something on creation?
+    async onCreate(_impl, _protocolHandler) {
+      // TODO
     },
     async generatePortID(_protocolHandler) {
       nonce += 1;
@@ -499,20 +562,32 @@ export function makeLoopbackProtocolHandler(E = defaultE) {
     async onBind(_port, _localAddr, _protocolHandler) {
       // TODO: Maybe handle a bind?
     },
-    async onConnect(_port, localAddr, remoteAddr, _protocolHandler) {
+    async onConnect(_port, localAddr, remoteAddr, _chandler, _protocolHandler) {
       if (!listeners.has(remoteAddr)) {
         return undefined;
       }
       const [lport, lhandler] = listeners.get(remoteAddr);
       // console.log(`looking up onAccept in`, lhandler);
-      const rport = await E(lhandler)
-        .onAccept(lport, remoteAddr, localAddr, lhandler)
-        .catch(rethrowUnlessMissing);
+      const rport = await E(lhandler).onAccept(
+        lport,
+        remoteAddr,
+        localAddr,
+        lhandler,
+      );
       // console.log(`rport is`, rport);
       return rport;
     },
     async onListen(port, localAddr, listenHandler, _protocolHandler) {
-      listeners.init(localAddr, [port, listenHandler]);
+      // TODO: Implement other listener replacement policies.
+      if (listeners.has(localAddr)) {
+        const lhandler = listeners.get(localAddr)[1];
+        if (lhandler !== listenHandler) {
+          // Last-one-wins.
+          listeners.set(localAddr, [port, listenHandler]);
+        }
+      } else {
+        listeners.init(localAddr, [port, listenHandler]);
+      }
     },
     async onListenRemove(port, localAddr, listenHandler, _protocolHandler) {
       const [lport, lhandler] = listeners.get(localAddr);
@@ -526,50 +601,6 @@ export function makeLoopbackProtocolHandler(E = defaultE) {
     },
     async onRevoke(_port, _localAddr, _protocolHandler) {
       // TODO: maybe clean up?
-    },
-  });
-}
-
-/**
- * Create a protocol that combines the subprotocol
- * with a loopback protocol.
- *
- * @param {ProtocolHandler} subi the handler to delegate non-loopback connections
- * @returns {ProtocolHandler} the extended protocol
- */
-export function extendLoopbackProtocolHandler(subi) {
-  const loopback = makeLoopbackProtocolHandler();
-  return harden({
-    async onCreate(impl, _protocolHandler) {
-      await subi.onCreate(impl, subi);
-      await loopback.onCreate(impl, loopback);
-    },
-    async generatePortID(localAddr, _protocolHandler) {
-      return subi.generatePortID(localAddr, subi);
-    },
-    async onBind(port, localAddr, _protocolHandler) {
-      await subi.onBind(port, localAddr, subi);
-      await loopback.onBind(port, localAddr, loopback);
-    },
-    async onConnect(port, localAddr, remoteAddr, _protocolHandler) {
-      // Try loopback connection first.
-      const c = await loopback.onConnect(port, localAddr, remoteAddr, loopback);
-      if (c) {
-        return c;
-      }
-      return subi.onConnect(port, localAddr, remoteAddr, subi);
-    },
-    async onListen(port, localAddr, listenHandler) {
-      await subi.onListen(port, localAddr, listenHandler, subi);
-      await loopback.onListen(port, localAddr, listenHandler, loopback);
-    },
-    async onListenRemove(port, localAddr, listenHandler) {
-      await subi.onListenRemove(port, localAddr, listenHandler, subi);
-      await loopback.onListenRemove(port, localAddr, listenHandler, loopback);
-    },
-    async onRevoke(port, localAddr) {
-      await subi.onRevoke(port, localAddr, subi);
-      await loopback.onRevoke(port, localAddr, loopback);
     },
   });
 }

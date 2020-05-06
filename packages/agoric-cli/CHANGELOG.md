@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.6.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.5.0...agoric@0.6.0) (2020-05-04)
+
+
+### Bug Fixes
+
+* change default dapp to dapp-encouragement ([#939](https://github.com/Agoric/agoric-sdk/issues/939)) ([0a2c97a](https://github.com/Agoric/agoric-sdk/commit/0a2c97ae71059a0af5da55a6a2bacbaad10cddc5))
+* don't use the (nonexistent) _agstate/agoric-wallet anymore ([0b739a6](https://github.com/Agoric/agoric-sdk/commit/0b739a64991e1319ac96d12bd76c9a36d408625b))
+* get working with latest relayer ([3d39496](https://github.com/Agoric/agoric-sdk/commit/3d394963ce16556a639bf6f4118c5e91377b6bcc))
+* implement nestedEvaluate where it was missing ([8f7d17f](https://github.com/Agoric/agoric-sdk/commit/8f7d17fe6a0c452df8c701c708d73cc79144071c))
+* remove unnecessary files ([a13e937](https://github.com/Agoric/agoric-sdk/commit/a13e9375bccd6ff03e814745ca489fead21956f8))
+
+
+### Features
+
+* add Presence, getInterfaceOf, deepCopyData to marshal ([aac1899](https://github.com/Agoric/agoric-sdk/commit/aac1899b6cefc4241af04911a92ffc50fbac3429))
+* symlink wallet from agoric-sdk or NPM for all ag-solos ([fdade37](https://github.com/Agoric/agoric-sdk/commit/fdade3773ae270d1ecbcf79f05d8b58c580e2350))
+
+
+
+
+
 # [0.5.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.5.0-alpha.0...agoric@0.5.0) (2020-04-13)
 
 **Note:** Version bump only for package agoric

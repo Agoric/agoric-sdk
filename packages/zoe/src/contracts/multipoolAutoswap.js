@@ -17,6 +17,7 @@ import {
 /**
  * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @typedef {import('@agoric/ertp/src/issuer').Amount} Amount
+ * @typedef {import('../zoe').AmountKeywordRecords} AmountKeywordRecords
  */
 
 // Autoswap is a rewrite of Uniswap. Please see the documentation for more
@@ -56,6 +57,7 @@ export const makeContract = harden(
       rejectIfNotProposal,
       assertKeywords,
       getKeys,
+      escrowAndAllocateTo,
     } = makeZoeHelpers(zcf);
 
     // There must be one keyword at the start, which is equal to the
@@ -286,49 +288,38 @@ export const makeContract = harden(
 
       const liquidityPaymentP = liquidityMint.mintPayment(liquidityAmountOut);
 
-      // The contract needs to escrow the liquidity payment with Zoe
-      // to eventually pay as a payout to the user
-      const tempProposal = harden({
-        give: { [liquidityKeyword]: liquidityAmountOut },
-      });
-
-      let tempLiqHandle;
-
-      const tempLiqOfferHook = tmpHandle => (tempLiqHandle = tmpHandle);
-      const tempLiqInvite = zcf.makeInvitation(tempLiqOfferHook);
-      const zoeService = zcf.getZoeService();
       // We update the liquidityTokenSupply before the next turn
       liquidityTable.update(secondaryTokenBrand, {
         liquidityTokenSupply: liquidityTokenSupply + liquidityExtentOut,
       });
-      return zoeService
-        .offer(
-          tempLiqInvite,
-          tempProposal,
-          harden({ [liquidityKeyword]: liquidityPaymentP }),
-        )
-        .then(() => {
-          const add = makeAdd(amountMaths);
-          const getAllEmpty = makeGetAllEmpty(amountMaths);
-          const newPoolAmounts = harden({
-            [CENTRAL_TOKEN]: add(CENTRAL_TOKEN, userAmounts, poolAmounts),
-            [tokenKeyword]: add(tokenKeyword, userAmounts, poolAmounts),
-            [liquidityKeyword]: poolAmounts[liquidityKeyword],
-          });
 
-          const newUserAmounts = getAllEmpty(liquidityKeys);
-          newUserAmounts[liquidityKeyword] = liquidityAmountOut;
-
-          const newTempLiqAmounts = getAllEmpty(liquidityKeys);
-
-          zcf.reallocate(
-            harden([offerHandle, poolHandle, tempLiqHandle]),
-            harden([newUserAmounts, newPoolAmounts, newTempLiqAmounts]),
-            liquidityKeys,
-          );
-          zcf.complete(harden([offerHandle, tempLiqHandle]));
-          return 'Added liquidity.';
+      // The contract needs to escrow the liquidity payment with Zoe
+      // to eventually pay as a payout to the user
+      return escrowAndAllocateTo({
+        amount: liquidityAmountOut,
+        payment: liquidityPaymentP,
+        keyword: liquidityKeyword,
+        recipientHandle: offerHandle,
+      }).then(() => {
+        const add = makeAdd(amountMaths);
+        const getAllEmpty = makeGetAllEmpty(amountMaths);
+        const newPoolAmounts = harden({
+          [CENTRAL_TOKEN]: add(CENTRAL_TOKEN, userAmounts, poolAmounts),
+          [tokenKeyword]: add(tokenKeyword, userAmounts, poolAmounts),
+          [liquidityKeyword]: poolAmounts[liquidityKeyword],
         });
+
+        const newUserAmounts = getAllEmpty(liquidityKeys);
+        newUserAmounts[liquidityKeyword] = liquidityAmountOut;
+
+        zcf.reallocate(
+          harden([offerHandle, poolHandle]),
+          harden([newUserAmounts, newPoolAmounts]),
+          liquidityKeys,
+        );
+        zcf.complete(harden([offerHandle]));
+        return 'Added liquidity.';
+      });
     };
 
     const removeLiquidityHook = offerHandle => {
@@ -543,9 +534,7 @@ export const makeContract = harden(
     };
 
     const makeAddLiquidityInvite = () =>
-      zcf.makeInvitation(addLiquidityHook, {
-        inviteDesc: 'multipool autoswap add liquidity',
-      });
+      zcf.makeInvitation(addLiquidityHook, 'multipool autoswap add liquidity');
 
     return harden({
       invite: makeAddLiquidityInvite(),
@@ -638,15 +627,10 @@ export const makeContract = harden(
             );
           }
         },
-        makeSwapInvite: () =>
-          zcf.makeInvitation(swapHook, {
-            inviteDesc: 'autoswap swap',
-          }),
+        makeSwapInvite: () => zcf.makeInvitation(swapHook, 'autoswap swap'),
         makeAddLiquidityInvite,
         makeRemoveLiquidityInvite: () =>
-          zcf.makeInvitation(removeLiquidityHook, {
-            inviteDesc: 'autoswap remove liquidity',
-          }),
+          zcf.makeInvitation(removeLiquidityHook, 'autoswap remove liquidity'),
       },
     });
   },

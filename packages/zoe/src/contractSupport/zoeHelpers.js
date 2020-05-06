@@ -152,48 +152,44 @@ export const makeZoeHelpers = (zcf) => {
       zcf.complete(handles);
       return defaultAcceptanceMsg;
     },
+
     /**
-     * Make an invitation to submit an Offer to this contract. This
-     * invitation can be given to a client, granting them the ability to
-     * participate in the contract.
+     * Make an offerHook that wraps the provided `offerHook`, to first
+     * check the submitted offer against an `expected` record that says
+     * what shape of proposal is acceptable.
      *
-     * If the "expected" option is provided, it should be an ExpectedRecord.
-     * This is like a Proposal, but the amounts in 'want' and 'give' should be null,
-     * and the 'exit' should have a choice but the contents should be null.
-     * If the client submits an Offer which does not match these expectations,
-     * that offer will be rejected (and refunded).
+     * This ExpectedRecord is like a Proposal, but the amounts in 'want'
+     * and 'give' should be null; the exit clause should specify a rule with
+     * null contents. If the client submits an Offer which does not match
+     * these expectations, that offer will be rejected (and refunded).
      *
-     * If "offerHook" is provided, it will be called when the invitation is exercised
-     * and an offer is submitted. The callback will get a reference to the offer.
-     *
-     * @param {InviteAnOfferOptions} [options={}]
-     * @returns {Invite}
-     *
-     * @typedef InviteAnOfferOptions
-     * @param {OfferHook} [offerHook]
-     * @param {CustomProperties} [customProperties]
-     * @param {ExpectedRecord} [expected]
+     * @param {OfferHook} offerHook
+     * @param {ExpectedRecord} expected
      *
      * @typedef ExpectedRecord
      * @property {TODO} [want]
      * @property {TODO} [give]
      * @property {TODO} [exit]
-     *
      */
-    inviteAnOffer: (options = {}) => {
-      const {
-        offerHook = () => {},
-        customProperties = undefined,
-        expected = undefined,
-      } = options;
-      const wrappedOfferHook = offerHandle => {
-        if (expected) {
-          helpers.rejectIfNotProposal(offerHandle, expected);
-        }
-        return offerHook(offerHandle);
-      };
-      return zcf.makeInvitation(wrappedOfferHook, customProperties);
+    checkHook: (offerHook, expected) => offerHandle => {
+      helpers.rejectIfNotProposal(offerHandle, expected);
+      return offerHook(offerHandle);
     },
+
+    // TODO DEPRECATED `inviteAnOffer` is deprecated legacy. Remove when we can.
+    inviteAnOffer: ({
+      offerHook = () => {},
+      inviteDesc,
+      customProperties = undefined,
+      expected = undefined,
+    }) => {
+      return zcf.makeInvitation(
+        expected ? helpers.checkHook(offerHook, expected) : offerHook,
+        inviteDesc || customProperties.inviteDesc,
+        customProperties && harden({ customProperties }),
+      );
+    },
+
     /**
      * Return a Promise for an OfferHandle.
      *
@@ -207,11 +203,78 @@ export const makeZoeHelpers = (zcf) => {
      */
     makeEmptyOffer: () =>
       new HandledPromise(resolve => {
-        const invite = helpers.inviteAnOffer({
-          offerHook: offerHandle => resolve(offerHandle),
-        });
+        const invite = zcf.makeInvitation(
+          offerHandle => resolve(offerHandle),
+          'empty offer',
+        );
         zoeService.offer(invite);
       }),
+    /**
+     * Escrow a payment with Zoe and reallocate the amount of the
+     * payment to a recipient.
+     *
+     * @param {Object} obj
+     * @param {Amount} obj.amount
+     * @param {Payment} obj.payment
+     * @param {String} obj.keyword
+     * @param {Handle} obj.recipientHandle
+     * @returns {Promise<undefined>}
+     *
+     */
+    escrowAndAllocateTo: ({ amount, payment, keyword, recipientHandle }) => {
+      // We will create a temporary offer to be able to escrow our payment
+      // with Zoe.
+      let tempHandle;
+
+      const amountMath = zcf.getAmountMaths(harden([keyword]))[keyword];
+
+      // We need to make an invite and store the offerHandle of that
+      // invite for future use.
+      const contractSelfInvite = zcf.makeInvitation(
+        offerHandle => (tempHandle = offerHandle),
+        'self invite',
+      );
+      // To escrow the payment, we must get the Zoe Service facet and
+      // make an offer
+      const proposal = harden({ give: { [keyword]: amount } });
+      const payments = harden({ [keyword]: payment });
+      return zcf
+        .getZoeService()
+        .offer(contractSelfInvite, proposal, payments)
+        .then(() => {
+          // At this point, the temporary offer has the amount from the
+          // payment but nothing else. The recipient offer may have any
+          // allocation, so we can't assume the allocation is currently empty for this
+          // keyword.
+          const [recipientAlloc, tempAlloc] = zcf.getCurrentAllocations(
+            harden([recipientHandle, tempHandle]),
+            harden([keyword]),
+          );
+
+          // Add the tempAlloc for the keyword to the recipientAlloc.
+          recipientAlloc[keyword] = amountMath.add(
+            recipientAlloc[keyword],
+            tempAlloc[keyword],
+          );
+
+          // Set the temporary offer allocation to empty.
+          tempAlloc[keyword] = amountMath.getEmpty();
+
+          // Actually reallocate the amounts. Note that only the amounts
+          // for `keyword` are reallocated.
+          zcf.reallocate(
+            harden([tempHandle, recipientHandle]),
+            harden([tempAlloc, recipientAlloc]),
+            harden([keyword]),
+          );
+
+          // Complete the temporary offerHandle
+          zcf.complete([tempHandle]);
+
+          // Now, the temporary offer no longer exists, but the recipient
+          // offer is allocated the value of the payment.
+        });
+    },
   });
   return helpers;
 };

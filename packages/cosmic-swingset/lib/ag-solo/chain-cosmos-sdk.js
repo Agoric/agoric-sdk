@@ -73,11 +73,13 @@ export async function connectToChain(
   const queued = {};
 
   async function retryRpcAddr(tryOnce) {
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       const randomRpcAddr =
         rpcAddresses[Math.floor(Math.random() * rpcAddresses.length)];
 
       // tryOnce will either throw if cancelled (which rejects this promise),
+      // eslint-disable-next-line no-await-in-loop
       const ret = await tryOnce(randomRpcAddr);
       if (ret !== undefined) {
         // Or returns non-undefined, which we should resolve.
@@ -85,6 +87,7 @@ export async function connectToChain(
       }
 
       // It was undefined, so wait, then retry.
+      // eslint-disable-next-line no-await-in-loop
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
@@ -96,6 +99,7 @@ export async function connectToChain(
     throwIfCancelled = () => undefined,
     defaultIfCancelled = WAS_CANCELLED_EXCEPTION,
   ) {
+    // eslint-disable-next-line consistent-return
     return retryRpcAddr(async rpcAddr => {
       await throwIfCancelled();
 
@@ -165,6 +169,7 @@ export async function connectToChain(
     if (maxQueued !== undefined) {
       while (queue.length > 0 && queue.length >= maxQueued) {
         // Cancel the excesses from most recent down to the currently-running.
+        // eslint-disable-next-line no-unused-vars
         const [proceed, cancel] = queue.pop();
         log.debug(`cancelling ${queue.length}`);
         cancel();
@@ -188,6 +193,7 @@ export async function connectToChain(
       resolveWait = resolve;
       if (queue[0] === qentry) {
         // Wake us immediately, since we're first in queue.
+        // eslint-disable-next-line no-unused-vars
         const [proceed, cancel] = qentry;
         proceed();
       }
@@ -216,6 +222,7 @@ export async function connectToChain(
       }
       if (queue[0] !== undefined) {
         // Wake the next in queue.
+        // eslint-disable-next-line no-unused-vars
         const [proceed, cancel] = queue[0];
         proceed();
       }
@@ -227,6 +234,7 @@ export async function connectToChain(
       'getMailbox',
       1, // Only one helper running at a time.
       ['query', 'swingset', 'mailbox', myAddr],
+      // eslint-disable-next-line consistent-return
       ret => {
         const { stdout, stderr } = ret;
         log.error(stderr);

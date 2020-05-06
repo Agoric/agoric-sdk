@@ -1,5 +1,25 @@
 User-visible changes in @agoric/zoe:
 
+## Release v0.6.0 (1-May-2020)
+
+* We added `completeObj` with the method `complete` to what is given
+  to a user if they make an offer with Zoe with the exit rule
+  `onDemand`. This will eventually replace the `cancelObj`, which will
+  be removed in a few weeks.
+* `zcf.makeInvitation` now takes an offerHook, a required string
+  `inviteDesc`, and an object of options, including the ability to add
+  `customProperties` to the extent of the invite. `inviteDesc` is
+  required such that different kinds of invites from the same contract
+  are distinguishable.
+* The zoeHelper `inviteAnOffer` is deprecated
+* Instead of `inviteAnOffer`, we recommend using `checkHook` which
+  more cleanly wraps an offerHook in a check of whether the offer
+  matches the expected proposal format. 
+* We changed the `getOffer` and `getOffers` methods on the Zoe Service
+  API to match the Zoe Contract Facet API. Now, in order to get the
+  current allocation, you should call the new methods
+  `E(zoe).getCurrentAllocation(offerHandle)` or `E(zoe).getCurrentAllocations(offerHandles)`
+
 ## Release v0.4.0 (2-Apr-2020)
 
 * The `proposal` and `paymentKeywordRecord` arguments to `zoe.redeem` now default to an empty record. Previously, a user had to pass in an empty record for these arguments, which would be interpreted as a presence in @agoric/marshal. 

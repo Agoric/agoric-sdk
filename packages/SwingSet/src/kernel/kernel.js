@@ -97,23 +97,21 @@ export default function buildKernel(kernelEndowments) {
     }
   }
 
-  async function process(f, whenDone, logerr) {
+  // waitUntilQuiescent is provided to each vatManager
+  function waitUntilQuiescent() {
     // the delivery might cause some number of (native) Promises to be
     // created and resolved, so we use the IO queue to detect when the
     // Promise queue is empty. The IO queue (setImmediate and setTimeout) is
     // lower-priority than the Promise queue on browsers and Node 11, but on
     // Node 10 it is higher. So this trick requires Node 11.
     // https://jsblog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
-
     const { promise: queueEmptyP, resolve } = producePromise();
     setImmediate(() => resolve());
+    return queueEmptyP;
+  }
 
-    // protect f() with promise/then
-    Promise.resolve()
-      .then(f)
-      .then(undefined, logerr);
-    await queueEmptyP;
-
+  // doEndOfCrank is provided to each vatMananger, to run inside doProcess
+  function doEndOfCrank() {
     if (typeof replaceGlobalMeter !== 'undefined') {
       // Turn off the global meter.
       replaceGlobalMeter(null);
@@ -121,8 +119,6 @@ export default function buildKernel(kernelEndowments) {
 
     // Finish everything at the end of the crank.
     runEndOfCrank();
-
-    whenDone();
   }
 
   function invoke(deviceSlot, method, args) {
@@ -198,7 +194,8 @@ export default function buildKernel(kernelEndowments) {
 
   const syscallManager = {
     kdebug,
-    process,
+    waitUntilQuiescent,
+    doEndOfCrank,
     send,
     invoke,
     subscribe,
