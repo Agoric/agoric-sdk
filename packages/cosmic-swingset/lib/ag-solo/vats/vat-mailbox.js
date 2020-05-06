@@ -30,7 +30,8 @@ function build(_log) {
     },
     // We deliberately do not expose the entire registry so that the
     // only way someone can send a payment using a mailbox is if they
-    // have obtained the key from the creator of a mailbox.
+    // have obtained the key. This is intended only to cut down on
+    // spam. The key should not be assumed to be unforgeable or unguessable.
   });
 
   return harden({
