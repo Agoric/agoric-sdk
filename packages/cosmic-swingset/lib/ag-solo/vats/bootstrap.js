@@ -80,6 +80,7 @@ export default function setup(syscall, state, helpers) {
 
         const zoe = await E(vats.zoe).getZoe();
         const contractHost = await E(vats.host).makeHost();
+        const mailboxAdmin = await E(vats.mailbox).getMailboxAdmin();
 
         // Make the other demo mints
         const issuerNames = ['moola', 'simolean'];
@@ -119,6 +120,7 @@ export default function setup(syscall, state, helpers) {
               registrar: registry,
               registry,
               zoe,
+              mailboxAdmin,
             });
 
             const payments = await E(vats.mints).mintInitialPayments(
