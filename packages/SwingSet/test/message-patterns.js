@@ -419,6 +419,7 @@ export function buildPatterns(E, log) {
       // todo: all the pipelined calls (pipe123) get sent to the kernel a
       // turn after the two call-to-presence calls (getpx/resolvex), which is
       // a bit weird. Feels like p.post gets one extra stall.
+      // todo: is this still true?
       const px = E(b.bob).b71_getpx();
       const p1 = E(px).pipe1();
       const p2 = E(p1).pipe2();
@@ -451,7 +452,15 @@ export function buildPatterns(E, log) {
       p1.resolve(x);
     };
   }
-  out.a71 = ['pipe1', 'pipe2', 'pipe3', 'p1.then', 'p2.then', 'p3.then'];
+  out.a71 = ['pipe1', 'p1.then', 'pipe2', 'p2.then', 'pipe3', 'p3.then'];
+  outPipelined.a71 = [
+    'pipe1',
+    'pipe2',
+    'pipe3',
+    'p1.then',
+    'p2.then',
+    'p3.then',
+  ];
   test('a71');
 
   // px!pipe1()!pipe2()!pipe3(); px.resolve() but better

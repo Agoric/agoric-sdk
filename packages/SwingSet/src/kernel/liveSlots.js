@@ -36,77 +36,6 @@ function build(syscall, _state, makeRoot, forVatID) {
     }
   }
 
-  // Make a handled Promise that enqueues kernel messages.
-  //
-  // at present, for every promise we receive (a `p-NN` reference for which
-  // we build a Promise object for application-level code) that eventually
-  // resolves to a Presence (i.e. an `o-NN` that represents an object which
-  // we might send messages to, for which we create a Presence to hand up to
-  // our application-level code), we wind up calling makeQueued() twice.
-  //
-  // The first time is during importPromise(), where we call
-  // makeQueued('p-NN') as we build the HandledPromise that uses the
-  // unfulfilledHandler (the second argument to `new HandledPromise()` to
-  // close over 'p-NN'. The unfulfilledHandler is used when applications do
-  // E(p).foo() or p~.foo(), aimed at the Promise they receive. This
-  // HandledPromise does not ever call the fulfilledHandler, because we never
-  // call `pr.resPres` or the resolveWithPresence function.
-  //
-  // The second time is during notifyFulfillToPresence, when it does
-  // convertSlotToVal(o-NN) and that function must handle the `type ==
-  // 'object'` case. Here, we call makeQueued('o-NN') to create a
-  // HandledPromise, then immediately call `pr.resPres` to obtain the
-  // generated Presence object, and then throw away the HandledPromise. (*we*
-  // throw it away, however the HandledPromise implementation remembers it,
-  // and it can be retrieved by `HandledPromise.resolve(presence)`, or in the
-  // internals of an E(presence).foo() call). In this case, we care about the
-  // *fulfilledHandler*, not the unfulfilledHandler: the HandledPromise is
-  // never revealed to anyone before it is resolved-to-presence, which means
-  // its unfulfilledHandler will never be used.
-  //
-  // When notifyFulfillToPresence() resolves the first (importPromise)
-  // HandledPromise with a Presence that's associated with the second
-  // promise, all the handlers from the first are replaced with those from
-  // the second. The first promise becomes behaviorally indistinguishable
-  // from the second (they still have distinct identities, but all method
-  // invocations will act as if they are the same).
-  //
-  //  We might consider de-factoring this in the future, into two separate
-  //  functions for these two cases. The original makeQueued('p-NN') could be
-  //  changed to only set the unfulfilledHandler, and omit `pr.resPres`. The
-  //  second would be named makePresence('o-NN'): it would call
-  //  resolveWithPresence() immediately, wouldn't set unfulfilledHandler, and
-  //  would only return the Presence converted to a Remotable. This might be clearer.
-
-  function makeQueued(slot) {
-    /* eslint-disable no-use-before-define */
-    lsdebug(`makeQueued(${slot})`);
-    const handler = {
-      applyMethod(_o, prop, args, returnedP) {
-        // Support: o~.[prop](...args) remote method invocation
-        lsdebug(`makeQueued handler.applyMethod (${slot})`);
-        return queueMessage(slot, prop, args, returnedP);
-      },
-    };
-    /* eslint-enable no-use-before-define */
-
-    const pr = {};
-    pr.p = new HandledPromise((res, rej, resolveWithPresence) => {
-      pr.rej = rej;
-      pr.resPres = () => resolveWithPresence(handler); // fulfilledHandler
-      pr.res = res;
-    }, handler); // unfulfilledHandler
-    // We harden this Promise because it feeds importPromise(), which is
-    // where remote promises inside inbound arguments and resolutions are
-    // created. Both places are additionally hardened by m.unserialize, but
-    // it seems reasonable to do it here too, just in case.
-    return harden(pr);
-  }
-
-  function makeDeviceNode(id) {
-    return Remotable(`Device ${id}`);
-  }
-
   const outstandingProxies = new WeakSet();
 
   /** Map in-vat object references -> vat slot strings.
@@ -123,6 +52,117 @@ function build(syscall, _state, makeRoot, forVatID) {
   const importedPromisesByPromiseID = new Map();
   let nextExportID = 1;
   let nextPromiseID = 5;
+
+  function makeImportedPresence(slot) {
+    // Called by convertSlotToVal for type=object (an `o-NN` reference). We
+    // build a Presence for application-level code to receive. This Presence
+    // is associated with 'slot' so that all handled messages get sent to
+    // that slot: pres~.foo() causes a syscall.send(target=slot, msg=foo).
+
+    lsdebug(`makeImportedPresence(${slot})`);
+    const fulfilledHandler = {
+      applyMethod(_o, prop, args, returnedP) {
+        // Support: o~.[prop](...args) remote method invocation
+        lsdebug(`makeImportedPresence handler.applyMethod (${slot})`);
+        // eslint-disable-next-line no-use-before-define
+        return queueMessage(slot, prop, args, returnedP);
+      },
+    };
+
+    let presence;
+    const p = new HandledPromise((_res, _rej, resolveWithPresence) => {
+      const remote = resolveWithPresence(fulfilledHandler);
+      presence = Remotable(`Presence ${slot}`, undefined, remote);
+      // remote === presence, actually
+
+      // todo: mfig says to swap remote and presence (resolveWithPresence
+      // gives us a Presence, Remoteable gives us a Remote). I think that
+      // implies we have a lot of renaming to do, 'makeRemote' instead of
+      // 'makeImportedPresence', etc. I'd like to defer that for a later
+      // cleanup/renaming pass.
+    }); // no unfulfilledHandler
+
+    // The call to resolveWithPresence performs the forwarding logic
+    // immediately, so by the time we reach here, E(presence).foo() will use
+    // our fulfilledHandler, and nobody can observe the fact that we failed
+    // to provide an unfulfilledHandler.
+
+    // We throw 'p' away, but it is retained by the internal tables of
+    // HandledPromise, and will be returned to anyone who calls
+    // `HandledPromise.resolve(presence)`. So we must harden it now, for
+    // safety, to prevent it from being used as a communication channel
+    // between isolated objects that share a reference to the Presence.
+    harden(p);
+
+    // Up at the application level, presence~.foo(args) starts by doing
+    // HandledPromise.resolve(presence), which retrieves it, and then does
+    // p.eventualSend('foo', [args]), which uses the fulfilledHandler.
+
+    // We harden the presence for the same safety reasons.
+    return harden(presence);
+  }
+
+  function makeImportedPromise(vpid) {
+    // Called by convertSlotToVal(type=promise) for incoming promises (a
+    // `p-NN` reference), and by queueMessage() for the result of an outbound
+    // message (a `p+NN` reference). We build a Promise for application-level
+    // code, to which messages can be pipelined, and we prepare for the
+    // kernel to tell us that it has been resolved in various ways.
+    insistVatType('promise', vpid);
+    lsdebug(`makeImportedPromise(${vpid})`);
+
+    // The Promise will we associated with a handler that converts p~.foo()
+    // into a syscall.send() that targets the vpid. When the Promise is
+    // resolved (during receipt of a dispatch.notifyFulfill* or
+    // notifyReject), this Promise's handler will be replaced by the handler
+    // of the resolution, which might be a Presence or a local object.
+
+    // for safety as we shake out bugs in HandledPromise, we guard against
+    // this handler being used after it was supposed to be resolved
+    let handlerActive = true;
+    const unfulfilledHandler = {
+      applyMethod(_o, prop, args, returnedP) {
+        // Support: o~.[prop](...args) remote method invocation
+        lsdebug(`makeImportedPromise handler.applyMethod (${vpid})`);
+        if (!handlerActive) {
+          console.error(`mIPromise handler called after resolution`);
+          throw Error(`mIPromise handler called after resolution`);
+        }
+        // eslint-disable-next-line no-use-before-define
+        return queueMessage(vpid, prop, args, returnedP);
+      },
+    };
+
+    let resolve;
+    let reject;
+    const p = new HandledPromise((res, rej, _resPres) => {
+      resolve = res;
+      reject = rej;
+    }, unfulfilledHandler);
+
+    // Prepare for the kernel to tell us about resolution. Both ensure the
+    // old handler should never be called again. TODO: once we're confident
+    // about how we interact with HandledPromise, just use harden({ resolve,
+    // reject }).
+    const pRec = harden({
+      resolve(resolution) {
+        handlerActive = false;
+        resolve(resolution);
+      },
+
+      reject(rejection) {
+        handlerActive = false;
+        reject(rejection);
+      },
+    });
+    importedPromisesByPromiseID.set(vpid, pRec);
+
+    return harden(p);
+  }
+
+  function makeDeviceNode(id) {
+    return Remotable(`Device ${id}`);
+  }
 
   // TODO: fix awkward non-orthogonality: allocateExportID() returns a number,
   // allocatePromiseID() returns a slot, exportPromise() uses the slot from
@@ -185,29 +225,6 @@ function build(syscall, _state, makeRoot, forVatID) {
     return valToSlot.get(val);
   }
 
-  function importedPromiseThen(vpid) {
-    insistVatType('promise', vpid);
-    syscall.subscribe(vpid);
-  }
-
-  function importPromise(vpid) {
-    insistVatType('promise', vpid);
-    assert(
-      !parseVatSlot(vpid).allocatedByVat,
-      details`kernel is being presumptuous: vat got unrecognized vatSlot ${vpid}`,
-    );
-    const pr = makeQueued(vpid);
-    importedPromisesByPromiseID.set(vpid, pr);
-    const { p } = pr;
-    // ideally we'd wait until .then is called on p before subscribing, but
-    // the current Promise API doesn't give us a way to discover this, so we
-    // must subscribe right away. If we were using Vows or some other
-    // then-able, we could just hook then() to notify us.
-    lsdebug(`ls[${forVatID}].importPromise.importedPromiseThen ${vpid}`);
-    importedPromiseThen(vpid);
-    return p;
-  }
-
   function convertSlotToVal(slot) {
     if (!slotToVal.has(slot)) {
       let val;
@@ -215,18 +232,21 @@ function build(syscall, _state, makeRoot, forVatID) {
       assert(!allocatedByVat, details`I don't remember allocating ${slot}`);
       if (type === 'object') {
         // this is a new import value
-        // lsdebug(`assigning new import ${slot}`);
-        // prepare a Promise for this Presence, so E(val) can work
-        const pr = makeQueued(slot); // TODO find a less confusing name than "pr"
-        const remote = pr.resPres();
-        val = Remotable(`Presence ${slot}`, undefined, remote);
-        // lsdebug(` for presence`, val);
+        val = makeImportedPresence(slot);
       } else if (type === 'promise') {
-        val = importPromise(slot);
+        assert(
+          !parseVatSlot(slot).allocatedByVat,
+          details`kernel is being presumptuous: vat got unrecognized vatSlot ${slot}`,
+        );
+        val = makeImportedPromise(slot);
+        // ideally we'd wait until .then is called on p before subscribing,
+        // but the current Promise API doesn't give us a way to discover
+        // this, so we must subscribe right away. If we were using Vows or
+        // some other then-able, we could just hook then() to notify us.
+        syscall.subscribe(slot);
       } else if (type === 'device') {
         val = makeDeviceNode(slot);
       } else {
-        // todo (temporary): resolver?
         throw Error(`unrecognized slot type '${type}'`);
       }
       slotToVal.set(slot, val);
@@ -239,26 +259,36 @@ function build(syscall, _state, makeRoot, forVatID) {
 
   function queueMessage(targetSlot, prop, args, returnedP) {
     const serArgs = m.serialize(harden(args));
-    const result = allocatePromiseID();
-    lsdebug(`Promise allocation ${forVatID}:${result} in queueMessage`);
-    const done = makeQueued(result);
-    lsdebug(`ls.qm send(${JSON.stringify(targetSlot)}, ${prop}) -> ${result}`);
-    syscall.send(targetSlot, prop, serArgs, result);
+    const resultVPID = allocatePromiseID();
+    lsdebug(`Promise allocation ${forVatID}:${resultVPID} in queueMessage`);
+    // create a Promise which callers follow for the result, give it a
+    // handler so we can pipeline messages to it, and prepare for the kernel
+    // to notify us of its resolution
+    const p = makeImportedPromise(resultVPID);
 
-    // prepare for notifyFulfillToData/etc
-    importedPromisesByPromiseID.set(result, done);
+    lsdebug(
+      `ls.qm send(${JSON.stringify(targetSlot)}, ${prop}) -> ${resultVPID}`,
+    );
+    syscall.send(targetSlot, prop, serArgs, resultVPID);
 
-    // ideally we'd wait until someone .thens done.p, but with native
-    // Promises we have no way of spotting that, so subscribe immediately
-    lsdebug(`ls[${forVatID}].queueMessage.importedPromiseThen ${result}`);
-    importedPromiseThen(result);
+    // ideally we'd wait until .then is called on p before subscribing, but
+    // the current Promise API doesn't give us a way to discover this, so we
+    // must subscribe right away. If we were using Vows or some other
+    // then-able, we could just hook then() to notify us.
+    syscall.subscribe(resultVPID);
 
-    // prepare the serializer to recognize the promise we will return,
-    // if it's used as an argument or return value
-    valToSlot.set(returnedP, result);
-    slotToVal.set(result, returnedP);
+    // We return 'p' to the handler, and the eventual resolution of 'p' will
+    // be used to resolve the caller's Promise, but the caller never sees 'p'
+    // itself. The caller got back their Promise before the handler ever got
+    // invoked, and thus before queueMessage was called.. If that caller
+    // passes the Promise they received as argument or return value, we want
+    // it to serialize as resultVPID. And if someone passes resultVPID to
+    // them, we want the user-level code to get back that Promise, not 'p'.
 
-    return done.p;
+    valToSlot.set(returnedP, resultVPID);
+    slotToVal.set(resultVPID, returnedP);
+
+    return p;
   }
 
   function DeviceHandler(slot) {
@@ -302,42 +332,57 @@ function build(syscall, _state, makeRoot, forVatID) {
     if (!t) {
       throw Error(`no target ${target}`);
     }
+    // TODO: if we acquire new decision-making authority over a promise that
+    // we already knew about ('result' is already in slotToVal), we should no
+    // longer accept dispatch.notifyFulfill from the kernel. We currently use
+    // importedPromisesByPromiseID to track a combination of "we care about
+    // when this promise resolves" and "we are listening for the kernel to
+    // resolve it". We should split that into two tables or something. And we
+    // should error-check cases that the kernel shouldn't do, like getting
+    // the same vpid as a result= twice, or getting a result= for an exported
+    // promise (for which we were already the decider).
+
     const args = m.unserialize(argsdata);
-    const p = Promise.resolve().then(_ => {
-      // The idiom here results in scheduling the method invocation on the next
-      // turn, but more importantly arranges for errors to become promise
-      // rejections rather than errors in the kernel itself
+
+    let notifySuccess = () => undefined;
+    let notifyFailure = () => undefined;
+    if (result) {
+      insistVatType('promise', result);
+      // eslint-disable-next-line no-use-before-define
+      notifySuccess = thenResolve(result);
+      // eslint-disable-next-line no-use-before-define
+      notifyFailure = thenReject(result);
+    }
+
+    // If the method is missing, or is not a Function, or the method throws a
+    // synchronous exception, we notify the caller (by rejecting the result
+    // promise, if any). If the method returns an eventually-rejected
+    // Promise, we notify them when it resolves.
+
+    // If the method returns a synchronous value, we notify the caller right
+    // away. If it returns an eventually-fulfilled Promise, we notify the
+    // caller when it resolves.
+
+    // Both situations are the business of this vat and the calling vat, not
+    // the kernel. deliver() does not report such exceptions to the kernel.
+
+    try {
       if (!(method in t)) {
-        throw new TypeError(
-          `target[${method}] does not exist, has ${Object.getOwnPropertyNames(
-            t,
-          )}`,
-        );
+        const names = Object.getOwnPropertyNames(t);
+        throw new TypeError(`target[${method}] does not exist, has ${names}`);
       }
       if (!(t[method] instanceof Function)) {
+        const ftype = typeof t[method];
+        const names = Object.getOwnPropertyNames(t);
         throw new TypeError(
-          `target[${method}] is not a function, typeof is ${typeof t[
-            method
-          ]}, has ${Object.getOwnPropertyNames(t)}`,
+          `target[${method}] is not a function, typeof is ${ftype}, has ${names}`,
         );
       }
-      return t[method](...args);
-    });
-    if (result) {
-      lsdebug(` ls.deliver attaching then ->${result}`);
-      insistVatType('promise', result);
-
-      // We return the results of the resolve/reject, rather
-      // than rejecting the dispatch with whatever the method
-      // did.
-      // It is up to the caller to handle or fail to handle the
-      // rejection.  Failing to handle should trigger a platform
-      // log, rather than via our parent doProcess call.
-
-      // eslint-disable-next-line no-use-before-define
-      return p.then(thenResolve(result), thenReject(result));
+      const res = t[method](...args);
+      Promise.resolve(res).then(notifySuccess, notifyFailure);
+    } catch (err) {
+      notifyFailure(err);
     }
-    return p;
   }
 
   function thenResolve(promiseID) {
@@ -345,6 +390,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     return res => {
       harden(res);
       lsdebug(`ls.thenResolve fired`, res);
+
       // We need to know if this is resolving to an imported/exported
       // presence, because then the kernel can deliver queued messages. We
       // could build a simpler way of doing this.
@@ -358,16 +404,33 @@ function build(syscall, _state, makeRoot, forVatID) {
         unser[QCLASS] === 'slot'
       ) {
         const slot = ser.slots[unser.index];
-        const { type } = parseVatSlot(slot);
-        if (type === 'object') {
-          syscall.fulfillToPresence(promiseID, slot);
-        } else {
-          throw new Error(`thenResolve to non-object slot ${slot}`);
-        }
+        insistVatType('object', slot);
+        syscall.fulfillToPresence(promiseID, slot);
       } else {
         // if it resolves to data, .thens fire but kernel-queued messages are
         // rejected, because you can't send messages to data
         syscall.fulfillToData(promiseID, ser);
+      }
+
+      // TODO (for chip): the kernel currently notifies all subscribers of a
+      // promise about its resolution, even a subscriber who causes that
+      // promise to be resolved. We notify ourselves here anyways, because
+      // we'll need this when the retire-promises branch lands and the kernel
+      // behavior is changed to refrain from echoing back the notification to
+      // the resolving vat. So for now, we're double-resolving the promise,
+      // but it doesn't seem to cause any problems, and the tests
+      // (test-vpid-liveslots) depends upon it (the test doesn't simulate the
+      // kernel doing a echoed notification). When we land that branch, we
+      // can delete this first comment, without changing any of the code.
+      // (leave the following comment, it becomes correct then)
+
+      // If we were *also* waiting on this promise (perhaps we received it as
+      // an argument, and also as a result=), then we are responsible for
+      // notifying ourselves. The kernel assumes we're a grownup and don't
+      // need to be reminded of something we did ourselves.
+      const pRec = importedPromisesByPromiseID.get(promiseID);
+      if (pRec) {
+        pRec.resolve(res);
       }
     };
   }
@@ -378,6 +441,12 @@ function build(syscall, _state, makeRoot, forVatID) {
       lsdebug(`ls thenReject fired`, rej);
       const ser = m.serialize(rej);
       syscall.reject(promiseID, ser);
+      // TODO (for chip): this is also a double-rejection until the
+      // retire-promises branch lands. Delete this comment when that happens.
+      const pRec = importedPromisesByPromiseID.get(promiseID);
+      if (pRec) {
+        pRec.reject(rej);
+      }
     };
   }
 
@@ -387,22 +456,31 @@ function build(syscall, _state, makeRoot, forVatID) {
       `ls.dispatch.notifyFulfillToData(${promiseID}, ${data.body}, ${data.slots})`,
     );
     insistVatType('promise', promiseID);
+    // TODO: insist that we do not have decider authority for promiseID
     if (!importedPromisesByPromiseID.has(promiseID)) {
       throw new Error(`unknown promiseID '${promiseID}'`);
     }
+    const pRec = importedPromisesByPromiseID.get(promiseID);
     const val = m.unserialize(data);
-    importedPromisesByPromiseID.get(promiseID).res(val);
+    pRec.resolve(val);
   }
 
   function notifyFulfillToPresence(promiseID, slot) {
     lsdebug(`ls.dispatch.notifyFulfillToPresence(${promiseID}, ${slot})`);
     insistVatType('promise', promiseID);
+    // TODO: insist that we do not have decider authority for promiseID
+    insistVatType('object', slot);
     if (!importedPromisesByPromiseID.has(promiseID)) {
       throw new Error(`unknown promiseID '${promiseID}'`);
     }
+    const pRec = importedPromisesByPromiseID.get(promiseID);
     const val = convertSlotToVal(slot);
-    importedPromisesByPromiseID.get(promiseID).res(val);
+    // val is either a local pass-by-presence object, or a Presence (which
+    // points at some remote pass-by-presence object).
+    pRec.resolve(val);
   }
+
+  // TODO: when we add notifyForward, guard against cycles
 
   function notifyReject(promiseID, data) {
     insistCapData(data);
@@ -410,11 +488,13 @@ function build(syscall, _state, makeRoot, forVatID) {
       `ls.dispatch.notifyReject(${promiseID}, ${data.body}, ${data.slots})`,
     );
     insistVatType('promise', promiseID);
+    // TODO: insist that we do not have decider authority for promiseID
     if (!importedPromisesByPromiseID.has(promiseID)) {
       throw new Error(`unknown promiseID '${promiseID}'`);
     }
+    const pRec = importedPromisesByPromiseID.get(promiseID);
     const val = m.unserialize(data);
-    importedPromisesByPromiseID.get(promiseID).rej(val);
+    pRec.reject(val);
   }
 
   // here we finally invoke the vat code, and get back the root object
