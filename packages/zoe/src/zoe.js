@@ -322,6 +322,8 @@ import { makeTables } from './state';
 const makeZoe = (additionalEndowments = {}) => {
   // Zoe maps the inviteHandles to contract offerHook upcalls
   const inviteHandleToOfferHook = makeStore();
+  const brandToIssuer = makeStore();
+
   const {
     mint: inviteMint,
     issuer: inviteIssuer,
@@ -555,6 +557,7 @@ const makeZoe = (additionalEndowments = {}) => {
             ...issuerKeywordRecord,
             [keyword]: issuerRecord.issuer,
           };
+          brandToIssuer.init(issuerRecord.brand, issuerRecord.issuer);
           instanceTable.update(instanceHandle, {
             issuerKeywordRecord: newIssuerKeywordRecord,
           });
@@ -679,7 +682,12 @@ const makeZoe = (additionalEndowments = {}) => {
         );
 
         const makeInstanceRecord = issuerRecords => {
-          const issuers = issuerRecords.map(record => record.issuer);
+          const issuers = issuerRecords.map(record => {
+            if (!brandToIssuer.has(record.brand)) {
+              brandToIssuer.init(record.brand, record.issuer);
+            }
+            return record.issuer;
+          });
           const cleanedIssuerKeywordRecord = arrayToObj(
             issuers,
             cleanedKeywords,
@@ -756,49 +764,62 @@ const makeZoe = (additionalEndowments = {}) => {
             inviteAmount.extent.length === 1,
             'only one invite should be redeemed',
           );
+          const giveKeywords = proposal.give
+            ? Object.getOwnPropertyNames(proposal.give)
+            : [];
+          const wantKeywords = proposal.want
+            ? Object.getOwnPropertyNames(proposal.want)
+            : [];
+          const userKeywords = harden([...giveKeywords, ...wantKeywords]);
 
           const {
             extent: [{ instanceHandle, handle: inviteHandle }],
           } = inviteAmount;
-          const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
           const offerHandle = harden({});
 
-          const amountMathKeywordRecord = getAmountMaths(
-            instanceHandle,
-            getKeywords(issuerKeywordRecord),
-          );
+          function amountMathFromBrand({ brand }) {
+            return issuerTable.get(brandToIssuer.get(brand)).amountMath;
+          }
+
+          const amountMathKeywordRecord = {};
+          giveKeywords.forEach(keyword => {
+            const amountMath = amountMathFromBrand(proposal.give[keyword]);
+            amountMathKeywordRecord[keyword] = amountMath;
+          });
+          wantKeywords.forEach(keyword => {
+            const amountMath = amountMathFromBrand(proposal.want[keyword]);
+            amountMathKeywordRecord[keyword] = amountMath;
+          });
 
           proposal = cleanProposal(
-            issuerKeywordRecord,
+            userKeywords,
             amountMathKeywordRecord,
             proposal,
           );
 
           // Promise flow:
           // issuer -> purse -> deposit payment -> offerHook -> payout
-          const giveKeywords = Object.getOwnPropertyNames(proposal.give);
-          const wantKeywords = Object.getOwnPropertyNames(proposal.want);
-          const userKeywords = harden([...giveKeywords, ...wantKeywords]);
           const paymentDepositedPs = userKeywords.map(keyword => {
-            const issuer = issuerKeywordRecord[keyword];
-            const issuerRecordP = issuerTable.getPromiseForIssuerRecord(issuer);
-            return issuerRecordP.then(({ purse }) => {
-              if (giveKeywords.includes(keyword)) {
-                // We cannot trust the returned amount since it comes directly
-                // from the remote issuer. So we use our cleaned proposal's
-                // amount that should be the same.
-                return E(purse)
-                  .deposit(
-                    paymentKeywordRecord[keyword],
-                    proposal.give[keyword],
-                  )
-                  .then(_ => proposal.give[keyword]);
-              }
-              // If any other payments are included, they are ignored.
-              return Promise.resolve(
-                amountMathKeywordRecord[keyword].getEmpty(),
-              );
-            });
+            if (giveKeywords.includes(keyword)) {
+              const issuer = brandToIssuer.get(proposal.give[keyword].brand);
+              return issuerTable
+                .getPromiseForIssuerRecord(issuer)
+                .then(({ purse }) => {
+                  // We cannot trust the returned amount since it comes directly
+                  // from the remote issuer. So we use our cleaned proposal's
+                  // amount that should be the same.
+                  return E(purse)
+                    .deposit(
+                      paymentKeywordRecord[keyword],
+                      proposal.give[keyword],
+                    )
+                    .then(_ => proposal.give[keyword]);
+                });
+              // eslint-disable-next-line no-else-return
+            } else {
+              // payments outside the give: clause are ignored.
+              return amountMathFromBrand(proposal.want[keyword]).getEmpty();
+            }
           });
 
           const recordOffer = amountsArray => {
