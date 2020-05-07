@@ -433,28 +433,26 @@ export function makeIBCProtocolHandler(
       }
 
       // We explain to the user how to configure a naive relayer.
+      const q = JSON.stringify;
       E(chandler)
         .infoMessage(
           `\
 # Set up the relayer for this path:
-paths:
-  XXX-PATH-ID:
-    src:
-      chain-id: XXX-SRC-CHAIN
-      client-id: YYY-DST-CLIENT
-      connection-id: ${hops[0]}
-      channel-id: ${channelID}
-      port-id: ${portID}
-      order: ${order}
-    dst:
-      chain-id: YYY-DST-CHAIN
-      client-id: XXX-SRC-CLIENT
-      connection-id: XXX-SRC-CONNECTION
-      channel-id: ${rChannelID}
-      port-id: ${rPortID}
-      order: ${order}
-    strategy:
-      type: naive
+ag-nchainz start-relayer <<'EOF'
+{
+  "src": {
+    "connection-id": ${q(hops[0])},
+    "channel-id": ${q(channelID)},
+    "port-id": ${q(portID)},
+    "order": ${q(order)}
+  },
+  "dst": {
+    "channel-id": ${q(rChannelID)},
+    "port-id": ${q(rPortID)},
+    "order": ${q(order)}
+  }
+}
+EOF
 # then your connection will try to proceed.
 `,
         )
