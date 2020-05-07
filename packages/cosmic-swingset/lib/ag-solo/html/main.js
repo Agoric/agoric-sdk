@@ -273,17 +273,20 @@ const fpj = fetch('/package.json')
   });
 fetches.push(fpj);
 
-fetch('wallet/')
-  .then(resp => {
-    if (resp.status < 200 || resp.status >= 300) {
-      throw Error(`status ${resp.status}`);
-    }
-    walletFrame.style.display = 'block';
-    walletFrame.src = 'wallet/';
-  })
-  .catch(e => {
-    console.log('Cannot fetch wallet/', e);
-  });
+// an optional `w=0` GET argument will suppress showing the wallet
+if (new URLSearchParams(window.location.search).get('w') !== '0') {
+  fetch('wallet/')
+    .then(resp => {
+      if (resp.status < 200 || resp.status >= 300) {
+        throw Error(`status ${resp.status}`);
+      }
+      walletFrame.style.display = 'block';
+      walletFrame.src = 'wallet/';
+    })
+    .catch(e => {
+      console.log('Cannot fetch wallet/', e);
+    });
+}
 
 Promise.all(fetches)
   .then(([rev, pjson]) => {
