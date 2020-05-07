@@ -81,7 +81,7 @@ export const cleanKeywords = keywordRecord => {
 // `{ waived: null }` `{ onDemand: null }` `{ afterDeadline: { timer
 // :Timer, deadline :Number } }
 export const cleanProposal = (
-  issuerKeywordRecord,
+  allKeywords,
   amountMathKeywordRecord,
   proposal,
 ) => {
@@ -93,7 +93,6 @@ export const cleanProposal = (
   let { want = harden({}), give = harden({}) } = proposal;
   const { exit = harden({ onDemand: null }) } = proposal;
 
-  const allKeywords = getKeywords(issuerKeywordRecord);
   want = coerceAmountKeywordRecord(amountMathKeywordRecord, allKeywords, want);
   give = coerceAmountKeywordRecord(amountMathKeywordRecord, allKeywords, give);
 

@@ -3,7 +3,7 @@ import { test } from 'tape-promise/tape';
 
 import harden from '@agoric/harden';
 
-import { cleanProposal } from '../../src/cleanProposal';
+import { cleanProposal, getKeywords } from '../../src/cleanProposal';
 import { setup } from './setupBasicMints';
 import buildManualTimer from '../../tools/manualTimer';
 
@@ -44,7 +44,7 @@ test('cleanProposal test', t => {
     });
 
     const actual = cleanProposal(
-      issuerKeywordRecord,
+      getKeywords(issuerKeywordRecord),
       amountMathKeywordRecord,
       proposal,
     );
@@ -84,8 +84,9 @@ test('cleanProposal - all empty', t => {
     });
 
     // cleanProposal no longer fills in empty keywords
+    const allKeywords = getKeywords(issuerKeywordRecord);
     t.deepEquals(
-      cleanProposal(issuerKeywordRecord, amountMathKeywordRecord, proposal),
+      cleanProposal(allKeywords, amountMathKeywordRecord, proposal),
       expected,
     );
   } catch (e) {
@@ -137,7 +138,8 @@ test('cleanProposal - repeated brands', t => {
       exit: { afterDeadline: { timer, deadline: 100 } },
     });
     // cleanProposal no longer fills in empty keywords
-    const actual = cleanProposal(issuerKeywordRecord, amountMathsObj, proposal);
+    const keywords = getKeywords(issuerKeywordRecord);
+    const actual = cleanProposal(keywords, amountMathsObj, proposal);
     t.deepEquals(actual.want, expected.want);
     t.deepEquals(actual.give, expected.give);
     t.deepEquals(actual.exit, expected.exit);

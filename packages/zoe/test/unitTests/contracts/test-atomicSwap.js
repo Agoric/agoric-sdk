@@ -268,3 +268,118 @@ test('zoe - non-fungible atomicSwap', async t => {
   t.deepEquals(bobCcPurse.getCurrentAmount().extent, ['calico #37']);
   t.deepEquals(bobRpgPurse.getCurrentAmount().extent, []);
 });
+
+// Checking handling of duplicate issuers. I'd have preferred a raffle contract
+test('zoe - atomicSwap like-for-like', async t => {
+  t.plan(9);
+  const { moolaIssuer, moolaMint, moola } = setup();
+  const zoe = makeZoe({ require });
+  const inviteIssuer = zoe.getInviteIssuer();
+
+  // pack the contract
+  const { source, moduleFormat } = await bundleSource(atomicSwapRoot);
+  // install the contract
+  const installationHandle = zoe.install(source, moduleFormat);
+
+  // Setup Alice
+  const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
+  const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
+
+  // Setup Bob
+  const bobMoolaPayment = moolaMint.mintPayment(moola(7));
+  const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
+
+  // 1: Alice creates an atomicSwap instance
+  const issuerKeywordRecord = harden({
+    Asset: moolaIssuer,
+    Price: moolaIssuer,
+  });
+  const aliceInvite = await zoe.makeInstance(
+    installationHandle,
+    issuerKeywordRecord,
+  );
+
+  // 2: Alice escrows with zoe
+  const aliceProposal = harden({
+    give: { Asset: moola(3) },
+    want: { Price: moola(7) },
+    exit: { onDemand: null },
+  });
+  const alicePayments = { Asset: aliceMoolaPayment };
+
+  // 3: Alice makes the first offer in the swap.
+  const { payout: alicePayoutP, outcome: bobInviteP } = await zoe.offer(
+    aliceInvite,
+    aliceProposal,
+    alicePayments,
+  );
+
+  // 4: Alice spreads the invite far and wide with instructions
+  // on how to use it and Bob decides he wants to be the
+  // counter-party.
+
+  const bobExclusiveInvite = await inviteIssuer.claim(bobInviteP);
+  const {
+    extent: [bobInviteExtent],
+  } = await inviteIssuer.getAmountOf(bobExclusiveInvite);
+
+  const {
+    installationHandle: bobInstallationId,
+    issuerKeywordRecord: bobIssuers,
+  } = zoe.getInstanceRecord(bobInviteExtent.instanceHandle);
+
+  t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
+  t.deepEquals(bobIssuers, { Asset: moolaIssuer, Price: moolaIssuer });
+  t.deepEquals(bobInviteExtent.asset, moola(3));
+  t.deepEquals(bobInviteExtent.price, moola(7));
+
+  const bobProposal = harden({
+    give: { Price: moola(7) },
+    want: { Asset: moola(3) },
+    exit: { onDemand: null },
+  });
+  const bobPayments = { Price: bobMoolaPayment };
+
+  // 5: Bob makes an offer
+  const { payout: bobPayoutP, outcome: bobOutcomeP } = await zoe.offer(
+    bobExclusiveInvite,
+    bobProposal,
+    bobPayments,
+  );
+
+  t.equals(
+    await bobOutcomeP,
+    'The offer has been accepted. Once the contract has been completed, please check your payout',
+  );
+  const bobPayout = await bobPayoutP;
+  const alicePayout = await alicePayoutP;
+
+  const bobMoolaPayout = await bobPayout.Asset;
+  const bobSimoleanPayout = await bobPayout.Price;
+
+  const aliceMoolaPayout = await alicePayout.Asset;
+  const aliceSimoleanPayout = await alicePayout.Price;
+
+  // Alice gets what Alice wanted
+  t.deepEquals(
+    await moolaIssuer.getAmountOf(aliceSimoleanPayout),
+    aliceProposal.want.Price,
+  );
+
+  // Alice didn't get any of what Alice put in
+  t.deepEquals(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
+
+  // Alice deposits her payout to ensure she can
+  await aliceMoolaPurse.deposit(aliceMoolaPayout);
+  await aliceMoolaPurse.deposit(aliceSimoleanPayout);
+
+  // Bob deposits his original payments to ensure he can
+  await bobMoolaPurse.deposit(bobMoolaPayout);
+  await bobMoolaPurse.deposit(bobSimoleanPayout);
+
+  // Assert that the correct payouts were received.
+  // Alice had 3 moola and 0 simoleans.
+  // Bob had 0 moola and 7 simoleans.
+  t.equals(aliceMoolaPurse.getCurrentAmount().extent, 7);
+  t.equals(bobMoolaPurse.getCurrentAmount().extent, 3);
+});
