@@ -7,18 +7,26 @@ function build(E, log) {
     bootstrap(argv, vats) {
       console.log('=> Alice: bootstrap() called');
 
-      log('Alice: sending first to Bob');
       const p1 = E(vats.bob).first();
-      log('Alice: sending second to Bob');
       const p2 = E(vats.bob).second(p1);
-      log(`Alice: awaiting Bob's responses`);
+      const p3 = E(vats.bob).third();
       p1.then(
-        r => log(`=> Alice: Bob's response to first resolved to '${r}'`),
-        e => log(`=> Alice: Bobs' response to first rejected as '${e}'`),
+        r => {
+          log(`=> Alice: Bob.first resolved to '${r}' (should be a promise in an array)`);
+          r[0].then(
+            rr => log(`=> Alice: Bob.first result resolved to '${rr}'`),
+            ee => log(`=> Alice: Bob.first result rejected as '${ee}'`),
+          );
+        },
+        e => log(`=> Alice: Bob.first rejected as '${e}'`),
       );
       p2.then(
-        r => log(`=> Alice: Bob's response to second resolved to '${r}'`),
-        e => log(`=> Alice: Bobs' response to second rejected as '${e}'`),
+        r => log(`=> Alice: Bob.second resolved to '${r}'`),
+        e => log(`=> Alice: Bob.second rejected as '${e}'`),
+      );
+      p3.then(
+        r => log(`=> Alice: Bob.third resolved to '${r}'`),
+        e => log(`=> Alice: Bob.third rejected as '${e}'`),
       );
       log('=> Alice: bootstrap() done');
       return 'Alice started';
