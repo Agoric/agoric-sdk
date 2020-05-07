@@ -14,6 +14,9 @@ import { makeWithQueue } from './queue';
 
 const DEFAULT_PACKET_TIMEOUT = 1000;
 
+// FIXME: IBC acks cannot be empty, as that deserialises to nil in Golang.
+const DEFAULT_ACKNOWLEDGEMENT = '\x00';
+
 // FIXME: this constitutes a security flaw, but is currently the
 // only way to create channels.
 const FIXME_ALLOW_NAIVE_RELAYS = true;
@@ -638,15 +641,15 @@ paths:
             destination_channel: channelID,
           } = packet;
           const channelKey = `${channelID}:${portID}`;
-
-          console.log(`Received with:`, channelKey, channelKeyToConnP.keys());
           const connP = channelKeyToConnP.get(channelKey);
           const data = base64ToBytes(data64);
 
           E(connP)
             .send(data)
             .then(ack => {
-              const ack64 = dataToBase64(/** @type {Bytes} */ (ack));
+              /** @type {Data} */
+              const realAck = ack || DEFAULT_ACKNOWLEDGEMENT;
+              const ack64 = dataToBase64(realAck);
               return callIBCDevice('packetExecuted', { packet, ack: ack64 });
             })
             .catch(e => console.error(e));
