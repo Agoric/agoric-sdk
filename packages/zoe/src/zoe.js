@@ -18,6 +18,7 @@ import {
   objToArray,
   objToArrayAssertFilled,
   filterObj,
+  filterObjOkIfMissing,
   filterFillAmounts,
   assertSubset,
 } from './objArrayConversion';
@@ -460,7 +461,22 @@ const makeZoe = (additionalEndowments = {}) => {
 
         const offerRecords = offerTable.getOffers(offerHandles);
 
-        const proposals = offerRecords.map(offerRecord => offerRecord.proposal);
+        const amountMathKeywordRecord = contractFacet.getAmountMaths(
+          sparseKeywords,
+        );
+
+        // Filter proposal `want` and `give` by sparseKeywords
+        const filterProposalBySparseKeywords = proposal => {
+          return harden({
+            give: filterObjOkIfMissing(proposal.give, sparseKeywords),
+            want: filterObjOkIfMissing(proposal.want, sparseKeywords),
+          });
+        };
+
+        const proposals = offerRecords.map(offerRecord =>
+          filterProposalBySparseKeywords(offerRecord.proposal),
+        );
+
         const currentAmountMatrix = offerRecords.map(({ handle }) => {
           const filteredAmounts = contractFacet.getCurrentAllocation(
             handle,
@@ -468,9 +484,7 @@ const makeZoe = (additionalEndowments = {}) => {
           );
           return objToArray(filteredAmounts, sparseKeywords);
         });
-        const amountMathKeywordRecord = contractFacet.getAmountMaths(
-          sparseKeywords,
-        );
+
         const amountMathsArray = objToArray(
           amountMathKeywordRecord,
           sparseKeywords,

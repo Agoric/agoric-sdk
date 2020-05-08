@@ -220,6 +220,24 @@ test('isOfferSafeForOffer - equal to want, equal to give', t => {
   }
 });
 
+test('isOfferSafeForOffer - empty proposal', t => {
+  t.plan(1);
+  try {
+    const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
+    const amountMathKeywordRecord = harden({
+      A: moolaR.amountMath,
+      B: simoleanR.amountMath,
+      C: bucksR.amountMath,
+    });
+    const proposal = harden({ give: {}, want: {} });
+    const amounts = harden({ A: moola(1), B: simoleans(6), C: bucks(7) });
+
+    t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
+  } catch (e) {
+    t.assert(false, e);
+  }
+});
+
 // All users get exactly what they wanted
 test('isOfferSafeForAll - All users get what they wanted', t => {
   t.plan(1);
