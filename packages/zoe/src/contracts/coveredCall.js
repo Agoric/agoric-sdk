@@ -1,9 +1,13 @@
+// @ts-check
+
 import harden from '@agoric/harden';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { makeZoeHelpers } from '../contractSupport';
 
 const rejectMsg = `The covered call option is expired.`;
+
+/** @typedef {import('../zoe').ContractFacet} ContractFacet */
 
 // In a covered call, the owner of a digital asset sells a call
 // option. A call option is the right to buy the digital asset at a
@@ -21,46 +25,48 @@ const rejectMsg = `The covered call option is expired.`;
 // { expirationDate, timerAuthority, underlyingAsset, strikePrice }
 
 // zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe
-export const makeContract = harden(zcf => {
-  const { swap, assertKeywords, checkHook } = makeZoeHelpers(zcf);
-  assertKeywords(harden(['UnderlyingAsset', 'StrikePrice']));
+export const makeContract = harden(
+  /** @param {ContractFacet} zcf */ zcf => {
+    const { swap, assertKeywords, checkHook } = makeZoeHelpers(zcf);
+    assertKeywords(harden(['UnderlyingAsset', 'StrikePrice']));
 
-  const makeCallOptionInvite = sellerHandle => {
-    const {
-      proposal: { want, give, exit },
-    } = zcf.getOffer(sellerHandle);
+    const makeCallOptionInvite = sellerHandle => {
+      const {
+        proposal: { want, give, exit },
+      } = zcf.getOffer(sellerHandle);
 
-    const exerciseOptionHook = offerHandle =>
-      swap(sellerHandle, offerHandle, rejectMsg);
-    const exerciseOptionExpected = harden({
-      give: { StrikePrice: null },
-      want: { UnderlyingAsset: null },
+      const exerciseOptionHook = offerHandle =>
+        swap(sellerHandle, offerHandle, rejectMsg);
+      const exerciseOptionExpected = harden({
+        give: { StrikePrice: null },
+        want: { UnderlyingAsset: null },
+      });
+
+      return zcf.makeInvitation(
+        checkHook(exerciseOptionHook, exerciseOptionExpected),
+        'exerciseOption',
+        harden({
+          customProperties: {
+            expirationDate: exit.afterDeadline.deadline,
+            timerAuthority: exit.afterDeadline.timer,
+            underlyingAsset: give.UnderlyingAsset,
+            strikePrice: want.StrikePrice,
+          },
+        }),
+      );
+    };
+
+    const writeOptionExpected = harden({
+      give: { UnderlyingAsset: null },
+      want: { StrikePrice: null },
+      exit: { afterDeadline: null },
     });
 
-    return zcf.makeInvitation(
-      checkHook(exerciseOptionHook, exerciseOptionExpected),
-      'exerciseOption',
-      harden({
-        customProperties: {
-          expirationDate: exit.afterDeadline.deadline,
-          timerAuthority: exit.afterDeadline.timer,
-          underlyingAsset: give.UnderlyingAsset,
-          strikePrice: want.StrikePrice,
-        },
-      }),
-    );
-  };
-
-  const writeOptionExpected = harden({
-    give: { UnderlyingAsset: null },
-    want: { StrikePrice: null },
-    exit: { afterDeadline: null },
-  });
-
-  return harden({
-    invite: zcf.makeInvitation(
-      checkHook(makeCallOptionInvite, writeOptionExpected),
-      'makeCallOption',
-    ),
-  });
-});
+    return harden({
+      invite: zcf.makeInvitation(
+        checkHook(makeCallOptionInvite, writeOptionExpected),
+        'makeCallOption',
+      ),
+    });
+  },
+);
