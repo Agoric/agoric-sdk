@@ -393,6 +393,19 @@ function build(syscall, _state, makeRoot, forVatID) {
     slotToVal.delete(promiseID);
   }
 
+  function retirePromiseIDIfEasy(promiseID, data) {
+    for (const slot of data.slots) {
+      const { type } = parseVatSlot(slot);
+      if (type === 'promise') {
+        lsdebug(
+          `Unable to retire ${promiseID} because slot ${slot} is a promise`,
+        );
+        return;
+      }
+    }
+    retirePromiseID(promiseID);
+  }
+
   function thenResolve(promiseID) {
     insistVatType('promise', promiseID);
     return res => {
@@ -406,9 +419,6 @@ function build(syscall, _state, makeRoot, forVatID) {
       lsdebug(` ser ${ser.body} ${JSON.stringify(ser.slots)}`);
       // find out what resolution category we're using
       const unser = JSON.parse(ser.body);
-      if (importedPromisesByPromiseID.has(promiseID)) {
-        importedPromisesByPromiseID.get(promiseID).res(res);
-      }
       if (
         Object(unser) === unser &&
         QCLASS in unser &&
@@ -417,12 +427,10 @@ function build(syscall, _state, makeRoot, forVatID) {
         const slot = ser.slots[unser.index];
         insistVatType('object', slot);
         syscall.fulfillToPresence(promiseID, slot);
-        retirePromiseID(promiseID);
       } else {
         // if it resolves to data, .thens fire but kernel-queued messages are
         // rejected, because you can't send messages to data
         syscall.fulfillToData(promiseID, ser);
-        retirePromiseID(promiseID);
       }
 
       // TODO (for chip): the kernel currently notifies all subscribers of a
@@ -445,6 +453,7 @@ function build(syscall, _state, makeRoot, forVatID) {
       if (pRec) {
         pRec.resolve(res);
       }
+      retirePromiseIDIfEasy(promiseID, ser);
     };
   }
 
@@ -453,17 +462,14 @@ function build(syscall, _state, makeRoot, forVatID) {
       harden(rej);
       lsdebug(`ls thenReject fired`, rej);
       const ser = m.serialize(rej);
-      if (importedPromisesByPromiseID.has(promiseID)) {
-        importedPromisesByPromiseID.get(promiseID).rej(rej);
-      }
       syscall.reject(promiseID, ser);
-      retirePromiseID(promiseID);
       // TODO (for chip): this is also a double-rejection until the
       // retire-promises branch lands. Delete this comment when that happens.
       const pRec = importedPromisesByPromiseID.get(promiseID);
       if (pRec) {
         pRec.reject(rej);
       }
+      retirePromiseIDIfEasy(promiseID, ser);
     };
   }
 
@@ -480,7 +486,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     const pRec = importedPromisesByPromiseID.get(promiseID);
     const val = m.unserialize(data);
     pRec.resolve(val);
-    retirePromiseID(promiseID);
+    retirePromiseIDIfEasy(promiseID, data);
   }
 
   function notifyFulfillToPresence(promiseID, slot) {
@@ -514,7 +520,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     const pRec = importedPromisesByPromiseID.get(promiseID);
     const val = m.unserialize(data);
     pRec.reject(val);
-    retirePromiseID(promiseID);
+    retirePromiseIDIfEasy(promiseID, data);
   }
 
   // here we finally invoke the vat code, and get back the root object

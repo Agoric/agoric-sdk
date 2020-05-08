@@ -107,6 +107,19 @@ export default function makeVatManager(
     }
   }
 
+  function deleteCListEntryIfEasy(kpid, vpid, kernelData) {
+    for (const slot of kernelData.slots) {
+      const { type } = parseKernelSlot(slot);
+      if (type === 'promise') {
+        kdebug(
+          `Unable to delete clist entry ${kpid}<=>${vpid} because slot ${slot} is a promise`,
+        );
+        return;
+      }
+    }
+    vatKeeper.deleteCListEntry(kpid, vpid);
+  }
+
   // syscall handlers: these are wrapped by the 'syscall' object and made
   // available to userspace
 
@@ -182,7 +195,7 @@ export default function makeVatManager(
         data.body
       } ${JSON.stringify(data.slots)}/${JSON.stringify(kernelSlots)}`,
     );
-    vatKeeper.deleteCListEntry(kpid, promiseID);
+    deleteCListEntryIfEasy(kpid, promiseID, kernelData);
     syscallManager.fulfillToData(vatID, kpid, kernelData);
   }
 
@@ -197,7 +210,7 @@ export default function makeVatManager(
         data.body
       } ${JSON.stringify(data.slots)}/${JSON.stringify(kernelSlots)}`,
     );
-    vatKeeper.deleteCListEntry(kpid, promiseID);
+    deleteCListEntryIfEasy(kpid, promiseID, kernelData);
     syscallManager.reject(vatID, kpid, kernelData);
   }
 
@@ -378,7 +391,6 @@ export default function makeVatManager(
         ['notifyFulfillToPresence', vpid, slot],
         `vat[${vatID}].promise[${vpid}] fulfillToPresence failed`,
       );
-      vatKeeper.deleteCListEntry(kpid, vpid);
     } else if (kp.state === 'redirected') {
       throw new Error('not implemented yet');
     } else if (kp.state === 'fulfilledToData') {
@@ -387,24 +399,22 @@ export default function makeVatManager(
         ...kp.data,
         slots: kp.data.slots.map(slot => mapKernelSlotToVatSlot(slot)),
       });
-      vatKeeper.deleteCListEntry(kpid, vpid);
+      deleteCListEntryIfEasy(kpid, vpid, kp.data);
       await doProcess(
         ['notifyFulfillToData', vpid, vatData],
         `vat[${vatID}].promise[${vpid}] fulfillToData failed`,
       );
-      vatKeeper.deleteCListEntry(kpid, vpid);
     } else if (kp.state === 'rejected') {
       const vpid = mapKernelSlotToVatSlot(kpid);
       const vatData = harden({
         ...kp.data,
         slots: kp.data.slots.map(slot => mapKernelSlotToVatSlot(slot)),
       });
-      vatKeeper.deleteCListEntry(kpid, vpid);
+      deleteCListEntryIfEasy(kpid, vpid, kp.data);
       await doProcess(
         ['notifyReject', vpid, vatData],
         `vat[${vatID}].promise[${vpid}] reject failed`,
       );
-      vatKeeper.deleteCListEntry(kpid, vpid);
     } else {
       throw new Error(`unknown kernelPromise state '${kp.state}'`);
     }
