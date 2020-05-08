@@ -71,7 +71,7 @@ export const filterObj = /** @type {function<T>(T, string[]): T} */ (
 };
 
 // return a new object with only the keys in subsetKeywords. `obj`
-// may *not* have all the `subsetKeywords`.
+// is allowed to not include keywords in subsetKeywords.
 export const filterObjOkIfMissing = /** @type {function<T>(T, string[]): T} */ (
   obj,
   subsetKeywords,
