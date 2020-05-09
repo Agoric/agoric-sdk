@@ -143,8 +143,13 @@ export async function buildVatController(config, withSES = true, argv = []) {
     }
   }
 
-  async function loadStaticVat(path, name) {
-    const bundle = await bundleSource(path, 'nestedEvaluate');
+  async function loadStaticVat(sourceIndex, name) {
+    if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
+      throw Error(
+        'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
+      );
+    }
+    const bundle = await bundleSource(sourceIndex, 'nestedEvaluate');
     const vatNS = await importBundle(bundle,
                                      { filePrefix: name,
                                        endowments: {
