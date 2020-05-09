@@ -12,15 +12,13 @@ import {
   SES1ReplaceGlobalMeter,
   SES1TameMeteringShim,
 } from '@agoric/tame-metering';
-import { producePromise } from '@agoric/produce-promise';
 
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import * as babelCore from '@babel/core';
 
 import anylogger from 'anylogger';
 
-// eslint-disable-next-line import/extensions
-import kernelSourceFunc from './bundles/kernel';
+import { waitUntilQuiescent } from './waitUntilQuiescent';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
@@ -136,19 +134,6 @@ export async function buildVatController(config, withSES = true, argv = []) {
                                         },
                                       });
   const buildKernel = kernelNS.default;
-
-  // waitUntilQuiescent is provided to each vatManager
-  function waitUntilQuiescent() {
-    // the delivery might cause some number of (native) Promises to be
-    // created and resolved, so we use the IO queue to detect when the
-    // Promise queue is empty. The IO queue (setImmediate and setTimeout) is
-    // lower-priority than the Promise queue on browsers and Node 11, but on
-    // Node 10 it is higher. So this trick requires Node 11.
-    // https://jsblog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
-    const { promise: queueEmptyP, resolve } = producePromise();
-    setImmediate(() => resolve());
-    return queueEmptyP;
-  }
 
   function vatRequire(what) {
     if (what === '@agoric/harden') {
