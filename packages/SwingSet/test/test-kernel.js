@@ -1,7 +1,7 @@
-// eslint-disable-next-line no-redeclare
-/* global setImmediate */
+/* global harden */
 import { test } from 'tape-promise/tape';
-import harden from '@agoric/harden';
+import '../install-ses.js';
+import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 import { initSwingStore } from '@agoric/swing-store-simple';
 
 import buildKernel from '../src/kernel/index';
@@ -33,7 +33,7 @@ function emptySetup(_syscall) {
 
 function makeEndowments() {
   return {
-    setImmediate,
+    waitUntilQuiescent,
     hostStorage: initSwingStore().storage,
     runEndOfCrank: () => {},
   };
