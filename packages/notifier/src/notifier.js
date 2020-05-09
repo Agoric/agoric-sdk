@@ -3,12 +3,14 @@ import { E } from '@agoric/eventual-send';
 import harden from '@agoric/harden';
 
 /**
- * Adaptor from a notifierP in an async iterable.
+ * Adaptor from a notifierP to an async iterable.
  * The notifierP can be any object that has an eventually invokable
  * `getUpdateSince` method that behaves according to the notifier
- * spec. Typically, this will actually be a reference to a
- * possibly-remote notifier. But it is also used internally below
- * so that a notifier itself is an async iterable.
+ * spec. This can be a notifier, a promise for a local or remote
+ * notfier, or a presence of a remote notifier.
+ *
+ * It is also used internally below so that a notifier itself is an async
+ * iterable.
  *
  * An async iterable is an object with a `[Symbol.asyncIterator]()` method
  * that returns an async iterator. The async iterator we return here has only
@@ -21,8 +23,13 @@ import harden from '@agoric/harden';
  * result. An iteration result is a record with `value` and `done` properties,
  * where the `value` property's value might be a promise for the next
  * iteration variable.
+ *
+ * The purpose of building on the notifier protocol is to have a lossy
+ * adaptor, where intermediate results can be missed in favor of more recent
+ * results which are therefore less stale. See
+ * https://github.com/Agoric/documentation/blob/master/main/distributed-programming.md#notifiers
  */
-export function makeAsyncIterable(notifierP) {
+export const makeAsyncIterableFromNotifier = notifierP => {
   return harden({
     [Symbol.asyncIterator]: () => {
       let myHandle;
@@ -65,7 +72,7 @@ export function makeAsyncIterable(notifierP) {
       });
     },
   });
-}
+};
 
 /**
  * Produces a pair of objects, which allow a service to produce a stream of
@@ -129,8 +136,41 @@ export const produceNotifier = () => {
   // is tightly held
   const notifier = harden({
     getUpdateSince,
-    ...makeAsyncIterable(harden({ getUpdateSince })),
+    ...makeAsyncIterableFromNotifier(harden({ getUpdateSince })),
   });
   const updater = harden({ updateState, resolve });
   return harden({ notifier, updater });
+};
+
+/**
+ * This reads from `iteratorP` updating `updater` with each successive value.
+ * `iteratorP` can be a sync or async iterator, or a promise for a local or
+ * remote iterator, or a presence of a remote iterator. When `iteratorP` is
+ * done, `updater` is resoved, so that the corresponding notifier is
+ * also done.
+ *
+ * The `updater` must be local and is called synchronously, so this adapter
+ * must be co-located with the updater.
+ */
+export const updateFromIterator = (updater, iteratorP) => {
+  E(iteratorP)
+    .next()
+    .then(({ value, done }) => {
+      if (done) {
+        E.when(value, finalState => updater.resolve(finalState));
+      } else {
+        E.when(value, state => updater.updateState(state));
+        updateFromIterator(updater, iteratorP);
+      }
+    });
+};
+
+/**
+ * Adaptor from async iterable to notifier.
+ */
+export const makeNotifierFromAsyncIterable = asyncIterable => {
+  const iterator = asyncIterable[Symbol.asyncIterator]();
+  const { notifier, updater } = produceNotifier();
+  updateFromIterator(updater, iterator);
+  return notifier;
 };
