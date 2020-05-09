@@ -26,6 +26,7 @@
     "@agoric/evaluate": "^2.2.5",
     "@agoric/eventual-send": "^0.9.1",
     "@agoric/harden": "^0.0.8",
+    "@agoric/marshal": "^0.2.0",
     "@agoric/nat": "2.0.1",
     "@agoric/produce-promise": "^0.1.1",
     "@agoric/registrar": "^0.1.1",
