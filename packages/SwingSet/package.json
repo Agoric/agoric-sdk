@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "esm": "^3.2.5",
+    "ses": "^0.7.7",
     "tap": "^14.10.5",
     "tape": "^4.11.0",
     "tape-promise": "^4.0.0"
@@ -46,7 +47,6 @@
     "rollup": "^1.23.1",
     "rollup-plugin-node-resolve": "^5.2.0",
     "semver": "^6.3.0",
-    "ses": "^0.6.5",
     "yargs": "^14.2.0"
   },
   "files": [

@@ -1,19 +1,18 @@
 // eslint-disable-next-line no-redeclare
-/* global setImmediate */
+/* global setImmediate Compartment harden */
 import fs from 'fs';
 import path from 'path';
-// import { rollup } from 'rollup';
-import harden from '@agoric/harden';
-import SES from 'ses';
 import { assert } from '@agoric/assert';
 
 import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 import bundleSource from '@agoric/bundle-source';
+import { importBundle } from '@agoric/import-bundle';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import {
   SES1ReplaceGlobalMeter,
   SES1TameMeteringShim,
 } from '@agoric/tame-metering';
+import { producePromise } from '@agoric/produce-promise';
 
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import * as babelCore from '@babel/core';
@@ -101,214 +100,101 @@ export function loadBasedir(basedir) {
   return { vats, bootstrapIndexJS };
 }
 
-function getKernelSource() {
-  return `(${kernelSourceFunc})`;
-}
-
-// this feeds the SES realm's (real/safe) confine*() back into the Realm
-// when it does require('@agoric/evaluate'), so we can get the same
-// functionality both with and without SES
-// To support makeEvaluators, we create a new Compartment.
-function makeEvaluate(e) {
-  const { makeCompartment, rootOptions, confine, confineExpr } = e;
-  const makeEvaluators = (realmOptions = {}) => {
-    // Realm transforms need to be vetted by global transforms.
-    const transforms = (realmOptions.transforms || []).concat(
-      rootOptions.transforms || [],
-    );
-
-    const c = makeCompartment({
-      ...rootOptions,
-      ...realmOptions,
-      transforms,
-    });
-    transforms.forEach(t => t.closeOverSES && t.closeOverSES(c));
-    return {
-      evaluateExpr(source, endowments = {}, options = {}) {
-        return c.evaluate(`(${source}\n)`, endowments, options);
-      },
-      evaluateProgram(source, endowments = {}, options = {}) {
-        return c.evaluate(`${source}`, endowments, options);
-      },
-    };
-  };
-
-  // As an optimization, do not create a new compartment unless
-  // they call makeEvaluators explicitly.
-  const evaluateExpr = (source, endowments = {}, options = {}) =>
-    confineExpr(source, endowments, options);
-  const evaluateProgram = (source, endowments = {}, options = {}) =>
-    confine(source, endowments, options);
-  return Object.assign(evaluateExpr, {
-    evaluateExpr,
-    evaluateProgram,
-    makeEvaluators,
-  });
-}
-
-function makeSESEvaluator(registerEndOfCrank) {
-  const evaluateOptions = makeDefaultEvaluateOptions();
-  const { transforms = [], shims = [], ...otherOptions } = evaluateOptions;
-  // The metering transform only activates when a getMeter endowment
-  // is provided.
-  const meteringTransformer = makeMeteringTransformer(babelCore);
-  const s = SES.makeSESRootRealm({
-    ...otherOptions,
-    transforms: [...transforms, meteringTransformer],
-    errorStackMode: 'allow',
-    shims: [SES1TameMeteringShim, ...shims],
-    configurableGlobals: true,
-  });
-  const replaceGlobalMeter = SES1ReplaceGlobalMeter(s);
-  transforms.forEach(t => {
-    t.closeOverSES && t.closeOverSES(s);
-  });
-
-  // TODO: if the 'require' we provide here supplies a non-pure module,
-  // that could open a communication channel between otherwise isolated
-  // Vats. For now that's just harden, but others might get added in the
-  // future, so pay attention to what we allow in. We could build a new
-  // makeRequire for each Vat, but 1: performance and 2: the same comms
-  // problem exists between otherwise-isolated code within a single Vat
-  // so it doesn't really help anyways
-  const r = s.makeRequire({
-    '@agoric/evaluate': {
-      attenuatorSource: `${makeEvaluate}`,
-      confine: s.global.SES.confine,
-      confineExpr: s.global.SES.confineExpr,
-      rootOptions: evaluateOptions,
-      makeCompartment: (...args) => {
-        const c = s.global.Realm.makeCompartment(...args);
-        // FIXME: This call should be unnecessary.
-        // We currently need it because fresh Compartments
-        // do not inherit the configured stable globals.
-        Object.defineProperties(
-          c.global,
-          Object.getOwnPropertyDescriptors(s.global),
-        );
-        return c;
-      },
-    },
-    '@agoric/harden': true,
-  });
-
-  const realmRegisterEndOfCrank = s.evaluate(
-    `\
-function realmRegisterEndOfCrank(fn) {
-  try {
-    registerEndOfCrank(fn);
-  } catch (e) {
-    // do nothing.
-  }
-}`,
-    { registerEndOfCrank },
-  );
-
-  return (src, tag = 'anonymous') => {
-    const filePrefix = `/SwingSet/${tag}`;
-    const localConsole = SES1MakeConsole(s, anylogger(`SwingSet:${tag}`));
-
-    const nestedEvaluate = SES1MakeNestedEvaluate(s, {
-      // Support both getExport and nestedEvaluate module format.
-      require: r,
-
-      // This isn't installed on the global, but at least it's secure.
-      console: localConsole,
-
-      // Note that replaceGlobalMeter is evaluated within the SES realm.
-      // FIXME: Also note that this replaceGlobalMeter endowment is not any
-      // worse than before metering existed.  However, it probably is
-      // only necessary to be added to the kernel, rather than all
-      // static vats once we add metering support to the dynamic vat
-      // implementation.
-      replaceGlobalMeter,
-
-      // FIXME: Same for registerEndOfCrank.
-      registerEndOfCrank: realmRegisterEndOfCrank,
-    });
-
-    return nestedEvaluate(src)(filePrefix).default;
-  };
-}
-
-function buildSESKernel(sesEvaluator, endowments) {
-  const kernelSource = getKernelSource();
-  const buildKernel = sesEvaluator(kernelSource, 'kernel');
-  return buildKernel(endowments);
-}
-
 export async function buildVatController(config, withSES = true, argv = []) {
   if (!withSES) {
     throw Error('SES is now mandatory');
   }
+  if (typeof Compartment === 'undefined') {
+    throw Error('SES must be installed before calling buildVatController');
+  }
   // todo: move argv into the config
 
-  const endOfCrankHooks = new Set();
-  const registerEndOfCrank = hook => endOfCrankHooks.add(hook);
+  // once https://github.com/Agoric/SES-shim/issues/292 is fixed, this goes
+  // away and we can just harden(console) and pass 'console' as an endowment
+  const newConsole = harden({
+    log(...args) { return console.log(...args); },
+    debug(...args) { return console.debug(...args); },
+    error(...args) { return console.error(...args); },
+    info(...args) { return console.info(...args); },
+    
+  });
+  harden(newConsole);
 
-  const runEndOfCrank = () => {
-    endOfCrankHooks.forEach(h => {
-      try {
-        h();
-      } catch (e) {
-        try {
-          log.error('cannot run hook:', e);
-        } catch (e2) {
-          // Nothing to do.
-        }
-      }
-    });
-    endOfCrankHooks.clear();
-  };
-
-  const sesEvaluator = makeSESEvaluator(registerEndOfCrank);
-
-  // Evaluate source to produce a setup function. This binds withSES from the
-  // enclosing context and evaluates it either in a SES context, or without SES
-  // by directly calling require().
-  async function evaluateToSetup(sourceIndex, tag = undefined) {
-    if (!(sourceIndex[0] === '.' || path.isAbsolute(sourceIndex))) {
-      throw Error(
-        'sourceIndex must be relative (./foo) or absolute (/foo) not bare (foo)',
-      );
+  function kernelRequire(what) {
+    if (what === '@agoric/harden') {
+      return harden;
+    } else {
+      throw Error(`kernelRequire unprepared to satisfy require(${what})`);
     }
+  }
+  const kernelSource = await bundleSource('./src/kernel/kernel.js', 'nestedEvaluate');
+  const kernelNS = await importBundle(kernelSource,
+                                      { filePrefix: 'kernel',
+                                        endowments: {
+                                          console: newConsole,
+                                          require: kernelRequire,
+                                        },
+                                      });
+  const buildKernel = kernelNS.default;
 
-    // we load the sourceIndex (and everything it imports), and expect to get
-    // two symbols from each Vat: 'start' and 'dispatch'. The code in
-    // bootstrap.js gets a 'controller' object which can invoke start()
-    // (which is expected to initialize some state and export some facetIDs)
-    const { source, sourceMap } = await bundleSource(
-      `${sourceIndex}`,
-      'nestedEvaluate',
-    );
-    const actualSource = `(${source})\n${sourceMap}`;
-    const setup = sesEvaluator(actualSource, tag);
+  // waitUntilQuiescent is provided to each vatManager
+  function waitUntilQuiescent() {
+    // the delivery might cause some number of (native) Promises to be
+    // created and resolved, so we use the IO queue to detect when the
+    // Promise queue is empty. The IO queue (setImmediate and setTimeout) is
+    // lower-priority than the Promise queue on browsers and Node 11, but on
+    // Node 10 it is higher. So this trick requires Node 11.
+    // https://jsblog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
+    const { promise: queueEmptyP, resolve } = producePromise();
+    setImmediate(() => resolve());
+    return queueEmptyP;
+  }
+
+  function vatRequire(what) {
+    if (what === '@agoric/harden') {
+      return harden;
+    } else {
+      throw Error(`vatRequire unprepared to satisfy require(${what})`);
+    }
+  }
+
+  async function loadStaticVat(path, name) {
+    const bundle = await bundleSource(path, 'nestedEvaluate');
+    const vatNS = await importBundle(bundle,
+                                     { filePrefix: name,
+                                       endowments: {
+                                         console: newConsole,
+                                         require: vatRequire,
+                                       },
+                                     });
+    const setup = vatNS.default;
     return setup;
   }
 
   const hostStorage = config.hostStorage || initSwingStore().storage;
   insistStorageAPI(hostStorage);
   const kernelEndowments = {
-    setImmediate,
+    waitUntilQuiescent,
     hostStorage,
-    runEndOfCrank,
-    vatAdminDevSetup: await evaluateToSetup(ADMIN_DEVICE_PATH, 'dev-vatAdmin'),
-    vatAdminVatSetup: await evaluateToSetup(ADMIN_VAT_PATH, 'vat-vatAdmin'),
+    runEndOfCrank: () => 0, // not implemented
+    vatAdminDevSetup: await loadStaticVat(ADMIN_DEVICE_PATH, 'dev-vatAdmin'),
+    vatAdminVatSetup: await loadStaticVat(ADMIN_VAT_PATH, 'vat-vatAdmin'),
   };
 
-  const kernel = buildSESKernel(sesEvaluator, kernelEndowments);
+  const kernel = buildKernel(kernelEndowments);
+
   if (config.verbose) {
     kernel.kdebugEnable(true);
   }
 
   async function addGenesisVat(name, sourceIndex, options = {}) {
     log.debug(`= adding vat '${name}' from ${sourceIndex}`);
-    const setup = await evaluateToSetup(sourceIndex, `vat-${name}`);
+    const setup = await loadStaticVat(sourceIndex, `vat-${name}`);
     kernel.addGenesisVat(name, setup, options);
   }
 
   async function addGenesisDevice(name, sourceIndex, endowments) {
-    const setup = await evaluateToSetup(sourceIndex, `dev-${name}`);
+    const setup = await loadStaticVat(sourceIndex, `dev-${name}`);
     kernel.addGenesisDevice(name, setup, endowments);
   }
 

@@ -1,9 +1,8 @@
 /* global replaceGlobalMeter */
 import harden from '@agoric/harden';
 import { makeMarshal } from '@agoric/marshal';
-import evaluateProgram from '@agoric/evaluate';
+//import evaluateProgram from '@agoric/evaluate';
 import { assert, details } from '@agoric/assert';
-import { producePromise } from '@agoric/produce-promise';
 import makeVatManager from './vatManager';
 import { makeLiveSlots } from './liveSlots';
 import { makeDeviceSlots } from './deviceSlots';
@@ -28,7 +27,7 @@ function abbreviateReviver(_, arg) {
 
 export default function buildKernel(kernelEndowments) {
   const {
-    setImmediate,
+    waitUntilQuiescent,
     hostStorage,
     runEndOfCrank,
     vatAdminVatSetup,
@@ -95,19 +94,6 @@ export default function buildKernel(kernelEndowments) {
       // entry earlier.
       send(kpid, msg);
     }
-  }
-
-  // waitUntilQuiescent is provided to each vatManager
-  function waitUntilQuiescent() {
-    // the delivery might cause some number of (native) Promises to be
-    // created and resolved, so we use the IO queue to detect when the
-    // Promise queue is empty. The IO queue (setImmediate and setTimeout) is
-    // lower-priority than the Promise queue on browsers and Node 11, but on
-    // Node 10 it is higher. So this trick requires Node 11.
-    // https://jsblog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
-    const { promise: queueEmptyP, resolve } = producePromise();
-    setImmediate(() => resolve());
-    return queueEmptyP;
   }
 
   // doEndOfCrank is provided to each vatMananger, to run inside doProcess

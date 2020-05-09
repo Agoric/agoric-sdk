@@ -13162,6 +13162,13 @@ ses@^0.7.6:
   dependencies:
     "@agoric/make-hardener" "0.0.8"
 
+ses@^0.7.7:
+  version "0.7.7"
+  resolved "https://registry.yarnpkg.com/ses/-/ses-0.7.7.tgz#d608378aa0ed7363e4f3ddadc3bc24b00439a062"
+  integrity sha512-rN+z8Auz+XX/SXUMPHePZhHP0mLeDdihq8Au8UZzxlyOK+SdUeVxDJOjUdrtxebtQYNk8LMqFE0Qst5ea/SN6Q==
+  dependencies:
+    "@agoric/make-hardener" "0.0.8"
+
 set-blocking@^2.0.0, set-blocking@~2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/set-blocking/-/set-blocking-2.0.0.tgz#045f9782d011ae9a6803ddd382b24392b3d890f7"
