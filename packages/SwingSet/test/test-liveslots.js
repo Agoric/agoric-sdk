@@ -395,6 +395,7 @@ async function doResultPromise(t, mode) {
     return harden({
       async run(target1) {
         const p1 = E(target1).getTarget2();
+        hush(p1);
         const p2 = E(p1).one();
         // p1 resolves first, then p2 resolves on a subsequent crank
         await p2;
