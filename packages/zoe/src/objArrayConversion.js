@@ -70,6 +70,21 @@ export const filterObj = /** @type {function<T>(T, string[]): T} */ (
   return newObj;
 };
 
+// return a new object with only the keys in subsetKeywords. `obj`
+// is allowed to not include keywords in subsetKeywords.
+export const filterObjOkIfMissing = /** @type {function<T>(T, string[]): T} */ (
+  obj,
+  subsetKeywords,
+) => {
+  const newObj = {};
+  subsetKeywords.forEach(keyword => {
+    if (obj[keyword] !== undefined) {
+      newObj[keyword] = obj[keyword];
+    }
+  });
+  return newObj;
+};
+
 /**
  * @typedef {import('./zoe').Allocation} Allocation
  * @typedef {import('@agoric/ertp/src/amountMath').AmountMath} AmountMath
