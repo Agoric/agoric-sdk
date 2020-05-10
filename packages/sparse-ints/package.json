@@ -1,6 +1,6 @@
 {
   "name": "@agoric/sparse-ints",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Share code across vat boundaries",
   "main": "src/sparseInts.js",
   "engines": {
