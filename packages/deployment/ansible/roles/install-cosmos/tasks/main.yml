@@ -15,6 +15,13 @@
     regexp: '^persistent_peers *='
     line: 'persistent_peers = "{{ PERSISTENT_PEERS }}"'
 
+- name: Index all keys (needed for IBC)
+  lineinfile:
+    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    state: present
+    regexp: '^index_all_keys *='
+    line: 'index_all_keys = true'
+
 - name: Set addr_book_strict=false
   lineinfile:
     path: "/home/{{ service }}/.{{ service }}/config/config.toml"
