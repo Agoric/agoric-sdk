@@ -2,21 +2,34 @@
   "public":{
       "chainName": "Agoric Testnet",
       "chainId": "@CHAIN_NAME@",
-      "gtm": "{Add your Google Tag Manager ID here}",
+      "gtm": "@GTM@",
       "slashingWindow": 10000,
       "uptimeWindow": 250,
       "initialPageSize": 30,
-      "bech32PrefixAccAddr": "cosmos",
-      "bech32PrefixAccPub": "cosmospub",
-      "bech32PrefixValAddr": "cosmosvaloper",
-      "bech32PrefixValPub": "cosmosvaloperpub",
-      "bech32PrefixConsAddr": "cosmosvalcons",
-      "bech32PrefixConsPub": "cosmosvalconspub",
-      "stakingDenom": "stake",
-      "stakingDenomPlural": "stakes", 
-      "mintingDenom": null,
-      "stakingFraction": 1000000,
-      "powerReduction": 0,
+      "validatorStatus0": 1,
+      "bech32PrefixAccAddr": "agoric",
+      "bech32PrefixAccPub": "agoricpub",
+      "bech32PrefixValAddr": "agoricvaloper",
+      "bech32PrefixValPub": "agoricvaloperpub",
+      "bech32PrefixConsAddr": "agoricvalcons",
+      "bech32PrefixConsPub": "agoricvalconspub",
+      "bondDenom": "uagstake",
+      "powerReduction": 1000000,
+      "coins": [
+          {
+              "denom": "uagstake",
+              "displayName": "AGSTAKE",
+              "displayNamePlural": "AGSTAKES",
+              "fraction": 1000000
+          },
+     {
+   "denom": "uag",
+   "displayName": "AG",
+   "displayNamePlural": "AGS",
+   "fraction": 1000000
+     }
+
+      ],
       "gasPrice": 0.00,
       "coingeckoId": null
   },

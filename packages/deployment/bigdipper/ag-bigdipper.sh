@@ -3,8 +3,8 @@
 set -e
 ncf=`curl -Ss https://testnet.agoric.com/network-config`
 l=`echo "$ncf" | jq '.rpcAddrs | length'`
-eval rp=`echo "$ncf" | jq ".rpcAddrs[$(( RANDOM % l ))]"`
-eval cn=`echo "$ncf" | jq '.chainName'`
+rp=`echo "$ncf" | jq -r ".rpcAddrs[$(( RANDOM % l ))]"`
+cn=`echo "$ncf" | jq -r '.chainName'`
 
 case $cn in
 testnet-1.16.8) db=meteor ;;
@@ -12,9 +12,10 @@ testnet-1.16.8) db=meteor ;;
 esac
 
 export MONGO_URL=mongodb://localhost:27017/"$db"
+GTM=`cat google-tag-manager.txt || true`
 
 test -d "portal-$cn" && ln -sfT "portal-$cn" portal
 cd portal
-export METEOR_SETTINGS=`sed -e "s/@CHAIN_NAME@/$cn/; s/@RPC@/$rp/" settings.json`
+export METEOR_SETTINGS=`sed -e "s/@GTM@/$GTM/; s/@CHAIN_NAME@/$cn/; s/@RPC@/$rp/" settings.json`
 exec /usr/bin/node main.js
 exit $?
