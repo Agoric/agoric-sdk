@@ -2,14 +2,13 @@
 import { test } from 'tape-promise/tape';
 import { produceNotifier } from '../src/notifier';
 
-test('notifier - initital state', t => {
-  const { notifier, updater } = produceNotifier();
-  updater.updateState(1);
+test('notifier - prior state', t => {
+  const { notifier } = produceNotifier();
 
   const updateDeNovo = notifier.getUpdateSince();
   const updateFromNonExistent = notifier.getUpdateSince({});
 
-  t.equals(updateDeNovo.value, 1, 'state is one');
+  t.equals(updateDeNovo.value, undefined, 'state is one');
   t.deepEquals(updateDeNovo, updateFromNonExistent, 'no param same as unknown');
   t.end();
 });

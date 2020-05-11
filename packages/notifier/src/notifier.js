@@ -46,11 +46,15 @@ export const makeAsyncIterableFromNotifier = notifierP => {
             // air, all further asks should just use the result of that one.
             //
             // This reuse behavior is only needed for code that uses the async
-            // iterator protocol explicitly. When this async iterator is
+            // iterator protocol explicitly. See When this async iterator is
             // consumed by a for/await/of loop, `next()` will only be called
             // after the promise for the previous iteration result has
             // fulfilled. If it fulfills with `done: true`, the for/await/of
             // loop will never call `next()` again.
+            //
+            // See
+            // https://2ality.com/2016/10/asynchronous-iteration.html#queuing-next()-invocations
+            // for an explicit use that sends `next()` without waiting.
             myIterationResultP = E(notifierP)
               .getUpdateSince(myHandle)
               .then(({ value, updateHandle, done }) => {
@@ -64,6 +68,7 @@ export const makeAsyncIterableFromNotifier = notifierP => {
                   // is `done`, that was the last answer do reuse it forever.
                   myIterationResultP = undefined;
                 }
+                console.log({ value, done });
                 return harden({ value, done });
               });
           }
