@@ -174,7 +174,7 @@ export default function Inbox() {
                         <Typography key={`give${role}`} variant="body1">
                           {i === 0 ? 'Give' : <>and&nbsp;give</>}&nbsp;
                           <Box component="span" fontWeight={800}>
-                            {extent}
+                            {JSON.stringify(extent)}
                             &nbsp;
                             {pet(issuerPetname)}
                           </Box>
@@ -192,7 +192,7 @@ export default function Inbox() {
                             <>and&nbsp;receieve</>
                           }&nbsp;
                           <Box component="span" fontWeight={800}>
-                            {extent}
+                            {JSON.stringify(extent)}
                             &nbsp;
                             {pet(issuerPetname)}
                           </Box>
