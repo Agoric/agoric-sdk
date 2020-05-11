@@ -264,7 +264,8 @@ test('Remotable/getInterfaceOf', t => {
       body: '{"@qclass":"slot","index":0}',
       slots: [promise],
     },
-    'promise can be serialized');
+    'promise can be serialized',
+  );
 
   t.equals(getInterfaceOf('foo'), undefined, 'string, no interface');
   t.equals(getInterfaceOf(null), undefined, 'null, no interface');
