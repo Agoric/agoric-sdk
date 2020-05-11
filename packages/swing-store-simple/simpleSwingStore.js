@@ -26,6 +26,7 @@ function safeUnlink(filePath) {
  */
 function makeStorageInMemory() {
   const state = new Map();
+  let dirty = false;
 
   /**
    * Test if the state contains a value for a given key.
@@ -108,7 +109,10 @@ function makeStorageInMemory() {
     if (`${value}` !== value) {
       throw new Error(`non-string value ${value}`);
     }
-    state.set(key, value);
+    if (state.get(key) !== value) {
+      state.set(key, value);
+      dirty = true;
+    }
   }
 
   /**
@@ -123,7 +127,18 @@ function makeStorageInMemory() {
     if (`${key}` !== key) {
       throw new Error(`non-string key ${key}`);
     }
-    state.delete(key);
+    if (state.has(key)) {
+      state.delete(key);
+      dirty = true;
+    }
+  }
+
+  function markClean() {
+    dirty = false;
+  }
+
+  function isDirty() {
+    return dirty;
   }
 
   const storage = {
@@ -134,7 +149,7 @@ function makeStorageInMemory() {
     delete: del,
   };
 
-  return { storage, state };
+  return { storage, state, markClean, isDirty };
 }
 
 /**
@@ -152,7 +167,7 @@ function makeStorageInMemory() {
  * }
  */
 function makeSwingStore(dirPath, forceReset = false) {
-  const { storage, state } = makeStorageInMemory();
+  const { storage, state, isDirty, markClean } = makeStorageInMemory();
 
   let storeFile;
   if (dirPath) {
@@ -187,6 +202,9 @@ function makeSwingStore(dirPath, forceReset = false) {
    */
   function commit() {
     if (dirPath) {
+      if (!isDirty()) {
+        return;
+      }
       const tempFile = `${storeFile}.tmp`;
       const fd = fs.openSync(tempFile, 'w');
 
@@ -197,6 +215,7 @@ function makeSwingStore(dirPath, forceReset = false) {
       }
       fs.closeSync(fd);
       fs.renameSync(tempFile, storeFile);
+      markClean();
     }
   }
 
