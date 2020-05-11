@@ -107,16 +107,9 @@ export async function buildVatController(config, withSES = true, argv = []) {
   }
   // todo: move argv into the config
 
-  // once https://github.com/Agoric/SES-shim/issues/292 is fixed, this goes
-  // away and we can just harden(console) and pass 'console' as an endowment
-  const newConsole = harden({
-    log(...args) { return console.log(...args); },
-    debug(...args) { return console.debug(...args); },
-    error(...args) { return console.error(...args); },
-    info(...args) { return console.info(...args); },
-    
-  });
-  harden(newConsole);
+  // https://github.com/Agoric/SES-shim/issues/292
+  harden(console.__proto__);
+  harden(console);
 
   function kernelRequire(what) {
     if (what === '@agoric/harden') {
@@ -129,7 +122,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
   const kernelNS = await importBundle(kernelSource,
                                       { filePrefix: 'kernel',
                                         endowments: {
-                                          console: newConsole,
+                                          console,
                                           require: kernelRequire,
                                         },
                                       });
@@ -153,7 +146,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
     const vatNS = await importBundle(bundle,
                                      { filePrefix: name,
                                        endowments: {
-                                         console: newConsole,
+                                         console,
                                          require: vatRequire,
                                        },
                                      });
