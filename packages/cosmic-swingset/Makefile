@@ -108,7 +108,7 @@ scenario2-run-client:
 # then run: make scenario3-setup FAKE_CHAIN_DELAY=0
 scenario3-setup:
 	rm -rf t3
-	bin/ag-solo init t3 --egresses=fake
+	bin/ag-solo init t3 --egresses=fake --webport=$(BASE_PORT)
 	@echo 'Execute `make scenario3-run` to run the client and simulated chain'
 
 # This runs both the client and the fake chain.

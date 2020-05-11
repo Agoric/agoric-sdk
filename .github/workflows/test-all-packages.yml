@@ -120,6 +120,3 @@ jobs:
       run: cd packages/weak-store && yarn test
     - name: yarn test (zoe)
       run: cd packages/zoe && yarn test
-
-    - name: lint check
-      run: yarn lint-check

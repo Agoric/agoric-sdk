@@ -459,8 +459,8 @@ EOF
         .catch(rethrowUnlessMissing);
       return rchandler.promise;
     },
-    async onListen(_port, localAddr, _listenHandler) {
-      console.warn('IBC onListen', localAddr);
+    async onListen(_port, _localAddr, _listenHandler) {
+      // console.warn('IBC onListen', localAddr);
     },
     async onListenRemove(_port, localAddr, _listenHandler) {
       console.warn('IBC onListenRemove', localAddr);

@@ -42,9 +42,9 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
   const vatsdir = path.join(basedir, 'vats');
   const argv = [`--role=${role}`, bootAddress];
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
-  function doOutboundBridge(dstID, obj) {
-    console.error('received', dstID, obj);
-    return 'IBC and bridge device not used on fake-chain';
+  function doOutboundBridge(dstID, _obj) {
+    // console.error('received', dstID, obj);
+    return `Bridge device (${dstID}) not implemented for fake-chain`;
   }
   function flushChainSends(replay) {
     if (replay) {
