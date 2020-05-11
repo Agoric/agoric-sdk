@@ -67,11 +67,18 @@ start
         },
       });
       const webport = Number(subOpts.webport);
-      const { webhost, egresses } = subOpts;
+      const { webhost, egresses, recover } = subOpts;
       const basedir = subArgs[0] || AG_SOLO_BASEDIR;
       const subdir = subArgs[1];
       assert(basedir !== undefined, 'you must provide a BASEDIR');
-      initBasedir(basedir, webport, webhost, subdir, egresses.split(','));
+      initBasedir(
+        basedir,
+        webport,
+        webhost,
+        subdir,
+        egresses.split(','),
+        recover,
+      );
       await resetState(basedir);
 
       // TODO: We may want to give some instructions.  This is probably not the

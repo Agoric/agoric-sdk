@@ -13,6 +13,7 @@ import {
   getTimerWrapperSourcePath,
   getVatTPSourcePath,
 } from '@agoric/swingset-vat';
+import { openSwingStore as openSwingStoreSimple } from '@agoric/swing-store-simple';
 import { getBestSwingStore } from './check-lmdb';
 
 const log = anylogger('launch-chain');
@@ -65,6 +66,7 @@ async function buildSwingset(
 
 export async function launch(
   kernelStateDBDir,
+  egressesDB,
   mailboxStorage,
   doOutboundBridge,
   flushChainSends,
@@ -83,7 +85,34 @@ export async function launch(
   const { openSwingStore } = getBestSwingStore(tempdir);
   const { storage, commit } = openSwingStore(kernelStateDBDir);
 
+  const { storage: egressStorage, commit: egressCommit } = openSwingStoreSimple(
+    egressesDB,
+  );
+
   function bridgeOutbound(dstID, obj) {
+    if (dstID === 'provision') {
+      // We intercept provisioning successes here.
+      switch (obj.type) {
+        case 'PROVISIONED': {
+          // Commit the new egress.
+          const { nickname, address } = obj;
+          const oldJSON = egressStorage.get(nickname);
+          let addresses;
+          if (oldJSON) {
+            addresses = JSON.parse(oldJSON);
+          } else {
+            addresses = [];
+          }
+          if (!addresses.includes(address)) {
+            addresses.push(address);
+            egressStorage.set(`egress/${nickname}`, JSON.stringify(addresses));
+          }
+          return true;
+        }
+        default:
+          return true;
+      }
+    }
     // console.error('would outbound bridge', dstID, obj);
     return doOutboundBridge(dstID, obj);
   }
@@ -120,6 +149,7 @@ export async function launch(
       JSON.stringify([savedHeight, savedActions]),
     );
     commit();
+    egressCommit();
   }
 
   async function deliverInbound(sender, messages, ack) {

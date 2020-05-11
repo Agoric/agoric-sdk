@@ -12,6 +12,7 @@ export default function initBasedir(
   webhost,
   subdir,
   egresses,
+  recover,
 ) {
   const here = __dirname;
   try {
@@ -100,6 +101,9 @@ export default function initBasedir(
     const agchServerDir = path.join(basedir, 'ag-cosmos-helper-statedir');
     if (!fs.existsSync(agchServerDir)) {
       fs.mkdirSync(agchServerDir);
+      const recoverArgs = recover ? ['--recover'] : [];
+      const recoverInput = recover ? `${recover}\n` : '';
+
       // we assume 'ag-cosmos-helper' is on $PATH for now, see chain-cosmos-sdk.js
       const keyName = 'ag-solo';
       // we suppress stderr because it displays the mnemonic phrase, but
@@ -113,9 +117,10 @@ export default function initBasedir(
           keyName,
           '--home',
           agchServerDir,
+          ...recoverArgs,
         ],
         {
-          input: Buffer.from(''),
+          input: Buffer.from(recoverInput),
           stdio: ['pipe', 'ignore', 'ignore'],
         },
       );

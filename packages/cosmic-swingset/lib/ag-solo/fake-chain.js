@@ -42,6 +42,7 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
   const vatsdir = path.join(basedir, 'vats');
   const argv = [`--role=${role}`, bootAddress];
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
+  const egressesDB = path.join(basedir, `fake-chain-${GCI}-egresses`);
   function doOutboundBridge(dstID, obj) {
     console.error('received', dstID, obj);
     return 'IBC and bridge device not used on fake-chain';
@@ -53,6 +54,7 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
   }
   const s = await launch(
     stateDBdir,
+    egressesDB,
     mailboxStorage,
     doOutboundBridge,
     flushChainSends,

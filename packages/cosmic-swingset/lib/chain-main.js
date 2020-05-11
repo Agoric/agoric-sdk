@@ -38,6 +38,7 @@ export default async function main(progname, args, { path, env, agcc }) {
   // is better than scribbling into the current directory.
   const cosmosHome = getFlagValue('home', `${env.HOME}/.ag-chain-cosmos`);
   const stateDBDir = `${cosmosHome}/data/ag-cosmos-chain-state`;
+  const egressesDB = `${cosmosHome}/config/egresses`;
 
   // console.log('Have AG_COSMOS', agcc);
 
@@ -186,6 +187,7 @@ export default async function main(progname, args, { path, env, agcc }) {
     }
     const s = await launch(
       stateDBDir,
+      egressesDB,
       mailboxStorage,
       doOutboundBridge,
       flushChainSends,
