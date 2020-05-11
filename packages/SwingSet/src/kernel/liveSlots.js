@@ -3,6 +3,7 @@ import { E, HandledPromise } from '@agoric/eventual-send';
 import {
   QCLASS,
   Remotable,
+  RemotePresence,
   getInterfaceOf,
   mustPassByPresence,
   makeMarshal,
@@ -72,7 +73,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     let presence;
     const p = new HandledPromise((_res, _rej, resolveWithPresence) => {
       const remote = resolveWithPresence(fulfilledHandler);
-      presence = Remotable(`Presence ${slot}`, undefined, remote);
+      presence = RemotePresence(remote, `Presence ${slot}`);
       // remote === presence, actually
 
       // todo: mfig says to swap remote and presence (resolveWithPresence
@@ -161,7 +162,7 @@ function build(syscall, _state, makeRoot, forVatID) {
   }
 
   function makeDeviceNode(id) {
-    return Remotable(`Device ${id}`);
+    return RemotePresence({}, `Device ${id}`);
   }
 
   // TODO: fix awkward non-orthogonality: allocateExportID() returns a number,
