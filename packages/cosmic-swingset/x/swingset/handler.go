@@ -34,6 +34,9 @@ func NewHandler(keeper Keeper) sdk.Handler {
 		case MsgSendPacket:
 			return handleMsgSendPacket(ctx, keeper, msg)
 
+		case MsgProvision:
+			return handleMsgProvision(ctx, keeper, msg)
+
 		default:
 			errMsg := fmt.Sprintf("Unrecognized swingset Msg type: %v", msg.Type())
 			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
@@ -97,6 +100,36 @@ func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg MsgSendPacket) (*sd
 		Event:         "sendPacket",
 		BlockHeight:   ctx.BlockHeight(),
 		BlockTime:     ctx.BlockTime().Unix(),
+	}
+	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
+	b, err := json.Marshal(action)
+	if err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
+	}
+
+	_, err = keeper.CallToController(ctx, string(b))
+	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	if err != nil {
+		return nil, err
+	}
+	return &sdk.Result{
+		Events: ctx.EventManager().Events().ToABCIEvents(),
+	}, nil
+}
+
+type provisionAction struct {
+	MsgProvision
+	Type        string `json:"type"` // IBC_EVENT
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
+}
+
+func handleMsgProvision(ctx sdk.Context, keeper Keeper, msg MsgProvision) (*sdk.Result, error) {
+	action := &provisionAction{
+		MsgProvision: msg,
+		Type:         "PLEASE_PROVISION",
+		BlockHeight:  ctx.BlockHeight(),
+		BlockTime:    ctx.BlockTime().Unix(),
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
 	b, err := json.Marshal(action)
