@@ -245,9 +245,6 @@ export function mustPassByRemote(val, isCheckingPrototype = false) {
   // We prevent non-methods from passing through.
   const names = Object.getOwnPropertyNames(val);
   names.forEach(name => {
-    if (name === 'then') {
-      throw new Error(`cannot serialize thenables like ${val}`);
-    }
     const pd = Object.getOwnPropertyDescriptor(val, name);
     if (pd.get || pd.set) {
       throw new Error(
@@ -258,6 +255,9 @@ export function mustPassByRemote(val, isCheckingPrototype = false) {
       throw new Error(
         `cannot serialize objects with non-methods like the .${name} in ${val}`,
       );
+    }
+    if (name === 'then') {
+      throw new Error(`cannot serialize thenables like ${val}`);
     }
   });
 
