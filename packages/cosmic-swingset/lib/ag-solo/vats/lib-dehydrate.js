@@ -11,22 +11,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
 
   const petnameKindToMappings = makeStore();
 
-  let searchOrder = [];
-
-  const updateSearchOrder = newSearchOrder => {
-    assert(
-      Array.isArray(newSearchOrder),
-      details`the new search order must be an array, but was actually ${typeof newSearchOrder}`,
-    );
-    newSearchOrder.map(kind =>
-      assert.typeof(
-        kind,
-        'string',
-        details`petname kind ${kind} must be string`,
-      ),
-    );
-    searchOrder = newSearchOrder;
-  };
+  const searchOrder = [];
 
   const makeMappings = kind => {
     assert.typeof(kind, 'string', details`kind ${kind} must be a string`);
@@ -93,7 +78,5 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       searchOrder.push(kind);
       return mappings;
     },
-    updateSearchOrder,
-    getSearchOrder: () => searchOrder,
   });
 };
