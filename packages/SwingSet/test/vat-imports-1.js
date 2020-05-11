@@ -11,13 +11,6 @@ function build(E, log) {
         harden2(o1);
         log(Object.isFrozen(o1));
         log(Object.isFrozen(o1.o2));
-      } else if (argv[0] === 'evaluate') {
-        log('evaluate-1');
-        // eslint-disable-next-line global-require
-        const evaluate = require('@agoric/evaluate');
-        log(evaluate('1+2'));
-        log(evaluate('a+b', { a: 0, b: 4 }));
-        log(evaluate('(a) => a+b', { b: 3 })(2));
       }
     },
   };

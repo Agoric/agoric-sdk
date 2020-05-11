@@ -540,8 +540,6 @@ export default function buildKernel(kernelEndowments) {
     switch (name) {
       case '@agoric/harden':
         return harden;
-      case '@agoric/evaluate':
-        return evaluateProgram;
       default:
         throw Error(`require "${name}" is not supported`);
     }
