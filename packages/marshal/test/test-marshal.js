@@ -4,6 +4,7 @@ import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 import {
   Remotable,
+  RemotePresence,
   getInterfaceOf,
   makeMarshal,
   mustPassByPresence,
@@ -183,6 +184,47 @@ test('null cannot be pass-by-presence', t => {
   t.end();
 });
 
+test('accessors are not pass-by-remote', t => {
+  const m = makeMarshal();
+  let objMessage = 'hello';
+  const obj = harden({
+    get foo() {
+      return objMessage;
+    },
+  });
+  t.throws(
+    () => m.serialize(obj),
+    /cannot serialize objects with accessors/,
+    'object with getter is not pass-by-remote',
+  );
+
+  const obj2 = harden({
+    set foo(newMessage) {
+      objMessage = newMessage;
+    },
+  });
+  t.throws(
+    () => m.serialize(obj2),
+    /cannot serialize objects with accessors/,
+    'object with setter is not pass-by-remote',
+  );
+
+  const rmt = Remotable(obj, 'Getter');
+  t.deepEquals(
+    Object.getOwnPropertyDescriptors(rmt),
+    Object.getOwnPropertyDescriptors(obj),
+    'getters are remotable',
+  );
+  const rmt2 = Remotable(obj2, 'Setter');
+  t.deepEquals(
+    Object.getOwnPropertyDescriptors(rmt2),
+    Object.getOwnPropertyDescriptors(obj2),
+    'setters are remotable',
+  );
+
+  t.end();
+});
+
 test('mal-formed @qclass', t => {
   const m = makeMarshal();
   const uns = body => m.unserialize({ body, slots: [] });
@@ -191,21 +233,38 @@ test('mal-formed @qclass', t => {
 });
 
 test('Remotable/getInterfaceOf', t => {
+  const m = makeMarshal();
   t.throws(
-    () => Remotable({ bar: 29 }),
+    () => Remotable('hello', { bar: 29 }),
     /unimplemented/,
     'object ifaces are not implemented',
   );
+  const handleWithProps = Remotable({ foo: 123 }, 'MyHandle');
   t.throws(
-    () => Remotable('MyHandle', { foo: 123 }),
-    /cannot serialize/,
-    'non-function props are not implemented',
+    () => m.serialize(handleWithProps),
+    /cannot serialize objects with non-methods/,
+    'non-function props are not allowed',
   );
+  const functional = Remotable(a => a + 1);
   t.throws(
-    () => Remotable('MyHandle', {}, a => a + 1),
-    /cannot serialize/,
-    'function presences are not implemented',
+    () => m.serialize(functional),
+    /cannot serialize non-objects like/,
+    'function remotables are not allowed',
   );
+  const rpromise = Remotable(Promise.resolve(2));
+  t.throws(
+    () => m.serialize(rpromise),
+    /cannot serialize thenables like/,
+    'promise remotables are not allowed',
+  );
+  const promise = harden(Promise.resolve(3));
+  t.deepEquals(
+    m.serialize(harden(Promise.resolve(3))),
+    {
+      body: '{"@qclass":"slot","index":0}',
+      slots: [promise],
+    },
+    'promise can be serialized');
 
   t.equals(getInterfaceOf('foo'), undefined, 'string, no interface');
   t.equals(getInterfaceOf(null), undefined, 'null, no interface');
@@ -216,23 +275,34 @@ test('Remotable/getInterfaceOf', t => {
   );
   t.equals(getInterfaceOf(123), undefined, 'number, no interface');
 
-  // Check that a handle can be created.
-  const p = Remotable('MyHandle');
+  // Check that a remote presence can be created.
+  const p = RemotePresence({}, 'MyHandle');
   harden(p);
   // console.log(p);
   t.equals(getInterfaceOf(p), 'MyHandle', `interface is MyHandle`);
   t.equals(`${p}`, '[MyHandle]', 'stringify is [MyHandle]');
 
-  const p2 = Remotable('Thing', {
-    name() {
-      return 'cretin';
+  const p2 = Remotable(
+    {
+      name() {
+        return 'cretin';
+      },
+      birthYear(now) {
+        return now - 64;
+      },
     },
-    birthYear(now) {
-      return now - 64;
-    },
-  });
+    'Thing',
+  );
   t.equals(getInterfaceOf(p2), 'Thing', `interface is Thing`);
-  t.equals(p2.name(), 'cretin', `name() method is presence`);
+  t.equals(p2.name(), 'cretin', `name() method is present`);
   t.equals(p2.birthYear(2020), 1956, `birthYear() works`);
+  t.deepEquals(
+    m.serialize(p2),
+    {
+      body: '{"@qclass":"slot","index":0}',
+      slots: [p2],
+    },
+    'Function properties serialise',
+  );
   t.end();
 });
