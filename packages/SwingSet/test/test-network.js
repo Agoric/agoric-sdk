@@ -1,7 +1,10 @@
-// @ts-check
+// DISABLED@ts-checkDISABLED
 import { test } from 'tape-promise/tape';
+import '../install-ses.js'; // adds 'harden' to global
+import assertNS from 'assert';
+const assert = assertNS.strict;
 import { producePromise } from '@agoric/produce-promise';
-import rawHarden from '@agoric/harden';
+//import rawHarden from '@agoric/harden';
 
 import {
   parse,
@@ -14,7 +17,7 @@ import {
   base64ToBytes,
 } from '../src/vats/network';
 
-const harden = /** @type {<T>(data: T) => T} */ (rawHarden);
+//const harden = /** @type {<T>(data: T) => T} */ (rawHarden);
 
 // eslint-disable-next-line no-constant-condition
 const log = false ? console.log : () => {};
@@ -305,7 +308,11 @@ test('routing', async t => {
     );
     t.deepEquals(router.getRoutes('/ibc/*/barfo'), [], 'no match');
 
-    t.throws(
+    // tape's t.throws is broken under SES, more details in
+    // https://github.com/Agoric/SES-shim/issues/293#issuecomment-627037799
+    // The workaround is to use node's built-in assert.throws
+    //t.throws(
+    assert.throws(
       () => router.unregister('/ibc/*/ordered', 'a'),
       /Router is not registered/,
       'unregister fails for no match',
@@ -333,7 +340,8 @@ test('multiaddr', async t => {
       ['bot'],
     ]);
     for (const str of ['', 'foobar']) {
-      t.throws(
+      //t.throws(
+      assert.throws(
         () => parse(str),
         /Error parsing Multiaddr/,
         `expected failure of ${str}`,
