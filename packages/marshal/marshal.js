@@ -697,6 +697,26 @@ export function makeMarshal(
  * @returns {*} Hardened remotable
  */
 function Remotable(remotable, iface = 'Remotable') {
+  // A remotable must be a legit weakmap key.
+  const remotableType = typeof remotable;
+  switch (remotableType) {
+    case 'function':
+    case 'object':
+      if (!remotable) {
+        throw Error(
+          `remotable must be a function or object, not ${JSON.stringify(
+            remotable,
+          )}`,
+        );
+      }
+      break;
+
+    default:
+      throw Error(
+        `remotable must be a function or object, not ${remotableType}`,
+      );
+  }
+
   iface = pureCopy(harden(iface));
   const ifaceType = typeof iface;
 

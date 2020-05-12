@@ -192,34 +192,28 @@ test('accessors are not pass-by-remote', t => {
       return objMessage;
     },
   });
-  t.throws(
-    () => m.serialize(obj),
-    /cannot serialize objects with accessors/,
-    'object with getter is not pass-by-remote',
-  );
 
   const obj2 = harden({
     set foo(newMessage) {
       objMessage = newMessage;
     },
   });
+
+  const rmt = Remotable(obj, 'Getter');
+  t.equals(rmt, obj, 'getters are remotable');
+  const rmt2 = Remotable(obj2, 'Setter');
+  t.equals(rmt2, obj2, 'setters are remotable');
+
+  t.throws(
+    () => m.serialize(obj),
+    /cannot serialize objects with accessors/,
+    'object with getter is not pass-by-remote',
+  );
+
   t.throws(
     () => m.serialize(obj2),
     /cannot serialize objects with accessors/,
     'object with setter is not pass-by-remote',
-  );
-
-  const rmt = Remotable(obj, 'Getter');
-  t.deepEquals(
-    Object.getOwnPropertyDescriptors(rmt),
-    Object.getOwnPropertyDescriptors(obj),
-    'getters are remotable',
-  );
-  const rmt2 = Remotable(obj2, 'Setter');
-  t.deepEquals(
-    Object.getOwnPropertyDescriptors(rmt2),
-    Object.getOwnPropertyDescriptors(obj2),
-    'setters are remotable',
   );
 
   t.end();
@@ -234,8 +228,17 @@ test('mal-formed @qclass', t => {
 
 test('Remotable/getInterfaceOf', t => {
   const m = makeMarshal();
+
+  for (const [val, desc] of [[null, 'null'], [true], [undefined], [123]]) {
+    t.throws(
+      () => Remotable(val),
+      /remotable must be a function or object/,
+      `${desc || typeof val} is not remotable`,
+    );
+  }
+
   t.throws(
-    () => Remotable('hello', { bar: 29 }),
+    () => Remotable({}, { bar: 29 }),
     /unimplemented/,
     'object ifaces are not implemented',
   );
