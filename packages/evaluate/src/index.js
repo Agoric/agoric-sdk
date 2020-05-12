@@ -100,6 +100,8 @@ export const makeEvaluators = (makerOptions = {}) => {
       }
     })`;
 
+    // console.log('##### evaluate ######\n${src}\n###### end evaluate #####');
+
     // The eval below is indirect, so that we are only in the global scope.
     // eslint-disable-next-line no-eval
     return (1, eval)(scopedEval)(sourceState.endowments)(src);

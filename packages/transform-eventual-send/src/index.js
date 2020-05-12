@@ -64,7 +64,7 @@ function makeEventualSendTransformer(parser, generate) {
         plugins: ['eventualSend'],
       });
       // Create the source from the ast.
-      const output = generate(ast, {}, source);
+      const output = generate(ast, { retainLines: true }, source);
 
       // Work around Babel appending semicolons.
       const maybeSource = output.code;
