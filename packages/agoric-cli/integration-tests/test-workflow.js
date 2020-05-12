@@ -1,3 +1,4 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import { test } from 'tape-promise/tape';
 import fs from 'fs';
 import tmp from 'tmp';
