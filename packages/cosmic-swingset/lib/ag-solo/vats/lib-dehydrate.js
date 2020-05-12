@@ -9,29 +9,34 @@ import { assert, details } from '@agoric/assert';
 export const makeDehydrator = (initialUnnamedCount = 0) => {
   let unnamedCount = initialUnnamedCount;
 
-  const petnameKindToMappings = makeStore();
+  const petnameKindToMapping = makeStore();
 
   const searchOrder = [];
 
-  const makeMappings = kind => {
+  const makeMapping = kind => {
     assert.typeof(kind, 'string', details`kind ${kind} must be a string`);
     const valToPetname = makeStore();
     const petnameToVal = makeStore();
     const addPetname = (petname, val) => {
+      assert(
+        !petnameToVal.has(petname),
+        details`petname ${petname} is already in use`,
+      );
+      assert(!valToPetname.has(val), details`val ${val} already has a petname`);
       petnameToVal.init(petname, val);
       valToPetname.init(val, petname);
     };
-    const mappings = harden({
+    const mapping = harden({
       valToPetname,
       petnameToVal,
       addPetname,
       kind,
     });
-    petnameKindToMappings.init(kind, mappings);
-    return mappings;
+    petnameKindToMapping.init(kind, mapping);
+    return mapping;
   };
 
-  const unnamedMappings = makeMappings('unnamed');
+  const unnamedMapping = makeMapping('unnamed');
 
   const addToUnnamed = val => {
     unnamedCount += 1;
@@ -40,7 +45,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       kind: 'unnamed',
       petname: placeholder,
     });
-    unnamedMappings.addPetname(placeholder, val);
+    unnamedMapping.addPetname(placeholder, val);
     return placeholderName;
   };
 
@@ -49,7 +54,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   const convertValToName = val => {
     for (let i = 0; i < searchOrder.length; i += 1) {
       const kind = searchOrder[i];
-      const { valToPetname } = petnameKindToMappings.get(kind);
+      const { valToPetname } = petnameKindToMapping.get(kind);
       if (valToPetname.has(val)) {
         return harden({
           kind,
@@ -63,7 +68,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   };
 
   const convertNameToVal = ({ kind, petname }) => {
-    const { petnameToVal } = petnameKindToMappings.get(kind);
+    const { petnameToVal } = petnameKindToMapping.get(kind);
     return petnameToVal.get(petname);
   };
   const { serialize: dehydrate, unserialize: hydrate } = makeMarshal(
@@ -73,10 +78,10 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   return harden({
     hydrate,
     dehydrate,
-    makeMappings: kind => {
-      const mappings = makeMappings(kind);
+    makeMapping: kind => {
+      const mapping = makeMapping(kind);
       searchOrder.push(kind);
-      return mappings;
+      return mapping;
     },
   });
 };

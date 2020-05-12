@@ -6,17 +6,17 @@ import { makeDehydrator } from '../../lib/ag-solo/vats/lib-dehydrate';
 
 test('makeDehydrator', async t => {
   try {
-    const { hydrate, dehydrate, makeMappings } = makeDehydrator();
+    const { hydrate, dehydrate, makeMapping } = makeDehydrator();
 
-    const instanceHandleMappings = makeMappings('instanceHandle');
-    const brandMappings = makeMappings('brand');
+    const instanceHandleMapping = makeMapping('instanceHandle');
+    const brandMapping = makeMapping('brand');
 
     const handle1 = harden({});
     const handle2 = harden({});
     const handle3 = harden({});
-    instanceHandleMappings.addPetname('simpleExchange', handle1);
-    instanceHandleMappings.addPetname('atomicSwap', handle2);
-    instanceHandleMappings.addPetname('automaticRefund', handle3);
+    instanceHandleMapping.addPetname('simpleExchange', handle1);
+    instanceHandleMapping.addPetname('atomicSwap', handle2);
+    instanceHandleMapping.addPetname('automaticRefund', handle3);
 
     const makeMockBrand = () =>
       harden({
@@ -27,9 +27,9 @@ test('makeDehydrator', async t => {
     const brand1 = makeMockBrand();
     const brand2 = makeMockBrand();
     const brand3 = makeMockBrand();
-    brandMappings.addPetname('moola', brand1);
-    brandMappings.addPetname('simolean', brand2);
-    brandMappings.addPetname('zoeInvite', brand3);
+    brandMapping.addPetname('moola', brand1);
+    brandMapping.addPetname('simolean', brand2);
+    brandMapping.addPetname('zoeInvite', brand3);
 
     t.deepEquals(
       dehydrate(harden({ handle: handle1 })),
