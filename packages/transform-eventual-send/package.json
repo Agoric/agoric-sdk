@@ -2,14 +2,12 @@
   "name": "@agoric/transform-eventual-send",
   "version": "1.2.4",
   "description": "transform-eventual-send",
-  "main": "dist/transform-eventual-send.cjs.js",
-  "module": "src/index.js",
-  "browser": "dist/transform-eventual-send.umd.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "tape -r esm 'test/**/*.js'",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'",
-    "build": "node -r esm ./scripts/build-esend.js && rollup -c rollup.config.js"
+    "build": "node -r esm ./scripts/build-esend.js"
   },
   "devDependencies": {
     "@agoric/acorn-eventual-send": "^2.0.4",

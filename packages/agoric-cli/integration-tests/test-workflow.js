@@ -36,17 +36,32 @@ test('workflow', async t => {
     // Kill an entire process group.
     const pkill = (cp, signal = 'SIGINT') => process.kill(-cp.pid, signal);
 
+    function pspawnStdout(...args) {
+      let output = '';
+      const ps = pspawn(...args);
+      ps.cp.stdout.on('data', chunk => {
+        output += chunk.toString('utf-8');
+      });
+      ps.then(ret => {
+        if (ret !== 0) {
+          process.stdout.write(output);
+        }
+      });
+      return ps;
+    }
+
     // Run all main programs with the '--sdk' flag if we are in agoric-sdk.
     const extraArgs = fs.existsSync(`${__dirname}/../../cosmic-swingset`)
       ? ['--sdk']
       : [];
-    const myMain = args => {
+    function myMain(args) {
       // console.error('running agoric-cli', ...extraArgs, ...args);
-      return pspawn(`agoric`, [...extraArgs, ...args], {
+      return pspawnStdout(`agoric`, [...extraArgs, ...args], {
         stdio: ['ignore', 'pipe', 'inherit'],
+        env: { ...process.env, DEBUG: 'agoric' },
         detached: true,
       });
-    };
+    }
 
     const olddir = process.cwd();
     const { name, removeCallback } = tmp.dirSync({
@@ -150,7 +165,7 @@ test('workflow', async t => {
 
       // ==============
       // cd ui && yarn install
-      const instRet = await pspawn(`yarn`, ['install'], {
+      const instRet = await pspawnStdout(`yarn`, ['install'], {
         stdio: ['ignore', 'pipe', 'inherit'],
         cwd: 'ui',
         detached: true,
