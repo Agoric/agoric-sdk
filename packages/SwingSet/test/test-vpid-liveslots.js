@@ -213,7 +213,7 @@ async function doVatResolveCase1(t, mode) {
   const expectedP1 = 'p+5';
   const expectedP2 = 'p+6';
   const expectedP3 = 'p+7';
-  // const expectedP4 = 'p+8';
+  const expectedP4 = 'p+8';
 
   dispatch.deliver(
     rootA,
@@ -239,14 +239,23 @@ async function doVatResolveCase1(t, mode) {
   // then it should send 'two'. For now it should cite the same promise ID,
   // but in the future that vpid will have been retired, and we should see a
   // different one
+  let expectedArg = expectedP3;
+  let expectedResult = expectedP4;
+  if (mode === 'promise-data' || mode === 'promise-reject') {
+    expectedArg = expectedP1;
+    expectedResult = expectedP3;
+  }
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
     method: 'two',
-    args: capargs([slot0arg], [expectedP1]),
-    resultSlot: expectedP3,
+    args: capargs([slot0arg], [expectedArg]),
+    resultSlot: expectedResult,
   });
-  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP3 });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResult });
+  if (mode !== 'promise-data' && mode !== 'promise-reject') {
+    t.deepEqual(log.shift(), resolutionOf(expectedP3, mode, targets));
+  }
   t.deepEqual(log, []);
 
   t.end();
@@ -473,13 +482,13 @@ async function doVatResolveCase23(t, which, mode, stalls) {
 
   // The VPIDs in the remaining messages will depend upon whether we retired
   // p1 during that resolution.
-  const RETIRE_VPIDS = false;
+  const RETIRE_VPIDS = true;
 
   let expectedVPIDInThree = p1;
   let expectedResultOfThree = expectedP4;
   let expectedResultOfFour = expectedP5;
 
-  if (RETIRE_VPIDS) {
+  if (RETIRE_VPIDS && mode !== 'promise-data' && mode !== 'promise-reject') {
     expectedVPIDInThree = expectedP4;
     expectedResultOfThree = expectedP5;
     expectedResultOfFour = expectedP6;
@@ -515,6 +524,9 @@ async function doVatResolveCase23(t, which, mode, stalls) {
       type: 'subscribe',
       target: expectedResultOfFour,
     });
+  }
+  if (mode !== 'promise-data' && mode !== 'promise-reject') {
+    t.deepEqual(log.shift(), resolutionOf(expectedP4, mode, targets));
   }
 
   // that's all the syscalls we should see
@@ -652,26 +664,38 @@ async function doVatResolveCase4(t, mode) {
   await endOfCrank();
 
   const expectedP4 = nextP();
+  const expectedP5 = nextP();
+  let expectedArg = expectedP4;
+  let expectedResult = expectedP5;
+  if (mode === 'promise-data' || mode === 'promise-reject') {
+    expectedArg = p1;
+    expectedResult = expectedP4;
+  }
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
     method: 'three',
-    args: capargs([slot0arg], [p1]),
-    resultSlot: expectedP4,
+    args: capargs([slot0arg], [expectedArg]),
+    resultSlot: expectedResult,
   });
-  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP4 });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResult });
 
   if (mode === 'presence') {
-    const expectedP5 = nextP();
+    const expectedP6 = nextP();
     t.deepEqual(log.shift(), {
       type: 'send',
       targetSlot: target2, // this depends on #823 being fixed
       method: 'four',
       args: capargs([], []),
-      resultSlot: expectedP5,
+      resultSlot: expectedP6,
     });
-    t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP5 });
+    t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP6 });
   }
+  if (mode !== 'promise-data' && mode !== 'promise-reject') {
+    const targets = { target2, localTarget: rootA, p1 };
+    t.deepEqual(log.shift(), resolutionOf(expectedP4, mode, targets));
+  }
+
   // if p1 rejects or resolves to data, the kernel never hears about four()
   t.deepEqual(log, []);
 

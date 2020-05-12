@@ -502,13 +502,7 @@ async function doTest4567(t, which, mode) {
   // dispatch: Alice.notifyFulfillToPresence()
   onDispatchCallback = function odc1(d) {
     t.deepEqual(d, resolutionOf(p1VatA, mode, rootAvatA));
-    // before retirement is implemented, the c-list entry should still be present
-    t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
-
-    // after retirement is implemented,
-    // the kernel c-list entries should be removed before we are given a
-    // chance to make any syscalls that might reference them
-    // t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
+    t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
   };
   doResolveSyscall(syscallB, p1VatB, mode, rootAvatB);
   await kernel.run();
