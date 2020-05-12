@@ -1,6 +1,28 @@
 import eventualSendBundle from './bundles/eventual-send';
 
+export function makeTransform(parser, generate) {
+  function transform(source) {
+    // Parse with eventualSend enabled, rewriting to
+    // HandledPromise.get/applyFunction/applyMethod(...). Whoever finally
+    // evaluates this code must provide a HandledPromise object, probably as
+    // an endowment.
+    const parseFunc = parser.parse;
+    const ast = (parseFunc || parser)(source, {
+      sourceType: 'module',
+      plugins: ['eventualSend'],
+    });
+    // Create the source from the ast.
+    const output = generate(ast, { retainLines: true }, source);
+    return output.code;
+  }
+  return transform;
+}
+
+// this transformer is meant for the SES1 evaluation format, with mutable
+// endowments and stuff
+
 function makeEventualSendTransformer(parser, generate) {
+  const transformer = makeTransform(parser, generate);
   let HandledPromise;
   let evaluateProgram;
   let myRequire;
@@ -57,17 +79,9 @@ function makeEventualSendTransformer(parser, generate) {
         });
       }
 
-      // Parse with eventualSend enabled, rewriting to
-      // HandledPromise.get/applyFunction/applyMethod(...)
-      const parseFunc = parser.parse;
-      const ast = (parseFunc || parser)(source, {
-        plugins: ['eventualSend'],
-      });
-      // Create the source from the ast.
-      const output = generate(ast, { retainLines: true }, source);
+      const maybeSource = transformer(source);
 
       // Work around Babel appending semicolons.
-      const maybeSource = output.code;
       const actualSource =
         ss.sourceType === 'expression' &&
         maybeSource.endsWith(';') &&
@@ -77,7 +91,6 @@ function makeEventualSendTransformer(parser, generate) {
 
       return {
         ...ss,
-        ast,
         endowments,
         src: actualSource,
       };
