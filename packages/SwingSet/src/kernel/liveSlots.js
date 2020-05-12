@@ -500,7 +500,7 @@ function build(syscall, _state, makeRoot, forVatID) {
   // here we finally invoke the vat code, and get back the root object
   // We need to pass in Remotable and getInterfaceOf so that they can
   // access our own @agoric/marshal, not a separate instance in a bundle.
-  const vatPowers = { Remotable, getInterfaceOf };
+  const vatPowers = { HandledPromise, Remotable, getInterfaceOf };
   const rootObject = makeRoot(E, D, vatPowers);
   mustPassByPresence(rootObject);
 

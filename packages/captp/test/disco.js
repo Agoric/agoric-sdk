@@ -1,5 +1,5 @@
 import { test } from 'tape-promise/tape';
-import { harden, makeCapTP } from '../lib/captp';
+import { harden, makeCapTP } from '../lib';
 
 test('try disconnecting captp', async t => {
   try {

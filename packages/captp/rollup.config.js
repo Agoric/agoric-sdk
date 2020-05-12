@@ -3,7 +3,7 @@ import commonjs from 'rollup-plugin-commonjs';
 
 export default [
   {
-    input: 'lib/captp.js',
+    input: 'lib/index.js',
     output: [
       {
         file: 'dist/captp.umd.js',
@@ -15,7 +15,7 @@ export default [
         format: 'esm',
       },
       {
-        file: 'dist/captp.cjs.js',
+        file: 'dist/captp.cjs',
         format: 'cjs',
       },
     ],

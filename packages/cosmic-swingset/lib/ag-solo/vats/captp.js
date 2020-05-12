@@ -3,7 +3,7 @@
 import { makeCapTP } from '@agoric/captp/lib/captp';
 import harden from '@agoric/harden';
 
-export const getCapTPHandler = (E, send, getBootstrapObject) => {
+export const getCapTPHandler = (send, getBootstrapObject, powers) => {
   const chans = new Map();
   const handler = harden({
     onOpen(_obj, meta) {
@@ -16,6 +16,7 @@ export const getCapTPHandler = (E, send, getBootstrapObject) => {
         origin,
         sendObj,
         getBootstrapObject,
+        { harden, ...powers },
       );
       chans.set(channelHandle, [dispatch, abort]);
     },

@@ -1,5 +1,5 @@
 import { test } from 'tape-promise/tape';
-import { harden, makeCapTP, E } from '../lib/captp';
+import { harden, makeCapTP, E } from '../lib';
 
 test('prevent crosstalk', async t => {
   try {

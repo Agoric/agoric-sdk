@@ -1,15 +1,31 @@
 // This logic was mostly lifted from @agoric/swingset-vat liveSlots.js
 // Defects in it are mfig's fault.
-import { Remotable, makeMarshal, QCLASS } from '@agoric/marshal';
-import harden from '@agoric/harden';
-import Nat from '@agoric/nat';
-import { HandledPromise, E } from '@agoric/eventual-send';
+import {
+  Remotable as defaultRemotable,
+  makeMarshal,
+  QCLASS,
+} from '@agoric/marshal';
+import defaultHarden from '@agoric/harden';
+import { HandledPromise as defaultHandledPromise } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/produce-promise';
 
-export { E, HandledPromise, Nat, harden };
-
-export function makeCapTP(ourId, send, bootstrapObj = undefined) {
+export function makeCapTP(
+  ourId,
+  rawSend,
+  bootstrapObj = undefined,
+  {
+    Remotable = defaultRemotable,
+    HandledPromise = defaultHandledPromise,
+    harden = defaultHarden,
+  } = {},
+) {
   let unplug = false;
+  function send(...args) {
+    if (unplug) {
+      throw unplug;
+    }
+    return rawSend(...args);
+  }
   const { serialize, unserialize } = makeMarshal(
     // eslint-disable-next-line no-use-before-define
     convertValToSlot,
@@ -193,7 +209,6 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
     },
     CTP_ABORT(obj) {
       const { exception } = obj;
-      unplug = true;
       for (const pr of questions.values()) {
         pr.rej(exception);
       }
@@ -201,6 +216,7 @@ export function makeCapTP(ourId, send, bootstrapObj = undefined) {
         pr.rej(exception);
       }
       send(obj);
+      unplug = exception;
     },
   };
 
