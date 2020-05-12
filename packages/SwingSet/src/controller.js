@@ -12,6 +12,7 @@ import {
   SES1ReplaceGlobalMeter,
   SES1TameMeteringShim,
 } from '@agoric/tame-metering';
+import { HandledPromise } from '@agoric/eventual-send';
 
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import * as babelCore from '@babel/core';
@@ -124,6 +125,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
                                         endowments: {
                                           console,
                                           require: kernelRequire,
+                                          HandledPromise,
                                         },
                                       });
   const buildKernel = kernelNS.default;
@@ -148,6 +150,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
                                        endowments: {
                                          console,
                                          require: vatRequire,
+                                         HandledPromise,
                                        },
                                      });
     const setup = vatNS.default;
