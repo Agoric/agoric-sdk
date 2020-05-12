@@ -17,6 +17,14 @@ test('makeDehydrator', async t => {
     instanceHandleMapping.addPetname('simpleExchange', handle1);
     instanceHandleMapping.addPetname('atomicSwap', handle2);
     instanceHandleMapping.addPetname('automaticRefund', handle3);
+    t.throws(
+      () => instanceHandleMapping.addPetname('simpleExchange2', handle1),
+      `cannot add a second petname for the same value`,
+    );
+    t.throws(
+      () => instanceHandleMapping.addPetname('simpleExchange', harden({})),
+      `cannot add another value for the same petname`,
+    );
 
     const makeMockBrand = () =>
       harden({
@@ -132,6 +140,26 @@ test('makeDehydrator', async t => {
       ),
       { handle: handle4 },
       `deserialize same val with no petname`,
+    );
+    // Name a previously unnamed handle
+    instanceHandleMapping.addPetname('autoswap', handle4);
+    t.deepEquals(
+      dehydrate(harden({ handle: handle4 })),
+      {
+        body: '{"handle":{"@qclass":"slot","index":0}}',
+        slots: [{ kind: 'instanceHandle', petname: 'autoswap' }],
+      },
+      `serialize val with new petname`,
+    );
+    t.deepEquals(
+      hydrate(
+        harden({
+          body: '{"handle":{"@qclass":"slot","index":0}}',
+          slots: [{ kind: 'instanceHandle', petname: 'autoswap' }],
+        }),
+      ),
+      { handle: handle4 },
+      `deserialize same val with new petname`,
     );
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
