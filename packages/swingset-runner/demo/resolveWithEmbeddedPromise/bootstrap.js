@@ -12,7 +12,9 @@ function build(E, log) {
       const p3 = E(vats.bob).third();
       p1.then(
         r => {
-          log(`=> Alice: Bob.first resolved to '${r}' (should be a promise in an array)`);
+          log(
+            `=> Alice: Bob.first resolved to '${r}' (should be a promise in an array)`,
+          );
           r[0].then(
             rr => log(`=> Alice: Bob.first result resolved to '${rr}'`),
             ee => log(`=> Alice: Bob.first result rejected as '${ee}'`),

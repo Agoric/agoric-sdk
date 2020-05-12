@@ -8,9 +8,11 @@ function makePR() {
   return [p, r];
 }
 
-function build(E, log) {
-  let p1, r1;
-  let p2, r2;
+function build(_E, _log) {
+  let p1;
+  let r1;
+  let p2;
+  let r2;
   return {
     genPromise1() {
       [p1, r1] = makePR();

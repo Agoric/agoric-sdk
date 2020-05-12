@@ -2,12 +2,12 @@ import harden from '@agoric/harden';
 
 console.log(`=> loading bootstrap.js`);
 
-function build(E, log) {
+function build(E, _log) {
   return {
     bootstrap(argv, vats) {
       const pa = E(vats.bob).genPromise1();
       const pb = E(vats.bob).genPromise2();
-      const pc = E(vats.bob).usePromises([pa], [pb]);
+      E(vats.bob).usePromises([pa], [pb]);
     },
   };
 }

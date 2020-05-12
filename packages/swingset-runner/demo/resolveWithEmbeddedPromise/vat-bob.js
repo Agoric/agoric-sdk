@@ -30,11 +30,11 @@ function build(_E, log) {
       log('=> Bob: second done');
       return p2;
     },
-    third(p) {
+    third(_p) {
       log('=> Bob: third begins');
       r2(`Bob's resolution to p2`);
       return `Bob's answer to third`;
-    }
+    },
   };
 }
 
