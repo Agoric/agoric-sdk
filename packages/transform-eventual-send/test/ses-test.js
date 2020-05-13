@@ -10,7 +10,7 @@ import eventualSend from '@agoric/acorn-eventual-send';
 import * as acorn from 'acorn';
 import * as astring from 'astring';
 
-import makeEventualSendTransformer from '../src';
+import makeEventualSendTransformer from '../src/rewriter';
 
 // FIXME: This should be unnecessary when SES has support
 // for passing `evaluateProgram` through to the rewriter state.
