@@ -161,6 +161,28 @@ test('makeDehydrator', async t => {
       { handle: handle4 },
       `deserialize same val with new petname`,
     );
+
+    // Test spoofing
+    t.notDeepEqual(
+      hydrate(
+        harden({
+          body: '{"handle":{"kind":"instanceHandle","petname":"autoswap"}}',
+          slots: [],
+        }),
+      ),
+      { handle: handle4 },
+      `deserialize with no slots does not produce the real object`,
+    );
+    t.deepEquals(
+      hydrate(
+        harden({
+          body: '{"handle":{"kind":"instanceHandle","petname":"autoswap"}}',
+          slots: [],
+        }),
+      ),
+      { handle: { kind: 'instanceHandle', petname: 'autoswap' } },
+      `deserialize with no slots does not produce the real object`,
+    );
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
   } finally {
