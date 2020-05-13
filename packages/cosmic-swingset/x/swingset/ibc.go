@@ -7,7 +7,6 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/capability"
 	channel "github.com/cosmos/cosmos-sdk/x/ibc/04-channel"
-	channelexported "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/exported"
 	channeltypes "github.com/cosmos/cosmos-sdk/x/ibc/04-channel/types"
 	port "github.com/cosmos/cosmos-sdk/x/ibc/05-port"
 	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/05-port/types"
@@ -21,14 +20,14 @@ type channelHandler struct {
 }
 
 type channelMessage struct { // comes from swingset's IBC handler
-	Type            string                `json:"type"` // IBC_METHOD
-	Method          string                `json:"method"`
-	Packet          channeltypes.Packet   `json:"packet"`
-	RelativeTimeout uint64                `json:"relativeTimeout"`
-	Order           channelexported.Order `json:"order"`
-	Hops            []string              `json:"hops"`
-	Version         string                `json:"version"`
-	Ack             []byte                `json:"ack"`
+	Type            string              `json:"type"` // IBC_METHOD
+	Method          string              `json:"method"`
+	Packet          channeltypes.Packet `json:"packet"`
+	RelativeTimeout uint64              `json:"relativeTimeout"`
+	Order           ibctypes.Order      `json:"order"`
+	Hops            []string            `json:"hops"`
+	Version         string              `json:"version"`
+	Ack             []byte              `json:"ack"`
 }
 
 // DefaultRouter is a temporary hack until cosmos-sdk implements its features FIXME.
@@ -143,7 +142,7 @@ func (am AppModule) CallToController(ctx sdk.Context, send string) (string, erro
 type channelOpenInitEvent struct {
 	Type           string                    `json:"type"`  // IBC
 	Event          string                    `json:"event"` // channelOpenInit
-	Order          channelexported.Order     `json:"order"`
+	Order          ibctypes.Order            `json:"order"`
 	ConnectionHops []string                  `json:"connectionHops"`
 	PortID         string                    `json:"portID"`
 	ChannelID      string                    `json:"channelID"`
@@ -154,7 +153,7 @@ type channelOpenInitEvent struct {
 // Implement IBCModule callbacks
 func (am AppModule) OnChanOpenInit(
 	ctx sdk.Context,
-	order channelexported.Order,
+	order ibctypes.Order,
 	connectionHops []string,
 	portID string,
 	channelID string,
@@ -194,7 +193,7 @@ func (am AppModule) OnChanOpenInit(
 type channelOpenTryEvent struct {
 	Type                string                    `json:"type"`  // IBC
 	Event               string                    `json:"event"` // channelOpenTry
-	Order               channelexported.Order     `json:"order"`
+	Order               ibctypes.Order            `json:"order"`
 	ConnectionHops      []string                  `json:"connectionHops"`
 	PortID              string                    `json:"portID"`
 	ChannelID           string                    `json:"channelID"`
@@ -205,7 +204,7 @@ type channelOpenTryEvent struct {
 
 func (am AppModule) OnChanOpenTry(
 	ctx sdk.Context,
-	order channelexported.Order,
+	order ibctypes.Order,
 	connectionHops []string,
 	portID,
 	channelID string,
