@@ -38,6 +38,16 @@ export default function setup(syscall, state, helpers) {
                 );
               return;
             }
+            case 'non-bundle': {
+              log(`starting non-bundle test`);
+              E(vatAdminSvc)
+                .createVat(bundles.nonBundle)
+                .then(
+                  result => log(`didn't expect success ${result}`),
+                  rejection => log(`yay, rejected: ${rejection}`),
+                );
+              return;
+            }
             case 'vatStats': {
               log(`starting stats test`);
               const { root, adminNode } = await E(vatAdminSvc).createVat(bundles.newVatBundle);

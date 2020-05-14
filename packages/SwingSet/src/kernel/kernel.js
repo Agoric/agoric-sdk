@@ -580,14 +580,20 @@ export default function buildKernel(kernelEndowments) {
     // insert messages into the kernel run queue) in the middle of some other
     // vat's crank. TODO: find a safer way.
 
-    importBundle(vatSourceBundle,
-                 { filePrefix: vatID,
-                   endowments: {
-                     console,
-                     require: vatRequire,
-                     HandledPromise,
-                   },
-                 })
+    Promise.resolve()
+      .then(() => {
+        if (!vatSourceBundle.source || !vatSourceBundle.moduleFormat) {
+          throw Error(`createVatDynamically() requires bundle, not a plain string`);
+        }
+      })
+      .then(() => importBundle(vatSourceBundle,
+                               { filePrefix: vatID,
+                                 endowments: {
+                                   console,
+                                   require: vatRequire,
+                                   HandledPromise,
+                                 },
+                               }))
       .then(vatNS => {
         const buildFn = vatNS.default;
         const setup = (syscall, state, helpers) => {
@@ -595,7 +601,7 @@ export default function buildKernel(kernelEndowments) {
         };
         const manager = buildVatManager(vatID, `dynamicVat${vatID}`, setup);
         ephemeral.vats.set(vatID, harden({ manager }));
-      }).then(_ => {
+      }).then(() => {
         // build success message, giving admin vat access to the new vat's root
         // object
         const kernelRootObjSlot = addExport(vatID, makeVatRootObjectSlot());

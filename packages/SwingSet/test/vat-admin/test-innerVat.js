@@ -5,6 +5,10 @@ import { initSwingStore } from '@agoric/swing-store-simple';
 import bundleSource from '@agoric/bundle-source';
 import { buildVatController, loadBasedir } from '../../src';
 
+function nonBundleFunction(E) {
+  return {};
+}
+
 async function doTestSetup(mode) {
   const dir = path.resolve('./test/vat-admin');
   const config = await loadBasedir(dir);
@@ -13,7 +17,8 @@ async function doTestSetup(mode) {
                                           'nestedEvaluate');
   const brokenVatBundle = await bundleSource(path.resolve('./test/vat-admin/broken-vat.js'),
                                              'nestedEvaluate');
-  const bundles = { newVatBundle, brokenVatBundle };
+  const nonBundle = `${nonBundleFunction}`;
+  const bundles = { newVatBundle, brokenVatBundle, nonBundle };
   const c = await buildVatController(config, true, [mode, bundles]);
   return c;
 }
@@ -45,6 +50,17 @@ test('VatAdmin broken vat creation', async t => {
     'starting brokenVat test',
     'yay, rejected: Error: Vat Creation Error: ReferenceError: missing is not defined',
   ]);
+  t.end();
+});
+
+test('error creating vat from non-bundle', async t => {
+  const c = await doTestSetup('non-bundle');
+  await c.run();
+  t.deepEqual(c.dump().log, [
+    'starting non-bundle test',
+    'yay, rejected: Error: Vat Creation Error: Error: createVatDynamically() requires bundle, not a plain string',
+  ]);
+  await c.run();
   t.end();
 });
 
