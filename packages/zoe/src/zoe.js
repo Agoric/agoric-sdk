@@ -74,8 +74,8 @@ import { makeTables } from './state';
  *
  * @property {(installationHandle: InstallationHandle,
  *             issuerKeywordRecord: IssuerKeywordRecord,
- *             terms: object?)
- *            => Invite} makeInstance
+ *             terms?: object)
+ *            => Promise<Invite>} makeInstance
  * Zoe is long-lived. We can use Zoe to create smart contract
  * instances by specifying a particular contract installation to
  * use, as well as the `issuerKeywordRecord` and `terms` of the contract. The
@@ -669,6 +669,10 @@ const makeZoe = (additionalEndowments = {}) => {
         issuerKeywordRecord = harden({}),
         terms = harden({}),
       ) => {
+        assert(
+          installationTable.has(installationHandle),
+          details`${installationHandle} was not a valid installationHandle`,
+        );
         const { installation } = installationTable.get(installationHandle);
         const instanceHandle = harden({});
         const contractFacet = makeContractFacet(instanceHandle);
