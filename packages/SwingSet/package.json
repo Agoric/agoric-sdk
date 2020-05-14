@@ -11,11 +11,9 @@
     "vat": "bin/vat"
   },
   "scripts": {
-    "build": "npm run-script build-kernel",
-    "build-kernel": "node -r esm scripts/build-kernel.js",
-    "prepublish": "npm run-script build-kernel",
-    "test": "npm run-script build-kernel && tap --no-coverage test/test-node-version.js && tap --no-coverage --reporter specy --timeout 600 'test/**/test*.js'",
-    "test-nosort": "npm run-script build-kernel && tape -r esm test/test-node-version.js && tape -r esm 'test/**/test*.js'",
+    "build": "exit 0",
+    "test": "tap --no-coverage test/test-node-version.js && tap --no-coverage --reporter specy --timeout 600 'test/**/test*.js'",
+    "test-nosort": "tape -r esm test/test-node-version.js && tape -r esm 'test/**/test*.js'",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
     "lint-fix": "eslint --fix '**/*.js'",
