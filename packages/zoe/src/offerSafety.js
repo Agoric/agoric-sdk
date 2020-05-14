@@ -7,8 +7,7 @@
  * independently. It *does* allow for returning a full refund plus
  * full winnings.
  *
- * @param  {object} amountMathKeywordRecord - a record with keywords as
- * keys and amountMath as values
+ * @param  {object} brandToAmountMath - a map from brand to amountMath
  * @param  {object} proposal - the rules that accompanied the
  * escrow of payments that dictate what the user expected to get back
  * from Zoe. A proposal is a record with keys `give`,
@@ -20,18 +19,21 @@
  * amounts as values. These amounts are the reallocation to be given to a user.
  */
 function isOfferSafeForOffer(
-  amountMathKeywordRecord,
+  brandToAmountMath,
   proposal,
   newAmountKeywordRecord,
 ) {
   const isGTEByKeyword = ([keyword, amount]) => {
-    if (!Object.keys(amountMathKeywordRecord).includes(keyword)) {
+    const amountMath = brandToAmountMath.get(amount.brand);
+    const newAmount = newAmountKeywordRecord[keyword];
+    if (!newAmount && !amountMath.isEmpty(amount)) {
       return false;
     }
-    return amountMathKeywordRecord[keyword].isGTE(
-      newAmountKeywordRecord[keyword],
-      amount,
-    );
+    return amountMath.isGTE(newAmount, amount);
+  };
+
+  const isUnchanged = ([keyword]) => {
+    return !newAmountKeywordRecord[keyword];
   };
 
   // For this allocation to count as a full refund, the allocated
@@ -43,26 +45,26 @@ function isOfferSafeForOffer(
   // wanted, their allocated amount must be greater than or equal to
   // what the payoutRules said they wanted.
   const winningsOk = Object.entries(proposal.want).every(isGTEByKeyword);
-  return refundOk || winningsOk;
+
+  // This reallocation is also offer safe if it only changes amounts that aren't
+  // mentioned in this offer's give and want.
+  const unchangedGive = Object.entries(proposal.give).every(isUnchanged);
+  const unchangedWant = Object.entries(proposal.want).every(isUnchanged);
+  return refundOk || winningsOk || (unchangedGive && unchangedWant);
 }
 
 /**
- * @param  {object} amountMathKeywordRecord - a record with keywords
- * as keys and amountMath as values
- * @param  {proposal[]} proposals - an array of records which are the
+ * @param  {object} brandToAmountMath - a map from brand to amountMath
+ * @param  {proposal[]} proposals - an array of records, each of which is the
  * proposal for a single player. Each proposal has keys `give`,
  * `want`, and `exit`.
  * @param  {newAmountKeywordRecord[]} newAllocations - an array of
- * records. Each of the records (amountKeywordRecord) has keywords for
- * keys and the values are the amount that a single user will get.
+ * records. Each of the records (amountKeywordRecord) has an offer's keywords
+ * for keys and the values are the amounts that that offer will get.
  */
-const isOfferSafeForAll = (
-  amountMathKeywordRecord,
-  proposals,
-  newAllocations,
-) =>
+const isOfferSafeForAll = (brandToAmountMath, proposals, newAllocations) =>
   proposals.every((proposal, i) =>
-    isOfferSafeForOffer(amountMathKeywordRecord, proposal, newAllocations[i]),
+    isOfferSafeForOffer(brandToAmountMath, proposal, newAllocations[i]),
   );
 
 // `isOfferSafeForOffer` is only exported for testing

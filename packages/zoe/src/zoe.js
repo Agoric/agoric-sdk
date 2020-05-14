@@ -15,15 +15,11 @@ import {
 } from './cleanProposal';
 import {
   arrayToObj,
-  objToArray,
-  objToArrayAssertFilled,
   filterObj,
-  filterObjOkIfMissing,
   filterFillAmounts,
   assertSubset,
 } from './objArrayConversion';
 import { isOfferSafeForAll } from './offerSafety';
-import { areRightsConserved } from './rightsConservation';
 import { evalContractCode } from './evalContractCode';
 import { makeTables } from './state';
 
@@ -322,7 +318,6 @@ import { makeTables } from './state';
 const makeZoe = (additionalEndowments = {}) => {
   // Zoe maps the inviteHandles to contract offerHook upcalls
   const inviteHandleToOfferHook = makeStore();
-  const brandToIssuer = makeStore();
 
   const {
     mint: inviteMint,
@@ -337,6 +332,7 @@ const makeZoe = (additionalEndowments = {}) => {
     offerTable,
     payoutMap,
     issuerTable,
+    brandToIssuerMap,
   } = makeTables();
 
   /**
@@ -443,7 +439,14 @@ const makeZoe = (additionalEndowments = {}) => {
      * @type {ContractFacet}
      */
     const contractFacet = harden({
-      reallocate: (offerHandles, newAllocations, sparseKeywords) => {
+      // reallocate takes two parallel arrays: offerHandles and newAllocations.
+      // Each of the rows in newAllocations gives a collection of keyword-amount
+      // pairs where the amount should replace the old amount for that keyword.
+      // The reallocation will only succeed if the amounts specified have the
+      // same total value as the current total amount for those keywords on
+      // those offers, and 'offer safety' continues to be satisfied. The amounts
+      // for those brands on other keywords don't need to be compared.
+      reallocate: (offerHandles, newAllocations) => {
         assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
         // We may want to handle this with static checking instead.
         // Discussion at: https://github.com/Agoric/agoric-sdk/issues/1017
@@ -451,60 +454,80 @@ const makeZoe = (additionalEndowments = {}) => {
           offerHandles.length >= 2,
           details`reallocating must be done over two or more offers`,
         );
-        const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
-        const allKeywords = getKeywords(issuerKeywordRecord);
-        if (sparseKeywords === undefined) {
-          sparseKeywords = allKeywords;
+        assert(
+          offerHandles.length === newAllocations.length,
+          details`lengths of offerHandles (${offerHandles.length} and newAllocations (${newAllocations.length}) must be the same.`,
+        );
+
+        function addAmountForBrand(amountsByBrand, amount) {
+          if (!amount) {
+            return;
+          }
+          const { brand } = amount;
+          const { amountMath } = issuerTable.get(brandToIssuerMap.get(brand));
+          if (amountsByBrand.has(brand)) {
+            const sum = amountMath.add(amount, amountsByBrand.get(brand));
+            amountsByBrand.set(brand, sum);
+          } else {
+            amountsByBrand.set(brand, amount);
+          }
         }
 
-        const newAmountMatrix = newAllocations.map(amountObj =>
-          objToArrayAssertFilled(amountObj, sparseKeywords),
-        );
-
+        const proposedAmountsByBrand = new Map();
+        const currentAmountsByBrand = new Map();
         const offerRecords = offerTable.getOffers(offerHandles);
-
-        const amountMathKeywordRecord = contractFacet.getAmountMaths(
-          sparseKeywords,
-        );
-
-        // Filter proposal `want` and `give` by sparseKeywords
-        const filterProposalBySparseKeywords = proposal => {
-          return harden({
-            give: filterObjOkIfMissing(proposal.give, sparseKeywords),
-            want: filterObjOkIfMissing(proposal.want, sparseKeywords),
+        for (let i = 0; i < offerHandles.length; i += 1) {
+          const { currentAllocation } = offerRecords[i];
+          const keywords = Object.getOwnPropertyNames(newAllocations[i]);
+          keywords.forEach(keyword => {
+            const proposedAmount = newAllocations[i][keyword];
+            const currentAmount = currentAllocation[keyword];
+            addAmountForBrand(currentAmountsByBrand, currentAmount);
+            addAmountForBrand(proposedAmountsByBrand, proposedAmount);
           });
-        };
+        }
 
-        const proposals = offerRecords.map(offerRecord =>
-          filterProposalBySparseKeywords(offerRecord.proposal),
-        );
+        // We'll need amountMaths for everything in the original proposals as
+        // well as everything in the new allocations.
+        const brandToAmountMath = new Map();
+        function addAmountMathMapping(brand) {
+          let amountMath = brandToAmountMath.get(brand);
+          if (!amountMath) {
+            amountMath = issuerTable.get(brandToIssuerMap.get(brand))
+              .amountMath;
+            brandToAmountMath.set(brand, amountMath);
+          }
+          return amountMath;
+        }
 
-        const currentAmountMatrix = offerRecords.map(({ handle }) => {
-          const filteredAmounts = contractFacet.getCurrentAllocation(
-            handle,
-            sparseKeywords,
+        // 1) rights are conserved if the total for each brand is the same in
+        // the current and proposed allocation, regardless of keywords.
+        for (const brand of proposedAmountsByBrand.keys()) {
+          const amountMath = addAmountMathMapping(brand);
+          assert(
+            amountMath.isEqual(
+              proposedAmountsByBrand.get(brand),
+              currentAmountsByBrand.get(brand),
+            ),
+            details`Rights are not conserved in the proposed reallocation`,
           );
-          return objToArray(filteredAmounts, sparseKeywords);
-        });
+        }
 
-        const amountMathsArray = objToArray(
-          amountMathKeywordRecord,
-          sparseKeywords,
-        );
-
-        // 1) ensure that rights are conserved
-        assert(
-          areRightsConserved(
-            amountMathsArray,
-            currentAmountMatrix,
-            newAmountMatrix,
-          ),
-          details`Rights are not conserved in the proposed reallocation`,
-        );
+        // add all amountMaths from the proposal as well
+        for (let i = 0; i < offerHandles.length; i += 1) {
+          const { give, want } = offerRecords[i].proposal;
+          getKeywords(want).forEach(keyword => {
+            addAmountMathMapping(want[keyword].brand);
+          });
+          getKeywords(give).forEach(keyword => {
+            addAmountMathMapping(give[keyword].brand);
+          });
+        }
 
         // 2) ensure 'offer safety' for each player
+        const proposals = offerRecords.map(offerRecord => offerRecord.proposal);
         assert(
-          isOfferSafeForAll(amountMathKeywordRecord, proposals, newAllocations),
+          isOfferSafeForAll(brandToAmountMath, proposals, newAllocations),
           details`The proposed reallocation was not offer safe`,
         );
 
@@ -557,7 +580,7 @@ const makeZoe = (additionalEndowments = {}) => {
             ...issuerKeywordRecord,
             [keyword]: issuerRecord.issuer,
           };
-          brandToIssuer.init(issuerRecord.brand, issuerRecord.issuer);
+          brandToIssuerMap.init(issuerRecord.brand, issuerRecord.issuer);
           instanceTable.update(instanceHandle, {
             issuerKeywordRecord: newIssuerKeywordRecord,
           });
@@ -662,8 +685,8 @@ const makeZoe = (additionalEndowments = {}) => {
        * other information, such as the terms used in the instance.
        * @param  {object} installationHandle - the unique handle for the
        * installation
-       * @param  {object} issuerKeywordRecord - optional, a record mapping keyword keys to
-       * issuer values
+       * @param {Object.<string,Issuer>} issuerKeywordRecord - a record mapping
+       * keyword keys to issuer values
        * @param  {object} terms - optional, arguments to the contract. These
        * arguments depend on the contract.
        */
@@ -679,16 +702,18 @@ const makeZoe = (additionalEndowments = {}) => {
         const { installation } = installationTable.get(installationHandle);
         const instanceHandle = harden({});
         const contractFacet = makeContractFacet(instanceHandle);
-
         const cleanedKeywords = cleanKeywords(issuerKeywordRecord);
         const issuersP = cleanedKeywords.map(
           keyword => issuerKeywordRecord[keyword],
         );
+        // Rather than storing a mapping from global keywords to issuers, we'll
+        // map brands to keywords. This means Zoe won't have a global unique
+        // mapping of keywords across offers, but it doesn't need to.
 
         const makeInstanceRecord = issuerRecords => {
           const issuers = issuerRecords.map(record => {
-            if (!brandToIssuer.has(record.brand)) {
-              brandToIssuer.init(record.brand, record.issuer);
+            if (!brandToIssuerMap.has(record.brand)) {
+              brandToIssuerMap.init(record.brand, record.issuer);
             }
             return record.issuer;
           });
@@ -749,14 +774,16 @@ const makeZoe = (additionalEndowments = {}) => {
        * outcome promise.
        * @param {Invite} invite - an invite (ERTP payment) to join a
        * Zoe smart contract instance
-       * @param  {object?} proposal - the proposal, a record
+       * @param  {Proposal?} proposal - the proposal, a record
        * with properties `want`, `give`, and `exit`. The keys of
        * `want` and `give` are keywords and the values are amounts.
-       * @param  {object?} paymentKeywordRecord - a record with keyword
-       * keys and values which are payments that will be escrowed by Zoe.
+       * @param  {Object.<string,Payment>} paymentKeywordRecord - a record with
+       * keyword keys and values which are payments that will be escrowed by
+       * Zoe.
        *
-       * The default arguments are so that remote invocations don't
-       * have to specify empty objects (which get marshaled as presences).
+       * The default arguments allow remote invocations to specify empty
+       * objects. Otherwise, explicitly-provided empty objects would be
+       * marshaled as presences.
        */
       offer: (
         invite,
@@ -781,10 +808,9 @@ const makeZoe = (additionalEndowments = {}) => {
           } = inviteAmount;
           const offerHandle = harden({});
 
-          function amountMathFromBrand({ brand }) {
-            return issuerTable.get(brandToIssuer.get(brand)).amountMath;
-          }
-
+          const amountMathFromBrand = ({ brand }) => {
+            return issuerTable.get(brandToIssuerMap.get(brand)).amountMath;
+          };
           const amountMathKeywordRecord = {};
           giveKeywords.forEach(keyword => {
             const amountMath = amountMathFromBrand(proposal.give[keyword]);
@@ -805,7 +831,7 @@ const makeZoe = (additionalEndowments = {}) => {
           // issuer -> purse -> deposit payment -> offerHook -> payout
           const paymentDepositedPs = userKeywords.map(keyword => {
             if (giveKeywords.includes(keyword)) {
-              const issuer = brandToIssuer.get(proposal.give[keyword].brand);
+              const issuer = brandToIssuerMap.get(proposal.give[keyword].brand);
               return issuerTable
                 .getPromiseForIssuerRecord(issuer)
                 .then(({ purse }) => {
@@ -826,6 +852,14 @@ const makeZoe = (additionalEndowments = {}) => {
             }
           });
 
+          // recordOffer() creates and stores an offerImmutableRecord in the
+          // offerTable. The allocations are according to the keywords in the
+          // offer's proposal, which are not required to match anything in the
+          // issuerKeywordRecord that was used to instantiate the contract.
+          // recordOffer is called on amountsArray, which includes amounts for
+          // all the keywords in the proposal. Keywords which were in the give
+          // clause are mapped to the amount deposited. Any others are mapped to
+          // the empty amount for the keyword's Issuer in the want clause.
           const recordOffer = amountsArray => {
             const notifierRec = produceNotifier();
             const offerImmutableRecord = {

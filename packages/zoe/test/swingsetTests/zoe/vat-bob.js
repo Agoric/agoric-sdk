@@ -342,6 +342,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const { installationHandle, issuerKeywordRecord } = await E(
         zoe,
       ).getInstanceRecord(inviteExtent[0].instanceHandle);
+
       assert(
         installationHandle === installations.simpleExchange,
         details`wrong installation`,

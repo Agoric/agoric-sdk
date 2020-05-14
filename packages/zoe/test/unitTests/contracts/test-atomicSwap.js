@@ -271,7 +271,7 @@ test('zoe - non-fungible atomicSwap', async t => {
 
 // Checking handling of duplicate issuers. I'd have preferred a raffle contract
 test('zoe - atomicSwap like-for-like', async t => {
-  t.plan(9);
+  t.plan(13);
   const { moolaIssuer, moolaMint, moola } = setup();
   const zoe = makeZoe({ require });
   const inviteIssuer = zoe.getInviteIssuer();
@@ -354,32 +354,37 @@ test('zoe - atomicSwap like-for-like', async t => {
   const bobPayout = await bobPayoutP;
   const alicePayout = await alicePayoutP;
 
-  const bobMoolaPayout = await bobPayout.Asset;
-  const bobSimoleanPayout = await bobPayout.Price;
+  const bobAssetPayout = await bobPayout.Asset;
+  const bobPricePayout = await bobPayout.Price;
 
-  const aliceMoolaPayout = await alicePayout.Asset;
-  const aliceSimoleanPayout = await alicePayout.Price;
+  const aliceAssetPayout = await alicePayout.Asset;
+  const alicePricePayout = await alicePayout.Price;
 
   // Alice gets what Alice wanted
   t.deepEquals(
-    await moolaIssuer.getAmountOf(aliceSimoleanPayout),
+    await moolaIssuer.getAmountOf(alicePricePayout),
     aliceProposal.want.Price,
   );
 
   // Alice didn't get any of what Alice put in
-  t.deepEquals(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
+  t.deepEquals(await moolaIssuer.getAmountOf(aliceAssetPayout), moola(0));
 
   // Alice deposits her payout to ensure she can
-  await aliceMoolaPurse.deposit(aliceMoolaPayout);
-  await aliceMoolaPurse.deposit(aliceSimoleanPayout);
+  const aliceAssetAmount = await aliceMoolaPurse.deposit(aliceAssetPayout);
+  t.equals(aliceAssetAmount.extent, 0);
+  const alicePriceAmount = await aliceMoolaPurse.deposit(alicePricePayout);
+  t.equals(alicePriceAmount.extent, 7);
 
   // Bob deposits his original payments to ensure he can
-  await bobMoolaPurse.deposit(bobMoolaPayout);
-  await bobMoolaPurse.deposit(bobSimoleanPayout);
+  const bobAssetAmount = await bobMoolaPurse.deposit(bobAssetPayout);
+  t.equals(bobAssetAmount.extent, 3);
+  const bobPriceAmount = await bobMoolaPurse.deposit(bobPricePayout);
+  // deposit should return 0: https://github.com/Agoric/agoric-sdk/issues/1103
+  t.equals(bobPriceAmount.extent, bobAssetAmount.extent + 0);
 
   // Assert that the correct payouts were received.
-  // Alice had 3 moola and 0 simoleans.
-  // Bob had 0 moola and 7 simoleans.
+  // Alice had 3 moola from Asset and 0 from Price.
+  // Bob had 0 moola from Asset and 7 from Price.
   t.equals(aliceMoolaPurse.getCurrentAmount().extent, 7);
   t.equals(bobMoolaPurse.getCurrentAmount().extent, 3);
 });

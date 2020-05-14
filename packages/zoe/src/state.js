@@ -26,6 +26,10 @@ const makeInstanceTable = () => {
   return makeTable(validateSomewhat);
 };
 
+// Brand to Issuer Map
+// PrivateName: brand | Issuer
+const makeBrandToIssuerMap = makeStore;
+
 // Offer Table
 // Columns:
 //   handle | instanceHandle | proposal | currentAllocation, notifier, updater
@@ -177,6 +181,7 @@ const makeTables = () =>
     offerTable: makeOfferTable(),
     payoutMap: makePayoutMap(),
     issuerTable: makeIssuerTable(),
+    brandToIssuerMap: makeBrandToIssuerMap(),
   });
 
 export { makeTables };
