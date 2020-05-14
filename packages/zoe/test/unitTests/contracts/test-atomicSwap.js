@@ -11,8 +11,8 @@ import { setupNonFungible } from '../setupNonFungibleMints';
 
 const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 
-test('zoe - atomicSwap', async t => {
-  t.plan(11);
+test.only('zoe - atomicSwap - alice completes her offer early', async t => {
+  t.plan(5);
   const {
     moolaIssuer,
     simoleanIssuer,
@@ -39,7 +39,7 @@ test('zoe - atomicSwap', async t => {
   const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
   const bobSimoleanPurse = simoleanIssuer.makeEmptyPurse();
 
-  // 1: Alice creates an atomicSwap instance
+  // Alice creates an atomicSwap instance
   const issuerKeywordRecord = harden({
     Asset: moolaIssuer,
     Price: simoleanIssuer,
@@ -49,7 +49,7 @@ test('zoe - atomicSwap', async t => {
     issuerKeywordRecord,
   );
 
-  // 2: Alice escrows with zoe
+  // Alice makes the first offer in the swap.
   const aliceProposal = harden({
     give: { Asset: moola(3) },
     want: { Price: simoleans(7) },
@@ -57,31 +57,18 @@ test('zoe - atomicSwap', async t => {
   });
   const alicePayments = { Asset: aliceMoolaPayment };
 
-  // 3: Alice makes the first offer in the swap.
-  const { payout: alicePayoutP, outcome: bobInviteP } = await zoe.offer(
-    aliceInvite,
-    aliceProposal,
-    alicePayments,
-  );
+  console.log('alice makes offer');
+  const {
+    payout: alicePayoutP,
+    outcome: bobInviteP,
+    completeObj,
+  } = await zoe.offer(aliceInvite, aliceProposal, alicePayments);
 
-  // 4: Alice spreads the invite far and wide with instructions
-  // on how to use it and Bob decides he wants to be the
-  // counter-party.
+  // Alice completes her offer
+  await completeObj.complete();
 
+  // Alice gives Bob an invite
   const bobExclusiveInvite = await inviteIssuer.claim(bobInviteP);
-  const {
-    extent: [bobInviteExtent],
-  } = await inviteIssuer.getAmountOf(bobExclusiveInvite);
-
-  const {
-    installationHandle: bobInstallationId,
-    issuerKeywordRecord: bobIssuers,
-  } = zoe.getInstanceRecord(bobInviteExtent.instanceHandle);
-
-  t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
-  t.deepEquals(bobIssuers, { Asset: moolaIssuer, Price: simoleanIssuer });
-  t.deepEquals(bobInviteExtent.asset, moola(3));
-  t.deepEquals(bobInviteExtent.price, simoleans(7));
 
   const bobProposal = harden({
     give: { Price: simoleans(7) },
@@ -90,17 +77,20 @@ test('zoe - atomicSwap', async t => {
   });
   const bobPayments = { Price: bobSimoleanPayment };
 
-  // 5: Bob makes an offer
+  // Bob makes an offer
+  console.log('bob makes offer');
   const { payout: bobPayoutP, outcome: bobOutcomeP } = await zoe.offer(
     bobExclusiveInvite,
     bobProposal,
     bobPayments,
   );
 
-  t.equals(
-    await bobOutcomeP,
-    'The offer has been accepted. Once the contract has been completed, please check your payout',
+  t.rejects(
+    () => bobOutcomeP,
+    /prior offer is unavailable/,
+    `bob's offer is rejected`,
   );
+  // Bob and Alice get refunds
   const bobPayout = await bobPayoutP;
   const alicePayout = await alicePayoutP;
 
@@ -109,15 +99,6 @@ test('zoe - atomicSwap', async t => {
 
   const aliceMoolaPayout = await alicePayout.Asset;
   const aliceSimoleanPayout = await alicePayout.Price;
-
-  // Alice gets what Alice wanted
-  t.deepEquals(
-    await simoleanIssuer.getAmountOf(aliceSimoleanPayout),
-    aliceProposal.want.Price,
-  );
-
-  // Alice didn't get any of what Alice put in
-  t.deepEquals(await moolaIssuer.getAmountOf(aliceMoolaPayout), moola(0));
 
   // Alice deposits her payout to ensure she can
   await aliceMoolaPurse.deposit(aliceMoolaPayout);
@@ -130,141 +111,8 @@ test('zoe - atomicSwap', async t => {
   // Assert that the correct payouts were received.
   // Alice had 3 moola and 0 simoleans.
   // Bob had 0 moola and 7 simoleans.
-  t.equals(aliceMoolaPurse.getCurrentAmount().extent, 0);
-  t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 7);
-  t.equals(bobMoolaPurse.getCurrentAmount().extent, 3);
-  t.equals(bobSimoleanPurse.getCurrentAmount().extent, 0);
-});
-
-test('zoe - non-fungible atomicSwap', async t => {
-  t.plan(11);
-  const {
-    ccIssuer,
-    rpgIssuer,
-    ccMint,
-    rpgMint,
-    cryptoCats,
-    rpgItems,
-    createRpgItem,
-  } = setupNonFungible();
-
-  const zoe = makeZoe({ require });
-  const inviteIssuer = zoe.getInviteIssuer();
-
-  // pack the contract
-  const { source, moduleFormat } = await bundleSource(atomicSwapRoot);
-  // install the contract
-  const installationHandle = zoe.install(source, moduleFormat);
-
-  // Setup Alice
-  const calico37Amount = cryptoCats(harden(['calico #37']));
-  const aliceCcPayment = ccMint.mintPayment(calico37Amount);
-  const aliceCcPurse = ccIssuer.makeEmptyPurse();
-  const aliceRpgPurse = rpgIssuer.makeEmptyPurse();
-
-  // Setup Bob
-  const vorpalSword = createRpgItem('Vorpal Sword', 38);
-  const vorpalAmount = rpgItems(vorpalSword);
-  const bobRpgPayment = rpgMint.mintPayment(vorpalAmount);
-  const bobCcPurse = ccIssuer.makeEmptyPurse();
-  const bobRpgPurse = rpgIssuer.makeEmptyPurse();
-
-  // 1: Alice creates an atomicSwap instance
-  const issuerKeywordRecord = harden({
-    Asset: ccIssuer,
-    Price: rpgIssuer,
-  });
-  const aliceInvite = await zoe.makeInstance(
-    installationHandle,
-    issuerKeywordRecord,
-  );
-
-  // 2: Alice escrows with zoe
-  const aliceProposal = harden({
-    give: { Asset: calico37Amount },
-    want: { Price: vorpalAmount },
-    exit: { onDemand: null },
-  });
-  const alicePayments = { Asset: aliceCcPayment };
-
-  // 3: Alice makes the first offer in the swap.
-  const { payout: alicePayoutP, outcome: bobInviteP } = await zoe.offer(
-    aliceInvite,
-    aliceProposal,
-    alicePayments,
-  );
-
-  // 4: Alice spreads the invite far and wide with instructions
-  // on how to use it and Bob decides he wants to be the
-  // counter-party.
-
-  const bobExclusiveInvite = await inviteIssuer.claim(bobInviteP);
-  const {
-    extent: [bobInviteExtent],
-  } = await inviteIssuer.getAmountOf(bobExclusiveInvite);
-
-  const {
-    installationHandle: bobInstallationId,
-    issuerKeywordRecord: bobIssuers,
-  } = zoe.getInstanceRecord(bobInviteExtent.instanceHandle);
-
-  t.equals(bobInstallationId, installationHandle, 'bobInstallationId');
-  t.deepEquals(bobIssuers, { Asset: ccIssuer, Price: rpgIssuer });
-  t.deepEquals(bobInviteExtent.asset, calico37Amount);
-  t.deepEquals(bobInviteExtent.price, vorpalAmount);
-
-  const bobProposal = harden({
-    give: { Price: vorpalAmount },
-    want: { Asset: calico37Amount },
-    exit: { onDemand: null },
-  });
-  const bobPayments = { Price: bobRpgPayment };
-
-  // 5: Bob makes an offer
-  const { payout: bobPayoutP, outcome: bobOutcomeP } = await zoe.offer(
-    bobExclusiveInvite,
-    bobProposal,
-    bobPayments,
-  );
-
-  t.equals(
-    await bobOutcomeP,
-    'The offer has been accepted. Once the contract has been completed, please check your payout',
-  );
-  const bobPayout = await bobPayoutP;
-  const alicePayout = await alicePayoutP;
-
-  const bobCcPayout = await bobPayout.Asset;
-  const bobRpgPayout = await bobPayout.Price;
-
-  const aliceCcPayout = await alicePayout.Asset;
-  const aliceRpgPayout = await alicePayout.Price;
-
-  // Alice gets what Alice wanted
-  t.deepEquals(
-    await rpgIssuer.getAmountOf(aliceRpgPayout),
-    aliceProposal.want.Price,
-  );
-
-  // Alice didn't get any of what Alice put in
-  t.deepEquals(
-    await ccIssuer.getAmountOf(aliceCcPayout),
-    cryptoCats(harden([])),
-  );
-
-  // Alice deposits her payout to ensure she can
-  await aliceCcPurse.deposit(aliceCcPayout);
-  await aliceRpgPurse.deposit(aliceRpgPayout);
-
-  // Bob deposits his original payments to ensure he can
-  await bobCcPurse.deposit(bobCcPayout);
-  await bobRpgPurse.deposit(bobRpgPayout);
-
-  // Assert that the correct payouts were received.
-  // Alice had a CryptoCat and no RPG tokens.
-  // Bob had an empty CryptoCat purse and a Vorpal Sword.
-  t.deepEquals(aliceCcPurse.getCurrentAmount().extent, []);
-  t.deepEquals(aliceRpgPurse.getCurrentAmount().extent, vorpalSword);
-  t.deepEquals(bobCcPurse.getCurrentAmount().extent, ['calico #37']);
-  t.deepEquals(bobRpgPurse.getCurrentAmount().extent, []);
+  t.equals(aliceMoolaPurse.getCurrentAmount().extent, 3);
+  t.equals(aliceSimoleanPurse.getCurrentAmount().extent, 0);
+  t.equals(bobMoolaPurse.getCurrentAmount().extent, 0);
+  t.equals(bobSimoleanPurse.getCurrentAmount().extent, 7);
 });

@@ -13,13 +13,19 @@ export const makeContract = harden(
     const { swap, assertKeywords, checkHook } = makeZoeHelpers(zcf);
     assertKeywords(harden(['Asset', 'Price']));
 
+    let callCount = 0;
+
     const makeMatchingInvite = firstOfferHandle => {
       const {
         proposal: { want, give },
       } = zcf.getOffer(firstOfferHandle);
 
       return zcf.makeInvitation(
-        offerHandle => swap(firstOfferHandle, offerHandle),
+        offerHandle => {
+          callCount += 1;
+          console.log(`second offerHook called ${callCount} times`);
+          return swap(firstOfferHandle, offerHandle);
+        },
         'matchOffer',
         harden({
           customProperties: {
