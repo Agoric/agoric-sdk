@@ -1,4 +1,5 @@
 import { test } from 'tape-promise/tape';
+import '../../install-ses';
 import { buildVatController } from '../../src/index';
 import { buildTimer } from '../../src/devices/timer';
 
