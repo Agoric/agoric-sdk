@@ -10,38 +10,39 @@ import { producePromise } from '@agoric/produce-promise';
 
 export default function setup(syscall, state, helpers) {
   function build(E, D) {
-    const vatIdsToResolvers = new Map();
+    const pendingVatIDs = new Map();
 
     function createVatAdminService(vatAdminNode) {
       return harden({
         createVat(code) {
-          const { vatID, error } = D(vatAdminNode).create(code);
-          if (error) {
-            throw Error(`Vat Creation Error: ${error}`);
-          } else {
-            const vatPromise = producePromise();
-            vatIdsToResolvers.set(vatID, vatPromise.resolve);
-            const adminNode = harden({
-              terminate() {
-                D(vatAdminNode).terminate(vatID);
-                // TODO(hibbert): cleanup admin vat data structures
-              },
-              adminData() {
-                return D(vatAdminNode).adminStats(vatID);
-              },
-            });
-            return vatPromise.promise.then(root => {
-              return { adminNode, root };
-            });
-          }
-        },
+          const vatID = D(vatAdminNode).create(code);
+          const { promise, resolve, reject } = producePromise();
+          pendingVatIDs.set(vatID, { resolve, reject });
+          const adminNode = harden({
+            terminate() {
+              D(vatAdminNode).terminate(vatID);
+              // TODO(hibbert): cleanup admin vat data structures
+            },
+            adminData() {
+              return D(vatAdminNode).adminStats(vatID);
+            },
+          });
+          return promise.then(root => {
+            return { adminNode, root };
+          });
+        }
       });
     }
 
-    function newVatCallback(vatId, rootObject) {
-      const rootResolver = vatIdsToResolvers.get(vatId);
-      vatIdsToResolvers.delete(vatId);
-      rootResolver(rootObject);
+    // this message is queued to us by createVatDynamically
+    function newVatCallback(vatId, results) {
+      const { resolve, reject } = pendingVatIDs.get(vatId);
+      pendingVatIDs.delete(vatId);
+      if (results.rootObject) {
+        resolve(results.rootObject);
+      } else {
+        reject(Error(`Vat Creation Error: ${results.error}`));
+      }
     }
 
     return harden({

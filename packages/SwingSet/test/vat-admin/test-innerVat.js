@@ -1,20 +1,25 @@
 import { test } from 'tape';
+import '../../install-ses.js';
 import path from 'path';
 import { initSwingStore } from '@agoric/swing-store-simple';
-
+import bundleSource from '@agoric/bundle-source';
 import { buildVatController, loadBasedir } from '../../src';
 
-async function createConfig() {
+async function doTestSetup(mode) {
   const dir = path.resolve('./test/vat-admin');
   const config = await loadBasedir(dir);
-
   config.hostStorage = initSwingStore().storage;
-  return config;
+  const newVatBundle = await bundleSource(path.resolve('./test/vat-admin/new-vat.js'),
+                                          'nestedEvaluate');
+  const brokenVatBundle = await bundleSource(path.resolve('./test/vat-admin/broken-vat.js'),
+                                             'nestedEvaluate');
+  const bundles = { newVatBundle, brokenVatBundle };
+  const c = await buildVatController(config, true, [mode, bundles]);
+  return c;
 }
 
-async function testVatCreationFromBuild(t, withSES) {
-  const config = await createConfig();
-  const c = await buildVatController(config, withSES, ['newVat']);
+test('VatAdmin inner vat creation', async t => {
+  const c = await doTestSetup('newVat');
   t.equal(c.vatNameToID('vatAdmin'), 'v2');
   t.equal(c.vatNameToID('_bootstrap'), 'v1');
   for (let i = 0; i < 9; i += 1) {
@@ -23,43 +28,28 @@ async function testVatCreationFromBuild(t, withSES) {
   }
   t.deepEqual(c.dump().log, ['starting newVat test', '13']);
   t.end();
-}
-
-test('VatAdmin inner vat creation', async t => {
-  await testVatCreationFromBuild(t, true);
 });
 
-async function testVatCreationAndObjectHosting(t, withSES) {
-  const config = await createConfig();
-  const c = await buildVatController(config, withSES, ['counters']);
+test('VatAdmin counter test', async t => {
+  const c = await doTestSetup('counters');
   await c.run();
   await c.run();
   t.deepEqual(c.dump().log, ['starting counter test', '4', '9', '2']);
   t.end();
-}
-
-test('VatAdmin inner vat creation', async t => {
-  await testVatCreationAndObjectHosting(t, true);
 });
 
-async function testBrokenVatCreation(t, withSES) {
-  const config = await createConfig();
-  const c = await buildVatController(config, withSES, ['brokenVat']);
+test('VatAdmin broken vat creation', async t => {
+  const c = await doTestSetup('brokenVat');
   await c.run();
   t.deepEqual(c.dump().log, [
     'starting brokenVat test',
     'yay, rejected: Error: Vat Creation Error: ReferenceError: missing is not defined',
   ]);
   t.end();
-}
-
-test('VatAdmin broken vat creation', async t => {
-  await testBrokenVatCreation(t, true);
 });
 
-async function testGetVatStats(t, withSES) {
-  const config = await createConfig();
-  const c = await buildVatController(config, withSES, ['vatStats']);
+test('VatAdmin get vat stats', async t => {
+  const c = await doTestSetup('vatStats');
   await c.run();
   t.deepEqual(c.dump().log, [
     'starting stats test',
@@ -69,8 +59,4 @@ async function testGetVatStats(t, withSES) {
   ]);
   await c.run();
   t.end();
-}
-
-test('VatAdmin get vat stats', async t => {
-  await testGetVatStats(t, true);
 });
