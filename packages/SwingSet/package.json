@@ -50,7 +50,6 @@
   "files": [
     "bin/vat",
     "src/**/*.js",
-    "src/bundles/kernel"
   ],
   "repository": {
     "type": "git",
