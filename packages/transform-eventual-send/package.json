@@ -20,7 +20,7 @@
     "esm": "^3.2.5",
     "rollup": "^1.16.6",
     "rollup-plugin-node-resolve": "^5.2.0",
-    "ses": "^0.6.5",
+    "ses": "^0.7.7",
     "tap-spec": "^5.0.0",
     "tape": "^4.9.2",
     "tape-promise": "^4.0.0"
