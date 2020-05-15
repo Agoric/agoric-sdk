@@ -18,7 +18,6 @@ import {
   objToArray,
   objToArrayAssertFilled,
   filterObj,
-  filterObjOkIfMissing,
   filterFillAmounts,
   assertSubset,
 } from './objArrayConversion';

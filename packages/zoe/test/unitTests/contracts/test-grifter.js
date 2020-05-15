@@ -11,8 +11,8 @@ import { setup } from '../setupBasicMints';
 
 const grifterRoot = `${__dirname}/grifter`;
 
-test('zoe - grifter', async t => {
-  t.plan(2);
+test('zoe - grifter tries to steal; prevented by offer safety', async t => {
+  t.plan(1);
   // Setup zoe and mints
   const { moola, moolaR, moolaMint, bucksR, bucks } = setup();
   const zoe = makeZoe({ require });
@@ -34,7 +34,7 @@ test('zoe - grifter', async t => {
   const malloryProposal = harden({
     want: { Price: moola(37) },
   });
-  const { payout: malloryPayoutP, outcome: vicInviteP } = await zoe.offer(
+  const { outcome: vicInviteP } = await zoe.offer(
     malloryInvite,
     malloryProposal,
     harden({}),
@@ -47,23 +47,15 @@ test('zoe - grifter', async t => {
     exit: { onDemand: null },
   });
   const vicPayments = { Price: vicMoolaPayment };
-  const { payout: vicPayoutP } = await zoe.offer(
+  const { outcome: vicOutcomeP } = await zoe.offer(
     vicInviteP,
     vicProposal,
     vicPayments,
   );
 
-  const malloryPayout = await malloryPayoutP;
-  const malloryMoolaPayout = await malloryPayout.Price;
-  const malloryMoolaPurse = moolaR.issuer.makeEmptyPurse();
-
-  const vicPayout = await vicPayoutP;
-  const vicMoolaPayout = await vicPayout.Price;
-  const vicMoolaPurse = moolaR.issuer.makeEmptyPurse();
-
-  vicMoolaPurse.deposit(vicMoolaPayout);
-  malloryMoolaPurse.deposit(malloryMoolaPayout);
-
-  t.equals(malloryMoolaPurse.getCurrentAmount().extent, 37);
-  t.equals(vicMoolaPurse.getCurrentAmount().extent, 0);
+  t.rejects(
+    vicOutcomeP,
+    /The proposed reallocation was not offer safe/,
+    `vicOffer is rejected`,
+  );
 });
