@@ -1,4 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
+import '../../../../SwingSet/install-ses.js';
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
