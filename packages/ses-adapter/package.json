@@ -14,7 +14,7 @@
     "lint-check": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "ses": "^0.7.6",
+    "ses": "^0.7.7",
     "tap": "^14.10.5"
   },
   "dependencies": {
