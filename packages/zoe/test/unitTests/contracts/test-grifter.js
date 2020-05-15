@@ -11,7 +11,7 @@ import { setup } from '../setupBasicMints';
 
 const grifterRoot = `${__dirname}/grifter`;
 
-test('zoe - grifter', async t => {
+test.skip('zoe - grifter', async t => {
   t.plan(2);
   // Setup zoe and mints
   const { moola, moolaR, moolaMint, bucksR, bucks } = setup();
