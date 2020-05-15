@@ -465,17 +465,7 @@ const makeZoe = (additionalEndowments = {}) => {
           sparseKeywords,
         );
 
-        // Filter proposal `want` and `give` by sparseKeywords
-        const filterProposalBySparseKeywords = proposal => {
-          return harden({
-            give: filterObjOkIfMissing(proposal.give, sparseKeywords),
-            want: filterObjOkIfMissing(proposal.want, sparseKeywords),
-          });
-        };
-
-        const proposals = offerRecords.map(offerRecord =>
-          filterProposalBySparseKeywords(offerRecord.proposal),
-        );
+        const proposals = offerRecords.map(offerRecord => offerRecord.proposal);
 
         const currentAmountMatrix = offerRecords.map(({ handle }) => {
           const filteredAmounts = contractFacet.getCurrentAllocation(

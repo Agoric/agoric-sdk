@@ -34,6 +34,10 @@ function isOfferSafeForOffer(
     );
   };
 
+  const isUnchanged = ([keyword]) => {
+    return !newAmountKeywordRecord[keyword];
+  };
+
   // For this allocation to count as a full refund, the allocated
   // amount must be greater than or equal to what was originally
   // offered.
@@ -43,7 +47,12 @@ function isOfferSafeForOffer(
   // wanted, their allocated amount must be greater than or equal to
   // what the payoutRules said they wanted.
   const winningsOk = Object.entries(proposal.want).every(isGTEByKeyword);
-  return refundOk || winningsOk;
+
+  // This reallocation is also offer safe if it only changes amounts that aren't
+  // mentioned in this offer's give and want.
+  const unchangedGive = Object.entries(proposal.give).every(isUnchanged);
+  const unchangedWant = Object.entries(proposal.want).every(isUnchanged);
+  return refundOk || winningsOk || (unchangedGive && unchangedWant);
 }
 
 /**
