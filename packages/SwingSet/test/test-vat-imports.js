@@ -1,5 +1,5 @@
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
-import '../install-ses.js';
 import { buildVatController } from '../src/index';
 
 async function requireHarden(t, withSES) {

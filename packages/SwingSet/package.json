@@ -21,9 +21,9 @@
   },
   "devDependencies": {
     "esm": "^3.2.5",
-    "ses": "^0.7.7",
+    "@agoric/install-ses": "0.1.0",
     "tap": "^14.10.5",
-    "tape": "^4.11.0",
+    "tape": "^4.13.2",
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
@@ -49,7 +49,7 @@
   },
   "files": [
     "bin/vat",
-    "src/**/*.js",
+    "src/**/*.js"
   ],
   "repository": {
     "type": "git",

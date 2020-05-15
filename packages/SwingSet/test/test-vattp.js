@@ -1,5 +1,5 @@
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
-import '../install-ses.js';
 import { buildVatController, getVatTPSourcePath } from '../src/index';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 

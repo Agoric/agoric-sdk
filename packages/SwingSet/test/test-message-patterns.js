@@ -2,8 +2,8 @@
 /* eslint dot-notation: "off" */
 /* eslint object-shorthand: "off" */
 
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
-import '../install-ses.js';
 import path from 'path';
 import {
   buildVatController,

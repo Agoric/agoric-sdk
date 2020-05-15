@@ -1,6 +1,6 @@
 // DISABLED@ts-checkDISABLED
+import '@agoric/install-ses'; // adds 'harden' to global
 import { test } from 'tape-promise/tape';
-import '../install-ses.js'; // adds 'harden' to global
 import assertNS from 'assert';
 const assert = assertNS.strict;
 import { producePromise } from '@agoric/produce-promise';
@@ -308,11 +308,7 @@ test('routing', async t => {
     );
     t.deepEquals(router.getRoutes('/ibc/*/barfo'), [], 'no match');
 
-    // tape's t.throws is broken under SES, more details in
-    // https://github.com/Agoric/SES-shim/issues/293#issuecomment-627037799
-    // The workaround is to use node's built-in assert.throws
-    //t.throws(
-    assert.throws(
+    t.throws(
       () => router.unregister('/ibc/*/ordered', 'a'),
       /Router is not registered/,
       'unregister fails for no match',
@@ -340,8 +336,7 @@ test('multiaddr', async t => {
       ['bot'],
     ]);
     for (const str of ['', 'foobar']) {
-      //t.throws(
-      assert.throws(
+      t.throws(
         () => parse(str),
         /Error parsing Multiaddr/,
         `expected failure of ${str}`,

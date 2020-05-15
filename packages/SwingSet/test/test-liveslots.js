@@ -1,6 +1,6 @@
 /* global harden */
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
-import '../install-ses.js';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 import { initSwingStore } from '@agoric/swing-store-simple';
 

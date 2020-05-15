@@ -1,5 +1,5 @@
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
-import '../install-ses.js';
 import { loadBasedir, buildVatController } from '../src/index';
 
 async function main(withSES, basedir, argv) {
