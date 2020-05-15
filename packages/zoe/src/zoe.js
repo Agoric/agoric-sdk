@@ -21,7 +21,7 @@ import {
   filterFillAmounts,
   assertSubset,
 } from './objArrayConversion';
-import { isOfferSafeForAll } from './offerSafety';
+import { isOfferSafeForOffer } from './offerSafety';
 import { areRightsConserved } from './rightsConservation';
 import { evalContractCode } from './evalContractCode';
 import { makeTables } from './state';
@@ -448,38 +448,32 @@ const makeZoe = (additionalEndowments = {}) => {
           offerHandles.length >= 2,
           details`reallocating must be done over two or more offers`,
         );
+
+        // Set sparseKeywords if undefined.
         const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
         const allKeywords = getKeywords(issuerKeywordRecord);
         if (sparseKeywords === undefined) {
           sparseKeywords = allKeywords;
         }
 
-        const newAmountMatrix = newAllocations.map(amountObj =>
-          objToArrayAssertFilled(amountObj, sparseKeywords),
-        );
-
-        const offerRecords = offerTable.getOffers(offerHandles);
-
+        // 1) ensure that rights are conserved overall
         const amountMathKeywordRecord = contractFacet.getAmountMaths(
           sparseKeywords,
         );
-
-        const proposals = offerRecords.map(offerRecord => offerRecord.proposal);
-
-        const currentAmountMatrix = offerRecords.map(({ handle }) => {
+        const amountMathsArray = objToArray(
+          amountMathKeywordRecord,
+          sparseKeywords,
+        );
+        const currentAmountMatrix = offerHandles.map(handle => {
           const filteredAmounts = contractFacet.getCurrentAllocation(
             handle,
             sparseKeywords,
           );
           return objToArray(filteredAmounts, sparseKeywords);
         });
-
-        const amountMathsArray = objToArray(
-          amountMathKeywordRecord,
-          sparseKeywords,
+        const newAmountMatrix = newAllocations.map(amountObj =>
+          objToArrayAssertFilled(amountObj, sparseKeywords),
         );
-
-        // 1) ensure that rights are conserved
         assert(
           areRightsConserved(
             amountMathsArray,
@@ -489,14 +483,42 @@ const makeZoe = (additionalEndowments = {}) => {
           details`Rights are not conserved in the proposed reallocation`,
         );
 
-        // 2) ensure 'offer safety' for each player
-        assert(
-          isOfferSafeForAll(amountMathKeywordRecord, proposals, newAllocations),
-          details`The proposed reallocation was not offer safe`,
+        // 2) Ensure 'offer safety' for each offer separately.
+
+        // Make the potential reallocation and test for offer safety
+        // by comparing the potential reallocation to the proposal.
+        const makePotentialReallocation = (
+          offerHandle,
+          sparseKeywordsAllocation,
+        ) => {
+          const { proposal, currentAllocation } = offerTable.get(offerHandle);
+          const potentialReallocation = harden({
+            ...currentAllocation,
+            ...sparseKeywordsAllocation,
+          });
+          const proposalKeywords = [
+            ...getKeywords(proposal.want),
+            ...getKeywords(proposal.give),
+          ];
+          assert(
+            isOfferSafeForOffer(
+              contractFacet.getAmountMaths(proposalKeywords),
+              proposal,
+              potentialReallocation,
+            ),
+            details`The proposed reallocation was not offer safe`,
+          );
+
+          // The reallocation passes the offer safety check
+          return potentialReallocation;
+        };
+
+        const reallocations = offerHandles.map((offerHandle, i) =>
+          makePotentialReallocation(offerHandle, newAllocations[i]),
         );
 
         // 3) save the reallocation
-        offerTable.updateAmounts(offerHandles, harden(newAllocations));
+        offerTable.updateAmounts(offerHandles, reallocations);
       },
 
       complete: offerHandles => {
