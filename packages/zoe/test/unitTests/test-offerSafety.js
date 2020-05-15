@@ -2,7 +2,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
-import { isOfferSafeForOffer, isOfferSafeForAll } from '../../src/offerSafety';
+import { isOfferSafeForOffer } from '../../src/offerSafety';
 import { setup } from './setupBasicMints';
 
 // Potential outcomes:
@@ -233,68 +233,6 @@ test('isOfferSafeForOffer - empty proposal', t => {
     const amounts = harden({ A: moola(1), B: simoleans(6), C: bucks(7) });
 
     t.ok(isOfferSafeForOffer(amountMathKeywordRecord, proposal, amounts));
-  } catch (e) {
-    t.assert(false, e);
-  }
-});
-
-// All users get exactly what they wanted
-test('isOfferSafeForAll - All users get what they wanted', t => {
-  t.plan(1);
-  try {
-    const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-    const amountMathKeywordRecord = harden({
-      A: moolaR.amountMath,
-      B: simoleanR.amountMath,
-      C: bucksR.amountMath,
-    });
-    const proposal = harden({
-      want: { B: simoleans(6) },
-      give: { A: moola(1), C: bucks(7) },
-    });
-    const proposals = [proposal, proposal, proposal];
-    const amounts = harden({ A: moola(0), B: simoleans(6), C: bucks(0) });
-    const amountKeywordRecords = [amounts, amounts, amounts];
-    t.ok(
-      isOfferSafeForAll(
-        amountMathKeywordRecord,
-        proposals,
-        amountKeywordRecords,
-      ),
-    );
-  } catch (e) {
-    t.assert(false, e);
-  }
-});
-
-test(`isOfferSafeForAll - One user doesn't get what they wanted`, t => {
-  t.plan(1);
-  try {
-    const { moolaR, simoleanR, bucksR, moola, simoleans, bucks } = setup();
-    const amountMathKeywordRecord = harden({
-      A: moolaR.amountMath,
-      B: simoleanR.amountMath,
-      C: bucksR.amountMath,
-    });
-    const proposal = harden({
-      want: { B: simoleans(6) },
-      give: { A: moola(1), C: bucks(7) },
-    });
-    const proposals = [proposal, proposal, proposal];
-    const amounts = harden({ A: moola(0), B: simoleans(6), C: bucks(0) });
-    const unsatisfiedAmounts = harden({
-      A: moola(0),
-      B: simoleans(4),
-      C: bucks(0),
-    });
-    const amountKeywordRecords = [amounts, amounts, unsatisfiedAmounts];
-    t.notOk(
-      isOfferSafeForAll(
-        amountMathKeywordRecord,
-        proposals,
-        amountKeywordRecords,
-      ),
-    );
   } catch (e) {
     t.assert(false, e);
   }

@@ -24,15 +24,11 @@ function isOfferSafeForOffer(
   proposal,
   newAmountKeywordRecord,
 ) {
-  const isGTEByKeyword = ([keyword, amount]) => {
-    if (!Object.keys(amountMathKeywordRecord).includes(keyword)) {
-      return false;
-    }
-    return amountMathKeywordRecord[keyword].isGTE(
+  const isGTEByKeyword = ([keyword, amount]) =>
+    amountMathKeywordRecord[keyword].isGTE(
       newAmountKeywordRecord[keyword],
       amount,
     );
-  };
 
   // For this allocation to count as a full refund, the allocated
   // amount must be greater than or equal to what was originally
@@ -46,24 +42,4 @@ function isOfferSafeForOffer(
   return refundOk || winningsOk;
 }
 
-/**
- * @param  {object} amountMathKeywordRecord - a record with keywords
- * as keys and amountMath as values
- * @param  {proposal[]} proposals - an array of records which are the
- * proposal for a single player. Each proposal has keys `give`,
- * `want`, and `exit`.
- * @param  {newAmountKeywordRecord[]} newAllocations - an array of
- * records. Each of the records (amountKeywordRecord) has keywords for
- * keys and the values are the amount that a single user will get.
- */
-const isOfferSafeForAll = (
-  amountMathKeywordRecord,
-  proposals,
-  newAllocations,
-) =>
-  proposals.every((proposal, i) =>
-    isOfferSafeForOffer(amountMathKeywordRecord, proposal, newAllocations[i]),
-  );
-
-// `isOfferSafeForOffer` is only exported for testing
-export { isOfferSafeForOffer, isOfferSafeForAll };
+export { isOfferSafeForOffer };
