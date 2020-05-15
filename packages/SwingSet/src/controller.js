@@ -35,6 +35,7 @@ process.on('unhandledRejection', e =>
 
 const ADMIN_DEVICE_PATH = require.resolve('./kernel/vatAdmin/vatAdmin-src');
 const ADMIN_VAT_PATH = require.resolve('./kernel/vatAdmin/vatAdminWrapper');
+const KERNEL_SOURCE_PATH = require.resolve('./kernel/kernel.js');
 
 function byName(a, b) {
   if (a.name < b.name) {
@@ -119,7 +120,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
       throw Error(`kernelRequire unprepared to satisfy require(${what})`);
     }
   }
-  const kernelSource = await bundleSource('./src/kernel/kernel.js', 'nestedEvaluate');
+  const kernelSource = await bundleSource(KERNEL_SOURCE_PATH, 'nestedEvaluate');
   const kernelNS = await importBundle(kernelSource,
                                       { filePrefix: 'kernel',
                                         endowments: {
