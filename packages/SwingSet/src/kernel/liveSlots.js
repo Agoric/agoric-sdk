@@ -433,18 +433,6 @@ function build(syscall, _state, makeRoot, forVatID) {
         syscall.fulfillToData(promiseID, ser);
       }
 
-      // TODO (for chip): the kernel currently notifies all subscribers of a
-      // promise about its resolution, even a subscriber who causes that
-      // promise to be resolved. We notify ourselves here anyways, because
-      // we'll need this when the retire-promises branch lands and the kernel
-      // behavior is changed to refrain from echoing back the notification to
-      // the resolving vat. So for now, we're double-resolving the promise,
-      // but it doesn't seem to cause any problems, and the tests
-      // (test-vpid-liveslots) depends upon it (the test doesn't simulate the
-      // kernel doing a echoed notification). When we land that branch, we
-      // can delete this first comment, without changing any of the code.
-      // (leave the following comment, it becomes correct then)
-
       // If we were *also* waiting on this promise (perhaps we received it as
       // an argument, and also as a result=), then we are responsible for
       // notifying ourselves. The kernel assumes we're a grownup and don't
@@ -463,8 +451,6 @@ function build(syscall, _state, makeRoot, forVatID) {
       lsdebug(`ls thenReject fired`, rej);
       const ser = m.serialize(rej);
       syscall.reject(promiseID, ser);
-      // TODO (for chip): this is also a double-rejection until the
-      // retire-promises branch lands. Delete this comment when that happens.
       const pRec = importedPromisesByPromiseID.get(promiseID);
       if (pRec) {
         pRec.reject(rej);

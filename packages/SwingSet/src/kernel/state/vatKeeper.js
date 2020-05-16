@@ -143,6 +143,8 @@ export function makeVatKeeper(
    * @param vatSlot  The vat slot being removed
    */
   function deleteCListEntry(kernelSlot, vatSlot) {
+    parseKernelSlot(kernelSlot);
+    parseVatSlot(vatSlot);
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     const vatKey = `${vatID}.c.${vatSlot}`;
     kdebug(`Delete mapping ${kernelKey}<=>${vatKey}`);

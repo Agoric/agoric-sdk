@@ -112,7 +112,7 @@ export default function makeVatManager(
       const { type } = parseKernelSlot(slot);
       if (type === 'promise') {
         kdebug(
-          `Unable to delete clist entry ${kpid}<=>${vpid} because slot ${slot} is a promise`,
+          `Unable to delete ${vatID} clist entry ${kpid}<=>${vpid} because slot ${slot} is a promise`,
         );
         return;
       }
