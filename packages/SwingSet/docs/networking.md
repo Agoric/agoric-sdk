@@ -1,4 +1,4 @@
-= Network API =
+# Network API
 
 Suitably-empowered code inside a vat can access a "network API" that works vaguely like the BSD socket API. This code can open a listening port on various networking stacks, initiate connections to remote ports, send and receive data over these connections, and finally close the connection and/or ports.
 
@@ -13,13 +13,13 @@ Vats which live inside a solo machine are able to use traditional networking lay
 
 Solo machines may be able to talk to chains and vice versa using specialized protocols. This will be used by CapTP to provide ocap messaging between these heterogeneous machine types.
 
-== The agoric-sdk User Local Port ==
+## The agoric-sdk User Local Port
 
 Each user of the Agoric testnet gets a few personal IBC listening ports. You can access these `Port` objects in the `home.ibcport` array, and you can learn their local address by calling something like `home.ibcport[0]~.getLocalAddress()`, which will give you a local address like `/ibc-port/portbvmnfb`.
 
 This is currently the only way for user code to get an IBC `Port`, though non-IBC ports can be allocated using the local `home.network` object.  This is an advanced use case, to be documented later.
 
-== Connecting to a Remote Port ==
+## Connecting to a Remote Port
 
 To establish a connection, you must start with a local `Port` object, and you must know the name of the remote endpoint. The remote endpoint will have a name like `/ibc-hop/$HOPNAME/ibc-port/$PORTNAME/ordered/$VERSION` (where `ibc-hop`, `ibc-port` and `ordered` are literal strings, spelled just like that, but `$HOPNAME`, `$PORTNAME`, and `$VERSION` are placeholders for arbitrary values that will vary from one endpoint to another).
 
@@ -32,7 +32,7 @@ home.ibcport[0]~.connect(endpoint, connectionHandler)
   .then(conn => doSomethingWithConnection(conn));
 ```
 
-== Opening a Listening Port and Accepting an Inbound Connection ==
+## Opening a Listening Port and Accepting an Inbound Connection
 
 The other side of `connect()` is a "listening port". These ports are waiting for inbound connections to be established.
 
@@ -76,7 +76,7 @@ Of all the methods, `onAccept` is the interesting one. It is called with a `remo
 If you choose to accept, your `onAccept` method must return a `Promise` that fires with a `ConnectionHandler`. This will be used just like the one you would pass into `connect()`. To decline, throw an error.
 
 
-== Sending Data ==
+## Sending Data
 
 The Networking API (at least for IBC) provides a "record pipe", in which each packet is transmitted intact over the network, requiring no additional framing to distinguish where one packet ends and the next one begins. This is in contrast to the "byte pipe" provided by a TCP connection, where you must typically prepend length headers to establish framing boundaries.
 
@@ -90,7 +90,7 @@ connection.send('data');
 
 NOTE: The type of this data is currently a string.  Ideally we would also accept Node.js `Buffer` objects, or Javascript `ArrayBuffer` and `TypedArray` objects, but unfortunately neither can be serialized by our current inter-vat marshalling code.
 
-== Receiving Data: The ConnectionHandler ==
+## Receiving Data: The ConnectionHandler
 
 You must provide each open connection with a `ConnectionHandler` object, where you write methods that will be called when various things happen to the connection. You can share a single handler object between multiple connections, if you like, or you can make a separate one for each.
 
@@ -106,7 +106,7 @@ The `reason` in `onclose` is optional, as in it may be `undefined`.
 
 The return value of `onReceive` is nominally a Promise for the ACK data of the message (and should thus appear as the eventual resolution of the Promise returned by `connection.send()` on the other side). However the ACK data can only appear in the block which includes the transaction that delivered the message, so there is a limited time window during which this data can be successfully delivered, and there is no guarantee that `onReceive` will return a Promise that resolves in time.  If the promise does not resolve in time, the implementation will automatically send an empty `''` ACK.  Because ACKs with data in them are difficult for your handler to get right, it is better to avoid them, where possible.
 
-== Closing the Connection ==
+## Closing the Connection
 
 When a given Connection has ceased to be useful, you should close it:
 
@@ -116,7 +116,7 @@ connection.close();
 
 This initiates a shutdown. The `ConnectionHandler` on both sides will eventually see their `onClose()` methods be called, with a `reason`.  It will allow them to distinguish an intentional `onClose()` (`reason` is `undefined`) from some error condition.
 
-== Removing a Listener ==
+## Removing a Listener
 
 When you no longer wish to receive connections on a port, you can remove the listener:
 
@@ -128,7 +128,7 @@ You must provide the handler you added, to enable the future ability to have mul
 
 Note that if you want to listen on this port again, you can just call `port.addListener(...)`, as before.  If you want to start a new connection, you can always call `port.connect(...)`.
 
-=== Closing the Port Entirely ===
+### Closing the Port Entirely
 
 Removing a listener doesn't release the port address to make it available for other `bind` requests.  You can call:
 
