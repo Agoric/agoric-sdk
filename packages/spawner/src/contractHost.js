@@ -13,6 +13,7 @@ import {
 import produceIssuer from '@agoric/ertp';
 import { producePromise } from '@agoric/produce-promise';
 import { makeMeter } from '@agoric/transform-metering/src/meter';
+import { E } from '@agoric/eventual-send';
 
 export { makeCollect } from './makeCollect';
 
@@ -23,7 +24,7 @@ export { makeCollect } from './makeCollect';
  * @param evaluate function to evaluate with endowments
  * @param additionalEndowments pure or pure-ish endowments to add to evaluator
  */
-function makeContractHost(E, evaluate, additionalEndowments = {}) {
+function makeContractHost(additionalEndowments = {}) {
   // Maps from seat identity to seats
   const seats = makeStore('seatIdentity');
   // from seat identity to invite description.
@@ -79,6 +80,18 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
       '$1',
     );
 
+    // metering added getMeter
+    // we don't accept bundles so we don't need nestedEvaluate
+    // Nat can be imported normally
+    // test files import @agoric/harden and @agoric/same-structure
+    // except the test *function* doesn't, it presumes they're on the global
+    // so add 'harden' and 'mustBeSameStructure' to global
+
+    const c = new Compartment(fullEndowments);
+    harden(c.global);
+    const fn = c.evaluate(functionSrcString);
+
+    /*
     // Refill a meter each crank.
     const { meter, refillFacet } = makeMeter();
     const doRefill = () => {
@@ -118,6 +131,7 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
     };
 
     const fn = nestedEvaluate(functionSrcString);
+    */
     assert(
       typeof fn === 'function',
       `"${functionSrcString}" must be a string for a function, but produced ${typeof fn}`,
@@ -153,17 +167,12 @@ function makeContractHost(E, evaluate, additionalEndowments = {}) {
     // used by clients to help validate that they have terms that match the
     // contract.
     install(contractSrcs, moduleFormat = 'object') {
+      // spawner is old and only used by ag-solo, and the tests only cover
+      // the 'object' format, so for now I'm not going to try to make
+      // anything else work
       let installation;
       if (moduleFormat === 'object') {
         installation = extractCheckFunctions(contractSrcs);
-      } else if (
-        moduleFormat === 'getExport' ||
-        moduleFormat === 'nestedEvaluate'
-      ) {
-        // We don't support 'check' functions in getExport format,
-        // because we only do a single evaluate, and the whole
-        // contract must be metered per-spawn, not per-installation.
-        installation = {};
       } else {
         assert.fail(details`Unrecognized moduleFormat ${moduleFormat}`);
       }
