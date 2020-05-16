@@ -236,24 +236,23 @@ async function doVatResolveCase1(t, mode) {
   const targets = { target2, localTarget, p1: expectedP1 };
   t.deepEqual(log.shift(), resolutionOf(expectedP1, mode, targets));
 
-  // then it should send 'two'. For now it should cite the same promise ID,
-  // but in the future that vpid will have been retired, and we should see a
-  // different one
-  let expectedArg = expectedP3;
-  let expectedResult = expectedP4;
-  if (mode === 'promise-data' || mode === 'promise-reject') {
-    expectedArg = expectedP1;
-    expectedResult = expectedP3;
+  // then it should send 'two'.
+  const RETIRE_VPIDS = mode !== 'promise-data' && mode !== 'promise-reject';
+  let expectedTwoArg = expectedP3;
+  let expectedResultOfTwo = expectedP4;
+  if (!RETIRE_VPIDS) {
+    expectedTwoArg = expectedP1;
+    expectedResultOfTwo = expectedP3;
   }
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
     method: 'two',
-    args: capargs([slot0arg], [expectedArg]),
-    resultSlot: expectedResult,
+    args: capargs([slot0arg], [expectedTwoArg]),
+    resultSlot: expectedResultOfTwo,
   });
-  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResult });
-  if (mode !== 'promise-data' && mode !== 'promise-reject') {
+  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResultOfTwo });
+  if (RETIRE_VPIDS) {
     t.deepEqual(log.shift(), resolutionOf(expectedP3, mode, targets));
   }
   t.deepEqual(log, []);
@@ -482,13 +481,13 @@ async function doVatResolveCase23(t, which, mode, stalls) {
 
   // The VPIDs in the remaining messages will depend upon whether we retired
   // p1 during that resolution.
-  const RETIRE_VPIDS = true;
+  const RETIRE_VPIDS = mode !== 'promise-data' && mode !== 'promise-reject';
 
   let expectedVPIDInThree = p1;
   let expectedResultOfThree = expectedP4;
   let expectedResultOfFour = expectedP5;
 
-  if (RETIRE_VPIDS && mode !== 'promise-data' && mode !== 'promise-reject') {
+  if (RETIRE_VPIDS) {
     expectedVPIDInThree = expectedP4;
     expectedResultOfThree = expectedP5;
     expectedResultOfFour = expectedP6;
@@ -525,7 +524,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
       target: expectedResultOfFour,
     });
   }
-  if (mode !== 'promise-data' && mode !== 'promise-reject') {
+  if (RETIRE_VPIDS) {
     t.deepEqual(log.shift(), resolutionOf(expectedP4, mode, targets));
   }
 
@@ -654,31 +653,31 @@ async function doVatResolveCase4(t, mode) {
   }
   await endOfCrank();
   t.deepEqual(log, []);
-  // TODO: when we switch to retiring VPIDs in the syscall.notifyFulfill*
-  // direction, this is the point at which both vat and kernel agree to stop
-  // using the 'p1' identifier. Subsequent sycalls from the vat will allocate
-  // a new VPID for that promise, and the vat will emit a syscall.fulfillTo*
-  // shortly after mentioning the new identifier.
+
+  const RETIRE_VPIDS = mode !== 'promise-data' && mode !== 'promise-reject';
 
   dispatch.deliver(rootA, 'second', capargs([slot0arg], [target1]));
   await endOfCrank();
 
   const expectedP4 = nextP();
   const expectedP5 = nextP();
-  let expectedArg = expectedP4;
-  let expectedResult = expectedP5;
-  if (mode === 'promise-data' || mode === 'promise-reject') {
-    expectedArg = p1;
-    expectedResult = expectedP4;
+  let expectedThreeArg = p1;
+  let expectedResultOfThree = expectedP4;
+  if (RETIRE_VPIDS) {
+    expectedThreeArg = expectedP4;
+    expectedResultOfThree = expectedP5;
   }
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
     method: 'three',
-    args: capargs([slot0arg], [expectedArg]),
-    resultSlot: expectedResult,
+    args: capargs([slot0arg], [expectedThreeArg]),
+    resultSlot: expectedResultOfThree,
   });
-  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResult });
+  t.deepEqual(log.shift(), {
+    type: 'subscribe',
+    target: expectedResultOfThree,
+  });
 
   if (mode === 'presence') {
     const expectedP6 = nextP();
@@ -691,7 +690,7 @@ async function doVatResolveCase4(t, mode) {
     });
     t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP6 });
   }
-  if (mode !== 'promise-data' && mode !== 'promise-reject') {
+  if (RETIRE_VPIDS) {
     const targets = { target2, localTarget: rootA, p1 };
     t.deepEqual(log.shift(), resolutionOf(expectedP4, mode, targets));
   }

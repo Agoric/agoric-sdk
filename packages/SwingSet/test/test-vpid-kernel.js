@@ -106,29 +106,46 @@ function buildRawVat(name, kernel, onDispatchCallback = undefined) {
 // run to set up test 1 is also what sets up the other side of test 4. But we
 // test each separately for clarity)
 
-function doResolveSyscall(syscallA, vpid, mode, target2) {
+const slot0arg = { '@qclass': 'slot', index: 0 };
+
+function doResolveSyscall(syscallA, vpid, mode, targets) {
   switch (mode) {
     case 'presence':
-      syscallA.fulfillToPresence(vpid, target2);
+      syscallA.fulfillToPresence(vpid, targets.target2);
+      break;
+    case 'local-object':
+      syscallA.fulfillToPresence(vpid, targets.localTarget);
       break;
     case 'data':
       syscallA.fulfillToData(vpid, capargs(4, []));
       break;
+    case 'promise-data':
+      syscallA.fulfillToData(vpid, capargs([slot0arg], [targets.p1]));
+      break;
     case 'reject':
       syscallA.reject(vpid, capargs('error', []));
+      break;
+    case 'promise-reject':
+      syscallA.reject(vpid, capargs([slot0arg], [targets.p1]));
       break;
     default:
       throw Error(`unknown mode ${mode}`);
   }
 }
 
-function resolutionOf(vpid, mode, target2) {
+function resolutionOf(vpid, mode, targets) {
   switch (mode) {
     case 'presence':
       return {
         type: 'notifyFulfillToPresence',
         promiseID: vpid,
-        slot: target2,
+        slot: targets.target2,
+      };
+    case 'local-object':
+      return {
+        type: 'notifyFulfillToPresence',
+        promiseID: vpid,
+        slot: targets.localTarget,
       };
     case 'data':
       return {
@@ -136,11 +153,23 @@ function resolutionOf(vpid, mode, target2) {
         promiseID: vpid,
         data: capargs(4, []),
       };
+    case 'promise-data':
+      return {
+        type: 'notifyFulfillToData',
+        promiseID: vpid,
+        data: capargs([slot0arg], [targets.p1]),
+      };
     case 'reject':
       return {
         type: 'notifyReject',
         promiseID: vpid,
         data: capargs('error', []),
+      };
+    case 'promise-reject':
+      return {
+        type: 'notifyReject',
+        promiseID: vpid,
+        data: capargs([slot0arg], [targets.p1]),
       };
     default:
       throw Error(`unknown mode ${mode}`);
@@ -206,19 +235,25 @@ async function doTest123(t, which, mode) {
   const rootAvatB = kernel.addImport(vatB, rootAkernel);
   const exportedP1VatA = 'p+1';
   const exportedP1VatB = 'p+2';
+  let dataPromiseB = 'p-60';
+  const dataPromiseA = 'p+3';
   const expectedP1kernel = 'kp40';
   const importedP1VatB = 'p-60';
   const importedP1VatA = 'p-60';
-  const slot0arg = { '@qclass': 'slot', index: 0 };
+  const localTargetA = 'o+1';
+  const localTargetB = 'o-51';
   let p1kernel;
   let p1VatA;
   let p1VatB;
+
+  const expectRetirement = mode !== 'promise-data' && mode !== 'promise-reject';
 
   if (which === 1) {
     // 1: Alice creates a new promise, sends it to Bob, and resolves it
     // A: bob~.one(p1); resolve_p1(mode) // to bob, 4, or reject
     p1VatA = exportedP1VatA;
     p1VatB = importedP1VatB;
+    dataPromiseB = 'p-61';
     syscallA.send(rootBvatA, 'one', capargs([slot0arg], [exportedP1VatA]));
     p1kernel = clistVatToKernel(kernel, vatA, exportedP1VatA);
     t.equal(p1kernel, expectedP1kernel);
@@ -243,13 +278,11 @@ async function doTest123(t, which, mode) {
     // A: function one() { return resolution; }
     p1VatB = exportedP1VatB;
     p1VatA = importedP1VatA;
-    console.log(`exportedP1VatB ${exportedP1VatB} in vatB ${vatB}`);
     syscallB.send(rootAvatB, 'one', capargs([], []), exportedP1VatB);
     syscallB.subscribe(exportedP1VatB);
     p1kernel = clistVatToKernel(kernel, vatB, p1VatB);
     await kernel.run();
     // expect logA to have deliver(one)
-    console.log(`importedP1VatA ${importedP1VatA}`);
     t.deepEqual(logA.shift(), {
       type: 'deliver',
       targetSlot: rootAvatA,
@@ -301,18 +334,28 @@ async function doTest123(t, which, mode) {
   // before resolution, A's c-list should have the promise
   t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
 
-  doResolveSyscall(syscallA, p1VatA, mode, rootBvatA);
+  const targetsA = {
+    target2: rootBvatA,
+    localTarget: localTargetA,
+    p1: dataPromiseA,
+  };
+  doResolveSyscall(syscallA, p1VatA, mode, targetsA);
   await kernel.run();
 
-  t.deepEqual(logB.shift(), resolutionOf(p1VatB, mode, rootBvatB));
+  const targetsB = {
+    target2: rootBvatB,
+    localTarget: localTargetB,
+    p1: dataPromiseB,
+  };
+  t.deepEqual(logB.shift(), resolutionOf(p1VatB, mode, targetsB));
   t.deepEqual(logB, []);
 
-  // after resolution, (now that we've implemented retirement), A's c-list
-  // should *not* have the promise
-  t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
-  t.equal(clistKernelToVat(kernel, vatA, p1kernel), undefined);
-  t.equal(clistVatToKernel(kernel, vatA, p1VatA), undefined);
-
+  if (expectRetirement) {
+    // after resolution, A's c-list should *not* have the promise
+    t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
+    t.equal(clistKernelToVat(kernel, vatA, p1kernel), undefined);
+    t.equal(clistVatToKernel(kernel, vatA, p1VatA), undefined);
+  }
   t.end();
 }
 
@@ -328,6 +371,18 @@ test('kernel vpid handling case1 reject', async t => {
   await doTest123(t, 1, 'reject');
 });
 
+test('kernel vpid handling case1 local-object', async t => {
+  await doTest123(t, 1, 'local-object');
+});
+
+test('kernel vpid handling case1 promise-data', async t => {
+  await doTest123(t, 1, 'promise-data');
+});
+
+test('kernel vpid handling case1 promise-reject', async t => {
+  await doTest123(t, 1, 'promise-reject');
+});
+
 test('kernel vpid handling case2 presence', async t => {
   await doTest123(t, 2, 'presence');
 });
@@ -338,6 +393,18 @@ test('kernel vpid handling case2 data', async t => {
 
 test('kernel vpid handling case2 reject', async t => {
   await doTest123(t, 2, 'reject');
+});
+
+test('kernel vpid handling case2 local-object', async t => {
+  await doTest123(t, 2, 'local-object');
+});
+
+test('kernel vpid handling case2 promise-data', async t => {
+  await doTest123(t, 2, 'promise-data');
+});
+
+test('kernel vpid handling case2 promise-reject', async t => {
+  await doTest123(t, 2, 'promise-reject');
 });
 
 test('kernel vpid handling case3 presence', async t => {
@@ -352,13 +419,25 @@ test('kernel vpid handling case3 reject', async t => {
   await doTest123(t, 3, 'reject');
 });
 
+test('kernel vpid handling case3 local-object', async t => {
+  await doTest123(t, 3, 'local-object');
+});
+
+test('kernel vpid handling case3 promise-data', async t => {
+  await doTest123(t, 3, 'promise-data');
+});
+
+test('kernel vpid handling case3 promise-reject', async t => {
+  await doTest123(t, 3, 'promise-reject');
+});
+
 async function doTest4567(t, which, mode) {
   const kernel = buildKernel(makeEndowments());
   // vatA is our primary actor
   let onDispatchCallback;
-  function odc(targetSlot, method, args, resultSlot) {
+  function odc(d) {
     if (onDispatchCallback) {
-      onDispatchCallback(targetSlot, method, args, resultSlot);
+      onDispatchCallback(d);
     }
   }
   const { log: logA, getSyscall: getSyscallA } = buildRawVat(
@@ -382,21 +461,27 @@ async function doTest4567(t, which, mode) {
   const rootAvatA = 'o+0';
   const rootAkernel = kernel.addExport(vatA, rootAvatA);
   const rootAvatB = kernel.addImport(vatB, rootAkernel);
+  const localTargetB = 'o+1';
+  const localTargetA = 'o-51';
   const exportedP1VatA = 'p+1';
   const exportedP1VatB = 'p+2';
+  const dataPromiseB = 'p+3';
+  let dataPromiseA = 'p-60';
   const expectedP1kernel = 'kp40';
   const importedP1VatB = 'p-60';
   const importedP1VatA = 'p-60';
-  const slot0arg = { '@qclass': 'slot', index: 0 };
   let p1kernel;
   let p1VatA;
   let p1VatB;
+
+  const expectRetirement = mode !== 'promise-data' && mode !== 'promise-reject';
 
   if (which === 4) {
     // 4: Alice receives a promise from Bob, which is then resolved
     // B: alice~.one(p1); resolve_p1(mode) // to alice, 4, or reject
     p1VatB = exportedP1VatB;
     p1VatA = importedP1VatA;
+    dataPromiseA = 'p-61';
     syscallB.send(rootAvatB, 'one', capargs([slot0arg], [exportedP1VatB]));
     p1kernel = clistVatToKernel(kernel, vatB, exportedP1VatB);
     t.equal(p1kernel, expectedP1kernel);
@@ -500,23 +585,33 @@ async function doTest4567(t, which, mode) {
   // Now bob resolves it. We want to examine the kernel's c-lists at the
   // moment the notification is delivered to Alice. We only expect one
   // dispatch: Alice.notifyFulfillToPresence()
-  onDispatchCallback = function odc1(d) {
-    t.deepEqual(d, resolutionOf(p1VatA, mode, rootAvatA));
-    t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
+  const targetsA = {
+    target2: rootAvatA,
+    localTarget: localTargetA,
+    p1: dataPromiseA,
   };
-  doResolveSyscall(syscallB, p1VatB, mode, rootAvatB);
+  onDispatchCallback = function odc1(d) {
+    t.deepEqual(d, resolutionOf(p1VatA, mode, targetsA));
+    t.equal(inCList(kernel, vatA, p1kernel, p1VatA), !expectRetirement);
+  };
+  const targetsB = {
+    target2: rootAvatB,
+    localTarget: localTargetB,
+    p1: dataPromiseB,
+  };
+  doResolveSyscall(syscallB, p1VatB, mode, targetsB);
   await kernel.run();
   onDispatchCallback = undefined;
 
-  t.deepEqual(logA.shift(), resolutionOf(p1VatA, mode, rootAvatA));
+  t.deepEqual(logA.shift(), resolutionOf(p1VatA, mode, targetsA));
   t.deepEqual(logA, []);
 
-  // after resolution, (now that we've implemented retirement), A's c-list
-  // should *not* have the promise
-  t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
-  t.equal(clistKernelToVat(kernel, vatA, p1kernel), undefined);
-  t.equal(clistVatToKernel(kernel, vatA, p1VatA), undefined);
-
+  if (expectRetirement) {
+    // after resolution, A's c-list should *not* have the promise
+    t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
+    t.equal(clistKernelToVat(kernel, vatA, p1kernel), undefined);
+    t.equal(clistVatToKernel(kernel, vatA, p1VatA), undefined);
+  }
   t.end();
 }
 
@@ -532,6 +627,18 @@ test('kernel vpid handling case4 reject', async t => {
   await doTest4567(t, 4, 'reject');
 });
 
+test('kernel vpid handling case4 local-object', async t => {
+  await doTest4567(t, 4, 'local-object');
+});
+
+test('kernel vpid handling case4 promise-data', async t => {
+  await doTest4567(t, 4, 'promise-data');
+});
+
+test('kernel vpid handling case4 promise-reject', async t => {
+  await doTest4567(t, 4, 'promise-reject');
+});
+
 test('kernel vpid handling case5 presence', async t => {
   await doTest4567(t, 5, 'presence');
 });
@@ -542,6 +649,18 @@ test('kernel vpid handling case5 data', async t => {
 
 test('kernel vpid handling case5 reject', async t => {
   await doTest4567(t, 5, 'reject');
+});
+
+test('kernel vpid handling case5 local-object', async t => {
+  await doTest4567(t, 5, 'local-object');
+});
+
+test('kernel vpid handling case5 promise-data', async t => {
+  await doTest4567(t, 5, 'promise-data');
+});
+
+test('kernel vpid handling case5 promise-reject', async t => {
+  await doTest4567(t, 5, 'promise-reject');
 });
 
 test('kernel vpid handling case6 presence', async t => {
@@ -556,6 +675,18 @@ test('kernel vpid handling case6 reject', async t => {
   await doTest4567(t, 6, 'reject');
 });
 
+test('kernel vpid handling case6 local-object', async t => {
+  await doTest4567(t, 6, 'local-object');
+});
+
+test('kernel vpid handling case6 promise-data', async t => {
+  await doTest4567(t, 6, 'promise-data');
+});
+
+test('kernel vpid handling case6 promise-reject', async t => {
+  await doTest4567(t, 6, 'promise-reject');
+});
+
 test('kernel vpid handling case7 presence', async t => {
   await doTest4567(t, 7, 'presence');
 });
@@ -566,4 +697,16 @@ test('kernel vpid handling case7 data', async t => {
 
 test('kernel vpid handling case7 reject', async t => {
   await doTest4567(t, 7, 'reject');
+});
+
+test('kernel vpid handling case7 local-object', async t => {
+  await doTest4567(t, 7, 'local-object');
+});
+
+test('kernel vpid handling case7 promise-data', async t => {
+  await doTest4567(t, 7, 'promise-data');
+});
+
+test('kernel vpid handling case7 promise-reject', async t => {
+  await doTest4567(t, 7, 'promise-reject');
 });
