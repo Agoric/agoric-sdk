@@ -18,7 +18,7 @@ export const makeContract = harden(
 
     const zoeService = zcf.getZoeService();
 
-    const mintAndSellTickets = ({
+    const sellTickets = ({
       show,
       start,
       count,
@@ -84,8 +84,8 @@ export const makeContract = harden(
     };
 
     const mintTicketsForShowHook = _offerHandle => {
-      // outcome is an object with a mintTickets method
-      return harden({ mintAndSellTickets });
+      // outcome is an object with a sellTickets method
+      return harden({ sellTickets });
     };
 
     return harden({

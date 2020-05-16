@@ -10,7 +10,7 @@ import { makeZoe } from '../../../src/zoe';
 import { makeGetInstanceHandle } from '../../../src/clientSupport';
 import { defaultAcceptanceMsg } from '../../../src/contractSupport';
 
-const mintTicketsRoot = `${__dirname}/../../../src/contracts/mintTickets`;
+const venueContractRoot = `${__dirname}/../../../src/contracts/venueContract`;
 const sellItemsRoot = `${__dirname}/../../../src/contracts/sellItems`;
 
 test(`mint and sell tickets for multiple shows`, async t => {
@@ -19,10 +19,10 @@ test(`mint and sell tickets for multiple shows`, async t => {
   const inviteIssuer = E(zoe).getInviteIssuer();
   const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
-  const mintTicketsBundle = await bundleSource(mintTicketsRoot);
-  const mintTicketsInstallationHandle = await E(zoe).install(
-    mintTicketsBundle.source,
-    mintTicketsBundle.moduleFormat,
+  const venueContractBundle = await bundleSource(venueContractRoot);
+  const venueContractInstallationHandle = await E(zoe).install(
+    venueContractBundle.source,
+    venueContractBundle.moduleFormat,
   );
 
   const sellItemsBundle = await bundleSource(sellItemsRoot);
@@ -35,16 +35,16 @@ test(`mint and sell tickets for multiple shows`, async t => {
     'moola',
   );
 
-  const invite = await E(zoe).makeInstance(mintTicketsInstallationHandle);
+  const invite = await E(zoe).makeInstance(venueContractInstallationHandle);
   const instanceHandle = await getInstanceHandle(invite);
   const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
 
   const ticketIssuer = await E(publicAPI).getTicketIssuer();
   const { outcome } = await E(zoe).offer(invite);
-  const mint = await outcome;
-  const { outcome: saleOutcome, sellItemsInstanceHandle } = await E(
-    mint,
-  ).mintAndSellTickets({
+  const ticketMaker = await outcome;
+  const { outcome: escrowTicketsOutcome, sellItemsInstanceHandle } = await E(
+    ticketMaker,
+  ).sellTickets({
     show: 'Steven Universe, the Opera',
     start: 'Wed, March 25th 2020 at 8pm',
     count: 3,
@@ -53,16 +53,16 @@ test(`mint and sell tickets for multiple shows`, async t => {
     pricePerItem: moolaAmountMath.make(20),
   });
   t.equals(
-    await saleOutcome,
+    await escrowTicketsOutcome,
     defaultAcceptanceMsg,
-    `saleOutcome is default acceptance message`,
+    `escrowTicketsOutcome is default acceptance message`,
   );
 
   const ticketBrand = await E(ticketIssuer).getBrand();
-  const { publicAPI: salesPublicAPI } = await E(zoe).getInstanceRecord(
+  const { publicAPI: ticketSalesPublicAPI } = await E(zoe).getInstanceRecord(
     sellItemsInstanceHandle,
   );
-  const ticketsForSale = await E(salesPublicAPI).getAvailableItems();
+  const ticketsForSale = await E(ticketSalesPublicAPI).getAvailableItems();
   t.deepEquals(
     ticketsForSale,
     {
@@ -89,8 +89,8 @@ test(`mint and sell tickets for multiple shows`, async t => {
   );
 
   const { sellItemsInstanceHandle: sellItemsInstanceHandle2 } = await E(
-    mint,
-  ).mintAndSellTickets({
+    ticketMaker,
+  ).sellTickets({
     show: 'Reserved for private party',
     start: 'Tues May 12, 2020 at 8pm',
     count: 2,
@@ -142,7 +142,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
 // The Opera is told about the show being sold out. It gets all the moolas from
 // the sale
 
-test.only(`mint and sell opera tickets`, async t => {
+test(`mint and sell opera tickets`, async t => {
   // Setup initial conditions
   const {
     mint: moolaMint,
@@ -155,10 +155,10 @@ test.only(`mint and sell opera tickets`, async t => {
 
   const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
-  const mintTicketsBundle = await bundleSource(mintTicketsRoot);
-  const mintTicketsInstallationHandle = await E(zoe).install(
-    mintTicketsBundle.source,
-    mintTicketsBundle.moduleFormat,
+  const venueContractBundle = await bundleSource(venueContractRoot);
+  const venueContractInstallationHandle = await E(zoe).install(
+    venueContractBundle.source,
+    venueContractBundle.moduleFormat,
   );
 
   const sellItemsBundle = await bundleSource(sellItemsRoot);
@@ -169,22 +169,22 @@ test.only(`mint and sell opera tickets`, async t => {
 
   // === Initial Opera de Bordeaux part ===
 
-  // create an instance of the ticketMinting contract
+  // create an instance of the venue contract
   const mintTickets = async () => {
-    const invite = await E(zoe).makeInstance(mintTicketsInstallationHandle);
+    const invite = await E(zoe).makeInstance(venueContractInstallationHandle);
     const instanceHandle = await getInstanceHandle(invite);
     const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
 
     const ticketIssuer = await E(publicAPI).getTicketIssuer();
     const { outcome } = await E(zoe).offer(invite);
-    const mintAdmin = await outcome;
+    const ticketSeller = await outcome;
 
     // completeObj exists because of a current limitation in @agoric/marshal : https://github.com/Agoric/agoric-sdk/issues/818
     const {
       sellItemsInstanceHandle: ticketSalesInstanceHandle,
       payout,
       completeObj,
-    } = await E(mintAdmin).mintAndSellTickets({
+    } = await E(ticketSeller).sellTickets({
       show: 'Steven Universe, the Opera',
       start: 'Wed, March 25th 2020 at 8pm',
       count: 3,

@@ -67,6 +67,7 @@ export const makeContract = harden(
         [newSellerAllocation, newBuyerAllocation],
       );
       zcf.complete([buyerOfferHandle]);
+      return defaultAcceptanceMsg;
     };
 
     const buyerExpected = harden({

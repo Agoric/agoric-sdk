@@ -10,6 +10,8 @@ import publicAuctionBundle from './bundle-publicAuction';
 import atomicSwapBundle from './bundle-atomicSwap';
 import simpleExchangeBundle from './bundle-simpleExchange';
 import autoswapBundle from './bundle-autoswap';
+import sellItemsBundle from './bundle-sellItems';
+import venueContractBundle from './bundle-venueContract';
 /* eslint-enable import/no-unresolved, import/extensions */
 
 const setupBasicMints = () => {
@@ -114,6 +116,14 @@ function build(E, log) {
         autoswap: await E(zoe).install(
           autoswapBundle.source,
           autoswapBundle.moduleFormat,
+        ),
+        sellItems: await E(zoe).install(
+          sellItemsBundle.source,
+          sellItemsBundle.moduleFormat,
+        ),
+        venueContract: await E(zoe).install(
+          venueContractBundle.source,
+          venueContractBundle.moduleFormat,
         ),
       };
 
