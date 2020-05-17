@@ -18,7 +18,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/debug"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
-	codecstd "github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/bank"
@@ -50,8 +49,7 @@ func Run() {
 func RunWithController(sendToController Sender) {
 	cobra.EnableCommandSorting = false
 
-	cdc := codecstd.MakeCodec(app.ModuleBasics)
-	appCodec := codecstd.NewAppCodec(cdc)
+	appCodec, cdc := app.MakeCodecs()
 
 	config := sdk.GetConfig()
 	app.SetConfigDefaults(config)
