@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.2.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/evaluate@2.2.5...@agoric/evaluate@2.2.6) (2020-05-17)
+
+
+### Bug Fixes
+
+* make output from bundleSource correspond to source map lines ([c1ddd4a](https://github.com/Agoric/agoric-sdk/commit/c1ddd4a0a27de9561b3bd827213562d9741e61a8))
+
+
+
+
+
 ## [2.2.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/evaluate@2.2.4...@agoric/evaluate@2.2.5) (2020-05-10)
 
 **Note:** Version bump only for package @agoric/evaluate

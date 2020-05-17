@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.17.0...@agoric/cosmic-swingset@0.18.0) (2020-05-17)
+
+
+### Bug Fixes
+
+* bump dependency on newer cosmos-sdk ([d114c5e](https://github.com/Agoric/agoric-sdk/commit/d114c5e53be4056df89fd7a15bbd80b3a51fe4c1))
+* don't bypass the block queue when running simulateBlock ([444067d](https://github.com/Agoric/agoric-sdk/commit/444067d24f2aee15eece92a0b1a4888b9fb9e419))
+
+
+### Features
+
+* marshal based on user's petnames ([#1092](https://github.com/Agoric/agoric-sdk/issues/1092)) ([5e1945c](https://github.com/Agoric/agoric-sdk/commit/5e1945c99d405c2dbf1a6c980591c09d8a952e8a))
+* provide scaffolding for testing scenario3's home objects ([84752e2](https://github.com/Agoric/agoric-sdk/commit/84752e230f22d8cc254413e3827a24140318dfcb))
+
+
+
+
+
 # [0.17.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.16.0...@agoric/cosmic-swingset@0.17.0) (2020-05-10)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/produce-promise",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Helper for making promises",
   "main": "src/producePromise.js",
   "engines": {
@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/eventual-send": "^0.9.1",
+    "@agoric/eventual-send": "^0.9.2",
     "@agoric/harden": "^0.0.8"
   },
   "devDependencies": {
