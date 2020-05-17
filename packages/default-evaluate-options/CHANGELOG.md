@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.3.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/default-evaluate-options@0.3.5...@agoric/default-evaluate-options@0.3.6) (2020-05-17)
+
+
+### Bug Fixes
+
+* **transform-eventual-send:** split out rewriter.js to fix cycle ([8a54d36](https://github.com/Agoric/agoric-sdk/commit/8a54d36f6de8cee2ea87d6c75ea1eb013f40e766))
+* remove many build steps ([6c7d3bb](https://github.com/Agoric/agoric-sdk/commit/6c7d3bb0c70277c22f8eda40525d7240141a5434))
+
+
+
+
+
 ## [0.3.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/default-evaluate-options@0.3.4...@agoric/default-evaluate-options@0.3.5) (2020-05-10)
 
 **Note:** Version bump only for package @agoric/default-evaluate-options

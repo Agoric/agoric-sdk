@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-eventual-send@1.2.4...@agoric/transform-eventual-send@1.3.0) (2020-05-17)
+
+
+### Bug Fixes
+
+* **transform-eventual-send:** split out rewriter.js to fix cycle ([8a54d36](https://github.com/Agoric/agoric-sdk/commit/8a54d36f6de8cee2ea87d6c75ea1eb013f40e766))
+* make output from bundleSource correspond to source map lines ([c1ddd4a](https://github.com/Agoric/agoric-sdk/commit/c1ddd4a0a27de9561b3bd827213562d9741e61a8))
+* remove many build steps ([6c7d3bb](https://github.com/Agoric/agoric-sdk/commit/6c7d3bb0c70277c22f8eda40525d7240141a5434))
+
+
+### Features
+
+* **transform-eventual-send:** expose bare transform function too ([0bb35eb](https://github.com/Agoric/agoric-sdk/commit/0bb35eb11fd9acc4e90ec987f83f246e09cdcab5))
+
+
+
+
+
 ## [1.2.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-eventual-send@1.2.3...@agoric/transform-eventual-send@1.2.4) (2020-05-10)
 
 **Note:** Version bump only for package @agoric/transform-eventual-send

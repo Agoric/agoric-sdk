@@ -1,6 +1,6 @@
 {
   "name": "@agoric/zoe",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Zoe: the Smart Contract Framework for Offer Enforcement",
   "main": "src/zoe.js",
   "engines": {
@@ -32,22 +32,22 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.0.6",
-    "@agoric/ertp": "^0.5.4",
-    "@agoric/evaluate": "^2.2.5",
-    "@agoric/eventual-send": "^0.9.1",
+    "@agoric/assert": "^0.0.7",
+    "@agoric/ertp": "^0.5.5",
+    "@agoric/evaluate": "^2.2.6",
+    "@agoric/eventual-send": "^0.9.2",
     "@agoric/harden": "^0.0.8",
-    "@agoric/marshal": "^0.2.1",
+    "@agoric/marshal": "^0.2.2",
     "@agoric/nat": "^2.0.1",
-    "@agoric/notifier": "^0.1.1",
-    "@agoric/produce-promise": "^0.1.1",
-    "@agoric/same-structure": "^0.0.6",
-    "@agoric/transform-metering": "^1.2.4",
-    "@agoric/weak-store": "^0.0.6"
+    "@agoric/notifier": "^0.1.2",
+    "@agoric/produce-promise": "^0.1.2",
+    "@agoric/same-structure": "^0.0.7",
+    "@agoric/transform-metering": "^1.2.5",
+    "@agoric/weak-store": "^0.0.7"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^1.1.4",
-    "@agoric/swingset-vat": "^0.5.1",
+    "@agoric/bundle-source": "^1.1.5",
+    "@agoric/swingset-vat": "^0.5.2",
     "esm": "^3.2.25",
     "tap-spec": "^5.0.0",
     "tape": "^4.11.0",
