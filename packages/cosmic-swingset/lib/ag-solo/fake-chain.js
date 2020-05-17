@@ -75,7 +75,7 @@ export async function connectToFakeChain(basedir, GCI, role, delay, inbound) {
   const maximumDelay = (delay || PRETEND_BLOCK_DELAY) * 1000;
 
   const withBlockQueue = makeWithQueue();
-  const simulateBlock = withBlockQueue(async function simulateBlock() {
+  const simulateBlock = withBlockQueue(async function unqueuedSimulateBlock() {
     const actualStart = Date.now();
     // Gather up the new messages into the latest block.
     thisBlock.push(...intoChain);
