@@ -137,6 +137,22 @@ export function makeVatKeeper(
   }
 
   /**
+   * Remove an entry from the vat's c-list.
+   *
+   * @param kernelSlot  The kernel slot being removed
+   * @param vatSlot  The vat slot being removed
+   */
+  function deleteCListEntry(kernelSlot, vatSlot) {
+    parseKernelSlot(kernelSlot);
+    parseVatSlot(vatSlot);
+    const kernelKey = `${vatID}.c.${kernelSlot}`;
+    const vatKey = `${vatID}.c.${vatSlot}`;
+    kdebug(`Delete mapping ${kernelKey}<=>${vatKey}`);
+    storage.delete(kernelKey);
+    storage.delete(vatKey);
+  }
+
+  /**
    * Generator function to return the vat's transcript, one entry at a time.
    */
   function* getTranscript() {
@@ -198,6 +214,7 @@ export function makeVatKeeper(
   return harden({
     mapVatSlotToKernelSlot,
     mapKernelSlotToVatSlot,
+    deleteCListEntry,
     getTranscript,
     addToTranscript,
     vatStats,

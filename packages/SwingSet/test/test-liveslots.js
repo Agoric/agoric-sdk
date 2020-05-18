@@ -305,7 +305,8 @@ async function doOutboundPromise(t, mode) {
   const target = 'o-1';
   const expectedP1 = 'p+5';
   const expectedResultP1 = 'p+6';
-  const expectedResultP2 = 'p+7';
+  const expectedP2 = 'p+7';
+  const expectedResultP2 = 'p+8';
   const slot0arg = { '@qclass': 'slot', index: 0 };
 
   let resolution;
@@ -356,18 +357,19 @@ async function doOutboundPromise(t, mode) {
   t.deepEqual(log.shift(), fulfillmentSyscall);
 
   // On the next turn, 'two' is sent, with the previously-resolved promise.
-  // In our current implementation, this re-uses the same Promise ID. Once we
-  // switch to retiring promises after they've been resolved, this will use a
-  // fresh ID.
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target,
     method: 'two',
-    args: capargs([slot0arg], [expectedP1]), // this will change
+    args: capargs([slot0arg], [expectedP2]),
     resultSlot: expectedResultP2,
   });
   // and again it subscribes to the result promise
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResultP2 });
+
+  fulfillmentSyscall.promiseID = expectedP2;
+  t.deepEqual(log.shift(), fulfillmentSyscall);
+
   t.deepEqual(log, []);
 
   t.end();

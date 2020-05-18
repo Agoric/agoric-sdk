@@ -2,7 +2,7 @@ import harden from '@agoric/harden';
 
 function build(_E, log) {
   let resolver;
-  return harden({
+  return {
     first() {
       log('=> Bob: in first');
       const answer = new Promise((theResolver, _theRejector) => {
@@ -20,7 +20,7 @@ function build(_E, log) {
       log('=> Bob: second done');
       return `Bob's second answer`;
     },
-  });
+  };
 }
 
 export default function setup(syscall, state, helpers) {
@@ -31,7 +31,7 @@ export default function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
-    E => build(E, log),
+    E => harden(build(E, log)),
     helpers.vatID,
   );
 }
