@@ -10,5 +10,6 @@ var ModuleCdc *codec.Codec
 func RegisterCodec(cdc *codec.Codec) {
 	cdc.RegisterConcrete(MsgDeliverInbound{}, "swingset/DeliverInbound", nil)
 	cdc.RegisterConcrete(MsgSendPacket{}, "swingset/SendPacket", nil)
+	cdc.RegisterConcrete(MsgProvision{}, "swingset/Provision", nil)
 	ModuleCdc = cdc
 }

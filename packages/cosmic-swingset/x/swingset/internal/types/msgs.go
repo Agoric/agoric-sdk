@@ -120,3 +120,53 @@ func (msg MsgSendPacket) GetSigners() []sdk.AccAddress {
 func (msg MsgSendPacket) Type() string {
 	return "sendpacket"
 }
+
+// MsgProvision defines a Provision message
+type MsgProvision struct {
+	Nickname  string         `json:"nickname" yaml:"nickname"`
+	Address   sdk.AccAddress `json:"address" yaml:"address"`
+	Submitter sdk.AccAddress `json:"submitter" yaml:"submitter"`
+}
+
+var _ sdk.Msg = &MsgProvision{}
+
+func NewMsgProvision(nickname string, addr sdk.AccAddress, submitter sdk.AccAddress) MsgProvision {
+	return MsgProvision{
+		Nickname:  nickname,
+		Address:   addr,
+		Submitter: submitter,
+	}
+}
+
+// Route should return the name of the module
+func (msg MsgProvision) Route() string { return RouterKey }
+
+// Type should return the action
+func (msg MsgProvision) Type() string { return "provision" }
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgProvision) ValidateBasic() error {
+	if msg.Submitter.Empty() {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter.String())
+	}
+	if msg.Address.Empty() {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Address.String())
+	}
+	if len(msg.Nickname) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Nickname cannot be empty")
+	}
+	if msg.Address.Empty() {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Address.String())
+	}
+	return nil
+}
+
+// GetSignBytes encodes the message for signing
+func (msg MsgProvision) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+}
+
+// GetSigners defines whose signature is required
+func (msg MsgProvision) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.Submitter}
+}
