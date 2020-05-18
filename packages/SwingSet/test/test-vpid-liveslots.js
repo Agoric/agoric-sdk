@@ -6,6 +6,8 @@ import harden from '@agoric/harden';
 import { producePromise } from '@agoric/produce-promise';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
+const RETIRE_VPIDS = true;
+
 function capdata(body, slots = []) {
   return harden({ body, slots });
 }
@@ -237,10 +239,11 @@ async function doVatResolveCase1(t, mode) {
   t.deepEqual(log.shift(), resolutionOf(expectedP1, mode, targets));
 
   // then it should send 'two'.
-  const RETIRE_VPIDS = mode !== 'promise-data' && mode !== 'promise-reject';
+  const expectRetirement =
+    RETIRE_VPIDS && mode !== 'promise-data' && mode !== 'promise-reject';
   let expectedTwoArg = expectedP3;
   let expectedResultOfTwo = expectedP4;
-  if (!RETIRE_VPIDS) {
+  if (!expectRetirement) {
     expectedTwoArg = expectedP1;
     expectedResultOfTwo = expectedP3;
   }
@@ -252,7 +255,7 @@ async function doVatResolveCase1(t, mode) {
     resultSlot: expectedResultOfTwo,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResultOfTwo });
-  if (RETIRE_VPIDS) {
+  if (expectRetirement) {
     t.deepEqual(log.shift(), resolutionOf(expectedP3, mode, targets));
   }
   t.deepEqual(log, []);
@@ -481,13 +484,14 @@ async function doVatResolveCase23(t, which, mode, stalls) {
 
   // The VPIDs in the remaining messages will depend upon whether we retired
   // p1 during that resolution.
-  const RETIRE_VPIDS = mode !== 'promise-data' && mode !== 'promise-reject';
+  const expectRetirement =
+    RETIRE_VPIDS && mode !== 'promise-data' && mode !== 'promise-reject';
 
   let expectedVPIDInThree = p1;
   let expectedResultOfThree = expectedP4;
   let expectedResultOfFour = expectedP5;
 
-  if (RETIRE_VPIDS) {
+  if (expectRetirement) {
     expectedVPIDInThree = expectedP4;
     expectedResultOfThree = expectedP5;
     expectedResultOfFour = expectedP6;
@@ -524,7 +528,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
       target: expectedResultOfFour,
     });
   }
-  if (RETIRE_VPIDS) {
+  if (expectRetirement) {
     t.deepEqual(log.shift(), resolutionOf(expectedP4, mode, targets));
   }
 
@@ -654,7 +658,8 @@ async function doVatResolveCase4(t, mode) {
   await endOfCrank();
   t.deepEqual(log, []);
 
-  const RETIRE_VPIDS = mode !== 'promise-data' && mode !== 'promise-reject';
+  const expectRetirement =
+    RETIRE_VPIDS && mode !== 'promise-data' && mode !== 'promise-reject';
 
   dispatch.deliver(rootA, 'second', capargs([slot0arg], [target1]));
   await endOfCrank();
@@ -663,7 +668,7 @@ async function doVatResolveCase4(t, mode) {
   const expectedP5 = nextP();
   let expectedThreeArg = p1;
   let expectedResultOfThree = expectedP4;
-  if (RETIRE_VPIDS) {
+  if (expectRetirement) {
     expectedThreeArg = expectedP4;
     expectedResultOfThree = expectedP5;
   }
@@ -690,7 +695,7 @@ async function doVatResolveCase4(t, mode) {
     });
     t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP6 });
   }
-  if (RETIRE_VPIDS) {
+  if (expectRetirement) {
     const targets = { target2, localTarget: rootA, p1 };
     t.deepEqual(log.shift(), resolutionOf(expectedP4, mode, targets));
   }

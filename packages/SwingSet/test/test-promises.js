@@ -164,3 +164,41 @@ async function testHardenPromise1(t, withSES) {
 test('send-harden-promise-1 with SES', async t => {
   await testHardenPromise1(t, true);
 });
+
+async function testCircularPromiseData(t, withSES) {
+  const config = await loadBasedir(path.resolve(__dirname, 'basedir-circular'));
+  const c = await buildVatController(config, withSES);
+
+  await c.run();
+  t.deepEqual(c.dump().promises, [
+    {
+      id: 'kp40',
+      state: 'fulfilledToData',
+      data: {
+        body: '[{"@qclass":"slot","index":0}]',
+        slots: ['kp41'],
+      },
+    },
+    {
+      id: 'kp41',
+      state: 'fulfilledToData',
+      data: {
+        body: '[{"@qclass":"slot","index":0}]',
+        slots: ['kp40'],
+      },
+    },
+    {
+      id: 'kp42',
+      state: 'fulfilledToData',
+      data: {
+        body: '{"@qclass":"undefined"}',
+        slots: [],
+      },
+    },
+  ]);
+  t.end();
+}
+
+test('circular promise resolution data', async t => {
+  await testCircularPromiseData(t, true);
+});

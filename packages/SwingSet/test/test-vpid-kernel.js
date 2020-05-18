@@ -6,6 +6,8 @@ import { initSwingStore } from '@agoric/swing-store-simple';
 
 import buildKernel from '../src/kernel/index';
 
+const RETIRE_VPIDS = true;
+
 function capdata(body, slots = []) {
   return harden({ body, slots });
 }
@@ -105,6 +107,18 @@ function buildRawVat(name, kernel, onDispatchCallback = undefined) {
 // (Note, there is overlap between these cases: e.g. the user-level code we
 // run to set up test 1 is also what sets up the other side of test 4. But we
 // test each separately for clarity)
+
+// In addition, we want to exercise the promises being resolved in various
+// ways:
+// prettier-ignore
+const modes = [
+  'presence',       // resolveToPresence: messages can be sent to resolution
+  'local-object',   // resolve to a local object: messages to resolution don't create syscalls
+  'data',           // resolveToData: messages are rejected as DataIsNotCallable
+  'promise-data',   // resolveToData that contains a promise ID
+  'reject',         // reject: messages are rejected
+  'promise-reject', // reject to data that contains a promise ID
+];
 
 const slot0arg = { '@qclass': 'slot', index: 0 };
 
@@ -246,7 +260,8 @@ async function doTest123(t, which, mode) {
   let p1VatA;
   let p1VatB;
 
-  const expectRetirement = mode !== 'promise-data' && mode !== 'promise-reject';
+  const expectRetirement =
+    RETIRE_VPIDS && mode !== 'promise-data' && mode !== 'promise-reject';
 
   if (which === 1) {
     // 1: Alice creates a new promise, sends it to Bob, and resolves it
@@ -355,81 +370,25 @@ async function doTest123(t, which, mode) {
     t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
     t.equal(clistKernelToVat(kernel, vatA, p1kernel), undefined);
     t.equal(clistVatToKernel(kernel, vatA, p1VatA), undefined);
+  } else {
+    t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
+    t.equal(clistKernelToVat(kernel, vatA, p1kernel), p1VatA);
+    t.equal(clistVatToKernel(kernel, vatA, p1VatA), p1kernel);
   }
   t.end();
 }
+// uncomment this when debugging specific problems
+// test.only(`XX`, async t => {
+//   await doTest123(t, 2, 'promise-data');
+// });
 
-test('kernel vpid handling case1 presence', async t => {
-  await doTest123(t, 1, 'presence');
-});
-
-test('kernel vpid handling case1 data', async t => {
-  await doTest123(t, 1, 'data');
-});
-
-test('kernel vpid handling case1 reject', async t => {
-  await doTest123(t, 1, 'reject');
-});
-
-test('kernel vpid handling case1 local-object', async t => {
-  await doTest123(t, 1, 'local-object');
-});
-
-test('kernel vpid handling case1 promise-data', async t => {
-  await doTest123(t, 1, 'promise-data');
-});
-
-test('kernel vpid handling case1 promise-reject', async t => {
-  await doTest123(t, 1, 'promise-reject');
-});
-
-test('kernel vpid handling case2 presence', async t => {
-  await doTest123(t, 2, 'presence');
-});
-
-test('kernel vpid handling case2 data', async t => {
-  await doTest123(t, 2, 'data');
-});
-
-test('kernel vpid handling case2 reject', async t => {
-  await doTest123(t, 2, 'reject');
-});
-
-test('kernel vpid handling case2 local-object', async t => {
-  await doTest123(t, 2, 'local-object');
-});
-
-test('kernel vpid handling case2 promise-data', async t => {
-  await doTest123(t, 2, 'promise-data');
-});
-
-test('kernel vpid handling case2 promise-reject', async t => {
-  await doTest123(t, 2, 'promise-reject');
-});
-
-test('kernel vpid handling case3 presence', async t => {
-  await doTest123(t, 3, 'presence');
-});
-
-test('kernel vpid handling case3 data', async t => {
-  await doTest123(t, 3, 'data');
-});
-
-test('kernel vpid handling case3 reject', async t => {
-  await doTest123(t, 3, 'reject');
-});
-
-test('kernel vpid handling case3 local-object', async t => {
-  await doTest123(t, 3, 'local-object');
-});
-
-test('kernel vpid handling case3 promise-data', async t => {
-  await doTest123(t, 3, 'promise-data');
-});
-
-test('kernel vpid handling case3 promise-reject', async t => {
-  await doTest123(t, 3, 'promise-reject');
-});
+for (const caseNum of [1, 2, 3]) {
+  for (const mode of modes) {
+    test(`kernel vpid handling case${caseNum} ${mode}`, async t => {
+      await doTest123(t, caseNum, mode);
+    });
+  }
+}
 
 async function doTest4567(t, which, mode) {
   const kernel = buildKernel(makeEndowments());
@@ -474,7 +433,8 @@ async function doTest4567(t, which, mode) {
   let p1VatA;
   let p1VatB;
 
-  const expectRetirement = mode !== 'promise-data' && mode !== 'promise-reject';
+  const expectRetirement =
+    RETIRE_VPIDS && mode !== 'promise-data' && mode !== 'promise-reject';
 
   if (which === 4) {
     // 4: Alice receives a promise from Bob, which is then resolved
@@ -611,102 +571,18 @@ async function doTest4567(t, which, mode) {
     t.equal(inCList(kernel, vatA, p1kernel, p1VatA), false);
     t.equal(clistKernelToVat(kernel, vatA, p1kernel), undefined);
     t.equal(clistVatToKernel(kernel, vatA, p1VatA), undefined);
+  } else {
+    t.equal(inCList(kernel, vatA, p1kernel, p1VatA), true);
+    t.equal(clistKernelToVat(kernel, vatA, p1kernel), p1VatA);
+    t.equal(clistVatToKernel(kernel, vatA, p1VatA), p1kernel);
   }
   t.end();
 }
 
-test('kernel vpid handling case4 presence', async t => {
-  await doTest4567(t, 4, 'presence');
-});
-
-test('kernel vpid handling case4 data', async t => {
-  await doTest4567(t, 4, 'data');
-});
-
-test('kernel vpid handling case4 reject', async t => {
-  await doTest4567(t, 4, 'reject');
-});
-
-test('kernel vpid handling case4 local-object', async t => {
-  await doTest4567(t, 4, 'local-object');
-});
-
-test('kernel vpid handling case4 promise-data', async t => {
-  await doTest4567(t, 4, 'promise-data');
-});
-
-test('kernel vpid handling case4 promise-reject', async t => {
-  await doTest4567(t, 4, 'promise-reject');
-});
-
-test('kernel vpid handling case5 presence', async t => {
-  await doTest4567(t, 5, 'presence');
-});
-
-test('kernel vpid handling case5 data', async t => {
-  await doTest4567(t, 5, 'data');
-});
-
-test('kernel vpid handling case5 reject', async t => {
-  await doTest4567(t, 5, 'reject');
-});
-
-test('kernel vpid handling case5 local-object', async t => {
-  await doTest4567(t, 5, 'local-object');
-});
-
-test('kernel vpid handling case5 promise-data', async t => {
-  await doTest4567(t, 5, 'promise-data');
-});
-
-test('kernel vpid handling case5 promise-reject', async t => {
-  await doTest4567(t, 5, 'promise-reject');
-});
-
-test('kernel vpid handling case6 presence', async t => {
-  await doTest4567(t, 6, 'presence');
-});
-
-test('kernel vpid handling case6 data', async t => {
-  await doTest4567(t, 6, 'data');
-});
-
-test('kernel vpid handling case6 reject', async t => {
-  await doTest4567(t, 6, 'reject');
-});
-
-test('kernel vpid handling case6 local-object', async t => {
-  await doTest4567(t, 6, 'local-object');
-});
-
-test('kernel vpid handling case6 promise-data', async t => {
-  await doTest4567(t, 6, 'promise-data');
-});
-
-test('kernel vpid handling case6 promise-reject', async t => {
-  await doTest4567(t, 6, 'promise-reject');
-});
-
-test('kernel vpid handling case7 presence', async t => {
-  await doTest4567(t, 7, 'presence');
-});
-
-test('kernel vpid handling case7 data', async t => {
-  await doTest4567(t, 7, 'data');
-});
-
-test('kernel vpid handling case7 reject', async t => {
-  await doTest4567(t, 7, 'reject');
-});
-
-test('kernel vpid handling case7 local-object', async t => {
-  await doTest4567(t, 7, 'local-object');
-});
-
-test('kernel vpid handling case7 promise-data', async t => {
-  await doTest4567(t, 7, 'promise-data');
-});
-
-test('kernel vpid handling case7 promise-reject', async t => {
-  await doTest4567(t, 7, 'promise-reject');
-});
+for (const caseNum of [4, 5, 6, 7]) {
+  for (const mode of modes) {
+    test(`kernel vpid handling case${caseNum} ${mode}`, async t => {
+      await doTest4567(t, caseNum, mode);
+    });
+  }
+}
