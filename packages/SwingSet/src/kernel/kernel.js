@@ -405,11 +405,20 @@ export default function buildKernel(kernelEndowments) {
     try {
       processQueueRunning = Error('here');
       if (message.type === 'send') {
-        kernelKeeper.decrementKernelPromiseRefCount(message.target, `deq|msg|t`);
-        kernelKeeper.decrementKernelPromiseRefCount(message.msg.result, `deq|msg|r`);
+        kernelKeeper.decrementKernelPromiseRefCount(
+          message.target,
+          `deq|msg|t`,
+        );
+        kernelKeeper.decrementKernelPromiseRefCount(
+          message.msg.result,
+          `deq|msg|r`,
+        );
         let idx = 0;
         for (const argSlot of message.msg.args.slots) {
-          kernelKeeper.decrementKernelPromiseRefCount(argSlot, `deq|msg|s${idx}`);
+          kernelKeeper.decrementKernelPromiseRefCount(
+            argSlot,
+            `deq|msg|s${idx}`,
+          );
           idx += 1;
         }
         await deliverToTarget(message.target, message.msg);

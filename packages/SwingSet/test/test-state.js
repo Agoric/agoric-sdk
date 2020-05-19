@@ -396,6 +396,7 @@ test('kernelKeeper promises', async t => {
   const p1 = k.addKernelPromise('v4');
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'unresolved',
+    refCount: '0',
     queue: [],
     subscribers: [],
     decider: 'v4',
@@ -408,6 +409,7 @@ test('kernelKeeper promises', async t => {
 
   t.deepEqual(k2.getKernelPromise(p1), {
     state: 'unresolved',
+    refCount: '0',
     queue: [],
     subscribers: [],
     decider: 'v4',
@@ -417,6 +419,7 @@ test('kernelKeeper promises', async t => {
   k.clearDecider(p1);
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'unresolved',
+    refCount: '0',
     queue: [],
     subscribers: [],
     decider: undefined,
@@ -426,6 +429,7 @@ test('kernelKeeper promises', async t => {
   k2 = duplicateKeeper(getState);
   t.deepEqual(k2.getKernelPromise(p1), {
     state: 'unresolved',
+    refCount: '0',
     queue: [],
     subscribers: [],
     decider: undefined,
@@ -434,6 +438,7 @@ test('kernelKeeper promises', async t => {
   k.setDecider(p1, 'v7');
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'unresolved',
+    refCount: '0',
     queue: [],
     subscribers: [],
     decider: 'v7',
@@ -464,6 +469,7 @@ test('kernelKeeper promises', async t => {
   k.fulfillKernelPromiseToPresence(p1, 'ko44');
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'fulfilledToPresence',
+    refCount: '0',
     slot: 'ko44',
   });
   t.ok(k.hasKernelPromise(p1));
@@ -481,6 +487,7 @@ test('kernelKeeper promises', async t => {
     ['kp.nextID', '41'],
     ['kp40.slot', 'ko44'],
     ['kp40.state', 'fulfilledToPresence'],
+    ['kp40.refCount', '0'],
   ]);
   t.end();
 });
@@ -495,6 +502,7 @@ test('kernelKeeper promise resolveToData', async t => {
   k.fulfillKernelPromiseToData(p1, capdata);
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'fulfilledToData',
+    refCount: '0',
     data: {
       body: 'bodyjson',
       slots: ['ko22', 'kp24', 'kd25'],
@@ -513,6 +521,7 @@ test('kernelKeeper promise reject', async t => {
   k.rejectKernelPromise(p1, capdata);
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'rejected',
+    refCount: '0',
     data: {
       body: 'bodyjson',
       slots: ['ko22', 'kp24', 'kd25'],
