@@ -22,6 +22,7 @@ export async function dataGraphApp(xField, xLabel, yField, yLabel, lineFields) {
 
   let outfile = null;
   const datafiles = [];
+  const tags = [];
   let type = 'png';
 
   while (argv[0]) {
@@ -35,11 +36,18 @@ export async function dataGraphApp(xField, xLabel, yField, yLabel, lineFields) {
         case '--pdf':
           type = 'pdf';
           break;
+        case '--label':
+        case '-l':
+          tags.push(argv.shift());
+          break;
         default:
           throw new Error(`invalid flag ${arg}`);
       }
     } else {
       datafiles.push(arg);
+      if (datafiles.length < tags.length) {
+        tags.push(undefined);
+      }
     }
   }
   if (datafiles.length < 1) {
@@ -53,6 +61,7 @@ export async function dataGraphApp(xField, xLabel, yField, yLabel, lineFields) {
     for (let lineIdx = 0; lineIdx < lineFields.length; lineIdx += 1) {
       addGraphToGraphSpec(
         spec,
+        tags[dataIdx],
         datafiles[dataIdx],
         lineFields[lineIdx],
         groupColors[lineIdx % groupColors.length],

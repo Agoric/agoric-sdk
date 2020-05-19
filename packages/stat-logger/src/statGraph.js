@@ -3,7 +3,6 @@ import path from 'path';
 import * as vega from 'vega';
 
 export function initGraphSpec(statsPath, xField, xLabel, yField, yLabel) {
-  const tag = path.basename(statsPath);
   const spec = {
     $schema: 'https://vega.github.io/schema/vega/v5.json',
     width: 1500,
@@ -24,7 +23,7 @@ export function initGraphSpec(statsPath, xField, xLabel, yField, yLabel) {
         type: 'linear',
         range: 'width',
         nice: true,
-        domain: { data: tag, field: xField },
+        domain: { data: statsPath, field: xField },
       },
       {
         name: 'y',
@@ -32,7 +31,7 @@ export function initGraphSpec(statsPath, xField, xLabel, yField, yLabel) {
         range: 'height',
         nice: true,
         zero: true,
-        domain: { data: tag, field: yField },
+        domain: { data: statsPath, field: yField },
       },
       {
         name: 'legend',
@@ -69,17 +68,18 @@ export function initGraphSpec(statsPath, xField, xLabel, yField, yLabel) {
 }
 
 export function addDataToGraphSpec(spec, statsPath) {
-  const tag = path.basename(statsPath);
   const dataElement = {
-    name: tag,
+    name: statsPath,
     format: { type: 'tsv' },
     url: `file://${statsPath}`,
   };
   spec.data.push(dataElement);
 }
 
-export function addGraphToGraphSpec(spec, statsPath, yField, color) {
-  const tag = path.basename(statsPath);
+export function addGraphToGraphSpec(spec, tag, statsPath, yField, color) {
+  if (!tag) {
+    tag = path.basename(statsPath);
+  }
   const legendElement = {
     text: `${tag} - ${yField}`,
     color,
@@ -87,7 +87,7 @@ export function addGraphToGraphSpec(spec, statsPath, yField, color) {
   spec.data[0].values.push(legendElement);
   const lineElement = {
     type: 'line',
-    from: { data: tag },
+    from: { data: statsPath },
     encode: {
       enter: {
         x: { scale: 'x', field: spec.scales[0].domain.field },
