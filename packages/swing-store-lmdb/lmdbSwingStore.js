@@ -1,4 +1,5 @@
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 
 import lmdb from 'node-lmdb';
@@ -27,7 +28,12 @@ function makeSwingStore(dirPath, forceReset = false) {
   lmdbEnv.open({
     path: dirPath,
     mapSize: 2 * 1024 * 1024 * 1024, // XXX need to tune this
-    useWritemap: true,
+    // Turn off useWritemap on the Mac.  The userWritemap option is currently
+    // required for LMDB to function correctly on Linux running under WSL, but
+    // we don't yet have a convenient recipe to probe our environment at
+    // runtime to distinguish that species of Linux from the others.  For now
+    // we're running our benchmarks on Mac, so this will do for the time being.
+    useWritemap: os.platform() !== 'darwin',
   });
 
   let dbi = lmdbEnv.openDbi({
