@@ -1,6 +1,6 @@
 import { lockdown } from 'ses';
 
 lockdown({
-  noTameError: true, // for debugging
-  noTameRegExp: true, // for #230 and #237
+  errorTaming: 'unsafe', // for debugging
+  regExpTaming: 'unsafe', // for #230 and #237
 });

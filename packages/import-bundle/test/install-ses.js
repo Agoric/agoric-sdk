@@ -1,8 +1,8 @@
 import { lockdown } from 'ses';
 
 lockdown({
-  // noTameError: true, // enable if needed, for better debugging
-  noTameMath: true, // bundle-source -> rollup uses Math.random
+  // errorTaming: 'unsafe', // enable if needed, for better debugging
+  mathTaming: 'unsafe', // bundle-source -> rollup uses Math.random
 });
 
 process.on('unhandledRejection', (error, _p) => {

@@ -1,7 +1,5 @@
 /* global globalThis harden Compartment HandledPromise */
 
-// @agoric/harden-0.0.4 can only be imported under SES if noTameRegExp is
-// enabled
 import maybeHarden from '@agoric/harden';
 
 // ses-0.7.3 doesn't export Compartment, and when I patched it to do so
@@ -9,7 +7,6 @@ import maybeHarden from '@agoric/harden';
 // safety-check error
 // import { Compartment as maybeCompartment } from 'ses'; // 'compartment-shim';
 
-// @agoric/eventual-send-0.5.0 imports harden-0.0.4, requires noTameRegExp
 import { HandledPromise as maybeHandledPromise } from '@agoric/eventual-send';
 
 // Use some magic to obtain 'globalThis'. Remember, under SES, we cannot
