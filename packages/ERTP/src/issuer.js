@@ -276,7 +276,7 @@ function produceIssuer(allegedName, mathHelpersName = 'nat') {
           }),
         );
         assert(payments.length === 0, 'no payments should be returned');
-        return newPurseBalance;
+        return srcPaymentBalance;
       },
       withdraw: amount => {
         amount = amountMath.coerce(amount);
