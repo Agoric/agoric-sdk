@@ -112,25 +112,24 @@ test('issuer.deposit', async t => {
   const payment17 = mint.mintPayment(fungible17);
   const payment25 = mint.mintPayment(fungible25);
 
-  const checkDeposit = (oldBalance, newBalance) => 
-    depositResult => {
-      const delta = amountMath.subtract(newBalance, oldBalance);
-      t.ok(
-        amountMath.isEqual(depositResult, delta),
-        `the balance changes by the deposited amount: ${delta.extent}`,
-      );
-      t.ok(
-        amountMath.isEqual(purse.getCurrentAmount(), newBalance),
-        `the new purse balance ${depositResult.extent} is the expected amount: ${newBalance.extent}`,
-      );
-    };
+  const checkDeposit = (oldBalance, newBalance) => depositResult => {
+    const delta = amountMath.subtract(newBalance, oldBalance);
+    t.ok(
+      amountMath.isEqual(depositResult, delta),
+      `the balance changes by the deposited amount: ${delta.extent}`,
+    );
+    t.ok(
+      amountMath.isEqual(purse.getCurrentAmount(), newBalance),
+      `the new purse balance ${depositResult.extent} is the expected amount: ${newBalance.extent}`,
+    );
+  };
 
   await E(purse)
-      .deposit(payment17, fungible17)
-      .then(checkDeposit(fungible0, fungible17));
+    .deposit(payment17, fungible17)
+    .then(checkDeposit(fungible0, fungible17));
   await E(purse)
-      .deposit(payment25, fungible25)
-      .then(checkDeposit(fungible17, fungibleSum));
+    .deposit(payment25, fungible25)
+    .then(checkDeposit(fungible17, fungibleSum));
 });
 
 test('issuer.deposit promise', t => {
