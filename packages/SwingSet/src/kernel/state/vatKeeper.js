@@ -52,6 +52,8 @@ export function makeVatKeeper(
   addKernelPromise,
   incrementRefCount,
   decrementRefCount,
+  incStat,
+  decStat,
 ) {
   insistVatID(vatID);
 
@@ -85,6 +87,7 @@ export function makeVatKeeper(
         }
         incrementRefCount(kernelSlot, `${vatID}|vk|clist`);
         const kernelKey = `${vatID}.c.${kernelSlot}`;
+        incStat('clistEntries');
         storage.set(kernelKey, vatSlot);
         storage.set(vatKey, kernelSlot);
         kdebug(`Add mapping v->k ${kernelKey}<=>${vatKey}`);
@@ -132,6 +135,7 @@ export function makeVatKeeper(
       const vatSlot = makeVatSlot(type, false, id);
 
       const vatKey = `${vatID}.c.${vatSlot}`;
+      incStat('clistEntries');
       storage.set(vatKey, kernelSlot);
       storage.set(kernelKey, vatSlot);
       kdebug(`Add mapping k->v ${kernelKey}<=>${vatKey}`);
@@ -154,6 +158,7 @@ export function makeVatKeeper(
     kdebug(`Delete mapping ${kernelKey}<=>${vatKey}`);
     if (storage.has(kernelKey)) {
       decrementRefCount(kernelSlot, `${vatID}|del|clist`);
+      decStat('clistEntries');
       storage.delete(kernelKey);
       storage.delete(vatKey);
     }
