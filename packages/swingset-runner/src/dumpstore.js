@@ -30,6 +30,7 @@ export function dumpStore(store, outfile, rawMode) {
 
   popt('runQueue');
   popt('crankNumber');
+  popt('kernelStats');
   gap();
 
   p('// device info');

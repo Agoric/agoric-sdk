@@ -1,3 +1,4 @@
+import path from 'path';
 import process from 'process';
 
 import {
@@ -17,7 +18,43 @@ const colors = [
   [ '#16e7cf', '#73fdea', '#00a89d', '#2e578c' ],
 ];
 
-export async function dataGraphApp(xField, xLabel, yField, yLabel, lineFields) {
+const appName = path.basename(process.argv[1]);
+
+function usage(showFields) {
+  let fieldsLine = '';
+  if (showFields) {
+    fieldsLine =
+      '\n  --fields FIELDS - comma separated list of field names to graph';
+  }
+
+  console.log(`
+Command line:
+  ${appName} [FLAGS...] ARGS...
+
+FLAGS may be:
+  --output FILE   - place output in FILE (otherwise it will got to stdout)
+  -o FILE         - synonym for --output
+  --pdf           - generate a PDF file (PNG by default)
+  --label STR     - label for a data file
+  -l STR          - synonym for --label${fieldsLine}
+  --help          - print this helpful usage information
+
+ARGS consist of paths to one or more data files.  Each datafile must contain
+all the fields being graphed.  Files may be labeled in the graph key with the
+--label option, one --label option per file, applied in the same order as the
+data file ARGS (and may be interleaved with them on the command line).
+`);
+}
+
+function fail(message, printUsage, showFields) {
+  console.log(message);
+  if (printUsage) {
+    usage(showFields);
+  }
+  process.exit(1);
+}
+
+export async function dataGraphApp(xField, xLabel, yField, yLabel, fields) {
   const argv = process.argv.splice(2);
 
   let outfile = null;
@@ -25,6 +62,7 @@ export async function dataGraphApp(xField, xLabel, yField, yLabel, lineFields) {
   const tags = [];
   let type = 'png';
 
+  const expectFields = !fields;
   while (argv[0]) {
     const arg = argv.shift();
     if (arg.startsWith('-')) {
@@ -40,8 +78,19 @@ export async function dataGraphApp(xField, xLabel, yField, yLabel, lineFields) {
         case '-l':
           tags.push(argv.shift());
           break;
+        case '--help':
+          usage(expectFields);
+          process.exit(0);
+          break;
+        case '--fields':
+        case '-f':
+          if (expectFields) {
+            fields = argv.shift().split(',');
+            break;
+          }
+        // note fall through to error
         default:
-          throw new Error(`invalid flag ${arg}`);
+          fail(`invalid flag ${arg}`, true, expectFields);
       }
     } else {
       datafiles.push(arg);
@@ -50,20 +99,30 @@ export async function dataGraphApp(xField, xLabel, yField, yLabel, lineFields) {
       }
     }
   }
+  if (!fields) {
+    fail('you must specify some field names to graph', true, expectFields);
+  }
   if (datafiles.length < 1) {
-    throw new Error('you must specify some input');
+    fail('you must specify some input', true, expectFields);
   }
 
-  const spec = initGraphSpec(datafiles[0], xField, xLabel, yField, yLabel);
+  let yFields;
+  if (expectFields) {
+    yFields = fields;
+  } else {
+    yFields = [yField];
+  }
+
+  const spec = initGraphSpec(datafiles, xField, xLabel, yFields, yLabel);
   for (let dataIdx = 0; dataIdx < datafiles.length; dataIdx += 1) {
     addDataToGraphSpec(spec, datafiles[dataIdx]);
     const groupColors = colors[dataIdx % colors.length];
-    for (let lineIdx = 0; lineIdx < lineFields.length; lineIdx += 1) {
+    for (let lineIdx = 0; lineIdx < fields.length; lineIdx += 1) {
       addGraphToGraphSpec(
         spec,
         tags[dataIdx],
         datafiles[dataIdx],
-        lineFields[lineIdx],
+        fields[lineIdx],
         groupColors[lineIdx % groupColors.length],
       );
     }

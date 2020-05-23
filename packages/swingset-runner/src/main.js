@@ -42,7 +42,9 @@ FLAGS may be:
   --logtimes     - log block execution time stats while running
   --logmem       - log memory usage stats after each block
   --logdisk      - log disk space usage stats after each block
-  --logall       - log block times, memory use, and disk space
+  --logstats     - log kernel stats after each block
+  --logall       - log kernel stats, block times, memory use, and disk space
+  --logtag STR   - tag for stats log file (default "runner")
   --forcegc      - run garbage collector after each block
   --batchsize N  - set BATCHSIZE to N (default 200)
   --verbose      - output verbose debugging messages as it runs
@@ -91,6 +93,8 @@ export async function main() {
   let logTimes = false;
   let logMem = false;
   let logDisk = false;
+  let logStats = false;
+  let logTag = 'runner';
   let forceGC = false;
   let verbose = false;
   let doDumps = false;
@@ -114,10 +118,17 @@ export async function main() {
       case '--logdisk':
         logDisk = true;
         break;
+      case '--logstats':
+        logStats = true;
+        break;
       case '--logall':
         logTimes = true;
         logMem = true;
         logDisk = true;
+        logStats = true;
+        break;
+      case '--logtag':
+        logTag = argv.shift();
         break;
       case '--forcegc':
         forceGC = true;
@@ -223,6 +234,8 @@ export async function main() {
     config.verbose = true;
   }
 
+  const controller = await buildVatController(config, true, bootstrapArgv);
+
   let blockNumber = 0;
   let statLogger = null;
   if (logTimes || logMem || logDisk) {
@@ -236,11 +249,14 @@ export async function main() {
     if (logDisk) {
       headers.push('disk');
     }
-    statLogger = makeStatLogger('runner', headers);
+    if (logStats) {
+      const statNames = Object.getOwnPropertyNames(controller.getStats());
+      headers = headers.concat(statNames);
+    }
+    statLogger = makeStatLogger(logTag, headers);
   }
 
   let crankNumber = 0;
-  const controller = await buildVatController(config, true, bootstrapArgv);
   switch (command) {
     case 'run': {
       await commandRun(0, blockMode);
@@ -375,6 +391,9 @@ export async function main() {
       if (logDisk) {
         const diskUsage = dbMode === '--lmdb' ? store.diskUsage() : 0;
         data.push(diskUsage);
+      }
+      if (logStats) {
+        data = data.concat(Object.values(controller.getStats()));
       }
       statLogger.log(data);
     }
