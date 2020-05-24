@@ -9,7 +9,7 @@ import { producePromise } from '@agoric/produce-promise';
 
 import {
   cleanProposal,
-  assertCapASCII,
+  assertKeywordName,
   getKeywords,
   cleanKeywords,
 } from './cleanProposal';
@@ -556,7 +556,7 @@ const makeZoe = (additionalEndowments = {}) => {
 
       addNewIssuer: (issuerP, keyword) =>
         issuerTable.getPromiseForIssuerRecord(issuerP).then(issuerRecord => {
-          assertCapASCII(keyword);
+          assertKeywordName(keyword);
           const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
           assert(
             !getKeywords(issuerKeywordRecord).includes(keyword),

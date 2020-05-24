@@ -6,7 +6,7 @@ import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 
 import { makeTable, makeValidateProperties } from '../table';
-import { assertCapASCII } from '../cleanProposal';
+import { assertKeywordName } from '../cleanProposal';
 import {
   makeZoeHelpers,
   getCurrentPrice,
@@ -85,7 +85,7 @@ export const makeContract = harden(
     // Allows users to add new liquidity pools. `newTokenIssuer` and
     // `newTokenKeyword` must not have been already used
     const addPool = (newTokenIssuer, newTokenKeyword) => {
-      assertCapASCII(newTokenKeyword);
+      assertKeywordName(newTokenKeyword);
       const { issuerKeywordRecord } = zcf.getInstanceRecord();
       const keywords = Object.keys(issuerKeywordRecord);
       const issuers = Object.values(issuerKeywordRecord);

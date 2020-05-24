@@ -1,15 +1,30 @@
 import harden from '@agoric/harden';
-import { assert, details } from '@agoric/assert';
+import { assert, details, openDetail } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 
 import { arrayToObj, assertSubset } from './objArrayConversion';
 
-export const assertCapASCII = keyword => {
+// We adopt simple requirements on keywords so that they do not accidentally
+// conflict with existing property names.
+// We require keywords to be strings, ascii identifiers beggining with an
+// upper case letter, and distinct from the stringified form of any number.
+//
+// Of numbers, only NaN and Infinity, when stringified to a property name,
+// produce an ascii identifier beginning with an upper case letter.
+// With this rule, a computed indexing expression like `a[+i]` cannot
+// lookup a keyword-named property no matter what `i` is.
+export const assertKeywordName = keyword => {
   assert.typeof(keyword, 'string');
   const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
   assert(
     firstCapASCII.test(keyword),
-    details`keyword ${keyword} must be ascii and must start with a capital letter.`,
+    details`keyword ${openDetail(
+      keyword,
+    )} must be ascii and must start with a capital letter.`,
+  );
+  assert(
+    keyword !== 'NaN' && keyword !== 'Infinity',
+    details`keyword ${openDetail(keyword)} must not be a number's name`,
   );
 };
 
@@ -65,7 +80,7 @@ export const cleanKeywords = keywordRecord => {
 
   // Assert all key characters are ascii and keys start with a
   // capital letter.
-  keywords.forEach(assertCapASCII);
+  keywords.forEach(assertKeywordName);
 
   return keywords;
 };
