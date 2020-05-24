@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { assert, details, openDetail } from '@agoric/assert';
+import { assert, details, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
@@ -291,9 +291,7 @@ export async function makeWallet({
   const makeEmptyPurse = async (brandPetname, petnameForPurse) => {
     assert(
       !purseMapping.petnameToVal.has(petnameForPurse),
-      details`Purse petname ${openDetail(
-        petnameForPurse,
-      )} already used in wallet.`,
+      details`Purse petname ${q(petnameForPurse)} already used in wallet.`,
     );
     const brand = brandMapping.petnameToVal.get(brandPetname);
     const { issuer } = brandTable.get(brand);

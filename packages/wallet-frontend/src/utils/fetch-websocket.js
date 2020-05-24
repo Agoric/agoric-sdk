@@ -12,7 +12,7 @@ export async function doFetch(req) {
   }
 
   const socket = websocket;
-  
+
   let resolve;
   const p = new Promise(res => {
     resolve = res;

@@ -3,7 +3,7 @@ import harden from '@agoric/harden';
 import { E, HandledPromise } from '@agoric/eventual-send';
 import makeStore from '@agoric/weak-store';
 import produceIssuer from '@agoric/ertp';
-import { assert, details, openDetail } from '@agoric/assert';
+import { assert, details, q } from '@agoric/assert';
 import { produceNotifier } from '@agoric/notifier';
 import { producePromise } from '@agoric/produce-promise';
 
@@ -882,7 +882,7 @@ const makeZoe = (additionalEndowments = {}) => {
             } else {
               assert(
                 exitKind === 'waived',
-                details`exit kind was not recognized: ${openDetail(exitKind)}`,
+                details`exit kind was not recognized: ${q(exitKind)}`,
               );
             }
 
