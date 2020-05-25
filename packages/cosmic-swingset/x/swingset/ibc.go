@@ -24,10 +24,32 @@ type channelMessage struct { // comes from swingset's IBC handler
 	Method          string              `json:"method"`
 	Packet          channeltypes.Packet `json:"packet"`
 	RelativeTimeout uint64              `json:"relativeTimeout"`
-	Order           ibctypes.Order      `json:"order"`
+	Order           string              `json:"order"`
 	Hops            []string            `json:"hops"`
 	Version         string              `json:"version"`
 	Ack             []byte              `json:"ack"`
+}
+
+func stringToOrder(order string) ibctypes.Order {
+	switch order {
+	case "ORDERED":
+		return ibctypes.ORDERED
+	case "UNORDERED":
+		return ibctypes.UNORDERED
+	default:
+		return ibctypes.NONE
+	}
+}
+
+func orderToString(order ibctypes.Order) string {
+	switch order {
+	case ibctypes.ORDERED:
+		return "ORDERED"
+	case ibctypes.UNORDERED:
+		return "UNORDERED"
+	default:
+		return "NONE"
+	}
 }
 
 // DefaultRouter is a temporary hack until cosmos-sdk implements its features FIXME.
@@ -97,7 +119,7 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 
 	case "channelOpenInit":
 		err = ctx.Keeper.ChanOpenInit(
-			ctx.Context, msg.Order, msg.Hops,
+			ctx.Context, stringToOrder(msg.Order), msg.Hops,
 			msg.Packet.SourcePort, msg.Packet.SourceChannel,
 			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
 			msg.Version,
@@ -142,7 +164,7 @@ func (am AppModule) CallToController(ctx sdk.Context, send string) (string, erro
 type channelOpenInitEvent struct {
 	Type           string                    `json:"type"`  // IBC
 	Event          string                    `json:"event"` // channelOpenInit
-	Order          ibctypes.Order            `json:"order"`
+	Order          string                    `json:"order"`
 	ConnectionHops []string                  `json:"connectionHops"`
 	PortID         string                    `json:"portID"`
 	ChannelID      string                    `json:"channelID"`
@@ -164,7 +186,7 @@ func (am AppModule) OnChanOpenInit(
 	event := channelOpenInitEvent{
 		Type:           "IBC_EVENT",
 		Event:          "channelOpenInit",
-		Order:          order,
+		Order:          orderToString(order),
 		ConnectionHops: connectionHops,
 		PortID:         portID,
 		ChannelID:      channelID,
@@ -193,7 +215,7 @@ func (am AppModule) OnChanOpenInit(
 type channelOpenTryEvent struct {
 	Type                string                    `json:"type"`  // IBC
 	Event               string                    `json:"event"` // channelOpenTry
-	Order               ibctypes.Order            `json:"order"`
+	Order               string                    `json:"order"`
 	ConnectionHops      []string                  `json:"connectionHops"`
 	PortID              string                    `json:"portID"`
 	ChannelID           string                    `json:"channelID"`
@@ -217,7 +239,7 @@ func (am AppModule) OnChanOpenTry(
 	event := channelOpenTryEvent{
 		Type:                "IBC_EVENT",
 		Event:               "channelOpenTry",
-		Order:               order,
+		Order:               orderToString(order),
 		ConnectionHops:      connectionHops,
 		PortID:              portID,
 		ChannelID:           channelID,

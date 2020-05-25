@@ -4,7 +4,6 @@ import {
   rethrowUnlessMissing,
   dataToBase64,
   base64ToBytes,
-  getPrefixes,
 } from '@agoric/swingset-vat/src/vats/network';
 import makeStore from '@agoric/store';
 import { producePromise } from '@agoric/produce-promise';
@@ -26,6 +25,7 @@ const FIXME_ALLOW_NAIVE_RELAYS = true;
  * @typedef {import('@agoric/swingset-vat/src/vats/network').ProtocolImpl} ProtocolImpl
  * @typedef {import('@agoric/swingset-vat/src/vats/network').ConnectionHandler} ConnectionHandler
  * @typedef {import('@agoric/swingset-vat/src/vats/network').Connection} Connection
+ * @typedef {import('@agoric/swingset-vat/src/vats/network').InboundAttempt} InboundAttempt
  * @typedef {import('@agoric/swingset-vat/src/vats/network').Port} Port
  * @typedef {import('@agoric/swingset-vat/src/vats/network').Endpoint} Endpoint
  * @typedef {import('@agoric/swingset-vat/src/vats/network').Bytes} Bytes
@@ -112,6 +112,11 @@ export function makeIBCProtocolHandler(
    * @type {Store<string, ConnectingInfo>}
    */
   const channelKeyToInfo = makeStore('CHANNEL:PORT');
+
+  /**
+   * @type {Store<string, Promise<InboundAttempt>>}
+   */
+  const channelKeyToAttemptP = makeStore('CHANNEL:PORT');
 
   /**
    * @type {Set<string>}
@@ -396,7 +401,6 @@ export function makeIBCProtocolHandler(
 
       // TODO: Will need to change to dispatch (without sending)
       // a ChanOpenInit to get a passive relayer flowing.
-      // eslint-disable-next-line no-constant-condition
       if (false) {
         const packet = {
           source_channel: channelID,
@@ -494,6 +498,7 @@ EOF
     rPortID,
     removeMatching = false,
   ) {
+    // /ibc-port/portID/ibc-channel/channelID(/ibc-hop/hop1(/ibc-hop/hop2))/ibc-port/rPortID/ibc-channel/rChannelID
     // FIXME: Leaves garbage behind in the less specific outboundWaiters.
     for (let i = 0; i <= hops.length; i += 1) {
       // Try most specific to least specific outbound connections.
@@ -546,8 +551,9 @@ EOF
     async fromBridge(srcID, obj) {
       console.warn('IBC fromBridge', srcID, obj);
       switch (obj.event) {
-        case 'channelOpenTry':
         case 'channelOpenInit': {
+          // This event is sent by a naive relayer that wants to initiate
+          // a connection.
           const {
             channelID,
             portID,
@@ -556,20 +562,96 @@ EOF
           } = obj;
 
           const channelKey = `${channelID}:${portID}`;
-          const waiter = getWaiter(
-            hops,
+
+          if (FIXME_ALLOW_NAIVE_RELAYS) {
+            // Continue the handshake if we are waiting for it.
+            const waiter = getWaiter(
+              hops,
+              channelID,
+              portID,
+              rChannelID,
+              rPortID,
+              false,
+            );
+            if (waiter) {
+              // We have more specific information for the outbound connection.
+              channelKeyToInfo.set(channelKey, obj);
+              break;
+            }
+          }
+
+          // We're not waiting for an init, so throw.
+          throw Error(`No waiting outbound connection for ${channelKey}`);
+        }
+
+        case 'attemptChannelOpenTry':
+        case 'channelOpenTry': {
+          // They're (more or less politely) asking if we are listening, so make an attempt.
+          const {
             channelID,
             portID,
-            rChannelID,
-            rPortID,
-            false,
+            counterparty: { port_id: rPortID, channel_id: rChannelID },
+            connectionHops: hops,
+            order,
+            version,
+            counterpartyVersion: rVersion,
+          } = obj;
+
+          const channelKey = `${channelID}:${portID}`;
+          if (channelKeyToAttemptP.has(channelKey)) {
+            // We have a pending attempt, so continue the handshake.
+            break;
+          }
+
+          const versionSuffix = version ? `/${version}` : '';
+          const localAddr = `/ibc-port/${portID}/${order.toLowerCase()}${versionSuffix}`;
+          const ibcHops = hops.map(hop => `/ibc-hop/${hop}`).join('/');
+          const remoteAddr = `${ibcHops}/ibc-port/${rPortID}/${order.toLowerCase()}/${rVersion}`;
+
+          // See if we allow an inbound attempt for this address pair (without rejecting).
+          const attemptP =
+            /** @type {Promise<InboundAttempt>} */
+            (E(protocolImpl).inbound(localAddr, remoteAddr));
+
+          // Tell what version string we negotiated.
+          const attemptedLocal =
+            /** @type {string} */
+            (await E(attemptP).getLocalAddress());
+          const match = attemptedLocal.match(
+            // Match:    /ibc-port/PORT /ORDER/VERSION...
+            new RegExp('^/ibc-port/[^/]+/[^/]+/([^/]+)(/|$)'),
           );
-          if (!waiter) {
-            await E(protocolImpl).isListening([`/ibc-port/${portID}`]);
-            channelKeyToInfo.init(channelKey, obj);
-          } else {
-            // We have more specific information.
-            channelKeyToInfo.set(channelKey, obj);
+          if (!match) {
+            throw Error(
+              `Cannot determine version from attempted local address ${attemptedLocal}`,
+            );
+          }
+
+          channelKeyToAttemptP.init(channelKey, attemptP);
+          channelKeyToInfo.init(channelKey, obj);
+
+          const negotiatedVersion = match[1];
+          if (obj.type === 'attemptChannelOpenTry') {
+            // We can try to open with the version we wanted.
+            const packet = {
+              source_channel: channelID,
+              source_port: portID,
+              destination_channel: rChannelID,
+              destination_port: rPortID,
+            };
+
+            await callIBCDevice('channelOpenTry', {
+              packet,
+              order,
+              hops,
+              version: negotiatedVersion,
+              counterpartyVersion: rVersion,
+            });
+          } else if (negotiatedVersion !== version) {
+            // Too late to change the version.
+            throw Error(
+              `Rejecting version ${version}; we negotiated ${negotiatedVersion}`,
+            );
           }
           break;
         }
@@ -615,8 +697,6 @@ EOF
             break;
           }
 
-          // Check for a listener for this subprotocol.
-          const listenSearch = getPrefixes(localAddr);
           const rchandler = makeIBCConnectionHandler(
             channelID,
             portID,
@@ -625,9 +705,8 @@ EOF
             order === 'ORDERED',
           );
 
-          // Actually connect.
-          // eslint-disable-next-line prettier/prettier
-          E(protocolImpl).inbound(listenSearch, localAddr, remoteAddr, rchandler);
+          // Attempt a connection and accept our handler.
+          E(E(protocolImpl).inbound(localAddr, remoteAddr)).accept(rchandler);
           break;
         }
 

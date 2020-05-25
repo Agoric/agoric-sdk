@@ -34,6 +34,11 @@ export const ENDPOINT_SEPARATOR = '/';
  */
 
 /**
+ * @typedef {Object} Closable A closable object
+ * @property {() => Promise<void>} close Terminate the object
+ */
+
+/**
  * @typedef {Object} Protocol The network Protocol
  * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if ending in ENDPOINT_SEPARATOR, a fresh name
  */
@@ -50,6 +55,7 @@ export const ENDPOINT_SEPARATOR = '/';
 /**
  * @typedef {Object} ListenHandler A handler for incoming connections
  * @property {(port: Port, l: ListenHandler) => Promise<void>} [onListen] The listener has been registered
+ * @property {(port: Port, listenAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<Endpoint>} [onInbound] Return metadata for inbound connection attempt
  * @property {(port: Port, localAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<ConnectionHandler>} onAccept A new connection is incoming
  * @property {(port: Port, rej: any, l: ListenHandler) => Promise<void>} [onError] There was an error while listening
  * @property {(port: Port, l: ListenHandler) => Promise<void>} [onRemove] The listener has been removed
@@ -58,7 +64,7 @@ export const ENDPOINT_SEPARATOR = '/';
 /**
  * @typedef {Object} Connection
  * @property {(packetBytes: Data) => Promise<Bytes>} send Send a packet on the connection
- * @property {() => void} close Close both ends of the connection
+ * @property {() => Promise<void>} close Close both ends of the connection
  * @property {() => Endpoint} getLocalAddress Get the locally bound name of this connection
  * @property {() => Endpoint} getRemoteAddress Get the name of the counterparty
  */
@@ -82,9 +88,14 @@ export const ENDPOINT_SEPARATOR = '/';
  * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, c: ConnectionHandler, p: ProtocolHandler) => Promise<ConnectionHandler|undefined>} onConnect A port initiates an outbound connection
  * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onRevoke The port is being completely destroyed
  *
+ * @typedef {Object} InboundAttempt An inbound connection attempt
+ * @property {(connectionHandler: ConnectionHandler) => Promise<Connection>} accept Establish the connection
+ * @property {() => Endpoint} getLocalAddress Return the local address for this attempt
+ * @property {() => Endpoint} getRemoteAddress Return the remote address for this attempt
+ * @property {() => Promise<void>} close Abort the attempt
+ *
  * @typedef {Object} ProtocolImpl Things the protocol can do for us
- * @property {(listenSearch: Endpoint[]) => Promise<boolean>} isListening Tell whether anything in listenSearch is listening
- * @property {(listenSearch: Endpoint[], localAddr: Endpoint, remoteAddr: Endpoint, connectionHandler: ConnectionHandler) => Promise<Connection>} inbound Establish a connection into this protocol
+ * @property {(listenAddr: Endpoint, remoteAddr: Endpoint) => Promise<InboundAttempt>} inbound Make an attempt to connect into this protocol
  * @property {(port: Port, remoteAddr: Endpoint, connectionHandler: ConnectionHandler) => Promise<Connection>} outbound Create an outbound connection
  */
 
@@ -97,7 +108,7 @@ export const rethrowUnlessMissing = err => {
   ) {
     throw err;
   }
-  return true;
+  return false;
 };
 
 /**
@@ -106,7 +117,7 @@ export const rethrowUnlessMissing = err => {
  * @param {ConnectionHandler} handler
  * @param {Endpoint} localAddr
  * @param {Endpoint} remoteAddr
- * @param {WeakSet<Connection>} [current=new WeakSet()]
+ * @param {Set<Closable>} [current=new Set()]
  * @param {typeof defaultE} [E=defaultE] Eventual send function
  * @returns {Connection}
  */
@@ -114,7 +125,7 @@ export const makeConnection = (
   handler,
   localAddr,
   remoteAddr,
-  current = new WeakSet(),
+  current = new Set(),
   E = defaultE,
 ) => {
   let closed;
@@ -286,7 +297,7 @@ export function getPrefixes(addr) {
  * @returns {Protocol} the local capability for connecting and listening
  */
 export function makeNetworkProtocol(protocolHandler, E = defaultE) {
-  /** @type {Store<Port, Set<Connection>>} */
+  /** @type {Store<Port, Set<Closable>>} */
   const currentConnections = makeStore('port');
 
   /**
@@ -300,39 +311,89 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
    * @type {ProtocolImpl}
    */
   const protocolImpl = harden({
-    async isListening(listenSearch) {
-      const listener = listenSearch.find(addr => listening.has(addr));
-      return !!listener;
-    },
-    async inbound(listenSearch, localAddr, remoteAddr, rchandler) {
-      const listenAddr = listenSearch.find(addr => listening.has(addr));
-      if (!listenAddr) {
-        throw Error(`Connection refused to ${localAddr}`);
+    async inbound(listenAddr, remoteAddr) {
+      let lastFailure = Error(`No listeners for ${listenAddr}`);
+      for (const listenPrefix of getPrefixes(listenAddr)) {
+        if (!listening.has(listenPrefix)) {
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+        const [port, listener] = listening.get(listenPrefix);
+        let localAddr;
+        try {
+          // See if we have a listener that's willing to receive this connection.
+          // eslint-disable-next-line no-await-in-loop
+          const localSuffix = await E(listener)
+            .onInbound(port, listenPrefix, remoteAddr, listener)
+            .catch(rethrowUnlessMissing);
+          localAddr = localSuffix
+            ? `${listenPrefix}/${localSuffix}`
+            : listenAddr;
+        } catch (e) {
+          lastFailure = e;
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+        // We have a legitimate inbound attempt.
+        let consummated;
+        const current = currentConnections.get(port);
+        const inboundAttempt = harden({
+          getLocalAddress() {
+            // Return address metadata.
+            return localAddr;
+          },
+          getRemoteAddress() {
+            return remoteAddr;
+          },
+          async close() {
+            if (consummated) {
+              throw consummated;
+            }
+            consummated = Error(`Already closed`);
+            current.delete(inboundAttempt);
+            await E(listener)
+              .onReject(port, localAddr, remoteAddr, listener)
+              .catch(rethrowUnlessMissing);
+          },
+          async accept(rchandler) {
+            if (consummated) {
+              throw consummated;
+            }
+            consummated = Error(`Already accepted`);
+            current.delete(inboundAttempt);
+
+            const lchandler =
+              /** @type {ConnectionHandler} */
+              // eslint-disable-next-line prettier/prettier
+              (await E(listener).onAccept(port, localAddr, remoteAddr, listener));
+
+            return crossoverConnection(
+              lchandler,
+              localAddr,
+              rchandler,
+              remoteAddr,
+              current,
+              E,
+            )[1];
+          },
+        });
+        current.add(inboundAttempt);
+        return inboundAttempt;
       }
-      const [port, listener] = listening.get(listenAddr);
-      const current = currentConnections.get(port);
-
-      const lchandler =
-        /** @type {ConnectionHandler} */
-        (await E(listener).onAccept(port, localAddr, remoteAddr, listener));
-
-      return crossoverConnection(
-        lchandler,
-        localAddr,
-        rchandler,
-        remoteAddr,
-        current,
-        E,
-      )[1];
+      throw lastFailure;
     },
     async outbound(port, remoteAddr, lchandler) {
       const localAddr =
         /** @type {string} */
         (await E(port).getLocalAddress());
 
-      const ret = getPrefixes(remoteAddr);
-      if (await protocolImpl.isListening(ret)) {
-        return protocolImpl.inbound(ret, remoteAddr, localAddr, lchandler);
+      let lastFailure;
+      try {
+        // Attempt the loopback connection.
+        const attempt = await protocolImpl.inbound(remoteAddr, localAddr);
+        return attempt.accept(lchandler);
+      } catch (e) {
+        lastFailure = e;
       }
 
       const rchandler =
@@ -346,7 +407,7 @@ export function makeNetworkProtocol(protocolHandler, E = defaultE) {
         ));
 
       if (!rchandler) {
-        throw Error(`Cannot connect to ${remoteAddr}`);
+        throw lastFailure;
       }
 
       const current = currentConnections.get(port);

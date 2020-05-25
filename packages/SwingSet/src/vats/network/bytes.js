@@ -13,7 +13,6 @@
 export function toBytes(data) {
   // TODO: We really need marshallable TypedArrays.
   if (typeof data === 'string') {
-    // eslint-disable-next-line no-bitwise
     data = data.split('').map(c => c.charCodeAt(0));
   }
 
