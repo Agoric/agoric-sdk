@@ -3,7 +3,7 @@
 
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
-import makeStore from '@agoric/store';
+import makeStore from '@agoric/weak-store';
 import { assert, details } from '@agoric/assert';
 import {
   allComparable,
