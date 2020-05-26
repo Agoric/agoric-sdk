@@ -181,6 +181,8 @@ type channelOpenInitEvent struct {
 	ChannelID      string                    `json:"channelID"`
 	Counterparty   channeltypes.Counterparty `json:"counterparty"`
 	Version        string                    `json:"version"`
+	BlockHeight    int64                     `json:"blockHeight"`
+	BlockTime      int64                     `json:"blockTime"`
 }
 
 // Implement IBCModule callbacks
@@ -203,6 +205,8 @@ func (am AppModule) OnChanOpenInit(
 		ChannelID:      channelID,
 		Counterparty:   counterparty,
 		Version:        version,
+		BlockHeight:    ctx.BlockHeight(),
+		BlockTime:      ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -233,6 +237,8 @@ type channelOpenTryEvent struct {
 	Counterparty        channeltypes.Counterparty `json:"counterparty"`
 	Version             string                    `json:"version"`
 	CounterpartyVersion string                    `json:"counterpartyVersion"`
+	BlockHeight         int64                     `json:"blockHeight"`
+	BlockTime           int64                     `json:"blockTime"`
 }
 
 func (am AppModule) OnChanOpenTry(
@@ -257,6 +263,8 @@ func (am AppModule) OnChanOpenTry(
 		Counterparty:        counterparty,
 		Version:             version,
 		CounterpartyVersion: counterpartyVersion,
+		BlockHeight:         ctx.BlockHeight(),
+		BlockTime:           ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -283,6 +291,8 @@ type channelOpenAckEvent struct {
 	PortID              string `json:"portID"`
 	ChannelID           string `json:"channelID"`
 	CounterpartyVersion string `json:"counterpartyVersion"`
+	BlockHeight         int64  `json:"blockHeight"`
+	BlockTime           int64  `json:"blockTime"`
 }
 
 func (am AppModule) OnChanOpenAck(
@@ -298,6 +308,8 @@ func (am AppModule) OnChanOpenAck(
 		PortID:              portID,
 		ChannelID:           channelID,
 		CounterpartyVersion: counterpartyVersion,
+		BlockHeight:         ctx.BlockHeight(),
+		BlockTime:           ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -310,10 +322,12 @@ func (am AppModule) OnChanOpenAck(
 }
 
 type channelOpenConfirmEvent struct {
-	Type      string `json:"type"`  // IBC
-	Event     string `json:"event"` // channelOpenConfirm
-	PortID    string `json:"portID"`
-	ChannelID string `json:"channelID"`
+	Type        string `json:"type"`  // IBC
+	Event       string `json:"event"` // channelOpenConfirm
+	PortID      string `json:"portID"`
+	ChannelID   string `json:"channelID"`
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
 }
 
 func (am AppModule) OnChanOpenConfirm(
@@ -322,10 +336,12 @@ func (am AppModule) OnChanOpenConfirm(
 	channelID string,
 ) error {
 	event := channelOpenConfirmEvent{
-		Type:      "IBC_EVENT",
-		Event:     "channelOpenConfirm",
-		PortID:    portID,
-		ChannelID: channelID,
+		Type:        "IBC_EVENT",
+		Event:       "channelOpenConfirm",
+		PortID:      portID,
+		ChannelID:   channelID,
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -339,10 +355,12 @@ func (am AppModule) OnChanOpenConfirm(
 }
 
 type channelCloseInitEvent struct {
-	Type      string `json:"type"`  // IBC
-	Event     string `json:"event"` // channelCloseInit
-	PortID    string `json:"portID"`
-	ChannelID string `json:"channelID"`
+	Type        string `json:"type"`  // IBC
+	Event       string `json:"event"` // channelCloseInit
+	PortID      string `json:"portID"`
+	ChannelID   string `json:"channelID"`
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
 }
 
 func (am AppModule) OnChanCloseInit(
@@ -351,10 +369,12 @@ func (am AppModule) OnChanCloseInit(
 	channelID string,
 ) error {
 	event := channelCloseInitEvent{
-		Type:      "IBC_EVENT",
-		Event:     "channelCloseInit",
-		PortID:    portID,
-		ChannelID: channelID,
+		Type:        "IBC_EVENT",
+		Event:       "channelCloseInit",
+		PortID:      portID,
+		ChannelID:   channelID,
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -367,10 +387,12 @@ func (am AppModule) OnChanCloseInit(
 }
 
 type channelCloseConfirmEvent struct {
-	Type      string `json:"type"`  // IBC
-	Event     string `json:"event"` // channelCloseConfirm
-	PortID    string `json:"portID"`
-	ChannelID string `json:"channelID"`
+	Type        string `json:"type"`  // IBC
+	Event       string `json:"event"` // channelCloseConfirm
+	PortID      string `json:"portID"`
+	ChannelID   string `json:"channelID"`
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
 }
 
 func (am AppModule) OnChanCloseConfirm(
@@ -379,10 +401,12 @@ func (am AppModule) OnChanCloseConfirm(
 	channelID string,
 ) error {
 	event := channelCloseConfirmEvent{
-		Type:      "IBC_EVENT",
-		Event:     "channelCloseConfirm",
-		PortID:    portID,
-		ChannelID: channelID,
+		Type:        "IBC_EVENT",
+		Event:       "channelCloseConfirm",
+		PortID:      portID,
+		ChannelID:   channelID,
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -395,9 +419,11 @@ func (am AppModule) OnChanCloseConfirm(
 }
 
 type receivePacketEvent struct {
-	Type   string              `json:"type"`  // IBC
-	Event  string              `json:"event"` // receivePacket
-	Packet channeltypes.Packet `json:"packet"`
+	Type        string              `json:"type"`  // IBC
+	Event       string              `json:"event"` // receivePacket
+	Packet      channeltypes.Packet `json:"packet"`
+	BlockHeight int64               `json:"blockHeight"`
+	BlockTime   int64               `json:"blockTime"`
 }
 
 func (am AppModule) OnRecvPacket(
@@ -406,9 +432,11 @@ func (am AppModule) OnRecvPacket(
 ) (*sdk.Result, error) {
 
 	event := receivePacketEvent{
-		Type:   "IBC_EVENT",
-		Event:  "receivePacket",
-		Packet: packet,
+		Type:        "IBC_EVENT",
+		Event:       "receivePacket",
+		Packet:      packet,
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -431,6 +459,8 @@ type acknowledgementPacketEvent struct {
 	Event           string              `json:"event"` // acknowledgementPacket
 	Packet          channeltypes.Packet `json:"packet"`
 	Acknowledgement []byte              `json:"acknowledgement"`
+	BlockHeight     int64               `json:"blockHeight"`
+	BlockTime       int64               `json:"blockTime"`
 }
 
 func (am AppModule) OnAcknowledgementPacket(
@@ -444,6 +474,8 @@ func (am AppModule) OnAcknowledgementPacket(
 		Event:           "acknowledgementPacket",
 		Packet:          packet,
 		Acknowledgement: acknowledgement,
+		BlockHeight:     ctx.BlockHeight(),
+		BlockTime:       ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -462,9 +494,11 @@ func (am AppModule) OnAcknowledgementPacket(
 }
 
 type timeoutPacketEvent struct {
-	Type   string              `json:"type"`  // IBC
-	Event  string              `json:"event"` // timeoutPacket
-	Packet channeltypes.Packet `json:"packet"`
+	Type        string              `json:"type"`  // IBC
+	Event       string              `json:"event"` // timeoutPacket
+	Packet      channeltypes.Packet `json:"packet"`
+	BlockHeight int64               `json:"blockHeight"`
+	BlockTime   int64               `json:"blockTime"`
 }
 
 func (am AppModule) OnTimeoutPacket(
@@ -473,9 +507,11 @@ func (am AppModule) OnTimeoutPacket(
 ) (*sdk.Result, error) {
 
 	event := timeoutPacketEvent{
-		Type:   "IBC_EVENT",
-		Event:  "timeoutPacket",
-		Packet: packet,
+		Type:        "IBC_EVENT",
+		Event:       "timeoutPacket",
+		Packet:      packet,
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)

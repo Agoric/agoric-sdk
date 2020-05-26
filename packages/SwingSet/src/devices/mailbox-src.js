@@ -10,7 +10,7 @@ export default function setup(syscall, state, helpers, endowments) {
 
   function inboundCallback(hPeer, hMessages, hAck) {
     const peer = `${hPeer}`;
-    if (!inboundCallback) {
+    if (!deliverInboundMessages) {
       throw new Error(
         `mailbox.inboundCallback(${peer}) called before handler was registered`,
       );
