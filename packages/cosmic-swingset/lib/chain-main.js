@@ -176,7 +176,11 @@ export default async function main(progname, args, { path, env, agcc }) {
         );
       }
       const retStr = chainSend(portNum, stringify(obj));
-      return JSON.parse(retStr);
+      try {
+        return JSON.parse(retStr);
+      } catch (e) {
+        throw Error(`cannot JSON.parse(${JSON.stringify(retStr)}): ${e}`);
+      }
     }
 
     const vatsdir = path.resolve(__dirname, '../lib/ag-solo/vats');

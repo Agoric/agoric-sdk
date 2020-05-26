@@ -117,16 +117,27 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 			ret = "true"
 		}
 
-	case "channelOpenInit":
+	case "startChannelOpenInit":
+		/* TODO: Find out what is necessary to wake up a passive relayer.
 		err = ctx.Keeper.ChanOpenInit(
 			ctx.Context, stringToOrder(msg.Order), msg.Hops,
 			msg.Packet.SourcePort, msg.Packet.SourceChannel,
 			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
 			msg.Version,
 		)
+		*/
 		if err == nil {
 			ret = "true"
 		}
+		break
+
+	case "continueChannelOpenTry":
+		/* TODO: Call ctx.Keeper.ChanOpenTry.
+		 */
+		if err == nil {
+			ret = "true"
+		}
+		break
 
 	case "channelCloseInit":
 		err = ctx.Keeper.ChanCloseInit(ctx.Context, msg.Packet.SourcePort, msg.Packet.SourceChannel)

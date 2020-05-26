@@ -105,13 +105,17 @@ export function makeIBCProtocolHandler(
    * @property {string} channelID
    * @property {Counterparty} counterparty
    * @property {string} version
-   * @property {string} [counterpartyVersion]
    */
 
   /**
    * @type {Store<string, ConnectingInfo>}
    */
   const channelKeyToInfo = makeStore('CHANNEL:PORT');
+
+  /**
+   * @type {Store<string, PromiseRecord<[Endpoint, ConnectionHandler], any>>}
+   */
+  const channelKeyToOnConnectP = makeStore('CHANNEL:PORT');
 
   /**
    * @type {Store<string, Promise<InboundAttempt>>}
@@ -180,7 +184,7 @@ export function makeIBCProtocolHandler(
    * @param {string} portID
    * @param {string} rChannelID
    * @param {string} rPortID
-   * @param {boolean} ordered
+   * @param {'ORDERED'|'UNORDERED'} order
    * @returns {ConnectionHandler}
    */
   function makeIBCConnectionHandler(
@@ -188,7 +192,7 @@ export function makeIBCProtocolHandler(
     portID,
     rChannelID,
     rPortID,
-    ordered,
+    order,
   ) {
     const channelKey = `${channelID}:${portID}`;
     const seqToAck = makeStore('SEQUENCE');
@@ -212,11 +216,8 @@ export function makeIBCProtocolHandler(
       return ibcSendPacket(packet, seqToAck);
     };
 
-    // FIXME: We may want a queue sometime to sequence
-    // our packets, but it doesn't currently work (received
-    // packets don't arrive).
-    if (false && ordered) {
-      // Set up a queue on the receiver.
+    if (order === 'ORDERED') {
+      // We set up a queue on the receiver to enforce ordering.
       const withChannelReceiveQueue = makeWithQueue();
       onReceive = withChannelReceiveQueue(onReceive);
     }
@@ -292,11 +293,6 @@ export function makeIBCProtocolHandler(
   const portToCircuits = makeStore('Port');
 
   /**
-   * @type {Store<string, Store<string, ConnectedRecord[]>>}
-   */
-  const outboundWaiters = makeStore('destination');
-
-  /**
    * @type {Store<Port, Set<PromiseRecord<ConnectionHandler,any>>>}
    */
   const portToPendingConns = makeStore('Port');
@@ -359,81 +355,42 @@ export function makeIBCProtocolHandler(
 
       const channelID = generateChannelID();
 
-      // FIXME: The destination should be able to choose this channelID.
+      const onConnectP = producePromise();
+
+      // FIXME: The destination should be able to choose its own channelID.
+      // (That would require sending it as part of channelOpenAck.)
       const rChannelID = generateChannelID();
 
-      const rchandler = producePromise();
-      pendingConns.add(rchandler);
-
-      /**
-       * @type {typeof makeIBCConnectionHandler}
-       */
-      function connected(cID, pID, rCID, rPID, ord) {
-        const ch = makeIBCConnectionHandler(cID, pID, rCID, rPID, ord);
-        rchandler.resolve(ch);
-        pendingConns.delete(rchandler);
-        return ch;
-      }
-
-      for (let i = 0; i <= hops.length; i += 1) {
-        // Add most specific to least specific outbound connections.
-        const ibcHops = hops
-          .slice(0, hops.length - i)
-          .map(hop => `/ibc-hop/${hop}`)
-          .join('/');
-        const them = `${ibcHops}/ibc-port/${rPortID}`;
-        let waiters;
-        if (outboundWaiters.has(them)) {
-          waiters = outboundWaiters.get(them);
-        } else {
-          waiters = makeStore('source');
-          outboundWaiters.init(them, waiters);
-        }
-        let waiterList;
-        if (waiters.has(portID)) {
-          waiterList = waiters.get(portID);
-        } else {
-          waiterList = [];
-          waiters.init(portID, waiterList);
-        }
-        waiterList.push({ channelID, rChannelID, connected });
-      }
-
-      // TODO: Will need to change to dispatch (without sending)
-      // a ChanOpenInit to get a passive relayer flowing.
-      if (false) {
-        const packet = {
-          source_channel: channelID,
-          source_port: portID,
-          destination_channel: rChannelID,
-          destination_port: rPortID,
-        };
-
-        await callIBCDevice('channelOpenInit', {
-          packet,
-          order,
-          hops,
-          version,
-        });
-      }
-
-      /**
-       * @type {ConnectingInfo}
-       */
-      const obj = {
+      const channelKey = `${channelID}:${portID}`;
+      pendingConns.add(onConnectP);
+      channelKeyToOnConnectP.init(channelKey, onConnectP);
+      channelKeyToInfo.init(channelKey, {
         channelID,
         portID,
         counterparty: { channel_id: rChannelID, port_id: rPortID },
         connectionHops: hops,
         order,
         version,
+      });
+
+      // Get any passive relayers to flow.
+      const packet = {
+        source_channel: channelID,
+        source_port: portID,
+        destination_channel: rChannelID,
+        destination_port: rPortID,
       };
-      const channelKey = `${channelID}:${portID}`;
-      channelKeyToInfo.init(channelKey, obj);
+
+      await callIBCDevice('startChannelOpenInit', {
+        packet,
+        order,
+        hops,
+        version,
+      });
 
       if (!FIXME_ALLOW_NAIVE_RELAYS || !chandler) {
         // Just wait until the connection handler resolves.
-        return rchandler.promise;
+        return onConnectP.promise;
       }
 
       // We explain to the user how to configure a naive relayer.
@@ -448,7 +405,8 @@ ag-nchainz start-relayer <<'EOF'
     "connection-id": ${q(hops[0])},
     "channel-id": ${q(channelID)},
     "port-id": ${q(portID)},
-    "order": ${q(order)}
+    "order": ${q(order)},
+    "version": ${q(version)}
   },
   "dst": {
     "channel-id": ${q(rChannelID)},
@@ -461,7 +419,7 @@ EOF
 `,
         )
         .catch(rethrowUnlessMissing);
-      return rchandler.promise;
+      return onConnectP.promise;
     },
     async onListen(_port, _localAddr, _listenHandler) {
       // console.warn('IBC onListen', localAddr);
@@ -475,76 +433,11 @@ EOF
       portToPendingConns.delete(port);
       portToCircuits.delete(port);
       const revoked = Error(`Port ${localAddr} revoked`);
-      for (const rchandler of pendingConns.values()) {
-        rchandler.reject(revoked);
+      for (const onConnectP of pendingConns.values()) {
+        onConnectP.reject(revoked);
       }
     },
   });
-
-  /**
-   * @param {string[]} hops
-   * @param {string} channelID
-   * @param {string} portID
-   * @param {string} rChannelID
-   * @param {string} rPortID
-   * @param {boolean} [removeMatching=false]
-   * @returns {ConnectedRecord|undefined}
-   */
-  function getWaiter(
-    hops,
-    channelID,
-    portID,
-    rChannelID,
-    rPortID,
-    removeMatching = false,
-  ) {
-    // /ibc-port/portID/ibc-channel/channelID(/ibc-hop/hop1(/ibc-hop/hop2))/ibc-port/rPortID/ibc-channel/rChannelID
-    // FIXME: Leaves garbage behind in the less specific outboundWaiters.
-    for (let i = 0; i <= hops.length; i += 1) {
-      // Try most specific to least specific outbound connections.
-      const ibcHops = hops
-        .slice(0, hops.length - i)
-        .map(hop => `/ibc-hop/${hop}`)
-        .join('/');
-      const them = `${ibcHops}/ibc-port/${rPortID}`;
-      if (outboundWaiters.has(them)) {
-        const waiters = outboundWaiters.get(them);
-        if (waiters.has(portID)) {
-          const waiterList = waiters.get(portID);
-          // Find the best waiter.
-          let bestWaiter = -1;
-          for (let j = 0; j < waiterList.length; j += 1) {
-            if (
-              waiterList[j].channelID === channelID &&
-              waiterList[j].rChannelID === rChannelID
-            ) {
-              bestWaiter = j;
-              break;
-            }
-          }
-
-          if (bestWaiter < 0) {
-            return undefined;
-          }
-          const waiter = waiterList[bestWaiter];
-          if (!removeMatching) {
-            return waiter;
-          }
-
-          // Clean up the maps.
-          waiterList.splice(bestWaiter, 1);
-          if (waiterList.length === 0) {
-            waiters.delete(portID);
-          }
-          if (waiters.keys().length === 0) {
-            outboundWaiters.delete(them);
-          }
-          return waiter;
-        }
-      }
-    }
-    return undefined;
-  }
 
   return harden({
     ...protocol,
@@ -553,35 +446,46 @@ EOF
       switch (obj.event) {
         case 'channelOpenInit': {
           // This event is sent by a naive relayer that wants to initiate
-          // a connection.
+          // a connection.  It is only honoured if we already have autonomously
+          // attempted a connection.
           const {
             channelID,
             portID,
-            counterparty: { channel_id: rChannelID, port_id: rPortID },
-            connectionHops: hops,
+            counterparty: { port_id: rPortID },
+            connectionHops: rHops,
           } = obj;
 
           const channelKey = `${channelID}:${portID}`;
 
-          if (FIXME_ALLOW_NAIVE_RELAYS) {
-            // Continue the handshake if we are waiting for it.
-            const waiter = getWaiter(
-              hops,
-              channelID,
-              portID,
-              rChannelID,
-              rPortID,
-              false,
+          if (!channelKeyToOnConnectP.has(channelKey)) {
+            // We're not waiting for an init, so throw.
+            throw Error(`${channelKey}: did not expect channelOpenInit`);
+          }
+
+          // Continue the handshake.
+          const chanInfo = channelKeyToInfo.get(channelKey);
+          const {
+            counterparty: { port_id: iPortID },
+            connectionHops: iHops,
+          } = chanInfo;
+          if (iPortID !== rPortID) {
+            throw Error(
+              `${channelKey}: inbound port ${iPortID} is not ${rPortID}`,
             );
-            if (waiter) {
-              // We have more specific information for the outbound connection.
-              channelKeyToInfo.set(channelKey, obj);
-              break;
+          }
+          for (let i = 0; i < rHops.length; i += 1) {
+            if (iHops[i] !== rHops[i]) {
+              throw Error(
+                `${channelKey}: inbound hops ${iHops.join(
+                  ',',
+                )} does not begin with ${rHops.join(',')}`,
+              );
             }
           }
 
-          // We're not waiting for an init, so throw.
-          throw Error(`No waiting outbound connection for ${channelKey}`);
+          // We have more specific information for the outbound connection.
+          channelKeyToInfo.set(channelKey, { ...chanInfo, ...obj });
+          break;
         }
 
         case 'attemptChannelOpenTry':
@@ -618,95 +522,108 @@ EOF
             /** @type {string} */
             (await E(attemptP).getLocalAddress());
           const match = attemptedLocal.match(
-            // Match:    /ibc-port/PORT /ORDER/VERSION...
-            new RegExp('^/ibc-port/[^/]+/[^/]+/([^/]+)(/|$)'),
+            // Match:  ... /ORDER/VERSION ...
+            new RegExp('^(/[^/]+/[^/]+)*/(ordered|unordered)/([^/]+)(/|$)'),
           );
           if (!match) {
             throw Error(
-              `Cannot determine version from attempted local address ${attemptedLocal}`,
+              `${channelKey}: cannot determine version from attempted local address ${attemptedLocal}`,
             );
           }
+          const negotiatedVersion = match[3];
 
           channelKeyToAttemptP.init(channelKey, attemptP);
           channelKeyToInfo.init(channelKey, obj);
 
-          const negotiatedVersion = match[1];
-          if (obj.type === 'attemptChannelOpenTry') {
-            // We can try to open with the version we wanted.
-            const packet = {
-              source_channel: channelID,
-              source_port: portID,
-              destination_channel: rChannelID,
-              destination_port: rPortID,
-            };
+          try {
+            if (obj.type === 'attemptChannelOpenTry') {
+              // We can try to open with the version we wanted.
+              const packet = {
+                source_channel: channelID,
+                source_port: portID,
+                destination_channel: rChannelID,
+                destination_port: rPortID,
+              };
 
-            await callIBCDevice('channelOpenTry', {
-              packet,
-              order,
-              hops,
-              version: negotiatedVersion,
-              counterpartyVersion: rVersion,
-            });
-          } else if (negotiatedVersion !== version) {
-            // Too late to change the version.
-            throw Error(
-              `Rejecting version ${version}; we negotiated ${negotiatedVersion}`,
-            );
+              await callIBCDevice('continueChannelOpenTry', {
+                packet,
+                order,
+                hops,
+                version: negotiatedVersion,
+                counterpartyVersion: rVersion,
+              });
+            } else if (negotiatedVersion !== version) {
+              // Too late; the relayer gave us a version we didn't like.
+              throw Error(
+                `${channelKey}: negotiated version was ${negotiatedVersion}; rejecting ${version}`,
+              );
+            }
+          } catch (e) {
+            // Clean up after our failed attempt.
+            channelKeyToAttemptP.delete(channelKey);
+            channelKeyToInfo.delete(channelKey);
+            E(attemptP).close();
+            throw e;
           }
           break;
         }
 
-        case 'channelOpenAck':
-        case 'channelOpenConfirm': {
-          const {
-            portID,
-            channelID,
-            counterpartyVersion: updatedVersion,
-          } = obj;
+        case 'channelOpenAck': {
+          // Complete the pending outbound connection.
+          const { portID, channelID, counterpartyVersion: rVersion } = obj;
           const channelKey = `${channelID}:${portID}`;
+          if (!channelKeyToOnConnectP.has(channelKey)) {
+            throw Error(`${channelKey}: did not expect channelOpenAck`);
+          }
+          const onConnectP = channelKeyToOnConnectP.get(channelKey);
+          channelKeyToOnConnectP.delete(channelKey);
+
           const {
             order,
-            version,
-            connectionHops: hops,
+            connectionHops: rHops,
             counterparty: { port_id: rPortID, channel_id: rChannelID },
-            counterpartyVersion: storedVersion,
           } = channelKeyToInfo.get(channelKey);
           channelKeyToInfo.delete(channelKey);
 
-          const rVersion = updatedVersion || storedVersion;
-          const localAddr = `/ibc-port/${portID}/${order.toLowerCase()}/${version}`;
-          const ibcHops = hops.map(hop => `/ibc-hop/${hop}`).join('/');
+          // Finish the outbound connection.
+          const ibcHops = rHops.map(hop => `/ibc-hop/${hop}`).join('/');
           const remoteAddr = `${ibcHops}/ibc-port/${rPortID}/${order.toLowerCase()}/${rVersion}`;
-          const waiter = getWaiter(
-            hops,
-            channelID,
-            portID,
-            rChannelID,
-            rPortID,
-            true,
-          );
-          if (waiter) {
-            // An outbound connection wants to use this channel.
-            waiter.connected(
-              channelID,
-              portID,
-              rChannelID,
-              rPortID,
-              order === 'ORDERED',
-            );
-            break;
-          }
-
           const rchandler = makeIBCConnectionHandler(
             channelID,
             portID,
             rChannelID,
             rPortID,
-            order === 'ORDERED',
+            order,
           );
+          onConnectP.resolve([remoteAddr, rchandler]);
+          break;
+        }
 
-          // Attempt a connection and accept our handler.
-          E(E(protocolImpl).inbound(localAddr, remoteAddr)).accept(rchandler);
+        case 'channelOpenConfirm': {
+          const { portID, channelID } = obj;
+          const channelKey = `${channelID}:${portID}`;
+          if (!channelKeyToAttemptP.has(channelKey)) {
+            throw Error(`${channelKey}: did not expect channelOpenConfirm`);
+          }
+          const attemptP = channelKeyToAttemptP.get(channelKey);
+          channelKeyToAttemptP.delete(channelKey);
+
+          // We have the information from our inbound connection, so complete it.
+          const {
+            order,
+            counterparty: { port_id: rPortID, channel_id: rChannelID },
+          } = channelKeyToInfo.get(channelKey);
+          channelKeyToInfo.delete(channelKey);
+
+          // Accept the attempt.
+          const rchandler = makeIBCConnectionHandler(
+            channelID,
+            portID,
+            rChannelID,
+            rPortID,
+            order,
+          );
+          E(attemptP).accept(rchandler);
           break;
         }
 
