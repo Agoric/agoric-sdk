@@ -47,9 +47,11 @@ const makeProtocolHandler = t => {
       t.assert(localAddr, `local address is supplied to onConnect`);
       t.assert(remoteAddr, `remote address is supplied to onConnect`);
       if (lp) {
-        return l.onAccept(lp, localAddr, remoteAddr, l);
+        return l
+          .onAccept(lp, localAddr, remoteAddr, l)
+          .then(ch => [localAddr, ch]);
       }
-      return makeEchoConnectionHandler();
+      return [remoteAddr, makeEchoConnectionHandler()];
     },
     async onListen(port, localAddr, listenHandler) {
       t.assert(port, `port is tracked in onListen`);
