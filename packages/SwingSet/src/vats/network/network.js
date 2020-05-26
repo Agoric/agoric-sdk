@@ -71,7 +71,7 @@ export const ENDPOINT_SEPARATOR = '/';
 
 /**
  * @typedef {Object} ConnectionHandler A handler for a given Connection
- * @property {(connection: Connection, c: ConnectionHandler) => void} [onOpen] The connection has been opened
+ * @property {(connection: Connection, localAddr: Endpoint, remoteAddr: Endpoint, c: ConnectionHandler) => void} [onOpen] The connection has been opened
  * @property {(connection: Connection, packetBytes: Bytes, c: ConnectionHandler) => Promise<Data>} [onReceive] The connection received a packet
  * @property {(connection: Connection, reason?: CloseReason, c: ConnectionHandler) => Promise<void>} [onClose] The connection has been closed
  *
@@ -185,7 +185,7 @@ export const makeConnection = (
 
   current.add(connection);
   E(handler)
-    .onOpen(connection, handler)
+    .onOpen(connection, localAddr, remoteAddr, handler)
     .catch(rethrowUnlessMissing);
   return connection;
 };
@@ -257,15 +257,19 @@ export function crossoverConnection(
   makeHalfConnection(0, 1);
   makeHalfConnection(1, 0);
 
-  function openHalfConnection(l) {
+  /**
+   * @param {number} l local side of the connection
+   * @param {number} r remote side of the connection
+   */
+  function openHalfConnection(l, r) {
     current.add(conns[l]);
     E(handlers[l])
-      .onOpen(conns[l], handlers[l])
+      .onOpen(conns[l], addrs[l], addrs[r], handlers[l])
       .catch(rethrowUnlessMissing);
   }
 
-  openHalfConnection(0);
-  openHalfConnection(1);
+  openHalfConnection(0, 1);
+  openHalfConnection(1, 0);
 
   const [conn0, conn1] = conns;
   return [conn0, conn1];

@@ -223,8 +223,14 @@ export function makeIBCProtocolHandler(
     }
 
     return harden({
-      async onOpen(conn, _handler) {
-        console.info('onOpen Remote IBC Connection', channelID, portID);
+      async onOpen(conn, localAddr, remoteAddr, _handler) {
+        console.info(
+          'onOpen Remote IBC Connection',
+          channelID,
+          portID,
+          localAddr,
+          remoteAddr,
+        );
         const connP = /** @type {Promise<Connection, any>} */ (E.when(conn));
         channelKeyToConnP.init(channelKey, connP);
       },
