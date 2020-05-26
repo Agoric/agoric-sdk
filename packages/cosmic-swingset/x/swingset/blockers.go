@@ -83,6 +83,7 @@ func CommitBlock(keeper Keeper) error {
 		BlockHeight: endBlockHeight,
 		BlockTime:   endBlockTime,
 	}
+	committedHeight = endBlockHeight
 
 	b, err := json.Marshal(action)
 	if err != nil {

@@ -12,6 +12,8 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
+var committedHeight int64 = 0
+
 type deliverInboundAction struct {
 	Type        string          `json:"type"`
 	Peer        string          `json:"peer"`
@@ -25,6 +27,11 @@ type deliverInboundAction struct {
 // NewHandler returns a handler for "swingset" type messages.
 func NewHandler(keeper Keeper) sdk.Handler {
 	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
+		if committedHeight == ctx.BlockHeight() {
+			// We don't support simulation.
+			return &sdk.Result{}, nil
+		}
+
 		switch msg := msg.(type) {
 		// Legacy deliver inbound.
 		// TODO: Sometime merge with IBC?

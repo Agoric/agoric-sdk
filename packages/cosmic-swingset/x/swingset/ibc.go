@@ -196,6 +196,11 @@ func (am AppModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) error {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return nil
+	}
+
 	event := channelOpenInitEvent{
 		Type:           "IBC_EVENT",
 		Event:          "channelOpenInit",
@@ -252,6 +257,10 @@ func (am AppModule) OnChanOpenTry(
 	version,
 	counterpartyVersion string,
 ) error {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return nil
+	}
 
 	event := channelOpenTryEvent{
 		Type:                "IBC_EVENT",
@@ -301,6 +310,10 @@ func (am AppModule) OnChanOpenAck(
 	channelID string,
 	counterpartyVersion string,
 ) error {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return nil
+	}
 
 	event := channelOpenAckEvent{
 		Type:                "IBC_EVENT",
@@ -335,6 +348,11 @@ func (am AppModule) OnChanOpenConfirm(
 	portID,
 	channelID string,
 ) error {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return nil
+	}
+
 	event := channelOpenConfirmEvent{
 		Type:        "IBC_EVENT",
 		Event:       "channelOpenConfirm",
@@ -368,6 +386,11 @@ func (am AppModule) OnChanCloseInit(
 	portID,
 	channelID string,
 ) error {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return nil
+	}
+
 	event := channelCloseInitEvent{
 		Type:        "IBC_EVENT",
 		Event:       "channelCloseInit",
@@ -400,6 +423,11 @@ func (am AppModule) OnChanCloseConfirm(
 	portID,
 	channelID string,
 ) error {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return nil
+	}
+
 	event := channelCloseConfirmEvent{
 		Type:        "IBC_EVENT",
 		Event:       "channelCloseConfirm",
@@ -430,6 +458,15 @@ func (am AppModule) OnRecvPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 ) (*sdk.Result, error) {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return &sdk.Result{}, nil
+	}
+	if packet.GetTimeoutTimestamp() == 0 {
+		// FIXME: Don't know why, but for every relayed packet, we receive
+		// a second nearly-identical packet with a zero Timestamp.
+		return &sdk.Result{}, nil
+	}
 
 	event := receivePacketEvent{
 		Type:        "IBC_EVENT",
@@ -468,6 +505,10 @@ func (am AppModule) OnAcknowledgementPacket(
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 ) (*sdk.Result, error) {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return &sdk.Result{}, nil
+	}
 
 	event := acknowledgementPacketEvent{
 		Type:            "IBC_EVENT",
@@ -505,6 +546,10 @@ func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 ) (*sdk.Result, error) {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return &sdk.Result{}, nil
+	}
 
 	event := timeoutPacketEvent{
 		Type:        "IBC_EVENT",
