@@ -50,8 +50,8 @@ export function makeVatKeeper(
   vatID,
   addKernelObject,
   addKernelPromise,
-  incrementKernelPromiseRefCount,
-  decrementKernelPromiseRefCount,
+  incrementRefCount,
+  decrementRefCount,
 ) {
   insistVatID(vatID);
 
@@ -80,10 +80,10 @@ export function makeVatKeeper(
           throw new Error(`normal vats aren't allowed to export device nodes`);
         } else if (type === 'promise') {
           kernelSlot = addKernelPromise(vatID);
-          incrementKernelPromiseRefCount(kernelSlot, `${vatID}|vk|clist`);
         } else {
           throw new Error(`unknown type ${type}`);
         }
+        incrementRefCount(kernelSlot, `${vatID}|vk|clist`);
         const kernelKey = `${vatID}.c.${kernelSlot}`;
         storage.set(kernelKey, vatSlot);
         storage.set(vatKey, kernelSlot);
@@ -125,10 +125,10 @@ export function makeVatKeeper(
       } else if (type === 'promise') {
         id = Nat(Number(storage.get(`${vatID}.p.nextID`)));
         storage.set(`${vatID}.p.nextID`, `${id + 1}`);
-        incrementKernelPromiseRefCount(kernelSlot, `${vatID}[kv|clist`);
       } else {
         throw new Error(`unknown type ${type}`);
       }
+      incrementRefCount(kernelSlot, `${vatID}[kv|clist`);
       const vatSlot = makeVatSlot(type, false, id);
 
       const vatKey = `${vatID}.c.${vatSlot}`;
@@ -153,10 +153,7 @@ export function makeVatKeeper(
     const vatKey = `${vatID}.c.${vatSlot}`;
     kdebug(`Delete mapping ${kernelKey}<=>${vatKey}`);
     if (storage.has(kernelKey)) {
-      const { type } = parseKernelSlot(kernelSlot);
-      if (type === 'promise') {
-        decrementKernelPromiseRefCount(kernelSlot, `${vatID}|del|clist`);
-      }
+      decrementRefCount(kernelSlot, `${vatID}|del|clist`);
       storage.delete(kernelKey);
       storage.delete(vatKey);
     }

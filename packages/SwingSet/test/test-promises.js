@@ -176,7 +176,7 @@ async function testCircularPromiseData(t, withSES) {
     {
       id: 'kp40',
       state: 'fulfilledToData',
-      refCount: '3',
+      refCount: 3,
       data: {
         body: '[{"@qclass":"slot","index":0}]',
         slots: ['kp41'],
@@ -185,7 +185,7 @@ async function testCircularPromiseData(t, withSES) {
     {
       id: 'kp41',
       state: 'fulfilledToData',
-      refCount: '3',
+      refCount: 3,
       data: {
         body: '[{"@qclass":"slot","index":0}]',
         slots: ['kp40'],
@@ -196,7 +196,7 @@ async function testCircularPromiseData(t, withSES) {
     expectedPromises.push({
       id: 'kp42',
       state: 'fulfilledToData',
-      refCount: '0',
+      refCount: 0,
       data: {
         body: '{"@qclass":"undefined"}',
         slots: [],

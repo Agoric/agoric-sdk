@@ -262,7 +262,7 @@ test('outbound call', async t => {
     {
       id: 'kp40',
       state: 'unresolved',
-      refCount: '2',
+      refCount: 2,
       decider: vat1,
       subscribers: [],
       queue: [],
@@ -270,7 +270,7 @@ test('outbound call', async t => {
     {
       id: 'kp41',
       state: 'unresolved',
-      refCount: '2',
+      refCount: 2,
       decider: undefined,
       subscribers: [],
       queue: [],
@@ -292,7 +292,7 @@ test('outbound call', async t => {
         {
           id: 'kp40',
           state: 'unresolved',
-          refCount: '2',
+          refCount: 2,
           decider: vat1,
           subscribers: [],
           queue: [],
@@ -300,7 +300,7 @@ test('outbound call', async t => {
         {
           id: 'kp41',
           state: 'unresolved',
-          refCount: '2',
+          refCount: 2,
           decider: vat2,
           subscribers: [],
           queue: [],
@@ -318,7 +318,7 @@ test('outbound call', async t => {
     {
       id: 'kp40',
       state: 'unresolved',
-      refCount: '2',
+      refCount: 2,
       decider: vat1,
       // Sending a promise from vat1 to vat2 doesn't cause vat2 to be
       // subscribed unless they want it. Liveslots will always subscribe,
@@ -330,7 +330,7 @@ test('outbound call', async t => {
     {
       id: 'kp41',
       state: 'unresolved',
-      refCount: '2',
+      refCount: 2,
       decider: vat2,
       subscribers: [],
       queue: [],
@@ -436,7 +436,7 @@ test('three-party', async t => {
     {
       id: ap,
       state: 'unresolved',
-      refCount: '1',
+      refCount: 1,
       decider: vatA,
       subscribers: [],
       queue: [],
@@ -444,7 +444,7 @@ test('three-party', async t => {
     {
       id: 'kp41',
       state: 'unresolved',
-      refCount: '2',
+      refCount: 2,
       decider: undefined,
       subscribers: [],
       queue: [],
@@ -527,7 +527,7 @@ test('transfer promise', async t => {
   kp.push({
     id: 'kp40',
     state: 'unresolved',
-    refCount: '2',
+    refCount: 2,
     decider: vatA,
     subscribers: [],
     queue: [],
@@ -597,7 +597,7 @@ test('subscribe to promise', async t => {
     {
       id: kp,
       state: 'unresolved',
-      refCount: '2',
+      refCount: 2,
       decider: vat2,
       subscribers: [vat1],
       queue: [],
@@ -649,7 +649,7 @@ test('promise resolveToData', async t => {
     {
       id: pForKernel,
       state: 'unresolved',
-      refCount: '2',
+      refCount: 2,
       decider: vatB,
       subscribers: [vatA],
       queue: [],
@@ -676,7 +676,7 @@ test('promise resolveToData', async t => {
       {
         id: pForKernel,
         state: 'fulfilledToData',
-        refCount: '0',
+        refCount: 0,
         data: capdata('args', ['ko20']),
       },
     ]);
@@ -732,7 +732,7 @@ test('promise resolveToPresence', async t => {
     {
       id: pForKernel,
       state: 'unresolved',
-      refCount: '2',
+      refCount: 2,
       decider: vatB,
       subscribers: [vatA],
       queue: [],
@@ -757,7 +757,7 @@ test('promise resolveToPresence', async t => {
       {
         id: pForKernel,
         state: 'fulfilledToPresence',
-        refCount: '0',
+        refCount: 0,
         slot: bobForKernel,
       },
     ]);
@@ -806,7 +806,7 @@ test('promise reject', async t => {
     {
       id: pForKernel,
       state: 'unresolved',
-      refCount: '2',
+      refCount: 2,
       decider: vatB,
       subscribers: [vatA],
       queue: [],
@@ -833,7 +833,7 @@ test('promise reject', async t => {
       {
         id: pForKernel,
         state: 'rejected',
-        refCount: '0',
+        refCount: 0,
         data: capdata('args', ['ko20']),
       },
     ]);
@@ -943,7 +943,7 @@ test('non-pipelined promise queueing', async t => {
     {
       id: p1ForKernel,
       state: 'unresolved',
-      refCount: '3',
+      refCount: 3,
       decider: undefined,
       subscribers: [],
       queue: [],
@@ -951,7 +951,7 @@ test('non-pipelined promise queueing', async t => {
     {
       id: p2ForKernel,
       state: 'unresolved',
-      refCount: '3',
+      refCount: 3,
       decider: undefined,
       subscribers: [],
       queue: [],
@@ -959,7 +959,7 @@ test('non-pipelined promise queueing', async t => {
     {
       id: p3ForKernel,
       state: 'unresolved',
-      refCount: '2',
+      refCount: 2,
       decider: undefined,
       subscribers: [],
       queue: [],
@@ -976,7 +976,7 @@ test('non-pipelined promise queueing', async t => {
     {
       id: p1ForKernel,
       state: 'unresolved',
-      refCount: '2',
+      refCount: 2,
       decider: vatB,
       subscribers: [],
       queue: [
@@ -990,7 +990,7 @@ test('non-pipelined promise queueing', async t => {
     {
       id: p2ForKernel,
       state: 'unresolved',
-      refCount: '1',
+      refCount: 1,
       decider: undefined,
       subscribers: [],
       queue: [
@@ -1004,7 +1004,7 @@ test('non-pipelined promise queueing', async t => {
     {
       id: p3ForKernel,
       state: 'unresolved',
-      refCount: '1',
+      refCount: 1,
       decider: undefined,
       subscribers: [],
       queue: [],
@@ -1060,7 +1060,7 @@ test('pipelined promise queueing', async t => {
     {
       id: p1ForKernel,
       state: 'unresolved',
-      refCount: '3',
+      refCount: 3,
       decider: undefined,
       subscribers: [],
       queue: [],
@@ -1068,7 +1068,7 @@ test('pipelined promise queueing', async t => {
     {
       id: p2ForKernel,
       state: 'unresolved',
-      refCount: '3',
+      refCount: 3,
       decider: undefined,
       subscribers: [],
       queue: [],
@@ -1076,7 +1076,7 @@ test('pipelined promise queueing', async t => {
     {
       id: p3ForKernel,
       state: 'unresolved',
-      refCount: '2',
+      refCount: 2,
       decider: undefined,
       subscribers: [],
       queue: [],
@@ -1097,7 +1097,7 @@ test('pipelined promise queueing', async t => {
     {
       id: p1ForKernel,
       state: 'unresolved',
-      refCount: '2',
+      refCount: 2,
       decider: vatB,
       subscribers: [],
       queue: [],
@@ -1105,7 +1105,7 @@ test('pipelined promise queueing', async t => {
     {
       id: p2ForKernel,
       state: 'unresolved',
-      refCount: '2',
+      refCount: 2,
       decider: vatB,
       subscribers: [],
       queue: [],
@@ -1113,7 +1113,7 @@ test('pipelined promise queueing', async t => {
     {
       id: p3ForKernel,
       state: 'unresolved',
-      refCount: '2',
+      refCount: 2,
       decider: vatB,
       subscribers: [],
       queue: [],

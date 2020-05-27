@@ -3,16 +3,9 @@ export function auditRefCounts(store) {
   const refCounts = new Map();
   const refSites = new Map();
 
-  const vats = [];
-  const vatNamesRaw = store.get('vat.names');
-  if (vatNamesRaw) {
-    const vatNames = JSON.parse(vatNamesRaw);
-    for (const vn of vatNames) {
-      vats.push(store.get(`vat.name.${vn}`));
-    }
-  }
-
-  for (const v of vats) {
+  const vatNextID = Number(store.get('vat.nextID'));
+  for (let vn = 1; vn < vatNextID; vn += 1) {
+    const v = `v${vn}`;
     for (const key of store.getKeys(`${v}.c.kp`, `${v}.c.kp~`)) {
       const val = store.get(key);
       incRefCount(store.get(`${v}.c.${val}`), `clist.${v}`);
@@ -26,7 +19,7 @@ export function auditRefCounts(store) {
     msgNum += 1;
   }
 
-  const topID = store.get('kp.nextID');
+  const topID = Number(store.get('kp.nextID'));
   for (let idx = 1; idx < topID; idx += 1) {
     const kpid = `kp${idx}`;
     const state = store.get(`${kpid}.state`);

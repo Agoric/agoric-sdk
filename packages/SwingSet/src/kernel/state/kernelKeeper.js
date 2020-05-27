@@ -191,7 +191,7 @@ export default function makeKernelKeeper(storage) {
       case undefined:
         throw new Error(`unknown kernelPromise '${kernelSlot}'`);
       case 'unresolved':
-        p.refCount = storage.get(`${kernelSlot}.refCount`);
+        p.refCount = Number(storage.get(`${kernelSlot}.refCount`));
         p.decider = storage.get(`${kernelSlot}.decider`);
         if (p.decider === '') {
           p.decider = undefined;
@@ -202,12 +202,12 @@ export default function makeKernelKeeper(storage) {
         ).map(JSON.parse);
         break;
       case 'fulfilledToPresence':
-        p.refCount = storage.get(`${kernelSlot}.refCount`);
+        p.refCount = Number(storage.get(`${kernelSlot}.refCount`));
         p.slot = storage.get(`${kernelSlot}.slot`);
         parseKernelSlot(p.slot);
         break;
       case 'fulfilledToData':
-        p.refCount = storage.get(`${kernelSlot}.refCount`);
+        p.refCount = Number(storage.get(`${kernelSlot}.refCount`));
         p.data = {
           body: storage.get(`${kernelSlot}.data.body`),
           slots: commaSplit(storage.get(`${kernelSlot}.data.slots`)),
@@ -215,7 +215,7 @@ export default function makeKernelKeeper(storage) {
         p.data.slots.map(parseKernelSlot);
         break;
       case 'rejected':
-        p.refCount = storage.get(`${kernelSlot}.refCount`);
+        p.refCount = Number(storage.get(`${kernelSlot}.refCount`));
         p.data = {
           body: storage.get(`${kernelSlot}.data.body`),
           slots: commaSplit(storage.get(`${kernelSlot}.data.slots`)),
@@ -369,13 +369,14 @@ export default function makeKernelKeeper(storage) {
   const deadKernelPromises = new Set();
 
   /**
-   * Increment the reference count associated with some kernel promise.
+   * Increment the reference count associated with some kernel object.
+   *
+   * Note that currently we are only reference counting promises, but ultimately
+   * we intend to keep track of all objects with kernel slots.
    *
    * @param kernelSlot  The kernel slot whose refcount is to be incremented.
-   *
-   * @throws if `kernelSlot` does not refer to a promise.
    */
-  function incrementKernelPromiseRefCount(kernelSlot, tag) {
+  function incrementRefCount(kernelSlot, tag) {
     if (kernelSlot && parseKernelSlot(kernelSlot).type === 'promise') {
       const refCount = Nat(Number(storage.get(`${kernelSlot}.refCount`))) + 1;
       kdebug(`++ ${kernelSlot}  ${tag} ${refCount}`);
@@ -384,16 +385,18 @@ export default function makeKernelKeeper(storage) {
   }
 
   /**
-   * Decrement the reference count associated with some kernel promise.
+   * Decrement the reference count associated with some kernel object.
+   *
+   * Note that currently we are only reference counting promises, but ultimately
+   * we intend to keep track of all objects with kernel slots.
    *
    * @param kernelSlot  The kernel slot whose refcount is to be decremented.
    *
    * @return true if the reference count has been decremented to zero, false if it is still non-zero
    *
-   * @throws if `kernelSlot` does not refer to a promise.
    * @throws if this tries to decrement the reference count below zero.
    */
-  function decrementKernelPromiseRefCount(kernelSlot, tag) {
+  function decrementRefCount(kernelSlot, tag) {
     if (kernelSlot && parseKernelSlot(kernelSlot).type === 'promise') {
       let refCount = Nat(Number(storage.get(`${kernelSlot}.refCount`)));
       assert(refCount > 0, details`refCount underflow {kernelSlot} ${tag}`);
@@ -412,11 +415,14 @@ export default function makeKernelKeeper(storage) {
     if (enableKernelPromiseGC) {
       for (const kpid of deadKernelPromises.values()) {
         const kp = getKernelPromise(kpid);
-        if (kp.refCount === '0') {
+        if (kp.refCount === 0) {
           if (kp.state === 'fulfilledToData' || kp.state === 'rejected') {
             let idx = 0;
             for (const slot of kp.data.slots) {
-              decrementKernelPromiseRefCount(slot, `gc|${kpid}|s${idx}`);
+              // Note: the following decrement can result in an addition to the
+              // deadKernelPromises set, which we are in the midst of iterating.
+              // TC39 went to a lot of trouble to ensure that this is kosher.
+              decrementRefCount(slot, `gc|${kpid}|s${idx}`);
               idx += 1;
             }
           }
@@ -438,8 +444,8 @@ export default function makeKernelKeeper(storage) {
         vatID,
         addKernelObject,
         addKernelPromise,
-        incrementKernelPromiseRefCount,
-        decrementKernelPromiseRefCount,
+        incrementRefCount,
+        decrementRefCount,
       );
       ephemeral.vatKeepers.set(vatID, vk);
     }
@@ -609,8 +615,8 @@ export default function makeKernelKeeper(storage) {
     addSubscriberToPromise,
     setDecider,
     clearDecider,
-    incrementKernelPromiseRefCount,
-    decrementKernelPromiseRefCount,
+    incrementRefCount,
+    decrementRefCount,
 
     addToRunQueue,
     isRunQueueEmpty,
