@@ -8,7 +8,6 @@ import harden from '@agoric/harden';
 import { makeZoe } from '../../../src/zoe';
 import { setup } from '../setupBasicMints';
 import { setupMixed } from '../setupMixedMints';
-import { makeGetInstanceHandle } from '../../../src/clientSupport';
 
 const publicAuctionRoot = `${__dirname}/../../../src/contracts/publicAuction`;
 
@@ -18,7 +17,6 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
     const inviteIssuer = zoe.getInviteIssuer();
-    const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
     // Setup Alice
     const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1));
@@ -52,14 +50,10 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       Bid: simoleanR.issuer,
     });
     const terms = harden({ numBidsAllowed });
-    const aliceInvite = await zoe.makeInstance(
-      installationHandle,
-      issuerKeywordRecord,
-      terms,
-    );
-
-    const instanceHandle = await getInstanceHandle(aliceInvite);
-    const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
+    const {
+      invite: aliceInvite,
+      instanceRecord: { publicAPI },
+    } = await zoe.makeInstance(installationHandle, issuerKeywordRecord, terms);
 
     // Alice escrows with zoe
     const aliceProposal = harden({
@@ -323,7 +317,6 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
     const zoe = makeZoe({ require });
-    const inviteIssuer = zoe.getInviteIssuer();
 
     // Setup Alice
     const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1));
@@ -347,15 +340,10 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       Bid: simoleanR.issuer,
     });
     const terms = harden({ numBidsAllowed });
-    const aliceInvite = await zoe.makeInstance(
-      installationHandle,
-      issuerKeywordRecord,
-      terms,
-    );
     const {
-      extent: [{ instanceHandle }],
-    } = await inviteIssuer.getAmountOf(aliceInvite);
-    const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
+      invite: aliceInvite,
+      instanceRecord: { publicAPI },
+    } = await zoe.makeInstance(installationHandle, issuerKeywordRecord, terms);
 
     // Alice escrows with zoe
     const aliceProposal = harden({
@@ -468,7 +456,6 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   } = setupMixed();
   const zoe = makeZoe({ require });
   const inviteIssuer = zoe.getInviteIssuer();
-  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   // Setup Alice
   const aliceCcPayment = ccMint.mintPayment(cryptoCats(harden(['Felix'])));
@@ -502,14 +489,10 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     Bid: moolaIssuer,
   });
   const terms = harden({ numBidsAllowed });
-  const aliceInvite = await zoe.makeInstance(
-    installationHandle,
-    issuerKeywordRecord,
-    terms,
-  );
-
-  const instanceHandle = await getInstanceHandle(aliceInvite);
-  const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
+  const {
+    invite: aliceInvite,
+    instanceRecord: { publicAPI },
+  } = await zoe.makeInstance(installationHandle, issuerKeywordRecord, terms);
 
   // Alice escrows with zoe
   const aliceProposal = harden({
