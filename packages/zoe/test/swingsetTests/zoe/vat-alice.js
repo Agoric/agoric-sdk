@@ -17,13 +17,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       Contribution1: moolaIssuer,
       Contribution2: simoleanIssuer,
     });
-    const refundInvite = await E(zoe).makeInstance(
+    const { invite: refundInvite, instanceRecord } = await E(zoe).makeInstance(
       installId,
       issuerKeywordRecord,
     );
 
-    const instanceHandle = await getInstanceHandle(refundInvite);
-    const instanceRecord = await E(zoe).getInstanceRecord(instanceHandle);
     const { publicAPI } = instanceRecord;
     const proposal = harden({
       give: { Contribution1: moola(3) },
@@ -59,7 +57,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       UnderlyingAsset: moolaIssuer,
       StrikePrice: simoleanIssuer,
     });
-    const writeCallInvite = await E(zoe).makeInstance(
+    const { invite: writeCallInvite } = await E(zoe).makeInstance(
       installId,
       issuerKeywordRecord,
     );
@@ -95,7 +93,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       UnderlyingAsset: moolaIssuer,
       StrikePrice: simoleanIssuer,
     });
-    const writeCallInvite = await E(zoe).makeInstance(
+    const { invite: writeCallInvite } = await E(zoe).makeInstance(
       installations.coveredCall,
       issuerKeywordRecord,
     );
@@ -138,13 +136,14 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       Bid: simoleanIssuer,
     });
     const terms = harden({ numBidsAllowed });
-    const sellAssetsInvite = await E(zoe).makeInstance(
+    const {
+      invite: sellAssetsInvite,
+      instanceRecord: { publicAPI },
+    } = await E(zoe).makeInstance(
       installations.publicAuction,
       issuerKeywordRecord,
       terms,
     );
-    const instanceHandle = await getInstanceHandle(sellAssetsInvite);
-    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
 
     const proposal = harden({
       give: { Asset: moola(1) },
@@ -186,7 +185,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       Asset: moolaIssuer,
       Price: simoleanIssuer,
     });
-    const firstOfferInvite = await E(zoe).makeInstance(
+    const { invite: firstOfferInvite } = await E(zoe).makeInstance(
       installations.atomicSwap,
       issuerKeywordRecord,
     );
@@ -222,12 +221,10 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       Asset: moolaIssuer,
     });
     const { simpleExchange } = installations;
-    const addOrderInvite = await E(zoe).makeInstance(
-      simpleExchange,
-      issuerKeywordRecord,
-    );
-    const instanceHandle = await getInstanceHandle(addOrderInvite);
-    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
+    const {
+      invite: addOrderInvite,
+      instanceRecord: { publicAPI },
+    } = await E(zoe).makeInstance(simpleExchange, issuerKeywordRecord);
 
     const aliceSellOrderProposal = harden({
       give: { Asset: moola(3) },
@@ -271,12 +268,10 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       Asset: moolaIssuer,
     });
     const { simpleExchange } = installations;
-    const addOrderInvite = await E(zoe).makeInstance(
-      simpleExchange,
-      issuerKeywordRecord,
-    );
-    const instanceHandle = await getInstanceHandle(addOrderInvite);
-    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
+    const {
+      invite: addOrderInvite,
+      instanceRecord: { publicAPI },
+    } = await E(zoe).makeInstance(simpleExchange, issuerKeywordRecord);
 
     logStateOnChanges(await E(publicAPI).getNotifier());
 
@@ -319,15 +314,14 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       TokenA: moolaIssuer,
       TokenB: simoleanIssuer,
     });
-    const addLiquidityInvite = await E(zoe).makeInstance(
-      installations.autoswap,
-      issuerKeywordRecord,
-    );
-    const instanceHandle = await getInstanceHandle(addLiquidityInvite);
-    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
+    const {
+      invite: addLiquidityInvite,
+      instanceRecord: { publicAPI },
+    } = await E(zoe).makeInstance(installations.autoswap, issuerKeywordRecord);
     const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
     const liquidityAmountMath = await getLocalAmountMath(liquidityIssuer);
     const liquidity = liquidityAmountMath.make;
+    const instanceHandle = await getInstanceHandle(addLiquidityInvite);
 
     // Alice adds liquidity
     // 10 moola = 5 simoleans at the time of the liquidity adding
@@ -398,7 +392,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
   const doSellTickets = async bobP => {
     const { mintAndSellNFT } = installations;
-    const invite = await E(zoe).makeInstance(mintAndSellNFT);
+    const { invite } = await E(zoe).makeInstance(mintAndSellNFT);
 
     const { outcome } = await E(zoe).offer(invite);
     const ticketSeller = await outcome;

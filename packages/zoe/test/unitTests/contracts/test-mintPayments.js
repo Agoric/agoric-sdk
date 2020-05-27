@@ -8,7 +8,6 @@ import { E } from '@agoric/eventual-send';
 import harden from '@agoric/harden';
 import produceIssuer from '@agoric/ertp';
 
-import { makeGetInstanceHandle } from '../../../src/clientSupport';
 import { makeZoe } from '../../../src/zoe';
 
 const mintPaymentsRoot = `${__dirname}/../../../src/contracts/mintPayments`;
@@ -21,15 +20,14 @@ test('zoe - mint payments', async t => {
     const bundle = await bundleSource(mintPaymentsRoot);
     const installationHandle = await E(zoe).install(bundle);
     const inviteIssuer = await E(zoe).getInviteIssuer();
-    const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
     // Alice creates a contract instance
-    const adminInvite = await E(zoe).makeInstance(installationHandle);
-    const instanceHandle = await getInstanceHandle(adminInvite);
+    const {
+      instanceRecord: { publicAPI },
+    } = await E(zoe).makeInstance(installationHandle);
 
     // Bob wants to get 1000 tokens so he gets an invite and makes an
     // offer
-    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
     const invite = await E(publicAPI).makeInvite();
     t.ok(await E(inviteIssuer).isLive(invite), `valid invite`);
     const { payout: payoutP } = await E(zoe).offer(invite);
@@ -62,7 +60,6 @@ test('zoe - mint payments with unrelated give and want', async t => {
     const bundle = await bundleSource(mintPaymentsRoot);
     const installationHandle = await E(zoe).install(bundle);
     const inviteIssuer = await E(zoe).getInviteIssuer();
-    const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
     const moolaBundle = produceIssuer('moola');
     const simoleanBundle = produceIssuer('simolean');
@@ -72,15 +69,12 @@ test('zoe - mint payments with unrelated give and want', async t => {
       Asset: moolaBundle.issuer,
       Price: simoleanBundle.issuer,
     });
-    const adminInvite = await E(zoe).makeInstance(
-      installationHandle,
-      issuerKeywordRecord,
-    );
-    const instanceHandle = await getInstanceHandle(adminInvite);
+    const {
+      instanceRecord: { publicAPI },
+    } = await E(zoe).makeInstance(installationHandle, issuerKeywordRecord);
 
     // Bob wants to get 1000 tokens so he gets an invite and makes an
     // offer
-    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
     const invite = await E(publicAPI).makeInvite();
     t.ok(await E(inviteIssuer).isLive(invite), `valid invite`);
     const proposal = harden({

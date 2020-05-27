@@ -29,7 +29,7 @@ test('zoe - simplest automaticRefund', async t => {
 
     // 1: Alice creates an automatic refund instance
     const issuerKeywordRecord = harden({ Contribution: moolaR.issuer });
-    const invite = await zoe.makeInstance(
+    const { invite } = await zoe.makeInstance(
       installationHandle,
       issuerKeywordRecord,
     );
@@ -78,7 +78,7 @@ test('zoe - automaticRefund same issuer', async t => {
       Contribution1: moolaR.issuer,
       Contribution2: moolaR.issuer,
     });
-    const invite = await zoe.makeInstance(
+    const { invite } = await zoe.makeInstance(
       installationHandle,
       issuerKeywordRecord,
     );
@@ -137,7 +137,7 @@ test('zoe with automaticRefund', async t => {
       Contribution1: moolaR.issuer,
       Contribution2: simoleanR.issuer,
     });
-    const aliceInvite = await zoe.makeInstance(
+    const { invite: aliceInvite } = await zoe.makeInstance(
       installationHandle,
       issuerKeywordRecord,
     );
@@ -283,14 +283,14 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
     });
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
-    const aliceInvite1 = await zoe.makeInstance(
+    const { invite: aliceInvite1 } = await zoe.makeInstance(
       installationHandle,
       issuerKeywordRecord,
     );
     const instanceHandle1 = await getInstanceHandle(aliceInvite1);
     const { publicAPI: publicAPI1 } = zoe.getInstanceRecord(instanceHandle1);
 
-    const aliceInvite2 = await zoe.makeInstance(
+    const { invite: aliceInvite2 } = await zoe.makeInstance(
       installationHandle,
       issuerKeywordRecord,
     );
@@ -299,7 +299,7 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
     } = await inviteIssuer.getAmountOf(aliceInvite2);
     const { publicAPI: publicAPI2 } = zoe.getInstanceRecord(instanceHandle2);
 
-    const aliceInvite3 = await zoe.makeInstance(
+    const { invite: aliceInvite3 } = await zoe.makeInstance(
       installationHandle,
       issuerKeywordRecord,
     );
@@ -386,7 +386,7 @@ test('zoe - alice cancels after completion', async t => {
       ContributionA: moolaR.issuer,
       ContributionB: simoleanR.issuer,
     });
-    const invite = await zoe.makeInstance(
+    const { invite } = await zoe.makeInstance(
       installationHandle,
       issuerKeywordRecord,
     );
@@ -455,7 +455,7 @@ test('zoe - automaticRefund non-fungible', async t => {
 
   // 1: Alice creates an automatic refund instance
   const issuerKeywordRecord = harden({ Contribution: ccIssuer });
-  const invite = await zoe.makeInstance(
+  const { invite } = await zoe.makeInstance(
     installationHandle,
     issuerKeywordRecord,
   );

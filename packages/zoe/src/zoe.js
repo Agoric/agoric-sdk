@@ -745,7 +745,10 @@ const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
                   success,
                   details`invites must be issued by the inviteIssuer.`,
                 );
-                return invite;
+                return {
+                  invite,
+                  instanceRecord: instanceTable.get(instanceHandle),
+                };
               });
             });
         };

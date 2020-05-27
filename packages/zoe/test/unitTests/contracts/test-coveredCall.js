@@ -41,7 +41,7 @@ test('zoe - coveredCall', async t => {
       StrikePrice: simoleanR.issuer,
     });
     // separate issuerKeywordRecord from contract-specific terms
-    const aliceInvite = await zoe.makeInstance(
+    const { invite: aliceInvite } = await zoe.makeInstance(
       coveredCallInstallationHandle,
       issuerKeywordRecord,
     );
@@ -165,7 +165,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
       UnderlyingAsset: moolaR.issuer,
       StrikePrice: simoleanR.issuer,
     });
-    const aliceInvite = await zoe.makeInstance(
+    const { invite: aliceInvite } = await zoe.makeInstance(
       coveredCallInstallationHandle,
       issuerKeywordRecord,
     );
@@ -313,7 +313,7 @@ test('zoe - coveredCall with swap for invite', async t => {
       UnderlyingAsset: moolaR.issuer,
       StrikePrice: simoleanR.issuer,
     });
-    const aliceInvite = await zoe.makeInstance(
+    const { invite: aliceInvite } = await zoe.makeInstance(
       coveredCallInstallationHandle,
       issuerKeywordRecord,
     );
@@ -372,7 +372,7 @@ test('zoe - coveredCall with swap for invite', async t => {
       Asset: inviteIssuer,
       Price: bucksR.issuer,
     });
-    const bobSwapInvite = await zoe.makeInstance(
+    const { invite: bobSwapInvite } = await zoe.makeInstance(
       swapInstallationId,
       swapIssuerKeywordRecord,
     );
@@ -573,7 +573,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       UnderlyingAsset: moolaR.issuer,
       StrikePrice: simoleanR.issuer,
     });
-    const aliceCoveredCallInvite = await zoe.makeInstance(
+    const { invite: aliceCoveredCallInvite } = await zoe.makeInstance(
       coveredCallInstallationHandle,
       issuerKeywordRecord,
     );
@@ -635,7 +635,7 @@ test('zoe - coveredCall with coveredCall for invite', async t => {
       UnderlyingAsset: inviteIssuer,
       StrikePrice: bucksR.issuer,
     });
-    const bobInviteForSecondCoveredCall = await zoe.makeInstance(
+    const { invite: bobInviteForSecondCoveredCall } = await zoe.makeInstance(
       coveredCallInstallationHandle,
       issuerKeywordRecord2,
     );
@@ -857,7 +857,7 @@ test('zoe - coveredCall non-fungible', async t => {
     StrikePrice: rpgIssuer,
   });
   // separate issuerKeywordRecord from contract-specific terms
-  const aliceInvite = await zoe.makeInstance(
+  const { invite: aliceInvite } = await zoe.makeInstance(
     coveredCallInstallationHandle,
     issuerKeywordRecord,
   );

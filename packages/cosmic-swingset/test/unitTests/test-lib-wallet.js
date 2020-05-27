@@ -37,7 +37,7 @@ const setupTest = async () => {
   const installationHandle = await zoe.install(bundle);
 
   const issuerKeywordRecord = harden({ Contribution: moolaBundle.issuer });
-  const invite = await zoe.makeInstance(
+  const { invite } = await zoe.makeInstance(
     installationHandle,
     issuerKeywordRecord,
   );
