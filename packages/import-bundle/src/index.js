@@ -37,7 +37,7 @@ export async function importBundle(bundle, options = {}) {
     throw Error(`unrecognized moduleFormat '${moduleFormat}'`);
   }
   c = new Compartment(endowments, {}, compartmentOptions);
-  harden(c.global);
+  harden(c.globalThis);
   const actualSource = `(${source})\n${sourceMap}`;
   const namespace = c.evaluate(actualSource)(filePrefix);
   // namespace.default has the default export

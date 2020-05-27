@@ -1,4 +1,4 @@
-/* global require */
+/* global require harden */
 import '@agoric/install-ses';
 
 import bundleSource from '@agoric/bundle-source';
@@ -26,6 +26,14 @@ async function testBundle1(b1, mode, ew) {
   const ns3 = await importBundle(b1, { endowments, transforms: [transform1] });
   tap.equal(ns3.f4('is ok'), 'substitution is ok', `ns3.f4 ${mode} ok`);
   tap.equal(ns3.f5('the bed'), 'Mr. Lambert says the bed is sixty feet wide', `ns3.f5 ${mode} ok`);
+
+  const endowments4 = { sneakyChannel: 3, ...ew };
+  const ns4 = await importBundle(b1, { endowments: endowments4 });
+  tap.equal(ns4.f6_read_global(), 3, `ns3.f6 ${mode} ok`);
+  tap.equal(ns4.f8_read_global_submodule(), 3, `ns3.f8 ${mode} ok`);
+  tap.throws(() => ns4.f7_write_global(5), 'Cannot assign to read only property', `ns4.f7 ${mode} ok`);
+  tap.equal(ns4.f6_read_global(), 3, `ns4.f6 ${mode} ok`);
+  tap.equal(ns4.f8_read_global_submodule(), 3, `ns3.f8 ${mode} ok`);
 }
 
 tap.test('test import', async function testImport(t) {
@@ -33,7 +41,8 @@ tap.test('test import', async function testImport(t) {
   function req(what) {
     console.log(`require(${what})`);
   }
-  const endowments = { require: req };
+  harden(console.__proto__);
+  const endowments = { require: req, console };
 
   // bundleSource (in 'getExport' mode) uses rollup() in a way that uses
   // Math.random, which is disabled under SES
