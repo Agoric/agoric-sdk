@@ -2,6 +2,8 @@ import path from 'path';
 import { test } from 'tape-promise/tape';
 import { buildVatController, loadBasedir } from '../src/index';
 
+const RETIRE_KPIDS = true;
+
 async function testFlush(t, withSES) {
   const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
   const c = await buildVatController(config, withSES, ['flush']);
@@ -170,10 +172,11 @@ async function testCircularPromiseData(t, withSES) {
   const c = await buildVatController(config, withSES);
 
   await c.run();
-  t.deepEqual(c.dump().promises, [
+  const expectedPromises = [
     {
       id: 'kp40',
       state: 'fulfilledToData',
+      refCount: 3,
       data: {
         body: '[{"@qclass":"slot","index":0}]',
         slots: ['kp41'],
@@ -182,20 +185,25 @@ async function testCircularPromiseData(t, withSES) {
     {
       id: 'kp41',
       state: 'fulfilledToData',
+      refCount: 3,
       data: {
         body: '[{"@qclass":"slot","index":0}]',
         slots: ['kp40'],
       },
     },
-    {
+  ];
+  if (!RETIRE_KPIDS) {
+    expectedPromises.push({
       id: 'kp42',
       state: 'fulfilledToData',
+      refCount: 0,
       data: {
         body: '{"@qclass":"undefined"}',
         slots: [],
       },
-    },
-  ]);
+    });
+  }
+  t.deepEqual(c.dump().promises, expectedPromises);
   t.end();
 }
 

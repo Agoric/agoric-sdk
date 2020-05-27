@@ -50,6 +50,8 @@ export function makeVatKeeper(
   vatID,
   addKernelObject,
   addKernelPromise,
+  incrementRefCount,
+  decrementRefCount,
 ) {
   insistVatID(vatID);
 
@@ -81,6 +83,7 @@ export function makeVatKeeper(
         } else {
           throw new Error(`unknown type ${type}`);
         }
+        incrementRefCount(kernelSlot, `${vatID}|vk|clist`);
         const kernelKey = `${vatID}.c.${kernelSlot}`;
         storage.set(kernelKey, vatSlot);
         storage.set(vatKey, kernelSlot);
@@ -125,6 +128,7 @@ export function makeVatKeeper(
       } else {
         throw new Error(`unknown type ${type}`);
       }
+      incrementRefCount(kernelSlot, `${vatID}[kv|clist`);
       const vatSlot = makeVatSlot(type, false, id);
 
       const vatKey = `${vatID}.c.${vatSlot}`;
@@ -148,8 +152,11 @@ export function makeVatKeeper(
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     const vatKey = `${vatID}.c.${vatSlot}`;
     kdebug(`Delete mapping ${kernelKey}<=>${vatKey}`);
-    storage.delete(kernelKey);
-    storage.delete(vatKey);
+    if (storage.has(kernelKey)) {
+      decrementRefCount(kernelSlot, `${vatID}|del|clist`);
+      storage.delete(kernelKey);
+      storage.delete(vatKey);
+    }
   }
 
   /**
