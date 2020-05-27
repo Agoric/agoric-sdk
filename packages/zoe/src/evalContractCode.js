@@ -1,5 +1,4 @@
-/* global replaceGlobalMeter, registerEndOfCrank */
-import { evaluateProgram } from '@agoric/evaluate';
+/* global replaceGlobalMeter, registerEndOfCrank, Compartment */
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
@@ -8,21 +7,9 @@ import produceIssuer from '@agoric/ertp';
 import { assert, details } from '@agoric/assert';
 import { producePromise } from '@agoric/produce-promise';
 import { sameStructure } from '@agoric/same-structure';
+import { importBundle } from '@agoric/import-bundle';
 
-const evaluateStringToFn = (functionSrcString, endowments) => {
-  assert.typeof(functionSrcString, 'string');
-  const nestedEvaluate = src =>
-    evaluateProgram(src, { ...endowments, nestedEvaluate });
-  const fn = nestedEvaluate(`(${functionSrcString})`);
-  assert.typeof(
-    fn,
-    'function',
-    details`"${functionSrcString}" must be a string for a function, but produced ${typeof fn}`,
-  );
-  return fn;
-};
-
-const evalContractCode = (code, additionalEndowments) => {
+const evalContractBundle = (bundle, additionalEndowments) => {
   // Make the console more verbose.
   const louderConsole = {
     ...console,
@@ -42,6 +29,7 @@ const evalContractCode = (code, additionalEndowments) => {
     ...Object.getOwnPropertyDescriptors(additionalEndowments),
   });
 
+  /*
   // Refill our meter each crank.
   const { meter, refillFacet } = makeMeter();
   const doRefill = () => {
@@ -65,13 +53,13 @@ const evalContractCode = (code, additionalEndowments) => {
     }
     return meter;
   };
+*/
 
   // Evaluate the export function, and use the resulting
   // module namespace as our installation.
 
-  const getExport = evaluateStringToFn(code, fullEndowments);
-  const installation = getExport();
+  const installation = importBundle(bundle, { endowments: fullEndowments });
   return installation;
 };
 
-export { evalContractCode };
+export { evalContractBundle };

@@ -37,6 +37,7 @@
     "@agoric/evaluate": "^2.2.5",
     "@agoric/eventual-send": "^0.9.1",
     "@agoric/harden": "^0.0.8",
+    "@agoric/import-bundle": "^0.0.6",
     "@agoric/marshal": "^0.2.1",
     "@agoric/nat": "^2.0.1",
     "@agoric/notifier": "^0.1.1",

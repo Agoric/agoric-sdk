@@ -24,7 +24,7 @@ import {
 } from './objArrayConversion';
 import { isOfferSafeForAll } from './offerSafety';
 import { areRightsConserved } from './rightsConservation';
-import { evalContractCode } from './evalContractCode';
+import { evalContractBundle } from './evalContractCode';
 import { makeTables } from './state';
 
 // TODO Update types and documentatuon to describe the new API
@@ -633,22 +633,10 @@ const makeZoe = (additionalEndowments = {}) => {
        * registering it with Zoe. We have a moduleFormat to allow for
        * different future formats without silent failures.
        */
-      install: (code, moduleFormat = 'nestedEvaluate') => {
-        let installation;
-        switch (moduleFormat) {
-          case 'nestedEvaluate':
-          case 'getExport': {
-            installation = evalContractCode(code, additionalEndowments);
-            break;
-          }
-          default: {
-            assert.fail(
-              details`Unimplemented installation moduleFormat ${moduleFormat}`,
-            );
-          }
-        }
+      install: async (bundle) => {
+        const installation = await evalContractBundle(bundle, additionalEndowments);
         const installationHandle = installationTable.create(
-          harden({ installation, code }),
+          harden({ installation, bundle }),
         );
         return installationHandle;
       },
