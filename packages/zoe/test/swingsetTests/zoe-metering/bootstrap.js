@@ -42,11 +42,9 @@ function build(E, log) {
       log(`instantiating ${testName}`);
       const inviteIssuer = E(zoe).getInviteIssuer();
       const issuerKeywordRecord = harden({ Keyword1: inviteIssuer });
-      const invite = await E(zoe).makeInstance(installId, issuerKeywordRecord);
       const {
-        extent: [{ instanceHandle }],
-      } = await E(inviteIssuer).getAmountOf(invite);
-      const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
+        instanceRecord: { publicAPI },
+      } = await E(zoe).makeInstance(installId, issuerKeywordRecord);
       log(`invoking ${testName}.doTest()`);
       await E(publicAPI).doTest();
       log(`complete`);
