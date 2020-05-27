@@ -1,5 +1,4 @@
 /* global harden Compartment */
-// import { harden, Compartment } from 'ses-adapter';
 
 // importBundle takes the output of bundle-source, and returns a namespace
 // object (with .default, and maybe other properties for named exports)
