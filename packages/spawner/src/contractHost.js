@@ -1,4 +1,4 @@
-/* global replaceGlobalMeter, registerEndOfCrank */
+/* global replaceGlobalMeter, registerEndOfCrank, Compartment */
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import Nat from '@agoric/nat';
