@@ -25,7 +25,7 @@ test('zoe - grifter tries to steal; prevented by offer safety', async t => {
     Price: moolaR.issuer,
   });
 
-  const malloryInvite = zoe.makeInstance(
+  const { invite: malloryInvite } = await zoe.makeInstance(
     installationHandle,
     issuerKeywordRecord,
   );
