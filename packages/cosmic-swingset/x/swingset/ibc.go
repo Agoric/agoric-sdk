@@ -24,10 +24,32 @@ type channelMessage struct { // comes from swingset's IBC handler
 	Method          string              `json:"method"`
 	Packet          channeltypes.Packet `json:"packet"`
 	RelativeTimeout uint64              `json:"relativeTimeout"`
-	Order           ibctypes.Order      `json:"order"`
+	Order           string              `json:"order"`
 	Hops            []string            `json:"hops"`
 	Version         string              `json:"version"`
 	Ack             []byte              `json:"ack"`
+}
+
+func stringToOrder(order string) ibctypes.Order {
+	switch order {
+	case "ORDERED":
+		return ibctypes.ORDERED
+	case "UNORDERED":
+		return ibctypes.UNORDERED
+	default:
+		return ibctypes.NONE
+	}
+}
+
+func orderToString(order ibctypes.Order) string {
+	switch order {
+	case ibctypes.ORDERED:
+		return "ORDERED"
+	case ibctypes.UNORDERED:
+		return "UNORDERED"
+	default:
+		return "NONE"
+	}
 }
 
 // DefaultRouter is a temporary hack until cosmos-sdk implements its features FIXME.
@@ -95,16 +117,27 @@ func (ch channelHandler) Receive(ctx *ControllerContext, str string) (ret string
 			ret = "true"
 		}
 
-	case "channelOpenInit":
+	case "startChannelOpenInit":
+		/* TODO: Find out what is necessary to wake up a passive relayer.
 		err = ctx.Keeper.ChanOpenInit(
-			ctx.Context, msg.Order, msg.Hops,
+			ctx.Context, stringToOrder(msg.Order), msg.Hops,
 			msg.Packet.SourcePort, msg.Packet.SourceChannel,
 			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
 			msg.Version,
 		)
+		*/
 		if err == nil {
 			ret = "true"
 		}
+		break
+
+	case "continueChannelOpenTry":
+		/* TODO: Call ctx.Keeper.ChanOpenTry.
+		 */
+		if err == nil {
+			ret = "true"
+		}
+		break
 
 	case "channelCloseInit":
 		err = ctx.Keeper.ChanCloseInit(ctx.Context, msg.Packet.SourcePort, msg.Packet.SourceChannel)
@@ -142,12 +175,14 @@ func (am AppModule) CallToController(ctx sdk.Context, send string) (string, erro
 type channelOpenInitEvent struct {
 	Type           string                    `json:"type"`  // IBC
 	Event          string                    `json:"event"` // channelOpenInit
-	Order          ibctypes.Order            `json:"order"`
+	Order          string                    `json:"order"`
 	ConnectionHops []string                  `json:"connectionHops"`
 	PortID         string                    `json:"portID"`
 	ChannelID      string                    `json:"channelID"`
 	Counterparty   channeltypes.Counterparty `json:"counterparty"`
 	Version        string                    `json:"version"`
+	BlockHeight    int64                     `json:"blockHeight"`
+	BlockTime      int64                     `json:"blockTime"`
 }
 
 // Implement IBCModule callbacks
@@ -161,15 +196,22 @@ func (am AppModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) error {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return nil
+	}
+
 	event := channelOpenInitEvent{
 		Type:           "IBC_EVENT",
 		Event:          "channelOpenInit",
-		Order:          order,
+		Order:          orderToString(order),
 		ConnectionHops: connectionHops,
 		PortID:         portID,
 		ChannelID:      channelID,
 		Counterparty:   counterparty,
 		Version:        version,
+		BlockHeight:    ctx.BlockHeight(),
+		BlockTime:      ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -193,13 +235,15 @@ func (am AppModule) OnChanOpenInit(
 type channelOpenTryEvent struct {
 	Type                string                    `json:"type"`  // IBC
 	Event               string                    `json:"event"` // channelOpenTry
-	Order               ibctypes.Order            `json:"order"`
+	Order               string                    `json:"order"`
 	ConnectionHops      []string                  `json:"connectionHops"`
 	PortID              string                    `json:"portID"`
 	ChannelID           string                    `json:"channelID"`
 	Counterparty        channeltypes.Counterparty `json:"counterparty"`
 	Version             string                    `json:"version"`
 	CounterpartyVersion string                    `json:"counterpartyVersion"`
+	BlockHeight         int64                     `json:"blockHeight"`
+	BlockTime           int64                     `json:"blockTime"`
 }
 
 func (am AppModule) OnChanOpenTry(
@@ -213,17 +257,23 @@ func (am AppModule) OnChanOpenTry(
 	version,
 	counterpartyVersion string,
 ) error {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return nil
+	}
 
 	event := channelOpenTryEvent{
 		Type:                "IBC_EVENT",
 		Event:               "channelOpenTry",
-		Order:               order,
+		Order:               orderToString(order),
 		ConnectionHops:      connectionHops,
 		PortID:              portID,
 		ChannelID:           channelID,
 		Counterparty:        counterparty,
 		Version:             version,
 		CounterpartyVersion: counterpartyVersion,
+		BlockHeight:         ctx.BlockHeight(),
+		BlockTime:           ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -250,6 +300,8 @@ type channelOpenAckEvent struct {
 	PortID              string `json:"portID"`
 	ChannelID           string `json:"channelID"`
 	CounterpartyVersion string `json:"counterpartyVersion"`
+	BlockHeight         int64  `json:"blockHeight"`
+	BlockTime           int64  `json:"blockTime"`
 }
 
 func (am AppModule) OnChanOpenAck(
@@ -258,6 +310,10 @@ func (am AppModule) OnChanOpenAck(
 	channelID string,
 	counterpartyVersion string,
 ) error {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return nil
+	}
 
 	event := channelOpenAckEvent{
 		Type:                "IBC_EVENT",
@@ -265,6 +321,8 @@ func (am AppModule) OnChanOpenAck(
 		PortID:              portID,
 		ChannelID:           channelID,
 		CounterpartyVersion: counterpartyVersion,
+		BlockHeight:         ctx.BlockHeight(),
+		BlockTime:           ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -277,10 +335,12 @@ func (am AppModule) OnChanOpenAck(
 }
 
 type channelOpenConfirmEvent struct {
-	Type      string `json:"type"`  // IBC
-	Event     string `json:"event"` // channelOpenConfirm
-	PortID    string `json:"portID"`
-	ChannelID string `json:"channelID"`
+	Type        string `json:"type"`  // IBC
+	Event       string `json:"event"` // channelOpenConfirm
+	PortID      string `json:"portID"`
+	ChannelID   string `json:"channelID"`
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
 }
 
 func (am AppModule) OnChanOpenConfirm(
@@ -288,11 +348,18 @@ func (am AppModule) OnChanOpenConfirm(
 	portID,
 	channelID string,
 ) error {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return nil
+	}
+
 	event := channelOpenConfirmEvent{
-		Type:      "IBC_EVENT",
-		Event:     "channelOpenConfirm",
-		PortID:    portID,
-		ChannelID: channelID,
+		Type:        "IBC_EVENT",
+		Event:       "channelOpenConfirm",
+		PortID:      portID,
+		ChannelID:   channelID,
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -306,10 +373,12 @@ func (am AppModule) OnChanOpenConfirm(
 }
 
 type channelCloseInitEvent struct {
-	Type      string `json:"type"`  // IBC
-	Event     string `json:"event"` // channelCloseInit
-	PortID    string `json:"portID"`
-	ChannelID string `json:"channelID"`
+	Type        string `json:"type"`  // IBC
+	Event       string `json:"event"` // channelCloseInit
+	PortID      string `json:"portID"`
+	ChannelID   string `json:"channelID"`
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
 }
 
 func (am AppModule) OnChanCloseInit(
@@ -317,11 +386,18 @@ func (am AppModule) OnChanCloseInit(
 	portID,
 	channelID string,
 ) error {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return nil
+	}
+
 	event := channelCloseInitEvent{
-		Type:      "IBC_EVENT",
-		Event:     "channelCloseInit",
-		PortID:    portID,
-		ChannelID: channelID,
+		Type:        "IBC_EVENT",
+		Event:       "channelCloseInit",
+		PortID:      portID,
+		ChannelID:   channelID,
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -334,10 +410,12 @@ func (am AppModule) OnChanCloseInit(
 }
 
 type channelCloseConfirmEvent struct {
-	Type      string `json:"type"`  // IBC
-	Event     string `json:"event"` // channelCloseConfirm
-	PortID    string `json:"portID"`
-	ChannelID string `json:"channelID"`
+	Type        string `json:"type"`  // IBC
+	Event       string `json:"event"` // channelCloseConfirm
+	PortID      string `json:"portID"`
+	ChannelID   string `json:"channelID"`
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
 }
 
 func (am AppModule) OnChanCloseConfirm(
@@ -345,11 +423,18 @@ func (am AppModule) OnChanCloseConfirm(
 	portID,
 	channelID string,
 ) error {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return nil
+	}
+
 	event := channelCloseConfirmEvent{
-		Type:      "IBC_EVENT",
-		Event:     "channelCloseConfirm",
-		PortID:    portID,
-		ChannelID: channelID,
+		Type:        "IBC_EVENT",
+		Event:       "channelCloseConfirm",
+		PortID:      portID,
+		ChannelID:   channelID,
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -362,20 +447,33 @@ func (am AppModule) OnChanCloseConfirm(
 }
 
 type receivePacketEvent struct {
-	Type   string              `json:"type"`  // IBC
-	Event  string              `json:"event"` // receivePacket
-	Packet channeltypes.Packet `json:"packet"`
+	Type        string              `json:"type"`  // IBC
+	Event       string              `json:"event"` // receivePacket
+	Packet      channeltypes.Packet `json:"packet"`
+	BlockHeight int64               `json:"blockHeight"`
+	BlockTime   int64               `json:"blockTime"`
 }
 
 func (am AppModule) OnRecvPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 ) (*sdk.Result, error) {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return &sdk.Result{}, nil
+	}
+	if packet.GetTimeoutTimestamp() == 0 {
+		// FIXME: Don't know why, but for every relayed packet, we receive
+		// a second nearly-identical packet with a zero Timestamp.
+		return &sdk.Result{}, nil
+	}
 
 	event := receivePacketEvent{
-		Type:   "IBC_EVENT",
-		Event:  "receivePacket",
-		Packet: packet,
+		Type:        "IBC_EVENT",
+		Event:       "receivePacket",
+		Packet:      packet,
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -398,6 +496,8 @@ type acknowledgementPacketEvent struct {
 	Event           string              `json:"event"` // acknowledgementPacket
 	Packet          channeltypes.Packet `json:"packet"`
 	Acknowledgement []byte              `json:"acknowledgement"`
+	BlockHeight     int64               `json:"blockHeight"`
+	BlockTime       int64               `json:"blockTime"`
 }
 
 func (am AppModule) OnAcknowledgementPacket(
@@ -405,12 +505,18 @@ func (am AppModule) OnAcknowledgementPacket(
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 ) (*sdk.Result, error) {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return &sdk.Result{}, nil
+	}
 
 	event := acknowledgementPacketEvent{
 		Type:            "IBC_EVENT",
 		Event:           "acknowledgementPacket",
 		Packet:          packet,
 		Acknowledgement: acknowledgement,
+		BlockHeight:     ctx.BlockHeight(),
+		BlockTime:       ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -429,20 +535,28 @@ func (am AppModule) OnAcknowledgementPacket(
 }
 
 type timeoutPacketEvent struct {
-	Type   string              `json:"type"`  // IBC
-	Event  string              `json:"event"` // timeoutPacket
-	Packet channeltypes.Packet `json:"packet"`
+	Type        string              `json:"type"`  // IBC
+	Event       string              `json:"event"` // timeoutPacket
+	Packet      channeltypes.Packet `json:"packet"`
+	BlockHeight int64               `json:"blockHeight"`
+	BlockTime   int64               `json:"blockTime"`
 }
 
 func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 ) (*sdk.Result, error) {
+	if committedHeight == ctx.BlockHeight() {
+		// We don't support simulation.
+		return &sdk.Result{}, nil
+	}
 
 	event := timeoutPacketEvent{
-		Type:   "IBC_EVENT",
-		Event:  "timeoutPacket",
-		Packet: packet,
+		Type:        "IBC_EVENT",
+		Event:       "timeoutPacket",
+		Packet:      packet,
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)

@@ -47,9 +47,11 @@ const makeProtocolHandler = t => {
       t.assert(localAddr, `local address is supplied to onConnect`);
       t.assert(remoteAddr, `remote address is supplied to onConnect`);
       if (lp) {
-        return l.onAccept(lp, localAddr, remoteAddr, l);
+        return l
+          .onAccept(lp, localAddr, remoteAddr, l)
+          .then(ch => [localAddr, ch]);
       }
-      return makeEchoConnectionHandler();
+      return [remoteAddr, makeEchoConnectionHandler()];
     },
     async onListen(port, localAddr, listenHandler) {
       t.assert(port, `port is tracked in onListen`);
@@ -84,7 +86,7 @@ test('handled protocol', async t => {
     await port.connect(
       '/ibc/*/ordered/echo',
       harden({
-        async onOpen(connection) {
+        async onOpen(connection, _localAddr, _remoteAddr) {
           const ack = await connection.send('ping');
           // log(ack);
           t.equals(`${ack}`, 'ping', 'received pong');
@@ -136,7 +138,7 @@ test('protocol connection listen', async t => {
         );
         let handler;
         return harden({
-          async onOpen(connection, connectionHandler) {
+          async onOpen(connection, _localAddr, _remoteAddr, connectionHandler) {
             t.assert(
               connectionHandler,
               `connectionHandler is tracked in onOpen`,
@@ -196,9 +198,14 @@ test('protocol connection listen', async t => {
       '/net/ordered/ordered/some-portname',
       harden({
         ...connectionHandler,
-        async onOpen(connection, c) {
+        async onOpen(connection, localAddr, remoteAddr, c) {
           if (connectionHandler.onOpen) {
-            await connectionHandler.onOpen(connection, c);
+            await connectionHandler.onOpen(
+              connection,
+              localAddr,
+              remoteAddr,
+              c,
+            );
           }
           connection.send('ping');
         },
@@ -243,7 +250,7 @@ test('loopback protocol', async t => {
     await port2.connect(
       port.getLocalAddress(),
       harden({
-        async onOpen(c, _connectionHandler) {
+        async onOpen(c, _localAddr, _remoteAddr, _connectionHandler) {
           t.equals(`${await c.send('ping')}`, 'pingack', 'expected pingack');
           closed.resolve();
         },
