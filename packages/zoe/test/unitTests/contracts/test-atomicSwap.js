@@ -45,7 +45,7 @@ test('zoe - atomicSwap', async t => {
     Asset: moolaIssuer,
     Price: simoleanIssuer,
   });
-  const aliceInvite = await zoe.makeInstance(
+  const { invite: aliceInvite } = await zoe.makeInstance(
     installationHandle,
     issuerKeywordRecord,
   );
@@ -175,7 +175,7 @@ test('zoe - non-fungible atomicSwap', async t => {
     Asset: ccIssuer,
     Price: rpgIssuer,
   });
-  const aliceInvite = await zoe.makeInstance(
+  const { invite: aliceInvite } = await zoe.makeInstance(
     installationHandle,
     issuerKeywordRecord,
   );

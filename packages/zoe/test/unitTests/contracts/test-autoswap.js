@@ -46,7 +46,7 @@ test('autoSwap with valid offers', async t => {
       TokenA: moolaIssuer,
       TokenB: simoleanIssuer,
     });
-    const aliceInvite = await zoe.makeInstance(
+    const { invite: aliceInvite } = await zoe.makeInstance(
       installationHandle,
       issuerKeywordRecord,
     );
@@ -254,7 +254,7 @@ test('autoSwap - test fee', async t => {
       TokenA: moolaIssuer,
       TokenB: simoleanIssuer,
     });
-    const aliceAddLiquidityInvite = await zoe.makeInstance(
+    const { invite: aliceAddLiquidityInvite } = await zoe.makeInstance(
       installationHandle,
       issuerKeywordRecord,
     );

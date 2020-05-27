@@ -43,7 +43,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     const bundle = await bundleSource(multipoolAutoswapRoot);
 
     const installationHandle = await zoe.install(bundle);
-    const aliceInvite = await zoe.makeInstance(
+    const { invite: aliceInvite } = await zoe.makeInstance(
       installationHandle,
       harden({ CentralToken: centralR.issuer }),
       harden({ CentralToken: centralR.issuer }),
