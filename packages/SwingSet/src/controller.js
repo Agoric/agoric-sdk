@@ -362,7 +362,7 @@ export async function buildVatController(config, withSES = true, argv = []) {
     },
 
     getStats() {
-      return kernel.getStats();
+      return JSON.parse(JSON.stringify(kernel.getStats()));
     },
 
     // these are for tests

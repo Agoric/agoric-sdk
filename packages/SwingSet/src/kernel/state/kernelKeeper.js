@@ -156,7 +156,7 @@ export default function makeKernelKeeper(storage) {
   }
 
   function loadStats() {
-    kernelStats = JSON.parse(getRequired('kernelStats'));
+    kernelStats = { ...kernelStats, ...JSON.parse(getRequired('kernelStats')) };
   }
 
   function getStats() {
