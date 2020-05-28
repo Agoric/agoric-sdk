@@ -43,3 +43,25 @@ export async function importBundle(bundle, options = {}) {
   // namespace.default has the default export
   return namespace;
 }
+
+
+/*
+importBundle(bundle, { metering: { getMeter, meteringOptions } });
+importBundle(bundle, { transforms: [ meterTransform ], lexicals: { getMeter } });
+importBundle(bundle, { mandatoryTransforms: [ meterTransform ], mandatoryLexicals: { getMeter } });
+ // then importBundle builds the Compartment wrapper
+
+XS:
+
+xs.setMeter();
+xs.callWithMeter(meter, ns.dispatch);
+xs.callWithKeeper(keeper, ns.dispatch); // keeper.getMeter() -> meter, then ns.dispatch()
+// keeper.startCrank(metadata.tshirtsize)
+//   // keeper sets meter to some fixed value
+// initialMeter = keeper.getMeter()
+// ns.dispatch() // drains initialMeter
+// maybe: keeper.endCrank() ???
+
+
+
+*/
