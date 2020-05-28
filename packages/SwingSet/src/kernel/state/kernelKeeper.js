@@ -311,6 +311,24 @@ export default function makeKernelKeeper(storage) {
   }
 
   function deleteKernelPromise(kpid) {
+    const state = getRequired(`${kpid}.state`);
+    switch (state) {
+      case 'unresolved':
+        decStat('kpUnresolved');
+        break;
+      case 'fulfilledToPresence':
+        decStat('kpFulfilledToPresence');
+        break;
+      case 'fulfilledToData':
+        decStat('kpFulfilledToData');
+        break;
+      case 'rejected':
+        decStat('kpRejected');
+        break;
+      default:
+        throw new Error(`unknown state for ${kpid}: ${state}`);
+    }
+    decStat('kernelPromises');
     deleteKernelPromiseState(kpid);
     storage.delete(`${kpid}.refCount`);
   }
