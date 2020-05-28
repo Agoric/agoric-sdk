@@ -1,9 +1,12 @@
+// import LMDB before SES lockdown, as workaround for
+// https://github.com/Agoric/SES-shim/issues/308
+import 'node-lmdb';
+import '@agoric/install-ses';
+
 import fs from 'fs';
 import path from 'path';
 
 import { test } from 'tape-promise/tape';
-import 'node-lmdb'; // workaround for https://github.com/Agoric/SES-shim/issues/308
-import '../../SwingSet/install-ses.js';
 import { getAllState } from '@agoric/swing-store-simple';
 
 import {
