@@ -2,7 +2,57 @@ import fs from 'fs';
 import path from 'path';
 import * as vega from 'vega';
 
-export function initGraphSpec(statsPath, xField, xLabel, yField, yLabel) {
+function scanMax(filePath, fields) {
+  const lines = fs.readFileSync(filePath, { encoding: 'utf8' }).split('\n');
+  const headers = lines[0].split('\t');
+  const headerMap = [];
+  headerMap.length = headers.length;
+  for (const field of fields) {
+    let hit = -1;
+    for (let col = 0; col < headers.length; col += 1) {
+      if (field === headers[col]) {
+        hit = col;
+        break;
+      }
+    }
+    if (hit < 0) {
+      throw new Error(`field ${field} not found in ${filePath}`);
+    } else {
+      headerMap[hit] = field;
+    }
+  }
+  let maxValue = -1;
+  let maxField;
+  for (let row = 1; row < lines.length; row += 1) {
+    const line = lines[row].split('\t');
+    for (let col = 0; col < headerMap.length; col += 1) {
+      if (headerMap[col] && line[col] > maxValue) {
+        maxValue = line[col];
+        maxField = headerMap[col];
+      }
+    }
+  }
+  return { field: maxField, value: maxValue, filePath };
+}
+
+function scanMaxFile(filePaths, fields) {
+  let max = {
+    value: -1,
+    field: null,
+    filePath: null,
+  };
+  for (const filePath of filePaths) {
+    const fileMax = scanMax(filePath, fields);
+    if (fileMax.value > max.value) {
+      max = fileMax;
+    }
+  }
+  return max;
+}
+
+export function initGraphSpec(filePaths, xField, xLabel, yFields, yLabel) {
+  const maxGraph = scanMaxFile(filePaths, yFields);
+  const statsPath = maxGraph.filePath;
   const spec = {
     $schema: 'https://vega.github.io/schema/vega/v5.json',
     width: 1500,
@@ -31,7 +81,7 @@ export function initGraphSpec(statsPath, xField, xLabel, yField, yLabel) {
         range: 'height',
         nice: true,
         zero: true,
-        domain: { data: statsPath, field: yField },
+        domain: { data: statsPath, field: maxGraph.field },
       },
       {
         name: 'legend',

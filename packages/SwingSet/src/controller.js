@@ -361,6 +361,10 @@ export async function buildVatController(config, withSES = true, argv = []) {
       return kernel.step();
     },
 
+    getStats() {
+      return JSON.parse(JSON.stringify(kernel.getStats()));
+    },
+
     // these are for tests
 
     vatNameToID(vatName) {

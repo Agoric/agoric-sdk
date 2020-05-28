@@ -101,6 +101,68 @@ export default function makeKernelKeeper(storage) {
     return storage.get(key);
   }
 
+  // These are the defined kernel statistics counters.  For any counter 'foo'
+  // that is defined here, if there is also a defined counter named 'fooMax',
+  // the stats collection machinery will automatically track the latter as a
+  // high-water mark for the former.
+  let kernelStats = {
+    kernelObjects: 0,
+    kernelDevices: 0,
+    kernelPromises: 0,
+    kernelPromisesMax: 0,
+    kpUnresolved: 0,
+    kpUnresolvedMax: 0,
+    kpFulfilledToPresence: 0,
+    kpFulfilledToPresenceMax: 0,
+    kpFulfilledToData: 0,
+    kpFulfilledToDataMax: 0,
+    kpRejected: 0,
+    kpRejectedMax: 0,
+    runQueueLength: 0,
+    runQueueLengthMax: 0,
+    syscalls: 0,
+    syscallSend: 0,
+    syscallSubscribe: 0,
+    syscallFulfillToData: 0,
+    syscallFulfillToPresence: 0,
+    syscallReject: 0,
+    syscallCallNow: 0,
+    dispatches: 0,
+    dispatchDeliver: 0,
+    dispatchNotifyFulfillToData: 0,
+    dispatchNotifyFulfillToPresence: 0,
+    dispatchReject: 0,
+    clistEntries: 0,
+    clistEntriesMax: 0,
+  };
+
+  function incStat(stat) {
+    kernelStats[stat] += 1;
+    const maxStat = `${stat}Max`;
+    if (
+      kernelStats[maxStat] !== undefined &&
+      kernelStats[stat] > kernelStats[maxStat]
+    ) {
+      kernelStats[maxStat] = kernelStats[stat];
+    }
+  }
+
+  function decStat(stat) {
+    kernelStats[stat] -= 1;
+  }
+
+  function saveStats() {
+    storage.set('kernelStats', JSON.stringify(kernelStats));
+  }
+
+  function loadStats() {
+    kernelStats = { ...kernelStats, ...JSON.parse(getRequired('kernelStats')) };
+  }
+
+  function getStats() {
+    return { ...kernelStats };
+  }
+
   const ephemeral = harden({
     vatKeepers: new Map(), // vatID -> vatKeeper
     deviceKeepers: new Map(), // deviceID -> deviceKeeper
@@ -142,6 +204,7 @@ export default function makeKernelKeeper(storage) {
     storage.set('ko.nextID', `${id + 1}`);
     const s = makeKernelSlot('object', id);
     storage.set(`${s}.owner`, ownerID);
+    incStat('kernelObjects');
     return s;
   }
 
@@ -159,6 +222,7 @@ export default function makeKernelKeeper(storage) {
     storage.set('kd.nextID', `${id + 1}`);
     const s = makeKernelSlot('device', id);
     storage.set(`${s}.owner`, deviceID);
+    incStat('kernelDevices');
     return s;
   }
 
@@ -181,6 +245,8 @@ export default function makeKernelKeeper(storage) {
     storage.set(`${s}.queue.nextID`, `0`);
     storage.set(`${s}.refCount`, `0`);
     // queue is empty, so no state[kp$NN.queue.$NN] keys yet
+    incStat('kernelPromises');
+    incStat('kpUnresolved');
     return s;
   }
 
@@ -245,6 +311,24 @@ export default function makeKernelKeeper(storage) {
   }
 
   function deleteKernelPromise(kpid) {
+    const state = getRequired(`${kpid}.state`);
+    switch (state) {
+      case 'unresolved':
+        decStat('kpUnresolved');
+        break;
+      case 'fulfilledToPresence':
+        decStat('kpFulfilledToPresence');
+        break;
+      case 'fulfilledToData':
+        decStat('kpFulfilledToData');
+        break;
+      case 'rejected':
+        decStat('kpRejected');
+        break;
+      default:
+        throw new Error(`unknown state for ${kpid}: ${state}`);
+    }
+    decStat('kernelPromises');
     deleteKernelPromiseState(kpid);
     storage.delete(`${kpid}.refCount`);
   }
@@ -252,6 +336,8 @@ export default function makeKernelKeeper(storage) {
   function fulfillKernelPromiseToPresence(kernelSlot, targetSlot) {
     insistKernelType('promise', kernelSlot);
     deleteKernelPromiseState(kernelSlot);
+    decStat('kpUnresolved');
+    incStat('kpFulfilledToPresence');
     storage.set(`${kernelSlot}.state`, 'fulfilledToPresence');
     storage.set(`${kernelSlot}.slot`, targetSlot);
   }
@@ -260,6 +346,8 @@ export default function makeKernelKeeper(storage) {
     insistKernelType('promise', kernelSlot);
     insistCapData(capdata);
     deleteKernelPromiseState(kernelSlot);
+    decStat('kpUnresolved');
+    incStat('kpFulfilledToData');
     storage.set(`${kernelSlot}.state`, 'fulfilledToData');
     storage.set(`${kernelSlot}.data.body`, capdata.body);
     storage.set(`${kernelSlot}.data.slots`, capdata.slots.join(','));
@@ -269,6 +357,8 @@ export default function makeKernelKeeper(storage) {
     insistKernelType('promise', kernelSlot);
     insistCapData(capdata);
     deleteKernelPromiseState(kernelSlot);
+    decStat('kpUnresolved');
+    incStat('kpRejected');
     storage.set(`${kernelSlot}.state`, 'rejected');
     storage.set(`${kernelSlot}.data.body`, capdata.body);
     storage.set(`${kernelSlot}.data.slots`, capdata.slots.join(','));
@@ -320,6 +410,7 @@ export default function makeKernelKeeper(storage) {
     const queue = JSON.parse(getRequired('runQueue'));
     queue.push(msg);
     storage.set('runQueue', JSON.stringify(queue));
+    incStat('runQueueLength');
   }
 
   function isRunQueueEmpty() {
@@ -336,6 +427,7 @@ export default function makeKernelKeeper(storage) {
     const queue = JSON.parse(getRequired('runQueue'));
     const msg = queue.shift();
     storage.set('runQueue', JSON.stringify(queue));
+    decStat('runQueueLength');
     return msg;
   }
 
@@ -446,6 +538,8 @@ export default function makeKernelKeeper(storage) {
         addKernelPromise,
         incrementRefCount,
         decrementRefCount,
+        incStat,
+        decStat,
       );
       ephemeral.vatKeepers.set(vatID, vk);
     }
@@ -601,6 +695,12 @@ export default function makeKernelKeeper(storage) {
     getCrankNumber,
     incrementCrankNumber,
     purgeDeadKernelPromises,
+
+    incStat,
+    decStat,
+    saveStats,
+    loadStats,
+    getStats,
 
     ownerOfKernelObject,
     ownerOfKernelDevice,

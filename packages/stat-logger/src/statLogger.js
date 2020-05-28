@@ -3,7 +3,10 @@ import process from 'process';
 
 export function makeStatLogger(tag, headers, options) {
   const dir = (options && options.dir) || '.';
-  const statsPath = `${dir}/stats-${tag}-${process.pid}`;
+  if (!tag) {
+    tag = `${process.pid}`;
+  }
+  const statsPath = `${dir}/stats-${tag}`;
   const out = fs.createWriteStream(statsPath);
   out.write(headers.join('\t'));
   out.write('\n');
