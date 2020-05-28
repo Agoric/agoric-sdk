@@ -41,7 +41,7 @@ async function main(basedir, withSES, argv) {
 }
 
 const infiniteInstallLoopLog = ['installing infiniteInstallLoop'];
-test('zoe - metering - infinite loop in installation', async t => {
+test.skip('zoe - metering - infinite loop in installation', async t => {
   t.plan(1);
   try {
     const dump = await main('zoe-metering', true, ['infiniteInstallLoop']);
@@ -55,7 +55,7 @@ const infiniteInstanceLoopLog = [
   'installing infiniteInstanceLoop',
   'instantiating infiniteInstanceLoop',
 ];
-test('zoe - metering - infinite loop in instantiation', async t => {
+test.skip('zoe - metering - infinite loop in instantiation', async t => {
   t.plan(1);
   try {
     const dump = await main('zoe-metering', true, ['infiniteInstanceLoop']);
@@ -70,7 +70,7 @@ const infiniteTestLoopLog = [
   'instantiating infiniteTestLoop',
   'invoking infiniteTestLoop.doTest()',
 ];
-test('zoe - metering - infinite loop in contract method', async t => {
+test.skip('zoe - metering - infinite loop in contract method', async t => {
   t.plan(1);
   try {
     const dump = await main('zoe-metering', true, ['infiniteTestLoop']);
@@ -85,7 +85,7 @@ const testBuiltinsLog = [
   'instantiating testBuiltins',
   'invoking testBuiltins.doTest()',
 ];
-test('zoe - metering - expensive builtins in contract method', async t => {
+test.skip('zoe - metering - expensive builtins in contract method', async t => {
   t.plan(1);
   try {
     const dump = await main('zoe-metering', true, ['testBuiltins']);
