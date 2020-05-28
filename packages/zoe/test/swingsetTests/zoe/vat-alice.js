@@ -397,8 +397,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
   };
 
   const doSellTickets = async bobP => {
-    const { venueContract } = installations;
-    const invite = await E(zoe).makeInstance(venueContract);
+    const { mintAndSellNFT } = installations;
+    const invite = await E(zoe).makeInstance(mintAndSellNFT);
 
     const { outcome } = await E(zoe).offer(invite);
     const ticketSeller = await outcome;
@@ -408,9 +408,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       sellItemsInstanceHandle: ticketSalesInstanceHandle,
       payout: payoutP,
       completeObj,
-    } = await E(ticketSeller).sellTickets({
-      show: 'Steven Universe, the Opera',
-      start: 'Wed, March 25th 2020 at 8pm',
+    } = await E(ticketSeller).sellTokens({
+      customExtentProperties: {
+        show: 'Steven Universe, the Opera',
+        start: 'Wed, March 25th 2020 at 8pm',
+      },
       count: 3,
       moneyIssuer: moolaIssuer,
       sellItemsInstallationHandle: installations.sellItems,

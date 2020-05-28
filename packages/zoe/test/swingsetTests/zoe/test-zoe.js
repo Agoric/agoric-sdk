@@ -16,7 +16,7 @@ const CONTRACT_FILES = [
   'atomicSwap',
   'simpleExchange',
   'sellItems',
-  'venueContract',
+  'mintAndSellNFT',
 ];
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {

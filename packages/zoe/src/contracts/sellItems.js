@@ -9,10 +9,17 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 // zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe
 export const makeContract = harden(
   /** @param {ContractFacet} zcf */ zcf => {
-    const { assertKeywords, rejectOffer, checkHook } = makeZoeHelpers(zcf);
+    const {
+      assertKeywords,
+      rejectOffer,
+      checkHook,
+      assertNatMathHelpers,
+    } = makeZoeHelpers(zcf);
     assertKeywords(harden(['Items', 'Money']));
 
     const { terms } = zcf.getInstanceRecord();
+    assertNatMathHelpers('Money');
+
     const { pricePerItem } = terms;
 
     let sellerOfferHandle;
@@ -47,7 +54,7 @@ export const makeContract = harden(
       if (!amountMaths.Money.isGTE(providedMoney, totalCost)) {
         return rejectOffer(
           buyerOfferHandle,
-          `More money (${pricePerItem.extent}) is required to buy these items`,
+          `More money (${totalCost}) is required to buy these items`,
         );
       }
 
@@ -79,10 +86,7 @@ export const makeContract = harden(
       invite: zcf.makeInvitation(sellerOfferHook, 'seller'),
       publicAPI: {
         makeBuyerInvite: () =>
-          zcf.makeInvitation(
-            checkHook(buyerOfferHook, buyerExpected),
-            'buy items',
-          ),
+          zcf.makeInvitation(checkHook(buyerOfferHook, buyerExpected), 'buyer'),
         getAvailableItems: () =>
           zcf.getCurrentAllocation(sellerOfferHandle).Items,
         getItemsIssuer: () => zcf.getInstanceRecord().issuerKeywordRecord.Items,

@@ -11,7 +11,7 @@ import atomicSwapBundle from './bundle-atomicSwap';
 import simpleExchangeBundle from './bundle-simpleExchange';
 import autoswapBundle from './bundle-autoswap';
 import sellItemsBundle from './bundle-sellItems';
-import venueContractBundle from './bundle-venueContract';
+import mintAndSellNFTBundle from './bundle-mintAndSellNFT';
 /* eslint-enable import/no-unresolved, import/extensions */
 
 const setupBasicMints = () => {
@@ -121,9 +121,9 @@ function build(E, log) {
           sellItemsBundle.source,
           sellItemsBundle.moduleFormat,
         ),
-        venueContract: await E(zoe).install(
-          venueContractBundle.source,
-          venueContractBundle.moduleFormat,
+        mintAndSellNFT: await E(zoe).install(
+          mintAndSellNFTBundle.source,
+          mintAndSellNFTBundle.moduleFormat,
         ),
       };
 
