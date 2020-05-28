@@ -54,7 +54,7 @@ const contractExhaustedGolden = [
   'got return: 123',
 ];
 
-test('run contractHost Demo -- exhaust with SES', async t => {
+test.skip('run contractHost Demo -- exhaust with SES', async t => {
   const dump = await main(true, 'contractHost', ['exhaust']);
   t.deepEquals(dump.log, contractExhaustedGolden);
   t.end();
