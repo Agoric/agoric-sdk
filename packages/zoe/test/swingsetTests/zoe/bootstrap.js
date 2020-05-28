@@ -91,30 +91,12 @@ function build(E, log) {
       const zoe = await E(vats.zoe).getZoe();
 
       const installations = {
-        automaticRefund: await E(zoe).install(
-          automaticRefundBundle.source,
-          automaticRefundBundle.moduleFormat,
-        ),
-        coveredCall: await E(zoe).install(
-          coveredCallBundle.source,
-          coveredCallBundle.moduleFormat,
-        ),
-        publicAuction: await E(zoe).install(
-          publicAuctionBundle.source,
-          publicAuctionBundle.moduleFormat,
-        ),
-        atomicSwap: await E(zoe).install(
-          atomicSwapBundle.source,
-          atomicSwapBundle.moduleFormat,
-        ),
-        simpleExchange: await E(zoe).install(
-          simpleExchangeBundle.source,
-          simpleExchangeBundle.moduleFormat,
-        ),
-        autoswap: await E(zoe).install(
-          autoswapBundle.source,
-          autoswapBundle.moduleFormat,
-        ),
+        automaticRefund: await E(zoe).install(automaticRefundBundle.bundle),
+        coveredCall: await E(zoe).install(coveredCallBundle.bundle),
+        publicAuction: await E(zoe).install(publicAuctionBundle.bundle),
+        atomicSwap: await E(zoe).install(atomicSwapBundle.bundle),
+        simpleExchange: await E(zoe).install(simpleExchangeBundle.bundle),
+        autoswap: await E(zoe).install(autoswapBundle.bundle),
       };
 
       const [testName, startingExtents] = argv;

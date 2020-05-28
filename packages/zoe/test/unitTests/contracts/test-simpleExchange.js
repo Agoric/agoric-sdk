@@ -1,3 +1,4 @@
+import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -24,14 +25,14 @@ test('simpleExchange with valid offers', async t => {
     moola,
     simoleans,
   } = setup();
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
   const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   // Pack the contract.
-  const { source, moduleFormat } = await bundleSource(simpleExchange);
+  const bundle = await bundleSource(simpleExchange);
 
-  const installationHandle = zoe.install(source, moduleFormat);
+  const installationHandle = await zoe.install(bundle);
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
@@ -178,14 +179,14 @@ test('simpleExchange with multiple sell offers', async t => {
       moola,
       simoleans,
     } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     const inviteIssuer = zoe.getInviteIssuer();
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(simpleExchange);
+    const bundle = await bundleSource(simpleExchange);
 
-    const installationHandle = zoe.install(source, moduleFormat);
+    const installationHandle = await zoe.install(bundle);
 
     // Setup Alice
     const aliceMoolaPayment = moolaMint.mintPayment(moola(30));
@@ -271,14 +272,14 @@ test('simpleExchange with multiple sell offers', async t => {
 test('simpleExchange showPayoutRules', async t => {
   t.plan(1);
   const { moolaIssuer, simoleanIssuer, moolaMint, moola, simoleans } = setup();
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
   const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   // Pack the contract.
-  const { source, moduleFormat } = await bundleSource(simpleExchange);
+  const bundle = await bundleSource(simpleExchange);
 
-  const installationHandle = zoe.install(source, moduleFormat);
+  const installationHandle = await zoe.install(bundle);
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
@@ -329,14 +330,14 @@ test('simpleExchange with non-fungible assets', async t => {
     createRpgItem,
   } = setupNonFungible();
 
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   const inviteIssuer = zoe.getInviteIssuer();
   const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   // Pack the contract.
-  const { source, moduleFormat } = await bundleSource(simpleExchange);
+  const bundle = await bundleSource(simpleExchange);
 
-  const installationHandle = zoe.install(source, moduleFormat);
+  const installationHandle = await zoe.install(bundle);
 
   // Setup Alice
   const spell = createRpgItem('Spell of Binding', 'binding');

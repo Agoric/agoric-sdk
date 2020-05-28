@@ -1,3 +1,4 @@
+import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -17,7 +18,7 @@ test('multipoolAutoSwap with valid offers', async t => {
   t.plan(37);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
     const inviteIssuer = zoe.getInviteIssuer();
 
     // Set up central token
@@ -39,9 +40,9 @@ test('multipoolAutoSwap with valid offers', async t => {
     // Alice creates an autoswap instance
 
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(multipoolAutoswapRoot);
+    const bundle = await bundleSource(multipoolAutoswapRoot);
 
-    const installationHandle = zoe.install(source, moduleFormat);
+    const installationHandle = await zoe.install(bundle);
     const aliceInvite = await zoe.makeInstance(
       installationHandle,
       harden({ CentralToken: centralR.issuer }),

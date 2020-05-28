@@ -877,7 +877,7 @@ const makeZoe = (additionalEndowments = {}) => {
         );
       },
       getInstallation: installationHandle =>
-        installationTable.get(installationHandle).code,
+        installationTable.get(installationHandle).bundle,
     },
   );
   return zoeService;

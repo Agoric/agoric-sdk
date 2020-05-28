@@ -13,26 +13,10 @@ function build(E, log) {
       const zoe = await E(vats.zoe).getZoe();
 
       const installations = {
-        infiniteInstallLoop: () =>
-          E(zoe).install(
-            infiniteInstallLoopBundle.source,
-            infiniteInstallLoopBundle.moduleFormat,
-          ),
-        infiniteInstanceLoop: () =>
-          E(zoe).install(
-            infiniteInstanceLoopBundle.source,
-            infiniteInstanceLoopBundle.modelFormat,
-          ),
-        infiniteTestLoop: () =>
-          E(zoe).install(
-            infiniteTestLoopBundle.source,
-            infiniteTestLoopBundle.moduleFormat,
-          ),
-        testBuiltins: () =>
-          E(zoe).install(
-            testBuiltinsBundle.source,
-            testBuiltinsBundle.moduleFormat,
-          ),
+        infiniteInstallLoop: () => E(zoe).install(infiniteInstallLoopBundle),
+        infiniteInstanceLoop: () => E(zoe).install(infiniteInstanceLoopBundle),
+        infiniteTestLoop: () => E(zoe).install(infiniteTestLoopBundle),
+        testBuiltins: () => E(zoe).install(testBuiltinsBundle),
       };
 
       const [testName] = argv;

@@ -15,6 +15,13 @@ const evalContractBundle = (bundle, additionalEndowments) => {
     ...console,
     log: console.info,
   };
+  function myRequire(what) {
+    if (what === '@agoric/harden') {
+      return harden;
+    }
+    throw Error(`require(${what}) not implemented`);
+  }
+  harden(myRequire);
   const defaultEndowments = {
     console: louderConsole,
     harden,
@@ -23,6 +30,7 @@ const evalContractBundle = (bundle, additionalEndowments) => {
     sameStructure,
     produceIssuer,
     Nat,
+    require: myRequire,
   };
   const fullEndowments = Object.create(null, {
     ...Object.getOwnPropertyDescriptors(defaultEndowments),

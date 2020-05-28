@@ -1,3 +1,4 @@
+import '@agoric/install-ses';
 import { test } from 'tape-promise/tape';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import path from 'path';
@@ -15,10 +16,10 @@ const CONTRACT_FILES = [
 ];
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
-    const { source, moduleFormat } = await bundleSource(
+    const bundle = await bundleSource(
       `${__dirname}/${contract}`,
     );
-    const obj = { source, moduleFormat, contract };
+    const obj = { bundle, contract };
     fs.writeFileSync(
       `${__dirname}/bundle-${contract}.js`,
       `export default ${JSON.stringify(obj)};`,

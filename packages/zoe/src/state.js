@@ -9,7 +9,7 @@ import { makeTable, makeValidateProperties } from './table';
 // Columns: handle | installation | code
 const makeInstallationTable = () => {
   const validateSomewhat = makeValidateProperties(
-    harden(['installation', 'code']),
+    harden(['installation', 'bundle']),
   );
   return makeTable(validateSomewhat);
 };
