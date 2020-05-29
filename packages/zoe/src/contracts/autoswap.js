@@ -35,19 +35,13 @@ export const makeContract = harden(
       makeEmptyOffer,
       checkHook,
       escrowAndAllocateTo,
+      assertNatMathHelpers,
     } = makeZoeHelpers(zcf);
 
     return zcf.addNewIssuer(liquidityIssuer, 'Liquidity').then(() => {
-      const amountMaths = zcf.getAmountMaths(
-        harden(['TokenA', 'TokenB', 'Liquidity']),
-      );
-      Object.values(amountMaths).forEach(amountMath =>
-        assert(
-          amountMath.getMathHelpersName() === 'nat',
-          details`issuers must have natMathHelpers`,
-        ),
-      );
-
+      const keywords = harden(['TokenA', 'TokenB', 'Liquidity']);
+      const amountMaths = zcf.getAmountMaths(keywords);
+      keywords.forEach(assertNatMathHelpers);
       return makeEmptyOffer().then(poolHandle => {
         const getPoolAllocation = () => zcf.getCurrentAllocation(poolHandle);
 
