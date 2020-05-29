@@ -53,19 +53,20 @@ export const makeContract = harden(
       // A function for making invites to this contract
       const makeInvite = () => zcf.makeInvitation(offerHook, 'mint a payment');
 
-      return harden({
-        // return an invite to the creator of the contract instance
-        // through Zoe
-        invite: makeInvite(),
-        publicAPI: {
+      zcf.initPublicAPI(
+        harden({
           // provide a way for anyone who knows the instanceHandle of
           // the contract to make their own invite.
           makeInvite,
           // make the token issuer public. Note that only the mint can
           // make new digital assets. The issuer is ok to make public.
           getTokenIssuer: () => issuer,
-        },
-      });
+        }),
+      );
+
+      // return an invite to the creator of the contract instance
+      // through Zoe
+      return makeInvite();
     });
   },
 );

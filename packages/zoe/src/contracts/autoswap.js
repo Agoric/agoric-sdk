@@ -256,9 +256,8 @@ export const makeContract = harden(
             'autoswap add liquidity',
           );
 
-        return harden({
-          invite: makeAddLiquidityInvite(),
-          publicAPI: {
+        zcf.initPublicAPI(
+          harden({
             /**
              * `getCurrentPrice` calculates the result of a trade, given a certain amount
              * of digital assets in.
@@ -306,8 +305,10 @@ export const makeContract = harden(
                 checkHook(removeLiquidityHook, removeLiquidityExpected),
                 'autoswap remove liquidity',
               ),
-          },
-        });
+          }),
+        );
+
+        return makeAddLiquidityInvite();
       });
     });
   },

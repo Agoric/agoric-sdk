@@ -93,9 +93,8 @@ export const makeContract = harden(
       give: { Money: null },
     });
 
-    return harden({
-      invite: zcf.makeInvitation(sellerOfferHook, 'seller'),
-      publicAPI: {
+    zcf.initPublicAPI(
+      harden({
         makeBuyerInvite: () => {
           assert(
             sellerOfferHandle &&
@@ -116,7 +115,9 @@ export const makeContract = harden(
           return zcf.getCurrentAllocation(sellerOfferHandle).Items;
         },
         getItemsIssuer: () => zcf.getInstanceRecord().issuerKeywordRecord.Items,
-      },
-    });
+      }),
+    );
+
+    return zcf.makeInvitation(sellerOfferHook, 'seller');
   },
 );
