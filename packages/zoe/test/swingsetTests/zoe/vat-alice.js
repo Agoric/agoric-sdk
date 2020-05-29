@@ -1,14 +1,11 @@
 import harden from '@agoric/harden';
 import { showPurseBalance, setupIssuers, getLocalAmountMath } from '../helpers';
-import { makeGetInstanceHandle } from '../../../src/clientSupport';
 
 const build = async (E, log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, purses } = await setupIssuers(zoe, issuers);
   const [moolaPurseP, simoleanPurseP] = purses;
   const [moolaPayment, simoleanPayment] = payments;
   const [moolaIssuer, simoleanIssuer] = issuers;
-  const inviteIssuer = await E(zoe).getInviteIssuer();
-  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   const doAutomaticRefund = async bobP => {
     log(`=> alice.doCreateAutomaticRefund called`);
@@ -316,12 +313,11 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     });
     const {
       invite: addLiquidityInvite,
-      instanceRecord: { publicAPI },
+      instanceRecord: { publicAPI, handle: instanceHandle },
     } = await E(zoe).makeInstance(installations.autoswap, issuerKeywordRecord);
     const liquidityIssuer = await E(publicAPI).getLiquidityIssuer();
     const liquidityAmountMath = await getLocalAmountMath(liquidityIssuer);
     const liquidity = liquidityAmountMath.make;
-    const instanceHandle = await getInstanceHandle(addLiquidityInvite);
 
     // Alice adds liquidity
     // 10 moola = 5 simoleans at the time of the liquidity adding
@@ -392,7 +388,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
   const doSellTickets = async bobP => {
     const { mintAndSellNFT } = installations;
-    const invite = await E(zoe).makeInstance(mintAndSellNFT);
+    const { invite } = await E(zoe).makeInstance(mintAndSellNFT);
 
     const { outcome } = await E(zoe).offer(invite);
     const ticketSeller = await outcome;
