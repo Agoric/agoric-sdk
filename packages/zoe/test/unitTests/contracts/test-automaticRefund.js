@@ -136,12 +136,10 @@ test('zoe with automaticRefund', async t => {
       Contribution1: moolaR.issuer,
       Contribution2: simoleanR.issuer,
     });
-    const { invite: aliceInvite } = await zoe.makeInstance(
-      installationHandle,
-      issuerKeywordRecord,
-    );
-    const instanceHandle = await getInstanceHandle(aliceInvite);
-    const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
+    const {
+      invite: aliceInvite,
+      instanceRecord: { publicAPI },
+    } = await zoe.makeInstance(installationHandle, issuerKeywordRecord);
 
     // 2: Alice escrows with zoe
     const aliceProposal = harden({
