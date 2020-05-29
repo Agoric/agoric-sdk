@@ -510,6 +510,48 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       await showPurseBalance(moolaPurseP, 'bobMoolaPurse', log);
       await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
     },
+    doBuyTickets: async ticketSalesInstanceHandle => {
+      const { publicAPI: ticketSalesPublicAPI, terms } = await E(
+        zoe,
+      ).getInstanceRecord(ticketSalesInstanceHandle);
+      const ticketIssuer = await E(ticketSalesPublicAPI).getItemsIssuer();
+      const ticketAmountMath = await E(ticketIssuer).getAmountMath();
+
+      // Bob makes an invite
+      const invite = await E(ticketSalesPublicAPI).makeBuyerInvite();
+
+      const availableTickets = await E(
+        ticketSalesPublicAPI,
+      ).getAvailableItems();
+      log('availableTickets: ', availableTickets);
+
+      // find the extent corresponding to ticket #1
+      const ticket1Extent = availableTickets.extent.find(
+        ticket => ticket.number === 1,
+      );
+      // make the corresponding amount
+      const ticket1Amount = await E(ticketAmountMath).make(
+        harden([ticket1Extent]),
+      );
+
+      const proposal = harden({
+        give: { Money: terms.pricePerItem },
+        want: { Items: ticket1Amount },
+      });
+
+      const paymentKeywordRecord = harden({ Money: moolaPayment });
+
+      const { payout: payoutP } = await E(zoe).offer(
+        invite,
+        proposal,
+        paymentKeywordRecord,
+      );
+      const payout = await payoutP;
+      const boughtTicketAmount = await E(ticketIssuer).getAmountOf(
+        payout.Items,
+      );
+      log('boughtTicketAmount: ', boughtTicketAmount);
+    },
   });
 };
 
