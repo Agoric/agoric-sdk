@@ -7,7 +7,6 @@ import produceIssuer from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 import { makeZoe } from '../../../src/zoe';
-import { makeGetInstanceHandle } from '../../../src/clientSupport';
 import { defaultAcceptanceMsg } from '../../../src/contractSupport';
 
 const mintAndSellNFTRoot = `${__dirname}/../../../src/contracts/mintAndSellNFT`;
@@ -16,8 +15,6 @@ const sellItemsRoot = `${__dirname}/../../../src/contracts/sellItems`;
 test(`mint and sell tickets for multiple shows`, async t => {
   // Setup initial conditions
   const zoe = makeZoe({ require });
-  const inviteIssuer = E(zoe).getInviteIssuer();
-  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
   const mintAndSellNFTInstallationHandle = await E(zoe).install(
@@ -35,9 +32,10 @@ test(`mint and sell tickets for multiple shows`, async t => {
     'moola',
   );
 
-  const invite = await E(zoe).makeInstance(mintAndSellNFTInstallationHandle);
-  const instanceHandle = await getInstanceHandle(invite);
-  const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
+  const {
+    invite,
+    instanceRecord: { publicAPI },
+  } = await E(zoe).makeInstance(mintAndSellNFTInstallationHandle);
 
   const { outcome } = await E(zoe).offer(invite);
   const ticketMaker = await outcome;
@@ -155,9 +153,6 @@ test(`mint and sell opera tickets`, async t => {
   } = produceIssuer('moola');
 
   const zoe = makeZoe({ require });
-  const inviteIssuer = await E(zoe).getInviteIssuer();
-
-  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
   const mintAndSellNFTInstallationHandle = await E(zoe).install(
@@ -175,9 +170,10 @@ test(`mint and sell opera tickets`, async t => {
 
   // create an instance of the venue contract
   const mintTickets = async () => {
-    const invite = await E(zoe).makeInstance(mintAndSellNFTInstallationHandle);
-    const instanceHandle = await getInstanceHandle(invite);
-    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
+    const {
+      invite,
+      instanceRecord: { publicAPI },
+    } = await E(zoe).makeInstance(mintAndSellNFTInstallationHandle);
 
     const ticketIssuer = await E(publicAPI).getTokenIssuer();
     const { outcome } = await E(zoe).offer(invite);
