@@ -275,6 +275,17 @@ export const makeZoeHelpers = (zcf) => {
           // offer is allocated the value of the payment.
         });
     },
+    /*
+     * Given a keyword, assert that the mathHelpers for that issuer
+     * are 'nat' mathHelpers
+     */
+    assertNatMathHelpers: keyword => {
+      const amountMath = zcf.getAmountMaths(harden([keyword]))[keyword];
+      assert(
+        amountMath.getMathHelpersName() === 'nat',
+        details`issuer for ${keyword} must have natMathHelpers`,
+      );
+    },
   });
   return helpers;
 };
