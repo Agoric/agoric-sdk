@@ -42,11 +42,9 @@ export const makeContract = harden(
       want: { Price: null },
     });
 
-    return harden({
-      invite: zcf.makeInvitation(
-        checkHook(makeAccompliceInvite, firstOfferExpected),
-        'firstOffer',
-      ),
-    });
+    return zcf.makeInvitation(
+      checkHook(makeAccompliceInvite, firstOfferExpected),
+      'firstOffer',
+    );
   },
 );
