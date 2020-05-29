@@ -3,7 +3,6 @@
 
 import harden from '@agoric/harden';
 import produceIssuer from '@agoric/ertp';
-import { makeGetInstanceHandle } from '../clientSupport';
 
 // This contract mints non-fungible tokens and creates an instance of
 // a selling contract to sell the tokens in exchange for some sort of money.
@@ -74,20 +73,15 @@ export const makeContract = harden(
           issuerKeywordRecord,
           sellItemsTerms,
         )
-        .then(invite => {
-          const getInstanceHandle = makeGetInstanceHandle(
-            zoeService.getInviteIssuer(),
-          );
-          return getInstanceHandle(invite).then(instanceHandle => {
-            return zoeService
-              .offer(invite, proposal, paymentKeywordRecord)
-              .then(offerResult => {
-                return harden({
-                  ...offerResult,
-                  sellItemsInstanceHandle: instanceHandle,
-                });
+        .then(({ invite, instanceRecord: { handle: instanceHandle } }) => {
+          return zoeService
+            .offer(invite, proposal, paymentKeywordRecord)
+            .then(offerResult => {
+              return harden({
+                ...offerResult,
+                sellItemsInstanceHandle: instanceHandle,
               });
-          });
+            });
         });
     };
 
