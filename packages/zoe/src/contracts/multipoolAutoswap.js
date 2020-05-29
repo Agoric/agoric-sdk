@@ -114,7 +114,6 @@ export const makeContract = harden(
       ]).then(([newTokenIssuerRecord, poolHandle]) => {
         // The third element of the above array is intentionally
         // ignored, since we already have the liquidityIssuer and mint.
-        const amountMaths = zcf.getAmountMaths(harden([newTokenKeyword]));
         assertNatMathHelpers(newTokenKeyword);
         liquidityTable.create(
           harden({

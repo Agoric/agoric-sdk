@@ -7,6 +7,15 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 
 /** @typedef {import('../zoe').ContractFacet} ContractFacet */
 
+/**
+ * Sell items in exchange for money. Items may be fungible or
+ * non-fungible and multiple items may be bought at once. Money must
+ * be fungible.
+ *
+ * The `pricePerItem` is to be set in the terms. It is expected that all items
+ * are sold for the same uniform price.
+ */
+
 // zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe
 export const makeContract = harden(
   /** @param {ContractFacet} zcf */ zcf => {
@@ -100,8 +109,12 @@ export const makeContract = harden(
             'buyer',
           );
         },
-        getAvailableItems: () =>
-          zcf.getCurrentAllocation(sellerOfferHandle).Items,
+        getAvailableItems: () => {
+          if (!sellerOfferHandle) {
+            throw new Error(`no items have been escrowed`);
+          }
+          return zcf.getCurrentAllocation(sellerOfferHandle).Items;
+        },
         getItemsIssuer: () => zcf.getInstanceRecord().issuerKeywordRecord.Items,
       },
     });

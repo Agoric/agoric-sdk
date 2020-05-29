@@ -39,7 +39,6 @@ test(`mint and sell tickets for multiple shows`, async t => {
   const instanceHandle = await getInstanceHandle(invite);
   const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
 
-  const ticketIssuer = await E(publicAPI).getTokenIssuer();
   const { outcome } = await E(zoe).offer(invite);
   const ticketMaker = await outcome;
   const { outcome: escrowTicketsOutcome, sellItemsInstanceHandle } = await E(
@@ -60,7 +59,8 @@ test(`mint and sell tickets for multiple shows`, async t => {
     `escrowTicketsOutcome is default acceptance message`,
   );
 
-  const ticketBrand = await E(ticketIssuer).getBrand();
+  const ticketIssuerP = E(publicAPI).getTokenIssuer();
+  const ticketBrand = await E(ticketIssuerP).getBrand();
   const { publicAPI: ticketSalesPublicAPI } = await E(zoe).getInstanceRecord(
     sellItemsInstanceHandle,
   );
@@ -130,7 +130,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
 // __Test Scenario__
 
 // The Opera de Bordeaux plays the contract creator and the auditorium
-// It creates the contract for a show ("Steven Universe, the Opera", Web, March
+// It creates the contract for a show ("Steven Universe, the Opera", Wed, March
 // 25th 2020 at 8pm, 3 tickets)
 // The Opera wants 22 moolas per ticket
 
