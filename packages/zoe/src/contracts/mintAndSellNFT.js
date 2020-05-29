@@ -96,11 +96,12 @@ export const makeContract = harden(
       return harden({ sellTokens });
     };
 
-    return harden({
-      invite: zcf.makeInvitation(mintTokensHook, 'mint tokens'),
-      publicAPI: {
+    zcf.initPublicAPI(
+      harden({
         getTokenIssuer: () => issuer,
-      },
-    });
+      }),
+    );
+
+    return zcf.makeInvitation(mintTokensHook, 'mint tokens');
   },
 );

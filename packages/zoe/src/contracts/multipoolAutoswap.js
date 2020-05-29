@@ -533,9 +533,8 @@ export const makeContract = harden(
     const makeAddLiquidityInvite = () =>
       zcf.makeInvitation(addLiquidityHook, 'multipool autoswap add liquidity');
 
-    return harden({
-      invite: makeAddLiquidityInvite(),
-      publicAPI: {
+    zcf.initPublicAPI(
+      harden({
         getBrandKeywordRecord: () => {
           const { issuerKeywordRecord } = zcf.getInstanceRecord();
           const brandKeywordRecord = {};
@@ -628,7 +627,9 @@ export const makeContract = harden(
         makeAddLiquidityInvite,
         makeRemoveLiquidityInvite: () =>
           zcf.makeInvitation(removeLiquidityHook, 'autoswap remove liquidity'),
-      },
-    });
+      }),
+    );
+
+    return makeAddLiquidityInvite();
   },
 );
