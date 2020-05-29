@@ -1,15 +1,15 @@
 import harden from '@agoric/harden';
 
-export const makeContract = zoe => {
-  const invite = zoe.makeInvitation(() => {}, 'tester');
-  return harden({
-    invite,
-    publicAPI: {
+export const makeContract = zcf => {
+  const invite = zcf.makeInvitation(() => {}, 'tester');
+  zcf.initPublicAPI(
+    harden({
       doTest: () => {
         for (;;) {
           // Nothing
         }
       },
-    },
-  });
+    }),
+  );
+  return invite;
 };

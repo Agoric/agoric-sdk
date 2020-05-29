@@ -101,9 +101,8 @@ export const makeContract = harden(
         'sellAssets',
       );
 
-    return harden({
-      invite: makeSellerInvite(),
-      publicAPI: {
+    zcf.initPublicAPI(
+      harden({
         makeInvites: numInvites => {
           if (auctionedAssets === undefined) {
             throw new Error(`No assets are up for auction.`);
@@ -116,7 +115,9 @@ export const makeContract = harden(
         },
         getAuctionedAssetsAmounts: () => auctionedAssets,
         getMinimumBid: () => minimumBid,
-      },
-    });
+      }),
+    );
+
+    return makeSellerInvite();
   },
 );
