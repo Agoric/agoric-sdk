@@ -731,11 +731,7 @@ const makeZoe = (additionalEndowments = {}) => {
                 );
                 return {
                   invite,
-                  instanceRecord: {
-                    ...instanceRecord,
-                    publicAPI,
-                    handle: instanceHandle,
-                  },
+                  instanceRecord: instanceTable.get(instanceHandle),
                 };
               });
             });
