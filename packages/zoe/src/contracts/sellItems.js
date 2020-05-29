@@ -2,6 +2,7 @@
 // @ts-check
 
 import harden from '@agoric/harden';
+import { assert, details } from '@agoric/assert';
 import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 
 /** @typedef {import('../zoe').ContractFacet} ContractFacet */
@@ -24,6 +25,8 @@ export const makeContract = harden(
 
     let sellerOfferHandle;
 
+    const amountMaths = zcf.getAmountMaths(['Items', 'Money']);
+
     const sellerOfferHook = offerHandle => {
       sellerOfferHandle = offerHandle;
       return defaultAcceptanceMsg;
@@ -38,7 +41,6 @@ export const makeContract = harden(
       const { proposal } = zcf.getOffer(buyerOfferHandle);
       const wantedItems = proposal.want.Items;
       const numItemsWanted = wantedItems.extent.length;
-      const amountMaths = zcf.getAmountMaths(['Items', 'Money']);
       const totalCostExtent = pricePerItem.extent * numItemsWanted;
       const totalCost = amountMaths.Money.make(totalCostExtent);
 
@@ -85,8 +87,19 @@ export const makeContract = harden(
     return harden({
       invite: zcf.makeInvitation(sellerOfferHook, 'seller'),
       publicAPI: {
-        makeBuyerInvite: () =>
-          zcf.makeInvitation(checkHook(buyerOfferHook, buyerExpected), 'buyer'),
+        makeBuyerInvite: () => {
+          assert(
+            sellerOfferHandle &&
+              !amountMaths.Items.isEmpty(
+                zcf.getCurrentAllocation(sellerOfferHandle).Items,
+              ),
+            details`no items are for sale`,
+          );
+          return zcf.makeInvitation(
+            checkHook(buyerOfferHook, buyerExpected),
+            'buyer',
+          );
+        },
         getAvailableItems: () =>
           zcf.getCurrentAllocation(sellerOfferHandle).Items,
         getItemsIssuer: () => zcf.getInstanceRecord().issuerKeywordRecord.Items,
