@@ -15,6 +15,8 @@ const CONTRACT_FILES = [
   'publicAuction',
   'atomicSwap',
   'simpleExchange',
+  'sellItems',
+  'mintAndSellNFT',
 ];
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
@@ -256,4 +258,21 @@ test('zoe - autoswap - valid inputs - with SES', async t => {
   ];
   const dump = await main(true, ['autoswapOk', startingExtents]);
   t.deepEquals(dump.log, expectedAutoswapOkLog);
+});
+
+const expectedSellTicketsOkLog = [
+  '=> alice, bob, carol and dave are set up',
+  'availableTickets: {"brand":{},"extent":[{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":1},{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":2},{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":3}]}',
+  'boughtTicketAmount: {"brand":{},"extent":[{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":1}]}',
+  'after ticket1 purchased: {"brand":{},"extent":[{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":2},{"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm","number":3}]}',
+  'alice earned: {"brand":{},"extent":22}',
+];
+test('zoe - sellTickets - valid inputs', async t => {
+  t.plan(1);
+  const startingExtents = [
+    [0, 0, 0],
+    [22, 0, 0],
+  ];
+  const dump = await main(true, ['sellTicketsOk', startingExtents]);
+  t.deepEquals(dump.log, expectedSellTicketsOkLog);
 });

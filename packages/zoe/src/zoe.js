@@ -43,6 +43,10 @@ import { makeTables } from './state';
  * @typedef {string} Keyword
  * @typedef {{}} InstallationHandle
  * @typedef {Object.<string,Issuer>} IssuerKeywordRecord
+ * @typedef {Object} Bundle
+ * @property {string} source
+ * @property {string} sourceMap
+ * @property {string} moduleFormat
  */
 
 /**
@@ -67,7 +71,7 @@ import { makeTables } from './state';
  * that represent the right to interact with a smart contract in
  * particular ways.
  *
- * @property {(code: string, moduleFormat: string) => InstallationHandle} install
+ * @property {(bundle: Bundle, moduleFormat?: string) => InstallationHandle} install
  * Create an installation by safely evaluating the code and
  * registering it with Zoe. Returns an installationHandle.
  *

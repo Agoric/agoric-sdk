@@ -396,6 +396,48 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     );
   };
 
+  const doSellTickets = async bobP => {
+    const { mintAndSellNFT } = installations;
+    const invite = await E(zoe).makeInstance(mintAndSellNFT);
+
+    const { outcome } = await E(zoe).offer(invite);
+    const ticketSeller = await outcome;
+
+    // completeObj exists because of a current limitation in @agoric/marshal : https://github.com/Agoric/agoric-sdk/issues/818
+    const {
+      sellItemsInstanceHandle: ticketSalesInstanceHandle,
+      payout: payoutP,
+      completeObj,
+    } = await E(ticketSeller).sellTokens({
+      customExtentProperties: {
+        show: 'Steven Universe, the Opera',
+        start: 'Wed, March 25th 2020 at 8pm',
+      },
+      count: 3,
+      moneyIssuer: moolaIssuer,
+      sellItemsInstallationHandle: installations.sellItems,
+      pricePerItem: moola(22),
+    });
+
+    await E(bobP).doBuyTickets(ticketSalesInstanceHandle);
+
+    const { publicAPI: ticketSalesPublicAPI } = await E(zoe).getInstanceRecord(
+      ticketSalesInstanceHandle,
+    );
+    const availableTickets = await E(ticketSalesPublicAPI).getAvailableItems();
+
+    log('after ticket1 purchased: ', availableTickets);
+
+    await E(completeObj).complete();
+
+    const payout = await payoutP;
+    const moneyPayment = await payout.Money;
+    await E(moolaPurseP).deposit(moneyPayment);
+    const currentPurseBalance = await E(moolaPurseP).getCurrentAmount();
+
+    log('alice earned: ', currentPurseBalance);
+  };
+
   return harden({
     startTest: async (testName, bobP, carolP, daveP) => {
       switch (testName) {
@@ -422,6 +464,9 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         }
         case 'autoswapOk': {
           return doAutoswap(bobP, carolP, daveP);
+        }
+        case 'sellTicketsOk': {
+          return doSellTickets(bobP, carolP, daveP);
         }
         default: {
           throw new Error(`testName ${testName} not recognized`);
