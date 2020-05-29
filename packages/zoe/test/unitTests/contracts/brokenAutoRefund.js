@@ -15,10 +15,6 @@ export const makeContract = harden(zcf => {
   };
   const makeRefundInvite = () =>
     zcf.makeInvitation(refundOfferHook, 'getRefund');
-
-  return harden({
-    // should be makeRefundInvite(). Intentionally wrong to provoke an error.
-    invite: makeRefundInvite,
-    publicAPI: {},
-  });
+  // should be makeRefundInvite(). Intentionally wrong to provoke an error.
+  return makeRefundInvite;
 });
