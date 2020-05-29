@@ -45,12 +45,10 @@ test('autoSwap with valid offers', async t => {
       TokenA: moolaIssuer,
       TokenB: simoleanIssuer,
     });
-    const { invite: aliceInvite } = await zoe.makeInstance(
-      installationHandle,
-      issuerKeywordRecord,
-    );
-    const instanceHandle = await getInstanceHandle(aliceInvite);
-    const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
+    const {
+      invite: aliceInvite,
+      instanceRecord: { publicAPI },
+    } = await zoe.makeInstance(installationHandle, issuerKeywordRecord);
     const liquidityIssuer = publicAPI.getLiquidityIssuer();
     const liquidity = liquidityIssuer.getAmountMath().make;
 
@@ -253,12 +251,10 @@ test('autoSwap - test fee', async t => {
       TokenA: moolaIssuer,
       TokenB: simoleanIssuer,
     });
-    const { invite: aliceAddLiquidityInvite } = await zoe.makeInstance(
-      installationHandle,
-      issuerKeywordRecord,
-    );
-    const instanceHandle = await getInstanceHandle(aliceAddLiquidityInvite);
-    const { publicAPI } = zoe.getInstanceRecord(instanceHandle);
+    const {
+      invite: aliceAddLiquidityInvite,
+      instanceRecord: { publicAPI },
+    } = await zoe.makeInstance(installationHandle, issuerKeywordRecord);
     const liquidityIssuer = publicAPI.getLiquidityIssuer();
     const liquidity = liquidityIssuer.getAmountMath().make;
 
