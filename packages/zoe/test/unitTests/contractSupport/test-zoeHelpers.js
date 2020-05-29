@@ -407,6 +407,18 @@ test('ZoeHelpers canTradeWith', t => {
       getAmountMaths: () =>
         harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
       getZoeService: () => {},
+      getCurrentAllocation: handle => {
+        if (handle === leftOfferHandle) {
+          return harden({ Asset: moola(10) });
+        }
+        if (handle === rightOfferHandle) {
+          return harden({ Price: simoleans(6) });
+        }
+        if (handle === cantTradeRightOfferHandle) {
+          return harden({ Price: simoleans(6) });
+        }
+        throw new Error('unexpected handle');
+      },
       getOffer: handle => {
         if (handle === leftOfferHandle) {
           return harden({
@@ -471,13 +483,13 @@ test('ZoeHelpers swap ok', t => {
       isOfferActive: () => true,
       getCurrentAllocation: handle => {
         if (handle === leftOfferHandle) {
-          return 'leftInviteAmounts';
+          return harden({ Asset: moola(10) });
         }
         if (handle === rightOfferHandle) {
-          return 'rightInviteAmounts';
+          return harden({ Price: simoleans(6) });
         }
         if (handle === cantTradeRightOfferHandle) {
-          return 'cantTradeRightInviteAmounts';
+          return harden({ Price: simoleans(6) });
         }
         throw new Error('unexpected handle');
       },
@@ -532,7 +544,7 @@ test('ZoeHelpers swap ok', t => {
     );
     t.deepEquals(
       reallocatedAmountObjs,
-      harden(['rightInviteAmounts', 'leftInviteAmounts']),
+      harden([{ Price: simoleans(6) }, { Asset: moola(10) }]),
       `amounts reallocated passed to reallocate were as expected`,
     );
     t.deepEquals(
@@ -683,6 +695,18 @@ test(`ZoeHelpers swap - can't trade with`, t => {
             },
             amounts: 'cantTradeRightInviteAmounts',
           });
+        }
+        throw new Error('unexpected handle');
+      },
+      getCurrentAllocation: handle => {
+        if (handle === leftOfferHandle) {
+          return harden({ Asset: moola(10) });
+        }
+        if (handle === rightOfferHandle) {
+          return harden({ Price: simoleans(6) });
+        }
+        if (handle === cantTradeRightOfferHandle) {
+          return harden({ Price: simoleans(6) });
         }
         throw new Error('unexpected handle');
       },
