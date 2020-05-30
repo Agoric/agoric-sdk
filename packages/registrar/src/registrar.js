@@ -45,7 +45,7 @@ function makeRegistrar(systemVersion, seed = 0) {
       return key;
     },
     get(key, version = null) {
-      assert.equal(typeof key, 'string', details`Key must be string ${key}`);
+      assert.typeof(key, 'string', details`Key must be string ${key}`);
       assert(keyFormat.test(key), details`Key must end with _<digits> ${key}`);
       if (version) {
         assert.equal(

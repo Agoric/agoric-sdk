@@ -541,7 +541,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   } else if (mode === 'data') {
     t.equal(resolutionOfP1, 4);
   } else if (mode === 'promise-data') {
-    t.equal(resolutionOfP1 instanceof Array, true);
+    t.equal(Array.isArray(resolutionOfP1), true);
     t.equal(resolutionOfP1.length, 1);
     t.is(resolutionOfP1[0], Promise.resolve(resolutionOfP1[0]));
     t.is(resolutionOfP1[0], stashP1);
