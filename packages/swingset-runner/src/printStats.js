@@ -1,6 +1,6 @@
 const log = console.log;
 
-export function printStats(stats, totalSteps) {
+export function printStats(stats, cranks) {
   const wk = 32;
   const wi = 9;
   const wf = 8;
@@ -12,11 +12,12 @@ export function printStats(stats, totalSteps) {
   const d2 = ` ${''.padStart(wi - 1, '-')}`;
 
   const h3 = `${'MaxValue'.padStart(wi)}`;
-  const d3 = `  ${''.padStart(wi - 1, '-')}`;
+  const d3 = ` ${''.padStart(wi - 1, '-')}`;
 
-  const h4 = `${'PerCrank'.padStart(wf)}`;
-  const d4 = `${''.padStart(wf, '-')}`;
+  const h4 = ` ${'PerCrank'.padStart(wf)}`;
+  const d4 = ` ${''.padStart(wf, '-')}`;
 
+  log(`In ${cranks} cranks:`);
   log(`${h1} ${h2} ${h3} ${h4}`);
   log(`${d1} ${d2} ${d3} ${d4}`);
 
@@ -27,8 +28,8 @@ export function printStats(stats, totalSteps) {
       const col2 = `${String(value).padStart(wi)}`;
       const v3 = stats[maxKey] !== undefined ? stats[maxKey] : '';
       const col3 = `${String(v3).padStart(wi)}`;
-      const col4 = `${String((value / totalSteps).toFixed(4)).padStart(wf)}`;
-      log(`${col1} ${col2} ${col3} ${col4}`);
+      const col4 = `${String((value / cranks).toFixed(4)).padStart(wf)}`;
+      log(`${col1} ${col2} ${col3}  ${col4}`);
     }
   }
 }

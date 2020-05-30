@@ -39,7 +39,7 @@ FLAGS may be:
   --filedb       - runs using the simple file-based data store
   --memdb        - runs using the non-persistent in-memory data store
   --blockmode    - run in block mode (checkpoint every BLOCKSIZE blocks)
-  --blocksize N  - set BLOCKSIZE to N (default 200)
+  --blocksize N  - set BLOCKSIZE to N cranks (default 200)
   --logtimes     - log block execution time stats while running
   --logmem       - log memory usage stats after each block
   --logdisk      - log disk space usage stats after each block
@@ -47,7 +47,7 @@ FLAGS may be:
   --logall       - log kernel stats, block times, memory use, and disk space
   --logtag STR   - tag for stats log file (default "runner")
   --forcegc      - run garbage collector after each block
-  --batchsize N  - set BATCHSIZE to N (default 200)
+  --batchsize N  - set BATCHSIZE to N cranks (default 200)
   --verbose      - output verbose debugging messages as it runs
   --audit        - audit kernel promise reference counts after each crank
   --dump         - dump a kernel state store snapshot after each crank
@@ -433,7 +433,8 @@ export async function main() {
       store.commit();
     }
     if (shouldPrintStats) {
-      printStats(controller.getStats(), totalSteps);
+      const cranks = Number(store.storage.get('crankNumber'));
+      printStats(controller.getStats(), cranks);
     }
     store.close();
     if (logTimes) {
