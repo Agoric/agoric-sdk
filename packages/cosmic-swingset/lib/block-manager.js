@@ -7,6 +7,7 @@ const DELIVER_INBOUND = 'DELIVER_INBOUND';
 const END_BLOCK = 'END_BLOCK';
 const COMMIT_BLOCK = 'COMMIT_BLOCK';
 const IBC_EVENT = 'IBC_EVENT';
+const PLEASE_PROVISION = 'PLEASE_PROVISION';
 
 export default function makeBlockManager({
   deliverInbound,
@@ -48,6 +49,11 @@ export default function makeBlockManager({
 
       case IBC_EVENT: {
         p = doBridgeInbound('dibc', action);
+        break;
+      }
+
+      case PLEASE_PROVISION: {
+        p = doBridgeInbound('provision', action);
         break;
       }
 
