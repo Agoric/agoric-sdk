@@ -10,7 +10,7 @@ export function stringify(
   value,
   spaces,
   getInterfaceOf,
-  already = new WeakSet(),
+  inProgress = new WeakSet(),
   depth = 0,
 ) {
   if (Object(value) !== value) {
@@ -32,10 +32,10 @@ export function stringify(
   }
 
   // Detect cycles.
-  if (already.has(value)) {
+  if (inProgress.has(value)) {
     return '[Circular]';
   }
-  already.add(value);
+  inProgress.add(value);
 
   let ret = '';
   const spcs = spaces === undefined ? '' : ' '.repeat(spaces);
@@ -50,7 +50,7 @@ export function stringify(
       if (spcs !== '') {
         ret += `\n${spcs.repeat(depth + 1)}`;
       }
-      ret += stringify(value[i], spaces, getInterfaceOf, already, depth + 1);
+      ret += stringify(value[i], spaces, getInterfaceOf, inProgress, depth + 1);
       sep = ',';
     }
     if (sep !== '' && spcs !== '') {
@@ -68,13 +68,14 @@ export function stringify(
       ret += `\n${spcs.repeat(depth + 1)}`;
     }
     ret += `${JSON.stringify(key)}:${spaces > 0 ? ' ' : ''}`;
-    ret += stringify(value[key], spaces, getInterfaceOf, already, depth + 1);
+    ret += stringify(value[key], spaces, getInterfaceOf, inProgress, depth + 1);
     sep = ',';
   }
   if (sep !== '' && spcs !== '') {
     ret += `\n${spcs.repeat(depth)}`;
   }
   ret += '}';
+  inProgress.delete(value);
   return ret;
 }
 
