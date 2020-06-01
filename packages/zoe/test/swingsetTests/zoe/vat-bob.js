@@ -87,12 +87,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const { extent: optionExtent } = await E(inviteIssuer).getAmountOf(
         exclInvite,
       );
-
-      const instanceHandle = await getInstanceHandle(exclInvite);
-      const instanceInfo = await E(zoe).getInstanceRecord(instanceHandle);
-
       assert(
-        instanceInfo.installationHandle === installations.coveredCall,
+        optionExtent[0].installationHandle === installations.coveredCall,
         details`wrong installation`,
       );
       assert(
@@ -111,7 +107,9 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       );
       assert(optionExtent[0].timerAuthority === timer, 'wrong timer');
 
-      const { UnderlyingAsset, StrikePrice } = instanceInfo.issuerKeywordRecord;
+      const {
+        issuerKeywordRecord: { UnderlyingAsset, StrikePrice },
+      } = await E(zoe).getInstanceRecord(optionExtent[0].instanceHandle);
 
       assert(
         UnderlyingAsset === moolaIssuer,
@@ -152,11 +150,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       const optionAmounts = await E(inviteIssuer).getAmountOf(exclInvite);
       const optionExtent = optionAmounts.extent;
 
-      const instanceInfo = await E(zoe).getInstanceRecord(
-        optionExtent[0].instanceHandle,
-      );
       assert(
-        instanceInfo.installationHandle === installations.coveredCall,
+        optionExtent[0].installationHandle === installations.coveredCall,
         details`wrong installation`,
       );
       assert(
@@ -176,7 +171,9 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
         details`wrong expiration date`,
       );
       assert(optionExtent[0].timerAuthority === timer, details`wrong timer`);
-      const { UnderlyingAsset, StrikePrice } = instanceInfo.issuerKeywordRecord;
+      const {
+        issuerKeywordRecord: { UnderlyingAsset, StrikePrice },
+      } = await E(zoe).getInstanceRecord(optionExtent[0].instanceHandle);
       assert(
         UnderlyingAsset === moolaIssuer,
         details`The underlyingAsset issuer should be the moola issuer`,
