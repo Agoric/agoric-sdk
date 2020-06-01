@@ -135,7 +135,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
     const terms = harden({ numBidsAllowed });
     const {
       invite: sellAssetsInvite,
-      instanceRecord: { publicAPI },
+      instanceRecord: { handle: instanceHandle },
     } = await E(zoe).makeInstance(
       installations.publicAuction,
       issuerKeywordRecord,
@@ -153,6 +153,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       proposal,
       paymentKeywordRecord,
     );
+
+    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
 
     const [bobInvite, carolInvite, daveInvite] = await E(publicAPI).makeInvites(
       3,

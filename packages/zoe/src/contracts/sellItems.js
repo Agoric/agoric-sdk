@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 // @ts-check
 
 import harden from '@agoric/harden';
@@ -32,16 +31,14 @@ export const makeContract = harden(
 
     const { pricePerItem } = terms;
 
-    let sellerOfferHandle;
-
     const amountMaths = zcf.getAmountMaths(['Items', 'Money']);
 
-    const sellerOfferHook = offerHandle => {
-      sellerOfferHandle = offerHandle;
-      return defaultAcceptanceMsg;
-    };
+    const buyerExpected = harden({
+      want: { Items: null },
+      give: { Money: null },
+    });
 
-    const buyerOfferHook = buyerOfferHandle => {
+    const makeBuyerOfferHook = sellerOfferHandle => buyerOfferHandle => {
       const sellerAllocation = zcf.getCurrentAllocation(sellerOfferHandle);
       const buyerAllocation = zcf.getCurrentAllocation(buyerOfferHandle);
       const currentItemsForSale = sellerAllocation.Items;
@@ -88,35 +85,29 @@ export const makeContract = harden(
       return defaultAcceptanceMsg;
     };
 
-    const buyerExpected = harden({
-      want: { Items: null },
-      give: { Money: null },
-    });
-
-    zcf.initPublicAPI(
-      harden({
-        makeBuyerInvite: () => {
-          assert(
-            sellerOfferHandle &&
+    const sellerOfferHook = sellerOfferHandle => {
+      zcf.initPublicAPI(
+        harden({
+          makeBuyerInvite: () => {
+            assert(
               !amountMaths.Items.isEmpty(
                 zcf.getCurrentAllocation(sellerOfferHandle).Items,
               ),
-            details`no items are for sale`,
-          );
-          return zcf.makeInvitation(
-            checkHook(buyerOfferHook, buyerExpected),
-            'buyer',
-          );
-        },
-        getAvailableItems: () => {
-          if (!sellerOfferHandle) {
-            throw new Error(`no items have been escrowed`);
-          }
-          return zcf.getCurrentAllocation(sellerOfferHandle).Items;
-        },
-        getItemsIssuer: () => zcf.getInstanceRecord().issuerKeywordRecord.Items,
-      }),
-    );
+              details`no items are for sale`,
+            );
+            return zcf.makeInvitation(
+              checkHook(makeBuyerOfferHook(sellerOfferHandle), buyerExpected),
+              'buyer',
+            );
+          },
+          getAvailableItems: () =>
+            zcf.getCurrentAllocation(sellerOfferHandle).Items,
+          getItemsIssuer: () =>
+            zcf.getInstanceRecord().issuerKeywordRecord.Items,
+        }),
+      );
+      return defaultAcceptanceMsg;
+    };
 
     return zcf.makeInvitation(sellerOfferHook, 'seller');
   },

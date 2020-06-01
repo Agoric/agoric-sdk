@@ -2,7 +2,7 @@
 import { test } from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
-
+import { E } from '@agoric/eventual-send';
 import harden from '@agoric/harden';
 
 import { makeZoe } from '../../../src/zoe';
@@ -52,7 +52,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const terms = harden({ numBidsAllowed });
     const {
       invite: aliceInvite,
-      instanceRecord: { publicAPI },
+      instanceRecord: { handle: instanceHandle },
     } = await zoe.makeInstance(installationHandle, issuerKeywordRecord, terms);
 
     // Alice escrows with zoe
@@ -67,6 +67,8 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       aliceProposal,
       alicePayments,
     );
+
+    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
 
     const [bobInvite, carolInvite, daveInvite] = await publicAPI.makeInvites(3);
 
@@ -342,7 +344,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
     const terms = harden({ numBidsAllowed });
     const {
       invite: aliceInvite,
-      instanceRecord: { publicAPI },
+      instanceRecord: { handle: instanceHandle },
     } = await zoe.makeInstance(installationHandle, issuerKeywordRecord, terms);
 
     // Alice escrows with zoe
@@ -358,6 +360,7 @@ test('zoe - secondPriceAuction w/ 3 bids - alice exits onDemand', async t => {
       outcome: aliceOutcomeP,
     } = await zoe.offer(aliceInvite, aliceProposal, alicePayments);
 
+    const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
     const [bobInvite] = publicAPI.makeInvites(1);
 
     t.equals(
@@ -491,7 +494,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   const terms = harden({ numBidsAllowed });
   const {
     invite: aliceInvite,
-    instanceRecord: { publicAPI },
+    instanceRecord: { handle: instanceHandle },
   } = await zoe.makeInstance(installationHandle, issuerKeywordRecord, terms);
 
   // Alice escrows with zoe
@@ -507,6 +510,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     alicePayments,
   );
 
+  const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
   const [bobInvite, carolInvite, daveInvite] = await publicAPI.makeInvites(3);
 
   t.equals(

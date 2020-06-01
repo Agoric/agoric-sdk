@@ -28,29 +28,26 @@ export const makeContract = harden(
     } = zcf.getInstanceRecord();
     numBidsAllowed = Nat(numBidsAllowed !== undefined ? numBidsAllowed : 3);
 
-    let sellerOfferHandle;
-    let minimumBid;
-    let auctionedAssets;
     const allBidHandles = [];
 
     assertKeywords(harden(['Asset', 'Bid']));
 
-    const bidderOfferHook = offerHandle => {
+    const makeBidderOfferHook = sellerOfferHandle => bidderOfferHandle => {
       // Check that the item is still up for auction
       if (!zcf.isOfferActive(sellerOfferHandle)) {
         const rejectMsg = `The item up for auction is not available or the auction has completed`;
-        throw rejectOffer(offerHandle, rejectMsg);
+        throw rejectOffer(bidderOfferHandle, rejectMsg);
       }
       if (allBidHandles.length >= numBidsAllowed) {
-        throw rejectOffer(offerHandle, `No further bids allowed.`);
+        throw rejectOffer(bidderOfferHandle, `No further bids allowed.`);
       }
-      if (!canTradeWith(sellerOfferHandle, offerHandle)) {
+      if (!canTradeWith(sellerOfferHandle, bidderOfferHandle)) {
         const rejectMsg = `Bid was under minimum bid or for the wrong assets`;
-        throw rejectOffer(offerHandle, rejectMsg);
+        throw rejectOffer(bidderOfferHandle, rejectMsg);
       }
 
       // Save valid bid and try to close.
-      allBidHandles.push(offerHandle);
+      allBidHandles.push(bidderOfferHandle);
       if (allBidHandles.length >= numBidsAllowed) {
         closeAuction(zcf, {
           auctionLogicFn: secondPriceLogic,
@@ -66,9 +63,9 @@ export const makeContract = harden(
       want: { Asset: null },
     });
 
-    const makeBidderInvite = () =>
+    const makeBidderInvite = (sellerOfferHandle, auctionedAssets, minimumBid) =>
       zcf.makeInvitation(
-        checkHook(bidderOfferHook, bidderOfferExpected),
+        checkHook(makeBidderOfferHook(sellerOfferHandle), bidderOfferExpected),
         'bid',
         harden({
           customProperties: {
@@ -78,45 +75,45 @@ export const makeContract = harden(
         }),
       );
 
-    const sellerOfferHook = offerHandle => {
-      if (auctionedAssets) {
-        throw rejectOffer(offerHandle, `assets already present`);
-      }
-      // Save the valid offer
-      sellerOfferHandle = offerHandle;
-      const { proposal } = zcf.getOffer(offerHandle);
-      auctionedAssets = proposal.give.Asset;
-      minimumBid = proposal.want.Bid;
-      return defaultAcceptanceMsg;
-    };
-
     const sellerOfferExpected = harden({
       give: { Asset: null },
       want: { Bid: null },
     });
+
+    const sellerOfferHook = sellerOfferHandle => {
+      const auctionedAssets = zcf.getCurrentAllocation(sellerOfferHandle).Asset;
+      const minimumBid = zcf.getOffer(sellerOfferHandle).proposal.want.Bid;
+      const amountMaths = zcf.getAmountMaths(['Asset']);
+      zcf.initPublicAPI(
+        harden({
+          makeInvites: numInvites => {
+            if (amountMaths.Asset.isEmpty(auctionedAssets)) {
+              throw new Error(`No assets are up for auction.`);
+            }
+            const invites = [];
+            for (let i = 0; i < numInvites; i += 1) {
+              invites.push(
+                makeBidderInvite(
+                  sellerOfferHandle,
+                  auctionedAssets,
+                  minimumBid,
+                ),
+              );
+            }
+            return invites;
+          },
+          getAuctionedAssetsAmounts: () => auctionedAssets,
+          getMinimumBid: () => minimumBid,
+        }),
+      );
+      return defaultAcceptanceMsg;
+    };
 
     const makeSellerInvite = () =>
       zcf.makeInvitation(
         checkHook(sellerOfferHook, sellerOfferExpected),
         'sellAssets',
       );
-
-    zcf.initPublicAPI(
-      harden({
-        makeInvites: numInvites => {
-          if (auctionedAssets === undefined) {
-            throw new Error(`No assets are up for auction.`);
-          }
-          const invites = [];
-          for (let i = 0; i < numInvites; i += 1) {
-            invites.push(makeBidderInvite());
-          }
-          return invites;
-        },
-        getAuctionedAssetsAmounts: () => auctionedAssets,
-        getMinimumBid: () => minimumBid,
-      }),
-    );
 
     return makeSellerInvite();
   },
