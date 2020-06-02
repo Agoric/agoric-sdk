@@ -64,6 +64,7 @@ test('multipoolAutoSwap with valid offers', async t => {
           {
             inviteDesc: 'multipool autoswap add liquidity',
             instanceHandle: aliceInviteAmount.extent[0].instanceHandle,
+            installationHandle,
             handle: aliceInviteAmount.extent[0].handle,
           },
         ]),
