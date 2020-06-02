@@ -550,6 +550,7 @@ const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
         );
         const { customProperties = harden({}) } = options;
         const inviteHandle = harden({});
+        const { installationHandle } = instanceTable.get(instanceHandle);
         const inviteAmount = inviteAmountMath.make(
           harden([
             {
@@ -557,6 +558,7 @@ const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
               inviteDesc,
               handle: inviteHandle,
               instanceHandle,
+              installationHandle,
             },
           ]),
         );
