@@ -23,7 +23,7 @@ export default function setup(syscall, state, helpers) {
               r => log(`=> alice.introduceYourselfTo(bob) resolved to '${r}'`),
               e => log(`=> alice.introduceYourselfTo(bob) rejected as '${e}'`),
             );
-          const count = Number(argv[0]);
+          const count = argv[0] ? Number(argv[0]) : 10;
           E(vats.alice).grind('hey!', count);
         },
       }),

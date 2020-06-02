@@ -16,6 +16,7 @@ import {
 
 import { dumpStore } from './dumpstore';
 import { auditRefCounts } from './auditstore';
+import { printStats } from './printStats';
 
 const log = console.log;
 
@@ -28,7 +29,7 @@ function readClock() {
 }
 
 function usage() {
-  console.log(`
+  log(`
 Command line:
   runner [FLAGS...] CMD [{BASEDIR|--} [ARGS...]]
 
@@ -38,7 +39,7 @@ FLAGS may be:
   --filedb       - runs using the simple file-based data store
   --memdb        - runs using the non-persistent in-memory data store
   --blockmode    - run in block mode (checkpoint every BLOCKSIZE blocks)
-  --blocksize N  - set BLOCKSIZE to N (default 200)
+  --blocksize N  - set BLOCKSIZE to N cranks (default 200)
   --logtimes     - log block execution time stats while running
   --logmem       - log memory usage stats after each block
   --logdisk      - log disk space usage stats after each block
@@ -46,13 +47,14 @@ FLAGS may be:
   --logall       - log kernel stats, block times, memory use, and disk space
   --logtag STR   - tag for stats log file (default "runner")
   --forcegc      - run garbage collector after each block
-  --batchsize N  - set BATCHSIZE to N (default 200)
+  --batchsize N  - set BATCHSIZE to N cranks (default 200)
   --verbose      - output verbose debugging messages as it runs
   --audit        - audit kernel promise reference counts after each crank
   --dump         - dump a kernel state store snapshot after each crank
   --dumpdir DIR  - place kernel state dumps in directory DIR (default ".")
   --dumptag STR  - prefix kernel state dump filenames with STR (default "t")
   --raw          - perform kernel state dumps in raw mode
+  --stats        - print performance stats at the end of a run
 
 CMD is one of:
   help   - print this helpful usage information
@@ -70,7 +72,7 @@ Any remaining args are passed to the swingset's bootstrap vat.
 }
 
 function fail(message, printUsage) {
-  console.log(message);
+  log(message);
   if (printUsage) {
     usage();
   }
@@ -102,6 +104,7 @@ export async function main() {
   let dumpDir = '.';
   let dumpTag = 't';
   let rawMode = false;
+  let shouldPrintStats = false;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -157,6 +160,9 @@ export async function main() {
         rawMode = true;
         doDumps = true;
         break;
+      case '--stats':
+        shouldPrintStats = true;
+        break;
       case '--audit':
         doAudits = true;
         break;
@@ -196,7 +202,7 @@ export async function main() {
       );
     }
     if (!logMem) {
-      console.log('Warning: --forcegc without --logmem may be a mistake');
+      log('Warning: --forcegc without --logmem may be a mistake');
     }
   }
 
@@ -425,6 +431,10 @@ export async function main() {
     const [totalSteps, deltaT] = await runBatch(stepLimit, runInBlockMode);
     if (!runInBlockMode) {
       store.commit();
+    }
+    if (shouldPrintStats) {
+      const cranks = Number(store.storage.get('crankNumber'));
+      printStats(controller.getStats(), cranks);
     }
     store.close();
     if (logTimes) {

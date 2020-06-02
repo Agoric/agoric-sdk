@@ -7,6 +7,7 @@ import { openSwingStore as openSimpleSwingStore } from '@agoric/swing-store-simp
 
 import { dumpStore } from './dumpstore';
 import { auditRefCounts } from './auditstore';
+import { printStats } from './printStats';
 
 function usage() {
   console.log(`
@@ -14,7 +15,7 @@ Command line:
   kerneldump [FLAGS...] [TARGET]
 
 FLAGS may be:
-  --raw       - just dump the kernel state database as key/value pairs
+  --raw       - dump the kernel state database as key/value pairs,
                 alphabetically without annotation
   --lmdb      - read an LMDB state database (default)
   --refcounts - audit kernel promise reference counts
@@ -22,6 +23,7 @@ FLAGS may be:
   --filedb    - read a simple file-based (aka .jsonlines) data store
   --help      - print this helpful usage information
   --out PATH  - output dump to PATH ("-" indicates stdout, the default)
+  --stats     - just print summary stats and exit
 
 TARGET is one of: the base directory where a swingset's vats live, a swingset
 data store directory, or the path to a swingset database file.  If omitted, it
@@ -55,6 +57,7 @@ export function main() {
   const argv = process.argv.splice(2);
   let rawMode = false;
   let refCounts = false;
+  let justStats = false;
   let doDump = true;
   let dbMode = '--lmdb';
   let dbSuffix = '.mdb';
@@ -71,6 +74,9 @@ export function main() {
         break;
       case '--auditonly':
         doDump = false;
+        break;
+      case '--stats':
+        justStats = true;
         break;
       case '--help':
         usage();
@@ -123,10 +129,16 @@ export function main() {
     default:
       fail(`invalid database mode ${dbMode}`, true);
   }
-  if (doDump) {
-    dumpStore(store.storage, outfile, rawMode);
-  }
-  if (refCounts) {
-    auditRefCounts(store.storage);
+  if (justStats) {
+    const stats = JSON.parse(store.storage.get('kernelStats'));
+    const cranks = Number(store.storage.get('crankNumber'));
+    printStats(stats, cranks);
+  } else {
+    if (doDump) {
+      dumpStore(store.storage, outfile, rawMode);
+    }
+    if (refCounts) {
+      auditRefCounts(store.storage);
+    }
   }
 }

@@ -3,11 +3,14 @@ import harden from '@agoric/harden';
 console.log(`=> loading bootstrap.js`);
 
 function build(E, log) {
+  let count;
   function waitFor(who, p) {
     p.then(
       answer => {
-        log(`Alice: Bob answers with value ${answer[0]}`);
-        if (answer[0] < 3) {
+        if (0 < count && count < 50) {
+          log(`Alice: Bob answers with value ${answer[0]}`);
+        }
+        if (answer[0] < count || count < 0) {
           E(who).gen();
           waitFor(who, answer[1]);
         }
@@ -20,6 +23,7 @@ function build(E, log) {
 
   return {
     bootstrap(argv, vats) {
+      count = argv[0] ? Number(argv[0]) : 3;
       const bob = vats.bob;
       const p = E(bob).init();
       E(bob).gen();
