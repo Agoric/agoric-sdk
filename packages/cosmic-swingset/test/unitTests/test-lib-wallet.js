@@ -1,3 +1,4 @@
+import '@agoric/install-ses'; // calls lockdown()
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
@@ -15,7 +16,7 @@ const setupTest = async () => {
   const contractRoot = require.resolve(
     '@agoric/zoe/src/contracts/automaticRefund',
   );
-  const { source, moduleFormat } = await bundleSource(contractRoot);
+  const bundle = await bundleSource(contractRoot);
   const pursesStateChangeLog = [];
   const inboxStateChangeLog = [];
   const pursesStateChangeHandler = data => {
@@ -27,10 +28,10 @@ const setupTest = async () => {
 
   const moolaBundle = produceIssuer('moola');
   const rpgBundle = produceIssuer('rpg', 'strSet');
-  const zoe = makeZoe({ require });
+  const zoe = makeZoe();
   const registry = makeRegistrar();
 
-  const installationHandle = zoe.install(source, moduleFormat);
+  const installationHandle = await zoe.install(bundle);
 
   const issuerKeywordRecord = harden({ Contribution: moolaBundle.issuer });
   const invite = await zoe.makeInstance(
