@@ -458,6 +458,112 @@ test('ZoeHelpers canTradeWith', t => {
   }
 });
 
+// The left offer starts out unable to trade with the right offer, but
+// then more is allocated to left (magically in this test, but in
+// reality, it would be from another offer) and left is able to trade.
+// Then that same amount is taken away. canTradeWith should fail,
+// then succeed, and then fail again.
+test('ZoeHelpers canTradeWith allocation different than give', t => {
+  t.plan(6);
+  const { moolaR, simoleanR, moola, simoleans } = setup();
+  const leftOfferHandle = harden({});
+  const rightOfferHandle = harden({});
+  const cantTradeRightOfferHandle = harden({});
+
+  let amountsAddedToLeft = false;
+  const addAmountsToLeft = () => (amountsAddedToLeft = true);
+  const removeAmountsFromLeft = () => (amountsAddedToLeft = false);
+  try {
+    const mockZCF = harden({
+      getInstanceRecord: () =>
+        harden({
+          issuerKeywordRecord: {
+            Asset: moolaR.issuer,
+            Price: simoleanR.issuer,
+          },
+          keywords: ['Asset', 'Price'],
+        }),
+      getAmountMaths: () =>
+        harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
+      getZoeService: () => {},
+      getCurrentAllocation: handle => {
+        if (handle === leftOfferHandle) {
+          if (amountsAddedToLeft) {
+            return harden({ Asset: moola(10) });
+          }
+          return harden({ Asset: moola(0) });
+        }
+        if (handle === rightOfferHandle) {
+          return harden({ Price: simoleans(6) });
+        }
+        if (handle === cantTradeRightOfferHandle) {
+          return harden({ Price: simoleans(6) });
+        }
+        throw new Error('unexpected handle');
+      },
+      getOffer: handle => {
+        if (handle === leftOfferHandle) {
+          return harden({
+            proposal: {
+              give: { Asset: moola(0) },
+              want: { Price: simoleans(4) },
+              exit: { onDemand: null },
+            },
+          });
+        }
+        if (handle === rightOfferHandle) {
+          return harden({
+            proposal: {
+              give: { Price: simoleans(6) },
+              want: { Asset: moola(7) },
+              exit: { onDemand: null },
+            },
+          });
+        }
+        if (handle === cantTradeRightOfferHandle) {
+          return harden({
+            proposal: {
+              give: { Price: simoleans(6) },
+              want: { Asset: moola(100) },
+              exit: { onDemand: null },
+            },
+          });
+        }
+        throw new Error('unexpected handle');
+      },
+    });
+    const { canTradeWith } = makeZoeHelpers(mockZCF);
+    t.notOk(
+      canTradeWith(leftOfferHandle, rightOfferHandle),
+      `left can't trade with right before reallocation`,
+    );
+    t.notOk(
+      canTradeWith(leftOfferHandle, cantTradeRightOfferHandle),
+      `let can't trade with 'cantTradeRightOfferHandle`,
+    );
+    addAmountsToLeft();
+    t.ok(
+      canTradeWith(leftOfferHandle, rightOfferHandle),
+      `after reallocation, can trade`,
+    );
+    t.notOk(
+      canTradeWith(leftOfferHandle, cantTradeRightOfferHandle),
+      `still can't trade with 'cantTradeRightOfferHandle'`,
+    );
+    removeAmountsFromLeft();
+    t.notOk(
+      canTradeWith(leftOfferHandle, rightOfferHandle),
+      `left can't trade with right after amounts removed`,
+    );
+    t.notOk(
+      canTradeWith(leftOfferHandle, cantTradeRightOfferHandle),
+      `let can't trade with 'cantTradeRightOfferHandle`,
+    );
+  } catch (e) {
+    t.assert(false, e);
+  }
+});
+
 test('ZoeHelpers swap ok', t => {
   t.plan(4);
   const { moolaR, simoleanR, moola, simoleans } = setup();
