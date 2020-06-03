@@ -1,8 +1,9 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from 'tape-promise/tape';
 
+import makeStore from '@agoric/weak-store';
 import produceIssuer from '@agoric/ertp';
-import { areRightsConserved, transpose } from '../../src/rightsConservation';
+import { areRightsConserved } from '../../src/rightsConservation';
 
 const setupAmountMaths = () => {
   const moolaIssuerResults = produceIssuer('moola');
@@ -10,7 +11,16 @@ const setupAmountMaths = () => {
   const bucksIssuerResults = produceIssuer('bucks');
 
   const all = [moolaIssuerResults, simoleanIssuerResults, bucksIssuerResults];
-  return all.map(objs => objs.amountMath);
+  const amountMathArray = all.map(objs => objs.amountMath);
+  const brandToAmountMath = makeStore('brand');
+  all.forEach(bundle =>
+    brandToAmountMath.init(bundle.brand, bundle.amountMath),
+  );
+  const getAmountMathForBrand = brandToAmountMath.get;
+  return {
+    amountMathArray,
+    getAmountMathForBrand,
+  };
 };
 
 const makeAmountMatrix = (amountMathArray, extentMatrix) =>
@@ -18,31 +28,12 @@ const makeAmountMatrix = (amountMathArray, extentMatrix) =>
     row.map((extent, i) => amountMathArray[i].make(extent)),
   );
 
-test('transpose', t => {
-  t.plan(1);
-  try {
-    t.deepEquals(
-      transpose([
-        [1, 2, 3],
-        [4, 5, 6],
-      ]),
-      [
-        [1, 4],
-        [2, 5],
-        [3, 6],
-      ],
-    );
-  } catch (e) {
-    t.assert(false, e);
-  }
-});
-
 // rights are conserved for amount with Nat extents
 test(`areRightsConserved - true for amount with nat extents`, t => {
   t.plan(1);
   try {
-    const amountMaths = setupAmountMaths();
-    const oldExtents = [
+    const { amountMathArray, getAmountMathForBrand } = setupAmountMaths();
+    const previousExtents = [
       [0, 1, 0],
       [4, 1, 0],
       [6, 3, 0],
@@ -53,10 +44,15 @@ test(`areRightsConserved - true for amount with nat extents`, t => {
       [6, 2, 0],
     ];
 
-    const oldAmounts = makeAmountMatrix(amountMaths, oldExtents);
-    const newAmounts = makeAmountMatrix(amountMaths, newExtents);
+    const previousAmounts = makeAmountMatrix(
+      amountMathArray,
+      previousExtents,
+    ).flat();
+    const newAmounts = makeAmountMatrix(amountMathArray, newExtents).flat();
 
-    t.ok(areRightsConserved(amountMaths, oldAmounts, newAmounts));
+    t.ok(
+      areRightsConserved(getAmountMathForBrand, previousAmounts, newAmounts),
+    );
   } catch (e) {
     t.assert(false, e);
   }
@@ -66,7 +62,7 @@ test(`areRightsConserved - true for amount with nat extents`, t => {
 test(`areRightsConserved - false for amount with Nat extents`, t => {
   t.plan(1);
   try {
-    const amountMaths = setupAmountMaths();
+    const { amountMathArray, getAmountMathForBrand } = setupAmountMaths();
     const oldExtents = [
       [0, 1, 4],
       [4, 1, 0],
@@ -78,10 +74,10 @@ test(`areRightsConserved - false for amount with Nat extents`, t => {
       [6, 2, 0],
     ];
 
-    const oldAmounts = makeAmountMatrix(amountMaths, oldExtents);
-    const newAmounts = makeAmountMatrix(amountMaths, newExtents);
+    const oldAmounts = makeAmountMatrix(amountMathArray, oldExtents).flat();
+    const newAmounts = makeAmountMatrix(amountMathArray, newExtents).flat();
 
-    t.notOk(areRightsConserved(amountMaths, oldAmounts, newAmounts));
+    t.notOk(areRightsConserved(getAmountMathForBrand, oldAmounts, newAmounts));
   } catch (e) {
     t.assert(false, e);
   }
@@ -90,11 +86,11 @@ test(`areRightsConserved - false for amount with Nat extents`, t => {
 test(`areRightsConserved - empty arrays`, t => {
   t.plan(1);
   try {
-    const amountMaths = setupAmountMaths();
-    const oldAmounts = [[], [], []];
-    const newAmounts = [[], [], []];
+    const { getAmountMathForBrand } = setupAmountMaths();
+    const oldAmounts = [];
+    const newAmounts = [];
 
-    t.ok(areRightsConserved(amountMaths, oldAmounts, newAmounts));
+    t.ok(areRightsConserved(getAmountMathForBrand, oldAmounts, newAmounts));
   } catch (e) {
     t.assert(false, e);
   }
