@@ -8,7 +8,7 @@ test('repl', async t => {
     const homeObjects = { base: 1, fries: 2, cooking: 3 };
     const sentMessages = [];
     const send = m => sentMessages.push(m);
-    const vatPowers = { power: 'rangers' };
+    const vatPowers = { power: { of: { love: 4 } } };
     const rh = getReplHandler(E, homeObjects, send, vatPowers);
 
     const ch = rh.getCommandHandler();
@@ -25,7 +25,7 @@ test('repl', async t => {
     let m = sentMessages.shift();
     t.deepEquals(m.type, 'updateHistory');
     t.equals(sentMessages.length, 0);
-    
+
     t.deepEquals(getHighestHistory(), { highestHistory: -1 });
     t.equals(sentMessages.length, 0);
 
@@ -38,11 +38,44 @@ test('repl', async t => {
     t.equals(m.type, 'updateHistory');
     t.equals(m.histnum, 0);
     t.equals(m.display, '3');
-    
+    t.deepEquals(sentMessages, []);
+
+    // exercise eventual promise resolution
+    t.deepEquals(doEval(1, 'Promise.resolve(3)'), {});
+    m = sentMessages.shift();
+    t.equals(m.type, 'updateHistory');
+    t.equals(m.histnum, 1);
+    t.equals(m.display, 'working on eval(Promise.resolve(3))');
+    m = sentMessages.shift();
+    t.equals(m.type, 'updateHistory');
+    t.equals(m.histnum, 1);
+    t.equals(m.display, 'unresolved Promise');
+    t.deepEquals(sentMessages, []);
+    await Promise.resolve();
+    await Promise.resolve(); // I don't know why two stalls are needed
+    m = sentMessages.shift();
+    t.equals(m.type, 'updateHistory');
+    t.equals(m.histnum, 1);
+    t.equals(m.display, '3');
+    t.deepEquals(sentMessages, []);
+
+    // TODO: exercise sloppyGlobals, 'home', endowments
+    return;
+    t.deepEquals(doEval(2, 'newGlobal = home.base + home.fries + home.cooking + power.of.love'), {});
+    t.deepEquals(sentMessages, []);
+    m = sentMessages.shift();
+    t.equals(m.type, 'updateHistory');
+    t.equals(m.histnum, 2);
+    t.equals(m.display, 'working on eval(1+2)');
+    m = sentMessages.shift();
+    t.equals(m.type, 'updateHistory');
+    t.equals(m.histnum, 2);
+    t.equals(m.display, '3');
     t.deepEquals(sentMessages, []);
 
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
+    throw e;
   } finally {
     t.end();
   }
