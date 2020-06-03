@@ -35,6 +35,7 @@
     "packages/zoe",
     "packages/wallet-frontend",
     "packages/cosmic-swingset",
+    "packages/smart-relay",
     "packages/generator-agoric-dapp",
     "packages/agoric-cli",
     "packages/deployment",
