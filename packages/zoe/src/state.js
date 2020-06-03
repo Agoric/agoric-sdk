@@ -5,6 +5,11 @@ import makeStore from '@agoric/weak-store';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 import { makeTable, makeValidateProperties } from './table';
 
+/**
+ * @typedef {import('./zoe').OfferHandle} OfferHandle
+ * @typedef {import('@agoric/ertp').Payment} Payment
+ */
+
 // Installation Table
 // Columns: handle | installation | bundle
 const makeInstallationTable = () => {
@@ -92,8 +97,12 @@ const makeOfferTable = () => {
 };
 
 // Payout Map
-// PrivateName: offerHandle | payoutPromise
-const makePayoutMap = makeStore;
+/**
+ * Create payoutMap
+ * @returns {import('@agoric/store').Store<OfferHandle,
+ * Promise<Payment>>} Store
+ */
+const makePayoutMap = () => makeStore('offerHandle');
 
 // Issuer Table
 // Columns: brand | issuer | purse | amountMath
