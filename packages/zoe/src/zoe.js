@@ -15,8 +15,6 @@ import {
 } from './cleanProposal';
 import {
   arrayToObj,
-  objToArray,
-  objToArrayAssertFilled,
   filterObj,
   filterFillAmounts,
   assertSubset,
@@ -26,7 +24,7 @@ import { areRightsConserved } from './rightsConservation';
 import { evalContractCode } from './evalContractCode';
 import { makeTables } from './state';
 
-// TODO Update types and documentatuon to describe the new API
+// TODO Update types and documentation to describe the new API
 /**
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
  */
@@ -38,6 +36,8 @@ import { makeTables } from './state';
  * @typedef {import('@agoric/ertp/src/issuer').Payment} Payment
  * @typedef {import('@agoric/ertp/src/issuer').Issuer} Issuer
  * @typedef {import('@agoric/ertp/src/issuer').Purse} Purse
+ *
+ * @typedef {import('./rightsConservation').areRightsConserved} areRightsConserved
  *
  * @typedef {any} TODO Needs to be typed
  * @typedef {string} Keyword
@@ -256,9 +256,7 @@ import { makeTables } from './state';
  * @param  {AmountKeywordRecord[]} newAllocations An
  * array of amountKeywordRecords  - objects with keyword keys
  * and amount values, with one keywordRecord per offerHandle.
- * @param  {Keyword[]=} sparseKeywords An array of string
- * keywords, which may be a subset of allKeywords
- * @returns {TODO}
+ * @returns {undefined}
  *
  * @callback Complete
  * The contract can "complete" an offer to remove it from the
@@ -444,7 +442,7 @@ const makeZoe = (additionalEndowments = {}) => {
      * @type {ContractFacet}
      */
     const contractFacet = harden({
-      reallocate: (offerHandles, newAllocations, sparseKeywords) => {
+      reallocate: (offerHandles, newAllocations) => {
         assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
         // We may want to handle this with static checking instead.
         // Discussion at: https://github.com/Agoric/agoric-sdk/issues/1017
@@ -453,41 +451,7 @@ const makeZoe = (additionalEndowments = {}) => {
           details`reallocating must be done over two or more offers`,
         );
 
-        // Set sparseKeywords if undefined.
-        const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
-        const allKeywords = getKeywords(issuerKeywordRecord);
-        if (sparseKeywords === undefined) {
-          sparseKeywords = allKeywords;
-        }
-
-        // 1) ensure that rights are conserved overall
-        const amountMathKeywordRecord = contractFacet.getAmountMaths(
-          sparseKeywords,
-        );
-        const amountMathsArray = objToArray(
-          amountMathKeywordRecord,
-          sparseKeywords,
-        );
-        const currentAmountMatrix = offerHandles.map(handle => {
-          const filteredAmounts = contractFacet.getCurrentAllocation(
-            handle,
-            sparseKeywords,
-          );
-          return objToArray(filteredAmounts, sparseKeywords);
-        });
-        const newAmountMatrix = newAllocations.map(amountObj =>
-          objToArrayAssertFilled(amountObj, sparseKeywords),
-        );
-        assert(
-          areRightsConserved(
-            amountMathsArray,
-            currentAmountMatrix,
-            newAmountMatrix,
-          ),
-          details`Rights are not conserved in the proposed reallocation`,
-        );
-
-        // 2) Ensure 'offer safety' for each offer separately.
+        // 1) Ensure 'offer safety' for each offer separately.
 
         // Make the potential reallocation and test for offer safety
         // by comparing the potential reallocation to the proposal.
@@ -504,6 +468,7 @@ const makeZoe = (additionalEndowments = {}) => {
             ...getKeywords(proposal.want),
             ...getKeywords(proposal.give),
           ];
+
           assert(
             isOfferSafeForOffer(
               contractFacet.getAmountMaths(proposalKeywords),
@@ -521,7 +486,30 @@ const makeZoe = (additionalEndowments = {}) => {
           makePotentialReallocation(offerHandle, newAllocations[i]),
         );
 
-        // 3) save the reallocation
+        const flattened = arr => [].concat(...arr);
+
+        // 2. Ensure that rights are conserved overall.
+        const flattenAllocations = allocations =>
+          flattened(allocations.map(allocation => Object.values(allocation)));
+
+        // Don't fill the allocations.
+        const currentAllocations = offerTable
+          .getOffers(offerHandles)
+          .map(({ currentAllocation }) => currentAllocation);
+
+        const previousAmounts = flattenAllocations(currentAllocations);
+        const newAmounts = flattenAllocations(reallocations);
+
+        assert(
+          areRightsConserved(
+            issuerTable.getAmountMathByBrand,
+            previousAmounts,
+            newAmounts,
+          ),
+          details`Rights are not conserved in the proposed reallocation`,
+        );
+
+        // 3. Save the reallocations.
         offerTable.updateAmounts(offerHandles, reallocations);
       },
 
