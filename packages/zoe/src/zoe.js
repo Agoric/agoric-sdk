@@ -455,14 +455,11 @@ const makeZoe = (additionalEndowments = {}) => {
 
         // Make the potential reallocation and test for offer safety
         // by comparing the potential reallocation to the proposal.
-        const makePotentialReallocation = (
-          offerHandle,
-          sparseKeywordsAllocation,
-        ) => {
+        const makePotentialReallocation = (offerHandle, newAllocation) => {
           const { proposal, currentAllocation } = offerTable.get(offerHandle);
           const potentialReallocation = harden({
             ...currentAllocation,
-            ...sparseKeywordsAllocation,
+            ...newAllocation,
           });
           const proposalKeywords = [
             ...getKeywords(proposal.want),
