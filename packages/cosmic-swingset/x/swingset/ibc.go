@@ -462,11 +462,14 @@ func (am AppModule) OnRecvPacket(
 		// We don't support simulation.
 		return &sdk.Result{}, nil
 	}
-	if packet.GetTimeoutTimestamp() == 0 {
-		// FIXME: Don't know why, but for every relayed packet, we receive
-		// a second nearly-identical packet with a zero Timestamp.
-		return &sdk.Result{}, nil
-	}
+
+	// Sometimes we receive duplicate packets, just with a
+	// missing packet.TimeoutTimestamp.  This causes duplicate
+	// acks, with one of them being rejected.
+	//
+	// This turns out to happen when you run both "rly start"
+	// and also "rly tx xfer"-- they both are trying to relay
+	// the same packets.
 
 	event := receivePacketEvent{
 		Type:        "IBC_EVENT",
