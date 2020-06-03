@@ -102,6 +102,7 @@ test('issuer.makeEmptyPurse', t => {
 });
 
 test('issuer.deposit', async t => {
+  t.plan(4);
   const { issuer, mint, amountMath } = produceIssuer('fungible');
   const fungible0 = amountMath.getEmpty();
   const fungible17 = amountMath.make(17);
@@ -112,15 +113,18 @@ test('issuer.deposit', async t => {
   const payment17 = mint.mintPayment(fungible17);
   const payment25 = mint.mintPayment(fungible25);
 
-  const checkDeposit = (oldBalance, newBalance) => depositResult => {
-    const delta = amountMath.subtract(newBalance, oldBalance);
+  const checkDeposit = (
+    expectedOldBalance,
+    expectedNewBalance,
+  ) => depositResult => {
+    const delta = amountMath.subtract(expectedNewBalance, expectedOldBalance);
     t.ok(
       amountMath.isEqual(depositResult, delta),
       `the balance changes by the deposited amount: ${delta.extent}`,
     );
     t.ok(
-      amountMath.isEqual(purse.getCurrentAmount(), newBalance),
-      `the new purse balance ${depositResult.extent} is the expected amount: ${newBalance.extent}`,
+      amountMath.isEqual(purse.getCurrentAmount(), expectedNewBalance),
+      `the new purse balance ${depositResult.extent} is the expected amount: ${expectedNewBalance.extent}`,
     );
   };
 
