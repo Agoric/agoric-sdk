@@ -265,7 +265,6 @@ export const makeZoeHelpers = (zcf) => {
           zcf.reallocate(
             harden([tempHandle, recipientHandle]),
             harden([tempAlloc, recipientAlloc]),
-            harden([keyword]),
           );
 
           // Complete the temporary offerHandle
