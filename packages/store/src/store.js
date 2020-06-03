@@ -8,15 +8,16 @@ const harden = /** @type {<T>(x: T) => T} */ (rawHarden);
 
 /**
  * @template K,V
- * @typedef {Object} Store A wrapper around a Map
- * @property {(key: K) => boolean} has Check if a key exists
- * @property {(key: K, value: V) => void} init Initialize the key only if it doesn't already exist
- * @property {(key: K) => V?} get Return a value fo the key, or undefined
- * @property {(key: K, value: V) => void} set Unconditionally set the key
- * @property {(key: K) => void} delete Remove the key
- * @property {() => K[]} keys Return an array of keys
- * @property {() => V[]} values Return an array of values
- * @property {() => [K, V][]} entries Return an array of entries
+ * @typedef {Object} Store - A wrapper around a Map
+ * @property {(key: K) => boolean} has - Check if a key exists
+ * @property {(key: K, value: V) => void} init - Initialize the key only if it doesn't already exist
+ * @property {(key: K) => V} get - Return a value for the key. Throws
+ * if not found.
+ * @property {(key: K, value: V) => void} set - Unconditionally set the key
+ * @property {(key: K) => void} delete - Remove the key
+ * @property {() => K[]} keys - Return an array of keys
+ * @property {() => V[]} values - Return an array of values
+ * @property {() => [K, V][]} entries - Return an array of entries
  */
 
 /**

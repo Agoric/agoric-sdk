@@ -312,7 +312,6 @@ export const makeContract = harden(
         zcf.reallocate(
           harden([offerHandle, poolHandle]),
           harden([newUserAmounts, newPoolAmounts]),
-          liquidityKeys,
         );
         zcf.complete(harden([offerHandle]));
         return 'Added liquidity.';
@@ -396,7 +395,6 @@ export const makeContract = harden(
       zcf.reallocate(
         harden([offerHandle, poolHandle]),
         harden([newUserAmounts, newPoolAmounts]),
-        liquidityKeys,
       );
       zcf.complete(harden([offerHandle]));
       return 'Liquidity successfully removed.';
@@ -449,7 +447,6 @@ export const makeContract = harden(
         zcf.reallocate(
           harden([offerHandle, poolHandle]),
           harden([newUserAmounts, newPoolAmounts]),
-          keywords,
         );
         zcf.complete(harden([offerHandle]));
         return `Swap successfully completed.`;
@@ -470,7 +467,6 @@ export const makeContract = harden(
         zcf.reallocate(
           harden([offerHandle, poolHandle]),
           harden([newUserAmounts, newPoolAmounts]),
-          keywords,
         );
         zcf.complete(harden([offerHandle]));
         return `Swap successfully completed.`;
@@ -523,7 +519,6 @@ export const makeContract = harden(
         zcf.reallocate(
           harden([poolHandleA, poolHandleB, offerHandle]),
           harden([finalPoolAmountsA, finalPoolAmountsB, finalUserAmounts]),
-          keywords,
         );
         zcf.complete(harden([offerHandle]));
         return `Swap successfully completed.`;

@@ -5,6 +5,11 @@ import makeStore from '@agoric/weak-store';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 import { makeTable, makeValidateProperties } from './table';
 
+/**
+ * @typedef {import('./zoe').OfferHandle} OfferHandle
+ * @typedef {import('@agoric/ertp').Payment} Payment
+ */
+
 // Installation Table
 // Columns: handle | installation | code
 const makeInstallationTable = () => {
@@ -92,8 +97,12 @@ const makeOfferTable = () => {
 };
 
 // Payout Map
-// PrivateName: offerHandle | payoutPromise
-const makePayoutMap = makeStore;
+/**
+ * Create payoutMap
+ * @returns {import('@agoric/store').Store<OfferHandle,
+ * Promise<Payment>>} Store
+ */
+const makePayoutMap = () => makeStore('offerHandle');
 
 // Issuer Table
 // Columns: issuer | brand | purse | amountMath
@@ -103,6 +112,13 @@ const makeIssuerTable = () => {
   const validateSomewhat = makeValidateProperties(
     harden(['issuer', 'brand', 'purse', 'amountMath']),
   );
+
+  /**
+   * Brand to Issuer Map
+   * @returns {import('@agoric/store').Store<Brand,
+   * Issuer>} Store
+   */
+  const brandToIssuerMap = makeStore('brand');
 
   const makeCustomMethods = table => {
     const issuersInProgress = makeStore();
@@ -144,6 +160,7 @@ const makeIssuerTable = () => {
                 purse,
                 amountMath,
               };
+              brandToIssuerMap.init(brand, issuer);
               table.create(issuerRecord, issuer);
               issuersInProgress.delete(issuer);
               return table.get(issuer);
@@ -156,6 +173,15 @@ const makeIssuerTable = () => {
       },
       getPromiseForIssuerRecords: issuerPs =>
         Promise.all(issuerPs.map(customMethods.getPromiseForIssuerRecord)),
+      getIssuerRecordByBrand: brand => {
+        const issuer = brandToIssuerMap.get(brand);
+        return table.get(issuer);
+      },
+      getAmountMathByBrand: brand => {
+        const issuer = brandToIssuerMap.get(brand);
+        const { amountMath } = table.get(issuer);
+        return amountMath;
+      },
     });
     return customMethods;
   };
