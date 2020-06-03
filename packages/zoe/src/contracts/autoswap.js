@@ -177,7 +177,6 @@ export const makeContract = harden(
             zcf.reallocate(
               harden([offerHandle, poolHandle]),
               harden([newUserAmounts, newPoolAmounts]),
-              harden(['TokenA', 'TokenB', 'Liquidity']),
             );
             zcf.complete(harden([offerHandle]));
             return 'Added liquidity.';
