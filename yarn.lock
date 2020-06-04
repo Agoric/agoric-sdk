@@ -29,6 +29,13 @@
     "@agoric/harden" "^0.0.4"
     esm "^3.2.5"
 
+"@agoric/lib-cosmic-relayer@*":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@agoric/lib-cosmic-relayer/-/lib-cosmic-relayer-0.1.1.tgz#88594c6f5bfbebe5070972a0eef059fd4bd34526"
+  integrity sha512-F366Nk44IzluXWSiATXklHQ8/ZJcox5k/SennDnnR0NvAQ3kYn+djrCrGC365dx0wogglIoNhVhR3jiXUomqsA==
+  dependencies:
+    bindings "^1.2.1"
+
 "@agoric/make-hardener@0.0.4":
   version "0.0.4"
   resolved "https://registry.yarnpkg.com/@agoric/make-hardener/-/make-hardener-0.0.4.tgz#9b5d6692bc2fbbac2fff0a6682959ac5e69c582d"
