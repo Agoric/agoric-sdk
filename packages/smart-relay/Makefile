@@ -36,7 +36,7 @@ help:
 	@echo 'poke-bridge-ack           send an ack'
 	@echo 'poke-bridge-unknown       send an unknown'
 	@echo 'install-halfdrop-handler  install a handler that drops half'
-	@echo 'install-delay-handler     install a handler that delays messages'
+	@echo 'install-delay-handler     install a handler that delays'
 
 install-halfdrop-handler:
 	curl --data-binary @./halfdrop-handler.js -H "content-type: text/plain" http://localhost:8008/install

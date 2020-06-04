@@ -224,9 +224,9 @@ async function main(args) {
       // TODO: This is a hack for testing, remove when IBC is wired to the
       // bridge. Do 'curl http://localhost:8000/sendIntoBridge' to pretend that
       // the IBC/relayer golang code just received something.
-      if (request.path === '/sendIntoBridge') {
+      if (request.path.startsWith('/sendIntoBridge')) {
         console.log(`http said to send something into the bridge device`);
-        queueInboundBridge('input arg');
+        queueInboundBridge(request.path);
         return 'queued for input into bridge';
       }
       // this is the general HTTP input path. TODO: collect and pass the
