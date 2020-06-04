@@ -216,16 +216,19 @@ async function main() {
     // TODO: This is a hack for testing, remove when IBC is wired to the
     // bridge. Do 'curl http://localhost:8000/sendIntoBridge' to pretend that
     // the IBC/relayer golang code just received something.
-    if (request.path === '/sendIntoBridge') {
+    if (request.path.startsWith('/sendIntoBridge')) {
       console.log(`http said to send something into the bridge device`);
-      queueInboundBridge('input arg');
+      queueInboundBridge(request.path);
       return 'queued for input into bridge';
     }
     // this is the general HTTP input path. TODO: collect and pass the
     // request body in too, we'll use it for handler installation. Don't go
     // too crazy with options, keep it simple. Exercise with:
     //  curl --data-binary @./handler.js http://localhost:8000/install
-    return queueInboundCommand({ path: request.path, body: request.body.toString() });
+    return queueInboundCommand({
+      path: request.path,
+      body: request.body.toString(),
+    });
   }
   startAPIServer(8000, inboundHTTPRequest);
 
