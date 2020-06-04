@@ -90,8 +90,9 @@ async function buildSwingset() {
     console.log(`broadcast not implemented`);
   });
   const timer = buildTimer();
-  // todo: wire bridge output to IBC sender
+
   const bridge = buildBridge(obj => {
+    // TODO: send 'obj' to the IBC/relayer sender
     console.log(`bridge to nowhere`, obj);
   });
 
@@ -205,22 +206,31 @@ async function main() {
     queueInboundBridge,
     startTimer,
   } = await buildSwingset();
-  startTimer(1200);
+  startTimer(5000);
   console.log(`swingset running`);
 
   function inboundHTTPRequest(request) {
     console.log(`HTTP request path=${request.path}`);
     // return { response: 'ok' };
 
-    // hack for testing, remove when IBC is wired to the bridge
+    // TODO: This is a hack for testing, remove when IBC is wired to the
+    // bridge. Do 'curl http://localhost:8000/sendIntoBridge' to pretend that
+    // the IBC/relayer golang code just received something.
     if (request.path === '/sendIntoBridge') {
       console.log(`http said to send something into the bridge device`);
       queueInboundBridge('input arg');
       return 'queued for input into bridge';
     }
+    // this is the general HTTP input path. TODO: collect and pass the
+    // request body in too, we'll use it for handler installation. Don't go
+    // too crazy with options, keep it simple. Exercise with:
+    //  curl --data-binary @./handler.js http://localhost:8000/install
     return queueInboundCommand({ path: request.path });
   }
   startAPIServer(8000, inboundHTTPRequest);
+
+  // TODO: arrange for the golang IBC/relayer packet receiver to call
+  // queueInboundBridge(obj) with each handshake/packet/ack event
 
   // now we wait for events
 }
