@@ -24,20 +24,28 @@ export async function runWrappedProgram(initSwingSet, args) {
     // queueInboundBridge(obj) with each handshake/packet/ack event
     const retstr = sendClib(
       clibPort,
-      JSON.stringify({ type: 'CONTROLLER_RECEIVED', msg: m }),
+      JSON.stringify({ type: 'RELAYER_UPCALL', msg: m }),
     );
-    throw Error(`Unimplemented: ${retstr}`);
+    return retstr;
   }
 
   function fromClib(port, str, replier) {
     // Resolve or reject the inbound call according to processRelayer.
-    return processRelayer(port, str).then(replier.resolve, replier.reject);
+    return processRelayer(port, str).then(
+      res => replier.resolve(`${res}`),
+      rej => replier.reject(`${(rej && rej.stack) || rej}`),
+    );
   }
 
   // Run the relayer command line.
   if (process.env.RLY_HOME === undefined) {
     process.env.RLY_HOME = `${process.cwd()}/state/rly`;
   }
+  if (args[1] === 'config' && args[2] === 'show-home') {
+    console.log(process.env.RLY_HOME);
+    process.exit(0);
+  }
+
   const homeArgs = [...args];
   homeArgs.splice(1, 0, `--home=${process.env.RLY_HOME}`);
 
