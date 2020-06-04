@@ -45,6 +45,7 @@
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",
     "bindings": "^1.2.1",
+    "body-parser": "1.19.0",
     "chalk": "^2.4.2",
     "deterministic-json": "^1.0.5",
     "esm": "^3.2.25",

@@ -5,38 +5,152 @@ console.debug(`loading vat-relayer.js`);
 // At any given moment, there is exactly one PacketHandler in place.
 
 function buildRootObject(E) {
-  /*
-  function makeDefaultPacketHandler(src, dest, predecessorData) {
+  // the default Policy+PacketHandler transparently forwards all packets
+
+  function makeDefaultPacketHandler() {
     return harden({
       onPacket(target, packet) {
-        target(packet);
+        E(target).deliver(packet);
       },
       onAck(target, ackPacket) {
-        target(ackPacket);
+        E(target).deliver(ackPacket);
       },
       onHandshake(target, metaPacket) {
-        target(metaPacket);
+        E(target).deliver(metaPacket);
       },
       retire() {
-        return { data: 'sample' };
+        return undefined;
       },
     });
   }
-  */
 
-  const defaultHandler = harden({
-    handle(send, obj) {
-      send(obj); // eg
+  const defaultPolicy = harden({
+    // For any given Policy object, open() will only be called once per
+    // channel. If this is not the first Policy to be used, and the
+    // predecessor Policy had provided a PacketHandler for this channel, then
+    // 'oldState' will contain the object which that old PacketHandler
+    // provided from its 'shutdown()' method. "You have inherited this data
+    // from your predecessor, use it wisely."
+    open(src, dest, oldState = undefined) {
+      return makeDefaultPacketHandler(oldState);
     },
   });
 
-  let currentHandler = defaultHandler;
+  let currentPolicy = defaultPolicy;
+  const packetHandlers = new Map();
 
-  function doHandle(bridgeSender, arg) {
-    function send(what) {
-      E(bridgeSender).send(what);
+  function makeSenders(bridgeSender, srcID, destID) {
+    // TODO: replace this function with something that knows how to construct
+    // the right kind of bridge message. We want the (golang) lib-relayer
+    // code on the other side of the bridge to send this packet to the given
+    // target. This 'targetID' comes from identifyChannel(), which also needs
+    // to be replaced.
+    function XXX(targetID, msg) {
+      return harden({
+        sendTo: targetID,
+        msg,
+      });
     }
-    currentHandler.handle(send, arg);
+    return harden({
+      src: {
+        deliver(msg) {
+          E(bridgeSender).send(XXX(srcID, msg));
+        },
+      },
+      dest: {
+        deliver(msg) {
+          E(bridgeSender).send(XXX(destID, msg));
+        },
+      },
+    });
+  }
+
+  // TODO: write this properly
+  function identifyChannel(_msg) {
+    return harden({
+      channelID: 'fake_channelID',
+      srcID: 'fake_srcID',
+      destID: 'fake_destID',
+      isToDest: true, // fake
+    });
+  }
+
+  // TODO: write these properly
+  function isHandshake(msg) {
+    return msg.toString().indexOf('is-handshake') !== -1;
+  }
+  function isPacket(msg) {
+    return msg.toString().indexOf('is-packet') !== -1;
+  }
+  function isAck(msg) {
+    return msg.toString().indexOf('is-ack') !== -1;
+  }
+
+  // All relay data comes through here.
+  function doHandle(bridgeSender, msg) {
+    // First, we must figure out which (putative) Channel the message is for.
+    const { channelID, srcID, destID, isToDest } = identifyChannel(msg);
+
+    // If we don't already know about a PacketHandler for that Channel, ask
+    // the Policy to make one.
+    if (!packetHandlers.has(channelID)) {
+      const { src, dest } = makeSenders(bridgeSender, srcID, destID);
+      packetHandlers.set(channelID, {
+        handler: currentPolicy.open(src, dest, undefined),
+        src,
+        dest,
+      });
+    }
+
+    const h = packetHandlers.get(channelID);
+    const target = isToDest ? h.dest : h.src;
+    if (isHandshake(msg)) {
+      h.handler.onHandshake(target, msg);
+    } else if (isPacket(msg)) {
+      h.handler.onPacket(target, msg);
+    } else if (isAck(msg)) {
+      h.handler.onAck(target, msg);
+    } else {
+      console.log(`unrecognized packet`);
+    }
+  }
+
+  function doInstall(newPolicySrc) {
+    console.log(`installing new policy, src=`, newPolicySrc);
+    console.log(`evaluating...`);
+    // eslint-disable-next-line no-eval
+    const makePolicy = (1, eval)(`(${newPolicySrc})`);
+    console.log(`eval returned`, makePolicy);
+    if (typeof makePolicy !== 'function') {
+      console.log(
+        `policy source did not evaluate to function, rather to:`,
+        makePolicy,
+      );
+      return;
+    }
+    const endowments = { harden, E, console };
+    const newPolicy = harden(makePolicy(endowments));
+    if (!newPolicy.open) {
+      console.log(
+        `new Policy does not have .open, rather:`,
+        Object.keys(newPolicy),
+      );
+      return;
+    }
+
+    // activate the new policy
+    currentPolicy = newPolicy;
+    // migrate all old PacketHandlers, by asking them to retire, and passing
+    // the state object they emit to their successor
+    for (const channelID of packetHandlers.keys()) {
+      const { handler: oldHandler, src, dest } = packetHandlers.get(channelID);
+      const oldState = oldHandler.retire();
+      packetHandlers.set(channelID, {
+        handler: currentPolicy.open(src, dest, oldState),
+        src,
+        dest,
+      });
+    }
   }
 
   const root = {
@@ -52,20 +166,10 @@ function buildRootObject(E) {
       }
     },
 
-    install(handlerSrc) {
+    install(policySrc) {
       try {
-        console.log(`installing new handler, src=`, handlerSrc);
-        console.log(`evaluating...`);
-        // eslint-disable-next-line no-eval
-        const makeHandler = (1,eval)(`(${handlerSrc})`);
-        console.log(`eval returned`, makeHandler);
-        if (typeof makeHandler !== 'function') {
-          console.log(`handler source did not evaluate to function, rather to:`, makeHandler);
-          return;
-        }
-        const endowments = { harden, E, console };
-        currentHandler = harden(makeHandler(endowments));
-        console.log(`installed`);
+        doInstall(policySrc);
+        console.log(`install() successful`);
       } catch (e) {
         console.log(`error during install()`, e);
         throw e;
