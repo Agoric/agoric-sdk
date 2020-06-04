@@ -3,9 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 import temp from 'temp';
+
 import { initSwingStore, openSwingStore } from '@agoric/swing-store-lmdb';
 import { producePromise } from '@agoric/produce-promise';
-
 import {
   loadBasedir,
   buildCommand,
@@ -17,7 +17,9 @@ import {
   getCommsSourcePath,
   getTimerWrapperSourcePath,
 } from '@agoric/swingset-vat';
+
 import { makeWithQueue } from './queue';
+import { startAPIServer } from './web';
 
 // as this is a quick demo, we run a solo node (with relaying superpowers)
 // from this here directory, rather than creating a new working directory and
@@ -83,13 +85,13 @@ async function buildSwingset() {
   const mbs = buildMailboxStateMap();
   mbs.populateFromData(initialMailboxState);
   const mb = buildMailbox(mbs);
-  //const cm = buildCommand(broadcast);
+  const cm = buildCommand(obj => { console.log(`broadcast not implemented`); });
   const timer = buildTimer();
 
   const config = await loadBasedir(vatsDir);
   config.devices = [
     ['mailbox', mb.srcPath, mb.endowments],
-    //['command', cm.srcPath, cm.endowments],
+    ['command', cm.srcPath, cm.endowments],
     ['timer', timer.srcPath, timer.endowments],
   ];
   config.vats.set('vattp', { sourcepath: getVatTPSourcePath() });
@@ -183,7 +185,15 @@ async function main() {
   const { queueInboundMailbox, queueInboundCommand, startTimer } = await buildSwingset();
   startTimer(1200);
   console.log(`swingset running`);
-  // TODO: wait for events
+
+  function inboundHTTPRequest(request) {
+    console.log(`HTTP request path=${request.path}`);
+    //return { response: 'ok' };
+    return queueInboundCommand({ path: request.path });
+  }
+  startAPIServer(8000, inboundHTTPRequest);
+
+  // now we wait for events
 }
 
 main().then(
