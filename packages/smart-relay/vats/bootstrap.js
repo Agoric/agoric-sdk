@@ -3,22 +3,55 @@ import harden from '@agoric/harden';
 console.debug(`loading bootstrap.js`);
 
 function buildRootObject(E, D) {
-  async function handle(body) {
+  // use sendToBridge(arg) to send to IBC stuff
+  let sendToBridge;
+
+  // this receives HTTP requests, and can return JSONable objects in response
+  async function handleCommand(body) {
+    if (body.path === '/sendOutBridge') {
+      sendToBridge('http says hi');
+      return { 'i said': 'hi' };
+    }
     return { response: `${body.path} is ok` };
   }
 
+  function handleBridgeInput(arg) {
+    console.log(`bridge input`, arg);
+  }
+
+  function doBootstrap(argv, vats, devices) {
+    const commandHandler = harden({
+      inbound(count, body) {
+        console.log(`command:`, body);
+        const p = handleCommand(body);
+        p.then(ok => D(devices.command).sendResponse(count, false, ok),
+               err => D(devices.command).sendResponse(count, true, err));
+      },
+    });
+    D(devices.command).registerInboundHandler(commandHandler);
+
+    const bridgeHandler = harden({
+      inbound(arg) {
+        handleBridgeInput(arg);
+      },
+    });
+    D(devices.bridge).registerInboundHandler(bridgeHandler);
+    sendToBridge = (arg) => {
+      D(devices.bridge).callOutbound(arg);
+    };
+  }
+
   const root = {
-    bootstrap(argv, vats, devices) {
+    bootstrap(...args) {
       console.log(`bootstrap() invoked`);
-      const commandHandler = harden({
-        inbound(count, body) {
-          console.log(`command:`, body);
-          const p = handle(body);
-          p.then(ok => D(devices.command).sendResponse(count, false, ok),
-                 err => D(devices.command).sendResponse(count, true, err));
-        },
-      });
-      D(devices.command).registerInboundHandler(commandHandler);
+      try {
+        doBootstrap(...args);
+        console.log(`bootstrap() successful`);
+      } catch (e) {
+        console.log(`error during bootstrap`);
+        console.log(e);
+        throw e;
+      }
     },
   };
   return harden(root);
