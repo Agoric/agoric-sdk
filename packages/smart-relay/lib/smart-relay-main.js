@@ -21,6 +21,7 @@ import {
 
 import { makeWithQueue } from './queue';
 import { startAPIServer } from './web';
+import { runWrappedProgram } from './relayer';
 
 // as this is a quick demo, we run a solo node (with relaying superpowers)
 // from this here directory, rather than creating a new working directory and
@@ -198,47 +199,47 @@ async function buildSwingset() {
   };
 }
 
-async function main() {
+async function main(args) {
   initBasedir();
-  const {
-    // queueInboundMailbox,
-    queueInboundCommand,
-    queueInboundBridge,
-    startTimer,
-  } = await buildSwingset();
-  startTimer(5000);
-  console.log(`swingset running`);
 
-  function inboundHTTPRequest(request) {
-    console.log(`HTTP request path=${request.path}`);
-    // return { response: 'ok' };
+  async function initSwingSet() {
+    const {
+      // queueInboundMailbox,
+      queueInboundCommand,
+      queueInboundBridge,
+      startTimer,
+    } = await buildSwingset();
+    startTimer(5000);
+    console.log(`swingset running`);
 
-    // TODO: This is a hack for testing, remove when IBC is wired to the
-    // bridge. Do 'curl http://localhost:8000/sendIntoBridge' to pretend that
-    // the IBC/relayer golang code just received something.
-    if (request.path.startsWith('/sendIntoBridge')) {
-      console.log(`http said to send something into the bridge device`);
-      queueInboundBridge(request.path);
-      return 'queued for input into bridge';
+    function inboundHTTPRequest(request) {
+      console.log(`HTTP request path=${request.path}`);
+      // return { response: 'ok' };
+
+      // TODO: This is a hack for testing, remove when IBC is wired to the
+      // bridge. Do 'curl http://localhost:8000/sendIntoBridge' to pretend that
+      // the IBC/relayer golang code just received something.
+      if (request.path === '/sendIntoBridge') {
+        console.log(`http said to send something into the bridge device`);
+        queueInboundBridge('input arg');
+        return 'queued for input into bridge';
+      }
+      // this is the general HTTP input path. TODO: collect and pass the
+      // request body in too, we'll use it for handler installation. Don't go
+      // too crazy with options, keep it simple. Exercise with:
+      //  curl --data-binary @./handler.js http://localhost:8000/install
+      return queueInboundCommand({
+        path: request.path,
+        body: request.body.toString(),
+      });
     }
-    // this is the general HTTP input path. TODO: collect and pass the
-    // request body in too, we'll use it for handler installation. Don't go
-    // too crazy with options, keep it simple. Exercise with:
-    //  curl --data-binary @./handler.js http://localhost:8000/install
-    return queueInboundCommand({
-      path: request.path,
-      body: request.body.toString(),
-    });
+    startAPIServer(8000, inboundHTTPRequest);
   }
-  startAPIServer(8000, inboundHTTPRequest);
 
-  // TODO: arrange for the golang IBC/relayer packet receiver to call
-  // queueInboundBridge(obj) with each handshake/packet/ack event
-
-  // now we wait for events
+  await runWrappedProgram(initSwingSet, args);
 }
 
-main().then(
+main(process.argv.slice(1)).then(
   _ok => {},
   err => {
     console.log(`error in smart-relay main`, err);
