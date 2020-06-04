@@ -30,7 +30,7 @@ function buildRootObject(E) {
     },
   });
 
-  const currentHandler = defaultHandler;
+  let currentHandler = defaultHandler;
 
   function doHandle(bridgeSender, arg) {
     function send(what) {
@@ -48,6 +48,26 @@ function buildRootObject(E) {
       } catch (e) {
         console.log(`error during handle()`);
         console.log(e);
+        throw e;
+      }
+    },
+
+    install(handlerSrc) {
+      try {
+        console.log(`installing new handler, src=`, handlerSrc);
+        console.log(`evaluating...`);
+        // eslint-disable-next-line no-eval
+        const makeHandler = (1,eval)(`(${handlerSrc})`);
+        console.log(`eval returned`, makeHandler);
+        if (typeof makeHandler !== 'function') {
+          console.log(`handler source did not evaluate to function, rather to:`, makeHandler);
+          return;
+        }
+        const endowments = { harden, E, console };
+        currentHandler = harden(makeHandler(endowments));
+        console.log(`installed`);
+      } catch (e) {
+        console.log(`error during install()`, e);
         throw e;
       }
     },

@@ -4,11 +4,15 @@ console.debug(`loading bootstrap.js`);
 
 function buildRootObject(E, D) {
   // this receives HTTP requests, and can return JSONable objects in response
-  async function handleCommand(body) {
-    return { response: `${body.path} is ok` };
-  }
 
   function doBootstrap(argv, vats, devices) {
+    async function handleCommand(req) {
+      if (req.path === '/install') {
+        return E(vats.relayer).install(req.body);
+      }
+      return { response: `${req.path} is ok` };
+    }
+
     const commandHandler = harden({
       inbound(count, body) {
         console.log(`command:`, body);
