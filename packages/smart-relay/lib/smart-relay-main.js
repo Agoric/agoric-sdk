@@ -225,7 +225,7 @@ async function main() {
     // request body in too, we'll use it for handler installation. Don't go
     // too crazy with options, keep it simple. Exercise with:
     //  curl --data-binary @./handler.js http://localhost:8000/install
-    return queueInboundCommand({ path: request.path });
+    return queueInboundCommand({ path: request.path, body: request.body.toString() });
   }
   startAPIServer(8000, inboundHTTPRequest);
 
