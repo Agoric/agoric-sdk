@@ -8,6 +8,7 @@ import { initSwingStore, openSwingStore } from '@agoric/swing-store-lmdb';
 import { producePromise } from '@agoric/produce-promise';
 import {
   loadBasedir,
+  buildBridge,
   buildCommand,
   buildVatController,
   buildMailboxStateMap,
@@ -87,12 +88,15 @@ async function buildSwingset() {
   const mb = buildMailbox(mbs);
   const cm = buildCommand(obj => { console.log(`broadcast not implemented`); });
   const timer = buildTimer();
+  // todo: wire bridge output to IBC sender
+  const bridge = buildBridge(obj => { console.log(`bridge to nowhere`, obj); });
 
   const config = await loadBasedir(vatsDir);
   config.devices = [
     ['mailbox', mb.srcPath, mb.endowments],
     ['command', cm.srcPath, cm.endowments],
     ['timer', timer.srcPath, timer.endowments],
+    ['bridge', bridge.srcPath, bridge.endowments],
   ];
   config.vats.set('vattp', { sourcepath: getVatTPSourcePath() });
   config.vats.set('comms', {
@@ -142,6 +146,11 @@ async function buildSwingset() {
     _queueInbound(() => mb.deliverInbound(sender, messages, ack, true));
   }
 
+  // this should be called when IBC packets arrive
+  function queueInboundBridge(arg) {
+    _queueInbound(() => bridge.deliverInbound(arg));
+  }
+
   function queueInboundCommand(obj) {
     // unlike queueInboundMailbox, this returns a result promise, which might
     // be fired during some future crank, or maybe never at all
@@ -176,19 +185,26 @@ async function buildSwingset() {
   await _queueInbound(emptyThunk);
 
   return {
-    queueInboundMailbox, queueInboundCommand, startTimer,
+    queueInboundMailbox, queueInboundCommand, queueInboundBridge, startTimer,
   };
 }
 
 async function main() {
   initBasedir();
-  const { queueInboundMailbox, queueInboundCommand, startTimer } = await buildSwingset();
+  const { queueInboundMailbox, queueInboundCommand, queueInboundBridge, startTimer } = await buildSwingset();
   startTimer(1200);
   console.log(`swingset running`);
 
   function inboundHTTPRequest(request) {
     console.log(`HTTP request path=${request.path}`);
     //return { response: 'ok' };
+
+    // hack for testing, remove when IBC is wired to the bridge
+    if (request.path === '/sendIntoBridge') {
+      console.log(`http said to send something into the bridge device`);
+      queueInboundBridge('input arg');
+      return 'queued for input into bridge';
+    }
     return queueInboundCommand({ path: request.path });
   }
   startAPIServer(8000, inboundHTTPRequest);
