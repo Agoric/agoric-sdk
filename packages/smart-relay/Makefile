@@ -1,9 +1,16 @@
+# Get the path to our nchainz script.
+NCHAINZ := ./bin/nchainz
 
-reset:
+init:
 	rm -rf state
+	$(NCHAINZ) init norun agoric agoric
+	@echo "Next run \`make run' and \`make relay' in separate terminals"
 
 run:
-	./bin/smart-relay
+	$(NCHAINZ) run
+
+relay:
+	./bin/rly start zero -d
 
 poke-http:
 	curl http://localhost:8000/hello

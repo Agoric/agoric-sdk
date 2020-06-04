@@ -27,6 +27,8 @@ import { runWrappedProgram } from './relayer';
 // from this here directory, rather than creating a new working directory and
 // copying runtime files into it
 
+process.on('SIGINT', () => process.exit(99));
+
 const stateDirectory = 'state'; // delete this to reset
 const mailboxStateFile = 'state/mailbox-state.json';
 const kernelStateDBDir = 'state/kernel-state';
@@ -34,9 +36,10 @@ const vatsDir = 'vats';
 
 function initBasedir() {
   if (fs.existsSync(stateDirectory)) {
-    console.log(`'state/' directory already exists, resuming`);
+    // console.error(`'state/' directory already exists, resuming`);
     return;
   }
+  console.error(`${stateDirectory} directory does not exist, initializing`);
   fs.mkdirSync(stateDirectory);
   const { commit, close } = initSwingStore(kernelStateDBDir);
   commit();
@@ -242,7 +245,7 @@ async function main(args) {
 main(process.argv.slice(1)).then(
   _ok => {},
   err => {
-    console.log(`error in smart-relay main`, err);
+    console.error(`error in smart-relay main`, err);
     process.exit(1);
   },
 );

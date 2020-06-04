@@ -1,0 +1,5 @@
+#! /bin/bash
+thisdir=$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+PATH="$thisdir:$PATH"
+NCHAINZ=$(node -e 'console.log(require.resolve("@agoric/lib-cosmic-relayer/relayer/scripts/nchainz"))')
+exec "$NCHAINZ" ${1+"$@"}
