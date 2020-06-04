@@ -86,10 +86,14 @@ async function buildSwingset() {
   const mbs = buildMailboxStateMap();
   mbs.populateFromData(initialMailboxState);
   const mb = buildMailbox(mbs);
-  const cm = buildCommand(obj => { console.log(`broadcast not implemented`); });
+  const cm = buildCommand(_obj => {
+    console.log(`broadcast not implemented`);
+  });
   const timer = buildTimer();
   // todo: wire bridge output to IBC sender
-  const bridge = buildBridge(obj => { console.log(`bridge to nowhere`, obj); });
+  const bridge = buildBridge(obj => {
+    console.log(`bridge to nowhere`, obj);
+  });
 
   const config = await loadBasedir(vatsDir);
   config.devices = [
@@ -116,11 +120,8 @@ async function buildSwingset() {
     commit();
   }
 
-  function deliverOutbound() {
-  }
-
   const withInputQueue = makeWithQueue();
-  function _queueInbound(thunk) {
+  function queueInbound(thunk) {
     // the kernel executes one thunk at a time, and processes outbound events
     // afterwards
     async function outerCrank() {
@@ -128,7 +129,8 @@ async function buildSwingset() {
       await controller.run();
       await saveState();
       console.log(`deliverOutbound not yet implemented`);
-      //deliver(mbs);
+      // todo: deliver new outbound mailbox messages
+      // deliver(mbs);
     }
     const p = withInputQueue(outerCrank)();
     p.catch(err => {
@@ -143,12 +145,12 @@ async function buildSwingset() {
       throw new Error(`inbound given non-Array: ${messages}`);
     }
     // console.debug(`deliverInboundToMbx`, messages, ack);
-    _queueInbound(() => mb.deliverInbound(sender, messages, ack, true));
+    queueInbound(() => mb.deliverInbound(sender, messages, ack, true));
   }
 
   // this should be called when IBC packets arrive
   function queueInboundBridge(arg) {
-    _queueInbound(() => bridge.deliverInbound(arg));
+    queueInbound(() => bridge.deliverInbound(arg));
   }
 
   function queueInboundCommand(obj) {
@@ -157,15 +159,18 @@ async function buildSwingset() {
     const pr = producePromise();
 
     // console.debug(`deliverInboundToMbx`, messages, ack);
-    _queueInbound(() => {
-      cm.inboundCommand(obj).then(ok => pr.resolve(ok), err => pr.reject(err));
+    queueInbound(() => {
+      cm.inboundCommand(obj).then(
+        ok => pr.resolve(ok),
+        err => pr.reject(err),
+      );
     });
     return pr.promise;
   }
 
   let intervalMillis;
   function queueTimerEvent() {
-    const p = _queueInbound(() => {
+    const p = queueInbound(() => {
       const now = Math.floor(Date.now() / intervalMillis);
       timer.poll(now);
     });
@@ -182,22 +187,30 @@ async function buildSwingset() {
   // execute and the post-bootstrap state to be saved
   console.log(`-- running bootstrap crank`);
   function emptyThunk() {}
-  await _queueInbound(emptyThunk);
+  await queueInbound(emptyThunk);
 
   return {
-    queueInboundMailbox, queueInboundCommand, queueInboundBridge, startTimer,
+    queueInboundMailbox,
+    queueInboundCommand,
+    queueInboundBridge,
+    startTimer,
   };
 }
 
 async function main() {
   initBasedir();
-  const { queueInboundMailbox, queueInboundCommand, queueInboundBridge, startTimer } = await buildSwingset();
+  const {
+    // queueInboundMailbox,
+    queueInboundCommand,
+    queueInboundBridge,
+    startTimer,
+  } = await buildSwingset();
   startTimer(1200);
   console.log(`swingset running`);
 
   function inboundHTTPRequest(request) {
     console.log(`HTTP request path=${request.path}`);
-    //return { response: 'ok' };
+    // return { response: 'ok' };
 
     // hack for testing, remove when IBC is wired to the bridge
     if (request.path === '/sendIntoBridge') {
@@ -219,4 +232,3 @@ main().then(
     process.exit(1);
   },
 );
-

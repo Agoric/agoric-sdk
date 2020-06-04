@@ -24,8 +24,10 @@ function buildRootObject(E, D) {
       inbound(count, body) {
         console.log(`command:`, body);
         const p = handleCommand(body);
-        p.then(ok => D(devices.command).sendResponse(count, false, ok),
-               err => D(devices.command).sendResponse(count, true, err));
+        p.then(
+          ok => D(devices.command).sendResponse(count, false, ok),
+          err => D(devices.command).sendResponse(count, true, err),
+        );
       },
     });
     D(devices.command).registerInboundHandler(commandHandler);
@@ -36,7 +38,7 @@ function buildRootObject(E, D) {
       },
     });
     D(devices.bridge).registerInboundHandler(bridgeHandler);
-    sendToBridge = (arg) => {
+    sendToBridge = arg => {
       D(devices.bridge).callOutbound(arg);
     };
   }
@@ -58,10 +60,5 @@ function buildRootObject(E, D) {
 }
 
 export default function setup(syscall, state, helpers) {
-  return helpers.makeLiveSlots(
-    syscall,
-    state,
-    buildRootObject,
-    helpers.vatID,
-  );
+  return helpers.makeLiveSlots(syscall, state, buildRootObject, helpers.vatID);
 }

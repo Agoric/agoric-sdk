@@ -1,5 +1,4 @@
 import express from 'express';
-import { assert } from '@agoric/assert';
 
 export async function startAPIServer(port, inboundHTTPRequest) {
   async function handleRequest(request, response) {
