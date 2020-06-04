@@ -25,3 +25,7 @@ poke-bridge-unknown:
 install-halfdrop-handler:
 	curl --data-binary @./halfdrop-handler.js -H "content-type: text/plain" http://localhost:8000/install
 	@echo
+
+install-delay-handler:
+	curl --data-binary @./delay-handler.js -H "content-type: text/plain" http://localhost:8000/install
+	@echo

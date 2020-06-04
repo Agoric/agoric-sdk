@@ -5,6 +5,8 @@ console.debug(`loading vat-relayer.js`);
 // At any given moment, there is exactly one PacketHandler in place.
 
 function buildRootObject(E) {
+  let timerManager;
+
   // the default Policy+PacketHandler transparently forwards all packets
 
   function makeDefaultPacketHandler() {
@@ -128,7 +130,7 @@ function buildRootObject(E) {
       );
       return;
     }
-    const endowments = { harden, E, console };
+    const endowments = { harden, E, console, timerManager };
     const newPolicy = harden(makePolicy(endowments));
     if (!newPolicy.open) {
       console.log(
@@ -154,6 +156,9 @@ function buildRootObject(E) {
   }
 
   const root = {
+    setTimerManager(t) {
+      timerManager = t;
+    },
     handle(...args) {
       console.log(`handle() invoked`);
       try {
