@@ -6,6 +6,10 @@ function buildRootObject(E, D) {
   // this receives HTTP requests, and can return JSONable objects in response
 
   function doBootstrap(argv, vats, devices) {
+    E(vats.relayer).setTimerManager(
+      E(vats.timer).createTimerService(devices.timer),
+    );
+
     async function handleCommand(req) {
       if (req.path === '/install') {
         return E(vats.relayer).install(req.body);
