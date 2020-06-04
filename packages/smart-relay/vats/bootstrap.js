@@ -3,20 +3,9 @@ import harden from '@agoric/harden';
 console.debug(`loading bootstrap.js`);
 
 function buildRootObject(E, D) {
-  // use sendToBridge(arg) to send to IBC stuff
-  let sendToBridge;
-
   // this receives HTTP requests, and can return JSONable objects in response
   async function handleCommand(body) {
-    if (body.path === '/sendOutBridge') {
-      sendToBridge('http says hi');
-      return { 'i said': 'hi' };
-    }
     return { response: `${body.path} is ok` };
-  }
-
-  function handleBridgeInput(arg) {
-    console.log(`bridge input`, arg);
   }
 
   function doBootstrap(argv, vats, devices) {
@@ -32,15 +21,19 @@ function buildRootObject(E, D) {
     });
     D(devices.command).registerInboundHandler(commandHandler);
 
+    const bridgeSender = harden({
+      send(arg) {
+        D(devices.bridge).callOutbound(arg);
+      },
+    });
+
     const bridgeHandler = harden({
       inbound(arg) {
-        handleBridgeInput(arg);
+        console.log(`bridge input`, arg);
+        E(vats.relayer).handle(bridgeSender, arg);
       },
     });
     D(devices.bridge).registerInboundHandler(bridgeHandler);
-    sendToBridge = arg => {
-      D(devices.bridge).callOutbound(arg);
-    };
   }
 
   const root = {
