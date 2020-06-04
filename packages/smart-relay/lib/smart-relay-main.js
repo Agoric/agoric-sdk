@@ -133,7 +133,7 @@ async function buildSwingset() {
       thunk(); // device invocation
       await controller.run();
       await saveState();
-      console.log(`deliverOutbound not yet implemented`);
+      // console.log(`deliverOutbound not yet implemented`);
       // todo: deliver new outbound mailbox messages
       // deliver(mbs);
     }
@@ -176,8 +176,8 @@ async function buildSwingset() {
   let intervalMillis;
   function queueTimerEvent() {
     const p = queueInbound(() => {
-      const now = Math.floor(Date.now() / intervalMillis);
-      timer.poll(now);
+      const now = Math.floor(Date.now() / 1000);
+      timer.poll(now); // timer device gets seconds
     });
     p.then(() => {
       setTimeout(queueTimerEvent, intervalMillis);
@@ -202,6 +202,8 @@ async function buildSwingset() {
   };
 }
 
+const SECOND = 1000;
+
 async function main(args) {
   initBasedir();
 
@@ -212,7 +214,7 @@ async function main(args) {
       queueInboundBridge,
       startTimer,
     } = await buildSwingset();
-    startTimer(5000);
+    startTimer(1.0 * SECOND);
     console.log(`swingset running`);
 
     function inboundHTTPRequest(request) {
@@ -236,7 +238,7 @@ async function main(args) {
         body: request.body.toString(),
       });
     }
-    startAPIServer(8000, inboundHTTPRequest);
+    startAPIServer(8008, inboundHTTPRequest);
   }
 
   await runWrappedProgram(initSwingSet, args);

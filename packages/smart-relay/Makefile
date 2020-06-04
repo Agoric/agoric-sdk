@@ -13,20 +13,20 @@ relay:
 	./bin/rly start zero -d
 
 poke-http:
-	curl http://localhost:8000/hello
+	curl http://localhost:8008/hello
 	@echo
 
 poke-bridge-handshake:
-	curl http://localhost:8000/sendIntoBridge/is-handshake
+	curl http://localhost:8008/sendIntoBridge/is-handshake
 	@echo
 poke-bridge-packet:
-	curl http://localhost:8000/sendIntoBridge/is-packet
+	curl http://localhost:8008/sendIntoBridge/is-packet
 	@echo
 poke-bridge-ack:
-	curl http://localhost:8000/sendIntoBridge/is-ack
+	curl http://localhost:8008/sendIntoBridge/is-ack
 	@echo
 poke-bridge-unknown:
-	curl http://localhost:8000/sendIntoBridge/unknown
+	curl http://localhost:8008/sendIntoBridge/unknown
 	@echo
 
 help:
@@ -36,7 +36,12 @@ help:
 	@echo 'poke-bridge-ack           send an ack'
 	@echo 'poke-bridge-unknown       send an unknown'
 	@echo 'install-halfdrop-handler  install a handler that drops half'
+	@echo 'install-delay-handler     install a handler that delays messages'
 
 install-halfdrop-handler:
-	curl --data-binary @./halfdrop-handler.js -H "content-type: text/plain" http://localhost:8000/install
+	curl --data-binary @./halfdrop-handler.js -H "content-type: text/plain" http://localhost:8008/install
+	@echo
+
+install-delay-handler:
+	curl --data-binary @./delay-handler.js -H "content-type: text/plain" http://localhost:8008/install
 	@echo
