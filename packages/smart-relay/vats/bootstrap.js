@@ -55,7 +55,13 @@ function buildRootObject(E, D) {
     D(devices.mailbox).registerInboundHandler(vats.vattp);
     await E(vats.vattp).registerMailboxDevice(devices.mailbox);
     addRemote(GCI);
-    const chainObjectSomething = await E(vats.comms).addIngress(GCI, SOME_SMALL_INTEGER);
+    const PROVISIONER_INDEX = 1; // matches cosmic-swingset/lib/ag-solo/bootstrap.js
+    const demoProvider = await E(vats.comms).addIngress(GCI, PROVISIONER_INDEX);
+    const nick = 'smart-relayer'; // nickname
+    const { payments, bundle, issuerInfo } = await E(demoProvider).getDemoBundle(nick);
+    // from createUserBundle(). Also has sharingService, contractHost, mailboxAdmin
+    const { zoe, registry } = bundle;
+    const x = await E(registry).get(KEY);
     */
   }
 

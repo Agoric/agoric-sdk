@@ -32,14 +32,18 @@ import { runWrappedProgram } from './relayer';
 
 process.on('SIGINT', () => process.exit(99));
 
-const stateDirectory = 'state'; // delete this to reset
-const mailboxStateFile = 'state/mailbox-state.json';
-const kernelStateDBDir = 'state/kernel-state';
+const connectionsFile = 'state/connections.json';
+const stateDirectory = 'state/relay-swingset'; // delete this to reset
+const mailboxStateFile = 'state/relay-swingset/mailbox-state.json';
+const kernelStateDBDir = 'state/relay-swingset/kernel-state';
 const vatsDir = 'vats';
 
 function initBasedir() {
+  if (!fs.existsSync(connectionsFile)) {
+    console.error(`${connectionsFile} missing: make register-relay-with-ibc0`);
+  }
   if (fs.existsSync(stateDirectory)) {
-    // console.error(`'state/' directory already exists, resuming`);
+    console.error(`'state/relay-swingset/' directory already exists, resuming`);
     return;
   }
   console.error(`${stateDirectory} directory does not exist, initializing`);
@@ -209,9 +213,9 @@ async function buildSwingset(relayerDowncall) {
 const SECOND = 1000;
 
 async function main(args) {
-  initBasedir();
 
   async function initSwingSet(relayerDowncall) {
+    initBasedir();
     const {
       queueInboundMailbox,
       queueInboundCommand,
@@ -244,32 +248,31 @@ async function main(args) {
     }
     startAPIServer(8008, inboundHTTPRequest);
 
-    let connections = [];
-    if (fs.existsSync('connections.json')) {
-      connections = JSON.parse(fs.readFileSync('connections.json'));
+    if (fs.existsSync(connectionsFile)) {
+      const connections = JSON.parse(fs.readFileSync(connectionsFile));
+      await Promise.all(
+        connections.map(async c => {
+          switch (c.type) {
+          case 'chain-cosmos-sdk':
+            console.log(`adding follower/sender for GCI ${c.GCI}`);
+            // c.rpcAddresses are strings of host:port for the RPC ports of several
+            // chain nodes
+            const deliverator = await connectToChain(
+              c.helperBasedir,
+              c.GCI,
+              c.rpcAddresses,
+              c.myAddr,
+              queueInboundMailbox,
+              c.chainID,
+            );
+            addDeliveryTarget(c.GCI, deliverator);
+            break;
+          default:
+            throw new Error(`unknown connection type in ${c}`);
+          }
+        }),
+      );
     }
-    await Promise.all(
-      connections.map(async c => {
-        switch (c.type) {
-        case 'chain-cosmos-sdk':
-          console.log(`adding follower/sender for GCI ${c.GCI}`);
-          // c.rpcAddresses are strings of host:port for the RPC ports of several
-          // chain nodes
-          const deliverator = await connectToChain(
-            stateDirectory,
-            c.GCI,
-            c.rpcAddresses,
-            c.myAddr,
-            queueInboundMailbox,
-            c.chainID,
-          );
-          addDeliveryTarget(c.GCI, deliverator);
-          break;
-        default:
-          throw new Error(`unknown connection type in ${c}`);
-        }
-      }),
-    );
 
     return { queueInboundBridge };
   }
