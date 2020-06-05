@@ -166,6 +166,12 @@ function buildRootObject(E) {
     setTimerManager(t) {
       timerManager = t;
     },
+    addRegistry(GCI, registry) {
+      // this will be called once for each chain the smart-relayer has been
+      // connected to
+      console.log(`vat-relayer given registry for ${GCI}: ${registry}`);
+      // TODO: stash this, use it during install() to fetch a control object
+    },
     handle(...args) {
       console.log(`handle() invoked`);
       try {

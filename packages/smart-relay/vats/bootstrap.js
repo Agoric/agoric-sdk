@@ -6,7 +6,8 @@ function buildRootObject(E, D) {
   // this receives HTTP requests, and can return JSONable objects in response
 
   async function doBootstrap(argv, vats, devices) {
-    const GCI = argv[0];
+    const chainsToFollow = argv[0];
+
     E(vats.relayer).setTimerManager(
       E(vats.timer).createTimerService(devices.timer),
     );
@@ -44,7 +45,6 @@ function buildRootObject(E, D) {
     });
     D(devices.bridge).registerInboundHandler(bridgeHandler);
 
-    /*
     async function addRemote(addr) {
       const { transmitter, setReceiver } = await E(vats.vattp).addRemote(
         addr,
@@ -54,15 +54,16 @@ function buildRootObject(E, D) {
 
     D(devices.mailbox).registerInboundHandler(vats.vattp);
     await E(vats.vattp).registerMailboxDevice(devices.mailbox);
-    addRemote(GCI);
-    const PROVISIONER_INDEX = 1; // matches cosmic-swingset/lib/ag-solo/bootstrap.js
-    const demoProvider = await E(vats.comms).addIngress(GCI, PROVISIONER_INDEX);
-    const nick = 'smart-relayer'; // nickname
-    const { payments, bundle, issuerInfo } = await E(demoProvider).getDemoBundle(nick);
-    // from createUserBundle(). Also has sharingService, contractHost, mailboxAdmin
-    const { zoe, registry } = bundle;
-    const x = await E(registry).get(KEY);
-    */
+    for (const GCI of chainsToFollow) {
+      await addRemote(GCI);
+      const PROVISIONER_INDEX = 1; // matches cosmic-swingset/lib/ag-solo/bootstrap.js
+      const demoProvider = await E(vats.comms).addIngress(GCI, PROVISIONER_INDEX);
+      const nick = 'smart-relayer'; // nickname
+      const { payments, bundle, issuerInfo } = await E(demoProvider).getDemoBundle(nick);
+      // from createUserBundle(). Also has sharingService, contractHost, mailboxAdmin
+      const { zoe, registry } = bundle;
+      E(vats.relayer).addRegistry(GCI, registry);
+    }
   }
 
   const root = {

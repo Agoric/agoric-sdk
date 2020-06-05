@@ -91,7 +91,7 @@ async function atomicReplaceFile(filename, contents) {
   }
 }
 
-async function buildSwingset(relayerDowncall) {
+async function buildSwingset(relayerDowncall, swingsetArgv) {
   const initialMailboxState = JSON.parse(fs.readFileSync(mailboxStateFile));
 
   const mbs = buildMailboxStateMap();
@@ -103,8 +103,8 @@ async function buildSwingset(relayerDowncall) {
   const timer = buildTimer();
 
   const bridge = buildBridge(obj => {
-    // TODO: send 'obj' to the IBC/relayer sender
-    console.log(`bridge to somewhere`, obj);
+    // send 'obj' to the IBC/relayer sender
+    //console.log(`bridge to somewhere`, obj);
     return relayerDowncall(obj);
   });
 
@@ -125,7 +125,7 @@ async function buildSwingset(relayerDowncall) {
   const { storage, commit } = openSwingStore(kernelStateDBDir);
   config.hostStorage = storage;
 
-  const controller = await buildVatController(config, true, []);
+  const controller = await buildVatController(config, true, swingsetArgv);
 
   async function saveState() {
     const ms = JSON.stringify(mbs.exportToData());
@@ -216,12 +216,25 @@ async function main(args) {
 
   async function initSwingSet(relayerDowncall) {
     initBasedir();
+
+    let connections = [];
+    if (fs.existsSync(connectionsFile)) {
+      connections = JSON.parse(fs.readFileSync(connectionsFile));
+    }
+    const chainsToFollow = [];
+    for (const c of connections) {
+      if (c.type === 'chain-cosmos-sdk') {
+        chainsToFollow.push(c.GCI);
+      }
+    }
+
+    const swingsetArgv = [chainsToFollow];
     const {
       queueInboundMailbox,
       queueInboundCommand,
       queueInboundBridge,
       startTimer,
-    } = await buildSwingset(relayerDowncall);
+    } = await buildSwingset(relayerDowncall, swingsetArgv);
     startTimer(1.0 * SECOND);
     console.log(`swingset running`);
 
@@ -248,31 +261,29 @@ async function main(args) {
     }
     startAPIServer(8008, inboundHTTPRequest);
 
-    if (fs.existsSync(connectionsFile)) {
-      const connections = JSON.parse(fs.readFileSync(connectionsFile));
-      await Promise.all(
-        connections.map(async c => {
-          switch (c.type) {
-          case 'chain-cosmos-sdk':
-            console.log(`adding follower/sender for GCI ${c.GCI}`);
-            // c.rpcAddresses are strings of host:port for the RPC ports of several
-            // chain nodes
-            const deliverator = await connectToChain(
-              c.helperBasedir,
-              c.GCI,
-              c.rpcAddresses,
-              c.myAddr,
-              queueInboundMailbox,
-              c.chainID,
-            );
-            addDeliveryTarget(c.GCI, deliverator);
-            break;
-          default:
-            throw new Error(`unknown connection type in ${c}`);
-          }
-        }),
-      );
-    }
+    await Promise.all(
+      connections.map(async c => {
+        switch (c.type) {
+        case 'chain-cosmos-sdk':
+          console.log(`adding follower/sender for GCI ${c.GCI}`);
+          chainsToFollow.push(c.CGI);
+          // c.rpcAddresses are strings of host:port for the RPC ports of several
+          // chain nodes
+          const deliverator = await connectToChain(
+            c.helperBasedir,
+            c.GCI,
+            c.rpcAddresses,
+            c.myAddr,
+            queueInboundMailbox,
+            c.chainID,
+          );
+          addDeliveryTarget(c.GCI, deliverator);
+          break;
+        default:
+          throw new Error(`unknown connection type in ${c}`);
+        }
+      }),
+    );
 
     return { queueInboundBridge };
   }
