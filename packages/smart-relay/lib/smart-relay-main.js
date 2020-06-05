@@ -142,8 +142,8 @@ async function buildSwingset(relayerDowncall, swingsetArgv) {
       await controller.run();
       await saveState();
       // console.log(`deliverOutbound not yet implemented`);
-      // todo: deliver new outbound mailbox messages
-      // deliver(mbs);
+      // deliver new outbound mailbox messages
+      deliver(mbs);
     }
     const p = withInputQueue(outerCrank)();
     p.catch(err => {
