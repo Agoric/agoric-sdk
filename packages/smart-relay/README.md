@@ -15,6 +15,5 @@ To add in the feature where the smart-relayer can talk to a contract on chain
 
 ```sh
 make register-ibc0-with-relay
-make register-relay-with-ibc0
 make relay
 ```
