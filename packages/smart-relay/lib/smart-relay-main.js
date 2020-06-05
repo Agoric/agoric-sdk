@@ -196,21 +196,47 @@ async function buildSwingset(relayerDowncall, swingsetArgv) {
     setTimeout(queueTimerEvent, intervalMillis);
   }
 
-  // crank the kernel for the first time, to allow bootstrap functions to
-  // execute and the post-bootstrap state to be saved
-  console.log(`-- running bootstrap crank`);
-  function emptyThunk() {}
-  await queueInbound(emptyThunk);
+  function queueBootstrap() {
+    // crank the kernel for the first time, to allow bootstrap functions to
+    // execute and the post-bootstrap state to be saved
+    console.log(`-- running bootstrap crank`);
+    function emptyThunk() {}
+    return queueInbound(emptyThunk);
+  }
 
   return {
     queueInboundMailbox,
     queueInboundCommand,
     queueInboundBridge,
+    queueBootstrap,
     startTimer,
   };
 }
 
 const SECOND = 1000;
+
+function makePausedForwarder(output) {
+  let paused = true;
+  const queued = [];
+  function input(...args) {
+    if (paused) {
+      queued.push(args);
+    } else {
+      output(...args);
+    }
+  }
+  function unpause() {
+    if (paused) {
+      console.log(`pausedForwarder unpausing`);
+      paused = false;
+      for (const args of queued) {
+        console.log(` pausedForwarder delivering queued message`);
+        output(...args);
+      }
+    }
+  }
+  return { input, unpause };
+}
 
 async function main(args) {
 
@@ -228,15 +254,18 @@ async function main(args) {
       }
     }
 
+    // we first prepare the kernel (but don't let it run yet)
+
     const swingsetArgv = [chainsToFollow];
     const {
       queueInboundMailbox,
       queueInboundCommand,
       queueInboundBridge,
+      queueBootstrap,
       startTimer,
     } = await buildSwingset(relayerDowncall, swingsetArgv);
-    startTimer(1.0 * SECOND);
-    console.log(`swingset running`);
+
+    // prepare this for later
 
     function inboundHTTPRequest(request) {
       console.log(`HTTP request path=${request.path}`);
@@ -259,14 +288,20 @@ async function main(args) {
         body: request.body.toString(),
       });
     }
-    startAPIServer(8008, inboundHTTPRequest);
+
+    // next we enable the outbound channels. TODO rewrite connectToChain to
+    // add pause() or something that lets us defer polling for inbound
+    // messages until after the kernel is ready, but still allows outbound
+    // message to go as soon as we let bootstrap() run. For now we queue
+    // inbound messages ourselves.
+
+    const inMB = makePausedForwarder(queueInboundMailbox);
 
     await Promise.all(
       connections.map(async c => {
         switch (c.type) {
         case 'chain-cosmos-sdk':
           console.log(`adding follower/sender for GCI ${c.GCI}`);
-          chainsToFollow.push(c.CGI);
           // c.rpcAddresses are strings of host:port for the RPC ports of several
           // chain nodes
           const deliverator = await connectToChain(
@@ -274,7 +309,7 @@ async function main(args) {
             c.GCI,
             c.rpcAddresses,
             c.myAddr,
-            queueInboundMailbox,
+            inMB.input,
             c.chainID,
           );
           addDeliveryTarget(c.GCI, deliverator);
@@ -285,6 +320,18 @@ async function main(args) {
       }),
     );
 
+    // Now that it can send messages, we start the kernel by letting it run
+    // the bootstrap function.
+    await queueBootstrap();
+    console.log(` queueBootstrap() done`);
+
+    // And finally, now that the kernel is ready for inbound messages, we can
+    // create/enable the inbound channels.
+    inMB.unpause();
+    startTimer(1.0 * SECOND);
+    startAPIServer(8008, inboundHTTPRequest);
+
+    console.log(`swingset running`);
     return { queueInboundBridge };
   }
 
