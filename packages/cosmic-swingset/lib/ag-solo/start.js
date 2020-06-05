@@ -267,7 +267,7 @@ export default async function start(basedir, withSES, argv) {
             // c.rpcAddresses are strings of host:port for the RPC ports of several
             // chain nodes
             const deliverator = await connectToChain(
-              basedir,
+              path.join(basedir, 'ag-cosmos-helper-statedir'),
               c.GCI,
               c.rpcAddresses,
               c.myAddr,

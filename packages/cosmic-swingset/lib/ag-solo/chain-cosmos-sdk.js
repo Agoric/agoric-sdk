@@ -30,12 +30,13 @@ const CANCEL_USE_DEFAULT = {
 };
 
 export async function connectToChain(
-  basedir,
+  helperDir,
   GCI,
   rpcAddresses,
   myAddr,
   inbound,
   chainID,
+  keyName = 'ag-solo',
 ) {
   // Each time we read our mailbox from the chain's state, and each time we
   // send an outbound message to the chain, we shell out to a one-shot copy
@@ -67,8 +68,6 @@ export async function connectToChain(
     }
   }
   shuffle(rpcAddresses);
-
-  const helperDir = path.join(basedir, 'ag-cosmos-helper-statedir');
 
   const queued = {};
 
@@ -373,7 +372,7 @@ export async function connectToChain(
         `@${tmpInfo.path}`, // Deliver message over file, as it could be big.
         '--gas=auto',
         '--gas-adjustment=1.05',
-        '--from=ag-solo',
+        `--from=${keyName}`,
         '-ojson',
         '--broadcast-mode=block', // Don't return until committed.
         '--yes',
