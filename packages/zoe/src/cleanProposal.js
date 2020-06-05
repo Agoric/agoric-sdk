@@ -6,7 +6,7 @@ import { arrayToObj, assertSubset } from './objArrayConversion';
 
 // We adopt simple requirements on keywords so that they do not accidentally
 // conflict with existing property names.
-// We require keywords to be strings, ascii identifiers beggining with an
+// We require keywords to be strings, ascii identifiers beginning with an
 // upper case letter, and distinct from the stringified form of any number.
 //
 // Of numbers, only NaN and Infinity, when stringified to a property name,
@@ -50,21 +50,21 @@ export const getKeywords = keywordRecord =>
   harden(Object.getOwnPropertyNames(keywordRecord));
 
 export const coerceAmountKeywordRecord = (
-  amountMathKeywordRecord,
-  allKeywords,
+  getAmountMath,
   allegedAmountKeywordRecord,
 ) => {
-  const sparseKeywords = cleanKeys(allKeywords, allegedAmountKeywordRecord);
-  // Check that each value can be coerced using the amountMath indexed
-  // by keyword. `AmountMath.coerce` throws if coercion fails.
-  const coercedAmounts = sparseKeywords.map(keyword =>
-    amountMathKeywordRecord[keyword].coerce(
-      allegedAmountKeywordRecord[keyword],
-    ),
+  const keywords = getKeywords(allegedAmountKeywordRecord);
+  keywords.forEach(assertKeywordName);
+
+  const amounts = Object.values(allegedAmountKeywordRecord);
+  // Check that each value can be coerced using the amountMath
+  // indicated by brand. `AmountMath.coerce` throws if coercion fails.
+  const coercedAmounts = amounts.map(amount =>
+    getAmountMath(amount.brand).coerce(amount),
   );
 
   // Recreate the amountKeywordRecord with coercedAmounts.
-  return arrayToObj(coercedAmounts, sparseKeywords);
+  return arrayToObj(coercedAmounts, keywords);
 };
 
 export const cleanKeywords = keywordRecord => {
@@ -95,11 +95,7 @@ export const cleanKeywords = keywordRecord => {
 // `exit`, if present, must be a record of one of the following forms:
 // `{ waived: null }` `{ onDemand: null }` `{ afterDeadline: { timer
 // :Timer, deadline :Number } }
-export const cleanProposal = (
-  issuerKeywordRecord,
-  amountMathKeywordRecord,
-  proposal,
-) => {
+export const cleanProposal = (getAmountMath, proposal) => {
   const rootKeysAllowed = ['want', 'give', 'exit'];
   mustBeComparable(proposal);
   assertKeysAllowed(rootKeysAllowed, proposal);
@@ -108,9 +104,8 @@ export const cleanProposal = (
   let { want = harden({}), give = harden({}) } = proposal;
   const { exit = harden({ onDemand: null }) } = proposal;
 
-  const allKeywords = getKeywords(issuerKeywordRecord);
-  want = coerceAmountKeywordRecord(amountMathKeywordRecord, allKeywords, want);
-  give = coerceAmountKeywordRecord(amountMathKeywordRecord, allKeywords, give);
+  want = coerceAmountKeywordRecord(getAmountMath, want);
+  give = coerceAmountKeywordRecord(getAmountMath, give);
 
   // Check exit
   assert(
