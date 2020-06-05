@@ -89,7 +89,14 @@ function buildRootObject(E) {
   }
 
   // All relay data comes through here.
-  function doHandle(bridgeSender, msg) {
+  function doHandle(bridgeSender, msg, data) {
+    if (msg === 'RELAYER_SEND') {
+      console.log('FIGME: vat-relayer intercepted', data);
+      // Just send it back over the bridge, unmodified.
+      E(bridgeSender).send(data);
+      return;
+    }
+
     // First, we must figure out which (putative) Channel the message is for.
     const { channelID, srcID, destID, isToDest } = identifyChannel(msg);
 

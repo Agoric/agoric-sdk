@@ -208,7 +208,7 @@ start-relayer)
   rly config add-dir nchainz/config/
 
   try=0
-  while ! rly tx link $path --timeout=3s -d >> "nchainz/logs/$path.log" 2>&1; do
+  while ! rly tx link $path --timeout=3s -d 2>&1 | tee -a "nchainz/logs/$path.log"; do
     try=$(( $try + 1 ))
     echo "$path tx link not yet ready (try=$try)"
     sleep 1

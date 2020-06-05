@@ -37,9 +37,9 @@ function buildRootObject(E, D) {
     });
 
     const bridgeHandler = harden({
-      inbound(arg) {
-        console.log(`bridge input`, arg);
-        E(vats.relayer).handle(bridgeSender, arg);
+      inbound(...args) {
+        console.log(`bridge input`, ...args);
+        E(vats.relayer).handle(bridgeSender, ...args);
       },
     });
     D(devices.bridge).registerInboundHandler(bridgeHandler);

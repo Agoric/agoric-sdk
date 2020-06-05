@@ -87,7 +87,7 @@ async function atomicReplaceFile(filename, contents) {
   }
 }
 
-async function buildSwingset() {
+async function buildSwingset(relayerDowncall) {
   const initialMailboxState = JSON.parse(fs.readFileSync(mailboxStateFile));
 
   const mbs = buildMailboxStateMap();
@@ -100,7 +100,8 @@ async function buildSwingset() {
 
   const bridge = buildBridge(obj => {
     // TODO: send 'obj' to the IBC/relayer sender
-    console.log(`bridge to nowhere`, obj);
+    console.log(`bridge to somewhere`, obj);
+    return relayerDowncall(obj);
   });
 
   const config = await loadBasedir(vatsDir);
@@ -157,8 +158,8 @@ async function buildSwingset() {
   }
 
   // this should be called when IBC packets arrive
-  function queueInboundBridge(arg) {
-    queueInbound(() => bridge.deliverInbound(arg));
+  function queueInboundBridge(...args) {
+    return queueInbound(() => bridge.deliverInbound(...args));
   }
 
   function queueInboundCommand(obj) {
@@ -210,13 +211,13 @@ const SECOND = 1000;
 async function main(args) {
   initBasedir();
 
-  async function initSwingSet() {
+  async function initSwingSet(relayerDowncall) {
     const {
       queueInboundMailbox,
       queueInboundCommand,
       queueInboundBridge,
       startTimer,
-    } = await buildSwingset();
+    } = await buildSwingset(relayerDowncall);
     startTimer(1.0 * SECOND);
     console.log(`swingset running`);
 
@@ -270,7 +271,7 @@ async function main(args) {
       }),
     );
 
-
+    return { queueInboundBridge };
   }
 
   await runWrappedProgram(initSwingSet, args);
