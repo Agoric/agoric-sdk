@@ -89,11 +89,12 @@ function buildRootObject(E) {
   }
 
   // All relay data comes through here.
-  function doHandle(bridgeSender, msg, data) {
+  async function doHandle(bridgeSender, msg, data, upcallID) {
     if (msg === 'RELAYER_SEND') {
-      console.log('FIGME: vat-relayer intercepted', data);
+      // console.log('FIGME: vat-relayer intercepted', data);
       // Just send it back over the bridge, unmodified.
-      E(bridgeSender).send(data);
+      await E(bridgeSender).send(data);
+      E(bridgeSender).send({ type: 'RESOLVE_UPCALL', id: upcallID, value: false });
       return;
     }
 
@@ -172,10 +173,10 @@ function buildRootObject(E) {
       console.log(`vat-relayer given registry for ${GCI}: ${registry}`);
       // TODO: stash this, use it during install() to fetch a control object
     },
-    handle(...args) {
+    async handle(...args) {
       console.log(`handle() invoked`);
       try {
-        doHandle(...args);
+        await doHandle(...args);
         console.log(`handle() successful`);
       } catch (e) {
         console.log(`error during handle()`);

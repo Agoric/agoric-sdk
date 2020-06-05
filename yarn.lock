@@ -29,10 +29,10 @@
     "@agoric/harden" "^0.0.4"
     esm "^3.2.5"
 
-"@agoric/lib-cosmic-relayer@^0.2.1":
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/@agoric/lib-cosmic-relayer/-/lib-cosmic-relayer-0.2.1.tgz#e3d6b838734e5c8d0aa8bf545aea08d7d29f0e22"
-  integrity sha512-giiCupivOPhN6+Wjc877Mihgt1UKhgCaebrwK1rm9VlvaRWrI3/bD61AjQOdAFCb6f5hDUAhFuI+27PgJ1oC5w==
+"@agoric/lib-cosmic-relayer@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@agoric/lib-cosmic-relayer/-/lib-cosmic-relayer-0.3.0.tgz#d5078f7dcd7b0c0573d2376cab7fc47cf8572b39"
+  integrity sha512-Q47Oe0Y1CK9v821gSDOdJ9ruCgr+tVa/ZNu2GFbJqmFXz+9zZRSYYqomCwzod1QZ40P/DPU7i22sas1XtqIxyQ==
   dependencies:
     bindings "^1.2.1"
 

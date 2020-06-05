@@ -11,15 +11,26 @@ export async function runWrappedProgram(initSwingSet, args) {
   }
 
   let queueInboundBridge;
+  let lastPromiseID = 0;
+  const idToPromise = new Map();
   async function processRelayer(port, str) {
     // If we get here, that means the relayer plans to forward packets.
     // console.error(`node relayer inbound ${port} ${str}`);
     if (!swingSetInited) {
       // Start the SwingSet proper.
       swingSetInited = true;
-      const bundle = await initSwingSet(obj =>
-        sendClib(clibPort, JSON.stringify(obj)),
-      );
+      const bundle = await initSwingSet(obj => {
+        switch (obj && obj.type) {
+          case 'RESOLVE_UPCALL':
+            idToPromise.get(obj.id).resolve(obj.value);
+            break;
+          case 'REJECT_UPCALL':
+            idToPromise.get(obj.id).reject(obj.value);
+            break;
+          default:
+            sendClib(clibPort, JSON.stringify(obj));
+        }
+      });
       queueInboundBridge = bundle.queueInboundBridge;
     }
 
@@ -28,7 +39,22 @@ export async function runWrappedProgram(initSwingSet, args) {
 
     const obj = JSON.parse(str);
     if (obj.type === 'RELAYER_SEND') {
-      await queueInboundBridge(obj.type, obj);
+      lastPromiseID += 1;
+      const promiseID = lastPromiseID;
+      const prec = {};
+      prec.promise = new Promise((resolve, reject) => {
+        prec.resolve = res => {
+          idToPromise.delete(promiseID);
+          resolve(res);
+        };
+        prec.reject = rej => {
+          idToPromise.delete(promiseID);
+          reject(rej);
+        };
+      });
+      idToPromise.set(promiseID, prec);
+      queueInboundBridge(obj.type, obj, promiseID);
+      await prec.promise;
 
       // Declare that we decided/will decide what to send.
       return false;

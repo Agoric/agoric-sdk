@@ -25,7 +25,7 @@
     "@agoric/evaluate": "^2.2.6",
     "@agoric/eventual-send": "^0.9.2",
     "@agoric/harden": "^0.0.8",
-    "@agoric/lib-cosmic-relayer": "^0.2.2",
+    "@agoric/lib-cosmic-relayer": "^0.3.0",
     "@agoric/marshal": "^0.2.2",
     "@agoric/nat": "2.0.1",
     "@agoric/produce-promise": "^0.1.2",
