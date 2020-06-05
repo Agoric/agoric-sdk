@@ -190,6 +190,34 @@ export default function setup(syscall, state, helpers) {
             }),
           );
         }
+
+        if (bridgeMgr) {
+          // Register a provisioning handler over the bridge.
+          const handler = harden({
+            async fromBridge(_srcID, obj) {
+              switch (obj.type) {
+                case 'PLEASE_PROVISION': {
+                  if (!packetSendersWhitelist.includes(obj.submitter)) {
+                    throw Error('Permission denied');
+                  }
+                  const { nickname, address } = obj;
+                  return E(vats.provisioning)
+                    .pleaseProvision(nickname, address, PROVISIONER_INDEX)
+                    .then(_ =>
+                      bridgeMgr.toBridge('provision', {
+                        type: 'PROVISIONED',
+                        nickname,
+                        address,
+                      }),
+                    );
+                }
+                default:
+                  throw Error(`Unrecognized request ${obj.type}`);
+              }
+            },
+          });
+          bridgeMgr.register('provision', handler);
+        }
       }
 
       // objects that live in the client's solo vat. Some services should only
@@ -262,7 +290,7 @@ export default function setup(syscall, state, helpers) {
             devices.bridge && makeBridgeManager(E, D, devices.bridge);
           const [ROLE, bootAddress, additionalAddresses] = parseArgs(argv);
 
-          const pswl = [bootAddress];
+          const pswl = [bootAddress, ...additionalAddresses];
 
           async function addRemote(addr) {
             const { transmitter, setReceiver } = await E(vats.vattp).addRemote(
@@ -274,6 +302,7 @@ export default function setup(syscall, state, helpers) {
           D(devices.mailbox).registerInboundHandler(vats.vattp);
           await E(vats.vattp).registerMailboxDevice(devices.mailbox);
           if (bootAddress) {
+            // FIXME: The old way: register egresses for the addresses.
             await Promise.all(
               [bootAddress, ...additionalAddresses].map(addr =>
                 addRemote(addr),
@@ -389,6 +418,13 @@ export default function setup(syscall, state, helpers) {
 
               // bootAddress holds the pubkey of localclient
               const chainBundler = await makeChainBundler(vats, devices.timer);
+
+              // Allow manual provisioning requests via `agoric cosmos`.
+              await E(vats.provisioning).register(
+                chainBundler,
+                vats.comms,
+                vats.vattp,
+              );
 
               await registerNetworkProtocols(vats, bridgeManager, pswl);
 
