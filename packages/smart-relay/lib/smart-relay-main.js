@@ -311,6 +311,7 @@ async function main(args) {
             c.myAddr,
             inMB.input,
             c.chainID,
+            c.keyName, // controls --from, use 'testkey'
           );
           addDeliveryTarget(c.GCI, deliverator);
           break;

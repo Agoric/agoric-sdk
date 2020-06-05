@@ -63,7 +63,7 @@ IBC0_CHAINID = ibc0
 # We must write all this data into state/connections.json before the
 # relayer's swingset starts
 register-ibc0-with-relay:
-	./build-connections.js state/rly/keys/ibc0 `$(GET_RLY_IBC0_ADDR)` `$(GET_IBC0_GCI)` `$(GET_IBC0_RPC)` $(IBC0_CHAINID)
+	./build-connections.js state/rly/keys/ibc0 `$(GET_RLY_IBC0_ADDR)` `$(GET_IBC0_GCI)` `$(GET_IBC0_RPC)` $(IBC0_CHAINID) testkey
 	jq < state/connections.json
 
 

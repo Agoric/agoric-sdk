@@ -2,7 +2,7 @@
 
 const process = require('process');
 const fs = require('fs');
-const [helperBasedir, myAddr, GCI, rpc, chainID] = process.argv.slice(2);
+const [helperBasedir, myAddr, GCI, rpc, chainID, keyName] = process.argv.slice(2);
 const data = JSON.stringify([
   {
     type: 'chain-cosmos-sdk',
@@ -11,6 +11,7 @@ const data = JSON.stringify([
     rpcAddresses: [ rpc ],
     myAddr,
     chainID,
+    keyName,
   }
 ]);
 fs.writeFileSync('state/connections.json', `${data}\n`);
