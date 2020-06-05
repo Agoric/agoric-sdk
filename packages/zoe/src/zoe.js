@@ -784,11 +784,7 @@ const makeZoe = (additionalEndowments = {}) => {
             getKeywords(issuerKeywordRecord),
           );
 
-          proposal = cleanProposal(
-            issuerKeywordRecord,
-            amountMathKeywordRecord,
-            proposal,
-          );
+          proposal = cleanProposal(issuerTable.getAmountMathByBrand, proposal);
 
           // Promise flow:
           // issuer -> purse -> deposit payment -> offerHook -> payout
