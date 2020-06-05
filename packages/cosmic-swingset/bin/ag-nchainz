@@ -207,8 +207,6 @@ start-relayer)
   echo "$ rly config add-dir nchainz/config/"
   rly config add-dir nchainz/config/
 
-  echo "$ rly start -d $path"
-  rly start -d "$path" &
   try=0
   while ! rly tx link $path --timeout=3s -d >> "nchainz/logs/$path.log" 2>&1; do
     try=$(( $try + 1 ))
@@ -218,8 +216,8 @@ start-relayer)
   try=$(( $try + 1 ))
   echo "$path tx link initialized (try=$try)"
 
-  # Wait for the rly start command.
-  wait
+  echo "$ rly start -d $path"
+  rly start -d "$path"
   ;;
 *)
   echo 1>&2 "$progname: unrecognized command \`$COMMAND'"

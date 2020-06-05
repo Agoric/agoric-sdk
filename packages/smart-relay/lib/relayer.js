@@ -13,7 +13,6 @@ export async function runWrappedProgram(initSwingSet, args) {
   async function processRelayer(port, str) {
     // If we get here, that means the relayer plans to forward packets.
     console.error(`node relayer inbound ${port} ${str}`);
-    const m = JSON.parse(str);
     if (!swingSetInited) {
       // Start the SwingSet proper.
       swingSetInited = true;
@@ -22,11 +21,22 @@ export async function runWrappedProgram(initSwingSet, args) {
 
     // TODO: arrange for the golang IBC/relayer packet receiver to call
     // queueInboundBridge(obj) with each handshake/packet/ack event
-    const retstr = sendClib(
-      clibPort,
-      JSON.stringify({ type: 'RELAYER_UPCALL', msg: m }),
-    );
-    return retstr;
+
+    const obj = JSON.parse(str);
+    if (false && obj.type === 'RELAYER_SEND') {
+      // FIXME: Decoupled send functionality doesn't yet work.
+      // All we can do is observe the packets.
+      console.log('sending downcall');
+      const ret = sendClib(clibPort, JSON.stringify(obj));
+      console.log('send downcall result', ret);
+      if (!JSON.parse(ret)) {
+        throw Error(`Unexpected downcall failure ${ret}`);
+      }
+      return false;
+    }
+
+    // NOTE: The following continues normal control flow.
+    return true;
   }
 
   function fromClib(port, str, replier) {

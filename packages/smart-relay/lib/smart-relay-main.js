@@ -222,9 +222,9 @@ async function main(args) {
       // return { response: 'ok' };
 
       // TODO: This is a hack for testing, remove when IBC is wired to the
-      // bridge. Do 'curl http://localhost:8000/sendIntoBridge' to pretend that
+      // bridge. Do 'make poke-...' to pretend that
       // the IBC/relayer golang code just received something.
-      if (request.path.startsWith('/sendIntoBridge')) {
+      if (request.path.startsWith('/sendIntoBridge/')) {
         console.log(`http said to send something into the bridge device`);
         queueInboundBridge(request.path);
         return 'queued for input into bridge';

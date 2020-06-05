@@ -1,16 +1,26 @@
-# Get the path to our nchainz script.
-NCHAINZ := ./bin/nchainz
+# The relayer path to use.
+path = zero
 
 init:
 	rm -rf state
-	$(NCHAINZ) init norun agoric agoric
+	./bin/nchainz init norun ibc0=agoric ibc1=agoric
 	@echo "Next run \`make run' and \`make relay' in separate terminals"
 
 run:
-	$(NCHAINZ) run
+	./bin/nchainz run
+
+start-relayer:
+	PATH="./bin:$$PATH"; ag-nchainz start-relayer
 
 relay:
-	./bin/rly start zero -d
+	@PATH="./bin:$$PATH"; \
+  try=0; \
+  while ! rly tx link $(path) --timeout=3s -d; do \
+    try=$$(( $$try + 1 )); \
+    echo "$(path) tx link not yet ready (try=$$try)"; \
+    sleep 1; \
+  done; \
+	rly start -d "$(path)"
 
 poke-http:
 	curl http://localhost:8008/hello
