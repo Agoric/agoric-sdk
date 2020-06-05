@@ -5,7 +5,8 @@ console.debug(`loading bootstrap.js`);
 function buildRootObject(E, D) {
   // this receives HTTP requests, and can return JSONable objects in response
 
-  function doBootstrap(argv, vats, devices) {
+  async function doBootstrap(argv, vats, devices) {
+    const GCI = argv[0];
     E(vats.relayer).setTimerManager(
       E(vats.timer).createTimerService(devices.timer),
     );
@@ -42,6 +43,20 @@ function buildRootObject(E, D) {
       },
     });
     D(devices.bridge).registerInboundHandler(bridgeHandler);
+
+    /*
+    async function addRemote(addr) {
+      const { transmitter, setReceiver } = await E(vats.vattp).addRemote(
+        addr,
+      );
+      await E(vats.comms).addRemote(addr, transmitter, setReceiver);
+    }
+
+    D(devices.mailbox).registerInboundHandler(vats.vattp);
+    await E(vats.vattp).registerMailboxDevice(devices.mailbox);
+    addRemote(GCI);
+    const chainObjectSomething = await E(vats.comms).addIngress(GCI, SOME_SMALL_INTEGER);
+    */
   }
 
   const root = {
