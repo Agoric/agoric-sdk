@@ -801,16 +801,9 @@ const makeZoe = (additionalEndowments = {}, vatPowers = {}) => {
           const {
             extent: [{ instanceHandle, handle: inviteHandle }],
           } = inviteAmount;
-          const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
-
-          const amountMathKeywordRecord = getAmountMaths(
-            instanceHandle,
-            getKeywords(issuerKeywordRecord),
-          );
 
           const cleanedProposal = cleanProposal(
-            issuerKeywordRecord,
-            amountMathKeywordRecord,
+            getAmountMathForBrand,
             proposal,
           );
 
