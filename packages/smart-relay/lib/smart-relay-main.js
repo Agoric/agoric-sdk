@@ -19,6 +19,9 @@ import {
   getTimerWrapperSourcePath,
 } from '@agoric/swingset-vat';
 
+import { connectToChain } from '../../cosmic-swingset/lib/ag-solo/chain-cosmos-sdk';
+import { deliver, addDeliveryTarget } from '../../cosmic-swingset/lib/ag-solo/outbound';
+
 import { makeWithQueue } from './queue';
 import { startAPIServer } from './web';
 import { runWrappedProgram } from './relayer';
@@ -209,7 +212,7 @@ async function main(args) {
 
   async function initSwingSet() {
     const {
-      // queueInboundMailbox,
+      queueInboundMailbox,
       queueInboundCommand,
       queueInboundBridge,
       startTimer,
@@ -239,6 +242,35 @@ async function main(args) {
       });
     }
     startAPIServer(8008, inboundHTTPRequest);
+
+    let connections = [];
+    if (fs.existsSync('connections.json')) {
+      connections = JSON.parse(fs.readFileSync('connections.json'));
+    }
+    await Promise.all(
+      connections.map(async c => {
+        switch (c.type) {
+        case 'chain-cosmos-sdk':
+          console.log(`adding follower/sender for GCI ${c.GCI}`);
+          // c.rpcAddresses are strings of host:port for the RPC ports of several
+          // chain nodes
+          const deliverator = await connectToChain(
+            stateDirectory,
+            c.GCI,
+            c.rpcAddresses,
+            c.myAddr,
+            queueInboundMailbox,
+            c.chainID,
+          );
+          addDeliveryTarget(c.GCI, deliverator);
+          break;
+        default:
+          throw new Error(`unknown connection type in ${c}`);
+        }
+      }),
+    );
+
+
   }
 
   await runWrappedProgram(initSwingSet, args);
