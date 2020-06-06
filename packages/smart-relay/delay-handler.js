@@ -7,29 +7,34 @@ function makePolicy(endowments) {
 
   // this delivers every message, but one second late
 
-  // invoke the `callback` after `seconds` pass
-  function wait(seconds, callback) {
-    const handler = harden({ wake: callback });
-    E(timerManager).setWakeup(seconds, handler);
+  function wait(duration) {
+    let r;
+    const p = new Promise(r0 => (r = r0));
+    const handler = harden({
+      wake(_intendedTime) {
+        r();
+      },
+    });
+    E(timerManager).setWakeup(duration, handler);
+    return p;
   }
 
-  // Delay packets for a specified time
   function makeDelayHandler(_src, _dst, _oldState) {
     return harden({
       onPacket(target, packet) {
         console.log(`delaying packet by 2s`);
-        wait(2.0, () => E(target).deliver(packet));
+        wait(2.0).then(() => E(target).deliver(packet));
       },
       onAck(target, ackPacket) {
         console.log(`delaying ack by 2s`);
-        wait(2.0, () => E(target).deliver(ackPacket));
+        wait(2.0).then(() => E(target).deliver(ackPacket));
       },
-      onHandshake(target, metaPacket) {
+      onHandshake(_target, _metaPacket) {
         console.log(`delaying handshake by 1s`);
-        return wait(1.0, () => true);
+        return wait(1.0).then(_ => true);
       },
       retire() {
-        return undefined;
+        return harden({});
       },
     });
   }
