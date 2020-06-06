@@ -212,8 +212,10 @@ start-relayer)
   echo "***"
   sleep 5
 
-  echo "$ rly tx link-then-start start -d $path"
-  rly tx link-then-start $path --timeout=3s -d 2>&1 | tee -a "nchainz/logs/$path.log"
+  if ! curl http://localhost:8008/link-then-start/$path; then
+    echo "rly tx link-then-start start -d $path"
+    rly tx link-then-start $path --timeout=3s -d 2>&1 | tee -a "nchainz/logs/$path.log"
+  fi
   ;;
 *)
   echo 1>&2 "$progname: unrecognized command \`$COMMAND'"

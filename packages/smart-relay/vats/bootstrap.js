@@ -18,6 +18,17 @@ function buildRootObject(E, D) {
         const registryKey = m ? m[1] : undefined;
         return E(vats.relayer).install(req.body, registryKey);
       }
+      if (req.path.startsWith('/link-then-start')) {
+        const m = req.path.match(/link-then-start\/(\w+)$/);
+        const path = m ? m[1] : undefined;
+        if (!path) {
+          return { response: `${req.path} is missing a path` };
+        }
+        D(devices.bridge).callOutbound({
+          type: 'START_RELAYER',
+          args: ['rly', 'tx', 'link-then-start', path, '-d', '--timeout=3s'],
+        });
+      }
       return { response: `${req.path} is ok` };
     }
 
