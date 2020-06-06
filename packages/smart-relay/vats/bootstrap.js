@@ -13,8 +13,10 @@ function buildRootObject(E, D) {
     );
 
     async function handleCommand(req) {
-      if (req.path === '/install') {
-        return E(vats.relayer).install(req.body);
+      if (req.path.startsWith('/install')) {
+        const m = req.path.match(/install\/(\w+)$/);
+        const registryKey = m ? m[1] : undefined;
+        return E(vats.relayer).install(req.body, registryKey);
       }
       return { response: `${req.path} is ok` };
     }

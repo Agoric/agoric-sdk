@@ -104,9 +104,7 @@ help:
 	@echo 'install-delay-handler     install a handler that delays'
 
 install-halfdrop-handler:
-	curl --data-binary @./halfdrop-handler.js -H "content-type: text/plain" http://localhost:8008/install
-	@echo
+	./install-policy ./halfdrop-handler.js
 
 install-delay-handler:
-	curl --data-binary @./delay-handler.js -H "content-type: text/plain" http://localhost:8008/install
-	@echo
+	./install-policy ./delay-handler.js

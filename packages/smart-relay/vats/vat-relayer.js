@@ -1,4 +1,5 @@
 import harden from '@agoric/harden';
+import { producePromise } from '@agoric/produce-promise';
 
 console.debug(`loading vat-relayer.js`);
 
@@ -6,6 +7,7 @@ console.debug(`loading vat-relayer.js`);
 
 function buildRootObject(E) {
   let timerManager;
+  const { promise: registry, resolve: setRegistry } = producePromise();
 
   // the default Policy+PacketHandler transparently forwards all packets
 
@@ -125,7 +127,7 @@ function buildRootObject(E) {
     }
   }
 
-  function doInstall(newPolicySrc) {
+  function doInstall(newPolicySrc, registryKey) {
     console.log(`installing new policy, src=`, newPolicySrc);
     console.log(`evaluating...`);
     // eslint-disable-next-line no-eval
@@ -138,7 +140,11 @@ function buildRootObject(E) {
       );
       return;
     }
-    const endowments = { harden, E, console, timerManager };
+    if (registryKey) {
+      console.log(`commander = registry[${registryKey}]`);
+    }
+    const commander = registryKey ? E(registry).get(registryKey) : undefined;
+    const endowments = { harden, E, console, timerManager, commander };
     const newPolicy = harden(makePolicy(endowments));
     if (!newPolicy.open) {
       console.log(
@@ -167,11 +173,11 @@ function buildRootObject(E) {
     setTimerManager(t) {
       timerManager = t;
     },
-    addRegistry(GCI, registry) {
+    addRegistry(GCI, r) {
       // this will be called once for each chain the smart-relayer has been
       // connected to
       console.log(`vat-relayer given registry for ${GCI}: ${registry}`);
-      // TODO: stash this, use it during install() to fetch a control object
+      setRegistry(r); // used during install()
     },
     async handle(...args) {
       console.log(`handle() invoked`);
@@ -185,9 +191,9 @@ function buildRootObject(E) {
       }
     },
 
-    install(policySrc) {
+    install(policySrc, registryKey) {
       try {
-        doInstall(policySrc);
+        doInstall(policySrc, registryKey);
         console.log(`install() successful`);
       } catch (e) {
         console.log(`error during install()`, e);

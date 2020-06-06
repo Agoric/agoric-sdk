@@ -1,6 +1,9 @@
 // eslint-disable-next-line no-unused-vars
 function makePolicy(endowments) {
-  const { E, harden, console, timerManager } = endowments;
+  const { E, harden, console, timerManager, commander } = endowments;
+  // 'commander' is 'undefined', or a promise for something from the chain's
+  // registry. When you run `./install-policy delay-handler.js key123', our
+  // 'commander' will be registry.get(key123).
 
   // this delivers every message, but one second late
 

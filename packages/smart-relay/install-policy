@@ -1,0 +1,7 @@
+#!/bin/sh -e
+
+policy=$1; shift
+registry_key=$1
+
+curl --data-binary @$policy -H "content-type: text/plain" http://localhost:8008/install/$registry_key
+echo
