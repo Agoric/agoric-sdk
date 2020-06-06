@@ -19,7 +19,7 @@ function makePolicy(endowments) {
     return p;
   }
 
-  function makeDelayHandler(_oldState) {
+  function makeDelayHandler(_src, _dst, _oldState) {
     return harden({
       onPacket(target, packet) {
         console.log(`delaying packet by 2s`);
@@ -29,9 +29,9 @@ function makePolicy(endowments) {
         console.log(`delaying ack by 2s`);
         wait(2.0).then(() => E(target).deliver(ackPacket));
       },
-      onHandshake(target, metaPacket) {
-        console.log(`delaying handshake by 5s`);
-        wait(5.0).then(() => E(target).deliver(metaPacket));
+      onHandshake(_target, _metaPacket) {
+        console.log(`delaying handshake by 1s`);
+        return wait(1.0).then(_ => true);
       },
       retire() {
         return harden({});
