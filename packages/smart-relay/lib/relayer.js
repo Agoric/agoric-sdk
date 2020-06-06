@@ -2,20 +2,26 @@ import { runClib, sendClib } from '@agoric/lib-cosmic-relayer';
 
 let nodePort = 0;
 let ticker;
+let swingSetInited = false;
+
+let queueInboundBridge;
+let lastPromiseID = 0;
+const idToPromise = new Map();
+
 export async function runWrappedProgram(initSwingSet, args) {
   let clibPort;
-  let swingSetInited = false;
+  let startSwingSet = false;
   if (!ticker) {
     // Make sure we don't exit before Go is done.
     ticker = setInterval(() => 4, 30000);
   }
 
-  let queueInboundBridge;
-  let lastPromiseID = 0;
-  const idToPromise = new Map();
   async function processRelayer(port, str) {
     // If we get here, that means the relayer plans to forward packets.
     // console.error(`node relayer inbound ${port} ${str}`);
+    if (!startSwingSet) {
+      return true;
+    }
     if (!swingSetInited) {
       // Start the SwingSet proper.
       swingSetInited = true;
@@ -83,6 +89,9 @@ export async function runWrappedProgram(initSwingSet, args) {
 
   const homeArgs = [...args];
   homeArgs.splice(1, 0, `--home=${process.env.RLY_HOME}`);
+  if (homeArgs.includes('link-then-start')) {
+    startSwingSet = true;
+  }
 
   nodePort += 1;
   clibPort = runClib(nodePort, fromClib, homeArgs);

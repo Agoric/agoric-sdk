@@ -65,17 +65,8 @@ register-ibc0-with-relay:
 	./build-connections.js state/rly/keys/ibc0 `$(GET_RLY_IBC0_ADDR)` `$(GET_IBC0_GCI)` `$(GET_IBC0_RPC)` $(IBC0_CHAINID) testkey
 	jq < state/connections.json
 
-
-
 relay:
-	@PATH="./bin:$$PATH"; \
-  try=0; \
-  while ! rly tx link $(path) --timeout=3s -d; do \
-    try=$$(( $$try + 1 )); \
-    echo "$(path) tx link not yet ready (try=$$try)"; \
-    sleep 1; \
-  done; \
-	rly start -d "$(path)"
+	@PATH="./bin:$$PATH" rly tx link-then-start -d $(path) --timeout=3s
 
 poke-http:
 	curl http://localhost:8008/hello

@@ -207,6 +207,11 @@ start-relayer)
   echo "$ rly config add-dir nchainz/config/"
   rly config add-dir nchainz/config/
 
+  echo "***"
+  echo "*** You are starting relay link: $path"
+  echo "***"
+  sleep 5
+
   echo "$ rly tx link-then-start start -d $path"
   rly tx link-then-start $path --timeout=3s -d 2>&1 | tee -a "nchainz/logs/$path.log"
   ;;
