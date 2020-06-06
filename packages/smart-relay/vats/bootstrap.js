@@ -56,6 +56,8 @@ function buildRootObject(E, D) {
 
     D(devices.mailbox).registerInboundHandler(vats.vattp);
     await E(vats.vattp).registerMailboxDevice(devices.mailbox);
+    // TODO: if there are actually multiple chainsToFollow, vat-relayer needs
+    // to be deliberate about which registry/zoe is given to policy objects
     for (const GCI of chainsToFollow) {
       await addRemote(GCI);
       const PROVISIONER_INDEX = 1; // matches cosmic-swingset/lib/ag-solo/bootstrap.js
@@ -65,6 +67,7 @@ function buildRootObject(E, D) {
       // from createUserBundle(). Also has sharingService, contractHost, mailboxAdmin
       const { zoe, registry } = bundle;
       E(vats.relayer).addRegistry(GCI, registry);
+      E(vats.relayer).addZoe(GCI, zoe);
     }
   }
 

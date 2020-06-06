@@ -8,6 +8,7 @@ console.debug(`loading vat-relayer.js`);
 function buildRootObject(E) {
   let timerManager;
   const { promise: registry, resolve: setRegistry } = producePromise();
+  const { promise: zoe, resolve: setZoe } = producePromise();
 
   // the default Policy+PacketHandler transparently forwards all packets
 
@@ -144,7 +145,7 @@ function buildRootObject(E) {
       console.log(`commander = registry[${registryKey}]`);
     }
     const commander = registryKey ? E(registry).get(registryKey) : undefined;
-    const endowments = { harden, E, console, timerManager, commander };
+    const endowments = { harden, E, console, timerManager, commander, zoe };
     const newPolicy = harden(makePolicy(endowments));
     if (!newPolicy.open) {
       console.log(
@@ -178,6 +179,12 @@ function buildRootObject(E) {
       // connected to
       console.log(`vat-relayer given registry for ${GCI}: ${registry}`);
       setRegistry(r); // used during install()
+    },
+    addZoe(GCI, z) {
+      // this will be called once for each chain the smart-relayer has been
+      // connected to
+      console.log(`vat-relayer given zoe for ${GCI}: ${z}`);
+      setZoe(z); // used during install()
     },
     async handle(...args) {
       console.log(`handle() invoked`);
