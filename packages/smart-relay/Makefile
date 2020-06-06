@@ -42,7 +42,7 @@ t-addr:
 	$(GET_RLY_IBC0_ADDR)
 
 # note: we don't need to do this: the relayer setup has already provisioned our relayer's key.
-register-relay-with-ibc0:
+OFF-register-relay-with-ibc0:
 	ag-cosmos-helper tx swingset provision-one smart-relay `$(GET_RLY_IBC0_ADDR)` --home=nchainz/data/ibc0/n0/ag-cosmos-helper --keyring-backend=test --from=n0 --yes
 
 # Now we need to tell the smart-relay swingset VatTP layer about the ibc0
