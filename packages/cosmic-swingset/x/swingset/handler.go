@@ -69,7 +69,7 @@ func handleMsgDeliverInbound(ctx sdk.Context, keeper Keeper, msg MsgDeliverInbou
 
 	action := &deliverInboundAction{
 		Type:        "DELIVER_INBOUND",
-		Peer:        msg.Peer,
+		Peer:        msg.Submitter.String(),
 		Messages:    messages,
 		Ack:         msg.Ack,
 		StoragePort: GetPort("controller"),

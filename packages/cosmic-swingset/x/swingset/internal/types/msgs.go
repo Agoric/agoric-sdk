@@ -11,7 +11,6 @@ const RouterKey = ModuleName // this was defined in your key.go file
 
 // MsgDeliverInbound defines a DeliverInbound message
 type MsgDeliverInbound struct {
-	Peer      string
 	Messages  []string
 	Nums      []int
 	Ack       int
@@ -20,9 +19,8 @@ type MsgDeliverInbound struct {
 
 var _ sdk.Msg = &MsgDeliverInbound{}
 
-func NewMsgDeliverInbound(peer string, msgs *Messages, submitter sdk.AccAddress) MsgDeliverInbound {
+func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) MsgDeliverInbound {
 	return MsgDeliverInbound{
-		Peer:      peer,
 		Messages:  msgs.Messages,
 		Nums:      msgs.Nums,
 		Ack:       msgs.Ack,
@@ -34,15 +32,12 @@ func NewMsgDeliverInbound(peer string, msgs *Messages, submitter sdk.AccAddress)
 func (msg MsgDeliverInbound) Route() string { return RouterKey }
 
 // Type should return the action
-func (msg MsgDeliverInbound) Type() string { return "deliver" }
+func (msg MsgDeliverInbound) Type() string { return "eventualSend" }
 
 // ValidateBasic runs stateless checks on the message
 func (msg MsgDeliverInbound) ValidateBasic() error {
 	if msg.Submitter.Empty() {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter.String())
-	}
-	if len(msg.Peer) == 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Peer cannot be empty")
 	}
 	if len(msg.Messages) != len(msg.Nums) {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages and Nums must be the same length")
@@ -154,9 +149,6 @@ func (msg MsgProvision) ValidateBasic() error {
 	}
 	if len(msg.Nickname) == 0 {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Nickname cannot be empty")
-	}
-	if msg.Address.Empty() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Address.String())
 	}
 	return nil
 }

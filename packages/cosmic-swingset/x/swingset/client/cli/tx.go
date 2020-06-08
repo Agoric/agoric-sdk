@@ -38,9 +38,9 @@ func GetTxCmd(storeKey string, cdc *codec.Codec) *cobra.Command {
 // GetCmdDeliver is the CLI command for sending a DeliverInbound transaction
 func GetCmdDeliver(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "deliver [sender] [json string]",
+		Use:   "deliver [json string]",
 		Short: "deliver inbound messages",
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			inBuf := bufio.NewReader(cmd.InOrStdin())
@@ -48,9 +48,9 @@ func GetCmdDeliver(cdc *codec.Codec) *cobra.Command {
 
 			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(authclient.GetTxEncoder(cdc))
 
-			jsonIn := args[1]
+			jsonIn := args[0]
 			if jsonIn[0] == '@' {
-				fname := args[1][1:]
+				fname := args[0][1:]
 				if fname == "-" {
 					// Reading from stdin.
 					if _, err := fmt.Scanln(&jsonIn); err != nil {
@@ -69,7 +69,7 @@ func GetCmdDeliver(cdc *codec.Codec) *cobra.Command {
 				return err
 			}
 
-			msg := types.NewMsgDeliverInbound(args[0], msgs, cliCtx.GetFromAddress())
+			msg := types.NewMsgDeliverInbound(msgs, cliCtx.GetFromAddress())
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

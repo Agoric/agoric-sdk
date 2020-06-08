@@ -326,7 +326,7 @@ export async function connectToChain(
     try {
       log(`delivering to chain`, GCI, newMessages, acknum);
 
-      // TODO: combine peer and submitter in the message format (i.e. remove
+      // Peer and submitter are combined in the message format (i.e. we removed
       // the extra 'myAddr' after 'tx swingset deliver'). All messages from
       // solo vats are "from" the signer, and messages relayed from another
       // chain will have other data to demonstrate which chain it comes from
@@ -369,7 +369,6 @@ export async function connectToChain(
         'swingset',
         'deliver',
         '--keyring-backend=test',
-        myAddr,
         `@${tmpInfo.path}`, // Deliver message over file, as it could be big.
         '--gas=auto',
         '--gas-adjustment=1.05',

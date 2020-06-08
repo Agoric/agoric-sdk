@@ -3,13 +3,12 @@ package rest
 import (
 	"net/http"
 
-	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/Agoric/agoric-sdk/packages/cosmic-swingset/x/swingset/internal/types"
+	"github.com/cosmos/cosmos-sdk/client/context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/rest"
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
-
 	// "github.com/gorilla/mux"
 )
 
@@ -47,7 +46,7 @@ func deliverMailboxHandler(cliCtx context.CLIContext) http.HandlerFunc {
 			return
 		}
 
-		msg := types.NewMsgDeliverInbound(req.Peer, deliver, addr)
+		msg := types.NewMsgDeliverInbound(deliver, addr)
 		err = msg.ValidateBasic()
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
