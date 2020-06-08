@@ -2,6 +2,7 @@ import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { HandledPromise } from '@agoric/eventual-send';
+import { getKeywords } from '../cleanProposal';
 
 /**
  * @typedef {import('../zoe').OfferHandle} OfferHandle
@@ -9,6 +10,7 @@ import { HandledPromise } from '@agoric/eventual-send';
  * @typedef {import('../zoe').OfferHook} OfferHook
  * @typedef {import('../zoe').CustomProperties} CustomProperties
  * @typedef {import('../zoe').ContractFacet} ContractFacet
+ * @typedef {import('../zoe').Keyword} Keyword
  */
 
 export const defaultRejectMsg = `The offer was invalid. Please check your refund.`;
@@ -99,20 +101,18 @@ export const makeZoeHelpers = (zcf) => {
      *
      */
     canTradeWith: (leftOfferHandle, rightOfferHandle) => {
-      const { issuerKeywordRecord } = zcf.getInstanceRecord();
-      const keywords = getKeys(issuerKeywordRecord);
-      const amountMaths = zcf.getAmountMaths(keywords);
       const { proposal: left } = zcf.getOffer(leftOfferHandle);
       const { proposal: right } = zcf.getOffer(rightOfferHandle);
-      const satisfied = (want, give) =>
-        keywords.every(keyword => {
-          if (want[keyword]) {
-            return amountMaths[keyword].isGTE(give[keyword], want[keyword]);
-          }
-          return true;
+      const leftAllocation = zcf.getCurrentAllocation(leftOfferHandle);
+      const rightAllocation = zcf.getCurrentAllocation(rightOfferHandle);
+      const satisfied = (want, availableForTrade) =>
+        getKeywords(want).every(keyword => {
+          const amountMath = helpers.getAmountMath(keyword);
+          return amountMath.isGTE(availableForTrade[keyword], want[keyword]);
         });
       return (
-        satisfied(left.want, right.give) && satisfied(right.want, left.give)
+        satisfied(left.want, rightAllocation) &&
+        satisfied(right.want, leftAllocation)
       );
     },
     /**
@@ -285,6 +285,11 @@ export const makeZoeHelpers = (zcf) => {
         details`issuer for ${keyword} must have natMathHelpers`,
       );
     },
+    /**
+     * Get the amountMath associated with a keyword
+     * @param {Keyword} keyword
+     */
+    getAmountMath: keyword => zcf.getAmountMaths(harden([keyword]))[keyword],
   });
   return helpers;
 };
