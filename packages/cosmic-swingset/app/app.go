@@ -287,6 +287,7 @@ func NewAgoricApp(
 	app.swingSetKeeper = swingset.NewKeeper(
 		app.cdc, keys[swingset.StoreKey],
 		app.ibcKeeper.ChannelKeeper, &app.ibcKeeper.PortKeeper,
+		app.accountKeeper,
 		scopedSwingSetKeeper,
 	)
 	// This function is tricky to get right, so we inject it ourselves.

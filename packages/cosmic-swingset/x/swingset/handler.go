@@ -144,11 +144,18 @@ func handleMsgProvision(ctx sdk.Context, keeper Keeper, msg MsgProvision) (*sdk.
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
+	// Create the account, if it doesn't already exist.
+	err = keeper.EnsureAccountExists(ctx, msg.Address)
+	if err != nil {
+		return nil, err
+	}
+
 	_, err = keeper.CallToController(ctx, string(b))
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
 	}
+
 	return &sdk.Result{
 		Events: ctx.EventManager().Events().ToABCIEvents(),
 	}, nil

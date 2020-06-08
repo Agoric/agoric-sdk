@@ -66,36 +66,45 @@ scenario1-run-client:
 	AG_SOLO_BASEDIR=t7 ve3/bin/ag-setup-solo --webhost=127.0.0.1:$(BASE_PORT)
 
 AGC = ./lib/ag-chain-cosmos
-scenario2-setup: build-cosmos scenario2-setup-nobuild
+AGCH = ag-cosmos-helper
+scenario2-setup: all scenario2-setup-nobuild
 scenario2-setup-nobuild:
-	rm -rf ~/.ag-chain-cosmos
-	$(AGC) init scenario2-chain --chain-id=$(CHAIN_ID)
 	rm -rf t1
 	mkdir t1
+	# Init the chain node.
+	$(AGC) --home=t1/n0 init scenario2-chain --chain-id=$(CHAIN_ID)
+	# Init all the ag-solos.
 	set -e; for port in `seq $(BASE_PORT) $$(($(BASE_PORT) + $(NUM_SOLOS) - 1))`; do \
 		bin/ag-solo init t1/$$port --webport=$$port; \
-		case $$port in \
-			$(BASE_PORT)) toks=$(INITIAL_TOKENS),100000000uagstake ;; \
-			*) toks=1000000uag ;; \
-		esac; \
-		$(AGC) add-genesis-account `cat t1/$$port/ag-cosmos-helper-address` $$toks; \
 	done
-	$(AGC) gentx --keyring-backend=test --home-client=t1/$(BASE_PORT)/ag-cosmos-helper-statedir \
-		--name=ag-solo --amount=1000000uagstake
-	$(AGC) collect-gentxs
-	$(AGC) validate-genesis
-	../deployment/set-json.js ~/.ag-chain-cosmos/config/genesis.json --agoric-genesis-overrides
+	# Create the bootstrap account.
+	mkdir t1/bootstrap
+	$(AGCH) --home=t1/bootstrap keys add bootstrap --keyring-backend=test
+	$(AGCH) --home=t1/bootstrap keys show -a bootstrap --keyring-backend=test > t1/bootstrap-address
+	$(AGC) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` 100000000uagstake
+	# Create the (singleton) chain node.
+	$(AGC) --home=t1/n0 gentx --keyring-backend=test --home-client=t1/bootstrap --name=bootstrap --amount=1000000uagstake
+	$(AGC) --home=t1/n0 collect-gentxs
+	$(AGC) --home=t1/n0 validate-genesis
+	../deployment/set-json.js t1/n0/config/genesis.json --agoric-genesis-overrides
+	# Set the chain address in all the ag-solos.
 	$(MAKE) set-local-gci-ingress
-	@echo "ROLE=two_chain BOOT_ADDRESS=\`cat t1/$(BASE_PORT)/ag-cosmos-helper-address\` $(AGC) start"
-	@echo "(cd t1/$(BASE_PORT) && ../bin/ag-solo start --role=two_client)"
 
 scenario2-run-chain:
-	set -e; ba=; for acha in t1/*/ag-cosmos-helper-address; do \
-		ba="$$ba "`cat $$acha`; \
-	done; \
-	ROLE=two_chain BOOT_ADDRESS="$$ba" $(NODE_DEBUG) \
-	  `$(BREAK_CHAIN) && echo --inspect-brk` $(AGC) start --pruning=nothing
-scenario2-run-client:
+	ROLE=two_chain BOOT_ADDRESS=`cat t1/bootstrap-address` $(NODE_DEBUG) \
+	  `$(BREAK_CHAIN) && echo --inspect-brk` $(AGC) --home=t1/n0 start --pruning=nothing
+
+# Provision and start a client.
+scenario2-run-client: t1-provision-one t1-start-ag-solo
+
+# Provision the ag-solo from the bootstrap address (idempotent).
+t1-provision-one:
+	$(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
+		--gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+		t1/$(BASE_PORT) `cat t1/$(BASE_PORT)/ag-cosmos-helper-address`
+
+# Actually start the ag-solo.
+t1-start-ag-solo:
 	cd t1/$(BASE_PORT) && ../../bin/ag-solo start --role=two_client
 
 # scenario3 is a single JS process without any Golang.  However,
@@ -178,18 +187,12 @@ show-local-gci:
 
 set-local-gci-ingress:
 	set -e; \
-	gci=`./calc-gci.js ~/.ag-chain-cosmos/config/genesis.json`; \
-	rpcport=`./calc-rpcport.js ~/.ag-chain-cosmos/config/config.toml`; \
-	for dir in t1/*; do \
+	gci=`./calc-gci.js t1/n0/config/genesis.json`; \
+	rpcport=`./calc-rpcport.js t1/n0/config/config.toml`; \
+	for dir in t1/[0-9]*; do \
 		(cd $$dir && \
 			../../bin/ag-solo set-gci-ingress --chainID=$(CHAIN_ID) $$gci $$rpcport); \
 	done
-
-start-ag-solo-connected-to-local:
-	rm -rf t1
-	bin/ag-solo init t1
-	$(MAKE) set-local-gci-ingress
-	cd t1 && ../bin/ag-solo start
 
 install-pserver:
 	python3 -mvenv ve3
