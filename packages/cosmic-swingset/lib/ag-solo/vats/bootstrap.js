@@ -203,12 +203,11 @@ export default function setup(syscall, state, helpers) {
                   const { nickname, address } = obj;
                   return E(vats.provisioning)
                     .pleaseProvision(nickname, address, PROVISIONER_INDEX)
-                    .then(_ =>
-                      bridgeMgr.toBridge('provision', {
-                        type: 'PROVISIONED',
-                        nickname,
-                        address,
-                      }),
+                    .catch(e =>
+                      console.error(
+                        `Error provisioning ${nickname} ${address}:`,
+                        e,
+                      ),
                     );
                 }
                 default:

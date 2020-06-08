@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/auth"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/capability"
@@ -27,6 +28,7 @@ type Keeper struct {
 	storeKey sdk.StoreKey
 	cdc      *codec.Codec
 
+	accountKeeper auth.AccountKeeper
 	channelKeeper types.ChannelKeeper
 	portKeeper    types.PortKeeper
 	scopedKeeper  capability.ScopedKeeper
@@ -39,16 +41,34 @@ type Keeper struct {
 func NewKeeper(
 	cdc *codec.Codec, key sdk.StoreKey,
 	channelKeeper types.ChannelKeeper, portKeeper types.PortKeeper,
+	accountKeeper auth.AccountKeeper,
 	scopedKeeper capability.ScopedKeeper,
 ) Keeper {
 
 	return Keeper{
 		storeKey:      key,
 		cdc:           cdc,
+		accountKeeper: accountKeeper,
 		channelKeeper: channelKeeper,
 		portKeeper:    portKeeper,
 		scopedKeeper:  scopedKeeper,
 	}
+}
+
+func (k Keeper) EnsureAccountExists(ctx sdk.Context, addr sdk.AccAddress) error {
+	if acc := k.accountKeeper.GetAccount(ctx, addr); acc != nil {
+		// Account already exists.
+		return nil
+	}
+
+	// Create an account object with the specified address.
+	acc := k.accountKeeper.NewAccountWithAddress(ctx, addr)
+
+	// Store it in the keeper (panics on error).
+	k.accountKeeper.SetAccount(ctx, acc)
+
+	// Tell we were successful.
+	return nil
 }
 
 // GetStorage gets generic storage
