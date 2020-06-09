@@ -375,7 +375,7 @@ const makeZoe = (additionalEndowments = {}) => {
       const brand = issuerTable.brandFromIssuer(issuerKeywordRecord[keyword]);
       amountMathKeywordRecord[keyword] = issuerTable.get(brand).amountMath;
     });
-    return harden(amountMathKeywordRecord);
+    return amountMathKeywordRecord;
   };
 
   const removePurse = issuerRecord =>
