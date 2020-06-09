@@ -3,6 +3,7 @@ import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
+import { E } from '@agoric/eventual-send';
 
 import makeObservablePurse from './observable';
 import makeOfferCompiler from './offer-compiler';
@@ -10,13 +11,14 @@ import makeOfferCompiler from './offer-compiler';
 // does nothing
 const noActionStateChangeHandler = _newState => {};
 
-export async function makeWallet(
-  E,
+export async function makeWallet({
   zoe,
+  mailboxAdmin,
+  board,
   registry,
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
-) {
+}) {
   const petnameToPurse = makeStore();
   const purseToIssuer = makeWeakStore();
   const issuerPetnameToIssuer = makeStore();

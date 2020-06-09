@@ -225,7 +225,7 @@ export default function setup(syscall, state, helpers) {
       // be in the DApp environment (or only in end-user), but we're not yet
       // making a distinction, so the user also gets them.
       async function createLocalBundle(vats, userBundle, payments, issuerInfo) {
-        const { zoe, registry } = userBundle;
+        const { zoe, registry, board, mailboxAdmin } = userBundle;
         // This will eventually be a vat spawning service. Only needed by dev
         // environments.
         const spawner = E(vats.host).makeHost();
@@ -234,7 +234,7 @@ export default function setup(syscall, state, helpers) {
         const uploads = E(vats.uploads).getUploads();
 
         // Wallet for both end-user client and dapp dev client
-        await E(vats.wallet).startup(zoe, registry);
+        await E(vats.wallet).startup({ zoe, registry, board, mailboxAdmin });
         const wallet = E(vats.wallet).getWallet();
         await Promise.all(
           issuerInfo.map(({ petname, issuer, brandRegKey }) =>
