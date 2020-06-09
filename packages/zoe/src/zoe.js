@@ -670,8 +670,8 @@ const makeZoe = (additionalEndowments = {}) => {
        * other information, such as the terms used in the instance.
        * @param  {object} installationHandle - the unique handle for the
        * installation
-       * @param  {object} issuerKeywordRecord - optional, a record mapping keyword keys to
-       * issuer values
+       * @param {Object.<string,Issuer>} issuerKeywordRecord - a record mapping
+       * keyword keys to issuer values
        * @param  {object} terms - optional, arguments to the contract. These
        * arguments depend on the contract.
        */
@@ -752,14 +752,16 @@ const makeZoe = (additionalEndowments = {}) => {
        * outcome promise.
        * @param {Invite} invite - an invite (ERTP payment) to join a
        * Zoe smart contract instance
-       * @param  {object?} proposal - the proposal, a record
+       * @param  {Proposal?} proposal - the proposal, a record
        * with properties `want`, `give`, and `exit`. The keys of
        * `want` and `give` are keywords and the values are amounts.
-       * @param  {object?} paymentKeywordRecord - a record with keyword
-       * keys and values which are payments that will be escrowed by Zoe.
+       * @param  {Object.<string,Payment>?} paymentKeywordRecord - a record with
+       * keyword keys and values which are payments that will be escrowed by
+       * Zoe.
        *
-       * The default arguments are so that remote invocations don't
-       * have to specify empty objects (which get marshaled as presences).
+       * The default arguments allow remote invocations to specify empty
+       * objects. Otherwise, explicitly-provided empty objects would be
+       * marshaled as presences.
        */
       offer: (
         invite,
@@ -771,12 +773,18 @@ const makeZoe = (additionalEndowments = {}) => {
             inviteAmount.extent.length === 1,
             'only one invite should be redeemed',
           );
+          const giveKeywords = proposal.give
+            ? Object.getOwnPropertyNames(proposal.give)
+            : [];
+          const wantKeywords = proposal.want
+            ? Object.getOwnPropertyNames(proposal.want)
+            : [];
+          const userKeywords = harden([...giveKeywords, ...wantKeywords]);
 
           const {
             extent: [{ instanceHandle, handle: inviteHandle }],
           } = inviteAmount;
           const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
-          const offerHandle = harden({});
 
           const amountMathKeywordRecord = getAmountMaths(
             instanceHandle,
@@ -789,43 +797,46 @@ const makeZoe = (additionalEndowments = {}) => {
             proposal,
           );
 
-          // Promise flow:
-          // issuer -> purse -> deposit payment -> offerHook -> payout
-          const giveKeywords = Object.getOwnPropertyNames(cleanedProposal.give);
-          const wantKeywords = Object.getOwnPropertyNames(cleanedProposal.want);
-          const userKeywords = harden([...giveKeywords, ...wantKeywords]);
           const paymentDepositedPs = userKeywords.map(keyword => {
-            const issuer = issuerKeywordRecord[keyword];
-            const issuerRecordP = issuerTable.getPromiseForIssuerRecord(issuer);
-            return issuerRecordP.then(({ purse }) => {
-              if (giveKeywords.includes(keyword)) {
-                // We cannot trust the returned amount since it comes directly
-                // from the remote issuer. So we use our cleaned proposal's
-                // amount that should be the same.
-                return E(purse)
-                  .deposit(
-                    paymentKeywordRecord[keyword],
-                    cleanedProposal.give[keyword],
-                  )
-                  .then(_ => cleanedProposal.give[keyword]);
-              }
-              // If any other payments are included, they are ignored.
-              return Promise.resolve(
-                amountMathKeywordRecord[keyword].getEmpty(),
-              );
-            });
+            if (giveKeywords.includes(keyword)) {
+              // We cannot trust the amount in the proposal, so we use our
+              // cleaned proposal's amount that should be the same.
+              const giveAmount = cleanedProposal.give[keyword];
+              const { purse } = issuerTable.get(giveAmount.brand);
+              // TODO(1130). drop .then line when deposit() is repaired
+              // https://github.com/Agoric/agoric-sdk/pull/1130
+              return E(purse)
+                .deposit(paymentKeywordRecord[keyword], giveAmount)
+                .then(_ => giveAmount);
+              // eslint-disable-next-line no-else-return
+            } else {
+              // payments outside the give: clause are ignored.
+              return getAmountMathForBrand(
+                cleanedProposal.want[keyword].brand,
+              ).getEmpty();
+            }
           });
 
+          const offerHandle = harden({});
+
+          // recordOffer() creates and stores a record in the offerTable. The
+          // allocations are according to the keywords in the offer's proposal,
+          // which are not required to match anything in the issuerKeywordRecord
+          // that was used to instantiate the contract. recordOffer() is called
+          // on amountsArray, which includes amounts for all the keywords in the
+          // proposal. Keywords in the give clause are mapped to the amount
+          // deposited. Keywords in the want clause are mapped to the empty
+          // amount for that keyword's Issuer.
           const recordOffer = amountsArray => {
             const notifierRec = produceNotifier();
-            const offerImmutableRecord = {
+            const offerRecord = {
               instanceHandle,
               proposal: cleanedProposal,
               currentAllocation: arrayToObj(amountsArray, userKeywords),
               notifier: notifierRec.notifier,
               updater: notifierRec.updater,
             };
-            offerTable.create(offerImmutableRecord, offerHandle);
+            offerTable.create(offerRecord, offerHandle);
             payoutMap.init(offerHandle, producePromise());
           };
 
