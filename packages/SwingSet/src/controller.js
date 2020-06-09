@@ -152,6 +152,8 @@ export async function buildVatController(config, withSES = true, argv = []) {
                                          console,
                                          require: vatRequire,
                                          HandledPromise,
+                                         Buffer, // TODO unsafe: Buffer.allocUnsafe, Buffer.alloc(bigsize)
+                                         process: { env: {} },
                                        },
                                      });
     const setup = vatNS.default;
