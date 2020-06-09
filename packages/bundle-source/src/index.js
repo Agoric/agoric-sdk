@@ -74,7 +74,18 @@ export default async function bundleSource(
       entrypoint = fileName;
     }
     let unmappedCode = code;
+
+    // disabled because it mangles @agoric/babel-parser/lib/tokenizer/types.js,
+    // by turning:
+    //  function createBinop(name, binop) {
+    //    return new TokenType(name, {
+    //      beforeExpr,
+    //      binop
+    //    });
+    //  }
+    // into: function createBinop(name, binop) {  return new TokenType(name, {    beforeExpr,;    binop });};
     if (
+      false &&
       moduleFormat === 'nestedEvaluate' &&
       !fileName.startsWith('_virtual/')
     ) {
