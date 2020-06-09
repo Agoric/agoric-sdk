@@ -336,6 +336,8 @@ const makeZoe = (additionalEndowments = {}) => {
     issuerTable,
   } = makeTables();
 
+  const getAmountMathForBrand = brand => issuerTable.get(brand).amountMath;
+
   /**
    * @param {InstanceHandle} instanceHandle
    * @param {OfferHandle[]} offerHandles
