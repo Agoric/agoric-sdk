@@ -2,6 +2,10 @@
 import harden from '@agoric/harden';
 import { isPromise } from '@agoric/produce-promise';
 import { makeConsole } from '@agoric/swingset-vat/src/makeConsole';
+import { E, HandledPromise } from '@agoric/eventual-send';
+import { makeTransform } from '@agoric/transform-eventual-send';
+import * as babelParser from '@agoric/babel-parser';
+import babelGenerate from '@babel/generator';
 
 import makeUIAgentMakers from './ui-agent';
 
@@ -78,7 +82,7 @@ export function stringify(
   return ret;
 }
 
-export function getReplHandler(E, homeObjects, send, vatPowers) {
+export function getReplHandler(homeObjects, send, vatPowers) {
   let highestHistory = -1;
   const commands = {
     [highestHistory]: '',
@@ -148,13 +152,15 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
     ...vatPowers,
     console: replConsole,
     E,
+    HandledPromise,
     commands,
     history,
     home: homeObjects,
     harden,
   };
   const modules = {};
-  const options = {};
+  const tildotTransformer = makeTransform(babelParser, babelGenerate);
+  const options = { transforms: [tildotTransformer] };
   const c = new Compartment(endowments, modules, options);
 
   const agentMakers = makeUIAgentMakers({ harden, console: replConsole });

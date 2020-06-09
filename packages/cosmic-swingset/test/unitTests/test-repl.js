@@ -3,12 +3,11 @@ import { getReplHandler } from '../../lib/ag-solo/vats/repl';
 import { test } from 'tape-promise/tape';
 
 function make() {
-    const E = undefined;
     const homeObjects = { base: 1, fries: 2, cooking: 3 };
     const sentMessages = [];
     const send = m => sentMessages.push(m);
     const vatPowers = { power: { of: { love: 4 } } };
-    const rh = getReplHandler(E, homeObjects, send, vatPowers);
+    const rh = getReplHandler(homeObjects, send, vatPowers);
 
     const ch = rh.getCommandHandler();
     function getHighestHistory() {
@@ -104,6 +103,54 @@ test('repl: sloppyGlobals, home, endowments', async t => {
     t.equals(m.type, 'updateHistory');
     t.equals(m.histnum, 1);
     t.equals(m.display, '10');
+    t.deepEquals(sentMessages, []);
+
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+    throw e;
+  } finally {
+    t.end();
+  }
+});
+
+test('repl: tildot', async t => {
+  try {
+    const { doEval, sentMessages, getHighestHistory } = make();
+
+    let m = sentMessages.shift();
+    t.deepEquals(m.type, 'updateHistory');
+    t.equals(sentMessages.length, 0);
+
+    t.deepEquals(doEval(0, 'target = harden({ foo(x) { return x+1; } })'), {});
+    m = sentMessages.shift();
+    t.equals(m.type, 'updateHistory');
+    t.equals(m.histnum, 0);
+    t.ok(m.display.startsWith('working on eval(target ='));
+    m = sentMessages.shift();
+    t.equals(m.type, 'updateHistory');
+    t.equals(m.histnum, 0);
+    t.equals(m.display, '{"foo":[Function foo]}');
+    t.deepEquals(sentMessages, []);
+
+    t.deepEquals(doEval(1, 'target~.foo(2)'), {});
+    m = sentMessages.shift();
+    t.equals(m.type, 'updateHistory');
+    t.equals(m.histnum, 1);
+    t.equals(m.display, 'working on eval(target~.foo(2))');
+
+    m = sentMessages.shift();
+    t.equals(m.type, 'updateHistory');
+    t.equals(m.histnum, 1);
+    t.equals(m.display, 'unresolved Promise');
+
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve(); // I don't know why three stalls are needed
+
+    m = sentMessages.shift();
+    t.equals(m.type, 'updateHistory');
+    t.equals(m.histnum, 1);
+    t.equals(m.display, '3');
     t.deepEquals(sentMessages, []);
 
   } catch (e) {

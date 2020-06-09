@@ -68,7 +68,7 @@ function build(E, D, vatPowers) {
       if (ROLES.client) {
         handler.readyForClient = () => readyForClient.p;
 
-        const replHandler = getReplHandler(E, homeObjects, send, vatPowers);
+        const replHandler = getReplHandler(homeObjects, send, vatPowers);
         registerURLHandler(replHandler, '/private/repl');
 
         // Assign the captp handler.
