@@ -2,8 +2,7 @@ import '@agoric/install-ses';
 import { getReplHandler } from '../../lib/ag-solo/vats/repl';
 import { test } from 'tape-promise/tape';
 
-test('repl', async t => {
-  try {
+function make() {
     const E = undefined;
     const homeObjects = { base: 1, fries: 2, cooking: 3 };
     const sentMessages = [];
@@ -21,6 +20,12 @@ test('repl', async t => {
     function doEval(histnum, body) {
       return ch.onMessage({ type: 'doEval', number: histnum, body });
     }
+  return { doEval, sentMessages, getHighestHistory };
+}
+
+test('repl: basic eval, eventual promise resolution', async t => {
+  try {
+    const { doEval, sentMessages, getHighestHistory } = make();
 
     let m = sentMessages.shift();
     t.deepEquals(m.type, 'updateHistory');
@@ -59,30 +64,45 @@ test('repl', async t => {
     t.equals(m.display, '3');
     t.deepEquals(sentMessages, []);
 
-    // exercise sloppyGlobals, 'home', endowments
+  } catch (e) {
+    t.isNot(e, e, 'unexpected exception');
+    throw e;
+  } finally {
+    t.end();
+  }
+});
+
+
+test('repl: sloppyGlobals, home, endowments', async t => {
+  try {
+    const { doEval, sentMessages, getHighestHistory } = make();
+
+    let m = sentMessages.shift();
+    t.deepEquals(m.type, 'updateHistory');
+    t.equals(sentMessages.length, 0);
 
     // on old-ses, this only works if we're in a vat, where @agoric/evaluate
     // has been provided by a require() which maps it to a special SES thing.
     // In new-SES, it works without that.
-    t.deepEquals(doEval(2, 'newGlobal = home.base + home.fries + home.cooking + power.of.love'), {});
+    t.deepEquals(doEval(0, 'newGlobal = home.base + home.fries + home.cooking + power.of.love'), {});
     m = sentMessages.shift();
     t.equals(m.type, 'updateHistory');
-    t.equals(m.histnum, 2);
+    t.equals(m.histnum, 0);
     t.ok(m.display.startsWith('working on eval(newGlobal'));
     m = sentMessages.shift();
     t.equals(m.type, 'updateHistory');
-    t.equals(m.histnum, 2);
+    t.equals(m.histnum, 0);
     t.equals(m.display, '10');
     t.deepEquals(sentMessages, []);
 
-    t.deepEquals(doEval(3, 'newGlobal'), {});
+    t.deepEquals(doEval(1, 'newGlobal'), {});
     m = sentMessages.shift();
     t.equals(m.type, 'updateHistory');
-    t.equals(m.histnum, 3);
+    t.equals(m.histnum, 1);
     t.ok(m.display.startsWith('working on eval(newGlobal'));
     m = sentMessages.shift();
     t.equals(m.type, 'updateHistory');
-    t.equals(m.histnum, 3);
+    t.equals(m.histnum, 1);
     t.equals(m.display, '10');
     t.deepEquals(sentMessages, []);
 
