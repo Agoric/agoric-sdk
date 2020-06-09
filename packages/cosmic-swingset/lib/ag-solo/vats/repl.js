@@ -1,4 +1,4 @@
-import { makeEvaluators } from '@agoric/evaluate';
+/* global Compartment */
 import harden from '@agoric/harden';
 import { isPromise } from '@agoric/produce-promise';
 import { makeConsole } from '@agoric/swingset-vat/src/makeConsole';
@@ -144,7 +144,18 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
   });
 
   replConsole.log(`Welcome to Agoric!`);
-  const { evaluateProgram } = makeEvaluators({ sloppyGlobals: true });
+  const endowments = {
+    ...vatPowers,
+    console: replConsole,
+    E,
+    commands,
+    history,
+    home: homeObjects,
+    harden,
+  };
+  const modules = {};
+  const options = {};
+  const c = new Compartment(endowments, modules, options);
 
   const agentMakers = makeUIAgentMakers({ harden, console: replConsole });
   homeObjects.agent = agentMakers;
@@ -184,18 +195,9 @@ export function getReplHandler(E, homeObjects, send, vatPowers) {
       display[histnum] = `working on eval` + `(${body})`;
       updateHistorySlot(histnum);
 
-      const endowments = {
-        ...vatPowers,
-        console: replConsole,
-        E,
-        commands,
-        history,
-        home: homeObjects,
-        harden,
-      };
       let r;
       try {
-        r = evaluateProgram(body, endowments);
+        r = c.evaluate(body, { sloppyGlobalsMode: true });
         history[histnum] = r;
         display[histnum] = stringify(r, undefined, vatPowers.getInterfaceOf);
       } catch (e) {

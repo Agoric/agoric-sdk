@@ -59,18 +59,31 @@ test('repl', async t => {
     t.equals(m.display, '3');
     t.deepEquals(sentMessages, []);
 
-    // TODO: exercise sloppyGlobals, 'home', endowments
-    return;
+    // exercise sloppyGlobals, 'home', endowments
+
+    // on old-ses, this only works if we're in a vat, where @agoric/evaluate
+    // has been provided by a require() which maps it to a special SES thing.
+    // In new-SES, it works without that.
     t.deepEquals(doEval(2, 'newGlobal = home.base + home.fries + home.cooking + power.of.love'), {});
+    m = sentMessages.shift();
+    t.equals(m.type, 'updateHistory');
+    t.equals(m.histnum, 2);
+    t.ok(m.display.startsWith('working on eval(newGlobal'));
+    m = sentMessages.shift();
+    t.equals(m.type, 'updateHistory');
+    t.equals(m.histnum, 2);
+    t.equals(m.display, '10');
     t.deepEquals(sentMessages, []);
+
+    t.deepEquals(doEval(3, 'newGlobal'), {});
     m = sentMessages.shift();
     t.equals(m.type, 'updateHistory');
-    t.equals(m.histnum, 2);
-    t.equals(m.display, 'working on eval(1+2)');
+    t.equals(m.histnum, 3);
+    t.ok(m.display.startsWith('working on eval(newGlobal'));
     m = sentMessages.shift();
     t.equals(m.type, 'updateHistory');
-    t.equals(m.histnum, 2);
-    t.equals(m.display, '3');
+    t.equals(m.histnum, 3);
+    t.equals(m.display, '10');
     t.deepEquals(sentMessages, []);
 
   } catch (e) {
