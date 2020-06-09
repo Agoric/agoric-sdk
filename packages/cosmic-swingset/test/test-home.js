@@ -92,7 +92,7 @@ test('home.mailboxAdmin', async t => {
     const payment = await E(sourcePurse).withdraw(moola50);
     const mailboxId = await E(mailboxAdmin).makeMailbox(externalPurse);
 
-    // Someone else can get the mailbox given the id
+    // Someone else can send a payment given the mailboxId
     const result = await E(mailboxAdmin).sendPayment(mailboxId, payment);
     t.deepEquals(result, moola50, `result is 50 moola`);
     t.deepEquals(
