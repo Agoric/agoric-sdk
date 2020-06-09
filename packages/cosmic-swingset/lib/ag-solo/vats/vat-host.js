@@ -1,7 +1,6 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
-import evaluate from '@agoric/evaluate';
 
 import { makeContractHost } from '@agoric/spawner';
 
@@ -12,7 +11,7 @@ function setup(syscall, state, helpers) {
     E =>
       harden({
         makeHost() {
-          return harden(makeContractHost(E, evaluate, { require }));
+          return harden(makeContractHost());
         },
       }),
     helpers.vatID,
