@@ -74,13 +74,14 @@ export default function setup(syscall, state, helpers) {
         // Create singleton instances.
         const sharingService = await E(vats.sharing).getSharingService();
         const registry = await E(vats.registrar).getSharedRegistrar();
+        const board = await E(vats.board).getBoard();
         const chainTimerService = await E(vats.timer).createTimerService(
           timerDevice,
         );
 
         const zoe = await E(vats.zoe).getZoe();
         const contractHost = await E(vats.host).makeHost();
-        const mailboxAdmin = await E(vats.mailbox).getMailboxAdmin();
+        const mailboxAdmin = await E(vats.mailbox).startup(board);
 
         // Make the other demo mints
         const issuerNames = ['moola', 'simolean'];
@@ -119,6 +120,7 @@ export default function setup(syscall, state, helpers) {
               ibcport,
               registrar: registry,
               registry,
+              board,
               zoe,
               mailboxAdmin,
             });
