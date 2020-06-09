@@ -3,6 +3,8 @@ import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
+
+// TODO: move the Table abstraction out of Zoe
 import { makeTable, makeValidateProperties } from '@agoric/zoe/src/table';
 import { E } from '@agoric/eventual-send';
 
@@ -30,7 +32,7 @@ export async function makeWallet({
   const brandMapping = makeMapping('brand');
 
   // Brand Table
-  // Columns: key:brand | brand | issuer | amountMath
+  // Columns: key:brand | issuer | amountMath
   const makeBrandTable = () => {
     const validateSomewhat = makeValidateProperties(
       harden(['brand', 'issuer', 'amountMath']),
