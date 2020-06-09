@@ -19,13 +19,14 @@ import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
 // zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe
 export const makeContract = harden(
   /** @param {ContractFacet} zcf */ zcf => {
+    const allKeywords = ['Items', 'Money'];
     const {
       assertKeywords,
       rejectOffer,
       checkHook,
       assertNatMathHelpers,
     } = makeZoeHelpers(zcf);
-    assertKeywords(harden(['Items', 'Money']));
+    assertKeywords(harden(allKeywords));
 
     const { terms } = zcf.getInstanceRecord();
     assertNatMathHelpers('Money');
@@ -34,7 +35,7 @@ export const makeContract = harden(
 
     let sellerOfferHandle;
 
-    const amountMaths = zcf.getAmountMaths(['Items', 'Money']);
+    const amountMaths = zcf.getAmountMaths(allKeywords);
 
     const sellerOfferHook = offerHandle => {
       sellerOfferHandle = offerHandle;
@@ -42,8 +43,14 @@ export const makeContract = harden(
     };
 
     const buyerOfferHook = buyerOfferHandle => {
-      const sellerAllocation = zcf.getCurrentAllocation(sellerOfferHandle);
-      const buyerAllocation = zcf.getCurrentAllocation(buyerOfferHandle);
+      const sellerAllocation = zcf.getCurrentAllocation(
+        sellerOfferHandle,
+        allKeywords,
+      );
+      const buyerAllocation = zcf.getCurrentAllocation(
+        buyerOfferHandle,
+        allKeywords,
+      );
       const currentItemsForSale = sellerAllocation.Items;
       const providedMoney = buyerAllocation.Money;
 

@@ -40,9 +40,7 @@ export const makeContract = harden(
       const {
         terms: { CentralToken: centralTokenIssuer },
       } = zcf.getInstanceRecord();
-      const { brand: centralTokenBrand } = zcf.getIssuerRecord(
-        centralTokenIssuer,
-      );
+      const centralTokenBrand = zcf.getBrandForIssuer(centralTokenIssuer);
       assert(
         centralTokenBrand !== undefined,
         details`centralTokenBrand must be present`,
@@ -534,8 +532,7 @@ export const makeContract = harden(
           const { issuerKeywordRecord } = zcf.getInstanceRecord();
           const brandKeywordRecord = {};
           Object.entries(issuerKeywordRecord).forEach(([keyword, issuer]) => {
-            const { brand } = zcf.getIssuerRecord(issuer);
-            brandKeywordRecord[keyword] = brand;
+            brandKeywordRecord[keyword] = zcf.getBrandForIssuer(issuer);
           });
           return harden(brandKeywordRecord);
         },

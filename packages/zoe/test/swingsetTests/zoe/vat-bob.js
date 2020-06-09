@@ -241,7 +241,7 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       );
       assert(
         sameStructure(
-          harden({ Asset: moolaIssuer, Bid: simoleanIssuer }),
+          harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
           issuerKeywordRecord,
         ),
         details`issuerKeywordRecord was not as expected`,
@@ -446,44 +446,44 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
 
       // bob checks the price of 3 moola. The price is 1 simolean
       const simoleanAmounts = await E(publicAPI).getCurrentPrice(
-        harden({ TokenA: moola(3) }),
+        harden({ In: moola(3) }),
       );
       log(`simoleanAmounts `, simoleanAmounts);
 
       const buyBInvite = E(publicAPI).makeSwapInvite();
 
       const moolaForSimProposal = harden({
-        give: { TokenA: moola(3) },
-        want: { TokenB: simoleans(1) },
+        give: { In: moola(3) },
+        want: { Out: simoleans(1) },
       });
 
-      const moolaForSimPayments = harden({ TokenA: moolaPayment });
+      const moolaForSimPayments = harden({ In: moolaPayment });
       const { payout: moolaForSimPayoutP, outcome: outcomeP } = await E(
         zoe,
       ).offer(buyBInvite, moolaForSimProposal, moolaForSimPayments);
 
       log(await outcomeP);
       const moolaForSimPayout = await moolaForSimPayoutP;
-      const moolaPayout1 = await moolaForSimPayout.TokenA;
-      const simoleanPayout1 = await moolaForSimPayout.TokenB;
+      const moolaPayout1 = await moolaForSimPayout.In;
+      const simoleanPayout1 = await moolaForSimPayout.Out;
 
       await E(moolaPurseP).deposit(moolaPayout1);
       await E(simoleanPurseP).deposit(simoleanPayout1);
 
       // Bob looks up the price of 3 simoleans. It's 5 moola
       const moolaAmounts = await E(publicAPI).getCurrentPrice(
-        harden({ TokenB: simoleans(3) }),
+        harden({ In: simoleans(3) }),
       );
       log(`moolaAmounts `, moolaAmounts);
 
       // Bob makes another offer and swaps
       const bobSimsForMoolaProposal = harden({
-        want: { TokenA: moola(5) },
-        give: { TokenB: simoleans(3) },
+        want: { Out: moola(5) },
+        give: { In: simoleans(3) },
       });
       await E(simoleanPurseP).deposit(simoleanPayment);
       const bobSimoleanPayment = await E(simoleanPurseP).withdraw(simoleans(3));
-      const simsForMoolaPayments = harden({ TokenB: bobSimoleanPayment });
+      const simsForMoolaPayments = harden({ In: bobSimoleanPayment });
       const invite2 = E(publicAPI).makeSwapInvite();
 
       const {
@@ -498,8 +498,8 @@ const build = async (E, log, zoe, issuers, payments, installations, timer) => {
       log(await simsForMoolaOutcomeP);
 
       const simsForMoolaPayout = await bobSimsForMoolaPayoutP;
-      const moolaPayout2 = await simsForMoolaPayout.TokenA;
-      const simoleanPayout2 = await simsForMoolaPayout.TokenB;
+      const moolaPayout2 = await simsForMoolaPayout.Out;
+      const simoleanPayout2 = await simsForMoolaPayout.In;
 
       await E(moolaPurseP).deposit(moolaPayout2);
       await E(simoleanPurseP).deposit(simoleanPayout2);

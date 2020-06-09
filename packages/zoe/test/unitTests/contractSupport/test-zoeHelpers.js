@@ -2,6 +2,7 @@
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
 
+import makeStore from '@agoric/store';
 import { setup } from '../setupBasicMints';
 
 import {
@@ -390,7 +391,7 @@ test('ZoeHelpers rejectOffer', t => {
 
 test('ZoeHelpers canTradeWith', t => {
   t.plan(2);
-  const { moolaR, simoleanR, moola, simoleans } = setup();
+  const { moolaR, simoleanR, moola, simoleans, amountMaths } = setup();
   const leftOfferHandle = harden({});
   const rightOfferHandle = harden({});
   const cantTradeRightOfferHandle = harden({});
@@ -470,6 +471,10 @@ test('ZoeHelpers canTradeWith allocation different than give', t => {
   const rightOfferHandle = harden({});
   const cantTradeRightOfferHandle = harden({});
 
+  const amountMathToBrand = makeStore();
+  amountMathToBrand.init(moolaR.brand, moolaR.amountMath);
+  amountMathToBrand.init(simoleanR.brand, simoleanR.amountMath);
+
   let amountsAddedToLeft = false;
   const addAmountsToLeft = () => (amountsAddedToLeft = true);
   const removeAmountsFromLeft = () => (amountsAddedToLeft = false);
@@ -485,6 +490,7 @@ test('ZoeHelpers canTradeWith allocation different than give', t => {
         }),
       getAmountMaths: () =>
         harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
+      getAmountMathForBrand: amountMathToBrand.get,
       getZoeService: () => {},
       getCurrentAllocation: handle => {
         if (handle === leftOfferHandle) {
@@ -558,6 +564,88 @@ test('ZoeHelpers canTradeWith allocation different than give', t => {
     t.notOk(
       canTradeWith(leftOfferHandle, cantTradeRightOfferHandle),
       `let can't trade with 'cantTradeRightOfferHandle`,
+    );
+  } catch (e) {
+    t.assert(false, e);
+  }
+});
+
+test('ZoeHelpers canTradeWithIgnoreKeywords', t => {
+  t.plan(2);
+  const { moolaR, simoleanR, moola, simoleans, amountMaths } = setup();
+  const leftOfferHandle = harden({});
+  const rightOfferHandle = harden({});
+  const cantTradeRightOfferHandle = harden({});
+  try {
+    const mockZCF = harden({
+      getInstanceRecord: () =>
+        harden({
+          issuerKeywordRecord: {
+            Asset: moolaR.issuer,
+            Price: simoleanR.issuer,
+          },
+          keywords: ['Asset', 'Price'],
+        }),
+      getAmountMaths: () =>
+        harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
+      getAmountMathForBrand: brand => amountMaths.get(brand.getAllegedName()),
+      getCurrentAllocation: handle => {
+        switch (handle) {
+          case leftOfferHandle:
+            return harden({
+              Asset: moola(10),
+              Price: simoleans(4),
+            });
+          case rightOfferHandle:
+            return harden({
+              Price: simoleans(6),
+              Asset: moola(7),
+            });
+          case cantTradeRightOfferHandle:
+            return harden({
+              Price: simoleans(6),
+              Asset: moola(100),
+            });
+          default:
+            throw new Error('unexpected handle');
+        }
+      },
+      getZoeService: () => {},
+      getOffer: handle => {
+        if (handle === leftOfferHandle) {
+          return harden({
+            proposal: {
+              give: { Asset: moola(10) },
+              want: { Price: simoleans(4) },
+              exit: { onDemand: null },
+            },
+          });
+        }
+        if (handle === rightOfferHandle) {
+          return harden({
+            proposal: {
+              give: { Price: simoleans(6) },
+              want: { Asset: moola(7) },
+              exit: { onDemand: null },
+            },
+          });
+        }
+        if (handle === cantTradeRightOfferHandle) {
+          return harden({
+            proposal: {
+              give: { Price: simoleans(6) },
+              want: { Asset: moola(100) },
+              exit: { onDemand: null },
+            },
+          });
+        }
+        throw new Error('unexpected handle');
+      },
+    });
+    const { canTradeWithIgnoreKeywords } = makeZoeHelpers(mockZCF);
+    t.ok(canTradeWithIgnoreKeywords(leftOfferHandle, rightOfferHandle));
+    t.notOk(
+      canTradeWithIgnoreKeywords(leftOfferHandle, cantTradeRightOfferHandle),
     );
   } catch (e) {
     t.assert(false, e);
@@ -758,6 +846,10 @@ test(`ZoeHelpers swap - can't trade with`, t => {
   const reallocatedHandles = [];
   const reallocatedAmountObjs = [];
   const completedHandles = [];
+  const amountMathToBrand = makeStore();
+  amountMathToBrand.init(moolaR.brand, moolaR.amountMath);
+  amountMathToBrand.init(simoleanR.brand, simoleanR.amountMath);
+
   try {
     const mockZCF = harden({
       getInstanceRecord: () =>
@@ -770,6 +862,7 @@ test(`ZoeHelpers swap - can't trade with`, t => {
         }),
       getAmountMaths: () =>
         harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
+      getAmountMathForBrand: amountMathToBrand.get,
       getZoeService: () => {},
       isOfferActive: () => true,
       getOffer: handle => {

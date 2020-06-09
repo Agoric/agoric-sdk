@@ -13,12 +13,7 @@ import {
   getKeywords,
   cleanKeywords,
 } from './cleanProposal';
-import {
-  arrayToObj,
-  filterObj,
-  filterFillAmounts,
-  assertSubset,
-} from './objArrayConversion';
+import { arrayToObj, filterFillAmounts, filterObj } from './objArrayConversion';
 import { isOfferSafeForOffer } from './offerSafety';
 import { areRightsConserved } from './rightsConservation';
 import { evalContractCode } from './evalContractCode';
@@ -323,6 +318,7 @@ import { makeTables } from './state';
 const makeZoe = (additionalEndowments = {}) => {
   // Zoe maps the inviteHandles to contract offerHook upcalls
   const inviteHandleToOfferHook = makeStore();
+
   const {
     mint: inviteMint,
     issuer: inviteIssuer,
@@ -441,6 +437,13 @@ const makeZoe = (additionalEndowments = {}) => {
      * @type {ContractFacet}
      */
     const contractFacet = harden({
+      // reallocate takes two parallel arrays: offerHandles and newAllocations.
+      // Each of the rows in newAllocations gives a collection of keyword-amount
+      // pairs where the amount should replace the old amount for that keyword.
+      // The reallocation will only succeed if the amounts specified have the
+      // same total value as the current total amount for those keywords on
+      // those offers, and 'offer safety' continues to be satisfied. The amounts
+      // for those brands on other keywords don't need to be compared.
       reallocate: (offerHandles, newAllocations) => {
         assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
         // We may want to handle this with static checking instead.
@@ -449,50 +452,39 @@ const makeZoe = (additionalEndowments = {}) => {
           offerHandles.length >= 2,
           details`reallocating must be done over two or more offers`,
         );
+        assert(
+          offerHandles.length === newAllocations.length,
+          details`There must be as many offerHandles as entries in newAllocations`,
+        );
 
         // 1) Ensure 'offer safety' for each offer separately.
-
-        // Make the potential reallocation and test for offer safety
-        // by comparing the potential reallocation to the proposal.
-        const makePotentialReallocation = (offerHandle, newAllocation) => {
+        const makeOfferSafeReallocation = (offerHandle, newAllocation) => {
           const { proposal, currentAllocation } = offerTable.get(offerHandle);
-          const potentialReallocation = harden({
+          const reallocation = harden({
             ...currentAllocation,
             ...newAllocation,
           });
-          const proposalKeywords = [
-            ...getKeywords(proposal.want),
-            ...getKeywords(proposal.give),
-          ];
 
           assert(
-            isOfferSafeForOffer(
-              contractFacet.getAmountMaths(proposalKeywords),
-              proposal,
-              potentialReallocation,
-            ),
-            details`The proposed reallocation was not offer safe`,
+            isOfferSafeForOffer(getAmountMathForBrand, proposal, reallocation),
+            details`The reallocation was not offer safe`,
           );
-
-          // The reallocation passes the offer safety check
-          return potentialReallocation;
+          return reallocation;
         };
 
+        // Make the reallocation and test for offer safety by comparing the
+        // reallocation to the original proposal.
         const reallocations = offerHandles.map((offerHandle, i) =>
-          makePotentialReallocation(offerHandle, newAllocations[i]),
+          makeOfferSafeReallocation(offerHandle, newAllocations[i]),
         );
 
-        const flattened = arr => [].concat(...arr);
-
         // 2. Ensure that rights are conserved overall.
+        const flattened = arr => [].concat(...arr);
         const flattenAllocations = allocations =>
           flattened(allocations.map(allocation => Object.values(allocation)));
-
-        // Don't fill the allocations.
         const currentAllocations = offerTable
           .getOffers(offerHandles)
           .map(({ currentAllocation }) => currentAllocation);
-
         const previousAmounts = flattenAllocations(currentAllocations);
         const newAmounts = flattenAllocations(reallocations);
 
@@ -576,6 +568,7 @@ const makeZoe = (additionalEndowments = {}) => {
 
       // The methods below are pure and have no side-effects //
       getInviteIssuer: () => inviteIssuer,
+
       getAmountMaths: sparseKeywords =>
         getAmountMaths(instanceHandle, sparseKeywords),
       getOfferNotifier: offerHandle => offerTable.get(offerHandle).notifier,

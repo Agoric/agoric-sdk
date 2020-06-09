@@ -29,8 +29,12 @@ export const closeAuction = (
   zoe,
   { auctionLogicFn, sellerOfferHandle, allBidHandles },
 ) => {
-  const { Bid: bidAmountMath, Asset: assetAmountMath } = zoe.getAmountMaths(
-    harden(['Bid', 'Asset']),
+  const { issuerKeywordRecord } = zoe.getInstanceRecord();
+  const bidAmountMath = zoe.getAmountMathForBrand(
+    zoe.getBrandForIssuer(issuerKeywordRecord.Ask),
+  );
+  const assetAmountMath = zoe.getAmountMathForBrand(
+    zoe.getBrandForIssuer(issuerKeywordRecord.Asset),
   );
 
   // Filter out any inactive bids
@@ -52,7 +56,7 @@ export const closeAuction = (
   // price paid.
   const winnerRefund = bidAmountMath.subtract(winnerBid, price);
 
-  const newSellerAmounts = { Asset: assetAmountMath.getEmpty(), Bid: price };
+  const newSellerAmounts = { Asset: assetAmountMath.getEmpty(), Ask: price };
   const newWinnerAmounts = { Asset: assetAmount, Bid: winnerRefund };
 
   // Everyone else gets a refund so their extents remain the
