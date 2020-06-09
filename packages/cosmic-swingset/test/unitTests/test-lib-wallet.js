@@ -2,7 +2,6 @@
 import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 
-import { E } from '@agoric/eventual-send';
 import produceIssuer from '@agoric/ertp';
 import { makeZoe } from '@agoric/zoe';
 import { makeRegistrar } from '@agoric/registrar';

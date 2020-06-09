@@ -58,7 +58,6 @@ function build(E, _D, _log) {
     });
   }
 
-
   async function getWallet() {
     return harden(wallet);
   }
