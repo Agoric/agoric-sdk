@@ -376,6 +376,17 @@ const makeZoe = (additionalEndowments = {}) => {
     return amountMathKeywordRecord;
   };
 
+  const getAmountMathsByBrand = instanceHandle => {
+    const amountMathBrandTable = makeStore('brand');
+    const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
+    // this method presumes that issuers have all been retrieved by this point
+    Object.getOwnPropertyNames(issuerKeywordRecord).forEach(keyword => {
+      const brand = issuerTable.brandFromIssuer(issuerKeywordRecord[keyword]);
+      amountMathBrandTable.init(brand, issuerTable.get(brand).amountMath);
+    });
+    return amountMathBrandTable;
+  };
+
   const removePurse = issuerRecord =>
     filterObj(issuerRecord, ['issuer', 'brand', 'amountMath']);
 
@@ -399,22 +410,22 @@ const makeZoe = (additionalEndowments = {}) => {
     offerHandle,
     sparseKeywords,
   ) => {
-    const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
-    const allKeywords = getKeywords(issuerKeywordRecord);
-    if (sparseKeywords === undefined) {
-      sparseKeywords = allKeywords;
-    }
-    const amountMathKeywordRecord = getAmountMaths(
-      instanceHandle,
-      sparseKeywords,
-    );
-    assertSubset(allKeywords, sparseKeywords);
     const { currentAllocation } = offerTable.get(offerHandle);
-    return filterFillAmounts(
-      currentAllocation,
-      sparseKeywords,
-      amountMathKeywordRecord,
-    );
+    if (sparseKeywords === undefined) {
+      return currentAllocation;
+
+      // eslint-disable-next-line no-else-return
+    } else {
+      const amountMathKeywordRecord = getAmountMaths(
+        instanceHandle,
+        sparseKeywords,
+      );
+      return filterFillAmounts(
+        currentAllocation,
+        sparseKeywords,
+        amountMathKeywordRecord,
+      );
+  }
   };
 
   // Zoe has two different facets: the public Zoe service and the
@@ -608,8 +619,9 @@ const makeZoe = (additionalEndowments = {}) => {
         );
       },
       getInstanceRecord: () => instanceTable.get(instanceHandle),
-      getIssuerRecord: issuer =>
-        removePurse(issuerTable.get(issuerTable.brandFromIssuer(issuer))),
+      getBrandForIssuer: issuer => issuerTable.brandFromIssuer(issuer),
+      getAmountMathForBrand,
+      getAmountMathsByBrand: () => getAmountMathsByBrand(instanceHandle),
     });
     return contractFacet;
   };
@@ -686,6 +698,9 @@ const makeZoe = (additionalEndowments = {}) => {
           keyword => issuerKeywordRecord[keyword],
         );
 
+        // Rather than storing a mapping from global keywords to issuers, we'll
+        // map brands to keywords. This means Zoe won't have a global unique
+        // mapping of keywords across offers, but it doesn't need to.
         const makeInstanceRecord = issuerRecords => {
           const issuers = issuerRecords.map(record => record.issuer);
           const cleanedIssuerKeywordRecord = arrayToObj(
@@ -775,10 +790,6 @@ const makeZoe = (additionalEndowments = {}) => {
             : [];
           const userKeywords = harden([...giveKeywords, ...wantKeywords]);
 
-          const {
-            extent: [{ instanceHandle, handle: inviteHandle }],
-          } = inviteAmount;
-
           const cleanedProposal = cleanProposal(
             getAmountMathForBrand,
             proposal,
@@ -804,6 +815,9 @@ const makeZoe = (additionalEndowments = {}) => {
             }
           });
 
+          const {
+            extent: [{ instanceHandle, handle: inviteHandle }],
+          } = inviteAmount;
           const offerHandle = harden({});
 
           // recordOffer() creates and stores a record in the offerTable. The

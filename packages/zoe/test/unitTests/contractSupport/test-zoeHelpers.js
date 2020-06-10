@@ -407,6 +407,7 @@ test('ZoeHelpers canTradeWith', t => {
         }),
       getAmountMaths: () =>
         harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
+      getAmountMathForBrand: brand => amountMaths.get(brand.getAllegedName()),
       getZoeService: () => {},
       getCurrentAllocation: handle => {
         if (handle === leftOfferHandle) {
