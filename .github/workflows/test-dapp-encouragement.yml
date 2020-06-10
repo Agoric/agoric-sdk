@@ -36,11 +36,13 @@ jobs:
         result-encoding: string
         script: |
           let branch = 'master';
-          const { body } = context.payload.pull_request;
-          const regex = /.*\#dapp-encouragement-branch:\s+(\S+)/;
-          const result = regex.exec(body);
-          if (result) {
-            branch = result[1];
+          if (context.payload.pull_request) {
+            const { body } = context.payload.pull_request;
+            const regex = /.*\#dapp-encouragement-branch:\s+(\S+)/;
+            const result = regex.exec(body);
+            if (result) {
+              branch = result[1];
+            }
           }
           console.log(branch);
           return branch;
