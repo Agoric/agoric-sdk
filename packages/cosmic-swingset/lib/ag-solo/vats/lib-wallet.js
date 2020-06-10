@@ -4,28 +4,88 @@ import makeStore from '@agoric/store';
 import makeWeakStore from '@agoric/weak-store';
 import makeAmountMath from '@agoric/ertp/src/amountMath';
 
+// TODO: move the Table abstraction out of Zoe
+import { makeTable, makeValidateProperties } from '@agoric/zoe/src/table';
+import { E } from '@agoric/eventual-send';
+
 import makeObservablePurse from './observable';
 import makeOfferCompiler from './offer-compiler';
+import { makeDehydrator } from './lib-dehydrate';
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};
 
-export async function makeWallet(
-  E,
+export async function makeWallet({
   zoe,
+  // eslint-disable-next-line no-unused-vars
+  mailboxAdmin,
+  // eslint-disable-next-line no-unused-vars
+  board,
   registry,
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
-) {
-  const petnameToPurse = makeStore();
-  const purseToIssuer = makeWeakStore();
-  const issuerPetnameToIssuer = makeStore();
+}) {
+  // Create the petname maps so we can dehydrate information sent to
+  // the frontend.
+  const { makeMapping } = makeDehydrator();
+  const purseMapping = makeMapping('purse');
+  const brandMapping = makeMapping('brand');
+
+  // Brand Table
+  // Columns: key:brand | issuer | amountMath
+  const makeBrandTable = () => {
+    const validateSomewhat = makeValidateProperties(
+      harden(['brand', 'issuer', 'amountMath']),
+    );
+
+    const issuersInProgress = makeStore();
+    const issuerToBrand = makeWeakStore();
+    const makeCustomProperties = table =>
+      harden({
+        addIssuer: issuerP => {
+          return Promise.resolve(issuerP).then(issuer => {
+            assert(
+              !table.has(issuer),
+              details`issuer ${issuer} is already in wallet`,
+            );
+            if (issuersInProgress.has(issuer)) {
+              // a promise which resolves to the issuer record
+              return issuersInProgress.get(issuer);
+            }
+            // remote calls which immediately return a promise
+            const mathHelpersNameP = E(issuer).getMathHelpersName();
+            const brandP = E(issuer).getBrand();
+
+            // a promise for a synchronously accessible record
+            const synchronousRecordP = Promise.all([
+              brandP,
+              mathHelpersNameP,
+            ]).then(([brand, mathHelpersName]) => {
+              const amountMath = makeAmountMath(brand, mathHelpersName);
+              const issuerRecord = {
+                issuer,
+                brand,
+                amountMath,
+              };
+              table.create(issuerRecord, brand);
+              issuerToBrand.init(issuer, brand);
+              issuersInProgress.delete(issuer);
+              return table.get(brand);
+            });
+            issuersInProgress.init(issuer, synchronousRecordP);
+            return synchronousRecordP;
+          });
+        },
+        getBrandForIssuer: issuerToBrand.get,
+      });
+    const brandTable = makeTable(validateSomewhat, makeCustomProperties);
+    return brandTable;
+  };
 
   // issuerNames have properties like 'brandRegKey' and 'issuerPetname'.
   const issuerToIssuerNames = makeWeakStore();
-  const issuerToBrand = makeWeakStore();
-  const brandToIssuer = makeStore();
-  const brandToMath = makeStore();
+  const brandTable = makeBrandTable();
+  const purseToBrand = makeWeakStore();
 
   // Offers that the wallet knows about (the inbox).
   const idToOffer = makeStore();
@@ -64,7 +124,8 @@ export async function makeWallet(
       E(purse).getCurrentAmount(),
       E(purse).getAllegedBrand(),
     ]);
-    const issuerNames = issuerToIssuerNames.get(brandToIssuer.get(brand));
+    const { issuer } = brandTable.get(brand);
+    const issuerNames = issuerToIssuerNames.get(issuer);
     pursesState.set(pursePetname, {
       ...issuerNames,
       pursePetname,
@@ -195,47 +256,66 @@ export async function makeWallet(
 
   // === API
 
-  async function addIssuer(issuerPetname, issuer, brandRegKey = undefined) {
-    issuerPetnameToIssuer.init(issuerPetname, issuer);
-    issuerToIssuerNames.init(issuer, { issuerPetname, brandRegKey });
-    const [brand, mathName] = await Promise.all([
-      E(issuer).getBrand(),
-      E(issuer).getMathHelpersName(),
-    ]);
-    brandToIssuer.init(brand, issuer);
-    issuerToBrand.init(issuer, brand);
+  // TODO: remove brandRegKey
+  const addIssuer = async (
+    petnameForBrand,
+    issuer,
+    brandRegKey = undefined,
+  ) => {
+    const issuerSavedP = brandTable.addIssuer(issuer);
+    const addBrandPetname = ({ brand }) => {
+      brandMapping.addPetname(petnameForBrand, brand);
 
-    const math = makeAmountMath(brand, mathName);
-    brandToMath.init(brand, math);
-  }
+      // TODO: remove issuerToIssuerNames
+      issuerToIssuerNames.init(issuer, {
+        issuerPetname: petnameForBrand,
+        brandRegKey,
+      });
+    };
+    return issuerSavedP.then(addBrandPetname).then(() => {
+      return `issuer ${petnameForBrand} successfully added to wallet`;
+    });
+  };
 
-  async function makeEmptyPurse(issuerPetname, pursePetname, memo = 'purse') {
+  const makeEmptyPurse = async (brandPetname, petnameForPurse) => {
     assert(
-      !petnameToPurse.has(pursePetname),
-      details`Purse name already used in wallet.`,
+      !purseMapping.petnameToVal.has(petnameForPurse),
+      details`Purse petname already used in wallet.`,
     );
-    const issuer = issuerPetnameToIssuer.get(issuerPetname);
+    const brand = brandMapping.petnameToVal.get(brandPetname);
+    const { issuer } = brandTable.get(brand);
 
     // IMPORTANT: once wrapped, the original purse should never
     // be used otherwise the UI state will be out of sync.
-    const doNotUse = await E(issuer).makeEmptyPurse(memo);
+    const doNotUse = await E(issuer).makeEmptyPurse();
 
     const purse = makeObservablePurse(E, doNotUse, () =>
-      updatePursesState(pursePetname, doNotUse),
+      updatePursesState(petnameForPurse, doNotUse),
     );
 
-    petnameToPurse.init(pursePetname, purse);
-    purseToIssuer.init(purse, issuer);
-    updatePursesState(pursePetname, purse);
-  }
+    purseToBrand.init(purse, brand);
+    purseMapping.addPetname(petnameForPurse, purse);
+    updatePursesState(petnameForPurse, purse);
+  };
 
-  function deposit(pursePetName, payment) {
-    const purse = petnameToPurse.get(pursePetName);
+  function deposit(pursePetname, payment) {
+    const purse = purseMapping.petnameToVal.get(pursePetname);
     return purse.deposit(payment);
   }
 
   function getPurses() {
-    return petnameToPurse.entries();
+    return purseMapping.petnameToVal.entries();
+  }
+
+  function getPurse(pursePetname) {
+    return purseMapping.petnameToVal.get(pursePetname);
+  }
+
+  function getPurseIssuer(pursePetname) {
+    const purse = purseMapping.petnameToVal.get(pursePetname);
+    const brand = purseToBrand.get(purse);
+    const { issuer } = brandTable.get(brand);
+    return issuer;
   }
 
   function getOffers({ origin = null } = {}) {
@@ -258,11 +338,10 @@ export async function makeWallet(
 
     collections: {
       idToOffer,
-      brandToMath,
+      brandTable,
+      purseToBrand,
       issuerToIssuerNames,
-      issuerToBrand,
-      purseToIssuer,
-      petnameToPurse,
+      purseMapping,
     },
   });
   async function addOffer(
@@ -409,7 +488,10 @@ export async function makeWallet(
   }
 
   function getIssuers() {
-    return issuerPetnameToIssuer.entries();
+    return brandMapping.petnameToVal.entries().map(([petname, brand]) => {
+      const { issuer } = brandTable.get(brand);
+      return [petname, issuer];
+    });
   }
 
   const hydrateHook = ([hookMethod, ...hookArgs] = []) => object => {
@@ -457,8 +539,9 @@ export async function makeWallet(
     deposit,
     getIssuers,
     getPurses,
-    getPurse: petnameToPurse.get,
-    getPurseIssuer: petname => purseToIssuer.get(petnameToPurse.get(petname)),
+    getPurse,
+    getPurseIssuer,
+    // TODO: remove when removing brandRegKey
     getIssuerNames: issuerToIssuerNames.get,
     hydrateHooks,
     addOffer,

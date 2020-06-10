@@ -2,7 +2,6 @@
 import { test } from 'tape-promise/tape';
 import bundleSource from '@agoric/bundle-source';
 
-import { E } from '@agoric/eventual-send';
 import produceIssuer from '@agoric/ertp';
 import { makeZoe } from '@agoric/zoe';
 import { makeRegistrar } from '@agoric/registrar';
@@ -10,6 +9,8 @@ import harden from '@agoric/harden';
 import { makeGetInstanceHandle } from '@agoric/zoe/src/clientSupport';
 
 import { makeWallet } from '../../lib/ag-solo/vats/lib-wallet';
+import { makeBoard } from '../../lib/ag-solo/vats/lib-board';
+import { makeMailboxAdmin } from '../../lib/ag-solo/vats/lib-mailbox';
 
 const setupTest = async () => {
   const contractRoot = require.resolve(
@@ -29,6 +30,8 @@ const setupTest = async () => {
   const rpgBundle = produceIssuer('rpg', 'strSet');
   const zoe = makeZoe({ require });
   const registry = makeRegistrar();
+  const board = makeBoard();
+  const mailboxAdmin = makeMailboxAdmin(board);
 
   const installationHandle = zoe.install(source, moduleFormat);
 
@@ -45,18 +48,21 @@ const setupTest = async () => {
     instanceHandle,
   );
 
-  const wallet = await makeWallet(
-    E,
+  const wallet = await makeWallet({
     zoe,
     registry,
+    board,
+    mailboxAdmin,
     pursesStateChangeHandler,
     inboxStateChangeHandler,
-  );
+  });
   return {
     moolaBundle,
     rpgBundle,
     zoe,
     registry,
+    mailboxAdmin,
+    board,
     wallet,
     invite,
     installationHandle,

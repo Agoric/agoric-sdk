@@ -11,11 +11,10 @@ export default ({
 
   collections: {
     idToOffer,
-    brandToMath,
+    brandTable,
+    purseToBrand,
     issuerToIssuerNames,
-    issuerToBrand,
-    purseToIssuer,
-    petnameToPurse,
+    purseMapping,
   },
 }) => async (id, offer, hooks = {}) => {
   const { instanceRegKey, proposalTemplate } = offer;
@@ -35,10 +34,9 @@ export default ({
       purse,
       extent = undefined,
     ) => {
-      const issuer = purseToIssuer.get(purse);
+      const brand = purseToBrand.get(purse);
+      const { issuer, amountMath } = brandTable.get(brand);
       issuerNames[keyword] = issuerToIssuerNames.get(issuer);
-      const brand = issuerToBrand.get(issuer);
-      const amountMath = brandToMath.get(brand);
       if (extent === undefined) {
         keywords[keyword] = amountMath.getEmpty();
       } else {
@@ -58,7 +56,7 @@ export default ({
           amount.pursePetname,
           `Keyword ${dir} ${keyword} has no pursePetname`,
         );
-        const purse = petnameToPurse.get(amount.pursePetname);
+        const purse = purseMapping.petnameToVal.get(amount.pursePetname);
         assert(
           purse,
           `Keyword ${dir} ${keyword} pursePetname ${amount.pursePetname} is not a purse`,
