@@ -448,7 +448,7 @@ test('ZoeHelpers canTradeWith', t => {
 
 test('ZoeHelpers swap ok', t => {
   t.plan(4);
-  const { moolaR, simoleanR, moola, simoleans } = setup();
+  const { moolaR, simoleanR, moola, simoleans, amountMaths } = setup();
   const leftOfferHandle = harden({});
   const rightOfferHandle = harden({});
   const cantTradeRightOfferHandle = harden({});
@@ -465,6 +465,7 @@ test('ZoeHelpers swap ok', t => {
           },
           keywords: ['Asset', 'Price'],
         }),
+      getAmountMathForBrand: brand => amountMaths.get(brand.getAllegedName()),
       getAmountMaths: () =>
         harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
       getZoeService: () => {},

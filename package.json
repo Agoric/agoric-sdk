@@ -65,5 +65,8 @@
     "lint-check": "yarn workspaces run lint-check",
     "test": "yarn workspaces run test",
     "build": "yarn workspaces run build"
+  },
+  "dependencies": {
+    "@agoric/store": "^0.1.2"
   }
 }
