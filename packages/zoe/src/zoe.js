@@ -347,34 +347,31 @@ const makeZoe = (additionalEndowments = {}) => {
     }
     const offerRecords = offerTable.getOffers(offerHandles);
 
-    const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
-
     // Remove the offers from the offerTable so that they are no
     // longer active.
     offerTable.deleteOffers(offerHandles);
 
     // Resolve the payout promises with promises for the payouts
-    const pursePKeywordRecord = issuerTable.getPurseKeywordRecord(
-      issuerKeywordRecord,
-    );
     for (const offerRecord of offerRecords) {
       const payout = {};
       Object.keys(offerRecord.currentAllocation).forEach(keyword => {
-        payout[keyword] = E(pursePKeywordRecord[keyword]).withdraw(
-          offerRecord.currentAllocation[keyword],
-        );
+        const payoutAmount = offerRecord.currentAllocation[keyword];
+        const { purse } = issuerTable.get(payoutAmount.brand);
+        payout[keyword] = E(purse).withdraw(payoutAmount);
       });
       harden(payout);
       payoutMap.get(offerRecord.handle).resolve(payout);
     }
   };
 
+  // presumes global keywords
   const getAmountMaths = (instanceHandle, sparseKeywords) => {
     const amountMathKeywordRecord = /** @type {Object.<string,AmountMath>} */ ({});
     const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
+    // this method presumes that issuers have all been retrieved by this point
     sparseKeywords.forEach(keyword => {
-      const issuer = issuerKeywordRecord[keyword];
-      amountMathKeywordRecord[keyword] = issuerTable.get(issuer).amountMath;
+      const brand = issuerTable.brandFromIssuer(issuerKeywordRecord[keyword]);
+      amountMathKeywordRecord[keyword] = issuerTable.get(brand).amountMath;
     });
     return harden(amountMathKeywordRecord);
   };
@@ -517,7 +514,7 @@ const makeZoe = (additionalEndowments = {}) => {
           makePotentialReallocation(offerHandle, newAllocations[i]),
         );
 
-        // 3) save the reallocation
+        // 3. Save the reallocations.
         offerTable.updateAmounts(offerHandles, reallocations);
       },
 
@@ -616,7 +613,8 @@ const makeZoe = (additionalEndowments = {}) => {
         );
       },
       getInstanceRecord: () => instanceTable.get(instanceHandle),
-      getIssuerRecord: issuer => removePurse(issuerTable.get(issuer)),
+      getIssuerRecord: issuer =>
+        removePurse(issuerTable.get(issuerTable.brandFromIssuer(issuer))),
     });
     return contractFacet;
   };
@@ -783,7 +781,7 @@ const makeZoe = (additionalEndowments = {}) => {
             getKeywords(issuerKeywordRecord),
           );
 
-          proposal = cleanProposal(
+          const cleanedProposal = cleanProposal(
             issuerKeywordRecord,
             amountMathKeywordRecord,
             proposal,
@@ -791,8 +789,8 @@ const makeZoe = (additionalEndowments = {}) => {
 
           // Promise flow:
           // issuer -> purse -> deposit payment -> offerHook -> payout
-          const giveKeywords = Object.getOwnPropertyNames(proposal.give);
-          const wantKeywords = Object.getOwnPropertyNames(proposal.want);
+          const giveKeywords = Object.getOwnPropertyNames(cleanedProposal.give);
+          const wantKeywords = Object.getOwnPropertyNames(cleanedProposal.want);
           const userKeywords = harden([...giveKeywords, ...wantKeywords]);
           const paymentDepositedPs = userKeywords.map(keyword => {
             const issuer = issuerKeywordRecord[keyword];
@@ -805,9 +803,9 @@ const makeZoe = (additionalEndowments = {}) => {
                 return E(purse)
                   .deposit(
                     paymentKeywordRecord[keyword],
-                    proposal.give[keyword],
+                    cleanedProposal.give[keyword],
                   )
-                  .then(_ => proposal.give[keyword]);
+                  .then(_ => cleanedProposal.give[keyword]);
               }
               // If any other payments are included, they are ignored.
               return Promise.resolve(
@@ -820,7 +818,7 @@ const makeZoe = (additionalEndowments = {}) => {
             const notifierRec = produceNotifier();
             const offerImmutableRecord = {
               instanceHandle,
-              proposal,
+              proposal: cleanedProposal,
               currentAllocation: arrayToObj(amountsArray, userKeywords),
               notifier: notifierRec.notifier,
               updater: notifierRec.updater,
@@ -841,7 +839,7 @@ const makeZoe = (additionalEndowments = {}) => {
               payout: payoutMap.get(offerHandle).promise,
               outcome: outcomeP,
             };
-            const { exit } = proposal;
+            const { exit } = cleanedProposal;
             const [exitKind] = Object.getOwnPropertyNames(exit);
             // Automatically cancel on deadline.
             if (exitKind === 'afterDeadline') {
