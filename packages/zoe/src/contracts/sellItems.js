@@ -28,14 +28,9 @@ export const makeContract = harden(
     } = makeZoeHelpers(zcf);
     assertKeywords(harden(allKeywords));
 
-    const { terms } = zcf.getInstanceRecord();
-    assertNatMathHelpers('Money');
-
-    const { pricePerItem } = terms;
-
+    const { pricePerItem } = zcf.getInstanceRecord().terms;
+    assertNatMathHelpers(pricePerItem.brand);
     let sellerOfferHandle;
-
-    const amountMaths = zcf.getAmountMaths(allKeywords);
 
     const sellerOfferHook = offerHandle => {
       sellerOfferHandle = offerHandle;
@@ -58,10 +53,13 @@ export const makeContract = harden(
       const wantedItems = proposal.want.Items;
       const numItemsWanted = wantedItems.extent.length;
       const totalCostExtent = pricePerItem.extent * numItemsWanted;
-      const totalCost = amountMaths.Money.make(totalCostExtent);
+      const moneyAmountMaths = zcf.getAmountMathForBrand(pricePerItem.brand);
+      const itemsAmountMath = zcf.getAmountMathForBrand(wantedItems.brand);
+
+      const totalCost = moneyAmountMaths.make(totalCostExtent);
 
       // Check that the wanted items are still for sale.
-      if (!amountMaths.Items.isGTE(currentItemsForSale, wantedItems)) {
+      if (!itemsAmountMath.isGTE(currentItemsForSale, wantedItems)) {
         return rejectOffer(
           buyerOfferHandle,
           `Some of the wanted items were not available for sale`,
@@ -69,7 +67,7 @@ export const makeContract = harden(
       }
 
       // Check that the money provided to pay for the items is greater than the totalCost.
-      if (!amountMaths.Money.isGTE(providedMoney, totalCost)) {
+      if (!moneyAmountMaths.isGTE(providedMoney, totalCost)) {
         return rejectOffer(
           buyerOfferHandle,
           `More money (${totalCost}) is required to buy these items`,
@@ -78,13 +76,13 @@ export const makeContract = harden(
 
       // Reallocate and complete the buyer offer.
       const newSellerAllocation = {
-        Money: amountMaths.Money.add(sellerAllocation.Money, providedMoney),
-        Items: amountMaths.Items.subtract(sellerAllocation.Items, wantedItems),
+        Money: moneyAmountMaths.add(sellerAllocation.Money, providedMoney),
+        Items: itemsAmountMath.subtract(sellerAllocation.Items, wantedItems),
       };
 
       const newBuyerAllocation = {
-        Money: amountMaths.Money.getEmpty(),
-        Items: amountMaths.Items.add(buyerAllocation.Items, wantedItems),
+        Money: moneyAmountMaths.getEmpty(),
+        Items: itemsAmountMath.add(buyerAllocation.Items, wantedItems),
       };
 
       zcf.reallocate(
@@ -103,11 +101,10 @@ export const makeContract = harden(
     zcf.initPublicAPI(
       harden({
         makeBuyerInvite: () => {
+          const itemsAmount = zcf.getCurrentAllocation(sellerOfferHandle).Items;
+          const itemsAmountMath = zcf.getAmountMathForBrand(itemsAmount.brand);
           assert(
-            sellerOfferHandle &&
-              !amountMaths.Items.isEmpty(
-                zcf.getCurrentAllocation(sellerOfferHandle).Items,
-              ),
+            sellerOfferHandle && !itemsAmountMath.isEmpty(itemsAmount),
             details`no items are for sale`,
           );
           return zcf.makeInvitation(

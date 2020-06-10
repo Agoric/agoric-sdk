@@ -56,7 +56,7 @@ export const makeContract = harden(
       assertKeywords,
       getKeys,
       escrowAndAllocateTo,
-      assertNatMathHelpers,
+      assertNatMathHelpersKeyword,
     } = makeZoeHelpers(zcf);
 
     // There must be one keyword at the start, which is equal to the
@@ -112,7 +112,7 @@ export const makeContract = harden(
       ]).then(([newTokenIssuerRecord, poolHandle]) => {
         // The third element of the above array is intentionally
         // ignored, since we already have the liquidityIssuer and mint.
-        assertNatMathHelpers(newTokenKeyword);
+        assertNatMathHelpersKeyword(newTokenKeyword);
         liquidityTable.create(
           harden({
             poolHandle,

@@ -163,6 +163,7 @@ export const makeZoeHelpers = (zcf) => {
       );
     },
 
+    // TODO: this will go away after simplifying barterExchange.
     /**
      * Compare two proposals for compatibility. This returns true
      * if the left offer would accept whatever the right offer is offering,
@@ -326,8 +327,6 @@ export const makeZoeHelpers = (zcf) => {
       // with Zoe.
       let tempHandle;
 
-      const amountMath = zcf.getAmountMaths(harden([keyword]))[keyword];
-
       // We need to make an invite and store the offerHandle of that
       // invite for future use.
       const contractSelfInvite = zcf.makeInvitation(
@@ -338,6 +337,8 @@ export const makeZoeHelpers = (zcf) => {
       // make an offer
       const proposal = harden({ give: { [keyword]: amount } });
       const payments = harden({ [keyword]: payment });
+      const amountMath = zcf.getAmountMathForBrand(amount.brand);
+
       return zcf
         .getZoeService()
         .offer(contractSelfInvite, proposal, payments)
@@ -375,21 +376,24 @@ export const makeZoeHelpers = (zcf) => {
         });
     },
     /*
-     * Given a keyword, assert that the mathHelpers for that issuer
+     * Given a brand, assert that the mathHelpers for that issuer
      * are 'nat' mathHelpers
      */
-    assertNatMathHelpers: keyword => {
+    assertNatMathHelpers: brand => {
+      const amountMath = zcf.getAmountMathForBrand(brand);
+      assert(
+        amountMath.getMathHelpersName() === 'nat',
+        details`issuer must have natMathHelpers`,
+      );
+    },
+    // deprecated. migrate to the version above.
+    assertNatMathHelpersKeyword: keyword => {
       const amountMath = zcf.getAmountMaths(harden([keyword]))[keyword];
       assert(
         amountMath.getMathHelpersName() === 'nat',
         details`issuer for ${keyword} must have natMathHelpers`,
       );
     },
-    /**
-     * Get the amountMath associated with a keyword
-     * @param {Keyword} keyword
-     */
-    getAmountMath: keyword => zcf.getAmountMaths(harden([keyword]))[keyword],
 
     extractOfferDetails: offerHandle => {
       const { proposal } = zcf.getOffer(offerHandle);

@@ -37,13 +37,13 @@ export const makeContract = harden(
       makeEmptyOffer,
       checkHook,
       escrowAndAllocateTo,
-      assertNatMathHelpers,
+      assertNatMathHelpersKeyword,
     } = makeZoeHelpers(zcf);
 
     return zcf.addNewIssuer(liquidityIssuer, 'Liquidity').then(() => {
       const keywords = harden(['TokenA', 'TokenB', 'Liquidity']);
       const amountMaths = zcf.getAmountMathsByBrand();
-      keywords.forEach(assertNatMathHelpers);
+      keywords.forEach(assertNatMathHelpersKeyword);
 
       function getPoolKeywords(poolAllocation, inBrand) {
         const tokenABrand = poolAllocation.TokenA.brand;
