@@ -204,6 +204,7 @@ import { makeTables } from './state';
  *
  * @typedef {Keyword[]} SparseKeywords
  * @typedef {{[Keyword:string]:Amount}} Allocation
+ * @typedef {{[Keyword:string]:AmountMath}} AmountMathKeywordRecord
  */
 
 /**
@@ -220,15 +221,15 @@ import { makeTables } from './state';
  * @property {InitPublicAPI} initPublicAPI
  * @property {() => ZoeService} getZoeService
  * @property {() => Issuer} getInviteIssuer
- * @property {(sparseKeywords: SparseKeywords) => {[Keyword:string]:AmountMath}} getAmountMaths
  * @property {(offerHandles: OfferHandle[]) => { active: OfferStatus[], inactive: OfferStatus[] }} getOfferStatuses
  * @property {(offerHandle: OfferHandle) => boolean} isOfferActive
  * @property {(offerHandles: OfferHandle[]) => OfferRecord[]} getOffers
  * @property {(offerHandle: OfferHandle) => OfferRecord} getOffer
- * @property {(offerHandle: OfferHandle, sparseKeywords?: SparseKeywords) => Allocation} getCurrentAllocation
- * @property {(offerHandles: OfferHandle[], sparseKeywords?: SparseKeywords) => Allocation[]} getCurrentAllocations
+ * @property {(offerHandle: OfferHandle, amountMathKeywordRecord?: AmountMathKeywordRecord) => Allocation} getCurrentAllocation
+ * @property {(offerHandles: OfferHandle[], amountMathKeywordRecords?: AmountMathKeywordRecord[]) => Allocation[]} getCurrentAllocations
  * @property {() => InstanceRecord} getInstanceRecord
- * @property {(issuer: Issuer) => IssuerRecord} getIssuerRecord
+ * @property {(issuer: Issuer) => Brand} getBrandForIssuer
+ * @property {(brand: Brand) => AmountMath} getAmountMath
  *
  * @callback Reallocate
  * The contract can propose a reallocation of extents per offer,
@@ -364,29 +365,6 @@ const makeZoe = (additionalEndowments = {}) => {
     }
   };
 
-  // presumes global keywords
-  const getAmountMaths = (instanceHandle, sparseKeywords) => {
-    const amountMathKeywordRecord = /** @type {Object.<string,AmountMath>} */ ({});
-    const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
-    // this method presumes that issuers have all been retrieved by this point
-    sparseKeywords.forEach(keyword => {
-      const brand = issuerTable.brandFromIssuer(issuerKeywordRecord[keyword]);
-      amountMathKeywordRecord[keyword] = issuerTable.get(brand).amountMath;
-    });
-    return amountMathKeywordRecord;
-  };
-
-  const getAmountMathsByBrand = instanceHandle => {
-    const amountMathBrandTable = makeStore('brand');
-    const { issuerKeywordRecord } = instanceTable.get(instanceHandle);
-    // this method presumes that issuers have all been retrieved by this point
-    Object.getOwnPropertyNames(issuerKeywordRecord).forEach(keyword => {
-      const brand = issuerTable.brandFromIssuer(issuerKeywordRecord[keyword]);
-      amountMathBrandTable.init(brand, issuerTable.get(brand).amountMath);
-    });
-    return amountMathBrandTable;
-  };
-
   const removePurse = issuerRecord =>
     filterObj(issuerRecord, ['issuer', 'brand', 'amountMath']);
 
@@ -405,27 +383,12 @@ const makeZoe = (additionalEndowments = {}) => {
     });
   };
 
-  const doGetCurrentAllocation = (
-    instanceHandle,
-    offerHandle,
-    sparseKeywords,
-  ) => {
+  const doGetCurrentAllocation = (offerHandle, amountMathKeywordRecord) => {
     const { currentAllocation } = offerTable.get(offerHandle);
-    if (sparseKeywords === undefined) {
+    if (amountMathKeywordRecord === undefined) {
       return currentAllocation;
-
-      // eslint-disable-next-line no-else-return
-    } else {
-      const amountMathKeywordRecord = getAmountMaths(
-        instanceHandle,
-        sparseKeywords,
-      );
-      return filterFillAmounts(
-        currentAllocation,
-        sparseKeywords,
-        amountMathKeywordRecord,
-      );
-  }
+    }
+    return filterFillAmounts(currentAllocation, amountMathKeywordRecord);
   };
 
   // Zoe has two different facets: the public Zoe service and the
@@ -580,8 +543,6 @@ const makeZoe = (additionalEndowments = {}) => {
       // The methods below are pure and have no side-effects //
       getInviteIssuer: () => inviteIssuer,
 
-      getAmountMaths: sparseKeywords =>
-        getAmountMaths(instanceHandle, sparseKeywords),
       getOfferNotifier: offerHandle => offerTable.get(offerHandle).notifier,
       getOfferStatuses: offerHandles => {
         const { active, inactive } = offerTable.getOfferStatuses(offerHandles);
@@ -604,24 +565,22 @@ const makeZoe = (additionalEndowments = {}) => {
         assertOffersHaveInstanceHandle(harden([offerHandle]), instanceHandle);
         return removeAmountsAndNotifier(offerTable.get(offerHandle));
       },
-      getCurrentAllocation: (offerHandle, sparseKeywords) => {
+      getCurrentAllocation: (offerHandle, amountMathKeywordRecord) => {
         assertOffersHaveInstanceHandle(harden([offerHandle]), instanceHandle);
-        return doGetCurrentAllocation(
-          instanceHandle,
-          offerHandle,
-          sparseKeywords,
-        );
+        return doGetCurrentAllocation(offerHandle, amountMathKeywordRecord);
       },
-      getCurrentAllocations: (offerHandles, sparseKeywords) => {
+      getCurrentAllocations: (offerHandles, amountMathKeywordRecords = []) => {
         assertOffersHaveInstanceHandle(offerHandles, instanceHandle);
-        return offerHandles.map(offerHandle =>
-          contractFacet.getCurrentAllocation(offerHandle, sparseKeywords),
+        return offerHandles.map((offerHandle, i) =>
+          contractFacet.getCurrentAllocation(
+            offerHandle,
+            amountMathKeywordRecords[i],
+          ),
         );
       },
       getInstanceRecord: () => instanceTable.get(instanceHandle),
       getBrandForIssuer: issuer => issuerTable.brandFromIssuer(issuer),
-      getAmountMathForBrand,
-      getAmountMathsByBrand: () => getAmountMathsByBrand(instanceHandle),
+      getAmountMath: getAmountMathForBrand,
     });
     return contractFacet;
   };
@@ -902,17 +861,15 @@ const makeZoe = (additionalEndowments = {}) => {
         offerTable.getOffers(offerHandles).map(removeAmountsAndNotifier),
       getOffer: offerHandle =>
         removeAmountsAndNotifier(offerTable.get(offerHandle)),
-      getCurrentAllocation: (offerHandle, sparseKeywords) => {
-        const { instanceHandle } = offerTable.get(offerHandle);
-        return doGetCurrentAllocation(
-          instanceHandle,
-          offerHandle,
-          sparseKeywords,
-        );
+      getCurrentAllocation: (offerHandle, amountMathKeywordRecord) => {
+        return doGetCurrentAllocation(offerHandle, amountMathKeywordRecord);
       },
-      getCurrentAllocations: (offerHandles, sparseKeywords) => {
-        return offerHandles.map(offerHandle =>
-          zoeService.getCurrentAllocation(offerHandle, sparseKeywords),
+      getCurrentAllocations: (offerHandles, amountMathKeywordRecords = []) => {
+        return offerHandles.map((offerHandle, i) =>
+          zoeService.getCurrentAllocation(
+            offerHandle,
+            amountMathKeywordRecords[i],
+          ),
         );
       },
       getInstallation: installationHandle =>

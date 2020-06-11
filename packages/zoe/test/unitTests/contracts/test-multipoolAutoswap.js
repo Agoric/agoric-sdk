@@ -13,7 +13,7 @@ import { setup } from '../setupBasicMints';
 
 const multipoolAutoswapRoot = `${__dirname}/../../../src/contracts/multipoolAutoswap`;
 
-test('multipoolAutoSwap with valid offers', async t => {
+test.skip('multipoolAutoSwap with valid offers', async t => {
   t.plan(37);
   try {
     const { moolaR, simoleanR, moola, simoleans } = setup();

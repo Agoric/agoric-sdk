@@ -37,27 +37,33 @@ export const makeContract = harden(
       makeEmptyOffer,
       checkHook,
       escrowAndAllocateTo,
-      assertNatMathHelpersKeyword,
+      assertNatMathHelpers,
     } = makeZoeHelpers(zcf);
 
     return zcf.addNewIssuer(liquidityIssuer, 'Liquidity').then(() => {
       const keywords = harden(['TokenA', 'TokenB', 'Liquidity']);
-      const amountMaths = zcf.getAmountMathsByBrand();
-      keywords.forEach(assertNatMathHelpersKeyword);
+      const { issuerKeywordRecord } = zcf.getInstanceRecord();
+      const amountMathKeywordRecord = {};
+      keywords.forEach(keyword => {
+        const issuer = issuerKeywordRecord[keyword];
+        const brand = zcf.getBrandForIssuer(issuer);
+        assertNatMathHelpers(brand);
+        amountMathKeywordRecord[keyword] = zcf.getAmountMath(brand);
+      });
 
       function getPoolKeywords(poolAllocation, inBrand) {
         const tokenABrand = poolAllocation.TokenA.brand;
         const tokenBBrand = poolAllocation.TokenB.brand;
         const [inKeyword, outKeyword, outAmountMath] =
           inBrand === tokenABrand
-            ? ['TokenA', 'TokenB', amountMaths.get(tokenBBrand)]
-            : ['TokenB', 'TokenA', amountMaths.get(tokenABrand)];
+            ? ['TokenA', 'TokenB', zcf.getAmountMath(tokenBBrand)]
+            : ['TokenB', 'TokenA', zcf.getAmountMath(tokenABrand)];
         return { inKeyword, outKeyword, outAmountMath };
       }
 
       return makeEmptyOffer().then(poolHandle => {
         const getPoolAllocation = () =>
-          zcf.getCurrentAllocation(poolHandle, keywords);
+          zcf.getCurrentAllocation(poolHandle, amountMathKeywordRecord);
 
         const swap = offerHandle => {
           const { proposal } = zcf.getOffer(offerHandle);
@@ -86,8 +92,8 @@ export const makeContract = harden(
               outputReserve: poolAllocation[outKeyword].extent,
             }),
           );
-          const wantAmountMath = amountMaths.get(outBrand);
-          const giveAmountMath = amountMaths.get(inBrand);
+          const wantAmountMath = zcf.getAmountMath(outBrand);
+          const giveAmountMath = zcf.getAmountMath(inBrand);
           const amountOut = wantAmountMath.make(outputExtent);
 
           const satisfiesWantedAmounts = () =>
@@ -174,7 +180,7 @@ export const makeContract = harden(
             liqTokenSupply += liquidityExtentOut;
 
             const add = (key, obj1, obj2) =>
-              amountMaths.get(obj1[key].brand).add(obj1[key], obj2[key]);
+              zcf.getAmountMath(obj1[key].brand).add(obj1[key], obj2[key]);
             const newPoolAmounts = harden({
               TokenA: add('TokenA', userAllocation, poolAllocation),
               TokenB: add('TokenB', userAllocation, poolAllocation),
@@ -182,7 +188,7 @@ export const makeContract = harden(
             });
 
             const getEmpty = (key, alloc) =>
-              amountMaths.get(alloc[key].brand).getEmpty();
+              zcf.getAmountMath(alloc[key].brand).getEmpty();
             const newUserAmounts = harden({
               TokenA: getEmpty('TokenA', userAllocation),
               TokenB: getEmpty('TokenB', userAllocation),
@@ -209,8 +215,12 @@ export const makeContract = harden(
           const liquidityExtentIn = userAllocation.Liquidity.extent;
 
           const poolAllocation = getPoolAllocation();
-          const tokenAAmountMath = amountMaths.get(userAllocation.TokenA.brand);
-          const tokenBAmountMath = amountMaths.get(userAllocation.TokenB.brand);
+          const tokenAAmountMath = zcf.getAmountMath(
+            userAllocation.TokenA.brand,
+          );
+          const tokenBAmountMath = zcf.getAmountMath(
+            userAllocation.TokenB.brand,
+          );
 
           const newUserTokenAAmount = tokenAAmountMath.make(
             calcExtentToRemove(
@@ -293,8 +303,8 @@ export const makeContract = harden(
                 details`keyword ${inKeywords} must only include 'In'`,
               );
               const inBrand = amountInObj.In.brand;
-              const inputExtent = amountMaths
-                .get(inBrand)
+              const inputExtent = zcf
+                .getAmountMath(inBrand)
                 .getExtent(amountInObj.In);
               const poolAllocation = getPoolAllocation();
               const { inKeyword, outKeyword, outAmountMath } = getPoolKeywords(

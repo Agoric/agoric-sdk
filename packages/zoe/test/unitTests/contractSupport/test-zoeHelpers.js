@@ -39,7 +39,6 @@ test('ZoeHelpers assertKeywords', t => {
             Price: simoleanR.issuer,
           },
         }),
-      getAmountMaths: () => {},
       getZoeService: () => {},
     });
     const { assertKeywords } = makeZoeHelpers(mockZCF);
@@ -85,7 +84,6 @@ test('ZoeHelpers rejectIfNotProposal', t => {
             Price: simoleanR.issuer,
           },
         }),
-      getAmountMaths: () => {},
       getZoeService: () => {},
       getOffer: handle => {
         if (offerHandles.indexOf(handle) === 4) {
@@ -225,7 +223,6 @@ test('ZoeHelpers checkIfProposal', t => {
             Price: simoleanR.issuer,
           },
         }),
-      getAmountMaths: () => {},
       getZoeService: () => {},
       getOffer: _handle => {
         return harden({
@@ -280,7 +277,6 @@ test('ZoeHelpers checkIfProposal multiple keys', t => {
           Price: simoleanR.issuer,
         },
       }),
-    getAmountMaths: () => {},
     getZoeService: () => {},
     getOffer: _handle => {
       return harden({
@@ -329,7 +325,6 @@ test('ZoeHelpers getActiveOffers', t => {
             Price: simoleanR.issuer,
           },
         }),
-      getAmountMaths: () => {},
       getZoeService: () => {},
       getOfferStatuses: handles => {
         const [firstHandle, restHandles] = handles;
@@ -366,7 +361,6 @@ test('ZoeHelpers rejectOffer', t => {
             Price: simoleanR.issuer,
           },
         }),
-      getAmountMaths: () => {},
       getZoeService: () => {},
       complete: handles => completedOfferHandles.push(...handles),
     });
@@ -405,9 +399,7 @@ test('ZoeHelpers canTradeWith', t => {
           },
           keywords: ['Asset', 'Price'],
         }),
-      getAmountMaths: () =>
-        harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
-      getAmountMathForBrand: brand => amountMaths.get(brand.getAllegedName()),
+      getAmountMath: brand => amountMaths.get(brand.getAllegedName()),
       getZoeService: () => {},
       getCurrentAllocation: handle => {
         if (handle === leftOfferHandle) {
@@ -489,9 +481,7 @@ test('ZoeHelpers canTradeWith allocation different than give', t => {
           },
           keywords: ['Asset', 'Price'],
         }),
-      getAmountMaths: () =>
-        harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
-      getAmountMathForBrand: amountMathToBrand.get,
+      getAmountMath: amountMathToBrand.get,
       getZoeService: () => {},
       getCurrentAllocation: handle => {
         if (handle === leftOfferHandle) {
@@ -587,9 +577,7 @@ test('ZoeHelpers canTradeWithIgnoreKeywords', t => {
           },
           keywords: ['Asset', 'Price'],
         }),
-      getAmountMaths: () =>
-        harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
-      getAmountMathForBrand: brand => amountMaths.get(brand.getAllegedName()),
+      getAmountMath: brand => amountMaths.get(brand.getAllegedName()),
       getCurrentAllocation: handle => {
         switch (handle) {
           case leftOfferHandle:
@@ -672,9 +660,7 @@ test('ZoeHelpers swap ok', t => {
           },
           keywords: ['Asset', 'Price'],
         }),
-      getAmountMathForBrand: brand => amountMaths.get(brand.getAllegedName()),
-      getAmountMaths: () =>
-        harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
+      getAmountMath: brand => amountMaths.get(brand.getAllegedName()),
       getZoeService: () => {},
       isOfferActive: () => true,
       getCurrentAllocation: handle => {
@@ -772,8 +758,6 @@ test('ZoeHelpers swap keep inactive', t => {
           },
           keywords: ['Asset', 'Price'],
         }),
-      getAmountMaths: () =>
-        harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
       getZoeService: () => {},
       isOfferActive: () => false,
       getOffer: handle => {
@@ -861,9 +845,7 @@ test(`ZoeHelpers swap - can't trade with`, t => {
           },
           keywords: ['Asset', 'Price'],
         }),
-      getAmountMaths: () =>
-        harden({ Asset: moolaR.amountMath, Price: simoleanR.amountMath }),
-      getAmountMathForBrand: amountMathToBrand.get,
+      getAmountMath: amountMathToBrand.get,
       getZoeService: () => {},
       isOfferActive: () => true,
       getOffer: handle => {
@@ -954,7 +936,6 @@ test('ZoeHelpers makeEmptyOffer', async t => {
             Price: simoleanR.issuer,
           },
         }),
-      getAmountMaths: () => {},
       getZoeService: () =>
         harden({
           offer: invite => {

@@ -26,25 +26,25 @@ export const secondPriceLogic = (bidAmountMath, bidOfferHandles, bids) => {
 };
 
 export const closeAuction = (
-  zoe,
+  zcf,
   { auctionLogicFn, sellerOfferHandle, allBidHandles },
 ) => {
-  const { issuerKeywordRecord } = zoe.getInstanceRecord();
-  const bidAmountMath = zoe.getAmountMathForBrand(
-    zoe.getBrandForIssuer(issuerKeywordRecord.Ask),
+  const { issuerKeywordRecord } = zcf.getInstanceRecord();
+  const bidAmountMath = zcf.getAmountMath(
+    zcf.getBrandForIssuer(issuerKeywordRecord.Ask),
   );
-  const assetAmountMath = zoe.getAmountMathForBrand(
-    zoe.getBrandForIssuer(issuerKeywordRecord.Asset),
+  const assetAmountMath = zcf.getAmountMath(
+    zcf.getBrandForIssuer(issuerKeywordRecord.Asset),
   );
 
   // Filter out any inactive bids
-  const { active: activeBidHandles } = zoe.getOfferStatuses(
+  const { active: activeBidHandles } = zcf.getOfferStatuses(
     harden(allBidHandles),
   );
 
   const getBids = amountsKeywordRecord => amountsKeywordRecord.Bid;
-  const bids = zoe.getCurrentAllocations(activeBidHandles).map(getBids);
-  const assetAmount = zoe.getOffer(sellerOfferHandle).proposal.give.Asset;
+  const bids = zcf.getCurrentAllocations(activeBidHandles).map(getBids);
+  const assetAmount = zcf.getOffer(sellerOfferHandle).proposal.give.Asset;
 
   const { winnerOfferHandle, winnerBid, price } = auctionLogicFn(
     bidAmountMath,
@@ -61,10 +61,10 @@ export const closeAuction = (
 
   // Everyone else gets a refund so their extents remain the
   // same.
-  zoe.reallocate(
+  zcf.reallocate(
     harden([sellerOfferHandle, winnerOfferHandle]),
     harden([newSellerAmounts, newWinnerAmounts]),
   );
   const allOfferHandles = harden([sellerOfferHandle, ...activeBidHandles]);
-  zoe.complete(allOfferHandles);
+  zcf.complete(allOfferHandles);
 };

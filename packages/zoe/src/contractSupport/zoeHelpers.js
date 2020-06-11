@@ -122,7 +122,7 @@ export const makeZoeHelpers = (zcf) => {
       const rightAllocation = zcf.getCurrentAllocation(rightOfferHandle);
       const satisfied = (want, availableForTrade) =>
         getKeywords(want).every(keyword => {
-          const amountMath = zcf.getAmountMathForBrand(want[keyword].brand);
+          const amountMath = zcf.getAmountMath(want[keyword].brand);
           return amountMath.isGTE(availableForTrade[keyword], want[keyword]);
         });
       return (
@@ -142,9 +142,7 @@ export const makeZoeHelpers = (zcf) => {
       );
       const satisfied = (want, availableForTrade) => {
         for (let i = leftKeywords.label; i < leftKeywords.length; i += 1) {
-          const amountMath = zcf.getAmountMathForBrand(
-            want[leftKeywords[i]].brand,
-          );
+          const amountMath = zcf.getAmountMath(want[leftKeywords[i]].brand);
           if (
             !amountMath.isGTE(
               availableForTrade[rightKeywords[i]],
@@ -181,11 +179,11 @@ export const makeZoeHelpers = (zcf) => {
           const amount = term[keyword];
 
           if (!sumByBrand.has(amount.brand)) {
-            const empty = zcf.getAmountMathForBrand(amount.brand).getEmpty();
+            const empty = zcf.getAmountMath(amount.brand).getEmpty();
             sumByBrand.set(amount.brand, empty);
           }
           const prevSum = sumByBrand.get(amount.brand);
-          const amountMath = zcf.getAmountMathForBrand(amount.brand);
+          const amountMath = zcf.getAmountMath(amount.brand);
 
           sumByBrand.set(amount.brand, amountMath.add(prevSum, amount));
         });
@@ -194,7 +192,7 @@ export const makeZoeHelpers = (zcf) => {
 
       const isWantSatisfied = (want, offer) => {
         for (const brand of want.keys()) {
-          const amountMath = zcf.getAmountMathForBrand(brand);
+          const amountMath = zcf.getAmountMath(brand);
           if (!amountMath.isGTE(offer.get(brand), want.get(brand))) {
             return false;
           }
@@ -337,7 +335,7 @@ export const makeZoeHelpers = (zcf) => {
       // make an offer
       const proposal = harden({ give: { [keyword]: amount } });
       const payments = harden({ [keyword]: payment });
-      const amountMath = zcf.getAmountMathForBrand(amount.brand);
+      const amountMath = zcf.getAmountMath(amount.brand);
 
       return zcf
         .getZoeService()
@@ -347,9 +345,15 @@ export const makeZoeHelpers = (zcf) => {
           // payment but nothing else. The recipient offer may have any
           // allocation, so we can't assume the allocation is currently empty for this
           // keyword.
-          const [recipientAlloc, tempAlloc] = zcf.getCurrentAllocations(
-            harden([recipientHandle, tempHandle]),
-            harden([keyword]),
+          const amountMathKeywordRecord = harden({ [keyword]: amountMath });
+
+          const recipientAlloc = zcf.getCurrentAllocation(
+            recipientHandle,
+            amountMathKeywordRecord,
+          );
+          const tempAlloc = zcf.getCurrentAllocation(
+            tempHandle,
+            amountMathKeywordRecord,
           );
 
           // Add the tempAlloc for the keyword to the recipientAlloc.
@@ -380,18 +384,10 @@ export const makeZoeHelpers = (zcf) => {
      * are 'nat' mathHelpers
      */
     assertNatMathHelpers: brand => {
-      const amountMath = zcf.getAmountMathForBrand(brand);
+      const amountMath = zcf.getAmountMath(brand);
       assert(
         amountMath.getMathHelpersName() === 'nat',
         details`issuer must have natMathHelpers`,
-      );
-    },
-    // deprecated. migrate to the version above.
-    assertNatMathHelpersKeyword: keyword => {
-      const amountMath = zcf.getAmountMaths(harden([keyword]))[keyword];
-      assert(
-        amountMath.getMathHelpersName() === 'nat',
-        details`issuer for ${keyword} must have natMathHelpers`,
       );
     },
 
@@ -420,8 +416,8 @@ export const makeZoeHelpers = (zcf) => {
     },
 
     crossMatchAmounts: (leftDetails, rightDetails) => {
-      const amountMathLeftIn = zcf.getAmountMathForBrand(leftDetails.brandIn);
-      const amountMathLeftOut = zcf.getAmountMathForBrand(leftDetails.brandOut);
+      const amountMathLeftIn = zcf.getAmountMath(leftDetails.brandIn);
+      const amountMathLeftOut = zcf.getAmountMath(leftDetails.brandOut);
       const newLeftAmountsRecord = {
         [leftDetails.keywordOut]: leftDetails.amountOut,
         [leftDetails.keywordIn]: amountMathLeftIn.subtract(

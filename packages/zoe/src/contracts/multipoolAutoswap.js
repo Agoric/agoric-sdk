@@ -56,7 +56,7 @@ export const makeContract = harden(
       assertKeywords,
       getKeys,
       escrowAndAllocateTo,
-      assertNatMathHelpersKeyword,
+      assertNatMathHelpers,
     } = makeZoeHelpers(zcf);
 
     // There must be one keyword at the start, which is equal to the
@@ -112,7 +112,7 @@ export const makeContract = harden(
       ]).then(([newTokenIssuerRecord, poolHandle]) => {
         // The third element of the above array is intentionally
         // ignored, since we already have the liquidityIssuer and mint.
-        assertNatMathHelpersKeyword(newTokenKeyword);
+        assertNatMathHelpers(newTokenIssuerRecord.brand);
         liquidityTable.create(
           harden({
             poolHandle,
@@ -139,6 +139,7 @@ export const makeContract = harden(
       );
       return zcf.getCurrentAllocation(
         poolHandle,
+        // TODO: KATE FIX
         harden([tokenKeyword, CENTRAL_TOKEN, liquidityKeyword]),
       );
     };
@@ -147,6 +148,7 @@ export const makeContract = harden(
       amountIn,
       keywordIn,
       keywordOut,
+      brandOut,
       secondaryBrand,
     }) => {
       const poolAmounts = getPoolAllocation(secondaryBrand);
@@ -157,14 +159,15 @@ export const makeContract = harden(
           outputReserve: poolAmounts[keywordOut].extent,
         }),
       );
-      const amountMaths = zcf.getAmountMaths(harden([keywordOut]));
-      return amountMaths[keywordOut].make(outputExtent);
+      return zcf.getAmountMath(brandOut).make(outputExtent);
     };
 
     const doSwap = ({
       userAllocation,
       keywordIn,
       keywordOut,
+      brandIn,
+      brandOut,
       secondaryBrand,
     }) => {
       const { poolHandle } = liquidityTable.get(secondaryBrand);
@@ -180,17 +183,18 @@ export const makeContract = harden(
           outputReserve: poolAllocation[keywordOut].extent,
         }),
       );
-      const amountMaths = zcf.getAmountMaths([keywordIn, keywordOut]);
-      const amountOut = amountMaths[keywordOut].make(outputExtent);
+      const amountMathIn = zcf.getAmountMath(brandIn);
+      const amountMathOut = zcf.getAmountMath(brandOut);
+      const amountOut = amountMathOut.make(outputExtent);
 
       const newUserAmounts = harden({
-        [keywordIn]: amountMaths[keywordIn].getEmpty(),
+        [keywordIn]: amountMathIn.getEmpty(),
         [keywordOut]: amountOut,
       });
 
       const newPoolAmounts = harden({
-        [keywordIn]: amountMaths[keywordIn].make(newInputReserve),
-        [keywordOut]: amountMaths[keywordOut].make(newOutputReserve),
+        [keywordIn]: amountMathIn.make(newInputReserve),
+        [keywordOut]: amountMathOut.make(newOutputReserve),
       });
 
       return harden({ poolHandle, newUserAmounts, newPoolAmounts });
@@ -246,6 +250,7 @@ export const makeContract = harden(
         liquidityTokenSupply,
         liquidityMint,
         poolHandle,
+        liquidityTokenBrand,
       } = liquidityTable.get(secondaryTokenBrand);
 
       // These are the keywords that will be used several times within this method
@@ -264,6 +269,7 @@ export const makeContract = harden(
       });
       rejectIfNotProposal(offerHandle, expected);
 
+      // TODO: KATE FIX
       const userAmounts = zcf.getCurrentAllocation(offerHandle, liquidityKeys);
       const poolAmounts = getPoolAllocation(secondaryTokenBrand);
 
@@ -275,7 +281,11 @@ export const makeContract = harden(
           inputReserve: poolAmounts[CENTRAL_TOKEN].extent,
         }),
       );
-      const amountMaths = zcf.getAmountMaths(liquidityKeys);
+      const amountMaths = harden({
+        [CENTRAL_TOKEN]: zcf.getAmountMath(centralTokenBrand),
+        [tokenKeyword]: zcf.getAmountMath(secondaryTokenBrand),
+        [liquidityKeyword]: zcf.getAmountMath(liquidityTokenBrand),
+      });
 
       const liquidityAmountOut = amountMaths[liquidityKeyword].make(
         liquidityExtentOut,
@@ -326,6 +336,7 @@ export const makeContract = harden(
         liquidityKeyword,
         liquidityTokenSupply,
         poolHandle,
+        liquidityTokenBrand,
       } = liquidityTable.get(secondaryTokenBrand);
 
       const expected = harden({
@@ -340,6 +351,7 @@ export const makeContract = harden(
         liquidityKeyword,
       ]);
 
+      // TODO: KATE FIX
       const userAllocation = zcf.getCurrentAllocation(
         offerHandle,
         liquidityKeys,
@@ -347,7 +359,11 @@ export const makeContract = harden(
       const poolAllocation = getPoolAllocation(secondaryTokenBrand);
       const liquidityExtentIn = userAllocation[liquidityKeyword].extent;
 
-      const amountMaths = zcf.getAmountMaths(liquidityKeys);
+      const amountMaths = harden({
+        [CENTRAL_TOKEN]: zcf.getAmountMath(centralTokenBrand),
+        [tokenKeyword]: zcf.getAmountMath(secondaryTokenBrand),
+        [liquidityKeyword]: zcf.getAmountMath(liquidityTokenBrand),
+      });
 
       const subtract = makeSubtract(amountMaths);
 
@@ -436,6 +452,7 @@ export const makeContract = harden(
         const keywords = harden([keywordIn, keywordOut]);
         const { poolHandle, newUserAmounts, newPoolAmounts } = doSwap(
           harden({
+            // TODO: KATE FIX
             userAllocation: zcf.getCurrentAllocation(offerHandle, keywords),
             keywordIn,
             keywordOut,
@@ -456,6 +473,7 @@ export const makeContract = harden(
         const keywords = harden([keywordIn, keywordOut]);
         const { poolHandle, newUserAmounts, newPoolAmounts } = doSwap(
           harden({
+            // TODO: KATE FIX
             userAllocation: zcf.getCurrentAllocation(offerHandle, keywords),
             keywordIn,
             keywordOut,
@@ -479,12 +497,15 @@ export const makeContract = harden(
           newPoolAmounts: newPoolAmountsA,
         } = doSwap(
           harden({
+            // TODO: KATE FIX
             userAllocation: zcf.getCurrentAllocation(
               offerHandle,
               harden([keywordIn, CENTRAL_TOKEN]),
             ),
             keywordIn,
             keywordOut: CENTRAL_TOKEN,
+            brandIn,
+            brandOut,
             secondaryBrand: brandIn,
           }),
         );
@@ -497,11 +518,16 @@ export const makeContract = harden(
             userAllocation: newUserAmountsA,
             keywordIn: CENTRAL_TOKEN,
             keywordOut,
+            brandIn,
+            brandOut,
             secondaryBrand: brandOut,
           }),
         );
-        const keywords = harden([keywordIn, keywordOut, CENTRAL_TOKEN]);
-        const amountMaths = zcf.getAmountMaths(keywords);
+        const amountMaths = harden({
+          [keywordIn]: zcf.getAmountMath(brandIn),
+          [keywordOut]: zcf.getAmountMath(brandOut),
+          [CENTRAL_TOKEN]: zcf.getAmountMath(centralTokenBrand),
+        });
         const finalPoolAmountsA = {
           ...newPoolAmountsA,
           [keywordOut]: amountMaths[keywordOut].getEmpty(),
@@ -569,6 +595,7 @@ export const makeContract = harden(
                 amountIn,
                 keywordIn: CENTRAL_TOKEN,
                 keywordOut: liquidityTable.get(brandOut).tokenKeyword,
+                brandOut,
                 secondaryBrand: brandOut,
               }),
             );
@@ -584,6 +611,7 @@ export const makeContract = harden(
                 amountIn,
                 keywordIn: liquidityTable.get(brandIn).tokenKeyword,
                 keywordOut: CENTRAL_TOKEN,
+                brandOut,
                 secondaryBrand: brandIn,
               }),
             );
@@ -602,6 +630,7 @@ export const makeContract = harden(
                 amountIn,
                 keywordIn: liquidityTable.get(brandIn).tokenKeyword,
                 keywordOut: CENTRAL_TOKEN,
+                brandOut,
                 secondaryBrand: brandIn,
               }),
             );
@@ -610,6 +639,7 @@ export const makeContract = harden(
                 amountIn: centralTokenAmount,
                 keywordIn: CENTRAL_TOKEN,
                 keywordOut: liquidityTable.get(brandOut).tokenKeyword,
+                brandOut,
                 secondaryBrand: brandOut,
               }),
             );

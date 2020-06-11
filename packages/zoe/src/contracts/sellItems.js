@@ -4,6 +4,7 @@
 import harden from '@agoric/harden';
 import { assert, details } from '@agoric/assert';
 import { makeZoeHelpers, defaultAcceptanceMsg } from '../contractSupport';
+import { getKeywords } from '../cleanProposal';
 
 /** @typedef {import('../zoe').ContractFacet} ContractFacet */
 
@@ -38,13 +39,19 @@ export const makeContract = harden(
     };
 
     const buyerOfferHook = buyerOfferHandle => {
+      const amountMathKeywordRecord = {};
+      const { issuerKeywordRecord } = zcf.getInstanceRecord();
+      Object.getOwnPropertyNames(issuerKeywordRecord).forEach(keyword => {
+        const brand = zcf.getBrandForIssuer(issuerKeywordRecord[keyword]);
+        amountMathKeywordRecord[keyword] = zcf.getAmountMath(brand);
+      });
       const sellerAllocation = zcf.getCurrentAllocation(
         sellerOfferHandle,
-        allKeywords,
+        amountMathKeywordRecord,
       );
       const buyerAllocation = zcf.getCurrentAllocation(
         buyerOfferHandle,
-        allKeywords,
+        amountMathKeywordRecord,
       );
       const currentItemsForSale = sellerAllocation.Items;
       const providedMoney = buyerAllocation.Money;
@@ -53,8 +60,8 @@ export const makeContract = harden(
       const wantedItems = proposal.want.Items;
       const numItemsWanted = wantedItems.extent.length;
       const totalCostExtent = pricePerItem.extent * numItemsWanted;
-      const moneyAmountMaths = zcf.getAmountMathForBrand(pricePerItem.brand);
-      const itemsAmountMath = zcf.getAmountMathForBrand(wantedItems.brand);
+      const moneyAmountMaths = zcf.getAmountMath(pricePerItem.brand);
+      const itemsAmountMath = zcf.getAmountMath(wantedItems.brand);
 
       const totalCost = moneyAmountMaths.make(totalCostExtent);
 
@@ -102,7 +109,7 @@ export const makeContract = harden(
       harden({
         makeBuyerInvite: () => {
           const itemsAmount = zcf.getCurrentAllocation(sellerOfferHandle).Items;
-          const itemsAmountMath = zcf.getAmountMathForBrand(itemsAmount.brand);
+          const itemsAmountMath = zcf.getAmountMath(itemsAmount.brand);
           assert(
             sellerOfferHandle && !itemsAmountMath.isEmpty(itemsAmount),
             details`no items are for sale`,
