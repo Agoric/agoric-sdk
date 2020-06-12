@@ -5,7 +5,7 @@ let replaceGlobalMeter;
 
 // When using this function's text in a SES-1.0 shim, we redefine this
 // constant to be Error.
-const SES1ErrorConstructor = null;
+const SES1ErrorConstructor = Error;
 
 export function tameMetering() {
   if (replaceGlobalMeter) {
@@ -200,8 +200,7 @@ export function tameMetering() {
       wrap(getPrototypeOf(target), pname && `${pname}.__proto__`),
     );
 
-    // Assign the wrapped descriptors to the target.
-    for (const [p, desc] of entries(getOwnPropertyDescriptors(target))) {
+    const assignToTarget = (p, desc) => {
       let newDesc;
       if (constructor && p === 'constructor') {
         newDesc = {
@@ -211,11 +210,28 @@ export function tameMetering() {
           configurable: true,
         };
       } else {
-        newDesc = wrapDescriptor(desc, pname && `${pname}.${p}`);
+        newDesc = wrapDescriptor(desc, pname && `${pname}.${String(p)}`);
       }
-      defineProperty(wrapper, p, newDesc);
-      defineProperty(target, p, newDesc);
-    }
+      for (const o of [wrapper, target]) {
+        try {
+          defineProperty(o, p, newDesc);
+        } catch (e) {
+          // Ignore: TypeError: Cannot redefine property: Symbol(Symbol.hasInstance)
+          if (typeof p !== 'symbol' || !(e instanceof TypeError)) {
+            throw e;
+          }
+        }
+      }
+    };
+
+    // Assign the wrapped descriptors to the target.
+    const tdescs = getOwnPropertyDescriptors(target);
+    Object.getOwnPropertyNames(tdescs).forEach(p =>
+      assignToTarget(p, tdescs[p]),
+    );
+    Object.getOwnPropertySymbols(tdescs).forEach(p =>
+      assignToTarget(p, tdescs[p]),
+    );
 
     return wrapper;
   }
